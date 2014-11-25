@@ -28,6 +28,8 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
+`ifdef SYSTEM_VERILOG_MODE
+
 // basic test of "logic" data type instead of "reg", for combinational blocks
 // copied from comb1
 
@@ -130,3 +132,4 @@ endmodule
 */
 
 
+`endif

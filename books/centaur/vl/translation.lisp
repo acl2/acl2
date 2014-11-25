@@ -94,9 +94,9 @@ to say which version you want, e.g., @('\"adder$width=4\"').</p>
 the translation's @('failmods') field, whereas successful modules are kept in
 the @('mods') field.)</p>"
 
-  (vl-has-module modname
-                 (vl-design->mods
-                  (vl-translation->good x))))
+  (if (vl-find-module modname (vl-design->mods (vl-translation->good x)))
+      t
+    nil))
 
 (define vl-translation-get-esim ((modname stringp)
                                  (x vl-translation-p))

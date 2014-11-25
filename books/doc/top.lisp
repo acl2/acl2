@@ -102,6 +102,9 @@
 
 (include-book "centaur/satlink/top" :dir :system)
 (include-book "centaur/satlink/check-config" :dir :system)
+(include-book "centaur/satlink/benchmarks" :dir :system)
+
+(include-book "centaur/depgraph/top" :dir :system)
 
 (include-book "centaur/quicklisp/top" :dir :system)
 
@@ -170,6 +173,9 @@
 
 (include-book "hacking/all" :dir :system)
 (include-book "hints/consider-hint" :dir :system)
+
+(include-book "ordinals/e0-ordinal" :dir :system)
+
 (include-book "tools/do-not" :dir :system)
 (include-book "tools/plev" :dir :system)
 (include-book "tools/plev-ccl" :dir :system)
@@ -199,10 +205,10 @@
 
 (include-book "centaur/fty/deftypes" :dir :system)
 
+(include-book "misc/find-lemmas" :dir :system)
 (include-book "misc/simp" :dir :system)
 (include-book "misc/without-waterfall-parallelism" :dir :system)
 (include-book "misc/with-waterfall-parallelism" :dir :system)
-
 
 #||
 
@@ -240,10 +246,54 @@
 
 ||#
 
+(defpointer assocs patbind-assocs)
+
 ; Historically we had a completely ad-hoc organization that grew organically as
 ; topics were added.  This turned out to be a complete mess.  To make the
 ; manual more approachable and relevant, we now try to impose a better
 ; hierarchy and add some context.
+
+(defxdoc acl2::|Building the ACL2+Books Manual|
+  :parents (documentation)
+  :short "How to build the ACL2+Books Manual."
+
+  :long "<p>If you just want to get a copy of the ACL2+Books manual for local
+viewing, you probably <b>don't need to build it yourself</b> because you can
+just <a href='download/'>download</a> a copy.</p>
+
+
+<h4>Quick Instructions</h4>
+
+<p>This should work on CCL on Linux and Mac OS X.  It <b>may not work</b> for
+other OS/Lisp combinations.  In particular, building the manual requires some
+features from @(see oslib) and @(see quicklisp) that may not be available on
+other systems; see <a href='https://github.com/acl2/acl2/issues/189'>Issue
+189</a>.</p>
+
+<p>You need a copy of <b>ACL2(h)</b>.  Then, just run:</p>
+
+@({
+    cd acl2-sources/books
+    make manual ACL2=my-acl2h
+})
+
+<p>The resulting manual may be found in:</p>
+
+@({
+    acl2-sources/books/doc/manual/index.html
+})
+
+<p>For more detailed instructions, see @(see books-certification).</p>
+
+<h4>Other Manuals</h4>
+
+<p>See @(see acl2::acl2-doc) for details about how to build your own
+Emacs-based manual.</p>
+
+<p>See @(see xdoc::save) for general information about how to build and
+distribute custom XDOC manuals.  For instance, you can build manuals that are
+extended to cover proprietary libraries.</p>")
+
 
 (defsection arithmetic
   :parents (top)
@@ -379,7 +429,7 @@ of proofs.")
 ;(xdoc::change-parents data-definitions (macro-libraries projects debugging))
 ;(xdoc::change-parents with-timeout (data-definitions))
 ;(xdoc::change-parents testing (cgen))
-(xdoc::change-parents data-structures (macro-libraries))
+;; (xdoc::change-parents data-structures (macro-libraries))
 (xdoc::change-parents hacker (interfacing-tools))
 (xdoc::change-parents witness-cp (proof-automation))
 
@@ -485,7 +535,6 @@ also want to import many symbols from ACL2; see @(see *acl2-exports*).</p>
 
      (xdoc::change-parents wormhole (state ld))
 
-     (xdoc::change-parents sharp-comma-reader (defconst))
      (xdoc::change-parents sharp-dot-reader (defconst))
 
      (xdoc::change-parents computed-hints (hints))
@@ -1132,8 +1181,7 @@ See @(see arithmetic) for libraries for arithmetic reasoning.</p>")
       "new-doc.lsp")
      (xdoc::save "./manual"
                  :import nil
-                 :redef-okp t
-                 :expand-level 2)
+                 :redef-okp t)
      (value `(value-triple :manual)))))
 
 

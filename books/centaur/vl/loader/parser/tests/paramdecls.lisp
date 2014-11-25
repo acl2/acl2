@@ -337,12 +337,12 @@
                             :successp nil)
 
      (make-vl-paramdecltest :input "parameter foo_t a = 1"
-                            :expect '(("a" :explicit (:vl-usertype (id "foo_t")) = 1))
+                            :expect '(("a" :explicit (:vl-usertype (type "foo_t")) = 1))
                             :pre-usertypes '("foo_t"))
 
      (make-vl-paramdecltest :input "parameter foo_t a = 1, b"
-                            :expect '(("a" :explicit (:vl-usertype (id "foo_t")) = 1)
-                                      ("b" :explicit (:vl-usertype (id "foo_t"))))
+                            :expect '(("a" :explicit (:vl-usertype (type "foo_t")) = 1)
+                                      ("b" :explicit (:vl-usertype (type "foo_t"))))
                             :pre-usertypes '("foo_t"))
 
      (make-vl-paramdecltest :input "parameter struct { int field; } a = 1"

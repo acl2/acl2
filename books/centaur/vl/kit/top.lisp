@@ -190,7 +190,7 @@ toolkit with their own commands.</p>
         ;; Since the VL executable is a non-interactive program, there's no
         ;; chance to enter a break loop if something crashes.  Printing a
         ;; backtrace before aborting, then, can be extremely useful.
-        (set-debugger-enable :bt))
+        (set-debugger-enable :bt-break))
        (- (acl2::tshell-ensure))
        ((mv argv state) (oslib::argv))
 

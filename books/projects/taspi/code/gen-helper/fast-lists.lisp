@@ -24,13 +24,17 @@
   (alistp-gen (number-to-element l pos)))
 
 (defun taxa-list-to-index-taxon (taxa-list)
-  ":Doc-Section TASPI
-   Creates a mapping of unique integers to members of taxa-list.~/
-   ~/
-   Arguments:
-      (1) taxa-list - a list of taxa names
 
-   "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Creates a mapping of unique integers to members of taxa-list.~/
+;  ~/
+;  Arguments:
+;     (1) taxa-list - a list of taxa names
+
+;  "
   (declare (xargs :guard t))
   (build-fast-alist-from-alist
    (number-to-element taxa-list 0)
@@ -65,13 +69,17 @@
   (alistp-gen (element-to-number l pos)))
 
 (defun taxa-list-to-taxon-index (taxa-list)
-  ":Doc-Section TASPI
-   Creates a mapping from each member of taxa-list to a unique integer.~/
-   ~/
-   Arguments:
-      (1) taxa-list - a list of taxa names
 
-   "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Creates a mapping from each member of taxa-list to a unique integer.~/
+;  ~/
+;  Arguments:
+;     (1) taxa-list - a list of taxa names
+
+;  "
   (declare (xargs :guard t))
   (build-fast-alist-from-alist
    (element-to-number taxa-list 0)
@@ -111,13 +119,17 @@
            (alistp-gen x)))
 
 (defun get-taxa-from-taxon-index (x)
-  ":Doc-Section TASPI
-   Returns the taxa names from a mapping of taxa names to integers.~/
-   ~/
-   Arguments:
-      (1) x - a mapping of taxa names to integers.
 
-   "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the taxa names from a mapping of taxa names to integers.~/
+;  ~/
+;  Arguments:
+;     (1) x - a mapping of taxa names to integers.
+
+;  "
   (declare (xargs :guard (alistp-gen x)))
   (if (consp x)
       (cons (caar x)
@@ -260,13 +272,17 @@
   :hints (("Goal" :in-theory (enable taxa-list-to-index-taxon))))
   
 (defun get-taxa-from-index-taxon (x)
-  ":Doc-Section TASPI
-   Returns the list of taxa names from a mapping of integers to taxa names.~/
-   ~/
-   Arguments:
-      (1) x - a mapping of integers to taxa names.
 
-   "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the list of taxa names from a mapping of integers to taxa names.~/
+;  ~/
+;  Arguments:
+;     (1) x - a mapping of integers to taxa names.
+
+;  "
   (declare (xargs :guard (alistp-gen x)))
   (if (consp x)
       (cons (cdar x)
@@ -361,13 +377,17 @@
            (bound-to-nat-list l x)))
 
 (defmacro make-tia (tl)
-   ":Doc-Section TASPI
-   Builds a mapping from taxa names to integers.~/
-   ~/
-   Arguments:
-      (1) x - a list of taxa names
 
-   Details: Same as taxa-list-to-taxon-index, but shorter name.
-   "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;  Builds a mapping from taxa names to integers.~/
+;  ~/
+;  Arguments:
+;     (1) x - a list of taxa names
+
+;  Details: Same as taxa-list-to-taxon-index, but shorter name.
+;  "
   `(build-fast-alist-from-alist
     (element-to-number ,tl 0) 'taxon-index))

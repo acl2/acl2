@@ -31,8 +31,16 @@
 (in-package "VL")
 (include-book "base")
 (include-book "../ports")
+(include-book "../../../checkers/portcheck") ;; bozo for regularportlist->exprs
 
 ;; BOZO more unit tests!
+
+#||
+(trace-parser vl-parse-port-reference-fn)
+(trace-parser vl-parse-1+-port-references-separated-by-commas-fn)
+(trace-parser vl-parse-port-expression-fn)
+(trace-parser vl-parse-nonnull-port-fn)
+||#
 
 (defparser-top vl-parse-nonnull-port)
 
@@ -50,12 +58,12 @@
                 (and (prog2$ (cw "Erp: ~x0.~%" erp)
                              (not erp))
                      (prog2$ (cw "Val: ~x0.~%" val)
-                             (vl-port-p val))
-                     (prog2$ (cw "Name: ~x0.~%" (vl-port->name val))
-                             (equal (vl-port->name val) ',name))
+                             (vl-regularport-p val))
+                     (prog2$ (cw "Name: ~x0.~%" (vl-regularport->name val))
+                             (equal (vl-regularport->name val) ',name))
                      (prog2$ (cw "Expr: ~x0.~%"
-                                 (vl-pretty-expr (vl-port->expr val)))
-                             (equal (vl-pretty-expr (vl-port->expr val))
+                                 (vl-pretty-expr (vl-regularport->expr val)))
+                             (equal (vl-pretty-expr (vl-regularport->expr val))
                                     ',expr))
                      (prog2$ (cw "Tokens: ~x0.~%" tokens)
                              (not tokens))
@@ -123,9 +131,7 @@
             nil)
           (vl-pretty-maybe-exprlist (cdr x)))))
 
-
-
-(defparser-top vl-parse-list-of-ports)
+(defparser-top vl-parse-module-port-list-top)
 
 (defmacro test-parse-portlist (&key input (successp 't) names exprs)
   `(with-output
@@ -134,24 +140,33 @@
                    (config *vl-default-loadconfig*)
                    (pstate (make-vl-parsestate :warnings 'blah-warnings))
                    ((mv erp val tokens (vl-parsestate pstate))
-                    (vl-parse-list-of-ports-top))
+                    (vl-parse-module-port-list-top-top))
+                   (val (vl-parsed-ports->ports val))
                    ((unless ,successp)
                     (cw "Expect failure.  Actual Erp: ~x0.~%" erp)
                     erp))
                 (and (prog2$ (cw "Erp: ~x0.~%" erp)
                              (not erp))
                      (prog2$ (cw "Val: ~x0.~%" val)
-                             (vl-portlist-p val))
+                             (vl-regularportlist-p val))
                      (prog2$ (cw "Names: ~x0.~%" (vl-portlist->names val))
                              (equal (vl-portlist->names val) ',names))
                      (prog2$ (cw "Exprs: ~x0.~%"
-                                 (vl-pretty-maybe-exprlist (vl-portlist->exprs val)))
-                             (equal (vl-pretty-maybe-exprlist (vl-portlist->exprs val))
+                                 (vl-pretty-maybe-exprlist (vl-regularportlist->exprs val)))
+                             (equal (vl-pretty-maybe-exprlist (vl-regularportlist->exprs val))
                                     ',exprs))
                      (prog2$ (cw "Tokens: ~x0.~%" tokens)
                              (not tokens))
                      (prog2$ (cw "Warnings: ~x0.~%" pstate.warnings)
                              (equal pstate.warnings 'blah-warnings)))))))
+#||
+(trace-parser vl-parse-module-port-list-top-fn)
+(trace-parser vl-parse-0+-attribute-instances-fn)
+(trace-parser vl-parse-ansi-port-declaration-fn)
+(trace$ vl-port-starts-ansi-port-list-p)
+(trace-parser vl-parse-1+-ansi-port-declarations-fn)
+(trace-parser vl-parse-1+-ports-separated-by-commas-fn)
+||#
 
 (test-parse-portlist :input "()"
                      :names nil
@@ -181,7 +196,6 @@
                      :names ("a" nil nil "b")
                      :exprs ((id "a") nil nil (id "b")))
 
-
 (test-parse-portlist :input "(,a)"
                      :names (nil "a")
                      :exprs (nil (id "a")))
@@ -189,7 +203,6 @@
 (test-parse-portlist :input "(a,)"
                      :names ("a" nil)
                      :exprs ((id "a") nil))
-
 
 (test-parse-portlist :input "(.a(), b[3:0])"
                      :names ("a" nil)

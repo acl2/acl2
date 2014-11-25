@@ -118,10 +118,16 @@ field of each @(see vl-module-p).</p>")
   (b* (((vl-module x) x)
        ;; Gather up a message about what unsupported constructs there are.
        (acc nil)
-       (acc (if x.paramdecls
-                (cons (str::join (cons "parameter declarations: " (vl-paramdecllist->names x.paramdecls)) " ")
-                      acc)
-              acc))
+       ;; We used to check whether there were parameter declarations and fail
+       ;; if so, because e doesn't really support them directly.  But it's
+       ;; basically harmless to have parameter declarations in your module as
+       ;; long as they're not used.  If unparameterization failed somewhere, it
+       ;; should have produced a fatal warning, so we don't expect this check
+       ;; to be necessary.
+       ;; (acc (if x.paramdecls
+       ;;          (cons (str::join (cons "parameter declarations: " (vl-paramdecllist->names x.paramdecls)) " ")
+       ;;                acc)
+       ;;        acc))
        (acc (if x.fundecls
                 (cons (str::join (cons "function declarations: " (vl-fundecllist->names x.fundecls)) " ")
                       acc)
@@ -139,6 +145,8 @@ field of each @(see vl-module-p).</p>")
               acc))
        ;; BOZO BOZO BOZO !!!!!
        ;; need to check netdecls for WOR, etc.
+
+       (acc (if (vl-module->ifports x) (cons "interface ports" acc) acc))
 
        ((unless acc)
         (mv t warnings))
@@ -488,26 +496,20 @@ and extend @('eal') with the newly produced @('esim').</p>"
       (equal (vl-modulelist->names (mv-nth 0 ret))
              (vl-modulelist->names x)))))
 
-(define vl-modulelist-to-e
-  :short "Top-level function for E conversion."
-  ((mods (and (vl-modulelist-p mods)
-              (uniquep (vl-modulelist->names mods)))))
-  :returns (new-mods vl-modulelist-p
-                     "New modules, with @('esim') fields filled in where possible."
-                     :hyp (force (vl-modulelist-p mods)))
-  :guard-hints((set-reasoning))
-  (b* ( ;; We do a couple of global checks: we want to make sure that the
-       ;; module port/port-declarations agree and that there are no unsupported
-       ;; constructs.
-       (mods (vl-modulelist-check-port-bits mods))
-       ((mv mods failmods) (vl-modulelist-propagate-errors mods))
-       (names1  (mergesort (vl-modulelist->names mods)))
-       (mods    (vl-deporder-sort mods))
-       (names2  (vl-modulelist->names mods))
-       ((unless (and (equal (mergesort names2) names1)
-                     (uniquep names2)))
-        ;; BOZO prove this away so we don't have to do the check
-        (raise "deporder-sort screwed up the modnames??!?!"))
+
+
+(define vl-design-to-e-check-ports ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  :short "Make sure that the module port/port-declarations agree and that there
+          are no unsupported constructs."
+  (b* (((vl-design x) (vl-design-fix x))
+       (mods (vl-modulelist-check-port-bits x.mods)))
+    (change-vl-design x :mods mods)))
+
+(define vl-design-to-e-main ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* (((vl-design x) (vl-design-fix x))
+       (mods x.mods)
        (modalist (vl-modalist mods))
        ((mv mods eal) (vl-modulelist-make-esims mods mods modalist nil)))
     (fast-alist-free eal)
@@ -516,20 +518,22 @@ and extend @('eal') with the newly produced @('esim').</p>"
     (clear-memoize-table 'vl-portdecls-to-i/o)
     (clear-memoize-table 'vl-portlist-msb-bit-pattern)
     (clear-memoize-table 'vl-module-wirealist)
-    (append mods failmods))
-  ///
-  (defthm no-duplicatesp-equal-of-vl-modulelist->names-of-vl-modulelist-to-e
-    (implies (and (force (vl-modulelist-p mods))
-                  (force (no-duplicatesp-equal (vl-modulelist->names mods))))
-             (no-duplicatesp-equal (vl-modulelist->names (vl-modulelist-to-e mods))))
-    :hints((set-reasoning))))
+    (change-vl-design x :mods mods)))
 
-(define vl-design-to-e ((x vl-design-p))
-  :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x)
-       ((unless (uniquep (vl-modulelist->names x.mods)))
-        (raise "Name clash for modules ~&0."
-               (duplicated-members (vl-modulelist->names x.mods)))
-        x))
-    (change-vl-design x :mods (vl-modulelist-to-e x.mods))))
+(define vl-design-to-e ((good vl-design-p)
+                        (bad  vl-design-p))
+  :short "Top-level function for E conversion."
+  :returns (mv (good vl-design-p)
+               (bad  vl-design-p))
+  (b* ((good (vl-design-to-e-check-ports good))
+       (bad  (vl-design-fix bad))
+
+       ((mv good bad) (vl-design-propagate-errors good bad))
+       ((mv okp good) (vl-design-deporder-modules good))
+       ((unless okp)
+        (raise "Somehow failed to dependency order sort the modules.")
+        (mv good bad))
+
+       (good (vl-design-to-e-main good))
+       ((mv good bad) (vl-design-propagate-errors good bad)))
+    (mv good bad)))

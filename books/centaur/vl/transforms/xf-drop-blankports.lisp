@@ -63,13 +63,14 @@ ports because we expect @(see argresolve) to have done that.</p>")
   :guard (same-lengthp args ports)
   :returns (new-args "copy of @('args') with blank ports removed"
                      vl-plainarglist-p)
-  (cond ((atom args)
-         nil)
-        ((vl-port->expr (car ports))
-         (cons (vl-plainarg-fix (car args))
-               (vl-plainarglist-drop-blankports (cdr args) (cdr ports))))
-        (t
-         (vl-plainarglist-drop-blankports (cdr args) (cdr ports)))))
+  (b* (((when (atom args))
+        nil)
+       (port1 (vl-port-fix (car ports)))
+       ((when (or (eq (tag port1) :vl-interfaceport)
+                  (vl-regularport->expr port1)))
+        (cons (vl-plainarg-fix (car args))
+              (vl-plainarglist-drop-blankports (cdr args) (cdr ports)))))
+    (vl-plainarglist-drop-blankports (cdr args) (cdr ports))))
 
 (define vl-modinst-drop-blankports
   :short "Drop arguments to blank ports from a module instance."
@@ -126,13 +127,13 @@ ports because we expect @(see argresolve) to have done that.</p>")
   :short "Drop any blank ports from a list of ports."
   ((x vl-portlist-p))
   :returns (new-x vl-portlist-p)
-  (cond ((atom x)
-         nil)
-        ((vl-port->expr (car x))
-         (cons (vl-port-fix (car x))
-               (vl-portlist-drop-blankports (cdr x))))
-        (t
-         (vl-portlist-drop-blankports (cdr x)))))
+  (b* (((when (atom x)) nil)
+       (x1 (vl-port-fix (car x)))
+       ((when (or (eq (tag x1) :vl-interfaceport)
+                  (vl-regularport->expr (car x))))
+        (cons (vl-port-fix (car x))
+              (vl-portlist-drop-blankports (cdr x)))))
+    (vl-portlist-drop-blankports (cdr x))))
 
 (define vl-module-drop-blankports
   :short "Drop any blank ports from a module, and simultaneously remove all

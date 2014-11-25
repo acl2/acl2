@@ -264,13 +264,20 @@ SystemVerilog-2012 Standard.</p>"
 
    ;; Hierarchical Identifiers and Scoping
    (cons :vl-hid-dot               2)   ;;; e.g., foo.bar
-   (cons :vl-scope                 2)   ;;; e.g., foo::bar
+   (cons :vl-scope                 2)   ;;; e.g., foo::xbar
 
    ;; Tagged Union Expressions, should have arity 1 or 2
    (cons :vl-tagged nil) ;; e.g., "tagged Valid 13" or "tagged Invalid"
 
    ;; Casting Expressions
    (cons :vl-binary-cast           2)    ;;; e.g., int'(2.0)
+
+   ;; Assignment Pattern stuff
+   (cons :vl-pattern-positional nil) ;; '\{ expression { , expression } \}
+   (cons :vl-pattern-multi      2)   ;; '\{ expression \{ expression {, expression} \} \}, e.g. '{3{a,b}}
+   (cons :vl-pattern-keyvalue   nil) ;; '\{ structure_pattern_key : expression { , key : expression } \}
+   (cons :vl-keyvalue           2)   ;; key : value  (within vl-pattern-keyvalue)
+   (cons :vl-pattern-type       2)   ;; type'{...}, first argument 
 
    ))
 
@@ -674,6 +681,17 @@ so that we do not confuse them with ordinary @(see vl-id-p) objects.</p>")
 we do not confuse them with ordinary @(see vl-id-p) objects.</p>")
 
 
+(defprod vl-typename
+  :short "Represents a user-defined type name."
+  :tag :vl-typename
+  :layout :tree
+
+  ((name stringp :rule-classes :type-prescription))
+
+  :long "<p>We use a custom representation for the names of types, so that
+we do not confuse them with ordinary @(see vl-id-p) objects.</p>")
+
+
 (defprod vl-tagname
   :short "Represents a tagged union member name."
   :tag :vl-tagname
@@ -693,6 +711,7 @@ objects.</p>")
    :vl-this
    :vl-super
    :vl-local
+   :vl-default
    :vl-$
    :vl-$root
    :vl-$unit
@@ -729,8 +748,7 @@ distinguished by keywords such as @('null'), @('this'), @('super'), @('$'),
    :vl-signed
    :vl-unsigned
    :vl-string
-   :vl-const
-   )
+   :vl-const)
   :parents (vl-basictype-p)
   :short "The various kinds of basic, atomic, built-in SystemVerilog types.")
 
@@ -757,6 +775,7 @@ for a discussion of the valid types.</p>"
    vl-hidpiece
    vl-funname
    vl-sysfunname
+   vl-typename
    vl-keyguts
    vl-time
    vl-basictype
@@ -846,6 +865,18 @@ vl-atomguts-p) is already known."
   :hooks nil
   (mbe :logic (vl-sysfunname-p x)
        :exec (eq (tag x) :vl-sysfunname)))
+
+(define vl-fast-typename-p ((x vl-atomguts-p))
+  :parents (vl-atomguts-p vl-typename-p)
+  :short "Faster version of @(see vl-typename-p), given that @(see
+vl-atomguts-p) is already known."
+  :long "<p>We leave this function enabled and reason about @('vl-typename-p')
+instead.</p>"
+  :inline t
+  :enabled t
+  :hooks nil
+  (mbe :logic (vl-typename-p x)
+       :exec (eq (tag x) :vl-typename)))
 
 (defoption maybe-natp natp
   ;; BOZO misplaced, :parents nil to settle documentation issues
@@ -1654,11 +1685,6 @@ fairly easily solve the HIDEXPR problem.</p>"
            (list-fix (vl-exprlist-fix x)))
     :hints(("Goal" :induct (len x))))
 
-  (defthm vl-exprlist-fix-of-append
-    (equal (vl-exprlist-fix (append x y))
-           (append (vl-exprlist-fix x) (vl-exprlist-fix y)))
-    :hints(("Goal" :induct (len x))))
-
   (defthm vl-exprlist-fix-of-rev
     (equal (vl-exprlist-fix (rev x))
            (rev (vl-exprlist-fix x)))
@@ -1688,3 +1714,18 @@ fairly easily solve the HIDEXPR problem.</p>"
     :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
   (defcong vl-exprlist-equiv vl-exprlist-equiv (nthcdr n x) 2))
 
+
+(local (defun make-cases (ops)
+         (if (atom ops)
+             nil
+           (cons `(equal (vl-nonatom->op x) ,(car ops))
+                 (make-cases (cdr ops))))))
+
+(make-event
+ `(defruled vl-nonatom->op-forward
+    (or . ,(make-cases (strip-cars *vl-ops-table*)))
+    :rule-classes ((:forward-chaining
+                    :trigger-terms ((vl-nonatom->op x))))
+    :enable (vl-op-p acl2::hons-assoc-equal-of-cons)
+    :disable vl-op-p-of-vl-nonatom->op
+    :use ((:instance vl-op-p-of-vl-nonatom->op))))

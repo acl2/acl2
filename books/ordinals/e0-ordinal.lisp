@@ -11,79 +11,92 @@ See the end of this file for documentation of E0-ORD-< and E0-ORDINALP.
 
 (in-package "ACL2")
 (include-book "ordinal-definitions")
+(include-book "xdoc/top" :dir :system)
 (local (include-book "ordinal-isomorphism"))
 
-(defun e0-ord-< (x y)
+(defsection e0-ord-<
+  :parents (ordinals)
+  :short "The old ordering function for ACL2 ordinals."
 
-  ":Doc-Section ACL2::ACL2-built-ins
+  :long "<p>See @(see o<) for the current new ordering function for ACL2
+ordinals.</p>
 
-   the old ordering function for ACL2 ordinals~/
+<p>The functions @('e0-ordinalp') and @(see e0-ord-<) were replaced in ACL2
+Version 2.8 by @(see o-p) and @(see o<), respectively.  However, books created
+before that version used the earlier functions for termination proofs; the old
+functions might be of use in these cases.</p>
 
-   ~l[o<] for the current new ordering function for ACL2 ordinals.~/
+<p>To use the old functions in termination proofs, you can do:</p>
 
-   The functions ~c[e0-ordinalp] and ~ilc[e0-ord-<] were replaced in ACL2
-   Version_2.8 by ~ilc[o-p] and ~ilc[o<], respectively.  However, books created
-   before that version used the earlier functions for termination proofs; the
-   old functions might be of use in these cases.  To use the old functions in
-   termination proofs, include the community book ~c[books/ordinals/e0-ordinal]
-   and execute the event ~c[(set-well-founded-relation e0-ord-<)]
-   (~pl[set-well-founded-relation]).  For a more thorough discussion of
-   these functions, see the documentation at the end of community book
-   ~c[books/ordinals/e0-ordinal.lisp]."
+@({
+    (include-book \"ordinals/e0-ordinal\" :dir :system)
+    (set-well-founded-relation e0-ord-<)
+})
 
-  (declare (xargs :guard t))
-  (if (consp x)
-      (if (consp y)
-          (if (e0-ord-< (car x) (car y))
-              t
+<p>See @(see set-well-founded-relation).</p>
+
+<p>For a more thorough discussion of these functions, see the documentation at
+the end of community book @('ordinals/e0-ordinal.lisp').</p>"
+
+  (defun e0-ord-< (x y)
+    (declare (xargs :guard t))
+    (if (consp x)
+        (if (consp y)
+            (if (e0-ord-< (car x) (car y))
+                t
               (if (equal (car x) (car y))
                   (e0-ord-< (cdr x) (cdr y))
-                  nil))
+                nil))
           nil)
       (if (consp y)
           t
-          (< (if (real/rationalp x) x 0)
-             (if (real/rationalp y) y 0)))))
+        (< (if (real/rationalp x) x 0)
+           (if (real/rationalp y) y 0))))))
 
-(defun e0-ordinalp (x)
+(defsection e0-ordinalp
+  :parents (ordinals)
+  :short "The old recognizer for ACL2 ordinals."
+  :long "<p>See @(see o-p) for the current recognizer for ACL2 ordinals.</p>
 
-  ":Doc-Section ACL2::ACL2-built-ins
+<p>The functions @('e0-ordinalp') and @(see e0-ord-<) were replaced in ACL2
+Version 2.8 by @(see o-p) and @(see o<), respectively.  However, books created
+before that version used the earlier functions for termination proofs; the old
+functions might be of use in these cases.</p>
 
-   the old recognizer for ACL2 ordinals~/
+<p>To use the old functions in termination proofs, you can do:</p>
 
-   ~l[o-p] for the current recognizer for ACL2 ordinals.~/
+@({
+    (include-book \"ordinals/e0-ordinal\" :dir :system)
+    (set-well-founded-relation e0-ord-<)
+})
 
-   The functions ~c[e0-ordinalp] and ~ilc[e0-ord-<] were replaced in ACL2
-   Version_2.8 by ~ilc[o-p] and ~ilc[o<], respectively.  However, books created
-   before that version used the earlier functions for termination proofs; the
-   old functions might be of use in these cases.  To use the old functions in
-   termination proofs, include the community book ~c[books/ordinals/e0-ordinal]
-   and execute the event ~c[(set-well-founded-relation e0-ord-<)]
-   (~pl[set-well-founded-relation]).  For a more thorough discussion of
-   these functions, see the documentation at the end of community book
-   ~c[books/ordinals/e0-ordinal.lisp]."
+<p>See @(see set-well-founded-relation).</p>
 
-  (declare (xargs :guard t))
-  (if (consp x)
-      (and (e0-ordinalp (car x))
-           (not (equal (car x) 0))
-           (e0-ordinalp (cdr x))
-           (or (atom (cdr x))
-               (not (e0-ord-< (car x) (cadr x)))))
-    (and (integerp x)
-         (>= x 0))))
+<p>For a more thorough discussion of these functions, see the documentation at
+the end of community book @('ordinals/e0-ordinal.lisp').</p>"
 
-(defun copyn (a n) 
+  (defun e0-ordinalp (x)
+    (declare (xargs :guard t))
+    (if (consp x)
+        (and (e0-ordinalp (car x))
+             (not (equal (car x) 0))
+             (e0-ordinalp (cdr x))
+             (or (atom (cdr x))
+                 (not (e0-ord-< (car x) (cadr x)))))
+      (and (integerp x)
+           (>= x 0)))))
+
+(defun copyn (a n)
   (declare (xargs :guard (natp n)))
-  (if (zp n) 
-      nil 
+  (if (zp n)
+      nil
     (cons a (copyn a (1- n)))))
 
 (defun ctoa (x)
   (declare (xargs :guard (o-p x)))
   (if (o-finp x)
       x
-    (append (copyn (ctoa (o-first-expt x)) 
+    (append (copyn (ctoa (o-first-expt x))
 		   (o-first-coeff x))
             (ctoa (o-rst x)))))
 
@@ -95,7 +108,7 @@ See the end of this file for documentation of E0-ORD-< and E0-ORDINALP.
 		  (o< x y))))
 
 (defthm |oc.x  <=>  oa(ctoa.x)|
-   (implies (o-p x) 
+   (implies (o-p x)
 	    (e0-ordinalp (ctoa x)))
    :rule-classes ((:forward-chaining)
 		  (:rewrite)))
@@ -111,7 +124,7 @@ See the end of this file for documentation of E0-ORD-< and E0-ORDINALP.
   (declare (xargs :guard (e0-ordinalp a)))
   (if (atom a)
       a
-    (o+ (omega-term (atoc (car a)) 
+    (o+ (omega-term (atoc (car a))
 		    1)
 	(atoc (cdr a)))))
 
@@ -128,7 +141,7 @@ See the end of this file for documentation of E0-ORD-< and E0-ORDINALP.
 
 (defthm e0-ordinal-well-founded-cnf
   (and (implies (e0-ordinalp x) (o-p (atoc x)))
-       (implies (and (e0-ordinalp x)                       
+       (implies (and (e0-ordinalp x)
                      (e0-ordinalp y)
                      (e0-ord-< x y))
                 (o< (atoc x) (atoc y))))
@@ -231,7 +244,7 @@ does not change the ordinal.
 We denote by w+w or w*2 the "doubly infinite" sequence that we might
 write as follows.
 
-     w*2           |||||... |||||... 
+     w*2           |||||... |||||...
 
 One way to think of w*2 is that it is obtained by replacing each stroke
 in 2 (||) by w.  Thus, one can imagine w*3, w*4, etc., which leads
@@ -253,7 +266,7 @@ etc., ultimately suggesting w^w.  We can then stack omegas, i.e.,
 (w^w)^w etc.  Consider the "limit" of all of those stacks, which we
 might display as follows.
 
-            .         
+            .
            .
           .
          w

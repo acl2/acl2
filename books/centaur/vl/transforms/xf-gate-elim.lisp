@@ -162,6 +162,7 @@ happened and leave the gate unchanged.</p>"
        (ports (vl-module->ports target))
 
        ((unless (and (not x.range)
+                     (not (vl-collect-interface-ports ports))
                      (same-lengthp x.args ports)
                      (not (member nil exprs))
                      (all-equalp 1 (vl-exprlist->finalwidths exprs))))

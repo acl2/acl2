@@ -7,7 +7,7 @@
                   x)))
 
 (defthm true-listp-rev
-  (true-listp (rev x)))
+  (true-listp (taspi-rev x)))
 
 (defthm app-app
   (equal (app (app x y) z)
@@ -15,11 +15,11 @@
 
 (defthm rev-app
   (implies (true-listp l2)
-           (equal (rev (app l1 l2))
-                  (app (rev l2) (rev l1)))))
+           (equal (taspi-rev (app l1 l2))
+                  (app (taspi-rev l2) (taspi-rev l1)))))
 
 (defthm true-listp-flatten
-  (true-listp (flatten x)))
+  (true-listp (taspi-flatten x)))
 
 (defthm member-app
   (implies (member-gen x (double-rewrite y))
@@ -35,7 +35,7 @@
 
 (defthm member-gen-rev
   (implies (member-gen x(double-rewrite y))
-           (member-gen x (rev y))))
+           (member-gen x (taspi-rev y))))
 
 (defthm subset-app-forward
   (equal (subset (app x y) z)
@@ -44,7 +44,7 @@
 
 (defthm subset-rev
   (implies (subset x y)
-           (subset (rev x) (rev y))))
+           (subset (taspi-rev x) (taspi-rev y))))
 
 (defthm subset-app-first
   (implies (consp x)
@@ -55,7 +55,7 @@
            (subset x (app y z))))
 
 (defthm subset-rev-flatten-subset-mytips
-  (implies (subset (rev (flatten x)) y)
+  (implies (subset (taspi-rev (taspi-flatten x)) y)
            (subset (mytips x) y)))
 
 (defthm mytips-app
@@ -70,15 +70,15 @@
            (subset (mytips (app x z)) y)))
 
 (defthm mytips-rev-flatten=mytips
-  (subset (mytips (rev (flatten x)))
-          (rev (flatten x))))
+  (subset (mytips (taspi-rev (taspi-flatten x)))
+          (taspi-rev (taspi-flatten x))))
 
 (defthm mytips-rev-flatten
-  (subset (mytips (rev (flatten x)))
+  (subset (mytips (taspi-rev (taspi-flatten x)))
           (mytips x)))
 
 (defthm consp-rev-flatten
-  (consp (rev (flatten x))))
+  (consp (taspi-rev (taspi-flatten x))))
 
 
 (defthm car-app-of-consp-gives-car-first
@@ -88,11 +88,11 @@
 
 (defthm subset-x-rev
   (implies (subset x y)
-           (subset x (rev y))))
+           (subset x (taspi-rev y))))
 
 (defthm subset-x-subset-rev
   (implies (subset x y)
-           (subset (rev x) y)))
+           (subset (taspi-rev x) y)))
 
 
 (defthm taxa-list-from-fast-alist
@@ -117,7 +117,7 @@
 (defthm member-get-ints-subset-flatten
   (implies (and (good-index-taxon-halist list)
                 (member-gen x (get-taxa-from-taxon-index list)))
-           (subset (flatten (cdr (hons-assoc-equal x list)))
+           (subset (taspi-flatten (cdr (hons-assoc-equal x list)))
                    (get-taxa-from-index-taxon list))))
 
 (defthm del-app
@@ -137,11 +137,11 @@
 )
  
 (defthm perm-rev-fix-true
-  (perm (rev tl) (fix-true-list tl)))
+  (perm (taspi-rev tl) (fix-true-list tl)))
 
 
 (defthm perm-fix-true-list-subset-rev
   (implies (perm x (fix-true-list tl))
-           (perm (rev tl) x))
+           (perm (taspi-rev tl) x))
   :rule-classes :forward-chaining
 )

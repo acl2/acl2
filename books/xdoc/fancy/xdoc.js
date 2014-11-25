@@ -46,11 +46,11 @@ var xdata = [];
 
 
 var short_plaintext_cache = {};
-function topic_short_plaintext(key) {
+function topicShortPlaintext(key) {
     if (key in short_plaintext_cache) {
 	return short_plaintext_cache[key];
     }
-    var ret = render_text(topic_short(key));
+    var ret = renderText(topicShort(key));
     short_plaintext_cache[key] = ret;
     return ret;
 }
@@ -90,7 +90,7 @@ function alphanum(a, b) { // Alphanumeric comparison (for nice sorting)
   return aa.length - bb.length;
 }
 
-function starts_with_alpha(str) {
+function startsWithAlpha(str) {
     var little_a = "a".charCodeAt(0);
     var little_z = "z".charCodeAt(0);
     var big_a = "A".charCodeAt(0);
@@ -101,7 +101,7 @@ function starts_with_alpha(str) {
 }
 
 var waitmsg = 0;
-function please_wait() {
+function pleaseWait() {
     var msgs = ["Still loading",
                 "Gah, what's taking so long?",
                 "Man, tubes must be clogged...",
@@ -196,16 +196,16 @@ var XD_FROM = 1;
 var XD_BASEPKG = 2;
 var XD_LONG = 3;
 
-function key_title(key)
+function keyTitle(key)
 {
-    return (topic_exists(key))
-       ? ("XDOC &mdash; " + topic_name(key))
+    return (topicExists(key))
+       ? ("XDOC &mdash; " + topicName(key))
        : ("XDOC &mdash; " + key);
 }
 
 
 
-function apply_suborder(subkeys, keys) {
+function applySuborder(subkeys, keys) {
     var ret = [];
     for(var i in subkeys) {
 	ret.push(subkeys[i]);
@@ -221,13 +221,13 @@ function apply_suborder(subkeys, keys) {
     return ret;
 }
 
-function key_sorted_children(key) { // Returns a nicely sorted array of child_keys
-    var children = topic_child_keys(key);
+function keySortedChildren(key) { // Returns a nicely sorted array of child_keys
+    var children = topicChildKeys(key);
 
     var tmp = [];
     for(var i in children) {
         var child_key = children[i];
-        var rawname = topic_rawname(child_key);
+        var rawname = topicRawname(child_key);
         tmp.push({key:child_key, rawname:rawname});
     }
     tmp.sort(function(a,b) { return alphanum(a.rawname, b.rawname); });
@@ -237,15 +237,15 @@ function key_sorted_children(key) { // Returns a nicely sorted array of child_ke
         ret.push(tmp[i].key);
     }
 
-    var suborder = topic_suborder(key);
+    var suborder = topicSuborder(key);
     if (suborder.length > 0) {
-	return apply_suborder(suborder, ret);
+	return applySuborder(suborder, ret);
     }
 
     return ret;
 }
 
-function xdata_when_ready (keys, whenReady)
+function xdataWhenReady (keys, whenReady)
 {
     var missing = [];  // Optimization, don't load keys we've already loaded
     for(var i in keys) {
@@ -347,22 +347,22 @@ function xdata_when_ready (keys, whenReady)
 
 var nav_id_table = []; // map of ID to {"key":KEY,"ever_expanded":bool}
 
-function nav_make_node(key) {
+function navMakeNode(key) {
     // Create the navigation entry for a new occurrence of KEY.
     var id = nav_id_table.length;
     nav_id_table[id] = {"key":key, "ever_expanded":false};
 
-    var name = topic_name(key);
-    var tooltip = "<p>" + topic_short_plaintext(key) + "</p>";
+    var name = topicName(key);
+    var tooltip = "<p>" + topicShortPlaintext(key) + "</p>";
 
     var node = "<ul class=\"hindex\" id=\"_nav" + id + "\">";
     node += "<li><nobr>";
-    if (topic_child_keys(key).length == 0) {
+    if (topicChildKeys(key).length == 0) {
         node += "<img src=\"leaf.png\"/>";
     }
     else {
         node += "<a id=\"_nav_ilink" + id + "\" ";
-        node += " href=\"javascript:nav_expand(" + id + ")\">";
+        node += " href=\"javascript:navExpand(" + id + ")\">";
         node += "<img src=\"plus.png\" id=\"_nav_img" + id + "\"/>";
         node += "</a>";
     }
@@ -373,102 +373,102 @@ function nav_make_node(key) {
     node += name;
     node += "</a>";
     node += "</nobr>";
-    node += "<li><ul class=\"hindex\" id=\"_nav_tree" + id + "\"></ul></li>";
+    node += "<li><ul class=\"hindex\" id=\"_navTree" + id + "\"></ul></li>";
     return node;
 }
 
-function nav_activate_tooltip(id) {
-    // This sort of "should" be part of nav_make_node, but it can't be because
+function navActivateTooltip(id) {
+    // This sort of "should" be part of navMakeNode, but it can't be because
     // the node has to be properly installed into the document before jquery
     // can find it.
     $("#_golink" + id).powerTip({placement:'se',smartPlacement: true});
 }
 
-function nav_expand(id) {
+function navExpand(id) {
     // The user has just clicked on a node.  We may or may not have expanded it
     // already.  If we haven't expanded it before, we need to make nodes for
     // its children and add them.  If we have expanded it already, then we must
     // have subsequently collapsed it, and we just want to make it visible
     // again.
     $("#_nav_img" + id).attr("src", "minus.png");
-    $("#_nav_ilink" + id).attr("href", "javascript:nav_retract(" + id + ")");
+    $("#_nav_ilink" + id).attr("href", "javascript:navRetract(" + id + ")");
     var key = nav_id_table[id]["key"];
 
     if(nav_id_table[id]["ever_expanded"]) {
-        $("#_nav_tree" + id).show();
+        $("#_navTree" + id).show();
         return;
     }
 
     nav_id_table[id]["ever_expanded"] = true;
-    var children = key_sorted_children(key);
+    var children = keySortedChildren(key);
 
     var start = nav_id_table.length; // stupid hack for tooltip activation
     var exp = "";
     for(var i in children) {
-        exp += nav_make_node(children[i]);
+        exp += navMakeNode(children[i]);
     }
-    $("#_nav_tree" + id).append(exp);
+    $("#_navTree" + id).append(exp);
 
     // Activate only the tooltips that we have just added.  (If we try to
     // activate them more than once, they don't seem to work.)
     for(var i = start; i < nav_id_table.length; ++i) {
-        nav_activate_tooltip(i);
+        navActivateTooltip(i);
     }
 }
 
-function nav_retract(id)
+function navRetract(id)
 {
     $("#_nav_img" + id).attr("src", "plus.png");
-    $("#_nav_ilink" + id).attr("href", "JavaScript:nav_expand(" + id + ")");
-    $("#_nav_tree" + id).hide();
+    $("#_nav_ilink" + id).attr("href", "JavaScript:navExpand(" + id + ")");
+    $("#_navTree" + id).hide();
 }
 
 var nav_mode = "tree";
-var nav_tree_top = 0;
-var nav_flat_top = 0;
-var nav_flat_ever_shown = false;
+var navTree_top = 0;
+var navFlat_top = 0;
+var navFlat_ever_shown = false;
 
-function nav_tree() {
-    if (!xindex_ready()) {
-        please_wait();
+function navTree() {
+    if (!xindexReady()) {
+        pleaseWait();
         return;
     }
     if (nav_mode == "tree") { return; }
-    nav_flat_top = $("#left").scrollTop();
-    $("#left").scrollTop(nav_tree_top);
+    navFlat_top = $("#left").scrollTop();
+    $("#left").scrollTop(navTree_top);
     $("#flat").hide();
     $("#nav").show();
     nav_mode = "tree";
 }
 
-function nav_flat() {
-    if (!xindex_ready()) {
-        please_wait();
+function navFlat() {
+    if (!xindexReady()) {
+        pleaseWait();
         return;
     }
     if (nav_mode == "flat") { return; }
-    nav_tree_top = $("#left").scrollTop();
-    $("#left").scrollTop(nav_flat_top);
+    navTree_top = $("#left").scrollTop();
+    $("#left").scrollTop(navFlat_top);
     $("#nav").hide();
     $("#flat").show();
     nav_mode = "flat";
 
-    if (nav_flat_ever_shown) {
+    if (navFlat_ever_shown) {
        // Nothing to do, we've already built the flat index.
        return;
     }
     $("#flat").html("<p>Loading...</p>");
-    nav_flat_ever_shown = true;
-    setTimeout(nav_flat_really_install, 10);
+    navFlat_ever_shown = true;
+    setTimeout(navFlatReallyInstall, 10);
 }
 
-function nav_flat_really_install() {
+function navFlatReallyInstall() {
 
     var myarr = [];
-    var keys = all_keys();
+    var keys = allKeys();
     for(var i in keys) {
 	var key = keys[i];
-        myarr.push({key:key, rawname: topic_rawname(key)});
+        myarr.push({key:key, rawname: topicRawname(key)});
     }
     myarr.sort(function(a,b) { return alphanum(a.rawname, b.rawname); });
 
@@ -476,10 +476,10 @@ function nav_flat_really_install() {
     var current_startchar = "";
     for(var i in myarr) {
         var key = myarr[i].key;
-        var name = topic_name(key);
-        var rawname = topic_rawname(key);
-        var tooltip = "<p>" + topic_short_plaintext(key) + "</p>";
-        if ((rawname.charAt(0) != current_startchar) && starts_with_alpha(rawname)) {
+        var name = topicName(key);
+        var rawname = topicRawname(key);
+        var tooltip = "<p>" + topicShortPlaintext(key) + "</p>";
+        if ((rawname.charAt(0) != current_startchar) && startsWithAlpha(rawname)) {
             current_startchar = rawname.charAt(0).toUpperCase();
             dl.append("<li class=\"flatsec\" id=\"flat_startchar_" + current_startchar + "\"><b>"
                       + current_startchar + "</b></li>");
@@ -497,18 +497,18 @@ function nav_flat_really_install() {
 }
 
 
-function nav_flat_tochar(c) {
-    nav_flat();
+function navFlatToChar(c) {
+    navFlat();
     $("#left").scrollTop(0);
     var target = $("#flat_startchar_" + c).offset().top;
     var adjust = target - $("#left").offset().top;
     $("#left").scrollTop(adjust);
 }
 
-function nav_go(id)
+function navGo(id)
 {
     var key = nav_id_table[id]["key"];
-    action_go_key(key);
+    actionGoKey(key);
 }
 
 
@@ -528,9 +528,9 @@ function nav_go(id)
 
 var dat_id_table = []; // map of Occurrence ID to {"key":KEY,"ever_expanded":bool}
 
-function dat_load_parents(key) {
+function datLoadParents(key) {
     // Assumes xdata[key] is ready
-    var parent_keys = topic_parent_keys(key);
+    var parent_keys = topicParentKeys(key);
     var parent_names = xdata[key][XD_PNAMES];
     var acc = "";
     if (parent_keys.length == 0) {
@@ -543,8 +543,8 @@ function dat_load_parents(key) {
         var pkey = parent_keys[i];
         var pname = parent_names[i];
         var tooltip = "Error: parent topic is missing!";
-        if (topic_exists(key)) {
-            tooltip = topic_short_plaintext(pkey);
+        if (topicExists(key)) {
+            tooltip = topicShortPlaintext(pkey);
         }
         acc += "<li>";
         acc += "<a href=\"index.html?topic=" + pkey + "\""
@@ -560,9 +560,9 @@ function dat_load_parents(key) {
     $("#parents").show();
 }
 
-function dat_short_subtopics(key)
+function datShortSubtopics(key)
 {
-    var children = key_sorted_children(key);
+    var children = keySortedChildren(key);
 
     var dl = jQuery("<div></div>");
     for(var i in children) {
@@ -570,19 +570,19 @@ function dat_short_subtopics(key)
         dl.append("<dt><a href=\"index.html?topic=" + child_key + "\""
                   + " onclick=\"return dolink(event, '" + child_key + "');\""
 		  + ">"
-                  + topic_name(child_key)
+                  + topicName(child_key)
                   + "</dt>");
         var dd = jQuery("<dd></dd>");
-        dd.append(render_html(topic_short(child_key)));
+        dd.append(renderHtml(topicShort(child_key)));
         dl.append(dd);
     }
     return dl;
 }
 
-function dat_expand(dat_id)
+function datExpand(dat_id)
 {
     $("#_dat_img" + dat_id).attr("src", "collapse_subtopics.png");
-    $("#_dat_ilink" + dat_id).attr("href", "JavaScript:dat_collapse(" + dat_id + ")");
+    $("#_dat_ilink" + dat_id).attr("href", "JavaScript:datCollapse(" + dat_id + ")");
     $("#_dat_short" + dat_id).hide();
     $("#_dat_long" + dat_id).show();
 
@@ -593,13 +593,13 @@ function dat_expand(dat_id)
 
     dat_id_table[dat_id]["ever_expanded"] = true;
     var key = dat_id_table[dat_id]["key"];
-    var children = key_sorted_children(key);
-    xdata_when_ready(children,
+    var children = keySortedChildren(key);
+    xdataWhenReady(children,
     function(){
         var div = $("#_dat_long" + dat_id);
         for(var i in children) {
             var child_key = children[i];
-            div.append(dat_long_topic(child_key));
+            div.append(datLongTopic(child_key));
             if (i != children.length - 1) {
                 div.append("<hr></hr>");
             }
@@ -610,17 +610,17 @@ function dat_expand(dat_id)
     renderMathFragments();
 }
 
-function dat_collapse(dat_id)
+function datCollapse(dat_id)
 {
     $("#_dat_img" + dat_id).attr("src", "expand_subtopics.png");
-    $("#_dat_ilink" + dat_id).attr("href", "JavaScript:dat_expand(" + dat_id + ")");
+    $("#_dat_ilink" + dat_id).attr("href", "JavaScript:datExpand(" + dat_id + ")");
     $("#_dat_short" + dat_id).show();
     $("#_dat_long" + dat_id).hide();
 }
 
 var warned_about_history_state = false;
 
-function dat_long_topic(key)
+function datLongTopic(key)
 {
     // Assumes xdata[key] is ready
     var dat_id = dat_id_table.length;
@@ -643,13 +643,13 @@ function dat_long_topic(key)
     // for might be in the acl2-books docs; go try the Centaur manual."  Or the
     // internal manuals within, say, Centaur, might want to say, "please report
     // this broken link to Jared."
-    if (!topic_exists(key)) {
+    if (!topicExists(key)) {
 	// I think it's nice to change the title dynamically, to say what topic
 	// they tried to access, instead of just generically saying Broken-Link.
         div.append("<h1>" + key + " Not Found</h1>");
 
-	if (topic_exists(BROKEN_KEY)) {
-	    div.append(render_html(xdata[BROKEN_KEY][XD_LONG]));
+	if (topicExists(BROKEN_KEY)) {
+	    div.append(renderHtml(xdata[BROKEN_KEY][XD_LONG]));
 	}
 
         return div;
@@ -673,27 +673,27 @@ function dat_long_topic(key)
     var shortp;
     if (key != TOP_KEY) {
 	div.append(basediv);
-	div.append("<h1>" + topic_name(key) + "</h1>" + fromp);
+	div.append("<h1>" + topicName(key) + "</h1>" + fromp);
 	shortp = jQuery("<p></p>");
     } else {
 	div.append("<div align=\"center\" style=\"margin-top: 1em;\"><img src='xdoc-logo.png'/></div>");
 	shortp = jQuery("<p align='center'></p>");
     }
 
-    shortp.append(render_html(topic_short(key)));
+    shortp.append(renderHtml(topicShort(key)));
     div.append(shortp);
-    div.append(render_html(xdata[key][XD_LONG]));
-    if (topic_child_keys(key).length != 0) {
+    div.append(renderHtml(xdata[key][XD_LONG]));
+    if (topicChildKeys(key).length != 0) {
         var acc = "<h3>";
         acc += "Subtopics ";
         acc += "<a id=\"_dat_ilink" + dat_id + "\""
-                + " href=\"javascript:dat_expand(" + dat_id + ")\">";
+                + " href=\"javascript:datExpand(" + dat_id + ")\">";
         acc += "<img id=\"_dat_img" + dat_id + "\""
                 + " src=\"expand_subtopics.png\" align=\"top\"/>";
         acc += "</a>";
         acc += "</h3>";
         var sub = jQuery("<dl id=\"_dat_short" + dat_id + "\"></dl>");
-        sub.append(dat_short_subtopics(key));
+        sub.append(datShortSubtopics(key));
         div.append(acc);
         div.append(sub);
         div.append("<div id=\"_dat_long" + dat_id + "\" "
@@ -703,28 +703,28 @@ function dat_long_topic(key)
     return div;
 }
 
-function dat_load_key(key, scroll_to)
+function datLoadKey(key, scroll_to)
 {
     // BOZO consider doing something to find the key in the navigation
     // hierarchy somewhere, to make the navigation follow along with you?
     var keys = [key];
 
-    xdata_when_ready(keys,
+    xdataWhenReady(keys,
     function() {
         $("#parents").html("");
         $("#data").html("");
         $("#right").scrollTop(0);
         dat_id_table = [];
-        dat_load_parents(key);
-        $("#data").append(dat_long_topic(key));
+        datLoadParents(key);
+        $("#data").append(datLongTopic(key));
 	$(".basepkg").powerTip({placement:'sw',smartPlacement: true});
-        $("title").html(key_title(key));
+        $("title").html(keyTitle(key));
 	renderMathFragments();
-	setTimeout("dat_really_scroll_to(" + scroll_to + ")", 10);
+	setTimeout("datReallyScrollTo(" + scroll_to + ")", 10);
     });
 }
 
-function dat_really_scroll_to(top) {
+function datReallyScrollTo(top) {
     //console.log(" -- really scrolling to " + top);
     $("#right").scrollTop(top);
 }
@@ -743,7 +743,7 @@ function dat_really_scroll_to(top) {
 var short_tokens_initialized = false;
 var short_tokens = {};
 
-function search_tokenize(plaintext) {
+function searchTokenize(plaintext) {
     var tokens = plaintext.toLowerCase().split(/[ \t\n:]+/);
     if (tokens.length == 1 && tokens[0] == "") {
 	// Correct for ridiculous behavior of string.split
@@ -758,22 +758,22 @@ function search_tokenize(plaintext) {
     return tokens;
 }
 
-function make_short_tokens() {
+function makeShortTokens() {
     if (short_tokens_initialized)
 	return;
-    var keys = all_keys();
+    var keys = allKeys();
     for(var i in keys) {
 	var key = keys[i];
-	var name = topic_name(key);
-	var rawname = topic_rawname(key);
-	var plaintext = topic_short_plaintext(key);
-	var tokens = search_tokenize(name + " " + rawname + " " + plaintext);
+	var name = topicName(key);
+	var rawname = topicRawname(key);
+	var plaintext = topicShortPlaintext(key);
+	var tokens = searchTokenize(name + " " + rawname + " " + plaintext);
 	short_tokens[key] = tokens;
     }
     short_tokens_initialized = true;
 }
 
-function subarray_at_offsetp (a, b, n) {
+function subarrayAtOffsetp (a, b, n) {
     // Does array A occur at array B, starting from position N?
     var al = a.length;
     var bl = b.length - n;
@@ -794,23 +794,23 @@ function subarrayp (a, b) {
     if (al > bl) return false;
     var stop = (bl-al)+1;
     for(var i = 0; i < stop; ++i) {
-	if (subarray_at_offsetp(a,b,i))
+	if (subarrayAtOffsetp(a,b,i))
 	    return true;
     }
     return false;
 }
 
-function search_submit() {
+function searchSubmit() {
     var str = $("#searchbox").val();
     var str_url = encodeURIComponent(str);
     var str_html = "XDOC Search &mdash; " + htmlEncode(str);
     //console.log("submitting search for " + str);
-    history_save_place();
+    historySavePlace();
     window.history.pushState({"search":str}, str_html, "?search=" + str_url);
-    search_go(str);
+    searchGo(str);
 }
 
-function search_go(str) {
+function searchGo(str) {
     // Kludgy: get the page ready to receive data.
     $("#parents").html("");
     $("#parents").hide();
@@ -823,14 +823,14 @@ function search_go(str) {
 
     $("#data").append("<p id='searching_message'>Searching (takes much longer the first time)...</p>");
 
-    var query = search_tokenize(str);
+    var query = searchTokenize(str);
 
     // Now wait a bit to allow that to render, before starting the search.
-    setTimeout(search_go_main, 10, query);
+    setTimeout(searchGoMain, 10, query);
     return false;
 }
 
-function search_add_hit(matches, hits, key) {
+function searchAddHit(matches, hits, key) {
     if (key in matches) {
 	// already showed this result, don't show it again
 	return;
@@ -838,17 +838,17 @@ function search_add_hit(matches, hits, key) {
     matches[key] = 1;
     hits.append("<dt><a href=\"index.html?topic=" + key + "\""
 		+ " onclick=\"return dolink(event, '" + key + "');\">"
-		+ topic_name(key)
+		+ topicName(key)
 		+ "</a>"
-//		+ " (" + topic_uid(key) + ")" // nice for debugging
+//		+ " (" + topicUid(key) + ")" // nice for debugging
 		+ "</dt>");
     var dd = jQuery("<dd></dd>");
-    dd.append(render_html(topic_short(key)));
+    dd.append(renderHtml(topicShort(key)));
     hits.append(dd);
 }
 
-function search_go_main(query) {
-    make_short_tokens();
+function searchGoMain(query) {
+    makeShortTokens();
 
     $("#searching_message").hide();
     if (query.length == 0) {
@@ -865,33 +865,33 @@ function search_go_main(query) {
 
     // Hits will collect all the results
     var hits = jQuery("<dl></dl>");
-    var keys = all_keys();
+    var keys = allKeys();
 
     // We'll start with a stupid topic name search, in case there are any very
     // exact hits.
     for(var i in keys) {
 	var key = keys[i];
-	var name = topic_rawname(key);
-	var tokens = search_tokenize(name);
+	var name = topicRawname(key);
+	var tokens = searchTokenize(name);
 	if (subarrayp(query,tokens))
-	    search_add_hit(matches, hits, key);
+	    searchAddHit(matches, hits, key);
     }
 
     // Next, expand to a basic topic name substring search
     for(var i in keys) {
 	var key = keys[i];
-	var name = topic_rawname(key);
+	var name = topicRawname(key);
 	if (name.toLowerCase().indexOf(query_str) != -1)
-	    search_add_hit(matches, hits, key);
+	    searchAddHit(matches, hits, key);
     }
 
     // Next expand to a short-string search
     for(var i in keys) {
 	var key = keys[i];
 	var tokens = short_tokens[key];
-	var uid = topic_uid(key);
+	var uid = topicUid(key);
 	if (subarrayp(query, tokens))
-	    search_add_hit(matches, hits, key);
+	    searchAddHit(matches, hits, key);
     }
 
     var num_hits = Object.keys(matches).length;
@@ -924,11 +924,11 @@ $(document).ready(function()
 });
 
 
-function jump_render(datum) {
+function jumpRender(datum) {
     var key = datum["value"];
     var ret = "";
-    ret += "<p><b class=\"sf\">" + topic_name(key) + "</b>";
-    var shortmsg = topic_short_plaintext(key);
+    ret += "<p><b class=\"sf\">" + topicName(key) + "</b>";
+    var shortmsg = topicShortPlaintext(key);
     if (shortmsg != "") {
 	ret += " &mdash; " + shortmsg;
     }
@@ -936,16 +936,16 @@ function jump_render(datum) {
     return ret;
 }
 
-function jump_init() {
+function jumpInit() {
 
     var ta_data = [];
-    var keys = all_keys();
+    var keys = allKeys();
     for(var i in keys) {
 	var key = keys[i];
         var tokens = [];
-        tokens.push(topic_rawname(key));
+        tokens.push(topicRawname(key));
         var entry = {"value": key,
-		     "nicename": topic_name(key),
+		     "nicename": topicName(key),
                      "tokens": tokens
 		     };
         ta_data.push(entry);
@@ -975,12 +975,12 @@ function jump_init() {
 			     source: engine1.ttAdapter(),
 			     templates:
 			     {
-				 suggestion: jump_render
+				 suggestion: jumpRender
 			     }
 			 });
 
-    $("#jump").bind('typeahead:selected', jump_go);
-    $("#jump").bind('typeahead:autocompleted', jump_go);
+    $("#jump").bind('typeahead:selected', jumpGo);
+    $("#jump").bind('typeahead:autocompleted', jumpGo);
     $("#jumpmsg").powerTip({placement:'se'});
     $("#jump").attr("placeholder", "append");
     $("#jump").removeAttr("disabled");
@@ -996,7 +996,7 @@ function jump_init() {
 
 	// Act like the tab key was pressed, to trigger autocomplete.
 	// In the case where the user hasn't entered the entire input,
-	// this will trigger the jump_go call all by itself.
+	// this will trigger the jumpGo call all by itself.
 
 	var e = jQuery.Event("keydown");
 	e.keyCode = e.which = 9; // 9 == tab
@@ -1010,21 +1010,21 @@ function jump_init() {
 
 	var value = $("#jump").typeahead('val');
 	// console.log("After tab, value is " + value);
-	jump_go(null, {value:value});
+	jumpGo(null, {value:value});
     });
 }
 
-function jump_go(obj,datum) {
+function jumpGo(obj,datum) {
     var key = datum["value"];
-    if (topic_exists(key))
-        action_go_key(key);
+    if (topicExists(key))
+        actionGoKey(key);
     else
         alert("Invalid key " + key);
     $("#jump").typeahead('val', "");
     $("#jump").typeahead('setQuery', '');
 }
 
-function search_init() {
+function searchInit() {
     $("#searchbox").attr("placeholder", "files");
     $("#searchbox").removeAttr("disabled");
 }
@@ -1035,10 +1035,10 @@ function search_init() {
 
 function onIndexLoaded()
 {
-    xindex_init();
+    xindexInit();
 
     if (XDATAGET == "") {
-        // Load xdata.js after xindex_init() because that way we know the
+        // Load xdata.js after xindexInit() because that way we know the
         // index is fully initialized by the time we run onDataLoaded.
         LazyLoad.js('xdata.js', onDataLoaded);
     }
@@ -1052,19 +1052,19 @@ function onIndexLoaded()
     var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     for(var i in chars) {
         var c = chars.charAt(i);
-        acc += "<a href=\"javascript:nav_flat_tochar('" + c + "')\">" + c + "</a>";
+        acc += "<a href=\"javascript:navFlatToChar('" + c + "')\">" + c + "</a>";
         if (c == "M")
             acc += "<br/>";
     }
     $("#letters").html(acc);
 
-    var top_node = nav_make_node(TOP_KEY);
+    var top_node = navMakeNode(TOP_KEY);
     $("#nav").html(top_node);
-    nav_expand(0);
-    nav_activate_tooltip(0);
+    navExpand(0);
+    navActivateTooltip(0);
 
-    jump_init();
-    search_init();
+    jumpInit();
+    searchInit();
 
     // Load katex after the other stuff is loaded.
     LazyLoad.js('lib/katex/katex.min.js', onKatexLoaded);
@@ -1077,8 +1077,8 @@ function onDataLoaded()
 
     // Make sure that BROKEN_KEY gets loaded early on, so we can always just
     // assume it is loaded.
-    if (topic_exists(BROKEN_KEY)) {
-	xdata_when_ready([BROKEN_KEY], function() { return; });
+    if (topicExists(BROKEN_KEY)) {
+	xdataWhenReady([BROKEN_KEY], function() { return; });
     }
 
     if ("search" in params) {
@@ -1088,7 +1088,7 @@ function onDataLoaded()
 	//console.log("onDataLoaded: search for " + str + " --> 0");
 	window.history.replaceState({search:str,rtop:0},
 				    str_html, "?search=" + str_url);
-	search_go(str);
+	searchGo(str);
     }
 
     else {
@@ -1099,14 +1099,14 @@ function onDataLoaded()
 	}
 	//console.log("onDataLoaded: key " + key + " --> 0");
 	window.history.replaceState({key:key,rtop:0},
-				    key_title(key), "?topic=" + key);
-	dat_load_key(key, 0);
+				    keyTitle(key), "?topic=" + key);
+	datLoadKey(key, 0);
     }
 
     window.addEventListener('popstate',
                             function(event) {
 				event.preventDefault();
-                                action_go_back(event.state);
+                                actionGoBack(event.state);
                             });
 }
 
@@ -1134,8 +1134,8 @@ function srclink(key)
     // BOZO stupid hack, eventually generate this without the .xdoc-link part.
     key = key.replace(".xdoc-link", "");
     var rawname = key;
-    if (topic_exists(key)) {
-        rawname = topic_rawname(key);
+    if (topicExists(key)) {
+        rawname = topicRawname(key);
     }
 
     // Fancy Data URL generator
@@ -1158,24 +1158,24 @@ function srclink(key)
     encodeURIComponent(srclink_header + rawname));
 }
 
-function action_go_key(key) {
+function actionGoKey(key) {
 
     // Warning: if you change this, check for all uses of replaceState,
     // pushState, and popState, and update them to match.
 
     if (!xdata_loaded) {
-        please_wait();
+        pleaseWait();
         return;
     }
 
-    // console.log("action_go_key, going to new key " + key + " --> 0");
-    history_save_place();
-    window.history.pushState({key:key,rtop:0}, key_title(key),
+    // console.log("actionGoKey, going to new key " + key + " --> 0");
+    historySavePlace();
+    window.history.pushState({key:key,rtop:0}, keyTitle(key),
 			     "?topic=" + key);
-    dat_load_key(key, 0);
+    datLoadKey(key, 0);
 }
 
-function history_save_place() {
+function historySavePlace() {
     var curr_state = history.state;
     var rtop = $("#right").scrollTop();
     if (curr_state) {
@@ -1186,7 +1186,7 @@ function history_save_place() {
     }
 }
 
-function action_go_back(data) {
+function actionGoBack(data) {
 
     // Warning: if you change this, check for all uses of replaceState,
     // pushState, and popState, and update them to match.
@@ -1200,10 +1200,10 @@ function action_go_back(data) {
 	return;
     }
 
-    //console.log("action_go_back data: search = " + data.search
+    //console.log("actionGoBack data: search = " + data.search
     //            + ", key = " + data.key + ", rtop = " + data.rtop);
 
-    // I want to do something like history_save_place() here, so that
+    // I want to do something like historySavePlace() here, so that
     // the forward button would also remember its place.  But that doesn't
     // worked.  All solutions to this problem look very complex, e.g.,
     // see http://stackoverflow.com/questions/14541398.  So, I give up,
@@ -1211,21 +1211,21 @@ function action_go_back(data) {
 
     if ("search" in data) {
 	var str = data["search"];
-	search_go(str);
+	searchGo(str);
     }
 
     else if ("key" in data) {
 	var key = data.key;
 	var rtop = ("rtop" in data) ? data["rtop"] : 0;
 	if (key) {
-	    dat_load_key(key, rtop);
+	    datLoadKey(key, rtop);
 	}
     }
 }
 
 
 
-function printer_friendly()
+function printerFriendly()
 {
     var w = window.open("", "Printer",
 			"height=600,width=640,toolbar=1,location=0,resizable=1,scrollbars=1,status=0");
@@ -1233,7 +1233,10 @@ function printer_friendly()
     var html = "<html>\n"
 	+ "<head>\n"
 	+ "<title>Printer Friendly</title>\n"
-	+ "<link rel=\"stylesheet\" type=\"text/css\" href=\"print.css\"/>"
+        + "<link rel=\"stylesheet\" type=\"text/css\" href=\"http://fonts.googleapis.com/css?family=Noto+Serif\">"
+        + "<link rel=\"stylesheet\" type=\"text/css\" href=\"http://fonts.googleapis.com/css?family=Lato\">"
+        + "<link rel=\"stylesheet\" type=\"text/css\" href=\"http://fonts.googleapis.com/css?family=Source+Code+Pro\">"
+        + "<link rel=\"stylesheet\" type=\"text/css\" href=\"print.css\"/>"
         + "<link rel=\"shortcut icon\" href=\"favicon.png\"/>"
         + "</head><body>"
 	+ $("#data").html()
@@ -1248,6 +1251,6 @@ function dolink(event, topic) {
     if (event.button == 1) {
 	return true;
     }
-    action_go_key(topic);
+    actionGoKey(topic);
     return false;
 }

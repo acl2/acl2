@@ -30,9 +30,6 @@
 
 `ifdef SYSTEM_VERILOG_MODE
 
-`include "spec.v"
-`include "impl.sv"
-
 module compare () ;
 
   reg [3:0] in1, in2;

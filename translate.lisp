@@ -576,26 +576,6 @@
           (declare (ignore body cleanup1 cleanup2))
           ans))
 
-(defun stobjp (x known-stobjs w)
-
-; We recognize whether x is to be treated as a stobj name.  Known-stobjs is a
-; list of all such names, or else T, standing for all stobj names in w.  During
-; translation, only certain known stobjs in w are considered stobjs, as per the
-; user's :stobjs declare xargs.  If you want to know whether x has been defined
-; as a stobj in w, use known-stobjs = t.
-
-; Slight abuse permitted: Sometimes known-stobjs will be a list of stobj flags!
-; E.g., we might supply (NIL NIL STATE NIL $S) where (STATE $S) is technically
-; required.  But we should never ask if NIL is a stobj because we only ask this
-; of variable symbols.  But just to make this an ironclad guarantee, we include
-; the first conjunct below.
-
-  (and x
-       (symbolp x)
-       (if (eq known-stobjs t)
-           (getprop x 'stobj nil 'current-acl2-world w)
-         (member-eq x known-stobjs))))
-
 ; Essay on EV
 
 ; Ev, below, will take the following arguments:
@@ -4236,83 +4216,6 @@
        (null (getprop name 'formals t 'current-acl2-world wrld))
        (getprop name 'stobj-function nil 'current-acl2-world wrld)))
 
-(defun defstobj-fnname (root key1 key2 renaming-alist)
-
-; Warning: Keep this in sync with stobj-updater-guess-from-accessor.
-
-; This has been moved from other-events.lisp, where other stobj-related
-; functions are defined, because it is used in parse-with-local-stobj, which is
-; used in translate11.
-
-; This function generates the actual name we will use for a function generated
-; by defstobj.  Root and renaming-alist are, respectively, a symbol and an
-; alist.  Key1 describes which function name we are to generate and is one of
-; :length, :resize, :recognizer, :accessor, :updater, or :creator.  Key2
-; describes the ``type'' of root.  It is :top if root is the name of the live
-; object (and hence, root starts with a $) and it is otherwise either :array or
-; :non-array.  Note that if renaming-alist is nil, then this function returns
-; the ``default'' name used.  If renaming-alist pairs some default name with an
-; illegal name, the result is, of course, an illegal name.
-
-  (let* ((default-fnname
-           (case key1
-             (:recognizer
-              (case key2
-                (:top
-                 (packn-pos
-                  (list (coerce (append (coerce (symbol-name root) 'list)
-                                        '(#\P))
-                                'string))
-                  root))
-                (otherwise (packn-pos (list root "P") root))))
-
-; This function can legitimately return nil for key1 values of :length
-; and :resize.  We are careful in the assoc-eq call below not to look
-; for nil on the renaming-alist.  That check is probably not
-; necessary, but we include it for robustness.
-
-             (:length
-              (and (eq key2 :array)
-                   (packn-pos (list root "-LENGTH") root)))
-             (:resize
-              (and (eq key2 :array)
-                   (packn-pos (list "RESIZE-" root) root)))
-             (:accessor
-              (case key2
-                (:array (packn-pos (list root "I") root))
-                (otherwise root)))
-             (:updater
-              (case key2
-                (:array (packn-pos (list "UPDATE-" root "I") root))
-                (otherwise (packn-pos (list "UPDATE-" root) root))))
-             (:creator
-              (packn-pos (list "CREATE-" root) root))
-             (otherwise
-              (er hard 'defstobj-fnname
-                  "Implementation error (bad case); please contact ACL2 ~
-                   implementors."))))
-         (temp (and default-fnname ; see comment above
-                    (assoc-eq default-fnname renaming-alist))))
-    (if temp (cadr temp) default-fnname)))
-
-(defun parse-with-local-stobj (x)
-
-; x is a with-local-stobj form.  We return (mv erp stobj-name mv-let-form
-; creator-name).
-
-  (case-match x
-    ((st
-      ('mv-let . mv-let-body))
-     (cond ((symbolp st)
-            (mv nil st (cons 'mv-let mv-let-body)
-                (defstobj-fnname st :creator :top nil)))
-           (t (mv t nil nil nil))))
-    ((st
-      ('mv-let . mv-let-body)
-      creator)
-     (mv nil st (cons 'mv-let mv-let-body) creator))
-    (& (mv t nil nil nil))))
-
 (mutual-recursion
 
 (defun ffnnamep (fn term)
@@ -4747,12 +4650,6 @@
    (declare (ignore bindings))
    (mv erp msg :UNKNOWN-BINDINGS)))
 
-(defun congruent-stobj-rep (name wrld)
-  (assert$
-   wrld ; use congruent-stobj-rep-raw if wrld is not available
-   (or (getprop name 'congruent-stobj-rep nil 'current-acl2-world wrld)
-       name)))
-
 (defun congruent-stobjsp (st1 st2 wrld)
   (eq (congruent-stobj-rep st1 wrld)
       (congruent-stobj-rep st2 wrld)))
@@ -4934,79 +4831,6 @@
         (t (er-progn-cmp
             (chk-flet-declare-form names (car declare-form-list) ctx)
             (chk-flet-declare-form-list names (cdr declare-form-list) ctx)))))
-
-(defun translate-stobj-type-to-guard (x var wrld)
-
-; This function is a variant of translate-declaration-to-guard.  Like that
-; function, x is an alleged type about the variable symbol var -- think
-; (DECLARE (TYPE x ...)) -- and results in an UNTRANSLATED term about var if x
-; is seen to be a valid type-spec for ACL2.  Unlike that function, here we
-; allow x to be a stobj name, which may be used as a type in a field of another
-; stobj (introduced after x).  We return nil if x is not either sort of valid
-; type spec.
-
-; Our intended use of this function is in generation of guards for field
-; accessors and updaters, in the case of fields that are themselves stobjs.
-; When the defstobj is introduced, there are no stobj declarations, so the
-; subfield's recognizer (stobj-recog, below) is called on an ordinary object.
-; We started allowing such calls when translating for execution after
-; Version_6.1; see translate11-call.
-
-; Presumably the two arguments of OR below -- the guard corresponding to the
-; type x, and the stobj recognizer term -- cannot both be non-nil, since types
-; are in the main Lisp package and hence cannot be stobj names.  Nevertheless,
-; in case we're wrong about that, we translate the type first, in order to
-; avoid ambiguity in case there is a stobj previously defined locally in a book
-; or encapsulate, for example (which would cause x to translate as a type in
-; the first pass but to a type in the second pass).
-
-  (or (translate-declaration-to-guard x var wrld)
-      (let ((stobj-recog (and (not (eq x 'state))
-                              (cadr
-
-; Use stobjp below, not getprop, since we do not know that x is a symbol.
-
-                               (stobjp x t wrld)))))
-        (and stobj-recog
-             (list stobj-recog var)))))
-
-(defun get-stobj-creator (stobj wrld)
-
-; This function assumes that wrld is an ACL2 logical world, although wrld may
-; be nil when we call this in raw Lisp.
-
-; If stobj is a stobj name, return the name of its creator; else nil.  We use
-; the fact that the value of the 'stobj property is (*the-live-var* recognizer
-; creator ...) for all user defined stobj names, is '(*the-live-state*) for
-; STATE, and is nil for all other names.
-
-  (cond ((eq stobj 'state) 'state-p)
-        ((not (symbolp stobj)) nil)
-        (wrld (caddr (getprop stobj 'stobj nil 'current-acl2-world wrld)))
-        (t
-         #-acl2-loop-only
-         (let ((d (get (the-live-var stobj)
-                       'redundant-raw-lisp-discriminator)))
-           (cond ((eq (car d) 'defabsstobj)
-
-; Then d is (defabstobj name . keyword-alist).
-
-                  (let ((tail (assoc-keyword :CREATOR d)))
-                    (cond (tail (let* ((field-descriptor (cadr tail))
-                                       (c (if (consp field-descriptor)
-                                              (car field-descriptor)
-                                            field-descriptor)))
-                                  (assert$ (symbolp c)
-                                           c)))
-                          (t (let ((name (cadr d)))
-                               (absstobj-name name :CREATOR))))))
-                 (t (caddr d))))
-         #+acl2-loop-only
-         (er hard 'stobj-creator
-             "Implementation error: The call ~x0 is illegal, because ~
-              get-stobj-creator must not be called inside the ACL2 loop (as ~
-              is the case here) with wrld = nil."
-             `(get-stobj-creator ,stobj nil)))))
 
 (defun stobj-updater-guess-from-accessor (accessor)
 
@@ -5306,25 +5130,6 @@
                    (no-dups-exprs
                     (no-duplicatesp-checks-for-stobj-let-actuals actuals nil)))
               `(progn$ ,@no-dups-exprs ,form))))))
-
-(defun the-live-var (name)
-
-; If the user declares a single-threaded object named $S then we will
-; use *the-live-$s* as the Lisp parameter holding the live object
-; itself.  One might wonder why we don't choose to name this object
-; $s?  Perhaps we could, since starting with Version  2.6 we no longer
-; get the symbol-value of *the-live-$s* except at the top level,
-; because of local stobjs.  Below we explain our earlier thinking.
-
-; Historical Plaque for Why the Live Var for $S Is Not $S
-
-; [Otherwise] Consider how hard it would then be to define the raw defs
-; (below).  $S is the formal parameter, and naturally so since we want
-; translate to enforce the rules on single-threadedness.  The raw code
-; has to check whether the actual is the live object.  We could hardly
-; write (eq $S $S).
-
-  (packn-pos (list "*THE-LIVE-" name "*") name))
 
 (defun the-live-var-bindings (stobj-names)
   (cond ((endp stobj-names) nil)

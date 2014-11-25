@@ -237,15 +237,19 @@
     (strip-cars-gen hash)))
  
 (defun orderly-spr (x tia)
-  ":Doc-Section TASPI
-   Returns the spr (subtree prune regraft) neighbors of the input tree~/
-   ~/
-   Arguments:
-     (1) x - a tree
-     (2) tia - a mapping of taxa names to integers
 
-   Details: The tree should have the taxa names in the tia.  The tree should be
-            unrooted. NB: Does not handle branch lengths."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the spr (subtree prune regraft) neighbors of the input tree~/
+;  ~/
+;  Arguments:
+;    (1) x - a tree
+;    (2) tia - a mapping of taxa names to integers
+
+;  Details: The tree should have the taxa names in the tia.  The tree should be
+;           unrooted. NB: Does not handle branch lengths."
   (declare (xargs :guard (good-taxon-index-halist tia)))
   (if (and (consp x)
            (consp (cdr x))

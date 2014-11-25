@@ -29,6 +29,11 @@ if [ -z "$TARGET" ]; then
   TARGET='manual';
 fi
 
+if [ -z "$BOOK_PARALLELISM_LEVEL" ]; then
+  echo "Setting BOOK_PARALLELISM_LEVEL to 1";
+  BOOK_PARALLELISM_LEVEL='1';
+fi
+
 LISP=`which $LISP`
 echo "Using LISP = $LISP"
 echo "Using STARTJOB = `which startjob`"
@@ -70,7 +75,7 @@ startjob -c "make acl2${ACL2_SUFFIX} -f books/build/jenkins/Makefile LISP=$LISP 
 echo "Building the books."
 cd books
  # inherit USE_QUICKLISP for the following make call
-startjob -c "nice time make $TARGET ACL2=$WORKSPACE/saved_acl2$ACL2_SUFFIX -j3 $MAKEOPTS"
+startjob -c "nice -n 19 time make $TARGET ACL2=$WORKSPACE/saved_acl2$ACL2_SUFFIX -j $BOOK_PARALLELISM_LEVEL $MAKEOPTS"
 
 echo "Build was successful."
 

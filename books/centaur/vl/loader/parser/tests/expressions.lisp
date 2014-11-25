@@ -135,18 +135,12 @@
 
 #||
 
-A very useful tracing mechanism for debugging:
+(trace-parser vl-parse-indexed-id-2005-fn)
+(trace-parser vl-parse-indexed-id-2012-main-fn)
+(trace-parser vl-parse-indexed-id-2012-fn)
+(trace-parser vl-parse-indexed-id-fn)
+(trace-parser vl-parse-primary-fn)
 
-(defmacro trace-parser (fn)
-  `(trace! (,fn
-            :entry (list ',fn
-                         :tokens (take 5 (vl-tokenlist->string-with-spaces
-                                          (vl-tokstream->tokens))))
-            :exit (list ',fn
-                        :errmsg (first values)
-                        :val (second values)
-                        :remainder (take 5 (vl-tokenlist->string-with-spaces
-                                            (vl-tokstream->tokens)))))))
 
 (trace-parser vl-parse-stream-concatenation-fn)
 (trace-parser vl-parse-stream-expression-fn)
@@ -812,6 +806,19 @@ A very useful tracing mechanism for debugging:
                                         (:vl-concat
                                          ("VL_EXPLICIT_PARENS") 3 4)))
 
+    (make-exprtest :input "foo::bar"
+                   :expect '(:vl-scope nil (hid "foo") (hid "bar")))
+
+    (make-exprtest :input "foo::bar::baz"
+                   :expect '(:vl-scope nil (hid "foo")
+                             (:vl-scope nil (hid "bar") (hid "baz"))))
+
+
+    (make-exprtest :input "$unit::bar"
+                   :expect '(:vl-scope nil (key :vl-$unit) (hid "bar")))
+
+    (make-exprtest :input "local::bar"
+                   :expect '(:vl-scope nil (key :vl-local) (hid "bar")))
 
     ))
 
@@ -941,6 +948,23 @@ A very useful tracing mechanism for debugging:
                    :expect '(id "tagged")
                    :remainder "foo ( 3 + 4 )")
 
+    (make-exprtest :input "foo::bar"
+                   :expect '(id "foo")
+                   :remainder ": : bar")
+
+    (make-exprtest :input "foo::bar::baz"
+                   :expect '(id "foo")
+                   :remainder ": : bar : : baz")
+
+
+   ;; new scope operation stuff
+   (make-exprtest :input "$unit::bar"
+                  :expect '(:vl-syscall nil (sys "$unit"))
+                  :remainder ": : bar")
+
+   (make-exprtest :input "local::bar"
+                  :expect '(id "local")
+                  :remainder ": : bar")
 
     ))
 
@@ -1319,3 +1343,16 @@ A very useful tracing mechanism for debugging:
                                              :strictp t))
   '(value-triple :success))))
 
+
+
+#|| 
+(run-exprtests
+ (list    (make-exprtest :input "$unit::bar" :expect '(:vl-scope nil (key :vl-$unit) (hid "bar"))))
+ :config (make-vl-loadconfig :edition :system-verilog-2012
+                             :strictp nil))
+
+(run-exprtests
+ :config (make-vl-loadconfig :edition :system-verilog-2012
+                             :strictp nil)))
+
+||#

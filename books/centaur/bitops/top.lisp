@@ -31,6 +31,7 @@
 (in-package "ACL2")
 ;; (include-book "defaults")
 (include-book "ash-bounds")
+(include-book "logbitp-bounds")
 ;; (include-book "congruences")
 (include-book "equal-by-logbitp")
 (include-book "extra-defs")
@@ -44,6 +45,7 @@
 (include-book "part-select")
 (include-book "part-install")
 (include-book "rotate")
+(include-book "fast-rotate")
 (include-book "saturate")
 (include-book "signed-byte-p")
 
@@ -222,6 +224,10 @@ rewriting terms in an @('n')-bit context.</p>
 <p>This book adds some basic bounding and monotonicity lemmas for @(see ash)
 and @(see logtail).</p>
 
+<h5>@(see bitops/logbitp-bounds)</h5>
+
+<p>This book adds some basic lemmas about @(see logbitp) and @(see
+expt).</p>
 
 <h5>@(see bitops/defaults)</h5>
 
@@ -268,6 +274,12 @@ interaction of @('part-install') with @(see bitops/part-select).</p>
 provides lemmas explaining how @(see logbitp) interacts with these operations,
 and it makes use of the @('equal-by-logbitp') strategy to provide equivalent,
 recursive definitions.</p>
+
+<h5>@(see bitops/fast-rotate)</h5>
+
+<p>This book defines @(see fast-rotate-left) and @(see
+fast-rotate-right) operations that are proved equivalent to @(see
+rotate-left) and @(see rotate-right) respectively.</p>
 
 <h5>@(see bitops/saturate)</h5>
 

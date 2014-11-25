@@ -1156,6 +1156,14 @@
          (car alist))
         (t (assoc-eq-equal-butlast-2 x y (cdr alist)))))
 
+#-acl2-loop-only
+(progn
+(defvar *wormhole-iprint-ar* nil)
+(defvar *wormhole-iprint-hard-bound* nil)
+(defvar *wormhole-iprint-soft-bound* nil)
+)
+
+#-acl2-loop-only
 (defun-one-output push-wormhole-undo-formi (op arg1 arg2)
 
 ; When a primitive state changing function is called while *wormholep*
@@ -1239,11 +1247,34 @@
                                                              qarg2
                                                              :theory-array)))
                                         ,put-global-form))
-                               ((and (eq arg1 'iprint-ar)
-                                     arg2)
-                                `(progn (let ((qarg2 (quote ,arg2)))
-                                          (compress1 'iprint-ar qarg2))
-                                        ,put-global-form))
+                               ((member arg1
+                                        '(iprint-ar
+                                          iprint-hard-bound
+                                          iprint-soft-bound)
+                                        :test 'eq)
+
+; The variables above store the iprinting data structures.  In the interests of
+; somehow keeping them in sync, we set the values of all three if any has
+; changed.
+
+                                `(progn
+                                   (when (null *wormhole-iprint-ar*)
+                                     (setq *wormhole-iprint-ar*
+                                           (f-get-global
+                                            'iprint-ar
+                                            *the-live-state*))
+                                     (setq *wormhole-iprint-hard-bound*
+                                           (f-get-global
+                                            'iprint-hard-bound
+                                            *the-live-state*))
+                                     (setq *wormhole-iprint-soft-bound*
+                                           (f-get-global
+                                            'iprint-soft-bound
+                                            *the-live-state*)))
+                                   ,@(when (eq arg1 'iprint-ar)
+                                       `((let ((qarg2 (quote ,arg2)))
+                                           (compress1 'iprint-ar qarg2))))
+                                   ,put-global-form))
                                ((eq arg1 'trace-specs)
                                 nil) ; handled by fix-trace-specs
                                (t put-global-form)))
@@ -1448,6 +1479,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; that of the ACL2 constant *initial-known-package-alist* below.
 
 (defparameter *ever-known-package-alist*
+
+; Warning: This needs to be a defparameter, not a defvar, since it is
+; introduced (temporarily) in acl2-fns.lisp.
+
   (list (make-package-entry :name "ACL2-INPUT-CHANNEL"
                             :imports nil)
         (make-package-entry :name "ACL2-OUTPUT-CHANNEL"
@@ -4393,9 +4428,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #+acl2-loop-only
 (defun alpha-char-p (x)
 
-; The following guard is required by p. 235 of CLtL.
+; The guard characterp is required by p. 235 of CLtL.  However, In Allegro 6.0
+; we see characters other than standard characters that are treated as upper
+; case, such as (code-char (+ 128 65)).  So we strengthen that guard.
 
-  (declare (xargs :guard (characterp x)))
+  (declare (xargs :guard (and (characterp x)
+                              (standard-char-p x))))
   (and (member x
                '(#\a #\b #\c #\d #\e #\f #\g #\h #\i #\j #\k #\l #\m
                  #\n #\o #\p #\q #\r #\s #\t #\u #\v #\w #\x #\y #\z
@@ -4512,30 +4550,33 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (t (code-char 0)))))
 
 (defthm lower-case-p-char-downcase
-  (implies (and (upper-case-p x)
-                (characterp x))
+  (implies (upper-case-p x)
            (lower-case-p (char-downcase x))))
 
 (defthm upper-case-p-char-upcase
-  (implies (and (lower-case-p x)
-                (characterp x))
+  (implies (lower-case-p x)
            (upper-case-p (char-upcase x))))
 
 (defthm lower-case-p-forward-to-alpha-char-p
-  (implies (and (lower-case-p x)
-                (characterp x))
+  (implies (lower-case-p x)
            (alpha-char-p x))
   :rule-classes :forward-chaining)
 
 (defthm upper-case-p-forward-to-alpha-char-p
-  (implies (and (upper-case-p x)
-                (characterp x))
+  (implies (upper-case-p x)
            (alpha-char-p x))
   :rule-classes :forward-chaining)
 
-(defthm alpha-char-p-forward-to-characterp
+(defthm alpha-char-p-forward-to-standard-char-p
   (implies (alpha-char-p x)
+           (standard-char-p x))
+  :hints (("Goal" :in-theory (enable standard-char-p)))
+  :rule-classes :forward-chaining)
+
+(defthm standard-char-p-forward-to-characterp
+  (implies (standard-char-p x)
            (characterp x))
+  :hints (("Goal" :in-theory (enable standard-char-p)))
   :rule-classes :forward-chaining)
 
 (defthm characterp-char-downcase
@@ -10407,8 +10448,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #-(and (not gcl) cltl2)
   (import syms pkg))
 
-(defvar *defpkg-virgins* nil)
-
 (defun check-proposed-imports (name package-entry proposed-imports)
   (cond
    ((equal proposed-imports (package-entry-imports package-entry))
@@ -10477,7 +10516,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (*1*-name (concatenate 'string
                                acl2::*1*-package-prefix*
                                name))
-        (proposed-imports (sort-symbol-listp imports)))
+        (proposed-imports ; avoid sort-symbol-listp for toothbrush
+         (delete-duplicates (sort (copy-list imports) 'symbol-<))))
     (assert pkg) ; see defpkg-raw
 
 ; We bind proposed-imports to the value of the imports argument.  We do not
@@ -10561,151 +10601,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (do-symbols (sym pkg)
                         (unintern sym))
             (delete-package (find-package name)))))))))
-
-(defun package-has-no-imports (name)
-  (let ((pkg (find-package name)))
-    (do-symbols (sym pkg)
-                (when (not (eq (symbol-package sym) pkg))
-                  (return-from package-has-no-imports nil))))
-  t)
-
-#-acl2-loop-only
-(defmacro maybe-make-package (name)
-
-; When we moved to Version_4.3, with LispWorks once again a supported host
-; Lisp, we modified the macro maybe-introduce-empty-pkg-1 to avoid the use of
-; defpackage; see the comment in that macro.  Unfortunately, the new approach
-; didn't work for CMUCL (at least, for version 19e).  The following example
-; shows why; even with an eval-when form specifying :compile-toplevel, the
-; compiled code seems to skip the underlying package-creation form, as shown
-; below.  Therefore we revert to the use of defpackage for CMUCL, which appears
-; not to cause problems.
-
-;   % cat pkg-bug-cmucl.lisp
-;
-;   (in-package "CL-USER")
-;
-;   (eval-when (:load-toplevel :execute :compile-toplevel)
-;              (cond ((not (find-package "MYPKG"))
-;                     (print "*** About to make package ***")
-;                     (terpri)
-;                     (make-package "MYPKG" :use nil))))
-;
-;   (defparameter *foo* 'mypkg::x)
-;   % /projects/acl2/lisps/cmucl-19e-linux/bin/cmucl
-;   CMU Common Lisp 19e (19E), running on kindness
-;   With core: /v/filer4b/v11q001/acl2/lisps/cmucl-19e-linux/lib/cmucl/lib/lisp.core
-;   Dumped on: Thu, 2008-05-01 11:56:07-05:00 on usrtc3142
-;   See <http://www.cons.org/cmucl/> for support information.
-;   Loaded subsystems:
-;       Python 1.1, target Intel x86
-;       CLOS based on Gerd's PCL 2004/04/14 03:32:47
-;   * (load "pkg-bug-cmucl.lisp")
-;
-;   ; Loading #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.lisp".
-;
-;   "*** About to make package ***"
-;   T
-;   * (compile-file "pkg-bug-cmucl.lisp")
-;
-;   ; Python version 1.1, VM version Intel x86 on 04 JUL 11 09:57:13 am.
-;   ; Compiling: /v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.lisp 04 JUL 11 09:56:24 am
-;
-;   ; Byte Compiling Top-Level Form:
-;
-;   ; pkg-bug-cmucl.x86f written.
-;   ; Compilation finished in 0:00:00.
-;
-;   #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.x86f"
-;   NIL
-;   NIL
-;   * (quit)
-;   % /projects/acl2/lisps/cmucl-19e-linux/bin/cmucl
-;   CMU Common Lisp 19e (19E), running on kindness
-;   With core: /v/filer4b/v11q001/acl2/lisps/cmucl-19e-linux/lib/cmucl/lib/lisp.core
-;   Dumped on: Thu, 2008-05-01 11:56:07-05:00 on usrtc3142
-;   See <http://www.cons.org/cmucl/> for support information.
-;   Loaded subsystems:
-;       Python 1.1, target Intel x86
-;       CLOS based on Gerd's PCL 2004/04/14 03:32:47
-;   * (load "pkg-bug-cmucl.x86f")
-;
-;   ; Loading #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.x86f".
-;
-;
-;   Error in function LISP::FOP-PACKAGE:  The package "MYPKG" does not exist.
-;      [Condition of type SIMPLE-ERROR]
-;
-;   Restarts:
-;     0: [CONTINUE] Return NIL from load of "pkg-bug-cmucl.x86f".
-;     1: [ABORT   ] Return to Top-Level.
-;
-;   Debug  (type H for help)
-;
-;   (LISP::FOP-PACKAGE)
-;   Source: Error finding source:
-;   Error in function DEBUG::GET-FILE-TOP-LEVEL-FORM:  Source file no longer exists:
-;     target:code/load.lisp.
-;   0]
-
-  #-cmu
-  `(when (not (find-package ,name))
-     (make-package ,name :use nil))
-  #+cmu
-  `(defpackage ,name (:use)))
-
-(defmacro maybe-introduce-empty-pkg-1 (name)
-
-; It appears that GCL, requires a user::defpackage (non-ANSI case) or
-; defpackage (ANSI case; this may be the same as user::defpackage) form near
-; the top of a file in order to read the corresponding compiled file.  For
-; example, an error occurred upon attempting to load the community books file
-; books/data-structures/defalist.o after certifying the corresponding book
-; using GCL, because the form (MAYBE-INTRODUCE-EMPTY-PKG-1 "U") near the top of
-; the file was insufficient to allow reading a symbol in the "U" package
-; occurring later in the corresponding source file.
-
-; On the other hand, the CL HyperSpec does not pin down the effect of
-; defpackage when a package already exists.  Indeed, the defpackage approach
-; that we use for GCL does not work for LispWorks 6.0.
-
-; So, we have quite different definitions of this macro for GCL and LispWorks.
-; All other Lisps we have encountered seem happy with the approach we have
-; adopted for Lispworks, so we adopt that approach for them, too.
-
-  #-gcl
-  `(eval-when
-    #+cltl2 (:load-toplevel :execute :compile-toplevel)
-    #-cltl2 (load eval compile) ; though probably #-gcl implies #+cltl2
-    (progn
-      (maybe-make-package ,name)
-      (maybe-make-package ,(concatenate 'string
-                                        acl2::*global-package-prefix*
-                                        name))
-      (maybe-make-package ,(concatenate 'string
-                                        acl2::*1*-package-prefix*
-                                        name))))
-  #+gcl
-  (let ((defp #+cltl2 'defpackage #-cltl2 'user::defpackage))
-    `(progn
-       (,defp ,name
-         (:use))
-       (,defp ,(concatenate 'string
-                            acl2::*global-package-prefix*
-                            name)
-         (:use))
-       (,defp ,(concatenate 'string
-                            acl2::*1*-package-prefix*
-                            name)
-         (:use)))))
-
-(defmacro maybe-introduce-empty-pkg-2 (name)
-  `(when (and (not (member ,name *defpkg-virgins*
-                           :test 'equal))
-              (not (assoc ,name *ever-known-package-alist*
-                          :test 'equal))
-              (package-has-no-imports ,name))
-     (push ,name *defpkg-virgins*)))
 
 (defmacro defpkg-raw (name imports book-path event-form)
 
@@ -12444,6 +12339,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     certify-book-finish-complete
     chk-absstobj-invariants
     get-stobj-creator
+    restore-iprint-ar-from-wormhole
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
@@ -16782,6 +16678,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #-acl2-loop-only
 (defparameter *acl2-read-suppress* nil)
+
+(defun raw-mode-p (state)
+  (declare (xargs :guard (and (state-p state)
+                              (boundp-global 'acl2-raw-mode-p state))))
+  (f-get-global 'acl2-raw-mode-p state))
 
 (defun read-object (channel state-state)
 
@@ -25977,7 +25878,6 @@ Lisp definition."
                  (mv (state-free-global-let* ((safe-mode t))
                                              (apply (*1*-symbol fn) args))
                      state)))
-  #+acl2-loop-only
   (mv-let (erp val state)
           (read-acl2-oracle state)
           (declare (ignore erp))
@@ -25998,7 +25898,6 @@ Lisp definition."
   (when (live-state-p state)
     (return-from oracle-apply-raw
                  (mv (apply fn args) state)))
-  #+acl2-loop-only
   (ec-call (oracle-apply fn args state)))
 
 (defun time-tracker-fn (tag kwd kwdp times interval min-time msg)
@@ -26390,3 +26289,25 @@ Lisp definition."
        (<? (tau-interval-hi-rel int)
            (fix x)
            (tau-interval-hi int))))
+
+; We added the following three defthm forms at the request of Jared Davis, who
+; noted that many book that seem to depend on community book
+; books/arithmetic/top.lisp can get by with just these three theorems.  We
+; might consider adding analogues for multiplication as well, but that could
+; break a lot of books.  Since we already build in linear arithmetic but not
+; (by default) non-linear arithmetic, we think it not unreasonable to include
+; these rules only for addition and not multiplication.
+
+(defthm commutativity-2-of-+
+  (equal (+ x (+ y z))
+         (+ y (+ x z))))
+
+(defthm fold-consts-in-+
+  (implies (and (syntaxp (quotep x))
+                (syntaxp (quotep y)))
+           (equal (+ x (+ y z))
+                  (+ (+ x y) z))))
+
+(defthm distributivity-of-minus-over-+
+  (equal (- (+ x y))
+         (+ (- x) (- y))))

@@ -30,6 +30,15 @@
 
 // more tests of port handling
 
+`ifdef VL_SYSTEST_VCS
+  // VCS doesn't seem to like "var" inputs, so use `VAR instead and just make it
+  // empty for VCS.
+ `define VAR
+`else
+ `define VAR var
+`endif
+
+
 `ifdef SYSTEM_VERILOG_MODE
 
 module MA (out, in1, in2);
@@ -49,7 +58,7 @@ module MB (out, in1, in2);
   parameter foo = 1;
   wire make_foo_matter = foo;
   output [3:0] out;
-  input var [3:0]  in1, in2;
+  input `VAR [3:0]  in1, in2;
   logic [3:0] out;
 
   always @(in1 or in2) out = in1[0] ? (in1 | in2) : (in1 & in2);
@@ -58,7 +67,7 @@ endmodule
 module MC (out1, out2, in1, in2);
   parameter foo = 1;
   wire make_foo_matter = foo;
-  output var logic [3:0] out2, out1;
+  output `VAR logic [3:0] out2, out1;
   input logic [3:0]  in2, in1;
   always @(in1 or in2) out1 = in1[2] ? (in1 ^ in2) : (in1 & in2);
   assign out2 = ~out1;
@@ -67,7 +76,7 @@ endmodule
 module MD (out, in1, in2);
   parameter foo = 1;
   wire make_foo_matter = foo;
-  output var reg [3:0] out;
+  output `VAR reg [3:0] out;
   input [3:0]  in1;
   input logic [3:0]  in2;
   logic [3:0]  in1;
@@ -100,7 +109,7 @@ module MG (out, in1, in2); // Non-ANSI style, output wire
   parameter foo = 1;
   wire make_foo_matter = foo;
   output wire [3:0] out;
-  input var logic signed [3:0]  in1;
+  input `VAR logic signed [3:0]  in1;
   input signed [3:0]  in2;
   assign out = in1[1] ? (in1 < in2) : (in1 % in2);
 endmodule

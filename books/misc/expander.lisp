@@ -57,26 +57,24 @@
 ; (certify-book "expander").
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
 
-; The following deflabel is placed here primarily to provide a section in which
-; to hang documentation.
-(deflabel expander :doc
- ":Doc-Section miscellaneous
+(defxdoc expander
+  :parents (miscellaneous)
+  :short "Routines for simplifying terms."
+  :long "<p>The routines provided by the expander can be useful in generating
+theorems and simplifying expressions, under given assumptions.</p>
 
-  routines for simplifying terms~/
+<p>They were developed rather in a hurry and should be used without expecting
+the usual standards of care present in development of ACL2 code.  Once these
+routines are used to generate theorems for you, you should check the theorems
+directly with ACL2.</p>
 
-  The routines provided by the expander can be useful in generating
-  theorems and simplifying expressions, under given assumptions.~/
+<p>To load the expander, run:</p>
 
-  They were developed rather in a hurry and should be used without
-  expecting the usual standards of care present in development of ACL2
-  code.  Once these routines are used to generate theorems for you,
-  you should check the theorems directly with ACL2.
-
-  To load the expander, run:
-  ~bv[]
+@({
    (include-book \"misc/expander\" :dir :system)
-  ~ev[]~/")
+})")
 
 ; We know what we are doing when using state:
 (set-state-ok t)
@@ -222,8 +220,8 @@
                                               (list ""
                                                     "~|~     ~q*."
                                                     "~|~     ~q*,~|and~|"
-                                                    "~|~     ~q*,~|~%" 
-                                                   
+                                                    "~|~     ~q*,~|~%"
+
                                                     (make-defthm-forms-for-byes
                                                      byes wrld))))
                                   (proofs-co state)
@@ -274,7 +272,7 @@
 (defun hide-special-hyps (lst)
   "We do this stuff so that equalities and SYNP hyps won't be thrown out.
    Perhaps what we really need is a hyp simplifier with less aggressive
-   heuristics." 
+   heuristics."
   (cond
    ((null lst) nil)
    (t (let ((hyp (car lst)))
@@ -358,7 +356,7 @@
   (er-let* ((hints (if (alistp hints)
                        (value (add-key-val-pair-to-key-val-alist
                                "Goal"
-                               ;; only preprocess and simplify are allowed 
+                               ;; only preprocess and simplify are allowed
                                :do-not
                                (list 'quote '(generalize
                                               eliminate-destructors
@@ -382,7 +380,7 @@
                               (list 'hidden-expander-function
                                     (cons 'list vars)))
                         t t t  ctx wrld state))
-            (tterm (value (implicate (conjoin thyps) tconc)))) 
+            (tterm (value (implicate (conjoin thyps) tconc))))
            (sl-let
             (erp ttree clauses pairs new-pspv state)
             (prove-clauses tterm
@@ -515,7 +513,7 @@
   (sl-let (val new-ttree)
           (rewrite-entry (rewrite term nil 1)
                          :obj '?
-                         :fnstack 
+                         :fnstack
 ; We want to fool rewrite-fncall on lambdas.
                          '(silly-rec-fn-for-rewrite*)
                          :pre-dwp nil  ;; RBK:
@@ -633,7 +631,7 @@
                                      (if (ffnnamep-lst 'if current-clause)
                                          'weak
                                        t)))
-                            (pts 
+                            (pts
                              ;; (current-clause-pts (enumerate-elements current-clause 0))
                              nil))
                          (mv-let        ;from simplify-clause1
@@ -657,7 +655,7 @@
                             (sl-let     ;from simplify-clause1
                              (contradictionp simplify-clause-pot-lst)
                              (setup-simplify-clause-pot-lst current-clause
-                                                            (pts-to-ttree-lst 
+                                                            (pts-to-ttree-lst
                                                              pts)
                                                             nil ; fc-pair-lst  ;; RBK:
                                                             type-alist
@@ -827,7 +825,7 @@
        (@ inhibit-output-lst))))
    (prog2$
     (initialize-brr-stack state)
-    (er-let* 
+    (er-let*
      ((thints (translate-hints 'tool2 hints ctx wrld state)))
      (tool2-fn1 term hyps equiv ctx ens wrld state thints prove-assumptions
                 inhibit-output translate-flg print-flg must-rewrite-flg)))))
@@ -963,14 +961,12 @@
                        "No theorems were suggested for term~%  ~p0~%and ~
                         hypotheses~%  ~p1.")))))))))
 
-(defmacro defthm?
-  (name term &key hints (prove-assumptions 't) (simplify-hyps-p 't) print-flg)
+(defxdoc defthm?
+  :parents (expander)
+  :short "Generate a theorem."
+  :long "<p>Example:</p>
 
-  ":Doc-Section Expander
-
-  generate a theorem~/
-  ~bv[]
-  Example:
+@({
   (defthm? app-simplify
     (implies (true-listp x)
              (equal (append x y)
@@ -980,10 +976,11 @@
                              (append x y))))
     ; show some output
     :print-flg t)
-  ~ev[]~/
+})
 
-  General Forms:
-  ~bv[]
+<p>General Forms:</p>
+
+@({
   (DEFTHM? name
     (IMPLIES hyps (equiv term ?))
     :hints             hints
@@ -999,38 +996,38 @@
     :print-flg         print-flg ; t or nil, default nil
     :simplify-hyps-p   flg       ; t, nil, or :no-split; default t
   )
-  ~ev[]
-  where ~c[name] is a new symbolic name (~pl[name]), ~c[term] is a
-  term to be simplified assuming ~c[hyps] is true, and ~ilc[hints] is
-  as described in its ~il[documentation].  The four keyword arguments
-  above are all optional, and behave as you might expect.  In particular, set
-  ~c[:simplify-hyps-p] to ~c[nil] if you do not want the ~c[hyps] to be
-  simplified; otherwise, case splitting may occur in the course of their
-  simplification.
+})
 
-  If the given ~c[term] cannot be simplified, then the event fails.
-  Otherwise, the result is an ~ilc[encapsulate] event with one or more
-  ~ilc[defthm] events of the form of the theorem, except with ~c[hyps]
-  simplified (and even omitted if simplified to ~c[t]) and ~c[term]
-  simplified under the assumption that ~c[hyps] is true.  The reason
-  that there can be more than one ~ilc[defthm] event is that ~c[hyps] may
-  simplify to an expression that generates a case split, for example
-  if it simplifies to an ~ilc[if] expression that does not represent a
-  conjunction.
+<p>where @('name') is a new symbolic name (see @(see name)), @('term') is a
+term to be simplified assuming @('hyps') is true, and @(see hints) is as
+described in its @(see documentation).  The four keyword arguments above are
+all optional, and behave as you might expect.  In particular, set
+@(':simplify-hyps-p') to @('nil') if you do not want the @('hyps') to be
+simplified; otherwise, case splitting may occur in the course of their
+simplification.</p>
 
-  In general, simplification may generate assumptions because of
-  ~ilc[force].  By default, an attempt is made to prove these
-  assumptions, which must succeed or else this event fails.  However,
-  if ~c[:prove-assumptions] is ~c[nil], then roughly speaking, no
-  proof of forced hypotheses is attempted until after simplification
-  is complete.  The documentation of :prove-assumptions is admittedly
-  weak here; feel free to experiment.
+<p>If the given @('term') cannot be simplified, then the event fails.
+Otherwise, the result is an @(see encapsulate) event with one or more @(see
+defthm) events of the form of the theorem, except with @('hyps')
+simplified (and even omitted if simplified to @('t')) and @('term') simplified
+under the assumption that @('hyps') is true.  The reason that there can be more
+than one @(see defthm) event is that @('hyps') may simplify to an expression
+that generates a case split, for example if it simplifies to an @(see if)
+expression that does not represent a conjunction.</p>
 
-  Also ~pl[symsim].
+<p>In general, simplification may generate assumptions because of @(see force).
+By default, an attempt is made to prove these assumptions, which must succeed
+or else this event fails.  However, if @(':prove-assumptions') is @('nil'),
+then roughly speaking, no proof of forced hypotheses is attempted until after
+simplification is complete.  The documentation of :prove-assumptions is
+admittedly weak here; feel free to experiment.</p>
 
-  Here are some examples, including the one above.  Try them out and
-  see what happens.
-  ~bv[]
+<p>Also see @(see symsim).</p>
+
+<p>Here are some examples, including the one above.  Try them out and see what
+happens.</p>
+
+  @({
 
   ; Doesn't simplify, so fails:
   (defthm? app-simplify
@@ -1066,15 +1063,17 @@
 
   :pe :here
   :u
-  ~ev[]~/"
+  })")
 
+(defmacro defthm?
+  (name term &key hints (prove-assumptions 't) (simplify-hyps-p 't) print-flg)
   (let* ((form0
           `(defthm?-fn ',name ',term ',simplify-hyps-p ',hints
              ',prove-assumptions ',print-flg (w state) state))
          (form `(er-let* ((val ,form0))
                          (pprogn (f-put-global 'defthm?-result val state)
                                  (value :invisible)))))
-                       
+
     `(state-global-let*
       ((defthm?-result nil))
       (er-progn (ld '(,form)
@@ -1220,26 +1219,23 @@
             (er-progn (encapsulate-fn nil (cons '(logic) forms) state nil)
                       (value (list* 'encapsulate () forms))))))
 
-(defmacro symsim
-  (term hyps &key
-        hints (prove-assumptions 'try) (inhibit-output 't) (simplify-hyps-p 't)
-        print-flg)
+(defxdoc symsim
+  :parents (expander)
+  :short "Simplify given term and hypotheses."
+  :long "<p>Example:</p>
 
-  ":Doc-Section Expander
-
-  simplify given term and hypotheses~/
-  ~bv[]
-  Example:
-
+@({
   (symsim (append x y)
           ((not (atom x)) (not (cdr x)))
           :hints ((\"Goal\" :expand
                    ((true-listp x)
                     (true-listp (cdr x))
                     (append x y)))))
-  ~ev[]
-  yields
-  ~bv[]
+})
+
+<p>yields</p>
+
+@({
   Simplified term:
     (CONS (CAR X) Y)
   Simplified hyps:
@@ -1253,25 +1249,26 @@
           :print-flg         print-flg   ; t or nil, default nil
           :simplify-hyps-p   flg         ; t, nil, or :no-split; default t
   )
-  ~ev[]
-  where ~c[term] is a term to be simplified assuming that each ~c[hyp]
-  in the list ~c[hyps] is true, and ~ilc[hints] is as described in its
-  ~il[documentation].  The keyword arguments above are all optional, and behave
-  as you might expect.  In particular, set ~c[:simplify-hyps-p] to ~c[nil] if
-  you do not want the ~c[hyps] to be simplified; otherwise, case splitting may
-  occur in the course of their simplification.
+})
 
-  Prover output is inhibited if ~c[:inhibit-output] is ~c[t] (the default).
-  Only proof output is inhibited if ~c[:inhibit-output] is ~c[:prover] (so for
-  example, summaries and warnings are printed), and all prover output is shown
-  if ~c[:inhibit-output] is ~c[nil].
+<p>where @('term') is a term to be simplified assuming that each @('hyp') in
+the list @('hyps') is true, and @(see hints) is as described in its @(see
+documentation).  The keyword arguments above are all optional, and behave as
+you might expect.  In particular, set @(':simplify-hyps-p') to @('nil') if you
+do not want the @('hyps') to be simplified; otherwise, case splitting may occur
+in the course of their simplification.</p>
 
-  Also ~pl[defthm?], which has a related functionality and is a
-  bit more thoroughly documented.  Here are some examples that should
-  help give an idea of how ~c[symsim] works.  (The name, by the way,
-  is short for \"symbolically simulate\".)  Try these, as well as the
-  examples shown above.
-  ~bv[]
+<p>Prover output is inhibited if @(':inhibit-output') is @('t') (the default).
+Only proof output is inhibited if @(':inhibit-output') is @(':prover') (so for
+example, summaries and warnings are printed), and all prover output is shown if
+@(':inhibit-output') is @('nil').</p>
+
+<p>Also see @(see defthm?), which has a related functionality and is a bit more
+thoroughly documented.  Here are some examples that should help give an idea of
+how @('symsim') works.  (The name, by the way, is short for \"symbolically
+simulate\".)  Try these, as well as the examples shown above.</p>
+
+  @({
 
   (symsim (append x y)
           nil
@@ -1317,8 +1314,12 @@
   (symsim (append x y)
           ((consp x))
           :prove-assumptions nil)
-  ~ev[]"
+  })")
 
+(defmacro symsim
+  (term hyps &key
+        hints (prove-assumptions 'try) (inhibit-output 't) (simplify-hyps-p 't)
+        print-flg)
   `(symsim-fn ',term ',hyps ',simplify-hyps-p ',hints ',prove-assumptions
               ',inhibit-output ',print-flg (w state) state))
 
@@ -1390,7 +1391,7 @@
         ;; errors. If there are errors, we simply use the original term.
         (mv-let
          (erp x state)
-         (tool2-fn0 hyp 
+         (tool2-fn0 hyp
                     other-hyps
                     'iff ctx ens wrld state hints nil
                     inhibit-output nil print-flg nil)
@@ -1402,12 +1403,12 @@
                 (simplified? (term-order res hyp))
                 (always-simp? (and (not (equal simp-flg :t))
                                    (not (equal simp-flg :term-order))))
-                (nhyps-init 
-                 (cond (simplified-to-t? 
+                (nhyps-init
+                 (cond (simplified-to-t?
                         other-hyps)
                        ((or always-simp?
                             (and simplified? (not (equal simp-flg :t))))
-                        (append (flatten-ands-in-lit res) 
+                        (append (flatten-ands-in-lit res)
                                 other-hyps))
                        (t (append (flatten-ands-in-lit hyp)
                                   other-hyps))))
@@ -1437,12 +1438,12 @@
    functionality, but requires the user to provide the ctx, ens, and wrld."
   (let ((nd-hyps (remove-duplicates hyps)))
     (er-let*
-     ((t-nd-hyps 
+     ((t-nd-hyps
        (simp-hyps-aux nd-hyps nd-hyps nil ctx ens wrld state hints
                       inhibit-output print-flg :t)))
      (if (equal simp-flg :t)
          (value t-nd-hyps)
-       (simp-hyps-aux 
+       (simp-hyps-aux
         t-nd-hyps t-nd-hyps nil ctx ens wrld state hints
         inhibit-output print-flg simp-flg)))))
 
@@ -1468,7 +1469,7 @@
               state hints inhibit-output print-flg simp-flg))
 
 #|
-Testing code 
+Testing code
 
 
 (simp-hyps '((natp x) (natp x)) state nil t nil :t)

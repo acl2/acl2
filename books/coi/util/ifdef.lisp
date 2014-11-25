@@ -8,6 +8,8 @@
 
 (include-book "defdoc")
 
+(include-book "xdoc/top" :dir :system)
+
 (defun event-sequence (args)
   (if args `(encapsulate
 		()
@@ -24,34 +26,56 @@
   `(make-event
     (event-sequence (if ,p ',args nil))))
 
-(def::doc \#if
+;;; The following legacy doc string was replaced Nov. 2014 by the
+;;; auto-generated defxdoc form just below.
+; (def::doc \#if
+; 
+;   :section \#if
+; 
+;   :one-liner "A C-preprocessor-like macro for conditional events"
+; 
+;   :details (docstring
+; "
+;   \\#if is a C-preprocessor-like macro that allows a sequence of 
+; embedded event forms to be made conditional on state.
+; 
+;   (\\#if (equal (@ acl2-version) \"ACL2 Version 3.3\")
+; 
+;     (defun test1 (x) x)
+;     (defthm test-equal
+;       (equal (test x) x))
+; 
+;    )
+; 
+;   The first argument to \\#if is a predicate that is evaluated
+; in the current state.  If the predicate evaluates to true, the
+; remaining forms are submitted to ACL2.  If not, the remaining
+; forms are skipped.  \\if events can be nested.
+; 
+;   "(docref"#if-else")"
+;   "(docref"#cond")"
+; 
+; "))
 
-  :section \#if
+(defxdoc |#IF|
+  :parents (|#IF|)
+  :short "A C-preprocessor-like macro for conditional events"
+  :long "<p>\\#if is a C-preprocessor-like macro that allows a sequence of
+ embedded event forms to be made conditional on state.</p>
 
-  :one-liner "A C-preprocessor-like macro for conditional events"
+ <p>(\\#if (equal (@@ acl2-version) \"ACL2 Version 3.3\")</p>
 
-  :details (docstring
-"
-  \\#if is a C-preprocessor-like macro that allows a sequence of 
-embedded event forms to be made conditional on state.
+ <p>(defun test1 (x) x) (defthm test-equal (equal (test x) x))</p>
 
-  (\\#if (equal (@ acl2-version) \"ACL2 Version 3.3\")
+ <p>)</p>
 
-    (defun test1 (x) x)
-    (defthm test-equal
-      (equal (test x) x))
+ <p>The first argument to \\#if is a predicate that is evaluated in the current
+ state.  If the predicate evaluates to true, the remaining forms are submitted
+ to ACL2.  If not, the remaining forms are skipped.  \\if events can be
+ nested.</p>
 
-   )
-
-  The first argument to \\#if is a predicate that is evaluated
-in the current state.  If the predicate evaluates to true, the
-remaining forms are submitted to ACL2.  If not, the remaining
-forms are skipped.  \\if events can be nested.
-
-  "(docref"\\#if-else")"
-  "(docref"\\#cond")"
-
-"))
+ <p>See <see topic='@(url |#IF-ELSE|)'>#if-else</see> See <see topic='@(url
+ |#COND|)'>#cond</see></p>")
 
 ;; ===================================================================
 
@@ -71,36 +95,61 @@ forms are skipped.  \\if events can be nested.
   `(make-event
     (event-sequence (if ,p '(,e1) '(,e2)))))
 
-(def::doc \#if-else
+;;; The following legacy doc string was replaced Nov. 2014 by the
+;;; auto-generated defxdoc form just below.
+; (def::doc \#if-else
+; 
+;   :section \#if-else
+; 
+;   :one-liner "A C-preprocessor-like macro for alternate conditional events"
+; 
+;   :details (docstring
+; "
+;   \\#if-else is a C-preprocessor-like macro that alternates
+; between two different embedded event forms depending on the
+; result of evaluating the condition.
+; 
+;   (\#if-else (equal (@ acl2-version) \"ACL2 Version 3.3\")
+; 
+;     (defun test1 (x) (1- x))
+; 
+;     (defun test1 (x) (1+ x))
+; 
+;    )
+; 
+;   The first argument to \\#if-else is a predicate that is evaluated
+; in the current state.  If the predicate evaluates to true, the second
+; argument to if-else will be submitted to ACL2.  If the predicate
+; evaluates to false, the third argument will be submitted. \\#if-else 
+; events can be nested.
+; 
+;   "(docref"#if")"
+;   "(docref"#cond")"
+; 
+; "))
 
-  :section \#if-else
+(defxdoc |#IF-ELSE|
+  :parents (|#IF-ELSE|)
+  :short "A C-preprocessor-like macro for alternate conditional events"
+  :long "<p>\\#if-else is a C-preprocessor-like macro that alternates between
+ two different embedded event forms depending on the result of evaluating the
+ condition.</p>
 
-  :one-liner "A C-preprocessor-like macro for alternate conditional events"
+ <p>(#if-else (equal (@@ acl2-version) \"ACL2 Version 3.3\")</p>
 
-  :details (docstring
-"
-  \\#if-else is a C-preprocessor-like macro that alternates
-between two different embedded event forms depending on the
-result of evaluating the condition.
+ <p>(defun test1 (x) (1- x))</p>
 
-  (\#if-else (equal (@ acl2-version) \"ACL2 Version 3.3\")
+ <p>(defun test1 (x) (1+ x))</p>
 
-    (defun test1 (x) (1- x))
+ <p>)</p>
 
-    (defun test1 (x) (1+ x))
+ <p>The first argument to \\#if-else is a predicate that is evaluated in the
+ current state.  If the predicate evaluates to true, the second argument to
+ if-else will be submitted to ACL2.  If the predicate evaluates to false, the
+ third argument will be submitted. \\#if-else events can be nested.</p>
 
-   )
-
-  The first argument to \\#if-else is a predicate that is evaluated
-in the current state.  If the predicate evaluates to true, the second
-argument to if-else will be submitted to ACL2.  If the predicate
-evaluates to false, the third argument will be submitted. \\#if-else 
-events can be nested.
-
-  "(docref"\\#if")"
-  "(docref"\\#cond")"
-
-"))
+ <p>See <see topic='@(url |#IF|)'>#if</see> See <see topic='@(url
+ |#COND|)'>#cond</see></p>")
 
 ;; ===================================================================
 
@@ -123,35 +172,55 @@ events can be nested.
 (defmacro \#cond (&rest args)
   (make-cond-event args))
 
-(def::doc \#cond
+;;; The following legacy doc string was replaced Nov. 2014 by the
+;;; auto-generated defxdoc form just below.
+; (def::doc \#cond
+; 
+;   :section \#cond
+; 
+;   :one-liner "A C-preprocessor-like macro for alternate conditional events"
+; 
+;   :details (docstring
+; "
+;   \\#cond is a C-preprocessor-like macro that selects zero
+; or one event among a possible sequence of events based upon
+; the result of evaluating the condition associated with the
+; event.
+; 
+;   (\\#cond
+;    ((@ test3) (defun test3 (x) x))
+;    ((@ test4) (defun test4 (x) x))
+;    ((@ test5) (defun test5 (x) x))
+;   )
+; 
+;   The \\#cond macro accepts a sequence of terms in cond form.
+; Each predicate of the cond form is evaluated in sequence.  If a
+; predicate evaluates to true, the term associated with that 
+; predicate will be submitted to ACL2.  If no predicate evalutes
+; to true, the event is a no-op.
+; 
+;   "(docref"#if")"
+;   "(docref"#if-else")"
+; 
+; "))
 
-  :section \#cond
+(defxdoc |#COND|
+  :parents (|#COND|)
+  :short "A C-preprocessor-like macro for alternate conditional events"
+  :long "<p>\\#cond is a C-preprocessor-like macro that selects zero or one
+ event among a possible sequence of events based upon the result of evaluating
+ the condition associated with the event.</p>
 
-  :one-liner "A C-preprocessor-like macro for alternate conditional events"
+ <p>(\\#cond ((@@ test3) (defun test3 (x) x)) ((@@ test4) (defun test4 (x) x))
+    ((@@ test5) (defun test5 (x) x)) )</p>
 
-  :details (docstring
-"
-  \\#cond is a C-preprocessor-like macro that selects zero
-or one event among a possible sequence of events based upon
-the result of evaluating the condition associated with the
-event.
+ <p>The \\#cond macro accepts a sequence of terms in cond form.  Each predicate
+ of the cond form is evaluated in sequence.  If a predicate evaluates to true,
+ the term associated with that predicate will be submitted to ACL2.  If no
+ predicate evalutes to true, the event is a no-op.</p>
 
-  (\\#cond
-   ((@ test3) (defun test3 (x) x))
-   ((@ test4) (defun test4 (x) x))
-   ((@ test5) (defun test5 (x) x))
-  )
-
-  The \\#cond macro accepts a sequence of terms in cond form.
-Each predicate of the cond form is evaluated in sequence.  If a
-predicate evaluates to true, the term associated with that 
-predicate will be submitted to ACL2.  If no predicate evalutes
-to true, the event is a no-op.
-
-  "(docref"\\#if")"
-  "(docref"\\#if-else")"
-
-"))
+ <p>See <see topic='@(url |#IF|)'>#if</see> See <see topic='@(url
+ |#IF-ELSE|)'>#if-else</see></p>")
 
 ;; ===================================================================
 

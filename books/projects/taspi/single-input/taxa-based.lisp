@@ -51,16 +51,20 @@
 
 ;; Gives path length assuming unit lengths from root to taxon
 (defun len-path-to-taxon (taxon tree acc)
-  ":Doc-Section TASPI
-   Returns path length from root to taxon indicated assuming unit lengths on
-   each branch.~/
-   ~/
-   Arguments:
-     (1) taxon - a taxon name
-     (2) tree - a tree
-     (3) acc - accumulator (initially 0)
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns path length from root to taxon indicated assuming unit lengths on
+;  each branch.~/
+;  ~/
+;  Arguments:
+;    (1) taxon - a taxon name
+;    (2) tree - a tree
+;    (3) acc - accumulator (initially 0)
+;  
+;  "
   (declare (xargs :guard (acl2-numberp acc)))
   (if (taspip t tree)
       (if (member-gen taxon (mytips tree))
@@ -78,16 +82,20 @@
 
 ;; Gives path length from root to taxon using brlens
 (defun len-path-to-taxon-brlens (taxon tree acc)
-  ":Doc-Section TASPI
-   Returns path length from root to taxon indicated using branch lengths given
-   in tree on each branch.~/
-   ~/
-   Arguments:
-     (1) taxon - a taxon name
-     (2) tree - a tree with branch lengths
-     (3) acc - accumulator (initially 0)
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns path length from root to taxon indicated using branch lengths given
+;  in tree on each branch.~/
+;  ~/
+;  Arguments:
+;    (1) taxon - a taxon name
+;    (2) tree - a tree with branch lengths
+;    (3) acc - accumulator (initially 0)
+;  
+;  "
   (declare (xargs :guard (acl2-numberp acc)
                   :hints (("Subgoal 2.1" :in-theory (disable
                                                      container-no-larger-brlens)
@@ -132,15 +140,19 @@
 
 ;; only makes sense on a rooted tree
 (defun lca (a b tree)
-   ":Doc-Section TASPI
-   Returns least common ancestor of taxa a and b in tree.~/
-   ~/
-   Arguments:
-     (1) a - a taxon name
-     (2) b - a taxon name
-     (3) tree - a tree
-   
-   Details: Returns empty tree if no common ancestor exists."
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;  Returns least common ancestor of taxa a and b in tree.~/
+;  ~/
+;  Arguments:
+;    (1) a - a taxon name
+;    (2) b - a taxon name
+;    (3) tree - a tree
+;  
+;  Details: Returns empty tree if no common ancestor exists."
   (declare (xargs :guard t))
   (least-common-ancestor t a b tree nil))
 
@@ -267,15 +279,19 @@
 
 ;; this assumes that the tree is rooted at a true node
 (defun path-distance-no-brlens (a b tree)
-   ":Doc-Section TASPI
-   Returns path distance between a and b in tree assuming unit branch lengths.~/
-   ~/
-   Arguments:
-     (1) a - a taxon name
-     (2) b - a taxon name
-     (3) tree - a tree
-   
-   Details: Requires tree representation to be rooted at a node."
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;  Returns path distance between a and b in tree assuming unit branch lengths.~/
+;  ~/
+;  Arguments:
+;    (1) a - a taxon name
+;    (2) b - a taxon name
+;    (3) tree - a tree
+;  
+;  Details: Requires tree representation to be rooted at a node."
   (declare (xargs :guard (and (taspip t tree)
                               (member-gen a (mytips tree))
                               (member-gen b (mytips tree)))))
@@ -286,15 +302,19 @@
          (len-path-to-taxon b lca 1)))))
          
 (defun path-distance-brlens (a b tree)
-   ":Doc-Section TASPI
-   Returns path distance between a and b in tree.~/
-   ~/
-   Arguments:
-     (1) a - a taxon name
-     (2) b - a taxon name
-     (3) tree - a tree with branch lengths
-   
-   Details: Requires tree representation to be rooted at a node."
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;  Returns path distance between a and b in tree.~/
+;  ~/
+;  Arguments:
+;    (1) a - a taxon name
+;    (2) b - a taxon name
+;    (3) tree - a tree with branch lengths
+;  
+;  Details: Requires tree representation to be rooted at a node."
   (declare (xargs :guard t))
   (if (equal a b)
       0
@@ -409,42 +429,54 @@
 
 ;; makes most sense on a rooted tree
 (defun get-containing-subtree-of-taxa (taxa tree)
-  ":Doc-Section TASPI
-   Returns subtree of tree containing each taxon in taxa.~/
-   ~/
-   Arguments:
-     (1) taxa - a list of taxa names
-     (2) tree - a tree
-   
-   Details: Assumes a rooted tree with no branch lengths (see also
-            get-containing-subtree-of-taxa-brlens)."
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns subtree of tree containing each taxon in taxa.~/
+;  ~/
+;  Arguments:
+;    (1) taxa - a list of taxa names
+;    (2) tree - a tree
+;  
+;  Details: Assumes a rooted tree with no branch lengths (see also
+;           get-containing-subtree-of-taxa-brlens)."
   (declare (xargs :guard t))
   (get-containing-subtree-of-taxa-help taxa tree tree))
 
 (defun get-containing-subtree-of-taxa-brlens (taxa tree)
-  ":Doc-Section TASPI
-   Returns subtree of tree containing each taxon in taxa.~/
-   ~/
-   Arguments:
-     (1) taxa - a list of taxa names
-     (2) tree - a tree
-   
-   Details: Assumes a rooted tree.  Does not preserve branch lengths if 
-            present (see also get-containing-subtree-of-taxa)."
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns subtree of tree containing each taxon in taxa.~/
+;  ~/
+;  Arguments:
+;    (1) taxa - a list of taxa names
+;    (2) tree - a tree
+;  
+;  Details: Assumes a rooted tree.  Does not preserve branch lengths if 
+;           present (see also get-containing-subtree-of-taxa)."
   (declare (xargs :guard t))
   (get-containing-subtree-of-taxa taxa (remove-brlens tree)))
 
 ;; again makes most sense in rooted sense
 (defun monophyletic? (taxa tree)
-  ":Doc-Section TASPI
-   Determines if set of taxa is monophyletic in tree.~/
-   ~/
-   Arguments:
-     (1) taxa - a list of taxa names
-     (2) tree - a tree
-   
-   Details: Assumes a rooted tree with no branch lengths (see also
-            monophyletic?-brlens)."
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Determines if set of taxa is monophyletic in tree.~/
+;  ~/
+;  Arguments:
+;    (1) taxa - a list of taxa names
+;    (2) tree - a tree
+;  
+;  Details: Assumes a rooted tree with no branch lengths (see also
+;           monophyletic?-brlens)."
   (declare (xargs :guard t))
   (let ((subtree (get-containing-subtree-of-taxa taxa tree)))
     (if (perm (mytips subtree) taxa)
@@ -453,15 +485,19 @@
 
 ;; requires rooted input
 (defun monophyletic?-brlens (taxa tree)
-  ":Doc-Section TASPI
-   Determines if set of taxa is monophyletic in tree.~/
-   ~/
-   Arguments:
-     (1) taxa - a list of taxa names
-     (2) tree - a tree
-   
-   Details: Assumes a rooted tree.  Does not preserve branch lengths if 
-            present (see also monophyletic?-brlens)."
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Determines if set of taxa is monophyletic in tree.~/
+;  ~/
+;  Arguments:
+;    (1) taxa - a list of taxa names
+;    (2) tree - a tree
+;  
+;  Details: Assumes a rooted tree.  Does not preserve branch lengths if 
+;           present (see also monophyletic?-brlens)."
   (declare (xargs :guard t))
   (monophyletic? taxa (remove-brlens tree)))
 
@@ -497,17 +533,21 @@
     (perm taxa tree)))
 
 (defun root-to-monophyletic? (taxa tree)
-  ":Doc-Section TASPI
-   Determines if it is possible to root tree such that taxa is monophyletic
-   in tree.~/
-   ~/
-   Arguments:
-     (1) taxa - a list of taxa names
-     (2) tree - an unrooted tree
-   
-   Details: Assumes an unrooted tree with no branch lengths (see also
-            root-to-monophyletic?-brlens). Does not return monophyletic
-            structure if present."
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Determines if it is possible to root tree such that taxa is monophyletic
+;  in tree.~/
+;  ~/
+;  Arguments:
+;    (1) taxa - a list of taxa names
+;    (2) tree - an unrooted tree
+;  
+;  Details: Assumes an unrooted tree with no branch lengths (see also
+;           root-to-monophyletic?-brlens). Does not return monophyletic
+;           structure if present."
   (declare (xargs :guard t))
   (if (consp tree)
       (if (or (consp (car tree))
@@ -519,31 +559,39 @@
     'not-unrooted-tree))
 
 (defun root-to-monophyletic?-brlens (taxa tree)
-  ":Doc-Section TASPI
-   Determines if it is possible to root tree such that taxa is monophyletic
-   in tree.~/
-   ~/
-   Arguments:
-     (1) taxa - a list of taxa names
-     (2) tree - an unrooted tree
-   
-   Details: Assumes an unrooted tree.  Does not preserve structure (see also
-            root-to-monophyletic?)."
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Determines if it is possible to root tree such that taxa is monophyletic
+;  in tree.~/
+;  ~/
+;  Arguments:
+;    (1) taxa - a list of taxa names
+;    (2) tree - an unrooted tree
+;  
+;  Details: Assumes an unrooted tree.  Does not preserve structure (see also
+;           root-to-monophyletic?)."
   (declare (xargs :guard t))
   (root-to-monophyletic? taxa (remove-brlens tree)))
 
 (defun project (flg keep x)
-  ":Doc-Section TASPI
-   Returns the tree on taxa in keep implied by x.~/
-   ~/
-   Arguments:
-     (1) flg - non-nil for a single tree,
-               nil for a set of trees
-     (2) keep - a list of taxa names
-     (2) x - a tree
-   
-   Details: Does not matter if branch lengths are present or not, but
-            resulting trees will not have branch lengths."
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the tree on taxa in keep implied by x.~/
+;  ~/
+;  Arguments:
+;    (1) flg - non-nil for a single tree,
+;              nil for a set of trees
+;    (2) keep - a list of taxa names
+;    (2) x - a tree
+;  
+;  Details: Does not matter if branch lengths are present or not, but
+;           resulting trees will not have branch lengths."
   (declare (xargs :guard t
                   :measure (tree-measure x flg)))
   (if flg
@@ -605,20 +653,24 @@
 ;           (tree-listp (project flg keep x))))
 
 (defun project-with-normalize (rooted? keep tree taxa-list)
-  ":Doc-Section TASPI
-   Returns the normalized tree on taxa in keep implied by x.~/
-   ~/
-   Arguments:
-     (1) rooted? - non-nil for a rooted tree,
-                   nil for an unrooted tree
-     (2) keep - a list of taxa names
-     (3) tree - a tree
-     (4) taxa-list - a list of taxa names
-   
-   Details: Assumes tree does not have branch lengths.  Resulting tree will be
-            ordered according to the taxa list given, and if the tree is
-            unrooted, its representation will be rooted at the node at which
-            the least taxon is connected to the rest of the tree." 
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the normalized tree on taxa in keep implied by x.~/
+;  ~/
+;  Arguments:
+;    (1) rooted? - non-nil for a rooted tree,
+;                  nil for an unrooted tree
+;    (2) keep - a list of taxa names
+;    (3) tree - a tree
+;    (4) taxa-list - a list of taxa names
+;  
+;  Details: Assumes tree does not have branch lengths.  Resulting tree will be
+;           ordered according to the taxa list given, and if the tree is
+;           unrooted, its representation will be rooted at the node at which
+;           the least taxon is connected to the rest of the tree." 
   (declare (xargs :guard t))
   (if (and (good-taxon-index-halist (taxa-list-to-taxon-index taxa-list))
            (taspip t (project t keep tree))

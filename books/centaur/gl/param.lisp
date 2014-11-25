@@ -41,6 +41,7 @@
 (local (include-book "tools/mv-nth" :dir :system))
 (local (include-book "ihs/ihs-lemmas" :dir :system))
 (local (include-book "centaur/aig/eval-restrict" :dir :system))
+(local (include-book "std/util/support" :dir :system)) ;; for expand-calls-computed-hint
 (local (in-theory (disable acl2::append-of-nil)))
 
 ;; (local

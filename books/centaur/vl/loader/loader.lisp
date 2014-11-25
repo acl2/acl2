@@ -37,9 +37,9 @@
 (include-book "parser/parser")
 (include-book "filemap")
 (include-book "inject-comments")
-(include-book "../mlib/hierarchy")
 (include-book "../mlib/flat-warnings")
 (include-book "../mlib/print-warnings")
+(include-book "../mlib/hierarchy-basic")
 (include-book "../util/cwtime")
 (include-book "../util/gc")
 (include-book "centaur/misc/hons-extra" :dir :system)
@@ -538,7 +538,6 @@ descriptions.</li>
         (cons x1 (vl-collect-modules-from-descriptions (cdr x)))))
     (vl-collect-modules-from-descriptions (cdr x))))
 
-
 (define vl-descriptions-left-to-load ((st vl-loadstate-p))
   :returns (names string-listp)
   :short "Determine which descriptions we still need to load."
@@ -564,7 +563,7 @@ need to search for.</p>"
 
        ;; BOZO.  This will need to be extended when we support other kinds of
        ;; descriptions.  For now we only look for the modules we're missing.
-       (current-mods (vl-collect-modules-from-descriptions st.descs))
+       (current-mods   (vl-collect-modules-from-descriptions st.descs))
        (things-we-want-loaded (mergesort (append config.start-names
                                                  (vl-modulelist-everinstanced current-mods))))
        (things-we-have-loaded (mergesort (vl-descriptionlist->names st.descs))))
@@ -803,7 +802,7 @@ vl-load-summary) afterwards.</p>"
 
   :returns (mv (result vl-loadresult-p)
                (state  state-p1        :hyp (force (state-p1 state))))
-  (b* (((vl-loadconfig config) config)
+  (b* (((vl-loadconfig config) (vl-loadconfig-clean config))
        ((mv result state)
         (time$ (vl-load-main config state)
                :msg "; vl-load-main: ~st sec, ~sa bytes~%"

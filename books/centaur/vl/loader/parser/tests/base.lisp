@@ -29,6 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "../utils")
 (include-book "../../lexer/lexer") ;; for make-test-tokens, etc.
 (include-book "../../../parsetree")
 (include-book "../../../mlib/expr-tools")
@@ -49,9 +50,10 @@
           ((vl-id-p guts)          (list 'id   (vl-id->name guts)))
           ((vl-hidpiece-p guts)    (list 'hid  (vl-hidpiece->name guts)))
           ((vl-funname-p guts)     (list 'fun  (vl-funname->name guts)))
+          ((vl-typename-p guts)    (list 'type (vl-typename->name guts)))
           ((vl-sysfunname-p guts)  (list 'sys  (vl-sysfunname->name guts)))
           ((vl-keyguts-p guts)     (list 'key  (vl-keyguts->type guts)))
-          ((vl-basictype-p guts)   (list 'basic  (vl-basictype->kind guts)))
+          ((vl-basictype-p guts)   (list 'basic (vl-basictype->kind guts)))
           ((vl-tagname-p guts)     (list 'tag  (vl-tagname->name guts)))
 
           ((vl-time-p guts)
@@ -249,3 +251,22 @@
   (if (eq (tag x) :vl-fwdtypedef)
       (vl-pretty-fwdtypedef x)
     (vl-pretty-typedef x)))
+
+
+
+;; A very useful tracing mechanism for debugging:
+
+(defun vl-debug-tokstream (tokstream)
+  (declare (xargs :stobjs tokstream
+                  :guard-debug t))
+  (let* ((tokens (redundant-list-fix (vl-tokstream->tokens)))
+         (n      (min 5 (len tokens))))
+    (vl-tokenlist->string-with-spaces (take n tokens))))
+
+(defmacro trace-parser (fn)
+  `(trace! (,fn
+            :entry (list ',fn :tokens (vl-debug-tokstream tokstream))
+            :exit (list ',fn
+                        :errmsg (first values)
+                        :val (second values)
+                        :remainder (vl-debug-tokstream (third values))))))

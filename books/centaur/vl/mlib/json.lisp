@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "fmt")
-(include-book "find-module")
+(include-book "find")
 (include-book "centaur/bridge/to-json" :dir :system)
 (local (include-book "../util/arithmetic"))
 
@@ -378,14 +378,15 @@ encoding.</p>"
               (cw "Found info for defaggregate ~x0.~%" type)
               (mv (std::agginfo->tag agginfo)
                   (std::agginfo->efields agginfo)))
-             (prodinfo (fty::get-flexprod-info elem world))
-             ((unless prodinfo)
+             (suminfo (fty::get-flexsum-info elem world))
+             ((unless suminfo)
               (mv (raise "Type ~x0 doesn't look like a known defaggregate/defprod?~%" type)
                   nil))
-             ((fty::prodinfo prodinfo) prodinfo)
+             ((fty::suminfo suminfo))
+             (prod (car (fty::flexsum->prods suminfo.sum)))
              (efields (convert-flexprod-fields-into-eformals
-                       (fty::flexprod->fields prodinfo.prod)))
-             (tag (fty::prodinfo->tag prodinfo)))
+                       (fty::flexprod->fields prod)))
+             (tag (car (fty::suminfo->tags suminfo))))
           (mv tag efields)))
 
        (- (cw "Inferred tag ~x0.~%" tag))
@@ -632,6 +633,7 @@ which could not hold such large values.</p>")
 (def-vl-jp-aggregate sysfunname)
 (def-vl-jp-aggregate tagname)
 (def-vl-jp-aggregate funname)
+(def-vl-jp-aggregate typename)
 (def-vl-jp-aggregate keyguts)
 (def-vl-jp-aggregate extint)
 (def-vl-jp-aggregate time)
@@ -649,6 +651,7 @@ which could not hold such large values.</p>")
     (:vl-real       (vl-jp-real x))
     (:vl-hidpiece   (vl-jp-hidpiece x))
     (:vl-funname    (vl-jp-funname x))
+    (:vl-typename   (vl-jp-typename x))
     (:vl-keyguts    (vl-jp-keyguts x))
     (:vl-extint     (vl-jp-extint x))
     (:vl-time       (vl-jp-time x))
@@ -737,7 +740,36 @@ which could not hold such large values.</p>")
 
 (add-json-encoder vl-maybe-range-p vl-jp-maybe-range)
 
-(def-vl-jp-aggregate port)
+(define vl-jp-packeddimension ((x vl-packeddimension-p) &key (ps 'ps))
+  :parents (json-encoders)
+  (if (eq x :vl-unsized-dimension)
+      (jp-sym x)
+    (vl-jp-range x)))
+
+(add-json-encoder vl-packeddimension-p vl-jp-packeddimension)
+(def-vl-jp-list packeddimension)
+
+(define vl-jp-maybe-packeddimension ((x vl-maybe-packeddimension-p) &key (ps 'ps))
+  :parents (json-encoders)
+  (if x
+      (vl-jp-packeddimension x)
+    (vl-print "null")))
+
+(add-json-encoder vl-maybe-packeddimension-p vl-jp-maybe-packeddimension)
+
+(def-vl-jp-aggregate interfaceport)
+(def-vl-jp-list interfaceport :newlines 4)
+
+(def-vl-jp-aggregate regularport)
+(def-vl-jp-list regularport :newlines 4)
+
+(define vl-jp-port ((x vl-port-p) &key (ps 'ps))
+  :parents (json-encoders vl-port)
+  (b* ((x (vl-port-fix x)))
+    (if (eq (tag x) :vl-interfaceport)
+        (vl-jp-interfaceport x)
+      (vl-jp-regularport x))))
+
 (def-vl-jp-list port :newlines 4)
 
 
@@ -791,23 +823,6 @@ which could not hold such large values.</p>")
     (vl-print "null"))
   ///
   (add-json-encoder vl-maybe-nettypename-p vl-jp-maybe-nettypename))
-
-(define vl-jp-packeddimension ((x vl-packeddimension-p) &key (ps 'ps))
-  :parents (json-encoders)
-  (if (eq x :vl-unsized-dimension)
-      (jp-sym x)
-    (vl-jp-range x)))
-
-(add-json-encoder vl-packeddimension-p vl-jp-packeddimension)
-(def-vl-jp-list packeddimension)
-
-(define vl-jp-maybe-packeddimension ((x vl-maybe-packeddimension-p) &key (ps 'ps))
-  :parents (json-encoders)
-  (if x
-      (vl-jp-packeddimension x)
-    (vl-print "null")))
-
-(add-json-encoder vl-maybe-packeddimension-p vl-jp-maybe-packeddimension)
 
 (define vl-jp-enumbasekind ((x vl-enumbasekind-p) &key (ps 'ps))
   :guard-hints(("Goal" :in-theory (enable vl-enumbasekind-p)))
@@ -1200,7 +1215,17 @@ which could not hold such large values.</p>")
 (def-vl-jp-aggregate assign)
 (def-vl-jp-list assign :newlines 4)
 
+(define vl-jp-importpart ((x vl-importpart-p) &key (ps 'ps))
+  :guard-hints(("Goal" :in-theory (enable vl-importpart-p)))
+  (b* ((x (vl-importpart-fix x)))
+    (if (eq x :vl-import*)
+        (jp-str "*")
+      (jp-str x))))
 
+(add-json-encoder vl-importpart-p vl-jp-importpart)
+
+(def-vl-jp-aggregate import)
+(def-vl-jp-list import :newlines 4)
 
 
 (define vl-jp-warning ((x vl-warning-p) &key (ps 'ps))
@@ -1256,6 +1281,7 @@ TEXT versions of the message.</p>"
 (def-vl-jp-list modport-port)
 (def-vl-jp-aggregate modport)
 (def-vl-jp-aggregate alias)
+(def-vl-jp-list alias)
 
 (define vl-jp-fwdtypedefkind ((x vl-fwdtypedefkind-p) &key (ps 'ps))
   (jp-str (case x
@@ -1272,7 +1298,8 @@ TEXT versions of the message.</p>"
 (define vl-jp-modelement ((x vl-modelement-p) &key (ps 'ps))
   :guard-hints (("goal" :in-theory (enable vl-modelement-p)))
   (case (tag x)
-    (:VL-PORT (VL-jp-PORT X))
+    (:VL-interfacePORT (VL-jp-interfacePORT X))
+    (:VL-regularPORT (VL-jp-regularPORT X))
     (:VL-PORTDECL (VL-jp-PORTDECL X))
     (:VL-ASSIGN (VL-jp-ASSIGN X))
     (:VL-ALIAS (VL-jp-ALIAS X))
@@ -1286,6 +1313,7 @@ TEXT versions of the message.</p>"
     (:VL-INITIAL (VL-jp-INITIAL X))
     ;; BOZO implement typedef
     (:VL-TYPEDEF ps)
+    (:VL-IMPORT (VL-jp-IMPORT X))
     (:VL-FWDTYPEDEF (VL-jp-FWDTYPEDEF X))
     (OTHERWISE (VL-jp-MODPORT X))))
 

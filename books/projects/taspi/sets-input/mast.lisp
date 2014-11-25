@@ -81,29 +81,37 @@
     nil))
 
 (defun mast (list-of-trees taxa-list)
-  ":Doc-Section TASPI
-   Computes the maximum agreement subtree of a set of trees~/
-   ~/
-   Arguments:
-     (1) list-of-trees - a list of trees
-     (2) taxa-list - a list of taxa names
 
-   Details: Returns a single maximum agreement tree even if there exists more
-            than one.  Does not handle branch lengths (see mast-brlens)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Computes the maximum agreement subtree of a set of trees~/
+;  ~/
+;  Arguments:
+;    (1) list-of-trees - a list of trees
+;    (2) taxa-list - a list of taxa names
+
+;  Details: Returns a single maximum agreement tree even if there exists more
+;           than one.  Does not handle branch lengths (see mast-brlens)."
   (declare (xargs :guard t))
   (find-mast (possible-taxa-lists taxa-list)
              list-of-trees))
 
 (defun mast-brlens (list-of-trees taxa-list)
-  ":Doc-Section TASPI
-   Computes the maximum agreement subtree of a set of trees with branch lengths~/
-   ~/
-   Arguments:
-     (1) list-of-trees - a list of trees
-     (2) taxa-list - a list of taxa names
 
-   Details: Returns a single maximum agreement tree even if there exists more
-            than one.  Allows branch lengths (see mast)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Computes the maximum agreement subtree of a set of trees with branch lengths~/
+;  ~/
+;  Arguments:
+;    (1) list-of-trees - a list of trees
+;    (2) taxa-list - a list of taxa names
+
+;  Details: Returns a single maximum agreement tree even if there exists more
+;           than one.  Allows branch lengths (see mast)."
   (declare (xargs :guard t))
   (let ((trees-no-brlens (remove-brlens-list list-of-trees)))
     (find-mast (possible-taxa-lists taxa-list)

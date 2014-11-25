@@ -114,7 +114,11 @@ hierarchical identifiers.</p>"
       ((when (vl-fast-string-p x.guts))
        (b* (((vl-string x.guts) x.guts))
          (and (eq x.finaltype :vl-unsigned)
-              (eql x.finalwidth (* 8 (length x.guts.value)))))))
+              (eql x.finalwidth (* 8 (length x.guts.value))))))
+
+      ((when (eq (tag x.guts) :vl-extint))
+       (and x.finaltype
+            (posp x.finalwidth))))
 
    ;; Otherwise -- reals, function names, hierarchical identifier pieces;
    ;; these atoms do not get a finalwidth or finaltype.
@@ -126,6 +130,7 @@ hierarchical identifiers.</p>"
   (b* (((vl-nonatom x) x))
     (and x.finaltype
          (posp x.finalwidth))))
+
 
 
 
@@ -168,7 +173,11 @@ hierarchical identifiers.</p>"
              (:vl-index t)
              (:vl-select-colon (and (vl-expr-resolved-p (second x.args))
                                     (vl-expr-resolved-p (third x.args))))
-             (otherwise        (vl-expr-resolved-p (third x.args)))))))
+             (otherwise        (vl-expr-resolved-p (third x.args))))))
+         ((when (vl-$bits-call-p x))
+          (and (eql (vl-expr->finalwidth x) 32)
+               (vl-expr->finaltype x)
+               t)))
       (and
        (vl-exprlist-welltyped-p x.args)
        (case x.op
@@ -276,7 +285,7 @@ hierarchical identifiers.</p>"
                  (eq x.finaltype (vl-expr->finaltype c)))))
 
          (( ;; Table 5-22, Line 10
-           :vl-concat)
+           :vl-concat :vl-stream-left :vl-stream-right)
           (b* ((arg-widths (vl-exprlist->finalwidths x.args)))
             (and ;; result is unsigned (5.5.1) and its width is the sum of
              ;; its arg widths (Table 5-22)
@@ -287,6 +296,18 @@ hierarchical identifiers.</p>"
              ;; But it does prohibit reals, function names, etc.
              (not (member nil arg-widths))
              (equal x.finalwidth (sum-nats arg-widths)))))
+
+         ((:vl-stream-left-sized :vl-stream-right-sized)
+          (b* ((arg-widths (vl-exprlist->finalwidths x.args)))
+            (and ;; result is unsigned (5.5.1) and its width is the sum of
+             ;; its arg widths (Table 5-22)
+             (eq x.finaltype :vl-unsigned)
+             (posp x.finalwidth)
+             ;; we choose not to allow any unsized args.  this does NOT
+             ;; prohibit zero-sized multiconcats or zero-sized strings.
+             ;; But it does prohibit reals, function names, etc.
+             (not (member nil arg-widths))
+             (equal x.finalwidth (sum-nats (cdr arg-widths))))))
 
          (( ;; Table 5-22, Line 11.
            :vl-multiconcat)
@@ -349,9 +370,7 @@ hierarchical identifiers.</p>"
                (not x.finaltype)))
 
          ;; New things that we aren't really supporting yet
-         ((:vl-stream-left
-           :vl-stream-right
-           :vl-stream-left-sized
+         ((:vl-stream-left-sized
            :vl-stream-right-sized
            :vl-binary-cast
            :vl-scope
@@ -360,6 +379,7 @@ hierarchical identifiers.</p>"
            :vl-with-colon
            :vl-with-pluscolon
            :vl-with-minuscolon
+           :vl-keyvalue
            )
           t)
 
@@ -367,6 +387,16 @@ hierarchical identifiers.</p>"
           ;; Shouldn't hit this case, checked hidexpr-p above.  Makes guard
           ;; happy because we've covered all cases.
           nil)
+
+         ((:vl-pattern-positional
+           :vl-pattern-keyvalue
+           :vl-pattern-type
+           :vl-pattern-multi)
+          ;; For the moment, at least, we'll say that nothing containing these
+          ;; constructs can be considered welltyped.  Sizing will do its best
+          ;; to remove them and replace them with appropriate concats.
+          nil)
+
 
          (otherwise
           (impossible))))))

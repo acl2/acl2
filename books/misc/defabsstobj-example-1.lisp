@@ -396,9 +396,8 @@
                           :correspondence update-misc{correspondence}
                           :preserved update-misc{preserved}))
   :doc ; nil is OK, but we test the use of an actual :doc string
-  ":Doc-Section defabsstobj
-
-  a defabsstobj example~/
+    ;; Jared removed the doc section here toward axing legacy doc stuff
+  "a defabsstobj example~/
 
   This :DOC string is just a stub.  ~l[defabsstobj].~/~/")
 

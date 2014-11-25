@@ -8112,22 +8112,23 @@
 
 (defun translate-rule-class (name x thm ctx ens wrld state)
 
-; X is an untranslated rule class.  For example, x may be :REWRITE or
-; (:META :TRIGGER-FNS (fn1 ... fnk)) or even (:REWRITE :COROLLARY
-; (IMPLIES p q) :HINTS ...).  We either translate x into a "fully
-; elaborated" rule class or else cause an error.  A fully elaborated
-; rule class starts with one of the rule class keywords, token,
-; followed by an alternating keyword/value list.  Every fully
-; elaborated class has a :COROLLARY component.  In addition, every
-; :META class has a :TRIGGER-FNS component, every :FORWARD-CHAINING
-; class has a :TRIGGER-TERMS component, and every :TYPE-PRESCRIPTION
-; has a :TYPED-TERM component.  No keyword is bound twice in the list
-; and the values associated with each keyword is syntactically correct
-; in a local sense, e.g., alleged function symbols are really function
-; symbols, alleged terms are translated terms, alleged hints are
-; translated hints, etc.  We do not make the non-local checks, such as
-; that the :COROLLARY of a :TYPE-PRESCRIPTION rule actually prescribes
-; the type of the :TYPED-TERM.  Those checks are made by the
+; Warning: We depend on the property that the resulting :corollary field is
+; independent of context.  See redundant-theoremp.
+
+; X is an untranslated rule class.  For example, x may be :REWRITE or (:META
+; :TRIGGER-FNS (fn1 ... fnk)) or even (:REWRITE :COROLLARY (IMPLIES p q) :HINTS
+; ...).  We either translate x into a "fully elaborated" rule class or else
+; cause an error.  A fully elaborated rule class starts with one of the rule
+; class keywords, token, followed by an alternating keyword/value list.  Every
+; fully elaborated class has a :COROLLARY component.  In addition, every :META
+; class has a :TRIGGER-FNS component, every :FORWARD-CHAINING class has a
+; :TRIGGER-TERMS component, and every :TYPE-PRESCRIPTION has a :TYPED-TERM
+; component.  No keyword is bound twice in the list and the values associated
+; with each keyword is syntactically correct in a local sense, e.g., alleged
+; function symbols are really function symbols, alleged terms are translated
+; terms, alleged hints are translated hints, etc.  We do not make the non-local
+; checks, such as that the :COROLLARY of a :TYPE-PRESCRIPTION rule actually
+; prescribes the type of the :TYPED-TERM.  Those checks are made by the
 ; individual acceptability checkers.
 
   (let ((er-string
@@ -8141,6 +8142,11 @@
                (keywordp (car x))
                (keyword-value-listp (cdr x))))
       (translate-rule-class1
+
+; Note that we observe the requirement dicussed in the comment (warning) at the
+; top of this definition, about the :corollary field being independent of
+; context.
+
        (cond ((symbolp x) (list x :COROLLARY thm))
              ((assoc-keyword :COROLLARY (cdr x)) x)
              (t `(,(car x) :COROLLARY ,thm ,@(cdr x))))
@@ -8663,15 +8669,54 @@
        (putprop name 'classes (truncate-classes classes term)
                 (add-rules1 runic-mapping-pairs classes ens wrld state)))))))
 
-(defun redundant-theoremp (name term classes wrld)
+(defun redundant-theoremp (name term classes event-form wrld)
 
-; We know name is a symbol, but it may or may not be new.  We return t
-; if name is already defined as the name of the theorem term with the
-; given rule-classes.  If we are booting, no theorem is redundant.
+; We know name is a symbol, but it may or may not be new.  We return t if name
+; is already defined as the name of the theorem term with the given
+; rule-classes, or if event-form -- which is a defthm or defaxiom event -- is
+; an existing event in the world.  We do the first test first since perhaps it
+; is more efficient.
 
-  (and (equal term (getprop name 'theorem 0 'current-acl2-world wrld))
-       (equal (truncate-classes classes term)
-              (getprop name 'classes 0 'current-acl2-world wrld))))
+; Through Version_6.5 we had only the first test of this disjunction.  But
+; Jared Davis and Sol Swords sent us small examples including the following,
+; which failed because the translated rule-classes had changed.
+
+;   (defund foop (x) (consp x))
+;
+;   (defthm booleanp-of-foop
+;     (booleanp (foop x))
+;     :rule-classes :type-prescription)
+;
+;   (in-theory (disable booleanp-compound-recognizer))
+;
+;   ; Was not redundant, because the generated corollary's :typed-term changes:
+;   (defthm booleanp-of-foop
+;     (booleanp (foop x))
+;     :rule-classes :type-prescription)
+
+; Now that we treat the second event as redundant, imagine a book consisting of
+; the four events above except that the first defthm is local.  Then we get a
+; different rule when including the book.  That seems harmless enough, but
+; perhaps we should be more concerned if using encapsulate instead of a book,
+; since we have seen soundness bugs when constraints change.  There are two
+; reasons why we don't see a soundness issue here.
+
+; First, if there is a soundness issue here, then there was already a soundness
+; issue by converting each (defthm ...) to (encapsulate () (defthm ...)),
+; because syntactic equality implies redundancy for encapsulate events.
+
+; Second, the :corollary for a rule is independent of context; for example, the
+; enabled status of booleanp-compound-recognizer in the example above only
+; affects the :typed-term for the rule, not the :corollary.  The reason is that
+; when a :corollary is implicit, then translate-rule-class generates the
+; :corollary to be exactly the original theorem.
+
+  (or (and (equal term (getprop name 'theorem 0 'current-acl2-world wrld))
+           (equal (truncate-classes classes term)
+                  (getprop name 'classes 0 'current-acl2-world wrld)))
+      (assert$ event-form
+               (equal event-form
+                      (get-event name wrld)))))
 
 ; The next part develops the functions for proving that each alleged
 ; corollary in a rule class follows from the theorem proved.
@@ -10013,28 +10058,26 @@
    "DEFAXIOM"
    (with-ctx-summarized
     (if (output-in-infixp state) event-form (cons 'defaxiom name))
-    (let ((wrld (w state))
-          (ens (ens state))
-          (event-form (or event-form
-                          (list* 'defaxiom name term
-                                 (append (if (not (equal rule-classes
-                                                         '(:REWRITE)))
-                                             (list :rule-classes rule-classes)
-                                           nil)
-                                         (if doc
-                                             (list :doc doc)
-                                           nil))))))
-      (er-progn
-       (chk-all-but-new-name name ctx nil wrld state)
-       (er-let* ((tterm (translate term t t t ctx wrld state))
+
+; At one time we thought that event-form could be nil.  It is simplest, for
+; checking redundancy, not to consider the case of manufacturing an event-form,
+; so now we insist on event-form being supplied (not nil).
+
+    (assert$
+     event-form
+     (let ((wrld (w state))
+           (ens (ens state)))
+       (er-progn
+        (chk-all-but-new-name name ctx nil wrld state)
+        (er-let* ((tterm (translate term t t t ctx wrld state))
 ; known-stobjs = t (stobjs-out = t)
-                 (supporters (defaxiom-supporters tterm name ctx wrld state))
-                 (classes (translate-rule-classes name rule-classes tterm ctx
-                                                  ens wrld state)))
-         (cond
-          ((redundant-theoremp name tterm classes wrld)
-           (stop-redundant-event ctx state))
-          (t
+                  (supporters (defaxiom-supporters tterm name ctx wrld state))
+                  (classes (translate-rule-classes name rule-classes tterm ctx
+                                                   ens wrld state)))
+          (cond
+           ((redundant-theoremp name tterm classes event-form wrld)
+            (stop-redundant-event ctx state))
+           (t
 
 ; Next we implement Defaxiom Restriction for Defattach from The Essay on
 ; Defattach: no ancestor (according to the transitive closure of the
@@ -10042,56 +10085,56 @@
 ; this is all about logic, we remove guard-holders from term before doing this
 ; check.
 
-           (let ((attached-fns
-                  (attached-fns (canonical-ancestors-lst
-                                 (all-ffn-symbs (remove-guard-holders tterm)
-                                                nil)
-                                 wrld)
-                                wrld)))
-             (cond
-              (attached-fns
-               (er soft ctx
-                   "The following function~#0~[ has an attachment, but is~/s ~
+            (let ((attached-fns
+                   (attached-fns (canonical-ancestors-lst
+                                  (all-ffn-symbs (remove-guard-holders tterm)
+                                                 nil)
+                                  wrld)
+                                 wrld)))
+              (cond
+               (attached-fns
+                (er soft ctx
+                    "The following function~#0~[ has an attachment, but is~/s ~
                     have attachments, but are~] ancestral in the proposed ~
                     axiom: ~&0. ~ See :DOC defattach."
-                   attached-fns))
-              (t
-               (enforce-redundancy
-                event-form ctx wrld
-                (er-let*
-                    ((ttree1 (chk-acceptable-rules name classes ctx ens wrld state))
-                     (wrld1 (chk-just-new-name name 'theorem nil ctx wrld state))
-                     (doc-pair (translate-doc name doc ctx state))
-                     (ttree3
-                      (cond ((ld-skip-proofsp state)
-                             (value nil))
-                            (t
-                             (prove-corollaries name tterm classes ens wrld1 ctx
-                                                state)))))
-                  (let* ((wrld2
-                          (update-doc-database
-                           name doc doc-pair
-                           (add-rules name classes tterm term ens wrld1 state)))
-                         (wrld3 (global-set
-                                 'nonconstructive-axiom-names
-                                 (cons name
-                                       (global-val 'nonconstructive-axiom-names wrld))
-                                 wrld2))
-                         (wrld4 (maybe-putprop-lst supporters 'defaxiom-supporter
-                                                   name wrld3))
-                         (ttree4 (cons-tag-trees ttree1 ttree3)))
-                    (pprogn
-                     (f-put-global 'axiomsp t state)
-                     (er-progn
-                      (chk-assumption-free-ttree ttree4 ctx state)
-                      (print-rule-storage-dependencies name ttree1 state)
-                      (install-event name
-                                     event-form
-                                     'defaxiom
-                                     name
-                                     ttree4
-                                     nil :protect ctx wrld4
-                                     state)))))))))))))))))
+                    attached-fns))
+               (t
+                (enforce-redundancy
+                 event-form ctx wrld
+                 (er-let*
+                     ((ttree1 (chk-acceptable-rules name classes ctx ens wrld state))
+                      (wrld1 (chk-just-new-name name 'theorem nil ctx wrld state))
+                      (doc-pair (translate-doc name doc ctx state))
+                      (ttree3
+                       (cond ((ld-skip-proofsp state)
+                              (value nil))
+                             (t
+                              (prove-corollaries name tterm classes ens wrld1 ctx
+                                                 state)))))
+                   (let* ((wrld2
+                           (update-doc-database
+                            name doc doc-pair
+                            (add-rules name classes tterm term ens wrld1 state)))
+                          (wrld3 (global-set
+                                  'nonconstructive-axiom-names
+                                  (cons name
+                                        (global-val 'nonconstructive-axiom-names wrld))
+                                  wrld2))
+                          (wrld4 (maybe-putprop-lst supporters 'defaxiom-supporter
+                                                    name wrld3))
+                          (ttree4 (cons-tag-trees ttree1 ttree3)))
+                     (pprogn
+                      (f-put-global 'axiomsp t state)
+                      (er-progn
+                       (chk-assumption-free-ttree ttree4 ctx state)
+                       (print-rule-storage-dependencies name ttree1 state)
+                       (install-event name
+                                      event-form
+                                      'defaxiom
+                                      name
+                                      ttree4
+                                      nil :protect ctx wrld4
+                                      state))))))))))))))))))
 
 
 ;---------------------------------------------------------------------------
@@ -10227,73 +10270,79 @@
                         #+:non-standard-analysis std-p)
   (with-ctx-summarized
    (if (output-in-infixp state) event-form (cons 'defthm name))
-   (let ((wrld (w state))
-         (ens (ens state))
-         (event-form (or event-form
-                         (list* 'defthm name term
-                                (append (if (not (equal rule-classes
-                                                        '(:REWRITE)))
-                                            (list :rule-classes rule-classes)
-                                          nil)
-                                        (if instructions
-                                            (list :instructions instructions)
-                                          nil)
-                                        (if hints
-                                            (list :hints hints)
-                                          nil)
-                                        (if otf-flg
-                                            (list :otf-flg otf-flg)
-                                          nil)
-                                        (if doc
-                                            (list :doc doc)
-                                          nil)))))
-         (ld-skip-proofsp (ld-skip-proofsp state)))
-     (pprogn
-      (warn-on-inappropriate-defun-mode ld-skip-proofsp event-form ctx state)
-      #+acl2-par
-      (erase-acl2p-checkpoints-for-summary state)
-      (with-waterfall-parallelism-timings
-       name
-       (er-progn
-        (chk-all-but-new-name name ctx nil wrld state)
-        (er-let*
-         ((tterm0 (translate term t t t ctx wrld state))
+; At one time we thought that event-form could be nil.  It is simplest, for
+; checking redundancy, not to consider the case of manufacturing an event-form,
+; so now we insist on event-form being supplied (not nil).
+
+    (assert$
+     event-form
+     (let ((wrld (w state))
+           (ens (ens state))
+           (event-form (or event-form
+                           (list* 'defthm name term
+                                  (append (if (not (equal rule-classes
+                                                          '(:REWRITE)))
+                                              (list :rule-classes rule-classes)
+                                            nil)
+                                          (if instructions
+                                              (list :instructions instructions)
+                                            nil)
+                                          (if hints
+                                              (list :hints hints)
+                                            nil)
+                                          (if otf-flg
+                                              (list :otf-flg otf-flg)
+                                            nil)
+                                          (if doc
+                                              (list :doc doc)
+                                            nil)))))
+           (ld-skip-proofsp (ld-skip-proofsp state)))
+       (pprogn
+        (warn-on-inappropriate-defun-mode ld-skip-proofsp event-form ctx state)
+        #+acl2-par
+        (erase-acl2p-checkpoints-for-summary state)
+        (with-waterfall-parallelism-timings
+         name
+         (er-progn
+          (chk-all-but-new-name name ctx nil wrld state)
+          (er-let*
+              ((tterm0 (translate term t t t ctx wrld state))
 ; known-stobjs = t (stobjs-out = t)
-          (tterm
-           #+:non-standard-analysis
-           (if std-p
-               (er-progn
-                (chk-classical-term-or-standardp-of-classical-term
-                 tterm0 term ctx wrld state)
-                (translate (weaken-using-transfer-principle term)
-                           t t t ctx wrld state))
-             (value tterm0))
-           #-:non-standard-analysis
-           (value tterm0))
-          (classes
+               (tterm
+                #+:non-standard-analysis
+                (if std-p
+                    (er-progn
+                     (chk-classical-term-or-standardp-of-classical-term
+                      tterm0 term ctx wrld state)
+                     (translate (weaken-using-transfer-principle term)
+                                t t t ctx wrld state))
+                  (value tterm0))
+                #-:non-standard-analysis
+                (value tterm0))
+               (classes
 
 ; (#+:non-standard-analysis) We compute rule classes with respect to the
 ; original (translated) term.  The modified term is only relevant for proof.
 
-           (translate-rule-classes name rule-classes tterm0 ctx ens wrld
-                                   state)))
-         (cond
-          ((redundant-theoremp name tterm0 classes wrld)
-           (stop-redundant-event ctx state))
-          (t
-           (enforce-redundancy
-            event-form ctx wrld
-            (er-let*
-             ((ttree1 (chk-acceptable-rules name classes ctx ens wrld
-                                            state))
-              (wrld1 (chk-just-new-name name 'theorem nil ctx wrld state)))
-             (er-let*
-              ((instructions (if (or (eq ld-skip-proofsp 'include-book)
-                                     (eq ld-skip-proofsp 'include-book-with-locals)
-                                     (eq ld-skip-proofsp 'initialize-acl2))
-                                 (value nil)
-                               (translate-instructions name instructions
-                                                       ctx wrld1 state)))
+                (translate-rule-classes name rule-classes tterm0 ctx ens wrld
+                                        state)))
+            (cond
+             ((redundant-theoremp name tterm0 classes event-form wrld)
+              (stop-redundant-event ctx state))
+             (t
+              (enforce-redundancy
+               event-form ctx wrld
+               (er-let*
+                   ((ttree1 (chk-acceptable-rules name classes ctx ens wrld
+                                                  state))
+                    (wrld1 (chk-just-new-name name 'theorem nil ctx wrld state)))
+                 (er-let*
+                     ((instructions (if (or (eq ld-skip-proofsp 'include-book)
+                                            (eq ld-skip-proofsp 'include-book-with-locals)
+                                            (eq ld-skip-proofsp 'initialize-acl2))
+                                        (value nil)
+                                      (translate-instructions name instructions
+                                                              ctx wrld1 state)))
 
 ; Observe that we do not translate the hints if ld-skip-proofsp is non-nil.
 ; Once upon a time we translated the hints unless ld-skip-proofsp was
@@ -10302,66 +10351,66 @@
 ; was not defined when it was first used in axioms.lisp.  This choice is
 ; a little unsettling because it means
 
-               (hints (if (or (eq ld-skip-proofsp 'include-book)
-                              (eq ld-skip-proofsp 'include-book-with-locals)
-                              (eq ld-skip-proofsp 'initialize-acl2))
-                          (value nil)
-                        (translate-hints+ name
-                                          hints
+                      (hints (if (or (eq ld-skip-proofsp 'include-book)
+                                     (eq ld-skip-proofsp 'include-book-with-locals)
+                                     (eq ld-skip-proofsp 'initialize-acl2))
+                                 (value nil)
+                               (translate-hints+ name
+                                                 hints
 
 ; If there are :instructions, then default hints are to be ignored; otherwise
 ; the error just below will prevent :instructions in the presence of default
 ; hints.
 
-                                          (and (null instructions)
-                                               (default-hints wrld1))
-                                          ctx wrld1 state)))
-               (doc-pair (translate-doc name doc ctx state))
-               (ttree2 (cond (instructions
-                              (er-progn
-                               (cond (hints (er soft ctx
-                                                "It is not permitted to ~
+                                                 (and (null instructions)
+                                                      (default-hints wrld1))
+                                                 ctx wrld1 state)))
+                      (doc-pair (translate-doc name doc ctx state))
+                      (ttree2 (cond (instructions
+                                     (er-progn
+                                      (cond (hints (er soft ctx
+                                                       "It is not permitted to ~
                                                  supply both :INSTRUCTIONS ~
                                                  and :HINTS to DEFTHM."))
-                                     (t (value nil)))
-                               #+:non-standard-analysis
-                               (if std-p
+                                            (t (value nil)))
+                                      #+:non-standard-analysis
+                                      (if std-p
 
 ; How could this happen?  Presumably the user created a defthm event using the
 ; proof-checker, and then absent-mindedly somehow suffixed "-std" on to the
 ; car, defthm, of that form.
 
-                                   (er soft ctx
-                                       ":INSTRUCTIONS are not supported for ~
+                                          (er soft ctx
+                                              ":INSTRUCTIONS are not supported for ~
                                         defthm-std events.")
-                                 (value nil))
-                               (proof-checker name term
-                                              tterm classes instructions
-                                              wrld1 state)))
-                             (t (prove tterm
-                                       (make-pspv ens wrld1
-                                                  :displayed-goal term
-                                                  :otf-flg otf-flg)
-                                       hints ens wrld1 ctx state))))
-               (ttree3 (cond (ld-skip-proofsp (value nil))
-                             (t (prove-corollaries name tterm0 classes ens wrld1
-                                                   ctx state)))))
-              (let ((wrld2
-                     (update-doc-database
-                      name doc doc-pair
-                      (add-rules name classes tterm0 term ens wrld1 state)))
-                    (ttree4 (cons-tag-trees ttree1
-                                            (cons-tag-trees ttree2 ttree3))))
-                (er-progn
-                 (chk-assumption-free-ttree ttree4 ctx state)
-                 (print-rule-storage-dependencies name ttree1 state)
-                 (install-event name
-                                event-form
-                                'defthm
-                                name
-                                ttree4
-                                nil :protect ctx wrld2
-                                state)))))))))))))))
+                                        (value nil))
+                                      (proof-checker name term
+                                                     tterm classes instructions
+                                                     wrld1 state)))
+                                    (t (prove tterm
+                                              (make-pspv ens wrld1
+                                                         :displayed-goal term
+                                                         :otf-flg otf-flg)
+                                              hints ens wrld1 ctx state))))
+                      (ttree3 (cond (ld-skip-proofsp (value nil))
+                                    (t (prove-corollaries name tterm0 classes ens wrld1
+                                                          ctx state)))))
+                   (let ((wrld2
+                          (update-doc-database
+                           name doc doc-pair
+                           (add-rules name classes tterm0 term ens wrld1 state)))
+                         (ttree4 (cons-tag-trees ttree1
+                                                 (cons-tag-trees ttree2 ttree3))))
+                     (er-progn
+                      (chk-assumption-free-ttree ttree4 ctx state)
+                      (print-rule-storage-dependencies name ttree1 state)
+                      (install-event name
+                                     event-form
+                                     'defthm
+                                     name
+                                     ttree4
+                                     nil :protect ctx wrld2
+                                     state))))))))))))))))
 
 (defun defthm-fn (name term state
                        rule-classes

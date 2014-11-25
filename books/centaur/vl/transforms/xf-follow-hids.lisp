@@ -30,11 +30,12 @@
 
 (in-package "VL")
 (include-book "xf-resolve-ranges")
-(include-book "../mlib/hierarchy")
-(include-book "../mlib/find-item")
+(include-book "../mlib/find")
 (include-book "../mlib/expr-tools")
 (include-book "../mlib/hid-tools")
 (include-book "../mlib/stmt-tools")
+(include-book "../mlib/modnamespace")
+(include-book "../mlib/hierarchy-basic")
 ;(include-book "../wf-ranges-resolved-p")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
@@ -220,7 +221,7 @@ to report this information as well.</p>"
              ;; later found that we weren't fully resolving some HIDs because
              ;; their declared ranges were things like [`foo-1:0].  So we can
              ;; do a bit better by trying to resolve the ranges.
-             ((mv & range) (vl-maybe-rangeresolve range nil))
+             ((mv & range) (vl-maybe-rangeresolve range nil nil))
              (range-resolvedp
               ;; See vl-hid-expr-elim, don't say it's resolved unless
               ;; it's also unsigned and has no arrdims.

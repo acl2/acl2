@@ -179,6 +179,9 @@
            (NOT (EQUAL (CAT Z 1 X 1 Y 1) 1))))
  
 
+;; [Jared] added this to fix the proof after building these into ACL2
+(local (in-theory (disable commutativity-2-of-+
+                           fold-consts-in-+)))
 
 (DEFTHM CAT-FACT-11
   (IMPLIES (EQUAL (CAT X 1 Y 1 Z 1 U 1 V 1 W 1 1 1)

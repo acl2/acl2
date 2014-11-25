@@ -69,8 +69,10 @@ where we expect to see wires.</p>")
 
 (def-vl-clean-selects vl-port-clean-selects
   :type vl-port-p
-  :body (b* (((vl-port x) x))
-          (change-vl-port x :expr (vl-maybe-expr-clean-selects x.expr ss))))
+  :body (b* ((x (vl-port-fix x))
+             ((when (eq (tag x) :vl-interfaceport)) x)
+             ((vl-regularport x) x))
+          (change-vl-regularport x :expr (vl-maybe-expr-clean-selects x.expr ss))))
 
 (def-vl-clean-selects-list vl-portlist-clean-selects
   :type vl-portlist-p

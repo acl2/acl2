@@ -54,8 +54,9 @@ guarantee that (copy x) is the identity function. This
 
 ;; Here we build up the theory for proving that copying is identity.
 
-(local 
- (include-book "arithmetic-2/meta/top" :dir :system))
+(local
+ ;; [Jared] changed this to use arithmetic-3 instead of 2
+ (include-book "arithmetic-3/bind-free/top" :dir :system))
 
 (local 
   (defun falsifier-index (a b i)

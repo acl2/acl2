@@ -1099,9 +1099,12 @@
 
   (defund clause-to-term (clause)
     (declare (xargs :guard (pseudo-term-listp clause)))
-    (list (list `(implies ,(conjoin (dumb-negate-lit-list
-                                     (butlast clause 1)))
-                          ,(car (last clause))))))
+    (let* ((hyp-term (conjoin (dumb-negate-lit-list
+                               (butlast clause 1))))
+           (concl-term (car (last clause)))
+           (thm-term (if (equal hyp-term ''t) concl-term
+                       `(implies ,hyp-term ,concl-term))))
+    (list (list thm-term))))
 
 
   (local (in-theory (enable clause-to-term)))
@@ -1145,6 +1148,95 @@
            :clause-processor ,cproc))
      (and (equal (car id) '(0 1))
           (expand-marked :last-only t))))
+
+
+
+(defun just-induct/expand-default-hint (fnname id wait-til-stablep world)
+  (declare (Xargs :mode :program))
+  ;; This is a version that can be used as a default hint such as for
+  ;; std::define returnspec theorems or fty::deffixequiv forms.  To install, use either
+  ;;
+  ;;  (std::set-returnspec-default-hints
+  ;;   ((just-induct/expand-default-hint 'fnname id t world)))
+  ;; 
+  ;; to wait until stable after inducting to expand calls, or
+  ;;
+  ;;  (std::set-returnspec-default-hints
+  ;;   ((just-induct/expand-default-hint 'fnname id nil world)))
+  ;;
+  ;; to expand calls of the function immediately after inducting.
+  ;; 
+  ;; (replace with set-deffixequiv-default-hints to use in deffixequiv proofs.)
+  (and (eql (len (acl2::recursivep fnname world)) 1) ;; singly recursive
+       (eql 0 (acl2::access acl2::clause-id id :forcing-round))
+       (let* ((pool-lst (acl2::access acl2::clause-id id :pool-lst))
+              (formals (fgetprop fnname 'formals nil world)))
+         (cond ((not pool-lst)
+                `(:induct (,fnname . ,formals)
+                  :in-theory (disable (:d ,fnname))))
+               ((equal pool-lst '(1))
+                (let ((expand-hints (just-expand-cp-parse-hints
+                                     `((:free ,formals (,fnname . ,formals))) world)))
+                  `(:computed-hint-replacement
+                    ((and (or (not ',wait-til-stablep) stable-under-simplificationp)
+                          (expand-marked)))
+                    :clause-processor (mark-expands-cp clause '(t t ,expand-hints)))))))))
+
+(defun just-expand-mrec-expanders (fns world)
+  (declare (Xargs :mode :program))
+  (if (atom fns)
+      nil
+    (let ((formals (fgetprop (car fns) 'formals nil world)))
+      (cons `(:free ,formals (,(car fns) . ,formals))
+            (just-expand-mrec-expanders (cdr fns) world)))))
+
+(defun just-expand-mrec-default-hint (fnname id wait-til-stablep world)
+  (declare (Xargs :mode :program))
+  ;; This is a version that can be used as a default hint for mutual recursions
+  ;; such as std::defines returnspec theorems or deffixequiv-mutual forms.  It
+  ;; doesn't provide the induction hint; it expects the flag defthm form to
+  ;; provide one.  To install, use, e.g.,
+  ;;
+  ;;  (std::set-returnspec-mrec-default-hints
+  ;;   ((just-expand-mrec-default-hint 'fnname id t world)))
+  ;;
+  ;; where the 't' says to wait until stable after inducting to expand calls,
+  ;; which is usually preferable for mutual inductions because there are
+  ;; extraneous cases that simple Boolean logic should get rid of before
+  ;; expanding calls.
+  (and (eql 0 (acl2::access acl2::clause-id id :forcing-round))
+       (equal '(1) (acl2::access acl2::clause-id id :pool-lst))
+       (let* ((fns (acl2::recursivep fnname world))
+              (expand-hints (just-expand-cp-parse-hints
+                             (just-expand-mrec-expanders fns world)
+                             world)))
+         `(:computed-hint-replacement
+           ((and (or (not ',wait-til-stablep) stable-under-simplificationp)
+                 (expand-marked)))
+           :in-theory (disable . ,fns)
+           :clause-processor (mark-expands-cp clause '(t t ,expand-hints))))))
+
+(defun all-fns-in-cliques (fnnames world)
+  (declare (Xargs :mode :program))
+  (if (atom fnnames)
+      nil
+    (append (recursivep (car fnnames) world)
+            (all-fns-in-cliques (cdr fnnames) world))))
+
+(defun just-expand-mrec-multi-hint (fnnames id wait-til-stablep world)
+  (declare (Xargs :mode :program))
+  (and (eql 0 (acl2::access acl2::clause-id id :forcing-round))
+       (equal '(1) (acl2::access acl2::clause-id id :pool-lst))
+       (let* ((fns (all-fns-in-cliques fnnames world))
+              (expand-hints (just-expand-cp-parse-hints
+                             (just-expand-mrec-expanders fns world)
+                             world)))
+         `(:computed-hint-replacement
+           ((and (or (not ',wait-til-stablep) stable-under-simplificationp)
+                 (expand-marked)))
+           :in-theory (disable . ,fns)
+           :clause-processor (mark-expands-cp clause '(t t ,expand-hints))))))
+
 
 (local
  (progn

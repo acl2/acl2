@@ -98,7 +98,10 @@ more robust (although as they say the taste of the pudding....:->)
                   (true-listp l))))
 
 (in-theory (disable nth update-nth))
-(include-book "arithmetic-2/meta/top" :dir :system)
+
+(local
+ ;; [Jared] changed this to use arithmetic-3 instead of 2
+ (include-book "arithmetic-3/bind-free/top" :dir :system))
 
 ;; Ok so how does it all work? Given an array field we define the
 ;; function copy-from-array as follows. 

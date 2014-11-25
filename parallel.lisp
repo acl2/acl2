@@ -245,25 +245,19 @@
                   "Parallel execution must be enabled before enabling ~
                    waterfall parallelism.  See :DOC set-parallel-execution"))
              (t
-              (pprogn #+(and hons (not acl2-loop-only))
-                      (progn
+              (pprogn
 
 ; One might be tempted to insert (mf-multiprocessing val) here.  However, in
 ; ACL2(hp) -- which is where this code is run -- we really want to keep
 ; multiprocessing on, since one can do mulithreaded computations (e.g., with
 ; pand) even with waterfall-parallelism disabled.
 
-                        (cond ((null val)
-                               (acl2h-init-memoizations))
-                              (t
-                               (acl2h-init-unmemoizations)))
-                        state)
-                      (f-put-global 'waterfall-parallelism val state)
-                      (progn$
-                       #-acl2-loop-only
-                       (funcall ; avoid undefined function warning
-                        'initialize-dmr-interval-used)
-                       (value val)))))
+               (f-put-global 'waterfall-parallelism val state)
+               (progn$
+                #-acl2-loop-only
+                (funcall ; avoid undefined function warning
+                 'initialize-dmr-interval-used)
+                (value val)))))
             #-acl2-par
 
 ; Once upon a time we issued an error here instead of an observation.  In
@@ -381,49 +375,9 @@
   `(with-output
     :off (summary event)
     (make-event
-     (let ((old-val (f-get-global 'waterfall-parallelism state)))
-       (declare (ignorable old-val))
-       (er-let*
-        ((new-val (set-waterfall-parallelism1 ,val)))
-        (cond
-         ((eq new-val :IGNORED)
-          (value '(value-triple :IGNORED)))
-         #+hons
-         ((and (null old-val) (car new-val))
-          (pprogn
-           (observation
-            'set-waterfall-parallelism
-
-; Here and below, we start with a "~%" so that the messages printed when
-; enabling and disabling waterfall parallelism have the same amount of space
-; between the messages and the return value.  This "~%" is paired with the one
-; at the end of the observation in print-set-waterfall-parallelism-notice.
-
-            "~%Unmemoizing built-in function~#0~[ ~x0, which had been~/s ~&0, ~
-             which had been~] memoized by default, as well as all functions ~
-             that had been explicitly memoized.  See :DOC ~
-             unsupported-waterfall-parallelism-features.~%"
-             (strip-cars *thread-unsafe-builtin-memoizations*))
-
-; The functions that are memoized by default as part of hons are
-; memoized/unmemoized inside set-waterfall-parallelism-fn.  We do it there,
-; instead of as part of this macro, because those memoizations only occur in
-; raw Lisp and have nothing to do with table events.  Since this macro is an
-; ACL2-loop macro, it does not have access to acl2h-init-memoizations and
-; acl2h-init-unmemoizations.
-
-           (value '(save-and-clear-memoization-settings))))
-         #+hons
-         ((and old-val (null (car new-val)))
-          (pprogn
-           (observation
-            'set-waterfall-parallelism
-            "~%Rememoizing functions that had been memoized (either by ~
-             default or explicitly) but were later unmemoized when disabling ~
-             waterfall-parallelism.  See :DOC ~
-             unsupported-waterfall-parallelism-features.~%")
-           (value'(restore-memoization-settings))))
-         (t (value '(value-triple nil)))))))))
+     (er-let*
+         ((new-val (set-waterfall-parallelism1 ,val)))
+       (value (list 'value-triple (list 'quote new-val)))))))
 
 (defun set-waterfall-printing-fn (val ctx state)
   (cond ((member-eq val *waterfall-printing-values*)
@@ -848,37 +802,77 @@
 ;                      nil))))))))
 
 #+(or acl2-loop-only (not acl2-par))
-(defmacro spec-mv-let (bindings computation body)
-  (assert$
-   (and (true-listp body)
-        (equal (length body) 4)
-        (or (equal (car body) 'mv-let@par)
-            (equal (car body) 'mv-let)
-            (equal (car body) 'mv?-let)))
-   (let* ((inner-let (car body))
-          (inner-bindings (cadr body))
-          (inner-body (caddr body))
-          (ite (cadddr body)))
-     (assert$ (and (true-listp ite)
-                   (equal (length ite) 4)
-                   (equal (car ite) 'if))
-              (let* ((test (cadr ite))
-                     (true-branch (caddr ite))
-                     (false-branch (cadddr ite)))
-                `(check-vars-not-free
+(defmacro spec-mv-let (&whole spec-mv-let-form outer-vars computation body)
 
-; Keep the check for variable name "the-very-obscure-feature" in sync with the
-; variable name in the raw Lisp version.
+; Warning: Keep this in sync with the raw Lisp #+acl2-par definition of
+; spec-mv-let.
 
-                  (the-very-obscure-future)
-                  (,inner-let
-                   ,inner-bindings
-                   ,inner-body
-                   (if (check-vars-not-free ,bindings ,test)
-                       (mv?-let ,bindings
-                                ,computation
-                                ,true-branch)
-                     (check-vars-not-free ,bindings ,false-branch)))))))))
+; From the documentation, with annotations in brackets [..] showing names used
+; in the code below:
+
+;   (spec-mv-let
+;    (v1 ... vn)  ; bind distinct variables
+;    <spec>       ; evaluate speculatively; return n values
+;    (mv-let      ; [inner-let] or, use mv?-let if k=1 below
+;     (w1 ... wk) ; [inner-vars] bind distinct variables
+;     <eager>     ; [evaluate eagerly
+;     (if <test>  ; [test] use results from <spec> if true
+;         <typical-case> ; [true-branch] may mention v1 ... vn
+;       <abort-case>)))  ; [false-branch] does not mention v1 ... vn
+
+; In the logic, spec-mv-let is just mv?-let where the inner binding is also to
+; be done with mv-let, but capture needs to be avoided in the following sense:
+; no vi may occur in <test> or <abort-case>, because in the raw Lisp version,
+; those values may not be available for those forms.
+
+  (case-match body
+    ((inner-let inner-vars inner-body
+                ('if test true-branch false-branch))
+     (cond
+      ((not (member inner-let '(mv-let mv?-let mv-let@par)
+                    :test 'eq))
+       (er hard! 'spec-mv-let
+           "Illegal form (expected inner let to bind with one of ~v0): ~x1. ~ ~
+            See :doc spec-mv-let."
+           '(mv-let mv?-let mv-let@par)
+           spec-mv-let-form))
+      ((or (not (symbol-listp outer-vars))
+           (not (symbol-listp inner-vars))
+           (intersectp inner-vars outer-vars
+                       :test 'eq))
+       (er hard! 'spec-mv-let
+           "Illegal spec-mv-let form: ~x0.  The two bound variable lists ~
+            must be disjoint true lists of variables, unlike ~x1 and ~x2.  ~
+            See :doc spec-mv-let."
+           spec-mv-let-form
+           inner-vars
+           outer-vars))
+      (t
+       `(check-vars-not-free
+
+; Warning: Keep the check for variable name "the-very-obscure-feature" in sync
+; with the variable name in the raw Lisp version.
+
+         (the-very-obscure-future)
+
+; We lay down code that treats spec-mv-let as mv?-let, augmented by some
+; necessary checks.  The raw Lisp code has a different shape in order to
+; support speculative execution, and possible aborting, of the (speculative)
+; computation.
+
+         (mv?-let
+          ,outer-vars
+          ,computation
+          (,inner-let
+           ,inner-vars
+           ,inner-body
+           (cond ((check-vars-not-free ,outer-vars ,test)
+                  ,true-branch)
+                 (t
+                  (check-vars-not-free ,outer-vars ,false-branch)))))))))
+    (& (er hard! 'spec-mv-let
+           "Illegal form, ~x0.  See :doc spec-mv-let."
+           spec-mv-let-form))))
 
 ; Parallelism wart: when set-verify-guards-eagerness is 0, and there is a guard
 ; violation in subfunctions that are evaluating in the non-main-thread, we get

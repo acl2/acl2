@@ -35,6 +35,11 @@
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
+(local (in-theory (disable (tau-system)
+                           acl2::consp-under-iff-when-true-listp
+                           acl2::consp-when-member-equal-of-atom-listp
+                           double-containment)))
+
 (defxdoc substitution
   :parents (mlib)
   :short "Substitution into Verilog constructs"
@@ -60,13 +65,13 @@ substitution to be more generally useful, and prefer to use fast alists.</p>")
   :keyp-of-nil nil
   :valp-of-nil nil)
 
-(defthm vl-sigma-count-of-cdr-strong
-  (implies (and (vl-sigma-p x)
-                (consp x))
-           (< (vl-sigma-count (cdr x))
-              (vl-sigma-count x)))
-  :rule-classes ((:rewrite) (:linear))
-  :hints(("Goal" :in-theory (enable vl-sigma-count))))
+;; (defthm vl-sigma-count-of-cdr-strong
+;;   (implies (and (vl-sigma-p x)
+;;                 (consp x))
+;;            (< (vl-sigma-count (cdr x))
+;;               (vl-sigma-count x)))
+;;   :rule-classes ((:rewrite) (:linear))
+;;   :hints(("Goal" :in-theory (enable vl-sigma-count))))
 
 (defthm vl-exprlist-p-of-alist-vals-when-vl-sigma-p
   (implies (vl-sigma-p x)
@@ -79,6 +84,11 @@ substitution to be more generally useful, and prefer to use fast alists.</p>")
                 (force (vl-exprlist-p exprs)))
            (vl-sigma-p (pairlis$ strs exprs)))
   :hints(("Goal" :in-theory (enable (:induction pairlis$)))))
+
+(local (defthm vl-expr-fix-nonnil
+         (consp (vl-expr-fix x))
+         :hints(("Goal" :in-theory (enable (tau-system))))
+         :rule-classes :type-prescription))
 
 (defines vl-expr-subst
   :short "Substitute into a @(see vl-expr-p)."
@@ -125,7 +135,12 @@ attributes is left up to the implementation.</p>"
       :nil-preservingp nil))
   ///
   (verify-guards vl-expr-subst)
-  (deffixequiv-mutual vl-expr-subst))
+  (deffixequiv-mutual vl-expr-subst)
+
+  (defthm consp-of-vl-expr-subst
+    (consp (vl-expr-subst x sigma))
+    :hints(("Goal" :in-theory (enable (tau-system))))
+    :rule-classes :type-prescription))
 
 
 ; Now we can extend our notion of expression substitution across an entire
@@ -133,13 +148,14 @@ attributes is left up to the implementation.</p>"
 ; expressions.  But it's painful and long because of the complication of our
 ; parse tree.
 
-(defmacro def-vl-subst (name &key type body verbosep)
+(defmacro def-vl-subst (name &key type body verbosep prepwork)
   `(define ,name
      :short ,(cat "Substitute into a @(see " (symbol-name type) ").")
      ((x     ,type)
       (sigma vl-sigma-p))
      :returns (new-x ,type)
      :verbosep ,verbosep
+     :prepwork ,prepwork
      (declare (ignorable x sigma))
      ,body))
 
@@ -278,10 +294,25 @@ attributes is left up to the implementation.</p>"
             (vl-datatype-subst x sigma)
           nil))
 
+(def-vl-subst vl-interfaceport-subst
+  :type vl-interfaceport-p
+  :body (change-vl-interfaceport x
+                                 :udims (vl-packeddimensionlist-subst
+                                         (vl-interfaceport->udims x) sigma)))
+
+(def-vl-subst vl-regularport-subst
+  :type vl-regularport-p
+  :body (change-vl-regularport x
+                               :expr (b* ((expr (vl-regularport->expr x)))
+                                       (and expr
+                                            (vl-expr-subst expr sigma)))))
+
 (def-vl-subst vl-port-subst
   :type vl-port-p
-  :body (change-vl-port x
-                        :expr (vl-maybe-expr-subst (vl-port->expr x) sigma)))
+  :body (b* ((x (vl-port-fix x)))
+          (case (tag x)
+            (:vl-interfaceport (vl-interfaceport-subst x sigma))
+            (otherwise         (vl-regularport-subst x sigma)))))
 
 (def-vl-subst-list vl-portlist-subst
   :type vl-portlist-p

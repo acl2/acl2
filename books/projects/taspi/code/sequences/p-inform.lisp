@@ -60,16 +60,20 @@
       (number-pis-helper seqs (- curPos 1) curNum missingGapChars))))
                                 
 (defun number-of-p-informative-sites (seqs missingGapChars)
-  ":Doc-Section TASPI
-   Returns the number of sites that are parsimony informative~/
-   ~/
-   Arguments: 
-     (1) seqs - a set of sequences                                 
-     (2) missingGapChars - a list of characters indicating gaps or
-                           missing characters                       
 
-   Details: Checks that sequences are valid before counting number
-            of parsimony informative sites."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the number of sites that are parsimony informative~/
+;  ~/
+;  Arguments: 
+;    (1) seqs - a set of sequences                                 
+;    (2) missingGapChars - a list of characters indicating gaps or
+;                          missing characters                       
+
+;  Details: Checks that sequences are valid before counting number
+;           of parsimony informative sites."
   (declare (xargs :guard t))
   (if (valid-sequences-same-length seqs)
       (if (and (consp seqs)

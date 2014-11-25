@@ -38,18 +38,18 @@
     background-color: white;
 }
 
-body { font-family: "Georgia", "Bookman Old Style", serif; }
+body { font-family: "Noto Serif", serif; }
 
 .basepkg, h1, h2, h3, h4, h5, .sf {
-    font-family: "Geneva", "Verdana", sans-serif;
+    font-family: "Lato", sans-serif;
 }
 
 dt, .hindex, #flat, #still_loading {
-    font-family: "Tahoma", "Geneva", "Verdana", sans-serif;
+    font-family: "Lato", sans-serif;
 }
 
 .code, .srclink, .tt, #letters, .from, .v {
-    font-family: "Consolas", "Bitstream Vera Sans Mono", "DejaVu Sans Mono", "Lucida Console", monospace;
+    font-family: "Source Code Pro", monospace;
 }
 
 

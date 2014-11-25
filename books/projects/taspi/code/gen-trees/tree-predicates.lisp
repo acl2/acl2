@@ -11,32 +11,40 @@
 
 (mutual-recursion
  (defun subtreep (a b)
-   ":Doc-Section TASPI
-    Determines if the first argument is a subtree of the second.~/
-    ~/
-    Arguments:
-       (1) a - a tree
-       (2) b - a tree
 
-   Details: Requires both arguments to be ordered according to the same
-            taxa-list.  Not a traditional form of subtree in that it does
-            not take into account unrootedness. See u-subtreep."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;   Determines if the first argument is a subtree of the second.~/
+;   ~/
+;   Arguments:
+;      (1) a - a tree
+;      (2) b - a tree
+
+;  Details: Requires both arguments to be ordered according to the same
+;           taxa-list.  Not a traditional form of subtree in that it does
+;           not take into account unrootedness. See u-subtreep."
    (declare (xargs :guard t
                    :measure (tree-measure b t)))
    (or (equal a b)
        (proper-subtreep a b)))
 
  (defun proper-subtreep (a b)
-   ":Doc-Section TASPI
-    Determines if the first argument is a proper subtree of the second.~/
-    ~/
-    Arguments:
-       (1) a - a tree
-       (2) b - a tree
 
-   Details: Requires both arguments to be ordered according to the same
-            taxa-list.  Not a traditional form of subtree in that it does
-            not take into account unrootedness. See u-proper-subtreep."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;   Determines if the first argument is a proper subtree of the second.~/
+;   ~/
+;   Arguments:
+;      (1) a - a tree
+;      (2) b - a tree
+
+;  Details: Requires both arguments to be ordered according to the same
+;           taxa-list.  Not a traditional form of subtree in that it does
+;           not take into account unrootedness. See u-proper-subtreep."
    (declare (xargs :guard t
                    :measure (tree-measure b nil)))
    (if (atom b)
@@ -105,13 +113,17 @@
 
 ; Definition.  "tip" means a symbol or integer.
 (defun tip-p (x)
-  ":Doc-Section TASPI
-   Recognizes whether or not input is a valid taxa name.~/
-   ~/
-   Arguments:
-     (1) x - a possible taxa name
 
-   Details: Does not allow branch lengths (see tip-p-brlen)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Recognizes whether or not input is a valid taxa name.~/
+;  ~/
+;  Arguments:
+;    (1) x - a possible taxa name
+
+;  Details: Does not allow branch lengths (see tip-p-brlen)."
   (declare (xargs :guard t))
   (or (and (symbolp x)
            (not (equal x nil)))
@@ -158,14 +170,18 @@
 ;; treep checks that we don't have singleton subtrees unless its a tip
 (mutual-recursion
  (defun treep (x)
-   ":Doc-Section TASPI
-    Recognizes well formed trees with no branch lengths and no singletons.~/
-    ~/
-    Arguments:
-       (1) x - a potential tree
 
-    Details: Well formed tips are defined as in tip-p, branch lengths are not
-             permitted (see treep-brlens)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;   Recognizes well formed trees with no branch lengths and no singletons.~/
+;   ~/
+;   Arguments:
+;      (1) x - a potential tree
+
+;   Details: Well formed tips are defined as in tip-p, branch lengths are not
+;            permitted (see treep-brlens)."
    (declare (xargs :guard t
                    :measure (tree-measure x t)))
    (or (tip-p x)
@@ -174,15 +190,19 @@
             (tree-listp x)))) 
 
  (defun tree-listp (list)
-   ":Doc-Section TASPI
-    Recognizes a list of well formed trees with no branch lengths 
-    and no singletons.~/
-    ~/
-    Arguments:
-       (1) list - a list of potential trees
 
-    Details: Well formed tips are defined as in tip-p, branch lengths are not
-             permitted (see tree-listp-brlens)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;   Recognizes a list of well formed trees with no branch lengths 
+;   and no singletons.~/
+;   ~/
+;   Arguments:
+;      (1) list - a list of potential trees
+
+;   Details: Well formed tips are defined as in tip-p, branch lengths are not
+;            permitted (see tree-listp-brlens)."
    (declare (xargs :guard t
                    :measure (tree-measure list nil)))
    (if (atom list)
@@ -221,17 +241,21 @@
 
 ;; Question: Should we make a mutually recursive version??
 (defun taspip (flg x)
-  ":Doc-Section TASPI
-    Recognizes well formed trees with no branch lengths 
-    while allowing singletons.~/
-    ~/
-    Arguments:
-       (1) flg - nil indicating a set of trees, 
-                 non-nil indicating a single tree
-       (2) x - a potential tree
 
-    Details: Well formed tips are defined as in tip-p, branch lengths are not
-             permitted but singletons are allowed (see taspip-brlens)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;   Recognizes well formed trees with no branch lengths 
+;   while allowing singletons.~/
+;   ~/
+;   Arguments:
+;      (1) flg - nil indicating a set of trees, 
+;                non-nil indicating a single tree
+;      (2) x - a potential tree
+
+;   Details: Well formed tips are defined as in tip-p, branch lengths are not
+;            permitted but singletons are allowed (see taspip-brlens)."
   (declare (xargs :measure (make-ord (1+ (acl2-count x))
                                      1
                                      (if flg 1 0))
@@ -288,13 +312,17 @@
 ;; (to be used to check no proper subtrees property)
 (mutual-recursion
  (defun count-tips (tree)
-   ":Doc-Section TASPI
-    Returns the number of leaves in a tree.~/
-    ~/
-    Arguments:
-       (1) x - a tree
 
-    Details: Does not matter if branch lengths are present or not. "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;   Returns the number of leaves in a tree.~/
+;   ~/
+;   Arguments:
+;      (1) x - a tree
+
+;   Details: Does not matter if branch lengths are present or not. "
    (declare (xargs :guard t
                    :measure (tree-measure tree t)))
    (if (atom tree)
@@ -353,13 +381,17 @@
 (dis+ind trees-with-n-tips)
 
 (defun all-same-num-tips (list)
-  ":Doc-Section TASPI
-    Determines if all of the trees in the input have the same number of leaves.~/
-    ~/
-    Arguments:
-       (1) list - a list of trees
 
-    Details: Does not matter if branch lengths are present or not. "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;   Determines if all of the trees in the input have the same number of leaves.~/
+;   ~/
+;   Arguments:
+;      (1) list - a list of trees
+
+;   Details: Does not matter if branch lengths are present or not. "
   (declare (xargs :guard t))
   (or (atom list)
       (trees-with-n-tips (count-tips (car list)) (cdr list))))
@@ -431,14 +463,18 @@
 ;; Gives the taxa names present in a tree
 ;; assumes?? no nil named subtrees
 (defun mytips (tree)
-  ":Doc-Section TASPI
-    Returns the taxa names from a tree.~/
-    ~/
-    Arguments:
-       (1) tree - a tree
 
-    Details: Assumes branch lengths are not present and that no taxon has been
-             assigned the name *nil*. See mytips-brlens."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;   Returns the taxa names from a tree.~/
+;   ~/
+;   Arguments:
+;      (1) tree - a tree
+
+;   Details: Assumes branch lengths are not present and that no taxon has been
+;            assigned the name *nil*. See mytips-brlens."
   (declare (xargs :guard t))
   (if (consp tree)
       (append (mytips (car tree)) 
@@ -466,13 +502,17 @@
 
 ;;Gives name of taxon first appearing in representation
 (defun first-taxon (term)
-  ":Doc-Section TASPI
-    Returns the taxon name first appearing in the tree representation.~/
-    ~/
-    Arguments:
-       (1) term - a tree
 
-    Details: Does not matter if branch lengths are present or not. "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;   Returns the taxon name first appearing in the tree representation.~/
+;   ~/
+;   Arguments:
+;      (1) term - a tree
+
+;   Details: Does not matter if branch lengths are present or not. "
   (declare (xargs :guard t))
   (if (atom term) 
       term

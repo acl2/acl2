@@ -1176,8 +1176,8 @@
 
 (defmacro hl-flex-acons (elem al &optional shared)
 
-; (hl-flex-acons entry al) assumes that entry is a (key . val) pair, and
-; extends the flex alist al by binding key to entry.
+; (hl-flex-acons elem al) assumes that elem is a (key . val) pair, and extends
+; the flex alist al by binding key to elem.
 ;
 ; WARNING: the caller must be sure to obey the restrictions described in the
 ; Essay on Flex Alists.  These are not enforced but their violation can lead to
@@ -2919,21 +2919,18 @@ To avoid the following break and get only the above warning:~%  ~a~%"
            (type hash-table table))
   (cond
    ((atom alist) ans)
-   (t
-    (let ((key (caar alist)))
-      (cond
-       ((or (atom (car alist))
-            (gethash key table))
-        (hl-fast-alist-clean-aux (cdr alist) ans table honsp hs))
-       (t
-        (let* ((entry (if honsp
-                          (hl-hspace-hons key (cdar alist) hs)
-                        (car alist)))
-               (ans (if honsp
-                        (hl-hspace-hons entry ans hs)
-                      (cons entry ans))))
-          (setf (gethash key table) entry)
-          (hl-fast-alist-clean-aux (cdr alist) ans table honsp hs))))))))
+   ((or (atom (car alist))
+        (gethash (caar alist) table))
+    (hl-fast-alist-clean-aux (cdr alist) ans table honsp hs))
+   (t (let* ((key (caar alist))
+             (entry (if honsp
+                        (hl-hspace-hons key (cdar alist) hs)
+                      (car alist)))
+             (ans (if honsp
+                      (hl-hspace-hons entry ans hs)
+                    (cons entry ans))))
+        (setf (gethash key table) entry)
+        (hl-fast-alist-clean-aux (cdr alist) ans table honsp hs)))))
 
 (defun hl-hspace-fast-alist-clean (alist honsp hs)
   (declare (type hl-hspace hs))
@@ -2951,10 +2948,16 @@ To avoid the following break and get only the above warning:~%  ~a~%"
        (t
         (setf (hl-falslot-key slot) nil) ; invalidate entry for alist
 
-; We replace each value of table with nil, which is useful in
+; We eliminate each value from table, which is useful in
 ; hl-fast-alist-clean-aux for identifying when a pair in alist is shadowed
-; (because its key occurs earlier in alist).
+; (because its key occurs earlier in alist).  In an experiment with the seven
+; supported Lisps, only CLISP reduced the size of the hash-table when using
+; clrhash.  Otherwise, clrhash is preferred, at least in CCL where maphash
+; appears to do some consing while clrhash does not.
 
+        #-clisp
+        (clrhash table)
+        #+clisp
         (maphash (lambda (key val)
                    (declare (ignore val))
                    (setf (gethash key table) nil))

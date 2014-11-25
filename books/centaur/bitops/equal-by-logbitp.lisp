@@ -898,22 +898,38 @@ etc.</p>"
            (eq (car x) 'nfix)
            (eq (cadr x) var))))
 
-(define eqbylbp-solve-for-var ((x pseudo-termp)
-                               (var symbolp)
-                               (target pseudo-termp))
+(encapsulate
+  (((eqbylbp-solve-for-var * * *) => (mv * *)
+    :formals (x var target)
+    :guard (and (pseudo-termp x)
+                (symbolp var)
+                (pseudo-termp target))))
+  (local (defun eqbylbp-solve-for-var (x var target)
+           (declare (ignore var target))
+           (mv t x)))
+  (defthm pseudo-termp-of-eqbbylbp-solve-for-var
+    (implies (and (pseudo-termp x)
+                  (pseudo-termp target))
+             (pseudo-termp (mv-nth 1 (eqbylbp-solve-for-var x var target))))))
+
+(define eqbylbp-solve-for-var-default ((x pseudo-termp)
+                                       (var symbolp)
+                                       (target pseudo-termp))
   :returns (mv ok
                (res pseudo-termp :hyp (and (pseudo-termp x)
                                            (pseudo-termp target))))
   (b* (((when (eqbylbp-is-var x var)) (mv t target))
        ((when (atom x)) (mv nil nil))
        ((when (eq (car x) 'unary--))
-        (eqbylbp-solve-for-var (cadr x) var `(unary-- ,target)))
+        (eqbylbp-solve-for-var-default (cadr x) var `(unary-- ,target)))
        ((unless (eq (car x) 'binary-+)) (mv nil nil))
        ((when (eqbylbp-is-var (cadr x) var))
         (mv t `(binary-+ ,target (unary-- ,(caddr x))))))
-    (eqbylbp-solve-for-var
+    (eqbylbp-solve-for-var-default
      (caddr x) var
      `(binary-+ ,target (unary-- ,(cadr x))))))
+
+(defattach eqbylbp-solve-for-var eqbylbp-solve-for-var-default)
 
 (define eqbylbp-collect-examples-for-target ((avail-logbitp-args pseudo-term-list-listp)
                                              (var symbolp)

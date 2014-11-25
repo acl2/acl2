@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "../../mlib/consteval")
 (include-book "../../mlib/stmt-tools")
+(include-book "../../mlib/blocks")
 (local (include-book "../../util/arithmetic"))
 
 (defxdoc stmtrewrite
@@ -177,7 +178,7 @@ less than the @('unroll-limit').  In particular, we use @(see vl-consteval) to
 try to evaluate the condition.  This lets us handle things like
 @('repeat(width-1) body') after @(see unparameterization) has occurred.</p>"
 
-  (b* (((mv ok count-expr) (vl-consteval condition))
+  (b* (((mv ok count-expr) (vl-consteval condition nil))
        (count (and ok (vl-resolved->val count-expr)))
        ((when (and count (<= count unroll-limit)))
         (mv warnings
@@ -728,26 +729,39 @@ have a whole @('always') or @('initial') block that does nothing more than
             cdr-prime
           (cons car-prime cdr-prime)))))
 
+(def-genblob-transform vl-genblob-stmtrewrite ((unroll-limit natp)
+                                               (warnings vl-warninglist-p))
+  :returns ((warnings vl-warninglist-p))
+  ;; :verify-guards nil
+  (b* (((vl-genblob x) x)
+
+       (unroll-limit (lnfix unroll-limit))
+       (warnings (vl-warninglist-fix warnings))
+       ((mv warnings alwayses)
+        (vl-alwayslist-stmtrewrite x.alwayses unroll-limit warnings))
+       ((mv warnings initials)
+        (vl-initiallist-stmtrewrite x.initials unroll-limit warnings))
+
+       ((mv warnings generates)  (vl-generates-stmtrewrite x.generates unroll-limit warnings)))
+
+    (mv warnings
+        (change-vl-genblob
+         x
+         :alwayses alwayses
+         :initials initials
+         :generates generates)))
+  :apply-to-generates vl-generates-stmtrewrite)
+
 (define vl-module-stmtrewrite ((x            vl-module-p)
                                (unroll-limit natp))
   :returns (new-x vl-module-p :hyp :fguard)
   (b* (((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
-
-       ((unless (or x.alwayses x.initials))
-       ;; Optimization: bail early on modules with no blocks.
-        x)
-
-       (warnings x.warnings)
-       ((mv warnings alwayses)
-        (vl-alwayslist-stmtrewrite x.alwayses unroll-limit warnings))
-       ((mv warnings initials)
-        (vl-initiallist-stmtrewrite x.initials unroll-limit warnings)))
-    (change-vl-module x
-                      :warnings warnings
-                      :alwayses alwayses
-                      :initials initials)))
+       (genblob (vl-module->genblob x))
+       ((mv warnings new-genblob) (vl-genblob-stmtrewrite genblob unroll-limit x.warnings))
+       (x-warn (change-vl-module x :warnings warnings)))
+    (vl-genblob->module new-genblob x-warn)))
 
 (defprojection vl-modulelist-stmtrewrite (x unroll-limit)
   (vl-module-stmtrewrite x unroll-limit)

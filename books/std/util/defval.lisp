@@ -30,7 +30,6 @@
 
 (in-package "STD")
 (include-book "xdoc/top" :dir :system)
-(include-book "std/strings/cat" :dir :system)
 (include-book "support")
 (set-state-ok t)
 (program)
@@ -197,13 +196,14 @@ macros to generate @('defval') forms, you will need to be careful.</p>")
        ;; Undocumented topic.  Hence, we always want to extend long, etc.
 
        (long     (or long ""))
-       (name-str (str::cat (symbol-package-name name) "::" (symbol-name name)))
+       (name-str (concatenate 'string (symbol-package-name name) "::" (symbol-name name)))
        (long     (if showdef
-                     (str::cat long "@(def " name-str ")")
+                     (concatenate 'string long "@(def " name-str ")")
                    long))
        (long     (if showval
-                     (str::cat long "<p><b>Value:</b></p>"
-                               "@(`(:code " name-str ")`)")
+                     (concatenate 'string
+                                  long "<p><b>Value:</b></p>"
+                                  "@(`(:code " name-str ")`)")
                    long)))
 
     `(defsection ,name

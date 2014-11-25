@@ -28,12 +28,6 @@
 
 (in-package "ACL2")
 
-(defmacro defn (f a &rest r)
-  `(defun ,f ,a (declare (xargs :guard t)) ,@r))
-
-(defmacro defnd (f a &rest r)
-  `(defund ,f ,a (declare (xargs :guard t)) ,@r))
-
 #+(or acl2-loop-only (not hons))
 (defn clear-memoize-table (fn)
 
@@ -122,6 +116,7 @@
                      forget
                      memo-table-init-size
                      aokp
+                     stats
                      ideal-okp)
 
 ; Jared Davis suggests that we consider bundling up these 13 parameters, for
@@ -145,6 +140,7 @@
                                   ,(or memo-table-init-size
                                        *mht-default-size*))
                             (cons :aokp ,aokp)
+                            (cons :stats ,stats)
                             (and (not (eq ,ideal-okp :default))
                                  (list (cons :ideal-okp ,ideal-okp)))))
               (value-triple (deref-macro-name
@@ -177,6 +173,7 @@
                (forget ,forget)
                (memo-table-init-size ,memo-table-init-size)
                (aokp ,aokp)
+               (stats ,stats)
                (ideal-okp ,ideal-okp))
           (cond ((not (and
                        (symbolp fn)
@@ -235,6 +232,7 @@
                                         (or ,memo-table-init-size
                                             *mht-default-size*))
                                   (cons :aokp ',aokp)
+                                  (cons :stats ,stats)
                                   (and (not (eq ',ideal-okp :default))
                                        (list (cons :ideal-okp ',ideal-okp)))))
                     (value-triple ',fn)))))))
@@ -248,6 +246,7 @@
                                     (or ,memo-table-init-size
                                         *mht-default-size*))
                               (cons :aokp ',aokp)
+                              (cons :stats ,stats)
                               (and (not (eq ',ideal-okp :default))
                                    (list (cons :ideal-okp ',ideal-okp)))))
                 (value-triple (deref-macro-name
@@ -262,6 +261,7 @@
                       forget
                       memo-table-init-size
                       aokp
+                      (stats ':default)
                       (ideal-okp ':default)
                       (verbose 't))
 
@@ -282,7 +282,7 @@
   (declare (xargs :guard (booleanp recursive))
            (ignorable condition-p condition condition-fn hints otf-flg
                       recursive commutative forget memo-table-init-size
-                      aokp ideal-okp verbose))
+                      aokp stats ideal-okp verbose))
 
   #-acl2-loop-only
   `(progn (when (eql *ld-level* 0)
@@ -327,10 +327,11 @@
                                ',forget
                                ',memo-table-init-size
                                ',aokp
+                               ',stats
                                ',ideal-okp)))))
            (t (memoize-form fn condition condition-p condition-fn
                             hints otf-flg inline commutative forget
-                            memo-table-init-size aokp ideal-okp)))))
+                            memo-table-init-size aokp stats ideal-okp)))))
     (cond (verbose form)
           (t `(with-output
                :off (summary prove event)
@@ -411,11 +412,8 @@
 
 (defconst *thread-unsafe-builtin-memoizations*
 
-; See acl2h-init-memoizations and acl2h-init-unmemoizations.
+; This alist associates built-in raw Lisp functions with corresponding
+; keyword arguments for memoize-fn.  These functions may be unsafe to memoize
+; when using ACL2(hp).
 
-  '((worse-than-builtin :condition ; Sol Swords suggestion
-                        '(and (nvariablep term1)
-                              (not (fquotep term1))
-                              (nvariablep term2)
-                              (not (fquotep term2))))
-    (bad-lisp-objectp :forget t)))
+  '((bad-lisp-objectp :forget t)))

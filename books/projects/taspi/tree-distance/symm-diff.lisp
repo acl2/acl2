@@ -4,19 +4,23 @@
 (include-book "../database/props")
 
 (defun symm-diff (tree1 taxa-list1 rooted1 tree2 taxa-list2 rooted2)
-  ":Doc-Section TASPI
-   Returns the symmetric difference, number of false negatives and number of
-   false positives between the two trees input.~/
-   ~/
-   Arguments:
-     (1) tree1 - a tree
-     (2) taxa-list1 - a list of taxa names
-     (3) rooted1 - a flag indicating rootedness
-     (4) tree2 - a tree
-     (5) taxa-list2 - a list of taxa names
-     (6) rooted2 - a flag indicating rootedness
 
-   Details: Trees input should not have branch lengths (see symm-diff-brlens)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the symmetric difference, number of false negatives and number of
+;  false positives between the two trees input.~/
+;  ~/
+;  Arguments:
+;    (1) tree1 - a tree
+;    (2) taxa-list1 - a list of taxa names
+;    (3) rooted1 - a flag indicating rootedness
+;    (4) tree2 - a tree
+;    (5) taxa-list2 - a list of taxa names
+;    (6) rooted2 - a flag indicating rootedness
+
+;  Details: Trees input should not have branch lengths (see symm-diff-brlens)."
   (declare (xargs :guard (and (good-taxa-list taxa-list1)
                               (good-taxa-list taxa-list2)
                               (good-tree tree1)
@@ -48,19 +52,23 @@
     (mv 'need-same-taxa-list-and-consp-trees 'error 'error)))
 
 (defun symm-diff-brlens (tree1 taxa-list1 rooted1 tree2 taxa-list2 rooted2)
-  ":Doc-Section TASPI
-   Returns the symmetric difference, number of false negatives and number of
-   false positives between the two trees input.~/
-   ~/
-   Arguments:
-     (1) tree1 - a tree
-     (2) taxa-list1 - a list of taxa names
-     (3) rooted1 - a flag indicating rootedness
-     (4) tree2 - a tree
-     (5) taxa-list2 - a list of taxa names
-     (6) rooted2 - a flag indicating rootedness
 
-   Details: Trees input may have branch lengths (see also symm-diff)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the symmetric difference, number of false negatives and number of
+;  false positives between the two trees input.~/
+;  ~/
+;  Arguments:
+;    (1) tree1 - a tree
+;    (2) taxa-list1 - a list of taxa names
+;    (3) rooted1 - a flag indicating rootedness
+;    (4) tree2 - a tree
+;    (5) taxa-list2 - a list of taxa names
+;    (6) rooted2 - a flag indicating rootedness
+
+;  Details: Trees input may have branch lengths (see also symm-diff)."
   (declare (xargs :guard t))
   (let ((tree1-no-brlens (remove-brlens tree1))
         (tree2-no-brlens (remove-brlens tree2)))

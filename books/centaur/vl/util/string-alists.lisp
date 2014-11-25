@@ -161,96 +161,98 @@
              (string-listp (cdr (hons-assoc-equal a x))))))
 
 
+;; Moved to centaur/depgraph/mergesort-alist-values.lisp
 
-(defsection vl-set-values-p
-  :parents (utilities)
-  :short "Recognizer for alists whose every value is an ordered set."
+;; (defsection vl-set-values-p
+;;   :parents (utilities)
+;;   :short "Recognizer for alists whose every value is an ordered set."
 
-;; BOZO eliminate, use defalist?
+;; ;; BOZO eliminate, use defalist?
 
-  (defund vl-set-values-p (x)
-    (declare (xargs :guard (alistp x)))
-    (if (consp x)
-        (and (setp (cdar x))
-             (vl-set-values-p (cdr x)))
-      t))
+;;   (defund vl-set-values-p (x)
+;;     (declare (xargs :guard (alistp x)))
+;;     (if (consp x)
+;;         (and (setp (cdar x))
+;;              (vl-set-values-p (cdr x)))
+;;       t))
 
-  (local (in-theory (enable vl-set-values-p)))
+;;   (local (in-theory (enable vl-set-values-p)))
 
-  (defthm vl-set-values-p-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-set-values-p x)
-                    t)))
+;;   (defthm vl-set-values-p-when-not-consp
+;;     (implies (not (consp x))
+;;              (equal (vl-set-values-p x)
+;;                     t)))
 
-  (defthm vl-set-values-p-of-cons
-    (equal (vl-set-values-p (cons a x))
-           (and (setp (cdr a))
-                (vl-set-values-p x))))
+;;   (defthm vl-set-values-p-of-cons
+;;     (equal (vl-set-values-p (cons a x))
+;;            (and (setp (cdr a))
+;;                 (vl-set-values-p x))))
 
-  (defthm vl-set-values-p-of-hons-shrink-alist
-    (implies (and (vl-set-values-p x)
-                  (vl-set-values-p ans))
-             (vl-set-values-p (hons-shrink-alist x ans)))
-    :hints(("Goal" :in-theory (e/d (hons-shrink-alist)
-                                   ((force))))))
+;;   (defthm vl-set-values-p-of-hons-shrink-alist
+;;     (implies (and (vl-set-values-p x)
+;;                   (vl-set-values-p ans))
+;;              (vl-set-values-p (hons-shrink-alist x ans)))
+;;     :hints(("Goal" :in-theory (e/d (hons-shrink-alist)
+;;                                    ((force))))))
 
-  (defthm setp-of-cdr-of-hons-assoc-equal-when-vl-set-values-p
-    (implies (vl-set-values-p x)
-             (setp (cdr (hons-assoc-equal a x))))
-    :hints(("Goal" :in-theory (disable (force))))))
+;;   (defthm setp-of-cdr-of-hons-assoc-equal-when-vl-set-values-p
+;;     (implies (vl-set-values-p x)
+;;              (setp (cdr (hons-assoc-equal a x))))
+;;     :hints(("Goal" :in-theory (disable (force))))))
 
 
+;; Moved to centaur/depgraph/mergesort-alist-values.lisp
 
-(defsection vl-mergesort-values
-  :parents (utilities)
-  :short "Given an alist, @(call vl-mergesort-values) produces a new, fast
-alist by sorting each value."
+;; (defsection vl-mergesort-values
+;;   :parents (utilities)
+;;   :short "Given an alist, @(call vl-mergesort-values) produces a new, fast
+;; alist by sorting each value."
 
-  :long "<p>Since a fast alist is returned, make sure to free it once you
-are done to avoid memory leaks.</p>"
+;;   :long "<p>Since a fast alist is returned, make sure to free it once you
+;; are done to avoid memory leaks.</p>"
 
-  (defund vl-mergesort-values (x)
-    (declare (xargs :guard (alistp x)))
-    (if (consp x)
-        (hons-acons (caar x)
-                    (mergesort (cdar x))
-                    (vl-mergesort-values (cdr x)))
-      nil))
+;;   (defund vl-mergesort-values (x)
+;;     (declare (xargs :guard (alistp x)))
+;;     (if (consp x)
+;;         (hons-acons (caar x)
+;;                     (mergesort (cdar x))
+;;                     (vl-mergesort-values (cdr x)))
+;;       nil))
 
-  (local (in-theory (enable vl-mergesort-values)))
+;;   (local (in-theory (enable vl-mergesort-values)))
 
-  (defthm vl-mergesort-values-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-mergesort-values x)
-                    nil)))
+;;   (defthm vl-mergesort-values-when-not-consp
+;;     (implies (not (consp x))
+;;              (equal (vl-mergesort-values x)
+;;                     nil)))
 
-  (defthm vl-mergesort-values-of-cons
-    (equal (vl-mergesort-values (cons a x))
-           (cons (cons (car a) (mergesort (cdr a)))
-                 (vl-mergesort-values x))))
+;;   (defthm vl-mergesort-values-of-cons
+;;     (equal (vl-mergesort-values (cons a x))
+;;            (cons (cons (car a) (mergesort (cdr a)))
+;;                  (vl-mergesort-values x))))
 
-  (defthm vl-set-values-p-of-vl-mergesort-values
-    (vl-set-values-p (vl-mergesort-values x)))
+;;   (defthm vl-set-values-p-of-vl-mergesort-values
+;;     (vl-set-values-p (vl-mergesort-values x)))
 
-  (defthm alistp-of-vl-mergesort-values
-    (alistp (vl-mergesort-values x)))
+;;   (defthm alistp-of-vl-mergesort-values
+;;     (alistp (vl-mergesort-values x)))
 
-  (defthm hons-assoc-equal-of-vl-mergesort-values
-    (implies (force (alistp x))
-             (equal (cdr (hons-assoc-equal key (vl-mergesort-values x)))
-                    (mergesort (cdr (hons-assoc-equal key x))))))
+;;   (defthm hons-assoc-equal-of-vl-mergesort-values
+;;     (implies (force (alistp x))
+;;              (equal (cdr (hons-assoc-equal key (vl-mergesort-values x)))
+;;                     (mergesort (cdr (hons-assoc-equal key x))))))
 
-  (defthm vl-string-keys-p-of-vl-mergesort-values
-    (implies (vl-string-keys-p x)
-             (vl-string-keys-p (vl-mergesort-values x))))
+;;   (defthm vl-string-keys-p-of-vl-mergesort-values
+;;     (implies (vl-string-keys-p x)
+;;              (vl-string-keys-p (vl-mergesort-values x))))
 
-  (defthm vl-string-list-values-p-of-vl-mergesort-values
-    (implies (vl-string-list-values-p x)
-             (vl-string-list-values-p (vl-mergesort-values x))))
+;;   (defthm vl-string-list-values-p-of-vl-mergesort-values
+;;     (implies (vl-string-list-values-p x)
+;;              (vl-string-list-values-p (vl-mergesort-values x))))
 
-  (defthm in-of-hons-assoc-equal-of-vl-mergesort-values
-    (implies (force (alistp x))
-             (equal (in a (cdr (hons-assoc-equal b (vl-mergesort-values x))))
-                    (if (member-equal a (cdr (hons-assoc-equal b x)))
-                        t
-                      nil)))))
+;;   (defthm in-of-hons-assoc-equal-of-vl-mergesort-values
+;;     (implies (force (alistp x))
+;;              (equal (in a (cdr (hons-assoc-equal b (vl-mergesort-values x))))
+;;                     (if (member-equal a (cdr (hons-assoc-equal b x)))
+;;                         t
+;;                       nil)))))

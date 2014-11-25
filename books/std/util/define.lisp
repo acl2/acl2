@@ -224,11 +224,14 @@ to this @('define') only and not to any @('other-events').</dd>
 
 <dt>@(':inline val')</dt>
 
-<dd>By default the function will not be inlined.  But if @(':inline t') is
-provided, we will create an inline function as in @(see defun-inline).  (The
-function will have an ugly name like @('foo$inline'), so we'll also set up a
-@('foo') macro and appropriate macro aliases.  See @(see defun-inline) for
-details.</dd>
+<dd>By default @('val') is @(':default') and we produce an ordinary function
+that is neither inline or notinline.  When @(':inline t') is provided, we
+create an <i>inline</i> function as in @(see defun-inline); the function will
+have an ugly name like @('foo$inline'), so we'll also set up a @('foo') macro
+and appropriate macro aliases.  When @(':inline nil') is provided, we create a
+<i>notinline</i> function as in @(see defun-notinline); the function will have
+an ugly name like @('foo$notinline'), so we will again set up a macro and
+appropriate macro aliases.</dd>
 
 <dt>@(':parents'), @(':short'), @(':long')</dt>
 
@@ -247,6 +250,16 @@ needed for termination.</dd>
 But if @(':t-proof t') is provided, we will create a theorem without
 any rule-classes that holds the proof of termination for this function and
 measure.</dd>
+
+<dt>@(':no-function bool')</dt>
+
+<dd>(Advanced/obscure) By default, @('define') will automatically bind
+@('__function__') to the name of your function.  This binding can change how
+ACL2 classifies @(':definition') rules by promoting @(':definition') into
+@(':abbreviation') rules.  When porting legacy libraries to @('define'), this
+difference can sometimes cause problems in later theorems.  Setting
+@(':no-function t') will avoid binding @('__function__') for better backwards
+compatibility.</dd>
 
 </dl>
 
@@ -331,7 +344,8 @@ some kind of separator!</p>
             :verbosep
             :progn
             :hooks
-            :t-proof)
+            :t-proof
+            :no-function)
           acl2::*xargs-keywords*))
 
 
@@ -629,7 +643,7 @@ some kind of separator!</p>
 
 (def-primitive-aggregate defguts
   (name        ;; user-level name (could be the function, or its wrapper macro)
-   name-fn     ;; name of the actual function (might be fn, or fn$inline, or fn-fn)
+   name-fn     ;; name of the actual function (might be fn, or fn$inline, fn$notinline, or fn-fn)
    kwd-alist   ;; keyword options passed to define
    returnspecs ;; returns specifiers, already parsed
 
@@ -663,7 +677,7 @@ some kind of separator!</p>
 
 ; -------- Proving termination of some function definition separately -------
 (defun make-termination-proof (thmName thmHints defun)
-  `((make-event 
+  `((make-event
         (let* ((state (f-put-global 'last-clause '(t) state))
                (oldHint (override-hints (w state))))
           (er-progn
@@ -675,7 +689,7 @@ some kind of separator!</p>
                    (value `(progn (set-override-hints ,oldHint)
                                   (defthm ,',thmName ,(cons 'or (@ last-clause))
                                     :hints ,',thmHints :rule-classes nil)))))))))
-                                    
+
 ; ----------------- Hooks -----------------------------------------------------
 
 ; WARNING: Undocumented, experimental feature; all details may change.
@@ -802,16 +816,16 @@ some kind of separator!</p>
        (traditional-decls/docs (butlast (cdr normal-defun-stuff) 1))
        (body                   (car (last normal-defun-stuff)))
 
-       (non-exec   (getarg :non-executable nil kwd-alist))
-       (returns    (getarg :returns        nil kwd-alist))
-       (enabled-p  (getarg :enabled        nil kwd-alist))
-       (inline-p   (getarg :inline         nil kwd-alist))
-       (prepwork   (getarg :prepwork       nil kwd-alist))
+       (non-exec   (getarg :non-executable nil      kwd-alist))
+       (returns    (getarg :returns        nil      kwd-alist))
+       (enabled-p  (getarg :enabled        nil      kwd-alist))
+       (inline     (getarg :inline         :default kwd-alist))
+       (prepwork   (getarg :prepwork       nil      kwd-alist))
 
        ((unless (true-listp prepwork))
         (raise "Error in ~x0: expected :prepwork to be a true-listp, but found ~x1."
                name prepwork))
-               
+
        (t-proof    (getarg :t-proof        nil kwd-alist))
        ; If you can think of a good extension for t-proof, you may relax the
        ; requirement of booleanp while preserving the old behavior for t and
@@ -820,11 +834,19 @@ some kind of separator!</p>
        ((unless (booleanp t-proof))
         (raise "Error in ~x0: expected :t-proof to be a booleanp, but found ~x1."
                name prepwork))
+       ((unless (member inline '(:default t nil)))
+        (raise "Error in ~x0: expected :inline to be T, NIL, or :DEFAULT, but found ~x1."
+               name inline))
 
-       (need-macrop (or inline-p (has-macro-args raw-formals)))
-       (name-fn     (cond (inline-p
+       (need-macrop (or (not (eq inline :default))
+                        (has-macro-args raw-formals)))
+       (name-fn     (cond ((eq inline t)
                            (intern-in-package-of-symbol
                             (concatenate 'string (symbol-name name) "$INLINE")
+                            name))
+                          ((eq inline nil)
+                           (intern-in-package-of-symbol
+                            (concatenate 'string (symbol-name name) "$NOTINLINE")
                             name))
                           (need-macrop
                            (intern-in-package-of-symbol
@@ -843,12 +865,15 @@ some kind of separator!</p>
        (formal-types  (formallist->types formals))
        (stobj-names   (formallist->names (formallist-collect-stobjs formals world)))
 
-       (extended-body `(let ((__function__ ',name))
-                         ;; CCL's compiler seems to be smart enough to not
-                         ;; generate code for this binding when it's not
-                         ;; needed.
-                         (declare (ignorable __function__))
-                         ,body))
+       (no-function   (getarg :no-function nil kwd-alist))
+       (extended-body (if no-function
+                          body
+                        `(let ((__function__ ',name))
+                           ;; CCL's compiler seems to be smart enough to not
+                           ;; generate code for this binding when it's not
+                           ;; needed.
+                           (declare (ignorable __function__))
+                           ,body)))
        (final-body    (if non-exec
                           ;; support the :non-executable xarg by wrapping the
                           ;; body in the required throw form
@@ -930,7 +955,7 @@ some kind of separator!</p>
                   :macro       macro
                   :raw-formals raw-formals
                   :formals     formals
-                  :rest-events rest-events
+                  :rest-events (xdoc::make-xdoc-fragments rest-events)
                   :t-proof     (if t-proof (cons t-proof-name t-hints) nil)
                   )))
 
@@ -977,6 +1002,8 @@ some kind of separator!</p>
 
        (set-ignores (get-set-ignores-from-kwd-alist guts.kwd-alist))
        (prognp      (getarg :progn         nil guts.kwd-alist))
+       (start-max-absolute-event-number
+        (acl2::max-absolute-event-number world))
        )
 
     `(progn
@@ -1013,7 +1040,7 @@ some kind of separator!</p>
            (if (logic-mode-p ',guts.name-fn (w state))
                '(in-theory (enable ,guts.name))
              '(value-triple :invisible))))
-         
+
          (make-event
           (let* ((world (w state))
                  (events (returnspec-thms ',guts.name ',guts.name-fn ',guts.returnspecs world)))
@@ -1038,6 +1065,13 @@ some kind of separator!</p>
        ,@(if prognp
              `((set-define-current-function nil))
            nil)
+
+       (make-event (list 'value-triple
+                         (if (eql ,start-max-absolute-event-number
+                                  (acl2::max-absolute-event-number
+                                   (acl2::w acl2::state)))
+                             :redundant
+                           (quote ',guts.name))))
        )))
 
 (defun define-fn (name args world)

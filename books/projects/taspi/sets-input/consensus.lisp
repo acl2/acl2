@@ -60,17 +60,21 @@
 
 
 (defun compute-consensus (list-of-trees taxa-list percentage)
-  ":Doc-Section TASPI
-   Computes the majority consensus of a set of trees~/
-   ~/
-   Arguments:
-     (1) list-of-trees - a list of trees
-     (2) taxa-list - a list of taxa names
-     (3) percentage - an integer between 0 and 100
 
-   Details: Trees given must match taxa list given and all have the same
-            number of leaves.  Does not handle branch lengths (see 
-            compute-consensus-brlens). NOTE: Guards not yet verified."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Computes the majority consensus of a set of trees~/
+;  ~/
+;  Arguments:
+;    (1) list-of-trees - a list of trees
+;    (2) taxa-list - a list of taxa names
+;    (3) percentage - an integer between 0 and 100
+
+;  Details: Trees given must match taxa list given and all have the same
+;           number of leaves.  Does not handle branch lengths (see 
+;           compute-consensus-brlens). NOTE: Guards not yet verified."
   (declare (xargs :guard (and (non-tip-tree-listp list-of-trees)
                               (int-symlist taxa-list)
                               (<= 2 (len taxa-list))
@@ -85,17 +89,21 @@
                               num-trees percentage)))
 
 (defun compute-consensus-brlens (list-of-trees taxa-list percentage)
-  ":Doc-Section TASPI
-   Computes the majority consensus of a set of trees with branch lengths~/
-   ~/
-   Arguments:
-     (1) list-of-trees - a list of trees
-     (2) taxa-list - a list of taxa names
-     (3) percentage - an integer between 0 and 100
 
-   Details: Trees given must match taxa list given and all have the same
-            number of leaves.  Allows branch lengths (see also 
-            compute-consensus). Guards are not yet verified."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Computes the majority consensus of a set of trees with branch lengths~/
+;  ~/
+;  Arguments:
+;    (1) list-of-trees - a list of trees
+;    (2) taxa-list - a list of taxa names
+;    (3) percentage - an integer between 0 and 100
+
+;  Details: Trees given must match taxa list given and all have the same
+;           number of leaves.  Allows branch lengths (see also 
+;           compute-consensus). Guards are not yet verified."
   (declare (xargs :guard t
 		  :verify-guards nil))
   (let ((trees-no-brlens (remove-brlens-list list-of-trees)))
@@ -109,16 +117,20 @@
       'bad-input-trees-to-consensus)))
 
 (defun compute-frequencies (list-of-trees taxa-list)
-  ":Doc-Section TASPI
-   Returns a mapping of bdd based bipartitions to their frequencies in 
-   list-of-trees.~/
-   ~/
-   Arguments:
-     (1) list-of-trees - a list of trees
-     (2) taxa-list - a list of taxa names
 
-   Details: Does not allow branch lengths on input trees.
-            Manages memory more explicitly than bfringe-frequencies."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns a mapping of bdd based bipartitions to their frequencies in 
+;  list-of-trees.~/
+;  ~/
+;  Arguments:
+;    (1) list-of-trees - a list of trees
+;    (2) taxa-list - a list of taxa names
+
+;  Details: Does not allow branch lengths on input trees.
+;           Manages memory more explicitly than bfringe-frequencies."
   (declare (xargs :guard (and (non-tip-tree-listp list-of-trees) 
                               (int-symlist taxa-list)
                               (<= 2 (len taxa-list))
@@ -140,16 +152,20 @@
     bio-ans))
 
 (defun compute-frequencies-brlens (list-of-trees taxa-list)
-  ":Doc-Section TASPI
-   Returns a mapping of bdd based bipartitions to their frequencies in 
-   list-of-trees.~/
-   ~/
-   Arguments:
-     (1) list-of-trees - a list of trees
-     (2) taxa-list - a list of taxa names
 
-   Details: Allows branch lengths. 
-            Manages memory more explicitly than bfringe-frequencies-brlens."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns a mapping of bdd based bipartitions to their frequencies in 
+;  list-of-trees.~/
+;  ~/
+;  Arguments:
+;    (1) list-of-trees - a list of trees
+;    (2) taxa-list - a list of taxa names
+
+;  Details: Allows branch lengths. 
+;           Manages memory more explicitly than bfringe-frequencies-brlens."
   (declare (xargs :guard t))
   (let ((trees-no-brlens (remove-brlens-list list-of-trees)))
     (if (and (non-tip-tree-listp trees-no-brlens)

@@ -31,9 +31,7 @@
 (in-package "VL")
 (include-book "ports")      ;; vl-portdecllist-p, vl-portlist-p
 (include-book "elements")
-(include-book "../make-implicit-wires")
-(include-book "../portdecl-sign")
-(include-book "../../mlib/port-tools")  ;; vl-ports-from-portdecls
+(include-book "../../mlib/blocks")
 (local (include-book "../../util/arithmetic"))
 
 (define vl-make-module-by-items
@@ -52,38 +50,61 @@
    (maxloc   vl-location-p)
    (warnings vl-warninglist-p))
   :returns (mod vl-module-p)
-  (b* (((mv items warnings) (vl-make-implicit-wires
-                             (append-without-guard (vl-modelementlist->genelements params)
-                                                   items)
-                             warnings))
-       ((vl-genelement-collection c) (vl-sort-genelements items))
-       ((mv warnings c.portdecls c.vardecls)
-        (vl-portdecl-sign c.portdecls c.vardecls warnings)))
-    (or (not c.ports)
-        (raise "There shouldn't be any ports in the items."))
-    ;; BOZO: Warn about other bad elements in c?
+  (b* ((items (append-without-guard (vl-modelementlist->genelements params) items))
+       (bad-item (vl-genelementlist-findbad items
+                                            '(:vl-generate
+                                              ;; :vl-port    -- not allowed, they were parsed separately
+                                              :vl-portdecl
+                                              :vl-assign
+                                              ;; :vl-alias   -- bozo, let's not permit these yet
+                                              :vl-vardecl
+                                              :vl-paramdecl
+                                              :vl-fundecl
+                                              :vl-taskdecl
+                                              :vl-modinst
+                                              :vl-gateinst
+                                              :vl-always
+                                              :vl-initial
+                                              ;; :vl-typedef    -- let's not permit these yet
+                                              :vl-import
+                                              ;; :vl-fwdtypedef -- doesn't seem like these should be ok
+                                              ;; :vl-modport    -- definitely not ok
+                                              )))
+       (warnings
+        (if (not bad-item)
+            warnings
+          (fatal :type :vl-bad-module-item
+                 :msg "~a0: a module may not contain ~x1s."
+                 :args (list bad-item (tag bad-item)))))
+
+       ((vl-genblob c) (vl-sort-genelements items))
+       ;; ((mv warnings c.portdecls c.vardecls)
+       ;;  (vl-portdecl-sign c.portdecls c.vardecls warnings))
+       )
     (make-vl-module :name       name
                     :params     params
                     :ports      ports
                     :portdecls  c.portdecls
                     :assigns    c.assigns
+                    :aliases    c.aliases
                     :vardecls   c.vardecls
                     :paramdecls c.paramdecls
                     :fundecls   c.fundecls
                     :taskdecls  c.taskdecls
                     :modinsts   c.modinsts
                     :gateinsts  c.gateinsts
-                    :alwayses   c.alwayss
+                    :alwayses   c.alwayses
                     :initials   c.initials
                     :generates  c.generates
+                    :imports    c.imports
                     :atts       atts
                     :minloc     minloc
                     :maxloc     maxloc
                     :warnings   warnings
                     :origname   name
                     :comments   nil
+                    :loaditems  items
                     )))
-
 
 
 ;                                    MODULES
@@ -91,25 +112,16 @@
 ; Grammar rules from Verilog-2005:
 ;
 ; module_declaration ::=
-;
-;   // I call this the "Non-ANSI" variant
-;
 ;    {attribute_instance} module_keyword identifier [module_parameter_port_list]
 ;        list_of_ports ';' {module_item}
 ;        'endmodule'
-;
-;
-;   // I call this the "ANSI" variant
-;
 ;  | {attribute_instance} module_keyword identifier [module_parameter_port_list]
 ;        [list_of_port_declarations] ';' {non_port_module_item}
 ;        'endmodule'
 ;
 ; module_keyword ::= 'module' | 'macromodule'
 
-
-
-(defparser vl-parse-module-declaration-nonansi (atts module_keyword id)
+(defparser vl-parse-module-declaration-core (atts module_keyword id)
   :guard (and (vl-atts-p atts)
               (vl-token-p module_keyword)
               (vl-idtoken-p id))
@@ -118,13 +130,8 @@
   :fails gracefully
   :count strong
 
-; We try to match Nonansi:
-;
-;    {attribute_instance} module_keyword identifier [module_parameter_port_list]
-;        list_of_ports ';' {module_item}
-;        'endmodule'
-;
-; But we assume that
+; We handle modules of either ANSI or NON-ANSI variants.
+; But we assume that:
 ;
 ;   (1) the attributes, "module" or "macromodule", and the name of this module
 ;       have already been read, and
@@ -133,62 +140,30 @@
 ;       with until the end of the module 'belong' to this module.
 
   (seq tokstream
-       (params := (vl-maybe-parse-parameter-port-list))
-       (ports := (vl-maybe-parse-list-of-ports))
+       (params   := (vl-maybe-parse-parameter-port-list))
+       (portinfo := (vl-parse-module-port-list-top))
        (:= (vl-match-token :vl-semi))
-       (items := (vl-parse-0+-genelements))
+       (items := (vl-parse-genelements-until :vl-kwd-endmodule))
        (endkwd := (vl-match-token :vl-kwd-endmodule))
-
        (:= (vl-parse-endblock-name (vl-idtoken->name id) "module/endmodule"))
-
-       (return (vl-make-module-by-items (vl-idtoken->name id)
-                                        params ports items atts
-                                        (vl-token->loc module_keyword)
-                                        (vl-token->loc endkwd)
-                                        (vl-parsestate->warnings (vl-tokstream->pstate))))))
-
-
-
-(defparser vl-parse-module-declaration-ansi (atts module_keyword id)
-  :guard (and (vl-atts-p atts)
-              (vl-token-p module_keyword)
-              (vl-idtoken-p id))
-  :result (vl-module-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-
-; This is for the ANSI Variant:
-;
-;  | {attribute_instance} module_keyword identifier [module_parameter_port_list]
-;        [list_of_port_declarations] ';' {non_port_module_item}
-;        'endmodule'
-
-  (seq tokstream
-       (params := (vl-maybe-parse-parameter-port-list))
-       ((portdecls . netdecls) := (vl-maybe-parse-list-of-port-declarations))
-       (:= (vl-match-token :vl-semi))
-       (items := (vl-parse-0+-genelements))
-       (endkwd := (vl-match-token :vl-kwd-endmodule))
-
-       (:= (vl-parse-endblock-name (vl-idtoken->name id) "module/endmodule"))
-
        (return-raw
-        (b* ((item-portdecls (vl-genelementlist->portdecls items))
-             ((when item-portdecls)
-              (vl-parse-error "ANSI module contained internal portdecls"))
-             (module (vl-make-module-by-items (vl-idtoken->name id)
-                                              params
-                                              (vl-ports-from-portdecls portdecls)
-                                              (append (vl-modelementlist->genelements netdecls)
-                                                      (vl-modelementlist->genelements portdecls)
-                                                      items)
-                                              atts
-                                              (vl-token->loc module_keyword)
-                                              (vl-token->loc endkwd)
-                                              (vl-parsestate->warnings (vl-tokstream->pstate)))))
+        (b* (((vl-parsed-ports portinfo))
+             (name   (vl-idtoken->name id))
+             (minloc (vl-token->loc module_keyword))
+             (maxloc (vl-token->loc endkwd))
+             (warnings (vl-parsestate->warnings (vl-tokstream->pstate)))
+             ((when (and portinfo.ansi-p (vl-genelementlist->portdecls items))) ;; User's fault
+              (vl-parse-error "ANSI module cannot have internal port declarations."))
+             ((when (and (not portinfo.ansi-p)
+                         (or portinfo.portdecls portinfo.vardecls)))
+              (vl-parse-error "Non-ANSI module ports are somehow causing declarations?
+                               Programming error."))
+             (items (append (vl-modelementlist->genelements portinfo.portdecls)
+                            (vl-modelementlist->genelements portinfo.vardecls)
+                            items))
+             (module (vl-make-module-by-items name params portinfo.ports items
+                                              atts minloc maxloc warnings)))
           (mv nil module tokstream)))))
-
 
 (defparser vl-parse-module-main (atts module_keyword id)
   :guard (and (vl-atts-p atts)
@@ -198,87 +173,29 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  ;; Main function to try to parse a module either way.
+  ;; Main function to try to parse the guts of a module.  A weird twist is that
+  ;; we want to associate all warnings encountered during the parsing of a
+  ;; module with that module as it is created, and NOT return them in the
+  ;; global list of warnings.  Because of this, we use a fresh warnings
+  ;; accumulator here.
   (b* ((orig-warnings (vl-parsestate->warnings (vl-tokstream->pstate)))
-       (tokstream (vl-tokstream-update-pstate
-                   (change-vl-parsestate (vl-tokstream->pstate) :warnings nil)))
-       (backup (vl-tokstream-save))
+       (tokstream     (vl-tokstream-update-pstate
+                       (change-vl-parsestate (vl-tokstream->pstate) :warnings nil)))
        ((mv err1 mod tokstream)
-        ;; A weird twist is that we want to associate all warnings encountered
-        ;; during the parsing of a module with that module as it is created,
-        ;; and NOT return them in the global list of warnings.  Because of
-        ;; this, we use a fresh warnings accumulator here.
-        (vl-parse-module-declaration-nonansi atts module_keyword id))
-       ((unless err1)
-        ;; Successfully parsed the module using the nonansi variant.  Return
-        ;; the result.
-        ;; Any warnings get associated with the module, so now throw out
-        ;; any warnings that are returned.
-        (b* ((tokstream (vl-tokstream-update-pstate
-                         (change-vl-parsestate
-                          (vl-tokstream->pstate) :warnings orig-warnings))))
-          (mv err1 mod tokstream)))
-       (v1-tokens (vl-tokstream->tokens))
-
-       (tokstream (vl-tokstream-restore backup))
-       ((mv err2 mod tokstream)
-        ;; Similar handling for warnings
-        (vl-parse-module-declaration-ansi atts module_keyword id))
-       ((unless err2)
-        ;; Successfully parsed using ansi variant.  Similar deal.
-        (b* ((tokstream (vl-tokstream-update-pstate
-                         (change-vl-parsestate
-                          (vl-tokstream->pstate) :warnings orig-warnings))))
-          (mv err2 mod tokstream)))
-
-       ;; If we get this far, we saw "module foo" but were not able to parse
-       ;; the rest of this module definiton using either variant.  We need to
-       ;; report a parse error.  But which error do we report?  We have two
-       ;; errors, one from our nonansi attempt to parse the module, and one
-       ;; from our ansi attempt.
-       ;;
-       ;; Well, originally I thought I'd just report both errors, but that was
-       ;; a really bad idea.  Why?  Well, imagine a mostly-well-formed module
-       ;; that happens to have a parse error far down within it.  Instead of
-       ;; getting told, "hey, I was expecting a semicolon after "assign foo =
-       ;; bar", the user gets TWO parse errors, one of which properly says
-       ;; this, but the other of which says that there's a parse error very
-       ;; closely after the module keyword.  (The wrong variant tends to fail
-       ;; very quickly because we either hit a list_of_port_declarations or a
-       ;; list_of_ports, at which point we get a failure.)  This parse error is
-       ;; really hard to understand, because where it occurs the module looks
-       ;; perfectly well-formed (under the other variant).
-       ;;
-       ;; So, as a gross but workable sort of hack, my new approach is simply:
-       ;; whichever variant "got farther" was probably the variant that we
-       ;; wanted to follow, so we'll just report its parse-error.  Maybe some
-       ;; day we'll rework the module parser so that it doesn't use
-       ;; backtracking so aggressively.
-       (v2-tokens (vl-tokstream->tokens))
-       (tokstream (vl-tokstream-restore backup))
+        (vl-parse-module-declaration-core atts module_keyword id))
        (tokstream (vl-tokstream-update-pstate
-                   (change-vl-parsestate
-                    (vl-tokstream->pstate) :warnings orig-warnings)))
-
-       ((when (<= (len v1-tokens) (len v2-tokens)))
-        ;; nonansi variant got farther (or as far), so use it.
-        (mv err1 nil tokstream)))
-
-    ;; ansi variant got farther
-    (mv err2 nil tokstream)))
-
+                   (change-vl-parsestate (vl-tokstream->pstate) :warnings orig-warnings))))
+    (mv err1 mod tokstream)))
 
 (defparser vl-skip-through-endmodule ()
+  ;; This is a special function which is used to provide more fault-tolerance
+  ;; in module parsing.  Historically, we just advanced the token stream until
+  ;; :vl-kwd-endmodule was encountered.  For SystemVerilog, we also capture the
+  ;; "endmodule : foo" part and return a proper vl-endinfo-p.
   :result (vl-endinfo-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-
-; This is a special function which is used to provide more fault-tolerance in
-; module parsing.  Historically, we just advanced the token stream until
-; :vl-kwd-endmodule was encountered.  For SystemVerilog, we also capture the
-; "endmodule : foo" part and return a proper vl-endinfo-p.
-
   (seq tokstream
         (unless (vl-is-token? :vl-kwd-endmodule)
           (:s= (vl-match-any))
@@ -294,7 +211,6 @@
         (id := (vl-match-token :vl-idtoken))
         (return (make-vl-endinfo :name (vl-idtoken->name id)
                                  :loc (vl-token->loc id)))))
-
 
 (define vl-make-module-with-parse-error ((name   stringp)
                                          (minloc vl-location-p)
@@ -321,7 +237,6 @@
                     :minloc minloc
                     :maxloc maxloc
                     :warnings (list err warn2))))
-
 
 (defparser vl-parse-module-declaration (atts)
   :guard (vl-atts-p atts)

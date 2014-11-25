@@ -1,4 +1,0 @@
-model-defs.lisp
-model-eq.lisp
-bvecp.lisp
-model.lisp

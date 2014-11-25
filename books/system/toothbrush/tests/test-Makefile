@@ -1,0 +1,127 @@
+# Copyright (C) 2014, ForrestHunt, Inc.
+# Written by Matt Kaufmann, November, 2014
+# License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
+# Example:
+# make ACL2=/Users/kaufmann/acl2/acl2/saved_acl2h
+
+# Required files:
+
+# - input.lsp
+#   ACL2 forms to evaluate before calling make-toothbrush
+
+# - tb-test.lsp
+#   Test to run after loading the generated toothbrush file
+
+# - Makefile
+#   This Makefile
+
+# The other files needed are those referenced in input.lsp and
+# (perhaps) tb-test.lsp.
+
+ifneq ($(ACL2), $(notdir $(ACL2)))
+ACL2_DIR := $(dir $(ACL2))
+ACL2_SYSTEM_BOOKS ?= $(ACL2_DIR)books
+else
+ifneq ($(ACL2_SYSTEM_BOOKS), )
+ACL2_DIR := $(dir $(ACL2_SYSTEM_BOOKS)/../)
+endif
+endif
+
+# The following variables are user-modifiable.
+# TB_FNS must be a non-empty list of top-level function symbols.  This
+# variable is user-editable.
+TB_FNS ?= top
+# The input file for make-toothbrush is $(TB_INPUT).lsp.
+TB_INPUT ?= input
+# The generated toothbrush file is $(TB_OUTPUT).lsp.
+TB_OUTPUT ?= output
+# The file to load after loading the toothbrush file.  A successful
+# test is one for which loading of the toothbrush file and this file
+# into Lisp causes "SUCCESS" to be printed to standard output.
+TB_TEST ?= tb-test.lsp
+# The Lisp we will use (see main toothbrush Makefile for comments):
+TB_LISP ?= ccl
+
+.PHONY: tb_top
+tb_top: success.txt
+
+# Note that ACL2_SYSTEM_BOOKS is what defines BOOKS_CERT.
+ifneq ($(ACL2_SYSTEM_BOOKS),)
+include $(ACL2_SYSTEM_BOOKS)/Makefile-generic
+-include Makefile-deps
+endif
+
+ifneq ($(TEST_DIR),)
+TEST_DIR_STRING := $(TEST_DIR): 
+endif
+
+# If ACL2 is defined, then ACL2_SYSTEM_BOOKS will also be defined
+# (above).  But we check both, just to be safe.
+.PHONY: acl2_check
+acl2_check:
+	@if [ "$(ACL2)" = "" ] ; then \
+	echo "ERROR: Environment (or make) variable ACL2 must be";\
+	echo "       defined.  It needs to be set to a file whose";\
+	echo "       directory contains relevant ACL2 source files.";\
+	exit 1 ;\
+	fi
+	@if [ "$(ACL2_SYSTEM_BOOKS)" = "" ] ; then \
+	echo "ERROR: Environment (or make) variable ACL2_SYSTEM_BOOKS must be";\
+	echo "       defined.  It needs to be set to a file whose";\
+	echo "       directory contains relevant ACL2 source files.";\
+	exit 1 ;\
+	fi
+
+.PHONY: generate
+generate: acl2_check $(BOOKS_CERT)
+	@echo "$(TEST_DIR_STRING)Starting generate step (see generate.out)..."
+	@rm -f workxxx.$@
+	@echo '(ld "$(TB_INPUT).lsp")' > workxxx.$@
+	@echo '(include-book "../../make-toothbrush")' >> workxxx.$@
+	@echo '(value :q)' >> workxxx.$@
+	@echo '(load "../../defined-syms.lsp")' >> workxxx.$@
+	@echo '(lp)' >> workxxx.$@
+	@echo '(make-toothbrush "$(TB_OUTPUT).lsp" $(TB_FNS))' >> workxxx.$@
+	@echo '(quit)' >> workxxx.$@
+	@($(ACL2) < workxxx.$@ 2>&1) > generate.out
+	@if [ "`fgrep 'Unimplemented command type' generate.out`" != "" ] ; then\
+	  echo "ERROR: Unimplemented command type (see generate.out)." ;\
+	  exit 1 ;\
+	  fi
+	@echo "$(TEST_DIR_STRING)Completed generate step."
+
+.PHONY: compile
+compile: generate $(BOOKS_CERT)
+	@echo "$(TEST_DIR_STRING)Starting compile step (see compile.out)..."
+	@rm -f workxxx.$@
+	@echo '(defparameter *acl2-dir* "$(ACL2_DIR)")' > workxxx.$@
+	@echo '(load "../../load-toothbrush.lsp")' >> workxxx.$@
+	@echo '(acl2::with-suppression (load "$(TB_OUTPUT).lsp"))' >> workxxx.$@
+	@echo '(compile-file "$(TB_OUTPUT).lsp")' >> workxxx.$@
+	@echo '(acl2::exit-lisp)' >> workxxx.$@
+	@($(TB_LISP) < workxxx.$@ 2>&1) > compile.out
+	@echo "$(TEST_DIR_STRING)Completed compile step."
+
+success.txt: tb-test.lsp input.lsp $(BOOKS_CERT)
+	@$(MAKE) compile
+	@echo "$(TEST_DIR_STRING)Starting final step (see $@.out)..."
+	@rm -f workxxx.$@
+	@echo '(defparameter *acl2-dir* "$(ACL2_DIR)")' > workxxx.$@
+	@echo '(load "../../load-toothbrush.lsp")' >> workxxx.$@
+	@echo '(acl2::with-suppression (load "$(TB_OUTPUT)"))' >> workxxx.$@
+	@echo '(load "$(TB_TEST)")' >> workxxx.$@
+	@echo '(acl2::exit-lisp)' >> workxxx.$@
+	@($(TB_LISP) < workxxx.$@ 2>&1) > $@.out
+	@if [ "`fgrep SUCCESS $@.out`" = "" ] ; then \
+	echo "Test failed!  See `pwd`/$@.out ." ;\
+	exit 1 ;\
+	else \
+	(echo "Test succeeded." > $@) ;\
+	echo "$(TEST_DIR_STRING)Completed final step successfully." ;\
+	fi
+
+clean: acl2_check clean-output
+
+clean-output:
+	rm -f $(TB_OUTPUT).lsp success.txt

@@ -172,17 +172,21 @@
 
 ;; the idea here is that l is a tree-listp-brlens
 (defun replete-trees-list-brlens (l)
-  ":Doc-Section TASPI
-   Returns a replete mapping of trees and subtrees in the input list to either 
-   the number of times the tree occurs or to a list of each subtrees immediate 
-   parents.~/
-   ~/
-   Arguments:
-      (1) l - a list of trees no member of which is a proper subtree of another
 
-   Details: The trees should all be ordered according to the same taxa list. 
-            Branch lengths are allowed, but not preserved 
-            (see replete-trees-list-top)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns a replete mapping of trees and subtrees in the input list to either 
+;  the number of times the tree occurs or to a list of each subtrees immediate 
+;  parents.~/
+;  ~/
+;  Arguments:
+;     (1) l - a list of trees no member of which is a proper subtree of another
+
+;  Details: The trees should all be ordered according to the same taxa list. 
+;           Branch lengths are allowed, but not preserved 
+;           (see replete-trees-list-top)."
   (declare (xargs :guard t))
   (let ((removed (remove-brlens-list l)))
     (if (non-subtree-listp removed removed)

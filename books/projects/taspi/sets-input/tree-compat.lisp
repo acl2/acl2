@@ -54,7 +54,7 @@
                 (y (term-to-bfringes tree taxa-list))
                 (ftlt 
                  (build-taxa-list-tree taxa-list))
-                (z (rev taxa-list))))
+                (z (taspi-rev taxa-list))))
          ("Goal''" ; changed by J Moore after v5-0, from "Subgoal 1'''", for tau system
           :in-theory
           (disable
@@ -109,16 +109,20 @@
       nil)))
 
 (defun tree-compatibility (list-of-trees taxa-list)
-  ":Doc-Section TASPI
-   Determines if a set of trees is compatible~/
-   ~/
-   Arguments:
-     (1) list-of-trees - a list of trees
-     (2) taxa-list - a list of taxa names
 
-   Details: Does not allow branch lengths (see tree-compatibility-brlens). 
-            Does a pairwise check of compatibility between all bipartitions
-            in the given list of trees. NOTE: Guards are not yet verified."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Determines if a set of trees is compatible~/
+;  ~/
+;  Arguments:
+;    (1) list-of-trees - a list of trees
+;    (2) taxa-list - a list of taxa names
+
+;  Details: Does not allow branch lengths (see tree-compatibility-brlens). 
+;           Does a pairwise check of compatibility between all bipartitions
+;           in the given list of trees. NOTE: Guards are not yet verified."
   (declare (xargs :guard (and (tree-listp list-of-trees)
                               (subset (mytips list-of-trees)
                                       taxa-list)
@@ -129,16 +133,20 @@
                list-of-trees taxa-list))
 
 (defun tree-compatibility-brlens (list-of-trees taxa-list)
-  ":Doc-Section TASPI
-   Determines if a set of trees with branch lengths is compatible~/
-   ~/
-   Arguments:
-     (1) list-of-trees - a list of trees
-     (2) taxa-list - a list of taxa names
 
-   Details: Allows branch lengths (see also tree-compatibility). 
-            Does a pairwise check of compatibility between all bipartitions
-            in the given list of trees. NOTE: Guards are not yet verified. "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Determines if a set of trees with branch lengths is compatible~/
+;  ~/
+;  Arguments:
+;    (1) list-of-trees - a list of trees
+;    (2) taxa-list - a list of taxa names
+
+;  Details: Allows branch lengths (see also tree-compatibility). 
+;           Does a pairwise check of compatibility between all bipartitions
+;           in the given list of trees. NOTE: Guards are not yet verified. "
   (declare (xargs :guard t
 		  :verify-guards nil))
   (let ((trees-no-brlens (remove-brlens-list list-of-trees)))

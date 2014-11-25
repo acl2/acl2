@@ -54,7 +54,13 @@
 (include-book "../checkers/skip-detect")
 
 (include-book "../transforms/cn-hooks")
-(include-book "../transforms/xf-argresolve")
+(include-book "../transforms/unparam/top")
+(include-book "../transforms/annotate/argresolve")
+(include-book "../transforms/annotate/resolve-indexing")
+(include-book "../transforms/annotate/origexprs")
+(include-book "../transforms/annotate/make-implicit-wires")
+(include-book "../transforms/annotate/portdecl-sign")
+
 (include-book "../transforms/xf-assign-trunc")
 (include-book "../transforms/xf-blankargs")
 (include-book "../transforms/xf-clean-params")
@@ -64,14 +70,11 @@
 (include-book "../transforms/xf-expand-functions")
 (include-book "../transforms/xf-follow-hids")
 (include-book "../transforms/xf-hid-elim")
-(include-book "../transforms/xf-orig")
 (include-book "../transforms/xf-oprewrite")
-(include-book "../transforms/xf-resolve-indexing")
 (include-book "../transforms/xf-resolve-ranges")
 (include-book "../transforms/xf-replicate-insts")
 (include-book "../transforms/xf-selresolve")
 (include-book "../transforms/xf-sizing")
-(include-book "../transforms/xf-unparameterize")
 (include-book "../transforms/xf-unused-vars")
 
 (include-book "../../misc/sneaky-load")
@@ -353,7 +356,7 @@ shown.</p>"
   (b* (((when (atom x))
         nil)
        ((sd-problem x1) (car x))
-       ((vl-context x1.ctx) x1.ctx)
+       ((vl-context1 x1.ctx) x1.ctx)
        ((when (hons-get x1.ctx.mod fal))
         (vl-delete-sd-problems-for-modnames-aux fal (cdr x))))
     (cons (car x)
@@ -392,20 +395,12 @@ shown.</p>"
                                               (design vl-design-p))
   :returns (new-design vl-design-p)
   (b* ((design (vl-design-fix design))
-       (keep   (mbe :logic (if (string-listp keep) keep nil) :exec keep))
-       (keep   (mergesort keep))
+       (keep   (mergesort (string-list-fix keep)))
        ((unless keep)
         ;; Special feature: if the user didn't specify any top modules,
         ;; then we want to keep everything.
-        design)
-       (mods (mergesort (vl-design->mods design)))
-       ((unless (uniquep (vl-modulelist->names mods)))
-        (raise "Name clash: duplicate module names: ~&0."
-               (duplicated-members (vl-modulelist->names mods)))
-        design)
-       (new-mods (vl-remove-unnecessary-modules keep mods)))
-    (change-vl-design design :mods new-mods)))
-
+        design))
+    (vl-remove-unnecessary-elements keep design)))
 
 ;; (define vl-lint-unparam ((good vl-design-p))
 ;;   :returns (good vl-design-p)
@@ -468,6 +463,8 @@ shown.</p>"
        (design0 (vl-design-remove-unnecessary-modules config.topmods design))
 
        (- (cw "~%vl-lint: initial processing...~%"))
+       (design (cwtime (vl-design-make-implicit-wires design)))
+       (design (cwtime (vl-design-portdecl-sign design)))
        (design (cwtime (vl-design-portcheck design)))
        (design (cwtime (vl-design-check-case design)))
        (design (cwtime (vl-design-duperhs-check design)))
@@ -640,7 +637,7 @@ shown.</p>"
             (vl-cw "One ~s0 Warning:~%~%" label))
            (t
             (vl-cw "~x0 ~s1 Warnings:~%~%" count label)))
-     (vl-print-reportcard reportcard))))
+     (vl-print-reportcard reportcard :elide nil))))
 
 (define vl-jp-reportcard-aux ((x vl-reportcard-p) &key (ps 'ps))
   (b* (((when (atom x))

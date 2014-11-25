@@ -464,12 +464,12 @@ about set equivalence.</p>"
 
   (defcong set-equiv equal (atom x) 1)
 
-  (defthmd intersectp-iff-intersection-equal
-    ;; BOZO this seems like a good rule, why disable it?
-    (iff (consp (intersection-equal x y))
-         (intersectp x y))
-    :hints(("Goal" :in-theory (enable intersection-equal
-                                      intersectp))))
+  (local (defthmd intersectp-iff-intersection-equal
+           ;; We prove things like this in intersection.lisp and intersectp.lisp
+           (iff (consp (intersection-equal x y))
+                (intersectp x y))
+           :hints(("Goal" :in-theory (enable intersection-equal
+                                             intersectp)))))
 
   (defcong set-equiv equal (intersectp x y) 1
     :hints(("Goal" :use ((:instance intersectp-iff-intersection-equal)
@@ -528,11 +528,11 @@ about set equivalence.</p>"
            (implies (and (subsetp x (element-listxformer z))
                          (member z y))
                     (subsetp x (elementlist-mapappend y)))))
-  
+
   (local (defthm subsetp-element-listxformer-of-elementlist-mapappend
            (implies (member x y)
                     (subsetp (element-listxformer x) (elementlist-mapappend y)))))
-  
+
   (def-mapappend-rule subsetp-of-elementlist-mapappend-when-subsetp
     (implies (subsetp x y)
              (subsetp (elementlist-mapappend x)
@@ -729,9 +729,7 @@ about set equivalence.</p>"
   :hints(("Goal" :in-theory (enable rcons))))
 
 
-
 (defsection element-list-p-of-set-operations
-  
 
   (def-listp-rule element-list-p-of-set-difference-equal
     (implies (element-list-p x)
@@ -752,4 +750,3 @@ about set equivalence.</p>"
     (equal (element-list-p (union-equal x y))
            (and (element-list-p (list-fix x))
                 (element-list-p (double-rewrite y))))))
-

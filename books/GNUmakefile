@@ -456,7 +456,8 @@ quicklisp_clean:
 	echo "Removing downloaded quicklisp files (if any)" ; \
 	cd $(QUICKLISP_DIR); rm -rf quicklisp.lsp  inst/asdf.lisp inst/cache \
 	    inst/client-info.sexp inst/dists inst/local-projects \
-	    inst/quicklisp inst/setup.lisp inst/tmp install.out Makefile-tmp
+	    inst/quicklisp inst/setup.lisp inst/tmp install.out Makefile-tmp \
+            asdf-home/cache/common-lisp
 	cd $(QUICKLISP_DIR); $(BUILD_DIR)/clean.pl
 
 # The following hack was useful briefly in late January, 2014, when
@@ -666,6 +667,7 @@ ifeq ($(ACL2_HAS_REALS), )
 # that we don't always want built with "all".
 
 ACL2_CUSTOM_TARGETS := \
+  system/toothbrush/success.txt \
   clause-processors/SULFA/target.cert \
   fix-cert/fix-cert.cert \
   projects/translators/l3-to-acl2/target.cert \
@@ -683,6 +685,20 @@ ACL2_CUSTOM_TARGETS := \
 # which dependencies will be generated since there is no
 # cert_pl_exclude file in projects/translators/ (even though there is
 # a cert_pl_exclude in projects/translators/l3-to-acl2/).
+
+# It is currently only recommended to test the toothbrush mechanism
+# for Lisps that compile on-the-fly, namely CCL and SBCL, since that
+# mechanism doeswn't use (or depend on) compiled files in the main
+# ACL2 directory.  We might revisit that decision if there is reason
+# to do so.
+ifeq ($(TB_LISP), )
+.PHONY: system/toothbrush/success.txt
+system/toothbrush/success.txt:
+	@echo "Note: Skipping $@ for host Lisp $(ACL2_HOST_LISP)."
+else
+system/toothbrush/success.txt: system/toothbrush-deps.cert
+	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+endif # ifeq ($(TB_LISP), )
 
 # We only make the books under SULFA if a documented test for an
 # installed SAT solver succeeds.
@@ -991,7 +1007,7 @@ critpath.txt: $(OK_CERTS)
 
 # basic is the default set of books to build:
 .PHONY: basic
-basic: arithmetic arithmetic-2 arithmetic-3 arithmetic-5 ihs std xdoc tools misc data-structures
+basic: arithmetic arithmetic-3 arithmetic-5 ihs std xdoc tools misc data-structures
 
 
 .PHONY: add-ons

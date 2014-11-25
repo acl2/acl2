@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "modnamespace")
-(include-book "find-module")
+(include-book "find")
 (include-book "centaur/misc/dag-measure" :dir :system)
 
 

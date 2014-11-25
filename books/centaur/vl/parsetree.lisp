@@ -33,6 +33,7 @@
 (include-book "util/commentmap")
 (include-book "util/warnings")
 (include-book "tools/flag" :dir :system)
+(include-book "tools/templates" :dir :system)
 (local (include-book "util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable double-containment)))
@@ -42,12 +43,11 @@
                            default-car default-cdr
                            acl2::lower-bound-of-car-when-nat-listp
                            stringp-when-true-listp
-                           consp-when-member-equal-of-cons-listp
+                           acl2::consp-when-member-equal-of-cons-listp
                            acl2::consp-when-member-equal-of-atom-listp
                            consp-when-member-equal-of-vl-commentmap-p
                            consp-when-member-equal-of-vl-atts-p
                            (tau-system))))
-
 
 ; ----------------------------------------------------------------------------
 ;
@@ -69,7 +69,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2014-10-08")
+  "VL Syntax 2014-11-4")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -716,9 +716,39 @@ away with them as alternate kinds of assignments.</p>"))
                                :pdims    nil)))
 
 
-(defprod vl-port
-  :short "Representation of a single Verilog port."
-  :tag :vl-port
+(defprod vl-interfaceport
+  :parents (vl-port)
+  :short "Representation of a single interface port."
+  :tag :vl-interfaceport
+  :layout :tree
+  ((name stringp
+         :rule-classes :type-prescription
+         "Name (internal and external) of this interface port, e.g., @('foo')
+          for @('simplebus.master foo').")
+
+   (ifname stringp
+           :rule-classes :type-prescription
+           "For interface ports like @('simplebus foo') or @('simplebus.master foo'),
+            this is the name of the interface, e.g., @('simplebus').  For
+            non-interface ports it is just @('nil').")
+
+   (modport maybe-stringp
+            :rule-classes :type-prescription
+            "For interface ports with modport components, e.g., @('simplebus.master foo'),
+             this is the name of the modport being used, e.g., @('master').
+             For plain interfaces like @('simplebus foo') or non-interface
+             ports, this is just @('nil').")
+
+   (udims   vl-packeddimensionlist-p
+            "For interface ports only: the unpacked dimensions for this port.")
+
+   (loc  vl-location-p
+         "Where this port came from in the Verilog source code.")))
+
+(defprod vl-regularport
+  :parents (vl-port)
+  :short "Representation of a single non-interface port."
+  :tag :vl-regularport
   :layout :tree
 
   ((name maybe-stringp
@@ -729,25 +759,37 @@ away with them as alternate kinds of assignments.</p>"))
    (expr vl-maybe-expr-p
          "How the port is wired internally within the module.  Most of the time,
           this is a simple identifier expression that is just @('name').  But
-          it can also be more complex; see below.")
+          it can also be more complex; see below.  The expression should be
+          @('nil') for interface ports.")
 
    (loc  vl-location-p
          "Where this port came from in the Verilog source code."))
 
-  :long "<p>Ports are described in Section 12.3 of Verilog-2005.  In simple
-cases, a module's ports look like this:</p>
+  :long "<p>In Verilog-2005, ports are described in Section 12.3 of the
+standard.</p>
+
+<p>It is important to understand the difference between ports and port
+declarations.  We represent ports as @('vl-port') structures, whereas port
+declarations re represented as @(see vl-portdecl) structures.  It is easy to
+see the difference between ports and port declarations when modules are
+declared using the \"non-ANSI\" syntax.</p>
 
 @({
-module mod(a,b,c) ;  <-- ports are a, b, and c
-  ...
+module mod(a,b,c) ;  <-- ports
+
+  input [3:0] a;     <-- port declarations (not ports)
+  input b;
+  output c;
+
 endmodule
 })
 
-<p>A more modern, less repetitive syntax can be used instead:</p>
+<p>It is less easy to see this difference when the more concise \"ANSI\" syntax
+is used:</p>
 
 @({
 module mod(
-  input [3:0] a;   <-- ports are a, b, and c
+  input [3:0] a;   <-- ports and port declarations, mixed together
   input b;
   output c;
 ) ;
@@ -755,8 +797,13 @@ module mod(
 endmodule
 })
 
-<p>More complex ports are also possible, e.g., here are some ports whose
-external names are distinct from their internal wiring:</p>
+<p>Regardless of which syntax is used, VL internally creates both ports and
+portdecls as separate structures.</p>
+
+<p>In most designs, there is a single port corresponding to each port
+declaration.  However, in general Verilog permits more complex ports.  Here is
+an example of a module where the ports have external names that are distinct
+from their internal wiring.</p>
 
 @({
 module mod (a, .b(w), c[3:0], .d(c[7:4])) ;
@@ -768,19 +815,29 @@ endmodule
 })
 
 <p>In this example, the @('name')s of these ports would be, respectively:
-@('\"a\"'), @('\"b\"'), @('nil') (because this port has no externally visible
-name), and @('\"d\"').  Meanwhile, the first two ports are internally wired to
-@('a') and @('w'), respectively, while the third and fourth ports collectively
-specify the bits of @('c').</p>
+@('\"a\"'), @('\"b\"'), @('nil') (because the third port has no externally
+visible name), and @('\"d\"').  Meanwhile, the first two ports are internally
+wired to @('a') and @('w'), respectively, while the third and fourth ports
+collectively specify the bits of @('c').</p>
 
-<h3>Using Ports</h3>
+<p>SystemVerilog-2012 extends ports in several ways, but most of these
+extensions (e.g., support for fancy data types) are related to the port
+declarations rather than the ports.  One place where the ports themselves
+<i>are</i> extended is for interface ports.  See @(see vl-port).</p>")
+
+(deftranssum vl-port
+  (vl-regularport
+   vl-interfaceport)
+  :short "Representation of a single port."
+  :long "<p>Most ports are regular ports, see @(see vl-regularport).  However,
+SystemVerilog also adds interface ports, see @(see vl-interfaceport).</p>
 
 <p>It is generally best to <b>avoid using port names</b> except perhaps for
 things like error messages.  Why?  As shown above, some ports might not have
 names, and even when a port does have a name, it does not necessarily
-correspond to any wires in the module.  But these cases are exotic, so code
-based on port names is likely to work for simple test cases and then fail later
-when more complex examples are encountered!</p>
+correspond to any wires in the module.  Since these cases are exotic, code that
+is based on port names is likely to work for simple test cases, but then fail
+later when more complex examples are encountered!</p>
 
 <p>Usually you should not need to deal with port names.  The @(see argresolve)
 transform converts module instances that use named arguments into their plain
@@ -814,17 +871,41 @@ expression-sizing) for details.</p>")
               :true-listp nil
               :elementp-of-nil nil)
 
-(defprojection vl-portlist->exprs ((x vl-portlist-p))
-  :parents (vl-portlist-p)
-  :nil-preservingp t
-  (vl-port->expr x)
-  ///
-  (defthm vl-exprlist-p-of-vl-portlist->exprs
-    (equal (vl-exprlist-p (vl-portlist->exprs x))
-           (not (member nil (vl-portlist->exprs x)))))
+(fty::deflist vl-interfaceportlist
+              :elt-type vl-interfaceport-p
+              :true-listp nil
+              :elementp-of-nil nil)
 
-  (defthm vl-exprlist-p-of-remove-equal-of-vl-portlist->exprs
-    (vl-exprlist-p (remove-equal nil (vl-portlist->exprs x)))))
+(fty::deflist vl-regularportlist
+  :elt-type vl-regularport
+  :true-listp nil
+  :elementp-of-nil nil)
+
+(defthm vl-portlist-p-when-vl-interfaceportlist-p
+  (implies (vl-interfaceportlist-p x)
+           (vl-portlist-p x))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-portlist-p-when-vl-regularportlist-p
+  (implies (vl-regularportlist-p x)
+           (vl-portlist-p x))
+  :hints(("Goal" :induct (len x))))
+
+(define vl-port->name ((x vl-port-p))
+  :returns (name maybe-stringp :rule-classes :type-prescription)
+  (b* ((x (vl-port-fix x)))
+    (case (tag x)
+      (:vl-regularport   (vl-regularport->name x))
+      (:vl-interfaceport (vl-interfaceport->name x))
+      (otherwise         (impossible)))))
+
+(define vl-port->loc ((x vl-port-p))
+  :returns (loc vl-location-p)
+  (b* ((x (vl-port-fix x)))
+    (case (tag x)
+      (:vl-regularport   (vl-regularport->loc x))
+      (:vl-interfaceport (vl-interfaceport->loc x))
+      (otherwise         (progn$ (impossible) *vl-fakeloc*)))))
 
 (defprojection vl-portlist->names ((x vl-portlist-p))
   :parents (vl-portlist-p)
@@ -837,6 +918,53 @@ expression-sizing) for details.</p>")
 
   (defthm string-listp-of-remove-equal-of-vl-portlist->names
     (string-listp (remove-equal nil (vl-portlist->names x)))))
+
+(define vl-collect-interface-ports-exec ((x vl-portlist-p) nrev)
+  :parents (vl-collect-interface-ports)
+  (b* (((when (atom x))
+        (nrev-fix nrev))
+       (x1 (vl-port-fix (car x)))
+       ((when (eq (tag x1) :vl-interfaceport))
+        (b* ((nrev (nrev-push x1 nrev)))
+          (vl-collect-interface-ports-exec (cdr x) nrev))))
+    (vl-collect-interface-ports-exec (cdr x) nrev)))
+
+(define vl-collect-interface-ports
+  :parents (vl-portlist-p)
+  :short "Filter a @(see vl-portlist-p) to collect only the interface ports."
+  ((x vl-portlist-p))
+  :returns (ifports (and (vl-portlist-p ifports)
+                         (vl-interfaceportlist-p ifports)))
+  :verify-guards nil
+  (mbe :logic
+       (b* (((when (atom x))
+             nil)
+            (x1 (vl-port-fix (car x)))
+            ((when (eq (tag x1) :vl-interfaceport))
+             (cons x1 (vl-collect-interface-ports (cdr x)))))
+         (vl-collect-interface-ports (cdr x)))
+       :exec
+       (with-local-nrev
+         (vl-collect-interface-ports-exec x nrev)))
+  ///
+  (defthm vl-collect-interface-ports-exec-removal
+    (equal (vl-collect-interface-ports-exec x nrev)
+           (append nrev (vl-collect-interface-ports x)))
+    :hints(("Goal" :in-theory (enable vl-collect-interface-ports-exec))))
+
+  (verify-guards vl-collect-interface-ports)
+
+  (defthm vl-collect-interface-ports-when-atom
+    (implies (atom x)
+             (equal (vl-collect-interface-ports x)
+                    nil)))
+
+  (defthm vl-collect-interface-ports-of-cons
+    (equal (vl-collect-interface-ports (cons a x))
+           (if (eq (tag (vl-port-fix a)) :vl-interfaceport)
+               (cons (vl-port-fix a)
+                     (vl-collect-interface-ports x))
+             (vl-collect-interface-ports x)))))
 
 
 (defenum vl-direction-p (:vl-input :vl-output :vl-inout)
@@ -894,9 +1022,10 @@ arguments of gate instances and most arguments of module instances.  See our
    (loc      vl-location-p
              "Where the port was declared in the source code."))
 
-  :long "<p>Port declarations, described in Section 12.3.3 of the Verilog-2005
-standard, ascribe certain properties (direction, signedness, size, and so on)
-to the ports of a module.  Here is an example:</p>
+  :long "<p>See @(see vl-port) for related background.  Port declarations,
+described in Section 12.3.3 of the Verilog-2005 standard, ascribe certain
+properties (direction, signedness, size, and so on) to the ports of a module.
+Here is an example:</p>
 
 @({
 module m(a, b) ;
@@ -906,26 +1035,26 @@ endmodule
 })
 
 <p>Although Verilog allows multiple ports to be declared simultaneously, i.e.,
-@('input a, b ;'), our parser splits these merged declarations to create
+@('input w1, w2;'), our parser splits these merged declarations to create
 separate @('vl-portdecl-p') objects for each port.  Because of this, every
 @('vl-portdecl-p') has only a single name.</p>
 
-<h4>A Note about Port Types</h4>
+<p>Most of the time, e.g., for @('a') in module @('m') above, the resulting
+@(see vl-module) will have:</p>
 
-<p>If you look at the grammar for port declarations, you will see that you
-can also do things like:</p>
+<ul>
+<li>A @(see vl-port) for @('a'),</li>
+<li>A corresponding @(see vl-portdecl) that has the direction/type information, and</li>
+<li>A corresponding @(see vl-vardecl) that looks like an ordinary variable.</li>
+</ul>
 
-@({
-input wire a;
-input supply0 b;
-})
+<p>The exceptions to this are:</p>
 
-<p>And so on.  For some time, our @('vl-port-p') structures included a
-@('type') field.  However, upon a closer reading of the Verilog-2005 standard,
-we have learned that the proper way to handle these is to simultaneously
-introduce a @(see vl-vardecl) alongside the @('vl-portdecl-p') that we would
-ordinarily create for a port declaration.  See, e.g., the second paragraph from
-the bottom on Page 174.</p>")
+<ul>
+<li>Interface ports have no corresponding port/vardecl.</li>
+<li>The ports/portdecls do not necessarily line up when complex ports are used,
+see @(see vl-port) for details.</li>
+</ul>")
 
 (fty::deflist vl-portdecllist
               :elt-type vl-portdecl-p
@@ -1790,8 +1919,8 @@ variety.</p>"
 
 
 (defprod vl-modinst
-  :short "Representation of a single module (or user-defined primitive)
-instance."
+  :short "Representation of a single module instance, user-defined primitive
+instance, or a direct interface instance (not an interface port)."
   :tag :vl-modinst
   :layout :tree
 
@@ -1802,16 +1931,16 @@ instance."
 
    (modname   stringp
               :rule-classes :type-prescription
-              "Name of the module or user-defined primitive that is being
-               instantiated.")
+              "Name of the module, user-defined primitive, or interface that is
+               being instantiated.")
 
    (range     vl-maybe-range-p
               "When present, indicates that this is an array of instances,
                instead of a single instance.")
 
    (paramargs vl-paramargs-p
-              "Values to use for module parameters, e.g., this might specify
-               the width to use for an adder module, etc.")
+              "Values to use for module parameters.  For instance, this might
+               specify the width to use for an adder module, etc.")
 
    (portargs  vl-arguments-p
               "Connections to use for the submodule's input, output, and inout
@@ -2094,12 +2223,10 @@ respectively.</p>"
   (vl-vardecl
    vl-paramdecl))
 
-(defthm vl-blockitem-p-tag-forward
-  ;; BOZO is this better than the rewrite rule we currently add?
-  (implies (vl-blockitem-p x)
-           (or (equal (tag x) :vl-vardecl)
-               (equal (tag x) :vl-paramdecl)))
-  :rule-classes :forward-chaining)
+(defthm vl-blockitem-fix-type
+  (consp (vl-blockitem-fix x))
+  :rule-classes :type-prescription
+  :hints(("Goal" :expand ((:with vl-blockitem-fix (vl-blockitem-fix x))))))
 
 (fty::deflist vl-blockitemlist
   :elt-type vl-blockitem-p
@@ -2224,14 +2351,6 @@ rid of repeateventcontrol.</p>")
    vl-eventcontrol
    vl-repeateventcontrol))
 
-(defthm vl-delayoreventcontrol-p-tag-forward
-  ;; BOZO is this better than the rewrite rule we currently add?
-  (implies (vl-delayoreventcontrol-p x)
-           (or (equal (tag x) :vl-delaycontrol)
-               (equal (tag x) :vl-eventcontrol)
-               (equal (tag x) :vl-repeat-eventcontrol)))
-  :rule-classes :forward-chaining)
-
 (local (defthm vl-delayoreventcontrol-fix-nonnil
          (vl-delayoreventcontrol-fix x)
          :hints(("Goal" :in-theory (enable (tau-system))))
@@ -2296,7 +2415,6 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
 
   :prepwork
   ((local (in-theory (disable VL-EXPR-P-OF-CAR-WHEN-VL-EXPRLIST-P
-                              CONSP-OF-CAR-WHEN-CONS-LISTP
                               VL-MAYBE-EXPR-P-OF-CDAR-WHEN-VL-ATTS-P
                               VL-ATTS-P-OF-CDR-WHEN-VL-ATTS-P
                               ACL2::CONSP-OF-CAR-WHEN-ALISTP
@@ -2652,6 +2770,14 @@ block name to each variable name.</p>"
       (atts vl-atts-p)))
     ))
 
+;; NOTE: Other statement subtypes are declared in stmt-tools.  This is here
+;; because scopestack needs it.
+(define vl-blockstmt-p ((x vl-stmt-p))
+  :inline t
+  :enabled t
+  (eq (vl-stmt-kind x) :vl-blockstmt))
+
+
 
 (local (in-theory (disable vl-stmtlist-p-of-cdr-when-vl-stmtlist-p
                            consp-when-member-equal-of-vl-caselist-p
@@ -2884,10 +3010,11 @@ have input ports that are very similar to task ports.  So, we reuse
    (decls      vl-blockitemlist-p
                "Any local variable declarations for the function, e.g., the
                 declarations of @('lowest_pair') and @('next_lowest_pair')
-                below.  We represent the declarations as an ordinary @(see
-                vl-blockitemlist-p), and it appears that it may even contain
-                event declarations, parameter declarations, etc., which seems
-                pretty absurd.")
+                below.  <b>Also</b>, variable declarations for the ports and
+                return value (see below).  We represent the declarations as an
+                ordinary @(see vl-blockitemlist-p), and it appears that it may
+                even contain event declarations, parameter declarations, etc.,
+                which seems pretty absurd.")
 
    (body       vl-stmt-p
                "The body of the function.  We represent this as an ordinary statement,
@@ -2918,7 +3045,13 @@ endfunction
 })
 
 <p>Note that functions don't have any inout or output ports.  Instead, you
-assign to a function's name to indicate its return value.</p>")
+assign to a function's name to indicate its return value.</p>
+
+<p>To simplify scoping issues, we put \"hidden\" variables declarations for the
+ports and return value of the function into its @('decls').  These ports are
+marked with the @('VL_HIDDEN_DECL_FOR_TASKPORT') attribute.  The pretty printer
+and other code rely on this attribute to produce the correct output.  These
+extra declarations are created automatically by the loader.</p>")
 
 (fty::deflist vl-fundecllist
   :elt-type vl-fundecl-p
@@ -2952,7 +3085,10 @@ assign to a function's name to indicate its return value.</p>")
 
    (decls      vl-blockitemlist-p
                "Any local declarations for the task, e.g., for the task below,
-                the declaration of @('temp') would be found here.")
+                the declaration of @('temp') would be found here.  <b>Also</b>,
+                variable declarations for the ports, marked with
+                @('VL_HIDDEN_DECL_FOR_TASKPORT'), just as in our @(see
+                vl-fundecl) representation.")
 
    (body       vl-stmt-p
                "The statement that gives the actions for this task, i.e., the
@@ -3142,72 +3278,58 @@ be non-sliceable, at least if it's an input.</p>"
   (vl-typedef->name x))
 
 
-
 (encapsulate nil
-  (local (include-book "tools/templates" :dir :system))
 
-  (local (defconst *vl-modelement-typenames*
-           '(port
-             portdecl
-             assign
-             alias
-             vardecl
-             paramdecl
-             fundecl
-             taskdecl
-             modinst
-             gateinst
-             always
-             initial
-             typedef
-             fwdtypedef
-             modport)))
+  (defconst *vl-modelement-typenames*
+    '(portdecl
+      assign
+      alias
+      vardecl
+      paramdecl
+      fundecl
+      taskdecl
+      modinst
+      gateinst
+      always
+      initial
+      typedef
+      import
+      fwdtypedef
+      modport))
 
-  (local (defun types-mk-strsubst-alists (types)
-           (if (atom types)
+  (local (defun typenames-to-tags (x)
+           (declare (xargs :mode :program))
+           (if (atom x)
                nil
-             (cons `(("__TYPE__" ,(symbol-name (car types)) . vl-package))
-                   (types-mk-strsubst-alists (cdr types))))))
+             (cons (intern$ (cat "VL-" (symbol-name (car x))) "KEYWORD")
+                   (typenames-to-tags (cdr x))))))
 
-  (local (defconst *strsubst-alists*
-           (types-mk-strsubst-alists *vl-modelement-typenames*)))
+  (make-event
+   `(defconst *vl-modelement-tagnames*
+      ',(typenames-to-tags *vl-modelement-typenames*)))
 
-  ;; (local (defun types-mk-atom-alists (types)
-  ;;          (if (atom types)
-  ;;              nil
-  ;;            (cons `((vl-type . ,(intern-in-package-of-symbol(car types)))
-  ;;                  (types-mk-atom-alists (cdr types)))))))
+  (defun vl-typenames-to-tmplsubsts (types)
+    (declare (xargs :mode :program))
+    (if (atom types)
+        nil
+      (let ((name (symbol-name (car types))))
+        (cons (make-tmplsubst
+               :strs `(("__TYPE__" ,name . vl-package)
+                       ("__ELTS__" ,(if (member (char name (1- (length name))) '(#\S #\s))
+                                        (str::cat name "ES")
+                                      (str::cat name "S")) . vl-package)))
+              (vl-typenames-to-tmplsubsts (cdr types))))))
 
-  ;; (local (defconst *atom-alists*
-  ;;          (types-mk-atom-alists *vl-modelement-typenames*)))
+  (defconst *vl-modelement-tmplsubsts*
+    (vl-typenames-to-tmplsubsts *vl-modelement-typenames*))
 
-  (local (defun project-over-types-rec (template strsubst-alists)
-           (declare (xargs :mode :program))
-           (if (atom strsubst-alists)
-               nil
-             (cons (b* (((mv & val)
-                         (acl2::template-subst-rec nil nil nil (car strsubst-alists)
-                                                   template 'vl-package)))
-                     val)
-                   (project-over-types-rec template (cdr strsubst-alists))))))
+  (defun project-over-modelement-types (template)
+    (declare (xargs :mode :program))
+    (template-proj template *vl-modelement-tmplsubsts*))
 
-  (local (defun project-over-types (template)
-           (declare (xargs :mode :program))
-           (project-over-types-rec template *strsubst-alists*)))
-
-  (local (defun append-over-types-rec (template strsubst-alists)
-           (declare (xargs :mode :program))
-           (if (atom strsubst-alists)
-               nil
-             (append (b* (((mv & val)
-                           (acl2::template-subst-rec nil nil nil (car strsubst-alists)
-                                                     template 'vl-package)))
-                       val)
-                     (append-over-types-rec template (cdr strsubst-alists))))))
-
-  (local (defun append-over-types (template)
-           (declare (xargs :mode :program))
-           (append-over-types-rec template *strsubst-alists*)))
+  (defun append-over-modelement-types (template)
+    (declare (xargs :mode :program))
+    (template-append template *vl-modelement-tmplsubsts*))
 
 
   (make-event
@@ -3220,17 +3342,27 @@ arbitrary types.  For instance, we often use this in error messages, along with
 @(see vl-context-p), to describe where expressions occur.  We also use it in
 our @(see parser), where before module formation, the module elements are
 initially kept in a big, mixed list.</p>"
-        ,(project-over-types 'vl-__type__))
+        ,(project-over-modelement-types 'vl-__type__))
 
       (fty::deflist vl-modelementlist
         :elt-type vl-modelement-p
         :elementp-of-nil nil
         ///
         (local (in-theory (enable vl-modelementlist-p)))
-        . ,(project-over-types
+        . ,(project-over-modelement-types
             '(defthm vl-modelementlist-p-when-vl-__type__list-p
                (implies (vl-__type__list-p x)
-                        (vl-modelementlist-p x)))))))
+                        (vl-modelementlist-p x)))))
+
+      (define vl-modelement->loc ((x vl-modelement-p))
+        :returns (loc vl-location-p :hints(("Goal" :in-theory (enable vl-modelement-fix
+                                                                      vl-modelement-p
+                                                                      tag-reasoning
+                                                                      (tau-system)))))
+        (let ((x (vl-modelement-fix x)))
+          (case (tag x)
+            . ,(project-over-modelement-types
+                '(:vl-__type__ (vl-__type__->loc x))))))))
 
 
   (local (in-theory (disable acl2::o<-of-two-nats-measure o< o<-when-natps nfix)))
@@ -3295,6 +3427,24 @@ initially kept in a big, mixed list.</p>"
         (default   vl-generateblock  "the default, which may be an empty generateblock if not provided")
         (loc   vl-location)))
 
+      (:vl-genblock
+       :base-name vl-genblock
+       :layout :tree
+       :short "Normalized form of a generate construct that has been instantiated."
+       ((name      maybe-stringp     "the name of the block, if named")
+        (elems     vl-genelementlist-p)
+        (loc       vl-location)))
+
+
+      (:vl-genarray
+       :base-name vl-genarray
+       :layout :tree
+       :short "Normalized form of a generate loop."
+       ((name      maybe-stringp     "the name of the block array, if named")
+        (var       vl-id             "the iterator variable")
+        (blocks    vl-genarrayblocklist-p "the blocks produced by the loop")
+        (loc       vl-location)))
+
       (:vl-genbase
        :base-name vl-genbase
        :layout :tree
@@ -3312,6 +3462,15 @@ initially kept in a big, mixed list.</p>"
       :true-listp t
       :measure (two-nats-measure (acl2-count x) 5))
 
+    (fty::deflist vl-genarrayblocklist :elt-type vl-genarrayblock
+      :true-listp t :elementp-of-nil nil
+      :measure (two-nats-measure (acl2-count x) 1))
+
+    (defprod vl-genarrayblock
+      ((index    integerp           "index of the iterator variable for this block")
+       (elems    vl-genelementlist-p))
+      :measure (two-nats-measure (acl2-count x) 3))
+
     (defprod vl-generateblock
       ((name     maybe-stringp      "name of the generate block if provided")
        (elems   vl-genelementlist   "elements of the block"))
@@ -3326,119 +3485,20 @@ initially kept in a big, mixed list.</p>"
                    nfix
                    ))
 
+  (defthm vl-genelement-fix-type
+    (consp (vl-genelement-fix x))
+    :rule-classes :type-prescription
+    :hints(("Goal" :expand ((:with vl-genelement-fix (vl-genelement-fix x))))))
 
-  (make-event
-   `(progn
-      (defprod vl-genelement-collection
-        :short "A sorted collection of module elements (see @(see vl-modelement))."
-        :long "<p>A vl-modelement-collection can be made from a @(see
-vl-modelementlist) by sorting the elements by type.  Its fields each contain
-the list of elements of the given type.</p>"
-        (,@(project-over-types
-            '(__type__s vl-__type__list-p))
-           (generates vl-genelementlist-p))
-
-
-        :layout :tree)
-
-
-      (define vl-modelement-loc ((x vl-modelement-p))
-        :short "Get the location of any @(see vl-modelement-p)."
-        :returns (loc vl-location-p
-                      :hints(("Goal" :in-theory (enable vl-modelement-fix
-                                                        (tau-system)))))
-        (b* ((x (vl-modelement-fix x)))
-
-          (case (tag x)
-            . ,(project-over-types
-                '(:vl-__type__       (vl-__type__->loc x))))))
-
-      (define vl-genelement-loc ((x vl-genelement-p))
-        :short "Get the location of any @(see vl-genelement-p)."
-        :returns (loc vl-location-p
-                      :hints(("Goal" :in-theory (enable vl-genelement-fix))))
-        (vl-genelement-case x
-          :vl-genbase (vl-modelement-loc x.item)
-          :vl-genloop   x.loc
-          :vl-genif     x.loc
-          :vl-gencase   x.loc))
-
-      (define vl-sort-genelements-aux
-        ((x           vl-genelementlist-p)
-         ,@(project-over-types
-            '(__type__s       vl-__type__list-p))
-         (generates   vl-genelementlist-p))
-        :returns (mv ,@(project-over-types
-                        `(__type__s
-                          vl-__type__list-p
-                          :hints (("goal" :in-theory (disable (:d vl-sort-genelements-aux))
-                                   :induct (vl-sort-genelements-aux
-                                            x ,@(project-over-types '__type__s) generates)
-                                   :expand ((vl-sort-genelements-aux
-                                             x ,@(project-over-types '__type__s) generates))))))
-                     (generates vl-genelementlist-p
-                                :hints (("goal" :in-theory (disable (:d vl-sort-genelements-aux))
-                                         :induct (vl-sort-genelements-aux
-                                                  x ,@(project-over-types '__type__s) generates)
-                                         :expand ((vl-sort-genelements-aux
-                                                   x ,@(project-over-types '__type__s) generates))))))
-        :hooks ((:fix :hints (("goal" :in-theory (disable (:d vl-sort-genelements-aux))
-                               :induct (vl-sort-genelements-aux
-                                        x ,@(project-over-types '__type__s) generates)
-                               :expand ((:free (,@(project-over-types '__type__s) generates)
-                                         (vl-sort-genelements-aux
-                                          x ,@(project-over-types '__type__s) generates))
-                                        (vl-sort-genelements-aux
-                                         (vl-genelementlist-fix x)
-                                         ,@(project-over-types '__type__s) generates))))))
-        (b* (((when (atom x))
-              (mv ,@(project-over-types
-                     '(rev (vl-__type__list-fix        __type__s)))
-                  (vl-genelementlist-fix generates))))
-          (vl-genelement-case (xf (car x))
-            :vl-genbase
-            (b* ((x1  xf.item)
-                 (tag (tag x1)))
-              (vl-sort-genelements-aux
-               (cdr x)
-               ,@(project-over-types
-                  '(if (eq tag :vl-__type__)       (cons x1 __type__s)       __type__s))
-               generates))
-            :otherwise
-            (vl-sort-genelements-aux
-             (cdr x) ,@(project-over-types '__type__s)
-             (cons (vl-genelement-fix (car x)) generates))))
-        :prepwork
-        ((local (in-theory (disable
-                            ;; just a speed hint
-                            double-containment
-                            set::nonempty-means-set
-                            acl2::consp-under-iff-when-true-listp
-                            acl2::consp-by-len
-                            acl2::true-listp-when-character-listp
-                            acl2::true-listp-when-atom
-                            set::sets-are-true-lists
-                            consp-when-member-equal-of-cons-listp
-                            consp-when-member-equal-of-cons-listp
-                            acl2::rev-when-not-consp
-                            default-car
-                            default-cdr
-                            pick-a-point-subset-strategy
-                            vl-genelement-p-when-member-equal-of-vl-genelementlist-p
-                            ,@(project-over-types
-                               'vl-__type__list-p-when-subsetp-equal)
-                            ,@(project-over-types
-                               'vl-modelementlist-p-when-vl-__type__list-p)
-                            (:rules-of-class :type-prescription :here)
-                            (:ruleset tag-reasoning))))))
-
-      (define vl-sort-genelements ((x vl-genelementlist-p))
-        :returns (collection vl-genelement-collection-p)
-        (b* (((mv ,@(project-over-types '__type__s) generates)
-              (vl-sort-genelements-aux x ,@(project-over-types nil) nil)))
-          (make-vl-genelement-collection
-           ,@(append-over-types '(:__type__s __type__s))
-           :generates generates))))))
+  (define vl-genelement->loc ((x vl-genelement-p))
+    :returns (loc vl-location-p)
+    (vl-genelement-case x
+      (:vl-genloop  x.loc)
+      (:vl-genif    x.loc)
+      (:vl-gencase  x.loc)
+      (:vl-genblock x.loc)
+      (:vl-genarray x.loc)
+      (:vl-genbase  (vl-modelement->loc x.item)))))
 
 
 (define vl-modelementlist->genelements ((x vl-modelementlist-p))
@@ -3448,14 +3508,122 @@ the list of elements of the given type.</p>"
     (cons (make-vl-genbase :item (car x))
           (vl-modelementlist->genelements (cdr x)))))
 
-(defprod vl-context
+(encapsulate nil
+
+  (defthm tag-when-vl-genelement-p-forward
+    (implies (vl-genelement-p x)
+             (or (equal (tag x) :vl-genbase)
+                 (equal (tag x) :vl-genloop)
+                 (equal (tag x) :vl-genif)
+                 (equal (tag x) :vl-gencase)
+                 (equal (tag x) :vl-genblock)
+                 (equal (tag x) :vl-genarray)))
+    :hints(("Goal" :in-theory (enable tag vl-genelement-p)))
+    :rule-classes :forward-chaining)
+
+  (deftranssum vl-ctxelement
+    ;; Add any tagged product that can be written with ~a and has a loc field.
+    (vl-portdecl
+     vl-assign
+     vl-alias
+     vl-vardecl
+     vl-paramdecl
+     vl-fundecl
+     vl-taskdecl
+     vl-modinst
+     vl-gateinst
+     vl-always
+     vl-initial
+     vl-typedef
+     vl-import
+     vl-fwdtypedef
+     vl-modport
+     vl-interfaceport
+     vl-regularport
+     vl-genelement))
+
+  (local (defthm vl-genelement-kind-by-tag-when-vl-ctxelement-p
+           (implies (and (vl-ctxelement-p x)
+                         (vl-genelement-p x))
+                    (equal (vl-genelement-kind x)
+                           (tag x)))
+           :hints(("Goal" :in-theory (enable vl-ctxelement-p
+                                             vl-genelement-p
+                                             vl-genelement-kind
+                                             tag)))))
+
+  (define vl-ctxelement->loc ((x vl-ctxelement-p))
+    :returns (loc vl-location-p :hints(("Goal" :in-theory (enable vl-ctxelement-fix
+                                                                  vl-ctxelement-p
+                                                                  tag-reasoning
+                                                                  (tau-system)))))
+    :guard-hints (("Goal" :do-not-induct t))
+    (let ((x (vl-ctxelement-fix X)))
+      (case (tag x)
+        (:vl-portdecl (vl-portdecl->loc x))
+        (:vl-assign (vl-assign->loc x))
+        (:vl-alias (vl-alias->loc x))
+        (:vl-vardecl (vl-vardecl->loc x))
+        (:vl-paramdecl (vl-paramdecl->loc x))
+        (:vl-fundecl (vl-fundecl->loc x))
+        (:vl-taskdecl (vl-taskdecl->loc x))
+        (:vl-modinst (vl-modinst->loc x))
+        (:vl-gateinst (vl-gateinst->loc x))
+        (:vl-always (vl-always->loc x))
+        (:vl-initial (vl-initial->loc x))
+        (:vl-typedef (vl-typedef->loc x))
+        (:vl-import (vl-import->loc x))
+        (:vl-fwdtypedef (vl-fwdtypedef->loc x))
+        (:vl-modport (vl-modport->loc x))
+        (:vl-interfaceport (vl-interfaceport->loc x))
+        (:vl-regularport (vl-regularport->loc x))
+        (:vl-genbase (vl-modelement->loc (vl-genbase->item x)))
+        (:vl-genloop (vl-genloop->loc x))
+        (:vl-genif   (vl-genif->loc x))
+        (:vl-gencase (vl-gencase->loc x))
+        (:vl-genblock (vl-genblock->loc x))
+        (:vl-genarray (vl-genarray->loc x))))))
+
+(defprod vl-context1
   :short "Description of where an expression occurs."
   :tag :vl-context
   :layout :tree
   ((mod  stringp :rule-classes :type-prescription
          "The module where this module element was taken from.")
-   (elem vl-modelement-p
+   (elem vl-ctxelement-p
          "Some element from the module.")))
+
+(define vl-context-p ((x))
+  :prepwork ((set-tau-auto-mode nil))
+  (declare (ignorable x))
+  t
+  ///
+  (defthm vl-context-p-type
+    (booleanp (vl-context-p x))
+    :rule-classes :type-prescription)
+  (in-theory (disable (:t vl-context-p)))
+
+  (defthm vl-context-p-of-ctxelement
+    (implies (vl-ctxelement-p x)
+             (vl-context-p x)))
+
+  (define vl-context-fix ((x))
+    x
+    ///
+    (defthm vl-context-p-of-vl-context-fix
+      (vl-context-p (vl-context-fix x)))
+    (defthm vl-context-fix-when-vl-context-p
+      (implies (vl-context-p x)
+               (equal (vl-context-fix x) x)))
+
+    (fty::deffixtype vl-context :pred vl-context-p :fix vl-context-fix :equiv vl-context-equiv
+      :define t))
+
+  (defmacro make-vl-context (&rest args)
+    `(vl-context (make-vl-context1 . ,args)))
+
+  (defmacro vl-context (x)
+    `(vl-context-fix ,x)))
 
 
 (defprod vl-module
@@ -3483,8 +3651,8 @@ the list of elements of the given type.</p>"
 
    ;; BOZO possibly add timeunits declarations.
 
-   ;; (imports    vl-importlist-p
-   ;;             "Import statements for this module, like @('import foo::*').")
+   (imports    vl-importlist-p
+               "Import statements for this module, like @('import foo::*').")
 
    (ports      vl-portlist-p
                "The module's ports list, i.e., @('a'), @('b'), and @('c') in
@@ -3510,6 +3678,9 @@ the list of elements of the given type.</p>"
 
    (assigns    vl-assignlist-p
                "Top-level continuous assignments like @('assign lhs = rhs;').")
+
+   (aliases    vl-aliaslist-p
+               "Wire aliases, @('alias lhs = rhs;')")
 
    (modinsts   vl-modinstlist-p
                "Instances of modules and user-defined primitives, e.g.,
@@ -3562,9 +3733,19 @@ the list of elements of the given type.</p>"
                 displaying the transformed module with comments preserved,
                 e.g., see @(see vl-ppc-module).")
 
+   (loaditems  vl-genelementlist-p
+               "See @(see make-implicit-wires).  This is a temporary container
+                to hold the module elements, in program order, until the rest
+                of the design has been loaded.  This field is \"owned\" by the
+                @('make-implicit-wires') transform.  You should never access it
+                or modify it in any other code.")
+
    (esim       "This is meant to be @('nil') until @(see esim) conversion, at
                 which point it becomes the E module corresponding to this
-                VL module.")))
+                VL module."))
+  :extra-binder-names (hands-offp
+                       ifports
+                       modnamespace))
 
 (fty::deflist vl-modulelist
   :elt-type vl-module-p
@@ -3601,6 +3782,25 @@ transforms to not modules with this attribute.</p>"
                       :hints(("Goal" :in-theory (enable alistp))))))
   :inline t
   (consp (assoc-equal "VL_HANDS_OFF" (vl-module->atts x))))
+
+(define vl-module->ifports
+  :short "Collect just the interface ports for a module."
+  ((x vl-module-p))
+  :returns (ports (vl-interfaceportlist-p ports))
+  (vl-collect-interface-ports (vl-module->ports x))
+  ///
+  (local (defthm vl-regularportlist-p-when-no-interface-ports
+           (implies (and (not (vl-collect-interface-ports x))
+                         (vl-portlist-p x))
+                    (vl-regularportlist-p x))
+           :hints(("Goal" :induct (len x)))))
+  
+  (defthm vl-regularportlist-p-when-no-module->ifports
+    (implies (not (vl-module->ifports x))
+             (vl-regularportlist-p (vl-module->ports x)))
+    :hints(("Goal" :in-theory (enable vl-module->ifports)))))
+
+
 
 (defprojection vl-modulelist->names ((x vl-modulelist-p))
   :returns (names string-listp)
@@ -3820,13 +4020,20 @@ e.g., @('(01)') or @('(1?)')."
   ((name stringp
          :rule-classes :type-prescription
          "The name of this package as a string.")
-   ;; ...
-   (warnings vl-warninglist-p)
-   (minloc   vl-location-p)
-   (maxloc   vl-location-p)
-   (atts     vl-atts-p)
-   (comments vl-commentmap-p))
-  :long "BOZO incomplete stub -- we don't really support packages yet.")
+   (lifetime   vl-lifetime-p)
+   (imports    vl-importlist-p)
+   (fundecls   vl-fundecllist-p)
+   (taskdecls  vl-taskdecllist-p)
+   (typedefs   vl-typedeflist-p)
+   (paramdecls vl-paramdecllist-p)
+   (vardecls   vl-vardecllist-p)
+   (warnings   vl-warninglist-p)
+   (minloc     vl-location-p)
+   (maxloc     vl-location-p)
+   (atts       vl-atts-p)
+   (comments   vl-commentmap-p))
+  :long "<p>BOZO we haven't finished out all the things that can go inside of
+packages.  Eventually there will be new fields here.</p>")
 
 (fty::deflist vl-packagelist :elt-type vl-package-p
   :elementp-of-nil nil)
@@ -3852,14 +4059,23 @@ e.g., @('(01)') or @('(1?)')."
    (vardecls   vl-vardecllist-p)
    (modports   vl-modportlist-p)
    (generates  vl-genelementlist-p)
+   (imports    vl-importlist-p)
    ;; ...
    (warnings vl-warninglist-p)
    (minloc   vl-location-p)
    (maxloc   vl-location-p)
    (atts     vl-atts-p)
    (origname stringp :rule-classes :type-prescription)
-   (comments vl-commentmap-p))
-  :long "BOZO incomplete stub -- we don't really support interfaces yet.")
+   (comments vl-commentmap-p)
+
+   (loaditems  vl-genelementlist-p
+               "See @(see make-implicit-wires).  This is a temporary container
+                to hold the module elements, in program order, until the rest
+                of the design has been loaded."))
+
+  :long "BOZO incomplete stub -- we don't really support interfaces yet."
+
+  :extra-binder-names (ifports))
 
 (fty::deflist vl-interfacelist :elt-type vl-interface-p
   :elementp-of-nil nil)
@@ -3924,7 +4140,5 @@ resulting from parsing some Verilog source code."
 
    ))
 
-
-
-
+(defoption vl-maybe-design-p vl-design-p)
 

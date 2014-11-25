@@ -30,6 +30,7 @@
 
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
+(include-book "tools/include-raw" :dir :system)
 
 (defxdoc seed-random$
   :parents (random$)
@@ -138,26 +139,7 @@ session by just calling @('(seed-random 'seed)').</p>")
 
 (defttag seed-random$)
 
-(progn!
- (set-raw-mode t)
-
- (defparameter *random-seeds* nil)
-
- (defun seed-random$-fn (name freshp)
-   (let ((look (assoc-equal name *random-seeds*)))
-     (cond (look
-            ;(format t "Restoring *random-state* to ~a.~%" (cdr look))
-            (setq *random-state* (make-random-state (cdr look))))
-           (freshp
-            (let* ((new-st (make-random-state t)))
-              ;(format t "Fresh seed ~a: ~a.~%" name new-st)
-              (setq *random-seeds* (acons name new-st *random-seeds*))
-              (setq *random-state* (make-random-state new-st))))
-           (t
-            (let ((new-st (make-random-state nil)))
-              ;(format t "Copy seed to ~a: ~a.~%" name new-st)
-              (setq *random-seeds* (acons name new-st *random-seeds*))))))
-   nil))
+(include-raw "seed-random-raw.lsp")
 
 
 ;; Basic tests to make sure it works

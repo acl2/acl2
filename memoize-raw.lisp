@@ -101,12 +101,6 @@
 ; - Consider using memo-max-sizes-entry records not only to guess good sizes,
 ;   but also to guess good rehash sizes.
 
-; - Maybe think a bit harder about whether our initial memoizations (calls of
-;   memoize-fn in acl2h-init-memoizations) are really handled properly, given
-;   that our code is so oriented towards calling memoize in the loop.  The
-;   current approach seems to have worked well for a long time, so maybe this
-;   isn't much of a priority.  But it seems a bit dodgy somehow.
-
 ; - Tests such as (< (* 100 local-tt) tt) and (> (* 10000 local-tt) tt) in
 ;   function memoize-summary-after-compute-calls-and-times restrict reporting
 ;   to cases where the time is at least 1% of the time taken by the main
@@ -205,17 +199,6 @@
  (:execute :compile-toplevel :load-toplevel)
  (when (fboundp 'ccl::rdtsc)
    (pushnew :RDTSC *features*)))
-
-#+gcl
-(when (not (gcl-version->= 2 6 10))
-
-; Note for GCL: As of late May 2013, with-standard-io-syntax seems to work
-; properly in ANSI GCL.  If necessary one could use our-with-standard-io-syntax
-; here, but better would be to use an up-to-date ANSI GCL.
-
-  (error "Please use GCL Version 2.6.10 or later, as we use the function~%~s, ~
-          which might not always be supported in an earlier version."
-         'with-standard-io-syntax))
 
 ; SECTION: Multithreaded Memoization
 
@@ -1400,6 +1383,11 @@
 #+static-hons
 (defun pons-addr-of-argument (x)
 
+; Warning: *default-hs* needs to have been initialized before calling this
+; function.  As of this writing, pons-addr-of-argument is called only by
+; pons-addr-hash, which is called only by pons, which calls
+; (hl-maybe-initialize-default-hs) before calling pons-addr-hash.
+
 ; Warning: Keep this in sync with hl-addr-of and hl-addr-of-unusual-atom.
 
 ; See hl-addr-of.  This is similar, except without the STR-HT or OTHER-HT we
@@ -1488,6 +1476,12 @@
 #+static-hons
 (defabbrev pons-addr-hash (x y)
 
+; Warning: *default-hs* needs to have been initialized before calling this
+; function, because it calls pons-addr-of-argument.  As of this writing,
+; pons-addr-of-argument is called only by pons-addr-hash, which is called only
+; by pons, which calls (hl-maybe-initialize-default-hs) before calling
+; pons-addr-hash.
+
 ; We try to compute the addresses of X and Y and hash them together.  If either
 ; doesn't have an address, we just return NIL.
 
@@ -1512,6 +1506,20 @@
 ; memoize-fn-def.
 
   (declare (hash-table ht))
+
+; With static honsing pons calls pons-addr-hash, which calls
+; pons-addr-of-argument, which can access *default-hs*.  So here, we make sure
+; that *default-hs* is initialized with static honsing.  This is inexpensive
+; compared to pons, for two reasons:
+
+; - When *default-hs* has already been initialized, the call just below is
+;   essentially just a read of a special variable.
+
+; - Pons is only called on behalf of memoized functions with at least two
+;   arguments.
+
+  #+static-hons
+  (hl-maybe-initialize-default-hs)
 
   #+static-hons
   (let ((addr (pons-addr-hash x y)))
@@ -1717,7 +1725,7 @@
 
   (ma-index *initial-max-symbol-to-fixnum*))
 
-(defg *caller*
+(defvar *caller*
 
 ; This variable represents the index into *memoize-call-array* that starts the
 ; layout of the "column" for the innermost memoized function call being
@@ -1728,6 +1736,10 @@
 
 ; When memoized functions are executing in parallel, the value of *caller* and
 ; of statistics derived therefrom may be meaningless and random.
+
+; At one time we introduced this variable using defg instead of defvar.  To see
+; why we now use defvar, see the comment about unwind-protect in
+; memoize-fn-outer-body.
 
   (let ((val (outside-caller-col-base)))
     (check-type val mfixnum)
@@ -2059,11 +2071,34 @@
      (error "memoize-call-array-grow: ARRAY-DIMENSION-LIMIT exceeded.  Too ~
              many memoized functions."))
    (unless (eql *caller* (outside-caller-col-base))
-     (cw "; MEMOIZE-CALL-ARRAY-GROW was called while a memoized function~%~
-          ; was executing, so call reports may be quite inaccurate.~%"))
+
+; Ouch.  We are about to blow away and reconsitute the memoization structures,
+; including memoized definitions, yet we are inside a memoized definition!
+; This seems like a potentially terrible situation; presumably the original
+; definition continues executing in this case even though the function has been
+; redefined, and probably the only thing wrong is the statistics gathering.
+; But are we sure?  Fortunately, we are only here when we need more than the
+; initial limit of about 500 memoized functions, and it seems unlikely that
+; this will happen when inside a memoized function.  (It might happen when
+; calling profile-all or profile-acl2 in raw Lisp, as defined in community book
+; books/centaur/memoize/old/profile.lisp.  But it seems unlike that these would
+; be called inside some other memoized function!)
+
+; So we cause a somewhat scary continuable error here, and leave it up to the
+; user whether to continue at his or her own risk.  If this problem really
+; occurs in practice, someone can point it out, and some attention can perhaps
+; be given to the problem of whether there is any reasonable way to guarantee
+; that all is well in this circumstance.
+
+     (cerror "Continue at your own risk."
+             "MEMOIZE-CALL-ARRAY-GROW was called while a memoized function~%~
+              was executing, so all bets are off.  Continue only at your own~%~
+              risk.  That risk may be low, but at the least, memoization~%~
+              reports (in particular, from memsum) will probably be~%~
+              inaccurate."))
    (setq *2max-memoize-fns* 2nmax)
    (let ((state *the-live-state*))
-     (observation 'sync-memoize-call-array
+     (observation 'memoize-call-array-grow
                   "Now reinitializing memoization structures.  This will ~
                    erase saved values and statistics."))
    (sync-memoize-call-array)
@@ -2083,7 +2118,6 @@
      (if g
          (access memoize-info-ht-entry g :num)
        (let (new)
-         (assert (eql *caller* (outside-caller-col-base))) ; sanity check
          (loop for i fixnum
                from (1+ *initial-max-symbol-to-fixnum*)
                below (the fixnum (floor *2max-memoize-fns* 2))
@@ -2094,8 +2128,10 @@
                           (max *max-symbol-to-fixnum* new))
                     new)
                (t (memoize-call-array-grow)
-                  (safe-incf *max-symbol-to-fixnum* 1 symbol-to-fixnum-create)
-                  *max-symbol-to-fixnum*)))))))
+
+; Everything has been blown away!  So try again.
+
+                  (symbol-to-fixnum-create s))))))))
 
 (defun-one-output symbol-to-fixnum (s)
   (check-type s symbol)
@@ -2240,7 +2276,8 @@
          ((or (rationalp y)
               (mf-index y t))))))))
 
-(defun memoize-look-up-def (fn cl-defun inline wrld)
+(defun memoize-look-up-def (fn cl-defun inline wrld
+                               &key quiet-p)
 
 ; This function returns a definition (fn formals ...), that is, without the
 ; initial DEFUN.  It returns cl-defun unchanged (other than stripping off the
@@ -2261,7 +2298,7 @@
           ((let ((def (cltl-def-from-name fn wrld)))
              (cond (def (assert (eq (car def) 'defun))
                         (cdr def)))))
-          (t (memoize-look-up-def-raw fn nil))))
+          (t (memoize-look-up-def-raw fn quiet-p))))
         ((eq (car cl-defun) 'defun)
          (cdr cl-defun))
         (t
@@ -2411,29 +2448,27 @@
 
 ; Do more initial stuff for memoize-fn after formals is computed.
 
-  (with-global-memoize-lock
-
-   (unless (and (symbol-listp formals)
-                (no-duplicatesp formals)
-                (loop for x in formals never (constantp x)))
+  (unless (and (symbol-listp formals)
+               (no-duplicatesp formals)
+               (loop for x in formals never (constantp x)))
 
 ; This sanity check is unnecessary when memoization is invoked using memoize
 ; inside the ACL2 loop.
 
-     (error "Memoize-fn: FORMALS, ~a, must be a true list of distinct, ~
-             nonconstant symbols."
-            formals))
+    (error "Memoize-fn: FORMALS, ~a, must be a true list of distinct, ~
+            nonconstant symbols."
+           formals))
 
-   (when (intersection lambda-list-keywords formals)
+  (when (intersection lambda-list-keywords formals)
 
 ; This sanity check is unnecessary when memoization is invoked using memoize
 ; inside the ACL2 loop.
 
-     (error "Memoize-fn: FORMALS, ~a, may not intersect LAMBDA-LIST-KEYWORDS."
-            formals))
+    (error "Memoize-fn: FORMALS, ~a, may not intersect LAMBDA-LIST-KEYWORDS."
+           formals))
 
-   (when (and condition (or (member 'state stobjs-in)
-                            (member 'state stobjs-out)))
+  (when (and condition (or (member 'state stobjs-in)
+                           (member 'state stobjs-out)))
 
 ; This sanity check is unnecessary when memoization is invoked using memoize
 ; inside the ACL2 loop, because in memoize-table-chk, we disallow state as a
@@ -2444,14 +2479,14 @@
 ; and defstobj-field-fns-raw-defs to flush memo tables as necessary.  But there
 ; is no such accommodation for the ACL2 state.
 
-     (error "Memoize-fn:  ~s uses STATE." fn))))
+    (error "Memoize-fn:  ~s uses STATE." fn)))
 
-(defun memoize-fn-inner-body (fn condition body-call fn-col-base
+(defun memoize-fn-inner-body (fn condition body fn-col-base
                                  tablename localtablename
                                  ponstablename localponstablename
                                  memo-table-init-size
                                  formals specials stobjs-out number-of-args
-                                 commutative aokp)
+                                 commutative aokp prog1-fn)
 
 ; This is the main part of the body of the function defined by memoize-fn.
 
@@ -2459,9 +2494,9 @@
 ; best be ignored on a first reading.  A long comment in *memoize-call-array*
 ; outlines how performance counting is implemented.
 
-;; [Jared] multithreading note: all of this is going to be protected with the
-;; global lock, so we shouldn't need any locking inside here.  See
-;; memoize-fn-def.
+  ;; [Jared] multithreading note: all of this is going to be protected with the
+  ;; global lock, so we shouldn't need any locking inside here.  See
+  ;; memoize-fn-def.
 
   (let ((mf-record-mht ; performance counting
          (and *record-mht-calls*
@@ -2477,10 +2512,14 @@
                        ,(ma-index-from-col-base fn-col-base *ma-hits-index*))
                  1)))))
     `(cond
-      ((not ,condition)
-       ,@(and *condition-nil-as-hit* ; see comment in definition of this var
-              mf-record-hit)
-       ,body-call)
+      ,@(and (not (member-eq condition '('t t))) ; minor optimization
+             `(((not ,condition)
+
+; See the comment in the definition of *condition-nil-as-hit*.
+
+                ,@(and *condition-nil-as-hit*
+                       mf-record-hit)
+                ,body)))
       ,@(and
          condition ; else dead code
          `((t
@@ -2537,7 +2576,7 @@
 
                 ,@(and aokp
 
-; We note that a saved value for fn was used, which may have dependent on an
+; We note that a saved value for fn was used, which may have depended on an
 ; attachment since aokp is true.  See memoize-use-attachment-warning for how
 ; this special lookup-marker (:lookup . fn) is used.
 
@@ -2575,35 +2614,49 @@
                                (if (cdr stobjs-out)
                                    (length stobjs-out)
                                  1)
-                               collect (mf-make-symbol "O~a" i)))
-                        (prog1-fn (if (cdr stobjs-out)
-                                      'multiple-value-prog1
-                                    'prog1)))
-                   `(let (,*attached-fn-temp*)
-                      (mv?-let
+                               collect (mf-make-symbol "O~a" i))))
+                   (cond
+                    (aokp
+                     `(mv?-let
                        ,vars
-                       (let (*attached-fn-called*)
-                         (,prog1-fn
-                          ,body-call
-                          (setq ,*attached-fn-temp* *attached-fn-called*)))
-                       (progn
-                         (cond
-                          ,@(and (not aokp)
-                                 `((,*attached-fn-temp*
-                                    (memoize-use-attachment-warning
-                                     ',fn
-                                     ,*attached-fn-temp*))))
-                          (t ; Save the results in the memo table.
-                           (mf-sethash ,*mf-args*
-                                       (list* ,@vars)
-                                       ,localtablename)))
-                         (when ,*attached-fn-temp* ; optimization
-                           (update-attached-fn-called ,*attached-fn-temp*))
-                         (mv? ,@vars))))))))))))))
+                       ,body
+                       (progn (mf-sethash ,*mf-args*
+                                          (list* ,@vars)
+                                          ,localtablename)
+                              (mv? ,@vars))))
+                    (t ; (not aokp); so avoid using attachments
+                     `(let (,*attached-fn-temp*)
+                        (mv?-let
+                         ,vars
+                         (let (*attached-fn-called*)
+                           (,prog1-fn
+                            ,body
+                            (setq ,*attached-fn-temp* *attached-fn-called*)))
+                         (progn
+                           (cond
+                            (,*attached-fn-temp*
+                             (memoize-use-attachment-warning
+                              ',fn
+                              ,*attached-fn-temp*))
+                            (t ; Save the results in the memo table.
+                             (mf-sethash ,*mf-args*
+                                         (list* ,@vars)
+                                         ,localtablename)))
+
+; Special variable *attached-fn-called* was protected by a LET above when
+; executing body, which could have set it to a non-nil value.  That value was
+; however saved in *attached-fn-temp*, which we now use to update
+; *attached-fn-called* since *attached-fn-called* was restored, after the
+; execution of body, to its previous value.
+
+                           (when ,*attached-fn-temp* ; optimization
+                             (update-attached-fn-called ,*attached-fn-temp*))
+                           (mv? ,@vars))))))))))))))))
 
 (defun memoize-fn-outer-body (inner-body fn fn-col-base start-ticks forget
                                          number-of-args
-                                         tablename ponstablename)
+                                         tablename ponstablename
+                                         prog1-fn)
 
 ; The code returned below will be put in the context of outer-body in the code
 ; returned by memoize-fn-def.  It is a wrapper for inner-body, and it is used
@@ -2621,32 +2674,63 @@
 ; functions will be "charged" to fn, and *caller* will only be re-assigned by
 ; subsidiary top-level calls of other memoized functions.
 
-;; [Jared] multithreading note: all of this is going to be protected with the
-;; global lock, so we shouldn't need any locking inside here.  See
-;; memoize-fn-def.
+  ;; [Jared] multithreading note: all of this is going to be protected with the
+  ;; global lock, so we shouldn't need any locking inside here.  See
+  ;; memoize-fn-def.
 
-  `(let ((,*mf-old-caller* *caller*)
-         #+ccl
+  `(let (#+ccl
          ,@(and *record-bytes* ; performance counting
                 `((,*mf-start-bytes* (heap-bytes-allocated))))
          ,@(and *record-pons-calls* ; performance counting
-                `((,*mf-start-pons* *pons-call-counter*))))
+                `((,*mf-start-pons* *pons-call-counter*)))
+         (,start-ticks ,(if *record-time*
+                            '(internal-real-ticks)
+                          '0)))
      (declare
       (ignorable #+ccl
                  ,@(and *record-bytes* `(,*mf-start-bytes*))
                  ,@(and *record-pons-calls* `(,*mf-start-pons*)))
       (type mfixnum
-            ,*mf-old-caller*
+            ,start-ticks
             ,@(and *record-pons-calls* `(,*mf-start-pons*))
             #+ccl
             ,@(and *record-bytes* `(,*mf-start-bytes*))))
-     (unwind-protect-disable-interrupts-during-cleanup
-      (progn (setq ,start-ticks  ,(if *record-time*
-                                      '(internal-real-ticks)
-                                    '0))
-             (setq *caller* ,fn-col-base) ; performance counting
-             ,inner-body)
-      (setq *caller* ,*mf-old-caller*)
+     (,(cond ((or *record-pons-calls*
+                  *record-bytes*
+                  *record-time*
+                  forget)
+
+; The test above is the condition under which there are forms following the
+; inner-body call below.  If there are no such forms, we simply lay down a
+; progn (which presumably will be compiled away).
+
+              prog1-fn)
+             (t 'progn))
+
+; At one time we used unwind-protect here (actually, we used
+; unwind-protect-disable-interrupts-during-cleanup).  But some very simple
+; experiments show that prog1 and multiple-value-prog1 are much cheaper than
+; unwind-protect, even if we introduce *caller* and start-ticks as special
+; variables (so that they can be let-bound) instead of defg.  Maybe that's in
+; the noise, but it seems worth trying, even if when aborting computations,
+; some of the statistics are skewed or, if forget is true, some tables fail to
+; be flushed.
+
+      ,(cond ((or *record-bytes*
+                  *record-calls*
+                  *record-hits*
+                  *record-mht-calls*
+                  *record-pons-calls*
+                  *record-time*)
+
+; Then we are gathering performance counting statistics for this function, so
+; we need to make a note of the caller.  Otherwise, this function is invisible
+; from the standpoint of performance counting, and we should let the caller
+; stay as it was.
+
+              `(let ((*caller* ,fn-col-base)) ; performance counting
+                 ,inner-body))
+             (t inner-body))
       ,@(and *record-pons-calls* ; performance counting
              `((safe-incf
                 (aref ,*mf-ma*
@@ -2693,10 +2777,9 @@
 
              `((setq ,tablename nil)
                ,@(and (> number-of-args 1)
-                      `((setq ,ponstablename nil)))))
-      (setq ,start-ticks -1))))
+                      `((setq ,ponstablename nil))))))))
 
-(defun memoize-fn-def (inner-body outer-body body body-name
+(defun memoize-fn-def (inner-body outer-body
                                   fn formals specials dcls fnn start-ticks
                                   localtablename localponstablename)
 
@@ -2731,10 +2814,16 @@
                        ,*mf-ma*))
         ,@(and *record-calls* ; performance counting
                `((safe-incf (aref ,*mf-ma* ,*mf-count-loc*) 1)))
-        (flet ((,body-name () ,body))
-          (if (eql -1 ,start-ticks)
-              ,outer-body
-            ,inner-body))))))
+
+; At one time we introduced an flet to share code for the original body, which
+; can occur twice or three times below.  But we changed this on 10/18/2014
+; because we think that the code expansion might be worth it, in case flet
+; reduces performance.  Probably this is not a sufficiently important issue to
+; pursue further.
+
+        (if (eql -1 ,start-ticks)
+            ,outer-body
+          ,inner-body)))))
 
 (defun-one-output memoize-eval-compile (def old-fn)
   #+(or ccl sbcl) ; all functions are compiled
@@ -2751,6 +2840,29 @@
       (compile (eval def))
     (eval def))
   nil)
+
+(defun memoize-fn-formals (fn wrld inline
+                              &key
+                              (cl-defun :default cl-defun-p))
+
+; This function is used not only below, but also in community book
+; books/centaur/memoize/old/profile.lisp (actually profile-raw.lsp).
+
+  (let ((formals (getprop fn 'formals t 'current-acl2-world wrld)))
+    (if (eq formals t)
+        (let ((cl-defun (if cl-defun-p
+                            cl-defun
+                          (memoize-look-up-def fn cl-defun inline wrld
+                                               :quiet-p t))))
+          (if (consp cl-defun)
+              (cadr cl-defun)
+            (let ((n (mf-len-inputs fn)))
+              (if n
+                  (loop for i fixnum below n
+                        collect (mf-make-symbol "X~a" i))
+                t ; error
+                ))))
+      formals)))
 
 (defun memoize-fn (fn &key
                       (condition t)
@@ -2865,15 +2977,10 @@
            (formals
             (cond
              ((eq formals :default)
-              (let ((formals (getprop fn 'formals t 'current-acl2-world wrld)))
+              (let ((formals (memoize-fn-formals fn wrld inline
+                                                 :cl-defun cl-defun)))
                 (if (eq formals t)
-                    (if (consp cl-defun)
-                        (cadr cl-defun)
-                      (let ((n (mf-len-inputs fn)))
-                        (if n
-                            (loop for i fixnum below n
-                                  collect (mf-make-symbol "X~a" i))
-                          (error memoize-fn-signature-error fn))))
+                    (error memoize-fn-signature-error fn)
                   formals)))
              (t formals)))
            (stobjs-in
@@ -2930,21 +3037,6 @@
                       #-gcl ,old-fn
                       #+gcl ',old-fn ; old-fn could be (lisp:lambda-block ...)
                       ,@formals)))))
-             (body-name (make-symbol "BODY-NAME"))
-             (body-call
-
-; This call has no arguments, which is OK because a suitable closure is formed.
-; For example, before memoizing a function (foo x) we can evaluate
-
-;   (trace! (memoize-fn-def :native t 
-;                           :entry t
-;                           :exit (progn (pprint (car values)) t)))
-
-; to find that the memoized definition of foo has this form:
-
-;   (DEFUN FOO (X) ... (FLET ((#:BODY-NAME NIL (LIST X X))) ...))
-
-              (list body-name))
              (dcls (mf-dcls (cddr (butlast cl-defun))))
              (start-ticks
 
@@ -2952,7 +3044,7 @@
 
               (let ((v (hons-gentemp
                         (memoize-fn-suffix "START-TICKS-" fn))))
-                (eval `(prog1 (defg ,v -1)
+                (eval `(prog1 (defparameter ,v -1)
                          (declaim (type mfixnum ,v))))))
              (tablename
 
@@ -3014,20 +3106,23 @@
 ; reads from specials we want to count them as arguments.
 
               (+ (len formals) (len specials)))
+             (prog1-fn (if (cdr stobjs-out)
+                           'multiple-value-prog1
+                         'prog1))
              (inner-body
               (memoize-fn-inner-body
-               fn condition body-call fn-col-base
+               fn condition body fn-col-base
                tablename localtablename ponstablename localponstablename
                memo-table-init-size
                formals specials stobjs-out number-of-args
-               commutative aokp))
+               commutative aokp prog1-fn))
              (outer-body
               (memoize-fn-outer-body
                inner-body fn fn-col-base start-ticks forget number-of-args
-               tablename ponstablename))
+               tablename ponstablename prog1-fn))
              (def
               (memoize-fn-def
-               inner-body outer-body body body-name
+               inner-body outer-body
                fn formals specials dcls fnn start-ticks
                localtablename localponstablename))
              (success nil))
@@ -3423,15 +3518,10 @@
   (setq alist
         (loop for x in alist collect
               (progn
-
-; Avoid a bug in GCL 2.6.10 (and perhaps some earlier versions?).
-
-                (when #+gcl (gcl-version->= 2 6 11)
-                      #-gcl t
-                      (check-type x
-                                  (cons (or string symbol)
-                                        (cons (or string (integer 0))
-                                              null))))
+                (check-type x
+                            (cons (or string symbol)
+                                  (cons (or string (integer 0))
+                                        null)))
                 (list (mf-shorten (car x) *mf-print-alist-width*)
                       (if (integerp (cadr x))
                           (mf-num-to-string (cadr x))
@@ -4434,7 +4524,7 @@
 
 (defmacro with-lower-overhead (&rest r)
 
-; Warning: Keep this in sync with lower-overhead.
+; Warning: Keep this in sync with lower-overhead and with-higher-overhead.
 
   `(let ((*record-bytes* nil)
          (*record-calls*
@@ -4452,11 +4542,26 @@
          (*record-time* nil))
      ,@r))
 
-(defun acl2h-init-memoizations ()
+(defmacro with-higher-overhead (&rest r)
 
-; Warning: Keep in sync with acl2h-init-unmemoizations.  Note however that some
-; of the functions memoized here are not memoized by acl2h-init-unmemoizations,
-; as explained below and in a comment in that function.
+; Warning: Keep this in sync with lower-overhead and with-lower-overhead.
+
+  `(let ((*record-bytes* t)
+         (*record-calls* t)
+         (*record-hits* t)
+         (*record-mht-calls* t)
+         (*record-pons-calls* t)
+         (*record-time* t))
+     ,@r))
+
+(defmacro with-overhead (val form)
+  (let ((v (gensym)))
+    `(let ((,v ,val))
+       (cond ((eq ,v :default) ,form)
+             ((null ,v) (with-lower-overhead ,form))
+             (t (with-higher-overhead ,form))))))
+
+(defun acl2h-init-memoizations ()
 
 ; The memoizations performed here, for certain built-in functions, may be
 ; important for performance in applications that traffic in large objects or
@@ -4466,41 +4571,10 @@
 ; thread-safe.
 
   (loop for entry in
-
-; Warning: If this list is changed, visit the comments in the memoized
-; functions.
-
-        (list* '(fchecksum-obj :forget t)
-               '(expansion-alist-pkg-names-memoize :forget t)
-               *thread-unsafe-builtin-memoizations*)
+        *thread-unsafe-builtin-memoizations*
         when (not (memoizedp-raw (car entry)))
         do (with-lower-overhead
             (apply 'memoize-fn entry))))
-
-(defun acl2h-init-unmemoizations ()
-
-; Warning: Keep in sync with acl2h-init-memoizations.
-
-; We unmemoize only those functions whose memoization may interfere with
-; waterfall parallelism.  In particular, we avoid unmemoizing fchecksum-obj and
-; expansion-alist-pkg-names-memoize, which had caused ACL2(hp) certification
-; failure for community book books/system/doc/render-doc-combined (which went
-; out to lunch with many fchecksum-obj on the stack).
-
-; We unmemoize bad-lisp-objectp because the *1* function for
-; symbol-package-name calls chk-bad-lisp-object, and of course
-; symbol-package-name can be called during the waterfall.  Of course,
-; worse-than-builtin is also called during the waterfall, so we unmemoize it
-; here as well.
-
-  (loop for entry in
-
-; Warning: If this list is changed, visit the comments in the memoized
-; functions.
-
-        *thread-unsafe-builtin-memoizations*
-        when (memoizedp-raw (car entry))
-        do (unmemoize-fn (car entry))))
 
 ;;;;;;;;;;
 ;;; Start memory management code (start-sol-gc)
@@ -4744,7 +4818,7 @@
 ; we expect ACL2-DEFAULT-RESTART to be called only once, nevertheless for
 ; robustness we code ACL2H-INIT so that it may be called multiple times.
 
-  (memoize-init)
+; (memoize-init) ; skipped, since this call is in exit-boot-strap-mode
 
   #+static-hons
   (setq *print-array*
@@ -4787,7 +4861,8 @@
 
 (defun lower-overhead ()
 
-; Warning: Keep this in sync with with-lower-overhead.
+; Warning: Keep this in sync with with-lower-overhead and
+; with-higher-overhead.
 
 ; An old comment here claims that lower-overhead does not help much (in
 ; speeding things up, presumably).  It might be interesting to test that.

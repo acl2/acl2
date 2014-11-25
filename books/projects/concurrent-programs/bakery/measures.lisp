@@ -141,7 +141,9 @@ theorem demonstrates that msr1- decrements measures which are non-0.
 |#
 
 (defthm msr->ord-returns-e0-ordinals
-  (e0-ordinalp (msr->ord x)))
+  (e0-ordinalp (msr->ord x))
+  ;; [Jared] disabling this after building it into ACL2
+  :hints(("Goal" :in-theory (disable fold-consts-in-+))))
 
 (defthm msr<-is-well-founded-via-msr->ord
   (implies (msr< x y)

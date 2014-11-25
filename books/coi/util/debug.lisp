@@ -2,6 +2,8 @@
 
 (include-book "defdoc")
 
+(include-book "xdoc/top" :dir :system)
+
 (defun map-values-to-fmt-list (values)
   (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) values))
 
@@ -28,39 +30,63 @@
   `(coi-debug::fail-fn ,value ,message ,(map-values-to-fmt-list parameters)))
 
 ;; -------------------------------------------------------------------
-(def::doc coi-debug::fail
+;;; The following legacy doc string was replaced Nov. 2014 by the
+;;; auto-generated defxdoc form just below.
+; (def::doc coi-debug::fail
+; 
+;   :one-liner "A macro to assist in signalling runtime errors"
+; 
+;   :details (docstring
+; "
+; 
+;   The coi-debug::fail macro allows the user to signal runtime errors
+; in ACL2 code.  The return value of coi-debug::fail can be set by
+; specifying a :value parameter.  The failure message can be configured
+; via the :message keyword.  Additional parameters can be passed in as 
+; a list via :parameters.
+; 
+;   Typical usage pattern:
+; 
+;   (if (consp x) (car x)
+;     (coi-debug::fail :value nil
+;                  :message \"~~x0 is not a consp\"
+;                  :parameters (x)))
+; 
+;   It is sometimes convenient when debugging to induce a common-lisp
+; break on a failure.  The following code will do just that.
+; 
+;   FOO !> (acl2::progn
+;            (acl2::defttag t)
+;            (acl2::progn!
+;              (acl2::set-raw-mode t)
+;              (defun coi-debug::fail-fn (value message parameters)
+;                (acl2::prog2$
+;                  (acl2::fmt-to-comment-window message parameters 0 nil)
+;                  (acl2::break)))))
+; 
+; "))
 
-  :one-liner "A macro to assist in signalling runtime errors"
+(defxdoc coi-debug::fail
+  :parents (coi-debug::fail)
+  :short "A macro to assist in signalling runtime errors"
+  :long "<p>The coi-debug::fail macro allows the user to signal runtime errors
+ in ACL2 code.  The return value of coi-debug::fail can be set by specifying
+ a :value parameter.  The failure message can be configured via the :message
+ keyword.  Additional parameters can be passed in as a list
+ via :parameters.</p>
 
-  :details (docstring
-"
+ <p>Typical usage pattern:</p>
 
-  The coi-debug::fail macro allows the user to signal runtime errors
-in ACL2 code.  The return value of coi-debug::fail can be set by
-specifying a :value parameter.  The failure message can be configured
-via the :message keyword.  Additional parameters can be passed in as 
-a list via :parameters.
+ <p>(if (consp x) (car x) (coi-debug::fail :value nil :message \"~x0 is not a
+     consp\" :parameters (x)))</p>
 
-  Typical usage pattern:
+ <p>It is sometimes convenient when debugging to induce a common-lisp break on
+ a failure.  The following code will do just that.</p>
 
-  (if (consp x) (car x)
-    (coi-debug::fail :value nil
-                 :message \"~x0 is not a consp\"
-                 :parameters (x)))
-
-  It is sometimes convenient when debugging to induce a common-lisp
-break on a failure.  The following code will do just that.
-
-  FOO !> (acl2::progn
-           (acl2::defttag t)
-           (acl2::progn!
-             (acl2::set-raw-mode t)
-             (defun coi-debug::fail-fn (value message parameters)
-               (acl2::prog2$
-                 (acl2::fmt-to-comment-window message parameters 0 nil)
-                 (acl2::break)))))
-
-"))
+ <p>FOO !&gt; (acl2::progn (acl2::defttag t) (acl2::progn!  (acl2::set-raw-mode
+            t) (defun coi-debug::fail-fn (value message parameters)
+            (acl2::prog2$ (acl2::fmt-to-comment-window message parameters 0
+            nil) (acl2::break)))))</p>")
 ;; -------------------------------------------------------------------
 
 
@@ -82,30 +108,47 @@ break on a failure.  The following code will do just that.
 			 ,value ,message ,(map-values-to-fmt-list parameters)))))
 
 ;; -------------------------------------------------------------------
+;;; The following legacy doc string was replaced Nov. 2014 by the
+;;; auto-generated defxdoc form just below.
+; (def::doc coi-debug::assert
+; 
+;   :one-liner "A macro to assist in detecting runtime errors"
+; 
+;   :details (docstring
+; "
+; 
+;   The coi-debug::assert macro allows the user to identify runtime errors
+; in ACL2 code.  The return value of coi-debug::assert can be set by
+; specifying a :value parameter.  The failure message can be configured
+; via the :message keyword.  Note that the first argument (~~x0) is the
+; syntactic form of the test, but that additional parameters can be
+; passed in as a list via :parameters.
+; 
+;   Example usage pattern:
+; 
+;   (let ((y (coi-debug::assert (test y)
+;                           :value y
+;                           :message \"Y failed ~~x0 in ~~x1\"
+;                           :parameters (z))))
+;     ..)
+; 
+; "))
 
-(def::doc coi-debug::assert
+(defxdoc coi-debug::assert
+  :parents (coi-debug::assert)
+  :short "A macro to assist in detecting runtime errors"
+  :long "<p>The coi-debug::assert macro allows the user to identify runtime
+ errors in ACL2 code.  The return value of coi-debug::assert can be set by
+ specifying a
+ :value parameter.  The failure message can be configured via the :message
+ keyword.  Note that the first argument (~x0) is the syntactic form of the
+ test, but that additional parameters can be passed in as a list via
+ :parameters.</p>
 
-  :one-liner "A macro to assist in detecting runtime errors"
+ <p>Example usage pattern:</p>
 
-  :details (docstring
-"
-
-  The coi-debug::assert macro allows the user to identify runtime errors
-in ACL2 code.  The return value of coi-debug::assert can be set by
-specifying a :value parameter.  The failure message can be configured
-via the :message keyword.  Note that the first argument (~x0) is the
-syntactic form of the test, but that additional parameters can be
-passed in as a list via :parameters.
-
-  Example usage pattern:
-
-  (let ((y (coi-debug::assert (test y)
-                          :value y
-                          :message \"Y failed ~x0 in ~x1\"
-                          :parameters (z))))
-    ..)
-
-"))
+ <p>(let ((y (coi-debug::assert (test y) :value y :message \"Y failed ~x0 in
+                           ~x1\" :parameters (z)))) ..)</p>")
 
 ;; -------------------------------------------------------------------
 

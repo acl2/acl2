@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "../../mlib/lvalues")
-(include-book "../../mlib/find-item")
+(include-book "../../mlib/find")
 (include-book "../../mlib/filter")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
@@ -85,7 +85,6 @@ isn't an array.</p>"
          :fatalp nil
          :fn __function__))
 
-       ((vl-vardecl decl) decl)
        ((unless (vl-simplereg-p decl))
         (make-vl-warning
          :type :vl-always-too-hard
@@ -319,3 +318,38 @@ singleton statement list.</p>"
     (mv x.body x.ctrl (vl-eventcontrol->atoms x.ctrl)))
   :prepwork ((local (in-theory (e/d (vl-edge-control-p))))))
 
+
+
+
+(define vl-evatom-plain-p ((x vl-evatom-p))
+  :returns plainp
+  :parents (vl-match-latch-main vl-evatom-p)
+  :short "We say a @(see vl-evatom-p) is <i>plain</i> when it has no
+@('posedge') or @('negedge'), and the expression is a simple identifier.  For
+instance, an event control list like @('@(a or b or c)') contains only plain
+evatoms."
+  :long "<p>Typically an @('always') block that has this sort of event control
+contains either behavioral-style combinational logic or latches, whereas an
+event control with something like @('@(posedge clk)') expresses
+flip-flops.</p>"
+  (b* (((vl-evatom x) x))
+    (and (eq x.type :vl-noedge)
+         (vl-idexpr-p x.expr)))
+  ///
+  (defthm vl-evatom->type-when-vl-evatom-plain-p
+    (implies (vl-evatom-plain-p x)
+             (equal (vl-evatom->type x) :vl-noedge)))
+
+  (defthm vl-idexpr-p-of-vl-evatom->expr-when-vl-evatom-plain-p
+    (implies (vl-evatom-plain-p x)
+             (vl-idexpr-p (vl-evatom->expr x)))))
+
+(deflist vl-evatomlist-plain-p (x)
+  (vl-evatom-plain-p x)
+  :guard (vl-evatomlist-p x)
+  :elementp-of-nil nil
+  :parents (vl-match-latch-main vl-evatomlist-p)
+  :rest
+  ((defthm vl-idexprlist-p-of-vl-evatomlist->exprs
+     (implies (vl-evatomlist-plain-p x)
+              (vl-idexprlist-p (vl-evatomlist->exprs x))))))

@@ -103,7 +103,11 @@ added.")
 (defxdoc-raw ts-queue-len
   :parents (ts-queue)
   :short "@('(ts-queue-len queue)') returns the current length of the data list
-for @('queue').  It can be used at any time by any thread and never blocks.")
+for @('queue').  It can be used at any time by any thread and never blocks."
+
+  :long "The return value of @('ts-queue-len') should only be treated as an
+estimate.  This is because the length of the queue can change immediately after
+@('ts-queue-len') returns (or even, right before it returns).")
 
 (defun ts-queue-len (queue)
   (declare (type ts-queue queue))
@@ -196,6 +200,7 @@ with are not normed.</p>")
   (load-queue  (make-ts-queue)))
 
 (defparameter *vls-transdb* (make-vls-transdb))
+
 
 
 (defun vls-scanner-thread (&optional noloop)
@@ -294,7 +299,8 @@ with are not normed.</p>")
 ; Runs forever.  Tries to load any translations that are added to the load
 ; queue.
 
-  (let ((acl2::*default-hs* (acl2::hl-hspace-init))
+  (let (#+hons
+        (acl2::*default-hs* (acl2::hl-hspace-init))
         ;; Bigger sizes might be better for large models, but it might be
         ;; nice not to grow these beyond reason...
         (db *vls-transdb*))
@@ -310,10 +316,7 @@ with are not normed.</p>")
            ;;                         condition))))))
 
 
-
-
-
-
+#+hons
 (acl2::mf-multiprocessing t)
 
 (let ((support-started nil))
@@ -382,6 +385,7 @@ with are not normed.</p>")
   `(b* ((?state
          ;; Bind state since we often need that.
          acl2::*the-live-state*)
+        #+hons
         (acl2::*default-hs*
          ;; Give this thread its own hons space.  Hopefully it won't use it
          ;; for anything.
@@ -412,88 +416,96 @@ with are not normed.</p>")
 
   (hunchentoot:define-easy-handler (list-unloaded :uri "/list-unloaded") ()
     (setf (hunchentoot:content-type*) "application/json")
-    (let* ((scanned  (vls-scanned-translations *vls-transdb*))
-           (loaded   (vls-loaded-translations *vls-transdb*))
-           (unloaded (difference (mergesort scanned)
-                                 (mergesort loaded)))
-           (ans      (vl-tnames-to-json unloaded)))
-      (bridge::json-encode (list (cons :value ans)))))
+    (with-handler-bindings
+      (let* ((scanned  (vls-scanned-translations *vls-transdb*))
+             (loaded   (vls-loaded-translations *vls-transdb*))
+             (unloaded (difference (mergesort scanned)
+                                   (mergesort loaded)))
+             (ans      (vl-tnames-to-json unloaded)))\
+        (bridge::json-encode (list (cons :value ans))))))
 
   (hunchentoot:define-easy-handler (list-loaded :uri "/list-loaded") ()
     (setf (hunchentoot:content-type*) "application/json")
-    (let ((ans (vl-tnames-to-json (vls-loaded-translations *vls-transdb*))))
-      (bridge::json-encode (list (cons :value ans)))))
+    (with-handler-bindings
+      (let ((ans (vl-tnames-to-json (vls-loaded-translations *vls-transdb*))))
+        (bridge::json-encode (list (cons :value ans))))))
 
   (hunchentoot:define-easy-handler (load-model :uri "/load-model" :default-request-type :post)
     ((base  :parameter-type 'string)
      (model :parameter-type 'string))
     (setf (hunchentoot:content-type*) "application/json")
-    (let ((tname (make-vl-tname :base base :model model)))
-      (if (vls-quick-get-model tname *vls-transdb*)
-          (bridge::json-encode (list (cons :status :loaded)))
-        (progn
-          (vls-start-model-load tname *vls-transdb*)
-          (bridge::json-encode (list (cons :status :started)))))))
+    (with-handler-bindings
+      (let ((tname (make-vl-tname :base base :model model)))
+        (if (vls-quick-get-model tname *vls-transdb*)
+            (bridge::json-encode (list (cons :status :loaded)))
+          (progn
+            (vls-start-model-load tname *vls-transdb*)
+            (bridge::json-encode (list (cons :status :started))))))))
 
   (hunchentoot:define-easy-handler (load-model :uri "/load-model" :default-request-type :post)
     ((base  :parameter-type 'string)
      (model :parameter-type 'string))
     (setf (hunchentoot:content-type*) "application/json")
-    (let ((tname (make-vl-tname :base base :model model)))
-      (if (vls-quick-get-model tname *vls-transdb*)
-          (bridge::json-encode (list (cons :status :loaded)))
-        (progn
-          (vls-start-model-load tname *vls-transdb*)
-          (bridge::json-encode (list (cons :status :started)))))))
+    (with-handler-bindings
+      (let ((tname (make-vl-tname :base base :model model)))
+        (if (vls-quick-get-model tname *vls-transdb*)
+            (bridge::json-encode (list (cons :status :loaded)))
+          (progn
+            (vls-start-model-load tname *vls-transdb*)
+            (bridge::json-encode (list (cons :status :started))))))))
 
   (hunchentoot:define-easy-handler (get-summary :uri "/get-summary")
     ((base     :parameter-type 'string)
      (model    :parameter-type 'string)
      (origname :parameter-type 'string))
     (setf (hunchentoot:content-type*) "application/json")
-    (b* ((tname (make-vl-tname :base base :model model))
-         (data (vls-quick-get-model tname *vls-transdb*))
-         ((unless data)
-          (bridge::json-encode (list (cons :error "Invalid model")))))
-      (bridge::json-encode (list (cons :error nil)
-                                 (cons :value (vls-get-summary origname data))))))
+    (with-handler-bindings
+      (b* ((tname (make-vl-tname :base base :model model))
+           (data (vls-quick-get-model tname *vls-transdb*))
+           ((unless data)
+            (bridge::json-encode (list (cons :error "Invalid model")))))
+        (bridge::json-encode (list (cons :error nil)
+                                   (cons :value (vls-get-summary origname data)))))))
 
   (hunchentoot:define-easy-handler (get-summaries :uri "/get-summaries")
     ((base  :parameter-type 'string)
      (model :parameter-type 'string))
     (setf (hunchentoot:content-type*) "application/json")
-    (b* ((tname (make-vl-tname :base base :model model))
-         (data (vls-quick-get-model tname *vls-transdb*))
-         ((unless data)
-          (bridge::json-encode (list (cons :error "Invalid model"))))
-         ((vls-data data)))
-      (bridge::json-encode (list (cons :error nil)
-                                 (cons :value (vl-descriptionlist-summaries
-                                               (alist-vals data.orig-descalist)))))))
+    (with-handler-bindings
+      (b* ((tname (make-vl-tname :base base :model model))
+           (data (vls-quick-get-model tname *vls-transdb*))
+           ((unless data)
+            (bridge::json-encode (list (cons :error "Invalid model"))))
+           ((vls-data data)))
+        (bridge::json-encode (list (cons :error nil)
+                                   (cons :value (vl-descriptionlist-summaries
+                                                 (alist-vals data.orig-descalist))))))))
 
   (hunchentoot:define-easy-handler (get-parents :uri "/get-parents")
     ((base     :parameter-type 'string)
      (model    :parameter-type 'string)
      (origname :parameter-type 'string))
     (setf (hunchentoot:content-type*) "application/json")
-    (b* ((tname (make-vl-tname :base base :model model))
-         (data (vls-quick-get-model tname *vls-transdb*))
-         ((unless data)
-          (bridge::json-encode (list (cons :error "Invalid model")))))
-      (bridge::json-encode (list (cons :error nil)
-                                 (cons :value (vls-get-parents origname data))))))
+    (with-handler-bindings
+      (b* ((tname (make-vl-tname :base base :model model))
+           (data (vls-quick-get-model tname *vls-transdb*))
+           ((unless data)
+            (bridge::json-encode (list (cons :error "Invalid model")))))
+        (bridge::json-encode (list (cons :error nil)
+                                   (cons :value (vls-get-parents origname data)))))))
 
   (hunchentoot:define-easy-handler (get-children :uri "/get-children")
     ((base     :parameter-type 'string)
      (model    :parameter-type 'string)
      (origname :parameter-type 'string))
     (setf (hunchentoot:content-type*) "application/json")
-    (b* ((tname (make-vl-tname :base base :model model))
-         (data (vls-quick-get-model tname *vls-transdb*))
-         ((unless data)
-          (bridge::json-encode (list (cons :error "Invalid model")))))
-      (bridge::json-encode (list (cons :error nil)
-                                 (cons :value (vls-get-children origname data))))))
+    (with-handler-bindings
+      (b* ((tname (make-vl-tname :base base :model model))
+           (data (vls-quick-get-model tname *vls-transdb*))
+           ((unless data)
+            (bridge::json-encode (list (cons :error "Invalid model")))))
+        (bridge::json-encode (list (cons :error nil)
+                                   (cons :value (vls-get-children origname data)))))))
 
   (hunchentoot:define-easy-handler (get-origsrc :uri "/get-origsrc")
     ((base  :parameter-type 'string)

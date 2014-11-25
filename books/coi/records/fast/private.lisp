@@ -28,38 +28,78 @@
 
 (in-package "MEM")
 
-(defdoc private
-  ":Doc-Section private
-  redundantly define, then serverely restrict the usage of some function~/
-  ~bv[]
+(include-book "xdoc/top" :dir :system)
+(defmacro defxdoc (&rest args)
+  `(acl2::defxdoc ,@args))
+
+;;; The following legacy doc string was replaced Nov. 2014 by the
+;;; auto-generated defxdoc form just below.
+; (defdoc private
+;   ":Doc-Section private
+;   redundantly define, then serverely restrict the usage of some function~/
+;   ~bv[]
+;   Example:
+;      (private foo (x y) 
+;         (if (atom x) 
+;             ...))
+;   ~ev[]
+;   ~c[private] is a macro which may be useful for authors of libraries, or
+;   to users who want to enforce severe discipline upon themselves.~/
+; 
+;   The macro is similar to defund (~l[defund]) in that it first introduces
+;   a defun and then immediately disables its definition.  However, ~c[private]
+;   goes further -- it also disables the resulting type-prescription rule and 
+;   sets up theory invariants that prohibit the user from ever enabling the 
+;   definition or the type prescription.
+; 
+;   Why would we want such a thing?  A nice way to develop libraries is to use
+;   redundant definitions (~l[set-enforce-redundancy]) in an interface file, 
+;   so that users never even see the local lemmas and so forth that you used
+;   to get the proofs to go through.  This gives you the freedom to change 
+;   and remove those definitions at will.
+; 
+;   Unfortunately, you cannot do the same for functions, because ACL2 needs
+;   the functions available in the interface book if they are ever used.  With
+;   ~c[private], you can identify functions that you want to keep control over
+;   and that the user should either (1) not be using at all, or (2) only be
+;   reasoning about using the theorems your have provided.
+; 
+;   To use private, simply copy your ~c[(defun foo ...)] form into your interface
+;   file, then replace ~c[defun] with ~c[private].")
+
+(defxdoc mem::private
+  :parents (mem::private)
+  :short "Redundantly define, then serverely restrict the usage of some function"
+  :long "@({
   Example:
-     (private foo (x y) 
-        (if (atom x) 
+     (private foo (x y)
+        (if (atom x)
             ...))
-  ~ev[]
-  ~c[private] is a macro which may be useful for authors of libraries, or
-  to users who want to enforce severe discipline upon themselves.~/
+ })
 
-  The macro is similar to defund (~l[defund]) in that it first introduces
-  a defun and then immediately disables its definition.  However, ~c[private]
-  goes further -- it also disables the resulting type-prescription rule and 
-  sets up theory invariants that prohibit the user from ever enabling the 
-  definition or the type prescription.
+ <p>@('private') is a macro which may be useful for authors of libraries, or to
+ users who want to enforce severe discipline upon themselves.</p>
 
-  Why would we want such a thing?  A nice way to develop libraries is to use
-  redundant definitions (~l[set-enforce-redundancy]) in an interface file, 
-  so that users never even see the local lemmas and so forth that you used
-  to get the proofs to go through.  This gives you the freedom to change 
-  and remove those definitions at will.
+ <p>The macro is similar to defund (See @(see defund)) in that it first
+ introduces a defun and then immediately disables its definition.  However,
+ @('private') goes further -- it also disables the resulting type-prescription
+ rule and sets up theory invariants that prohibit the user from ever enabling
+ the definition or the type prescription.</p>
 
-  Unfortunately, you cannot do the same for functions, because ACL2 needs
-  the functions available in the interface book if they are ever used.  With
-  ~c[private], you can identify functions that you want to keep control over
-  and that the user should either (1) not be using at all, or (2) only be
-  reasoning about using the theorems your have provided.
+ <p>Why would we want such a thing?  A nice way to develop libraries is to use
+ redundant definitions (See @(see set-enforce-redundancy)) in an interface
+ file, so that users never even see the local lemmas and so forth that you used
+ to get the proofs to go through.  This gives you the freedom to change and
+ remove those definitions at will.</p>
 
-  To use private, simply copy your ~c[(defun foo ...)] form into your interface
-  file, then replace ~c[defun] with ~c[private].")
+ <p>Unfortunately, you cannot do the same for functions, because ACL2 needs the
+ functions available in the interface book if they are ever used.  With
+ @('private'), you can identify functions that you want to keep control over
+ and that the user should either (1) not be using at all, or (2) only be
+ reasoning about using the theorems your have provided.</p>
+
+ <p>To use private, simply copy your @('(defun foo ...)') form into your
+ interface file, then replace @('defun') with @('private').</p>")
 
 (defmacro private (&rest def)
   (declare (xargs :guard (and (true-listp def)

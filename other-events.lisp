@@ -4107,7 +4107,6 @@
      (SETENV$ ACL2-BUILT-INS)
      (SEVENTH ACL2-BUILT-INS)
      (SHARP-BANG-READER OTHER)
-     (SHARP-COMMA-READER OTHER)
      (SHARP-DOT-READER OTHER)
      (SHARP-U-READER OTHER)
      (ACL2-PC::SHOW-ABBREVIATIONS PROOF-CHECKER-COMMANDS)
@@ -8921,16 +8920,21 @@
 
 (defun mark-missing-as-hidden-p (a1 a2)
 
-; A1 and a2 are known-package-alists.  Return the result of marking each
-; package-entry in a1 that is missing in a2 with hidden-p equal to t.
+; A1 and a2 are known-package-alists.  Return the result of modifying a1 by
+; marking the following non-hidden entries as hidden: those that are either
+; missing from a2 or hidden in a2.
 
   (cond ((endp a1) nil)
-        ((or (find-package-entry (package-entry-name (car a1)) a2)
-             (package-entry-hidden-p (car a1)))
-         (cons (car a1)
+        ((and (not (package-entry-hidden-p (car a1)))
+              (let ((entry
+                     (find-package-entry (package-entry-name (car a1)) a2)))
+                (or (not entry)
+                    (package-entry-hidden-p entry))))
+         (cons (change-package-entry-hidden-p (car a1) t)
                (mark-missing-as-hidden-p (cdr a1) a2)))
-        (t (cons (change-package-entry-hidden-p (car a1) t)
-                 (mark-missing-as-hidden-p (cdr a1) a2)))))
+        (t
+         (cons (car a1)
+               (mark-missing-as-hidden-p (cdr a1) a2)))))
 
 (defun known-package-alist-included-p (a1 a2)
 
@@ -9433,7 +9437,7 @@
                              t
                              (or new-event-form event-form)
                              'encapsulate
-                             (strip-cars insigs)
+                             (or (strip-cars insigs) 0)
                              nil nil
                              t
                              ctx
@@ -9524,7 +9528,7 @@
                                         new-event-form
                                       event-form)
                                     'encapsulate
-                                    (strip-cars insigs)
+                                    (or (strip-cars insigs) 0)
                                     nil nil
                                     nil ; irrelevant, since we are skipping proofs
                                     ctx
@@ -11496,7 +11500,7 @@
               (t (er soft ctx
                      "The argument to IN-PACKAGE must be a known ~
                       package name, but ~x0, used in the first form ~
-                      in ~x1, is not.  The known packages are~*2"
+                      in ~x1, is not.  The known packages are ~*2"
                      (cadr val)
                      file
                      (tilde-*-&v-strings
@@ -15563,7 +15567,6 @@
                  (t (cons name acc)))))
         (t acc)))
 
-#+(and hons (not acl2-loop-only))
 (defun hons-union-ordered-string-lists (x y)
   (cond ((null x) y)
         ((null y) x)
@@ -15579,8 +15582,6 @@
          (hons (car y)
                (hons-union-ordered-string-lists x (cdr y))))))
 
-#+(and hons (not acl2-loop-only))
-(save-def
 (defun expansion-alist-pkg-names-memoize (x)
 
 ; See expansion-alist-pkg-names.
@@ -15592,16 +15593,8 @@
         ((and x (symbolp x))
          (hons (symbol-package-name x) nil))
         (t nil)))
-)
 
 (defun expansion-alist-pkg-names (x base-kpa)
-
-; Warning: With #+hons, there could be performance problems if this is put into
-; :logic mode without verifying guards.  That is because
-; expansion-alist-pkg-names-memoize is memoized by running acl2h-init, and for
-; memoization, we expect the raw Lisp function to be executed and call
-; expansion-alist-pkg-names; but :ideal mode functions are run without ever
-; slipping into raw Lisp.
 
 ; For an explanation of the point of this function, see the comment at the call
 ; of expansion-alist-pkg-names in certify-book-fn.
@@ -18345,7 +18338,9 @@
                `((defdoc ,name ,doc))
              nil))))))
 
-; Here is the defstobj event.
+; Here is the defstobj event.  Note that many supporting functions have been
+; moved from this file to basis-a.lisp, in support of ACL2 "toothbrush"
+; applications.
 
 ; We start with the problem of finding the arguments to the defstobj event.
 ; The form looks likes
@@ -18403,30 +18398,6 @@
            have a guard of T."
           (car names)
           (untranslate (guard (car names) nil wrld) t wrld)))))
-
-(defconst *expt2-28* (expt 2 28))
-
-(defun fix-stobj-array-type (type wrld)
-
-; Note: Wrld may be a world or nil.  If wrld is nil and we are in raw Lisp,
-; then this function should be called in a context where the symbol-value is
-; available for any symbol introduced by a previous defconst event.  Our
-; intended use case meets that criterion: evaluation of a defstobj form during
-; loading of the compiled file for a book.
-
-  (let* ((max (car (caddr type)))
-         (n (cond ((consp wrld)
-                   (let ((qc (defined-constant max wrld)))
-                     (and qc (unquote qc))))
-                  #-acl2-loop-only
-                  ((eq wrld nil)
-                   (and (symbolp max)
-                        (symbol-value max)))
-                  (t nil))))
-    (cond (n (list (car type)
-                   (cadr type)
-                   (list n)))
-          (t type))))
 
 (defun chk-stobj-field-descriptor (name field-descriptor non-memoizable
                                         ctx wrld state)
@@ -18787,11 +18758,6 @@
 ; the type-spec only involves compliant functions and that every
 ; non-system function used has a guard of T.
 
-(defun defconst-name (name)
-  (intern-in-package-of-symbol
-   (concatenate 'string "*" (symbol-name name) "*")
-   name))
-
 (defun chk-acceptable-defstobj1 (name field-descriptors ftemps renaming
                                       non-memoizable ctx wrld state names
                                       const-names)
@@ -18886,9 +18852,6 @@
                                            names))
                                   (cons accessor-const-name
                                         const-names))))))))
-
-(defconst *defstobj-keywords*
-  '(:renaming :doc :inline :congruent-to :non-memoizable))
 
 (defun defstobj-redundancy-bundle (args)
 
@@ -19170,385 +19133,9 @@
 ; restriction; it is OK for the implementation to insist on such a
 ; bound when actually executing.
 
-; Now we introduce the idea of the "template" of a defstobj, which
-; includes a normalized version of the field descriptors under the
-; renaming.
-
-(defrec defstobj-field-template
-  (((fieldp-name . type) . (init . length-name))
-   (accessor-name . updater-name)
-   resize-name
-   resizable
-   . other ; e.g., for hacking in community book books/add-ons/hash-stobjs.lisp
-   )
-  nil)
-
-(defrec defstobj-template
-  ((congruent-to . non-memoizable)
-   (recognizer . creator)
-   field-templates
-   inline
-   doc)
-  nil)
-
-; With the above record definitions, we can give the raw Lisp definition of
-; defstobj.
-
-#-acl2-loop-only
-(defmacro defstobj (name &rest args)
-
-; Note: This code bothers me a little because of its impact on the toothbrush
-; model.  In particular, it uses defstobj-raw-defs, which is defined far away
-; in other-events.lisp.
-
-; Warning: If you change this definition, consider the possibility of making
-; corresponding changes to the #-acl2-loop-only definition of defabsstobj.
-
-; This function is run when we evaluate (defstobj name . args) in raw lisp.
-; A typical such form is
-
-; (defstobj $st
-;   (flag :type t :initially run)
-;   (pc   :type (integer 0 255) :initially 128)
-;   (mem  :type (array (integer 0 255) (256)) :initially 0))
-
-; Warning: If this event ever generates proof obligations, remove it from the
-; list of exceptions in install-event just below its "Comment on irrelevance of
-; skip-proofs".
-
-; This function must contend with a problem analogous to the one addressed by
-; acl2::defconst in acl2.lisp: the need to avoid re-declaration of the same
-; stobj.  We use redundant-raw-lisp-discriminator in much the same way as in
-; the raw lisp defmacro of acl2::defconst.
-
-  (let* ((template (defstobj-template name args nil))
-         (congruent-to (access defstobj-template template :congruent-to))
-         (congruent-stobj-rep (if congruent-to
-                                  (congruent-stobj-rep-raw congruent-to)
-                                name))
-         (non-memoizable (access defstobj-template template :non-memoizable))
-         (init (defstobj-raw-init template))
-         (the-live-name (the-live-var name)))
-    `(progn
-
-; We place the defvar above the subsequent let*, in order to avoid
-; warnings in Lisps such as CCL that compile on-the-fly.
-
-       (defvar ,the-live-name)
-       #+hons ,@(and (null congruent-to)
-                     `((defg ,(st-lst name) nil)))
-
-; Now we lay down the defuns of the recognizers, accessors and updaters as
-; generated by defstob-raw-defs.  The boilerplate below just adds the DEFUN to
-; the front of each def generated, preserving the order of the defs as
-; generated.  We deal here with the :inline case; note that
-; *stobj-inline-declare* was added in defstobj-field-fns-raw-defs.
-
-       ,@(mapcar (function (lambda (def)
-                             (if (member-equal *stobj-inline-declare* def)
-                                 (cons 'DEFABBREV
-                                       (remove-stobj-inline-declare def))
-                               (cons 'DEFUN def))))
-                 (defstobj-raw-defs name template congruent-stobj-rep nil))
-       ,@(defstobj-defconsts
-           (strip-accessor-names (access defstobj-template template
-                                         :field-templates))
-           0)
-       (let* ((template ',template)
-              (congruent-stobj-rep ',congruent-stobj-rep)
-              (non-memoizable ',non-memoizable)
-              (boundp (boundp ',the-live-name))
-              (d (and boundp
-                      (get ',the-live-name
-                           'redundant-raw-lisp-discriminator)))
-
-; d is expected to be of the form (DEFSTOBJ namep creator field-templates
-; . congruent-stobj-rep).
-
-              (ok-p (and boundp
-                         (consp d)
-                         (eq (car d) 'defstobj)
-                         (consp (cdr d))
-                         (eq (cadr d) (access defstobj-template template
-                                              :recognizer))
-                         (consp (cddr d))
-                         (eq (caddr d) (access defstobj-template template
-                                               :creator))
-                         (equal (cadddr d) (access defstobj-template template
-                                                   :field-templates))
-                         (eq (car (cddddr d)) congruent-stobj-rep)
-                         (eq (cdr (cddddr d)) non-memoizable)
-
-; We also formerly required:
-
-;                        (stobj-initial-statep (symbol-value ',the-live-name)
-;                                              (access defstobj-template template
-;                                                      :field-templates))
-
-; However, the stobj need not have its initial value; consider a redundant
-; defstobj in a book whose certification world has already modified the stobj,
-; or a defstobj in a book whose value is modified in a make-event later in that
-; book.  Either way, ok-p would be false when this code is executed by loading
-; the compiled file.
-
-; We do not check the :doc, :inline, or :congruent-to fields, because these
-; incur no proof obligations.  If a second pass of encapsulate, or inclusion of
-; a book, exposes a later non-local defstobj that is redundant with an earlier
-; local one, then any problems will be caught during local compatibility
-; checks.
-
-                         )))
-         (cond
-          (ok-p ',name)
-          ((and boundp (not (raw-mode-p *the-live-state*)))
-           (interface-er
-            "Illegal attempt to redeclare the single-threaded object ~s0."
-            ',name))
-          (t
-
-; Memoize-flush expects the variable (st-lst name) to be bound.
-
-           (setf ,the-live-name ,init)
-           (setf (get ',the-live-name 'redundant-raw-lisp-discriminator)
-                 (list* 'defstobj
-                        (access defstobj-template template
-                                :recognizer)
-                        (access defstobj-template template
-                                :creator)
-                        (access defstobj-template template
-                                :field-templates)
-                        congruent-stobj-rep
-                        (access defstobj-template template
-                                :non-memoizable)))
-           (let ((old (and boundp
-
-; Since boundp, then by a test made above, we also know (raw-mode-p state).
-; This boundp test could be omitted, since otherwise we know that the assoc-eq
-; call below will return nil; the boundp check is just an optimization.
-
-                           (assoc-eq ',name *user-stobj-alist*))))
-             (cond
-              (old ; hence raw-mode
-               (fms "Note:  Redefining and reinitializing stobj ~x0 in raw ~
-                     mode.~%"
-                    (list (cons #\0 ',name))
-                    (standard-co *the-live-state*) *the-live-state* nil)
-               (setf (cdr old)
-                     (symbol-value ',the-live-name)))
-              (t
-               (assert$
-                (not (assoc-eq ',name *user-stobj-alist*))
-                (setq *user-stobj-alist*
-                      (cons (cons ',name (symbol-value ',the-live-name))
-                            *user-stobj-alist*))))))
-           ',name))))))
-
-(defun defstobj-field-templates (field-descriptors renaming wrld)
-
-; Note: Wrld may be a world or nil.  See fix-stobj-array-type.
-
-  (cond
-   ((endp field-descriptors) nil)
-   (t
-    (let* ((field-desc (car field-descriptors))
-           (field (if (atom field-desc)
-                      field-desc
-                    (car field-desc)))
-           (type (if (consp field-desc)
-                     (or (cadr (assoc-keyword :type (cdr field-desc)))
-                         t)
-                   t))
-           (init (if (consp field-desc)
-                     (cadr (assoc-keyword :initially (cdr field-desc)))
-                   nil))
-           (resizable (if (consp field-desc)
-                          (cadr (assoc-keyword :resizable (cdr field-desc)))
-                        nil))
-           (key2 (if (and (consp type)
-                          (eq (car type) 'array))
-                     :array
-                   :non-array))
-           (fieldp-name (defstobj-fnname field :recognizer key2 renaming))
-           (accessor-name (defstobj-fnname field :accessor key2 renaming))
-           (updater-name (defstobj-fnname field :updater key2 renaming))
-           (resize-name (defstobj-fnname field :resize key2 renaming))
-           (length-name (defstobj-fnname field :length key2 renaming)))
-      (cons (make defstobj-field-template
-                  :fieldp-name fieldp-name
-                  :type (cond ((and (consp type)
-                                    (eq (car type) 'array))
-                               (fix-stobj-array-type type wrld))
-                              (t type))
-                  :init init
-                  :accessor-name accessor-name
-                  :updater-name updater-name
-                  :length-name length-name
-                  :resize-name resize-name
-                  :resizable resizable) 
-            (defstobj-field-templates
-              (cdr field-descriptors) renaming wrld))))))
-
-(defun defstobj-template (name args wrld)
-
-; Note: Wrld may be a world or nil.  See fix-stobj-array-type.
-
-; We unpack the args to get the renamed field descriptors.  We return a list of
-; the form (namep create-name fields doc inline congruent-to), where: namep is
-; the name of the recognizer for the single-threaded object; create-name is the
-; name of the constructor for the stobj; fields is a list corresponding to the
-; field descriptors, but normalized with respect to the renaming, types, etc.;
-; doc is the doc string, or nil if no doc string is supplied; inline is t if
-; :inline t was specified in the defstobj event, else nil; and congruent-to is
-; the :congruent-to field of the defstobj event (default: nil).  A field in
-; fields is of the form (recog-name type init accessor-name updater-name
-; length-name resize-name resizable).  The last three fields are nil unless
-; type has the form (ARRAY ptype (n)), in which case ptype is a primitive type
-; and n is a positive integer.  Init is the evg of a constant term, i.e.,
-; should be quoted to be a treated as a term.  Doc is the value of the :doc
-; keyword arg in args.
-
-  (mv-let
-   (erp field-descriptors key-alist)
-   (partition-rest-and-keyword-args args *defstobj-keywords*)
-   (cond
-    (erp
-
-; If the defstobj has been admitted, this won't happen.
-
-     (er hard 'defstobj
-         "The keyword arguments to the DEFSTOBJ event must appear ~
-          after all field descriptors.  The allowed keyword ~
-          arguments are ~&0, and these may not be duplicated.  Thus, ~
-          ~x1 is ill-formed."
-         *defstobj-keywords*
-         (list* 'defstobj name args)))
-    (t
-     (let ((renaming (cdr (assoc-eq :renaming key-alist)))
-           (doc (cdr (assoc-eq :doc key-alist)))
-           (inline (cdr (assoc-eq :inline key-alist)))
-           (congruent-to (cdr (assoc-eq :congruent-to key-alist)))
-           (non-memoizable (cdr (assoc-eq :non-memoizable key-alist))))
-       (make defstobj-template
-             :recognizer (defstobj-fnname name :recognizer :top renaming)
-             :creator (defstobj-fnname name :creator :top renaming)
-             :field-templates (defstobj-field-templates
-                                field-descriptors renaming wrld)
-             :non-memoizable non-memoizable
-             :doc doc
-             :inline inline
-             :congruent-to congruent-to))))))
-
-(defun defstobj-component-recognizer-calls (field-templates n var ans)
-
-; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
-
-; Given a list of defstobj-field-template records with n+1 field names -- for
-; example regp, pcp, ... -- such that var is some symbol, v, we return a
-; corresponding list -- for example ((regp (nth 0 v)) (pcp (nth 1 v)) ...).
-; Except, for each field corresponding to a non-resizable array then we also
-; include a corresponding length statement in the list.
-
-  (cond ((endp field-templates)
-         (reverse ans))
-        (t (defstobj-component-recognizer-calls
-             (cdr field-templates)
-             (+ n 1)
-             var
-             (let* ((type (access defstobj-field-template
-                                  (car field-templates)
-                                  :type))
-                    (nonresizable-ar (and (consp type)
-                                          (eq (car type) 'array)
-                                          (not (access defstobj-field-template
-                                                       (car field-templates)
-                                                       :resizable))))
-                    (pred-stmt `(,(access defstobj-field-template
-                                          (car field-templates)
-                                          :fieldp-name)
-                                 (nth ,n ,var))))
-               (if nonresizable-ar
-                   (list* `(equal (len (nth ,n ,var)) ,(car (caddr type)))
-                          pred-stmt
-                          ans)
-                 (cons pred-stmt ans)))))))
-
-(defun defstobj-component-recognizer-axiomatic-defs (name template
-                                                          field-templates wrld)
-
-; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
-
-; It is permissible for wrld to be nil, as this merely defeats additional
-; checking by translate-declaration-to-guard.
-
-; We return a list of defs (see defstobj-axiomatic-defs) for all the
-; recognizers for the single-threaded resource named name with the given
-; template.  The answer contains the top-level recognizer as well as the
-; definitions of all component recognizers.  The answer contains defs for
-; auxiliary functions used in array component recognizers.  The defs are listed
-; in an order suitable for processing (components first, then top-level).
-
-  (cond
-   ((endp field-templates)
-    (let* ((recog-name (access defstobj-template template :recognizer))
-           (field-templates (access defstobj-template template
-                                    :field-templates))
-           (n (length field-templates)))
-
-; Rockwell Addition: See comment below.
-
-; Note: The recognizer for a stobj must be Boolean!  That is why we
-; conclude the AND below with a final T.  The individual field
-; recognizers need not be Boolean and sometimes are not!  For example,
-; a field with :TYPE (MEMBER e1 ... ek) won't be Boolean, nor with
-; certain :TYPE (OR ...) involving MEMBER.  The reason we want the
-; stobj recognizer to be Boolean is so that we can replace it by T in
-; guard conjectures for functions that have been translated with the
-; stobj syntactic restrictions.  See optimize-stobj-recognizers.
-
-      (list `(,recog-name (,name)
-                          (declare (xargs :guard t
-                                          :verify-guards t))
-                          (and (true-listp ,name)
-                               (= (length ,name) ,n)
-                               ,@(defstobj-component-recognizer-calls
-                                   field-templates 0 name nil)
-                               t)))))
-   (t
-    (let ((recog-name (access defstobj-field-template
-                              (car field-templates)
-                              :fieldp-name))
-          (type (access defstobj-field-template
-                        (car field-templates)
-                        :type)))
-
-; Below we simply append the def or defs for this field to those for
-; the rest.  We get two defs for each array field and one def for each
-; of the others.
-
-      (cons (cond
-             ((and (consp type)
-                   (eq (car type) 'array))
-              (let ((etype (cadr type)))
-                `(,recog-name (x)
-                              (declare (xargs :guard t
-                                              :verify-guards t))
-                              (if (atom x)
-                                  (equal x nil)
-                                (and ,(translate-stobj-type-to-guard
-                                       etype '(car x) wrld)
-                                     (,recog-name (cdr x)))))))
-             (t (let ((type-term (translate-stobj-type-to-guard
-                                  type 'x wrld)))
-
-; We might not use x in the type-term and so have to declare it ignorable.
-
-                  `(,recog-name (x)
-                                (declare (xargs :guard t
-                                                :verify-guards t)
-                                         (ignorable x))
-                                ,type-term))))
-            (defstobj-component-recognizer-axiomatic-defs
-              name template (cdr field-templates) wrld))))))
+; We introduce the idea of the "template" of a defstobj, which includes a
+; normalized version of the field descriptors under the renaming.  See
+; basis-a.lisp for defrec forms defstobj-field-template and defstobj-template.
 
 (defun defstobj-field-fns-axiomatic-defs (top-recog var n field-templates wrld)
 
@@ -19764,427 +19351,6 @@
         (access defstobj-template template :recognizer)
         name 0 field-templates wrld)))))
 
-(defun simple-array-type (array-etype dimensions)
-  (declare (ignore dimensions))
-  (cond
-   ((eq array-etype t)
-    `(simple-vector *))
-   ((eq array-etype '*)
-    (er hard 'simple-array-type
-        "Implementation error: We had thought that * is an invalid type-spec! ~
-         ~ Please contact the ACL2 implementors."))
-   (t `(simple-array ,array-etype (*)))))
-
-#-acl2-loop-only
-(defun-one-output stobj-copy-array-aref (a1 a2 i n)
-  (declare (type (unsigned-byte 29) i n))
-
-; Copy the first n elements of array a1 into array a2, starting with index i,
-; and then return a2.  See also copy-array-svref and stobj-copy-array-fix-aref.
-; Note that this copying does not copy substructures, so in the case that a1 is
-; an array of stobjs, if 0 <= i < n then the ith element of a1 will be EQ to
-; the ith element of a2 after the copy is complete.
-
-  (cond
-   ((>= i n) a2)
-   (t (setf (aref a2 i)
-            (aref a1 i))
-      (stobj-copy-array-aref a1 a2
-                             (the (unsigned-byte 29) (1+ i))
-                             (the (unsigned-byte 29) n)))))
-
-#-acl2-loop-only
-(defun-one-output stobj-copy-array-svref (a1 a2 i n)
-  (declare (type (unsigned-byte 29) i n)
-           (type simple-vector a1 a2))
-
-; This is a variant of copy-array-aref for simple vectors a1 and a2.
-
-  (cond
-   ((>= i n) a2)
-   (t (setf (svref a2 i)
-            (svref a1 i))
-      (stobj-copy-array-svref a1 a2
-                              (the (unsigned-byte 29) (1+ i))
-                              (the (unsigned-byte 29) n)))))
-
-#-acl2-loop-only
-(defun-one-output stobj-copy-array-fix-aref (a1 a2 i n)
-  #+gcl ; declaration causes errors in cmucl and sbcl and may not be necessary
-        ; except in gcl (to avoid boxing)
-  (declare (type (unsigned-byte 29) i n)
-           (type (simple-array (signed-byte 29) (*)) a1 a2))
-
-; This is a variant of copy-array-aref for arrays of fixnums a1 and a2.  We
-; need this special version to avoid fixnum boxing in GCL during resizing.
-
-  (cond
-   ((>= i n) a2)
-   (t (setf (aref a2 i)
-            (aref a1 i))
-      (stobj-copy-array-fix-aref a1 a2
-                                 (the (unsigned-byte 29) (1+ i))
-                                 (the (unsigned-byte 29) n)))))
-
-(defmacro live-stobjp (name)
-
-; Through Version_4.3, this macro was called the-live-stobj, and its body was
-; `(eq ,name ,(the-live-var name)).  However, we need a more permissive
-; definition in support of congruent stobjs (and perhaps local stobjs and stobj
-; fields of nested stobjs).  Note that no ACL2 object is a simple-vector; in
-; particular, a string is a vector but not a simple-vector.
-
-  `(typep ,name 'simple-vector))
-
-(defun array-etype-is-fixnum-type (array-etype)
-  (declare (xargs :guard
-                  (implies (consp array-etype)
-                           (true-listp array-etype))))
-  (and (consp array-etype)
-       (case (car array-etype)
-             (integer
-              (let* ((e1 (cadr array-etype))
-                     (int1 (if (integerp e1)
-                               e1
-                             (and (consp e1)
-                                  (integerp (car e1))
-                                  (1- (car e1)))))
-                     (e2 (caddr array-etype))
-                     (int2 (if (integerp e2)
-                               e2
-                             (and (consp e2)
-                                  (integerp (car e2))
-                                  (1- (car e2))))))
-                (and int1
-                     int2
-                     (>= int1 (- *expt2-28*))
-                     (< int2 *expt2-28*))))
-             (mod
-              (and (integerp (cadr array-etype))
-                   (< (cadr array-etype)
-                      *expt2-28*)))
-             (unsigned-byte
-              (and (integerp (cadr array-etype))
-                   (<= (cadr array-etype)
-                       29)))
-             (signed-byte
-              (and (integerp (cadr array-etype))
-                   (<= (cadr array-etype)
-                       30))))))
-
-(defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
-
-; Warning: Keep the formals in the definitions below in sync with corresponding
-; formals defstobj-field-fns-raw-defs.  Otherwise trace$ may not work
-; correctly; we saw such a problem in Version_5.0 for a resize function.
-
-; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
-
-  #-hons (declare (ignorable flush-var)) ; irrelevant var without hons
-  (cond
-   ((endp field-templates) nil)
-   (t
-    (append
-     (let* ((field-template (car field-templates))
-            (type (access defstobj-field-template field-template :type))
-            (init (access defstobj-field-template field-template :init))
-            (arrayp (and (consp type) (eq (car type) 'array)))
-            (array-etype0 (and arrayp (cadr type)))
-            (stobj-creator (get-stobj-creator (if arrayp array-etype0 type)
-                                              nil))
-            (scalar-type
-             (if stobj-creator t type)) ; only used when (not arrayp)
-            (array-etype (and arrayp
-                              (if stobj-creator
-
-; Stobj-creator is non-nil when array-etype is a stobj.  The real element type,
-; then, is simple-array rather than a simple-array-type, so we might say that
-; the parent stobj array is not simple.  But we will assume that the advantage
-; of having a simple-vector for the parent stobj outweighs the advantage of
-; having a simple-vector element type declaration.
-
-                                  t
-                                array-etype0)))
-            (simple-type (and arrayp
-                              (simple-array-type array-etype (caddr type))))
-            (array-length (and arrayp (car (caddr type))))
-            (vref (and arrayp
-                       (if (eq (car simple-type) 'simple-vector)
-                           'svref
-                         'aref)))
-            (fix-vref (and arrayp
-                           (if (array-etype-is-fixnum-type array-etype)
-                               'fix-aref
-                             vref)))
-            (accessor-name (access defstobj-field-template
-                                   field-template
-                                   :accessor-name))
-            (updater-name (access defstobj-field-template
-                                  field-template
-                                  :updater-name))
-            (length-name (access defstobj-field-template
-                                 field-template
-                                 :length-name))
-            (resize-name (access defstobj-field-template
-                                 field-template
-                                 :resize-name))
-            (resizable (access defstobj-field-template
-                               field-template
-                               :resizable)))
-       (cond
-        (arrayp
-         `((,length-name
-            (,var)
-            ,@(and inline (list *stobj-inline-declare*))
-            ,@(if (not resizable)
-                  `((declare (ignore ,var))
-                    ,array-length)
-                `((the (and fixnum (integer 0 *))
-                       (length (svref ,var ,n))))))
-           (,resize-name
-            (i ,var)
-            ,@(if (not resizable)
-                  `((declare (ignore i))
-                    (prog2$
-                     (er hard ',resize-name
-                         "The array field corresponding to accessor ~x0 of ~
-                          stobj ~x1 was not declared :resizable t.  ~
-                          Therefore, it is illegal to resize this array."
-                         ',accessor-name
-                         ',var)
-                     ,var))
-                `((if (not (and (integerp i)
-                                (>= i 0)
-                                (< i array-dimension-limit)))
-                      (hard-error
-                       ',resize-name
-                       "Attempted array resize failed because the requested ~
-                        size ~x0 was not a nonnegative integer less than the ~
-                        value of Common Lisp constant array-dimension-limit, ~
-                        which is ~x1.  These bounds on array sizes are fixed ~
-                        by ACL2."
-                       (list (cons #\0 i)
-                             (cons #\1 array-dimension-limit)))
-                    (let* ((var ,var)
-                           (old (svref var ,n))
-                           (min-index (min i (length old)))
-                           (new (make-array$ i
-
-; The :initial-element below is probably not necessary in the case
-; that we are downsizing the array.  At least, CLtL2 does not make any
-; requirements about specifying an :initial-element, even when an
-; :element-type is supplied.  However, it seems harmless enough to go
-; ahead and specify :initial-element even for downsizing: resizing is
-; not expected to be fast, we save a case split here (at the expense
-; of this comment!), and besides, we are protecting against the
-; possibility that some Common Lisp will fail to respect the spec and
-; will cause an error by trying to initialize a fixnum array (say)
-; with NILs.
-
-                                             :initial-element
-                                             ',init
-                                             :element-type
-                                             ',array-etype)))
-                      #+hons (memoize-flush ,flush-var)
-                      (setf (svref var ,n)
-                            (,(pack2 'stobj-copy-array- fix-vref)
-                             old new 0 min-index))
-                      ,@(and stobj-creator
-                             `((when (< (length old) i)
-                                 (loop for j from (length old) to (1- i)
-                                       do (setf (svref new j)
-                                                (,stobj-creator))))))
-                      var)))))
-           (,accessor-name
-            (i ,var)
-            (declare (type (and fixnum (integer 0 *)) i))
-            ,@(and inline (list *stobj-inline-declare*))
-            (the ,array-etype
-                 (,vref (the ,simple-type (svref ,var ,n))
-                        (the (and fixnum (integer 0 *)) i))))
-           (,updater-name
-            (i v ,var)
-            (declare (type (and fixnum (integer 0 *)) i)
-                     (type ,array-etype v))
-            ,@(and inline (list *stobj-inline-declare*))
-            (progn
-              #+hons (memoize-flush ,flush-var)
-
-; See the long comment below for the updater in the scalar case, about
-; supporting *1* functions.
-
-              (setf (,vref (the ,simple-type (svref ,var ,n))
-                           (the (and fixnum (integer 0 *)) i))
-                    (the ,array-etype v))
-              ,var))))
-        ((eq scalar-type t)
-         `((,accessor-name (,var)
-                           ,@(and inline (list *stobj-inline-declare*))
-                           (svref ,var ,n))
-           (,updater-name (v ,var)
-                          ,@(and inline (list *stobj-inline-declare*))
-                          (progn
-                            #+hons (memoize-flush ,flush-var)
-
-; For the case of a stobj field, we considered causing an error here since the
-; raw Lisp code for stobj-let avoids calling updaters because there is no need:
-; updates for fields that are stobjs have already updated destructively.
-; However, a raw Lisp updater can be called by a *1* function, say *1*f,
-; applied to live stobjs, when guard checking does not pass control to the raw
-; Lisp function, f.  Perhaps we could optimize to avoid this, but there is no
-; need; this setf is fast and is only called on behalf of executing *1*
-; function calls.  See the comment referencing "defstobj-field-fns-raw-defs" in
-; community book misc/nested-stobj-tests.lisp.  To see this point in action,
-; evaluate the forms under that comment after modifying this definition by
-; uncommenting the following line of code.
-
-;                           ,@(when stobj-creator '((break$))) ; see just above
-
-                            (setf (svref ,var ,n) v)
-                            ,var))))
-        (t
-         (assert$
-          (not stobj-creator) ; scalar-type is t for stobj-creator
-          `((,accessor-name (,var)
-                            ,@(and inline (list *stobj-inline-declare*))
-                            (the ,scalar-type
-                                 (aref (the (simple-array ,scalar-type (1))
-                                            (svref ,var ,n))
-                                       0)))
-            (,updater-name (v ,var)
-                           (declare (type ,scalar-type v))
-                           ,@(and inline (list *stobj-inline-declare*))
-                           (progn
-                             #+hons (memoize-flush ,flush-var)
-                             (setf (aref (the (simple-array ,scalar-type (1))
-                                              (svref ,var ,n))
-                                         0)
-                                   (the ,scalar-type v))
-                             ,var)))))))
-     (defstobj-field-fns-raw-defs
-       var flush-var inline (1+ n) (cdr field-templates))))))
-
-(defun defstobj-raw-init-fields (field-templates)
-
-; Keep this in sync with defstobj-axiomatic-init-fields.
-
-  (cond
-   ((endp field-templates) nil)
-   (t (let* ((field-template (car field-templates))
-             (type (access defstobj-field-template field-template :type))
-             (arrayp (and (consp type) (eq (car type) 'array)))
-             (array-etype0 (and arrayp (cadr type)))
-             (array-size (and arrayp (car (caddr type))))
-             (stobj-creator (get-stobj-creator (if arrayp array-etype0 type)
-                                               nil))
-             (array-etype (and arrayp
-
-; See comment for this binding in defstobj-field-fns-raw-defs.
-
-                               (if stobj-creator
-                                   t
-                                 array-etype0)))
-             (init (access defstobj-field-template field-template :init)))
-        (cond
-         (arrayp
-          (cons (cond (stobj-creator
-                       (assert$
-                        (null init) ; checked by chk-stobj-field-descriptor
-                        (assert$
-
-; We expect array-size to be a natural number, as this is checked by
-; chk-stobj-field-descriptor (using fix-stobj-array-type).  It is important
-; that array-size not be a Lisp form that references the variable AR, even
-; after macroexpasion, in order to avoid capture by the binding of AR below.
-
-                         (natp array-size)
-                         `(let ((ar (make-array$ ,array-size
-
-; Do not be tempted to use :initial-element (,stobj-creator) here, because that
-; would presumably share structure among all the created stobjs.
-
-                                                 :element-type ',array-etype)))
-                            (loop for i from 0 to ,(1- array-size)
-                                  do
-                                  (setf (svref ar i) (,stobj-creator)))
-                            ar))))
-                      (t `(make-array$ ,array-size
-                                       :element-type ',array-etype
-                                       :initial-element ',init)))
-                (defstobj-raw-init-fields (cdr field-templates))))
-         ((eq type t)
-          (cons (kwote init)
-                (defstobj-raw-init-fields (cdr field-templates))))
-         (stobj-creator
-          (cons `(,stobj-creator)
-                (defstobj-raw-init-fields (cdr field-templates))))
-         (t (cons `(make-array$ 1
-                                :element-type ',type
-                                :initial-element ',init)
-                  (defstobj-raw-init-fields (cdr field-templates)))))))))
-
-(defun defstobj-raw-init (template)
-
-; This function generates the initialization code for the live object
-; representing the stobj name.
-
-  (let ((field-templates (access defstobj-template template :field-templates)))
-    `(vector ,@(defstobj-raw-init-fields field-templates))))
-
-(defun defstobj-raw-defs (name template congruent-stobj-rep wrld)
-
-; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
-
-; This function generates a list of defs.  Each def is such that
-; (defun . def) is a well-formed raw Lisp definition.  The defuns can
-; be executed in raw lisp to define the versions of the recognizers,
-; accessors, and updaters (and for array fields, length and resize
-; functions) that are run when we know the guards are satisfied.  Many
-; of these functions anticipate application to the live object itself.
-
-; It is permissible for wrld to be nil, as this merely defeats additional
-; checking by translate-declaration-to-guard.  If wrld is nil, then
-; congruent-stobj-rep should be the result of calling congruent-stobj-rep on
-; name and the world where the corresponding defstobj is executed.  If wrld is
-; non-nil, then it should be an ACL2 world and congruent-stobj-rep is
-; irrelevant.
-
-; WARNING: If you change the formals of these generated raw defs be
-; sure to change the formals of the corresponding axiomatic defs.
-
-  #-hons (declare (ignore congruent-stobj-rep))
-  (let* ((recog (access defstobj-template template :recognizer))
-         (creator (access defstobj-template template :creator))
-         (field-templates (access defstobj-template template :field-templates))
-         (inline (access defstobj-template template :inline)))
-    (append
-     (all-but-last
-      (defstobj-component-recognizer-axiomatic-defs name template
-        field-templates wrld))
-     `((,recog (,name)
-               (cond
-                ((live-stobjp ,name)
-                 t)
-                (t (and (true-listp ,name)
-                        (= (length ,name) ,(length field-templates))
-                        ,@(defstobj-component-recognizer-calls
-                            field-templates 0 name nil)))))
-       (,creator ()
-                 ,(defstobj-raw-init template))
-       ,@(defstobj-field-fns-raw-defs
-           name
-           #-hons nil
-           #+hons (cond
-                   ((access defstobj-template template :non-memoizable)
-                    nil)
-                   (wrld (let ((congruent-to (access defstobj-template template
-                                                     :congruent-to)))
-                           (if congruent-to
-                               (congruent-stobj-rep congruent-to wrld)
-                             name)))
-                   (t congruent-stobj-rep))
-           inline 0 field-templates)))))
-
 (defun put-stobjs-in-and-outs1 (name field-templates wrld)
 
 ; See put-stobjs-in-and-outs for a table that explains what we're doing.
@@ -20295,19 +19461,6 @@
                                :NAME ,name
                                :ORDER :none)
                      (defconst-name-alist field-names 0)))))
-
-(defun strip-accessor-names (field-templates)
-  (if (endp field-templates)
-      nil
-    (cons (access defstobj-field-template (car field-templates)
-                  :accessor-name)
-          (strip-accessor-names (cdr field-templates)))))
-
-(defun defstobj-defconsts (names index)
-  (if (endp names)
-      nil
-    (cons `(defconst ,(defconst-name (car names)) ,index)
-          (defstobj-defconsts (cdr names) (1+ index)))))
 
 (defun put-defstobj-invariant-risk (field-templates wrld)
 
@@ -20784,34 +19937,6 @@
 ; the property that guard proof obligations are essentially preserved.  But the
 ; use of user-supplied guards destroys that argument, and as a result, we no
 ; longer can trust evaluation of the guard in raw Lisp.
-
-(defun absstobj-name (name type)
-
-; Warning: The (absstobj-name name :CREATOR) should equal (defstobj-fnname name
-; :CREATOR :TOP nil), because of the use of the latter in
-; parse-with-local-stobj.
-
-  (declare (type symbol name type))
-  (mv-let (prefix suffix)
-          (case type
-            (:A (mv nil "$A")) ; abstract
-            (:C (mv nil "$C")) ; concrete
-            (:CREATOR (mv "CREATE-" nil))
-            (:RECOGNIZER (mv nil "P"))
-            (:RECOGNIZER-LOGIC (mv nil "$AP"))
-            (:RECOGNIZER-EXEC (mv nil "$CP"))
-            (:CORR-FN (mv nil "$CORR"))
-            (:CORRESPONDENCE (mv nil "{CORRESPONDENCE}"))
-            (:PRESERVED (mv nil "{PRESERVED}"))
-            (:GUARD-THM (mv nil "{GUARD-THM}"))
-            (otherwise (mv (er hard 'absstobj-name
-                               "Unrecognized type, ~x0."
-                               type)
-                           nil)))
-          (let* ((s (symbol-name name))
-                 (s (if prefix (concatenate 'string prefix s) s))
-                 (s (if suffix (concatenate 'string s suffix) s)))
-            (intern-in-package-of-symbol s name))))
 
 #-acl2-loop-only
 (defmacro defabsstobj (&whole event-form
@@ -22464,314 +21589,6 @@
      (msg "( DEFABSSTOBJ ~x0 ...)" st-name))
    (defabsstobj-fn1 st-name st$c recognizer creator corr-fn exports
      protect-default congruent-to missing-only doc ctx state event-form)))
-
-#-acl2-loop-only
-(defun-one-output mv-let-for-with-local-stobj (mv-let-form st creator flet-fns
-                                                           w program-p)
-
-; If w is not nil, then it is the current ACL2 world and we are to oneify the
-; appropriate subforms with the indicated program-p argument.  If w is nil,
-; then program-p is irrelevant.
-
-; It was tempting to have an acl2-loop-only version of the body below as well,
-; which would omit the binding of the live var.  But if someone were to
-; verify-termination of this function, we could presumably prove nil using the
-; discrepancy between the two versions.  So we take the attitude that
-; with-local-stobj is a special form, like let, that is not defined.
-
-; In the case that st is STATE, this form does not take responsibility for
-; restoring state, for example by restoring values of state global variables
-; and by closing channels that may have been created during evaluation of the
-; producer form.  A with-local-state form thus needs to take responsibility for
-; restoring state; see for example the definition of channel-to-string.
-
-  (let ((producer (caddr mv-let-form))
-        (rest (cdddr mv-let-form)))
-    `(mv-let ,(cadr mv-let-form)
-             (let* (,@(and (not (eq st 'state))
-                           `((,st (,creator))))
-
-; We bind the live var so that user-stobj-alist-safe can catch misguided
-; attempts to use functions like trans-eval in inappropriate contexts.
-
-                    ,@(cond ((eq st 'state)
-                             '((*file-clock* *file-clock*)
-                               (*t-stack* *t-stack*)
-                               (*t-stack-length* *t-stack-length*)
-                               (*32-bit-integer-stack* *32-bit-integer-stack*)
-                               (*32-bit-integer-stack-length*
-                                *32-bit-integer-stack-length*)))
-                            (t `((,(the-live-var st) ,st)))))
-               ,(let ((p (if w
-                             (oneify producer flet-fns w program-p)
-                           producer)))
-                  (if (eq st 'state)
-
-; We should lock this computation when #+acl2-par, even though special
-; variables that are let-bound (including those bound above) are thread-local.
-
-                      `(if (f-get-global 'parallel-execution-enabled
-                                         *the-live-state*)
-
-; Parallelism wart: this isn't really the right check for ACL2(p), because
-; we've effectively disallowed the use of with-local-state, even when we're not
-; executing in parallel!  This bothers Rager, because he wants to use
-; with-local-state in code that isn't executing in parallel (in his
-; dissertation's supporting evidence, for reading in files that contain
-; performance results).  Instead, we should be calling
-; warn-about-parallelism-hazard (similar to what we do in the definition of
-; state-global-let*).
-
-                           (er hard! 'with-local-state
-                               "The use of with-local-state ~
-                                (or, with-local-stobj where STATE is the ~
-                                stobj) is disallowed with parallelism enabled.")
-                         ,p)
-                    p)))
-             (declare (ignore ,st))
-             ,@(if w
-                   (if (cdr rest) ; rest is ((declare (ignore ...)) body)
-                       (list (car rest)
-                             (oneify (cadr rest) flet-fns w program-p))
-                     (list (oneify (car rest) flet-fns w program-p)))
-                 rest))))
-
-#-acl2-loop-only ; see the comment in mv-let-for-with-local-stobj
-(defmacro with-local-stobj (&rest args)
-
-; Below are some tests of local stobjs.
-
-;  (defstobj foo bar xxx)
-;
-;  (thm (equal (create-foo) '(nil nil))) ; succeeds
-;
-;  (defun up1 (x foo)
-;    (declare (xargs :stobjs foo))
-;    (update-bar x foo))
-;
-;  (bar foo) ; nil
-;
-;  (up1 3 foo) ; <foo>
-;
-;  (bar foo) ; 3
-;
-;  (defun test (x) ; should fail; must use with-local-stobj explicitly
-;    (mv-let (a b foo)
-;            (let ((foo (create-foo)))
-;              (let ((foo (up1 (1+ x) foo)))
-;                (mv (bar foo) (xxx foo) foo)))
-;            (declare (ignore foo))
-;            (mv a b x)))
-;
-;  (defun test (x)
-;    (declare (xargs :guard (acl2-numberp x) :verify-guards nil))
-;    (with-local-stobj
-;     foo
-;     (mv-let (a b foo)
-;             (let ((foo (up1 (1+ x) foo)))
-;               (mv (bar foo) (xxx foo) foo))
-;             (mv a b x))))
-;
-;  (test 17) ; (18 NIL 17)
-;
-;  (bar foo) ; 3
-;
-;  (thm (equal (test x) (list (1+ x) nil x))) ; succeeds
-;
-;  (thm (equal (test x) (list (1+ x) nil x)) ; succeeds
-;       :hints (("Goal"
-;                :in-theory
-;                (enable
-;                 (:executable-counterpart create-foo)))))
-;
-;  (thm (equal (test x) (list (1+ x) nil x)) ; fails, creating (NOT (NTH 1 (HIDE (CREATE-FOO))))
-;       :hints (("Goal"
-;                :in-theory
-;                (set-difference-theories
-;                 (enable
-;                  (:executable-counterpart create-foo))
-;                 '(create-foo)))))
-;
-;  (verify-guards test)
-;
-;  (test 17) ; (18 nil 17)
-;
-;  (bar foo) ; 3
-;
-;  (defun test2 (x)
-;    (with-local-stobj
-;     foo
-;     (mv-let (a foo)
-;             (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
-;             (mv a x))))
-;
-;  (test2 12) ; (13 12)
-;
-;  (bar foo) ; 3
-;
-;  (thm (equal (test x) (mv-let (x y) (test2 x) (mv x nil y)))) ; succeeds
-;
-;  (create-foo) ; should get graceful error
-;
-;  (defun test3 (x) ; Should be OK.
-;    (with-local-stobj
-;     foo
-;     (mv-let (a foo)
-;             (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
-;             a)))
-;
-;  (test3 11) ; 12
-;
-;  (bar foo) ; 3
-;
-;  (defun test4 (x foo) ; Should be OK.
-;    (declare (xargs :stobjs foo
-;                    :verify-guards nil))
-;    (let* ((x+1
-;           (with-local-stobj
-;            foo
-;            (mv-let (a foo)
-;                    (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
-;                    a)))
-;           (foo (up1 92 foo)))
-;      (mv x+1 foo)))
-;
-;  (test4 19 foo) ; (20 <foo>)
-;
-;  (bar foo) ; 92
-;
-;  (defun test5 (x foo) ; Should be OK.
-;    (declare (xargs :stobjs foo
-;                    :verify-guards nil))
-;    (let* ((foo (up1 23 foo))
-;           (x+1
-;            (with-local-stobj
-;             foo
-;             (mv-let (a foo)
-;                     (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
-;                     a))))
-;      (mv x+1 foo)))
-;
-;  (test5 35 foo) ; (36 <foo>)
-;
-;  (bar foo) ; 23
-;
-;  (with-local-stobj ; should get macroexpansion error or the equivalent
-;   foo
-;   (mv foo 3))
-;
-;  (defun trans-eval-test (x foo state) ; this part is ok
-;    (declare (xargs :stobjs (foo state)
-;                    :mode :program))
-;    (mv-let (erp val state)
-;            (trans-eval '(update-bar (cons 3 (bar foo)) foo) 'top state t)
-;            (declare (ignore erp val))
-;            (mv x foo state)))
-;
-;  (with-local-stobj ; should fail; cannot use with-local-stobj in top level loop
-;   foo
-;   (mv-let (x foo state)
-;           (trans-eval-test 3 foo state t)
-;           (mv x state)))
-;
-;  (pprogn
-;   (with-local-stobj ; should fail with create-foo error
-;    foo
-;    (mv-let (x foo state)
-;            (trans-eval-test 3 foo state t)
-;            (declare (ignore x))
-;            state))
-;   (mv 3 state))
-;
-;  (defun test6 (a state)
-;    (declare (xargs :mode :program :stobjs state))
-;    (with-local-stobj
-;     foo
-;     (mv-let (x foo state)
-;             (trans-eval-test a foo state t)
-;             (mv x state))))
-;
-;  (test6 100 state) ; should get trans-eval error:  user-stobj-alist mismatch
-;
-;  (bar foo) ; 23, still -- trans-eval did not affect global state
-
-; Below are some more tests, contributed by Rob Sumners.
-
-;  (defstobj foo foo-fld)
-;  (defstobj bar bar-fld)
-;
-;  (defun test-wls1 (x)
-;    (with-local-stobj
-;     foo
-;     (mv-let (result foo)
-;             (let ((foo (update-foo-fld 2 foo)))
-;               (mv (with-local-stobj
-;                    bar
-;                    (mv-let (result bar)
-;                            (let ((bar (update-bar-fld 3 bar)))
-;                              (mv x bar))
-;                            result))
-;                   foo))
-;             result)))
-;
-;  (test-wls1 129) ; 129
-;
-;  :comp t
-;
-;  (test-wls1 '(adjka 202)) ; '(ADJKA 202)
-;
-;  (thm (equal (test-wls1 x) x))
-;
-;  (defun test-wls2 (x)
-;    (with-local-stobj
-;     foo
-;     (mv-let (result foo)
-;             (let ((foo (update-foo-fld 2 foo)))
-;               (mv (with-local-stobj
-;                    foo
-;                    (mv-let (result foo)
-;                            (let ((foo (update-foo-fld 3 foo)))
-;                              (mv x foo))
-;                            result))
-;                   foo))
-;             result)))
-;
-;  (test-wls2 129) ; 129
-;
-;  :comp t
-;
-;  (test-wls2 '(adjka 202)) ; (ADJKA 202)
-;
-;  (thm (equal (test-wls2 x) x))
-;
-;  (defun test-wls3 (x)
-;    (if (atom x) x
-;      (with-local-stobj
-;       foo
-;       (mv-let (result foo)
-;               (mv (cons (car x)
-;                         (test-wls3 (cdr x)))
-;                   foo)
-;               (let ((x result))
-;                 (if (atom x) x (cons (car x) (cdr x))))))))
-;
-;  (test-wls3 129) ; 129
-;
-;  :comp t
-;
-;  (test-wls3 '(adjka 202)) ; (ADJKA 202)
-;
-;  (thm (equal (test-wls3 x) x))
-
-  (mv-let (erp st mv-let-form creator)
-          (parse-with-local-stobj args)
-          (if (or erp
-                  (not (and (true-listp mv-let-form)
-                            (<= 3 (length mv-let-form)))))
-              (er hard 'with-local-stobj
-                  "Macroexpansion of a with-local-stobj call caused an error. ~
-                   See :DOC with-local-stobj.")
-            (mv-let-for-with-local-stobj mv-let-form st creator nil nil nil))))
 
 (defun create-state ()
   (declare (xargs :guard t))
@@ -26170,11 +24987,24 @@
              (er hard ctx
                  "~@0~x1 is not a function symbol."
                  str key))
-            ((member-eq 'state (stobjs-in key wrld))
+            ((and (or condition (cdr (assoc-eq :inline val)))
+
+; The preceding term says that we are not profiling.  Why not replace it simply
+; with condition, allowing :inline t?  Perhaps we could, but that would require
+; a bit of thought since memoization with :inline t will modify recursive
+; calls, and we would need to be sure that this replacement doesn't violate
+; syntactic restrictions.  We can think about this if someone has reason to
+; memoize with :condition nil but not :inline nil.
+
+                  (member-eq 'state (stobjs-in key wrld)))
              (er hard ctx
-                 "~@0~x1 takes ACL2's STATE as an argument."
+                 "~@0~x1 takes ACL2's STATE as an argument (illegal except ~
+                  for profiling)."
                  str key))
-            ((and condition
+            ((and (or condition (cdr (assoc-eq :inline val)))
+
+; See comment above for the case of 'state.
+
                   (non-memoizable-stobjs (stobjs-in key wrld) wrld))
              (mv-let
               (abs conc)
@@ -26201,11 +25031,14 @@
                      corresponding concrete stobj was introduced with ~
                      :NON-MEMOIZABLE T.  See :DOC defstobj."
                     str key conc abs)))))
-            ((and condition
+            ((and (or condition (cdr (assoc-eq :inline val)))
+
+; See comment above for the case of 'state.
+
                   (not (all-nils (stobjs-out key wrld))))
              (let ((stobj (find-first-non-nil (stobjs-out key wrld))))
                (er hard ctx
-                   "~@0~x1 returns a stobj, ~x2."
+                   "~@0~x1 returns a stobj, ~x2 (illegal except for profiling)."
                    str key stobj)))
             ((member-eq key *hons-primitive-fns*)
              (er hard ctx

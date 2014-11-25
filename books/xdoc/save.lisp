@@ -105,4 +105,3 @@
            ((mv & & state) (assign acl2::writes-okp t))
            (state (save-fancy all-xdoc-topics ,dir ',zip-p state)))
         (value '(value-triple :invisible))))))
-

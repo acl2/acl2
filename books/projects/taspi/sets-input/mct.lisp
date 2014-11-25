@@ -6,14 +6,18 @@
 
 ;; This could/should move to somewhere else!!
 (defun get-all-fringes (trees taxa-list)
-  ":Doc-Section TASPI
-   Returns all bdd based bipartitions present in the trees input.~/
-   ~/
-   Arguments:
-     (1) trees - a list of trees
-     (2) taxa-list - a list of taxa names
 
-   Details: Trees should have taxa list given and no branch lengths."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns all bdd based bipartitions present in the trees input.~/
+;  ~/
+;  Arguments:
+;    (1) trees - a list of trees
+;    (2) taxa-list - a list of taxa names
+
+;  Details: Trees should have taxa list given and no branch lengths."
   (declare (xargs :guard t))
   (if (consp trees)
       (if (and (treep (car trees))
@@ -59,31 +63,39 @@
     nil))
 
 (defun mct (list-of-trees taxa-list)
-  ":Doc-Section TASPI
-   Computes the maximum compatibility tree of a set of trees~/
-   ~/
-   Arguments:
-     (1) list-of-trees - a list of trees
-     (2) taxa-list - a list of taxa names
 
-   Details: The trees given should have taxa list given and no branch lengths 
-            (see also mct-brlens).  Returns a single maximum compatibility tree
-            even if there exists more than one."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Computes the maximum compatibility tree of a set of trees~/
+;  ~/
+;  Arguments:
+;    (1) list-of-trees - a list of trees
+;    (2) taxa-list - a list of taxa names
+
+;  Details: The trees given should have taxa list given and no branch lengths 
+;           (see also mct-brlens).  Returns a single maximum compatibility tree
+;           even if there exists more than one."
   (declare (xargs :guard t))
   (find-mct (possible-taxa-lists taxa-list)
             list-of-trees))
 
 (defun mct-brlens (list-of-trees taxa-list)
-  ":Doc-Section TASPI
-   Computes the maximum compatibility tree of a set of trees with branch lengths~/
-   ~/
-   Arguments:
-     (1) list-of-trees - a list of trees
-     (2) taxa-list - a list of taxa names
 
-   Details: The trees given should have taxa list given and may or may not 
-            have branch lengths (see also mct).  Returns a single maximum 
-            compatibility tree even if there exists more than one."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Computes the maximum compatibility tree of a set of trees with branch lengths~/
+;  ~/
+;  Arguments:
+;    (1) list-of-trees - a list of trees
+;    (2) taxa-list - a list of taxa names
+
+;  Details: The trees given should have taxa list given and may or may not 
+;           have branch lengths (see also mct).  Returns a single maximum 
+;           compatibility tree even if there exists more than one."
   (declare (xargs :guard t))
   (let ((trees-no-brlens (remove-brlens-list list-of-trees)))
     (find-mct (possible-taxa-lists taxa-list)

@@ -48,10 +48,8 @@
   ;; Has an under-the-hood implementation
   (cons x y))
 
-#+(or acl2-loop-only (not hons))
-(defn hons-equal (x y)
-  ;; Has an under-the-hood implementation
-  (equal x y))
+; See basis-a.lisp for hons-equal, which supports hons-assoc-equal, which
+; supports eviscerate1.
 
 #+(or acl2-loop-only (not hons))
 (defn hons-equal-lite (x y)
@@ -90,15 +88,6 @@
                    fal-ht persist-ht))
   ;; Has an under-the-hood implementation
   nil)
-
-(defn hons-assoc-equal (key alist)
-  (cond ((atom alist)
-         nil)
-        ((and (consp (car alist))
-              (hons-equal key (caar alist)))
-         (car alist))
-        (t
-         (hons-assoc-equal key (cdr alist)))))
 
 (table hons 'slow-alist-warning :warning)
 

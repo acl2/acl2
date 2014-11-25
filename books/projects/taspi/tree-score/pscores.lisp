@@ -328,20 +328,24 @@
 ;; Top-level function for scoring a single tree:  takes the tree, the sequence
 ;; alist, the scorelist map, and the cost matrix; returns the score of the tree.
 (defun pscore-tree (tree sequences cssl-map matrix)
-  ":Doc-Section TASPI
-   Scores a tree under parsimony~/
-   ~/
-   Arguments: 
-     (1) tree - a single phylogenetic tree                     
-     (2) sequences - a mapping of taxa to sequences            
-     (3) cssl-map -  An alist mapping every character state,  
-                     including ambiguous ones, to a list containing 
-                     one element (either 0 or nil for infinity) for
-                     each unambiguous state.                     
-     (4) matrix - A mapping of unambiguous character states to 
-                  transition costs.          
-                    
-   Details: Does not handle branch lengths."
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Scores a tree under parsimony~/
+;  ~/
+;  Arguments: 
+;    (1) tree - a single phylogenetic tree                     
+;    (2) sequences - a mapping of taxa to sequences            
+;    (3) cssl-map -  An alist mapping every character state,  
+;                    including ambiguous ones, to a list containing 
+;                    one element (either 0 or nil for infinity) for
+;                    each unambiguous state.                     
+;    (4) matrix - A mapping of unambiguous character states to 
+;                 transition costs.          
+;                   
+;  Details: Does not handle branch lengths."
   (declare (xargs :guard (and (valid-sequences-same-length sequences)
                               (tree-matches-sequences t tree sequences)
                               (charstate-scorelist-map-p cssl-map (len matrix))
@@ -360,19 +364,23 @@
 
 ;; Scores a list of trees all with the same sequences and matrix.
 (defun pscore-trees (trees sequences cssl-map matrix)
-  ":Doc-Section TASPI
-   Scores a list of trees under parsimony~/
-   ~/
-   Arguments: 
-      (1) trees - a list of  phylogenetic trees                
-      (2) sequences - a mapping of taxa to sequences           
-      (3) cssl-map -  An alist mapping every character state to a  
-                      list containing one element (either 0 or nil 
-                      for infinity) for each unambiguous state   
-      (4) matrix - A mapping of unambiguous character states to 
-                   transition costs.                           
 
-   Details: Does not handle branch lengths."  
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Scores a list of trees under parsimony~/
+;  ~/
+;  Arguments: 
+;     (1) trees - a list of  phylogenetic trees                
+;     (2) sequences - a mapping of taxa to sequences           
+;     (3) cssl-map -  An alist mapping every character state to a  
+;                     list containing one element (either 0 or nil 
+;                     for infinity) for each unambiguous state   
+;     (4) matrix - A mapping of unambiguous character states to 
+;                  transition costs.                           
+
+;  Details: Does not handle branch lengths."  
   (declare (xargs :guard (and (valid-sequences-same-length sequences)
                               (tree-matches-sequences nil trees sequences)
                               (charstate-scorelist-map-p cssl-map (len matrix))
@@ -387,10 +395,14 @@
 ;; just 0 for no transition and 1 for any transition.
 (defconst *dna-matrix*
    (make-default-cost-matrix '(a c t g))
-   ":Doc-Section TASPI
-   A dna transition cost matrix with all transitions having cost 1.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;  A dna transition cost matrix with all transitions having cost 1.~/
+;  ~/
+;  "
 )
  
 (defconst *dna-cssl*
@@ -413,10 +425,14 @@
      (-    0   0   0   0  )
      (?    0   0   0   0  ))
   'dna-cssl)
-  ":Doc-Section TASPI
-   The usual mapping for dna character states to their dna score-list.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  The usual mapping for dna character states to their dna score-list.~/
+;  ~/
+;  "
   )
 
 #||

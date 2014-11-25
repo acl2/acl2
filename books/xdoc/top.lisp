@@ -81,7 +81,11 @@
   (declare (xargs :mode :program))
   (let* ((all-topics   (xdoc::get-xdoc-table world))
          (old-topic    (xdoc::find-topic name all-topics))
-         (long         (or long "")))
+         (long         (cond ((not long) "")
+                             ((stringp long) long)
+                             (t
+                              (er hard? 'xdoc-extend "Can't extend ~x0 with non-string ~x1."
+                                  name long)))))
     (cond ((not old-topic)
            (prog2$
             (er hard? 'xdoc-extend "Topic ~x0 wasn't found." name)
@@ -90,27 +94,32 @@
            (let* ((other-topics (remove-equal old-topic all-topics))
                   (old-long     (or (cdr (assoc :long old-topic)) ""))
                   (new-long     (concatenate 'string old-long long))
-                  (new-topic    (acons :long new-long
-                                       (delete-assoc :long old-topic))))
+                  (new-topic    (acons :long new-long (delete-assoc :long old-topic))))
              (cons new-topic other-topics))))))
 
 (defmacro xdoc-extend (name long)
   `(table xdoc 'doc
+          ;; Since we don't quote long, it can be something like (concatenate
+          ;; 'string ...), and that's fine, it'll get evaluated here and
+          ;; xdoc-extend will get the resulting string.
           (xdoc-extend-fn ',name ,long world)))
 
 (defun xdoc-prepend-fn (name long world)
   (declare (xargs :mode :program))
   (let* ((all-topics   (xdoc::get-xdoc-table world))
          (old-topic    (xdoc::find-topic name all-topics))
-         (long         (or long "")))
+         (long         (cond ((not long) "")
+                             ((stringp long) long)
+                             (t
+                              (er hard? 'xdoc-extend "Can't prepend ~x0 with non-string ~x1."
+                                  name long)))))
     (cond ((not old-topic)
            (er hard? 'xdoc-prepend "Topic ~x0 wasn't found." name))
           (t
            (let* ((other-topics (remove-equal old-topic all-topics))
-                  (old-long     (cdr (assoc :long old-topic)))
+                  (old-long     (or (cdr (assoc :long old-topic)) ""))
                   (new-long     (concatenate 'string long old-long))
-                  (new-topic    (acons :long new-long
-                                       (delete-assoc :long old-topic))))
+                  (new-topic    (acons :long new-long (delete-assoc :long old-topic))))
              (cons new-topic other-topics))))))
 
 (defmacro xdoc-prepend (name long)
@@ -183,7 +192,7 @@
                (bar-escape-string (symbol-name x)) "|"))
 
 (defun formula-info-to-defs1 (entries)
-  ;; See misc/book-thms.lisp.  Entries should be the kind of structure that
+  ;; See book-thms.lisp.  Entries should be the kind of structure that
   ;; new-formula-info produces.  We turn it into a list of "@(def fn)" entries.
   ;; This is a hack.  We probably want something smarter.
   (declare (xargs :mode :program))
@@ -191,7 +200,12 @@
          nil)
         ((and (consp (car entries))
               (symbolp (caar entries)))
+         ;; theorems, definitions, defchooses
          (cons (concatenate 'string "@(def " (full-escape-symbol (caar entries)) ")")
+               (formula-info-to-defs1 (cdr entries))))
+        ((stringp (car entries))
+         ;; xdoc fragments
+         (cons (car entries)
                (formula-info-to-defs1 (cdr entries))))
         (t
          (formula-info-to-defs1 (cdr entries)))))
@@ -233,6 +247,16 @@
          :short ,short
          :long ,long))))
 
+(defun make-xdoc-fragments (args) ;; args to a defsection
+  (cond ((atom args)
+         nil)
+        ((stringp (car args))
+         (cons `(acl2::acl2-xdoc-fragment ,(car args))
+               (make-xdoc-fragments (cdr args))))
+        (t
+         (cons (car args)
+               (make-xdoc-fragments (cdr args))))))
+
 (defun defsection-fn (wrapper ; (encapsulate nil) or (progn)
                       name args)
   (declare (xargs :mode :program))
@@ -240,23 +264,29 @@
          (short       (cdr (extract-keyword-from-args :short args)))
          (long        (cdr (extract-keyword-from-args :long args)))
          (extension   (cdr (extract-keyword-from-args :extension args)))
+         (extension
+          (cond ((symbolp extension) extension)
+                ((and (consp extension)
+                      (atom (cdr extension))
+                      (symbolp (car extension)))
+                 ;; DWIM feature -- previously you had to write :extension foo.
+                 ;; I always screwed this up because I was used to writing, e.g.,
+                 ;; :parents (foo).  So now we allow :extension (foo) as well.
+                 (car extension))
+                (t
+                 (er hard? 'defsection "In section ~x0, invalid :extension: ~x1."
+                     name extension))))
          (defxdoc-p   (and (not extension)
                            (or parents short long)))
          (autodoc-arg (extract-keyword-from-args :autodoc args))
          (autodoc-p   (and (or defxdoc-p extension)
                            (or (not autodoc-arg)
                                (cdr autodoc-arg))))
-         (new-args (throw-away-keyword-parts args)))
+         (new-args (make-xdoc-fragments (throw-away-keyword-parts args))))
     (cond ((and extension
                 (or parents short))
-           (er hard? 'defsection-fn "When using :extension, you cannot ~
-                  give a :parents or :short field."))
-
-          ((and extension
-                (not (symbolp extension)))
-           (er hard? 'defsection-fn "Expected a single symbol for :extension, ~
-                                     but was given ~x0." extension))
-
+           (er hard? 'defsection "In section ~x0, you are using :extension, ~
+                                  so :parents and :short are not allowed." name))
           ((not autodoc-p)
            `(with-output
               :stack :push
@@ -274,9 +304,7 @@
                    (value-triple :invisible)
                    . ,new-args))
                 ,@(and extension
-                       long
                        `(xdoc-extend ,extension ,long)))))
-
           (t
            ;; Fancy autodoc stuff.
            (let ((marker `(table acl2::intro-table :mark ',name)))
@@ -292,7 +320,7 @@
                      (value-triple :invisible)
                      . ,new-args))
                   (make-event
-                   (defsection-autodoc-fn ',name ',parents ',short ',long ',extension ',marker state))
+                   (defsection-autodoc-fn ',name ',parents ,short ,long ',extension ',marker state))
                   (value-triple ',name))))))))
 
 (defmacro defsection (name &rest args)

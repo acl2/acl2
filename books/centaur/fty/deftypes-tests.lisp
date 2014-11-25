@@ -32,8 +32,8 @@
 
 (include-book "deftypes")
 (include-book "basetypes")
-
 (include-book "std/lists/acl2-count" :dir :system)
+(include-book "misc/assert" :dir :system)
 
 (logic)
 
@@ -456,7 +456,23 @@
   ((first nat)
    (second int)
    (third symbol))
+  :extra-binder-names (first-two (list . 3ple-to-list))
   :layout :tree)
+
+(define 3ple->first-two ((x 3ple-p))
+  (b* (((3ple x)))
+    (cons x.first x.second)))
+
+(define 3ple-to-list ((x 3ple-p))
+  (b* (((3ple x)))
+    (list x.first x.second x.third x.first-two)))
+
+(define 3ple-test ((x 3ple-p))
+  (b* (((3ple x)))
+    (list x.list x.first-two x.third))
+  ///
+  (assert! (equal (3ple-test (make-3ple :first 1 :second 2 :third 'three))
+                  '((1 2 three (1 . 2)) (1 . 2) three))))
 
 (defprod 3ple-b
   ((first nat)
@@ -603,8 +619,10 @@
 (deftagsum arithtm
   (:num ((val integerp :rule-classes :type-prescription)))
   (:plus ((left arithtm-p)
-          (right arithtm-p)))
-  (:minus ((arg arithtm-p))))
+          (right arithtm-p))
+   :extra-binder-names ((val . arithtm-eval)))
+  (:minus ((arg arithtm-p))
+   :extra-binder-names ((val . arithtm-eval))))
 
 (define arithtm-eval ((x arithtm-p))
   :returns (val integerp :rule-classes :type-prescription)
@@ -642,6 +660,18 @@
     (equal (arithtm-eval (arithtm-double x))
            (* 2 (arithtm-eval x)))
     :hints(("Goal" :in-theory (enable arithtm-eval)))))
+
+(define arithtm-info ((x arithtm-p))
+  (arithtm-case x
+    :plus (list :plus x.val)
+    :minus (list :minus x.val)
+    :num (list :num x.val))
+  ///
+  (make-event
+   (and (equal (arithtm-info (make-arithtm-plus :left (make-arithtm-num :val 1)
+                                                :right (make-arithtm-num :val 2)))
+               '(:plus 3))
+        '(value-triple :ok))))
 
 (deflist arithtmlist :elt-type arithtm)
 

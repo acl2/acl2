@@ -31,8 +31,7 @@
 (in-package "VL")
 (include-book "elements")
 (include-book "imports")
-(include-book "../make-implicit-wires")
-(include-book "../portdecl-sign")
+(include-book "../../mlib/blocks")
 (local (include-book "../../util/arithmetic"))
 
 
@@ -59,30 +58,6 @@ interface_ansi_header ::=
 
 ||#
 
-(define vl-interface-warn-unsupported ((c vl-genelement-collection-p)
-                                       (warnings vl-warninglist-p))
-  :returns (warnings vl-warninglist-p)
-  (b* (((vl-genelement-collection c)))
-    (if (or* c.assigns
-             c.fundecls
-             c.taskdecls
-             c.modinsts
-             c.gateinsts
-             c.alwayss
-             c.initials
-             c.ports)
-        (warn :type :vl-unsupported-interface-item
-              :msg "Unsupported interface items: ~&0"
-              :args (list (append (and* c.assigns '("continuous assignments"))
-                                  (and* c.fundecls '("functions"))
-                                  (and* c.taskdecls '("tasks"))
-                                  (and* c.modinsts '("module instances"))
-                                  (and* c.gateinsts '("gate instances"))
-                                  (and* c.alwayss '("always blocks"))
-                                  (and* c.initials '("initial blocks"))
-                                  (and* c.ports    '("ports")))))
-      (vl-warninglist-fix warnings))))
-
 (define vl-make-interface-by-items
 
 ; Our various parsing functions for declarations, assignments, etc., return all
@@ -99,33 +74,55 @@ interface_ansi_header ::=
    (maxloc   vl-location-p)
    (warnings vl-warninglist-p))
   :returns (mod vl-interface-p)
-  (b* (((mv items warnings) (vl-make-implicit-wires
-                             (append-without-guard (vl-modelementlist->genelements params)
-                                                   items)
-                             warnings))
-       ((vl-genelement-collection c) (vl-sort-genelements items))
-       ((mv warnings c.portdecls c.vardecls)
-        (vl-portdecl-sign c.portdecls c.vardecls warnings))
-       (warnings (vl-interface-warn-unsupported c warnings)))
-    ;; BOZO: Warn about other bad elements in c?
-    (make-vl-interface :name       name
-                       :ports      ports
-                       :portdecls  c.portdecls
-                       :vardecls   c.vardecls
-                       :paramdecls c.paramdecls
-                       :modports   c.modports
-                       :generates  c.generates
-                       :atts       atts
-                       :minloc     minloc
-                       :maxloc     maxloc
-                       :warnings   warnings
-                       :origname   name
-                       :comments   nil
-                       )))
+  (b* ((items (append-without-guard (vl-modelementlist->genelements params)
+                                    items))
 
+       (bad-item (vl-genelementlist-findbad items
+                                            '(:vl-generate
+                                              ;; :vl-port    -- not allowed, they were parsed separately
+                                              :vl-portdecl
+                                              ;; :vl-assign  -- not allowed
+                                              ;; :vl-alias   -- not allowed (bozo yet?)
+                                              :vl-vardecl
+                                              :vl-paramdecl
+                                              ;; :vl-fundecl  -- not allowed
+                                              ;; :vl-taskdecl -- not allowed
+                                              ;; :vl-modinst  -- not allowed
+                                              ;; :vl-gateinst -- not allowed
+                                              ;; :vl-always   -- not allowed
+                                              ;; :vl-initial  -- not allowed
+                                              ;; :vl-typedef    -- bozo? not yet
+                                              :vl-import
+                                              ;; :vl-fwdtypedef -- bozo? not yet
+                                              :vl-modport
+                                              )))
+       (warnings
+        (if (not bad-item)
+            warnings
+          (fatal :type :vl-bad-interface-item
+                 :msg "~a0: an interface may not contain ~x1s."
+                 :args (list bad-item (tag bad-item)))))
 
+       ((vl-genblob c) (vl-sort-genelements items)))
 
-(defparser vl-parse-interface-declaration-ansi (atts interface-kwd name)
+     (make-vl-interface :name       name
+                        :ports      ports
+                        :portdecls  c.portdecls
+                        :vardecls   c.vardecls
+                        :paramdecls c.paramdecls
+                        :modports   c.modports
+                        :generates  c.generates
+                        :imports    c.imports
+                        :atts       atts
+                        :minloc     minloc
+                        :maxloc     maxloc
+                        :warnings   warnings
+                        :origname   name
+                        :comments   nil
+                        :loaditems  items
+                        )))
+
+(defparser vl-parse-interface-declaration-core (atts interface-kwd name)
   :guard (and (vl-atts-p atts)
               (vl-token-p interface-kwd)
               (vl-idtoken-p name))
@@ -134,58 +131,35 @@ interface_ansi_header ::=
   :fails gracefully
   :count strong
   (seq tokstream
-       (:= (vl-parse-0+-package-import-declarations)) ;; ignore
-       (params := (vl-maybe-parse-parameter-port-list))
-       ((portdecls . netdecls) := (vl-maybe-parse-list-of-port-declarations))
+       (imports  := (vl-parse-0+-package-import-declarations)) ;; ignore
+       (params   := (vl-maybe-parse-parameter-port-list))
+       (portinfo := (vl-parse-module-port-list-top))
        (:= (vl-match-token :vl-semi))
-       (items := (vl-parse-0+-genelements))
+       (items := (vl-parse-genelements-until :vl-kwd-endinterface))
        (endkwd := (vl-match-token :vl-kwd-endinterface))
        (:= (vl-parse-endblock-name (vl-idtoken->name name)
                                    "interface/endinterface"))
-
        (return-raw
-        (b* ((item-portdecls (vl-genelementlist->portdecls items))
-             ((when item-portdecls)
-              (vl-parse-error "ANSI interface contained internal portdecls"))
-             (interface (vl-make-interface-by-items (vl-idtoken->name name)
-                                              params
-                                              (vl-ports-from-portdecls portdecls)
-                                              (append (vl-modelementlist->genelements netdecls)
-                                                      (vl-modelementlist->genelements portdecls)
-                                                      items)
-                                              atts
-                                              (vl-token->loc interface-kwd)
-                                              (vl-token->loc endkwd)
-                                              (vl-parsestate->warnings (vl-tokstream->pstate)))))
+        (b* (((vl-parsed-ports portinfo))
+             (name     (vl-idtoken->name name))
+             (minloc   (vl-token->loc interface-kwd))
+             (maxloc   (vl-token->loc endkwd))
+             (warnings (vl-parsestate->warnings (vl-tokstream->pstate)))
+             ((when (and portinfo.ansi-p (vl-genelementlist->portdecls items))) ;; User's fault
+              (vl-parse-error "ANSI interface cannot have internal port declarations."))
+             ((when (and (not portinfo.ansi-p)
+                         (or portinfo.portdecls portinfo.vardecls)))
+              (vl-parse-error "Non-ANSI interface ports are somehow causing declarations?
+                               Programming error."))
+             (items (append (vl-modelementlist->genelements imports)
+                            (vl-modelementlist->genelements portinfo.portdecls)
+                            (vl-modelementlist->genelements portinfo.vardecls)
+                            items))
+             (interface (vl-make-interface-by-items name params portinfo.ports items
+                                              atts minloc maxloc warnings)))
           (mv nil interface tokstream)))))
 
-(defparser vl-parse-interface-declaration-nonansi (atts interface-kwd name)
-  :guard (and (vl-atts-p atts)
-              (vl-token-p interface-kwd)
-              (vl-idtoken-p name))
-  :result (vl-interface-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (:= (vl-parse-0+-package-import-declarations)) ;; ignore
-       (params := (vl-maybe-parse-parameter-port-list))
-       (ports := (vl-maybe-parse-list-of-ports))
-       (:= (vl-match-token :vl-semi))
-       (items := (vl-parse-0+-genelements))
-       (endkwd := (vl-match-token :vl-kwd-endinterface))
-       (:= (vl-parse-endblock-name (vl-idtoken->name name)
-                                   "interface/endinterface"))
-
-       (return
-        (vl-make-interface-by-items (vl-idtoken->name name)
-                                    params ports items atts
-                                    (vl-token->loc interface-kwd)
-                                    (vl-token->loc endkwd)
-                                    (vl-parsestate->warnings (vl-tokstream->pstate))))))
-
-
-(defparser vl-parse-interface-main(atts interface-kwd name)
+(defparser vl-parse-interface-main (atts interface-kwd name)
   :guard (and (vl-atts-p atts)
               (vl-token-p interface-kwd)
               (vl-idtoken-p name))
@@ -197,43 +171,11 @@ interface_ansi_header ::=
   (b* ((orig-warnings (vl-parsestate->warnings (vl-tokstream->pstate)))
        (tokstream (vl-tokstream-update-pstate
                    (change-vl-parsestate (vl-tokstream->pstate) :warnings nil)))
-       (backup (vl-tokstream-save))
        ((mv err1 res tokstream)
-        (vl-parse-interface-declaration-nonansi atts interface-kwd name))
-       ((unless err1)
-        ;; Successfully parsed the interface using the nonansi variant.  Return
-        ;; the result.
-        ;; Any warnings get associated with the interface, so now throw out
-        ;; any warnings that are returned.
-        (b* ((tokstream (vl-tokstream-update-pstate
-                         (change-vl-parsestate
-                          (vl-tokstream->pstate) :warnings orig-warnings))))
-          (mv err1 res tokstream)))
-       (v1-tokens (vl-tokstream->tokens))
-
-       (tokstream (vl-tokstream-restore backup))
-       ((mv err2 res tokstream)
-        ;; Similar handling for warnings
-        (vl-parse-interface-declaration-ansi atts interface-kwd name))
-       ((unless err2)
-        ;; Successfully parsed using ansi variant.  Similar deal.
-        (b* ((tokstream (vl-tokstream-update-pstate
-                         (change-vl-parsestate
-                          (vl-tokstream->pstate) :warnings orig-warnings))))
-          (mv err2 res tokstream)))
-
-       ;; Choose which parse error to use based on the tokens remaining.
-       (v2-tokens (vl-tokstream->tokens))
-       (tokstream (vl-tokstream-restore backup))
+        (vl-parse-interface-declaration-core atts interface-kwd name))
        (tokstream (vl-tokstream-update-pstate
-                   (change-vl-parsestate
-                    (vl-tokstream->pstate) :warnings orig-warnings)))
-
-       ((when (<= (len v1-tokens) (len v2-tokens)))
-        ;; nonansi variant got farther (or as far), so use it.
-        (mv err1 nil tokstream)))
-    (mv err2 nil tokstream)))
-
+                   (change-vl-parsestate (vl-tokstream->pstate) :warnings orig-warnings))))
+    (mv err1 res tokstream)))
 
 (defparser vl-skip-through-endinterface ()
   :result (vl-endinfo-p val)
@@ -262,7 +204,6 @@ interface_ansi_header ::=
        (return (make-vl-endinfo :name (vl-idtoken->name id)
                                 :loc (vl-token->loc id)))))
 
-
 (define vl-make-interface-with-parse-error ((name   stringp)
                                             (minloc vl-location-p)
                                             (maxloc vl-location-p)
@@ -284,10 +225,6 @@ interface_ansi_header ::=
                        :minloc minloc
                        :maxloc maxloc
                        :warnings (list err warn2))))
-
-
-
-
 
 (defparser vl-parse-interface-declaration (atts)
   :guard (vl-atts-p atts)

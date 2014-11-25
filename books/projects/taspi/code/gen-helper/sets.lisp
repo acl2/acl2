@@ -148,20 +148,24 @@
 (dis+ind intersect)
 
 (defun no-conflicts (x list)
-  ":Doc-Section TASPI
-   Determines if bipartition x is consistent with each of those in list. ~/
-   ~/
-   Arguments: 
-     (1) x - a bipartition                                                
-     (2) list - a list of bipartitions
 
-   Details: Set operations are used to determine if the bipartition x does not
-            conflict with each of the bipartitions in list.  Bipartitions must
-            be list based (as opposed to bdd-based) and the underlying taxa list
-            must be preserved between x and each member of list. 
-            The bipartitions are assumed to be ordered such that no bipartition
-            x following y in list exists such that y is a subset of x and x=/y.
-            See also q-no-conflicts (bdd based)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Determines if bipartition x is consistent with each of those in list. ~/
+;  ~/
+;  Arguments: 
+;    (1) x - a bipartition                                                
+;    (2) list - a list of bipartitions
+
+;  Details: Set operations are used to determine if the bipartition x does not
+;           conflict with each of the bipartitions in list.  Bipartitions must
+;           be list based (as opposed to bdd-based) and the underlying taxa list
+;           must be preserved between x and each member of list. 
+;           The bipartitions are assumed to be ordered such that no bipartition
+;           x following y in list exists such that y is a subset of x and x=/y.
+;           See also q-no-conflicts (bdd based)."
   (declare (xargs :guard t))
   (if (consp list)
       (if (intersect x (car list))
@@ -186,19 +190,23 @@
 (dis+ind no-conflicts)
 
 (defun no-conflicts-list (list)
-  ":Doc-Section TASPI
-   Determines if the list of bipartitions x is consistent. ~/
-   ~/
-   Arguments: 
-     (1) list - a list of bipartitions
 
-   Details: Set operations are used to determine if the list of bipartitions x 
-            do not conflict.  Bipartitions must be list based (as opposed to
-            bdd based), and an underlying taxa list must be preserved between
-            every pair of bipartitions in the list. 
-            The bipartitions are assumed to be ordered such that no bipartition
-            x following y in list exists such that y is a subset of x and x=/y.
-            See also q-no-conflicts-list (bdd based)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Determines if the list of bipartitions x is consistent. ~/
+;  ~/
+;  Arguments: 
+;    (1) list - a list of bipartitions
+
+;  Details: Set operations are used to determine if the list of bipartitions x 
+;           do not conflict.  Bipartitions must be list based (as opposed to
+;           bdd based), and an underlying taxa list must be preserved between
+;           every pair of bipartitions in the list. 
+;           The bipartitions are assumed to be ordered such that no bipartition
+;           x following y in list exists such that y is a subset of x and x=/y.
+;           See also q-no-conflicts-list (bdd based)."
   (declare (xargs :guard t))
   (if (consp list)
       (and (no-conflicts (car list) (cdr list))

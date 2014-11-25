@@ -30,7 +30,6 @@
 
 (in-package "VL")
 (include-book "scopestack")
-(include-book "find-item")
 (include-book "expr-tools")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
@@ -376,19 +375,3 @@ otherwise, it is a single-bit wide.</p>"
    (maybe-range (equal (vl-range-p maybe-range) (if maybe-range t nil))
                 :name vl-range-p-of-vl-slow-find-net/reg-range)))
 
-(define vl-find-net/reg-range ((name   stringp)
-                               (mod    vl-module-p)
-                               (ialist (equal ialist (vl-moditem-alist mod))))
-  :returns (mv successp maybe-range)
-  :enabled t
-  :hooks ((:fix :args ((mod vl-module-p))))
-  :guard-hints(("Goal" :in-theory (enable vl-slow-find-net/reg-range
-                                          vl-find-moduleitem)))
-  (mbe :logic (vl-slow-find-net/reg-range name mod)
-       :exec
-       (b* ((find (vl-fast-find-moduleitem name mod ialist))
-            ((unless (and find
-                          (eq (tag find) :vl-vardecl)
-                          (vl-simplevar-p find)))
-             (mv nil nil)))
-         (mv t (vl-simplevar->range find)))))

@@ -40,7 +40,6 @@
 
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (include-book "xdoc/top" :dir :system)
-(include-book "tools/defredundant" :dir :system)
 
 (local (in-theory (enable* arith-equiv-forwarding)))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
@@ -55,56 +54,70 @@ lightweight) replacement for books such as @('ihs/logops-lemmas.lisp')."
   :long "<p>BOZO this needs a lot of documentation.  For now you're best
 off looking at the source code.</p>")
 
-(defredundant-events
+
+;; [Jared] this was causing errors, I think due to the doc-string stripping code
+;; not working when :doc nil is given.  Switching it to use std/util/defredundant
+;; instead.
+;; (include-book "tools/defredundant" :dir :system)
+;; (defredundant-events
+
+(encapsulate
+  ()
+  (local (include-book "std/util/defredundant" :dir :system))
+  (make-event
+   (b* ((imports '(
+
 ; There are too many rules with forced hyps in logops-lemmas.  We'll locally
 ; include it and redundantly define many of the useful theorems.
 
-  constant-syntaxp
-  ash-0
-  cancel-equal-lognot
-  commutativity-of-logand
-  simplify-logand
-  commutativity-of-logior
-  simplify-logior
-  commutativity-of-logxor
-  simplify-logxor
-  simplify-bit-functions
-  unsigned-byte-p-base-case
-  unsigned-byte-p-0
-  unsigned-byte-p-plus
-  difference-unsigned-byte-p
-  ;; signed-byte-p-base-cases
-  ;; backchain-signed-byte-p-to-unsigned-byte-p
-  loghead-identity
-  ;; loghead-0-i remove hyp
-  ;; loghead-size-0 remove hyp
-  ;; loghead-leq remove force
-  bitp-loghead-1
-  logtail-identity
-  ;; logtail-logtail remove hyps
-  ;; logtail-0-i remove hyp
-  ;; logtail-size-0 remove hyp
-  ;; logtail-leq remove hyp
-  ;; logtail-unsigned-byte-p remove hyp
-  ;; logtail-loghead remove hyp
-  ;; associativity-of-logapp remove hyp
+                   constant-syntaxp
+                   ash-0
+                   cancel-equal-lognot
+                   commutativity-of-logand
+                   simplify-logand
+                   commutativity-of-logior
+                   simplify-logior
+                   commutativity-of-logxor
+                   simplify-logxor
+                   simplify-bit-functions
+                   unsigned-byte-p-base-case
+                   unsigned-byte-p-0
+                   unsigned-byte-p-plus
+                   difference-unsigned-byte-p
+                   ;; signed-byte-p-base-cases
+                   ;; backchain-signed-byte-p-to-unsigned-byte-p
+                   loghead-identity
+                   ;; loghead-0-i remove hyp
+                   ;; loghead-size-0 remove hyp
+                   ;; loghead-leq remove force
+                   bitp-loghead-1
+                   logtail-identity
+                   ;; logtail-logtail remove hyps
+                   ;; logtail-0-i remove hyp
+                   ;; logtail-size-0 remove hyp
+                   ;; logtail-leq remove hyp
+                   ;; logtail-unsigned-byte-p remove hyp
+                   ;; logtail-loghead remove hyp
+                   ;; associativity-of-logapp remove hyp
 
-  logext-identity
+                   logext-identity
 
-  ;; we'll prove a stronger rewrite rule and disable this
-  ;; rw, but it's a good elim
-  logcar-logcdr-elim
+                   ;; we'll prove a stronger rewrite rule and disable this
+                   ;; rw, but it's a good elim
+                   logcar-logcdr-elim
 
-  ;; these are weird but won't hurt much
-  logcar-2*i
-  logcar-i+2*j
-  logcdr-2*i
-  logcdr-i+2*j
+                   ;; these are weird but won't hurt much
+                   logcar-2*i
+                   logcar-i+2*j
+                   logcdr-2*i
+                   logcdr-i+2*j
 
-  ;; logbitp-0-minus-1 remove hyps
-  ;; logbit-0-minus-1 remove hyps
+                   ;; logbitp-0-minus-1 remove hyps
+                   ;; logbit-0-minus-1 remove hyps
 
-  signed-byte-p-logops)
+                   signed-byte-p-logops))
+        (events (std::defredundant-fn imports nil state)))
+     (acl2::value events))))
 
 (defconst *ihs-extensions-disables*
   '(floor mod expt ash evenp oddp
@@ -2474,7 +2487,7 @@ off looking at the source code.</p>")
     :hints (("goal" :in-theory (e/d* (ihsext-recursive-redefs
                                       ihsext-inductions)
                                      (logcdr-<-const
-                                      mod-x-y-=-x+y))
+                                      mod-x-y-=-x+y-for-rationals))
              :induct (and (logsquash m x)
                           (logsquash n x))
              :expand ((:free (b) (logsquash n b))
@@ -2488,7 +2501,7 @@ off looking at the source code.</p>")
     :hints (("goal" :in-theory (e/d* (ihsext-recursive-redefs
                                       ihsext-inductions)
                                      (logcdr-<-const
-                                      MOD-X-Y-=-X+Y))
+                                      MOD-X-Y-=-X+Y-for-rationals))
              :induct (and (logsquash m x)
                           (logsquash n x))
              :expand ((:free (b) (logsquash n b))
@@ -2936,8 +2949,15 @@ off looking at the source code.</p>")
              :in-theory (disable signed-byte-p
                                  minus-to-lognot))))
 
+  (defthm logapp-sign
+    (equal (< (logapp size i j) 0)
+           (< (ifix j) 0))
+    :hints (("goal" :induct (logapp size i j)
+             :in-theory (disable (force)))))
+
   (add-to-ruleset ihsext-basic-thms '(unsigned-byte-p-of-logapp
-                                      signed-byte-p-of-logapp))
+                                      signed-byte-p-of-logapp
+                                      logapp-sign))
 
   ;; (defthm logapp-zeros
   ;;   (equal (logapp i 0 0) 0))
@@ -3143,8 +3163,8 @@ off looking at the source code.</p>")
                                      logmaskp*
                                      ihsext-recursive-redefs)
                                     ((force)))))
-    :rule-classes ((:definition :clique (bitmaskp)
-                    :controller-alist ((bitmaskp t)))))
+    :rule-classes ((:definition :clique (bitmaskp$inline)
+                    :controller-alist ((bitmaskp$inline t)))))
 
   (local (in-theory (disable bitmaskp)))
 
@@ -3332,11 +3352,12 @@ off looking at the source code.</p>")
   (local (in-theory (enable* arith-equiv-forwarding)))
   (local (in-theory (enable logrev1 logrev)))
 
-  (in-theory (disable (:type-prescription logrev))) ;; Too weak (integerp)
+  (in-theory (disable (:t logrev))) ;; Too weak (integerp)
 
   (defthm logrev-type
     ;; Redundant with ihs/basic-definitions.lisp
-    (natp (logrev size i))
+    (b* ((nat (logrev$inline size i)))
+      (natp nat))
     :rule-classes :type-prescription)
 
   (local (defthm natp-of-logrev1
@@ -3410,8 +3431,8 @@ off looking at the source code.</p>")
                  (logior (logrev size (logcdr i))
                          (ash (logcar i) size)))))
       :rule-classes ((:definition
-                      :clique (logrev)
-                      :controller-alist ((logrev t nil))))))
+                      :clique (logrev$inline)
+                      :controller-alist ((logrev$inline t nil))))))
 
   (add-to-ruleset ihsext-recursive-redefs '(logrev**))
   (add-to-ruleset ihsext-redefs '(logrev**))
@@ -3419,7 +3440,7 @@ off looking at the source code.</p>")
   (defthmd logrev-induct
     t
     :rule-classes ((:induction
-                    :pattern (logrev size i)
+                    :pattern (logrev$inline size i)
                     :scheme (logbitp-ind size i))))
 
   (add-to-ruleset ihsext-inductions '(logrev-induct))

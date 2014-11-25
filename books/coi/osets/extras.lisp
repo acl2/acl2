@@ -173,11 +173,13 @@
 ;may be expensive?
 ;use a congruence?
 ;trying disabled, since this sort of takes us out of the set world
-(defthmd insert-when-empty
-  (implies (empty x)
-           (equal (insert a x)
-                  (list a)))
-  :hints (("Goal" :in-theory (enable insert))))
+
+;; [jared] something like this is now in std/osets
+;; (defthmd insert-when-empty
+;;   (implies (empty x)
+;;            (equal (insert a x)
+;;                   (list a)))
+;;   :hints (("Goal" :in-theory (enable insert))))
 
 ;this sort of keeps us in the sets world (emptyset is a macro for nil - does that count as being in the sets world?)
 (defthm insert-when-empty-2
@@ -307,11 +309,12 @@
          (or (empty s)
              (equal s (insert a (emptyset))))))
 
-(defthmd tail-when-empty                
-  (implies (empty set) 
-           (equal (tail set)
-                  (emptyset)))
-  :hints (("Goal" :in-theory (enable tail))))
+;; [jared] something like this is now in std/osets/top
+;; (defthmd tail-when-empty                
+;;   (implies (empty set) 
+;;            (equal (tail set)
+;;                   (emptyset)))
+;;   :hints (("Goal" :in-theory (enable tail))))
 
 (defthm tail-when-empty-cheap    
   (implies (empty set) 

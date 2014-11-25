@@ -227,17 +227,21 @@
   (cluster-sort-by-merge flg x taxon-index-alist))
 
 (defun order-by-merge (x taxon-index-alist)
-  ":Doc-Section TASPI
-    Returns the structurally unchanged input but with leaves ordered according
-    to the mapping given.~/
-    ~/
-    Arguments:
-       (1) x - a tree
-       (2) taxon-index-alist - a mapping of taxa names to integers
 
-    Details: The leaves in the tree must all be represented in the mapping 
-             given.  Ordering is achieved using a merge sort algorithm.
-             Consider also order-by-insertion."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;   Returns the structurally unchanged input but with leaves ordered according
+;   to the mapping given.~/
+;   ~/
+;   Arguments:
+;      (1) x - a tree
+;      (2) taxon-index-alist - a mapping of taxa names to integers
+
+;   Details: The leaves in the tree must all be represented in the mapping 
+;            given.  Ordering is achieved using a merge sort algorithm.
+;            Consider also order-by-insertion."
   (declare (xargs :guard (and (good-taxon-index-halist
                                taxon-index-alist)
                               (taspip t x)
@@ -247,19 +251,23 @@
   (order-by-merge-help t x taxon-index-alist))
 
 (defun order-by-merge-one-level (x taxon-index-alist)
-  ":Doc-Section TASPI
-    Returns the structurally unchanged input but with top-level subtrees
-    ordered according to the mapping given.~/
-    ~/
-    Arguments:
-       (1) x - a tree
-       (3) taxon-index-alist - a mapping of taxa names to integers
 
-    Details: The leaves in the tree must all be represented in the mapping 
-             given.  Ordering is achieved using a merge sort algorithm.
-             The tree produced will only be fully ordered if each of the
-             top-level trees are intially ordered.  
-             Consider also order-by-insertion-one-level."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;   Returns the structurally unchanged input but with top-level subtrees
+;   ordered according to the mapping given.~/
+;   ~/
+;   Arguments:
+;      (1) x - a tree
+;      (3) taxon-index-alist - a mapping of taxa names to integers
+
+;   Details: The leaves in the tree must all be represented in the mapping 
+;            given.  Ordering is achieved using a merge sort algorithm.
+;            The tree produced will only be fully ordered if each of the
+;            top-level trees are intially ordered.  
+;            Consider also order-by-insertion-one-level."
   (declare (xargs :guard (and (good-taxon-index-halist taxon-index-alist)
                               (taspip t x)
                               (subset (mytips x)
@@ -484,20 +492,24 @@
 (in-theory (disable order-by-merge-help))
                 
 (defun order-each-by-merge (input-trees taxon-index-alist)
-  ":Doc-Section TASPI
-    Returns a list where each of the trees in the input list has been 
-    structurally unchanged but now has leaves ordered according
-    to the mapping given.~/
-    ~/
-    Arguments:
-       (1) input-trees - a list of trees
-       (2) taxon-index-alist - a mapping of taxa names to integers
-       (3) length-taxon-index-alist - a number larger than any value in the 
-                                      mapping
 
-    Details: The leaves in each of the trees must all be represented in the 
-             mapping given.  Ordering is achieved using a merge sort 
-             algorithm. Consider also order-each-by-insertion."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;   Returns a list where each of the trees in the input list has been 
+;   structurally unchanged but now has leaves ordered according
+;   to the mapping given.~/
+;   ~/
+;   Arguments:
+;      (1) input-trees - a list of trees
+;      (2) taxon-index-alist - a mapping of taxa names to integers
+;      (3) length-taxon-index-alist - a number larger than any value in the 
+;                                     mapping
+
+;   Details: The leaves in each of the trees must all be represented in the 
+;            mapping given.  Ordering is achieved using a merge sort 
+;            algorithm. Consider also order-each-by-insertion."
   (declare (xargs :guard (and (good-taxon-index-halist
                                taxon-index-alist)
                               (taspip nil input-trees)

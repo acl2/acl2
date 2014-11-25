@@ -143,6 +143,7 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
    return-type   ; t when omitted
    hyp           ; t when omitted
    hints         ; nil when omitted
+   hintsp        ; t if hints were provided
    rule-classes  ; :rewrite when omitted
    thm-name      ; NIL (to generate a name) or the name for the theorem
    )
@@ -154,6 +155,7 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
                    :return-type t
                    :hyp t
                    :hints nil
+                   :hintsp nil
                    :rule-classes :rewrite
                    :thm-name nil))
 
@@ -288,9 +290,10 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
         ;; bozo not really a very good place to check for this.
         (raise "Error in ~x0: invalid keyword ~x1 used as a :hyp." fnname hyp)
         *default-returnspec*)
-       (hints (if (assoc :hints kwd-alist)
-                  (cdr (assoc :hints kwd-alist))
-                nil))
+       ((mv hints hintsp)
+        (if (assoc :hints kwd-alist)
+            (mv (cdr (assoc :hints kwd-alist)) t)
+          (mv nil nil)))
        (rule-classes (if (assoc :rule-classes kwd-alist)
                          (cdr (assoc :rule-classes kwd-alist))
                        :rewrite))
@@ -325,6 +328,7 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
                      :rule-classes rule-classes
                      :hyp hyp
                      :hints hints
+                     :hintsp hintsp
                      :thm-name thm-name)))
 
 (defun parse-returnspecs-aux (fnname x world)
@@ -480,6 +484,30 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
      (concatenate 'string "RETURN-TYPE-OF-" (symbol-name name) multi-suffix)
      name)))
 
+(defun returnspec-default-default-hint (fnname id world)
+  (and (eql (len (acl2::recursivep fnname world)) 1) ;; singly recursive
+       (let* ((pool-lst (acl2::access acl2::clause-id id :pool-lst)))
+         (and (eql 0 (acl2::access acl2::clause-id id :forcing-round))
+              (cond ((not pool-lst)
+                     (let ((formals (look-up-formals fnname world)))
+                       `(:induct (,fnname . ,formals)
+                         :in-theory (disable (:d ,fnname)))))
+                    ((equal pool-lst '(1))
+                     `(:computed-hint-replacement
+                       ((and stable-under-simplificationp
+                             (expand-calls ,fnname)))
+                       :in-theory (disable (:d ,fnname)))))))))
+
+(defun returnspec-default-hints (fnname world)
+  (let ((entry (cdr (assoc 'returnspec (table-alist 'std::default-hints-table world)))))
+    (subst fnname 'fnname entry)))
+
+(defmacro set-returnspec-default-hints (hint)
+  `(table std::default-hints-table 'returnspec ',hint))
+
+(set-returnspec-default-hints
+ ((returnspec-default-default-hint 'fnname acl2::id world)))
+
 (defun returnspec-single-thm (name name-fn x badname-okp world)
   "Returns EVENTS"
   ;; Only valid to call AFTER the function has been submitted, because we look
@@ -493,7 +521,8 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
        (binds `(,x.name (,name-fn . ,formals)))
        (formula (returnspec-thm-body name-fn binds x world))
        ((when (eq formula t)) nil)
-       (hints x.hints))
+       (hints (if x.hintsp x.hints
+                (returnspec-default-hints name-fn world))))
     `((defthm ,(returnspec-generate-name name x t badname-okp)
         ,formula
         :hints ,hints
@@ -508,7 +537,9 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
   (b* (((returnspec x) x)
        (formula (returnspec-thm-body name-fn binds x world))
        ((when (equal formula t)) nil)
-       (hints x.hints))
+       (hints (if x.hintsp
+                  x.hints
+                (returnspec-default-hints name-fn world))))
     `((defthm ,(returnspec-generate-name name x nil badname-okp)
         ,formula
         :hints ,hints

@@ -28,14 +28,6 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-`include "spec.v"
-
-`ifdef SYSTEM_VERILOG_MODE
- `include "impl.sv"
-`else
- `include "impl.v"
-`endif
-
 // Nasty preprocessor garbage to introduce comparison modules for each of the
 // various sizes.  See aux-compare-binary.v for details.
 

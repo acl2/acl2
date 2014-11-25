@@ -19,7 +19,11 @@
       0
     (+ n (sum1 (1- n)))))
 
-(commutativity-2 +)
+;; [Jared] Removed this commutativity-2 macro call in order to build the rule
+;; into ACL2.  (The macro generates a commutativity-2-of-+ theorem that uses
+;; different variable names than the built-in rule, so it's incompatible.)
+;;
+;; (commutativity-2 +)
 
 (defthm fold-consts-in-+
   (implies (and (syntaxp (quotep x))

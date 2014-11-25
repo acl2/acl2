@@ -245,14 +245,23 @@
   strengthen-cl-program
   nil
   :label strengthen-cl-program-cl-proc
-  :doc
-  ":Doc-Section clause-processor
-
-  example of a trusted (unverified) goal-level simplifier~/
-
-  Documentation remains to be written.~/~/"
+;;; The following legacy doc string was replaced Nov. 2014 by the
+;;; defxdoc form just below.
+; :doc
+; ":Doc-Section clause-processor
+;
+; example of a trusted (unverified) goal-level simplifier~/
+;
+; Documentation remains to be written.~/~/"
 
   :ttag my-ttag)
+
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc strengthen-cl-program-cl-proc
+  :parents (clause-processor)
+  :short "example of a trusted (unverified) goal-level simplifier"
+  :long "Documentation remains to be written.")
 
 (must-fail ; not a symbol
  (encapsulate ; hard error thrown below defeats must-fail without encapsulate

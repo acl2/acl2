@@ -28,6 +28,8 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
+`ifdef SYSTEM_VERILOG_MODE
+
 // Copy of flopcode3 but with always replaced by always_ff
 
 module f1 (q, d, clk);
@@ -287,3 +289,5 @@ module make_tests();
 endmodule
 
 */
+
+`endif

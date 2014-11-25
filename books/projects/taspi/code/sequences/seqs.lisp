@@ -24,13 +24,17 @@
 
 ;; a set of sequences is a list of valid-seqs
 (defun valid-sequences (x)
-  ":Doc-Section TASPI
-   Recognizes a set of sequences as structurally well-formed~/
-   ~/
-   Arguments: 
-     (1) x - a set of potential sequences
 
-   "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Recognizes a set of sequences as structurally well-formed~/
+;  ~/
+;  Arguments: 
+;    (1) x - a set of potential sequences
+
+;  "
   (declare (xargs :guard t))
   (if (consp x)
       (and (consp (car x))
@@ -52,13 +56,17 @@
 
 ;; sequences with same length
 (defun valid-sequences-same-length (x)
-  ":Doc-Section TASPI
-   Recognizes a set of sequences as structurally well-formed and of equal length~/
-   ~/
-   Arguments: 
-      (1) x - a set of potential sequences
 
-  "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Recognizes a set of sequences as structurally well-formed and of equal length~/
+;  ~/
+;  Arguments: 
+;     (1) x - a set of potential sequences
+
+; "
   (declare (xargs :guard t))
   (if (consp x)
       (and (consp (car x))
@@ -68,13 +76,17 @@
     t))
 
 (defun get-taxa-from-sequences (x)
-  ":Doc-Section TASPI
-   Returns the taxa-list implied by a set of sequences~/
-   ~/
-   Arguments: 
-      (1) x - a valid set of sequences
 
-  " 
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the taxa-list implied by a set of sequences~/
+;  ~/
+;  Arguments: 
+;     (1) x - a valid set of sequences
+
+; " 
   (declare (xargs :guard (valid-sequences x)))
   (strip-cars-gen x))
 
@@ -85,16 +97,20 @@
 ;;  (subset (mytips tree) (strip-cars-gen seqs)))
 
 (defun tree-matches-sequences (flg x sequences)
-  ":Doc-Section TASPI
-   Determines if a tree is made up of taxa for which sequences are available~/
-   ~/
-   Arguments: 
-      (1) flg - non-nil for a single tree, nil for a set of trees        
-      (2) x - a tree                                                     
-      (3) sequences - a set of sequences                                 
 
-   Details: Does not care if x is a valid tree, but sequences must be 
-            well-formed."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Determines if a tree is made up of taxa for which sequences are available~/
+;  ~/
+;  Arguments: 
+;     (1) flg - non-nil for a single tree, nil for a set of trees        
+;     (2) x - a tree                                                     
+;     (3) sequences - a set of sequences                                 
+
+;  Details: Does not care if x is a valid tree, but sequences must be 
+;           well-formed."
   (declare (xargs :guard (valid-sequences sequences)
                   :measure (tree-measure x flg)))
   (if flg

@@ -329,11 +329,85 @@
                       nil)))))
 
 
+(define vl-make-hidden-variable-for-taskport-aux ((name  stringp)
+                                                  (type  vl-taskporttype-p)
+                                                  (range vl-maybe-range-p)
+                                                  (loc   vl-location-p)
+                                                  (atts  vl-atts-p))
+  :returns (var vl-vardecl-p)
+  (b* ((atts (cons (list (hons-copy "VL_HIDDEN_DECL_FOR_TASKPORT")) atts))
+       ;; The taskport has a type and range.
+       (datatype (case type
+                   ((:vl-unsigned :vl-signed)
+                    (hons-copy
+                     (make-vl-coretype :name :vl-logic
+                                       :signedp (eq type :vl-signed)
+                                       :udims nil
+                                       :pdims (if range
+                                                  (list range)
+                                                nil))))
+                   (:vl-integer  *vl-plain-old-integer-type*)
+                   (:vl-real     *vl-plain-old-real-type*)
+                   (:vl-realtime *vl-plain-old-realtime-type*)
+                   (:vl-time     *vl-plain-old-time-type*)
+                   (otherwise (progn$ (impossible)
+                                      *vl-plain-old-integer-type*)))))
+    (make-vl-vardecl :name name
+                     :type datatype
+                     :atts atts
+                     :loc  loc)))
+
+(define vl-make-hidden-variable-for-taskport ((x vl-taskport-p))
+  :returns (var vl-vardecl-p)
+  (b* (((vl-taskport x)))
+    (vl-make-hidden-variable-for-taskport-aux x.name x.type x.range x.loc x.atts)))
+
+(defprojection vl-make-hidden-variables-for-taskports ((x vl-taskportlist-p))
+  :returns (vars vl-vardecllist-p)
+  (vl-make-hidden-variable-for-taskport x))
+
+(define vl-make-fundecl-for-parser (&key (name       stringp)
+                                         (automaticp booleanp)
+                                         (rtype      vl-taskporttype-p)
+                                         (rrange     vl-maybe-range-p)
+                                         (inputs     vl-taskportlist-p)
+                                         (decls      vl-blockitemlist-p)
+                                         (body       vl-stmt-p)
+                                         (atts       vl-atts-p)
+                                         (loc        vl-location-p))
+  ;; Adds the VL_HIDDEN_DECL_FOR_TASKPORTs.
+  :returns (fun vl-fundecl-p)
+  (b* ((port-vars (vl-make-hidden-variables-for-taskports inputs))
+       (ret-var   (vl-make-hidden-variable-for-taskport-aux name rtype rrange loc atts)))
+    (make-vl-fundecl :name name
+                     :automaticp automaticp
+                     :rtype rtype
+                     :rrange rrange
+                     :inputs inputs
+                     :decls (append port-vars (list ret-var) decls)
+                     :body body
+                     :atts atts
+                     :loc loc)))
+
+
+(defparser vl-skip-through-endfunction ()
+  :result (vl-token-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (when (vl-is-token? :vl-kwd-endfunction)
+         (end := (vl-match))
+         (return end))
+       (:s= (vl-match-any))
+       (end := (vl-skip-through-endfunction))
+       (return end)))
+
 (defparser vl-parse-function-declaration (atts)
   :guard (vl-atts-p atts)
-  :result (vl-fundecl-p val)
-  :true-listp nil
-  :resultp-of-nil nil
+  :result (vl-fundecllist-p val)
+  :true-listp t
+  :resultp-of-nil t
   :fails gracefully
   :count strong
   (seq tokstream
@@ -344,62 +418,85 @@
         ((rtype . rrange) := (vl-parse-optional-function-range-or-type))
         (name := (vl-match-token :vl-idtoken))
 
-        (when (vl-is-token? :vl-semi)
-          ;; Variant 1.
-          (:= (vl-match-token :vl-semi))
-          (decls := (vl-parse-0+-task-item-declarations))
-          (stmt := (vl-parse-statement))
-          (:= (vl-match-token :vl-kwd-endfunction))
-          (return-raw
-           (b* (((mv inputs blockitems)
-                 (vl-filter-taskport-or-blockitem-list decls))
-                (non-input (vl-taskportlist-find-noninput inputs))
-                ((when non-input)
-                 (vl-parse-error (str::cat "Functions may only have inputs, but port "
-                                           (vl-taskport->name non-input)
-                                           " has direction "
-                                           (symbol-name (vl-taskport->dir non-input)))))
-                ((unless (consp inputs))
-                 (vl-parse-error "Function has no inputs."))
-                (ret (make-vl-fundecl :name       (vl-idtoken->name name)
-                                      :automaticp (if automatic t nil)
-                                      :rtype      rtype
-                                      :rrange     rrange
-                                      :inputs     inputs
-                                      :decls      blockitems
-                                      :body       stmt
-                                      :atts       atts
-                                      :loc        (vl-token->loc function))))
-             (mv nil ret tokstream))))
-
-        ;; Variant 2.
-        (:= (vl-match-token :vl-lparen))
-        (inputs := (vl-parse-taskport-list))
-        (:= (vl-match-token :vl-rparen))
-        (:= (vl-match-token :vl-semi))
-        (blockitems := (vl-parse-0+-block-item-declarations))
-        (stmt := (vl-parse-statement))
-        (:= (vl-match-token :vl-kwd-endfunction))
         (return-raw
-         (b* ((non-input (vl-taskportlist-find-noninput inputs))
-              ((when non-input)
-               (vl-parse-error (str::cat "Functions may only have inputs, but port "
-                                         (vl-taskport->name non-input)
-                                         " has direction "
-                                         (symbol-name (vl-taskport->dir non-input)))))
-              ;; (consp inputs) is automatic from vl-parse-taskport-list.
-              (ret (make-vl-fundecl :name       (vl-idtoken->name name)
-                                    :automaticp (if automatic t nil)
-                                    :rtype      rtype
-                                    :rrange     rrange
-                                    :inputs     inputs
-                                    :decls      blockitems
-                                    :body       stmt
-                                    :atts       atts
-                                    :loc        (vl-token->loc function))))
-           (mv nil ret tokstream)))))
+         ;; In case of any error, we'll try to recover gracefully by reading
+         ;; through endfunction.
+         (b* (((mv err val tokstream)
+               (seq tokstream
 
+                    (when (vl-is-token? :vl-semi)
+                      ;; Variant 1.
+                      (:= (vl-match-token :vl-semi))
+                      (decls := (vl-parse-0+-task-item-declarations))
+                      (stmt := (vl-parse-statement))
+                      (:= (vl-match-token :vl-kwd-endfunction))
+                      (return-raw
+                       (b* (((mv inputs blockitems)
+                             (vl-filter-taskport-or-blockitem-list decls))
+                            (non-input (vl-taskportlist-find-noninput inputs))
+                            ((when non-input)
+                             (vl-parse-error (str::cat "Functions may only have inputs, but port "
+                                                       (vl-taskport->name non-input)
+                                                       " has direction "
+                                                       (symbol-name (vl-taskport->dir non-input)))))
+                            ((unless (consp inputs))
+                             (vl-parse-error "Function has no inputs."))
+                            (ret (vl-make-fundecl-for-parser :name       (vl-idtoken->name name)
+                                                             :automaticp (if automatic t nil)
+                                                             :rtype      rtype
+                                                             :rrange     rrange
+                                                             :inputs     inputs
+                                                             :decls      blockitems
+                                                             :body       stmt
+                                                             :atts       atts
+                                                             :loc        (vl-token->loc function))))
+                         (mv nil (list ret) tokstream))))
 
+                    ;; Variant 2.
+                    (:= (vl-match-token :vl-lparen))
+                    (inputs := (vl-parse-taskport-list))
+                    (:= (vl-match-token :vl-rparen))
+                    (:= (vl-match-token :vl-semi))
+                    (blockitems := (vl-parse-0+-block-item-declarations))
+                    (stmt := (vl-parse-statement))
+                    (:= (vl-match-token :vl-kwd-endfunction))
+                    (return-raw
+                     (b* ((non-input (vl-taskportlist-find-noninput inputs))
+                          ((when non-input)
+                           (vl-parse-error (str::cat "Functions may only have inputs, but port "
+                                                     (vl-taskport->name non-input)
+                                                     " has direction "
+                                                     (symbol-name (vl-taskport->dir non-input)))))
+                          ;; (consp inputs) is automatic from vl-parse-taskport-list.
+                          (ret (vl-make-fundecl-for-parser :name       (vl-idtoken->name name)
+                                                           :automaticp (if automatic t nil)
+                                                           :rtype      rtype
+                                                           :rrange     rrange
+                                                           :inputs     inputs
+                                                           :decls      blockitems
+                                                           :body       stmt
+                                                           :atts       atts
+                                                           :loc        (vl-token->loc function))))
+                       (mv nil (list ret) tokstream)))))
+
+              ((unless err)
+               ;; Successfully parsed a function, nothing more to do.
+               (mv nil val tokstream)))
+
+           ;; Else, we failed to parse the function.  Skip through
+           ;; 'endfunction', don't produce a function, and add a fatal warning
+           (seq tokstream
+                (end := (vl-skip-through-endfunction))
+                (return-raw
+                 (b* ((warning (make-vl-warning
+                                :type :vl-parse-error
+                                :msg "~a0: ignoring everything through 'endfunction' at ~a1."
+                                :args (list (vl-idtoken->name name) (vl-token->loc end))
+                                :fatalp t
+                                :fn __function__))
+                      (tokstream (vl-tokstream-add-warning err))
+                      (tokstream (vl-tokstream-add-warning warning)))
+                   (mv nil nil tokstream))))))))
 
 
 ; task_declaration ::=
@@ -414,11 +511,42 @@
 ;       statement_or_null
 ;    'endtask'
 
+(define vl-make-taskdecl-for-parser (&key (name       stringp)
+                                          (automaticp booleanp)
+                                          (ports      vl-taskportlist-p)
+                                          (decls      vl-blockitemlist-p)
+                                          (body       vl-stmt-p)
+                                          (atts       vl-atts-p)
+                                          (loc        vl-location-p))
+  ;; Adds the VL_HIDDEN_DECL_FOR_TASKPORTs.
+  :returns (task vl-taskdecl-p)
+  (b* ((port-vars (vl-make-hidden-variables-for-taskports ports)))
+    (make-vl-taskdecl :name name
+                      :automaticp automaticp
+                      :ports ports
+                      :decls (append port-vars decls)
+                      :body body
+                      :atts atts
+                      :loc loc)))
+
+(defparser vl-skip-through-endtask ()
+  :result (vl-token-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (when (vl-is-token? :vl-kwd-endtask)
+         (end := (vl-match))
+         (return end))
+       (:s= (vl-match-any))
+       (end := (vl-skip-through-endtask))
+       (return end)))
+
 (defparser vl-parse-task-declaration (atts)
   :guard (vl-atts-p atts)
-  :result (vl-taskdecl-p val)
-  :true-listp nil
-  :resultp-of-nil nil
+  :result (vl-taskdecllist-p val)
+  :true-listp t
+  :resultp-of-nil t
   :fails gracefully
   :count strong
   (seq tokstream
@@ -428,36 +556,62 @@
           (automatic := (vl-match-token :vl-kwd-automatic)))
         (name := (vl-match-token :vl-idtoken))
 
-        (when (vl-is-token? :vl-semi)
-          ;; Variant 1.
-          (:= (vl-match-token :vl-semi))
-          (decls := (vl-parse-0+-task-item-declarations))
-          (stmt  := (vl-parse-statement-or-null))
-          (:= (vl-match-token :vl-kwd-endtask))
-          (return
-           (b* (((mv ports blockitems)
-                 (vl-filter-taskport-or-blockitem-list decls)))
-             (make-vl-taskdecl :name       (vl-idtoken->name name)
-                               :automaticp (if automatic t nil)
-                               :ports      ports
-                               :decls      blockitems
-                               :body       stmt
-                               :atts       atts
-                               :loc        (vl-token->loc task)))))
+        ;; Error handling like in functions
+        (return-raw
+         (b* (((mv err val tokstream)
+               (seq tokstream
 
-        ;; Variant 2.
-        (:= (vl-match-token :vl-lparen))
-        (ports := (vl-parse-taskport-list))
-        (:= (vl-match-token :vl-rparen))
-        (:= (vl-match-token :vl-semi))
-        (blockitems := (vl-parse-0+-block-item-declarations))
-        (stmt       := (vl-parse-statement-or-null))
-        (:= (vl-match-token :vl-kwd-endtask))
-        (return (make-vl-taskdecl :name       (vl-idtoken->name name)
-                                  :automaticp (if automatic t nil)
-                                  :ports      ports
-                                  :decls      blockitems
-                                  :body       stmt
-                                  :atts       atts
-                                  :loc        (vl-token->loc task)))))
+                    (when (vl-is-token? :vl-semi)
+                      ;; Variant 1.
+                      (:= (vl-match-token :vl-semi))
+                      (decls := (vl-parse-0+-task-item-declarations))
+                      (stmt  := (vl-parse-statement-or-null))
+                      (:= (vl-match-token :vl-kwd-endtask))
+                      (return
+                       (b* (((mv ports blockitems)
+                             (vl-filter-taskport-or-blockitem-list decls))
+                            (ans (vl-make-taskdecl-for-parser :name       (vl-idtoken->name name)
+                                                              :automaticp (if automatic t nil)
+                                                              :ports      ports
+                                                              :decls      blockitems
+                                                              :body       stmt
+                                                              :atts       atts
+                                                              :loc        (vl-token->loc task))))
+                         (list ans))))
+
+                    ;; Variant 2.
+                    (:= (vl-match-token :vl-lparen))
+                    (ports := (vl-parse-taskport-list))
+                    (:= (vl-match-token :vl-rparen))
+                    (:= (vl-match-token :vl-semi))
+                    (blockitems := (vl-parse-0+-block-item-declarations))
+                    (stmt       := (vl-parse-statement-or-null))
+                    (:= (vl-match-token :vl-kwd-endtask))
+                    (return
+                     (list (vl-make-taskdecl-for-parser :name       (vl-idtoken->name name)
+                                                        :automaticp (if automatic t nil)
+                                                        :ports      ports
+                                                        :decls      blockitems
+                                                        :body       stmt
+                                                        :atts       atts
+                                                        :loc        (vl-token->loc task))))))
+
+              ((unless err)
+               (mv nil val tokstream)))
+
+           ;; Else, we failed to parse the function.  Skip through 'endtask',
+           ;; don't produce a task, and add a fatal warning
+           (seq tokstream
+                (end := (vl-skip-through-endtask))
+                (return-raw
+                 (b* ((warning (make-vl-warning
+                                :type :vl-parse-error
+                                :msg "~a0: ignoring everything through 'endtask' at ~a1."
+                                :args (list (vl-idtoken->name name) (vl-token->loc end))
+                                :fatalp t
+                                :fn __function__))
+                      (tokstream (vl-tokstream-add-warning err))
+                      (tokstream (vl-tokstream-add-warning warning)))
+                   (mv nil nil tokstream))))))))
+
 

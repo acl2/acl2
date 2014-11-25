@@ -1,11 +1,14 @@
 (in-package "ACL2")
 (include-book "misc/hons-help2" :dir :system)
 
-(defdoc TASPI
-  ":Doc-Section TASPI
-   Documentation for TASPI.~/
-   Tree Analysis System for Phylogenetic Inquiry~/
-   A suite a functions for working with trees.")
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+; (defdoc TASPI
+;   ":Doc-Section TASPI
+;    Documentation for TASPI.~/
+;    Tree Analysis System for Phylogenetic Inquiry~/
+;    A suite a functions for working with trees.")
 
 (def-macro-alias hhshrink-alist fast-alist-fork! 2)
 (def-macro-alias member-hqual hons-member-equal 2)
@@ -132,41 +135,45 @@
 
 (dis+ind app)
 
-(defun flatten (x)
+; Matt K., 11/2014: Changed the names "flatten" to "taspi-flatten" and "rev" to
+; "taspi-rev" below, to avoid conflicts with std/lists/list-defuns.lisp,
+; std/lists/flatten.lisp, and std/lists/rev.lisp.
+
+(defun taspi-flatten (x)
   (declare (xargs :guard t))
   (if (consp x)
-      (app (flatten (car x))
-           (flatten (cdr x)))
+      (app (taspi-flatten (car x))
+           (taspi-flatten (cdr x)))
     (list x)))
 
-(defthm flatten-when-not-consp
+(defthm taspi-flatten-when-not-consp
   (implies (not (consp x))
-           (equal (flatten x)
+           (equal (taspi-flatten x)
                   (list x))))
 
 (defthm flatten-of-consp
-  (equal (flatten (cons x y))
-         (app (flatten x)
-              (flatten y))))
+  (equal (taspi-flatten (cons x y))
+         (app (taspi-flatten x)
+              (taspi-flatten y))))
 
-(dis+ind flatten)
+(dis+ind taspi-flatten)
 
-(defun rev (x)
+(defun taspi-rev (x)
   (declare (xargs :guard t))
   (if (consp x)
-      (app (rev (cdr x)) (list (car x)))
+      (app (taspi-rev (cdr x)) (list (car x)))
     nil))
 
-(defthm rev-when-not-consp
+(defthm taspi-rev-when-not-consp
   (implies (not (consp x))
-           (equal (rev x)
+           (equal (taspi-rev x)
                   nil)))
 
 (defthm rev-of-consp
-  (equal (rev (cons x y))
-         (app (rev y) (list x))))
+  (equal (taspi-rev (cons x y))
+         (app (taspi-rev y) (list x))))
 
-(dis+ind rev)
+(dis+ind taspi-rev)
 
 (defun my-join (fn args)
   (declare (xargs :guard t))

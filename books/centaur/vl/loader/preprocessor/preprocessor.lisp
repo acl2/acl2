@@ -64,7 +64,7 @@
 
 (local (in-theory (disable ;ACL2-COUNT-OF-VL-READ-UNTIL-END-OF-DEFINE-WEAK
                            hons-assoc-equal
-                           CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
+                           acl2::CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
                            acl2::STRINGP-WHEN-MEMBER-EQUAL-OF-STRING-LISTP
                            STRING-LISTP-WHEN-SUBSETP-EQUAL-OF-STRING-LISTP
                            STRING-LISTP-WHEN-MEMBER-EQUAL-OF-STRING-LIST-LISTP
@@ -1122,16 +1122,20 @@ appropriately if @('activep') is set.</p>"
 
        (prev-def (vl-find-define name defines))
        (- (or (not prev-def)
-              (b* ((new-str (vl-pps-define new-def))
-                   (old-str (vl-pps-define prev-def))
-                   ((when (equal (str::trim new-str) (str::trim old-str)))
+              (b* ((new-str (str::trim (vl-define->body new-def)))
+                   (old-str (str::trim (vl-define->body prev-def)))
+                   ((when (equal new-str old-str))
                     ;; Don't warn, redefining it in exactly the same way, modulo
                     ;; whitespace.
                     t))
-              (cw "Preprocessor warning (~s0): redefining ~s1:~% ~
-                    - Was ~s2~% ~
-                    - Now ~s3~%"
-                  (vl-location-string loc) name old-str new-str))))
+              (cw "Preprocessor warning: redefining ~s0:~% ~
+                    - Was ~s1     // from ~s2~% ~
+                    - Now ~s3     // from ~s4~%"
+                  name
+                  old-str
+                  (vl-location-string (vl-define->loc prev-def))
+                  new-str
+                  (vl-location-string loc)))))
 
        (defines  (if prev-def
                      (vl-delete-define name defines)
@@ -2236,7 +2240,6 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                              acl2::len-when-prefixp
                              string-fix
                              stringp-when-true-listp
-                             CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
                              hons-assoc-equal
                              (:TYPE-PRESCRIPTION REMAINDER-OF-VL-READ-UNTIL-LITERAL)
                              acl2::revappend-removal

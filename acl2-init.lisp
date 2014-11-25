@@ -795,57 +795,39 @@ implementations.")
             ,string
             ,@args)))
 
-(defun proclaim-files (&optional outfilename infilename infile-optional-p)
+(defun proclaim-files (outfilename)
 
-; IMPORTANT: This function assumes that the defconst and defmacro forms in the
-; given files have already been evaluated.  One way to achieve this state of
-; affairs, of course, is to load the files first.
+; When *do-proclaims* is true, this function proclaims types for forms
+; introduced in files among *acl2-files*.  It assumes that the defconst and
+; defmacro forms in those files have already been evaluated, for example by
+; loading those files first.
 
-  (when (and outfilename infilename)
-    (error "It is illegal to supply non-nil values for both optional ~
-            arguments of proclaim-files."))
-  (when (not *do-proclaims*)
+  (unless (and *do-proclaims*
+               (not (eq *do-proclaims* :gcl)))
     (return-from proclaim-files nil))
-  (cond
-   (outfilename
-    (format t
-            "Writing proclaim forms for ACL2 source files to file ~s.~%"
-            outfilename))
-   (t
-    (when infilename
-        (cond ((probe-file infilename)
-               (format t
-                       "Loading nontrivial generated file of proclaim forms, ~
-                        ~s...~%"
-                       infilename)
-               (load infilename)
-               (format t
-                       "Completed load of ~s.~%"
-                       infilename)
-               (return-from proclaim-files nil))
-              (infile-optional-p) ; fall through as though infilename is nil
-              (t (error "File ~s is to be loaded by proclaim-files, but does ~
-                         not exist."
-                        infilename))))
-       (format t
-            "Generating and evaluating proclaim forms for ACL2 source ~
-             files.~%")))
+  (when (probe-file outfilename)
+    (delete-file outfilename))
+  (format t
+          "Writing proclaim forms for ACL2 source files to file ~s.~%"
+          outfilename)
+  #+gcl
+  (when (eq *do-proclaims* :gcl)
+    (when (not (equal outfilename "sys-proclaim.lisp"))
+      (if (probe-file "sys-proclaim.lisp")
+          (rename-file "sys-proclaim.lisp" outfilename)
+        (error "File sys-proclaim.lisp does not exist!")))
+    (return-from proclaim-files nil))
   (let (str)
-    (when outfilename
-      (if (probe-file outfilename)
-          (delete-file outfilename))
-      (or (setq str (safe-open outfilename :direction :output))
-          (error "Unable to open file ~s for output." outfilename)))
+    (or (setq str (safe-open outfilename :direction :output))
+        (error "Unable to open file ~s for output." outfilename))
 
 ; It is tempting to print an in-package form, but we leave that task to
-; proclaim-file, which presumably finds the first form to be an in-package
-; form.
+; proclaim-file.
 
     (dolist (fl *acl2-files*)
       (when (not (equal fl "doc.lisp")) ; no need to proclaim that one!
         (proclaim-file (format nil "~a.lisp" fl) str)))
-    (when str ; equivalently, when outfilename is non-nil
-      (close str))))
+    (close str)))
 
 (defun insert-string (s)
   (cond ((null s) "")
@@ -877,8 +859,7 @@ implementations.")
                                           set-optimize-maximum-pages
                                           host-lisp-args
                                           inert-args)
-  (when (and (gcl-version-> 2 6 9 t)
-             *saved-system-banner*)
+  (when *saved-system-banner*
     (when (not (boundp 'si::*system-banner*)) ; true, unless user intervened
       (setq si::*system-banner* *saved-system-banner*))
     (setq *saved-system-banner* nil))
@@ -910,16 +891,9 @@ implementations.")
                 (boundp 'si::*optimize-maximum-pages*))
 
 ; We follow a suggestion of Camm Maguire by setting
-; 'si::*optimize-maximum-pages* to t just before the save.  We avoid the
-; combination of 'si::*optimize-maximum-pages* and sgc-on for GCL versions
-; through 2.6.3, because of problematic interactions between SGC and
-; si::*optimize-maximum-pages*.  This issue has been fixed starting with GCL
-; 2.6.4.  Since si::*optimize-maximum-pages* is only bound starting with
-; sub-versions of 2.6, the problem only exists there.
+; 'si::*optimize-maximum-pages* to t just before the save.
 
-           (cond ((or (not (fboundp 'si::sgc-on))
-                      (gcl-version-> 2 6 3))
-                  (setq si::*optimize-maximum-pages* t)))))
+           (setq si::*optimize-maximum-pages* t)))
     (chmod-executable sysout-name)
     (si::save-system (concatenate 'string sysout-name "." ext))))
 
@@ -989,10 +963,7 @@ implementations.")
 ; So as an experiment we used some really large numbers below (but not for hole or
 ; relocatable).  They seemed to work well, but see comment just below.
 
-; End of Historical Comments.
-
-        (cond
-         ((gcl-version-> 2 6 1)
+; End of Historical Comments... well, except here is one more.
 
 ; In GCL 2.6.5, and in fact starting (we believe) with GCL 2.6.2, GCL does not
 ; need preallocation to do the job well.  We got this opinion after discussions
@@ -1001,24 +972,7 @@ implementations.")
 ; preallocation.  So it seems reasonable to stop messing with such numbers so
 ; that they do not become stale and interfere with GCL doing its job.
 
-          nil)
-         (t
-          `((hole)
-            (relocatable)
-            (cons . 10000)
-            (fixnum . 300)
-
-; Apparently bignums are in CFUN space starting with GCL 2.4.0.  So we make
-; sure explicitly that there is enough room for bignums.  Before GCL 2.4.0,
-; bignums are in CONS space so the following should be irrelevant.
-
-            (bignum . 800)
-            (symbol . 500)
-            (package)
-            (array  . 300)
-            (string . 2000)
-            ;;(cfun . 32) ; same as bignum
-            (sfun . 200)))))
+        nil)
 
 ; Now adjust if the page size differs from that for GCL/AKCL running on a
 ; Sparc.  See comment above.
@@ -1060,23 +1014,9 @@ implementations.")
   (loop
    for type in
    '(cons fixnum symbol array string cfun sfun
-
-; In akcl, at least some versions of it, we cannot call allocate-growth on the
-; following two types.
-
-; Camm Maguire has told us on 9/22/2013 that certain allocations for contiguous
-; pages, as we now do in acl2.lisp for GCL 2.6.10 and later (which includes GCL
-; 2.6.10pre as of 9/22/2013).
-;          #+gcl contiguous
-          #+gcl relocatable
-          )
+          #+gcl relocatable)
    do
-   (cond
-    ((or (boundp 'si::*gcl-major-version*) ;GCL 2.0 or greater
-         (and (boundp 'si::*gcl-version*) ;GCL 1.1
-              (= si::*gcl-version* 1)))
-     (si::allocate-growth type 0 0 0 0))
-    (t (si::allocate-growth type 0 0 0))))
+   (si::allocate-growth type 0 0 0 0))
 
 ;  (print "Start (si::gbc nil)") ;debugging GC
 
@@ -1108,12 +1048,8 @@ implementations.")
                     (not (equal (symbol-name type) "HOLE"))
                     (< (setq space
                              #+gcl
-                             (cond ;2.0 or later?
-                              ((boundp 'si::*gcl-major-version*)
-                               (nth 1 (multiple-value-list
-                                       (si::allocated type))))
-                              (t
-                               (caddr (si::allocated type))))
+                             (nth 1 (multiple-value-list
+                                     (si::allocated type)))
                              #-gcl
                              (cond
                               ((equal (symbol-name type)
@@ -1231,7 +1167,6 @@ implementations.")
 ; lsp/gcl_top.lsp.
 
     (when (and *print-startup-banner*
-               (gcl-version-> 2 6 9 t)
                (boundp 'si::*system-banner*))
       (format t si::*system-banner*)
       (setq *saved-system-banner* si::*system-banner*)
@@ -1955,7 +1890,7 @@ implementations.")
 ; (ccl::save-application "acl2-image" :size (expt 2 24))
 ; for the Mac.
 
-  (load-acl2)
+  (load-acl2 :load-acl2-proclaims *do-proclaims*)
   (setq *saved-build-date-lst*
 
 ; The call of eval below should avoid a warning in cmucl version 18d.  Note
@@ -1998,25 +1933,32 @@ implementations.")
 
 (defun generate-acl2-proclaims ()
 
-; See the section "PROCLAIMING" in acl2-fns.lisp.
+; See the Essay on Proclaiming.
 
   (let ((filename "acl2-proclaims.lisp"))
-    (cond (*do-proclaims*
-           (format t "Beginning load-acl2 and initialize-acl2 on behalf of ~
-                      generate-acl2-proclaims.~%")
-           (load-acl2 t)
+    (when (probe-file filename)
+      (delete-file filename))
+    (cond
+     ((eq *do-proclaims* :gcl)
+      (cond ((probe-file "sys-proclaim.lisp")
+             (rename-file "sys-proclaim.lisp" filename))
+            (t (error "File sys-proclaim.lisp does not exist!"))))
+     (*do-proclaims*
+      (format t "Beginning load-acl2 and initialize-acl2 on behalf of ~
+                 generate-acl2-proclaims.~%")
+      (load-acl2 :fast t)
 ; Use funcall to avoid compiler warning in (at least) CCL.
-           (qfuncall initialize-acl2 'include-book nil nil t)
-           (proclaim-files filename))
-          (t
-           (if (probe-file filename)
-               (delete-file filename))
-           (with-open-file
-            (str filename :direction :output)
-            (format str "(in-package \"ACL2\")~%~%")
-            (format str
-                    "; No proclaims are generated here for this host Lisp.~%"))
-           nil))))
+      (qfuncall initialize-acl2 'include-book nil nil 'generating)
+      (proclaim-files filename))
+     (t
+      (when (probe-file filename)
+        (delete-file filename))
+      (with-open-file
+       (str filename :direction :output)
+       (format str "(in-package \"ACL2\")~%~%")
+       (format str
+               "; No proclaims are generated here for this host Lisp.~%")))))
+  nil)
 
 ; The following avoids core being dumped in certain circumstances
 ; resulting from very hard errors.

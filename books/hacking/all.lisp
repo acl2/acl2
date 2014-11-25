@@ -18,3 +18,5 @@
 (include-book "subsumption")
 (include-book "table-guard"
               :ttags ((defcode) (table-guard)))
+
+(include-book "hacking-xdoc")

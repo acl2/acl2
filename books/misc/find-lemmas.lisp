@@ -70,3 +70,108 @@
                         a list of symbols, but ~x0 is not."
                        fns)))))
       `(find-lemmas-fn ',fns ',omit-boot-strap nil (w state) (w state)))))
+
+; Documentation:
+
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc find-lemmas
+  :parents (debugging)
+  :short "Find lemmas that mention specified function symbols"
+  :long "<p>The @('find-lemmas') macro finds all lemmas that mention specified
+ function symbols.  More precisely, @('(find-lemmas (fn1 fn2 ...))') evaluates
+ to a list of all @(tsee defthm), @(tsee defaxiom), and @(tsee defchoose) @(see
+ events) that mention all of the indicated function symbols: each @('fni') is
+ either a function symbol or a macro-alias indicating a function symbol (see
+ @(see macro-aliases-table)).</p>
+
+ <p>By default, @('find-lemmas') ignores @(see events) built into ACL2 (that
+ is, in the so-called ``ground-zero @(see world)'').  In
+ order to include those as well, give a second argument of nil:
+ @('(find-lemmas (fn1 fn2 ...) nil)').</p>
+
+ <p>For convenience, you may specify a single symbol to represent a list
+ containing exactly that symbol.</p>
+
+ <p>The following example illustrates all the points above.  First, let us
+ create an ACL2 session by including some book (for example) and then loading
+ the \"find-lemmas\" book.</p>
+
+ @({
+ (include-book \"arithmetic/top-with-meta\" :dir :system)
+ (include-book \"misc/find-lemmas\" :dir :system)
+ })
+
+ <p>The following log then shows some uses of @('find-lemmas').</p>
+
+ @({
+ ACL2 !>(find-lemmas (numerator denominator)) ; exclude built-in lemmas
+ ((DEFTHM *-R-DENOMINATOR-R
+          (EQUAL (* R (DENOMINATOR R))
+                 (IF (RATIONALP R)
+                     (NUMERATOR R)
+                     (FIX R)))
+          :HINTS ((\"Goal\" :USE ((:INSTANCE RATIONAL-IMPLIES2 (X R)))
+                          :IN-THEORY (DISABLE RATIONAL-IMPLIES2))))
+  (DEFTHM /R-WHEN-ABS-NUMERATOR=1
+          (AND (IMPLIES (EQUAL (NUMERATOR R) 1)
+                        (EQUAL (/ R) (DENOMINATOR R)))
+               (IMPLIES (EQUAL (NUMERATOR R) -1)
+                        (EQUAL (/ R) (- (DENOMINATOR R)))))
+          :HINTS ((\"Goal\" :USE ((:INSTANCE RATIONAL-IMPLIES2 (X R)))
+                          :IN-THEORY (DISABLE RATIONAL-IMPLIES2)))))
+ ACL2 !>(find-lemmas (numerator denominator) nil) ; include built-in lemmas
+ ((DEFAXIOM RATIONAL-IMPLIES1
+            (IMPLIES (RATIONALP X)
+                     (AND (INTEGERP (DENOMINATOR X))
+                          (INTEGERP (NUMERATOR X))
+                          (< 0 (DENOMINATOR X))))
+            :RULE-CLASSES NIL)
+  (DEFAXIOM RATIONAL-IMPLIES2
+            (IMPLIES (RATIONALP X)
+                     (EQUAL (* (/ (DENOMINATOR X)) (NUMERATOR X))
+                            X)))
+  (DEFAXIOM LOWEST-TERMS
+            (IMPLIES (AND (INTEGERP N)
+                          (RATIONALP X)
+                          (INTEGERP R)
+                          (INTEGERP Q)
+                          (< 0 N)
+                          (EQUAL (NUMERATOR X) (* N R))
+                          (EQUAL (DENOMINATOR X) (* N Q)))
+                     (EQUAL N 1))
+            :RULE-CLASSES NIL)
+  (DEFTHM *-R-DENOMINATOR-R
+          (EQUAL (* R (DENOMINATOR R))
+                 (IF (RATIONALP R)
+                     (NUMERATOR R)
+                     (FIX R)))
+          :HINTS ((\"Goal\" :USE ((:INSTANCE RATIONAL-IMPLIES2 (X R)))
+                          :IN-THEORY (DISABLE RATIONAL-IMPLIES2))))
+  (DEFTHM /R-WHEN-ABS-NUMERATOR=1
+          (AND (IMPLIES (EQUAL (NUMERATOR R) 1)
+                        (EQUAL (/ R) (DENOMINATOR R)))
+               (IMPLIES (EQUAL (NUMERATOR R) -1)
+                        (EQUAL (/ R) (- (DENOMINATOR R)))))
+          :HINTS ((\"Goal\" :USE ((:INSTANCE RATIONAL-IMPLIES2 (X R)))
+                          :IN-THEORY (DISABLE RATIONAL-IMPLIES2)))))
+ ACL2 !>(find-lemmas (+ * <)) ; + and * are macro-aliases (binary-+, binary-*)
+ ((DEFTHM EXPONENTS-ADD-FOR-NONNEG-EXPONENTS
+          (IMPLIES (AND (<= 0 I)
+                        (<= 0 J)
+                        (FC (INTEGERP I))
+                        (FC (INTEGERP J)))
+                   (EQUAL (EXPT R (+ I J))
+                          (* (EXPT R I) (EXPT R J))))))
+ ACL2 !>(find-lemmas append) ; same as (find-lemmas (binary-append))
+ ((DEFTHM APPEND-PRESERVES-RATIONAL-LISTP
+          (IMPLIES (TRUE-LISTP X)
+                   (EQUAL (RATIONAL-LISTP (APPEND X Y))
+                          (AND (RATIONAL-LISTP X)
+                               (RATIONAL-LISTP Y)))))
+  (DEFTHM NAT-LISTP-OF-APPEND-WEAK
+          (IMPLIES (TRUE-LISTP X)
+                   (EQUAL (NAT-LISTP (APPEND X Y))
+                          (AND (NAT-LISTP X) (NAT-LISTP Y))))))
+ ACL2 !>
+ })")

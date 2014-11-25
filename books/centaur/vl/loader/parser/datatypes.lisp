@@ -44,7 +44,7 @@
 ;; accumulated persistence hacking
 (local (in-theory (disable acl2::prefixp-when-equal-lengths
                            acl2::lower-bound-of-len-when-sublistp
-                           consp-when-member-equal-of-cons-listp
+                           acl2::consp-when-member-equal-of-cons-listp
                            acl2::consp-when-member-equal-of-atom-listp
                            acl2::len-when-prefixp
                            acl2::consp-under-iff-when-true-listp
@@ -188,7 +188,6 @@
                                               nil)
                                           entry.default-signedp)
                                :pdims dims))))))
-
 
 
 
@@ -785,6 +784,24 @@ dimensions.</p>
  (verify-guards vl-parse-datatype-fn))
 
 
+(defsection no-unpacked-dimensions-after-vl-parse-datatype
+
+  (local (defthm l0
+           (b* (((mv err val ?tokstream) (vl-parse-core-data-type)))
+             (implies (not err)
+                      (and (equal (vl-datatype-kind val) :vl-coretype)
+                           (not (vl-coretype->udims val)))))
+           :hints(("Goal" :in-theory (enable vl-parse-core-data-type)))))
+
+  (defthm no-unpacked-dimensions-after-vl-parse-datatype
+    (b* (((mv err val ?tokstream) (vl-parse-datatype)))
+      (implies (not err)
+               (not (vl-datatype->udims val))))
+    :hints(("Goal"
+            :in-theory (enable vl-datatype->udims)
+            :expand ((vl-parse-datatype))))))
+
+
 (defparser vl-parse-datatype-or-implicit ()
   :result (vl-datatype-p val)
   :fails gracefully
@@ -808,6 +825,4 @@ dimensions.</p>
        ;; so the datatype must be unsigned, undimensioned logic.
        (tokstream (vl-tokstream-restore backup)))
     (mv nil (make-vl-coretype :name :vl-logic) tokstream)))
-       
-       
 

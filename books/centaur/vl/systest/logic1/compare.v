@@ -39,11 +39,6 @@ endmodule
 
 `else
 
-// Exhaustive testing of binary operators up to some small size
-
-`include "spec.v"
-`include "impl.sv"
-
 // Nasty preprocessor garbage to introduce comparison modules for each of the
 // various sizes.  See aux-compare-binary.v for details.
 

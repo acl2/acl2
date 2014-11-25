@@ -35,10 +35,18 @@
 (set-deferred-ttag-notes t state)
 (set-gag-mode :goals)
 
+; Initialize xdoc stuff so all of its books are pre-loaded and we're ready to
+; use xdoc commands in the vl shell.
+(xdoc::colon-xdoc-init)
+
 :q
 
 ;; Set up our program to not print a bunch of ACL2 banners.
 (setq *print-startup-banner* nil)
+
+;; Generally unsound hack that practically should be safe, and makes warnings
+;; faster.
+(setq vl::*vl-enable-unsafe-but-fast-printing* t)
 
 ;; Set up our program NOT try to read the any customization files.
 (defun initial-customization-filename () :none)

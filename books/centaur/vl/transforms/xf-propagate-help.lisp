@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/find-item")
+(include-book "../mlib/find")
 (include-book "../mlib/expr-tools")
 (include-book "../mlib/expr-building")
 (include-book "../mlib/expr-slice")

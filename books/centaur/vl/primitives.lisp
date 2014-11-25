@@ -80,7 +80,7 @@ one-bit things so we leave out the ranges to make them prettier.</p>"
 
   (b* ((name     (hons-copy (string-fix name)))
        (expr     (vl-idexpr name 1 :vl-unsigned))
-       (port     (make-vl-port     :name name :expr expr :loc *vl-fakeloc*))
+       (port     (make-vl-regularport     :name name :expr expr :loc *vl-fakeloc*))
        (portdecl (make-vl-portdecl :name name :type *vl-plain-old-wire-type* :dir dir :loc *vl-fakeloc*))
        (vardecl  (make-vl-vardecl  :name name :type *vl-plain-old-wire-type*
                                    :nettype :vl-wire :loc *vl-fakeloc* :atts '(("VL_PORT_IMPLICIT")))))

@@ -34,25 +34,25 @@
 
 // Public:
 //
-//    xindex_ready() -> Bool  -- Has the xindex been loaded and initialized?
+//    xindexReady() -> Bool  -- Has the xindex been loaded and initialized?
 //                               May be called at any time.
 //
-//    xindex_init();     -- Prepare the index for use.
+//    xindexInit();     -- Prepare the index for use.
 //                          Must only be called after loading xindex.js
 //                          Must be called before using the below functions
 //
-//    all_keys() -> [array of all valid keys]
+//    allKeys() -> [array of all valid keys]
 //
 //    uid_to_key        : UID -> KEY
 //
-//    topic_exists      : KEY -> bool
-//    topic_uid         : KEY -> unique integer identifier
-//    topic_name        : KEY -> xml encoded nice topic name
-//    topic_rawname     : KEY -> non-encoded symbol-name (no package)
-//    topic_short       : KEY -> xml encoded short topic description
-//    topic_parent_keys : KEY -> [array of KEYS of parents]
-//    topic_child_keys  : KEY -> [array of KEYS of children]
-//    topic_suborder    : KEY -> [array of KEYS of children]
+//    topicExists      : KEY -> bool
+//    topicUid         : KEY -> unique integer identifier
+//    topicName        : KEY -> xml encoded nice topic name
+//    topicRawname     : KEY -> non-encoded symbol-name (no package)
+//    topicShort       : KEY -> xml encoded short topic description
+//    topicParentKeys : KEY -> [array of KEYS of parents]
+//    topicChildKeys  : KEY -> [array of KEYS of children]
+//    topicSuborder    : KEY -> [array of KEYS of children]
 //
 //
 // Implementation details:
@@ -87,37 +87,37 @@
 var xindex_loaded = false;
 var xhash = {};
 
-function xindex_ready()
+function xindexReady()
 { return xindex_loaded; }
 
-function all_keys()
+function allKeys()
 { return Object.keys(xhash); }
 
-function topic_exists(key)
+function topicExists(key)
 { return key in xhash; }
 
-function topic_uid(key)
+function topicUid(key)
 { return key in xhash ? xhash[key][0] : null; }
 
-function topic_name(key)
+function topicName(key)
 { return key in xhash ? xhash[key][1] : "Error: Key " + key + " not found"; }
 
-function topic_rawname(key)
+function topicRawname(key)
 { return key in xhash ? xhash[key][2] : "Error: Key " + key + " not found"; }
 
-function topic_parent_keys(key)
+function topicParentKeys(key)
 { return key in xhash ? xhash[key][4] : []; }
 
-function topic_short(key)
+function topicShort(key)
 { return key in xhash ? xhash[key][5] : "Error: Key " + key + " not found"; }
 
-function topic_child_keys(key)
+function topicChildKeys(key)
 { return key in xhash ? xhash[key][6] : []; }
 
-function topic_suborder(key)
+function topicSuborder(key)
 { return key in xhash ? xhash[key][8] : []; }
 
-function xindex_init()
+function xindexInit()
 {
     // Fill in most of the xhash directly from the xindex
     for(var uid in xindex) {
@@ -159,7 +159,7 @@ function xindex_init()
 
     // Fill in all child_keys by cross-referencing parents
     for(var child_key in xhash) {
-        var parent_keys = topic_parent_keys(child_key);
+        var parent_keys = topicParentKeys(child_key);
         for(var i in parent_keys) {
             var parent_key = parent_keys[i];
             // It's incorrect, but possible for a child topic to list parents

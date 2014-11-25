@@ -28,10 +28,37 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
 
-;; See documentation under (defmacro fake-event ...)
+(defxdoc fake-event
+  :parents (events)
+  :short "Execute an event form without affecting the world."
+  :long "<p>Usage:</p>
+
+@({
+    (fake-event <form>)
+})
+
+<p>where @('<form>') evaluates to an event form.  This causes that event form
+to be run, but without affecting the logical world.  Fake-event returns the
+same error-triple that the event form produced.  The logical world resulting
+from that event's success or failure is saved in the state global
+fake-event-saved-world.</p>
+
+<p>Fake-event is a bit like @(see make-event), in that both are macros that
+evaluate a form to obtain an event, then run that event. Actually, fake-event
+doesn't evaluate the form itself (it macroexpands to a call in which the form
+is not quoted, so that it is evaluated before fake-event-fn operates upon it.)
+It then calls the resulting event using a make-event inside an LD.</p>
+
+<p>Unlike make-event, fake-event can only take a form that evaluates to a
+single value, not an error triple.  But fake-event-er is a simple wrapper for
+fake-event that supports an error-triple-valued form.</p>
+
+<p>If the event produces a hard error, then fake-event will also produce a hard
+error unless the keyword argument :hard-error-ok t is given.  If :hard-error-ok
+is set, fake-event returns @('(mv :fake-event-ld-error nil state)').</p>")
 
 (defun fake-event-fn (event hard-error-ok state)
   (declare (xargs :mode :program :stobjs state))
@@ -61,32 +88,6 @@
           state))))
 
 (defmacro fake-event (event &key hard-error-ok)
-  ":doc-section Programming
-Execute an event form without affecting the world.~/
-
-Usage:
-~bv[]
- (fake-event <form>)
-~ev[]
-where ~c[<form>] evaluates to an event form.  This causes that event form to be
-run, but without affecting the logical world.  Fake-event returns the same
-error-triple that the event form produced.  The logical world resulting from
-that event's success or failure is saved in the state global
-fake-event-saved-world.~/
-
-Fake-event is a bit like make-event, in that both are macros that evaluate a
-form to obtain an event, then run that event. Actually, fake-event doesn't
-evaluate the form itself (it macroexpands to a call in which the form is not
-quoted, so that it is evaluated before fake-event-fn operates upon it.)  It
-then calls the resulting event using a make-event inside an LD.
-
-Unlike make-event, fake-event can only take a form that evaluates to a single
-value, not an error triple.  But fake-event-er is a simple wrapper for
-fake-event that supports an error-triple-valued form.
-
-If the event produces a hard error, then fake-event will also produce a hard
-error unless the keyword argument :hard-error-ok t is given.  If :hard-error-ok
-is set, fake-event returns ~c[(mv :fake-event-ld-error nil state)]."
   `(fake-event-fn ,event ,hard-error-ok state))
 
 (defmacro fake-event-er (event &key hard-error-ok)

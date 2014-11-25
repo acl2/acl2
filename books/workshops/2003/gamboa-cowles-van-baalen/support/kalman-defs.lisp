@@ -370,11 +370,12 @@
 			  (r ,k))))))
 
  (defun pplus (k)
-   #-small-acl2-image
-   ":Doc-Section ACL2::Programming
-
-estimate of error covariance~/~/
-"
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form
+;;; see defxdoc form towards in the last part of this file.
+;    ":Doc-Section ACL2::Programming
+;
+; estimate of error covariance~/~/
+; "
    (if (zp k)
        (m-* (m-- (m-id (l (x k)))
 		 (m-* (m-* (pminus-0)
@@ -391,19 +392,21 @@ estimate of error covariance~/~/
 	  (pminus-body k))))
 
  (defun pminus (k)
-   #-small-acl2-image
-   ":Doc-Section ACL2::Programming
-
-a priori estimate of error covariance~/~/
-"
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form
+;;; see defxdoc form towards in the last part of this file.
+;    ":Doc-Section ACL2::Programming
+;
+; a priori estimate of error covariance~/~/
+; "
    (pminus-body k))
 
  (defun gain (k)
-   #-small-acl2-image
-   ":Doc-Section ACL2::Programming
-
-Kalman gain modifies observation residual to get better estimate of x~/~/
-"
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form
+;;; see defxdoc form towards in the last part of this file.
+;    ":Doc-Section ACL2::Programming
+;
+; Kalman gain modifies observation residual to get better estimate of x~/~/
+; "
    (m-* (pminus k)
 	(m-* (m-trans (h k))
 	     (m-inv (m-+ (m-* (h k)
@@ -489,21 +492,23 @@ Kalman gain modifies observation residual to get better estimate of x~/~/
 		   (m-* (h ,k) (xhatmin ,k))))))
 
  (defun xhatmin (k)
-   #-small-acl2-image
-   ":Doc-Section ACL2::Programming
-
-estimate of x(k) before seeing measurement z(k)~/~/
-"
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form
+;;; see defxdoc form towards in the last part of this file.
+;    ":Doc-Section ACL2::Programming
+;
+; estimate of x(k) before seeing measurement z(k)~/~/
+; "
    (if (zp k)
        (xhatmin-0)
      (m-* (phi (1- k)) (xhat-body (1- k)))))
 
  (defun xhat (k)
-   #-small-acl2-image
-   ":Doc-Section ACL2::Programming
-
-estimate of x(k) using measurement z(k)~/~/
-"
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form
+;;; see defxdoc form towards in the last part of this file.
+;    ":Doc-Section ACL2::Programming
+;
+; estimate of x(k) using measurement z(k)~/~/
+; "
    (xhat-body k))
 
  (defthm xhatmin-recdef
@@ -762,3 +767,35 @@ estimate of x(k) using measurement z(k)~/~/
  )
 
 (in-theory (disable mean-* mean-delete))
+
+; The forms below were initially generated automatically from
+; legacy documentation strings in this file.
+
+(include-book "xdoc/top" :dir :system)
+(defmacro defxdoc (&rest args)
+  `(acl2::defxdoc ,@args))
+
+(defxdoc kalman::gain
+  :parents (programming)
+  :short "Kalman gain modifies observation residual to get better estimate of x"
+  :long "")
+
+(defxdoc kalman::pminus
+  :parents (programming)
+  :short "A priori estimate of error covariance"
+  :long "")
+
+(defxdoc kalman::pplus
+  :parents (programming)
+  :short "Estimate of error covariance"
+  :long "")
+
+(defxdoc kalman::xhat
+  :parents (programming)
+  :short "Estimate of x(k) using measurement z(k)"
+  :long "")
+
+(defxdoc kalman::xhatmin
+  :parents (programming)
+  :short "Estimate of x(k) before seeing measurement z(k)"
+  :long "")

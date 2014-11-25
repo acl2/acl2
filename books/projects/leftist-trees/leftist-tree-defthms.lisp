@@ -30,73 +30,99 @@
 (in-package "ACL2")
 (include-book "leftist-tree-defuns")
 
+; NOTE: Legacy doc strings defined in this file were replaced Nov. 2014 by the
+; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+
 ;; We need this much arithmetic to prove theorems about the
 ;; rank of the tree.
 
 (local (include-book "arithmetic-5/top" :dir :system))
 
-(defdoc leftist-tree-thms
-  ":doc-section leftist-trees
-Useful theorems about leftist trees.~/~/
-~/")
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+; (defdoc leftist-tree-thms
+;   ":doc-section leftist-trees
+; Useful theorems about leftist trees.~/~/
+; ~/")
+
+
 
 ;;;;;;;;;;;;;;;;;;;
 ;; MISCELLANEOUS ;;
 ;;;;;;;;;;;;;;;;;;;
 
-(defdoc leftist-tree-misc-thms
-  ":doc-section leftist-tree-thms
-Miscellaneous theorems~/~/
-Includes proofs that the rank, length of right spine, and length of
-the shortest path to an empty node are all equal. We also prove that
-the rank and size of a tree are always natp, as this is helpful in
-a later theorem.~/")
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+; (defdoc leftist-tree-misc-thms
+;   ":doc-section leftist-tree-thms
+; Miscellaneous theorems~/~/
+; Includes proofs that the rank, length of right spine, and length of
+; the shortest path to an empty node are all equal. We also prove that
+; the rank and size of a tree are always natp, as this is helpful in
+; a later theorem.~/")
 
 (defthm lrt-equals-rank-lt
   (implies (proper-lt tree)
            (equal (length-right-spine-lt tree)
                   (rank-lt tree)))
-  :doc ":doc-section leftist-tree-misc-thms 
-~/~/
-(length-right-spine-lt tree) ==> (rank-lt tree)~/")
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+;   :doc ":doc-section leftist-tree-misc-thms 
+; ~/~/
+; (length-right-spine-lt tree) ==> (rank-lt tree)~/"
+  )
 
 (defthm ltn-equals-rank-lt
   (implies (proper-lt tree)
            (equal (length-to-nil-lt tree)
                   (rank-lt tree)))
-  :doc ":doc-section leftist-tree-misc-thms
-~/~/
-(length-to-nil-lt tree) ==> (rank-lt tree)~/")
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+;   :doc ":doc-section leftist-tree-misc-thms
+; ~/~/
+; (length-to-nil-lt tree) ==> (rank-lt tree)~/"
+  )
 
 (defthm member-insert-lt
   (implies (proper-lt tree)
            (member-lt x (insert-lt x tree)))
-  :doc ":doc-section leftist-tree-misc-thms
-~/~/
-(proper-lt tree) ==> (member-lt x (insert-lt x tree))~/")
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+;   :doc ":doc-section leftist-tree-misc-thms
+; ~/~/
+; (proper-lt tree) ==> (member-lt x (insert-lt x tree))~/"
+  )
 
 ; rank and size are naturals
 (defthm rank-is-natp-lt
   (implies (proper-lt tree)
            (natp (rank-lt tree)))
-  :doc ":doc-section leftist-tree-misc-thms
-~/~/
-(proper-lt tree) ==> (natp (rank-lt tree))~/")
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+;   :doc ":doc-section leftist-tree-misc-thms
+; ~/~/
+; (proper-lt tree) ==> (natp (rank-lt tree))~/"
+  )
 
 (defthm size-is-natp-lt
   (implies (proper-lt tree)
            (natp (size-lt tree)))
-  :doc ":doc-section leftist-tree-misc-thms
-~/~/
-(proper-lt tree) ==> (natp (size-lt tree))~/")
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+;   :doc ":doc-section leftist-tree-misc-thms
+; ~/~/
+; (proper-lt tree) ==> (natp (size-lt tree))~/"
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; BASIC OPERATIONS RESPECT STRUCTURE ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defdoc leftist-tree-structure-thms
-  ":doc-section leftist-tree-thms
-Theorems proving that the basic operations respect PROPER-LT~/~/~/")
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+; (defdoc leftist-tree-structure-thms
+;   ":doc-section leftist-tree-thms
+; Theorems proving that the basic operations respect PROPER-LT~/~/~/")
 
 (local 
  (defthmd proper-merge-lt-L1
@@ -164,38 +190,52 @@ Theorems proving that the basic operations respect PROPER-LT~/~/~/")
   :hints (("Goal"
            :in-theory (enable proper-merge-lt-L3 proper-merge-lt-L4)
            :induct (merge-lt tree1 tree2)))
-  :doc ":doc-section leftist-tree-structure-thms
-~/~/
-(and (proper-lt tree1) (proper-lt tree2)) 
-    ==> (proper-lt (merge-lt tree1 tree2))~/")
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+;   :doc ":doc-section leftist-tree-structure-thms
+; ~/~/
+; (and (proper-lt tree1) (proper-lt tree2)) 
+;     ==> (proper-lt (merge-lt tree1 tree2))~/"
+  )
 
 (defthm proper-insert-lt
   (implies (proper-lt tree)
            (proper-lt (insert-lt x tree)))
-  :doc ":doc-section leftist-tree-structure-thms
-~/~/
-(proper-lt tree) ==> (proper-lt (insert-lt x tree))~/")
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+;   :doc ":doc-section leftist-tree-structure-thms
+; ~/~/
+; (proper-lt tree) ==> (proper-lt (insert-lt x tree))~/"
+  )
 
 (defthm proper-build-lt
   (proper-lt (build-lt l))
-  :doc ":doc-section leftist-tree-structure-thms
-~/~/
-(proper-lt (build-lt l))~/")
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+;   :doc ":doc-section leftist-tree-structure-thms
+; ~/~/
+; (proper-lt (build-lt l))~/"
+  )
 
 (defthm proper-delete-min-lt
   (implies (proper-lt tree)
            (proper-lt (delete-min-lt tree)))
-  :doc ":doc-section leftist-tree-structure-thms
-~/~/
-(proper-lt tree) ==> (proper-lt (delete-min-lt tree))~/")
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+;   :doc ":doc-section leftist-tree-structure-thms
+; ~/~/
+; (proper-lt tree) ==> (proper-lt (delete-min-lt tree))~/"
+  )
 
 ;;;;;;;;;;;;;;;;;;;
 ;; RANK THEOREMS ;;
 ;;;;;;;;;;;;;;;;;;;
 
-(defdoc leftist-tree-rank-thms
-  ":doc-section leftist-tree-thms
-Theorems about the rank of leftist trees~/~/~/")
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+; (defdoc leftist-tree-rank-thms
+;   ":doc-section leftist-tree-thms
+; Theorems about the rank of leftist trees~/~/~/")
 
 (local
  (defthmd size-rank-lt-L1
@@ -233,8 +273,11 @@ Theorems about the rank of leftist trees~/~/~/")
           ("Subgoal *1/2.6''"
            :use ((:instance rank-is-natp-lt
                             (tree (caddr tree))))))
-  :doc ":doc-section leftist-tree-rank-thms
-~/~/
-(proper-lt tree)
-    ==> (<= (- (expt 2 (rank-lt tree)) 1)
-            (size-lt tree))~/")
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+;   :doc ":doc-section leftist-tree-rank-thms
+; ~/~/
+; (proper-lt tree)
+;     ==> (<= (- (expt 2 (rank-lt tree)) 1)
+;             (size-lt tree))~/"
+  )

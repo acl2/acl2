@@ -106,6 +106,11 @@ modules for sizing for the linter.</p>")
         :vl-tagged
 
         :vl-binary-cast ;; eventually we should be able to handle these
+        :vl-pattern-multi
+        :vl-pattern-type
+        :vl-pattern-keyvalue
+        :vl-pattern-positional
+        :vl-keyvalue
         ))
 
 (assert! (equal (mergesort (append *toohard-ops* *not-toohard-ops*))

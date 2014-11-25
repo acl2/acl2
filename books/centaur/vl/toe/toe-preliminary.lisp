@@ -31,12 +31,13 @@
 (in-package "VL")
 (include-book "toe-wirealist")
 (include-book "toe-verilogify")
-(include-book "../mlib/find-module")
+(include-book "../mlib/find")
 (include-book "centaur/esim/esim-sexpr-support" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 (local (include-book "../util/esim-lemmas"))
 
+(local (in-theory (disable (tau-system))))
 
 (defxdoc modinsts-to-eoccs
   :parents (e-conversion)
@@ -288,8 +289,15 @@ might not even have the same direction.</p>"
       (msb-bits vl-emodwirelist-p))
 
   (b* ((warnings nil)
-       (expr (vl-port->expr x))
+       (x (vl-port-fix x))
+       ((when (eq (tag x) :vl-interfaceport))
+        (mv nil
+            (fatal :type :vl-bad-port
+                   :msg "~a0: interface ports are not supported."
+                   :args (list x))
+            nil))
 
+       (expr (vl-regularport->expr x))
        ((unless expr)
         (mv nil
             (fatal :type :vl-bad-port
@@ -648,7 +656,7 @@ where each sub-list is in LSB-order.</p>"
              (nformals (length formal1-msb-bits)))
           (mv nil
               (fatal :type :vl-bad-instance
-                     :msg "~a0: we produced ~x1 wires~s2 for an argument whose ~
+                     :msg "~a0: we produced ~x1 wire~s2 for an argument whose ~
                            corresponding port has ~x3 wire~s4.  ~
                             - Argument wires: ~x5;  ~
                             - Port wires: ~x6."
@@ -915,6 +923,10 @@ modinsts-to-eoccs).</p>"
                          (vl-emodwirelist-p (alist-keys al))
                          (vl-emodwirelist-p (alist-vals al)))
                     (similar-patternsp (al->pat pat al default) pat))))
+
+  (local (defthm vl-plain-wire-name-under-iff
+           (vl-plain-wire-name x)
+           :hints(("Goal" :in-theory (enable (tau-system))))))
 
   (defthm good-esim-occp-of-vl-modinst-to-eocc
     (let ((ret (vl-modinst-to-eocc x walist mods modalist eal warnings)))

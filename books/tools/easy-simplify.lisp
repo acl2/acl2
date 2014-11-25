@@ -1,13 +1,62 @@
-
+; Easy Simplify
+; Copyright (C) 2012-2014 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-
 (include-book "bstar")
 
-;; This provides a straightforward interface for simplifying a term.  It uses
-;; the proof checker's pc-rewrite* function.  It can handle rewriting under
-;; some hypotheses, under a user-provided equivalence relation, 
+(defxdoc easy-simplify-term
+  :parents (programming)
+  :short "A simple interface for simplifying a term, perhaps under a hypothesis
+and equivalence context, and with optional guidance from a hint."
 
+  :long "<p>This provides a straightforward interface for simplifying a term.
+It uses the proof checker's pc-rewrite* function.  It can handle rewriting
+under some hypotheses, under a user-provided equivalence relation.</p>
+
+<p>Usage:</p>
+
+@({
+    (easy-simplify-term (my-fn (foo) (bar baz))
+                        ;; optional keyword args:
+                        :hyp (and (integerp baz) (<= 0 baz))
+                        :hint (:in-theory (enable my-fn) :expand ((foo)))
+                        :equiv equal
+                        :normalize t
+                        :rewrite t
+                        :repeat 555
+                        :backchain-limit 5)
+})
+
+<p>Important NOTE: The HINT keyword should be given a hint keyword/val list, as
+in the example above, NOT a list of subgoal or computed hints,
+e.g. ((\"Goal\" :foo)).</p>")
 
 ;; Note: replaced this with acl2's built-in expand-assumptions-1
 ;; (defun if-nest-to-hyp-list (x)
@@ -26,9 +75,9 @@
                               repeat
                               backchain-limit
                               state)
-  (declare (XargS :mode :program :stobjs state))
+  (declare (xargs :mode :program :stobjs state))
   (b* ((world (w state))
-       
+
        ((er hint-settings)
         (translate-hint-settings
          'simp-term "Goal" hints 'easy-simplify-term world state))
@@ -64,7 +113,7 @@
 
 (defun easy-simplify-term-fn (term hyp-term hints equiv
                               normalize rewrite repeat backchain-limit state)
-  (declare (XargS :mode :program :stobjs state))
+  (declare (xargs :mode :program :stobjs state))
   (b* ((world (w state))
        ((er trans-term)
         (translate term t nil t 'easy-simplify-term world state))
@@ -75,7 +124,7 @@
        ;; ... like this:
        (hyps (expand-assumptions-1 trans-hyp-term))
        ((er new-term)
-        (easy-simplify-term1-fn 
+        (easy-simplify-term1-fn
          trans-term hyps hints equiv normalize rewrite repeat backchain-limit
          state)))
     (value (untranslate new-term nil (w state)))))
@@ -88,44 +137,31 @@
                                    (rewrite 't)
                                    (repeat '1000)
                                    (backchain-limit '1000))
-  ":doc-section programming
- Easy-simplify-term:  simple interface for simplifying a term.~/
-
-Usage:
-~bv[]
- (easy-simplify-term (my-fn (foo) (bar baz))
-                 ;; optional keyword args:
-                 :hyp (and (integerp baz) (<= 0 baz))
-                 :hint (:in-theory (enable my-fn) :expand ((foo)))
-                 :equiv equal
-                 :normalize t
-                 :rewrite t
-                 :repeat 555
-                 :backchain-limit 5)
-~ev[]
-
- Important NOTE: The HINT keyword should be given a hint keyword/val list,
- as in the example above, NOT a list of subgoal or computed hints,
- e.g. ((\"Goal\" :foo)). ~/
-
- Simplifies a term under the given hypothesis and equivalence context,
- with guidance from the given hint."
   `(easy-simplify-term-fn
     ',term ',hyp ',hint ',equiv
     ',normalize ',rewrite ',repeat ',backchain-limit
     state))
 
 
+(defxdoc defopen
+  :parents (programming)
+  :short "A simple event generator that creates a theorem by finding out what a
+term simplifies to under some hyp and with some hint."
 
+  :long "<p>In contrast to @('misc/defopener'), the reductions carried out by
+@('defopen') may be less powerful because we only do simplification (no
+clausify).  However, this seems to produce more compact expressions than
+@('defopener'), where the result is formed by combining several clauses
+produced from the original term.</p>
+
+<p>General form:</p>
+
+@(ccall defopen)
+
+<p>See also @(see easy-simplify-term).</p>")
 
 (defmacro defopen (name term &key (hyp 't) hint
                         (rule-classes ':rewrite))
-  ;; This is a simple event generator that creates a theorem by finding out
-  ;; what a term simplifies to under some hyp and with some hint.  In contrast
-  ;; to misc/defopener, because this only does simplification (no clausify),
-  ;; the reductions may be less powerful, but it seems to produce more compact
-  ;; expressions compared to defopener, where the result is formed by combining
-  ;; several clauses produced from the original term.
   `(make-event
     (b* (((er new-hyp-term)
           (acl2::easy-simplify-term ,hyp :hint ,hint))

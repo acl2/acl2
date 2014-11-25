@@ -3554,6 +3554,18 @@
                         (cdr pair))
                     0))))
            (cond
+            ((not (natp repeat))
+             (print-no-change2
+              "The :REPEAT argument provided to S (or a command that invoked ~
+               S), which was ~x0, is illegal. ~ It must be T or a natural ~
+               number."
+              (list (cons #\0 repeat))))
+            ((not (natp local-backchain-limit))
+             (print-no-change2
+              "The :BACKCHAIN-LIMIT argument provided to S (or a command that ~
+               invoked S), which was ~x0, is illegal.  It must be NIL or a ~
+               natural number."
+              (list (cons #\0 local-backchain-limit))))
             ((not (or normalize rewrite))
              (print-no-change2 "You may not specify in the S command that ~
                                 neither IF normalization nor rewriting is to ~

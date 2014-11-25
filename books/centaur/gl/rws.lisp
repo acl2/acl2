@@ -39,6 +39,7 @@
 (local (include-book "centaur/misc/equal-sets" :dir :system))
 (local (include-book "centaur/misc/alist-equiv" :dir :system))
 (local (include-book "std/lists/take" :dir :system))
+(local (include-book "std/util/support" :dir :System))
 
 ;;; What does 'rws' abbreviate, in anything, asks Boyer???
 

@@ -29,7 +29,7 @@
 ;; If bit vector X is longer than (p+s), bits between the p'th and (p+s)'th
 ;; bits of the concatenation of x and y is equal to that of x.
 (defthm rdb-logapp-1
-    (implies (and (integerp x) (integerp y) (integerp i) (<= 0 i) 
+    (implies (and (integerp x) (integerp y) (integerp i) (<= 0 i)
 		  (integerp s) (<= 0 s) (integerp p) (<= 0 p)
 		  (<= (+ s p) i))
 	     (equal (rdb (cons s p) (logapp i x y))
@@ -234,7 +234,7 @@
 (defthm fold-logcdr-vector
     (implies (and (integerp x)
 		  (syntaxp (or (not (consp x))
-			       (not (equal (car x) 'logcons)))))
+			       (not (equal (car x) 'logcons$inline)))))
 	     (equal (logcdr x) (logtail 1 x)))
   :hints (("goal" :in-theory (enable logtail*))))
 (in-theory (disable fold-logcdr-vector))
@@ -242,10 +242,12 @@
 (defthm fold-logcar-vector
     (implies (and (integerp x)
 		  (syntaxp (or (not (consp x))
-			       (not (equal (car x) 'logcons)))))
+			       (not (equal (car x) 'logcons$inline)))))
 	     (equal (logcar x) (logbit 0 x)))
-  :hints (("goal" :in-theory (enable logbit logbitp*))))
-(in-theory (disable fold-logcar-vector))	   
+  :hints (("goal" :in-theory (e/d (logbit logbitp*)
+                                  (logbitp)))))
+
+(in-theory (disable fold-logcar-vector))
 (deflabel end-bv-expand)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -267,7 +269,7 @@
 
 ;; Following lemma is useful in converting a formula with 'bv-eqv' to one
 ;; with 'equal'.
-;; This can cause BDD simplification to fail, especially if when the words 
+;; This can cause BDD simplification to fail, especially if when the words
 ;; need to be open up.
 (defthm bv-eqv-iff-equal
   (implies (and (unsigned-byte-p n x) (unsigned-byte-p n y))
@@ -303,7 +305,7 @@
 
 ;; Following lemma is a schematic lemma which will be used in BDD proof.
 ;; We noticed that several lemmas is a tautology under the property that
-;; (bv-eqv x y) and (bv-eqv x z) are not simultaneously asserted, if y and  
+;; (bv-eqv x y) and (bv-eqv x z) are not simultaneously asserted, if y and
 ;; z are not equal. We instantiate the following lemma and add it to BDD
 ;; proof as a hint.
 (defthm bv-eqv-transitivity
@@ -317,7 +319,7 @@
 
 ;; Bv-expander is the theory to be enabled to expand bit vectors before
 ;; applying bdd's.
-(deftheory bv-expander 
+(deftheory bv-expander
     '(rdb-expand
       open-lognot
       open-logand open-logand-right-const open-logand-left-const
@@ -359,7 +361,7 @@
 (in-theory (disable  equal-to-b1p-b-eqv))
 
 ;; From here, we define bit-to-boolean converter, especially for BDD
-;; operation. 
+;; operation.
 (deflabel begin-lift-b-ops)
 
 (defthm zbp-b-and
@@ -432,7 +434,7 @@
   :hints (("Goal" :in-theory (enable b-orc1))))
 
 (defthm b1p-orc2 (equal (b1p (b-orc2 x y)) (or (b1p x) (not (b1p y))))
-  :hints (("Goal" :in-theory (enable b-orc2))))  
+  :hints (("Goal" :in-theory (enable b-orc2))))
 
 (defthm zbp-to-b1p
     (equal (zbp x) (not (b1p x)))
@@ -440,7 +442,7 @@
 
 (deflabel end-lift-b-ops)
 
-(deftheory lift-b-ops 
+(deftheory lift-b-ops
     (set-difference-theories (universal-theory 'end-lift-b-ops)
 			     (universal-theory 'begin-lift-b-ops)))
 
@@ -449,7 +451,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; New Simplifier
 ; This simplifier simplifies bit terms into 1 and 0's using information
-; represented by b1p.  
+; represented by b1p.
 ; Origianl Simplify-Bit-Functions can simplify expressions with bit-functions
 ; if its arguments are 0 or 1's.  For instance, it can reduce expressions
 ; with a rule like:
@@ -552,7 +554,7 @@
 		  (equal (b-orc1 x y) y))
 	 (implies (and (bitp x) (bitp y) (b1p y))
 		  (equal (b-orc1 x y) 1))
-	 
+
 	 (implies (and (bitp x) (bitp y) (not (b1p x)))
 		  (equal (b-orc2 x y) (b-not y)))
 	 (implies (and (bitp x) (bitp y) (not (b1p y)))
@@ -597,8 +599,8 @@
     (if (zp pos)
 	val
 	(logbit-induction (1- pos) (logcdr val))))
-	
-; If a value are in the range  0 <= val < 2^width 
+
+; If a value are in the range  0 <= val < 2^width
 ; then the width'th bit of val is not set.
 (defthm logbit-0-if-val-lt-expt-2-width
     (implies (and (integerp width) (<= 0 width)
@@ -625,7 +627,7 @@
 
 (local
  (defthm logbit-1-if-val-gt-expt-2-width-help2
-     (implies  (and (integerp val) 
+     (implies  (and (integerp val)
 		    (integerp width) (< 0 width)
 		    (< VAL (* 2 2 (EXPT 2 (+ -1 WIDTH)))))
 	       (< (/ VAL 2) (* 2 (EXPT 2 (+ -1 WIDTH)))))
@@ -694,7 +696,8 @@
 		  (unsigned-byte-p width val2)
 		  (not (b1p (logbit width (+ val1 val2)))))
 	     (equal (loghead width (+ val1 val2)) (+ val1 val2)))
-  :hints (("goal" :in-theory (enable loghead)
+  :hints (("goal" :in-theory (e/d (loghead)
+                                  (bfix))
 		  :do-not-induct t)))
 
 (encapsulate nil
@@ -714,7 +717,7 @@
  (implies (and (integerp x) (integerp y) (< 0 y)
 	       (<= y x) (< x (* 2 y)))
 	  (equal (mod x y) (- x y)))
- :Hints (("goal" :in-theory (disable (:generalize floor-bounds)))
+ :Hints (("goal" :in-theory (disable (:generalize floor-bounded-by-/)))
 	 ("subgoal 1" :cases ((<= j 1)))))
 )
 
@@ -733,4 +736,3 @@
 		    (- (+ val1 val2) (expt 2 width))))
   :hints (("goal" :in-theory (enable loghead mod-x-y-=-minux-x-y)
 		  :do-not-induct t)))
-

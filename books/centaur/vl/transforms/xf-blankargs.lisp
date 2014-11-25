@@ -77,6 +77,12 @@ has been run to ensure that no instances have ranges.</p>")
   :guard (same-lengthp args ports)
   :verify-guards nil
   :prepwork ((local (in-theory (disable cons-equal))))
+  :hooks ((:fix :hints (("goal" :induct (vl-modinst-plainarglist-blankargs
+                                         args ports nf warnings inst)
+                         :in-theory (disable (:d vl-modinst-plainarglist-blankargs)))
+                        (and stable-under-simplificationp
+                             (flag::expand-calls-computed-hint
+                              clause '(vl-modinst-plainarglist-blankargs))))))
   :returns
   (mv (warnings   vl-warninglist-p)
       (new-args   vl-plainarglist-p
@@ -85,7 +91,6 @@ has been run to ensure that no instances have ranges.</p>")
       (vardecls   vl-vardecllist-p
                   "Any fresh wire declarations we've added.")
       (nf         vl-namefactory-p))
-  :verbosep t
   (b* ((nf   (vl-namefactory-fix nf))
        (inst (vl-modinst-fix inst))
        ((when (atom args))
@@ -101,12 +106,19 @@ has been run to ensure that no instances have ranges.</p>")
 
        ;; Else, a blank.  Figure out the port width.
        (port1 (vl-port-fix (car ports)))
-       ((vl-port port1) port1)
+       ((when (eq (tag port1) :vl-interfaceport))
+        (mv (fatal :type :vl-blankargs-fail
+                   :msg "~a0: blank argument is connected to interface port ~s1."
+                   :args (list inst (vl-interfaceport->name port1)))
+            (cons arg1 cdr-prime)
+            cdr-vardecls
+            nf))
+       ((vl-regularport port1 ))
        ((unless (and port1.expr (posp (vl-expr->finalwidth port1.expr))))
         (mv (fatal :type :vl-blankargs-fail
-                   :msg "~a0: expected all ports to have expressions with ~ their
-                         widths, but a blank argument is connected to ~ port ~a1,
-                         which has expression ~a2 and width ~x3."
+                   :msg "~a0: expected all ports to have expressions with ~
+                         their widths, but a blank argument is connected to ~
+                         port ~a1, which has expression ~a2 and width ~x3."
                    :args (list inst
                                port1
                                port1.expr

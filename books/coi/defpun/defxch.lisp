@@ -5,7 +5,8 @@
 #|===========================================================================|#
 (in-package "ACL2")
 
-(local (include-book "arithmetic-2/meta/top" :dir :system) )
+;; [Jared] switched this to use arithmetic-3 instead of 2
+(local (include-book "arithmetic-3/bind-free/top" :dir :system))
 
 ;; (encapsulate
 ;;  (

@@ -42,67 +42,54 @@
   :parents (documentation)
   :short "<i>XDOC</i> is a tool for documenting ACL2 books.  You can use it to
 access documentation about ACL2 and its books, to document your own books, and
-to create custom web-based manuals.  It is intended as a replacement for ACL2
-facilities like @(see defdoc), @(':doc'), and so on."
+to create custom web-based manuals."
 
-  :long "<h3>Getting the Documentation</h3>
+  :long "<p>Below we cover how to use XDOC to build manuals or document your
+own @(see acl2::books).  If you just want to browse the documentation, you
+probably don't need to read any of this!  Instead, see @(see
+documentation).</p>
 
-<p>Most of the documentation below is about using XDOC to document your own
-@(see acl2::books).  If you just want to browse the documentation, you probably
-don't need to read any of this!  Instead, see either:</p>
+<h3>Starting Points</h3>
 
-<ul>
+<p>A good, tutorial-style introduction to XDOC can be found in:</p>
 
-<li><b>The online version.</b> If you expect to have an internet connection
-while using the documentation, you may be happy with the <a
-href='http://fv.centtech.com/acl2/latest/doc/'>online XDOC manual</a> hosted by
-<a href='http://www.centtech.com/'>Centaur Technology</a>.  This version covers
-the latest released version of ACL2 and the corresponding version of the <a
-href='http://code.google.com/p/acl2-books/'>ACL2 Community Books</a>.</li>
+<blockquote>
+Jared Davis and Matt Kaufmann.  <a
+href='http://dx.doi.org/10.4204/EPTCS.152.2'>Industrial Strength Documentation
+for ACL2</a>.  ACL2 Workshop 2014.  EPTCS 152.  Pages 9-25.
+</blockquote>
 
-<li><b>A local version.</b> If you sometimes work without an internet
-connection, or are using development snapshots of ACL2 and need up-to-date
-documentation, you can <a href='download/'>download</a> a local copy of this
-manual.</li>
+<p>See @(see acl2::|Building the ACL2+Books Manual|) for information on
+building the ACL2+Books manual.</p>
 
-<li><b>The ACL2-Doc Emacs version.</b> If you would like to view the
-documentation using Emacs instead of a web browser, you may wish to use a
-feature-rich Emacs-based documentation browser provided by the ACL2 system.
-See @(see acl2::acl2-doc) for details.</li>
 
-</ul>
-
-<p>You can also build your own copy of the manual as follows. (This has been
-tested using CCL on Linux and Mac OS X, but may work for other OS/Lisp
-combinations.)  To do this, you first need to build ACL2(h), then certify the
-@('doc/top') book, e.g., as follows:</p>
+<p>To use XDOC to document your own books, the first step is:</p>
 
 @({
-  cd acl2-sources/books
-  make USE_QUICKLISP=1 ACL2=my-acl2h doc/top.cert
+ (include-book \"xdoc/top\" :dir :system)
 })
 
-<p>After this is built, the web-based manual should be available at:</p>
+<p>This book loads very quickly and requires no ttags.  It gives you @(see
+defxdoc) and @(see defsection), the basic commands for adding documentation.
+It also installs a new @(':doc') command, via @(see ld-keyword-aliases), so
+that you can see new documentation from the terminal.</p>
 
-@({acl2-sources/books/doc/manual/index.html})
+<p>Once you have documented your books, you may wish to create a manual that
+can be viewed from a web browser.  You can do this quite easily with XDOC's
+@(see save) command.  This command can be embedded in an ordinary ACL2 book, so
+that your manual is automatically regenerated when you build your project.</p>
 
-<p>See also @(see acl2::acl2-doc) for details about how to build your own
-Emacs-based manual.</p>
 
+<h3>New Features</h3>
 
-
-<h3>Documenting your Books</h3>
-
-<box><p><b><color rgb='#ff0000'>NEW</color></b> (experimental): XDOC now
+<p><b><color rgb='#ff0000'>NEW</color></b> (experimental): XDOC now
 supports @(see katex-integration) for writing LaTeX-like formulas like
 @($
 \\left( \\sum_{i=0}^{n} \\sqrt{f(i)} \\right) < \\frac{n^2}{k}
 $)
-within your documentation.</p></box>
+within your documentation.</p>
 
-<br/>
-
-<box><p><b><color rgb='#ff0000'>NEW</color></b> (experimental): When writing
+<p><b><color rgb='#ff0000'>NEW</color></b> (experimental): When writing
 documentation, you can now optionally have XDOC topics automatically displayed
 as you submit new @(see defxdoc) forms&mdash;just add:</p>
 
@@ -113,36 +100,7 @@ as you submit new @(see defxdoc) forms&mdash;just add:</p>
 <p>to your @(see acl2::acl2-customization) file, or include it while you are
 developing your book.  Afterward, each @(see defxdoc) form you submit will be
 immediately shown at the terminal, giving you a quick, text-mode preview that
-may help you to diagnose any markup problems.</p></box>
-
-
-<p>To use XDOC to document your own books, the first step is:</p>
-
-@({
- (include-book \"xdoc/top\" :dir :system)
-})
-
-<p>This book loads very quickly and requires no ttags, and gives you:</p>
-
-<ul>
-
-<li>@(see defxdoc) and @(see defsection), the basic commands for adding
-documentation &mdash; these are the XDOC alternatives to ACL2's @(see defdoc)
-command.</li>
-
-<li>A new @(':doc') command.  The book installs a new <see topic='@(url
-ld-keyword-aliases)'>LD keyword alias</see> so that you (and your users) can
-see both ordinary ACL2 documentation and XDOC documentation from the terminal
-by just using @(':doc'), without thinking about which documentation system was
-used to document which topic.</li>
-
-</ul>
-
-<p>Once you have documented your books, you may wish to create a manual that
-can be viewed from a web browser.  You can do this quite easily with XDOC's
-@(see save) command.  This command can be embedded in an ordinary ACL2 book, so
-that your manual is automatically regenerated when you build your
-project.</p>")
+may help you to diagnose any markup problems.</p>")
 
 (local (set-default-parents xdoc))
 
@@ -1085,7 +1043,7 @@ with keyword arguments.  See also @(see extract-keyword-from-args).</p>
     [:long      long]
     [:autodoc   autodoc]
     [:extension topic]
-    ... events ...)
+    ... events and commentary ...)
 })
 
 <h4>Example</h4>
@@ -1099,7 +1057,12 @@ with keyword arguments.  See also @(see extract-keyword-from-args).</p>
    (defund foo (x) ...)
    (local (in-theory (enable foo)))
    (defthm foo-thm1 ...)
-   (defthm foo-thm2 ...))
+   (defthm foo-thm2 ...)
+
+   \"<p>NOTE: the next theorem is really useful, but we keep it disabled
+   because it gets too expensive when...</p>\"
+
+   (defthmd foo-thm3 ...))
 })
 
 <box><p>Note: this example might be better written as a @(see std::define),
@@ -1126,9 +1089,9 @@ reasons you might prefer using @('defsection') for this, instead of plain
 
 <p>But the main reasons to use @('defsection') are its documentation features.
 The definitions and theorems within a section can be <b>automatically</b>
-included in the documentation page for that section.  This helps to avoid
-copying-and-pasting code into the manual, and keeps it up-to-date as the code
-changes.</p>
+included in the documentation page for that section, along with any running
+commentary.  This helps to avoid copying-and-pasting code into the manual, and
+keeps it up-to-date as the code changes.</p>
 
 
 <h3>Ordinary Sections</h3>
@@ -1138,15 +1101,23 @@ any of these keywords are provided, they will be used to introduce a @(see
 defxdoc) command; otherwise no documentation will be generated.</p>
 
 <p>By default, the @(':long') string you give will be automatically extended
-with a \"Definitions and Theorems\" part that lists all the (non-local,
-non-redundant) definitions and theorems introduced in the section.  In the
-above example, the @(':long') field would be extended with:</p>
+with a \"Definitions and Theorems\" part that lists all of the (non-local,
+non-redundant) definitions and theorems introduced in the section.</p>
+
+<p>For instance, in the above example, the @(':long') field would be extended
+with:</p>
 
 @({
  <h3>Definition and Theorems</h3>
+
  @(def foo)
  @(thm foo-thm1)
  @(thm foo-thm2)
+
+ <p>NOTE: the next theorem is really useful, but we keep it disabled
+   because it gets too expensive when...</p>
+
+ @(thm foo-thm3)
 })
 
 <p>If you do not want this automatic documentation, you can turn it off with
@@ -1156,30 +1127,37 @@ above example, the @(':long') field would be extended with:</p>
 <h3>Extended Sections</h3>
 
 <p>The @(':extension') keyword allows you to say that this section is a
-continuation of a previously introduced concept.  When @(':extension topic') is
-provided, then @('topic') must be the name of a previously documented @(see
-xdoc) section, and you are not allowed to use @(':parents') or @(':short')
-since the topic already exists.</p>
+continuation of a previously introduced concept.</p>
+
+<p>When @(':extension topic') is provided, then @('topic') must be the name of
+a previously documented @(see xdoc) section, and you are not allowed to use
+@(':parents') or @(':short') since the topic already exists.  Note that whereas
+topics can have multiple parents, you can only extend a single topic at a
+time.</p>
 
 <p>The main purpose of an @(':extension') section is to add additional
-documentation, either via the @(':long') string or via the automatic
-documentation generation features of @('defsection').  The documentation
-obtained this way is just appended onto the existing @(':long') for the
-topic.</p>
+documentation, either via the @(':long') string or via the automatic events and
+commentary.  The documentation obtained this way is just appended onto the
+existing @(':long') for the topic.</p>
 
-<p>For example, if we have already given the section @('foo') with basic
-theorems, above we now want to add a bunch of additional \"advanced\" theorems
-about it, we might write something like this:</p>
+<p>For example, say we have already defined the above @('foo') section in some
+\"basic\" book.  We might then want to add some additional \"advanced\"
+theorems about it in some other book.  We could do this via:</p>
 
 @({
  (defsection advanced-theorems-about-foo
    :extension foo
-   (defthm foo-thm3 ...)
-   (defthm foo-thm4 ...))
+
+   \"<p>Additional theorems are also available in the @('advanced') book.  (We
+     don't include these in the basic book since they take a long time to
+     prove.)</p>\"
+
+   (defthm foo-thm4 ...)
+   (defthm foo-thm5 ...))
 })
 
-<p>This will then append the definitions of @('foo-thm3') and @('foo-thm4')
-onto the end of the documentation for @('foo').</p>")
+<p>This will result in the commentary and definitions of @('foo-thm4') and
+@('foo-thm5') being added onto the end of the documentation for @('foo').</p>")
 
 
 (defxdoc defsection-progn
@@ -1609,3 +1587,5 @@ all is well, you should see the logo below:</p>
 <img src='res/centaur/centaur-logo.png'/>")
 
 (add-resource-directory "centaur" "centaur")
+
+(defpointer build-the-manual xdoc)

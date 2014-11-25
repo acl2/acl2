@@ -177,6 +177,23 @@
                  avoid swapping, keep this below (physical_memory - 2 GB)."
                 :default 4
                 :rule-classes :type-prescription)
+
+   (mustfail    string-listp
+                :argname "MOD"
+                "Print a failure message and exit with status 1 if MOD is
+                 translated successfully.  This option is mainly meant for
+                 running tests to ensure that VL is properly rejecting bad
+                 constructs.  You can give this option multiple times."
+                :parser getopt::parse-string
+                :merge acl2::rcons)
+
+   (mustget     string-listp
+                :argname "MOD"
+                "Print a failure message and exit with status 1 if MOD is
+                 not translated successfully.  You can give this option
+                 multiple times."
+                :parser getopt::parse-string
+                :merge acl2::rcons)
    ))
 
 
@@ -191,6 +208,28 @@ Usage:    vl model [OPTIONS] file.v [file2.v ...]
 
 Options:" *nls* *nls* *vl-model-opts-usage* *nls*))
 
+
+(define vl-model-check-must-fail ((mustfail string-listp)
+                                  (design   vl-design-p))
+  (b* ((okmods (vl-modulelist->names (vl-design->mods design)))
+       (oops   (intersect (mergesort mustfail)
+                          (mergesort okmods)))
+       ((when oops)
+        (cw "Oops, modules were translated successfully that are supposed to ~
+             have failed: ~x0.~%" oops)
+        (exit-fail)))
+    nil))
+
+(define vl-model-check-must-get ((mustget string-listp)
+                                 (design  vl-design-p))
+  (b* ((okmods (vl-modulelist->names (vl-design->mods design)))
+       (oops   (difference (mergesort mustget)
+                           (mergesort okmods)))
+       ((when oops)
+        (cw "Oops, required modules were not translated successfully: ~x0.~%"
+            oops)
+        (exit-fail)))
+    nil))
 
 (define vl-model-main ((opts vl-model-opts-p)
                        &key (state 'state))
@@ -215,31 +254,40 @@ Options:" *nls* *nls* *vl-model-opts-usage* *nls*))
                     :compress-p   want-translation-p))
 
        ((mv translation state)
-        (defmodules-fn loadconfig simpconfig))
+        (cwtime (defmodules-fn loadconfig simpconfig)))
+
+       (good (vl-translation->good translation))
+       (- (vl-model-check-must-get opts.mustget good))
+       (- (vl-model-check-must-fail opts.mustfail good))
 
        (state
-        (if (equal opts.model-file "")
-            state
-          (b* ((state (serialize-write (oslib::catpath opts.outdir opts.model-file)
-                                       translation))
-               (state (with-ps-file
-                        (oslib::catpath opts.outdir (cat opts.model-file ".ver"))
-                        (vl-println *vl-current-syntax-version*))))
-            state)))
+        (b* (((when (equal opts.model-file ""))
+              state)
+             (path (oslib::catpath opts.outdir opts.model-file))
+             (- (cw "; vl-model: writing ~s0~%" path))
+             (state (serialize-write path translation))
+             (state (with-ps-file
+                      (oslib::catpath opts.outdir (cat opts.model-file ".ver"))
+                      (vl-println *vl-current-syntax-version*))))
+          state))
 
        (state
-        (if (equal opts.esims-file "")
-            state
-          (serialize-write (oslib::catpath opts.outdir opts.esims-file)
+        (b* (((when (equal opts.esims-file ""))
+              state)
+             (path (oslib::catpath opts.outdir opts.esims-file))
+             (- (cw "; vl-model: writing ~s0~%" path)))
+          (serialize-write path
                            (vl-modulelist->esims
                             (vl-design->mods
                              (vl-translation->good translation))))))
 
        (good (vl-translation->good translation))
        (state
-        (if (equal opts.verilog-file "")
-            state
-          (with-ps-file opts.verilog-file
+        (b* (((when (equal opts.verilog-file ""))
+              state)
+             (path opts.verilog-file)
+             (- (cw "; vl-model: writing ~s0~%" path)))
+          (with-ps-file path
                         (vl-ps-update-show-atts nil)
                         (vl-pp-modulelist (vl-design->mods good)
                                           (vl-scopestack-init good))))))

@@ -201,6 +201,36 @@
 
 
 
+;; Testing new doc fragment stuff.
+
+(define frags (x)
+  (if (atom x)
+      1
+    (+ 1 (frags (cdr x))))
+  ///
+  "<p>This would be better written as a type-prescription rule:</p>"
+  (defthm posp-of-frags
+    (posp (frags x)))
+  "<p>But this would not make a good type prescription rule:</p>"
+  (defthm frags-of-cons
+    (equal (frags (cons a x)) (+ 1 (frags x)))))
+
+
+
+;; tests of evaluation of short/long strings
+
+(define test-shortcat (x)
+  :short (concatenate 'string "Test of evaluation of " "short strings for define.")
+  x)
+
+(assert! (stringp (cdr (assoc :short (xdoc::find-topic 'test-shortcat (xdoc::get-xdoc-table (w state)))))))
+
+(define test-longcat (x)
+  :long (concatenate 'string "Test of evaluation of " "long strings for define.")
+  x)
+
+(assert! (stringp (cdr (assoc :long (xdoc::find-topic 'test-longcat (xdoc::get-xdoc-table (w state)))))))
+
 
 ;; Basic testing of hook installation/removal
 
@@ -363,3 +393,16 @@
 
 
 
+(define inline-test (x)
+  :inline t
+  x)
+
+(define notinline-test (x)
+  :inline nil
+  x)
+
+(assert! (equal (inline-test$inline 1) 1))
+(assert! (equal (inline-test 1) 1))
+
+(assert! (equal (notinline-test$notinline 2) 2))
+(assert! (equal (notinline-test 2) 2))

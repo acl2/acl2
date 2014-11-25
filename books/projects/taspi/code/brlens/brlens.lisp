@@ -6,14 +6,18 @@
 ;; equivalent tree with no brlens
 (mutual-recursion
 (defun remove-brlens (a)
-  ":Doc-Section TASPI
-   Returns the structurally unchanged tree now with no branch lengths.~/
-   ~/
-   Arguments:
-     (1) a - a tree
 
-   Details: If no branch lengths are initially present, no change results.
-            Not all branches are required to have a length."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the structurally unchanged tree now with no branch lengths.~/
+;  ~/
+;  Arguments:
+;    (1) a - a tree
+
+;  Details: If no branch lengths are initially present, no change results.
+;           Not all branches are required to have a length."
   (declare (xargs :guard t))
   (if (consp a)
       (let ((first (remove-brlens (car a))))
@@ -29,14 +33,18 @@
     a))
 
 (defun remove-brlens-list (a)
-  ":Doc-Section TASPI
-   Returns the structurally unchanged list of trees now with no branch lengths.~/
-   ~/
-   Arguments:
-     (1) a - a list of trees
 
-   Details: If no branch lengths are initially present, no change results.
-            List can contain trees both with and without brlens."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the structurally unchanged list of trees now with no branch lengths.~/
+;  ~/
+;  Arguments:
+;    (1) a - a list of trees
+
+;  Details: If no branch lengths are initially present, no change results.
+;           List can contain trees both with and without brlens."
   (declare (xargs :guard t))
   (if (consp a)
       (if (null (cdr a))

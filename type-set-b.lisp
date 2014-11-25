@@ -4241,16 +4241,13 @@
 ; know that if two terms are pseudo-variants of each other, then the
 ; worse-than-builtin relation does not hold.
 
-; Warning: With #+hons, there could be performance problems if this is put into
-; :logic mode without verifying guards.  That is because worse-than-builtin is
-; memoized by running acl2h-init, to make it efficient on structure-shared
-; objects; but memoization depends on the raw Lisp function being executed,
-; while :ideal mode functions are run without ever slipping into raw Lisp.
-
-  (declare (xargs :guard (and (pseudo-termp term1)
-                              (pseudo-termp term2))
-                  :measure (make-ord 1 (+ 1 (acl2-count term1) (acl2-count term2)) 1)
-                  :well-founded-relation o<))
+  (declare
+   (xargs :guard (and (pseudo-termp term1)
+                      (pseudo-termp term2))
+          :measure (make-ord 1
+                             (+ 1 (acl2-count term1) (acl2-count term2))
+                             1)
+          :well-founded-relation o<))
   (cond ((basic-worse-than term1 term2) t)
         ((pseudo-variantp term1 term2) nil)
         ((variablep term1)

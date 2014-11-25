@@ -18,13 +18,17 @@
 
 ;; A tip with brlens is possibly a cons
 (defun tip-p-brlen (x)
-   ":Doc-Section TASPI
-   Recognizes whether or not input is a valid leaf.~/
-   ~/
-   Arguments:
-     (1) x - a possible leaf
 
-   Details: Does allow branch lengths (see also tip-p)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;  Recognizes whether or not input is a valid leaf.~/
+;  ~/
+;  Arguments:
+;    (1) x - a possible leaf
+
+;  Details: Does allow branch lengths (see also tip-p)."
   (declare (xargs :guard t))
   (if (consp x) ; brlen present
       (and (or (and (symbolp (car x))
@@ -57,14 +61,18 @@
 ;; arbitrary atom brlens if present, and no singleton subtrees
 (mutual-recursion
  (defun treep-brlens (x)
-   ":Doc-Section TASPI
-    Recognizes well formed trees with no singletons.~/
-    ~/
-    Arguments:
-       (1) x - a potential tree
 
-    Details: Well formed tips are defined as in tip-p, branch lengths are
-             permitted (see also treep)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;   Recognizes well formed trees with no singletons.~/
+;   ~/
+;   Arguments:
+;      (1) x - a potential tree
+
+;   Details: Well formed tips are defined as in tip-p, branch lengths are
+;            permitted (see also treep)."
    (declare (xargs :guard t
                    :measure (tree-measure x t)))
    (or (tip-p-brlen x)
@@ -79,14 +87,18 @@
                ))))
 
  (defun tree-listp-brlens (list)
-   ":Doc-Section TASPI
-    Recognizes a list of well formed trees with no singletons.~/
-    ~/
-    Arguments:
-       (1) list - a list of potential trees
 
-    Details: Well formed tips are defined as in tip-p, branch lengths are
-             permitted (see also tree-listp)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;   Recognizes a list of well formed trees with no singletons.~/
+;   ~/
+;   Arguments:
+;      (1) list - a list of potential trees
+
+;   Details: Well formed tips are defined as in tip-p, branch lengths are
+;            permitted (see also tree-listp)."
    (declare (xargs :guard t
                    :measure (tree-measure list nil)))
    (if (atom list)
@@ -126,14 +138,18 @@
 
 ;; A tip with numeric brlens
 (defun tip-p-num-brlen (x)
-   ":Doc-Section TASPI
-   Recognizes whether or not input is a leaf with a numeric branch length.~/
-   ~/
-   Arguments:
-     (1) x - a possible leaf
 
-   Details: Requires a branch length in order to return true. 
-            See also tip-p." 
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;  Recognizes whether or not input is a leaf with a numeric branch length.~/
+;  ~/
+;  Arguments:
+;    (1) x - a possible leaf
+
+;  Details: Requires a branch length in order to return true. 
+;           See also tip-p." 
   (declare (xargs :guard t))
   (if (consp x) ; brlen must be present
       (and (or (and (symbolp (car x))
@@ -160,15 +176,19 @@
 ;; rational brlens, and no singleton subtrees
 (mutual-recursion
  (defun treep-num-brlens (x)
-   ":Doc-Section TASPI
-    Recognizes well formed trees with numeric branch lengths 
-    and no singletons.~/
-    ~/
-    Arguments:
-       (1) x - a potential tree
 
-    Details: Well formed tips are defined as in tip-p-num-brlen.
-             See also treep."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;   Recognizes well formed trees with numeric branch lengths 
+;   and no singletons.~/
+;   ~/
+;   Arguments:
+;      (1) x - a potential tree
+
+;   Details: Well formed tips are defined as in tip-p-num-brlen.
+;            See also treep."
    (declare (xargs :guard t
                    :measure (tree-measure x t)))
    (or (tip-p-num-brlen x)
@@ -183,15 +203,19 @@
                ))))
 
  (defun tree-listp-num-brlens (list)
-   ":Doc-Section TASPI
-    Recognizes a list of well formed trees with numeric branch lengths 
-    and no singletons.~/
-    ~/
-    Arguments:
-       (1) list - a list of potential trees
 
-    Details: Well formed tips are defined as in tip-p-num-brlen.
-             See also tree-listp."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;   Recognizes a list of well formed trees with numeric branch lengths 
+;   and no singletons.~/
+;   ~/
+;   Arguments:
+;      (1) list - a list of potential trees
+
+;   Details: Well formed tips are defined as in tip-p-num-brlen.
+;            See also tree-listp."
    (declare (xargs :guard t
                    :measure (tree-measure list nil)))
    (if (atom list)
@@ -315,14 +339,18 @@
 ;  (balanced-tree (remove-brlens x)))
 
 (defun mytips-brlens (x)
-  ":Doc-Section TASPI
-    Returns the taxa names from a tree with or without branch lengths.~/
-    ~/
-    Arguments:
-       (1) tree - a tree
 
-    Details: Assumes that no taxon has been assigned the name *nil*. 
-             See also mytips."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;   Returns the taxa names from a tree with or without branch lengths.~/
+;   ~/
+;   Arguments:
+;      (1) tree - a tree
+
+;   Details: Assumes that no taxon has been assigned the name *nil*. 
+;            See also mytips."
   (declare (xargs :guard t))
   (mytips (remove-brlens x)))
 

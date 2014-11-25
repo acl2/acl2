@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "../mlib/ctxexprs")
-(include-book "../mlib/range-tools")
+(include-book "../mlib/range-tools-legacy")
 (local (include-book "../util/arithmetic"))
 
 (defxdoc selfassigns

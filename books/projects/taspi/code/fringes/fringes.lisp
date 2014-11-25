@@ -157,16 +157,20 @@
 (dis+ind fringe-frequencies1)
          
 (defun fringe-frequencies (l)
-  ":Doc-Section TASPI
-   Returns a mapping of the list based bipartitions present in the input list
-   of trees to the number of times it appeared in the input.~/
-   ~/
-   Arguments:
-      (1) l - a list of trees
 
-  Details: Trees in input list should not have branch lengths.  Trees should
-           all be ordered according to the same underlying taxa list.
-           See also fringe-frequencies-brlens."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns a mapping of the list based bipartitions present in the input list
+;  of trees to the number of times it appeared in the input.~/
+;  ~/
+;  Arguments:
+;     (1) l - a list of trees
+
+; Details: Trees in input list should not have branch lengths.  Trees should
+;          all be ordered according to the same underlying taxa list.
+;          See also fringe-frequencies-brlens."
   (declare (xargs :guard (and (tree-list-listp l)
                               (all-same-num-tips l))
                   :verify-guards nil))
@@ -255,16 +259,20 @@
 ; btree would result from BDD operations, and specifies what part of
 ; the "full" tree to keep.
 (defun btree-to-fringe (btree full-taxa-list-tree)
-  ":Doc-Section TASPI
-   Returns the list based version of the bdd based bipartition given.~/
-   ~/
-   Arguments:
-      (1) btree - a bdd based bipartition
-      (2) full-taxa-list-tree - a binary tree based version of the taxa list
 
-   Details: The btree given must have a depth less than that of the 
-            full-taxa-list-tree and the resulting bipartition will have
-            the taxa given in the full-taxa-list-tree. "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the list based version of the bdd based bipartition given.~/
+;  ~/
+;  Arguments:
+;     (1) btree - a bdd based bipartition
+;     (2) full-taxa-list-tree - a binary tree based version of the taxa list
+
+;  Details: The btree given must have a depth less than that of the 
+;           full-taxa-list-tree and the resulting bipartition will have
+;           the taxa given in the full-taxa-list-tree. "
   (declare (xargs :guard (and (balanced-tree
                                full-taxa-list-tree)
                               (<= (depth btree)
@@ -316,17 +324,21 @@
 
 (mutual-recursion
  (defun bfringe (x ta)
-   ":Doc-Section TASPI
-    Returns the bdd based bipartition implied by the (sub)tree given.~/
-    ~/
-    Arguments:
-       (1) x - a tree (usually a subtree of some larger tree)
-       (2) ta - a mapping of taxa-names their bdd based representation 
 
-   Details: Arguments can actually be more general.  Another way to think of
-            this is that it returns the taxa names in the tree x, represented
-            as a bdd.  Requires that the taxa names in the tree are keys in the
-            ta argument. "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;   Returns the bdd based bipartition implied by the (sub)tree given.~/
+;   ~/
+;   Arguments:
+;      (1) x - a tree (usually a subtree of some larger tree)
+;      (2) ta - a mapping of taxa-names their bdd based representation 
+
+;  Details: Arguments can actually be more general.  Another way to think of
+;           this is that it returns the taxa names in the tree x, represented
+;           as a bdd.  Requires that the taxa names in the tree are keys in the
+;           ta argument. "
    (declare (xargs :measure (+ 1 (* 2 (acl2-count x)))
                    :guard t))
    (hopy (cond ((atom x) (cdr (het x ta)))
@@ -409,16 +421,20 @@
 (dis+ind bfringe-frequencies1)
              
 (defun bfringe-frequencies (l taxa-list)
-  ":Doc-Section TASPI
-   Returns a mapping of the bdd based bipartitions present in the input list
-   of trees to the number of times it appeared in the input.~/
-   ~/
-   Arguments:
-      (1) l - a list of trees
-      (2) taxa-list - a list of taxa
 
-  Details: Trees in input list should not have branch lengths.  Trees should
-           all be ordered according to the taxa list given."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns a mapping of the bdd based bipartitions present in the input list
+;  of trees to the number of times it appeared in the input.~/
+;  ~/
+;  Arguments:
+;     (1) l - a list of trees
+;     (2) taxa-list - a list of taxa
+
+; Details: Trees in input list should not have branch lengths.  Trees should
+;          all be ordered according to the taxa list given."
   (declare (xargs :guard (and (tree-list-listp l)
                               (all-same-num-tips l))
                   :verify-guards nil))
@@ -434,16 +450,20 @@
 (in-theory (disable bfringe-frequencies))
 
 (defun btrees-to-fringes (fringe-list full-taxa-list-tree)
-  ":Doc-Section TASPI
-   Returns the list based version of bdd based bipartitions given.~/
-   ~/
-   Arguments:
-      (1) fringe-list - a list of bdd based bipartitions
-      (2) full-taxa-list-tree - a binary tree based version of the taxa list
 
-   Details: The bdd based bipartitions must each have a depth less than that of
-            the full-taxa-list-tree.  The resulting list based bipartitions will
-            have the taxa given in the full-taxa-list-tree. "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the list based version of bdd based bipartitions given.~/
+;  ~/
+;  Arguments:
+;     (1) fringe-list - a list of bdd based bipartitions
+;     (2) full-taxa-list-tree - a binary tree based version of the taxa list
+
+;  Details: The bdd based bipartitions must each have a depth less than that of
+;           the full-taxa-list-tree.  The resulting list based bipartitions will
+;           have the taxa given in the full-taxa-list-tree. "
   (declare (xargs :guard (and (balanced-tree
                                full-taxa-list-tree)
                               (good-depths fringe-list
@@ -550,18 +570,22 @@
 (dis+ind merge-bdd-fringes)
 
 (defun sort-bdd-fringes (bdd-fringes full-taxa-list-tree taxon-index-alist)
-  ":Doc-Section TASPI
-   Returns the given list of bdd based bipartitions sorted by length of implied
-   list based bipartitions.~/
-   ~/
-   Arguments:
-      (1) bdd-fringes - a list of bdd based bipartitions
-      (2) full-taxa-list-tree - a binary tree based version of the taxa list
-      (3) taxon-index-alist - a mapping of taxa names to integers
 
-  Details: Depth of each of the bdd based bipartitions must be less than that of
-           the full-taxa-list-tree.  The taxa names in the full-taxa-list-tree
-           must match those present as keys in the taxon-index-alist. "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the given list of bdd based bipartitions sorted by length of implied
+;  list based bipartitions.~/
+;  ~/
+;  Arguments:
+;     (1) bdd-fringes - a list of bdd based bipartitions
+;     (2) full-taxa-list-tree - a binary tree based version of the taxa list
+;     (3) taxon-index-alist - a mapping of taxa names to integers
+
+; Details: Depth of each of the bdd based bipartitions must be less than that of
+;          the full-taxa-list-tree.  The taxa names in the full-taxa-list-tree
+;          must match those present as keys in the taxon-index-alist. "
   (declare (xargs 
             :guard 
             (and (good-depths bdd-fringes full-taxa-list-tree)
@@ -640,15 +664,19 @@
 (dis+ind make-good-fringes)
 
 (defun term-to-bfringes (term taxa-list)
-  ":Doc-Section TASPI
-   Returns the bdd based list of bipartitions for the input tree.~/
-   ~/
-   Arguments:
-      (1) term - a tree
-      (2) taxa-list - a list of taxa
 
-   Details: Taxa names in the given tree must be a subset of those present in
-            the taxa-list given.  Tree input should not have branch lengths."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the bdd based list of bipartitions for the input tree.~/
+;  ~/
+;  Arguments:
+;     (1) term - a tree
+;     (2) taxa-list - a list of taxa
+
+;  Details: Taxa names in the given tree must be a subset of those present in
+;           the taxa-list given.  Tree input should not have branch lengths."
   (declare (xargs :guard (and (treep term)
                               (consp term)
                               (<= 2 (len taxa-list))

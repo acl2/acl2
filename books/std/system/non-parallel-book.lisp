@@ -49,11 +49,11 @@
  is true.  (Suggestion: avoid that keyword unless you are sure you know what
  you are doing!)  Another keyword arguments is also available: if
  @(':hons-only') is non-@('nil') then @(see waterfall-parallelism) is turned
- off only in ACL2(hp), not in ACL2(p).  This keyword is useful if @(see
- memoize)d forms are the only problem: ACL2(h)'s memoization code isn't thread
- safe, which can sometimes cause errors in ACL2(hp).  Of course, if
- @(':hons-only') is omitted or @('nil'), then waterfall parallelism will always
- be turned off, not only in ACL2(hp).</p>"
+ off only in ACL2(hp), not in ACL2(p).  This keyword used to be more useful,
+ but ACL2(h)'s memoization code is now believed to be thread safe, so this
+ feature is likely deprecated.  Of course, if @(':hons-only') is omitted or
+ @('nil'), then waterfall parallelism will always be turned off, not only in
+ ACL2(hp).</p>"
 
   (defmacro non-parallel-book (&key hons-only check-expansion)
     `(make-event

@@ -1,0 +1,110 @@
+primary
+
+Verilog-2005:
+
+    Goal ::= hierarchical_identifier [ { '[' expression ']' } '[' range_expression ']' ]
+
+SystemVerilog-2012:
+
+    Goal ::= [ class_qualifier | package_scope ] hierarchical_identifier select
+
+    class_qualifier ::= ['local' '::'] [ implicit_class_handle '.' | class_scope ]
+
+    implicit_class_handle ::= 'this' | 'super' | 'this' '.' 'super'
+
+    class_scope ::= class_type '::'
+
+    class_type ::= ps_class_identifier [pva] { '::' identifier [pva] }
+
+    ps_class_identifier ::= [package_scope] identifier
+
+    package_scope ::= identifier '::'
+                    | '$unit' '::'
+
+
+Simplification.  Let's not support 'local' yet.  This reduces class_qualifier to:
+
+    class_qualifier ::= [ implicit_class_handle '.' | class_scope ]
+
+Simplification.  Let's not support 'this' or 'super' yet.  This eliminates the
+implicit_class_handle case and just leaves us with:
+
+    class_qualifier ::= [class_scope]
+
+So we have:
+
+    Goal ::= [ class_scope | package_scope ] hierarchical_identifier select
+
+A package_scope is almost a class_scope.
+
+    '$unit' '::' 
+
+
+
+
+Reduction 1.  package_scope is a subset of class_qualifier, so we can just
+reduce the Goal to:
+
+    Goal ::= [class_qualifier] hierarchical_identifier select
+
+Explanation: package_scope can be one of two things:
+
+    1. identifier '::'
+    2. '$unit'    '::'
+
+Which is 
+
+
+Note that package_scope and class_scope are redundant.
+
+   In particular, everything in "class_type" is optional except for ps_class_identifier
+   So, this permits
+
+foo::bar    ps-class-identifier
+
+
+
+
+
+
+
+So, inlining package_scope:
+
+     ps_class_identifier ::= identifier
+                           | identifier '::' identifier
+                           | '$unit'    '::' identifier
+
+So class_type is:
+
+    class_type ::= identifier                  [pva] { '::' identifier [pva] }
+                 | identifier '::' identifier  [pva] { '::' identifier [pva] }
+                 | '$unit'    '::' identifier  [pva] { '::' identifier [pva] }
+
+So class_scope is
+
+    class_scope ::= identifier                  [pva] { '::' identifier [pva] } '::'
+                  | identifier '::' identifier  [pva] { '::' identifier [pva] } '::'
+                  | '$unit'    '::' identifier  [pva] { '::' identifier [pva] } '::'
+
+---------------------------------------------------------------
+
+Simplified Version:
+
+   Goal ::=                 hierarchical_identifier select
+          | class_qualifier hierarchical_identifier select
+	  | identifier      '::' hierarchical_identifier select
+          | '$unit'         '::' hierarchical_identifier select
+
+   class_qualifier ::= ['local' '::'] [ implicit_class_handle '.' | class_scope ]
+
+   implicit_class_handle ::= 'this' | 'super' | 'this' '.' 'super'
+
+   class_scope ::= identifier                  [pva] { '::' identifier [pva] } '::'
+                 | identifier '::' identifier  [pva] { '::' identifier [pva] } '::'
+                 | '$unit'    '::' identifier  [pva] { '::' identifier [pva] } '::'
+
+---------------------------------------------------------------
+
+
+
+So, if this starts with an identifier, 

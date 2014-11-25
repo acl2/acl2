@@ -201,11 +201,15 @@ basic port expressions.</p>"
 
 (define vl-port-wellformed-p ((x vl-port-p))
   :short "Recognizer for ports whose expressions are well-formed."
-  (vl-portexpr-p (vl-port->expr x))
+  (b* ((x (vl-port-fix x)))
+    (or (eq (tag x) :vl-interfaceport)
+        (vl-portexpr-p (vl-regularport->expr x))))
   ///
   (defthm vl-portexpr-p-of-vl-port->expr
-    (implies (vl-port-wellformed-p x)
-             (vl-portexpr-p (vl-port->expr x)))))
+    (implies (and (vl-port-wellformed-p x)
+                  (not (equal (tag x) :vl-interfaceport))
+                  (vl-port-p x))
+             (vl-portexpr-p (vl-regularport->expr x)))))
 
 (deflist vl-portlist-wellformed-p (x)
   (vl-port-wellformed-p x)
@@ -277,10 +281,11 @@ endmodule
 
 <p>We ignore any bit- or part-selects involved in the port expression and just
 return a list of strings.</p>"
-
-  (vl-basic-portexprlist-internal-wirenames
-   (vl-flatten-portexpr
-    (vl-port->expr x))))
+  (b* ((x (vl-port-fix x)))
+    (and (eq (tag x) :vl-regularport)
+         (vl-basic-portexprlist-internal-wirenames
+          (vl-flatten-portexpr
+           (vl-regularport->expr x))))))
 
 
 
@@ -345,6 +350,10 @@ and add a warning that this case is very unusual.</p>"
                   :msg "~a0 is not well-formed."
                   :args (list port))
             nil))
+
+       ((when (eq (tag port) :vl-interfaceport))
+        ;; No simple direction for interface port.
+        (mv (ok) nil))
 
        (names (vl-port-internal-wirenames port))
        ((mv successp warnings dirs)
@@ -421,7 +430,7 @@ and add a warning that this case is very unusual.</p>"
        (loc  (vl-portdecl->loc (car x)))
        (guts (make-vl-id :name name))
        (expr (make-vl-atom :guts guts)))
-    (cons (make-vl-port :name name :expr expr :loc loc)
+    (cons (make-vl-regularport :name name :expr expr :loc loc)
           (vl-ports-from-portdecls (cdr x)))))
 
 (define vl-portdecls-with-dir ((dir vl-direction-p)
@@ -435,3 +444,27 @@ and add a warning that this case is very unusual.</p>"
                (vl-portdecls-with-dir dir (cdr x))))
         (t
          (vl-portdecls-with-dir dir (cdr x)))))
+
+
+(define vl-portdecllist-names-by-direction
+  ((x vl-portdecllist-p)
+   (in string-listp)
+   (out string-listp)
+   (inout string-listp))
+  :parents (vl-portdecllist-p)
+  :returns (mv (in string-listp)
+               (out string-listp)
+               (inout string-listp))
+  (b* (((when (atom x))
+        (mv (string-list-fix in)
+            (string-list-fix out)
+            (string-list-fix inout)))
+       (decl (car x))
+       (name (vl-portdecl->name decl))
+       (dir  (vl-portdecl->dir decl)))
+    (case dir
+      (:vl-input  (vl-portdecllist-names-by-direction (cdr x) (cons name in) out inout))
+      (:vl-output (vl-portdecllist-names-by-direction (cdr x) in (cons name out) inout))
+      (:vl-inout  (vl-portdecllist-names-by-direction (cdr x) in out (cons name inout)))
+      (otherwise  (progn$ (raise "Impossible")
+                          (mv nil nil nil))))))

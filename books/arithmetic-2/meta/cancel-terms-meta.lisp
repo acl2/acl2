@@ -171,16 +171,20 @@
 		 t t mfc state)
 	 *t*))
 
-(defun true (x mfc state)
-  (declare (ignore x mfc state))
-  t)
+;; [Jared] 2014-10 commented out and removed its only use (in my-apply-2) to
+;; avoid name conflict with std/basic.
+;;
+;; (defun true (x mfc state)
+;;   (declare (ignore x mfc state))
+;;   t)
 
 (defun my-apply-2 (fun arg mfc state)
   (case fun
     (proveably-rational
      (proveably-rational arg mfc state))
     (true
-     (true arg mfc state))))
+     ;; [Jared] 2014-10 was formerly (true arg mfc state)
+     t)))
 
 (local
  (in-theory (disable my-apply-2)))

@@ -649,7 +649,7 @@
   (equal (mrdepsmap map)
          (depsmap map))
   :hints(("Goal" :in-theory (e/d (mrdepsmap depsmap)
-                                 (set::double-containment)))))
+                                 (set::double-containment-expensive)))))
 
 (verify-guards deps
   :hints(("Goal" :in-theory (enable deps)
@@ -673,7 +673,7 @@
   (equal (deps1 locs (dtreefix dtree))
          (deps1 locs dtree))
   :hints(("Goal" :in-theory (e/d (deps1) 
-                                 (set::double-containment)))))
+                                 (set::double-containment-expensive)))))
 
 (defthm deps-of-dtreefix
   (equal (deps (dtreefix dtree))

@@ -23,8 +23,10 @@ fair selection. The theorems we prove are
 
 (include-book "programs")
 (include-book "properties")
-(include-book "arithmetic-2/meta/top" :dir :system)
 (include-book "lexicographic-pos")
+
+;; [Jared] switched to arithmetic-3 instead of 2
+(local (include-book "arithmetic-3/bind-free/top" :dir :system))
 
 (defun rank-proc (i p)
   (if (equal (loc p) i) 1 0))
@@ -148,14 +150,15 @@ fair selection. The theorems we prove are
            (> (rank-keys (loc (<- procs in)) procs keys) 0)))
 )
 (local
-(defthm rank-keys-decreases-if-moved
-  (implies (and (memberp in keys)
-                (not (equal (loc p) a))
-                (equal (loc (<- procs in)) a))
-           (< (rank-keys a (-> procs in p) keys)
-              (rank-keys a procs keys)))
-  :hints (("Subgoal *1/3.2"
-           :cases ((equal in (car keys))))))
+ (defthm rank-keys-decreases-if-moved
+   (implies (and (memberp in keys)
+                 (not (equal (loc p) a))
+                 (equal (loc (<- procs in)) a))
+            (< (rank-keys a (-> procs in p) keys)
+               (rank-keys a procs keys)))
+   ;; [Jared] avoid explicit subgoal for switch to arithmetic-3.
+   :hints((and stable-under-simplificationp
+               '(:cases ((equal in (car keys)))))))
 )
 
 (local

@@ -30,6 +30,16 @@
 
 // more tests of port handling
 
+`ifdef VL_SYSTEST_VCS
+  // VCS doesn't seem to like "var" inputs, so use `VAR instead and just make it
+  // empty for VCS.
+ `define VAR
+`else
+ `define VAR var
+`endif
+
+
+
 `ifdef SYSTEM_VERILOG_MODE
 
 module MA (output logic [3:0] out,
@@ -44,13 +54,13 @@ module MA (output logic [3:0] out,
 endmodule
 
 module MB (output logic [3:0] out,
-           input var [3:0] in1, in2);
+           input `VAR [3:0] in1, in2);
   parameter foo = 1;
   wire make_foo_matter = foo;
   always @(in1 or in2) out = in1[0] ? (in1 | in2) : (in1 & in2);
 endmodule
 
-module MC (output var logic [3:0] out1, out2,
+module MC (output `VAR logic [3:0] out1, out2,
            input logic [3:0] in1, in2);
   parameter foo = 1;
   wire make_foo_matter = foo;
@@ -74,7 +84,7 @@ module ME (output logic [3:0] out,
   always @(in1 or in2) out = in1[1] ? (in1 < in2) : (in1 * in2);
 endmodule
 
-module MF (output var reg [3:0] out,
+module MF (output `VAR reg [3:0] out,
            input signed [3:0] in1, in2);
   parameter foo = 1;
   wire make_foo_matter = foo;
@@ -82,7 +92,7 @@ module MF (output var reg [3:0] out,
 endmodule
 
 module MG (output wire [3:0] out,
-           input var logic signed [3:0] in1, in2);
+           input `VAR logic signed [3:0] in1, in2);
   parameter foo = 1;
   wire make_foo_matter = foo;
   assign out = in1[1] ? (in1 < in2) : (in1 % in2);
@@ -190,7 +200,14 @@ iout1, iout2, iout3, iout4, iout5, iout6, iout7
   MF finst4 (.in1(in1 + 1'd1), .in2(in2), .out(fout4));
   MF finst5 (.in1(in1 + 1'sd1), .in2(in2), .out(fout5));
   MF finst6 (.out(fout6), .*);
-  MF finst7 (.out(fout7), .in1, .*);
+  MF finst7 (.out(fout7),
+                         `ifdef VL_SYSTEST_VCS
+                         // VCS doesn't permit using .foo with .*
+                         .in1(in1)
+                         `else
+                         .in1
+                         `endif,
+                .*);
 
   output [3:0] 	   gout1, gout2, gout3, gout4, gout5, gout6, gout7;
   MG ginst1 (gout1, in1, in2);

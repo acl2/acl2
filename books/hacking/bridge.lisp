@@ -88,40 +88,44 @@
                                (raw '() raw-p)
                                (raw-declare '())
                                (doc '())))
-  ":Doc-Section hacker
-  
-  define a function with a different low-level definition.~/
 
-  ~bv[]
-  General Form:
-  (defun-bridge ~i[name] (~i[formals])
-    [:doc ~i[doc-string]]
-    [:loop-declare ~i[loop-decls]]
-    :loop ~i[loop-body]
-    [:raw-declare ~i[raw-decls]]
-    :raw ~i[raw-body])
-  ~ev[] ~/
-  
-  This is much like executing
-  ~bv[]
-  (defun ~i[name] (~i[formals])
-    ~i[doc-string]
-    (declare (xargs :mode :program))
-    ~i[loop-decls]
-    ~i[loop-body])
-  ~ev[]
-  in ACL2 and then
-  ~bv[]
-  (defun ~i[name] (~i[formals])
-    ~i[raw-decls]
-    ~i[raw-body])
-  ~ev[]
-  in raw Lisp, except that extra checks and bookkeeping make it safer
-  than that.
-  
-  An active ttag is required to use this form (~l[defttag]), because
-  it can easily corrupt ACL2 or render it unsound.
-  ~/"
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
+
+; ":Doc-Section hacker
+; 
+; define a function with a different low-level definition.~/
+
+; ~bv[]
+; General Form:
+; (defun-bridge ~i[name] (~i[formals])
+;   [:doc ~i[doc-string]]
+;   [:loop-declare ~i[loop-decls]]
+;   :loop ~i[loop-body]
+;   [:raw-declare ~i[raw-decls]]
+;   :raw ~i[raw-body])
+; ~ev[] ~/
+; 
+; This is much like executing
+; ~bv[]
+; (defun ~i[name] (~i[formals])
+;   ~i[doc-string]
+;   (declare (xargs :mode :program))
+;   ~i[loop-decls]
+;   ~i[loop-body])
+; ~ev[]
+; in ACL2 and then
+; ~bv[]
+; (defun ~i[name] (~i[formals])
+;   ~i[raw-decls]
+;   ~i[raw-body])
+; ~ev[]
+; in raw Lisp, except that extra checks and bookkeeping make it safer
+; than that.
+; 
+; An active ttag is required to use this form (~l[defttag]), because
+; it can easily corrupt ACL2 or render it unsound.
+; ~/"
   (declare (xargs :guard (and (or (and logic-p program-p (not raw-p))
                                   (and logic-p (not program-p) raw-p)
                                   (and (not logic-p) program-p raw-p))

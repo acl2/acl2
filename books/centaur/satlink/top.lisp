@@ -413,6 +413,7 @@ work.</p>")
 
 (define satlink-parse-variable-line
   :parents (dimacs-interp)
+  :prepwork ((local (in-theory (disable ACL2::FOLD-CONSTS-IN-+))))
   ((x          stringp                "String we're processing.")
    (n          natp                   "Current position in @('x').")
    (xl         (equal xl (length x))  "Pre-computed length of @('x').")
@@ -550,6 +551,66 @@ work.</p>")
     ;; Didn't see either sat or unsat.
     (mv :failed env$)))
 
+(defsection satlink-extra-hook
+  :parents (satlink)
+  :short "An attachable hook for performing extra actions after successful
+calls of the SAT solver."
+
+  :long "<p>This is an advanced feature for Satlink hackers.</p>
+
+<p>@(call satlink-extra-hook) is an attachable function (see @(see defattach))
+that is called by @(see satlink-run-impl) after successful invocations of the
+SAT solver.</p>
+
+<p>The default hook does nothing, but you may be able to implement custom hooks
+that do useful things.  For instance, the @(see gather-benchmarks) hook can be
+used to automatically collect up the DIMACS files for Satlink problems.  These
+kinds of hooks might require additional trust tags, so it is nice to keep them
+out of Satlink itself.</p>
+
+<p>A hook can access several arguments:</p>
+
+<ul>
+
+<li>@('cnf') is the formula we were trying to solve.</li>
+
+<li>@('filename') is the name of the temporary input file that was given to the
+SAT solver.  At the time the hook is invoked, the file should still exist, even
+when we are removing temporary files.</li>
+
+<li>@('status') says whether the SAT solver returned @(':sat') or @(':unsat').
+Note that you don't have to consider @(':failed') because the hook does not get
+invoked in that case.</li>
+
+<li>@('env$') is the satisfying assignment in case of @(':sat') answers.</li>
+
+<li>@('state') is the usual ACL2 state, which might be useful for sending some
+extra information to your hook, e.g., state globals or similar.</li>
+
+</ul>"
+
+  (encapsulate
+    (((satlink-extra-hook * * * env$ state) => *
+      :formals (cnf filename status env$ state)
+      :guard (and (lit-list-listp cnf)
+                  (stringp filename)
+                  (or (eq status :sat)
+                      (eq status :unsat)))))
+    (local (defun satlink-extra-hook (cnf filename status env$ state)
+             (declare (xargs :stobjs (env$ state))
+                      (ignorable cnf filename status env$ state))
+             nil)))
+
+  (define default-satlink-hook ((cnf      lit-list-listp)
+                                (filename stringp)
+                                (status   (or (eq status :sat)
+                                              (eq status :unsat)))
+                                (env$)
+                                (state))
+    (declare (ignorable cnf filename status env$ state))
+    nil)
+
+  (defattach satlink-extra-hook default-satlink-hook))
 
 (define satlink-run-impl
   :parents (logical-story)
@@ -567,7 +628,7 @@ into a @(see dimacs) file, invokes the SAT solver on it, and interprets the
 answer.  This function is typically never used directly; instead see @(see
 satlink-run).</p>"
 
-  (b* (((config config) config)
+  (b* (((config config))
 
        ((mv filename state) (oslib::tempfile "satlink"))
        ((unless filename)
@@ -584,6 +645,13 @@ satlink-run).</p>"
         (cw "SATLINK: Error writing dimacs file ~s0~%" filename)
         (mv :failed env$ state))
 
+       ((acl2::fun (cleanup filename config))
+        (b* (((unless (config->remove-temps config))
+              nil)
+             ((mv & & &)
+              (acl2::tshell-call (str::cat "rm " filename))))
+          nil))
+
        (cmd (str::cat config.cmdline " " filename))
        ((mv finishedp & lines)
         (time$ (acl2::tshell-call cmd
@@ -596,16 +664,13 @@ satlink-run).</p>"
                :args (list cmd)
                :mintime config.mintime))
 
-       (- (or (not config.remove-temps)
-              (b* (((mv & & &)
-                    (acl2::tshell-call (str::cat "rm " filename))))
-                nil)))
-
        ((unless finishedp)
         (cw "SATLINK: Call of ~s0 somehow did not finish.~%" cmd)
+        (cleanup filename config)
         (mv :failed env$ state))
        ((unless (string-listp lines))
         (cw "SATLINK: Tshell somehow didn't give us a string list.~%")
+        (cleanup filename config)
         (mv :failed env$ state))
        ((mv status env$)
         (time$ (b* ((env$ (resize-bits (1+ max-index) env$))
@@ -613,6 +678,13 @@ satlink-run).</p>"
                  (mv status env$))
                :msg "; SATLINK: interpreting output: ~st sec, ~sa bytes~%"
                :mintime config.mintime)))
+    ;; Successful round trips --> invoke the extra hook.  We do this BEFORE
+    ;; cleaning up so that the input file still exists.
+    (if (or (eq status :sat)
+            (eq status :unsat))
+        (satlink-extra-hook cnf filename status env$ state)
+      nil)
+    (cleanup filename config)
     (mv status env$ state)))
 
 

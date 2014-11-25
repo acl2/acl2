@@ -29,13 +29,13 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/range-tools")
-(include-book "../util/sum-nats")
+(include-book "../mlib/selfsize")
+(include-book "../mlib/typedecide")
 (include-book "../mlib/welltyped")
 (include-book "../mlib/lvalues")
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (local (in-theory (enable acl2::arith-equiv-forwarding lnfix)))
-(local (include-book "clause-processors/autohide" :dir :system))
+;; (local (include-book "clause-processors/autohide" :dir :system))
 (local (include-book "../util/arithmetic"))
 (local (in-theory (enable tag-reasoning)))
 (local (std::add-default-post-define-hook :fix))
@@ -49,20 +49,7 @@
                            not nfix acl2::zp-open)))
 (local (in-theory (disable (tau-system))))
 
-(local (defun make-cases (ops)
-         (if (atom ops)
-             nil
-           (cons `(equal (vl-nonatom->op x) ,(car ops))
-                 (make-cases (cdr ops))))))
 
-(local (make-event
-        `(defruled vl-nonatom->op-forward
-           (or . ,(make-cases (strip-cars *vl-ops-table*)))
-           :rule-classes ((:forward-chaining
-                           :trigger-terms ((vl-nonatom->op x))))
-           :enable (vl-op-p acl2::hons-assoc-equal-of-cons)
-           :disable vl-op-p-of-vl-nonatom->op
-           :use ((:instance vl-op-p-of-vl-nonatom->op)))))
 
 (local (defthm vl-expr-fix-nonnil
          (vl-expr-fix x)
@@ -452,1679 +439,111 @@ the difference does not matter.  See @(see vl-expr-typedecide-aux) for
 details.</p>")
 
 
-; -----------------------------------------------------------------------------
-;
-;                       DETERMINATION OF FINAL SIZES
-;
-; -----------------------------------------------------------------------------
 
-
-(define vl-hidexpr-selfsize ((x        vl-expr-p)
-                             (ss       vl-scopestack-p)
-                             (elem     vl-modelement-p "context")
-                             (warnings vl-warninglist-p))
-  :guard (vl-hidexpr-p x)
-  :returns (mv (new-warnings vl-warninglist-p)
-               (size maybe-posp :rule-classes :type-prescription))
-  (b* ((x (vl-expr-fix x))
-       (?elem (vl-modelement-fix elem))
-       ((mv warning datatype) (vl-hidexpr-find-type x ss))
-       ((when warning)
-        (mv (cons (change-vl-warning warning :fatalp t)
-                  (vl-warninglist-fix warnings))
-            nil))
-       ;; this will warn if it has unpacked dims
-       ((mv warning size) (vl-packed-datatype-size datatype))
-       ((when warning)
-        (mv (cons (change-vl-warning warning :fatalp t)
-                  (vl-warninglist-fix warnings))
-            nil)))
-    (mv (ok) size))
-  ///
-  (defrule vl-hidexpr-selfsize-normalize-ctx/warnings
-    (implies (syntaxp (not (equal warnings ''nil)))
-             (equal (mv-nth 1 (vl-hidexpr-selfsize x ss elem warnings))
-                    (mv-nth 1 (vl-hidexpr-selfsize x ss elem nil))))))
-
-
-(define vl-atom-selfsize
-  :parents (vl-expr-selfsize)
-  :short "Compute the self-determined size of an atom."
-  ((x        vl-expr-p)
-   (ss       vl-scopestack-p)
-   (elem     vl-modelement-p)
-   (warnings vl-warninglist-p))
-  :guard (vl-atom-p x)
-  :verbosep t
-  :returns (mv (warnings vl-warninglist-p)
-               (size     maybe-natp :rule-classes :type-prescription))
-
-  :long "<p><b>Warning</b>: this function should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>We attempt to compute the \"self-determined size\" of the atom @('x').
-Another way to look at this function is as an extension of \"origwidth\" from
-constint/weirdint atoms to include identifiers.</p>
-
-<p>We have taken special care in our @(see lexer) to ensure that every
-constant, whether it is a @(see vl-weirdint-p) or @(see vl-constint-p), has a
-determined width.  As a result, it is easy to determine the self-determined
-size of a constant, and we never fail to do so.</p>
-
-<p>For identifiers, we must look up the identifier in the module to try to
-determine its size.  This can fail if the identifier is not declared in the
-module, or if its size is not resolved.  In these cases, we add a fatal warning
-to @('warnings') and return @('nil') as the size.</p>
-
-<p>We do not try to size other atoms, such as strings, real numbers, individual
-HID pieces, function names, etc.; instead we just return @('nil') as the size.
-But we do not issue a warning in this case, because it seems like these things
-are not really supposed to have sizes.</p>"
-
-  (b* ((x    (vl-expr-fix x))
-       (elem (vl-modelement-fix elem))
-       (guts (vl-atom->guts x))
-
-       ((when (vl-fast-constint-p guts))
-        (mv (ok) (vl-constint->origwidth guts)))
-
-       ((when (vl-fast-weirdint-p guts))
-        (mv (ok) (vl-weirdint->origwidth guts)))
-
-       ((when (vl-fast-string-p guts))
-        (mv (ok) (* 8 (length (vl-string->value guts)))))
-
-       ((unless (vl-fast-id-p guts))
-        ;; Reals, function names, hierarchical identifier pieces, etc., for which
-        ;; a size is not applicable.
-        (mv (ok) nil)))
-    (vl-hidexpr-selfsize x ss elem warnings))
-
-  ///
-  (defrule warning-irrelevance-of-vl-atom-selfsize
-    (let ((ret1 (vl-atom-selfsize x ss elem warnings))
-          (ret2 (vl-atom-selfsize x ss elem nil)))
-      (implies (syntaxp (not (equal warnings ''nil)))
-               (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))
-    :hints(("Goal" :in-theory (enable vl-hidexpr-selfsize)))))
-
-
-(define vl-syscall-selfsize
-  :parents (vl-expr-selfsize)
-  :short "Compute the self-determined size of an system call."
-  ((args      vl-exprlist-p)
-   (arg-sizes nat-listp)
-   (context   vl-expr-p)
-   (elem      vl-modelement-p)
-   (warnings  vl-warninglist-p))
-  :guard (same-lengthp args arg-sizes)
-  :returns
-  (mv (warnings vl-warninglist-p)
-      (size     maybe-natp :rule-classes :type-prescription))
-  (declare (ignorable arg-sizes context elem))
-  :long "<p><b>Warning</b>: this function should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>This might as well have been part of @(see vl-op-selfsize).  I decided to
-separate it out so that it can be more easily managed if it grows into a
-complex function.  At the moment we only support @('$random').</p>
-
-<h3>$random</h3>
-
-<p>From Section 17.9.1 on page 311, <i>\"The system function
-@('$random')... returns a new 32-bit random number each time it is called.  The
-random number is a signed integer; it can be positive or negative...</i> This
-is rather vague, but I think it probably means two separate things.  First,
-that the values produced by @('$random') are in the range @('[-2^31, 2^31)').
-Second, that the \"return type\" of @('$random') is @('integer'), which of
-course has an implementation-dependent size which some implementation might
-treat as 64-bits.  But since we emulate a 32-bit implementation, we just regard
-the size of @('$random') as 32.</p>"
-
-  (b* ((expr (make-vl-nonatom :op :vl-syscall :args args))
-       ((when (vl-$random-expr-p expr))
-        (mv (ok) 32)))
-    (mv (ok) nil))
-
-  ///
-  (defrule warning-irrelevance-of-vl-syscall-selfsize
-    (let ((ret1 (vl-syscall-selfsize args arg-sizes context elem warnings))
-          (ret2 (vl-syscall-selfsize args arg-sizes context elem nil)))
-      (implies (syntaxp (not (equal warnings ''nil)))
-               (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))))
-
-
-
-(defines vl-interesting-size-atoms
-  :parents (vl-tweak-fussy-warning-type)
-  :short "Heuristic for tweaking fussy size warnings."
-  :long "<p>Our basic goal is to gather all the atoms throughout an expression
-that are \"relevant\" to the current self-size computation.  This is a fuzzy
-concept and you should never use it for anything semantically meaningful, it's
-only meant as a heuristic for generating more useful warnings.</p>"
-
-  (define vl-expr-interesting-size-atoms ((x vl-expr-p))
-    :measure (vl-expr-count x)
-    :verify-guards nil
-    :returns (exprs (and (vl-exprlist-p exprs)
-                         (vl-atomlist-p exprs)))
-    (b* ((x (vl-expr-fix x))
-         ((when (vl-fast-atom-p x))
-          (list x))
-         (op   (vl-nonatom->op x))
-         (args (vl-nonatom->args x)))
-      (case op
-        ((:vl-bitselect :vl-unary-bitand :vl-unary-nand :vl-unary-bitor
-                        :vl-unary-nor :vl-unary-xor :vl-unary-xnor :vl-unary-lognot
-                        :vl-binary-logand :vl-binary-logor
-                        :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
-                        :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
-                        :vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
-                        :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon
-                        :vl-syscall :vl-funcall :vl-mintypmax :vl-hid-dot
-                         :vl-index :vl-scope
-
-                        ;; Eventually many of these may be worth considering...
-                        :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
-                        :vl-stream-left :vl-stream-right
-                        :vl-stream-left-sized :vl-stream-right-sized
-
-                        :vl-tagged
-
-                        :vl-binary-wildeq :vl-binary-wildneq
-                        :vl-implies :vl-equiv
-
-                        ;; This can definitely affect sizes, but I'm not sure what to do
-                        ;; about it yet.
-                        :vl-binary-cast
-                        )
-         ;; Don't gather anything from here.
-         nil)
-
-        ((:vl-binary-power
-          :vl-unary-plus :vl-unary-minus :vl-unary-bitnot
-          :vl-binary-shl :vl-binary-shr :vl-binary-ashl :vl-binary-ashr)
-         ;; Second arg doesn't affect selfsize
-         (vl-expr-interesting-size-atoms (first args)))
-
-        ((:vl-qmark :vl-multiconcat)
-         ;; First arg is special, don't consider it
-         (vl-exprlist-interesting-size-atoms (cdr args)))
-
-        ((:vl-binary-plus :vl-binary-minus :vl-binary-times :vl-binary-div :vl-binary-rem
-                          :vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor
-                          :vl-concat)
-         ;; All args affect size
-         (vl-exprlist-interesting-size-atoms args))
-
-        (otherwise
-         ;; To make us account for all ops
-         (impossible)))))
-
-  (define vl-exprlist-interesting-size-atoms ((x vl-exprlist-p))
-    :measure (vl-exprlist-count x)
-    :returns (exprs (and (vl-exprlist-p exprs)
-                         (vl-atomlist-p exprs)))
-    (if (consp x)
-        (append (vl-expr-interesting-size-atoms (car x))
-                (vl-exprlist-interesting-size-atoms (cdr x)))
-      nil))
-  ///
-  (defrule true-listp-of-vl-expr-interesting-size-atoms
-    (true-listp (vl-expr-interesting-size-atoms x))
-    :rule-classes :type-prescription)
-
-  (defrule true-listp-of-vl-exprlist-interesting-size-atoms
-    (true-listp (vl-exprlist-interesting-size-atoms x))
-    :rule-classes :type-prescription)
-
-  (verify-guards vl-expr-interesting-size-atoms
-    :hints(("Goal" :in-theory (enable vl-nonatom->op-forward
-                                      acl2::member-of-cons))))
-
-  (deffixequiv-mutual vl-interesting-size-atoms))
-
-
-(define vl-collect-unsized-ints ((x vl-exprlist-p))
-  :parents (vl-tweak-fussy-warning-type)
-  :returns (sub-x vl-exprlist-p)
-  (cond ((atom x)
-         nil)
-        ((and (vl-fast-atom-p (car x))
-              (vl-fast-constint-p (vl-atom->guts (car x)))
-              (vl-constint->wasunsized (vl-atom->guts (car x))))
-         (cons (vl-expr-fix (car x))
-               (vl-collect-unsized-ints (cdr x))))
-        (t
-         (vl-collect-unsized-ints (cdr x))))
-  ///
-  (defrule vl-exprlist-resolved-p-of-vl-collect-unsized-ints
-    (vl-exprlist-resolved-p (vl-collect-unsized-ints x))
-    :enable vl-expr-resolved-p))
-
-
-(define nats-below-p
-  :parents (vl-tweak-fussy-warning-type)
-  :short "Is every number in a list smaller than some maximum?"
-  ((max natp)
-   (x   nat-listp))
-  :hooks nil
-  (if (atom x)
-      t
-    (and (< (car x) max)
-         (nats-below-p max (cdr x)))))
-
-(define vl-tweak-fussy-warning-type
-  :short "Heuristically categorize fussy warnings according to severity."
-  ((type  symbolp   "Base warning type, which we may adjust.")
-   (a     vl-expr-p "LHS expression, i.e., A in: A + B, or C ? A : B")
-   (b     vl-expr-p "RHS expression, i.e., B in: A + B, or C ? A : B")
-   (asize natp      "Self-determined size of A.")
-   (bsize natp      "Self-determined size of B.")
-   (op    vl-op-p   "The particular operation."))
-  :returns
-  (adjusted-type symbolp :rule-classes :type-prescription
-                 "@('NIL') for <i>do not warn</i>, or some other warning type
-                  that is derived from @('type').")
-
-  :long "<p>This function is called when we've just noticed that A and B have
-different self-sizes but are used in an expression like @('A == B'), @('A &
-B'), @('C ? A : B'), or similar, and hence one or the other is going to be
-implicitly extended.  We're going to issue a fussy size warning, and we want to
-decide what type to give it.  I.e., is this a minor warning, or a normal
-warning?</p>
-
-<p>My original approach was just to say: the warning should be minor if ASIZE
-or BSIZE is 32.  But this happens in many very common cases where unsized
-numbers are used, such as:</p>
-
-@({
-    foo[3:0] == 7;          //  4 bits == 32 bits
-    foo[0] ? bar[3:0] : 0;  //  foo[0] ? 4 bits : 32 bits
-})
-
-<p>Over time I have added many additional tweaks, see the comments for
-details.</p>"
-  :prepwork ((local (in-theory (disable (tau-system)))))
-  (b* ((type  (acl2::symbol-fix type))
-       (op    (vl-op-fix op))
-       (asize (lnfix asize))
-       (bsize (lnfix bsize))
-       (a     (vl-expr-fix a))
-       (b     (vl-expr-fix b))
-
-       ((when (and (or (and (vl-expr-resolved-p a)
-                            (< (vl-resolved->val a) (ash 1 bsize)))
-                       (and (vl-expr-resolved-p b)
-                            (< (vl-resolved->val b) (ash 1 asize))))
-                   (member op '(:vl-qmark
-                                :vl-binary-eq :vl-binary-neq
-                                :vl-binary-ceq :vl-binary-cne
-                                :vl-binary-lt :vl-binary-lte
-                                :vl-binary-gt :vl-binary-gte
-                                :vl-binary-wildeq :vl-binary-wildneq
-                                :vl-binary-xnor))))
-        ;; Always suppress warnings in the case where one argument or the other
-        ;; is a constant.  Even though its size isn't quite right, it is not
-        ;; *really* wrong.  For instance, if foo was once a three-bit wire but
-        ;; now is a five-bit wire, we might run into an expression like "foo ==
-        ;; 3'b7," which isn't really any kind of problem.
-        nil)
-
-       (a32p (eql asize 32))
-       (b32p (eql bsize 32))
-       ((unless (or a32p b32p))
-        ;; Neither op is 32 bits, so this doesn't seem like it's related to
-        ;; unsized numbers, go ahead and warn.
-        type)
-
-       ;; Figure out which one is 32-bit and which one is not.  We assume
-       ;; they aren't both 32 bits, since otherwise we shouldn't be called.
-       ((mv expr-32 size-other) (if a32p (mv a bsize) (mv b asize)))
-
-       ;; Collect up interesting unsized ints in the 32-bit expression.  If it
-       ;; has unsized ints, they're probably the reason it's 32 bits.  After
-       ;; collecting them, see if they fit into the size of the other expr.
-       (atoms         (vl-expr-interesting-size-atoms expr-32))
-       (unsized       (vl-collect-unsized-ints atoms))
-       (unsized-fit-p (nats-below-p (ash 1 size-other)
-                                    (vl-exprlist-resolved->vals unsized)))
-       ((unless unsized-fit-p)
-        ;; Well, hrmn, there's some integer here that doesn't fit into the size
-        ;; of the other argument.  This is especially interesting because
-        ;; there's likely to be some kind of truncation here.  Give it a new
-        ;; type.
-        (intern-in-package-of-symbol (cat (symbol-name type) "-CONST-TOOBIG") type))
-
-       ((when (consp unsized))
-        ;; What does this mean?  Well, there are at least some unsized numbers
-        ;; in positions that are affecting our selfsize, and every such unsized
-        ;; number does fit into the new size we're going into, so it seems
-        ;; pretty safe to make this a minor warning.
-        (intern-in-package-of-symbol (cat (symbol-name type) "-MINOR") type)))
-
-    ;; Otherwise, we didn't find any unsized atoms, so just go ahead and do the
-    ;; warning.
-    type))
-
-
-(define vl-op-selfsize
-  :parents (vl-expr-selfsize)
-  :short "Main function for computing self-determined expression sizes."
-  ((op        vl-op-p)
-   (args      vl-exprlist-p)
-   (arg-sizes nat-listp)
-   (context   vl-expr-p)
-   (elem      vl-modelement-p)
-   (warnings  vl-warninglist-p))
-  :guard
-  (and (or (not (vl-op-arity op))
-           (equal (len args) (vl-op-arity op)))
-       (same-lengthp args arg-sizes))
-  :returns
-  (mv (warnings vl-warninglist-p)
-      (size     maybe-natp :rule-classes :type-prescription))
-
-  :long "<p><b>Warning</b>: this function should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>We attempt to determine the size of the expression formed by applying some
-operator, @('op'), to some arguments, @('args').  We assume that each argument
-has already had its self-size computed successfully and that the results of
-these computations are given as the @('arg-sizes').</p>
-
-<p>The @('context') is irrelevant and is only used to form better error
-messages; it is supposed to be the expression we are trying to size.  The
-@('elem') is similarly irrelevant, and gives the broader context for this
-expression.</p>
-
-<p>This function basically implements Verilog-2005 Table 5-22, or
-SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
-
-  :prepwork (; (local (in-theory (enable maybe-natp)))
-             (local (in-theory (disable natp-when-posp
-                                        nat-listp-when-no-nils-in-vl-maybe-nat-listp
-                                        acl2::natp-when-maybe-natp
-                                        default-car default-cdr)))
-             (local (defthm member-of-singleton
-                      (iff (member a (cons x nil))
-                           (equal a x))
-                      :hints(("Goal" :in-theory (enable acl2::member-of-cons)))))
-             (local (defund none-bound-to (keys value alist)
-                      (if (atom keys)
-                          t
-                        (and (let ((look (hons-assoc-equal (car keys) alist)))
-                               (not (equal (cdr look) value)))
-                             (none-bound-to (cdr keys) value alist)))))
-             (local (defthm hons-assoc-equal-when-none-bound-to
-                      (implies (and (member x keys)
-                                    (none-bound-to keys val alist))
-                               (not (equal val (cdr (hons-assoc-equal x alist)))))
-                      :hints(("Goal" :in-theory (enable hons-assoc-equal
-                                                        none-bound-to
-                                                        member)))))
-             (local (defthm hons-assoc-equal-when-none-bound-to-iff
-                      (implies (and (member x keys)
-                                    (none-bound-to keys nil alist))
-                               (cdr (hons-assoc-equal x alist)))
-                      :hints(("Goal" :in-theory (enable hons-assoc-equal
-                                                        none-bound-to
-                                                        member)))))
-             (local (defthm member-equal-when-member-non-intersecting
-                      (implies (and (syntaxp (quotep x))
-                                    (member k y)
-                                    (syntaxp (quotep y))
-                                    (not (intersectp-equal x y)))
-                               (not (member k x)))
-                      :hints ((set-reasoning))))
-             (local (defthm reduce-member-equal-when-not-member
-                      (implies (and (syntaxp (quotep x))
-                                    (not (member k y))
-                                    (syntaxp (quotep y))
-                                    (intersectp-equal x y))
-                               (iff (member k x)
-                                    (member k (set-difference-equal x y))))
-                      :hints ((set-reasoning))))
-             (local (defthm equal-when-member-non-member
-                      (implies (and (syntaxp (quotep v))
-                                    (member k x)
-                                    (syntaxp (quotep x))
-                                    (not (member v x)))
-                               (not (equal k v)))))
-             (local (defthm reduce-member-equal-when-not-equal
-                      (implies (and (syntaxp (quotep x))
-                                    (not (equal k v))
-                                    (syntaxp (quotep v))
-                                    (member v x))
-                               (iff (member k x)
-                                    (member k (remove-equal v x))))
-                      :hints ((set-reasoning))))
-             )
-  :guard-hints (("Goal" :in-theory (e/d (ACL2::HONS-ASSOC-EQUAL-IFF-MEMBER-ALIST-KEYS
-                                         ;; acl2::hons-assoc-equal-of-cons
-                                         vl-op-p vl-op-arity)
-                                        (acl2::alist-keys-member-hons-assoc-equal
-                                         nfix max (tau-system)))))
-
-  (b* ((op      (vl-op-fix op))
-       (context (vl-expr-fix context))
-       (elem    (vl-modelement-fix elem)))
-    (case (vl-op-fix op)
-      (( ;; All of these operations have one-bit results, and we have no
-        ;; expectations that their argument sizes should agree or anything like
-        ;; that.
-        :vl-bitselect
-        :vl-unary-bitand :vl-unary-nand :vl-unary-bitor :vl-unary-nor
-        :vl-unary-xor :vl-unary-xnor :vl-unary-lognot
-        :vl-binary-logand :vl-binary-logor
-
-        ;; SystemVerilog-2012 additions.  These also produce 1-bit results and
-        ;; we don't care if their arguments have equal sizes.
-        :vl-implies :vl-equiv)
-       (mv (ok) 1))
-
-      (( ;; These were originally part of the above case; they all return
-        ;; one-bit results.  However, we separate them out because,
-        ;; intuitively, their arguments "should" be the same size.  So as a
-        ;; Linting feature, we add warnings if any implicit size extension will
-        ;; occur.
-        :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
-        :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
-
-        ;; SystemVerilog-2012 additions.  Although Table 11-21 doesn't specify
-        ;; what the sizes are here, Section 11.4.6 says these produce a 1-bit
-        ;; self-sized result and explains how the arguments are to be widened
-        ;; similarly to ordinary equality comparisons.
-        :vl-binary-wildeq :vl-binary-wildneq)
-       (b* ((type (and (/= (first arg-sizes) (second arg-sizes))
-                       (vl-tweak-fussy-warning-type :vl-fussy-size-warning-1
-                                                    (first args)
-                                                    (second args)
-                                                    (first arg-sizes)
-                                                    (second arg-sizes)
-                                                    op)))
-            (warnings
-             (if (not type)
-                 (ok)
-               (warn :type type
-                     :msg "~a0: arguments to a comparison operator have ~
-                         different \"self-sizes\" (~x1 versus ~x2).  The ~
-                         smaller argument will be implicitly widened to match ~
-                         the larger argument.  The sub-expression in question ~
-                         is: ~a3."
-                     :args (list elem (first arg-sizes) (second arg-sizes)
-                                 context)))))
-         (mv (ok) 1)))
-
-      ((:vl-binary-power
-        :vl-unary-plus :vl-unary-minus :vl-unary-bitnot
-        :vl-binary-shl :vl-binary-shr :vl-binary-ashl :vl-binary-ashr)
-       ;; All of these operations keep the size of their first operands.
-       (mv (ok) (lnfix (first arg-sizes))))
-
-      ((:vl-binary-plus :vl-binary-minus :vl-binary-times :vl-binary-div :vl-binary-rem)
-       ;; All of these operations take the max size of either operand.
-       ;; Practically speaking we will probably never see times, div, or rem
-       ;; operators.  However, plus and minus are common.  We probably do not
-       ;; want to issue any size warnings in the case of plus or minus, since
-       ;; one argument or the other often needs to be expanded.
-       (mv (ok) (max (lnfix (first arg-sizes))
-                     (lnfix (second arg-sizes)))))
-
-      ((:vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor)
-       ;; All of these operations take the max size of either operand.  But
-       ;; this is a place where implicit widening could be bad.  I mean, you
-       ;; probably don't want to be doing A & B when A and B are different
-       ;; sizes, right?
-       (b* ((max (max (lnfix (first arg-sizes))
-                      (lnfix (second arg-sizes))))
-            (type (and (/= (first arg-sizes) (second arg-sizes))
-                       (vl-tweak-fussy-warning-type :vl-fussy-size-warning-2
-                                                    (first args)
-                                                    (second args)
-                                                    (first arg-sizes)
-                                                    (second arg-sizes)
-                                                    op)))
-            (warnings
-             (if (not type)
-                 (ok)
-               (warn :type type
-                     :msg "~a0: arguments to a bitwise operator have different ~
-                         self-sizes (~x1 versus ~x2).  The smaller argument ~
-                         will be implicitly widened to match the larger ~
-                         argument.  The sub-expression in question is: ~a3."
-                     :args (list elem (first arg-sizes) (second arg-sizes)
-                                 context)))))
-         (mv (ok) max)))
-
-      ((:vl-qmark)
-       ;; The conditional takes the max size of its true and false branches.
-       ;; We now warn if the branches don't agree on their size and hence will
-       ;; be widened.
-       (b* ((max (max (lnfix (second arg-sizes))
-                      (lnfix (third arg-sizes))))
-            (type (and (/= (second arg-sizes) (third arg-sizes))
-                       (vl-tweak-fussy-warning-type :vl-fussy-size-warning-3
-                                                    (second args)
-                                                    (third args)
-                                                    (second arg-sizes)
-                                                    (third arg-sizes)
-                                                    op)))
-            (warnings
-             (if (not type)
-                 (ok)
-               (warn :type type
-                     :msg "~a0: branches of a ?: operator have different ~
-                         self-sizes (~x1 versus ~x2).  The smaller branch ~
-                         will be implicitly widened to match the larger ~
-                         argument.  The sub-expression in question is: ~a3."
-                     :args (list elem (second arg-sizes) (third arg-sizes)
-                                 context)))))
-         (mv (ok) max)))
-
-      ((:vl-concat)
-       ;; Concatenations have the sum of their arguments' widths
-       (mv (ok) (sum-nats arg-sizes)))
-
-      ((:vl-syscall)
-       ;; We do all syscall sizing in a separate function.
-       (vl-syscall-selfsize args arg-sizes context elem warnings))
-
-      ((:vl-multiconcat)
-       ;; For multiple concatenations, the size is its multiplicity times the
-       ;; size of the concatenation-part.  The multiplicity can be zero.
-       (b* ((multiplicity (first args))
-            (concat-width (lnfix (second arg-sizes)))
-            ((unless (vl-expr-resolved-p multiplicity))
-             (mv (fatal :type :vl-unresolved-multiplicity
-                        :msg "~a0: cannot size ~a1 because its multiplicity ~
-                              has not been resolved."
-                        :args (list elem context))
-                 nil))
-            (size (* (vl-resolved->val multiplicity) concat-width)))
-         (mv (ok) size)))
-
-      ((:vl-partselect-colon)
-       ;; A part-select's width is one greater than the difference in its
-       ;; indices.  For instance, a[3:0] is 4 bits, while a[3:3] is one bit.
-       (b* ((left  (second args))
-            (right (third args))
-            ((unless (and (vl-expr-resolved-p left)
-                          (vl-expr-resolved-p right)))
-             (mv (fatal :type :vl-unresolved-select
-                        :msg "~a0: cannot size ~a1 since it does not have ~
-                              resolved indices."
-                        :args (list elem context))
-                 nil))
-            (left-val  (vl-resolved->val left))
-            (right-val (vl-resolved->val right))
-            (size      (+ 1 (abs (- left-val right-val)))))
-         (mv (ok) size)))
-
-      ((:vl-partselect-pluscolon :vl-partselect-minuscolon)
-       ;; foo[base_expr +: width_expr] has the width specified by width_expr,
-       ;; which must be a positive constant. (See Section 5.2.1)
-       (b* ((width-expr (second args))
-            ((unless (and (vl-expr-resolved-p width-expr)
-                          (> (vl-resolved->val width-expr) 0)))
-             (mv (fatal :type :vl-unresolved-select
-                        :msg "~a0: cannot size ~a1 since its width expression ~
-                              is not a resolved, positive constant."
-                        :args (list elem context))
-                 nil))
-            (size (vl-resolved->val width-expr)))
-         (mv (ok) size)))
-
-      ((:vl-funcall)
-       ;; BOZO we don't currently try to support function calls.  Eventually it
-       ;; should be easy to support sizing these, since it looks like functions
-       ;; are returned with a syntax like "function [7:0] getbyte;" -- we'll
-       ;; just need to look up the function and return the size of its range.
-       (mv (ok) nil))
-
-      ((:vl-mintypmax)
-       ;; I do not think it makes any sense to think about the size of a
-       ;; mintypmax expression.  We just return nil and cause no warnings since
-       ;; the width is basically "inapplicable."
-       (mv (ok) nil))
-
-      ((:vl-hid-dot :vl-index :vl-scope
-
-        ;; BOZO these might not belong here, but it seems like the
-        ;; safest place to put them until they're implemented
-        :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
-        :vl-stream-left :vl-stream-right
-        :vl-stream-left-sized :vl-stream-right-sized
-        :vl-tagged :vl-binary-cast
-        :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon
-        )
-       ;; We don't handle these here.  They should be handled in
-       ;; vl-expr-selfsize specially, because unlike all of the other
-       ;; operators, we can't assume that their subexpressions' sizes can be
-       ;; computed.  Instead, we need to only try to determine the size of
-       ;; "top-level" HIDs, and also specially handle array indexes.
-       (mv (fatal :type :vl-programming-error
-                  :msg "~a0: vl-op-selfsize should not encounter ~a1"
-                  :args (list elem context))
-           nil))
-
-      (otherwise
-       (progn$ (impossible)
-               (mv (ok) nil)))))
-  ///
-  (defrule warning-irrelevance-of-vl-op-selfsize
-    (let ((ret1 (vl-op-selfsize op args arg-sizes context elem warnings))
-          (ret2 (vl-op-selfsize op args arg-sizes context elem nil)))
-      (implies (syntaxp (not (equal warnings ''nil)))
-               (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))))
-
-
-
-
-
-(define vl-partselect-expr-type ((x vl-expr-p)
-                                 (ss vl-scopestack-p)
-                                 (elem vl-modelement-p "context"))
-  :guard (not (eq (vl-expr-kind x) :atom))
-  :guard-hints (("goal" :in-theory (enable acl2::member-of-cons)))
-  :returns (mv (warning (iff (vl-warning-p warning) warning))
-               (type (implies (not warning) (vl-datatype-p type))))
-  :prepwork ((local (in-theory (disable vl-nonatom->op-when-hidindex-resolved-p
-                                        default-car
-                                        vl-hidexpr-p-when-id-atom
-                                        vl-nonatom->op-when-vl-hidindex-p))))
-  :measure (vl-expr-count x)
-  (b* ((elem (vl-modelement-fix elem))
-       ((vl-nonatom x) (vl-expr-fix x))
-       ((unless (member x.op
-                        '(:vl-partselect-colon
-                          :vl-partselect-pluscolon
-                          :vl-partselect-minuscolon)))
-        (mv (make-vl-warning :type :vl-programming-error
-                             :msg "called vl-partselect-selfsize on non-partselect expr")
-            nil))
-       ((mv warning sub-type) (vl-index-find-type (first x.args) ss))
-       ((when warning) (mv warning nil))
-       (udims (vl-datatype->udims sub-type))
-       ((when (consp udims))
-        ;; AFAIK it's never legal to partselect on an unpacked array.
-        (mv (make-vl-warning :type :vl-bad-partselect-operator
-                             :msg "~a0: Can't apply a partselect operator to ~
-                                   ~a1 because it has unpacked dimensions."
-                             :args (list elem (first x.args)))
-            nil))
-       (pdims (vl-datatype->pdims sub-type))
-       ((unless (consp pdims))
-        (mv (make-vl-warning :type :vl-bad-indexing-operator
-                             :msg "~a0: Can't apply an index operator to ~a1 because it ~
-                         has no dimensions; its type is ~a2."
-                             :args (list elem (first x.args) sub-type))
-            nil))
-       ;; If we have a partselect-colon, it's ok to insist that we have
-       ;; constant indices and set the topmost dimension to that range.
-       ;; However, if we have a partselect-pluscolon or -minuscolon, the
-       ;; msb/lsb expression may legally be nonconstant.  But in this case, we
-       ;; think it's ok to just say the new dimension is [width-1:0].  Why?
-       ;; Another partselect or indexing operator applied to this expression
-       ;; isn't allowed by the syntax of expressions (unless perhaps we wrap
-       ;; this expression in a concatenation, but even then implementations
-       ;; don't yet allow it).
-
-       ;; Should we check that dimensions are in bounds here or is that best done separately?
-       (dim (car pdims))
-       ;; Partselects are always unsigned.
-       (type (vl-datatype-set-unsigned sub-type))
-       ((when (or (eq dim :vl-unsized-dimension)
-                  (not (vl-range-resolved-p dim))))
-        (mv (make-vl-warning :type :vl-partselect-type-unresolved
-                             :msg "~a0: Couldn't find type of ~a1 because the ~
-                                   most significant packed dimension of the ~
-                                   type of ~a2 was unsized or non-constant."
-                             :args (list elem x (first x.args)))
-            nil))
-       ((unless (and (vl-expr-resolved-p (third x.args))
-                     (or (not (eq x.op :vl-partselect-colon))
-                         (vl-expr-resolved-p (second x.args)))))
-        (mv (make-vl-warning :type :vl-partselect-indices-unresolved
-                             :msg "~a0: Couldn't find type of ~a1 because the ~
-                                   partselect has non-constant indices."
-                             :args (list elem x))
-            nil))
-       ((when (eq x.op :vl-partselect-colon))
-        (b* ((range (make-vl-range :msb (second x.args) :lsb (third x.args))))
-          (mv nil (vl-datatype-update-pdims (cons range (cdr pdims)) type))))
-       (width (vl-resolved->val (third x.args)))
-       ((unless (posp width))
-        (mv (make-vl-warning :type :vl-partselect-indices-unresolved
-                             :msg "~a0: Zero width in partselect operator?"
-                             :args (list elem x))
-            nil))
-       ((unless (vl-expr-resolved-p (second x.args)))
-        (b* ((range (make-vl-range :msb (vl-make-index (1- width)) :lsb (vl-make-index 0))))
-          (mv nil (vl-datatype-update-pdims (cons range (cdr pdims)) type))))
-       ;; The second argument is resolved, so set the range as specified.
-       (m-or-lsb (vl-resolved->val (second x.args)))
-       (backward-range-p (< (vl-resolved->val (vl-range->msb dim))
-                            (vl-resolved->val (vl-range->lsb dim))))
-       (greater-idx (if (eq x.op :vl-partselect-pluscolon)
-                        (+ m-or-lsb width -1)
-                      m-or-lsb))
-       (lesser-idx (if (eq x.op :vl-partselect-pluscolon)
-                       m-or-lsb
-                     (+ m-or-lsb (- width) 1)))
-       ((when (< lesser-idx 0))
-        (mv (make-vl-warning :type :vl-partselect-index-error
-                             :msg "~a0: Partselect ~s1 operator yields negative index: ~a2"
-                             :args (list elem (if (eq x.op :vl-partselect-pluscolon)
-                                                  "+:" "-:")
-                                         x))
-            nil))
-       (range (make-vl-range :msb (vl-make-index (if backward-range-p lesser-idx greater-idx))
-                             :lsb (vl-make-index (if backward-range-p greater-idx lesser-idx)))))
-    
-    (mv nil (vl-datatype-update-pdims (cons range (cdr pdims)) type))))
-       
-       
-             
-            
-                            
-
-(define vl-index-selfsize ((x vl-expr-p "the index expression")
-                           (ss vl-scopestack-p)
-                           (elem vl-modelement-p "context")
-                           (warnings vl-warninglist-p))
-  :returns (mv (new-warnings vl-warninglist-p)
-               (size maybe-posp :rule-classes :type-prescription))
-  (declare (ignorable elem))
-  (b* ((warnings  (vl-warninglist-fix warnings))
-       ((mv warning type) (vl-index-find-type x ss))
-       ((when warning)
-        (mv (cons (change-vl-warning warning :fatalp t) warnings) nil))
-       ((mv warning size)
-        (vl-packed-datatype-size type))
-       ((when warning)
-        (mv (cons (change-vl-warning warning :fatalp t) warnings) nil)))
-    (mv warnings size))
-  ///
-
-  (local
-   (make-event ;; test: x[8] sizes to 1 for simple net
-    (b* ((x-vardecl (make-vl-vardecl :name "x"
-                                     :type (make-vl-coretype
-                                            :name :vl-logic
-                                            :pdims (list
-                                                    (make-vl-range
-                                                     :msb (vl-make-index 10)
-                                                     :lsb (vl-make-index 0))))
-                                     :nettype :vl-wire
-                                     :loc *vl-fakeloc*))
-         (expr (make-vl-nonatom :op :vl-bitselect
-                                :args (list (vl-idexpr "x" nil nil)
-                                            (vl-make-index 8))))
-         (mod (make-vl-module :name "foo" :origname "foo"
-                              :vardecls (list x-vardecl)
-                              :minloc *vl-fakeloc*
-                              :maxloc *vl-fakeloc*))
-         (design (make-vl-design :mods (list mod)))
-         (ss (vl-scopestack-push mod (vl-scopestack-init design)))
-         ((mv warnings size)
-          (vl-index-selfsize expr ss x-vardecl nil)))
-      (if (and (not warnings)
-               (eql size 1))
-          '(value-triple :ok)
-        (er hard? 'test-vl-index-selfsize
-            "Bad result: ~x0~%" (list warnings size))))))
-
-  (defrule warning-irrelevance-of-vl-index-selfsize
-    (let ((ret1 (vl-index-selfsize x ss elem warnings))
-          (ret2 (vl-index-selfsize x ss elem nil)))
-      (implies (syntaxp (not (equal warnings ''nil)))
-               (equal (mv-nth 1 ret1)
-                      (mv-nth 1 ret2))))))
-
-
-
-(define vl-partselect-selfsize ((x vl-expr-p "the [artselect expression")
-                                (ss vl-scopestack-p)
-                                (elem vl-modelement-p "context")
-                                (warnings vl-warninglist-p))
-  :guard (not (eq (vl-expr-kind x) :atom))
-  :returns (mv (new-warnings vl-warninglist-p)
-               (size maybe-posp :rule-classes :type-prescription))
-  (b* ((warnings  (vl-warninglist-fix warnings))
-       ((mv warning type) (vl-partselect-expr-type x ss elem))
-       ((when warning)
-        (mv (cons (change-vl-warning warning :fatalp t) warnings) nil))
-       ((mv warning size)
-        (vl-packed-datatype-size type))
-       ((when warning)
-        (mv (cons (change-vl-warning warning :fatalp t) warnings) nil)))
-    (mv warnings size))
-  ///
-
-  (local
-   (make-event ;; test: x[8:4] sizes to 5 for simple net
-    (b* ((x-vardecl (make-vl-vardecl :name "x"
-                                     :type (make-vl-coretype
-                                            :name :vl-logic
-                                            :pdims (list
-                                                    (make-vl-range
-                                                     :msb (vl-make-index 10)
-                                                     :lsb (vl-make-index 0))))
-                                     :nettype :vl-wire
-                                     :loc *vl-fakeloc*))
-         (expr (make-vl-nonatom :op :vl-partselect-colon
-                                :args (list (vl-idexpr "x" nil nil)
-                                            (vl-make-index 8)
-                                            (vl-make-index 4))))
-         (mod (make-vl-module :name "foo" :origname "foo"
-                              :vardecls (list x-vardecl)
-                              :minloc *vl-fakeloc*
-                              :maxloc *vl-fakeloc*))
-         (design (make-vl-design :mods (list mod)))
-         (ss (vl-scopestack-push mod (vl-scopestack-init design)))
-         ((mv warnings size)
-          (vl-partselect-selfsize expr ss x-vardecl nil)))
-      (if (and (not warnings)
-               (eql size 5))
-          '(value-triple :ok)
-        (er hard? 'test-vl-index-selfsize
-            "Bad result: ~x0~%" (list warnings size))))))
-
-  (defrule warning-irrelevance-of-vl-partselect-selfsize
-    (let ((ret1 (vl-partselect-selfsize x ss elem warnings))
-          (ret2 (vl-partselect-selfsize x ss elem nil)))
-      (implies (syntaxp (not (equal warnings ''nil)))
-               (equal (mv-nth 1 ret1)
-                      (mv-nth 1 ret2))))))
-
-
-
-
-
-;; vl-dotexpr-selfsize
-
-
-
-
-
-
-(defines vl-expr-selfsize
-  :short "Computation of self-determined expression sizes."
-
-  :long "<p><b>Warning</b>: these functions should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>Some failures are expected, e.g., we do not know how to size some system
-calls.  In these cases we do not cause any warnings.  But in other cases, a
-failure might mean that the expression is malformed in some way, e.g., maybe it
-references an undefined wire or contains a raw, \"unindexed\" reference to an
-array.  In these cases we generate fatal warnings.</p>
-
-<p>BOZO we might eventually add as inputs the full list of modules and a
-modalist so that we can look up HIDs.  An alternative would be to use the
-annotations left by @(see vl-design-follow-hids) like (e.g.,
-@('VL_HID_RESOLVED_RANGE_P')) to see how wide HIDs are.</p>"
-
-  (define vl-expr-selfsize
-    ((x        vl-expr-p        "Expression whose size we are to compute.")
-     (ss vl-scopestack-p)
-     (elem     vl-modelement-p  "Context for warnings.")
-     (warnings vl-warninglist-p "Ordinary @(see warnings) accumulator."))
-    :returns
-    (mv (warnings vl-warninglist-p)
-        (size     maybe-natp :rule-classes :type-prescription))
-    :verify-guards nil
-    :measure (vl-expr-count x)
-    :flag :expr
-    (b* ((x (vl-expr-fix x))
-
-         ((when (vl-fast-atom-p x))
-          (vl-atom-selfsize x ss elem warnings))
-
-         (op   (vl-nonatom->op x))
-         (args (vl-nonatom->args x))
-
-         ((when (vl-hidexpr-p x))
-          (vl-hidexpr-selfsize x ss elem warnings))
-
-         ((when (member op '(:vl-index :vl-bitselect)))
-          ;; BOZO we should try to size array-indexing here.  For now I'm
-          ;; skipping this so I can press on.
-          (vl-index-selfsize x ss elem warnings))
-
-         ((when (member op '(:vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
-                             :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon)))
-          (vl-partselect-selfsize x ss elem warnings))
-
-         ((mv warnings arg-sizes)
-          (vl-exprlist-selfsize args ss elem warnings))
-
-         ((when (member nil arg-sizes))
-          ;; Some subexpression was not given its size.  We don't try to
-          ;; produce a size.
-          (mv warnings nil))
-
-         ;; Otherwise, all subexpressions sized successfully.  Call
-         ;; vl-op-selfsize to do all the work.
-         ((mv warnings size)
-          (vl-op-selfsize op args arg-sizes x elem warnings)))
-
-      (mv warnings size)))
-
-  (define vl-exprlist-selfsize
-    ((x        vl-exprlist-p    "Expressions whose sizes we are to compute.")
-     (ss vl-scopestack-p)
-     (elem     vl-modelement-p  "Context for warnings.")
-     (warnings vl-warninglist-p "Ordinary @(see warnings) accumulator."))
-    :returns
-    (mv (warnings vl-warninglist-p)
-        (size-list (and (vl-maybe-nat-listp size-list)
-                        (equal (len size-list) (len x)))))
-    :measure (vl-exprlist-count x)
-    :flag :list
-    (b* (((when (atom x))
-          (mv (ok) nil))
-         ((mv warnings car-size)
-          (vl-expr-selfsize (car x) ss elem warnings))
-         ((mv warnings cdr-sizes)
-          (vl-exprlist-selfsize (cdr x) ss elem warnings))
-         (sizes (cons car-size cdr-sizes)))
-      (mv warnings sizes)))
-  ///
-
-  (local
-   (defthm-vl-expr-selfsize-flag
-     (defthm true-listp-of-vl-exprlist-selfsize
-       (true-listp (mv-nth 1 (vl-exprlist-selfsize x ss elem warnings)))
-       :rule-classes :type-prescription
-       :flag :list)
-     :skip-others t))
-
-  (verify-guards vl-expr-selfsize)
-
-  (local
-   (defthm-vl-expr-selfsize-flag
-     ;; This is pretty subtle.  The induction scheme that the flag function
-     ;; would generate if we tried to directly use warnings and NIL isn't right
-     ;; in the list case.  We have to generalize this to an arbitrary warnings1
-     ;; and warnings2.  Then, ACL2's induction heuristic is smart enough to get
-     ;; the right scheme, but only when we tell it to consider the flag function
-     ;; for both warnings1 and warnings2.  Ugh.  This took a long time to figure
-     ;; out.
-     (defthm l0
-       (let ((ret1 (vl-expr-selfsize x ss elem warnings1))
-             (ret2 (vl-expr-selfsize x ss elem warnings2)))
-         (equal (mv-nth 1 ret1)
-                (mv-nth 1 ret2)))
-       :rule-classes nil
-       :flag :expr)
-
-     (defthm l1
-       (let ((ret1 (vl-exprlist-selfsize x ss elem warnings1))
-             (ret2 (vl-exprlist-selfsize x ss elem warnings2)))
-         (equal (mv-nth 1 ret1)
-                (mv-nth 1 ret2)))
-       :rule-classes nil
-       :flag :list)
-
-     :hints(("Goal"
-             :do-not '(generalize fertilize)
-             :induct (and (vl-expr-selfsize-flag flag x ss elem warnings1)
-                          (vl-expr-selfsize-flag flag x ss elem warnings2))
-             :expand ((vl-expr-selfsize x ss elem warnings1)
-                      (vl-expr-selfsize x ss elem warnings2))))))
-
-  (defrule warning-irrelevance-of-vl-expr-selfsize
-    (let ((ret1 (vl-expr-selfsize x ss elem warnings))
-          (ret2 (vl-expr-selfsize x ss elem nil)))
-      (implies (syntaxp (not (equal warnings ''nil)))
-               (equal (mv-nth 1 ret1)
-                      (mv-nth 1 ret2))))
-    :use ((:instance l0 (warnings1 warnings) (warnings2 nil))))
-
-  (defrule warning-irrelevance-of-vl-exprlist-selfsize
-    (let ((ret1 (vl-exprlist-selfsize x ss elem warnings))
-          (ret2 (vl-exprlist-selfsize x ss elem nil)))
-      (implies (syntaxp (not (equal warnings ''nil)))
-               (equal (mv-nth 1 ret1)
-                      (mv-nth 1 ret2))))
-    :use ((:instance l1 (warnings1 warnings) (warnings2 nil))))
-
-  (deffixequiv-mutual vl-expr-selfsize))
-
-
-; -----------------------------------------------------------------------------
-;
-;                    DETERMINATION OF FINAL SIGNEDNESS
-;
-; -----------------------------------------------------------------------------
-
-
-(define vl-datatype-exprtype
-  :parents (vl-expr-typedecide)
-  :short "Get the self-determined type for a datatype."
-  ((x vl-datatype-p))
-  :returns
-  (mv (successp booleanp :rule-classes :type-prescription
-                "NOTE: type may still be NIL on success.")
-      (errmsg maybe-stringp :rule-classes :type-prescription
-              "On failure: a very brief explanation of the failure reason.")
-      (type vl-maybe-exprtype-p
-            "On success: the self-determined type of this expression.  Note
-             that some expressions (e.g., real numbers) have type NIL."))
-  :long "<p>BOZO we don't try very hard yet.  Eventually this will need to know
-         how to look up the sizes of user-defined types, etc.</p>"
-  (b* (((fun (fail reason))   (mv nil reason nil))
-       ((fun (success width)) (mv t nil width))
-       ((when (consp (vl-datatype->udims x)))
-        (fail "Can't decide signedness of unpacked array")))
-    (vl-datatype-case x
-
-      (:vl-coretype
-       (case x.name
-         ((:vl-byte :vl-shortint :vl-int :vl-longint :vl-integer :vl-time
-           :vl-bit :vl-logic :vl-reg)
-          ;; See also vl-parse-core-data-type.  When using any of the above
-          ;; types, a logic designer can provide an optional `signed` or
-          ;; `unsigned` keyword that, presumably, overrides the default
-          ;; signedness.  The parser handles this and must set up the
-          ;; coretype.signedp field appropriately.  So, here, we just need to
-          ;; look at that field.
-          (success (if x.signedp :vl-signed :vl-unsigned)))
-
-         (otherwise
-          ;; Some other kind of core type like void, string, chandle, event,
-          ;; or similar.  We're not going to assign any type to these, but
-          ;; it's not any kind of error.
-          (success nil))))
-
-      (:vl-enum ;; just need to look at the base type, right?
-       (fail "bozo: implement enum typing"))
+(defsection unsigned-when-size-zero
+  ;; It would be weird for a size zero expression to be signed, because how do
+  ;; you sign extend something that has no sign bit?
+
+  (defthm vl-atom-unsigned-when-size-zero
+    (b* (((mv & size) (vl-atom-selfsize x ss ctx1 warnings1))
+         ((mv & type) (vl-atom-typedecide x ss ctx2 warnings2)))
+      (implies (equal size 0)
+               (equal type :vl-unsigned)))
+    :hints(("Goal" :in-theory (enable vl-atom-selfsize
+                                      vl-atom-typedecide))))
+
+  (define vl-unsigned-when-size-zero-lst ((sizes vl-maybe-nat-listp)
+                                          (types vl-maybe-exprtype-list-p))
+    :guard (eql (len sizes) (len types))
+    (if (atom sizes)
+        t
+      (and (or (not (equal (car sizes) 0))
+               (not (car types))
+               (equal (car types) :vl-unsigned))
+           (vl-unsigned-when-size-zero-lst (cdr sizes) (cdr types)))))
+
+  (local (defthm consp-by-len
+           (implies (and (syntaxp (not (and (consp x) (eq (car x) 'cdr))))
+                         (<= 1 (len x)))
+                    (consp x))
+           :rule-classes ((:rewrite :backchain-limit-lst 2))))
+
+  (local (defthm consp-cdr-by-len
+           (implies (and (syntaxp (not (and (consp x) (eq (car x) 'cdr))))
+                         (<= 2 (len x)))
+                    (consp (cdr x)))
+           :rule-classes ((:rewrite :backchain-limit-lst 2))))
+
+  (local (defthm consp-cddr-by-len
+           (implies (and (syntaxp (not (and (consp x) (eq (car x) 'cdr))))
+                         (<= 3 (len x)))
+                    (consp (cddr x)))
+           :rule-classes ((:rewrite :backchain-limit-lst 2))))
+
+  (local (in-theory (disable acl2::nat-listp-when-not-consp
+                             len-of-vl-nonatom->args-when-vl-hidexpr-p)))
+
+  ;; (local (defthm len-of-cdr-less
+  ;;          (implies (and (syntaxp (quotep n))
+  ;;                        (natp n)
+  ;;                        (consp x))
+  ;;                   (equal (< (len (cdr x)) n)
+  ;;                          (< (len x) (+ 1 n))))
+  ;;          :hints(("Goal" :in-theory (enable len)))))
+
+  ;; (local (defthm vl-unsigned-when-size-zero-lst-expand-when-consp
+  ;;          (implies (consp sizes)
+  ;;                   (equal (vl-unsigned-when-size-zero-lst sizes types)
+  ;;                          (and (or (not (equal (car sizes) 0))
+  ;;                                   (not (car types))
+  ;;                                   (equal (car types) :vl-unsigned))
+  ;;                               (vl-unsigned-when-size-zero-lst (cdr sizes) (cdr types)))))
+  ;;          :hints(("Goal" :in-theory (enable vl-unsigned-when-size-zero-lst)))))
+
+  (local (in-theory (disable max)))
+  
+  ;; (local (Defthm vl-exprtype-max-when-one-unsigned
+  ;;          (implies (or (equal a :vl-unsigned)
+  ;;                       (equal b :vl-unsigned))
+  ;;                   (equal (equal (vl-exprtype-max a b) :vl-unsigned) t))
+  ;;          :hints(("Goal" :in-theory (enable vl-exprtype-max)))))
+
+  (defthm-vl-expr-typedecide-aux-flag
+    (defthm vl-expr-unsigned-when-size-zero-aux
+      (b* (((mv & size) (vl-expr-selfsize x ss ctx1 warnings1))
+           ((mv & type) (vl-expr-typedecide-aux x ss ctx2 warnings2 mode)))
+        (implies (and (equal size 0)
+                      type)
+                 (equal type :vl-unsigned)))
+      :hints ('(:expand ((:free (ctx warnings)
+                          (vl-expr-selfsize x ss ctx warnings))
+                         (:free (ctx warnings mode)
+                          (vl-expr-typedecide-aux x ss ctx warnings mode))
+                         (:free (a b c)
+                          (vl-unsigned-when-size-zero-lst (cons a b) c)))
+                :in-theory (enable vl-op-selfsize
+                                   vl-syscall-selfsize
+                                   ;; vl-$bits-call-p
+                                   vl-exprtype-max
+                                   acl2::member-of-cons
+                                   ;; vl-unsigned-when-size-zero-lst
+                                   )))
       
-      (:vl-struct ;; just need to look at signedp and packed?
-       (b* (((unless x.packedp) (fail "non-packed struct")))
-         (success (if x.signedp :vl-signed :vl-unsigned))))
-
-      (:vl-union ;; just need to look at signedp and packed?
-       (b* (((unless x.packedp) (fail "non-packed union")))
-         (success (if x.signedp :vl-signed :vl-unsigned))))
-
-      (:vl-usertype
-       ;; BOZO maybe some day extend this to be able to do lookups
-       (fail "bozo: implement user-defined type typing")))))
-
-(define vl-hidexpr-typedecide ((x        vl-expr-p)
-                               (ss       vl-scopestack-p)
-                               (elem     vl-modelement-p "context")
-                               (warnings vl-warninglist-p))
-  :guard (vl-hidexpr-p x)
-  :returns (mv (new-warnings vl-warninglist-p)
-               (type vl-maybe-exprtype-p))
-  (b* ((x (vl-expr-fix x))
-       (?elem (vl-modelement-fix elem))
-       ((mv warning datatype) (vl-hidexpr-find-type x ss))
-       ((when warning)
-        (mv (cons (change-vl-warning warning :fatalp t)
-                  (vl-warninglist-fix warnings))
-            nil))
-       ((mv ok errmsg type) (vl-datatype-exprtype datatype))
-       ((unless ok)
-        (mv (fatal :type :vl-hidexpr-typedecide-fail
-                   :msg "~a0: Signedness of datatype failed: ~s1"
-                   :args (list elem errmsg))
-            nil)))
-    (mv (ok) type))
-  ///
-  (defrule vl-hidexpr-typedecide-normalize-ctx/warnings
-    (implies (syntaxp (not (equal warnings ''nil)))
-             (equal (mv-nth 1 (vl-hidexpr-typedecide x ss elem warnings))
-                    (mv-nth 1 (vl-hidexpr-typedecide x ss elem nil))))))
-
-(define vl-index-typedecide ((x        vl-expr-p)
-                             (ss       vl-scopestack-p)
-                             (elem     vl-modelement-p "context")
-                             (warnings vl-warninglist-p))
-  :returns (mv (new-warnings vl-warninglist-p)
-               (type vl-maybe-exprtype-p))
-  (b* ((x (vl-expr-fix x))
-       (?elem (vl-modelement-fix elem))
-       ((mv warning datatype) (vl-index-find-type x ss))
-       ((when warning)
-        (mv (cons (change-vl-warning warning :fatalp t)
-                  (vl-warninglist-fix warnings))
-            nil))
-       ((mv ok errmsg type) (vl-datatype-exprtype datatype))
-       ((unless ok)
-        (mv (fatal :type :vl-index-typedecide-fail
-                   :msg "~a0: Signedness of datatype failed: ~s1"
-                   :args (list elem errmsg))
-            nil)))
-    (mv (ok) type))
-  ///
-  (defrule vl-index-typedecide-normalize-ctx/warnings
-    (implies (syntaxp (not (equal warnings ''nil)))
-             (equal (mv-nth 1 (vl-index-typedecide x ss elem warnings))
-                    (mv-nth 1 (vl-index-typedecide x ss elem nil))))))
-
-
-(define vl-partselect-typedecide ((x        vl-expr-p)
-                             (ss       vl-scopestack-p)
-                             (elem     vl-modelement-p "context")
-                             (warnings vl-warninglist-p))
-  :guard (not (equal (vl-expr-kind x) :atom))
-  :returns (mv (new-warnings vl-warninglist-p)
-               (type vl-maybe-exprtype-p))
-  (b* ((x (vl-expr-fix x))
-       (?elem (vl-modelement-fix elem))
-       ((mv warning datatype) (vl-partselect-expr-type x ss elem))
-       ((when warning)
-        (mv (cons (change-vl-warning warning :fatalp t)
-                  (vl-warninglist-fix warnings))
-            nil))
-       ((mv ok errmsg type) (vl-datatype-exprtype datatype))
-       ((unless ok)
-        (mv (fatal :type :vl-partselect-typedecide-fail
-                   :msg "~a0: Signedness of datatype failed: ~s1"
-                   :args (list elem errmsg))
-            nil)))
-    (mv (ok) type))
-  ///
-  (defrule vl-partselect-typedecide-normalize-ctx/warnings
-    (implies (syntaxp (not (equal warnings ''nil)))
-             (equal (mv-nth 1 (vl-partselect-typedecide x ss elem warnings))
-                    (mv-nth 1 (vl-partselect-typedecide x ss elem nil))))))
-
-
-(define vl-atom-typedecide
-  :parents (vl-expr-typedecide)
-  :short "Effectively computes the \"self-determined\" type of an atom."
-  ((x        vl-expr-p)
-   (ss vl-scopestack-p)
-   (elem     vl-modelement-p)
-   (warnings vl-warninglist-p))
-  :guard (vl-atom-p x)
-  :returns (mv (warnings vl-warninglist-p)
-               (type (and (vl-maybe-exprtype-p type)
-                          (equal (vl-exprtype-p type) (if type t nil)))))
-
-  :long "<p><b>Warning</b>: this function should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>We compute what the type of the atom @('x') would be if it were in a
-self-determined location.  Another way to look at this function is as an
-extension of \"origtype\" from constint/weirdint atoms to include identifiers
-and strings.</p>
-
-<p>The @('type') we return is a @(see vl-maybe-exprtype-p).  Similarly to @(see
-vl-atom-selfsize), we might fail and return @('nil') for the type, perhaps
-producing some warnings.</p>"
-
-  (b* ((elem (vl-modelement-fix elem))
-       (guts (vl-atom->guts x))
-
-       ((when (vl-fast-constint-p guts))
-        (mv (ok) (vl-constint->origtype guts)))
-
-       ((when (vl-fast-weirdint-p guts))
-        (mv (ok) (vl-weirdint->origtype guts)))
-
-       ((when (vl-fast-string-p guts))
-        (mv (ok) :vl-unsigned))
-
-       ((unless (vl-fast-id-p guts))
-        ;; Other kinds of atoms don't get a type.
-        (mv (ok) nil)))
-
-    (vl-hidexpr-typedecide x ss elem warnings))
-
-  ///
-  (defrule warning-irrelevance-of-vl-atom-typedecide
-    (let ((ret1 (vl-atom-typedecide x ss elem warnings))
-          (ret2 (vl-atom-typedecide x ss elem nil)))
-      (implies (syntaxp (not (equal warnings ''nil)))
-               (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))))
-
-
-
-
-(deflist vl-maybe-exprtype-list-p (x)
-  (vl-maybe-exprtype-p x))
-
-(defines vl-expr-typedecide-aux
-  :parents (vl-expr-typedecide)
-  :short "Core of computing expression signedness."
-
-  :long "<p><b>Warning</b>: this function should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>These are the same arguments as @(see vl-expr-typedecide) except for
-@('mode').  You should probably read @(see expression-sizing-minutia) to
-understand the valid modes:</p>
-
-<ul>
-
-<li>In @(':probably-wrong') mode, we treat reduction/logical operations as if
-they produce signed values when their argument is signed, and we allow the
-types of self-determined operands in conditional operators, shifts, and so
-forth to affect the resulting expression type.  We do not think this is how
-sizing is supposed to be done, but a Verilog implementation that was based on a
-reading of the specification might mistakenly do it this way.</li>
-
-<li>In @(':probably-right') mode, we try to behave like other Verilog systems
-and ignore the type of self-determined operands when computing the resulting
-types of expressions, and we also treat reduction/logical operations as if they
-produce unsigned values.</li>
-
-</ul>"
-
-  (define vl-expr-typedecide-aux ((x        vl-expr-p)
-                                  (ss vl-scopestack-p)
-                                  (elem     vl-modelement-p)
-                                  (warnings vl-warninglist-p)
-                                  (mode     (or (eq mode :probably-wrong)
-                                                (eq mode :probably-right))))
-    :verify-guards nil
-    :returns (mv (warnings vl-warninglist-p)
-                 (type     (and (vl-maybe-exprtype-p type)
-                                (equal (vl-exprtype-p type)
-                                       (if type t nil)))
-                           :hints ('(:in-theory (disable (:d vl-expr-typedecide-aux)
-                                                         (:d vl-exprlist-typedecide-aux))
-                                     :expand ((:free (mode)
-                                               (vl-expr-typedecide-aux
-                                                x ss elem warnings mode)))))))
-    :measure (vl-expr-count x)
-    :flag :expr
-    (b* ((x        (vl-expr-fix x))
-         (warnings (vl-warninglist-fix warnings))
-         (elem     (vl-modelement-fix elem))
-
-         ((when (vl-fast-atom-p x))
-          (vl-atom-typedecide x ss elem warnings))
-
-         ((when (vl-hidexpr-p x))
-          (vl-hidexpr-typedecide x ss elem warnings))
-
-         (op        (vl-nonatom->op x))
-         (args      (vl-nonatom->args x))
-         ((mv warnings arg-types)
-          (vl-exprlist-typedecide-aux args ss elem warnings mode)))
-
-      (case op
-
-        ((:vl-bitselect :vl-index)
-         (vl-index-typedecide x ss elem warnings))
-
-        ((:vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
-          :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon)
-         ;; These are actually always unsigned
-         (vl-partselect-typedecide x ss elem warnings))
-
-        (( ;; From Verilog-2005 5.5.1, bit-selects, part-selects,
-          ;; concatenations, and comparisons always produce unsigned results,
-          ;; no matter the signedness of their operands.
-          :vl-concat :vl-multiconcat
-          :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
-          :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
-
-          ;; SystemVerilog-2012 extensions: I believe (although it's hard to
-          ;; find good evidence in the spec to support this) that these are
-          ;; also producing 1-bit unsigned answers.
-          :vl-binary-wildneq :vl-binary-wildeq
-          )
-
-         (mv warnings :vl-unsigned))
-
-        ((:vl-unary-plus :vl-unary-minus)
-         ;; From 5.5.1, I believe these fall into the "all other operators"
-         ;; rule and just take on the signedness of their argument.
-         (mv warnings (first arg-types)))
-
-        ((:vl-unary-lognot :vl-unary-bitnot :vl-unary-bitand :vl-unary-bitor
-          :vl-unary-nand :vl-unary-nor :vl-unary-xor :vl-unary-xnor)
-         (cond ((eq mode :probably-right)
-                ;; We believe the result is always unsigned; see "minutia".
-                ;; If we ever decide this is not right, review the rules in
-                ;; oprewrite that introduce concatenations like !a -> {~(|a)}
-                ;; since they are not supposed to change signs.
-                (mv warnings :vl-unsigned))
-               (t
-                ;; Probably-wrong mode: we act like the operand type matters and
-                ;; treat this like a unary plus or minus.
-                (mv warnings (first arg-types)))))
-
-        ((:vl-binary-logand :vl-binary-logor :vl-implies :vl-equiv)
-         (cond ((eq mode :probably-right)
-                ;; We believe the result is always unsigned; see "minutia".
-                (mv warnings :vl-unsigned))
-               (t
-                ;; Probably wrong mode: we act like the operand types matter and
-                ;; treat this like a regular binary op.
-                (b* ((type1 (first arg-types))
-                     (type2 (second arg-types))
-                     (type  (and type1 type2 (vl-exprtype-max type1 type2))))
-                  (mv warnings type)))))
-
-        ((:vl-binary-plus :vl-binary-minus :vl-binary-times :vl-binary-div :vl-binary-rem
-          :vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor)
-         ;; Simple context-determined binary ops.
-         (b* ((type1 (first arg-types))
-              (type2 (second arg-types))
-              (type  (and type1 type2 (vl-exprtype-max type1 type2))))
-           (mv warnings type)))
-
-        ((:vl-binary-shr :vl-binary-shl :vl-binary-ashr :vl-binary-ashl :vl-binary-power)
-         (cond ((eq mode :probably-right)
-                ;; We believe the second op's type does NOT affect the result
-                ;; type; see "minutia"
-                (mv warnings (first arg-types)))
-               (t
-                ;; Probably-wrong mode: we act like the second op's type matters
-                ;; and treat this like a regular binary op.
-                (b* ((type1 (first arg-types))
-                     (type2 (second arg-types))
-                     (type  (and type1 type2 (vl-exprtype-max type1 type2))))
-                  (mv warnings type)))))
-
-        ((:vl-qmark)
-         (b* ((type1 (first arg-types))
-              (type2 (second arg-types))
-              (type3 (third arg-types)))
-           (cond ((eq mode :probably-right)
-                  ;; We believe the first op's type does NOT affect the result type;
-                  ;; see "minutia".
-                  (mv warnings (and type1 type2 type3
-                                    (vl-exprtype-max type2 type3))))
-                 (t
-                  ;; Probably-wrong mode: we allow the first op's type to affect the
-                  ;; result type.
-                  (mv warnings (and type1 type2 type3
-                                    (vl-exprtype-max type1 type2 type3)))))))
-
-        ((:vl-syscall)
-         (if (vl-$random-expr-p x)
-             (mv nil :vl-signed)
-           ;; Otherwise, not a supported system call.
-           (mv warnings nil)))
-
-        ((:vl-funcall)
-         ;; BOZO eventually add support for function calls.
-         (mv warnings nil))
-
-        ((:vl-index :vl-hid-dot :vl-scope
-
-          ;; BOZO these might not belong here, but it seems like the
-          ;; safest place to put them until they're implemented
-          :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
-          :vl-stream-left :vl-stream-right
-          :vl-stream-left-sized :vl-stream-right-sized
-          :vl-tagged :vl-binary-cast
-          )
-         ;; Should have handled these above.
-         (mv warnings nil))
-
-        ((:vl-mintypmax)
-         ;; I think it makes no sense to try to assign a type to these.
-         (mv warnings nil))
-
-        (otherwise
-         (mv warnings (impossible))))))
-
-  (define vl-exprlist-typedecide-aux ((x        vl-exprlist-p)
-                                      (ss vl-scopestack-p)
-                                      (elem     vl-modelement-p)
-                                      (warnings vl-warninglist-p)
-                                      (mode     (or (eq mode :probably-wrong)
-                                                    (eq mode :probably-right))))
-    :returns (mv (warnings vl-warninglist-p)
-                 (types    vl-maybe-exprtype-list-p
-                           :hints ('(:in-theory (disable (:d vl-expr-typedecide-aux)
-                                                         (:d vl-exprlist-typedecide-aux))
-                                     :expand ((vl-exprlist-typedecide-aux
-                                               x ss elem warnings mode))))))
-    :measure (vl-exprlist-count x)
-    :flag :list
-    (b* (((when (atom x))
-          (mv (ok) nil))
-         ((mv warnings car-type)
-          (vl-expr-typedecide-aux (car x) ss elem warnings mode))
-         ((mv warnings cdr-type)
-          (vl-exprlist-typedecide-aux (cdr x) ss elem warnings mode)))
-      (mv warnings (cons car-type cdr-type))))
-
-  ///
-  (local (in-theory (disable member-equal-when-member-equal-of-cdr-under-iff
-                             vl-warninglist-p-when-subsetp-equal
-                             set::double-containment
-                             arg1-exists-by-arity
-                             default-car
-                             default-cdr
-                             vl-exprlist-typedecide-aux
-                             vl-expr-typedecide-aux)))
-
-  (defrule vl-exprlist-typedecide-aux-when-atom
-    (implies (atom x)
-             (equal (vl-exprlist-typedecide-aux x ss elem warnings mode)
-                    (mv (ok) nil)))
-    :hints (("goal" :expand ((:free (mode) (vl-exprlist-typedecide-aux x ss elem warnings mode))))))
-
-  (defrule vl-exprlist-typedecide-aux-of-cons
-    (equal (vl-exprlist-typedecide-aux (cons a x) ss elem warnings mode)
-           (b* (((mv warnings car-type)
-                 (vl-expr-typedecide-aux a ss elem warnings mode))
-                ((mv warnings cdr-type)
-                 (vl-exprlist-typedecide-aux x ss elem warnings mode)))
-             (mv warnings (cons car-type cdr-type))))
-    :hints (("goal" :expand ((:free (mode) (vl-exprlist-typedecide-aux
-                                            (cons a x) ss elem warnings mode))))))
-
-  (defthm-vl-expr-typedecide-aux-flag
-    (defthm len-of-vl-exprlist-typedecide-aux
-      (equal (len (mv-nth 1 (vl-exprlist-typedecide-aux x ss elem warnings mode)))
-             (len x))
-      :hints ('(:expand ((:free (mode) (vl-exprlist-typedecide-aux x ss elem warnings mode)))))
-      :flag :list)
-    :skip-others t)
-
-  (defthm-vl-expr-typedecide-aux-flag
-    (defthm true-listp-of-vl-exprlist-typedecide-aux
-      (true-listp (mv-nth 1 (vl-exprlist-typedecide-aux x ss elem warnings mode)))
-      :rule-classes :type-prescription
-      :hints ('(:expand ((:free (mode) (vl-exprlist-typedecide-aux x ss elem warnings mode)))))
-      :flag :list)
-    :skip-others t)
-
-
-  (local (defthm member-equal-when-member-non-intersecting
-           (implies (and (syntaxp (quotep x))
-                         (member k y)
-                         (syntaxp (quotep y))
-                         (not (intersectp-equal x y)))
-                    (not (member k x)))
-           :hints ((set-reasoning))))
-  (local (defthm reduce-member-equal-when-not-member
-           (implies (and (syntaxp (quotep x))
-                         (not (member k y))
-                         (syntaxp (quotep y))
-                         (intersectp-equal x y))
-                    (iff (member k x)
-                         (member k (set-difference-equal x y))))
-           :hints ((set-reasoning))))
-  (local (defthm equal-when-member-non-member
-           (implies (and (syntaxp (quotep v))
-                         (member k x)
-                         (syntaxp (quotep x))
-                         (not (member v x)))
-                    (not (equal k v)))))
-  (local (defthm member-of-singleton
-           (iff (member a (cons x nil))
-                (equal a x))
-           :hints(("Goal" :in-theory (enable acl2::member-of-cons)))))
-  (local (defthm reduce-member-equal-when-not-equal
-           (implies (and (syntaxp (quotep x))
-                         (not (equal k v))
-                         (syntaxp (quotep v))
-                         (member v x))
-                    (iff (member k x)
-                         (member k (remove-equal v x))))
-           :hints ((set-reasoning))))
-
-  (verify-guards vl-expr-typedecide-aux
-    :hints(("Goal" :in-theory (e/d (vl-nonatom->op-forward
-                                    acl2::hons-assoc-equal-iff-member-alist-keys
-                                    vl-op-p)
-                                   (vl-op-p-of-vl-nonatom->op
-                                    acl2::alist-keys-member-hons-assoc-equal
-                                    (tau-system)))
-            :use VL-OP-P-OF-VL-NONATOM->OP)))
-
-  (local
-   (defthm-vl-expr-typedecide-aux-flag
-     ;; This is pretty subtle.  The induction scheme that the flag function would
-     ;; generate if we tried to directly use warnings and NIL isn't right in the
-     ;; list case.  We have to generalize this to an arbitrary warnings1 and
-     ;; warnings2.  Then, ACL2's induction heuristic is smart enough to get the
-     ;; right scheme, but only when we tell it to consider the flag function for
-     ;; both warnings1 and warnings2.  Ugh.  This took a long time to figure out.
-     (defthm w0
-       (let ((ret1 (vl-expr-typedecide-aux x ss elem warnings1 mode))
-             (ret2 (vl-expr-typedecide-aux x ss elem warnings2 mode)))
-         (equal (mv-nth 1 ret1)
-                (mv-nth 1 ret2)))
-       :rule-classes nil
-       :flag :expr)
-     (defthm w1
-       (let ((ret1 (vl-exprlist-typedecide-aux x ss elem warnings1 mode))
-             (ret2 (vl-exprlist-typedecide-aux x ss elem warnings2 mode)))
-         (equal (mv-nth 1 ret1)
-                (mv-nth 1 ret2)))
-       :rule-classes nil
-       :flag :list)
-     :hints(("Goal"
-             :do-not '(generalize fertilize)
-             :induct (and (vl-expr-typedecide-aux-flag flag x ss elem warnings1 mode)
-                          (vl-expr-typedecide-aux-flag flag x ss elem warnings2 mode))
-             :expand ((:free (mode) (vl-expr-typedecide-aux x ss elem warnings1 mode))
-                      (:free (mode) (vl-expr-typedecide-aux x ss elem warnings2 mode))
-                      (:free (mode) (vl-exprlist-typedecide-aux x ss elem warnings1 mode))
-                      (:free (mode) (vl-exprlist-typedecide-aux x ss elem warnings2 mode)))))))
-
-  (defrule warning-irrelevance-of-vl-expr-typedecide-aux
-    (let ((ret1 (vl-expr-typedecide-aux x ss elem warnings mode))
-          (ret2 (vl-expr-typedecide-aux x ss elem nil mode)))
-      (implies (syntaxp (not (equal warnings ''nil)))
-               (equal (mv-nth 1 ret1)
-                      (mv-nth 1 ret2))))
-    :use ((:instance w0 (warnings1 warnings) (warnings2 nil))))
-
-  (defrule warning-irrelevance-of-vl-exprlist-typedecide-aux
-    (let ((ret1 (vl-exprlist-typedecide-aux x ss elem warnings mode))
-          (ret2 (vl-exprlist-typedecide-aux x ss elem nil mode)))
-      (implies (syntaxp (not (equal warnings ''nil)))
-               (equal (mv-nth 1 ret1)
-                      (mv-nth 1 ret2))))
-    :use ((:instance w1 (warnings1 warnings) (warnings2 nil))))
-
-  (defrule symbolp-of-vl-expr-typedecide-aux
-    (symbolp (mv-nth 1 (vl-expr-typedecide-aux x ss elem warnings mode)))
-    :expand ((:free (warnings mode)
-              (vl-expr-typedecide-aux x ss elem warnings mode)))
-    :in-theory (enable (tau-system))
-    :rule-classes :type-prescription)
-
-  (deffixequiv-mutual vl-expr-typedecide-aux
-    :hints ('(:in-theory (disable (:d vl-expr-typedecide-aux)
-                                  (:d vl-exprlist-typedecide-aux)
-                                  warning-irrelevance-of-vl-exprlist-typedecide-aux
-                                  warning-irrelevance-of-vl-expr-typedecide-aux)
-              :expand ((:free (ss elem warnings mode)
-                        (vl-expr-typedecide-aux x ss elem warnings mode))
-                       (:free (mode)
-                        (vl-expr-typedecide-aux (vl-expr-fix x) ss elem warnings mode))
-                       (:free (ss elem warnings mode)
-                        (vl-exprlist-typedecide-aux x ss elem warnings mode))
-                       (:free (mode)
-                        (vl-exprlist-typedecide-aux (vl-exprlist-fix x) ss elem warnings mode))))
-            (and stable-under-simplificationp
-                 '(:expand ((vl-exprlist-fix x)))))))
-
-
-
-(define vl-expr-typedecide
-  :parents (vl-expr-size)
-  :short "Computation of expression signedness (main routine)."
-
-  ((x        vl-expr-p)
-   (ss vl-scopestack-p)
-   (elem     vl-modelement-p)
-   (warnings vl-warninglist-p))
-  :returns (mv (warnings vl-warninglist-p)
-               (type     (and (vl-maybe-exprtype-p type)
-                              (equal (vl-exprtype-p type) (if type t nil)))))
-
-  :long "<p><b>Warning</b>: this function should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>We determine the signedness of an expression.  This function must
-<b>only</b> be used on \"top-level\" and self-determined portions of
-expressions.  That is, consider an assignment like:</p>
-
-@({
-  assign w = {foo + bar, a + b} | (baz + 1) ;
-})
-
-<p>Here, it is legitimate to call @('vl-expr-typedecide') to determine the
-signs of:</p>
-
-<ul>
- <li>@('foo + bar'), because it is self-determined,</li>
- <li>@('a + b'), because it is self-determined, and</li>
- <li>@('{foo + bar, a + b} | (baz + 1)'), because it is top-level.</li>
-</ul>
-
-<p>But it is <b>not</b> legitimate to try to decide the sign of, @('baz + 1')
-in isolation, and doing so could yield an nonsensical result.  For instance, if
-@('baz') is signed then, by itself, @('baz + 1') looks like a signed addition.
-But concatenations are always unsigned, so in the larger context we can see
-that this addition is in fact unsigned.</p>
-
-<p>The @('sign') we return is only a @(see vl-maybe-exprtype-p).  We might
-return @('nil') for two reasons.  First, there could be some kind of actual
-error with the module or the expression, e.g., the use of a wire which is not
-declared; in these cases we add fatal @(see warnings).  But we may also
-encounter expressions whose type we do not know how to compute (e.g., perhaps
-the expression is an unsupported system call).  In such cases we just return
-@('nil') for the sign without adding any warnings.</p>"
-
-  (b* ((x    (vl-expr-fix x))
-       (elem (vl-modelement-fix elem))
-       ((mv warnings right-type) (vl-expr-typedecide-aux x ss elem warnings :probably-right))
-       ((mv warnings wrong-type) (vl-expr-typedecide-aux x ss elem warnings :probably-wrong))
-       (warnings
-        (if (eq right-type wrong-type)
-            warnings
-          (warn :type :vl-warn-vague-spec
-                :msg "~a0: expression ~a1 has a type which is not necessarily ~
-                      clear according to the discussion in the Verilog-2005 ~
-                      standard.  We believe its type should be ~s2, but think ~
-                      it would be easy for other Verilog systems to ~
-                      mistakenly interpret the expression as ~s3.  To reduce ~
-                      any potential confusion, you may wish to rewrite this ~
-                      expression to make its signedness unambiguous.  Some ~
-                      typical causes of signedness are plain decimal numbers ~
-                      like 10, and the use of integer variables instead of ~
-                      regs."
-                :args (list elem x right-type wrong-type)))))
-    (mv warnings right-type))
-
-  ///
-  (defrule warning-irrelevance-of-vl-expr-typedecide
-    (let ((ret1 (vl-expr-typedecide x ss elem warnings))
-          (ret2 (vl-expr-typedecide x ss elem nil)))
-      (implies (syntaxp (not (equal warnings ''nil)))
-               (equal (mv-nth 1 ret1)
-                      (mv-nth 1 ret2))))))
+      :flag :expr)
+    (defthm vl-exprlist-unsigned-when-size-zero-aux
+      (b* (((mv & sizes) (vl-exprlist-selfsize x ss ctx1 warnings1))
+           ((mv & types) (vl-exprlist-typedecide-aux x ss ctx2 warnings2 mode)))
+        (vl-unsigned-when-size-zero-lst sizes types))
+      :hints ('(:expand ((:free (ctx warnings)
+                          (vl-exprlist-selfsize x ss ctx warnings))
+                         ;; (:free (ctx warnings mode)
+                         ;;  (vl-exprlist-typedecide-aux x ss ctx warnings mode))
+                         (:free (a b c d)
+                          (vl-unsigned-when-size-zero-lst
+                           (cons a b) (cons c d))))))
+      :flag :list)))
+
+               
 
 
 
@@ -2141,7 +560,7 @@ the expression is an unsupported system call).  In such cases we just return
   ((x          vl-expr-p        "An expression that we may need to zero-extend.")
    (finalwidth natp             "Width we want to expand @('x') to.  Must be at least
                                  as large as the final width of @('x').")
-   (elem       vl-modelement-p  "Context for warnings.")
+   (ctx       vl-context-p  "Context for warnings.")
    (warnings   vl-warninglist-p "Ordinary @(see warnings) accumulator."))
   :guard (and (vl-expr->finalwidth x)
               (eq (vl-expr->finaltype x) :vl-unsigned))
@@ -2158,7 +577,7 @@ we are expanding @('foo') from 3 to 7 bits, we produce a new expression like
 unchanged.</p>"
 
   (b* ((x            (vl-expr-fix x))
-       (elem         (vl-modelement-fix elem))
+       (ctx         (vl-context-fix ctx))
        (finalwidth   (lnfix finalwidth))
        (x.finalwidth (lnfix (vl-expr->finalwidth x)))
 
@@ -2167,7 +586,7 @@ unchanged.</p>"
             (fatal :type :vl-programming-error
                    :msg "~a0: trying to zero-extend ~a1, which has width ~x2, ~
                          to ~x3 bits??? Serious bug in our sizing code."
-                   :args (list elem x x.finalwidth finalwidth))
+                   :args (list ctx x x.finalwidth finalwidth))
             x))
 
        ((when (eql x.finalwidth finalwidth))
@@ -2193,28 +612,28 @@ unchanged.</p>"
     (mv t (ok) concat))
   ///
   (defrule warning-irrelevance-of-vl-expandsizes-zeroextend
-    (let ((ret1 (vl-expandsizes-zeroextend x finalwidth elem warnings))
-          (ret2 (vl-expandsizes-zeroextend x finalwidth elem nil)))
-      (implies (syntaxp (not (equal warnings ''nil)))
+    (let ((ret1 (vl-expandsizes-zeroextend x finalwidth ctx warnings))
+          (ret2 (vl-expandsizes-zeroextend x finalwidth nil nil)))
+      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
                (and (equal (mv-nth 0 ret1) (mv-nth 0 ret2))
                     (equal (mv-nth 2 ret1) (mv-nth 2 ret2))))))
 
   (defrule vl-expr->finalwidth-of-vl-expandsizes-zeroextend
-    (implies (and (mv-nth 0 (vl-expandsizes-zeroextend x finalwidth elem warnings))
+    (implies (and (mv-nth 0 (vl-expandsizes-zeroextend x finalwidth ctx warnings))
                   (force (vl-expr->finalwidth x))
                   (force (equal (vl-expr->finaltype x) :vl-unsigned)))
              (equal (vl-expr->finalwidth
-                     (mv-nth 2 (vl-expandsizes-zeroextend x finalwidth elem warnings)))
+                     (mv-nth 2 (vl-expandsizes-zeroextend x finalwidth ctx warnings)))
                     (nfix finalwidth))))
 
   (defrule no-change-loser-of-vl-expandsizes-zeroextend
-    (let ((ret (vl-expandsizes-zeroextend x finalwidth elem warnings)))
+    (let ((ret (vl-expandsizes-zeroextend x finalwidth ctx warnings)))
       (implies (not (mv-nth 0 ret))
                (equal (mv-nth 2 ret)
                       (vl-expr-fix x)))))
 
   (defrule vl-expr->finaltype-of-vl-expandsizes-zeroextend
-    (let ((ret (vl-expandsizes-zeroextend x finalwidth elem warnings)))
+    (let ((ret (vl-expandsizes-zeroextend x finalwidth ctx warnings)))
       (implies (and (mv-nth 0 ret)
                     (force (vl-expr->finalwidth x))
                     (force (equal (vl-expr->finaltype x) :vl-unsigned)))
@@ -2222,7 +641,7 @@ unchanged.</p>"
                       :vl-unsigned))))
 
   (defrule vl-expr-welltyped-p-of-vl-expandsizes-zeroextend
-    (let ((ret (vl-expandsizes-zeroextend x finalwidth elem warnings)))
+    (let ((ret (vl-expandsizes-zeroextend x finalwidth ctx warnings)))
       (implies (and (mv-nth 0 ret)
                     (force (vl-expr-welltyped-p x))
                     (force (vl-expr->finalwidth x))
@@ -2314,7 +733,7 @@ integer atom."
   ((x          vl-expr-p)
    (finalwidth natp)
    (finaltype  vl-exprtype-p)
-   (elem       vl-modelement-p)
+   (ctx       vl-context-p)
    (warnings   vl-warninglist-p))
   :guard (and (vl-atom-p x)
               (vl-fast-constint-p (vl-atom->guts x)))
@@ -2393,7 +812,7 @@ and the final result is @('2').</p>"
   ;; BOZO can we push the sanity checks into the guard?
 
   (b* ((x          (vl-expr-fix x))
-       (elem       (vl-modelement-fix elem))
+       (ctx       (vl-context-fix ctx))
        (finalwidth (lnfix finalwidth))
        (finaltype  (vl-exprtype-fix finaltype))
 
@@ -2407,7 +826,7 @@ and the final result is @('2').</p>"
             (fatal :type :vl-programming-error
                    :msg "~a0: origwidth > finalwidth when expanding ~a1. ~
                            This indicates a serious bug in our sizing code."
-                   :args (list elem x))
+                   :args (list ctx x))
             x))
 
        ((unless (or (eq guts.origtype finaltype)
@@ -2420,7 +839,7 @@ and the final result is @('2').</p>"
                    :msg "~a0: origtype is ~s1 but finaltype is ~s2 when ~
                            expanding ~a3.  This indicates a serious bug in ~
                            our typing code."
-                   :args (list elem guts.origtype finaltype x))
+                   :args (list ctx guts.origtype finaltype x))
             x))
 
        ((when (= guts.origwidth finalwidth))
@@ -2483,24 +902,24 @@ and the final result is @('2').</p>"
                         differ between Verilog implementations that have ~
                         different integer sizes.  Adding an explicit size to ~
                         this number is recommended.")
-              :args (list elem x))))
+              :args (list ctx x))))
     (mv t warnings new-x))
   ///
   (defrule warning-irrelevance-of-vl-constint-atom-expandsizes
-    (let ((ret1 (vl-constint-atom-expandsizes x finalwidth finaltype elem warnings))
-          (ret2 (vl-constint-atom-expandsizes x finalwidth finaltype elem nil)))
-      (implies (syntaxp (not (equal warnings ''nil)))
+    (let ((ret1 (vl-constint-atom-expandsizes x finalwidth finaltype ctx warnings))
+          (ret2 (vl-constint-atom-expandsizes x finalwidth finaltype nil nil)))
+      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
                (and (equal (mv-nth 0 ret1) (mv-nth 0 ret2))
                     (equal (mv-nth 2 ret1) (mv-nth 2 ret2))))))
 
   (defrule no-change-loserp-of-vl-constint-atom-expandsizes
-    (let ((ret (vl-constint-atom-expandsizes x finalwidth finaltype elem warnings)))
+    (let ((ret (vl-constint-atom-expandsizes x finalwidth finaltype ctx warnings)))
       (implies (not (mv-nth 0 ret))
                (equal (mv-nth 2 ret)
                       (vl-expr-fix x)))))
 
   (defrule vl-expr-welltyped-p-of-vl-constint-atom-expandsizes
-    (let ((ret (vl-constint-atom-expandsizes x finalwidth finaltype elem warnings)))
+    (let ((ret (vl-constint-atom-expandsizes x finalwidth finaltype ctx warnings)))
       (implies (and (mv-nth 0 ret)
                     (force (vl-atom-p x))
                     (force (vl-constint-p (vl-atom->guts x))))
@@ -2508,7 +927,7 @@ and the final result is @('2').</p>"
     :enable (vl-atom-welltyped-p vl-expr-welltyped-p))
 
   (defrule vl-expr->finalwidth-of-vl-constint-atom-expandsizes
-    (let ((ret (vl-constint-atom-expandsizes x finalwidth finaltype elem warnings)))
+    (let ((ret (vl-constint-atom-expandsizes x finalwidth finaltype ctx warnings)))
       (implies (and (mv-nth 0 ret)
                     (force (vl-atom-p x))
                     (force (vl-constint-p (vl-atom->guts x))))
@@ -2516,7 +935,7 @@ and the final result is @('2').</p>"
                       (nfix finalwidth)))))
 
   (defrule vl-expr->finaltype-of-vl-constint-atom-expandsizes
-    (let ((ret (vl-constint-atom-expandsizes x finalwidth finaltype elem warnings)))
+    (let ((ret (vl-constint-atom-expandsizes x finalwidth finaltype ctx warnings)))
       (implies (and (mv-nth 0 ret)
                     (force (vl-atom-p x))
                     (force (vl-constint-p (vl-atom->guts x))))
@@ -2533,7 +952,7 @@ integer atom."
   ((x          vl-expr-p)
    (finalwidth natp)
    (finaltype  vl-exprtype-p)
-   (elem       vl-modelement-p)
+   (ctx       vl-context-p)
    (warnings   vl-warninglist-p))
   :guard (and (vl-atom-p x)
               (vl-fast-weirdint-p (vl-atom->guts x)))
@@ -2547,7 +966,7 @@ integer atom."
        (guts       (vl-atom->guts x))
        (finalwidth (lnfix finalwidth))
        (finaltype  (vl-exprtype-fix finaltype))
-       (elem       (vl-modelement-fix elem))
+       (ctx       (vl-context-fix ctx))
 
        ((vl-weirdint guts) guts)
 
@@ -2558,7 +977,7 @@ integer atom."
             (fatal :type :vl-programming-error
                    :msg "~a0: origwidth > finalwidth when expanding ~a1. This ~
                          indicates a serious bug in our sizing code."
-                   :args (list elem x))
+                   :args (list ctx x))
             x))
 
        ((unless (or (eq guts.origtype finaltype)
@@ -2571,7 +990,7 @@ integer atom."
                    :msg "~a0: origtype is ~s1 but finaltype is ~s2 when ~
                          expanding ~a3.  This indicates a serious bug in our ~
                          typing code."
-                   :args (list elem guts.origtype finaltype x))
+                   :args (list ctx guts.origtype finaltype x))
             x))
 
        ((when (= guts.origwidth finalwidth))
@@ -2641,25 +1060,25 @@ integer atom."
                       Verilog implementations that have different integer ~
                       sizes.  Adding an explicit size to this number is ~
                       recommended.")
-              :args (list elem x))))
+              :args (list ctx x))))
 
     (mv t warnings new-x))
   ///
   (defrule warning-irrelevance-of-vl-weirdint-atom-expandsizes
-    (let ((ret1 (vl-weirdint-atom-expandsizes x finalwidth finaltype elem warnings))
-          (ret2 (vl-weirdint-atom-expandsizes x finalwidth finaltype elem nil)))
-      (implies (syntaxp (not (equal warnings ''nil)))
+    (let ((ret1 (vl-weirdint-atom-expandsizes x finalwidth finaltype ctx warnings))
+          (ret2 (vl-weirdint-atom-expandsizes x finalwidth finaltype nil nil)))
+      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
                (and (equal (mv-nth 0 ret1) (mv-nth 0 ret2))
                     (equal (mv-nth 2 ret1) (mv-nth 2 ret2))))))
 
   (defrule no-change-loserp-of-vl-weirdint-atom-expandsizes
-    (let ((ret (vl-weirdint-atom-expandsizes x finalwidth finaltype elem warnings)))
+    (let ((ret (vl-weirdint-atom-expandsizes x finalwidth finaltype ctx warnings)))
       (implies (not (mv-nth 0 ret))
                (equal (mv-nth 2 ret)
                       (vl-expr-fix x)))))
 
   (defrule vl-expr-welltyped-p-of-vl-weirdint-atom-expandsizes
-    (let ((ret (vl-weirdint-atom-expandsizes x finalwidth finaltype elem warnings)))
+    (let ((ret (vl-weirdint-atom-expandsizes x finalwidth finaltype ctx warnings)))
       (implies (and (mv-nth 0 ret)
                     (force (vl-atom-p x))
                     (force (vl-weirdint-p (vl-atom->guts x))))
@@ -2667,7 +1086,7 @@ integer atom."
     :enable (vl-atom-welltyped-p vl-expr-welltyped-p))
 
   (defrule vl-expr->finalwidth-of-vl-weirdint-atom-expandsizes
-    (let ((ret (vl-weirdint-atom-expandsizes x finalwidth finaltype elem warnings)))
+    (let ((ret (vl-weirdint-atom-expandsizes x finalwidth finaltype ctx warnings)))
       (implies (and (mv-nth 0 ret)
                     (force (vl-atom-p x))
                     (force (vl-weirdint-p (vl-atom->guts x))))
@@ -2675,7 +1094,7 @@ integer atom."
                       (lnfix finalwidth)))))
 
   (defrule vl-expr->finaltype-of-vl-weirdint-atom-expandsizes
-    (let ((ret (vl-weirdint-atom-expandsizes x finalwidth finaltype elem warnings)))
+    (let ((ret (vl-weirdint-atom-expandsizes x finalwidth finaltype ctx warnings)))
       (implies (and (mv-nth 0 ret)
                     (force (vl-atom-p x))
                     (force (vl-weirdint-p (vl-atom->guts x))))
@@ -2684,7 +1103,7 @@ integer atom."
 
 
 (local (defthm selfsize-of-select-plusminus-implies-resolved
-         (implies (and (mv-nth 1 (vl-expr-selfsize x ss elem warnings))
+         (implies (and (mv-nth 1 (vl-expr-selfsize x ss ctx warnings))
                        (not (vl-atom-p x))
                        (member (vl-nonatom->op x)
                                '(:vl-select-pluscolon
@@ -2693,10 +1112,11 @@ integer atom."
          :hints(("Goal" :in-theory (enable vl-expr-selfsize
                                            vl-partselect-selfsize
                                            vl-partselect-expr-type
+                                           vl-partselect-type-top-dimension-replacement
                                            acl2::member-of-cons)))))
 
 (local (defthm selfsize-of-select-colon-implies-resolved
-         (implies (and (mv-nth 1 (vl-expr-selfsize x ss elem warnings))
+         (implies (and (mv-nth 1 (vl-expr-selfsize x ss ctx warnings))
                        (not (vl-atom-p x))
                        (eq (vl-nonatom->op x) :vl-select-colon))
                   (and (vl-expr-resolved-p (second (vl-nonatom->args x)))
@@ -2704,6 +1124,7 @@ integer atom."
          :hints(("Goal" :in-theory (enable vl-expr-selfsize
                                            vl-partselect-selfsize
                                            vl-partselect-expr-type
+                                           vl-partselect-type-top-dimension-replacement
                                            acl2::member-of-cons)))))
 
 (define vl-hidexpr-expandsizes
@@ -2715,7 +1136,7 @@ identifier or HID."
    (finalwidth  natp)
    (finaltype   vl-exprtype-p)
    (ss vl-scopestack-p)
-   (elem        vl-modelement-p)
+   (ctx        vl-context-p)
    (warnings    vl-warninglist-p))
 
   :returns (mv (successp booleanp :rule-classes :type-prescription)
@@ -2725,12 +1146,12 @@ identifier or HID."
   ;; BOZO can we push the sanity checks into the guard?
 
   (b* ((x          (vl-expr-fix x))
-       (elem       (vl-modelement-fix elem))
+       (ctx       (vl-context-fix ctx))
        (finalwidth (lnfix finalwidth))
        (finaltype  (vl-exprtype-fix finaltype))
 
-       ((mv warnings origwidth) (vl-expr-selfsize x ss elem warnings))
-       ((mv warnings origtype)  (vl-expr-typedecide x ss elem warnings))
+       ((mv warnings origwidth) (vl-expr-selfsize x ss ctx warnings))
+       ((mv warnings origtype)  (vl-expr-typedecide x ss ctx warnings))
 
        ((unless (and origwidth origtype))
         (mv nil
@@ -2738,7 +1159,7 @@ identifier or HID."
                    :msg "~a0: expected to only try to expand sizes for atoms ~
                          whose sizes types can be successfully determined, ~
                          but we failed to determine the size or type of ~a1."
-                   :args (list elem x))
+                   :args (list ctx x))
             x))
 
        ((when (> origwidth finalwidth))
@@ -2748,7 +1169,7 @@ identifier or HID."
             (fatal :type :vl-programming-error
                    :msg "~a0: origwidth > finalwidth when expanding ~a1. This ~
                          indicates a serious bug in our sizing code."
-                   :args (list elem x))
+                   :args (list ctx x))
             x))
 
        ((unless (or (eq origtype finaltype)
@@ -2761,7 +1182,7 @@ identifier or HID."
                    :msg "~a0: origtype is ~s1 but finaltype is ~s2 when ~
                          expanding ~a3.  This indicates a serious bug in our ~
                          typing code."
-                   :args (list elem origtype finaltype x))
+                   :args (list ctx origtype finaltype x))
             x))
 
 ; BOZO This discussion needs to move into the basic documentation for
@@ -2800,55 +1221,22 @@ identifier or HID."
                                    :finaltype finaltype))))
     (mv t (ok) new-x))
   ///
-  (defrule warning-irrelevance-of-vl-hidexpr-expandsizes
-    (let ((ret1 (vl-hidexpr-expandsizes x finalwidth finaltype ss elem warnings))
-          (ret2 (vl-hidexpr-expandsizes x finalwidth finaltype ss elem nil)))
-      (implies (syntaxp (not (equal warnings ''nil)))
-               (and (equal (mv-nth 0 ret1) (mv-nth 0 ret2))
-                    (equal (mv-nth 2 ret1) (mv-nth 2 ret2))))))
 
   (defrule no-change-loserp-of-vl-hidexpr-expandsizes
     (let ((ret (vl-hidexpr-expandsizes x finalwidth finaltype ss
-                                      elem warnings)))
+                                      ctx warnings)))
       (implies (not (mv-nth 0 ret))
                (equal (mv-nth 2 ret)
                       (vl-expr-fix x)))))
 
   (local (defthm vl-expr-selfsize-of-idexpr
-           (b* (((mv & size) (vl-expr-selfsize x ss elem warnings)))
+           (b* (((mv & size) (vl-expr-selfsize x ss ctx warnings)))
              (implies (vl-idexpr-p x)
                       (not (equal size 0))))
            :hints(("Goal" :in-theory (enable vl-expr-selfsize
                                              vl-idexpr-p
-                                             vl-atom-selfsize)))))
-
-  (local (defthm vl-expr-selfsize-of-hidexpr
-           (b* (((mv & size) (vl-expr-selfsize x ss elem warnings)))
-             (implies (and (vl-hidexpr-p x)
-                           (not (vl-atom-p x)))
-                      (not (equal size 0))))
-           :hints(("Goal" :in-theory (enable vl-expr-selfsize
-                                             vl-hidexpr-selfsize)))))
-
-  (local (defthm vl-expr-selfsize-of-index
-           (b* (((mv & size) (vl-expr-selfsize x ss elem warnings)))
-             (implies (and (not (vl-atom-p x))
-                           (member (vl-nonatom->op x) '(:vl-index
-                                                 :vl-select-colon
-                                                 :vl-select-pluscolon
-                                                 :vl-select-minuscolon)))
-                      (not (equal size 0))))
-           :hints(("Goal" :in-theory (enable acl2::member-of-cons
-                                             vl-partselect-selfsize
-                                             vl-index-selfsize
-                                             vl-hidexpr-selfsize)
-                   :expand ((vl-expr-selfsize x ss elem nil))))))
-
-  (local (defthm vl-index-expr-p-when-hidexpr-p
-           (implies (vl-hidexpr-p x)
-                    (vl-index-expr-p x))
-           :hints(("Goal" :in-theory (e/d (vl-hidexpr-p vl-index-expr-p vl-hidindex-p)
-                                          ((force)))))))
+                                             vl-atom-selfsize
+                                             tag-reasoning)))))
 
   (local (defthm hidexpr-ops
            (implies (and (vl-hidexpr-p x)
@@ -2857,8 +1245,46 @@ identifier or HID."
            :hints(("Goal" :in-theory (enable vl-hidexpr-p vl-hidindex-p
                                              acl2::member-of-cons)))))
 
+  (local (defthm hidexpr-ops-extra
+           (implies (and (vl-hidexpr-p x)
+                         (not (equal (vl-expr-kind x) :atom)))
+                    (member (vl-nonatom->op x) '(:vl-hid-dot :vl-index :vl-bitselect)))
+           :hints(("Goal" :in-theory (enable vl-hidexpr-p vl-hidindex-p
+                                             acl2::member-of-cons)))))
+
+  (local (defthm vl-expr-selfsize-of-hidexpr
+           (b* (((mv & size) (vl-expr-selfsize x ss ctx warnings)))
+             (implies (and (vl-hidexpr-p x)
+                           (not (vl-atom-p x)))
+                      (not (equal size 0))))
+           :hints(("Goal" :in-theory (enable vl-expr-selfsize
+                                             vl-hidexpr-selfsize)
+                   :expand ((vl-expr-selfsize x ss ctx nil))))))
+
+  (local (defthm vl-expr-selfsize-of-index
+           (b* (((mv & size) (vl-expr-selfsize x ss ctx warnings)))
+             (implies (and (not (vl-atom-p x))
+                           (member (vl-nonatom->op x) '(:vl-index
+                                                        :vl-select-colon
+                                                        :vl-select-pluscolon
+                                                        :vl-select-minuscolon)))
+                      (not (equal size 0))))
+           :hints(("Goal" :in-theory (enable acl2::member-of-cons
+                                             vl-partselect-selfsize
+                                             vl-index-selfsize
+                                             vl-hidexpr-selfsize)
+                   :expand ((:Free (ctx) (vl-expr-selfsize x ss ctx nil)))))))
+
+  (local (defthm vl-index-expr-p-when-hidexpr-p
+           (implies (vl-hidexpr-p x)
+                    (vl-index-expr-p x))
+           :hints(("Goal" :in-theory (e/d (vl-hidexpr-p vl-index-expr-p vl-hidindex-p)
+                                          ((force)))))))
+
+
+
   (defrule vl-expr-welltyped-p-of-vl-hidexpr-expandsizes
-    (let ((ret (vl-hidexpr-expandsizes x finalwidth finaltype ss elem warnings)))
+    (let ((ret (vl-hidexpr-expandsizes x finalwidth finaltype ss ctx warnings)))
       (implies (and (mv-nth 0 ret)
                     (vl-idexpr-p x))
                (vl-expr-welltyped-p (mv-nth 2 ret))))
@@ -2870,11 +1296,18 @@ identifier or HID."
              vl-index-expr-p
              vl-expr-welltyped-p))
 
+  (defrule warning-irrelevance-of-vl-hidexpr-expandsizes
+    (let ((ret1 (vl-hidexpr-expandsizes x finalwidth finaltype ss ctx warnings))
+          (ret2 (vl-hidexpr-expandsizes x finalwidth finaltype ss nil nil)))
+      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
+               (and (equal (mv-nth 0 ret1) (mv-nth 0 ret2))
+                    (equal (mv-nth 2 ret1) (mv-nth 2 ret2))))))
+
   
 
 
   ;; (defrule vl-expr-welltyped-p-of-vl-hidexpr-expandsizes-unresolved-index
-  ;;   (let ((ret (vl-hidexpr-expandsizes x finalwidth finaltype ss elem warnings)))
+  ;;   (let ((ret (vl-hidexpr-expandsizes x finalwidth finaltype ss ctx warnings)))
   ;;     (implies (and (mv-nth 0 ret)
   ;;                   (not (vl-atom-p x))
   ;;                   (member (vl-nonatom->op x) '(:vl-index
@@ -2887,13 +1320,13 @@ identifier or HID."
   ;;            acl2::member-of-cons))
 
   (defrule vl-expr->finalwidth-of-vl-hidexpr-expandsizes
-    (let ((ret (vl-hidexpr-expandsizes x finalwidth finaltype ss elem warnings)))
+    (let ((ret (vl-hidexpr-expandsizes x finalwidth finaltype ss ctx warnings)))
       (implies (mv-nth 0 ret)
                (equal (vl-expr->finalwidth (mv-nth 2 ret))
                       (nfix finalwidth)))))
 
   (defrule vl-expr->finaltype-of-vl-hidexpr-expandsizes
-    (let ((ret (vl-hidexpr-expandsizes x finalwidth finaltype ss elem warnings)))
+    (let ((ret (vl-hidexpr-expandsizes x finalwidth finaltype ss ctx warnings)))
       (implies (mv-nth 0 ret)
                (equal (vl-expr->finaltype (mv-nth 2 ret))
                       (vl-exprtype-fix finaltype))))))
@@ -2907,7 +1340,7 @@ integer atom."
   ((x          vl-expr-p)
    (finalwidth natp)
    (finaltype  vl-exprtype-p)
-   (elem       vl-modelement-p)
+   (ctx       vl-context-p)
    (warnings   vl-warninglist-p))
   :guard (and (vl-atom-p x)
               (vl-fast-string-p (vl-atom->guts x)))
@@ -2920,7 +1353,7 @@ integer atom."
   (b* ((x          (vl-expr-fix x))
        (finalwidth (lnfix finalwidth))
        (finaltype  (vl-exprtype-fix finaltype))
-       (elem       (vl-modelement-fix elem))
+       (ctx       (vl-context-fix ctx))
 
        (guts (vl-atom->guts x))
        ((vl-string guts) guts)
@@ -2934,7 +1367,7 @@ integer atom."
             (fatal :type :vl-programming-error
                    :msg "~a0: origwidth > finalwidth when expanding ~a1. This ~
                          indicates a serious bug in our sizing code."
-                   :args (list elem x))
+                   :args (list ctx x))
             x))
 
        ((unless (eq finaltype :vl-unsigned))
@@ -2944,7 +1377,7 @@ integer atom."
             (fatal :type :vl-programming-error
                    :msg "~a0: finaltype is ~s1 when expanding ~a2.  This ~
                          indicates a serious bug in our sizing/typing code."
-                   :args (list elem finaltype x))
+                   :args (list ctx finaltype x))
             x))
 
        ;; Otherwise, everything is fine.  The finalwidth that we want is at
@@ -2959,7 +1392,7 @@ integer atom."
                               :finalwidth origwidth
                               :finaltype :vl-unsigned))
        ((mv successp warnings new-x)
-        (vl-expandsizes-zeroextend inner finalwidth elem warnings))
+        (vl-expandsizes-zeroextend inner finalwidth ctx warnings))
 
        ((unless successp)
         (mv nil warnings x)))
@@ -2968,20 +1401,20 @@ integer atom."
 
   ///
   (defrule warning-irrelevance-of-vl-string-atom-expandsizes
-    (let ((ret1 (vl-string-atom-expandsizes x finalwidth finaltype elem warnings))
-          (ret2 (vl-string-atom-expandsizes x finalwidth finaltype elem nil)))
-      (implies (syntaxp (not (equal warnings ''nil)))
+    (let ((ret1 (vl-string-atom-expandsizes x finalwidth finaltype ctx warnings))
+          (ret2 (vl-string-atom-expandsizes x finalwidth finaltype nil nil)))
+      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
                (and (equal (mv-nth 0 ret1) (mv-nth 0 ret2))
                     (equal (mv-nth 2 ret1) (mv-nth 2 ret2))))))
 
   (defrule no-change-loserp-of-vl-string-atom-expandsizes
-    (let ((ret (vl-string-atom-expandsizes x finalwidth finaltype elem warnings)))
+    (let ((ret (vl-string-atom-expandsizes x finalwidth finaltype ctx warnings)))
       (implies (not (mv-nth 0 ret))
                (equal (mv-nth 2 ret)
                       (vl-expr-fix x)))))
 
   (defrule vl-expr-welltyped-p-of-vl-string-atom-expandsizes
-    (let ((ret (vl-string-atom-expandsizes x finalwidth finaltype elem warnings)))
+    (let ((ret (vl-string-atom-expandsizes x finalwidth finaltype ctx warnings)))
       (implies (and (mv-nth 0 ret)
                     (force (vl-atom-p x))
                     (force (vl-string-p (vl-atom->guts x))))
@@ -2989,7 +1422,7 @@ integer atom."
     :enable (vl-atom-welltyped-p vl-expr-welltyped-p))
 
   (defrule vl-expr->finalwidth-of-vl-string-atom-expandsizes
-    (let ((ret (vl-string-atom-expandsizes x finalwidth finaltype elem warnings)))
+    (let ((ret (vl-string-atom-expandsizes x finalwidth finaltype ctx warnings)))
       (implies (and (mv-nth 0 ret)
                     (force (vl-atom-p x))
                     (force (vl-string-p (vl-atom->guts x))))
@@ -2997,7 +1430,7 @@ integer atom."
                       (nfix finalwidth)))))
 
   (defrule vl-expr->finaltype-of-vl-string-atom-expandsizes
-    (let ((ret (vl-string-atom-expandsizes x finalwidth finaltype elem warnings)))
+    (let ((ret (vl-string-atom-expandsizes x finalwidth finaltype ctx warnings)))
       (implies (and (mv-nth 0 ret)
                     (force (vl-atom-p x))
                     (force (vl-string-p (vl-atom->guts x))))
@@ -3012,7 +1445,7 @@ integer atom."
    (finalwidth natp)
    (finaltype  vl-exprtype-p)
    (ss vl-scopestack-p)
-   (elem       vl-modelement-p)
+   (ctx       vl-context-p)
    (warnings   vl-warninglist-p))
   :guard (vl-atom-p x)
   :prepwork ((local (in-theory (enable vl-idexpr-p))))
@@ -3020,12 +1453,23 @@ integer atom."
                (warnings vl-warninglist-p)
                (new-x    vl-expr-p))
   (b* ((x    (vl-expr-fix x))
-       (elem (vl-modelement-fix elem))
+       (ctx (vl-context-fix ctx))
        (guts (vl-atom->guts x))
-       ((when (vl-fast-constint-p guts)) (vl-constint-atom-expandsizes x finalwidth finaltype elem warnings))
-       ((when (vl-fast-weirdint-p guts)) (vl-weirdint-atom-expandsizes x finalwidth finaltype elem warnings))
-       ((when (vl-fast-id-p guts))       (vl-hidexpr-expandsizes x finalwidth finaltype ss elem warnings))
-       ((when (vl-fast-string-p guts))   (vl-string-atom-expandsizes x finalwidth finaltype elem warnings)))
+       ((when (vl-fast-constint-p guts)) (vl-constint-atom-expandsizes x finalwidth finaltype ctx warnings))
+       ((when (vl-fast-weirdint-p guts)) (vl-weirdint-atom-expandsizes x finalwidth finaltype ctx warnings))
+       ((when (vl-fast-id-p guts))       (vl-hidexpr-expandsizes x finalwidth finaltype ss ctx warnings))
+       ((when (vl-fast-string-p guts))   (vl-string-atom-expandsizes x finalwidth finaltype ctx warnings))
+
+       ((when (eq (tag guts) :vl-extint))
+        (cond ((zp finalwidth)
+               (mv nil (warn :type :vl-expr-size-fail
+                             :msg "~a0: size 0 extint"
+                             :args (list ctx))
+                   x))
+              (t (mv t (ok) (change-vl-atom x
+                                            :finalwidth finalwidth
+                                            :finaltype (vl-exprtype-fix finaltype)))))))
+       
     ;; Otherwise, we shouldn't have tried to size this.
     (mv nil
         (fatal :type :vl-programming-error
@@ -3033,40 +1477,40 @@ integer atom."
                      whose self-sizes and types can be successfully ~
                      determined, but we are trying to expand an atom of type ~
                      ~x1: ~a2."
-               :args (list elem (tag guts) x))
+               :args (list ctx (tag guts) x))
         x))
   ///
   (local (in-theory (disable natp nfix)))
 
   (defrule warning-irrelevance-of-vl-atom-expandsizes
-    (let ((ret1 (vl-atom-expandsizes x finalwidth finaltype ss elem warnings))
-          (ret2 (vl-atom-expandsizes x finalwidth finaltype ss elem nil)))
-      (implies (syntaxp (not (equal warnings ''nil)))
+    (let ((ret1 (vl-atom-expandsizes x finalwidth finaltype ss ctx warnings))
+          (ret2 (vl-atom-expandsizes x finalwidth finaltype ss nil nil)))
+      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
                (and (equal (mv-nth 0 ret1) (mv-nth 0 ret2))
                     (equal (mv-nth 2 ret1) (mv-nth 2 ret2))))))
 
   (defrule no-change-loserp-of-vl-atom-expandsizes
-    (let ((ret (vl-atom-expandsizes x finalwidth finaltype ss elem warnings)))
+    (let ((ret (vl-atom-expandsizes x finalwidth finaltype ss ctx warnings)))
       (implies (not (mv-nth 0 ret))
                (equal (mv-nth 2 ret)
                       (vl-expr-fix x)))))
 
   (defrule vl-expr-welltyped-p-of-vl-atom-expandsizes
-    (let ((ret (vl-atom-expandsizes x finalwidth finaltype ss elem warnings)))
+    (let ((ret (vl-atom-expandsizes x finalwidth finaltype ss ctx warnings)))
       (implies (and (mv-nth 0 ret)
                     (force (vl-atom-p x)))
                (vl-expr-welltyped-p (mv-nth 2 ret))))
     :enable (vl-atom-welltyped-p vl-expr-welltyped-p))
 
   (defrule vl-expr->finalwidth-of-atom-expandsizes
-    (let ((ret (vl-atom-expandsizes x finalwidth finaltype ss elem warnings)))
+    (let ((ret (vl-atom-expandsizes x finalwidth finaltype ss ctx warnings)))
       (implies (and (mv-nth 0 ret)
                     (force (vl-atom-p x)))
                (equal (vl-expr->finalwidth (mv-nth 2 ret))
                       (nfix finalwidth)))))
 
   (defrule vl-expr->finaltype-of-atom-expandsizes
-    (let ((ret (vl-atom-expandsizes x finalwidth finaltype ss elem warnings)))
+    (let ((ret (vl-atom-expandsizes x finalwidth finaltype ss ctx warnings)))
       (implies (and (mv-nth 0 ret)
                     (force (vl-atom-p x)))
                (equal (vl-expr->finaltype (mv-nth 2 ret))
@@ -3079,12 +1523,12 @@ integer atom."
   :long "<p>See @(see expression-sizing-minutia); we warn about shifts by
 a signed value since Verilog-XL doesn't handle them correctly.</p>"
   ((rhs      vl-expr-p)
-   (elem     vl-modelement-p)
+   (ctx     vl-context-p)
    (warnings vl-warninglist-p))
   :guard (vl-expr->finaltype rhs)
   :returns (new-warnings vl-warninglist-p)
   (b* ((rhs  (vl-expr-fix rhs))
-       (elem (vl-modelement-fix elem))
+       (ctx (vl-context-fix ctx))
 
        (want-to-warn-p
         ;; The idea here is to warn if the RHS is signed, unless it's a plain
@@ -3114,7 +1558,7 @@ a signed value since Verilog-XL doesn't handle them correctly.</p>"
                 ensure that the right-hand side is unsigned.  For example, ~
                 you might wrap the right-hand side in a concatnation, e.g., ~
                 \"a >> {b}\" instead of \"a >> b\"."
-          :args (list elem rhs))))
+          :args (list ctx rhs))))
 
 
 (define vl-warn-about-implicit-extension
@@ -3140,7 +1584,7 @@ minor warning for assignments where the rhs is a constant.</p>"
    (x-selfsize natp)
    (x          vl-expr-p)
    (ss vl-scopestack-p)
-   (elem       vl-modelement-p)
+   (ctx       vl-context-p)
    (warnings   vl-warninglist-p))
   :returns (new-warnings vl-warninglist-p)
   :verbosep t
@@ -3155,7 +1599,7 @@ minor warning for assignments where the rhs is a constant.</p>"
   (b* ((lhs-size   (lnfix lhs-size))
        (x-selfsize (lnfix x-selfsize))
        (x          (vl-expr-fix x))
-       (elem       (vl-modelement-fix elem))
+       (ctx       (vl-context-fix ctx))
 
        (ops     (vl-expr-ops x))
 
@@ -3176,7 +1620,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                   :vl-warn-extension)
           :msg "~a0: implicit extension from ~x1-bit expression to ~x2-bit ~
                  lvalue.~%     rhs: ~a3"
-          :args (list elem x-selfsize lhs-size x))))
+          :args (list ctx x-selfsize lhs-size x))))
 
 
 
@@ -3213,7 +1657,7 @@ minor warning for assignments where the rhs is a constant.</p>"
            vl-expr-resolved-p-of-car-when-vl-exprlist-resolved-p
            vl-exprlist-resolved-p-of-cdr-when-vl-exprlist-resolved-p
            natp-when-member-equal-of-nat-listp
-           vl-modelement-fix-when-vl-modelement-p
+           vl-context-fix-when-vl-context-p
            vl-warninglist-fix-when-vl-warninglist-p
            vl-nonatom->op-when-hidindex-resolved-p
            vl-nonatom->op-when-vl-hidindex-p
@@ -3236,7 +1680,7 @@ minor warning for assignments where the rhs is a constant.</p>"
            VL-EXPRLIST->FINALWIDTHS-WHEN-NOT-CONSP
 
            (:TYPE-PRESCRIPTION MEMBER-EQUAL)
-           VL-EXPANDSIZES-ZEROEXTEND-OF-VL-MODELEMENT-FIX-ELEM
+           VL-EXPANDSIZES-ZEROEXTEND-OF-VL-CONTEXT-FIX-CTX
 
            VL-HIDINDEX-RESOLVED-P-WHEN-VL-HIDEXPR-RESOLVED-P
            VL-HIDINDEX-P-WHEN-VL-HIDEXPR-P
@@ -3247,7 +1691,6 @@ minor warning for assignments where the rhs is a constant.</p>"
            )))
 
 
-
 (with-output :off (prove)
   (defines vl-expr-size
     :parents (expression-sizing)
@@ -3256,7 +1699,7 @@ minor warning for assignments where the rhs is a constant.</p>"
 ; BOZO we might be able to strengthen the guards here so that we don't need to
 ; explicitly check for signed finalwidths in unsigned operators like compares.
 ; But I'm not sure exactly how this would work, yet.
-
+    ;; :returns-hints nil
     (define vl-expr-size
       :short "Determine sizes for a top-level or self-determined expression."
       ((lhs-size maybe-natp
@@ -3267,15 +1710,16 @@ minor warning for assignments where the rhs is a constant.</p>"
                @('lhs-size') should be nil.")
        (x        vl-expr-p                             "The expression that we want to size.")
        (ss vl-scopestack-p)
-       (elem     vl-modelement-p                       "Context for sizing error messages.")
+       (ctx     vl-context-p                       "Context for sizing error messages.")
        (warnings vl-warninglist-p                      "Ordinary @(see warnings) accumulator."))
       :returns
       (mv (successp booleanp :rule-classes :type-prescription
                     "Indicates whether all sizing was successful."
-                    :hints ('(:in-theory (disable vl-expr-size vl-exprlist-size
-                                                  vl-expr-expandsizes vl-exprlist-expandsizes)
-                              :expand ((vl-expr-size lhs-size x ss elem warnings)
-                                       (vl-expr-size nil x ss elem warnings)))))
+                    ;; :hints ('(:in-theory (disable vl-expr-size vl-exprlist-size
+                    ;;                               vl-expr-expandsizes vl-exprlist-expandsizes)
+                    ;;           :expand ((vl-expr-size lhs-size x ss ctx warnings)
+                    ;;                    (vl-expr-size nil x ss ctx warnings))))
+                    )
           (warnings vl-warninglist-p
                     "Possibly extended with fatal or non-fatal warnings.")
           (new-x    vl-expr-p
@@ -3292,12 +1736,12 @@ minor warning for assignments where the rhs is a constant.</p>"
       (b* ((lhs-size (maybe-natp-fix lhs-size))
            (x        (vl-expr-fix x))
            (ss       (vl-scopestack-fix ss))
-           (elem     (vl-modelement-fix elem))
+           (ctx     (vl-context-fix ctx))
 
            ;; Phase 1, determine maximum size of any operand within X, and the
            ;; final expression type of X.
-           ((mv warnings x-selfsize) (vl-expr-selfsize   x ss elem warnings))
-           ((mv warnings finaltype)  (vl-expr-typedecide x ss elem warnings))
+           ((mv warnings x-selfsize) (vl-expr-selfsize   x ss ctx warnings))
+           ((mv warnings finaltype)  (vl-expr-typedecide x ss ctx warnings))
            ((unless (and x-selfsize finaltype))
             (mv nil warnings x))
 
@@ -3316,22 +1760,23 @@ minor warning for assignments where the rhs is a constant.</p>"
                                (> lhs-size x-selfsize)))
                   ;; Not an extension
                   warnings))
-              (vl-warn-about-implicit-extension lhs-size x-selfsize x ss elem warnings))))
+              (vl-warn-about-implicit-extension lhs-size x-selfsize x ss ctx warnings))))
 
         ;; Phase 2, propagate desired final width and type of the expression
         ;; into its context-determined operands.
-        (vl-expr-expandsizes x finalwidth finaltype ss elem warnings)))
+        (vl-expr-expandsizes x finalwidth finaltype ss ctx warnings)))
 
     (define vl-exprlist-size
       :short "Self-determine the sizes of a list of expressions."
       ((x        vl-exprlist-p "Should be a list of self-determined expressions.")
        (ss vl-scopestack-p)
-       (elem     vl-modelement-p)
+       (ctx     vl-context-p)
        (warnings vl-warninglist-p))
       :returns (mv (successp booleanp :rule-classes :type-prescription
-                             :hints ('(:in-theory (disable vl-expr-size vl-exprlist-size
-                                                           vl-expr-expandsizes vl-exprlist-expandsizes)
-                                       :expand ((vl-exprlist-size x ss elem warnings)))))
+                             ;; :hints ('(:in-theory (disable vl-expr-size vl-exprlist-size
+                             ;;                               vl-expr-expandsizes vl-exprlist-expandsizes)
+                             ;;           :expand ((vl-exprlist-size x ss ctx warnings))))
+                             )
                    (warnings vl-warninglist-p)
                    (new-x    (and (vl-exprlist-p new-x)
                                   (equal (len new-x) (len x)))))
@@ -3340,8 +1785,8 @@ minor warning for assignments where the rhs is a constant.</p>"
            each of the expressions in @('x').</p>"
       (b* (((when (atom x))
             (mv t (ok) nil))
-           ((mv car-successp warnings car-prime) (vl-expr-size nil (car x) ss elem warnings))
-           ((mv cdr-successp warnings cdr-prime) (vl-exprlist-size (cdr x) ss elem warnings)))
+           ((mv car-successp warnings car-prime) (vl-expr-size nil (car x) ss ctx warnings))
+           ((mv cdr-successp warnings cdr-prime) (vl-exprlist-size (cdr x) ss ctx warnings)))
         (mv (and car-successp cdr-successp)
             warnings
             (cons car-prime cdr-prime))))
@@ -3353,12 +1798,13 @@ minor warning for assignments where the rhs is a constant.</p>"
        (finalwidth natp)
        (finaltype  vl-exprtype-p)
        (ss vl-scopestack-p)
-       (elem       vl-modelement-p)
+       (ctx       vl-context-p)
        (warnings   vl-warninglist-p))
       :returns (mv (successp booleanp :rule-classes :type-prescription
-                             :hints ('(:in-theory (disable vl-expr-size vl-exprlist-size
-                                                           vl-expr-expandsizes vl-exprlist-expandsizes)
-                                       :expand ((vl-exprlist-expandsizes x finalwidth finaltype ss elem warnings)))))
+                             ;; :hints ('(:in-theory (disable vl-expr-size vl-exprlist-size
+                             ;;                               vl-expr-expandsizes vl-exprlist-expandsizes)
+                             ;;           :expand ((vl-exprlist-expandsizes x finalwidth finaltype ss ctx warnings))))
+                             )
                    (warnings vl-warninglist-p)
                    (new-x    (and (vl-exprlist-p new-x)
                                   (equal (len new-x) (len x)))))
@@ -3370,9 +1816,9 @@ minor warning for assignments where the rhs is a constant.</p>"
            ((when (atom x))
             (mv t (ok) nil))
            ((mv car-successp warnings car-prime)
-            (vl-expr-expandsizes (car x) finalwidth finaltype ss elem warnings))
+            (vl-expr-expandsizes (car x) finalwidth finaltype ss ctx warnings))
            ((mv cdr-successp warnings cdr-prime)
-            (vl-exprlist-expandsizes (cdr x) finalwidth finaltype ss elem warnings)))
+            (vl-exprlist-expandsizes (cdr x) finalwidth finaltype ss ctx warnings)))
         (mv (and car-successp cdr-successp)
             warnings
             (cons car-prime cdr-prime))))
@@ -3388,13 +1834,15 @@ minor warning for assignments where the rhs is a constant.</p>"
                    "Finaltype to coerce every expression in @('x') to, should be
                  determined by the first pass of the sizing algorithm.")
        (ss vl-scopestack-p)
-       (elem       vl-modelement-p)
+       (ctx       vl-context-p)
        (warnings   vl-warninglist-p))
       :returns
       (mv (successp booleanp :rule-classes :type-prescription
-                    :hints ('(:in-theory (disable vl-expr-size vl-exprlist-size
-                                                  vl-expr-expandsizes vl-exprlist-expandsizes)
-                              :expand ((vl-expr-expandsizes x finalwidth finaltype ss elem warnings)))))
+                    ;; :hints ('(:in-theory (disable vl-expr-size vl-exprlist-size
+                    ;;                               vl-expr-expandsizes vl-exprlist-expandsizes)
+                    ;;           :expand ((:free (finalwidth)
+                    ;;                     (vl-expr-expandsizes x finalwidth finaltype ss ctx warnings)))))
+                    )
           (warnings vl-warninglist-p)
           (new-x    vl-expr-p))
       :measure (two-nats-measure (vl-expr-count x) 1)
@@ -3402,14 +1850,14 @@ minor warning for assignments where the rhs is a constant.</p>"
            (ss         (vl-scopestack-fix ss))
            (finalwidth (lnfix finalwidth))
            (finaltype  (vl-exprtype-fix finaltype))
-           (elem       (vl-modelement-fix elem))
+           (ctx       (vl-context-fix ctx))
            (warnings   (vl-warninglist-fix warnings))
 
            ((when (vl-fast-atom-p x))
-            (vl-atom-expandsizes x finalwidth finaltype ss elem warnings))
+            (vl-atom-expandsizes x finalwidth finaltype ss ctx warnings))
 
            ;; ((when (vl-hidexpr-p x))
-           ;;  (vl-hidexpr-expandsizes x finalwidth finaltype ss elem warnings))
+           ;;  (vl-hidexpr-expandsizes x finalwidth finaltype ss ctx warnings))
            
            (op   (vl-nonatom->op x))
 
@@ -3417,7 +1865,7 @@ minor warning for assignments where the rhs is a constant.</p>"
            ;;                     :vl-select-colon
            ;;                     :vl-select-pluscolon
            ;;                     :vl-select-minuscolon)))
-           ;;  (vl-hidexpr-expandsizes x finalwidth finaltype ss elem warnings))
+           ;;  (vl-hidexpr-expandsizes x finalwidth finaltype ss ctx warnings))
 
            (args (vl-nonatom->args x)))
 
@@ -3428,13 +1876,13 @@ minor warning for assignments where the rhs is a constant.</p>"
                  (mv nil
                      (fatal :type :vl-bad-expression
                             :msg "~a0: ~x1 is not a well-formed HID."
-                            :args (list elem x))
+                            :args (list ctx x))
                      x))
                 ((unless (posp finalwidth))
                  (mv nil
                      (fatal :type :vl-bad-expression
                             :msg "~a0: ~x1 has 0 width?"
-                            :args (list elem x))
+                            :args (list ctx x))
                      x))
                 (new-x (change-vl-nonatom x
                                           :finalwidth finalwidth
@@ -3449,16 +1897,16 @@ minor warning for assignments where the rhs is a constant.</p>"
                  (mv nil
                      (fatal :type :vl-bad-expression
                             :msg "~a0: ~x1 is not a well-formed index expression."
-                            :args (list elem x))
+                            :args (list ctx x))
                      x))
                 ((unless (posp finalwidth))
                  (mv nil
                      (fatal :type :vl-bad-expression
                             :msg "~a0: ~x1 has 0 width?"
-                            :args (list elem x))
+                            :args (list ctx x))
                      x))
                 ((mv successp warnings indices)
-                 (vl-exprlist-size (cdr args) ss elem warnings))
+                 (vl-exprlist-size (cdr args) ss ctx warnings))
                 ((unless successp) (mv nil warnings x))
                 (resolved-ok (case op
                                (:vl-index t)
@@ -3471,7 +1919,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                      (fatal :type :vl-bad-expression
                             :msg "~a0: ~x1 has some non-constant indices that ~
                                   are required to be constant"
-                            :args (list elem x))
+                            :args (list ctx x))
                      x))
                 (new-x (change-vl-nonatom x
                                           :args (cons (first args) indices)
@@ -3488,10 +1936,10 @@ minor warning for assignments where the rhs is a constant.</p>"
                  (mv nil
                      (fatal :type :vl-bad-expression
                             :msg "~a0: ~x1 expression has zero width: ~a2."
-                            :args (list elem op x))
+                            :args (list ctx op x))
                      x))
                 ((mv successp warnings args-prime)
-                 (vl-exprlist-expandsizes args finalwidth finaltype ss elem warnings))
+                 (vl-exprlist-expandsizes args finalwidth finaltype ss ctx warnings))
                 ((unless successp)
                  (mv nil warnings x))
                 (new-x (change-vl-nonatom x
@@ -3519,23 +1967,23 @@ minor warning for assignments where the rhs is a constant.</p>"
                      (fatal :type :vl-programming-error
                             :msg "~a0: signed comparison result???  Serious bug in ~
                                our sizing code."
-                            :args (list elem))
+                            :args (list ctx))
                      x))
                 ;; Determine the maximum width of any operand in a/b and also
                 ;; whether they are signed or unsigned.
                 (a (first args))
                 (b (second args))
-                ((mv warnings a-selfsize) (vl-expr-selfsize a ss elem warnings))
-                ((mv warnings b-selfsize) (vl-expr-selfsize b ss elem warnings))
-                ((mv warnings a-type)     (vl-expr-typedecide a ss elem warnings))
-                ((mv warnings b-type)     (vl-expr-typedecide b ss elem warnings))
+                ((mv warnings a-selfsize) (vl-expr-selfsize a ss ctx warnings))
+                ((mv warnings b-selfsize) (vl-expr-selfsize b ss ctx warnings))
+                ((mv warnings a-type)     (vl-expr-typedecide a ss ctx warnings))
+                ((mv warnings b-type)     (vl-expr-typedecide b ss ctx warnings))
                 (a-goodp                  (and (posp a-selfsize) a-type))
                 (b-goodp                  (and (posp b-selfsize) b-type))
                 ((unless (and a-goodp b-goodp))
                  (mv nil
                      (fatal :type :vl-bad-expression
                             :msg "~a0: ill-formed ~s1 of comparison expression ~a2."
-                            :args (list elem
+                            :args (list ctx
                                         (cond (a-goodp "right-hand side")
                                               (b-goodp "left-hand side")
                                               (t       "left- and right-hand sides"))
@@ -3546,7 +1994,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                 (innerwidth (max a-selfsize b-selfsize))
                 (innertype  (vl-exprtype-max a-type b-type))
                 ((mv successp warnings args-prime)
-                 (vl-exprlist-expandsizes args innerwidth innertype ss elem warnings))
+                 (vl-exprlist-expandsizes args innerwidth innertype ss ctx warnings))
                 ((unless successp)
                  (mv nil warnings x))
                 (inner (change-vl-nonatom x
@@ -3555,7 +2003,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                                           :finaltype :vl-unsigned))
                 ;; Inner is only one bit, so we may need to zero-extend.
                 ((mv successp warnings new-x)
-                 (vl-expandsizes-zeroextend inner finalwidth elem warnings))
+                 (vl-expandsizes-zeroextend inner finalwidth ctx warnings))
                 ((unless successp)
                  (mv nil warnings x)))
              (mv t warnings new-x)))
@@ -3574,14 +2022,14 @@ minor warning for assignments where the rhs is a constant.</p>"
                      (fatal :type :vl-programming-error
                             :msg "~a0: signed logical op result???  Serious bug in ~
                                our sizing code."
-                            :args (list elem))
+                            :args (list ctx))
                      x))
                 (a (first args))
                 (b (second args))
                 ((mv a-successp warnings a-prime)
-                 (vl-expr-size nil a ss elem warnings))
+                 (vl-expr-size nil a ss ctx warnings))
                 ((mv b-successp warnings b-prime)
-                 (vl-expr-size nil b ss elem warnings))
+                 (vl-expr-size nil b ss ctx warnings))
                 ((unless (and a-successp b-successp))
                  (mv nil warnings x))
                 (a-goodp (and (posp (vl-expr->finalwidth a-prime))
@@ -3592,7 +2040,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                  (mv nil
                      (fatal :type :vl-bad-expression
                             :msg "~a0: ill-formed ~s1 of logical expression ~a2."
-                            :args (list elem
+                            :args (list ctx
                                         (cond (a-goodp "right-hand side")
                                               (b-goodp "left-hand side")
                                               (t       "left- and right-hand sides"))
@@ -3604,7 +2052,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                                           :finaltype :vl-unsigned))
                 ;; Inner is only one bit, so we may need to zero-extend.
                 ((mv successp warnings new-x)
-                 (vl-expandsizes-zeroextend inner finalwidth elem warnings))
+                 (vl-expandsizes-zeroextend inner finalwidth ctx warnings))
                 ((unless successp)
                  (mv nil warnings x)))
              (mv t warnings new-x)))
@@ -3620,11 +2068,11 @@ minor warning for assignments where the rhs is a constant.</p>"
                      (fatal :type :vl-programming-error
                             :msg "~a0: signed logical/reduction op result???  ~
                                Serious bug in our sizing code."
-                            :args (list elem))
+                            :args (list ctx))
                      x))
                 (a (first args))
                 ((mv successp warnings a-prime)
-                 (vl-expr-size nil a ss elem warnings))
+                 (vl-expr-size nil a ss ctx warnings))
                 ((unless successp)
                  (mv nil warnings x))
                 ((unless (and (posp (vl-expr->finalwidth a-prime))
@@ -3632,7 +2080,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                  (mv nil
                      (fatal :type :vl-bad-expression
                             :msg "~a0: ill-formed argument in ~x1 expression ~a2."
-                            :args (list elem op x))
+                            :args (list ctx op x))
                      x))
                 (inner (change-vl-nonatom x
                                           :args (list a-prime)
@@ -3640,7 +2088,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                                           :finaltype :vl-unsigned))
                 ;; Inner is only one bit, so we may need to zero-extend.
                 ((mv successp warnings new-x)
-                 (vl-expandsizes-zeroextend inner finalwidth elem warnings))
+                 (vl-expandsizes-zeroextend inner finalwidth ctx warnings))
                 ((unless successp)
                  (mv nil warnings x)))
              (mv t warnings new-x)))
@@ -3653,14 +2101,14 @@ minor warning for assignments where the rhs is a constant.</p>"
                  (mv nil
                      (fatal :type :vl-bad-expression
                             :msg "~a0: ~x1 expression has zero width: ~a2."
-                            :args (list elem op x))
+                            :args (list ctx op x))
                      x))
                 (a (first args))
                 (b (second args))
                 ((mv a-successp warnings a-prime)
-                 (vl-expr-expandsizes a finalwidth finaltype ss elem warnings))
+                 (vl-expr-expandsizes a finalwidth finaltype ss ctx warnings))
                 ((mv b-successp warnings b-prime)
-                 (vl-expr-size nil b ss elem warnings))
+                 (vl-expr-size nil b ss ctx warnings))
                 ((unless (and a-successp b-successp))
                  (mv nil warnings x))
                 ;; We don't require much of B, just that it has a type and that its
@@ -3670,10 +2118,10 @@ minor warning for assignments where the rhs is a constant.</p>"
                  (mv nil
                      (fatal :type :vl-bad-expression
                             :msg "~a0: ill-formed right-hand side of ~x1 expression ~a2."
-                            :args (list elem op x))
+                            :args (list ctx op x))
                      x))
                 ;; Special warning about signed shifts in Verilog-XL versus the Spec.
-                (warnings (vl-warn-about-signed-shifts b-prime elem warnings))
+                (warnings (vl-warn-about-signed-shifts b-prime ctx warnings))
                 (new-x (change-vl-nonatom x
                                           :args (list a-prime b-prime)
                                           :finalwidth finalwidth
@@ -3688,17 +2136,17 @@ minor warning for assignments where the rhs is a constant.</p>"
                  (mv nil
                      (fatal :type :vl-bad-expression
                             :msg "~a0: conditional operation with zero width: ~a1."
-                            :args (list elem x))
+                            :args (list ctx x))
                      x))
                 (a (first args))
                 (b (second args))
                 (c (third args))
                 ((mv a-successp warnings a-prime)
-                 (vl-expr-size nil a ss elem warnings))
+                 (vl-expr-size nil a ss ctx warnings))
                 ((mv b-successp warnings b-prime)
-                 (vl-expr-expandsizes b finalwidth finaltype ss elem warnings))
+                 (vl-expr-expandsizes b finalwidth finaltype ss ctx warnings))
                 ((mv c-successp warnings c-prime)
-                 (vl-expr-expandsizes c finalwidth finaltype ss elem warnings))
+                 (vl-expr-expandsizes c finalwidth finaltype ss ctx warnings))
                 ((unless (and a-successp b-successp c-successp))
                  (mv nil warnings x))
                 ((unless (and (posp (vl-expr->finalwidth a-prime))
@@ -3706,7 +2154,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                  (mv nil
                      (fatal :type :vl-bad-expression
                             :msg "~a0: ill-formed test for conditional operator ~a1"
-                            :args (list elem x))
+                            :args (list ctx x))
                      x))
                 (new-x (change-vl-nonatom x
                                           :args (list a-prime b-prime c-prime)
@@ -3716,17 +2164,19 @@ minor warning for assignments where the rhs is a constant.</p>"
              (mv t warnings new-x)))
 
           ((;; Table 5-22, Line 10.
-            :vl-concat)
+            :vl-concat
+            :vl-stream-left :vl-stream-right
+            :vl-stream-left-sized :vl-stream-right-sized)
            ;; All arguments self-determined, result is unsigned.
            (b* (((unless (eq finaltype :vl-unsigned))
                  (mv nil
                      (fatal :type :vl-programming-error
                             :msg "~a0: signed concatenation result???  Serious bug ~
                                in our sizing code."
-                            :args (list elem))
+                            :args (list ctx))
                      x))
                 ((mv successp warnings args-prime)
-                 (vl-exprlist-size args ss elem warnings))
+                 (vl-exprlist-size args ss ctx warnings))
                 ((unless successp)
                  (mv nil warnings x))
                 ;; Inner expression has width = sum of arg widths
@@ -3737,15 +2187,18 @@ minor warning for assignments where the rhs is a constant.</p>"
                             :msg "~a0: ill-formed argument in concatenation ~a1.  ~
                                BOZO make this error message better by saying ~
                                which argument is invalid."
-                            :args (list elem x))
+                            :args (list ctx x))
                      x))
 
-                (inner-width (sum-nats widths))
+                (inner-width (if (member op '(:vl-stream-left-sized :vl-stream-right-sized))
+                                 (sum-nats (mbe :logic (cdr widths)
+                                                :exec (and (consp widths) (cdr widths))))
+                               (sum-nats widths)))
                 ((unless (posp inner-width))
                  (mv nil
                      (fatal :type :vl-bad-expression
                             :msg "~a0: concatenation with zero total width: ~a1."
-                            :args (list elem x))
+                            :args (list ctx x))
                      x))
                 ((unless (<= inner-width finalwidth))
                  ;; BOZO can we move this into the guard?
@@ -3753,7 +2206,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                      (fatal :type :vl-programming-error
                             :msg "~a0: concatenation width > finalwidth???  ~
                                Serious bug in our sizing code."
-                            :args (list elem))
+                            :args (list ctx))
                      x))
                 (inner (change-vl-nonatom x
                                           :args args-prime
@@ -3761,7 +2214,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                                           :finaltype :vl-unsigned))
                 ;; Inner-width can be less than finalwidth; may need to zero-extend.
                 ((mv successp warnings new-x)
-                 (vl-expandsizes-zeroextend inner finalwidth elem warnings))
+                 (vl-expandsizes-zeroextend inner finalwidth ctx warnings))
                 ((unless successp)
                  (mv nil warnings x)))
              (mv t warnings new-x)))
@@ -3776,10 +2229,10 @@ minor warning for assignments where the rhs is a constant.</p>"
                      (fatal :type :vl-programming-error
                             :msg "~a0: signed multiconcat result??? Serious bug in ~
                                our sizing code."
-                            :args (list elem))
+                            :args (list ctx))
                      x))
                 ((mv successp warnings args-prime)
-                 (vl-exprlist-size args ss elem warnings))
+                 (vl-exprlist-size args ss ctx warnings))
                 ((unless successp)
                  (mv nil warnings x))
 
@@ -3791,7 +2244,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                      (fatal :type :vl-programming-error
                             :msg "~a0: multiconcat with unresolved multiplicity ~
                                should not be encountered here."
-                            :args (list elem))
+                            :args (list ctx))
                      x))
 
                 ((unless (and (not (vl-fast-atom-p b))
@@ -3800,7 +2253,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                      (fatal :type :vl-programming-error
                             :msg "~a0: multple concatenation's second argument ~
                                isn't a concatenation?? ~a1"
-                            :args (list elem x))
+                            :args (list ctx x))
                      x))
 
                 ((unless (and (posp (vl-expr->finalwidth b))
@@ -3810,7 +2263,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                             :msg "~a0: multiple concat's second argument didn't ~
                                get a unsigned positive result?? serious bug ~
                                in our sizing/typing code.  Expression: ~a1"
-                            :args (list elem x))
+                            :args (list ctx x))
                      x))
 
                 (inner-width (* (vl-resolved->val a) (vl-expr->finalwidth b)))
@@ -3819,7 +2272,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                      (fatal :type :vl-programming-error
                             :msg "~a0: multiconcat width > finalwidth??? Serious ~
                                bug in our sizing code."
-                            :args (list elem))
+                            :args (list ctx))
                      x))
 
                 ((when (and (= inner-width 0)
@@ -3829,7 +2282,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                             :msg "~a0: multiconcat width is zero but we want its ~
                                finalwidth to be ~x1??? serious bug in our ~
                                sizing code.  Expr: ~a2"
-                            :args (list elem finalwidth x))
+                            :args (list ctx finalwidth x))
                      x))
 
                 (warnings
@@ -3844,7 +2297,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                             in VCS and Verilog-XL.  To avoid mismatches between ~
                             Verilog tools, you should probably avoid this ~
                             construct!"
-                         :args (list elem x))))
+                         :args (list ctx x))))
 
                 (inner (change-vl-nonatom x
                                           :args args-prime
@@ -3853,7 +2306,7 @@ minor warning for assignments where the rhs is a constant.</p>"
 
                 ;; Inner-width can be less than finalwidth; may need to zero-extend.
                 ((mv successp warnings new-x)
-                 (vl-expandsizes-zeroextend inner finalwidth elem warnings))
+                 (vl-expandsizes-zeroextend inner finalwidth ctx warnings))
                 ((unless successp)
                  (mv nil warnings x)))
              (mv t warnings new-x)))
@@ -3870,20 +2323,20 @@ minor warning for assignments where the rhs is a constant.</p>"
                      (fatal :type :vl-programming-error
                             :msg "~a0: signed select result??? Serious bug in our ~
                                sizing code."
-                            :args (list elem))
+                            :args (list ctx))
                      x))
                 ((mv successp warnings args-prime)
-                 (vl-exprlist-size args ss elem warnings))
+                 (vl-exprlist-size args ss ctx warnings))
                 ((unless successp)
                  (mv nil warnings x))
                 ;; discard these warnings because they'll be redundant
-                ((mv ?warnings1 selfsize) (vl-expr-selfsize x ss elem warnings))
+                ((mv ?warnings1 selfsize) (vl-expr-selfsize x ss ctx warnings))
                 ((unless (eql selfsize 1))
                  (mv nil
                      (fatal :type :vl-bad-bitselect
                             :msg "~a0: bitselect expressions should selfsize ~
                                   to 1, but ~a1 selfsized to ~x2"
-                            :args (list elem x selfsize))
+                            :args (list ctx x selfsize))
                      x))
                 (inner (change-vl-nonatom x
                                           :args args-prime
@@ -3891,7 +2344,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                                           :finaltype :vl-unsigned))
                 ;; Inner is only one bit, so we may need to zero-extend.
                 ((mv successp warnings new-x)
-                 (vl-expandsizes-zeroextend inner finalwidth elem warnings))
+                 (vl-expandsizes-zeroextend inner finalwidth ctx warnings))
                 ((unless successp)
                  (mv nil warnings x)))
              (mv t warnings new-x)))
@@ -3905,10 +2358,10 @@ minor warning for assignments where the rhs is a constant.</p>"
                      (fatal :type :vl-programming-error
                             :msg "~a0: signed select result??? Serious bug in our ~
                                sizing code."
-                            :args (list elem))
+                            :args (list ctx))
                      x))
                 ((mv successp warnings args-prime)
-                 (vl-exprlist-size args ss elem warnings))
+                 (vl-exprlist-size args ss ctx warnings))
                 ((unless successp)
                  (mv nil warnings x))
 
@@ -3919,27 +2372,27 @@ minor warning for assignments where the rhs is a constant.</p>"
                  (mv nil
                      (fatal :type :vl-programming-error
                             :msg "~a0: part-select indices should be resolved."
-                            :args (list elem))
+                            :args (list ctx))
                      x))
 
                 (inner-width (+ 1 (abs (- (vl-resolved->val left-expr)
                                           (vl-resolved->val right-expr)))))
                 ;; discard these warnings because they'll be redundant
-                ((mv ?warnings1 selfsize) (vl-expr-selfsize x ss elem warnings))
+                ((mv ?warnings1 selfsize) (vl-expr-selfsize x ss ctx warnings))
                 ((unless (eql selfsize inner-width))
                  (mv nil
                      (fatal :type :vl-bad-bitselect
                             :msg "~a0: partselect expression was expected to ~
                                   selfsize to its index width ~x1, but ~a2 ~
                                   selfsized to ~x3"
-                            :args (list elem x inner-width selfsize))
+                            :args (list ctx x inner-width selfsize))
                      x))
                 ((unless (<= inner-width finalwidth))
                  (mv nil
                      (fatal :type :vl-programming-error
                             :msg "~a0: partselect width > finalwidth??? Serious ~
                                bug in our sizing code."
-                            :args (list elem))
+                            :args (list ctx))
                      x))
                 (inner (change-vl-nonatom x
                                           :args args-prime
@@ -3947,7 +2400,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                                           :finaltype :vl-unsigned))
                 ;; Inner-width can be less than finalwidth; may need to zero-extend.
                 ((mv successp warnings new-x)
-                 (vl-expandsizes-zeroextend inner finalwidth elem warnings))
+                 (vl-expandsizes-zeroextend inner finalwidth ctx warnings))
                 ((unless successp)
                  (mv nil warnings x)))
              (mv t warnings new-x)))
@@ -3961,10 +2414,10 @@ minor warning for assignments where the rhs is a constant.</p>"
                      (fatal :type :vl-programming-error
                             :msg "~a0: signed select result??? Serious bug in our ~
                                sizing code."
-                            :args (list elem))
+                            :args (list ctx))
                      x))
                 ((mv successp warnings args-prime)
-                 (vl-exprlist-size args ss elem warnings))
+                 (vl-exprlist-size args ss ctx warnings))
                 ((unless successp)
                  (mv nil warnings x))
                 (width-expr (third args-prime))
@@ -3972,25 +2425,25 @@ minor warning for assignments where the rhs is a constant.</p>"
                  (mv nil
                      (fatal :type :vl-programming-error
                             :msg "~a0: indexed part-select's width should be resolved."
-                            :args (list elem))
+                            :args (list ctx))
                      x))
                 (inner-width (vl-resolved->val width-expr))
                 ;; discard these warnings because they'll be redundant
-                ((mv ?warnings1 selfsize) (vl-expr-selfsize x ss elem warnings))
+                ((mv ?warnings1 selfsize) (vl-expr-selfsize x ss ctx warnings))
                 ((unless (eql selfsize inner-width))
                  (mv nil
                      (fatal :type :vl-bad-bitselect
                             :msg "~a0: partselect expression was expected to ~
                                   selfsize to its index width ~x1, but ~a2 ~
                                   selfsized to ~x3"
-                            :args (list elem x inner-width selfsize))
+                            :args (list ctx x inner-width selfsize))
                      x))
                 ((unless (<= inner-width finalwidth))
                  (mv nil
                      (fatal :type :vl-programming-error
                             :msg "~a0: indexed partselect width > finalwidth???  ~
                                Serious bug in our sizing code."
-                            :args (list elem))
+                            :args (list ctx))
                      x))
                 (inner (change-vl-nonatom x
                                           :args args-prime
@@ -3998,10 +2451,11 @@ minor warning for assignments where the rhs is a constant.</p>"
                                           :finaltype :vl-unsigned))
                 ;; Inner-width can be less than finalwidth; may need to zero-extend.
                 ((mv successp warnings new-x)
-                 (vl-expandsizes-zeroextend inner finalwidth elem warnings))
+                 (vl-expandsizes-zeroextend inner finalwidth ctx warnings))
                 ((unless successp)
                  (mv nil warnings x)))
              (mv t warnings new-x)))
+
 
           ((:vl-funcall :vl-syscall :vl-mintypmax :vl-index
             :vl-scope :vl-hid-dot
@@ -4009,21 +2463,55 @@ minor warning for assignments where the rhs is a constant.</p>"
             ;; BOZO these might not belong here, but it seems like the
             ;; safest place to put them until they're implemented
             :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
-            :vl-stream-left :vl-stream-right
-            :vl-stream-left-sized :vl-stream-right-sized
             :vl-tagged :vl-binary-cast
+          :vl-pattern-multi
+          :vl-pattern-type
+          :vl-pattern-positional
+          :vl-pattern-keyvalue
+          :vl-keyvalue
+
             )
-           (mv nil
-               (fatal :type :vl-unsupported
-                      :msg "~a0: add sizing support for ~x1."
-                      :args (list elem op))
-               x))
+           (if (vl-$bits-call-p x)
+               (if (and (not (eq finaltype :vl-unsigned)) (< 32 finalwidth))
+                   ;; we'd need to sign-extend, so fail for now
+                   (mv nil
+                       (fatal :type :vl-sign-extend-too-lazy
+                              :msg "~a0: failing to sign extend a $bits call"
+                              :args (list ctx))
+                       x)
+                 (b* ((ans1 (change-vl-nonatom x :finalwidth 32 
+                                               :finaltype finaltype))
+                      ((when (< finalwidth 32))
+                       (mv nil
+                           (fatal :type :vl-programming-error
+                                  :msg "~a0: finalwidth of $bits call can't be less than 32"
+                                  :args (list ctx))
+                           x))
+                      ((when (eql finalwidth 32))
+                       (mv t warnings ans1))
+                      ((mv ok warnings new-x)
+                       (vl-expandsizes-zeroextend ans1 finalwidth ctx warnings)))
+                   (if ok
+                       (mv ok warnings new-x)
+                     (mv nil warnings x))))
+             (mv nil
+                 (fatal :type :vl-unsupported
+                        :msg "~a0: add sizing support for ~x1."
+                        :args (list ctx op))
+                 x)))
 
           (otherwise
            (progn$ (impossible)
                    (mv nil warnings x))))))
     :prepwork
-    ((local (in-theory (disable my-disables))))
+    ((local (in-theory (disable my-disables
+                                (:t vl-exprtype-fix)
+                                (:t vl-warninglist-p))))
+     (local (std::set-returnspec-mrec-default-hints
+             ;; for whatever reason, it is faster here NOT to wait until
+             ;; stable-under-simplification to expand calls, so we pass NIL as
+             ;; the wait-until-stablep parameter.
+             ((acl2::just-expand-mrec-default-hint 'std::fnname id nil world)))))
     :flag-local nil))
 
 
@@ -4038,77 +2526,77 @@ minor warning for assignments where the rhs is a constant.</p>"
 
 (deffixequiv vl-expr-size
   :hints(("Goal"
-          :expand ((:free (lhs-size ss elem warnings)
-                    (vl-expr-size lhs-size x ss elem warnings))
-                   (:free (lhs-size ss elem warnings)
-                    (vl-expr-size lhs-size (vl-expr-fix x) ss elem warnings))))))
+          :expand ((:free (lhs-size ss ctx warnings)
+                    (vl-expr-size lhs-size x ss ctx warnings))
+                   (:free (lhs-size ss ctx warnings)
+                    (vl-expr-size lhs-size (vl-expr-fix x) ss ctx warnings))))))
 
 (deffixequiv vl-expr-expandsizes
   :hints(("Goal"
           :expand
-          ((:free (finalwidth finaltype ss elem warnings)
-            (vl-expr-expandsizes x finalwidth finaltype ss elem warnings))
-           (:free (finalwidth finaltype ss elem warnings)
-            (vl-expr-expandsizes (vl-expr-fix x) finalwidth finaltype ss elem warnings))))))
+          ((:free (finalwidth finaltype ss ctx warnings)
+            (vl-expr-expandsizes x finalwidth finaltype ss ctx warnings))
+           (:free (finalwidth finaltype ss ctx warnings)
+            (vl-expr-expandsizes (vl-expr-fix x) finalwidth finaltype ss ctx warnings))))))
 
 (encapsulate
   ()
-  (local (defun my-ind (x ss elem warnings)
+  (local (defun my-ind (x ss ctx warnings)
            ;; Same as vl-exprlist-size
            (b* (((when (atom x))
                  (mv t (ok) nil))
-                ((mv car-successp warnings car-prime) (vl-expr-size nil (car x) ss elem warnings))
-                ((mv cdr-successp warnings cdr-prime) (my-ind (cdr x) ss elem warnings)))
+                ((mv car-successp warnings car-prime) (vl-expr-size nil (car x) ss ctx warnings))
+                ((mv cdr-successp warnings cdr-prime) (my-ind (cdr x) ss ctx warnings)))
              (mv (and car-successp cdr-successp)
                  warnings
                  (cons car-prime cdr-prime)))))
 
   (defthm true-listp-of-vl-exprlist-size
-    (true-listp (mv-nth 2 (vl-exprlist-size x ss elem warnings)))
+    (true-listp (mv-nth 2 (vl-exprlist-size x ss ctx warnings)))
     :rule-classes :type-prescription
-    :hints(("Goal" :induct (my-ind x ss elem warnings)
-            :expand ((vl-exprlist-size x ss elem warnings)))))
+    :hints(("Goal" :induct (my-ind x ss ctx warnings)
+            :expand ((vl-exprlist-size x ss ctx warnings)))))
 
   (deffixequiv vl-exprlist-size
     :hints(("Goal"
-            :induct (my-ind x ss elem warnings)
+            :induct (my-ind x ss ctx warnings)
             :do-not '(generalize fertilize)
             :expand
-            ((:free (ss elem warnings)
-              (vl-exprlist-size x ss elem warnings))
-             (:free (ss elem warnings)
-              (vl-exprlist-size (vl-exprlist-fix x) ss elem warnings)))))))
+            ((:free (ss ctx warnings)
+              (vl-exprlist-size x ss ctx warnings))
+             (:free (ss ctx warnings)
+              (vl-exprlist-size (vl-exprlist-fix x) ss ctx warnings)))))))
 
 (encapsulate
   ()
-  (local (defun my-ind (x finalwidth finaltype ss elem warnings)
+  (local (defun my-ind (x finalwidth finaltype ss ctx warnings)
            ;; same as vl-exprlist-expandsizes
            (b* ((finalwidth (lnfix finalwidth))
                 ((when (atom x))
                  (mv t (ok) nil))
                 ((mv car-successp warnings car-prime)
-                 (vl-expr-expandsizes (car x) finalwidth finaltype ss elem warnings))
+                 (vl-expr-expandsizes (car x) finalwidth finaltype ss ctx warnings))
                 ((mv cdr-successp warnings cdr-prime)
-                 (my-ind (cdr x) finalwidth finaltype ss elem warnings)))
+                 (my-ind (cdr x) finalwidth finaltype ss ctx warnings)))
              (mv (and car-successp cdr-successp)
                  warnings
                  (cons car-prime cdr-prime)))))
 
   (defthm true-listp-of-vl-exprlist-expandsizes
-    (true-listp (mv-nth 2 (vl-exprlist-expandsizes x finalwidth finaltype ss elem warnings)))
+    (true-listp (mv-nth 2 (vl-exprlist-expandsizes x finalwidth finaltype ss ctx warnings)))
     :rule-classes :type-prescription
-    :hints(("Goal" :induct (my-ind x finalwidth finaltype ss elem warnings)
-            :expand ((vl-exprlist-expandsizes x finalwidth finaltype ss elem warnings)))))
+    :hints(("Goal" :induct (my-ind x finalwidth finaltype ss ctx warnings)
+            :expand ((vl-exprlist-expandsizes x finalwidth finaltype ss ctx warnings)))))
 
   (deffixequiv vl-exprlist-expandsizes
     :hints(("Goal"
             :do-not '(generalize fertilize)
-            :induct (my-ind x finalwidth finaltype ss elem warnings)
+            :induct (my-ind x finalwidth finaltype ss ctx warnings)
             :expand
-            ((:free (finalwidth finaltype ss elem warnings)
-              (vl-exprlist-expandsizes x finalwidth finaltype ss elem warnings))
-             (:free (finalwidth finaltype ss elem warnings)
-              (vl-exprlist-expandsizes (vl-exprlist-fix x) finalwidth finaltype ss elem warnings)))))))
+            ((:free (finalwidth finaltype ss ctx warnings)
+              (vl-exprlist-expandsizes x finalwidth finaltype ss ctx warnings))
+             (:free (finalwidth finaltype ss ctx warnings)
+              (vl-exprlist-expandsizes (vl-exprlist-fix x) finalwidth finaltype ss ctx warnings)))))))
 
 (local (defthm crock
           ;; this. fucking. blows.
@@ -4129,7 +2617,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                                   (len (cddr x)))))))
 
 (local (defrule vl-exprlist-size-under-iff
-          (let ((new-x (mv-nth 2 (vl-exprlist-size x ss elem warnings))))
+          (let ((new-x (mv-nth 2 (vl-exprlist-size x ss ctx warnings))))
             (and (iff new-x (consp x))
                  (iff (cdr new-x) (consp (cdr x)))
                  (iff (cddr new-x) (consp (cddr x)))
@@ -4137,10 +2625,10 @@ minor warning for assignments where the rhs is a constant.</p>"
                  (equal (consp (cdr new-x)) (consp (cdr x)))
                  (equal (consp (cddr new-x)) (consp (cddr x)))))
           :use ((:instance crock
-                 (new-x (mv-nth 2 (vl-exprlist-size x ss elem warnings)))))))
+                 (new-x (mv-nth 2 (vl-exprlist-size x ss ctx warnings)))))))
 
 (local (defrule vl-exprlist-expandsizes-under-iff
-          (let ((new-x (mv-nth 2 (vl-exprlist-expandsizes x finalwidth finaltype ss elem warnings))))
+          (let ((new-x (mv-nth 2 (vl-exprlist-expandsizes x finalwidth finaltype ss ctx warnings))))
             (and (iff new-x (consp x))
                  (iff (cdr new-x) (consp (cdr x)))
                  (iff (cddr new-x) (consp (cddr x)))
@@ -4148,7 +2636,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                  (equal (consp (cdr new-x)) (consp (cdr x)))
                  (equal (consp (cddr new-x)) (consp (cddr x)))))
           :use ((:instance crock
-                 (new-x (mv-nth 2 (vl-exprlist-expandsizes x finalwidth finaltype ss elem warnings)))))))
+                 (new-x (mv-nth 2 (vl-exprlist-expandsizes x finalwidth finaltype ss ctx warnings)))))))
 
 (local (defthm member-of-nil
          (not (member x nil))
@@ -4160,6 +2648,10 @@ minor warning for assignments where the rhs is a constant.</p>"
              (implies (consp x)
                       (equal (+ 1 (len (cdr x)))
                              (len x)))))
+    (local (defthm member-of-cdr-exprlist-finalwidths
+             (implies (not (member k (vl-exprlist->finalwidths x)))
+                      (not (member k (vl-exprlist->finalwidths (cdr x)))))
+             :hints(("Goal" :in-theory (enable vl-exprlist->finalwidths member)))))
     (verify-guards vl-expr-size
       :hints(("Goal"
               :in-theory (e/d (maybe-natp
@@ -4183,21 +2675,21 @@ minor warning for assignments where the rhs is a constant.</p>"
     (defthm-vl-expr-size-flag
 
       (defthm no-change-loserp-of-vl-expr-size
-        (let ((ret (vl-expr-size lhs-size x ss elem warnings)))
+        (let ((ret (vl-expr-size lhs-size x ss ctx warnings)))
           (implies (not (mv-nth 0 ret))
                    (equal (mv-nth 2 ret)
                           (vl-expr-fix x))))
-        :hints ('(:expand ((:free (lhs-size ss elem warnings)
-                            (vl-expr-size lhs-size x ss elem warnings)))))
+        :hints ('(:expand ((:free (lhs-size ss ctx warnings)
+                            (vl-expr-size lhs-size x ss ctx warnings)))))
         :flag vl-expr-size)
 
       (defthm no-change-loserp-of-vl-expr-expandsizes
-        (let ((ret (vl-expr-expandsizes x finalwidth finaltype ss elem warnings)))
+        (let ((ret (vl-expr-expandsizes x finalwidth finaltype ss ctx warnings)))
           (implies (not (mv-nth 0 ret))
                    (equal (mv-nth 2 ret)
                           (vl-expr-fix x))))
-        :hints ('(:expand ((:free (finalwidth finaltype ss elem warnings)
-                            (vl-expr-expandsizes x finalwidth finaltype ss elem warnings)))))
+        :hints ('(:expand ((:free (finalwidth finaltype ss ctx warnings)
+                            (vl-expr-expandsizes x finalwidth finaltype ss ctx warnings)))))
         :flag vl-expr-expandsizes)
       :skip-others t
       :hints(("Goal"
@@ -4205,17 +2697,139 @@ minor warning for assignments where the rhs is a constant.</p>"
 
 
 (defthm vl-expr-size-successp-implies-vl-expr-selfsize/typedecide
-  (b* (((mv ok & &) (vl-expr-size lhs-size x ss elem warnings))
-       ((mv & selfsize) (vl-expr-selfsize x ss elem warnings2))
-       ((mv & selftype) (vl-expr-typedecide x ss elem warnings3)))
+  (b* (((mv ok & &) (vl-expr-size lhs-size x ss ctx warnings))
+       ((mv & selfsize) (vl-expr-selfsize x ss ctx warnings2))
+       ((mv & selftype) (vl-expr-typedecide x ss ctx warnings3)))
     (implies ok
              (and selfsize
                   (natp selfsize)
                   selftype
                   (vl-exprtype-p selftype))))
-  :hints (("goal" :expand ((vl-expr-size lhs-size x ss elem warnings))
+  :hints (("goal" :expand ((vl-expr-size lhs-size x ss ctx warnings))
            :in-theory (enable WARNING-IRRELEVANCE-OF-VL-EXPR-TYPEDECIDE
                               WARNING-IRRELEVANCE-OF-VL-EXPR-SELFSIZE))))
+
+(defsection warning-irrelevance-of-vl-expr-size
+  (local
+   (flag::def-doublevar-induction vl-expr-size-flag-doublewarnings
+     :orig-fn vl-expr-size-flag
+     :old-var warnings
+     :new-var warnings2))
+
+  (local
+   (with-output :off (prove)
+     (defthm-vl-expr-size-flag
+       (defthm warning-irrelevance-of-vl-expr-size-1
+         (b* (((mv ok & new-x) (vl-expr-size lhs-size x ss ctx warnings))
+              ((mv ok1 & new-x1) (vl-expr-size lhs-size x ss ctx warnings2)))
+           (implies (bind-free (and (not (equal warnings ''nil)) '((warnings2 . 'nil))) (warnings2))
+                    (and (equal ok ok1)
+                         (equal new-x new-x1))))
+         :hints ('(:expand ((:free (lhs-size warnings)
+                             (vl-expr-size lhs-size x ss ctx warnings)))
+                   :in-theory (e/d (warning-irrelevance-of-vl-expr-selfsize
+                                    warning-irrelevance-of-vl-expr-typedecide)
+                                   (vl-expr-size
+                                    vl-expr-expandsizes))))
+         :flag vl-expr-size)
+       (defthm warning-irrelevance-of-vl-exprlist-size-1
+         (b* (((mv ok & new-x) (vl-exprlist-size x ss ctx warnings))
+              ((mv ok1 & new-x1) (vl-exprlist-size x ss ctx warnings2)))
+           (implies (bind-free (and (not (equal warnings ''nil)) '((warnings2 . 'nil))) (warnings2))
+                    (and (equal ok ok1)
+                         (equal new-x new-x1))))
+         :hints ('(:expand ((:free (warnings) (vl-exprlist-size x ss ctx warnings)))
+                   :in-theory (e/d ()
+                                   (vl-exprlist-size vl-expr-size))))
+         :flag vl-exprlist-size)
+       (defthm warning-irrelevance-of-vl-exprlist-expandsizes-1
+         (b* (((mv ok & new-x) (vl-exprlist-expandsizes x finalwidth finaltype ss ctx warnings))
+              ((mv ok1 & new-x1) (vl-exprlist-expandsizes x finalwidth finaltype ss ctx warnings2)))
+           (implies (bind-free (and (not (equal warnings ''nil)) '((warnings2 . 'nil))) (warnings2))
+                    (and (equal ok ok1)
+                         (equal new-x new-x1))))
+         :hints ('(:expand ((:free (warnings) (vl-exprlist-expandsizes
+                                               x finalwidth finaltype ss ctx warnings)))
+                   :in-theory (disable vl-exprlist-expandsizes vl-expr-expandsizes)))
+         :flag vl-exprlist-expandsizes)
+       (defthm warning-irrelevance-of-vl-expr-expandsizes-lemma-1
+         (b* (((mv ok & new-x) (vl-expr-expandsizes x finalwidth finaltype ss ctx warnings))
+              ((mv ok1 & new-x1) (vl-expr-expandsizes x finalwidth finaltype ss ctx warnings2)))
+           (implies (bind-free (and (not (equal warnings ''nil)) '((warnings2 . 'nil))) (warnings2))
+                    (and (equal ok ok1)
+                         (equal new-x new-x1))))
+         :hints ('(:expand ((:free (warnings finalwidth finaltype)
+                             (vl-expr-expandsizes x finalwidth finaltype ss ctx warnings)))
+                   :in-theory (e/d (warning-irrelevance-of-vl-expandsizes-zeroextend
+                                    warning-irrelevance-of-vl-expr-selfsize
+                                    warning-irrelevance-of-vl-expr-typedecide)
+                                   (vl-expr-size vl-exprlist-size vl-exprlist-expandsizes
+                                                 vl-expr-expandsizes))))
+         :flag vl-expr-expandsizes)
+       :hints (("Goal" :induct (vl-expr-size-flag-doublewarnings
+                                flag lhs-size x finalwidth finaltype ss ctx warnings warnings2))))))
+
+  (local
+   (flag::def-doublevar-induction vl-expr-size-flag-doublectx
+     :orig-fn vl-expr-size-flag
+     :old-var ctx
+     :new-var ctx2))
+
+  (with-output :off (prove)
+    (defthm-vl-expr-size-flag
+      (defthm warning-irrelevance-of-vl-expr-size
+        (b* (((mv ok & new-x) (vl-expr-size lhs-size x ss ctx warnings))
+             ((mv ok1 & new-x1) (vl-expr-size lhs-size x ss ctx2 nil)))
+          (implies (and (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
+                        (bind-free '((ctx2 . 'nil)) (ctx2)))
+                   (and (equal ok ok1)
+                        (equal new-x new-x1))))
+        :hints ('(:expand ((:free (lhs-size ctx warnings)
+                            (vl-expr-size lhs-size x ss ctx warnings)))
+                  :in-theory (e/d (warning-irrelevance-of-vl-expr-selfsize
+                                   warning-irrelevance-of-vl-expr-typedecide)
+                                  (vl-expr-size
+                                   vl-expr-expandsizes))))
+        :flag vl-expr-size)
+      (defthm warning-irrelevance-of-vl-exprlist-size
+        (b* (((mv ok & new-x) (vl-exprlist-size x ss ctx warnings))
+             ((mv ok1 & new-x1) (vl-exprlist-size x ss ctx2 nil)))
+          (implies (and (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
+                        (bind-free '((ctx2 . 'nil)) (ctx2)))
+                   (and (equal ok ok1)
+                        (equal new-x new-x1))))
+          :hints ('(:expand ((:free (ctx warnings) (vl-exprlist-size x ss ctx warnings)))
+                    :in-theory (e/d ()
+                                    (vl-exprlist-size vl-expr-size))))
+          :flag vl-exprlist-size)
+        (defthm warning-irrelevance-of-vl-exprlist-expandsizes
+          (b* (((mv ok & new-x) (vl-exprlist-expandsizes x finalwidth finaltype ss ctx warnings))
+               ((mv ok1 & new-x1) (vl-exprlist-expandsizes x finalwidth finaltype ss ctx2 nil)))
+            (implies (and (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
+                        (bind-free '((ctx2 . 'nil)) (ctx2)))
+                     (and (equal ok ok1)
+                          (equal new-x new-x1))))
+          :hints ('(:expand ((:free (ctx warnings) (vl-exprlist-expandsizes
+                                                x finalwidth finaltype ss ctx warnings)))
+                    :in-theory (disable vl-exprlist-expandsizes vl-expr-expandsizes)))
+          :flag vl-exprlist-expandsizes)
+        (defthm warning-irrelevance-of-vl-expr-expandsizes
+          (b* (((mv ok & new-x) (vl-expr-expandsizes x finalwidth finaltype ss ctx warnings))
+               ((mv ok1 & new-x1) (vl-expr-expandsizes x finalwidth finaltype ss ctx2 nil)))
+            (implies (and (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
+                          (bind-free '((ctx2 . 'nil)) (ctx2)))
+                     (and (equal ok ok1)
+                          (equal new-x new-x1))))
+          :hints ('(:expand ((:free (ctx warnings finalwidth finaltype)
+                              (vl-expr-expandsizes x finalwidth finaltype ss ctx warnings)))
+                    :in-theory (e/d (warning-irrelevance-of-vl-expandsizes-zeroextend
+                                     warning-irrelevance-of-vl-expr-selfsize
+                                     warning-irrelevance-of-vl-expr-typedecide)
+                                    (vl-expr-size vl-exprlist-size vl-exprlist-expandsizes
+                                                  vl-expr-expandsizes))))
+          :flag vl-expr-expandsizes)
+        :hints (("Goal" :induct (vl-expr-size-flag-doublectx
+                                 flag lhs-size x finalwidth finaltype ss ctx warnings ctx2))))))
 
 
 (defsection vl-expr-welltyped-p-of-vl-expr-size
@@ -4409,25 +3023,25 @@ minor warning for assignments where the rhs is a constant.</p>"
   (defthm-vl-expr-size-flag
 
     (defthm vl-expr-welltyped-p-of-vl-expr-size
-      (let ((ret (vl-expr-size lhs-size x ss elem warnings)))
+      (let ((ret (vl-expr-size lhs-size x ss ctx warnings)))
         (implies (mv-nth 0 ret)
                  (vl-expr-welltyped-p (mv-nth 2 ret))))
-      :hints ('(:expand ((vl-expr-size lhs-size x ss elem warnings)
-                         (vl-expr-size nil x ss elem warnings)
+      :hints ('(:expand ((vl-expr-size lhs-size x ss ctx warnings)
+                         (vl-expr-size nil x ss ctx warnings)
                          (:free (op atts args finalwidth finaltype)
                           (vl-expr-welltyped-p
                            (vl-nonatom op atts args finalwidth finaltype))))))
       :flag vl-expr-size)
 
     (defthm vl-exprlist-welltyped-p-of-vl-exprlist-size
-      (let ((ret (vl-exprlist-size x ss elem warnings)))
+      (let ((ret (vl-exprlist-size x ss ctx warnings)))
         (implies (mv-nth 0 ret)
                  (vl-exprlist-welltyped-p (mv-nth 2 ret))))
-      :hints ('(:expand ((vl-exprlist-size x ss elem warnings))))
+      :hints ('(:expand ((vl-exprlist-size x ss ctx warnings))))
       :flag vl-exprlist-size)
 
     (defthm vl-expr-welltyped-p-of-vl-expr-expandsizes
-      (let ((ret (vl-expr-expandsizes x finalwidth finaltype ss elem warnings)))
+      (let ((ret (vl-expr-expandsizes x finalwidth finaltype ss ctx warnings)))
         (implies (mv-nth 0 ret)
                  (and (vl-expr-welltyped-p (mv-nth 2 ret))
                       (equal (vl-expr->finalwidth (mv-nth 2 ret))
@@ -4435,13 +3049,14 @@ minor warning for assignments where the rhs is a constant.</p>"
                       (equal (vl-expr->finaltype (mv-nth 2 ret))
                              (vl-exprtype-fix finaltype)))))
       :hints ('(:expand ((:free (finalwidth)
-                          (vl-expr-expandsizes x finalwidth finaltype ss elem warnings))
+                          (vl-expr-expandsizes x finalwidth finaltype ss ctx warnings))
                          (:free (op atts args finalwidth finaltype)
                           (vl-expr-welltyped-p
-                           (vl-nonatom op atts args finalwidth finaltype)))))
+                           (vl-nonatom op atts args finalwidth finaltype))))
+                :in-theory (enable vl-$bits-call-p))
               (and stable-under-simplificationp
                    '(:expand ((:free (warnings)
-                               (vl-expr-selfsize x ss elem warnings))
+                               (vl-expr-selfsize x ss ctx warnings))
                               (:free (op atts args finalwidth finaltype)
                                (vl-expr-welltyped-p
                                 (vl-nonatom op atts args finalwidth finaltype))))))
@@ -4451,14 +3066,14 @@ minor warning for assignments where the rhs is a constant.</p>"
       :flag vl-expr-expandsizes)
 
     (defthm vl-exprlist-welltyped-p-of-vl-exprlist-expandsizes
-      (let ((ret (vl-exprlist-expandsizes x finalwidth finaltype ss elem warnings)))
+      (let ((ret (vl-exprlist-expandsizes x finalwidth finaltype ss ctx warnings)))
         (implies (mv-nth 0 ret)
                  (and (vl-exprlist-welltyped-p (mv-nth 2 ret))
                       (all-equalp (nfix finalwidth)
                                   (vl-exprlist->finalwidths (mv-nth 2 ret)))
                       (all-equalp (vl-exprtype-fix finaltype)
                                   (vl-exprlist->finaltypes (mv-nth 2 ret))))))
-      :hints ('(:expand ((vl-exprlist-expandsizes x finalwidth finaltype ss elem warnings))))
+      :hints ('(:expand ((vl-exprlist-expandsizes x finalwidth finaltype ss ctx warnings))))
       :flag vl-exprlist-expandsizes)
 
     :hints(("Goal"
@@ -4473,10 +3088,1737 @@ minor warning for assignments where the rhs is a constant.</p>"
   ;; ;; This is an important corollary.  It shows us that if we actually provide
   ;; ;; an lhs-size argument, we're guaranteed to get back an expression that is
   ;; ;; at least as large as lhs-size.
-  (let ((ret (vl-expr-size lhs-size x ss elem warnings)))
+  (let ((ret (vl-expr-size lhs-size x ss ctx warnings)))
     (implies (and (mv-nth 0 ret)
                   (natp lhs-size))
              (<= lhs-size (vl-expr->finalwidth (mv-nth 2 ret)))))
   :rule-classes ((:rewrite) (:linear))
   :hints(("Goal"
-          :expand ((vl-expr-size lhs-size x ss elem warnings)))))
+          :expand ((vl-expr-size lhs-size x ss ctx warnings)))))
+
+
+(define vl-datatype->packedp ((x vl-datatype-p))
+  :parents (vl-datatype)
+  :short "Check to see whether a datatype is packed."
+  :long "<p>Doesn't do deep consistency checking to say whether the datatype
+really can be considered packed -- just that it doesn't have unpacked dims, and
+it's of a bit-stream coretype or a packed struct/union type.  Ignoring enums
+for the moment.</p>"
+
+  (b* (((when (consp (vl-datatype->udims x))) nil))
+    (vl-datatype-case x
+      :vl-coretype (and (member x.name '(:vl-logic
+                                         :vl-reg
+                                         :vl-bit
+                                         :vl-byte
+                                         :vl-shortint
+                                         :vl-int
+                                         :vl-longint
+                                         :vl-integer
+                                         :vl-time))
+                        t)
+      :vl-struct x.packedp
+      :vl-union x.packedp
+      :vl-enum t
+      :otherwise nil ;; usertypes should be resolved
+      )))
+
+(define vl-basictype->datatype ((x vl-basictypekind-p))
+  :returns (mv (warning (iff (vl-warning-p warning) warning))
+               (type (implies (not warning) (vl-datatype-p type))))
+  (b* ((x (vl-basictypekind-fix x))
+       ((when (vl-coretypename-p x))
+        (mv nil (make-vl-coretype :name x))))
+    (mv (make-vl-warning :type :vl-basictype->datatype-fail
+                         :msg "Couldn't resolve type of ~a0."
+                         :args (list x))
+        nil)))
+    
+
+
+(define vl-castexpr->datatype ((x vl-expr-p) (ss vl-scopestack-p))
+  :returns (mv (warning (iff (vl-warning-p warning) warning))
+               (type (implies (not warning) (vl-datatype-p type))))
+  ;; missing support for type parameters and maybe some other things
+  (b* ((x (vl-expr-fix x))
+       ((unless (vl-atom-p x))
+        (mv (make-vl-warning :type :vl-castexpr->datatype-fail
+                             :msg "Couldn't resolve type of ~a0 (not implemented)."
+                             :args (list x))
+            nil))
+       ((vl-atom x))
+       ((when (eq (tag x.guts) :vl-basictype))
+        (vl-basictype->datatype (vl-basictype->kind x.guts)))
+       ((unless (eq (tag x.guts) :vl-typename))
+        (mv (make-vl-warning :type :vl-castexpr->datatype-fail
+                             :msg "Couldn't resolve type of ~a0 (not implemented)."
+                             :args (list x))
+            nil)))
+    (vl-datatype-usertype-elim (make-vl-usertype :kind x) ss 100)))
+
+(defconst *simple-vector-datatype*
+  (make-vl-coretype :name :vl-logic :pdims (list (make-vl-range
+                                                  :msb (vl-make-index 0)
+                                                  :lsb (vl-make-index 0)))))
+
+(define vl-atom-selfdetermine-type ((x vl-expr-p)
+                                    (ss vl-scopestack-p)
+                                    (ctx vl-context-p)
+                                    (warnings vl-warninglist-p))
+  :guard (vl-atom-p x)
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (type     (implies successp (vl-datatype-p type)))
+               (new-warnings vl-warninglist-p))
+  (b* (((vl-atom x))
+       (warnings (vl-warninglist-fix warnings)))
+    (case (tag x.guts)
+      ((:vl-constint :vl-weirdint :vl-extint) 
+       (mv t *simple-vector-datatype* warnings))
+      ((:vl-hidpiece :vl-id)
+       (b* (((mv warning type)
+             (vl-index-find-type x ss))
+            ((when warning)
+             (mv nil nil (cons warning warnings))))
+         (mv t type warnings)))
+      (otherwise
+       (mv nil nil
+           (warn :type :vl-expr-selfdetermined-type-fail
+                 :msg  "~a0: Couldn't determine the type of atom ~a1."
+                 :args (list (vl-context-fix ctx) (vl-expr-fix x))))))))
+
+
+(define vl-op-simple-vector-p ((x vl-op-p))
+  ;; We think all of these operators always produce a simple vector.  The one
+  ;; odd case is the concatenation op when it is really an unpacked
+  ;; concatenation.  For this reason we don't include the concatenation
+  ;; operator here.
+  (member (vl-op-fix x)
+          '(:vl-unary-plus
+            :vl-unary-minus
+            :vl-unary-lognot
+            :vl-unary-bitnot
+            :vl-unary-bitand
+            :vl-unary-nand
+            :vl-unary-bitor
+            :vl-unary-nor
+            :vl-unary-xor
+            :vl-unary-xnor
+            :vl-binary-plus
+            :vl-binary-minus
+            :vl-binary-times
+            :vl-binary-div
+            :vl-binary-rem
+            :vl-binary-eq
+            :vl-binary-neq
+            :vl-binary-ceq
+            :vl-binary-cne
+            :vl-binary-wildeq
+            :vl-binary-wildneq
+            :vl-binary-logand
+            :vl-binary-logor
+            :vl-binary-power
+            :vl-binary-lt
+            :vl-binary-lte
+            :vl-binary-gt
+            :vl-binary-gte
+            :vl-binary-bitand
+            :vl-binary-bitor
+            :vl-binary-xor
+            :vl-binary-xnor
+            :vl-binary-shr
+            :vl-binary-shl
+            :vl-binary-ashr
+            :vl-binary-ashl
+            :vl-implies
+            :vl-equiv
+            :vl-bitselect
+            :vl-select-colon
+            :vl-select-pluscolon
+            :vl-select-minuscolon
+            :vl-partselect-colon
+            :vl-partselect-pluscolon
+            :vl-partselect-minuscolon
+            :vl-multiconcat)))
+
+(local (in-theory (enable arg1-exists-by-arity
+                          vl-expr-p-of-car-when-vl-exprlist-p)))
+
+(define vl-expr-selfdetermine-type ((x vl-expr-p)
+                                    (ss vl-scopestack-p)
+                                    (ctx vl-context-p)
+                                    (warnings vl-warninglist-p))
+  :parents (expression-sizing)
+  :short "Determine the (unpacked) type of an expression."
+  :long "<p>Note: this function isn't used yet, because we don't try to support
+unpacked array concatenations yet.</p>
+
+<p>In the context of unpacked array concatenations, the expressions inside the
+concatenation have to have self-determined type.  We think this means that it
+has to be clear from looking at the expression whether it's an unpacked
+array/struct/whatever.  If it is a packed structure, we think it doesn't matter
+what its type is.</p>
+
+<p>If this function is successful, it returns a datatype.  If it is an unpacked
+datatype, then we think it's the exact self-determined datatype of the
+expression.  However, all packed datatypes are treated the same here -- in
+particular, the size and signedness of the packed datatype returned doesn't
+mean anything.</p>"
+  :measure (vl-expr-count x)
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (type     (implies successp (vl-datatype-p type)))
+               (new-warnings vl-warninglist-p))
+  :verify-guards nil
+  (b* ((warnings (vl-warninglist-fix warnings))
+       ((when (vl-atom-p x))
+        (vl-atom-selfdetermine-type x ss ctx warnings))
+       ((vl-nonatom x))
+       ((when (member x.op '(:vl-hid-dot :vl-index)))
+        (b* (((mv warning type) (vl-index-find-type x ss))
+             ((when warning) (mv nil nil (cons warning (vl-warninglist-fix warnings)))))
+          (mv t type warnings)))
+       ((when (eq x.op :vl-qmark))
+        (b* (((mv ok1 type1 warnings)
+              (vl-expr-selfdetermine-type (second x.args) ss ctx warnings))
+             ((mv ok2 type2 warnings)
+              (vl-expr-selfdetermine-type (third x.args) ss ctx warnings))
+             ((unless (and ok1 ok2))
+              (mv nil nil warnings))
+             ((when (equal type1 type2))
+              (mv t type1 warnings))
+             ((when (and (vl-datatype->packedp type1)
+                         (vl-datatype->packedp type2)))
+              ;; OK -- both types are packed, so it doesn't really matter
+              (mv t type1 warnings)))
+          (mv nil nil
+              (warn :type :vl-expr-self-determined-type-fail
+                    :msg "~a0: Couldn't self-determine the type of ~a1 ~
+                          because the branches have different types: ~a2 ~
+                          versus ~a3."
+                    :args (list (vl-context-fix ctx)
+                                (vl-expr-fix x) type1 type2)))))
+       ((when (eq x.op :vl-pattern-type))
+        (b* (((mv warning type) (vl-castexpr->datatype (first x.args) ss))
+             ((when warning) (mv nil nil (cons warning (vl-warninglist-fix warnings)))))
+          (mv t type warnings)))
+
+       ((when (or (vl-op-simple-vector-p x.op)
+                  (eq x.op :vl-concat)))
+        ;; Doesn't matter what packed datatype we return, so we just make a logic vector.
+        (mv t *simple-vector-datatype*
+            warnings)))
+    (mv nil nil
+        (warn :type :vl-expr-self-determined-type-fail
+              :msg "~a0: Couldn't self-determine the type of ~a1."
+              :args (list (vl-context-fix ctx) (vl-expr-fix x)))))
+  ///
+  (verify-guards vl-expr-selfdetermine-type))
+
+(define vl-expr-has-patterns ((x vl-expr-p))
+  :measure (vl-expr-count x)
+  (b* (((when (vl-atom-p x)) nil)
+       ((vl-nonatom x))
+       ((when (member x.op '(:vl-pattern-positional
+                             :vl-pattern-keyvalue
+                             :vl-pattern-multi
+                             :vl-pattern-type)))
+        t)
+       ((when (eq x.op :vl-qmark))
+        (or (vl-expr-has-patterns (second x.args))
+            (vl-expr-has-patterns (third x.args)))))
+    nil))
+
+(fty::defalist vl-type-expr-pairs :key-type vl-datatype :val-type vl-expr)
+
+
+
+
+(fty::deflist vl-datatypelist :elt-type vl-datatype :true-listp nil :elementp-of-nil nil)
+
+(defprojection vl-structmemberlist->types ((x vl-structmemberlist-p))
+  (vl-structmember->type x)
+  :returns (types vl-datatypelist-p))
+
+(local (defthm vl-type-expr-pairs-of-pairlis
+         (implies (and (equal (len x) (len y))
+                       (vl-datatypelist-p x)
+                       (vl-exprlist-p y))
+                  (vl-type-expr-pairs-p (pairlis$ x y)))
+         :hints(("Goal" :in-theory (enable pairlis$)))))
+
+(define vl-exprlist-max-count ((x vl-exprlist-p))
+  :verify-guards nil
+  (if (atom x)
+      0
+    (max (vl-expr-count (car x))
+         (vl-exprlist-max-count (cdr x)))))
+
+(local (fty::deffixcong list-equiv equal (vl-exprlist-max-count x) x
+         :hints(("Goal" :in-theory (enable list-fix
+                                           vl-exprlist-max-count)))))
+
+(local
+ (defthm vl-exprlist-max-count-less-than-vl-exprlist-count
+   (< (vl-exprlist-max-count x)
+      (vl-exprlist-count x))
+   :hints(("Goal" :in-theory (enable vl-exprlist-max-count
+                                     pairlis$ len)
+           :expand ((vl-exprlist-count vals))))
+   :rule-classes :linear))
+
+;; (local (in-theory (enable acl2::true-listp-of-list-fix
+;;                           (:t repeat)
+;;                           acl2::len-of-repeat)))
+(local (in-theory (enable acl2::len-of-repeat)))
+
+(define vl-type-expr-pairs-sum-datatype-sizes ((x vl-type-expr-pairs-p))
+  :returns (mv (warning (iff (vl-warning-p warning) warning))
+               (size (implies (not warning) (natp size)) :rule-classes :type-prescription))
+  :measure (len (vl-type-expr-pairs-fix x))
+  :verify-guards nil
+  (b* ((x (vl-type-expr-pairs-fix x)))
+    (if (atom x)
+        (mv nil 0)
+      (b* (((mv warning size1) (vl-datatype-size (caar x)))
+           ((when warning) (mv warning nil))
+           ((mv warning size2) (vl-type-expr-pairs-sum-datatype-sizes (cdr x)))
+           ((when warning) (mv warning nil)))
+        (mv nil (+ size1 size2)))))
+  ///
+  (verify-guards vl-type-expr-pairs-sum-datatype-sizes))
+
+
+(local (in-theory (enable basic-arithmetic-rules)))
+
+(local (defthm vl-datatype-size-of-cdr-udims
+         (b* (((mv warning size) (vl-datatype-size type))
+              ((mv warning1 size1) (vl-datatype-size
+                                    (vl-datatype-update-dims
+                                     (vl-datatype->pdims type)
+                                     (cdr (vl-datatype->udims type))
+                                     type))))
+           (implies (and (not warning)
+                         (consp (vl-datatype->udims type)))
+                    (and (not warning1)
+                         (equal size1
+                                (/ size (vl-range-size (car (vl-datatype->udims type))))))))
+         :hints(("Goal" :in-theory (enable vl-datatype->pdims
+                                           vl-datatype->udims
+                                           vl-datatype-size
+                                           vl-datatype-update-dims
+                                           vl-packeddimensionlist-total-size)))))
+
+(local (defthm vl-datatype-size-of-cdr-pdims
+         (b* (((mv warning size) (vl-datatype-size type))
+              ((mv warning1 size1) (vl-datatype-size
+                                    (vl-datatype-update-dims
+                                     (cdr (vl-datatype->pdims type))
+                                     nil
+                                     type))))
+           (implies (and (not warning)
+                         (consp (vl-datatype->pdims type))
+                         (not (consp (vl-datatype->udims type))))
+                    (and (not warning1)
+                         (equal size1
+                                (/ size (vl-range-size (car (vl-datatype->pdims type))))))))
+         :hints(("Goal" :in-theory (enable vl-datatype->pdims
+                                           vl-datatype->udims
+                                           vl-datatype-size
+                                           vl-datatype-update-dims
+                                           vl-packeddimensionlist-total-size)))))
+
+
+(local (defthm vl-type-expr-pairs-sum-datatype-sizes-of-pairlis-structmember-types
+         (b* (((mv warning sizes) (vl-structmemberlist-sizes members))
+              ((mv warning1 size) (vl-type-expr-pairs-sum-datatype-sizes
+                                   (pairlis$ (vl-structmemberlist->types members) exprs))))
+           (implies (not warning)
+                    (and (not warning1)
+                         (equal size (sum-nats sizes)))))
+         :hints (("goal" :induct (pairlis$ members exprs)
+                  :in-theory (enable pairlis$ vl-structmemberlist->types
+                                     vl-type-expr-pairs-sum-datatype-sizes
+                                     vl-structmemberlist-sizes)))))
+
+(local (defthm vl-structmemberlist->sizes-ok-when-type-size-ok
+         (b* (((mv warning size) (vl-datatype-size type))
+              ((mv warning1 sizes) (vl-structmemberlist-sizes
+                                    (vl-struct->members type))))
+           (implies (and (not warning)
+                         (equal (vl-datatype-kind type) :vl-struct))
+                    (and (not warning1)
+                         (implies (and (not (consp (vl-datatype->pdims type)))
+                                       (not (consp (vl-datatype->udims type))))
+                                  (equal (sum-nats sizes) size)))))
+         :hints (("Goal" :expand ((vl-datatype-size type))
+                  :in-theory (enable vl-datatype->pdims
+                                     vl-datatype->udims
+                                     vl-packeddimensionlist-total-size)))))
+
+(local (defthm blah
+           (implies (and (acl2-numberp a)
+                         (acl2-numberp n))
+                    (equal (+ a (* (+ -1 n) a))
+                           (* n a)))))
+
+(define vl-assignpattern-positional-replacement ((lhs-type vl-datatype-p)
+                                                 (fields vl-exprlist-p)
+                                                 (orig-x vl-expr-p)
+                                                 (ctx vl-context-p)
+                                                 (warnings vl-warninglist-p))
+    :parents (expression-sizing)
+    :short "Return the list of type/expression pairs to concatenate together to
+replace a positional assignment pattern."
+    :returns (mv (successp booleanp :rule-classes :type-prescription)
+                 (pairs vl-type-expr-pairs-p)
+                 (new-warnings vl-warninglist-p))
+  (b* ((pdims (vl-datatype->pdims lhs-type))
+       (udims (vl-datatype->udims lhs-type))
+       ((unless (or (consp udims) (consp pdims)))
+        (b* (((unless (eq (vl-datatype-kind lhs-type) :vl-struct))
+              (mv nil nil
+                  (warn :type :vl-assignpattern-elim-fail
+                        :msg "~a0: Positional assignment pattern must be in a ~
+                              struct or array type context: ~a1"
+                        :args (list (vl-context-fix ctx) (vl-expr-fix orig-x)))))
+             ((vl-struct lhs-type))
+             ((unless (eql (len fields) (len lhs-type.members)))
+              (mv nil nil
+                  (warn :type :vl-assignpattern-elim-fail
+                        :msg "~a0: Wrong number of fields in positional ~
+                              assignment pattern ~a1"
+                        :args (list (vl-context-fix ctx) (vl-expr-fix orig-x))))))
+          (mv t (pairlis$ (vl-structmemberlist->types lhs-type.members)
+                          (redundant-list-fix (vl-exprlist-fix fields)))
+              (ok))))
+       (dim (if (consp udims) (car udims) (car pdims)))
+       ((unless (and (not (eq dim :vl-unsized-dimension))
+                     (vl-range-resolved-p dim)))
+        (mv nil nil
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg "~a0: Unresolved packed dimensions in LHS datatype ~a1"
+                  :args (list (vl-context-fix ctx) (vl-datatype-fix lhs-type)))))
+       ((unless (eql (vl-range-size dim) (len fields)))
+        (mv nil nil
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg "~a0: Wrong number of fields in positional assignment ~
+                        pattern ~a1"
+                  :args (list (vl-context-fix ctx) (vl-expr-fix orig-x)))))
+
+       (new-datatype (if (consp udims)
+                         (vl-datatype-update-dims pdims (cdr udims) lhs-type)
+                       (vl-datatype-update-dims (cdr pdims) nil lhs-type))))
+    (mv t (pairlis$ (repeat (len fields) new-datatype)
+                    (redundant-list-fix (vl-exprlist-fix fields)))
+        (ok)))
+  ///
+  (defthm vl-exprlist-max-count-of-vl-assignpattern-positional-replacement
+    (< (vl-exprlist-max-count
+        (alist-vals
+         (mv-nth 1 (vl-assignpattern-positional-replacement
+                    lhs-type fields orig-x ctx warnings))))
+       (vl-exprlist-count fields))
+    :rule-classes :linear)
+
+  (defthm vl-exprlist-max-count-of-vl-assignpattern-positional-replacement-lte-max-count
+    (<= (vl-exprlist-max-count
+         (alist-vals
+          (mv-nth 1 (vl-assignpattern-positional-replacement
+                     lhs-type fields orig-x ctx warnings))))
+        (vl-exprlist-max-count fields))
+    :rule-classes :linear)
+
+
+  (local (defthm vl-type-expr-pairs-sum-datatype-sizes-of-pairlis-repeat
+           (b* (((mv warning size) (vl-datatype-size type))
+                ((mv warning1 size2) (vl-type-expr-pairs-sum-datatype-sizes
+                                      (pairlis$ (repeat n type) exprs))))
+             (implies (not warning)
+                      (and (not warning1)
+                           (equal size2 (* (nfix n) size)))))
+           :hints(("Goal" :in-theory (enable pairlis$ repeat nthcdr
+                                             vl-type-expr-pairs-sum-datatype-sizes)
+                   :induct (nthcdr n exprs)))))
+
+  (defthm sum-sizes-of-vl-assignpattern-positional-replacement
+    (b* (((mv ok pairs &) (vl-assignpattern-positional-replacement
+                           lhs-type fields orig-x ctx warnings))
+         ((mv warning size) (vl-datatype-size lhs-type))
+         ((mv warning1 size-sum) (vl-type-expr-pairs-sum-datatype-sizes pairs)))
+      (implies (and ok (not warning))
+               (and (not warning1)
+                    (equal size-sum size))))))
+
+
+(define append-n ((count natp) (list))
+  (if (zp count)
+      nil
+    (append-without-guard list (append-n (1- count) list))))
+
+(define vl-assignpattern-multi-replacement ((lhs-type vl-datatype-p)
+                                            (args vl-exprlist-p)
+                                            (orig-x vl-expr-p)
+                                            (ctx vl-context-p)
+                                            (warnings vl-warninglist-p))
+  :parents (expression-sizing)
+  :short "Return the list of type/expression pairs to concatenate together to
+replace a positional assignment pattern."
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (pairs vl-type-expr-pairs-p)
+               (new-warnings vl-warninglist-p))
+  :prepwork ((local (defthm vl-exprlist-p-of-append-n-expressions
+                      (implies (vl-exprlist-p list)
+                               (vl-exprlist-p (append-n count list)))
+                      :hints(("Goal" :in-theory (enable append-n))))))
+  (b* ((ctx (vl-context-fix ctx))
+       (orig-x (vl-expr-fix orig-x))
+       ((unless (and (eql (len args) 2)
+                     (vl-expr-resolved-p (first args))
+                     (not (eq (vl-expr-kind (second args)) :atom))
+                     (eq (vl-nonatom->op (second args)) :vl-concat)))
+        (mv nil nil
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg "~a0: Ill-formed replication assignment pattern: ~a1"
+                  :args (list ctx orig-x))))
+       (replications (vl-resolved->val (first args)))
+       (fields (append-n replications (vl-nonatom->args (second args)))))
+    ;; bozo the warnings produced by this will probably be weird
+    (vl-assignpattern-positional-replacement lhs-type fields orig-x ctx warnings))
+  ///
+
+  (local (defthm vl-exprlist-max-count-of-append
+           (equal (vl-exprlist-max-count (append x y))
+                  (max (vl-exprlist-max-count x)
+                       (vl-exprlist-max-count y)))
+           :hints(("Goal" :in-theory (enable vl-exprlist-max-count)))))
+
+  (local (defthm vl-exprlist-max-count-of-append-n
+           (<= (vl-exprlist-max-count (append-n n x))
+               (vl-exprlist-max-count x))
+           :hints(("Goal" :in-theory (enable append-n
+                                             vl-exprlist-max-count)))
+           :rule-classes :linear))
+
+  (defthm vl-exprlist-max-count-of-vl-assignpattern-multi-replacement
+    (< (vl-exprlist-max-count
+        (alist-vals (mv-nth 1 (vl-assignpattern-multi-replacement
+                               lhs-type args orig-x ctx warnings))))
+       (vl-exprlist-count args))
+    :rule-classes :linear)
+
+  (defthm sum-sizes-of-vl-assignpattern-multi-replacement
+    (b* (((mv ok pairs &) (vl-assignpattern-multi-replacement
+                           lhs-type args orig-x ctx warnings))
+         ((mv warning size) (vl-datatype-size lhs-type))
+         ((mv warning1 size-sum) (vl-type-expr-pairs-sum-datatype-sizes pairs)))
+      (implies (and ok (not warning))
+               (and (not warning1)
+                    (equal size-sum size))))))
+
+;; Alist for storing the correspondences from a key/value assignment pattern.
+;; We don't give the keys a type because they can be an index or a string or
+;; :default and we don't think it's needed.
+(fty::defalist vl-expr-val-alist :val-type vl-expr)
+
+(define vl-expr-val-alist-max-count ((x vl-expr-val-alist-p))
+  :verify-guards nil
+  :measure (len (vl-expr-val-alist-fix x))
+  (b* ((x (vl-expr-val-alist-fix x)))
+    (if (atom x)
+        0
+      (max (vl-expr-count (cdar x))
+           (vl-expr-val-alist-max-count (cdr x))))))
+
+
+(local
+ (defthm vl-expr-val-alist-max-count-of-pairlis$
+   (implies (equal (len keys) (len vals))
+            (< (vl-expr-val-alist-max-count (pairlis$ keys vals))
+               (vl-exprlist-count vals)))
+   :hints(("Goal" :in-theory (enable vl-expr-val-alist-fix
+                                     vl-expr-val-alist-max-count
+                                     pairlis$ len)
+           :expand ((vl-exprlist-count vals))
+           :induct (pairlis$ keys vals)))
+   :rule-classes :linear))
+
+(define vl-parse-keyval-pattern-array ((fields vl-exprlist-p)
+                                       (range (and (vl-range-p range)
+                                                   (vl-range-resolved-p range)))
+                                       (orig-x vl-expr-p)
+                                       (ctx vl-context-p)
+                                       (warnings vl-warninglist-p))
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (alist vl-expr-val-alist-p)
+               (new-warnings vl-warninglist-p))
+  :hooks ((:fix :hints (("goal" :induct (vl-parse-keyval-pattern-array
+                                         fields range orig-x ctx warnings)
+                         :expand ((:free (range orig-x ctx warnings)
+                                   (vl-parse-keyval-pattern-array
+                                    fields range orig-x ctx warnings))
+                                  (vl-parse-keyval-pattern-array
+                                   (vl-exprlist-fix fields) range orig-x ctx warnings))
+                         :in-theory (disable (:d vl-parse-keyval-pattern-array))))))
+                         
+  (b* ((warnings (vl-warninglist-fix warnings))
+       (ctx (vl-context-fix ctx))
+       (orig-x (vl-expr-fix orig-x))
+       ((when (atom fields)) (mv t nil warnings))
+       (pair (vl-expr-fix (car fields)))
+       ((unless (and (not (vl-atom-p pair))
+                     (eq (vl-nonatom->op pair) :vl-keyvalue)))
+        (mv nil nil (warn :type :vl-assignpattern-elim-fail
+                          :msg "~a0: Expected key-value pairs in assignment ~
+                                  pattern ~a1 (bad: ~a2)"
+                          :args (list ctx orig-x pair))))
+       (pair.args (vl-nonatom->args pair))
+       (idx (first pair.args))
+       (defaultp (and (vl-atom-p idx)
+                      (equal (vl-atom->guts idx) (vl-keyguts :vl-default))))
+       ((unless (or defaultp (vl-expr-resolved-p idx)))
+        (mv nil nil (warn :type :vl-assignpattern-elim-fail
+                          :msg "~a0: Expected keys in array keyval pattern ~
+                                  to be integers (except for default): ~a1 ~
+                                  (bad: ~a2)"
+                          :args (list ctx orig-x pair))))
+       (key (if defaultp
+                :default
+              (vl-resolved->val idx)))
+       ((unless (or defaultp
+                    (and (<= key (vl-resolved->val (vl-range->msb range)))
+                         (<= (vl-resolved->val (vl-range->lsb range)) key))
+                    (and (<= (vl-resolved->val (vl-range->msb range)) key)
+                         (<= key (vl-resolved->val (vl-range->lsb range))))))
+        (mv nil nil (warn :type :vl-assignpattern-elim-fail
+                          :msg "~a0: Assign pattern key out of range for ~
+                                  array type: ~a1 (bad: ~a2)"
+                          :args (list ctx orig-x pair))))
+
+       ((mv rest-ok rest warnings)
+        (vl-parse-keyval-pattern-array (cdr fields) range orig-x ctx warnings)))
+    (mv rest-ok
+        (cons (cons key (second pair.args))
+              rest)
+        warnings))
+  ///
+  (defthm vl-exprlist-max-count-of-vl-parse-keyval-pattern-array
+    (< (vl-exprlist-max-count
+        (alist-vals (mv-nth 1 (vl-parse-keyval-pattern-array
+                               fields range orig-x ctx warnings))))
+       (vl-exprlist-count fields))
+    :hints(("Goal" :in-theory (enable vl-exprlist-max-count)))
+    :rule-classes :linear))
+
+
+(define vl-parse-keyval-pattern-struct ((fields vl-exprlist-p)
+                                        (members vl-structmemberlist-p)
+                                        (orig-x vl-expr-p)
+                                        (ctx vl-context-p)
+                                        (warnings vl-warninglist-p))
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (alist vl-expr-val-alist-p)
+               (new-warnings vl-warninglist-p))
+  :hooks ((:fix :hints (("goal" :induct (vl-parse-keyval-pattern-struct
+                                         fields members orig-x ctx warnings)
+                         :expand ((:free (members orig-x ctx warnings)
+                                   (vl-parse-keyval-pattern-struct
+                                    fields members orig-x ctx warnings))
+                                  (vl-parse-keyval-pattern-struct
+                                   (vl-exprlist-fix fields) members orig-x ctx warnings))
+                         :in-theory (disable (:d vl-parse-keyval-pattern-struct))))))
+                         
+  (b* ((warnings (vl-warninglist-fix warnings))
+       (ctx (vl-context-fix ctx))
+       (orig-x (vl-expr-fix orig-x))
+       ((when (atom fields)) (mv t nil warnings))
+       (pair (vl-expr-fix (car fields)))
+       ((unless (and (not (vl-atom-p pair))
+                     (eq (vl-nonatom->op pair) :vl-keyvalue)))
+        (mv nil nil (warn :type :vl-assignpattern-elim-fail
+                          :msg "~a0: Expected key-value pairs in assignment ~
+                                  pattern ~a1 (bad: ~a2)"
+                          :args (list ctx orig-x pair))))
+       (pair.args (vl-nonatom->args pair))
+       (idx (first pair.args))
+       (defaultp (and (vl-atom-p idx)
+                      (equal (vl-atom->guts idx) (vl-keyguts :vl-default))))
+       ((unless (or defaultp (vl-idexpr-p idx)))
+        (mv nil nil (warn :type :vl-assignpattern-elim-fail
+                          :msg "~a0: Expected keys in struct keyval pattern ~
+                                  to be identifiers (except for default): ~a1 ~
+                                  (bad: ~a2)"
+                          :args (list ctx orig-x pair))))
+       (key (if defaultp
+                :default
+              (vl-idexpr->name idx)))
+       ((unless (or defaultp
+                    (vl-find-structmember key members)))
+        (mv nil nil (warn :type :vl-assignpattern-elim-fail
+                          :msg "~a0: Assign pattern key out of range for ~
+                                  struct type: ~a1 (bad: ~a2)"
+                          :args (list ctx orig-x pair))))
+
+       ((mv rest-ok rest warnings)
+        (vl-parse-keyval-pattern-struct (cdr fields) members orig-x ctx warnings)))
+    (mv rest-ok
+        (cons (cons key (second pair.args))
+              rest)
+        warnings))
+  ///
+  (defthm vl-exprlist-max-count-of-vl-parse-keyval-pattern-struct
+    (< (vl-exprlist-max-count
+        (alist-vals (mv-nth 1 (vl-parse-keyval-pattern-struct
+                               fields members orig-x ctx warnings))))
+       (vl-exprlist-count fields))
+    :hints(("Goal" :in-theory (enable vl-exprlist-max-count)))
+    :rule-classes :linear))
+
+
+;; (local (defthm vl-expr-count-of-lookup-in-expr-val-alist
+;;          (implies (hons-assoc-equal k alist)
+;;                   (<= (vl-expr-count (cdr (hons-assoc-equal k alist)))
+;;                       (vl-expr-val-alist-max-count alist)))
+;;          :hints(("Goal" :in-theory (enable vl-expr-val-alist-max-count
+;;                                            hons-assoc-equal)
+;;                  :induct (hons-assoc-equal k alist)
+;;                  :expand ((vl-expr-val-alist-fix alist)
+;;                           (vl-expr-val-alist-max-count alist))))))
+
+(local (defthm vl-expr-count-of-lookup-in-expr-val-alist-fix
+         (implies (hons-assoc-equal k (vl-expr-val-alist-fix alist))
+                  (<= (vl-expr-count (cdr (hons-assoc-equal k (vl-expr-val-alist-fix alist))))
+                      (vl-exprlist-max-count (alist-vals alist))))
+         :hints(("Goal" :in-theory (enable vl-exprlist-max-count
+                                           hons-assoc-equal)
+                 :induct (hons-assoc-equal k alist)
+                 :expand ((vl-expr-val-alist-fix alist)
+                          (alist-vals alist))))
+         :rule-classes (:rewrite :linear)))
+
+(local (fty::deffixcong vl-expr-val-alist-equiv vl-exprlist-equiv
+         (alist-vals x) x
+         :hints(("Goal" :in-theory (enable vl-expr-val-alist-fix)))))
+
+(define vl-keyvalue-pattern-collect-array-replacements
+  ((count natp)
+   (idx integerp)
+   (incr integerp)
+   (datatype vl-datatype-p)
+   (field-alist vl-expr-val-alist-p)
+   (orig-x vl-expr-p)
+   (ctx vl-context-p)
+   (warnings vl-warninglist-p))
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (pairs vl-type-expr-pairs-p)
+               (new-warnings vl-warninglist-p))
+  (b* ((warnings (vl-warninglist-fix warnings))
+       (orig-x (vl-expr-fix orig-x))
+       (ctx (vl-context-fix ctx))
+       (idx (lifix idx))
+       (field-alist (vl-expr-val-alist-fix field-alist))
+       ((when (zp count)) (mv t nil warnings))
+       (lookup (or (hons-assoc-equal idx field-alist)
+                   (hons-assoc-equal :default field-alist)))
+       ((unless lookup)
+        (mv nil nil
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg "~a0: Missing array index ~x1 in assignment pattern ~a2"
+                  :args (list ctx idx orig-x))))
+       ((mv ok rest warnings)
+        (vl-keyvalue-pattern-collect-array-replacements
+         (1- count) (+ idx (lifix incr)) incr
+         datatype field-alist orig-x ctx warnings)))
+    (mv ok (cons (cons (vl-datatype-fix datatype) (cdr lookup)) rest) warnings))
+  ///
+
+  (defthm vl-exprlist-max-count-of-vl-keyvalue-pattern-collect-array-replacements
+    (<= (vl-exprlist-max-count
+         (alist-vals
+          (mv-nth 1 (vl-keyvalue-pattern-collect-array-replacements
+                     count idx incr datatype field-alist orig-x ctx warnings))))
+        (vl-exprlist-max-count (alist-vals field-alist)))
+    :hints(("Goal" :in-theory (enable vl-exprlist-max-count)))
+    :rule-classes :linear)
+
+  (defthm vl-type-expr-pairs-sum-datatype-sizes-of-array-replacements
+    (b* (((mv ok pairs &) (vl-keyvalue-pattern-collect-array-replacements
+                           count idx incr datatype field-alist orig-x ctx warnings))
+         ((mv warning size) (vl-datatype-size datatype))
+         ((mv warning1 size1) (vl-type-expr-pairs-sum-datatype-sizes pairs)))
+      (implies (and ok (not warning))
+               (and (not warning1)
+                    (equal size1 (* (nfix count) size)))))
+    :hints(("Goal" :in-theory (enable vl-type-expr-pairs-sum-datatype-sizes)))))
+
+(define vl-keyvalue-pattern-collect-struct-replacements
+  ((members vl-structmemberlist-p)
+   (field-alist vl-expr-val-alist-p)
+   (orig-x vl-expr-p)
+   (ctx vl-context-p)
+   (warnings vl-warninglist-p))
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (pairs vl-type-expr-pairs-p)
+               (new-warnings vl-warninglist-p))
+  (b* ((warnings (vl-warninglist-fix warnings))
+       (orig-x (vl-expr-fix orig-x))
+       (ctx (vl-context-fix ctx))
+       (field-alist (vl-expr-val-alist-fix field-alist))
+       ((when (atom members)) (mv t nil warnings))
+       ((vl-structmember first) (car members))
+       (lookup (or (hons-assoc-equal first.name field-alist)
+                   (hons-assoc-equal :default field-alist)))
+       ((unless lookup)
+        (mv nil nil
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg "~a0: Missing struct member ~s1 in assignment pattern ~a2"
+                  :args (list ctx first.name orig-x))))
+       ((mv ok rest warnings)
+        (vl-keyvalue-pattern-collect-struct-replacements
+         (cdr members) field-alist orig-x ctx warnings)))
+    (mv ok (cons (cons first.type (cdr lookup)) rest) warnings))
+  ///
+  (defthm vl-exprlist-max-count-of-vl-keyvalue-pattern-collect-struct-replacements
+    (<= (vl-exprlist-max-count
+         (alist-vals (mv-nth 1 (vl-keyvalue-pattern-collect-struct-replacements
+                                members field-alist orig-x ctx warnings))))
+        (vl-exprlist-max-count (alist-vals field-alist)))
+    :hints(("Goal" :in-theory (enable vl-exprlist-max-count)))
+    :rule-classes :linear)
+
+  (defthm vl-type-expr-pairs-sum-datatype-sizes-of-struct-replacements
+    (b* (((mv ok pairs &) (vl-keyvalue-pattern-collect-struct-replacements
+                           members field-alist orig-x ctx warnings))
+         ((mv warning sizes) (vl-structmemberlist-sizes members))
+         ((mv warning1 size1) (vl-type-expr-pairs-sum-datatype-sizes pairs)))
+      (implies (and ok (not warning))
+               (and (not warning1)
+                    (equal size1 (sum-nats sizes)))))
+    :hints(("Goal" :in-theory (enable vl-type-expr-pairs-sum-datatype-sizes
+                                      vl-structmemberlist-sizes)))))
+
+
+(define vl-assignpattern-keyvalue-replacement ((lhs-type vl-datatype-p)
+                                               (fields vl-exprlist-p)
+                                               (orig-x vl-expr-p)
+                                               (ctx vl-context-p)
+                                               (warnings vl-warninglist-p))
+    :parents (expression-sizing)
+    :short "Return the list of type/expression pairs to concatenate together to
+replace a key/value assignment pattern."
+    :returns (mv (successp booleanp :rule-classes :type-prescription)
+                 (pairs vl-type-expr-pairs-p)
+                 (new-warnings vl-warninglist-p))
+    (b* ((warnings (vl-warninglist-fix warnings))
+         (ctx (vl-context-fix ctx))
+         (orig-x (vl-expr-fix orig-x))
+         (pdims (vl-datatype->pdims lhs-type))
+         (udims (vl-datatype->udims lhs-type))
+         ((unless (or (consp udims) (consp pdims)))
+          (b* (((unless (eq (vl-datatype-kind lhs-type) :vl-struct))
+                (mv nil nil
+                    (warn :type :vl-assignpattern-elim-fail
+                          :msg "~a0: Positional assignment pattern must be in a ~
+                              struct or array type context: ~a1"
+                          :args (list (vl-context-fix ctx) (vl-expr-fix orig-x)))))
+               ((vl-struct lhs-type))
+               ((mv ok alist warnings)
+                (vl-parse-keyval-pattern-struct fields lhs-type.members orig-x ctx warnings))
+               ((unless ok) (mv nil nil warnings))
+               ((unless (uniquep (alist-keys alist)))
+                (mv nil nil (warn :type :vl-assignpattern-elim-fail
+                                  :msg "~a0: Duplicate keys in assignment pattern: ~a1"
+                                  :args (list ctx orig-x)))))
+            (vl-keyvalue-pattern-collect-struct-replacements
+             lhs-type.members alist orig-x ctx warnings)))
+         (dim (if (consp udims) (car udims) (car pdims)))
+         ((unless (and (not (eq dim :vl-unsized-dimension))
+                       (vl-range-resolved-p dim)))
+          (mv nil nil
+              (warn :type :vl-assignpattern-elim-fail
+                    :msg "~a0: Unresolved packed dimensions in LHS datatype ~a1"
+                    :args (list (vl-context-fix ctx) (vl-datatype-fix lhs-type)))))
+         ((mv ok alist warnings)
+          (vl-parse-keyval-pattern-array fields dim orig-x ctx warnings))
+         ((unless ok) (mv nil nil warnings))
+         ((unless (uniquep (alist-keys alist)))
+          (mv nil nil (warn :type :vl-assignpattern-elim-fail
+                            :msg "~a0: Duplicate keys in assignment pattern: ~a1"
+                            :args (list ctx orig-x))))
+         (new-datatype (if (consp udims)
+                           (vl-datatype-update-dims pdims (cdr udims) lhs-type)
+                         (vl-datatype-update-dims (cdr pdims) nil lhs-type)))
+         (msb (vl-resolved->val (vl-range->msb dim)))
+         (lsb (vl-resolved->val (vl-range->lsb dim)))
+         (direction (if (< msb lsb) 1 -1)))
+      (vl-keyvalue-pattern-collect-array-replacements
+       (vl-range-size dim) msb direction
+       new-datatype alist
+       orig-x ctx warnings))
+    ///
+    (defthm vl-exprlist-max-count-of-vl-assignpattern-keyvalue-replacement
+      (< (vl-exprlist-max-count
+          (alist-vals (mv-nth 1 (vl-assignpattern-keyvalue-replacement
+                                 lhs-type fields orig-x ctx warnings))))
+         (vl-exprlist-count fields))
+      :rule-classes :linear)
+
+    (defthm sum-sizes-of-vl-assignpattern-keyvalue-replacement
+      (b* (((mv ok pairs &) (vl-assignpattern-keyvalue-replacement
+                             lhs-type fields orig-x ctx warnings))
+           ((mv warning size) (vl-datatype-size lhs-type))
+           ((mv warning1 size-sum) (vl-type-expr-pairs-sum-datatype-sizes pairs)))
+        (implies (and ok (not warning))
+                 (and (not warning1)
+                      (equal size-sum size))))))
+
+(define vl-assignpattern-replacement ((lhs-type vl-datatype-p)
+                                      (x vl-expr-p)
+                                      (ctx vl-context-p)
+                                      (warnings vl-warninglist-p))
+  :guard (and (not (vl-atom-p x))
+              (member (vl-nonatom->op x)
+                      '(:vl-pattern-positional
+                        :vl-pattern-multi
+                        :vl-pattern-keyvalue)))
+    :returns (mv (successp booleanp :rule-classes :type-prescription)
+                 (pairs vl-type-expr-pairs-p)
+                 (new-warnings vl-warninglist-p))
+    (b* (((vl-nonatom x)))
+      (case x.op
+        (:vl-pattern-positional
+         (vl-assignpattern-positional-replacement lhs-type x.args x ctx warnings))
+        (:vl-pattern-multi
+         (vl-assignpattern-multi-replacement lhs-type x.args x ctx warnings))
+        (:vl-pattern-keyvalue
+         (vl-assignpattern-keyvalue-replacement lhs-type x.args x ctx warnings))
+        (otherwise (mv (mbe :logic nil :exec 'impossible) nil nil))))
+    ///
+    (defthm vl-exprlist-max-count-of-vl-assignpattern-replacement
+      (implies (not (vl-atom-p x))
+               (< (vl-exprlist-max-count
+                   (alist-vals (mv-nth 1 (vl-assignpattern-replacement
+                                          lhs-type x ctx warnings))))
+                  (vl-expr-count x)))
+      :rule-classes :linear)
+
+    (defthm sum-sizes-of-vl-assignpattern-replacement
+      (b* (((mv ok pairs &) (vl-assignpattern-replacement
+                             lhs-type x ctx warnings))
+           ((mv warning size) (vl-datatype-size lhs-type))
+           ((mv warning1 size-sum) (vl-type-expr-pairs-sum-datatype-sizes pairs)))
+        (implies (and ok (not warning))
+                 (and (not warning1)
+                      (equal size-sum size))))))
+
+(local (defthm vl-expr-size-of-concat
+         (b* (((mv ok1 & new-x) (vl-expr-size
+                                 lhs-size
+                                 (make-vl-nonatom :op :vl-concat
+                                                  :args args)
+                                 ss ctx warnings))
+              ((mv & sizes) (vl-exprlist-selfsize args ss ctx warnings1)))
+           (and (implies (member nil sizes)
+                         (not ok1))
+                (implies ok1
+                         (equal (vl-expr->finalwidth new-x)
+                                (if lhs-size
+                                    (max (nfix lhs-size) (sum-nats sizes))
+                                  (sum-nats sizes))))))
+:hints (("goal" :expand ((:free (size x) (vl-expr-size size x ss ctx warnings))
+                             (:free (op args warnings)
+                              (vl-expr-selfsize
+                               (make-vl-nonatom :op op
+                                                :args args)
+                               ss ctx warnings))
+                             (:free (guts warnings)
+                              (vl-expr-selfsize
+                               (make-vl-atom :guts guts)
+                               ss ctx warnings)))
+             :in-theory (enable vl-op-selfsize
+                                vl-atom-selfsize
+                                vl-exprlist-selfsize
+                                vl-$bits-call-p
+                                ;; vl-expr-selfsize
+                                warning-irrelevance-of-vl-expr-selfsize
+                                warning-irrelevance-of-vl-exprlist-selfsize)))))
+
+(local (defthm vl-expr-selfsize-of-concat
+         (b* (((mv & selfsize) (vl-expr-selfsize
+                                (make-vl-nonatom :op :vl-concat
+                                                 :args args
+                                                 :atts atts
+                                                 :finalwidth finalwidth
+                                                 :finaltype finaltype)
+                                ss ctx warnings))
+              ((mv & sizes) (vl-exprlist-selfsize args ss ctx warnings1)))
+           (and (iff selfsize
+                     (not (member nil sizes)))
+                (implies selfsize
+                         (equal selfsize
+                                (sum-nats sizes)))))
+         :hints (("goal" :expand ((:free (op args warnings)
+                                   (vl-expr-selfsize
+                                    (make-vl-nonatom :op op
+                                                     :args args
+                                                     :atts atts
+                                                     :finalwidth finalwidth
+                                                     :finaltype finaltype)
+                                    ss ctx warnings)))
+                  :in-theory (enable vl-op-selfsize
+                                     vl-atom-selfsize
+                                     vl-exprlist-selfsize
+                                     vl-$bits-call-p
+                                     ;; vl-expr-selfsize
+                                     warning-irrelevance-of-vl-expr-selfsize
+                                     warning-irrelevance-of-vl-exprlist-selfsize)))))
+
+(local (defthm vl-expr-selfsize-of-qmark
+         (b* (((mv & selfsize) (vl-expr-selfsize
+                                (make-vl-nonatom :op :vl-qmark
+                                                 :args args
+                                                 :atts atts
+                                                 :finalwidth finalwidth
+                                                 :finaltype finaltype)
+                                ss ctx warnings))
+              ((mv & condsize) (vl-expr-selfsize (first args) ss ctx nil))
+              ((mv & truesize) (vl-expr-selfsize (second args) ss ctx nil))
+              ((mv & falsesize) (vl-expr-selfsize (third args) ss ctx nil)))
+           (implies (equal (len args) 3)
+                    (and (iff selfsize (and truesize falsesize condsize))
+                         (implies (and selfsize )
+                                  (equal selfsize
+                                         (max truesize falsesize))))))
+         :hints (("goal" :expand ((:free (op args ctx warnings)
+                                   (vl-expr-selfsize
+                                    (make-vl-nonatom :op op
+                                                     :args args
+                                                     :atts atts
+                                                     :finalwidth finalwidth
+                                                     :finaltype finaltype)
+                                    ss ctx nil))
+                                  (:free (ctx) (vl-exprlist-selfsize args ss ctx nil))
+                                  (:free (ctx) (vl-exprlist-selfsize (cdr args) ss ctx nil))
+                                  (:free (ctx) (vl-exprlist-selfsize (cddr args) ss ctx nil))
+                                  (:free (ctx) (vl-exprlist-selfsize (cdddr args) ss ctx nil)))
+                  :in-theory (e/d (vl-op-selfsize
+                                   ;; vl-exprlist-selfsize
+                                   ;; vl-expr-selfsize
+                                   warning-irrelevance-of-vl-expr-selfsize
+                                   warning-irrelevance-of-vl-exprlist-selfsize
+                                   vl-$bits-call-p)
+                                  (max acl2::posp-rw natp-when-posp acl2::natp-rw))))))
+
+
+(define vl-expr-assignpattern-extend/truncate ((lhs-type vl-datatype-p)
+                                               (x vl-expr-p)
+                                               (in-pattern)
+                                               (ss vl-scopestack-p)
+                                               (ctx vl-context-p)
+                                               (warnings vl-warninglist-p))
+  ;; bozo -- Do we ever need to worry about the sign of the resulting expression?
+    :returns (mv (successp booleanp :rule-classes :type-prescription)
+                 (new-x vl-expr-p)
+                 (new-warnings vl-warninglist-p))
+  (b* ((warnings (vl-warninglist-fix warnings))
+       (x (vl-expr-fix x))
+       ((unless in-pattern) (mv t x warnings))
+       ((mv warnings1 selfsize) (vl-expr-selfsize x ss ctx nil))
+       ((mv warnings2 exprtype) (vl-expr-typedecide x ss ctx nil))
+       ((unless (and selfsize exprtype))
+        (mv nil x (append-without-guard warnings1 warnings2 warnings)))
+       ((mv warning typesize) (vl-datatype-size lhs-type))
+       ((when warning) (mv nil x (cons warning warnings)))
+       ((when (< selfsize typesize))
+        (b* ((width (- typesize selfsize))
+             ((when (eq exprtype :vl-signed))
+              (mv nil x
+                  (warn :type :vl-assignpattern-elim-fail
+                        :msg "~a0: sign-extension of assignment pattern ~
+                              ctxents not yet implemented: ~a1"
+                        :args (list (vl-context-fix ctx) x)))))
+          (mv t (make-vl-nonatom
+                 :op :vl-concat
+                 ;; zero extend
+                 :args (list (make-vl-atom :guts (make-vl-constint :origwidth width
+                                                                   :origtype :vl-unsigned
+                                                                   :value 0))
+                             x))
+              warnings)))
+       ((when (< typesize selfsize))
+        (mv nil x
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg "~a0: truncation of assignment pattern ctxents not ~
+                        yet implemented: ~a1"
+                  :args (list (vl-context-fix ctx) x)))))
+    (mv t x warnings))
+  ///
+  (defthm vl-expr-size-of-vl-expr-assignpattern-extend/truncate-when-in-pattern
+    (b* (((mv ok1 x1 &) (vl-expr-assignpattern-extend/truncate
+                         lhs-type x t ss ctx warningsa))
+         ((mv warning size) (vl-datatype-size lhs-type))
+         ((mv ok2 & x2) (vl-expr-size size1 x1 ss ctxb warningsb)))
+      (and (implies warning (not ok1))
+           (implies (and ok1 ok2)
+                    (equal (vl-expr->finalwidth x2)
+                           (if size1
+                               (max (nfix size1) size)
+                             size)))))
+    :hints (("goal" :expand ((:free (ctx warningsb size) (vl-expr-size size x ss ctx warningsb))
+                             (:free (op args ctx warnings)
+                              (vl-expr-selfsize
+                               (make-vl-nonatom :op op
+                                                :args args)
+                               ss ctx warnings))
+                             (:free (guts ctx warnings)
+                              (vl-expr-selfsize
+                               (make-vl-atom :guts guts)
+                               ss ctx warnings)))
+             :in-theory (enable vl-op-selfsize
+                                vl-atom-selfsize
+                                vl-exprlist-selfsize
+                                ;; vl-expr-selfsize
+                                warning-irrelevance-of-vl-expr-selfsize
+                                warning-irrelevance-of-vl-exprlist-selfsize)))
+    )
+
+  (defthm vl-expr-size-of-vl-expr-assignpattern-extend/truncate-when-in-pattern-selfsize
+    (b* (((mv ok1 x1 &) (vl-expr-assignpattern-extend/truncate
+                         lhs-type x in-pattern ss ctx warningsa))
+         ((mv warning size) (vl-datatype-size lhs-type))
+         ((mv & selfsize) (vl-expr-selfsize x1 ss ctxb warningsb)))
+      (implies in-pattern
+               (and (implies warning (not ok1))
+                    (implies ok1
+                             (equal selfsize
+                                    size)))))
+    :hints (("goal" :expand ((:free (size ctx warnings) (vl-expr-size size x ss ctx warningsb))
+                             (:free (op args ctx warnings)
+                              (vl-expr-selfsize
+                               (make-vl-nonatom :op op
+                                                :args args)
+                               ss ctx warnings))
+                             (:free (guts ctx warnings)
+                              (vl-expr-selfsize
+                               (make-vl-atom :guts guts)
+                               ss ctx warnings)))
+             :in-theory (enable vl-op-selfsize
+                                vl-atom-selfsize
+                                vl-exprlist-selfsize
+                                vl-$bits-call-p
+                                ;; vl-expr-selfsize
+                                warning-irrelevance-of-vl-expr-selfsize
+                                warning-irrelevance-of-vl-exprlist-selfsize)))
+    ))
+
+
+
+
+(defines vl-expr-replace-assignpatterns
+  (define vl-expr-replace-assignpatterns
+    ((lhs-type vl-datatype-p                  "The type that we want x to assume.")
+     (x vl-expr-p                             "The expression to size/type.")
+     (in-pattern                              "True if we're inside an assignment pattern")
+     (ss vl-scopestack-p                      "Identifier bindings.")
+     (ctx     vl-context-p                "Context for sizing error messages.")
+     (warnings vl-warninglist-p               "Ordinary @(see warnings) accumulator."))
+    :parents (expression-sizing)
+    :short "Rewrite an expression to replace assignment patterns with concatenations."
+    :long "<p>Important caveat:  This is only correct for packed datatypes.</p>"
+    :returns (mv (successp booleanp :rule-classes :type-prescription)
+                 (new-x vl-expr-p)
+                 (new-warnings vl-warninglist-p))
+    :measure (two-nats-measure (vl-expr-count x) 0)
+    :verify-guards nil
+    (b* ((warnings (vl-warninglist-fix warnings))
+         (ctx (vl-context-fix ctx))
+         (x (vl-expr-fix x))
+         ((when (vl-atom-p x))
+          (vl-expr-assignpattern-extend/truncate lhs-type x in-pattern ss ctx warnings))
+         ((vl-nonatom x))
+         ((when (eq x.op :vl-qmark))
+          (b* (((mv true-ok true warnings)
+                (vl-expr-replace-assignpatterns lhs-type (second x.args) in-pattern ss ctx warnings))
+               ((mv false-ok false warnings)
+                (vl-expr-replace-assignpatterns lhs-type (third x.args) in-pattern ss ctx warnings))
+               ((unless (and true-ok false-ok)) (mv nil x warnings)))
+            (mv t (change-vl-nonatom x :args (list (first x.args) true false)) warnings)))
+         ((when (member x.op '(:vl-pattern-positional
+                               :vl-pattern-multi
+                               :vl-pattern-keyvalue)))
+          (b* (((mv ok type-expr-pairs warnings)
+                (vl-assignpattern-replacement lhs-type x ctx warnings))
+               ((unless ok) (mv nil x warnings))
+               ((mv ok args warnings)
+                (vl-exprlist-replace-assignpatterns type-expr-pairs ss ctx warnings))
+               ((unless ok) (mv nil x warnings)))
+            (mv t
+                ;; bozo -- Do we ever need to worry about the sign?
+                (make-vl-nonatom :op :vl-concat
+                                 :args args)
+                warnings)))
+         ((when (eq x.op :vl-pattern-type))
+          (b* (((mv warning pattype) (vl-castexpr->datatype (first x.args) ss))
+               ((when warning) (mv nil x (cons warning warnings)))
+               ((unless (vl-datatype->packedp pattype))
+                (mv nil x
+                    (warn :type :vl-assignpattern-elim-fail
+                          :msg "~a0: Assignment pattern given unpacked type ~
+                                in packed context: ~a1"
+                          :args (list ctx x))))
+               ((mv ok new-x warnings)
+                (vl-expr-replace-assignpatterns pattype (second x.args) t ss ctx warnings))
+               ((unless ok) (mv nil x warnings)))
+            (vl-expr-assignpattern-extend/truncate lhs-type new-x in-pattern ss ctx warnings))))
+      (vl-expr-assignpattern-extend/truncate lhs-type x in-pattern ss ctx warnings)))
+
+  (define vl-exprlist-replace-assignpatterns
+    ((x  vl-type-expr-pairs-p)
+     (ss vl-scopestack-p)
+     (ctx vl-context-p)
+     (warnings vl-warninglist-p))
+    :measure (two-nats-measure (vl-exprlist-max-count (alist-vals (vl-type-expr-pairs-fix x)))
+                               (len (vl-type-expr-pairs-fix x)))
+    :hints(("Goal" :in-theory (enable vl-exprlist-max-count alist-vals
+                                      vl-type-expr-pairs-fix)))
+    :returns (mv (successp booleanp :rule-classes :type-prescription)
+                 (new-x vl-exprlist-p)
+                 (new-warnings vl-warninglist-p))
+    (b* ((x (vl-type-expr-pairs-fix x))
+         ((when (atom x)) (mv t nil (vl-warninglist-fix warnings)))
+         ((mv ok1 first warnings) (vl-expr-replace-assignpatterns
+                                   (caar x) (cdar x) t ss ctx warnings))
+         ((mv ok2 rest warnings) (vl-exprlist-replace-assignpatterns
+                                  (cdr x) ss ctx warnings)))
+      (mv (and ok1 ok2) (cons first rest) warnings)))
+  ///
+  (verify-guards vl-expr-replace-assignpatterns)
+
+  (defthm-vl-expr-replace-assignpatterns-flag
+    (defthm vl-expr-size-of-vl-expr-replace-assignpatterns-in-pattern
+      (b* (((mv ok1 x1 &) (vl-expr-replace-assignpatterns
+                           lhs-type x in-pattern ss ctx warnings))
+           ((mv warning size) (vl-datatype-size lhs-type))
+           ((mv & selfsize) (vl-expr-selfsize x1 ss ctxb warningsb)))
+        ;; (and (implies warning
+        ;;               (not ok1))
+        (implies (and ok1 selfsize (not warning) in-pattern)
+                 (equal selfsize
+                        size)))
+      :hints ('(:expand ((vl-expr-replace-assignpatterns
+                          lhs-type x in-pattern ss ctx warnings))
+                :in-theory (e/d (warning-irrelevance-of-vl-expr-selfsize)
+                                (vl-expr-replace-assignpatterns
+                                 vl-exprlist-replace-assignpatterns))
+                :do-not-induct t))
+      :flag vl-expr-replace-assignpatterns)
+    (defthm vl-type-expr-pairs-sum-datatype-sizes-of-vl-exprlist-replace-assignpatterns
+      (b* (((mv ok1 x1 &) (vl-exprlist-replace-assignpatterns
+                           x ss ctx warnings))
+           ((mv warning size) (vl-type-expr-pairs-sum-datatype-sizes x))
+           ((mv & sizes) (vl-exprlist-selfsize x1 ss ctxb warningsb)))
+        (implies (and ok1 (not warning)
+                      (not (member nil sizes)))
+                 (equal (sum-nats sizes)
+                        size)))
+      :hints ('(:expand ((vl-type-expr-pairs-sum-datatype-sizes x)
+                         (vl-exprlist-replace-assignpatterns x ss ctx warnings)
+                         (:free (ctx warnings)
+                          (vl-exprlist-size nil ss ctx warnings)))
+                :in-theory (e/d (vl-exprlist-selfsize
+                                 vl-exprlist->finalwidths
+                                 warning-irrelevance-of-vl-exprlist-selfsize)
+                                (vl-exprlist-replace-assignpatterns
+                                 vl-expr-replace-assignpatterns))))
+      :flag vl-exprlist-replace-assignpatterns))
+
+  (deffixequiv-mutual vl-expr-replace-assignpatterns
+    :hints ('(:expand ((:free (lhs-type in-pattern ss ctx warnings)
+                        (vl-expr-replace-assignpatterns
+                         lhs-type x in-pattern ss ctx warnings))
+                       (:free (lhs-type in-pattern ss ctx warnings)
+                        (vl-expr-replace-assignpatterns
+                         lhs-type (vl-expr-fix x) in-pattern ss ctx warnings))
+                       (:free (ss ctx warnings)
+                        (vl-exprlist-replace-assignpatterns x ss ctx warnings))
+                       (:free (ss ctx warnings)
+                        (vl-exprlist-replace-assignpatterns
+                         (vl-type-expr-pairs-fix x) ss ctx warnings)))
+              :in-theory (disable vl-expr-replace-assignpatterns
+                                  vl-exprlist-replace-assignpatterns)))))
+
+
+(define vl-index-expr-size-assigncontext ((lhs-type vl-datatype-p)
+                                          (x vl-expr-p)
+                                          (ss vl-scopestack-p)
+                                          (ctx vl-context-p)
+                                          (warnings vl-warninglist-p))
+  :parents (vl-expr-size-assigncontext)
+  :short "Check and size an index expression in an unpacked type context."
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (new-x vl-expr-p)
+               (new-warnings vl-warninglist-p))
+  ;; We only need to deal with atoms that could represent an unpacked value.
+  (b* ((x (vl-expr-fix x))
+       (ctx (vl-context-fix ctx))
+       ((mv warning type) (vl-index-find-type x ss))
+       ((when warning) (mv nil x (cons warning (ok))))
+       ((unless (equal type (vl-datatype-fix lhs-type)))
+        (mv nil x
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg "~a0: RHS expression ~a1 is not of type ~a2 (rather, ~a3)"
+                  :args (list ctx x (vl-datatype-fix lhs-type) type)))))
+    (mv t x (ok)))
+  ///
+  (local (Defthm vl-index-find-type-implies
+           (implies (not (mv-nth 0 (vl-index-find-type x ss)))
+                    (if (equal (vl-expr-kind x) :atom)
+                        (or (and (vl-id-p (vl-atom->guts x))
+                                 (equal (tag (vl-atom->guts x)) :vl-id))
+                            (and (vl-hidpiece-p (vl-atom->guts x))
+                                 (equal (tag (vl-atom->guts x)) :vl-hidpiece)))
+                      (or (equal (vl-nonatom->op x) :vl-hid-dot)
+                          (equal (vl-nonatom->op x) :vl-index)
+                          (equal (vl-nonatom->op x) :vl-bitselect))))
+           :hints(("Goal" :in-theory (enable vl-index-find-type vl-hidexpr-p
+                                             vl-hidname-p
+                                             tag-when-vl-id-p
+                                             tag-when-vl-hidpiece-p)))
+           :rule-classes :forward-chaining))
+
+  (defthm vl-expr-selfsize-of-vl-index-expr-size-assigncontext
+    (b* (((mv ok new-x &) (vl-index-expr-size-assigncontext
+                                  lhs-type x ss ctx warnings))
+         ((mv warning typesize) (vl-datatype-size lhs-type))
+         ((mv & selfsize) (vl-expr-selfsize new-x ss ctx2 warnings2)))
+      (implies (and ok (not warning))
+               (equal selfsize typesize)))
+    :hints(("Goal" :expand ((:free (ctx warnings) (vl-expr-selfsize x ss ctx warnings))
+                            (:free (ctx warnings) (vl-atom-selfsize x ss ctx warnings)))
+            :in-theory (enable tag-when-vl-id-p
+                               tag-when-vl-hidpiece-p
+                               tag-when-vl-weirdint-p
+                               tag-when-vl-constint-p
+                               tag-when-vl-string-p
+                               vl-hidexpr-selfsize
+                               vl-index-selfsize)))))
+
+(define vl-arrayslice-expr-size-assigncontext ((lhs-type vl-datatype-p)
+                                               (x vl-expr-p)
+                                               (ss vl-scopestack-p)
+                                               (ctx vl-context-p)
+                                               (warnings vl-warninglist-p))
+  :parents (vl-expr-size-assigncontext)
+  :short "Check and size a range-select expression in an unpacked type context."
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (new-x vl-expr-p)
+               (new-warnings vl-warninglist-p))
+  :guard (and (not (vl-atom-p x))
+              (member (vl-nonatom->op x)
+                      '(:vl-select-colon
+                        :vl-select-pluscolon
+                        :vl-select-minuscolon
+                        :vl-partselect-colon
+                        :vl-partselect-pluscolon
+                        :vl-partselect-minuscolon)))
+  ;; We only need to deal with atoms that could represent an unpacked value.
+  (b* ((x (vl-expr-fix x))
+       (ctx (vl-context-fix ctx))
+       ((mv warning type) (vl-partselect-expr-type x ss ctx))
+       ((when warning) (mv nil x (cons warning (ok))))
+       (x-udims (vl-datatype->udims type))
+       ((unless (consp x-udims))
+        (mv nil x
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg (if (consp (vl-datatype->pdims type))
+                           "~a0: Can't assign packed array select ~a1 in an ~
+                            unpacked type context"
+                         "~a0: Can't apply select operator to non-array: ~a1")
+                  :args (list ctx x))))
+       (lhs-udims (vl-datatype->udims lhs-type))
+       ((unless (consp lhs-udims))
+        (mv nil x
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg "~a0: Can't assign array select ~a1 in a ~
+                        non-unpacked-array type context"
+                  :args (list ctx x))))
+       ((unless (equal (vl-datatype-update-udims (cdr x-udims) type)
+                       (vl-datatype-update-udims (cdr lhs-udims)
+                                                 lhs-type)))
+        (mv nil x
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg "~a0: Incompatible types for unpacked array slice ~
+                        assignment (~a1): lhs type ~a2, rhs type ~a3"
+                  :args (list ctx x (vl-datatype-fix lhs-type) type))))
+       ((unless (and (not (eq (car lhs-udims) :vl-unsized-dimension))
+                     (vl-range-resolved-p (car lhs-udims))
+                     (not (eq (car x-udims) :vl-unsized-dimension))
+                     (vl-range-resolved-p (car x-udims))))
+        (mv nil x
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg "~a0: Can't assign array slice ~a1 because datatype ~
+                        dimensions are unresolved: lhs ~a2, rhs ~a3"
+                  :args (list ctx x (vl-datatype-fix lhs-type) type))))
+       ((unless (equal (vl-range-size (car lhs-udims))
+                       (vl-range-size (car x-udims))))
+        (mv nil x
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg "~a0: Can't assign array slice ~a1 because datatype ~
+                        dimensions differ: lhs ~a2, rhs ~a3"
+                  :args (list ctx x (vl-datatype-fix lhs-type) type)))))
+    (mv t x (ok)))
+
+  ///
+
+  (local (Defthm vl-partselect-expr-type-implies
+           (implies (not (mv-nth 0 (vl-partselect-expr-type x ss ctx)))
+                    ;; (and (not (equal (vl-expr-kind x) :atom))
+                         (or (equal (vl-nonatom->op x) :vl-partselect-colon)
+                             (equal (vl-nonatom->op x) :vl-partselect-pluscolon)
+                             (equal (vl-nonatom->op x) :vl-partselect-minuscolon)
+                             (equal (vl-nonatom->op x) :vl-select-colon)
+                             (equal (vl-nonatom->op x) :vl-select-pluscolon)
+                             (equal (vl-nonatom->op x) :vl-select-minuscolon)))
+           :hints(("Goal" :in-theory (enable vl-partselect-expr-type
+                                             tag-when-vl-id-p
+                                             tag-when-vl-hidpiece-p)))
+           :rule-classes :forward-chaining))
+
+  (local
+   (defthmd vl-datatype-size-when-update-dims-equal
+     (b* ((udims1 (vl-datatype->udims x1))
+          (udims2 (vl-datatype->udims x2))
+          ((mv warn1 size1) (vl-datatype-size x1))
+          ((mv warn2 size2) (vl-datatype-size x2)))
+       (implies (and (equal (vl-datatype-update-dims (vl-datatype->pdims x1)
+                                                     (cdr udims1) x1)
+                            (vl-datatype-update-dims (vl-datatype->pdims x2)
+                                                     (cdr udims2) x2))
+                     (consp udims1)
+                     (consp udims2)
+                     (not (equal (car udims1) :vl-unsized-dimension))
+                     (vl-range-resolved-p (car udims1))
+                     (not (equal (car udims2) :vl-unsized-dimension))
+                     (vl-range-resolved-p (car udims2))
+                     (equal (vl-range-size (car udims1))
+                            (vl-range-size (car udims2))))
+                (and (equal (iff warn1 warn2) t)
+                     (equal (equal size1 size2) t))))
+     :hints(("Goal" :in-theory (enable vl-datatype-update-dims
+                                       vl-datatype-size
+                                       vl-datatype->udims
+                                       vl-datatype->pdims
+                                       vl-packeddimensionlist-total-size)))))
+
+  (defthm vl-expr-selfsize-of-vl-arrayslice-expr-size-assigncontext
+    (b* (((mv ok new-x &) (vl-arrayslice-expr-size-assigncontext
+                           lhs-type x ss ctx warnings))
+         ((mv warning typesize) (vl-datatype-size lhs-type))
+         ((mv & selfsize) (vl-expr-selfsize new-x ss ctx2 warnings2)))
+      (implies (and ok (not warning)
+                    (not (vl-atom-p x)))
+               (equal selfsize typesize)))
+    :hints(("Goal" :expand ((:free (ctx warnings) (vl-expr-selfsize x ss ctx warnings)))
+            :use ((:instance vl-datatype-size-when-update-dims-equal
+                   (x1 lhs-type)
+                   (x2 (mv-nth 1 (vl-partselect-expr-type x ss nil)))))
+            :in-theory (e/d (tag-when-vl-id-p
+                               tag-when-vl-hidpiece-p
+                               tag-when-vl-weirdint-p
+                               tag-when-vl-constint-p
+                               tag-when-vl-string-p
+                               vl-hidexpr-selfsize
+                               vl-partselect-selfsize)
+                            (vl-$bits-call-p))))))
+
+
+(define vl-atom-size-assigncontext ((lhs-type vl-datatype-p)
+                                    (x vl-expr-p)
+                                    (ss vl-scopestack-p)
+                                    (ctx vl-context-p)
+                                    (warnings vl-warninglist-p))
+  :parents (vl-expr-size-assigncontext)
+  :short "Check and size an atom in an unpacked type context."
+  :guard (vl-atom-p x)
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (new-x vl-expr-p)
+               (new-warnings vl-warninglist-p))
+  ;; We only need to deal with atoms that could represent an unpacked value.
+  (b* ((x (vl-expr-fix x))
+       (ctx (vl-context-fix ctx))
+       ((vl-atom x))
+       ((unless (member (tag x.guts) '(:vl-id :vl-hidpiece)))
+        ;; any others?
+        (mv nil x
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg "~a0: Bad expression for unpacked type context: ~a1"
+                  :args (list ctx x)))))
+    (vl-index-expr-size-assigncontext lhs-type x ss ctx warnings))
+
+  ///
+  (defthm vl-expr-selfsize-of-vl-atom-expr-size-assigncontext
+    (b* (((mv ok new-x &) (vl-atom-size-assigncontext
+                           lhs-type x ss ctx warnings))
+         ((mv warning typesize) (vl-datatype-size lhs-type))
+         ((mv & selfsize) (vl-expr-selfsize new-x ss ctx2 warnings2)))
+      (implies (and ok (not warning))
+               (equal selfsize typesize)))))
+
+
+
+
+
+(defines vl-expr-size-assigncontext
+  (define vl-expr-size-assigncontext
+    ((lhs-type vl-datatype-p                         "The type that we want x to assume.")
+     (x vl-expr-p                                    "The expression to size/type.")
+     (in-pattern                                     "are we inside an assignment pattern?")
+     (ss vl-scopestack-p                             "Identifier bindings.")
+     (ctx     vl-context-p                       "Context for sizing error messages.")
+     (warnings vl-warninglist-p                      "Ordinary @(see warnings) accumulator."))
+    :returns (mv (successp booleanp :rule-classes :type-prescription)
+                 (new-x vl-expr-p)
+                 (new-warnings vl-warninglist-p))
+    :parents (expression-sizing)
+    :short "Size and resolve assignment patterns in an expression, given the type of its LHS."
+    :long "<p>If successful, returns a sized (welltyped) expression.  If the
+LHS type is an unpacked datatype, then the size of the expression is the
+datatype size and the type is unsigned.</p>"
+    :measure (two-nats-measure (vl-expr-count x) 0)
+    :hints(("Goal" :in-theory (enable vl-exprlist-max-count
+                                      alist-vals vl-type-expr-pairs-fix)))
+    :verify-guards nil
+    (b* ((warnings (vl-warninglist-fix warnings))
+         (ctx (vl-context-fix ctx))
+         (x (vl-expr-fix x))
+         ((when (vl-datatype->packedp lhs-type))
+          (vl-expr-replace-assignpatterns lhs-type x in-pattern ss ctx warnings)
+          ;; (b* (((mv ok new-x warnings)
+          ;;       (vl-expr-replace-assignpatterns lhs-type x in-pattern ss ctx warnings))
+          ;;      ((unless ok) (mv nil x warnings))
+          ;;      ((mv warning size) (vl-packed-datatype-size lhs-type))
+          ;;      ((when warning)
+          ;;       (mv nil x (cons warning warnings)))
+          ;;      ((mv ok warnings new-x)
+          ;;       (vl-expr-size size new-x ss ctx warnings)))
+          ;;   (mv ok new-x warnings))
+          )
+         ((when (vl-atom-p x))
+          ;; We have an unpacked datatype.  This function must check that the
+          ;; type of x is compatible.
+          (vl-atom-size-assigncontext lhs-type x ss ctx warnings))
+         ((vl-nonatom x))
+         ((when (member x.op '(:vl-hid-dot :vl-index)))
+          ;; Must have an unpacked datatype.  This function must check that the
+          ;; type of x is compatible.
+          (vl-index-expr-size-assigncontext lhs-type x ss ctx warnings))
+         ((when (member x.op '(:vl-select-colon
+                          :vl-select-pluscolon
+                          :vl-select-minuscolon
+                          :vl-partselect-colon
+                          :vl-partselect-pluscolon
+                          :vl-partselect-minuscolon)))
+          (vl-arrayslice-expr-size-assigncontext lhs-type x ss ctx warnings))
+         ((when (eq x.op :vl-qmark))
+          ;; Since we have an unpacked datatype, each branch of the conditional
+          ;; should end up as the same size (= the size of the datatype).
+          (b* (((list cond truebr falsebr) x.args)
+               ((mv cond-ok warnings cond1) (vl-expr-size nil cond ss ctx warnings))
+               ((mv true-ok true1 warnings) (vl-expr-size-assigncontext
+                                             lhs-type truebr in-pattern ss ctx warnings))
+               ((mv false-ok false1 warnings) (vl-expr-size-assigncontext
+                                               lhs-type falsebr in-pattern ss ctx warnings))
+               ((unless (and cond-ok true-ok false-ok))
+                (mv nil x warnings)))
+            (mv t (make-vl-nonatom :op :vl-qmark
+                                   :args (list cond1 true1 false1))
+                warnings)))
+         ((when (member x.op '(:vl-pattern-positional
+                               :vl-pattern-multi
+                               :vl-pattern-keyvalue)))
+          (b* (((mv ok type-expr-pairs warnings)
+                (vl-assignpattern-replacement lhs-type x ctx warnings))
+               ((unless ok) (mv nil x warnings))
+               ((mv ok args warnings)
+                (vl-exprlist-size-assigncontext type-expr-pairs ss ctx warnings))
+               ((unless ok) (mv nil x warnings)))
+            (mv t (make-vl-nonatom :op :vl-concat
+                                   :args args)
+                warnings)))
+
+         ((when (eq x.op :vl-pattern-type))
+          (b* (((mv warning pattype) (vl-castexpr->datatype (first x.args) ss))
+               ((when warning) (mv nil x (cons warning warnings)))
+               ((unless (equal pattype (vl-datatype-fix lhs-type)))
+                ;; bozo -- is there a different compatibility test we should use?
+                (mv nil x
+                    (warn :type :vl-assignpattern-elim-fail
+                          :msg "~a0: Assignment pattern type is incompatible ~
+                                with LHS type: ~a1"
+                          :args (list ctx x)))))
+            (vl-expr-size-assigncontext pattype (second x.args) t ss ctx warnings)))
+
+         ((when (eq x.op :vl-concat))
+          (mv nil (vl-expr-fix x)
+              (warn :type :vl-assignpattern-elim-fail
+                    :msg "~a0: Unpacked array concatenations are not yet ~
+                          implemented (~a1)"
+                    :args (list ctx x)))))
+
+      (mv nil (vl-expr-fix x)
+              (warn :type :vl-assignpattern-elim-fail
+                    :msg "~a0: Bad expression for unpacked LHS type: ~a1"
+                    :args (list ctx x)))))
+
+  (define vl-exprlist-size-assigncontext ((x vl-type-expr-pairs-p)
+                                          (ss vl-scopestack-p)
+                                          (ctx vl-context-p)
+                                          (warnings vl-warninglist-p))
+    :returns (mv (successp booleanp :rule-classes :type-prescription)
+                 (new-x vl-exprlist-p)
+                 (new-warnings vl-warninglist-p))
+    :measure (two-nats-measure (vl-exprlist-max-count (alist-vals (vl-type-expr-pairs-fix x)))
+                               (len (vl-type-expr-pairs-fix x)))
+    (b* ((x (vl-type-expr-pairs-fix x))
+         ((when (atom x)) (mv t nil (vl-warninglist-fix warnings)))
+         ((mv ok x1 warnings) (vl-expr-size-assigncontext
+                               (caar x) (cdar x) t ss ctx warnings))
+         ((unless ok) (mv nil nil warnings))
+         ((mv ok x2 warnings) (vl-exprlist-size-assigncontext (cdr x) ss ctx warnings))
+         ((unless ok) (mv nil nil warnings)))
+      (mv t (cons x1 x2) warnings)))
+  ///
+
+  (local
+   (defthm finalwidth-when-selfsize/exprsize-same
+     (b* (((mv ok & new-x) (vl-expr-size lhs-size x ss ctx warnings))
+          ((mv & selfsize) (vl-expr-selfsize x ss ctx warnings)))
+       (implies (and ok (equal lhs-size selfsize))
+                (equal (vl-expr->finalwidth new-x)
+                       selfsize)))
+     :hints(("Goal" :expand ((:free (lhs-size warnings)
+                              (vl-expr-size lhs-size x ss ctx warnings)))))))
+
+  (defthm-vl-expr-size-assigncontext-flag
+    (defthm vl-expr-size-of-vl-expr-size-assigncontext
+      (b* (((mv ok1 x1 &) (vl-expr-size-assigncontext
+                           lhs-type x in-pattern ss ctx warnings))
+           ((mv warning size) (vl-datatype-size lhs-type))
+           ((mv & selfsize)   (vl-expr-selfsize x1 ss ctx1 warnings1)))
+        ;; (and (implies warning
+        ;;               (not ok1))
+        (implies (and ok1 (not warning) selfsize in-pattern)
+                 (equal selfsize
+                        size)))
+      :hints ('(:expand ((vl-expr-size-assigncontext
+                          lhs-type x in-pattern ss ctx warnings))
+                :in-theory (e/d (warning-irrelevance-of-vl-expr-selfsize
+                                 warning-irrelevance-of-vl-exprlist-selfsize)
+                                (vl-expr-size-assigncontext
+                                 vl-exprlist-size-assigncontext))))
+      :flag vl-expr-size-assigncontext)
+    (defthm vl-type-expr-pairs-sum-datatype-sizes-of-vl-exprlist-size-assigncontext
+      (b* (((mv ok1 x1 &) (vl-exprlist-size-assigncontext
+                           x ss ctx warnings))
+           ((mv warning size) (vl-type-expr-pairs-sum-datatype-sizes x))
+           ((mv & sizes) (vl-exprlist-selfsize x1 ss ctx1 warnings1)))
+        (implies (and ok1 (not (member nil sizes)) (not warning))
+                 (equal (sum-nats sizes)
+                        size)))
+      :hints ('(:expand ((vl-type-expr-pairs-sum-datatype-sizes x)
+                         (vl-exprlist-size-assigncontext x ss ctx warnings)
+                         (vl-exprlist-size nil ss ctx warningsb))
+                :in-theory (e/d (vl-exprlist-selfsize
+                                 vl-exprlist->finalwidths
+                                 warning-irrelevance-of-vl-expr-selfsize
+                                 warning-irrelevance-of-vl-exprlist-selfsize)
+                                (vl-exprlist-size-assigncontext
+                                 vl-expr-size-assigncontext))))
+      :flag vl-exprlist-size-assigncontext))
+
+  (verify-guards vl-exprlist-size-assigncontext)
+
+  (deffixequiv-mutual vl-expr-size-assigncontext
+    :hints ('(:expand ((:free (lhs-type in-pattern ss ctx warnings)
+                        (vl-expr-size-assigncontext
+                         lhs-type x in-pattern ss ctx warnings))
+                       (:free (lhs-type in-pattern ss ctx warnings)
+                        (vl-expr-size-assigncontext
+                         lhs-type (vl-expr-fix x) in-pattern ss ctx warnings))
+                       (:free (ss ctx warnings)
+                        (vl-exprlist-size-assigncontext x ss ctx warnings))
+                       (:free (ss ctx warnings)
+                        (vl-exprlist-size-assigncontext
+                         (vl-type-expr-pairs-fix x) ss ctx warnings)))
+              :in-theory (disable vl-expr-size-assigncontext
+                                  vl-exprlist-size-assigncontext)))))
+
+
+
+(define vl-lvalue-type ((x vl-expr-p) (ss vl-scopestack-p))
+  :returns (mv (warning (iff (vl-warning-p warning) warning))
+               (type (implies (and (not warning) type)
+                              (vl-datatype-p type))))
+  (b* (((when (vl-atom-p x))
+        ;; has to be an identifier
+        (vl-index-find-type x ss))
+       ((vl-nonatom x))
+       ((when (member x.op '(:vl-hid-dot :vl-index :bitselect)))
+        (vl-index-find-type x ss)))
+       ;; We think the above are the only lvalue ops that can be targets of
+       ;; assignment patterns.  The remaining lvalue ops are partselects and
+       ;; concats, which don't have indices of their own so we won't support
+       ;; them.
+    (mv nil nil)))
+
+(define vl-assigncontext-size ((lhs vl-expr-p)
+                               (rhs vl-expr-p)
+                               (ss vl-scopestack-p)
+                               (ctx vl-context-p)
+                               (warnings vl-warninglist-p))
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (new-lhs vl-expr-p)
+               (new-rhs vl-expr-p)
+               (new-warnings vl-warninglist-p))
+  (b* ((ctx (vl-context-fix ctx))
+       (lhs (vl-expr-fix lhs))
+       (rhs (vl-expr-fix rhs))
+       ((mv lhs-successp warnings lhs-prime)
+        (vl-expr-size nil lhs ss ctx warnings))
+       ((unless lhs-successp)
+        (mv nil lhs rhs warnings))
+
+       (lhs-size (vl-expr->finalwidth lhs-prime))
+       ((unless (posp lhs-size))
+        (mv nil
+            lhs-prime rhs
+            (fatal :type :vl-bad-assignment
+                   :msg "~a0: The size of the left-hand side ~a1 was not ~
+                          a positive number?"
+                   :args (list ctx lhs))))
+
+       ((mv warning lhs-type) (vl-lvalue-type lhs-prime ss))
+       ((when warning) (mv nil lhs-prime rhs (cons warning (ok))))
+
+       ((mv ok new-rhs warnings)
+        (if lhs-type
+            (vl-expr-size-assigncontext lhs-type rhs nil ss ctx warnings)
+          (mv t rhs warnings)))
+
+       ((unless ok) (mv nil lhs-prime rhs warnings))
+
+       ((mv rhs-successp warnings rhs-prime)
+        (vl-expr-size lhs-size new-rhs ss ctx warnings))
+
+       ((unless rhs-successp) (mv nil lhs-prime rhs warnings)))
+    (mv t lhs-prime rhs-prime warnings))
+  ///
+  (defthm vl-expr->finalwidth-of-vl-assigncontext-size-lhs
+    (b* (((mv ok new-lhs & &) (vl-assigncontext-size lhs rhs ss ctx warnings)))
+      (implies ok
+               (posp (vl-expr->finalwidth new-lhs))))
+    :rule-classes :type-prescription))
+
+      
+
+            
+          
+ 

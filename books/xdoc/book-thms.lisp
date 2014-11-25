@@ -4,6 +4,9 @@
 ; Written by Matt Kaufmann (original date October, 2007; augmented January, 2011)
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; Modified by Jared Davis, October 2014, to add support for raw documentation
+; strings in defsections.
+
 ; This file first introduces two utilities, which require that the indicated
 ; book already be included when running them.
 
@@ -25,7 +28,6 @@
 
 ; Thanks to Jared Davis for requesting and trying out this book.
 
-
 ; See book-thms-example.lisp for an example of the usage of these utilities.
 
 (in-package "ACL2")
@@ -41,7 +43,7 @@
   (cond ((endp trips)
          acc)
         ((and (eq (caar trips) 'include-book-path)
-              (eq (cadar trips) 'global-value)) 
+              (eq (cadar trips) 'global-value))
          (newly-defined-top-level-thms-rec (cdr trips)
                                            (equal (car (cddar trips))
                                                   full-book-name)
@@ -65,11 +67,9 @@
 (defun reversed-world-since-event (wrld ev acc)
   (cond ((or (endp wrld)
              (let ((trip (car wrld)))
-               (and
-                (eq (car trip) 'event-landmark)
-                (eq (cadr trip) 'global-value)
-                (equal (access-event-tuple-form (cddr trip))
-                       ev))))
+               (and (eq (car trip) 'event-landmark)
+                    (eq (cadr trip) 'global-value)
+                    (equal (access-event-tuple-form (cddr trip)) ev))))
          acc)
         (t (reversed-world-since-event (cdr wrld)
                                        ev
@@ -119,7 +119,12 @@
 ; current view is formula-based rather than event-based, so presentation might
 ; be an issue.
 
-(defun new-formula-info (trips wrld acc)
+(table acl2-xdoc)
+
+(defmacro acl2-xdoc-fragment (msg)
+  `(table acl2-xdoc :fragment ,msg))
+
+
 
 ; We collect into acc entries of the following forms, using untranslated
 ; (user-level) syntax for formulas.
@@ -133,6 +138,8 @@
 ;     formula
 ; - (name :defchoose formula)
 ;     for name introduced by defchoose with the indicated constraint
+; - "blah"
+;     for calls of (acl2-xdoc-fragment "blah")
 
 ; Remarks:
 
@@ -151,42 +158,50 @@
 ; include-book events represented (since any such are local to the
 ; encapsulate).
 
-  (cond ((endp trips)
-         acc)
-        (t
-         (new-formula-info
-          (cdr trips)
-          wrld
-          (let ((name (caar trips))
-                (prop (cddar trips)))
-            (case (cadar trips)
-              (theorem
-               (cons (list name :theorem prop)
-                     acc))
-              (unnormalized-body
-               (cond ((eq (getprop name 'constraint-lst t
-                                   'current-acl2-world wrld)
-                          t)
-                      (cons (list name
-                                  :def
-                                  `(equal (,name ,@(formals name wrld))
-                                          ,(untranslate prop nil wrld)))
-                            acc))
-                     (t ; function is really constrained
-                      acc)))
-              (constraint-lst
-               (cond ((and prop (symbolp prop))
-                      acc)
-                     (t
-                      (cons (list (getprop name 'siblings nil
-                                           'current-acl2-world wrld)
-                                  :constraint
-                                  (untranslate (cons 'and prop) t wrld))
-                            acc))))
-              (defchoose-axiom
-                (cons (list name :defchoose (untranslate prop t wrld))
-                      acc))
-              (t acc)))))))
+(defun new-formula-info1 (trip wrld acc)
+  (let ((name (car trip))
+        (prop (cddr trip)))
+    (case (cadr trip)
+      (theorem
+       (cons (list name :theorem prop) acc))
+      (unnormalized-body
+       (cond ((eq (getprop name 'constraint-lst t 'current-acl2-world wrld) t)
+              (cons (list name
+                          :def
+                          `(equal (,name ,@(formals name wrld))
+                                  ,(untranslate prop nil wrld)))
+                    acc))
+             (t ; function is really constrained
+              acc)))
+      (constraint-lst
+       (cond ((and prop (symbolp prop))
+              acc)
+             (t
+              (cons (list (getprop name 'siblings nil 'current-acl2-world wrld)
+                          :constraint
+                          (untranslate (cons 'and prop) t wrld))
+                    acc))))
+      (defchoose-axiom
+        (cons (list name :defchoose (untranslate prop t wrld))
+              acc))
+      (global-value
+       (if (and (eq name 'event-landmark)
+                (eq (access-event-tuple-type prop) 'table))
+           (let ((form (access-event-tuple-form prop)))
+             (if (and (eq (first form) 'table)
+                      (eq (second form) 'acl2-xdoc)
+                      (eq (third form) :fragment)
+                      (stringp (fourth form)))
+                 (cons (fourth form) acc)
+               acc))
+         acc))
+      (t acc))))
+
+(defun new-formula-info (trips wrld acc)
+  (if (endp trips)
+      acc
+    (let ((acc (new-formula-info1 (car trips) wrld acc)))
+      (new-formula-info (cdr trips) wrld acc))))
 
 (defmacro with-intro-table (&rest events)
 
@@ -222,3 +237,13 @@
                    (list 'quote
                          (cdr (assoc-eq :info (table-alist 'intro-table
                                                            wrld)))))))))
+
+#||
+;; for testing:
+(encapsulate-then-new-info foo
+  (defun f (x) x)
+  (acl2-xdoc-fragment "Hello")
+  (defun f2 (x) x)
+  (acl2-xdoc-fragment "World")
+  (defun f3 (x) x))
+||#

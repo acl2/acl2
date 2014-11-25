@@ -22,135 +22,136 @@
  (include-book "hacking/all" :dir :system :ttags :all))
 (subsume-ttags-since-defttag)
 
-
-(defdoc CCG
-  ":Doc-Section CCG
-   
-   a powerful automated termination prover for ACL2~/~/
-
-   In order to see how the CCG analysis works, consider the following
-   definition of Ackermann's function from exercise 6.15 in the ACL2 textbook:
-   ~bv[]
-   (defun ack (x y)
-      (if (zp x) 
-          1
-        (if (zp y) 
-            (if (equal x 1) 2 (+ x 2))
-          (ack (ack (1- x) y) (1- y))))) 
-    ~ev[] 
-    ACL2 cannot automatically prove the termination of ~c[ack] using its
-    measure-based termination proof. In order to admit the function, the user
-    must supply a measure. An example measure is 
-    ~c[(make-ord 1 (1+ (acl2-count y)) (acl2-count x))], which is equivalent to the ordinal 
-    ~c[w * (1+ (acl2-count y)) + (acl2-count x)], where ~c[w] is the first infinite
-    ordinal.
-
-   The CCG analysis, on the other hand, automatically proves termination as
-   follows. Note that there are two recursive calls. These calls, along with
-   their rulers (i.e. the conditions under which the recursive call is reached)
-   are called ~em[calling contexts], or sometimes just ~em[contexts] (for more
-   on rulers, see ~il[ruler-extenders]). For
-   ~c[ack], these are:
-   ~bv[]
-   1. (ack (1- x) y) with ruler ((not (zp x)) (not (zp y))).
-   2. (ack (ack (1- x) y) (1- y)) with ruler ((not (zp x)) (not (zp y))). 
-   ~ev[]
-   These calling contexts are used to build a ~em[calling context graph (CCG)],
-   from which our analysis derives its name. This graph has an edge from
-   context ~c[c1] to context ~c[c2] when it is possible that execution can move
-   from context ~c[c1] to context ~c[c2] in one ``step'' (i.e. without visiting
-   any other contexts). For our example, we get the complete graph, with edges
-   from each context to both contexts.
-
-   The analysis next attempts to guess ~em[calling context measures (CCMs)], or
-   just ~em[measures], for each function. These are similar to ACL2 measures,
-   in that they are ACL2 terms that must provably be able to evaluate to an
-   ordinal value (unlike ACL2 measures, CCG currently ignores the current
-   well-founded relation setting). However, functions may have multiple CCMs,
-   instead of one, like ACL2, and the CCG analysis has some more sophisticated
-   heuristics for guessing appropriate measures. However, there is a mechanism
-   for supplying measures to the CCG analysis if you need to ~pl[CCG-XARGS]. In
-   our example, the CCG analysis will guess the measures ~c[(acl2-count x)],
-   ~c[(acl2-count y)], and ~c[(+ (acl2-count x) (acl2-count y))]. This last one
-   turns out to be unimportant for the termination proof. However, note that
-   the first two of these measures are components of the ordinal measure that
-   we gave ACL2 to prove termination earlier. As one might guess, these are
-   important for the success of our CCG analysis.
-
-   Like ACL2's measure analysis, we are concerned with what happens to these
-   values when a recursive call is made. However, we are concerned not just
-   with decreasing measures, but also non-increasing measures. Thus, we
-   construct ~em[Calling Context Measure Functions (CCMFs)], which tell us how
-   one measure compares to another across recursive calls.
-
-   In our example, note that when the recursive call of the context 1 is made,
-   the new value of ~c[(acl2-count x)] is less than the original value of
-   ~c[(acl2-count x)]. More formally, we can prove the following:
-   ~bv[]
-   (implies (and (not (zp x))
-                 (not (zp y)))
-            (o< (acl2-count (1- x))
-                (acl2-count x)))
-   ~ev[]
-   For those of you that are familiar with measure-based termination proofs in
-   ACL2, this should look familiar, as it has the same structure as such a
-   termination proof. However, we also note the following trivial observation:
-   ~bv[]
-   (implies (and (not (zp x))
-                 (not (zp y)))
-            (o<= (acl2-count y)
-                 (acl2-count y)))
-   ~ev[]
-   That is, ~c[y] stays the same across this recursive call. For the other
-   context, we similarly note that ~c[(acl2-count y)] is decreasing. However,
-   we can say nothing about the value of ~c[(acl2-count x)]. The CCG algorithm
-   does this analysis using queries to the theorem prover that are carefully
-   restricted to limit prover time.
-
-   Finally, the CCG analysis uses this local information to do a global
-   analysis of what happens to values. This analysis asks the question, for
-   every infinite path through our CCG, ~c[c_1], ~c[c_2], ~c[c_3], ..., is
-   there a natural number ~c[N] such that there is an infinite sequence of
-   measures ~c[m_N], ~c[m_(N+1)], ~c[m_(N+2)], ... such that each ~c[m_i] is a
-   measure for the context ~c[c_i] (i.e. a measure for the function containing
-   ~c[ci]), we have proven that the ~c[m_(i+1)] is never larger than ~c[m_i],
-   and for infinitely many ~c[i], it is the case that we have proven that
-   ~c[m_i] is always larger than ~c[m_(i+)]. That's a bit of a mouthful, but
-   what we are essentially saying is that, for every possible infinite sequence
-   of recursions it is the case that after some finite number of steps, we can
-   start picking out measures such that they never increase and infinitely
-   often they decrease. Since these measures return ordinal values, we then
-   know that there can be no infinite recursions, and we are done.
-
-   For our example, consider two kinds of infinite paths through our CCG: those
-   that visit context 2 infinitely often, and those that don't. In the first
-   case, we know that ~c[(acl2-count y)] is never increasing, since a visit to
-   context 1 does not change the value of ~c[y], and a visit to context 2
-   decreases the value of ~c[(acl2-count y)]. Furthermore, since we visit
-   context 2 infinitely often, we know that ~c[(acl2-count y)] is infinitely
-   decreasing along this path. Therefore, we have met the criteria for proving
-   no such path is a valid computation. In the case in which we do not visit
-   context 2 infinitely often, there must be a value ~c[N] such that we do not
-   visit context 2 any more after the ~c[N]th context in the path. After this,
-   we must only visit context 1, which always decreases the value of
-   ~c[(acl2-count x)]. Therefore, no such path can be a valid
-   computation. Since all infinite paths through our CCG either visit context 2
-   infinitely often or not, we have proven termination. This analysis of the
-   local data in the global context is done automatically by a decision
-   procedure.
-
-   That is a brief overview of the CCG analysis. Note that, can it prove many
-   functions terminating that ACL2 cannot. It also does so using simpler
-   measures. In the ~c[ack] example, we did not require any infinite ordinal
-   measures to prove termination using CCG. Intuitively, CCG is in a way
-   putting together the measures for you so you don't have to think about the
-   ordinal structure. Thus, even when the CCG analysis to prove termination, it
-   is often easier to give it multiple simple measures and allow it to put
-   together the global termination argument than to give ACL2 the entire
-   measure so it can prove that it decreases every single step.
-
-   To find out more about interacting and controlling the CCG analysis, see the
-   topics included in this section.")
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
+; (defdoc CCG
+;   ":Doc-Section CCG
+;    
+;    a powerful automated termination prover for ACL2~/~/
+; 
+;    In order to see how the CCG analysis works, consider the following
+;    definition of Ackermann's function from exercise 6.15 in the ACL2 textbook:
+;    ~bv[]
+;    (defun ack (x y)
+;       (if (zp x) 
+;           1
+;         (if (zp y) 
+;             (if (equal x 1) 2 (+ x 2))
+;           (ack (ack (1- x) y) (1- y))))) 
+;     ~ev[] 
+;     ACL2 cannot automatically prove the termination of ~c[ack] using its
+;     measure-based termination proof. In order to admit the function, the user
+;     must supply a measure. An example measure is 
+;     ~c[(make-ord 1 (1+ (acl2-count y)) (acl2-count x))], which is equivalent to the ordinal 
+;     ~c[w * (1+ (acl2-count y)) + (acl2-count x)], where ~c[w] is the first infinite
+;     ordinal.
+; 
+;    The CCG analysis, on the other hand, automatically proves termination as
+;    follows. Note that there are two recursive calls. These calls, along with
+;    their rulers (i.e. the conditions under which the recursive call is reached)
+;    are called ~em[calling contexts], or sometimes just ~em[contexts] (for more
+;    on rulers, see ~il[ruler-extenders]). For
+;    ~c[ack], these are:
+;    ~bv[]
+;    1. (ack (1- x) y) with ruler ((not (zp x)) (not (zp y))).
+;    2. (ack (ack (1- x) y) (1- y)) with ruler ((not (zp x)) (not (zp y))). 
+;    ~ev[]
+;    These calling contexts are used to build a ~em[calling context graph (CCG)],
+;    from which our analysis derives its name. This graph has an edge from
+;    context ~c[c1] to context ~c[c2] when it is possible that execution can move
+;    from context ~c[c1] to context ~c[c2] in one ``step'' (i.e. without visiting
+;    any other contexts). For our example, we get the complete graph, with edges
+;    from each context to both contexts.
+; 
+;    The analysis next attempts to guess ~em[calling context measures (CCMs)], or
+;    just ~em[measures], for each function. These are similar to ACL2 measures,
+;    in that they are ACL2 terms that must provably be able to evaluate to an
+;    ordinal value (unlike ACL2 measures, CCG currently ignores the current
+;    well-founded relation setting). However, functions may have multiple CCMs,
+;    instead of one, like ACL2, and the CCG analysis has some more sophisticated
+;    heuristics for guessing appropriate measures. However, there is a mechanism
+;    for supplying measures to the CCG analysis if you need to ~pl[CCG-XARGS]. In
+;    our example, the CCG analysis will guess the measures ~c[(acl2-count x)],
+;    ~c[(acl2-count y)], and ~c[(+ (acl2-count x) (acl2-count y))]. This last one
+;    turns out to be unimportant for the termination proof. However, note that
+;    the first two of these measures are components of the ordinal measure that
+;    we gave ACL2 to prove termination earlier. As one might guess, these are
+;    important for the success of our CCG analysis.
+; 
+;    Like ACL2's measure analysis, we are concerned with what happens to these
+;    values when a recursive call is made. However, we are concerned not just
+;    with decreasing measures, but also non-increasing measures. Thus, we
+;    construct ~em[Calling Context Measure Functions (CCMFs)], which tell us how
+;    one measure compares to another across recursive calls.
+; 
+;    In our example, note that when the recursive call of the context 1 is made,
+;    the new value of ~c[(acl2-count x)] is less than the original value of
+;    ~c[(acl2-count x)]. More formally, we can prove the following:
+;    ~bv[]
+;    (implies (and (not (zp x))
+;                  (not (zp y)))
+;             (o< (acl2-count (1- x))
+;                 (acl2-count x)))
+;    ~ev[]
+;    For those of you that are familiar with measure-based termination proofs in
+;    ACL2, this should look familiar, as it has the same structure as such a
+;    termination proof. However, we also note the following trivial observation:
+;    ~bv[]
+;    (implies (and (not (zp x))
+;                  (not (zp y)))
+;             (o<= (acl2-count y)
+;                  (acl2-count y)))
+;    ~ev[]
+;    That is, ~c[y] stays the same across this recursive call. For the other
+;    context, we similarly note that ~c[(acl2-count y)] is decreasing. However,
+;    we can say nothing about the value of ~c[(acl2-count x)]. The CCG algorithm
+;    does this analysis using queries to the theorem prover that are carefully
+;    restricted to limit prover time.
+; 
+;    Finally, the CCG analysis uses this local information to do a global
+;    analysis of what happens to values. This analysis asks the question, for
+;    every infinite path through our CCG, ~c[c_1], ~c[c_2], ~c[c_3], ..., is
+;    there a natural number ~c[N] such that there is an infinite sequence of
+;    measures ~c[m_N], ~c[m_(N+1)], ~c[m_(N+2)], ... such that each ~c[m_i] is a
+;    measure for the context ~c[c_i] (i.e. a measure for the function containing
+;    ~c[ci]), we have proven that the ~c[m_(i+1)] is never larger than ~c[m_i],
+;    and for infinitely many ~c[i], it is the case that we have proven that
+;    ~c[m_i] is always larger than ~c[m_(i+)]. That's a bit of a mouthful, but
+;    what we are essentially saying is that, for every possible infinite sequence
+;    of recursions it is the case that after some finite number of steps, we can
+;    start picking out measures such that they never increase and infinitely
+;    often they decrease. Since these measures return ordinal values, we then
+;    know that there can be no infinite recursions, and we are done.
+; 
+;    For our example, consider two kinds of infinite paths through our CCG: those
+;    that visit context 2 infinitely often, and those that don't. In the first
+;    case, we know that ~c[(acl2-count y)] is never increasing, since a visit to
+;    context 1 does not change the value of ~c[y], and a visit to context 2
+;    decreases the value of ~c[(acl2-count y)]. Furthermore, since we visit
+;    context 2 infinitely often, we know that ~c[(acl2-count y)] is infinitely
+;    decreasing along this path. Therefore, we have met the criteria for proving
+;    no such path is a valid computation. In the case in which we do not visit
+;    context 2 infinitely often, there must be a value ~c[N] such that we do not
+;    visit context 2 any more after the ~c[N]th context in the path. After this,
+;    we must only visit context 1, which always decreases the value of
+;    ~c[(acl2-count x)]. Therefore, no such path can be a valid
+;    computation. Since all infinite paths through our CCG either visit context 2
+;    infinitely often or not, we have proven termination. This analysis of the
+;    local data in the global context is done automatically by a decision
+;    procedure.
+; 
+;    That is a brief overview of the CCG analysis. Note that, can it prove many
+;    functions terminating that ACL2 cannot. It also does so using simpler
+;    measures. In the ~c[ack] example, we did not require any infinite ordinal
+;    measures to prove termination using CCG. Intuitively, CCG is in a way
+;    putting together the measures for you so you don't have to think about the
+;    ordinal structure. Thus, even when the CCG analysis to prove termination, it
+;    is often easier to give it multiple simple measures and allow it to put
+;    together the global termination argument than to give ACL2 the entire
+;    measure so it can prove that it decreases every single step.
+; 
+;    To find out more about interacting and controlling the CCG analysis, see the
+;    topics included in this section.")
 
 ; BEGIN public configuration interface
 
@@ -161,62 +162,68 @@
 (add-acl2-defaults-table-key :termination-method
                              (member-eq val '(:measure :ccg)))
 
-(defdoc set-termination-method
-  ":Doc-Section CCG
-
-  Set the default means of proving termination.~/
-  ~bv[]
-  Examples:
-  (set-termination-method :ccg)
-  (set-termination-method :measure)
-  ~ev[]
-
-  Introduced by the CCG analysis book, this macro sets the default
-  means by which ACL2 will prove termination. Note: This is an event!
-  It does not print the usual event summary but nevertheless changes
-  the ACL2 logical ~il[world] and is so recorded.~/
-
-  ~bv[] General Form:
-  (set-termination-method tm)
-  ~ev[]
-
-  where ~c[tm] is ~c[:CCG] or ~c[:MEASURE]. The default is ~c[:MEASURE] (chosen
-  to assure compatibility with books created without CCG). The recommended
-  setting is ~c[:CCG]. This macro is equivalent to 
-  ~c[(table acl2-defaults-table :termination-method 'tm)], and hence is ~ilc[local] to
-  any ~il[books] and ~ilc[encapsulate] ~il[events] in which it occurs;
-  ~pl[acl2-defaults-table].
-
-  When the termination-method is set to ~c[:CCG], a termination proof is
-  attempted using the the hierarchical CCG algorithm ~url[CCG-hierarchy].
-
-  When the termination-method is set to ~c[:MEASURE], ACL2 attempts to
-  prove termination using its default measure-based method. Thus, in
-  this setting, ACL2's behavior is identical to that when the CCG book
-  is not included at all.
-
-  To see what the current termination method setting is, use
-  ~ilc[get-termination-method].~/")
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
+; (defdoc set-termination-method
+;   ":Doc-Section CCG
+; 
+;   Set the default means of proving termination.~/
+;   ~bv[]
+;   Examples:
+;   (set-termination-method :ccg)
+;   (set-termination-method :measure)
+;   ~ev[]
+; 
+;   Introduced by the CCG analysis book, this macro sets the default
+;   means by which ACL2 will prove termination. Note: This is an event!
+;   It does not print the usual event summary but nevertheless changes
+;   the ACL2 logical ~il[world] and is so recorded.~/
+; 
+;   ~bv[] General Form:
+;   (set-termination-method tm)
+;   ~ev[]
+; 
+;   where ~c[tm] is ~c[:CCG] or ~c[:MEASURE]. The default is ~c[:MEASURE] (chosen
+;   to assure compatibility with books created without CCG). The recommended
+;   setting is ~c[:CCG]. This macro is equivalent to 
+;   ~c[(table acl2-defaults-table :termination-method 'tm)], and hence is ~ilc[local] to
+;   any ~il[books] and ~ilc[encapsulate] ~il[events] in which it occurs;
+;   ~pl[acl2-defaults-table].
+; 
+;   When the termination-method is set to ~c[:CCG], a termination proof is
+;   attempted using the the hierarchical CCG algorithm ~url[CCG-hierarchy].
+; 
+;   When the termination-method is set to ~c[:MEASURE], ACL2 attempts to
+;   prove termination using its default measure-based method. Thus, in
+;   this setting, ACL2's behavior is identical to that when the CCG book
+;   is not included at all.
+; 
+;   To see what the current termination method setting is, use
+;   ~ilc[get-termination-method].~/")
 
 (defun get-termination-method (wrld)
-  ":Doc-Section CCG
 
-  Returns the current default termination method.~/
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
 
-  ~bv[]
-  Examples:
-  (get-termination-method (w state))
-  ~ev[]
+; ":Doc-Section CCG
 
-  This will return the termination-method as specified by the current world. ~/
-  
-  ~bv[]
-  General Form:
-  (get-termination-method wrld)
-  ~ev[]
+; Returns the current default termination method.~/
 
-  where ~c[wrld] is a ~il[world]. For information on the settings and
-  their meaning, ~pl[set-termination-method].~/"
+; ~bv[]
+; Examples:
+; (get-termination-method (w state))
+; ~ev[]
+
+; This will return the termination-method as specified by the current world. ~/
+; 
+; ~bv[]
+; General Form:
+; (get-termination-method wrld)
+; ~ev[]
+
+; where ~c[wrld] is a ~il[world]. For information on the settings and
+; their meaning, ~pl[set-termination-method].~/"
 
   (declare (xargs :guard (and (plist-worldp wrld)
                               (alistp (table-alist 'acl2-defaults-table wrld)))))
@@ -526,221 +533,225 @@
              hierarchy))))
          
 (defmacro set-ccg-hierarchy (v)
-    ":Doc-Section CCG
-   
-     Set the default hierarchy of techniques for CCG-based termination
-     analysis. ~/
-     ~bv[]
-     (set-ccg-hierarchy ((:built-in-clauses :equal t)
-                         (:measure (:induction-depth 1))
-                         ((:induction-depth 0) :EQUAL t)
-                         ((:induction-depth 1) :EQUAL t)
-                         ((:induction-depth 1) :ALL   t)
-                         ((:induction-depth 1) :SOME  t)
-                         ((:induction-depth 1) :NONE  t)
-                         ((:induction-depth 1) :EQUAL nil)
-                         ((:induction-depth 1) :ALL   nil)
-                         ((:induction-depth 1) :SOME  nil)
-                         ((:induction-depth 1) :NONE  nil)))
-     :set-ccg-hierarchy ((:built-in-clauses :equal t)
-                         ((:induction-depth 0) :EQUAL t)
-                         ((:induction-depth 1) :EQUAL t)
-                         ((:induction-depth 1) :ALL   t)
-                         ((:induction-depth 1) :SOME  t)
-                         ((:induction-depth 1) :NONE  t))~/
 
-     General Form:
-     (set-ccg-hierarchy v)
-     ~ev[]
-     where ~c[v] is ~c[:CCG-ONLY], ~c[:CCG-ONLY-CPN], ~c[:HYBRID],
-     ~c[:HYBRID-CPN], or a non-empty list of hierarchy levels, which either
-     have the form ~c[(pt ccm-cs cpn)] or the form ~c[(:measure pt)], where
-     ~c[pt] is either ~c[:built-in-clauses] or ~c[(:induction-depth n)] for
-     some natural number ~c[n], ~c[ccm-cs] is one of ~c[:EQUAL], ~c[:ALL],
-     ~c[:SOME], or ~c[:NONE], and ~c[cpn] is ~c[t] or ~c[nil].
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
 
-     Each level of the hierarchy describes techniques used to prove
-     termination. Termination proofs performed after admitting this event will
-     use the specified techniques in the order in which they are listed.
+;   ":Doc-Section CCG
+;  
+;    Set the default hierarchy of techniques for CCG-based termination
+;    analysis. ~/
+;    ~bv[]
+;    (set-ccg-hierarchy ((:built-in-clauses :equal t)
+;                        (:measure (:induction-depth 1))
+;                        ((:induction-depth 0) :EQUAL t)
+;                        ((:induction-depth 1) :EQUAL t)
+;                        ((:induction-depth 1) :ALL   t)
+;                        ((:induction-depth 1) :SOME  t)
+;                        ((:induction-depth 1) :NONE  t)
+;                        ((:induction-depth 1) :EQUAL nil)
+;                        ((:induction-depth 1) :ALL   nil)
+;                        ((:induction-depth 1) :SOME  nil)
+;                        ((:induction-depth 1) :NONE  nil)))
+;    :set-ccg-hierarchy ((:built-in-clauses :equal t)
+;                        ((:induction-depth 0) :EQUAL t)
+;                        ((:induction-depth 1) :EQUAL t)
+;                        ((:induction-depth 1) :ALL   t)
+;                        ((:induction-depth 1) :SOME  t)
+;                        ((:induction-depth 1) :NONE  t))~/
 
-     Basically, the CCG analysis as described and illustrated at a high level
-     in the documentation for ~il[CCG] can potentially be very expensive. In
-     order to make the analysis as efficient as possible, we use less expensive
-     (and less powerful) techniques first, and resort to more powerful and
-     expensive techniques only when these fail.
+;    General Form:
+;    (set-ccg-hierarchy v)
+;    ~ev[]
+;    where ~c[v] is ~c[:CCG-ONLY], ~c[:CCG-ONLY-CPN], ~c[:HYBRID],
+;    ~c[:HYBRID-CPN], or a non-empty list of hierarchy levels, which either
+;    have the form ~c[(pt ccm-cs cpn)] or the form ~c[(:measure pt)], where
+;    ~c[pt] is either ~c[:built-in-clauses] or ~c[(:induction-depth n)] for
+;    some natural number ~c[n], ~c[ccm-cs] is one of ~c[:EQUAL], ~c[:ALL],
+;    ~c[:SOME], or ~c[:NONE], and ~c[cpn] is ~c[t] or ~c[nil].
 
-     There are three ways of varying the CCG analysis, which are represented by
-     each of the three elements in a hierarchy level (levels of the form
-     ~c[(:measure pt)] will be explained later).
+;    Each level of the hierarchy describes techniques used to prove
+;    termination. Termination proofs performed after admitting this event will
+;    use the specified techniques in the order in which they are listed.
 
-     ~c[Pt] tells the CCG analysis how to limit proof attempts. The idea behind
-     this is that ACL2 is designed to prove statements that the user thinks are
-     true. It therefore does everything it can to prove the conjecture. As ACL2
-     useres already know, this can lead to very long, or even non-terminating
-     proof attempts. The CCG analysis, on the other hand, sends multiple
-     queries to the theorem prover that may or may not be true, in order to
-     improve the accuracy of the analysis. It is therefore necessary to reign
-     in ACL2's proof attempts to keep them from taking too long. Of course, the
-     trade-off is that, the more we limit ACL2's prover, the less powerful it
-     becomes.
+;    Basically, the CCG analysis as described and illustrated at a high level
+;    in the documentation for ~il[CCG] can potentially be very expensive. In
+;    order to make the analysis as efficient as possible, we use less expensive
+;    (and less powerful) techniques first, and resort to more powerful and
+;    expensive techniques only when these fail.
 
-     ~c[Pt] can be ~c[:built-in-clauses], which tells ACL2 to use only
-     ~il[built-in-clauses] analysis. This is a very fast, and surprisingly
-     powerful proof technique. For example, the definition of Ackermann's
-     function given in the documentation for ~il[CCG] is solved using only this
-     proof technique.
+;    There are three ways of varying the CCG analysis, which are represented by
+;    each of the three elements in a hierarchy level (levels of the form
+;    ~c[(:measure pt)] will be explained later).
 
-     ~c[Pt] can also be of the form ~c[(:induction-depth n)], where ~c[n] is a
-     natural number. This uses the full theorem prover, but limits it in two
-     ways. First, it stops proof attempts if ACL2 has been working on a subgoal
-     with no case splitting or induction for 20 steps (that is, at a goal of
-     the form 1.5'20'). It also limits the ~em[induction depth], which
-     describes how many times we allow induction goals to lead to further
-     induction goals. For example, ~c[(:induction-depth 0)] allows no
-     induction, while ~c[(:induction-depth 1)] allows goals of the form ~c[*1]
-     or ~c[*2], but stops if it creates a goal such as ~c[*1.1] or ~c[*2.1].
+;    ~c[Pt] tells the CCG analysis how to limit proof attempts. The idea behind
+;    this is that ACL2 is designed to prove statements that the user thinks are
+;    true. It therefore does everything it can to prove the conjecture. As ACL2
+;    useres already know, this can lead to very long, or even non-terminating
+;    proof attempts. The CCG analysis, on the other hand, sends multiple
+;    queries to the theorem prover that may or may not be true, in order to
+;    improve the accuracy of the analysis. It is therefore necessary to reign
+;    in ACL2's proof attempts to keep them from taking too long. Of course, the
+;    trade-off is that, the more we limit ACL2's prover, the less powerful it
+;    becomes.
 
-     ~c[Ccm-cs] limits which CCMs are compared using the theorem
-     prover. Consider again the ~c[ack] example in the documentation for
-     ~il[CCG]. All we needed was to compare the value of ~c[(acl2-count x)]
-     before and after the recursive call and the value of ~c[(acl2-count y)]
-     before and after the recursive call. We would learn nothing, and waste
-     time with the theorem prover if we compared ~c[(acl2-count x)] to
-     ~c[(acl2-count y)]. However, other times, it is important to compare CCMs
-     with each other, for example, when arguments are permuted, or we are
-     dealing with a mutual recursion.
+;    ~c[Pt] can be ~c[:built-in-clauses], which tells ACL2 to use only
+;    ~il[built-in-clauses] analysis. This is a very fast, and surprisingly
+;    powerful proof technique. For example, the definition of Ackermann's
+;    function given in the documentation for ~il[CCG] is solved using only this
+;    proof technique.
 
-     ~c[Ccm-cs] can be one of ~c[:EQUAL], ~c[:ALL], ~c[:SOME], or
-     ~c[:NONE]. These limit which CCMs we compare based on the variables they
-     mention. Let ~c[c] be a recursive call in the body of function ~c[f] that
-     calls function ~c[g]. Let ~c[m1] be a CCM for ~c[f] and ~c[m2] be a CCM
-     for ~c[g]. Let ~c[v1] be the formals mentioned in ~c[m1] and ~c[v2] be the
-     formals mentioned in ~c[m2'] where ~c[m2'] is derived from ~c[m2] by
-     substituting the formals of ~c[g] with the actuals of ~c[c]. For example,
-     consider following function:
-     ~bv[]
-     (defun f (x)
-       (if (endp x)
-           0
-         (1+ (f (cdr x)))))
-     ~ev[]
-     Now consider the case where ~c[m1] and ~c[m2] are both the measure
-     ~c[(acl2-count x)]. Then if we look at the recursive call ~c[(f (cdr x))]
-     in the body of ~c[f], then ~c[m2'] is the result of replacing ~c[x] with
-     ~c[(cdr x)] in ~c[m2], i.e., ~c[(acl2-count (cdr x))].
+;    ~c[Pt] can also be of the form ~c[(:induction-depth n)], where ~c[n] is a
+;    natural number. This uses the full theorem prover, but limits it in two
+;    ways. First, it stops proof attempts if ACL2 has been working on a subgoal
+;    with no case splitting or induction for 20 steps (that is, at a goal of
+;    the form 1.5'20'). It also limits the ~em[induction depth], which
+;    describes how many times we allow induction goals to lead to further
+;    induction goals. For example, ~c[(:induction-depth 0)] allows no
+;    induction, while ~c[(:induction-depth 1)] allows goals of the form ~c[*1]
+;    or ~c[*2], but stops if it creates a goal such as ~c[*1.1] or ~c[*2.1].
 
-     If ~c[ccm-cs] is ~c[:EQUAL] we will compare ~c[m1] to
-     ~c[m2] if ~c[v1] and ~c[v2] are equal. If ~c[value] is ~c[:ALL] we will
-     compare ~c[m1] to ~c[m2'] if ~c[v2] is a subset of ~c[v1]. If ~c[value] is
-     ~c[:SOME] we will compare ~c[m1] to ~c[m2'] if ~c[v1] and ~c[v2]
-     intersect. If ~c[value] is ~c[:NONE] we will compare ~c[m1] to ~c[m2] no
-     matter what.
+;    ~c[Ccm-cs] limits which CCMs are compared using the theorem
+;    prover. Consider again the ~c[ack] example in the documentation for
+;    ~il[CCG]. All we needed was to compare the value of ~c[(acl2-count x)]
+;    before and after the recursive call and the value of ~c[(acl2-count y)]
+;    before and after the recursive call. We would learn nothing, and waste
+;    time with the theorem prover if we compared ~c[(acl2-count x)] to
+;    ~c[(acl2-count y)]. However, other times, it is important to compare CCMs
+;    with each other, for example, when arguments are permuted, or we are
+;    dealing with a mutual recursion.
 
-     There is one caveat to what was just said: if ~c[m1] and ~c[m2] are
-     syntactically equal, then regardless of the value of ~c[ccm-cs] we will
-     construct a CCMF that will indicate that ~c[(o>= m1 m2)].
+;    ~c[Ccm-cs] can be one of ~c[:EQUAL], ~c[:ALL], ~c[:SOME], or
+;    ~c[:NONE]. These limit which CCMs we compare based on the variables they
+;    mention. Let ~c[c] be a recursive call in the body of function ~c[f] that
+;    calls function ~c[g]. Let ~c[m1] be a CCM for ~c[f] and ~c[m2] be a CCM
+;    for ~c[g]. Let ~c[v1] be the formals mentioned in ~c[m1] and ~c[v2] be the
+;    formals mentioned in ~c[m2'] where ~c[m2'] is derived from ~c[m2] by
+;    substituting the formals of ~c[g] with the actuals of ~c[c]. For example,
+;    consider following function:
+;    ~bv[]
+;    (defun f (x)
+;      (if (endp x)
+;          0
+;        (1+ (f (cdr x)))))
+;    ~ev[]
+;    Now consider the case where ~c[m1] and ~c[m2] are both the measure
+;    ~c[(acl2-count x)]. Then if we look at the recursive call ~c[(f (cdr x))]
+;    in the body of ~c[f], then ~c[m2'] is the result of replacing ~c[x] with
+;    ~c[(cdr x)] in ~c[m2], i.e., ~c[(acl2-count (cdr x))].
 
-     
-     ~c[Cpn] tells us how much ruler information we will use to compare CCMs.
-     Unlike ACL2's measure-based termination analysis, CCG has the ability to
-     use the rulers from both the current recursive call the next recursive
-     call when constructing the CCMFs. That is, instead of asking ``What
-     happens when I make recursive call A?'', we can ask, ``What happens when
-     execution moves from recursive call A to recursive call B?''. Using this
-     information potentially strengthens the termination analysis. For a brief
-     example, consider the following code:
-     ~bv[]
-     (defun half (x)
-        (if (zp x)
-            0
-          (1+ (half (- x 2)))))
-     ~ev[]
+;    If ~c[ccm-cs] is ~c[:EQUAL] we will compare ~c[m1] to
+;    ~c[m2] if ~c[v1] and ~c[v2] are equal. If ~c[value] is ~c[:ALL] we will
+;    compare ~c[m1] to ~c[m2'] if ~c[v2] is a subset of ~c[v1]. If ~c[value] is
+;    ~c[:SOME] we will compare ~c[m1] to ~c[m2'] if ~c[v1] and ~c[v2]
+;    intersect. If ~c[value] is ~c[:NONE] we will compare ~c[m1] to ~c[m2] no
+;    matter what.
 
-     Clearly this is terminating. If we choose a measure of ~c[(nfix x)] we
-     know that if ~c[x] is a positive integer, ~c[(nfix (- x 2))] is less than
-     ~c[(nfix x)]. But consider the measure ~c[(acl2-count x)]. The strange
-     thing here is that if ~c[x] is 1, then ~c[(acl2-count (- x 2))] is
-     ~c[(acl2-count -1)], which is 1, i.e. the ~c[acl2-count] of ~c[x]. So, the
-     fact that we know that ~c[x] is a positive integer is not enough to show
-     that this measure decreases. But notice that if ~c[x] is 1, we will recur
-     just one more time. So, if we consider what happens when we move from the
-     recursive call back to itself. In this case we know 
-    ~c[(and (not (zp x)) (not (zp (- x 2))))]. 
-     Under these conditions, it is trivial for ACL2 to prove that
-     ~c[(acl2-count (- x 2))] is always less than ~c[(acl2-count x)].
- 
-     However, this can make the CCG analysis much more expensive, since
-     information about how values change from step to step are done on a
-     per-edge, rather than a per-node basis in the CCG (where the nodes are the
-     recursive calls and the edges indicate that execution can move from one
-     call to another in one step). Thus, calculating CCMFs (how values change
-     across recursive calls) on a per-edge basis rather than a per-node basis
-     can require n^2 instead of n prover queries.
+;    There is one caveat to what was just said: if ~c[m1] and ~c[m2] are
+;    syntactically equal, then regardless of the value of ~c[ccm-cs] we will
+;    construct a CCMF that will indicate that ~c[(o>= m1 m2)].
 
-     If ~c[cpn] is ~c[t], we will use only the ruler of the current recursive
-     call to compute our CCMFs. If it is ~c[nil], we will use the much more
-     expensive technique of using the rulers of the current and next call.
+;    
+;    ~c[Cpn] tells us how much ruler information we will use to compare CCMs.
+;    Unlike ACL2's measure-based termination analysis, CCG has the ability to
+;    use the rulers from both the current recursive call the next recursive
+;    call when constructing the CCMFs. That is, instead of asking ``What
+;    happens when I make recursive call A?'', we can ask, ``What happens when
+;    execution moves from recursive call A to recursive call B?''. Using this
+;    information potentially strengthens the termination analysis. For a brief
+;    example, consider the following code:
+;    ~bv[]
+;    (defun half (x)
+;       (if (zp x)
+;           0
+;         (1+ (half (- x 2)))))
+;    ~ev[]
 
-     Levels of the hierarchy of the form ~c[(:measure pt)] specify that the CCG
-     analysis is to be set aside for a step, and the traditional measure-based
-     termination proof is to be attempted. Here, ~c[pt] has the same meaning as
-     it does in a CCG hierarchy level. That is, it limits the measure proof in
-     order to avoid prohibitively long termination analyses.
+;    Clearly this is terminating. If we choose a measure of ~c[(nfix x)] we
+;    know that if ~c[x] is a positive integer, ~c[(nfix (- x 2))] is less than
+;    ~c[(nfix x)]. But consider the measure ~c[(acl2-count x)]. The strange
+;    thing here is that if ~c[x] is 1, then ~c[(acl2-count (- x 2))] is
+;    ~c[(acl2-count -1)], which is 1, i.e. the ~c[acl2-count] of ~c[x]. So, the
+;    fact that we know that ~c[x] is a positive integer is not enough to show
+;    that this measure decreases. But notice that if ~c[x] is 1, we will recur
+;    just one more time. So, if we consider what happens when we move from the
+;    recursive call back to itself. In this case we know 
+;   ~c[(and (not (zp x)) (not (zp (- x 2))))]. 
+;    Under these conditions, it is trivial for ACL2 to prove that
+;    ~c[(acl2-count (- x 2))] is always less than ~c[(acl2-count x)].
+;
+;    However, this can make the CCG analysis much more expensive, since
+;    information about how values change from step to step are done on a
+;    per-edge, rather than a per-node basis in the CCG (where the nodes are the
+;    recursive calls and the edges indicate that execution can move from one
+;    call to another in one step). Thus, calculating CCMFs (how values change
+;    across recursive calls) on a per-edge basis rather than a per-node basis
+;    can require n^2 instead of n prover queries.
 
-     The user may specify their own hierarchy in the form given above. The main
-     restriction is that no level may be subsumed by an earlier level. That is,
-     it should be the case at each level of the hierarchy, that it is possible
-     to discover new information about the CCG that could help lead to a
-     termination proof.
+;    If ~c[cpn] is ~c[t], we will use only the ruler of the current recursive
+;    call to compute our CCMFs. If it is ~c[nil], we will use the much more
+;    expensive technique of using the rulers of the current and next call.
 
-     In addition to constructing his or her own CCG hierarchy, the user may use
-     several preset hierarchies:
+;    Levels of the hierarchy of the form ~c[(:measure pt)] specify that the CCG
+;    analysis is to be set aside for a step, and the traditional measure-based
+;    termination proof is to be attempted. Here, ~c[pt] has the same meaning as
+;    it does in a CCG hierarchy level. That is, it limits the measure proof in
+;    order to avoid prohibitively long termination analyses.
 
-     ~bv[]
-     :CCG-ONLY
-     ((:built-in-clauses :equal t)
-      ((:induction-depth 0) :EQUAL t)
-      ((:induction-depth 1) :EQUAL t)
-      ((:induction-depth 1) :ALL   t)
-      ((:induction-depth 1) :SOME  t)
-      ((:induction-depth 1) :NONE  t)
-      ((:induction-depth 1) :EQUAL nil)
-      ((:induction-depth 1) :ALL   nil)
-      ((:induction-depth 1) :SOME  nil)
-      ((:induction-depth 1) :NONE  nil))
+;    The user may specify their own hierarchy in the form given above. The main
+;    restriction is that no level may be subsumed by an earlier level. That is,
+;    it should be the case at each level of the hierarchy, that it is possible
+;    to discover new information about the CCG that could help lead to a
+;    termination proof.
 
-     :CCG-ONLY-CPN
-     ((:built-in-clauses :equal t)
-      ((:induction-depth 0) :EQUAL t)
-      ((:induction-depth 1) :EQUAL t)
-      ((:induction-depth 1) :ALL   t)
-      ((:induction-depth 1) :SOME  t)
-      ((:induction-depth 1) :NONE  t))
+;    In addition to constructing his or her own CCG hierarchy, the user may use
+;    several preset hierarchies:
 
-     :HYBRID
-     ((:built-in-clauses :equal t)
-      (:measure (:induction-depth 1))
-      ((:induction-depth 0) :EQUAL t)
-      ((:induction-depth 1) :EQUAL t)
-      ((:induction-depth 1) :ALL   t)
-      ((:induction-depth 1) :SOME  t)
-      ((:induction-depth 1) :NONE  t)
-      ((:induction-depth 1) :EQUAL nil)
-      ((:induction-depth 1) :ALL   nil)
-      ((:induction-depth 1) :SOME  nil)
-      ((:induction-depth 1) :NONE  nil))
+;    ~bv[]
+;    :CCG-ONLY
+;    ((:built-in-clauses :equal t)
+;     ((:induction-depth 0) :EQUAL t)
+;     ((:induction-depth 1) :EQUAL t)
+;     ((:induction-depth 1) :ALL   t)
+;     ((:induction-depth 1) :SOME  t)
+;     ((:induction-depth 1) :NONE  t)
+;     ((:induction-depth 1) :EQUAL nil)
+;     ((:induction-depth 1) :ALL   nil)
+;     ((:induction-depth 1) :SOME  nil)
+;     ((:induction-depth 1) :NONE  nil))
 
-     :HYBRID-CPN
-     ((:built-in-clauses :equal t)
-      (:measure (:induction-depth 1))
-      ((:induction-depth 0) :EQUAL t)
-      ((:induction-depth 1) :EQUAL t)
-      ((:induction-depth 1) :ALL   t)
-      ((:induction-depth 1) :SOME  t)
-      ((:induction-depth 1) :NONE  t))
-     ~ev[]
+;    :CCG-ONLY-CPN
+;    ((:built-in-clauses :equal t)
+;     ((:induction-depth 0) :EQUAL t)
+;     ((:induction-depth 1) :EQUAL t)
+;     ((:induction-depth 1) :ALL   t)
+;     ((:induction-depth 1) :SOME  t)
+;     ((:induction-depth 1) :NONE  t))
 
-     The default hierarchy for CCG termination analysis is :CCG-ONLY.~/"
+;    :HYBRID
+;    ((:built-in-clauses :equal t)
+;     (:measure (:induction-depth 1))
+;     ((:induction-depth 0) :EQUAL t)
+;     ((:induction-depth 1) :EQUAL t)
+;     ((:induction-depth 1) :ALL   t)
+;     ((:induction-depth 1) :SOME  t)
+;     ((:induction-depth 1) :NONE  t)
+;     ((:induction-depth 1) :EQUAL nil)
+;     ((:induction-depth 1) :ALL   nil)
+;     ((:induction-depth 1) :SOME  nil)
+;     ((:induction-depth 1) :NONE  nil))
+
+;    :HYBRID-CPN
+;    ((:built-in-clauses :equal t)
+;     (:measure (:induction-depth 1))
+;     ((:induction-depth 0) :EQUAL t)
+;     ((:induction-depth 1) :EQUAL t)
+;     ((:induction-depth 1) :ALL   t)
+;     ((:induction-depth 1) :SOME  t)
+;     ((:induction-depth 1) :NONE  t))
+;    ~ev[]
+
+;    The default hierarchy for CCG termination analysis is :CCG-ONLY.~/"
 
   `(er-progn
     (chk-ccg-hierarchy ',v "SET-CCG-HIERARCHY" state)
@@ -758,56 +769,62 @@
 (logic)
 (set-state-ok nil)
 
-(defdoc set-ccg-time-limit
-  ":Doc-Section CCG
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
+; (defdoc set-ccg-time-limit
+; ":Doc-Section CCG
 
-  Set a global time limit for CCG-based termination proofs.~/
-  ~bv[]
-  Examples:
-  (set-ccg-time-limit 120)  ; limits termination proofs to 120 seconds.
-  (set-ccg-time-limit 53/2) ; limits termination proofs to 53/2 seconds.
-  (set-ccg-time-limit nil)  ; removes any time limit for termination proofs.
-  ~ev[]
+; Set a global time limit for CCG-based termination proofs.~/
+; ~bv[]
+; Examples:
+; (set-ccg-time-limit 120)  ; limits termination proofs to 120 seconds.
+; (set-ccg-time-limit 53/2) ; limits termination proofs to 53/2 seconds.
+; (set-ccg-time-limit nil)  ; removes any time limit for termination proofs.
+; ~ev[]
 
-  Introduced by the CCG analysis book, this macro sets a global time limit for
-  the completion of the CCG analysis. The time limit is given as a rational
-  number, signifying the number of seconds to which the CCG analysis should be
-  limited, or nil, signifying that there should be no such time limit. If CCG
-  has not completed its attempt to prove termination in the number of seconds
-  specified, it will immediately throw an error and the definition attempt will
-  fail. Note: This is an event!  It does not print the usual event summary but
-  nevertheless changes the ACL2 logical ~il[world] and is so recorded.~/
+; Introduced by the CCG analysis book, this macro sets a global time limit for
+; the completion of the CCG analysis. The time limit is given as a rational
+; number, signifying the number of seconds to which the CCG analysis should be
+; limited, or nil, signifying that there should be no such time limit. If CCG
+; has not completed its attempt to prove termination in the number of seconds
+; specified, it will immediately throw an error and the definition attempt will
+; fail. Note: This is an event!  It does not print the usual event summary but
+; nevertheless changes the ACL2 logical ~il[world] and is so recorded.~/
 
-  ~bv[] General Form:
-  (set-ccg-time-limit tl)
-  ~ev[]
-  where ~c[tl] is a positive rational number or nil. The default is nil. If the
-  time limit is nil, the CCG analysis will work as long as it needs to in order
-  to complete the analysis. If the ~c[tl] is a positive rational number,
-  all CCG analyses will be limited to ~c[tl] seconds.
+; ~bv[] General Form:
+; (set-ccg-time-limit tl)
+; ~ev[]
+; where ~c[tl] is a positive rational number or nil. The default is nil. If the
+; time limit is nil, the CCG analysis will work as long as it needs to in order
+; to complete the analysis. If the ~c[tl] is a positive rational number,
+; all CCG analyses will be limited to ~c[tl] seconds.
 
-  To see what the current time limit is, see
-  ~ilc[get-ccg-time-limit].~/")
+; To see what the current time limit is, see
+; ~ilc[get-ccg-time-limit].~/")
 
 (defun get-ccg-time-limit (wrld)
-  ":Doc-Section CCG
 
-  Returns the current default ccg-time-limit setting.~/
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
 
-  ~bv[]
-  Examples:
-  (get-ccg-time-limit (w state))
-  ~ev[]
+; ":Doc-Section CCG
 
-  This will return the time-limit as specified by the current world. ~/
-  
-  ~bv[]
-  General Form:
-  (get-time-limit wrld)
-  ~ev[]
+; Returns the current default ccg-time-limit setting.~/
 
-  where ~c[wrld] is a ~il[world]. For information on the settings and
-  their meaning, ~pl[set-termination-method].~/"
+; ~bv[]
+; Examples:
+; (get-ccg-time-limit (w state))
+; ~ev[]
+
+; This will return the time-limit as specified by the current world. ~/
+; 
+; ~bv[]
+; General Form:
+; (get-time-limit wrld)
+; ~ev[]
+
+; where ~c[wrld] is a ~il[world]. For information on the settings and
+; their meaning, ~pl[set-termination-method].~/"
 
   (declare (xargs :guard (and (plist-worldp wrld)
                               (alistp (table-alist 'acl2-defaults-table wrld)))))
@@ -817,41 +834,49 @@
 (verify-guards get-ccg-time-limit)
 
 (defmacro set-ccg-print-proofs (v)
-  ":Doc-Section CCG
 
-   controls whether proof attempts are printed during CCG analysis~/
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
 
-   ~bv[]
-   Examples:
-   (set-ccg-print-proofs t)
-   (set-ccg-print-proofs nil)
-   :set-ccg-print-proofs t~/
+; ":Doc-Section CCG
 
-   General Form:
-   (set-ccg-print-proofs v)
-   ~ev[]
-   If ~c[v] is ~c[nil], no proof attempts will be printed during CCG
-   analysis. This is the default. If ~c[v] is anything but ~c[nil], proofs will
-   be displayed. Fair warning: there is potentially a large amount of prover
-   output that might be displayed. It is probably better to use
-   ~l[set-ccg-inhibit-output-lst] to un-inhibit ~c['query] output to figure out
-   what lemmas might be needed to get a given query to go through."
+;  controls whether proof attempts are printed during CCG analysis~/
+
+;  ~bv[]
+;  Examples:
+;  (set-ccg-print-proofs t)
+;  (set-ccg-print-proofs nil)
+;  :set-ccg-print-proofs t~/
+
+;  General Form:
+;  (set-ccg-print-proofs v)
+;  ~ev[]
+;  If ~c[v] is ~c[nil], no proof attempts will be printed during CCG
+;  analysis. This is the default. If ~c[v] is anything but ~c[nil], proofs will
+;  be displayed. Fair warning: there is potentially a large amount of prover
+;  output that might be displayed. It is probably better to use
+;  ~l[set-ccg-inhibit-output-lst] to un-inhibit ~c['query] output to figure out
+;  what lemmas might be needed to get a given query to go through."
 
  `(assign ccg-print-proofs ,v))
 
 (defmacro get-ccg-print-proofs ()
-  ":Doc-Section CCG
-  
-  returns the setting that controls whether proof attempts are printed during
-  CCG analysis~/
 
-  ~bv[]
-  Examples:
-  (get-ccg-print-proofs)
-  :get-ccg-print-proofs
-  ~ev[]~/
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
 
-  See ~l[set-ccg-print-proofs] for details."
+; ":Doc-Section CCG
+; 
+; returns the setting that controls whether proof attempts are printed during
+; CCG analysis~/
+
+; ~bv[]
+; Examples:
+; (get-ccg-print-proofs)
+; :get-ccg-print-proofs
+; ~ev[]~/
+
+; See ~l[set-ccg-print-proofs] for details."
  '(and (f-boundp-global 'ccg-print-proofs state)
        (f-get-global 'ccg-print-proofs state)))
 
@@ -879,43 +904,47 @@
   '(query basics performance build/refine size-change counter-example))
 
 (defmacro set-ccg-inhibit-output-lst (lst)
- ":Doc-Section CCG
 
-  control output during CCG termination analysis~/
-  ~bv[]
-  Examples:
-  (set-ccg-inhibit-output-lst '(query))
-  (set-ccg-inhibit-output-lst '(build/refine size-change))
-  (set-ccg-inhibit-output-lst *ccg-valid-output-names*) ; inhibit all ccg output
-  :set-ccg-inhibit-output-lst (build/refine size-change)~/
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
 
-  General Form:
-  (set-ccg-inhibit-output-lst lst)
-  ~ev[]
-  where ~c[lst] is a form (which may mention ~ilc[state]) that evaluates
-  to a list of names, each of which is the name of one of the
-  following ``kinds'' of output produced by the CCG termination analysis.
-  ~bv[]
-    query            prints the goal, restrictions, and results of each prover
-                     query (for a discussion on displaying actual proofs,
-                     see ~c[set-ccg-display-proofs](yet to be documented).
-    basics           the basic CCG output, enough to follow along, but concise
-                     enough to keep from drowning in output
-    performance      performance information for the size change analysis
-    build/refine     the details of CCG construction and refinement
-    size-change      the details of size change analysis
-    counter-example  prints out a counter-example that can be useful for
-                     debugging failed termination proof attempts.
-  ~ev[]
-  It is possible to inhibit each kind of output by putting the corresponding
-  name into ~c[lst].  For example, if ~c['query] is included in (the value of)
-  ~c[lst], then no information about individual queries is printed during CCG
-  analysis.
+;":Doc-Section CCG
 
-  The default setting is ~c['(query performance build/refine size-change)].
-  That is, by default only the basic CCG information and counter-example (in
-  the case of a failed proof attempt) are printed. This should hopefully be
-  adequate for most users."
+; control output during CCG termination analysis~/
+; ~bv[]
+; Examples:
+; (set-ccg-inhibit-output-lst '(query))
+; (set-ccg-inhibit-output-lst '(build/refine size-change))
+; (set-ccg-inhibit-output-lst *ccg-valid-output-names*) ; inhibit all ccg output
+; :set-ccg-inhibit-output-lst (build/refine size-change)~/
+
+; General Form:
+; (set-ccg-inhibit-output-lst lst)
+; ~ev[]
+; where ~c[lst] is a form (which may mention ~ilc[state]) that evaluates
+; to a list of names, each of which is the name of one of the
+; following ``kinds'' of output produced by the CCG termination analysis.
+; ~bv[]
+;   query            prints the goal, restrictions, and results of each prover
+;                    query (for a discussion on displaying actual proofs,
+;                    see ~c[set-ccg-display-proofs](yet to be documented).
+;   basics           the basic CCG output, enough to follow along, but concise
+;                    enough to keep from drowning in output
+;   performance      performance information for the size change analysis
+;   build/refine     the details of CCG construction and refinement
+;   size-change      the details of size change analysis
+;   counter-example  prints out a counter-example that can be useful for
+;                    debugging failed termination proof attempts.
+; ~ev[]
+; It is possible to inhibit each kind of output by putting the corresponding
+; name into ~c[lst].  For example, if ~c['query] is included in (the value of)
+; ~c[lst], then no information about individual queries is printed during CCG
+; analysis.
+
+; The default setting is ~c['(query performance build/refine size-change)].
+; That is, by default only the basic CCG information and counter-example (in
+; the case of a failed proof attempt) are printed. This should hopefully be
+; adequate for most users."
   
   `(let ((lst ,lst))
      (cond ((not (true-listp lst))
@@ -936,19 +965,23 @@
                (value lst))))))
 
 (defmacro get-ccg-inhibit-output-lst ()
-  ":Doc-Section CCG
 
-  returns the list of ``kinds'' of output that will be inhibited during CCG
-  analysis~/
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
+
+; ":Doc-Section CCG
+
+; returns the list of ``kinds'' of output that will be inhibited during CCG
+; analysis~/
 
 
-  ~bv[]
-  Examples:
-  (get-ccg-inhibit-output-lst)
-  :get-ccg-inhibit-output-lst
-  ~bv[]~/
+; ~bv[]
+; Examples:
+; (get-ccg-inhibit-output-lst)
+; :get-ccg-inhibit-output-lst
+; ~ev[]~/
 
-  See ~l[set-ccg-inhibit-output-lst]."
+; See ~l[set-ccg-inhibit-output-lst]."
   '(if (f-boundp-global 'ccg-inhibit-output-lst state)
        (f-get-global 'ccg-inhibit-output-lst state)
      '(query performance build/refine size-change)))
@@ -5938,66 +5971,68 @@
            (cond ((equal x '(unspecified)) (value default))
                  (t (value x)))))
 
-(defdoc CCG-XARGS
-  ":Doc-Section CCG
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
+; (defdoc CCG-XARGS
+; ":Doc-Section CCG
 
-  giving hints to CCG analysis via ~l[xargs]~/
+; giving hints to CCG analysis via ~l[xargs]~/
 
-  In addition to the ~ilc[xargs] provided by ACL2 for passing ~il[hints] to
-  function definitions, the CCG analysis enables several others for guiding the
-  CCG termination analysis for a given function definition. The following
-  example is nonsensical but illustrates all of these xargs:
-  ~bv[]
-  (declare (xargs :termination-method :ccg
-                  :consider-ccms ((foo x) (bar y z))
-                  :consider-only-ccms ((foo x) (bar y z))
-                  :ccg-print-proofs nil
-                  :time-limit 120
-                  :ccg-hierarchy *ccg-hierarchy-hybrid*))~/
+; In addition to the ~ilc[xargs] provided by ACL2 for passing ~il[hints] to
+; function definitions, the CCG analysis enables several others for guiding the
+; CCG termination analysis for a given function definition. The following
+; example is nonsensical but illustrates all of these xargs:
+; ~bv[]
+; (declare (xargs :termination-method :ccg
+;                 :consider-ccms ((foo x) (bar y z))
+;                 :consider-only-ccms ((foo x) (bar y z))
+;                 :ccg-print-proofs nil
+;                 :time-limit 120
+;                 :ccg-hierarchy *ccg-hierarchy-hybrid*))~/
 
-  General Form:
-  (xargs :key1 val1 ... :keyn valn)
-  ~ev[]
+; General Form:
+; (xargs :key1 val1 ... :keyn valn)
+; ~ev[]
 
-  Where the keywords and their respective values are as shown below.
+; Where the keywords and their respective values are as shown below.
 
-  Note that the :TERMINATION-METHOD ~c[xarg] is always valid, but the other
-  ~c[xargs] listed above are only valid if the termination method being used
-  for the given function is :CCG.
+; Note that the :TERMINATION-METHOD ~c[xarg] is always valid, but the other
+; ~c[xargs] listed above are only valid if the termination method being used
+; for the given function is :CCG.
 
-  ~c[:TERMINATION-METHOD value]~nl[]
-  ~c[Value] here is either ~c[:CCG] or ~c[:MEASURE]. For details on the meaning
-  of these settings, see the documentation for ~ilc[set-termination-method]. If
-  this ~c[xarg] is given, it overrides the global setting for the current
-  definition. If the current definition is part of a ~ilc[mutual-recursion],
-  and a ~c[:termination-method] is provided, it must match that provided by all
-  other functions in the ~c[mutual-recursion].
+; ~c[:TERMINATION-METHOD value]~nl[]
+; ~c[Value] here is either ~c[:CCG] or ~c[:MEASURE]. For details on the meaning
+; of these settings, see the documentation for ~ilc[set-termination-method]. If
+; this ~c[xarg] is given, it overrides the global setting for the current
+; definition. If the current definition is part of a ~ilc[mutual-recursion],
+; and a ~c[:termination-method] is provided, it must match that provided by all
+; other functions in the ~c[mutual-recursion].
 
-  ~c[:CONSIDER-CCMS value] or ~c[:CONSIDER-ONLY-CCMS value]~nl[] 
-  ~c[Value] is a list of terms involving only the formals of the function being
-  defined. Both suggest measures for the current function to the CCG
-  analysis. ACL2 must be able to prove that each of these terms always evaluate
-  to an ordinal ~pl[ordinals]. ACL2 will attempt to prove this before beginning
-  the CCG analysis. The difference between ~c[:consider-ccms] and
-  ~c[:consider-only-ccms] is that if ~c[:consider-ccms] is used, the CCG
-  analysis will attempt to guess additional measures that it thinks might be
-  useful for proving termination, whereas if ~c[:consider-only-ccms] is used,
-  only the measures given will be used for the given function in the CCG
-  analysis. These two ~c[xargs] may not be used together, and attempting to do
-  so will result in an error.
+; ~c[:CONSIDER-CCMS value] or ~c[:CONSIDER-ONLY-CCMS value]~nl[] 
+; ~c[Value] is a list of terms involving only the formals of the function being
+; defined. Both suggest measures for the current function to the CCG
+; analysis. ACL2 must be able to prove that each of these terms always evaluate
+; to an ordinal ~pl[ordinals]. ACL2 will attempt to prove this before beginning
+; the CCG analysis. The difference between ~c[:consider-ccms] and
+; ~c[:consider-only-ccms] is that if ~c[:consider-ccms] is used, the CCG
+; analysis will attempt to guess additional measures that it thinks might be
+; useful for proving termination, whereas if ~c[:consider-only-ccms] is used,
+; only the measures given will be used for the given function in the CCG
+; analysis. These two ~c[xargs] may not be used together, and attempting to do
+; so will result in an error.
 
-  ~c[:CCG-PRINT-PROOFS value]~nl[]
-  ~c[Value] is either ~c[t] or ~c[nil]. This is a local override of the
-  ~ilc[set-ccg-print-proofs] setting. See this documentation topic for details.
+; ~c[:CCG-PRINT-PROOFS value]~nl[]
+; ~c[Value] is either ~c[t] or ~c[nil]. This is a local override of the
+; ~ilc[set-ccg-print-proofs] setting. See this documentation topic for details.
 
-  ~c[:TIME-LIMIT value]~nl[]
-  ~c[Value] is either a positive rational number or nil. This is a local
-  override of the ~ilc[set-ccg-time-limit] setting. See this documentation
-  topic for details.
+; ~c[:TIME-LIMIT value]~nl[]
+; ~c[Value] is either a positive rational number or nil. This is a local
+; override of the ~ilc[set-ccg-time-limit] setting. See this documentation
+; topic for details.
 
-  ~c[:CCG-HIERARCHY value]~nl[]
-  ~c[Value] is a CCG hierarchy. This is a local override of the
-  ~ilc[set-ccg-hierarchy] setting. See this documentation topic for details.~/")
+; ~c[:CCG-HIERARCHY value]~nl[]
+; ~c[Value] is a CCG hierarchy. This is a local override of the
+; ~ilc[set-ccg-hierarchy] setting. See this documentation topic for details.~/")
                 
 (defun chk-acceptable-ccg-xargs (fives symbol-class ctx wrld state)
   (er-let* ((untranslated-consider (get-ccms symbol-class
@@ -7668,3 +7703,613 @@
            :vars (%1% %2% %3% %4% %5% %app-cdr% %pee-cdr%)
            :mult 1)))
 
+; The defxdoc forms below were initially generated automatically from
+; legacy documentation strings in this file.
+
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc ccg
+  :parents (ccg)
+  :short "A powerful automated termination prover for ACL2"
+  :long "<p>In order to see how the CCG analysis works, consider the following
+ definition of Ackermann's function from exercise 6.15 in the ACL2
+ textbook:</p>
+
+ @({
+  (defun ack (x y)
+     (if (zp x)
+         1
+       (if (zp y)
+           (if (equal x 1) 2 (+ x 2))
+         (ack (ack (1- x) y) (1- y)))))
+
+ })
+
+ <p>ACL2 cannot automatically prove the termination of @('ack') using its
+  measure-based termination proof. In order to admit the function, the user
+  must supply a measure. An example measure is @('(make-ord 1 (1+ (acl2-count
+  y)) (acl2-count x))'), which is equivalent to the ordinal @('w * (1+
+  (acl2-count y)) + (acl2-count x)'), where @('w') is the first infinite
+  ordinal.</p>
+
+ <p>The CCG analysis, on the other hand, automatically proves termination as
+ follows. Note that there are two recursive calls. These calls, along with
+ their rulers (i.e. the conditions under which the recursive call is reached)
+ are called <i>calling contexts</i>, or sometimes just <i>contexts</i> (for
+ more on rulers, see @(see ruler-extenders)). For @('ack'), these are:</p>
+
+ @({
+  1. (ack (1- x) y) with ruler ((not (zp x)) (not (zp y))).
+  2. (ack (ack (1- x) y) (1- y)) with ruler ((not (zp x)) (not (zp y))).
+ })
+
+ <p>These calling contexts are used to build a <i>calling context graph
+ (CCG)</i>, from which our analysis derives its name. This graph has an edge
+ from context @('c1') to context @('c2') when it is possible that execution can
+ move from context @('c1') to context @('c2') in one ``step'' (i.e. without
+ visiting any other contexts). For our example, we get the complete graph, with
+ edges from each context to both contexts.</p>
+
+ <p>The analysis next attempts to guess <i>calling context measures (CCMs)</i>,
+ or just <i>measures</i>, for each function. These are similar to ACL2
+ measures, in that they are ACL2 terms that must provably be able to evaluate
+ to an ordinal value (unlike ACL2 measures, CCG currently ignores the current
+ well-founded relation setting). However, functions may have multiple CCMs,
+ instead of one, like ACL2, and the CCG analysis has some more sophisticated
+ heuristics for guessing appropriate measures. However, there is a mechanism
+ for supplying measures to the CCG analysis if you need to see @(see
+ CCG-XARGS). In our example, the CCG analysis will guess the measures
+ @('(acl2-count x)'), @('(acl2-count y)'), and @('(+ (acl2-count x) (acl2-count
+ y))'). This last one turns out to be unimportant for the termination
+ proof. However, note that the first two of these measures are components of
+ the ordinal measure that we gave ACL2 to prove termination earlier. As one
+ might guess, these are important for the success of our CCG analysis.</p>
+
+ <p>Like ACL2's measure analysis, we are concerned with what happens to these
+ values when a recursive call is made. However, we are concerned not just with
+ decreasing measures, but also non-increasing measures. Thus, we construct
+ <i>Calling Context Measure Functions (CCMFs)</i>, which tell us how one
+ measure compares to another across recursive calls.</p>
+
+ <p>In our example, note that when the recursive call of the context 1 is made,
+ the new value of @('(acl2-count x)') is less than the original value of
+ @('(acl2-count x)'). More formally, we can prove the following:</p>
+
+ @({
+  (implies (and (not (zp x))
+                (not (zp y)))
+           (o< (acl2-count (1- x))
+               (acl2-count x)))
+ })
+
+ <p>For those of you that are familiar with measure-based termination proofs in
+ ACL2, this should look familiar, as it has the same structure as such a
+ termination proof. However, we also note the following trivial
+ observation:</p>
+
+ @({
+  (implies (and (not (zp x))
+                (not (zp y)))
+           (o<= (acl2-count y)
+                (acl2-count y)))
+ })
+
+ <p>That is, @('y') stays the same across this recursive call. For the other
+ context, we similarly note that @('(acl2-count y)') is decreasing. However, we
+ can say nothing about the value of @('(acl2-count x)'). The CCG algorithm does
+ this analysis using queries to the theorem prover that are carefully
+ restricted to limit prover time.</p>
+
+ <p>Finally, the CCG analysis uses this local information to do a global
+ analysis of what happens to values. This analysis asks the question, for every
+ infinite path through our CCG, @('c_1'), @('c_2'), @('c_3'), ..., is there a
+ natural number @('N') such that there is an infinite sequence of measures
+ @('m_N'), @('m_(N+1)'), @('m_(N+2)'), ... such that each @('m_i') is a measure
+ for the context @('c_i') (i.e. a measure for the function containing @('ci')),
+ we have proven that the @('m_(i+1)') is never larger than @('m_i'), and for
+ infinitely many @('i'), it is the case that we have proven that @('m_i') is
+ always larger than @('m_(i+)'). That's a bit of a mouthful, but what we are
+ essentially saying is that, for every possible infinite sequence of recursions
+ it is the case that after some finite number of steps, we can start picking
+ out measures such that they never increase and infinitely often they
+ decrease. Since these measures return ordinal values, we then know that there
+ can be no infinite recursions, and we are done.</p>
+
+ <p>For our example, consider two kinds of infinite paths through our CCG:
+ those that visit context 2 infinitely often, and those that don't. In the
+ first case, we know that @('(acl2-count y)') is never increasing, since a
+ visit to context 1 does not change the value of @('y'), and a visit to context
+ 2 decreases the value of @('(acl2-count y)'). Furthermore, since we visit
+ context 2 infinitely often, we know that @('(acl2-count y)') is infinitely
+ decreasing along this path. Therefore, we have met the criteria for proving no
+ such path is a valid computation. In the case in which we do not visit context
+ 2 infinitely often, there must be a value @('N') such that we do not visit
+ context 2 any more after the @('N')th context in the path. After this, we must
+ only visit context 1, which always decreases the value of @('(acl2-count
+ x)'). Therefore, no such path can be a valid computation. Since all infinite
+ paths through our CCG either visit context 2 infinitely often or not, we have
+ proven termination. This analysis of the local data in the global context is
+ done automatically by a decision procedure.</p>
+
+ <p>That is a brief overview of the CCG analysis. Note that, can it prove many
+ functions terminating that ACL2 cannot. It also does so using simpler
+ measures. In the @('ack') example, we did not require any infinite ordinal
+ measures to prove termination using CCG. Intuitively, CCG is in a way putting
+ together the measures for you so you don't have to think about the ordinal
+ structure. Thus, even when the CCG analysis to prove termination, it is often
+ easier to give it multiple simple measures and allow it to put together the
+ global termination argument than to give ACL2 the entire measure so it can
+ prove that it decreases every single step.</p>
+
+ <p>To find out more about interacting and controlling the CCG analysis, see
+ the topics included in this section.</p>")
+
+(defxdoc ccg-xargs
+  :parents (ccg)
+  :short "Giving hints to CCG analysis via See @(see xargs)"
+  :long "<p>In addition to the @(tsee xargs) provided by ACL2 for passing @(see
+ hints) to function definitions, the CCG analysis enables several others for
+ guiding the CCG termination analysis for a given function definition. The
+ following example is nonsensical but illustrates all of these xargs:</p>
+
+ @({
+  (declare (xargs :termination-method :ccg
+                  :consider-ccms ((foo x) (bar y z))
+                  :consider-only-ccms ((foo x) (bar y z))
+                  :ccg-print-proofs nil
+                  :time-limit 120
+                  :ccg-hierarchy *ccg-hierarchy-hybrid*))
+
+  General Form:
+  (xargs :key1 val1 ... :keyn valn)
+ })
+
+ <p>Where the keywords and their respective values are as shown below.</p>
+
+ <p>Note that the :TERMINATION-METHOD @('xarg') is always valid, but the other
+ @('xargs') listed above are only valid if the termination method being used
+ for the given function is :CCG.</p>
+
+ <p>@(':TERMINATION-METHOD value')<br></br>
+
+ @('Value') here is either @(':CCG') or @(':MEASURE'). For details on the
+ meaning of these settings, see the documentation for @(tsee
+ set-termination-method). If this @('xarg') is given, it overrides the global
+ setting for the current definition. If the current definition is part of a
+ @(tsee mutual-recursion), and a @(':termination-method') is provided, it must
+ match that provided by all other functions in the @('mutual-recursion').</p>
+
+ <p>@(':CONSIDER-CCMS value') or @(':CONSIDER-ONLY-CCMS value')<br></br>
+
+ @('Value') is a list of terms involving only the formals of the function being
+ defined. Both suggest measures for the current function to the CCG
+ analysis. ACL2 must be able to prove that each of these terms always evaluate
+ to an ordinal see @(see ordinals). ACL2 will attempt to prove this before
+ beginning the CCG analysis. The difference between @(':consider-ccms') and
+ @(':consider-only-ccms') is that if @(':consider-ccms') is used, the CCG
+ analysis will attempt to guess additional measures that it thinks might be
+ useful for proving termination, whereas if @(':consider-only-ccms') is used,
+ only the measures given will be used for the given function in the CCG
+ analysis. These two @('xargs') may not be used together, and attempting to do
+ so will result in an error.</p>
+
+ <p>@(':CCG-PRINT-PROOFS value')<br></br>
+
+ @('Value') is either @('t') or @('nil'). This is a local override of the
+ @(tsee set-ccg-print-proofs) setting. See this documentation topic for
+ details.</p>
+
+ <p>@(':TIME-LIMIT value')<br></br>
+
+ @('Value') is either a positive rational number or nil. This is a local
+ override of the @(tsee set-ccg-time-limit) setting. See this documentation
+ topic for details.</p>
+
+ <p>@(':CCG-HIERARCHY value')<br></br>
+
+ @('Value') is a CCG hierarchy. This is a local override of the @(tsee
+ set-ccg-hierarchy) setting. See this documentation topic for details.</p>")
+
+(defxdoc get-ccg-inhibit-output-lst
+  :parents (ccg)
+  :short "Returns the list of ``kinds'' of output that will be inhibited during CCG
+analysis"
+  :long "@({
+  Examples:
+  (get-ccg-inhibit-output-lst)
+  :get-ccg-inhibit-output-lst
+ })
+
+ <p>See See @(see set-ccg-inhibit-output-lst).</p>")
+
+(defxdoc get-ccg-print-proofs
+  :parents (ccg)
+  :short "Returns the setting that controls whether proof attempts are printed during
+CCG analysis"
+  :long "@({
+  Examples:
+  (get-ccg-print-proofs)
+  :get-ccg-print-proofs
+ })
+
+ <p>See See @(see set-ccg-print-proofs) for details.</p>")
+
+(defxdoc get-ccg-time-limit
+  :parents (ccg)
+  :short "Returns the current default ccg-time-limit setting."
+  :long "@({
+  Examples:
+  (get-ccg-time-limit (w state))
+ })
+
+ <p>This will return the time-limit as specified by the current world.</p>
+
+ @({
+  General Form:
+  (get-time-limit wrld)
+ })
+
+ <p>where @('wrld') is a @(see world). For information on the settings and
+ their meaning, see @(see set-termination-method).</p>")
+
+(defxdoc get-termination-method
+  :parents (ccg)
+  :short "Returns the current default termination method."
+  :long "@({
+  Examples:
+  (get-termination-method (w state))
+ })
+
+ <p>This will return the termination-method as specified by the current
+ world.</p>
+
+ @({
+  General Form:
+  (get-termination-method wrld)
+ })
+
+ <p>where @('wrld') is a @(see world). For information on the settings and
+ their meaning, see @(see set-termination-method).</p>")
+
+(defxdoc set-ccg-hierarchy
+  :parents (ccg)
+  :short "Set the default hierarchy of techniques for CCG-based termination
+analysis."
+  :long "@({
+  (set-ccg-hierarchy ((:built-in-clauses :equal t)
+                      (:measure (:induction-depth 1))
+                      ((:induction-depth 0) :EQUAL t)
+                      ((:induction-depth 1) :EQUAL t)
+                      ((:induction-depth 1) :ALL   t)
+                      ((:induction-depth 1) :SOME  t)
+                      ((:induction-depth 1) :NONE  t)
+                      ((:induction-depth 1) :EQUAL nil)
+                      ((:induction-depth 1) :ALL   nil)
+                      ((:induction-depth 1) :SOME  nil)
+                      ((:induction-depth 1) :NONE  nil)))
+  :set-ccg-hierarchy ((:built-in-clauses :equal t)
+                      ((:induction-depth 0) :EQUAL t)
+                      ((:induction-depth 1) :EQUAL t)
+                      ((:induction-depth 1) :ALL   t)
+                      ((:induction-depth 1) :SOME  t)
+                      ((:induction-depth 1) :NONE  t))
+
+  General Form:
+  (set-ccg-hierarchy v)
+ })
+
+ <p>where @('v') is @(':CCG-ONLY'), @(':CCG-ONLY-CPN'), @(':HYBRID'),
+ @(':HYBRID-CPN'), or a non-empty list of hierarchy levels, which either have
+ the form @('(pt ccm-cs cpn)') or the form @('(:measure pt)'), where @('pt') is
+ either @(':built-in-clauses') or @('(:induction-depth n)') for some natural
+ number @('n'), @('ccm-cs') is one of @(':EQUAL'), @(':ALL'), @(':SOME'), or
+ @(':NONE'), and @('cpn') is @('t') or @('nil').</p>
+
+ <p>Each level of the hierarchy describes techniques used to prove
+ termination. Termination proofs performed after admitting this event will use
+ the specified techniques in the order in which they are listed.</p>
+
+ <p>Basically, the CCG analysis as described and illustrated at a high level in
+ the documentation for @(see CCG) can potentially be very expensive. In order
+ to make the analysis as efficient as possible, we use less expensive (and less
+ powerful) techniques first, and resort to more powerful and expensive
+ techniques only when these fail.</p>
+
+ <p>There are three ways of varying the CCG analysis, which are represented by
+ each of the three elements in a hierarchy level (levels of the form
+ @('(:measure pt)') will be explained later).</p>
+
+ <p>@('Pt') tells the CCG analysis how to limit proof attempts. The idea behind
+ this is that ACL2 is designed to prove statements that the user thinks are
+ true. It therefore does everything it can to prove the conjecture. As ACL2
+ useres already know, this can lead to very long, or even non-terminating proof
+ attempts. The CCG analysis, on the other hand, sends multiple queries to the
+ theorem prover that may or may not be true, in order to improve the accuracy
+ of the analysis. It is therefore necessary to reign in ACL2's proof attempts
+ to keep them from taking too long. Of course, the trade-off is that, the more
+ we limit ACL2's prover, the less powerful it becomes.</p>
+
+ <p>@('Pt') can be @(':built-in-clauses'), which tells ACL2 to use only <see
+ topic='@(url acl2::broken-link)'>built-in-clauses</see> analysis. This is a
+ very fast, and surprisingly powerful proof technique. For example, the
+ definition of Ackermann's function given in the documentation for @(see CCG)
+ is solved using only this proof technique.</p>
+
+ <p>@('Pt') can also be of the form @('(:induction-depth n)'), where @('n') is
+ a natural number. This uses the full theorem prover, but limits it in two
+ ways. First, it stops proof attempts if ACL2 has been working on a subgoal
+ with no case splitting or induction for 20 steps (that is, at a goal of the
+ form 1.5'20'). It also limits the <i>induction depth</i>, which describes how
+ many times we allow induction goals to lead to further induction goals. For
+ example, @('(:induction-depth 0)') allows no induction, while
+ @('(:induction-depth 1)') allows goals of the form @('*1') or @('*2'), but
+ stops if it creates a goal such as @('*1.1') or @('*2.1').</p>
+
+ <p>@('Ccm-cs') limits which CCMs are compared using the theorem
+ prover. Consider again the @('ack') example in the documentation for @(see
+ CCG). All we needed was to compare the value of @('(acl2-count x)') before and
+ after the recursive call and the value of @('(acl2-count y)') before and after
+ the recursive call. We would learn nothing, and waste time with the theorem
+ prover if we compared @('(acl2-count x)') to @('(acl2-count y)'). However,
+ other times, it is important to compare CCMs with each other, for example,
+ when arguments are permuted, or we are dealing with a mutual recursion.</p>
+
+ <p>@('Ccm-cs') can be one of @(':EQUAL'), @(':ALL'), @(':SOME'), or
+ @(':NONE'). These limit which CCMs we compare based on the variables they
+ mention. Let @('c') be a recursive call in the body of function @('f') that
+ calls function @('g'). Let @('m1') be a CCM for @('f') and @('m2') be a CCM
+ for @('g'). Let @('v1') be the formals mentioned in @('m1') and @('v2') be the
+ formals mentioned in @('m2'') where @('m2'') is derived from @('m2') by
+ substituting the formals of @('g') with the actuals of @('c'). For example,
+ consider following function:</p>
+
+ @({
+  (defun f (x)
+    (if (endp x)
+        0
+      (1+ (f (cdr x)))))
+ })
+
+ <p>Now consider the case where @('m1') and @('m2') are both the measure
+ @('(acl2-count x)'). Then if we look at the recursive call @('(f (cdr x))') in
+ the body of @('f'), then @('m2'') is the result of replacing @('x') with
+ @('(cdr x)') in @('m2'), i.e., @('(acl2-count (cdr x))').</p>
+
+ <p>If @('ccm-cs') is @(':EQUAL') we will compare @('m1') to @('m2') if @('v1')
+ and @('v2') are equal. If @('value') is @(':ALL') we will compare @('m1') to
+ @('m2'') if @('v2') is a subset of @('v1'). If @('value') is @(':SOME') we
+ will compare @('m1') to @('m2'') if @('v1') and @('v2') intersect. If
+ @('value') is @(':NONE') we will compare @('m1') to @('m2') no matter
+ what.</p>
+
+ <p>There is one caveat to what was just said: if @('m1') and @('m2') are
+ syntactically equal, then regardless of the value of @('ccm-cs') we will
+ construct a CCMF that will indicate that @('(o>= m1 m2)').</p>
+
+ <p>@('Cpn') tells us how much ruler information we will use to compare CCMs.
+ Unlike ACL2's measure-based termination analysis, CCG has the ability to use
+ the rulers from both the current recursive call the next recursive call when
+ constructing the CCMFs. That is, instead of asking ``What happens when I make
+ recursive call A?'', we can ask, ``What happens when execution moves from
+ recursive call A to recursive call B?''. Using this information potentially
+ strengthens the termination analysis. For a brief example, consider the
+ following code:</p>
+
+ @({
+  (defun half (x)
+     (if (zp x)
+         0
+       (1+ (half (- x 2)))))
+ })
+
+ <p>Clearly this is terminating. If we choose a measure of @('(nfix x)') we
+ know that if @('x') is a positive integer, @('(nfix (- x 2))') is less than
+ @('(nfix x)'). But consider the measure @('(acl2-count x)'). The strange thing
+ here is that if @('x') is 1, then @('(acl2-count (- x 2))') is @('(acl2-count
+ -1)'), which is 1, i.e. the @('acl2-count') of @('x'). So, the fact that we
+ know that @('x') is a positive integer is not enough to show that this measure
+ decreases. But notice that if @('x') is 1, we will recur just one more
+ time. So, if we consider what happens when we move from the recursive call
+ back to itself. In this case we know @('(and (not (zp x)) (not (zp (- x
+ 2))))').  Under these conditions, it is trivial for ACL2 to prove that
+ @('(acl2-count (- x 2))') is always less than @('(acl2-count x)').
+
+ However, this can make the CCG analysis much more expensive, since information
+ about how values change from step to step are done on a per-edge, rather than
+ a per-node basis in the CCG (where the nodes are the recursive calls and the
+ edges indicate that execution can move from one call to another in one
+ step). Thus, calculating CCMFs (how values change across recursive calls) on a
+ per-edge basis rather than a per-node basis can require n^2 instead of n
+ prover queries.</p>
+
+ <p>If @('cpn') is @('t'), we will use only the ruler of the current recursive
+ call to compute our CCMFs. If it is @('nil'), we will use the much more
+ expensive technique of using the rulers of the current and next call.</p>
+
+ <p>Levels of the hierarchy of the form @('(:measure pt)') specify that the CCG
+ analysis is to be set aside for a step, and the traditional measure-based
+ termination proof is to be attempted. Here, @('pt') has the same meaning as it
+ does in a CCG hierarchy level. That is, it limits the measure proof in order
+ to avoid prohibitively long termination analyses.</p>
+
+ <p>The user may specify their own hierarchy in the form given above. The main
+ restriction is that no level may be subsumed by an earlier level. That is, it
+ should be the case at each level of the hierarchy, that it is possible to
+ discover new information about the CCG that could help lead to a termination
+ proof.</p>
+
+ <p>In addition to constructing his or her own CCG hierarchy, the user may use
+ several preset hierarchies:</p>
+
+ @({
+  :CCG-ONLY
+  ((:built-in-clauses :equal t)
+   ((:induction-depth 0) :EQUAL t)
+   ((:induction-depth 1) :EQUAL t)
+   ((:induction-depth 1) :ALL   t)
+   ((:induction-depth 1) :SOME  t)
+   ((:induction-depth 1) :NONE  t)
+   ((:induction-depth 1) :EQUAL nil)
+   ((:induction-depth 1) :ALL   nil)
+   ((:induction-depth 1) :SOME  nil)
+   ((:induction-depth 1) :NONE  nil))
+
+  :CCG-ONLY-CPN
+  ((:built-in-clauses :equal t)
+   ((:induction-depth 0) :EQUAL t)
+   ((:induction-depth 1) :EQUAL t)
+   ((:induction-depth 1) :ALL   t)
+   ((:induction-depth 1) :SOME  t)
+   ((:induction-depth 1) :NONE  t))
+
+  :HYBRID
+  ((:built-in-clauses :equal t)
+   (:measure (:induction-depth 1))
+   ((:induction-depth 0) :EQUAL t)
+   ((:induction-depth 1) :EQUAL t)
+   ((:induction-depth 1) :ALL   t)
+   ((:induction-depth 1) :SOME  t)
+   ((:induction-depth 1) :NONE  t)
+   ((:induction-depth 1) :EQUAL nil)
+   ((:induction-depth 1) :ALL   nil)
+   ((:induction-depth 1) :SOME  nil)
+   ((:induction-depth 1) :NONE  nil))
+
+  :HYBRID-CPN
+  ((:built-in-clauses :equal t)
+   (:measure (:induction-depth 1))
+   ((:induction-depth 0) :EQUAL t)
+   ((:induction-depth 1) :EQUAL t)
+   ((:induction-depth 1) :ALL   t)
+   ((:induction-depth 1) :SOME  t)
+   ((:induction-depth 1) :NONE  t))
+ })
+
+ <p>The default hierarchy for CCG termination analysis is :CCG-ONLY.</p>")
+
+(defxdoc set-ccg-inhibit-output-lst
+  :parents (ccg)
+  :short "Control output during CCG termination analysis"
+  :long "@({
+  Examples:
+  (set-ccg-inhibit-output-lst '(query))
+  (set-ccg-inhibit-output-lst '(build/refine size-change))
+  (set-ccg-inhibit-output-lst *ccg-valid-output-names*) ; inhibit all ccg output
+  :set-ccg-inhibit-output-lst (build/refine size-change)
+
+  General Form:
+  (set-ccg-inhibit-output-lst lst)
+ })
+
+ <p>where @('lst') is a form (which may mention @(tsee state)) that evaluates
+ to a list of names, each of which is the name of one of the following
+ ``kinds'' of output produced by the CCG termination analysis.</p>
+
+ <code> query prints the goal, restrictions, and results of each prover
+   query (for a discussion on displaying actual proofs, see
+   @('set-ccg-display-proofs')(yet to be documented).  basics the basic CCG
+   output, enough to follow along, but concise enough to keep from drowning in
+   output performance performance information for the size change analysis
+   build/refine the details of CCG construction and refinement size-change the
+   details of size change analysis counter-example prints out a counter-example
+   that can be useful for debugging failed termination proof attempts.  </code>
+
+ <p>It is possible to inhibit each kind of output by putting the corresponding
+ name into @('lst').  For example, if @(''query') is included in (the value of)
+ @('lst'), then no information about individual queries is printed during CCG
+ analysis.</p>
+
+ <p>The default setting is @(''(query performance build/refine size-change)').
+ That is, by default only the basic CCG information and counter-example (in the
+ case of a failed proof attempt) are printed. This should hopefully be adequate
+ for most users.</p>")
+
+(defxdoc set-ccg-print-proofs
+  :parents (ccg)
+  :short "Controls whether proof attempts are printed during CCG analysis"
+  :long "@({
+  Examples:
+  (set-ccg-print-proofs t)
+  (set-ccg-print-proofs nil)
+  :set-ccg-print-proofs t
+
+  General Form:
+  (set-ccg-print-proofs v)
+ })
+
+ <p>If @('v') is @('nil'), no proof attempts will be printed during CCG
+ analysis. This is the default. If @('v') is anything but @('nil'), proofs will
+ be displayed. Fair warning: there is potentially a large amount of prover
+ output that might be displayed. It is probably better to use See @(see
+ set-ccg-inhibit-output-lst) to un-inhibit @(''query') output to figure out
+ what lemmas might be needed to get a given query to go through.</p>")
+
+(defxdoc set-ccg-time-limit
+  :parents (ccg)
+  :short "Set a global time limit for CCG-based termination proofs."
+  :long "@({
+  Examples:
+  (set-ccg-time-limit 120)  ; limits termination proofs to 120 seconds.
+  (set-ccg-time-limit 53/2) ; limits termination proofs to 53/2 seconds.
+  (set-ccg-time-limit nil)  ; removes any time limit for termination proofs.
+ })
+
+ <p>Introduced by the CCG analysis book, this macro sets a global time limit
+ for the completion of the CCG analysis. The time limit is given as a rational
+ number, signifying the number of seconds to which the CCG analysis should be
+ limited, or nil, signifying that there should be no such time limit. If CCG
+ has not completed its attempt to prove termination in the number of seconds
+ specified, it will immediately throw an error and the definition attempt will
+ fail. Note: This is an event!  It does not print the usual event summary but
+ nevertheless changes the ACL2 logical @(see world) and is so recorded.</p>
+
+ @({
+   General Form:
+  (set-ccg-time-limit tl)
+ })
+
+ <p>where @('tl') is a positive rational number or nil. The default is nil. If
+ the time limit is nil, the CCG analysis will work as long as it needs to in
+ order to complete the analysis. If the @('tl') is a positive rational number,
+ all CCG analyses will be limited to @('tl') seconds.</p>
+
+ <p>To see what the current time limit is, see @(tsee
+ get-ccg-time-limit).</p>")
+
+(defxdoc set-termination-method
+  :parents (ccg)
+  :short "Set the default means of proving termination."
+  :long "@({
+  Examples:
+  (set-termination-method :ccg)
+  (set-termination-method :measure)
+ })
+
+ <p>Introduced by the CCG analysis book, this macro sets the default means by
+ which ACL2 will prove termination. Note: This is an event!  It does not print
+ the usual event summary but nevertheless changes the ACL2 logical @(see world)
+ and is so recorded.</p>
+
+ @({
+   General Form:
+  (set-termination-method tm)
+ })
+
+ <p>where @('tm') is @(':CCG') or @(':MEASURE'). The default is @(':MEASURE')
+ (chosen to assure compatibility with books created without CCG). The
+ recommended setting is @(':CCG'). This macro is equivalent to @('(table
+ acl2-defaults-table :termination-method 'tm)'), and hence is @(tsee local) to
+ any @(see books) and @(tsee encapsulate) @(see events) in which it occurs; see
+ @(see acl2-defaults-table).</p>
+
+ <p>When the termination-method is set to @(':CCG'), a termination proof is
+ attempted using the the hierarchical CCG algorithm <a
+ href='CCG-hierarchy'>CCG-hierarchy</a>.</p>
+
+ <p>When the termination-method is set to @(':MEASURE'), ACL2 attempts to prove
+ termination using its default measure-based method. Thus, in this setting,
+ ACL2's behavior is identical to that when the CCG book is not included at
+ all.</p>
+
+ <p>To see what the current termination method setting is, use @(tsee
+ get-termination-method).</p>")

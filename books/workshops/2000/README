@@ -1,0 +1,9 @@
+# The following directories do not have any certifiable books:
+goerigk sawada shumsky wilding
+
+Note on cowles/books --
+     tarai4 is resource-demanding: crashes some lisps, overflows
+     At some point we may deal with this.
+     Also, a change will be needed for v2-6 in tarai6, to get
+     through lemma tarai=Fb-3.
+

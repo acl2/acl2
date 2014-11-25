@@ -6,21 +6,8 @@
 (lp)
 (redef!)
 (set-ld-skip-proofsp t state)
+(include-book "centaur/vl/loader/parser/tests/base" :dir :system)
 
-(defmacro trace-parser (fn)
-  `(trace$ (,fn
-            :entry (list ',fn
-                         ;;:tokens (vl-tokenlist->string-with-spaces tokens)
-                         ;;:warnings (len warnings)
-                         )
-            :exit (list :errmsg (first values)
-                        :val (second values)
-                        ;; :remainder (vl-tokenlist->string-with-spaces
-                        ;;             (third values))
-                        ;; :next-token (and (consp (third values))
-                        ;;                  (vl-token->type (car (third values))))
-                        ;; :warnings (len (fourth values))
-                        ))))
 (untrace$)
 
 (trace-parser vl-parse-udp-declaration-fn)
@@ -36,11 +23,13 @@
 
 (defconst *edgesynth-debug* t)
 (defconst *vl-unparam-debug* t)
+(defconst *vl-shadowcheck-debug* t)
 
 (defconst *loadconfig*
   (make-vl-loadconfig
-   :start-files (list "udp1/spec.v")
-   :search-path (list "udp1/")
+   :start-files (list "ports5/spec.v")
+   :search-path (list "ports5/")
+   :defines (vl-make-initial-defines '("SYSTEM_VERILOG_MODE"))
    ))
 
 ;; (defconst *loadconfig*
@@ -49,14 +38,13 @@
 ;;    ))
 
 (defconsts (*loadresult* state)
-  (vl-load *loadconfig*))
+  ;; If you turn on warning tracing, don't be scared about warnings during parsing
+  ;; because they are most likely due to backtracking.
+  (b* (((mv (vl-loadresult res) state) (vl-load *loadconfig*)))
+    (cw "Loaded ~x0 modules.~%" (len (vl-design->mods res.design)))
+    (mv res state)))
 
-
-(top-level
- (with-local-ps
-   (vl-pp-modulelist (vl-design->mods (vl-loadresult->design *loadresult*)))))
-
-
+(vl-loadresult->filemap *loadresult*)
 
 (untrace$)
 (trace$ (vl-parse-port-declaration-noatts-fn
@@ -67,8 +55,31 @@
 (defconsts *simpconfig*
   (make-vl-simpconfig))
 
-(defconsts (*good* *bad* &)
-  (vl-simplify (vl-loadresult->design *loadresult*) *simpconfig*))
+(trace$ (vl-blame-alist :entry (list 'vl-blame-alist bads)))
+(trace$ vl-blame-alist-to-reportcard)
+(trace$ (vl-modulelist-zombies :entry (list 'vl-modulelist-zombies (vl-modulelist->names x))))
+
+(trace$ (vl-filter-modules :entry
+                           (list 'vl-filter-modules names)
+                           :exit
+                           (let ((values acl2::values))
+                             (list 'vl-filter-modules
+                                   :good (vl-modulelist->names (first values))
+                                   :bad (vl-modulelist->names (second values))))))
+
+                           
+
+(defconsts (*good* *bad*)
+  (b* (((mv good bad &) (vl-simplify (vl-loadresult->design *loadresult*) *simpconfig*))
+       (- (cw "Successfully translated ~x0 modules: ~x1.~%"
+              (len (vl-design->mods good))
+              (vl-modulelist->names (vl-design->mods good))))
+       (- (cw "Failed to translate ~x0 modules: ~x1.~%"
+              (len (vl-design->mods bad))
+              (vl-modulelist->names (vl-design->mods bad)))))
+    (mv good bad)))
+
+
 
 (top-level
  (with-local-ps

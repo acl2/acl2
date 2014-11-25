@@ -18,10 +18,14 @@
 ;; key for each entry is the id, then rest of attributes are 
 ;; an alist of values
 (defun good-study-entry (entry)
-  ":Doc-Section TASPI
-   Recognizes a well-formed study table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Recognizes a well-formed study table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard t))
   (if (consp entry)
       (let ((study-id (car entry))
@@ -36,10 +40,14 @@
         nil))
 
 (defun good-analysis-entry (entry)
-  ":Doc-Section TASPI
-   Recognizes a well-formed analysis table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Recognizes a well-formed analysis table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard t))
   (if (consp entry)
       (let ((analysis-id (car entry))
@@ -70,10 +78,14 @@
     nil))
 
 (defun good-tree-entry (entry)
-  ":Doc-Section TASPI
-   Recognizes a well-formed tree table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Recognizes a well-formed tree table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard t))
   (if (consp entry)
       (let ((tree-id (car entry))
@@ -99,10 +111,14 @@
 
 ;;primary key accessor
 (defun get-id (entry)
-  ":Doc-Section TASPI
-   Returns the primary key of a table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the primary key of a table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (or (good-study-entry entry)
                              (good-analysis-entry entry)
                              (good-tree-entry entry))))
@@ -122,10 +138,14 @@
 
 ; Name accessor
 (defun get-name (entry)
-  ":Doc-Section TASPI
-   Returns the name of a table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the name of a table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (or (good-study-entry entry)
                              (good-analysis-entry entry)
                              (good-tree-entry entry))))
@@ -146,10 +166,14 @@
 
 ;;study table accessor functions
 (defun get-sequences (entry)
-  ":Doc-Section TASPI
-   Returns the sequences from a study table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the sequences from a study table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-study-entry entry)))
   (my-get 'sequences (cdr entry)))
 
@@ -167,10 +191,14 @@
 
 ;; Analysis table accessors
 (defun get-study-id (entry)
-  ":Doc-Section TASPI
-   Returns the study-id of an analysis table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the study-id of an analysis table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-analysis-entry entry)))
   (my-get 'study-id (cdr entry)))
 
@@ -179,10 +207,14 @@
            (good-id (get-study-id entry))))
 
 (defun get-method (entry)
-  ":Doc-Section TASPI
-   Returns the method of an analysis table entry.~/
-   ~/
-   "  
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the method of an analysis table entry.~/
+;  ~/
+;  "  
   (declare (xargs :guard (good-analysis-entry entry)))
   (my-get 'method (cdr entry)))
 
@@ -191,10 +223,14 @@
            (good-method (get-method entry))))
 
 (defun get-data-type (entry)
-  ":Doc-Section TASPI
-   Returns the data-type of an analysis table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the data-type of an analysis table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-analysis-entry entry)))
   (my-get 'data-type (cdr entry)))
 
@@ -203,10 +239,14 @@
            (good-data-type (get-data-type entry))))
 
 (defun get-model (entry)
-  ":Doc-Section TASPI
-   Returns the model of an analysis table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the model of an analysis table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-analysis-entry entry)))
   (my-get 'model (cdr entry)))
 
@@ -215,10 +255,14 @@
            (good-model (get-model entry))))
 
 (defun get-date (entry)
-  ":Doc-Section TASPI
-   Returns the date of an analysis table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the date of an analysis table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-analysis-entry entry)))
   (my-get 'date (cdr entry)))
 
@@ -227,10 +271,14 @@
            (good-date (get-date entry))))
 
 (defun get-tool (entry)
-  ":Doc-Section TASPI
-   Returns the tool of an analysis table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the tool of an analysis table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-analysis-entry entry)))
   (my-get 'tool (cdr entry)))
 
@@ -239,10 +287,14 @@
            (good-tool (get-tool entry))))
 
 (defun get-author (entry)
-  ":Doc-Section TASPI
-   Returns the author of an analysis table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the author of an analysis table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-analysis-entry entry)))
   (my-get 'author (cdr entry)))
 
@@ -251,10 +303,14 @@
            (good-author (get-author entry))))
 
 (defun get-taxa-list (entry)
-  ":Doc-Section TASPI
-   Returns the taxa list of an analysis table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the taxa list of an analysis table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-analysis-entry entry)))
   (my-get 'taxa-list (cdr entry)))
 
@@ -263,10 +319,14 @@
            (good-taxa-list (get-taxa-list entry))))
 
 (defun get-ingroup (entry)
-  ":Doc-Section TASPI
-   Returns the ingroup of an analysis table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the ingroup of an analysis table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-analysis-entry entry)))
   (my-get 'ingroup (cdr entry)))
 
@@ -276,10 +336,14 @@
                          (get-taxa-list entry))))
 
 (defun get-outgroup (entry)
-  ":Doc-Section TASPI
-   Returns the outgroup of an analysis table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the outgroup of an analysis table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-analysis-entry entry)))
   (my-get 'outgroup (cdr entry)))
 
@@ -290,10 +354,14 @@
 
 ;; tree table accessors
 (defun get-analysis-id (entry)
-  ":Doc-Section TASPI
-   Returns the analysis-id of a tree table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the analysis-id of a tree table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-tree-entry entry)))
   (my-get 'analysis-id (cdr entry)))
 
@@ -302,10 +370,14 @@
            (good-id (get-analysis-id entry))))
 
 (defun get-rooted-flg (entry)
-  ":Doc-Section TASPI
-   Returns the rootedness flag of a tree table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the rootedness flag of a tree table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-tree-entry entry)))
   (my-get 'rooted? (cdr entry)))
 
@@ -314,10 +386,14 @@
            (good-rooted-flg (get-rooted-flg entry))))
 
 (defun get-brlens-flg (entry)
-  ":Doc-Section TASPI
-   Returns the presence of branch lengths flag of a tree table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the presence of branch lengths flag of a tree table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-tree-entry entry)))
   (my-get 'brlens? (cdr entry)))
 
@@ -326,10 +402,14 @@
            (good-brlens-flg (get-brlens-flg entry))))
 
 (defun get-tree (entry)
-  ":Doc-Section TASPI
-   Returns the tree of a tree table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the tree of a tree table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-tree-entry entry)))
   (my-get 'tree (cdr entry)))
 
@@ -338,10 +418,14 @@
            (good-tree (get-tree entry))))
 
 (defun get-tree-type (entry)
-  ":Doc-Section TASPI
-   Returns the tree type of a tree table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the tree type of a tree table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-tree-entry entry)))
   (my-get 'type (cdr entry)))
 
@@ -350,10 +434,14 @@
            (good-tree-type (get-tree-type entry))))
 
 (defun get-mp (entry)
-  ":Doc-Section TASPI
-   Returns the maximum parsimony score of a tree table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the maximum parsimony score of a tree table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-tree-entry entry)))
   (my-get 'mp (cdr entry)))
 
@@ -362,10 +450,14 @@
            (good-mp (get-mp entry))))
 
 (defun get-ml (entry)
-  ":Doc-Section TASPI
-   Returns the maximum likelihood score of a tree table entry.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the maximum likelihood score of a tree table entry.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-tree-entry entry)))
   (my-get 'ml (cdr entry)))
 

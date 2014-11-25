@@ -26,26 +26,31 @@
 (include-book "leftist-tree-defuns")
 (include-book "leftist-tree-defthms")
 
-(defdoc leftist-tree-sort
-  ":doc-section leftist-trees
-Functions and theorems about leftist tree-based heapsort.~/~/
-There are three functions related to heapsort, the most important
-being ltree-sort, which works just like the other sorting functions in
-the books/sorting contribution, except it uses leftist trees to sort
-its input. There are a number of theorems provided that prove the
-heapsort algorithm correct.
+; NOTE: Legacy doc strings defined in this file were replaced Nov. 2014 by the
+; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
 
-------------------------------------------------------------
-Functions and Constants
-------------------------------------------------------------
-
-Function/Constant Name      Result
-  (supporting function)     Type
-----------------------      ----
-LTREE-TO-LIST               list
-LTREE-SORT                  list
-HOW-MANY-LT                 natural
-~/")
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+; (defdoc leftist-tree-sort
+;   ":doc-section leftist-trees
+; Functions and theorems about leftist tree-based heapsort.~/~/
+; There are three functions related to heapsort, the most important
+; being ltree-sort, which works just like the other sorting functions in
+; the books/sorting contribution, except it uses leftist trees to sort
+; its input. There are a number of theorems provided that prove the
+; heapsort algorithm correct.
+; 
+; ------------------------------------------------------------
+; Functions and Constants
+; ------------------------------------------------------------
+; 
+; Function/Constant Name      Result
+;   (supporting function)     Type
+; ----------------------      ----
+; LTREE-TO-LIST               list
+; LTREE-SORT                  list
+; HOW-MANY-LT                 natural
+; ~/")
 
 ;;;;;;;;;;;;;;
 ;; HEAPSORT ;;
@@ -59,11 +64,13 @@ HOW-MANY-LT                 natural
 ;;    ltree-to-list on the result.
 
 (defun ltree-to-list (tree)
-  ":doc-section leftist-tree-sort
-convert a leftist tree to a list~/~/
-Assuming the leftist tree in question is proper, this will result in a
-sorted list.
-~/"
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+;   ":doc-section leftist-tree-sort
+; convert a leftist tree to a list~/~/
+; Assuming the leftist tree in question is proper, this will result in a
+; sorted list.
+; ~/"
   (declare 
    (xargs :measure (size-lt tree)))
   (cond ((atom tree) nil)
@@ -73,21 +80,25 @@ sorted list.
 ;% (ltree-sort l)
 ; -- Computes a leftist-heapsort of a list.
 (defun ltree-sort (l)
-  ":doc-section ltree-sort
-sort an input list using leftist tree-based heapsort~/~/
-Sorts an input list by first INSERT-LTing each element of the list into a
-leftist tree, then DELETE-MIN-LTing the min element from the tree one
-by one.
-~/"
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+;   ":doc-section ltree-sort
+; sort an input list using leftist tree-based heapsort~/~/
+; Sorts an input list by first INSERT-LTing each element of the list into a
+; leftist tree, then DELETE-MIN-LTing the min element from the tree one
+; by one.
+; ~/"
   (ltree-to-list (build-lt l)))
 
 (defun how-many-lt (e tree)
-  ":doc-section how-many-lt
-returns the number of times an object occurs in a leftist tree~/~/
-Counts the number of occurrences of a given object in a leftist
-tree. This function takes advantage of the heap-ordering property, and
-returns 0 if the root of the tree is larger than what we are searching
-for."
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+;   ":doc-section how-many-lt
+; returns the number of times an object occurs in a leftist tree~/~/
+; Counts the number of occurrences of a given object in a leftist
+; tree. This function takes advantage of the heap-ordering property, and
+; returns 0 if the root of the tree is larger than what we are searching
+; for."
   (cond ((is-empty-lt tree) 0)
         ((equal e (root-lt tree))
          (+ 1 (how-many-lt e (left-lt tree))
@@ -152,13 +163,19 @@ for."
 
 (defthm orderedp-ltree-sort
   (orderedp (ltree-sort l))
-  :doc ":doc-section leftist-tree-sort
-ltree-sort produces an ordered list~/~/~/")
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+;   :doc ":doc-section leftist-tree-sort
+; ltree-sort produces an ordered list~/~/~/"
+)
 
 (defthm true-listp-ltree-sort
   (true-listp (ltree-sort l))
-  :doc ":doc-section leftist-tree-sort
-ltree-sort produces a true-listp~/~/~/")
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+;   :doc ":doc-section leftist-tree-sort
+; ltree-sort produces a true-listp~/~/~/"
+)
 
 ;(defthm how-many-lt-zero
 ;  (implies (not (lexorder (root-lt tree) e))
@@ -235,6 +252,9 @@ ltree-sort produces a true-listp~/~/~/")
 (defthm how-many-ltree-sort
   (equal (how-many e (ltree-sort x))
          (how-many e x))
-  :doc ":doc-section leftist-tree-sort
-ltree-sort preserves how-many~/~/
-This is needed to prove that ltree-sort is equivalent to isort.~/")
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
+;   :doc ":doc-section leftist-tree-sort
+; ltree-sort preserves how-many~/~/
+; This is needed to prove that ltree-sort is equivalent to isort.~/"
+  )

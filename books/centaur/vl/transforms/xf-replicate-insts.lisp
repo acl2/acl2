@@ -956,8 +956,14 @@ vl-gateinstlist-p)."
 
        ((when (atom ports))
         (mv t warnings nil))
-       (port1  (car ports))
-       (expr1  (vl-port->expr port1))
+       (port1 (vl-port-fix (car ports)))
+       ((when (eq (tag port1) :vl-interfaceport))
+        (mv nil
+            (fatal :type :vl-replicate-fail
+                   :msg "~a0: bozo need to implement interface ports.~%"
+                   :args (list inst))
+            nil))
+       (expr1  (vl-regularport->expr port1))
        (width1 (and expr1 (vl-expr->finalwidth expr1)))
        ((unless (posp width1))
         (mv nil

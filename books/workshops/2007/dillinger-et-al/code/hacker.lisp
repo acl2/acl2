@@ -113,26 +113,30 @@
 
 ;for export
 (defmacro push+touchable (&key vars fns)
-  ":Doc-Section hacker
-  
-  add some fns/vars to those temporarily touchable, remembering previous setting.~/
 
-  ~bv[]
-  Examples:
-  (push+touchable :fns :all :vars :all)  ; like push-all-touchable
-  (push+touchable :fns set-w :vars :initial)
-  (push+touchable :vars (foo :initial bar))
-  ~ev[] ~/
-  
-  This event first pushes the previous temporary touchable settings
-  (functions and variables) onto a stack (stored in a global variable)
-  and then adds all those that meet the specification passed in.
-  
-  ~ilc[pop-touchable] reinstates the previous setting.
-  
-  An active ttag is required to use this form (~l[defttag]) because it
-  can render ACL2 unsound (~l[remove-untouchable]).
-  ~/"
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file dillinger-et-al-xdoc.lisp.
+
+; ":Doc-Section hacker
+; 
+; add some fns/vars to those temporarily touchable, remembering previous setting.~/
+
+; ~bv[]
+; Examples:
+; (push+touchable :fns :all :vars :all)  ; like push-all-touchable
+; (push+touchable :fns set-w :vars :initial)
+; (push+touchable :vars (foo :initial bar))
+; ~ev[] ~/
+; 
+; This event first pushes the previous temporary touchable settings
+; (functions and variables) onto a stack (stored in a global variable)
+; and then adds all those that meet the specification passed in.
+; 
+; ~ilc[pop-touchable] reinstates the previous setting.
+; 
+; An active ttag is required to use this form (~l[defttag]) because it
+; can render ACL2 unsound (~l[remove-untouchable]).
+; ~/"
   `(progn! (push-temp-touchables state)
            (set-temp-touchable-vars
             (add-temp-touchable-aliases ',vars (@ temp-touchable-vars) nil)
@@ -143,26 +147,30 @@
 
 ;for export
 (defmacro push=touchable (&key vars fns)
-  ":Doc-Section hacker
-  
-  set which fns/vars are temporarily touchable, remembering previous setting.~/
 
-  ~bv[]
-  Examples:
-  (push=touchable :fns :all :vars :all)  ; like push-all-touchable
-  (push=touchable :fns set-w :vars :initial)
-  (push=touchable :vars (foo :initial bar)) ;``:fns ()'' default
-  ~ev[] ~/
-  
-  This event first pushes the previous temporary touchable settings
-  (functions and variables) onto a stack (stored in a global variable)
-  and then sets them to the specification passed in.
-  
-  ~ilc[pop-touchable] reinstates the previous setting.
-  
-  An active ttag is required to use this form (~l[defttag]) because it
-  can render ACL2 unsound (~l[remove-untouchable]).
-  ~/"
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file dillinger-et-al-xdoc.lisp.
+
+; ":Doc-Section hacker
+; 
+; set which fns/vars are temporarily touchable, remembering previous setting.~/
+
+; ~bv[]
+; Examples:
+; (push=touchable :fns :all :vars :all)  ; like push-all-touchable
+; (push=touchable :fns set-w :vars :initial)
+; (push=touchable :vars (foo :initial bar)) ;``:fns ()'' default
+; ~ev[] ~/
+; 
+; This event first pushes the previous temporary touchable settings
+; (functions and variables) onto a stack (stored in a global variable)
+; and then sets them to the specification passed in.
+; 
+; ~ilc[pop-touchable] reinstates the previous setting.
+; 
+; An active ttag is required to use this form (~l[defttag]) because it
+; can render ACL2 unsound (~l[remove-untouchable]).
+; ~/"
   `(progn! (push-temp-touchables state)
            (set-temp-touchable-vars
             (add-temp-touchable-aliases ',vars nil nil)
@@ -173,48 +181,56 @@
 
 ;for export
 (defmacro push-all-touchable ()
-  ":Doc-Section hacker
-  
-  make all fns/vars temporarily touchable, remembering previous setting.~/
 
-  ~bv[]
-  Usage:
-  (push-all-touchable)
-  ~ev[] ~/
-  
-  This event first pushes the previous temporary touchable settings
-  (functions and variables) onto a stack (stored in a global variable)
-  and then sets them to make everything temporarily touchable.
-  
-  ~ilc[pop-touchable] reinstates the previous setting.  ~ilc[push+touchable]
-  and ~ilc[push=touchable] allow more more specification of what should be
-  permitted.
-  
-  An active ttag is required to use this form (~l[defttag]) because it
-  can render ACL2 unsound (~l[remove-untouchable]).
-  ~/"
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file dillinger-et-al-xdoc.lisp.
+
+; ":Doc-Section hacker
+; 
+; make all fns/vars temporarily touchable, remembering previous setting.~/
+
+; ~bv[]
+; Usage:
+; (push-all-touchable)
+; ~ev[] ~/
+; 
+; This event first pushes the previous temporary touchable settings
+; (functions and variables) onto a stack (stored in a global variable)
+; and then sets them to make everything temporarily touchable.
+; 
+; ~ilc[pop-touchable] reinstates the previous setting.  ~ilc[push+touchable]
+; and ~ilc[push=touchable] allow more more specification of what should be
+; permitted.
+; 
+; An active ttag is required to use this form (~l[defttag]) because it
+; can render ACL2 unsound (~l[remove-untouchable]).
+; ~/"
   `(progn! (push-temp-touchables state)
            (set-temp-touchable-vars t state)
            (set-temp-touchable-fns t state)))
 
 ;for export
 (defmacro pop-touchable ()
-  ":Doc-Section hacker
-  
-  revert the effect of a push+touchable, push=touchable, or push-all-touchable.~/
 
-  ~bv[]
-  Usage:
-  (pop-touchable)
-  ~ev[] ~/
-  
-  This event pops of the stack of saved temporary touchable settings,
-  reverting the effect of a ~ilc[push+touchable], ~ilc[push=touchable], or
-  ~ilc[push-all-touchable].
-  
-  An active ttag is required to use this form (~l[defttag]) because it
-  can render ACL2 unsound (~l[remove-untouchable]).
-  ~/"
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file dillinger-et-al-xdoc.lisp.
+
+; ":Doc-Section hacker
+; 
+; revert the effect of a push+touchable, push=touchable, or push-all-touchable.~/
+
+; ~bv[]
+; Usage:
+; (pop-touchable)
+; ~ev[] ~/
+; 
+; This event pops of the stack of saved temporary touchable settings,
+; reverting the effect of a ~ilc[push+touchable], ~ilc[push=touchable], or
+; ~ilc[push-all-touchable].
+; 
+; An active ttag is required to use this form (~l[defttag]) because it
+; can render ACL2 unsound (~l[remove-untouchable]).
+; ~/"
   `(progn! (er-let*
         ((to-restore (pop-temp-touchables state)))
         (pprogn (set-temp-touchable-vars (car to-restore) state)
@@ -246,34 +262,38 @@
 
 ;for export
 (defmacro progn+touchable (&rest args)
-  ":Doc-Section hacker
-  
-  execute some events with some additional fns and/or vars made temporarily touchable.~/
 
-  ~bv[]
-  Examples:
-  (progn+touchable :all ; same as :fns :all :vars :all
-    (defun foo ...)
-    (defun bar ...))
-  (progn+touchable :vars (current-package ld-skip-proofsp)
-    ...)
-  (progn+touchable :fns :all
-    ...)
-  (progn+touchable :fns set-w :vars :all
-    ...)
-  ~ev[] ~/
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file dillinger-et-al-xdoc.lisp.
 
-  This is like ~ilc[progn] except that it surrounds the events with code to
-  add certain fns and/or vars to those that are temporarily touchable.
-  
-  Related to ~ilc[progn=touchable].
-  
-  An active ttag is required to use this form (~l[defttag]) because it
-  can render ACL2 unsound (~l[remove-untouchable]).
-  
-  Note that the syntax for this macro is not quite like traditional
-  keyword arguments, which would come at the end of the argument list.
-  ~/"
+; ":Doc-Section hacker
+; 
+; execute some events with some additional fns and/or vars made temporarily touchable.~/
+
+; ~bv[]
+; Examples:
+; (progn+touchable :all ; same as :fns :all :vars :all
+;   (defun foo ...)
+;   (defun bar ...))
+; (progn+touchable :vars (current-package ld-skip-proofsp)
+;   ...)
+; (progn+touchable :fns :all
+;   ...)
+; (progn+touchable :fns set-w :vars :all
+;   ...)
+; ~ev[] ~/
+
+; This is like ~ilc[progn] except that it surrounds the events with code to
+; add certain fns and/or vars to those that are temporarily touchable.
+; 
+; Related to ~ilc[progn=touchable].
+; 
+; An active ttag is required to use this form (~l[defttag]) because it
+; can render ACL2 unsound (~l[remove-untouchable]).
+; 
+; Note that the syntax for this macro is not quite like traditional
+; keyword arguments, which would come at the end of the argument list.
+; ~/"
   (declare (xargs :guard (and (consp args)
                               (keywordp (car args)))))
   (if (not (member-eq (car args) '(:vars :fns)))
@@ -283,34 +303,38 @@
     `(progn-touchable-keyword nil t . ,(transpose-keyword-args args))))
 
 (defmacro progn=touchable (&rest args)
-  ":Doc-Section hacker
-  
-  execute some events with only the specified fns and/or vars temporarily touchable.~/
 
-  ~bv[]
-  Examples:
-  (progn=touchable :all ; same as :fns :all :vars :all
-    (defun foo ...)
-    (defun bar ...))
-  (progn=touchable :vars (current-package ld-skip-proofsp) ; :fns ()  implied
-    ...)  
-  (progn=touchable :fns :all    ; :vars ()  implied
-    ...)
-  (progn=touchable :fns set-w :vars :all
-    ...)
-  ~ev[] ~/
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file dillinger-et-al-xdoc.lisp.
 
-  This is like ~ilc[progn] except that it surrounds the events with code to
-  set only certain fns and/or vars as temporarily touchable.
-  
-  Related to ~ilc[progn+touchable].
-  
-  An active ttag is required to use this form (~l[defttag]) because it
-  can render ACL2 unsound (~l[remove-untouchable]).
-  
-  Note that the syntax for this macro is not quite like traditional
-  keyword arguments, which would come at the end of the argument list.
-  ~/"
+; ":Doc-Section hacker
+; 
+; execute some events with only the specified fns and/or vars temporarily touchable.~/
+
+; ~bv[]
+; Examples:
+; (progn=touchable :all ; same as :fns :all :vars :all
+;   (defun foo ...)
+;   (defun bar ...))
+; (progn=touchable :vars (current-package ld-skip-proofsp) ; :fns ()  implied
+;   ...)  
+; (progn=touchable :fns :all    ; :vars ()  implied
+;   ...)
+; (progn=touchable :fns set-w :vars :all
+;   ...)
+; ~ev[] ~/
+
+; This is like ~ilc[progn] except that it surrounds the events with code to
+; set only certain fns and/or vars as temporarily touchable.
+; 
+; Related to ~ilc[progn+touchable].
+; 
+; An active ttag is required to use this form (~l[defttag]) because it
+; can render ACL2 unsound (~l[remove-untouchable]).
+; 
+; Note that the syntax for this macro is not quite like traditional
+; keyword arguments, which would come at the end of the argument list.
+; ~/"
   (declare (xargs :guard (and (consp args)
                               (keywordp (car args)))))
   (if (not (member-eq (car args) '(:vars :fns)))
@@ -341,11 +365,15 @@
 
 ; for export
 (defmacro with-touchable (&rest args)
-  ":Doc-Section hacker
-  
-  execute some events but with certain untouchables removed.
-  ~/~/
-  Same as ~c[progn+touchable]. ~l[progn+touchable]."
+
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file dillinger-et-al-xdoc.lisp.
+
+; ":Doc-Section hacker
+; 
+; execute some events but with certain untouchables removed.
+; ~/~/
+; Same as ~c[progn+touchable]. ~l[progn+touchable]."
   `(progn+touchable . ,args))
 
 
@@ -381,32 +409,36 @@
 
 ; for export
 (defmacro progn+redef (&rest args)
-  ":Doc-Section hacker
-  
-  execute some events but with redefinition enabled.~/
 
-  ~bv[]
-  Examples (all equivalent):
-  (progn+redef
-    (defun foo ...)
-    (defun bar ...))
-  (progn+redef :action t 
-    ...)
-  (progn+redef :action (:doit! . :overwrite)
-    ...)
-  ~ev[] ~/
-  
-  This is like ~ilc[progn] except that it sets the
-  ~ilc[ld-redefinition-action] as (optionally) specified for the
-  given events.  An ~c[:action] of ~c[t] is a shortcut for
-  ~c[(:doit! . :overwrite)].  ~ilc[make-event] is used to save and restore
-  the old value of ~ilc[ld-redefinition-action].
-  
-  An active ttag is required to use this form (~l[defttag]).
-  
-  Note that the syntax for this macro is not quite like traditional
-  keyword arguments, which would come at the end of the argument list.
-  ~/"
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file dillinger-et-al-xdoc.lisp.
+
+; ":Doc-Section hacker
+; 
+; execute some events but with redefinition enabled.~/
+
+; ~bv[]
+; Examples (all equivalent):
+; (progn+redef
+;   (defun foo ...)
+;   (defun bar ...))
+; (progn+redef :action t 
+;   ...)
+; (progn+redef :action (:doit! . :overwrite)
+;   ...)
+; ~ev[] ~/
+; 
+; This is like ~ilc[progn] except that it sets the
+; ~ilc[ld-redefinition-action] as (optionally) specified for the
+; given events.  An ~c[:action] of ~c[t] is a shortcut for
+; ~c[(:doit! . :overwrite)].  ~ilc[make-event] is used to save and restore
+; the old value of ~ilc[ld-redefinition-action].
+; 
+; An active ttag is required to use this form (~l[defttag]).
+; 
+; Note that the syntax for this macro is not quite like traditional
+; keyword arguments, which would come at the end of the argument list.
+; ~/"
   (declare (xargs :guard (consp args)))
   (if (and (equal (car args) :action)
            (consp (cdr args)))
@@ -415,11 +447,15 @@
 
 ; for export
 (defmacro with-redef-allowed (&rest args)
-  ":Doc-Section hacker
-  
-  execute some events but with redefinition enabled.
-  ~/~/
-  Same as ~c[progn+redef]. ~l[progn+redef]."
+
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file dillinger-et-al-xdoc.lisp.
+
+; ":Doc-Section hacker
+; 
+; execute some events but with redefinition enabled.
+; ~/~/
+; Same as ~c[progn+redef]. ~l[progn+redef]."
   `(progn+redef . ,args))
 
 ; for export
@@ -436,35 +472,39 @@
 
 ; for export
 (defmacro in-raw-mode (&rest form-lst)
-  ":Doc-Section hacker
-  
-  embed some raw lisp code as an event.~/
 
-  ~bv[]
-  Example Form:
-  (in-raw-mode
-    (format t \"Preparing to load file...~~%\")
-    (load \"my-file.lisp\"))~/
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file dillinger-et-al-xdoc.lisp.
 
-  General Form:
-  (in-raw-mode form1 form2 ... formk)
-  ~ev[]
-  where each ~c[formi] is processed as though all the forms are preceded by
-  ~c[:]~ilc[set-raw-mode]~c[ t].  Thus, the forms need not be ~il[events]; they
-  need not even be legal ACL2 forms.  ~l[set-raw-mode] for a discussion of the
-  so-called ``raw mode'' under which the forms are evaluated ~-[] unless raw
-  mode is disabled by one of the forms, for example, ~c[(set-raw-mode nil)], in
-  which case evaluation resumes in non-raw mode.
+; ":Doc-Section hacker
+; 
+; embed some raw lisp code as an event.~/
 
-  WARNING: Thus, an ~c[in-raw-mode] form is potentially very dangerous!  For
-  example, you can use it to call the Common Lisp ~c[load] function to load
-  arbitrary Common Lisp code, perhaps even overwriting definitions of ACL2
-  system functions!  Thus, as with ~ilc[set-raw-mode], ~ilc[in-raw-mode] may
-  not be evaluated unless there is an active trust tag in effect.  ~l[defttag].
+; ~bv[]
+; Example Form:
+; (in-raw-mode
+;   (format t \"Preparing to load file...~~%\")
+;   (load \"my-file.lisp\"))~/
 
-  Note that the normal undoing mechanism (~pl[ubt]) is not supported when raw
-  mode is used.
-  ~/"
+; General Form:
+; (in-raw-mode form1 form2 ... formk)
+; ~ev[]
+; where each ~c[formi] is processed as though all the forms are preceded by
+; ~c[:]~ilc[set-raw-mode]~c[ t].  Thus, the forms need not be ~il[events]; they
+; need not even be legal ACL2 forms.  ~l[set-raw-mode] for a discussion of the
+; so-called ``raw mode'' under which the forms are evaluated ~-[] unless raw
+; mode is disabled by one of the forms, for example, ~c[(set-raw-mode nil)], in
+; which case evaluation resumes in non-raw mode.
+
+; WARNING: Thus, an ~c[in-raw-mode] form is potentially very dangerous!  For
+; example, you can use it to call the Common Lisp ~c[load] function to load
+; arbitrary Common Lisp code, perhaps even overwriting definitions of ACL2
+; system functions!  Thus, as with ~ilc[set-raw-mode], ~ilc[in-raw-mode] may
+; not be evaluated unless there is an active trust tag in effect.  ~l[defttag].
+
+; Note that the normal undoing mechanism (~pl[ubt]) is not supported when raw
+; mode is used.
+; ~/"
   `(progn! (with-output :off observation (set-raw-mode-on state))
            (progn
              ,@form-lst
@@ -474,11 +514,15 @@
 
 ; for export
 (defmacro with-raw-mode (&rest args)
-  ":Doc-Section hacker
-  
-  embed some raw lisp code as an event.
-  ~/~/
-  Same as ~c[in-raw-mode]. ~l[in-raw-mode]."
+
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file dillinger-et-al-xdoc.lisp.
+
+; ":Doc-Section hacker
+; 
+; embed some raw lisp code as an event.
+; ~/~/
+; Same as ~c[in-raw-mode]. ~l[in-raw-mode]."
   `(in-raw-mode . ,args))
 
 
@@ -486,28 +530,32 @@
 
 ; for export
 (defmacro ensure-program-only-flag (&rest fn-lst)
-  ":Doc-Section hacker
-  
-  ensure that given function names remain in :PROGRAM mode.~/
 
-  ~bv[]
-  Example Form:
-  (ensure-program-only-flag my-fn your-fn)~/
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file dillinger-et-al-xdoc.lisp.
 
-  General Form:
-  (ensure-program-only-flag fn1 fn2 ... fnk)
-  ~ev[]
-  where each ~c[fni] is a literal symbol which should have a ~ilc[program] mode
-  definition. Each ~c[fni] not already flagged as \"program only\" is flagged
-  as such.  This prevents it from being migrated to ~ilc[logic] mode or being 
-  used in a macro.
-  
-  This is a pseudo-event, meaning it can be used in an event context but does
-  not (ever) change the world.
-  
-  Note that the normal undoing mechanism (~pl[ubt]) does not undo the effects
-  of this pseudo-event.
-  ~/"
+; ":Doc-Section hacker
+; 
+; ensure that given function names remain in :PROGRAM mode.~/
+
+; ~bv[]
+; Example Form:
+; (ensure-program-only-flag my-fn your-fn)~/
+
+; General Form:
+; (ensure-program-only-flag fn1 fn2 ... fnk)
+; ~ev[]
+; where each ~c[fni] is a literal symbol which should have a ~ilc[program] mode
+; definition. Each ~c[fni] not already flagged as \"program only\" is flagged
+; as such.  This prevents it from being migrated to ~ilc[logic] mode or being 
+; used in a macro.
+; 
+; This is a pseudo-event, meaning it can be used in an event context but does
+; not (ever) change the world.
+; 
+; Note that the normal undoing mechanism (~pl[ubt]) does not undo the effects
+; of this pseudo-event.
+; ~/"
   (declare (xargs :guard (and fn-lst
                               (symbol-listp fn-lst))))
   `(progn!=touchable :vars program-fns-with-raw-code
@@ -527,23 +575,27 @@
 
 ; for export
 (defmacro assert-program-mode (&rest fn-lst)
-  ":Doc-Section hacker
-  
-  assert that given symbols name :PROGRAM mode functions.~/
 
-  ~bv[]
-  Example Form:
-  (assert-program-mode my-fn your-fn)~/
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file dillinger-et-al-xdoc.lisp.
 
-  General Form:
-  (assert-program-mode fn1 fn2 ... fnk)
-  ~ev[]
-  where each ~c[fni] is a literal symbol which should have a ~ilc[program] mode
-  definition. An error is raised if any ~c[fni] is not a program mode function.
-  
-  This is a pseudo-event, meaning it can be used in an event context but does
-  not (ever) change the world.
-  ~/"
+; ":Doc-Section hacker
+; 
+; assert that given symbols name :PROGRAM mode functions.~/
+
+; ~bv[]
+; Example Form:
+; (assert-program-mode my-fn your-fn)~/
+
+; General Form:
+; (assert-program-mode fn1 fn2 ... fnk)
+; ~ev[]
+; where each ~c[fni] is a literal symbol which should have a ~ilc[program] mode
+; definition. An error is raised if any ~c[fni] is not a program mode function.
+; 
+; This is a pseudo-event, meaning it can be used in an event context but does
+; not (ever) change the world.
+; ~/"
   (declare (xargs :guard (and fn-lst
                               (symbol-listp fn-lst))))
   `(assert-event
@@ -554,32 +606,36 @@
 
 ; for export
 (defmacro ensure-program-only (&rest fn-lst)
-  ":Doc-Section hacker
-  
-  ensure that named functions are and remain in :PROGRAM mode.~/
 
-  ~bv[]
-  Example Form:
-  (ensure-program-only my-fn your-fn)~/
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file dillinger-et-al-xdoc.lisp.
 
-  General Form:
-  (ensure-program-only fn1 fn2 ... fnk)
-  ~ev[]
-  where each ~c[fni] is a literal symbol which should have a ~ilc[program] mode
-  definition. An error is raised if any ~c[fni] is not a program mode function.
-  Also, each ~c[fni] not already flagged as \"program only\" is flagged
-  as such.  This prevents it from being migrated to ~ilc[logic] mode or being 
-  used in a macro.
-  
-  This is actually a combination of ~ilc[assert-program-mode] and
-  ~ilc[ensure-program-only-flag].
-  
-  This is a pseudo-event, meaning it can be used in an event context but does
-  not (ever) change the world.
-  
-  Note that the normal undoing mechanism (~pl[ubt]) does not undo the effects
-  of this pseudo-event.
-  ~/"
+; ":Doc-Section hacker
+; 
+; ensure that named functions are and remain in :PROGRAM mode.~/
+
+; ~bv[]
+; Example Form:
+; (ensure-program-only my-fn your-fn)~/
+
+; General Form:
+; (ensure-program-only fn1 fn2 ... fnk)
+; ~ev[]
+; where each ~c[fni] is a literal symbol which should have a ~ilc[program] mode
+; definition. An error is raised if any ~c[fni] is not a program mode function.
+; Also, each ~c[fni] not already flagged as \"program only\" is flagged
+; as such.  This prevents it from being migrated to ~ilc[logic] mode or being 
+; used in a macro.
+; 
+; This is actually a combination of ~ilc[assert-program-mode] and
+; ~ilc[ensure-program-only-flag].
+; 
+; This is a pseudo-event, meaning it can be used in an event context but does
+; not (ever) change the world.
+; 
+; Note that the normal undoing mechanism (~pl[ubt]) does not undo the effects
+; of this pseudo-event.
+; ~/"
   (declare (xargs :guard (and fn-lst
                               (symbol-listp fn-lst))))
   `(progn (assert-program-mode . ,fn-lst)
@@ -850,29 +906,33 @@
 
 ; for export
 (defmacro ensure-special-raw-definition-flag (&rest fn-lst)
-  ":Doc-Section hacker
-  
-  ensure that named functions are flagged as having special raw definitions.~/
 
-  ~bv[]
-  Example Form:
-  (ensure-special-raw-definition-flag my-fn your-fn)~/
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file dillinger-et-al-xdoc.lisp.
 
-  General Form:
-  (ensure-special-raw-definition-flag fn1 fn2 ... fnk)
-  ~ev[]
-  where each ~c[fni] is a literal symbol which should have a function
-  definition. Each ~c[fni] not already flagged as having a special raw
-  definition is flagged as such.  This idicates to interested parties that
-  the \"loop\" definition of the function doesn't fully characterize the
-  effects it has in raw lisp.
-  
-  This is a pseudo-event, meaning it can be used in an event context but does
-  not (ever) change the world.
-  
-  Note that the normal undoing mechanism (~pl[ubt]) does not undo the effects
-  of this pseudo-event.
-  ~/"
+; ":Doc-Section hacker
+; 
+; ensure that named functions are flagged as having special raw definitions.~/
+
+; ~bv[]
+; Example Form:
+; (ensure-special-raw-definition-flag my-fn your-fn)~/
+
+; General Form:
+; (ensure-special-raw-definition-flag fn1 fn2 ... fnk)
+; ~ev[]
+; where each ~c[fni] is a literal symbol which should have a function
+; definition. Each ~c[fni] not already flagged as having a special raw
+; definition is flagged as such.  This idicates to interested parties that
+; the \"loop\" definition of the function doesn't fully characterize the
+; effects it has in raw lisp.
+; 
+; This is a pseudo-event, meaning it can be used in an event context but does
+; not (ever) change the world.
+; 
+; Note that the normal undoing mechanism (~pl[ubt]) does not undo the effects
+; of this pseudo-event.
+; ~/"
   (declare (xargs :guard (and fn-lst
                               (symbol-listp fn-lst))))
   `(progn!=touchable :vars has-special-raw-definition
@@ -880,24 +940,28 @@
 
 ; for export
 (defmacro assert-no-special-raw-definition (&rest fn-lst)
-  ":Doc-Section hacker
-  
-  assert that given symbols do not have a special raw function definition.~/
 
-  ~bv[]
-  Example Form:
-  (assert-no-special-raw-definition my-fn your-fn)~/
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form in file dillinger-et-al-xdoc.lisp.
 
-  General Form:
-  (assert-no-special-raw-definition fn1 fn2 ... fnk)
-  ~ev[]
-  where each ~c[fni] is a literal symbol.  An error is raised if any ~c[fni]
-  is is flagged as having a special raw definition.
-  ~l[ensure-special-raw-definition-flag].
-  
-  This is a pseudo-event, meaning it can be used in an event context but does
-  not (ever) change the world.
-  ~/"
+; ":Doc-Section hacker
+; 
+; assert that given symbols do not have a special raw function definition.~/
+
+; ~bv[]
+; Example Form:
+; (assert-no-special-raw-definition my-fn your-fn)~/
+
+; General Form:
+; (assert-no-special-raw-definition fn1 fn2 ... fnk)
+; ~ev[]
+; where each ~c[fni] is a literal symbol.  An error is raised if any ~c[fni]
+; is is flagged as having a special raw definition.
+; ~l[ensure-special-raw-definition-flag].
+; 
+; This is a pseudo-event, meaning it can be used in an event context but does
+; not (ever) change the world.
+; ~/"
   (declare (xargs :guard (and fn-lst
                               (symbol-listp fn-lst))))
   `(assert-event

@@ -1,3 +1,4 @@
+; Instantiate hint
 ; Copyright (C) 2012 Centaur Technology
 ;
 ; Contact:
@@ -28,14 +29,93 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-
-
-
-
 (include-book "unify-subst")
 (include-book "tools/flag" :dir :system)
 (include-book "tools/bstar" :dir :system)
 
+(defxdoc instantiate-thm-for-matching-terms
+  :parents (computed-hints)
+  :short "A computed hint which produces :use hints of the given theorem, based
+on occurences of a pattern in the current goal clause."
+
+  :long "<p>Syntax: @(call instantiate-thm-for-matching-terms).</p>
+
+<p>Arguments: THM is a theorem/definition name or rune, SUBST is a list of
+pairs such as</p>
+
+@({
+   ((var1 sub1)
+    (var2 sub2) ... )
+})
+
+<p>where each vari is a variable name and each sub1 is a term, usually
+containing free variables that are also free in PATTERN, and PATTERN is a
+pattern (pseudo-term) to be matched against the clause.</p>
+
+<p>We translate the PATTERN and each term in the SUBST, so it's ok to use
+macros etc. within them.</p>
+
+<p>For each subterm of CLAUSE that matches PATTERN, the unifying substitution
+is computed and applied to each of the subi terms in the SUBST.</p>
+
+<p>For example, if I have some theorem FOO-BOUND, such as:</p>
+
+@({
+    (defthm foo-bound
+      (< (foo a b) (max (g a) (g b))))
+})
+
+<p>and I'm proving the goal:</p>
+
+@({
+   (implies (and (p (foo (bar z) (baz q)))
+                 (q (bar z) (buz y)))
+            (r (foo (baz q) (bar y))))
+})
+
+<p>and I provide the computed hint</p>
+
+@({
+    (instantiate-thm-for-matching-terms foo-bound
+                                        ((a c) (b d))
+                                        (foo c d))
+})
+
+<p>this produces the hint:</p>
+
+@({
+    :use ((:instance foo-bound
+           (a (bar z)) (b (baz q)))
+          (:instance foo-bound
+           (a (baz q)) (b (bar y))))
+})
+
+<p>The process by which this happens: The provided pattern @('(foo c d)') is
+matched against the clause, which contains two unifying instances,</p>
+
+@({
+    c -> (bar z), d -> (baz q)
+})
+
+<p>and</p>
+
+@({
+    c -> (baz q), d -> (bar y).
+})
+
+<p>These two unifying substitutions are applied to the user-provided
+ substitution @('((a c) (b d))') to obtain the two instantiations.</p>
+
+<p>Note: you may want to qualify this computed hint with
+STABLE-UNDER-SIMPLIFICATIONP or other conditions, and perhaps disable the
+theorem used.  For example:</p>
+
+@({
+    :hints ((and stable-under-simplificationp
+                 (let ((res (instantiate-thm-for-matching-terms
+                             foo-bound ((a c) (b d)) (foo c d))))
+                   (and res (append res '(:in-theory (disable foo-bound)))))))
+})")
 
 (mutual-recursion
  (defun find-matching-terms (pattern restr x)
@@ -119,7 +199,7 @@
        ((cmp rest)
         (translate-restr-for-instantiate (cdr restr) state)))
     (value-cmp (cons (cons (caar restr) tterm) rest))))
-            
+
 
 (defun instantiate-thm-for-matching-terms-fn (thm subst pattern restr clause state)
   (b* (((mv ctx pattern)
@@ -147,79 +227,6 @@
        ((unless matches) nil))
     `(:use ,(make-insts-for-matches thm subst matches))))
 
-
 (defmacro instantiate-thm-for-matching-terms (thm subst pattern &key restrict)
-  ":doc-section computed-hints
-A computed hint which produces :use hints of the given theorem based on
-occurences of a pattern in the current goal clause.~/
-
-Arguments: THM is a theorem/definition name or rune,
-SUBST is a list of pairs such as
-~bv[]
- ((var1 sub1)
-  (var2 sub2) ... )
-~ev[]
-where each vari is a variable name and each sub1 is a term, usually containing
-free variables that are also free in PATTERN,
-and PATTERN is a pattern (pseudo-term) to be matched against the clause.
-
-We translate the PATTERN and each term in the SUBST, so it's ok to use macros
-etc. within them.
-
-For each subterm of CLAUSE that matches PATTERN, the unifying
-substitution is computed and applied to each of the subi terms
-in the SUBST.~/
-
-For example, if I have some theorem FOO-BOUND, such as:
-~bv[]
- (defthm foo-bound
-  (< (foo a b) (max (g a) (g b))))
-~ev[]
-
-and I'm proving the goal:
-~bv[]
- (implies (and (p (foo (bar z) (baz q)))
-               (q (bar z) (buz y)))
-          (r (foo (baz q) (bar y))))
-~ev[]
-
-and I provide the computed hint
-~bv[]
- (instantiate-thm-for-matching-terms
-   foo-bound
-   ((a c) (b d))
-   (foo c d))
-~ev[]
-this produces the hint:
-~bv[]
- :use ((:instance foo-bound
-        (a (bar z)) (b (baz q)))
-       (:instance foo-bound
-        (a (baz q)) (b (bar y))))
-~ev[]
-
-The process by which this happens:  The provided pattern
- ~c[(foo c d)] is matched against the clause, which contains
-two unifying instances,
-~bv[]
-  c -> (bar z), d -> (baz q)
-~ev[]
-and
-~bv[]
-  c -> (baz q), d -> (bar y).
-~ev[]
-These two unifying substitutions are applied to the user-provided substitution
- ~c[((a c) (b d))] to obtain the two instantiations.
-
-Note: you may want to qualify this computed hint with
-STABLE-UNDER-SIMPLIFICATIONP or other conditions, and perhaps disable the
-theorem used.  For example:
-~bv[]
- :hints ((and stable-under-simplificationp
-              (let ((res (instantiate-thm-for-matching-terms
-                          foo-bound ((a c) (b d)) (foo c d))))
-                (and res (append res '(:in-theory (disable foo-bound)))))))
-~ev[]
-~/"
   `(instantiate-thm-for-matching-terms-fn
     ',thm ',subst ',pattern ',restrict clause state))

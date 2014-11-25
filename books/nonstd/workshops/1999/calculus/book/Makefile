@@ -14,3 +14,4 @@ top-with-meta.cert: top-with-meta.lisp
 top-with-meta.cert: ../../../../../arithmetic/top-with-meta.cert
 
 proof-outline.lisp: tree.lisp
+

@@ -75,18 +75,77 @@
     (add-tracing guard-sub-untrans)))
 
 (defmacro debug-guards (form)
-  ":Doc-Section Miscellaneous
 
-  identify the cause of a guard violation. ~/
+;;; The following legacy doc string was replaced Nov. 2014 by the
+;;; auto-generated defxdoc form just below.
 
-  If a function has an elaborate guard, it may be difficult to tell which
-  part of the guard is being violated when a guard violation occurs.  The
-  ~c[debug-guards] function may be useful in identifying the problem. ~/
+; ":Doc-Section Miscellaneous
 
-  Below is a trivial example.  We define a function with several inputs
-  and require that each input be a natural.
+; identify the cause of a guard violation. ~/
 
-  ~bv[]
+; If a function has an elaborate guard, it may be difficult to tell which
+; part of the guard is being violated when a guard violation occurs.  The
+; ~c[debug-guards] function may be useful in identifying the problem. ~/
+
+; Below is a trivial example.  We define a function with several inputs
+; and require that each input be a natural.
+
+; ~bv[]
+;   ACL2 !> (defun f (a b c d e)
+;             (declare (xargs :guard (and (natp a)
+;                                         (natp b)
+;                                         (natp c)
+;                                         (natp d)
+;                                         (natp e))))
+;             (list a b c d e))
+; ~ev[]
+
+; We can now use debug-guards to see what would happen when we try to
+; run this function on various arguments.  For example, perhaps we do
+; not realize that the symbol d is not a natural.  Then, debug-guards
+; will show us why this function call will fail:
+
+; ~bv[]
+;   ACL2 !> (debug-guards '(f 1 2 3 d 5))
+;   (NATP 1) ==> T
+;   (NATP 2) ==> T
+;   (NATP 3) ==> T
+;   (NATP 'D) ==> NIL
+;   (AND (NATP 1) (NATP 2) (NATP 3) (NATP 'D) (NATP 5)) ==> NIL
+; ~ev[]
+
+; The argument to debug-guards should be a quoted function call, but
+; you can also perform evaluation ahead of time, e.g., using ~c[list]
+; as follows:
+
+; ~bv[]
+;   ACL2 !> (defconst *d* 'd)
+
+;   ACL2 !> (debug-guards (list 'f 1 2 3 *d* 5))
+;   (NATP 1) ==> T
+;   (NATP 2) ==> T
+;   (NATP 3) ==> T
+;   (NATP 'D) ==> NIL
+;   (AND (NATP 1) (NATP 2) (NATP 3) (NATP 'D) (NATP 5)) ==> NIL
+; ~ev[]
+; ~/"
+  `(let ((dbg-form (debug-guards-fn ,form (w state))))
+     (er-progn (trans-eval dbg-form 'debug-guards state)
+	       (value :invisible))))
+
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc debug-guards
+  :parents (miscellaneous)
+  :short "Identify the cause of a guard violation."
+  :long "<p>If a function has an elaborate guard, it may be difficult to tell
+ which part of the guard is being violated when a guard violation occurs.  The
+ @('debug-guards') function may be useful in identifying the problem.</p>
+
+ <p>Below is a trivial example.  We define a function with several inputs and
+ require that each input be a natural.</p>
+
+ @({
     ACL2 !> (defun f (a b c d e)
               (declare (xargs :guard (and (natp a)
                                           (natp b)
@@ -94,27 +153,26 @@
                                           (natp d)
                                           (natp e))))
               (list a b c d e))
-  ~ev[]
+ })
 
-  We can now use debug-guards to see what would happen when we try to
-  run this function on various arguments.  For example, perhaps we do
-  not realize that the symbol d is not a natural.  Then, debug-guards
-  will show us why this function call will fail:
+ <p>We can now use debug-guards to see what would happen when we try to run
+ this function on various arguments.  For example, perhaps we do not realize
+ that the symbol d is not a natural.  Then, debug-guards will show us why this
+ function call will fail:</p>
 
-  ~bv[]
+ @({
     ACL2 !> (debug-guards '(f 1 2 3 d 5))
     (NATP 1) ==> T
     (NATP 2) ==> T
     (NATP 3) ==> T
     (NATP 'D) ==> NIL
     (AND (NATP 1) (NATP 2) (NATP 3) (NATP 'D) (NATP 5)) ==> NIL
-  ~ev[]
+ })
 
-  The argument to debug-guards should be a quoted function call, but
-  you can also perform evaluation ahead of time, e.g., using ~c[list]
-  as follows:
+ <p>The argument to debug-guards should be a quoted function call, but you can
+ also perform evaluation ahead of time, e.g., using @('list') as follows:</p>
 
-  ~bv[]
+ @({
     ACL2 !> (defconst *d* 'd)
 
     ACL2 !> (debug-guards (list 'f 1 2 3 *d* 5))
@@ -123,8 +181,6 @@
     (NATP 3) ==> T
     (NATP 'D) ==> NIL
     (AND (NATP 1) (NATP 2) (NATP 3) (NATP 'D) (NATP 5)) ==> NIL
-  ~ev[]
-  ~/"
-  `(let ((dbg-form (debug-guards-fn ,form (w state))))
-     (er-progn (trans-eval dbg-form 'debug-guards state)
-	       (value :invisible))))
+ })
+
+ ")

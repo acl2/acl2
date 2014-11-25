@@ -162,20 +162,24 @@
 (dis+ind q-and)
 
 (defun q-no-conflicts (x list)
-  ":Doc-Section TASPI
-   Determines if bipartition x is consistent with each of those in list. ~/
-   ~/
-   Arguments: 
-     (1) x - a bipartition                                                
-     (2) list - a list of bipartitions
 
-   Details: Set operations are used to determine if the bipartition x does not
-            conflict with each of the bipartitions in list.  Bipartitions must
-            be bdd based (as opposed to list based) and the underlying taxa list
-            must be preserved between x and each member of list. 
-            The bipartitions are assumed to be ordered such that no bipartition
-            x following y in list exists such that y is a subset of x and x=/y.
-            See also no-conflicts (list based)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Determines if bipartition x is consistent with each of those in list. ~/
+;  ~/
+;  Arguments: 
+;    (1) x - a bipartition                                                
+;    (2) list - a list of bipartitions
+
+;  Details: Set operations are used to determine if the bipartition x does not
+;           conflict with each of the bipartitions in list.  Bipartitions must
+;           be bdd based (as opposed to list based) and the underlying taxa list
+;           must be preserved between x and each member of list. 
+;           The bipartitions are assumed to be ordered such that no bipartition
+;           x following y in list exists such that y is a subset of x and x=/y.
+;           See also no-conflicts (list based)."
   (declare (xargs :guard t))
   (if (consp list)
       (if (q-and x (car list))
@@ -199,19 +203,23 @@
 (dis+ind q-no-conflicts)
 
 (defun q-no-conflicts-gen (x list)
-  ":Doc-Section TASPI
-   Determines if bipartition x is consistent with each of those in list. ~/
-   ~/
-   Arguments: 
-     (1) x - a bipartition                                                
-     (2) list - a list of bipartitions
 
-   Details: Set operations are used to determine if the bipartition x does not
-            conflict with each of the bipartitions in list.  Bipartitions must
-            be bdd based (as opposed to list based) and the underlying taxa list
-            must be preserved between x and each member of list. 
-            Assumes no ordering of bipartitions in list.
-            See also q-no-conflicts."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Determines if bipartition x is consistent with each of those in list. ~/
+;  ~/
+;  Arguments: 
+;    (1) x - a bipartition                                                
+;    (2) list - a list of bipartitions
+
+;  Details: Set operations are used to determine if the bipartition x does not
+;           conflict with each of the bipartitions in list.  Bipartitions must
+;           be bdd based (as opposed to list based) and the underlying taxa list
+;           must be preserved between x and each member of list. 
+;           Assumes no ordering of bipartitions in list.
+;           See also q-no-conflicts."
   (declare (xargs :guard t))
   (if (consp list)
       (if (q-and x (car list))
@@ -222,19 +230,23 @@
     t))
 
 (defun q-no-conflicts-list (list)
-   ":Doc-Section TASPI
-   Determines if the list of bipartitions list is consistent. ~/
-   ~/
-   Arguments: 
-     (1) list - a list of bipartitions
 
-   Details: Set operations are used to determine if the list of bipartitions 
-            do not conflict.  Bipartitions must be list based (as opposed to
-            bdd based), and an underlying taxa list must be preserved between
-            every pair of bipartitions in the list. The bipartitions are 
-            assumed to be ordered such that no bipartition x following y in
-            list exists such that y is a subset of x and x=/y.
-            See also no-conflicts-list (list based) and q-no-conflicts-list-gen."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;  Determines if the list of bipartitions list is consistent. ~/
+;  ~/
+;  Arguments: 
+;    (1) list - a list of bipartitions
+
+;  Details: Set operations are used to determine if the list of bipartitions 
+;           do not conflict.  Bipartitions must be list based (as opposed to
+;           bdd based), and an underlying taxa list must be preserved between
+;           every pair of bipartitions in the list. The bipartitions are 
+;           assumed to be ordered such that no bipartition x following y in
+;           list exists such that y is a subset of x and x=/y.
+;           See also no-conflicts-list (list based) and q-no-conflicts-list-gen."
   (declare (xargs :guard t))
   (if (consp list)
       (and (q-no-conflicts (car list) (cdr list))
@@ -254,18 +266,22 @@
 (dis+ind q-no-conflicts-list)
 
 (defun q-no-conflicts-list-gen (list)
-   ":Doc-Section TASPI
-   Determines if the list of bipartitions list is consistent. ~/
-   ~/
-   Arguments: 
-     (1) list - a list of bipartitions
 
-   Details: Set operations are used to determine if the list of bipartitions 
-            do not conflict.  Bipartitions must be list based (as opposed to
-            bdd based), and an underlying taxa list must be preserved between
-            every pair of bipartitions in the list. No ordering on the 
-            bipartitions is assumed.
-            See also q-no-conflicts-list."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;  Determines if the list of bipartitions list is consistent. ~/
+;  ~/
+;  Arguments: 
+;    (1) list - a list of bipartitions
+
+;  Details: Set operations are used to determine if the list of bipartitions 
+;           do not conflict.  Bipartitions must be list based (as opposed to
+;           bdd based), and an underlying taxa list must be preserved between
+;           every pair of bipartitions in the list. No ordering on the 
+;           bipartitions is assumed.
+;           See also q-no-conflicts-list."
   (declare (xargs :guard t))
   (if (consp list)
       (and (q-no-conflicts-gen (car list) (cdr list))
@@ -274,15 +290,19 @@
 
 ; Finds bipartitions in l that refine bipartition tree.
 (defun subtrees-implying (branch l)
-  ":Doc-Section TASPI
-   Returns bipartitions that refine a tree *below* the branch given.~/
-   ~/
-   Arguments:
-      (1) branch - a bdd based bipartition
-      (2) l - a list of bdd based bipartitions
 
-   Details: All bipartitions must be based on the same taxa list.  
-            *Below* is defined in terms of the rooting given by taxa list."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns bipartitions that refine a tree *below* the branch given.~/
+;  ~/
+;  Arguments:
+;     (1) branch - a bdd based bipartition
+;     (2) l - a list of bdd based bipartitions
+
+;  Details: All bipartitions must be based on the same taxa list.  
+;           *Below* is defined in terms of the rooting given by taxa list."
   (declare (xargs :guard t))
   (cond ((atom l) nil)
         ((qs-subset (car l) branch)
@@ -305,15 +325,19 @@
 (dis+ind subtrees-implying)
 
 (defun subtrees-not-implying (branch l)
-   ":Doc-Section TASPI
-   Returns bipartitions that are not *below* the branch given.~/
-   ~/
-   Arguments:
-      (1) branch - a bdd based bipartition
-      (2) l - a list of bdd based bipartitions
 
-   Details: All bipartitions must be based on the same taxa list.  
-            *Below* is defined in terms of the rooting given by taxa list."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;  Returns bipartitions that are not *below* the branch given.~/
+;  ~/
+;  Arguments:
+;     (1) branch - a bdd based bipartition
+;     (2) l - a list of bdd based bipartitions
+
+;  Details: All bipartitions must be based on the same taxa list.  
+;           *Below* is defined in terms of the rooting given by taxa list."
   (declare (xargs :guard t))
   (cond ((atom l) nil)
         ((not (qs-subset (car l) branch))

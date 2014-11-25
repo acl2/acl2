@@ -84,20 +84,24 @@
                     'Error))))))
 
 (defun spr-search (seqs num-rearrangements cssl-map matrix)
-  ":Doc-Section TASPI
-   Searches for the maximum parsimony trees using spr rearrangements.~/
-   ~/
-   Arguments:
-     (1) seqs - a set of sequences
-     (2) num-rearrangements - a limit to the number of rearrangements to try
-     (3) cssl-map -  An alist mapping every character state to a  
-                     list containing one element (either 0 or nil 
-                     for infinity) for each unambiguous state   
-     (4) matrix - A mapping of unambiguous character states to 
-                  transition costs.                           
 
-   Details: Builds a few starting trees, starts from best of these and keeps
-            best trees found at each iteration to search from next."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Searches for the maximum parsimony trees using spr rearrangements.~/
+;  ~/
+;  Arguments:
+;    (1) seqs - a set of sequences
+;    (2) num-rearrangements - a limit to the number of rearrangements to try
+;    (3) cssl-map -  An alist mapping every character state to a  
+;                    list containing one element (either 0 or nil 
+;                    for infinity) for each unambiguous state   
+;    (4) matrix - A mapping of unambiguous character states to 
+;                 transition costs.                           
+
+;  Details: Builds a few starting trees, starts from best of these and keeps
+;           best trees found at each iteration to search from next."
   (declare (xargs :guard (and (natp num-rearrangements)
                               (valid-sequences-same-length seqs)
                               (charstate-scorelist-map-p cssl-map (len matrix))
@@ -193,20 +197,24 @@
                     'Error))))))
 
 (defun tbr-search (seqs num-rearrangements cssl-map matrix)
-  ":Doc-Section TASPI
-   Searches for the maximum parsimony trees using tbr rearrangements.~/
-   ~/
-   Arguments:
-     (1) seqs - a set of sequences
-     (2) num-rearrangements - a limit to the number of rearrangements to try
-     (3) cssl-map -  An alist mapping every character state to a  
-                     list containing one element (either 0 or nil 
-                     for infinity) for each unambiguous state   
-     (4) matrix - A mapping of unambiguous character states to 
-                  transition costs.                           
 
-   Details: Builds a few starting trees, starts from best of these and keeps
-            best trees found at each iteration to search from next."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Searches for the maximum parsimony trees using tbr rearrangements.~/
+;  ~/
+;  Arguments:
+;    (1) seqs - a set of sequences
+;    (2) num-rearrangements - a limit to the number of rearrangements to try
+;    (3) cssl-map -  An alist mapping every character state to a  
+;                    list containing one element (either 0 or nil 
+;                    for infinity) for each unambiguous state   
+;    (4) matrix - A mapping of unambiguous character states to 
+;                 transition costs.                           
+
+;  Details: Builds a few starting trees, starts from best of these and keeps
+;           best trees found at each iteration to search from next."
   (declare (xargs :guard (and (natp num-rearrangements)
                               (valid-sequences-same-length seqs)
                               (charstate-scorelist-map-p cssl-map (len matrix))

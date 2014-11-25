@@ -1015,17 +1015,6 @@
           (declare (ignore erp state))
           val))
 
-(defvar *acl2-gentemp-counter* 0)
-(defun-one-output acl2-gentemp (root)
-  (let ((acl2-pkg (find-package "ACL2")))
-    (loop
-     (let ((name (coerce (packn1 (list root *acl2-gentemp-counter*)) 'string)))
-       (if (not (find-symbol name acl2-pkg))
-           (return (let ((ans (intern name acl2-pkg)))
-; See comment in intern-in-package-of-symbol for an explanation of this trick.
-                     ans))
-         (incf *acl2-gentemp-counter*))))))
-
 (defvar *ignore-invariant-risk*
 
 ; In oneify-cltl-code we handle an "invariant-risk" that stobj invariants
@@ -1090,6 +1079,40 @@
                                     oneified-body)
                             (list oneified-body))))
                  (oneify-flet-bindings (cdr alist) fns w program-p)))))
+
+(defun remove-type-dcls (dcls)
+
+; Before we called this function in oneify, the following caused an error in
+; some Lisps (specifically, we have seen it in ACL2 Version_6.5 built on SBCL
+; Version 1.2.1).
+
+;   (defun f (x)
+;     (declare (xargs :guard (natp x)))
+;     (let ((y (1+ x)))
+;       (declare (type (integer 0 *) y))
+;       y))
+;   (set-guard-checking nil)
+;   (f -3)
+
+  (loop for dcl in dcls
+        collect
+        (assert$
+         (and (consp dcl)
+              (eq (car dcl) 'declare))
+         (cond ((assoc-eq 'type (cdr dcl)) ; optimization
+                (cons 'declare
+                      (loop for d in (cdr dcl)
+                            collect
+                            (cond ((eq (car d) 'type)
+
+; Experiments in all supported Lisps suggest that duplicating ignorable
+; declarations doesn't produce a warning, so we keep it simple here by paying
+; no heed to whether we have already declared some of these variables
+; ignorable.
+
+                                   (cons 'ignorable (cddr d)))
+                                  (t d)))))
+               (t dcl)))))
 
 (defun-one-output oneify (x fns w program-p)
 
@@ -1261,10 +1284,11 @@
       `(mv-let ,(cadr x)
                ,value-form
 
-; We leave the DECLAREs in place so that the compiler can see the
-; IGNOREs at least.
+; We leave some of the DECLAREs in place, in particular so that the compiler
+; can see the IGNOREs.  But type declarations must be removed; see
+; remove-type-dcls.
 
-               ,@(butlast (cdddr x) 1)
+               ,@(remove-type-dcls (butlast (cdddr x) 1))
                ,body-form)))
 
 ;     Feb 8, 1995.  Once upon a time we had the following code here:
@@ -1346,7 +1370,7 @@
                            ,(oneify (cadr (cadr (cadr x))) fns w program-p)))))
         ,(listlis (strip-cars bindings)
                   value-forms)
-        ,@(butlast post-bindings 1)
+        ,@(remove-type-dcls (butlast post-bindings 1))
         ,body-form)))
    #+acl2-par
    ((member-eq (car x) '(pand por pargs))
@@ -6029,17 +6053,20 @@
          (maybe-push-undo-stack 'memoize (cadr (cddr trip)))
          (let* ((tuple (cddr trip))
                 (cl-defun (nth 4 tuple)))
-           (assert$ cl-defun (memoize-fn (nth 1 tuple)
-                                         :condition  (nth 2 tuple)
-                                         :inline     (nth 3 tuple)
-                                         :cl-defun   cl-defun
-                                         :formals    (nth 5 tuple)
-                                         :stobjs-in  (nth 6 tuple)
-                                         :stobjs-out (nth 7 tuple)
-                                         :commutative (nth 9 tuple)
-                                         :forget     (nth 10 tuple)
-                                         :memo-table-init-size (nth 11 tuple)
-                                         :aokp       (nth 12 tuple)))))
+           (assert$ cl-defun
+                    (with-overhead
+                     (nth 13 tuple) ; stats
+                     (memoize-fn (nth 1 tuple)
+                                 :condition  (nth 2 tuple)
+                                 :inline     (nth 3 tuple)
+                                 :cl-defun   cl-defun
+                                 :formals    (nth 5 tuple)
+                                 :stobjs-in  (nth 6 tuple)
+                                 :stobjs-out (nth 7 tuple)
+                                 :commutative (nth 9 tuple)
+                                 :forget     (nth 10 tuple)
+                                 :memo-table-init-size (nth 11 tuple)
+                                 :aokp       (nth 12 tuple))))))
         #+hons
         (unmemoize
          (maybe-push-undo-stack 'unmemoize (cadr (cddr trip)))
@@ -6160,7 +6187,8 @@
    (strip-cars *user-stobj-alist*)
    wrld)
   #+hons
-  (update-memo-entries-for-attachments *defattach-fns* wrld state))
+  (update-memo-entries-for-attachments *defattach-fns* wrld state)
+  nil)
 
 (defun-one-output extend-world1 (name wrld)
 
@@ -6842,8 +6870,7 @@
   (move-current-acl2-world-key-to-front (w *the-live-state*))
   (checkpoint-world1 t (w *the-live-state*) *the-live-state*)
   #+hons
-  (progn (memoize-init)
-         (initialize-never-memoize-ht)
+  (progn (initialize-never-memoize-ht)
          (acl2h-init-memoizations)))
 
 (defun-one-output ld-alist-raw (standard-oi ld-skip-proofsp ld-error-action)
@@ -6876,6 +6903,7 @@
          (global-set 'boot-strap-pass-2 t (w *the-live-state*))
          *the-live-state*)
   (acl2-unwind *ld-level* nil)
+  #+hons (memoize-init) ; for memoize calls in boot-strap-pass-2.lisp
 
 ; We use an explicit call of LD-fn to change the defun-mode to :logic just to
 ; lay down an event in the pre-history, in case we someday want to poke around
@@ -6990,6 +7018,7 @@
            logic
            make-waterfall-parallelism-constants
            make-waterfall-printing-constants
+           memoize
            push
            reset-future-parallelism-variables
            set-invisible-fns-table
@@ -7549,7 +7578,13 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 (defun initialize-acl2 (&optional (pass-2-ld-skip-proofsp 'include-book)
                                   (acl2-pass-2-files *acl2-pass-2-files*)
                                   system-books-dir
-                                  skip-comp-exec)
+                                  skip-comp-exec
+                                  &aux
+
+; We avoid proclaiming types dynamically, instead doing so only via the
+; acl2-proclaims.lisp mechanism.  See the Essay on Proclaiming.
+
+                                  (*do-proclaims* nil))
 
 ; Note: if system-books-dir is supplied, it should be a Unix-style
 ; pathname (either absolute or not [doesn't matter which]).
@@ -7762,11 +7797,11 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; possible the subsidiary uses of state-global-let* on behalf of macroexpand1
 ; (see the comment in comp-fn for more information).
 
-     (if (not skip-comp-exec)
+     (unless skip-comp-exec
 
 ; Optimization: Skip this compile for generate-acl2-proclaims.
 
-         (ld '((comp-fn :exec nil "1" state))))
+       (ld '((comp-fn :exec nil "1" state))))
      (exit-boot-strap-mode)
      (initialize-pc-acl2 *the-live-state*)
 

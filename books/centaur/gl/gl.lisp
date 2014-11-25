@@ -678,8 +678,8 @@ auto-bindings).</p>"
                                          (evisc-symbolic-al (cadr acl2::arglist)))
                                 '(car acl2::arglist))
                       :exit ,(if show-values
-                                 '(if (general-concretep (nth 2 acl2::values))
-                                      (general-concrete-obj (nth 2 acl2::values))
+                                 '(if (general-concretep (nth 0 acl2::values))
+                                      (general-concrete-obj (nth 0 acl2::values))
                                     'acl2::???)
                                '(:fmt ""))))))
       ;; Now, if trace$ was an event, we could just use it as our expansion.
