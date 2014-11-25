@@ -117,6 +117,7 @@
 (include-book "centaur/misc/load-stobj-tests" :dir :system)
 (include-book "centaur/misc/count-up" :dir :system)
 (include-book "centaur/misc/fast-alist-pop" :dir :system)
+(include-book "centaur/misc/spacewalk" :dir :system)
 
 ;; BOZO conflicts with something in 4v-sexpr?
 
