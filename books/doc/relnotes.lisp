@@ -194,7 +194,7 @@ functional instantiation.</p>
 <p>The new tool, @(see def-saved-obligs), can be used to save proof obligations
 for an event as independent defthms.</p>
 
-<p>Many @(see legacy-documentation) topics have been rewritten into the @(see
+<p>All @(see legacy-documentation) topics have been rewritten into the @(see
 xdoc) format, as a step towards eventually eliminating the legacy documentation
 system.  This notably includes the @(see data-structures) and @(see ihs)
 libraries.</p>
