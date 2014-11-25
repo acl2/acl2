@@ -39,6 +39,7 @@
 
 (DEFUN S01_MUXED (N)
        (IF (EQL (LONGOP N) 0)
+;; Rager 11/2014: The rel9 version of comp1 is named lnot.
            (COMP1 (S01 N) 1)
            (S01 N)))
 
