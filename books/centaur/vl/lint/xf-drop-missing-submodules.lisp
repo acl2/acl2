@@ -92,7 +92,7 @@ transformation process.</p>")
        (nbad             (len dropped-insts))
        (missing-modnames (mergesort (vl-modinstlist->modnames dropped-insts)))
        (warnings (if (atom dropped-insts)
-                     warnings
+                     x.warnings
                    (fatal :type :vl-dropped-insts
                           :msg "Deleting ~x0 instance~s1 of undefined ~
                                 module~s2 ~&3. This may cause our analysis to ~
