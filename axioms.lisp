@@ -7682,7 +7682,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   `(progn$ ,@rst))
 
-; The Unwind-Protect Essay
+; Essay on Unwind-Protect
 
 ; We wish to define an ACL2 macro form:
 
@@ -8110,8 +8110,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; can pretty much return the latches we want, as long as it, indeed,
 ; contains the final values of all the stobjs.
 
-; This completes the unwind-protect essay.  There are some additional comments
-; in the code for EV.
+; This completes the Essay on Unwind-Protect.  There are some additional
+; comments in the code for EV.
 
 ; It is IMPERATIVE that the following macro, when-logic, is ONLY used when its
 ; second argument is a form that evaluates to an error triple.  Keep this

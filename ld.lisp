@@ -1498,11 +1498,11 @@
                       (WITH-INTERRUPTS
 
 ; We allow interrupts for the cleanup form.  This seems acceptable because of
-; how we handle ACL2 unwind-protects, calling ACL2-UNWIND; see The
-; Unwind-Protect Essay.  It also seems acceptable because some Lisps don't
-; disable interrupts during evaluation of unwind-protect cleanup forms, so we
-; expect to allow interrupts anyhow.  And it seems important to do so, in case
-; printing the gag-state needs to be interrupted; see the call of
+; how we handle ACL2 unwind-protects, calling ACL2-UNWIND; see The Essay on
+; Unwind-Protect.  It also seems acceptable because some Lisps don't disable
+; interrupts during evaluation of unwind-protect cleanup forms, so we expect to
+; allow interrupts anyhow.  And it seems important to do so, in case printing
+; the gag-state needs to be interrupted; see the call of
 ; print-pstack-and-gag-state in prove-loop0.
 
                        (COND

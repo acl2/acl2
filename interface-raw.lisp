@@ -5035,12 +5035,13 @@
 
 ; We need to be careful about handling interrupts.  On the one hand, we want to
 ; take advantage of the "idempotency" provided by acl2-unwind-protect that is
-; described in The Unwind-Protect Essay.  On the other hand, cleanup forms of
-; acl2-unwind-protect will be evaluated outside the scope of the bindings just
-; above.  Our solution is for an unwind-protect cleanup form to do nothing more
-; than save the above three hash tables -- which we expect can complete without
-; interruption, though we check for that in hcomp-restore-defs -- and then for
-; acl2-unwind-protect to do the actual cleanup using those saved values.
+; described in the Essay on Unwind-Protect.  On the other hand, cleanup forms
+; of acl2-unwind-protect will be evaluated outside the scope of the bindings
+; just above.  Our solution is for an unwind-protect cleanup form to do nothing
+; more than save the above three hash tables -- which we expect can complete
+; without interruption, though we check for that in hcomp-restore-defs -- and
+; then for acl2-unwind-protect to do the actual cleanup using those saved
+; values.
 
     (setq *saved-hcomp-restore-hts* nil)
     (acl2-unwind-protect

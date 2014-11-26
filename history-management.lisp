@@ -8150,9 +8150,9 @@
 (defun get-event (name wrld)
 
 ; This function returns nil when name was not introduced by an ACL2 event.  For
-; primitives without definitions, the absolute-event-number is 0 and, as laid
-; down in primordial-world, the corresponding event-tuple is (list
-; 'enter-boot-strap-mode operating-system).
+; primitives without definitions, we believe that the absolute-event-number is
+; 0 and, as laid down in primordial-world, the corresponding event-tuple is
+; (list 'enter-boot-strap-mode operating-system).
 
   (let ((index (getprop name 'absolute-event-number nil 'current-acl2-world wrld)))
     (and index

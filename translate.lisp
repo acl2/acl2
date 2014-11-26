@@ -1898,7 +1898,7 @@
 ; compiled and caused a hard lisp error.  Furthermore, if the evaluation of
 ; body is aborted, we ensure that the cleanup1 code is EV'd upon unwinding.
 
-; See the unwind-protect essay in axioms.lisp.
+; See the Essay on Unwind-Protect in axioms.lisp.
 
   (declare (xargs :guard (and (plist-worldp w)
                               (termp form w)
@@ -1939,7 +1939,7 @@
                   (cons "ev-rec-acl2-unwind-protect"
                         #'(lambda nil
 
-; The Unwind-Protect Essay says that we have the freedom to give arbitrary
+; The Essay on Unwind-Protect says that we have the freedom to give arbitrary
 ; semantics to acl2-unwind-protect in the face of an abort.  So in this raw
 ; Lisp code, we take the liberty of binding *ev-shortcut-okp* to t even though
 ; when this cleanup code is executed, we may violate the requirement that the
