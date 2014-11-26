@@ -76,13 +76,13 @@ if (!(ref($xdata) eq "HASH")) {
     exit(1);
 }
 
-if (-f "xdata.db") {
-    print "; Deleting old xdata.db.\n";
-    unlink("xdata.db");
+if (-f "xdata-seo.db") {
+    print "; Deleting old xdata-seo.db.\n";
+    unlink("xdata-seo.db");
 }
 
-print "; Creating new xdata.db.\n";
-my $dbh = DBI->connect("dbi:SQLite:dbname=xdata.db", "", "",
+print "; Creating new xdata-seo.db.\n";
+my $dbh = DBI->connect("dbi:SQLite:dbname=xdata-seo.db", "", "",
 		       {RaiseError=>1, AutoCommit=>0})
     or die $DBI::errstr;
 
