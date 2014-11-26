@@ -91,14 +91,17 @@ transformation process.</p>")
        ((mv dropped-insts new-genblob) (vl-genblob-drop-missing-submodules genblob ss nil))
        (nbad             (len dropped-insts))
        (missing-modnames (mergesort (vl-modinstlist->modnames dropped-insts)))
-       (warnings (fatal :type :vl-dropped-insts
-                        :msg "Deleting ~x0 instance~s1 of undefined module~s2 ~
-                              ~&3. This may cause our analysis to be flawed."
-                        :args (list nbad
-                                    (if (eql nbad 1) "" "s")
-                                    (if (vl-plural-p missing-modnames) "s" "")
-                                    missing-modnames)
-                        :acc x.warnings))
+       (warnings (if (atom dropped-insts)
+                     warnings
+                   (fatal :type :vl-dropped-insts
+                          :msg "Deleting ~x0 instance~s1 of undefined ~
+                                module~s2 ~&3. This may cause our analysis to ~
+                                be flawed."
+                          :args (list nbad
+                                      (if (eql nbad 1) "" "s")
+                                      (if (vl-plural-p missing-modnames) "s" "")
+                                      missing-modnames)
+                          :acc x.warnings)))
        (x-warn (change-vl-module x :warnings warnings)))
     (vl-genblob->module new-genblob x-warn)))
 

@@ -28,41 +28,140 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-function htmlEncode(value){
-    // copied from stackoverflow:1219860
-    return $('<div/>').text(value).html();
+function log(msg) {
+    "use strict";
+    if (window.console && console.log) {
+	console.log(msg);
+    }
 }
 
-function getParameterByName(name)
-{
+function assert(condition, message) {
+    "use strict";
+    // http://stackoverflow.com/questions/15313418/javascript-assert
+    if (!condition) {
+	message = message || "Assertion failed";
+	if (typeof Error !== "undefined") { throw new Error(message); }
+        throw message; // Fallback
+    }
+}
+
+function htmlEncode(value) {
+    "use strict";
+    // http://stackoverflow.com/questions/1219860/html-encoding-in-javascript-jquery
+    // http://jsperf.com/htmlencoderegex/17
+    return document.createElement('a').appendChild(document.createTextNode(value)).parentNode.innerHTML;
+}
+
+function getParameterByName(name) {
+    "use strict";
     name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
-    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
-        results = regex.exec(location.search);
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)");
+    var results = regex.exec(location.search);
     return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
-function niceDescriptionType(type)
-{
-    var niceType = (type == ":VL-MODULE") ? "module"
-                 : (type == ":VL-PACKAGE") ? "package"
-                 : (type == ":VL-INTERFACE") ? "interface"
-                 : (type == ":VL-TYPEDEF") ? "typedef"
-                 : (type == ":VL-PACKAGE") ? "package"
-                 : (type == ":VL-FUNDECL") ? "function"
-                 : (type == ":VL-PARAMDECL") ? "parameter"
-                 : type;
-    return niceType;
-}
-
-var BASE = getParameterByName("base");
+var BASE  = getParameterByName("base");
 var MODEL = getParameterByName("model");
+assert(BASE,  "Expected base parameter");
+assert(MODEL, "Expected model parameter");
 
-if (!BASE || !MODEL) {
-    window.location = "index.html";
+function vlsGetJson(query) {
+    "use strict";
+    // Specialized wrapper for $.get() with tweaks for VLS commands.
+    //   - Automatically fills in BASE and MODEL parameters
+    //   - Assumes GET queries unless you specify:            type: "post"
+    //   - Assumes the query is cacheable unless you specify: cache: false
+    //
+    // You can provide an optional ERROR callback with a single message
+    // argument, but most commands can use the default handler (it just dies).
+    //
+    // We assumes VLS-FAIL/VLS-SUCCESS semantics.  That is, we expect the
+    // resulting JSON object to have a ":ERROR" and ":VALUE" field.
+    //  - If the ":ERROR" field is set, we invoke the error handler.
+    //  - If the ":ERROR" field is NOT set, we invoke the success
+    //    function on the ":VALUE".
+    // The success callback therefore doesn't have to check for errors!
+    log("vlsGetJson: Running query: "); log(query);
+
+    assert(query,         "Null query?");
+    assert(query.url,     "Query needs a URL.");
+    assert(query.success, "Query has no success function?");
+
+    var type  = "type"  in query ? query.type  : "get";
+    var cache = "cache" in query ? query.cache : true;
+    var data  = "data"  in query ? query.data  : {};
+    assert(!("base" in data), "Query data shouldn't have its own 'base' parameter");
+    assert(!("model" in data), "Query data shouldn't have its own 'model' parameter");
+    data.base = BASE;
+    data.model = MODEL;
+
+    var userErrorCallback = "error" in query ? query.error : function(msg) {
+	var body = "<pre>Error running query " + JSON.stringify(query) + "\n\n" + htmlEncode(msg) + "</pre>";
+	$("body").html(body);
+    }
+
+    var ajaxQuery = { url: query.url,
+		      cache: cache,
+		      data: data,
+		      type: type,
+		      dataType: "json",
+		      success: function(data, textStatus, jqXHR) {
+			  assert(":ERROR" in data, "Query result has no :ERROR field");
+			  if (data[":ERROR"]) {
+			      userErrorCallback(data[":ERROR"]);
+			      return;
+			  }
+			  assert(":VALUE" in data, "Query result has no :VALUE field");
+			  query.success(data[":VALUE"]);
+		      },
+		      error: function(jqXHR, textStatus, errorThrown) {
+			  userErrorCallback("Error running query: " + textStatus + "\n" + errorThrown);
+		      }
+		    };
+    log("ajaxQuery: "); log(ajaxQuery);
+    $.ajax(ajaxQuery);
+}
+
+function vlsGetHtml(query) {
+    "use strict";
+    // Similar to vlsGetJson but meant for HTML requests.
+    assert(query,         "Null query?");
+    assert(query.url,     "Query needs a URL.");
+    assert(query.success, "Query has no success function?");
+
+    var type  = "type"  in query ? query.type  : "get";
+    var cache = "cache" in query ? query.cache : true;
+    var data  = "data"  in query ? query.data  : [];
+    assert(!("base" in data), "Query data shouldn't have its own 'base' parameter");
+    assert(!("model" in data), "Query data shouldn't have its own 'model' parameter");
+    data.base = BASE;
+    data.model = MODEL;
+
+    var userErrorCallback = "error" in query ? query.error : function(msg) {
+	var body = "<pre>Error running query " + JSON.stringify(query) + "\n\n" + htmlEncode(msg) + "</pre>";
+	$("body").html(body);
+    }
+
+    var ajaxQuery = { url: query.url,
+		      cache: cache,
+		      data: data,
+		      type: type,
+		      dataType: "html",
+		      // Nothing fancy to do here with :ERROR and :VALUE, just
+		      // use the user's success callback directly.
+		      success: query.success,
+		      error: function(jqXHR, textStatus, errorThrown) {
+			  userErrorCallback("Error running query: " + textStatus + "\n" + errorThrown);
+		      }
+		    };
+    $.ajax(ajaxQuery);
 }
 
 
-function alphanum(a, b) { // Alphanumeric comparison (for nice sorting)
+
+function alphanum(a, b) {
+    "use strict";
+    // Alphanumeric comparison (for nice sorting)
     // Credit: http://my.opera.com/GreyWyvern/blog/show.dml/1671288
 
     // Modification: make it case insensitive
@@ -97,7 +196,22 @@ function alphanum(a, b) { // Alphanumeric comparison (for nice sorting)
     return aa.length - bb.length;
 }
 
+function niceDescriptionType(type)
+{
+    "use strict";
+    var niceType = (type == ":VL-MODULE") ? "module"
+                 : (type == ":VL-PACKAGE") ? "package"
+                 : (type == ":VL-INTERFACE") ? "interface"
+                 : (type == ":VL-TYPEDEF") ? "typedef"
+                 : (type == ":VL-PACKAGE") ? "package"
+                 : (type == ":VL-FUNDECL") ? "function"
+                 : (type == ":VL-PARAMDECL") ? "parameter"
+                 : type;
+    return niceType;
+}
+
 function jump_render(entry) {
+    "use strict";
     var name = entry["value"];
     var type = entry["type"];
     var file = entry["file"];
@@ -108,21 +222,21 @@ function jump_render(entry) {
 }
 
 var SUMMARY_DATA = false;
-function withSummaryData(success, failure)
-{
+function withSummaryData(success, failure) {
+    "use strict";
     if (SUMMARY_DATA) {
 	success(SUMMARY_DATA);
     }
     else {
 	$.ajax({
-	    url: "/get-summaries",
+	    url: "/vls-get-summaries",
 	    cache: true,
 	    data: {"base":BASE, "model":MODEL},
 	    dataType: "json",
 	    type: "post",
 	    success: function(data,textStatus,jqXHR) {
 		var err = data[":ERROR"];
-		if (err != "NIL") {
+		if (err) {
 		    failure(err);
 		}
 		else {
@@ -132,15 +246,15 @@ function withSummaryData(success, failure)
 	    },
 	    error: function()
 	    {
-		failure("Error invoking /get-summaries");
+		failure("Error invoking /vls-get-summaries");
 	    }
 	});
     }
 }
 
-function toolbarInitSuccess(summaries)
-{
-    //console.log("summaries ok: " + summaries);
+function toolbarInitSuccess(summaries) {
+    "use strict";
+    log("toolbarInitSuccess");
 
     $(".toolbutton").powerTip({placement:'se',smartPlacement: true});
     $("#modelname").append("<p><b>" + MODEL + "</b><br/><small>" + BASE + "</small></p>");
@@ -257,7 +371,7 @@ function toolbarInitSuccess(summaries)
 	function(event)
 	{
 	    // Magic code that took me way too much hacking to get working.
-	    // console.log("In form submitter.");
+	    // log("In form submitter.");
 
 	    // Don't actually try to "submit" the form.
 	    event.preventDefault();
@@ -277,66 +391,64 @@ function toolbarInitSuccess(summaries)
 	    // figure out what we're looking at and submit it manually.
 
 	    var value = $("#jump").typeahead('val');
-	    // console.log("After tab, value is " + value);
+	    // log("After tab, value is " + value);
 	    jump_go(null, {value:value});
 	}
     );
 }
 
-function toolbarInitFail(msg)
-{
+function toolbarInitFail(msg) {
+    "use strict";
     $("#jump").attr("placeholder", msg);
 }
 
 
-function toolbar_init()
-{
+function toolbar_init() {
+    "use strict";
     create_toolbar();
     withSummaryData(toolbarInitSuccess, toolbarInitFail);
 }
 
 function jump_go(obj,datum) {
+    "use strict";
     var key = datum["value"];
-    console.log("jump_go(" + key + ")");
+    log("jump_go(" + key + ")");
     window.location = "/display.html?base=" + BASE + "&model=" + MODEL + "&origname=" + key;
 }
 
 
-function connect(onReady)
-{
+function connect(onReady) {
+    "use strict";
+    log("Connecting to base " + BASE + ", model " + MODEL);
     // Sanity check to make sure that the model is loaded.
-    $.ajax({
-	url: "/load-model",
-	cache: false,
-	data: {"base":BASE, "model":MODEL},
-	dataType: "json",
-	type: "post",
-	success: function(data,textStatus,jqXHR)
-	{
-	    var status = data[":STATUS"];
-	    //console.log("Status: " + status);
-	    if (status == ":LOADED") {
-		onReady();
-	    }
-	    else if (status == ":STARTED") {
-		// Model isn't loaded yet?  Let's go back to the model chooser.
-		window.alert("Model isn't loaded?");
-		//window.location = "index.html";
-	    }
-	    else {
-		$("body").html("<p>Unexpected response from server: " + status + "</p>");
-	    }
-	},
-	error: function()
-	{
-	    $("body").html("<p>Error posting load_model request.</p>");
-	}
-    });
+    vlsGetJson({ url: "/load-model",
+		 type: "post",
+		 cache: false,
+		 success: function(value) {
+		     assert(":STATUS" in value);
+		     var status = value[":STATUS"];
+		     log("Model status: " + status);
+		     if (status == ":LOADED") {
+			 onReady();
+		     }
+		     else if (status == ":STARTED") {
+			 var msg = "<h1>Model not loaded</h1>";
+			 msg += "<h3>Base " + htmlEncode(BASE) + ", Model " + htmlEncode(MODEL) + "</h3>";
+			 msg += "<p>This model is either invalid or not yet loaded.</p>";
+			 msg += "<p>Maybe that idiot Jared restarted the VL server on you?</p>";
+			 msg += "<p>You probably want to <a href='index.html'>go to model chooser</a></p>";
+			 $("head").append("<link rel='stylesheet' href='style.css'/>");
+			 $("body").html(msg);
+		     }
+		     else {
+			 assert(false, "Unrecognized status " + status);
+		     }
+		 }});
 }
 
 
-function create_toolbar ()
-{
+function create_toolbar () {
+    "use strict";
     var tb = "";
     tb += "<form id='jumpform'>";
     tb += "  <div id='icons'>";
@@ -376,6 +488,7 @@ function create_toolbar ()
 
 
 function showLoc(file,line,col) {
+    "use strict";
     var url = "loc.html?"
                   + "&base=" + BASE
                   + "&model=" + MODEL
@@ -387,4 +500,7 @@ function showLoc(file,line,col) {
     win.focus();
     return false;
 }
+
+
+
 

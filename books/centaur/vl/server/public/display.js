@@ -37,41 +37,28 @@ if (!ORIGNAME) {
 var SUMMARY = false;
 function onConnected()
 {
+    log("Connected");
     toolbar_init();
+    log("Toolbar initialized.");
 
-    $.ajax({
-	url: "/get-summary",
-	cache: true,
-	data: {base:BASE, model:MODEL, origname:ORIGNAME},
-	dataType: "json",
-	type: "get",
-	success: function(data,textStatus,jqXHR)
-	{
-	    var error = data[":ERROR"];
-	    var summary = data[":VALUE"];
-
-	    if (error != "NIL") {
-		$("#sourcecode").html(data[":ERROR"]);
-		return;
-	    }
-	    if (summary == "NIL") {
-		$("#sourcecode").html(ORIGNAME + " not found.");
-		return;
-	    }
-
-	    SUMMARY = summary;
-	    ORIGNAME = SUMMARY[":NAME"];
-
-	    loadEverythingElse();
-	},
-	error: function() {
-	    $("#sourcecode").html("Error running /get-summary");
-	}
-    });
+    vlsGetJson({ url: "/vls-get-summary",
+		 data: {origname:ORIGNAME},
+		 success: function(summary)
+		 {
+		     log("Got summaries.");
+		     if (summary == "NIL") {
+			 $("#sourcecode").html(ORIGNAME + " not found.");
+			 return;
+		     }
+		     SUMMARY = summary;
+		     ORIGNAME = SUMMARY[":NAME"];
+		     loadEverythingElse();
+		 }});
 }
 
 function loadEverythingElse()
 {
+    log("Loading everything else.");
     $("#banner").html(ORIGNAME);
 
     var desc = "";
@@ -86,8 +73,9 @@ function loadEverythingElse()
     desc += "</small>";
     $("#desctype").html(desc);
 
-    console.log("Type is " + type);
+    log("Type is " + type);
 
+    // Add the port table/IOs button only for modules
     if (type == ":VL-MODULE")
     {
 	var btn = "";
@@ -97,6 +85,7 @@ function loadEverythingElse()
 	$("#disptools").append(btn);
     }
 
+    // Add raw source display button only if this is a container-type thing with a start/end location.
     if (type == ":VL-MODULE" ||
 	type == ":VL-PACKAGE" ||
 	type == ":VL-CONFIG" ||
@@ -104,7 +93,6 @@ function loadEverythingElse()
 	type == ":VL-TYPEDEF" ||
 	type == ":VL-PROGRAM")
     {
-	// Should be able to do a raw source display.
 	var btn = "";
 	btn += "<a href='javascript:void(0)' onclick='toggleMarkup();'>";
 	btn += "<img class='toolbutton' src='images/markup.png' data-powertip='<p>Switch to parsed/raw display.</p>'/>";
@@ -112,12 +100,8 @@ function loadEverythingElse()
 	$("#disptools").append(btn);
     }
 
-
     installParsedSource();
-
-    if (type == ":VL-MODULE") {
-	installHierarchy();
-    }
+    installHierarchy();
 }
 
 
@@ -130,86 +114,56 @@ function installHierarchy()
     hier += "<span id='hier_children'></span>";
     $("#hierarchy").html(hier);
 
-    $.ajax({
-	url: "/get-parents",
-	cache: true,
-	data: {base:BASE, model:MODEL, origname:ORIGNAME},
-	dataType: "json",
-	type: "get",
-	success: function(data,textStatus,jqXHR)
-	{
-	    var error = data[":ERROR"];
-	    var parents = data[":VALUE"];
-	    if (error != "NIL") {
-		$("#hier_parents").html(data[":ERROR"]);
-		return;
-	    }
+    vlsGetJson({ url: "/vls-get-parents",
+		 data: {origname:ORIGNAME},
+		 success: function(parents) {
+		      if (parents == "NIL" || parents.length == 0) {
+    			  // Seems nicer just not to say anything at all.
+			  log("Not showing empty parents " + JSON.stringify(parents));
+    			  // $("#hier_parents").html("No parents");
+    			  return;
+    		      }
 
-	    if (parents == "NIL" || parents.length == 0) {
-		// Seems nicer just not to say anything at all.
-		// $("#hier_parents").html("No parents");
-		return;
-	    }
+    		     var ret = "Used by ";
+    		     for(var i = 0; i < parents.length; ++i) {
+    			 var par = parents[i];
+    			 ret += "<a href=\"javascript:void(0)\" onclick=\"showModule('" + par + "')\">" + par + "</a>";
+    			 if (i == parents.length - 2) {
+    			     ret += " and ";
+    			 }
+    			 else if (i != parents.length - 1) {
+    			     ret += ", ";
+    			 }
+    		     }
+    		     ret += ".<br/>";
+    		     $("#hier_parents").append(ret);
+		 }});
 
-	    var ret = "Parents ";
-	    for(var i = 0; i < parents.length; ++i) {
-		var par = parents[i];
-		ret += "<a href=\"javascript:void(0)\" onclick=\"showModule('" + par + "')\">" + par + "</a>";
-		if (i == parents.length - 2) {
-		    ret += " and ";
-		}
-		else if (i != parents.length - 1) {
-		    ret += ", ";
-		}
-	    }
-	    ret += ".<br/>";
-	    $("#hier_parents").append(ret);
-	},
-	error: function() {
-	    $("#hier_parents").html("Error running /get-parents");
-	}
-    });
+    vlsGetJson({ url: "/vls-get-children",
+		 cache: true,
+		 data: {origname:ORIGNAME},
+		 success: function(children) {
+		     if (children == "NIL" || children.length == 0) {
+			 // Seems nicer just not to say anything at all.
+			  log("Not showing empty children " + JSON.stringify(children));
+			 // $("#hier_children").html("Leaf module (no children).");
+			 return;
+		     }
 
-
-    $.ajax({
-	url: "/get-children",
-	cache: true,
-	data: {base:BASE, model:MODEL, origname:ORIGNAME},
-	dataType: "json",
-	type: "get",
-	success: function(data,textStatus,jqXHR)
-	{
-	    var error = data[":ERROR"];
-	    var children = data[":VALUE"];
-	    if (error != "NIL") {
-		$("#hier_children").html(data[":ERROR"]);
-		return;
-	    }
-	    if (children == "NIL" || children.length == 0) {
-		// Seems nicer just not to say anything at all.
-		// $("#hier_children").html("Leaf module (no children).");
-		return;
-	    }
-
-	    var ret = "Children ";
-	    for(var i = 0; i < children.length; ++i) {
-		var child = children[i];
-		ret += "<a href=\"javascript:void(0)\" onclick=\"showModule('" + child + "')\">" + child + "</a>";
-		if (i == children.length - 2) {
-		    ret += " and ";
-		}
-		else if (i != children.length - 1) {
-		    ret += ", ";
-		}
-
-	    }
-	    ret += ".";
-	    $("#hier_children").append(ret);
-	},
-	error: function() {
-	    $("#hier_children").html("Error running /get-children");
-	}
-    });
+		     var ret = "Uses ";
+		     for(var i = 0; i < children.length; ++i) {
+			 var child = children[i];
+			 ret += "<a href=\"javascript:void(0)\" onclick=\"showModule('" + child + "')\">" + child + "</a>";
+			 if (i == children.length - 2) {
+			     ret += " and ";
+			 }
+			 else if (i != children.length - 1) {
+			     ret += ", ";
+			 }
+		     }
+		     ret += ".";
+		     $("#hier_children").append(ret);
+		 }});
 }
 
 
@@ -217,40 +171,23 @@ var SHOWING = "";
 
 function installParsedSource()
 {
-    $.ajax({
-	url: "/get-origsrc",
-	cache: true,
-	data: {base:BASE, model:MODEL, origname:ORIGNAME},
-	dataType: "html",
-	type: "get",
-	success: function(data,textStatus,jqXHR)
-	{
-	    $("#sourcecode").html(data);
-	    SHOWING = "parsed";
-	},
-	error: function() {
-	    $("#sourcecode").html("Error running /get-origsrc");
-	}
-    });
+    vlsGetHtml({ url: "/vls-get-origsrc",
+		 data: {origname:ORIGNAME},
+		 success: function(data) {
+		     $("#sourcecode").html(data);
+		     SHOWING = "parsed";
+		 }});
 }
 
 function installRawSource()
 {
-    $.ajax({
-	url: "/get-plainsrc",
-	cache: true,
-	data: {base:BASE, model:MODEL, origname:ORIGNAME},
-	dataType: "text",
-	type: "get",
-	success: function(data,textStatus,jqXHR)
-	{
-	    $("#sourcecode").html("<pre>" + htmlEncode(data) + "</pre>");
-	    SHOWING = "raw";
-	},
-	error: function() {
-	    $("#sourcecode").html("Error running /get-origsrc");
-	}
-    });
+    vlsGetHtml({ url: "/vls-get-plainsrc",
+		 data: {origname:ORIGNAME},
+		 success: function(data)
+		 {
+		     $("#sourcecode").html("<pre>" + htmlEncode(data) + "</pre>");
+		     SHOWING = "raw";
+		 }});
 }
 
 function toggleMarkup()

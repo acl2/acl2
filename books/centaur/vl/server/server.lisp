@@ -34,6 +34,7 @@
 (include-book "porttable")
 (include-book "showloc")
 (include-book "file-layout")
+(include-book "command")
 (include-book "../transforms/annotate/top")
 (include-book "../mlib/comment-writer")
 (include-book "std/io/unsound-read" :dir :system)
@@ -42,6 +43,7 @@
 (include-book "centaur/quicklisp/bt-semaphore" :dir :system)
 (include-book "centaur/bridge/to-json" :dir :system)
 (include-book "xdoc/defxdoc-raw" :dir :system)
+(include-book "centaur/misc/memory-mgmt" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 (local (in-theory (enable tag-reasoning)))
@@ -106,6 +108,9 @@ viewing Verilog designs.")
         (vl-description-fix desc1)))
     (vl-find-description-insensitive name (cdr descalist))))
 
+
+
+
 (define vl-ppc-description ((x vl-description-p)
                             (ss vl-scopestack-p)
                             &key (ps 'ps))
@@ -136,34 +141,37 @@ viewing Verilog designs.")
           (cons :line (vl-location->line minloc))
           (cons :col  (vl-location->col minloc)))))
 
-(defprojection vl-descriptionlist-summaries ((x vl-descriptionlist-p))
-  (vl-description-summary x))
-
-(define vls-get-summary ((origname stringp     "Special: case insensitive.")
-                         (data     vls-data-p))
+(define-vls-json vls-get-summary (origname data)
+  ;; Special command: the origname is case insensitive to support jump-to box.
   (b* (((vls-data data))
-       ;; Special: case insensitive to support jump-to box.
+       ;; (- (raise "Testing out how errors work."))
        (desc (or (cdr (hons-assoc-equal origname data.orig-descalist))
                  (vl-find-description-insensitive origname data.orig-descalist)))
        ((unless desc)
-        nil))
-    (vl-description-summary desc)))
+        (vls-success :json (bridge::json-encode "NIL"))))
+    (vls-success :json (bridge::json-encode (vl-description-summary desc)))))
 
-(define vls-get-origsrc ((origname stringp)
-                         (data     vls-data-p))
+(defprojection vl-descriptionlist-summaries ((x vl-descriptionlist-p))
+  (vl-description-summary x))
+
+(define-vls-json vls-get-summaries (data)
+  (b* (((vls-data data))
+       (descriptions (alist-vals data.orig-descalist))
+       (summaries    (vl-descriptionlist-summaries descriptions)))
+    (vls-success :json (bridge::json-encode summaries))))
+
+(define-vls-html vls-get-origsrc (origname data)
   (b* (((vls-data data))
        (desc (cdr (hons-assoc-equal origname data.orig-descalist)))
        ((unless desc)
         (cat "Error: " origname " not found."))
-
-       (ss       (vl-scopestack-init data.orig))
-       (ans      (with-local-ps
-                   (vl-ps-update-htmlp t)
-                   (vl-ppc-description desc ss))))
+       (ss  (vl-scopestack-init data.orig))
+       (ans (with-local-ps
+              (vl-ps-update-htmlp t)
+              (vl-ppc-description desc ss))))
     ans))
 
-(define vls-get-plainsrc ((origname stringp)
-                          (data     vls-data-p))
+(define-vls-html vls-get-plainsrc (origname data)
   (b* (((vls-data data))
        (desc (cdr (hons-assoc-equal origname data.orig-descalist)))
        ((unless desc)
@@ -206,94 +214,72 @@ viewing Verilog designs.")
     (cons (cons name (tag description))
           (vl-descalist->descriptions/types (cdr x)))))
 
-(define vls-data->descriptions/types ((x vls-data-p))
-  (vl-descalist->descriptions/types (vls-data->orig-descalist x)))
+(define-vls-json vls-get-desctypes (data)
+  (b* ((desctypes (vl-descalist->descriptions/types (vls-data->orig-descalist data))))
+    (vls-success :json (bridge::json-encode desctypes))))
 
-
-(define vls-describe ((data     vls-data-p)
-                      (origname stringp)
-                      (what     stringp))
+(define-vls-html vls-describe (origname what data)
   (b* (((vls-data data))
        (desc (cdr (hons-assoc-equal origname data.orig-descalist)))
+       ;;(- (raise "Testing error handling"))
        ((unless desc)
-        (cat "<p>Error: " origname " not found.</p>"))
+        (cat "Error: " origname " not found."))
        ((unless (mbe :logic (vl-module-p desc)
                      :exec (eq (tag desc) :vl-module)))
-        (cat "<p>BOZO implement describe page for " (ec-call (symbol-name (tag desc))) "</p>")))
+        (cat "BOZO implement describe page for " (ec-call (symbol-name (tag desc))))))
     (with-local-ps
       (vl-ps-update-htmlp t)
       (vl-pp-describe what desc))))
 
-(define vls-showloc ((data vls-data-p)
-                     (file stringp)
-                     (line posp)
-                     (col  natp))
-  (cwtime
-   (b* (((vls-data data))
-        (loc      (make-vl-location :filename file :line line :col col))
-        (contents (cdr (hons-assoc-equal file data.filemap)))
-        ((unless contents) (cat "No filemap binding for " file))
-        (desc     (vl-find-description-for-loc loc (alist-vals (vls-data->orig-descalist data))))
-        ((unless desc) (cat "No description found for location ~x0."))
-        (min (vl-location->line (vl-description->minloc desc)))
-        (max (vl-location->line (vl-description->maxloc desc))))
-     (with-local-ps
-       (vl-ps-seq
-        (vl-ps-update-htmlp t)
-        (vls-showloc-print contents min max line col))))
-   :name vls-showloc))
-
-(define vls-port-table ((data       vls-data-p)
-                        (modname    stringp))
+(define-vls-html vls-showloc (file line col data)
   (b* (((vls-data data))
-       (look   (cdr (hons-assoc-equal modname data.orig-descalist)))
+       (line     (str::strval line))
+       (col      (str::strval col))
+       ((unless (posp line))
+        "Error: Invalid line number")
+       ((unless (natp col))
+        "Error: Invalid column number")
+       (loc      (make-vl-location :filename file :line line :col col))
+       (contents (cdr (hons-assoc-equal file data.filemap)))
+       ((unless contents) (cat "No filemap binding for " file))
+       (desc     (vl-find-description-for-loc loc (alist-vals (vls-data->orig-descalist data))))
+       ((unless desc) (cat "No description found for location ~x0."))
+       (min (vl-location->line (vl-description->minloc desc)))
+       (max (vl-location->line (vl-description->maxloc desc))))
+    (with-local-ps
+      (vl-ps-seq
+       (vl-ps-update-htmlp t)
+       (vls-showloc-print contents min max line col)))))
+
+(define-vls-html vls-port-table (origname data)
+  (b* (((vls-data data))
+       (look   (cdr (hons-assoc-equal origname data.orig-descalist)))
        ((unless look)
-        (cat "Error: no such module " modname))
+        (cat "Error: no such module " origname))
        ((unless (mbe :logic (vl-module-p look)
                      :exec (eq (tag look) :vl-module)))
-        (cat "Error: expected a module but " modname " is a " (ec-call (symbol-name (tag look))))))
+        (cat "Error: expected a module but " origname " is a " (ec-call (symbol-name (tag look))))))
     (with-local-ps
       (vl-ps-seq
        (vl-ps-update-htmlp t)
        (vl-pp-porttable look)))))
 
-(define vls-get-parents ((origname stringp     "Should be the name of a module.")
-                         (data     vls-data-p))
-  (b* (((vls-data data)))
-    (vl-dependent-elements-direct (list origname) data.orig)))
+(define-vls-json vls-get-parents (origname data)
+  (b* (((vls-data data))
+       (parents (vl-dependent-elements-direct (list origname) data.orig)))
+    (vls-success :json (bridge::json-encode parents))))
 
-(define vls-get-children ((origname stringp     "Should be the name of a module.")
-                          (data     vls-data-p))
-  (b* (((vls-data data)))
-    (vl-necessary-elements-direct (list origname) data.orig)))
+(define-vls-json vls-get-children (origname data)
+  (b* (((vls-data data))
+       (children (vl-necessary-elements-direct (list origname) data.orig)))
+    (vls-success :json (bridge::json-encode children))))
+
+
+; (depends-on "hard-error-patch.lsp")
+(acl2::include-raw "hard-error-patch.lsp")
 
 
 ; (depends-on "server-raw.lsp")
 (acl2::include-raw "server-raw.lsp"
                    :host-readtable t)
 
-
-#||
-(in-package "VL")
-(set-vls-root "/n/fv2/translations")
-(start)
-||#
-
-#||
-(trace$ (vls-get-parents :entry (list 'vls-get-parents origname
-                                      (vl-modulelist->names (vl-design->mods (vls-data->orig data))))))
-
-(trace$ (vl-design-upgraph :entry (list 'vl-design-upgraph)
-                           :exit (list 'vl-design-upgraph acl2::values)))
-
-(trace$ (vl-necessary-elements-direct :entry (list 'vl-necessary-elements-direct :superiors superiors)
-                                      :exit (list 'vl-necessary-elements-direct acl2::values)))
-
-(trace$ (vl-dependent-elements-direct :entry (list 'vl-dependent-elements-direct :subs subs)
-                                      :exit (list 'vl-dependent-elements-direct acl2::values)))
-
-(trace$ (vl-collect-dependencies :entry (list 'vl-collect-dependencies
-                                              :names names
-                                              :graph graph)
-                                 :exit (list 'vl-collect-dependencies acl2::values)))
-||#

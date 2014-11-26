@@ -71,7 +71,7 @@ function render_bucket (typename, bucket)
 function status_init()
 {
     $.ajax({
-	url: "/get-desctypes",
+	url: "/vls-get-desctypes",
 	cache: true,
 	data: {"base":BASE, "model":MODEL},
 	dataType: "json",
@@ -79,7 +79,7 @@ function status_init()
 	success: function(data,textStatus,jqXHR)
 	{
 	    var err = data[":ERROR"];
-	    if (err != "NIL") {
+	    if (err) {
 		$("#status").html("Error: " + err);
 	    }
 
@@ -139,7 +139,7 @@ function status_init()
 	},
 	error: function()
 	{
-	    $("#status").html("Error invoking /get-desctypes");
+	    $("#status").html("Error invoking /vls-get-desctypes");
 	}
     });
 }
