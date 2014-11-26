@@ -1818,7 +1818,14 @@
                     (avg-mt-size   (access memo-max-sizes-entry max-sizes
                                            :avg-mt-size))
                     (our-guess     (ceiling (* 1.20 avg-mt-size)))
-                    (capped-guess  (min our-guess (* nclears 44000)))
+                    (capped-guess  (min our-guess (* nclears
+
+; At one time we believed 44,000 entries was about a megabyte of space.  We now
+; think this isn't right---it's more like 53,000 entries per megabyte (as
+; discussed above).  But since we don't have a good reason to change the
+; number, we've left it at 44,000.
+
+                                                     44000)))
                     (final-guess   (max 60 init-size capped-guess)))
                final-guess))))
      (mf-mht
@@ -1850,8 +1857,8 @@
 ; over the pons table size.  But for now, the main use of our memoize table
 ; size controls is to set things up for big BDD/AIG/SEXPR operations where
 ; we've got honsed data.  So, we just use *mht-default-size* here, which seems
-; as reasonable a choice as any, say that the memo-table-init-size only affects
-; the memoize table and not the initial pons table.
+; as reasonable a choice as any, so that the memo-table-init-size argument of
+; memoize-fn only affects the memoize table and not the initial pons table.
 
                *mht-default-size*
              (let* ((nclears       (access memo-max-sizes-entry max-sizes
@@ -2012,10 +2019,11 @@
 
 (defun sync-memoize-call-array ()
 
-; Warning: Be careful if you call this function is from other than memoize-init
-; or memoize-call-array-grow.  Think about whether it would be a mistake to do
-; otherwise, especially while memoized functions are running.  In particular,
-; this function sets *caller* to denote the "outside" caller.
+; Warning: Be careful if you call this function from other than memoize-init or
+; memoize-call-array-grow.  In particular, it is probably a mistake to call
+; this function while memoized functions are running, since *caller* is
+; supposed to depend on the innermost memoized function call being evaluated,
+; but sync-memoize-call-array sets *caller* to denote the "outside" caller.
 
 ; We assume that *2max-memoize-fns* is the intended length of
 ; *memoize-call-array* and *max-symbol-to-fixnum* is the maximum fixnum
@@ -2512,7 +2520,7 @@
                        ,(ma-index-from-col-base fn-col-base *ma-hits-index*))
                  1)))))
     `(cond
-      ,@(and (not (member-eq condition '('t t))) ; minor optimization
+      ,@(and (not (member-equal condition '('t t))) ; minor optimization
              `(((not ,condition)
 
 ; See the comment in the definition of *condition-nil-as-hit*.
