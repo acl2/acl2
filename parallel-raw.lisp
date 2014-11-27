@@ -1083,7 +1083,10 @@
       (apply parent-fun-name parallelize-closures-res))))
 
 (defmacro closure-for-expression (x)
-  `(function (lambda () ,x)))
+
+; This macro expands to an expression that evaluates to a closure.
+
+  (make-closure-expr-with-acl2-bindings x))
 
 (defmacro closure-list-for-expression-list (x)
   (if (atom x)

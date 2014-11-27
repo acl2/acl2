@@ -1182,33 +1182,17 @@
   (signal-semaphore *future-added*)
   future)
 
-(defmacro mt-future (x)
+(defun make-closure-expr-with-acl2-bindings (body)
 
-; Return a future whose closure, when executed, will execute the given form, x.
-; Note that (future x) macroexpands to (mt-future x).
-
-  (let ((ld-level-sym (gensym))
-        (ld-level-state-sym (gensym))
-        (wormholep-sym (gensym))
-        (local-safe-mode-sym (gensym))
-        (local-gc-on-sym (gensym)))
-    `(cond
-      (#-skip-resource-availability-test
-       (not (futures-resources-available))
-       #+skip-resource-availability-test
-       nil
-
-; need to return a "single-threaded" future
-
-       (incf *futures-resources-unavailable-count*)
-       (st-future ,x))
-      (t ; normal case
-       (incf *futures-resources-available-count*)
+; This function returns an expression that evaluates to a closure.  When the
+; resulting closure is called later, it will be in an ACL2 environment that
+; respects certain special variables.
 
 ; We need to set up bindings for some special variables to have appropriate
-; values when the future is executed.  Note that the current value of a special
-; variable is irrelevant for its value in a newly created thread, as
-; illustrated in the following log.
+; values when the given body is ultimately executed, as occurs when executing
+; closures that are executed by mt-future and closure-for-expression.  Note
+; that the current value of a special variable is irrelevant for its value in a
+; newly created thread, as illustrated in the following log.
 
 ;   ? [RAW LISP] (defvar foo 1)
 ;   FOO
@@ -1221,23 +1205,6 @@
 ;   ? [RAW LISP]
 ;   1
 ;   1
-
-       (let* ((,ld-level-sym *ld-level*)
-              (,ld-level-state-sym
-
-; We have discussed with David Rager whether it is an invariant of ACL2 that
-; *ld-level* and (@ ld-level) have the same value, except perhaps when cleaning
-; up with acl2-unwind-protect.  If it is, then David believes that it's also an
-; invariant of ACL2(p).  We add an assertion here to check that.
-
-               (assert$ (equal *ld-level*
-                               (f-get-global 'ld-level *the-live-state*))
-                        (f-get-global 'ld-level *the-live-state*)))
-              (acl2-unwind-protect-stack *acl2-unwind-protect-stack*)
-              (,wormholep-sym *wormholep*)
-              (,local-safe-mode-sym (f-get-global 'safe-mode *the-live-state*))
-              (,local-gc-on-sym (f-get-global 'guard-checking-on
-                                              *the-live-state*))
 
 ; Parallelism no-fix: we have considered causing child threads to inherit
 ; ld-specials from their parents, or even other state globals such as
@@ -1257,21 +1224,61 @@
 ;   bind *wormhole-cleanup-form* since we bind *wormholep*, but we haven't done
 ;   so.
 
-              (closure (lambda ()
-                         (let ((*ld-level* ,ld-level-sym)
-                               (*acl2-unwind-protect-stack*
-                                acl2-unwind-protect-stack)
-                               (*wormholep* ,wormholep-sym))
-                           (state-free-global-let*
-                            ((ld-level ,ld-level-state-sym)
-                             (safe-mode ,local-safe-mode-sym)
-                             (guard-checking-on ,local-gc-on-sym))
-                            ,x)))))
-         (without-interrupts
-          (let ((future (make-future-with-closure closure)))
-            (without-interrupts ; probably not needed
-             (add-future-to-queue future))
-            future)))))))
+  (let ((ld-level-sym (gensym))
+        (ld-level-state-sym (gensym))
+        (wormholep-sym (gensym))
+        (local-safe-mode-sym (gensym))
+        (local-gc-on-sym (gensym)))
+    `(let* ((,ld-level-sym *ld-level*)
+            (,ld-level-state-sym
+
+; We have discussed with David Rager whether it is an invariant of ACL2 that
+; *ld-level* and (@ ld-level) have the same value, except perhaps when cleaning
+; up with acl2-unwind-protect.  If it is, then David believes that it's also an
+; invariant of ACL2(p).  We add an assertion here to check that.
+
+             (assert$ (equal *ld-level*
+                             (f-get-global 'ld-level *the-live-state*))
+                      (f-get-global 'ld-level *the-live-state*)))
+            (acl2-unwind-protect-stack *acl2-unwind-protect-stack*)
+            (,wormholep-sym *wormholep*)
+            (,local-safe-mode-sym (f-get-global 'safe-mode *the-live-state*))
+            (,local-gc-on-sym (f-get-global 'guard-checking-on
+                                            *the-live-state*)))
+       (lambda ()
+         (let ((*ld-level* ,ld-level-sym)
+               (*acl2-unwind-protect-stack*
+                acl2-unwind-protect-stack)
+               (*wormholep* ,wormholep-sym))
+           (state-free-global-let*
+            ((ld-level ,ld-level-state-sym)
+             (safe-mode ,local-safe-mode-sym)
+             (guard-checking-on ,local-gc-on-sym))
+            ,body))))))
+
+(defmacro mt-future (x)
+
+; Return a future whose closure, when executed, will execute the given form, x.
+; Note that (future x) macroexpands to (mt-future x).
+  
+  `(cond
+    (#-skip-resource-availability-test
+     (not (futures-resources-available))
+     #+skip-resource-availability-test
+     nil
+
+; need to return a "single-threaded" future
+
+     (incf *futures-resources-unavailable-count*)
+     (st-future ,x))
+    (t ; normal case
+     (incf *futures-resources-available-count*)
+     (without-interrupts
+      (let ((future (make-future-with-closure
+                     ,(make-closure-expr-with-acl2-bindings x))))
+        (without-interrupts ; probably not needed
+         (add-future-to-queue future))
+        future)))))
 
 (defun mt-future-read (future)
   (cond ((st-future-p future)
