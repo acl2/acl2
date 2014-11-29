@@ -2653,13 +2653,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t
          (throw 'raw-ev-fncall val))))
 
-#+acl2-loop-only
-(defun hard-error (ctx str alist)
+#-acl2-loop-only
+(defvar *hard-error-is-error* nil)
 
-; Note: The #-acl2-loop-only definition of this function is separated from this
-; definition in order that the function error-fms-channel and (especially) the
-; macro channel-to-string, which are called in that raw Lisp definition, are
-; first defined.
+(defun hard-error (ctx str alist)
 
 ; This function returns nil -- when it returns.  However, the implementation
 ; usually signals a hard error, which is sound since it is akin to running out
@@ -2708,6 +2705,35 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; inadequate handling of these issues.
 
   (declare (xargs :guard t))
+  #-acl2-loop-only
+  (when (not *hard-error-returns-nilp*)
+
+; We are going to ``cause an error.''  We print an error message with error-fms
+; even though we do not have state.  To do that, we must bind *wormholep* to
+; nil so we don't try to push undo information (or, in the case of error-fms,
+; cause an error for illegal state changes).  If error-fms could evaluate
+; arbitrary forms, e.g., to make legal state changes while in wormholes, then
+; this would be a BAD IDEA.  But error-fms only prints stuff that was created
+; earlier (and passed in via alist).
+
+    (let ((state *the-live-state*))
+      (cond
+       (*hard-error-is-error*
+        (hard-error-is-error ctx str alist))
+       (t
+        (let ((*standard-output* *error-output*)
+              (*wormholep* nil))
+          (error-fms t ctx str alist state))
+
+; Once upon a time hard-error took a throw-flg argument and did the
+; following throw-raw-ev-fncall only if the throw-flg was t.  Otherwise,
+; it signalled an interface-er.  Note that in either case it behaved like
+; an error -- interface-er's are rougher because they do not leave you in
+; the ACL2 command loop.  I think this aspect of the old code was a vestige
+; of the pre-*ld-level* days when we didn't know if we could throw or not.
+
+        (throw-raw-ev-fncall 'illegal)))))
+  #+acl2-loop-only
   (declare (ignore ctx str alist))
   nil)
 
@@ -26288,3 +26314,40 @@ Lisp definition."
 (defthm distributivity-of-minus-over-+
   (equal (- (+ x y))
          (+ (- x) (- y))))
+
+; The following was moved here from other-events.lisp (and tweaked slightly in
+; order to be guard-verified) so that it is included in the toothbrush.
+
+(defun decimal-string-to-number (s bound expo)
+
+; Returns 10^expo times the integer represented by the digits of string s from
+; 0 up through bound-1 (most significant digit at position 0), but returns a
+; hard error if any of those "digits" are not digits.
+
+  (declare (xargs :guard (and (stringp s)
+                              (natp expo)
+                              (natp bound)
+                              (<= bound (length s)))))
+  (cond ((zp bound) 0)
+        (t (let* ((pos (1- bound))
+                  (ch (char s pos)))
+             (cond ((member ch '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
+                    (let ((digit (case ch
+                                   (#\0 0)
+                                   (#\1 1)
+                                   (#\2 2)
+                                   (#\3 3)
+                                   (#\4 4)
+                                   (#\5 5)
+                                   (#\6 6)
+                                   (#\7 7)
+                                   (#\8 8)
+                                   (otherwise 9))))
+                      (+ (* (expt 10 expo) digit)
+                         (decimal-string-to-number s pos (1+ expo)))))
+                   (t (prog2$
+                       (er hard? 'decimal-string-to-number
+                           "Found non-decimal digit in position ~x0 of string ~
+                           \"~s1\"."
+                           pos s)
+                       0)))))))

@@ -9038,22 +9038,6 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
           (t (cons (trace-hide-world-and-state (car l))
                    (trace-hide-world-and-state (cdr l)))))))
 
-; The following would create warnings in MCL 4.2, presumably because this file
-; is compiled in that Lisp; so we avoid it for MCL.  It was originally in
-; acl2-init.lisp, but cmulisp warned that *open-output-channel-key*,
-; print-idate, and idate were undefined.
-#-(and mcl (not ccl))
-(defun-one-output saved-build-date-string ()
-  (with-output-to-string
-   (str)
-   (setf (get 'tmp-channel *open-output-channel-key*)
-         str)
-   (print-idate (idate)
-                'tmp-channel
-                *the-live-state*)
-   (remprop 'tmp-channel *open-output-channel-key*)
-   str))
-
 (defun-one-output get-stobjs-out-for-declare-form (fn)
 
 ; Warning: Keep this in sync with stobjs-out.

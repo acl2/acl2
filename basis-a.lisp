@@ -6644,3 +6644,250 @@
                   "Macroexpansion of a with-local-stobj call caused an error. ~
                    See :DOC with-local-stobj.")
             (mv-let-for-with-local-stobj mv-let-form st creator nil nil nil))))
+
+; The following definitions were moved here from other-events.lisp so that it
+; is included in the toothbrush.
+
+(defun parse-version (version)
+
+; Version is an ACL2 version string, as in state global 'acl2-version.  We
+; return (mv major minor incrl rest), where either major is nil, indicating an
+; ill-formed version; or else major, minor, and incrl are natural numbers
+; indicating the major, minor, and incrl version, and rest is the part of the
+; string starting with #\(, if any.  For example,
+; (parse-version "ACL2 Version 2.10") is (mv 2 10 0 "") and
+; (parse-version "ACL2 Version 2.10.1(r)") is (mv 2 10 1 "(r)").
+
+  (declare (xargs :guard (stringp version)))
+  (let* ((root "ACL2 Version")
+         (pos0 (if (and (stringp version)
+                        (<= 13 (length version))
+                        (equal (subseq version 0 12) root)
+                        (or (eql (char version 12) #\Space)
+                            (eql (char version 12) #\_)))
+                   13
+                 nil))
+         (pos-lparen (position #\( version))
+         (end0 (or pos-lparen
+                   (length version)))
+         (rest (subseq version end0 (length version)))
+         (from-pos0 (and pos0 (subseq version pos0 end0)))
+         (pos1-from-pos0 (and pos0 (position #\. from-pos0)))
+         (pos1 (and pos1-from-pos0 (+ pos0 pos1-from-pos0)))
+         (major (and pos1 (decimal-string-to-number
+                           (subseq version pos0 pos1)
+                           (- pos1 pos0) 0)))
+         (from-pos1 (and pos1 (subseq version (1+ pos1) end0)))
+         (pos2-from-pos1 (and pos1 (position #\. from-pos1)))
+         (pos2 (if pos2-from-pos1
+                   (+ (1+ pos1) pos2-from-pos1)
+                 (and pos1 end0)))
+         (minor (and pos2 (decimal-string-to-number
+                           (subseq version (1+ pos1) pos2)
+                           (1- (- pos2 pos1)) 0)))
+         (incrl (if (and pos2 (< pos2 end0))
+                    (decimal-string-to-number
+                     (subseq version (1+ pos2) end0)
+                     (1- (- end0 pos2))
+                     0)
+                  0)))
+    (mv major minor incrl rest)))
+
+#-acl2-loop-only
+(defun-one-output latest-release-note-string ()
+  (mv-let (major minor incrl rest)
+    (parse-version (f-get-global 'acl2-version *the-live-state*))
+    (declare (ignore rest))
+    (if (zerop incrl)
+        (format nil "note-~s-~s" major minor)
+      (format nil "note-~s-~s-~s" major minor incrl))))
+
+(defun pcd2 (n channel state)
+  (declare (xargs :guard (integerp n)))
+  (cond ((< n 10)
+         (pprogn (princ$ "0" channel state)
+                 (princ$ n channel state)))
+        (t (princ$ n channel state))))
+
+(defun power-rep (n b)
+  (if (< n b)
+      (list n)
+    (cons (rem n b)
+          (power-rep (floor n b) b))))
+
+(defun decode-idate (n)
+  (let ((tuple (power-rep n 100)))
+    (cond
+     ((< (len tuple) 6)
+      (er hard 'decode-idate
+          "Idates are supposed to decode to a list of at least length six ~
+           but ~x0 decoded to ~x1."
+          n tuple))
+     ((equal (len tuple) 6) tuple)
+     (t
+
+; In this case, tuple is (secs mins hrs day month yr1 yr2 ...) where 0
+; <= yri < 100 and (yr1 yr2 ...) represents a big number, yr, in base
+; 100.  Yr is the number of years since 1900.
+
+        (let ((secs (nth 0 tuple))
+              (mins (nth 1 tuple))
+              (hrs  (nth 2 tuple))
+              (day  (nth 3 tuple))
+              (mo   (nth 4 tuple))
+              (yr (power-eval (cdr (cddddr tuple)) 100)))
+          (list secs mins hrs day mo yr))))))
+
+(defun print-idate (n channel state)
+  (let* ((x (decode-idate n))
+         (sec (car x))
+         (minimum (cadr x))
+         (hrs (caddr x))
+         (day (cadddr x))
+         (mo (car (cddddr x)))
+         (yr (cadr (cddddr x))))  ; yr = years since 1900.  It is possible
+                                  ; that yr > 99!
+    (pprogn
+     (princ$ (nth (1- mo)
+              '(|January| |February| |March| |April| |May|
+                |June| |July| |August| |September|
+                |October| |November| |December|))
+             channel state)
+     (princ$ #\Space channel state)
+     (princ$ day channel state)
+     (princ$ '|,| channel state)
+     (princ$ #\Space channel state)
+     (princ$ (+ 1900 yr) channel state)
+     (princ$ "  " channel state)
+     (pcd2 hrs channel state)
+     (princ$ '|:| channel state)
+     (pcd2 minimum channel state)
+     (princ$ '|:| channel state)
+     (pcd2 sec channel state)
+     state)))
+
+; This definition was originally in acl2-init.lisp, but cmulisp warned that
+; *open-output-channel-key*, print-idate, and idate were undefined.
+#-acl2-loop-only
+(defun saved-build-date-string ()
+  (with-output-to-string
+   (str)
+   (setf (get 'tmp-channel *open-output-channel-key*)
+         str)
+   (print-idate (idate)
+                'tmp-channel
+                *the-live-state*)
+   (remprop 'tmp-channel *open-output-channel-key*)
+   str))
+
+; Quitting
+
+(defun good-bye-fn (status)
+  (declare (xargs :mode :logic :guard t))
+  #-acl2-loop-only
+  (exit-lisp (ifix status))
+  status)
+
+(defmacro good-bye (&optional (status '0))
+  (declare (xargs :guard (natp status)))
+  `(good-bye-fn ,status))
+
+(defmacro exit (&optional (status '0))
+  (declare (xargs :guard (natp status)))
+  `(good-bye-fn ,status))
+
+(defmacro quit (&optional (status '0))
+  (declare (xargs :guard (natp status)))
+  `(good-bye-fn ,status))
+
+; Saving an Executable Image
+
+#-acl2-loop-only
+(defparameter *initial-cbd* nil)
+
+#-acl2-loop-only
+(defvar *return-from-lp* nil)
+
+#-acl2-loop-only
+(defvar *lp-init-forms* nil)
+
+(defun save-exec-fn (exec-filename extra-startup-string host-lisp-args
+                                   toplevel-args inert-args return-from-lp
+                                   init-forms)
+
+  #-acl2-loop-only
+  (progn
+
+; Parallelism blemish: it may be a good idea to reset the parallelism variables
+; in all #+acl2-par compilations before saving the image.
+
+    (when (and init-forms return-from-lp)
+
+; For each of return-from-lp and init-forms, a non-nil value takes us through a
+; different branch of LP.  Rather than support the use of both, we cause an
+; error.
+
+      (er hard 'save-exec
+          "The use of non-nil values for both :init-forms and :return-from-lp ~
+           is not supported for save-exec.  Consider using only :init-forms, ~
+           with (value :q) as the final form."))
+    (setq *return-from-lp* return-from-lp)
+    (setq *lp-init-forms* init-forms)
+    #-sbcl (when toplevel-args
+             (er hard 'save-exec
+                 "Keyword argument :toplevel-args is only allowed when the ~
+                  host Lisp is SBCL."))
+    (if (not (eql *ld-level* 0))
+        (er hard 'save-exec
+            "Please type :q to exit the ACL2 read-eval-print loop and then try ~
+             again."))
+    (if (equal extra-startup-string "")
+        (er hard 'save-exec
+            "The extra-startup-string argument of save-exec must be ~x0 or ~
+             else a non-empty string."
+            nil)
+      (setq *saved-string*
+            (format
+             nil
+             "~a~%MODIFICATION NOTICE:~%~%~a~%"
+             *saved-string*
+             (cond ((null extra-startup-string)
+                    "This ACL2 executable was created by saving a session.")
+                   (t extra-startup-string)))))
+    #-(or gcl cmu sbcl allegro clisp ccl lispworks)
+    (er hard 'save-exec
+        "Sorry, but save-exec is not implemented for this Common Lisp.")
+
+; The forms just below, before the call of save-exec-raw, are there so that the
+; initial (lp) will set the :cbd correctly.
+
+    (f-put-global 'connected-book-directory nil *the-live-state*)
+    (setq *initial-cbd* nil)
+    (setq *startup-package-name* (package-name *package*))
+    (setq *saved-build-date-lst*
+
+; By using setq here for *saved-build-date* instead of a let-binding for
+; save-exec-raw, it happens that saving more than once in the same session (for
+; Lisps that allow this, such as Allegro CL but not GCL) would result in extra
+; "; then ..." strings.  But that seems a minor problem, and avoids having to
+; think about the effect of having a let-binding in force above a save of an
+; image.
+
+          (cons (saved-build-date-string)
+                *saved-build-date-lst*))
+    (save-exec-raw exec-filename
+                   host-lisp-args
+                   #+sbcl toplevel-args
+                   inert-args))
+  #+acl2-loop-only
+  (declare (ignore exec-filename extra-startup-string host-lisp-args
+                   toplevel-args inert-args return-from-lp init-forms))
+  nil ; Won't get to here in GCL and perhaps other lisps
+  )
+
+(defmacro save-exec (exec-filename extra-startup-string
+                                   &key
+                                   host-lisp-args toplevel-args inert-args
+                                   return-from-lp init-forms)
+  `(save-exec-fn ,exec-filename ,extra-startup-string ,host-lisp-args
+                 ,toplevel-args ,inert-args ,return-from-lp ,init-forms))

@@ -1012,16 +1012,6 @@
                     (mv col state)))
            (t (mv col state)))))
 
-(defun good-bye-fn (status)
-  (declare (xargs :mode :logic :guard t))
-  #-acl2-loop-only
-  (exit-lisp (ifix status))
-  status)
-
-(defmacro good-bye (&optional (status '0))
-  (declare (xargs :guard (natp status)))
-  `(good-bye-fn ,status))
-
 (defun ld-return-error (state)
   (let ((action (ld-error-action state)))
     (cond ((eq action :return!)
@@ -3467,14 +3457,6 @@
     :ld-pre-eval-print t
     :ld-error-action :return!))
 
-(defmacro exit (&optional (status '0))
-  (declare (xargs :guard (natp status)))
-  `(good-bye-fn ,status))
-
-(defmacro quit (&optional (status '0))
-  (declare (xargs :guard (natp status)))
-  `(good-bye-fn ,status))
-
 (defmacro set-guard-checking (flg)
   (declare (xargs :guard
                   (let ((flg (if (and (consp flg)
@@ -4459,98 +4441,6 @@
 
 (defmacro set-gag-mode (action)
   `(set-gag-mode-fn ,action state))
-
-; Saving an Executable Image
-
-#-acl2-loop-only
-(defparameter *initial-cbd* nil)
-
-#-acl2-loop-only
-(defvar *return-from-lp* nil)
-
-#-acl2-loop-only
-(defvar *lp-init-forms* nil)
-
-(defun save-exec-fn (exec-filename extra-startup-string host-lisp-args
-                                   toplevel-args inert-args return-from-lp
-                                   init-forms)
-
-  #-acl2-loop-only
-  (progn
-
-; Parallelism blemish: it may be a good idea to reset the parallelism variables
-; in all #+acl2-par compilations before saving the image.
-
-    (when (and init-forms return-from-lp)
-
-; For each of return-from-lp and init-forms, a non-nil value takes us through a
-; different branch of LP.  Rather than support the use of both, we cause an
-; error.
-
-      (er hard 'save-exec
-          "The use of non-nil values for both :init-forms and :return-from-lp ~
-           is not supported for save-exec.  Consider using only :init-forms, ~
-           with (value :q) as the final form."))
-    (setq *return-from-lp* return-from-lp)
-    (setq *lp-init-forms* init-forms)
-    #-sbcl (when toplevel-args
-             (er hard 'save-exec
-                 "Keyword argument :toplevel-args is only allowed when the ~
-                  host Lisp is SBCL."))
-    (if (not (eql *ld-level* 0))
-        (er hard 'save-exec
-            "Please type :q to exit the ACL2 read-eval-print loop and then try ~
-             again."))
-    (if (equal extra-startup-string "")
-        (er hard 'save-exec
-            "The extra-startup-string argument of save-exec must be ~x0 or ~
-             else a non-empty string."
-            nil)
-      (setq *saved-string*
-            (format
-             nil
-             "~a~%MODIFICATION NOTICE:~%~%~a~%"
-             *saved-string*
-             (cond ((null extra-startup-string)
-                    "This ACL2 executable was created by saving a session.")
-                   (t extra-startup-string)))))
-    #-(or gcl cmu sbcl allegro clisp ccl lispworks)
-    (er hard 'save-exec
-        "Sorry, but save-exec is not implemented for this Common Lisp.")
-
-; The forms just below, before the call of save-exec-raw, are there so that the
-; initial (lp) will set the :cbd correctly.
-
-    (f-put-global 'connected-book-directory nil *the-live-state*)
-    (setq *initial-cbd* nil)
-    (setq *startup-package-name* (package-name *package*))
-    (setq *saved-build-date-lst*
-
-; By using setq here for *saved-build-date* instead of a let-binding for
-; save-exec-raw, it happens that saving more than once in the same session (for
-; Lisps that allow this, such as Allegro CL but not GCL) would result in extra
-; "; then ..." strings.  But that seems a minor problem, and avoids having to
-; think about the effect of having a let-binding in force above a save of an
-; image.
-
-          (cons (saved-build-date-string)
-                *saved-build-date-lst*))
-    (save-exec-raw exec-filename
-                   host-lisp-args
-                   #+sbcl toplevel-args
-                   inert-args))
-  #+acl2-loop-only
-  (declare (ignore exec-filename extra-startup-string host-lisp-args
-                   toplevel-args inert-args return-from-lp init-forms))
-  nil ; Won't get to here in GCL and perhaps other lisps
-  )
-
-(defmacro save-exec (exec-filename extra-startup-string
-                                   &key
-                                   host-lisp-args toplevel-args inert-args
-                                   return-from-lp init-forms)
-  `(save-exec-fn ,exec-filename ,extra-startup-string ,host-lisp-args
-                 ,toplevel-args ,inert-args ,return-from-lp ,init-forms))
 
 ; We now develop code for without-evisc.
 

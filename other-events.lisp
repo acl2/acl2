@@ -12123,90 +12123,6 @@
         (t (cons (car post-alist3)
                  (unmark-and-delete-local-included-books (cdr post-alist3))))))
 
-(defun decimal-string-to-number (s bound expo)
-
-; Returns 10^expo times the integer represented by the digits of string s from
-; 0 up through bound-1 (most significant digit at position 0), but returns a
-; hard error if any of those "digits" are not digits.
-
-  (declare (xargs :guard (and (stringp s)
-                              (natp expo)
-                              (<= bound (length s)))))
-  (cond ((zp bound) 0)
-        (t (let* ((pos (1- bound))
-                  (ch (char s pos)))
-             (cond ((member ch '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
-                    (let ((digit (case ch
-                                   (#\0 0)
-                                   (#\1 1)
-                                   (#\2 2)
-                                   (#\3 3)
-                                   (#\4 4)
-                                   (#\5 5)
-                                   (#\6 6)
-                                   (#\7 7)
-                                   (#\8 8)
-                                   (otherwise 9))))
-                      (+ (* (expt 10 expo) digit)
-                         (decimal-string-to-number s pos (1+ expo)))))
-                   (t (er hard 'decimal-string-to-number
-                          "Found non-decimal digit in position ~x0 of string ~
-                           \"~s1\"."
-                          pos s)))))))
-
-(defun parse-version (version)
-
-; Version is an ACL2 version string, as in state global 'acl2-version.  We
-; return (mv major minor incrl rest), where either major is nil, indicating an
-; ill-formed version; or else major, minor, and incrl are natural numbers
-; indicating the major, minor, and incrl version, and rest is the part of the
-; string starting with #\(, if any.  For example,
-; (parse-version "ACL2 Version 2.10") is (mv 2 10 0 "") and
-; (parse-version "ACL2 Version 2.10.1(r)") is (mv 2 10 1 "(r)").
-
-  (let* ((root "ACL2 Version")
-         (pos0 (if (and (stringp version)
-                        (<= 13 (length version))
-                        (equal (subseq version 0 12) root)
-                        (or (eql (char version 12) #\Space)
-                            (eql (char version 12) #\_)))
-                   13
-                 nil))
-         (pos-lparen (position #\( version))
-         (end0 (or pos-lparen
-                   (length version)))
-         (rest (subseq version end0 (length version)))
-         (from-pos0 (and pos0 (subseq version pos0 end0)))
-         (pos1-from-pos0 (and pos0 (position #\. from-pos0)))
-         (pos1 (and pos1-from-pos0 (+ pos0 pos1-from-pos0)))
-         (major (and pos1 (decimal-string-to-number
-                           (subseq version pos0 pos1)
-                           (- pos1 pos0) 0)))
-         (from-pos1 (and pos1 (subseq version (1+ pos1) end0)))
-         (pos2-from-pos1 (and pos1 (position #\. from-pos1)))
-         (pos2 (if pos2-from-pos1
-                   (+ (1+ pos1) pos2-from-pos1)
-                 (and pos1 end0)))
-         (minor (and pos2 (decimal-string-to-number
-                           (subseq version (1+ pos1) pos2)
-                           (1- (- pos2 pos1)) 0)))
-         (incrl (if (and pos2 (< pos2 end0))
-                    (decimal-string-to-number
-                     (subseq version (1+ pos2) end0)
-                     (1- (- end0 pos2))
-                     0)
-                  0)))
-    (mv major minor incrl rest)))
-
-#-acl2-loop-only
-(defun-one-output latest-release-note-string ()
-  (mv-let (major minor incrl rest)
-    (parse-version (f-get-global 'acl2-version *the-live-state*))
-    (declare (ignore rest))
-    (if (zerop incrl)
-        (format nil "note-~s-~s" major minor)
-      (format nil "note-~s-~s-~s" major minor incrl))))
-
 (defun earlier-acl2-versionp (version1 version2)
 
 ; This function ignores the part of each version string after the first
@@ -28428,43 +28344,10 @@
   `(fmt1!-to-string-fn ,str ,alist ,col ,evisc-tuple ,fmt-control-alist ,iprint))
 
 #-acl2-loop-only
-(defvar *hard-error-is-error* nil)
-
-#-acl2-loop-only
-(defun hard-error (ctx str alist &aux (state *the-live-state*))
-
-; See the #+acl2-loop-only definition of this function for a discussion of this
-; function.
-
-  (when (not *hard-error-returns-nilp*)
-
-; We are going to ``cause an error.''  We print an error message with error-fms
-; even though we do not have state.  To do that, we must bind *wormholep* to
-; nil so we don't try to push undo information (or, in the case of error-fms,
-; cause an error for illegal state changes).  If error-fms could evaluate arbitrary
-; forms, e.g., to make legal state changes while in wormholes, then this would be
-; a BAD IDEA.  But error-fms only prints stuff that was created earlier (and passed
-; in via alist).
-
-    (cond
-     (*hard-error-is-error*
-      (error "~a" (channel-to-string
-                   (error-fms-channel t ctx str alist chan state)
-                   chan nil nil :default t)))
-     (t
-      (let ((*standard-output* *error-output*)
-            (*wormholep* nil))
-        (error-fms t ctx str alist state))
-
-; Once upon a time hard-error took a throw-flg argument and did the
-; following throw-raw-ev-fncall only if the throw-flg was t.  Otherwise,
-; it signalled an interface-er.  Note that in either case it behaved like
-; an error -- interface-er's are rougher because they do not leave you in
-; the ACL2 command loop.  I think this aspect of the old code was a vestige
-; of the pre-*ld-level* days when we didn't know if we could throw or not.
-
-      (throw-raw-ev-fncall 'illegal))))
-  nil)
+(defun hard-error-is-error (ctx str alist)
+  (error "~a" (channel-to-string
+               (error-fms-channel t ctx str alist chan state)
+               chan nil nil :default t)))
 
 ; Essay on Memoization with Attachments (relevant for #+hons version only)
 

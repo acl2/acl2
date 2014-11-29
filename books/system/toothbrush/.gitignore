@@ -2,3 +2,4 @@ defined-syms.lsp
 success.txt
 tests/*/output.lsp
 tests/*/success.txt
+tests/*/tb-exec*
