@@ -1740,30 +1740,6 @@
     (setf (hl-hspace-addr-limit hs) (- cutoff count))))
 
 #+static-hons
-(defmacro our-hash-table-rehash-size (ht)
-
-; Hash-table-rehash-size is missing in some versions of ANSI GCL 2.6.11 as of
-; mid-Sept. 2014.
-
-  #+gcl (if (fboundp 'hash-table-rehash-size)
-            `(hash-table-rehash-size ,ht)
-; else use default from hl-mht-fn
-          1.5)
-  #-gcl `(hash-table-rehash-size ,ht))
-
-#+static-hons
-(defmacro our-hash-table-rehash-threshold (ht)
-
-; Hash-table-rehash-threshold is missing in some versions of ANSI GCL 2.6.11 as
-; of mid-Sept. 2014.
-
-  #+gcl (if (fboundp 'hash-table-rehash-threshold)
-            `(hash-table-rehash-threshold ,ht)
-; else use default from hl-mht-fn
-          0.7)
-  #-gcl `(hash-table-rehash-threshold ,ht))
-
-#+static-hons
 (defun hl-make-addr-limit-next (hs)
   (declare (type hl-hspace hs))
 
@@ -1776,7 +1752,7 @@
   (let* ((addr-ht       (hl-hspace-addr-ht hs))
          (count         (hash-table-count addr-ht))
          (size          (hash-table-size addr-ht))
-         (rehash-size   (our-hash-table-rehash-size addr-ht))
+         (rehash-size   (hash-table-rehash-size addr-ht))
          (future-cutoff (floor (* 0.995 rehash-size size))))
     (setf (hl-hspace-addr-limit hs)
           ;; Presumably the rehash-size is a fixnum, as required for the
@@ -3566,9 +3542,9 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   (let* (;; Note: do not bind ADDR-HT here, we want it to get GC'd.
          (addr-ht-size             (hash-table-size (hl-hspace-addr-ht hs)))
          (addr-ht-count            (hash-table-count (hl-hspace-addr-ht hs)))
-         (addr-ht-rehash-size      (our-hash-table-rehash-size
+         (addr-ht-rehash-size      (hash-table-rehash-size
                                     (hl-hspace-addr-ht hs)))
-         (addr-ht-rehash-threshold (our-hash-table-rehash-threshold
+         (addr-ht-rehash-threshold (hash-table-rehash-threshold
                                     (hl-hspace-addr-ht hs)))
 
          (str-ht        (hl-hspace-str-ht hs))

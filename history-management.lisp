@@ -2909,6 +2909,7 @@
                (ctx erp)
                (let ((channel (proofs-co state)))
                  (pprogn
+                  (newline channel state)
                   (error-fms-channel nil ctx "~@0See :DOC failure."
                                      (list (cons #\0
                                                  (if (tilde-@p erp)

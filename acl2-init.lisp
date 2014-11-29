@@ -37,6 +37,8 @@
 (push :static-hons *features*)
 
 ; We use the static honsing scheme on 64-bit GCL when the support is there.
+; Actually, with our restriction to GCL Version 2.6.12 and later, we believe
+; that the test below will always be true for ANSI GCL.
 #+(and gcl x86_64)
 (when (and (fboundp 'si::static-inverse-cons)
            (fboundp 'si::without-interrupts))

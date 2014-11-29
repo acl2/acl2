@@ -3784,8 +3784,8 @@
 
   (mv-let (col state)
           (fmt1 (if hardp
-                    "~%HARD ACL2 ERROR"
-                  "~%ACL2 Error")
+                    "HARD ACL2 ERROR"
+                  "ACL2 Error")
                 nil 0 channel state nil)
           (mv-let (col state)
                   (fmt-in-ctx ctx col channel state)
@@ -3800,6 +3800,7 @@
   (with-output-lock
    (let ((chan (f-get-global 'standard-co state)))
      (pprogn (newline chan state)
+             (newline chan state)
              (error-fms-channel hardp ctx str alist chan state)
              (newline chan state)
              (newline chan state)))))
