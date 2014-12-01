@@ -1016,12 +1016,14 @@ function jumpInit() {
 
 function jumpGo(obj,datum) {
     var key = datum["value"];
-    if (topicExists(key))
+    if (topicExists(key)) {
         actionGoKey(key);
-    else
+	$("#jump").typeahead('val', "");
+	// $("#jump").typeahead('setQuery', '');
+    }
+    else {
         alert("Invalid key " + key);
-    $("#jump").typeahead('val', "");
-    $("#jump").typeahead('setQuery', '');
+    }
 }
 
 function searchInit() {
