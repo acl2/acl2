@@ -29,6 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
+#+acl2-legacy-doc
 (include-book "write-acl2-xdoc")
 (set-state-ok t)
 (program)
@@ -277,6 +278,7 @@ find what you want.</p>")
 
 (include-book "verbosep")
 
+#+acl2-legacy-doc
 #!XDOC
 (defmacro import-acl2doc ()
   ;; This is for refreshing the documentation to reflect topics documented in

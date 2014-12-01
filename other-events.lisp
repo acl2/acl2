@@ -2824,6 +2824,7 @@
     (ec-call1-raw . ec-call1)
     (with-guard-checking1-raw . with-guard-checking1)))
 
+#+acl2-legacy-doc
 (defun doc-stub-lst (doc-alist acc)
 
 ; See documentation-alist-stub.
@@ -2834,6 +2835,7 @@
                                  (list (car tuple) (cadr tuple)))
                                acc)))))
 
+#+acl2-legacy-doc
 (defun documentation-alist-stub1 (x acc)
 
 ; See documentation-alist-stub.  X is a tail of *documentation-alist-stub*.
@@ -2851,6 +2853,7 @@
   of the User's Manual on the ACL2 home page.~/~/")
                   acc)))))
 
+#+acl2-legacy-doc
 (defun documentation-alist-stub ()
 
 ; In order to have doc sections available for books that still use classic :doc
@@ -4377,6 +4380,7 @@
                        (list 'redef-seen nil)
                        (list 'cert-replay nil)
                        (list 'proof-supporters-alist nil)
+                       #+acl2-legacy-doc
                        (list 'documentation-alist (documentation-alist-stub)))
                  (putprop 'acl2-defaults-table
                           'table-alist
@@ -5277,7 +5281,7 @@
      set-default-backchain-limit
      set-default-hints!
      set-enforce-redundancy
-     set-ignore-doc-string-error
+     #+acl2-legacy-doc set-ignore-doc-string-error
      set-ignore-ok
      set-inhibit-warnings!
      set-invisible-fns-table
@@ -5613,7 +5617,7 @@
                              set-compile-fns
                              set-default-backchain-limit
                              set-enforce-redundancy
-                             set-ignore-doc-string-error
+                             #+acl2-legacy-doc set-ignore-doc-string-error
                              set-ignore-ok
                              set-irrelevant-formals-ok
                              set-let*-abstractionp
@@ -17965,6 +17969,7 @@
               ~x1 does not have this form.  See :DOC defchoose."
              valid-keywords
              event-form))
+        #+acl2-legacy-doc
         ((and doc
               (not (doc-stringp doc)))
          (er soft ctx

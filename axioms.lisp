@@ -4010,6 +4010,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(29 . MINUSP)
   #-non-standard-analysis
   '(26 . MINUSP))
+#+acl2-legacy-doc
 (defconst *tau-booleanp-pair*
   #+(and (not non-standard-analysis) acl2-par)
   '(109 . BOOLEANP)
@@ -4019,6 +4020,17 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(111 . BOOLEANP)
   #+(and non-standard-analysis acl2-par)
   '(112 . BOOLEANP)
+  )
+#-acl2-legacy-doc
+(defconst *tau-booleanp-pair*
+  #+(and (not non-standard-analysis) acl2-par)
+  '(108 . BOOLEANP)
+  #+(and (not non-standard-analysis) (not acl2-par))
+  '(107 . BOOLEANP)
+  #+(and non-standard-analysis (not acl2-par))
+  '(110 . BOOLEANP)
+  #+(and non-standard-analysis acl2-par)
+  '(111 . BOOLEANP)
   )
 
 ; Note: The constants declared above are checked for accuracy after bootstrap
@@ -12528,7 +12540,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     defuns add-default-hints!
     local encapsulate remove-default-hints!
     include-book pprogn set-enforce-redundancy
-    set-ignore-doc-string-error
+    #+acl2-legacy-doc set-ignore-doc-string-error
     logic er deflabel mv-let program value-triple
     set-body comp set-bogus-defun-hints-ok
     dmr-stop defpkg set-measure-function
@@ -12878,8 +12890,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (deferred-ttag-notes . :not-deferred)
     (deferred-ttag-notes-saved . nil)
     (dmrp . nil)
-    (doc-char-subst-table . nil)
-    (doc-fmt-alist . nil)
+    #+acl2-legacy-doc (doc-char-subst-table . nil)
+    #+acl2-legacy-doc (doc-fmt-alist . nil)
     (evisc-hitp-without-iprint . nil)
     (eviscerate-hide-terms . nil)
     (fmt-hard-right-margin . ,*fmt-hard-right-margin-default*)
@@ -12924,9 +12936,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (make-event-debug-depth . 0)
     (match-free-error . nil) ; if t, modify :doc for set-match-free-error
     (modifying-include-book-dir-alist . nil)
-    (more-doc-max-lines . 45)
-    (more-doc-min-lines . 35)
-    (more-doc-state . nil)
+    #+acl2-legacy-doc (more-doc-max-lines . 45)
+    #+acl2-legacy-doc (more-doc-min-lines . 35)
+    #+acl2-legacy-doc (more-doc-state . nil)
     (parallel-execution-enabled . nil)
     (parallelism-hazards-action . nil) ; nil or :error, else treated as :warn
     (pc-erp . nil)
@@ -12944,7 +12956,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (print-circle . nil)
     (print-circle-files . t) ; set to nil for #+gcl in LP
     (print-clause-ids . nil)
-    (print-doc-start-column . 15)
+    #+acl2-legacy-doc (print-doc-start-column . 15)
     (print-escape . t)
     (print-length . nil)
     (print-level . nil)
@@ -20269,6 +20281,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (member val '(0 1 2)))
         ((eq key :enforce-redundancy)
          (member-eq val '(t nil :warn)))
+        #+acl2-legacy-doc
         ((eq key :ignore-doc-string-error)
          (member-eq val '(t nil :warn)))
         ((eq key :compile-fns)
@@ -20388,14 +20401,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (ignore x))
   nil)
 
-#+acl2-loop-only
+#+(and acl2-legacy-doc acl2-loop-only)
 (defmacro set-ignore-doc-string-error (x)
   `(state-global-let*
     ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :ignore-doc-string-error ,x)
            (table acl2-defaults-table :ignore-doc-string-error))))
 
-#-acl2-loop-only
+#+(and acl2-legacy-doc (not acl2-loop-only))
 (defmacro set-ignore-doc-string-error (x)
   (declare (ignore x))
   nil)

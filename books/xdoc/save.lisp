@@ -87,6 +87,7 @@
      ,@(and import
             `((include-book
                "xdoc/topics" :dir :system)
+              #+acl2-legacy-doc
               (import-acl2doc)))
      ;; b* should have been included by the above includes
      (make-event

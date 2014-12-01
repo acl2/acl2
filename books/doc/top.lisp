@@ -414,6 +414,7 @@ of proofs.")
 ; have XDOC topics for their parents.  So, get them all loaded and converted
 ; into proper XDOC topics, then move them around where we want them.
 
+#+acl2-legacy-doc
 (xdoc::import-acl2doc)
 
 (include-book "xdoc/topics" :dir :system)

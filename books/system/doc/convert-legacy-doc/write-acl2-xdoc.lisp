@@ -147,6 +147,9 @@ an xdoc file.  See :DOC markup")
                      (subseq x 1 nil))
       x)))
 
+#+acl2-legacy-doc
+(progn
+
 (defun write-a-doc-section (doc-tuple doc-fmt-alist parents-fal channel
                                       state)
 
@@ -309,6 +312,8 @@ an xdoc file.  See :DOC markup")
                                        (return-p 'nil)
                                        (skip-topics-fal 'nil))
   `(write-xdoc-alist-fn ,write-p ,return-p ,skip-topics-fal state))
+
+)
 
 ; Utility for accessing element of xdoc-alist:
 

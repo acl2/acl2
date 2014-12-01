@@ -4141,6 +4141,7 @@
             timer-alist                ;;; preserve accumulated summary info
             main-timer                 ;;; preserve accumulated summary info
             verbose-theory-warning     ;;; for warning on disabled mv-nth etc.
+            #+acl2-legacy-doc
             more-doc-state             ;;; for proof-checker :more command
             pc-ss-alist                ;;; for saves under :instructions hints
             last-step-limit            ;;; propagate step-limit past expansion
@@ -6039,6 +6040,7 @@
                   (length str)
                   normp))
 
+#+acl2-legacy-doc
 (defun doc-stringp (str)
 
 ; If this function returns t then the first character (if any) after
@@ -6056,9 +6058,11 @@
 
 ; So now we continue with the development of printing event forms.
 
+#+acl2-legacy-doc
 (defconst *zapped-doc-string*
   "Documentation available via :doc")
 
+#+acl2-legacy-doc
 (defun zap-doc-string-from-event-form/all-but-last (lst)
   (cond ((null lst) nil)
         ((null (cdr lst)) lst)
@@ -6068,6 +6072,7 @@
         (t (cons (car lst)
                  (zap-doc-string-from-event-form/all-but-last (cdr lst))))))
 
+#+acl2-legacy-doc
 (defun zap-doc-string-from-event-form/second-arg (form)
 
 ; Zap a doc string if it occurs in the second arg, e.g.,
@@ -6078,6 +6083,7 @@
                *zapped-doc-string*))
         (t form)))
 
+#+acl2-legacy-doc
 (defun zap-doc-string-from-event-form/third-arg (form)
 
 ; Zap a doc string if it occurs in the third arg, e.g.,
@@ -6089,11 +6095,13 @@
                *zapped-doc-string*))
         (t form)))
 
+#+acl2-legacy-doc
 (defun zap-doc-string-from-event-form/mutual-recursion (lst)
   (cond ((null lst) nil)
         (t (cons (zap-doc-string-from-event-form/all-but-last (car lst))
                  (zap-doc-string-from-event-form/mutual-recursion (cdr lst))))))
 
+#+acl2-legacy-doc
 (defun zap-doc-string-from-event-form/doc-keyword (lst)
 
 ; This function is supposed to zap out a doc string if it occurs in
@@ -6115,6 +6123,7 @@
         (t (cons (car lst)
                  (zap-doc-string-from-event-form/doc-keyword (cdr lst))))))
 
+#+acl2-legacy-doc
 (defun zap-doc-string-from-event-form (form)
   (case (car form)
     ((defun defmacro)
@@ -6164,7 +6173,8 @@
 
   (cond
    ((atom form) (mv form state))
-   (fullp (let* ((form (zap-doc-string-from-event-form form))
+   (fullp (let* (#+acl2-legacy-doc
+                 (form (zap-doc-string-from-event-form form))
                  (evisc-tuple (ld-evisc-tuple state))
                  (evisc-alist (world-evisceration-alist state (car evisc-tuple)))
                  (print-level (cadr evisc-tuple))
@@ -7652,8 +7662,10 @@
 ; We now develop the code for checking that a documentation string
 ; is well formed.
 
+#+acl2-legacy-doc
 (defconst *return-character* (code-char 13))
 
+#+acl2-legacy-doc
 (defun read-symbol-from-string1 (str i len ans)
   (cond ((< i len)
          (let ((c (char str i)))
@@ -7669,6 +7681,7 @@
                                               (cons (char-upcase c) ans))))))
         (t (mv (reverse ans) i))))
 
+#+acl2-legacy-doc
 (defun read-symbol-from-string2 (str i len ans)
   (cond ((< i len)
          (let ((c (char str i)))
@@ -7678,6 +7691,7 @@
                                               (cons c ans))))))
         (t (mv (reverse ans) i))))
 
+#+acl2-legacy-doc
 (defun read-symbol-from-string (str i pkg-witness)
 
 ; Reads one symbol from str, starting at index i.  The symbol will
@@ -7729,6 +7743,7 @@
                     j)))
           (t (mv nil nil)))))
 
+#+acl2-legacy-doc
 (defun scan-past-newline (str i maximum)
   (cond ((< i maximum)
          (cond ((eql (char str i) #\Newline)
@@ -7736,6 +7751,7 @@
                (t (scan-past-newline str (1+ i) maximum))))
         (t maximum)))
 
+#+acl2-legacy-doc
 (defun scan-past-newlines (str i maximum)
   (cond ((< i maximum)
          (cond ((eql (char str i) #\Newline)
@@ -7743,6 +7759,7 @@
                (t i)))
         (t maximum)))
 
+#+acl2-legacy-doc
 (defun scan-past-tilde-slash (str i maximum)
   (cond ((< i maximum)
          (cond ((eql (char str i) #\~)
@@ -7755,6 +7772,7 @@
                (t (scan-past-tilde-slash str (1+ i) maximum))))
         (t maximum)))
 
+#+acl2-legacy-doc
 (defun scan-to-doc-string-part1 (parti str i maximum)
   (cond ((= parti 0) i)
         (t (scan-to-doc-string-part1
@@ -7766,6 +7784,7 @@
              maximum)
             maximum))))
 
+#+acl2-legacy-doc
 (defun scan-to-doc-string-part (i str)
 
 ; We assume str is a doc-stringp.  Thus, it has the form:
@@ -7785,11 +7804,13 @@
                                len)
                               len)))
 
+#+acl2-legacy-doc
 (defun get-one-liner-as-string1 (str i j acc)
   (cond ((<= i j)
          (get-one-liner-as-string1 str i (1- j) (cons (char str j) acc)))
         (t (coerce acc 'string))))
 
+#+acl2-legacy-doc
 (defun get-one-liner-as-string (str)
   (let ((i (scan-to-doc-string-part 0 str))
         (max (length str)))
@@ -7798,6 +7819,7 @@
                               (- (scan-past-tilde-slash str i max) 3)
                               nil)))
 
+#+acl2-legacy-doc
 (defun read-doc-string-citations1 (name str i)
   (mv-let (sym1 i)
           (read-symbol-from-string str i name)
@@ -7812,6 +7834,7 @@
                         (cons (cons sym1 sym2)
                               (read-doc-string-citations1 name str i)))))))))
 
+#+acl2-legacy-doc
 (defun read-doc-string-citations (name str)
 
 ; This function reads the contents of the citations section of a doc
@@ -7828,13 +7851,16 @@
   (let ((i (scan-to-doc-string-part 3 str)))
     (read-doc-string-citations1 name str i)))
 
+#+acl2-legacy-doc
 (defun doc-topicp (name wrld)
   (assoc-equal name (global-val 'documentation-alist wrld)))
 
+#+acl2-legacy-doc
 (defun ignore-doc-string-error (wrld)
   (cdr (assoc-eq :ignore-doc-string-error
                  (table-alist 'acl2-defaults-table wrld))))
 
+#+acl2-legacy-doc
 (defmacro er-doc (ctx str &rest str-args)
   `(let ((er-doc-ign (ignore-doc-string-error (w state))))
      (cond ((eq er-doc-ign t)
@@ -7849,6 +7875,7 @@
                   (check-vars-not-free (er-doc-ign)
                                        (msg ,str ,@str-args)))))))
 
+#+acl2-legacy-doc
 (defun chk-doc-string-citations (str citations wrld)
 
 ; We know that citations is a list of pairs of symbols, by construction -- it
@@ -7881,6 +7908,7 @@
            (caar citations)
            str))))
 
+#+acl2-legacy-doc
 (defun chk-well-formed-doc-string (name doc ctx state)
 
 ; This function checks that doc is a well-formed doc string.
@@ -7975,6 +8003,7 @@
                               name section-sym doc))))))))
      (t (value nil)))))
 
+#+acl2-legacy-doc
 (defun translate-doc (name doc ctx state)
 
 ; If this function does not cause an error, it returns a pair of the form
@@ -7997,6 +8026,12 @@
                (t (value nil))))
         (t (chk-well-formed-doc-string name doc ctx state))))
 
+#-acl2-legacy-doc ; Delete this and its uses when finally excising legacy doc:
+(defun translate-doc (name doc ctx state)
+  (declare (ignore name doc ctx))
+  (value nil))
+
+#+acl2-legacy-doc
 (defun translate-doc-lst (names docs ctx state)
   (cond
    ((null names) (value nil))
@@ -8004,6 +8039,12 @@
                 (rst (translate-doc-lst (cdr names) (cdr docs) ctx state)))
                (value (cons pair rst))))))
 
+#-acl2-legacy-doc ; Delete this and its uses when finally excising legacy doc:
+(defun translate-doc-lst (names docs ctx state)
+  (declare (ignore names docs ctx))
+  (value nil))
+
+#+acl2-legacy-doc
 (defun get-cites (citations)
 
 ; This function collects all the symbols that are paired with
@@ -8047,6 +8088,7 @@
         (t (merge-alpha-< (merge-sort-alpha-< (evens l))
                           (merge-sort-alpha-< (odds l))))))
 
+#+acl2-legacy-doc
 (defun update-alpha-<-alist (key val alist)
 
 ; Alist is an alist whose keys are either symbols or strings and
@@ -8059,6 +8101,7 @@
          (cons (car alist) (update-alpha-<-alist key val (cdr alist))))
         (t (cons (cons key val) alist))))
 
+#+acl2-legacy-doc
 (defun put-cited-bys (name citations alist)
 
 ; This function visits every symbol paired with :cited-by in the
@@ -8084,6 +8127,7 @@
                        alist))))
            alist)))))
 
+#+acl2-legacy-doc
 (defun update-doc-database (name doc pair wrld)
 
 ; Name is a documented name, i.e., a symbol or a string (package name).
@@ -8109,6 +8153,12 @@
                      wrld))
         (t wrld)))
 
+#-acl2-legacy-doc ; Delete this and its uses when finally excising legacy doc:
+(defun update-doc-database (name doc pair wrld)
+  (declare (ignore name doc pair))
+  wrld)
+
+#+acl2-legacy-doc
 (defun update-doc-database-lst (names docs pairs wrld)
   (cond ((null names) wrld)
         (t (update-doc-database-lst
@@ -8116,6 +8166,11 @@
             (cdr docs)
             (cdr pairs)
             (update-doc-database (car names) (car docs) (car pairs) wrld)))))
+
+#-acl2-legacy-doc ; Delete this and its uses when finally excising legacy doc:
+(defun update-doc-database-lst (names docs pairs wrld)
+  (declare (ignore names docs pairs))
+  wrld)
 
 (defun putprop-unless (sym key val exception wrld)
 
@@ -8221,6 +8276,103 @@
 ; info based on the documentation database.  First, let us get
 ; defdoc out of the way.
 
+#+acl2-legacy-doc
+(defmacro pstate-global-let* (bindings body)
+
+; This macro is useful when you want the effect of state-global-let*
+; but you are in a situation in which you are working only with state
+; and not with error/val/state triples.
+
+  `(mv-let (erp val state)
+           (state-global-let* ,bindings
+                              (pprogn ,body (value nil)))
+           (declare (ignore erp val))
+           state))
+
+; Now we implement the DWIM feature of doc, which prints out the
+; near-misses for an alleged (but erroneous) documentation topic.
+
+(defun degree-of-match2 (ch1 ch2 str i maximum)
+  (cond ((< (1+ i) maximum)
+         (if (and (eql ch1 (normalize-char (char str i) nil))
+                  (eql ch2 (normalize-char (char str (1+ i)) nil)))
+             1
+             (degree-of-match2 ch1 ch2 str (1+ i) maximum)))
+        (t 0)))
+
+(defun degree-of-match1 (pat-lst str maximum)
+  (cond ((null pat-lst) 0)
+        ((null (cdr pat-lst)) 0)
+        (t (+ (degree-of-match2 (car pat-lst) (cadr pat-lst) str 0 maximum)
+              (degree-of-match1 (cdr pat-lst) str maximum)))))
+
+(defun degree-of-match (pat-lst str)
+
+; Pat-lst is a normalized string (with hyphen-is-space nil).  We
+; normalize str similarly and compute the degree of match between
+; them.  The answer is a rational between 0 and 1.  The number is just
+; n divided by (length pat)-1, where n is the number of adjacent
+; character pairs in pat that occur adjacently in str.  This is just
+; a Royal Kludge that seems to work.
+
+  (if (< (length pat-lst) 2)
+      0
+      (/ (degree-of-match1 pat-lst str (length str))
+         (1- (length pat-lst)))))
+
+(defun find-likely-near-misses (pat-lst alist)
+
+; Alist is the documentation-alist.  Pat-lst is a normalized string
+; (with hyphen-is-space nil).  We collect the cars of the pairs in
+; alist that have a degree of match of more than one half.  Again, an
+; utter kludge.
+
+  (cond ((null alist) nil)
+        (t (let ((d (degree-of-match pat-lst
+                                     (if (stringp (caar alist))
+                                         (caar alist)
+                                         (symbol-name (caar alist))))))
+             (cond ((<= d 1/2)
+                    (find-likely-near-misses pat-lst (cdr alist)))
+                   (t (cons (cons d (caar alist))
+                            (find-likely-near-misses pat-lst
+                                                     (cdr alist)))))))))
+
+(defun print-doc-dwim (name ctx state)
+  (let ((lst (merge-sort-car->
+              (find-likely-near-misses
+               (normalize-string
+                (if (stringp name) ; impossible after Version_6.3
+                    name
+                    (symbol-name name))
+                nil)
+               *acl2-system-documentation*))))
+    (er soft ctx
+        "There is no documentation for ~x0.~#1~[~/  A similar documented name ~
+         is ~&2.~/  Similar documented names are ~&2.~]~|~%NOTE: See also ~
+         :DOC finding-documentation."
+        name
+        (zero-one-or-more (length lst))
+        (strip-cdrs lst))))
+
+(defun doc-fn (name state)
+  (cond
+   ((not (symbolp name))
+    (er soft 'doc
+        "Documentation topics are symbols."))
+   (t (let ((entry (assoc name *acl2-system-documentation*)))
+        (cond (entry (mv-let
+                      (col state)
+                      (fmt1 "Parent~#0~[~/s~]: ~&0.~|~%"
+                            (list (cons #\0 (cadr entry)))
+                            0 *standard-co* state nil)
+                      (declare (ignore col))
+                      (pprogn (princ$ (caddr entry) *standard-co* state)
+                              (newline *standard-co* state)
+                              (value :invisible))))
+              (t (print-doc-dwim name :doc state)))))))
+
+#+acl2-legacy-doc
 (defun defdoc-fn (name state doc event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
@@ -8282,12 +8434,27 @@
 ; list of exceptions in install-event just below its "Comment on irrelevance of
 ; skip-proofs".
 
+; It is tempting to remove this event.  However, we noticed that in community
+; book books/workshops/2000/manolios/pipeline/pipeline/top/defun-weak-sk.lisp,
+; a macro has a :doc keyword that is used to generate a defdoc form; maybe
+; others do that sort of thing, too.  So we cause a warning instead of an
+; error, at least for now.
+
+  (declare (ignorable event-form doc))
+  #+acl2-legacy-doc
   (list 'defdoc-fn
         (list 'quote name)
         'state
         (list 'quote doc)
-        (list 'quote event-form)))
+        (list 'quote event-form))
+  #-acl2-legacy-doc
+  `(pprogn (warning$ 'defdoc "Legacy-doc"
+                     "Defdoc is deprecated and has no effect.  Consider using ~
+                      defxdoc instead to document ~x0."
+                     ',name)
+           (value nil)))
 
+#+acl2-legacy-doc
 (defun access-doc-string-database (name state)
 
 ; Name is a symbol or a string.  This function would be just
@@ -8321,6 +8488,12 @@
                  (global-val 'documentation-alist (w state))))
    (t nil)))
 
+#-acl2-legacy-doc ; Delete this and its uses when finally excising legacy doc:
+(defun access-doc-string-database (name state)
+  (declare (ignore name state))
+  nil)
+
+#+acl2-legacy-doc
 (defun get-doc-string (name state)
 
 ; This function is provided simply to let the user see what
@@ -8328,10 +8501,12 @@
 
   (cadddr (access-doc-string-database name state)))
 
+#+acl2-legacy-doc
 (defun get-doc-string-de-indent1 (str i)
   (cond ((eql (char str i) #\Newline) 0)
         (t (1+ (get-doc-string-de-indent1 str (1- i))))))
 
+#+acl2-legacy-doc
 (defun get-doc-string-de-indent (str)
 
 ; The text in a doc string is assumed to be indented some to
@@ -8344,6 +8519,7 @@
   (get-doc-string-de-indent1 str
                              (1- (scan-to-doc-string-part 0 str))))
 
+#+acl2-legacy-doc
 (defun use-doc-string-de-indent (d str i maximum)
 
 ; If there are d spaces in str starting at i, return i+d; else nil.
@@ -8355,21 +8531,25 @@
                (t nil)))
         (t nil)))
 
+#+acl2-legacy-doc
 (defun doc-prefix (state)
   (if (f-boundp-global 'doc-prefix state)
       (f-get-global 'doc-prefix state)
       "| "))
 
+#+acl2-legacy-doc
 (defun princ-prefix (prefix channel state)
   (cond ((consp prefix)
          (pprogn (princ$ (car prefix) channel state)
                  (spaces (cdr prefix) (length (car prefix)) channel state)))
         (t (princ$ prefix channel state))))
 
+#+acl2-legacy-doc
 (defun length-prefix (prefix)
   (cond ((consp prefix) (+ (length (car prefix)) (cdr prefix)))
         (t (length prefix))))
 
+#+acl2-legacy-doc
 (defun save-more-doc-state (str i maximum de-indent prefix state)
   (cond ((or (>= i maximum)
          (and (int= (+ i 2) maximum)
@@ -8379,6 +8559,7 @@
                          (list str i maximum de-indent prefix)
                          state))))
 
+#+acl2-legacy-doc
 (defun doc-char-subst-table-p (x)
 
 ; See comment in terminal-markup-table.
@@ -8392,6 +8573,7 @@
          (doc-char-subst-table-p (cdr x))))
    (t (null x))))
 
+#+acl2-legacy-doc
 (defun set-doc-char-subst-table (x state)
   (if (doc-char-subst-table-p x)
       (pprogn (f-put-global 'doc-char-subst-table x state)
@@ -8402,15 +8584,18 @@
          ~x0 does not have this property."
         x)))
 
+#+acl2-legacy-doc
 (defun doc-char-subst-table (state)
 
 ; See comment in terminal-markup-table.
 
   (f-get-global 'doc-char-subst-table state))
 
+#+acl2-legacy-doc
 (defun doc-fmt-alist (state)
   (f-get-global 'doc-fmt-alist state))
 
+#+acl2-legacy-doc
 (defconst *terminal-markup-table*
 
 ; Examples of links are as follows.
@@ -8504,11 +8689,13 @@
     ("URL"  nil . "~st")   ;print as HTML hyperlink (when possible)
     ))
 
+#+acl2-legacy-doc
 (defun doc-markup-table (state)
   (or (and (f-boundp-global 'doc-markup-table state)
            (f-get-global 'doc-markup-table state))
       *terminal-markup-table*))
 
+#+acl2-legacy-doc
 (defun doc-scan-past-tilde-key (name orig-position posn str maximum acc state)
 
 ; Posn is the position just after the first opening bracket ([) that is at or
@@ -8537,6 +8724,7 @@
        (t (doc-scan-past-tilde-key
            name orig-position (1+ posn) str maximum (cons ch acc) state)))))))
 
+#+acl2-legacy-doc
 (defun doc-scan-past-tilde-arg
   (name orig-position posn str maximum acc state)
 
@@ -8609,6 +8797,7 @@
                                    (cons ch acc)
                                    state)))))))
 
+#+acl2-legacy-doc
 (defun doc-scan-past-tilde
   (name posn str maximum markup-table state)
 
@@ -8647,6 +8836,7 @@
                                 (erp (mv erp nil nil nil state))
                                 (t (mv nil posn entry arg state)))))))))))
 
+#+acl2-legacy-doc
 (defun assoc-char-alist-stringp (char-alist str len)
 
 ; Warning:  Just like member-char-stringp, len must be strictly less than the
@@ -8657,6 +8847,7 @@
    (t (or (member-char-stringp (caar char-alist) str len)
           (assoc-char-alist-stringp (cdr char-alist) str len)))))
 
+#+acl2-legacy-doc
 (defun apply-char-subst-table1 (char-lst acc char-subst-table)
 
 ; Consider the result of replacing each character in char-lst with its value in
@@ -8678,6 +8869,7 @@
                                    (cons (car char-lst) acc)
                                    char-subst-table)))))))
 
+#+acl2-legacy-doc
 (defun apply-char-subst-table (s char-subst-table spack)
 
 ; Consider the result of replacing each character in char-lst with its value in
@@ -8705,6 +8897,7 @@
            non-string:  ~x0"
           s))))
 
+#+acl2-legacy-doc
 (defun read-pointer-and-text1 (lst pacc sacc)
   (cond ((null lst)
          (mv (er hard 'read-pointer-and-text
@@ -8729,6 +8922,7 @@
                                    (cons (car lst) pacc)
                                    (cons (car lst) sacc)))))
 
+#+acl2-legacy-doc
 (defun read-pointer-and-text2 (lst acc)
   (cond ((eql (car lst) #\Space)
          (let ((temp (coerce (reverse acc) 'string)))
@@ -8738,6 +8932,7 @@
         (t (read-pointer-and-text2 (cdr lst)
                                    (cons (char-upcase (car lst)) acc)))))
 
+#+acl2-legacy-doc
 (defun read-pointer-and-text-raw (str)
 
 ; See the comment in lookup-fmt-alist, especially the table showing
@@ -8751,6 +8946,7 @@
    (t (let ((temp (string-upcase str)))
         (mv temp temp str)))))
 
+#+acl2-legacy-doc
 (defun posn-char-stringp (chr str i)
   (cond ((zp i)
          (if (eql chr (char str i))
@@ -8761,6 +8957,7 @@
         (t
          (posn-char-stringp chr str (1- i)))))
 
+#+acl2-legacy-doc
 (defun replace-colons (p)
   (let ((posn (posn-char-stringp #\: p (1- (length p)))))
     (if (or (null posn)
@@ -8774,6 +8971,7 @@
                    "||"
                    (subseq p (1+ posn) (length p))))))
 
+#+acl2-legacy-doc
 (defun read-pointer-and-text (str bar-sep-p)
   (if bar-sep-p
       (mv-let
@@ -8782,6 +8980,7 @@
        (mv (replace-colons p) (replace-colons s) text))
     (read-pointer-and-text-raw str)))
 
+#+acl2-legacy-doc
 (defun lookup-fmt-alist (str flag fmt-alist char-subst-table bar-sep-p)
 
 ; Warning: Keep this in sync with missing-fmt-alist-chars.
@@ -8872,10 +9071,12 @@
                   (cons #\s (apply-char-subst-table s char-subst-table nil))
                   alist0)))))))
 
+#+acl2-legacy-doc
 (defun bar-sep-p (state)
   (and (f-boundp-global 'bar-sep-p state)
        (f-get-global 'bar-sep-p state)))
 
+#+acl2-legacy-doc
 (defun char-to-string-alistp (lst)
   (declare (xargs :guard t
                   :mode :logic))
@@ -8887,6 +9088,7 @@
                 (stringp (cdar lst))
                 (char-to-string-alistp (cdr lst))))))
 
+#+acl2-legacy-doc
 (defun missing-fmt-alist-chars1 (str char-to-tilde-s-string-alist fmt-alist)
 
 ; See documentation for missing-fmt-alist-chars.
@@ -8908,6 +9110,7 @@
                   (cons fmt-char rest))
                  (t rest))))))
 
+#+acl2-legacy-doc
 (defun missing-fmt-alist-chars (str fmt-alist)
 
 ; Warning: Keep the characters bound below with the documentation for
@@ -8934,6 +9137,7 @@
                               (#\w . "~sw"))
                             fmt-alist))
 
+#+acl2-legacy-doc
 (defun complete-fmt-alist (topic-name fmt-alist undocumented-file
                                       char-subst-table)
 
@@ -8961,6 +9165,7 @@
                 (t fmt-alist))))
     fmt-alist))
 
+#+acl2-legacy-doc
 (defmacro mv-to-state (n form)
 
 ; Form should evaluate to an mv of two or more values, all non-stobjs except
@@ -8975,6 +9180,7 @@
              (declare (ignore ,@vars))
              state)))
 
+#+acl2-legacy-doc
 (defun print-par-entry (entry fmt-alist char-subst-table channel state)
   (mv-to-state
    2
@@ -8983,6 +9189,7 @@
                            (bar-sep-p state))
          0 channel state nil)))
 
+#+acl2-legacy-doc
 (defun print-doc-string-part1 (str i maximum de-indent prefix
                                    markup-table char-subst-table
                                    fmt-alist channel name state ln
@@ -9298,6 +9505,7 @@
             (save-more-doc-state str i maximum de-indent prefix state)
             (mv ln state)))))
 
+#+acl2-legacy-doc
 (defun print-doc-string-part-mv
   (i str prefix markup-table char-subst-table fmt-alist
      channel name ln undocumented-file vp state)
@@ -9395,6 +9603,7 @@
                     (t state))
               (mv new-ln state))))))
 
+#+acl2-legacy-doc
 (defun print-doc-string-part
   (i str prefix markup-table char-subst-table fmt-alist
      channel name ln undocumented-file vp state)
@@ -9404,6 +9613,7 @@
                              fmt-alist channel name ln undocumented-file vp
                              state)))
 
+#+acl2-legacy-doc
 (defun get-doc-section (section alist)
   (cond ((null alist) nil)
         ((and (equal section (cadar alist))
@@ -9412,18 +9622,7 @@
                (get-doc-section section (cdr alist))))
         (t (get-doc-section section (cdr alist)))))
 
-(defmacro pstate-global-let* (bindings body)
-
-; This macro is useful when you want the effect of state-global-let*
-; but you are in a situation in which you are working only with state
-; and not with error/val/state triples.
-
-  `(mv-let (erp val state)
-           (state-global-let* ,bindings
-                              (pprogn ,body (value nil)))
-           (declare (ignore erp val))
-           state))
-
+#+acl2-legacy-doc
 (mutual-recursion
 
 (defun print-doc (name n prefix
@@ -9533,72 +9732,7 @@
 
 )
 
-; Now we implement the DWIM feature of doc, which prints out the
-; near-misses for an alleged (but erroneous) documentation topic.
-
-(defun degree-of-match2 (ch1 ch2 str i maximum)
-  (cond ((< (1+ i) maximum)
-         (if (and (eql ch1 (normalize-char (char str i) nil))
-                  (eql ch2 (normalize-char (char str (1+ i)) nil)))
-             1
-             (degree-of-match2 ch1 ch2 str (1+ i) maximum)))
-        (t 0)))
-
-(defun degree-of-match1 (pat-lst str maximum)
-  (cond ((null pat-lst) 0)
-        ((null (cdr pat-lst)) 0)
-        (t (+ (degree-of-match2 (car pat-lst) (cadr pat-lst) str 0 maximum)
-              (degree-of-match1 (cdr pat-lst) str maximum)))))
-
-(defun degree-of-match (pat-lst str)
-
-; Pat-lst is a normalized string (with hyphen-is-space nil).  We
-; normalize str similarly and compute the degree of match between
-; them.  The answer is a rational between 0 and 1.  The number is just
-; n divided by (length pat)-1, where n is the number of adjacent
-; character pairs in pat that occur adjacently in str.  This is just
-; a Royal Kludge that seems to work.
-
-  (if (< (length pat-lst) 2)
-      0
-      (/ (degree-of-match1 pat-lst str (length str))
-         (1- (length pat-lst)))))
-
-(defun find-likely-near-misses (pat-lst alist)
-
-; Alist is the documentation-alist.  Pat-lst is a normalized string
-; (with hyphen-is-space nil).  We collect the cars of the pairs in
-; alist that have a degree of match of more than one half.  Again, an
-; utter kludge.
-
-  (cond ((null alist) nil)
-        (t (let ((d (degree-of-match pat-lst
-                                     (if (stringp (caar alist))
-                                         (caar alist)
-                                         (symbol-name (caar alist))))))
-             (cond ((<= d 1/2)
-                    (find-likely-near-misses pat-lst (cdr alist)))
-                   (t (cons (cons d (caar alist))
-                            (find-likely-near-misses pat-lst
-                                                     (cdr alist)))))))))
-
-(defun print-doc-dwim (name ctx state)
-  (let ((lst (merge-sort-car->
-              (find-likely-near-misses
-               (normalize-string
-                (if (stringp name) ; impossible after Version_6.3
-                    name
-                    (symbol-name name))
-                nil)
-               *acl2-system-documentation*))))
-    (er soft ctx
-        "There is no documentation for ~x0.~#1~[~/  A similar documented name ~
-         is ~&2.~/  Similar documented names are ~&2.~]~|~%NOTE: See also ~
-         :DOC finding-documentation."
-        name
-        (zero-one-or-more (length lst))
-        (strip-cdrs lst))))
-
+#+acl2-legacy-doc
 (defun end-doc (channel state)
   (cond
    ((f-get-global 'more-doc-state state)
@@ -9613,6 +9747,7 @@
               (newline channel state)
               (value :invisible)))))
 
+#+acl2-legacy-doc
 (defun legacy-doc-fn (name state)
   (cond
    ((not (symbolp name))
@@ -9669,23 +9804,7 @@
                        (newline channel state)
                        (end-doc channel state)))))))))
 
-(defun doc-fn (name state)
-  (cond
-   ((not (symbolp name))
-    (er soft 'doc
-        "Documentation topics are symbols."))
-   (t (let ((entry (assoc name *acl2-system-documentation*)))
-        (cond (entry (mv-let
-                      (col state)
-                      (fmt1 "Parent~#0~[~/s~]: ~&0.~|~%"
-                            (list (cons #\0 (cadr entry)))
-                            0 *standard-co* state nil)
-                      (declare (ignore col))
-                      (pprogn (princ$ (caddr entry) *standard-co* state)
-                              (newline *standard-co* state)
-                              (value :invisible))))
-              (t (print-doc-dwim name :doc state)))))))
-
+#+acl2-legacy-doc
 (defun more-fn (ln state)
   (io? temporary nil (mv erp val state)
        (ln)
@@ -9710,6 +9829,7 @@
             (end-doc channel state)))
           (t (end-doc channel state))))))
 
+#+acl2-legacy-doc
 (defun doc!-fn (name state)
   (cond
    ((not (symbolp name))
@@ -9736,12 +9856,15 @@
                             (newline channel state)
                             (more-fn t state)))))))))
 
+#+acl2-legacy-doc
 (defmacro more nil
  '(more-fn 0 state))
 
+#+acl2-legacy-doc
 (defmacro more! nil
   '(more-fn t state))
 
+#+acl2-legacy-doc
 (defun print-doc-outline
   (name prefix markup-table char-subst-table fmt-alist
         channel state)
@@ -9772,6 +9895,7 @@
             (princ$ (car doc-tuple) channel state)
             (newline channel state))))
 
+#+acl2-legacy-doc
 (defun print-doc-outline-lst (name-lst prefix
                                        markup-table char-subst-table
                                        fmt-alist
@@ -9786,6 +9910,7 @@
                                           fmt-alist
                                           channel state)))))
 
+#+acl2-legacy-doc
 (defmacro legacy-doc (name)
   (list 'legacy-doc-fn name 'state))
 
@@ -9796,9 +9921,11 @@
 
   (list 'doc-fn name 'state))
 
+#+acl2-legacy-doc
 (defmacro doc! (name)
   (list 'doc!-fn name 'state))
 
+#+acl2-legacy-doc
 (defun more-doc-fn (name state)
   (cond
    ((not (symbolp name))
@@ -9818,23 +9945,28 @@
                                        channel state)
                             (end-doc channel state)))))))))
 
+#+acl2-legacy-doc
 (defmacro more-doc (name)
   (list 'more-doc-fn name 'state))
 
+#+acl2-legacy-doc
 (defun get-doc-section-symbols (alist ans)
   (cond ((null alist) ans)
         (t (get-doc-section-symbols (cdr alist)
                                     (add-to-set-eq (cadar alist) ans)))))
 
+#+acl2-legacy-doc
 (defun get-docs-apropos1 (pat-lst alist ans)
   (cond ((null alist) ans)
         ((string-search pat-lst (cadddr (car alist)) 'hyphen-is-space)
          (get-docs-apropos1 pat-lst (cdr alist) (cons (car alist) ans)))
         (t (get-docs-apropos1 pat-lst (cdr alist) ans))))
 
+#+acl2-legacy-doc
 (defun get-docs-apropos (pat alist)
   (reverse (get-docs-apropos1 (normalize-string pat t) alist nil)))
 
+#+acl2-legacy-doc
 (defun docs-fn (x state)
   (io? temporary nil (mv erp val state)
        (x)
@@ -9890,9 +10022,11 @@
               (end-doc channel state))))
           (t (er soft :docs "Unrecognized argument, ~x0." x))))))
 
+#+acl2-legacy-doc
 (defmacro docs (x)
   (list 'docs-fn x 'state))
 
+#+acl2-legacy-doc
 (defun print-top-doc-topics (doc-alist channel state)
   (cond
    ((endp doc-alist)
@@ -9905,6 +10039,7 @@
             (print-top-doc-topics (cdr doc-alist) channel state)))
    (t (print-top-doc-topics (cdr doc-alist) channel state))))
 
+#+acl2-legacy-doc
 (defun help-fn (state)
   (io? temporary nil (mv erp val state)
        nil
@@ -9963,6 +10098,7 @@
           (newline channel state)
           (value :invisible)))))
 
+#+acl2-legacy-doc
 (defmacro help nil
   '(help-fn state))
 

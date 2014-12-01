@@ -125,6 +125,9 @@ an xdoc file.  See :DOC markup")
                      (subseq x 1 nil))
       x)))
 
+#+acl2-legacy-doc
+(progn
+
 (defun write-a-doc-section (doc-tuple doc-fmt-alist channel state)
 
 ; We return an xdoc database entry based on doc-tuple.
@@ -275,3 +278,4 @@ an xdoc file.  See :DOC markup")
   `(xdoc-entry-fn ',name
                   (acl2::f-get-global 'acl2::xdoc-alist
                                       state)))
+)

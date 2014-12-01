@@ -5689,6 +5689,7 @@
                                               (cdr ignorep)
                                             nil))
                                    new-*1*-defs)))))
+            #+acl2-legacy-doc
             (dolist (def new-defs)
 
 ; Remove the documentation string potentially stored in raw Lisp, if a copy is
@@ -6018,6 +6019,7 @@
                                             ',(cadddr (cddr trip)))
                                          nil
                                          t)))
+          #+acl2-legacy-doc
           (cond ((doc-stringp (and (cadr (cddr trip))
                                    (documentation (cadr (cddr trip))
                                                   'variable)))
@@ -6035,6 +6037,7 @@
                                (cadr (cddr trip))))
                 (t (maybe-push-undo-stack 'defmacro (cadr (cddr trip)))
                    (install-for-add-trip (cddr trip) nil t)))
+          #+acl2-legacy-doc
           (cond ((doc-stringp (documentation (cadr (cddr trip)) 'function))
                  (setf (documentation (cadr (cddr trip)) 'function)
                        nil))))
@@ -7014,8 +7017,8 @@
            in-theory
            initialize-state-globals
            let ; could be arbitrarily complex, but we can only do so much!
-           link-doc-to
-           link-doc-to-keyword
+           #+acl2-legacy-doc link-doc-to
+           #+acl2-legacy-doc link-doc-to-keyword
            logic
            make-waterfall-parallelism-constants
            make-waterfall-printing-constants

@@ -1,8 +1,10 @@
 (in-package "ACL2")
 (include-book "plev")
 (include-book "include-raw")
+(include-book "xdoc/top" :dir :system)
 
-(link-doc-to plev-info print-control plev)
+; The following is already in plev.lisp.
+; (defpointer plev-info plev)
 
 (defun plev-info ()
   (declare (xargs :guard t))

@@ -7961,6 +7961,7 @@
                                  non-executablep ctx wrld state
                                  #+:non-standard-analysis std-p))))))))
 
+#+acl2-legacy-doc
 (defmacro link-doc-to-keyword (name parent see)
   `(defdoc ,name
      ,(concatenate
@@ -7977,6 +7978,7 @@
        (string-downcase (symbol-name see))
        "].~/~/")))
 
+#+acl2-legacy-doc
 (defmacro link-doc-to (name parent see)
   `(defdoc ,name
      ,(concatenate
