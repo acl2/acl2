@@ -30,77 +30,61 @@ License: (An MIT/X11-style license)
 Original author: Jared Davis <jared@centtech.com>
 */
 
-toolbar_icon {
-  border: 0;
+p {
+  margin-left: 1em;
 }
 
-#toolbar {
-   position: fixed;
-   top: 0;
-   left: 0;
-   right: 0;
+body {
    margin: 0;
-   padding: 4px;
+   padding: 0;
+}
+
+#header {
    margin: 0;
-   height: 40px;
-   background-color: white;
+   padding-left: 1em;
+   padding-right: 1em;
+   padding-top: .3em;
+   padding-bottom: .3em;
+   width: 100%;
    border-bottom-style: solid;
    border-bottom-width: 3px;
    border-bottom-color: #ffd0b0;
-   box-shadow: 0px 2px 10px 2px rgba(0,64,80,0.7);
-   z-index: 100;
-   vertical-align: middle;
    background-color: #fffff0;
-   font-family: "<!-- TMPL_VAR sans_font -->", sans-serif;
+   box-shadow: 0px 2px 10px 2px rgba(0,64,80,0.7);
+}
+
+#wire_id {
+   font-family: "<!-- TMPL_VAR tt_font -->", monospace;
+   font-weight: bold;
+   font-size: 110%;
 }
 
 #content {
-   position: fixed;
-   left: 0;
-   right: 0;
-   top: 60px;
-   bottom: 0;
-   overflow-x: auto;
-   overflow-y: scroll;
-   padding-left: 2em;
-   padding-right: 2em;
+   padding: 1em;
 }
 
-#jump {
-    background-color: #ffffff;
-    border-radius: 3px;
-    border: 2px solid #ffd0b0;
-    background-clip: padding-box;
+.pane {
+   border: 1px black solid;
+   margin-bottom: .2em;
+   margin-right: 1em;  /* some extra space between the scrollbars */
 }
 
-#jump:focus, #searchbox:focus {
-    outline: none;
-    border-color: #9ecaed;
-    box-shadow: 0 0 10px #9ecaed;
+.panetop {
+   width: 100%;
+   background-color: #ffcc99;
+   padding: 3px;
+   margin: 0;
 }
 
-/* These are fancy things for the typeahead menu: */
-
-.tt-dropdown-menu
-{
-    background-color: white;
-    color: black;
-    width: 450px;
-    max-height: 500px;
-    overflow-y: auto;
-    font-size: 80%;
-    border: 1px black solid;
-    border-radius: 5px;
+.paneguts {
+   padding-top: 0;
+   padding-bottom: 0;
+   padding-left: 1em;
+   padding-right: 1em;
+   max-height: 300px;
+   overflow-y: auto;
 }
 
-.tt-highlight { font-weight: bold; }
-
-.tt-suggestion {
-   padding-top: .05em;
-   padding-bottom: .05em;
+.desc_detail {
+  font-family: "<!-- TMPL_VAR tt_font -->", monospace;
 }
-
-.tt-cursor { background-color: #ffffa0; }
-
-.tt-dataset-fuzzy { color: #000099; }
-.tt-dataset-exact { color: #009900; }

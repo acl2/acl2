@@ -287,10 +287,7 @@ with are not normed.</p>")
        (when (assoc-equal tname (vls-transdb-loaded db))
          (error "translation should not yet be loaded"))
        (setf (vls-transdb-loaded db)
-             (acons tname data (vls-transdb-loaded db))))))
-
-  (acl2::hons-summary)
-  (acl2::hons-analyze-memory nil))
+             (acons tname data (vls-transdb-loaded db)))))))
 
 (defun vls-loader-thread ()
 
@@ -340,47 +337,6 @@ with are not normed.</p>")
   (alist-keys
    (bordeaux-threads:with-lock-held ((vls-transdb-loaded-lock db))
      (vls-transdb-loaded db))))
-
-
-(let ((vl-server nil))
-
-  (defun stop ()
-    (when vl-server
-      (hunchentoot:stop vl-server)
-      (setq vl-server nil))
-    nil)
-
-  (defun start-fn (port public-dir)
-    (maybe-start-support-threads)
-    (when vl-server
-      (stop))
-    (let* ((port (or port
-                     (b* (((mv ? port state) (getenv$ "FVQ_PORT" state))
-                          (port-num (str::strval port))
-                          ((when port-num)
-                           port-num))
-                       ;; Else, just use the default port
-                       9999)))
-           (public-dir (or public-dir
-                           (oslib::catpath *browser-dir* "/public/")))
-           (public-dir (if (str::strsuffixp "/" public-dir)
-                           public-dir
-                         (cat public-dir "/")))
-           (server (make-instance 'hunchentoot:easy-acceptor
-                                  :port port
-                                  :document-root public-dir)))
-      (setf (hunchentoot:acceptor-access-log-destination server)
-            (oslib::catpath public-dir "access.out"))
-      (hunchentoot:start server)
-      (cl-user::format t "; ----------------------------------------------------------------~%")
-      (cl-user::format t ";~%")
-      (cl-user::format t ";         Module Browser Started at http://localhost:~D/~%" port)
-      (cl-user::format t ";~%")
-      (cl-user::format t "; ----------------------------------------------------------------~%~%")
-      (add-handlers)
-      (setq vl-server server))
-    nil))
-
 
 (defmacro with-vls-bindings (&rest forms)
   `(b* ((?state
@@ -517,7 +473,100 @@ with are not normed.</p>")
             (cl-user::format t "; Adding ~a~%" info.fn)
             (eval form)))))
 
+
+(defparameter *template-ht*
+  (let ((template-ht (make-hash-table :test #'eq)))
+    (setf (gethash :serif_font template-ht) "Noto Serif")
+    (setf (gethash :sans_font template-ht) "Lato")
+    (setf (gethash :tt_font template-ht) "Source Code Pro")
+    template-ht))
+
+(defun get-file-with-templates (script)
+  ;; This allows us to do at least some basic server-side processing on
+  ;; .html/.css files, e.g., for includes, etc.
+  (vls-try-catch
+   :try
+   (b* (((when    (or (str::substrp "~" script)
+                      (str::isubstrp ".." script)))
+         (setf (hunchentoot:return-code*) hunchentoot:+http-forbidden+)
+         (cl-user::format nil "<html><body><h1>Forbidden</h1><h3>Request not allowed: ~a</h3></body></html>~%" script))
+
+        (docroot  (ccl::native-translated-namestring (hunchentoot:acceptor-document-root hunchentoot:*acceptor*)))
+        (fullpath (oslib::catpath docroot script))
+
+        ((unless (b* ((state acl2::*the-live-state*)
+                      ((mv err ans ?state) (oslib::regular-file-p fullpath)))
+                   (and (not err) ans)))
+         (setf (hunchentoot:return-code*) hunchentoot:+http-not-found+)
+         (cl-user::format nil "<html><body><h1>Error 404</h1><h3>File not found: ~a</h3></body></html>~%" fullpath))
+
+        (html-template:*value-access-function* #'gethash)
+        (template (html-template:create-template-printer (pathname fullpath))))
+
+     (with-output-to-string (stream)
+                            (html-template:fill-and-print-template template *template-ht* :stream stream)))
+   :catch errmsg))
+
+(defun request-html-file ()
+  (setf (hunchentoot:content-type*) "text/html")
+  (get-file-with-templates (hunchentoot:script-name*)))
+
+(defun request-css-file ()
+  (setf (hunchentoot:content-type*) "text/css")
+  (get-file-with-templates (hunchentoot:script-name*)))
+
+(let ((vl-server nil))
+
+  (defun stop ()
+    (when vl-server
+      (hunchentoot:stop vl-server)
+      (setq vl-server nil))
+    nil)
+
+  (defun start-fn (port public-dir)
+    (maybe-start-support-threads)
+    (when vl-server
+      (stop))
+    (let* ((state acl2::*the-live-state*)
+           (port (or port
+                     (b* (((mv ? port ?state) (getenv$ "FVQ_PORT" state))
+                          (port-num (str::strval port))
+                          ((when port-num)
+                           port-num))
+                       ;; Else, just use the default port
+                       9999)))
+           (public-dir (or public-dir
+                           (oslib::catpath *browser-dir* "/public/")))
+           (public-dir (if (str::strsuffixp "/" public-dir)
+                           public-dir
+                         (cat public-dir "/")))
+           (server (make-instance 'hunchentoot:easy-acceptor
+                                  :port port
+                                  :document-root public-dir)))
+      (setf (hunchentoot:acceptor-access-log-destination server)
+            (oslib::catpath public-dir "access.out"))
+      (setf html-template:*default-template-pathname* (pathname public-dir))
+      (hunchentoot:start server)
+      (cl-user::format t "; ----------------------------------------------------------------~%")
+      (cl-user::format t ";~%")
+      (cl-user::format t ";         Module Browser Started at http://localhost:~D/~%" port)
+      (cl-user::format t ";~%")
+      (cl-user::format t "; ----------------------------------------------------------------~%~%")
+      (add-handlers)
+      (setq vl-server server))
+    nil))
+
 (defun add-handlers ()
+
+  (setf hunchentoot:*dispatch-table*
+        (list (hunchentoot:create-regex-dispatcher ".*\.html$" 'request-html-file)
+              (hunchentoot:create-regex-dispatcher ".*\.css$" 'request-css-file)
+              'hunchentoot:dispatch-easy-handlers))
+
+  (hunchentoot:define-easy-handler (root :uri "/") ()
+    ;; Since *.html doesn't match /
+    (setf (hunchentoot:content-type*) "text/html")
+    (get-file-with-templates "index.html"))
 
   (vls-add-automatic-command-handlers)
 

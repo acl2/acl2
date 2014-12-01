@@ -42,3 +42,4 @@
 (ql:quickload :bt-semaphore)
 (ql:quickload :hunchentoot)
 (ql:quickload :uiop)
+(ql:quickload :html-template)

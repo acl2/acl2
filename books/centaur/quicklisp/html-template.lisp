@@ -1,10 +1,4 @@
-<!HTML>
-<html>
-<head>
-<meta charset="UTF-8">
-
-<!--
-; VL Verilog Toolkit
+; ACL2 Quicklisp Interface
 ; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
@@ -33,38 +27,10 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
--->
 
-<title>Module Browser</title>
-<!-- TMPL_INCLUDE "header.html" -->
-<link rel="stylesheet" href="toolbar.css"/>
-<script src="toolbar.js"></script>
-<link rel="stylesheet" href="display.css"/>
-<script src="display.js"></script>
-</head>
+(in-package "ACL2")
+(include-book "base")
 
-<body>
-
-<div id="toolbar"></div>
-
-<div id="content">
-
-<table id="banner_table">
-<tr>
-<td><h2 id="banner"></h2></td>
-<td id="disptools"></td>
-<td id="desctype"></td>
-</tr>
-</table>
-
-<div id="hierarchy"></div>
-
-<br/>
-
-<div id="sourcecode" class="vl_src">Loading</div>
-
-
-</body>
-</html>
-
-
+(defttag :quicklisp)
+; (depends-on "html-template-raw.lsp")
+(include-raw "html-template-raw.lsp" :host-readtable t)

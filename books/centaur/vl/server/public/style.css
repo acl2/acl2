@@ -30,9 +30,15 @@ License: (An MIT/X11-style license)
 Original author: Jared Davis <jared@centtech.com>
 */
 
-h1,h2,h3,h4,h5 {
-   font-family: "Geneva", "Bitstream Vera Sans", "Verdana", sans-serif;
-}
+.serif { font-family: "<!-- TMPL_VAR serif_font -->", serif; }
+body   { font-family: "<!-- TMPL_VAR serif_font -->", serif; }
+
+.sans                     { font-family: "<!-- TMPL_VAR sans_font -->", sans-serif; }
+h1,h2,h3,h4,h5,dt         { font-family: "<!-- TMPL_VAR sans_font -->", sans-serif; }
+.vl_start_loc,.vl_end_loc { font-family: "<!-- TMPL_VAR sans_font -->", sans-serif; }
+
+.tt                    { font-family: "<!-- TMPL_VAR tt_font -->", monospace; }
+tt, code, pre, .vl_src { font-family: "<!-- TMPL_VAR tt_font -->", monospace; }
 
 h1,h2,h3 {
     font-weight: normal;
@@ -56,9 +62,6 @@ a:hover {
   background-color: #ffffd0;
 }
 
-tt, code {
-    font-family: "Consolas", "Inconsolata", "Bitstream Vera Sans Mono", "DejaVu Sans Mono", "Lucida Console", monospace;
-}
 
 
 
@@ -71,13 +74,11 @@ tt, code {
 .vl_src {
     /* This is a div that is wrapped around the entire source-code fragment being
        displayed. */
-    font-family: "Consolas", "Inconsolata", "Bitstream Vera Sans Mono", "DejaVu Sans Mono", "Lucida Console", monospace;
 }
 
 .vl_start_loc,.vl_end_loc {
     /* "Module start" and "Module end" banners */
     margin-left: .5in;
-    font-family: sans-serif;
     font-weight: normal;
     font-size: 13pt;
 }
