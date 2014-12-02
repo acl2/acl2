@@ -141,414 +141,413 @@
         *default-invalid-data-address*
       x))
 
-(defrulel buffers-identity
-  (IMPLIES
-    (AND (ALISTP X)
-         (CDDDDR X)
-         (NOT (CDR (CDDDDR X)))
-         (EQUAL (CAR (CAR (CDDDDR X))) 'OUT)
-         (EQUAL (CAR (CADDDR X)) 'B4)
-         (EQUAL (CAR (CADDR X)) 'B3)
-         (EQUAL (CAR (CADR X)) 'B2)
-         (EQUAL (CAR (CAR X)) 'B1)
-         (DATA-ADDRESS-VALID-P (CDR (CAR X)))
-         (DATA-ADDRESS-VALID-P (CDR (CADR X)))
-         (DATA-ADDRESS-VALID-P (CDR (CADDR X)))
-         (DATA-ADDRESS-VALID-P (CDR (CADDDR X)))
-         (DATA-ADDRESS-VALID-P (CDR (CAR (CDDDDR X))))
-         (BUFFERS-REQ (CDR (CAR X))
-                      (CDR (CADR X))
-                      (CDR (CADDR X))
-                      (CDR (CADDDR X))))
-    (EQUAL (LIST (CONS 'B1
-                       (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CAR X))
-                                                           (CDR (CADR X))
-                                                           (CDR (CADDR X))
-                                                           (CDR (CADDDR X))))
-                 (CONS 'B2
-                       (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADR X))
-                                                           (CDR (CAR X))
-                                                           (CDR (CADDR X))
-                                                           (CDR (CADDDR X))))
-                 (CONS 'B3
-                       (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADDR X))
-                                                           (CDR (CAR X))
-                                                           (CDR (CADR X))
-                                                           (CDR (CADDDR X))))
-                 (CONS 'B4
-                       (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADDDR X))
-                                                           (CDR (CAR X))
-                                                           (CDR (CADR X))
-                                                           (CDR (CADDR X))))
-                 (CONS 'OUT (CDR (CAR (CDDDDR X)))))
-           X))
-     :hints (("goal" :in-theory (enable buffers-req data-address-valid-fix-for-buffers))))
+;; (defrulel buffers-identity
+;;   (IMPLIES
+;;     (AND (ALISTP X)
+;;          (CDDDDR X)
+;;          (NOT (CDR (CDDDDR X)))
+;;          (EQUAL (CAR (CAR (CDDDDR X))) 'OUT)
+;;          (EQUAL (CAR (CADDDR X)) 'B4)
+;;          (EQUAL (CAR (CADDR X)) 'B3)
+;;          (EQUAL (CAR (CADR X)) 'B2)
+;;          (EQUAL (CAR (CAR X)) 'B1)
+;;          (DATA-ADDRESS-VALID-P (CDR (CAR X)))
+;;          (DATA-ADDRESS-VALID-P (CDR (CADR X)))
+;;          (DATA-ADDRESS-VALID-P (CDR (CADDR X)))
+;;          (DATA-ADDRESS-VALID-P (CDR (CADDDR X)))
+;;          (DATA-ADDRESS-VALID-P (CDR (CAR (CDDDDR X))))
+;;          (BUFFERS-REQ (CDR (CAR X))
+;;                       (CDR (CADR X))
+;;                       (CDR (CADDR X))
+;;                       (CDR (CADDDR X))))
+;;     (EQUAL (LIST (CONS 'B1
+;;                        (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CAR X))
+;;                                                            (CDR (CADR X))
+;;                                                            (CDR (CADDR X))
+;;                                                            (CDR (CADDDR X))))
+;;                  (CONS 'B2
+;;                        (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADR X))
+;;                                                            (CDR (CAR X))
+;;                                                            (CDR (CADDR X))
+;;                                                            (CDR (CADDDR X))))
+;;                  (CONS 'B3
+;;                        (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADDR X))
+;;                                                            (CDR (CAR X))
+;;                                                            (CDR (CADR X))
+;;                                                            (CDR (CADDDR X))))
+;;                  (CONS 'B4
+;;                        (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADDDR X))
+;;                                                            (CDR (CAR X))
+;;                                                            (CDR (CADR X))
+;;                                                            (CDR (CADDR X))))
+;;                  (CONS 'OUT (CDR (CAR (CDDDDR X)))))
+;;            X))
+;;      :hints (("goal" :in-theory (enable buffers-req data-address-valid-fix-for-buffers))))
 
-(defrule buffers-identity2 ; bozo: kind of weird
-  (IMPLIES
-   (AND (ALISTP X)
-        (CDDDDR X)
-        (NOT (CDR (CDDDDR X)))
-        (EQUAL (CAR (CAR (CDDDDR X))) 'OUT)
-        (EQUAL (CAR (CADDDR X)) 'B4)
-        (EQUAL (CAR (CADDR X)) 'B3)
-        (EQUAL (CAR (CADR X)) 'B2)
-        (EQUAL (CAR (CAR X)) 'B1)
-        (DATA-ADDRESS-VALID-P (CDR (CAR X)))
-        (DATA-ADDRESS-VALID-P (CDR (CADR X)))
-        (DATA-ADDRESS-VALID-P (CDR (CADDR X)))
-        (DATA-ADDRESS-VALID-P (CDR (CADDDR X)))
-        (DATA-ADDRESS-VALID-P (CDR (CAR (CDDDDR X))))
-        (BUFFERS-REQ (CDR (CAR X))
-                     (CDR (CADR X))
-                     (CDR (CADDR X))
-                     (CDR (CADDDR X))))
-   (EQUAL (LIST (CONS 'B1 (CDR (CAR X)))
-                (CONS 'B2
-                      (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADR X))
-                                                          (CDR (CAR X))
-                                                          (CDR (CADDR X))
-                                                          (CDR (CADDDR X))))
-                (CONS 'B3
-                      (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADDR X))
-                                                          (CDR (CAR X))
-                                                          (CDR (CADR X))
-                                                          (CDR (CADDDR X))))
-                (CONS 'B4
-                      (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADDDR X))
-                                                          (CDR (CAR X))
-                                                          (CDR (CADR X))
-                                                          (CDR (CADDR X))))
-                (CONS 'OUT (CDR (CAR (CDDDDR X)))))
-          X))
-  :enable (buffers-req data-address-valid-fix-for-buffers))
+;; (defrule buffers-identity2 ; bozo: kind of weird
+;;   (IMPLIES
+;;    (AND (ALISTP X)
+;;         (CDDDDR X)
+;;         (NOT (CDR (CDDDDR X)))
+;;         (EQUAL (CAR (CAR (CDDDDR X))) 'OUT)
+;;         (EQUAL (CAR (CADDDR X)) 'B4)
+;;         (EQUAL (CAR (CADDR X)) 'B3)
+;;         (EQUAL (CAR (CADR X)) 'B2)
+;;         (EQUAL (CAR (CAR X)) 'B1)
+;;         (DATA-ADDRESS-VALID-P (CDR (CAR X)))
+;;         (DATA-ADDRESS-VALID-P (CDR (CADR X)))
+;;         (DATA-ADDRESS-VALID-P (CDR (CADDR X)))
+;;         (DATA-ADDRESS-VALID-P (CDR (CADDDR X)))
+;;         (DATA-ADDRESS-VALID-P (CDR (CAR (CDDDDR X))))
+;;         (BUFFERS-REQ (CDR (CAR X))
+;;                      (CDR (CADR X))
+;;                      (CDR (CADDR X))
+;;                      (CDR (CADDDR X))))
+;;    (EQUAL (LIST (CONS 'B1 (CDR (CAR X)))
+;;                 (CONS 'B2
+;;                       (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADR X))
+;;                                                           (CDR (CAR X))
+;;                                                           (CDR (CADDR X))
+;;                                                           (CDR (CADDDR X))))
+;;                 (CONS 'B3
+;;                       (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADDR X))
+;;                                                           (CDR (CAR X))
+;;                                                           (CDR (CADR X))
+;;                                                           (CDR (CADDDR X))))
+;;                 (CONS 'B4
+;;                       (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADDDR X))
+;;                                                           (CDR (CAR X))
+;;                                                           (CDR (CADR X))
+;;                                                           (CDR (CADDR X))))
+;;                 (CONS 'OUT (CDR (CAR (CDDDDR X)))))
+;;           X))
+;;   :enable (buffers-req data-address-valid-fix-for-buffers))
 
-(defrulel buffers-identity3 ; bozo: kind of weird
-  (IMPLIES
-    (AND (ALISTP X)
-         (CDDDDR X)
-         (NOT (CDR (CDDDDR X)))
-         (EQUAL (CAR (CAR (CDDDDR X))) 'OUT)
-         (EQUAL (CAR (CADDDR X)) 'B4)
-         (EQUAL (CAR (CADDR X)) 'B3)
-         (EQUAL (CAR (CADR X)) 'B2)
-         (EQUAL (CAR (CAR X)) 'B1)
-         (DATA-ADDRESS-VALID-P (CDR (CAR X)))
-         (DATA-ADDRESS-VALID-P (CDR (CADR X)))
-         (DATA-ADDRESS-VALID-P (CDR (CADDR X)))
-         (DATA-ADDRESS-VALID-P (CDR (CADDDR X)))
-         (DATA-ADDRESS-VALID-P (CDR (CAR (CDDDDR X))))
-         (BUFFERS-REQ (CDR (CAR X))
-                      (CDR (CADR X))
-                      (CDR (CADDR X))
-                      (CDR (CADDDR X))))
-    (EQUAL (LIST (CONS 'B1 (CDR (CAR X)))
-                 (CONS 'B2 (CDR (CADR X)))
-                 (CONS 'B3
-                       (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADDR X))
-                                                           (CDR (CAR X))
-                                                           (CDR (CADR X))
-                                                           (CDR (CADDDR X))))
-                 (CONS 'B4
-                       (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADDDR X))
-                                                           (CDR (CAR X))
-                                                           (CDR (CADR X))
-                                                           (CDR (CADDR X))))
-                 (CONS 'OUT (CDR (CAR (CDDDDR X)))))
-           X))
-     :hints (("goal" :in-theory (enable buffers-req data-address-valid-fix-for-buffers))))
+;; (defrulel buffers-identity3 ; bozo: kind of weird
+;;   (IMPLIES
+;;     (AND (ALISTP X)
+;;          (CDDDDR X)
+;;          (NOT (CDR (CDDDDR X)))
+;;          (EQUAL (CAR (CAR (CDDDDR X))) 'OUT)
+;;          (EQUAL (CAR (CADDDR X)) 'B4)
+;;          (EQUAL (CAR (CADDR X)) 'B3)
+;;          (EQUAL (CAR (CADR X)) 'B2)
+;;          (EQUAL (CAR (CAR X)) 'B1)
+;;          (DATA-ADDRESS-VALID-P (CDR (CAR X)))
+;;          (DATA-ADDRESS-VALID-P (CDR (CADR X)))
+;;          (DATA-ADDRESS-VALID-P (CDR (CADDR X)))
+;;          (DATA-ADDRESS-VALID-P (CDR (CADDDR X)))
+;;          (DATA-ADDRESS-VALID-P (CDR (CAR (CDDDDR X))))
+;;          (BUFFERS-REQ (CDR (CAR X))
+;;                       (CDR (CADR X))
+;;                       (CDR (CADDR X))
+;;                       (CDR (CADDDR X))))
+;;     (EQUAL (LIST (CONS 'B1 (CDR (CAR X)))
+;;                  (CONS 'B2 (CDR (CADR X)))
+;;                  (CONS 'B3
+;;                        (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADDR X))
+;;                                                            (CDR (CAR X))
+;;                                                            (CDR (CADR X))
+;;                                                            (CDR (CADDDR X))))
+;;                  (CONS 'B4
+;;                        (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADDDR X))
+;;                                                            (CDR (CAR X))
+;;                                                            (CDR (CADR X))
+;;                                                            (CDR (CADDR X))))
+;;                  (CONS 'OUT (CDR (CAR (CDDDDR X)))))
+;;            X))
+;;      :hints (("goal" :in-theory (enable buffers-req data-address-valid-fix-for-buffers))))
 
-(defrulel buffers-req-of-fix
-  (BUFFERS-REQ (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
-               (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
-               (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
-               (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))))
-  :hints (("Goal" :in-theory (enable data-address-valid-fix-for-buffers buffers-req))))
+;; (defrulel buffers-req-of-fix
+;;   (BUFFERS-REQ (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
+;;                (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
+;;                (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
+;;                (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))))
+;;   :hints (("Goal" :in-theory (enable data-address-valid-fix-for-buffers buffers-req))))
 
-(defrulel buffers-not-match-addresses
-  (and (implies (buffers-req x a b c)
-                (not (match-address x a)))
-       (implies (buffers-req x a b c)
-                (not (match-address x b)))
-       (implies (buffers-req x a b c)
-                (not (match-address x c))))
-  :enable buffers-req)
+;; (defrulel buffers-not-match-addresses
+;;   (and (implies (buffers-req x a b c)
+;;                 (not (match-address x a)))
+;;        (implies (buffers-req x a b c)
+;;                 (not (match-address x b)))
+;;        (implies (buffers-req x a b c)
+;;                 (not (match-address x c))))
+;;   :enable buffers-req)
 
-(defrule data-address-valid-fix-identity-1
-  (IMPLIES (AND (ALISTP X)
-                (CDDDDR X)
-                (NOT (CDR (CDDDDR X)))
-                (EQUAL (CAR (CAR (CDDDDR X))) 'OUT)
-                (EQUAL (CAR (CADDDR X)) 'B4)
-                (EQUAL (CAR (CADDR X)) 'B3)
-                (EQUAL (CAR (CADR X)) 'B2)
-                (EQUAL (CAR (CAR X)) 'B1)
-                (DATA-ADDRESS-VALID-P (CDR (CAR X)))
-                (DATA-ADDRESS-VALID-P (CDR (CADR X)))
-                (DATA-ADDRESS-VALID-P (CDR (CADDR X)))
-                (DATA-ADDRESS-VALID-P (CDR (CADDDR X)))
-                (DATA-ADDRESS-VALID-P (CDR (CAR (CDDDDR X))))
-                (BUFFERS-REQ (CDR (CAR X))
-                             (CDR (CADR X))
-                             (CDR (CADDR X))
-                             (CDR (CADDDR X))))
-           (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CAR X))
-                                                      (CDR (CADR X))
-                                                      (CDR (CADDR X))
-                                                      (CDR (CADDDR X)))
-                  (CDR (CAR X))))
-  :enable (data-address-valid-fix-for-buffers buffers-not-match-addresses))
+;; (defrule data-address-valid-fix-identity-1
+;;   (IMPLIES (AND (ALISTP X)
+;;                 (CDDDDR X)
+;;                 (NOT (CDR (CDDDDR X)))
+;;                 (EQUAL (CAR (CAR (CDDDDR X))) 'OUT)
+;;                 (EQUAL (CAR (CADDDR X)) 'B4)
+;;                 (EQUAL (CAR (CADDR X)) 'B3)
+;;                 (EQUAL (CAR (CADR X)) 'B2)
+;;                 (EQUAL (CAR (CAR X)) 'B1)
+;;                 (DATA-ADDRESS-VALID-P (CDR (CAR X)))
+;;                 (DATA-ADDRESS-VALID-P (CDR (CADR X)))
+;;                 (DATA-ADDRESS-VALID-P (CDR (CADDR X)))
+;;                 (DATA-ADDRESS-VALID-P (CDR (CADDDR X)))
+;;                 (DATA-ADDRESS-VALID-P (CDR (CAR (CDDDDR X))))
+;;                 (BUFFERS-REQ (CDR (CAR X))
+;;                              (CDR (CADR X))
+;;                              (CDR (CADDR X))
+;;                              (CDR (CADDDR X))))
+;;            (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CAR X))
+;;                                                       (CDR (CADR X))
+;;                                                       (CDR (CADDR X))
+;;                                                       (CDR (CADDDR X)))
+;;                   (CDR (CAR X))))
+;;   :enable (data-address-valid-fix-for-buffers buffers-not-match-addresses))
 
-(maybe-skip-expensive-proof
-(defrulel DATA-ADDRESS-VALID-FIX-FOR-BUFFERS-4-no-ops-b1
-; proves in 866.58 seconds.
-  (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-            (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X))) ; b1
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X))) ; b2
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X))) ; b3
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))) ; b4
-            (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
-            (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
-            (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))))
-       (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-            (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-            (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-            (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
-            (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))))
-  :enable (data-address-valid-fix data-address-valid-fix-for-buffers))
-)
+;; (maybe-skip-expensive-proof
+;; (defrulel DATA-ADDRESS-VALID-FIX-FOR-BUFFERS-4-no-ops-b1
+;; ; proves in 866.58 seconds.
+;;   (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;             (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CAR X))) ; b1
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADR X))) ; b2
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDR X))) ; b3
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))) ; b4
+;;             (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
+;;             (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
+;;             (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))))
+;;        (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;             (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;             (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;             (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
+;;             (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))))
+;;   :enable (data-address-valid-fix data-address-valid-fix-for-buffers))
+;; )
 
-(maybe-skip-expensive-proof
-(defrulel DATA-ADDRESS-VALID-FIX-FOR-BUFFERS-4-no-ops-b2
-  (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-            (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X))) ; b2
-                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X))) ; b1
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X))) ; b3
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))) ; b4
-            (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
-            (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
-            (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))))
-       (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-            (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-            (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-            (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
-            (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))))
-  :enable (data-address-valid-fix data-address-valid-fix-for-buffers))
-)
+;; (maybe-skip-expensive-proof
+;; (defrulel DATA-ADDRESS-VALID-FIX-FOR-BUFFERS-4-no-ops-b2
+;;   (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;             (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADR X))) ; b2
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CAR X))) ; b1
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDR X))) ; b3
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))) ; b4
+;;             (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
+;;             (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
+;;             (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))))
+;;        (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;             (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;             (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;             (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
+;;             (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))))
+;;   :enable (data-address-valid-fix data-address-valid-fix-for-buffers))
+;; )
 
-(maybe-skip-expensive-proof
-(defrulel DATA-ADDRESS-VALID-FIX-FOR-BUFFERS-4-no-ops-b3
-  (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-            (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X))) ; b3
-                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X))) ; b1
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X))) ; b2
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))) ; b4
-            (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
-            (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
-            (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))))
-       (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-            (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
-            (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-            (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-            (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))))
-  :enable (data-address-valid-fix data-address-valid-fix-for-buffers))
-)
+;; (maybe-skip-expensive-proof
+;; (defrulel DATA-ADDRESS-VALID-FIX-FOR-BUFFERS-4-no-ops-b3
+;;   (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;             (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDR X))) ; b3
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CAR X))) ; b1
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADR X))) ; b2
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))) ; b4
+;;             (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
+;;             (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
+;;             (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))))
+;;        (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;             (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
+;;             (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;             (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;             (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))))
+;;   :enable (data-address-valid-fix data-address-valid-fix-for-buffers))
+;; )
 
-(maybe-skip-expensive-proof
-(defrulel DATA-ADDRESS-VALID-FIX-FOR-BUFFERS-4-no-ops-b4
-  (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-            (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))) ; b4
-                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X))) ; b1
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X))) ; b2
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))) ; b3
-            (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
-            (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
-            (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))))
-       (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-            (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))
-            (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-            (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-            (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))))
-  :enable (data-address-valid-fix data-address-valid-fix-for-buffers))
-)
+;; (maybe-skip-expensive-proof
+;; (defrulel DATA-ADDRESS-VALID-FIX-FOR-BUFFERS-4-no-ops-b4
+;;   (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;             (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))) ; b4
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CAR X))) ; b1
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADR X))) ; b2
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))) ; b3
+;;             (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
+;;             (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
+;;             (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                  (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))))
+;;        (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;             (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))
+;;             (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;             (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;             (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))))
+;;   :enable (data-address-valid-fix data-address-valid-fix-for-buffers))
+;; )
 
-(defrule DATA-ADDRESS-VALID-FIX-FOR-BUFFERS-no-op-b2
-  (IMPLIES (AND (ALISTP X)
-              (CDDDDR X)
-              (NOT (CDR (CDDDDR X)))
-              (EQUAL (CAR (CAR (CDDDDR X))) 'OUT)
-              (EQUAL (CAR (CADDDR X)) 'B4)
-              (EQUAL (CAR (CADDR X)) 'B3)
-              (EQUAL (CAR (CADR X)) 'B2)
-              (EQUAL (CAR (CAR X)) 'B1)
-              (DATA-ADDRESS-VALID-P (CDR (CAR X)))
-              (DATA-ADDRESS-VALID-P (CDR (CADR X)))
-              (DATA-ADDRESS-VALID-P (CDR (CADDR X)))
-              (DATA-ADDRESS-VALID-P (CDR (CADDDR X)))
-              (DATA-ADDRESS-VALID-P (CDR (CAR (CDDDDR X))))
-              (BUFFERS-REQ (CDR (CAR X))
-                           (CDR (CADR X))
-                           (CDR (CADDR X))
-                           (CDR (CADDDR X))))
-         (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADR X)) ; b2
-                                                    (CDR (CAR X)) ; b1
-                                                    (CDR (CADDR X)) ; b3
-                                                    (CDR (CADDDR X))) ; b4
-                (CDR (CADR X)))) ; b2
-  :enable (buffers-req data-address-valid-fix-for-buffers))
+;; (defrule DATA-ADDRESS-VALID-FIX-FOR-BUFFERS-no-op-b2
+;;   (IMPLIES (AND (ALISTP X)
+;;               (CDDDDR X)
+;;               (NOT (CDR (CDDDDR X)))
+;;               (EQUAL (CAR (CAR (CDDDDR X))) 'OUT)
+;;               (EQUAL (CAR (CADDDR X)) 'B4)
+;;               (EQUAL (CAR (CADDR X)) 'B3)
+;;               (EQUAL (CAR (CADR X)) 'B2)
+;;               (EQUAL (CAR (CAR X)) 'B1)
+;;               (DATA-ADDRESS-VALID-P (CDR (CAR X)))
+;;               (DATA-ADDRESS-VALID-P (CDR (CADR X)))
+;;               (DATA-ADDRESS-VALID-P (CDR (CADDR X)))
+;;               (DATA-ADDRESS-VALID-P (CDR (CADDDR X)))
+;;               (DATA-ADDRESS-VALID-P (CDR (CAR (CDDDDR X))))
+;;               (BUFFERS-REQ (CDR (CAR X))
+;;                            (CDR (CADR X))
+;;                            (CDR (CADDR X))
+;;                            (CDR (CADDDR X))))
+;;          (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADR X)) ; b2
+;;                                                     (CDR (CAR X)) ; b1
+;;                                                     (CDR (CADDR X)) ; b3
+;;                                                     (CDR (CADDDR X))) ; b4
+;;                 (CDR (CADR X)))) ; b2
+;;   :enable (buffers-req data-address-valid-fix-for-buffers))
 
-(defrule DATA-ADDRESS-VALID-FIX-FOR-BUFFERS-no-op-b3
-  (IMPLIES (AND (ALISTP X)
-              (CDDDDR X)
-              (NOT (CDR (CDDDDR X)))
-              (EQUAL (CAR (CAR (CDDDDR X))) 'OUT)
-              (EQUAL (CAR (CADDDR X)) 'B4)
-              (EQUAL (CAR (CADDR X)) 'B3)
-              (EQUAL (CAR (CADR X)) 'B2)
-              (EQUAL (CAR (CAR X)) 'B1)
-              (DATA-ADDRESS-VALID-P (CDR (CAR X)))
-              (DATA-ADDRESS-VALID-P (CDR (CADR X)))
-              (DATA-ADDRESS-VALID-P (CDR (CADDR X)))
-              (DATA-ADDRESS-VALID-P (CDR (CADDDR X)))
-              (DATA-ADDRESS-VALID-P (CDR (CAR (CDDDDR X))))
-              (BUFFERS-REQ (CDR (CAR X))
-                           (CDR (CADR X))
-                           (CDR (CADDR X))
-                           (CDR (CADDDR X))))
-         (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADDR X))
-                                                    (CDR (CAR X))
-                                                    (CDR (CADR X))
-                                                    (CDR (CADDDR X)))
-                (CDR (CADDR X)))) ; b3
-    :enable (buffers-req data-address-valid-fix-for-buffers))
+;; (defrule DATA-ADDRESS-VALID-FIX-FOR-BUFFERS-no-op-b3
+;;   (IMPLIES (AND (ALISTP X)
+;;               (CDDDDR X)
+;;               (NOT (CDR (CDDDDR X)))
+;;               (EQUAL (CAR (CAR (CDDDDR X))) 'OUT)
+;;               (EQUAL (CAR (CADDDR X)) 'B4)
+;;               (EQUAL (CAR (CADDR X)) 'B3)
+;;               (EQUAL (CAR (CADR X)) 'B2)
+;;               (EQUAL (CAR (CAR X)) 'B1)
+;;               (DATA-ADDRESS-VALID-P (CDR (CAR X)))
+;;               (DATA-ADDRESS-VALID-P (CDR (CADR X)))
+;;               (DATA-ADDRESS-VALID-P (CDR (CADDR X)))
+;;               (DATA-ADDRESS-VALID-P (CDR (CADDDR X)))
+;;               (DATA-ADDRESS-VALID-P (CDR (CAR (CDDDDR X))))
+;;               (BUFFERS-REQ (CDR (CAR X))
+;;                            (CDR (CADR X))
+;;                            (CDR (CADDR X))
+;;                            (CDR (CADDDR X))))
+;;          (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADDR X))
+;;                                                     (CDR (CAR X))
+;;                                                     (CDR (CADR X))
+;;                                                     (CDR (CADDDR X)))
+;;                 (CDR (CADDR X)))) ; b3
+;;     :enable (buffers-req data-address-valid-fix-for-buffers))
 
-(defrule data-address-valid-fix-for-buffers-no-op-b4
-  (IMPLIES (AND (ALISTP X)
-              (CDDDDR X)
-              (NOT (CDR (CDDDDR X)))
-              (EQUAL (CAR (CAR (CDDDDR X))) 'OUT)
-              (EQUAL (CAR (CADDDR X)) 'B4)
-              (EQUAL (CAR (CADDR X)) 'B3)
-              (EQUAL (CAR (CADR X)) 'B2)
-              (EQUAL (CAR (CAR X)) 'B1)
-              (DATA-ADDRESS-VALID-P (CDR (CAR X)))
-              (DATA-ADDRESS-VALID-P (CDR (CADR X)))
-              (DATA-ADDRESS-VALID-P (CDR (CADDR X)))
-              (DATA-ADDRESS-VALID-P (CDR (CADDDR X)))
-              (DATA-ADDRESS-VALID-P (CDR (CAR (CDDDDR X))))
-              (BUFFERS-REQ (CDR (CAR X))
-                           (CDR (CADR X))
-                           (CDR (CADDR X))
-                           (CDR (CADDDR X))))
-         (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADDDR X))
-                                                    (CDR (CAR X))
-                                                    (CDR (CADR X))
-                                                    (CDR (CADDR X)))
-                (CDR (CADDDR X)))) ; b4
-    :enable (buffers-req data-address-valid-fix-for-buffers))
+;; (defrule data-address-valid-fix-for-buffers-no-op-b4
+;;   (IMPLIES (AND (ALISTP X)
+;;               (CDDDDR X)
+;;               (NOT (CDR (CDDDDR X)))
+;;               (EQUAL (CAR (CAR (CDDDDR X))) 'OUT)
+;;               (EQUAL (CAR (CADDDR X)) 'B4)
+;;               (EQUAL (CAR (CADDR X)) 'B3)
+;;               (EQUAL (CAR (CADR X)) 'B2)
+;;               (EQUAL (CAR (CAR X)) 'B1)
+;;               (DATA-ADDRESS-VALID-P (CDR (CAR X)))
+;;               (DATA-ADDRESS-VALID-P (CDR (CADR X)))
+;;               (DATA-ADDRESS-VALID-P (CDR (CADDR X)))
+;;               (DATA-ADDRESS-VALID-P (CDR (CADDDR X)))
+;;               (DATA-ADDRESS-VALID-P (CDR (CAR (CDDDDR X))))
+;;               (BUFFERS-REQ (CDR (CAR X))
+;;                            (CDR (CADR X))
+;;                            (CDR (CADDR X))
+;;                            (CDR (CADDDR X))))
+;;          (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADDDR X))
+;;                                                     (CDR (CAR X))
+;;                                                     (CDR (CADR X))
+;;                                                     (CDR (CADDR X)))
+;;                 (CDR (CADDDR X)))) ; b4
+;;     :enable (buffers-req data-address-valid-fix-for-buffers))
 
-(defrule exploded-call-of-data-address-valid-fix-for-buffers
-  (IMPLIES
-     (AND (ALISTP X)
-          (CDDDDR X) ; implies (consp (cdr x)) ^ (consp (cdr (cdr x))) ^ ...
-          (NOT (CDR (CDDDDR X)))
-          (EQUAL (CAR (CAR (CDDDDR X))) 'OUT)
-          (EQUAL (CAR (CADDDR X)) 'B4)
-          (EQUAL (CAR (CADDR X)) 'B3)
-          (EQUAL (CAR (CADR X)) 'B2)
-          (EQUAL (CAR (CAR X)) 'B1)
-          (DATA-ADDRESS-VALID-P (CDR (CAR X)))
-          (DATA-ADDRESS-VALID-P (CDR (CADR X)))
-          (DATA-ADDRESS-VALID-P (CDR (CADDR X)))
-          (DATA-ADDRESS-VALID-P (CDR (CADDDR X)))
-          (DATA-ADDRESS-VALID-P (CDR (CAR (CDDDDR X))))
-          (BUFFERS-REQ (CDR (CAR X))
-                       (CDR (CADR X))
-                       (CDR (CADDR X))
-                       (CDR (CADDDR X))))
-     (EQUAL (LIST (CONS 'B1 (CDR (CAR X)))
-                  (CONS 'B2 (CDR (CADR X)))
-                  (CONS 'B3 (CDR (CADDR X)))
-                  (CONS 'B4
-                        (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADDDR X)) ; b4
-                                                            (CDR (CAR X))
-                                                            (CDR (CADR X))
-                                                            (CDR (CADDR X))))
-                  (CONS 'OUT (CDR (CAR (CDDDDR X)))))
-            X))
-    :enable (buffers-req data-address-valid-fix-for-buffers))
+;; (defrule exploded-call-of-data-address-valid-fix-for-buffers
+;;   (IMPLIES
+;;      (AND (ALISTP X)
+;;           (CDDDDR X) ; implies (consp (cdr x)) ^ (consp (cdr (cdr x))) ^ ...
+;;           (NOT (CDR (CDDDDR X)))
+;;           (EQUAL (CAR (CAR (CDDDDR X))) 'OUT)
+;;           (EQUAL (CAR (CADDDR X)) 'B4)
+;;           (EQUAL (CAR (CADDR X)) 'B3)
+;;           (EQUAL (CAR (CADR X)) 'B2)
+;;           (EQUAL (CAR (CAR X)) 'B1)
+;;           (DATA-ADDRESS-VALID-P (CDR (CAR X)))
+;;           (DATA-ADDRESS-VALID-P (CDR (CADR X)))
+;;           (DATA-ADDRESS-VALID-P (CDR (CADDR X)))
+;;           (DATA-ADDRESS-VALID-P (CDR (CADDDR X)))
+;;           (DATA-ADDRESS-VALID-P (CDR (CAR (CDDDDR X))))
+;;           (BUFFERS-REQ (CDR (CAR X))
+;;                        (CDR (CADR X))
+;;                        (CDR (CADDR X))
+;;                        (CDR (CADDDR X))))
+;;      (EQUAL (LIST (CONS 'B1 (CDR (CAR X)))
+;;                   (CONS 'B2 (CDR (CADR X)))
+;;                   (CONS 'B3 (CDR (CADDR X)))
+;;                   (CONS 'B4
+;;                         (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS (CDR (CADDDR X)) ; b4
+;;                                                             (CDR (CAR X))
+;;                                                             (CDR (CADR X))
+;;                                                             (CDR (CADDR X))))
+;;                   (CONS 'OUT (CDR (CAR (CDDDDR X)))))
+;;             X))
+;;     :enable (buffers-req data-address-valid-fix-for-buffers))
 
-(defrule all-four
+(defrule all-four ; this is an implementation of Sol's second rule
   (and (IMPLIES (AND (BUFFERS-REQ B1 B2 B3 B4)
-                     (DATA-ADDRESS-VALID-P OUT)
                      (DATA-ADDRESS-VALID-P B4)
                      (DATA-ADDRESS-VALID-P B3)
                      (DATA-ADDRESS-VALID-P B2)
@@ -556,7 +555,6 @@
                 (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS B2 B1 B3 B4)
                        B2))
        (IMPLIES (AND (BUFFERS-REQ B1 B2 B3 B4)
-                     (DATA-ADDRESS-VALID-P OUT)
                      (DATA-ADDRESS-VALID-P B4)
                      (DATA-ADDRESS-VALID-P B3)
                      (DATA-ADDRESS-VALID-P B2)
@@ -564,7 +562,6 @@
                 (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS B4 B1 B2 B3)
                        B4))
        (IMPLIES (AND (BUFFERS-REQ B1 B2 B3 B4)
-                     (DATA-ADDRESS-VALID-P OUT)
                      (DATA-ADDRESS-VALID-P B4)
                      (DATA-ADDRESS-VALID-P B3)
                      (DATA-ADDRESS-VALID-P B2)
@@ -572,7 +569,6 @@
                 (EQUAL (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS B1 B2 B3 B4)
                        B1))
        (IMPLIES (AND (BUFFERS-REQ B1 B2 B3 B4)
-                     (DATA-ADDRESS-VALID-P OUT)
                      (DATA-ADDRESS-VALID-P B4)
                      (DATA-ADDRESS-VALID-P B3)
                      (DATA-ADDRESS-VALID-P B2)
@@ -601,6 +597,31 @@
                                          (DATA-ADDRESS-VALID-FIX B2)
                                          (DATA-ADDRESS-VALID-FIX B3)))
     :enable (buffers-req DATA-ADDRESS-VALID-FIX-FOR-BUFFERS))
+
+(defrule sol1
+; implements:
+;;; the reqfixes always produce something that satisfies the requirement:
+;;; (implies  (a,b,c are of the right types)
+;;;               (requirement (reqfix-a a b c) (reqfix-b a b c) (reqfix-c a b c)))
+  (implies (and (data-address-valid-p b1)
+                (data-address-valid-p b2)
+                (data-address-valid-p b3)
+                (data-address-valid-p b4))
+           (buffers-req (data-address-valid-fix-for-buffers b1 b2 b3 b4)
+                        (data-address-valid-fix-for-buffers b2 b1 b3 b4)
+                        (data-address-valid-fix-for-buffers b3 b1 b2 b4)
+                        (data-address-valid-fix-for-buffers b4 b1 b1 b2)))
+  :enable (data-address-valid-fix-for-buffers  buffers-req))
+
+; The following is already implemented by all-four
+;; the reqfixes don't change things if they already satisfy the requirement:
+;;; (implies (and (a,b,c are of the right types)
+;;;                      (requirement a b c))
+;;;              (and (equal (reqfix-a a b c) a)
+;;;                      (equal (reqfix-b a b c) b)
+;;;                      (equal (reqfix-c a b c) c)))
+
+
 
 (i-am-here)
 
