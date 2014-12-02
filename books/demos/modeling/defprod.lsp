@@ -205,7 +205,6 @@
                                          (DATA-ADDRESS-VALID-FIX B3)))
     :enable (buffers-req DATA-ADDRESS-VALID-FIX-FOR-BUFFERS))
 
-
 (defrulel obscure-fact
 ; The rewrite rule has to be structured to rewrite an equality to t, because if
 ; it's used to rewrite the lhs of the inner equality to the rhs of the inner
