@@ -78,3 +78,8 @@ Original author: Jared Davis <jared@centtech.com>
 #hierarchy a {
     font-family: "<!-- TMPL_VAR tt_font -->", monospace;
 }
+
+.expandelided {
+    font-family: "<!-- TMPL_VAR serif_font -->", serif;
+}
+

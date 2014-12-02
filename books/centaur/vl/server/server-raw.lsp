@@ -357,9 +357,11 @@ with are not normed.</p>")
         ;;  ;; isn't thread-safe.
         ;;  nil)
 
-        (acl2::*hard-error-is-error*
-         ;; Turn hard errors into Common Lisp errors that we can catch properly
-         t))
+
+        ;; Error Handling.  Make sure ACL2 hard errors get turned into Common
+        ;; Lisp errors that we can catch properly.
+        (acl2::*hard-error-is-error* t)
+        (acl2::*hard-error-returns-nilp* nil))
      . ,forms))
 
 (defun vls-quick-get-model (tname db)
@@ -384,6 +386,7 @@ with are not normed.</p>")
 (defun vls-error-handler (condition)
   (let ((msg (let ((*debug-io* (make-string-output-stream)))
                (cl-user::format *debug-io* "VL Server Error: ~a~%" condition)
+               (cl-user::format *debug-io* "Backtrace:~%")
                (acl2::print-call-history)
                (get-output-stream-string *debug-io*))))
     (throw 'vls-error-handler (cons +vls-error-marker+ msg))))
@@ -416,23 +419,23 @@ with are not normed.</p>")
            ,catch)
        errmsg)))
 
-#|| small/simple demo of how it works
 
-(let* ((acl2::*hard-error-is-error* t)
-       (oktest   (vls-try-catch
-                  :try (+ 1 2)
-                  :catch (list :whoops errmsg)))
-       (failtest (vls-try-catch
-                  :try (er hard? 'vls-try-catch-test "causing an error!")
-                  :catch (list :whoops errmsg))))
-  (cl-user::format t "OKTEST is ~a~%" oktest)
-  (assert (equal oktest 3))
-  (cl-user::format t "FAILTEST is ~a~%" failtest)
-  (assert (and (consp failtest)
-               (equal (first failtest) :whoops)
-               (stringp (second failtest)))))
-
-||#
+;; Small/simple demo to make sure it works.
+(with-vls-bindings
+  (let* ((oktest   (vls-try-catch
+                    :try (+ 1 2)
+                    :catch (list :whoops errmsg)))
+         (failtest (vls-try-catch
+                    :try (er hard? 'vls-try-catch-test "causing an error!")
+                    :catch (list :whoops errmsg))))
+    ;; Don't print these because they look scary
+    ;; (cl-user::format t "OKTEST is ~a~%" oktest)
+    ;; (cl-user::format t "FAILTEST is ~a~%" failtest)
+    (assert (equal oktest 3))
+    (assert (and (consp failtest)
+                 (equal (first failtest) :whoops)
+                 (stringp (second failtest))
+                 (str::substrp "causing an error!" (second failtest))))))
 
 (defun vls-add-automatic-command-handlers ()
   (let ((table (get-vls-commands (w acl2::*the-live-state*))))

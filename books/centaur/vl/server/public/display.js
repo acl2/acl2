@@ -28,6 +28,8 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
+$(document).ready(function() { connect(onConnected); });
+
 var ORIGNAME = getParameterByName("origname"); // Originally case-insensitive.  Gets corrected by onConnected.
 
 if (!ORIGNAME) {
@@ -105,10 +107,69 @@ function loadEverythingElse()
 }
 
 
+function makeModuleList(id, names)
+{
+    log("makeModuleList(" + id + ") with " + names.length + " names");
+
+    var ret = "";
+    var max = 8;
+    if (names.length <= max)
+    {
+	// Short enough list that there is no need to elide it.
+	for(var i = 0; i < names.length; ++i) {
+    	    var name = names[i];
+    	    ret += "<a href=\"javascript:void(0)\" onclick=\"showModule('" + name + "')\">" + name + "</a>";
+    	    if (i == names.length - 2) {
+    		ret += " and ";
+    	    }
+    	    else if (i != names.length - 1) {
+    		ret += ", ";
+    	    }
+	}
+	return ret;
+    }
+
+    // Otherwise we have a long list, let's elide it and make it expandable.
+    for(var i = 0; i < max; ++i) {
+	var name = names[i];
+	ret += "<a href=\"javascript:void(0)\" onclick=\"showModule('" + name + "')\">" + name + "</a> ";
+	if (i != names.length - 1) {
+	    ret += ", ";
+	}
+    }
+
+    ret += "<span id='elide_" + id + "'>";
+    ret += " and ";
+    ret += "<a class=\"expandelided\" href=\"javascript:void(0)\" onclick=\"expandElidedModuleList('" + id + "')\">";
+    ret += (names.length - max);
+    ret += " more";
+    ret += "</a>";
+    ret += "</span>";
+
+    ret += "<span id='show_" + id + "' style='display:none;'>";
+    for(var i = max; i < names.length; ++i) {
+    	var name = names[i];
+    	ret += "<a href=\"javascript:void(0)\" onclick=\"showModule('" + name + "')\">" + name + "</a>";
+    	if (i == names.length - 2) {
+    	    ret += " and ";
+    	}
+    	else if (i != names.length - 1) {
+    	    ret += ", ";
+    	}
+    }
+    ret += "</span>";
+
+    return ret;
+}
+
+function expandElidedModuleList(id) {
+    $("#elide_" + id).hide();
+    $("#show_" + id).show();
+}
+
 function installHierarchy()
 {
-    // Only called for modules.
-
+    // Build Parents ("Used by") and Children ("Used in") Lists, if applicable.
     var hier = "";
     hier += "<span id='hier_parents'></span>";
     hier += "<span id='hier_children'></span>";
@@ -117,24 +178,14 @@ function installHierarchy()
     vlsGetJson({ url: "/vls-get-parents",
 		 data: {origname:ORIGNAME},
 		 success: function(parents) {
-		      if (parents == "NIL" || parents.length == 0) {
-    			  // Seems nicer just not to say anything at all.
-			  log("Not showing empty parents " + JSON.stringify(parents));
-    			  // $("#hier_parents").html("No parents");
-    			  return;
-    		      }
-
-    		     var ret = "Used by ";
-    		     for(var i = 0; i < parents.length; ++i) {
-    			 var par = parents[i];
-    			 ret += "<a href=\"javascript:void(0)\" onclick=\"showModule('" + par + "')\">" + par + "</a>";
-    			 if (i == parents.length - 2) {
-    			     ret += " and ";
-    			 }
-    			 else if (i != parents.length - 1) {
-    			     ret += ", ";
-    			 }
+		     if (parents == "NIL" || parents.length == 0) {
+    			 // Seems nicer just not to say anything at all.
+			 log("Not showing empty parents " + JSON.stringify(parents));
+    			 // $("#hier_parents").html("No parents");
+    			 return;
     		     }
+    		     var ret = "Used by ";
+		     ret += makeModuleList('parents', parents);
     		     ret += ".<br/>";
     		     $("#hier_parents").append(ret);
 		 }});
@@ -149,18 +200,8 @@ function installHierarchy()
 			 // $("#hier_children").html("Leaf module (no children).");
 			 return;
 		     }
-
 		     var ret = "Uses ";
-		     for(var i = 0; i < children.length; ++i) {
-			 var child = children[i];
-			 ret += "<a href=\"javascript:void(0)\" onclick=\"showModule('" + child + "')\">" + child + "</a>";
-			 if (i == children.length - 2) {
-			     ret += " and ";
-			 }
-			 else if (i != children.length - 1) {
-			     ret += ", ";
-			 }
-		     }
+		     ret += makeModuleList('children', children);
 		     ret += ".";
 		     $("#hier_children").append(ret);
 		 }});
@@ -247,5 +288,5 @@ function showWire(wire) {
     showWireExt(ORIGNAME, wire);
 }
 
-$(document).ready(function() { connect(onConnected); });
+
 

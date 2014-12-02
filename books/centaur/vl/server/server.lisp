@@ -276,11 +276,6 @@ viewing Verilog designs.")
        (children (vl-necessary-elements-direct (list origname) data.orig)))
     (vls-success :json (bridge::json-encode children))))
 
-
-; (depends-on "hard-error-patch.lsp")
-(acl2::include-raw "hard-error-patch.lsp")
-
-
 ; (depends-on "server-raw.lsp")
 (acl2::include-raw "server-raw.lsp"
                    :host-readtable t)
