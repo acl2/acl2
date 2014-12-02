@@ -258,28 +258,28 @@
 ;;            X))
 ;;      :hints (("goal" :in-theory (enable buffers-req data-address-valid-fix-for-buffers))))
 
-(defrulel buffers-req-of-fix
-  (BUFFERS-REQ (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
-               (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
-               (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
-               (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
-                (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
-                (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))))
-  :hints (("Goal" :in-theory (enable data-address-valid-fix-for-buffers buffers-req))))
+;; (defrulel buffers-req-of-fix
+;;   (BUFFERS-REQ (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
+;;                (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
+;;                (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X))))
+;;                (DATA-ADDRESS-VALID-FIX-FOR-BUFFERS
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADDDR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CAR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADR X)))
+;;                 (DATA-ADDRESS-VALID-FIX (CDR (CADDR X)))))
+;;   :hints (("Goal" :in-theory (enable data-address-valid-fix-for-buffers buffers-req))))
 
 ;; (defrulel buffers-not-match-addresses
 ;;   (and (implies (buffers-req x a b c)
