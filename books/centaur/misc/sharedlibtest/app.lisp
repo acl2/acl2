@@ -56,10 +56,10 @@
     (mv nil (cons kind1 kinds2) state)))
 
 (defund my-app (state)
-  (b* (((mv error-p paths state) (oslib::ls-files "."))
+  (b* (((mv errmsg paths state) (oslib::ls-files "."))
 
-       ((when error-p)
-        (cw "Listing files failed.~%")
+       ((when errmsg)
+        (cw "Listing files failed: ~@0~%" errmsg)
         (exit 1)
         state)
 

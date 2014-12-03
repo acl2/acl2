@@ -195,8 +195,7 @@ slash, e.g., <tt>/n/fv2/translations</tt>.</p>"
                     (true-listp x))))
 
   (defthm true-listp-of-ls-files
-    (implies (not (mv-nth 0 (oslib::ls-files path state)))
-             (true-listp (mv-nth 1 (oslib::ls-files path state))))
+    (true-listp (mv-nth 1 (oslib::ls-files path)))
     :rule-classes :type-prescription)))
 
 (define vl-looks-like-legitimate-tname-p ((x vl-tname-p) state)
@@ -207,8 +206,9 @@ slash, e.g., <tt>/n/fv2/translations</tt>.</p>"
           with this version of VL."
   (b* ((tdir (vl-tname-dir x))
        ((mv err files state)
-        (oslib::ls-files tdir state))
+        (oslib::ls-files tdir))
        ((when err)
+        (cw "; NOTE: Error listing ~x0: ~@1~%" tdir err)
         (mv nil state))
        ((unless (and (member-equal "model.sao" files)
                      (member-equal "model.sao.ver" files)))
@@ -255,9 +255,9 @@ slash, e.g., <tt>/n/fv2/translations</tt>.</p>"
                (state state-p1 :hyp (force (state-p1 state))))
   (b* ((dir (str::cat *vls-root* "/" base))
        ((mv err models state)
-        (oslib::ls-subdirs dir state))
+        (oslib::ls-subdirs dir))
        ((when err)
-        (raise "Error listing directory ~x0." dir)
+        (raise "Error listing directory ~x0: ~@1~%" dir err)
         (mv nil state)))
     (mv (vl-scan-for-tnames-in-base-aux base models)
         state))
@@ -295,7 +295,7 @@ slash, e.g., <tt>/n/fv2/translations</tt>.</p>"
                         no temporary translations.")
                (state state-p1 :hyp (force (state-p1 state))))
   (b* (((mv err val state)
-        (oslib::ls-subdirs *vls-root* state))
+        (oslib::ls-subdirs *vls-root*))
        ((when err)
         (raise "Error listing ~x0: ~x1." *vls-root* err)
         (mv nil state))

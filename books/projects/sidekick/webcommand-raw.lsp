@@ -32,7 +32,7 @@
 
 (in-package "SIDEKICK")
 
-(let ((webcommands-lock (bordeaux-threads:make-recursive-lock :webcommands-lock))
+(let ((webcommands-lock (bordeaux-threads:make-recursive-lock "webcommands lock"))
       (webcommands      nil))
 
   (defun push-webcommand (x)

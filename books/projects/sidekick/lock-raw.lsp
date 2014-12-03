@@ -33,7 +33,7 @@
 (in-package "SIDEKICK")
 
 (defvar *sidekick-lock*
-  (bordeaux-threads:make-recursive-lock :sidekick-lock))
+  (bordeaux-threads:make-recursive-lock "sidekick-lock"))
 
 (defmacro with-sidekick-lock-aux-raw (irrelevant-argument form)
   (declare (ignore irrelevant-argument))
