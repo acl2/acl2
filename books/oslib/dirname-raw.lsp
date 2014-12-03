@@ -116,7 +116,8 @@
            ;; something horrible.  Hopefully some day someone can rewrite this
            ;; to be more sensible.
            (dirpart (pathname-directory pathname))
-           (- (cl-user::format t "dirpart is ~s~%" dirpart))
+           ;; (- (cl-user::format t "dirpart is ~s~%" dirpart))
+
            ;; This seems to return something like
            ;;   - (:absolute "home" "jared")     for "/home/jared/"
            ;;   - (:relative "." "foo")          for "./foo/"

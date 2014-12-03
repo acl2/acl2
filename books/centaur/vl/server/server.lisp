@@ -51,8 +51,6 @@
 (local (in-theory (enable tag-reasoning)))
 (set-state-ok t)
 
-; cert_param: (ccl-only)
-
 (defxdoc server
   :parents (vl)
   :short "The VL server powers the Module Browser, a web-based interface for

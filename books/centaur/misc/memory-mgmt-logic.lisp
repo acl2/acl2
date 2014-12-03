@@ -39,16 +39,27 @@
 (defun hons-analyze-memory (slowp)
   (declare (xargs :guard t)
            (ignore slowp))
-  (er hard? 'hons-analyze-memory "Raw lisp definition not installed?"))
+  #+Clozure
+  (cw "; hons-analyze-memory: raw lisp definition not installed?~%")
+  #-Clozure
+  (cw "; hons-analyze-memory: not implemented on this lisp~%"))
 
 (defun maybe-wash-memory-fn (n clear)
   (declare (xargs :guard t)
            (ignore n clear))
-  (cw "maybe-wash-memory is defined under the hood~%"))
+  #+Clozure
+  (cw "; maybe-wash-memory: raw lisp definition not installed?~%")
+  #-Clozure
+  (cw "; maybe-wash-memory: not implemented on this lisp~%"))
+
 
 (defun print-quick-memory-summary ()
   (declare (xargs :guard t))
-  (cw "print-quick-memory-summary is defined under the hood~%"))
+  #+Clozure
+  (cw "; print-quick-memory-summary: raw lisp definition not installed?~%")
+  #-Clozure
+  (cw "; print-quick-memory-summary: not implemented on this lisp~%"))
+
 
 (defsection maybe-wash-memory
   :parents (hons-and-memoization)
@@ -92,8 +103,6 @@ advised.)</p>
 
 <p>This can be a good way to clean up memory in between @(see
 gl::def-gl-param-thm) cases, and in other situations.</p>")
-
-
 
 (defmacro maybe-wash-memory (n &optional clear)
   `(maybe-wash-memory-fn ,n ,clear))
@@ -163,12 +172,17 @@ saying it is doing nothing.</p>")
 (defun set-max-mem (n)
   (declare (xargs :guard t)
            (ignore n))
-  (cw "set-max-mem is defined under the hood~%"))
-
+  #+Clozure
+  (cw "; set-max-mem: raw lisp definition not installed?~%")
+  #-Clozure
+  (cw "; set-max-mem: not implemented on this Lisp.~%"))
 
 (defun print-rwx-size ()
   (declare (xargs :guard t))
-  (cw "print-rwx-size is defined under the hood~%"))
+  #+Clozure
+  (cw "; print-rwx-size: raw lisp definition not installed?~%")
+  #-Clozure
+  (cw "; print-rwx-size: not implemented on this Lisp.~%"))
 
 
 (defun last-chance-wash-memory-fn ()
