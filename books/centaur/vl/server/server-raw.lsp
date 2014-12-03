@@ -65,7 +65,7 @@ models.</p>")
 
   ;; LOCK must be acquired whenever a producer or consumer needs to modify DATA
   ;; to insert or extract a value.
-  (lock (bordeaux-threads:make-lock 'queue-lock))
+  (lock (bt:make-lock "ts-queue lock"))
 
   ;; DATA contains the actual queue data.  We enqueue elements into the back of
   ;; DATA and dequeue from the front.
@@ -79,9 +79,9 @@ consumer, and finally returns @('obj').")
 
 (defun ts-enqueue (obj queue)
   (declare (type ts-queue queue))
-  (bordeaux-threads:with-lock-held ((ts-queue-lock queue))
-                                   (setf (ts-queue-data queue)
-                                         (append (ts-queue-data queue) (list obj))))
+  (bt:with-lock-held ((ts-queue-lock queue))
+                     (setf (ts-queue-data queue)
+                           (append (ts-queue-data queue) (list obj))))
   (bt-semaphore:signal-semaphore (ts-queue-sem queue))
   obj)
 
@@ -94,11 +94,11 @@ added.")
 (defun ts-dequeue (queue)
   (declare (type ts-queue queue))
   (bt-semaphore:wait-on-semaphore (ts-queue-sem queue))
-  (bordeaux-threads:with-lock-held ((ts-queue-lock queue))
-                                   (let ((obj (car (ts-queue-data queue))))
-                                     (setf (ts-queue-data queue)
-                                           (cdr (ts-queue-data queue)))
-                                     obj)))
+  (bt:with-lock-held ((ts-queue-lock queue))
+                     (let ((obj (car (ts-queue-data queue))))
+                       (setf (ts-queue-data queue)
+                             (cdr (ts-queue-data queue)))
+                       obj)))
 
 (defxdoc-raw ts-queue-len
   :parents (ts-queue)
@@ -111,8 +111,8 @@ estimate.  This is because the length of the queue can change immediately after
 
 (defun ts-queue-len (queue)
   (declare (type ts-queue queue))
-  (bordeaux-threads:with-lock-held ((ts-queue-lock queue))
-                                   (length (ts-queue-data queue))))
+  (bt:with-lock-held ((ts-queue-lock queue))
+                     (length (ts-queue-data queue))))
 
 
 
@@ -185,7 +185,7 @@ with are not normed.</p>")
   ;; /n/fv2/translations.  It is updated occasionally by vls-scanner-thread.
   ;; You must acquire SCANNED-LOCK when accessing or updating SCANNED.
   (scanned      nil)
-  (scanned-lock (bordeaux-threads:make-lock 'vls-transdb-scanned-lock))
+  (scanned-lock (bt:make-lock "vls-transdb-scanned-lock"))
 
   ;; LOADED is an alist mapping tnames to their contents (vls-data-p objects).
   ;; It is updated by the vls-loader-thread, and perhaps in the future by some
@@ -193,7 +193,7 @@ with are not normed.</p>")
   ;; or updating this field.  Note also that the proper way to get a new
   ;; translation loaded is to add it to the LOAD-QUEUE via VLS-REQUEST-LOAD.
   (loaded      nil)
-  (loaded-lock (bordeaux-threads:make-lock 'vls-transdb-loaded-lock))
+  (loaded-lock (bt:make-lock "vls-transdb-loaded-lock"))
 
   ;; LOAD-QUEUE is a TS-QUEUE that governs which translations are next to be
   ;; loaded by the loader thread.
@@ -217,9 +217,9 @@ with are not normed.</p>")
           (handler-case
            (let ((new-scan (time$ (vl-scan-for-tnames state)
                                   :msg "; rescan: ~st sec, ~sa bytes~%")))
-             (bordeaux-threads:with-lock-held ((vls-transdb-scanned-lock db))
-                                     (setf (vls-transdb-scanned db)
-                                           new-scan))
+             (bt:with-lock-held ((vls-transdb-scanned-lock db))
+                                (setf (vls-transdb-scanned db)
+                                      new-scan))
              (sleep 600))
            (error (condition)
                   (cl-user::format t "Ignoring unexpected error in ~
@@ -239,8 +239,8 @@ with are not normed.</p>")
 ; by the scanner thread.
 
   (declare (type vls-transdb db))
-  (bordeaux-threads:with-lock-held ((vls-transdb-scanned-lock db))
-                          (vls-transdb-scanned db)))
+  (bt:with-lock-held ((vls-transdb-scanned-lock db))
+                     (vls-transdb-scanned db)))
 
 
 
@@ -258,10 +258,10 @@ with are not normed.</p>")
 
   (declare (type vls-transdb db))
 
-  (cl-user::format t "Running vls-loader-thread in ~a" ccl::*current-process*)
+  (cl-user::format t "Running vls-loader-thread in ~a" (bt:thread-name (bt:current-thread)))
   (cl-user::format t "Hons summary for loader thread:~%")
 
-  (bordeaux-threads:with-lock-held
+  (bt:with-lock-held
    ;; If it's already loaded, don't try to load it again.
    ((vls-transdb-loaded-lock db))
    (when (assoc-equal tname (vls-transdb-loaded db))
@@ -282,7 +282,7 @@ with are not normed.</p>")
       (cl-user::format t "; vls-load-translation: invalid translation data!~%")
       (return-from vls-load-translation nil))
     (let* ((data (vls-data-from-translation trans)))
-      (bordeaux-threads:with-lock-held
+      (bt:with-lock-held
        ((vls-transdb-loaded-lock db))
        (when (assoc-equal tname (vls-transdb-loaded db))
          (error "translation should not yet be loaded"))
@@ -320,13 +320,13 @@ with are not normed.</p>")
 (let ((support-started nil))
   (defun maybe-start-support-threads ()
     (unless support-started
-      (bordeaux-threads:make-thread 'vls-scanner-thread
+      (bt:make-thread 'vls-scanner-thread
                                     ;(list :name "vls-scanner-thread"
                                     ;      :stack-size  (* 8  (expt 2 20))  ;; 8 MB
                                     ;      :vstack-size (* 16 (expt 2 20))  ;; 16 MB
                                     ;      :tstack-size (* 8  (expt 2 20))  ;; 8 MB
                                     )
-      (bordeaux-threads:make-thread 'vls-loader-thread
+      (bt:make-thread 'vls-loader-thread
                                     ;; :stack-size  (* 8 (expt 2 20))   ;; 8 MB
                                     ;; :vstack-size (* 128 (expt 2 20)) ;; 128 MB
                                     ;; :tstack-size (* 8 (expt 2 20))   ;; 8 MB
@@ -335,7 +335,7 @@ with are not normed.</p>")
 
 (defun vls-loaded-translations (db)
   (alist-keys
-   (bordeaux-threads:with-lock-held ((vls-transdb-loaded-lock db))
+   (bt:with-lock-held ((vls-transdb-loaded-lock db))
      (vls-transdb-loaded db))))
 
 (defmacro with-vls-bindings (&rest forms)
@@ -365,7 +365,7 @@ with are not normed.</p>")
      . ,forms))
 
 (defun vls-quick-get-model (tname db)
-  (bordeaux-threads:with-lock-held
+  (bt:with-lock-held
     ;; If it's already loaded, don't try to load it again.
     ((vls-transdb-loaded-lock db))
     (let ((pair (assoc-equal tname (vls-transdb-loaded db))))
@@ -373,13 +373,16 @@ with are not normed.</p>")
            (cdr pair)))))
 
 (defun vls-start-model-load (tname db)
-  (bordeaux-threads:with-lock-held
+  (bt:with-lock-held
     ((vls-transdb-loaded-lock db))
     (ts-enqueue tname (vls-transdb-load-queue db))))
 
+(defmacro define-constant (name value &optional doc)
+  ;; See the SBCL manual, "Defining Constants"
+  `(defconstant ,name (if (boundp ',name) (symbol-value ',name) ,value)
+     ,@(when doc (list doc))))
 
-
-(defconstant +vls-error-marker+
+(define-constant +vls-error-marker+
   ;; A unique cons for distinguishing trapped errors
   (cons :vls-error-marker nil))
 
@@ -494,7 +497,7 @@ with are not normed.</p>")
          (setf (hunchentoot:return-code*) hunchentoot:+http-forbidden+)
          (cl-user::format nil "<html><body><h1>Forbidden</h1><h3>Request not allowed: ~a</h3></body></html>~%" script))
 
-        (docroot  (ccl::native-translated-namestring (hunchentoot:acceptor-document-root hunchentoot:*acceptor*)))
+        (docroot  (uiop:native-namestring (hunchentoot:acceptor-document-root hunchentoot:*acceptor*)))
         (fullpath (oslib::catpath docroot script))
 
         ((unless (b* ((state acl2::*the-live-state*)
