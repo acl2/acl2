@@ -30,7 +30,6 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-; cert_param: (ccl-only)
 (include-book "tools/include-raw" :dir :system)
 (include-book "tools/bstar" :dir :system)
 (include-book "std/strings/strrpos" :dir :system)
@@ -83,15 +82,23 @@
   ;; We assume you call this right before save-exec.
   ;; We assume you're in the directory you want all the .so files copied to.
   (declare (xargs :guard t))
+  #+Clozure
   (er hard? 'disconnect-shared-libs
-      "Error: under the hood redefinition not installed?"))
+      "Error: under the hood redefinition not installed?")
+  #-Clozure
+  (cw "; disconnect-shared-libs not implemented on this lisp.~%"))
 
 (defun reconnect-shared-libs ()
   ;; We assume your LD_LIBRARY_PATH has all the .so files you copied.
   (declare (xargs :guard t))
+  #+Clozure
   (er hard? 'reconnect-shared-libs
-      "Error: under the hood redefinition not installed?"))
+      "Error: under the hood redefinition not installed?")
+  #-Clozure
+  (cw "; reconnect-shared-libs not implemented on this lisp.~%"))
 
 (defttag :sharedlibs)
+
+#+Clozure
 (include-raw "sharedlibs-raw.lsp")
 
