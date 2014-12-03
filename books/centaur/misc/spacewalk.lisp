@@ -29,8 +29,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-; cert_param: (ccl-only)
-; cert_param: (hons-only)
 (include-book "tools/include-raw" :dir :system)
 (include-book "centaur/misc/memory-mgmt" :dir :system)
 (include-book "std/util/define" :dir :system)
@@ -57,8 +55,13 @@ eventually try to integrate it into the @(see Sidekick).</p>
 on various low-level CCL functions to analyze memory usage of various ACL2 data
 structures.</p>"
 
-  (raise "Under the hood definition not yet installed?"))
+  #+Clozure
+  (raise "Under the hood definition not yet installed?")
+  #-Clozure
+  (cw "Spacewalk is not implemented on this lisp.~%"))
 
 (defttag :spacewalk)
+
 ; (depends-on "spacewalk-raw.lsp")
+#+Clozure
 (include-raw "spacewalk-raw.lsp" :host-readtable t)
