@@ -329,6 +329,8 @@ equivalent to an insertion sort.</p>
 <p>The @(see include-raw) utility has been made more robust.  It now checks the
 write-date of compiled files, to avoid including stale files.</p>
 
+<p>The utilities @(see profile-acl2) and @(see profile-all) now work in the
+ACL2 loop, and are documented.</p>
 
 <h3>OSLIB</h3>
 

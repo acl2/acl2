@@ -15447,8 +15447,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (declare (xargs :guard (and (true-listp str-args)
                               (member-symbol-name (symbol-name severity)
-                                                  '(hard hard? hard! soft
-                                                         very-soft))
+                                                  '(hard hard? hard! hard?!
+                                                         soft very-soft))
                               (<= (length str-args) 10))))
   (let ((alist (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
                                     #\5 #\6 #\7 #\8 #\9)
