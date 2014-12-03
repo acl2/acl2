@@ -85,9 +85,11 @@
             (write-string elide)
             (format t "~%"))))
 
-  (format t "~%--- Hons memory usage ---~%")
-  (hons-summary)
-  (hons-analyze-memory nil))
+  #+hons
+  (progn
+    (format t "~%--- Hons memory usage ---~%")
+    (hons-summary)
+    (hons-analyze-memory nil)))
 
 (defun spacewalk ()
   (spacewalk-main)

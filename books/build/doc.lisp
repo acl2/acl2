@@ -1132,13 +1132,17 @@ to the head node before returning control to the Makefile.</p>")
   :parents (cert.pl)
   :short "restricting and modifying @(see community-books)
 certification using @('make')"
-  :long "<p>You can restrict the @(see books) to be certified using @('make')
+  :long (concatenate 'string
+ "<p>You can restrict the @(see books) to be certified using @('make')
   by adding a stylized ``@('cert_param:')'' comment.  For example, suppose that
   you include the following comment in your book or in a corresponding
   @('.acl2') file (see @(see 2._PRE_CERTIFY-BOOK_COMMANDS)).</p>
 
  @({
- ; cert_param: (ccl-only)
+ ; cert_"
+  ;; [Jared] adding line break so that the build system doesn't
+  ;; think this is a real restriction
+  "param: (ccl-only)
  })
 
  <p>Then your @('make') command will only certify that book if your host Lisp
@@ -1151,7 +1155,9 @@ certification using @('make')"
  is activated as described below.</p>
 
  @({
- ; cert_param: ( foo = bar , baz = 1 , bla )
+ ; cert_"
+  ;; [Jared] similar line breaks for similar reasons
+  "param: ( foo = bar , baz = 1 , bla )
  })
 
  <p>The meaning of an activated @('cert_param') is generally clear from its
@@ -1190,4 +1196,4 @@ certification using @('make')"
 
  <li>@('uses-quicklisp'): only certify when quicklisp is available</li>
 
- </ul>")
+ </ul>"))
