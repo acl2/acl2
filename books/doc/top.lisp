@@ -823,7 +823,7 @@ See @(see arithmetic) for libraries for arithmetic reasoning.</p>")
      (xdoc::change-parents String<= (stringp))
      (xdoc::change-parents String> (stringp))
      (xdoc::change-parents String>= (stringp))
-     (xdoc::change-parents Stringp (stringp))
+     (xdoc::change-parents Stringp (unselected-parents))
 
      (xdoc::change-parents coerce (stringp characters))
 
