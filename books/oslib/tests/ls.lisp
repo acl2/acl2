@@ -36,6 +36,7 @@
 (defconsts (*files* state)
   (oslib::ls! "."))
 
+(assert! (member-equal ".fileforls" *files*))
 (assert! (member-equal "ls.lisp" *files*))
 (assert! (member-equal "top.lisp" *files*))
 (assert! (not (member-equal "." *files*)))
@@ -62,7 +63,11 @@
 
 (assert! (member-equal "emacs" *acl2dirs*))
 (assert! (subsetp-equal *acl2dirs* *acl2-all*))
-(assert! (subsetp-equal *acl2-all* (append *acl2dirs* *acl2reg*)))
+(assert! (or (subsetp-equal *acl2-all* (append *acl2dirs* *acl2reg*))
+             (cw "Oops, somehow acl2-all has files that aren't dirs or regular? ~x0~%"
+                 (set-difference-equal *acl2-all*
+                                       (append *acl2dirs* *acl2reg*)))))
+
 (assert! (or (not (intersection-equal *acl2dirs* *acl2reg*))
              (cw "Oops, intersecting files and dirs?  ~x0~%"
                  (intersection-equal *acl2dirs* *acl2reg*))))

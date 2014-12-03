@@ -44,7 +44,7 @@
              (pathnames (osicat:list-directory dir))
              (names     nil))
         (loop for pathname in pathnames do
-              (push (namestring pathname) names))
+              (push (uiop:native-namestring pathname) names))
         (basenames names))
       (error (condition)
              (let ((condition-str (format nil "~a" condition)))
