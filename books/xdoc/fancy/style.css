@@ -474,6 +474,22 @@ hr { margin-top: 2em; }
   border-right-color: #a3b0dd;
 }
 
+.stv_override_line {
+    background-color: #ffb0b0;
+}
+
+.stv_override_line td:nth-child(even) {
+  background-color: #ffc0c0;
+}
+
+.stv_override_line td {
+  border-bottom: 1px;
+  border-bottom-color: #ff8080;
+  border-bottom-style: solid;
+  border-right: 1px;
+  border-right-style: solid;
+  border-right-color: #ff8080;
+}
 
 .stv_internal_line {
     background-color: #ff0000; /* bozo fix colors */
