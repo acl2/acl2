@@ -1125,8 +1125,6 @@
         ((and (fboundp 'old-trace)
               (member fn (eval '(old-trace))))
          (ofn " is a member of (old-trace), and it will so continue."))
-        ((eq fn 'return-last)
-         " is the function RETURN-LAST.")
         ((gethash fn *never-memoize-ht*)
          (ofn " is in *NEVER-MEMOIZE-HT*."))
         ((gethash fn *profile-reject-ht*)
@@ -1156,12 +1154,12 @@
 ;       ((null (mf-len-inputs fn)) (input-output-number-warning fn))
         ))
 
-(declaim (ftype (function (t) (values t)) event-number))
+(declaim (ftype (function (t) (values t)) profile-acl2-event-number))
 
-(defun event-number (fn)
+(defun profile-acl2-event-number (fn)
   (cond ((symbolp fn)
          (fgetprop fn 'absolute-event-number t (w *the-live-state*)))
-        (t (error "EVENT-NUMBER: ** ~a is not a symbol." fn))))
+        (t (error "PROFILE-ACL2-EVENT-NUMBER: ** ~a is not a symbol." fn))))
 
 (defn memoize-here-come (n)
   (let ((m (ceiling
@@ -1181,16 +1179,7 @@
      (format t ,@r)
      (force-output t)))
 
-(defun profile-acl2 (&key (start 0)
-                          forget
-                          (lots-of-info t))
-
-  "PROFILE-ACL2 is a raw Lisp function.  (PROFILE-ACL2 :start 'foo)
-   profiles many functions that have been accepted by ACL2, starting
-   with the acceptance of the function foo.  However, if a function is
-   regarded as DUBIOUS-TO-PROFILE, then it is not profiled and an
-   explanation is printed."
-
+(defun profile-acl2-fn (start lots-of-info forget)
   (let ((*record-bytes* #+Clozure lots-of-info #-Clozure nil)
         (*record-calls* lots-of-info)
         (*record-hits* lots-of-info)
@@ -1201,7 +1190,7 @@
     (unless (integerp start)
       (unless (symbolp start)
         (error "~%; PROFILE-ACL2: ** ~a is not an event." start))
-      (setq start (event-number start))
+      (setq start (profile-acl2-event-number start))
       (unless (integerp start)
         (error "~%; PROFILE-ACL2: ** ~a is not an event." start)))
     (let ((fns-ht (make-hash-table :test 'eq)))
@@ -1217,8 +1206,8 @@
                          (macro-function fn)
                          (special-form-or-op-p fn))
                      (setf (gethash fn fns-ht) 'no))
-                    ((or (not (integerp (event-number fn)))
-                         (< (event-number fn) start))
+                    ((or (not (integerp (profile-acl2-event-number fn)))
+                         (< (profile-acl2-event-number fn) start))
                      (setf (gethash fn fns-ht) 'no))
                     ((dubious-to-profile fn)
                      (setf (gethash fn fns-ht) 'no)
@@ -1239,24 +1228,13 @@
          (profile-fn k
                      :forget forget))
        fns-ht)
-      (clear-memoize-call-array)
-      (format t "~%(clear-memoize-call-array) invoked.")
-      (format t "~a function~:p newly profiled."
-              (hash-table-count fns-ht)))))
+      (clear-memoize-statistics)
+      (format t "~%(clear-memoize-statistics) invoked.~%")
+      (format t "~a function~:p newly profiled.~%"
+              (hash-table-count fns-ht))))
+  nil)
 
-(defun profile-all (&key (lots-of-info t) forget pkg)
-
-  "PROFILE-ALL is a raw Lisp function.  (PROFILE-ALL) profiles each
-  symbol that has a function-symbol and occurs in a package known
-  to ACL2, unless it is
-
-   1. memoized,
-   2. traced,
-   3. in the package COMMON-LISP,
-   4. in *NEVER-MEMOIZE-HT*, or
-   5. in *PROFILE-REJECT-HT*
-   6. otherwise rejected by DUBIOUS-TO-PROFILE."
-
+(defun profile-all-fn (lots-of-info forget pkg)
   (let ((*record-bytes* #+Clozure lots-of-info #-Clozure nil)
         (*record-calls* lots-of-info)
         (*record-hits* lots-of-info)
@@ -1296,10 +1274,11 @@
          (profile-fn k
                      :forget forget))
        fns-ht)
-      (clear-memoize-call-array)
-      (format t "~%(clear-memoize-call-array) invoked.")
-      (ofn "~a function~:p newly profiled."
-           (hash-table-count fns-ht)))))
+      (clear-memoize-statistics)
+      (format t "~%(clear-memoize-statistics) invoked.~%")
+      (ofn "~a function~:p newly profiled.~%"
+           (hash-table-count fns-ht))))
+  nil)
 
 (defn functions-defined-in-form (form)
   (cond ((consp form)

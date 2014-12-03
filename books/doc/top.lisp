@@ -211,6 +211,8 @@
 (include-book "misc/without-waterfall-parallelism" :dir :system)
 (include-book "misc/with-waterfall-parallelism" :dir :system)
 
+(include-book "centaur/memoize/old/profile" :dir :system)
+
 #||
 
 ;; This is a nice place to put include-book scanner hacks that trick cert.pl

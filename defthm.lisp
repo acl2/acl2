@@ -4905,7 +4905,7 @@
 
                              (mv
                               (if (tagged-objectsp 'fc-derivation ttree)
-                                  (er hard
+                                  (er hard 'destructure-type-prescription
                                       "Somehow an 'fc-derivation, ~x0, has ~
                                        found its way into the ttree returned ~
                                        by type-set-implied-by-term."
