@@ -52,7 +52,7 @@
 ;; them when they become expensive.
 (in-theory (enable acl2::subsetp-member acl2::subsetp-trans2))
 
-
+;; BOZO maybe this should be forward-chaining?
 (defrule member-equal-when-member-equal-of-cdr-under-iff
   (implies (member-equal a (cdr x))
            (member-equal a x))

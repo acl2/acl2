@@ -171,7 +171,7 @@ producing some warnings.</p>"
 
        ((unless (vl-fast-id-p guts))
         ;; Other kinds of atoms don't get a type.
-        (mv (warn :type :vl-selfsize-fail
+        (mv (warn :type :vl-typedecide-fail
                   :msg "~a0: Couldn't decide signedness of atom: ~a1"
                   :args (list (vl-context-fix ctx) (vl-expr-fix x)))
             nil)))
@@ -186,6 +186,51 @@ producing some warnings.</p>"
                (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))))
 
 
+
+
+(define vl-funcall-typedecide ((x vl-expr-p)
+                             (ss vl-scopestack-p)
+                             (ctx vl-context-p)
+                             (warnings vl-warninglist-p))
+  :guard (and (not (vl-atom-p x))
+              (eq (vl-nonatom->op x) :vl-funcall))
+  :returns (mv (warnings vl-warninglist-p)
+               (type (and (vl-maybe-exprtype-p type)
+                          (iff (vl-exprtype-p type) type))))
+  (b* ((ctx (vl-context-fix ctx))
+       ((vl-nonatom x) (vl-expr-fix x))
+       ((unless (and (consp x.args)
+                     (vl-fast-atom-p (first x.args))
+                     (vl-funname-p (vl-atom->guts (first x.args)))))
+        (raise "Programming error: function call without function name: ~x0" x)
+        (mv (warn :type :vl-programming-error
+                  :msg "~a0: Function call without function name: ~a1"
+                  :args (list ctx x))
+            nil))
+       (fnname (vl-funname->name (vl-atom->guts (first x.args))))
+       (decl (vl-scopestack-find-item fnname ss))
+       ((unless (and decl (eq (tag decl) :vl-fundecl)))
+        (mv (warn :type :vl-function-not-found
+                  :msg "~a0: Function not found: ~a1"
+                  :args (list ctx x))
+            nil))
+       ((vl-fundecl decl)))
+    (case decl.rtype
+      (:vl-unsigned (mv (ok) :vl-unsigned))
+      (:vl-signed   (mv (ok) :vl-signed))
+      (:vl-integer  (mv (ok) :vl-signed))
+      (otherwise
+       (mv (warn :type :vl-function-typedecide-fail
+                 :msg "~a0: Unsupported return type for function: ~a1"
+                 :args (list ctx x))
+           nil))))
+  ///
+  (defrule warning-irrelevance-of-vl-funcall-typedecide
+    (let ((ret1 (vl-funcall-typedecide x ss ctx warnings))
+          (ret2 (vl-funcall-typedecide x ss nil nil)))
+      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
+               (equal (mv-nth 1 ret1)
+                      (mv-nth 1 ret2))))))
 
 
 (deflist vl-maybe-exprtype-list-p (x)
@@ -263,9 +308,12 @@ produce unsigned values.</li>
            ((when (vl-$bits-call-p x))
             (mv (ok) :vl-signed))
 
-
            (op        (vl-nonatom->op x))
            (args      (vl-nonatom->args x))
+
+           ((when (eq op :vl-funcall))
+            (vl-funcall-typedecide x ss ctx warnings))
+
            ((mv warnings arg-types)
             (vl-exprlist-typedecide-aux args ss ctx warnings mode)))
 
@@ -365,10 +413,6 @@ produce unsigned values.</li>
                (mv nil :vl-signed)
              ;; Otherwise, not a supported system call.
              (mv warnings nil)))
-
-          ((:vl-funcall)
-           ;; BOZO eventually add support for function calls.
-           (mv warnings nil))
 
           ((:vl-stream-left :vl-stream-right
             :vl-stream-left-sized :vl-stream-right-sized)

@@ -177,7 +177,11 @@ hierarchical identifiers.</p>"
          ((when (vl-$bits-call-p x))
           (and (eql (vl-expr->finalwidth x) 32)
                (vl-expr->finaltype x)
-               t)))
+               t))
+         ((when (eq x.op :vl-funcall))
+          (and (consp x.args)
+               ;; could easily enough check that the first arg is a funname
+               (vl-exprlist-welltyped-p (cdr x.args)))))
       (and
        (vl-exprlist-welltyped-p x.args)
        (case x.op
@@ -353,10 +357,6 @@ hierarchical identifiers.</p>"
             (and (vl-expr-resolved-p c)
                  (eql x.finalwidth (vl-resolved->val c))
                  (eq x.finaltype :vl-unsigned))))
-
-         ((:vl-funcall)
-          ;; BOZO do we want to constrain these in any way?
-          t)
 
          ((:vl-syscall)
           ;; BOZO do we want to constrain these in any way?

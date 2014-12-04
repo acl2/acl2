@@ -186,8 +186,9 @@ for some basic ACL2 types.</p>")
                       (er hard? 'deffixtype
                           "Failed to prove that ~x0 is idempotent.~%" ',fix)))))
            (,(if execp 'defun 'defun-nx) ,equiv (x y)
-             (declare (xargs :verify-guards nil
-                             :normalize nil))
+             (declare (xargs :normalize nil
+                             ,@(and execp `(:guard (and (,predicate x) (,predicate y))))
+                             :verify-guards ,execp))
              (equal (,fix x) (,fix y)))
            (local (in-theory '(,equiv tmp-deffixtype-idempotent
                                       booleanp-compound-recognizer)))

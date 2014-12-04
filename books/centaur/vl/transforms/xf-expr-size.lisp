@@ -500,7 +500,14 @@ details.</p>")
   ;;                               (vl-unsigned-when-size-zero-lst (cdr sizes) (cdr types)))))
   ;;          :hints(("Goal" :in-theory (enable vl-unsigned-when-size-zero-lst)))))
 
-  (local (in-theory (disable max)))
+  (local (in-theory (disable max acl2::len-when-atom
+                             default-car default-cdr
+                             vl-context-fix-when-vl-context-p
+                             vl-context-p-of-ctxelement
+                             double-containment
+                             vl-expr-selfsize
+                             vl-expr-typedecide-aux
+                             vl-$bits-call-p)))
   
   ;; (local (Defthm vl-exprtype-max-when-one-unsigned
   ;;          (implies (or (equal a :vl-unsigned)
@@ -515,19 +522,28 @@ details.</p>")
         (implies (and (equal size 0)
                       type)
                  (equal type :vl-unsigned)))
-      :hints ('(:expand ((:free (ctx warnings)
+      :hints (;;(and stable-under-simplificationp
+              '(:expand ((:free (ctx warnings)
                           (vl-expr-selfsize x ss ctx warnings))
                          (:free (ctx warnings mode)
                           (vl-expr-typedecide-aux x ss ctx warnings mode))
                          (:free (a b c)
                           (vl-unsigned-when-size-zero-lst (cons a b) c)))
-                :in-theory (enable vl-op-selfsize
-                                   vl-syscall-selfsize
-                                   ;; vl-$bits-call-p
-                                   vl-exprtype-max
-                                   acl2::member-of-cons
-                                   ;; vl-unsigned-when-size-zero-lst
-                                   )))
+                :in-theory (enable acl2::member-of-cons))
+              (and stable-under-simplificationp
+                   '(:in-theory (enable vl-op-selfsize
+                                        vl-syscall-selfsize
+                                        vl-funcall-selfsize
+                                        ;; vl-$bits-call-p
+                                        vl-exprtype-max
+                                        acl2::member-of-cons
+                                        ;; vl-unsigned-when-size-zero-lst
+                                        )))
+              ;; (and (member-equal id
+              ;;                    (list (acl2::parse-clause-id "Subgoal *1/13.5")
+              ;;                          (acl2::parse-clause-id "Subgoal *1/13''")))
+              ;;      (cw "clause: ~x0~%" (acl2::prettyify-clause clause nil world)))
+              )
       
       :flag :expr)
     (defthm vl-exprlist-unsigned-when-size-zero-aux
@@ -1688,8 +1704,12 @@ minor warning for assignments where the rhs is a constant.</p>"
            ACL2::NATP-WHEN-MAYBE-NATP
            acl2::MEMBER-EQUAL-WHEN-ALL-EQUALP
            vl-warninglist-p-when-not-consp
+           vl-$bits-call-p
            )))
 
+
+
+          
 
 (with-output :off (prove)
   (defines vl-expr-size
@@ -2456,8 +2476,26 @@ minor warning for assignments where the rhs is a constant.</p>"
                  (mv nil warnings x)))
              (mv t warnings new-x)))
 
+          (:vl-funcall
+           ;; Skip the function, self-size the arguments.
+           (b* (((unless (consp args))
+                 (mv nil
+                     (warn :type :vl-programming-error
+                           :msg "~a0: Function call without function name: ~a1"
+                           :args (list ctx x))
+                     x))
+                ((cons fnname fn-args) args)
+                ((mv ok warnings fn-args)
+                 (vl-exprlist-size fn-args ss ctx warnings))
+                ((unless ok) (mv nil warnings x))
+                (new-x (change-vl-nonatom
+                        x
+                        :args (cons fnname fn-args)
+                        :finalwidth finalwidth
+                        :finaltype finaltype)))
+             (mv ok warnings new-x)))
 
-          ((:vl-funcall :vl-syscall :vl-mintypmax :vl-index
+          ((:vl-syscall :vl-mintypmax :vl-index
             :vl-scope :vl-hid-dot
 
             ;; BOZO these might not belong here, but it seems like the

@@ -42,6 +42,7 @@
   ;; don't process combinational or latch-based blocks.  We don't throw away
   ;; unsupported blocks because we want to deal with combinational and
   ;; latch-based blocks directly in svex.
+  :returns (new-x vl-design-p)
 
   (b* ((x (xf-cwtime (vl-design-caseelim x)))
        (x (xf-cwtime (vl-design-eliminitial x)))

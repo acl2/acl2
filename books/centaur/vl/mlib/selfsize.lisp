@@ -468,7 +468,6 @@ details.</p>"
     ;; warning.
     type))
 
-
 (with-output :off (event)
   (define vl-op-selfsize
     :parents (vl-expr-selfsize)
@@ -880,6 +879,47 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
 
 
 
+(define vl-funcall-selfsize ((x vl-expr-p)
+                             (ss vl-scopestack-p)
+                             (ctx vl-context-p)
+                             (warnings vl-warninglist-p))
+  :guard (and (not (vl-atom-p x))
+              (eq (vl-nonatom->op x) :vl-funcall))
+  :returns (mv (warnings vl-warninglist-p)
+               (size maybe-natp :rule-classes :type-prescription))
+  (b* ((ctx (vl-context-fix ctx))
+       ((vl-nonatom x) (vl-expr-fix x))
+       ((unless (and (consp x.args)
+                     (vl-fast-atom-p (first x.args))
+                     (vl-funname-p (vl-atom->guts (first x.args)))))
+        (raise "Programming error: function call without function name: ~x0" x)
+        (mv (warn :type :vl-programming-error
+                  :msg "~a0: Function call without function name: ~a1"
+                  :args (list ctx x))
+            nil))
+       (fnname (vl-funname->name (vl-atom->guts (first x.args))))
+       (decl (vl-scopestack-find-item fnname ss))
+       ((unless (and decl (eq (tag decl) :vl-fundecl)))
+        (mv (warn :type :vl-function-not-found
+                  :msg "~a0: Function not found: ~a1"
+                  :args (list ctx x))
+            nil))
+       ((vl-fundecl decl))
+       ((unless (vl-maybe-range-resolved-p decl.rrange))
+        (mv (warn :type :vl-function-selfsize-fail
+                  :msg "~a0: Range of function return value is not resolved: ~a1"
+                  :args (list ctx x))
+            nil)))
+    (mv (ok) (vl-maybe-range-size decl.rrange)))
+  ///
+  (defrule warning-irrelevance-of-vl-funcall-selfsize
+    (let ((ret1 (vl-funcall-selfsize x ss ctx warnings))
+          (ret2 (vl-funcall-selfsize x ss nil nil)))
+      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
+               (equal (mv-nth 1 ret1)
+                      (mv-nth 1 ret2))))))
+       
+
 (defines vl-expr-selfsize
   :short "Computation of self-determined expression sizes."
 
@@ -930,6 +970,9 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
 
          ((when (vl-$bits-call-p x))
           (mv (ok) 32))
+
+         ((when (eq op :vl-funcall))
+          (vl-funcall-selfsize x ss ctx warnings))
 
          ((mv warnings arg-sizes)
           (vl-exprlist-selfsize args ss ctx warnings))
