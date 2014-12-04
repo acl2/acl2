@@ -968,7 +968,7 @@ unless ($no_makefile) {
 	my $make_cmd = join(' ', ("$make -j $jobs -f $mf_name",
 				  ($keep_going ? " -k" : ""),
 				  @make_args,
-				  @targets));
+				  "all-cert-pl-certs"));
 	print "$make_cmd\n";
 	if ($certlib_opts{"debugging"}) {
 	    print "$make_cmd\n";
