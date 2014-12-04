@@ -274,7 +274,14 @@ with are not normed.</p>")
                    (vl-tname->model tname))
 
   (let* ((filename (vl-tname-xdat-file tname))
-         (trans    (acl2::unsound-read filename :hons-mode :always :verbosep t)))
+         (trans
+          (acl2::with-suppression
+            ;; BOZO with-suppression is necessary here for SBCL to avoid
+            ;; package lock problems.  I've discussed this with Matt and it
+            ;; sounds like he's probably going to make it so that
+            ;; serialize-read automatically does with-suppression.  Once that
+            ;; happens we should get rid of the with-suppression form here.
+            (acl2::unsound-read filename :hons-mode :always :verbosep t))))
     (unless (cwtime (vl-translation-p trans))
       (cl-user::format t "; vls-load-translation: invalid translation data!~%")
       (return-from vls-load-translation nil))
