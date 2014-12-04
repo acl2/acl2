@@ -70,7 +70,7 @@
  <p>Here are the @(see events) exported by the @('defpm') call above.</p>
 
  @({
- ; The first two lemmas can be useful for reasoning about the termination
+ ; The first three lemmas can be useful for reasoning about the termination
  ; predicate, FACT-TERMINATES.
 
  (DEFTHM FACT-TERMINATES-BASE
@@ -81,6 +81,15 @@
    (IMPLIES (NOT (FACT-TEST X))
             (EQUAL (FACT-TERMINATES (FACT-STEP X))
                    (FACT-TERMINATES X))))
+
+ (DEFTHMD FACT-TERMINATES-STEP-COMMUTED
+   (IMPLIES (AND (SYNTAXP (SYMBOLP X))
+                 (NOT (FACT-TEST X)))
+            (EQUAL (FACT-TERMINATES X)
+                   (FACT-TERMINATES (FACT-STEP X)))))
+
+ (THEORY-INVARIANT (INCOMPATIBLE (:REWRITE FACT-TERMINATES-STEP)
+                                 (:REWRITE FACT-TERMINATES-STEP-COMMUTED)))
 
  ; The next two lemmas can be useful for defining functions whose termination
  ; is ensured by the measure just introduced.
@@ -94,7 +103,7 @@
             (O< (FACT-MEASURE (FACT-STEP X))
                 (FACT-MEASURE X))))
 
- ; Finally, the four rewrite rules above are collected into a theory.
+ ; Finally, the four enabled rewrite rules above are collected into a theory.
 
  (DEFTHEORY FACT-THEORY
    '(FACT-TERMINATES-BASE FACT-TERMINATES-STEP
@@ -186,6 +195,13 @@
    (implies (not (TEST x))
             (equal (TERMINATES (STEP x))
                    (TERMINATES x))))
+ (defthmd TERMINATES-step-commuted
+   (implies (AND (syntaxp (symbolp x))
+                 (not (TEST x)))
+            (equal (TERMINATES x)
+                   (TERMINATES (STEP x)))))
+ (theory-invariant (incompatible (:rewrite TERMINATES-step)
+                                 (:rewrite TERMINATES-step-commuted)))
  (defthm MEASURE-type
    (o-p (MEASURE x)))
  (defthm MEASURE-decreases
@@ -212,6 +228,15 @@
                                ...
                                (STEP-yk y1 ... yk))
                    (TERMINATES y1 ... yk))))
+ (defthm TERMINATES-step-commuted
+   (implies (AND (syntaxp (symbolp y1)) ... (syntaxp (symbolp yk))
+                 (not (TEST y1 ... yk)))
+            (equal (TERMINATES (STEP-y1 y1 ... yk)
+                               ...
+                               (STEP-yk y1 ... yk))
+                   (TERMINATES y1 ... yk))))
+ (theory-invariant (incompatible (:rewrite TERMINATES-step)
+                                 (:rewrite TERMINATES-step-commuted)))
  (defthm MEASURE-type
    (o-p (MEASURE y1 ... yk)))
  (defthm MEASURE-decreases
@@ -363,6 +388,12 @@
         (t (cons (cons (car fns) formals)
                  (defpm-make-calls (cdr fns) formals)))))
 
+(defun syntaxp-symbolp-lst (formals)
+  (declare (xargs :guard (true-listp formals)))
+  (cond ((endp formals) nil)
+        (t (cons `(syntaxp (symbolp ,(car formals)))
+                 (syntaxp-symbolp-lst (cdr formals))))))
+
 (defun defpm-form (test steps measure terminates theory formals)
   (declare (xargs :guard
                   (and (symbol-listp (list measure terminates theory))
@@ -380,6 +411,7 @@
          (measure-type (defpm-add-suffix measure "TYPE"))
          (terminates-base (defpm-add-suffix terminates "BASE"))
          (terminates-step (defpm-add-suffix terminates "STEP"))
+         (terminates-step-commuted (defpm-add-suffix terminates "STEP-COMMUTED"))
          (measure-decreases (defpm-add-suffix measure "DECREASES")))
     `(encapsulate
       ((,measure ,formals t)
@@ -513,6 +545,15 @@
         (implies (not (,test ,@formals))
                  (equal (,terminates ,@step-calls)
                         (,terminates ,@formals)))
+        :hints (("Goal"
+                 :in-theory (disable defpm-clk)
+                 :use defpm-terminates-step-lemma)))
+
+      (defthmd ,terminates-step-commuted
+        (implies (and ,@(syntaxp-symbolp-lst formals)
+                      (not (,test ,@formals)))
+                 (equal (,terminates ,@formals)
+                        (,terminates ,@step-calls)))
         :hints (("Goal"
                  :in-theory (disable defpm-clk)
                  :use defpm-terminates-step-lemma)))
