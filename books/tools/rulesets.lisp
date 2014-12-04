@@ -68,6 +68,15 @@ rules to the contained rulesets.</p>")
 (defmacro ruleset (name)
   `(get-ruleset ,name world))
 
+(defxdoc get-ruleset
+  :parents (rulesets)
+  :short "See what currently constitutes a ruleset"
+  :long "<p>Example usage:</p>
+
+ @({
+ (get-ruleset 'my-ruleset (w state))
+ )}")
+
 (defun is-ruleset (name world)
   (let* ((ruleset-alist (table-alist 'ruleset-table world)))
     (consp (assoc name ruleset-alist))))
