@@ -1282,40 +1282,90 @@ on (say) x, but does a similar substitution on y, e.g.,</p>
                   (equal (caddr test1) (cadr test2))
                   (equal (caddr test1) (caddr test2)))))))
 
-(defun doublevar-place-calls-in-body (tests term calls-term)
-  (declare (xargs :measure (make-ord 1 (+ 1 (acl2-count term))
-                                     (acl2-count tests))
-                  :mode :program))
+(defun do-both (x y)
+  (declare (xargs :mode :logic))
+  (list x y))
+
+(defmacro do-all (&rest args)
+  (cond ((atom args) nil)
+        ((atom (cdr args)) (car args))
+        (t (xxxjoin 'do-both args))))
+
+(defun doublevar-make-simple-tests/calls (tests calls)
+  (declare (xargs :mode :program))
   (if (atom tests)
-      calls-term
+      calls
     (let* ((negp (and (consp (car tests))
                       (eq (caar tests) 'not)))
            (test-term (if negp (cadar tests) (car tests)))
-           (diff-equals (and (not negp)
-                             (doublevar-different-equals-p
-                              test-term (cadr term))))
-           (matchp (and (eq (car term) 'if)
-                        (or (equal (cadr term) test-term)
-                            diff-equals)))
-           (new-subterm (doublevar-place-calls-in-body
-                         (if diff-equals tests (cdr tests))
-                         (if diff-equals
-                             (cadddr term)
-                           (if matchp
-                               (if negp
-                                   (cadddr term)
-                                 (caddr term))
-                             nil))
-                         calls-term)))
-      (if diff-equals
-          (list 'if (cadr term) (caddr term) new-subterm)
-        (if negp
-            (list 'if test-term (and matchp (caddr term)) new-subterm)
-          (list 'if test-term new-subterm (and matchp (cadddr term))))))))
+           (rest (doublevar-make-simple-tests/calls (cdr tests) calls)))
+      (if negp
+          `(if ,test-term nil (do-all ,rest))
+        `(if ,test-term (do-all ,rest) nil)))))
+           
+           
 
-(defun doublevar-ind-body-add-tests/calls (tests term calls-term)
-  (declare (xargs :mode :program))
-  (doublevar-place-calls-in-body tests term calls-term))
+(mutual-recursion
+ (defun doublevar-place-calls-in-body (tests calls-term term)
+   (declare (xargs :measure (make-ord 1 (+ 1 (acl2-count term))
+                                      (acl2-count tests))
+                   :mode :program))
+   ;; The existing term is of type DOTERM in the following schema:
+   ;;  DOTERM ::= (DO-ALL IFTERM ... IFTERM) | NIL
+   ;;  IFTERM  ::=  (if TEST DOTERM DOTERM)
+   ;;               | recursive-call
+   
+   ;; The simplest way to write this function would be:
+   ;; `(do-both (and ,@tests ,calls-term) ,term)
+   ;; But this would replicate a lot of the IF structure in a lot of different
+   ;; places and make a mess.  We instead try to reuse the same IF structure as
+   ;; much as possible.
+
+  ;; For a given DOTERM, we look through the various subterms for an IF whose
+  ;; test is compatible with the first one in TESTS.  That is, it's the same
+  ;; condition modulo negation, or is checking equality of the same term with
+  ;; different constants.
+   (if (atom term)
+       `(do-all ,(doublevar-make-simple-tests/calls tests calls-term))
+     ;; term is (do-all . ,subterms)
+     (cons 'do-all (doublevar-find-if-to-place-calls tests calls-term (cdr term)))))
+
+ (defun doublevar-find-if-to-place-calls (tests calls-term subterms)
+   ;; Returns a list of IFTERMs, including the existing subterms and the tests/calls.
+   (if (atom subterms)
+       (list (doublevar-make-simple-tests/calls tests calls-term))
+     (if (not (eq (caar subterms) 'if))
+         (cons (car subterms)
+               (doublevar-find-if-to-place-calls tests calls-term (cdr subterms)))
+       (let* ((negp (and (consp (car tests))
+                         (eq (caar tests) 'not)))
+              (test-term (if negp (cadar tests) (car tests)))
+
+              (subterm-test (second (car subterms)))
+
+              (diff-equals (and (not negp)
+                                (doublevar-different-equals-p test-term subterm-test)))
+              (compatible (or (equal test-term subterm-test)
+                              diff-equals)))
+         (if (not compatible)
+             (cons (car subterms)
+                   (doublevar-find-if-to-place-calls tests calls-term (cdr subterms)))
+           (let* ((then-branchp (and (not diff-equals) (not negp)))
+                  (rest-tests (if diff-equals tests (cdr tests)))
+                  (sub-branch 
+                   (doublevar-place-calls-in-body
+                    rest-tests calls-term
+                    (if then-branchp
+                        (third (car subterms))
+                      (fourth (car subterms))))))
+             (cons (if then-branchp
+                       `(if ,subterm-test
+                            ,sub-branch
+                          ,(fourth (car subterms)))
+                     `(if ,subterm-test
+                          ,(third (car subterms))
+                        ,sub-branch))
+                   (cdr subterms)))))))))
 
 
 (defun doublevar-ind-body (ind-machine fnname old-var-index old-var new-var term)
@@ -1327,12 +1377,11 @@ on (say) x, but does a similar substitution on y, e.g.,</p>
            (calls-term `(list ,(len ind-machine)
                               . ,(doublevar-transform-calls
                                   calls fnname old-var-index old-var new-var)))
-           (new-term (doublevar-ind-body-add-tests/calls tests term calls-term)))
+           (new-term (doublevar-place-calls-in-body tests calls-term term)))
       (doublevar-ind-body (cdr ind-machine) fnname old-var-index old-var new-var new-term))))
-  
 
 
-(defun def-doublevar-induction-fn (name f old-var new-var hints w)
+(defun def-doublevar-induction-fn (name f old-var new-var hints take w)
   (declare (xargs :mode :program))
   (let* ((formals (get-formals f w))
          (ind-machine (getprop f 'acl2::induction-machine :none 'current-acl2-world w)))
@@ -1353,13 +1402,17 @@ on (say) x, but does a similar substitution on y, e.g.,</p>
                                 :measure ,measure
                                 :hints ,hints
                                 :well-founded-relation ,wfr
+                                :ruler-extenders (do-both mv-list return-last)
                                 :mode :logic)
                          (ignorable . ,all-formals))
-                ,(doublevar-ind-body ind-machine name old-var-index old-var new-var nil)))))))
+                ,(doublevar-ind-body (if take
+                                         (take take ind-machine)
+                                       ind-machine)
+                                     name old-var-index old-var new-var nil)))))))
 
-(defmacro def-doublevar-induction (name &key orig-fn old-var new-var hints)
+(defmacro def-doublevar-induction (name &key orig-fn old-var new-var hints take)
   `(make-event
-    (def-doublevar-induction-fn ',name ',orig-fn ',old-var ',new-var ',hints (w state))))
+    (def-doublevar-induction-fn ',name ',orig-fn ',old-var ',new-var ',hints ',take (w state))))
 
 
 (local
@@ -1428,4 +1481,5 @@ on (say) x, but does a similar substitution on y, e.g.,</p>
               (equal (sum-pairs-list x) (sum-pairs-list y)))
      :rule-classes :congruence
      :hints (("goal" :induct (sum-pairs-list-double x y))))))
+
 
