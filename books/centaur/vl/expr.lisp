@@ -878,9 +878,6 @@ instead.</p>"
   (mbe :logic (vl-typename-p x)
        :exec (eq (tag x) :vl-typename)))
 
-(defoption maybe-natp natp
-  ;; BOZO misplaced, :parents nil to settle documentation issues
-  :parents nil)
 
 
 (define vl-arity-ok-p ((op vl-op-p) (args))

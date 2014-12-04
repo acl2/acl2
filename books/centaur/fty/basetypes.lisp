@@ -65,9 +65,7 @@
                 (intern-in-package-of-symbol
                  (concatenate 'string (symbol-name typename) "-FIX")
                  pkg))))
-    `(progn
-       (fty::deffixtype ,typename :pred ,pred :fix ,fix :equiv ,equiv :define t)
-       (verify-guards ,equiv))))
+    `(fty::deffixtype ,typename :pred ,pred :fix ,fix :equiv ,equiv :define t)))
 
 (defmacro defbasetype (equiv pred &rest keys)
   (defbasetype-fn equiv pred keys))
@@ -145,7 +143,7 @@
       (implies (posp x)
                (equal (pos-fix x) x)))
 
-    (fty::defbasetype pos-equiv posp))
+    (fty::defbasetype pos-equiv posp :fix pos-fix))
 
   (fty::deffixtype character :pred characterp :fix char-fix :equiv chareqv)
 
@@ -174,6 +172,42 @@
     (fty::deffixtype bool :pred booleanp :fix bool-fix :equiv iff)
 
     (defcong iff equal (bool-fix x) 1))
+
+  (defsection maybe-natp-fix
+    (defthm maybe-natp-when-natp
+      (implies (natp x)
+               (maybe-natp x)))
+
+    (defthmd natp-when-maybe-natp
+      (implies (and (maybe-natp x)
+                    (double-rewrite x))
+               (natp x)))
+
+    (defund-inline maybe-natp-fix (x)
+      (declare (xargs :guard (maybe-natp x)))
+      (mbe :logic (if x (nfix x) nil)
+           :exec x))
+
+    (local (in-theory (enable maybe-natp-fix)))
+
+    (defthm maybe-natp-of-maybe-natp-fix
+      (maybe-natp (maybe-natp-fix x))
+      :rule-classes (:rewrite :type-prescription))
+
+    (defthm maybe-natp-fix-when-maybe-natp
+      (implies (maybe-natp x)
+               (equal (maybe-natp-fix x) x)))
+
+    (defthm maybe-natp-fix-under-iff
+      (iff (maybe-natp-fix x) x))
+
+    (defthm maybe-natp-fix-under-nat-equiv
+      (acl2::nat-equiv (maybe-natp-fix x) x)
+      :hints(("Goal" :in-theory (enable maybe-natp-fix))))
+
+    (fty::deffixtype maybe-nat :pred maybe-natp :fix maybe-natp-fix :equiv maybe-nat-equiv
+      :define t))
+
 
   ;; [Jared] unlocalizing these since this book is now included in std/strings/defs-program
   (defun center-in-n-char-field (str n)
@@ -214,6 +248,6 @@ the ACL2 package):</p>
      Type Name        Predicate       Fixing function    Equiv relation
 -------------------------------------------------------------------------
 "
-#!ACL2  ,(reverse (coerce (make-basetypes-table-rchars (cdar (table-alist 'fty::fixtypes (w state))) nil) 'string))
+#!ACL2  ,(reverse (coerce (make-basetypes-table-rchars (reverse (cdar (table-alist 'fty::fixtypes (w state)))) nil) 'string))
 "
  })")))
