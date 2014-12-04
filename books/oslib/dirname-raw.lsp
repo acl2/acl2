@@ -116,6 +116,8 @@
            ;; something horrible.  Hopefully some day someone can rewrite this
            ;; to be more sensible.
            (dirpart (pathname-directory pathname))
+           ;; (- (cl-user::format t "dirpart is ~s~%" dirpart))
+
            ;; This seems to return something like
            ;;   - (:absolute "home" "jared")     for "/home/jared/"
            ;;   - (:relative "." "foo")          for "./foo/"
@@ -130,6 +132,11 @@
                 "" state))
 
            ((cons type pieces) dirpart)
+
+           (pieces
+            ;; Hack for SBCL, where a path like "////" produces (:absolute "" "" "")
+            (remove-equal "" pieces))
+
            ((when (and (eq type :absolute)
                        (not pieces)))
             ;; BOZO probably not sensible on Windows

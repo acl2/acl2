@@ -37,6 +37,7 @@
 ; instead of ACL2 system documentation
 
 (in-package "ACL2") ;; So the acl2 topic comes from the acl2 package.
+#+acl2-legacy-doc
 (include-book "write-acl2-xdoc")
 (set-state-ok t)
 (program)
@@ -90,18 +91,6 @@
 
   )
 
-(defun create-xdoc-alist (state)
-  (mv-let (er val state)
-          (time$ (acl2::write-xdoc-alist)
-                 :msg "; Importing :doc topics: ~st sec, ~sa bytes~%"
-                 :mintime 1)
-          (declare (ignore er val))
-          (let* ((topics (acl2::f-get-global 'acl2::xdoc-alist state))
-                 ;; (topics (change-self-parents-to-acl2 topics))
-                 ;; (topics (add-from-acl2 topics))
-                 )
-            (value topics))))
-
 (include-book "xdoc/base" :dir :system)
 (include-book "tools/bstar" :dir :system)
 
@@ -148,9 +137,10 @@
         (mv topic state))
 
        ((mv er val state)
-        (if (assoc-eq name (acl2::documentation-alist-stub))
-            (value :built-in)
-          (acl2::origin-fn name state)))
+        (cond #+acl2-legacy-doc
+              ((assoc-eq name (acl2::documentation-alist-stub))
+               (value :built-in))
+              (t (acl2::origin-fn name state))))
        ((mv er val)
         (b* (((unless er)
               (mv er val))
@@ -200,6 +190,7 @@
         (extend-topics-with-origins (cdr topics) state)))
     (mv (cons first rest) state)))
 
+#+acl2-legacy-doc
 #!XDOC
 (defmacro import-acl2doc ()
   ;; This is for refreshing the documentation to reflect topics documented in

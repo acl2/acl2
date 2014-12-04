@@ -35,6 +35,7 @@
 (include-book "hunchentoot")
 (include-book "osicat")
 (include-book "uiop")
+(include-book "html-template")
 
 (defsection quicklisp
   :parents (acl2::interfacing-tools)

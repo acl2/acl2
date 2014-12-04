@@ -81,3 +81,14 @@ clear what we should do to support other systems like Windows.</p>"
                    "/home/jared/foo.txt"))
    ))
 
+
+(define catpaths
+  :short "Extend a base directory with many file names."
+  ((basedir   stringp      "Directory whose name should be extended, which may
+                            or may not end with a slash.")
+   (filenames string-listp "Names of files to append to @('basedir')."))
+  :returns (paths string-listp "Extended paths.")
+  (if (atom filenames)
+      nil
+    (cons (catpath basedir (car filenames))
+          (catpaths basedir (cdr filenames)))))

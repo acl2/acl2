@@ -1083,7 +1083,10 @@
       (apply parent-fun-name parallelize-closures-res))))
 
 (defmacro closure-for-expression (x)
-  `(function (lambda () ,x)))
+
+; This macro expands to an expression that evaluates to a closure.
+
+  (make-closure-expr-with-acl2-bindings x))
 
 (defmacro closure-list-for-expression-list (x)
   (if (atom x)
@@ -1235,44 +1238,57 @@
         (t (signal-semaphore (car sems))
            (signal-semaphores (cdr sems)))))
 
-(defmacro spec-mv-let (bindings computation body)
-  (assert
-   (and (true-listp body)
-        (equal (length body) 4)
+(defmacro spec-mv-let (&whole spec-mv-let-form outer-vars computation body)
 
-; We could easily also allow "mv?-let," but we don't for now, because we don't
-; have a need.  With work, we could also allow "let." We don't do so for now,
-; because we don't have a need, and we also don't want to a non-trivial amount
-; of work.
+; Warning: Keep this in sync with the logical definition of spec-mv-let.
 
-        (or (equal (car body) 'mv-let@par)
-            (equal (car body) 'mv-let)
-            (equal (car body) 'mv?-let))))
+; It is tempting to strip out the error checking code below, under the
+; assumption that ACL2 will always do this in the logical definition.  However,
+; David Rager has expressed an interest in perhaps making a standalone library
+; to support parallel execution, so we leave the checks in place here.
 
-  (let* ((inner-let (car body))
-         (inner-bindings (cadr body))
-         (inner-body (caddr body))
-         (ite (cadddr body)))
-    (assert (and (true-listp ite)
-                 (equal (length ite) 4)
-                 (equal (car ite) 'if)))
-    (let* ((test (cadr ite))
-           (true-branch (caddr ite))
-           (false-branch (cadddr ite)))
+  (case-match body
+    ((inner-let inner-vars inner-body
+                ('if test true-branch false-branch))
+     (cond
+      ((not (member inner-let '(mv-let mv?-let mv-let@par)
+                    :test 'eq))
+       (er hard! 'spec-mv-let
+           "Illegal form (expected inner let to bind with one of ~v0): ~x1. ~ ~
+            See :doc spec-mv-let."
+           '(mv-let mv?-let mv-let@par)
+           spec-mv-let-form))
+      ((or (not (symbol-listp outer-vars))
+           (not (symbol-listp inner-vars))
+           (intersectp inner-vars outer-vars
+                       :test 'eq))
+       (er hard! 'spec-mv-let
+           "Illegal spec-mv-let form: ~x0.  The two bound variable lists ~
+            must be disjoint true lists of variables, unlike ~x1 and ~x2.  ~
+            See :doc spec-mv-let."
+           spec-mv-let-form
+           inner-vars
+           outer-vars))
+      (t
 
-; Keep variable name "the-very-obscure-feature" in sync with
-; check-vars-not-free in logical definition.
+; We lay down code that differs a bit from the logical code (which treats
+; spec-mv-let essentially as mv?-let), in order to support speculative
+; execution, and possible aborting, of the (speculative) computation.
 
-      `(let ((the-very-obscure-feature (future ,computation)))
-         (,inner-let
-          ,inner-bindings
-          ,inner-body
-          (if ,test
-              (mv?-let ,bindings
-                       (future-read the-very-obscure-feature)
-                       ,true-branch)
-            (progn (future-abort the-very-obscure-feature)
-                   ,false-branch)))))))
+       `(let ((the-very-obscure-feature (future ,computation)))
+          (,inner-let
+           ,inner-vars
+           ,inner-body
+           (cond
+            (,test
+             (mv?-let ,outer-vars
+                      (future-read the-very-obscure-feature)
+                      ,true-branch))
+            (t (future-abort the-very-obscure-feature)
+               ,false-branch)))))))
+    (& (er hard! 'spec-mv-let
+           "Illegal form, ~x0.  See :doc spec-mv-let."
+           spec-mv-let-form))))
 
 (defun number-of-active-threads-aux (threads acc)
   #-ccl

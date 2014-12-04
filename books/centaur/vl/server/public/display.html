@@ -36,74 +36,13 @@
 -->
 
 <title>Module Browser</title>
-<link rel="icon" type="image/vnd.microsoft.icon" href="images/favicon.ico"/>
-<link rel="stylesheet" type="text/css" href="lib/jquery.powertip.css"/>
-<link rel="stylesheet" type="text/css" href="style.css"/>
-<link rel="stylesheet" type="text/css" href="toolbar.css"/>
-<style>
-<!--
-
-#sourcecode {
-   background-color: #ffffff;
-   border: 3px solid #ffd0b0;
-   border-radius: 5px;
-   box-shadow: 0px 2px 10px 2px rgba(0,64,80,0.7);
-   padding: 1em;
-   margin-bottom: 2em;
-}
-
-#sourcecode pre {
-   margin-top: 0;
-}
-
-#banner_table {
-   width: 100%;
-   background-color: #ffcc99;
-   margin-bottom: 0;
-   margin-top: 1em;
-   padding: 0;
-   border: 1px solid black;
-}
-
-#banner_table h2 {
-   text-align: left;
-   margin: 0;
-   padding: 0;
-}
-
-#banner_table a:hover {
-   background-color: inherit;
-}
-
-#desctype {
-   color: #606060;
-}
-
-#desctype small {
-    font-family: "Consolas", "Inconsolata", "Bitstream Vera Sans Mono", "DejaVu Sans Mono", "Lucida Console", monospace;
-}
-
-#hierarchy {
-  padding-top: 1em;
-  padding-left: 1em;
-}
-
-#hierarchy a {
-    font-family: "Consolas", "Inconsolata", "Bitstream Vera Sans Mono", "DejaVu Sans Mono", "Lucida Console", monospace;
-}
-
-// -->
-</style>
-
-<script src="lib/jquery-2.1.0.js"></script>
-<script src="lib/jquery.powertip.min.js"></script>
-<script src="lib/typeahead-bundle/typeahead.jquery.min.js"></script>
-<script src="lib/typeahead-bundle/bloodhound.min.js"></script>
-
+<!-- TMPL_INCLUDE "header.html" -->
+<link rel="stylesheet" href="toolbar.css"/>
 <script src="toolbar.js"></script>
+<link rel="stylesheet" href="display.css"/>
 <script src="display.js"></script>
-
 </head>
+
 <body>
 
 <div id="toolbar"></div>

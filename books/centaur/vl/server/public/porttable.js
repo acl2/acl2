@@ -36,20 +36,11 @@ if (!ORIGNAME) {
 
 function onConnected()
 {
-    $.ajax({
-	url: "/porttable",
-	cache: false,
-	data: {base:BASE, model:MODEL, origname:ORIGNAME},
-	dataType: "html",
-	type: "get",
-	success: function(data,textStatus,jqXHR)
-	{
-	    $("#content").html(data);
-	},
-	error: function() {
-	    $("#content").html("Error running /get-porttable");
-	}
-    });
+    vlsGetHtml({ url: "/vls-port-table",
+		 data: {origname:ORIGNAME},
+		 success: function(data) {
+		     $("#content").html(data);
+		 }});
 }
 
 $(document).ready(function() { connect(onConnected); });

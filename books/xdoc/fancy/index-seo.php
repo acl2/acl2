@@ -15,7 +15,7 @@
    {
       function __construct()
       {
-         $this->open('xdata.db');
+         $this->open('xdata-seo.db');
       }
    }
    $db = new MyDB();
@@ -23,7 +23,6 @@
       echo $db->lastErrorMsg();
       exit();
    }
-   
    
    if(isset($_SERVER["PATH_INFO"]) && (strlen($_SERVER["PATH_INFO"])>1))
         $key = pathinfo($_SERVER["PATH_INFO"],PATHINFO_BASENAME);
@@ -125,7 +124,6 @@
 <title><?php echo($page['PACKAGE'] .' - '. $page['TITLE']); ?></title>
 <link rel="stylesheet" type="text/css" href="<?= $basedir ?>style.css"/>
 <link rel="shortcut icon" href="<?= $basedir ?>favicon.png"/>
-<link rel="stylesheet" type="text/css" href="<?= $basedir ?>lib/katex/katex.min.css"/>
 </head>
 <body>
 
@@ -149,7 +147,7 @@
 	  </a>
       </th>
       <td><label style="color:white">
-	  Search-engine friendly clone of the <a href="http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html" style="color:white;text-decoration:underline">ACL2 documentation</a>.  We recommend you <a href="http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html" style="color:white;text-decoration:underline">use that</a> instead.
+	  Search-engine friendly clone of the <a href="http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/" style="color:white;text-decoration:underline">ACL2 documentation</a>.
 	  </label>
       </td>
     </tr>
@@ -239,16 +237,5 @@
     ?>
   </div>
 </div>
-
 </body>
-
-<!-- General Libraries -->
-<script src="<?= $basedir ?>lib/jquery-2.1.0.min.js"></script>
-<script src="<?= $basedir ?>lib/jquery.base64.js"></script>
-<script src="<?= $basedir ?>lib/jquery.powertip.min.js"></script>
-<link rel="stylesheet" type="text/css" href="<?= $basedir ?>lib/jquery.powertip.css"/>
-<script src="<?= $basedir ?>lib/typeahead-bundle/bloodhound.js"></script>
-<script src="<?= $basedir ?>lib/typeahead-bundle/typeahead.jquery.min.js"></script>
-<script src="<?= $basedir ?>lib/lazyload.js"></script>
-<script src="<?= $basedir ?>lib/xdoc.js" />
 </html>

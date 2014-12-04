@@ -147,7 +147,8 @@ formerly the \"location directive\" and printed a location.</p>")
        (if (or unsafe-okp (vl-context1-p x))
            (vl-pp-context-summary x)
          (vl-fmt-tilde-x x)))
-      ((:vl-port :vl-portdecl :vl-assign :vl-vardecl
+      ((:vl-regularport :vl-interfaceport
+        :vl-portdecl :vl-assign :vl-vardecl
         :vl-paramdecl :vl-fundecl :vl-taskdecl
         :vl-modinst :vl-gateinst :vl-always :vl-initial)
        (if (or unsafe-okp (vl-ctxelement-p x))

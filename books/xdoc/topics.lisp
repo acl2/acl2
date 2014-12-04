@@ -1174,6 +1174,12 @@ not introduce a new local scope, but a @('defsection') does.</p>")
 (defxdoc undocumented
   :short "Placeholder for undocumented topics.")
 
+(defxdoc unselected-parents
+  :short "Placeholder for topics with bad parents."
+  :long "<p>These are topics that we'd like to place somewhere other than, for
+  example, in `acl2-built-ins`.  See <a
+  href=\"https://github.com/acl2/acl2/issues/316\">Github Issue #316</a> for
+  more info.</p>")
 
 (defxdoc set-default-parents
   :short "Set up default parents to use for @(see xdoc)."

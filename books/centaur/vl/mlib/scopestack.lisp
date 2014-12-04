@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -550,7 +550,7 @@ in it, such as a function, task, or block statement."
 
 
 
-
+(local (xdoc::set-default-parents scopestack))
 
 
 (local ;; For each searchable type foo, we get:
@@ -726,19 +726,38 @@ in it, such as a function, task, or block statement."
                substs))))
 
 
-
-
-(define vl-package-scope-item-alist-top ((x vl-package-p))
+(define vl-package-scope-item-alist-aux ((x vl-package-p))
+  :parents (vl-package-scope-item-alist-top)
+  :short "Memoized version."
   :enabled t
   (make-fast-alist (vl-package-scope-item-alist x nil))
   ///
-  (memoize 'vl-package-scope-item-alist-top))
+  (memoize 'vl-package-scope-item-alist-aux))
 
-(define vl-design-scope-package-alist-top ((x vl-design-p))
+(define vl-package-scope-item-alist-top ((x vl-package-p))
+  :enabled t
+  :long "<p>The @('-aux') function is memoized.  In a single-threaded context,
+there would be no need to call @(see make-fast-alist) again.  But for
+multi-threaded code, e.g., the VL @(see server), the alist may only be fast in
+some threads.  Calling @('make-fast-alist') again corrects for this and should
+be very cheap in the single-threaded case.</p>"
+  (mbe :logic (vl-package-scope-item-alist x nil)
+       :exec (make-fast-alist (vl-package-scope-item-alist-aux x))))
+
+
+
+(define vl-design-scope-package-alist-aux ((x vl-design-p))
+  :parents (vl-design-scope-package-alist-top)
+  :short "Memoized version."
   :enabled t
   (make-fast-alist (vl-design-scope-package-alist x nil))
   ///
-  (memoize 'vl-design-scope-package-alist-top))
+  (memoize 'vl-design-scope-package-alist-aux))
+
+(define vl-design-scope-package-alist-top ((x vl-design-p))
+  :enabled t
+  (mbe :logic (vl-design-scope-package-alist x nil)
+       :exec (make-fast-alist (vl-design-scope-package-alist-aux x))))
 
 
 (defprod vl-scopeinfo
@@ -764,9 +783,16 @@ in it, such as a function, task, or block statement."
                      (equal (tag x) :vl-scopeinfo)))
         :rule-classes :forward-chaining))))
 
-
-
-
+(define vl-scopeinfo-make-fast ((x vl-scopeinfo-p))
+  :parents (vl-scopeinfo-p)
+  :short "Ensure that the fast alists in a @(see vl-scopeinfo) are indeed fast alists."
+  :enabled t
+  :hooks nil
+  (mbe :logic x
+       :exec (b* (((vl-scopeinfo x)))
+               (change-vl-scopeinfo x
+                                    :locals (make-fast-alist x.locals)
+                                    :imports (make-fast-alist x.imports)))))
 
 
 ;; (make-event ;; Definition of vl-package-scope-find-nonimported-item
@@ -1034,9 +1060,10 @@ in it, such as a function, task, or block statement."
                           :rule-classes :type-prescription)))
 
 
-             (define vl-scope->scopeinfo
-               :short "Make a fast lookup table for items in a scope.  Memoized."
-               ((scope vl-scope-p)
+             (define vl-scope->scopeinfo-aux
+               :parents (vl-scope->scopeinfo)
+               :short "Memoized version."
+               ((scope  vl-scope-p)
                 (design vl-maybe-design-p))
                :returns (scopeinfo vl-scopeinfo-p)
                (b* ((scope (vl-scope-fix scope)))
@@ -1058,12 +1085,25 @@ in it, such as a function, task, or block statement."
                ///
                (local (in-theory (enable vl-scope-find-item
                                          vl-scopeinfo-find-item)))
+               (defthm vl-scope->scopeinfo-aux-correct
+                 (implies (stringp name)
+                          (equal (vl-scopeinfo-find-item name (vl-scope->scopeinfo-aux scope design) design)
+                                 (vl-scope-find-item name scope design)))
+                 :hints (("goal" :expand ((vl-import-stars-find-item name nil design)))))
+               (memoize 'vl-scope->scopeinfo-aux))
+
+             (define vl-scope->scopeinfo
+               :short "Make a fast lookup table for items in a scope.  Memoized"
+               ((scope  vl-scope-p)
+                (design vl-maybe-design-p))
+               :returns (scopeinfo vl-scopeinfo-p)
+               (vl-scopeinfo-make-fast (vl-scope->scopeinfo-aux scope design))
+               ///
                (defthm vl-scope->scopeinfo-correct
                  (implies (stringp name)
                           (equal (vl-scopeinfo-find-item name (vl-scope->scopeinfo scope design) design)
                                  (vl-scope-find-item name scope design)))
-                 :hints (("goal" :expand ((vl-import-stars-find-item name nil design)))))
-               (memoize 'vl-scope->scopeinfo))
+                 :hints (("goal" :expand ((vl-import-stars-find-item name nil design))))))
 
              (define vl-scope-find-item-fast
                :short "Like @(see vl-scope-find-item), but uses a fast lookup table."
@@ -1155,7 +1195,6 @@ in it, such as a function, task, or block statement."
  (def-vl-scope-find-item *vl-scopes->items* 'item 'vl-scopeitem-p t t))
 
 
-
 (local
  (defun def-vl-scope-find (table result resulttype stackp)
    (declare (xargs :mode :program))
@@ -1176,9 +1215,9 @@ in it, such as a function, task, or block statement."
                       substs)
                    (otherwise nil))))
 
-
-             (define vl-scope-__result__-alist
-               :short "Make a fast lookup table for __result__s in a scope.  Memoized."
+             (define vl-scope-__result__-alist-aux
+               :parents (vl-scope-__result__-alist)
+               :short "Memoized core."
                ((scope vl-scope-p))
                :returns (alist vl-__resulttype__-alist-p)
                (b* ((scope (vl-scope-fix scope)))
@@ -1193,12 +1232,23 @@ in it, such as a function, task, or block statement."
                    (otherwise nil)))
                ///
                (local (in-theory (enable vl-scope-find-__result__)))
+               (defthm vl-scope-__result__-alist-aux-correct
+                 (implies (stringp name)
+                          (equal (cdr (hons-assoc-equal name (vl-scope-__result__-alist-aux scope)))
+                                 (vl-scope-find-__result__ name scope (:@ :import design))))
+                 :hints (("goal" :expand ((vl-import-stars-find-item name nil design)))))
+               (memoize 'vl-scope-__result__-alist-aux))
+
+             (define vl-scope-__result__-alist
+               :short "Make a fast lookup table for __result__s in a scope.  Memoized."
+               ((scope vl-scope-p))
+               :returns (alist vl-__resulttype__-alist-p)
+               (make-fast-alist (vl-scope-__result__-alist-aux scope))
+               ///
                (defthm vl-scope-__result__-alist-correct
                  (implies (stringp name)
                           (equal (cdr (hons-assoc-equal name (vl-scope-__result__-alist scope)))
-                                 (vl-scope-find-__result__ name scope (:@ :import design))))
-                 :hints (("goal" :expand ((vl-import-stars-find-item name nil design)))))
-               (memoize 'vl-scope-__result__-alist))
+                                 (vl-scope-find-__result__ name scope (:@ :import design))))))
 
              (define vl-scope-find-__result__-fast
                :short "Like @(see vl-scope-find-__result__), but uses a fast lookup table"
@@ -1284,11 +1334,11 @@ in it, such as a function, task, or block statement."
   :short "Frees memoization tables associated with scopestacks."
   :long "<p>You should generally call this function, e.g., at the end of any
 transform that has used scopestacks.</p>"
-  (progn$ (clear-memoize-table 'vl-scope->scopeinfo)
-          (clear-memoize-table 'vl-scope-definition-alist)
-          (clear-memoize-table 'vl-scope-package-alist)
-          (clear-memoize-table 'vl-scope-portdecl-alist)
-          (clear-memoize-table 'vl-design-scope-package-alist-top)
-          (clear-memoize-table 'vl-package-scope-item-alist-top)))
+  (progn$ (clear-memoize-table 'vl-scope->scopeinfo-aux)
+          (clear-memoize-table 'vl-scope-definition-alist-aux)
+          (clear-memoize-table 'vl-scope-package-alist-aux)
+          (clear-memoize-table 'vl-scope-portdecl-alist-aux)
+          (clear-memoize-table 'vl-design-scope-package-alist-aux)
+          (clear-memoize-table 'vl-package-scope-item-alist-aux)))
 
 

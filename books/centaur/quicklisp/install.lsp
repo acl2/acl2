@@ -49,6 +49,47 @@
 
 :q
 (in-package "CL-USER")
+
+(when (find-package "QL")
+  (error "~%~%****************************************************************
+
+                        ERROR: Quicklisp already installed?
+
+          For our ACL2/Quicklisp integration, we try to keep all Quicklisp
+          files locally within 'acl2/books/centaur/quicklisp'; in particular we
+          instruct Quicklisp to put its files into the 'inst' and 'asdf-home'
+          subdirectories.
+
+          This approach is incompatible with any existing, separately managed
+          Quicklisp installations.  So, to use our ACL2/Quicklisp integration
+          in your current environment, you will probably need to figure out how
+          to prevent Quicklisp from getting loaded.
+
+          However, it seems that Quicklisp is already loaded, i.e., that you
+          are managing your own version of Quicklisp.  The most likely reason
+          for this is that you have installed Quicklisp and it is being loaded
+          by a Lisp-specific initialization file such as ~~/.sbclrc,
+          ~~/ccl-init.lisp, or similar.
+
+          HOW CAN YOU FIX THIS?
+
+          1. You will probably need to adjust your initialization files so that
+             Quicklisp is not loaded automatically when using ACL2.
+
+          2. You may have to rebuild ACL2.  If you were loading Quicklisp via
+             an init file when you built ACL2 itself, then your copy of ACL2
+             probably has Quicklisp already built into it.  To check for this,
+             after editing your initialization files (step 1) you can run:
+
+                $ acl2
+                :q
+                (find-package \"QL\")
+
+             If the find-package command returns non-NIL, then Quicklisp is
+             built into your ACL2 and you will need to rebuild ACL2.
+
+          ***********************************************************************~%~%"))
+
 (load "quicklisp.lsp")
 
 (if ACL2::*proxy*

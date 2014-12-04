@@ -402,5 +402,6 @@ design."
        (blame-alist   (vl-blame-alist zombies good))
        (reportcard    (vl-blame-alist-to-reportcard blame-alist nil))
        (good          (vl-apply-reportcard good reportcard)))
+    (vl-hierarchy-free)
     (vl-design-filter-zombies good bad)))
 

@@ -36,7 +36,6 @@
 -->
 
 <title>XDOC (Loading)</title>
-<link rel="stylesheet" type="text/css" href="style.css"/>
 <link rel="shortcut icon" href="favicon.png"/>
 
 <script>
@@ -89,6 +88,18 @@ if (!window.history || !window.history.replaceState) {
 <script src="xdoc_index.js"></script>
 <script src="xslt.js"></script>
 <script src="xdoc.js"></script>
+
+<!-- Font selection.
+     If you modify these, also modify:
+         print.html -- need to copy the links
+         style.css  -- search for font names and replace everywhere
+         print.css  -- search for font names and replace everywhere
+         xdoc.js    -- printerFriendly function
+  -->
+<link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Noto+Serif">
+<link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Lato">
+<link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Source+Code+Pro">
+<link rel="stylesheet" type="text/css" href="style.css"/>
 
 </head>
 <body>

@@ -65,7 +65,7 @@ models.</p>")
 
   ;; LOCK must be acquired whenever a producer or consumer needs to modify DATA
   ;; to insert or extract a value.
-  (lock (bordeaux-threads:make-lock 'queue-lock))
+  (lock (bt:make-lock "ts-queue lock"))
 
   ;; DATA contains the actual queue data.  We enqueue elements into the back of
   ;; DATA and dequeue from the front.
@@ -79,9 +79,9 @@ consumer, and finally returns @('obj').")
 
 (defun ts-enqueue (obj queue)
   (declare (type ts-queue queue))
-  (bordeaux-threads:with-lock-held ((ts-queue-lock queue))
-                                   (setf (ts-queue-data queue)
-                                         (append (ts-queue-data queue) (list obj))))
+  (bt:with-lock-held ((ts-queue-lock queue))
+                     (setf (ts-queue-data queue)
+                           (append (ts-queue-data queue) (list obj))))
   (bt-semaphore:signal-semaphore (ts-queue-sem queue))
   obj)
 
@@ -94,11 +94,11 @@ added.")
 (defun ts-dequeue (queue)
   (declare (type ts-queue queue))
   (bt-semaphore:wait-on-semaphore (ts-queue-sem queue))
-  (bordeaux-threads:with-lock-held ((ts-queue-lock queue))
-                                   (let ((obj (car (ts-queue-data queue))))
-                                     (setf (ts-queue-data queue)
-                                           (cdr (ts-queue-data queue)))
-                                     obj)))
+  (bt:with-lock-held ((ts-queue-lock queue))
+                     (let ((obj (car (ts-queue-data queue))))
+                       (setf (ts-queue-data queue)
+                             (cdr (ts-queue-data queue)))
+                       obj)))
 
 (defxdoc-raw ts-queue-len
   :parents (ts-queue)
@@ -111,8 +111,8 @@ estimate.  This is because the length of the queue can change immediately after
 
 (defun ts-queue-len (queue)
   (declare (type ts-queue queue))
-  (bordeaux-threads:with-lock-held ((ts-queue-lock queue))
-                                   (length (ts-queue-data queue))))
+  (bt:with-lock-held ((ts-queue-lock queue))
+                     (length (ts-queue-data queue))))
 
 
 
@@ -185,7 +185,7 @@ with are not normed.</p>")
   ;; /n/fv2/translations.  It is updated occasionally by vls-scanner-thread.
   ;; You must acquire SCANNED-LOCK when accessing or updating SCANNED.
   (scanned      nil)
-  (scanned-lock (bordeaux-threads:make-lock 'vls-transdb-scanned-lock))
+  (scanned-lock (bt:make-lock "vls-transdb-scanned-lock"))
 
   ;; LOADED is an alist mapping tnames to their contents (vls-data-p objects).
   ;; It is updated by the vls-loader-thread, and perhaps in the future by some
@@ -193,7 +193,7 @@ with are not normed.</p>")
   ;; or updating this field.  Note also that the proper way to get a new
   ;; translation loaded is to add it to the LOAD-QUEUE via VLS-REQUEST-LOAD.
   (loaded      nil)
-  (loaded-lock (bordeaux-threads:make-lock 'vls-transdb-loaded-lock))
+  (loaded-lock (bt:make-lock "vls-transdb-loaded-lock"))
 
   ;; LOAD-QUEUE is a TS-QUEUE that governs which translations are next to be
   ;; loaded by the loader thread.
@@ -217,9 +217,9 @@ with are not normed.</p>")
           (handler-case
            (let ((new-scan (time$ (vl-scan-for-tnames state)
                                   :msg "; rescan: ~st sec, ~sa bytes~%")))
-             (bordeaux-threads:with-lock-held ((vls-transdb-scanned-lock db))
-                                     (setf (vls-transdb-scanned db)
-                                           new-scan))
+             (bt:with-lock-held ((vls-transdb-scanned-lock db))
+                                (setf (vls-transdb-scanned db)
+                                      new-scan))
              (sleep 600))
            (error (condition)
                   (cl-user::format t "Ignoring unexpected error in ~
@@ -239,8 +239,8 @@ with are not normed.</p>")
 ; by the scanner thread.
 
   (declare (type vls-transdb db))
-  (bordeaux-threads:with-lock-held ((vls-transdb-scanned-lock db))
-                          (vls-transdb-scanned db)))
+  (bt:with-lock-held ((vls-transdb-scanned-lock db))
+                     (vls-transdb-scanned db)))
 
 
 
@@ -258,7 +258,10 @@ with are not normed.</p>")
 
   (declare (type vls-transdb db))
 
-  (bordeaux-threads:with-lock-held
+  (cl-user::format t "Running vls-loader-thread in ~a" (bt:thread-name (bt:current-thread)))
+  (cl-user::format t "Hons summary for loader thread:~%")
+
+  (bt:with-lock-held
    ;; If it's already loaded, don't try to load it again.
    ((vls-transdb-loaded-lock db))
    (when (assoc-equal tname (vls-transdb-loaded db))
@@ -279,20 +282,12 @@ with are not normed.</p>")
       (cl-user::format t "; vls-load-translation: invalid translation data!~%")
       (return-from vls-load-translation nil))
     (let* ((data (vls-data-from-translation trans)))
-      (bordeaux-threads:with-lock-held
+      (bt:with-lock-held
        ((vls-transdb-loaded-lock db))
        (when (assoc-equal tname (vls-transdb-loaded db))
          (error "translation should not yet be loaded"))
        (setf (vls-transdb-loaded db)
-             (acons tname data (vls-transdb-loaded db))))))
-
-  (acl2::hons-summary)
-  ;; this used to be okay, but with the new memoize table analysis, we
-  ;; end up causing hash table ownership problems if we try to analyze
-  ;; memory in the loader thread.
-
-  ;; (acl2::hons-analyze-memory nil)
-  )
+             (acons tname data (vls-transdb-loaded db)))))))
 
 (defun vls-loader-thread ()
 
@@ -300,20 +295,23 @@ with are not normed.</p>")
 ; queue.
 
   (let (#+hons
-        (acl2::*default-hs* (acl2::hl-hspace-init))
-        ;; Bigger sizes might be better for large models, but it might be
-        ;; nice not to grow these beyond reason...
+        (acl2::*default-hs*
+         ;; Bigger sizes might be better for large models, but it might be nice
+         ;; not to grow these beyond reason...
+         (time$ (acl2::hl-hspace-init :addr-ht-size 100000000
+                                      :sbits-size   100000000)))
         (db *vls-transdb*))
     (cl-user::format t "; vls-loader-thread hons space allocated~%")
+    (acl2::hons-summary)
+    (acl2::hons-analyze-memory nil)
     (loop do
           (handler-case
            (let ((tname (ts-dequeue (vls-transdb-load-queue db))))
-             (vls-load-translation tname db))))))
-
-           ;; (error (condition)
-           ;;        (cl-user::format t "Ignoring unexpected error in ~
-           ;;                           vls-loader-thread: ~a~%"
-           ;;                         condition))))))
+             (time$ (vls-load-translation tname db)))
+           (error (condition)
+                  (cl-user::format t "Ignoring unexpected error in ~
+                                     vls-loader-thread: ~a~%"
+                                   condition))))))
 
 
 #+hons
@@ -322,13 +320,13 @@ with are not normed.</p>")
 (let ((support-started nil))
   (defun maybe-start-support-threads ()
     (unless support-started
-      (bordeaux-threads:make-thread 'vls-scanner-thread
+      (bt:make-thread 'vls-scanner-thread
                                     ;(list :name "vls-scanner-thread"
                                     ;      :stack-size  (* 8  (expt 2 20))  ;; 8 MB
                                     ;      :vstack-size (* 16 (expt 2 20))  ;; 16 MB
                                     ;      :tstack-size (* 8  (expt 2 20))  ;; 8 MB
                                     )
-      (bordeaux-threads:make-thread 'vls-loader-thread
+      (bt:make-thread 'vls-loader-thread
                                     ;; :stack-size  (* 8 (expt 2 20))   ;; 8 MB
                                     ;; :vstack-size (* 128 (expt 2 20)) ;; 128 MB
                                     ;; :tstack-size (* 8 (expt 2 20))   ;; 8 MB
@@ -337,9 +335,191 @@ with are not normed.</p>")
 
 (defun vls-loaded-translations (db)
   (alist-keys
-   (bordeaux-threads:with-lock-held ((vls-transdb-loaded-lock db))
+   (bt:with-lock-held ((vls-transdb-loaded-lock db))
      (vls-transdb-loaded db))))
 
+(defmacro with-vls-bindings (&rest forms)
+  `(b* ((?state
+         ;; Bind state since we often need that.
+         acl2::*the-live-state*)
+
+        ;; Hons space configuration.  Most threads probably don't need a hons
+        ;; space at all.  For those that do, we'd like to make sure we create
+        ;; hons spaces that are small so that creating threads isn't expensive.
+        #+hons (acl2::*hl-hspace-addr-ht-default-size* 1000)
+        #+hons (acl2::*hl-hspace-sbits-default-size*   1000)
+        #+hons (acl2::*default-hs*                     nil)
+
+        ;; I think we shouldn't need this anymore with thread-safe memoize?
+        ;; (acl2::*read-string-should-check-bad-lisp-object*
+        ;;  ;; Turn this off because otherwise we run into hash table ownership
+        ;;  ;; problems, because bad-lisp-objectp is memoized and memoization
+        ;;  ;; isn't thread-safe.
+        ;;  nil)
+
+
+        ;; Error Handling.  Make sure ACL2 hard errors get turned into Common
+        ;; Lisp errors that we can catch properly.
+        (acl2::*hard-error-is-error* t)
+        (acl2::*hard-error-returns-nilp* nil))
+     . ,forms))
+
+(defun vls-quick-get-model (tname db)
+  (bt:with-lock-held
+    ;; If it's already loaded, don't try to load it again.
+    ((vls-transdb-loaded-lock db))
+    (let ((pair (assoc-equal tname (vls-transdb-loaded db))))
+      (and pair
+           (cdr pair)))))
+
+(defun vls-start-model-load (tname db)
+  (bt:with-lock-held
+    ((vls-transdb-loaded-lock db))
+    (ts-enqueue tname (vls-transdb-load-queue db))))
+
+(defmacro define-constant (name value &optional doc)
+  ;; See the SBCL manual, "Defining Constants"
+  `(defconstant ,name (if (boundp ',name) (symbol-value ',name) ,value)
+     ,@(when doc (list doc))))
+
+(define-constant +vls-error-marker+
+  ;; A unique cons for distinguishing trapped errors
+  (cons :vls-error-marker nil))
+
+(defun vls-error-handler (condition)
+  (let ((msg (let ((*debug-io* (make-string-output-stream)))
+               (cl-user::format *debug-io* "VL Server Error: ~a~%" condition)
+               (cl-user::format *debug-io* "Backtrace:~%")
+               (acl2::print-call-history)
+               (get-output-stream-string *debug-io*))))
+    (throw 'vls-error-handler (cons +vls-error-marker+ msg))))
+
+(defmacro vls-try-catch (&key try catch)
+  ;; Stupid awful mess of crap that emulates sane error handling.
+  ;;
+  ;; General Form:
+  ;; (vls-try-catch :try <try-form>
+  ;;                :catch <catch-form>)
+  ;;
+  ;; We attempt to evaluate and return the SINGLE value from <try-form>.
+  ;;
+  ;; If evaluation of <try-form> fails, we catch the error and turn it
+  ;; into an error message, complete with a backtrace.  We then evaluate
+  ;; <catch-form>.
+  ;;
+  ;; The <catch-form> can (and should) mention the variable ERRMSG.
+
+  `(let ((errmsg ;; <-- goofy name but avoids inadvertent capture
+          (catch 'vls-error-handler
+            (handler-bind ((error #'vls-error-handler))
+                          ,try))))
+     ;; Result is now either: the result of running TRY (on success), or
+     ;; the result of running VLS-ERROR-HANDLER (on failure).  We check
+     ;; for this via the +vls-error-marker+.
+     (if (and (consp errmsg)
+              (eq (car errmsg) +vls-error-marker+))
+         (let ((errmsg (cdr errmsg)))
+           ,catch)
+       errmsg)))
+
+
+;; Small/simple demo to make sure it works.
+(with-vls-bindings
+  (let* ((oktest   (vls-try-catch
+                    :try (+ 1 2)
+                    :catch (list :whoops errmsg)))
+         (failtest (vls-try-catch
+                    :try (er hard? 'vls-try-catch-test "causing an error!")
+                    :catch (list :whoops errmsg))))
+    ;; Don't print these because they look scary
+    ;; (cl-user::format t "OKTEST is ~a~%" oktest)
+    ;; (cl-user::format t "FAILTEST is ~a~%" failtest)
+    (assert (equal oktest 3))
+    (assert (and (consp failtest)
+                 (equal (first failtest) :whoops)
+                 (stringp (second failtest))
+                 (str::substrp "causing an error!" (second failtest))))))
+
+(defun vls-add-automatic-command-handlers ()
+  (let ((table (get-vls-commands (w acl2::*the-live-state*))))
+    (loop for info in table collect
+          (b* (((vls-commandinfo info))
+
+               (autofn-name      (intern$ (cat "VLS-AUTO-HANDLER-FOR-" (symbol-name info.fn)) "VL"))
+               (uri              (cat "/" (str::downcase-string (symbol-name info.fn))))
+               (args-except-data (remove-equal 'data info.args))
+
+               (params           (append
+                                  '((base :parameter-type 'string)
+                                    (model :parameter-type 'string))
+                                  (loop for arg in args-except-data collect `(,arg :parameter-type 'string))))
+
+               (content-type     (case info.type
+                                   (:json "application/json")
+                                   (:html "text/html")
+                                   (otherwise (error "Invalid content type ~a" info.type))))
+
+               (guts             `(with-vls-bindings
+                                    (vls-try-catch
+                                     :try (b* ((data (vls-quick-get-model (make-vl-tname :base base :model model) *vls-transdb*))
+                                               ((unless data)
+                                                ,(case info.type
+                                                   (:json '(vls-fail "Error: invalid model (base ~s0, model ~s1)" base model))
+                                                   (:html '(cat "Error: Invalid model (base " base ", model " model)))))
+                                            (,info.fn . ,info.args))
+                                     :catch
+                                     ,(case info.type
+                                        (:json '(vls-fail errmsg))
+                                        (:html '(str::html-encode-string errmsg 8))))))
+
+               (form `(hunchentoot:define-easy-handler (,autofn-name :uri ,uri)
+                        ,params
+                        (setf (hunchentoot:content-type*) ,content-type)
+                        (time$ ,guts :msg ,(cat "; " uri ": ~st sec, ~sa bytes~%")))))
+            (cl-user::format t "; Adding ~a~%" info.fn)
+            (eval form)))))
+
+
+(defparameter *template-ht*
+  (let ((template-ht (make-hash-table :test #'eq)))
+    (setf (gethash :serif_font template-ht) "Noto Serif")
+    (setf (gethash :sans_font template-ht) "Lato")
+    (setf (gethash :tt_font template-ht) "Source Code Pro")
+    template-ht))
+
+(defun get-file-with-templates (script)
+  ;; This allows us to do at least some basic server-side processing on
+  ;; .html/.css files, e.g., for includes, etc.
+  (vls-try-catch
+   :try
+   (b* (((when    (or (str::substrp "~" script)
+                      (str::isubstrp ".." script)))
+         (setf (hunchentoot:return-code*) hunchentoot:+http-forbidden+)
+         (cl-user::format nil "<html><body><h1>Forbidden</h1><h3>Request not allowed: ~a</h3></body></html>~%" script))
+
+        (docroot  (uiop:native-namestring (hunchentoot:acceptor-document-root hunchentoot:*acceptor*)))
+        (fullpath (oslib::catpath docroot script))
+
+        ((unless (b* ((state acl2::*the-live-state*)
+                      ((mv err ans ?state) (oslib::regular-file-p fullpath)))
+                   (and (not err) ans)))
+         (setf (hunchentoot:return-code*) hunchentoot:+http-not-found+)
+         (cl-user::format nil "<html><body><h1>Error 404</h1><h3>File not found: ~a</h3></body></html>~%" fullpath))
+
+        (html-template:*value-access-function* #'gethash)
+        (template (html-template:create-template-printer (pathname fullpath))))
+
+     (with-output-to-string (stream)
+                            (html-template:fill-and-print-template template *template-ht* :stream stream)))
+   :catch errmsg))
+
+(defun request-html-file ()
+  (setf (hunchentoot:content-type*) "text/html")
+  (get-file-with-templates (hunchentoot:script-name*)))
+
+(defun request-css-file ()
+  (setf (hunchentoot:content-type*) "text/css")
+  (get-file-with-templates (hunchentoot:script-name*)))
 
 (let ((vl-server nil))
 
@@ -353,8 +533,9 @@ with are not normed.</p>")
     (maybe-start-support-threads)
     (when vl-server
       (stop))
-    (let* ((port (or port
-                     (b* (((mv ? port state) (getenv$ "FVQ_PORT" state))
+    (let* ((state acl2::*the-live-state*)
+           (port (or port
+                     (b* (((mv ? port ?state) (getenv$ "FVQ_PORT" state))
                           (port-num (str::strval port))
                           ((when port-num)
                            port-num))
@@ -370,6 +551,7 @@ with are not normed.</p>")
                                   :document-root public-dir)))
       (setf (hunchentoot:acceptor-access-log-destination server)
             (oslib::catpath public-dir "access.out"))
+      (setf html-template:*default-template-pathname* (pathname public-dir))
       (hunchentoot:start server)
       (cl-user::format t "; ----------------------------------------------------------------~%")
       (cl-user::format t ";~%")
@@ -380,208 +562,56 @@ with are not normed.</p>")
       (setq vl-server server))
     nil))
 
-
-(defmacro with-handler-bindings (&rest forms)
-  `(b* ((?state
-         ;; Bind state since we often need that.
-         acl2::*the-live-state*)
-        #+hons
-        (acl2::*default-hs*
-         ;; Give this thread its own hons space.  Hopefully it won't use it
-         ;; for anything.
-         nil)
-        (acl2::*read-string-should-check-bad-lisp-object*
-         ;; Turn this off because otherwise we run into hash table ownership
-         ;; problems, because bad-lisp-objectp is memoized and memoization
-         ;; isn't thread-safe.
-         nil))
-     . ,forms))
-
-
-
-(defun vls-quick-get-model (tname db)
-  (bordeaux-threads:with-lock-held
-    ;; If it's already loaded, don't try to load it again.
-    ((vls-transdb-loaded-lock db))
-    (let ((pair (assoc-equal tname (vls-transdb-loaded db))))
-      (and pair
-           (cdr pair)))))
-
-(defun vls-start-model-load (tname db)
-  (bordeaux-threads:with-lock-held
-    ((vls-transdb-loaded-lock db))
-    (ts-enqueue tname (vls-transdb-load-queue db))))
-
 (defun add-handlers ()
+
+  (setf hunchentoot:*dispatch-table*
+        (list (hunchentoot:create-regex-dispatcher ".*\.html$" 'request-html-file)
+              (hunchentoot:create-regex-dispatcher ".*\.css$" 'request-css-file)
+              'hunchentoot:dispatch-easy-handlers))
+
+  (hunchentoot:define-easy-handler (root :uri "/") ()
+    ;; Since *.html doesn't match /
+    (setf (hunchentoot:content-type*) "text/html")
+    (get-file-with-templates "index.html"))
+
+  (vls-add-automatic-command-handlers)
 
   (hunchentoot:define-easy-handler (list-unloaded :uri "/list-unloaded") ()
     (setf (hunchentoot:content-type*) "application/json")
-    (with-handler-bindings
-      (let* ((scanned  (vls-scanned-translations *vls-transdb*))
-             (loaded   (vls-loaded-translations *vls-transdb*))
-             (unloaded (difference (mergesort scanned)
-                                   (mergesort loaded)))
-             (ans      (vl-tnames-to-json unloaded)))\
-        (bridge::json-encode (list (cons :value ans))))))
+    (with-vls-bindings
+      (vls-try-catch
+       :try (b* ((scanned  (vls-scanned-translations *vls-transdb*))
+                 (loaded   (vls-loaded-translations *vls-transdb*))
+                 (unloaded (difference (mergesort scanned)
+                                       (mergesort loaded)))
+                 (ans      (vl-tnames-to-json unloaded)))
+              ;;(er hard? 'list-unloaded "error checking test")
+              (vls-success :json (bridge::json-encode ans)))
+       :catch (vls-fail errmsg))))
 
   (hunchentoot:define-easy-handler (list-loaded :uri "/list-loaded") ()
     (setf (hunchentoot:content-type*) "application/json")
-    (with-handler-bindings
-      (let ((ans (vl-tnames-to-json (vls-loaded-translations *vls-transdb*))))
-        (bridge::json-encode (list (cons :value ans))))))
+    (with-vls-bindings
+      (vls-try-catch
+       :try (b* ((ans (vl-tnames-to-json (vls-loaded-translations *vls-transdb*))))
+              ;; (er hard? 'list-loaded "Error checking test")
+              (vls-success :json (bridge::json-encode ans)))
+       :catch (vls-fail errmsg))))
 
   (hunchentoot:define-easy-handler (load-model :uri "/load-model" :default-request-type :post)
     ((base  :parameter-type 'string)
      (model :parameter-type 'string))
     (setf (hunchentoot:content-type*) "application/json")
-    (with-handler-bindings
-      (let ((tname (make-vl-tname :base base :model model)))
-        (if (vls-quick-get-model tname *vls-transdb*)
-            (bridge::json-encode (list (cons :status :loaded)))
-          (progn
-            (vls-start-model-load tname *vls-transdb*)
-            (bridge::json-encode (list (cons :status :started))))))))
-
-  (hunchentoot:define-easy-handler (load-model :uri "/load-model" :default-request-type :post)
-    ((base  :parameter-type 'string)
-     (model :parameter-type 'string))
-    (setf (hunchentoot:content-type*) "application/json")
-    (with-handler-bindings
-      (let ((tname (make-vl-tname :base base :model model)))
-        (if (vls-quick-get-model tname *vls-transdb*)
-            (bridge::json-encode (list (cons :status :loaded)))
-          (progn
-            (vls-start-model-load tname *vls-transdb*)
-            (bridge::json-encode (list (cons :status :started))))))))
-
-  (hunchentoot:define-easy-handler (get-summary :uri "/get-summary")
-    ((base     :parameter-type 'string)
-     (model    :parameter-type 'string)
-     (origname :parameter-type 'string))
-    (setf (hunchentoot:content-type*) "application/json")
-    (with-handler-bindings
-      (b* ((tname (make-vl-tname :base base :model model))
-           (data (vls-quick-get-model tname *vls-transdb*))
-           ((unless data)
-            (bridge::json-encode (list (cons :error "Invalid model")))))
-        (bridge::json-encode (list (cons :error nil)
-                                   (cons :value (vls-get-summary origname data)))))))
-
-  (hunchentoot:define-easy-handler (get-summaries :uri "/get-summaries")
-    ((base  :parameter-type 'string)
-     (model :parameter-type 'string))
-    (setf (hunchentoot:content-type*) "application/json")
-    (with-handler-bindings
-      (b* ((tname (make-vl-tname :base base :model model))
-           (data (vls-quick-get-model tname *vls-transdb*))
-           ((unless data)
-            (bridge::json-encode (list (cons :error "Invalid model"))))
-           ((vls-data data)))
-        (bridge::json-encode (list (cons :error nil)
-                                   (cons :value (vl-descriptionlist-summaries
-                                                 (alist-vals data.orig-descalist))))))))
-
-  (hunchentoot:define-easy-handler (get-parents :uri "/get-parents")
-    ((base     :parameter-type 'string)
-     (model    :parameter-type 'string)
-     (origname :parameter-type 'string))
-    (setf (hunchentoot:content-type*) "application/json")
-    (with-handler-bindings
-      (b* ((tname (make-vl-tname :base base :model model))
-           (data (vls-quick-get-model tname *vls-transdb*))
-           ((unless data)
-            (bridge::json-encode (list (cons :error "Invalid model")))))
-        (bridge::json-encode (list (cons :error nil)
-                                   (cons :value (vls-get-parents origname data)))))))
-
-  (hunchentoot:define-easy-handler (get-children :uri "/get-children")
-    ((base     :parameter-type 'string)
-     (model    :parameter-type 'string)
-     (origname :parameter-type 'string))
-    (setf (hunchentoot:content-type*) "application/json")
-    (with-handler-bindings
-      (b* ((tname (make-vl-tname :base base :model model))
-           (data (vls-quick-get-model tname *vls-transdb*))
-           ((unless data)
-            (bridge::json-encode (list (cons :error "Invalid model")))))
-        (bridge::json-encode (list (cons :error nil)
-                                   (cons :value (vls-get-children origname data)))))))
-
-  (hunchentoot:define-easy-handler (get-origsrc :uri "/get-origsrc")
-    ((base  :parameter-type 'string)
-     (model :parameter-type 'string)
-     (origname :parameter-type 'string))
-    (setf (hunchentoot:content-type*) "text/html")
-    (with-handler-bindings
-      (b* ((tname (make-vl-tname :base base :model model))
-           (data (vls-quick-get-model tname *vls-transdb*))
-           ((unless data)
-            "<p>Invalid model</p>"))
-        (vls-get-origsrc origname data))))
-
-  (hunchentoot:define-easy-handler (get-plain :uri "/get-plainsrc")
-    ((base  :parameter-type 'string)
-     (model :parameter-type 'string)
-     (origname :parameter-type 'string))
-    (setf (hunchentoot:content-type*) "text/plain")
-    (with-handler-bindings
-      (b* ((tname (make-vl-tname :base base :model model))
-           (data (vls-quick-get-model tname *vls-transdb*))
-           ((unless data)
-            "Invalid model"))
-        (vls-get-plainsrc origname data))))
-
-  (hunchentoot:define-easy-handler (get-desctypes :uri "/get-desctypes")
-    ((base  :parameter-type 'string)
-     (model :parameter-type 'string))
-    (setf (hunchentoot:content-type*) "text/html")
-    (with-handler-bindings
-      (b* ((tname (make-vl-tname :base base :model model))
-           (data (vls-quick-get-model tname *vls-transdb*))
-           ((unless data) "Invalid model."))
-        (bridge::json-encode (list (cons :error nil)
-                                   (cons :value (vls-data->descriptions/types data)))))))
-
-  (hunchentoot:define-easy-handler (get-describe :uri "/describe")
-    ((base     :parameter-type 'string)
-     (model    :parameter-type 'string)
-     (origname :parameter-type 'string)
-     (what     :parameter-type 'string))
-    (setf (hunchentoot:content-type*) "text/html")
-    (with-handler-bindings
-      (b* ((tname (make-vl-tname :base base :model model))
-           (data (vls-quick-get-model tname *vls-transdb*))
-           ((unless data) "Invalid model."))
-        (vls-describe data origname what))))
-
-  (hunchentoot:define-easy-handler (get-loc :uri "/loc")
-    ((base     :parameter-type 'string)
-     (model    :parameter-type 'string)
-     (file     :parameter-type 'string)
-     (line     :parameter-type 'string)
-     (col      :parameter-type 'string))
-    (setf (hunchentoot:content-type*) "text/html")
-    (with-handler-bindings
-      (b* ((tname (make-vl-tname :base base :model model))
-           (data (vls-quick-get-model tname *vls-transdb*))
-           ((unless data) "Invalid model.")
-           (line (str::strval line))
-           (col  (str::strval col))
-           ((unless (posp line)) "Invalid line number.")
-           ((unless (natp col)) "Invalid column number."))
-        (vls-showloc data file line col))))
-
-  (hunchentoot:define-easy-handler (get-porttable :uri "/porttable")
-    ((base       :parameter-type 'string)
-     (model      :parameter-type 'string)
-     (origname   :parameter-type 'string))
-    (setf (hunchentoot:content-type*) "text/html")
-    (with-handler-bindings
-      (b* ((tname (make-vl-tname :base base :model model))
-           (data  (vls-quick-get-model tname *vls-transdb*))
-           ((unless data) "Invalid model."))
-        (vls-port-table data origname))))
-
+    (with-vls-bindings
+      (vls-try-catch
+       :try (b* ((tname (make-vl-tname :base base :model model))
+                 ((when (vls-quick-get-model tname *vls-transdb*))
+                  (cw "; Model loaded: ~s0/~s1.~%" base model)
+                  (vls-success :json (bridge::json-encode (list (cons :status :loaded))))))
+              (cw "; Model starting: ~s0/~s1.~%" base model)
+              (vls-start-model-load tname *vls-transdb*)
+              (vls-success :json (bridge::json-encode (list (cons :status :started)))))
+       :catch (vls-fail errmsg))))
   )
 
 

@@ -1,29 +1,29 @@
-We intend to keep this directory organized as follows. 
+We intend to keep this directory organized as follows.
 
-   ./              
-   ./top.lisp           --- A summary of exported events.   
-                            (We intend to keep this to be the same set of events from 
+   ./
+   ./top.lisp           --- A summary of exported events.
+                            (We intend to keep this to be the same set of events from
                              ../lib/top.lisp, in the same order too.)
- 
+
    ./support            --- Effectively: lib0 + lib0.delta1  (where lib0 is empty)
 
    ./lib1               --- Summary of exported events in "support/"
-   ./lib1.delta1        --- Updates to lib1 
-   ./lib1.delta2        --- Other updates to lib1 
+   ./lib1.delta1        --- Updates to lib1
+   ./lib1.delta2        --- Other updates to lib1
 
 
    ./lib2               --- Summary of exported events in lib1 + lib1.delta<1-N>
-   ./lib2.delta1        --- ....  
-   ./lib2.delta2        --- ....    
+   ./lib2.delta1        --- ....
+   ./lib2.delta2        --- ....
 
-   ... 
+   ...
 
 The file "top.lisp" is a summary of exported events that should be a super set
 of events in "../lib/". So that certification of each book included in the
 "../lib/top.lisp" can pass trivially --- assuming "top.lisp" certifies.
 
-In fact, we intend to maintain "top.lisp" in such away, that it contains the
-exact the same list of events as the"../lib/top.lisp" contains.
+In fact, we intend to maintain "top.lisp" in such away, that it contains
+exactly the same list of events as the"../lib/top.lisp" contains.
 
 The directory "lib1/" is roughly a copy of "../lib" from rel5 of the RTL book.
 It serves as a foundation for developing lib1.delta<1-N>.

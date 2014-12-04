@@ -38,18 +38,18 @@
     background-color: white;
 }
 
-body { font-family: "Georgia", "Bookman Old Style", serif; }
+body { font-family: "Noto Serif", serif; }
 
 .basepkg, h1, h2, h3, h4, h5, .sf {
-    font-family: "Geneva", "Verdana", sans-serif;
+    font-family: "Lato", sans-serif;
 }
 
 dt, .hindex, #flat, #still_loading {
-    font-family: "Tahoma", "Geneva", "Verdana", sans-serif;
+    font-family: "Lato", sans-serif;
 }
 
 .code, .srclink, .tt, #letters, .from, .v {
-    font-family: "Consolas", "Bitstream Vera Sans Mono", "DejaVu Sans Mono", "Lucida Console", monospace;
+    font-family: "Source Code Pro", monospace;
 }
 
 
@@ -135,4 +135,125 @@ hr { margin-top: 2em; }
     padding-top: 5px;
     padding-bottom: 5px;
     margin-right: 1em;
+}
+
+
+/* Extra stuff for Symbolic Test Vectors at Centaur */
+
+
+.stv {
+  margin-left: 1em;
+  border: 1px;
+  border-color: black;
+  border-style: solid;
+}
+
+.stv th {
+  font-family: "Lato", sans-serif;
+}
+
+.stv td {
+  font-family: "Source Code Pro", monospace;
+
+  text-align: right;
+  padding-left: .5em;
+  padding-right: .5em;
+}
+
+.stv_labels {
+  background-color: #e0ffc3;
+}
+
+.stv_labels th:nth-child(even) {
+  background-color: #e9ffd6;
+}
+
+.stv_labels th {
+  font-family: "Lato", sans-serif;
+  text-align: left;
+
+  border-bottom: 2px;
+  border-bottom-style: solid;
+  border-bottom-color: #b0dda3;
+
+  border-right: 1px;
+  border-right-style: solid;
+  border-right-color: #b0dda3;
+}
+
+.stv_input_line {
+  background-color: #ffe0c3;
+}
+
+.stv_input_line td:nth-child(even) {
+  background-color: #ffe9d6;
+}
+
+.stv_input_line td {
+  border-bottom: 1px;
+  border-bottom-color: #ddb0a3;
+  border-bottom-style: solid;
+  border-right: 1px;
+  border-right-style: solid;
+  border-right-color: #ddb0a3;
+}
+
+
+.stv_output_line {
+    background-color: #c3e0ff;
+}
+
+.stv_output_line td:nth-child(even) {
+  background-color: #d6e9ff;
+}
+
+.stv_output_line td {
+  border-bottom: 1px;
+  border-bottom-color: #a3b0dd;
+  border-bottom-style: solid;
+  border-right: 1px;
+  border-right-style: solid;
+  border-right-color: #a3b0dd;
+}
+
+.stv_override_line {
+    background-color: #ffb0b0;
+}
+
+.stv_override_line td:nth-child(even) {
+  background-color: #ffc0c0;
+}
+
+.stv_override_line td {
+  border-bottom: 1px;
+  border-bottom-color: #ff8080;
+  border-bottom-style: solid;
+  border-right: 1px;
+  border-right-style: solid;
+  border-right-color: #ff8080;
+}
+
+.stv_internal_line {
+    background-color: #ff0000; /* bozo fix colors */
+}
+
+.stv_internal_line td:nth-child(even) {
+  background-color: #ffcc00; /* bozo fix colors */
+}
+
+.stv_internal_line td {
+  border-bottom: 1px;
+  border-bottom-color: #000000; /* bozo fix colors */
+  border-bottom-style: solid;
+  border-right: 1px;
+  border-right-style: solid;
+  border-right-color: #000000;
+}
+
+.stv_name {
+    border-right: 2px;
+    border-right-style: solid;
+    border-right-color: #000060;
+    text-align: left;
+    padding-right: 1em;
 }

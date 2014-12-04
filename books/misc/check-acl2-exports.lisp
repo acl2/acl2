@@ -80,8 +80,8 @@
                                     ((raw-acl2-exports allp wrld)))))
 
 (defconst *acl2-exports-exclusions*
-  '(*TERMINAL-MARKUP-TABLE*
-    *UNTROUBLESOME-CHARACTERS*
+  '(*UNTROUBLESOME-CHARACTERS*
+    #+acl2-legacy-doc *TERMINAL-MARKUP-TABLE*
     ADD-DIVE-INTO-MACRO
     BDD
     CHECK-SUM

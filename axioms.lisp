@@ -2653,74 +2653,77 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t
          (throw 'raw-ev-fncall val))))
 
+#-acl2-loop-only
+(defvar *hard-error-is-error* nil)
+
 (defun hard-error (ctx str alist)
 
-; Logically, this function just returns nil.  The implementation
-; usually signals a hard error, which is sound since it is akin to
-; running out of stack or some other resource problem.
+; This function returns nil -- when it returns.  However, the implementation
+; usually signals a hard error, which is sound since it is akin to running out
+; of stack or some other resource problem.
 
-; But if this function is called as part of a proof, e.g.,
-; (thm (equal (car (cons (hard-error 'ctx "Test" nil) y)) nil))
-; we do not want to cause an error!  (Note:  the simpler example
-; (thm (equal (hard-error 'ctx "Test" nil) nil)) can be proved
-; without any special handling of the executable counterpart of
-; hard-error, because we know its type-set is *ts-nil*.  So to cause
-; an error, you have to have the hard-error term used in a place
-; where type-reasoning alone won't do the job.)
+; But if this function is called as part of a proof, e.g., (thm (equal (car
+; (cons (hard-error 'ctx "Test" nil) y)) nil)) we do not want to cause an
+; error!  (Note: the simpler example (thm (equal (hard-error 'ctx "Test" nil)
+; nil)) can be proved without any special handling of the executable
+; counterpart of hard-error, because we know its type-set is *ts-nil*.  So to
+; cause an error, you have to have the hard-error term used in a place where
+; type-reasoning alone won't do the job.)
 
-; Sometimes hard-error is used in the guard of a function, e.g.,
-; illegal.  Generally evaluating that guard is to signal an error.
-; But if guard-checking-on is nil, then we want to cause no error and
-; just let the guard return nil.  We evaluate the guard even when
-; guard-checking-on is nil (though not for user-defined functions when
-; it is :none) so we know whether to call the raw Lisp version or the
-; ACL2_*1*_ACL2 version of a function.
+; Sometimes hard-error is used in the guard of a function, e.g., illegal.
+; Generally evaluating that guard is to signal an error.  But if
+; guard-checking-on is nil, then we want to cause no error and just let the
+; guard return nil.  We evaluate the guard even when guard-checking-on is nil
+; (though not for user-defined functions when it is :none) so we know whether
+; to call the raw Lisp version or the ACL2_*1*_ACL2 version of a function.
 
-; Logically speaking the two behaviors of hard-error, nil or error,
-; are indistinguishable.  So we can choose which behavior we want
-; without soundness concerns.  Therefore, we have a raw Lisp special
-; variable, named *hard-error-returns-nilp*, and if it is true, we
-; return nil.  It is up to the environment to somehow set that special
-; variable.
+; Logically speaking the two behaviors of hard-error, nil or error, are
+; indistinguishable.  So we can choose which behavior we want without soundness
+; concerns.  Therefore, we have a raw Lisp special variable, named
+; *hard-error-returns-nilp*, and if it is true, we return nil.  It is up to the
+; environment to somehow set that special variable.  A second special variable,
+; *hard-error-is-error*, is only relevant when *hard-error-returns-nilp* is
+; nil: when *hard-error-returns-nilp* is nil and *hard-error-is-error* is
+; non-nil, an actual Lisp error occurs (which can then be caught with
+; ignore-errors or handler-bind).
 
-; In ev-fncall we provide the argument hard-error-returns-nilp which
-; is used as the binding of *hard-error-returns-nil* when we invoke
-; the raw code.  This also infects ev and the other functions in the
-; ev-fncall clique, namely ev-lst and ev-acl2-unwind-protect.  It is
-; up to the user of ev-fncall to specify which behavior is desired.
-; Generally speaking, that argument of ev-fncall is set to t in those
-; calls of ev-fncall that are from within the theorem prover and on
-; terms from the conjecture being proved.  Secondly, (up to
-; Version_2.5) in oneify-cltl-code and oneify-cltl-code, when we
-; generated the ACL2_*1*_ACL2 code for a function, we laid down a
-; binding for *hard-error-returns-nil*.  That binding is in effect
-; just when we evaluate the guard of the function.  The binding is t
-; if either it was already (meaning somebody above us has asked for
-; hard-error to be treated this way) or if guard checking is turned
-; off.
+; In ev-fncall we provide the argument hard-error-returns-nilp which is used as
+; the binding of *hard-error-returns-nil* when we invoke the raw code.  This
+; also infects ev and the other functions in the ev-fncall clique, namely
+; ev-lst and ev-acl2-unwind-protect.  It is up to the user of ev-fncall to
+; specify which behavior is desired.  Generally speaking, that argument of
+; ev-fncall is set to t in those calls of ev-fncall that are from within the
+; theorem prover and on terms from the conjecture being proved.  Secondly, (up
+; to Version_2.5) in oneify-cltl-code and oneify-cltl-code, when we generated
+; the ACL2_*1*_ACL2 code for a function, we laid down a binding for
+; *hard-error-returns-nil*.  That binding is in effect just when we evaluate
+; the guard of the function.  The binding is t if either it was already
+; (meaning somebody above us has asked for hard-error to be treated this way)
+; or if guard checking is turned off.
 
-; See the comment after ILLEGAL (below) for a discussion of an
-; earlier, inadequate handling of these issues.
+; See the comment after ILLEGAL (below) for a discussion of an earlier,
+; inadequate handling of these issues.
 
   (declare (xargs :guard t))
   #-acl2-loop-only
-  (cond
-   ((not *hard-error-returns-nilp*)
+  (when (not *hard-error-returns-nilp*)
 
 ; We are going to ``cause an error.''  We print an error message with error-fms
 ; even though we do not have state.  To do that, we must bind *wormholep* to
 ; nil so we don't try to push undo information (or, in the case of error-fms,
-; cause an error for illegal state changes).  If error-fms could evaluate arbitrary
-; forms, e.g., to make legal state changes while in wormholes, then this would be
-; a BAD IDEA.  But error-fms only prints stuff that was created earlier (and passed
-; in via alist).
+; cause an error for illegal state changes).  If error-fms could evaluate
+; arbitrary forms, e.g., to make legal state changes while in wormholes, then
+; this would be a BAD IDEA.  But error-fms only prints stuff that was created
+; earlier (and passed in via alist).
 
-    (cond ((fboundp 'acl2::error-fms)                        ;;; Print a msg
-           (let ((*standard-output* *error-output*)          ;;; one way ...
-                 (*wormholep* nil)
-                 (fn 'acl2::error-fms))
-             (funcall fn t ctx str alist *the-live-state*)))
-          (t (print (list ctx str alist) *error-output*)))   ;;; or another.
+    (let ((state *the-live-state*))
+      (cond
+       (*hard-error-is-error*
+        (hard-error-is-error ctx str alist))
+       (t
+        (let ((*standard-output* *error-output*)
+              (*wormholep* nil))
+          (error-fms t ctx str alist state))
 
 ; Once upon a time hard-error took a throw-flg argument and did the
 ; following throw-raw-ev-fncall only if the throw-flg was t.  Otherwise,
@@ -2729,7 +2732,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; the ACL2 command loop.  I think this aspect of the old code was a vestige
 ; of the pre-*ld-level* days when we didn't know if we could throw or not.
 
-      (throw-raw-ev-fncall 'illegal)))
+        (throw-raw-ev-fncall 'illegal)))))
   #+acl2-loop-only
   (declare (ignore ctx str alist))
   nil)
@@ -4007,6 +4010,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(29 . MINUSP)
   #-non-standard-analysis
   '(26 . MINUSP))
+#+acl2-legacy-doc
 (defconst *tau-booleanp-pair*
   #+(and (not non-standard-analysis) acl2-par)
   '(109 . BOOLEANP)
@@ -4016,6 +4020,17 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(111 . BOOLEANP)
   #+(and non-standard-analysis acl2-par)
   '(112 . BOOLEANP)
+  )
+#-acl2-legacy-doc
+(defconst *tau-booleanp-pair*
+  #+(and (not non-standard-analysis) acl2-par)
+  '(108 . BOOLEANP)
+  #+(and (not non-standard-analysis) (not acl2-par))
+  '(107 . BOOLEANP)
+  #+(and non-standard-analysis (not acl2-par))
+  '(110 . BOOLEANP)
+  #+(and non-standard-analysis acl2-par)
+  '(111 . BOOLEANP)
   )
 
 ; Note: The constants declared above are checked for accuracy after bootstrap
@@ -7682,7 +7697,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   `(progn$ ,@rst))
 
-; The Unwind-Protect Essay
+; Essay on Unwind-Protect
 
 ; We wish to define an ACL2 macro form:
 
@@ -8110,8 +8125,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; can pretty much return the latches we want, as long as it, indeed,
 ; contains the final values of all the stobjs.
 
-; This completes the unwind-protect essay.  There are some additional comments
-; in the code for EV.
+; This completes the Essay on Unwind-Protect.  There are some additional
+; comments in the code for EV.
 
 ; It is IMPERATIVE that the following macro, when-logic, is ONLY used when its
 ; second argument is a form that evaluates to an error triple.  Keep this
@@ -12436,7 +12451,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     take
     file-write-date$
     print-call-history
-    set-debugger-enable-fn ; lisp::*break-enable* and *debugger-hook*
+    set-debugger-enable-fn ; system::*break-enable* and *debugger-hook*
     break$ ; break
     prin1$ prin1-with-slashes
     member-equal assoc-equal subsetp-equal
@@ -12525,7 +12540,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     defuns add-default-hints!
     local encapsulate remove-default-hints!
     include-book pprogn set-enforce-redundancy
-    set-ignore-doc-string-error
+    #+acl2-legacy-doc set-ignore-doc-string-error
     logic er deflabel mv-let program value-triple
     set-body comp set-bogus-defun-hints-ok
     dmr-stop defpkg set-measure-function
@@ -12875,8 +12890,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (deferred-ttag-notes . :not-deferred)
     (deferred-ttag-notes-saved . nil)
     (dmrp . nil)
-    (doc-char-subst-table . nil)
-    (doc-fmt-alist . nil)
+    #+acl2-legacy-doc (doc-char-subst-table . nil)
+    #+acl2-legacy-doc (doc-fmt-alist . nil)
     (evisc-hitp-without-iprint . nil)
     (eviscerate-hide-terms . nil)
     (fmt-hard-right-margin . ,*fmt-hard-right-margin-default*)
@@ -12921,9 +12936,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (make-event-debug-depth . 0)
     (match-free-error . nil) ; if t, modify :doc for set-match-free-error
     (modifying-include-book-dir-alist . nil)
-    (more-doc-max-lines . 45)
-    (more-doc-min-lines . 35)
-    (more-doc-state . nil)
+    #+acl2-legacy-doc (more-doc-max-lines . 45)
+    #+acl2-legacy-doc (more-doc-min-lines . 35)
+    #+acl2-legacy-doc (more-doc-state . nil)
     (parallel-execution-enabled . nil)
     (parallelism-hazards-action . nil) ; nil or :error, else treated as :warn
     (pc-erp . nil)
@@ -12941,7 +12956,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (print-circle . nil)
     (print-circle-files . t) ; set to nil for #+gcl in LP
     (print-clause-ids . nil)
-    (print-doc-start-column . 15)
+    #+acl2-legacy-doc (print-doc-start-column . 15)
     (print-escape . t)
     (print-length . nil)
     (print-level . nil)
@@ -15432,8 +15447,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (declare (xargs :guard (and (true-listp str-args)
                               (member-symbol-name (symbol-name severity)
-                                                  '(hard hard? hard! soft
-                                                         very-soft))
+                                                  '(hard hard? hard! hard?!
+                                                         soft very-soft))
                               (<= (length str-args) 10))))
   (let ((alist (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
                                     #\5 #\6 #\7 #\8 #\9)
@@ -20266,6 +20281,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (member val '(0 1 2)))
         ((eq key :enforce-redundancy)
          (member-eq val '(t nil :warn)))
+        #+acl2-legacy-doc
         ((eq key :ignore-doc-string-error)
          (member-eq val '(t nil :warn)))
         ((eq key :compile-fns)
@@ -20385,14 +20401,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (ignore x))
   nil)
 
-#+acl2-loop-only
+#+(and acl2-legacy-doc acl2-loop-only)
 (defmacro set-ignore-doc-string-error (x)
   `(state-global-let*
     ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :ignore-doc-string-error ,x)
            (table acl2-defaults-table :ignore-doc-string-error))))
 
-#-acl2-loop-only
+#+(and acl2-legacy-doc (not acl2-loop-only))
 (defmacro set-ignore-doc-string-error (x)
   (declare (ignore x))
   nil)
@@ -25237,7 +25253,7 @@ Lisp definition."
   #+(and (not acl2-loop-only)
          (and gcl (not cltl2)))
   (when (live-state-p state)
-    (setq lisp::*break-enable* (debugger-enabledp-val val)))
+    (setq system::*break-enable* (debugger-enabledp-val val)))
   (pprogn
    (f-put-global 'debugger-enable val state)
    (if (consp (f-get-global 'dmrp state))
@@ -26311,3 +26327,40 @@ Lisp definition."
 (defthm distributivity-of-minus-over-+
   (equal (- (+ x y))
          (+ (- x) (- y))))
+
+; The following was moved here from other-events.lisp (and tweaked slightly in
+; order to be guard-verified) so that it is included in the toothbrush.
+
+(defun decimal-string-to-number (s bound expo)
+
+; Returns 10^expo times the integer represented by the digits of string s from
+; 0 up through bound-1 (most significant digit at position 0), but returns a
+; hard error if any of those "digits" are not digits.
+
+  (declare (xargs :guard (and (stringp s)
+                              (natp expo)
+                              (natp bound)
+                              (<= bound (length s)))))
+  (cond ((zp bound) 0)
+        (t (let* ((pos (1- bound))
+                  (ch (char s pos)))
+             (cond ((member ch '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
+                    (let ((digit (case ch
+                                   (#\0 0)
+                                   (#\1 1)
+                                   (#\2 2)
+                                   (#\3 3)
+                                   (#\4 4)
+                                   (#\5 5)
+                                   (#\6 6)
+                                   (#\7 7)
+                                   (#\8 8)
+                                   (otherwise 9))))
+                      (+ (* (expt 10 expo) digit)
+                         (decimal-string-to-number s pos (1+ expo)))))
+                   (t (prog2$
+                       (er hard? 'decimal-string-to-number
+                           "Found non-decimal digit in position ~x0 of string ~
+                           \"~s1\"."
+                           pos s)
+                       0)))))))

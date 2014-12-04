@@ -556,7 +556,8 @@ OK_CERTS := $(filter-out $(SLOW_BOOKS) models/y86/%, $(OK_CERTS))
 
 # We delegate most of the cleaning process to clean.pl, a simple perl script
 # that lets us take care not to delete certain kinds of files.  The clean.pl
-# script will remove things like .cert and .fasl files.
+# script will remove things like .cert and .fasl files.  A few files don't
+# get explicitly cleaned.
 
 CLEAN_FILES_EXPLICIT := \
    $(BUILD_DIR)/Makefile-comp \
@@ -567,7 +568,12 @@ CLEAN_FILES_EXPLICIT := \
    $(BUILD_DIR)/Makefile-cache \
    serialize/test.sao \
    bdd/benchmarks.lisp \
-   nonstd/workshops/1999/calculus/book/tree.lisp
+   nonstd/workshops/1999/calculus/book/tree.lisp \
+   centaur/getopt/demo2.core \
+   centaur/getopt/demo2.gcl \
+   centaur/getopt/demo2.lw \
+   centaur/getopt/demo2.lx86cl64 \
+   centaur/getopt/demo2.ccl
 
 MORECLEAN_FILES_EXPLICIT := \
    doc/manual \

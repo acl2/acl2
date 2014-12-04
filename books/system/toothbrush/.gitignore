@@ -1,8 +1,5 @@
 defined-syms.lsp
 success.txt
-tests/dag-unification/output.lsp
-tests/dag-unification/success.txt
-tests/test1/output.lsp
-tests/test1/success.txt
-tests/test2/output.lsp
-tests/test2/success.txt
+tests/*/output.lsp
+tests/*/success.txt
+tests/*/tb-exec*

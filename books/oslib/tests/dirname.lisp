@@ -35,10 +35,6 @@
 ;
 ; cert_param: (non-allegro)
 ; cert_param: (non-lispworks)
-;
-; And apparently so does SBCL.
-;
-; cert_param: (non-sbcl)
 
 (defmacro test-dirname (in expect)
   `(make-event
@@ -57,6 +53,7 @@
             "Basename of ~s0: Expected ~s1 but got ~s2.~%" ',in ',expect ans)))))
 
 (test-dirname "/home/jared/hello.txt" "/home/jared/")
+(test-dirname "/home/jared/.foo"      "/home/jared/")
 (test-dirname "/home/jared/"          "/home/")
 (test-dirname "/home/jared"           "/home/")
 (test-dirname "/"                     "/")
@@ -70,6 +67,7 @@
 
 (test-basename "."                      ".")
 (test-basename "/home/jared/hello.txt"  "hello.txt")
+(test-basename "/home/jared/.foo"       ".foo")
 (test-basename "/home/jared/"           "jared")
 (test-basename "/home/jared"            "jared")
 (test-basename "/home/jared/.."         "..")

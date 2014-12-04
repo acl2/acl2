@@ -170,7 +170,10 @@ definitions of @('append') and @('reverse').</p>
 <p>The section example creates a new ruleset, @('other-rules'), with the
 definitions of @('member-equal') and @('revappend'), and also a link to
 @('my-rules').  When rules are added to @('my-rules'), @('other-rules')
-also grows.</p>"
+also grows.</p>
+
+<p>See @(see def-ruleset!) for a version that's more friendly towards
+redundant calls.</p>"
 
   (defmacro def-ruleset (name form)
     (declare (xargs :guard (symbolp name)))

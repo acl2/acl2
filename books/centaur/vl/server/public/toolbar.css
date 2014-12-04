@@ -51,7 +51,7 @@ toolbar_icon {
    z-index: 100;
    vertical-align: middle;
    background-color: #fffff0;
-   font-family: "Geneva", "Bitstream Vera Sans", "Verdana", sans-serif;
+   font-family: "<!-- TMPL_VAR sans_font -->", sans-serif;
 }
 
 #content {

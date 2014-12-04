@@ -105,7 +105,7 @@ compile: generate $(BOOKS_CERT)
 
 success.txt: tb-test.lsp input.lsp $(BOOKS_CERT)
 	@$(MAKE) compile
-	@echo "$(TEST_DIR_STRING)Starting final step (see $@.out)..."
+	@echo "$(TEST_DIR_STRING)Starting testing step (see $@.out)..."
 	@rm -f workxxx.$@
 	@echo '(defparameter *acl2-dir* "$(ACL2_DIR)")' > workxxx.$@
 	@echo '(load "../../load-toothbrush.lsp")' >> workxxx.$@
@@ -118,10 +118,10 @@ success.txt: tb-test.lsp input.lsp $(BOOKS_CERT)
 	exit 1 ;\
 	else \
 	(echo "Test succeeded." > $@) ;\
-	echo "$(TEST_DIR_STRING)Completed final step successfully." ;\
+	echo "$(TEST_DIR_STRING)Completed testing step successfully." ;\
 	fi
 
 clean: acl2_check clean-output
 
 clean-output:
-	rm -f $(TB_OUTPUT).lsp success.txt
+	rm -f $(TB_OUTPUT).lsp success.txt tb-exec*

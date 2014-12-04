@@ -1,0 +1,207 @@
+<!HTML>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Lookup &mdash; ACL2 Sidekick</title>
+
+<!--
+ACL2 Sidekick
+Copyright (C) 2014 Kookamara LLC
+
+Contact:
+
+  Kookamara LLC
+  11410 Windermere Meadows
+  Austin, TX 78759, USA
+  http://www.kookamara.com/
+
+License: (An MIT/X11-style license)
+
+  Permission is hereby granted, free of charge, to any person obtaining a
+  copy of this software and associated documentation files (the "Software"),
+  to deal in the Software without restriction, including without limitation
+  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+  DEALINGS IN THE SOFTWARE.
+-->
+
+<link rel="stylesheet" type="text/css" href="style.css"/>
+<link rel="stylesheet" type="text/css" href="xdoc/style.css"/>
+<script src="lib/jquery-2.1.0.min.js"></script>
+<script src="common.js"></script>
+<script src="xdoc/xslt.js"></script>
+<script src="toolbar.js"></script>
+<script src="lookup.js"></script>
+
+
+<style>
+<!--
+
+#leftcolwrap {
+    float: left;
+    width: 100%;
+    margin-left: -32em;
+}
+
+#leftcol {
+    margin-left: 32em;
+}
+
+#rightcolwrap {
+    float: left;
+    width: 32em;
+    padding-left: 0;
+    padding-top: 0;
+    margin: 0;
+    height: 100%;
+}
+
+#rightcol {
+   padding-right: 1em;
+}
+
+#propswrap {
+    overflow-x: auto;
+    overflow-y: auto;
+    margin-left: 2.5em;
+    height: 20em;
+/*
+    width: 35em;
+    background-color: #fffff0;
+    border-width: 3px;
+    border-style: inset;
+*/
+}
+
+.propstable {
+    border-collapse: collapse;
+/*    width: 95%%; */
+}
+
+.propstable td, .propstable th {
+    text-align: left;
+}
+
+.propstable th {
+   font-variant: small-caps;
+}
+
+.propstable .longbody, .propstable .short {
+    border-bottom: 1px solid #808080;
+}
+
+.propstable .short th {
+    padding-right: 1em;
+}
+
+#include_path ul {
+   margin: 0;
+   padding: 0;
+}
+
+#include_path li {
+   padding: 0;
+   margin-left: 1em;
+   margin-top: 0;
+   margin-bottom: 0;
+}
+
+#include_path tt {
+   color: #3C9DD0;
+}
+
+.disassemble_out {
+   overflow-y: auto;
+   height: 25em;
+   margin-left: 2.5em;
+   /* width: 35em; */
+}
+
+.secheader {
+    margin-left: 0;
+    padding-left: 0;
+    padding-bottom: 0em;
+    padding-top: .2em;
+}
+
+.secheader img {
+    vertical-align: middle;
+    padding-right: .3em;
+}
+
+#xdoc table {
+  margin-left: 0.5em;
+}
+
+.xdoc_main {
+  margin-left: 1em;
+}
+
+
+-->
+</style>
+
+
+</head>
+<body>
+
+<div id="toolbar"></div>
+
+<div id="main">
+<h1 id="what"></h1>
+
+<div id="leftcolwrap">
+ <div id="leftcol">
+
+  <p id="origin">Loading</p>
+
+  <div id="xdoc">Loading</div>
+
+  <hr>
+
+  <h3>Lookup Page</h3>
+
+  <p>Todo/wish list:</p>
+
+  <ul>
+   <li>Function/Macro/Theorem definitions</li>
+   <li>PL/PE/PR style information</li>
+   <li>Make xdoc links work</li>
+   <li>Search community books if not found</li>
+  </ul>
+
+  <p>When we mark up s-expressions with hyperlinks, they should be able
+  to link here and leave us with a suitable thing.</p>
+
+ </div>
+</div>
+
+<div id="rightcolwrap">
+ <div id="rightcol">
+   <div id="props"></div>
+   <div id="disassembly"></div>
+ </div>
+</div>
+
+
+
+
+<div id="footer"></div>
+
+
+</body>
+</html>
+
+
+

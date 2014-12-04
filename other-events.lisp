@@ -2824,6 +2824,7 @@
     (ec-call1-raw . ec-call1)
     (with-guard-checking1-raw . with-guard-checking1)))
 
+#+acl2-legacy-doc
 (defun doc-stub-lst (doc-alist acc)
 
 ; See documentation-alist-stub.
@@ -2834,6 +2835,7 @@
                                  (list (car tuple) (cadr tuple)))
                                acc)))))
 
+#+acl2-legacy-doc
 (defun documentation-alist-stub1 (x acc)
 
 ; See documentation-alist-stub.  X is a tail of *documentation-alist-stub*.
@@ -2851,6 +2853,7 @@
   of the User's Manual on the ACL2 home page.~/~/")
                   acc)))))
 
+#+acl2-legacy-doc
 (defun documentation-alist-stub ()
 
 ; In order to have doc sections available for books that still use classic :doc
@@ -4377,6 +4380,7 @@
                        (list 'redef-seen nil)
                        (list 'cert-replay nil)
                        (list 'proof-supporters-alist nil)
+                       #+acl2-legacy-doc
                        (list 'documentation-alist (documentation-alist-stub)))
                  (putprop 'acl2-defaults-table
                           'table-alist
@@ -5277,7 +5281,7 @@
      set-default-backchain-limit
      set-default-hints!
      set-enforce-redundancy
-     set-ignore-doc-string-error
+     #+acl2-legacy-doc set-ignore-doc-string-error
      set-ignore-ok
      set-inhibit-warnings!
      set-invisible-fns-table
@@ -5613,7 +5617,7 @@
                              set-compile-fns
                              set-default-backchain-limit
                              set-enforce-redundancy
-                             set-ignore-doc-string-error
+                             #+acl2-legacy-doc set-ignore-doc-string-error
                              set-ignore-ok
                              set-irrelevant-formals-ok
                              set-let*-abstractionp
@@ -7728,65 +7732,70 @@
 
                                          (not only-pass-p) ; make-event-chk
                                          ctx state))))
-             (let* ((expansion-alist (car expansion-alist-and-proto-wrld3))
-                    (proto-wrld3 (cdr expansion-alist-and-proto-wrld3))
-                    (wrld (w state))
-                    (new-trips (new-trips wrld proto-wrld3 nil nil))
-                    (exported-names (exported-function-names new-trips))
-                    (trusted-clause-processor-table
-                     (table-alist 'trusted-clause-processor-table (w state)))
-                    (new-dependent-cl-procs
-                     (and insigs ; else cl-procs belong to a parent encapsulate
-                          (not (equal ; optimization
-                                trusted-clause-processor-table
-                                saved-trusted-clause-processor-table))
-                          (new-dependent-clause-processors
-                           trusted-clause-processor-table
-                           saved-trusted-clause-processor-table))))
-               (cond
-                ((and new-dependent-cl-procs
-                      exported-names)
-                 (er soft ctx
-                     "A dependent clause-processor that has a promised ~
-                      encapsulate (partial theory) must introduce only the ~
-                      functions listed in that encapsulate's signature.  ~
-                      However, the dependent clause-processor ~x0 is ~
-                      introduced with an encapsulate whose signature's list ~
-                      of names, ~x1, is missing the function name~#2~[~/s~] ~
-                      ~&2 that is also introduced by that encapsulate.  See ~
-                      :DOC define-trusted-clause-processor."
-                     (car new-dependent-cl-procs)
-                     (strip-cars insigs)
-                     exported-names))
-                ((and expansion-alist (not only-pass-p))
-                 (value (er hard ctx
-                            "Implementation error: Unexpected expansion-alist ~
-                             ~x0 for second pass of encapsulate.  Please ~
-                             contact the ACL2 implementors."
-                            expansion-alist)))
-                ((null insigs)
-                 (value (if only-pass-p
-                            expansion-alist
-                          (list nil nil exported-names))))
-                (new-dependent-cl-procs ; so (not exported-names) by test above
-                 (let* ((sig-fns (strip-cars insigs))
-                        (state
-                         (set-w 'extension
-                                (putprop-constraints
-                                 (car sig-fns)
-                                 (cdr sig-fns)
+      (let* ((expansion-alist (car expansion-alist-and-proto-wrld3))
+             (proto-wrld3 (cdr expansion-alist-and-proto-wrld3))
+             (wrld (w state))
+             (new-trips (new-trips wrld proto-wrld3 nil nil)))
+        (cond
+         ((and (null insigs)
+               (not (assoc-eq 'event-landmark new-trips)))
+          (let ((state (set-w 'retraction wrld1 state)))
+            (value (cons :empty-encapsulate expansion-alist))))
+         (t (let* ((exported-names (exported-function-names new-trips))
+                   (trusted-clause-processor-table
+                    (table-alist 'trusted-clause-processor-table (w state)))
+                   (new-dependent-cl-procs
+                    (and insigs ; else cl-procs belong to a parent encapsulate
+                         (not (equal ; optimization
+                               trusted-clause-processor-table
+                               saved-trusted-clause-processor-table))
+                         (new-dependent-clause-processors
+                          trusted-clause-processor-table
+                          saved-trusted-clause-processor-table))))
+              (cond
+               ((and new-dependent-cl-procs
+                     exported-names)
+                (er soft ctx
+                    "A dependent clause-processor that has a promised ~
+                     encapsulate (partial theory) must introduce only the ~
+                     functions listed in that encapsulate's signature.  ~
+                     However, the dependent clause-processor ~x0 is ~
+                     introduced with an encapsulate whose signature's list of ~
+                     names, ~x1, is missing the function name~#2~[~/s~] ~&2 ~
+                     that is also introduced by that encapsulate.  See :DOC ~
+                     define-trusted-clause-processor."
+                    (car new-dependent-cl-procs)
+                    (strip-cars insigs)
+                    exported-names))
+               ((and expansion-alist (not only-pass-p))
+                (value (er hard ctx
+                           "Implementation error: Unexpected expansion-alist ~
+                            ~x0 for second pass of encapsulate.  Please ~
+                            contact the ACL2 implementors."
+                           expansion-alist)))
+               ((null insigs)
+                (value (if only-pass-p
+                           expansion-alist
+                         (list nil nil exported-names))))
+               (new-dependent-cl-procs ; so (not exported-names) by test above
+                (let* ((sig-fns (strip-cars insigs))
+                       (state
+                        (set-w 'extension
+                               (putprop-constraints
+                                (car sig-fns)
+                                (cdr sig-fns)
+                                *unknown-constraints*
+                                (car new-dependent-cl-procs)
+                                wrld)
+                               state)))
+                  (value (if only-pass-p
+                             expansion-alist
+                           (list sig-fns
                                  *unknown-constraints*
-                                 (car new-dependent-cl-procs)
-                                 wrld)
-                                state)))
-                   (value (if only-pass-p
-                              expansion-alist
-                            (list sig-fns
-                                  *unknown-constraints*
-                                  new-dependent-cl-procs
-                                  nil
-                                  nil)))))
-                (t
+                                 new-dependent-cl-procs
+                                 nil
+                                 nil)))))
+               (t
 
 ; We are about to collect the constraint generated by this encapsulate on the
 ; signature functions.  We ``optimize'' one common case: if this is a top-level
@@ -7799,51 +7808,51 @@
 ; point is moot if this encapsulate has an empty signature -- there will be no
 ; constraints anyway.
 
-                 (let* ((new-trips (new-trips wrld wrld1 nil nil))
-                        (sig-fns (strip-cars insigs)))
-                   (mv-let
-                    (constraints constrained-fns subversive-fns infectious-fns
-                                 exports-with-sig-ancestors)
-                    (encapsulate-constraint sig-fns exported-names new-trips
-                                            wrld)
-                    (let* ((wrld2 (putprop-constraints
-                                   (car sig-fns)
-                                   (remove1-eq (car sig-fns)
-                                               constrained-fns)
-                                   constraints
-                                   nil
-                                   (if constrained-fns
+                (let* ((new-trips (new-trips wrld wrld1 nil nil))
+                       (sig-fns (strip-cars insigs)))
+                  (mv-let
+                   (constraints constrained-fns subversive-fns infectious-fns
+                                exports-with-sig-ancestors)
+                   (encapsulate-constraint sig-fns exported-names new-trips
+                                           wrld)
+                   (let* ((wrld2 (putprop-constraints
+                                  (car sig-fns)
+                                  (remove1-eq (car sig-fns)
+                                              constrained-fns)
+                                  constraints
+                                  nil
+                                  (if constrained-fns
+                                      (assert$
+                                       (subsetp-eq subversive-fns
+                                                   constrained-fns)
                                        (assert$
-                                        (subsetp-eq subversive-fns
+                                        (subsetp-eq infectious-fns
                                                     constrained-fns)
-                                        (assert$
-                                         (subsetp-eq infectious-fns
-                                                     constrained-fns)
-                                         (putprop-x-lst1 constrained-fns
-                                                         'siblings
-                                                         constrained-fns
-                                                         wrld)))
-                                     wrld)))
-                           (state (set-w 'extension wrld2 state))
+                                        (putprop-x-lst1 constrained-fns
+                                                        'siblings
+                                                        constrained-fns
+                                                        wrld)))
+                                    wrld)))
+                          (state (set-w 'extension wrld2 state))
+                          (bogus-exported-compliants
                            (bogus-exported-compliants
-                            (bogus-exported-compliants
-                             exported-names exports-with-sig-ancestors sig-fns
-                             wrld2)))
-                      (cond
-                       (bogus-exported-compliants
-                        (er soft ctx
-                            "For the following function~#0~[~/s~] introduced ~
-                             by this encapsulate event, guard verification ~
-                             may depend on local properties that are not ~
-                             exported from that encapsulate event: ~&0."
-                            bogus-exported-compliants))
-                       (t (value (if only-pass-p
-                                     expansion-alist
-                                   (list constrained-fns
-                                         constraints
-                                         exported-names
-                                         subversive-fns
-                                         infectious-fns))))))))))))))
+                            exported-names exports-with-sig-ancestors sig-fns
+                            wrld2)))
+                     (cond
+                      (bogus-exported-compliants
+                       (er soft ctx
+                           "For the following function~#0~[~/s~] introduced ~
+                            by this encapsulate event, guard verification may ~
+                            depend on local properties that are not exported ~
+                            from that encapsulate event: ~&0."
+                           bogus-exported-compliants))
+                      (t (value (if only-pass-p
+                                    expansion-alist
+                                  (list constrained-fns
+                                        constraints
+                                        exported-names
+                                        subversive-fns
+                                        infectious-fns)))))))))))))))))
 
 ; Here I have collected a sequence of encapsulates to test the implementation.
 ; After each is an undo.  They are not meant to co-exist.  Just eval each
@@ -9183,6 +9192,13 @@
             (declare (ignore local-alist))
             (global-set 'proof-supporters-alist proof-supporters-alist wrld))))
 
+(defun empty-encapsulate (ctx state)
+  (pprogn (observation ctx
+                       "The submitted encapsulate event has created no new ~
+                        ACL2 events, and thus is leaving the ACL2 logical ~
+                        world unchanged.  See :DOC encapsulate.")
+          (value :empty-encapsulate)))
+
 (defun encapsulate-fn (signatures ev-lst state event-form)
 
 ; Important Note:  Don't change the formals of this function without reading
@@ -9348,141 +9364,145 @@
 ; calling prove -- so in particular, we do both passes of an encapsulate.
 
             (er-let*
-             ((trip (chk-acceptable-encapsulate1 signatures ev-lst
-                                                 ctx wrld1 state)))
-             (let ((insigs (car trip))
-                   (kwd-value-list-lst (cadr trip))
-                   (wrld1 (cddr trip)))
-               (pprogn
-                (set-w 'extension
-                       (global-set 'proof-supporters-alist nil wrld1)
-                       state)
-                (print-encapsulate-msg1 insigs ev-lst state)
-                (er-let*
-                 ((expansion-alist
-                   (state-global-let*
-                    ((in-local-flg
+                ((trip (chk-acceptable-encapsulate1 signatures ev-lst
+                                                    ctx wrld1 state)))
+              (let ((insigs (car trip))
+                    (kwd-value-list-lst (cadr trip))
+                    (wrld1 (cddr trip)))
+                (pprogn
+                 (set-w 'extension
+                        (global-set 'proof-supporters-alist nil wrld1)
+                        state)
+                 (print-encapsulate-msg1 insigs ev-lst state)
+                 (er-let*
+                     ((expansion-alist
+                       (state-global-let*
+                        ((in-local-flg
 
 ; As we start processing the events in the encapsulate, we are no longer in the
 ; lexical scope of LOCAL for purposes of disallowing setting of the
 ; acl2-defaults-table.
 
-                      (and (f-get-global 'in-local-flg state)
-                           'local-encapsulate)))
-                    (process-embedded-events
-                     'encapsulate-pass-1
-                     saved-acl2-defaults-table
-                     (ld-skip-proofsp state)
-                     (current-package state)
-                     (list 'encapsulate insigs)
-                     ev-lst 0 nil ctx state))))
-                 (let* ((wrld2 (w state))
-                        (post-pass-1-skip-proofs-seen
-                         (global-val 'skip-proofs-seen wrld2))
-                        (post-pass-1-include-book-alist-all
-                         (global-val 'include-book-alist-all wrld2))
-                        (post-pass-1-pcert-books
-                         (global-val 'pcert-books wrld2))
-                        (post-pass-1-ttags-seen
-                         (global-val 'ttags-seen wrld2))
-                        (post-pass-1-proof-supporters-alist
-                         (global-val 'proof-supporters-alist wrld2)))
-                   (pprogn
-                    (print-encapsulate-msg2 insigs ev-lst state)
-                    (er-progn
-                     (chk-acceptable-encapsulate2 insigs kwd-value-list-lst
-                                                  wrld2 ctx state)
-                     (let* ((pass1-known-package-alist
-                             (global-val 'known-package-alist wrld2))
-                            (new-ev-lst
-                             (subst-by-position expansion-alist ev-lst 0))
-                            (state (set-w 'retraction wrld1 state)))
-                       (er-let*
-                        ((temp
-
-; The following encapsulate-pass-2 is protected by the revert-world-on
-; error above.
-                          (encapsulate-pass-2
-                           insigs
-                           kwd-value-list-lst
-                           new-ev-lst
-                           saved-acl2-defaults-table nil ctx state)))
-                        (let ((wrld3 (w state))
-                              (constrained-fns (nth 0 temp))
-                              (constraints-introduced (nth 1 temp))
-                              (exports (nth 2 temp))
-                              (subversive-fns (nth 3 temp))
-                              (infectious-fns (nth 4 temp))
+                          (and (f-get-global 'in-local-flg state)
+                               'local-encapsulate)))
+                        (process-embedded-events
+                         'encapsulate-pass-1
+                         saved-acl2-defaults-table
+                         (ld-skip-proofsp state)
+                         (current-package state)
+                         (list 'encapsulate insigs)
+                         ev-lst 0 nil ctx state))))
+                   (let* ((wrld2 (w state))
+                          (post-pass-1-skip-proofs-seen
+                           (global-val 'skip-proofs-seen wrld2))
+                          (post-pass-1-include-book-alist-all
+                           (global-val 'include-book-alist-all wrld2))
+                          (post-pass-1-pcert-books
+                           (global-val 'pcert-books wrld2))
+                          (post-pass-1-ttags-seen
+                           (global-val 'ttags-seen wrld2))
+                          (post-pass-1-proof-supporters-alist
+                           (global-val 'proof-supporters-alist wrld2)))
+                     (pprogn
+                      (print-encapsulate-msg2 insigs ev-lst state)
+                      (er-progn
+                       (chk-acceptable-encapsulate2 insigs kwd-value-list-lst
+                                                    wrld2 ctx state)
+                       (let* ((pass1-known-package-alist
+                               (global-val 'known-package-alist wrld2))
+                              (new-ev-lst
+                               (subst-by-position expansion-alist ev-lst 0))
+                              (state (set-w 'retraction wrld1 state))
                               (new-event-form
                                (and expansion-alist
                                     (list* 'encapsulate signatures
                                            new-ev-lst))))
-                          (pprogn
-                           (print-encapsulate-msg3
-                            ctx insigs new-ev-lst exports
-                            constrained-fns constraints-introduced
-                            subversive-fns infectious-fns wrld3 state)
-                           (f-put-global 'last-make-event-expansion
-                                         new-event-form
-                                         state)
-                           (er-let*
-                            ((wrld3a (intro-udf-guards insigs
-                                                       kwd-value-list-lst wrld3
-                                                       wrld3 ctx state))
-                             #+:non-standard-analysis
-                             (wrld3a (value (intro-udf-non-classicalp
-                                             insigs kwd-value-list-lst
-                                             wrld3a))))
-                            (install-event
-                             t
-                             (or new-event-form event-form)
-                             'encapsulate
-                             (or (strip-cars insigs) 0)
-                             nil nil
-                             t
-                             ctx
-                             (let* ((wrld4 (encapsulate-fix-known-package-alist
-                                            pass1-known-package-alist
-                                            wrld3a))
-                                    (wrld5 (global-set? 'ttags-seen
-                                                        post-pass-1-ttags-seen
-                                                        wrld4
-                                                        (global-val 'ttags-seen
-                                                                    wrld3)))
-                                    (wrld6 (install-proof-supporters-alist
-                                            post-pass-1-proof-supporters-alist
-                                            wrld3
-                                            wrld5))
-                                    (wrld7 (cond
-                                            ((or (global-val 'skip-proofs-seen
+                         (er-let* ((temp
+
+; The following encapsulate-pass-2 is protected by the revert-world-on
+; error above.
+                                    (encapsulate-pass-2
+                                     insigs
+                                     kwd-value-list-lst
+                                     new-ev-lst
+                                     saved-acl2-defaults-table nil ctx state)))
+                           (pprogn
+                            (f-put-global 'last-make-event-expansion
+                                          new-event-form
+                                          state)
+                            (cond
+                             ((eq (car temp) :empty-encapsulate)
+                              (empty-encapsulate ctx state))
+                             (t
+                              (let ((wrld3 (w state))
+                                    (constrained-fns (nth 0 temp))
+                                    (constraints-introduced (nth 1 temp))
+                                    (exports (nth 2 temp))
+                                    (subversive-fns (nth 3 temp))
+                                    (infectious-fns (nth 4 temp)))
+                                (pprogn
+                                 (print-encapsulate-msg3
+                                  ctx insigs new-ev-lst exports
+                                  constrained-fns constraints-introduced
+                                  subversive-fns infectious-fns wrld3 state)
+                                 (er-let*
+                                     ((wrld3a (intro-udf-guards insigs
+                                                                kwd-value-list-lst wrld3
+                                                                wrld3 ctx state))
+                                      #+:non-standard-analysis
+                                      (wrld3a (value (intro-udf-non-classicalp
+                                                      insigs kwd-value-list-lst
+                                                      wrld3a))))
+                                   (install-event
+                                    t
+                                    (or new-event-form event-form)
+                                    'encapsulate
+                                    (or (strip-cars insigs) 0)
+                                    nil nil
+                                    t
+                                    ctx
+                                    (let* ((wrld4 (encapsulate-fix-known-package-alist
+                                                   pass1-known-package-alist
+                                                   wrld3a))
+                                           (wrld5 (global-set? 'ttags-seen
+                                                               post-pass-1-ttags-seen
+                                                               wrld4
+                                                               (global-val 'ttags-seen
+                                                                           wrld3)))
+                                           (wrld6 (install-proof-supporters-alist
+                                                   post-pass-1-proof-supporters-alist
+                                                   wrld3
+                                                   wrld5))
+                                           (wrld7 (cond
+                                                   ((or (global-val 'skip-proofs-seen
 
 ; We prefer that an error report about skip-proofs in certification world be
 ; about a non-local event.
 
-                                                             wrld3)
-                                                 (null
-                                                  post-pass-1-skip-proofs-seen))
-                                             wrld6)
-                                            (t (global-set
-                                                'skip-proofs-seen
-                                                post-pass-1-skip-proofs-seen
-                                                wrld6))))
-                                    (wrld8 (global-set?
-                                            'include-book-alist-all
-                                            post-pass-1-include-book-alist-all
-                                            wrld7
-                                            (global-val
-                                             'include-book-alist-all
-                                             wrld3)))
-                                    (wrld9 (global-set?
-                                            'pcert-books
-                                            post-pass-1-pcert-books
-                                            wrld8
-                                            (global-val
-                                             'pcert-books
-                                             wrld3))))
-                               wrld9)
-                             state))))))))))))))
+                                                                    wrld3)
+                                                        (null
+                                                         post-pass-1-skip-proofs-seen))
+                                                    wrld6)
+                                                   (t (global-set
+                                                       'skip-proofs-seen
+                                                       post-pass-1-skip-proofs-seen
+                                                       wrld6))))
+                                           (wrld8 (global-set?
+                                                   'include-book-alist-all
+                                                   post-pass-1-include-book-alist-all
+                                                   wrld7
+                                                   (global-val
+                                                    'include-book-alist-all
+                                                    wrld3)))
+                                           (wrld9 (global-set?
+                                                   'pcert-books
+                                                   post-pass-1-pcert-books
+                                                   wrld8
+                                                   (global-val
+                                                    'pcert-books
+                                                    wrld3))))
+                                      wrld9)
+                                    state)))))))))))))))))
 
            (t ; (ld-skip-proofsp state) = 'include-book
 ;                                         'include-book-with-locals or
@@ -9491,47 +9511,57 @@
 ; We quietly execute our second pass.
 
             (er-let*
-             ((trip (chk-signatures signatures ctx wrld1 state)))
-             (let ((insigs (car trip))
-                   (kwd-value-list-lst (cadr trip))
-                   (wrld1 (cddr trip)))
-               (pprogn
-                (set-w 'extension wrld1 state)
-                (er-let*
+                ((trip (chk-signatures signatures ctx wrld1 state)))
+              (let ((insigs (car trip))
+                    (kwd-value-list-lst (cadr trip))
+                    (wrld1 (cddr trip)))
+                (pprogn
+                 (set-w 'extension wrld1 state)
+                 (er-let*
 
 ; The following encapsulate-pass-2 is protected by the revert-world-on
 ; error above.
 
-                 ((expansion-alist
-                   (encapsulate-pass-2
-                    insigs kwd-value-list-lst ev-lst saved-acl2-defaults-table
-                    t ctx state)))
-                 (let ((wrld3 (w state))
-                       (new-event-form
-                        (and expansion-alist
-                             (list* 'encapsulate signatures
-                                    (subst-by-position expansion-alist
-                                                       ev-lst
-                                                       0)))))
-                   (pprogn
-                    (f-put-global 'last-make-event-expansion
-                                  new-event-form
-                                  state)
-                    (er-let*
-                     ((wrld3a (intro-udf-guards insigs kwd-value-list-lst
-                                                wrld3 wrld3 ctx state))
-                      #+:non-standard-analysis
-                      (wrld3a (value (intro-udf-non-classicalp
-                                      insigs kwd-value-list-lst wrld3a))))
-                     (install-event t
-                                    (if expansion-alist
-                                        new-event-form
-                                      event-form)
-                                    'encapsulate
-                                    (or (strip-cars insigs) 0)
-                                    nil nil
-                                    nil ; irrelevant, since we are skipping proofs
-                                    ctx
+                     ((expansion-alist0
+                       (encapsulate-pass-2
+                        insigs kwd-value-list-lst ev-lst saved-acl2-defaults-table
+                        t ctx state)))
+                   (let* ((empty-encapsulate-p
+                           (eq (car expansion-alist0) :empty-encapsulate))
+                          (expansion-alist
+                           (if empty-encapsulate-p
+                               (cdr expansion-alist0)
+                             expansion-alist0))
+                          (wrld3 (w state))
+                          (new-event-form
+                           (and expansion-alist
+                                (list* 'encapsulate signatures
+                                       (subst-by-position expansion-alist
+                                                          ev-lst
+                                                          0)))))
+                     (pprogn
+                      (f-put-global 'last-make-event-expansion
+                                    new-event-form
+                                    state)
+                      (cond
+                       (empty-encapsulate-p
+                        (empty-encapsulate ctx state))
+                       (t
+                        (er-let*
+                            ((wrld3a (intro-udf-guards insigs kwd-value-list-lst
+                                                       wrld3 wrld3 ctx state))
+                             #+:non-standard-analysis
+                             (wrld3a (value (intro-udf-non-classicalp
+                                             insigs kwd-value-list-lst wrld3a))))
+                          (install-event t
+                                         (if expansion-alist
+                                             new-event-form
+                                           event-form)
+                                         'encapsulate
+                                         (or (strip-cars insigs) 0)
+                                         nil nil
+                                         nil ; irrelevant, since we are skipping proofs
+                                         ctx
 
 ; We have considered calling encapsulate-fix-known-package-alist on wrld3a, just
 ; as we do in the first case (when not doing this on behalf of include-book).
@@ -9541,8 +9571,8 @@
 ; include-book, :puff (where ld-skip-proofsp is include-book-with-locals), or
 ; initialization.
 
-                                    wrld3a
-                                    state))))))))))))))))
+                                         wrld3a
+                                         state))))))))))))))))))
 
 (defun progn-fn1 (ev-lst progn!p bindings state)
 
@@ -12096,90 +12126,6 @@
          (unmark-and-delete-local-included-books (cdr post-alist3)))
         (t (cons (car post-alist3)
                  (unmark-and-delete-local-included-books (cdr post-alist3))))))
-
-(defun decimal-string-to-number (s bound expo)
-
-; Returns 10^expo times the integer represented by the digits of string s from
-; 0 up through bound-1 (most significant digit at position 0), but returns a
-; hard error if any of those "digits" are not digits.
-
-  (declare (xargs :guard (and (stringp s)
-                              (natp expo)
-                              (<= bound (length s)))))
-  (cond ((zp bound) 0)
-        (t (let* ((pos (1- bound))
-                  (ch (char s pos)))
-             (cond ((member ch '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
-                    (let ((digit (case ch
-                                   (#\0 0)
-                                   (#\1 1)
-                                   (#\2 2)
-                                   (#\3 3)
-                                   (#\4 4)
-                                   (#\5 5)
-                                   (#\6 6)
-                                   (#\7 7)
-                                   (#\8 8)
-                                   (otherwise 9))))
-                      (+ (* (expt 10 expo) digit)
-                         (decimal-string-to-number s pos (1+ expo)))))
-                   (t (er hard 'decimal-string-to-number
-                          "Found non-decimal digit in position ~x0 of string ~
-                           \"~s1\"."
-                          pos s)))))))
-
-(defun parse-version (version)
-
-; Version is an ACL2 version string, as in state global 'acl2-version.  We
-; return (mv major minor incrl rest), where either major is nil, indicating an
-; ill-formed version; or else major, minor, and incrl are natural numbers
-; indicating the major, minor, and incrl version, and rest is the part of the
-; string starting with #\(, if any.  For example,
-; (parse-version "ACL2 Version 2.10") is (mv 2 10 0 "") and
-; (parse-version "ACL2 Version 2.10.1(r)") is (mv 2 10 1 "(r)").
-
-  (let* ((root "ACL2 Version")
-         (pos0 (if (and (stringp version)
-                        (<= 13 (length version))
-                        (equal (subseq version 0 12) root)
-                        (or (eql (char version 12) #\Space)
-                            (eql (char version 12) #\_)))
-                   13
-                 nil))
-         (pos-lparen (position #\( version))
-         (end0 (or pos-lparen
-                   (length version)))
-         (rest (subseq version end0 (length version)))
-         (from-pos0 (and pos0 (subseq version pos0 end0)))
-         (pos1-from-pos0 (and pos0 (position #\. from-pos0)))
-         (pos1 (and pos1-from-pos0 (+ pos0 pos1-from-pos0)))
-         (major (and pos1 (decimal-string-to-number
-                           (subseq version pos0 pos1)
-                           (- pos1 pos0) 0)))
-         (from-pos1 (and pos1 (subseq version (1+ pos1) end0)))
-         (pos2-from-pos1 (and pos1 (position #\. from-pos1)))
-         (pos2 (if pos2-from-pos1
-                   (+ (1+ pos1) pos2-from-pos1)
-                 (and pos1 end0)))
-         (minor (and pos2 (decimal-string-to-number
-                           (subseq version (1+ pos1) pos2)
-                           (1- (- pos2 pos1)) 0)))
-         (incrl (if (and pos2 (< pos2 end0))
-                    (decimal-string-to-number
-                     (subseq version (1+ pos2) end0)
-                     (1- (- end0 pos2))
-                     0)
-                  0)))
-    (mv major minor incrl rest)))
-
-#-acl2-loop-only
-(defun-one-output latest-release-note-string ()
-  (mv-let (major minor incrl rest)
-    (parse-version (f-get-global 'acl2-version *the-live-state*))
-    (declare (ignore rest))
-    (if (zerop incrl)
-        (format nil "note-~s-~s" major minor)
-      (format nil "note-~s-~s-~s" major minor incrl))))
 
 (defun earlier-acl2-versionp (version1 version2)
 
@@ -18023,6 +17969,7 @@
               ~x1 does not have this form.  See :DOC defchoose."
              valid-keywords
              event-form))
+        #+acl2-legacy-doc
         ((and doc
               (not (doc-stringp doc)))
          (er soft ctx
@@ -28201,7 +28148,8 @@
 
 (defmacro channel-to-string (form channel-var
                                   &optional
-                                  extra-var fmt-controls iprint-action)
+                                  extra-var fmt-controls iprint-action
+                                  outside-loop-p)
 
 ; Form is a call of fms, fmt, or fmt1 (or their "!" versions) on variables.  To
 ; see why we make this restriction, consider the following form:
@@ -28219,6 +28167,10 @@
 ; evaluates to (NIL 4 5 NIL).  Thus, state changed even though
 ; channel-to-string generates a with-local-state call, which should not change
 ; state!
+
+; If variable outside-loop-p (which is evaluated) is true, then this form is
+; suitable for execution in raw Lisp; otherwise, it is suitable for evaluation
+; in the ACL2 logic.
 
 ; Note that fmt-controls and iprint-action are evaluated, but channel-var and
 ; extra-var are not evaluated.
@@ -28272,32 +28224,63 @@
                                 'result))
                         state))))
          (body1 ; bind fmt controls and clean up around body0
-          `(acl2-unwind-protect
+
+; Warning: Keep the two branches below in sync.
+
+; We use acl2-unwind-protect and unwind-protect to guarantee that the new
+; channel is finally closed.  See the comment about channels in
+; mv-let-for-with-local-stobj.
+
+          (cond
+           (outside-loop-p
+            `(unwind-protect
+                 (state-free-global-let*
+                  ,(fmt-control-bindings fmt-controls)
+                  (mv-let (msg state)
+                          (set-iprint-fn1
+                           (case ,iprint-action
+                             (:default :same)
+                             ((nil) :reset)
+                             (otherwise :reset-enable))
+                           state)
+                          (declare (ignore msg))
+                          ,body0))
+               (when (open-output-channel-p ,channel-var :character state)
+                 (close-output-channel ,channel-var state))))
+           (t
+            `(acl2-unwind-protect
 
 ; We use acl2-unwind-protect to guarantee that the new channel is finally
 ; closed.  See the comment about channels in mv-let-for-with-local-stobj.
 
-            "channel-to-string"
-            (state-global-let*
-             ,(fmt-control-bindings fmt-controls)
-             (mv-let (msg state)
-                     (set-iprint-fn1
-                      (if ,iprint-action :reset-enable :reset)
-                      state)
-                     (declare (ignore msg))
-                     ,body0))
-            (cond ((open-output-channel-p ,channel-var :character state)
-                   (close-output-channel ,channel-var state))
-                  (t state))
-            state))
+              "channel-to-string"
+              (state-global-let*
+               ,(fmt-control-bindings fmt-controls)
+               (mv-let (msg state)
+                       (set-iprint-fn1
+                        (case ,iprint-action
+                          (:default :same)
+                          ((nil) :reset)
+                          (otherwise :reset-enable))
+                        state)
+                       (declare (ignore msg))
+                       ,body0))
+              (cond ((open-output-channel-p ,channel-var :character state)
+                     (close-output-channel ,channel-var state))
+                    (t state))
+              state))))
          (body ; open a string output channel and then evaluate body1
           `(mv-let
             (,channel-var state)
             (open-output-channel :string :character state)
             (cond (,channel-var ,body1)
-                  (t (er soft 'channel-to-string
-                         "Implementation error: Unable to open a channel to a ~
-                          string."))))))
+                  (t ,(cond
+                       (outside-loop-p
+                        "ERROR: Failed to open string output channel to ~
+                         report an error.")
+                       (t '(er soft 'channel-to-string
+                               "Implementation error: Unable to open a ~
+                                channel to a string."))))))))
     `(with-local-state
       (mv-let
        (erp result state)
@@ -28364,6 +28347,12 @@
                                iprint)
   (declare (xargs :guard (member-eq iprint '(t nil))))
   `(fmt1!-to-string-fn ,str ,alist ,col ,evisc-tuple ,fmt-control-alist ,iprint))
+
+#-acl2-loop-only
+(defun hard-error-is-error (ctx str alist)
+  (error "~a" (channel-to-string
+               (error-fms-channel t ctx str alist chan state)
+               chan nil nil :default t)))
 
 ; Essay on Memoization with Attachments (relevant for #+hons version only)
 

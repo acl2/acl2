@@ -802,37 +802,77 @@
 ;                      nil))))))))
 
 #+(or acl2-loop-only (not acl2-par))
-(defmacro spec-mv-let (bindings computation body)
-  (assert$
-   (and (true-listp body)
-        (equal (length body) 4)
-        (or (equal (car body) 'mv-let@par)
-            (equal (car body) 'mv-let)
-            (equal (car body) 'mv?-let)))
-   (let* ((inner-let (car body))
-          (inner-bindings (cadr body))
-          (inner-body (caddr body))
-          (ite (cadddr body)))
-     (assert$ (and (true-listp ite)
-                   (equal (length ite) 4)
-                   (equal (car ite) 'if))
-              (let* ((test (cadr ite))
-                     (true-branch (caddr ite))
-                     (false-branch (cadddr ite)))
-                `(check-vars-not-free
+(defmacro spec-mv-let (&whole spec-mv-let-form outer-vars computation body)
 
-; Keep the check for variable name "the-very-obscure-feature" in sync with the
-; variable name in the raw Lisp version.
+; Warning: Keep this in sync with the raw Lisp #+acl2-par definition of
+; spec-mv-let.
 
-                  (the-very-obscure-future)
-                  (,inner-let
-                   ,inner-bindings
-                   ,inner-body
-                   (if (check-vars-not-free ,bindings ,test)
-                       (mv?-let ,bindings
-                                ,computation
-                                ,true-branch)
-                     (check-vars-not-free ,bindings ,false-branch)))))))))
+; From the documentation, with annotations in brackets [..] showing names used
+; in the code below:
+
+;   (spec-mv-let
+;    (v1 ... vn)  ; bind distinct variables
+;    <spec>       ; evaluate speculatively; return n values
+;    (mv-let      ; [inner-let] or, use mv?-let if k=1 below
+;     (w1 ... wk) ; [inner-vars] bind distinct variables
+;     <eager>     ; [evaluate eagerly
+;     (if <test>  ; [test] use results from <spec> if true
+;         <typical-case> ; [true-branch] may mention v1 ... vn
+;       <abort-case>)))  ; [false-branch] does not mention v1 ... vn
+
+; In the logic, spec-mv-let is just mv?-let where the inner binding is also to
+; be done with mv-let, but capture needs to be avoided in the following sense:
+; no vi may occur in <test> or <abort-case>, because in the raw Lisp version,
+; those values may not be available for those forms.
+
+  (case-match body
+    ((inner-let inner-vars inner-body
+                ('if test true-branch false-branch))
+     (cond
+      ((not (member inner-let '(mv-let mv?-let mv-let@par)
+                    :test 'eq))
+       (er hard! 'spec-mv-let
+           "Illegal form (expected inner let to bind with one of ~v0): ~x1. ~ ~
+            See :doc spec-mv-let."
+           '(mv-let mv?-let mv-let@par)
+           spec-mv-let-form))
+      ((or (not (symbol-listp outer-vars))
+           (not (symbol-listp inner-vars))
+           (intersectp inner-vars outer-vars
+                       :test 'eq))
+       (er hard! 'spec-mv-let
+           "Illegal spec-mv-let form: ~x0.  The two bound variable lists ~
+            must be disjoint true lists of variables, unlike ~x1 and ~x2.  ~
+            See :doc spec-mv-let."
+           spec-mv-let-form
+           inner-vars
+           outer-vars))
+      (t
+       `(check-vars-not-free
+
+; Warning: Keep the check for variable name "the-very-obscure-feature" in sync
+; with the variable name in the raw Lisp version.
+
+         (the-very-obscure-future)
+
+; We lay down code that treats spec-mv-let as mv?-let, augmented by some
+; necessary checks.  The raw Lisp code has a different shape in order to
+; support speculative execution, and possible aborting, of the (speculative)
+; computation.
+
+         (mv?-let
+          ,outer-vars
+          ,computation
+          (,inner-let
+           ,inner-vars
+           ,inner-body
+           (cond ((check-vars-not-free ,outer-vars ,test)
+                  ,true-branch)
+                 (t
+                  (check-vars-not-free ,outer-vars ,false-branch)))))))))
+    (& (er hard! 'spec-mv-let
+           "Illegal form, ~x0.  See :doc spec-mv-let."
+           spec-mv-let-form))))
 
 ; Parallelism wart: when set-verify-guards-eagerness is 0, and there is a guard
 ; violation in subfunctions that are evaluating in the non-main-thread, we get

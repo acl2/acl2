@@ -7,6 +7,12 @@
 
 (in-package "ACL2")
 
+; Rager 11/2014: The following rel9 books may be close to enough to certify
+; this book:
+
+;; (include-book "rtl/rel9/lib/basic" :dir :system)
+;; (include-book "rtl/rel9/arithmetic/fp" :dir :system)
+
 (include-book "../../../rtl/rel1/lib1/basic")
 
 (include-book "../../../rtl/rel1/support/fp")

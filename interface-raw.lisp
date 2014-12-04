@@ -5035,12 +5035,13 @@
 
 ; We need to be careful about handling interrupts.  On the one hand, we want to
 ; take advantage of the "idempotency" provided by acl2-unwind-protect that is
-; described in The Unwind-Protect Essay.  On the other hand, cleanup forms of
-; acl2-unwind-protect will be evaluated outside the scope of the bindings just
-; above.  Our solution is for an unwind-protect cleanup form to do nothing more
-; than save the above three hash tables -- which we expect can complete without
-; interruption, though we check for that in hcomp-restore-defs -- and then for
-; acl2-unwind-protect to do the actual cleanup using those saved values.
+; described in the Essay on Unwind-Protect.  On the other hand, cleanup forms
+; of acl2-unwind-protect will be evaluated outside the scope of the bindings
+; just above.  Our solution is for an unwind-protect cleanup form to do nothing
+; more than save the above three hash tables -- which we expect can complete
+; without interruption, though we check for that in hcomp-restore-defs -- and
+; then for acl2-unwind-protect to do the actual cleanup using those saved
+; values.
 
     (setq *saved-hcomp-restore-hts* nil)
     (acl2-unwind-protect
@@ -5688,6 +5689,7 @@
                                               (cdr ignorep)
                                             nil))
                                    new-*1*-defs)))))
+            #+acl2-legacy-doc
             (dolist (def new-defs)
 
 ; Remove the documentation string potentially stored in raw Lisp, if a copy is
@@ -6017,6 +6019,7 @@
                                             ',(cadddr (cddr trip)))
                                          nil
                                          t)))
+          #+acl2-legacy-doc
           (cond ((doc-stringp (and (cadr (cddr trip))
                                    (documentation (cadr (cddr trip))
                                                   'variable)))
@@ -6034,6 +6037,7 @@
                                (cadr (cddr trip))))
                 (t (maybe-push-undo-stack 'defmacro (cadr (cddr trip)))
                    (install-for-add-trip (cddr trip) nil t)))
+          #+acl2-legacy-doc
           (cond ((doc-stringp (documentation (cadr (cddr trip)) 'function))
                  (setf (documentation (cadr (cddr trip)) 'function)
                        nil))))
@@ -7013,8 +7017,8 @@
            in-theory
            initialize-state-globals
            let ; could be arbitrarily complex, but we can only do so much!
-           link-doc-to
-           link-doc-to-keyword
+           #+acl2-legacy-doc link-doc-to
+           #+acl2-legacy-doc link-doc-to-keyword
            logic
            make-waterfall-parallelism-constants
            make-waterfall-printing-constants
@@ -8121,7 +8125,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
    (f-put-global 'parallel-execution-enabled t *the-live-state*)
    (let ((state *the-live-state*)
          #+(and gcl (not cltl2))
-         (lisp::*break-enable* (debugger-enabledp *the-live-state*)))
+         (system::*break-enable* (debugger-enabledp *the-live-state*)))
      (cond
       ((> *ld-level* 0)
        (when (raw-mode-p *the-live-state*)
@@ -9036,22 +9040,6 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
           (t (cons (trace-hide-world-and-state (car l))
                    (trace-hide-world-and-state (cdr l)))))))
-
-; The following would create warnings in MCL 4.2, presumably because this file
-; is compiled in that Lisp; so we avoid it for MCL.  It was originally in
-; acl2-init.lisp, but cmulisp warned that *open-output-channel-key*,
-; print-idate, and idate were undefined.
-#-(and mcl (not ccl))
-(defun-one-output saved-build-date-string ()
-  (with-output-to-string
-   (str)
-   (setf (get 'tmp-channel *open-output-channel-key*)
-         str)
-   (print-idate (idate)
-                'tmp-channel
-                *the-live-state*)
-   (remprop 'tmp-channel *open-output-channel-key*)
-   str))
 
 (defun-one-output get-stobjs-out-for-declare-form (fn)
 

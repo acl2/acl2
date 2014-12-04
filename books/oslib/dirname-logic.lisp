@@ -38,7 +38,7 @@
   :short "Remove the leading directory part from a path."
   ((path stringp "Path to process.")
    &optional (state 'state))
-  :returns (mv (err     "NIL on failure or an error @(see msg) on success.")
+  :returns (mv (err     "NIL on success or an error @(see msg) on failure.")
                (basename stringp :rule-classes :type-prescription
                          "Sensible only if there is no error.")
                (state state-p1 :hyp (force (state-p1 state))))
@@ -87,11 +87,28 @@ any failure.</p>"
         (mv "" state)))
     (mv basename state)))
 
+(define basenames
+  :short "Removing leading directories from a list of paths."
+  ((paths string-listp)
+   &key (state 'state))
+  :returns (mv (err "NIL on success or an error @(see msg) on failure.")
+               (basenames string-listp "Sensible only if there is no error.")
+               (state state-p1 :hyp (force (state-p1 state))))
+  :long "<p>This just calls @(see basename) on every path in a list.</p>"
+  (b* (((when (atom paths))
+        (mv nil nil state))
+       ((mv err name1 state) (basename (car paths)))
+       ((when err) (mv err nil state))
+       ((mv err names2 state) (basenames (cdr paths)))
+       ((when err) (mv err nil state)))
+    (mv nil (cons name1 names2) state)))
+
+
 (define dirname
   :short "Strip the non-directory suffix from a path."
   ((path stringp "Path to process.")
    &optional (state 'state))
-  :returns (mv (err     "NIL on failure or an error @(see msg) on success.")
+  :returns (mv (err     "NIL on success or an error @(see msg) on failure.")
                (dirname stringp :rule-classes :type-prescription
                         "Sensible only if there is no error.")
                (state state-p1 :hyp (force (state-p1 state))))
@@ -139,3 +156,18 @@ any failure.</p>"
         (mv "" state)))
     (mv dirname state)))
 
+(define dirnames
+  :short "Strip non-directory suffixes from a list of file names."
+  ((paths string-listp)
+   &key (state 'state))
+  :returns (mv (err "NIL on success or an error @(see msg) on failure.")
+               (dirnames string-listp "Sensible only if there is no error.")
+               (state state-p1 :hyp (force (state-p1 state))))
+  :long "<p>This just calls @(see dirname) on every path in a list.</p>"
+  (b* (((when (atom paths))
+        (mv nil nil state))
+       ((mv err name1 state) (dirname (car paths)))
+       ((when err) (mv err nil state))
+       ((mv err names2 state) (dirnames (cdr paths)))
+       ((when err) (mv err nil state)))
+    (mv nil (cons name1 names2) state)))

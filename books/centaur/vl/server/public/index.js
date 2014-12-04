@@ -64,12 +64,18 @@ function make_model_list_table(data)
 
 function get_loaded()
 {
+    // Don't use vlsGetJson because this is a special pre-model-loading command
+    // that has no MODEL/BASE.
     $.ajax({
 	url: "/list-loaded",
 	data: null,
 	dataType: "json",
 	cache: false,
 	success: function(data,textStatus,jqXHR) {
+	    if (data[":ERROR"]) {
+		$("#loaded").html("Error: " + data[":ERROR"]);
+		return;
+	    }
 	    var div = make_model_list_table(data[":VALUE"]);
 	    $("#loaded").html(div);
 	},
@@ -81,12 +87,19 @@ function get_loaded()
 
 function get_unloaded()
 {
+    // Don't use vlsGetJson because this is a special pre-model-loading command
+    // that has no MODEL/BASE.
     $.ajax({
 	url: "/list-unloaded",
 	data: null,
 	dataType: "json",
 	cache: false,
 	success: function(data,textStatus,jqXHR) {
+	    if (data[":ERROR"]) {
+		$("#unloaded").html("<p>Error: " + data[":ERROR"]);
+		return;
+	    }
+
 	    var div = make_model_list_table(data[":VALUE"]);
 	    $("#unloaded").html(div);
 	},
@@ -115,7 +128,13 @@ function loadModel(base, model)
 	type: "post",
 	success: function(data,textStatus,jqXHR)
 	{
-	    var status = data[":STATUS"];
+	    if (data[":ERROR"]) {
+		$("body").html("Error: " + data[":ERROR"]);
+		return;
+	    }
+
+	    var value = data[":VALUE"];
+	    var status = value[":STATUS"];
 	    console.log("Status: " + status);
 	    if (status == ":LOADED") {
 		window.location = "main.html?base=" + encodeURIComponent(base) + "&model=" + encodeURIComponent(model);
@@ -141,7 +160,9 @@ function loadModel(base, model)
 		setTimeout(function() { loadModel(base, model); }, 5000);
 	    }
 	    else {
-		$("#content").html("<p>Unexpected response from server: " + status + "</p>");
+		$("#content").html("<p>Unexpected response from server: "
+				   + "value " + value
+				   + "status " + status + "</p>");
 	    }
 	},
 	fail: function()

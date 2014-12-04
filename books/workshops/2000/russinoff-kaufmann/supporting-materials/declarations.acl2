@@ -3,7 +3,8 @@
 
 (ld "packages.lsp")
 
-(include-book "../../../../rtl/rel1/lib3/top")
+;; (include-book "rtl/rel9/lib/top" :dir :system) ; breaks constants.lisp
+(include-book "rtl/rel1/lib3/top" :dir :system)
 
 (encapsulate ((unknown (key size n) t))
 	     (local (defun unknown (key size n) (declare (ignore key size n)) 0))

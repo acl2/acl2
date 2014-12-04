@@ -164,6 +164,11 @@ See also bash.lisp and expander.lisp.
 
 ===============================================================================
 
+defpm.lisp -- generate measure and termination predicates for
+              partial functions
+
+===============================================================================
+
 defproxy-test.lisp -- examples of the use of defproxy
 
 ===============================================================================

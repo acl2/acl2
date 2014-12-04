@@ -76,33 +76,21 @@ function nukePane(id) {
 }
 
 function doDescribe(what) {
-
-    $.ajax({
-	url: "/describe",
-	cache: false,
-	data: {"base":BASE, "model":MODEL, "origname":ORIGNAME, "what":what},
-	dataType: "html",
-	type: "get",
-	success: function(data,textStatus,jqXHR)
-	{
-	    if (firstTimeLoad) {
-		$("#content").html(makePane(what, data));
-		firstTimeLoad = 0;
-	    }
-	    else {
-		$("#content").append(makePane(what, data));
-
-		$('html, body').animate({
-		    scrollTop: $("#pane_" + paneId).offset().top
-		}, 100);
-
-	    }
-	},
-	error: function()
-	{
-	    $("#content").append("<p>Error with /describe request.</p>");
-	}
-    });
+    vlsGetHtml({ url: "/vls-describe",
+		 data: {"origname":ORIGNAME, "what":what},
+		 success: function(data)
+		 {
+		     if (firstTimeLoad) {
+			 $("#content").html(makePane(what, data));
+			 firstTimeLoad = 0;
+		     }
+		     else {
+			 $("#content").append(makePane(what, data));
+			 $('html, body').animate({
+			     scrollTop: $("#pane_" + paneId).offset().top
+			 }, 100);
+		     }
+		 }});
 }
 
 function onConnected()

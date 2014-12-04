@@ -1,0 +1,179 @@
+/*
+ACL2 Sidekick
+Copyright (C) 2014 Kookamara LLC
+
+Contact:
+
+  Kookamara LLC
+  11410 Windermere Meadows
+  Austin, TX 78759, USA
+  http://www.kookamara.com/
+
+License: (An MIT/X11-style license)
+
+  Permission is hereby granted, free of charge, to any person obtaining a
+  copy of this software and associated documentation files (the "Software"),
+  to deal in the Software without restriction, including without limitation
+  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+  DEALINGS IN THE SOFTWARE.
+*/
+
+body { margin: 0; padding: 0; }
+
+#toolbar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  height: 60px;
+  background-color: #034569;
+  border-bottom: 4px solid #3C9DD0;
+  box-shadow: 0px 4px 10px 2px rgba(0,64,80,0.8);
+  color: white;
+  z-index: 100;
+  padding-left: 1em;
+  padding-right: 1em;
+  padding-top: .3em;
+}
+
+#footer {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  height: 50px;
+  border-top: 4px solid #3C9DD0;
+  box-shadow: 0px -1px 0px 0px rgba(0, 0, 0, 0.9); 
+  background-color: #FFe8c3;
+  padding-left: 2em;
+  padding-right: 2em;
+}
+
+#main {
+  background-color: #fffffa;
+  position: absolute;
+  padding-top: 1.5em;
+  padding-bottom: 1em;
+  padding-left: 1em;
+  padding-right: 1em;
+  left: 0px;
+  right: 0px;
+  top: 64px;
+  bottom: 54px;
+  overflow: auto;
+}
+
+.spacer {
+  width: 1.5em;
+}
+
+.toolbutton {
+  color: white;
+  text-align: center;
+  font-family: "Geneva", "Verdana", sans-serif;
+  font-size: 75%;
+  font-weight: bold;
+  padding-left: .3em;
+  padding-right: .3em;
+}
+
+.toolbutton a {
+  color: white;
+  text-decoration: none;
+}
+
+.toolbutton a:hover {
+  background-color: #034569;
+  text-decoration: none;
+}
+
+
+.kookamara {
+  padding-top: .5em;
+  padding-bottom: .5em;
+}
+
+.kookamara a {
+  text-decoration: none;
+}
+
+.banner {
+    margin-top: .5em;
+    padding-left: 1em;
+}
+
+.banner img {
+    vertical-align: middle;
+}
+
+.logo {
+  padding-left: .3em;
+  padding-right: .3em;
+  color: #FF6700;
+  font-size: 250%;
+  font-family: "Geneva", "Verdana", sans-serif;
+}
+
+
+h1,h2,h3,h4,h5,.kookamara {
+  font-family: "Geneva", "Verdana", sans-serif;
+}
+
+h1, h2, h1 .tt, h2 .tt, h1 .v, h2 .v  {  color: #A64300; }
+h3, h4, h5, h3 .tt, h4 .tt, h5 .tt, h3 .v, h4 .v, h5 .v { color: #FF6700; }
+
+h1 { text-align: center; }
+
+body { font-family: "Georgia", "Bookman Old Style", serif; }
+
+pre, tt {
+    font-family: "Consolas", "Inconsolata", "Bitstream Vera Sans Mono", "DejaVu Sans Mono", "Lucida Console", monospace;
+}
+
+a: { text-decoration: none; }
+
+#main a:hover {
+  text-decoration: underline;
+  background-color: #ffffa0;
+}
+
+h1 { font-size: 2.2em; text-align: center; }
+h2 { font-size: 1.8em; }
+h3 { font-size: 1.5em; }
+h4 { font-size: 1.2em; margin-left: .5em;}
+h5 { font-size: 1.1em; margin-left: 1em;}
+
+p, dl { margin-left: 1em; margin-right: 1em; }
+
+li    { margin-left: 1.0em; margin-right: 1em; margin-bottom: 0.5em; }
+li li { margin-left: -1.0em; margin-bottom: 0em; }
+
+
+
+
+
+#lookup {
+    background-color: #ffffa0;
+    box-shadow: 0px 0px 0px 2px rgba(0,0,0,0.3);
+    border-radius: 3px;
+    border: 2px solid #dadada;
+    background-clip: padding-box;
+}
+
+#lookup:focus {
+    outline: none;
+    border-color: #9ecaed;
+    box-shadow: 0 0 10px #9ecaed;
+}

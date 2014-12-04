@@ -33,6 +33,7 @@
 (include-book "date")
 (include-book "dirname")
 (include-book "getpid")
+(include-book "ls")
 (include-book "file-types")
 (include-book "lisptype")
 (include-book "mkdir")

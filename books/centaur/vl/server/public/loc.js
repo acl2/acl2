@@ -38,7 +38,7 @@ var COL = getParameterByName("col");
 function onConnected()
 {
     $.ajax({
-	url: "/loc",
+	url: "/vls-showloc",
 	cache: false,
 	data: {"base":BASE, "model":MODEL, "file":FILE, "line":LINE, "col":COL},
 	dataType: "text",
@@ -50,7 +50,7 @@ function onConnected()
 	},
 	error: function()
 	{
-	    $("#content").html("<p>Error with /loc request.</p>");
+	    $("#content").html("<p>Error with /vls-showloc request.</p>");
 	}
     });
 }

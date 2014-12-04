@@ -96,7 +96,7 @@ sub wait_for_nfs
     my $filename = shift;
     for(my $i = 0; $i < $MAX_NFS_LAG; $i++)
     {
-	print "NFS Lag?  Waited $i seconds for $filename...\n";
+	print "NFS Lag?  Waited $i seconds for $filename... (max wait ${MAX_NFS_LAG} sec)\n";
 	sleep(1);
 
 	return 1 if nfs_file_exists($filename);

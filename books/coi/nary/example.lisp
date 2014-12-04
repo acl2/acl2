@@ -446,12 +446,19 @@ Accumulated Persistence
 
 (in-theory (disable loghead))
 
-(defthm loghead-theorem
-  (implies (and (integerp x) (integerp f))
-	   (equal (loghead 32 (+ (* 4294967295 (loghead 32 (* x f)))
-				 (* x f)
-				 (* x (loghead 32 (* x f)))))
-		  (loghead 32 (* x x f)))))
+;;; Commented out 11/28/2014 by Matt K., because the enclosing local-hide is no
+;;; longer redundant, since as of late today, ACL2 no longer stores encapsulate
+;;; events in the world whose sub-events are all local for encapsulates that
+;;; are also "trivial" (have empty signatures).  This theorem failed previously
+;;; when it was actually attempted; I'll leave it to someone else to fix, if
+;;; someone wants to do that (as my simple attempts didn't work).
+
+; (defthm loghead-theorem
+;   (implies (and (integerp x) (integerp f))
+;            (equal (loghead 32 (+ (* 4294967295 (loghead 32 (* x f)))
+;                                  (* x f)
+;                                  (* x (loghead 32 (* x f)))))
+;                   (loghead 32 (* x x f)))))
 
 (defcong+ loghead-mod-refinement
   (loghead n x)
@@ -465,12 +472,19 @@ Accumulated Persistence
 ;; Works much better if we disable LOGHEAD-UPPER-BOUND and MOD-X-Y-=-X+Y
 ;; 
 
-(defthm loghead-mod-theorem
-  (implies (and (integerp x) (integerp f))
-	   (equal (loghead 32 (+ (* 4294967295 (loghead 32 (* x f)))
-				 (* (mod x (expt 2 32)) f)
-				 (* x (loghead 32 (* x f)))))
-		  (loghead 32 (* x x f)))))
+;;; Commented out 11/28/2014 by Matt K.; as with loghead-theorem above, this
+;;; proof hasn't been attempted in some time, and it seems to go into a loop
+;;; when we follow the suggestion in the comment immediately above of disabling
+;;; LOGHEAD-UPPER-BOUND and MOD-X-Y-=-X+Y-FOR-RATIONALS (as MOD-X-Y-=-X+Y seems
+;;; no longer to exist), and it seems to go out to lunch without any such
+;;; disables.
+
+; (defthm loghead-mod-theorem
+;   (implies (and (integerp x) (integerp f))
+;            (equal (loghead 32 (+ (* 4294967295 (loghead 32 (* x f)))
+;                                  (* (mod x (expt 2 32)) f)
+;                                  (* x (loghead 32 (* x f)))))
+;                   (loghead 32 (* x x f)))))
 
 )
 

@@ -36,8 +36,80 @@
 (include-book "../../mlib/blocks")
 (include-book "../../mlib/hierarchy-basic")
 (local (std::add-default-post-define-hook :fix))
-
 (local (in-theory (disable (tau-system))))
+
+(defxdoc unparameterization
+  :parents (transforms)
+  :short "Expand away modules with parameters; similar to the idea of
+<i>elaboration</i> of the design."
+
+  :long "<p>Unparameterization is a Verilog transformation which, given a set
+of Verilog modules, is supposed to produce an equivalent, parameter-free set of
+modules.</p>
+
+
+<h3>Background on Parameters</h3>
+
+<p>See @(see vl-paramtype) and @(see vl-paramdecl) for background on our
+representation of parameter declarations.  Parameters can be declared as either
+ordinary @('parameter')s or as @('localparam')s.  Parameters may have default
+values, and their defaults can refer to other parameters in the module.  Some
+simple examples of parameters are:</p>
+
+@({
+    module m (a, b, c) ;
+      ...
+      parameter size = 4 ;
+      localparam twosize = 2 * size ;
+      ...
+    endmodule
+})
+
+<p>Such a module can be instantiated in various ways, e.g.,:</p>
+
+@({
+    module uses_m (x y z) ;
+      ...
+      m #(6)        m_instance_1 (.a(x), .b(y), .c(z)) ; // size 6
+      m #(.size(6)) m_instance_2 (.a(x), .b(y), .c(z)) ; // size 6
+      m             m_instance_3 (.a(x), .b(y), .c(z)) ; // size 4
+      ...
+    endmodule
+})
+
+<p>Local parameters are just like parameters except that they cannot be
+assigned to from outside the module.  They seem like about the cleanest way to
+introduce named constants, as unlike @('`define') they don't pollute the global
+namespace.</p>
+
+<p>Parameters can also be given values via the @('defparam') statement, but
+this construct is being deprecated (see SystemVerilog-2012 section C.4.1) and
+may be removed from future versions of the language.  We generally think that
+using @('defparam') is bad form.  VL does not support @('defparam'), so we do
+not consider it here.</p>
+
+
+<h3>Unparameterization</h3>
+
+<p>The basic idea behind unparameterization is pretty simple.</p>
+
+<p>Suppose we are dealing with a parameterized module called @('plus'), which
+takes a single parameter called @('size').  There may be several modules, say
+@('m1'), @('m2'), and @('m3'), which contain instances of @('plus') with
+different sizes, say @('8'), @('16'), and @('32').</p>
+
+<p>Our general goal is to eliminate @('plus') from our module list by replacing
+it with three new modules, @('plus$size=8'), @('plus$size=16'), and
+@('plus$size=32'), which are copies of @('plus') except that @('size') has been
+replaced everywhere with @('8'), @('16'), or @('32') as suggested by their
+names.</p>
+
+<p>At the same time, we need to change the instances of @('plus') throughout
+@('m1'), @('m2'), and @('m3') with appropriate instances of the new modules.
+Finally, once all of the instances of the generic @('plus') have been done away
+with, we can safely remove @('plus') from our module list.</p>")
+
+(local (xdoc::set-default-parents unparameterization))
 
 (define vl-paramdecl-set-default ((x vl-paramdecl-p)
                                   (val vl-maybe-paramvalue-p))
@@ -59,7 +131,7 @@
           (if (or (not val) (vl-paramvalue-expr-p val))
               (mv t (change-vl-explicitvalueparam x.type :default val))
             (mv nil (change-vl-explicitvalueparam x.type :default nil))))))
-    (mv ok 
+    (mv ok
         (change-vl-paramdecl x :type type))))
 
 (define vl-paramdecl-remove-default ((x vl-paramdecl-p))
@@ -99,7 +171,7 @@
                                     scopeinfo ss final-params-acc warnings ctx)))
                          :in-theory (e/d (vl-paramdecloverridelist-fix)
                                          ((:d vl-scopeinfo-resolve-params)))))))
-                                  
+
   (b* (((when (atom x))
         (mv t (ok) (vl-scopeinfo-fix scopeinfo)
             (revappend-without-guard
@@ -138,12 +210,12 @@
                        :locals (hons-acons (vl-paramdecl->name final-paramdecl)
                                            final-paramdecl
                                            scopeinfo.locals))))
-    (vl-scopeinfo-resolve-params (cdr x) new-scopeinfo ss 
+    (vl-scopeinfo-resolve-params (cdr x) new-scopeinfo ss
                                  (cons final-paramdecl
                                        final-params-acc)
                                  warnings ctx)))
-                                     
-      
+
+
 
 (define vl-scope-finalize-params ((x vl-scope-p)
                                   (formals vl-paramdecllist-p)
@@ -227,7 +299,7 @@
                (vl-print "=")
                (vl-print-str type-expr-part)
                (vl-unparam-newname-aux (cdr x)))))
-       
+
 
 
 (define vl-unparam-newname
@@ -273,7 +345,7 @@ introduced.</p>"
   (b* (((vl-modinst inst) (vl-modinst-fix inst))
        (mod (vl-scopestack-find-definition inst.modname ss))
        (ss (vl-scopestack-fix ss))
-       ((unless (and mod 
+       ((unless (and mod
                      (or (eq (tag mod) :vl-module)
                          (eq (tag mod) :vl-interface))))
         (vl-unparam-debug "~a0: can't find module ~a1.~%" inst inst.modname)
@@ -294,7 +366,7 @@ introduced.</p>"
         ;; declarations for the submodule.  In this case, all we need to do is
         ;; make sure the instance is also parameter-free.
         (if (vl-paramargs-empty-p inst.paramargs)
-            (mv t (ok) inst 
+            (mv t (ok) inst
                 (make-vl-unparam-signature :modname inst.modname)
                 (vl-scopestack-push mod ss))
           (mv nil
@@ -397,7 +469,7 @@ introduced.</p>"
 (with-output :off (event)
   :evisc (:gag-mode (evisc-tuple 3 4 nil nil ))
   (defines vl-generate-resolve
-    :prepwork ((local (in-theory (disable 
+    :prepwork ((local (in-theory (disable
                                   cons-equal
                                   vl-genelement-p-by-tag-when-vl-scopeitem-p
                                   vl-genelement-p-when-member-equal-of-vl-genelementlist-p
@@ -476,7 +548,7 @@ introduced.</p>"
             (mv ok warnings
                 (make-vl-genarray :name x.genblock.name :var x.var :blocks arrayblocks
                                   :loc x.loc))))))
-    
+
 
     (define vl-genelementlist-resolve ((x vl-genelementlist-p)
                                        (ss vl-scopestack-p)
@@ -629,7 +701,7 @@ introduced.</p>"
                              vl-genloop-resolve)))))))
 
 
-             
+
 
 
 
@@ -756,7 +828,7 @@ introduced.</p>"
           (mv nil
               (fatal :type :vl-unparameterize-loop
                      :msg "Recursion depth ran out in unparameterize -- loop ~
-                           in the hierarchy?") 
+                           in the hierarchy?")
               nil donelist))
 
          (donelist (hons-acons sig t donelist))
@@ -907,5 +979,3 @@ introduced.</p>"
        (warnings (append warnings1 warnings)))
     (fast-alist-free donelist)
     (change-vl-design x :warnings warnings :mods new-mods)))
-
-

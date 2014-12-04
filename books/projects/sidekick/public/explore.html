@@ -1,0 +1,144 @@
+<!HTML>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Proof Explorer &mdash; ACL2 Sidekick</title>
+
+<!--
+ACL2 Sidekick
+Copyright (C) 2014 Kookamara LLC
+
+Contact:
+
+  Kookamara LLC
+  11410 Windermere Meadows
+  Austin, TX 78759, USA
+  http://www.kookamara.com/
+
+License: (An MIT/X11-style license)
+
+  Permission is hereby granted, free of charge, to any person obtaining a
+  copy of this software and associated documentation files (the "Software"),
+  to deal in the Software without restriction, including without limitation
+  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+  DEALINGS IN THE SOFTWARE.
+-->
+
+<link rel="stylesheet" type="text/css" href="style.css"/>
+<script src="lib/jquery-2.1.0.min.js"></script>
+<script src="common.js"></script>
+<script src="toolbar.js"></script>
+<script src="explore.js"></script>
+
+<style>
+<!--
+
+
+.sf { font-family: "Geneva", "Verdana", sans-serif; }
+
+.hyps {
+  margin-left: 2em;
+  border-collapse: collapse;
+}
+
+.hyps td, .hyps th {
+   vertical-align: top;
+}
+
+.current_term pre {
+   margin-left: 2em;
+}
+
+.hyps pre, .current_term pre {
+  color: #006000;
+}
+
+
+.commandlist {
+   border-collapse: collapse;
+   margin-left: 2em;
+}
+
+.commandlist td, .commandlist th {
+   vertical-align: top;
+   padding-left: .5em;
+   padding-right: .5em;
+   padding-top: .1em;
+   padding-bottom: .1em;
+}
+
+.commandlist pre {
+  color: #006000;
+  margin-bottom: 0;
+}
+
+
+-->
+</style>
+
+
+</head>
+<body>
+
+<div id="toolbar"></div>
+
+<div id="main">
+
+<h3 class="banner"><img src="icons/explore.png"/> Proof Explorer</h3>
+
+<table width="100%">
+<tr>
+<td width="70%" valign="top"> <div id="goal">Loading</div> </td>
+<td width="30%" valign="top"> <div id="commands">Loading</div> </td>
+</tr>
+</table>
+
+
+
+
+
+<h3>Todo/Wishlist</h3>
+
+
+<p>The current design is sort of snapshot-oriented.  David suggested a
+more history-oriented focus where you could see the previous goals and
+how things changed.  I think that could work much better.  (It should
+be quite easy to switch over to that sort of a model)</p>
+
+<ul>
+<li>Buttons to take actions like sr, bash, etc.</li>
+<li>Integrate show rules, show linear, etc., options for which rule to use</li>
+<li>Automatic counterexample generation attempts to point out false goals.</li>
+<li>Diveable terms</li>
+<li>Goal management -- current goal instead of just current term, highlight
+current term within the goal, etc.</li>
+</ul>
+
+<h3>Bugs</h3>
+
+<p><tt>split</tt> doesn't work in ACL2(h) due to memoize being unthreadsafe for
+whatever reason.  Currently we avoid this using <tt>pro</tt> instead.</p>
+
+
+</div>
+
+<div id="footer"></div>
+
+
+</body>
+</html>
+
+
+

@@ -117,6 +117,7 @@
 (include-book "centaur/misc/load-stobj-tests" :dir :system)
 (include-book "centaur/misc/count-up" :dir :system)
 (include-book "centaur/misc/fast-alist-pop" :dir :system)
+(include-book "centaur/misc/spacewalk" :dir :system)
 
 ;; BOZO conflicts with something in 4v-sexpr?
 
@@ -209,6 +210,8 @@
 (include-book "misc/simp" :dir :system)
 (include-book "misc/without-waterfall-parallelism" :dir :system)
 (include-book "misc/with-waterfall-parallelism" :dir :system)
+
+(include-book "centaur/memoize/old/profile" :dir :system)
 
 #||
 
@@ -413,6 +416,7 @@ of proofs.")
 ; have XDOC topics for their parents.  So, get them all loaded and converted
 ; into proper XDOC topics, then move them around where we want them.
 
+#+acl2-legacy-doc
 (xdoc::import-acl2doc)
 
 (include-book "xdoc/topics" :dir :system)
@@ -819,7 +823,7 @@ See @(see arithmetic) for libraries for arithmetic reasoning.</p>")
      (xdoc::change-parents String<= (stringp))
      (xdoc::change-parents String> (stringp))
      (xdoc::change-parents String>= (stringp))
-     (xdoc::change-parents Stringp (stringp))
+     (xdoc::change-parents Stringp (unselected-parents))
 
      (xdoc::change-parents coerce (stringp characters))
 
