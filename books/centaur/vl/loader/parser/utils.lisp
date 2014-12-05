@@ -785,7 +785,7 @@ execution) that includes the current location."
 (define vl-parse-warning
   :short "Compatible with @(see seq).  Produce a non-fatal warning (not an
 error, doesn't stop execution) that includes the current location."
-  ((type        symbolp "Type for this @(see pstate).")
+  ((type        symbolp "Type for this warning.")
    (description stringp "Short message about what happened.")
    &key
    ((function symbolp) '__function__)

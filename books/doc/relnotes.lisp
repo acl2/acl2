@@ -196,7 +196,7 @@ for an event as independent defthms.</p>
 
 <p>All legacy documentation topics have been rewritten into the @(see xdoc)
 format, as a step towards eliminating the legacy documentation system.  This
-notably includes the @(see data-structures) and @(see ihs) libraries.</p>
+notably includes the @('data-structures') and @(see ihs) libraries.</p>
 
 <p>The @(see sneaky) documentation has been considerably expanded.</p>
 
@@ -213,9 +213,9 @@ has been extended to show more results, with a scrollbar if necessary.  The
 jump-to box has also been extended with a @('Alt+/') hotkey (or perhaps some
 other key combination like @('Ctrl+/'), depending on your browser).</p>
 
-<p>XDOC now features @(see katex-integration) for writing LaTeX-like formulas
-like @($ \\left( \\sum_{i=0}^{n} \\sqrt{f(i)} \\right) < \\frac{n^2}{k} $)
-within your documentation.</p>
+<p>XDOC now features @(see xdoc::katex-integration) for writing LaTeX-like
+formulas like @($ \\left( \\sum_{i=0}^{n} \\sqrt{f(i)} \\right) <
+\\frac{n^2}{k} $) within your documentation.</p>
 
 <p>The new @(see fancy-string-reader) can be used to make escaping simpler for
 authors of xdoc topics.  It may be especially useful when trying to write
@@ -259,17 +259,17 @@ incompatibility.</p>
 
 <h5>@(see std/util)</h5>
 
-<p>The @(see b*) binders for @(see defaggregate)s now also bind the variable,
-fixing a longstanding issue.  Also, the syntax @('((prodname name))') is now
-permitted as an abbreviation for @('((prodname name) name)').  (This is often
-useful when destructuring a function's arguments).</p>
+<p>The @(see b*) binders for @(see std::defaggregate)s now also bind the
+variable, fixing a longstanding issue.  Also, the syntax @('((prodname name))')
+is now permitted as an abbreviation for @('((prodname name) name)').  (This is
+often useful when destructuring a function's arguments).</p>
 
 <p>The @(see std::deflist), @(see std::defalist), @(see std::defprojection),
 and @(see std::defmapappend) macros are now \"pluggable\" and can be extended
 with additional theorems; see for instance the new book
 @('std/lists/abstract.lisp').</p>
 
-<p>The new books @('std/util/deflist-base') and @(see std/util/defalist-base)
+<p>The new books @('std/util/deflist-base') and @('std/util/defalist-base')
 offer lighter-weight alternative to @('std/util/deflist') and
 @('std/util/defalist').</p>
 
@@ -282,8 +282,8 @@ non-executable functions that involve stobjs.</p>
 
 <p>Certification time has been improved.</p>
 
-<p>The @(see fast-cat) book now uses @(see include-raw) to avoid possible
-issues on various Lisps.</p>
+<p>The @('fast-cat') book (see @(see str::cat)) now uses @(see include-raw) to
+avoid possible issues on various Lisps.</p>
 
 <h5>@(see std/io)</h5>
 

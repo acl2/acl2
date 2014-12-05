@@ -40,13 +40,7 @@
 (defsection with-sidekick-lock
   :parents (sidekick)
   :short "Special macro that should be used to ensure thread-safety when
-accessing the sidekick's state."
-
-  :long "<p>This should generally be used any time you are accessing the
-sidekick's state with @(see sget-raw) and @(see sset-raw).</p>
-
-  @(def with-sidekick-lock)
-  @(def with-sidekick-lock-aux)"
+accessing sidekick state."
 
   (defmacro-last with-sidekick-lock-aux)
 

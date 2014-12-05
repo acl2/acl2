@@ -303,12 +303,12 @@ style:</p>
             (foo-listp x))
 })
 
-<p>@(see deflist) originally came out of @(see milawa), where I universally
-applied the loose approach, and in that context I think it is very nice.  It's
-not entirely clear that loose recognizers are a good fit for ACL2.  Really one
-of the main objections to the loose style is: ACL2's built-in list recognizers
-use the strict approach, and it can become irritating to keep track of which
-recognizers require true-listp and which don't.</p>")
+<p>@(see deflist) originally came out of @(see acl2::milawa), where I
+universally applied the loose approach, and in that context I think it is very
+nice.  It's not entirely clear that loose recognizers are a good fit for ACL2.
+Really one of the main objections to the loose style is: ACL2's built-in list
+recognizers use the strict approach, and it can become irritating to keep track
+of which recognizers require true-listp and which don't.</p>")
 
 
 

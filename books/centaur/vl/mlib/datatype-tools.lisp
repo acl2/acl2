@@ -30,13 +30,18 @@
 ;      (this file) Sol Swords <sswords@centtech.com>
 
 (in-package "VL")
-
 (include-book "scopestack")
 (include-book "range-tools")
 (include-book "../util/sum-nats")
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system))))
 (local (in-theory (disable append)))
+
+(defxdoc datatype-tools
+  :parents (mlib)
+  :short "Functions for working with datatypes.")
+
+(local (xdoc::set-default-parents datatype-tools))
 
 (define vl-usertype-resolve ((x vl-datatype-p)
                              (ss vl-scopestack-p)
@@ -591,7 +596,7 @@ packed or we'll fail.</p>"
 
 
 (define vl-datatype-exprtype
-  :parents (vl-expr-typedecide)
+  :parents (datatype-tools vl-expr-typedecide)
   :short "Get the self-determined type for a datatype."
   ((x vl-datatype-p))
   :returns

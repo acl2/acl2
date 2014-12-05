@@ -1136,7 +1136,7 @@ certification using @('make')"
  "<p>You can restrict the @(see books) to be certified using @('make')
   by adding a stylized ``@('cert_param:')'' comment.  For example, suppose that
   you include the following comment in your book or in a corresponding
-  @('.acl2') file (see @(see 2._PRE_CERTIFY-BOOK_COMMANDS)).</p>
+  @('.acl2') file (see @(see |2. Pre Certify-Book Commands|)).</p>
 
  @({
  ; cert_"

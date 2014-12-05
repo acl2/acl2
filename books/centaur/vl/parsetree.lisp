@@ -197,7 +197,6 @@ try to support the use of both ascending and descending ranges.</p>")
    :vl-uwire
    :vl-wand
    :vl-wor)
-  :parents (vl-nettype)
   :short "Representation of wire types."
 
   :long "<p>Wires in Verilog can be given certain types.  We
@@ -2195,11 +2194,6 @@ module mymod (a, b, ...) ;
 endmodule
 })")
 
-(fty::deflist vl-vardecllist
-              :elt-type vl-vardecl-p
-              :true-listp nil
-              :elementp-of-nil nil)
-
 (fty::deflist vl-paramdecllist
               :elt-type vl-paramdecl-p
               :true-listp nil
@@ -3593,7 +3587,18 @@ initially kept in a big, mixed list.</p>"
    (elem vl-ctxelement-p
          "Some element from the module.")))
 
+(defxdoc vl-context
+  :short "A context for @(see warnings)."
+
+  :long "<p>Contexts are usually @(see vl-context1)s.  However, for more
+generality, you can use any arbitrary object as a context.  The proper way to
+do this is to wrap it using @('(vl-context x)').</p>
+
+@(def vl-context)
+@(def make-vl-context)")
+
 (define vl-context-p ((x))
+  :parents (vl-context)
   :prepwork ((set-tau-auto-mode nil))
   (declare (ignorable x))
   t
@@ -3605,25 +3610,31 @@ initially kept in a big, mixed list.</p>"
 
   (defthm vl-context-p-of-ctxelement
     (implies (vl-ctxelement-p x)
-             (vl-context-p x)))
+             (vl-context-p x))))
 
-  (define vl-context-fix ((x))
-    x
-    ///
-    (defthm vl-context-p-of-vl-context-fix
-      (vl-context-p (vl-context-fix x)))
-    (defthm vl-context-fix-when-vl-context-p
-      (implies (vl-context-p x)
-               (equal (vl-context-fix x) x)))
+(define vl-context-fix ((x))
+  :prepwork ((set-tau-auto-mode nil))
+  :parents (vl-context)
+  x
+  ///
+  (local (in-theory (enable vl-context-p)))
+  (defthm vl-context-p-of-vl-context-fix
+    (vl-context-p (vl-context-fix x)))
+  (defthm vl-context-fix-when-vl-context-p
+    (implies (vl-context-p x)
+             (equal (vl-context-fix x) x)))
 
-    (fty::deffixtype vl-context :pred vl-context-p :fix vl-context-fix :equiv vl-context-equiv
-      :define t))
+  (fty::deffixtype vl-context
+    :pred vl-context-p
+    :fix vl-context-fix
+    :equiv vl-context-equiv
+    :define t))
 
-  (defmacro make-vl-context (&rest args)
-    `(vl-context (make-vl-context1 . ,args)))
+(defmacro make-vl-context (&rest args)
+  `(vl-context (make-vl-context1 . ,args)))
 
-  (defmacro vl-context (x)
-    `(vl-context-fix ,x)))
+(defmacro vl-context (x)
+  `(vl-context-fix ,x))
 
 
 (defprod vl-module

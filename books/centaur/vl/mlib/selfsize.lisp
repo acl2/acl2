@@ -376,6 +376,7 @@ only meant as a heuristic for generating more useful warnings.</p>"
          (nats-below-p max (cdr x)))))
 
 (define vl-tweak-fussy-warning-type
+  :parents (vl-op-selfsize)
   :short "Heuristically categorize fussy warnings according to severity."
   ((type  symbolp   "Base warning type, which we may adjust.")
    (a     vl-expr-p "LHS expression, i.e., A in: A + B, or C ? A : B")
@@ -799,7 +800,6 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
           :vl-pattern-positional
           :vl-pattern-keyvalue
           :vl-keyvalue
-          
           )
          ;; We don't handle these here.  They should be handled in
          ;; vl-expr-selfsize specially, because unlike all of the other
@@ -918,9 +918,10 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
       (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
                (equal (mv-nth 1 ret1)
                       (mv-nth 1 ret2))))))
-       
+
 
 (defines vl-expr-selfsize
+  :parents (vl-expr-size)
   :short "Computation of self-determined expression sizes."
 
   :long "<p><b>Warning</b>: these functions should typically only be called by
@@ -1129,7 +1130,3 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
                       (mv-nth 1 ret2))))
     :use ((:instance l1 (warnings1 warnings) (warnings2 nil))
           (:instance l3 (ctx1 ctx) (ctx2 nil) (warnings nil)))))
-
-
-
-

@@ -88,8 +88,8 @@ macro.  A feature expression is:</p>
 <ul>
 <li>A symbol</li>
 <li>@('(NOT <subexpression>)')</li>
-<li>@('(AND [<subexpression>]*)</li>
-<li>@('(OR [<subexpression>]*])</li>
+<li>@('(AND [<subexpression>]*)')</li>
+<li>@('(OR [<subexpression>]*])')</li>
 </ul>
 
 <p>When templates are expanded using @('template-subst'), each symbol present
@@ -105,7 +105,9 @@ defthm would effectively disappear.</p>
 
 <h3>Substitution</h3>
 <p> The second step involves substitution of various kinds into the tree.</p>
+
 <ul>
+
 <li>At each cons node of the tree:
 <ul>
 <li> We check whether the tree is bound in subtree-alist, and if so we
@@ -116,6 +118,7 @@ defthm would effectively disappear.</p>
 <li> Otherwise, we return the cons of the recursive substitutions into the
     car and cdr.</li>
 </ul></li>
+
 <li>
 At each atom in the tree:
 <ul>
@@ -125,6 +128,7 @@ At each atom in the tree:
     symbol-name.  If any substitutions are made, we intern the resulting
     string in the package of pkg-sym.</li>
 </ul></li>
+
 </ul>
 
 <p>Therefore, in our example we make the following replacements:</p>

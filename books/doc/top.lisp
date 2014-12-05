@@ -813,19 +813,26 @@ See @(see arithmetic) for libraries for arithmetic reasoning.</p>")
      (xdoc::change-parents gag-mode (prover-output))
 
 
-     (xdoc::change-parents String (stringp))
-     (xdoc::change-parents String-append (stringp))
-     (xdoc::change-parents String-downcase (stringp))
-     (xdoc::change-parents String-equal (stringp))
-     (xdoc::change-parents String-listp (stringp))
-     (xdoc::change-parents String-upcase (stringp))
-     (xdoc::change-parents String< (stringp))
-     (xdoc::change-parents String<= (stringp))
-     (xdoc::change-parents String> (stringp))
-     (xdoc::change-parents String>= (stringp))
-     (xdoc::change-parents Stringp (unselected-parents))
+     (defxdoc strings
+       :parents (acl2)
+       :short "Strings are atomic objects that contain character sequences,
+      like @('\"Hello World\"')."
+       :long "<p>See the @(see std/strings) library for many additional string
+functions and lemmas about the built-in string functions.</p>")
 
-     (xdoc::change-parents coerce (stringp characters))
+     (xdoc::change-parents String (strings))
+     (xdoc::change-parents String-append (strings))
+     (xdoc::change-parents String-downcase (strings))
+     (xdoc::change-parents String-equal (strings))
+     (xdoc::change-parents String-listp (strings))
+     (xdoc::change-parents String-upcase (strings))
+     (xdoc::change-parents String< (strings))
+     (xdoc::change-parents String<= (strings))
+     (xdoc::change-parents String> (strings))
+     (xdoc::change-parents String>= (strings))
+     (xdoc::change-parents Stringp (strings))
+
+     (xdoc::change-parents coerce (strings characters))
 
      (defxdoc errors
        :parents (acl2)
@@ -920,15 +927,15 @@ See @(see arithmetic) for libraries for arithmetic reasoning.</p>")
      (xdoc::change-parents ninth (nth))
      (xdoc::change-parents tenth (nth))
 
-     (xdoc::change-parents concatenate (lists stringp))
-     (xdoc::change-parents count (lists stringp))
-     (xdoc::change-parents length (lists stringp))
-     (xdoc::change-parents position (lists stringp))
-     (xdoc::change-parents remove-duplicates (lists stringp))
-     (xdoc::change-parents reverse (lists stringp))
-     (xdoc::change-parents search (lists stringp))
-     (xdoc::change-parents subseq (lists stringp))
-     (xdoc::change-parents substitute (lists stringp))
+     (xdoc::change-parents concatenate (lists strings))
+     (xdoc::change-parents count (lists strings))
+     (xdoc::change-parents length (lists strings))
+     (xdoc::change-parents position (lists strings))
+     (xdoc::change-parents remove-duplicates (lists strings))
+     (xdoc::change-parents reverse (lists strings))
+     (xdoc::change-parents search (lists strings))
+     (xdoc::change-parents subseq (lists strings))
+     (xdoc::change-parents substitute (lists strings))
 
      (xdoc::change-parents kwote (pseudo-termp))
      (xdoc::change-parents kwote-lst (pseudo-termp))
@@ -1047,7 +1054,21 @@ See @(see arithmetic) for libraries for arithmetic reasoning.</p>")
      (xdoc::change-parents disabledp (theories))
 
 
-     
+     (defxdoc functional-instantiation
+       :parents (encapsulate)
+       :short "A kind of higher-order logical reasoning for ACL2.  Functional
+instantiation allows you to prove theorems \"by analogy\" with previous
+theorems.")
+
+     (xdoc::change-parents signature (functional-instantiation))
+     (xdoc::change-parents constraint (functional-instantiation))
+     (xdoc::change-parents functional-instantiation-example (functional-instantiation tutorial5-miscellaneous-examples))
+     (xdoc::change-parents functional-instantiation-in-acl2r (functional-instantiation))
+     (xdoc::change-parents lemma-instance (hints functional-instantiation))
+
+
+
+
 
 
      ))

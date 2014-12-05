@@ -35,7 +35,7 @@
 
 (local (in-theory (enable intersection$ intersectp)))
 
-(defsection intersectp
+(defsection std/lists/intersectp
   :parents (std/lists intersectp)
   :short "Lemmas about @(see intersectp) available in the @(see std/lists)
 library."
