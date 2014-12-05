@@ -50,8 +50,7 @@
   :parents (note-7-0)
   :short "Release notes for the ACL2 Community Books for ACL2 7.0 (BOZO month??)"
 
-; Current through 8f1aa5614a464a6a302318057cab14915dfeb61d (2014-10-27)
-; Modulo a couple of bozos
+; Current through 2014-12-05, modulo  a couple of bozos
 
   :long "<p>The following is a brief summary of changes made to the @(see
 community-books) between the releases of ACL2 6.5 and 7.0.</p>
@@ -65,13 +64,17 @@ href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
 
 <h2>Organizational, Build System, and Name Changes</h2>
 
-<h3>Source Code Repository Change</h3>
+
+<h3>Source Code Moved</h3>
 
 <p>The ACL2 Community Books and ACL2 System source code repositories have been
-merged into one repository and are now available at <a
-href=\"https://github.com/acl2/acl2\">https://github.com/acl2/acl2</a>.  See
-the Readme.md file found there for more details.  See also the @(see
-git-quick-start) guide if you are interested in contributing.</p>
+merged into one repository and are now available at</p>
+
+<box><p><a
+href=\"https://github.com/acl2/acl2\">https://github.com/acl2/acl2</a></p></box>
+
+<p>See the @('Readme.md') file found there for more details.  See also the
+@(see git-quick-start) guide if you are interested in contributing.</p>
 
 
 
@@ -105,36 +108,69 @@ in ACL2 6.5, so we've deleted them.</p>
 
 <h3>Build System Changes</h3>
 
-<p>Many minor build-system tweaks have been made.  The @(see cert_param)
-mechanism, which is used by @(see cert.pl) to indicate that books have special
-requirements, is now documented.  New @('cert_param') directives have been
-added to avoid certifying certain books on incompatible Lisps.</p>
+<p>The @('arithmetic-2') library is no longer built by default when running an
+ordinary @('make').  All books that previously depended on @('arithmetic-2')
+have been transitioned to use @('arithmetic-3') instead.  If your own work
+depends on @('arithmetic-2'), you can still build these books, e.g., by running
+@('make arithmetic-2') in the @('books') directory.</p>
 
-<p>The implementation of ``@('make everything')'' has been cleaned up.  In
-particular, it no longer sets @('USE_QUICKLISP=1'), which must now be provided
-explicitly in order for the command above to build the ACL2+Books Manual.</p>
+<p>Many minor tweaks and cleanups have been made to the build system
+itself.</p>
 
-<p>Installing Quicklisp now works from behind a proxy.  See Section `Using a
-Proxy` in @(see books-certification).</p>
+<ul>
 
-<p>The @('etags.sh') script has been improved to permit whitespace before
-definitions.</p>
+<li>@('cert.pl') now has better support for @(see
+provisional-certification).</li>
 
-<p>The @('fix-cert') utility has been improved and now includes scripts for
-moving ACL2 distributions.</p>
+<li>The @(see cert_param) mechanism, which is used by @(see cert.pl) to
+indicate that books have special requirements, is now documented.</li>
+
+<li>New @('cert_param') directives have been added to avoid certifying certain
+books on incompatible Lisps.</li>
+
+<li>@(see cert.pl) now better avoids overflowing the maximum number of
+arguments to shell commands on some platforms when certifying large numbers of
+books.</li>
+
+<li>Hundreds of old Makefiles from the @(see books-certification-classic) era
+have been eliminated.</li>
+
+<li>Installing @(see quicklisp) now works from behind a proxy.  See <i>Using a
+Proxy</i> in @(see books-certification) for details.</li>
+
+<li>The implementation of ``@('make everything')'' has been cleaned up.  In
+particular, it no longer sets @('USE_QUICKLISP=1') since this is not
+appropriate for some Lisps.</li>
+
+<li>The @('make clean') command now does a better job of cleaning up generated
+files.</li>
+
+</ul>
+
+<p>Numerous books have been patched up for better portability across Lisps and
+integration with ACL2(p).  For instance: In many cases, previous calls of @(see
+without-waterfall-parallelism) are no longer necessary, largely due to
+thread-safe memoization; several @(see oslib) functions have been extended to
+work on additional Lisps; many books with raw Lisp code now use @(see
+include-raw) for more portable compilation behavior across Lisps.</p>
+
+<p>Various other utilities have been made more reliable.</p>
+
+<ul>
+
+<li>For Emacs @('TAGS') users, the @('etags.sh') script has been improved to
+permit whitespace before definitions.</li>
+
+<li>For ACL2 packaging mechanisms, the @('fix-cert') utility has been improved
+and now includes scripts for moving ACL2 distributions.</li>
+
+</ul>
 
 <p>Supporting scripts for the <a href='http://jenkins-ci.org/'>Jenkins</a>
 continuous integration server can now be found in the @('build/jenkins')
 directory.  These scripts have received significant attention and can now
 support multi-configuration builds for checking ACL2 books compatibility with
 many host Lisps.</p>
-
-<p>@('cert.pl') now has better support for @(see
-provisional-certification).</p>
-
-<p>Numerous books have been patched up for better integration with ACL2(p).
-In many cases, previous calls of @(see without-waterfall-parallelism) are
-no longer necessary, largely due to thread-safe memoization.</p>
 
 
 <h3>Name Conflict Resolution</h3>
@@ -167,73 +203,133 @@ may require updates to your books.</p>
 <p>COI/osets</p>
 
 <ul>
-<li>Many @('coi/osets') books are now just small wrappers around @('std/osets') books.</li>
-<li>COI's @('double-containment') rule has been renamed to @('double-containment-expensive').</li>
+
+<li>Many @('coi/osets') books are now just small wrappers around @('std/osets')
+books.</li>
+
+<li>COI's @('double-containment') rule has been renamed to
+@('double-containment-expensive').</li>
+
 </ul>
 
 
 <h3>Licensing Changes</h3>
 
+<p>Robert Krug's @('arithmetic-3') library of is now available under a
+BSD-3-Clause style license instead of the GNU General Public License.</p>
+
 <p>Several books contributed by David Rager, which were formerly released under
 the GNU General Public License or a BSD-3-Clause style license, are now instead
 released under a (more permissive) MIT/X11-style license.</p>
 
+<p>The @(see ubdds) library and a few \"miscellaneous\" books have also been
+transitioned from the GNU General Public License to a 3-clause BSD style
+license.</p>
 
-<h2>New Libraries, Demos, and Documentation</h2>
 
-<p>Many topics have been reorganized.</p>
+<h2>New Libraries and Documentation</h2>
 
-<p>The new @(see simp) tool can be used to ask ACL2 to simplify terms under
-certain hypotheses.</p>
+<p>The ACL2+Books manual has a great deal of new and improved content and many
+topics have been reorganized to provide a more coherent hierarchy.  Notably,
+all documentation in the legacy <i>defdoc</i> format has been rewritten into
+the @(see xdoc) format.  Some highlights:</p>
 
-<p>The @(see defsort) macro is now documented.</p>
+<ul>
+<li>The @(see ihs) documentation has been considerably updated.</li>
+<li>The @(see defsort) macro is now documented.</li>
+<li>The @(see sneaky) documentation has been considerably expanded.</li>
+</ul>
 
-<p>The new tool @('misc/check-fn-inst') can be used to check the constraints to a
-functional instantiation.</p>
+<p>The ACL2 @(see Sidekick) is an experimental and very preliminary graphical
+add-on to ACL2.  It currently features a session viewer, theory linter, a
+horribly primitive interface to the @(see proof-checker), and a slick
+<i>Lookup</i> feature that can show you documentation and other information
+about various symbols.</p>
 
-<p>The new tool, @(see def-saved-obligs), can be used to save proof obligations
-for an event as independent defthms.</p>
+<p>The new @('system/toothbrush') directory provides a way to create
+applications with ACL2 that have a much smaller memory footprint than an
+ordinary ACL2 @(see save-exec) image.  See the @('README') file in this
+directory for more information.</p>
 
-<p>All legacy documentation topics have been rewritten into the @(see xdoc)
-format, as a step towards eliminating the legacy documentation system.  This
-notably includes the @('data-structures') and @(see ihs) libraries.</p>
+<p>The new @(see depgraph::depgraph) library now contains a few algorithms for
+working with dependency graphs.  It provides @(see depgraph::toposort), a
+topological sort, @(see depgraph::invert), an edge-inversion algorithm, and
+@(see depgraph::transdeps), which can compute the transitive dependencies for a
+set of nodes.  This functionality was formerly part of @(see VL) but has now
+been made more general and extracted.</p>
 
-<p>The @(see sneaky) documentation has been considerably expanded.</p>
+<p>There are also several new small tools:</p>
+
+<ul>
+
+<li>(CCL Only) The new @(see spacewalk) tool can be used to get a report about
+heap memory usage.  It may be useful for identifying unusually large functions
+and constants in your ACL2 session.</li>
+
+<li>The new @(see simp) tool can be used to ask ACL2 to simplify terms under
+certain hypotheses.</li>
+
+<li>The new tool @('misc/check-fn-inst') can be used to check the constraints
+to a functional instantiation.</li>
+
+<li>The new tool, @(see def-saved-obligs), can be used to save proof
+obligations for an event as independent defthms.</li>
+
+</ul>
+
 
 
 <h2>Changes to Major Libraries</h2>
 
-
-
 <h3>XDOC Changes</h3>
 
-<p>XDOC has been updated to use newer versions of the JQuery and Typeahead
-libraries.  Some bugs with the typeahead (jump to) box have been fixed and it
-has been extended to show more results, with a scrollbar if necessary.  The
-jump-to box has also been extended with a @('Alt+/') hotkey (or perhaps some
-other key combination like @('Ctrl+/'), depending on your browser).</p>
+<p>The web-based XDOC viewer has been improved.  It now uses newer versions of
+the JQuery and Typeahead libraries.  Some bugs with the typeahead (jump to) box
+have been fixed and it has been extended to show more results.  The jump-to box
+has been extended with a @('Alt+/') hotkey (or perhaps some other key
+combination like @('Ctrl+/'), depending on your browser).  Middle clicking on
+XDOC links should now properly open them in new tabs and the fonts have been
+updated.</p>
 
-<p>XDOC now features @(see xdoc::katex-integration) for writing LaTeX-like
-formulas like @($ \\left( \\sum_{i=0}^{n} \\sqrt{f(i)} \\right) <
-\\frac{n^2}{k} $) within your documentation.</p>
-
-<p>The new @(see fancy-string-reader) can be used to make escaping simpler for
-authors of xdoc topics.  It may be especially useful when trying to write
-formulas.</p>
+<p>Significant work has been done to try to make XDOC content accessible to
+search engines such as Google.  A new PHP script largely replaces previous
+failed efforts to generate \"static\" HTML files, site maps, and so forth.</p>
 
 <p>XDOC now supports \"resource directories\" for incorporating images, PDF
 files, and other kinds of resources.  See @(see xdoc::add-resource-directory)
 for details.</p>
 
-<p>XDOC's \"static\" HTML files, which are intended to make search engines
-happy, have been tweaked to avoid redirects.</p>
+<p>XDOC now features @(see xdoc::katex-integration) for writing LaTeX-like
+formulas like @($ \\left( \\sum_{i=0}^{n} \\sqrt{f(i)} \\right) <
+\\frac{n^2}{k} $) within your documentation.  Note that ACL2's new @(see
+fancy-string-reader) can be used to make escaping simpler, and this may be
+especially useful when trying to write LaTeX-like formulas, where the escaping
+of @('\\') characters can be irritating.</p>
 
-<p>The @(see defpointer) macro has been integrated into XDOC itself.  (It was
-formerly only part of the ACL2 system documentation.)</p>
+<p>There are also many other minor changes:</p>
 
+<ul>
 
+<li>The @(see defpointer) macro has been integrated into XDOC itself.  (It was
+formerly only part of the ACL2 system documentation.)</li>
 
-<p>Middle clicking on XDOC links should now properly open them in new tabs.</p>
+<li>@(see defsection) and @(see define) now permit plain strings to be included
+among the list of events.  These strings are incorporated into the resulting
+documentation as running commentary.</li>
+
+<li>The @(see defxdoc), @(see defsection), and @(see define) macros now all
+evaluate the arguments to @(':short') and @(':long') instead of quoting them.
+This may make it more convenient to write macros that produce documentation
+from boilerplate templates, e.g., you can now directly write things like
+@(':short (cat ...)').</li>
+
+<li>Tweaked @(see defsection) so that you can give @(':extension (foo)')
+instead of just @(':extension foo.')</li>
+
+<li>Better error handling on @(see xdoc::xdoc-extend) and @(see
+xdoc::xdoc-prepend).</li>
+
+</ul>
 
 
 
@@ -247,14 +343,20 @@ formerly only part of the ACL2 system documentation.)</p>
 
 <h5>@(see std/lists)</h5>
 
-
 <p>Cleaned up rules about take in @(see std/lists/take).</p>
 
 <p>@(see replicate) is now an alias for @(see repeat) and is compatible with
 the definition of @('repeat') in the COI libraries, fixing a longstanding
 incompatibility.</p>
 
-<p>The @(see all-equalp) function has bene added.</p>
+<p>The @(see all-equalp) function has been added.</p>
+
+<p>Several lemmas about @(see intersection$), @(see intersectp), and @(see
+set-difference$) have been extracted from @(see vl) and moved into
+@('std/lists').  See for instance @(see std/lists/intersection$),
+@(see std/lists/intersectp), and @(see std/lists/set-difference).</p>
+
+
 
 
 <h5>@(see std/util)</h5>
@@ -263,6 +365,11 @@ incompatibility.</p>
 variable, fixing a longstanding issue.  Also, the syntax @('((prodname name))')
 is now permitted as an abbreviation for @('((prodname name) name)').  (This is
 often useful when destructuring a function's arguments).</p>
+
+<p>The @(see b*) binders for @(see std::defaggregate) (and also @(see
+fty::defprod)) are now extensible and can translate bindings like @('x.foo')
+into calls of user-defined functions.  See the description of <i>Extra Binder
+Names</i> in the documentation of @(see std::defaggregate) for details.</p>
 
 <p>The @(see std::deflist), @(see std::defalist), @(see std::defprojection),
 and @(see std::defmapappend) macros are now \"pluggable\" and can be extended
@@ -273,10 +380,28 @@ with additional theorems; see for instance the new book
 offer lighter-weight alternative to @('std/util/deflist') and
 @('std/util/defalist').</p>
 
-<p>Fixed a bug with @(see define)'s return-specifiers that could affect
-non-executable functions that involve stobjs.</p>
-
 <p>The @(see std::defrule) book now has fewer dependencies.</p>
+
+<p>Documentation for @(see std::deflist) has been improved.  @('Deflist') now
+uses @(see define) so that you get a signature block in the resulting
+documentation.  The documentation for automatically generated deflist events is
+now put in a more sensible order and split off into a @('foolistp-basics')
+section underneath of @('foolistp'), to reduce the prominence of this
+\"boilerplate\" documentation.  Deflist can now also create documentation even
+in the @('already-definedp') case.</p>
+
+<p>Fixed an obscure bug with @(see define)'s return-specifiers that could
+affect non-executable functions that involve stobjs.</p>
+
+<p>The @(see define) macro now interprets @(':inline nil') as \"make this a
+<see topic='@(url defun-notinline)'>$notinline</see> function\" instead of
+\"make this a regular function instead of an <see topic='@(url
+defun-inline)'>inline</see> one.\"</p>
+
+<p>The @(see define), @(see defines), and also the @(see fty::deffixequiv)
+macros now have improved, more advanced default hints set for inductive proofs
+in return specs and @('deffixequiv(-mutual)') forms.</p>
+
 
 <h5>@(see std/strings)</h5>
 
@@ -297,6 +422,11 @@ fal-all-boundp).</p>
 <p>Moved @(see worth-hashing) into @('std/alists') from
 @('misc/hons-help').</p>
 
+<h5>@(see std/typed-lists)</h5>
+
+<p>Move @(see cons-listp) and @(see cons-list-listp) out of VL and into
+@('std/typed-lists').</p>
+
 
 
 <h3>Defdata</h3>
@@ -305,9 +435,6 @@ fal-all-boundp).</p>
 write a summary or copy Harsh's message here.</p>
 
 <p>Also @('7fecb0d6658e817f8c585b8dc6761dafe606ee11')</p>
-
-
-
 
 
 
@@ -339,7 +466,11 @@ files in oslib are now split up into, e.g., argv-logic.lisp (no raw code or
 ttags) and argv.lisp (actual implementation).</p>
 
 <p>OSLIB has new functions including @(see oslib::dirname), @(see
-oslib::basename), and @(see oslib::copy).</p>
+oslib::basename), @(see oslib::copy), and @(see oslib::catpaths).</p>
+
+<p>The @(see oslib::ls), @(see oslib::ls-files), and @(see oslib::ls-subdirs)
+functions have been improved to return better error information, and made more
+portable across Lisps.</p>
 
 
 <h2>Changes to Centaur Libraries</h2>
@@ -349,8 +480,17 @@ oslib::basename), and @(see oslib::copy).</p>
 <p>The @(see getopt) library now has a basic test suite.</p>
 
 <p>The @('centaur/misc/sharedlibs') code for relocating shared libraries has
-been extended with a test/demo script.</p>
+been extended with a test/demo script.  The sharedlibs functions no longer
+cause errors when used on non-CCL Lisps (they simply print a message,
+instead.)</p>
 
+<p>The @(see template-subst) tool has been expanded with some additional
+functions.</p>
+
+<p>The @(see profile-all) and @(see profile-acl2) functions can now be used
+from within the ACL2 loop instead of only from raw Lisp.</p>
+
+<p>The @(see flag::def-doublevar-induction) macro has been extended and improved.</p>
 
 
 <h3>@(see Quicklisp)</h3>
@@ -362,20 +502,36 @@ always ends up duplicated everywhere.</p>
 
 <p>Quicklisp now includes books for loading the @('uiop') library and a more
 sensible @('cl-fad') book.  These libraries may be useful for doing file system
-things.</p>
+things.  The CCL-only restrictions on @('bordeaux-threads') and
+@('hunchentoot') have been dropped since these libraries seem to be working
+fine on modern SBCL distributions.  A book for the @('html-template') library
+has also been added.</p>
+
+<p>The Quicklisp build should be more robust.  It now checks for existing
+Quicklisp installations and produce a sensible error message instead of dying
+horribly.</p>
+
 
 
 <h3>@(see bitops)</h3>
 
-<p>The new @(see part-install) macro can be used to set particular bits of an
+<p>The new @(see bitops/part-install) macro can be used to set particular bits of an
 integer to a value.  It is somewhat similar to utilities like @(see wrb) from
 the IHS library, but its interface is perhaps more intuitive.</p>
 
+<p>The new @(see bitops/fast-rotate) macros provide optimized versions of @(see
+rotate-left) and @(see rotate-right).</p>
 
-<h3>FTY</h3>
+<p>The new @(see bitops/logbitp-bounds) book provides a few lemmas relating
+@(see logbitp) to @(see expt).</p>
+
+
+<h3>@(see fty::fty)</h3>
 
 <p>The @(see std::deflist) and @(see fty::deflist) books are now integrated, so
-that @('fty::deflist') can provide the ordinary @('std::deflist') theorems.</p>
+that @('fty::deflist') can provide the ordinary @('std::deflist') theorems.
+The @('fty::deflist') and @('fty::defalist') macros now provide at least @(see
+append) theorems by default.</p>
 
 <p>The documentation-generating macros have been enhanced.</p>
 
@@ -383,7 +539,6 @@ that @('fty::deflist') can provide the ordinary @('std::deflist') theorems.</p>
 speed up certification, and also has more comprehensive error checking.</p>
 
 <p>The @(see fty::deffixtype) macro has better error checking.</p>
-
 
 <p>The cases macros introduced by @(see fty::deftypes) now support an
 @(':otherwise') case.</p>
@@ -394,19 +549,39 @@ keywords.</p>
 <p>The @(see fty::deflist) and @(see fty::defalist) macros can now tolerate
 already-defined predicates.</p>
 
+<p>The @(see fty::basetypes) book has been filled out a bit, e.g., it now includes
+@(see maybe-natp).</p>
+
+<p>By default, @(see fty::deffixtype) now verifies the guards on the equivalence
+relations it introduces.</p>
+
 
 <h3>@(see esim)/@(see 4v)</h3>
 
-<p>There is a new tool for STV decomposition theorems,
+<p>There is a new tool for @(see stv) decomposition theorems,
 @('oracle/stv-decomp-theory-expander.lisp'), and a demo of using this tool in
 @('centaur/regression/composed-stv.lisp').</p>
 
 <p>There are a few new @(see *sexpr-rewrites*).</p>
 
+<p>The documentation tables for STVs should now look nicer in the
+printer-friendly xdoc view.</p>
 
-<h3>AIGNET</h3>
+
+<h3>@(see aignet)</h3>
 
 <p>Minor bug-fix to avoid complaint in @('bind-free') routine.</p>
+
+
+<h3>@(see satlink)</h3>
+
+<p>Added @(see satlink::gather-benchmarks), a plugin for collecting DIMACS
+files that SATLINK sends to the SAT solver. You could use this to gather
+benchmarks for evaluating SAT solvers or for the SAT solving competitions.</p>
+
+<h3>@(see gl)</h3>
+
+<p>Fixed a bug in @('trace-gl-interp').</p>
 
 
 
@@ -415,7 +590,8 @@ already-defined predicates.</p>
 
 <p>VL has undergone significant extensions and changes, mostly toward extending
 VL to support a subset of SystemVerilog.  VL is intended to also still support
-Verilog-2005, and in many cases its Verilog-2005 support has also improved.</p>
+Verilog-2005, and in many cases its Verilog-2005 support has been improved as
+new SystemVerilog features have been implemented.  Some highlights:</p>
 
 <ul>
 
@@ -433,34 +609,46 @@ necessary for parsing certain constructs.</li>
 <li>More comprehensive parameter support.  This involved reworking
 unparameterization to handle SystemVerilog data types, and adding support for
 richer expressions in wire ranges, etc., by reworking how constant expressions
-are evaluated to handle many more operators and operands of mixed
-sizes/types.</li>
+are evaluated to handle many more operators and operands of mixed sizes/types.
+Generate statements are also now supported to some degree.</li>
 
 <li>Added support for fancier ports, e.g., ports with data types, module
-instances with @('.name') and @('.*') style connections, etc.</li>
+instances with @('.name') and @('.*') style connections, and interface
+ports.</li>
 
 <li>Added support for combinational user-defined primitives, and at least basic
 parsing support for sequential UDPs.</li>
 
-<li>Added some support for SystemVerilog packages and imports.  Also, a new
+<li>Added some support for SystemVerilog packages and imports.  A new
 \"scopestack\" abstraction is now widely used to provide more comprehensive
-handling of nested scopes, packages, etc.</li>
+handling of nested scopes (e.g., named begin/end blocks), packages, etc.  There
+is now some support for functions defined at the global scope.</li>
+
+<li>Sizing has been extended to handle unpacked arrays.  The sizing code has
+been reorganized to be more modular, and extended to handle additional
+operators.</li>
 
 <li>Miscellaneous improvements.  The pretty-printer has been extended to handle
 the new SystemVerilog constructs, ansi-style ports, etc.  Some transforms are
 more configurable, e.g., gate elimination can easily use alternate replacements
 for gate instances.  There is better support for @('case') statements,
 especially in @('always_comb') blocks.  Various operators are now supported to
-various degrees, e.g., @('++'), casting operators, @('$bits').  The
-preprocessor now supports @('`define') macros with arguments.</li>
+various degrees, e.g., @('++'), casting operators, @('$bits'), streaming
+concatenations.  The preprocessor now supports @('`define') macros with
+arguments.  The hierarchy tools have been greatly simplified.</li>
 
 <li>Numerous organizational changes, bug fixes, and updates to existing tools
 and transforms to keep things working.</li>
 
 </ul>
 
-<p>The VL @(see vl::server) is now included in the VL toolkit.  It allows you to
-view Verilog modules in a web browser.</p>")
+<p>Besides these improvements to the core library, there have been various user
+interface improvements.  For instance, the VL @(see vl::server) has been
+entirely rewritten and is now included in the @(see vl::kit); it allows you to
+view Verilog modules in a web browser.  The loader has been made more
+user-friendly and more gracefully handles search paths, errors, etc.</p>")
+
+
 
 
 (defxdoc note-6-5-books

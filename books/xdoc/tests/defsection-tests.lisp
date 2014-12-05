@@ -30,6 +30,8 @@
 
 (in-package "XDOC")
 (include-book "../top")
+(include-book "tools/bstar" :dir :system)
+(include-book "std/strings/substrp" :dir :system)
 (include-book "misc/assert" :dir :system)
 
 (defxdoc test :short "Test of defsection")
@@ -137,3 +139,84 @@
 (defsection ext-test-2
   :extension (long-eval-test)
   :long "Test of new :extension (foo) feature.")
+
+
+
+(xdoc::set-default-parents nil)
+
+(defsection double-extension-test
+  :short "Test of double extensions"
+  :long "<p>Blah1</p>"
+  (defun det-f1 (x) x))
+
+(defthm det-f1-identity (equal (det-f1 x) x))
+
+(defsection det-extension-1
+  :extension (double-extension-test)
+  :long "<p>Blah2</p>"
+  (defun det-f2 (x) x))
+
+(defthm det-f2-identity (equal (det-f2 x) x))
+
+(defsection det-extension-2
+  :extension (double-extension-test)
+  :long "<p>Blah3</p>"
+  (defun det-f3 (x) x))
+
+(defthm det-f3-identity (equal (det-f3 x) x))
+
+(assert!
+ (b* ((topic (find-topic 'double-extension-test (get-xdoc-table (w state))))
+      (long  (cdr (assoc :long topic))))
+   (and (str::substrp "@(def |XDOC|::|DET-F1|)" long)
+        (str::substrp "@(def |XDOC|::|DET-F2|)" long)
+        (str::substrp "@(def |XDOC|::|DET-F3|)" long)
+        (str::substrp "Blah1" long)
+        (str::substrp "Blah2" long)
+        (str::substrp "Blah3" long)
+        (not (str::substrp "@(def |XDOC::DET-F1-IDENTITY|)" long))
+        (not (str::substrp "@(def |XDOC::DET-F2-IDENTITY|)" long))
+        (not (str::substrp "@(def |XDOC::DET-F3-IDENTITY|)" long)))))
+
+
+
+
+
+
+(xdoc::set-default-parents whatever)
+
+(defsection double-extension-test2
+  :short "Test of double extensions"
+  :long "<p>Blooop1</p>"
+  (defun det2-f1 (x) x))
+
+(defthm det2-f1-identity (equal (det2-f1 x) x))
+
+(defsection det2-extension-1
+  :extension (double-extension-test2)
+  :long "<p>Blooop2</p>"
+  (defun det2-f2 (x) x))
+
+(defthm det2-f2-identity (equal (det2-f2 x) x))
+
+(defsection det2-extension-2
+  :extension (double-extension-test2)
+  :long "<p>Blooop3</p>"
+  (defun det2-f3 (x) x))
+
+(defthm det2-f3-identity (equal (det2-f3 x) x))
+
+(assert!
+ (b* ((topic (find-topic 'double-extension-test2 (get-xdoc-table (w state))))
+      (long  (cdr (assoc :long topic))))
+   (and (str::substrp "@(def |XDOC|::|DET2-F1|)" long)
+        (str::substrp "@(def |XDOC|::|DET2-F2|)" long)
+        (str::substrp "@(def |XDOC|::|DET2-F3|)" long)
+        (str::substrp "Blooop1" long)
+        (str::substrp "Blooop2" long)
+        (str::substrp "Blooop3" long)
+        (not (str::substrp "@(def |XDOC::DET2-F1-IDENTITY|)" long))
+        (not (str::substrp "@(def |XDOC::DET2-F2-IDENTITY|)" long))
+        (not (str::substrp "@(def |XDOC::DET2-F3-IDENTITY|)" long)))))
+
+
