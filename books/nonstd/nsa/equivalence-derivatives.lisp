@@ -691,7 +691,15 @@
 		 )
 	   :in-theory (disable i-close-transitive
 			       i-close-limited
-			       standard-derivative-rdfn-classical)
+			       standard-derivative-rdfn-classical
+; Added by Matt K., 12/5/2014: The proof seemed to take very long (forever?)
+; today (I don't know why), but it succeeds quickly with the following
+; additional disables.  Actually only one of these needs to be disabled, but
+; compared to disabling both, the proof takes about 10x longer if only the
+; second is enabled and about 27x as long if only the first is enabled.
+                               DIFFERENTIAL-RDFN2-LIMITED
+                               CLOSE-IF-<-ABS
+                               )
 	   )
 	  )
   )

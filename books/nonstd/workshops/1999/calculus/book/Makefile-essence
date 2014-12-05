@@ -40,7 +40,8 @@ proof-outline: tree.cert proof-outline.cert
 	echo '(display-proof-outline-all "outline/outline" "fundamental-theorem-of-calculus")' >> workxxx
 	echo '(value :q)' >> workxxx
 	echo '(acl2::good-bye)' >> workxxx
-	rm -f outline/outline.*
+	rm -f outline
+	mkdir outline
 	$(ACL2) < workxxx
 
 clean: clean-more
@@ -48,7 +49,7 @@ clean: clean-more
 .PHONY: clean-more
 clean-more:
 	rm -f tree.lisp
-#	rm -rf outline/outline.*
+	rm -rf outline
 
 # Dependencies:
 
