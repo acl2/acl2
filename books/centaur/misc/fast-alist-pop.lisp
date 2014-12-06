@@ -37,7 +37,7 @@
 (defttag fast-alist-pop)
 
 (defxdoc fast-alist-pop
-  :parents (hons-and-memoization)
+  :parents (fast-alists)
   :short "@('fast-alist-pop') removes the first key-value pair from a fast alist."
   :long "<p>This is a user extension to the ACL2 (in particular, ACL2H) system.
 It may eventually be added to acl2h proper, but until then it requires a trust
