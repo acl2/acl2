@@ -3372,12 +3372,39 @@
            (declare (ignore erp val))
            state))
 
+(define-pc-macro doc (&optional name)
+  (let ((name (or name (make-official-pc-command 'doc))))
+    (cond ((and (equal (assoc-eq :doc (ld-keyword-aliases state))
+                       '(:DOC 1 XDOC))
+                (function-symbolp 'colon-xdoc-initialized (w state)))
+           (value `(lisp (if (colon-xdoc-initialized state)
+                             (xdoc ',name)
+                           (pprogn
+                            (fms0 "Note: Using built-in :doc command.  To use ~
+                                   :xdoc command, exit the proof-checker and ~
+                                   run :doc in the top-level loop.~|~%")
+                            (doc ',name))))))
+          (t (value `(lisp (doc ',name)))))))
+
 #+acl2-legacy-doc
 (define-pc-help help (&optional instr)
   (let ((comm (make-official-pc-command (if args
                                             (if (consp instr) (car instr) instr)
                                           'help))))
     (state-only (pc-help-fn comm state))))
+
+#-acl2-legacy-doc
+(define-pc-macro help (&optional name)
+  (cond ((not (symbolp name))
+         (pprogn
+          (print-no-change "The argument for :HELP requires a symbol, but ~x0 ~
+                            is not a symbol."
+                           (list (cons #\0 name)))
+          (value :fail)))
+        (t (let ((name (if (equal (symbol-name name) "ALL")
+                           'proof-checker-commands
+                         (make-official-pc-command (or name 'help)))))
+             (value `(doc ,name))))))
 
 #+acl2-legacy-doc
 (defun pc-help!-fn (name state)
