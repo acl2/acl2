@@ -523,10 +523,6 @@ encoding.</p>"
   :inline t
   (jp-sym x))
 
-(define vl-jp-taskporttype ((x vl-taskporttype-p) &key (ps 'ps))
-  :parents (json-encoders)
-  :inline t
-  (jp-sym x))
 
 (define vl-jp-alwaystype ((x vl-alwaystype-p) &key (ps 'ps))
   :parents (json-encoders)
@@ -543,7 +539,6 @@ encoding.</p>"
 (add-json-encoder vl-deassign-type-p    vl-jp-deassign-type)
 (add-json-encoder vl-casetype-p         vl-jp-casetype)
 (add-json-encoder vl-casecheck-p        vl-jp-casecheck)
-(add-json-encoder vl-taskporttype-p     vl-jp-taskporttype)
 (add-json-encoder vl-alwaystype-p       vl-jp-alwaystype)
 
 
@@ -1200,17 +1195,14 @@ which could not hold such large values.</p>")
 (def-vl-jp-aggregate initial)
 (def-vl-jp-list initial :newlines 4)
 
-(def-vl-jp-aggregate taskport)
-(def-vl-jp-list taskport :newlines 4)
+(def-vl-jp-aggregate portdecl)
+(def-vl-jp-list portdecl :newlines 4)
 
 (def-vl-jp-aggregate fundecl)
 (def-vl-jp-list fundecl :newlines 4)
 
 (def-vl-jp-aggregate taskdecl)
 (def-vl-jp-list taskdecl :newlines 4)
-
-(def-vl-jp-aggregate portdecl)
-(def-vl-jp-list portdecl :newlines 4)
 
 (def-vl-jp-aggregate assign)
 (def-vl-jp-list assign :newlines 4)
