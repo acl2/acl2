@@ -844,25 +844,17 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :list vl-portlist
   :element vl-port)
 
-(def-vl-allexprs
-  :type :vl-taskport
-  :nrev-body (vl-maybe-range-allexprs-nrev (vl-taskport->range x) nrev)
-  :body (vl-maybe-range-allexprs (vl-taskport->range x)))
-
-(def-vl-allexprs-list
-  :list vl-taskportlist
-  :element vl-taskport)
 
 (def-vl-allexprs
   :type :vl-fundecl
   :nrev-body (b* (((vl-fundecl x) x)
-                  (nrev (vl-maybe-range-allexprs-nrev x.rrange nrev))
-                  (nrev (vl-taskportlist-allexprs-nrev x.inputs nrev))
+                  (nrev (vl-datatype-allexprs-nrev x.rettype nrev))
+                  (nrev (vl-portdecllist-allexprs-nrev x.portdecls nrev))
                   (nrev (vl-blockitemlist-allexprs-nrev x.decls nrev)))
                (vl-stmt-allexprs-nrev x.body nrev))
   :body (b* (((vl-fundecl x) x))
-          (append (vl-maybe-range-allexprs x.rrange)
-                  (vl-taskportlist-allexprs x.inputs)
+          (append (vl-datatype-allexprs x.rettype)
+                  (vl-portdecllist-allexprs x.portdecls)
                   (vl-blockitemlist-allexprs x.decls)
                   (vl-stmt-allexprs x.body))))
 
@@ -873,11 +865,11 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
 (def-vl-allexprs
   :type :vl-taskdecl
   :nrev-body (b* (((vl-taskdecl x) x)
-                  (nrev (vl-taskportlist-allexprs-nrev x.ports nrev))
+                  (nrev (vl-portdecllist-allexprs-nrev x.portdecls nrev))
                   (nrev (vl-blockitemlist-allexprs-nrev x.decls nrev)))
                (vl-stmt-allexprs-nrev x.body nrev))
   :body (b* (((vl-taskdecl x) x))
-          (append (vl-taskportlist-allexprs x.ports)
+          (append (vl-portdecllist-allexprs x.portdecls)
                   (vl-blockitemlist-allexprs x.decls)
                   (vl-stmt-allexprs x.body))))
 

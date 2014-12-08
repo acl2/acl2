@@ -303,13 +303,6 @@ these expressions.</p>")
 
 (def-vl-rangeresolve-list vl-paramdecllist :element vl-paramdecl)
 
-(def-vl-rangeresolve vl-taskport
-  :body (b* (((vl-taskport x) x)
-             ((mv warnings range) (vl-maybe-rangeresolve x.range ss warnings)))
-          (mv warnings (change-vl-taskport x :range range))))
-
-(def-vl-rangeresolve-list vl-taskportlist :element vl-taskport)
-
 (def-vl-rangeresolve vl-blockitem
   :body (case (tag x)
           (:vl-vardecl   (vl-vardecl-rangeresolve   x ss warnings))
@@ -319,13 +312,13 @@ these expressions.</p>")
 
 (def-vl-rangeresolve vl-fundecl
   :body (b* (((vl-fundecl x) x)
-             ((mv warnings rrange) (vl-maybe-rangeresolve x.rrange ss warnings))
+             ((mv warnings rettype) (vl-datatype-rangeresolve x.rettype ss warnings))
              ((mv warnings decls)  (vl-blockitemlist-rangeresolve x.decls ss warnings))
-             ((mv warnings inputs) (vl-taskportlist-rangeresolve x.inputs ss warnings)))
+             ((mv warnings portdecls) (vl-portdecllist-rangeresolve x.portdecls ss warnings)))
           (mv warnings (change-vl-fundecl x
-                                          :rrange rrange
+                                          :rettype rettype
                                           :decls  decls
-                                          :inputs inputs))))
+                                          :portdecls portdecls))))
 
 (def-vl-rangeresolve-list vl-fundecllist :element vl-fundecl)
 

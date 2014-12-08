@@ -214,16 +214,14 @@ producing some warnings.</p>"
                   :msg "~a0: Function not found: ~a1"
                   :args (list ctx x))
             nil))
-       ((vl-fundecl decl)))
-    (case decl.rtype
-      (:vl-unsigned (mv (ok) :vl-unsigned))
-      (:vl-signed   (mv (ok) :vl-signed))
-      (:vl-integer  (mv (ok) :vl-signed))
-      (otherwise
-       (mv (warn :type :vl-function-typedecide-fail
-                 :msg "~a0: Unsupported return type for function: ~a1"
-                 :args (list ctx x))
-           nil))))
+       ((vl-fundecl decl))
+       ((mv ok errmsg type) (vl-datatype-exprtype decl.rettype))
+       ((unless ok)
+        (mv (fatal :type :vl-funcall-typedecide-fail
+                   :msg "~a0: Signedness of datatype failed: ~s1"
+                   :args (list ctx errmsg))
+            nil)))
+    (mv (ok) type))
   ///
   (defrule warning-irrelevance-of-vl-funcall-typedecide
     (let ((ret1 (vl-funcall-typedecide x ss ctx warnings))

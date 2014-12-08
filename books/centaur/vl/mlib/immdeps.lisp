@@ -915,14 +915,6 @@ elements.")
 
 
 
-(def-vl-immdeps vl-taskport
-  :ctxp nil
-  :body
-  (b* (((vl-taskport x))
-       (ctx x))
-    (vl-maybe-range-immdeps x.range ans)))
-
-(def-vl-immdeps-list vl-taskportlist vl-taskport :ctxp nil)
 
 
 (def-vl-immdeps vl-fundecl
@@ -930,9 +922,9 @@ elements.")
   :body
   (b* (((vl-fundecl x))
        (ctx x)
+       (ans (vl-datatype-immdeps x.rettype ans))
+       (ans (vl-portdecllist-immdeps x.portdecls ans))
        (ss  (vl-scopestack-push (vl-fundecl->blockscope x) ss))
-       (ans (vl-maybe-range-immdeps x.rrange ans))
-       (ans (vl-taskportlist-immdeps x.inputs ans))
        (ans (vl-blockitemlist-immdeps x.decls ans)))
     (vl-stmt-immdeps x.body ans)))
 
@@ -944,7 +936,7 @@ elements.")
   :body
   (b* (((vl-taskdecl x))
        (ss  (vl-scopestack-push (vl-taskdecl->blockscope x) ss))
-       (ans (vl-taskportlist-immdeps x.ports ans))
+       (ans (vl-portdecllist-immdeps x.portdecls ans))
        (ans (vl-blockitemlist-immdeps x.decls ans)))
     (vl-stmt-immdeps x.body ans)))
 

@@ -555,16 +555,6 @@ so that their overrides are compatible with thier types.</p>"
   :type vl-initiallist-p
   :element vl-initial-scopesubst)
 
-(def-vl-scopesubst vl-taskport-scopesubst
-  :type vl-taskport-p
-  :body
-  (b* (((vl-taskport x) x))
-    (change-vl-taskport x
-                        :range (vl-maybe-range-scopesubst x.range ss))))
-
-(def-vl-scopesubst-list vl-taskportlist-scopesubst
-  :type vl-taskportlist-p
-  :element vl-taskport-scopesubst)
 
 ;; BOZO how should subscopes work
 
@@ -576,9 +566,9 @@ so that their overrides are compatible with thier types.</p>"
        ;; probably not?
        (ss (vl-scopestack-push (vl-fundecl->blockscope x) ss)))
     (change-vl-fundecl x
-                       :rrange (vl-maybe-range-scopesubst x.rrange ss)
+                       :rettype (vl-datatype-scopesubst x.rettype ss)
                        :decls  (vl-blockitemlist-scopesubst x.decls ss)
-                       :inputs (vl-taskportlist-scopesubst x.inputs ss)
+                       :portdecls (vl-portdecllist-scopesubst x.portdecls ss)
                        :body   (vl-stmt-scopesubst x.body ss))))
 
 (def-vl-scopesubst-list vl-fundecllist-scopesubst

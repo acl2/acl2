@@ -912,7 +912,7 @@ variables and inputs.</p>"
   (b* ((real-decls (vl-remove-fake-function-vardecls (vl-fundecl->decls function)))
        ((mv vardecls ?paramdecls) (vl-filter-blockitems real-decls))
        (varnames (vl-vardecllist->names vardecls))
-       (innames  (vl-taskportlist->names (vl-fundecl->inputs function)))
+       (innames  (vl-portdecllist->names (vl-fundecl->portdecls function)))
        ((mv okp warnings written-vars read-vars read-inputs)
         (vl-fun-assignorder-okp-aux x innames varnames nil nil nil warnings function))
        ((unless okp)
@@ -1196,10 +1196,10 @@ throughout the rest of the module we only need one pass.</p>")
         (t
          (vl-find-funtemplate name (cdr templates)))))
 
-(define vl-taskportlist-types-okp
+(define vl-portdecllist-types-okp
   :parents (vl-funtemplate-p)
   :short "Ensure that a function's inputs are simple enough to convert into nets."
-  ((x        vl-taskportlist-p)
+  ((x        vl-portdecllist-p)
    (warnings vl-warninglist-p)
    (function vl-fundecl-p))
   :returns
@@ -1207,34 +1207,30 @@ throughout the rest of the module we only need one pass.</p>")
       (warnings vl-warninglist-p))
   (b* (((when (atom x))
         (mv t (ok)))
-       ((vl-taskport x1) (car x))
+       ((vl-portdecl x1) (car x))
        ((unless (or (eq x1.type :vl-unsigned)
                     (eq x1.type :vl-signed)))
         (mv nil (fatal :type :vl-bad-function-input
                        :msg "In ~a0, input ~s1 has unsupported type ~s2."
                        :args (list function x1.name x1.type)))))
-    (vl-taskportlist-types-okp (cdr x) warnings function)))
+    (vl-portdecllist-types-okp (cdr x) warnings function)))
 
 (define vl-funinput-to-vardecl
   :parents (vl-funtemplate-p)
   :short "Convert a function's input declaration into a net declaration for its
 funtemplate."
-  ((x vl-taskport-p))
+  ((x vl-portdecl-p))
   :returns (vardecl vl-vardecl-p)
   :long "<p>We assume the input is okay in the sense of @(see
-vl-taskportlist-types-okp).</p>"
-  (b* (((vl-taskport x) x)
-       (name-atom (make-vl-atom :guts (make-vl-string :value x.name)))
-       (type (make-vl-coretype :name :vl-logic
-                               :pdims (and x.range (list x.range))
-                               :signedp (eq x.type :vl-signed))))
+vl-portdecllist-types-okp).</p>"
+  (b* (((vl-portdecl x) x)
+       (name-atom (make-vl-atom :guts (make-vl-string :value x.name))))
     (make-vl-vardecl :name  x.name
-                     :type  type
-                     :nettype :vl-wire
+                     :type  x.type
                      :atts  (acons "VL_FUNCTION_INPUT" name-atom x.atts)
                      :loc   x.loc)))
 
-(defprojection vl-funinputlist-to-vardecls ((x vl-taskportlist-p))
+(defprojection vl-funinputlist-to-vardecls ((x vl-portdecllist-p))
   :parents (vl-funtemplate-p)
   :returns (nets vl-vardecllist-p)
   (vl-funinput-to-vardecl x))
@@ -1325,13 +1321,13 @@ unsupported constructs or doesn't meet our other sanity criteria.</p>"
   (b* (((vl-fundecl x) x)
        (real-decls (vl-remove-fake-function-vardecls x.decls))
 
-       ((unless (or (eq x.rtype :vl-unsigned)
-                    (eq x.rtype :vl-signed)))
-        (mv nil (fatal :type :vl-bad-function
-                       :msg "In ~a0, we do not support functions with return ~
-                             types other than plain/reg or 'signed', but this ~
-                             function has type ~s1."
-                       :args (list x x.rtype))))
+       ;; ((unless (or (eq x.rtype :vl-unsigned)
+       ;;              (eq x.rtype :vl-signed)))
+       ;;  (mv nil (fatal :type :vl-bad-function
+       ;;                 :msg "In ~a0, we do not support functions with return ~
+       ;;                       types other than plain/reg or 'signed', but this ~
+       ;;                       function has type ~s1."
+       ;;                 :args (list x x.rtype))))
 
        ((mv vardecls paramdecls)
         (vl-filter-blockitems real-decls))
@@ -1347,26 +1343,22 @@ unsupported constructs or doesn't meet our other sanity criteria.</p>"
        ((mv okp warnings) (vl-fun-vardecllist-types-okp vardecls warnings x))
        ((unless okp) (mv nil warnings)) ;; already warned
 
-       ((mv okp warnings) (vl-taskportlist-types-okp x.inputs warnings x))
+       ((mv okp warnings) (vl-portdecllist-types-okp x.portdecls warnings x))
        ((unless okp) (mv nil warnings)) ;; already warned
 
        ((mv okp warnings assigns) (vl-funbody-to-assignments x warnings))
        ((unless okp) (mv nil warnings)) ;; already warned
 
        (funname-atom (make-vl-atom :guts (make-vl-funname :name x.name)))
-       (result-type  (make-vl-coretype :name :vl-logic
-                                       :pdims (and x.rrange (list x.rrange))
-                                       :signedp (eq x.rtype :vl-signed)))
-       (result-net   (make-vl-vardecl :name    x.name
-                                      :type    result-type
-                                      :nettype :vl-wire
+       (result-var   (make-vl-vardecl :name    x.name
+                                      :type    x.rettype
                                       :atts    (list (cons "VL_FUNCTION_RETURN" funname-atom))
                                       :loc     x.loc))
        (template     (make-vl-funtemplate
                       :name    x.name
-                      :inputs  (vl-funinputlist-to-vardecls x.inputs)
+                      :inputs  (vl-funinputlist-to-vardecls x.portdecls)
                       :locals  (vl-fun-vardecllist-to-vardecls vardecls)
-                      :out     result-net
+                      :out     result-var
                       :assigns assigns)))
 
     (mv template warnings)))
