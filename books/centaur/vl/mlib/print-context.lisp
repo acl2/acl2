@@ -33,7 +33,7 @@
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
-(local (xdoc::set-default-parents context))
+(local (xdoc::set-default-parents vl-context))
 
 (define vl-pp-ctxelement-summary
   :short "Print a short, human-friendly description of a @(see vl-ctxelement-p)."

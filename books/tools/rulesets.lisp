@@ -61,21 +61,20 @@ rules to the contained rulesets.</p>")
 ; BOZO this documentation is incomplete and doesn't really explain ruleset
 ; designators and fancy things like rules-of-class.  Oh well, maybe someday.
 
-(defun get-ruleset (name world)
-  (let* ((ruleset-alist (table-alist 'ruleset-table world)))
-    (cdr (assoc name ruleset-alist))))
-
-(defmacro ruleset (name)
-  `(get-ruleset ,name world))
-
-(defxdoc get-ruleset
+(defsection get-ruleset
   :parents (rulesets)
   :short "See what currently constitutes a ruleset"
   :long "<p>Example usage:</p>
 
- @({
- (get-ruleset 'my-ruleset (w state))
- )}")
+@({ (get-ruleset 'my-ruleset (w state)) })"
+
+  (defun get-ruleset (name world)
+    (let* ((ruleset-alist (table-alist 'ruleset-table world)))
+      (cdr (assoc name ruleset-alist)))))
+
+(defmacro ruleset (name)
+  `(get-ruleset ,name world))
+
 
 (defun is-ruleset (name world)
   (let* ((ruleset-alist (table-alist 'ruleset-table world)))

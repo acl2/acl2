@@ -26,7 +26,7 @@
 ; FAST ALIST UTILITIES -----------------------------------------------------
 
 (defsection make-fal
-  :parents (hons-and-memoization)
+  :parents (fast-alists)
   :short "Make a fast alist out of an alist."
   :long "<p>Note: it is usually better to use @(see make-fast-alist).</p>
 
@@ -228,7 +228,7 @@ an existing fast alist like @('make-fal').</p>"
          (list 'hons (car x) (cons 'hons-list* (cdr x))))))
 
 (defsection hons-make-list
-  :parents (hons-and-memoization make-list)
+  :parents (fast-alists make-list)
   :short "Like @(see make-list), but produces honses."
 
   (defn hons-make-list-acc (n val ac)
@@ -400,8 +400,8 @@ an existing fast alist like @('make-fal').</p>"
      '(value-triple :skipping-memoization))))
 
 (defsection hons-sublis
-  :parents (hons-and-memoization sublis)
-  :short "Memoized version of SUBLIS which uses fast-alists."
+  :parents (hons sublis)
+  :short "@(tsee memoize)d version of SUBLIS which uses @(see fast-alists)."
   :long "<p>@('(hons-sublis fal x)') is like @(see sublis), but may be faster
 in two ways.</p>
 

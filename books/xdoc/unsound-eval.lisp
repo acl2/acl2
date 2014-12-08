@@ -37,6 +37,7 @@
 ; cert_param: (ansi-only)
 
 (define unsound-eval
+  :parents (interfacing-tools programming-with-state)
   :short "A somewhat robust evaluator."
   ((sexpr "An s-expression to evaluate, typically this should be a well-formed
            ACL2 form without guard violations, etc.  It may mention @(see

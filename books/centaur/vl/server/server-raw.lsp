@@ -257,10 +257,7 @@ with are not normed.</p>")
 ; Space of the loader thread.
 
   (declare (type vls-transdb db))
-
   (cl-user::format t "Running vls-loader-thread in ~a" (bt:thread-name (bt:current-thread)))
-  (cl-user::format t "Hons summary for loader thread:~%")
-
   (bt:with-lock-held
    ;; If it's already loaded, don't try to load it again.
    ((vls-transdb-loaded-lock db))
@@ -297,13 +294,17 @@ with are not normed.</p>")
   (let (#+hons
         (acl2::*default-hs*
          ;; Bigger sizes might be better for large models, but it might be nice
-         ;; not to grow these beyond reason...
-         (time$ (acl2::hl-hspace-init :addr-ht-size 100000000
-                                      :sbits-size   100000000)))
+         ;; not to grow these beyond reason.
+         ;; Bugfix 2014-12-05, do not call time$ here because it uses fmt, which
+         ;; uses evisceration, which uses hons-assoc-equal and hence goes digging
+         ;; through the hons space, which can cause hash table ownership problems.
+         (acl2::hl-hspace-init :addr-ht-size 100000000
+                               :sbits-size   100000000))
         (db *vls-transdb*))
     (cl-user::format t "; vls-loader-thread hons space allocated~%")
     (acl2::hons-summary)
     (acl2::hons-analyze-memory nil)
+    ;; (format t "In vls-loader-thread, hons space is at ~s~%" (ccl::%address-of acl2::*default-hs*))
     (loop do
           (handler-case
            (let ((tname (ts-dequeue (vls-transdb-load-queue db))))

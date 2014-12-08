@@ -84,7 +84,7 @@ column of the table @(see *vl-scopes->items*):</p>
 that scope representation into a fast alist, in which we look up the name.
 That way, subsequent lookups in the same scope will be constant-time.  This
 design means that you may occasionally need to free up memory associated with
-scopestacks; see @(see vl-scopestack-free).</p>
+scopestacks; see @(see vl-scopestacks-free).</p>
 
 
 <h5>Construction and Maintenance</h5>
@@ -217,7 +217,7 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
   (defval *vl-scopes->items*
     :short "Information about the kinds of items in each scope."
     :long "<p>Note that this is only for items, i.e., it's not for definitions,
-  ports, packages, etc."
+  ports, packages, etc.</p>"
     '((interface    (:import)
                     paramdecl vardecl modport)
       (module       (:import)
@@ -629,7 +629,7 @@ in it, such as a function, task, or block statement."
           `(progn
              (define vl-__scope__-scope-find-__result__
                :ignore-ok t
-               :parents (vl-scope-find)
+               :parents (scopestack)
                ((name  stringp)
                 (scope vl-__scope__-p))
                :returns (item    (iff (__resulttype__ item) item))
@@ -640,7 +640,7 @@ in it, such as a function, task, or block statement."
                                   substs))))
 
              (define vl-__scope__-scope-__result__-alist
-               :parents (vl-scope-find)
+               :parents (vl-__scope__-scope-find-__result__)
                :ignore-ok t
                ((scope vl-__scope__-p)
                 acc)

@@ -314,5 +314,26 @@
           (acl2::msg "syrupy: ~x0 buttery: ~x1 messy: ~x2~%" t nil nil))))
 
 
+(defaggregate student
+  ((firstname stringp)
+   (lastname  stringp)
+   (grade     natp))
+  :extra-binder-names (fullname))
+
+(define student->fullname ((x student-p))
+  :returns (fullname stringp :rule-classes :type-prescription)
+  (concatenate 'string
+               (student->firstname x)
+               " "
+               (student->lastname x)))
+
+(assert! (equal (b* ((fred (make-student :firstname "Fredrick"
+                                         :lastname "Flintstone"
+                                         :grade 7))
+                     ((student fred)))
+                  (concatenate 'string
+                               "Fred's full name is " fred.fullname "."))
+                "Fred's full name is Fredrick Flintstone."))
+
 
 

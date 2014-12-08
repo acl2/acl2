@@ -34,7 +34,7 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc ctxexprs
-  :parents (context)
+  :parents (vl-context)
   :short "Functions for gathering expressions and the context in which they
 occur."
 
@@ -47,7 +47,7 @@ expression with a @(see vl-context-p) describing its origin.</p>")
 (fty::defalist vl-exprctxalist
   :key-type vl-expr-p
   :val-type vl-context-p
-  :parents (context)
+  :parents (ctxexprs)
   :short "An alist binding @(see vl-expr-p)s to @(see vl-context-p)s."
   :long "<p>These alists are produced by our @(see ctxexprs) functions, and
 essentially say where some expressions are from.</p>"

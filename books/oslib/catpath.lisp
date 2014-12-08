@@ -83,6 +83,7 @@ clear what we should do to support other systems like Windows.</p>"
 
 
 (define catpaths
+  :parents (oslib)
   :short "Extend a base directory with many file names."
   ((basedir   stringp      "Directory whose name should be extended, which may
                             or may not end with a slash.")

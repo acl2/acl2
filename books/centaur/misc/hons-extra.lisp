@@ -35,7 +35,7 @@
 (include-book "tools/bstar" :dir :system)
 
 (defxdoc with-fast-alists
-  :parents (hons-and-memoization)
+  :parents (fast-alists)
   :short "Concisely call @(see with-fast-alist) on multiple alists."
   :long "<p>Example:</p>
 @({
@@ -148,7 +148,7 @@
 
 
 (defxdoc with-stolen-alists
-  :parents (hons-and-memoization)
+  :parents (fast-alists)
   :short "Concisely call @(see with-stolen-alist) on multiple alists."
   :long "<p>Example:</p>
 @({
@@ -226,7 +226,7 @@
 
 
 (defxdoc fast-alists-free-on-exit
-  :parents (hons-and-memoization)
+  :parents (fast-alists)
   :short "Concisely call ~ilc[fast-alist-free-on-exit] for several alists."
   :long "<p>For example:</p>
 

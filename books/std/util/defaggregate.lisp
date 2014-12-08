@@ -468,7 +468,52 @@ necessary.  In such cases, the ACL2 user will be presented with either \"unused
 variable\" or \"unbound variable\" error.  If you can come up with a
 non-contrived example where this is really a problem, we might consider
 developing some workaround, perhaps extended syntax that lets you suppress the
-optimization altogether.</p>")
+optimization altogether.</p>
+
+<h5>Extra Binder Names</h5>
+
+<p>You can instruct the @(see b*) binder to understand additional, \"derived\"
+fields for certain structures.</p>
+
+<p>Example.  Suppose we are dealing with @('student') structures that have
+separate @('firstname') and @('lastname') fields.  We might find that we often
+want to use the student's full name.  We can explain to the @(see b*) binder
+that we want it to understand the syntax @('x.fullname') by giving the
+@(':extra-binder-names') argument.</p>
+
+@({
+   (defaggregate student
+     ((firstname stringp)
+      (lastname  stringp)
+      (grade     natp))
+    :extra-binder-names (fullname))
+})
+
+<p>When we do this, the @(see b*) binder will look for occurrences of
+@('x.fullname') and, if any are found, it will bind them to
+@('(student->fullname x)').  For this to be work at all, we have to define this
+function ourselves, e.g.,:</p>
+
+@({
+   (define student->fullname ((x student-p))
+     :returns (fullname stringp :rule-classes :type-prescription)
+     (str::cat (student->firstname x)
+               \" \"
+               (student->lastname x)))
+})
+
+<p>Once we do this, we can freely write @('x.fullname') wherever we previously
+would have had to call @('(student->fullname x)').  For instance:</p>
+
+@({
+    (b* ((fred (make-student :firstname \"Fredrick\"
+                             :lastname \"Flintstone\"
+                             :grade 7))
+        ((student fred)))
+      (str::cat \"Fred's full name is \" fred.fullname \".\"))
+})
+
+<p>Nicely produces @('\"Fred's full name is Fredrick Flintstone\"').</p>")
 
 ;; <h4>Debug-mode (@(':debugp') parameter)</h4>
 

@@ -39,10 +39,30 @@
 (include-book "base")
 (include-book "book-thms")
 
+(defun acl2::colon-xdoc-initialized (state)
+
+; This interface function was added by Matt K. so that the proof-checker can
+; determine if xdoc is ready to go.  If we only use the ld-keyword-aliases to
+; determine that xdoc is available, then events will be submitted when xdoc is
+; invoked from within the proof-checker (see colon-xdoc-init).  This would
+; cause a weird complaint about make-event when exiting the proof-checker.
+
+; In general, it seems best only to submit events at the top-level of the ACL2
+; loop, so that ACL2 can handle them properly, for example laying down
+; command-markers appropriately.  This interface function can be used by other
+; applications (besides the proof-checker) in order to avoid calling xdoc when
+; this would create events.
+
+; This function is in the ACL2 package so that it can be run even when the
+; "XDOC" package is not present.
+
+  (declare (xargs :stobjs state :mode :program))
+  (cdr (assoc 'colon-xdoc-support-loaded (table-alist 'xdoc (w state)))))
+
 (defmacro colon-xdoc-init ()
   '(with-output :off (summary event observation)
      (make-event
-      (if (not (cdr (assoc 'colon-xdoc-support-loaded (table-alist 'xdoc (w state)))))
+      (if (not (acl2::colon-xdoc-initialized state))
         `(progn
            (include-book ;; newlines to fool dependency scanner
             "xdoc/defxdoc-raw" :dir :system :ttags :all)

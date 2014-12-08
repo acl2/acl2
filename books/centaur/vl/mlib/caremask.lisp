@@ -37,8 +37,14 @@
 (local (std::add-default-post-define-hook :fix))
 
 
+(defxdoc caremask
+  :parents (mlib)
+  :short "Functions for computing bitmasks for, e.g., casez/casezx statements
+and wildcard equality operators.")
+
+(local (xdoc::set-default-parents caremask))
+
 (define vl-intliteral-msb-bits
-  :parents (vl-casezx-matchexpr)
   :short "Try to explode a match-expression into a @(see vl-bitlist-p)."
 
   ((x vl-expr-p

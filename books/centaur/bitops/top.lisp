@@ -277,9 +277,8 @@ recursive definitions.</p>
 
 <h5>@(see bitops/fast-rotate)</h5>
 
-<p>This book defines @(see fast-rotate-left) and @(see
-fast-rotate-right) operations that are proved equivalent to @(see
-rotate-left) and @(see rotate-right) respectively.</p>
+<p>This book defines @(see fast-rotate) operations that are proved equivalent
+to @(see rotate-left) and @(see rotate-right).</p>
 
 <h5>@(see bitops/saturate)</h5>
 

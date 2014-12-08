@@ -62,7 +62,7 @@
 
 
 (defsection maybe-wash-memory
-  :parents (hons-and-memoization)
+  :parents (hons)
   :short "Conditionally trigger a @(see hons-wash) and also @(see
   clear-memoize-tables) to reclaim memory in ACL2(h).  (CCL only; requires a
   trust tag)"

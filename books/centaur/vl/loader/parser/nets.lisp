@@ -66,8 +66,6 @@
 (defconst *vl-nettypes-kwds*
   (strip-cars *vl-nettypes-kwd-alist*))
 
-(defoption vl-maybe-nettypename-p vl-nettypename-p)
-
 (defparser vl-parse-optional-nettype ()
   :result (vl-maybe-nettypename-p val)
   :resultp-of-nil t

@@ -110,6 +110,7 @@ the books without worrying overly much about escaping.</p>")
 
 
 (defxdoc working-with-packages
+  :parents (best-practices packages)
   :short "How to set up new package and portcullis files."
 
   :long "<h4>Recommendations</h4>

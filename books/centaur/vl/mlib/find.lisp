@@ -469,7 +469,7 @@ fast alists binding names to items that can be used for this purpose.</p>")
         (define vl-__type__list-alist ((x vl-__type__list-p) acc)
           :returns (alist (equal (vl-__type__-alist-p alist)
                                  (vl-__type__-alist-p acc)))
-          :short (cat "Extend an alist by binding the names of @(see "
+          :short (cat "Extend an alist by binding the names of @(see VL-"
                       (symbol-name '__type__)
                       ")s to their definitions.")
           :long (cat "<p>This can be used as an alternative to @(see " (symbol-name '__find__)

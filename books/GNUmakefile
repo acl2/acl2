@@ -573,7 +573,8 @@ CLEAN_FILES_EXPLICIT := \
    centaur/getopt/demo2.gcl \
    centaur/getopt/demo2.lw \
    centaur/getopt/demo2.lx86cl64 \
-   centaur/getopt/demo2.ccl
+   centaur/getopt/demo2.ccl \
+   nonstd/workshops/1999/calculus/book/outline/
 
 MORECLEAN_FILES_EXPLICIT := \
    doc/manual \

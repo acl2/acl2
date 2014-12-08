@@ -46,6 +46,8 @@ produces a @(see vl-immdepgraph-p) which has information about the immediate
 dependencies between the design elements and any missing dependencies.</p>")
 
 (define vl-scopestack-toplevel-p
+  ;; BOZO move me to mlib/scopestack
+  :parents (scopestack)
   :short "Does this scopestack refer to the top level of the design?"
   ((ss vl-scopestack-p))
   (vl-scopestack-case ss
@@ -71,7 +73,7 @@ dependencies between the design elements and any missing dependencies.</p>")
 
    (deps     string-listp
              "List of dependencies that have been collected.  Note that for
-              compatibility with @(see toposort), we <b>exclude</b> any
+              compatibility with @(see depgraph::toposort), we <b>exclude</b> any
               dependencies that are not found as top-level design elements.
               For instance, if we find a module instance of module @('foo'),
               but @('foo') is not defined, we do <i>not</i> include a
@@ -1172,7 +1174,7 @@ elements.")
 (fty::defalist vl-depgraph
   :parents (immdeps)
   :short "A basic dependency graph.  Binds each node to the list of nodes it
-depends on.  The format is compatible with @(see toposort)."
+depends on.  The format is compatible with @(see depgraph::toposort)."
   :key-type stringp
   :val-type string-listp
   :keyp-of-nil nil

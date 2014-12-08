@@ -35,7 +35,7 @@
 (include-book "mergesort-alist-values")
 
 (defxdoc depgraph
-  :parents (alists)   ;; BOZO where would be a better place for this?
+  :parents (acl2::alists)
   :short "A small library for working with dependency graphs."
 
   :long "<p>This is just a small collection of basic graph algorithms for
@@ -44,8 +44,9 @@ working with dependency graphs.</p>
 
 <h3>Graph Representation</h3>
 
-<p>We represent dependency graphs as simple @(see alist)s that bind nodes to
-the lists of nodes they (directly) depend on.  For instance, a graph like</p>
+<p>We represent dependency graphs as simple @(see acl2::alists) that bind nodes
+to the lists of nodes they (directly) depend on.  For instance, a graph
+like</p>
 
 @({
       A ----->  B ---> C
@@ -68,12 +69,12 @@ the lists of nodes they (directly) depend on.  For instance, a graph like</p>
 entries are ignored.</p>
 
 <p>There are no restrictions on the kinds of nodes that a graph can contain.
-However, our algorithms are generally based on @(see fast-alists), so for good
-performance:</p>
+However, our algorithms are generally based on @(see acl2::fast-alists), so for
+good performance:</p>
 
 <ul>
 
-<li>It is helpful for the nodes to be @(see normed) objects.  (This isn't
+<li>It is helpful for the nodes to be @(see acl2::normed) objects.  (This isn't
 strictly necessary; the nodes will be normed as needed.)</li>
 
 <li>It is helpful for @('graph') to be a fast alist.  (This isn't strictly

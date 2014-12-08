@@ -89,8 +89,8 @@ optimization is logically invisible via @(see mbe).</p>")
        :short (cat "Non fast-alist version of @(see " (symbol-name '[reorder-foos]) "), used
                     when the lists are really short.")
        :long (cat "<p>You should ordinarily never reason about this because of the
-                   following rule, which we leave enabled.</p> @(def "
-                  (symbol-name '[slow-reorder-foos]-removal))
+                   following rule, which we leave enabled.</p>"
+                  "@(def " (symbol-name '[slow-reorder-foos]-removal) ")")
        :hooks nil
        (b* (((when (atom names))
              nil)

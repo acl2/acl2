@@ -155,14 +155,3 @@ disruptive to other proofs.</p>
 
   (add-default-hints!
    '((do-not-hint world stable-under-simplificationp state))))
-
-
-(defxdoc do-not
-  :parents (hints)
-  :short "hints keyword @(':do-not')"
-  :long "<p>See @(see hints) for documentation about the @(':do-not') keyword
-for theorem hints.</p>
-
-<p>See @(see do-not-hint) for documentation about the @('do-not') macro that
-controls the behavior of the @('do-not-hint'), a mechanism for automatically
-suggesting @(':do-not') hints.</p>")
