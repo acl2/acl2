@@ -1208,8 +1208,8 @@ throughout the rest of the module we only need one pass.</p>")
   (b* (((when (atom x))
         (mv t (ok)))
        ((vl-portdecl x1) (car x))
-       ((unless (or (eq x1.type :vl-unsigned)
-                    (eq x1.type :vl-signed)))
+       ((unless (and (eq (vl-datatype-kind x1.type) :vl-coretype)
+                     (member (vl-coretype->name x1.type) '(:vl-logic :vl-reg))))
         (mv nil (fatal :type :vl-bad-function-input
                        :msg "In ~a0, input ~s1 has unsupported type ~s2."
                        :args (list function x1.name x1.type)))))
