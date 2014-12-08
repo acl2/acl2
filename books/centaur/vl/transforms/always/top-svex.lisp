@@ -30,8 +30,6 @@
 
 (in-package "VL")
 (include-book "caseelim")
-(include-book "edgesplit")
-(include-book "edgesynth")
 (include-book "eliminitial")
 (include-book "../../util/cwtime")
 
@@ -46,6 +44,7 @@
 
   (b* ((x (xf-cwtime (vl-design-caseelim x)))
        (x (xf-cwtime (vl-design-eliminitial x)))
-       (x (xf-cwtime (vl-design-edgesplit x)))
-       (x (xf-cwtime (vl-design-edgesynth x :vecp t))))
+       ;; (x (xf-cwtime (vl-design-edgesplit x)))
+       ;; (x (xf-cwtime (vl-design-edgesynth x :vecp t)))
+       )
     x))
