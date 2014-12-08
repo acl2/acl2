@@ -2971,12 +2971,11 @@ endmodule
                :rule-classes :type-prescription
                "Name of this function, e.g., @('lower_bits') below.")
 
-   (automaticp booleanp
-               :rule-classes :type-prescription
-               "Says whether the @('automatic') keyword was provided.  This
-                keyword indicates that the function should be reentrant and
-                have its local parameters dynamically allocated for each
-                function call, with various consequences.")
+   (lifetime   vl-lifetime-p
+               "Indicates whether an explicit @('automatic') or @('static')
+                lifetime was provided.  An automatic function is supposed to be
+                reentrant and have its local parameters dynamically allocated
+                for each function call, with various consequences.")
 
    (rettype    vl-datatype-p
                "Return type of the function, e.g., a function might return an
@@ -3059,14 +3058,13 @@ extra declarations are created automatically by the loader.</p>")
                :rule-classes :type-prescription
                "The name of this task.")
 
-   (automaticp booleanp
-               :rule-classes :type-prescription
-               "Says whether the @('automatic') keyword was provided.  This
-                keyword indicates that each invocation of the task has its own
-                copy of its variables.  For instance, the task below had
-                probably better be automatic if it there are going to be
-                concurrent instances of it running, since otherwise @('temp')
-                could be corrupted by the other task.")
+   (lifetime   vl-lifetime-p
+               "Indicates whether an explicit @('automatic') or @('static')
+                lifetime was provided.  Each invocation of an automatic task
+                has its own copy of its variables.  For instance, the task
+                below had probably better be automatic if it there are going to
+                be concurrent instances of it running, since otherwise
+                @('temp') could be corrupted by the other task.")
 
    (portdecls  vl-portdecllist-p
                "The input, output, and inout ports for the task.")

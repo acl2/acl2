@@ -33,13 +33,15 @@
 (include-book "../functions")
 
 (defund taskport-summary (x)
-  (declare (xargs :guard (vl-taskport-p x)))
-  (b* (((vl-taskport x) x))
-    (list x.name x.dir x.type (vl-pretty-maybe-range x.range))))
+  (declare (xargs :guard (vl-portdecl-p x)))
+  (b* (((vl-portdecl x) x))
+    (list x.name
+          x.dir
+          (vl-pretty-datatype x.type))))
 
 (defprojection taskportlist-summary (x)
   (taskport-summary x)
-  :guard (vl-taskportlist-p x))
+  :guard (vl-portdecllist-p x))
 
 (defparser-top vl-parse-taskport-list)
 
@@ -47,7 +49,8 @@
   `(with-output
      :off summary
      (assert! (b* ((tokens (make-test-tokens ,input))
-                   (config *vl-default-loadconfig*)
+                   (config (change-vl-loadconfig *vl-default-loadconfig*
+                                                 :edition :verilog-2005))
                    (pstate (make-vl-parsestate :warnings 'blah-warnings))
                    ((mv erp val tokens (vl-parsestate pstate))
                     (vl-parse-taskport-list-top))
@@ -78,72 +81,72 @@
                       :successp nil)
 
 (test-parse-taskports :input "input a"
-                      :summary (("a" :vl-input :vl-unsigned (no-range))))
+                      :summary (("a" :vl-input (:vl-logic unsigned))))
 
 (test-parse-taskports :input "input a, b"
-                      :summary (("a" :vl-input :vl-unsigned (no-range))
-                                ("b" :vl-input :vl-unsigned (no-range))))
+                      :summary (("a" :vl-input (:vl-logic unsigned))
+                                ("b" :vl-input (:vl-logic unsigned))))
 
 (test-parse-taskports :input "input a, b, c, d"
-                      :summary (("a" :vl-input :vl-unsigned (no-range))
-                                ("b" :vl-input :vl-unsigned (no-range))
-                                ("c" :vl-input :vl-unsigned (no-range))
-                                ("d" :vl-input :vl-unsigned (no-range))))
+                      :summary (("a" :vl-input (:vl-logic unsigned))
+                                ("b" :vl-input (:vl-logic unsigned))
+                                ("c" :vl-input (:vl-logic unsigned))
+                                ("d" :vl-input (:vl-logic unsigned))))
 
 ;; bozo we're currently ignoring reg.  does it mean anything?
 (test-parse-taskports :input "input reg a"
-                      :summary (("a" :vl-input :vl-unsigned (no-range))))
+                      :summary (("a" :vl-input (:vl-logic unsigned))))
 
 (test-parse-taskports :input "input reg a, b"
-                      :summary (("a" :vl-input :vl-unsigned (no-range))
-                                ("b" :vl-input :vl-unsigned (no-range))))
+                      :summary (("a" :vl-input (:vl-logic unsigned))
+                                ("b" :vl-input (:vl-logic unsigned))))
 
 (test-parse-taskports :input "input signed a"
-                      :summary (("a" :vl-input :vl-signed (no-range))))
+                      :summary (("a" :vl-input (:vl-logic signed))))
 
 (test-parse-taskports :input "input signed a, b"
-                      :summary (("a" :vl-input :vl-signed (no-range))
-                                ("b" :vl-input :vl-signed (no-range))))
+                      :summary (("a" :vl-input (:vl-logic signed))
+                                ("b" :vl-input (:vl-logic signed))))
 
 
 (test-parse-taskports :input "input [3:0] a"
-                      :summary (("a" :vl-input :vl-unsigned (range 3 0))))
+                      :summary (("a" :vl-input (:vl-logic unsigned (range 3 0)))))
 
 (test-parse-taskports :input "input [3:0] a, b"
-                      :summary (("a" :vl-input :vl-unsigned (range 3 0))
-                                ("b" :vl-input :vl-unsigned (range 3 0))))
+                      :summary (("a" :vl-input (:vl-logic unsigned (range 3 0)))
+                                ("b" :vl-input (:vl-logic unsigned (range 3 0)))))
 
 (test-parse-taskports :input "input [3:0] a, b, \c , d"
-                      :summary (("a" :vl-input :vl-unsigned (range 3 0))
-                                ("b" :vl-input :vl-unsigned (range 3 0))
-                                ("c" :vl-input :vl-unsigned (range 3 0))
-                                ("d" :vl-input :vl-unsigned (range 3 0))
+                      :summary (("a" :vl-input (:vl-logic unsigned (range 3 0)))
+                                ("b" :vl-input (:vl-logic unsigned (range 3 0)))
+                                ("c" :vl-input (:vl-logic unsigned (range 3 0)))
+                                ("d" :vl-input (:vl-logic unsigned (range 3 0)))
                                 ))
 
 (test-parse-taskports :input "input signed [3:0] a"
-                      :summary (("a" :vl-input :vl-signed (range 3 0))))
+                      :summary (("a" :vl-input (:vl-logic signed (range 3 0)))))
 
 (test-parse-taskports :input "input signed [3:0] a, b"
-                      :summary (("a" :vl-input :vl-signed (range 3 0))
-                                ("b" :vl-input :vl-signed (range 3 0))))
+                      :summary (("a" :vl-input (:vl-logic signed (range 3 0)))
+                                ("b" :vl-input (:vl-logic signed (range 3 0)))))
 
 (test-parse-taskports :input "input reg [3:0] a"
-                      :summary (("a" :vl-input :vl-unsigned (range 3 0))))
+                      :summary (("a" :vl-input (:vl-logic unsigned (range 3 0)))))
 
 (test-parse-taskports :input "input reg signed [3:0] a"
-                      :summary (("a" :vl-input :vl-signed (range 3 0))))
+                      :summary (("a" :vl-input (:vl-logic signed (range 3 0)))))
 
 (test-parse-taskports :input "input integer a"
-                      :summary (("a" :vl-input :vl-integer (no-range))))
+                      :summary (("a" :vl-input (:vl-integer signed))))
 
 (test-parse-taskports :input "input real a"
-                      :summary (("a" :vl-input :vl-real (no-range))))
+                      :summary (("a" :vl-input (:vl-real unsigned))))
 
 (test-parse-taskports :input "input time a"
-                      :summary (("a" :vl-input :vl-time (no-range))))
+                      :summary (("a" :vl-input (:vl-time unsigned))))
 
 (test-parse-taskports :input "input realtime a"
-                      :summary (("a" :vl-input :vl-realtime (no-range))))
+                      :summary (("a" :vl-input (:vl-realtime unsigned))))
 
 
 ;; reg must come before signed
