@@ -2719,9 +2719,9 @@ expression into a string."
                  ps)
                (vl-ps-span "vl_key"
                            (vl-print "function ")
-                           (if x.automaticp
-                               (vl-print "automatic ")
-                             ps)
+                           (cond ((eq x.lifetime :vl-automatic) (vl-print "automatic "))
+                                 ((eq x.lifetime :vl-static)    (vl-print "static "))
+                                 (t                             ps))
                            (vl-pp-datatype x.rettype))
                (vl-print-wirename x.name)
                (vl-println ";")
@@ -2750,9 +2750,9 @@ expression into a string."
                  ps)
                (vl-ps-span "vl_key"
                            (vl-print "task ")
-                           (if x.automaticp
-                               (vl-print "automatic ")
-                             ps))
+                           (cond ((eq x.lifetime :vl-automatic) (vl-print "automatic "))
+                                 ((eq x.lifetime :vl-static)    (vl-print "static "))
+                                 (t                             ps)))
                (vl-print-wirename x.name)
                (vl-println ";")
                (vl-pp-portdecllist x.portdecls)
