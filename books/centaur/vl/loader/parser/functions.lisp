@@ -145,7 +145,7 @@ variable declaration plays well with @(see scopestack) and similar.</p>"
 (define vl-make-fundecl-for-parser
   :short "Main function the parser uses for creating function declarations."
   (&key (name       stringp)
-        (automaticp booleanp)
+        (lifetime   vl-lifetime-p)
         (rettype    vl-datatype-p)
         (inputs     vl-portdecllist-p)
         (decls      vl-blockitemlist-p)
@@ -163,7 +163,7 @@ information.</p>"
                                           (list (hons-copy "VL_HIDDEN_DECL_FOR_TASKPORT")))
                                    :loc  loc)))
     (make-vl-fundecl :name       name
-                     :automaticp automaticp
+                     :lifetime   lifetime
                      :rettype    rettype
                      :portdecls  inputs
                      :decls      (append port-vars (list ret-var) decls)
@@ -174,7 +174,7 @@ information.</p>"
 (define vl-make-taskdecl-for-parser
   :short "Main function the parser uses for creating task declarations."
   (&key (name       stringp)
-        (automaticp booleanp)
+        (lifetime   vl-lifetime-p)
         (ports      vl-portdecllist-p)
         (decls      vl-blockitemlist-p)
         (body       vl-stmt-p)
@@ -185,13 +185,13 @@ information.</p>"
 variables.  See the description of <i>decls</i> in @(see vl-taskdecl) for more
 information.</p>"
   (b* ((port-vars (vl-make-hidden-variables-for-portdecls ports)))
-    (make-vl-taskdecl :name name
-                      :automaticp automaticp
+    (make-vl-taskdecl :name      name
+                      :lifetime  lifetime
                       :portdecls ports
-                      :decls (append port-vars decls)
-                      :body body
-                      :atts atts
-                      :loc loc)))
+                      :decls     (append port-vars decls)
+                      :body      body
+                      :atts      atts
+                      :loc       loc)))
 
 
 
@@ -467,7 +467,7 @@ try to resume parsing after a problematic function."
                             ((unless (consp inputs))
                              (vl-parse-error "Function has no inputs."))
                             (ret (vl-make-fundecl-for-parser :name       (vl-idtoken->name name)
-                                                             :automaticp (if automatic t nil)
+                                                             :lifetime   (if automatic :vl-automatic nil)
                                                              :rettype    rettype
                                                              :inputs     inputs
                                                              :decls      blockitems
@@ -493,7 +493,7 @@ try to resume parsing after a problematic function."
                                                      (symbol-name (vl-portdecl->dir non-input)))))
                           ;; (consp inputs) is automatic from vl-parse-taskport-list.
                           (ret (vl-make-fundecl-for-parser :name       (vl-idtoken->name name)
-                                                           :automaticp (if automatic t nil)
+                                                           :lifetime   (if automatic :vl-automatic nil)
                                                            :rettype    rettype
                                                            :inputs     inputs
                                                            :decls      blockitems
@@ -583,13 +583,13 @@ try to resume parsing after a problematic function."
                       (return
                        (b* (((mv ports blockitems)
                              (vl-filter-portdecl-or-blockitem-list decls))
-                            (ans (vl-make-taskdecl-for-parser :name       (vl-idtoken->name name)
-                                                              :automaticp (if automatic t nil)
-                                                              :ports      ports
-                                                              :decls      blockitems
-                                                              :body       stmt
-                                                              :atts       atts
-                                                              :loc        (vl-token->loc task))))
+                            (ans (vl-make-taskdecl-for-parser :name     (vl-idtoken->name name)
+                                                              :lifetime (if automatic :vl-automatic nil)
+                                                              :ports    ports
+                                                              :decls    blockitems
+                                                              :body     stmt
+                                                              :atts     atts
+                                                              :loc      (vl-token->loc task))))
                          (list ans))))
 
                     ;; Variant 2.
@@ -601,13 +601,13 @@ try to resume parsing after a problematic function."
                     (stmt       := (vl-parse-statement-or-null))
                     (:= (vl-match-token :vl-kwd-endtask))
                     (return
-                     (list (vl-make-taskdecl-for-parser :name       (vl-idtoken->name name)
-                                                        :automaticp (if automatic t nil)
-                                                        :ports      ports
-                                                        :decls      blockitems
-                                                        :body       stmt
-                                                        :atts       atts
-                                                        :loc        (vl-token->loc task))))))
+                     (list (vl-make-taskdecl-for-parser :name     (vl-idtoken->name name)
+                                                        :lifetime (if automatic :vl-automatic nil)
+                                                        :ports    ports
+                                                        :decls    blockitems
+                                                        :body     stmt
+                                                        :atts     atts
+                                                        :loc      (vl-token->loc task))))))
 
               ((unless err)
                (mv nil val tokstream)))
@@ -636,7 +636,494 @@ try to resume parsing after a problematic function."
 ;
 ; -----------------------------------------------------------------------------
 
-; BOZO these are completely wrong, just stubs for now.
+;; BOZO what are function prototypes and do we care?
+;; function_prototype ::= 'function' data_type_or_void identifier [ '(' [tf_port_list] ')' ]
+
+(defsection parse-functions-sv2012
+  :short "Parsing of functions and task for SystemVerilog.")
+
+(local (xdoc::set-default-parents parse-functions-sv2012))
+
+(defparser vl-parse-function-data-type-or-implicit ()
+  :short "Matches @('function_data_type_or_implicit')."
+  :result (vl-datatype-p val)
+  :fails gracefully
+  :count weak
+  :long "<p>Grammar rules:</p>
+
+@({
+    function_data_type_or_implicit ::= data_type_or_void
+                                     | implicit_data_type
+
+    data_type_or_void ::= data_type | 'void'
+})"
+  (seq tokstream
+       (when (vl-is-token? :vl-kwd-void)
+         (return (make-vl-coretype :name :vl-void)))
+       (ans := (vl-parse-datatype-or-implicit))
+       (return ans)))
+
+(defparser vl-parse-function-statements-aux ()
+  :parents (vl-parse-function-statements)
+  :result (vl-stmtlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong-on-value
+  (seq tokstream
+       (when (vl-is-token? :vl-kwd-endfunction)
+         (return nil))
+       (stmt1 := (vl-parse-statement-or-null))
+       (rest := (vl-parse-function-statements-aux))
+       (return (cons stmt1 rest))))
+
+(defparser vl-parse-function-statements ()
+  :short "Matches @('{ function_statement_or_null }') and returns a single statement."
+  :result (vl-stmt-p val)
+  :resultp-of-nil nil
+  :true-listp nil
+  :fails gracefully
+  :count weak
+  :long "<p>In Verilog-2005 a function's body can be a single statement.
+However, in SystemVerilog this is extended to a list of:</p>
+
+@({
+     function_statement_or_null ::= function_statement
+                                  | { attribute_instance } ';'
+
+     function_statement ::= statement
+})
+
+<p>For greater compatibility between Verilog-2005 and SystemVerilog-2012, if we
+encounter a function whose body is a list of statements, we convert it into an
+implicit begin/end block.</p>
+
+<p>In the case of tasks, there is evidence that this begin/end treatment is
+reasonable.  From Page 287:</p>
+
+<blockquote>\"Multiple statements can be written between the task declaration
+and endtask.  Statements are executed sequentially, the same as if they were
+enclosed in a @('begin .... end') group. It shall also be legal to have no
+statements at all.\"</blockquote>
+
+<p>Similar language is used to describe functions on page 291.</p>"
+
+  (seq tokstream
+       (stmts := (vl-parse-function-statements-aux))
+       (when (atom stmts)
+         (return (make-vl-nullstmt)))
+       (when (atom (cdr stmts))
+         ;; A single statement.  No need to add a block.
+         (return (car stmts)))
+       (return (make-vl-blockstmt :sequentialp t
+                                  :stmts stmts))))
+
+(local (defthm vl-packeddimensionlist-p-when-vl-rangelist-p
+         (implies (vl-rangelist-p x)
+                  (vl-packeddimensionlist-p x))
+         :hints(("Goal" :induct (len x)))))
+
+(local (defthm vl-idtoken-p-of-car-by-vl-is-token-crock
+         (implies (vl-is-token? :vl-idtoken)
+                  (vl-idtoken-p (car (vl-tokstream->tokens))))
+         :hints(("Goal" :in-theory (enable vl-is-token?)))))
+
+(defparser vl-parse-tf-port-item (prev)
+  :short "Matches @('tf_port_item'), not for prototypes."
+  :guard (or (not prev)
+             (vl-portdecl-p prev))
+  :result (vl-portdecl-p val)
+  :resultp-of-nil nil
+  :true-listp nil
+  :fails gracefully
+  :count strong
+  :long "<p>If we ever implement prototypes, this isn't the right function,
+because we assume that we have names for the items.</p>
+
+<p>These items occur in @('tf_port_list') in a C-style function declaration
+such as:</p>
+
+@({
+       function foo (input int a, logic [3:0] b, c); ... endfunction
+})
+
+<p>The @('tf_port_item')s here are @('input int a'), @('logic [3:0] b'), and
+@('c').  We will represent these using @(see vl-portdecl)s.</p>
+
+
+<h5>Type Determination</h5>
+
+<p>The type of each @('tf_port_item') may be explicitly declared or inherited
+from the previous argument.  To support this, we take as input the previously
+parsed port, if there is a previous port, so that we can infer our type from
+it, if necessary.</p>
+
+<p>SystemVerilog-2012 gives rules for inferring data types</p>
+<ul>
+<li>For tasks arguments in Section 13.3, Page 287, and</li>
+<li>For function arguments in Section 13.4, page 291.</li>
+</ul>
+
+<p>In both cases identical language is used:</p>
+
+<blockquote>\"If the data type is not explicitly declared, then the default
+data type is logic if it is the first argument or if the argument direction is
+explicitly specified.  Otherwise the data type is inherited from the previous
+argument.\"</blockquote>
+
+
+<h5>Direction Determination</h5>
+
+<p>Per 13.3 (Page 287), regarding tasks:</p>
+
+<blockquote>\"There is a default direction of @('input') if no direction has
+been specified.  Once a direction is given, subsequent formals default to the
+same direction.\"</blockquote>
+
+<h5>Grammar rules:</h5>
+
+@({
+     tf_port_item ::= {attribute_instance}
+                      [tf_port_direction] ['var'] data_type_or_implicit
+                      [ identifier {variable_dimension} [ = expression ] ]
+
+        ((footnote: it shall be illegal to omit the explicit port_identifier
+                    except within a function_prototype or task_prototype.))
+
+     tf_port_direction ::= direction | 'const' 'ref'
+
+})"
+  (seq tokstream
+       (atts := (vl-parse-0+-attribute-instances))
+       (dir  := (vl-parse-optional-port-direction))
+       (when (vl-is-token? :vl-kwd-const)
+         (return-raw
+          (vl-parse-error "BOZO need to implement 'const ref' port on tasks/functions.")))
+       (when (vl-is-token? :vl-kwd-var)
+         (var := (vl-match)))
+
+       ;; Styled after vl-parse-port-declaration-head-2012.  We'll check for the
+       ;; implicit data type case first.
+       ;;
+       ;;    data_type_or_implicit ::= data_type | implicit_data_type
+       ;;    implicit_data_type    ::= [ signing ] { packed_dimension }
+       (when (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned))
+         (signing := (vl-match)))
+       (when (vl-is-token? :vl-lbrack)
+         (ranges := (vl-parse-0+-ranges)))
+       (when (or signing ranges)
+         ;; Definitely in the implicit case.
+         (name := (vl-match-token :vl-idtoken))
+         (udims := (vl-parse-0+-ranges))
+         (when (vl-is-token? :vl-equalsign)
+           (return-raw
+            (vl-parse-error "BOZO implement default values for task/function arguments.")))
+         (return (make-vl-portdecl
+                  :name (vl-idtoken->name name)
+                  :loc  (vl-token->loc name)
+                  ;; See direction determination: use explicit direction, or
+                  ;; inherit previous direction, or use input if this is the
+                  ;; first port.
+                  :dir  (cond (dir  dir)
+                              (prev (vl-portdecl->dir prev))
+                              (t    :vl-input))
+                  :type (make-vl-coretype :name :vl-logic
+                                          :signedp (and signing
+                                                        (eq (vl-token->type signing) :vl-kwd-signed))
+                                          :pdims ranges
+                                          :udims udims)
+                  :atts atts
+                  :nettype nil)))
+
+       ;; If we get here, we know there is no implicit data type.  Per the footnote
+       ;; we know there must be a name for this port, so the possibilities for what
+       ;; comes next are either:
+       ;; (1) ``data_type  name``
+       ;; (2) no data type, just ``name``
+       ;;
+       ;; Since a data_type can also be an identifier, to disambiguate, we'll
+       ;; check whether we have an identifier that is NOT a type name.
+       (when (and (vl-is-token? :vl-idtoken)
+                  (not (vl-parsestate-is-user-defined-type-p
+                        (vl-idtoken->name (car (vl-tokstream->tokens)))
+                        (vl-tokstream->pstate))))
+         ;; Identifier that is not a known type.  We must be in the empty
+         ;; implicit case then, i.e., this is a plain, type-free or 'var' type
+         ;; port.
+         (name := (vl-match))
+         (udims := (vl-parse-0+-ranges))
+         (when (vl-is-token? :vl-equalsign)
+           (return-raw
+            (vl-parse-error "BOZO implement default values for task/function arguments.")))
+         (return (make-vl-portdecl
+                  :name (vl-idtoken->name name)
+                  :loc  (vl-token->loc name)
+                  ;; See direction determination: use explicit direction, or
+                  ;; inherit previous direction, or use input if this is the
+                  ;; first port.
+                  :dir  (cond (dir  dir)
+                              (prev (vl-portdecl->dir prev))
+                              (t    :vl-input))
+                  :type (if (or var dir (not prev))
+                            ;; In these cases we're to assume it's a logic wire
+                            ;; and not try to inherit a type from the previous port.
+                            ;;
+                            ;;   - VAR: I think if there's a only just a VAR
+                            ;;     keyword, then that should still count as
+                            ;;     being a type (logic), because that's how it
+                            ;;     works in module ports.
+                            ;;
+                            ;;   - DIR: If there's a direction but no type,
+                            ;;     then we're to assume it's a logic and not
+                            ;;     inherit the previous port's type.  See "Type
+                            ;;     Determination" above.
+                            ;;
+                            ;;   - (NOT PREV): If it's the first port and
+                            ;;     there's no type, then we're to assume it's a
+                            ;;     logic.
+                            (make-vl-coretype :name :vl-logic
+                                              :signedp nil
+                                              :pdims nil
+                                              :udims udims)
+                          ;; Otherwise, there's no type information at all, and
+                          ;; there's no direction, so inherit from the previous
+                          ;; port.
+                          (vl-portdecl->type prev))
+                  :atts atts
+                  :nettype nil)))
+
+       ;; The only remaining possibility is that we have an explicit data type.
+       (type  := (vl-parse-datatype))
+       (name  := (vl-match-token :vl-idtoken))
+       (udims := (vl-parse-0+-ranges))
+       (when (vl-is-token? :vl-equalsign)
+         (return-raw
+          (vl-parse-error "BOZO implement default values for task/function arguments.")))
+       (return (make-vl-portdecl
+                :name (vl-idtoken->name name)
+                :loc  (vl-token->loc name)
+                :dir  (cond (dir  dir)
+                            (prev (vl-portdecl->dir prev))
+                            (t    :vl-input))
+                :type (vl-datatype-update-udims udims type)
+                :atts atts
+                :nettype nil))))
+
+(defparser vl-parse-tf-port-list-aux (prev)
+  :parents (vl-parse-tf-port-list)
+  :guard (or (not prev)
+             (vl-portdecl-p prev))
+  :result (vl-portdecllist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :count strong
+  :fails gracefully
+  (seq tokstream
+       (first := (vl-parse-tf-port-item prev))
+       (unless (vl-is-token? :vl-comma)
+         (return (list first)))
+       (:= (vl-match))
+       (rest := (vl-parse-tf-port-list-aux first))
+       (return (cons first rest))))
+
+(defparser vl-parse-tf-port-list ()
+  :short "Matches @('tf_port_list'), not for prototypes."
+  :result (vl-portdecllist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :count strong
+  :fails gracefully
+  (seq tokstream
+       (ans := (vl-parse-tf-port-list-aux nil))
+       (return ans)))
+
+(defaggregate vl-tf-parsed-var-id
+  :short "Temporary structure used when parsing @('list_of_tf_variable_identifiers)."
+  :tag :vl-tf-parsed-var-id
+  ((name    vl-idtoken-p)
+   (udims   vl-packeddimensionlist-p)
+   ;; BOZO eventually add default value
+   ))
+
+(deflist vl-tf-parsed-var-idlist-p (x)
+  (vl-tf-parsed-var-id-p x))
+
+(defparser vl-parse-tf-variable-identifier ()
+  :short "Matches @('port_identifier { variable_dimension } [ '=' expression ]')."
+  :result (vl-tf-parsed-var-id-p val)
+  :resultp-of-nil nil
+  :true-listp nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (name  := (vl-match-token :vl-idtoken))
+       (udims := (vl-parse-0+-ranges))
+       (when (vl-is-token? :vl-equalsign)
+         (return-raw
+          (vl-parse-error "BOZO implement default values for function/task ports.")))
+       (return (make-vl-tf-parsed-var-id :name name
+                                         :udims udims))))
+
+(defparser vl-parse-list-of-tf-variable-identifiers ()
+  :short "Matches @('list_of_tf_variable_identifiers')."
+  :long "@({
+             list_of_tf_variable_identifiers ::= port_identifier { variable_dimension } [ '=' expression ]
+                                                 { ',' port_identifier { variable_dimension } [ '=' expression ] }
+})"
+  :result (vl-tf-parsed-var-idlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (first := (vl-parse-tf-variable-identifier))
+       (unless (vl-is-token? :vl-comma)
+         (return (list first)))
+       (:= (vl-match))
+       (rest := (vl-parse-list-of-tf-variable-identifiers))
+       (return (cons first rest))))
+
+(define vl-make-tf-ports-from-parsed-ids ((ids vl-tf-parsed-var-idlist-p)
+                                          &key
+                                          (dir  vl-direction-p)
+                                          (type vl-datatype-p)
+                                          (atts vl-atts-p))
+  :returns (ports vl-portdecllist-p)
+  (b* (((when (atom ids))
+        nil)
+       ((vl-tf-parsed-var-id id1) (car ids)))
+    (cons (make-vl-portdecl :name    (vl-idtoken->name id1.name)
+                            :loc     (vl-token->loc id1.name)
+                            :nettype nil
+                            :dir     dir
+                            :type    (vl-datatype-update-udims id1.udims type)
+                            :atts    atts)
+          (vl-make-tf-ports-from-parsed-ids (cdr ids)
+                                            :dir dir
+                                            :type type
+                                            :atts atts))))
+
+(defparser vl-parse-tf-port-declaration (atts)
+  :short "Matches @('tf_port_declaration')."
+  :long "@({
+             tf_port_declaration ::= { attribute_instance } tf_port_direction
+                                     [ var ] data_type_or_implicit list_of_tf_variable_identifiers ';'
+})"
+  :result (vl-portdecllist-p val)
+  :guard (vl-atts-p atts)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       ;; tf_port_direction ::= port_direction | 'const' 'ref'
+       (when (vl-is-token? :vl-kwd-const)
+         (return-raw
+          (vl-parse-error "BOZO implement 'const ref' task/function ports.")))
+       (dir := (vl-match-some-token *vl-directions-kwds*))
+
+       ;; I don't think the var actually matters here for anything?
+       (when (vl-is-token? :vl-kwd-var)
+         (:= (vl-match)))
+
+       ;;    data_type_or_implicit ::= data_type | implicit_data_type
+       ;;    implicit_data_type    ::= [ signing ] { packed_dimension }
+       (when (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned))
+         (signing := (vl-match)))
+       (when (vl-is-token? :vl-lbrack)
+         (ranges := (vl-parse-0+-ranges)))
+       (when (or signing ranges)
+         ;; Definitely in the implicit case.
+         (ids := (vl-parse-list-of-tf-variable-identifiers))
+         (:= (vl-match-token :vl-semi))
+         (return (vl-make-tf-ports-from-parsed-ids
+                  ids
+                  :atts atts
+                  :dir (cdr (assoc (vl-token->type dir) *vl-directions-kwd-alist*))
+                  :type (make-vl-coretype :name    :vl-logic
+                                          :signedp (and signing
+                                                        (eq (vl-token->type signing) :vl-kwd-signed))
+                                          :pdims   ranges))))
+
+       ;; Otherwise, usual ambiguity between data types and identifiers...
+
+       (when (and (vl-is-token? :vl-idtoken)
+                  (not (vl-parsestate-is-user-defined-type-p
+                        (vl-idtoken->name (car (vl-tokstream->tokens)))
+                        (vl-tokstream->pstate))))
+         ;; Not a datatype, so pure implicit case.
+         (ids := (vl-parse-list-of-tf-variable-identifiers))
+         (:= (vl-match-token :vl-semi))
+         (return (vl-make-tf-ports-from-parsed-ids
+                  ids
+                  :atts atts
+                  :dir (cdr (assoc (vl-token->type dir) *vl-directions-kwd-alist*))
+                  :type (make-vl-coretype :name :vl-logic
+                                          :signedp nil
+                                          :pdims nil))))
+
+       ;; Else we'd better have a real datatype.
+       (type := (vl-parse-datatype))
+       (ids  := (vl-parse-list-of-tf-variable-identifiers))
+       (:= (vl-match-token :vl-semi))
+       (return (vl-make-tf-ports-from-parsed-ids
+                ids
+                :atts atts
+                :dir (cdr (assoc (vl-token->type dir) *vl-directions-kwd-alist*))
+                :type type))))
+
+
+(defparser vl-parse-tf-item-declaration-noatts (atts)
+  :short "Match @('tf_item_declaration') except for attributes."
+  :guard (vl-atts-p atts)
+  :result (vl-portdecl-or-blockitem-list-p val)
+  :true-listp t
+  :resultp-of-nil t
+  :fails gracefully
+  :count strong
+  :long "@({
+                tf_item_declaration ::= block_item_declaration
+                                      | tf_port_declaration
+         })"
+  (seq tokstream
+       (when (vl-is-some-token? '(:vl-kwd-input :vl-kwd-output :vl-kwd-inout))
+         (decls := (vl-parse-tf-port-declaration atts))
+         (return decls))
+        (decls := (vl-parse-block-item-declaration-noatts atts))
+        (return decls)))
+
+(defparser vl-parse-tf-item-declaration ()
+  :short "Match @('tf_item_declaration'), including attributes."
+  :result (vl-portdecl-or-blockitem-list-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+        (atts  := (vl-parse-0+-attribute-instances))
+        (decls := (vl-parse-tf-item-declaration-noatts atts))
+        (return decls)))
+
+
+(defparser vl-parse-0+-tf-item-declarations ()
+  :short "Match @('{ tf_item_declaration }')."
+  :result (vl-portdecl-or-blockitem-list-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails never
+  :count strong-on-value
+  :long "<p>We use backtracking to know when to stop, because these
+declarations can be followed by arbitrary statements, hence it's not clear
+whether @('(* ... *)') is the start of a new item declaration or a
+statement.</p>"
+  (b* ((backup (vl-tokstream-save))
+       ((mv erp first tokstream) (vl-parse-tf-item-declaration))
+       ((when erp)
+        (b* ((tokstream (vl-tokstream-restore backup)))
+          (mv nil nil tokstream)))
+       ((mv ?erp rest tokstream) (vl-parse-0+-tf-item-declarations)))
+    (mv nil (append first rest) tokstream)))
+
 
 (defparser vl-parse-function-declaration-2012 (atts)
   :guard (vl-atts-p atts)
@@ -645,9 +1132,78 @@ try to resume parsing after a problematic function."
   :resultp-of-nil t
   :fails gracefully
   :count strong
+  :long "@({
+
+     function_declaration ::= 'function' [ lifetime ] function_body_declaration
+
+     function_body_declaration ::=
+
+       function_data_type_or_implicit                                                           ; Variant 1
+         [ interface_identifier '.' | class_scope ] identifier ';'
+         { tf_item_declaration }
+         { function_statement_or_null }
+       'endfunction' [ ':' identifier ]
+
+      | function_data_type_or_implicit
+          [ interface_identifier '.' | class_scope ] identifier '(' [tf_port_list] ')' ';'      ; Variant 2
+          { block_item_declaration }
+          { function_statement_or_null }
+        'endfunction' [ ':' identifier ]
+})"
+
   (seq tokstream
-       (ans := (vl-parse-function-declaration-2005 atts))
-       (return ans)))
+       (:= (vl-match-token :vl-kwd-function))
+       (lifetime := (vl-maybe-parse-lifetime))
+       (rettype  := (vl-parse-function-data-type-or-implicit))
+
+       ;; At this point we should in principle be matching:
+       ;;
+       ;;  [ interface_identifier '.' | class_scope ] identifier
+       ;;
+       ;; But we don't try to support fancy interface/class scope stuff yet,
+       ;; and instead just look for the function's name.
+       (name := (vl-match-token :vl-idtoken))
+
+       ;; BOZO add better error handling stuff here.
+
+       (when (vl-is-token? :vl-semi)
+         ;; Variant 1.  We need to match:
+         ;;    { tf_item_declaration } { function_statement_or_null } 'endfunction' [ ':' identifier ]
+         (:= (vl-match)) ;; eat the semicolon
+         (items := (vl-parse-0+-tf-item-declarations))
+         (body := (vl-parse-function-statements))
+         (:= (vl-match-token :vl-kwd-endfunction))
+         (:= (vl-parse-endblock-name (vl-idtoken->name name) "function/endfunction"))
+         (return (b* (((mv portdecls blockitems)
+                       (vl-filter-portdecl-or-blockitem-list items)))
+                   (list (vl-make-fundecl-for-parser :name      (vl-idtoken->name name)
+                                                     :lifetime  lifetime
+                                                     :rettype   rettype
+                                                     :inputs    portdecls
+                                                     :decls     blockitems
+                                                     :body      body
+                                                     :atts      atts
+                                                     :loc       (vl-token->loc name))))))
+
+       ;; Variant 2.  We need to match:
+       ;;    '(' [tf_port_list] ')' ';' { block_item_declaration } { function_statement_or_null } 'endfunction' [ ':' identifier ]
+       (:= (vl-match-token :vl-lparen))
+       (portdecls := (vl-parse-tf-port-list))
+       (:= (vl-match-token :vl-rparen))
+       (:= (vl-match-token :vl-semi))
+       (decls   := (vl-parse-0+-block-item-declarations))
+       (body    := (vl-parse-function-statements))
+       (:= (vl-match-token :vl-kwd-endfunction))
+       (:= (vl-parse-endblock-name (vl-idtoken->name name) "function/endfunction"))
+       (return (list (vl-make-fundecl-for-parser :name       (vl-idtoken->name name)
+                                                 :lifetime   lifetime
+                                                 :rettype    rettype
+                                                 :inputs     portdecls
+                                                 :decls      decls
+                                                 :body       body
+                                                 :atts       atts
+                                                 :loc        (vl-token->loc name))))))
+
 
 (defparser vl-parse-task-declaration-2012 (atts)
   :guard (vl-atts-p atts)
@@ -696,3 +1252,4 @@ try to resume parsing after a problematic function."
          (return ans))
        (ans := (vl-parse-task-declaration-2012 atts))
        (return ans)))
+
