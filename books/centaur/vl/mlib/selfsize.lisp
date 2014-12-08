@@ -905,12 +905,11 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                   :args (list ctx x))
             nil))
        ((vl-fundecl decl))
-       ((unless (vl-maybe-range-resolved-p decl.rrange))
-        (mv (warn :type :vl-function-selfsize-fail
-                  :msg "~a0: Range of function return value is not resolved: ~a1"
-                  :args (list ctx x))
-            nil)))
-    (mv (ok) (vl-maybe-range-size decl.rrange)))
+       ((mv warning size)
+        (vl-datatype-size decl.rettype))
+       ((when warning)
+        (mv (cons (change-vl-warning warning :fatalp t) (ok)) nil)))
+    (mv (ok) size))
   ///
   (defrule warning-irrelevance-of-vl-funcall-selfsize
     (let ((ret1 (vl-funcall-selfsize x ss ctx warnings))

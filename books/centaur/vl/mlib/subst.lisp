@@ -602,25 +602,16 @@ attributes is left up to the implementation.</p>"
   :type vl-initiallist-p
   :element vl-initial-subst)
 
-(def-vl-subst vl-taskport-subst
-  :type vl-taskport-p
-  :body
-  (b* (((vl-taskport x) x))
-    (change-vl-taskport x
-                        :range (vl-maybe-range-subst x.range sigma))))
 
-(def-vl-subst-list vl-taskportlist-subst
-  :type vl-taskportlist-p
-  :element vl-taskport-subst)
 
 (def-vl-subst vl-fundecl-subst
   :type vl-fundecl-p
   :body
   (b* (((vl-fundecl x) x))
     (change-vl-fundecl x
-                       :rrange (vl-maybe-range-subst x.rrange sigma)
+                       :rettype (vl-datatype-subst x.rettype sigma)
                        :decls (vl-blockitemlist-subst x.decls sigma)
-                       :inputs (vl-taskportlist-subst x.inputs sigma)
+                       :portdecls (vl-portdecllist-subst x.portdecls sigma)
                        :body (vl-stmt-subst x.body sigma))))
 
 (def-vl-subst-list vl-fundecllist-subst

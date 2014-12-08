@@ -692,8 +692,8 @@ problem.</p>"
        ;; Check for undeclared names in the non-local parts (the inputs and
        ;; return value range.)  It's not quite right to do the inputs here, as
        ;; described above, but in practice it shouldn't be much of a problem.
-       (other-names (vl-exprlist-varnames (append (vl-taskportlist-allexprs x.inputs)
-                                                  (vl-maybe-range-allexprs x.rrange))))
+       (other-names (vl-exprlist-varnames (append (vl-portdecllist-allexprs x.portdecls)
+                                                  (vl-datatype-allexprs x.rettype))))
        (warnings    (vl-warn-about-undeclared-wires x other-names st warnings))
 
        ;; Now make a local scope and add the local declarations, as in named
@@ -711,7 +711,7 @@ problem.</p>"
        ;; refer to them in the body.  Also add in the function's name since it
        ;; can be a valid return value.
        (local-decls  (vl-implicitst->decls local-st))
-       (local-decls  (make-fal (pairlis$ (vl-taskportlist->names x.inputs) nil) local-decls))
+       (local-decls  (make-fal (pairlis$ (vl-portdecllist->names x.portdecls) nil) local-decls))
        (local-decls  (hons-acons x.name nil local-decls))
        (local-st     (change-vl-implicitst local-st :decls local-decls))
 
@@ -738,7 +738,7 @@ it has the same problems with parameters.</p>"
        ;; Check for undeclared names in the task's visible ports.  It's not
        ;; quite right to do the ports here if they have parameters, as
        ;; described above, but in practice it shouldn't be much of a problem.
-       (other-names (vl-exprlist-varnames (vl-taskportlist-allexprs x.ports)))
+       (other-names (vl-exprlist-varnames (vl-portdecllist-allexprs x.portdecls)))
        (warnings    (vl-warn-about-undeclared-wires x other-names st warnings))
 
        ;; Now make a local scope and add the local declarations, as in named
@@ -756,7 +756,7 @@ it has the same problems with parameters.</p>"
        ;; Okay, now add the ports to the local scope, since it's valid to
        ;; refer to them in the body.
        (local-decls (vl-implicitst->decls local-st))
-       (local-decls (make-fal (pairlis$ (vl-taskportlist->names x.ports) nil) local-decls))
+       (local-decls (make-fal (pairlis$ (vl-portdecllist->names x.portdecls) nil) local-decls))
        (local-st    (change-vl-implicitst local-st :decls local-decls))
 
        ;; The local scope is constructed, check the task's body.
