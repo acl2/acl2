@@ -38,9 +38,7 @@
 ; function_range_or_type ::= ['signed'] range | 'integer' | 'real' | 'realtime' | 'time'
 
 (defparser vl-parse-optional-function-range-or-type ()
-  :result (and (consp val)
-               (vl-taskporttype-p (car val))
-               (vl-maybe-range-p (cdr val)))
+  :result (vl-datatype-p val)
   :fails gracefully
   :count weak
   (seq tokstream
@@ -52,17 +50,20 @@
                                                    :vl-kwd-real
                                                    :vl-kwd-realtime
                                                    :vl-kwd-time)))
-          (return (cons (case (vl-token->type vartype-token)
-                          (:vl-kwd-integer  :vl-integer)
-                          (:vl-kwd-real     :vl-real)
-                          (:vl-kwd-realtime :vl-realtime)
-                          (:vl-kwd-time     :vl-time))
-                        nil)))
+          (return (case (vl-token->type vartype-token)
+                    (:vl-kwd-integer  *vl-plain-old-integer-type*)
+                    (:vl-kwd-real     *vl-plain-old-real-type*)
+                    (:vl-kwd-realtime *vl-plain-old-realtime-type*)
+                    (:vl-kwd-time     *vl-plain-old-time-type*))))
         (when (vl-is-token? :vl-kwd-signed)
           (signed := (vl-match-token :vl-kwd-signed)))
         (when (vl-is-token? :vl-lbrack)
           (range := (vl-parse-range)))
-        (return (cons (if signed :vl-signed :vl-unsigned) range))))
+        (return
+         (make-vl-coretype :name :vl-logic
+                           :signedp (if signed t nil)
+                           :pdims   (and range
+                                         (list range))))))
 
 
 ; tf_input_declaration ::= 'input' [ 'reg' ] [ 'signed' ] [ range ] list_of_port_identifiers
@@ -78,38 +79,26 @@
 ;
 ; list_of_port_identifier ::= identifier { ',' identifier }
 
-(defsection vl-build-taskports
-
-  (defund vl-build-taskports (atts dir type range names)
-    (declare (xargs :guard (and (vl-atts-p atts)
-                                (vl-direction-p dir)
-                                (vl-taskporttype-p type)
-                                (vl-maybe-range-p range)
-                                (vl-idtoken-list-p names))))
-    (if (atom names)
-        nil
-      (cons (make-vl-taskport :name  (vl-idtoken->name (car names))
-                              :dir   dir
-                              :type  type
-                              :range range
-                              :atts  atts
-                              :loc   (vl-token->loc (car names)))
-            (vl-build-taskports atts dir type range (cdr names)))))
-
-  (local (in-theory (enable vl-build-taskports)))
-
-  (defthm vl-taskportlist-p-of-vl-build-taskports
-    (implies (and (force (vl-atts-p atts))
-                  (force (vl-direction-p dir))
-                  (force (vl-taskporttype-p type))
-                  (force (vl-maybe-range-p range))
-                  (force (vl-idtoken-list-p names)))
-             (vl-taskportlist-p (vl-build-taskports atts dir type range names)))))
+(define vl-build-taskports ((atts  vl-atts-p)
+                            (dir   vl-direction-p)
+                            (type  vl-datatype-p)
+                            (names vl-idtoken-list-p))
+  :returns (decls vl-portdecllist-p)
+  (if (atom names)
+      nil
+    (cons (make-vl-portdecl :name    (vl-idtoken->name (car names))
+                            :dir     dir
+                            ;; We'll never have a net type on function/task ports
+                            :nettype nil
+                            :type    type
+                            :atts    atts
+                            :loc     (vl-token->loc (car names)))
+          (vl-build-taskports atts dir type (cdr names)))))
 
 (defparser vl-parse-taskport-declaration (atts)
   ;; Matches tf_input_declaration, tf_output_declaration, or tf_inout_declaration.
   :guard (vl-atts-p atts)
-  :result (vl-taskportlist-p val)
+  :result (vl-portdecllist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -126,10 +115,7 @@
                                    :vl-kwd-real
                                    :vl-kwd-realtime
                                    :vl-kwd-time))
-          (type := (vl-match-some-token '(:vl-kwd-integer
-                                          :vl-kwd-real
-                                          :vl-kwd-realtime
-                                          :vl-kwd-time))))
+          (type := (vl-match)))
         (names := (vl-parse-1+-identifiers-separated-by-commas))
         (return-raw
          (b* (((when (and type (or reg signed range)))
@@ -142,14 +128,14 @@
                      (:vl-kwd-inout    :vl-inout)))
               (type (if type
                         (case (vl-token->type type)
-                          (:vl-kwd-integer  :vl-integer)
-                          (:vl-kwd-real     :vl-real)
-                          (:vl-kwd-realtime :vl-realtime)
-                          (:vl-kwd-time     :vl-time))
-                      (if signed
-                          :vl-signed
-                        :vl-unsigned)))
-              (ret (vl-build-taskports atts dir type range names)))
+                          (:vl-kwd-integer  *vl-plain-old-integer-type*)
+                          (:vl-kwd-real     *vl-plain-old-real-type*)
+                          (:vl-kwd-realtime *vl-plain-old-realtime-type*)
+                          (:vl-kwd-time     *vl-plain-old-time-type*))
+                      (make-vl-coretype :name :vl-logic
+                                        :signedp (if signed t nil)
+                                        :pdims (and range (list range)))))
+              (ret (vl-build-taskports atts dir type names)))
            (mv nil ret tokstream)))))
 
 
@@ -169,7 +155,7 @@
 ; (when we construct the function declaration) that all the ports are inputs.
 
 (defparser vl-parse-taskport-list ()
-  :result (vl-taskportlist-p val)
+  :result (vl-portdecllist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -198,60 +184,60 @@
 ; Our approach: just writer a parser for task_item_declaration, then separately
 ; check (when we construct the function declaration) that all ports are inputs.
 
-(defsection vl-taskport-or-blockitem-p
+(defsection vl-portdecl-or-blockitem-p
 
   (local (in-theory (enable tag-reasoning)))
 
-  (defund vl-taskport-or-blockitem-p (x)
+  (defund vl-portdecl-or-blockitem-p (x)
     (declare (xargs :guard t))
-    (or (vl-taskport-p x)
+    (or (vl-portdecl-p x)
         (vl-blockitem-p x)))
 
-  (deflist vl-taskport-or-blockitem-list-p (x)
-    (vl-taskport-or-blockitem-p x)
+  (deflist vl-portdecl-or-blockitem-list-p (x)
+    (vl-portdecl-or-blockitem-p x)
     :guard t
     :elementp-of-nil nil
     :parents nil)
 
   (local (defthm crock
-           (implies (vl-taskport-or-blockitem-p x)
-                    (equal (vl-taskport-p x)
-                           (eq (tag x) :vl-taskport)))
-           :hints(("Goal" :in-theory (enable vl-taskport-or-blockitem-p
+           (implies (vl-portdecl-or-blockitem-p x)
+                    (equal (vl-portdecl-p x)
+                           (eq (tag x) :vl-portdecl)))
+           :hints(("Goal" :in-theory (enable vl-portdecl-or-blockitem-p
                                              vl-blockitem-p)))))
 
-  (local (in-theory (enable vl-taskport-or-blockitem-p
-                            vl-taskport-or-blockitem-list-p)))
+  (local (in-theory (enable vl-portdecl-or-blockitem-p
+                            vl-portdecl-or-blockitem-list-p)))
 
-  (defthm vl-taskport-or-blockitem-list-p-when-vl-taskportlist-p
-    (implies (vl-taskportlist-p x)
-             (vl-taskport-or-blockitem-list-p x)))
+  (defthm vl-portdecl-or-blockitem-list-p-when-vl-portdecllist-p
+    (implies (vl-portdecllist-p x)
+             (vl-portdecl-or-blockitem-list-p x)))
 
-  (defthm vl-taskport-or-blockitem-list-p-when-vl-blockitemlist-p
+  (defthm vl-portdecl-or-blockitem-list-p-when-vl-blockitemlist-p
     (implies (vl-blockitemlist-p x)
-             (vl-taskport-or-blockitem-list-p x)))
+             (vl-portdecl-or-blockitem-list-p x)))
 
-  (defund vl-filter-taskport-or-blockitem-list (x)
-    (declare (xargs :guard (vl-taskport-or-blockitem-list-p x)))
+  (defund vl-filter-portdecl-or-blockitem-list (x)
+    (declare (xargs :guard (vl-portdecl-or-blockitem-list-p x)))
     (b* (((when (atom x))
           (mv nil nil))
-         ((mv cdr-taskports cdr-blockitems)
-          (vl-filter-taskport-or-blockitem-list (cdr x)))
-         ((when (eq (tag (car x)) :vl-taskport))
-          (mv (cons (car x) cdr-taskports) cdr-blockitems)))
-      (mv cdr-taskports (cons (car x) cdr-blockitems))))
+         ((mv cdr-portdecls cdr-blockitems)
+          (vl-filter-portdecl-or-blockitem-list (cdr x)))
+         ((when (eq (tag (car x)) :vl-portdecl))
+          (mv (cons (car x) cdr-portdecls) cdr-blockitems)))
+      (mv cdr-portdecls (cons (car x) cdr-blockitems))))
 
-  (defthm vl-filter-taskport-or-blockitem-list-basics
-    (implies (force (vl-taskport-or-blockitem-list-p x))
-             (let ((ret (vl-filter-taskport-or-blockitem-list x)))
-               (and (vl-taskportlist-p (mv-nth 0 ret))
+  (defthm vl-filter-portdecl-or-blockitem-list-basics
+    (implies (force (vl-portdecl-or-blockitem-list-p x))
+             (let ((ret (vl-filter-portdecl-or-blockitem-list x)))
+               (and (vl-portdecllist-p (mv-nth 0 ret))
                     (vl-blockitemlist-p (mv-nth 1 ret)))))
-    :hints(("Goal" :in-theory (enable vl-filter-taskport-or-blockitem-list)))))
+    :hints(("Goal" :in-theory (enable vl-filter-portdecl-or-blockitem-list)))))
 
 
 (defparser vl-parse-task-item-declaration-noatts (atts)
   :guard (vl-atts-p atts)
-  :result (vl-taskport-or-blockitem-list-p val)
+  :result (vl-portdecl-or-blockitem-list-p val)
   :true-listp t
   :resultp-of-nil t
   :fails gracefully
@@ -265,7 +251,7 @@
         (return decls)))
 
 (defparser vl-parse-task-item-declaration ()
-  :result (vl-taskport-or-blockitem-list-p val)
+  :result (vl-portdecl-or-blockitem-list-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -280,7 +266,7 @@
   ;; We use backtracking to know when to stop, because these declarations can be
   ;; followed by arbitrary statements, hence it's not clear whether (* ... *) is
   ;; the start of a new item declaration or a statement.
-  :result (vl-taskport-or-blockitem-list-p val)
+  :result (vl-portdecl-or-blockitem-list-p val)
   :resultp-of-nil t
   :true-listp t
   :fails never
@@ -308,86 +294,66 @@
 ;     statement
 ;    'endfunction'
 
-(defsection vl-taskportlist-find-noninput
+(defsection vl-portdecllist-find-noninput
 
-  (defund vl-taskportlist-find-noninput (x)
-    (declare (xargs :guard (vl-taskportlist-p x)))
+  (defund vl-portdecllist-find-noninput (x)
+    (declare (xargs :guard (vl-portdecllist-p x)))
     (cond ((atom x)
            nil)
-          ((eq (vl-taskport->dir (car x)) :vl-input)
-           (vl-taskportlist-find-noninput (cdr x)))
+          ((eq (vl-portdecl->dir (car x)) :vl-input)
+           (vl-portdecllist-find-noninput (cdr x)))
           (t
            (car x))))
 
-  (local (in-theory (enable vl-taskportlist-find-noninput)))
+  (local (in-theory (enable vl-portdecllist-find-noninput)))
 
-  (defthm vl-taskport-p-of-vl-taskportlist-find-noninput
-    (implies (force (vl-taskportlist-p x))
-             (equal (vl-taskport-p (vl-taskportlist-find-noninput x))
-                    (if (vl-taskportlist-find-noninput x)
+  (defthm vl-portdecl-p-of-vl-portdecllist-find-noninput
+    (implies (force (vl-portdecllist-p x))
+             (equal (vl-portdecl-p (vl-portdecllist-find-noninput x))
+                    (if (vl-portdecllist-find-noninput x)
                         t
                       nil)))))
 
 
-(define vl-make-hidden-variable-for-taskport-aux ((name  stringp)
-                                                  (type  vl-taskporttype-p)
-                                                  (range vl-maybe-range-p)
-                                                  (loc   vl-location-p)
-                                                  (atts  vl-atts-p))
+(define vl-make-hidden-variable-for-portdecl ((x vl-portdecl-p))
   :returns (var vl-vardecl-p)
-  (b* ((atts (cons (list (hons-copy "VL_HIDDEN_DECL_FOR_TASKPORT")) atts))
-       ;; The taskport has a type and range.
-       (datatype (case type
-                   ((:vl-unsigned :vl-signed)
-                    (hons-copy
-                     (make-vl-coretype :name :vl-logic
-                                       :signedp (eq type :vl-signed)
-                                       :udims nil
-                                       :pdims (if range
-                                                  (list range)
-                                                nil))))
-                   (:vl-integer  *vl-plain-old-integer-type*)
-                   (:vl-real     *vl-plain-old-real-type*)
-                   (:vl-realtime *vl-plain-old-realtime-type*)
-                   (:vl-time     *vl-plain-old-time-type*)
-                   (otherwise (progn$ (impossible)
-                                      *vl-plain-old-integer-type*)))))
-    (make-vl-vardecl :name name
-                     :type datatype
-                     :atts atts
-                     :loc  loc)))
+  (b* (((vl-portdecl x)))
+    (make-vl-vardecl :name x.name
+                     :type x.type
+                     ;; The pretty-printer will look for this and avoid
+                     ;; printing out these "extra" variable declarations.
+                     :atts (cons (list (hons-copy "VL_HIDDEN_DECL_FOR_TASKPORT"))
+                                 x.atts)
+                     :loc  x.loc)))
 
-(define vl-make-hidden-variable-for-taskport ((x vl-taskport-p))
-  :returns (var vl-vardecl-p)
-  (b* (((vl-taskport x)))
-    (vl-make-hidden-variable-for-taskport-aux x.name x.type x.range x.loc x.atts)))
-
-(defprojection vl-make-hidden-variables-for-taskports ((x vl-taskportlist-p))
+(defprojection vl-make-hidden-variables-for-portdecls ((x vl-portdecllist-p))
   :returns (vars vl-vardecllist-p)
-  (vl-make-hidden-variable-for-taskport x))
+  (vl-make-hidden-variable-for-portdecl x))
 
 (define vl-make-fundecl-for-parser (&key (name       stringp)
                                          (automaticp booleanp)
-                                         (rtype      vl-taskporttype-p)
-                                         (rrange     vl-maybe-range-p)
-                                         (inputs     vl-taskportlist-p)
+                                         (rettype    vl-datatype-p)
+                                         (inputs     vl-portdecllist-p)
                                          (decls      vl-blockitemlist-p)
                                          (body       vl-stmt-p)
                                          (atts       vl-atts-p)
                                          (loc        vl-location-p))
   ;; Adds the VL_HIDDEN_DECL_FOR_TASKPORTs.
   :returns (fun vl-fundecl-p)
-  (b* ((port-vars (vl-make-hidden-variables-for-taskports inputs))
-       (ret-var   (vl-make-hidden-variable-for-taskport-aux name rtype rrange loc atts)))
-    (make-vl-fundecl :name name
+  (b* ((port-vars (vl-make-hidden-variables-for-portdecls inputs))
+       (ret-var   (make-vl-vardecl :name name
+                                   :type rettype
+                                   :atts (list
+                                          (list (hons-copy "VL_HIDDEN_DECL_FOR_TASKPORT")))
+                                   :loc  loc)))
+    (make-vl-fundecl :name       name
                      :automaticp automaticp
-                     :rtype rtype
-                     :rrange rrange
-                     :inputs inputs
-                     :decls (append port-vars (list ret-var) decls)
-                     :body body
-                     :atts atts
-                     :loc loc)))
+                     :rettype    rettype
+                     :portdecls  inputs
+                     :decls      (append port-vars (list ret-var) decls)
+                     :body       body
+                     :atts       atts
+                     :loc        loc)))
 
 
 (defparser vl-skip-through-endfunction ()
@@ -410,12 +376,14 @@
   :resultp-of-nil t
   :fails gracefully
   :count strong
+  :prepwork ((local (in-theory (disable not))))
+
   (seq tokstream
 
         (function := (vl-match-token :vl-kwd-function))
         (when (vl-is-token? :vl-kwd-automatic)
           (automatic := (vl-match-token :vl-kwd-automatic)))
-        ((rtype . rrange) := (vl-parse-optional-function-range-or-type))
+        (rettype := (vl-parse-optional-function-range-or-type))
         (name := (vl-match-token :vl-idtoken))
 
         (return-raw
@@ -432,19 +400,18 @@
                       (:= (vl-match-token :vl-kwd-endfunction))
                       (return-raw
                        (b* (((mv inputs blockitems)
-                             (vl-filter-taskport-or-blockitem-list decls))
-                            (non-input (vl-taskportlist-find-noninput inputs))
+                             (vl-filter-portdecl-or-blockitem-list decls))
+                            (non-input (vl-portdecllist-find-noninput inputs))
                             ((when non-input)
                              (vl-parse-error (str::cat "Functions may only have inputs, but port "
-                                                       (vl-taskport->name non-input)
+                                                       (vl-portdecl->name non-input)
                                                        " has direction "
-                                                       (symbol-name (vl-taskport->dir non-input)))))
+                                                       (symbol-name (vl-portdecl->dir non-input)))))
                             ((unless (consp inputs))
                              (vl-parse-error "Function has no inputs."))
                             (ret (vl-make-fundecl-for-parser :name       (vl-idtoken->name name)
                                                              :automaticp (if automatic t nil)
-                                                             :rtype      rtype
-                                                             :rrange     rrange
+                                                             :rettype    rettype
                                                              :inputs     inputs
                                                              :decls      blockitems
                                                              :body       stmt
@@ -461,17 +428,16 @@
                     (stmt := (vl-parse-statement))
                     (:= (vl-match-token :vl-kwd-endfunction))
                     (return-raw
-                     (b* ((non-input (vl-taskportlist-find-noninput inputs))
+                     (b* ((non-input (vl-portdecllist-find-noninput inputs))
                           ((when non-input)
                            (vl-parse-error (str::cat "Functions may only have inputs, but port "
-                                                     (vl-taskport->name non-input)
+                                                     (vl-portdecl->name non-input)
                                                      " has direction "
-                                                     (symbol-name (vl-taskport->dir non-input)))))
+                                                     (symbol-name (vl-portdecl->dir non-input)))))
                           ;; (consp inputs) is automatic from vl-parse-taskport-list.
                           (ret (vl-make-fundecl-for-parser :name       (vl-idtoken->name name)
                                                            :automaticp (if automatic t nil)
-                                                           :rtype      rtype
-                                                           :rrange     rrange
+                                                           :rettype    rettype
                                                            :inputs     inputs
                                                            :decls      blockitems
                                                            :body       stmt
@@ -513,17 +479,17 @@
 
 (define vl-make-taskdecl-for-parser (&key (name       stringp)
                                           (automaticp booleanp)
-                                          (ports      vl-taskportlist-p)
+                                          (ports      vl-portdecllist-p)
                                           (decls      vl-blockitemlist-p)
                                           (body       vl-stmt-p)
                                           (atts       vl-atts-p)
                                           (loc        vl-location-p))
   ;; Adds the VL_HIDDEN_DECL_FOR_TASKPORTs.
   :returns (task vl-taskdecl-p)
-  (b* ((port-vars (vl-make-hidden-variables-for-taskports ports)))
+  (b* ((port-vars (vl-make-hidden-variables-for-portdecls ports)))
     (make-vl-taskdecl :name name
                       :automaticp automaticp
-                      :ports ports
+                      :portdecls ports
                       :decls (append port-vars decls)
                       :body body
                       :atts atts
@@ -549,6 +515,7 @@
   :resultp-of-nil t
   :fails gracefully
   :count strong
+  :prepwork ((local (in-theory (disable not))))
   (seq tokstream
 
         (task := (vl-match-token :vl-kwd-task))
@@ -569,7 +536,7 @@
                       (:= (vl-match-token :vl-kwd-endtask))
                       (return
                        (b* (((mv ports blockitems)
-                             (vl-filter-taskport-or-blockitem-list decls))
+                             (vl-filter-portdecl-or-blockitem-list decls))
                             (ans (vl-make-taskdecl-for-parser :name       (vl-idtoken->name name)
                                                               :automaticp (if automatic t nil)
                                                               :ports      ports
