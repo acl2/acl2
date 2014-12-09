@@ -1222,13 +1222,33 @@ funtemplate."
   ((x vl-portdecl-p))
   :returns (vardecl vl-vardecl-p)
   :long "<p>We assume the input is okay in the sense of @(see
-vl-portdecllist-types-okp).</p>"
+vl-portdecllist-types-okp).</p>
+
+<p>We implement a special hack for Verilog-2005 compatibility.  In particular,
+consider a basic function such as:</p>
+
+@({
+     function [3:0] AndFn(input [3:0] a, input [3:0] b);
+       AndFn = a & b;
+     endfunction
+})
+
+<p>Our internal representation of function inputs now uses @('logic') types for
+@('a') and @('b'), which is perfectly fine and sensible.  But, when we are
+trying to cosimulate our simplified modules against the original modules, e.g.,
+in the VL <i>systest</i> directory, then this can cause problems because plain
+Verilog-2005 simulators don't know about @('logic') types.</p>
+
+<p>To avoid this, when we convert function inputs into wires, we'll just go
+ahead and ensure the net type is :vl-wire.</p>"
+
   (b* (((vl-portdecl x) x)
        (name-atom (make-vl-atom :guts (make-vl-string :value x.name))))
-    (make-vl-vardecl :name  x.name
-                     :type  x.type
-                     :atts  (acons "VL_FUNCTION_INPUT" name-atom x.atts)
-                     :loc   x.loc)))
+    (make-vl-vardecl :name    x.name
+                     :type    x.type
+                     :nettype :vl-wire
+                     :atts    (acons "VL_FUNCTION_INPUT" name-atom x.atts)
+                     :loc     x.loc)))
 
 (defprojection vl-funinputlist-to-vardecls ((x vl-portdecllist-p))
   :parents (vl-funtemplate-p)
@@ -1352,6 +1372,7 @@ unsupported constructs or doesn't meet our other sanity criteria.</p>"
        (funname-atom (make-vl-atom :guts (make-vl-funname :name x.name)))
        (result-var   (make-vl-vardecl :name    x.name
                                       :type    x.rettype
+                                      :nettype :vl-wire ;; Special hack for better compatibility with Verilog-2005
                                       :atts    (list (cons "VL_FUNCTION_RETURN" funname-atom))
                                       :loc     x.loc))
        (template     (make-vl-funtemplate
