@@ -2709,56 +2709,9 @@ expression into a string."
                (vl-pp-initiallist (cdr x)))))
 
 
-(define vl-taskporttype-string ((x vl-taskporttype-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  :parents (vl-taskporttype-p)
-  :short "@(call vl-taskporttype-string) returns a string describing this
-function type, for pretty-printing."
-  :long "<p>We just return the empty string for @(':vl-unsigned'), but it seems
-like it would be valid to print @('reg').</p>"
-  :guard-hints (("Goal" :in-theory (enable vl-taskporttype-p)))
-  (case (vl-taskporttype-fix x)
-    (:vl-unsigned "")
-    (:vl-signed   "signed")
-    (:vl-integer  "integer")
-    (:vl-real     "real")
-    (:vl-realtime "realtime")
-    (:vl-time     "time")
-    (otherwise    (progn$ (impossible) ""))))
-
-(define vl-pp-taskport ((x vl-taskport-p) &key (ps 'ps))
-  (b* (((vl-taskport x) x)
-       (typestr (vl-taskporttype-string x.type))
-       (dirstr  (vl-direction-string x.dir)))
-    (vl-ps-seq (vl-print "  ")
-               (if x.atts
-                   (vl-ps-seq (vl-pp-atts x.atts)
-                              (vl-print " "))
-                 ps)
-               (vl-ps-span "vl_key"
-                           (vl-print-str dirstr)
-                           (vl-print " ")
-                           (vl-print-str typestr)
-                           (if (equal typestr "")
-                               ps
-                             (vl-print " ")))
-               (if x.range
-                   (vl-ps-seq (vl-pp-range x.range)
-                              (vl-print " "))
-                 ps)
-               (vl-print-wirename x.name))))
-
-(define vl-pp-taskportlist ((x vl-taskportlist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-taskport (car x))
-               (vl-println " ;")
-               (vl-pp-taskportlist (cdr x)))))
-
 (define vl-pp-fundecl ((x vl-fundecl-p) &key (ps 'ps))
   ;; We print these off using "variant 1" style (see parse-functions)
-  (b* (((vl-fundecl x) x)
-       (typestr (vl-taskporttype-string x.rtype)))
+  (b* (((vl-fundecl x) x))
     (vl-ps-seq (vl-print "  ")
                (if x.atts
                    (vl-ps-seq (vl-pp-atts x.atts)
@@ -2766,20 +2719,13 @@ like it would be valid to print @('reg').</p>"
                  ps)
                (vl-ps-span "vl_key"
                            (vl-print "function ")
-                           (if x.automaticp
-                               (vl-print "automatic ")
-                             ps)
-                           (vl-print-str typestr)
-                           (if (equal typestr "")
-                               ps
-                             (vl-print " ")))
-               (if x.rrange
-                   (vl-ps-seq (vl-pp-range x.rrange)
-                              (vl-print " "))
-                 ps)
+                           (cond ((eq x.lifetime :vl-automatic) (vl-print "automatic "))
+                                 ((eq x.lifetime :vl-static)    (vl-print "static "))
+                                 (t                             ps))
+                           (vl-pp-datatype x.rettype))
                (vl-print-wirename x.name)
                (vl-println ";")
-               (vl-pp-taskportlist x.inputs)
+               (vl-pp-portdecllist x.portdecls)
                (vl-pp-blockitemlist x.decls)
                (vl-print "  ")
                (vl-pp-stmt x.body)
@@ -2804,12 +2750,12 @@ like it would be valid to print @('reg').</p>"
                  ps)
                (vl-ps-span "vl_key"
                            (vl-print "task ")
-                           (if x.automaticp
-                               (vl-print "automatic ")
-                             ps))
+                           (cond ((eq x.lifetime :vl-automatic) (vl-print "automatic "))
+                                 ((eq x.lifetime :vl-static)    (vl-print "static "))
+                                 (t                             ps)))
                (vl-print-wirename x.name)
                (vl-println ";")
-               (vl-pp-taskportlist x.ports)
+               (vl-pp-portdecllist x.portdecls)
                (vl-pp-blockitemlist x.decls)
                (vl-print "  ")
                (vl-pp-stmt x.body)
