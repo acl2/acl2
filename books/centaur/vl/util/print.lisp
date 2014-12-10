@@ -34,7 +34,7 @@
 (include-book "print-urlencode")
 (include-book "print-htmlencode")
 (include-book "cw-unformatted")
-(include-book "std/strings/decimal" :dir :system)
+(include-book "std/strings/pretty" :dir :system)
 (local (include-book "arithmetic"))
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "std/io/base" :dir :system))
@@ -63,7 +63,7 @@ efficient.</p>")
 
 (defsection vl-printedlist-p-util
   :extension vl-printedlist-p
-  
+
   (local (in-theory (enable vl-printedlist-p)))
 
   (local (in-theory (e/d (repeated-revappend)
@@ -1523,220 +1523,223 @@ as nice as ACL2's ordinary @('~x') directives.</p>
 <p>Note: although other ACL2-style directives are not yet supported, we may
 eventually extend the printer to allow them.</p>")
 
-(define vl-ppr-escape-slashes
-  :parents (vl-basic-fmt)
-  :short "This is basically like acl2::prin1-with-slashes, but we put the
-characters into the accumulator in reverse order instead of printing them."
-  ((x          stringp)
-   (n          natp)
-   (xl         (eql xl (length x)))
-   (slash-char characterp)
-   (col        natp)
-   acc)
-  :guard (<= n xl)
-  :returns (mv (col-prime natp :rule-classes :type-prescription)
-               (acc-prime character-listp :hyp (character-listp acc)))
-  :measure (nfix (- (nfix xl) (nfix n)))
-  :verbosep t
-  (b* ((n   (lnfix n))
-       (col (lnfix col))
-       ((when (mbe :logic (zp (- (nfix xl) (nfix n)))
-                   :exec (eql n xl)))
-        (mv col acc))
-       ((the character char)
-        (mbe :logic (char-fix (char x n))
-             :exec (char x n)))
-       ((the character slash-char)
-        (mbe :logic (char-fix slash-char)
-             :exec slash-char)))
-    (vl-ppr-escape-slashes x
-                           (the unsigned-byte (+ 1 n))
-                           xl
-                           slash-char
-                           (if (eql char #\Newline)
-                               0
-                             (the unsigned-byte (+ 1 col)))
-                           (if (or (eql char #\\)
-                                   (eql char slash-char))
-                               (list* char #\\ acc)
-                             (cons char acc))))
-  :hooks ((:fix :hints(("Goal"
-                        ;; The expansion heuristics stupidly don't want to open
-                        ;; up calls that have fixes in them.
-                        :expand ((:free (x n xl slash-char col)
-                                  (vl-ppr-escape-slashes x n xl slash-char col acc)))))))
-  ///
-  (defthm vl-printedlist-p-of-vl-ppr-escape-slashes
-    (implies (vl-printedlist-p acc)
-             (vl-printedlist-p
-              (mv-nth 1 (vl-ppr-escape-slashes x n xl slash-char col acc))))))
-
-(define vl-ppr-explode-symbol-aux
-  :parents (vl-ppr-explode-symbol)
-  :short "Write the characters for a symbol name, adding bars if necessary."
-  ((name stringp   "Name of a symbol or package.")
-   (col  natp)
-   acc)
-  :returns (mv (new-col natp :rule-classes :type-prescription)
-               (acc     character-listp :hyp (character-listp acc)))
-  (b* ((name (string-fix name))
-       (col  (lnfix col))
-       (len  (length name))
-       ((when (acl2::may-need-slashes-fn name 10))
-        (b* (((mv col acc)
-              (vl-ppr-escape-slashes name 0 len #\| (+ 1 col) (cons #\| acc))))
-          (mv (+ 1 col) (cons #\| acc)))))
-    (mv (+ (lnfix col) len)
-        (str::revappend-chars name acc)))
-  :verbosep t
-  :prepwork
-  ((local (in-theory (disable acl2::may-need-slashes-fn))))
-  ///
-  (defthm vl-printedlist-p-of-vl-ppr-explode-symbol-aux
-    (implies (vl-printedlist-p acc)
-             (vl-printedlist-p (mv-nth 1 (vl-ppr-explode-symbol-aux name col acc))))))
 
 
-(define vl-ppr-explode-symbol
-  :parents (vl-basic-fmt)
-  :short "Print a symbol."
-  ((x   symbolp "The symbol we want to explode.")
-   (pkg symbolp "A symbol in the current package we are printing from.")
-   (col natp    "Current column we're at.")
-   (acc))
-  :returns (mv (new-col natp :rule-classes :type-prescription)
-               (acc     character-listp :hyp (character-listp acc)))
-  (b* ((x     (mbe :logic (acl2::symbol-fix x) :exec x))
-       (pkg   (mbe :logic (acl2::symbol-fix pkg) :exec pkg))
-       (col   (lnfix col))
-       (xname (symbol-name x))
-       (xpkg  (symbol-package-name x))
-       ((when (or (equal xpkg xname)
-                  (equal (intern-in-package-of-symbol xname pkg) x)))
-        (vl-ppr-explode-symbol-aux xname col acc))
-       ((when (equal xpkg "KEYWORD"))
-        (vl-ppr-explode-symbol-aux xname (+ 1 col) (cons #\: acc)))
-       ((mv col acc) (vl-ppr-explode-symbol-aux xpkg col acc))
-       (col          (+ 2 col))
-       (acc          (list* #\: #\: acc)))
-    (vl-ppr-explode-symbol-aux xname col acc))
-  ///
-  (defthm vl-printedlist-p-of-vl-ppr-explode-symbol
-    (implies (vl-printedlist-p acc)
-             (vl-printedlist-p (mv-nth 1 (vl-ppr-explode-symbol x pkg col acc))))))
-
-(define vl-ppr-explode-string
-  :parents (vl-basic-fmt)
-  :short "Print a string."
-  ((x stringp)
-   (col natp)
-   acc)
-  :returns (mv (new-col natp :rule-classes :type-prescription)
-               (acc character-listp :hyp (character-listp acc)))
-  (b* ((x   (string-fix x))
-       (col (lnfix col))
-       ((mv col acc)
-        (vl-ppr-escape-slashes x 0 (length x) #\" (+ 1 col) (cons #\" acc))))
-    (mv (+ 1 col) (cons #\" acc)))
-  ///
-  (defthm vl-printedlist-p-of-vl-ppr-explode-string
-    (implies (vl-printedlist-p acc)
-             (vl-printedlist-p (mv-nth 1 (vl-ppr-explode-string x col acc))))))
-
-(define vl-ppr-explode-atom
-  :parents (vl-basic-fmt)
-  ((x atom)
-   (pkg symbolp)
-   (base print-base-p)
-   (col natp)
-   acc)
-  :hooks ((:fix :args ((pkg symbolp) (col natp))))
-  :returns (mv (new-col natp :rule-classes :type-prescription)
-               (acc character-listp :hyp (character-listp acc)))
-  (b* ((col (lnfix col))
-       ((when (symbolp x))
-        (vl-ppr-explode-symbol x pkg col acc))
-       ((when (stringp x))
-        (vl-ppr-explode-string x col acc))
-       ((when (acl2-numberp x))
-        (let* ((explode (explode-atom x base))
-               (len     (len explode)))
-          (mv (+ col len) (revappend explode acc))))
-       ((when (characterp x))
-        (case x
-          (#\Space   (mv (+ col 7) (str::revappend-chars "#\\Space" acc)))
-          (#\Newline (mv (+ col 9) (str::revappend-chars "#\\Newline" acc)))
-          (#\Tab     (mv (+ col 5) (str::revappend-chars "#\\Tab" acc)))
-          (#\Rubout  (mv (+ col 8) (str::revappend-chars "#\\Rubout" acc)))
-          (#\Page    (mv (+ col 6) (str::revappend-chars "#\\Page" acc)))
-          (otherwise (mv (+ col 3) (list* x #\\ #\# acc))))))
-    (raise "Bad atom: ~x0." x)
-    (mv (+ col 10) (str::revappend-chars "<bad atom>" acc)))
-  ///
-  (defthm vl-printedlist-p-of-vl-ppr-explode-atom
-    (implies (vl-printedlist-p acc)
-             (vl-printedlist-p (mv-nth 1 (vl-ppr-explode-atom x pkg base col acc))))))
 
 
-(define vl-stupid-ppr1
-  :parents (vl-basic-fmt)
-  :short "Barbaric pretty-printer."
-  ((x                      "Any ACL2 object.")
-   (pkg      symbolp       "Home package we're printing from.")
-   (base     print-base-p  "Numeric base for printing numbers.")
-   (rmargin  natp          "Right margin for line wrapping.")
-   (in-listp booleanp      "Are we currently in a list?")
-   (col      natp          "Current column number.")
-   (acc))
-  :hooks ((:fix :args ((pkg symbolp)
-                       (rmargin natp)
-                       (in-listp booleanp)
-                       (col natp))))
-  :returns (mv (new-col natp :rule-classes :type-prescription)
-               (new-acc character-listp :hyp (character-listp acc)))
-  :verify-guards nil
-  (b* ((col     (lnfix col))
-       (rmargin (lnfix rmargin))
-       ((when (atom x))
-        (vl-ppr-explode-atom x pkg base col acc))
-       ((mv col acc)
-        (if in-listp
-            (vl-stupid-ppr1 (car x) pkg base rmargin nil col acc)
-          (vl-stupid-ppr1 (car x) pkg base rmargin nil (+ 1 col) (cons #\( acc))))
-       ((when (not (cdr x)))
-        (mv (+ 1 (lnfix col)) (if in-listp acc (cons #\) acc))))
-       ;; "Maybe break"
-       ((mv col acc) (if (< col rmargin)
-                         (mv col acc)
-                       (mv 0 (cons #\Newline acc))))
-       ((when (consp (cdr x)))
-        ;; Successive elements of a list, no dots.
-        (b* (((mv col acc)
-              (vl-stupid-ppr1 (cdr x) pkg base rmargin t (+ 1 col) (cons #\Space acc))))
-          (mv (+ 1 (lnfix col))
-              (if in-listp acc (cons #\) acc)))))
+;; (define vl-ppr-escape-slashes
+;;   :parents (vl-basic-fmt)
+;;   :short "This is basically like acl2::prin1-with-slashes, but we put the
+;; characters into the accumulator in reverse order instead of printing them."
+;;   ((x          stringp)
+;;    (n          natp)
+;;    (xl         (eql xl (length x)))
+;;    (slash-char characterp)
+;;    (col        natp)
+;;    acc)
+;;   :guard (<= n xl)
+;;   :returns (mv (col-prime natp :rule-classes :type-prescription)
+;;                (acc-prime character-listp :hyp (character-listp acc)))
+;;   :measure (nfix (- (nfix xl) (nfix n)))
+;;   :verbosep t
+;;   (b* ((n   (lnfix n))
+;;        (col (lnfix col))
+;;        ((when (mbe :logic (zp (- (nfix xl) (nfix n)))
+;;                    :exec (eql n xl)))
+;;         (mv col acc))
+;;        ((the character char)
+;;         (mbe :logic (char-fix (char x n))
+;;              :exec (char x n)))
+;;        ((the character slash-char)
+;;         (mbe :logic (char-fix slash-char)
+;;              :exec slash-char)))
+;;     (vl-ppr-escape-slashes x
+;;                            (the unsigned-byte (+ 1 n))
+;;                            xl
+;;                            slash-char
+;;                            (if (eql char #\Newline)
+;;                                0
+;;                              (the unsigned-byte (+ 1 col)))
+;;                            (if (or (eql char #\\)
+;;                                    (eql char slash-char))
+;;                                (list* char #\\ acc)
+;;                              (cons char acc))))
+;;   :hooks ((:fix :hints(("Goal"
+;;                         ;; The expansion heuristics stupidly don't want to open
+;;                         ;; up calls that have fixes in them.
+;;                         :expand ((:free (x n xl slash-char col)
+;;                                   (vl-ppr-escape-slashes x n xl slash-char col acc)))))))
+;;   ///
+;;   (defthm vl-printedlist-p-of-vl-ppr-escape-slashes
+;;     (implies (vl-printedlist-p acc)
+;;              (vl-printedlist-p
+;;               (mv-nth 1 (vl-ppr-escape-slashes x n xl slash-char col acc))))))
 
-       ;; End element, need a dot.
-       (col (+ 3 col))
-       (acc (list* #\Space #\. #\Space acc))
+;; (define vl-ppr-explode-symbol-aux
+;;   :parents (vl-ppr-explode-symbol)
+;;   :short "Write the characters for a symbol name, adding bars if necessary."
+;;   ((name stringp   "Name of a symbol or package.")
+;;    (col  natp)
+;;    acc)
+;;   :returns (mv (new-col natp :rule-classes :type-prescription)
+;;                (acc     character-listp :hyp (character-listp acc)))
+;;   (b* ((name (string-fix name))
+;;        (col  (lnfix col))
+;;        (len  (length name))
+;;        ((when (acl2::may-need-slashes-fn name 10))
+;;         (b* (((mv col acc)
+;;               (vl-ppr-escape-slashes name 0 len #\| (+ 1 col) (cons #\| acc))))
+;;           (mv (+ 1 col) (cons #\| acc)))))
+;;     (mv (+ (lnfix col) len)
+;;         (str::revappend-chars name acc)))
+;;   :verbosep t
+;;   :prepwork
+;;   ((local (in-theory (disable acl2::may-need-slashes-fn))))
+;;   ///
+;;   (defthm vl-printedlist-p-of-vl-ppr-explode-symbol-aux
+;;     (implies (vl-printedlist-p acc)
+;;              (vl-printedlist-p (mv-nth 1 (vl-ppr-explode-symbol-aux name col acc))))))
 
-       ;; "Maybe break"
-       ((mv col acc) (if (< col rmargin)
-                         (mv col acc)
-                       (mv 0 (cons #\Newline acc))))
 
-       ((mv col acc)
-        (vl-stupid-ppr1 (cdr x) pkg base rmargin t col acc)))
+;; (define vl-ppr-explode-symbol
+;;   :parents (vl-basic-fmt)
+;;   :short "Print a symbol."
+;;   ((x   symbolp "The symbol we want to explode.")
+;;    (pkg symbolp "A symbol in the current package we are printing from.")
+;;    (col natp    "Current column we're at.")
+;;    (acc))
+;;   :returns (mv (new-col natp :rule-classes :type-prescription)
+;;                (acc     character-listp :hyp (character-listp acc)))
+;;   (b* ((x     (mbe :logic (acl2::symbol-fix x) :exec x))
+;;        (pkg   (mbe :logic (acl2::symbol-fix pkg) :exec pkg))
+;;        (col   (lnfix col))
+;;        (xname (symbol-name x))
+;;        (xpkg  (symbol-package-name x))
+;;        ((when (or (equal xpkg xname)
+;;                   (equal (intern-in-package-of-symbol xname pkg) x)))
+;;         (vl-ppr-explode-symbol-aux xname col acc))
+;;        ((when (equal xpkg "KEYWORD"))
+;;         (vl-ppr-explode-symbol-aux xname (+ 1 col) (cons #\: acc)))
+;;        ((mv col acc) (vl-ppr-explode-symbol-aux xpkg col acc))
+;;        (col          (+ 2 col))
+;;        (acc          (list* #\: #\: acc)))
+;;     (vl-ppr-explode-symbol-aux xname col acc))
+;;   ///
+;;   (defthm vl-printedlist-p-of-vl-ppr-explode-symbol
+;;     (implies (vl-printedlist-p acc)
+;;              (vl-printedlist-p (mv-nth 1 (vl-ppr-explode-symbol x pkg col acc))))))
 
-    (mv (+ 1 (lnfix col))
-        (if in-listp acc (cons #\) acc))))
-  ///
-  (defthm vl-printedlist-p-of-vl-stupid-ppr1
-    (implies (vl-printedlist-p acc)
-             (vl-printedlist-p (mv-nth 1 (vl-stupid-ppr1 x pkg base rmargin in-listp col acc)))))
+;; (define vl-ppr-explode-string
+;;   :parents (vl-basic-fmt)
+;;   :short "Print a string."
+;;   ((x stringp)
+;;    (col natp)
+;;    acc)
+;;   :returns (mv (new-col natp :rule-classes :type-prescription)
+;;                (acc character-listp :hyp (character-listp acc)))
+;;   (b* ((x   (string-fix x))
+;;        (col (lnfix col))
+;;        ((mv col acc)
+;;         (vl-ppr-escape-slashes x 0 (length x) #\" (+ 1 col) (cons #\" acc))))
+;;     (mv (+ 1 col) (cons #\" acc)))
+;;   ///
+;;   (defthm vl-printedlist-p-of-vl-ppr-explode-string
+;;     (implies (vl-printedlist-p acc)
+;;              (vl-printedlist-p (mv-nth 1 (vl-ppr-explode-string x col acc))))))
 
-  (verify-guards vl-stupid-ppr1))
+;; (define vl-ppr-explode-atom
+;;   :parents (vl-basic-fmt)
+;;   ((x atom)
+;;    (pkg symbolp)
+;;    (base print-base-p)
+;;    (col natp)
+;;    acc)
+;;   :hooks ((:fix :args ((pkg symbolp) (col natp))))
+;;   :returns (mv (new-col natp :rule-classes :type-prescription)
+;;                (acc character-listp :hyp (character-listp acc)))
+;;   (b* ((col (lnfix col))
+;;        ((when (symbolp x))
+;;         (vl-ppr-explode-symbol x pkg col acc))
+;;        ((when (stringp x))
+;;         (vl-ppr-explode-string x col acc))
+;;        ((when (acl2-numberp x))
+;;         (let* ((explode (explode-atom x base))
+;;                (len     (len explode)))
+;;           (mv (+ col len) (revappend explode acc))))
+;;        ((when (characterp x))
+;;         (case x
+;;           (#\Space   (mv (+ col 7) (str::revappend-chars "#\\Space" acc)))
+;;           (#\Newline (mv (+ col 9) (str::revappend-chars "#\\Newline" acc)))
+;;           (#\Tab     (mv (+ col 5) (str::revappend-chars "#\\Tab" acc)))
+;;           (#\Rubout  (mv (+ col 8) (str::revappend-chars "#\\Rubout" acc)))
+;;           (#\Page    (mv (+ col 6) (str::revappend-chars "#\\Page" acc)))
+;;           (otherwise (mv (+ col 3) (list* x #\\ #\# acc))))))
+;;     (raise "Bad atom: ~x0." x)
+;;     (mv (+ col 10) (str::revappend-chars "<bad atom>" acc)))
+;;   ///
+;;   (defthm vl-printedlist-p-of-vl-ppr-explode-atom
+;;     (implies (vl-printedlist-p acc)
+;;              (vl-printedlist-p (mv-nth 1 (vl-ppr-explode-atom x pkg base col acc))))))
 
+
+;; (define vl-stupid-ppr1
+;;   :parents (vl-basic-fmt)
+;;   :short "Barbaric pretty-printer."
+;;   ((x                      "Any ACL2 object.")
+;;    (pkg      symbolp       "Home package we're printing from.")
+;;    (base     print-base-p  "Numeric base for printing numbers.")
+;;    (rmargin  natp          "Right margin for line wrapping.")
+;;    (in-listp booleanp      "Are we currently in a list?")
+;;    (col      natp          "Current column number.")
+;;    (acc))
+;;   :hooks ((:fix :args ((pkg symbolp)
+;;                        (rmargin natp)
+;;                        (in-listp booleanp)
+;;                        (col natp))))
+;;   :returns (mv (new-col natp :rule-classes :type-prescription)
+;;                (new-acc character-listp :hyp (character-listp acc)))
+;;   :verify-guards nil
+;;   (b* ((col     (lnfix col))
+;;        (rmargin (lnfix rmargin))
+;;        ((when (atom x))
+;;         (vl-ppr-explode-atom x pkg base col acc))
+;;        ((mv col acc)
+;;         (if in-listp
+;;             (vl-stupid-ppr1 (car x) pkg base rmargin nil col acc)
+;;           (vl-stupid-ppr1 (car x) pkg base rmargin nil (+ 1 col) (cons #\( acc))))
+;;        ((when (not (cdr x)))
+;;         (mv (+ 1 (lnfix col)) (if in-listp acc (cons #\) acc))))
+;;        ;; "Maybe break"
+;;        ((mv col acc) (if (< col rmargin)
+;;                          (mv col acc)
+;;                        (mv 0 (cons #\Newline acc))))
+;;        ((when (consp (cdr x)))
+;;         ;; Successive elements of a list, no dots.
+;;         (b* (((mv col acc)
+;;               (vl-stupid-ppr1 (cdr x) pkg base rmargin t (+ 1 col) (cons #\Space acc))))
+;;           (mv (+ 1 (lnfix col))
+;;               (if in-listp acc (cons #\) acc)))))
+
+;;        ;; End element, need a dot.
+;;        (col (+ 3 col))
+;;        (acc (list* #\Space #\. #\Space acc))
+
+;;        ;; "Maybe break"
+;;        ((mv col acc) (if (< col rmargin)
+;;                          (mv col acc)
+;;                        (mv 0 (cons #\Newline acc))))
+
+;;        ((mv col acc)
+;;         (vl-stupid-ppr1 (cdr x) pkg base rmargin t col acc)))
+
+;;     (mv (+ 1 (lnfix col))
+;;         (if in-listp acc (cons #\) acc))))
+;;   ///
+;;   (defthm vl-printedlist-p-of-vl-stupid-ppr1
+;;     (implies (vl-printedlist-p acc)
+;;              (vl-printedlist-p (mv-nth 1 (vl-stupid-ppr1 x pkg base rmargin in-listp col acc)))))
+
+;;   (verify-guards vl-stupid-ppr1))
 
 (define vl-skip-ws
   :parents (vl-basic-fmt)
@@ -1862,6 +1865,21 @@ characters into the accumulator in reverse order instead of printing them."
          (implies (character-listp x)
                   (true-listp x))))
 
+
+
+(define vl-fmt-tilde-x-column ((rchars   character-listp)
+                               (orig-col natp))
+  ;; Horrible stupid function used in vl-stupid-ppr1.  The str::pretty function
+  ;; doesn't tell us the final column number.  This just looks at the
+  ;; (backwards) characters to figure it out.
+  :returns (col natp)
+  (cond ((atom rchars)
+         (lnfix orig-col))
+        ((chareqv (car rchars) #\Newline)
+         0)
+        (t
+         (+ 1 (vl-fmt-tilde-x-column (cdr rchars) orig-col)))))
+
 (define vl-fmt-tilde-x (x &key (ps 'ps))
   :parents (vl-basic-fmt)
   (b* ((rchars  (vl-ps->rchars))
@@ -1871,24 +1889,50 @@ characters into the accumulator in reverse order instead of printing them."
        (htmlp   (vl-ps->htmlp))
        (tabsize (vl-ps->tabsize))
        (rmargin (vl-ps->autowrap-col))
+
+       (config (str::make-printconfig :flat-right-margin   (max 40 (floor rmargin 2))
+                                      :hard-right-margin   (max 77 rmargin)
+                                      :print-base          base
+                                      :print-radix         nil
+                                      :home-package        pkg
+                                      :print-lowercase     nil))
+
+       (x-rchars (str::revappend-pretty x nil :config config :col col))
        ((unless htmlp)
-        (mv-let (col rchars)
-                (vl-stupid-ppr1 x pkg base rmargin nil col rchars)
-                (vl-ps-seq
-                 (vl-ps-update-col col)
-                 (vl-ps-update-rchars rchars))))
-       ;; Else, we need to HTML-encode the printing of X.  Rather than
-       ;; complicate all the ppr functions with htmlp, we just do the normal
-       ;; printing then HTML-encode the resulting character list.  This is kind
-       ;; of horrifyingly inefficient.  On the other hand, it's still linear
-       ;; and shouldn't be THAT bad...
-       (temp         nil)
-       ((mv & temp)  (vl-stupid-ppr1 x pkg base rmargin nil col temp))
-       (temp         (reverse temp))
-       ((mv col rchars) (vl-html-encode-chars-aux temp col tabsize rchars)))
-      (vl-ps-seq
-       (vl-ps-update-col col)
-       (vl-ps-update-rchars rchars))))
+        (vl-ps-seq
+         ;; One option would be to append the new-rchars onto rchars.  Cost: N
+         ;; conses.  Another option would be to implode new-rchars into a
+         ;; string, then cons that string onto rchars.  Cost: implode and one
+         ;; cons.  I think I'll go with the second option because it seems like
+         ;; it should be nicer to the garbage collector.
+         (vl-ps-update-rchars (cons (str::rchars-to-string x-rchars) rchars))
+         (vl-ps-update-col    (vl-fmt-tilde-x-column x-rchars col))))
+
+       ;; HTML mode.  We're going to html encode the new-rchars.
+       ((mv col rchars)
+        (vl-html-encode-chars-aux (reverse x-rchars) col tabsize rchars)))
+    (vl-ps-seq
+     (vl-ps-update-col col)
+     (vl-ps-update-rchars rchars))))
+
+(local
+ (encapsulate
+   ()
+   (defun test-vl-fmt-tilde-x (x)
+     (with-local-ps
+       (vl-print "Hello ")
+       (vl-fmt-tilde-x x)
+       (vl-print ", World")))
+   (assert! (equal (test-vl-fmt-tilde-x '(a))
+                   "Hello (A), World"))
+   (assert! (equal (test-vl-fmt-tilde-x '(a b))
+                   "Hello (A B), World"))
+   (assert! (equal (test-vl-fmt-tilde-x
+                    (repeat 10 ':foo)) "Hello (:FOO :FOO
+            :FOO :FOO
+            :FOO :FOO
+            :FOO :FOO
+            :FOO :FOO), World"))))
 
 (define vl-fmt-tilde-s (x &key (ps 'ps))
   :parents (vl-basic-fmt)
@@ -1930,7 +1974,6 @@ characters into the accumulator in reverse order instead of printing them."
   (assert! (equal (test-vl-fmt-tilde-& '(a b)) "A and B"))
   (assert! (equal (test-vl-fmt-tilde-& '(a b c)) "A, B and C"))
   (assert! (equal (test-vl-fmt-tilde-& '(a b c d)) "A, B, C and D"))))
-
 
 
 
