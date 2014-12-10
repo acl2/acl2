@@ -104,6 +104,7 @@ function loadEverythingElse()
 
     installParsedSource();
     installHierarchy();
+    installWarnings();
 }
 
 
@@ -184,14 +185,13 @@ function installHierarchy()
     			 // $("#hier_parents").html("No parents");
     			 return;
     		     }
-    		     var ret = "Used by ";
+    		     var ret = "<p>Used by ";
 		     ret += makeModuleList('parents', parents);
-    		     ret += ".<br/>";
+    		     ret += ".</p>";
     		     $("#hier_parents").append(ret);
 		 }});
 
     vlsGetJson({ url: "/vls-get-children",
-		 cache: true,
 		 data: {origname:ORIGNAME},
 		 success: function(children) {
 		     if (children == "NIL" || children.length == 0) {
@@ -200,13 +200,143 @@ function installHierarchy()
 			 // $("#hier_children").html("Leaf module (no children).");
 			 return;
 		     }
-		     var ret = "Uses ";
+		     var ret = "<p>Uses ";
 		     ret += makeModuleList('children', children);
-		     ret += ".";
+		     ret += ".</p>";
 		     $("#hier_children").append(ret);
 		 }});
 }
 
+// function warningTypesSummary(wtypes) {
+//     // Wtypes is a hash that binds type -> count
+//     var tuples = [];
+//     for(var key in wtypes) tuples.push([key, wtypes[key]]);
+//     tuples.sort(function(a,b) {
+// 	count1 = a[1];
+// 	count2 = b[1];
+// 	return (count1 < count2) ? -1
+//              : (count2 < count1) ? 1
+// 	     : 0;
+//     });
+
+// }
+
+function warningToItem(w) {
+    var ret = "";
+    ret += "<li class='vl_warning'>";
+    if (w.fatalp)
+	ret += "<span class='vl_fatal_warning_type' title=\"From " + htmlEncode(w.fn) + "\">";
+    else
+	ret += "<span class='vl_nonfatal_warning_type' title=\"From " + htmlEncode(w.fn) + "\">";
+    ret += htmlEncode(w.type);
+    ret += "</span><br/>";
+    ret += w.html;
+    ret += "</li>";
+    return ret;
+}
+
+function expandElidedWarnings() {
+    $("#elided_warnings").hide();
+    $("#full_warnings").show();
+}
+
+function collapseWarnings() {
+    $("#elided_warnings").show();
+    $("#full_warnings").hide();
+}
+
+function closeExtraStuff() {
+    $("#extrastuff").hide();
+}
+
+function installWarnings()
+{
+    vlsGetJson({ url: "/vls-get-warnings",
+		 data: {origname:ORIGNAME},
+		 success: function(warnings)
+		 {
+		     // Basic sanity check on server data.
+		     assert(warnings.constructor === Array, "warnings not an array?");
+		     for(var i = 0;i < warnings.length; i++) {
+			 var w = warnings[i];
+			 assert("tag" in w,    "warning has no tag");
+			 assert("type" in w,   "warning has no type");
+			 assert("fatalp" in w, "warning has no fatalp");
+			 assert("html" in w,   "warning has no html");
+			 assert("fn" in w,     "warning has no fn");
+		     }
+
+		     if (warnings.length == 0) {
+			 // Seems nicer not to say anything at all.
+			 log("Not showing empty warnings " + JSON.stringify(warnings));
+			 return;
+		     }
+
+		     // Partition into fatal versus nonfatal warnings.
+		     var fatal = [];
+		     var nonfatal = [];
+		     for(var i = 0; i < warnings.length; i++) {
+			 var w = warnings[i];
+			 if (w.fatalp)
+			     fatal.push(w);
+			 else
+			     nonfatal.push(w);
+		     }
+
+		     fatal.sort(function(a,b) { return (a.type < b.type) ? 1 : (a.type > b.type) ? -1 : 0; });
+		     nonfatal.sort(function(a,b) { return (a.type < b.type) ? 1 : (a.type > b.type) ? -1 : 0; });
+
+		     var acc = "";
+		     acc += "<a href=\"javascript:void(0)\" onClick=\"closeExtraStuff()\">";
+		     acc += "<img src='images/close_small.png' align='right'/>";
+		     acc += "</a>";
+
+		     acc += "<p class='warninghead' align='left'>Warnings &mdash; " + fatal.length + " fatal, " + nonfatal.length + " nonfatal</p>";
+
+		     var all = fatal.concat(nonfatal);
+		     var cutoff = 3;
+
+		     if (all.length < cutoff)
+		     {
+			 acc += "<ul class='vl_warning_list'>";
+			 for(var i = 0;i < all.length; ++i)
+			     acc += warningToItem(all[i]);
+			 acc += "</ul>";
+		     }
+
+		     else
+		     {
+			 acc += "<ul class='vl_warning_list' id='full_warnings' style='display:none'>";
+			 for(var i = 0;i < cutoff; ++i)
+			     acc += warningToItem(all[i]);
+
+			 acc += "<p class='vl_warning_more'>";
+			 acc += "<a class=\"expandelided\" href=\"javascript:void(0)\" onclick=\"collapseWarnings()\">";
+			 acc += "show fewer";
+			 acc += "</a>";
+			 acc += "</p>";
+
+			 for(var i = cutoff;i < all.length; ++i)
+			     acc += warningToItem(all[i]);
+
+			 acc += "</ul>";
+
+			 acc += "<ul class='vl_warning_list' id='elided_warnings'>";
+			 for(var i = 0;i < cutoff; ++i)
+			     acc += warningToItem(all[i]);
+
+			 acc += "<li class='vl_warning_more'>";
+			 acc += "<br/><a class=\"expandelided\" href=\"javascript:void(0)\" onclick=\"expandElidedWarnings()\">";
+			 acc += "show " + (all.length - cutoff) + " more";
+			 acc += "</a>";
+			 acc += "</li>";
+
+			 acc += "</ul>";
+		     }
+
+		     $("#warnings").html(acc);
+		 }});
+}
 
 var SHOWING = "";
 

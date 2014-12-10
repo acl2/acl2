@@ -1241,8 +1241,13 @@ TEXT versions of the message.</p>"
 
   (b* (((vl-warning x) x)
        (text (with-local-ps (vl-cw-obj x.msg x.args)))
-       (html (with-local-ps (vl-ps-update-htmlp t)
-                            (vl-cw-obj x.msg x.args))))
+       (html (with-local-ps
+               (vl-ps-update-htmlp t)
+               ;; For the module browser, the warnings get word wrapped by the
+               ;; browser anyway, so don't try to wrap them ourselves or things
+               ;; get weird looking.
+               (vl-ps-update-autowrap-col 100000)
+               (vl-cw-obj x.msg x.args))))
     (jp-object :tag    (vl-print "\"warning\"")
                :fatalp (jp-bool x.fatalp)
                :type   (jp-str (symbol-name x.type))

@@ -274,6 +274,22 @@ merged so that @('foo') will now have 5 warnings.</p>"
 (def-vl-gather-reportcard configlist config)
 (def-vl-gather-reportcard typedeflist typedef)
 
+(define vl-design-reportcard-aux
+  :parents (vl-design-reportcard)
+  :short "Extend a @(see vl-reportcard-p) with all of the warnings for a design."
+  ((x   vl-design-p)
+   (acc vl-reportcard-p "Should be a fast alist."))
+  :returns (new-acc vl-reportcard-p "Fast alist, stolen from @('acc').  Not cleaned.")
+  (b* (((vl-design x))
+       (acc (vl-modulelist-gather-reportcard    x.mods       acc))
+       (acc (vl-udplist-gather-reportcard       x.udps       acc))
+       (acc (vl-interfacelist-gather-reportcard x.interfaces acc))
+       (acc (vl-programlist-gather-reportcard   x.programs   acc))
+       (acc (vl-packagelist-gather-reportcard   x.packages   acc))
+       (acc (vl-configlist-gather-reportcard    x.configs    acc))
+       (acc (vl-typedeflist-gather-reportcard   x.typedefs   acc)))
+    acc))
+
 (define vl-design-reportcard
   :short "Constructs a @(see vl-reportcard-p) for a design."
   ((x vl-design-p))
@@ -281,15 +297,8 @@ merged so that @('foo') will now have 5 warnings.</p>"
   :long "<p>This reportcard is in terms of elaborated (unparameterized) names;
 see also @(see vl-design-origname-reportcard) for an alternative that uses
 original names.</p>"
-  (b* (((vl-design x) x)
-       (acc nil)
-       (acc (vl-modulelist-gather-reportcard    x.mods acc))
-       (acc (vl-udplist-gather-reportcard       x.udps acc))
-       (acc (vl-interfacelist-gather-reportcard x.interfaces acc))
-       (acc (vl-programlist-gather-reportcard   x.programs acc))
-       (acc (vl-packagelist-gather-reportcard   x.packages acc))
-       (acc (vl-configlist-gather-reportcard    x.configs acc))
-       (acc (vl-typedeflist-gather-reportcard   x.typedefs acc))
+  (b* ((acc nil)
+       (acc (vl-design-reportcard-aux x acc))
        (ret (vl-clean-reportcard acc)))
     (fast-alist-free acc)
     ret))
@@ -298,6 +307,24 @@ original names.</p>"
   :fn vl-modulelist-gather-origname-reportcard
   :elem->name vl-module->origname)
 
+
+(define vl-design-origname-reportcard-aux
+  :parents (vl-design-origname-reportcard)
+  :short "Extend a @(see vl-reportcard-p) with all of the warnings for a
+design, in terms of the original design element names."
+  ((x   vl-design-p)
+   (acc vl-reportcard-p "Should be a fast alist."))
+  :returns (new-acc vl-reportcard-p "Fast alist, stolen from @('acc').  Not cleaned.")
+  (b* (((vl-design x))
+       (acc (vl-modulelist-gather-origname-reportcard    x.mods acc))
+       ;; BOZO are these going to have orignames?
+       (acc (vl-udplist-gather-reportcard       x.udps acc))
+       (acc (vl-interfacelist-gather-reportcard x.interfaces acc))
+       (acc (vl-programlist-gather-reportcard   x.programs acc))
+       (acc (vl-packagelist-gather-reportcard   x.packages acc))
+       (acc (vl-configlist-gather-reportcard    x.configs acc))
+       (acc (vl-typedeflist-gather-reportcard   x.typedefs acc)))
+    acc))
 
 (define vl-design-origname-reportcard
   :short "Constructs a @(see vl-reportcard-p) for a design in terms of original
@@ -322,14 +349,7 @@ cleaned up and merged.</p>"
 
   (b* (((vl-design x) x)
        (acc nil)
-       (acc (vl-modulelist-gather-origname-reportcard    x.mods acc))
-       ;; BOZO are these going to have orignames?
-       (acc (vl-udplist-gather-reportcard       x.udps acc))
-       (acc (vl-interfacelist-gather-reportcard x.interfaces acc))
-       (acc (vl-programlist-gather-reportcard   x.programs acc))
-       (acc (vl-packagelist-gather-reportcard   x.packages acc))
-       (acc (vl-configlist-gather-reportcard    x.configs acc))
-       (acc (vl-typedeflist-gather-reportcard   x.typedefs acc))
+       (acc (vl-design-origname-reportcard-aux x acc))
        (ret (vl-clean-reportcard acc)))
     (fast-alist-free acc)
     ret))

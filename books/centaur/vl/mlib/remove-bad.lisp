@@ -223,7 +223,7 @@ its removal.</p>")
        ;; Else, we found someone else to blame, so blame them!
        (warning (make-vl-warning
                  :type :vl-bad-dependency
-                 :msg "~m0 (perhaps transitively) depends on other design elements
+                 :msg "~m0 (perhaps transitively) depends on other design elements ~
                        that we were not able to process successfully: ~&1."
                  :args (list name root-probs)
                  :fatalp t
