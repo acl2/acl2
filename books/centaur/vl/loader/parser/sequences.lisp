@@ -40,92 +40,13 @@
 
 (local (xdoc::set-default-parents parse-sequence))
 
-
-(defenum vl-distweighttype-p
-  (:vl-weight-each
-   :vl-weight-total)
-  :short "Representation of the @(':=') or @(':/') weight operators."
-  :long "<p>See SystemVerilog-2012 Section 18.5.4, Distribution, and also see
-@(see vl-distitem).</p>
-
-<ul>
-
-<li>@(':vl-weight-each') stands for the @(':=') operator, which assigns the
-same weight to each item in the range.</li>
-
-<li>@(':vl-weight-total') stands for the @(':/') operator, which assigns a
-weight to the range as a whole, i.e., the weight of each value in the range
-will become @('weight/n') where @('n') is the number of items in the
-range.</li>
-
-</ul>
-
-<p>Both operators have the same meaning when applied to a single expression
-instead of a range.</p>")
-
-(defprod vl-distitem
-  :short "Representation of weighted distribution information."
-  :layout :tree
-  :tag :vl-distitem
-
-  ((left  vl-expr-p
-          "The sole or left expression in a dist item.  For instance, @('left')
-           will be @('100') in either @('100 := 1') or @('[100:102] := 1').")
-
-   (right vl-maybe-expr-p
-          "The right expression in a dist item that has a value range, or nil
-           if this dist item just has a single item.  For instance, @('right')
-           would be @('nil') in @('100 := 1'), but would be @('102') in
-           @('[100:102] := 1').")
-
-   (type  vl-distweighttype-p
-          "The weight type, i.e., @(':vl-weight-each') for @(':=')-style dist items,
-           or @(':vl-weight-total') for @(':/')-style dist items.  Note per
-           SystemVerilog-2012 Section 18.5.4, if no weight is specified, the
-           default weight is @(':= 1'), i.e., the default is
-           @(':vl-weight-each').")
-
-   (weight vl-expr-p
-           "The weight, e.g., @('1') in @('100 := 1').  Note per
-            SystemVerilog-2012 Section 18.5.4, if no weight is specified, the
-            default weight is @(':= 1'), so the default weight is @('1')."))
-
-  :long "<p>See SystemVerilog-2012 Section 18.5.4, Distribution.  This is our
-representation of a single @('dist_item').  The associated grammar rules
-are:</p>
-
-@({
-     dist_item ::= value_range [ dist_weight ]
-
-     dist_weight ::= ':=' expression             ;; see vl-distweighttype-p
-                   | ':/' expression
-
-     value_range ::= expression
-                   | [ expression : expression ]
-})")
-
-(fty::deflist vl-distlist
-  :elt-type vl-distitem
-  :elementp-of-nil nil)
-
-(defprod vl-exprdist
-  :short "Representation of @('expr dist { ... }') constructs."
-  :tag :vl-exprdist
-  :layout :tree
-  ((expr vl-expr-p
-         "The left-hand side expression, which per SystemVerilog-2012 Section
-          18.5.4 should involve at least one @('rand') variable.")
-   (dist vl-distlist-p
-         "The desired ranges of values and probability distribution.")))
-
-
 (defparser vl-parse-dist-item ()
   :short "Matches @('dist_item')."
   :result (vl-distitem-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  :long "<p>See @(see vl-distitem-p).  Grammar rules:</p>
+  :long "<p>See @(see vl-distitem).  Grammar rules:</p>
 
 @({
      dist_item ::= value_range [ dist_weight ]
@@ -158,20 +79,122 @@ are:</p>
                              (t
                               (progn$ (impossible)
                                       :vl-weight-each)))
-                :weight (or weight
-                            (vl-make-index 1))))))
+                :weight (or weight (vl-make-index 1))))))
+
+(defparser vl-parse-dist-list ()
+  :short "Matches @('dist_list ::= dist_item { ',' dist_item }')."
+  :result (vl-distlist-p val)
+  :true-listp t
+  :resultp-of-nil t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (first := (vl-parse-dist-item))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (rest := (vl-parse-dist-list)))
+       (return (cons first rest))))
+
+(defparser vl-parse-exprdist ()
+  :short "Matches @('expression_or_dist ::= expression [ 'dist' '{' dist_list '}' ]')."
+  :result (vl-exprdist-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (expr := (vl-parse-expression))
+       (when (vl-is-token? :vl-kwd-dist)
+         (:= (vl-match))
+         (:= (vl-match-token :vl-lcurly))
+         (dist := (vl-parse-dist-list))
+         (:= (vl-match-token :vl-rcurly)))
+       (return (make-vl-exprdist :expr expr :dist dist))))
 
 
 
 
 
 
-;; ; Expression or dist
+(defval *vl-end-of-sequence-$*
+  :parents (vl-parse-cycledelayrange)
+  (make-vl-atom :guts (make-vl-keyguts :type :vl-$)))
 
-;; expression_or_dist ::= expression [ 'dist' '{' dist_list '}' ]
+(assert! (vl-expr-p *vl-end-of-sequence-$*))
 
-;; dist_list ::= dist_item { ',' dist_item }
-;; dist_item ::= value_range [ dist_weight ]
+(defparser vl-parse-cycledelayrange ()
+  :short "Matches @('cycle_delay_range')."
+  :result (vl-cycledelayrange-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  :long "<p>See @(see vl-cycledelayrange).  Grammar rules are as follows:</p>
+
+@({
+    cycle_delay_range ::= '##' constant_primary
+                        | '##' '[' cycle_delay_const_range_expression ']'
+                        | '##[*]'
+                        | '##[+]'
+
+    cycle_delay_const_range_expression ::= constant_expression ':' constant_expression
+                                         | constant_expression ':' '$'
+})
+
+<p>But @('##[*]') just means @('##[0:$]') and @('##[+]') just means
+@('##[1:$]').  Note also that @('$') is a valid expression, so there's nothing
+special we need to do to recognize @('$') tokens here.</p>"
+  (seq tokstream
+       (:= (vl-match-token :vl-poundpound))
+
+       (unless (vl-is-token? :vl-lbrack)  ;; constant_primary case
+         (left := (vl-parse-primary))
+         (return (make-vl-cycledelayrange :left left :right nil)))
+
+       (:= (vl-match))  ;; Eat [
+
+       (when (vl-is-token? :vl-times)
+         (:= (vl-match))
+         (:= (vl-match-token :vl-rbrack))
+         (return (make-vl-cycledelayrange :left (vl-make-index 0)
+                                          :right *vl-end-of-sequence-$*)))
+
+       (when (vl-is-token? :vl-plus)
+         (:= (vl-match))
+         (:= (vl-match-token :vl-rbrack))
+         (return (make-vl-cycledelayrange :left (vl-make-index 1)
+                                          :right *vl-end-of-sequence-$*)))
+
+       ;; Otherwise should have two expressions.  We don't have to do anything
+       ;; special in case the right one is a $.
+       (left := (vl-parse-expression))
+       (:= (vl-match-token :vl-colon))
+       (right := (vl-parse-expression))
+       (:= (vl-match-token :vl-rbrack))
+       (return (make-vl-cycledelayrange :left left
+                                        :right right))))
+
+
+
+
+
+;; ; Boolean and Sequence Abbreviations
+
+;; boolean_abbrev ::= consecutive_repetition
+;;                  | non_consecutive_repetition
+;;                  | goto_repetition
+
+;; sequence_abbrev ::= consecutive_repetition
+
+;; consecutive_repetition ::= '[*' const_or_range_expression ']'
+;;                          | '[*]'
+;;                          | '[+]'
+
+;; non_consecutive_repetition ::= ['=' const_or_range_expression ]
+
+;; goto_repetition ::= ['->' const_or_range_expression ]
+
+;; const_or_range_expression ::= constant_expression
+;;                             | cycle_delay_const_range_expression
+
 
 
 
@@ -317,36 +340,6 @@ are:</p>
 ;;                 | sequence_expr 'within' sequence_expr
 ;;                 | clocking_event sequence_expr
 
-
-;; ; Cycle Delays
-
-;; cycle_delay_range ::= '##' constant_primary
-;;                     | '##' '[' cycle_delay_const_range_expression ']'
-;;                     | '##[*]'
-;;                     | '##[+]'
-
-;; cycle_delay_const_range_expression ::= constant_expression ':' constant_expression
-;;                                      | constant_expression ':' '$'
-
-
-;; ; Boolean and Sequence Abbreviations
-
-;; boolean_abbrev ::= consecutive_repetition
-;;                  | non_consecutive_repetition
-;;                  | goto_repetition
-
-;; sequence_abbrev ::= consecutive_repetition
-
-;; consecutive_repetition ::= '[*' const_or_range_expression ']'
-;;                          | '[*]'
-;;                          | '[+]'
-
-;; non_consecutive_repetition ::= ['=' const_or_range_expression ]
-
-;; goto_repetition ::= ['->' const_or_range_expression ]
-
-;; const_or_range_expression ::= constant_expression
-;;                             | cycle_delay_const_range_expression
 
 
 

@@ -4145,3 +4145,138 @@ resulting from parsing some Verilog source code."
 
 (defoption vl-maybe-design-p vl-design-p)
 
+
+
+
+
+
+;; BOZO these will have to move up at some point
+
+(defenum vl-distweighttype-p
+  (:vl-weight-each
+   :vl-weight-total)
+  :short "Representation of the @(':=') or @(':/') weight operators."
+  :long "<p>See SystemVerilog-2012 Section 18.5.4, Distribution, and also see
+@(see vl-distitem).</p>
+
+<ul>
+
+<li>@(':vl-weight-each') stands for the @(':=') operator, which assigns the
+same weight to each item in the range.</li>
+
+<li>@(':vl-weight-total') stands for the @(':/') operator, which assigns a
+weight to the range as a whole, i.e., the weight of each value in the range
+will become @('weight/n') where @('n') is the number of items in the
+range.</li>
+
+</ul>
+
+<p>Both operators have the same meaning when applied to a single expression
+instead of a range.</p>")
+
+(defprod vl-distitem
+  :short "Representation of weighted distribution information."
+  :layout :tree
+  :tag :vl-distitem
+
+  ((left  vl-expr-p
+          "The sole or left expression in a dist item.  For instance, @('left')
+           will be @('100') in either @('100 := 1') or @('[100:102] := 1').")
+
+   (right vl-maybe-expr-p
+          "The right expression in a dist item that has a value range, or nil
+           if this dist item just has a single item.  For instance, @('right')
+           would be @('nil') in @('100 := 1'), but would be @('102') in
+           @('[100:102] := 1').")
+
+   (type  vl-distweighttype-p
+          "The weight type, i.e., @(':vl-weight-each') for @(':=')-style dist items,
+           or @(':vl-weight-total') for @(':/')-style dist items.  Note per
+           SystemVerilog-2012 Section 18.5.4, if no weight is specified, the
+           default weight is @(':= 1'), i.e., the default is
+           @(':vl-weight-each').")
+
+   (weight vl-expr-p
+           "The weight, e.g., @('1') in @('100 := 1').  Note per
+            SystemVerilog-2012 Section 18.5.4, if no weight is specified, the
+            default weight is @(':= 1'), so the default weight is @('1')."))
+
+  :long "<p>See SystemVerilog-2012 Section 18.5.4, Distribution.  This is our
+representation of a single @('dist_item').  The associated grammar rules
+are:</p>
+
+@({
+     dist_item ::= value_range [ dist_weight ]
+
+     dist_weight ::= ':=' expression             ;; see vl-distweighttype-p
+                   | ':/' expression
+
+     value_range ::= expression
+                   | [ expression : expression ]
+})")
+
+(fty::deflist vl-distlist
+  :elt-type vl-distitem
+  :elementp-of-nil nil)
+
+(defprod vl-exprdist
+  :short "Representation of @('expr dist { ... }') constructs."
+  :tag :vl-exprdist
+  :layout :tree
+  ((expr vl-expr-p
+         "The left-hand side expression, which per SystemVerilog-2012 Section
+          18.5.4 should involve at least one @('rand') variable.")
+   (dist vl-distlist-p
+         "The desired ranges of values and probability distribution.")))
+
+(defprod vl-cycledelayrange
+  :short "Representation of cycle delay ranges in SystemVerilog sequences."
+  :layout :tree
+  :tag :vl-cycledelayrange
+
+  ((left  vl-expr-p
+          "The left-hand side expression.  Examples: @('left') is @('5') in @('##5'),
+           @('10') in @('##[10:20]'), 0 in @('##[*]'), and 1 in @('##[+]').
+           Supposed to be a constant expression that produces a non-negative
+           integer value.")
+
+   (right vl-maybe-expr-p
+          "The right-hand side expression, if applicable.  Note that our
+           expression representation allows us to directly represent @('$') as
+           a @(see vl-keyguts) atom, so in case of ranges like @('##[1:$]'),
+           @('right') is just the expression for @('$').  Other examples:
+           @('right') is @('nil') in @('##5'), @('20') in @('##[10:20]), @('$')
+           in @('##[*]), and @('$') in @('##[+]).  Supposed to be a constant
+           expression that produces a non-negative integer value that is at
+           least as large as @('left')."))
+
+  :long "<p>See SystemVerilog-2012 Section 16.7.  This is essentially our
+representation of the following grammar rules:</p>
+
+@({
+     cycle_delay_range ::= '##' constant_primary
+                         | '##' '[' cycle_delay_const_range_expression ']'
+                         | '##[*]'
+                         | '##[+]'
+
+     cycle_delay_const_range_expression ::= constant_expression ':' constant_expression
+                                          | constant_expression ':' '$'
+})
+
+<p>Note (page 346) that the expressions here (constant_primary or
+constant_expressions) are supposed to be determined at compile time and result
+in nonnegative integer expressions.  The @('$') token means the end of
+simulation, or for formal verification tools indicates a finite but unbounded
+range.  The right-hand side expression is supposed to be greater than or equal
+to the left-hand side expression.</p>
+
+<p>Some of this syntax is unnecessary:</p>
+
+<ul>
+<li>The syntax @('##[*]') just means @('##[0:$]')</li>
+<li>The syntax @('##[+]') just means @('##[1:$]')</li>
+</ul>
+
+<p>Accordingly in our internal representation we don't bother with these, but
+instead just translate them into @('0,$') or @('1,$') ranges.</p>")
+

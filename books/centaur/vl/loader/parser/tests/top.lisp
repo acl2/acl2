@@ -47,6 +47,7 @@
 (include-book "paramdecls")
 (include-book "ports")
 (include-book "ranges")
+(include-book "sequences")
 (include-book "statements")
 (include-book "strengths")
 (include-book "typedefs")
