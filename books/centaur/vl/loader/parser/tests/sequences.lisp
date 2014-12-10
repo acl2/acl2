@@ -63,16 +63,16 @@
           :dist
           (vl-pretty-distlist x.dist))))
 
-(defparser-top vl-parse-exprdist :resulttype vl-exprdist-p)
+(defparser-top vl-parse-expression-or-dist :resulttype vl-exprdist-p)
 
 
 
-(defmacro test-exprdist (&key input expect (successp 't))
+(defmacro test-exprdist (&key input expect (successp 't) (extra 'nil))
   `(assert! (b* ((config *vl-default-loadconfig*)
                  (tokens (make-test-tokens ,input))
                  (pstate (make-vl-parsestate))
                  ((mv erp val ?tokens (vl-parsestate pstate))
-                  (vl-parse-exprdist-top))
+                  (vl-parse-expression-or-dist-top))
                  ((when erp)
                   (cw "ERP is ~x0.~%" erp)
                   (not ,successp)))
@@ -80,6 +80,9 @@
               (and ,successp
                    (vl-exprdist-p val)
                    (not pstate.warnings)
+                   (or ',extra
+                       (not tokens)
+                       (cw "Extra tokens not expected?"))
                    (or (equal ',expect (vl-pretty-exprdist val))
                        (cw "Expected ~x0~%" ',expect)
                        (cw "Got:     ~x0~%" (vl-pretty-exprdist val)))))))
@@ -162,7 +165,7 @@
 
 (defparser-top vl-parse-cycledelayrange :resulttype vl-cycledelayrange-p)
 
-(defmacro test-cycledelayrange (&key input expect (successp 't))
+(defmacro test-cycledelayrange (&key input expect (successp 't) (extra 'nil))
   `(assert! (b* ((config *vl-default-loadconfig*)
                  (tokens (make-test-tokens ,input))
                  (pstate (make-vl-parsestate))
@@ -175,6 +178,9 @@
               (and ,successp
                    (vl-cycledelayrange-p val)
                    (not pstate.warnings)
+                   (or ',extra
+                       (not tokens)
+                       (cw "Extra tokens not expected?"))
                    (or (equal ',expect (vl-pretty-cycledelayrange val))
                        (cw "Expected ~x0~%" ',expect)
                        (cw "Got:     ~x0~%" (vl-pretty-cycledelayrange val)))))))
@@ -217,4 +223,62 @@
 
 
 
+(define vl-pretty-repetition ((x vl-repetition-p))
+  (b* (((vl-repetition x)))
+    (list* x.type
+           (vl-pretty-expr x.left)
+           (if x.right
+               (list (vl-pretty-expr x.right))
+             nil))))
+
+(defparser-top vl-parse-boolean-abbrev :resulttype vl-repetition-p)
+
+(defmacro test-repetition (&key input expect (successp 't) (extra 'nil))
+  `(assert! (b* ((config *vl-default-loadconfig*)
+                 (tokens (make-test-tokens ,input))
+                 (pstate (make-vl-parsestate))
+                 ((mv erp val ?tokens (vl-parsestate pstate))
+                  (vl-parse-boolean-abbrev-top))
+                 ((when erp)
+                  (cw "ERP is ~x0.~%" erp)
+                  (not ,successp)))
+              (cw "VAL is ~x0.~%" val)
+              (and ,successp
+                   (vl-repetition-p val)
+                   (not pstate.warnings)
+                   (or ',extra
+                       (not tokens)
+                       (cw "Extra tokens not expected?"))
+                   (or (equal ',expect (vl-pretty-repetition val))
+                       (cw "Expected ~x0~%" ',expect)
+                       (cw "Got:     ~x0~%" (vl-pretty-repetition val)))))))
+
+(test-repetition :input "" :successp nil)
+(test-repetition :input "[]" :successp nil)
+(test-repetition :input "[->]" :successp nil)
+(test-repetition :input "[=]"  :successp nil)
+
+(test-repetition :input "[*]" :expect (:vl-repetition-consecutive 0 (key :vl-$)))
+(test-repetition :input "[+]" :expect (:vl-repetition-consecutive 1 (key :vl-$)))
+
+(test-repetition :input "[*3]"   :expect (:vl-repetition-consecutive 3))
+(test-repetition :input "[*3:4]" :expect (:vl-repetition-consecutive 3 4))
+(test-repetition :input "[*3:$]" :expect (:vl-repetition-consecutive 3 (key :vl-$)))
+(test-repetition :input "[* 3]"   :expect (:vl-repetition-consecutive 3))
+(test-repetition :input "[* 3:4]" :expect (:vl-repetition-consecutive 3 4))
+(test-repetition :input "[* 3:$]" :expect (:vl-repetition-consecutive 3 (key :vl-$)))
+
+(test-repetition :input "[->3]"   :expect (:vl-repetition-goto 3))
+(test-repetition :input "[->3:4]" :expect (:vl-repetition-goto 3 4))
+(test-repetition :input "[->3:$]" :expect (:vl-repetition-goto 3 (key :vl-$)))
+(test-repetition :input "[-> 3]"   :expect (:vl-repetition-goto 3))
+(test-repetition :input "[-> 3:4]" :expect (:vl-repetition-goto 3 4))
+(test-repetition :input "[-> 3:$]" :expect (:vl-repetition-goto 3 (key :vl-$)))
+
+(test-repetition :input "[=3]"   :expect (:vl-repetition-nonconsecutive 3))
+(test-repetition :input "[=3:4]" :expect (:vl-repetition-nonconsecutive 3 4))
+(test-repetition :input "[=3:$]" :expect (:vl-repetition-nonconsecutive 3 (key :vl-$)))
+(test-repetition :input "[= 3]"   :expect (:vl-repetition-nonconsecutive 3))
+(test-repetition :input "[= 3:4]" :expect (:vl-repetition-nonconsecutive 3 4))
+(test-repetition :input "[= 3:$]" :expect (:vl-repetition-nonconsecutive 3 (key :vl-$)))
 

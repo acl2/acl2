@@ -4280,3 +4280,53 @@ to the left-hand side expression.</p>
 <p>Accordingly in our internal representation we don't bother with these, but
 instead just translate them into @('0,$') or @('1,$') ranges.</p>")
 
+
+(defenum vl-repetitiontype-p
+  (:vl-repetition-consecutive
+   :vl-repetition-goto
+   :vl-repetition-nonconsecutive)
+  :short "Representation of SystemVerilog assertion sequence repetition types,
+i.e., @('[*...]'), @('[->...]'), or @('[=...]') style repetition."
+  :long "<p>See SystemVerilog-2012 Section 16.9.2.</p>
+
+<ul>
+<li>@('[* ...]'), @('[*]'), and @('[+]') is called <b>consecutive</b> repetition</li>
+<li>@('[-> ...]') is called <b>goto</b> repetition</li>
+<li>@('[= ...]') is called <b>nonconsecutive</b> repetition</li>
+</ul>")
+
+(defprod vl-repetition
+  :short "Representation of a SystemVerilog assertion sequence repetition."
+  :tag :vl-repetition
+  :layout :tree
+
+  ((type vl-repetitiontype-p
+         "Kind of repetition, i.e., consecutive, goto, or nonconsecutive.")
+
+   (left vl-expr-p
+         "Sole or left bound on the repetition.  Examples: @('left') is 3 for
+          any of @('[* 3]'),
+                 @('[* 3:4]'),
+                 @('[-> 3]'),
+                 @('[-> 3:4]'),
+                 @('[= 3]'), or
+                 @('[= 3:4]').
+          In the special cases of @('[*]') and @('[+]'), @('left') should be
+          0 and 1, respectively.")
+
+   (right vl-maybe-expr-p
+          "Right bound on the repetition if applicable.  For instance,
+           @('right') is
+                 @('nil') for any of @('[* 3]'),
+                                     @('[-> 3]'), or
+                                     @('[= 3]').
+           It is @('4') for any of @('[* 3:4]'),
+                                   @('[-> 3:4]'), or
+                                   @('[= 3:4]').
+           It is @('$') for @('[*]') or @('[+]')."))
+
+  :long "<p>See SystemVerilog-2012 Section 16.9.2.</p>
+
+<p>Note from Page 357 that @('[*]') is equivalent to @('[0:$]') and @('[+]') is
+equivalent to @('[1:$]'), so we don't bother with separate representations of
+these.</p>")
