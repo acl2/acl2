@@ -160,3 +160,60 @@ a:hover {
     color: #aa00aa;
     text-decoration: underline;
 }
+
+
+
+
+
+
+/* ---------------------------------------------------------------------- *
+ *                                                                        *
+ *  Warning Formatting for VL                                             *
+ *                                                                        *
+ * ---------------------------------------------------------------------- */
+
+.vl_warning {
+    font-size: 75%;
+}
+
+.vl_warning_more {
+    list-style-type: none;
+    margin-left: .1in;
+    font-size: 75%;
+}
+
+.vl_nonfatal_warning_type {
+    font-family: "<!-- TMPL_VAR sans_font -->", sans-serif;
+    font-weight: bold;
+    color: #c06000;
+}
+
+.vl_fatal_warning_type {
+    font-family: "<!-- TMPL_VAR sans_font -->", sans-serif;
+    font-weight: bold;
+    color: #c00000;
+}
+
+.vl_module_yes_warnings {
+    margin-top: 0px;
+    margin-left: .1in;
+    font-weight: normal;
+    font-size: 13pt;
+    color: #900000;
+}
+
+.vl_module_no_warnings {
+    margin-top: 0px;
+    margin-left: .1in;
+    font-weight: normal;
+    font-size: 13pt;
+    color: #006000;
+}
+
+.vl_warning_list {
+    list-style-type: decimal;
+    background-color: #ffffff;
+    /* border-width: 1px; */
+    /* border-style: solid; */
+    /* border-color: #909090; */
+}

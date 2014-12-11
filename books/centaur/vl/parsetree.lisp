@@ -69,7 +69,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2014-11-4")
+  "VL Syntax 2014-12-8")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -2861,105 +2861,105 @@ endmodule
 
 
 
-(defenum vl-taskporttype-p
-  (:vl-unsigned
-   :vl-signed
-   :vl-integer
-   :vl-real
-   :vl-realtime
-   :vl-time)
-  :short "Representation for the type of task ports, function return types, and
-function inputs."
+;; (defenum vl-taskporttype-p
+;;   (:vl-unsigned
+;;    :vl-signed
+;;    :vl-integer
+;;    :vl-real
+;;    :vl-realtime
+;;    :vl-time)
+;;   :short "Representation for the type of task ports, function return types, and
+;; function inputs."
 
-  :long "<p>These are the various return types that can be used with a Verilog
-task's input, output, or inout declarations.  For instance, a task can have
-ports such as:</p>
+;;   :long "<p>These are the various return types that can be used with a Verilog
+;; task's input, output, or inout declarations.  For instance, a task can have
+;; ports such as:</p>
 
-@({
-  task mytask;
-    input integer count;  // type :vl-integer
-    output signed value;  // type :vl-signed
-    inout x;              // type :vl-unsigned
-    ...
-  endtask
-})
+;; @({
+;;   task mytask;
+;;     input integer count;  // type :vl-integer
+;;     output signed value;  // type :vl-signed
+;;     inout x;              // type :vl-unsigned
+;;     ...
+;;   endtask
+;; })
 
-<p>There isn't an explicit @('unsigned') type that you can write; so note that
-@(':vl-unsigned') is really the type for \"plain\" ports that don't have an
-explicit type label.</p>
+;; <p>There isn't an explicit @('unsigned') type that you can write; so note that
+;; @(':vl-unsigned') is really the type for \"plain\" ports that don't have an
+;; explicit type label.</p>
 
-<p>These same types are used for the return values of Verilog functions.  For
-instance, we use @(':vl-unsigned') for a function like:</p>
+;; <p>These same types are used for the return values of Verilog functions.  For
+;; instance, we use @(':vl-unsigned') for a function like:</p>
 
-@({ function [7:0] add_one ; ... endfunction })
+;; @({ function [7:0] add_one ; ... endfunction })
 
-<p>whereas we use @(':vl-real') for a function like:</p>
+;; <p>whereas we use @(':vl-real') for a function like:</p>
 
-@({ function real get_ratio ; ... endfunction })
+;; @({ function real get_ratio ; ... endfunction })
 
-<p>Likewise, the inputs to Verilog functions use these same kinds of
-types.</p>")
+;; <p>Likewise, the inputs to Verilog functions use these same kinds of
+;; types.</p>")
 
-(defprod vl-taskport
-  :short "Representation of a task port or a function input."
-  :tag :vl-taskport
-  :layout :Tree
+;; (defprod vl-taskport
+;;   :short "Representation of a task port or a function input."
+;;   :tag :vl-taskport
+;;   :layout :Tree
 
-  ((name  stringp
-          :rule-classes :type-prescription
-          "The name of this task port.")
+;;   ((name  stringp
+;;           :rule-classes :type-prescription
+;;           "The name of this task port.")
 
-   (dir   vl-direction-p
-          :rule-classes
-          ((:rewrite)
-           (:type-prescription
-            :corollary
-            (implies (force (vl-taskport-p x))
-                     (and (symbolp (vl-taskport->dir x))
-                          (not (equal (vl-taskport->dir x) t))
-                          (not (equal (vl-taskport->dir x) nil))))))
-          "Says whether this is an input, output, or inout port.  Note that
-           tasks can have all three kinds of ports, but functions only have
-           inputs.")
+;;    (dir   vl-direction-p
+;;           :rule-classes
+;;           ((:rewrite)
+;;            (:type-prescription
+;;             :corollary
+;;             (implies (force (vl-taskport-p x))
+;;                      (and (symbolp (vl-taskport->dir x))
+;;                           (not (equal (vl-taskport->dir x) t))
+;;                           (not (equal (vl-taskport->dir x) nil))))))
+;;           "Says whether this is an input, output, or inout port.  Note that
+;;            tasks can have all three kinds of ports, but functions only have
+;;            inputs.")
 
-   (type  vl-taskporttype-p
-          :rule-classes
-          ((:rewrite)
-           (:type-prescription
-            :corollary
-            (implies (force (vl-taskport-p x))
-                     (and (symbolp (vl-taskport->type x))
-                          (not (equal (vl-taskport->type x) t))
-                          (not (equal (vl-taskport->type x) nil))))))
-          "Says what kind of port this is, i.e., @('integer'), @('real'),
-          etc.")
+;;    (type  vl-taskporttype-p
+;;           :rule-classes
+;;           ((:rewrite)
+;;            (:type-prescription
+;;             :corollary
+;;             (implies (force (vl-taskport-p x))
+;;                      (and (symbolp (vl-taskport->type x))
+;;                           (not (equal (vl-taskport->type x) t))
+;;                           (not (equal (vl-taskport->type x) nil))))))
+;;           "Says what kind of port this is, i.e., @('integer'), @('real'),
+;;           etc.")
 
-   (range vl-maybe-range-p
-          "The size of this input.  A range only makes sense when the type is
-           @(':vl-unsigned') or @(':vl-signed').  It should be @('nil') when
-           other types are used.")
+;;    (range vl-maybe-range-p
+;;           "The size of this input.  A range only makes sense when the type is
+;;            @(':vl-unsigned') or @(':vl-signed').  It should be @('nil') when
+;;            other types are used.")
 
-   (atts  vl-atts-p
-          "Any attributes associated with this input.")
+;;    (atts  vl-atts-p
+;;           "Any attributes associated with this input.")
 
-   (loc   vl-location-p
-          "Where this input was found in the source code."))
+;;    (loc   vl-location-p
+;;           "Where this input was found in the source code."))
 
-  :long "<p>Verilog tasks have ports that are similar to the ports of a module.
-We represent these ports with their own @('vl-taskport-p') structures, rather
-than reusing @(see vl-portdecl-p), because unlike module port declarations,
-task ports can have types like @('integer') or @('real').</p>
+;;   :long "<p>Verilog tasks have ports that are similar to the ports of a module.
+;; We represent these ports with their own @('vl-taskport-p') structures, rather
+;; than reusing @(see vl-portdecl-p), because unlike module port declarations,
+;; task ports can have types like @('integer') or @('real').</p>
 
-<p>While Verilog functions don't have @('output') or @('inout') ports, they do
-have input ports that are very similar to task ports.  So, we reuse
-@('vl-taskport-p') structures for function inputs.</p>")
+;; <p>While Verilog functions don't have @('output') or @('inout') ports, they do
+;; have input ports that are very similar to task ports.  So, we reuse
+;; @('vl-taskport-p') structures for function inputs.</p>")
 
-(fty::deflist vl-taskportlist :elt-type vl-taskport-p
-  :elementp-of-nil nil)
+;; (fty::deflist vl-taskportlist :elt-type vl-taskport-p
+;;   :elementp-of-nil nil)
 
-(defprojection vl-taskportlist->names ((x vl-taskportlist-p))
-  :returns (names string-listp)
-  (vl-taskport->name x))
+;; (defprojection vl-taskportlist->names ((x vl-taskportlist-p))
+;;   :returns (names string-listp)
+;;   (vl-taskport->name x))
 
 
 (defprod vl-fundecl
@@ -2971,26 +2971,19 @@ have input ports that are very similar to task ports.  So, we reuse
                :rule-classes :type-prescription
                "Name of this function, e.g., @('lower_bits') below.")
 
-   (automaticp booleanp
-               :rule-classes :type-prescription
-               "Says whether the @('automatic') keyword was provided.  This
-                keyword indicates that the function should be reentrant and
-                have its local parameters dynamically allocated for each
-                function call, with various consequences.")
+   (lifetime   vl-lifetime-p
+               "Indicates whether an explicit @('automatic') or @('static')
+                lifetime was provided.  An automatic function is supposed to be
+                reentrant and have its local parameters dynamically allocated
+                for each function call, with various consequences.")
 
-   (rtype      vl-taskporttype-p
+   (rettype    vl-datatype-p
                "Return type of the function, e.g., a function might return an
                 ordinary unsigned or signed result of some width, or might
                 return a @('real') value, etc.  For instance, the return type
                 of @('lower_bits') below is @(':vl-unsigned').")
 
-   (rrange     vl-maybe-range-p
-               "Range for the function's return value.  This only makes sense
-                when the @('rtype') is @(':vl-unsigned') or @(':vl-signed').
-                For instance, the return range of @('lower_bits') below is
-                @('[7:0]').")
-
-   (inputs     vl-taskportlist-p
+   (portdecls  vl-portdecllist-p
                "The arguments to the function, e.g., @('input [7:0] a') below.
                 Functions must have at least one input.  We check this in our
                 parser, but we don't syntactically enforce this requirement in
@@ -3065,16 +3058,15 @@ extra declarations are created automatically by the loader.</p>")
                :rule-classes :type-prescription
                "The name of this task.")
 
-   (automaticp booleanp
-               :rule-classes :type-prescription
-               "Says whether the @('automatic') keyword was provided.  This
-                keyword indicates that each invocation of the task has its own
-                copy of its variables.  For instance, the task below had
-                probably better be automatic if it there are going to be
-                concurrent instances of it running, since otherwise @('temp')
-                could be corrupted by the other task.")
+   (lifetime   vl-lifetime-p
+               "Indicates whether an explicit @('automatic') or @('static')
+                lifetime was provided.  Each invocation of an automatic task
+                has its own copy of its variables.  For instance, the task
+                below had probably better be automatic if it there are going to
+                be concurrent instances of it running, since otherwise
+                @('temp') could be corrupted by the other task.")
 
-   (ports      vl-taskportlist-p
+   (portdecls  vl-portdecllist-p
                "The input, output, and inout ports for the task.")
 
    (decls      vl-blockitemlist-p

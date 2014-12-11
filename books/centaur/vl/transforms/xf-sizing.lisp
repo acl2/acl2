@@ -1054,6 +1054,65 @@ the expression.</p>"
 
 (def-vl-exprsize-list vl-vardecllist :element vl-vardecl)
 
+(def-vl-exprsize vl-maybe-datatype
+  :body
+  (if x
+      (vl-datatype-exprsize x ss ctx warnings)
+    (mv nil (ok) nil))
+  :takes-ctx t)
+
+(def-vl-exprsize vl-paramdecl
+  :body
+  (b* (((vl-paramdecl x) (vl-paramdecl-fix x))
+       (ctx x)
+       ((mv ok warnings type)
+        (vl-paramtype-case x.type
+          :vl-implicitvalueparam
+          (b* (((mv ok1 warnings range) (vl-maybe-range-exprsize x.type.range ss ctx warnings))
+               ((mv ok2 warnings default) (vl-maybe-expr-size x.type.default ss ctx warnings)))
+            (mv (and ok1 ok2) warnings (change-vl-implicitvalueparam
+                                        x.type :range range :default default)))
+          :vl-explicitvalueparam
+          (b* (((mv ok1 warnings type) (vl-datatype-exprsize x.type.type ss ctx warnings))
+               ((mv ok2 warnings default) (vl-maybe-expr-size x.type.default ss ctx warnings)))
+            (mv (and ok1 ok2) warnings
+                (change-vl-explicitvalueparam
+                 x.type :type type :default default)))
+          :vl-typeparam
+          (b* (((mv ok warnings default) (vl-maybe-datatype-exprsize x.type.default ss ctx warnings)))
+            (mv ok warnings (change-vl-typeparam x.type :default default))))))
+    (mv ok warnings (change-vl-paramdecl x :type type))))
+
+
+       
+
+(def-vl-exprsize vl-blockitem
+  :body
+  (case (tag x)
+    (:vl-vardecl (vl-vardecl-exprsize x ss warnings))
+    (otherwise   (vl-paramdecl-exprsize x ss warnings))))
+
+(def-vl-exprsize-list vl-blockitemlist :element vl-blockitem)
+
+(def-vl-exprsize vl-fundecl
+  :body
+  (b* (((vl-fundecl x) x)
+       ((mv ok1 warnings portdecls) (vl-portdecllist-exprsize x.portdecls ss warnings))
+       ((mv ok2 warnings rettype)   (vl-datatype-exprsize x.rettype ss x warnings))
+       (ss (vl-scopestack-push (vl-fundecl->blockscope x) ss))
+       ((mv ok3 warnings decls)
+        (vl-blockitemlist-exprsize x.decls ss warnings))
+       ((mv ok4 warnings body) (vl-stmt-exprsize x.body ss x warnings)))
+    (mv (and ok1 ok2 ok3 ok4) warnings
+        (change-vl-fundecl x
+                           :portdecls portdecls
+                           :rettype rettype
+                           :decls decls
+                           :body body))))
+       
+(def-vl-exprsize-list vl-fundecllist :element vl-fundecl)
+
+
 
 (def-genblob-transform vl-genblob-exprsize ((ss vl-scopestack-p)
                                             (warnings vl-warninglist-p))
@@ -1070,7 +1129,8 @@ the expression.</p>"
        ((mv & warnings portdecls)  (vl-portdecllist-exprsize  x.portdecls  ss warnings))
        ((mv & warnings vardecls)   (vl-vardecllist-exprsize   x.vardecls   ss warnings))
        ((mv warnings generates)    (vl-generates-exprsize     x.generates  ss  warnings))
-       ((mv & warnings ports)      (vl-portlist-exprsize      x.ports      ss warnings)))
+       ((mv & warnings ports)      (vl-portlist-exprsize      x.ports      ss warnings))
+       ((mv & warnings fundecls)   (vl-fundecllist-exprsize   x.fundecls   ss warnings)))
 
     (mv warnings
         (change-vl-genblob
@@ -1083,7 +1143,8 @@ the expression.</p>"
          :initials initials
          :portdecls portdecls
          :vardecls vardecls
-         :generates generates)))
+         :generates generates
+         :fundecls fundecls)))
   :apply-to-generates vl-generates-exprsize)
 
 (define vl-module-exprsize ((x vl-module-p)
@@ -1108,7 +1169,10 @@ the expression.</p>"
   :returns (new-x vl-design-p)
   (b* (((vl-design x) x)
        (ss (vl-scopestack-init x))
-       (mods (vl-modulelist-exprsize x.mods ss)))
+       (mods (vl-modulelist-exprsize x.mods ss))
+       ((mv ?ok warnings fundecls) (vl-fundecllist-exprsize x.fundecls ss x.warnings)))
     (vl-scopestacks-free)
-    (change-vl-design x :mods mods)))
+    (change-vl-design x :mods mods
+                      :fundecls fundecls
+                      :warnings warnings)))
 

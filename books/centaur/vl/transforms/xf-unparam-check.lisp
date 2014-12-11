@@ -119,7 +119,7 @@ name clashes, and adds fatal warnings to them.</p>")
 
 (define vl-fundecl-localnames-nrev ((x vl-fundecl-p) nrev)
   (b* (((vl-fundecl x) x)
-       (nrev (vl-taskportlist->names-nrev x.inputs nrev))
+       (nrev (vl-portdecllist->names-nrev x.portdecls nrev))
        (nrev (vl-blockitemlist->names-nrev x.decls nrev))
        (nrev (vl-stmt-localnames-nrev x.body nrev)))
     nrev))
@@ -129,7 +129,7 @@ name clashes, and adds fatal warnings to them.</p>")
   :verify-guards nil
   (mbe :logic
        (b* (((vl-fundecl x) x))
-         (append (vl-taskportlist->names x.inputs)
+         (append (vl-portdecllist->names x.portdecls)
                  (vl-blockitemlist->names x.decls)
                  (vl-stmt-localnames x.body)))
        :exec
@@ -152,7 +152,7 @@ name clashes, and adds fatal warnings to them.</p>")
 
 (define vl-taskdecl-localnames-nrev ((x vl-taskdecl-p) nrev)
   (b* (((vl-taskdecl x) x)
-       (nrev (vl-taskportlist->names-nrev x.ports nrev))
+       (nrev (vl-portdecllist->names-nrev x.portdecls nrev))
        (nrev (vl-blockitemlist->names-nrev x.decls nrev))
        (nrev (vl-stmt-localnames-nrev x.body nrev)))
     nrev))
@@ -162,7 +162,7 @@ name clashes, and adds fatal warnings to them.</p>")
   :verify-guards nil
   (mbe :logic
        (b* (((vl-taskdecl x) x))
-         (append (vl-taskportlist->names x.ports)
+         (append (vl-portdecllist->names x.portdecls)
                  (vl-blockitemlist->names x.decls)
                  (vl-stmt-localnames x.body)))
        :exec

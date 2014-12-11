@@ -37,6 +37,7 @@
 (include-book "command")
 (include-book "../transforms/annotate/top")
 (include-book "../mlib/comment-writer")
+(include-book "../mlib/json")
 (include-book "oslib/file-types" :dir :system)
 (include-book "std/io/unsound-read" :dir :system)
 (include-book "centaur/quicklisp/hunchentoot" :dir :system)
@@ -273,6 +274,52 @@ viewing Verilog designs.")
   (b* (((vls-data data))
        (children (vl-necessary-elements-direct (list origname) data.orig)))
     (vls-success :json (bridge::json-encode children))))
+
+
+(define vl-description->warnings ((x vl-description-p))
+  :short "Get the warnings from most descriptions, or @('nil') if this
+description doesn't have any warnings (e.g., an @('import') statement, function
+declaration, ...)."
+  :returns (warnings vl-warninglist-p)
+  (b* ((x (vl-description-fix x)))
+    (case (tag x)
+      (:vl-module     (vl-module->warnings x))
+      (:vl-udp        (vl-udp->warnings x))
+      (:vl-interface  (vl-interface->warnings x))
+      (:vl-package    (vl-package->warnings x))
+      (:vl-program    (vl-program->warnings x))
+      (:vl-config     (vl-config->warnings x))
+      (:vl-taskdecl   nil)
+      (:vl-fundecl    nil)
+      (:vl-paramdecl  nil)
+      (:vl-import     nil)
+      (:vl-fwdtypedef nil)
+      (:vl-typedef    nil)
+      (otherwise      (impossible)))))
+
+(define vls-data-origname-reportcard ((data vls-data-p))
+  :returns (reportcard vl-reportcard-p)
+  (b* (((vls-data data))
+       (acc nil)
+       (acc (vl-design-origname-reportcard-aux data.good acc))
+       (acc (vl-design-origname-reportcard-aux data.bad acc))
+       (ret (vl-clean-reportcard acc)))
+    (fast-alist-free acc)
+    ret))
+
+(memoize 'vls-data-origname-reportcard)
+
+(define-vls-json vls-get-warnings (origname data)
+  (b* (((vls-data data))
+       (look (hons-assoc-equal origname data.orig-descalist))
+       ((unless look)
+        (vls-fail "No such description: ~s0~%" origname))
+
+       (reportcard (vls-data-origname-reportcard data))
+       (warnings   (cdr (hons-assoc-equal origname reportcard)))
+       (json       (with-local-ps
+                     (vl-jp-warninglist warnings))))
+    (vls-success :json json)))
 
 ; (depends-on "server-raw.lsp")
 (acl2::include-raw "server-raw.lsp"
