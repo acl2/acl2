@@ -8588,8 +8588,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
-  (declare (xargs :guard
-                  (member-eq load-compiled-file *load-compiled-file-values*)))
+; Rather than specify a guard, we call chk-include-book-inputs.
+
   (list 'include-book-fn
         (list 'quote user-book-name)
         'state
@@ -12905,6 +12905,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (gstackp . nil)
     (guard-checking-on . t)
     (host-lisp . nil)
+    (ignore-cert-files . nil)
     (illegal-to-certify-message . nil)
     (in-local-flg . nil)
     (in-prove-flg . nil)
