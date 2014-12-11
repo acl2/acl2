@@ -235,6 +235,10 @@ special we need to do to recognize @('$') tokens here.</p>"
 
 
 
+#||
+
+(i-am-here)
+
 
 ;; ; Section 16.9.1 gives the Sequence Operators and Precedence
 
@@ -248,13 +252,6 @@ special we need to do to recognize @('$') tokens here.</p>"
 ;; <tr>  <td>  @('and')                </td><td>  Left           </td></tr>
 ;; <tr>  <td>  @('or')                 </td><td>  Left           </td></tr>
 ;; </table>
-
-
-
-;; ## is next highest precedence
-
-;; thro
-
 
 
 ;; sequence_expr ::=               cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }
@@ -274,9 +271,97 @@ special we need to do to recognize @('$') tokens here.</p>"
 
 
 
+;; ## is next highest precedence
+
+(defenum vl-seqbinop-p
+  (:vl-sequence-and
+   :vl-sequence-intersect
+   :vl-sequence-or
+   :vl-sequence-within))
+
+(deftypes sequences
+  :parents (syntax)
+  :short "Representation of SystemVerilog sequence expressions."
+
+  (deftagsum vl-sequence
+
+    (:vl-seqbase
+     ;; sequence_expr ::= expression_or_dist [boolean_abbrev]
+     :layout :tree
+     :base-name vl-seqbase
+     ((item       vl-exprdist-p)
+      (repetition vl-repetition-p)))
+
+    (:vl-seqbinop
+     ;; sequence_expr ::= ...
+     ;;                 | sequence_expr 'and'       sequence_expr
+     ;;                 | sequence_expr 'intersect' sequence_expr
+     ;;                 | sequence_expr 'or'        sequence_expr
+     ;;                 | sequence_expr 'within'    sequence_expr
+     :layout :tree
+     :base-name vl-seqbinop
+     ((left  vl-sequence-p)
+      (right vl-sequence-p)
+      (op    vl-seqbinop-p)))))
+
+     
+I think the only atomic sequences are:
+
+;;                 | 
+
+
+;; sequence_expr ::=               cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }
+;;                 | sequence_expr cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }
+
+;;                 | sequence_instance [sequence_abbrev]
+;;                 | '(' sequence_expr { ',' sequence_match_item } ')' [sequence_abbrev]
+;;                 | 'first_match' '(' sequence_expr {',' sequence_match_item} ')'
+;;                 | expression_or_dist 'throughout' sequence_expr
+
+;;                 | clocking_event sequence_expr
 
 
 
+;; So this stuff is all mutually recursive
+
+sequence_instance ::= ps_or_hierarchical_sequence_identifier [ '(' [sequence_list_of_arguments] ')' ]
+
+sequence_list_of_arguments ::= [sequence_actual_arg] { ',' [sequence_actual_arg] }
+                                                     { ',' '.' identifier '(' [sequence_actual_arg] ')' }
+                             | '.' identifier ( [sequence_actual_arg] )
+                                { ',' '.' identifier ( [sequence_actual_arg] ) }
+
+sequence_actual_arg ::= event_expression
+                      | sequence_expr
+
+
+
+
+
+sequence_match_item ::= operator_assignment
+                      | inc_or_dec_expression
+                      | subroutine_call
+
+
+
+subroutine_call ::= tf_call
+                  | system_tf_call
+                  | method_call
+                  | [ 'std::' ] randomize_call
+
+tf_call ::= ps_or_hierarchical_tf_identifier { attribute_instance } [ '(' list_of_arguments ')' ]
+
+   ;; Note 37: It shall be illegal to omit the parentheses in a tf_call
+   ;; unless the subroutine is a task, void function, or class method.
+   ;; If the subroutine is a nonvoid class function method, it shall be
+   ;; illegal to omit the parentheses if the call is directly recursive.
+
+system_tf_call ::= system_tf_identifier [ '(' list_of_arguments ')' ]
+
+method_call ::= method_call_root '.' method_call_body
+
+method_call_body ::= method_identifier { attribute_instance } [ ( list_of_arguments ) ]
+                   | built_in_method_call
 
 
 
@@ -474,3 +559,6 @@ special we need to do to recognize @('$') tokens here.</p>"
 
 ;; ...
 
+
+
+||#

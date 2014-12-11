@@ -270,35 +270,44 @@ only meant as a heuristic for generating more useful warnings.</p>"
          (op   (vl-nonatom->op x))
          (args (vl-nonatom->args x)))
       (case op
-        ((:vl-bitselect :vl-unary-bitand :vl-unary-nand :vl-unary-bitor
-                        :vl-unary-nor :vl-unary-xor :vl-unary-xnor :vl-unary-lognot
-                        :vl-binary-logand :vl-binary-logor
-                        :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
-                        :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
-                        :vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
-                        :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon
-                        :vl-syscall :vl-funcall :vl-mintypmax :vl-hid-dot
-                         :vl-index :vl-scope
+        ((:vl-bitselect
+          :vl-unary-bitand :vl-unary-nand :vl-unary-bitor
+          :vl-unary-nor :vl-unary-xor :vl-unary-xnor :vl-unary-lognot
+          :vl-binary-logand :vl-binary-logor
+          :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
+          :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
+          :vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
+          :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon
+          :vl-syscall :vl-funcall :vl-mintypmax :vl-hid-dot
+          :vl-index :vl-scope
 
-                        ;; Eventually many of these may be worth considering...
-                        :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
-                        :vl-stream-left :vl-stream-right
-                        :vl-stream-left-sized :vl-stream-right-sized
+          ;; Eventually many of these may be worth considering...
+          :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
+          :vl-stream-left :vl-stream-right
+          :vl-stream-left-sized :vl-stream-right-sized
 
-                        :vl-tagged
+          :vl-tagged
 
-                        :vl-binary-wildeq :vl-binary-wildneq
-                        :vl-implies :vl-equiv
+          :vl-binary-wildeq :vl-binary-wildneq
+          :vl-implies :vl-equiv
 
-                        ;; This can definitely affect sizes, but I'm not sure what to do
-                        ;; about it yet.
-                        :vl-binary-cast
+          ;; This can definitely affect sizes, but I'm not sure what to do
+          ;; about it yet.
+          :vl-binary-cast
           :vl-pattern-multi
           :vl-pattern-type
           :vl-pattern-positional
           :vl-pattern-keyvalue
           :vl-keyvalue
-                        )
+
+          ;; Sizing shouldn't encounter these.
+          :vl-unary-preinc :vl-unary-predec :vl-unary-postinc :vl-unary-postdec
+          :vl-binary-assign
+          :vl-binary-plusassign :vl-binary-minusassign
+          :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
+          :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
+          :vl-binary-shlassign :vl-binary-shrassign :vl-binary-ashlassign :vl-binary-ashrassign
+          )
          ;; Don't gather anything from here.
          nil)
 
@@ -800,6 +809,15 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
           :vl-pattern-positional
           :vl-pattern-keyvalue
           :vl-keyvalue
+
+          ;; We shouldn't encounter these in sizing, they should be gotten
+          ;; rid of in increment-elim
+          :vl-unary-preinc :vl-unary-predec :vl-unary-postinc :vl-unary-postdec
+          :vl-binary-assign
+          :vl-binary-plusassign :vl-binary-minusassign
+          :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
+          :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
+          :vl-binary-shlassign :vl-binary-shrassign :vl-binary-ashlassign :vl-binary-ashrassign
           )
          ;; We don't handle these here.  They should be handled in
          ;; vl-expr-selfsize specially, because unlike all of the other

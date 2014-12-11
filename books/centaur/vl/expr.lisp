@@ -67,6 +67,10 @@ arities (e.g., concatenation, function calls, ...), we map the operator to
 <li>@(' ~| ') becomes @(':vl-unary-nor')</li>
 <li>@(' ^  ') becomes @(':vl-unary-xor')</li>
 <li>@(' ^~ ') or @(' ~^ ') becomes @(':vl-unary-xnor')</li>
+<li>@(' ++a ') becomes @(':vl-unary-preinc')</li>
+<li>@(' a++ ') becomes @(':vl-unary-postinc')</li>
+<li>@(' --a ') becomes @(':vl-unary-predec')</li>
+<li>@(' a-- ') becomes @(':vl-unary-postdec')</li>
 </ul>
 
 <h5>Basic Binary Operators (arity 2)</h5>
@@ -96,6 +100,24 @@ arities (e.g., concatenation, function calls, ...), we map the operator to
 <li>@(' <<  ') becomes @(':vl-binary-shl')</li>
 <li>@(' >>> ') becomes @(':vl-binary-ashr')</li>
 <li>@(' <<< ') becomes @(':vl-binary-ashl')</li>
+</ul>
+
+<h5>Assignments within Expressions (SystemVerilog)</h5>
+
+<ul>
+<li>@(' (a = b)    ') becomes @(':vl-binary-assign')</li>
+<li>@(' (a += b)   ') becomes @(':vl-binary-plusassign')</li>
+<li>@(' (a -= b)   ') becomes @(':vl-binary-minusassign')</li>
+<li>@(' (a *= b)   ') becomes @(':vl-binary-timesassign')</li>
+<li>@(' (a /= b)   ') becomes @(':vl-binary-divassign')</li>
+<li>@(' (a %= b)   ') becomes @(':vl-binary-remassign')</li>
+<li>@(' (a &= b)   ') becomes @(':vl-binary-andassign')</li>
+<li>@(' (a |= b)   ') becomes @(':vl-binary-orassign')</li>
+<li>@(' (a ^= b)   ') becomes @(':vl-binary-xorassign')</li>
+<li>@(' (a <<= b)  ') becomes @(':vl-binary-shlassign')</li>
+<li>@(' (a >>= b)  ') becomes @(':vl-binary-shrassign')</li>
+<li>@(' (a <<<= b) ') becomes @(':vl-binary-ashlassign')</li>
+<li>@(' (a >>>= b) ') becomes @(':vl-binary-ashrassign')</li>
 </ul>
 
 <h5>Basic Ternary Operators (arity 3)</h5>
@@ -197,6 +219,10 @@ SystemVerilog-2012 Standard.</p>"
    (cons :vl-unary-nor             1)   ;;; ~|
    (cons :vl-unary-xor             1)   ;;; ^
    (cons :vl-unary-xnor            1)   ;;; ~^ or ^~
+   (cons :vl-unary-preinc          1)   ;;; ++a
+   (cons :vl-unary-predec          1)   ;;; --a
+   (cons :vl-unary-postinc         1)   ;;; a++
+   (cons :vl-unary-postdec         1)   ;;; a--
 
    ;; Basic Binary Operators
    (cons :vl-binary-plus           2)   ;;; +
@@ -225,6 +251,21 @@ SystemVerilog-2012 Standard.</p>"
    (cons :vl-binary-shl            2)   ;;; <<
    (cons :vl-binary-ashr           2)   ;;; >>>
    (cons :vl-binary-ashl           2)   ;;; <<<
+
+   ;; Assignments within Expressions (SystemVerilog)
+   (cons :vl-binary-assign         2)   ;;; (a = b)
+   (cons :vl-binary-plusassign     2)   ;;; (a += b)
+   (cons :vl-binary-minusassign    2)   ;;; (a -= b)
+   (cons :vl-binary-timesassign    2)   ;;; (a *= b)
+   (cons :vl-binary-divassign      2)   ;;; (a /= b)
+   (cons :vl-binary-remassign      2)   ;;; (a %= b)
+   (cons :vl-binary-andassign      2)   ;;; (a &= b)
+   (cons :vl-binary-orassign       2)   ;;; (a |= b)
+   (cons :vl-binary-xorassign      2)   ;;; (a ^= b)
+   (cons :vl-binary-shlassign      2)   ;;; (a <<= b)
+   (cons :vl-binary-shrassign      2)   ;;; (a >>= b)
+   (cons :vl-binary-ashlassign     2)   ;;; (a <<<= b)
+   (cons :vl-binary-ashrassign     2)   ;;; (a >>>= b)
 
    ;; Special Binary Operators (these associate right to left)
    (cons :vl-implies               2)   ;;; ->

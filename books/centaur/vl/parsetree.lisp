@@ -2436,9 +2436,10 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
      :base-name vl-nullstmt
      :layout :tree
      ((atts vl-atts-p "Any attributes associated with this statement."))
-     :long "<p>We allow explicit null statements.  This allows us to canonicalize
-@('if') expressions so that any missing branches are turned into null
-statements.</p>")
+
+     :long "<p>We allow explicit null statements.  This allows us to
+canonicalize @('if') expressions so that any missing branches are turned into
+null statements.</p>")
 
     (:vl-assignstmt
      :layout :tree
@@ -2500,7 +2501,23 @@ to either nets or variables.  There are two kinds:</p>
 })
 
 <p>We represent all of these kinds of assignment statements uniformly as
-@('vl-assignstmt-p') objects.</p>")
+@('vl-assignstmt-p') objects.</p>
+
+<h4>SystemVerilog Extensions</h4>
+
+<p>SystemVerilog-2012 implements special additional assignment operators such
+as @('a += b').  Per Section 11.4 of SystemVerilog-2012, these operators are
+semantically equivalent to blocking assignment statements except that in the
+case of index expressions such as @('a[i] += b'), the index @('i') is only
+evaluated once.  VL's parser converts assignments such as @('a += b') into
+blocking assignments such as @('a = a + b').  To note that this was a @('+=')
+style assignment, the parser adds a @('VL_FANCY_ASSIGNMENT_OPERATOR') attribute
+to the assignstmt.</p>
+
+<p>SystemVerilog also adds increment and decrement operators, i.e., @('a++')
+and @('a--').  These operators, per Section 11.4.2 of SystemVerilog-2012, also
+\"behave as blocking assignments.\" We normally convert these operators into
+blocking assignments in the @(see increment-elim) transform.</p>")
 
 
     (:vl-deassignstmt
