@@ -106,7 +106,6 @@
     (and buffer.valid in.valid
          (equal buffer.address in.address))))
 
-
 (defrule match-commute
   (equal (match-address x y)
          (match-address y x))
@@ -167,7 +166,6 @@
                        B3)))
   :enable (buffers-req data-address-valid-fix-for-buffers))
 
-
 (defrulel match-of-default-is-always-nil
 ; For subgoal 23.9 in buffers-fix-works and buffers-req-of-fixes, but it's not
 ; a horrible lemma to have in general.  Still, we make it local.
@@ -180,7 +178,6 @@
 ;;           nil)
 ;;    :enable match-address)
 
-
 (defrule buffers-fix-works
   (implies (and (data-address-valid-p b1)
                 (data-address-valid-p b2)
@@ -191,7 +188,6 @@
                         (data-address-valid-fix-for-buffers b3 b1 b2 b4)
                         (data-address-valid-fix-for-buffers b4 b1 b1 b2)))
   :enable (data-address-valid-fix-for-buffers  buffers-req))
-
 
 (defrule buffers-req-of-fixes
 ; I don't quite understand why this is necessary, but it is.  At least it's
