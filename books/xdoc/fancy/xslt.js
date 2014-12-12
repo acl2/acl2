@@ -155,7 +155,10 @@ function xsltInit() {
 		return "Error: " + myErr.reason;
 	    }
 	    var output = xmldom.transformNode(xsltdom);
-	    unfuglifyLegacyQuotes(output);
+	    // Don't try to unfuglify quotes on IE, I run into errors
+	    // in code like node.childNodes.length and it just isn't worth
+	    // trying to figure out.
+	    // unfuglifyLegacyQuotes(output);
 	    var str = $("<div>" + output + "</div>");
 	    return str;
 	};
