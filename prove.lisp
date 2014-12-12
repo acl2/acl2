@@ -9285,29 +9285,6 @@
            (cond (interrupted-p (mv t nil state))
                  (t (mv (car erp-val) (cdr erp-val) state))))))
 
-(defmacro bind-acl2-time-limit (form)
-
-; The raw Lisp code for this macro arranges that *acl2-time-limit* is restored
-; to its global value (presumably nil) after we exit its top-level call.
-; Consider the following key example of how this can work.  Suppose
-; *acl2-time-limit* is set to 0 by our-abort because of an interrupt.
-; Inspection of the code for our-abort shows that *acl2-time-limit-boundp* must
-; be true in that case; but then we must be in the dynamic scope of
-; bind-acl2-time-limit, as that is the only legal way for
-; *acl2-time-limit-boundp* to be bound or set.  But inside bind-acl2-time-limit
-; we are only modifying a let-bound *acl2-time-limit*, not its global value.
-; In summary, setting *acl2-time-limit* to 0 by our-abort will not change the
-; global value of *acl2-time-limit*.
-
-  #-acl2-loop-only
-  `(if *acl2-time-limit-boundp*
-       ,form
-     (let ((*acl2-time-limit-boundp* t)
-           (*acl2-time-limit* *acl2-time-limit*))
-       ,form))
-  #+acl2-loop-only
-  form)
-
 (defun prove-loop (clauses pspv hints ens wrld ctx state)
 
 ; We either cause an error or return a ttree.  If the ttree contains

@@ -22737,10 +22737,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (progn
 
-; The following variables implement time limits.  Only bind-acl2-time-limit
-; should bind *acl2-time-limit*, as described in a comment in
-; bind-acl2-time-limit, where one may find a a discussion of how these
-; variables are handled.
+; The following variables implement prover time limits.  The variable
+; *acl2-time-limit* is nil by default, but is set to a positive time limit (in
+; units of internal-time-units-per-second) by with-prover-time-limit, and is
+; set to 0 to indicate that a proof with a time limit has been interrupted (see
+; our-abort).
+
+; The variable *acl2-time-limit-boundp* is used in bind-acl2-time-limit, which
+; provides the only legal way to bind bind *acl2-time-limit*.  For more
+; information about these variables, see bind-acl2-time-limit.
 
 (defparameter *acl2-time-limit* nil)
 
@@ -22994,6 +22999,59 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (defparameter *inhibit-wormhole-activityp* nil)
 
+(defmacro bind-acl2-time-limit (form &optional (limit 'nil limit-p))
+
+; The raw Lisp code for this macro arranges that *acl2-time-limit* is restored
+; to its global value (presumably nil) after we exit its top-level call.
+; Consider the following key example of how this can work.  Suppose
+; *acl2-time-limit* is set to 0 by our-abort because of an interrupt.
+; Inspection of the code for our-abort shows that *acl2-time-limit-boundp* must
+; be true in that case; but then we must be in the dynamic scope of
+; bind-acl2-time-limit, as that is the only legal way for
+; *acl2-time-limit-boundp* to be bound or set.  But inside bind-acl2-time-limit
+; we are only modifying a let-bound *acl2-time-limit*, not its global value.
+; In summary, setting *acl2-time-limit* to 0 by our-abort will not change the
+; global value of *acl2-time-limit*.
+
+; However, the description above is a bit flawed if we enter a wormhole.  We
+; really want a fresh binding of *acl2-time-limit* in that case, as illustrated
+; by the following example, which explains the call of bind-acl2-time-limit in
+; wormhole1.
+
+;   (defun foo (x) (cons x x))
+;   (brr t)
+;   (monitor '(:definition foo) t)
+;   ; The following succeeds if we type :go at the breaks.
+;   ; But suppose we don't:
+;   (with-prover-time-limit
+;    1/10
+;    (thm (equal (append (append x y) (foo z))
+;                (append x y (foo z)))))
+;   ; Now in the break...
+;   ; Try the following several times, and eventually you'll see it quit with an
+;   ; error due to being out of time!
+;   (thm (equal (append (append x y) z)
+;               (append x y z)))
+;   ; The following fails after enough THM calls just above, but that's not
+;   ; surprising, since time-limits are based on total cpu time, which includes
+;   ; time in the wormhole.
+;   :go
+
+  #-acl2-loop-only
+  (cond (limit-p ; then definitely bind
+         `(let ((*acl2-time-limit-boundp* t)
+                (*acl2-time-limit* ,limit))
+            ,form))
+        (t `(if *acl2-time-limit-boundp*
+                ,form
+              (let ((*acl2-time-limit-boundp* t)
+                    (*acl2-time-limit* *acl2-time-limit*))
+                ,form))))
+  #+acl2-loop-only
+  (declare (ignore limit limit-p))
+  #+acl2-loop-only
+  form)
+
 (defun wormhole1 (name input form ld-specials)
 
 ; Here is the world's fanciest no-op.
@@ -23079,13 +23137,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (f-put-global 'wormhole-status
                     (cdr (assoc-equal name *wormhole-status-alist*))
                     state)
-      (ld-fn (append
-              `((standard-oi . (,form . ,*standard-oi*))
-                (standard-co . ,*standard-co*)
-                (proofs-co . ,*standard-co*))
-              ld-specials)
-             state
-             t)
+      (bind-acl2-time-limit
+
+; See the comments in bind-acl2-time-limit to understand why we are using it
+; here.
+
+       (ld-fn (append
+               `((standard-oi . (,form . ,*standard-oi*))
+                 (standard-co . ,*standard-co*)
+                 (proofs-co . ,*standard-co*))
+               ld-specials)
+              state
+              t)
+       nil)
       (eval *wormhole-cleanup-form*)
       (pop (car *acl2-unwind-protect-stack*))
       nil))))

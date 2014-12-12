@@ -7901,7 +7901,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                (ccl::*break-hook* nil)
                (*package* (find-package (current-package state)))
                (continue-p (and (find-restart 'continue)
-                                *acl2-time-limit-boundp*
+                                *acl2-time-limit*
                                 (not (eql *acl2-time-limit* 0)))))
            #+ccl ; for CCL revisions before 12090
            (declare (ignorable ccl::*break-hook*))
