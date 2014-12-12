@@ -10102,6 +10102,14 @@
 (defmacro help nil
   '(help-fn state))
 
+#-acl2-legacy-doc
+(defmacro help nil
+  '(pprogn (fms "For information about name, type :DOC name.  For an ~
+                 introduction to the ACL2 documentation, type :DOC ~
+                 documentation.~|"
+                nil (standard-co state) state nil)
+           (value :invisible)))
+
 (defun trans-fn (form state)
   (io? temporary nil (mv erp val state)
        (form)
