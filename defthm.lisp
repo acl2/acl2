@@ -6177,6 +6177,26 @@
                           end) the Remark on Replacing IFF by EQUAL."
                          name 'iff 'equal))
               (t state))
+
+; The warnings below were originally errors, but as Jared Davis pointed out
+; using essentially the following example, it was easy to change order to avoid
+; the errors.  So we create warnings instead.
+
+;  (defun my-equiv (x y) (equal x y))
+;  (defun my-equiv2 (x y) (equal x y))
+;  (defequiv my-equiv)
+;  (defequiv my-equiv2)
+;  (defrefinement my-equiv my-equiv2)
+
+;   ; Then this sequence formerly resulted in an error, but not if their order
+;   ; was switched or the defrefinement above was moved to after both defcong
+;   ; forms.  Now, we get a warning this way but not if we switch their order
+;   ; or defer the defrefinement.  We can live with that, since we suspect that
+;   ; it could slow down ACL2 to do the more thorough checks.
+
+;  (defcong my-equiv2 equal (consp x) 1)
+;  (defcong my-equiv equal (consp x) 1)
+
         (cond
          ((eq flg :classic)
           (let* ((k addr)
@@ -6186,41 +6206,40 @@
                                                'current-acl2-world wrld)))))
             (cond
              ((some-congruence-rule-same equiv1 temp)
-              (er soft ctx
-                  "The previously added :CONGRUENCE lemma, ~x0, establishes ~
-                   that ~x1 preserves ~x2 in the ~n3 slot of ~x4.  Thus, ~x5 ~
-                   is unnecessary."
-                  (base-symbol
-                   (access congruence-rule
-                           (some-congruence-rule-same equiv1 temp)
-                           :rune))
-                  equiv1 equiv2 (cons k 'th) fn name))
+              (warning$ ctx "Equiv"
+                        "The previously added :CONGRUENCE lemma, ~x0, ~
+                         establishes that ~x1 preserves ~x2 in the ~n3 slot ~
+                         of ~x4.  Thus, ~x5 is unnecessary."
+                        (base-symbol
+                         (access congruence-rule
+                                 (some-congruence-rule-same equiv1 temp)
+                                 :rune))
+                        equiv1 equiv2 (cons k 'th) fn name))
              ((some-congruence-rule-has-refinement equiv1 temp wrld)
-              (er soft ctx
-                  "The previously added :CONGRUENCE lemma, ~x0, establishes ~
-                   that ~x1 preserves ~x2 in the ~n3 slot of ~x4.  But we ~
-                   know that ~x5 is a refinement of ~x1.  Thus, ~x6 is ~
-                   unnecessary."
-                  (base-symbol
-                   (access congruence-rule
-                           (some-congruence-rule-has-refinement equiv1 temp
-                                                                wrld)
-                           :rune))
-                  (access congruence-rule
-                          (some-congruence-rule-has-refinement equiv1 temp wrld)
-                          :equiv)
-                  equiv2 (cons k 'th) fn equiv1 name))
-             (t (value nil)))))
-         (t (pprogn
-             (observation ctx
-                          "The rule ~x0 is a ~s1 patterned congruence rule.  ~
-                           See :DOC patterned-congruence."
-                          name
-                          (if (eq flg :shallow)
-                              "shallow"
-                            (assert$ (eq flg :deep)
-                                     "deep")))
-             (value nil))))))))))
+              (warning$ ctx "Equiv"
+                        "The previously added :CONGRUENCE lemma, ~x0, ~
+                         establishes that ~x1 preserves ~x2 in the ~n3 slot ~
+                         of ~x4.  But we know that ~x5 is a refinement of ~
+                         ~x1.  Thus, ~x6 is unnecessary."
+                        (base-symbol
+                         (access congruence-rule
+                                 (some-congruence-rule-has-refinement equiv1 temp
+                                                                      wrld)
+                                 :rune))
+                        (access congruence-rule
+                                (some-congruence-rule-has-refinement equiv1 temp wrld)
+                                :equiv)
+                        equiv2 (cons k 'th) fn equiv1 name))
+             (t state))))
+         (t (observation ctx
+                         "The rule ~x0 is a ~s1 patterned congruence rule.  ~
+                          See :DOC patterned-congruence."
+                         name
+                         (if (eq flg :shallow)
+                             "shallow"
+                           (assert$ (eq flg :deep)
+                                    "deep")))))
+        (value nil)))))))
 
 (defun add-congruence-rule-to-congruence (rule k congruence)
 
