@@ -51,35 +51,43 @@
    (progn
 ; (depends-rec "std/strings/cat" :dir :system)
      (acl2::acl2x-replace (include-book
-                           "std/strings/cat" :dir :system)
+                           "std/strings/cat" :dir :system
+                           :uncertified-okp :ignore-certs)
                           (value-triple :invisible)
                           :outside-certification
                           (include-book
-                           "std/strings/cat" :dir :system))
+                           "std/strings/cat" :dir :system
+                           :uncertified-okp :ignore-certs))
 
 ; (depends-rec "std/strings/case-conversion" :dir :system)
      (acl2::acl2x-replace (include-book
-                           "std/strings/case-conversion" :dir :system)
+                           "std/strings/case-conversion" :dir :system
+                           :uncertified-okp :ignore-certs)
                           (value-triple :invisible)
                           :outside-certification
                           (include-book
-                           "std/strings/case-conversion" :dir :system))
+                           "std/strings/case-conversion" :dir :system
+                           :uncertified-okp :ignore-certs))
 
 ; (depends-rec "std/strings/strsubst" :dir :system)
      (acl2::acl2x-replace (include-book
-                           "std/strings/strsubst" :dir :system)
+                           "std/strings/strsubst" :dir :system
+                           :uncertified-okp :ignore-certs)
                           (value-triple :invisible)
                           :outside-certification
                           (include-book
-                           "std/strings/strsubst" :dir :system))
+                           "std/strings/strsubst" :dir :system
+                           :uncertified-okp :ignore-certs))
 
 ; (depends-rec "std/strings/decimal" :dir :system)
      (acl2::acl2x-replace (include-book
-                           "std/strings/decimal" :dir :system)
+                           "std/strings/decimal" :dir :system
+                           :uncertified-okp :ignore-certs)
                           (value-triple :invisible)
                           :outside-certification
                           (include-book
-                           "std/strings/decimal" :dir :system)))
+                           "std/strings/decimal" :dir :system
+                           :uncertified-okp :ignore-certs)))
    
    (make-event
     (er hard? 'xdoc/str
