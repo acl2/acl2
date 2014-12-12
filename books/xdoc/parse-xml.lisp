@@ -65,7 +65,7 @@
 ;
 ;    (:ENTITY TYPE) represents entities like &amp;
 ;
-;      - TYPE is :AMP, :LT, :GT, :APOS, :NBSP, :MDASH, or :RARR
+;      - TYPE is :AMP, :LT, :GT, :APOS, :NBSP, :MDASH, :RARR, LSQUO, RSQUO, LDQUO, or RDQUO
 
 (defun opentok-p (x) (eq (first x) :OPEN))
 (defun opentok-name (x) (second x))
@@ -280,7 +280,12 @@
        ((when (equal str "apos")) (mv nil n '(:ENTITY :APOS)))
        ((when (equal str "nbsp")) (mv nil n '(:ENTITY :NBSP)))
        ((when (equal str "mdash")) (mv nil n '(:ENTITY :MDASH)))
-       ((when (equal str "rarr")) (mv nil n '(:ENTITY :RARR))))
+       ((when (equal str "rarr")) (mv nil n '(:ENTITY :RARR)))
+       ((when (equal str "lsquo")) (mv nil n '(:ENTITY :LSQUO)))
+       ((when (equal str "rsquo")) (mv nil n '(:ENTITY :RSQUO)))
+       ((when (equal str "ldquo")) (mv nil n '(:ENTITY :LDQUO)))
+       ((when (equal str "rdquo")) (mv nil n '(:ENTITY :RDQUO)))
+       )
     (mv (str::cat "Unsupported entity: &" str ";" *nls*
                   "Nearby text: {" (error-context x saved-n xl) "}" *nls*)
         n nil)))
@@ -327,6 +332,10 @@
     (:NBSP  "&nbsp;")
     (:MDASH "&mdash;")
     (:RARR  "&rarr;")
+    (:LSQUO "&lsquo;")
+    (:RSQUO "&rsquo;")
+    (:LDQUO "&ldquo;")
+    (:RDQUO "&rdquo;")
     ))
 
 (defun entitytok-as-plaintext (x)
@@ -338,7 +347,11 @@
     (:APOS  "'")
     (:NBSP  " ")
     (:MDASH "---")
-    (:RARR  "-->")))
+    (:RARR  "-->")
+    (:LSQUO "`")
+    (:RSQUO "'")
+    (:LDQUO "``")
+    (:RDQUO "''")))
 
 (defun flatten-token-for-errormsg (x)
   (cond ((opentok-p x)
