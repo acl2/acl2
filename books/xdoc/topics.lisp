@@ -1404,7 +1404,32 @@ manual.</p>")
 <li>@('&nbsp;')  becomes &nbsp; (this one can be hard to see)</li>
 <li>@('&mdash;') becomes &mdash;</li>
 <li>@('&rarr;')  becomes &rarr;</li>
-</ul>")
+<li>@('&lsquo;') becomes &lsquo;</li>
+<li>@('&rsquo;') becomes &rsquo;</li>
+<li>@('&ldquo;') becomes &ldquo;</li>
+<li>@('&rdquo;') becomes &rdquo;</li>
+</ul>
+
+<p>Test of `single' and ``double'' smart quoting for legacy topics.</p>
+
+<p>Test of &lsquo;single&rsquo; and &ldquo;double&rdquo; smart quoting for
+regular old entities.</p>
+
+<p>Test of <tt>`single' and ``double''</tt> quotes in a @('<tt>') tag and in
+a @('<code>') tag:</p>
+
+<code>`single' and ``double''</code>
+
+<p>Test of @(' `single' and ``double'' ') quotes in inline preprocessor stuff,
+and in preprocessor blocks here:</p>
+
+@({ `single' and ``double'' quotes ! })
+
+<p>Test of primes in math: @($ foo' $) and</p>
+
+@([ foo' ])
+
+<p>That should probably about do it.</p>")
 
 (order-subtopics xdoc-tests
   (order-test-w

@@ -60,6 +60,10 @@
   <!ENTITY mdash \"&#8212;\">
   <!ENTITY rarr \"&#8594;\">
   <!ENTITY nbsp \"&#160;\">
+  <!ENTITY lsquo \"&#8216;\">
+  <!ENTITY rsquo \"&#8217;\">
+  <!ENTITY ldquo \"&#8220;\">
+  <!ENTITY rdquo \"&#8221;\">
 ]>
 ")
 
