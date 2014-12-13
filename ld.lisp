@@ -1043,10 +1043,22 @@
          (t state))
    (mv-let
     (col state)
-    (ld-print-prompt state)
+    (if (and (eql (f-get-global 'in-verify-flg state) 1)
+             (eql (f-get-global 'ld-level state) 1))
+        (mv 0 state)
+      (ld-print-prompt state))
     (mv-let
      (eofp erp keyp form state)
-     (ld-read-command state)
+     (let ((in-verify-flg (f-get-global 'in-verify-flg state)))
+       (cond (in-verify-flg
+              (pprogn (f-put-global 'in-verify-flg nil state)
+                      (cond ((and (eql (f-get-global 'ld-level state) 1)
+                                  (eql in-verify-flg 1))
+                             (pprogn
+                              (print-re-entering-proof-checker nil state)
+                              (mv nil nil nil '(verify) state)))
+                            (t (ld-read-command state)))))
+             (t (ld-read-command state))))
      (cond
       (eofp (cond ((ld-prompt state)
                    (pprogn (princ$ "Bye." (standard-co state) state)

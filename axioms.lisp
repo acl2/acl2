@@ -12909,7 +12909,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (illegal-to-certify-message . nil)
     (in-local-flg . nil)
     (in-prove-flg . nil)
-    (in-verify-flg . nil)
+    (in-verify-flg . nil) ; value can be set to the ld-level
     (including-uncertified-p . nil) ; valid only during include-book
     (infixp . nil)                   ; See the Essay on Infix below
     (inhibit-output-lst . (summary)) ; Without this setting, initialize-acl2
@@ -22983,6 +22983,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(abort!))
 
 (defun p! ()
+
+; If p! is executed inside a brr wormhole break, it will cause an abort out of
+; the brkpt1 call.  The message "Pop up to ACL2 top-level" might be a bit
+; misleading in that case, but it appears to be accurate: the brr wormhole from
+; brkpt1 is indeed exited.
+
   (declare (xargs :guard t))
   #-acl2-loop-only
   (throw 'local-top-level :pop)

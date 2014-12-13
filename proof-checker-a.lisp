@@ -1155,33 +1155,18 @@
 
 (defconst *pc-complete-signal* 'acl2-pc-complete)
 
-(defmacro catch-throw-to-local-top-level (form)
-
-; Form should evaluate to (mv erp val state) or else throw to
-; 'local-top-level.
-
-  #+acl2-loop-only
-  `(mv-let (cttltl-erp cttltl-val state)
-           (read-acl2-oracle state)
-           (cond ((or cttltl-erp cttltl-val)
-                  (mv 'thrown-to-local-top-level
-                      (or cttltl-erp cttltl-val)
-                      state))
-                 (t (check-vars-not-free
-                     (cttltl-erp cttltl-val)
-                     ,form))))
-  #-acl2-loop-only
-  (let ((thrown-var (gensym)))
-    `(let* ((,thrown-var t)
-            (trip (catch 'local-top-level
-                    (prog1
-                        (mv-list 3 ,form)
-                      (setq ,thrown-var nil)))))
-       (cond (,thrown-var
-              (mv 'thrown-to-local-top-level trip state))
-             (t (assert$ (eq *the-live-state*
-                             (caddr trip))
-                         (mv (car trip) (cadr trip) state)))))))
+(defun print-re-entering-proof-checker (eof-p state)
+  (io? proof-checker nil state (eof-p)
+       (fms0
+        "~|~%~
+         /-----------------------------------------------------------\\~%~
+         | Note: Re-entering the proof-checker after ~s0 |~%~
+         | Submit EXIT if you want to exit the proof-checker.        |~%~
+         \\-----------------------------------------------------------/~%"
+        (list (cons #\0 (cond (eof-p
+                               "end of file.   ")
+                              (t
+                               "error or abort.")))))))
 
 (defun pc-main-loop (instr-list quit-conditions last-value
                                 pc-print-prompt-and-instr-flg state)
@@ -1223,34 +1208,33 @@
                   (value (car instr-list)))
         (state-global-let*
          ((infixp nil))
-         (catch-throw-to-local-top-level
-          (read-object instr-list state))))
+         (read-object instr-list state)))
       (cond
-       (erp ; read error
+       (erp
+
+; Read-object encountered end-of-file, presumably because a control-d was
+; issued.  Note that raw Lisp errors are not handled here, but rather, in
+; ld-read-eval-print, where a (verify) command is re-issued (to get back into
+; the proof-checker) instead of taking input from the user.
+
         (pprogn
-         (io? proof-checker nil state nil
-              (fms0
-               "~|~%~
-                /----------------------------------------------------\\~%~
-                |        NOTE: Read error -- input discarded.        |~%~
-                | Submit EXIT if you want to exit the proof-checker. |~%~
-                \\----------------------------------------------------/~%"))
+         (print-re-entering-proof-checker t state)
          (pc-main-loop instr-list quit-conditions last-value
                        pc-print-prompt-and-instr-flg state)))
        (t (mv-let
            (signal val state)
-           (catch-throw-to-local-top-level
-            (pc-single-step
-             (make-official-pc-instr instr)
-             state))
+           (pc-single-step
+            (make-official-pc-instr instr)
+            state)
            (cond
-            ((and signal
-                  (or (member-eq 'signal quit-conditions)
-                      (and (eq signal *pc-complete-signal*)
-                           (member-eq 'exit quit-conditions))))
-             (mv signal val state))
-            ((and (null val) (member-eq 'value quit-conditions))
-             (mv signal val state))
+            ((or (and signal
+                      (or (member-eq 'signal quit-conditions)
+                          (and (eq signal *pc-complete-signal*)
+                               (member-eq 'exit quit-conditions))))
+                 (and (null val)
+                      (member-eq 'value quit-conditions)))
+             (pprogn (f-put-global 'in-verify-flg nil state)
+                     (mv signal val state)))
             (t (let ((new-last-value
 
 ; We ultimately "succeed" if and only if every instruction "succeeds".  We use
@@ -1307,12 +1291,24 @@
                  state)))
 
 (defun pc-main (term raw-term event-name rule-classes instr-list
-                     quit-conditions pc-print-prompt-and-instr-flg state)
+                     quit-conditions pc-print-prompt-and-instr-flg
+                     in-verify-flg state)
   (pprogn (install-initial-state-stack term raw-term event-name rule-classes)
+          (cond (in-verify-flg
+                 (f-put-global 'in-verify-flg in-verify-flg state))
+                (t
+
+; It is tempting to assert (eq (f-get-global 'in-verify-flg state) nil).  But
+; we can get here by way of calling state-from-instructions, which is used to
+; replay proof-checker commands upon exit, and where in-verify-flg is already
+; true.
+
+                 state))
           (pc-main1 instr-list quit-conditions pc-print-prompt-and-instr-flg
                     state)))
 
-(defun pc-top (raw-term event-name rule-classes instr-list quit-conditions state)
+(defun pc-top (raw-term event-name rule-classes instr-list quit-conditions
+                        in-verify-flg state)
   ;; Here instr-list can have a non-nil last cdr, meaning "proceed
   ;; interactively".
   (declare (xargs :guard (symbolp event-name)))
@@ -1327,7 +1323,7 @@
           (if erp
               (mv t nil state)
             (pc-main term raw-term event-name rule-classes instr-list
-                     quit-conditions t state))))
+                     quit-conditions t in-verify-flg state))))
 
 (mutual-recursion
 
@@ -1361,51 +1357,53 @@
         "You are apparently already inside the VERIFY interactive loop.  It ~
          is illegal to enter such a loop recursively."))
    (t
-    (mv-let
-     (erp val state)
-     (cond
-      (raw-term-supplied-p
-       (state-global-let*
-        ((in-verify-flg t)
-         (print-base 10)
-         (print-radix nil)
-         (inhibit-output-lst
-          (remove1-eq 'proof-checker
-                      (f-get-global 'inhibit-output-lst state))))
-        (pc-top raw-term event-name rule-classes
-                (append instructions *standard-oi*)
-                (list 'exit)
-                state)))
-      ((null (state-stack))
-       (er soft 'verify "There is no interactive verification to re-enter!"))
-      (t
-       (let ((bad-fn
-              (illegal-fnp
-               (access goal
-                       (car (access pc-state (car (last (state-stack)))
-                                    :goals))
-                       :conc)
-               (w state))))
-         (cond
-          (bad-fn
-           (er soft 'verify
-               "The current proof-checker session was begun in an ACL2 world ~
+    (let ((ld-level (f-get-global 'ld-level state)))
+      (mv-let
+       (erp val state)
+       (cond
+        (raw-term-supplied-p
+         (state-global-let*
+          ((print-base 10)
+           (print-radix nil)
+           (inhibit-output-lst
+            (remove1-eq 'proof-checker
+                        (f-get-global 'inhibit-output-lst state))))
+          (pc-top raw-term event-name rule-classes
+                  (append instructions *standard-oi*)
+                  (list 'exit)
+                  ld-level
+                  state)))
+        ((null (state-stack))
+         (er soft 'verify "There is no interactive verification to re-enter!"))
+        (t
+         (let ((bad-fn
+                (illegal-fnp
+                 (access goal
+                         (car (access pc-state (car (last (state-stack)))
+                                      :goals))
+                         :conc)
+                 (w state))))
+           (cond
+            (bad-fn
+             (er soft 'verify
+                 "The current proof-checker session was begun in an ACL2 world ~
                 with function symbol ~x0, but that function symbol no longer ~
                 exists."
-               bad-fn))
-          (t
-           (state-global-let*
-            ((in-verify-flg t)
-             (print-base 10)
-             (print-radix nil)
-             (inhibit-output-lst
-              (remove1-eq 'proof-checker
-                          (f-get-global 'inhibit-output-lst state))))
-            (pc-main1 (append instructions *standard-oi*)
-                      (list 'exit) t state)))))))
-     (cond ((equal erp *pc-complete-signal*)
-            (value val))
-           (t (mv erp val state)))))))
+                 bad-fn))
+            (t
+             (state-global-let*
+              ((print-base 10)
+               (print-radix nil)
+               (inhibit-output-lst
+                (remove1-eq 'proof-checker
+                            (f-get-global 'inhibit-output-lst state))))
+              (pprogn
+               (f-put-global 'in-verify-flg ld-level state)
+               (pc-main1 (append instructions *standard-oi*)
+                         (list 'exit) t state))))))))
+       (cond ((equal erp *pc-complete-signal*)
+              (value val))
+             (t (mv erp val state))))))))
 
 (defun print-unproved-goals-message (goals state)
   (io? proof-checker nil state
@@ -1423,7 +1421,7 @@
                    nil
                    (fms0 "~|~%Entering the proof-checker....~%~%"))
               (er-progn (pc-top raw-term event-name rule-classes
-                                instructions quit-conditions state)
+                                instructions quit-conditions nil state)
                         (value (state-stack))))
     (value (state-stack))))
 
@@ -1431,7 +1429,7 @@
   (raw-term event-name rule-classes instructions quit-conditions state)
   (mv-let (erp val state)
           (pc-top raw-term event-name rule-classes
-                  instructions quit-conditions state)
+                  instructions quit-conditions nil state)
           (declare (ignore erp val))
           state))
 

@@ -4874,6 +4874,7 @@
                               instr-list
                               '(signal value) ; quit-conditions
                               t ; pc-print-prompt-and-instr-flg, suitable for :pso
+                              nil ; in-verify-flg
                               state)
                      (pprogn
                       (cond (outputp (io? prove nil state
