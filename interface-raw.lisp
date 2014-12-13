@@ -2474,10 +2474,13 @@
 
 ;;; Code implementing dmr in ACL2
 
-(defparameter *dmr-stream*
+(defg *dmr-stream*
+
+; This variable is nil by default, but is non-nil exactly when dmr is active.
+
   nil)
 
-(defparameter *dmr-counter*
+(defg *dmr-counter*
 
 ; For the sake of GCL, we may want to consider consider using a 0-dimensional
 ; fixnum array instead.  If so, then consider whether *dmr-interval* should
@@ -2517,8 +2520,12 @@
               ))
   state)
 
-(defvar *dmr-array*
-  (make-array 10000)) ; start with default length of cw-gstack
+(defv *dmr-array*
+
+; The argument of make-array below is somewhat arbitrary.  It was initially
+; chosen to be the default length of cw-gstack.
+
+  (make-array 10000))
 
 (defun reverse-into-dmr-array (lst)
   (let ((len-1 (1- (length lst))))
@@ -2721,7 +2728,6 @@
                  (print-interesting-parallelism-variables-str)))
   (when (null *pstk-stack*)
     (setq *dmr-counter* *dmr-interval-used*) ; will flush next time
-    (setq *saved-deep-gstack* nil)
     (setq *deep-gstack* nil)
     (return-from dmr-string *dmr-delete-string*))
   (setf (fill-pointer *dmr-reusable-string*) 0)
@@ -2796,48 +2802,46 @@
       (princ *dmr-delete-string* s)))
   *dmr-reusable-string*)
 
-(declaim (inline dmr-flush1))
-
 (defun dmr-flush1 (&optional reset-counter)
-  (when *dmr-stream*
-    (file-position *dmr-stream* :start)
-    (princ (dmr-string) *dmr-stream*)
-    #-ccl
-    (force-output *dmr-stream*)
-    #+ccl ; fix for "Expected newpos" error (thanks, Gary Byers)
-    (ccl::without-interrupts
-     (force-output *dmr-stream*))
-    (setq *saved-deep-gstack* *deep-gstack*)
-    (when reset-counter
-      (setq *dmr-counter* 0))
-    t))
+
+; This function should only be called when *dmr-stream* is non-nil (and hence
+; is a stream).
+
+  (file-position *dmr-stream* :start)
+  (princ (dmr-string) *dmr-stream*)
+  (without-interrupts
+
+; This use of without-interrupts fixed an "Expected newpos" error in CCL
+; (thanks, Gary Byers).  So to increase confidence in this code, we use it for
+; all Lisps.
+
+   (force-output *dmr-stream*))
+  (when reset-counter
+    (setq *dmr-counter* 0))
+  t)
 
 #+acl2-par
 (defvar *dmr-lock* (make-lock))
 
+(declaim (inline dmr-flush))
 (defun dmr-flush (&optional reset-counter)
-  #+acl2-par
-  (when (dmr-acl2-par-hack-p)
-    (return-from dmr-flush
-                 (cond ((> *dmr-counter*
-                           *dmr-interval-used*)
-                        (setq *dmr-counter* 0)
-                        (with-lock *dmr-lock* (dmr-flush1)))
-                       (t
-                        (setq *dmr-counter* (1+ *dmr-counter*))))))
-  (dmr-flush1 reset-counter))
+  (when *dmr-stream*
+    (cond #+acl2-par
+          ((dmr-acl2-par-hack-p)
+           (with-lock *dmr-lock* (dmr-flush1 reset-counter)))
+          (t (dmr-flush1 reset-counter)))))
 
+(declaim (inline dmr-display))
 (defun dmr-display ()
-  #+acl2-par
-  (when (dmr-acl2-par-hack-p)
-    (return-from dmr-display
-                 (cond ((> *dmr-counter*
-                           *dmr-interval-used*)
-                        (setq *dmr-counter* 0)
-                        (dmr-flush))
-                       (t
-                        (setq *dmr-counter* (1+ *dmr-counter*))))))
-  (dmr-flush))
+  (when *dmr-stream*
+    (cond ((> *dmr-counter* *dmr-interval-used*)
+           (setq *dmr-counter* 0)
+           (cond #+acl2-par
+                 ((dmr-acl2-par-hack-p)
+                  (with-lock *dmr-lock* (dmr-flush1)))
+                 (t (dmr-flush1))))
+          (t
+           (setq *dmr-counter* (1+ *dmr-counter*))))))
 
 (defun cw-gstack-short ()
   (let* ((str (dmr-string))

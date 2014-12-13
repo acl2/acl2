@@ -46,11 +46,11 @@
 (make-event
  '(:or
    (acl2::acl2x-replace (include-book
-                         "top")
+                         "top" :uncertified-okp :ignore-certs)
                         (value-triple :invisible)
                         :outside-certification
                         (include-book
-                         "top"))
+                         "top" :uncertified-okp :ignore-certs))
    (make-event
     (er hard? 'defs-program
         "~%************************* DEFS-PROGRAM FAILURE *************************~%~
