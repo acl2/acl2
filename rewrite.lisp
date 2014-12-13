@@ -6522,9 +6522,6 @@
               (dmr-display))
             *deep-gstack*)))
 
-#-acl2-loop-only
-(defparameter *saved-deep-gstack* nil)
-
 (defmacro initial-gstack (sys-fn bkptr &rest args)
 
 ; This macro is just (push-gframe sys-fn bkptr ,@args) except it is done on an
@@ -6536,7 +6533,6 @@
 ; by dmr-string.
 
   `(let ((gstack nil))
-     #-acl2-loop-only (setq *saved-deep-gstack* nil)
      #-acl2-loop-only (setq *add-polys-counter* 0)
      (push-gframe ,sys-fn ,bkptr ,@args)))
 

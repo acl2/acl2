@@ -3952,7 +3952,7 @@
        (setq *pstk-stack*
              (cons ,(list* 'list (kwote (car form)) fake-args)
                    *pstk-stack*))
-       (dmr-flush)
+       (dmr-display)
        (when (and *verbose-pstk*
                   (or (eq *verbose-pstk* t)
                       (not (member-eq ',(car form) *verbose-pstk*))))
@@ -3983,7 +3983,7 @@
                      (float internal-time-units-per-second))))
         (setq *pstk-stack* (cdr *pstk-stack*))
         ,@(and (not (eq (car form) 'ev-fncall-meta)) ; overkill in that case
-               '((dmr-flush)))
+               '((dmr-display)))
         ,@(and (eq (car form) 'rewrite-atm)
                '((setq *deep-gstack* nil)))))))
 

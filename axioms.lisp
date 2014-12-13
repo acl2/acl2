@@ -21986,7 +21986,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;     (declare (xargs :mode :program))
 ;     (or (rw-tagged-objects-subsetp (tagged-objects 'rw-cache-nil-tag ttree)
 ;                                    (tagged-objects 'rw-cache-any-tag ttree))
-;         (prog2$ (cw string)
+;         (progn$ (cw string)
+;                 (cw "~|~x0:~|  ~x1~|~x2:~|  ~x3~|~%"
+;                     '(tagged-objects 'rw-cache-nil-tag ttree)
+;                     (tagged-objects 'rw-cache-nil-tag ttree)
+;                     '(tagged-objects 'rw-cache-any-tag ttree)
+;                     (tagged-objects 'rw-cache-any-tag ttree))
 ;                 (break$))))
 ;
 ;   (trace$ (relieve-hyps
