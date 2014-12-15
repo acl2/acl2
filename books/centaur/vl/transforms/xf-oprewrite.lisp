@@ -209,7 +209,7 @@ it as a zatom and occform it correctly.</p>")
       (expr     vl-expr-p "Possibly simplified, rewritten version of @('op(args)')."))
   :long "<p>Keeping this function separate from @(see vl-expr-oprewrite) helps
          to keep the mutual recursion as simple as possible.</p>"
-  :guard-hints (("Goal" :in-theory (enable vl-op-p vl-op-arity)))
+  :guard-hints (("Goal" :in-theory (enable vl-op-p vl-op-arity vl-ops-table)))
   :verbosep t
   (case (vl-op-fix op)
     (:vl-qmark

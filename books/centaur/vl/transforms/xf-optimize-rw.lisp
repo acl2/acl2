@@ -63,7 +63,7 @@ rewritten, split up, simplified tree.</p>
              must be semantically equal to OP(ARGS) in this context."
             (equal (vl-expr-p new-expr?)
                    (if new-expr? t nil)))
-  :guard-hints (("Goal" :in-theory (enable vl-op-p vl-op-arity)))
+  :guard-hints (("Goal" :in-theory (enable vl-op-p vl-op-arity vl-ops-table)))
 
   (b* ((op   (vl-op-fix op))
        (args (vl-exprlist-fix args)))
