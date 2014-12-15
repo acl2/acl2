@@ -137,6 +137,12 @@ endif
 
 $(info ACL2_WD is $(ACL2_WD))
 
+# The default build for ACL2 includes support for hash cons, function
+# memoization, and applicative hash tables (see :doc hons-and-memoization).  In
+# order to avoid including those features, comment out the following line or
+# supply "ACL2_HONS= " on the command line.
+ACL2_HONS=h
+
 # The variable ACL2_REAL should be defined for the non-standard version and not
 # for the standard version.  Non-standard ACL2 images will end in saved_acl2r
 # rather than saved_acl2.  ACL2_HONS, ACL2_PAR, ACL2_DEVEL, and ACL2_WAG (for
