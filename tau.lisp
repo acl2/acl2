@@ -236,7 +236,7 @@
 ; predicate in one variable.  The variable is always VAR.  Denote this
 ; predicate as (guard VAR).  Then the entire (THE type expr) is translated into
 ; ((LAMBDA (VAR) (THE-CHECK (guard VAR) 'type VAR)) expr).  The-check is
-; defined to have a guard that logically is its first argumennt, so when we
+; defined to have a guard that logically is its first argument, so when we
 ; generate guards for the translation above we generate the obligation to prove
 ; (guard expr).  Futhermore, the definition of the-check is such that unless
 ; the value of state global 'guard-checking-on is :none, executing it in the

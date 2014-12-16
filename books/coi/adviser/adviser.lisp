@@ -872,7 +872,7 @@
                        acc))))
 
 (defconst *pick-a-point-message*
-  "~|~%[Adviser]: We suspect this conjecture sould be proven by functional ~
+  "~|~%[Adviser]: We suspect this conjecture should be proven by functional ~
   instantiation of the following, generic theorems: ~x0.  We only make this ~
   suggestion because of following triggering rules: ~x1.  If you do not want ~
   to use functional instantiation here, you should disable these triggering ~

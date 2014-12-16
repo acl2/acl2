@@ -22,8 +22,8 @@
 
 #  Example invocations for users:
 
-#   make             ; Build saved_acl2 from scratch.  Same as make large.
-#   make large       ; Build large-saved_acl2 from scratch.
+#   make             ; Build ${PREFIXsaved_acl2} from scratch.  Same as make large.
+#   make large       ; Build large-${PREFIXsaved_acl2} from scratch.
 #   make LISP=cl PREFIX=allegro-
 #   make LISP=lisp PREFIX=lucid-
 #   make LISP='gcl -eval "(defparameter user::*fast-acl2-gcl-build* t)"'
@@ -39,7 +39,7 @@
 #                    ; As above, but for OpenMCL.
 #   make LISP="lispworks -init /projects/acl2/devel/lispworks-init.lisp" PREFIX=lispworks-
 #                    ; Same as make, except that image is named
-#                    ; lispworks-saved_acl2 and the indicated init file is
+#                    ; lispworks-saved_acl2h and the indicated init file is
 #                    ;  loaded when lispworks is invoked during the build
 #                    ; Note from Rich Cohen:
 #                    ; The "-init -" tell Lispworks not to load the user's
@@ -93,7 +93,7 @@
 #   make full      ; A complete recompilation whether needed or not.
 #   make full init ; Completely recompile, initialize and save.
 #   make full-meter init  ; Completely recompile with meters, init and save.
-#   make init      ; Just build full-size saved_acl2.
+#   make init      ; Just build full-size ${PREFIXsaved_acl2}.
 #   make check-sum ; Call only after ACL2 is completely compiled.
 #   make full LISP=lucid PREFIX=lucid-  ; makes acl2 in Lucid
 #   make full LISP=cl PREFIX=allegro- ; makes acl2 in allegro
@@ -144,14 +144,15 @@ $(info ACL2_WD is $(ACL2_WD))
 ACL2_HONS=h
 
 # The variable ACL2_REAL should be defined for the non-standard version and not
-# for the standard version.  Non-standard ACL2 images will end in saved_acl2r
-# rather than saved_acl2.  ACL2_HONS, ACL2_PAR, ACL2_DEVEL, and ACL2_WAG (for
-# feature write-arithmetic-goals) are similar (with suffixes h,
-# p, d, and w, resp., rather than r), but for the experimental hons and
-# parallel versions and the feature that writes out arithmetic lemma data to
-# ~/write-arithmetic-goals.lisp (surely only of interest to implementors!).
+# for the standard version.  Non-standard ACL2 images will include the suffix
+# "r", for example saved_acl2r rather than saved_acl2.  ACL2_HONS (which is "h"
+# by default), ACL2_PAR, ACL2_DEVEL, and ACL2_WAG (for feature
+# write-arithmetic-goals) are similar (with suffixes h, p, d, and w, resp.,
+# rather than r), but for hons-enabled and parallel versions and the feature
+# that writes out arithmetic lemma data to ~/write-arithmetic-goals.lisp
+# (surely only of interest to implementors!).
 
-# DO NOT EDIT ACL2_SUFFIX!  Edit the above-mentioned three variables instead.
+# DO NOT EDIT ACL2_SUFFIX!  Edit the above-mentioned four variables instead.
 
 ACL2_SUFFIX :=
 ifdef ACL2_HONS
@@ -539,7 +540,7 @@ doc.lisp: books/system/doc/acl2-doc.lisp \
 books/system/doc/rendered-doc.lsp:
 	rm -f books/system/doc/rendered-doc.lsp
 ifndef ACL2
-	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2_WD)/saved_acl2
+	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2_WD)/${PREFIXsaved_acl2}
 else
 	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2)
 endif
@@ -550,7 +551,7 @@ endif
 # See the Essay on Computing Code Size in the ACL2 source code.
 STATS:
 	@if [ "$(ACL2)" = "" ]; then \
-	    ACL2="../$(PREFIX)saved_acl2$(ACL2_SUFFIX)" ;\
+	    ACL2="../${PREFIXsaved_acl2}" ;\
 	    export ACL2 ;\
 	    ACL2_SOURCES="$(sources)" ;\
 	    export ACL2_SOURCES ;\
@@ -573,7 +574,7 @@ clean:
 	  *.d64fsl *.dx64fsl *.lx64fsl \
 	  *.lx32fsl *.x86f *.o *.fn \
 	  TAGS acl2-status.txt acl2r.lisp acl2-proclaims.lisp .acl2rc \
-	  *osaved_acl2 *osaved_acl2.* \
+	  *osaved_acl2* \
 	  *.log TMP*
 	rm -rf saved
 	rm -f doc/*.o doc/*#* doc/*.c doc/*.h doc/*.data doc/gazonk.* \
@@ -634,7 +635,7 @@ move-large:
 .PHONY: certify-books
 certify-books:
 ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) certify-books ACL2=$(ACL2_WD)/saved_acl2
+	cd books ; $(MAKE) $(ACL2_IGNORE) certify-books ACL2=$(ACL2_WD)/${PREFIXsaved_acl2}
 else
 	cd books ; $(MAKE) $(ACL2_IGNORE) certify-books ACL2=$(ACL2)
 endif
@@ -647,7 +648,7 @@ endif
 regression:
 	uname -a
 ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) all ACL2=$(ACL2_WD)/saved_acl2
+	cd books ; $(MAKE) $(ACL2_IGNORE) all ACL2=$(ACL2_WD)/${PREFIXsaved_acl2}
 else
 	cd books ; $(MAKE) $(ACL2_IGNORE) all ACL2=$(ACL2)
 endif
@@ -656,7 +657,7 @@ endif
 regression-everything:
 	uname -a
 ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(ACL2_WD)/saved_acl2
+	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(ACL2_WD)/${PREFIXsaved_acl2}
 else
 	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(ACL2)
 endif
@@ -665,7 +666,7 @@ endif
 .PHONY: certify-books-fresh
 certify-books-fresh: clean-books
 ifndef ACL2
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/saved_acl2 certify-books
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/${PREFIXsaved_acl2} certify-books
 else
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) certify-books
 endif
@@ -676,7 +677,7 @@ endif
 .PHONY: regression-fresh
 regression-fresh: clean-books
 ifndef ACL2
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/saved_acl2 regression
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/${PREFIXsaved_acl2} regression
 else
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression
 endif
@@ -684,7 +685,7 @@ endif
 .PHONY: regression-everything-fresh
 regression-everything-fresh: clean-books
 ifndef ACL2
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/saved_acl2 regression-everything
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/${PREFIXsaved_acl2} regression-everything
 else
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-everything
 endif
@@ -696,7 +697,7 @@ certify-books-short:
 	uname -a
 ifndef ACL2
 	cd books ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/saved_acl2 basic
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/${PREFIXsaved_acl2} basic
 else
 	cd books ; \
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) basic
@@ -742,7 +743,7 @@ clean-doc:
 .PHONY: clean-books
 clean-books:
 ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/saved_acl2 moreclean
+	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/${PREFIXsaved_acl2} moreclean
 else
 	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) moreclean
 endif
@@ -832,7 +833,7 @@ our-develenv.cl:
 chk-include-book-worlds:
 	uname -a
 ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds ACL2=$(ACL2_WD)/saved_acl2
+	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds ACL2=$(ACL2_WD)/${PREFIXsaved_acl2}
 else
 	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds ACL2=$(ACL2)
 endif

@@ -18,8 +18,7 @@
 ; University of Texas at Austin
 ; Austin, TX 78712 U.S.A.
 
-; memoize.lisp -- Logical definitions for memoization functions, only
-; to be included in the experimental HONS version of ACL2.
+; memoize.lisp -- Logical definitions for memoization functions.
 
 ; The original version of this file was contributed by Bob Boyer and
 ; Warren A. Hunt, Jr.  The design of this system of Hash CONS,
