@@ -426,7 +426,7 @@ hierarchical identifiers.</p>"
     :hints(("goal" :in-theory (enable acl2::member-of-cons))
            (and stable-under-simplificationp
                 '(:use ((:instance vl-op-p-of-vl-nonatom->op))
-                  :in-theory (e/d (vl-op-p)
+                  :in-theory (e/d (vl-op-p vl-ops-table)
                                   (vl-op-p-of-vl-nonatom->op)))))))
 
 (defthm vl-expr-welltyped-p-of-vl-make-bitselect

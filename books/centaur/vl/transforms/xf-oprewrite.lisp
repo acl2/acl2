@@ -209,20 +209,20 @@ it as a zatom and occform it correctly.</p>")
       (expr     vl-expr-p "Possibly simplified, rewritten version of @('op(args)')."))
   :long "<p>Keeping this function separate from @(see vl-expr-oprewrite) helps
          to keep the mutual recursion as simple as possible.</p>"
-  :guard-hints (("Goal" :in-theory (enable vl-op-p vl-op-arity)))
+  :guard-hints (("Goal" :in-theory (enable vl-op-p vl-op-arity vl-ops-table)))
   :verbosep t
   (case (vl-op-fix op)
     (:vl-qmark
      (b* (((list a b c) args)
           (or-a (make-vl-nonatom :op :vl-unary-bitor
                                  :args (list a)
-                                 :atts (acons "VL_CONDITIONAL_FIX" nil nil))))
+                                 :atts (acons "VL_CONDITIONAL_FIX" nil atts))))
 
        (if (vl-zatom-p b)
            ;; a ? z : c -->  ~(|a) ? c : z
            (let ((nor-a (make-vl-nonatom :op :vl-unary-bitnot
                                          :args (list or-a)
-                                         :atts (acons "VL_CONDITIONAL_FIX" nil nil)
+                                         :atts (acons "VL_CONDITIONAL_FIX" nil atts)
                                          )))
              (mv (ok) (make-vl-nonatom :op :vl-qmark
                                        :atts atts

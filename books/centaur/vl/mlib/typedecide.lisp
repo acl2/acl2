@@ -540,7 +540,8 @@ produce unsigned values.</li>
     (verify-guards vl-expr-typedecide-aux
       :hints(("Goal" :in-theory (e/d (vl-nonatom->op-forward
                                       acl2::hons-assoc-equal-iff-member-alist-keys
-                                      vl-op-p)
+                                      vl-op-p
+                                      vl-ops-table)
                                      (vl-op-p-of-vl-nonatom->op
                                       acl2::alist-keys-member-hons-assoc-equal
                                       (tau-system)))
