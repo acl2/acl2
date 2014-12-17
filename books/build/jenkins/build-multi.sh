@@ -14,7 +14,7 @@
 # Cause the script to exit immediately upon failure
 set -e
 echo "acl2dir is $ACL2DIR"
-echo "Starting build-ccl-acl2h.sh"
+echo "Starting build-multi.sh"
 echo " -- Running in `pwd`"
 echo " -- Running on `hostname`"
 echo " -- PATH is $PATH"
