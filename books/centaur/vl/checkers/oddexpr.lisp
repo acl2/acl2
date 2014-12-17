@@ -599,7 +599,7 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
                  ps))
         (t
          (vl-ps-seq
-          (vl-print " - ")
+          (vl-print "     - ")
           (vl-cw "~s0: ~a1~%" (caar x) (cdar x))
           (vl-pp-oddexpr-details (cdr x))))))
 
@@ -614,8 +614,8 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
         nil))
     (list (make-vl-warning
            :type :vl-warn-oddexpr
-           :msg (cat "~a0: found ~s1 that suggest precedence problems may ~ be
-                      present.  Details:~%"
+           :msg (cat "~a0: found ~s1 that suggest precedence problems may be ~
+                      present.  Maybe add explicit parens?  Details:~%"
                      (with-local-ps (vl-pp-oddexpr-details details)))
            :args (list ctx
                        (if (vl-plural-p details)

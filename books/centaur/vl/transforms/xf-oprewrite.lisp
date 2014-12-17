@@ -216,13 +216,13 @@ it as a zatom and occform it correctly.</p>")
      (b* (((list a b c) args)
           (or-a (make-vl-nonatom :op :vl-unary-bitor
                                  :args (list a)
-                                 :atts (acons "VL_CONDITIONAL_FIX" nil nil))))
+                                 :atts (acons "VL_CONDITIONAL_FIX" nil atts))))
 
        (if (vl-zatom-p b)
            ;; a ? z : c -->  ~(|a) ? c : z
            (let ((nor-a (make-vl-nonatom :op :vl-unary-bitnot
                                          :args (list or-a)
-                                         :atts (acons "VL_CONDITIONAL_FIX" nil nil)
+                                         :atts (acons "VL_CONDITIONAL_FIX" nil atts)
                                          )))
              (mv (ok) (make-vl-nonatom :op :vl-qmark
                                        :atts atts

@@ -560,9 +560,9 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                (warn :type type
                      :msg "~a0: arguments to a ~s1 comparison operator have ~
                              different \"self-sizes\".  The smaller argument ~
-                             will be   implicitly widened to match the larger ~
-                             argument. Arguments:~%  ~
-                               - lhs (width ~x2): ~a4~%  ~
+                             will be implicitly widened to match the larger ~
+                             argument. Arguments:~%     ~
+                               - lhs (width ~x2): ~a4~%     ~
                                - rhs (width ~x3): ~a5~%"
                      :args (list ctx
                                  (vl-fancy-op-str (vl-nonatom->original-operator context))
@@ -607,9 +607,9 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                (warn :type type
                      :msg "~a0: arguments to a bitwise ~s1 operator have ~
                              different \"self-sizes\".  The smaller argument ~
-                             will be   implicitly widened to match the larger ~
-                             argument. Arguments:~%  ~
-                               - lhs (width ~x2): ~a4~%  ~
+                             will be implicitly widened to match the larger ~
+                             argument. Arguments:~%     ~
+                               - lhs (width ~x2): ~a4~%     ~
                                - rhs (width ~x3): ~a5~%"
                      :args (list ctx
                                  (vl-fancy-op-str (vl-nonatom->original-operator context))
@@ -640,9 +640,9 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                      :msg "~a0: branches of a ?: operator have different ~
                              \"self-sizes\".  The smaller branch will be ~
                              implicitly widened to match the larger branch. ~
-                             Arguments:~%  ~
-                               - Condition:               ~a1~%  ~
-                               - True Branch  (size ~x2): ~a4~%  ~
+                             Arguments:~%     ~
+                               - Condition:               ~a1~%     ~
+                               - True Branch  (size ~x2): ~a4~%     ~
                                - False Branch (size ~x3): ~a5~%"
                      :args (list ctx
                                  (first args)
