@@ -1576,30 +1576,26 @@ a signed value since Verilog-XL doesn't handle them correctly.</p>"
                 \"a >> {b}\" instead of \"a >> b\"."
           :args (list ctx rhs))))
 
-
-(define vl-stupid-maximum-value ((x 
-
-
-(define vl-collect-top-level-summands
-  :short "Collect arguments to top-level @('+') and @('-') operators."
-  ((x vl-expr-p
-      "Some expression whose top-level operator should be a @('+') or @('-')
-       term."))
-  :returns
-  (summands vl-exprlist-p
-            "The arguments to top-level @('+') and @('-') operators. For
-             instance, if @('x') is an expression like @('a + b + c + d'), then
-             this collects the list @('(a b c d)').")
-  :parents (vl-warn-about-implicit-truncation)
-  :measure (vl-expr-count x)
-  (b* (((when (vl-fast-atom-p x))
-        (list x))
-       ((vl-nonatom x))
-       ((when (or (eq x.op :vl-binary-plus)
-                  (eq x.op :vl-binary-minus)))
-        (append (vl-collect-top-level-summands (first x.args))
-                (vl-collect-top-level-summands (second x.args)))))
-    (list x)))
+;; (define vl-collect-top-level-summands
+;;   :short "Collect arguments to top-level @('+') and @('-') operators."
+;;   ((x vl-expr-p
+;;       "Some expression whose top-level operator should be a @('+') or @('-')
+;;        term."))
+;;   :returns
+;;   (summands vl-exprlist-p
+;;             "The arguments to top-level @('+') and @('-') operators. For
+;;              instance, if @('x') is an expression like @('a + b + c + d'), then
+;;              this collects the list @('(a b c d)').")
+;;   :parents (vl-warn-about-implicit-truncation)
+;;   :measure (vl-expr-count x)
+;;   (b* (((when (vl-fast-atom-p x))
+;;         (list x))
+;;        ((vl-nonatom x))
+;;        ((when (or (eq x.op :vl-binary-plus)
+;;                   (eq x.op :vl-binary-minus)))
+;;         (append (vl-collect-top-level-summands (first x.args))
+;;                 (vl-collect-top-level-summands (second x.args)))))
+;;     (list x)))
 
 (define vl-warn-about-implicit-extension
   :short "Lint-like warnings about right hand sides being extended."
@@ -1647,7 +1643,7 @@ minor warning for assignments where the rhs is a constant.</p>"
         ;; Completely trivial, don't give any warning.
         (ok))
 
-       (ops     (vl-expr-ops x))       (
+       (ops     (vl-expr-ops x))
 
        (minorp (and (or (member-equal :vl-binary-plus ops)
                         (member-equal :vl-binary-minus ops))
