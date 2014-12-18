@@ -615,7 +615,8 @@ named arguments with missing ports, and only issue non-fatal warnings.</p>"
   :returns
   (annotated-args "annotated version of @('args'), semantically equivalent
                    but typically has @(':dir') and @(':portname') information."
-                  vl-plainarglist-p)
+                  (and (vl-plainarglist-p annotated-args)
+                       (equal (len annotated-args) (len args))))
   :short "Annotates a plain argument list with port names and directions."
   :long "<p>This is a \"best-effort\" process which may fail to add annotations
 to any or all arguments.  Such failures are expected, so we do not generate any
@@ -648,19 +649,28 @@ for every port.</li>
 
 (define vl-check-blankargs
   :short "Warn about expressions connected to blank ports and for blanks
-connected to non-blank ports."
-  ((args  "plainargs for a module instance" vl-plainarglist-p)
+connected to non-blank, non-output ports."
+  ((args  "plainargs for a module instance, which should already be
+           annotated with their directions"
+          vl-plainarglist-p)
    (ports "corresponding ports for the submodule"
           vl-portlist-p)
    (inst  "just a context for warnings" vl-modinst-p)
    (warnings "warnings accumulator" vl-warninglist-p))
   :guard (same-lengthp args ports)
   :returns (warnings vl-warninglist-p)
-  :long "<p>Either of these situations is semantically well-formed and
-relatively easy to handle; see @(see blankargs).  But they are also bizarre,
-and at least would seem to indicate a situation that could be optimized.  So,
-if we see either of these cases, we add a non-fatal warning explaining the
-problem.</p>"
+
+  :long "<p>We historically warned about blank arguments connected to
+<i>any</i> port.  However, it seems reasonably common that a module will
+produce outputs you don't care about, and connecting a blank to such an output
+seems like a very reasonable thing to do.  So, we no longer warn about blanks
+that are connected to output ports.</p>
+
+<p>Either of these situations is semantically well-formed and relatively easy
+to handle; see @(see blankargs).  But they are also bizarre, and at least would
+seem to indicate a situation that could be optimized.  So, if we see either of
+these cases, we add a non-fatal warning explaining the problem.</p>"
+
   :hooks ((:fix :hints (("goal" :induct (vl-check-blankargs args ports inst warnings)
                          :in-theory (disable (:d vl-check-blankargs)))
                         (and stable-under-simplificationp
@@ -673,20 +683,23 @@ problem.</p>"
        ((when (eq (tag port1) :vl-interfaceport))
         (vl-check-blankargs (cdr args) (cdr ports) inst warnings))
        ((vl-regularport port1) port1)
-       (argexpr  (vl-plainarg->expr (car args)))
+       ((vl-plainarg arg1) (car args))
+
        (warnings
-        (if (and argexpr (not port1.expr))
+        (if (and arg1.expr (not port1.expr))
             (warn :type :vl-warn-blank
                   :msg "~a0 connects the expression ~a1 to the blank port at ~
                         ~l2."
-                  :args (list inst argexpr port1.loc))
+                  :args (list inst arg1.expr port1.loc))
           (ok)))
        (warnings
-        (if (and port1.expr (not argexpr))
+        (if (and port1.expr
+                 (not arg1.expr)
+                 (not (eq arg1.dir :vl-output)))
             (warn :type :vl-warn-blank
                   ;; BOZO linking doesn't quite work here for the foreign port.
-                  :msg "~a0 gives a blank expression for non-blank ~a1."
-                  :args (list inst port1))
+                  :msg "~a0 gives a blank expression for non-blank port ~s1 (port direction: ~s2)."
+                  :args (list inst port1 arg1.dir))
           (ok))))
     (vl-check-blankargs (cdr args) (cdr ports) inst warnings)))
 
@@ -727,8 +740,10 @@ checking, and add direction/name annotations.</p>"
                                  nports
                                  (if (= nports 1) "port" "ports")))
               x)))
-       (warnings  (vl-check-blankargs plainargs ports inst warnings))
+       ;; Note: must annotate before checking for blanks, because the checks
+       ;; heuristically consider the directions of the ports.
        (plainargs (vl-annotate-plainargs plainargs ports scope))
+       (warnings  (vl-check-blankargs plainargs ports inst warnings))
        (new-x     (make-vl-arguments-plain :args plainargs)))
     (mv (ok) new-x)))
 
