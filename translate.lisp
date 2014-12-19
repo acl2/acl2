@@ -387,7 +387,15 @@
                          hard-error-returns-nilp aok)
   (the #+acl2-mv-as-values (values t t t)
        #-acl2-mv-as-values t
-       (let* ((*aokp* aok)
+       (let* ((*aokp*
+
+; We expect the parameter aok, here and in all functions in the "ev family"
+; that take aok as an argument, to be Boolean.  If it's not, then there is no
+; real harm done: *aokp* would be bound here to a non-Boolean value, suggesting
+; that an attachment has been used when that isn't necessarily the case; see
+; *aokp*.
+
+               aok)
               (pair (assoc-eq 'state latches))
               (w (if pair (w (cdr pair)) w)) ; (cdr pair) = *the-live-state*
               (throw-raw-ev-fncall-flg t)
@@ -1583,12 +1591,7 @@
     (let (#-acl2-loop-only (*aokp*
 
 ; See the #-acl2-loop-only definition of return-last and the comment just
-; below.  Note that fn is not mbe1-raw, so this binding is legal.
-
-; Unlike the raw Lisp definition of return-last, we see no need to bind
-; *attached-fn-called* here (for the #+hons version), because that would amount
-; to trying to manage the use of memoization with calls of top-level calls of
-; ev-rec on behalf of the trans-eval call under ld-read-eval-print.
+; below.  Note that fn is not mbe1-raw, so this binding is appropriate.
 
                             t))
       (ev-rec arg2 alist w user-stobj-alist
@@ -2325,7 +2328,7 @@
                                        nil ; safe-mode
                                        nil ; gc-off
                                        nil ; hard-error-returns-nilp
-                                       t   ; okp
+                                       t   ; aok
                                        )
                           (or (and (null erp) term1)
                               term))

@@ -2887,9 +2887,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; argument of return-last, because logically the third argument provides the
 ; value(s) of a return-last call -- the exception being the evaluation of the
 ; :exec argument of an mbe call (or, equivalent evaluation by way of mbe1,
-; etc.).  We not only bind *aokp* to t, but we also bind *attached-fn-called*
-; so that no changes to this variable will prevent the storing of memoization
-; results.
+; etc.).  Note that with the binding of *aokp*, we guarantee that changes to
+; *aokp* during evaluation of arg2 won't prevent the storing of memoization
+; results.  For further explanation on this point, see the comment in *aokp*.
 
 ; See also the related treatment of aokp in ev-rec-return-last.
 
@@ -2901,8 +2901,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                      (eq (car arg2) ; no point in doing extra bindings below
                          'quote)))
             arg2)
-           (t `(let ((*aokp* t)
-                     #+hons (*attached-fn-called* t))
+           (t `(let ((*aokp* t))
                  ,arg2)))))
     (cond ((and fn (fboundp fn))
 
@@ -4996,8 +4995,39 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defvar *aokp*
 
-; We set *aokp* to t simply so that we can use attachments in raw Lisp.  It
-; will be bound suitably inside the ACL2 loop by calls of raw-ev-fncall.
+; The variable *aokp* indicates that state of using attachments, and can take
+; any of three sorts of values, as follows.
+
+; nil
+;   Attachments are not allowed.
+
+; t
+;   Attachments are allowed, but the value currently being computed does not
+;   depend on any attachments.
+
+; fn
+;   Attachments are allowed, and the value currently being computed depends on
+;   the attachment to the function symbol, fn.
+
+; A case that illustrates these values is (prog2$ <expr1> <expr2>), which is
+; really (return-last 'progn <expr1> <expr2>).  The #-acl2-loop-only definition
+; of return-last replaces <expr1> by (let ((*aokp* t)) <expr1>).  So
+; attachments are allowed during the evaluation of <expr1> and moreover, any
+; use of attachments in <expr1> (and any setting of *aokp* to a function
+; symbol) will be ignored when evaluating <expr2> and when returning from
+; prog2$.  This is reasonable, since the values of <expr2> and the prog2$ call
+; do not depend on any attachments used in the evaluation of <expr1>.
+
+; We initialize *aokp* to t simply so that we can use attachments at the top
+; level of the ACL2 loop and also in raw Lisp.  This variable is bound suitably
+; inside the ACL2 loop by calls of raw-ev-fncall.
+
+; Before Version_7.0, *aokp* was Boolean and a separate special variable,
+; *attached-fn-called*, was used for holding a function symbol whose
+; attachement has been called.  By folding that role into *aokp* we reduced the
+; time for (defthm spec-body ...) in
+; books/misc/misc2/reverse-by-separation.lisp from 188 seconds to 181 seconds,
+; a savings of about 4%.
 
   t)
 
@@ -5005,12 +5035,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '*aokp*)
 
 #+hons
-(defvar *attached-fn-called* nil)
-
-#+hons
 (defmacro update-attached-fn-called (fn)
-  `(when (null *attached-fn-called*)
-     (setq *attached-fn-called* ,fn)))
+  `(when (eq *aokp* t)
+     (setq *aokp* ,fn)))
 
 (defmacro throw-or-attach (fn formals &optional *1*-p)
 

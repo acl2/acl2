@@ -2746,8 +2746,7 @@
 ; attachment since aokp is true.  See memoize-use-attachment-warning for how
 ; this special lookup-marker (:lookup . fn) is used.
 
-                       `((update-attached-fn-called
-                          ',(cons :lookup fn))))
+                       `((update-attached-fn-called ',(cons :lookup fn))))
                 ,@mf-record-hit
                 ,@(cond ((null (cdr stobjs-out))
                          `(,*mf-ans*))
@@ -2794,10 +2793,11 @@
                      `(let (,*attached-fn-temp*)
                         (mv?-let
                          ,vars
-                         (let (*attached-fn-called*)
+                         (let ((*aokp* (and *aokp* t)))
                            (,prog1-fn
                             ,body
-                            (setq ,*attached-fn-temp* *attached-fn-called*)))
+                            (when (not (member *aokp* '(t nil) :test #'eq))
+                              (setq ,*attached-fn-temp* *aokp*))))
                          (progn
                            (cond
                             (,*attached-fn-temp*
@@ -2809,13 +2809,14 @@
                                          (list* ,@vars)
                                          ,localtablename)))
 
-; Special variable *attached-fn-called* was protected by a LET above when
-; executing body, which could have set it to a non-nil value.  That value was
-; however saved in *attached-fn-temp*, which we now use to update
-; *attached-fn-called* since *attached-fn-called* was restored, after the
-; execution of body, to its previous value.
+; Special variable *aokp* was protected by a LET above when executing body,
+; which could have set it to a function symbol whose attachment was used.  That
+; value was however saved in *attached-fn-temp*, which we now use to update
+; *aokp* since *sokp* was restored, after the execution of body, to its
+; previous value (by popping out of its binding scope).
 
                            (when ,*attached-fn-temp* ; optimization
+                             (assert *aokp*)
                              (update-attached-fn-called ,*attached-fn-temp*))
                            (mv? ,@vars))))))))))))))))
 
@@ -3003,110 +3004,185 @@
 ; below be denoted by the short names shown:
 
 ; long name                                                          short name
-; ACL2_INVISIBLE::|HONS-G-"\\"START-TICKS-\\",\\"ACL2\\",\\"FIB\\"",25|  sticks
-; ACL2_INVISIBLE::|HONS-G-"\\"MEMOIZE-HT-FOR-\\",\\"ACL2\\",\\"FIB\\"",26|  mht
+; ACL2_INVISIBLE::|HONS-G-"\\"START-TICKS-\\",\\"ACL2\\",\\"FIB\\"",13|  sticks
+; ACL2_INVISIBLE::|HONS-G-"\\"MEMOIZE-HT-FOR-\\",\\"ACL2\\",\\"FIB\\"",14|  mht
 
-; Here is the raw Lisp defun of fib produced by (memoize 'fib):
+; Here is the raw Lisp defun of fib produced by (memoize 'fib).  It was
+; obtained as follows.
+
+;  :q
+;  (old-trace memoize-fn-def)
+;  (lp)
+;  (memoize 'fib)
+;  ; Then copy result of memoize-fn-def into a file foo, make the two
+;  ; replacements above (globally), and save foo after:
+;  ; (setq xxx (defun ...) )
+;  :q
+;  (load foo)
+;  xxx
+;  (pprint *)
+;  ; Now replace STICKS and MHT by sticks and mht, resp., in the output.
 
 ; (DEFUN FIB (N)
 ;   (DECLARE (XARGS :GUARD (NATP N)))
 ;   (DECLARE (IGNORABLE N))
 ;   (WITH-GLOBAL-MEMOIZE-LOCK-STATIC
-;    (LET* ((#:MF-COUNT-LOC (THE-MFIXNUM (+ *CALLER* 18)))
-;           (#:MA *MEMOIZE-CALL-ARRAY*)
-;           #:TABLENAME
-;           #:PONSTABLENAME)
-;      (DECLARE (TYPE MFIXNUM #:MF-COUNT-LOC)
-;               (IGNORABLE #:MF-COUNT-LOC #:MA #:PONSTABLENAME #:TABLENAME)
-;               (TYPE (SIMPLE-ARRAY MFIXNUM (*)) #:MA))
-;      (SAFE-INCF (AREF #:MA #:MF-COUNT-LOC) 1)
-;      (IF (EQL -1 sticks)
-;          (LET ((#:START-BYTES (HEAP-BYTES-ALLOCATED))
-;                (#:START-PONS *PONS-CALL-COUNTER*)
-;                (sticks
-;                 (INTERNAL-REAL-TICKS)))
-;            (DECLARE (IGNORABLE #:START-BYTES #:START-PONS)
-;                     (TYPE MFIXNUM
-;                           sticks
-;                           #:START-PONS #:START-BYTES))
-;            (PROG1
-;             (LET ((*CALLER* 9000))
-;               (COND
-;                (T (LET (#:ANS #:ARGS #:ANS-P)
-;                     (DECLARE (IGNORABLE #:ANS #:ARGS #:ANS-P))
-;                     (WHEN (NULL mht)
-;                           (SAFE-INCF (AREF #:MA 9002) 1)
-;                           (SETQ mht
-;                                 (MAKE-INITIAL-MEMOIZE-HASH-TABLE 'FIB 60)))
-;                     (SETQ #:TABLENAME mht)
-;                     (SETQ #:ARGS (PIST* #:PONSTABLENAME N))
-;                     (MULTIPLE-VALUE-SETQ (#:ANS #:ANS-P)
-;                                          (MF-GETHASH #:ARGS #:TABLENAME))
-;                     (COND
-;                      (#:ANS-P (SAFE-INCF (AREF #:MA 9001) 1) #:ANS)
-;                      (T (LET (#:ATTACHED-FN-TEMP)
-;                           (MV?-LET
-;                            (O0)
-;                            (LET (*ATTACHED-FN-CALLED*)
-;                              (PROG1
-;                               (IF (ZP N)
-;                                   0
-;                                   (IF (EQL N 1)
+;     (LET* ((#:MF-COUNT-LOC (THE-MFIXNUM (+ *CALLER* 18)))
+;            (#:MA *MEMOIZE-CALL-ARRAY*)
+;            #:TABLENAME
+;            #:PONSTABLENAME)
+;       (DECLARE (TYPE MFIXNUM #:MF-COUNT-LOC)
+;        (IGNORABLE #:MF-COUNT-LOC #:MA #:PONSTABLENAME #:TABLENAME)
+;        (TYPE (SIMPLE-ARRAY MFIXNUM (*)) #:MA))
+;       (SAFE-INCF (AREF #:MA #:MF-COUNT-LOC) 1)
+;       (IF (EQL -1 sticks)
+;           (LET ((#:START-BYTES (HEAP-BYTES-ALLOCATED))
+;                 (#:START-PONS *PONS-CALL-COUNTER*)
+;                 (sticks (INTERNAL-REAL-TICKS)))
+;             (DECLARE (IGNORABLE #:START-BYTES #:START-PONS)
+;              (TYPE MFIXNUM sticks #:START-PONS #:START-BYTES))
+;             (PROG1 (LET ((*CALLER* 9000))
+;                      (COND (T
+;                             (LET (#:ANS #:ARGS #:ANS-P)
+;                               (DECLARE
+;                                (IGNORABLE #:ANS #:ARGS #:ANS-P))
+;                               (WHEN
+;                                (NULL mht)
+;                                (SAFE-INCF (AREF #:MA 9002) 1)
+;                                (SETQ
+;                                 mht
+;                                 (MAKE-INITIAL-MEMOIZE-HASH-TABLE
+;                                  'FIB
+;                                  60)))
+;                               (SETQ #:TABLENAME mht)
+;                               (SETQ #:ARGS (PIST* #:PONSTABLENAME N))
+;                               (MULTIPLE-VALUE-SETQ
+;                                (#:ANS #:ANS-P)
+;                                (MF-GETHASH #:ARGS #:TABLENAME))
+;                               (COND
+;                                (#:ANS-P
+;                                 (SAFE-INCF (AREF #:MA 9001) 1)
+;                                 #:ANS)
+;                                (T
+;                                 (LET
+;                                  (#:ATTACHED-FN-TEMP)
+;                                  (MV?-LET
+;                                   (O0)
+;                                   (LET
+;                                    ((*AOKP* (AND *AOKP* T)))
+;                                    (PROG1
+;                                     (IF
+;                                      (ZP N)
+;                                      0
+;                                      (IF
+;                                       (EQL N 1)
 ;                                       1
-;                                       (+ (FIB (- N 1)) (FIB (- N 2)))))
-;                               (SETQ #:ATTACHED-FN-TEMP *ATTACHED-FN-CALLED*)))
-;                            (PROGN
-;                             (COND
-;                              (#:ATTACHED-FN-TEMP
-;                               (MEMOIZE-USE-ATTACHMENT-WARNING
-;                                'FIB #:ATTACHED-FN-TEMP))
-;                              (T (MF-SETHASH #:ARGS (LIST* O0) #:TABLENAME)))
-;                             (WHEN #:ATTACHED-FN-TEMP
-;                                   (UPDATE-ATTACHED-FN-CALLED
-;                                    #:ATTACHED-FN-TEMP))
-;                             (MV? O0))))))))))
-;             (SAFE-INCF (AREF #:MA 9004)
-;                        (THE-MFIXNUM (- *PONS-CALL-COUNTER* #:START-PONS)))
-;             (SAFE-INCF (AREF #:MA 9000)
-;                        (THE-MFIXNUM (- (HEAP-BYTES-ALLOCATED) #:START-BYTES)))
-;             (SAFE-INCF (THE MFIXNUM (AREF #:MA
-;                                           (THE-MFIXNUM (1+ #:MF-COUNT-LOC))))
-;                        (THE-MFIXNUM
-;                         (FIX-TICKS (THE-MFIXNUM (- (INTERNAL-REAL-TICKS)
-;                                                    sticks))
-;                                    'FIB)))))
-;          (COND
-;           (T (LET (#:ANS #:ARGS #:ANS-P)
-;                (DECLARE (IGNORABLE #:ANS #:ARGS #:ANS-P))
-;                (WHEN (NULL mht)
+;                                       (+
+;                                        (FIB (- N 1))
+;                                        (FIB (- N 2)))))
+;                                     (WHEN
+;                                      (NOT
+;                                       (MEMBER
+;                                        *AOKP*
+;                                        '(T NIL)
+;                                        :TEST
+;                                        #'EQ))
+;                                      (SETQ
+;                                       #:ATTACHED-FN-TEMP
+;                                       *AOKP*))))
+;                                   (PROGN
+;                                    (COND
+;                                     (#:ATTACHED-FN-TEMP
+;                                      (MEMOIZE-USE-ATTACHMENT-WARNING
+;                                       'FIB
+;                                       #:ATTACHED-FN-TEMP))
+;                                     (T
+;                                      (MF-SETHASH
+;                                       #:ARGS
+;                                       (LIST* O0)
+;                                       #:TABLENAME)))
+;                                    (WHEN
+;                                     #:ATTACHED-FN-TEMP
+;                                     (ASSERT *AOKP*)
+;                                     (UPDATE-ATTACHED-FN-CALLED
+;                                      #:ATTACHED-FN-TEMP))
+;                                    (MV? O0))))))))))
+;                    (SAFE-INCF (AREF #:MA 9004)
+;                               (THE-MFIXNUM
+;                                (- *PONS-CALL-COUNTER* #:START-PONS)))
+;                    (SAFE-INCF (AREF #:MA 9000)
+;                               (THE-MFIXNUM
+;                                (-
+;                                 (HEAP-BYTES-ALLOCATED)
+;                                 #:START-BYTES)))
+;                    (SAFE-INCF (THE
+;                                MFIXNUM
+;                                (AREF
+;                                 #:MA
+;                                 (THE-MFIXNUM (1+ #:MF-COUNT-LOC))))
+;                               (THE-MFIXNUM
+;                                (FIX-TICKS
+;                                 (THE-MFIXNUM
+;                                  (- (INTERNAL-REAL-TICKS) sticks))
+;                                 'FIB)))))
+;           (COND (T
+;                  (LET (#:ANS #:ARGS #:ANS-P)
+;                    (DECLARE (IGNORABLE #:ANS #:ARGS #:ANS-P))
+;                    (WHEN (NULL mht)
 ;                      (SAFE-INCF (AREF #:MA 9002) 1)
-;                      (SETQ mht (MAKE-INITIAL-MEMOIZE-HASH-TABLE 'FIB 60)))
-;                (SETQ #:TABLENAME mht)
-;                (SETQ #:ARGS (PIST* #:PONSTABLENAME N))
-;                (MULTIPLE-VALUE-SETQ (#:ANS #:ANS-P)
-;                                     (MF-GETHASH #:ARGS #:TABLENAME))
-;                (COND
-;                 (#:ANS-P (SAFE-INCF (AREF #:MA 9001) 1) #:ANS)
-;                 (T (LET (#:ATTACHED-FN-TEMP)
-;                      (MV?-LET
-;                       (O0)
-;                       (LET (*ATTACHED-FN-CALLED*)
-;                         (PROG1
-;                          (IF (ZP N)
-;                              0
-;                              (IF (EQL N 1)
-;                                  1
-;                                  (+ (FIB (- N 1)) (FIB (- N 2)))))
-;                          (SETQ #:ATTACHED-FN-TEMP *ATTACHED-FN-CALLED*)))
-;                       (PROGN
-;                        (COND
-;                         (#:ATTACHED-FN-TEMP
-;                          (MEMOIZE-USE-ATTACHMENT-WARNING
-;                           'FIB #:ATTACHED-FN-TEMP))
-;                         (T (MF-SETHASH #:ARGS (LIST* O0) #:TABLENAME)))
-;                        (WHEN #:ATTACHED-FN-TEMP
-;                              (UPDATE-ATTACHED-FN-CALLED #:ATTACHED-FN-TEMP))
-;                        (MV? O0)))))))))))))
+;                      (SETQ mht
+;                            (MAKE-INITIAL-MEMOIZE-HASH-TABLE
+;                              'FIB
+;                              60)))
+;                    (SETQ #:TABLENAME mht)
+;                    (SETQ #:ARGS (PIST* #:PONSTABLENAME N))
+;                    (MULTIPLE-VALUE-SETQ (#:ANS #:ANS-P)
+;                      (MF-GETHASH #:ARGS #:TABLENAME))
+;                    (COND (#:ANS-P
+;                           (SAFE-INCF (AREF #:MA 9001) 1)
+;                           #:ANS)
+;                          (T
+;                           (LET (#:ATTACHED-FN-TEMP)
+;                             (MV?-LET (O0)
+;                                      (LET
+;                                       ((*AOKP* (AND *AOKP* T)))
+;                                       (PROG1
+;                                        (IF
+;                                         (ZP N)
+;                                         0
+;                                         (IF
+;                                          (EQL N 1)
+;                                          1
+;                                          (+
+;                                           (FIB (- N 1))
+;                                           (FIB (- N 2)))))
+;                                        (WHEN
+;                                         (NOT
+;                                          (MEMBER
+;                                           *AOKP*
+;                                           '(T NIL)
+;                                           :TEST
+;                                           #'EQ))
+;                                         (SETQ
+;                                          #:ATTACHED-FN-TEMP
+;                                          *AOKP*))))
+;                                      (PROGN
+;                                       (COND
+;                                        (#:ATTACHED-FN-TEMP
+;                                         (MEMOIZE-USE-ATTACHMENT-WARNING
+;                                          'FIB
+;                                          #:ATTACHED-FN-TEMP))
+;                                        (T
+;                                         (MF-SETHASH
+;                                          #:ARGS
+;                                          (LIST* O0)
+;                                          #:TABLENAME)))
+;                                       (WHEN
+;                                        #:ATTACHED-FN-TEMP
+;                                        (ASSERT *AOKP*)
+;                                        (UPDATE-ATTACHED-FN-CALLED
+;                                         #:ATTACHED-FN-TEMP))
+;                                       (MV? O0)))))))))))))
 
 (defun-one-output memoize-eval-compile (def old-fn)
   #+(or ccl sbcl) ; all functions are compiled

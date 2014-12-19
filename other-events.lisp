@@ -25023,7 +25023,8 @@
                        t))
         (key-class (symbol-class key wrld))
         (condition (and val (cdr (assoc-eq :condition-fn val))))
-        (inline (and val (cdr (assoc-eq :inline val)))))
+        (inline (and val (cdr (assoc-eq :inline val))))
+        (aokp (and val (cdr (assoc-eq :aokp val)))))
     (let ((result
            (cond
             ((eq key-formals t)
@@ -25044,6 +25045,10 @@
                  "~@0~x1 takes ACL2's STATE as an argument (illegal except ~
                   for profiling)."
                  str key))
+            ((not (booleanp aokp))
+             (er hard ctx
+                 "~@0:aokp has a non-Boolean value, ~x1."
+                 str aokp))
             ((and (or condition (cdr (assoc-eq :inline val)))
 
 ; See comment above for the case of 'state.
