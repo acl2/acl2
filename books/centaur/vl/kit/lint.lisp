@@ -480,8 +480,12 @@ shown.</p>"
        (design (cwtime (vl-design-check-namespace design)))
 
        (- (cw "~%vl-lint: processing arguments, parameters...~%"))
-       (design (cwtime (vl-design-elim-unused-vars design)))
        (design (cwtime (vl-design-argresolve design)))
+       (design
+        ;; Bug fixed 2014-12-19: don't do this until after argresolve, because
+        ;; in SystemVerilog it can get confused by .* or .foo style port
+        ;; connections.
+        (cwtime (vl-design-elim-unused-vars design)))
        (design (cwtime (vl-design-dupeinst-check design)))
 
        ;; BOZO not exactly sure where this should go, maybe this will work.
