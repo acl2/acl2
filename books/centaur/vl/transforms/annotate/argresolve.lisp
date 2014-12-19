@@ -698,7 +698,7 @@ these cases, we add a non-fatal warning explaining the problem.</p>"
                  (not (eq arg1.dir :vl-output)))
             (warn :type :vl-warn-blank
                   ;; BOZO linking doesn't quite work here for the foreign port.
-                  :msg "~a0 gives a blank expression for non-blank port ~s1 (port direction: ~s2)."
+                  :msg "~a0 gives a blank expression for non-blank port ~a1 (port direction: ~s2)."
                   :args (list inst port1 arg1.dir))
           (ok))))
     (vl-check-blankargs (cdr args) (cdr ports) inst warnings)))
