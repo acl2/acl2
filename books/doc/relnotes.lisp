@@ -258,6 +258,11 @@ topological sort, @(see depgraph::invert), an edge-inversion algorithm, and
 set of nodes.  This functionality was formerly part of @(see VL) but has now
 been made more general and extracted.</p>
 
+<p>The new @('projects/codewalker/') directory contains Codewalker, a utility
+for exploring code in any programming language specified by an ACL2 model to
+discover certain properties of the code.  Demos of Codewalker are also in that
+directory.</p>
+
 <p>There are also several new small tools:</p>
 
 <ul>
@@ -894,7 +899,6 @@ hons-and-memoization) code.</p>
 
 <p>The new @('oracle/') directory contains tools and examples from Oracle,
 Inc.</p>
-
 
 <h5>New Demos</h5>
 
