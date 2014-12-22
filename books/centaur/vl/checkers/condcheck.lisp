@@ -303,12 +303,10 @@ occurs, and is used in any warning messages we produce.</p>"
   (verify-guards vl-expr-condcheck
     :guard-debug t))
 
-
 (define vl-exprctxalist-condcheck ((x vl-exprctxalist-p))
   :returns (warnings vl-warninglist-p)
   :short "@(call vl-exprctxalist-condcheck) extends @(see vl-expr-condcheck)
 across an @(see vl-exprctxalist-p)."
-
   (if (atom x)
       nil
     (append (vl-expr-condcheck (caar x) nil (cdar x))
@@ -333,9 +331,10 @@ the expressions in a module, and adds any resulting warnings to the module."
 (define vl-design-condcheck ((x vl-design-p))
   :returns (new-x vl-design-p)
   (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
-    (change-vl-design x
-                      :mods (vl-modulelist-condcheck x.mods))))
+       ((vl-design x) x)
+       (new-mods (vl-modulelist-condcheck x.mods)))
+    (clear-memoize-table 'vl-expr-strip)
+    (change-vl-design x :mods new-mods)))
 
 
 

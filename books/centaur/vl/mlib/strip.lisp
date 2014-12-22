@@ -74,8 +74,11 @@ details.</p>")
 
 (defines vl-expr-strip
   :short "Throw away attributes and widths, keeping just the core of an
-expression."
-  ;; BOZO consider optimizing to avoid reconsing already-striped expressions
+expression. (memoized)"
+
+  :long "<p>Note that we gain significant performance in @(see leftright-check)
+by memoizing this function.</p>"
+
   (define vl-expr-strip ((x vl-expr-p))
     :returns (new-x vl-expr-p)
     :measure (vl-expr-count x)
@@ -100,7 +103,9 @@ expression."
             (vl-exprlist-strip (cdr x)))))
   ///
   (deffixequiv-mutual vl-expr-strip)
-  (verify-guards vl-expr-strip))
+  (verify-guards vl-expr-strip)
+
+  (memoize 'vl-expr-strip))
 
 (define vl-range-strip ((x vl-range-p))
   :returns (x-strip vl-range-p)

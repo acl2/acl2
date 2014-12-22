@@ -912,5 +912,7 @@ vl-expr-p) @('x') and returns @('(mv warnings-prime x-prime)')."
   :short "Top-level @(see oprewrite) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* (((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-oprewrite x.mods))))
+  (b* (((vl-design x) x)
+       (new-mods (vl-modulelist-oprewrite x.mods)))
+    (clear-memoize-table 'vl-expr-strip)
+    (change-vl-design x :mods new-mods)))
