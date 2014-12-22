@@ -180,6 +180,8 @@ for odd but innocuous things like @('~ 1'b0') and @('{1'b0}').</p>"
 (define vl-design-duperhs-check ((x vl-design-p))
   :returns (new-x vl-design-p)
   (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-duperhs-check x.mods))))
+       ((vl-design x) x)
+       (new-mods (vl-modulelist-duperhs-check x.mods)))
+    (clear-memoize-table 'vl-expr-strip)
+    (change-vl-design x :mods new-mods)))
 

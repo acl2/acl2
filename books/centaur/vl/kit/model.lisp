@@ -302,7 +302,7 @@ Options:" *nls* *nls* *vl-model-opts-usage* *nls*))
 
 
 (define vl-model ((argv string-listp) &key (state 'state))
-  :parents (kit lint)
+  :parents (kit)
   :short "The @('vl model') command."
   (b* (((mv errmsg opts start-files)
         (parse-vl-model-opts argv))

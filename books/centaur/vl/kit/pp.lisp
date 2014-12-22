@@ -174,7 +174,7 @@ Options:" *nls* *nls* *vl-pp-opts-usage* *nls*))
 
 
 (define vl-pp ((argv string-listp) &key (state 'state))
-  :parents (kit lint)
+  :parents (kit)
   :short "The @('vl pp') command."
   (b* (((mv errmsg opts start-files)
         (parse-vl-pp-opts argv))

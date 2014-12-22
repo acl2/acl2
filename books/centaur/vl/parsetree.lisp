@@ -3600,8 +3600,12 @@ do this is to wrap it using @('(vl-context x)').</p>
     :rule-classes :type-prescription)
   (in-theory (disable (:t vl-context-p)))
 
-  (defthm vl-context-p-of-ctxelement
+  (defthm vl-context-p-when-vl-ctxelement-p
     (implies (vl-ctxelement-p x)
+             (vl-context-p x)))
+
+  (defthm vl-context-p-when-vl-context1-p
+    (implies (vl-context1-p x)
              (vl-context-p x))))
 
 (define vl-context-fix ((x))
