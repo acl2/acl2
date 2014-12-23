@@ -146,7 +146,7 @@ about these equivalences.</p>"
 ; other than waste time, because the resulting conclusion would be typed to T.
 
 ; By the way, this rule is needed for certification of
-; books/workshops/2003/sustik/support/dickson,lisp, in particular, map-lemma-4.
+; books/workshops/2003/sustik/support/dickson.lisp, in particular, map-lemma-4.
 
  ((:type-prescription)))
 
