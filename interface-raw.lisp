@@ -7728,10 +7728,6 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
           (state *the-live-state*)
           pass-2-alist)
      (enter-boot-strap-mode system-books-dir (get-os))
-
-; Rockwell Addition:  Here we initialize the nu-rewriter memo cache.
-
-     (initialize-nu-memos 65534)
      (setq pass-2-alist
            (let ((ans nil))
              (dolist

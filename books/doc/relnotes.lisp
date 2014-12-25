@@ -464,6 +464,18 @@ write-date of compiled files, to avoid including stale files.</p>
 <p>The utilities @(see profile-acl2) and @(see profile-all) now work in the
 ACL2 loop, and are documented.</p>
 
+<p>The @('watch') utility works again.  Thanks to Bob Boyer for providing
+fixes.  To use this utility:</p>
+
+@({
+(include-book \"centaur/memoize/old/watch\" :dir :system :ttags :all)
+:q
+(watch)
+(lp)
+; Now in Emacs, bring into a buffer the file reported by (watch), whose
+; name is of the form watch-output-temp-n.lsp.  Then execute ACL2 forms.
+})
+
 <h3>OSLIB</h3>
 
 <p>OSLIB has been reorganized to try to make it somewhat more coherent.  Most

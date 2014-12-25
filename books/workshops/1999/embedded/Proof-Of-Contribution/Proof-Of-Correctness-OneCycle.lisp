@@ -7533,7 +7533,8 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 
 (encapsulate
  ()
- (set-nu-rewriter-mode nil) ; to avoid skip-proofs below
+;;; Modified 12/24/2014 to avoid the nu-rewriter, which is being eliminated.
+; (set-nu-rewriter-mode nil) ; to avoid skip-proofs below
  (defthm after-n-instructions-out-of-range-rtmstate-untouched
    (implies
     (and

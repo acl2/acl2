@@ -3741,7 +3741,6 @@
      (NTH ACL2-BUILT-INS)
      (NTH-ALIASES-TABLE STOBJ) ; was SWITCHES-PARAMETERS-AND-MODES
      (NTHCDR ACL2-BUILT-INS)
-     (NU-REWRITER MISCELLANEOUS)
      (NULL ACL2-BUILT-INS)
      (NUMBER-SUBTREES HONS-AND-MEMOIZATION)
      (NUMERATOR ACL2-BUILT-INS)
@@ -4062,7 +4061,6 @@
      (SET-NON-LINEAR POINTERS) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-NON-LINEARP
       NON-LINEAR-ARITHMETIC) ; was SWITCHES-PARAMETERS-AND-MODES
-     (SET-NU-REWRITER-MODE NU-REWRITER) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-OVERRIDE-HINTS OVERRIDE-HINTS) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-OVERRIDE-HINTS! OVERRIDE-HINTS) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-PARALLEL-EXECUTION PARALLELISM) ; was SWITCHES-PARAMETERS-AND-MODES
@@ -5290,7 +5288,6 @@
      set-match-free-default
      set-measure-function
      set-non-linearp
-     set-nu-rewriter-mode
      set-override-hints-macro
      set-prover-step-limit
      set-rewrite-stack-limit
@@ -5624,7 +5621,6 @@
                              set-match-free-default
                              set-measure-function
                              set-non-linearp
-                             set-nu-rewriter-mode
                              set-prover-step-limit
                              set-rewrite-stack-limit
                              set-ruler-extenders

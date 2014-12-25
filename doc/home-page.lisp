@@ -267,15 +267,18 @@ authorship</a> information is available from the ACL2 <a
 href=\"#documentation\">documentation</a>.</li>
 
 <li><b>Extensions.</b><br>The ACL2 distribution includes the following
-extensions, which were developed by the individuals shown.
+extensions, which were developed by the individuals shown.  <b>NOTE:</b>Not
+included in this list is ACL2(h) &mdash; that is, <a href=\"~sm\">support for
+hash cons, applicative hash tables, and function memoization for reuse of
+previously computed results</a> &mdash; because these features are now built
+into ACL2 executables by default (that is, ACL2 is ACL2(h) by default).  Thanks
+to Bob Boyer, Warren A. Hunt, Jr., Jared Davis, and Sol Swords for their
+contributions; see the <a href=\"~sk\">acknowledgments</a>.
+
   <UL>
   <LI><A HREF=\"~sl\">ACL2(r)</A><BR>
   Support for the real numbers by way of non-standard analysis<BR>
   Ruben Gamboa</LI>
-  <LI><A HREF=\"~sm\">ACL2(h)</A><BR>
-  Support for hash cons, applicative hash tables, and function
-    memoization for reuse of previously computed results<BR>
-  Bob Boyer, Warren A. Hunt, Jr., Jared Davis, and Sol Swords</LI>
   <LI><A HREF=\"~sn\">ACL2(p)</A><BR>
   Support for parallel evaluation<BR>
   David L. Rager</LI>

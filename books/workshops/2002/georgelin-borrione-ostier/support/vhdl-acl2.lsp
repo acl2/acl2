@@ -13,7 +13,8 @@
 (set-acl2-print-case :downcase)
 (set-ignore-ok t) 
 (set-state-ok t)
- (set-nu-rewriter-mode nil); nu-rewriter mode off
+;;; Modified 12/24/2014 to avoid the nu-rewriter, which is being eliminated.
+;;; (set-nu-rewriter-mode nil); nu-rewriter mode off
 
 (program)
 

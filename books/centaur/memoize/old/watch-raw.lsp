@@ -51,7 +51,8 @@
 (defg *watch-forms*
   '("\"A string or a quoted form in *WATCH-FORMS* is ignored.\""
     (print-call-stack)
-    #+Clozure '(bytes-used)
+; Commented out as suggested by Boyer, for general user:
+;   #+Clozure '(bytes-used)
     (memoize-summary)
     (time-since-watch-start)
     (time-of-last-watch-update)
@@ -59,11 +60,12 @@
     ;; [Jared] removing these, they haven't worked since hl-hons
     ;; '(hons-calls/sec-run-time)
     ;; '(hons-hits/calls)
-    '(hons-acons-summary)
-    '(pons-calls/sec-run-time)
-    '(pons-hits/calls)
-    '(pons-summary)
-    '(hons-summary)
+; Commented out as suggested by Boyer, for general user:
+;   '(hons-acons-summary)
+    (pons-calls/sec-run-time)
+    (pons-hits/calls)
+    (pons-summary)
+    (hons-summary)
     ;; [Jared]; removing this because it seems very architecture specific, etc.
     ;; If we really want this, we can add it back with some kind of ttag book.
     ;; '(print-fds)
@@ -73,10 +75,13 @@
     ;; '(print-ancestry)
     ;; [Jared]: removing this 
     ;; #+Clozure '(watch-shell-command "pwd")
-    '(functions-that-may-be-too-fast-to-sensibly-profile)
-    '(physical-memory-on-this-machine)
-    #+Clozure '(number-of-cpus-on-this-machine)
-    #+Clozure (gc-count)
+    (functions-that-may-be-too-fast-to-sensibly-profile)
+; Commented out as suggested by Boyer, for general user:
+;   (physical-memory-on-this-machine)
+; Commented out as suggested by Boyer, for general user:
+;   #+Clozure '(number-of-cpus-on-this-machine)
+; Commented out as suggested by Boyer, for general user:
+;   #+Clozure (gc-count)
     )
 
   "The forms in *WATCH-FORMS* are evaluated periodically and the
@@ -206,6 +211,37 @@
 
 #+Clozure
 (declaim (fixnum *watch-real-seconds-between-dumps*))
+
+(defmacro oft (&rest r) ; For writing to *standard-output*.
+  `(progn (format t ,@r) (force-output *standard-output*)))
+
+(defmacro ofto (&rest r) ; For writing to *terminal-io*
+  `(progn (format *terminal-io* ,@r)
+          (force-output *terminal-io*)))
+
+(defun abbrev (x &optional
+                (level *print-level*)
+                (length *print-length*))
+  (cond ((atom x) x)
+        ((eql level 0) '?)
+        ((eql length 0) '?)
+        (t (let ((pair (assoc-eq-hack
+                        x (table-alist 'evisc-table
+                                       (w *the-live-state*)))))
+             (cond (pair (cdr pair))
+                   (t (let ((a (abbrev (car x)
+                                       (and level (1- level))
+                                       length))
+                            (d (abbrev (cdr x)
+                                       level
+                                       (and length (1- length)))))
+                        (cond ((and (eq a (car x))
+                                    (eq d (cdr x)))
+                               x)
+                              ((and (eq a '?)
+                                    (eq d '?))
+                               '?)
+                              (t (cons a d))))))))))
 
 #+Clozure
 (defn watch-condition ()

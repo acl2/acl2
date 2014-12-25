@@ -12283,8 +12283,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; consider adding such functions to the list *oneify-primitives*.
 
   '(relieve-hyp-synp ; *deep-gstack*
-    apply-abbrevs-to-lambda-stack1 ; *nth-update-tracingp*
-    nth-update-rewriter ; *nth-update-tracingp*
     ev-w-lst ; *the-live-state*
     simplify-clause1 ; dmr-flush
     ev-rec-acl2-unwind-protect ; *acl2-unwind-protect-stack*
@@ -12304,12 +12302,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     user-stobj-alist-safe ; chk-user-stobj-alist
     comp-fn ; compile-uncompiled-defuns
     fmt-ppr ; print-infix
-    get-memo ; *nu-memos*
     acl2-raw-eval ; eval
     pstack-fn ; *pstk-stack*
     dmr-start-fn ; dmr-start-fn-raw
-    memo-exit ; *nu-memos*
-    memo-key1 ; *nu-memos*
     ev-fncall-meta ; *metafunction-context*
     ld-loop ; *ld-level*
     print-summary ; dmr-flush
@@ -12325,7 +12320,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     prove-loop ; *deep-gstack*
     chk-virgin ; chk-virgin2
     w-of-any-state ; live-state-p
-    lambda-abstract ; *lambda-abstractp*
     ld-fn-body ; reset-parallelism-variables, *first-entry-to-ld-fn-body-flg*
     untranslate ; *the-live-state*
     longest-common-tail-length-rec ; eq
@@ -12335,7 +12329,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     add-polys ; *add-polys-counter*
     dmr-stop-fn ; dmr-stop-fn-raw
     ld-print-results ; print-infix
-    apply-abbrevs-to-lambda-stack ; *nth-update-tracingp*
     flpr ; print-flat-infix
     close-trace-file-fn ; *trace-output*
     ev-fncall-rec ; raw-ev-fncall
@@ -12585,7 +12578,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     wormhole verify-termination-boot-strap start-proof-tree
     f-decrement-big-clock defabsstobj defstobj defund defttag
     defdoc push-gframe defthmd f-get-global
-    set-nu-rewriter-mode
 
 ; Most of the following were discovered after we included macros defined in
 ; #+acl2-loop-only whose definitions are missing in #-acl-loop-only.
@@ -20355,12 +20347,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq key :let*-abstractionp)
          (member-eq val '(t nil)))
 
-; Rockwell Addition: See the doc string associated with
-; set-nu-rewriter-mode.
-
-        ((eq key :nu-rewriter-mode)
-         (member-eq val '(nil t :literals)))
-
         ((eq key :backchain-limit)
          (and (true-listp val)
               (equal (length val) 2)
@@ -21147,30 +21133,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                      (table-alist 'acl2-defaults-table wrld)))
       *default-rewrite-stack-limit*))
 
-#+acl2-loop-only
-(defmacro set-nu-rewriter-mode (x)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (progn (table acl2-defaults-table :nu-rewriter-mode ,x)
-           (table acl2-defaults-table :nu-rewriter-mode))))
-
-#-acl2-loop-only
-(defmacro set-nu-rewriter-mode (x)
-  (declare (ignore x))
-  nil)
-
-(defun nu-rewriter-mode (wrld)
-  (declare (xargs :mode :program))
-  (cdr (assoc-eq :nu-rewriter-mode
-                 (table-alist 'acl2-defaults-table wrld))))
-
-; Through Version_2.9.4, we set the nu-rewriter mode by default as follows:
-; (set-nu-rewriter-mode nil)
-; But nil is the default anyhow, and we prefer to keep the acl2-defaults-table
-; clean so that its initial value agrees with the value in
-; chk-raise-portcullis1.  This isn't essentially, but for example it avoids
-; laying down extra table forms when we :puff.
-
 ; Terminology: case-split-limitations refers to a list of two
 ; "numbers" (either of which might be nil meaning infinity), sr-limit
 ; is the name of the first number, and case-limit is the name of the
@@ -21214,11 +21176,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   nil)
 
 ; Up through Version_2.9.4 we set case split limitations as follows:
-; (set-case-split-limitations *default-case-split-limitations*)
-; But as explained in the comment above for set-nu-rewriter-mode, we prefer to
-; start with an acl2-defaults-table that agrees with the one in
-; chk-raise-portcullis1.  So we instead we set the initial acl2-defaults-table
-; as follows, in end-prehistoric-world.
+; (set-case-split-limitations *default-case-split-limitations*).  But we prefer
+; to start with an acl2-defaults-table that agrees with the one in
+; chk-raise-portcullis1; this isn't essential, but for example it avoids laying
+; down extra table forms when we :puff.  So we instead we set the initial
+; acl2-defaults-table as follows, in end-prehistoric-world.
 
 (defconst *initial-acl2-defaults-table*
   `((:DEFUN-MODE . :LOGIC)
