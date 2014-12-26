@@ -212,6 +212,7 @@
 (include-book "misc/with-waterfall-parallelism" :dir :system)
 
 (include-book "centaur/memoize/old/profile" :dir :system)
+(include-book "centaur/memoize/old/watch" :dir :system)
 
 #||
 
