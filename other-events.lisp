@@ -1023,6 +1023,7 @@
             'state
             (list 'quote doc)
             (list 'quote event-form)))
+    #+acl2-legacy-doc
     (defmacro defdoc (&whole event-form name doc)
       (list 'defdoc-fn
             (list 'quote name)
@@ -1511,7 +1512,8 @@
                          mutual-recursion-fn defmacro-fn defconst-fn
                          defstobj-fn
                          defthm-fn defaxiom-fn progn-fn encapsulate-fn
-                         include-book-fn deflabel-fn defdoc-fn
+                         include-book-fn deflabel-fn
+                         #+acl2-legacy-doc defdoc-fn
                          deftheory-fn in-theory-fn in-arithmetic-theory-fn
                          regenerate-tau-database-fn
                          push-untouchable-fn remove-untouchable-fn
@@ -5385,7 +5387,7 @@
 ;                                 associated FORMALS triples.]
 ; defabsstobj-fn             (name STOBJ . names) [as above for defstobj-fn]
 ; deflabel-fn                (name LABEL . T)
-; defdoc-fn                  ---
+; #+acl2-legacy-doc defdoc-fn ---
 ; deftheory-fn               (name THEORY . &)
 ; defchoose-fn               (name FORMALS . &)
 ; verify-guards-fn           ---

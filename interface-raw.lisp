@@ -1697,7 +1697,7 @@
                             defstobj-fn defabsstobj-fn
                             defpkg-fn
                             deflabel-fn
-                            defdoc-fn
+                            #+acl2-legacy-doc defdoc-fn
                             deftheory-fn
                             defchoose-fn
                             verify-guards-fn
