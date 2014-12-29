@@ -57,6 +57,8 @@
   :short "The VL server powers the Module Browser, a web-based interface for
 viewing Verilog designs.")
 
+(local (xdoc::set-default-parents server))
+
 (local (defthm vl-descriptionlist-p-of-alist-vals-when-vl-descalist-p
          (implies (vl-descalist-p x)
                   (vl-descriptionlist-p (alist-vals x)))
