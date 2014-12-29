@@ -578,7 +578,8 @@ CLEAN_FILES_EXPLICIT := \
 
 MORECLEAN_FILES_EXPLICIT := \
    doc/manual \
-   system/doc/manual
+   system/doc/manual \
+   doc/xdoc.sao
 
 .PHONY: clean_books clean
 
