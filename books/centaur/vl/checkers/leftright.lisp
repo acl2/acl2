@@ -237,7 +237,7 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
                  :fn __function__)
                 (vl-exprlist-leftright-check args ctx)))
 
-         ((when (and (member op '(:vl-partselect-colon))
+         ((when (and (member op '(:vl-partselect-colon :vl-select-colon))
                      (equal (vl-expr-strip (second args))
                             (vl-expr-strip (third args)))))
           (cons (make-vl-warning
@@ -246,9 +246,15 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
                  :args (list ctx x)
                  :fatalp nil
                  :fn __function__)
-                ;; Note: we might want to not recur here, for similar reasons to the
-                ;; special hack above for minuses in net/reg/var decls.
+
+                ;; Special hack: I decided not to recur here for the same
+                ;; reasons as in net/reg/var declarations.
                 (vl-exprlist-leftright-check args ctx)))
+
+         ((when (member op '(:vl-index :vl-bitselect)))
+          ;; Special hack: I decided not to recur here for the same reasons
+          ;; as in net/reg/var declarations.
+          nil)
 
          ((when (and (member op '(:vl-qmark))
                      (equal (vl-expr-strip (second args))

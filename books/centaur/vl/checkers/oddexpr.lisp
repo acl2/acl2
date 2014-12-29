@@ -203,7 +203,7 @@ giving motivation for these actions, etc.</p>
 ;   a op1 b op2 c |  parsed as        bad-type?   error-prone?
 ; ----------------+----------------------------------------------------------------------------------------------------
 ;   a - b + c     |  (a - b) + c      see above
-;   a - b - c     |  (a - b) - c      no          yes              warn
+;   a - b - c     |  (a - b) - c      no          maybe, see below
 ;   a - b << c    |  (a - b) << c     no          yes              warn
 ;   a - b < c     |  (a - b) < c      no          no
 ;   a - b == c    |  (a - b) == c     no          no
@@ -213,9 +213,14 @@ giving motivation for these actions, etc.</p>
 ;   a - b && c    |  (a - b) && c     yes         --               warn
 ;   a - b || c    |  (a - b) || c     yes         --               warn
 ; ----------------+----------------------------------------------------------------------------------------------------
+;
+; For a long time we warned about A - B - C, but this seems to be a common
+; cause of false positives.  My takeaway is that our logic designers do seem to
+; be comfortable with the associativity of minus, so I'm not going to warn
+; about this.
 
     ;; (outer-op     .  inner-op)    .   action
-    ((:minus-class   . :minus-class)  . :check-precedence)
+    ;; ((:minus-class   . :minus-class)  . :check-precedence)
     ((:shift-class   . :minus-class)  . :check-precedence)
     ((:bitand-class  . :minus-class)  . :check-precedence)
     ((:xor-class     . :minus-class)  . :check-precedence)
