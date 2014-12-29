@@ -84,10 +84,10 @@
  *memoize-summary-limit* 100)') to see the most time-using 100 functions (for
  example).</p>
 
- <p>The following documentation has been pasted in from file
- @('books/centaur/memoize/old/watch-raw.lsp').  The ACL2 community is invited
- to format it, modify it, etc.  More documentation may be found in the above
- @('watch-raw.lsp') file.</p>
+ <p>The documentation below was directly derived from a Lisp documentation
+ string formerly in @('books/centaur/memoize/old/watch-raw.lsp').  The ACL2
+ community is invited to format it, modify it, etc.  More documentation may be
+ found in the above @('watch-raw.lsp') file.</p>
 
  @({
  WATCH is a raw Lisp function that initiates the printing of
@@ -111,9 +111,6 @@
  Often (PRINT-CALL-STACK) is a member of *WATCH-FORMS*.  It shows the
  names of memoized and/or profiled functions that are currently in
  execution and how long they have been executing.
-
- Other favorite members of *WATCH-FORMS* include (PRINT-FDS),
- (BYTES-USED), and (GC-COUNT).
 
  We suggest the following approach for getting profiling information
  about calls to Common Lisp functions:
@@ -166,5 +163,6 @@
  thread is created to periodically call (WATCH-DUMP).  The thread is
  the value of *WATCH-DOG-PROCESS*.
 
- Invoke (WATCH-HELP) outside of ACL2 for further details.
+ See documentation strings in file
+ books/centaur/memoize/old/watch-raw.lsp for further details.
  })")
