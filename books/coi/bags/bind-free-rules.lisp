@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "BAG")
 
 (include-book "meta")
@@ -24,13 +49,13 @@
   (:REWRITE MEMBERSHIP-EXTRACTION-INSTANCE)
   ))
 
-(in-theory 
- (disable 
+(in-theory
+ (disable
   (:REWRITE *TRIGGER*-UNIQUE-SUBBAGPS-IMPLIES-DISJOINTNESS)
   (:REWRITE *TRIGGER*-SUBBAGP-PAIR-DISJOINT) ;can we get rid of this then?
  ))
 
-;we look through HYPS for a term of the form (subbagp x y) 
+;we look through HYPS for a term of the form (subbagp x y)
 ;if such an item is found, we return (mv t y).  else, we return (mv nil nil)
 ;what if multple such things might be found?
 (defun find-exact-subbagp-instance (x hyps)
@@ -64,7 +89,7 @@
   (if (consp hyps)
       (let ((entry (car hyps)))
 	(let ((hit ;(not (subbagp term zed))
-	       (and 
+	       (and
 		(consp entry)
 		(equal (car entry) 'not)
 		(consp (cdr entry))
@@ -73,7 +98,7 @@
 		(consp (cdr (cadr entry)))
 		(consp (cddr (cadr entry)))
 		(let ((term (cadr (cadr entry)))
-		      (zed (caddr (cadr entry)))) 
+		      (zed (caddr (cadr entry))))
 		  (and (syntax-subbagp-fn nil x term)
 		       (cons term zed))))))
 	  (if hit
@@ -101,7 +126,7 @@
                       (and hit
                            (or (find-bounded-subbagp-path t   x1 hyps y hyps (1- n) (cons (cons x1 t) (cons (cons x0 nil) res)))
                                (find-bounded-subbagp-path nil x  nrh  y hyps (1- n) res))))))))))
-  
+
 (defun reverse-path (path res)
   (declare (type t path res))
   (if (consp path)
@@ -112,7 +137,7 @@
     res))
 
 ;what does this do?
-;we look through HYPS for a term of the form (subbagp x BLAH) 
+;we look through HYPS for a term of the form (subbagp x BLAH)
 ;if such an item is found, we test whether BLAH equals y.  else, we return nil
 ;what if multple such things might be found?
 (defun subbagp-instance (x y hyps)
@@ -145,7 +170,7 @@
 	       nil))))))
 
 
-;add guard?		     
+;add guard?
 (defun subbagp-chain (x xlist x0)
   (if (consp xlist)
       (and (if (cdar xlist) (hide-subbagp x (caar xlist)) (meta-subbagp x (caar xlist)))
@@ -154,7 +179,7 @@
 	(hide-subbagp x x0)
       (meta-subbagp x x0))))
 
-;add guard?		     
+;add guard?
 (defun subbagp-hyp (key x xlist y)
   (and key (subbagp-chain x xlist y)))
 
@@ -180,7 +205,7 @@
              (subbagp x z)))
 
   (defthmd tester2
-    (implies (subbagp a x) 
+    (implies (subbagp a x)
              (subbagp a (append x y))))
 
   ))
@@ -241,7 +266,7 @@
   (if (consp xlist)
       (let ((z0 (if (consp (car xlist)) (caar xlist) nil)))
 	(met ((uni syntax) (find-unique-instance z0 hyps))
-	  (if uni 
+	  (if uni
 	      (if syntax
 		  xlist
 		(append `((,uni . nil) (,z0 . t)) (cdr xlist))) ;reversed since list still needs to be reversed
@@ -311,7 +336,7 @@
 
 ;; hide-unique is defined in meta as unique
 
-;add guard?		     
+;add guard?
 (defun unique-chain (x xlist uni)
   (if (consp xlist)
       (and (if (cdar xlist) (hide-subbagp x (caar xlist)) (meta-subbagp x (caar xlist)));(subbagp x (car xlist))
@@ -322,7 +347,7 @@
       (and (meta-subbagp x uni)
 	   (hide-unique uni)))))
 
-;add guard?		     
+;add guard?
 (defun unique-hyp (key x xlist uni)
   (and key (unique-chain x xlist uni)))
 
@@ -409,7 +434,7 @@
                               (list-whose-caars-are-pseudo-termsp ylist)
                               (pseudo-term-listp hyps))
                   ))
-  
+
   (if (and (consp ylist)
 	   (consp (car ylist)))
       (met ((hit syn p q) (find-disjointness  x (caar ylist) hyps))
@@ -427,12 +452,12 @@
   (if (and (consp xlist)
 	   (consp (car xlist)))
       (met ((hit syn p q ylist2) (find-disjointness*  (caar xlist) ylist hyps))
-	   (if hit 
+	   (if hit
 	       (mv hit syn xlist ylist2 p q)
 	     (find-disjointness** (cdr xlist) ylist hyps)))
     (mv nil nil nil nil nil nil)))
 
-;checks for subbagp paths up to disjoint 
+;checks for subbagp paths up to disjoint
 ;argument for disjointness comes from a disjoint in hyps
 (defun disjoint-disjointness (x y hyps)
   (declare (type t x hyps)
@@ -452,7 +477,7 @@
 		     x0
 		     (reverse-path newy '(quote t)) ;ylist
 		     y0
-		     `(quote ,syn) 
+		     `(quote ,syn)
 		     p
 		     q)) ;z's are irrelevent in this argument
 ;but use z positions for subbagp-pair type argument
@@ -625,8 +650,8 @@
       (let ((xlist (revlist xlist nil))
 	    (ylist (revlist ylist nil)))               ; smallest to largest
 	(met ((xlist ylist zlist) (find-shared-ancestor xlist ylist nil)) ; x/y largest to smallest
-	     
-	     (let ((newzlist (find-unique-instance-list (revlist zlist nil) hyps))) 
+
+	     (let ((newzlist (find-unique-instance-list (revlist zlist nil) hyps)))
 	       ;; newzlist path from something unique down subbagps
 	       (met ((hit newxlist x0 newylist y0 z zlist z0) (find-unique-subbagp** xlist ylist newzlist hyps))
 		    (mv hit (reverse-path newxlist '(quote t))
@@ -657,12 +682,12 @@
                   )
 	   (ignore state))
   (let ((hyps (mfc-clause mfc)))
-    (and (or flg 
+    (and (or flg
 	     t
              (mfc-ancestors mfc) ;bzo why are we doing these checks?
 	     (in-clause-disjoint x y hyps)
              )
-	 (met ((hit xlist* x0* ylist* y0* z* zlist* z0*) (unique-disjointness x y hyps)) 
+	 (met ((hit xlist* x0* ylist* y0* z* zlist* z0*) (unique-disjointness x y hyps))
 	      (if hit
 		  `((,key . (quote :unique))
 		    (,xlist . ,xlist*)
@@ -689,12 +714,12 @@
   (subbagp-pair x y x y)
   :hints (("goal" :in-theory (enable subbagp-pair))))
 
-;add guard?		     
+;add guard?
 (defun unique-subbagp-chain (x0 y0 z zlist z0)
   (and (unique-subbagps x0 y0 z)
        (unique-chain z zlist z0)))
 
-;add guard?		     
+;add guard?
 (defun disjoint-hyp (key x xlist x0 y ylist y0 z-syn zlist-p z0-q)
   (cond
    ((equal key ':disjoint)
@@ -776,7 +801,7 @@
    :rule-classes :forward-chaining)
 
  (defthm disjoint-computation
-   (implies (and (bind-free (bind-disjoint-argument nil 'key 'xlist 'x0 'ylist 'y0 'z 'zlist 'z0 x y mfc state) 
+   (implies (and (bind-free (bind-disjoint-argument nil 'key 'xlist 'x0 'ylist 'y0 'z 'zlist 'z0 x y mfc state)
                             (key xlist x0 ylist y0 z zlist z0))
                  (disjoint-hyp key x xlist x0 y ylist y0 z zlist z0))
             (disjoint x y))
@@ -869,7 +894,7 @@
 		 (consp (cdr (cadr entry)))
 		 (consp (cddr (cadr entry)))
 		 (equal (cadr (cadr entry)) x))
-	    (find-memberp-instance-list x (cdr clause) 
+	    (find-memberp-instance-list x (cdr clause)
 				       (cons (caddr (car (cdr entry))) res))
 	  (find-memberp-instance-list x (cdr clause) res)))
     res))
@@ -897,7 +922,7 @@
                 (PSEUDO-TERM-LISTP res)
                 )
            (PSEUDO-TERM-LISTP (FIND-MEMBERP-INSTANCE-LIST x clause res))))
- 
+
 (defun memberp-membership (x y hyps)
   (declare (type t x y hyps)
            (xargs :guard (and (pseudo-termp x)
@@ -907,7 +932,7 @@
   (let ((x0list (find-memberp-instance-list x hyps nil)))
     (met ((hit x0 path) (find-memberp-subbagp-list x0list y hyps))
 	 (mv hit x0 path))))
-	
+
 (defun in-hyps-memberp (x y hyps)
   (declare (type t x y hyps))
   (if (consp hyps)
@@ -942,9 +967,9 @@
 		    (,x0 . ,val)
 		    (,xlist . ,list))
 		nil)))))
-	 
 
-;add guard?		     
+
+;add guard?
 (defun memberp-hyp (key x x0 xlist y)
   (and key
        (hide-memberp x x0)
@@ -953,7 +978,7 @@
 (defthm memberp-computation
   (implies
    (and
-    (bind-free (bind-memberp-argument 'key 'xlist 'x0 x y mfc state) 
+    (bind-free (bind-memberp-argument 'key 'xlist 'x0 x y mfc state)
 	       (key x0 xlist))
     (memberp-hyp key x x0 xlist y)
     )
@@ -975,9 +1000,9 @@
 
  (local
   (defthmd memberp-test1
-    (implies (and (memberp x z) 
-                  (subbagp z w) 
-                  (subbagp w y)) 
+    (implies (and (memberp x z)
+                  (subbagp z w)
+                  (subbagp w y))
              (memberp x y))))
 
 
@@ -1030,7 +1055,7 @@
                   ))
   (if (consp memlist)
       (let ((x* (car memlist)))
-	(let ((disjoint-arg 
+	(let ((disjoint-arg
 	       (bind-disjoint-argument t 'key 'xlist 'x0 'ylist 'y0 'z 'zlist 'z0 x* y mfc state)))
 	  (if disjoint-arg
 	      (mv t x* disjoint-arg)
@@ -1064,13 +1089,13 @@
 			      (,x* . ,x*1))
 			    disjoint-arg)
 		  nil))))))
-	       
-;add guard?		     
+
+;add guard?
 (defun non-memberp-hyp (hit x* key x xlist x0 y ylist y0 z zlist z0)
   (and hit
        (hide-memberp x x*)
        (disjoint-hyp key x* xlist x0 y ylist y0 z zlist z0)))
-  
+
 (defthm non-memberp-computation
   (implies
    (and
@@ -1104,7 +1129,7 @@
                   (disjoint m v)
                   (disjoint i o)
                   )
-             (not (memberp a p))))) 
+             (not (memberp a p)))))
  )
 
 
@@ -1176,22 +1201,22 @@
 		 (,val   . ,(cdr x)))))))))
 
 (defmacro bind-remove-bag-instance (y z which val)
-  `(bind-free (bind-remove-bag-instance-fn ,y ,z (quote ,which) (quote ,val) mfc state) 
+  `(bind-free (bind-remove-bag-instance-fn ,y ,z (quote ,which) (quote ,val) mfc state)
 	      (,which ,val)))
 
-;add guard?		     
+;add guard?
 (defun disjoint-other-hyp (which x y z)
   (if which
       (disjoint (append x (remove-bag x y))
                 z)
     (disjoint (append x (remove-bag x z)) y)))
-   
+
 (defthm disjoint-other-memberp
   (implies (and (bind-remove-bag-instance y z which x)
                 (disjoint-other-hyp which x y z))
            (disjoint y z)))
 
-;add guard?		     
+;add guard?
 (defun collect-list (term)
   (if (and (consp term)
 	   (equal (car term) 'remove-1))
@@ -1199,14 +1224,14 @@
 	     ,(collect-list (caddr term)))
     `(quote nil)))
 
-;add guard?		     
+;add guard?
 (defun collect-rest (term)
   (if (and (consp term)
 	   (equal (car term) 'remove-1))
       (collect-rest (caddr term))
     term))
 
-;add guard?		     
+;add guard?
 (defun bind-list (list rest term)
   `((,list . ,(collect-list term))
     (,rest . ,(collect-rest term))))
@@ -1243,7 +1268,7 @@
         (if (equal 'binary-append (car term))
             (if (consp (caddr term))
                 (if (and ;(consp (cdr term))
-                 
+
                      (equal 'binary-append (car (caddr term)))
     ;(consp (cdaddr term))
                      (equal (cadr term)
@@ -1255,7 +1280,7 @@
                 nil))
           nil))
     nil))
-  
+
 (defun bind-x-to-repeated-subbag (term)
   (declare (xargs :guard (pseudo-termp term)))
   (let* ((bag (find-repeated-subbag term)))
@@ -1286,5 +1311,5 @@
 ;; Test it out...
 (local
  (defthm test-of-show-not-unique-1
-   (implies (consp x) 
+   (implies (consp x)
             (not (bag::unique (append x x y))))))

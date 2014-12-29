@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 (include-book "bit-twiddling-logops")
 (include-book "eric")
@@ -13,7 +38,7 @@
 ;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
 
 ;; This theory includes rules that convert logops involving
-;; bits to b-functions.  This tends to lead to casesplitting, 
+;; bits to b-functions.  This tends to lead to casesplitting,
 ;; so should only be done when needed.  So, we disable the
 ;; theorems by default.
 
@@ -80,7 +105,7 @@
 ;;                 (< 0 n)
 ;;                 (unsigned-byte-p n y))
 ;;            (equal (if (equal 0 (logand (expt 2 (1- n)) y))
-;;                       y 
+;;                       y
 ;;                     (logior (- (expt 2 n)) y))
 ;;                   (logext n y)))
 ;;   :rule-classes nil
@@ -98,7 +123,7 @@
 ;;                 (< 0 n)
 ;;                 (unsigned-byte-p 1 (nth a x)))
 ;;            (not (logbitp n (nth a x))))
-;;   :hints (("goal" 
+;;   :hints (("goal"
 ;;            :in-theory (enable unsigned-byte-p logbitp*)
 ;;            :cases ((equal (nth a x) 0)))))
 
@@ -116,7 +141,7 @@
                 )
            (unsigned-byte-p n (+ p (* 4 x))))
   :hints (("Goal" :in-theory (e/d (logapp) ( UNSIGNED-BYTE-P-LOGAPP))
-           :use (:instance UNSIGNED-BYTE-P-LOGAPP (size n) (size1 2) (i p) (j x))))) 
+           :use (:instance UNSIGNED-BYTE-P-LOGAPP (size n) (size1 2) (i p) (j x)))))
 
 ;; ;drop??? see next lemma
 ;; (defthmd logcdr-all-ones-lemma
@@ -125,10 +150,10 @@
 ;;                 (integerp n)
 ;;                 (< 0 n)
 ;;                 )
-;;            (equal (logcdr x) 
+;;            (equal (logcdr x)
 ;;                   (loghead (1- n) -1)))
 ;;   :rule-classes nil
-;;   :hints (("goal" 
+;;   :hints (("goal"
 ;;            :induct (unsigned-byte-p n x)
 ;;            :in-theory (enable LRDT))))
 
@@ -140,10 +165,10 @@
            (equal (unsigned-byte-p n (+ 1 x))
                   (and (integerp n)
                        (<= 0 n)
-                       (not (equal x 
+                       (not (equal x
                                    (loghead n -1) ;all ones!
                                    )))))
-  :hints (("goal" 
+  :hints (("goal"
            :induct (unsigned-byte-p n x)
            :in-theory (e/d (LRDT) (unsigned-byte-p* ;for acl2 3.0
                                    )))))
@@ -168,7 +193,7 @@
                   (< x (expt 2 (+ -1 n)))))
   :hints (("Goal" :in-theory (disable LOGBITP-TO-BOUND-WHEN-USB)
            :use (:instance logbitp-to-bound-when-usb))))
-                 
+
 ;; This rule doesn't really have a place.  It involves reasoning about
 ;; additions that equal exactly a power of two.
 
@@ -188,11 +213,11 @@
           :rule-classes nil
           :hints (("goal" ;:do-not '(generalize eliminate-destructors)
                    :do-not-induct t
-                   :in-theory (e/d ( ;LRDT ;expt2* 
+                   :in-theory (e/d ( ;LRDT ;expt2*
                                     EVEN-ODD-DIFFERENT-2
                                     EXPONENTS-ADD-UNRESTRICTED
                                     ;logendp
-                                    ) 
+                                    )
                                    (LOGBITP-OF-LOGCDR2
                                     LOGCONS-0-EXPT-HACK
 ;UNSIGNED-BYTE-P-OF-LOGCDR
@@ -208,14 +233,14 @@
                  (not (logbitp (1- (1- (integer-length k))) x))
                  (not (logbitp (1- (1- (integer-length k))) y)))
             (not (equal (+ x y) k)))
-   :hints (("goal" :use ((:instance sum-power-of-two-helper1 
-                                    (c 0) 
+   :hints (("goal" :use ((:instance sum-power-of-two-helper1
+                                    (c 0)
                                     (n (1- (integer-length k)))))))))
 
 
 
 
-        
+
 (encapsulate
  ()
 
@@ -236,7 +261,7 @@
                                (equal c 0))))
           :rule-classes nil
           :otf-flg t
-          :hints (("goal" 
+          :hints (("goal"
                    :in-theory (e/d (LRDT ;expt2*
                                     EXPONENTS-ADD-UNRESTRICTED
                                          ) (LOGCONS-0-EXPT-HACK))
@@ -256,8 +281,6 @@
                    (and (equal x (expt 2 (1- (1- (integer-length k)))))
                         (equal y (expt 2 (1- (1- (integer-length k))))))))
    :hints (("goal" :use (
-                         (:instance sum-power-of-two-helper2 
-                                    (c 0) 
+                         (:instance sum-power-of-two-helper2
+                                    (c 0)
                                     (n (1- (integer-length k)))))))))
-
-

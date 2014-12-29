@@ -1,3 +1,33 @@
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ; Jared: what's this file for?  It's not certifiable, so I'm
 ; renaming it to a .lsp extension for Make compatibility
 
@@ -9,7 +39,7 @@
 ;(in-package "NARY")
 
 ;;
-;; This file isolates nary definitions and types. The file currently 
+;; This file isolates nary definitions and types. The file currently
 ;; contains the following ACL2 constructs as they occur in the nary book:
 ;; - defun
 ;; - defund
@@ -49,7 +79,7 @@
 
 ;;
 ;; Works much better if we disable LOGHEAD-UPPER-BOUND and MOD-X-Y-=-X+Y
-;; 
+;;
 
 (defthm loghead-mod-theorem
   (implies (and (integerp x) (integerp f))
@@ -246,7 +276,7 @@
        (symbolp (car cong))
        (consp (cdr cong))
        (equiv-exp (car cong) (cadr cong))))
-       
+
 (defun wf-cong-list (congs)
   (declare (type t congs))
   (if (consp congs)
@@ -353,7 +383,7 @@
          (wrapped-var?     (safe-symbol (list var "-wrapped?") var))
          (wrapped-var-hyps (safe-symbol (list var "-wrapped-hyps") var))
          )
-    `(encapsulate 
+    `(encapsulate
       ()
 
       (defun ,fix-fn-unfix (term ,@args wrapped unwrap hyp)
@@ -372,7 +402,7 @@
         (declare (ignore ,wrapped-var-hyps ,(ith (1- position) nargs)))
         (if ,wrapped-var? (equal ,wrapped-var (,fix-fn ,@(replace-ith (1- position) var nargs)))
           (equal ,wrapped-var ,var)))
-      
+
       (defthm ,fix-fn-unfix-check-reduction-1
         (,fix-fn-unfix-check t (,fix-fn ,@(replace-ith (1- position) var nargs))
                              ,var ,wrapped-var-hyps ,@nargs))
@@ -386,9 +416,9 @@
          (equal (,fix-fn-unfix-check ,wrapped-var? ,wrapped-var ,var ,wrapped-var-hyps ,@nargs)
                 (if ,wrapped-var? (equal ,wrapped-var (,fix-fn ,@(replace-ith (1- position) var nargs)))
                   (equal ,wrapped-var ,var)))))
-      
+
       (in-theory (disable ,fix-fn-unfix-check))
-      
+
       )))
 
 (defun locate (val list)
@@ -443,7 +473,7 @@
 
 (defun syn__consp (term)
   (declare (type t term))
-  (and 
+  (and
    (equal_len 3 term)
    (equal (car term) 'cons)))
 
@@ -478,7 +508,7 @@
 (defun check-term (negated expr term)
   (declare (type t term))
   (cond
-   ((equal negated :negated) 
+   ((equal negated :negated)
     (equal expr term))
    ((equal negated :any)
     (or (equal expr term)
@@ -486,12 +516,12 @@
              (equal (car term) 'not)
              (consp (cdr term))
              (equal expr (cadr term)))))
-   (t 
+   (t
     (and (consp term)
          (equal (car term) 'not)
          (consp (cdr term))
          (equal expr (cadr term))))))
-      
+
 (defun member-of-clause (negated expr clause)
   (declare (type t clause))
   (if (consp clause)
@@ -554,27 +584,27 @@
            (unwrapped-wrapped-var nvar)
            )
       `(
-        (bind-free (,fix-fn-unfix ,ovar ,@fix-args ',var-wrapped? ',unwrapped-var ',var-hyps) 
+        (bind-free (,fix-fn-unfix ,ovar ,@fix-args ',var-wrapped? ',unwrapped-var ',var-hyps)
                    (,var-wrapped? ,unwrapped-var ,var-hyps))
-        
-        ;; var-wrapped => (ovar == (fn .. unwrapped-var ..))  
-        
+
+        ;; var-wrapped => (ovar == (fn .. unwrapped-var ..))
+
         ;; We now ask ACL2 to rewrite under the new context .. if the bound
         ;; variable was not already in such a context.
-        
+
         ,(cond
           ((not (equal equiv 'equal))
                   `(,equiv ,wrapped-var (double-rewrite (if ,var-wrapped? ,ovar ,exp))))
           (t      `(,equiv ,wrapped-var (if ,var-wrapped? ,ovar ,exp))))
 
-        (bind-free (,fix-fn-unfix ,wrapped-var ,@fix-args ',wrapped-var-wrapped? ',unwrapped-wrapped-var ',wrapped-var-hyps) 
+        (bind-free (,fix-fn-unfix ,wrapped-var ,@fix-args ',wrapped-var-wrapped? ',unwrapped-wrapped-var ',wrapped-var-hyps)
                    (,wrapped-var-wrapped? ,unwrapped-wrapped-var ,wrapped-var-hyps))
 
         ;; wrapped-var-wrapped? => (wrapped-var == (fn .. unwrapped-wrapped-var ..))
 
         ;; After rewriting in the new context, we evaluate the resulting term.
         ;; If the term is still (syntactically) wrapped in the context, we
-        ;; remove the context.  
+        ;; remove the context.
 
         ;; Of course, we have to justify our actions when we remove the
         ;; syntactic wrapper.  To avoid re-rewriting the term, we have defined
@@ -582,12 +612,12 @@
         ;; expected value without actually re-wrapping it in the context.
 
         (,fix-fn-unfix-check ,wrapped-var-wrapped? ,wrapped-var ,unwrapped-wrapped-var ,wrapped-var-hyps ,@fix-args)
-        
+
         )
-      
+
       )))
 
-  
+
 (defun generate-cong-hyp-p (cong)
   (declare (xargs :mode :program))
   (let* (;(ovar  (car cong))
@@ -609,7 +639,7 @@
       `(
         ;; We now ask ACL2 to rewrite under the new context .. if the bound
         ;; variable was not already in such a context.
-        
+
         (,equiv ,wrapped-var ,exp)
 
         (bind-free
@@ -620,7 +650,7 @@
 
         ;; After rewriting in the new context, we evaluate the resulting term.
         ;; If the term is still (syntactically) wrapped in the context, we
-        ;; remove the context.  
+        ;; remove the context.
 
         ;; Of course, we have to justify our actions when we remove the
         ;; syntactic wrapper.  To avoid re-rewriting the term, we have defined
@@ -628,9 +658,9 @@
         ;; expected value without actually re-wrapping it in the context.
 
         (,fix-fn-unfix-check-keyed ,wrapped-var ,wrapped-var-wrapped? ,unwrapped-wrapped-var ,wrapped-var-hyps ,lhs ,@key-args)
-        
+
         )
-      
+
       )))
 
 
@@ -669,7 +699,7 @@
          (eex  (cadr cong))
          (nvar (cadr eex)))
     `(not (equal ,ovar ,nvar))))
-    
+
 (defun generate-cong-syntax-hyps-rec (congs)
   (if (consp congs)
       (cons (generate-cong-syntax-hyp (car congs))
@@ -742,7 +772,7 @@
          (wrapped-var? (safe-symbol (list rhs "-wrapped?") fn-witness))
          (fix-fn-chaining  (safe-symbol (list fix-fn "-CHAINING") fn-witness))
          )
-    `(encapsulate 
+    `(encapsulate
       ()
 
       (set-ignore-ok t)
@@ -750,7 +780,7 @@
 
       (defun ,context-fn (,@lhs-args--)
         t)
-      
+
       (defmacro ,context-macro (,lhs &key ,@(make-keyargs (remove lhs lhs-args--)))
         `(,',context-fn ,@(list ,@lhs-args--)))
 
@@ -760,10 +790,10 @@
          (equal (,context-fn ,@lhs-args--) t)))
 
       (in-theory (disable (:type-prescription ,context-fn) ,context-fn (,context-fn)))
-      
+
       (defund ,fix-fn (,@args)
         (if (not ,hyps) nil (not (not ,term))))
-      
+
       (in-theory (disable (,fix-fn)))
 
       (defthm ,(safe-symbol (list fix-fn "-OPEN") fix-fn)
@@ -781,7 +811,7 @@
                `((,wrapped . 't)
                  (,unwrap  . ,(ith ,(1+ (locate rhs term)) term))
                  (,hyp     . ,(ith 1 term))))
-              ((equal (car term) ',context-fn) 
+              ((equal (car term) ',context-fn)
                `((,wrapped . 'nil)
                  (,unwrap  . ,,lhs)
                  (,hyp     . 't)))
@@ -789,7 +819,7 @@
                (cw "~%Boolean Binding reduced ~p0 to TRUE~%" ',fix-fn))
               (t
                (cw "~%Boolean Binding Failure on returned term:~%~p0~%" term)))))
-      
+
       (defmacro ,fix-fn-unfix-keyed (term wrapped unwrap ,hyps ,lhs &key ,@(make-keyargs (remove lhs lhs-args--)))
         `(,',fix-fn-unfix ,term ,@(list ,@lhs-args--) ,wrapped ,unwrap ,,hyps))
 
@@ -799,7 +829,7 @@
       (defun ,fix-fn-unfix-check (,wrapped-var? ,wrapped-var ,rhs ,@lhs-args)
         (if ,wrapped-var? (equal ,wrapped-var (,fix-fn ,@args))
           (equal ,rhs ,lhs)))
-      
+
       (defmacro ,fix-fn-unfix-check-keyed (,wrapped-var ,wrapped-var? ,rhs ,hyps ,lhs
                                                          &key ,@(make-keyargs (remove lhs lhs-args--)))
         `(,',fix-fn-unfix-check ,,wrapped-var? ,,wrapped-var ,,rhs ,@(list ,@lhs-args)))
@@ -810,13 +840,13 @@
          (equal (,fix-fn-unfix-check ,wrapped-var? ,wrapped-var ,rhs ,@lhs-args)
                 (if ,wrapped-var? (equal ,wrapped-var (,fix-fn ,@args))
                   (equal ,rhs ,lhs)))))
-        
+
       (defthm ,fix-fn-unfix-check-reduction-2
         (,fix-fn-unfix-check t (,fix-fn ,@args) ,rhs ,@lhs-args))
-      
+
       (defthm ,fix-fn-unfix-check-reduction-3
         (,fix-fn-unfix-check nil ,wrapped-var ,lhs ,@lhs-args))
-      
+
       (in-theory (disable ,fix-fn-unfix-check))
 
       (defmacro ,equiv ,(if keywords `(&key (hyp 'nil) (skip 'nil) ,@keyargs) `(,@macroargs &key (hyp 'nil) (skip 'nil)))
@@ -827,7 +857,7 @@
                     ,(if skip
                          `(skip-rewrite (,',fix-fn ,hyp ,@(list ,@args--)))
                        `(,',fix-fn ,hyp ,@(list ,@args--)))))))
-      
+
       ,@(and chaining
              `(
                (defthm ,fix-fn-chaining
@@ -842,7 +872,7 @@
                  :rule-classes ((:rewrite :backchain-limit-lst 100))
                  :hints (("Goal" :expand (:free (x) (hide x)))))
                ))
-      
+
       )))
 
 (defthm equal-cons-cases
@@ -994,7 +1024,7 @@
                     (equal-nth-conclusion (1- n) (cdr x) (cdr y)))
              (equal x y))))
   :rule-classes (:definition))
-  
+
 (defun equal-nth-conclusion-fn (n x y)
   (if (zp n) (if (and (consp x) (consp y))
                  (and (equal (car x) (car y))
@@ -1064,8 +1094,8 @@
   (equal (nth a (nil-list m v))
          (if (nfix-equiv a m) v
            nil))
-  :hints (("Goal" :in-theory 
-           '(nth-nil-list-not-nfix-equiv 
+  :hints (("Goal" :in-theory
+           '(nth-nil-list-not-nfix-equiv
              nth-nil-list-nfix-equiv))))
 
 (defthm nthcdr-nil-list
@@ -1159,7 +1189,7 @@
 
 (defequiv nfix-list-equiv)
 
-(defthm open-nfix-list-equiv 
+(defthm open-nfix-list-equiv
   (and
    (implies
     (consp x)
@@ -1172,7 +1202,7 @@
     (not (consp x))
     (equal (nfix-list-equiv x y)
            (not (consp y))))))
-  
+
 (in-theory (disable nfix-list-equiv))
 
 
@@ -1233,7 +1263,7 @@
 
 (defun equal-nth*-induction (list x y)
   (if (consp list)
-      (equal-nth*-induction (cdr list) 
+      (equal-nth*-induction (cdr list)
                             (clr-nth (car list) x)
                             (clr-nth (car list) y))
     (list x y)))
@@ -1310,7 +1340,7 @@
            nil))
   :hints (("Goal" :in-theory (enable maxsize)))
   :otf-flg t)
- 
+
 (defthm nth*-equiv-reduction
   (equal (nth*-equiv list x y)
          (nth*-copy-equiv list x y z)))
@@ -1463,7 +1493,7 @@
                      (nth* x b))
               (equal (nth* y a)
                      (nth* y b))))
-  :hints (("Goal" :in-theory (disable 
+  :hints (("Goal" :in-theory (disable
                               NTH*-GET-COPY-EQUIVALENCE
                               ))))
 
@@ -1559,7 +1589,7 @@
 (in-theory (disable ocons ocar ocdr oconsp))
 
 ;;
- 
+
 (defun len-len-induction (x y)
   (declare (xargs :measure (+ (len x) (len y))))
   (if (and (consp x) (consp y))
@@ -1888,7 +1918,7 @@
    (equal (equal x y)
           (and (not (o<< x y))
                (not (o<< y x)))))
-  :hints (("Goal" :in-theory (enable equal-*too-reduction 
+  :hints (("Goal" :in-theory (enable equal-*too-reduction
                                      ordinal-double-containment))))
 
 (defthm o<<-is-well-founded
@@ -1953,7 +1983,7 @@
       (let ((term (car clause)))
         (let ((term (equiv-term equivs term)))
           (if term
-              (rewrite-equiv-hint once (cons `(not (hide (rewrite-equiv ,(optimize-equiv-term term)))) 
+              (rewrite-equiv-hint once (cons `(not (hide (rewrite-equiv ,(optimize-equiv-term term))))
                                              cases) equivs (cdr clause))
             (rewrite-equiv-hint once cases equivs (cdr clause)))))
     (if cases
@@ -1974,7 +2004,7 @@
       (let ((term (car clause)))
         (let ((term (equiv-term equivs term)))
           (if term
-              (rewrite-equiv-hint once (cons `(not (hide (rewrite-equiv ,(optimize-equiv-term term)))) 
+              (rewrite-equiv-hint once (cons `(not (hide (rewrite-equiv ,(optimize-equiv-term term))))
                                              cases) equivs (cdr clause))
             (rewrite-equiv-hint once cases equivs (cdr clause)))))
     (if (and stable cases)
@@ -2019,7 +2049,7 @@
       (let ((term (car clause)))
         (let ((term (equiv-var-term equivs term)))
           (if term
-              (slow-rewrite-equiv-hint once (cons `(not (hide (rewrite-equiv ,(optimize-equiv-term term)))) 
+              (slow-rewrite-equiv-hint once (cons `(not (hide (rewrite-equiv ,(optimize-equiv-term term))))
                                              cases) equivs (cdr clause))
             (slow-rewrite-equiv-hint once cases equivs (cdr clause)))))
     (if cases
@@ -2031,16 +2061,16 @@
 
 (defun slow-rewrite-equiv-hint (stbl once equivs clause)
   (declare (type t clause))
-  (if stbl 
+  (if stbl
       (let ((term (find-equiv equivs clause)))
-        (if term 
+        (if term
             (if once nil
               (let ((term `(not (hide (rewrite-equiv ,(optimize-equiv-term term))))))
-                `(:computed-hint-replacement 
+                `(:computed-hint-replacement
                   ((slow-rewrite-equiv-hint stable-under-simplificationp 't ',equivs clause))
                   :cases (,term))))
           (if once
-              `(:computed-hint-replacement  
+              `(:computed-hint-replacement
                 ((slow-rewrite-equiv-hint stable-under-simplificationp 'nil ',equivs clause)) :cases (t))
             nil)))
     nil))
@@ -2086,8 +2116,8 @@
   (declare (type (satisfies true-listp) keys vals))
   (declare (xargs :guard (pseudo-termp-key arg term)))
   (cond
-   (arg 
-    (cond 
+   (arg
+    (cond
      ((endp term) nil)
      (t (cons (beta-reduce-term nil (car term) keys vals)
               (beta-reduce-term arg (cdr term) keys vals)))))
@@ -2110,8 +2140,8 @@
 
 (defun unhide-eval-key (arg term alist)
   (cond
-   (arg 
-    (cond 
+   (arg
+    (cond
      ((endp term) nil)
      (t (cons (unhide-eval-key nil (car term) alist)
               (unhide-eval-key arg (cdr term) alist)))))
@@ -2132,8 +2162,8 @@
 
 (defun wf-beta-term (arg term)
   (cond
-   (arg 
-    (cond 
+   (arg
+    (cond
      ((endp term) t)
      (t (and (wf-beta-term nil (car term))
              (wf-beta-term arg (cdr term))))))
@@ -2169,7 +2199,7 @@
           nil)))
 
 ;; DAG -- odd that we need these now, but not before.
-(defthm car-quote-list 
+(defthm car-quote-list
   (equal (car (quote-list list))
          (if (consp list) `(quote ,(car list)) nil)))
 
@@ -2187,7 +2217,7 @@
     (wf-beta-term arg term)
     (equal (len keys) (len vals)))
    (equal (unhide-eval-key arg (beta-reduce-term arg term keys vals) a1)
-          (unhide-eval-key arg term (pairlis$ keys 
+          (unhide-eval-key arg term (pairlis$ keys
                                               (unhide-eval-key t vals a1)))))
    :hints (("Goal" :do-not '(generalize eliminate-destructors)
             :do-not-induct t
@@ -2245,7 +2275,7 @@
    (lambda-expr-p term)
    (equal (unhide-eval-key nil term a1)
           (unhide-eval-key nil (CAR (CDR (CDR (CAR term))))
-                           (pairlis$ (CAR (CDR (CAR term))) 
+                           (pairlis$ (CAR (CDR (CAR term)))
                                      (unhide-eval-key t (cdr term) a1)))))
   :hints (("Goal" :in-theory (e/d (lambda-expr-p-to-para-lambda-expr-key-p) (unhide-eval-key)))))
 
@@ -2254,7 +2284,7 @@
    (lambda-expr-p term)
    (equal (unhide-eval term a1)
           (unhide-eval (CAR (CDR (CDR (CAR term))))
-                       (pairlis$ (CAR (CDR (CAR term))) 
+                       (pairlis$ (CAR (CDR (CAR term)))
                                  (unhide-eval-list (cdr term) a1)))))
   :hints (("Goal" :use unhide-eval-lambda-expr-helper
            :in-theory (enable unhide-eval-key-reduction))))
@@ -2282,7 +2312,7 @@
     (lambda-expr-p term)
     (pseudo-termp term))
    (equal (unhide-eval term a1)
-          (unhide-eval (beta-reduce-term nil (CAR (CDR (CDR (CAR term)))) 
+          (unhide-eval (beta-reduce-term nil (CAR (CDR (CDR (CAR term))))
                                          (CAR (CDR (CAR term)))
                                          (cdr term)) a1))))
 
@@ -2378,7 +2408,7 @@
 
 ;; One can, however, emulate such substitution using free-variables.
 ;; How expensive is this?  Would this be a long-term solution for
-;; this kind of problem?  Note that this solution wouldn't support 
+;; this kind of problem?  Note that this solution wouldn't support
 ;; refinements, either.
 
 (defthm free-variable-substitution
@@ -2399,14 +2429,14 @@
   (equal (mod x n) (if (test x n) (foo x) (goo n))))
 
 (defthm substitution-of-equals
-  (implies 
+  (implies
    (equal (z) (fix y))
    (pred (foo y))))
 
-(defthm 
+(defthm
   (equal (mod (foo x) n)
      (goo y)))
-     
+
 (defthm static-context-refinement
   (implies
    (and

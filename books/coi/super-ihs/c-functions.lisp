@@ -1,13 +1,38 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 (include-book "hacks")
 
-   
+
 ;Should more of less of this "C stuff" be in this library?
 
 ;;
@@ -18,8 +43,8 @@
   (declare (type (signed-byte 32) a)
 	   (type (signed-byte 32) b)
 	   (type (signed-byte 32) c))
-  (if (= a 0) 
-      c 
+  (if (= a 0)
+      c
     b))
 
 ;; We want to open c_conditional when the test value is a constant, since in
@@ -90,7 +115,7 @@
 ;; ADD32
 ;;
 
-(defund add32 (a b) 
+(defund add32 (a b)
   (declare
     (xargs :guard
 	 (and (signed-byte-p 32 a)
@@ -107,7 +132,7 @@
 
 ;is this ever used?
 ;I'm somewhat surprised that this doesn't chop its result down to 32 bits or something. -ews
-(defun addu32 (a b) 
+(defun addu32 (a b)
   (declare (xargs :guard (and (unsigned-byte-p 32 a)
                               (unsigned-byte-p 32 b))))
   (+ a b))
@@ -117,7 +142,7 @@
 ;;
 
 ;I'm somewhat surprised that this doesn't chop its result down to 16 bits or something. -ews
-(defun addu16 (a b) 
+(defun addu16 (a b)
   (declare (xargs :guard (and (unsigned-byte-p 16 a)
                               (unsigned-byte-p 16 b))))
   (+ a b))
@@ -134,7 +159,7 @@
 ;; ;; optimized for integers.  Thus we define xor32 and do compiler
 ;; ;; replacments on it.
 ;; ;does this ever get used?
-;; (defun xor32 (a b) 
+;; (defun xor32 (a b)
 ;;   (declare
 ;;     (xargs :guard
 ;; 	 (and (signed-byte-p 32 a)

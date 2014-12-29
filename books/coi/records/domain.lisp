@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 ;;
@@ -30,7 +55,7 @@
        (<< A (CAAR R)))
       (not (list::memberp a (alist::keys r))))
      :hints (("Goal" :in-theory (enable list::memberp)))))
-   
+
   (local
    (defthm unique-keys
      (implies
@@ -137,7 +162,7 @@
  ;; This used to have hyps, but no longer!  -EWS
  (defthm rkeys-s
    (list::setequiv (rkeys (s a v r))
-                   (if v 
+                   (if v
                        (cons a (rkeys r))
                      (list::remove a (rkeys r))))
    :otf-flg t
@@ -164,9 +189,9 @@
      :hints (("Goal" :in-theory (e/d (bag::unique bag::count list::memberp)
                                      (bag::count-of-cdr)))))
    )
-   
+
   (local (include-book "../bags/pick-a-point"))
-  
+
   ;; DAG - should probably be moved to bags somewhere
   (local
    (defthm count-remove
@@ -182,13 +207,13 @@
 
   (defthm rkeys-s-perm
     (bag::perm (rkeys (s a v r))
-               (if v 
+               (if v
                    (cons a (remove a (rkeys r)))
                  (remove a (rkeys r))))
     :hints (("Goal" :in-theory (enable bag::perm-by-double-containment))))
-  
+
   )
-  
+
 ;bzo make a t-p rule?
 (defthm rkeys-iff
   (iff (rkeys r)
@@ -356,19 +381,19 @@
 
 (encapsulate
  ()
- 
+
  (encapsulate
   (((rkeyquiv-hyps) => *)
    ((rkeyquiv-lhs) => *)
    ((rkeyquiv-rhs) => *)
    )
-  
+
   (local (defun rkeyquiv-hyps () nil))
   (local (defun rkeyquiv-lhs  () nil))
   (local (defun rkeyquiv-rhs  () nil))
-  
+
   (defthm rkeyquiv-multiplicity-constraint
-    (implies 
+    (implies
      (rkeyquiv-hyps)
      (equal (g arbitrary-element (rkeyquiv-lhs))
             (g arbitrary-element (rkeyquiv-rhs))))
@@ -378,7 +403,7 @@
  (local
   (encapsulate
       ()
- 
+
     (defun bad-guy (keys r1 r2)
       (if (consp keys)
           (let ((key (car keys)))
@@ -386,51 +411,51 @@
                 (bad-guy (remove (car keys) keys) (clr key r1) (clr key r2))
               key))
         nil))
-    
+
     (defthm rkeysub-implies-not-bad-guy
       (implies
        (rkeysub a x y)
        (not (bad-guy a x y)))
       :rule-classes (:forward-chaining :rewrite))
-    
+
     (defthm not-rkeysub-implies-not-equal-g-bad-guy
       (implies
        (not (rkeysub a x y))
        (not (equal (g (bad-guy a x y) x)
                    (g (bad-guy a x y) y)))))
-    
+
     (defun bad-guy2 (x y)
       (let ((a (bad-guy (rkeys x) x y)))
         (if (equal (g a x) (g a y))
             (bad-guy (rkeys y) x y)
           a)))
-    
+
     (defthm not-rkeyquiv-implies-not-equal-g-bad-guy
       (implies
        (not (rkeyquiv x y))
        (not (equal (g (bad-guy2 x y) x)
                    (g (bad-guy2 x y) y))))
       :hints (("Goal" :in-theory (enable rkeyquiv))))
-    
+
     (in-theory (disable bad-guy2))
-    
+
 
     (defthm rkeyquiv-reduction
       (equal (rkeyquiv x y)
              (equal x y)))
 
     ))
-    
+
  (defthm rkeyquiv-by-multiplicity-driver
-   (implies 
+   (implies
     (rkeyquiv-hyps)
     (rkeyquiv (rkeyquiv-lhs) (rkeyquiv-rhs)))
    :rule-classes nil
-   :hints(("Goal" 
-           :use ((:instance 
+   :hints(("Goal"
+           :use ((:instance
                   rkeyquiv-multiplicity-constraint
                   (arbitrary-element (bad-guy2 (rkeyquiv-lhs) (rkeyquiv-rhs))))))))
- 
+
  (ADVISER::defadvice rkeyquiv-by-multiplicity
                      (implies (rkeyquiv-hyps)
                               (rkeyquiv (rkeyquiv-lhs) (rkeyquiv-rhs)))

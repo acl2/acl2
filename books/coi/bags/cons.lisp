@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 (include-book "../syntax/syntax")
@@ -45,7 +70,7 @@
            (equal (car cons-nest2) 'cons))
       (if (equal (cadr cons-nest1) (cadr cons-nest2))
           (cons-equal-meta-function-helper (caddr cons-nest1) (caddr cons-nest2)) ;skip syntactically equal stuff
-        (list 
+        (list
          'if
          (list 'equal (cadr cons-nest1) (cadr cons-nest2))
          (cons-equal-meta-function-helper (caddr cons-nest1) (caddr cons-nest2))
@@ -72,9 +97,9 @@
            (consp (cddr term))
            (consp (caddr term))
            (equal (car (caddr term)) 'cons)  ;(caddr term) should be of the form (cons blah3 blah4)
-           
+
            (equal (car term) 'equal)
-           
+
 ;           (consp (cdr (cadr term))) ;check the arities:
  ;          (consp (cddr (cadr term)))
   ;         (consp (cdr (caddr term)))
@@ -84,13 +109,13 @@
       (cons-equal-meta-function-helper (cadr term) (caddr term))
     term))
 
-(in-theory (disable HYPothesis-PARITY MFC-CLAUSE))                                       
+(in-theory (disable HYPothesis-PARITY MFC-CLAUSE))
 
 (defthmd cons-equal-smart-meta
   (equal (cons-ev term a)
          (cons-ev (cons-equal-meta-function term mfc state) a))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)))
-  :rule-classes ((:meta :trigger-fns (equal))))           
+  :rule-classes ((:meta :trigger-fns (equal))))
 
 #|
 (defmacro V0 (x) `(mv-nth 0 ,x))
@@ -139,9 +164,9 @@
            (consp (cddr term))
            (consp (caddr term))
            (equal (car (caddr term)) 'cons)  ;(caddr term) should be of the form (cons blah3 blah4)
-           
+
            (equal (car term) 'equal)
-           
+
 ;           (consp (cdr (cadr term))) ;check the arities:
  ;          (consp (cddr (cadr term)))
   ;         (consp (cdr (caddr term)))
@@ -219,10 +244,10 @@ how do we handle backchaining?
            (equal (equal (cons a b) (cons c d))
                   (cons-equal-dummy a b c d)))
   :hints (("Goal" :in-theory (enable cons-equal-dummy))))
-                                
+
 (defun cons-equal-dummy-meta-function (term)
   (declare (type t term))
-  (if (and; (hypothesis-parity term mfc state) ;TERM appears as a hypothesis (or a negated conclusion)           
+  (if (and; (hypothesis-parity term mfc state) ;TERM appears as a hypothesis (or a negated conclusion)
            (consp term)
            (consp (cdr term))
            (consp (cddr term))
@@ -311,4 +336,3 @@ how do we handle backchaining?
 
 (in-theory (disable cons-equal))
 (in-theory (enable cons-equal-smart-meta))
-

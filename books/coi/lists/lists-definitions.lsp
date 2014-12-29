@@ -1,3 +1,33 @@
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ; Jared: what's this file for?  It's not certifiable, so I'm
 ; renaming it to a .lsp extension for Make compatibility
 
@@ -9,7 +39,7 @@
 ;(in-package "LISTS")
 
 ;;
-;; This file isolates lists definitions and types. The file currently 
+;; This file isolates lists definitions and types. The file currently
 ;; contains the following ACL2 constructs as they occur in the lists book:
 ;; - defun
 ;; - defund
@@ -77,7 +107,7 @@
            (nth (+ -1 n) y)))
   :hints (("Goal" :in-theory (enable nth))))
 
-;; jcd - this rule is inspired by the standard list-defthms book, but is 
+;; jcd - this rule is inspired by the standard list-defthms book, but is
 ;; improved by dropping the true-listp hyp.
 
 (defthm nth-with-large-index
@@ -87,7 +117,7 @@
   :hints(("Goal" :in-theory (enable nth))))
 
 ;; jcd - copied this rule from the data-structures/list-defthms.lisp file,
-;; and this is strong enough to prove update-nth-update-nth-diff below 
+;; and this is strong enough to prove update-nth-update-nth-diff below
 ;; without even including data-structures/list-defthms.  BTW, I think there
 ;; are going to be lots of useful rules in the data-structures library that
 ;; we haven't included yet.
@@ -132,7 +162,7 @@
 ;;
 ;; (defthm update-nth-nil
 ;;   (equal (update-nth n v nil)
-;;          (append (repeat n nil) 
+;;          (append (repeat n nil)
 ;;                  (list v)))
 ;;   :hints (("Goal" :in-theory (enable update-nth append))))
 
@@ -161,7 +191,7 @@
 
 
 ;; TEMP (jcd) removed this rule since it is now subsumed by
-;; update-nth-non-consp.  Previous comment asked if we can just say what 
+;; update-nth-non-consp.  Previous comment asked if we can just say what
 ;; update-nth is equal to in the non-consp case, and indeed, we just did.
 ;;
 ;; (defthm len-update-nth-ncons
@@ -175,8 +205,8 @@
 ;; replace this rule with our better rule, and then disable the original,
 ;; weak rule since it is no longer necessary.
 ;;
-;; bzo (jcd) - Matt Kaufmann says that in v2.9.3 and beyond, the built in 
-;; len-update-nth rule will be changed to this.  After v2.9.3, we should 
+;; bzo (jcd) - Matt Kaufmann says that in v2.9.3 and beyond, the built in
+;; len-update-nth rule will be changed to this.  After v2.9.3, we should
 ;; remove this disable and this rule, and use the built in rule instead.
 ;;
 ;; TEMP (jcd) - added this to disable the original rule.
@@ -185,7 +215,7 @@
 
 (defthm len-update-nth-better
   (equal (len (update-nth n val x))
-         (max (1+ (nfix n)) 
+         (max (1+ (nfix n))
               (len x)))
   :hints (("Goal" :in-theory (enable update-nth))))
 
@@ -196,16 +226,16 @@
            (car l)))
   :hints(("Goal" :in-theory (enable update-nth))))
 
-(defthm fix-of-update-nth 
+(defthm fix-of-update-nth
   (equal (fix (update-nth key val l))
          (if (< (nfix key) (len l))
              (update-nth key val (fix l))
            (append l (repeat (+ key (- (len l))) nil) (list val))))
-  :hints(("Goal" :in-theory (e/d (repeat update-nth) 
+  :hints(("Goal" :in-theory (e/d (repeat update-nth)
                                  (list-equiv-hack ;bzo
                                   )))))
 
-;; bzo (jcd) - add a rule for cdr of update nth?      
+;; bzo (jcd) - add a rule for cdr of update nth?
 
 ;; TEMP (jcd) - this rule was originally named update-nth-update-nth-better and
 ;; was a replacement for ACL2::update-nth-update-nth as provided by the
@@ -217,7 +247,7 @@
   (equal (update-nth j b (update-nth i a l))
          (if (equal (nfix i) (nfix j))
              (update-nth j b l)
-           (update-nth i a (update-nth j b l))))           
+           (update-nth i a (update-nth j b l))))
   :rule-classes
   ((:rewrite :corollary
              (implies (equal (nfix i) (nfix j))
@@ -230,7 +260,7 @@
                              (update-nth i a (update-nth j b l))))))
   :hints(("Goal" :in-theory (enable update-nth))))
 
-;; bzo (jcd) - can we strengthen this rule by dropping the hyps and adding 
+;; bzo (jcd) - can we strengthen this rule by dropping the hyps and adding
 ;; nfixes?
 
 (defthm firstn-update-nth
@@ -267,7 +297,7 @@
                        (< n (len l2))
                        (equal (firstn n (append l1 (repeat (- n (len l1)) nil))) (firstn n l2))
                        (equal (nthcdr (1+ n) l1) (nthcdr (1+ n) l2)))))
-  :hints (("Goal" :in-theory (enable nth update-nth 
+  :hints (("Goal" :in-theory (enable nth update-nth
                                      repeat ;bzo why?
                                      ))))
 
@@ -292,12 +322,12 @@
   :hints (("Goal" :in-theory (enable nth update-nth))))
 
 (defthm update-nth-update-nth-diff
-  (implies (not (equal (nfix i1) 
+  (implies (not (equal (nfix i1)
                        (nfix i2)))
            (equal (update-nth i1 v1 (update-nth i2 v2 l))
                   (update-nth i2 v2 (update-nth i1 v1 l))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable update-nth 
+           :in-theory (enable update-nth
                               nthcdr ;why?
                               )))
   :rule-classes ((:rewrite :loop-stopper ((i1 i2)))))
@@ -323,7 +353,7 @@
 
 (defund clear-nth (key lst)
   (update-nth key nil lst))
-  
+
 ;bzo handle this better!
 (defthm update-nth-equal-update-nth-rewrite
   (implies (AND (syntaxp (not (and (equal val2 ''nil)
@@ -367,7 +397,7 @@
            (nth n1 lst)))
   :hints (("Goal" :in-theory (enable clear-nth))))
 
-;t-p rule? 
+;t-p rule?
 (defthm true-listp-of-clear-nth
   (implies (true-listp lst)
            (true-listp (clear-nth n lst)))
@@ -381,8 +411,8 @@
               (equal (clear-nth n lst1) (clear-nth n lst2))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable ;LIST::EQUAL-UPDATE-NTH-CASESPLIT
-;                      LIST::LEN-OF-CDR 
-                       UPDATE-NTH 
+;                      LIST::LEN-OF-CDR
+                       UPDATE-NTH
                        clear-nth
                        nth
                        ))))
@@ -400,8 +430,8 @@
                   )))
 
 ;not true!
-;; (defcong equiv equal (clear-nth n l) 2 
-;;   :hints (("Goal" :in-theory (e/d (clear-nth) 
+;; (defcong equiv equal (clear-nth n l) 2
+;;   :hints (("Goal" :in-theory (e/d (clear-nth)
 ;;                                   ( looped:
 ;;                                    UPDATE-NTH-EQUAL-REWRITE)))))
 
@@ -457,7 +487,7 @@
 ;; (defthm firstn-with-large-index
 ;;   (implies (<= (len l) (nfix n))
 ;;            (equal (firstn n l)
-;;                   (fix l))))        
+;;                   (fix l))))
 
 
 ;; TEMP (jcd) - Comments asked if this could be removed, and indeed it seems
@@ -499,7 +529,7 @@
 ;;                 (integerp n)
 ;;                 (<= 0 n))
 ;;            (equal (update-nth n v l)
-;;                   (append 
+;;                   (append
 ;;                    l
 ;;                    (append (repeat (- n (len l)) nil)
 ;;                            (list v)))))
@@ -509,7 +539,7 @@
 ;; since we have firstn-cons, and so I have dropped it.
 ;;
 ;; (defthmd firstn-1-element
-;;   (equal (firstn n (cons a nil)) 
+;;   (equal (firstn n (cons a nil))
 ;;          (if (< 0 (nfix n))
 ;;              (cons a nil)
 ;;            nil)))
@@ -523,7 +553,7 @@
 ;;                   (equal a b))
 ;;              (equal b (list::finalcdr a)))))
 
-;; TEMP (jcd) - The following rule is redundant with len-of-firstn, so I am 
+;; TEMP (jcd) - The following rule is redundant with len-of-firstn, so I am
 ;; removing it.
 ;;
 ;; (defthm len-firstn-better
@@ -537,7 +567,7 @@
 ;;   (equal
 ;;    (equal (acl2::fix-true-listp l) (firstn n l))
 ;;    (<= (len l) (nfix n)))
-;;   :hints (("goal" :in-theory (enable firstn len))))  
+;;   :hints (("goal" :in-theory (enable firstn len))))
 ;;
 ;; dsh
 ;; (defthm nthcdr-fix-true-listp
@@ -550,17 +580,17 @@
 ;;   (equal (firstn n (fix-true-listp l))
 ;;          (firstn n l))
 ;;   :hints (("goal" :in-theory (enable firstn))))
-;;   
+;;
 ;; dsh
 ;; (defthm fix-true-listp-update-nth
 ;;   (equal
 ;;    (update-nth n v (fix-true-listp l))
 ;;    (fix-true-listp (update-nth n v l)))
 ;;   :hints (("goal" :in-theory (enable update-nth nth nthcdr firstn))))
-;;  
-;; BY: These gave problems in acl2-v2.8 because 
+;;
+;; BY: These gave problems in acl2-v2.8 because
 ;;     nth-update-nth was disable in favor of a new
-;;     nth-update-nth-better that doesn't fire. 
+;;     nth-update-nth-better that doesn't fire.
 
 ;; (TEMP) jcd - removed this rule since we already have len-of-nthcdr.
 ;;
@@ -579,7 +609,7 @@
 ;;   :hints (("goal" :in-theory (enable nthcdr))))
 
 
-            
+
 ;From eric's lemmas.  Drat.  I'm going to have to leave this disabled because
 ;it causes big problems when ACL2 rewrites an equality of two update-nth
 ;expressions.  Why?  Well, when ACL2 rewrites an equality of two known-consps,
@@ -618,7 +648,7 @@
          (repeat (+ 1 (nfix n)) nil))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d (list::clear-nth) (LIST::UPDATE-NTH-EQUAL-REWRITE)))))
-        
+
 (defthmd update-nth-of-cdr
   (implies (natp n)
            (equal (UPDATE-NTH n val (CDR LST))
@@ -669,7 +699,7 @@
   :hints (("Goal" :in-theory (e/d (clear-nth) (update-nth-equal-rewrite)))))
 
 (defthm update-nth-becomes-clear-nth
-  (equal (update-nth n nil r) 
+  (equal (update-nth n nil r)
          (clear-nth n r)))
 
 (defthm car-of-clear-nth
@@ -714,7 +744,7 @@
          (if (zp n)
              (cons nil lst)
            (cons a (list::clear-nth (+ -1 n) lst))))
-  :hints (("Goal" :in-theory (e/d (list::clear-nth) 
+  :hints (("Goal" :in-theory (e/d (list::clear-nth)
                                   (LIST::UPDATE-NTH-BECOMES-CLEAR-NTH
                                    LIST::UPDATE-NTH-EQUAL-REWRITE)))))
 
@@ -761,13 +791,13 @@
            :expand ((nthcdr 1 x) ;bzo
                     (nthcdr 1 y))
            :in-theory (e/d (list::clear-nth
-                            list::equal-update-nth-update-nth) 
+                            list::equal-update-nth-update-nth)
                            (list::update-nth-equal-rewrite
                             list::update-nth-becomes-clear-nth
 ;                            AAMP::EQUAL-OF-IF
                             update-nth)))))
 
-        
+
 ;phrased in this funny way so we don't have to decide to unilaterally write one into the other..
 (defthm nth-0-equal-car
   (equal (equal (nth 0 lst) (car lst))
@@ -798,7 +828,7 @@
 (defund memberp (a x)
   (declare (type t a x))
   (if (consp x)
-      (if (equal a (car x)) 
+      (if (equal a (car x))
           t
         (memberp a (cdr x)))
     nil))
@@ -849,7 +879,7 @@
 
 ;; jcd - i think memberp-of-non-consp should be enabled instead
 (defthm memberp-of-nil
-  (equal (memberp a nil) 
+  (equal (memberp a nil)
          nil)
   :hints (("goal" :in-theory (enable memberp))))
 
@@ -1013,7 +1043,7 @@
 
 (defthm map-cons-type-2
   (implies (not (consp x))
-           (equal (map-cons a x) 
+           (equal (map-cons a x)
                   nil))
   :rule-classes :type-prescription
   :hints(("Goal" :in-theory (enable map-cons))))
@@ -1029,7 +1059,7 @@
 
 (defthm map-cons-of-cons
   (equal (map-cons a (cons b x))
-         (cons (cons a b) 
+         (cons (cons a b)
                (map-cons a x)))
   :hints(("Goal" :in-theory (enable map-cons))))
 
@@ -1167,7 +1197,7 @@
                   (if (consp x)
                       (< n (len x))
                     (< n 1)))))
-        
+
 ;; (thm
 ;;  (implies (bag::memberp key key-names)
 ;;           (equal (find-index key (cdr key-names))
@@ -1197,10 +1227,10 @@
   (equal (find-index (car key-names) key-names)
          0)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (find-index nth) 
+           :in-theory (e/d (find-index nth)
                            (;find-index-of-cdr
                             )))))
-                 
+
 (defthm find-index-of-cons-same
   (equal (find-index item (cons item res))
          0)
@@ -1231,7 +1261,7 @@
            (equal (nth (list::find-index val lst) lst)
                   val))
   :hints (("Goal" :in-theory (enable list::find-index))))
- 
+
 ;; bzo (ews and jcd) We would like to disable true-listp as well, but we're
 ;; afraid it may break a lot of stuff, so we haven't tried it yet.
 
@@ -1266,7 +1296,7 @@
 ;; ;; bzo (ews and jcd) - This rule is inspired by the built in axiom
 ;; ;; car-cdr-elim.  We think that the case splitting version is better.  We have
 ;; ;; asked Matt Kaufmann to change ACL2 to provide the new rule instead, and
-;; ;; he may change car-cdr-elim at some point in the future.  
+;; ;; he may change car-cdr-elim at some point in the future.
 ;; ;;
 ;; ;; So, when version 2.9.3 comes out, someone should check to see if this rule
 ;; ;; is now built in, and if so, remove this!
@@ -1390,9 +1420,9 @@
 
 ;bzo trying without this
 ;; (defthm finalcdr-when-cdr-not-consp
-;;   (implies (and (consp x) 
+;;   (implies (and (consp x)
 ;;                 (not (consp (cdr x))))
-;;            (equal (finalcdr x) 
+;;            (equal (finalcdr x)
 ;;                   (cdr x)))
 ;;  :hints (("Goal" :in-theory (enable finalcdr))))
 
@@ -1405,13 +1435,13 @@
 
 (defthm acl2-count-of-finalcdr-linear
   (implies (consp y)
-           (< (acl2-count (finalcdr y)) 
+           (< (acl2-count (finalcdr y))
               (acl2-count y)))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable finalcdr))))
 
 (defthm acl2-count-finalcdr-less-than-acl2-count
-  (equal (< (acl2-count (finalcdr y)) 
+  (equal (< (acl2-count (finalcdr y))
             (acl2-count y))
          (consp y)))
 
@@ -1438,7 +1468,7 @@
 (defund fix (x)
   (declare (type t x))
   (if (consp x)
-      (cons (car x) 
+      (cons (car x)
             (fix (cdr x)))
     nil))
 
@@ -1469,7 +1499,7 @@
 
 (defthm acl2-count-of-fix
   (equal (acl2-count (fix x))
-         (- (acl2-count x) 
+         (- (acl2-count x)
             (acl2-count (finalcdr x))))
   :hints (("Goal" :in-theory (enable fix finalcdr))))
 
@@ -1487,20 +1517,20 @@
          (fix y)))
 
 (defthm equal-of-fixes
-  (equal (equal (fix x) 
+  (equal (equal (fix x)
                 (fix y))
          (equiv x y))
   :hints (("Goal" :in-theory (enable equiv))))
 
 (local (in-theory (disable (:rewrite equal-of-fixes))))
 
-(defthm fix-equiv 
-  (equiv (fix x) 
+(defthm fix-equiv
+  (equiv (fix x)
              x)
   :hints(("Goal" :in-theory (enable equiv))))
 
 (defthm finalcdr-equiv
-  (equiv (finalcdr x) 
+  (equiv (finalcdr x)
              nil)
   :hints(("Goal" :in-theory (enable equiv))))
 
@@ -1624,7 +1654,7 @@
 ;; Why have the free variable here?  Without it, the rule would only be
 ;; triggered by: (< 0 (len x)), but we want it to fire any time we know that
 ;; (len x) is equal to some term FOO (see whether FOO is known to be positive
-;; and, if so, throw (consp x) into the type-alist).  
+;; and, if so, throw (consp x) into the type-alist).
 ;;
 ;; Why make this a :forward-chaining rule instead of a :rewrite rule?  Well, we
 ;; think that a :rewrite rule hung on (consp x) which all of a sudden starts
@@ -1656,7 +1686,7 @@
 
 (defthm len-of-cdr-linear
   (implies (consp x)
-           (equal (len (cdr x)) 
+           (equal (len (cdr x))
                   (+ -1 (len x))))
   :rule-classes :linear)
 
@@ -1676,7 +1706,7 @@
 (local (in-theory (enable len-of-cdr-better)))
 
 (defthm len-of-cdr-bound-weak-linear
-  (<= (len (cdr x)) 
+  (<= (len (cdr x))
       (len x))
   :rule-classes :linear)
 
@@ -1686,7 +1716,7 @@
 
 (defthm len-of-cdr-bound-tight-linear
   (implies (consp x)
-           (< (len (cdr x)) 
+           (< (len (cdr x))
               (len x)))
   :rule-classes :linear)
 
@@ -1709,7 +1739,7 @@
 
 (defthm consp-append
   (equal (consp (append x y))
-         (or (consp x) 
+         (or (consp x)
              (consp y)))
   :hints (("Goal" :in-theory (enable append))))
 
@@ -1737,7 +1767,7 @@
 ;; weird to want to disable a type prescription rule).
 
 (defthm append-true-listp-type-prescription
-  (implies (true-listp y) 
+  (implies (true-listp y)
            (true-listp (append x y)))
   :rule-classes (:type-prescription)
   :hints (("Goal" :in-theory (enable append))))
@@ -1749,7 +1779,7 @@
 
 (defthmd car-append
   (equal (car (append x y))
-         (if (consp x) 
+         (if (consp x)
              (car x)
            (car y)))
   :hints (("Goal" :in-theory (enable append))))
@@ -1803,7 +1833,7 @@
            (equal (equal (append x p) (append y q))
                   (and (equal x y)
                        (equal p q))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (enable append)
            :induct (len-len-induction x y))))
 
@@ -1811,7 +1841,7 @@
 ;; append-of-non-consp-one below.
 ;;
 ;; (defthm append-of-nil-one
-;;   (equal (append nil x) 
+;;   (equal (append nil x)
 ;;          x)
 ;;   :hints (("Goal" :in-theory (enable append))))
 
@@ -1834,7 +1864,7 @@
   :hints (("Goal" :in-theory (enable car-append cdr-append))))
 
 (defthm equal-append-x-append-x
-  (equal (equal (append x y) 
+  (equal (equal (append x y)
                 (append x z))
          (equal y z))
   :hints (("Goal" :in-theory (enable append))))
@@ -1844,7 +1874,7 @@
          (append x (append y z)))
   :hints (("Goal" :in-theory (enable append))))
 
-;; TEMP (jcd) - A comment indicated that we don't need this rule if the 
+;; TEMP (jcd) - A comment indicated that we don't need this rule if the
 ;; associativity of append is enabled, and I agree.  I have removed it.
 ;;
 ;; (defthm append-equality-cancel
@@ -1862,9 +1892,9 @@
          (fix x))
   :hints (("Goal" :in-theory (enable car-append fix))))
 
-(defthm acl2-count-of-append-increases 
+(defthm acl2-count-of-append-increases
   (implies (consp y)
-           (< (acl2-count x) 
+           (< (acl2-count x)
               (acl2-count (append y x))))
   :hints (("Goal" :in-theory (disable acl2-count))))
 
@@ -1886,14 +1916,14 @@
 (defthm append-equal-self-two
    (equal (equal x (append y x))
           (not (consp y)))
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (disable acl2-count-of-append)
-           :use (:instance acl2-count-of-append))))                         
+           :use (:instance acl2-count-of-append))))
 
 (defthm appends-equal
-  (equal (equal (append x1 y) 
+  (equal (equal (append x1 y)
                 (append x2 y))
-         (equal (fix x1) 
+         (equal (fix x1)
                 (fix x2)))
   :hints (("Goal" :induct (len-len-induction x1 x2)
            :do-not '(generalize eliminate-destructors)
@@ -1912,8 +1942,8 @@
 ;;              x)
 ;;   :hints (("Goal" :in-theory (enable equiv))))
 ;;
-;; I have removed it, since we already have the rule below, which is more 
-;; general and trivially implies equiv-of-append-onto-finalcdr with the 
+;; I have removed it, since we already have the rule below, which is more
+;; general and trivially implies equiv-of-append-onto-finalcdr with the
 ;; type prescription of finalcdr.
 
 (defthm append-of-non-consp-2
@@ -1924,7 +1954,7 @@
 ;; TEMP (jcd) -- I've replaced (equiv nil y) in the following rules with
 ;; (not (consp y)).  These are identical concepts, but (not (consp y)) seems
 ;; more primitive to me, and therefore seems to make "more" progress.
-                 
+
 (defthm equiv-of-append-self-one
  (equal (equiv (append x y) x)
         (not (consp y)))
@@ -1947,7 +1977,7 @@
 
 ;make more like this?
 (defthm equiv-of-two-append-same
-  (equal (equiv (append x y) 
+  (equal (equiv (append x y)
                 (append x z))
          (equiv y z))
   :hints (("Goal" :in-theory (enable equiv))))
@@ -1992,7 +2022,7 @@
 (defthm consp-firstn
   (equal (consp (firstn n x))
          (and (not (zp n))
-              (consp x)))         
+              (consp x)))
   :hints(("Goal" :in-theory (enable firstn))))
 
 ;; TEMP (jcd) - this is a new rule, inspired by the list-defthms book.  Their
@@ -2004,7 +2034,7 @@
                 (consp x))
            (consp (firstn n x)))
   :rule-classes :type-prescription)
-          
+
 
 (defthm car-of-firstn
   (equal (car (firstn n y))
@@ -2054,7 +2084,7 @@
   (equal (firstn n (append x y))
          (append (firstn n x)
                  (firstn (+ n (- (len x))) y)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (enable firstn append fix))))
 
 ;; TEMP (jcd) - removed this rule on the grounds that firstn-of-append subsumes
@@ -2069,7 +2099,7 @@
 ;;          (fix x))
 ;;   :hints (("Goal" :in-theory (enable firstn append))))
 
-;; TEMP (jcd) - Removed this for now, seems like it's an obvious consequence of 
+;; TEMP (jcd) - Removed this for now, seems like it's an obvious consequence of
 ;; the equality axiom schema for functions or whatever its called
 ;;
 ;; (defthmd not-equal-from-len-not-equal
@@ -2093,7 +2123,7 @@
   :hints (("Goal" :in-theory (enable firstn))))
 
 (defthm list::firstn-1-rewrite-strong
-  (equal (firstn 1 x) 
+  (equal (firstn 1 x)
          (if (consp x)
              (list (car x))
            nil))
@@ -2138,7 +2168,7 @@
                 (< (nfix n) (len l))))
   :hints (("Goal" :in-theory (enable nthcdr))))
 
-;; TEMP (jcd) -- added this type prescription rule.  previously it was a 
+;; TEMP (jcd) -- added this type prescription rule.  previously it was a
 ;; rewrite rule.  also see true-listp-of-nthcdr directly below.
 
 (defthm true-listp-of-nthcdr-type-prescription
@@ -2179,7 +2209,7 @@
   :hints(("Goal" :in-theory (enable nthcdr))))
 
 
-;; TEMP (jcd) -- Enabled this rule.  A comment asked if this rule was too 
+;; TEMP (jcd) -- Enabled this rule.  A comment asked if this rule was too
 ;; strong, but I think it is a good rule and unless it breaks things, I think
 ;; we will want to have it enabled.
 
@@ -2214,16 +2244,16 @@
 
 
 ;; TEMP (jcd) - made this rule stronger.  originally it was the following:
-;;                                
+;;
 ;; (defthm nthcdr-of-len
 ;;   (equal (nthcdr (len x) x)
 ;;          (finalcdr x))
-;;   :hints (("Goal" :in-theory (enable nthcdr len))))         
+;;   :hints (("Goal" :in-theory (enable nthcdr len))))
 
 (defthm nthcdr-of-len-or-more
   (implies (<= (len path) (nfix n))
            (equal (nthcdr n path)
-                  (if (equal (len path) (nfix n))                           
+                  (if (equal (len path) (nfix n))
                       (finalcdr path)
                     nil)))
   :hints(("Goal" :in-theory (enable nthcdr))))
@@ -2248,7 +2278,7 @@
 ;;          list)
 ;;   :hints (("Goal" :in-theory (enable nthcdr append))))
 
-;; jcd - The following rule was essentially copied from the list-defthms 
+;; jcd - The following rule was essentially copied from the list-defthms
 ;; book.  It's a good rule.
 
 (defthm nthcdr-of-append
@@ -2259,7 +2289,7 @@
   :hints(("Goal" :in-theory (enable nthcdr))))
 
 ;; jcd - Here's another nice rule from the list-defthms book that we didn't
-;; have before. 
+;; have before.
 
 (defthm nthcdr-of-firstn
   (equal (nthcdr i (firstn j x))
@@ -2269,7 +2299,7 @@
   :hints(("Goal" :in-theory (enable firstn nthcdr))))
 
 (defthmd firstn-of-nthcdr
-  (implies (and (natp m) 
+  (implies (and (natp m)
                 (natp n))
            (equal (firstn m (nthcdr n s))
                   (nthcdr n (firstn (+ m n) s)))))
@@ -2409,7 +2439,7 @@
 
 (defthm nthcdr-when-<=
   (implies (and (<= (len l) (nfix n))
-                (true-listp l) 
+                (true-listp l)
                 )
            (equal (nthcdr n l)
                   nil))
@@ -2418,7 +2448,7 @@
 ;; TEMP (jcd) - rescued this theorem from nth-and-update-nth.lisp and also
 ;; changed it into rule-classes :linear instead of :rewrite.
 
-(defthm acl2-count-of-nthcdr 
+(defthm acl2-count-of-nthcdr
   (implies (and (integerp n)
                 (> n 0)
                 (consp l))
@@ -2444,7 +2474,7 @@
   (equal (equal (append x y) z)
          (and (equiv x (firstn (len x) z))
               (equal y (nthcdr (len x) z))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :induct (len-len-induction x z)
            :in-theory (enable firstn nthcdr append))))
 
@@ -2452,9 +2482,9 @@
 
 (defthm equal-append-append-simple
   (implies (equal (len a) (len b))
-           (equal (equal (append a c) 
+           (equal (equal (append a c)
                          (append b d))
-                  (and (equal (fix a) 
+                  (and (equal (fix a)
                               (fix b))
                        (equal c d))))
   :hints(("Goal" :in-theory (enable equiv
@@ -2477,7 +2507,7 @@
 ;; to be a true list.  This is sometimes irritating, so we provide the
 ;; following function which is provably equal to append logically, but which
 ;; removes the guard.  We use MBE so that the definition of appendx can just be
-;; an "abbreviation rule" that expands to append. 
+;; an "abbreviation rule" that expands to append.
 ;;
 ;; NOTE 1: You should NEVER try to write theorems about appendx; write your
 ;; theorems about "append" instead.
@@ -2524,7 +2554,7 @@
                   (list (nth n s))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (list::nthcdr-of-firstn ;nthcdr firstn (:definition nth)
-                            ) 
+                            )
                            (firstn-of-nthcdr)))))
 
 ;bzo might be expensive?
@@ -2575,8 +2605,8 @@
 
 (defthm acl2-count-when-consp-linear
   (implies (consp x)
-           (equal (acl2-count x) 
-                  (+ 1 
+           (equal (acl2-count x)
+                  (+ 1
                      (acl2-count (car x))
                      (acl2-count (cdr x)))))
   :rule-classes :linear)
@@ -2584,7 +2614,7 @@
 ;; ACL2-COUNT of CAR
 
 (defthm acl2-count-of-car-bound-weak-linear
-  (<= (acl2-count (car x)) 
+  (<= (acl2-count (car x))
       (acl2-count x))
   :rule-classes :linear)
 
@@ -2600,7 +2630,7 @@
 ;; ACL2-COUNT of CDR
 
 (defthm acl2-count-of-cdr-bound-weak-linear
-  (<= (acl2-count (cdr x)) 
+  (<= (acl2-count (cdr x))
       (acl2-count x))
   :rule-classes :linear)
 
@@ -2617,7 +2647,7 @@
 ;; ACL2-COUNT of NTH
 
 (defthm acl2-count-of-nth-bound-weak-linear
-  (<= (acl2-count (nth n l)) 
+  (<= (acl2-count (nth n l))
       (acl2-count l))
   :rule-classes :linear)
 
@@ -2638,7 +2668,7 @@
 (defun disjoint (x y)
   (declare (type t x y))
   (if (consp x)
-      (if (memberp (car x) y) 
+      (if (memberp (car x) y)
           nil
         (disjoint (cdr x) y))
     t))
@@ -2716,7 +2746,7 @@
                   (nth n (nth-update-nth-eval term alist))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
 
-;the function should return a flag if it doesn't do anything and in the case we shouldn't bother to build a new term?  
+;the function should return a flag if it doesn't do anything and in the case we shouldn't bother to build a new term?
 ;takes an nth term
 (defun drop-irrelevant-update-nth-calls-from-update-nth-nest (term)
   (declare (xargs :guard (pseudo-termp term)))
@@ -2732,7 +2762,7 @@
                      (caddr term)
                      nil)))
         (if result
-            `(nth ,(cadr term) 
+            `(nth ,(cadr term)
                   (unhide (hide ,result)))
           term))
     term))
@@ -2778,7 +2808,7 @@
 ;; (defthm pseudo-termp-of-get-nth-component-of-update-nth-nest
 ;;   (implies (pseudo-termp term)
 ;;            (pseudo-termp (get-nth-component-of-update-nth-nest-aux n term))))
-  
+
 (defun get-nth-component-of-update-nth-nest (term)
   (declare (xargs :guard (pseudo-termp term)))
   (if (and (consp term)
@@ -2843,7 +2873,7 @@
                   (nth n (nth-update-nth-eval nest alist))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
 
-;the function should return a flag if it doesn't do anything and in the case we shouldn't bother to build a new term?  
+;the function should return a flag if it doesn't do anything and in the case we shouldn't bother to build a new term?
 ;takes an nth term
 (defun drop-irrelevant-update-nth-calls-from-update-nth-nest (term)
   (declare (xargs :guard (pseudo-termp term)))
@@ -2922,7 +2952,7 @@
    (memberp a y)
    (equal (subsetp (remove a x) y)
           (subsetp x y))))
-          
+
 ;;
 ;; remove-list : a means of removing multiple elements of a list
 ;;
@@ -2985,7 +3015,7 @@
    (equal (remove-list x (remove a y))
           (remove-list x y))))
 
-;; 
+;;
 
 (defthm remove-list-superset-reduction
   (implies
@@ -2994,7 +3024,7 @@
                 nil)))
 
 ;;
-;; Is this what we want to do? 
+;; Is this what we want to do?
 ;;
 
 (defthm subsetp-cons-2
@@ -3097,8 +3127,8 @@
           (remove-list (remove a x) (remove a y))))
   :hints (("Goal" :in-theory `(remove-list-remove-reduction-1-ALT
                                REMOVE-LIST-REMOVE-REDUCTION-2
-                               MEMBERP-REMOVE 
-                               (:TYPE-PRESCRIPTION MEMBERP) 
+                               MEMBERP-REMOVE
+                               (:TYPE-PRESCRIPTION MEMBERP)
                                (:TYPE-PRESCRIPTION REMOVE)
                                ))))
 
@@ -3190,7 +3220,7 @@
   :hints (("Goal" :in-theory (enable repeat)
            :induct (double-sub1-induct n n2))))
 
-;; Here's a rule inspired by the list-defthms book, which shows what 
+;; Here's a rule inspired by the list-defthms book, which shows what
 ;; happens when nthcdr is applied to repeat.
 
 (defthm nthcdr-repeat
@@ -3212,9 +3242,9 @@
 (defthm append-repeat-singleton-same
   (equal (append (repeat n k) (list k))
          (repeat (+ 1 (nfix n)) k))
-  :hints (("Goal" :in-theory (e/d (LIST::EQUAL-APPEND-REDUCTION!) 
+  :hints (("Goal" :in-theory (e/d (LIST::EQUAL-APPEND-REDUCTION!)
                                   ()))))
-        
+
 (defun setequiv (x y)
   (and (subsetp x y)
        (subsetp y x)))
@@ -3290,7 +3320,7 @@
                                   (a x)
                                   (x (append x y))
                                   (y z)))))
-           
+
 (defchoose setfix x (y)
   (setequiv x y)
   :strengthen t)
@@ -3481,14 +3511,14 @@
   (implies (and (integerp n)
                 (<= 0 n)
                 (equal (len l1) (len l2)))
-           (equal (equal (update-nth-array n i v1 l1) 
+           (equal (equal (update-nth-array n i v1 l1)
                          (update-nth-array n i v2 l2))
                   (and
-                   (equal (update-nth i v1 (nth n l1)) 
+                   (equal (update-nth i v1 (nth n l1))
                           (update-nth i v2 (nth n l2)))
-                   (equal (firstn n l1) 
+                   (equal (firstn n l1)
                           (firstn n l2))
-                   (equal (nthcdr (1+ n) l1) 
+                   (equal (nthcdr (1+ n) l1)
                           (nthcdr (1+ n) l2)))))
   :hints (("Goal" :in-theory (enable equal-update-nth-casesplit
                                      update-nth-array))))

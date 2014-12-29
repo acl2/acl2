@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "GACC")
 
 (include-book "list-ops-fast")
@@ -49,22 +74,22 @@
     (if (equal 1 numbytes)
         (rd (loghead 32 ad) ram)
       (if (equal 2 numbytes)
-          (acl2::logapp 8 
+          (acl2::logapp 8
                         (rd (loghead 32 ad) ;bzo i added these logheads...
-                            ram) 
+                            ram)
                         (rd (loghead 32 (+ 1 ad)) ram)
                         ) ;bzo
         (if (equal 4 numbytes)
             ;bzo reassociate the logapp?
             (acl2::logapp 24
                           (acl2::logapp 16
-                                        (acl2::logapp 8 
-                                                      (rd (loghead 32 ad) ram) 
+                                        (acl2::logapp 8
+                                                      (rd (loghead 32 ad) ram)
                                                       (rd (loghead 32 (+ 1 ad)) ram))
                                         (rd (loghead 32 (+ 2 ad)) ram))
                           (rd (loghead 32 (+ 3 ad)) ram))
           (acl2::logapp 8 (rd (loghead 32 ad) ram) (rd-bytes-exec (+ -1 numbytes) (+ 1 ad) ram)))))))
-  
+
 
 ;; Read NUMBYTES bytes of data from RAM, starting at address AD.  (RAM is
 ;; byte-addressable.)  Data from the lower addresses goes into the lower-order
@@ -172,7 +197,7 @@
 ;;
 ;; WR-BYTES
 ;;
-;;bzo add mbe          
+;;bzo add mbe
 
 (defund wr-bytes (numbytes ad v ram)
   (declare (type t ad ram)
@@ -184,7 +209,7 @@
                                )
                    :guard-hints (("Goal" :in-theory (enable OFFSET-RANGE-WRAP-CONST-OPENER
                                                             ADDR-RANGE-EXPAND-WHEN-K-IS-A-CONSTANT)))))
-  (wr-list (offset-range-wrap 32 ad numbytes) ;(addr-range ad numbytes) 
+  (wr-list (offset-range-wrap 32 ad numbytes) ;(addr-range ad numbytes)
            (enlistw numbytes v) ram))
 
 (defthm wr-bytes-when-ad-is-not-an-integerp
@@ -230,7 +255,7 @@
 ;;           (implies (integerp ad)
 ;;                    (equal (rd-bytes numbytes ad (wr-bytes numbytes ad v ram))
 ;;                           (acl2::loghead (* 8 (ifix numbytes)) v)))
-;;           :hints (("Goal" :in-theory (enable ENLISTW rd-bytes wr-bytes 
+;;           :hints (("Goal" :in-theory (enable ENLISTW rd-bytes wr-bytes
 ;;                                              rd-list ;bzo
 ;;                                              )
 ;;                    ;:induct (induct-fun ad numbytes v)
@@ -306,7 +331,7 @@
   (implies (force (< numbytes (expt 2 32))) ;bzo added this when changing to fast-memories
            (equal (equal (wr-bytes numbytes ad v ram1) ram2)
                   (if (integerp numbytes)
-                      (and (equal (loghead (* 8 numbytes) v) 
+                      (and (equal (loghead (* 8 numbytes) v)
                                   (rd-bytes numbytes ad ram2))
                            (equal (clr-bytes numbytes ad ram1)
                                   (clr-bytes numbytes ad ram2)))
@@ -319,7 +344,7 @@
 ;;            (equal (clr-list ads (wr ad val ram))
 ;;                   (clr-list ads ram)))
 ;;   :hints (("Goal" :in-theory (enable clr-list))))
-                 
+
 (defthm clr-bytes-of-wr-cover
   (implies (list::memberp ad (offset-range-wrap 32 ad2 numbytes) ;;(addr-range ad2 numbytes)
                           )
@@ -327,7 +352,7 @@
                   (clr-bytes numbytes ad2 ram)))
   :hints (("Goal" :in-theory (enable clr-bytes))))
 
-  
+
 ;; ;replacement for rx, except when numbytes is 0?
 ;; (defun rx2 (size a ram)
 ;;   (rd-bytes (* 1/8 (fix-size numbytes) ad ram)))
@@ -427,4 +452,3 @@
 ;;           (equal (RD AD RAM)
 ;;                  (RD 0 RAM)))
 ;;  :hints (("Goal" :in-theory (enable rd))))
-

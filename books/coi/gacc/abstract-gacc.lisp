@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 ; cert_param: (non-acl2r)
 (include-book "../records/defrecord")
@@ -212,7 +237,7 @@ spec: (
   (if (consp spec)
       (if (consp (car spec))
           (and (not (memberx (caar spec) (keys (cdr spec))))
-               (implies (sconsp (cdar spec)) 
+               (implies (sconsp (cdar spec))
                         (unique-spec (cdar spec)))
                (unique-spec (cdr spec)))
         (unique-spec (cdr spec)))
@@ -248,7 +273,7 @@ spec: (
    (equal (c* spec (s a v r1) r2)
           (c* spec r1 r2)))
   :hints (("goal" :induct (c*-induction spec r1 r2))))
-  
+
 
 (defun c*-c*-induction (spec r1 r2 r3)
   (declare (type t spec r1 r2 r3))
@@ -257,8 +282,8 @@ spec: (
           (let ((v1 (g (caar spec) r1))
                 (v2 (g (caar spec) r2))
                 (v3 (g (caar spec) r3)))
-            (let ((v (if (sconsp (cdar spec)) 
-                         (c*-c*-induction (cdar spec) v1 v2 v3) 
+            (let ((v (if (sconsp (cdar spec))
+                         (c*-c*-induction (cdar spec) v1 v2 v3)
                        (cons v1 v1))))
               (let ((v1 (car v))
                     (v2 (cdr v)))
@@ -381,9 +406,9 @@ spec: (
   type-b-spec
   ))
 
-;; Note that proving the following should allow us to conclude 
+;; Note that proving the following should allow us to conclude
 ;;
-;; (= (z* spec (goo r)) (z* spec r)) 
+;; (= (z* spec (goo r)) (z* spec r))
 ;;
 ;; for any spec of which (type-b-spec) is a subset (subbag-p?). (yay)
 
@@ -598,7 +623,7 @@ spec: (
         (:key1 (k1-set value g))
         (:key2 (k2-set value g))
         (t     value)))
-  
+
 (defun key-fix (key value)
   (declare (type t key value))
   (case key
@@ -955,7 +980,7 @@ spec: (
 
 ;; (def list) and (use list) might be used extract these lists of
 ;; keys.  Intersect and Difference compare two lists and create a u/d
-;; list based on the results.  
+;; list based on the results.
 ;;
 ;; We will often want identity mappings (u==d).  In such case, we might
 ;; want the function (ud list), such that (use (ud list)) = list and (def
@@ -1133,11 +1158,10 @@ spec: (
    (equal (c* (dia seg) st1 nil)
           (c* (dia seg) st2 nil))
    (equal (c* (dia seg) (step (c* use st2 nil)) nil)
-          (c* (dia seg) (step (c* use st2 nil)) nil)))) 
+          (c* (dia seg) (step (c* use st2 nil)) nil))))
 
 ;; Boom .. done.
 
 
 
 |#
-

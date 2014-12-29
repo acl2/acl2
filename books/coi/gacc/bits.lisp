@@ -1,11 +1,36 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "GACC")
 
-;bzo Can we just use IHS functions like logapp, loghead, and logcdr, etc. -- instead of wcons, wcar, and wcdr, etc.? 
+;bzo Can we just use IHS functions like logapp, loghead, and logcdr, etc. -- instead of wcons, wcar, and wcdr, etc.?
 
 ;bzo take pains to ensure that expensive ihs/super-ihs rules that aren't
 ;needed don't slow down proofs for users of gacc?
@@ -184,7 +209,7 @@
 ;;    :hints (("Goal" :in-theory (enable wcdr))))
 
 ;; ;;
-;; ;; Rules about (at least two of) WCONS, WCAR, and WCDR 
+;; ;; Rules about (at least two of) WCONS, WCAR, and WCDR
 ;; ;;
 
 ;; (defthm wcons-when-y-is-0
@@ -231,7 +256,7 @@
 ;;   (equal (wcons b (wcar b x) y)
 ;;          (wcons b x y))
 ;;   :hints (("Goal" :in-theory (enable wcar wcons))))
-  
+
 ;; (defthm wcdr-of-wcar
 ;;   (equal (wcdr b (wcar b x))
 ;;          0)
@@ -259,7 +284,7 @@
 ;;   :hints (("goal" :in-theory (enable wfixw))))
 
 ;; (defthm wfixw-0
-;;   (equal (wfixw b n 0) 
+;;   (equal (wfixw b n 0)
 ;;          0)
 ;;   :hints (("Goal" :in-theory (enable wfixw))))
 
@@ -350,14 +375,14 @@
 ;; (defthm wcar-wcdr-wfixw
 ;;   (and (equal (acl2::loghead ;wcar
 ;;                b (wfixw b n value))
-;;               (if (zp n) 
-;;                   0 
+;;               (if (zp n)
+;;                   0
 ;;                 (acl2::loghead ;wcar
 ;;                  b value)))
 ;;        (equal (acl2::logtail ;wcdr
 ;;                b (wfixw b n value))
-;;               (if (zp n) 
-;;                   0 
+;;               (if (zp n)
+;;                   0
 ;;                 (wfixw b (1- n) (acl2::logtail ;wcdr
 ;;                                  b value)))))
 ;;   :hints (("Goal" :in-theory (enable open-wfixw))))
@@ -408,9 +433,6 @@
 
 ;; (defthm wintw-wfixw
 ;;   (implies (wintw s n x)
-;;            (equal (wfixw s n x) 
+;;            (equal (wfixw s n x)
 ;;                   x))
 ;;   :hints (("Goal" :in-theory (enable wfixw wintw))))
-
-
-

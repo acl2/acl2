@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "BAG")
 
 ;bzo decide whether to hang the rules on equal (is that too expensive?) or on the special function NEQ.
@@ -37,7 +62,7 @@ Eric,
 |#
 
 
-;Look through the clause for a (non-negated) literal of the form 
+;Look through the clause for a (non-negated) literal of the form
 ;(memberp a BLAH) where BLAH syntactically contains b.
 ;or a (non-negated) literal of the form:
 ;(memberp b BLAH) where BLAH syntactically contains a.
@@ -65,7 +90,7 @@ Eric,
       (if (and (consp lit)
                (member-symbol (car lit)) ;the fact (memberp v x) appears un-negated in the clause
                (consp (cdr lit)))
-          (if (or (and (equal v (cadr lit)) 
+          (if (or (and (equal v (cadr lit))
                        (consp (cddr lit))
                        (syntax-memberp b (caddr lit)))
                   (and (equal b (cadr lit))
@@ -76,11 +101,11 @@ Eric,
         (find-memberp-literal-that-shows-a-and-b-differ v b (cdr clause))))))
 
 (defirrelevant find-memberp-literal-that-shows-a-and-b-differ 1 a (v b clause)
-  :hints (("goal" :in-theory (enable 
+  :hints (("goal" :in-theory (enable
                               find-memberp-literal-that-shows-a-and-b-differ
                               syntax-memberp-irrelevant
                               ))))
-  
+
 ;TERM has the form (equal a b)
 (defun metafunction-to-rewrite-equal-to-nil (term mfc state)
   (declare (ignore state)
@@ -91,7 +116,7 @@ Eric,
            (equal (car term) 'equal)
            (consp (cdr term))
            (consp (cddr term))
-           (find-memberp-literal-that-shows-a-and-b-differ-fn 
+           (find-memberp-literal-that-shows-a-and-b-differ-fn
             nil (cadr term) (caddr term) (mfc-clause mfc))
            (null (cdddr term))
            )
@@ -109,7 +134,7 @@ Eric,
            (consp (cddr term))
            (null (cdddr term))
            )
-      `(not ,(find-memberp-literal-that-shows-a-and-b-differ-fn 
+      `(not ,(find-memberp-literal-that-shows-a-and-b-differ-fn
               nil (cadr term) (caddr term) (mfc-clause mfc)))
     ''nil))
 
@@ -126,7 +151,7 @@ Eric,
    ))
 
 
-(local 
+(local
  (defthm syntactic-membership-meta-rule-helper
    (implies (syntax-memberp x y)
             (memberp (ev3 x a)
@@ -171,7 +196,7 @@ Eric,
           :hints (("Goal" :in-theory (union-theories '(meta-rule-to-rewrite-equal-to-nil)
                                                      (theory 'minimal-theory)))))))
 
-(encapsulate 
+(encapsulate
  ()
  (local (defthm neq-test-2
           (implies (not (memberp a (cons b (cons c (append (cons d (cons e nil)) f)))))
@@ -297,7 +322,7 @@ Eric,
  (implies (and (ev3 (find-negated-memberp-literal-in-clause x list clause) a)
                (find-negated-memberp-literal-in-clause x list clause))
           (memberp (ev3 x a) (ev3 list a )))))
-          
+
 
 (local
  (defthm syntactic-membership-meta-rule-helper-2
@@ -309,7 +334,7 @@ Eric,
    :hints (("Goal" :do-not '(generalize eliminate-destructors)
             :in-theory (e/d (memberp) (;FIND-NEGATED-MEMBERP-LITERAL-IN-CLAUSE
                                               ))))))
-   
+
 ; ; Greve almost considers this a special case.
 (defthm meta-rule-for-two-memberp-literals
   (implies (ev3 (hyp-metafunction-for-two-memberp-literals-blah term mfc state) a)
@@ -320,7 +345,7 @@ Eric,
 
 
 
-;bzo extend to case when x isn't quite the same in both places!  
+;bzo extend to case when x isn't quite the same in both places!
 ;or see greve's suggestion below
 (encapsulate
  ()
@@ -408,7 +433,7 @@ Eric,
            (equal (foo (equal a b))
                   (foo nil)))
   :hints (("Goal" :in-theory (disable DISJOINT-OF-CONS-TWO
-                                      
+
                                       DISJOINT-OF-SINGLETON-TWO
                                       DISJOINT-OF-SINGLETON-ONE))))
 
@@ -417,7 +442,7 @@ Eric,
 
 (defthm blah
   (implies (
-  
+
   (not (equal a b))
 
 
@@ -468,7 +493,7 @@ Eric,
 In general:
 
   I would suggest: if neither a nor b appear as
-an argument to member-equal in the hypothesis, 
+an argument to member-equal in the hypothesis,
 wrap them in a list and pass them to the
 disjoint computation.
 

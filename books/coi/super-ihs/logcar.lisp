@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 (include-book "ihs/ihs-lemmas" :dir :system)
@@ -14,7 +39,7 @@
 
 (defthm logcar-when-i-is-not-an-integerp
   (implies (not (integerp i))
-           (equal (logcar i) 
+           (equal (logcar i)
                   0))
   :hints (("goal" :in-theory (enable logcar ifix))))
 
@@ -65,7 +90,7 @@
                     (if (acl2-numberp i)
                         0
                       (logcar j)))))
-  :hints (("Goal" :use (:instance logcar-+ (i j) (j i)) 
+  :hints (("Goal" :use (:instance logcar-+ (i j) (j i))
            :in-theory (disable logcar-+))))
 
 (defthm logcar-evenp
@@ -88,7 +113,7 @@
                 (integerp k))
            (equal (logcar (+ i j (* 2 k)))
                   (logcar (+ i j))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance logcar-i+2*j (i (+ i j)) (j k))))))
 
 (defthm logcar-range

@@ -1,3 +1,33 @@
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ; Jared: what's this file for?  It's not certifiable, so I'm
 ; renaming it to a .lsp extension for Make compatibility
 
@@ -114,7 +144,7 @@
        (equal (a-mark n mptr (wx size wptr value ram))
               (wx size wptr value (a-mark n mptr ram))))))
   :hints (("goal" :induct (a-mark n mptr ram))))
-      
+
 (defthm rx-over-a-mark
   (let ((askel (g* mptr (atype n) ram)))
     (let ((flat (flatten askel)))
@@ -137,7 +167,7 @@
           (rflat (flatten askel)))
       (implies
        (and
-        (syntaxp (not (syntax-consp-or-quote rskel)))        
+        (syntaxp (not (syntax-consp-or-quote rskel)))
         (disjoint mflat rflat)
         (unique mflat)
         (wf-skel rskel)
@@ -171,7 +201,7 @@
           (rflat (flatten askel)))
       (implies
        (and
-        (syntaxp (not (syntax-consp-or-quote rskel)))        
+        (syntaxp (not (syntax-consp-or-quote rskel)))
         (disjoint mflat rflat)
         (unique mflat)
         (wf-skel rskel)
@@ -198,14 +228,14 @@
 
 
 (mutual-recursion
- 
+
  (defun rx-denormal-list (term spec)
    (declare (type (satisfies eqlable-alistp) spec))
    (if (consp term)
        (or (rx-denormal (car term) spec)
            (rx-denormal-list (cdr term) spec))
      nil))
- 
+
  (defun rx-denormal (term spec)
    (declare (type (satisfies eqlable-alistp) spec))
    (if (consp term)
@@ -226,7 +256,7 @@
     (rx (size ptr ram) . (wx))
     ))
 
-                       
+
 |#
 
 

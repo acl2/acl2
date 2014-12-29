@@ -1,3 +1,33 @@
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 (include-book "defdoc")
@@ -33,28 +63,28 @@
 ;;; The following legacy doc string was replaced Nov. 2014 by the
 ;;; auto-generated defxdoc form just below.
 ; (def::doc coi-debug::fail
-; 
+;
 ;   :one-liner "A macro to assist in signalling runtime errors"
-; 
+;
 ;   :details (docstring
 ; "
-; 
+;
 ;   The coi-debug::fail macro allows the user to signal runtime errors
 ; in ACL2 code.  The return value of coi-debug::fail can be set by
 ; specifying a :value parameter.  The failure message can be configured
-; via the :message keyword.  Additional parameters can be passed in as 
+; via the :message keyword.  Additional parameters can be passed in as
 ; a list via :parameters.
-; 
+;
 ;   Typical usage pattern:
-; 
+;
 ;   (if (consp x) (car x)
 ;     (coi-debug::fail :value nil
 ;                  :message \"~~x0 is not a consp\"
 ;                  :parameters (x)))
-; 
+;
 ;   It is sometimes convenient when debugging to induce a common-lisp
 ; break on a failure.  The following code will do just that.
-; 
+;
 ;   FOO !> (acl2::progn
 ;            (acl2::defttag t)
 ;            (acl2::progn!
@@ -63,7 +93,7 @@
 ;                (acl2::prog2$
 ;                  (acl2::fmt-to-comment-window message parameters 0 nil)
 ;                  (acl2::break)))))
-; 
+;
 ; "))
 
 (defxdoc coi-debug::fail
@@ -111,27 +141,27 @@
 ;;; The following legacy doc string was replaced Nov. 2014 by the
 ;;; auto-generated defxdoc form just below.
 ; (def::doc coi-debug::assert
-; 
+;
 ;   :one-liner "A macro to assist in detecting runtime errors"
-; 
+;
 ;   :details (docstring
 ; "
-; 
+;
 ;   The coi-debug::assert macro allows the user to identify runtime errors
 ; in ACL2 code.  The return value of coi-debug::assert can be set by
 ; specifying a :value parameter.  The failure message can be configured
 ; via the :message keyword.  Note that the first argument (~~x0) is the
 ; syntactic form of the test, but that additional parameters can be
 ; passed in as a list via :parameters.
-; 
+;
 ;   Example usage pattern:
-; 
+;
 ;   (let ((y (coi-debug::assert (test y)
 ;                           :value y
 ;                           :message \"Y failed ~~x0 in ~~x1\"
 ;                           :parameters (z))))
 ;     ..)
-; 
+;
 ; "))
 
 (defxdoc coi-debug::assert

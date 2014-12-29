@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "GACC")
 
 ;; Keep this list of include-books in sync with the list in the .acl2 file:
@@ -26,14 +51,14 @@
       (let ((ram (z*-rec (car zlist) ram)))
         (z* (cdr zlist) ram))
     ram))
- 
+
 ;;
 ;; This may be helpful in extending the z*-rec lemmas to z*
 ;;
 ;bzo nested inductions
 
-(defthmd z*-reduction 
-  (equal (z* zlist ram) 
+(defthmd z*-reduction
+  (equal (z* zlist ram)
          (z*-rec (flat zlist) ram))
   :hints (("Goal" :in-theory (enable append  ;bzo why the enables?
                                      flat
@@ -41,20 +66,20 @@
 
 (defthmd z*-wx-introduction
   (equal (equal (wx size ptr value ram1)
-                ram2) 
-         (and (equal (z* (list (sblk size ptr)) ram1) 
-                     (z* (list (sblk size ptr)) ram2)) 
-              (tag-location ptr (equal (acl2::loghead (fix-size size) ;wfixn 8 size 
-                                              value) 
-                                       (rx size ptr ram2))))) 
-  :hints (("Goal" :in-theory (e/d (blk sblk wx rx failed-location ;wfixn 
+                ram2)
+         (and (equal (z* (list (sblk size ptr)) ram1)
+                     (z* (list (sblk size ptr)) ram2))
+              (tag-location ptr (equal (acl2::loghead (fix-size size) ;wfixn 8 size
+                                              value)
+                                       (rx size ptr ram2)))))
+  :hints (("Goal" :in-theory (e/d (blk sblk wx rx failed-location ;wfixn
                                        wx==ram-rec)
                                   (
                                    open-rx-rec open-wx-rec z*-same-wx-rec-0)))))
 
 ;bzo WX==RAM-REC seemed to loop here when wx was disabled...
-(defthm z*-of-wx 
-  (implies 
+(defthm z*-of-wx
+  (implies
    (any-subbagp (sblk size ptr) zlist)
    (equal (z* zlist (wx size ptr value ram1))
           (z* zlist ram1)))
@@ -74,7 +99,7 @@
 
 
 
-                      
+
 
 (encapsulate
  ()
@@ -88,7 +113,7 @@
           (equal (wr a v ram2) ram1)
           (equal (loghead8 v) (rd a ram1))))
     :hints (("Goal" :in-theory (enable failed-location)))))
- 
+
  (local
   (defthm wx-rec-equality-to-value-equality
     (and
@@ -100,7 +125,7 @@
        (integerp off)
        (< off max)
        (<= 0 off))
-      (equal (rx-rec base off max ram1) ( ;wfixw 8 (- max off) 
+      (equal (rx-rec base off max ram1) ( ;wfixw 8 (- max off)
                                          acl2::loghead (* 8 (nfix  (- max off)))
                                          value)))
      (implies
@@ -111,23 +136,23 @@
        (integerp off)
        (< off max)
        (<= 0 off))
-      (equal ( ;wfixw 8 (- max off) 
+      (equal ( ;wfixw 8 (- max off)
               acl2::loghead (* 8 (nfix  (- max off)))
               value) (rx-rec base off max ram1))))
     :hints (("goal" :in-theory (enable (:induction wx-rec))
              :induct (wx-rec base off max value ram2)))))
 
-;bzo is this a good general theorem? 
+;bzo is this a good general theorem?
 ;not used outside this book?
  (defthmd wx-equality-to-value-equality
    (and (implies (equal ram1 (wx size ptr value ram2))
                  (equal (rx size ptr ram1) (acl2::loghead (fix-size size) value)))
         (implies
          (equal (wx size ptr value ram2) ram1)
-         (equal (acl2::loghead (fix-size size) ;wfixn 8 size 
+         (equal (acl2::loghead (fix-size size) ;wfixn 8 size
                                value) (rx size ptr ram1))))
    :hints (("Goal" :in-theory (e/d ( failed-location) ()))))
- 
+
  #+joe
  (local
   (defthm z*-rec-over-wx-rec
@@ -146,17 +171,17 @@
                                     (Z*-REC-DISJOINT
                                      wr==ram
                                      z*-rec-of-wr
-                                     z*-rec-over-wr 
+                                     z*-rec-over-wr
                                      ))
              :induct (wx-rec base off max value ram2)))))
- 
+
  (local
   (defthm rx-rec-over-z*-disjoint-flat
     (implies (disjoint (blk-rec ptr off size) (flat zlist))
              (equal (rx-rec ptr off size (z* zlist ram))
                     (rx-rec ptr off size ram)))))
 
-;bzo 
+;bzo
  (local
   (defthm open-disjoint-list-x
     (and (implies (consp list)
@@ -165,19 +190,19 @@
                               (disjoint-list term (cdr list)))))
          (implies (not (consp list))
                   (equal (disjoint-list term list) t)))
-    :hints (("goal" :in-theory (enable disjoint-list 
-                                       ;;append 
+    :hints (("goal" :in-theory (enable disjoint-list
+                                       ;;append
                                        flat
                                        ;;acl2::disjoint-of-cons-two
                                        )))))
-  
+
  (defthm rx-over-z*-disjoint
    (implies (disjoint (sblk size ptr) (flat zlist))
     (equal (rx size ptr (z* zlist ram))
            (rx size ptr ram)))
-   :hints (("goal" :in-theory '(rx-rec-over-z*-disjoint-flat 
+   :hints (("goal" :in-theory '(rx-rec-over-z*-disjoint-flat
                                 blk rx sblk))))
- 
+
  (local
   (defthm z*-rec-over-wx
     (implies
@@ -185,13 +210,13 @@
      (equal (z*-rec list (wx size ptr value ram))
             (wx size ptr value (z*-rec list ram))))
     :hints (("goal" :in-theory (enable wx sblk blk wx==ram-rec)))))
- 
+
  (defthmd z*-over-wx-commute
    (implies (disjoint (sblk size ptr) (flat list))
             (equal (z* list (wx size ptr value ram))
                    (wx size ptr value (z* list ram))))
    :hints (("goal" :in-theory (enable z*-reduction))))
- 
+
  )
 
 (in-theory (disable bag::disjoint-list-reduction ;bzo why?
@@ -219,7 +244,7 @@
                     (rx-rec ptr off size ram2)))
     :hints (("Goal" :do-not-induct t
              :in-theory (disable z*-rec-over-append z*-reduction)
-             :use ((:instance rx-rec-over-z*-disjoint 
+             :use ((:instance rx-rec-over-z*-disjoint
                               (ram (wx-rec ptr off size value ram1)))))
             )
     :rule-classes nil))
@@ -227,16 +252,16 @@
  (local
   (encapsulate
    ()
-  
+
    (local
     (defthm z*-helper-1-helper
-      (implies 
+      (implies
        (and
         (disjoint (sblk size ptr) (flat zlist))
-        (equal (z* zlist (wx size ptr value ram1)) 
+        (equal (z* zlist (wx size ptr value ram1))
                (z* zlist ram2)))
-       (equal (acl2::loghead (fix-size size) ;wfixn 8 size 
-                             value) 
+       (equal (acl2::loghead (fix-size size) ;wfixn 8 size
+                             value)
               (rx size ptr ram2)))
       :hints (("goal" :in-theory '(z*-over-wx-commute ;bzo scary literal value for theory
                                    rx-over-z*-disjoint
@@ -244,37 +269,37 @@
                                    )))))
 
    (defthm z*-helper-1
-     (implies 
+     (implies
       (and
-       (disjoint-list (sblk size ptr) zlist) 
-       (equal (z* zlist (wx size ptr value ram1)) 
+       (disjoint-list (sblk size ptr) zlist)
+       (equal (z* zlist (wx size ptr value ram1))
               (z* zlist ram2)))
-      (equal (acl2::loghead (fix-size size) ;wfixn 8 size 
-                            value) 
+      (equal (acl2::loghead (fix-size size) ;wfixn 8 size
+                            value)
              (rx size ptr ram2)))
-     :hints (("goal" :in-theory '(z*-helper-1-helper 
+     :hints (("goal" :in-theory '(z*-helper-1-helper
                                   bag::disjoint-list-reduction))))
-  
+
    ))
-  
+
  (local
   (defthm z*-helper-2
     (implies (and
-              (disjoint-list (sblk size ptr) zlist) 
-              (equal (z* zlist (wx size ptr value ram1)) 
+              (disjoint-list (sblk size ptr) zlist)
+              (equal (z* zlist (wx size ptr value ram1))
                      (z* zlist ram2)))
-             (equal (z* (cons (sblk size ptr) zlist) ram1) 
+             (equal (z* (cons (sblk size ptr) zlist) ram1)
                     (z* (cons (sblk size ptr) zlist) ram2)))
     :hints (("goal" :in-theory (e/d (wx blk sblk flat z*-reduction) (open-wx-rec open-rx-rec))))) )
- 
+
  (local
   (defthm z*-helper-2a
-    (implies 
+    (implies
      (and
-      (disjoint-list (sblk size ptr) zlist) 
-      (equal (z* zlist ram2) 
+      (disjoint-list (sblk size ptr) zlist)
+      (equal (z* zlist ram2)
              (z* zlist (wx size ptr value ram1))))
-     (equal (z* (cons (sblk size ptr) zlist) ram2) 
+     (equal (z* (cons (sblk size ptr) zlist) ram2)
             (z* (cons (sblk size ptr) zlist) ram1)))
     :hints (("goal" :in-theory (e/d (wx blk sblk flat z*-reduction)
                                     (open-wx-rec open-rx-rec))))) )
@@ -286,9 +311,9 @@
                   (integerp off)
                   (integerp size)
                   (disjoint-list (blk-rec ptr off size) list)
-                  (equal (z*-rec (append (blk-rec ptr off size) 
+                  (equal (z*-rec (append (blk-rec ptr off size)
                                          (flat list)) ram1)
-                         (z*-rec (append (blk-rec ptr off size) 
+                         (z*-rec (append (blk-rec ptr off size)
                                          (flat list)) ram2))
                   (equal (;wfixw 8 (- size off)
                           acl2::loghead (* 8 (nfix  (- size off)))
@@ -302,31 +327,31 @@
 
  (local
   (defthm z*-helper-3
-    (implies 
+    (implies
      (and
-      (disjoint-list (sblk size ptr) zlist) 
-      (equal (z* (cons (sblk size ptr) zlist) ram1) 
-             (z* (cons (sblk size ptr) zlist) ram2)) 
-      (equal (acl2::loghead (fix-size size) ;wfixn 8 size 
-                            value) 
+      (disjoint-list (sblk size ptr) zlist)
+      (equal (z* (cons (sblk size ptr) zlist) ram1)
+             (z* (cons (sblk size ptr) zlist) ram2))
+      (equal (acl2::loghead (fix-size size) ;wfixn 8 size
+                            value)
              (rx size ptr ram2)))
-     (equal (z* zlist (wx size ptr value ram1)) 
+     (equal (z* zlist (wx size ptr value ram1))
             (z* zlist ram2)))
-    :hints (("goal" :in-theory (e/d (wx rx blk sblk flat ;wfixn 
-                                        z*-reduction) (;wfixw 
+    :hints (("goal" :in-theory (e/d (wx rx blk sblk flat ;wfixn
+                                        z*-reduction) (;wfixw
                                                        z*-rec-over-append))))))
 
  (local
   (defthm z*-helper-3a
-    (implies 
+    (implies
      (and
-      (disjoint-list (sblk size ptr) zlist) 
-      (equal (z* (cons (sblk size ptr) zlist) ram2) 
-             (z* (cons (sblk size ptr) zlist) ram1)) 
-      (equal (acl2::loghead (fix-size size) ;wfixn 8 size 
-                            value) 
+      (disjoint-list (sblk size ptr) zlist)
+      (equal (z* (cons (sblk size ptr) zlist) ram2)
+             (z* (cons (sblk size ptr) zlist) ram1))
+      (equal (acl2::loghead (fix-size size) ;wfixn 8 size
+                            value)
              (rx size ptr ram2)))
-     (equal (z* zlist ram2) 
+     (equal (z* zlist ram2)
             (z* zlist (wx size ptr value ram1))))
     :hints (("goal" :use z*-helper-3))))
 
@@ -335,14 +360,14 @@
 ; since z*-rec ifixes the elements of the list.
 
  (defthm z*-wx-induction
-   (implies 
+   (implies
     (disjoint-list (sblk size ptr) zlist)
-    (equal (equal (z* zlist (wx size ptr value ram1)) 
-                  (z* zlist ram2)) 
-           (and (equal (z* (cons (sblk size ptr) zlist) ram1) 
-                       (z* (cons (sblk size ptr) zlist) ram2)) 
-                (tag-location ptr (equal (acl2::loghead (fix-size size) ;wfixn 8 size 
-                                                        value) 
+    (equal (equal (z* zlist (wx size ptr value ram1))
+                  (z* zlist ram2))
+           (and (equal (z* (cons (sblk size ptr) zlist) ram1)
+                       (z* (cons (sblk size ptr) zlist) ram2))
+                (tag-location ptr (equal (acl2::loghead (fix-size size) ;wfixn 8 size
+                                                        value)
                                          (rx size ptr ram2))))))
    :hints (("goal" :in-theory (e/d (failed-location)
                                    ( z*-helper-1 z*-helper-2
@@ -380,7 +405,7 @@
 
 (defun update-slot-value (value slot)
   (let ((size (slot-size slot)))
-    (update-slot slot :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+    (update-slot slot :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                   value))))
 
 (defun update-slot-skel (skel slot)
@@ -410,7 +435,7 @@
           (cons (missing-key key) skel)))
     (cons (missing-key key) skel)))
 
-;; If no :type key is provided, these functions expect "fun::type" 
+;; If no :type key is provided, these functions expect "fun::type"
 ;; to be bound in the context in which they are used.
 
 (defmacro setx (key value skel &key (type 'nil))
@@ -440,7 +465,7 @@
              (size (slot-size slot))
              (off  (slot-off  slot)))
          (rs size off base (skel-spec ,skel))))))
-  
+
 (defun syntax-offset (woff wbase wptr rptr)
   (declare (type t woff wbase wptr rptr))
   (if (and (consp wptr)
@@ -549,7 +574,7 @@
   `(bind-free (find-fn-template-args ',template ,term) ,(template-keys (cdr template))))
 
 (defun ptr! (op)
-  (if (whichtype (op-which op) :ptr) 
+  (if (whichtype (op-which op) :ptr)
       (update-op op :which :ptr)
     (update-op op :which :nil)))
 
@@ -601,40 +626,40 @@
     (equal (op-which gop) :val)
     (equal wbase base)
     (equal wptr (+ (ifix woff) (ifix wbase)))
-     
+
     (unique (flat (f*-spec (update-op gop :which :all) base (v0 (split-blk spec)))))
-     
+
     (memberp (sblk wsize (+<> woff wbase))
              (f*-spec gop base (v0 (split-blk spec))))
-     
+
     (subbagp (sblk wsize (+<> woff wbase))
              (flat (f*-spec gop base (v0 (split-blk spec)))))
-     
+
     )
    (equal (g*-spec gop base (v0 (split-blk spec)) (wx wsize wptr value ram))
-          (wv wsize woff wbase (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
-                                      value) 
+          (wv wsize woff wbase (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
+                                      value)
               (g*-spec gop base (v0 (split-blk spec)) ram))))
   :otf-flg t
   :rule-classes nil
-  :hints (("goal" :induct (len spec) 
-           :do-not '(generalize ;preprocess 
+  :hints (("goal" :induct (len spec)
+           :do-not '(generalize ;preprocess
                                 eliminate-destructors fertilize eliminate-irrelevance)
            :do-not-induct t
            :in-theory (e/d (open-wv
-                            ;len 
+                            ;len
                             bag::flat-of-cons
 ;                            (:REWRITE ACL2::DISJOINT-COMMUTATIVE)
 ;                           (:REWRITE ACL2::MEMBERP-COMPUTATION)
-                            (:REWRITE BAG::UNIQUE-of-APPEND) 
-                            bag::disjoint-of-append-one 
-                            bag::disjoint-of-append-two 
-                            LIST::memberp-of-cons 
+                            (:REWRITE BAG::UNIQUE-of-APPEND)
+                            bag::disjoint-of-append-one
+                            bag::disjoint-of-append-two
+                            LIST::memberp-of-cons
                             bag::disjoint-of-flat-helper-2
                             bag::disjoint-of-flat-helper
                             BAG::SUBBAGP-MEANS-RARELY-DISJOINT
                             BAG::SUBBAGP-MEANS-RARELY-DISJOINT-two
-                            g*-spec-over-wx 
+                            g*-spec-over-wx
                             f*-spec-vp-perm
 ;                            unfixed-size-wfixn
                             unfixed-size-rx
@@ -645,9 +670,9 @@
                             ;;whichtype
                             ;;START-OF-F*-SPEC
                             ;;wfixn-of-fix-size
-                            ;;subbagp-membership-fwd 
-                            ;;subbagp-membership-free 
-                            ;;bag::memberp-implies-subbagp-flat 
+                            ;;subbagp-membership-fwd
+                            ;;subbagp-membership-free
+                            ;;bag::memberp-implies-subbagp-flat
                             zz-wv-introduction)))))
 
 (defthm rv-over-g*-spec-helper
@@ -671,7 +696,7 @@
                             bag::disjoint-of-append-two
                             LIST::memberp-of-cons
                             bag::disjoint-of-flat-helper-2
-                            bag::unique-of-append 
+                            bag::unique-of-append
                             F*-SPEC-VP-PERM
                             UNFIXED-SIZE-RX
 ;                                          UNFIXED-SIZE-WFIXN
@@ -679,7 +704,7 @@
                             BAG::MEMBERP-SUBBAGP
 ;                                           BAG::NOT-MEMBERP-OF-CDR-CHEAP
                             BAG::SUBBAGP-IMPLIES-SUBBAGP-APPEND-CAR
-                            ) 
+                            )
                            ( ;wfixn-of-fix-size
                             ;;ptr!
                             ;;F*-SPEC-VP-PERM
@@ -706,7 +731,7 @@
     (unique (flat (f*-spec (update-op gop :which :all) base (v0 (split-blk spec)))))
     )
    (equal (g*-spec gop base (v0 (split-blk spec)) (wx wsize wptr value ram))
-          (wv wsize woff wbase (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
+          (wv wsize woff wbase (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
                                               value)
               (g*-spec gop base (v0 (split-blk spec)) ram))))
   :hints (("goal" :use (:instance g*-spec-v0-split-blk-of-wx-helper)
@@ -807,7 +832,7 @@
         (equal (v0 (join-list list (append x y)))
                (v0 (join-list list x)))
         (equal (v1 (join-list list (append x y)))
-               (append (v1 (join-list list x)) y)))) 
+               (append (v1 (join-list list x)) y))))
   :hints (("goal" :in-theory (enable default-car default-cdr))))
 
 (defthm join-list-split-list
@@ -885,11 +910,11 @@
                     (value (slot-val slot)))
                 (let ((read value))
                   (let ((base (skel-base skel)))
-                    (let ((base (if (ptr? type) (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                    (let ((base (if (ptr? type) (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                        (op-base h type base read))
                                   base)))
                       (let ((slot (update-slot slot
-                                               :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                                               :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                            value)
                                                :off (+<> off ptr)
                                                :skel (skel base nil))))
@@ -916,11 +941,11 @@
                     (value (slot-val slot)))
                 (let ((read value))
                   (let ((base (skel-base skel)))
-                    (let ((base (if (ptr? type) (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                    (let ((base (if (ptr? type) (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                        (op-base h type base read))
                                   base)))
                       (let ((slot (update-slot slot
-                                               :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                                               :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                            value)
                                                :off (+<> off ptr)
                                                :skel (skel base nil))))
@@ -979,21 +1004,21 @@
                     (value (slot-val  slot))
                     )
                 (if (and (whichtype w type) (not (consp rec))) (mv spec rec nil)
-                  (let ((read (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                  (let ((read (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                              (slot-val (car rec))))
                         (rec  (if (whichtype w type) (cdr rec) rec)))
-                    (let ((base (if (ptr? type) (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                    (let ((base (if (ptr? type) (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                                (skel-base skel)) (skel-base skel))))
-                      (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                      (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                           (if (whichtype w type) read value))))
                         (let ((base (op-base h type base value)))
                           (let ((skel-spec (skel-spec skel)))
                             (met ((skel-spec rec hit1) (if (ptr? type)
-                                                           (rec->spec op skel-spec rec) 
+                                                           (rec->spec op skel-spec rec)
                                                          (mv skel-spec rec t)))
                                  (let ((skel (skel base skel-spec)))
                                    (met ((spec rec hit2) (rec->spec op (cdr spec) rec))
-                                        (mv (cons (update-slot slot :val value :skel skel) spec) 
+                                        (mv (cons (update-slot slot :val value :skel skel) spec)
                                             rec (and hit1 hit2)))))))))))))
           (met ((spec rec hit) (rec->spec op (cdr spec) rec))
                (mv (cons slot spec) rec hit))))
@@ -1015,21 +1040,21 @@
                     (value (slot-val  slot))
                     )
                 (if (and (whichtype w type) (not (consp rec))) (mv spec rec nil)
-                  (let ((read (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                  (let ((read (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                              (slot-val (car rec))))
                         (rec  (if (whichtype w type) (cdr rec) rec)))
-                    (let ((base (if (ptr? type) (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                    (let ((base (if (ptr? type) (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                                (skel-base skel)) (skel-base skel))))
-                      (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                      (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                   (if (whichtype w type) read value))))
                         (let ((base (op-base h type base value)))
                           (let ((skel-spec (skel-spec skel)))
                             (met ((skel-spec rec hit1) (if (ptr? type)
-                                                           (rec->spec op skel-spec rec) 
+                                                           (rec->spec op skel-spec rec)
                                                          (mv skel-spec rec t)))
                                  (let ((skel (skel base skel-spec)))
                                    (met ((spec rec hit2) (rec->spec op (cdr spec) rec))
-                                        (mv (cons (update-slot slot :val value :skel skel) spec) 
+                                        (mv (cons (update-slot slot :val value :skel skel) spec)
                                             rec (and hit1 hit2)))))))))))))
           (met ((spec rec hit) (rec->spec op (cdr spec) rec))
                (mv (cons slot spec) rec hit))))
@@ -1044,7 +1069,7 @@
   (implies (syntaxp (symbolp op))
            (equal (rec->spec op spec rec)
                   (rec->spec (xop op) spec rec)))
-  :hints (("Goal" :in-theory (disable numwhich 
+  :hints (("Goal" :in-theory (disable numwhich
                                       numtype
                                       op-base
                                       ptr?
@@ -1077,9 +1102,9 @@
                             ATOMIC-REC->SPEC-REPLACEMENT
                             BINARY-APPEND
                             SLOT-P
-                            skel-extensionality! 
+                            skel-extensionality!
                             SLOT-EXTENSIONALITY!!
-                            default-car 
+                            default-car
                             numwhich
                             numtype
                             ptr?
@@ -1119,9 +1144,9 @@
          (not (consp (v1 (rec->spec op template (spec->rec op ptr spec)))))))
   :rule-classes nil
   :hints (("goal" :induct (spec->rec op ptr spec)
-           :do-not '(generalize eliminate-destructors 
+           :do-not '(generalize eliminate-destructors
                                 fertilize eliminate-irrelevance)
-           :in-theory (e/d (binary-append) (numwhich 
+           :in-theory (e/d (binary-append) (numwhich
                                             numtype
                                             op-base
                                             ;;whichtype
@@ -1140,10 +1165,10 @@
        (not (consp (v1 (rec->spec op spec (spec->rec op ptr spec))))))
   :hints (("goal" :induct (spec->rec op ptr spec))
           (and (consp (cadr acl2::id))
-               `(:do-not '(generalize preprocess eliminate-destructors 
+               `(:do-not '(generalize preprocess eliminate-destructors
                                       fertilize eliminate-irrelevance)
-                         :in-theory (e/d (binary-append) 
-                                         (numwhich numtype 
+                         :in-theory (e/d (binary-append)
+                                         (numwhich numtype
                                                    SLOT-EXTENSIONALITY
                                                    ;ptr?
                                                    op-base
@@ -1173,7 +1198,7 @@
   :otf-flg t
   :hints (("goal" :do-not '(generalize preprocess eliminate-destructors
                                        fertilize eliminate-irrelevance)
-           :in-theory (e/d (g? binary-append) 
+           :in-theory (e/d (g? binary-append)
                            (SKEL-EXTENSIONALITY!
                             ;;GACC::ATOMIC-REC->SPEC-REPLACEMENT ;made things worse...
                             numwhich
@@ -1200,7 +1225,7 @@
 ;  :otf-flg t
   :hints (("goal" :do-not '(generalize preprocess eliminate-destructors
                                        fertilize eliminate-irrelevance)
-           :in-theory (e/d (g? rec->spec-h*-spec-not-which-introduction-1) 
+           :in-theory (e/d (g? rec->spec-h*-spec-not-which-introduction-1)
                            (SKEL-EXTENSIONALITY!
                             SLOT-EXTENSIONALITY!!
                             SLOT-EXTENSIONALITY
@@ -1225,7 +1250,7 @@
                   (v2 (rec->spec op (h*-spec (not-which op) spec) rec))))
   :hints (("goal" :do-not '(generalize preprocess eliminate-destructors
                                        fertilize eliminate-irrelevance)
-           :in-theory (e/d (g? rec->spec-h*-spec-not-which-introduction-1) 
+           :in-theory (e/d (g? rec->spec-h*-spec-not-which-introduction-1)
                            (SKEL-EXTENSIONALITY!
                             ;;GACC::ATOMIC-REC->SPEC-REPLACEMENT ;made things worse...
                             numwhich
@@ -1240,11 +1265,11 @@
            :do-not-induct t
            :induct (rec->spec op spec rec))
           ))
- 
+
 (defun rec->spec-of-spec->rec-hyp (op template spec)
   (equal (h*-spec (not-which op) template)
          (h*-spec (not-which op) spec)))
- 
+
 (defthmd rec->spec-of-spec->rec
   (implies
    (and
@@ -1258,7 +1283,7 @@
                                      rec->spec-h*-spec-not-which-introduction-3
                                      rec->spec-of-spec->rec-h*-spec
                                      ))))
- 
+
 
 
 (defthm g*-rec-g*-spec-commute
@@ -1303,7 +1328,7 @@
         (if (slot-p slot)
             (let ((size  (slot-size slot))
                   (value (slot-val  slot)))
-              (let ((slot (update-slot slot :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+              (let ((slot (update-slot slot :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                                 value))))
                 (cons slot (h*-rec (cdr rec)))))
           (cons slot
@@ -1343,14 +1368,14 @@
  (defthm spec-rec-h*-spec-reduction
    (implies
     (x? op)
-    (equal 
+    (equal
      (spec->rec op ptr (h*-spec op spec))
      (spec->rec op ptr spec))))
 
  (defthmd h*-spec-h*-rec-reduction
    (implies
     (and
-     (x? op) 
+     (x? op)
      (equal (op-which op) :all))
     (equal (h*-spec op spec)
            (v0 (rec->spec op spec (h*-rec (spec->rec op ptr spec))))))
@@ -1375,7 +1400,7 @@
   :hints (("goal" :in-theory (enable ;my-wx-over-wx
                                      flat))))
 
-;; We are beginning to see a weakness in our representation. There 
+;; We are beginning to see a weakness in our representation. There
 ;; is no good reason for (f*-rec rec) to be unique in the following
 ;; theorem, except that it makes it convenient to prove the result.
 ;; Our use of s*-rec type functions should have gone all the way down
@@ -1565,7 +1590,7 @@
    (not (g-op op))
    (equal (rs size off base (h*-spec op spec))
           (skel (if (equal (op-how op) :z) 0
-                  (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                  (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                  (skel-base (rs size off base spec))))
                 (h*-spec op (skel-spec (rs size off base spec))))))
   :hints (("goal" :in-theory (enable g? ;unfixed-size-wfixn
@@ -1632,7 +1657,7 @@
                    (keys-spec :all base spec))
            (equal (rv size
                       off base (wv size off base value spec))
-                  (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                  (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                  value
                          )))
   :hints (("goal" :in-theory nil
@@ -1728,7 +1753,7 @@
                   slot))
             slot)))
     slot))
-  
+
 (defthm v0-split-blk
   (equal (v0 (split-blk (cons slot list)))
          (cons (split-blk-fix-slot slot) (v0 (split-blk list)))))
@@ -1862,7 +1887,7 @@
            (if (slot-p slot)
                (let ((size (slot-size slot))
                      (value (slot-val slot)))
-                    (cons (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                    (cons (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                          value)
                           (v*-rec (cdr spec))))
                (v*-rec (cdr spec))))
@@ -1960,7 +1985,7 @@
   :rule-classes nil
   :hints (("goal" :induct (list->rec op list))
           (and (consp (cadr acl2::id))
-               `(:do-not '(generalize preprocess eliminate-destructors 
+               `(:do-not '(generalize preprocess eliminate-destructors
                                       fertilize eliminate-irrelevance)
                          :in-theory (enable binary-append)
                          :do-not-induct t))))
@@ -1972,7 +1997,7 @@
        (not (consp (v1 (rec->list op list (list->rec op list))))))
   :hints (("goal" :induct (list->rec op list))
           (and (consp (cadr acl2::id))
-               `(:do-not '(generalize preprocess eliminate-destructors 
+               `(:do-not '(generalize preprocess eliminate-destructors
                                       fertilize eliminate-irrelevance)
                          :in-theory (enable binary-append)
                          :do-not-induct t))))
@@ -2008,7 +2033,7 @@
                                             rec->spec-h*-spec-not-which-introduction-2
                                             rec->spec-h*-spec-not-which-introduction-3
                                             g? ;binary-append
-                                            ) 
+                                            )
                                          (numwhich
                                           whichnum
                                           op-base
@@ -2043,7 +2068,7 @@
            (equal (g*-rec (list->rec op list) ram)
                   (list->rec op (g*-list op list ram))))
   :hints (("goal" :induct (g*-list op list ram)
-           :do-not '(generalize preprocess eliminate-destructors 
+           :do-not '(generalize preprocess eliminate-destructors
                                 fertilize eliminate-irrelevance)
            :in-theory (enable g? open-g*-list (:induction g*-list))
            :do-not-induct t)))
@@ -2075,7 +2100,7 @@
          (g*-rd spec (rd-spec (f*-rec spec) ram)))
   :hints (("Goal" :in-theory (enable RX-TO-RD-LIST-REDUCTION))))
 
-;(local (in-theory (enable LEN))) 
+;(local (in-theory (enable LEN)))
 
 (defthm len-v1-rec->spec
   (implies (x? op)
@@ -2117,7 +2142,7 @@
                               rec->spec-h*-spec-not-which-introduction-3
                               g*-spec-default-which
                               rec->list-of-list->rec
-                              rec->spec-of-spec->rec) 
+                              rec->spec-of-spec->rec)
                            (;numwhich
                             )))))
 
@@ -2136,7 +2161,7 @@
 (defthm list-rec-h*-list-reduction
    (implies
     (x? op)
-    (equal 
+    (equal
      (list->rec op (h*-list op list))
      (list->rec op list))))
 
@@ -2171,7 +2196,7 @@
     (disjoint (flat (f*-rec list1)) (flat (f*-rec list2))))
    (equal (s*-rec list1 (s*-rec list2 ram))
           (s*-rec list2 (s*-rec list1 ram))))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (e/d (flat) ( Z*-S*-REC-INTRODUCTION))
            :induct (s*-rec list2 ram))))
 
@@ -2185,27 +2210,27 @@
 
    (defun rewrite= (x y)
      (equal x y))
-   
+
    (defthm true-rewrite=
      (implies
       (equal x y)
       (rewrite= x y)))
-   
+
    (defthm false-rewrite=
      (implies
       (not (equal x y))
       (not (rewrite= x y))))
-   
+
    (defthm rewrite=-free
      (implies
       (rewrite= (s*-list op list ram) y)
       (equal (s*-list op list ram) y)))
-   
+
    (in-theory
     (disable
      rewrite=
      ))
-   
+
    (defthm s*-list-s*-rec-reduction-helper
      (implies
       (unique (flat (f*-list op list)))
@@ -2271,7 +2296,7 @@
          (nfix n))
   :hints (("goal" :induct (offset-size n)
            :in-theory (e/d (max-offset)
-                           ( 
+                           (
                         unfixed-size-max-offset
                         offset-size-max-offset-free
                        )))))
@@ -2297,7 +2322,7 @@
       (let ((value (wintlist (car list))))
         (met ((size base) (sblk-parms 0 (car flat)))
              (declare (ignore base))
-             (cons (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+             (cons (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                   value)
                    (h*-rd (cdr flat) (cdr list)))))
     nil))
@@ -2395,22 +2420,22 @@
 
    (defun rewrite= (x y)
      (equal x y))
-   
+
    (defthm true-rewrite=
      (implies
       (equal x y)
       (rewrite= x y)))
-   
+
    (defthm false-rewrite=
      (implies
       (not (equal x y))
       (not (rewrite= x y))))
-   
+
    (defthm rewrite=-v1
      (implies
       (rewrite= (v1 x) y)
       (equal (v1 x) y)))
-   
+
    (in-theory
     (disable
      rewrite=
@@ -2459,9 +2484,9 @@
         (equal (g*-rec (list->rec op list) ram) (h*-rec (list->rec op list)))))
   :hints (("goal" :induct (list->rec op list))
           (and (consp (cadr acl2::id))
-               `(:do-not '(generalize preprocess eliminate-destructors 
+               `(:do-not '(generalize preprocess eliminate-destructors
                                       fertilize eliminate-irrelevance)
-                         :in-theory (enable g? 
+                         :in-theory (enable g?
                                             g*-spec-h*-spec-equality-reduction)
                          :do-not-induct t))))
 
@@ -2511,9 +2536,9 @@
 
 (defun fix-memory-list (a-list ram)
    (if (consp a-list)
-      (wr 
-         (car a-list) 
-         (rd (car a-list) ram) 
+      (wr
+         (car a-list)
+         (rd (car a-list) ram)
          (fix-memory-list (cdr a-list) ram))
       nil))
 
@@ -2524,7 +2549,7 @@
 (defthm len-of-h*-rd
   (equal (len (H*-RD FLAT LIST))
          (len FLAT)))
-        
+
 
 ;bzo gross hints
 (defthm fix-memory-list-fix-memory-equiv
@@ -2565,13 +2590,13 @@
                                   v*-rec-g*-rd
                                   ))))
 
-;(in-theory (disable wfix wint)) 
+;(in-theory (disable wfix wint))
 
 
 ;; begin stuff from push-gacc:
 
 
-(in-theory (disable ;sblk 
+(in-theory (disable ;sblk
                     (sblk) ;move up?
                     ))
 
@@ -2637,13 +2662,13 @@
   (equal (h*-spec (op :nil :z) (skel-spec (rs size off base spec)))
          (skel-spec (rs size off base (h*-spec (op :nil :z) spec)))))
 
-(in-theory 
- (disable 
+(in-theory
+ (disable
   rs-of-h*-spec
   ))
 
-(theory-invariant 
- (incompatible 
+(theory-invariant
+ (incompatible
   (:rewrite h*-spec-over-rs)
   (:rewrite rs-of-h*-spec)
   ))
@@ -2663,8 +2688,8 @@
   SPLIT-BLK-H*-SPEC
   ))
 
-(theory-invariant 
- (incompatible 
+(theory-invariant
+ (incompatible
   (:rewrite f*-spec-v0-split-blk-h*-spec-introduction)
   (:rewrite SPLIT-BLK-H*-SPEC)
   ))
@@ -2681,7 +2706,7 @@
 (defthm fixed-spec-p-skel-base-rs
   (implies
    (fixed-spec-p spec)
-   (acl2::unsigned-byte-p (fix-size size) ;wintn 8 size 
+   (acl2::unsigned-byte-p (fix-size size) ;wintn 8 size
           (skel-base (rs size off base spec))))
   :hints (("goal" :in-theory (enable ;unfixed-size-wintn
                                      )
@@ -2694,7 +2719,7 @@
   (or (not (consp n))
       (and (not (equal (car n) 'quote))
            (not (equal (car n) 'ifix)))))
-      
+
 (defthmd unfixed-int-sblk-parms
   (implies (syntaxp (syntax-unfixed-int base))
            (equal (sblk-parms base sblk)
@@ -2720,6 +2745,3 @@
 
 
 ;(in-theory (disable consp-h*-spec))
-
-
-

@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "PATH")
 
 (include-book "../osets/multicons")
@@ -55,7 +80,7 @@
 
 (local
  (defthm gp-domination-implies-equality
-   (IMPLIES (AND (EQUAL (GP P1 ST1) 
+   (IMPLIES (AND (EQUAL (GP P1 ST1)
 			(GP P1 ST2))
 		 (DOMINATES P1 P2))
 	    (iff (EQUAL (GP P2 ST1)
@@ -70,7 +95,7 @@
     (not (zp n))
     (equal (nthcdr n list)
 	   (nthcdr (1- n) (cdr list)))))
- ) 
+ )
 
 (local
  (include-book "arithmetic/top-with-meta" :dir :system)
@@ -79,7 +104,7 @@
 (local
  (defthm gp-dominates-implies-equality-2
    (implies
-    (AND (EQUAL (GP PATH ST1) 
+    (AND (EQUAL (GP PATH ST1)
 		(GP PATH ST2))
 	 (DOMINATES P2 PATH)
 	 (EQUAL (CLRP (NTHCDR (LEN P2) PATH)
@@ -100,7 +125,7 @@
 		(gp path (cp-set set st2 x))) t))
    :hints (("goal" :in-theory (enable gp-of-gp gp-of-sp))))
  )
- 
+
 (local
  (defthm clrp-cp-set-reduction
    (implies
@@ -139,7 +164,7 @@
 	  (LET ((P (SET::HEAD SET)))
 	       (SP P (GP P ST1)
 		   (CP-SET (SET::TAIL SET) ST1 ST2))))))
-	  
+
 (local
  (defthm cp-set-and-gp-equal-implies-cp-set-insert-equal
    (implies
@@ -176,7 +201,7 @@
 	       (gp a st2)) t))
   :rule-classes (:rewrite
 		 (:forward-chaining
-		  :corollary 
+		  :corollary
 		  (implies
 		   (and
 		    (set::in a set)
@@ -209,7 +234,7 @@
 		   (gp p st2))
 	    (equal (cp-set set st1 x)
 		   (cp-set set st2 x))))
-  :hints (("goal" 
+  :hints (("goal"
 	   :in-theory nil
 	   :use (:instance equal-cp-set-reduction-reduction-helper
 			   (set (set::insert p set))))
@@ -306,7 +331,7 @@
 
 (defun clrp-set-induction (set r1 r2)
   (if (set::empty set) (cons r1 r2)
-    (clrp-set-induction (set::tail set) 
+    (clrp-set-induction (set::tail set)
 			(clrp (set::head set) r1)
 			(clrp (set::head set) r2))))
 
@@ -403,10 +428,10 @@
   (implies
    (and
     (cp-set-equal (set::multiappend a (keep-exposed-elements a x)) st1 st2)
-    (equal (gp a xx1) 
+    (equal (gp a xx1)
 	   (gp a xx2)))
-   (equal (cp-set-equal x 
-			(sp a (gp a st1) xx1) 
+   (equal (cp-set-equal x
+			(sp a (gp a st1) xx1)
 			(sp a (gp a st2) xx2))
 	  (cp-set-equal x xx1 xx2)))
   :hints (("goal" :in-theory (e/d (cp-set-equal-mapappend-reduction
@@ -422,10 +447,10 @@
   (implies
    (and
     (cp-set-equal x st1 st2)
-    (equal (gp a xx1) 
+    (equal (gp a xx1)
 	   (gp a xx2)))
-   (equal (cp-set-equal x 
-			(sp a (gp a st1) xx1) 
+   (equal (cp-set-equal x
+			(sp a (gp a st1) xx1)
 			(sp a (gp a st2) xx2))
 	  (cp-set-equal x xx1 xx2)))
   :hints (("goal" :in-theory (e/d (incremental-cp-set-equality-reduction-helper-2)
@@ -461,7 +486,7 @@
 
 (defun clrp-set-equal (set x y)
   (if (set::empty set) (equal x y)
-    (clrp-set-equal (set::tail set) 
+    (clrp-set-equal (set::tail set)
 		    (path::clrp (set::head set) x)
 		    (path::clrp (set::head set) y))))
 
@@ -511,4 +536,3 @@
    (iff (equal (path::clrp-set set2 x)
 	       (path::clrp-set set2 y)) t))
   :hints (("goal" :in-theory (enable equal-clrp-set-to-clrp-set-equal))))
-

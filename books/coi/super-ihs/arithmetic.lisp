@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 (include-book "ihs/quotient-remainder-lemmas" :dir :system)
@@ -13,7 +38,7 @@
 ;this was causing lots of generalization to occur, introducing mod into goals which had nothing to do with mod.
 (in-theory (disable (:generalize MOD-X-Y-=-X+Y-for-rationals)))
 
-(in-theory (disable 
+(in-theory (disable
             (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT)
             (:DEFINITION FLOOR)
             (:DEFINITION CEILING)
@@ -67,7 +92,7 @@
 (defthm integerp-/
   (implies (and (integerp n)
                 (not (equal n 0)))
-           (equal (integerp (/ n)) 
+           (equal (integerp (/ n))
                   (or (equal n 1) (equal n -1))))
   :hints (("goal" :use ((:instance integerp-0-1 (x (/ n)))
                         (:instance integerp-0-1 (x (/ n)))))))
@@ -167,7 +192,7 @@
     ;add to rtl?
     ;bzo loops
  (defthmd floor-normalizes-to-have-j-be-1
-   (implies (syntaxp (not (equal j ''1))) 
+   (implies (syntaxp (not (equal j ''1)))
             (equal (floor i j)
                    (floor (/ i j) 1))))
 
@@ -175,7 +200,7 @@
    (IMPLIES (INTEGERP I)
             (EQUAL (FLOOR I 1) I)))
 
- 
+
  )
 
 
@@ -320,8 +345,8 @@
                      y)))
   :otf-flg t
   :hints (("Goal" :in-theory (e/d (evenp mod
-                                         FLOOR-NORMALIZES-TO-HAVE-J-BE-1) 
-                                  (;acl2::evenp-collapse 
+                                         FLOOR-NORMALIZES-TO-HAVE-J-BE-1)
+                                  (;acl2::evenp-collapse
                                    mod-cancel)))))
 
 (DEFTHM INTEGERP-+-MINUS-*-1
@@ -338,7 +363,7 @@
 (DEFTHM INTEGERP-+-MINUS-*-4
   (IMPLIES (AND (INTEGERP I) (INTEGERP J))
            (INTEGERP (* I J))))
- 
+
 (in-theory (disable INTEGERP-+-MINUS-*)) ;bzo
 
 
@@ -389,7 +414,7 @@
   (implies (syntaxp (not (quotep x))) ;without the not-quotep test, the rule matches things like: (< -1 x)
            (equal (< (- x) y)
                   (< 0 (+ x y)))))
-  
+
 (defthm move-negated-term-to-other-side-of-<-term-1-on-rhs
   (implies (syntaxp (not (quotep y))) ;without the not-quotep test, the rule matches things like: (< x -1) ?
            (equal (< x (- y))
@@ -671,7 +696,7 @@
            :in-theory (disable acl2::integerp-expt))))
 
 (defthm integerp-prod-of-3-first-two
-  (implies (and (integerp (* a b)) 
+  (implies (and (integerp (* a b))
                 (integerp c))
            (integerp (* a b c)))
   :hints (("Goal" :in-theory (disable acl2::integerp-+-minus-*-4)

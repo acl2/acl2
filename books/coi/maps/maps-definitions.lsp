@@ -1,3 +1,33 @@
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ; Jared: what's this file for?  It's not certifiable, so I'm
 ; renaming it to a .lsp extension for Make compatibility
 
@@ -9,7 +39,7 @@
 ;(in-package "MAPS")
 
 ;;
-;; This file isolates maps definitions and types. The file currently 
+;; This file isolates maps definitions and types. The file currently
 ;; contains the following ACL2 constructs as they occur in the maps book:
 ;; - defun
 ;; - defund
@@ -60,15 +90,15 @@
            (typed-mapp (typed-mapp-map)))
   :hints(("Goal" :use (:instance typed-mapp-badguy-witnesses
                                  (map (typed-mapp-map))))))
- 
+
 (defthm typed-mapp-of-erase
   (implies (typed-mapp map)
            (typed-mapp (erase key map)))
   :hints(("Goal" :use (:functional-instance
                        typed-mapp-by-membership
-                       (typed-mapp-hyps 
+                       (typed-mapp-hyps
                         (lambda () (typed-mapp map)))
-                       (typed-mapp-map 
+                       (typed-mapp-map
                         (lambda () (erase key map)))))))
 
 (local (defthm equal-of-booleans-rewrite
@@ -93,9 +123,9 @@
 (defund domain (map)
   (declare (xargs :guard (mapp map)
                   :verify-guards nil))
-  (mbe :logic (cond ((atom map) 
+  (mbe :logic (cond ((atom map)
                      (set::emptyset))
-                    ((atom (car map)) 
+                    ((atom (car map))
                      (domain (cdr map)))
                     (t (set::insert (caar map)
                                      (domain (cdr map)))))
@@ -138,7 +168,7 @@
               (acl2-count map)))
   :rule-classes :linear
   :hints(("Goal" :in-theory (enable erase domain)
-          :induct (erase key map))))                
+          :induct (erase key map))))
 
 (defthm acl2-count-of-erase-weak-linear
   (<= (acl2-count (erase key map))
@@ -274,7 +304,7 @@
        :exec (cond ((atom map)
                      nil)
                     (t (cons (car map)
-                             (optimize 
+                             (optimize
                               (erase (caar map) (cdr map))))))))
 
 (defthm acl2-count-of-optimize-weak-linear
@@ -344,7 +374,7 @@
 
 (defthm subset-of-submap-domain-with-supermap-domain
   (implies (submap sub super)
-           (set::subset (domain sub) 
+           (set::subset (domain sub)
                          (domain super))))
 
 
@@ -399,7 +429,7 @@
   (implies (submap sub super)
            (submap (set key val sub)
                    (set key val super))))
-               
+
 (defund equiv (x y)
   (declare (xargs :guard (and (mapp x)
                               (mapp y))))
@@ -430,7 +460,7 @@
 
 ;; The following rule is necessarily weaker than its variant in misc/records,
 ;; because of the way that the map's domain has been separated from its range.
-          
+
 (defthm set-of-get-same
   (equiv (set key (get key map) map)
          (if (in key map)
@@ -467,15 +497,15 @@
 ;; right way to simplify erase of erase.  But, "set"s can't just be arbitrarily
 ;; reordered like "erase"s, unless they are to different locations.
 ;;
-;; I thought for awhile that maybe the best thing to do for set-of-set would 
+;; I thought for awhile that maybe the best thing to do for set-of-set would
 ;; then be to just do the case split.  But, I found that this doesn't work.  In
 ;; particular, we need a loop stopper in order to prevent ourselves from going
 ;; into infinite loops on the not-equal case.  But then the rule won't fire on
 ;; the equal case either!
 ;;
 ;; So, here is what I am going to do.  I will just write two rules: a simple
-;; (hypothesis free) rewrite to handle the "same" case, and a conditional 
-;; rewrite rule to handle the "different" case.  But, I'll add a "case-split" 
+;; (hypothesis free) rewrite to handle the "same" case, and a conditional
+;; rewrite rule to handle the "different" case.  But, I'll add a "case-split"
 ;; to the set-of-set case, so that even if the hypothesis fails, we'll break
 ;; into cases.  This way, we have an the aggressive splitting strategy that
 ;; nonetheless still applies to "same" addresses.
@@ -499,7 +529,7 @@
   :rule-classes ((:rewrite :loop-stopper ((key1 key2 set))))
   :hints(("Goal" :in-theory (enable equiv))))
 
-(defthm set-of-erase-same 
+(defthm set-of-erase-same
   (equiv (set key val (erase key map))
          (set key val map))
   :hints(("Goal" :in-theory (enable equiv))))

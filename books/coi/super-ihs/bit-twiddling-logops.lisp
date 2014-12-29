@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 (include-book "logical-logops")
 
@@ -15,7 +40,7 @@
 (defthm ash-logior
   (equal (ash (logior x y) n)
          (logior (ash x n) (ash y n)))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (e/d (LRDT zip) (ash*))
            :cases ((<= 0 n)))))
 
@@ -31,13 +56,13 @@
                 )
            (equal (ash (ash x m) n)
                   (ash x (+ m n))))
-  :hints (("goal" 
-           :in-theory (e/d (LRDT expt2* ;ash 
+  :hints (("goal"
+           :in-theory (e/d (LRDT expt2* ;ash
                                  ;logtail*-better
-                                 ash-as-logtail 
+                                 ash-as-logtail
                                  ash-as-logapp
                                  open-logcons
-                                 zip) 
+                                 zip)
                            (logapp-0-part-2-better
                             EXPT-2-CRUNCHER)))))
 
@@ -75,7 +100,7 @@
 ;;                 (<= 0 n))
 ;;            (equal (ASH (ASH x m) n)
 ;;                   (ash x (+ m n)))))
-;;   :hints (("goal" 
+;;   :hints (("goal"
 ;;            :in-theory (enable LRDT ash-as-logtail ash-as-logapp))))
 
 ;; ;seems useless, and is proven instantly without hints.
@@ -84,13 +109,13 @@
 ;;                 (< n 0)
 ;;                 (unsigned-byte-p (- n) (nth n1 (nth n2 x))))
 ;;            (equal (ash (nth n1 (nth n2 x)) n) 0)))
-;;   :hints (("goal" :use (:instance ASH-GOES-TO-0 
-;;                                   (count (- n)) 
-;;                                   (size (- n)) 
+;;   :hints (("goal" :use (:instance ASH-GOES-TO-0
+;;                                   (count (- n))
+;;                                   (size (- n))
 ;;                                   (i x)))))
 
 (defthm ash--1
-  (equal (ash x -1) 
+  (equal (ash x -1)
          (logcdr x))
   :hints (("goal" :in-theory (enable ash
                                      logcons ;bzo?
@@ -110,7 +135,7 @@
                   (if (< i n)
                       (logbitp i x)
                     (logbitp (1- n) x))))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (enable LRDT)
            :induct (sub1-sub1-logcdr-induction i n x))))
 
@@ -153,7 +178,7 @@
 (encapsulate
  ()
 
-  
+
  (local
   (defthm logbitp-+-simple-helper
     (implies (and (integerp n)
@@ -162,13 +187,13 @@
                   (not (logbitp (1- n) x))
                   (signed-byte-p n x)
                   (signed-byte-p n y))
-             (equal (logbitp n (+ x y c)) 
+             (equal (logbitp n (+ x y c))
                     (and (logbitp n y) (logbitp (1- n) (+ x y c)))))
     :rule-classes nil
-    :hints (("goal" 
+    :hints (("goal"
 ;:do-not '(generalize eliminate-destructors)
              :in-theory (e/d (LRDT open-logcons) (SIGNED-BYTE-P-OF-LOGCDR
-                                                  LOGCONS-OF-0 
+                                                  LOGCONS-OF-0
                                                   ))))))
 ;             :induct (sub1-logcdr-logcdr-carry-induction n x y c)))))
 ;             :in-theory (enable LOGOPS-RECURSIVE-DEFINITIONS-THEORY)))))
@@ -180,9 +205,9 @@
                  (integerp n)
                  (< 0 n)
                  )
-            (and (equal (logbitp n (+ x y)) 
+            (and (equal (logbitp n (+ x y))
                         (and (logbitp n y) (logbitp (1- n) (+ x y))))
-                 (equal (logbitp n (+ y x)) 
+                 (equal (logbitp n (+ y x))
                         (and (logbitp n y) (logbitp (1- n) (+ x y))))))
    :hints (("goal" :use (:instance logbitp-+-simple-helper (c 0))))))
 
@@ -247,7 +272,7 @@
                 (unsigned-byte-p n y))
            (logbitp n (+ x y c)))
   :rule-classes nil
-  :hints (("goal" :in-theory (enable LRDT open-logcons)))) 
+  :hints (("goal" :in-theory (enable LRDT open-logcons))))
 
 (defthm logbitp-+-usb-v2
   (implies (and (integerp n)
@@ -295,7 +320,7 @@
 
 (defthm logbitp-+-usb-v4
   (implies (and (integerp n)
-                (< 0 n)    
+                (< 0 n)
                 (not (logbitp (1- n) x))
                 (unsigned-byte-p n x)
                 (unsigned-byte-p n y)
@@ -304,21 +329,21 @@
                 (not (logbitp n (+ y x)))))
   :hints (("goal" :use (:instance logbitp-+-usb-v4-helper (c 0)))))
 
-;; (deftheory overflow-bits 
-;;   '(logbitp-+-usb-v4 
-;;    logbitp-+-usb-v3 
-;;    logbitp-+-usb-v2 
-;;    logbitp-+-usb-v1 
-;;    logbitp-+-simple2 
+;; (deftheory overflow-bits
+;;   '(logbitp-+-usb-v4
+;;    logbitp-+-usb-v3
+;;    logbitp-+-usb-v2
+;;    logbitp-+-usb-v1
+;;    logbitp-+-simple2
 ;;    logbitp-+-simple
 ;;    unsigned-byte-p-+))
 
 (in-theory (disable ;overflow-bits
-            logbitp-+-usb-v4 
-            logbitp-+-usb-v3 
-            logbitp-+-usb-v2 
-            logbitp-+-usb-v1 
-            logbitp-+-simple2 
+            logbitp-+-usb-v4
+            logbitp-+-usb-v3
+            logbitp-+-usb-v2
+            logbitp-+-usb-v1
+            logbitp-+-simple2
             logbitp-+-simple
             unsigned-byte-p-+))
 
@@ -399,7 +424,7 @@
                   (integerp m)
                   (equal (logcar (ash x m)) 1))
              (logbitp (- m) x))
-    :hints (("goal" 
+    :hints (("goal"
              :cases ((< 0 m))))))
 
  (defthm logbitp-ash
@@ -432,7 +457,7 @@
            (equal (logbitp n1 (+ x (loghead n2 y) c))
                   (logbitp n1 (+ x y c))))
   :rule-classes nil
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (enable LRDT open-logcons)
            :induct (sub1-sub1-logcdr-logcdr-carry-induction n1 n2 x y c))))
 
@@ -452,13 +477,13 @@
                                      (logbitp n1 (+ x z y)))
                               (equal (logbitp n1 (+ x (loghead n2 y) z))
                                      (logbitp n1 (+ x y z)))))))
-  :hints (("goal" :use 
+  :hints (("goal" :use
            ((:instance logbitp-+-loghead-helper (c 0))
             (:instance logbitp-+-loghead-helper (c 0) (x (+ x z)))))))
 
 (defthm logbitp-+-logext-bridge
   (implies (and (integerp n1)
-                (integerp n2)    
+                (integerp n2)
                 (integerp x)
                 (integerp y)
                 (<= 0 n1)
@@ -470,7 +495,7 @@
                                      (logbitp n1 (+ x z y)))
                               (equal (logbitp n1 (+ x (logext n2 y) z))
                                      (logbitp n1 (+ x y z)))))))
-  :hints (("goal" :use 
+  :hints (("goal" :use
            ((:instance logbitp-+-logext (i n1) (x (+ x z)) (n n2))))))
 
 (defthm logbitp-+-logext-bridge
@@ -487,7 +512,7 @@
                                      (logbitp n1 (+ x z y)))
                               (equal (logbitp n1 (+ x (logext n2 y) z))
                                      (logbitp n1 (+ x y z)))))))
-  :hints (("goal" :use 
+  :hints (("goal" :use
            ((:instance logbitp-+-logext (i n1) (x (+ x z)) (n n2))))))
 
 (defthm logbitp---*2
@@ -508,7 +533,7 @@
 
 (defthmd negate-as-bits
   (implies (integerp x)
-           (equal (- x) 
+           (equal (- x)
                   (1+ (lognot x))))
   :hints (("goal" :in-theory (enable LRDT logendp open-logcons))))
 
@@ -521,7 +546,7 @@
                 (integerp x))
            (equal (logbitp n (- x))
                   (not (logbitp n (1- x)))))
-  :hints (("goal" 
+  :hints (("goal"
            :induct (logbitp n x) ;not necessary, but speeds things up
            :in-theory (enable LRDT negate-as-bits))))
 
@@ -571,16 +596,16 @@
 
 (defthm negate-as-bits-reverse
   (implies (integerp x)
-           (equal (1+ (lognot x)) 
+           (equal (1+ (lognot x))
                   (- x)))
   :hints (("goal" :in-theory (enable LRDT logendp))))
 
 (defthm negate-as-bits-reverse-bridge
   (implies (and (integerp x)
                 (integerp y))
-           (equal (+ 1 x (lognot y)) 
+           (equal (+ 1 x (lognot y))
                   (+ x (- y))))
-  :hints (("goal" 
+  :hints (("goal"
            :use (:instance negate-as-bits-reverse (x y))
            :in-theory (disable negate-as-bits-reverse))))
 
@@ -610,10 +635,10 @@
 ;;             (and (equal (logcar x) 1)
 ;;                  (equal (logcar y) 1))))
 ;;  :hints (("Goal" :in-theory (enable logcar))))
-        
+
 (defthm logbitp-+-expt-n
   (implies (and (integerp x) ;drop?
-                (integerp n) 
+                (integerp n)
                 (<= 0 n))
            (equal (logbitp n (+ (expt 2 n) x))
                   (not (logbitp n x))))
@@ -646,7 +671,7 @@
                 (<= 0 n)
                 (equal (loghead (1+ n) x) 0))
            (equal (logbitp n (+ x y)) (logbitp n y)))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (enable LRDT)
            :induct (sub1-logcdr-logcdr-induction n x y))))
 
@@ -801,7 +826,7 @@
                 (<= (1- m) n))
            (and (<= (- (expt 2 n)) (logext m x))
                 (<= (logext m x) (1- (expt 2 n)))))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (e/d (signed-byte-p) (signed-byte-p-logext))
            :use ((:instance signed-byte-p-logext (i x) (size1 (1+ n)) (size m))))))
 
@@ -819,7 +844,7 @@
                   (if (<= n m)
                       (logext n x)
                     (loghead m x))))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (e/d (LRDT) (logext* LOGHEAD*))
            :induct (sub1-sub1-logcdr-induction n m x))))
 
@@ -827,12 +852,12 @@
   (implies (and (< m n)
                 (<= 0 m)
                 (integerp m)
-                (integerp n)     
+                (integerp n)
                 )
            (equal (logext n (ash x m))
                   (ash (logext (- n m) x) m)))
   :hints (("goal"; :induct t
-           :in-theory (e/d (LRDT) (ASH-RECOLLAPSE 
+           :in-theory (e/d (LRDT) (ASH-RECOLLAPSE
                                    )))))
 
 (defthm logext-logior
@@ -845,7 +870,7 @@
          (logext n (logior x y))))
 
 (theory-invariant (incompatible (:rewrite logext-logior) (:rewrite logior-of-logext-and-logext)))
-  
+
 ;; This should be in the loghead section, but it uses so many logext
 ;; rules we place it here.
 
@@ -867,17 +892,17 @@
 
 
 
-;; We need to prove equal-logext---logext.  
+;; We need to prove equal-logext---logext.
 ;; We define a function that handles a little-bigger range
 ;; through casesplitting.  14 Nov 00
 
 
-(encapsulate 
+(encapsulate
  ()
 
  (local (in-theory (enable expt)))
 
- (local 
+ (local
   (defmacro logext-intN+1 (n s)
     `(let ((s ,s))
        (let ((n ,n))
@@ -898,11 +923,11 @@
 
  (local
   (defthm <-+k*j-expt-bridge
-    (implies (and (integerp j) 
-                  (integerp n) 
-                  (integerp k) 
+    (implies (and (integerp j)
+                  (integerp n)
+                  (integerp k)
                   (integerp m)
-                  (<= 0 j) 
+                  (<= 0 j)
                   (<= 0 n)
                   (<= 0 k)
                   (<= 0 m)
@@ -917,10 +942,10 @@
 
  (local
   (defthm <-+k*j-expt-rewrite-bridge
-    (implies (and (integerp j) 
-                  (integerp n) 
+    (implies (and (integerp j)
+                  (integerp n)
                   (integerp k)
-                  (<= 0 j) 
+                  (<= 0 j)
                   (<= 0 n)
                   (<= 0 k)
                   (< 1 n)
@@ -943,15 +968,15 @@
 
  (local
 
-  
+
   (defthm logext-as-logext-intN+1
     (implies (and (unsigned-byte-p n x) ; hyp could be (1+ n), but stronger thm not needed
                   (integerp n)
                   (< 0 n))
              (equal (logext n x)
                     (logext-intN+1 n x)))
-    :hints (("goal" :in-theory (e/d (lrdt signed-byte-p) 
-                                    (EXPT-2-EQUAL-1-REWRITE 
+    :hints (("goal" :in-theory (e/d (lrdt signed-byte-p)
+                                    (EXPT-2-EQUAL-1-REWRITE
                                      ))))))
 
  (defthm equal-logext---logext
@@ -961,7 +986,7 @@
                  (unsigned-byte-p n y))
             (equal (equal (logext n x) (- (logext n y)))
                    (or (and (equal x 0) (equal y 0))
-                       (and (equal (+ x y) (expt 2 n)) 
+                       (and (equal (+ x y) (expt 2 n))
                             (not (equal x y))))))
    :hints (("goal" :use +-logext-logext-0-helper))))
 
@@ -976,7 +1001,7 @@
                         (NOT (EQUAL N 1)))
                    (EQUAL (EXPT 2 N)
                           (* 2 (EXPT 2 (+ -1 N))))) :hints (("Goal" :in-theory (enable expt)))))
- 
+
 
 ;; DANGER - opening to arithmetic
 ;should this lemma be disabled?
@@ -1001,7 +1026,7 @@
                         (loghead n x))))
    :hints (("goal" :in-theory (e/d (LRDT
                                     )
-                                   (LOGBITP-OF-LOGCDR2 
+                                   (LOGBITP-OF-LOGCDR2
                                     equal-logext-0))))))
 
 
@@ -1066,7 +1091,7 @@
 ;; (defthm logtail-logext-hack
 ;;   (equal (logtail 16 (logext 32 x))
 ;;          (logext 16 (logtail 16 x)))
-;;   :hints (("Goal" :in-theory (enable ;logtail 
+;;   :hints (("Goal" :in-theory (enable ;logtail
 ;;                                      logext ifix))))
 
 
@@ -1146,9 +1171,9 @@
                 (unsigned-byte-p n y))
            (equal (ash (+ x y) (- n))
                   (if (unsigned-byte-p n (+ x y))
-                      0 
+                      0
                     1)))
-  :hints (("goal" 
+  :hints (("goal"
            :use (:instance ash-downto-1-or-0-helper (x (+ x y)))
            :in-theory (disable unsigned-byte-p-+))))
 
@@ -1189,8 +1214,8 @@
                 (equal n (1+ m)))
            (equal (ash (logext n x) (- m))
                   (if (logbitp m x) -1 0)))
-  :hints (("goal" :use (:instance ash-sbp-downto-1-or-0-helper 
-                                  (n m) 
+  :hints (("goal" :use (:instance ash-sbp-downto-1-or-0-helper
+                                  (n m)
                                   (x (logext n x))))))
 
 (defthm ash-sbp-downto-1-or-0-bridge
@@ -1200,7 +1225,7 @@
                 (unsigned-byte-p n y))
            (equal (ash (+ x (- y)) (- n))
                   (if (logbitp n (+ x (- y))) -1 0)))
-  :hints (("goal" :use (:instance ash-sbp-downto-1-or-0-helper 
+  :hints (("goal" :use (:instance ash-sbp-downto-1-or-0-helper
                                   (x (+ x (- y))))
            :in-theory (enable unsigned-byte-p signed-byte-p))))
 
@@ -1208,7 +1233,7 @@
 
 ;; Needed just for the FCP models?
 (defthm equal-ash-expt-0-fact
-  (implies (and (integerp n)                
+  (implies (and (integerp n)
                 (integerp x)
                 (<= 0 n))
            (equal (equal (ash (+ x (expt 2 n)) (- n)) 0)
@@ -1246,25 +1271,25 @@
                 (unsigned-byte-p n y))
            (equal (ash (+ k x (- y)) (- n))
                   (if (logbitp n (+ x (- y))) 0 1)))
-  :hints (("goal" :use (:instance ash-sbp-expt-downto-1-or-0-helper 
+  :hints (("goal" :use (:instance ash-sbp-expt-downto-1-or-0-helper
                                   (x (+ x (- y)))))))
 
 (defthm equal-ash-+---expt--1
   (implies (and (integerp n)
-                (<= 0 n) 
+                (<= 0 n)
                 (signed-byte-p (1+ n) x))
            (equal (equal (ash (+ x (- (expt 2 n))) (- n)) -1)
                   (not (logbitp n x))))
   :hints (("goal" :in-theory (enable LRDT expt))))
 
 (defthm equal-ash-+---expt--1-rewrite
-  (implies (and (syntaxp (quotep k)) (integerp k) 
+  (implies (and (syntaxp (quotep k)) (integerp k)
                 (equal (- (expt 2 (1- (integer-length (- k))))) k)
                 (equal n (1- (integer-length (- k))))
                 (signed-byte-p (1+ n) x))
            (equal (equal (ash (+ k x) (- n)) -1)
                   (not (logbitp n x))))
-  :hints (("goal" :use (:instance equal-ash-+---expt--1 
+  :hints (("goal" :use (:instance equal-ash-+---expt--1
                                   (n (1- (integer-length (- k))))))))
 
 (defthm ash-logext-neg
@@ -1289,7 +1314,7 @@
 ;;                   (< n 0))
 ;;              (equal (ash (logand x y) n)
 ;;                     (logand (ash x n) (ash y n))))
-;;     :hints (("goal" 
+;;     :hints (("goal"
 ;;              :induct (add1-induction n)
 ;;              :in-theory (enable LOGOPS-RECURSIVE-DEFINITIONS-THEORY)))))
 
@@ -1330,15 +1355,15 @@
                 (integerp n)
                 (<= 0 n)
                 )
-           (equal (ash x (- n)) 
+           (equal (ash x (- n))
                   (logbit n x)))
 ;  :rule-classes nil
-  :hints (("goal" 
+  :hints (("goal"
            :induct (logbitp n x)
            :in-theory (enable LRDT logbit))))
            ;; :induct (sub1-logcdr-induction n x)
 ;;            :in-theory (enable LOGOPS-RECURSIVE-DEFINITIONS-THEORY logbit))))
-  
+
 ;; (defthm ash--15-special
 ;;   (implies
 ;;    (unsigned-byte-p 16 x)
@@ -1350,7 +1375,7 @@
 ;;   (implies (and (integerp n1)
 ;;                 (integerp n2)
 ;;                 (integerp x)
-;;                 (<= 0 n1) 
+;;                 (<= 0 n1)
 ;;                 (< n2 0))
 ;;            (equal (ash (loghead n1 x) n2)
 ;;                   (if (<= n1 (- n2))
@@ -1386,7 +1411,7 @@
                     (if (< n (- m))
                         (ash y (+ m n))
                       (logapp (+ n m) (ash x m) y))))
-    :hints (("goal" 
+    :hints (("goal"
              :in-theory (enable ash-as-logtail)))))
 
  (local
@@ -1415,7 +1440,7 @@
                      (logapp (+ n m) (ash x m) y))))
    :hints (("goal"
             :cases ((< m 0))))))
-    
+
 
 
 
@@ -1429,7 +1454,7 @@
                 (< 0 n))
            (equal (< (+ (logext n x) (logext n y)) 0)
                   (logbitp n (+ (logext n x) (logext n y)))))
-  :hints (("goal" :use (:instance sign-as-logbitp 
+  :hints (("goal" :use (:instance sign-as-logbitp
                                   (x (+ (logext n x) (logext n y)))))))
 
 (defthm sign-logext-as-logbitp
@@ -1438,4 +1463,3 @@
            (equal (< (logext n x) 0)
                   (logbitp (1- n) x)))
   :hints (("goal" :use (:instance sign-as-logbitp (x (logext n x)) (n (1- n))))))
-

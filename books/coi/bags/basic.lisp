@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "BAG")
 (include-book "../lists/basic")
 (include-book "../lists/memberp")
@@ -13,17 +38,17 @@
 ;; plain wrong, e.g., we had (defmacro bag-insert (a x) (cons a x)) which was
 ;; certainly the wrong thing.
 
-(defmacro bag-insert (a x) 
+(defmacro bag-insert (a x)
   `(cons ,a ,x))
 
-(defmacro bag-sum (x y) 
+(defmacro bag-sum (x y)
   `(append ,x ,y))
 
-(defmacro bagp (x) 
-  (declare (ignore x)) 
+(defmacro bagp (x)
+  (declare (ignore x))
   t)
 
-(defmacro empty-bagp (x) 
+(defmacro empty-bagp (x)
   `(not (consp ,x)))
 
 ;We have tried to follow the convention that elements are letters from the
@@ -34,7 +59,7 @@
 ;isn't nfix enabled?
 (defthm not-zp-nfix-reduction
   (implies (not (zp n))
-           (and (equal (nfix n) 
+           (and (equal (nfix n)
                        n)
                 (equal (nfix (1- n)) ;will this fire?  how do we normalize differences?
                        (1- n)))))
@@ -42,7 +67,7 @@
 ;isn't nfix enabled?
 (defthm zp-nfix
   (implies (zp n)
-           (equal (nfix n) 
+           (equal (nfix n)
                   0)))
 
 (defthm dumb
@@ -99,7 +124,7 @@
 
 ;; jcd - added this congruence
 (defcong list::equiv equal (remove-1 a x) 2
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable remove-1)
           :induct (list::len-len-induction x list::x-equiv))))
 
@@ -114,7 +139,7 @@
   :hints(("Goal" :in-theory (enable remove-1))))
 
 
-;; jcd - a stronger type prescription, (true-listp (remove-1 a x)), is 
+;; jcd - a stronger type prescription, (true-listp (remove-1 a x)), is
 ;; now automatically deduced, so we don't add this rule anymore.
 ;;
 ;; (defthm remove-1-true-listp-type-prescription
@@ -158,7 +183,7 @@
 ;; jcd - changed rhs to list-fix.
 (defthm non-membership-remove-1
   (implies (not (memberp a x))
-           (equal (remove-1 a x) 
+           (equal (remove-1 a x)
                   (list::fix x)))
   :hints (("Goal" :in-theory (enable remove-1))))
 
@@ -205,7 +230,7 @@
 (defthmd non-membership-removal-free
   (implies (and (not (memberp b x)) ;b is a free variable
                 (equal b a))
-           (equal (remove-1 a x) 
+           (equal (remove-1 a x)
                   (list::fix x)))) ; jcd - added list::fix
 
 ;expensive?
@@ -252,7 +277,7 @@
   (implies (and (not (memberp a (remove-1 b x)))
                 (memberp a x))
            (equal b a))
-  :rule-classes :forward-chaining) 
+  :rule-classes :forward-chaining)
 
 
 ;; jcd - added a list::fix to y.
@@ -349,7 +374,7 @@
             (list x x-equiv y))))
 
  (defcong list::equiv equal (remove-bag x y) 1
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (enable remove-bag)
            :induct (my-induction x list::x-equiv y)))))
 
@@ -359,7 +384,7 @@
 
 ;; jcd - fixed the macro here, originally it was (defmacro bag-difference (x y)
 ;; (remove-bag y x)), but of course it needs to be quoted and escaped properly.
-(defmacro bag-difference (x y) 
+(defmacro bag-difference (x y)
   `(remove-bag ,y ,x))
 
 ;; jcd - changed rhs to list::fix
@@ -381,7 +406,7 @@
                   nil))
   :hints (("Goal" :in-theory (enable remove-bag))))
 
-;; jcd - changed rhs to nil.  
+;; jcd - changed rhs to nil.
 (defthm remove-bag-of-non-consp-cheap
   (implies (not (consp y))
            (equal (remove-bag x y)
@@ -389,7 +414,7 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable remove-bag))))
 
-;; jcd - removed this, we now inferred that (remove-bag x y) always returns 
+;; jcd - removed this, we now inferred that (remove-bag x y) always returns
 ;; a true list.
 ;;
 ;; (defthm true-listp-remove-bag
@@ -441,7 +466,7 @@
 ;; jcd - changed rhs to list::fix y
 (defthm remove-bag-not-consp-x
   (implies (not (consp x))
-           (equal (remove-bag x y) 
+           (equal (remove-bag x y)
                   (list::fix y)))
   :hints (("Goal" :in-theory (enable remove-bag))))
 
@@ -499,26 +524,26 @@
                 (remove-bag x y))
            (equal (remove-bag x y)
                   (list a)))
-  :hints (("Goal" :in-theory (enable remove-1 
+  :hints (("Goal" :in-theory (enable remove-1
                                      remove-bag))))
 
 
 (encapsulate
  ()
 
-;bzo 
+;bzo
  (local
   (defthm cons-remove-1-not-equal
     (implies (not (equal a b))
              (equal (cons a (remove-1 b x))
                     (remove-1 b (cons a x))))))
- 
+
  (defthm remove-bag-cons-remove-1-not-equal
    (implies (not (equal a b))
             (equal (remove-bag x (cons a (remove-1 b y)))
                    (remove-1 b (remove-bag x (cons a y)))))
    :hints (("goal" :in-theory (disable remove-1
-                                       REMOVE-1-OF-CONS-BOTH 
+                                       REMOVE-1-OF-CONS-BOTH
                                        )))
    ))
 
@@ -541,7 +566,7 @@
                        (memberp (car y) x))
                   (equal (remove-bag x y)
                          (remove-bag (remove-1 (car y) x) (cdr y))))
-         :hints (("Goal" 
+         :hints (("Goal"
                   :in-theory (e/d (remove-bag)
                                   (REMOVE-BAG-REMOVE-1 ; bzo
                                    consp-remove-1-rewrite ; speedup
@@ -555,7 +580,7 @@
            (equal (remove-bag x y)
                   (if (memberp (car y) x)
                       (remove-bag (remove-1 (car y) x) (cdr y))
-                    (cons (car y) 
+                    (cons (car y)
                           (remove-bag x (cdr y)))))))
 
 (encapsulate
@@ -567,7 +592,7 @@
                     (if (memberp (car x) y)
                         (remove-bag y x)
                       (remove-bag y (cdr x)))))
-    :hints (("Goal" 
+    :hints (("Goal"
              :in-theory (enable remove-bag)))))
 
     ;improve this?
@@ -589,9 +614,9 @@
   (equal (remove-bag x (append y z))
          (append (remove-bag x y)
                  (remove-bag (remove-bag y x) z)))
-  :hints (("Goal" :in-theory (e/d (remove-bag 
+  :hints (("Goal" :in-theory (e/d (remove-bag
                                    append-of-remove-1-two
-                                   append-of-remove-1-one) 
+                                   append-of-remove-1-one)
                                   (remove-1-append)))))
 
 
@@ -630,7 +655,7 @@
                   (remove-bag x y)))
   :hints (("Goal" :in-theory (enable remove-bag))))
 
-;; jcd - changed rhs to list::fix 
+;; jcd - changed rhs to list::fix
 ;bzo renamed -2 because of clash..
 ;rename
 (defthm remove-bag-append-2
@@ -649,7 +674,7 @@
            (equal (remove-bag x y)
                   (remove-1 (car x) (remove-bag (cdr x) y))))
   :hints (("goal" :do-not-induct t
-           :in-theory (enable memberp 
+           :in-theory (enable memberp
                               remove-bag
                               REMOVE-BAG-ADDS-NO-TERMS
                               remove-bag-over-remove-1))))
@@ -670,7 +695,7 @@
    :hints (("Goal" :in-theory (enable remove-bag))))
 
 
-;; jcd - removing this rule, it is trivial with our congruence rule for 
+;; jcd - removing this rule, it is trivial with our congruence rule for
 ;; list::equiv over remove-bag 1.
 ;;
 ;; (defthm remove-bag-of-list-fix-one
@@ -681,8 +706,8 @@
 
 
 ;; jcd - Removing this theorem, this should be trivial now that remove-bag
-;; always returns a true list.  
-;; 
+;; always returns a true list.
+;;
 ;; jcd - Strenghtened the rhs from (remove-bag x (list::fix y)) to (remove-bag x
 ;; y).
 ;;
@@ -719,7 +744,7 @@
 ;;   (not (consp (remove-bag list2 list1))))
 
 ;; jcd - consider removing this?  are we not satisifed that subbagp is what
-;; we want?  
+;; we want?
 (local (encapsulate
 ;This proves that Eric's new version of subbagp matches the old version.
         ()
@@ -727,7 +752,7 @@
         (local (defun old-subset (list1 list2)
                  (declare (type t list1 list2))
                  (not (consp (remove-bag list2 list1)))))
-        
+
         ;;The new version matches the old one.
         (local (defthm subsets-match
                  (equal (old-subset x y)
@@ -751,7 +776,7 @@
           (if (consp x)
               (my-induction (cdr x) (cdr x-equiv) (remove-1 (car x) y))
             (list x x-equiv y))))
- 
+
  (defcong list::equiv equal (subbagp x y) 1
    :hints(("Goal" :in-theory (enable subbagp)
            :induct (my-induction x list::x-equiv y)))))
@@ -789,14 +814,14 @@
                   (not (consp x))))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
-;; jcd - what is this crazy rule?  subsumed by our regular boolean 
+;; jcd - what is this crazy rule?  subsumed by our regular boolean
 ;; rewrite?
 (defthm equal-of-subbagp-becomes-iff
   (implies (booleanp z)
            (equal (equal (subbagp x y) z)
                   (iff (subbagp x y) z))))
 
-;; jcd - removing this rule, we don't need it with the congruence 
+;; jcd - removing this rule, we don't need it with the congruence
 ;; (defthm subbagp-of-list-fix-one
 ;;   (equal (subbagp (list::fix x) y)
 ;;          (subbagp x y))
@@ -829,7 +854,7 @@
               (subbagp x (remove-1 a y))))
   :hints (("Goal" :in-theory (enable subbagp-of-remove-1-two))))
 
-(theory-invariant (incompatible (:rewrite subbagp-of-cons) 
+(theory-invariant (incompatible (:rewrite subbagp-of-cons)
                                 (:rewrite subbagp-of-remove-1-two)))
 
 (defthm subbagp-of-remove-1-implies-subbagp
@@ -895,7 +920,7 @@
                         (equal (car x) nil)
                         (not (consp (cdr x)))))
              (not (consp x)))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use (:instance subbagp-of-remove-1-and-remove-1 (a (car y)))
            :in-theory (disable subbagp-of-remove-1-and-remove-1
                                SUBBAGP-OF-REMOVE-1-AND-REMOVE-1-STRONG))))
@@ -907,7 +932,7 @@
                   nil))
   :hints (("Goal" :in-theory (enable remove-bag))))
 
-;add a remove-bag iff rule?          
+;add a remove-bag iff rule?
 (defthm consp-remove-bag-rewrite
   (equal (consp (remove-bag x y))
          (not (subbagp y x)))
@@ -955,13 +980,13 @@
 (defthm subbagp-append-append-left
   (implies (subbagp x z)
            (subbagp (append x y) (append z y)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (enable subbagp))))
 
 (defthm subbagp-append-append
   (implies (and (subbagp x z)
                 (subbagp y w))
-           (subbagp (append x y) 
+           (subbagp (append x y)
                     (append z w)))
   :hints (("Goal" :in-theory (enable subbagp))))
 
@@ -976,16 +1001,16 @@
 
 (defthm subbagp-implies-common-members-are-irrelevant
   (implies (subbagp x y)
-           (subbagp (remove-1 a x) 
+           (subbagp (remove-1 a x)
                     (remove-1 a y))))
 
-;bzo maybe we want to leave the remove-1 where it is??         
+;bzo maybe we want to leave the remove-1 where it is??
 (defthm subbagp-of-remove-1-both
   (equal (subbagp (remove-1 a x) y)
          (if (memberp a x)
              (subbagp x (cons a y))
            (subbagp x y)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (e/d (subbagp)
                            ;; disables give a minor speed boost
                            (memberp-subbagp consp-remove-1-rewrite)))))
@@ -1002,7 +1027,7 @@
            (subbagp x (cons a y))))
   :hints (("Goal" :in-theory (e/d (subbagp)
                                   (memberp-subbagp) ; minor speed boost
-                                  )))) 
+                                  ))))
 
 (encapsulate
  ()
@@ -1039,7 +1064,7 @@
                      (remove-bag x z)))
    :hints (("Goal" :in-theory (enable remove-bag))))
 
-               
+
 ;reverse lhs too?
 (defthm subbagp-remove-1
   (subbagp (remove-1 a x) x))
@@ -1069,8 +1094,8 @@
 |#
 
 (defthmd subbagp-cons-car-memberp
-  (implies (subbagp (cons a x) y) 
-           (memberp a y)) 
+  (implies (subbagp (cons a x) y)
+           (memberp a y))
   :hints (("Goal" :in-theory (enable subbagp))))
 
 ;which way do we want to rewrite this?
@@ -1110,7 +1135,7 @@
                 (subbagp x (remove-1 a y)))
            (memberp a (remove-bag x y)))
   :hints(("Goal" :in-theory (enable remove-bag
-                                    equality-from-mem-and-remove 
+                                    equality-from-mem-and-remove
                                     ))))
 
 ;bzo name clashed with something in gacc, so I added the -2.  did all
@@ -1138,7 +1163,7 @@
                 (subbagp x z))
            (subbagp (append x y) z))
   :hints (("goal" :in-theory (e/d (subbagp)
-                                  (consp-remove-1-rewrite ; speedup 
+                                  (consp-remove-1-rewrite ; speedup
                                    subbagp-of-non-consp-two ; speedup
                                    subbagp-chaining ; speedup
                                    subbagp-cdr-lemma ; speedup
@@ -1162,7 +1187,7 @@
   (implies (subbagp x y)
            (equal (remove-bag x (append y z))
                   (append (remove-bag x y) (list::fix z))))
-  :hints(("Goal" 
+  :hints(("Goal"
            :in-theory (e/d (subbagp remove-bag)
                            (consp-remove-1-rewrite ; speedup
                             subbagp-cdr-lemma ; speedup
@@ -1183,7 +1208,7 @@
            (subbagp (cdr x) y)))
   :hints (("Goal" :in-theory (enable subbagp))))
 
-(theory-invariant (incompatible (:rewrite subbagp-cdr-remove-1-rewrite) 
+(theory-invariant (incompatible (:rewrite subbagp-cdr-remove-1-rewrite)
                                 (:definition subbagp)))
 
 (defthm subbagp-of-remove-bag-and-remove-bag
@@ -1210,11 +1235,11 @@
 
 (defthm subbagp-of-remove-bag-and-remove-1
   (implies (memberp a x)
-           (subbagp (remove-bag x bag) 
+           (subbagp (remove-bag x bag)
                     (remove-1 a bag)))
-  :hints  (("Goal" 
+  :hints  (("Goal"
             :in-theory (disable subbagp-of-remove-bag-and-remove-bag-2)
-            :use ((:instance subbagp-of-remove-bag-and-remove-bag-2 
+            :use ((:instance subbagp-of-remove-bag-and-remove-bag-2
                              (x2 (list a)))))))
 
 
@@ -1236,7 +1261,7 @@
 ;; jcd - fixed this macro, before it was (defmacro bag-equal (x y) (perm x y)).
 ;; Now it properly quotes the perm and so forth.
 
-(defmacro bag-equal (x y) 
+(defmacro bag-equal (x y)
   `(perm ,x ,y))
 
 
@@ -1272,7 +1297,7 @@
                   (not (consp x))))
   :hints (("Goal" :in-theory (enable perm))))
 
-(encapsulate 
+(encapsulate
  ()
 
  (local (defun my-induction (x x-equiv y)
@@ -1284,15 +1309,15 @@
  ;; show that perm is a refinement of list::equiv, and this becomes trivial.  See
  ;; the notes right after (defrefinement list::equiv perm) for more.
  (local (defcong list::equiv equal (perm x y) 1
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable perm)
                   :induct (my-induction x list::x-equiv y)))))
- 
+
  ;; jcd - added this congruence.  keep this local because in a moment we will
  ;; show that perm is a refinement of list::equiv, and this becomes trivial.  See
  ;; the notes right after (defrefinement list::equiv perm) for more.
  (local (defcong list::equiv equal (perm x y) 2
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable perm)))))
 
  ;; jcd - make this local?
@@ -1302,7 +1327,7 @@
           (if (memberp a x)
               (perm (remove-1 a x) y)
             nil))
-   :hints (("Goal" :in-theory (enable perm) 
+   :hints (("Goal" :in-theory (enable perm)
             :induct (perm x y))))
 
  ;; jcd - i initially thought there was no reason to leave this enabled, since
@@ -1327,7 +1352,7 @@
                                            perm-of-cons-two)
                                           (perm-of-non-consp-one
                                            perm-of-non-consp-two))))))
- 
+
  ;; jcd - i wondered why this is local, but then realized that in a few lemmas
  ;; we'll prove that perm is a congruence over memberp, so there is no reason
  ;; to have this theorem afterwards.
@@ -1336,13 +1361,13 @@
                         (memberp a x))
                    (memberp a y))
           :hints (("Goal" :in-theory (enable perm)))))
- 
+
  (local (defthm perm-transitivity
           (implies (and (perm x y)
                         (perm y z))
                    (perm x z))
           :hints (("Goal" :in-theory (enable perm)))))
- 
+
  (defequiv perm)
 
  )
@@ -1372,7 +1397,7 @@
 
 ;; jcd - note that to get this through, I had to leave perm-commutative enabled
 ;; so that not-perm-of-cons-onto-same could get a chance to fire.  I think we
-;; might want to prove "both versions" of not-perm-of-cons-onto-same instead? 
+;; might want to prove "both versions" of not-perm-of-cons-onto-same instead?
 ;; Is this an insight that should be applied to other theorems as well?
 
 ;alt version?
@@ -1394,10 +1419,10 @@
 (defcong perm perm (cons a x) 2
   :hints (("Goal" :in-theory (enable perm))))
 
-(defcong perm equal (memberp a x) 2 
+(defcong perm equal (memberp a x) 2
   :hints (("Goal" :in-theory (enable perm))))
 
-(defcong perm perm (append x y) 2 
+(defcong perm perm (append x y) 2
   :hints (("Goal" :in-theory (enable append))))
 
 (defthm perm-of-cons-to-false
@@ -1440,7 +1465,7 @@
 ;;   :hints (("Goal" :in-theory (enable perm))))
 
 ;; jcd - getting rid of this theorem since we already have the duplicate
-;; theorem perm-cons-x-y-z below, and it has a better name.  (dammit man, 
+;; theorem perm-cons-x-y-z below, and it has a better name.  (dammit man,
 ;; how do you disable anything when you prove theorems three times!)
 ;;
 ;; (defthm perm-cons-x-y-z
@@ -1450,18 +1475,18 @@
 ;;   :hints (("goal" :in-theory (enable perm))))
 
 (defthm perm-of-cons-and-cons
-  (equal (perm (cons a x) 
+  (equal (perm (cons a x)
                (cons a y))
          (perm x y))
    :hints (("Goal" :in-theory (enable perm))))
 
 
-;; jcd - getting rid of this theorem since it duplicates the theorem 
-;; below.  
+;; jcd - getting rid of this theorem since it duplicates the theorem
+;; below.
 ;;
 ;; ;bzo ;add the two "cross" cases for this.
 ;; (defthm perm-append-x-y-z
-;;   (equal (perm (append x y) 
+;;   (equal (perm (append x y)
 ;;                (append x z))
 ;;          (perm y z))
 ;;   :hints (("goal" :in-theory (enable binary-append perm))))
@@ -1475,7 +1500,7 @@
 
 
 
-;; jcd - removing this rule.  we already have this for list::equiv, and since 
+;; jcd - removing this rule.  we already have this for list::equiv, and since
 ;; list::equiv refines perm, this is kind of like proving (iff foo bar) after
 ;; you already have proven (equal foo bar).
 ;;
@@ -1484,7 +1509,7 @@
 ;;         nil))
 
 ;instead move remove-1 outside of append within a perm context??
-(defthm perm-cons-append 
+(defthm perm-cons-append
   (implies (memberp a y)
            (perm (cons a (append x (remove-1 a y)))
                  (append x y)))
@@ -1517,13 +1542,13 @@
                   (bad-boy (cdr x) (remove-1 (car x) y))
                 (list (car x)))
             (if (consp y) (list (car y)) nil))))
- 
+
  (local (defcong list::equiv equal (bad-boy x y) 1
           :hints(("goal" :induct (my-induction x list::x-equiv y)))))
 
  (local (defthm perm-has-no-badboy
           (equal (perm x y)
-                 (not (bad-boy x y)))                       
+                 (not (bad-boy x y)))
           :hints (("goal" :in-theory (enable perm)))))
 
  (defcong perm perm (remove-1 a x) 2
@@ -1577,8 +1602,8 @@
                 (memberp a y))
            (equal (perm (remove-1 a x) (remove-1 a y))
                   (perm x y)))
-  :hints (("Goal" 
-           :use (:instance perm-of-cons-and-cons 
+  :hints (("Goal"
+           :use (:instance perm-of-cons-and-cons
                            (x (remove-1 a x)) (y (remove-1 a y)))
            :in-theory (disable perm-of-cons-and-cons
                                perm-implies-perm-cons-2
@@ -1595,7 +1620,7 @@
                (perm x (remove-1 a y))
              (perm x y)))))
 
-;drop? 
+;drop?
 (local (defthmd perm-membership-reduction
          (implies (and (memberp a x)
                        (memberp a y)
@@ -1612,7 +1637,7 @@
   (implies (subbagp y z)
            (perm (append x (remove-bag y z))
                  (remove-bag y (append x z))))
-  :hints (("goal" :in-theory (e/d (remove-bag) 
+  :hints (("goal" :in-theory (e/d (remove-bag)
                                   (remove-bag-append
                                    consp-remove-1-rewrite
                                    )))))
@@ -1662,10 +1687,10 @@
 
 ;; jcd - try to move closer to append-common-reduction?  horrible name...
 (defthm perm-append-y-z-a
-  (equal (perm (append x z) 
+  (equal (perm (append x z)
                (append y z))
          (perm x y))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable append-common-reduction)
            :use (:instance append-common-reduction
                            (x z) (y y) (z x)))))
@@ -1689,7 +1714,7 @@
 ;nests which could have common stuff "cancelled".  (consider a bind-free rule).
 
 (defthm perm-append-x-a-y-append-a-z
-  (equal (perm (append w z) 
+  (equal (perm (append w z)
                (append x (append w y)))
          (perm z (append x y))))
 
@@ -1698,7 +1723,7 @@
 ;; list::equiv, so we get more information out of this than we do from the same
 ;; rule for list::equiv.
 
-(defcong perm equal (len x) 1 
+(defcong perm equal (len x) 1
   :hints (("Goal" :in-theory (enable len perm))))
 
 ;; jcd - removing this rule which is redundant with the defcong above and,
@@ -1738,13 +1763,13 @@
 ;;   :hints (("Goal" :in-theory (enable perm))))
 
 (defcong perm equal (subbagp x y) 1
-   :hints (("goal" 
+   :hints (("goal"
             :in-theory (e/d (subbagp perm)
                             (subbagp-cdr-remove-1-rewrite ; incompatible
                              )))))
 
 (defcong perm equal (subbagp x y) 2
-   :hints (("goal" 
+   :hints (("goal"
             :in-theory (e/d (subbagp)
                             (subbagp-cdr-remove-1-rewrite ; incompatible
                              )))))
@@ -1855,7 +1880,7 @@
 
 (defthm perm-of-append-of-remove-bag-same
   (implies (subbagp x y)
-           (perm (append x (remove-bag x y)) 
+           (perm (append x (remove-bag x y))
                  y))
   :hints (("Goal" :in-theory (e/d (subbagp)
                                   (subbagp-cdr-remove-1-rewrite ; incompat
@@ -1864,7 +1889,7 @@
                                    subbagp-cdr-lemma ; speedup
                                    subbagp-of-non-consp-two ; speedup
                                    )))))
-           
+
 (defthmd perm-of-append-one
   (implies (subbagp x z)
            (equal (perm (append x y) z)
@@ -1957,7 +1982,7 @@
 
 ;; jcd - added this rule
 (defcong list::equiv equal (disjoint x y) 1
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable disjoint)
           :induct (list::len-len-induction x list::x-equiv))))
 
@@ -1982,16 +2007,16 @@
 
 (defthm disjoint-of-non-consp-one
   (implies (not (consp x))
-           (equal (disjoint x y) 
+           (equal (disjoint x y)
                   t))
   :hints (("Goal" :in-theory (enable disjoint))))
 
 (defthm disjoint-of-non-consp-two
   (implies (not (consp y))
-           (equal (disjoint x y) 
+           (equal (disjoint x y)
                   t))
   :hints (("Goal" :in-theory (enable disjoint))))
-   
+
 (defthm disjoint-commutative
   (equal (disjoint x y)
          (disjoint y x))
@@ -2059,7 +2084,7 @@
                   (not (consp y))))
   :hints (("Goal" :in-theory (enable disjoint))))
 
-;bzo rename params on these? 
+;bzo rename params on these?
 ;rename?
 (defthm subbagp-disjoint
    (implies (and (disjoint w z)
@@ -2076,15 +2101,15 @@
                  (subbagp x z)
                  (subbagp y w))
             (disjoint x y))
-   :hints (("Goal" :in-theory (disable subbagp-disjoint) 
+   :hints (("Goal" :in-theory (disable subbagp-disjoint)
            :use (:instance subbagp-disjoint (w z) (z w)))))
 
 (defcong perm equal (disjoint x y) 2
   :hints (("goal" :in-theory (enable disjoint))))
 
 (defcong perm equal (disjoint x y) 1
-  :hints (("goal" 
-           :use ((:instance perm-implies-equal-disjoint-2 
+  :hints (("goal"
+           :use ((:instance perm-implies-equal-disjoint-2
                             (x y) (y x) (y-equiv x-equiv)))
            :in-theory (disable perm-implies-equal-disjoint-2))))
 
@@ -2120,7 +2145,7 @@
 (defthmd disjoint-memberp-implies-non-membership
   (implies (and (disjoint x y) ;y is a free variable
                 (memberp a y))
-           (equal (memberp a x) 
+           (equal (memberp a x)
                   nil)))
 
 ;changing disjoint could improve this rule..
@@ -2142,7 +2167,7 @@
 ;;          (disjoint x y))
 ;;   :hints (("Goal" :in-theory (enable list::fix disjoint))))
 
-;; ;; jcd - removing this rule, it is trivial with our congruence rule for perm 
+;; ;; jcd - removing this rule, it is trivial with our congruence rule for perm
 ;; ;; over disjoint 1.
 ;; (defthm disjoint-of-list-fix-one
 ;;   (equal (disjoint (list::fix x) y)
@@ -2195,7 +2220,7 @@
 ;; jcd - changed rhs to list::fix
 (defthmd disjoint-remove-bag
   (implies (disjoint x y)
-           (equal (remove-bag x y) 
+           (equal (remove-bag x y)
                   (list::fix y)))
   :hints (("goal" :in-theory (enable disjoint))))
 
@@ -2219,7 +2244,7 @@
   (implies (disjoint x z)
            (equal (disjoint z (remove-bag x y))
                   (disjoint y z)))
-  :hints(("goal" 
+  :hints(("goal"
           :in-theory (disable disjoint-commutative)
           :use (:instance disjoint-commutative
                           (x z) (y (remove-bag x y))))))
@@ -2363,7 +2388,7 @@
   (implies (and (not (unique x))
                 (unique y))
            (not (subbagp x y)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (e/d (subbagp unique)
                            (subbagp-cdr-remove-1-rewrite ; incompatible
                             consp-remove-1-rewrite ; speedup
@@ -2401,7 +2426,7 @@
          (and (not (memberp a x))
               (unique x)))
   :hints (("Goal" :in-theory (enable unique))))
-         
+
 ;; jcd - added this rule
 (defthm unique-of-cdr
   (implies (unique x)
@@ -2433,7 +2458,7 @@
 ;;   :hints (("Goal" :in-theory (enable unique list::fix))))
 
 (defcong perm equal (unique x) 1
-  :hints (("Goal" 
+  :hints (("Goal"
            :induct (perm x x-equiv)
            :in-theory (enable perm perm-of-cdr-x-and-remove-1-of-car-x))))
 
@@ -2566,13 +2591,13 @@
             (equal (count a (remove-1 b x))
                    (count a x)))
    :hints (("Goal" :in-theory (enable count))))
- 
+
  ;; jcd - leave this nonlocal?
  (defthmd count-of-remove-1-same
    (equal (count a (remove-1 a x))
           (nfix (+ -1 (count a x))))
    :hints (("Goal" :in-theory (enable count))))
-                  
+
  (defthm count-of-remove-1-both
    (equal (count a (remove-1 b x))
           (if (equal a b)
@@ -2583,7 +2608,7 @@
 
  ;; jcd - added this congruence rule
  (defcong perm equal (count a x) 2
-   :hints(("Goal" 
+   :hints(("Goal"
            :induct (perm x x-equiv)
            :in-theory (e/d (count perm)
                            (consp-remove-1-rewrite ; minor speedup
@@ -2629,12 +2654,12 @@
 (defthm unique-means-count-at-most-one
   (implies (unique x)
            (<= (count a x) 1))
-  :hints (("goal" 
-           :use unique-means-not-memberp-of-remove-1-same 
+  :hints (("goal"
+           :use unique-means-not-memberp-of-remove-1-same
            :in-theory (disable unique-means-not-memberp-of-remove-1-same))))
 
 (defthm unique-memberp-means-count-is-one
-  (implies 
+  (implies
    (and
     (unique x)
     (memberp a x))
@@ -2644,7 +2669,7 @@
   :rule-classes (:rewrite :forward-chaining))
 
 (defthm non-simular-count-implies-not-unique
-  (implies 
+  (implies
    (and
     (memberp a x)
     (equal n (count a x))
@@ -2669,32 +2694,32 @@
                   (if (memberp a y)
                       nil
                     (subbagp x y))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use (:instance subbagp-false-from-counts (y (remove-1 a y)))
            :in-theory (disable subbagp-false-from-counts))))
 
 (encapsulate
  ()
- 
+
  (local (defthm lemma
-          (implies (and (consp x)                
+          (implies (and (consp x)
                         (memberp a y)
                         (subbagp x (remove-1 a y)))
                    (equal (< (count a x) (count a y))
                           (< (count a (cdr x)) (count a y))))
-          :hints (("Goal" 
-                   :use (:instance subbagp-false-from-counts 
+          :hints (("Goal"
+                   :use (:instance subbagp-false-from-counts
                                    (x (cdr x))
                                    (y (remove-1 (car x)
                                                 (remove-1 (car x) y)))
                                    (a (car x)))))))
- 
+
  (local (defthm lemma2
           (implies (and (memberp a y)
                         (subbagp x y))
                    (implies (subbagp x (remove-1 a y))
                             (memberp a (remove-bag x y))))
-          :hints (("Goal" 
+          :hints (("Goal"
                    :do-not '(generalize eliminate-destructors)
                    :in-theory (e/d (subbagp)
                                    (subbagp-cdr-remove-1-rewrite ; incompatible
@@ -2708,8 +2733,8 @@
           (implies (and (subbagp x y)
                         (< (count a x) (count a y)))
                    (subbagp x (remove-1 a y)))
-          :hints (("Goal" 
-                   :in-theory (e/d (subbagp count)                                   
+          :hints (("Goal"
+                   :in-theory (e/d (subbagp count)
                                    (subbagp-cdr-remove-1-rewrite ; incompatible
                                     count-of-cdr ; incompatible with count
                                     consp-remove-1-rewrite ; speedup
@@ -2750,7 +2775,7 @@
            (perm (remove-bag x (cons a y))
                  (cons a (remove-bag x y))
                  ))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (e/d (remove-bag)
                            (consp-remove-1-rewrite ; speedup
                             consp-remove-bag-rewrite ; speedup
@@ -2840,7 +2865,7 @@
 ;non-consp args (return that non-consp arg or return nil?).
 
 ;; jcd - changing remove-all to return a true list, like the other remove
-;; functions. 
+;; functions.
 (defund remove-all (a x)
   (declare (type t a x))
   (if (consp x)
@@ -2859,11 +2884,11 @@
             (list x x-equiv))))
 
  (defcong list::equiv equal (remove-all a x) 2
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (enable remove-all)
            :induct (my-induction x list::x-equiv))))
  )
-          
+
 ;; jcd - strenghened rhs from (true-listp x) to t, now that remove-all returns
 ;; nil at the end.
 (defthm true-listp-of-remove-all
@@ -2899,12 +2924,12 @@
 ;;
 ;; (defthm non-membership-remove-all
 ;;   (implies (not (memberp a x))
-;;            (equal (remove-all a x) 
+;;            (equal (remove-all a x)
 ;;                   (list::fix x)))
 ;;   :hints (("Goal" :in-theory (enable remove-all))))
 
 ;; jcd - changed rhs from x to (list::fix x)
-(defthm remove-all-does-nothing 
+(defthm remove-all-does-nothing
   (implies (not (memberp a x))
            (equal (remove-all a x)
                   (list::fix x)))
@@ -2934,7 +2959,7 @@
   (equal (equal x (remove-all a x))
          (and (true-listp x)
               (not (memberp a x)))))
-                
+
 (defthm remove-all-of-cons-same
   (equal (remove-all a (cons a x))
          (remove-all a x))
@@ -2970,7 +2995,7 @@
                                 (:rewrite remove-all-of-remove-1)))
 
 
-;make remove-all analogues of all the remove-1 theorems!      
+;make remove-all analogues of all the remove-1 theorems!
 
 (defthm remove-all-of-remove-1-same-one
   (equal (remove-all a (remove-1 a x))
@@ -3069,7 +3094,7 @@
 ;returns the intersection of two bags.  the count of an element in the
 ;intersection is the minimum of its counts in the arguments.
 
-;; jcd - changed this to always return nil instead of x when x is not a 
+;; jcd - changed this to always return nil instead of x when x is not a
 ;; consp, so that it will always return a true list.
 (defund bag-intersection (x y)
   (declare (type t x y))
@@ -3080,7 +3105,7 @@
     nil))
 
 ;; jcd - added this congruence
-(encapsulate 
+(encapsulate
  ()
  (local (defun my-induction (x x-equiv y)
           (if (consp x)
@@ -3090,7 +3115,7 @@
             (list x x-equiv y))))
 
  (defcong list::equiv equal (bag-intersection x y) 1
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (enable bag-intersection)
            :induct (my-induction x list::x-equiv y)))))
 
@@ -3177,7 +3202,7 @@
                       (bag-intersection x y)
                     nil))))
 
-(theory-invariant (incompatible (:rewrite bag-intersection-of-cdr) 
+(theory-invariant (incompatible (:rewrite bag-intersection-of-cdr)
                                 (:rewrite bag-intersection)))
 
 ;; jcd - bzo - add congruence rules for perm over bag-intersection??
@@ -3247,9 +3272,9 @@
           :hints(("Goal"
                   :in-theory (disable subbagp-nil-from-<-of-counts ; going to :use
                                       subbagp-false-from-counts ; bzo!
-                                      subbagp-of-remove-1-from-subbagp 
+                                      subbagp-of-remove-1-from-subbagp
                                       )
-                  :use (:instance subbagp-nil-from-<-of-counts 
+                  :use (:instance subbagp-nil-from-<-of-counts
                                   (y (remove-1 (car y)
                                                (remove-bag (cdr y) bag)))
                                   (a (car y)))))))
@@ -3259,10 +3284,10 @@
           (implies (and (subbagp y bag) ;drop?
                         (not (subbagp y (remove-bag x bag))))
                    (not (subbagp x (remove-bag y bag))))
-          :hints (("Goal" 
+          :hints (("Goal"
                    :in-theory (e/d (subbagp)
                                    (subbagp-cdr-remove-1-rewrite ;incompatible
-                                    subbagp-of-remove-1-from-subbagp 
+                                    subbagp-of-remove-1-from-subbagp
                                     consp-remove-1-rewrite ; speedup
                                     subbagp-of-non-consp-two ; speedup
                                     memberp-of-remove-bag ; speedup
@@ -3276,8 +3301,8 @@
                                     non-membership-remove-1 ; speedup
                                     consp-remove-bag-rewrite ; speedup
                                     )))
-                  ("Subgoal *1/4" :use (:instance lemma))))) 
-        
+                  ("Subgoal *1/4" :use (:instance lemma)))))
+
  (defthm unique-subbagps-commutative
    (equal (unique-subbagps x y bag)
           (unique-subbagps y x bag))
@@ -3291,7 +3316,7 @@
   (implies (and (unique-subbagps y x2 z)
                 (subbagp x x2))
            (unique-subbagps x y z))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable unique-subbagps-from-unique-subbagps-and-subbagp-2)
            :use unique-subbagps-from-unique-subbagps-and-subbagp-2)))
 
@@ -3354,16 +3379,16 @@
            (unique-memberp-and-subbagp a y z))
   :hints (("Goal" :in-theory (e/d (unique-memberp-and-subbagp
                                    unique-subbagps)
-                                  (count-of-remove-bag-when-member-of-both-bags                                   
+                                  (count-of-remove-bag-when-member-of-both-bags
                                    ))
-           :use count-of-remove-bag-when-member-of-both-bags 
+           :use count-of-remove-bag-when-member-of-both-bags
            )))
 
 (defthm unique-memberp-and-subbagp-when-unique-subbagps-and-memberp-alt
   (implies (and (unique-subbagps y x z)
                 (memberp a x))
            (unique-memberp-and-subbagp a y z))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use (:instance unique-memberp-and-subbagp-when-unique-subbagps-and-memberp)
            :in-theory (disable unique-memberp-and-subbagp-when-unique-subbagps-and-memberp))))
 
@@ -3371,21 +3396,21 @@
   (implies (and (unique-memberp-and-subbagp a x z)
                 (subbagp z y))
            (unique-memberp-and-subbagp a x y))
-  :hints (("Goal" :in-theory (enable unique-memberp-and-subbagp 
+  :hints (("Goal" :in-theory (enable unique-memberp-and-subbagp
                                      unique-subbagps))))
 
 (defthm unique-memberp-and-subbagp-when-unique-memberp-and-subbagp-and-subbagp-two
   (implies (and (unique-memberp-and-subbagp a y z) ; y is a free var
                 (subbagp x y))
            (unique-memberp-and-subbagp a x z))
-  :hints (("Goal" :in-theory (enable unique-memberp-and-subbagp 
+  :hints (("Goal" :in-theory (enable unique-memberp-and-subbagp
                                      unique-subbagps))))
 
 (defthm unique-memberps-when-unique-memberp-and-subbagp-and-memberp
   (implies (and (unique-memberp-and-subbagp a x z)
                 (memberp b x))
            (unique-memberps a b z))
-  :hints (("Goal" :in-theory (enable unique-memberp-and-subbagp 
+  :hints (("Goal" :in-theory (enable unique-memberp-and-subbagp
                                      unique-memberps))))
 
 (defthm unique-memberps-when-unique-memberp-and-subbagp-and-memberp-alt
@@ -3393,7 +3418,7 @@
                 (memberp a x))
            (unique-memberps a b y))
   :hints (("Goal" :cases ((equal a b))
-           :in-theory (enable unique-memberp-and-subbagp 
+           :in-theory (enable unique-memberp-and-subbagp
                               unique-memberps))))
 
 (defthm unique-memberps-when-unique-memberp-and-subbagp-and-memberp-three
@@ -3437,42 +3462,42 @@
 ;; #|
 ;; (encapsulate
 ;;  ()
- 
+
 ;;  (local
 ;;   (encapsulate
 ;;    ()
-   
+
 ;;    (defun raw-remove-bag (list1 list2)
 ;;      (if (consp list1)
 ;;          (let ((list2 (remove-1 (car list1) list2)))
 ;;            (raw-remove-bag (cdr list1) list2))
 ;;        list2))
-   
+
 ;;    (defthm raw-remove-bag-reduction
 ;;      (equal (raw-remove-bag list1 list2)
 ;;             (remove-bag list1 list2))
 ;;      :hints (("Goal" :in-theory (enable remove-bag))))
-   
+
 ;;    (defthm raw-remove-bag-reduction-instance
 ;;      (equal (raw-remove-bag (cdr list1) list2)
 ;;             (remove-bag (cdr list1) list2)))
-   
+
 ;;    (defun raw-remove-bag-double (list1 listx listy)
 ;;      (if (consp list1)
 ;;          (let ((listx (remove-1 (car list1) listx))
 ;;                (listy (remove-1 (car list1) listy)))
 ;;            (raw-remove-bag-double (cdr list1) listx listy))
 ;;        (cons listx listy)))
-   
+
 ;;    (defthm subbagp-implies-subbagp-raw-remove-bag
 ;;      (implies
 ;;       (subbagp listx listy)
 ;;       (subbagp (raw-remove-bag list1 listx) (raw-remove-bag list1 listy)))
-;;      :hints (("goal" 
+;;      :hints (("goal"
 ;;               :in-theory (disable raw-remove-bag-reduction)
 ;;               :induct (raw-remove-bag-double list1 listx listy))))
 ;;    ))
- 
+
 ;;  )
 ;; |#
 
@@ -3506,7 +3531,7 @@
 ;; ;bad name?
 ;; (defthm perm-not-consp
 ;;   (implies (perm x x-equiv)
-;;            (iff (not (consp (remove-bag p x))) 
+;;            (iff (not (consp (remove-bag p x)))
 ;;                 (not (consp (remove-bag p x-equiv)))))
 ;;   :hints (("Goal" :induct (perm-remove-bag-induction p x x-equiv)
 ;;            :in-theory (enable remove-bag))
@@ -3543,12 +3568,12 @@
 ;;   (declare (xargs :guard (and (equal y y)
 ;;                               (equal a a))))
 ;;   (if (consp x)
-;;       (perm-remove-bag-induction-2 (cdr x) (remove-1 (car x) y) 
+;;       (perm-remove-bag-induction-2 (cdr x) (remove-1 (car x) y)
 ;;                                    (remove-1 (car x) a))
 ;;     nil))
 ;; |#
 
-;; #| 
+;; #|
 ;;  (local
 ;;   (defthm perm-implies-consp-remove-bag-correlation
 ;;     (implies
@@ -3666,7 +3691,7 @@
 ;;     (implies (subbagp x list)
 ;;              (equal (perm (append x y) list)
 ;;                     (perm y (remove-bag x list))))
-;;     :hints (("Goal" :in-theory (enable perm subbagp remove-bag 
+;;     :hints (("Goal" :in-theory (enable perm subbagp remove-bag
 ;;                                        memberp-of-cons
 ;;                                        binary-append)))))
 ;; |#
@@ -3674,7 +3699,7 @@
 
 ;; #|
 ;;  (local
-;;   (encapsulate 
+;;   (encapsulate
 ;;    ()
 
 ;;    (defthm disjoint-remove-1-not-memberp
@@ -3686,7 +3711,7 @@
 ;;                     (not (memberp x setx)))
 ;;                (disjoint setx set3)))
 ;;      :hints (("Goal" :in-theory (enable disjoint))))
-  
+
 ;;    (defthm subbagp-disjoint-setx-1
 ;;      (implies (and (disjoint set1 setx)
 ;;                    (subbagp set3 set1)
@@ -3694,7 +3719,7 @@
 ;;               (disjoint set3 setx))
 ;;      :hints (("goal" :in-theory (e/d (subbagp)  ())))
 ;;      :rule-classes (:rewrite :forward-chaining))
-   
+
 ;;    (defthm subbagp-disjoint-setx-2
 ;;      (implies
 ;;       (and
@@ -3708,7 +3733,7 @@
 ;; |#
 
 ;; #|
-;; 
+;;
 ;; (defthmd subbagp-perm-subbagp-cons
 ;;   (implies (and (subbagp (append (cdr u) v)
 ;;                         (remove-1 (car u) y))
@@ -3752,18 +3777,18 @@
 ;;       (not (consp y)))
 ;;      :hints (("goal" :in-theory (enable perm)))
 ;;      :rule-classes (:forward-chaining))
-   
+
 ;;    (defthm membership-remove-1
 ;;      (implies (memberp x (remove-1 y list))
 ;;               (memberp x list))
 ;;      :hints (("goal" :in-theory (enable memberp remove-1))))
-   
+
 ;;    (defthm not-unique-remove-1
 ;;      (implies (not (unique (remove-1 x list)))
 ;;               (not (unique list)))
 ;;      :hints (("goal" :induct (remove-1 x list)
 ;;               :in-theory (enable unique remove-1))))
-   
+
 ;;    (defthm unique-remove-1-not-memberp-unique
 ;;      (implies
 ;;       (and
@@ -3773,7 +3798,7 @@
 ;;       (equal (unique list)
 ;;              (not (memberp x (remove-1 x list)))))
 ;;      :hints (("goal" :in-theory (enable unique memberp remove-1))))
-   
+
 ;;    )))
 ;; |#
 
@@ -3793,7 +3818,7 @@
 ;;   (equal (remove-bag y (list::fix y))
 ;;          (remove-bag x y))
 ;;   :hints (("Goal" :in-theory (enable remove-bag list::fix))))
-;; |#       
+;; |#
 
 ;; #|
 ;; bzo not quite right
@@ -3802,53 +3827,53 @@
 ;;          (and (subbagp x (remove-bag y z))
 ;;               (subbagp y z)))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-;;            :in-theory (enable subbagp append remove-1))))              
+;;            :in-theory (enable subbagp append remove-1))))
 ;; |#
 
 
 ;; #|
 ;;  (encapsulate
 ;;   ()
-  
+
 ;;   (local
 ;;    (encapsulate
 ;;     ()
-    
+
 ;;     (local
 ;;      (encapsulate
 ;;       ()
-      
+
 ;;       (defthm memberp-append-tail
 ;;         (implies (consp a)
 ;;                  (memberp (car a) (append b a)))
 ;;         :hints (("goal" :in-theory (enable memberp binary-append))))
-      
+
 ;;       (defthm memberp-append-middle
 ;;         (implies (consp b)
 ;;                  (memberp (car b) (append a b c)))
 ;;         :hints (("goal" :in-theory (enable memberp binary-append))))
-      
+
 ;;       (defthm append-cdr-tail-perm-remove-1
-;;         (implies 
+;;         (implies
 ;;          (consp y)
 ;;          (perm (append x (cdr y))
 ;;                (remove-1 (car y) (append x y))))
 ;;         :hints (("goal" :in-theory (enable perm binary-append memberp remove-1))))
-      
+
 ;;       (defthm append-cdr-middle-perm-remove-1
-;;         (implies 
+;;         (implies
 ;;          (consp y)
 ;;          (perm (append x (cdr y) z)
 ;;                (remove-1 (car y) (append x y z))))
 ;;         :hints (("goal" :in-theory (enable perm binary-append memberp remove-1))))
-      
-;;       ))
-    
 
-    
+;;       ))
+
+
+
 ;;     ))
-  
-  
+
+
 ;;   )
 ;; |#
 
@@ -3882,7 +3907,7 @@
 ;; |#
 
 ;; #|
-;; 
+;;
 ;; (defthmd remove-all-of-car
 ;;   (equal (remove-all (car x) x)
 ;;          (if (consp x)
@@ -3903,7 +3928,7 @@
 ;; (defthmd non-membership-removal-free
 ;;   (implies (and (not (memberp b x)) ;b is a free variable
 ;;                 (equal b a))
-;;            (equal (remove-all a x) 
+;;            (equal (remove-all a x)
 ;;                   x)))
 ;; |#
 
@@ -3923,7 +3948,7 @@
 ;;   (implies (and (not (memberp a (remove-all b x)))
 ;;                 (memberp a x))
 ;;            (equal b a))
-;;   :rule-classes :forward-chaining) 
+;;   :rule-classes :forward-chaining)
 ;; |#
 
 ;; #|
@@ -4043,8 +4068,8 @@
 
 
 
-;; Example of how this rule helps us:  If we know: 
-;;(LIST::MEMBERP a '(1 2 3 4 5)) this rule lets us rewrite: 
+;; Example of how this rule helps us:  If we know:
+;;(LIST::MEMBERP a '(1 2 3 4 5)) this rule lets us rewrite:
 ;;(LIST::MEMBERP a '(6 7 8 9 10))) to nil without splitting into cases based
 ;;on whether a is 1 or 2 or 3 or 4 or 5.
 
@@ -4056,25 +4081,25 @@
                 )
            (equal (list::memberp a x)
                   nil)))
-               
+
 (defthm subbagp-of-x-and-cons-car-x
   (implies (consp x)
            (equal (bag::subbagp x (cons (car x) y))
                   (bag::subbagp (cdr x) y))))
 
-;looped?        
+;looped?
 ;; (defthm subbagp-of-singleton
 ;;   (equal (bag::subbagp x (cons a nil))
 ;;          (or (bag::empty-bagp x)
 ;;              (list::equiv a (cons a nil))
 ;; ;             (and (equal 1 (len x)) ;rephrase as congruence to singleton bag?
 ;;  ;                 (equal a (car x)))
-             
+
 ;;              ))
 ;;   :hints (("Goal" :cases ( (equal 1 (len x)))
 ;;            :in-theory (enable list::memberp-of-cons
 ;;                               bag::subbagp-of-cons))))
-                  
+
 
 (defthm subbagp-of-singleton
   (equal (bag::subbagp x (cons a nil))

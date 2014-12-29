@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 
 (in-package "ACL2")
 
@@ -42,7 +67,7 @@
 
 ;; ===================================================================
 ;; *rule-sets*:
-;; 
+;;
 ;; This is where the rule sets are stored in the ACL2 table.
 ;;
 ;; ===================================================================
@@ -58,7 +83,7 @@
 ;;
 ;; ===================================================================
 
-(defmacro def::rule-set (name &key 
+(defmacro def::rule-set (name &key
 			      (extends 'nil)
 			      (omits 'nil))
   `(table::set *rule-sets* (rule-sets::define-new-set ',name ',extends ',omits (table::get *rule-sets* world))))
@@ -82,13 +107,13 @@
       (progn
 	(in-theory (set-difference-theories-fn
 		    (current-theory :here)
-		    (rule-sets::ref-list-to-disable 
-		     (rule-sets::default-ref (table::get *rule-sets*)) 
+		    (rule-sets::ref-list-to-disable
+		     (rule-sets::default-ref (table::get *rule-sets*))
 		     (table::get *rule-sets*) nil)
 		    t world))
 	(table::set
 	 *rule-sets*
-	 (rule-sets::set-ref-default-version-in-rule-set ',ref ',version 
+	 (rule-sets::set-ref-default-version-in-rule-set ',ref ',version
            (rule-sets::set-default-library ',ref (table::get *rule-sets* world))))
 	(in-theory (rule-sets::d/e-list (current-theory :here)
 					(rule-sets::ref-list-to-de ',ref (table::get *rule-sets*) nil) world))
@@ -120,7 +145,7 @@
 	      *rule-sets*
 	      (rule-sets::set-ref-default-version-in-rule-set ',ref ',version (table::get *rule-sets* world))))
 	'(table::set *rule-sets* (table::get *rule-sets* world))))))
-	
+
 
 ;; ===================================================================
 ;;
@@ -155,7 +180,7 @@
 
 (defmacro rule-set (name &rest rules)
   (if rules
-      `(table::set 
+      `(table::set
 	*rule-sets*
 	(rule-sets::add-rules-to-ref-in-rule-set ',name ',rules nil (table::get *rule-sets* world)))
     `(rule-sets::query-ref ',name (table::get *rule-sets* (w state)))))
@@ -209,72 +234,71 @@
   (local
    (encapsulate
        ()
-     
+
      (def::rule-set open-rules)
      (def::rule-set definitions)
 
      (defund foo (x) x)
-     
+
      (defthmd open-foo
        (equal (foo x) x)
        :hints (("Goal" :in-theory (enable foo))))
-     
+
      (rule-set open-rules open-foo)
-     
+
      (defund goo (x) x)
-     
+
      (defthmd open-goo
        (equal (goo x) x)
        :hints (("Goal" :in-theory (enable goo))))
-     
+
      (rule-set open-rules open-goo)
-     
+
      (defthmd foo-test-1
        (equal (foo x) (goo x))
        :hints (("Goal" :in-theory (eset :here open-rules))))
-     
+
      (rule-set definitions foo goo)
-     
+
      (defthmd foo-test-2
        (equal (foo x) (goo x))
        :hints (("Goal" :in-theory (eset (dset :here definitions)
 					open-rules))))
-     
+
      (defthmd foo-test-3
        (equal (foo x) (goo x))
        :hints (("Goal" :in-theory (e/d-set :here (open-rules) (definitions)))))
-     
+
      ))
   )
 
 (encapsulate
     ()
-  
+
   (local
    (encapsulate
        ()
-     
+
      (encapsulate
 	 ()
-       
+
        (def::rule-set (frank . alpha))
        (def::rule-set joe)
-       
+
        )
 
      (in-library (frank . alpha))
-     
+
      (def::library (zed . beta)
        :extends ((frank . alpha))
        :omits (joe))
-     
+
      (set-library-version (zed . beta))
 
      (classify-rule (:rewrite rule-name)
 		    :enable   ((frank . alpha) joe)
 		    :disable  ((zed . beta)))
-     
-     ))
-  
-  )
 
+     ))
+
+  )

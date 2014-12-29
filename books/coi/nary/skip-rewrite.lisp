@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 (defun unhide (x)
@@ -53,8 +78,8 @@
   (declare (type (satisfies true-listp) keys vals))
   (declare (xargs :guard (pseudo-termp-key arg term)))
   (cond
-   (arg 
-    (cond 
+   (arg
+    (cond
      ((endp term) nil)
      (t (cons (beta-reduce-term nil (car term) keys vals)
               (beta-reduce-term arg (cdr term) keys vals)))))
@@ -77,8 +102,8 @@
 
 (defun unhide-eval-key (arg term alist)
   (cond
-   (arg 
-    (cond 
+   (arg
+    (cond
      ((endp term) nil)
      (t (cons (unhide-eval-key nil (car term) alist)
               (unhide-eval-key arg (cdr term) alist)))))
@@ -99,8 +124,8 @@
 
 (defun wf-beta-term (arg term)
   (cond
-   (arg 
-    (cond 
+   (arg
+    (cond
      ((endp term) t)
      (t (and (wf-beta-term nil (car term))
              (wf-beta-term arg (cdr term))))))
@@ -136,7 +161,7 @@
           nil)))
 
 ;; DAG -- odd that we need these now, but not before.
-(defthm car-quote-list 
+(defthm car-quote-list
   (equal (car (quote-list list))
          (if (consp list) `(quote ,(car list)) nil)))
 
@@ -154,7 +179,7 @@
     (wf-beta-term arg term)
     (equal (len keys) (len vals)))
    (equal (unhide-eval-key arg (beta-reduce-term arg term keys vals) a1)
-          (unhide-eval-key arg term (pairlis$ keys 
+          (unhide-eval-key arg term (pairlis$ keys
                                               (unhide-eval-key t vals a1)))))
    :hints (("Goal" :do-not '(generalize eliminate-destructors)
             :do-not-induct t
@@ -212,7 +237,7 @@
    (lambda-expr-p term)
    (equal (unhide-eval-key nil term a1)
           (unhide-eval-key nil (CAR (CDR (CDR (CAR term))))
-                           (pairlis$ (CAR (CDR (CAR term))) 
+                           (pairlis$ (CAR (CDR (CAR term)))
                                      (unhide-eval-key t (cdr term) a1)))))
   :hints (("Goal" :in-theory (e/d (lambda-expr-p-to-para-lambda-expr-key-p) (unhide-eval-key)))))
 
@@ -221,7 +246,7 @@
    (lambda-expr-p term)
    (equal (unhide-eval term a1)
           (unhide-eval (CAR (CDR (CDR (CAR term))))
-                       (pairlis$ (CAR (CDR (CAR term))) 
+                       (pairlis$ (CAR (CDR (CAR term)))
                                  (unhide-eval-list (cdr term) a1)))))
   :hints (("Goal" :use unhide-eval-lambda-expr-helper
            :in-theory (enable unhide-eval-key-reduction))))
@@ -249,7 +274,7 @@
     (lambda-expr-p term)
     (pseudo-termp term))
    (equal (unhide-eval term a1)
-          (unhide-eval (beta-reduce-term nil (CAR (CDR (CDR (CAR term)))) 
+          (unhide-eval (beta-reduce-term nil (CAR (CDR (CDR (CAR term))))
                                          (CAR (CDR (CAR term)))
                                          (cdr term)) a1))))
 
@@ -335,21 +360,21 @@
   ;; watch this proof (and monitor unhide-hide-wrapper)
 
   (defun foo (x) (if (zp x) 2 (foo (1- x))))
-  
+
   (defthm open-foo
     (implies
      (and
       (not (zp x))
       (equal v (1- x)))
      (equal (foo x) (skip-rewrite (foo v)))))
-  
+
   (defthm foo-0
     (equal (foo 0) 2))
-  
+
   (in-theory (disable foo (foo)))
-  
+
   ;;(trace$ unhide-hide-wrapper)
-  
+
   (defthm foo-10
     (equal (foo 10) 2))
 
@@ -406,7 +431,7 @@
   #+joe
   (defthmd unhide-eval2-constraint-0
     (implies
-     (and (consp term) 
+     (and (consp term)
           (syntaxp (not (equal a *nil*))) ; prevent looping
           (not (equal (car term) 'quote)))
      (equal (unhide-eval2 term a)
@@ -458,7 +483,7 @@
 (skip-proofs
 (defthmd unhide-eval2-constraint-0
     (implies
-     (and (consp term) 
+     (and (consp term)
           (syntaxp (not (equal a *nil*))) ; prevent looping
           (not (equal (car term) 'quote)))
      (equal (unhide-eval2 term a)

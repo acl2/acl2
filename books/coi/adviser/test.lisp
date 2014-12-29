@@ -1,10 +1,35 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;; test.lisp
-;; Jared Davis 
+;; Jared Davis
 
 (in-package "ADVISER")
 (include-book "adviser")
@@ -49,18 +74,18 @@
           (equal (not (all-not-integerp x))
                  (and (member (which-one? x) x)
                       (integerp (which-one? x))))))
-    
+
  (defthm all-not-integerp-by-membership-driver
    (implies (all-not-integerp-hyps)
             (all-not-integerp (all-not-integerp-term)))
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (disable lemma)
-           :use ((:instance all-not-integerp-constraint 
-                            (all-not-integerp-member 
+           :use ((:instance all-not-integerp-constraint
+                            (all-not-integerp-member
                              (which-one? (all-not-integerp-term))))
                  (:instance lemma
                             (x (all-not-integerp-term)))))))
- 
+
  (defadvice not-all-not-integerp-by-membership
    (implies (all-not-integerp-hyps)
             (all-not-integerp (all-not-integerp-term)))
@@ -109,15 +134,15 @@
           (equal (some-integerp x)
                  (and (member (which-one? x) x)
                       (integerp (which-one? x))))))
-    
+
  (defthm not-some-integerp-by-membership-driver
    (implies (some-integerp-hyps)
             (not (some-integerp (some-integerp-term))))
-   :hints(("Goal" 
-           :use (:instance not-some-integerp-constraint 
-                           (some-integerp-member 
+   :hints(("Goal"
+           :use (:instance not-some-integerp-constraint
+                           (some-integerp-member
                             (which-one? (some-integerp-term)))))))
- 
+
  (defadvice not-some-integerp-by-membership
    (implies (some-integerp-hyps)
             (not (some-integerp (some-integerp-term))))
@@ -143,6 +168,3 @@
 (defthm conclusion
   (equal (some-integerp x)
          (not (all-not-integerp x))))
-
-  
-  

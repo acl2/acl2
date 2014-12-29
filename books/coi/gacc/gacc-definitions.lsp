@@ -1,3 +1,33 @@
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ; Jared: what's this file for?  It's not certifiable, so I'm
 ; renaming it to a .lsp extension for Make compatibility
 
@@ -9,7 +39,7 @@
 ;(in-package "GACC")
 
 ;;
-;; This file isolates gacc definitions and types. The file currently 
+;; This file isolates gacc definitions and types. The file currently
 ;; contains the following ACL2 constructs as they occur in the gacc book:
 ;; - defun
 ;; - defund
@@ -189,7 +219,7 @@
   (if (consp spec)
       (if (consp (car spec))
           (and (not (memberx (caar spec) (keys (cdr spec))))
-               (implies (sconsp (cdar spec)) 
+               (implies (sconsp (cdar spec))
                         (unique-spec (cdar spec)))
                (unique-spec (cdr spec)))
         (unique-spec (cdr spec)))
@@ -225,7 +255,7 @@
    (equal (c* spec (s a v r1) r2)
           (c* spec r1 r2)))
   :hints (("goal" :induct (c*-induction spec r1 r2))))
-  
+
 
 (defun c*-c*-induction (spec r1 r2 r3)
   (declare (type t spec r1 r2 r3))
@@ -234,8 +264,8 @@
           (let ((v1 (g (caar spec) r1))
                 (v2 (g (caar spec) r2))
                 (v3 (g (caar spec) r3)))
-            (let ((v (if (sconsp (cdar spec)) 
-                         (c*-c*-induction (cdar spec) v1 v2 v3) 
+            (let ((v (if (sconsp (cdar spec))
+                         (c*-c*-induction (cdar spec) v1 v2 v3)
                        (cons v1 v1))))
               (let ((v1 (car v))
                     (v2 (cdr v)))
@@ -358,9 +388,9 @@
   type-b-spec
   ))
 
-;; Note that proving the following should allow us to conclude 
+;; Note that proving the following should allow us to conclude
 ;;
-;; (= (z* spec (goo r)) (z* spec r)) 
+;; (= (z* spec (goo r)) (z* spec r))
 ;;
 ;; for any spec of which (type-b-spec) is a subset (subbag-p?). (yay)
 
@@ -526,7 +556,7 @@
         (:key1 (k1-set value g))
         (:key2 (k2-set value g))
         (t     value)))
-  
+
 (defun key-fix (key value)
   (declare (type t key value))
   (case key
@@ -990,7 +1020,7 @@
    (equal (c* (dia seg) st1 nil)
           (c* (dia seg) st2 nil))
    (equal (c* (dia seg) (step (c* use st2 nil)) nil)
-          (c* (dia seg) (step (c* use st2 nil)) nil)))) 
+          (c* (dia seg) (step (c* use st2 nil)) nil))))
 
 
 |#
@@ -1017,7 +1047,7 @@
            (xargs :measure (acl2-count k)))
   (if (zp k)
       nil
-    (cons (ifix base) 
+    (cons (ifix base)
           (addr-range (+ 1 (ifix base)) (1- k)))))
 
 ;consider disabling (:executable-counterpart addr-range) as we do for gacc::sblk?
@@ -1178,7 +1208,7 @@
   :hints (("Goal" :cases ((and (integerp size2) (integerp size1))
                           (and (not (integerp size2)) (integerp size1))
                           (and (integerp size2) (not (integerp size1)))
-                          
+
                           )
            :in-theory (enable ifix zp bag::subbagp-of-cons addr-range))))
 
@@ -1424,7 +1454,7 @@
 ;;    :hints (("Goal" :in-theory (enable wcdr))))
 
 ;; ;;
-;; ;; Rules about (at least two of) WCONS, WCAR, and WCDR 
+;; ;; Rules about (at least two of) WCONS, WCAR, and WCDR
 ;; ;;
 
 ;; (defthm wcons-when-y-is-0
@@ -1471,7 +1501,7 @@
 ;;   (equal (wcons b (wcar b x) y)
 ;;          (wcons b x y))
 ;;   :hints (("Goal" :in-theory (enable wcar wcons))))
-  
+
 ;; (defthm wcdr-of-wcar
 ;;   (equal (wcdr b (wcar b x))
 ;;          0)
@@ -1499,7 +1529,7 @@
 ;;   :hints (("goal" :in-theory (enable wfixw))))
 
 ;; (defthm wfixw-0
-;;   (equal (wfixw b n 0) 
+;;   (equal (wfixw b n 0)
 ;;          0)
 ;;   :hints (("Goal" :in-theory (enable wfixw))))
 
@@ -1564,14 +1594,14 @@
 ;; (defthm wcar-wcdr-wfixw
 ;;   (and (equal (acl2::loghead ;wcar
 ;;                b (wfixw b n value))
-;;               (if (zp n) 
-;;                   0 
+;;               (if (zp n)
+;;                   0
 ;;                 (acl2::loghead ;wcar
 ;;                  b value)))
 ;;        (equal (acl2::logtail ;wcdr
 ;;                b (wfixw b n value))
-;;               (if (zp n) 
-;;                   0 
+;;               (if (zp n)
+;;                   0
 ;;                 (wfixw b (1- n) (acl2::logtail ;wcdr
 ;;                                  b value)))))
 ;;   :hints (("Goal" :in-theory (enable open-wfixw))))
@@ -1622,7 +1652,7 @@
 
 ;; (defthm wintw-wfixw
 ;;   (implies (wintw s n x)
-;;            (equal (wfixw s n x) 
+;;            (equal (wfixw s n x)
 ;;                   x))
 ;;   :hints (("Goal" :in-theory (enable wfixw wintw))))
 
@@ -1641,7 +1671,7 @@
            (xargs :measure (nfix (- (ifix max) (ifix off)))))
   (if (not (< (ifix off) (ifix max)))
       nil
-    (cons (+ (ifix off) (ifix base)) 
+    (cons (+ (ifix off) (ifix base))
           (blk-rec base (1+ (ifix off)) (ifix max)))))
 
 (defthm true-listp-blk-rec
@@ -1725,20 +1755,20 @@
                 (<= (ifix size0) (ifix size1)))
            (disjoint list (blk-rec ptr off size0)))
   :hints (("Goal" :in-theory (enable blk-rec)
-           :do-not '(generalize eliminate-destructors)))) 
-  
+           :do-not '(generalize eliminate-destructors))))
+
 (defthm disjoint-blk-rec-subbagp-right
   (implies (and (not (disjoint list (blk-rec ptr off size0)))
                 (<= (ifix size0) (ifix size1)))
            (equal (disjoint list (blk-rec ptr off size1))
-                  nil))) 
-   
+                  nil)))
+
 (defthm disjoint-blk-rec-subbagp-left
   (implies (and (not (disjoint (blk-rec ptr off size0) list))
                 (<= (ifix size0) (ifix size1)))
            (equal (disjoint (blk-rec ptr off size1) list)
                   nil)))
-   
+
 ;make a blk analogue of this?
 (defthm blk-rec-non-membership-less
   (implies (< n (+ (ifix ptr) (ifix off)))
@@ -1786,8 +1816,8 @@
                 (integerp x)
                 (<= 0 x))
            (equal (blk-rec (+ x rptr) roff rmax)
-                  (blk-rec rptr 
-                           (+ x (ifix roff)) 
+                  (blk-rec rptr
+                           (+ x (ifix roff))
                            (+ x (ifix rmax)))))
   :hints (("goal" :in-theory (enable blk-rec)
            :induct (blk-rec (+ x rptr) roff rmax))))
@@ -1834,7 +1864,7 @@
                            (wsize rsize)
                            (rsize wsize)
                            ))))
-                                       
+
 (defthm memberp-of-blk-rec-when-not-integerp
   (implies (not (integerp x))
            (not (bag::memberp x (gacc::blk-rec base offset max))))
@@ -1856,7 +1886,7 @@
 (defund blk (base size)
   (declare (type t base size))
   (blk-rec base 0 size))
- 
+
 ;We disable the executable-counterpart of blk, so that ACL2 doesn't actually compute big lists of addresses
 ;For instance, (blk 5 10) does not get expanded to (5 6 7 8 9 10 11 12 13 14) if the executablec-counterpart is disabled.
 (in-theory (disable (:executable-counterpart blk)))
@@ -1900,7 +1930,7 @@
            (subbagp (blk ptr max1)
                     (blk ptr max2)))
   :hints (("Goal" :in-theory (enable blk))))
-   
+
  ;; These should be among the last rules attempted ..
 
 (defthm blk-disjoint-from-blk-1
@@ -1920,7 +1950,7 @@
            (disjoint (blk rptr rsize)
                      (blk wptr wsize)))
   :hints (("Goal" :in-theory (enable blk))))
- 
+
 (defthm blk-membership-subbagp
   (implies (and (not (memberp addr (blk ptr size2))) ;size2 is a free variable
                 (<= (ifix size1) (ifix size2))
@@ -1954,8 +1984,8 @@
                 (<= (ifix size0) (ifix size1)))
            (equal (disjoint list (blk ptr size1))
                   nil))
-  :hints (("Goal" :in-theory (enable blk)))) 
- 
+  :hints (("Goal" :in-theory (enable blk))))
+
 (defthm disjoint-blk-subbagp-left
   (implies (and (not (disjoint (blk ptr size0) list)) ;size0 is a free variable
                 (<= (ifix size0) (ifix size1)))
@@ -1967,14 +1997,14 @@
 ;; XBLOCK
 ;;
 
-;; ;bzo do we ever use xblock? 
+;; ;bzo do we ever use xblock?
 
 ;; (defun xblock (base size)
 ;;   (declare (type integer size base))
-;;   (if (zerop base) 
+;;   (if (zerop base)
 ;;       nil
 ;;     (blk base size)))
- 
+
 ;; (defthm zp-xblock
 ;;   (implies (zerop base)
 ;;            (equal (xblock base size)
@@ -2000,11 +2030,11 @@
 ; for these the problem is that +/- treats non-numbers as 0, so
 ; if x is a non-number, or anything in the list isn't, doesn't hold
 (defthm memberp-relocate-blk
-  (implies 
+  (implies
    (and
     (integer-listp list)
     (integerp x)
-    ) 
+    )
    (equal (memberp x (relocate-blk y list))
           (memberp (- x (ifix y)) list)))
   :hints (("Goal" :in-theory (enable LIST::memberp-of-cons))))
@@ -2146,7 +2176,7 @@
 (in-theory (disable (:executable-counterpart skel)))
 
 ;Added by Eric
-(local (in-theory (disable memberp 
+(local (in-theory (disable memberp
 ;                           acl2::MEMBERP-Subbagp-NOT-CONSP-VERSION
                            REMOVE-BAG
                            REMOVE-1)))
@@ -2173,19 +2203,19 @@
 ;move these?
 (defthm non-integerp-ifix
   (implies (not (integerp x))
-           (equal (ifix x) 
+           (equal (ifix x)
                   0))
   :hints (("goal" :in-theory (enable ifix))))
 
 (defthm integerp-ifix
   (implies (integerp x)
-           (equal (ifix x) 
+           (equal (ifix x)
                   x))
   :hints (("goal" :in-theory (enable ifix))))
 
-(in-theory 
- (enable 
-  slot-p 
+(in-theory
+ (enable
+  slot-p
   slot-extensionality!!
   ))
 
@@ -2269,7 +2299,7 @@
       (memberp base term)))
 |#
 
-              
+
 (defun syntax-ptr (base ptr woff wbase)
   (declare (type t base ptr))
   (if (and (consp ptr)
@@ -2322,7 +2352,7 @@
 
 (local (in-theory (disable MAX-OFFSET-WHEN-MULTIPLE-OF-8))) ;bzo
 
-;bzo 
+;bzo
 (defthm open-len
   (implies (and (syntaxp (syntax-consp-or-symbol list))
                 (consp list))
@@ -2355,7 +2385,7 @@
       (let ((slot (car spec)))
         (if (and (slot-p slot)
                  (compare base size off (slot-size slot) (slot-off slot)))
-            (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+            (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                    (ifix (slot-val slot)))
           (rv size off base (cdr spec))))
     0))
@@ -2378,7 +2408,7 @@
     spec))
 
 (defthm ws-when-base-is-not-an-integerp
-  (implies (not (integerp gacc::base))  
+  (implies (not (integerp gacc::base))
            (equal (ws size gacc::off gacc::base skel gacc::spec)
                   (ws size gacc::off 0 skel gacc::spec)))
   :hints (("Goal" :in-theory (enable ws))))
@@ -2412,7 +2442,7 @@
       (let ((slot (car spec)))
         (if (and (slot-p slot)
                  (compare base size off (slot-size slot) (slot-off slot)))
-            (cons (update-slot slot :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+            (cons (update-slot slot :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                 (ifix val)))
                   (cdr spec))
           (cons slot
@@ -2427,7 +2457,7 @@
            (let ((slot (car spec)))
              (if (and (slot-p slot)
                       (compare base size off (slot-size slot) (slot-off slot)))
-                 (cons (update-slot slot :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                 (cons (update-slot slot :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                      val))
                        (cdr spec))
                (cons slot
@@ -2468,7 +2498,7 @@
   (implies
    (memberp (sblk size (+<> off base)) (keys-spec w base spec))
    (equal (rv size off base (wv size off base value spec))
-          (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+          (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                  value))))
 
 (defthm vanishing-ws
@@ -2545,11 +2575,11 @@
    (equal (h*-spec hop (ws size off base skel spec))
           (let ((skel (fix-skel skel)))
             (let ((wbase (skel-base skel)))
-              (ws size off base (skel (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+              (ws size off base (skel (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                              (op-base (op-how hop) :ptr wbase 0))
                                       (h*-spec hop (skel-spec (fix-skel skel))))
                   (h*-spec hop spec))))))
-  :hints (("goal" :in-theory (enable ;unfixed-size-wfixn 
+  :hints (("goal" :in-theory (enable ;unfixed-size-wfixn
                                      g? fix-skel)
            :induct (ws size off base skel spec))))
 
@@ -2655,7 +2685,7 @@
           (and (consp (cadr acl2::id))
                `(:do-not '(generalize preprocess eliminate-destructors fertilize eliminate-irrelevance)
                          :do-not-induct t
-                         :in-theory (enable ifix 
+                         :in-theory (enable ifix
                                             fix-skel)))))
 
 
@@ -2700,7 +2730,7 @@
            (equal (GACC::RV GACC::SIZE GACC::OFF GACC::BASE (cons gacc::slot GACC::SPEC))
                   (GACC::RV GACC::SIZE GACC::OFF GACC::BASE GACC::SPEC)))
   :hints (("Goal" :in-theory (enable gacc::rv))))
-       
+
 (defthm rv-of-cons-both
   (equal (GACC::RV GACC::SIZE GACC::OFF GACC::BASE (cons gacc::slot GACC::SPEC))
          (if  (AND (GACC::SLOT-P GACC::SLOT)
@@ -2766,8 +2796,8 @@
                     (and (equal (zv (list sblk) base spec1)
                                 (zv (list sblk) base spec2))
                          (implies (memberp sblk (keys-spec :all base spec1))
-                                  (equal (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
-                                                        value) 
+                                  (equal (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
+                                                        value)
                                          (rv wsize woff base spec2)))))))
 ;  :otf-flg t
   :hints (("goal" ; :in-theory (enable acl2::memberp-of-cons)
@@ -2792,7 +2822,7 @@
 ;                       numtype
                                ))
            :induct (spec-spec-induction spec1 spec2)
-           :do-not '(generalize eliminate-destructors ;fertilize 
+           :do-not '(generalize eliminate-destructors ;fertilize
                                 eliminate-irrelevance)
            :do-not-induct t)))
 
@@ -2810,7 +2840,7 @@
             (and (equal (zv (list sblk) base spec2)
                         (zv (list sblk) base spec1))
                  (implies (memberp sblk (keys-spec :all base spec1))
-                          (equal (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
+                          (equal (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
                                         value) (rv wsize woff base spec2)))))))
   :hints (("goal" :in-theory (disable zv-introduction-left)
 
@@ -2843,11 +2873,11 @@
   (implies
    (and
     (fixed-spec-p spec)
-    (acl2::unsigned-byte-p (gacc::fix-size size) ;wintn 8 size 
+    (acl2::unsigned-byte-p (gacc::fix-size size) ;wintn 8 size
            (skel-base skel))
     (fixed-spec-p (skel-spec skel)))
    (fixed-spec-p (ws size off base skel spec)))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (enable ;unfixed-size-wintn
                               fix-skel)
            :induct (ws size off base skel spec))))
@@ -2863,9 +2893,9 @@
 ;bzo move
 ;similar rule for wintn?
 ;; (defthm wfixn-of-fix-size
-;;   (equal (acl2::loghead (gacc::fix-size (fix-size wsize)) ;wfixn 8 (fix-size wsize) 
+;;   (equal (acl2::loghead (gacc::fix-size (fix-size wsize)) ;wfixn 8 (fix-size wsize)
 ;;                 value)
-;;          (wfixn 8 wsize 
+;;          (wfixn 8 wsize
 ;;                 value))
 ;;   :hints (("Goal" :in-theory (enable unfixed-size-wfixn))))
 
@@ -2954,9 +2984,9 @@
           (and (consp (cadr acl2::id))
                `(:do-not '(generalize preprocess eliminate-destructors fertilize eliminate-irrelevance)
                          :do-not-induct t
-                         :in-theory (enable ;acl2::memberp-of-cons 
-                                     slot-extensionality! 
-                                     ifix 
+                         :in-theory (enable ;acl2::memberp-of-cons
+                                     slot-extensionality!
+                                     ifix
                                      fix-skel)))))
 
 |#
@@ -2980,7 +3010,7 @@
                          :do-not-induct t
                          :expand (;(H*-SPEC (OP :NIL :Z) SPEC1)
                                   )
-                         :in-theory (e/d () 
+                         :in-theory (e/d ()
                                          (FIX
                                           ;PTR?
                                           ;split-blk
@@ -3056,7 +3086,7 @@
 
 
 (defthmd zs-over-ws
-  (implies 
+  (implies
    (equal value (skel 0 nil))
    (equal (zs list1 base (ws size off base value spec))
           (ws size off base value (zs list1 base spec))))
@@ -3086,15 +3116,15 @@
 
 ;I think the failed-location / tag-location stuff gives us debugging information in failed proofs.
 
-(defund failed-location (key) 
-  (declare (ignore key)) 
-  nil) 
+(defund failed-location (key)
+  (declare (ignore key))
+  nil)
 
 (in-theory (disable (:executable-counterpart failed-location)))
 (in-theory (disable (:type-prescription failed-location)))
 
 (defun tag-location (key bool)
-  (implies (not bool) (failed-location key)))        
+  (implies (not bool) (failed-location key)))
 
 (defthm zz-wv-introduction
   (implies
@@ -3105,11 +3135,11 @@
                  (and (equal (zz (list sblk) nil base spec1)
                              (zz (list sblk) nil base spec2))
                       (implies (memberp sblk (keys-spec :all base spec1))
-                               (tag-location woff (equal (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
-                                                                value) 
+                               (tag-location woff (equal (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
+                                                                value)
                                                          (rv wsize woff base spec2)))))))
         ))
-  :hints (("goal" :in-theory '(tag-location failed-location zz zs 
+  :hints (("goal" :in-theory '(tag-location failed-location zz zs
                                             zv-introduction-left zv-introduction-right))))
 
 
@@ -3120,7 +3150,7 @@
                 (and (equal (zz nil (list sblk) base spec1)
                             (zz nil (list sblk) base spec2))
                      (implies (memberp sblk (keys-spec :ptr base spec1))
-                              (tag-location woff (equal (fix-skel value) 
+                              (tag-location woff (equal (fix-skel value)
                                                         (rs wsize woff base spec2)))))))
 ;;        (equal (equal spec2
 ;;                      (ws wsize woff base value spec1))
@@ -3128,10 +3158,10 @@
 ;;                 (and (equal (zz nil (list sblk) base spec2)
 ;;                             (zz nil (list sblk) base spec1))
 ;;                      (implies (memberp sblk (keys-spec :ptr base spec1))
-;;                               (tag-location woff (equal (rs wsize woff base spec2) 
+;;                               (tag-location woff (equal (rs wsize woff base spec2)
 ;;                                                         (fix-skel value)))))))
        )
-  :hints (("goal" :in-theory '(tag-location failed-location zz zv 
+  :hints (("goal" :in-theory '(tag-location failed-location zz zv
                                             zs-introduction-left zs-introduction-right))))
 
 (in-theory
@@ -3175,17 +3205,17 @@
                (and (equal (zz vlist (cons sblk slist) base spec1)
                            (zz vlist (cons sblk slist) base spec2))
                     (implies (memberp sblk (keys-spec :ptr base spec1))
-                             (tag-location woff (equal (fix-skel value) 
+                             (tag-location woff (equal (fix-skel value)
                                                        (rs wsize woff base spec2))))))
 ;;         (equal (equal (zz vlist slist base spec2)
 ;;                       (zz vlist slist base (ws wsize woff base value spec1)))
 ;;                (and (equal (zz vlist (cons sblk slist) base spec2)
 ;;                            (zz vlist (cons sblk slist) base spec1))
 ;;                     (implies (memberp sblk (keys-spec :ptr base spec1))
-;;                              (tag-location woff (equal (fix-skel value) 
+;;                              (tag-location woff (equal (fix-skel value)
 ;;                                                        (rs wsize woff base spec2))))))
         ))
-  :hints (("goal" :in-theory '(tag-location failed-location zz 
+  :hints (("goal" :in-theory '(tag-location failed-location zz
                                             zv-over-ws zs-induction rs-zv keys-spec-zv))))
 
 (defthm zs-over-zv
@@ -3212,23 +3242,23 @@
                (and (equal (zz (cons sblk vlist) slist base spec1)
                            (zz (cons sblk vlist) slist base spec2))
                     (implies (memberp sblk (keys-spec :all base spec1))
-                             (tag-location woff (equal (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
+                             (tag-location woff (equal (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
                                                                       value
                                                                       )
                                                        (rv wsize woff base spec2))))))
         ))
-  :hints (("goal" :in-theory '(tag-location failed-location zz 
+  :hints (("goal" :in-theory '(tag-location failed-location zz
                                             fixed-spec-p-zs
-                                            zs-over-zv 
-                                            zs-over-wv 
-                                            zv-induction 
-                                            rv-zs 
+                                            zs-over-zv
+                                            zs-over-wv
+                                            zv-induction
+                                            rv-zs
                                             keys-spec-zs))))
 
 ;              ))
 
-(in-theory 
- (disable 
+(in-theory
+ (disable
   failed-location
   (:type-prescription failed-location)
   (failed-location)
@@ -3293,9 +3323,9 @@
    (and
     (x? fop)
     (equal v (rs wsize woff base spec))
-    (equal (f*-spec fop (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
+    (equal (f*-spec fop (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
                                (skel-base (fix-skel skel))) (skel-spec (fix-skel skel)))
-           (f*-spec fop (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
+           (f*-spec fop (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
                                (skel-base v)) (skel-spec v)))
     )
    (equal (f*-spec fop ptr (ws wsize woff base skel spec))
@@ -3308,7 +3338,7 @@
           (and (consp (cadr acl2::id))
                `(:do-not '(generalize preprocess eliminate-destructors fertilize eliminate-irrelevance)
                          :do-not-induct t
-                         :in-theory (e/d (;unfixed-size-wfixn unfixed-size-wintn 
+                         :in-theory (e/d (;unfixed-size-wfixn unfixed-size-wintn
                                                              open-ws) (;WFIXN-OF-FIX-SIZE
                                                                        ))
                          ))))
@@ -3333,7 +3363,7 @@
     (equal (op-which hop) :all)
     (not (g-op hop)))
    (equal (h*-spec hop (wv wsize woff base value spec))
-          (wv wsize woff base (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
+          (wv wsize woff base (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
                                              value) (h*-spec hop spec))))
   :hints (("goal" :induct (wv wsize woff base value spec)
            :in-theory (e/d (g? open-wv ;unfixed-size-wfixn
@@ -3351,7 +3381,7 @@
   (implies
    (fixed-spec-p spec)
    (and (fixed-spec-p (skel-spec (rs size off base spec)))
-        (acl2::unsigned-byte-p (gacc::fix-size size) ;wintn 8 size 
+        (acl2::unsigned-byte-p (gacc::fix-size size) ;wintn 8 size
                (skel-base (rs size off base spec)))))
   :hints (("goal" :in-theory (enable ;UNFIXED-SIZE-WINTN
                                       )
@@ -3376,7 +3406,7 @@
     (gacc::wr (set::head keys)
               (g (set::head keys) r)
               (mypush-aux (set::tail keys) r size))))
-              
+
 (defund mypush (r size)
   (mypush-aux (set::rkeys r) r size))
 
@@ -3405,7 +3435,7 @@
              (loghead 8 (g a r))
            0))
   :hints (("Goal" :in-theory (enable mypush))))
-    
+
 (defthm memory-clr-of-new
   (equal (gacc::memory-clr a (mem::new size))
          (mem::new size))
@@ -3436,7 +3466,7 @@
    (if (set::empty rkeys)
        (list a rkeys r)
      (if (equal a (set::head (set::insert a rkeys)))
-         (list a rkeys r)  
+         (list a rkeys r)
        (my-ind a (set::tail rkeys) (s (set::head rkeys) (g (set::head rkeys) r) r))))))
 
 
@@ -3554,7 +3584,7 @@
   (equal (mypush-aux (set::insert key rkeys) (clr key r) size)
          (mypush-aux rkeys (clr key r) size))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-                 
+
 
 (defthm mypush-irrel
   (implies (not (set::in key rkeys))
@@ -3567,13 +3597,13 @@
   (equal (mypush-aux rkeys (clr a r) size)
          (mypush-aux (set::delete a rkeys) r size))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-        
+
 
 (defthm mypush-irrel2
   (implies (not (set::in key rkeys))
            (equal (mypush-aux rkeys (s key v r) size)
                   (mypush-aux rkeys r size)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors))))        
+  :hints (("Goal" :do-not '(generalize eliminate-destructors))))
 
 ;for dave
 (defthm mypush-of-s
@@ -3605,7 +3635,7 @@
        (gacc::rd (set::head keys) tr)
        (mylift-aux (set::tail keys) tr))))
 
-;bzo 
+;bzo
 (defund mylift (m)
   (mylift-aux (mem::domain m) m))
 
@@ -3649,7 +3679,7 @@
 ;for dave
 (defthm g-of-mylift
   (equal (g a (mylift tr))
-         (if (set::in a (mem::domain; rkeys 
+         (if (set::in a (mem::domain; rkeys
                          tr))
              (loghead 8 (gacc::rd a tr))
            nil))
@@ -3679,7 +3709,7 @@
   (implies (EQUAL (LOGHEAD 8 V) 0)
            (equal (GACC::WR A V TR)
                   (gacc::memory-clr A TR))))
-          
+
 
 ;bzo improve CLR-OVER-CLR?
 
@@ -3717,7 +3747,7 @@
                   (set::delete (set::head s) (set::delete key s))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :expand ((set::delete key s)))))
-                 
+
 (defthm clr-of-mylift-aux
   (equal (clr key (mylift-aux rkeys tr))
          (mylift-aux (set::delete key rkeys) (gacc::memory-clr key tr)))
@@ -3734,7 +3764,7 @@
 
 (defun non-nil (x)
   (declare (xargs :guard t))
-  (not (null x))) 
+  (not (null x)))
 
 ;; ;sheesh even the guard has a guard...
 ;; (set::quantify-predicate (mem::address-p key mem) :arg-guard ((MEM::MEMORY-P MEM)))
@@ -3745,7 +3775,7 @@
        (not (equal 0 val))))
 
 (defun check-tr-entry (val)
-  (and ;(GACC::WF-USBP8 (cdr val)) 
+  (and ;(GACC::WF-USBP8 (cdr val))
    (equal nil (cdr val))
    (check-tr-val (car val))))
 
@@ -3781,7 +3811,7 @@
        (check-fr-keys (mem::domain tr) tr)))
 
 (defthm mylift-of-wr-1
-  (implies (and (good-memoryp tr) 
+  (implies (and (good-memoryp tr)
                 (not (EQUAL 0 (LOGHEAD 8 V))))
            (equal (mylift (gacc::wr a v tr))
                   (s a (val-fix v) (mylift tr))))
@@ -3846,9 +3876,9 @@
 
 ;skipping for now...
 ;; (defthm not-consp-g-of-cdr-but-consp-g
-;;   (IMPLIES (AND (NOT (CONSP (mem::load ;G 
+;;   (IMPLIES (AND (NOT (CONSP (mem::load ;G
 ;;                              A (CDR TR))))
-;;                 (CONSP (mem::load ;G 
+;;                 (CONSP (mem::load ;G
 ;;                         A TR))
 ;;                 (WFR TR) ;was wfr-weak
 ;;                 )
@@ -3942,7 +3972,7 @@
 ;;   (equal (mylift-aux rkeys (gacc::memory-clr a t))
 ;;          (mylift-aux (set::delete a rkeys) t))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-        
+
 
 (defthm rd-of-s-irrel
   (implies (not (equal key1 key2))
@@ -3953,17 +3983,17 @@
 
 (defthm mylift-irrel2
   (implies (not (set::in key rkeys))
-           (equal (mylift-aux rkeys (mem::store ;s 
+           (equal (mylift-aux rkeys (mem::store ;s
                                      key v tr))
                   (mylift-aux rkeys tr)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-         
+
 
 ;; (defthmd check-fr-keys-lemma
 ;;   (IMPLIES (and (CHECK-FR-KEYS keys TR)
 ;;                 (set::in a keys)
 ;;                 (consp tr))
-;;            (NOT (EQUAL (LOGHEAD 8 (CAR (mem::load ;G 
+;;            (NOT (EQUAL (LOGHEAD 8 (CAR (mem::load ;G
 ;;                                         A TR))) 0))))
 
 ;ttt
@@ -3982,7 +4012,7 @@
                   nil
                   ))
   :hints (("Goal" :in-theory (enable GOOD-MEMORYP
-                                     MEM::LOAD 
+                                     MEM::LOAD
                                      MEM::MEMORY-P
                                      MEM::|_BAD-MEMORY-P|
                                      MEM::SIZE
@@ -4005,7 +4035,7 @@
                   nil))
   :hints (("Goal" :in-theory (enable MEM::DOMAIN
                                      GOOD-MEMORYP
-                                     MEM::LOAD 
+                                     MEM::LOAD
                                      MEM::MEMORY-P
                                      MEM::|_BAD-MEMORY-P|
                                      MEM::SIZE
@@ -4033,10 +4063,10 @@
                 (set::subset (mem::domain r) keys)
                 (set::in a (mem::domain r)))
            (check-fr-key a r)))
-          
+
 
 (defthm mylift-of-wr-0-case
-  (implies (and (wf-fr tr) ;(wfr tr) 
+  (implies (and (wf-fr tr) ;(wfr tr)
                 (good-memoryp tr)
                 (equal 0 (loghead 8 v)))
            (equal (mylift (gacc::wr a v tr))
@@ -4054,7 +4084,7 @@
                             check-fr-keys
                             check-fr-key
                             GACC::MEMORY-CLR
-                            ) 
+                            )
                            (WR-OF-0-IS-CLR
                             LOGHEAD*-BETTER ;bzo why isn't this disabled?
                             LOGCAR-LOGCDR-ELIM
@@ -4065,7 +4095,7 @@
 ;bzo can we improve this?
 ;for dave
 (defthm mylift-of-wr
-  (implies (and; (good-memoryp tr) 
+  (implies (and; (good-memoryp tr)
                 (wf-fr tr)
                 ;v
                 )
@@ -4075,7 +4105,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :use ((:instance mylift-of-wr-0-case)
                  (:instance mylift-of-wr-1))
-           :in-theory (disable MYLIFT 
+           :in-theory (disable MYLIFT
                                g-of-mylift
                                ))))
 
@@ -4086,12 +4116,12 @@
 ;bzo move
 (defthm load-of-store-redux
   (equal (mem::load a (mem::store b v r))
-         (if (equal a b) 
-             v 
+         (if (equal a b)
+             v
            (mem::load a r))))
 
 ;bzo really what's checked by CHECK-FR-KEYS is the value -rename
-       
+
 (defthm check-fr-keys-of-store
   (implies (and (check-fr-keys keys tr)
                 (or (null v)
@@ -4100,13 +4130,13 @@
            (check-fr-keys keys (mem::store a v tr)))
   :hints (("Goal" :in-theory (enable check-fr-keys check-fr-key)
            :do-not '(generalize eliminate-destructors))))
-  
+
 (defthm check-fr-keys-of-s-irrel
   (implies (not (set::in a keys))
            (equal (check-fr-keys keys (mem::store a nil tr))
                   (check-fr-keys keys tr)))
   :hints (("Goal" :in-theory (enable check-fr-keys check-fr-key))))
-                 
+
 (defthm delete-when-would-be-head
   (implies (equal a (set::head (set::insert a keys)))
            (equal (set::delete a keys)
@@ -4159,16 +4189,16 @@
 
 ;ttt
 ;; (defthm consp-g-when-g-and-check-fr-keys
-;;   (implies (and (check-fr-keys (mem::domain ;rkeys 
+;;   (implies (and (check-fr-keys (mem::domain ;rkeys
 ;;                                 tr) tr)
-;;                 (mem::load ;g 
+;;                 (mem::load ;g
 ;;                  a tr) ;is not nil
-;;                 (good-memoryp ;;wfr 
+;;                 (good-memoryp ;;wfr
 ;;                  tr)
 ;;                 )
 ;;            (consp (mem::load ;g
 ;;                    a tr)))
-;;   :hints (("Goal" :use (:instance consp-g-when-in-keys-and-check-fr-keys (keys (mem::domain ;rkeys 
+;;   :hints (("Goal" :use (:instance consp-g-when-in-keys-and-check-fr-keys (keys (mem::domain ;rkeys
 ;;                                                                                 tr)))
 ;;            :in-theory (e/d (check-fr-keys) (consp-g-when-in-keys-and-check-fr-keys)))))
 
@@ -4181,7 +4211,7 @@
 ;;                               WFR
 ;;                               WFKEY
 ;;                               ))))
- 
+
 
 (defthm use-check-fr-key-1
   (implies (check-fr-key a tr)
@@ -4275,13 +4305,13 @@
 ;;            (set::all<non-nil> (mem::domain ;rkeys
 ;;                                tr)))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-;;            :in-theory (enable ;wfr 
+;;            :in-theory (enable ;wfr
 ;;                        wfkeyed wfkey rkeys))))
 
 ;trying without...
 ;; (defthm all-non-nil-of-rkeys2
 ;;   (implies (wf-fr tr)
-;;            (set::all<non-nil> (mem::domain ;RKEYS 
+;;            (set::all<non-nil> (mem::domain ;RKEYS
 ;;                                TR)))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;;            :in-theory (enable wfr WFKEYED))))
@@ -4298,7 +4328,7 @@
    (if (or (not (set::setp keys))
            (set::empty keys))
        (list keys tr)
-     (ind (set::tail keys) 
+     (ind (set::tail keys)
           (GACC::MEMORY-CLR (SET::HEAD (mem::domain ;;RKEYS
                                         TR)) tr) ;
     ;(gacc::wr (set::head keys) (gacc::rd (set::head keys) tr) tr)
@@ -4311,9 +4341,9 @@
                 )
            (equal (mem::domain ;;rkeys
                    (gacc::memory-clr a tr))
-                  (if (gacc::wf-usbp8 (mem::load ;g 
+                  (if (gacc::wf-usbp8 (mem::load ;g
                                        a tr))
-                      (if (cdr (mem::load ;g 
+                      (if (cdr (mem::load ;g
                                 a tr))
                           (set::insert a (mem::domain ;;rkeys
                                           tr))
@@ -4393,7 +4423,7 @@
 ;;             (wf-fr tr)
 ;;                 ;tr ;need to say something stronger now to imply the domain isn't empty...
 ;;                 )
-;;            (wfkey (set::head (mem::domain ;rkeys 
+;;            (wfkey (set::head (mem::domain ;rkeys
 ;;                               tr))))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;;            :in-theory (e/d (;wfr rkeys wfkey wfkeyed
@@ -4451,14 +4481,14 @@
                                           ))
           ("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable ;MEM::|_MEMORY-P|
-                       
+
                        MEM::MEM-TREE-DOMAIN
-                       mem::domain 
+                       mem::domain
                        mem::new
                        good-memoryp
                        MEM::MEMORY-P
 ;MEM::SIZE
-                              
+
                        MEM::|_MEMORY-P|
                        MEM::|_MEMORY-FIX|
                        MEM::|_MEMORY-SIZE|
@@ -4476,9 +4506,9 @@
   (implies (good-memoryp fr)
            (equal (mem::size (gacc::memory-clr a fr))
                   (mem::size fr)))
-  :hints (("Goal" :in-theory (e/d (GACC::MEMORY-CLR 
+  :hints (("Goal" :in-theory (e/d (GACC::MEMORY-CLR
                                    GACC::WR
-                                   GOOD-MEMORYP) 
+                                   GOOD-MEMORYP)
                                   (WR-OF-0-IS-CLR)))))
 
 (defthm wf-fr-of-memory-clr
@@ -4546,10 +4576,10 @@
                   fr))
   :hints (("subgoal *1/1" :use (:instance empty-domain-means))
           ("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d ( ;wfr 
+           :in-theory (e/d ( ;wfr
                             CHECK-FR-KEY
                             CHECK-FR-KEYS
-                            mypush-aux mylift-aux) 
+                            mypush-aux mylift-aux)
                            ( ;gacc::wr==r!
                             ))
            :induct (ind rkeys fr)
@@ -4574,7 +4604,7 @@
   (if (set::empty keys)
       nil ;the empty record
     (s ;mem::store
-     (set::head keys) 
+     (set::head keys)
        (val-fix (g (set::head keys) r))
        (typed-fix-aux (set::tail keys) r))))
 
@@ -4596,12 +4626,12 @@
                                     A TR))
                               (SET::INSERT A (mem::domain ;RKEYS
                                               TR))
-                              (SET::DELETE A (mem::domain ;RKEYS 
+                              (SET::DELETE A (mem::domain ;RKEYS
                                               TR)))
                           (SET::INSERT A (mem::domain ;RKEYS
                                           TR)))
                       (IF (GACC::USBP8-ZP V)
-                          (mem::domain ; RKEYS 
+                          (mem::domain ; RKEYS
                            TR)
                           (SET::INSERT A (mem::domain ;RKEYS
                                           TR))))))
@@ -4623,12 +4653,12 @@
    (if (or (not (set::setp keys))
            (set::empty keys))
        (list keys r)
-     (ind3 (set::tail keys) 
+     (ind3 (set::tail keys)
            (CLR (SET::HEAD (SET::RKEYS R)) r) ;
     ;(gacc::wr (set::head keys) (gacc::rd (set::head keys) tr) tr)
            ))))
 
-(defthmd g-when-not-g-of-cdr 
+(defthmd g-when-not-g-of-cdr
   (implies (and (not (g key (cdr r)))
                 (wfr r)
                 )
@@ -4679,7 +4709,7 @@
            (equal (mem::load ;g
                    key (mypush-aux keys r size))
                   nil))
-  :hints (("Goal" :in-theory (e/d (GACC::WR) 
+  :hints (("Goal" :in-theory (e/d (GACC::WR)
                                   (NOT-IN-DOMAIN-MEANS-LOAD-IS-NIL
                                    NOT-CHECK-FR-KEYS-1))
            :do-not '(generalize eliminate-destructors))))
@@ -4716,7 +4746,7 @@
 ;                (set::all<non-nil> keys) ;drop?
                 (posp size)
                 (equal keys (set::rkeys r)))
-           (equal (mylift-aux (mem::domain ;rkeys 
+           (equal (mylift-aux (mem::domain ;rkeys
                                (mypush-aux keys r size))
                               (mypush-aux keys r size))
                   (typed-fix-aux keys r)))
@@ -4751,7 +4781,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;          :induct (ind3 keys r)
            )))
-          
+
 (defthm typed-fix-does-nothing-helper
   (implies (and (all-vals-okay-aux keys r)
                 (equal keys (set::rkeys r))
@@ -4768,7 +4798,7 @@
   (declare (xargs :verify-guards nil))
   (and (wfr r)
        (all-vals-okay-aux (set::rkeys r) r)))
-  
+
 ;for Dave
 ;bzo is this stuff common to both tr- and fr-?
 (defthm typed-fix-does-nothing
@@ -4776,17 +4806,17 @@
            (equal (typed-fix r)
                   r))
   :hints (("Goal" :in-theory (enable typed-fix well-typed-record)
-           :do-not '(generalize eliminate-destructors))))          
+           :do-not '(generalize eliminate-destructors))))
 
 (defthm good-memoryp-implies-non-nil-hack
   (implies (not x)
            (not (acl2::good-memoryp x))))
-          
+
 (defthm wr-non-nil-when-good-memoryp
   (implies (acl2::good-memoryp m)
            (GACC::WR a v m))
   :otf-flg t
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance acl2::good-memoryp-of-store
                             (acl2::a a)
                             (acl2::v (CDR (MEM::LOAD A M)))
@@ -4801,7 +4831,7 @@
                             (acl2::v (CONS (ACL2::LOGHEAD 8 V)
                                            (CDR (MEM::LOAD A M))))
                             (acl2::mem m)))
-                          
+
            :in-theory (e/d (GACC::WR) (acl2::good-memoryp-of-store)))))
 ;; (thm
 ;;  (ACL2::MYPUSH-AUX keys (set::rkeys r) size))
@@ -4851,7 +4881,7 @@
 (defthm clr-of-mylift
   (implies (good-memoryp m)
            (equal (clr key (acl2::mylift m))
-                  (acl2::mylift ( ;gacc::memory-clr 
+                  (acl2::mylift ( ;gacc::memory-clr
                                  mem::clear
                                  key m))))
   :hints (("Goal" :in-theory (enable acl2::mylift))))
@@ -4927,7 +4957,7 @@
   :hints (("Goal" :use (:instance wf-fr-of-MYPUSH-AUX (keys2 (set::rkeys R)))
            :in-theory (e/d (mypush wf-fr) (wf-fr-of-MYPUSH-AUX)))))
 
-;bzo or put this elsewhere and don't include paths for this book (there's not much pathy stuff here?)          
+;bzo or put this elsewhere and don't include paths for this book (there's not much pathy stuff here?)
 (defthm gp-of-mylift-singleton
   (equal (path::gp (list a) (acl2::mylift tr))
          (if (set::in a (mem::domain tr))
@@ -4939,7 +4969,7 @@
 (defthm well-typed-record-of-clrp-singleton
   (implies (acl2::well-typed-record m)
            (acl2::well-typed-record (path::clrp (list key) m)))
-  :hints (("Goal" :in-theory (e/d (path::clrp-singleton-becomes-clr) 
+  :hints (("Goal" :in-theory (e/d (path::clrp-singleton-becomes-clr)
                                   (path::clr-becomes-clrp-singleton
                                    )))))
 
@@ -4947,7 +4977,7 @@
   (implies (acl2::good-memoryp m)
            (equal (path::clrp (list key) (acl2::mylift m))
                   (acl2::mylift (mem::clear key m))))
-  :hints (("Goal" :in-theory (e/d (path::clrp-singleton-becomes-clr) 
+  :hints (("Goal" :in-theory (e/d (path::clrp-singleton-becomes-clr)
                                   (path::SP==R ;bzo looped
                                    path::clr-becomes-clrp-singleton)))))
 
@@ -5053,7 +5083,7 @@
   (implies (and (set::in acl2::key keys)
                 (acl2::check-fr-keys keys acl2::m))
            (not (cdr (mem::load acl2::key acl2::m))))
-  :hints (("Goal" :in-theory (enable acl2::check-fr-keys)))) 
+  :hints (("Goal" :in-theory (enable acl2::check-fr-keys))))
 
 (defthm not-cdr-load
  (implies (ACL2::WF-FR ACL2::M)
@@ -5076,7 +5106,7 @@
                            (acl2::key ACL2::KEY)
                            (acl2::keys (MEM::DOMAIN ACL2::M))
                            (acl2::tr acl2::m))
-                                  
+
            :in-theory (e/d (acl2::mylift) (acl2::mylift-irrel)))))
 
 (in-theory (disable acl2::clr-of-mylift))
@@ -5092,7 +5122,7 @@
 ;for efficiency:
 ;(local (in-theory (disable BAG::DISJOINT-APPEND-REDUCTION)))
 
-(in-theory (disable 
+(in-theory (disable
             (:REWRITE DEFAULT-<-2)
             (:REWRITE DEFAULT-<-1)
             (:REWRITE DEFAULT-+-2)
@@ -5115,7 +5145,7 @@
                (and (equal (car skel) 'quote)
                     (consp (cdr skel))
                     (not (null (cadr skel))))))))
-      
+
 
 (defun syntax-atom (m)
   (declare (type t m))
@@ -5132,7 +5162,7 @@
 ;bzo
 (defthm integerp-+
   (implies
-   (and 
+   (and
     (integerp x)
     (integerp y))
    (integerp (+ x y))))
@@ -5190,11 +5220,11 @@
   (declare (type t skel))
   (if (consp skel)
       (let ((entry (car skel)))
-        (and (skel-entry-body entry (acl2::unsigned-byte-p (fix-size size) ;wintn 8 size 
+        (and (skel-entry-body entry (acl2::unsigned-byte-p (fix-size size) ;wintn 8 size
                                                            ptr) (weak-skel type))
              (weak-skel (cdr skel))))
     (null skel)))
-   
+
 (defthm weak-skel-implies-true-listp
   (implies
    (weak-skel skel)
@@ -5206,7 +5236,7 @@
                 (consp skel))
            (equal (weak-skel skel)
                   (let ((entry (car skel)))
-                    (and (skel-entry-body entry (acl2::unsigned-byte-p (fix-size size) ;wintn 8 size 
+                    (and (skel-entry-body entry (acl2::unsigned-byte-p (fix-size size) ;wintn 8 size
                                                                        ptr) (weak-skel type))
                          (weak-skel (cdr skel)))))))
 
@@ -5230,7 +5260,7 @@
 (defthm blks-of-cons
   (equal (blks (cons a skel))
          (append  (BLK (+ (IFIX (CADR a)) (CADDR a))
-                       (1+ (MAX-OFFSET (CADDDR a)))) 
+                       (1+ (MAX-OFFSET (CADDDR a))))
                   (blks skel)))
   :hints (("Goal" :in-theory (e/d (blks) (ifix)))))
 
@@ -5299,7 +5329,7 @@
   (implies (not (consp skel))
            (not (mesh skel)))
   :hints (("Goal" :in-theory (enable mesh))))
-         
+
 (defthmd open-mesh
   (and
    (implies
@@ -5356,21 +5386,21 @@
   (if (consp skel)
       (let ((entry (car skel)))
         (and (skel-entry-body entry
-                              (wf-skel type) 
-                              (acl2::unsigned-byte-p (fix-size size) ptr) ;(wintn 8 size ptr) 
+                              (wf-skel type)
+                              (acl2::unsigned-byte-p (fix-size size) ptr) ;(wintn 8 size ptr)
                               (unique (blks type))
                               (uniform-base type)
                               )
              (wf-skel (cdr skel))))
     (null skel)))
-   
+
 (defthm open-wf-skel
   (implies (and (syntaxp (syntax-consp-or-symbol skel))
                 (consp skel))
            (equal (wf-skel skel)
                   (let ((entry (car skel)))
-                    (and (skel-entry-body entry 
-                                          (wf-skel type) 
+                    (and (skel-entry-body entry
+                                          (wf-skel type)
                                           (acl2::unsigned-byte-p (fix-size size) ptr) ;(wintn 8 size ptr)
                                           (unique (blks type))
                                           (uniform-base type)
@@ -5419,7 +5449,7 @@
 
 (defthm rmax-bound-rewrite
   (implies
-   (and 
+   (and
     (<= (size-rec max1 skel) rmax)
     (< (+ index (max-offset size)) (nfix max1)))
    (< (+ index (max-offset size)) rmax))
@@ -5473,9 +5503,9 @@
 ;; other functions that used g* .. hmm.
 ;;
 ;; Actually, I think we want to use x* in the following manner ..
-;; 
+;;
 ;; (x* ptr (g* ptr dtype ram) (fn ram))
-;; 
+;;
 ;; x* allows us to extract the functionality of fn as it applies to
 ;; the original structure (g* ..).
 ;;
@@ -5947,9 +5977,9 @@
 ;; rx/wx - x*/g*/s* rules
 ;;
 
-(in-theory (disable DEFAULT-*-2 DEFAULT-*-1 
-                    ACL2::INTEGERP-+-MINUS-* 
-                    ACL2::INTEGERP-*-CONSTANT-MEANS-1 
+(in-theory (disable DEFAULT-*-2 DEFAULT-*-1
+                    ACL2::INTEGERP-+-MINUS-*
+                    ACL2::INTEGERP-*-CONSTANT-MEANS-1
 ;                    ACL2::TOP-BIT-MEANS-<
                     ACL2::INTEGERP-+-MINUS-*
                     ;DISJOINT-BLK-FREE-BACKCHAINING-1
@@ -6000,7 +6030,7 @@
 (defthm rx-over-s*-mesh
   (implies
    (and
-    (disjoint (flatten wskel) 
+    (disjoint (flatten wskel)
               (blk rptr (1+ (max-offset rsize))))
     (wf-skel wskel)
     )
@@ -6143,13 +6173,13 @@
            :in-theory (e/d (bag::disjoint-of-append-one ;yuck
                               mesh
                               blks
-                              bag::disjoint-of-append-two) 
+                              bag::disjoint-of-append-two)
                            (ifix)))))
 
 (defthm subbagp-blks-g*-fix-lemma
   (subbagp (BLKS (G*-FIX PTR C2 a))
            (BLKS a)))
-     
+
 (defthm disjoint-blks-g*-fix
   (implies (disjoint (blks a) b)
            (disjoint (blks (g*-fix ptr c a)) b))
@@ -6190,7 +6220,7 @@
                (g* ptr skel ram)))
 
 
-(in-theory (disable 
+(in-theory (disable
             G*-OVER-S*-S*
             BLKS-G*-REDUCTION-CASESPLIT
             ))
@@ -6379,7 +6409,7 @@
            (equal (flat list)
                   (append (car list)
                           (flat (cdr list)))))
-  :hints (("goal" :in-theory (enable flat))))      
+  :hints (("goal" :in-theory (enable flat))))
 
 (defun syntax-atom (m)
   (declare (type t m))
@@ -6398,7 +6428,7 @@
   (implies (not (line-p x))
            (equal (equal (line k (skel b s)) x)
                   nil))
-  :hints (("goal" :in-theory (enable ;weak-skel-p skel-p 
+  :hints (("goal" :in-theory (enable ;weak-skel-p skel-p
                                      ;line-p line-skel weak-line-p line skel
                                      ))))
 
@@ -6471,13 +6501,13 @@
 
 (defthm fix-skel-skel-p
   (implies (skel-p skel)
-           (equal (fix-skel skel) 
+           (equal (fix-skel skel)
                   skel))
   :hints (("goal" :in-theory (enable fix-skel))))
 
 (defun wfixn-skel (size skel)
   (let ((skel (fix-skel skel)))
-    (skel (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+    (skel (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                  (skel-base skel))
           (skel-spec skel))))
 
@@ -6494,7 +6524,7 @@
 (defun op-base (h type base valu)
   (declare (type t h type base valu))
   (if (equal type :ptr)
-      (if (equal h :x) base 
+      (if (equal h :x) base
         (if (equal h :z) 0 valu))
     base))
 
@@ -6522,7 +6552,7 @@
                    (wf-skels (cdr skels))))
           (wf-skels (cdr skels))))
     t))
-      
+
 (defun g*-spec (op ptr spec ram)
   (declare (type (satisfies op-p) op)
            (type (satisfies wf-spec) spec)
@@ -6540,10 +6570,10 @@
                     )
                 (let ((read (rx size (+<> off ptr) ram)))
                   (let ((base (skel-base skel)))
-                    (let ((base (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                    (let ((base (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                        (ifix (op-base h type base read))
                                        )))
-                      (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                      (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                           (ifix (if (whichtype w type) read value))
                                           )))
                         (let ((skel (if (ptr? type) (skel base (g*-spec op base (skel-spec skel) ram)) skel)))
@@ -6589,7 +6619,7 @@
                 SKEL)))
           (UPDATE-SLOT SLOT :VAL VALUE :SKEL SKEL))))))))
    SLOT))
-  
+
 (DEFTHM G*-SPEC-of-non-cons
   (implies (not (consp spec))
            (EQUAL (G*-SPEC OP ptr spec RAM)
@@ -6614,7 +6644,7 @@
   (equal (cdr (G*-SPEC OP ptr spec RAM))
          (g*-spec op ptr (cdr spec) ram))
   :hints (("Goal" :in-theory (e/d (g*-spec) (numwhich numtype op-base ptr? whichtype)))))
-                
+
 
 
 (defthm wf-spec-g*-spec
@@ -6649,9 +6679,9 @@
                     )
                 (let ((read (rx size (+<> off ptr) ram)))
                   (let ((base (skel-base skel)))
-                    (let ((base (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                    (let ((base (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                        (op-base h type base read))))
-                      (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                      (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                           (if (whichtype w type) read value))))
                         (let ((skel (if (ptr? type) (skel base (g*-spec op base (skel-spec skel) ram)) skel)))
                           (cons (update-slot slot
@@ -6787,13 +6817,13 @@
                     (skel  (slot-skel slot)))
                 (let ((read value))
                   (let ((base (skel-base skel)))
-                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size 
+                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size
                                        (ifix (op-base h type base read)))))
-                      (let ((value (acl2::loghead (fix-size size) ;wfixn 8 size 
+                      (let ((value (acl2::loghead (fix-size size) ;wfixn 8 size
                                           (ifix (if (whichtype w type) value (rx size (+<> off ptr) ram))))))
                         (let ((ram (wx size (+<> off ptr) value ram)))
                           (let ((ram (if (ptr? type)
-                                         (s*-spec op base (skel-spec skel) ram) 
+                                         (s*-spec op base (skel-spec skel) ram)
                                        ram)))
                             (s*-spec op ptr (cdr spec) ram)))))))))
           (s*-spec op ptr (cdr spec) ram)))
@@ -6818,13 +6848,13 @@
                     (skel  (slot-skel slot)))
                 (let ((read value))
                   (let ((base (skel-base skel)))
-                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size 
+                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size
                                        (op-base h type base read))))
-                      (let ((value (acl2::loghead (fix-size size) ;wfixn 8 size 
+                      (let ((value (acl2::loghead (fix-size size) ;wfixn 8 size
                                           (if (whichtype w type) value (rx size (+<> off ptr) ram)))))
                         (let ((ram (wx size (+<> off ptr) value ram)))
                           (let ((ram (if (ptr? type)
-                                         (s*-spec op base (skel-spec skel) ram) 
+                                         (s*-spec op base (skel-spec skel) ram)
                                        ram)))
                             (s*-spec op ptr (cdr spec) ram)))))))))
           (s*-spec op ptr (cdr spec) ram)))))
@@ -6898,7 +6928,7 @@
                     (value (slot-val slot)))
                 (let ((read value))
                   (let ((base (skel-base skel)))
-                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size 
+                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size
                                        (ifix (op-base h type base read)))))
                       (let ((blk (if (whichtype w type) (list (sblk size (+<> off ptr))) nil)))
                         (let ((rec (if (ptr? type) (f*-spec op base (skel-spec skel)) nil)))
@@ -6931,7 +6961,7 @@
                     (value (slot-val slot)))
                 (let ((read value))
                   (let ((base (skel-base skel)))
-                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size 
+                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size
                                        (op-base h type base read))))
                       (let ((blk (if (whichtype w type) (list (sblk size (+<> off ptr))) nil)))
                         (let ((rec (if (ptr? type) (f*-spec op base (skel-spec skel)) nil)))
@@ -7037,12 +7067,12 @@
                     )
                 (let ((read value))
                   (let ((base (skel-base skel)))
-                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size 
+                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size
                                                (ifix (op-base h type base read)))))
-                      (let ((value (acl2::loghead (fix-size size) ;wfixn 8 size 
+                      (let ((value (acl2::loghead (fix-size size) ;wfixn 8 size
                                                   (ifix (if (whichtype w type) read 0)))))
                         (let ((skel (if (ptr? type) (skel base (h*-spec op (skel-spec skel))) skel)))
-                          (cons (update-slot slot 
+                          (cons (update-slot slot
                                              :val  value
                                              :skel skel
                                              )
@@ -7141,12 +7171,12 @@
                          )
                      (let ((read value))
                        (let ((base (skel-base skel)))
-                         (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size 
+                         (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size
                                                     (op-base h type base read))))
-                           (let ((value (acl2::loghead (fix-size size) ;wfixn 8 size 
+                           (let ((value (acl2::loghead (fix-size size) ;wfixn 8 size
                                                        (if (whichtype w type) read 0))))
                              (let ((skel (if (ptr? type) (skel base (h*-spec op (skel-spec skel))) skel)))
-                               (cons (update-slot slot 
+                               (cons (update-slot slot
                                                   :val  value
                                                   :skel skel
                                                   )
@@ -7175,7 +7205,7 @@
             (let ((key  (line-key line))
                   (skel (line-skel line)))
               (let ((base (op-base (op-how op) :ptr (skel-base skel) key)))
-                (let ((key key)) 
+                (let ((key key))
                   (cons (line key (skel base (h*-spec op (skel-spec skel))))
                         (h*-list op (cdr skels))))))
           (cons line (h*-list op (cdr skels)))))
@@ -7212,7 +7242,7 @@
             (let ((key  (line-key line))
                   (skel (line-skel line)))
               (let ((base (op-base (op-how op) :ptr (skel-base skel) key)))
-                (let ((key key)) 
+                (let ((key key))
                   (cons (line key (skel base (h*-spec op (skel-spec skel))))
                         (h*-list op (cdr skels))))))
           (cons line (h*-list op (cdr skels)))))))
@@ -7247,7 +7277,7 @@
                     (value (slot-val  slot))
                     )
                 (let ((read value))
-                  (let ((value (if (whichtype w type) (list (acl2::loghead (fix-size size) ;wfixn 8 size 
+                  (let ((value (if (whichtype w type) (list (acl2::loghead (fix-size size) ;wfixn 8 size
                                                                            (ifix read)
                                                                            )) nil)))
                     (let ((rec (if (ptr? type) (v*-spec op (skel-spec skel)) nil)))
@@ -7274,7 +7304,7 @@
                     (value (slot-val  slot))
                     )
                 (let ((read value))
-                  (let ((value (if (whichtype w type) (list (acl2::loghead (fix-size size) ;wfixn 8 size 
+                  (let ((value (if (whichtype w type) (list (acl2::loghead (fix-size size) ;wfixn 8 size
                                                                            read)) nil)))
                     (let ((rec (if (ptr? type) (v*-spec op (skel-spec skel)) nil)))
                       (append value
@@ -7293,9 +7323,9 @@
 (defthm true-listp-v*-spec
   (true-listp (v*-spec op spec)))
 
-(in-theory 
- (disable 
-  (:definition v*-spec) 
+(in-theory
+ (disable
+  (:definition v*-spec)
   (v*-spec)
   ))
 
@@ -7353,7 +7383,7 @@
                     (sspec (skel-spec skel)))
                 (and (acl2::unsigned-byte-p (fix-size size) value) ;(wintn 8 size value)
                      (implies* (ptr? type)
-                               (and (acl2::unsigned-byte-p (fix-size size) ;wintn 8 size 
+                               (and (acl2::unsigned-byte-p (fix-size size) ;wintn 8 size
                                            base)
                                     (fixed-spec-p sspec)))
                      (fixed-spec-p (cdr spec)))))
@@ -7436,7 +7466,7 @@
    (syntaxp (symbolp sop))
    (equal (s*-spec sop ptr spec ram)
           (s*-spec (xop sop) ptr spec ram)))
-  :hints (("Goal" :in-theory (disable 
+  :hints (("Goal" :in-theory (disable
                               ;for efficiency:
                               whichtype OP-BASE ptr? ifix
                                       ))))
@@ -7470,14 +7500,14 @@
       (let ((ram (z*-rec (car zlist) ram)))
         (z* (cdr zlist) ram))
     ram))
- 
+
 ;;
 ;; This may be helpful in extending the z*-rec lemmas to z*
 ;;
 ;bzo nested inductions
 
-(defthmd z*-reduction 
-  (equal (z* zlist ram) 
+(defthmd z*-reduction
+  (equal (z* zlist ram)
          (z*-rec (flat zlist) ram))
   :hints (("Goal" :in-theory (enable append  ;bzo why the enables?
                                      flat
@@ -7485,20 +7515,20 @@
 
 (defthmd z*-wx-introduction
   (equal (equal (wx size ptr value ram1)
-                ram2) 
-         (and (equal (z* (list (sblk size ptr)) ram1) 
-                     (z* (list (sblk size ptr)) ram2)) 
-              (tag-location ptr (equal (acl2::loghead (fix-size size) ;wfixn 8 size 
-                                              value) 
-                                       (rx size ptr ram2))))) 
-  :hints (("Goal" :in-theory (e/d (blk sblk wx rx failed-location ;wfixn 
+                ram2)
+         (and (equal (z* (list (sblk size ptr)) ram1)
+                     (z* (list (sblk size ptr)) ram2))
+              (tag-location ptr (equal (acl2::loghead (fix-size size) ;wfixn 8 size
+                                              value)
+                                       (rx size ptr ram2)))))
+  :hints (("Goal" :in-theory (e/d (blk sblk wx rx failed-location ;wfixn
                                        wx==ram-rec)
                                   (
                                    open-rx-rec open-wx-rec z*-same-wx-rec-0)))))
 
 ;bzo WX==RAM-REC seemed to loop here when wx was disabled...
-(defthm z*-of-wx 
-  (implies 
+(defthm z*-of-wx
+  (implies
    (any-subbagp (sblk size ptr) zlist)
    (equal (z* zlist (wx size ptr value ram1))
           (z* zlist ram1)))
@@ -7542,7 +7572,7 @@
 
 (defun update-slot-value (value slot)
   (let ((size (slot-size slot)))
-    (update-slot slot :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+    (update-slot slot :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                   value))))
 
 (defun update-slot-skel (skel slot)
@@ -7677,7 +7707,7 @@
     nil))
 
 (defun ptr! (op)
-  (if (whichtype (op-which op) :ptr) 
+  (if (whichtype (op-which op) :ptr)
       (update-op op :which :ptr)
     (update-op op :which :nil)))
 
@@ -7729,40 +7759,40 @@
     (equal (op-which gop) :val)
     (equal wbase base)
     (equal wptr (+ (ifix woff) (ifix wbase)))
-     
+
     (unique (flat (f*-spec (update-op gop :which :all) base (v0 (split-blk spec)))))
-     
+
     (memberp (sblk wsize (+<> woff wbase))
              (f*-spec gop base (v0 (split-blk spec))))
-     
+
     (subbagp (sblk wsize (+<> woff wbase))
              (flat (f*-spec gop base (v0 (split-blk spec)))))
-     
+
     )
    (equal (g*-spec gop base (v0 (split-blk spec)) (wx wsize wptr value ram))
-          (wv wsize woff wbase (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
-                                      value) 
+          (wv wsize woff wbase (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
+                                      value)
               (g*-spec gop base (v0 (split-blk spec)) ram))))
   :otf-flg t
   :rule-classes nil
-  :hints (("goal" :induct (len spec) 
-           :do-not '(generalize ;preprocess 
+  :hints (("goal" :induct (len spec)
+           :do-not '(generalize ;preprocess
                                 eliminate-destructors fertilize eliminate-irrelevance)
            :do-not-induct t
            :in-theory (e/d (open-wv
-                            ;len 
+                            ;len
                             bag::flat-of-cons
 ;                            (:REWRITE ACL2::DISJOINT-COMMUTATIVE)
 ;                           (:REWRITE ACL2::MEMBERP-COMPUTATION)
-                            (:REWRITE BAG::UNIQUE-of-APPEND) 
-                            bag::disjoint-of-append-one 
-                            bag::disjoint-of-append-two 
-                            LIST::memberp-of-cons 
+                            (:REWRITE BAG::UNIQUE-of-APPEND)
+                            bag::disjoint-of-append-one
+                            bag::disjoint-of-append-two
+                            LIST::memberp-of-cons
                             bag::disjoint-of-flat-helper-2
                             bag::disjoint-of-flat-helper
                             BAG::SUBBAGP-MEANS-RARELY-DISJOINT
                             BAG::SUBBAGP-MEANS-RARELY-DISJOINT-two
-                            g*-spec-over-wx 
+                            g*-spec-over-wx
                             f*-spec-vp-perm
 ;                            unfixed-size-wfixn
                             unfixed-size-rx
@@ -7773,9 +7803,9 @@
                             ;;whichtype
                             ;;START-OF-F*-SPEC
                             ;;wfixn-of-fix-size
-                            ;;subbagp-membership-fwd 
-                            ;;subbagp-membership-free 
-                            ;;bag::memberp-implies-subbagp-flat 
+                            ;;subbagp-membership-fwd
+                            ;;subbagp-membership-free
+                            ;;bag::memberp-implies-subbagp-flat
                             zz-wv-introduction)))))
 
 (defthm rv-over-g*-spec-helper
@@ -7799,7 +7829,7 @@
                             bag::disjoint-of-append-two
                             LIST::memberp-of-cons
                             bag::disjoint-of-flat-helper-2
-                            bag::unique-of-append 
+                            bag::unique-of-append
                             F*-SPEC-VP-PERM
                             UNFIXED-SIZE-RX
 ;                                          UNFIXED-SIZE-WFIXN
@@ -7807,7 +7837,7 @@
                             BAG::MEMBERP-SUBBAGP
 ;                                           BAG::NOT-MEMBERP-OF-CDR-CHEAP
                             BAG::SUBBAGP-IMPLIES-SUBBAGP-APPEND-CAR
-                            ) 
+                            )
                            ( ;wfixn-of-fix-size
                             ;;ptr!
                             ;;F*-SPEC-VP-PERM
@@ -7834,7 +7864,7 @@
     (unique (flat (f*-spec (update-op gop :which :all) base (v0 (split-blk spec)))))
     )
    (equal (g*-spec gop base (v0 (split-blk spec)) (wx wsize wptr value ram))
-          (wv wsize woff wbase (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
+          (wv wsize woff wbase (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
                                               value)
               (g*-spec gop base (v0 (split-blk spec)) ram))))
   :hints (("goal" :use (:instance g*-spec-v0-split-blk-of-wx-helper)
@@ -7935,7 +7965,7 @@
         (equal (v0 (join-list list (append x y)))
                (v0 (join-list list x)))
         (equal (v1 (join-list list (append x y)))
-               (append (v1 (join-list list x)) y)))) 
+               (append (v1 (join-list list x)) y))))
   :hints (("goal" :in-theory (enable default-car default-cdr))))
 
 (defthm join-list-split-list
@@ -8013,11 +8043,11 @@
                     (value (slot-val slot)))
                 (let ((read value))
                   (let ((base (skel-base skel)))
-                    (let ((base (if (ptr? type) (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                    (let ((base (if (ptr? type) (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                        (op-base h type base read))
                                   base)))
                       (let ((slot (update-slot slot
-                                               :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                                               :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                            value)
                                                :off (+<> off ptr)
                                                :skel (skel base nil))))
@@ -8044,11 +8074,11 @@
                     (value (slot-val slot)))
                 (let ((read value))
                   (let ((base (skel-base skel)))
-                    (let ((base (if (ptr? type) (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                    (let ((base (if (ptr? type) (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                        (op-base h type base read))
                                   base)))
                       (let ((slot (update-slot slot
-                                               :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                                               :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                            value)
                                                :off (+<> off ptr)
                                                :skel (skel base nil))))
@@ -8107,21 +8137,21 @@
                     (value (slot-val  slot))
                     )
                 (if (and (whichtype w type) (not (consp rec))) (mv spec rec nil)
-                  (let ((read (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                  (let ((read (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                              (slot-val (car rec))))
                         (rec  (if (whichtype w type) (cdr rec) rec)))
-                    (let ((base (if (ptr? type) (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                    (let ((base (if (ptr? type) (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                                (skel-base skel)) (skel-base skel))))
-                      (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                      (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                           (if (whichtype w type) read value))))
                         (let ((base (op-base h type base value)))
                           (let ((skel-spec (skel-spec skel)))
                             (met ((skel-spec rec hit1) (if (ptr? type)
-                                                           (rec->spec op skel-spec rec) 
+                                                           (rec->spec op skel-spec rec)
                                                          (mv skel-spec rec t)))
                                  (let ((skel (skel base skel-spec)))
                                    (met ((spec rec hit2) (rec->spec op (cdr spec) rec))
-                                        (mv (cons (update-slot slot :val value :skel skel) spec) 
+                                        (mv (cons (update-slot slot :val value :skel skel) spec)
                                             rec (and hit1 hit2)))))))))))))
           (met ((spec rec hit) (rec->spec op (cdr spec) rec))
                (mv (cons slot spec) rec hit))))
@@ -8143,21 +8173,21 @@
                     (value (slot-val  slot))
                     )
                 (if (and (whichtype w type) (not (consp rec))) (mv spec rec nil)
-                  (let ((read (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                  (let ((read (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                              (slot-val (car rec))))
                         (rec  (if (whichtype w type) (cdr rec) rec)))
-                    (let ((base (if (ptr? type) (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                    (let ((base (if (ptr? type) (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                                (skel-base skel)) (skel-base skel))))
-                      (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                      (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                   (if (whichtype w type) read value))))
                         (let ((base (op-base h type base value)))
                           (let ((skel-spec (skel-spec skel)))
                             (met ((skel-spec rec hit1) (if (ptr? type)
-                                                           (rec->spec op skel-spec rec) 
+                                                           (rec->spec op skel-spec rec)
                                                          (mv skel-spec rec t)))
                                  (let ((skel (skel base skel-spec)))
                                    (met ((spec rec hit2) (rec->spec op (cdr spec) rec))
-                                        (mv (cons (update-slot slot :val value :skel skel) spec) 
+                                        (mv (cons (update-slot slot :val value :skel skel) spec)
                                             rec (and hit1 hit2)))))))))))))
           (met ((spec rec hit) (rec->spec op (cdr spec) rec))
                (mv (cons slot spec) rec hit))))
@@ -8172,7 +8202,7 @@
   (implies (syntaxp (symbolp op))
            (equal (rec->spec op spec rec)
                   (rec->spec (xop op) spec rec)))
-  :hints (("Goal" :in-theory (disable numwhich 
+  :hints (("Goal" :in-theory (disable numwhich
                                       numtype
                                       op-base
                                       ptr?
@@ -8205,9 +8235,9 @@
                             ATOMIC-REC->SPEC-REPLACEMENT
                             BINARY-APPEND
                             SLOT-P
-                            skel-extensionality! 
+                            skel-extensionality!
                             SLOT-EXTENSIONALITY!!
-                            default-car 
+                            default-car
                             numwhich
                             numtype
                             ptr?
@@ -8247,9 +8277,9 @@
          (not (consp (v1 (rec->spec op template (spec->rec op ptr spec)))))))
   :rule-classes nil
   :hints (("goal" :induct (spec->rec op ptr spec)
-           :do-not '(generalize eliminate-destructors 
+           :do-not '(generalize eliminate-destructors
                                 fertilize eliminate-irrelevance)
-           :in-theory (e/d (binary-append) (numwhich 
+           :in-theory (e/d (binary-append) (numwhich
                                             numtype
                                             op-base
                                             ;;whichtype
@@ -8268,10 +8298,10 @@
        (not (consp (v1 (rec->spec op spec (spec->rec op ptr spec))))))
   :hints (("goal" :induct (spec->rec op ptr spec))
           (and (consp (cadr acl2::id))
-               `(:do-not '(generalize preprocess eliminate-destructors 
+               `(:do-not '(generalize preprocess eliminate-destructors
                                       fertilize eliminate-irrelevance)
-                         :in-theory (e/d (binary-append) 
-                                         (numwhich numtype 
+                         :in-theory (e/d (binary-append)
+                                         (numwhich numtype
                                                    SLOT-EXTENSIONALITY
                                                    ;ptr?
                                                    op-base
@@ -8301,7 +8331,7 @@
   :otf-flg t
   :hints (("goal" :do-not '(generalize preprocess eliminate-destructors
                                        fertilize eliminate-irrelevance)
-           :in-theory (e/d (g? binary-append) 
+           :in-theory (e/d (g? binary-append)
                            (SKEL-EXTENSIONALITY!
                             ;;GACC::ATOMIC-REC->SPEC-REPLACEMENT ;made things worse...
                             numwhich
@@ -8328,7 +8358,7 @@
 ;  :otf-flg t
   :hints (("goal" :do-not '(generalize preprocess eliminate-destructors
                                        fertilize eliminate-irrelevance)
-           :in-theory (e/d (g? rec->spec-h*-spec-not-which-introduction-1) 
+           :in-theory (e/d (g? rec->spec-h*-spec-not-which-introduction-1)
                            (SKEL-EXTENSIONALITY!
                             SLOT-EXTENSIONALITY!!
                             SLOT-EXTENSIONALITY
@@ -8353,7 +8383,7 @@
                   (v2 (rec->spec op (h*-spec (not-which op) spec) rec))))
   :hints (("goal" :do-not '(generalize preprocess eliminate-destructors
                                        fertilize eliminate-irrelevance)
-           :in-theory (e/d (g? rec->spec-h*-spec-not-which-introduction-1) 
+           :in-theory (e/d (g? rec->spec-h*-spec-not-which-introduction-1)
                            (SKEL-EXTENSIONALITY!
                             ;;GACC::ATOMIC-REC->SPEC-REPLACEMENT ;made things worse...
                             numwhich
@@ -8368,11 +8398,11 @@
            :do-not-induct t
            :induct (rec->spec op spec rec))
           ))
- 
+
 (defun rec->spec-of-spec->rec-hyp (op template spec)
   (equal (h*-spec (not-which op) template)
          (h*-spec (not-which op) spec)))
- 
+
 (defthmd rec->spec-of-spec->rec
   (implies
    (and
@@ -8386,7 +8416,7 @@
                                      rec->spec-h*-spec-not-which-introduction-3
                                      rec->spec-of-spec->rec-h*-spec
                                      ))))
- 
+
 
 
 (defthm g*-rec-g*-spec-commute
@@ -8431,7 +8461,7 @@
         (if (slot-p slot)
             (let ((size  (slot-size slot))
                   (value (slot-val  slot)))
-              (let ((slot (update-slot slot :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+              (let ((slot (update-slot slot :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                                 value))))
                 (cons slot (h*-rec (cdr rec)))))
           (cons slot
@@ -8474,7 +8504,7 @@
   :hints (("goal" :in-theory (enable ;my-wx-over-wx
                                      flat))))
 
-;; We are beginning to see a weakness in our representation. There 
+;; We are beginning to see a weakness in our representation. There
 ;; is no good reason for (f*-rec rec) to be unique in the following
 ;; theorem, except that it makes it convenient to prove the result.
 ;; Our use of s*-rec type functions should have gone all the way down
@@ -8664,7 +8694,7 @@
    (not (g-op op))
    (equal (rs size off base (h*-spec op spec))
           (skel (if (equal (op-how op) :z) 0
-                  (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                  (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                  (skel-base (rs size off base spec))))
                 (h*-spec op (skel-spec (rs size off base spec))))))
   :hints (("goal" :in-theory (enable g? ;unfixed-size-wfixn
@@ -8731,7 +8761,7 @@
                    (keys-spec :all base spec))
            (equal (rv size
                       off base (wv size off base value spec))
-                  (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                  (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                  value
                          )))
   :hints (("goal" :in-theory nil
@@ -8800,7 +8830,7 @@
                   slot))
             slot)))
     slot))
-  
+
 (defthm v0-split-blk
   (equal (v0 (split-blk (cons slot list)))
          (cons (split-blk-fix-slot slot) (v0 (split-blk list)))))
@@ -8934,7 +8964,7 @@
            (if (slot-p slot)
                (let ((size (slot-size slot))
                      (value (slot-val slot)))
-                    (cons (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                    (cons (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                          value)
                           (v*-rec (cdr spec))))
                (v*-rec (cdr spec))))
@@ -9032,7 +9062,7 @@
   :rule-classes nil
   :hints (("goal" :induct (list->rec op list))
           (and (consp (cadr acl2::id))
-               `(:do-not '(generalize preprocess eliminate-destructors 
+               `(:do-not '(generalize preprocess eliminate-destructors
                                       fertilize eliminate-irrelevance)
                          :in-theory (enable binary-append)
                          :do-not-induct t))))
@@ -9044,7 +9074,7 @@
        (not (consp (v1 (rec->list op list (list->rec op list))))))
   :hints (("goal" :induct (list->rec op list))
           (and (consp (cadr acl2::id))
-               `(:do-not '(generalize preprocess eliminate-destructors 
+               `(:do-not '(generalize preprocess eliminate-destructors
                                       fertilize eliminate-irrelevance)
                          :in-theory (enable binary-append)
                          :do-not-induct t))))
@@ -9080,7 +9110,7 @@
                                             rec->spec-h*-spec-not-which-introduction-2
                                             rec->spec-h*-spec-not-which-introduction-3
                                             g? ;binary-append
-                                            ) 
+                                            )
                                          (numwhich
                                           whichnum
                                           op-base
@@ -9115,7 +9145,7 @@
            (equal (g*-rec (list->rec op list) ram)
                   (list->rec op (g*-list op list ram))))
   :hints (("goal" :induct (g*-list op list ram)
-           :do-not '(generalize preprocess eliminate-destructors 
+           :do-not '(generalize preprocess eliminate-destructors
                                 fertilize eliminate-irrelevance)
            :in-theory (enable g? open-g*-list (:induction g*-list))
            :do-not-induct t)))
@@ -9141,7 +9171,7 @@
          (g*-rd spec (rd-spec (f*-rec spec) ram)))
   :hints (("Goal" :in-theory (enable RX-TO-RD-LIST-REDUCTION))))
 
-;(local (in-theory (enable LEN))) 
+;(local (in-theory (enable LEN)))
 
 (defthm len-v1-rec->spec
   (implies (x? op)
@@ -9183,7 +9213,7 @@
                               rec->spec-h*-spec-not-which-introduction-3
                               g*-spec-default-which
                               rec->list-of-list->rec
-                              rec->spec-of-spec->rec) 
+                              rec->spec-of-spec->rec)
                            (;numwhich
                             )))))
 
@@ -9202,7 +9232,7 @@
 (defthm list-rec-h*-list-reduction
    (implies
     (x? op)
-    (equal 
+    (equal
      (list->rec op (h*-list op list))
      (list->rec op list))))
 
@@ -9237,7 +9267,7 @@
     (disjoint (flat (f*-rec list1)) (flat (f*-rec list2))))
    (equal (s*-rec list1 (s*-rec list2 ram))
           (s*-rec list2 (s*-rec list1 ram))))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (e/d (flat) ( Z*-S*-REC-INTRODUCTION))
            :induct (s*-rec list2 ram))))
 
@@ -9287,7 +9317,7 @@
          (nfix n))
   :hints (("goal" :induct (offset-size n)
            :in-theory (e/d (max-offset)
-                           ( 
+                           (
                         unfixed-size-max-offset
                         offset-size-max-offset-free
                        )))))
@@ -9313,7 +9343,7 @@
       (let ((value (wintlist (car list))))
         (met ((size base) (sblk-parms 0 (car flat)))
              (declare (ignore base))
-             (cons (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+             (cons (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                   value)
                    (h*-rd (cdr flat) (cdr list)))))
     nil))
@@ -9422,9 +9452,9 @@
         (equal (g*-rec (list->rec op list) ram) (h*-rec (list->rec op list)))))
   :hints (("goal" :induct (list->rec op list))
           (and (consp (cadr acl2::id))
-               `(:do-not '(generalize preprocess eliminate-destructors 
+               `(:do-not '(generalize preprocess eliminate-destructors
                                       fertilize eliminate-irrelevance)
-                         :in-theory (enable g? 
+                         :in-theory (enable g?
                                             g*-spec-h*-spec-equality-reduction)
                          :do-not-induct t))))
 
@@ -9474,9 +9504,9 @@
 
 (defun fix-memory-list (a-list ram)
    (if (consp a-list)
-      (wr 
-         (car a-list) 
-         (rd (car a-list) ram) 
+      (wr
+         (car a-list)
+         (rd (car a-list) ram)
          (fix-memory-list (cdr a-list) ram))
       nil))
 
@@ -9487,7 +9517,7 @@
 (defthm len-of-h*-rd
   (equal (len (H*-RD FLAT LIST))
          (len FLAT)))
-        
+
 
 ;bzo gross hints
 (defthm fix-memory-list-fix-memory-equiv
@@ -9528,13 +9558,13 @@
                                   v*-rec-g*-rd
                                   ))))
 
-;(in-theory (disable wfix wint)) 
+;(in-theory (disable wfix wint))
 
 
 ;; begin stuff from push-gacc:
 
 
-(in-theory (disable ;sblk 
+(in-theory (disable ;sblk
                     (sblk) ;move up?
                     ))
 
@@ -9600,8 +9630,8 @@
   (equal (h*-spec (op :nil :z) (skel-spec (rs size off base spec)))
          (skel-spec (rs size off base (h*-spec (op :nil :z) spec)))))
 
-(in-theory 
- (disable 
+(in-theory
+ (disable
   rs-of-h*-spec
   ))
 
@@ -9631,7 +9661,7 @@
 (defthm fixed-spec-p-skel-base-rs
   (implies
    (fixed-spec-p spec)
-   (acl2::unsigned-byte-p (fix-size size) ;wintn 8 size 
+   (acl2::unsigned-byte-p (fix-size size) ;wintn 8 size
           (skel-base (rs size off base spec))))
   :hints (("goal" :in-theory (enable ;unfixed-size-wintn
                                      )
@@ -9642,7 +9672,7 @@
   (or (not (consp n))
       (and (not (equal (car n) 'quote))
            (not (equal (car n) 'ifix)))))
-      
+
 (defthmd unfixed-int-sblk-parms
   (implies (syntaxp (syntax-unfixed-int base))
            (equal (sblk-parms base sblk)
@@ -9672,7 +9702,7 @@
 ;try
 (local (in-theory (disable RX-NON-NEGATIVE-LINEAR ACL2::LOGHEAD-UPPER-BOUND)))
 
-(local (in-theory (disable 
+(local (in-theory (disable
 ;                   ACL2::LOGAND-WITH-MASK-ERIC
                    ACL2::UNSIGNED-BYTE-P-LOGHEAD-FORWARD-CHAINING ;bzo
                    ACL2::LOGHEAD-NONNEGATIVE-LINEAR
@@ -9734,8 +9764,8 @@
 
 (local (in-theory (disable skel-extensionality!)))
 
-(in-theory (disable max-offset)) 
-(local (in-theory (disable slot-p))) 
+(in-theory (disable max-offset))
+(local (in-theory (disable slot-p)))
 
 (defthm slot-extensionality!!
   (implies
@@ -9757,13 +9787,13 @@
 ;;                     (equal type (slot-type x) )
 ;;                     (equal skel (slot-skel x) )))
         ))
-  :hints (("goal" :in-theory (enable ; slot-skel 
-; slot-name 
-;slot-off 
-;slot-size 
-;slot-val 
-;slot-type 
-;slot 
+  :hints (("goal" :in-theory (enable ; slot-skel
+; slot-name
+;slot-off
+;slot-size
+;slot-val
+;slot-type
+;slot
 ;slot-p
 ;weak-slot-p
                               ))))
@@ -9779,17 +9809,17 @@
 
 
 
-(in-theory 
- (enable 
+(in-theory
+ (enable
   (:induction g*-spec)
   (:induction f*-spec)
   (:induction h*-spec)
   (:induction s*-spec)
   ))
 
-(in-theory 
- (enable 
-;;  wx-of-rx 
+(in-theory
+ (enable
+;;  wx-of-rx
   ))
 
 (defun which-union (w1 w2)
@@ -9878,7 +9908,7 @@
     )
    (equal (g*-spec gop gptr gspec (wx wsize wptr wvalue ram))
           (g*-spec gop gptr gspec ram))))
-  
+
 ;;
 ;; For efficiency, we usually want either x or g.
 ;;
@@ -9897,7 +9927,7 @@
           (rx rsize rptr ram)))
   :hints (("goal" :in-theory (e/d (bag::flat-of-cons ;bzo
 ;                                   wx-of-rx
-                                   ) 
+                                   )
                                   (numwhich
                                    numtype
                                    op-base
@@ -9942,7 +9972,7 @@
           (s*-spec sop2 sptr2 sspec2 (s*-spec sop1 sptr1 sspec1 ram))))
   :hints (("goal" :in-theory (e/d (bag::flat-of-cons ;bzo. prove a meta rule to handle this?
                                    ;wx-of-rx
-                                     ) 
+                                     )
                                   (numwhich numtype op-base whichtype ptr?))
            :do-not '(generalize preprocess eliminate-destructors fertilize eliminate-irrelevance)
            :do-not-induct t
@@ -9978,7 +10008,7 @@
            :do-not '(generalize eliminate-destructors fertilize eliminate-irrelevance)
            :expand ((F*-SPEC SOP 0 SSPEC)
                     (F*-SPEC SOP SPTR SSPEC))
-           :in-theory (e/d (BAG::FLAT-OF-CONS) 
+           :in-theory (e/d (BAG::FLAT-OF-CONS)
                            (ptr?
                             ;;g?
                             ;;whichtype
@@ -9992,10 +10022,10 @@
                             ATOMIC-F*-OP-REPLACEMENT
                             ATOMIC-G*-OP-REPLACEMENT
                             OPEN-F*-SPEC
-                            ;; bag::memberp-implies-subbagp-flat 
-                            ;; bag::subbagp-disjoint-commute 
-                            ;; s*-spec-over-wx 
-                            ;; skel-extensionality! 
+                            ;; bag::memberp-implies-subbagp-flat
+                            ;; bag::subbagp-disjoint-commute
+                            ;; s*-spec-over-wx
+                            ;; skel-extensionality!
                             ;; bag::subbagp-implies-membership
                             ;; WX-OF-RX
                             ;; ACL2::LOGAND-WITH-MASK-ERIC
@@ -10026,7 +10056,7 @@
           (g*-spec gop gptr gspec ram)))
   :hints (("goal" :induct (s*-spec sop sptr sspec ram)
            :do-not-induct t
-           :do-not '(generalize ;preprocess 
+           :do-not '(generalize ;preprocess
                      eliminate-destructors fertilize eliminate-irrelevance)
            :in-theory (e/d (bag::flat-of-cons) (;for efficiency:
                                                 numwhich
@@ -10071,18 +10101,18 @@
                       (sread svalue))
                   (let ((gbase (skel-base gskel))
                         (sbase (skel-base sskel)))
-                    (let ((gbase (acl2::loghead (gacc::fix-size gsize) ;wfixn 8 gsize 
+                    (let ((gbase (acl2::loghead (gacc::fix-size gsize) ;wfixn 8 gsize
                                         (op-base gh gtype gbase gread)))
-                          (sbase (acl2::loghead (gacc::fix-size ssize) ;wfixn 8 ssize 
+                          (sbase (acl2::loghead (gacc::fix-size ssize) ;wfixn 8 ssize
                                         (op-base sh stype sbase sread))))
-                      (let ((gvalue (acl2::loghead (gacc::fix-size gsize) ;wfixn 8 gsize 
+                      (let ((gvalue (acl2::loghead (gacc::fix-size gsize) ;wfixn 8 gsize
                                                    (if (whichtype gw gtype) gread gvalue)))
-                            (svalue (acl2::loghead (gacc::fix-size ssize) ;wfixn 8 ssize 
-                                                   (if (whichtype sw stype) svalue 
+                            (svalue (acl2::loghead (gacc::fix-size ssize) ;wfixn 8 ssize
+                                                   (if (whichtype sw stype) svalue
                                                      (rx ssize (+<> soff sptr) ram)))))
                         (let ((gskel (update-skel gskel :base gbase)))
                           (let ((ram (wx ssize (+<> soff sptr) svalue ram)))
-                            (met ((gspex ramx) (s*-g*-equal-induction 
+                            (met ((gspex ramx) (s*-g*-equal-induction
                                                 gop gbase (skel-spec gskel)
                                                 sop sbase (skel-spec sskel) ram))
                                  (let ((gskelx (skel gbase gspex)))
@@ -10142,9 +10172,9 @@
                       (bread bvalue))
                   (let ((abase (skel-base askel))
                         (bbase (skel-base bskel)))
-                    (let ((abase (acl2::loghead (gacc::fix-size asize) ;wfixn 8 asize 
+                    (let ((abase (acl2::loghead (gacc::fix-size asize) ;wfixn 8 asize
                                                 (op-base ah atype abase aread)))
-                          (bbase (acl2::loghead (gacc::fix-size bsize) ;wfixn 8 bsize 
+                          (bbase (acl2::loghead (gacc::fix-size bsize) ;wfixn 8 bsize
                                                 (op-base bh btype bbase bread))))
                       (let ((ablk (if (whichtype aw atype) (sblk asize (+<> aoff aptr)) nil))
                             (bblk (if (whichtype bw btype) (sblk bsize (+<> boff bptr)) nil)))
@@ -10164,7 +10194,7 @@
           bop bptr bspec)))
 
 (local (in-theory (disable LIST::LEN-OF-CDR)))
-(local (in-theory (enable len))) 
+(local (in-theory (enable len)))
 
 (defthm len-f*-spec-under-h*-spec-equality
   (implies (equal (h*-spec hop fspec)
@@ -10203,7 +10233,7 @@
            :do-not-induct t
            :in-theory (e/d (g?
                             ) ( ;;for efficiency:
-                            numwhich 
+                            numwhich
                             numtype
                             whichtype
                             ;;op-base
@@ -10319,7 +10349,7 @@
          (and (not (equal which :all))
               (not (equal which :ptr))
               (not (equal which :nil)))))
-                   
+
 
 ;bzo
 (defthm numwhich-of-whichnum
@@ -10408,7 +10438,7 @@
                     (:free (op) (H*-SPEC op sSPEC))
                     (S*-SPEC GOP GPTR SSPEC RAM))
            :do-not-induct t
-           :in-theory (e/d (bag::flat-of-cons) 
+           :in-theory (e/d (bag::flat-of-cons)
                            ( ;mostly for efficiency:
                             OPEN-F*-SPEC
                             OPEN-G*-SPEC
@@ -10421,7 +10451,7 @@
                             ATOMIC-F*-OP-REPLACEMENT
                             numwhich
                             WHICHNUM
-                            numtype 
+                            numtype
                             op-base
                             which-union
                             binary-append
@@ -10467,20 +10497,20 @@
                     )
                 (let ((read value))
                   (let ((base (skel-base skel)))
-                    (let ((hbase (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                    (let ((hbase (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                 (op-base hh type base read))))
-                      (let ((fbase (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                      (let ((fbase (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                   (op-base fh type hbase read))))
                         (let ((skelx (skel fbase (f*-h*-induction fop fbase hop (skel-spec skel)))))
                           (let ((skel (update-skel skel :base fbase)))
                             (let ((skel (if (ptr? type) skelx skel)))
                               (let ((slot (update-slot slot :skel skel)))
-                                (cons slot 
+                                (cons slot
                                       (f*-h*-induction fop fptr hop (cdr spec)))))))))))))
           (cons slot
                 (f*-h*-induction fop fptr hop (cdr spec)))))
     fptr))
-  
+
 (defthm len-f*-spec-of-h*-spec
   (implies
    (w-all? hop)
@@ -10544,11 +10574,11 @@
    (equal (h*-spec op1 (h*-spec op2 spec))
           (h*-spec (h*-h*-op op1 op2) spec)))
   :hints (("goal" :induct (h*-spec op2 spec)
-           :do-not '(generalize eliminate-destructors 
+           :do-not '(generalize eliminate-destructors
                                 fertilize eliminate-irrelevance)
            :do-not-induct t
            :expand ((H*-SPEC OP2 SPEC))
-           :in-theory (e/d (g?) (;numwhich 
+           :in-theory (e/d (g?) (;numwhich
                                  ;numtype
                                  ;whichtype
                                  open-h*-spec
@@ -10570,11 +10600,11 @@
                     )
                 (let ((read value))
                   (let ((base (skel-base skel)))
-                    (let ((hbase (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                    (let ((hbase (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                 (op-base hh type base read))))
-                      (let ((sbase (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                      (let ((sbase (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                   (op-base sh type hbase read))))
-                        (let ((svalue (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                        (let ((svalue (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                      (if (whichtype sw type) value (rx size (+<> off sptr) sram)))))
                           (let ((sram (wx size (+<> off sptr) svalue sram)))
                             (let ((sram (if (ptr? type)
@@ -10608,7 +10638,7 @@
    (equal (s*-spec sop sptr (h*-spec hop spec) ram)
           (s*-spec (f*-h*-op sop hop) sptr spec ram)))
   :hints (("goal" :induct (s*-h*-induction sop sptr hop spec ram)
-           :do-not '(generalize 
+           :do-not '(generalize
                      preprocess ;;
                      eliminate-destructors fertilize eliminate-irrelevance)
            :do-not-induct t
@@ -10632,11 +10662,11 @@
                       )
                   (let ((read (rx size (+<> off ptr) ram)))
                     (let ((base (skel-base skel)))
-                      (let ((hbase (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                      (let ((hbase (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                   (op-base hh type base read))))
-                        (let ((base (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                        (let ((base (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                    (op-base h type hbase read))))
-                          (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                          (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                       (if (whichtype w type) read value))))
                             (let ((skel (update-skel skel :base base)))
                               (let ((skelx (skel base (g*-h*-induction gop base hop (skel-spec skel) ram))))
@@ -10705,11 +10735,11 @@
                     )
                 (let ((read (rx size (+<> off ptr) ram)))
                   (let ((base (skel-base skel)))
-                    (let ((base (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                    (let ((base (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                (op-base h type base read))))
-                      (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                      (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                   (if (whichtype w type) read value))))
-                        (let ((fbase (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                        (let ((fbase (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                     (op-base fh type base value))))
                           (let ((skel (update-skel skel :base base)))
                             (let ((skelx (skel base (f*-g*-induction fop fbase op base (skel-spec skel) ram))))
@@ -10760,13 +10790,13 @@
                 (let ((read  (rx size (+<> off ptr) ram))
                       (read1 (rx size (+<> off gptr1) ram1)))
                   (let ((base (skel-base skel)))
-                    (let ((base (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                    (let ((base (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                (op-base h type base read))))
-                      (let ((base1 (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                      (let ((base1 (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                   (op-base h1 type base read1))))
-                        (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                        (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                     (if (whichtype w type) read value))))
-                          (let ((value1 (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                          (let ((value1 (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                        (if (whichtype w1 type) read1 value))))
                             (let ((skel (update-skel skel :base base1)))
                               (let ((skelx (skel base1 (g*-g*-induction gop1 base1 ram1 op base (skel-spec skel) ram))))
@@ -10809,7 +10839,7 @@
            :in-theory (enable g?))
           ))
 
-  
+
 ;; ====================================================
 ;;
 ;; split-blk
@@ -10824,12 +10854,12 @@
         (skel  (slot-skel slot)))
     (let ((skel (if (ptr? type)
                     (let ((base (skel-base skel)))
-                      (update-skel skel :base (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                      (update-skel skel :base (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                      (ifix base)
                                                      )))
                   skel)))
-      (update-slot slot 
-                   :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+      (update-slot slot
+                   :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                (ifix value)
                                )
                    :skel skel))))
@@ -10973,7 +11003,7 @@
     )
    (equal (s*-blk sop sptr spec ram)
           (s*-spec sop sptr spec ram)))
-  :hints (("goal'" :in-theory (enable flat) 
+  :hints (("goal'" :in-theory (enable flat)
            :induct (split-blk spec))
           (and (consp (cadr acl2::id))
                `(:do-not '(generalize eliminate-destructors fertilize eliminate-irrelevance)
@@ -11030,7 +11060,7 @@
     list))
 
 (defthm join-lst-split-lst
-  (equal (join-lst key 
+  (equal (join-lst key
                    (v0 (split-lst key list))
                    (v1 (split-lst key list)))
          list))
@@ -11108,7 +11138,7 @@
 (defun h*-g*-op (op1 op2)
   (if (x? op1) (update-op op1 :how (op-how op2))
     (update-op op1)))
-    
+
 (defun h*-g*-hyp (hop gop)
   (and (which-disjoint hop gop)
        (implies (g-op gop) (and (or (not (optype hop :ptr))
@@ -11156,8 +11186,8 @@
   (implies (h*-g*-hyp hop gop)
            (equal (h*-spec hop (g*-spec gop gptr spec ram))
                   (h*-spec (h*-g*-op hop gop) spec)))
-  :hints (("subgoal *1/2" 
-           :in-theory (e/d (g?) 
+  :hints (("subgoal *1/2"
+           :in-theory (e/d (g?)
                            (OPEN-H*-SPEC
                             ;CAR-H*-SPEC
                             ;;NFIX
@@ -11266,7 +11296,7 @@
 (defthm nthcdr-of-rd-list
   (equal (nthcdr n (rd-list ads ram))
          (rd-list (nthcdr n ads) ram))
-  :hints (("Goal" :in-theory (enable nthcdr rd-list))))                 
+  :hints (("Goal" :in-theory (enable nthcdr rd-list))))
 
 (defthm nth-of-rd-list
   (equal (nth n (rd-list ads ram))
@@ -11302,7 +11332,7 @@
 ;;defun. -ews
 ;;
 ;bzo rename list param to ads?
-;bzo disable 
+;bzo disable
 
 ;bzo give a fast body?
 (defund wr-list (list vals ram)
@@ -11311,7 +11341,7 @@
   (if (and (consp list)
            ;(consp vals)
            )
-      (wr (car list) (car vals) 
+      (wr (car list) (car vals)
           (wr-list (cdr list) (cdr vals) ram))
     ram))
 
@@ -11319,7 +11349,7 @@
   (implies
    (consp list)
    (equal (wr-list list vals ram)
-          (wr (car list) (car vals) 
+          (wr (car list) (car vals)
               (wr-list (cdr list) (cdr vals) ram))))
   :hints (("goal" :in-theory (enable wr-list))))
 
@@ -11344,7 +11374,7 @@
            (equal (wr-list ads vals ram)
                   ram))
   :hints (("Goal" :in-theory (enable wr-list))))
-                 
+
 (defthm wr-list-over-wr
   (implies (not (memberp x list))
            (equal (wr-list list vals (wr x v ram))
@@ -11358,14 +11388,14 @@
            (equal (wr-list (append x y) (append a b) ram)
                   (wr-list y b (wr-list x a ram))))
   :hints (("goal" :induct (list::len-len-induction x a)
-           :in-theory (enable disjoint binary-append)))) 
+           :in-theory (enable disjoint binary-append))))
 
 (defthm rd-list-of-wr-irrel
   (implies (not (list::memberp ad ads))
            (equal (rd-list ads (wr ad v ram))
                   (rd-list ads ram)))
   :hints (("Goal" :in-theory (enable rd-list))))
- 
+
 (defthm wfixlist-rd-list
   (equal (wfixlist (rd-list list ram))
          (rd-list list ram))
@@ -11375,7 +11405,7 @@
 ;;  (equal (wr-list ads v1 (wr-list ads v2 ram))
 ;;         (wr-list ads v1 ram))
 ;;  :hints (("Goal" :in-theory (enable wr==r!))))
-        
+
 ;bzo move
 (defthm wr-list-of-wr-same
   (implies (memberp x list)
@@ -11423,7 +11453,7 @@
            (equal (rd ad (wr-list ads val ram))
                   (rd ad ram)))
   :hints (("Goal" :in-theory (enable wr-list))))
-                 
+
 (defthm rd-list-of-wr-list-diff
   (implies (bag::disjoint ads1 ads2)
            (equal (rd-list ads1 (wr-list ads2 vals ram))
@@ -11528,7 +11558,7 @@
   (implies (syntaxp (not (equal vals ''nil)))
            (equal (equal (wr-list ads vals ram2) (wr-list ads vals ram1))
                   (equal (wr-list ads nil ram2) (wr-list ads nil ram1)))))
-        
+
 
 ;gen the len of ads?
 (defthm wr-list-of-my-wfixlist
@@ -11544,7 +11574,7 @@
                   (wr-list ads vals2 ram)))
   :hints (("Goal" :use ((:instance wr-list-of-my-wfixlist (vals vals1))
                         (:instance wr-list-of-my-wfixlist (vals vals2)))
-           :in-theory (disable wr-list-of-my-wfixlist) ))) 
+           :in-theory (disable wr-list-of-my-wfixlist) )))
 
 
 ;; The (unique ads) hyp is necessary.  If ads contains duplicates but the
@@ -11562,7 +11592,7 @@
 (defthm wr-list-equal-rewrite
   (implies (unique ads)
            (equal (equal (wr-list ads vals ram1) ram2)
-                  (and (equal (my-wfixlist (len ads) vals) 
+                  (and (equal (my-wfixlist (len ads) vals)
                               (rd-list ads ram2))
                        (equal (clr-list ads ram1)
                               (clr-list ads ram2)))))
@@ -11657,7 +11687,7 @@
            :in-theory (e/d (LIST::NTH-0-BECOMES-CAR
                              NTH-0-BECOMES-CAR-gen
                             (:induction nth)
-                            logapp-list) 
+                            logapp-list)
                            ( ACL2::EQUAL-LOGAPP-X-Y-Z ;bzo
                             ACL2::EQUAL-LOGAPP-X-Y-Z-CONSTANTS
                             )))))
@@ -11667,7 +11697,7 @@
 
 ;;
 ;; LOGEXT-LIST
-;;        
+;;
 
 (defund logext-list (size i-list)
   (declare (xargs :guard (integer-listp i-list))
@@ -11732,7 +11762,7 @@
   (implies (integer-listp vals)
            (equal (ifix-list vals)
                   vals)))
- 
+
 (defthm integer-listp-of-logext-list
   (integer-listp (logext-list n x))
   :hints (("Goal" :in-theory (enable logext-list))))
@@ -11795,7 +11825,7 @@
            (equal (logapp-list size1 i-list (loghead size2 j))
                   (loghead-list (+ size1 size2)  (logapp-list size1 i-list j))))
   :hints (("Goal" :in-theory (e/d (logapp-list
-                                   ACL2::LOGTAIL-LOGHEAD-BETTER) 
+                                   ACL2::LOGTAIL-LOGHEAD-BETTER)
                                   (ACL2::LOGHEAD-LOGTAIL)))))
 
 
@@ -11893,7 +11923,7 @@
          (repeat (len ivals) (acl2::logcdr j))))
 
 (defthm loghead-list-of-repeat-15
-  (equal (loghead-list 15 (repeat n v))        
+  (equal (loghead-list 15 (repeat n v))
          (repeat n  (loghead 15 v)))
   :hints (("Goal" :in-theory (enable loghead-list repeat))))
 
@@ -11958,7 +11988,7 @@
                                                         )))))
 
 ;move
-(defthm subbagp-of-two-logapp-list-calls 
+(defthm subbagp-of-two-logapp-list-calls
   (implies (and (bag::subbagp vals1 vals2)
                 (integer-listp vals1)
                 (integer-listp vals2)
@@ -11990,7 +12020,7 @@
            (equal (loghead-list width x)
                   (list::fix x)
                   ))
-  :hints (("Goal" :in-theory (enable loghead-list))))        
+  :hints (("Goal" :in-theory (enable loghead-list))))
 
 (defthm unique-of-logext-list
   (implies (and (integerp n) (< 0 n))
@@ -12048,7 +12078,7 @@
 ;;            (equal (logapp-list size1 i-list (loghead size2 j))
 ;;                   (loghead-list (+ size1 size2)  (logapp-list size1 i-list j))))
 ;;   :hints (("Goal" :in-theory (e/d (logapp-list
-;;                                    ACL2::LOGTAIL-LOGHEAD-BETTER) 
+;;                                    ACL2::LOGTAIL-LOGHEAD-BETTER)
 ;;                                   (ACL2::LOGHEAD-LOGTAIL)))))
 
 ;;
@@ -12091,7 +12121,7 @@
          (if (endp list)
              0
            (wintlist (cdr list)))))
-        
+
 ;bzo gen!
 (defthm loghead-16-of-wintlist
   (equal (loghead 16 (wintlist byte-list))
@@ -12118,7 +12148,7 @@
 (defund enlistw (size v)
   (declare (type integer v)
            (type (integer 0 *) size))
-  (if (zp size) 
+  (if (zp size)
       nil
     (cons (acl2::loghead 8 v)
           (enlistw (1- size) (acl2::logtail 8 v)))))
@@ -12202,7 +12232,7 @@
 (defund wfixlist (list)
   (declare (xargs :guard (integer-listp list)))
   (if (consp list)
-      (cons (acl2::loghead 8 ;wfixn 8 1 
+      (cons (acl2::loghead 8 ;wfixn 8 1
                            (car list)) ;should this be  (wfixn 8 8 (car list))?
             (wfixlist (cdr list)))
     nil))
@@ -12211,7 +12241,7 @@
 (defund wfixedlist (list)
   (declare (type t list))
   (if (consp list)
-      (and (acl2::unsigned-byte-p 8 ;wintn 8 1 
+      (and (acl2::unsigned-byte-p 8 ;wintn 8 1
                   (car list))  ;should this be  (wintn 8 8 (car list))?
            (wfixedlist (cdr list)))
     (null list) ;maybe we don't want to do this check, now that we have nice list congruences??
@@ -12257,7 +12287,7 @@
          (;wfixw 8 size
           acl2::loghead (* 8 (nfix size))
           v))
-  :hints (("goal" :in-theory (enable ;wintn 
+  :hints (("goal" :in-theory (enable ;wintn
                                      ;open-wfixw
                               enlistw
                               ;wfixlist
@@ -12340,7 +12370,7 @@
 
 (defthm my-wfixlist-when-numbytes-is-not-positive
   (implies (<= numbytes 0)
-           (equal (my-wfixlist numbytes byte-list) 
+           (equal (my-wfixlist numbytes byte-list)
                   nil))
   :hints (("Goal" :in-theory (enable my-wfixlist))))
 
@@ -12411,7 +12441,7 @@
 
 (defthm wfixedlist-of-repeat
   (equal (wfixedlist (repeat size elem))
-         (if (zp size) 
+         (if (zp size)
              t
            (unsigned-byte-p 8 elem)))
   :hints (("Goal" :in-theory (enable wfixedlist repeat))))
@@ -12498,7 +12528,7 @@
            (gacc::unsigned-byte-p-list n (bag::remove-1 a x)))
   :hints (("Goal" :in-theory (enable gacc::unsigned-byte-p-list bag::remove-1))))
 
-(defthm unsigned-byte-p-list-implies-integer-listp 
+(defthm unsigned-byte-p-list-implies-integer-listp
   (implies (gacc::unsigned-byte-p-list n lst) ;n is a free var
            (equal (integer-listp lst)
                   (true-listp lst))))
@@ -12507,7 +12537,7 @@
 ;use this one instead?
 (DEFUN INTEGER-LISTP-better (ACL2::L)
   (DECLARE (XARGS :GUARD T))
-  (COND ((ATOM ACL2::L) 
+  (COND ((ATOM ACL2::L)
          t)
         (T (AND (INTEGERP (CAR ACL2::L))
                 (INTEGER-LISTP-better (CDR ACL2::L))))))
@@ -12543,7 +12573,7 @@
                                   (gacc::logapp-list 16 x j))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable gacc::logapp-list bag::remove-1))))
-        
+
 (local
  (defun 2-list-induct (l1 l2)
    (if (endp l1)
@@ -12567,8 +12597,8 @@
   (implies (and (gacc::unsigned-byte-p-list 16 vals1)
                 (gacc::unsigned-byte-p-list 16 vals2)
                 (bag::unique vals2) ;okay?
-                (true-listp vals1) 
-                (true-listp vals2) 
+                (true-listp vals1)
+                (true-listp vals2)
                 )
            (equal (bag::subbagp (gacc::logapp-list 16 vals1 j)
                                 (gacc::logapp-list 16 vals2 j))
@@ -12710,7 +12740,7 @@
 (defthm nthcdr-of-rd-list
   (equal (nthcdr n (rd-list ads ram))
          (rd-list (nthcdr n ads) ram))
-  :hints (("Goal" :in-theory (enable nthcdr rd-list))))                 
+  :hints (("Goal" :in-theory (enable nthcdr rd-list))))
 
 (in-theory (enable (:induction nth))) ;bzo
 
@@ -12747,7 +12777,7 @@
 ;;defun. -ews
 ;;
 ;bzo rename list param to ads?
-;bzo disable 
+;bzo disable
 
 ;bzo give a fast body?
 (defund wr-list (list vals ram)
@@ -12761,7 +12791,7 @@
   (if (and (consp list)
 ;(consp vals)
            )
-      (wr (car list) (car vals) 
+      (wr (car list) (car vals)
           (wr-list (cdr list) (cdr vals) ram))
     ram))
 
@@ -12781,7 +12811,7 @@
   (implies
    (consp list)
    (equal (wr-list list vals ram)
-          (wr (car list) (car vals) 
+          (wr (car list) (car vals)
               (wr-list (cdr list) (cdr vals) ram))))
   :hints (("goal" :in-theory (enable wr-list))))
 
@@ -12806,7 +12836,7 @@
            (equal (wr-list ads vals ram)
                   ram))
   :hints (("Goal" :in-theory (enable wr-list))))
-                 
+
 
 
 (defthm wr-list-over-wr
@@ -12822,7 +12852,7 @@
            (equal (wr-list (append x y) (append a b) ram)
                   (wr-list y b (wr-list x a ram))))
   :hints (("goal" :induct (list::len-len-induction x a)
-           :in-theory (enable disjoint binary-append)))) 
+           :in-theory (enable disjoint binary-append))))
 
 
 
@@ -12831,7 +12861,7 @@
            (equal (rd-list ads (wr ad v ram))
                   (rd-list ads ram)))
   :hints (("Goal" :in-theory (enable rd-list))))
- 
+
 (defthm wfixlist-rd-list
   (equal (wfixlist (rd-list list ram))
          (rd-list list ram))
@@ -12841,7 +12871,7 @@
 ;;  (equal (wr-list ads v1 (wr-list ads v2 ram))
 ;;         (wr-list ads v1 ram))
 ;;  :hints (("Goal" :in-theory (enable wr==r!))))
-        
+
 ;bzo move
 (defthm wr-list-of-wr-same
   (implies (memberp x list)
@@ -12885,7 +12915,7 @@
            (equal (rd ad (wr-list ads val ram))
                   (rd ad ram)))
   :hints (("Goal" :in-theory (enable wr-list))))
-                 
+
 (defthm rd-list-of-wr-list-diff
   (implies (bag::disjoint ads1 ads2)
            (equal (rd-list ads1 (wr-list ads2 vals ram))
@@ -12991,7 +13021,7 @@
   (implies (syntaxp (not (equal vals ''nil)))
            (equal (equal (wr-list ads vals ram2) (wr-list ads vals ram1))
                   (equal (wr-list ads nil ram2) (wr-list ads nil ram1)))))
-        
+
 
 ;gen the len of ads?
 (defthm wr-list-of-my-wfixlist
@@ -13007,7 +13037,7 @@
                   (wr-list ads vals2 ram)))
   :hints (("Goal" :use ((:instance wr-list-of-my-wfixlist (vals vals1))
                         (:instance wr-list-of-my-wfixlist (vals vals2)))
-           :in-theory (disable wr-list-of-my-wfixlist) ))) 
+           :in-theory (disable wr-list-of-my-wfixlist) )))
 
 
 ;; The (unique ads) hyp is necessary.  If ads contains duplicates but the
@@ -13025,7 +13055,7 @@
 (defthm wr-list-equal-rewrite
   (implies (unique ads)
            (equal (equal (wr-list ads vals ram1) ram2)
-                  (and (equal (my-wfixlist (len ads) vals) 
+                  (and (equal (my-wfixlist (len ads) vals)
                               (rd-list ads ram2))
                        (equal (clr-list ads ram1)
                               (clr-list ads ram2)))))
@@ -13038,7 +13068,7 @@
   (implies (list::memberp ad ads)
            (equal (gacc::rd ad (gacc::wr-list ads vals ram))
                   (acl2::loghead 8 (nth (list::find-index ad ads) vals))))
-  :hints (("Goal" :in-theory (e/d (LIST::MEMBERP-WHEN-NOT-MEMBERP-OF-CDR gacc::wr-list list::FIND-INDEX) 
+  :hints (("Goal" :in-theory (e/d (LIST::MEMBERP-WHEN-NOT-MEMBERP-OF-CDR gacc::wr-list list::FIND-INDEX)
                                   (bag::FIND-INDEX-OF-CDR)))))
 
 ;bzo theory invar?
@@ -13046,7 +13076,7 @@
   (equal (gacc::clr-list x ram)
          (gacc::wr-list x (repeat (len x) 0) ram))
   :hints (("Goal" :in-theory (enable gacc::wr-list gacc::clr-list))))
-        
+
 
 (defthm clr-list-of-append
   (equal (gacc::clr-list (append x y) ram)
@@ -13158,7 +13188,7 @@
        (equal (a-mark n mptr (wx size wptr value ram))
               (wx size wptr value (a-mark n mptr ram))))))
   :hints (("goal" :induct (a-mark n mptr ram))))
-      
+
 (defthm rx-over-a-mark
   (let ((askel (g* mptr (atype n) ram)))
     (let ((flat (flatten askel)))
@@ -13181,7 +13211,7 @@
           (rflat (flatten askel)))
       (implies
        (and
-        (syntaxp (not (syntax-consp-or-quote rskel)))        
+        (syntaxp (not (syntax-consp-or-quote rskel)))
         (disjoint mflat rflat)
         (unique mflat)
         (wf-skel rskel)
@@ -13215,7 +13245,7 @@
           (rflat (flatten askel)))
       (implies
        (and
-        (syntaxp (not (syntax-consp-or-quote rskel)))        
+        (syntaxp (not (syntax-consp-or-quote rskel)))
         (disjoint mflat rflat)
         (unique mflat)
         (wf-skel rskel)
@@ -13242,14 +13272,14 @@
 
 
 (mutual-recursion
- 
+
  (defun rx-denormal-list (term spec)
    (declare (type (satisfies eqlable-alistp) spec))
    (if (consp term)
        (or (rx-denormal (car term) spec)
            (rx-denormal-list (cdr term) spec))
      nil))
- 
+
  (defun rx-denormal (term spec)
    (declare (type (satisfies eqlable-alistp) spec))
    (if (consp term)
@@ -13270,7 +13300,7 @@
     (rx (size ptr ram) . (wx))
     ))
 
-                       
+
 |#
 
 
@@ -13796,7 +13826,7 @@
 
 ;bzo improve?
 (defthm loghead-of-rd
-  (equal (acl2::loghead 8 ;wfixn 8 1 
+  (equal (acl2::loghead 8 ;wfixn 8 1
                         (rd a ram))
          (rd a ram))
   :hints (("goal" :in-theory (enable ;open-wfixw ;wfixn
@@ -13808,9 +13838,9 @@
          (wr y val (wr x val ram)))
   :hints (("Goal" :cases ((equal x y)))))
 
-(defthm wr-equality 
+(defthm wr-equality
   (implies (equal (wr off val1 ram1) ;val1 is a free variable
-                  (wr off val1 ram2)) 
+                  (wr off val1 ram2))
            (equal (equal (wr off val2 ram1) (wr off val2 ram2))
                 t))
   :hints (("Goal" :in-theory (enable wr==r!))))
@@ -13819,7 +13849,7 @@
   (implies (and (equal (wr b val ram1) (wr b val ram2))
                 (syntaxp (acl2::smaller-term ram2 ram1))
                 (not (equal a b)))
-           (equal (rd a ram1) 
+           (equal (rd a ram1)
                   (rd a ram2)))
   :hints (("Goal" :in-theory (disable RD-OF-WR-REDUX WR==R!)
            :use ((:instance RD-OF-WR-REDUX (acl2::a a) (acl2::b b) (acl2::v val) (acl2::r ram1))
@@ -13830,7 +13860,7 @@
   (implies (and (equal (memory-clr b ram1) (memory-clr b ram2))
                 (syntaxp (acl2::smaller-term ram2 ram1))
                 (not (equal a b)))
-           (equal (rd a ram1) 
+           (equal (rd a ram1)
                   (rd a ram2)))
   :hints (("Goal" :in-theory '(memory-clr rd-subst-when-wr-equal))))
 
@@ -13963,7 +13993,7 @@
 
 ;bzo improve?
 (defthm loghead-of-rd
-  (equal (acl2::loghead 8 ;wfixn 8 1 
+  (equal (acl2::loghead 8 ;wfixn 8 1
                         (rd a ram))
          (rd a ram))
   :hints (("goal" :in-theory (enable ;open-wfixw ;wfixn
@@ -13974,9 +14004,9 @@
          (wr y val (wr x val ram)))
   :hints (("Goal" :cases ((equal x y)))))
 
-(defthm wr-equality 
+(defthm wr-equality
   (implies (equal (wr off val1 ram1) ;val1 is a free variable
-                  (wr off val1 ram2)) 
+                  (wr off val1 ram2))
            (equal (equal (wr off val2 ram1) (wr off val2 ram2))
                 t))
   :hints (("Goal" :in-theory (enable wr==r!))))
@@ -13986,7 +14016,7 @@
   (implies (and (equal (wr b val ram1) (wr b val ram2))
                 (syntaxp (acl2::smaller-term ram2 ram1))
                 (not (equal a b)))
-           (equal (rd a ram1) 
+           (equal (rd a ram1)
                   (rd a ram2)))
   :hints (("Goal" :in-theory (disable RD-OF-WR-REDUX WR==R!)
            :use ((:instance RD-OF-WR-REDUX (acl2::a a) (acl2::b b) (acl2::v val) (acl2::r ram1))
@@ -13997,7 +14027,7 @@
   (implies (and (equal (memory-clr b ram1) (memory-clr b ram2))
                 (syntaxp (acl2::smaller-term ram2 ram1))
                 (not (equal a b)))
-           (equal (rd a ram1) 
+           (equal (rd a ram1)
                   (rd a ram2)))
   :hints (("Goal" :in-theory '(memory-clr rd-subst-when-wr-equal))))
 
@@ -14039,7 +14069,7 @@
 
 (defthm negative-fix-size
   (implies (<= size 0)
-           (equal (fix-size size) 
+           (equal (fix-size size)
                   8))
   :hints (("Goal" :in-theory (enable fix-size))))
 
@@ -14072,7 +14102,7 @@
            (integerp size))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable multiple-of-8))))
- 
+
 (defthm fix-size-when-size-is-not-an-integerp
   (implies (not (integerp size))
            (equal (fix-size size)
@@ -14087,9 +14117,9 @@
              8
            (* 8 (+ 1 (floor (+ -1 size) 8)))
            ))
-  :hints (("Goal" :in-theory (e/d (max-offset ;floor 
+  :hints (("Goal" :in-theory (e/d (max-offset ;floor
                                    FIX-SIZE
-                                   ) 
+                                   )
                                   ( ;UNFIXED-SIZE-MAX-OFFSET ;looped
                                    ))
            :do-not '(generalize eliminate-destructors))))
@@ -14188,7 +14218,7 @@
                 (disjoint (sblk rsize rptr) (sblk wsize wptr)))
        (implies (<= (+ (ifix wptr) (1+ (max-offset wsize))) (ifix rptr))
                 (disjoint (sblk rsize rptr) (sblk wsize wptr))))
-  :hints (("goal" :in-theory (enable sblk 
+  :hints (("goal" :in-theory (enable sblk
                                      blk-disjoint-from-blk-1
                                      blk-disjoint-from-blk-2))))
 
@@ -14214,10 +14244,10 @@
   :hints (("goal" :cases ((iff (integerp o1) (integerp o2)))
            :in-theory (e/d (;ifix
                             max-offset-to-fix-size-rev
-                              blk 
-                              sblk 
+                              blk
+                              sblk
                               fix-size
-                              ) 
+                              )
                            (;BLK-REC-NON-INTEGER-PTR
                              max-offset-to-fix-size
                             )))))
@@ -14307,7 +14337,7 @@
            (equal (rx-rec ptr off size (memory-clr x ram))
                   (rx-rec ptr off size ram)))
   :hints (("goal" :in-theory (enable memory-clr))))
- 
+
 (defthm rd-over-wx-rec
   (implies
    (and
@@ -14403,7 +14433,7 @@
                 (<= 0 (ifix off))
                 (<= (ifix off) (ifix max))
                 )
-           (equal (equal ram1 (wx-rec ptr off max value ram2)) 
+           (equal (equal ram1 (wx-rec ptr off max value ram2))
                   t))
   :hints (("Goal" :in-theory (enable wx-rec rx-rec ;open-wfixw ;wcar wcons wcdr
                                      )
@@ -14430,7 +14460,7 @@
                 (<= woff wmax)
                 )
            (equal (wx-rec base woff wmax value ram)
-                  (wr-list (blk-rec base woff wmax) 
+                  (wr-list (blk-rec base woff wmax)
                            (enlistw (- wmax woff) value) ram)))
   :hints (("goal" :induct (wx-rec base woff wmax value ram)
            :in-theory (e/d (wx-rec
@@ -14469,42 +14499,42 @@
   :hints (("Goal" :in-theory (enable clr-list-over-memory-clr))))
 
 
-(defthmd wr==ram 
-  (equal (equal (wr a (loghead8 v) ram1) ram2) 
-         (and (equal (loghead8 v) (rd a ram2)) 
-              (equal (z*-rec `(,a) ram1) 
+(defthmd wr==ram
+  (equal (equal (wr a (loghead8 v) ram1) ram2)
+         (and (equal (loghead8 v) (rd a ram2))
+              (equal (z*-rec `(,a) ram1)
                      (z*-rec `(,a) ram2))))
   :hints (("Goal" :in-theory (enable wr==r!))))
- 
 
-(defun z*-rec-induction (a list ram1 ram2 v) 
-  (if (consp list) 
-      (z*-rec-induction a (cdr list) (memory-clr (car list) ram1) 
-                        (memory-clr (car list) ram2) v) 
+
+(defun z*-rec-induction (a list ram1 ram2 v)
+  (if (consp list)
+      (z*-rec-induction a (cdr list) (memory-clr (car list) ram1)
+                        (memory-clr (car list) ram2) v)
     (equal (equal a ram1) (equal ram2 v))))
 
 (defthm z*-rec-of-wr
   (implies (not (memberp a list))
-           (equal (equal (z*-rec list (wr a (loghead8 v) ram1)) 
-                         (z*-rec list ram2)) 
-                  (and (equal (loghead8 v) (rd a ram2)) 
-                       (equal (z*-rec (cons a list) ram1) 
-                              (z*-rec (cons a list) ram2))))) 
-  :hints (("goal" :in-theory (enable 
+           (equal (equal (z*-rec list (wr a (loghead8 v) ram1))
+                         (z*-rec list ram2))
+                  (and (equal (loghead8 v) (rd a ram2))
+                       (equal (z*-rec (cons a list) ram1)
+                              (z*-rec (cons a list) ram2)))))
+  :hints (("goal" :in-theory (enable
                               wr==r!
                               memberp ;bzo
                               )
            :do-not '(generalize eliminate-destructors)
            :induct (z*-rec-induction a list ram1 ram2 v))))
- 
-(defthm z*-rec-over-wr  
-  (implies (memberp a list) 
-           (equal (equal (z*-rec list (wr a v ram1)) 
-                         (z*-rec list ram2)) 
-                  (equal (z*-rec list ram1) 
+
+(defthm z*-rec-over-wr
+  (implies (memberp a list)
+           (equal (equal (z*-rec list (wr a v ram1))
+                         (z*-rec list ram2))
+                  (equal (z*-rec list ram1)
                          (z*-rec list ram2))))
   :hints (("goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable 
+           :in-theory (enable
 ;memberp ;bzo
                        ))
           ("Subgoal *1/1" :cases ((equal (car list) a)))))
@@ -14515,7 +14545,7 @@
   (implies (disjoint (blk-rec ptr off size) list)
            (equal (rx-rec ptr off size (z*-rec list ram))
                   (rx-rec ptr off size ram))))
-                                           
+
 
 ;stringe rule...
 (defthm equality-implies-equal-reads
@@ -14532,7 +14562,7 @@
 
 (defun ram==wx-hyp (size ptr value ram)
   (declare (type t size ptr value ram))
-  (equal (acl2::loghead (fix-size size) ;wfixn 8 size 
+  (equal (acl2::loghead (fix-size size) ;wfixn 8 size
                 (ifix value) ;drop the ifix once loghead's guards are weakened
                 )
          (rx size ptr ram)))
@@ -14564,7 +14594,7 @@
                   t))
   :hints (("Goal" :in-theory (e/d (rx wx
                                       RAM==WX-REC
-                                      ram==wx-rec) 
+                                      ram==wx-rec)
                                   ( ;WFIXN-REWRITE-TO-LOGHEAD ;why
                                    MAX-OFFSET
                                    )))))
@@ -14573,10 +14603,10 @@
 ;why do we have a separate function for this?
 (defun wx==wx-hyp (size value1 value2)
   (declare (type t size value1 value2))
-  (equal (acl2::loghead (fix-size size) ;wfixn 8 size 
+  (equal (acl2::loghead (fix-size size) ;wfixn 8 size
                 (ifix value1)
                 )
-         (acl2::loghead (fix-size size) ;wfixn 8 size 
+         (acl2::loghead (fix-size size) ;wfixn 8 size
                 (ifix value2)
                 )))
 
@@ -14588,7 +14618,7 @@
                 (equal size1 size2)
                 (wx==wx-hyp size2 value1 value2)
                 (equal ram1 ram2))
-           (equal (equal (wx size1 addr1 value1 ram1) 
+           (equal (equal (wx size1 addr1 value1 ram1)
                          (wx size2 addr2 value2 ram2))
                   t))
   :hints (("Goal" :cases ((integerp value1))
@@ -14600,7 +14630,7 @@
                 (equal wsize rsize)
                 )
            (equal (rx rsize rptr (wx wsize wptr value ram))
-                  (acl2::loghead (fix-size rsize) ;wfixn 8 rsize 
+                  (acl2::loghead (fix-size rsize) ;wfixn 8 rsize
                                  value)))
   :hints (("Goal" :in-theory (enable rx wx))))
 
@@ -14675,7 +14705,7 @@
                   (wx wsize wptr wvalue (wx size ptr value ram))))
   :rule-classes ((:rewrite :loop-stopper ((wptr ptr wx))))
   :hints (("goal" :in-theory (enable wx
-                                     sblk blk 
+                                     sblk blk
                                      ))))
 
 ;exported?
@@ -14684,7 +14714,7 @@
                      (sblk wsize wptr))
            (equal (rx rsize rptr (wx wsize wptr value ram))
                   (rx rsize rptr ram)))
-  :hints (("goal" :in-theory (enable sblk blk 
+  :hints (("goal" :in-theory (enable sblk blk
                                      rx wx
                                      ))))
 
@@ -14709,7 +14739,7 @@
   (implies (< woff (+ (ifix off) (ifix ptr)))
            (equal (wx-rec ptr off size val1
                           (wr woff val2 ram))
-                  (wr woff val2 
+                  (wr woff val2
                       (wx-rec ptr off size val1 ram))))
   :hints (("Goal" :in-theory (enable wx-rec)
            :induct (wx-rec ptr off size val1
@@ -14719,7 +14749,7 @@
 (defthmd open-wx-rec
   (and (implies (> (ifix max) (ifix off))
                 (equal (wx-rec base off max value ram)
-                       (let ((off (ifix off)) 
+                       (let ((off (ifix off))
                              (max (ifix max)))
                          (let ((ram (wx-rec (ifix base) (1+ off) max (acl2::logtail 8 (ifix value)) ram)))
                            (wr (+ off (ifix base))
@@ -14733,10 +14763,10 @@
 (defthmd open-rx-rec
   (and (implies (> (ifix max) (ifix off))
                 (equal (rx-rec base off max ram)
-                       (let ((off (ifix off)) 
+                       (let ((off (ifix off))
                              (max (ifix max)))
                          (let ((v (rd (+ off (ifix base)) ram)))
-                           (acl2::logapp ;wcons 
+                           (acl2::logapp ;wcons
                             8 v
                                   (rx-rec (ifix base)
                                           (1+ off)
@@ -14749,10 +14779,10 @@
 (defun wx==ram-induction-8 (off ptr ram1 size value)
   (declare (xargs :measure (nfix (- (ifix size) (ifix off)))))
   (if (< (ifix off) (ifix size))
-      (wx==ram-induction-8 (+ 1 (ifix off)) (ifix ptr) 
-                         (wr (+ (ifix off) (ifix ptr)) (acl2::loghead ;wcar 
-                                                        8 value) ram1) 
-                         (ifix size) (acl2::logtail ;wcdr 
+      (wx==ram-induction-8 (+ 1 (ifix off)) (ifix ptr)
+                         (wr (+ (ifix off) (ifix ptr)) (acl2::loghead ;wcar
+                                                        8 value) ram1)
+                         (ifix size) (acl2::logtail ;wcdr
                                       8 value))
     (equal ptr (equal ram1 value))))
 
@@ -14784,7 +14814,7 @@
   (implies (and (equal (wx-rec ptr off size value ram1) ram2)
                 (integerp off)
                 (integerp size)
-                (< off size)) 
+                (< off size))
            (equal (;wfixw 8 (- size off)
                    acl2::loghead (* 8 (nfix  (- size off)))
                    value)
@@ -14802,7 +14832,7 @@
   (implies (and (equal ram2 (wx-rec ptr off size value ram1))
                 (integerp off)
                 (integerp size)
-                (< off size)) 
+                (< off size))
            (equal (acl2::loghead (* 8 (nfix  (- size off))) value)
                   (rx-rec ptr off size ram2)))
   :hints (("Goal" :by wx==ram-rec-value-same)))
@@ -14817,21 +14847,21 @@
                        (rx-rec ptr off size ram2)))
            (equal (wx-rec ptr off size val ram2)
                   ram2))
-  :hints (("Goal" :in-theory (e/d (wx-rec rx-rec) 
+  :hints (("Goal" :in-theory (e/d (wx-rec rx-rec)
                                   (open-wx-rec open-rx-rec)))))
 
 (defthmd z*-same-wx-rec-0
   (equal (z*-rec (blk-rec ptr off size) ram)
          (wx-rec ptr off size 0 ram))
-  :hints (("Goal" :in-theory (e/d (wx-rec blk-rec) 
+  :hints (("Goal" :in-theory (e/d (wx-rec blk-rec)
                                   (z*-rec-of-wx-rec)))))
 
 (defthm other-way-2
   (implies (and (equal (z*-rec (blk-rec ptr off size) ram1)
                        (z*-rec (blk-rec ptr off size) ram2))
                 (equal (;wfixw 8 (- size off)
-                        acl2::loghead (* 8 (nfix  (- size off)))                              
-                              value) 
+                        acl2::loghead (* 8 (nfix  (- size off)))
+                              value)
                        (rx-rec ptr off size ram2))
                 (< off size)
                 (integerp off)
@@ -14845,13 +14875,13 @@
 ;exported?
 (defthmd wx==ram-rec
   (implies (and (<= 0 off)
-                (< off size) 
+                (< off size)
                 (integerp off)
                 (integerp size))
            (equal (equal (wx-rec ptr off size value ram1) ram2)
                   (and (equal (z*-rec (blk-rec ptr off size) ram1)
                               (z*-rec (blk-rec ptr off size) ram2))
-                       (equal (acl2::loghead (* 8 (nfix (- size off))) value) 
+                       (equal (acl2::loghead (* 8 (nfix (- size off))) value)
                               (rx-rec ptr off size ram2)))))
   :hints (("Goal" :in-theory (disable open-rx-rec)
            :use ((:instance other-way-1)
@@ -14871,11 +14901,11 @@
   (equal (z*-rec (blk-rec ptr off size)
                  (z*-rec list (wx-rec ptr off size value ram1)))
          (z*-rec list (z*-rec (blk-rec ptr off size) ram1)))
-  :hints (("Goal" :in-theory (disable z*-rec-commutativity 
+  :hints (("Goal" :in-theory (disable z*-rec-commutativity
                                       open-wx-rec open-blk-rec)
-           :use (:instance z*-rec-commutativity 
+           :use (:instance z*-rec-commutativity
                            (x (blk-rec ptr off size))
-                           (y list) 
+                           (y list)
                            (ram (wx-rec ptr off size value ram1))))))
 
 (defthm z*-rec-over-wx-rec
@@ -14895,7 +14925,7 @@
                 (integerp off)
                 (integerp size))
            (equal (acl2::loghead (* 8 (nfix (- size off))) value)
-                  (rx-rec ptr off size 
+                  (rx-rec ptr off size
                           (z*-rec list (wx-rec ptr off size value ram)))))
   :hints (("goal" :in-theory (e/d (;wfixw
                                      blk-rec
@@ -14912,7 +14942,7 @@
   (equal (wx size ptr (acl2::loghead (fix-size size) value) ram)
          (wx size ptr value ram))
   :hints (("Goal" :cases ((integerp value))
-           :in-theory (enable wx ;wfixn 
+           :in-theory (enable wx ;wfixn
                               wx-rec==wx-rec))))
 
 ;(local (in-theory (disable UNFIXED-SIZE-MAX-OFFSET)))
@@ -14933,8 +14963,8 @@
   (equal (rx size ptr ram)
          (wintlist (rd-list (sblk size ptr) ram)))
   :hints (("goal" :in-theory (enable RX-REC-TO-RD-LIST-REDUCTION
-                                     rx 
-                                     blk 
+                                     rx
+                                     blk
                                      sblk))))
 
 (defthmd wx-to-wr-list-reduction
@@ -14949,7 +14979,7 @@
   (implies (integerp a)
            (equal (wr a v ram)
                   (wx 8 a v ram)))
-  :hints (("goal" :in-theory (e/d (;WFIXW WINTW ;wintn ;wfix 
+  :hints (("goal" :in-theory (e/d (;WFIXW WINTW ;wintn ;wfix
                                    OPEN-WX-REC wx wx-rec)
                                   (WX-REC-TO-WR-LIST-REDUCTION)))))
 
@@ -14981,7 +15011,7 @@
                          (gacc::sblk 32 addr)))
   :hints (("Goal" :in-theory (e/d (gacc::sblk gacc::blk
 ;                                     bag::subbagp
-                                     bag::memberp) 
+                                     bag::memberp)
                                   (BAG::SUBBAGP-CDR-REMOVE-1-REWRITE)))))
 
 
@@ -14990,9 +15020,9 @@
          (loghead 8 value))
   :hints (("Goal" :expand  (gacc::addr-range ad 2)
            :in-theory (enable gacc::rx gacc::wx gacc::open-wx-rec gacc::open-rx-rec))))
-        
 
-;gen...        
+
+;gen...
 (defthm loghead-8-of-rx
   (equal (loghead 8 (gacc::rx 16 a ram))
          (gacc::rx 8 a ram))
@@ -15039,7 +15069,7 @@
                   (gacc::wx numbits 0 val ram)))
   :hints (("Goal" :in-theory (enable gacc::wx))))
 
-;; 
+;;
 ;; (defthm my-wx-over-wx-both
 ;;   (equal (gacc::wx size ptr value (gacc::wx wsize wptr wvalue ram))
 ;;          (if (bag::disjoint (gacc::sblk size  ptr)
@@ -15067,7 +15097,7 @@
 ;;   (integerp (wfixn b n value)))
 
 ;; (defthm wfixn-0
-;;   (equal (wfixn b n 0) 
+;;   (equal (wfixn b n 0)
 ;;          0)
 ;;   :hints (("Goal" :in-theory (enable wfixn))))
 
@@ -15094,9 +15124,9 @@
 ;;            (equal (wfixn b n (+ a (wfixn b n x)))
 ;;                   (wfixn b n (+ a x))))
 ;;   :hints (("goal" :in-theory (enable wfixn wfixw-reduction))))
- 
+
 ;; (defthm wfixn-ifix
-;;   (equal (wfixn b n (ifix x)) 
+;;   (equal (wfixn b n (ifix x))
 ;;          (wfixn b n x))
 ;;   :hints (("goal" :in-theory (enable wfixn wfixw-reduction))))
 
@@ -15124,7 +15154,7 @@
 ;;                               acl2::imod ;bzo
 ;;                               max-offset-rewrites-to-floor
 ;;                               WFIXW-REDUCTION
-;;                               WFIXN 
+;;                               WFIXN
 ;;                               acl2::LOGHEAD))))
 
 ;; ;bzo
@@ -15173,7 +15203,7 @@
 ;;   :hints (("goal" :use unfixed-size-wfixn)))
 
 ;; (defthm signed-byte-p-of-wfixn
-;;   (implies (< (fix-size n) m) 
+;;   (implies (< (fix-size n) m)
 ;;            (equal (acl2::signed-byte-p m (wfixn 8 n x))
 ;;                   (integerp m)))
 ;;   :hints (("Goal" :in-theory (enable wfixn-rewrite-to-loghead))))
@@ -15197,7 +15227,7 @@
 
 ;; (defthm wintn-wfixn
 ;;   (implies (wintn s n x)
-;;            (equal (wfixn s n x) 
+;;            (equal (wfixn s n x)
 ;;                   x))
 ;;   :hints (("Goal" :in-theory (enable wintn wfixn))))
 
@@ -15209,8 +15239,8 @@
 ;;                       t
 ;;                     (wintn 8 8 x)  ;simplify this?
 ;;                     )))
-;;   :hints (("Goal" :in-theory (enable wintn 
-;;                                      wintw 
+;;   :hints (("Goal" :in-theory (enable wintn
+;;                                      wintw
 ;;                                      WFIXW-REDUCTION
 ;;                                      MAX-OFFSET-REWRITES-TO-FLOOR))))
 
@@ -15239,7 +15269,7 @@
 ;;            (equal (wfixn 8 n x)
 ;;                   x))
 ;;   :hints (("Goal" :use (:instance wintn-wfixn (s 8))
-;;            :in-theory (disable wfixn 
+;;            :in-theory (disable wfixn
 ;;                                wintn-wfixn
 ;;                                wintn))))
 
@@ -15251,7 +15281,7 @@
 ;;   (wintn b s (wfixn b s v))
 ;;   :hints (("goal" :in-theory (enable wintn wfixn wintw))))
 
-;; can be expensive? 
+;; can be expensive?
 ;; (defthmd wintn-+
 ;;   (implies (wintn b w y)
 ;;            (<= 0 y))
@@ -15294,7 +15324,7 @@
 ;;            (equal (max-offset (+ -8 x))
 ;;                   (+ -1 (max-offset x))))
 ;;   :hints (("Goal" :in-theory (enable max-offset))))
-         
+
 
 
 ;bbzo
@@ -15303,7 +15333,7 @@
 ;;          (acl2::unsigned-byte-p (+ 8 (* 8 (MAX-OFFSET N))) v))
 ;;   :hints (("Goal" :in-theory (e/d (wintn MAX-OFFSET-FIX-SIZE) ( ;UNFIXED-SIZE-MAX-OFFSET
 ;;                                                                       )))))
-        
+
 
 ;; ;generalized above
 ;; (defthm wintn-unsigned-byte-p
@@ -15312,8 +15342,8 @@
 ;;                     (equal size 32))
 ;;                 (wintn 8 size x))
 ;;            (acl2::unsigned-byte-p size x))
-;;   :hints(("goal" :in-theory (e/d (wintn 
-;;                                   wintw 
+;;   :hints(("goal" :in-theory (e/d (wintn
+;;                                   wintw
 ;;                                   wfixw-unsigned-byte-p)
 ;;                                  (wfixw)))))
 
@@ -15519,7 +15549,7 @@
 ;If SIZE is not a multiple of 8, it gets rounded up to a multiple of 8.  Thus, we read whole bytes.
 ;If SIZE is 0, it gets treated as if it were 8.
 ;Data from the lower addresses goes into the lower-order positions of the result.
-(defund rx (size a ram) 
+(defund rx (size a ram)
   (declare (type t size a ram))
   (rx-rec a 0 (1+ (max-offset size)) ram))
 
@@ -15570,7 +15600,7 @@
 ;; WX-REC
 ;;
 
-;I changed this to call logtail and loghead instead of wcar and wcdr. -ews 
+;I changed this to call logtail and loghead instead of wcar and wcdr. -ews
 
 ;bzo - I believe the calls to ifix on value below could be dropped if the
 ;guards on the following functions were changed to not include (integerp i):
@@ -15683,22 +15713,22 @@
     (if (equal 1 numbytes)
         (rd (loghead 32 ad) ram)
       (if (equal 2 numbytes)
-          (acl2::logapp 8 
+          (acl2::logapp 8
                         (rd (loghead 32 ad) ;bzo i added these logheads...
-                            ram) 
+                            ram)
                         (rd (loghead 32 (+ 1 ad)) ram)
                         ) ;bzo
         (if (equal 4 numbytes)
             ;bzo reassociate the logapp?
             (acl2::logapp 24
                           (acl2::logapp 16
-                                        (acl2::logapp 8 
-                                                      (rd (loghead 32 ad) ram) 
+                                        (acl2::logapp 8
+                                                      (rd (loghead 32 ad) ram)
                                                       (rd (loghead 32 (+ 1 ad)) ram))
                                         (rd (loghead 32 (+ 2 ad)) ram))
                           (rd (loghead 32 (+ 3 ad)) ram))
           (acl2::logapp 8 (rd (loghead 32 ad) ram) (rd-bytes-exec (+ -1 numbytes) (+ 1 ad) ram)))))))
-  
+
 
 ;; Read NUMBYTES bytes of data from RAM, starting at address AD.  (RAM is
 ;; byte-addressable.)  Data from the lower addresses goes into the lower-order
@@ -15806,7 +15836,7 @@
 ;;
 ;; WR-BYTES
 ;;
-;;bzo add mbe          
+;;bzo add mbe
 
 (defund wr-bytes (numbytes ad v ram)
   (declare (type t ad ram)
@@ -15818,7 +15848,7 @@
                                )
                    :guard-hints (("Goal" :in-theory (enable OFFSET-RANGE-WRAP-CONST-OPENER
                                                             ADDR-RANGE-EXPAND-WHEN-K-IS-A-CONSTANT)))))
-  (wr-list (offset-range-wrap 32 ad numbytes) ;(addr-range ad numbytes) 
+  (wr-list (offset-range-wrap 32 ad numbytes) ;(addr-range ad numbytes)
            (enlistw numbytes v) ram))
 
 (defthm wr-bytes-when-ad-is-not-an-integerp
@@ -15916,7 +15946,7 @@
   (implies (force (< numbytes (expt 2 32))) ;bzo added this when changing to fast-memories
            (equal (equal (wr-bytes numbytes ad v ram1) ram2)
                   (if (integerp numbytes)
-                      (and (equal (loghead (* 8 numbytes) v) 
+                      (and (equal (loghead (* 8 numbytes) v)
                                   (rd-bytes numbytes ad ram2))
                            (equal (clr-bytes numbytes ad ram1)
                                   (clr-bytes numbytes ad ram2)))
@@ -15929,7 +15959,7 @@
 ;;            (equal (clr-list ads (wr ad val ram))
 ;;                   (clr-list ads ram)))
 ;;   :hints (("Goal" :in-theory (enable clr-list))))
-                 
+
 (defthm clr-bytes-of-wr-cover
   (implies (list::memberp ad (offset-range-wrap 32 ad2 numbytes) ;;(addr-range ad2 numbytes)
                           )
@@ -15937,7 +15967,7 @@
                   (clr-bytes numbytes ad2 ram)))
   :hints (("Goal" :in-theory (enable clr-bytes))))
 
-  
+
 ;; ;replacement for rx, except when numbytes is 0?
 ;; (defun rx2 (size a ram)
 ;;   (rd-bytes (* 1/8 (fix-size numbytes) ad ram)))
@@ -16044,7 +16074,7 @@
 ;;                                         (rd (+ 2 ad) ram))
 ;;                           (rd (+ 3 ad) ram))
 ;;           (acl2::logapp 8 (rd ad ram) (rd-bytes-exec (+ -1 numwords) (+ 1 ad) ram)))))))
-  
+
 
 (defun addresses-of-data-word-univ (word-ad)
   (declare (type integer word-ad))
@@ -16072,7 +16102,7 @@
                                                          read-data-word-exec
                                                          acl2::ash-as-logapp
                                                          word-ad-to-byte-ads
-                                                         acl2::sum-with-shift-becomes-logapp-constant-version) 
+                                                         acl2::sum-with-shift-becomes-logapp-constant-version)
                                                         (acl2::logapp-0-part-2-better))))))
 ;  (mbe :exec (read-data-word-exec denvr offset ram)
 ;      :logic
@@ -16105,7 +16135,7 @@
            ;;                                                          read-data-word-exec
            ;;                                                          acl2::ash-as-logapp
            ;;                                                          word-ad-to-byte-ads
-           ;;                                                          acl2::sum-with-shift-becomes-logapp-constant-version) 
+           ;;                                                          acl2::sum-with-shift-becomes-logapp-constant-version)
            ;;                                                         (acl2::logapp-0-part-2-better)))))
            )
 ;  (mbe :exec (read-data-word-exec denvr offset ram)
@@ -16183,7 +16213,7 @@
            (write-data-word-univ ad2 val2 (write-data-word-univ ad1 val1 ram))))
   :rule-classes ((:rewrite :loop-stopper ((ad2 ad1))))
   :hints (("Goal" :in-theory (enable WRITE-DATA-WORD-UNIV))))
-        
+
 (defund clear-data-word-univ (word-ad ram)
   (declare (type integer word-ad)
            (xargs :guard (aamp-ramp ram))
@@ -16195,8 +16225,8 @@
          (and (equal (loghead 16 value) (read-data-word-univ ad ram2))
               (equal (clear-data-word-univ ad ram1)
                      (clear-data-word-univ ad ram2))))
-  :hints (("Goal" :in-theory (enable WRITE-DATA-WORD-UNIV 
-                                     READ-DATA-WORD-UNIV 
+  :hints (("Goal" :in-theory (enable WRITE-DATA-WORD-UNIV
+                                     READ-DATA-WORD-UNIV
                                      WORD-AD-TO-BYTE-ADS
                                      ACL2::EQUAL-LOGAPP-X-Y-Z
                                      WR==R!
@@ -16249,7 +16279,7 @@
            ;;                                                   read-data-word-exec
            ;;                                                   acl2::logext-logapp
            ;;                                                   acl2::ash-as-logapp
-           ;;                                                   read-data-words-exec) 
+           ;;                                                   read-data-words-exec)
            ;;                                                  (acl2::logapp-0-part-2-better
            ;;                                                   acl2::loghead-sum-split-into-2-when-i-is-a-constant)))))
            )
@@ -16272,7 +16302,7 @@
            (equal (read-data-words-univ numwords ad ram)
                   0))
   :hints (("Goal" :in-theory (enable read-data-words-univ))))
-       
+
 (defthm read-data-words-univ-when-ad-is-not-an-integerp
   (implies (not (integerp ad))
            (equal (read-data-words-univ numwords ad ram)
@@ -16346,14 +16376,14 @@
 ;;
 ;; WR-BYTES
 ;;
-;;bzo add mbe          
+;;bzo add mbe
 
 (defund write-data-words-univ (numwords word-ad value ram)
   (declare (type integer word-ad value)
            (type (integer 0 *) numwords)
            (xargs :guard (aamp-ramp ram))
            )
-  (wr-list (addresses-of-data-words-univ numwords word-ad) 
+  (wr-list (addresses-of-data-words-univ numwords word-ad)
            ;;(logext-list 32 (word-ads-to-byte-ads (addr-range word-ad numwords)))
 ;           (word-list-to-byte-list (split-into-words numwords value))
            (enlistw (* 2 numwords) value)
@@ -16391,7 +16421,7 @@
                      (offset-range-wrap 31 (ifix ad2) numwords2))
            (equal (write-data-words-univ numwords1 ad1 v1 (write-data-words-univ numwords2 ad2 v2 ram))
                   (write-data-words-univ numwords2 ad2 v2 (write-data-words-univ numwords1 ad1 v1 ram))))
-  :hints (("Goal" :in-theory (e/d (write-data-words-univ) 
+  :hints (("Goal" :in-theory (e/d (write-data-words-univ)
                                   (DISJOINT-OF-TWO-OFFSET-RANGE-WRAPS
                                     disjoint-of-word-ads-to-byte-ads
                                     disjoint-of-two-addr-ranges)))))
@@ -16446,7 +16476,7 @@
                           (offset-range-wrap 31 ad2 numwords2))
            (equal (read-data-words-univ numwords1 ad1 (write-data-words-univ numwords2 ad2 v2 ram))
                   (read-data-words-univ numwords1 ad1 ram)))
-  :hints (("Goal" :in-theory (e/d (write-data-words-univ read-data-words-univ) 
+  :hints (("Goal" :in-theory (e/d (write-data-words-univ read-data-words-univ)
                                   (disjoint-of-word-ads-to-byte-ads
                                    DISJOINT-OF-TWO-ADDR-RANGES)))))
 
@@ -16470,20 +16500,20 @@
   (implies (<= NUMWORDS 2147483648)
            (equal (equal (write-data-words-univ numwords ad v ram1) ram2)
                   (if (integerp numwords)
-                      (and (equal (loghead (* 16 numwords) v) 
+                      (and (equal (loghead (* 16 numwords) v)
                                   (read-data-words-univ numwords ad ram2))
                            (equal (clear-data-words-univ numwords ad ram1)
                                   (clear-data-words-univ numwords ad ram2)))
                     (equal ram1 ram2))))
   :hints (("Goal" :in-theory (enable write-data-words-univ read-data-words-univ clear-data-words-univ))))
-                 
+
 ;; (defthm clear-data-words-univ-of-wr-cover
 ;;   (implies (list::memberp ad (addr-range ad2 numwords))
 ;;            (equal (clear-data-words-univ numwords ad2 (wr ad val ram))
 ;;                   (clear-data-words-univ numwords ad2 ram)))
 ;;   :hints (("Goal" :in-theory (enable clear-data-words-univ))))
 
-  
+
 ;; ;replacement for rx, except when numwords is 0?
 ;; (defun rx2 (size a ram)
 ;;   (read-data-words-univ (* 1/8 (fix-size numwords) ad ram)))
@@ -16574,7 +16604,7 @@
   :hints (("Goal" :expand ((OFFSET-RANGE-WRAP 31 ad NUMWORDS)
                            (OFFSET-RANGE-WRAP 31 0 NUMWORDS))
            :in-theory (e/d (write-data-words-univ write-data-word-univ
-                                             WORD-AD-TO-BYTE-ADS) 
+                                             WORD-AD-TO-BYTE-ADS)
                            ( ;makeaddr-of-+-loghead
                             )))))
 
@@ -16582,7 +16612,7 @@
   (implies (and (syntaxp (quotep numwords))
                 (not (zp numwords)))
            (equal (read-data-words-univ numwords ad ram)
-                  (logapp 16 
+                  (logapp 16
                           (read-data-word-univ ad ram)
                           (read-data-words-univ (+ -1 numwords)
                                                 (+ 1 (ifix ad))
@@ -16629,12 +16659,12 @@
                   (fetch-code-byte cenvr offset ram)))
   :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (write-data-word 
+           :in-theory (e/d (write-data-word
                             acl2::loghead-logcdr
                             write-data-word-univ
                             make-code-addr
                             word-ad-to-byte-ads
-                            fetch-code-byte no-code-data-clash) 
+                            fetch-code-byte no-code-data-clash)
                            (addresses-of-data-word-univ
                             make-code-addr
                             acl2::logcdr-loghead)))))
@@ -16646,13 +16676,13 @@
            (equal (read-data-word denvr offset (write-data-word-univ ad val ram))
                   (read-data-word denvr offset ram)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (write-data-word 
+           :in-theory (e/d (write-data-word
                             read-data-word
                             acl2::loghead-logcdr
                             write-data-word-univ
                             make-code-addr
                             word-ad-to-byte-ads
-                            fetch-code-byte no-code-data-clash) 
+                            fetch-code-byte no-code-data-clash)
                            (addresses-of-data-word-univ
                             addresses-of-data-word
                             make-code-addr
@@ -16665,13 +16695,13 @@
            (equal (read-data-word-univ ad (write-data-word denvr offset val ram))
                   (read-data-word-univ ad ram)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (write-data-word 
+           :in-theory (e/d (write-data-word
                             read-data-word-univ
                             acl2::loghead-logcdr
                             write-data-word-univ
                             make-code-addr
                             word-ad-to-byte-ads
-                            fetch-code-byte no-code-data-clash) 
+                            fetch-code-byte no-code-data-clash)
                            (addresses-of-data-word-univ
                             addresses-of-data-word
                             make-code-addr
@@ -16690,13 +16720,13 @@
            (equal (write-data-word-univ ad val1 (write-data-word denvr offset val2 ram))
                   (write-data-word denvr offset val2 (write-data-word-univ ad val1 ram))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (write-data-word 
+           :in-theory (e/d (write-data-word
                             read-data-word-univ
                             acl2::loghead-logcdr
                             write-data-word-univ
                             make-code-addr
                             word-ad-to-byte-ads
-                            fetch-code-byte no-code-data-clash) 
+                            fetch-code-byte no-code-data-clash)
                            (addresses-of-data-word-univ
                             addresses-of-data-word
                             make-code-addr
@@ -16763,7 +16793,7 @@
                           (addresses-of-data-word-univ ad))
            (equal (read-data-word denvr offset (clear-data-word-univ ad ram))
                   (read-data-word denvr offset ram)))
-  :hints (("Goal" :in-theory (e/d (clear-data-word-univ) 
+  :hints (("Goal" :in-theory (e/d (clear-data-word-univ)
                                   (DISJOINT-OF-TWO-WORD-AD-TO-BYTE-ADS ;bzo
                                    )))))
 
@@ -16772,12 +16802,12 @@
                           (addresses-of-data-word-univ ad))
            (equal (read-data-word-univ ad (clear-data-word denvr offset ram))
                   (read-data-word-univ ad ram)))
-  :hints (("Goal" :in-theory (e/d (clear-data-word) 
+  :hints (("Goal" :in-theory (e/d (clear-data-word)
                                   (DISJOINT-OF-TWO-WORD-AD-TO-BYTE-ADS ;bzo
                                    WRITE-DATA-WORD-EQUAL-REWRITE)
                                    ))))
 
-(defthm read-data-words-univ-of-logext-special-case 
+(defthm read-data-words-univ-of-logext-special-case
   (equal (gacc::read-data-words-univ 2 (logext 32 x) ram)
          (gacc::read-data-words-univ 2 x ram))
   :hints (("Goal" :in-theory (enable gacc::read-data-words-univ))))
@@ -16843,7 +16873,7 @@
                   (list (cadr (cadr term)))
                 (list 1))
             (list 1)))))))
-  
+
 ;only works for positive numbers?
 (defun gcd-aux (i j)
   (declare (xargs :measure (nfix j)
@@ -16868,7 +16898,7 @@
         (car lst)
       (greatest-common-divisor (car lst)
                                (gcd-many (cdr lst))))))
-  
+
 (defthm integerp-of-gcd-many
   (implies (integer-listp lst)
            (integerp (gcd-many lst))))
@@ -16878,10 +16908,10 @@
 
 (defun greatest-common-constant-factor (term1 term2)
   (declare (xargs :guard (and (pseudo-termp term1)
-                              (pseudo-termp term2))))  
+                              (pseudo-termp term2))))
   (greatest-common-divisor (gcd-many (gather-constant-factors term1))
                            (gcd-many (gather-constant-factors term2))))
-                           
+
 (defun bind-x-to-greatest-common-constant-factor (term1 term2)
   (declare (xargs :guard (and (pseudo-termp term1)
                               (pseudo-termp term2))))
@@ -16943,7 +16973,7 @@
   (implies (not (equal ad1 ad2))
            (equal (clr ad1 (clr ad2 ram))
                   (clr ad2 (clr ad1 ram))))
-  :hints (("Goal" :in-theory (e/d (clr) (wr-of-0-becomes-clr)))))                 
+  :hints (("Goal" :in-theory (e/d (clr) (wr-of-0-becomes-clr)))))
 
 #+joe
 (DEFTHM RD-OF-clr-both
@@ -16969,7 +16999,7 @@
 
 ;;
 ;; Converting word addresses to byte addresses.
-;; 
+;;
 
 
 
@@ -17073,8 +17103,8 @@
               (equal "ST" (symbol-name (caddr nth-call)))
               (or (equal (cadr nth-call) ''4)
                   (equal (cadr nth-call) ''3))))))
-             
-       
+
+
 (defun smaller-offset-term-aux (term1 term2)
   (declare (type t term1 term2)
            (xargs :mode :program))
@@ -17091,7 +17121,7 @@
               nil
             ;;we must be dealing with two locals ones or two stack ones,
             ;;so we just compare the offsets numerically
-            ;; lexorder is like <=, but what we want is like <, so we use 
+            ;; lexorder is like <=, but what we want is like <, so we use
             ;; the not of the lexorder of the arguments in reverse order
             (not (lexorder (cadr term2) (cadr term1))))))
     (acl2::smaller-term term1 term2)))
@@ -17112,10 +17142,10 @@
     term))
 
 ;;(smaller-offset-term '(BINARY-+ '2 (NTH '3 ST)) '(BINARY-+ '2 (NTH '4 ST)))
-(defun smaller-offset-term (term1 term2)      
+(defun smaller-offset-term (term1 term2)
   (declare (xargs :mode :program))
   (smaller-offset-term-aux (convert-term-to-plus-form term1) (convert-term-to-plus-form term2)))
-    
+
 ;The arguments to this function are terms
 (defun smaller-params (denvr1 offset1 denvr2 offset2)
   (declare (xargs :mode :program))
@@ -17212,15 +17242,15 @@
 ;I'm intending to leave this open in this file
 ;logext 15 of denv?
 (defun addresses-of-data-word (denvr offset)
-  (word-ad-to-byte-ads (logapp 16 
-                               offset 
+  (word-ad-to-byte-ads (logapp 16
+                               offset
                                (loghead 15 denvr) ;;(logext 15 denvr) ;bzo drop this?
                                )))
 
 ;; Read the 2-byte word of data at offset OFFSET in data environment DENVR in
 ;; RAM.  The byte at the lower address goes into the least significant bits of
 ;; the result.
-;; 
+;;
 (defund read-data-word (denvr offset ram)
   (declare (type (unsigned-byte 15) denvr)
            (type (unsigned-byte 16) offset)
@@ -17229,7 +17259,7 @@
                                                          read-data-word-exec
                                                          acl2::ash-as-logapp
                                                          word-ad-to-byte-ads
-                                                         acl2::sum-with-shift-becomes-logapp-constant-version) 
+                                                         acl2::sum-with-shift-becomes-logapp-constant-version)
                                                         (acl2::logapp-0-part-2-better))))))
   (mbe :exec (read-data-word-exec denvr offset ram)
        :logic (wintlist (rd-list (addresses-of-data-word denvr offset)
@@ -17268,7 +17298,7 @@
                                      WORD-AD-TO-BYTE-ADS))))
 
 (defthm read-data-word-when-offset-is-not-an-integerp
-  (implies (not (integerp offset)) 
+  (implies (not (integerp offset))
            (equal (read-data-word denvr offset ram)
                   (read-data-word denvr 0 ram)))
   :hints (("Goal" :in-theory (enable read-data-word))))
@@ -17340,7 +17370,7 @@
 
 ;;
 ;; WRITE-DATA-WORD
-;;               
+;;
 
 
 ;; For execution only.
@@ -17360,7 +17390,7 @@
          (byte0 (loghead 8 value))
          (byte1 (loghead 8 (logtail 8 value)))
          )
-    (wr ad0 byte0 
+    (wr ad0 byte0
         (wr ad1 byte1 ram))))
 
 
@@ -17487,7 +17517,7 @@
 
 
 (defthm write-data-word-of-sum-of-loghead
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp a)
                 )
            (equal (write-data-word denvr (+ a (loghead 16 x)) val ram)
@@ -17519,7 +17549,7 @@
                 )
            (equal (write-data-word denvr offset (+ k value) ram)
                   (write-data-word denvr offset (+ (loghead 16 k) value) ram)))
-  :hints (("Goal" :use ((:instance WRITE-DATA-WORD-of-loghead 
+  :hints (("Goal" :use ((:instance WRITE-DATA-WORD-of-loghead
                                    (denvr denvr)
                                    (offset offset)
                                    (ram ram)
@@ -17638,12 +17668,12 @@
               (equal (clear-data-word denvr offset ram1)
                      (clear-data-word denvr offset ram2))))
   :otf-flg t
-  :hints (("Goal" :in-theory (e/d (WRITE-DATA-WORD READ-DATA-WORD 
+  :hints (("Goal" :in-theory (e/d (WRITE-DATA-WORD READ-DATA-WORD
                                                    WORD-AD-TO-BYTE-ADS
                                                    ACL2::EQUAL-LOGAPP-X-Y-Z
                                                    WR==R!
                                                    clear-data-word
-                                                   ) 
+                                                   )
                                   ()))))
 
 (defthm read-data-word-of-clear-data-word-both
@@ -17682,18 +17712,18 @@
 ;;            (equal (clear-data-word denvr1 offset1 (write-data-word denvr2 offset2 value ram))
 ;;                   (write-data-word denvr2 offset2 value (clear-data-word denvr1 offset1 ram))))
 ;;   :hints (("Goal" :in-theory (e/d (clear-data-word
-;;                                    acl2::logext-logapp) 
+;;                                    acl2::logext-logapp)
 ;;                                   (write-data-word-equal-rewrite)))))
 
 
 ;; (defthm clear-data-word-of-write-data-word-diff-offsets
-;;   (implies (not (equal (loghead 16 offset1) 
+;;   (implies (not (equal (loghead 16 offset1)
 ;;                        (loghead 16 offset2)))
 ;;            (equal (clear-data-word denvr1 offset1 (write-data-word denvr2 offset2 value ram))
 ;;                   (write-data-word denvr2 offset2 value (clear-data-word denvr1 offset1 ram))))
 ;;   :hints (("Goal" :in-theory (e/d (
 ;;                                    clear-data-word
-;;                                    acl2::logext-logapp) 
+;;                                    acl2::logext-logapp)
 ;;                                   (write-data-word-equal-rewrite)))))
 
 (defthm clear-data-word-subst-in-offset
@@ -17716,7 +17746,7 @@
              (clear-data-word denvr1 offset1 ram)
            (write-data-word denvr2 offset2 val (clear-data-word denvr1 offset1 ram))))
   :hints (("Goal" :in-theory (e/d (clear-data-word
-                                   acl2::logext-logapp) 
+                                   acl2::logext-logapp)
                                   (write-data-word-equal-rewrite)))))
 
 (defthm write-data-word-subst-in-offset
@@ -17728,7 +17758,7 @@
   :hints (("Goal" :in-theory (e/d (write-data-word) (WRITE-DATA-WORD-EQUAL-REWRITE)))))
 
 (defthm clear-data-word-of-sum-of-loghead
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp a)
                 )
            (equal (clear-data-word denvr (+ a (loghead 16 x)) ram)
@@ -17789,7 +17819,7 @@
            (equal (clear-data-word denvr (+ a (loghead 16 (+ b n))) ram)
                   (clear-data-word denvr (+ a b n) ram)))
   :hints (("Goal" :in-theory (e/d (clear-data-word) (write-data-word-equal-rewrite)))))
-        
+
 
 
 
@@ -17800,7 +17830,7 @@
 ;;
 
 
-        
+
 ;;
 ;; WORD-ADS-TO-BYTE-ADS
 ;;
@@ -17857,7 +17887,7 @@
            nil))
   :hints (("Goal" :in-theory (enable word-ads-to-byte-ads
                                      word-ad-to-byte-ads))))
-        
+
 (defthm len-of-word-ads-to-byte-ads
   (equal (len (word-ads-to-byte-ads word-ads))
          (* 2 (len word-ads)))
@@ -17912,7 +17942,7 @@
 
 (defthm disjoint-of-two-calls-to-word-ads-to-byte-ads
   (equal (disjoint (word-ads-to-byte-ads word-ads1) (word-ads-to-byte-ads word-ads2))
-         (or (endp word-ads1) 
+         (or (endp word-ads1)
              (endp word-ads2)
              (disjoint (ifix-list word-ads1) (ifix-list word-ads2))
              ))
@@ -17928,7 +17958,7 @@
   :hints (("Goal" :in-theory (e/d (word-ads-to-byte-ads
                                    acl2::equal-logapp-x-y-z
                                    acl2::ash-as-logapp
-                                   word-ad-to-byte-ads) 
+                                   word-ad-to-byte-ads)
                                   (acl2::logapp-0-part-2-better)))))
 
 
@@ -17948,7 +17978,7 @@
 
 ;drop?
 (defthm unique-of-word-ads-to-byte-ads
-  (implies (and (bag::unique (loghead-list 16 word-ads)) 
+  (implies (and (bag::unique (loghead-list 16 word-ads))
                 (integer-listp word-ads) ;bzo
                 )
            (bag::unique (word-ads-to-byte-ads word-ads))))
@@ -18024,7 +18054,7 @@
         (read-data-word-exec denvr offset ram)
       (if (zp numwords)
           0
-        (logapp 16 
+        (logapp 16
                 (read-data-word-exec denvr offset ram)
                 (read-data-words-exec (+ -1 numwords) denvr (loghead 16 (+ 1 offset)) ram))))))
 
@@ -18033,7 +18063,7 @@
 ;;
 
 (defun addresses-of-data-words (numwords denvr offset)
-  (word-ads-to-byte-ads (logapp-list 16 
+  (word-ads-to-byte-ads (logapp-list 16
                                      (offset-range-wrap 16 offset numwords)
                                      (loghead 15 denvr) ;(logext 15 denvr)
                                      )))
@@ -18059,7 +18089,7 @@
                                                    read-data-word-exec
                                                    acl2::logext-logapp
                                                    acl2::ash-as-logapp
-                                                   read-data-words-exec) 
+                                                   read-data-words-exec)
                                                   (acl2::logapp-0-part-2-better
                                                    acl2::loghead-sum-split-into-2-when-i-is-a-constant))))))
   (mbe :exec (read-data-words-exec numwords denvr offset ram)
@@ -18082,7 +18112,7 @@
            (equal (read-data-words numwords denvr offset ram)
                   0))
   :hints (("Goal" :in-theory (enable read-data-words))))
-                 
+
 (defthm read-data-words-when-numwords-is-not-an-integerp
   (implies (not (integerp numwords))
            (equal (read-data-words numwords denvr offset ram)
@@ -18090,7 +18120,7 @@
   :hints (("Goal" :in-theory (enable read-data-words))))
 
 (defthm read-data-words-when-offset-is-not-an-integerp
-  (implies (not (integerp offset)) 
+  (implies (not (integerp offset))
            (equal (read-data-words numwords denvr offset ram)
                   (read-data-words numwords denvr 0 ram)))
   :hints (("Goal" :in-theory (enable read-data-words))))
@@ -18107,7 +18137,7 @@
                               ))
                 (not (zp numwords)))
            (equal (read-data-words numwords denvr offset ram)
-                  (logapp 16 
+                  (logapp 16
                           (read-data-word denvr offset ram)
                           (read-data-words (+ -1 numwords)
                                            denvr (+ 1 (ifix offset))
@@ -18135,7 +18165,7 @@
                    (read-data-word denvr offset ram)
                    (read-data-words (+ -1 numwords) denvr (+ 1 (ifix offset)) ram))))
   :rule-classes :definition
-  :hints (("Goal" :use (:instance read-data-words-opener) 
+  :hints (("Goal" :use (:instance read-data-words-opener)
            :in-theory (disable read-data-words-opener))))
 
 (defthm read-data-words-of-1
@@ -18218,7 +18248,7 @@
                (byte3 (loghead 8 (logtail 24 value)))
                )
           (wr ad0 byte0 (wr ad1 byte1 (wr ad2 byte2 (wr ad3 byte3 ram)))))
-      (write-data-word-exec 
+      (write-data-word-exec
        denvr offset value ;(loghead 16 value)
        (write-data-words-exec (+ -1 numwords) denvr (+ 1 offset) (logtail 16 value) ram)))))
 
@@ -18256,7 +18286,7 @@
 ;maybe we don't even need the call to offset-range-wrap, since logapp-list chops its args?
 ;16 or 15???
 ;; Wraps around if we reach the end of DENVR.
-;; The low-order bits of VALUE go into the lower addresses in DENV (unless wrapping occurs). 
+;; The low-order bits of VALUE go into the lower addresses in DENV (unless wrapping occurs).
 
 (defund write-data-words (numwords denvr offset value ram)
   (declare (type (integer 0 *) numwords)
@@ -18269,7 +18299,7 @@
                                                   OFFSET-RANGE-WRAP-CONST-OPENER
                                                   WRITE-DATA-WORD-EXEC
                                                   ACL2::LOGEXT-LOGAPP
-                                                  write-data-words-exec) 
+                                                  write-data-words-exec)
                                                  (ACL2::LOGHEAD-SUM-SPLIT-INTO-2-WHEN-I-IS-A-CONSTANT))))))
   (mbe :exec (write-data-words-exec numwords denvr offset value ram)
        :logic (wr-list (addresses-of-data-words numwords denvr offset)
@@ -18308,15 +18338,15 @@
   :hints (("Goal" :expand ((OFFSET-RANGE-WRAP 16 OFFSET NUMWORDS))
            :in-theory (e/d (write-data-words write-data-word
                                              acl2::logext-logapp
-                                             WORD-AD-TO-BYTE-ADS) 
+                                             WORD-AD-TO-BYTE-ADS)
                            ()))))
 
 (defthmd write-data-words-alt-def
   (equal (write-data-words numwords denvr offset value ram)
          (if (zp numwords)
              ram
-           (write-data-word denvr offset 
-                            (loghead 16 value) 
+           (write-data-word denvr offset
+                            (loghead 16 value)
                             (write-data-words (+ -1 numwords)
                                               denvr
                                               (+ 1 (ifix offset))
@@ -18324,7 +18354,7 @@
                                               ram))))
   :rule-classes :definition
   :hints (("Goal" :use (:instance write-data-words-opener)
-           :in-theory (e/d () 
+           :in-theory (e/d ()
                            (write-data-word-equal-rewrite
                             write-data-words-opener
                             )))))
@@ -18455,7 +18485,7 @@
   (("Goal"
     :in-theory (enable loghead-list word-ads-to-byte-ads))))
 
-(local 
+(local
  (defthm read-data-word-of-write-data-words-diff-denvrs
    (implies (not (equal (loghead 15 denvr1) (loghead 15 denvr2)))
             (equal (read-data-word denvr1 offset1 (write-data-words numwords denvr2 offset2 value ram))
@@ -18463,7 +18493,7 @@
    :hints (("Goal" :in-theory (e/d (read-data-word write-data-words
                                       loghead-list-32-of-word-ads-to-byte-ads
                                       LOGHEAD-LIST-OF-LOGAPP-LIST
-                                      acl2::logext-logapp) 
+                                      acl2::logext-logapp)
                                    (WORD-ADS-TO-BYTE-ADS-OF-LOGHEAD-LIST
                                     LOGAPP-LIST-OF-LOGHEAD))))))
 
@@ -18510,7 +18540,7 @@
                             write-data-word
                             acl2::logext-logapp
                             ACL2::ASH-AS-LOGAPP
-                            ) 
+                            )
                            (LOGAPP-LIST-OF-LOGHEAD
                             ;ACL2::EQUAL-LOGAPP-X-Y-Z-CONSTANTS
                             ACL2::LOGAPP-0-PART-2-BETTER
@@ -18520,7 +18550,7 @@
   (implies (integerp x)
            (equal (read-data-word denvr (+ -1 x) (write-data-words 2 denvr (+ -2 x) val ram))
                   (loghead 16 (logtail 16 val))))
-  :hints (("Goal" :in-theory (enable WRITE-DATA-WORDS-OPENER))))     
+  :hints (("Goal" :in-theory (enable WRITE-DATA-WORDS-OPENER))))
 
 
 ;gen or drop?
@@ -18542,9 +18572,9 @@
                                    LOGHEAD-LIST-OF-LOGAPP-LIST
 
                                    ACL2::ASH-AS-LOGAPP
-                                   write-data-words) 
+                                   write-data-words)
                                   (LOGAPP-LIST-OF-LOGHEAD
-                                   
+
                                    READ-DATA-WORDS-OPENER
                                    MEMBERP-OF-OFFSET-RANGE
                                    WRITE-DATA-WORDS-OPENER
@@ -18557,7 +18587,7 @@
            (equal (write-data-words numwords2 denvr2 offset2 val2 (write-data-words numwords1 denvr1 offset1 val1 ram))
                   (write-data-words numwords1 denvr1 offset1 val1 (write-data-words numwords2 denvr2 offset2 val2 ram))))
   :hints (("Goal" :in-theory (e/d (write-data-words
-                                   LOGHEAD-LIST-OF-LOGAPP-LIST) 
+                                   LOGHEAD-LIST-OF-LOGAPP-LIST)
                                   (LOGAPP-LIST-OF-LOGHEAD
                                    READ-DATA-WORDS-OPENER
                                    MEMBERP-OF-OFFSET-RANGE
@@ -18572,7 +18602,7 @@
                 )
            (equal (write-data-words numwords2 denvr2 offset2 val2 (write-data-words numwords1 denvr1 offset1 val1 ram))
                   (write-data-words numwords2 denvr2 offset2 val2 ram)))
-  :hints (("Goal" :in-theory (e/d (write-data-words) 
+  :hints (("Goal" :in-theory (e/d (write-data-words)
                                   (READ-DATA-WORDS-OPENER
                                    MEMBERP-OF-OFFSET-RANGE
                                    WRITE-DATA-WORDS-OPENER
@@ -18602,7 +18632,7 @@
                   (write-data-words numwords1 denvr offset1 val1 ram)))
   :hints (("Goal" :cases (zp numwords)
            :in-theory (e/d (LOGHEAD-LIST-OF-LOGAPP-LIST
-                              zp write-data-word write-data-words acl2::logext-logapp) 
+                              zp write-data-word write-data-words acl2::logext-logapp)
                            (LOGAPP-LIST-OF-LOGHEAD)))))
 
 
@@ -18617,11 +18647,11 @@
                   (write-data-words numwords denvr2 offset2 val2 (write-data-word denvr1 offset1 val1 ram))))
   :rule-classes ((:rewrite :loop-stopper ((denvr1 denvr2))))
   :hints (("Goal" ;:cases ((equal (loghead 15 denvr1) (loghead 15 denvr2)))
-           :in-theory (e/d (write-data-words 
+           :in-theory (e/d (write-data-words
                             write-data-word
                             acl2::logext-logapp
                             LOGHEAD-LIST-OF-LOGAPP-LIST
-                            ) 
+                            )
                            (
                             disjoint-of-WORD-AD-TO-BYTE-ADS
                             LOGAPP-LIST-OF-LOGHEAD
@@ -18644,12 +18674,12 @@
   (implies (zp numwords)
            (equal (clear-data-words numwords denvr offset ram)
                   ram))
-  :hints (("Goal" :in-theory (e/d (clear-data-words clear-data-word) 
+  :hints (("Goal" :in-theory (e/d (clear-data-words clear-data-word)
                                   (write-data-word-equal-rewrite  write-data-words-opener)))))
 
 ;;
 ;; theorems about write-data-words, etc.
-;; 
+;;
 
 (defthm write-data-words-equal-rewrite
   (implies (<= numwords 65536)
@@ -18658,7 +18688,7 @@
                        (equal (clear-data-words numwords denvr offset ram1)
                               (clear-data-words numwords denvr offset ram2)))))
   :otf-flg t
-  :hints (("Goal" :in-theory (e/d (WRITE-DATA-WORD READ-DATA-WORD 
+  :hints (("Goal" :in-theory (e/d (WRITE-DATA-WORD READ-DATA-WORD
                                                    WORD-AD-TO-BYTE-ADS
                                                    ACL2::EQUAL-LOGAPP-X-Y-Z
                                                    WR==R!
@@ -18666,7 +18696,7 @@
                                                    READ-DATA-WORDS
                                                    WRITE-DATA-WORDS
                                                    LOGHEAD-LIST-OF-LOGAPP-LIST
-                                                   ) 
+                                                   )
                                   (LOGAPP-LIST-OF-LOGHEAD
                                    UNIQUE-OF-WORD-ADS-TO-BYTE-ADS-better)))))
 
@@ -18675,11 +18705,11 @@
            (equal (write-data-words numwords denvr1 offset1 val1 (write-data-word denvr2 offset2 val2 ram))
                   (write-data-word denvr2 offset2 val2 (write-data-words numwords denvr1 offset1 val1 ram))))
   :rule-classes ((:rewrite :loop-stopper ((denvr1 denvr2))))
-  :hints (("Goal" :in-theory (e/d (write-data-words 
+  :hints (("Goal" :in-theory (e/d (write-data-words
                                      write-data-word
                                      acl2::logext-logapp
                                      LOGHEAD-LIST-OF-LOGAPP-LIST
-                                     ) 
+                                     )
                                   (LOGAPP-LIST-OF-LOGHEAD)))))
 
 ;(local (in-theory (disable LOGAPP-LIST-OF-LOGHEAD)))
@@ -18707,7 +18737,7 @@
                   (WRITE-DATA-WORDS numwords denvr2 offset2 value (CLEAR-DATA-WORD denvr1 offset1 ram))))
   :hints (("Goal" :in-theory (e/d (
                                    clear-data-word
-                                   acl2::logext-logapp) 
+                                   acl2::logext-logapp)
                                   (WRITE-DATA-WORD-EQUAL-REWRITE)))))
 
 (defthm clear-data-word-of-write-data-words-diff-offsets
@@ -18716,7 +18746,7 @@
                   (write-data-words numwords denvr2 offset2 value (clear-data-word denvr1 offset1 ram))))
   :hints (("Goal" :in-theory (e/d (
                                    clear-data-word
-                                   acl2::logext-logapp) 
+                                   acl2::logext-logapp)
                                   (write-data-word-equal-rewrite)))))
 
 ;gen!
@@ -18748,10 +18778,10 @@
            (equal (clear-data-word denvr offset1 (write-data-words numwords denvr offset2 value ram))
                   (write-data-words (+ -1 numwords) denvr offset2 value (clear-data-word denvr offset1 ram))))
   :hints (("Goal" :in-theory (e/d (;offset-range-wrap-const-opener
-;                                  clear-data-word write-data-word 
+;                                  clear-data-word write-data-word
 ;write-data-words
                                    write-data-words-opener
-                                   ) 
+                                   )
                                   (ACL2::LOGHEAD-SUM-SPLIT-INTO-2-WHEN-I-IS-A-CONSTANT
                                    write-data-word-equal-rewrite)))))
 
@@ -18782,10 +18812,10 @@
            (equal (clear-data-word denvr offset (write-data-words numwords denvr offset value ram))
                   (write-data-words (+ -1 numwords) denvr (+ 1 (ifix offset)) (logtail 16 value) (clear-data-word denvr offset ram))))
   :hints (("Goal" :in-theory (e/d (;offset-range-wrap-const-opener
-;                                  clear-data-word write-data-word 
+;                                  clear-data-word write-data-word
 ;write-data-words
                                    write-data-words-opener
-                                   ) 
+                                   )
                                   (ACL2::LOGHEAD-SUM-SPLIT-INTO-2-WHEN-I-IS-A-CONSTANT
                                    write-data-word-equal-rewrite)))))
 
@@ -18804,7 +18834,7 @@
   (equal (write-data-words 2 denvr offset (logext 32 x) ram)
          (write-data-words 2 denvr offset x ram))
   :hints (("Goal" :in-theory (enable write-data-words))))
-         
+
 
 ;bzo allow denvrs to differ
 (defthm read-data-words-of-clear-data-word-diff
@@ -18812,7 +18842,7 @@
            (equal (read-data-words size denvr offset1 (clear-data-word denvr offset2 ram))
                   (read-data-words size denvr offset1 ram)))
   :hints (("Goal" :cases ((EQUAL (LOGHEAD '16 OFFSET2) (LOGHEAD '16 OFFSET1)))
-           :in-theory (e/d (clear-data-word) 
+           :in-theory (e/d (clear-data-word)
                            (WRITE-DATA-WORD-EQUAL-REWRITE)))))
 
 (defthm read-data-words-of-clear-data-words-diff
@@ -18820,7 +18850,7 @@
                           (offset-range-wrap 16 offset2 numwords2))
            (equal (read-data-words numwords1 denvr1 offset1 (clear-data-words numwords2 denvr2 offset2 ram))
                   (read-data-words numwords1 denvr1 offset1 ram)))
-  :hints (("Goal" :in-theory (e/d (clear-data-words) 
+  :hints (("Goal" :in-theory (e/d (clear-data-words)
                                   ()))))
 
 (defthm clear-data-words-of-write-data-word-cover
@@ -18839,7 +18869,7 @@
 
 
 (defthm CLEAR-DATA-WORDS-of-WRITE-DATA-WORDS-partial-overlap-2
-  (implies (and (equal (loghead 16 offset1) (loghead 16 (+ 1 (ifix offset2)))) 
+  (implies (and (equal (loghead 16 offset1) (loghead 16 (+ 1 (ifix offset2))))
                 (integerp offset2)
                 (integerp offset1))
            (equal (CLEAR-DATA-WORDS 2 denvr offset2 (WRITE-DATA-WORDS 2 denvr offset1 value ram))
@@ -18865,7 +18895,7 @@
 
 ;; (thm
 ;;  (equal (CLEAR-DATA-WORD DENVR1 OFFSET1 (WRITE-DATA-WORD DENVR2 OFFSET1 VALUE RAM))
-        
+
 ;; (defthm write-data-word-of-write-data-word-same-value
 ;;   (equal (write-data-word denvr1 offset1 value (write-data-word denvr2 offset2 value ram))
 ;;          (write-data-word denvr2 offset2 value (write-data-word denvr1 offset1 value ram)))
@@ -18876,7 +18906,7 @@
 ;;          (clear-data-word denvr offset (clear-data-word denvr (+ 1 (ifix offset)) ram1))
 ;;          )
 ;;   :hints (("Goal" :in-theory (e/d (clear-data-words
-;;                                    WRITE-DATA-WORDS-OPENER) 
+;;                                    WRITE-DATA-WORDS-OPENER)
 ;;                                   (WRITE-DATA-WORDS-EQUAL-REWRITE ;bzo
 ;;                                    )))))
 
@@ -18888,21 +18918,21 @@
 (defthm read-data-words-of-write-data-word-hack
   (implies (integerp offset)
            (equal (read-data-words 2 denvr (+ -1 offset) (write-data-word denvr offset value ram))
-                  (logapp 16 
+                  (logapp 16
                           (read-data-word denvr (+ -1 offset) ram)
                           (loghead 16 value))))
   :hints (("Goal" :in-theory (enable read-data-words-opener))))
-        
+
 
 ;this loops with the splitting up rules?
 ;move
 (defthmd read-data-words-recollapse
   (implies (equal (loghead 16 offset2) (loghead 16 (+ 1 (ifix offset1))))
-           (equal (logapp 16 
+           (equal (logapp 16
                           (read-data-word denvr offset1 ram)
                           (read-data-word denvr offset2 ram))
                   (read-data-words 2 denvr offset1 ram)))
-  :hints (("Goal" :in-theory (e/d (read-data-words-opener) 
+  :hints (("Goal" :in-theory (e/d (read-data-words-opener)
                                   (ACL2::LOGHEAD-SUM-SPLIT-INTO-2-WHEN-I-IS-A-CONSTANT)))))
 
 (defthm write-data-words-of-write-data-words-diff-new
@@ -18917,7 +18947,7 @@
 ;more like this?
 ;bzo bad name?
 (defthm clear-data-words-of-write-data-words-partial-overlap-1
-  (implies (and (equal (loghead 16 offset2) (loghead 16 (+ 1 (ifix offset1)))) 
+  (implies (and (equal (loghead 16 offset2) (loghead 16 (+ 1 (ifix offset1))))
                 (integerp offset2)
                 (integerp offset1))
            (equal (clear-data-words 2 denvr offset2 (write-data-words 2 denvr offset1 value ram))
@@ -18944,7 +18974,7 @@
                   (read-data-words numwords denvr1 offset1 ram)))
   :hints (("Goal" :in-theory (enable write-data-word
                                      word-ad-to-byte-ads
-                                     read-data-words 
+                                     read-data-words
                                      acl2::logext-logapp))))
 
 
@@ -18957,7 +18987,7 @@
   )
 
 (in-theory (disable READ-DATA-WORDS-OF-WRITE-DATA-WORD-DIFF))
-        
+
 (DEFTHM READ-DATA-WORD-OF-SUM-NORMALIZE-CONSTANT-addend
   (IMPLIES (AND (SYNTAXP (QUOTEP K))
                 (NOT (UNSIGNED-BYTE-P 16 K))
@@ -19000,7 +19030,7 @@
            (equal (clear-data-words numwords denvr offset1 (clear-data-word denvr offset2 ram))
                   (clear-data-words numwords denvr offset1 ram)))
   :hints (("Goal" :in-theory (e/d (clear-data-words
-                                     clear-data-word) 
+                                     clear-data-word)
                                   (WRITE-DATA-WORD-EQUAL-REWRITE)))))
 
 (defthm clear-data-words-of-clear-data-word-cover-hack
@@ -19009,9 +19039,9 @@
            (equal (clear-data-words numwords denvr 0 (clear-data-word denvr offset2 ram))
                   (clear-data-words numwords denvr 0 ram)))
   :hints (("Goal" :in-theory (enable memberp-of-offset-range
-                                     acl2::loghead-sum-split-into-2-cases 
+                                     acl2::loghead-sum-split-into-2-cases
                                      acl2::loghead-of-minus))))
-  
+
 
 ;prove from the multi-word version?
 (defthm write-data-words-of-write-data-word-cover-better
@@ -19049,7 +19079,7 @@
            (equal (write-data-words numwords denvr1 offset1 val1 (write-data-word denvr2 offset2 val2 ram))
                   (write-data-word denvr2 offset2 val2 (write-data-words numwords denvr1 offset1 val1 ram))))
    :rule-classes ((:rewrite :loop-stopper nil))
-   :hints (("Goal" :in-theory (e/d (memberp-of-offset-range) 
+   :hints (("Goal" :in-theory (e/d (memberp-of-offset-range)
                                   (write-data-word-equal-rewrite
                                    write-data-words-equal-rewrite)))))
 
@@ -19132,7 +19162,7 @@
                   (clear-data-words numwords1 denvr offset1 ram)))
   :hints (("Goal" :cases ((<= 0 numwords2))
            :in-theory (enable write-data-words-of-write-data-words-cover))))
-  
+
 
 (defthm write-data-words-of-write-data-words-diff-new-better
   (implies (and (syntaxp (smaller-params denvr2 offset2 denvr1 offset1))
@@ -19176,7 +19206,7 @@
                 )
            (equal (read-data-words numwords denvr offset1 (write-data-word denvr2 offset2 val ram))
                   (read-data-words numwords denvr offset1 ram)))
-  :hints (("Goal" :in-theory (e/d (memberp-of-offset-range) 
+  :hints (("Goal" :in-theory (e/d (memberp-of-offset-range)
                                   ())))  )
 
 (defthm read-data-words-of-clear-data-word-diff-better-better
@@ -19187,7 +19217,7 @@
                 )
            (equal (read-data-words numwords denvr offset1 (clear-data-word denvr2 offset2 ram))
                   (read-data-words numwords denvr offset1 ram)))
-  :hints (("Goal" :in-theory (e/d (clear-data-word) 
+  :hints (("Goal" :in-theory (e/d (clear-data-word)
                                   (WRITE-DATA-WORD-EQUAL-REWRITE)))))
 
 
@@ -19202,7 +19232,7 @@
            (equal (clear-data-words numwords denvr offset ram)
                   (clear-data-word denvr offset (clear-data-words (+ -1 numwords) denvr (+ 1 (ifix offset)) ram))))
   :hints (("Goal" :use (:instance  write-data-words-opener (value 0))
-           :in-theory (e/d (clear-data-words clear-data-word) 
+           :in-theory (e/d (clear-data-words clear-data-word)
                                   (write-data-word-equal-rewrite  write-data-words-opener)))))
 
 
@@ -19349,22 +19379,22 @@
 (defthm make-code-addr-cong16
   (implies (and (equal (loghead 16 offset1)
                        (loghead 16 offset2))
-                (syntaxp (acl2::smaller-term offset2 offset1)) 
+                (syntaxp (acl2::smaller-term offset2 offset1))
                 )
            (equal (make-code-addr cenvr offset1)
                   (make-code-addr cenvr offset2)))
-  :hints (("Goal" :in-theory (enable make-code-addr 
+  :hints (("Goal" :in-theory (enable make-code-addr
                                      logapp ;bzo
                                      ))))
 
 (defthm make-code-addr-cong16-lemma
   (implies (and (equal (loghead 16 offset1)
                        offset2)
-                (syntaxp (acl2::smaller-term offset2 offset1)) 
+                (syntaxp (acl2::smaller-term offset2 offset1))
                 )
            (equal (make-code-addr cenvr offset1)
                   (make-code-addr cenvr offset2)))
-  :hints (("Goal" :in-theory (enable make-code-addr 
+  :hints (("Goal" :in-theory (enable make-code-addr
                                      logapp ;bzo
                                      ))))
 
@@ -19416,7 +19446,7 @@
          (loghead 16 x) ;;(logext 16 x)
          )
   :hints (("Goal" :in-theory (e/d (acl2::logext-logapp
-                                   make-code-addr) 
+                                   make-code-addr)
                                   (
                                    acl2::logtail-logapp)))))
 
@@ -19446,7 +19476,7 @@
          ;; (logapp 1 (acl2::logbit 15 offset) (logext 16 cenvr))
          (logapp 1 (acl2::logbit 15 offset) (loghead 16 cenvr))
          )
-  :hints (("Goal" :in-theory (e/d (make-code-addr ifix ACL2::LOGEXT-LOGAPP) 
+  :hints (("Goal" :in-theory (e/d (make-code-addr ifix ACL2::LOGEXT-LOGAPP)
                                   (acl2::logext-logtail)))))
 
 ;; (defthm <-of-make-code-addr
@@ -19462,7 +19492,7 @@
 ;;                     (< (loghead 31 (logapp 16 offset cenvr)) x))))
 ;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (e/d (make-code-addr logext acl2::logtail-loghead-better
-;;                                             ) 
+;;                                             )
 ;;                                   (;equal-of-if
 ;;                                    acl2::loghead-logtail
 ;;                                    acl2::logext-logapp ;why?
@@ -19476,7 +19506,7 @@
                   (< (loghead 32 (logapp 16 offset cenvr)) x)))
   :otf-flg t
   :hints (("Goal" :in-theory (e/d (make-code-addr logext acl2::logtail-loghead-better
-                                            ) 
+                                            )
                                   (;equal-of-if
                                    acl2::loghead-logtail
                                    acl2::logext-logapp ;why?
@@ -19488,9 +19518,9 @@
                 (not (unsigned-byte-p 16 offset)))
            (equal (make-code-addr cenvr offset)
                   (make-code-addr cenvr (loghead 16 offset)))))
-        
+
 (defthm loghead-15-make-code-addr
-  (implies (and (integerp y) 
+  (implies (and (integerp y)
                 (integerp x))
            (equal (loghead 15 (make-code-addr x y))
                   (loghead 15 y)))
@@ -19646,22 +19676,22 @@
 (defthm make-data-addr-cong16
   (implies (and (equal (loghead 16 offset1)
                        (loghead 16 offset2))
-                (syntaxp (acl2::smaller-term offset2 offset1)) 
+                (syntaxp (acl2::smaller-term offset2 offset1))
                 )
            (equal (make-data-addr denvr offset1)
                   (make-data-addr denvr offset2)))
-  :hints (("Goal" :in-theory (enable make-data-addr 
+  :hints (("Goal" :in-theory (enable make-data-addr
                                      logapp ;bzo
                                      ))))
 
 (defthm make-data-addr-cong16-lemma
   (implies (and (equal (loghead 16 offset1)
                        offset2)
-                (syntaxp (acl2::smaller-term offset2 offset1)) 
+                (syntaxp (acl2::smaller-term offset2 offset1))
                 )
            (equal (make-data-addr denvr offset1)
                   (make-data-addr denvr offset2)))
-  :hints (("Goal" :in-theory (enable make-data-addr 
+  :hints (("Goal" :in-theory (enable make-data-addr
                                      logapp ;bzo
                                      ))))
 
@@ -19734,7 +19764,7 @@
                 (not (unsigned-byte-p 16 offset)))
            (equal (make-data-addr denvr offset)
                   (make-data-addr denvr (loghead 16 offset)))))
-        
+
 (defthm loghead-15-make-data-addr
   (implies (and (integerp y) (integerp x))
            (equal (loghead 15 (make-data-addr x y))
@@ -19836,7 +19866,7 @@
 ;;                     )))
 ;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (e/d (make-data-addr logext acl2::logtail-loghead-better
-;;                                                   ) 
+;;                                                   )
 ;;                                   ( ;equal-of-if
 ;;                                    acl2::loghead-logtail
 ;;                                    acl2::logext-logapp ;why?
@@ -19852,7 +19882,7 @@
                        X)))
   :otf-flg t
   :hints (("Goal" :in-theory (e/d (make-data-addr logext acl2::logtail-loghead-better
-                                                  ) 
+                                                  )
                                   ( ;equal-of-if
                                    acl2::loghead-logtail
                                    acl2::logext-logapp ;why?
@@ -19863,7 +19893,7 @@
          (logapp 1 (acl2::logbit 15 y) (loghead 15 x) ;(logext 15 x)
                  ))
   :hints (("Goal" :cases ((integerp x))
-                          :in-theory (e/d (make-data-addr acl2::logext-logapp) 
+                          :in-theory (e/d (make-data-addr acl2::logext-logapp)
                                   (acl2::logtail-logapp)))))
 
 
@@ -19890,7 +19920,7 @@
 ;; (defthm logtail15-of-make-data-addr
 ;;   (equal (logtail 15 (make-data-addr denvr offset))
 ;;          (logapp 1 (acl2::logbit 15 offset) (logext 16 denvr)))
-;;   :hints (("Goal" :in-theory (e/d (make-data-addr ifix ACL2::LOGEXT-LOGAPP) 
+;;   :hints (("Goal" :in-theory (e/d (make-data-addr ifix ACL2::LOGEXT-LOGAPP)
 ;;                                   (acl2::logext-logtail)))))
 
 (defthm loghead16-logcdr-make-data-addr
@@ -19953,7 +19983,7 @@
 
 ;;
 ;; FETCH-CODE-BYTES
-;; 
+;;
 
 (defthm address-listp-of-loghead-list-32
   (implies (and (mem::memory-p ram)
@@ -19997,7 +20027,7 @@
   (declare (type integer cenvr offset)
            (type (integer 0 *) numbytes)
            (xargs :guard (aamp-ramp ram)))
-  (wintlist 
+  (wintlist
    (rd-list ;;(logext-list 32 (logapp-list 16 (offset-range-wrap 16 offset numbytes) cenvr))
     (loghead-list 32 (logapp-list 16 (offset-range-wrap 16 offset numbytes) cenvr))
     ram)))
@@ -20013,7 +20043,7 @@
          (fetch-code-byte cenvr offset ram))
   :hints (("Goal" :expand (fetch-code-bytes 1 cenvr offset ram)
            :in-theory (enable fetch-code-bytes fetch-code-byte make-code-addr))))
-        
+
 ;bzo fix this! - huh?
 (defthm fetch-code-bytes-when-offset-is-not-an-integerp
   (implies (not (integerp offset))
@@ -20058,7 +20088,7 @@
   :hints (("Goal" :in-theory (enable fetch-code-bytes))))
 
 (defthm unsigned-byte-p-of-fetch-code-bytes-gen
-  (implies (and (<= (* 8 numbytes) n) 
+  (implies (and (<= (* 8 numbytes) n)
                 (integerp numbytes)
                 (<= 0 numbytes)
                 )
@@ -20255,13 +20285,13 @@
                                         fetch-code-bytes-list)
                                   (use-fetch-code-bytes-list-1))
            :use (:instance use-fetch-code-bytes-list-1 (offset (loghead 16 offset))))))
-                 
+
 ;eventually don't go to addr range?
 ;gen
 ;bzo remove the stuff that mentions addr-range?
 ;; (defthm disjoint-of-addr-ranges-of-make-data-addrs
-;;   (implies (and (integerp denvr) 
-;;                 (integerp offset1) 
+;;   (implies (and (integerp denvr)
+;;                 (integerp offset1)
 ;;                 (integerp offset2))
 ;;            (equal (bag::disjoint (addr-range (make-data-addr denvr offset1) 2)
 ;;                                  (addr-range (make-data-addr denvr offset2) 2))
@@ -20272,7 +20302,7 @@
 ;;                                    ;makeaddr
 ;;                                    ACL2::LOGTAIL-LOGHEAD-BETTER
 ;;                                    MAKE-data-ADDR
-;;                                    ) 
+;;                                    )
 ;;                                   ( ;acl2::<-of-ash
 ;;                                    acl2::loghead-logtail
 ;;                                    acl2::extend-<
@@ -20316,7 +20346,7 @@
            (equal (fetch-code-byte cenvr offset (write-data-word ;write-data-word
                                                 denvr offset2 val ram))
                   (fetch-code-byte cenvr offset ram)))
-  :hints (("Goal" :in-theory (enable write-data-word 
+  :hints (("Goal" :in-theory (enable write-data-word
 ;                                     rx-to-rd
                                      make-code-addr
                                      WORD-AD-TO-BYTE-ADS
@@ -20340,7 +20370,7 @@
 (defthm fetch-code-byte-of-write-data-words
   (implies (no-code-data-clash cenvr denvr)
            (equal (fetch-code-byte cenvr offset (write-data-words ;write-data-words
-                                                 2 ;numwords 
+                                                 2 ;numwords
                                                  denvr offset2 val ram))
                   (fetch-code-byte cenvr offset ram)))
   :hints (("Goal" :in-theory (e/d (write-data-words
@@ -20351,7 +20381,7 @@
 ;                                     rx-to-rd
                                    OFFSET-RANGE-WRAP-CONST-OPENER
                                    NO-CODE-DATA-CLASH
-                                   ) 
+                                   )
                                   (WRITE-DATA-WORDS-OPENER)))))
 
 
@@ -20373,7 +20403,7 @@
 ;;                           (addr-range (make-data-addr denvr2 offset2)
 ;;                                             2)))
 ;;   :hints (("Goal" :in-theory (e/d (MAKE-DATA-ADDR-EQUAL-REWRITE
-;;                                    disjoint-of-two-addr-ranges) 
+;;                                    disjoint-of-two-addr-ranges)
 ;;                                   (<-OF-MAKE-DATA-ADDR)))))
 
 
@@ -20416,7 +20446,7 @@
            :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (fetch-code-bytes write-data-word WORD-AD-TO-BYTE-ADS
                                              NO-CODE-DATA-CLASH
-                                             ) 
+                                             )
                            (hack-for-code-data-clash
                             hack-for-code-data-clash2
                             ;ACL2::ASSOCIATIVITY-OF-LOGAPP-BETTER
@@ -20459,7 +20489,7 @@
   :hints (("Goal" :use (:instance  fetch-code-byte-of-sum-of-loghead-two)
            :in-theory (disable  fetch-code-byte-of-sum-of-loghead-two))))
 
-        
+
 (local (in-theory (disable ACL2::LOGHEAD-SUM-SPLIT-INTO-2-WHEN-I-IS-A-CONSTANT)))
 
 
@@ -20468,8 +20498,8 @@
            (equal (fetch-code-byte cenvr offset (write-data-word denvr offset2 val ram))
                   (fetch-code-byte cenvr offset ram)))
   :hints (("Goal" :in-theory (e/d (write-data-word
-                                   fetch-code-byte 
-                                   ) 
+                                   fetch-code-byte
+                                   )
                                   (ADDRESSES-OF-DATA-WORD)))))
 
 (defthm fetch-code-byte-of-clear-data-word-bag-phrasing
@@ -20495,7 +20525,7 @@
 ;;             (equal (read-data-word denvr offset (write-data-words numwords denvr offset2 value ram))
 ;;                    (nthword (- (loghead 16 offset) (loghead 16 offset2)) value)))
 ;;    :hints (("Goal" :in-theory (disable read-data-word-of-write-data-words-same )
-;;             :use (:instance  read-data-word-of-write-data-words-same 
+;;             :use (:instance  read-data-word-of-write-data-words-same
 ;;                              (offset (loghead 16 offset))
 ;;                              (offset2 (loghead 16 offset2)))))))
 
@@ -20611,10 +20641,10 @@
                     (write-nth-word (+ (- offset1) offset2)
                                     word
                                     (read-data-words numwords denvr offset1 ram)))
-          
+
            :in-theory (e/d (zp ;write-nth-word
                             MEMBERP-OF-OFFSET-RANGE
-                            acl2::loghead-sum-split-into-2-cases 
+                            acl2::loghead-sum-split-into-2-cases
                             acl2::loghead-of-minus
                             read-data-words-alt-def
                             ) (read-data-words-opener)))
@@ -20636,7 +20666,7 @@
   (equal (write-nth-word 0 value (logapp 16 lowbits highbits))
          (logapp 16 value highbits))
   :hints (("Goal" :in-theory (enable write-nth-word))))
-        
+
 (defun induct-by-sub1-and-sub16 (n m)
   (if (zp n)
       (list n m)
@@ -20676,7 +20706,7 @@
            :expand (WRITE-NTH-WORD N WORD (LOGHEAD (* 16 M) VALUE))
            :in-theory (e/d (WRITE-NTH-WORD
      ;                           logtail-16-of-WRITE-NTH-WORD-back
-                            ) 
+                            )
                            ( logtail-16-of-WRITE-NTH-WORD)))))
 
 (defthm write-data-word-of-write-data-words-same
@@ -20687,13 +20717,13 @@
                 (integerp word)
                 )
            (equal (write-DATA-WORD denvr offset1 word (WRITE-DATA-WORDS numwords denvr offset2 value ram))
-                  (WRITE-DATA-WORDS numwords denvr offset2 
+                  (WRITE-DATA-WORDS numwords denvr offset2
                                           (write-nth-word (loghead 16 (- offset1 offset2)) word value) ram)))
   :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable ;usb-of-sum-with-two-other-addends-hack
                               MEMBERP-OF-OFFSET-RANGE
-                              acl2::loghead-sum-split-into-2-cases 
+                              acl2::loghead-sum-split-into-2-cases
                               acl2::loghead-of-minus
                               )
      ;:induct (WRITE-DATA-WORDS-INDUCT-wrap numwords offset2 value)
@@ -20707,7 +20737,7 @@
                 (integerp word)
                 )
            (equal (clear-DATA-WORD denvr offset1 (WRITE-DATA-WORDS numwords denvr offset2 value ram))
-                  (WRITE-DATA-WORDS numwords denvr offset2 
+                  (WRITE-DATA-WORDS numwords denvr offset2
                                           (write-nth-word (loghead 16 (- offset1 offset2)) 0 value) ram)))
   :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -20723,7 +20753,7 @@
              (LOGAPP 16 word y)
            (LOGAPP 16 x (WRITE-NTH-WORD (+ -1 n) word y))))
   :hints (("Goal" :in-theory (enable WRITE-NTH-WORD))))
-        
+
 
 (defthm write-nth-word-0-when-usb16
   (implies (unsigned-byte-p 16 value)
@@ -20738,7 +20768,7 @@
 
 ;make a both?
 (defthm nthword-of-write-nth-word-diff
-  (implies (and (natp n1) 
+  (implies (and (natp n1)
                 (natp n2)
                 (not (equal n1 n2))
                 )
@@ -20766,7 +20796,7 @@
 (defthm write-nth-word-of-write-nth-word-same
   (equal (write-nth-word n word1 (write-nth-word n word2 value))
          (write-nth-word n word1 value))
-  :hints (("Goal" :in-theory (enable write-nth-word nthword))))                 
+  :hints (("Goal" :in-theory (enable write-nth-word nthword))))
 
 ;could make a bound about the second word?
 (defthm read-data-words-bound
@@ -20792,7 +20822,7 @@
                   (read-data-word denvr offset ram)))
   :rule-classes ((:rewrite :backchain-limit-lst (1 nil)))
   :hints (("Goal" :in-theory (enable read-data-words-alt-def))))
-                 
+
 
 ;bzo generalize this sequence?
 (defthm read-data-word-when-read-data-words-equals-constant
@@ -20882,7 +20912,7 @@
                                    (value value)
                                   )
            :in-theory (disable write-data-words))))
-       
+
 
 
 (defthm write-data-words-of-loghead
@@ -20894,7 +20924,7 @@
            :induct (write-data-words-induct numwords offset value)
            :in-theory (e/d ( WRITE-DATA-WORDS-opener-hack
                            ;  WRITE-DATA-WORDS-alt-def
-                             ) 
+                             )
                            (WRITE-DATA-WORD-EQUAL-REWRITE)))))
 
 (defthm write-data-words-of-sum-normalize-constant-addend-in-value
@@ -20905,7 +20935,7 @@
                 )
            (equal (write-data-words numwords denvr offset (+ k value) ram)
                   (write-data-words numwords denvr offset (+ (loghead (* 16 numwords) k) value) ram)))
-  :hints (("Goal" :use ((:instance WRITE-DATA-WORDs-of-loghead 
+  :hints (("Goal" :use ((:instance WRITE-DATA-WORDs-of-loghead
 ;;                                    (denvr denvr)
 ;;                                    (offset offset)
 ;;                                    (ram ram)
@@ -20928,7 +20958,7 @@
                 )
            (equal (write-data-words numwords denvr offset k ram)
                   (write-data-words numwords denvr offset (loghead (* 16 numwords) k) ram)))
-  :hints (("Goal" :use ((:instance WRITE-DATA-WORDs-of-loghead 
+  :hints (("Goal" :use ((:instance WRITE-DATA-WORDs-of-loghead
 ;;                                    (denvr denvr)
 ;;                                    (offset offset)
 ;;                                    (ram ram)
@@ -20951,7 +20981,7 @@
                 )
            (equal (write-data-words numwords denvr offset (+ (LOGEXT n x) y) ram)
                   (write-data-words numwords denvr offset (+ x y) ram)))
-  :hints (("Goal" :use ((:instance WRITE-DATA-WORDs-of-loghead 
+  :hints (("Goal" :use ((:instance WRITE-DATA-WORDs-of-loghead
                                    ;;                                    (denvr denvr)
                                    ;;                                    (offset offset)
                                    ;;                                    (ram ram)
@@ -20984,7 +21014,7 @@
 (defthmd fetch-code-bytes-recollect
   (implies (and (equal (loghead 16 (+ 2 offset1)) (loghead 16 offset2))
                 (integerp offset1))
-           (equal (logapp 16 
+           (equal (logapp 16
                           (gacc::fetch-code-bytes 2 cenvr offset1 ram)
                           (gacc::fetch-code-byte cenvr offset2 ram))
                   (gacc::fetch-code-bytes 3 cenvr offset1 ram)))
@@ -21064,7 +21094,7 @@
                   (if (<= numwords1 numwords2)
                       (gacc::read-data-words numwords1 denvr offset ram)
                     (gacc::read-data-words numwords2 denvr offset ram))))
-          
+
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable gacc::read-data-words-alt-def
                        )
@@ -21083,7 +21113,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable gacc::read-data-words-alt-def
                        )
-           :induct (gacc::read-data-words-induct-with-n numwords2 offset numwords1))) 
+           :induct (gacc::read-data-words-induct-with-n numwords2 offset numwords1)))
   )
 
 ;add to ram3
@@ -21117,7 +21147,7 @@
                 )
            (equal (gacc::write-data-word denvr offset1 val1 (gacc::write-data-word denvr offset2 val2 ram))
                   (gacc::write-data-words 2 denvr offset1 (logapp 16 val1 (ifix val2)) ram)))
-  :hints (("Goal" :in-theory (e/d (gacc::write-data-words-opener) 
+  :hints (("Goal" :in-theory (e/d (gacc::write-data-words-opener)
                                   (acl2::loghead-sum-split-into-2-when-i-is-a-constant)))))
 
 ;(defthm DATA-WRITE-ALLOWED-when-offset-is-not-an-UNSIGNED-BYTE-P
@@ -21125,7 +21155,7 @@
 ;           (equal (AAMP::DATA-WRITE-ALLOWED AAMP::DENVR AAMP::OFFSET AAMP::PMU)
 ;                  (AAMP::DATA-WRITE-ALLOWED AAMP::DENVR (loghead 16 AAMP::OFFSET) AAMP::PMU)))
 ;  :hints (("Goal" :in-theory (e/d (AAMP::DATA-WRITE-ALLOWED
-;                                   GACC::MAKE-DATA-ADDR) 
+;                                   GACC::MAKE-DATA-ADDR)
 ;                                  (AAMP::ACCESS-CHECK-BECOMES-DATA-WRITE-ALLOWED)))))
 
 
@@ -21166,7 +21196,7 @@
 
 ;gen?
 (defthm gacc::write-nth-word-0-0
-  (equal (gacc::write-nth-word n 0 0) 
+  (equal (gacc::write-nth-word n 0 0)
          0)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable gacc::write-nth-word))))
@@ -21212,7 +21242,7 @@
           acl2::logext-logapp gacc::word-ad-to-byte-ads)
          nil))))
 
-;bzo push this change back?         
+;bzo push this change back?
 (in-theory (disable list::nthcdr-of-firstn))
 (in-theory (enable list::firstn-of-nthcdr))
 
@@ -21223,7 +21253,7 @@
                                           (gacc::write-data-words (- nwords 2) denvr
                                                                   (loghead 16 (+ 2 offset1))
                                                                   (logtail 32 val) ram))))
-  :hints (("Goal" :in-theory (e/d (gacc::write-data-words-opener-2) 
+  :hints (("Goal" :in-theory (e/d (gacc::write-data-words-opener-2)
                                   (gacc::write-data-words-opener)))))
 
 ;bzo gen
@@ -21275,7 +21305,7 @@
   :hints (("Goal" :in-theory (disable gacc::loghead-times-8-of-wintlist)
            :use (:instance gacc::loghead-times-8-of-wintlist
                            (gacc::byte-list byte-list)
-                           (gacc::numbytes (+ -8 (* 2 numwords))))) 
+                           (gacc::numbytes (+ -8 (* 2 numwords)))))
           ))
 
 (defthm logtail-times-16-of-read-data-words-hack
@@ -21292,7 +21322,7 @@
                                   )
 
            :in-theory (disable gacc::logtail-times-16-of-read-data-words)))
-  
+
   )
 
 ;bzo remove the -hack version?
@@ -21383,7 +21413,7 @@
                   (and (acl2::unsigned-byte-p 32 ad)
                        (equal (acl2::logtail 17 ad) (acl2::loghead 15 denvr))
                        (< (acl2::loghead 16 (- (acl2::loghead 16 (acl2::logtail 1 ad))
-                                               offset)) 
+                                               offset))
                           numwords))))
   :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -21414,7 +21444,7 @@
   (equal (gacc::word-ads-to-byte-ads (list::fix ads))
          (gacc::word-ads-to-byte-ads ads))
   :hints (("Goal" :in-theory (enable gacc::word-ads-to-byte-ads))))
-         
+
 (defthm word-ads-to-byte-ads-of-remove-1
   (implies (and (gacc::unsigned-byte-p-list 31 ads)
                 (acl2::unsigned-byte-p 31 x))
@@ -21453,11 +21483,11 @@
   (("Goal" :do-not '(generalize eliminate-destructors)
                :induct (2-list-induct ads1 ads2)
     :in-theory (e/d (len gacc::word-ads-to-byte-ads
-                         WORD-AD-TO-BYTE-ADS) 
+                         WORD-AD-TO-BYTE-ADS)
                     (list::len-cdr-equal-len-cdr-rewrite
                      BAG::SUBBAG-BY-MULTIPLICITY
                      ;GACC::WORD-AD-TO-BYTE-ADS
-                     
+
                      )))))
 
 ;bzo improve GACC::SUBBAGP-OF-WORD-ADS-TO-BYTE-ADS-AND-WORD-ADS-TO-BYTE-ADS to not use integer-listp but rather the better one
@@ -21541,7 +21571,7 @@
 
 ;one is even and the other odd
 (defthm cadr-of-addresses-of-data-words-not-equal-car-of-addresses-of-data-word
-  (implies (and (integerp numwords) 
+  (implies (and (integerp numwords)
                 (< 0 numwords))
            (not (equal (cadr (gacc::addresses-of-data-words numwords denvr1 offset1))
                        (car (gacc::addresses-of-data-word denvr2 offset2)))))
@@ -21549,7 +21579,7 @@
 
 ;one is even and the other odd
 (defthm cadr-of-addresses-of-data-word-not-equal-car-of-addresses-of-data-words
-  (implies (and (integerp numwords) 
+  (implies (and (integerp numwords)
                 (< 0 numwords))
            (not (equal (cadr (gacc::addresses-of-data-word denvr2 offset2))
                        (car (gacc::addresses-of-data-words numwords denvr1 offset1)))))
@@ -21557,9 +21587,9 @@
 
 ;one is even and the other odd
 (defthm cadr-of-addresses-of-data-words-not-equal-car-of-addresses-of-data-words
-  (implies (and (integerp numwords1) 
+  (implies (and (integerp numwords1)
                 (< 0 numwords1)
-                (integerp numwords2) 
+                (integerp numwords2)
                 (< 0 numwords2))
            (not (equal (cadr (gacc::addresses-of-data-words numwords2 denvr2 offset2))
                        (car (gacc::addresses-of-data-words numwords1 denvr1 offset1)))))
@@ -21580,7 +21610,7 @@
            (equal (gacc::rd ad (gacc::write-data-word denvr offset value ram))
                   (gacc::rd ad ram)))
   :hints (("Goal" :in-theory (enable gacc::write-data-word))))
-        
+
 (defthm rd-of-write-data-word-same
   (implies (and (equal (acl2::loghead 15 denvr) (acl2::logtail 17 ad))
                 (equal (acl2::loghead 16 offset) (acl2::loghead 16 (acl2::logtail 1 ad)))
@@ -21588,11 +21618,11 @@
                 (ACL2::UNSIGNED-BYTE-P '32 AD) ;drop?
                 )
            (equal (gacc::rd ad (gacc::write-data-word denvr offset value ram))
-                  (acl2::loghead 8 (acl2::logtail 
+                  (acl2::loghead 8 (acl2::logtail
                                     (* 8 (acl2::logcar ad)) ;if ad is even, take word 0, else take word 1
                                     value))
                   ))
-  :hints (("Goal" :in-theory (enable gacc::write-data-word 
+  :hints (("Goal" :in-theory (enable gacc::write-data-word
                                      WORD-AD-TO-BYTE-ADS
                                      GACC::ADDRESSES-OF-DATA-WORD
                                      ACL2::EQUAL-LOGAPP-X-Y-Z))))
@@ -21617,7 +21647,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable gacc::write-data-words
                               MEMBERP-OF-OFFSET-RANGE))))
-        
+
 (defthm find-index-of-word-ads-to-byte-ads
   (implies (and (integerp ad)
                 (acl2::integer-listp word-ads)
@@ -21626,7 +21656,7 @@
                   (+ (acl2::logcar ad)
                      (* 2 (list::find-index (acl2::logcdr ad) word-ads)))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable gacc::word-ads-to-byte-ads 
+           :in-theory (enable gacc::word-ads-to-byte-ads
                               WORD-AD-TO-BYTE-ADS
                               (:definition list::find-index)
                               acl2::equal-logapp-x-y-z
@@ -21639,7 +21669,7 @@
 ;;; and put them in the proper palces.
 
 (defthm addresses-of-data-word-normalize-leading-constant
-  (implies (and (syntaxp (and (quotep k) 
+  (implies (and (syntaxp (and (quotep k)
                               (not (acl2::unsigned-byte-p 16 (cadr k)))))
                 (integerp k)
                 (integerp offset))
@@ -21647,7 +21677,7 @@
                   (GACC::ADDRESSES-OF-DATA-WORD cenvr (+ (acl2::loghead 16 k) offset)))))
 
 (defthm addresses-of-data-words-normalize-leading-constant
-  (implies (and (syntaxp (and (quotep k) 
+  (implies (and (syntaxp (and (quotep k)
                               (not (acl2::unsigned-byte-p 16 (cadr k)))))
                 (integerp k)
                 (integerp offset))
@@ -21655,7 +21685,7 @@
                   (GACC::ADDRESSES-OF-DATA-WORDS n cenvr (+ (acl2::loghead 16 k) offset)))))
 
 (defthm fetch-code-byte-normalize-leading-constant
-  (implies (and (syntaxp (and (quotep k) 
+  (implies (and (syntaxp (and (quotep k)
                               (not (acl2::unsigned-byte-p 16 (cadr k)))))
                 (integerp k)
                 (integerp offset))
@@ -21686,7 +21716,7 @@
                   (GACC::FETCH-CODE-BYTES 3 X0
                                           x
                                           X23))
-         
+
          (GACC::FETCH-CODE-BYTES 3 X0
                                  x
                                  X23)))
@@ -21716,7 +21746,7 @@
                   (GACC::FETCH-CODE-BYTES 2 X0
                                           x
                                           X23))
-         
+
          (GACC::FETCH-CODE-BYTES 2 X0
                                  x
                                  X23)))
@@ -21727,7 +21757,7 @@
                   (+ 1 (GACC::FETCH-CODE-BYTES 2 X0
                                                x
                                                X23)))
-         
+
          (+ 1 (GACC::FETCH-CODE-BYTES 2 X0
                                       x
                                       X23)))
@@ -21757,7 +21787,7 @@
                   (+ 1 (GACC::FETCH-CODE-BYTES 1 X0
                                                x
                                                X23)))
-         
+
          (+ 1 (GACC::FETCH-CODE-BYTES 1 X0
                                       x
                                       X23)))
@@ -21790,7 +21820,7 @@
                                       FETCH-CODE-BYTES))))
 
 (in-theory (disable g* s* x*))
-(in-theory (enable 
+(in-theory (enable
             (:induction s*)
             (:induction g*)
             (:induction x*)
@@ -21893,10 +21923,10 @@
             DISJOINT-BLK-REC-SUBBAGP
             ;;bag::DISJOINT-of-APPEND
             bag::DISJOINT-COMMUTATIVE ;;bzo really?
-            ;;DISJOINT-NIL         
+            ;;DISJOINT-NIL
             ;;bag::DISJOINT-CONS
             ;;DISJOINT
-            
+
             ;;SUBBAGP RULES
             bag::V2-SYNTAX-REMOVE-bag-IMPLICATION
             bag::V2-SYNTAX-REMOVE-bag-IMPLICATION-LEMMA
@@ -21937,7 +21967,7 @@
             ;;bag::SUBBAGP-CONS
             ;;SUBBAGP-IMPLIES-SUBBAGP-CONS
             ;;SUBBAGP already out
-            
+
             ;;MEMBERp RULES
             ;;bag::SYNTAX-MEMBERP-IMPLEMENTS-MEMBERP
             ;;bag::UNIQUE-REMOVE-1
@@ -21985,7 +22015,7 @@
 
 (defun set::rkeys (r)
   (list::2set (rkeys r)))
-              
+
 ;;
 ;; mypush (turn a record into a typed-record)
 ;;
@@ -21996,7 +22026,7 @@
     (gacc::wr (set::head keys)
               (g (set::head keys) r)
               (mypush-aux (set::tail keys) r))))
-              
+
 (defun mypush (r)
   (mypush-aux (set::rkeys r) r))
 
@@ -22013,7 +22043,7 @@
          (if (set::in a (set::rkeys r))
              (loghead 8 (g a r))
            0)))
-    
+
 (defthm memory-clr-of-mypush-aux
   (equal (gacc::memory-clr key (mypush-aux rkeys r))
          (mypush-aux rkeys (clr key r))))
@@ -22038,7 +22068,7 @@
   (if (set::empty rkeys)
       (list a rkeys r)
     (if (equal a (set::head (set::insert a rkeys)))
-        (list a rkeys r)  
+        (list a rkeys r)
       (my-ind a (set::tail rkeys) (s (set::head rkeys) (g (set::head rkeys) r) r)))))
 
 
@@ -22118,9 +22148,9 @@
                            )
            :in-theory (e/d (car-of-insert SET::EMPTY SET::HEAD SET::tail SET::SFIX) ( SET::PICK-A-POINT-SUBSET-STRATEGY))
            :do-not '(generalize eliminate-destructors))))
-                 
 
- 
+
+
 ;combine these cases?
 (defthm mypush-aux-of-insert
   (equal (mypush-aux (set::insert a rkeys) r)
@@ -22157,7 +22187,7 @@
   (equal (mypush-aux (set::insert key rkeys) (clr key r))
          (mypush-aux rkeys (clr key r)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-                 
+
 
 (defthm mypush-irrel
   (implies (not (set::in key rkeys))
@@ -22170,13 +22200,13 @@
   (equal (mypush-aux rkeys (clr a r))
          (mypush-aux (set::delete a rkeys) r))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-        
+
 
 (defthm mypush-irrel2
   (implies (not (set::in key rkeys))
            (equal (mypush-aux rkeys (s key v r))
                   (mypush-aux rkeys r)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors))))        
+  :hints (("Goal" :do-not '(generalize eliminate-destructors))))
 
 ;; (thm
 ;;  (equal (mypush-aux (set::insert a rkeys) (s a v r))
@@ -22216,7 +22246,7 @@
        (gacc::rd (set::head keys) tr)
        (mylift-aux (set::tail keys) tr))))
 
-;bzo 
+;bzo
 (defun mylift (tr)
   (mylift-aux (set::rkeys tr) tr))
 
@@ -22258,7 +22288,7 @@
   (implies (EQUAL (LOGHEAD 8 V) 0)
            (equal (GACC::WR A V TR)
                   (gacc::memory-clr A TR))))
-          
+
 
 ;bzo improve CLR-OVER-CLR?
 
@@ -22305,7 +22335,7 @@
                   (set::delete (set::head s) (set::delete key s))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :expand ((set::delete key s)))))
-                 
+
 (defthm clr-of-mylift-aux
   (equal (clr key (mylift-aux rkeys tr))
          (mylift-aux (set::delete key rkeys) (gacc::memory-clr key tr)))
@@ -22331,7 +22361,7 @@
 ;;        (not (ifrp r)) ;;should really just use a typed version of ifrp?
 ;;        ))
 
-    
+
 (defun wf-tr (tr)
   (and ;;(wfr-weak tr) ;;
        (wfr tr)
@@ -22468,7 +22498,7 @@
 ;;   (equal (mylift-aux rkeys (gacc::memory-clr a t))
 ;;          (mylift-aux (set::delete a rkeys) t))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-        
+
 
 (defthm rd-of-s-irrel
   (implies (not (equal key1 key2))
@@ -22481,7 +22511,7 @@
            (equal (mylift-aux rkeys (s key v tr))
                   (mylift-aux rkeys tr)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-         
+
 
 ;; (thm
 ;;  (IMPLIES (AND (WFR TR)
@@ -22506,7 +22536,7 @@
            (UNSIGNED-BYTE-P 8 (CAR (G A TR)))))
 
 (defthm mylift-of-wr-0-case
- (implies (and (wf-tr tr) ;(wfr tr) 
+ (implies (and (wf-tr tr) ;(wfr tr)
                (equal 0 (loghead 8 v)))
           (equal (mylift (gacc::wr a v tr))
                  ;if what was there was well-formed, we get 0.  otherwise (including if it was 0 before!), we get what was there!
@@ -22518,7 +22548,7 @@
                 (:instance check-tr-keys-lemma2 (keys (set::rkeys tr))))
           :in-theory (e/d ( ;gacc::wr
                            GACC::MEMORY-CLR
-                           ) 
+                           )
                           (
                            set::rkeys
                            WR-OF-0-IS-CLR
@@ -22551,20 +22581,20 @@
        (check-tr-val (car val))))
 
 ;bzo really what's checked by CHECK-TR-KEYS is the value -rename
-       
+
 (defthm check-tr-keys-of-s
   (implies (and (check-tr-keys keys tr)
                 (check-tr-entry v) ;the whole entry, not the val
                 )
            (check-tr-keys keys (s a v tr)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-  
+
 
 (defthm CHECK-TR-KEYS-of-s-irrel
   (implies (not (set::in a keys))
            (equal (CHECK-TR-KEYS keys (S A NIL TR))
                   (CHECK-TR-KEYS keys TR))))
-                 
+
 (defthm delete-when-would-be-head
   (implies (equal a (set::head (set::insert a keys)))
            (equal (set::delete a keys)
@@ -22658,7 +22688,7 @@
 
 (defun non-nil (x)
   (declare (xargs :guard t))
-  (not (null x))) 
+  (not (null x)))
 
 ;; ;bzo dup?
 ;; (defun all-non-nil (lst)
@@ -22707,7 +22737,7 @@
                 (wfr tr))
            (set::all<non-nil> (set::rkeys tr)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-;;           :in-theory (enable ;wfr 
+;;           :in-theory (enable ;wfr
 ;;                       wfkeyed wfkey rkeys))))
 
 (defthm all-non-nil-of-rkeys2
@@ -22734,7 +22764,7 @@
   (if (or (not (set::setp keys))
           (set::empty keys))
       (list keys tr)
-    (ind (set::tail keys) 
+    (ind (set::tail keys)
          (GACC::MEMORY-CLR (SET::HEAD (SET::RKEYS TR)) tr);
          ;(gacc::wr (set::head keys) (gacc::rd (set::head keys) tr) tr)
          )))
@@ -22823,9 +22853,9 @@
                               (mylift-aux rkeys tr))
                   tr))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d ( ;wfr 
+           :in-theory (e/d ( ;wfr
                             CHECK-TR-KEYS
-                            mypush-aux mylift-aux) 
+                            mypush-aux mylift-aux)
                            ( ;gacc::wr==r!
                             ))
            :induct (ind rkeys tr)
@@ -22842,7 +22872,7 @@
   (declare (xargs :verify-guards nil))
   (if (set::empty keys)
       nil ;the empty record
-    (s (set::head keys) 
+    (s (set::head keys)
        (val-fix (g (set::head keys) r))
        (typed-fix-aux (set::tail keys) r))))
 
@@ -22882,7 +22912,7 @@
   (if (or (not (set::setp keys))
           (set::empty keys))
       (list keys r)
-    (ind3 (set::tail keys) 
+    (ind3 (set::tail keys)
          (CLR (SET::HEAD (SET::RKEYS R)) r);
          ;(gacc::wr (set::head keys) (gacc::rd (set::head keys) tr) tr)
          )))
@@ -22906,7 +22936,7 @@
 
 
 
-(defthmd g-when-not-g-of-cdr 
+(defthmd g-when-not-g-of-cdr
   (implies (and (not (g key (cdr r)))
                 (wfr r))
            (equal (g key r)
@@ -22933,7 +22963,7 @@
            :in-theory (enable rkeys wfkeyed))))
 
 (defthm g-of-nil
-  (implies (and ;(wfkeyed r) 
+  (implies (and ;(wfkeyed r)
                 (wfr r))
            (not (g nil r)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -23049,7 +23079,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;          :induct (ind3 keys r)
            )))
-          
+
 
 (defthm typed-fix-does-nothing-helper
   (implies (and (all-vals-okay-aux keys r)
@@ -23066,13 +23096,13 @@
   (declare (xargs :verify-guards nil))
   (and (wfr r)
        (all-vals-okay-aux (set::rkeys r) r)))
-  
+
 ;for Dave
 (defthm typed-fix-does-nothing
   (implies (well-typed-record r)
            (equal (typed-fix r)
                   r))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors))))          
+  :hints (("Goal" :do-not '(generalize eliminate-destructors))))
 
 
 ;; (defun mypush (r)
@@ -23095,7 +23125,7 @@
 ;;            (unsigned-byte-p 8 val)
 ;;            (not (equal 0 val))
 ;;            (wf-tr (cdr tr))))))
-  
+
 (local (in-theory (disable ACL2::LOGHEAD-IDENTITY-2))) ;for efficiency... ;bzo, disable elsewhere?
 
 ;;
@@ -23222,7 +23252,7 @@
                 (list::memberp offset3 (OFFSET-RANGE-WRAP width offset1 size1))
                 (list::memberp offset4 (OFFSET-RANGE-WRAP width offset2 size2)))
            (not (equal offset3 offset4))))
-                        
+
 (defthmd offset-range-wrap-const-opener ;bzo yuck!
   (implies (and (syntaxp (quotep size))
                 (not (zp size))
@@ -23231,7 +23261,7 @@
                   (cons (loghead width base)
                         (offset-range-wrap width (loghead width (+ 1 (ifix base)))
                                            (+ -1 size)))))
-  :hints (("Goal" :in-theory (enable offset-range-wrap)))) 
+  :hints (("Goal" :in-theory (enable offset-range-wrap))))
 
 (defthm offset-range-wrap-of-logext
   (equal (offset-range-wrap width (acl2::logext width base) size)
@@ -23277,7 +23307,7 @@
                 (list::memberp offset4 (offset-range-wrap width offset1 size1))
                 (list::memberp offset3 bag))
            (not (equal offset4 offset3))))
-      
+
 
 (defthm cdr-of-offset-range-wrap
   (equal (cdr (offset-range-wrap width base size))
@@ -23409,7 +23439,7 @@
                   (<= (+ size1 (loghead width (+ base1 (- base2)))) size2))
          :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;:induct (OFFSET-RANGE-WRAP '16 BASE1 SIZE1)
-                  :in-theory (enable 
+                  :in-theory (enable
                               ACL2::LOGHEAD-SUM-SPLIT-INTO-2-CASES
                               ACL2::LOGHEAD-SUM-SPLIT-INTO-2-WHEN-I-IS-A-CONSTANT
                               OFFSET-RANGE-WRAP)))))
@@ -23479,12 +23509,12 @@
 
 
 
-(defthm offset-rangep-of-offset-range-wrap            
+(defthm offset-rangep-of-offset-range-wrap
   (implies (and (integerp width)
                 (<= 0 width))
            (offset-rangep width (offset-range-wrap width base size)))
   :hints (("Goal" :in-theory (enable offset-rangep offset-range-wrap))))
-                
+
 (defthm len-of-offset-range-wrap
   (implies (and (integerp width)
                 (<= 0 width))
@@ -23572,7 +23602,7 @@
                 (case-split (integerp base4))
                 (unsigned-byte-p width size4)
                 (integerp width)
-                (<= 0 width)                
+                (<= 0 width)
 
                 )
            (BAG::DISJOINT (OFFSET-RANGE-WRAP width base1 size1)
@@ -23606,7 +23636,7 @@
                 )
            (equal (offset-range-wrap width (+ off1 off2) size)
                   (if (integerp off3)
-                      
+
                       (offset-range-wrap width (+ off1 off3) size)
                     (offset-range-wrap width off1 size)
                     )))
@@ -23627,7 +23657,7 @@
                         )
            :in-theory (disable offset-range-wrap-of-loghead
                                ))))
-           
+
 (local (defun induct4 (x y)
          (if (or (endp x) (endp y))
              (list x y)
@@ -23668,16 +23698,16 @@
                        (or (equal 0 (nfix size1))
                            (equal (loghead width base1)
                                   (loghead width base2))))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use (:instance EQUIV-OF-TWO-OFFSET-RANGES-TRUE-LIST-CASE
                            (x  (offset-range-wrap width base1 size1))
                            (y  (offset-range-wrap width base2 size2))))))
 
 (defun get-enabled-structure (pspv)
-  (strip-cdrs 
-   (cdr 
-    (access enabled-structure 
-            (access rewrite-constant 
+  (strip-cdrs
+   (cdr
+    (access enabled-structure
+            (access rewrite-constant
                     (access prove-spec-var pspv :rewrite-constant)
                     :current-enabled-structure)
             :theory-array))))
@@ -23691,7 +23721,7 @@
     nil))
 
 
-        
+
 (defthm disjoint-of-offset-range-wraps-shift
   (implies (and (integerp i)
                 (integerp j)
@@ -23735,7 +23765,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :induct (sub1-sub1-induct num n)
            :in-theory (enable REPEAT))))
- 
+
 
 (defthm memberp-of-offset-range-wrap-same
   (implies (natp width)

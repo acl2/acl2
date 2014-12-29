@@ -1,14 +1,39 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
-;; dominates.lisp 
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
+;; dominates.lisp
 ;; Domination relations for lists
 
 (in-package "PATH")
-(include-book "../lists/basic") 
-(include-book "../lists/memberp") 
+(include-book "../lists/basic")
+(include-book "../lists/memberp")
 (include-book "../bags/basic")
 (include-book "../adviser/adviser")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -18,7 +43,7 @@
 ;; ----------------------------------------------------------------------------
 ;;
 ;;                                   PART 1
-;; 
+;;
 ;;                          The Dominates Relations
 ;;
 ;; ----------------------------------------------------------------------------
@@ -49,7 +74,7 @@
 (defthmd dominates-redefinition
   (equal (dominates x y)
          (list::equiv x (firstn (len x) y)))
-  :rule-classes :definition        
+  :rule-classes :definition
   :hints(("Goal" :in-theory (enable dominates))))
 
 (theory-invariant (incompatible (:definition dominates)
@@ -234,7 +259,7 @@
 
 
 ;; Strictly Dominates
-;; 
+;;
 ;; Given lists a and b, we say that a strictly dominates b whenever a dominates
 ;; b but a has a smaller length than b.  In other words, whenever a dominates b
 ;; but a and b are not "the same" (in the sense of list::equiv) list.  In a way,
@@ -243,9 +268,9 @@
 (defund strictly-dominates (x y)
   (declare (type t x y))
   (and (dominates x y)
-       ;; bzo - I want to change this to read 
-       ;; (not (equal (len x) (len y))), since after all our strategy is to 
-       ;; rewrite list::equiv to equal lengths when dominates is known.  
+       ;; bzo - I want to change this to read
+       ;; (not (equal (len x) (len y))), since after all our strategy is to
+       ;; rewrite list::equiv to equal lengths when dominates is known.
        ;; But, we have to leave this as (not (list::equiv x y)) for now,
        ;; because otherwise the old theory in records/path.lisp won't work
        ;; quite right.
@@ -257,7 +282,7 @@
 ;; left it enabled or even defined it as a macro.  Instead, we have chosen to
 ;; essentially reprove most of the above theorems about dominates.  In exchange
 ;; for proving these theorems, we are now able to use strictly-dominates as a
-;; target for rewrite rules just like any other function.  
+;; target for rewrite rules just like any other function.
 
 (defthm strictly-dominates-forward-to-dominates
   ;; Many of the theorems about dominates also apply to strictly-dominates, so
@@ -391,7 +416,7 @@
   (implies (strictly-dominates x y)
            (equal (< (len x) (len y))
                   t)))
- 
+
 (defthm not-strictly-dominates-of-append-when-not-strictly-dominates
   (implies (not (strictly-dominates a b))
            (not (strictly-dominates (append a x) b)))
@@ -407,7 +432,7 @@
                           (and (integerp n)
                                (<= (len x) n)
                                (<= (len y) n))))))
- 
+
  (defthm strictly-dominates-of-nthcdrs-when-strictly-dominates
    (implies (strictly-dominates x y)
             (equal (strictly-dominates (nthcdr n x) (nthcdr n y))
@@ -440,7 +465,7 @@
                  (dominates y z)
                  (not (dominates x y)))
             (strictly-dominates y x))
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (enable strictly-dominates)
            :induct (len-len-len-induction x y z))))
 )
@@ -452,7 +477,7 @@
 ;; ----------------------------------------------------------------------------
 ;;
 ;;                                   PART 2
-;; 
+;;
 ;;                Extending the Dominates Relations over Lists
 ;;
 ;; ----------------------------------------------------------------------------
@@ -464,13 +489,13 @@
 ;; or not there are any paths in x that dominate or are dominated by a.  It is
 ;; useful to be able to talk about the "base" cases where a is an atom, or when
 ;; x contains some atom, or when x contains no atoms.  (In these cases, the
-;; domination relations are trivial).  
+;; domination relations are trivial).
 ;;
 ;; Historical Note: originally we had the function contains-a-non-consp here,
 ;; which returned true only if the list had an atom as a member.  This is, of
 ;; course, the same idea as (not (all-conses x)).  However, I prefer to use
 ;; all-conses, because I think it has nicer rules, particularly for car and cdr
-;; and so forth. 
+;; and so forth.
 
 (defund all-conses (x)
   (declare (type t x))
@@ -480,7 +505,7 @@
     t))
 
 (defcong list::equiv equal (all-conses x) 1
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable all-conses)
           :induct (list::len-len-induction x list::x-equiv))))
 
@@ -531,7 +556,7 @@
          (and (all-conses x)
               (all-conses y)))
   :hints(("Goal" :in-theory (enable append))))
-           
+
 (encapsulate
  ()
 
@@ -552,18 +577,18 @@
             (if (consp (car x))
                 (badguy (cdr x))
               (car x)))))
- 
+
  (local (defthm badguy-works
           (implies (not (all-conses x))
                    (and (memberp (badguy x) x)
                         (not (consp (badguy x)))))
           :hints(("goal" :in-theory (enable badguy)))))
- 
+
  (defthm all-conses-by-membership-driver
    (implies (all-conses-hyps)
             (all-conses (all-conses-term)))
    :rule-classes nil
-   :hints(("Goal" 
+   :hints(("Goal"
            :use (:instance all-conses-by-membership-constraint
                            (all-conses-element (badguy (all-conses-term)))))))
 
@@ -585,7 +610,7 @@
     t))
 
 (defcong list::equiv equal (no-conses x) 1
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable no-conses)
           :induct (list::len-len-induction x list::x-equiv))))
 
@@ -633,7 +658,7 @@
          (and (no-conses x)
               (no-conses y)))
   :hints(("Goal" :in-theory (enable append))))
-           
+
 (encapsulate
  ()
 
@@ -654,18 +679,18 @@
             (if (not (consp (car x)))
                 (badguy (cdr x))
               (car x)))))
- 
+
  (local (defthm badguy-works
           (implies (not (no-conses x))
                    (and (memberp (badguy x) x)
                         (consp (badguy x))))
           :hints(("goal" :in-theory (enable badguy)))))
- 
+
  (defthm no-conses-by-membership-driver
    (implies (no-conses-hyps)
             (no-conses (no-conses-term)))
    :rule-classes nil
-   :hints(("Goal" 
+   :hints(("Goal"
            :use (:instance no-conses-by-membership-constraint
                            (no-conses-element (badguy (no-conses-term)))))))
 
@@ -714,7 +739,7 @@
 
 (defthm dominates-some-non-consp-one
   (implies (not (consp a))
-           (equal (dominates-some a x) 
+           (equal (dominates-some a x)
                   (consp x))))
 
 (defthm dominates-some-of-cons
@@ -763,7 +788,7 @@
             (if (dominates a (car x))
                 (car x)
               (which-one? a (cdr x))))))
- 
+
  (local (defthm lemma
           (implies (dominates-some a x)
                    (and (memberp (which-one? a x) x)
@@ -784,7 +809,7 @@
    (implies (dominates-some-hyps)
             (not (dominates-some (dominates-some-path)
                                  (dominates-some-term))))
-   :rule-classes (:pick-a-point 
+   :rule-classes (:pick-a-point
                   :driver not-dominates-some-by-membership-driver))
  )
 
@@ -802,7 +827,7 @@
           (implies (and (bag::perm x y)
                         (not (dominates-some a x)))
                    (not (dominates-some a y)))))
- 
+
  (defcong BAG::perm equal (dominates-some a x) 2))
 
 
@@ -838,7 +863,7 @@
 
 (defthm strictly-dominates-some-non-consp-one
   (implies (not (consp a))
-           (equal (strictly-dominates-some a x) 
+           (equal (strictly-dominates-some a x)
                   (not (no-conses x))))
   :hints(("Goal" :in-theory (enable strictly-dominates-some))))
 
@@ -888,7 +913,7 @@
             (if (strictly-dominates a (car x))
                 (car x)
               (which-one? a (cdr x))))))
- 
+
  (local (defthm lemma
           (implies (strictly-dominates-some a x)
                    (and (memberp (which-one? a x) x)
@@ -909,7 +934,7 @@
    (implies (strictly-dominates-some-hyps)
             (not (strictly-dominates-some (strictly-dominates-some-path)
                                  (strictly-dominates-some-term))))
-   :rule-classes (:pick-a-point 
+   :rule-classes (:pick-a-point
                   :driver not-strictly-dominates-some-by-membership-driver))
  )
 
@@ -926,7 +951,7 @@
           (implies (and (bag::perm x y)
                         (not (strictly-dominates-some a x)))
                    (not (strictly-dominates-some a y)))))
- 
+
  (defcong BAG::perm equal (strictly-dominates-some a x) 2))
 
 
@@ -959,7 +984,7 @@
 
 (defthm dominated-by-some-of-non-consp-one
   (implies (not (consp a))
-           (equal (dominated-by-some a x) 
+           (equal (dominated-by-some a x)
                   (not (all-conses x))))
   :hints (("Goal" :in-theory (enable dominated-by-some))))
 
@@ -1035,7 +1060,7 @@
             (if (dominates (car x) a)
                 (car x)
               (which-one? a (cdr x))))))
- 
+
  (local (defthm lemma
           (implies (dominated-by-some a x)
                    (and (memberp (which-one? a x) x)
@@ -1051,12 +1076,12 @@
                            (dominated-by-some-member
                             (which-one? (dominated-by-some-path)
                                         (dominated-by-some-term)))))))
- 
+
  (defadvice not-dominated-by-some-by-membership
    (implies (dominated-by-some-hyps)
             (not (dominated-by-some (dominated-by-some-path)
                                     (dominated-by-some-term))))
-   :rule-classes (:pick-a-point 
+   :rule-classes (:pick-a-point
                   :driver not-dominated-by-some-by-membership-driver))
  )
 
@@ -1067,7 +1092,7 @@
           (implies (and (bag::perm x y)
                         (not (dominated-by-some a x)))
                    (not (dominated-by-some a y)))))
- 
+
  (defcong BAG::perm equal (dominated-by-some a x) 2))
 
 
@@ -1122,7 +1147,7 @@
 
 (defthm strictly-dominated-by-some-of-non-consp-one
   (implies (not (consp a))
-           (equal (strictly-dominated-by-some a x) 
+           (equal (strictly-dominated-by-some a x)
                   nil))
   :hints (("Goal" :in-theory (enable strictly-dominated-by-some))))
 
@@ -1198,7 +1223,7 @@
             (if (strictly-dominates (car x) a)
                 (car x)
               (which-one? a (cdr x))))))
- 
+
  (local (defthm lemma
           (implies (strictly-dominated-by-some a x)
                    (and (memberp (which-one? a x) x)
@@ -1214,12 +1239,12 @@
                            (strictly-dominated-by-some-member
                             (which-one? (strictly-dominated-by-some-path)
                                         (strictly-dominated-by-some-term)))))))
- 
+
  (defadvice not-strictly-dominated-by-some-by-membership
    (implies (strictly-dominated-by-some-hyps)
             (not (strictly-dominated-by-some (strictly-dominated-by-some-path)
                                     (strictly-dominated-by-some-term))))
-   :rule-classes (:pick-a-point 
+   :rule-classes (:pick-a-point
                   :driver not-strictly-dominated-by-some-by-membership-driver))
  )
 
@@ -1230,7 +1255,7 @@
           (implies (and (bag::perm x y)
                         (not (strictly-dominated-by-some a x)))
                    (not (strictly-dominated-by-some a y)))))
- 
+
  (defcong BAG::perm equal (strictly-dominated-by-some a x) 2))
 
 
@@ -1261,10 +1286,10 @@
   :hints(("Goal" :in-theory (enable first-dominator))))
 
 (defcong list::equiv equal (first-dominator a x) 2
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable first-dominator)
           :induct (list::len-len-induction x list::x-equiv))))
-  
+
 (defthm first-dominator-type-1
   (implies (not (consp x))
            (equal (first-dominator a x) nil))
@@ -1273,7 +1298,7 @@
 
 (defthm first-dominator-of-non-consp-two
   (implies (not (consp x))
-           (equal (first-dominator a x) 
+           (equal (first-dominator a x)
                   nil)))
 
 (defthm first-dominator-dominates
@@ -1320,9 +1345,9 @@
 ;; Another thing you might think is true is the following, but it isn't because
 ;; nil might occur near the front or near the end of a list that also contains
 ;; other dominators.
-;;                                                             
+;;
 ;; (defcong BAG::perm iff (first-dominator a x) 2
-  
+
 
 
 
@@ -1331,10 +1356,10 @@
 (defthm first-dominator-when-p-dominates-it-yuck
   (implies (and (dominates a b)
                 (equal (first-dominator a x) b))
-           (equal (list::equiv b a) 
+           (equal (list::equiv b a)
                   t)))
 
-           
+
 
 
 
@@ -1345,7 +1370,7 @@
 ;; ----------------------------------------------------------------------------
 ;;
 ;;                                 Appendix A
-;; 
+;;
 ;;                       Pile of Dead Rules (bzo Remove Me)
 ;;
 ;; ----------------------------------------------------------------------------
@@ -1400,12 +1425,12 @@
 ;;          (and (equal a b)
 ;;               (dominates p1 p2))))
 
-;; jcd - these rules seem bad.  i understand that we want to be able to 
+;; jcd - these rules seem bad.  i understand that we want to be able to
 ;; reason about singletons and domination, but where does it end?  why not
-;; write similar rules for doubles and triples?  I think at some point we 
+;; write similar rules for doubles and triples?  I think at some point we
 ;; have to let destructor elimination do its job.
 ;;
-;; of course, I could be wrong.  Maybe it's not too much to ask to have 
+;; of course, I could be wrong.  Maybe it's not too much to ask to have
 ;; special rules for singletons.  We'll see if anythign breaks.
 
 
@@ -1433,7 +1458,7 @@
 ;; jcd - Removed this: redundant with dominated-by-some-of-non-consp-one.
 ;;
 ;; (defthm dominated-by-some-of-nil-one
-;;   (equal (dominated-by-some nil paths) 
+;;   (equal (dominated-by-some nil paths)
 ;;          (contains-a-non-consp paths)))
 
 ;; jcd - Removed this: redundant with dominated-by-some-of-non-consp-two
@@ -1448,7 +1473,7 @@
 ;(defthm dominates-of-nthcdr-and-nthcdr-from-dominates
 ;  (implies (dominates p1 p2)
 ;           (equal (dominates (nthcdr n1 p1) (nthcdr n2 p2))
-;                  (equal (nfix n1) 
+;                  (equal (nfix n1)
 ;                         (nfix n2)))))
 
 ;; two-dominators-hack: given two dominators of p, one of the must dominate the
@@ -1475,12 +1500,11 @@
 ;;                 (case-split (not (dominates a b))))
 ;;            (dominates b a)))
 
-; jcd - i don't like this rule, but i had to add it for a case 
+; jcd - i don't like this rule, but i had to add it for a case
 ; where it came up.  can we make it more general?
 ;(defthm not-dominates-append-by-unequal-cars
 ;  (implies (and (consp path)
 ;                (not (equal (car path) (car path2))))
-;           (not (dominates (append path rest) 
+;           (not (dominates (append path rest)
 ;                           path2)))
 ;  :hints(("Goal" :in-theory (enable dominates))))
-                

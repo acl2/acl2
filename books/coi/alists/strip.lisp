@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;; strip.lisp
 ;; Theorems about strip-cars and strip-cdrs. (a.k.a., keys and vals)
 ;;
@@ -28,7 +53,7 @@
 ;; STRIP-CARS
 
 (defcong alist-equiv equal (strip-cars x) 1
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable strip-cars)
           :induct (len-len-induction x x-equiv))))
 
@@ -56,7 +81,7 @@
 
 (defthm strip-cars-of-cons
   (equal (strip-cars (cons x y))
-         (cons (car x) 
+         (cons (car x)
                (strip-cars y)))
   :hints(("Goal" :in-theory (enable strip-cars))))
 
@@ -75,7 +100,7 @@
 
 (defthm strip-cars-of-append
   (equal (strip-cars (append x y))
-         (append (strip-cars x) 
+         (append (strip-cars x)
                  (strip-cars y)))
   :hints(("Goal" :in-theory (enable append))))
 
@@ -98,7 +123,7 @@
 ;; STRIP-CDRS
 
 (defcong alist-equiv equal (strip-cdrs x) 1
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable strip-cdrs)
           :induct (len-len-induction x x-equiv))))
 
@@ -120,13 +145,13 @@
 
 (defthm strip-cdrs-of-non-consp
   (implies (not (consp x))
-           (equal (strip-cdrs x) 
+           (equal (strip-cdrs x)
                   nil))
   :hints(("Goal" :in-theory (enable strip-cdrs))))
 
 (defthm strip-cdrs-of-cons
   (equal (strip-cdrs (cons x y))
-         (cons (cdr x) 
+         (cons (cdr x)
                (strip-cdrs y)))
   :hints(("Goal" :in-theory (enable strip-cdrs))))
 
@@ -145,7 +170,7 @@
 
 (defthm strip-cdrs-of-append
   (equal (strip-cdrs (append x y))
-         (append (strip-cdrs x) 
+         (append (strip-cdrs x)
                  (strip-cdrs y)))
   :hints(("Goal" :in-theory (enable append))))
 
@@ -162,4 +187,3 @@
 (defthm memberp-cdar-strip-cdrs
   (equal (memberp (cdar x) (strip-cdrs x))
          (consp x)))
-

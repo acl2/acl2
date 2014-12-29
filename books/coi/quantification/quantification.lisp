@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "QUANT")
 
 ;; TODO:
@@ -43,7 +68,7 @@
 ;; able to find a suitable instantiation.  Note that complete
 ;; instantiation of the term is essential.
 
-;; I'm using the tail-recursive function 
+;; I'm using the tail-recursive function
 
 (defun-sk forall-p (x)
   (forall a (implies (member a x) (p a))))
@@ -61,12 +86,12 @@
 
 ;; Step 1 : detect the presence of the witness/predicate
 ;; If it appears as a (forall):
-;;   
+;;
 ;; If it appears as an (exists):
 ;;
 
 ;; - instantiate the theorem.
-;; - 
+;; -
 
 (implies
  (forall-p x)
@@ -89,7 +114,7 @@
  (not (memberp b x))
  (pred x))
 
-(or (not (member a x)) 
+(or (not (member a x))
     (pred x))
 
 ;; - Instantiation with elements from the goal.  This
@@ -109,10 +134,10 @@
 
 ;; Instantiation should be "smart" about equivalence relations,
 ;; (at least equal and iff) .. allowing partial matches to
-;; 
+;;
 
 ;; It is OK for a match to introduce new function symbols.
-;; A binding is considered a match when 
+;; A binding is considered a match when
 
 ;; Unification allows a match to bein with any position.
 
@@ -123,7 +148,7 @@
 ;; sufficient to establish binding.
 
 ;; Start with the leaves and begin binding there.  Every
-;; atomic 
+;; atomic
 
 ;; A binding tree collects every possible match for
 ;; a set of free variables.
@@ -139,7 +164,7 @@
 
 - (foo 'x) .. we look for an instance of the pattern (foo ?) and
   bind 'x to the result of that instance.  This binding reduces
-  
+
 
 - Each join within a term becomes a restriction.
 
@@ -153,7 +178,7 @@
   ((x y) . (pred x y))
   )
 
-;; Second order bindings 
+;; Second order bindings
 
 `((z) (x y) (foo (bar x) (zed y) z))
 
@@ -208,7 +233,7 @@
 
 ;; multiple ocurrances of a particular function symbol signify
 ;; that there may be many ways to instantiate the term.  If
-;; I can find a binding that satisfies 
+;; I can find a binding that satisfies
 
 
 ;; We allow a rule to introduce no more than one new fact.
@@ -243,10 +268,10 @@
 ;; Any one of the terms that has more than one variable binding may be
 ;; last.  The terms are orderd from least to most likely to succeed.
 
-;; Essential terms 
+;; Essential terms
 
-;; + Essential bindings are those bindings that 
-;; + 
+;; + Essential bindings are those bindings that
+;; +
 
 
 |#
@@ -314,7 +339,7 @@
       (let ((y (add-new-alist (car x) y)))
 	(merge-alist-list (cdr x) y))
     y))
-      
+
 (defun sub-alist (keys alist)
   (if (consp keys)
       (let ((hit (assoc (car keys) alist)))
@@ -541,20 +566,20 @@
 			   :skolemize   skolemize
 			   :body        body-guts
 			   :witness    `(,skolem-name ,@args))))
-    
+
     `(encapsulate
       ()
-      
+
       (local (in-theory (cons 'acl2::MV-NTH-TO-VAL (theory 'acl2::minimal-theory))))
 
-      (defun-sk ,name ,args ,body 
+      (defun-sk ,name ,args ,body
 	,@(rekey :doc doc)
 	,@(rekey :quant-ok quant-ok)
 	,@(rekey :skolem-name skolem-name)
 	,@(rekey :thm-name thm-name)
 	,@(rekey :rewrite rewrite)
 	,@(rekey :witness-dcls witness-dcls))
-	
+
       (in-theory (disable ,thm-name))
 
       (defthmd ,skolemize
@@ -575,11 +600,11 @@
       (add-generalization-pattern (hide ,witness-instance))
 
       (table::set 'quant-list (cons ',quant (table::get 'quant-list)))
-      
+
       ,@(and disable `((in-theory (disable ,name))))
 
       )))
-  
+
 (defmacro def::un-sk (name args body &key doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls)
   (defun-sk-fn name args body nil doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls))
 
@@ -708,7 +733,7 @@
     (let ((alist (car alist-list)))
       (let ((res (greedy-match-pattern vars pattern goal alist res)))
 	(greedy-match-pattern-alist-list vars pattern goal (cdr alist-list) res)))))
-    
+
 (defun greedy-match-pattern-list (vars plist goal alist-list)
   (if (endp plist) alist-list
     (let ((alist-list (greedy-match-pattern-alist-list vars (car plist) goal alist-list nil)))
@@ -783,7 +808,7 @@
   (if (consp alist)
       (acons+ (cdar alist) (caar alist) (invert-alist (cdr alist)))
     nil))
-		
+
 (defun rebind-alist-instance-vars (alist base avoid)
   (met ((alist rebind) (rebind-alist-instance-vars-rec alist base avoid nil))
     (mv alist rebind)))
@@ -881,16 +906,16 @@
 
 (defun maximal-match-1-pattern-list-rec (hints quant pattern top bottom goal alist res state)
   (declare (xargs :mode :program))
-  (met ((alist-list state) 
+  (met ((alist-list state)
 	(maximal-match-pattern-list hints quant (append top bottom) goal (list alist) state))
-       (met ((new-alists state) 
+       (met ((new-alists state)
 	     (maximal-match-1-pattern-alist-list hints quant (term-vars pattern) pattern goal alist-list nil state))
 	     (let ((new-alists (filter-negations new-alists (negate-term pattern) goal)))
 	       (let ((res (merge-alist-list new-alists res)))
 		 (if (endp bottom) (mv res state)
-		   (maximal-match-1-pattern-list-rec hints quant (car bottom) (cons pattern top) (cdr bottom) 
+		   (maximal-match-1-pattern-list-rec hints quant (car bottom) (cons pattern top) (cdr bottom)
 						     goal alist res state)))))))
-  
+
 (defun maximal-match-1-pattern-list (hints quant plist goal alist state)
   (declare (xargs :mode :program))
   (if (consp plist)
@@ -992,15 +1017,15 @@
 
   (defthm pred-hoo
     (pred (hoo x y)))
-  
+
   (defthmd skolemization-axiom
-    (IMPLIES 
+    (IMPLIES
      (and
-      (BOO Q x) 
+      (BOO Q x)
       (syntaxp (and (symbolp x)
 		    (symbolp y))))
      (HOO Q y)))
-  
+
   )
 
 (defun inc-assoc (key alist)
@@ -1059,7 +1084,7 @@
 	    (declare (ignore zed))
 	    (if (or rec (consp (cdr use-hints)))
 		`(:computed-hint-replacement
-		  ((instantiate-quantified-formulae-fn world stable-under-simplificationp 
+		  ((instantiate-quantified-formulae-fn world stable-under-simplificationp
 						       clause ',(cdr use-hints) ',rec ',hints ',formulae acl2::pspv state))
 		  ,@hint)
 	      hint))))
@@ -1114,7 +1139,7 @@
 (defun restrict-all-instances (quant list-alist)
   (if (consp list-alist)
       (let ((alist (car list-alist)))
-	(if (consp alist) 
+	(if (consp alist)
 	    `((,(quant-skolemize quant) (,@(soft-alistify alist)))
 	      ,@(restrict-all-instances quant (cdr list-alist)))
 	  (restrict-all-instances quant (cdr list-alist))))
@@ -1163,32 +1188,32 @@
 
  (def::un-sk forall-zen (a)
    (forall (x y) (implies (boo a x) (hoo a y))))
- 
+
  #+joe
  (defthmd forall-zen-skolemization
    (equal (val n (forall-zen-witness a))
 	  (gensym::generalize (hide (val n (forall-zen-witness a)))))
    :hints (("Goal" :expand (:free (x) (hide x))
 	    :in-theory (enable gensym::generalize))))
- 
+
  #+joe
  (add-generalization-pattern (hide (val n (forall-zen-witness a))))
- 
+
  (def::un-sk exists-zen (a)
    (exists (x y) (not (implies (boo a x) (hoo a y)))))
- 
+
  #+joe
  (defthmd exists-zen-skolemization
    (equal (val n (exists-zen-witness a))
 	  (gensym::generalize (hide (val n (exists-zen-witness a)))))
    :hints (("Goal" :expand (:free (x) (hide x))
 	    :in-theory (enable gensym::generalize))))
- 
+
  #+joe
  (add-generalization-pattern (hide (val n (exists-zen-witness a))))
- 
+
  #+joe
- (defconst *qlist* 
+ (defconst *qlist*
    (list (new-quant :name 'exists-zen
 		    :type :exists
 		    :vars `(x y)
@@ -1207,48 +1232,48 @@
 		    :body  `(implies (boo a x) (hoo a y))
 		    :witness `(forall-zen-witness a)
 		    )))
- 
+
  ;; This is ultimately how we will store information on quantified
  ;; formulae: in tables.
- 
+
  #+joe
  (table::set 'quant-list *qlist*)
- 
+
  #+joe
  (in-theory (disable forall-zen-necc))
  #+joe
  (in-theory (disable exists-zen-suff))
- 
+
  (defthmd forall-zen-instantiation-test
    (implies
     (forall-zen q)
     (implies (boo q x1) (hoo q y1)))
    :hints ((inst?)))
- 
+
  (defthmd exists-zen-instantiation-test
    (implies
     (not (exists-zen q))
     (implies (boo q x1) (hoo q y1)))
    :hints ((inst?)))
- 
+
  (local (in-theory (enable skolemization-axiom)))
- 
+
  ;; Note that the instantiation and skolemization hints do not interfere.
 
  ;; I'm not sure, however, that the skolemization hints are working correctly.
- 
+
  (defthmd forall-zen-skolemization-test
    (forall-zen q)
    :hints ((skosimp)
 	   (inst?)
 	   ))
- 
+
  (defthmd exists-zen-skolemization-test
    (not (exists-zen q))
    :hints ((skosimp)
 	   (inst?)
 	   ))
- 
+
  ;; This is kind of a cool theorem
 
  (defthmd forall-implies-not-exists
@@ -1256,38 +1281,38 @@
 	(not (exists-zen q)))
    :hints ((skosimp)
 	   (inst?)))
- 
+
  )
 
 (local-events
 
- #| 
- 
+ #|
+
  This is the example from the ACL2 documentation.  It is challenging
  because is requires that an instantiated term be simplified before a
  complete match would work.  It does prove, however, in PVS using only
  skosimp and inst? and the member-append rule provided.
- 
+
  |#
- 
+
  (defstub p (x) t)
- 
+
  (def::un-sk forall-p (x)
    (forall (a) (implies (member a x) (p a))))
- 
+
  #+joe
  (defthmd forall-p-skolemization
    (equal (forall-p-witness a)
 	  (gensym::generalize (hide (forall-p-witness a))))
    :hints (("Goal" :in-theory (enable gensym::generalize)
 	    :expand (:free (x) (hide x)))))
- 
+
  #+joe
  (add-generalization-pattern (hide (forall-p-witness a)))
- 
+
  #+joe
  (table::set 'quant-list
-	     (list 
+	     (list
 	      (new-quant :name 'forall-p
 			 :type :forall
 			 :vars `(a)
@@ -1297,7 +1322,7 @@
 			 :body  `(implies (member a x) (p a))
 			 :witness `(forall-p-witness x)
 			 )))
- 
+
  #+joe
  (in-theory (disable FORALL-P-NECC))
 
@@ -1329,7 +1354,7 @@
    (iff (member a (append x y))
 	(or (member a x)
 	    (member a y))))
- 
+
  (defthm forall-p-append
    (equal (forall-p (append x1 x2))
 	  (and (forall-p x1) (forall-p x2)))
@@ -1338,17 +1363,17 @@
 	   (skosimp) ;; this messes up the proof .. why?
            ;; See my DAG comment in skolemize-quantified-formulae-rec
 	   (inst?)))
- 
+
  )
 
 #|
 ;; You will want this, too
-(defun if-to-and (term) 
+(defun if-to-and (term)
   (if (consp term)
       (if (equal (car term) 'if)
 	  (cond
 	   ((equal (cadddr term) *nil*)
-	    (cons (cadr term) 
+	    (cons (cadr term)
 		  (if-to-and (caddr term))))
 	   ((equal (caddr term) *nil*)
 	    (cons (negate-term (cadr term))
@@ -1357,7 +1382,7 @@
 	    (list term)))
 	(list term))
     (list term)))
-	    
+
 
 (defun unwrap-term (term)
   (if (consp term)
@@ -1374,7 +1399,7 @@
 		   (t term))))
 	(negate-term term))
     `(not ,term)))
-	
+
 (defun if-term (term)
   (and (consp term)
        (equal (car term) 'if)))
@@ -1395,8 +1420,8 @@
 ;; (type-alist-clause `(list (consp x) (natp x)) ttree-lst force-flg type-alist ens world pot-lst pt)
 ;; (type-alist-clause `(list (consp y) (natp x)) nil       nil       nil        (ens state) (w state) nil nil)
 #+joe
-(mv-let (x type-alist z) 
-	(type-alist-clause `((pred z) (consp y) (natp x)) nil  nil nil (ens state) (w state) nil nil)  
+(mv-let (x type-alist z)
+	(type-alist-clause `((pred z) (consp y) (natp x)) nil  nil nil (ens state) (w state) nil nil)
 	(declare (ignore x z))
 	(type-alist-to-clause type-alist nil state))
 |#
@@ -1405,7 +1430,7 @@
 
  (def::un-sk rewrite-boo ()
    (forall  (x y) (equal (boo x y) (hoo x y))))
- 
+
  ;; Here we show that we can pattern match on an "equal" term
  ;; in the quantification.
 
@@ -1414,7 +1439,7 @@
     (rewrite-boo)
     (pred (boo x y)))
    :hints ((inst?)))
- 
+
  )
 
 #|
@@ -1463,7 +1488,7 @@ ACL2 !>
 ;; Realizing that, we understand that the reason it doesn't really
 ;; work to use pick-a-point in the hypothesis is because pick-a-point
 ;; is skolemization .. and from the hypothesis we need instantiation.
-;; 
+;;
 ;; Thus, It should be possible to use quantification directly to do
 ;; the same thing (in some sense: more) than we can do with pick-a-
 ;; point.  Pick-a-point itself is then merely quant::skosimp and we
@@ -1481,7 +1506,7 @@ ACL2 !>
 
 ;; One other observation about the best way to do congruence proofs.
 ;; So you have a new function.  You hope that this function satisfies
-;; some congruence.  Consider how the function might decompose into 
+;; some congruence.  Consider how the function might decompose into
 ;; the operators used in describing the equivalences .. memberp,
 ;; count, assoc, keys, len, etc.  You must then proof theorems about
 ;; how those primitives interace with your new function.  If the
@@ -1502,7 +1527,7 @@ ACL2 !>
 ;; equality for lists reduces to the following:
 
 (equal (equal x y)
-       (and 
+       (and
 	(equal (len x) (len y))
 	(equal (lastcdr x) (lastcdr y))
 	(forall (a) (equal (nth a x) (nth a y)))))
@@ -1536,7 +1561,7 @@ ACL2 !>
 
    (def::un-sk assox-equiv (x y)
      (forall (a) (equal (assoc a x) (assoc a y))))
-   
+
    ;; I have added skosimp hints now .. just because I can :O
 
    (defequiv assox-equiv
@@ -1561,4 +1586,3 @@ ACL2 !>
 	     (quant::inst?)))
 
    ))
-

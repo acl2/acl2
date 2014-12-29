@@ -1,3 +1,33 @@
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ; Jared: what's this file for?  It's not certifiable, so I'm
 ; renaming it to a .lsp extension for Make compatibility
 
@@ -9,7 +39,7 @@
 (in-package "ADVISER")
 
 ;;
-;; This file isolates adviser definitions and types. The file currently 
+;; This file isolates adviser definitions and types. The file currently
 ;; contains the following ACL2 constructs as they occur in the adviser book:
 ;; - defun
 ;; - defund
@@ -37,8 +67,8 @@
   (declare (xargs :mode :program))
   (if (zp n)
       acc
-    (aux-symbols (1- n) (cons (intern-in-package-of-symbol 
-                               (concatenate 'string "X" 
+    (aux-symbols (1- n) (cons (intern-in-package-of-symbol
+                               (concatenate 'string "X"
                                             (coerce (explode-atom n 10) 'string))
                                'defthm)
                               acc))))
@@ -48,7 +78,7 @@
 ;;   (implies (hyps)
 ;;            (conclusion (arg1) (arg2) ... (argN)))
 ;;   :rule-classes (:pick-a-point :driver foo))
-;; 
+;;
 ;; Where hyps and each arg are encapsulated functions of no arguments, and
 ;; where foo is some defthm which proves exactly this implication for those
 ;; constrained functions.
@@ -63,7 +93,7 @@
     (and (true-listp (car x))
          (equal (len (car x)) 1)
          (symbolp (first (car x)))
-         (pick-a-point-term-syntax-ok-p1 (cdr x)))))         
+         (pick-a-point-term-syntax-ok-p1 (cdr x)))))
 
 (defun pick-a-point-term-syntax-ok-p (term)
   "Check that (implies (hyps) (conclusion ...)) is syntactically ok."
@@ -75,19 +105,19 @@
              (conclusion (third term)))
          (and (true-listp hypothesis)
               (equal (len hypothesis) 1)
-              (symbolp (first hypothesis))             
+              (symbolp (first hypothesis))
               (true-listp conclusion)
               (consp conclusion)
               (cond ((eq (car conclusion) 'not)
                      (let ((conclusion (cadr conclusion)))
                        (and (<= 2 (len conclusion))
                             (symbolp (car conclusion))
-                            (pick-a-point-term-syntax-ok-p1 
-                             (cdr conclusion)))))                          
-                    (t 
+                            (pick-a-point-term-syntax-ok-p1
+                             (cdr conclusion)))))
+                    (t
                      (and (<= 2 (len conclusion))
                           (symbolp (car conclusion))
-                          (pick-a-point-term-syntax-ok-p1 
+                          (pick-a-point-term-syntax-ok-p1
                            (cdr conclusion)))))))))
 
 
@@ -95,7 +125,7 @@
   "Check that the rule classes are syntactically ok."
   (declare (xargs :mode :program))
   (and (true-listp x)
-       (= (length x) 3)       
+       (= (length x) 3)
        (eq (first x) :pick-a-point)
        (eq (second x) :driver)
        (symbolp (third x))))
@@ -104,7 +134,7 @@
   "Check that a pick a point rule satisfies all syntactic requirements."
   (declare (xargs :mode :program))
   (cond ((not (symbolp name))
-         (cw "~%Rule name must be a symbol, but it is ~x0.~%" 
+         (cw "~%Rule name must be a symbol, but it is ~x0.~%"
              name))
         ((not (pick-a-point-term-syntax-ok-p term))
          (cw "~%Term must be of the form:~%~%   ~
@@ -113,7 +143,7 @@
               Or else of the form:~%~%   ~
                (implies (hyps) ~%          ~
                         (not (conclusion (arg1) (arg2) ... (argN))))~%~%~
-              But instead, the term is:~%~%   ~x0~%" 
+              But instead, the term is:~%~%   ~x0~%"
              term))
         ((not (pick-a-point-rule-classes-syntax-ok-p rule-classes))
          (cw "~%:pick-a-point rules must have :rule-classes ~
@@ -135,7 +165,7 @@
          (negatedp   (if (eq (car conclusion) 'not)
                          t
                        nil))
-         (function   (if negatedp 
+         (function   (if negatedp
                          (first (cadr conclusion))
                        (first conclusion)))
          (args       (if negatedp
@@ -145,7 +175,7 @@
           (cons :name name)
           (cons :negatedp negatedp)
           (cons :function function)
-          (cons :trigger (symbol-fns::join-symbols 
+          (cons :trigger (symbol-fns::join-symbols
                           function
                           "ADVISER-"
                           (symbol-name function)
@@ -154,7 +184,7 @@
           (cons :hyps (first hypothesis))
           (cons :args (pairlis$ (symbols (len args))
                                 args)))))
-                                                            
+
 (defun pick-a-point-rule-installer (parsed-rule)
   "Take a parsed rule and install it into the table, and set up the trigger."
   (declare (xargs :mode :program))
@@ -185,7 +215,7 @@
                       (,trigger ,@(strip-cars args))))
       :hints(("Goal" :in-theory (union-theories (theory 'minimal-theory)
                                                 '((:definition ,trigger))))))
-    
+
     ;; Finally we add our pattern to the pick a point rules database.
     (table adviser-table :pick-a-point-rules
            (let ((rules (pick-a-point-rules world)))
@@ -213,7 +243,7 @@
 ;; for instances of a trigger, and if it sees one, we will try to provide a
 ;; functional instantiation hint.  Our computed hint function is called as ACL2
 ;; is working to simplify terms, and it is allowed to examine the current
-;; clause.  
+;; clause.
 ;;
 ;; Terminology: A clause is a list of disjuncts, e.g.,
 ;;
@@ -252,22 +282,22 @@
                              (caadr literal)
                            (car literal))
                        nil)))
-      (let ((match (and 
-                    ;; Eric and Doug added this check, since we got an error 
+      (let ((match (and
+                    ;; Eric and Doug added this check, since we got an error
                     ;; when matchsym was a lambda expression:
                     (symbolp matchsym)
                     (ACL2::symbol-btree-lookup matchsym rules))))
-        (pick-a-point-trigger-harvester 
+        (pick-a-point-trigger-harvester
          (cdr clause)
          rules
          (if match (cons literal acc-lit) acc-lit)
          (if match (cons match acc-rule) acc-rule))))))
 
-      
+
 
 ;; If we find any matches, we need to provide appropriate hints.  To do this,
 ;; we need to provide values for the hypotheses and arguments.
-;; 
+;;
 ;; In order to compute the hypotheses, we first remove from the clause all of
 ;; our trigger terms.  This is easy to do, we can just take the
 ;; set-difference-equal of the clause with the acc-lit accumulator found above.
@@ -285,7 +315,7 @@
   (declare (xargs :mode :program))
   (if (endp literals)
       nil
-    (if (equal (caar literals) 'not)  
+    (if (equal (caar literals) 'not)
         ;; don't create ugly double not's
         (cons (second (car literals))
               (negate-literals (cdr literals)))
@@ -304,10 +334,10 @@
 
 ;; Here's an example:
 ;;
-;; ADVISER !>(andify-literals 
-;;  (negate-literals '((foo x) 
-;;                     (foo y) 
-;;                     (not (foo a)) 
+;; ADVISER !>(andify-literals
+;;  (negate-literals '((foo x)
+;;                     (foo y)
+;;                     (not (foo a))
 ;;                     (not (foo b)))))
 ;; (AND (NOT (FOO X))
 ;;      (NOT (FOO Y))
@@ -321,7 +351,7 @@
 ;; as arguments the matching literal and rule, and the hypotheses that were
 ;; build using the above strategy.
 ;;
-;; Rule is expected to be a parsed rule, which means that it is an alist of 
+;; Rule is expected to be a parsed rule, which means that it is an alist of
 ;; components.  We need to build a functional instance hint.  The theorem
 ;; to instantiate is stored in :driver.  The name of the generic hypotheses
 ;; function is stored in :hyps.  We also need to provide instantiations for
@@ -334,7 +364,7 @@
       nil
     (cons `(,(car arg-names)
             (lambda () ,(car actuals)))
-          (make-functional-instance-pairs (cdr arg-names) 
+          (make-functional-instance-pairs (cdr arg-names)
                                           (cdr actuals)))))
 
 (defun build-hint (literal rule hyps)
@@ -366,7 +396,7 @@
       nil
     (cons (cdr (assoc :driver (car rules)))
           (get-thms (cdr rules)))))
-              
+
 (defun get-names (rules)
   (declare (xargs :mode :program))
   (if (endp rules)
@@ -380,7 +410,7 @@
       nil
     (let ((lit (first literals)))
       (if (equal (car lit) 'not)
-          (cons (cadr lit) 
+          (cons (cadr lit)
                 (build-expand-hint (rest literals)))
         (cons lit (build-expand-hint (rest literals)))))))
 
@@ -400,14 +430,14 @@
   (let ((rules (pick-a-point-rules world)))
     (if (null rules)
         nil
-      (mv-let (literals rules) 
+      (mv-let (literals rules)
               (pick-a-point-trigger-harvester clause rules nil nil)
               (if (null literals)
                   nil
                 (let* ((others (set-difference-equal clause literals))
                        (hyps (andify-literals
                               (negate-literals others)))
-                       (hints `(:computed-hint-replacement 
+                       (hints `(:computed-hint-replacement
                                 ('(:computed-hint-replacement
                                    ((adviser-default-hint id clause world stable-under-simplificationp))
                                    :use ,(build-hints literals rules hyps nil)))
@@ -477,5 +507,5 @@
   (equal (some-integerp x)
          (not (all-not-integerp x))))
 
-  
-  
+
+

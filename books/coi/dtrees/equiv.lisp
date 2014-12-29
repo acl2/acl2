@@ -1,11 +1,36 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;;
 ;; Dependency Trees for Data Dependency Analysis
-;; Jared Davis 
+;; Jared Davis
 ;;
 
 (in-package "DTREE")
@@ -13,7 +38,7 @@
 
 ;; We say that x is a subtree of y if both (1) the domain of x is a subset of
 ;; the domain of y, and (2) for every path in the domain of x, the localdeps of
-;; this path in x are a subset of the localdeps of this path in y.  
+;; this path in x are a subset of the localdeps of this path in y.
 
 (defund subtree1 (locs sub super)
   (declare (xargs :guard (and (set::setp locs)
@@ -21,7 +46,7 @@
                               (dtreep super))))
   (or (set::empty locs)
       (and (in (set::head locs) super)
-           (set::subset 
+           (set::subset
             (localdeps (get (set::head locs) sub))
             (localdeps (get (set::head locs) super)))
            (subtree1 (set::tail locs) sub super))))
@@ -105,7 +130,7 @@
                    (set::subset (localdeps (get path sub))
                                  (localdeps (get path super))))
           :hints(("Goal" :in-theory (enable subtree)))))
-  
+
  (local (defthmd lemma2
           (implies (and (subtree sub super)
                         (true-listp path)
@@ -113,20 +138,20 @@
                    (set::subset (localdeps (get path sub))
                                  (localdeps (get path super))))
           :hints(("Goal" :in-theory (enable subtree)))))
-  
+
  (local (defthmd lemma3
           (implies (and (subtree sub super)
                         (in path sub))
                    (set::subset (localdeps (get path sub))
                                  (localdeps (get path super))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :use (:instance lemma2 (path (list::fix path)))))))
-  
+
  (defthm subset-of-localdeps-of-gets-when-subtree
    (implies (subtree sub super)
             (set::subset (localdeps (get path sub))
                           (localdeps (get path super))))
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (enable lemma1 lemma3)
            :cases ((in path sub))))))
 
@@ -134,7 +159,7 @@
    (implies (and (subtree sub super)
                  (set::in a (localdeps (get path sub))))
             (set::in a (localdeps (get path super))))
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (disable subset-of-localdeps-of-gets-when-subtree)
            :use (:instance subset-of-localdeps-of-gets-when-subtree))))
 
@@ -159,17 +184,17 @@
   (((subtree-hyps) => *)
    ((subtree-sub) => *)
    ((subtree-super) => *))
- 
+
   (local (defun subtree-hyps () nil))
   (local (defun subtree-sub () nil))
   (local (defun subtree-super () nil))
- 
+
   (defthmd subtree-membership-constraint
-    (implies 
+    (implies
      (and (subtree-hyps)
           (in subtree-path (subtree-sub)))
      (and (in subtree-path (subtree-super))
-          (set::subset 
+          (set::subset
            (localdeps (get subtree-path (subtree-sub)))
            (localdeps (get subtree-path (subtree-super))))))))
 
@@ -178,38 +203,38 @@
           (cond ((set::empty locs)
                  nil)
                 ((and (in (set::head locs) super)
-                      (set::subset 
+                      (set::subset
                        (localdeps (get (set::head locs) sub))
                        (localdeps (get (set::head locs) super))))
                  (subtree1-badguy (set::tail locs) sub super))
                 (t (set::head locs)))))
-          
+
  (local (defthmd subtree1-badguy-witness
           (equal (not (subtree1 locs sub super))
                  (and (set::in (subtree1-badguy locs sub super) locs)
                       (or (not (in (subtree1-badguy locs sub super) super))
-                          (not (set::subset 
+                          (not (set::subset
                                 (localdeps (get (subtree1-badguy locs sub super)
                                                 sub))
                                 (localdeps (get (subtree1-badguy locs sub super)
                                                 super)))))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable subtree1-badguy subtree1)
                   :induct (subtree1-badguy locs sub super)))))
-  
+
  (defthmd subtree-by-membership-driver
    (implies (subtree-hyps)
             (subtree (subtree-sub) (subtree-super)))
    :hints(("Goal"
            :in-theory (enable subtree)
-           :use ((:instance subtree1-badguy-witness 
+           :use ((:instance subtree1-badguy-witness
                             (locs (domain (subtree-sub)))
                             (sub (subtree-sub))
                             (super (subtree-super)))
                  (:instance subtree-membership-constraint
                             (subtree-path
                              (subtree1-badguy (domain (subtree-sub))
-                                              (subtree-sub) 
+                                              (subtree-sub)
                                               (subtree-super))))))))
 
  (defadvice subtree-by-membership
@@ -232,14 +257,14 @@
 
 (defthm subtree-of-get-with-get
   (implies (subtree sub super)
-           (subtree (get path sub) 
+           (subtree (get path sub)
                     (get path super))))
 
 (defthm in-children-of-super-when-in-children-of-subtree
   (implies (and (subtree sub super)
                 (map::in key (children sub)))
            (map::in key (children super)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable in-children-is-in-of-singleton-path))))
 
 (defthm subset-of-domains-when-subtree
@@ -278,13 +303,13 @@
   (implies (and (subtree sub super)
                 (set::in a (deps sub)))
            (set::in a (deps super)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :use (:instance in-deps-of-get-super-when-in-deps-of-get-subtree
                           (path nil)))))
 
 (defthm subset-of-deps-when-subtree
   (implies (subtree sub super)
-           (set::subset (deps sub) 
+           (set::subset (deps sub)
                          (deps super))))
 
 
@@ -302,7 +327,7 @@
                               (dtreep super))))
   (or (set::empty locs)
       (and (in (set::head locs) super)
-           (set::subset 
+           (set::subset
             (deps (get (set::head locs) sub))
             (deps (get (set::head locs) super)))
            (subdeps1 (set::tail locs) sub super))))
@@ -386,7 +411,7 @@
                    (set::subset (deps (get path sub))
                                  (deps (get path super))))
           :hints(("Goal" :in-theory (enable subdeps)))))
-  
+
  (local (defthmd lemma2
           (implies (and (subdeps sub super)
                         (true-listp path)
@@ -394,20 +419,20 @@
                    (set::subset (deps (get path sub))
                                  (deps (get path super))))
           :hints(("Goal" :in-theory (enable subdeps)))))
-  
+
  (local (defthmd lemma3
           (implies (and (subdeps sub super)
                         (in path sub))
                    (set::subset (deps (get path sub))
                                  (deps (get path super))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :use (:instance lemma2 (path (list::fix path)))))))
-  
+
  (defthm subset-of-deps-of-gets-when-subdeps
    (implies (subdeps sub super)
             (set::subset (deps (get path sub))
                           (deps (get path super))))
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (enable lemma1 lemma3)
            :cases ((in path sub))))))
 
@@ -415,7 +440,7 @@
   (implies (and (subdeps sub super)
                 (set::in a (deps (get path sub))))
            (set::in a (deps (get path super))))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable subset-of-deps-of-gets-when-subdeps)
           :use (:instance subset-of-deps-of-gets-when-subdeps))))
 
@@ -440,17 +465,17 @@
   (((subdeps-hyps) => *)
    ((subdeps-sub) => *)
    ((subdeps-super) => *))
- 
+
   (local (defun subdeps-hyps () nil))
   (local (defun subdeps-sub () nil))
   (local (defun subdeps-super () nil))
- 
+
   (defthmd subdeps-membership-constraint
-    (implies 
+    (implies
      (and (subdeps-hyps)
           (in subdeps-path (subdeps-sub)))
      (and (in subdeps-path (subdeps-super))
-          (set::subset 
+          (set::subset
            (deps (get subdeps-path (subdeps-sub)))
            (deps (get subdeps-path (subdeps-super))))))))
 
@@ -459,38 +484,38 @@
           (cond ((set::empty locs)
                  nil)
                 ((and (in (set::head locs) super)
-                      (set::subset 
+                      (set::subset
                        (deps (get (set::head locs) sub))
                        (deps (get (set::head locs) super))))
                  (subdeps1-badguy (set::tail locs) sub super))
                 (t (set::head locs)))))
-          
+
  (local (defthmd subdeps1-badguy-witness
           (equal (not (subdeps1 locs sub super))
                  (and (set::in (subdeps1-badguy locs sub super) locs)
                       (or (not (in (subdeps1-badguy locs sub super) super))
-                          (not (set::subset 
+                          (not (set::subset
                                 (deps (get (subdeps1-badguy locs sub super)
                                                 sub))
                                 (deps (get (subdeps1-badguy locs sub super)
                                                 super)))))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable subdeps1-badguy subdeps1)
                   :induct (subdeps1-badguy locs sub super)))))
-  
+
  (defthmd subdeps-by-membership-driver
    (implies (subdeps-hyps)
             (subdeps (subdeps-sub) (subdeps-super)))
    :hints(("Goal"
            :in-theory (enable subdeps)
-           :use ((:instance subdeps1-badguy-witness 
+           :use ((:instance subdeps1-badguy-witness
                             (locs (domain (subdeps-sub)))
                             (sub (subdeps-sub))
                             (super (subdeps-super)))
                  (:instance subdeps-membership-constraint
                             (subdeps-path
                              (subdeps1-badguy (domain (subdeps-sub))
-                                              (subdeps-sub) 
+                                              (subdeps-sub)
                                               (subdeps-super))))))))
 
  (defadvice subdeps-by-membership
@@ -520,9 +545,9 @@
   (implies (and (subdeps sub super)
                 (map::in key (children sub)))
            (map::in key (children super)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable in-children-is-in-of-singleton-path))))
-          
+
 (defthm subset-of-domains-when-subdeps
   (implies (subdeps sub super)
            (set::subset (map::domain (children sub))
@@ -561,10 +586,10 @@
            (equal (map::in key sub)
                   nil))
   :hints(("Goal" :in-theory (enable subtreemap))))
-                      
+
 (defthm subtree-of-gets-when-subtreemap
   (implies (subtreemap sub super)
-           (equal (subtree (map::get key sub) 
+           (equal (subtree (map::get key sub)
                            (map::get key super))
                   (if (map::in key sub)
                       t
@@ -572,7 +597,7 @@
                              (map::get key super)))))
   :hints(("Goal" :in-theory (enable subtreemap))))
 
-       
+
 (encapsulate
  ()
 
@@ -580,13 +605,13 @@
   (((subtreemap-hyps) => *)
    ((subtreemap-sub) => *)
    ((subtreemap-super) => *))
- 
+
   (local (defun subtreemap-hyps () nil))
   (local (defun subtreemap-sub () nil))
   (local (defun subtreemap-super () nil))
- 
+
   (defthmd subtreemap-membership-constraint
-    (implies 
+    (implies
      (and (subtreemap-hyps)
           (map::in subtreemap-key (subtreemap-sub)))
      (and (map::in subtreemap-key (subtreemap-super))
@@ -610,7 +635,7 @@
                                                   sub)
                                         (map::get (subtreemap-badguy sub super)
                                                   super))))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable subtreemap subtreemap-badguy)
                   :induct (subtreemap-badguy sub super)))))
 
@@ -671,7 +696,7 @@
   (implies (subtree sub super)
            (subtreemap (children sub)
                        (children super)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable get-of-children-is-get-of-singleton-path))))
 
 
@@ -704,11 +729,11 @@
 
 (defthm subdeps-of-gets-when-subdepsmap
   (implies (subdepsmap sub super)
-           (equal (subdeps (map::get key sub) 
+           (equal (subdeps (map::get key sub)
                            (map::get key super))
                   (if (map::in key sub)
                       t
-                    (subdeps (map::emptymap) 
+                    (subdeps (map::emptymap)
                              (map::get key super)))))
   :hints(("Goal" :in-theory (enable subdepsmap))))
 
@@ -719,13 +744,13 @@
   (((subdepsmap-hyps) => *)
    ((subdepsmap-sub) => *)
    ((subdepsmap-super) => *))
- 
+
   (local (defun subdepsmap-hyps () nil))
   (local (defun subdepsmap-sub () nil))
   (local (defun subdepsmap-super () nil))
- 
+
   (defthmd subdepsmap-membership-constraint
-    (implies 
+    (implies
      (and (subdepsmap-hyps)
           (map::in subdepsmap-key (subdepsmap-sub)))
      (and (map::in subdepsmap-key (subdepsmap-super))
@@ -749,7 +774,7 @@
                                                   sub)
                                         (map::get (subdepsmap-badguy sub super)
                                                   super))))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable subdepsmap subdepsmap-badguy)
                   :induct (subdepsmap-badguy sub super)))))
 
@@ -812,7 +837,7 @@
   (implies (subdeps sub super)
            (subdepsmap (children sub)
                        (children super)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable get-of-children-is-get-of-singleton-path))))
 
 (defthm subdepsmap-when-subtreemap
@@ -825,14 +850,14 @@
 ;; We introduce dtree equivalences using "mutual subtrees" and "mutual
 ;; subdeps", so that dtrees are equivalent iff (1) their domains are the same,
 ;; and (2) the localdeps/deps at every path within both trees are the same
-;; sets.  
+;; sets.
 
 (defund equiv (x y)
   (declare (xargs :guard (and (dtreep x)
                               (dtreep y))))
   (and (subtree x y)
        (subtree y x)))
-         
+
 (defund equivdeps (x y)
   (declare (xargs :guard (and (dtreep x)
                               (dtreep y))))
@@ -871,8 +896,8 @@
 (defcong equivdeps equal (in path dtree) 2
   :hints(("Goal" :in-theory (enable equivdeps))))
 
-;; get - We prove two rules for get.  For the equivdeps rule we can only 
-;; say that the results are equivdeps.  For the equiv rule, we know that 
+;; get - We prove two rules for get.  For the equivdeps rule we can only
+;; say that the results are equivdeps.  For the equiv rule, we know that
 ;; the results are equiv.
 
 (defcong equivdeps equivdeps (get path dtree) 2
@@ -987,7 +1012,7 @@
 (defcong equivdepsmap equivdepsmap (map::set key val map) 3
     :hints(("Goal" :in-theory (enable equivdepsmap))))
 
-;; depsmap - we already have (defcong map::equiv equal (depsmap map) 1), but, 
+;; depsmap - we already have (defcong map::equiv equal (depsmap map) 1), but,
 ;; we actually want a stronger form of this, which we prove below:
 
 (defcong equivdepsmap equal (depsmap map) 1
@@ -995,9 +1020,9 @@
 
 
 
-;; The following are congruence rules, that were unexpectedly proven. A 
-;; mutual-recursive function that would walk down the tree and compare was 
-;; being developed, but this approach seems much more clean, and it gives us 
+;; The following are congruence rules, that were unexpectedly proven. A
+;; mutual-recursive function that would walk down the tree and compare was
+;; being developed, but this approach seems much more clean, and it gives us
 ;; the same power as an equivalence relation using mutual recursion.
 ;;
 ;; The real trick behind this is the use of the "domain" function in our
@@ -1018,4 +1043,3 @@
 
 (defcong equivdeps equivdepsmap (children dtree) 1
   :hints(("Goal" :in-theory (enable equivdepsmap equivdeps))))
-

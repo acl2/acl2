@@ -1,14 +1,39 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "GACC")
 
 (include-book "../bags/basic")
 
 ;bzo make this local?
-(include-book "arithmetic/top-with-meta" :dir :system) 
+(include-book "arithmetic/top-with-meta" :dir :system)
 
 ; Modified by Matt K. after Jared D.'s check-in to acl2-books svn revision 633,
 ; which removed the following rule: I disabled the relatively new built-in rule
@@ -28,7 +53,7 @@
            (xargs :measure (nfix (- (ifix max) (ifix off)))))
   (if (not (< (ifix off) (ifix max)))
       nil
-    (cons (+ (ifix off) (ifix base)) 
+    (cons (+ (ifix off) (ifix base))
           (blk-rec base (1+ (ifix off)) (ifix max)))))
 
 (defthm true-listp-blk-rec
@@ -109,7 +134,7 @@
                      (<= m2 off))
                 nil
               (cons (list off b1 m1 b2 m2)
-                    (blk-blk-rec (1+ off) 
+                    (blk-blk-rec (1+ off)
                                  b1 m1
                                  b2 m2))))))
 
@@ -146,20 +171,20 @@
                 (<= (ifix size0) (ifix size1)))
            (disjoint list (blk-rec ptr off size0)))
   :hints (("Goal" :in-theory (enable blk-rec)
-           :do-not '(generalize eliminate-destructors)))) 
-  
+           :do-not '(generalize eliminate-destructors))))
+
 (defthm disjoint-blk-rec-subbagp-right
   (implies (and (not (disjoint list (blk-rec ptr off size0)))
                 (<= (ifix size0) (ifix size1)))
            (equal (disjoint list (blk-rec ptr off size1))
-                  nil))) 
-   
+                  nil)))
+
 (defthm disjoint-blk-rec-subbagp-left
   (implies (and (not (disjoint (blk-rec ptr off size0) list))
                 (<= (ifix size0) (ifix size1)))
            (equal (disjoint (blk-rec ptr off size1) list)
                   nil)))
-   
+
 ;make a blk analogue of this?
 (defthm blk-rec-non-membership-less
   (implies (< n (+ (ifix ptr) (ifix off)))
@@ -207,8 +232,8 @@
                 (integerp x)
                 (<= 0 x))
            (equal (blk-rec (+ x rptr) roff rmax)
-                  (blk-rec rptr 
-                           (+ x (ifix roff)) 
+                  (blk-rec rptr
+                           (+ x (ifix roff))
                            (+ x (ifix rmax)))))
   :hints (("goal" :in-theory (enable blk-rec)
            :induct (blk-rec (+ x rptr) roff rmax))))
@@ -222,7 +247,7 @@
               nil
             (blk-rec-induction (ifix max1) (ifix max2) (1+ (ifix off)) ptr))))
 
-;allow the off params to differ?             
+;allow the off params to differ?
  (defthm blk-rec-upper-subbagp
    (implies (<= (ifix max1) (ifix max2))
             (subbagp (blk-rec ptr off max1)
@@ -272,7 +297,7 @@
                            (wsize rsize)
                            (rsize wsize)
                            ))))
-                                       
+
 (defthm memberp-of-blk-rec-when-not-integerp
   (implies (not (integerp x))
            (not (bag::memberp x (gacc::blk-rec base offset max))))
@@ -294,7 +319,7 @@
 (defund blk (base size)
   (declare (type t base size))
   (blk-rec base 0 size))
- 
+
 ;We disable the executable-counterpart of blk, so that ACL2 doesn't actually compute big lists of addresses
 ;For instance, (blk 5 10) does not get expanded to (5 6 7 8 9 10 11 12 13 14) if the executablec-counterpart is disabled.
 (in-theory (disable (:executable-counterpart blk)))
@@ -338,7 +363,7 @@
            (subbagp (blk ptr max1)
                     (blk ptr max2)))
   :hints (("Goal" :in-theory (enable blk))))
-   
+
  ;; These should be among the last rules attempted ..
 
 (defthm blk-disjoint-from-blk-1
@@ -358,7 +383,7 @@
            (disjoint (blk rptr rsize)
                      (blk wptr wsize)))
   :hints (("Goal" :in-theory (enable blk))))
- 
+
 (defthm blk-membership-subbagp
   (implies (and (not (memberp addr (blk ptr size2))) ;size2 is a free variable
                 (<= (ifix size1) (ifix size2))
@@ -392,8 +417,8 @@
                 (<= (ifix size0) (ifix size1)))
            (equal (disjoint list (blk ptr size1))
                   nil))
-  :hints (("Goal" :in-theory (enable blk)))) 
- 
+  :hints (("Goal" :in-theory (enable blk))))
+
 (defthm disjoint-blk-subbagp-left
   (implies (and (not (disjoint (blk ptr size0) list)) ;size0 is a free variable
                 (<= (ifix size0) (ifix size1)))
@@ -405,14 +430,14 @@
 ;; XBLOCK
 ;;
 
-;; ;bzo do we ever use xblock? 
+;; ;bzo do we ever use xblock?
 
 ;; (defun xblock (base size)
 ;;   (declare (type integer size base))
-;;   (if (zerop base) 
+;;   (if (zerop base)
 ;;       nil
 ;;     (blk base size)))
- 
+
 ;; (defthm zp-xblock
 ;;   (implies (zerop base)
 ;;            (equal (xblock base size)
@@ -438,11 +463,11 @@
 ; for these the problem is that +/- treats non-numbers as 0, so
 ; if x is a non-number, or anything in the list isn't, doesn't hold
 (defthm memberp-relocate-blk
-  (implies 
+  (implies
    (and
     (integer-listp list)
     (integerp x)
-    ) 
+    )
    (equal (memberp x (relocate-blk y list))
           (memberp (- x (ifix y)) list)))
   :hints (("Goal" :in-theory (enable LIST::memberp-of-cons))))

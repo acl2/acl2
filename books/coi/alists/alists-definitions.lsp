@@ -1,3 +1,33 @@
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ; Jared: what's this file for?  It's not certifiable, so I'm
 ; renaming it to a .lsp extension for Make compatibility
 
@@ -9,7 +39,7 @@
 ;(in-package "ALIST")
 
 ;;
-;; This file isolates alists definitions and types. The file currently 
+;; This file isolates alists definitions and types. The file currently
 ;; contains the following ACL2 constructs as they occur in the alists book:
 ;; - defun
 ;; - defund
@@ -43,7 +73,7 @@
    (alist::use-equiv :lhs x
                      :rhs y
                      :domain d2)))
-   
+
 (defthm assoc-use-cong
   (implies
    (and
@@ -187,7 +217,7 @@
     (list::memberp key (alist::keys y)))
    (alist::cons-equiv (assoc key x)
                       (and (list::memberp key (alist::keys x)) (assoc key y)))))
-                      
+
 
 (defthmd cross-domain-binding-cons
   (implies
@@ -381,7 +411,7 @@
 
 (defthm deshadow-of-non-consp
   (implies (not (consp x))
-           (equal (deshadow x) 
+           (equal (deshadow x)
                   nil)))
 
 (defthm consp-of-deshadow
@@ -390,7 +420,7 @@
 
 (defthm deshadow-of-cons
   (equal (deshadow (cons x y))
-         (cons (consfix x) 
+         (cons (consfix x)
                (deshadow (clearkey (car x) y))))
   :hints(("Goal" :in-theory (enable deshadow clearkey))))
 
@@ -478,7 +508,7 @@
   :hints(("Goal" :in-theory (enable deshadow))))
 
 ;; Interpreting Objects as Conses (consfix)
-;; 
+;;
 ;; We can think of a mapping between all ACL2 objects and conses, so that any
 ;; atom is mapped to (nil . nil) and any cons is mapped to itself.  The
 ;; function consfix applies this mapping for us, i.e., it interprets any ACL2
@@ -500,7 +530,7 @@
 
 (defthm consfix-when-consp
   (implies (consp x)
-           (equal (consfix x) 
+           (equal (consfix x)
                   x))
   :hints(("Goal" :in-theory (enable consfix))))
 
@@ -509,7 +539,7 @@
          (consp x))
   :hints(("Goal" :in-theory (enable consfix))))
 
-(defthm consfix-of-cons 
+(defthm consfix-of-cons
   (equal (consfix (cons a b))
          (cons a b)))
 
@@ -526,8 +556,8 @@
 ;; (defthm consfix-of-cdr
 ;;   (equal (cdr (consfix a))
 ;;          (cdr a)))
-         
-         
+
+
 
 
 
@@ -544,7 +574,7 @@
          (consfix y)))
 
 (defthm consfix-in-cons-equiv
-  (cons-equiv (consfix x) 
+  (cons-equiv (consfix x)
               x)
   :hints(("Goal" :in-theory (enable cons-equiv))))
 
@@ -584,7 +614,7 @@
 
 (defthm alistfix-type-non-consp
   (implies (not (consp x))
-           (equal (alistfix x) 
+           (equal (alistfix x)
                   nil))
   :rule-classes :type-prescription
   :hints(("Goal" :in-theory (enable alistfix))))
@@ -600,12 +630,12 @@
 
 (defthm alistfix-when-non-consp
   (implies (not (consp alist))
-           (equal (alistfix alist) 
+           (equal (alistfix alist)
                   nil)))
 
 (defthm alistfix-when-alist
   (implies (alistp x)
-           (equal (alistfix x) 
+           (equal (alistfix x)
                   x))
   :hints(("Goal" :in-theory (enable alistfix))))
 
@@ -681,7 +711,7 @@
          (alistfix b)))
 
 (defthm alistfix-in-alist-equiv
-  (alist-equiv (alistfix a) 
+  (alist-equiv (alistfix a)
                a)
   :hints(("Goal" :in-theory (enable alist-equiv))))
 
@@ -698,7 +728,7 @@
   :hints(("Goal" :in-theory (enable alist-equiv))))
 
 ;; Interpreting Objects as Conses (consfix)
-;; 
+;;
 ;; We can think of a mapping between all ACL2 objects and conses, so that any
 ;; atom is mapped to (nil . nil) and any cons is mapped to itself.  The
 ;; function consfix applies this mapping for us, i.e., it interprets any ACL2
@@ -720,7 +750,7 @@
 
 (defthm consfix-when-consp
   (implies (consp x)
-           (equal (consfix x) 
+           (equal (consfix x)
                   x))
   :hints(("Goal" :in-theory (enable consfix))))
 
@@ -729,7 +759,7 @@
          (consp x))
   :hints(("Goal" :in-theory (enable consfix))))
 
-(defthm consfix-of-cons 
+(defthm consfix-of-cons
   (equal (consfix (cons a b))
          (cons a b)))
 
@@ -746,8 +776,8 @@
 ;; (defthm consfix-of-cdr
 ;;   (equal (cdr (consfix a))
 ;;          (cdr a)))
-         
-         
+
+
 
 
 
@@ -806,7 +836,7 @@
   :hints (("Goal" :in-theory (enable cons-equiv))))
 
 (defthm consfix-in-cons-equiv
-  (cons-equiv (consfix x) 
+  (cons-equiv (consfix x)
               x)
   :hints(("Goal" :in-theory (enable cons-equiv))))
 
@@ -1081,7 +1111,7 @@
    (not (equal a b))
    (keyquiv (clr a (setv b v r))
             (setv b v (clr a r)))))
-          
+
 (defthm clr-of-setv
   (keyquiv (clr a (setv a v r))
            (clr a r)))
@@ -1126,13 +1156,13 @@
 (defthm acl2-count-getv-<=
   (<= (acl2-count (alist::getv key alist1)) (acl2-count alist1))
   :rule-classes (:linear))
-   
+
 (defthm acl2-count-getv-<
   (implies
    (memberp key (alist::keys alist1))
    (< (acl2-count (alist::getv key alist1)) (acl2-count alist1)))
   :rule-classes (:linear))
-   
+
 (in-theory (disable setv getv clr keys))
 
 ;; Preimage-aux scans the list looking for our value, and collects any keys it
@@ -1143,7 +1173,7 @@
   (declare (xargs :guard (alistp x)))
   (if (consp x)
       (if (equal (cdar x) val)
-          (cons (caar x) 
+          (cons (caar x)
                 (preimage-aux val (cdr x)))
         (preimage-aux val (cdr x)))
     nil))
@@ -1216,8 +1246,8 @@
   (implies (not (memberp val (strip-cdrs x)))
            (equal (preimage val x)
                   nil))
-  :hints(("Goal" :in-theory (enable preimage))))                
-  
+  :hints(("Goal" :in-theory (enable preimage))))
+
 (defthm not-memberp-of-preimage
   (implies (not (memberp key (strip-cars x)))
            (equal (memberp key (preimage val x))
@@ -1253,15 +1283,15 @@
 (defthm preimage-of-cdar-with-self
   (equal (preimage (cdar x) x)
          (if (consp x)
-             (cons (caar x) 
-                   (preimage (cdar x) 
+             (cons (caar x)
+                   (preimage (cdar x)
                              (clearkey (caar x) (cdr x))))
            nil))
-  :hints(("Goal" :in-theory (e/d (preimage) 
+  :hints(("Goal" :in-theory (e/d (preimage)
                                  (preimage-aux-of-cdar-with-self))
           :use (:instance preimage-aux-of-cdar-with-self
                           (x (deshadow x))))))
-         
+
 (defthm preimage-of-cdr-when-not-cdar-and-unique
   (implies (and (not (equal (cdar x) a))
                 (BAG::unique (strip-cars x)))
@@ -1297,7 +1327,7 @@
 
 (defthm strip-cars-of-cons
   (equal (strip-cars (cons x y))
-         (cons (car x) 
+         (cons (car x)
                (strip-cars y)))
   :hints(("Goal" :in-theory (enable strip-cars))))
 
@@ -1316,7 +1346,7 @@
 
 (defthm strip-cars-of-append
   (equal (strip-cars (append x y))
-         (append (strip-cars x) 
+         (append (strip-cars x)
                  (strip-cars y)))
   :hints(("Goal" :in-theory (enable append))))
 
@@ -1352,13 +1382,13 @@
 
 (defthm strip-cdrs-of-non-consp
   (implies (not (consp x))
-           (equal (strip-cdrs x) 
+           (equal (strip-cdrs x)
                   nil))
   :hints(("Goal" :in-theory (enable strip-cdrs))))
 
 (defthm strip-cdrs-of-cons
   (equal (strip-cdrs (cons x y))
-         (cons (cdr x) 
+         (cons (cdr x)
                (strip-cdrs y)))
   :hints(("Goal" :in-theory (enable strip-cdrs))))
 
@@ -1377,7 +1407,7 @@
 
 (defthm strip-cdrs-of-append
   (equal (strip-cdrs (append x y))
-         (append (strip-cdrs x) 
+         (append (strip-cdrs x)
                  (strip-cdrs y)))
   :hints(("Goal" :in-theory (enable append))))
 

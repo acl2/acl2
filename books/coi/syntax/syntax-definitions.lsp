@@ -1,3 +1,33 @@
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ; Jared: what's this file for?  It's not certifiable, so I'm
 ; renaming it to a .lsp extension for Make compatibility
 
@@ -9,7 +39,7 @@
 ;(in-package "SYN")
 
 ;;
-;; This file isolates syntax definitions and types. The file currently 
+;; This file isolates syntax definitions and types. The file currently
 ;; contains the following ACL2 constructs as they occur in the syntax book:
 ;; - defun
 ;; - defund
@@ -70,7 +100,7 @@
                   :guard (state-p state)))
   (let ((wrld  (access metafunction-context mfc :wrld))
         (rcnst (access metafunction-context mfc :rcnst)))
-    (let ((geneqv (car (geneqv-lst equiv nil 
+    (let ((geneqv (car (geneqv-lst equiv nil
                                    (access rewrite-constant rcnst
                                            :current-enabled-structure)
                                    wrld))))
@@ -149,7 +179,7 @@
       (((,evfn * *) => *)
        ((,evfn-lst * *) => *))
       (set-inhibit-warnings "theory")
-      
+
       ,@(sublis
          (list (cons 'evfn evfn)
                (cons 'evfn-lst evfn-lst)
@@ -272,7 +302,7 @@
                (ACL2-COUNT x))))
 
 (defun quine-body-fn (name body history)
-  ``(encapsulate () 
+  ``(encapsulate ()
       (defmacro ,,name (name)
         (let ((history (cons (quote ,,name) (quote ,,history))))
           (,,body (quote ,,body))))
@@ -309,7 +339,7 @@
                      (acl2::if (zp n)
                          (acl2::car l)
                          (nth (+ -1 n) (acl2::cdr l)))))))
-          
+
 (defthm len-implies-true-listp
   (implies
    (len n list)
@@ -324,7 +354,7 @@
 
 (defun syn::consp (term)
   (declare (type t term))
-  (acl2::and 
+  (acl2::and
    (len 3 term)
    (equal (acl2::car term) 'acl2::cons)))
 
@@ -555,7 +585,7 @@
    (acl2::and
     (acl2::pseudo-termp x)
     (acl2::pseudo-termp y))
-   (acl2::pseudo-termp (syn::conjoin x y))))    
+   (acl2::pseudo-termp (syn::conjoin x y))))
 
 (in-theory (disable syn::nth syn::open-nth))
 (in-theory (disable syn::conjoin))
@@ -575,7 +605,7 @@
                           (val ,vals (,fname ,alist ,@args)))))
         (cons term
               (mv-equality-terms vals fname alist-1 alist args))))))
-  
+
 (defun equality-terms (vals fname alist-1 alist args)
   (declare (type (integer 0 *) vals)
            (type (satisfies true-listp) args))

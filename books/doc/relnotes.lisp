@@ -236,6 +236,9 @@ license.</p>
 transitioned from the GNU General Public License to a 3-clause BSD style
 license.</p>
 
+<p>Several books in the @('coi') library, which previously lacked explicit
+license information, now have explicit MIT/X11-style licenses.</p>
+
 
 <h2>New Libraries and Documentation</h2>
 

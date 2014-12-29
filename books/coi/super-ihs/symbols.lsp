@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 (ld "symbols-defpkg.lsp")
@@ -2422,15 +2447,15 @@
          CDR CAR < DEFMACRO DEFUN IN-PACKAGE))
 
 
-(defconst SYMBOLS::*baseline-symbols* 
+(defconst SYMBOLS::*baseline-symbols*
   (union-eq *acl2-exports*
 	    (union-eq *common-lisp-symbols-from-main-lisp-package*
 		      (union-eq SYMBOLS::*acl2-symbols* SYMBOLS::*lisp-symbols*))))
 
 (defconst SYMBOLS::*datastructure-symbols*
-  `(SETP-EQUAL 
+  `(SETP-EQUAL
     INTERSECTION-EQUAL
-    MEMBERP-EQUAL 
+    MEMBERP-EQUAL
     SET-EQUAL
     ADJOIN-EQUAL
     ;;DEFSTRUCTURE
@@ -2447,10 +2472,9 @@
 ;;     target))
 
 (defconst SYMBOLS::*base-symbols*
-  (set-difference-eq (union-eq SYMBOLS::*baseline-symbols* SYMBOLS::*datastructure-symbols*) 
+  (set-difference-eq (union-eq SYMBOLS::*baseline-symbols* SYMBOLS::*datastructure-symbols*)
                      '(common-lisp::block acl2::pc)))
 
 ;; (defconst SYMBOLS::*base-symbols*
-;;   (remove-list '(lisp::block acl2::pc) 
+;;   (remove-list '(lisp::block acl2::pc)
 ;; 	       (union-eq SYMBOLS::*baseline-symbols* SYMBOLS::*datastructure-symbols*)))
-

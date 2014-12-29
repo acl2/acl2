@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 ;make the inclusion of arithmetic stuff local?
@@ -35,8 +60,8 @@
   :hints (("Goal" :in-theory (enable loghead))))
 
 (defthm loghead-when-i-is-0
-  (equal (loghead size 0) 
-         0) 
+  (equal (loghead size 0)
+         0)
   :hints (("Goal" :in-theory (enable loghead))))
 
 (in-theory (disable loghead-size-0)) ;loghead-when-i-is-0 is better
@@ -78,12 +103,12 @@
          (if (< (nfix size1) (nfix size))
              (loghead (nfix size1) i)
            (loghead (nfix size) i)))
-  :hints (("Goal" :in-theory (e/d () 
+  :hints (("Goal" :in-theory (e/d ()
                                   (loghead-loghead
                                    loghead-leq))
            :use loghead-loghead)))
 
-(in-theory (disable loghead-loghead)) 
+(in-theory (disable loghead-loghead))
 
 (defthm loghead-does-nothing-rewrite
   (equal (equal (loghead n x) x)
@@ -114,15 +139,15 @@
   (equal (logcar (loghead size i))
          (if (or (not (integerp size))
                  (<= size 0))
-             0 
+             0
            (logcar i)))
   :hints
   (("Goal" :use logcar-loghead
     :in-theory (e/d (
-                     ) 
+                     )
                     (logcar-loghead)))))
 
-(in-theory (disable logcar-loghead)) 
+(in-theory (disable logcar-loghead))
 
 
 
@@ -159,7 +184,7 @@
   :hints (("Goal" :use (:instance loghead-+-cancel)
            :in-theory (disable loghead-+-cancel))))
 
-(in-theory (disable loghead-+-cancel)) 
+(in-theory (disable loghead-+-cancel))
 
 ;make more versions of this
 ;bzo normalize the leading constant of things like (LOGHEAD 16 (+ 65535 x)).
@@ -200,7 +225,7 @@
              (loghead size (+ i1 i2 j))
            (loghead size (+ i1 i2))))
   :hints (("Goal" :use (:instance loghead-+-loghead-better (i (+ i1 i2)) (j j)))))
-  
+
 ; improve loghead-cancel-better-alt, etc.
 (defthm loghead-sum-subst-helper
   (implies (and (equal (loghead n x) y)
@@ -256,7 +281,7 @@
 (defthm loghead-of-minus
   (equal (loghead n (- x))
          (if (integerp x)
-             (if (equal 0 (loghead n x)) 
+             (if (equal 0 (loghead n x))
                  0
                (- (expt 2 n) (loghead n x)) ;the usual case
                )
@@ -274,7 +299,7 @@
                   (EQUAL (LOGHEAD size (+ j A)) (LOGHEAD size K))))
   :hints (("Goal" :use (:instance LOGHEAD-+-CANCEL-BETTER (size size) (i j) (j a) (k (- k j)))))
   )
-        
+
 (defthm loghead-plus-constant-equal-constant
   (implies (and (syntaxp (and (quotep j)
                               (quotep k)))
@@ -300,7 +325,7 @@
                             (+ 1 (loghead n x)))))
           :hints (("Goal" ;:do-not '(generalize eliminate-destructors)
                    :in-theory (enable loghead
-                                      unsigned-byte-p 
+                                      unsigned-byte-p
                                       integer-range-p ;prove a rule for integer-range-p of (+ 1 x)
                                       )))))
 
@@ -331,10 +356,10 @@
                       (+ -1 (expt 2 n))
                     (+ -1 (loghead n x)))))
   :hints (("Goal" :in-theory (e/d (loghead
-                                     UNSIGNED-BYTE-P 
+                                     UNSIGNED-BYTE-P
                                      INTEGER-RANGE-P ;prove a rule for integer-range-p of (+ 1 x)
                                      imod
-                                     ) 
+                                     )
                                   (mod-cancel
                                    MOD-STRETCH-BASE ;looped!
                                    MOD-STRETCH-BASE-2 ;looped!
@@ -437,7 +462,7 @@
   :hints (("Goal" ;:in-theory (e/d (unary-/-of-expt loghead expt-gather) (expt-minus EXPONENTS-ADD))
            :use (:instance INTEGERP-EXPT (n (- n m)))
            :in-theory (e/d (loghead ifix
-                                    mod-cancel) 
+                                    mod-cancel)
                            (INTEGERP-OF-INVERSE-OF-EXPT
                                           MOD-X-I*J-of-positives ;yucky force!
                                            ))
@@ -494,11 +519,11 @@
 (defthm loghead-hack
   (equal (loghead 16 (+ -65535 off))
          (loghead 16 (+ 1 off)))
-  :hints (("Goal" :in-theory (enable loghead 
+  :hints (("Goal" :in-theory (enable loghead
                                      imod ifix))))
 
 (encapsulate
- ()                  
+ ()
  (local (defthm loghead-of-sum-with-constant-helper
           (implies (and (syntaxp (quotep c))
                         (unsigned-byte-p n c)
@@ -526,7 +551,7 @@
                                  )))))
 
 
-(include-book "inductions") 
+(include-book "inductions")
 
 (defthm loghead-induction t
   :rule-classes ((:induction :pattern (loghead n x)
@@ -558,10 +583,10 @@
                             loghead*-better
                             unsigned-byte-p*
                             logcdr--
-                          
+
                             ) ( ;evenp-of-logcons
                             UNSIGNED-BYTE-P-FORWARD
-                            ARITH-MOVE-NEGATED-TERM 
+                            ARITH-MOVE-NEGATED-TERM
                             expt-2-cruncher)))))
 
 ;See also the rule loghead-almost.
@@ -593,7 +618,7 @@
                       (+ (loghead n i) (loghead n j))
                     (+ (loghead n i) (loghead n j) (- (expt 2 n))))))
   :hints (("Goal" :in-theory (disable loghead-split-into-2-cases)
-           :use (:instance loghead-split-into-2-cases 
+           :use (:instance loghead-split-into-2-cases
                            (n n)
                            (x (+ (loghead n i) (loghead n j)))
                            ))))
@@ -639,7 +664,7 @@
 ;;                                      EXTEND-<
 ;;                                      ;UNSIGNED-BYTE-P-FORWARD-TO-NONNEGATIVE-INTEGERP
 ;;                                      ))))
- 
+
 
 (defthm loghead-sum-chop-first-arg-when-constant
   (implies (and (syntaxp (and (quotep x)
@@ -680,12 +705,12 @@
 ;;             :do-not-induct t
 ;;             :in-theory (e/d (loghead-sum-split-into-2-cases
 ;;      ;UNSIGNED-BYTE-P-FORWARD-TO-NONNEGATIVE-INTEGERP
-;;                              ) 
+;;                              )
 ;;                             (LOGHEAD-TYPE ;bzo these disables are gross!
 ;;                              loghead-identity
 ;;                              LOGHEAD-DOES-NOTHING-REWRITE
 ;;                              UNSIGNED-BYTE-P-LOGHEAD-FORWARD-CHAINING)))))
-       
+
 (defthm loghead-cancel-lemma
   (implies (and (integerp a)
                 (integerp size)
@@ -751,13 +776,13 @@
 
 (defthmd loghead-hack2
   (implies (and (equal (expt 2 n) (+ (loghead n a) (loghead n b)))
-                (integerp a) 
+                (integerp a)
                 (integerp b)
                 )
            (equal (loghead n (+ a b))
                   0))
   :hints (("Goal" :in-theory (enable loghead-sum-split-into-2-cases))))
-        
+
 ;; Allows ACL2 to quicly see that facts like this contradict:
 ;; (EQUAL x (LOGHEAD 16 (+ 4 y)))
 ;; (EQUAL (LOGHEAD 16 (+ 3 x)) y))
@@ -777,7 +802,7 @@
   (equal (evenp (loghead size i))
          (or (zp size)
              (evenp (ifix i))))
-  :hints (("Goal" :in-theory (e/d (loghead imod) 
+  :hints (("Goal" :in-theory (e/d (loghead imod)
                                   (mod-cancel)))))
 
 
@@ -846,7 +871,7 @@
   :hints (("Goal" :use (:instance acl2::loghead-+-cancel-0 (acl2::i i) (acl2::j j) (acl2::size size))
            :in-theory (disable acl2::loghead-+-cancel-0))))
 
-(in-theory (disable acl2::loghead-+-cancel-0)) 
+(in-theory (disable acl2::loghead-+-cancel-0))
 
 (defthm loghead-+-cancel-0-alt
   (implies (and (integerp m)
@@ -886,7 +911,7 @@
            (equal (equal x (loghead n (+ b y)))
                   nil))
   :hints (("Goal" :use (:instance acl2::loghead-cancel-lemma-3 (acl2::n n) (acl2::b b) (acl2::x x) (acl2::a a))
-           :in-theory (disable acl2::loghead-cancel-lemma-3))))                 
+           :in-theory (disable acl2::loghead-cancel-lemma-3))))
 
 
 
@@ -1029,7 +1054,7 @@
   (implies (and (integerp j)
                 (<= 0 size)
                 (integerp size)
-                (integerp x) 
+                (integerp x)
                 )
            (equal (loghead size (+ x (* j (expt 2 size))))
                   (loghead size x))))
@@ -1037,8 +1062,8 @@
 (defthm loghead-of-sum-with-multiple-of-expt-2-size-alt
   (implies (and (integerp j)
                 (<= 0 size)
-                (integerp size) 
-                (integerp x) 
+                (integerp size)
+                (integerp x)
                 )
            (equal (loghead size (+ (* j (expt 2 size)) x))
                   (loghead size x))))
@@ -1062,4 +1087,3 @@
            (equal (equal (loghead n (+ x y)) 0)
                   (equal (loghead n y) 0)))
   :hints (("goal" :in-theory (enable loghead*-better open-logcons))))
-

@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "GACC")
 
 ;; Keep this list of include-books in sync with the list in the .acl2 file:
@@ -47,7 +72,7 @@
            (equal (flat list)
                   (append (car list)
                           (flat (cdr list)))))
-  :hints (("goal" :in-theory (enable flat))))      
+  :hints (("goal" :in-theory (enable flat))))
 
 (defun syntax-atom (m)
   (declare (type t m))
@@ -82,7 +107,7 @@
   (implies (not (line-p x))
            (equal (equal (line k (skel b s)) x)
                   nil))
-  :hints (("goal" :in-theory (enable ;weak-skel-p skel-p 
+  :hints (("goal" :in-theory (enable ;weak-skel-p skel-p
                                      ;line-p line-skel weak-line-p line skel
                                      ))))
 
@@ -174,13 +199,13 @@
 
 (defthm fix-skel-skel-p
   (implies (skel-p skel)
-           (equal (fix-skel skel) 
+           (equal (fix-skel skel)
                   skel))
   :hints (("goal" :in-theory (enable fix-skel))))
 
 (defun wfixn-skel (size skel)
   (let ((skel (fix-skel skel)))
-    (skel (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+    (skel (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                  (skel-base skel))
           (skel-spec skel))))
 
@@ -200,7 +225,7 @@
 (defun op-base (h type base valu)
   (declare (type t h type base valu))
   (if (equal type :ptr)
-      (if (equal h :x) base 
+      (if (equal h :x) base
         (if (equal h :z) 0 valu))
     base))
 
@@ -228,7 +253,7 @@
                    (wf-skels (cdr skels))))
           (wf-skels (cdr skels))))
     t))
-      
+
 (defun g*-spec (op ptr spec ram)
   (declare (type (satisfies op-p) op)
            (type (satisfies wf-spec) spec)
@@ -246,10 +271,10 @@
                     )
                 (let ((read (rx size (+<> off ptr) ram)))
                   (let ((base (skel-base skel)))
-                    (let ((base (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                    (let ((base (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                        (ifix (op-base h type base read))
                                        )))
-                      (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                      (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                           (ifix (if (whichtype w type) read value))
                                           )))
                         (let ((skel (if (ptr? type) (skel base (g*-spec op base (skel-spec skel) ram)) skel)))
@@ -295,7 +320,7 @@
                 SKEL)))
           (UPDATE-SLOT SLOT :VAL VALUE :SKEL SKEL))))))))
    SLOT))
-  
+
 (DEFTHM G*-SPEC-of-non-cons
   (implies (not (consp spec))
            (EQUAL (G*-SPEC OP ptr spec RAM)
@@ -320,7 +345,7 @@
   (equal (cdr (G*-SPEC OP ptr spec RAM))
          (g*-spec op ptr (cdr spec) ram))
   :hints (("Goal" :in-theory (e/d (g*-spec) (numwhich numtype op-base ptr? whichtype)))))
-                
+
 
 
 (defthm wf-spec-g*-spec
@@ -357,9 +382,9 @@
                     )
                 (let ((read (rx size (+<> off ptr) ram)))
                   (let ((base (skel-base skel)))
-                    (let ((base (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                    (let ((base (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                        (op-base h type base read))))
-                      (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                      (let ((value (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                           (if (whichtype w type) read value))))
                         (let ((skel (if (ptr? type) (skel base (g*-spec op base (skel-spec skel) ram)) skel)))
                           (cons (update-slot slot
@@ -495,13 +520,13 @@
                     (skel  (slot-skel slot)))
                 (let ((read value))
                   (let ((base (skel-base skel)))
-                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size 
+                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size
                                        (ifix (op-base h type base read)))))
-                      (let ((value (acl2::loghead (fix-size size) ;wfixn 8 size 
+                      (let ((value (acl2::loghead (fix-size size) ;wfixn 8 size
                                           (ifix (if (whichtype w type) value (rx size (+<> off ptr) ram))))))
                         (let ((ram (wx size (+<> off ptr) value ram)))
                           (let ((ram (if (ptr? type)
-                                         (s*-spec op base (skel-spec skel) ram) 
+                                         (s*-spec op base (skel-spec skel) ram)
                                        ram)))
                             (s*-spec op ptr (cdr spec) ram)))))))))
           (s*-spec op ptr (cdr spec) ram)))
@@ -526,13 +551,13 @@
                     (skel  (slot-skel slot)))
                 (let ((read value))
                   (let ((base (skel-base skel)))
-                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size 
+                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size
                                        (op-base h type base read))))
-                      (let ((value (acl2::loghead (fix-size size) ;wfixn 8 size 
+                      (let ((value (acl2::loghead (fix-size size) ;wfixn 8 size
                                           (if (whichtype w type) value (rx size (+<> off ptr) ram)))))
                         (let ((ram (wx size (+<> off ptr) value ram)))
                           (let ((ram (if (ptr? type)
-                                         (s*-spec op base (skel-spec skel) ram) 
+                                         (s*-spec op base (skel-spec skel) ram)
                                        ram)))
                             (s*-spec op ptr (cdr spec) ram)))))))))
           (s*-spec op ptr (cdr spec) ram)))))
@@ -606,7 +631,7 @@
                     (value (slot-val slot)))
                 (let ((read value))
                   (let ((base (skel-base skel)))
-                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size 
+                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size
                                        (ifix (op-base h type base read)))))
                       (let ((blk (if (whichtype w type) (list (sblk size (+<> off ptr))) nil)))
                         (let ((rec (if (ptr? type) (f*-spec op base (skel-spec skel)) nil)))
@@ -639,7 +664,7 @@
                     (value (slot-val slot)))
                 (let ((read value))
                   (let ((base (skel-base skel)))
-                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size 
+                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size
                                        (op-base h type base read))))
                       (let ((blk (if (whichtype w type) (list (sblk size (+<> off ptr))) nil)))
                         (let ((rec (if (ptr? type) (f*-spec op base (skel-spec skel)) nil)))
@@ -745,12 +770,12 @@
                     )
                 (let ((read value))
                   (let ((base (skel-base skel)))
-                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size 
+                    (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size
                                                (ifix (op-base h type base read)))))
-                      (let ((value (acl2::loghead (fix-size size) ;wfixn 8 size 
+                      (let ((value (acl2::loghead (fix-size size) ;wfixn 8 size
                                                   (ifix (if (whichtype w type) read 0)))))
                         (let ((skel (if (ptr? type) (skel base (h*-spec op (skel-spec skel))) skel)))
-                          (cons (update-slot slot 
+                          (cons (update-slot slot
                                              :val  value
                                              :skel skel
                                              )
@@ -849,12 +874,12 @@
                          )
                      (let ((read value))
                        (let ((base (skel-base skel)))
-                         (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size 
+                         (let ((base (acl2::loghead (fix-size size) ;wfixn 8 size
                                                     (op-base h type base read))))
-                           (let ((value (acl2::loghead (fix-size size) ;wfixn 8 size 
+                           (let ((value (acl2::loghead (fix-size size) ;wfixn 8 size
                                                        (if (whichtype w type) read 0))))
                              (let ((skel (if (ptr? type) (skel base (h*-spec op (skel-spec skel))) skel)))
-                               (cons (update-slot slot 
+                               (cons (update-slot slot
                                                   :val  value
                                                   :skel skel
                                                   )
@@ -883,7 +908,7 @@
             (let ((key  (line-key line))
                   (skel (line-skel line)))
               (let ((base (op-base (op-how op) :ptr (skel-base skel) key)))
-                (let ((key key)) 
+                (let ((key key))
                   (cons (line key (skel base (h*-spec op (skel-spec skel))))
                         (h*-list op (cdr skels))))))
           (cons line (h*-list op (cdr skels)))))
@@ -920,7 +945,7 @@
             (let ((key  (line-key line))
                   (skel (line-skel line)))
               (let ((base (op-base (op-how op) :ptr (skel-base skel) key)))
-                (let ((key key)) 
+                (let ((key key))
                   (cons (line key (skel base (h*-spec op (skel-spec skel))))
                         (h*-list op (cdr skels))))))
           (cons line (h*-list op (cdr skels)))))))
@@ -955,7 +980,7 @@
                     (value (slot-val  slot))
                     )
                 (let ((read value))
-                  (let ((value (if (whichtype w type) (list (acl2::loghead (fix-size size) ;wfixn 8 size 
+                  (let ((value (if (whichtype w type) (list (acl2::loghead (fix-size size) ;wfixn 8 size
                                                                            (ifix read)
                                                                            )) nil)))
                     (let ((rec (if (ptr? type) (v*-spec op (skel-spec skel)) nil)))
@@ -982,7 +1007,7 @@
                     (value (slot-val  slot))
                     )
                 (let ((read value))
-                  (let ((value (if (whichtype w type) (list (acl2::loghead (fix-size size) ;wfixn 8 size 
+                  (let ((value (if (whichtype w type) (list (acl2::loghead (fix-size size) ;wfixn 8 size
                                                                            read)) nil)))
                     (let ((rec (if (ptr? type) (v*-spec op (skel-spec skel)) nil)))
                       (append value
@@ -1001,9 +1026,9 @@
 (defthm true-listp-v*-spec
   (true-listp (v*-spec op spec)))
 
-(in-theory 
- (disable 
-  (:definition v*-spec) 
+(in-theory
+ (disable
+  (:definition v*-spec)
   (v*-spec)
   ))
 
@@ -1061,7 +1086,7 @@
                     (sspec (skel-spec skel)))
                 (and (acl2::unsigned-byte-p (fix-size size) value) ;(wintn 8 size value)
                      (implies* (ptr? type)
-                               (and (acl2::unsigned-byte-p (fix-size size) ;wintn 8 size 
+                               (and (acl2::unsigned-byte-p (fix-size size) ;wintn 8 size
                                            base)
                                     (fixed-spec-p sspec)))
                      (fixed-spec-p (cdr spec)))))
@@ -1148,7 +1173,7 @@
    (syntaxp (symbolp sop))
    (equal (s*-spec sop ptr spec ram)
           (s*-spec (xop sop) ptr spec ram)))
-  :hints (("Goal" :in-theory (disable 
+  :hints (("Goal" :in-theory (disable
                               ;for efficiency:
                               whichtype OP-BASE ptr? ifix
                                       ))))
@@ -1164,5 +1189,3 @@
    (syntaxp (symbolp fop))
    (equal (h*-list fop list)
           (h*-list (xop fop) list))))
-
-

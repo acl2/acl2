@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 
 (in-package "DEFUNG")
 
@@ -147,7 +172,7 @@
 
 (defthm combine-and-evaluate-constants
   (implies
-   (and 
+   (and
     (syntaxp (and (quotep a) (quotep b)))
     (equal r (+ a b)))
    (equal (+ a (+ b x))
@@ -302,7 +327,7 @@
 		  (and (equal (nth 0 arg2) measure)
 		       (symbol-listp (cdr arg2))
 		       arg2)))))))
-  
+
 (defun appears-negated (fn clause)
   (if (endp clause) nil
     (let ((entry (car clause)))
@@ -361,8 +386,8 @@
 	    ;; natp-plus
 	    ;; natp-implication
 	    acl2::NATP-COMPOUND-RECOGNIZER
-	    acl2::POSP-COMPOUND-RECOGNIZER	
-	    acl2::ZP-COMPOUND-RECOGNIZER 
+	    acl2::POSP-COMPOUND-RECOGNIZER
+	    acl2::ZP-COMPOUND-RECOGNIZER
 	    acl2::O-FINP-CR
 	    acl2-count
 	    acl2::UNICITY-OF-0
@@ -400,7 +425,7 @@
 (defmacro map-fns (f1 f2 args)
   `(map-fn-sig ,f1 ,f2 (nullify-list ,args)))
 
-(defund mk-ibody (fn1 fn2 d args body) 
+(defund mk-ibody (fn1 fn2 d args body)
   (declare (type (satisfies not-quote-symbolp) fn1 fn2)
 	   (type (satisfies pseudo-termp) d body))
   (add-depth (map-fn-sig fn1 fn2 (cons d (nullify-list args))) body))
@@ -493,7 +518,7 @@
 	   (type (satisfies pseudo-termp) test base body default)
 	   (type (satisfies symbol-listp) ec-call)
 	   )
-  
+
   (let* ((default-value  default)
 	 (ibody          (mk-ibody fn ifn `(1- ,d) args body))
 	 (idom-body      (mk-idom-body ifn idom (cons d args) ibody))
@@ -502,15 +527,15 @@
 	 (test-call `(,ftest ,@args))
 	 )
     `(
-      
-      (defun ,fbase ,args 
+
+      (defun ,fbase ,args
 	,@arg-type-info
 	(declare (ignorable ,@args))
 	,base)
 
       (local (in-theory (disable ,fbase)))
 
-      (defun ,fdefault ,args 
+      (defun ,fdefault ,args
 	,@arg-type-info
 	(declare (ignorable ,@args))
 	,(if ec-call (map-ec-call-term default-value ec-call) default-value))
@@ -526,21 +551,21 @@
       (local (in-theory (disable ,ftest)))
 
       (defund ,ifn (,d ,@args)
-	(if (or (zp ,d) ,test-call) 
+	(if (or (zp ,d) ,test-call)
 	    (if ,test-call ,fbase-call ,default-call)
 	  ,ibody))
-      
+
       (in-theory (disable (:type-prescription ,ifn)))
 
-      (defund ,idom (,d ,@args) 
+      (defund ,idom (,d ,@args)
 	(if (zp ,d) ,test-call
-	  (if ,test-call t 
+	  (if ,test-call t
 	    ,idom-body)))
-      
+
       ;; There are some nice things that we know about the base
       ;; functions which might make some of these proofs more robust
       ;; (?)
-      
+
       (defchoose ,index (,d) ,args (,idom ,d ,@args))
 
      )
@@ -563,7 +588,7 @@
       (,idom (,index ,@args) ,@args))
      :rule-classes (:forward-chaining)
      :hints (("Goal" :use ,index)))
-   
+
    (defthmd ,mono-determ
      (implies
       (and
@@ -593,7 +618,7 @@
 			     (,idom ,d1 ,@args)
 			     (,idom ,d2 ,@args))))))
 
-   (defthmd ,mono 
+   (defthmd ,mono
      (implies
       (and
        (,idom ,d1 ,@args)
@@ -643,12 +668,12 @@
        (if (not (,idom ,d ,@args)) 0
          (if (not (,idom (1- ,d) ,@args)) ,d
 	   (,ifn-min-index (1- ,d) ,@args)))))
-    
+
     (defthm ,natp-min-index
       (natp (,ifn-min-index ,d ,@args))
       :hints (("Goal" :in-theory (enable ,ifn-min-index)))
       :rule-classes (:type-prescription))
-    
+
     (defthmd ,idom-min-index
       (implies
        (,idom ,d ,@args)
@@ -660,7 +685,7 @@
 	      (and stable-under-simplificationp
 		   '(:expand (:Free (,d) (,idom ,d ,@args)))))
       :rule-classes (:rewrite :forward-chaining))
-    
+
     (defthmd ,min-index-bound
       (implies
        (natp ,d)
@@ -671,10 +696,10 @@
 				  ,mono
 				  ,mono-contra
 				  )))
-      :rule-classes (:linear 
-		     (:forward-chaining 
+      :rule-classes (:linear
+		     (:forward-chaining
 		      :trigger-terms ((,ifn-min-index ,d ,@args)))))
-    
+
     (defthmd ,min-index-smallest
       (implies
        (and
@@ -707,7 +732,7 @@
   `(
 
     (defund ,measure ,args (,ifn-min-index (,index ,@args) ,@args))
-    
+
     (in-theory (disable (,measure)))
 
     (defthm ,measure-type
@@ -720,11 +745,11 @@
        (,idom ,d ,@args)
        (,idom (,measure ,@args) ,@args))
       :hints (("Goal" :in-theory (enable ,measure
-					 ,idom-min-index 
+					 ,idom-min-index
 					 ,index-thm
 					 )))
       :rule-classes (:forward-chaining))
-    
+
     (defthmd ,measure-smallest
       (implies
        (and
@@ -742,9 +767,9 @@
 				  ;;,min-index-bound
 				  ;;,mono
 				  ))))
-    
+
     (in-theory (disable ,measure))
-    
+
     (defthmd ,replace-index-by-measure
       (implies
        (and
@@ -833,7 +858,7 @@
 	 (open-fn-induction (symbol-fns::suffix open-fn '-induction)))
 
     `(
-      
+
       (defthm ,open-fn-base
 	(implies
 	 (and
@@ -841,7 +866,7 @@
 	  (,fn-domain ,@args))
 	 (equal (,fn ,@xargs) ,base))
 	:hints (("Goal" :expand (:with ,fn-definition (,fn ,@xargs)))))
-      
+
       (local (in-theory (disable ,open-fn-base)))
 
       (defthm ,open-fn-induction
@@ -852,14 +877,14 @@
 	  (not (,ftest ,@args)))
 	 (equal (,fn ,@xargs) ,xbody))
 	:hints (("Goal" :expand (:with ,fn-definition (,fn ,@xargs)))))
-      
+
       (local (in-theory (disable ,open-fn-induction)))
-      
+
     )))
 
 (defun real-defs (ifn fn fn0 fn0-domain depth args ftest fdefault fbase body
                   idom measure index d mono mono-contra
-                  ifn-min-index idom-min-index 
+                  ifn-min-index idom-min-index
                   min-index-bound min-index-smallest
                   base-implies-zero-measure fn0-measure-definition
                   fn0-domain-definition open-fn0-domain fn0-definition induction-fn0
@@ -872,7 +897,7 @@
 	   (type (satisfies symbol-listp) args)
 	   (type (satisfies pseudo-termp) body)
 	   (ignore replace-domain-index-by-measure))
-  
+
   (let* ((fn0-body        (rename-fn (map-fns fn fn0 args) body))
 	 (measure-xbody   (mk-measure-body fn0 measure args fn0-body))
 	 (measure-body   `(if (,ftest ,@args) 0 ,measure-xbody))
@@ -883,23 +908,23 @@
 	 (ind-body       `(if (,ftest ,@args) t ,ind-body))
 	 (fn0-body      `(if (,ftest ,@args) (,fbase ,@args) ,fn0-body))
 	 (calist          (default-calist fn args)))
-    
+
     `(
-      
+
       ;; ==================================================================
       ;; Define the function and domain.
       ;; ==================================================================
-      
+
       (defund ,fn0 ,args (,ifn (,measure ,@args) ,@args))
       (defund ,fn0-domain ,args (,idom (,measure ,@args) ,@args))
-      
+
       (in-theory (disable (,fn0) (,fn0-domain)))
 
       (defthmd ,base-implies-zero-measure
 	(implies
 	 (not (,fn0-domain ,@args))
 	 (equal (,measure ,@args) 0))
-	:hints (("Goal" :in-theory (enable 
+	:hints (("Goal" :in-theory (enable
 				    ,fn0-domain
 				    ;;,fdom
 				    ,measure
@@ -908,13 +933,13 @@
 				    ,mono-contra
 				    )
 		 :expand (,ifn-min-index (,index ,@args) ,@args))))
-      
+
       (in-theory (disable ,idom-min-index ,min-index-bound ,min-index-smallest))
-      
+
       ;; ==================================================================
       ;; The important theorems about the "top level" functions.
       ;; ==================================================================
-      
+
       (defun ,measure-body-fn (,@args)
 	,measure-body)
 
@@ -923,14 +948,14 @@
       (defthmd ,fn0-measure-definition
 	(equal (,measure ,@args)
 	       (if (not (,fn0-domain ,@args)) 0 ,measure-body))
-	:rule-classes ((:definition 
+	:rule-classes ((:definition
 			:install-body t
 			:controller-alist ,(rename-fn-args (map-fns fn measure args) calist)))
 	:hints (("Goal" :cases ((,fn0-domain ,@args)))
 		("Subgoal 2" :in-theory (enable ,base-implies-zero-measure))
 		("Subgoal 1" :cases ((,idom (,measure-body-fn ,@args) ,@args))
 		 :in-theory (enable natp-equal-reduction
-				    ,fn0-domain 
+				    ,fn0-domain
 				    ,mono
 				    ,mono-contra
 				    ,fn0
@@ -949,14 +974,14 @@
 						  ,replace-index-by-measure-2
 						  ,measure-property)))
 		))
-      
+
       (in-theory (disable (:definition ,measure)))
-      
+
       ;; Is there an analogous rule to replace-index-by-measure for domains?
 
       (defthmd ,fn0-domain-definition
 	(equal (,fn0-domain ,@args) ,domain-body)
-	:rule-classes ((:definition 
+	:rule-classes ((:definition
 			:install-body t
 			:controller-alist ,(rename-fn-args (map-fns fn fn0-domain args) calist)))
 	:hints ((and stable-under-simplificationp
@@ -976,19 +1001,19 @@
 					  )))
 		(and stable-under-simplificationp
 		     '(:expand (,idom (,measure ,@args) ,@args)
-			       :use ((:instance ,measure-property 
+			       :use ((:instance ,measure-property
 						(,d (,measure-body-fn ,@args))))))))
-      
+
       ;;(in-theory (disable (:definition ,fdom)))
       (in-theory (disable (:definition ,fn0-domain)))
-      
+
       (defthm ,fn0-definition
 	(equal (,fn0 ,@args)
 	       (if (not (,fn0-domain ,@args)) (,fdefault ,@args) ,fn0-body))
-	:rule-classes ((:definition 
+	:rule-classes ((:definition
 			:install-body t
 			:controller-alist ,(rename-fn-args (map-fns fn fn0 args) calist)))
-	:hints ((and stable-under-simplificationp 
+	:hints ((and stable-under-simplificationp
 		     '(:do-not '(preprocess)
 		       :expand ((:free (,depth) (,ifn ,depth ,@args)))
 		       :in-theory (e/d (,ifn
@@ -1013,9 +1038,9 @@
 					  ,replace-index-by-measure-2
 					  ,mono ,mono-contra
 					  ,fn0-domain)))))
-      
+
       (in-theory (disable (:definition ,fn0)))
-      
+
       (defun ,induction-fn0 ,args
 	(declare (xargs :measure (,measure ,@args)
 			;;
@@ -1027,7 +1052,7 @@
 			;;
 			:ruler-extenders :all
 			;;
-			:hints (("Goal" :in-theory (enable ,ftest) 
+			:hints (("Goal" :in-theory (enable ,ftest)
 				 :do-not '(preprocess))
 				(and stable-under-simplificationp
 				     '(:in-theory (e/d (,ftest) (max))
@@ -1035,14 +1060,14 @@
 				(and stable-under-simplificationp
 				     '(:in-theory (enable ,ftest))))))
 	(if (not (,fn0-domain ,@args)) nil ,ind-body))
-      
+
       (defthm ,induction-is-domain
 	(equal (,induction-fn0 ,@args) (,fn0-domain ,@args))
 	:hints (("Goal" :do-not '(preprocess)
 		 :induct (,induction-fn0 ,@args))
 		(and stable-under-simplificationp
 		     '(:expand (:with ,fn0-domain-definition (,fn0-domain ,@args))))))
-      
+
       (in-theory (disable (:definition ,induction-fn0) (,induction-fn0)))
 
       (defthm ,fn0-induction-rule t
@@ -1050,7 +1075,7 @@
 				   :pattern (,fn0 ,@args)
 				   :scheme (,induction-fn0 ,@args))))
 
-      
+
       (defthm ,open-fn0-domain
 	(implies
 	 (and
@@ -1117,12 +1142,12 @@
 	 (fn-mbe-measure-xbody    (mk-measure-body fn-mbe fn-mbe-measure args fn-mbe-xbody))
 	 (fn-mbe-measure-tbody    `(if (,ftest ,@args) 0 ,fn-mbe-measure-xbody))
 	 )
-    
+
     `(
       (set-bogus-mutual-recursion-ok t)
-      
+
       (mutual-recursion
-       
+
        (defun ,fn-mbe ,args
 	 ,@arg-type-info
 	 (declare (xargs ;;:hints (("Goal" :expand (:with ,fn0-measure-definition (,fn0-measure ,@args))))
@@ -1130,21 +1155,21 @@
 			 ;;:measure (,fn-measure ,@args)
 			 ))
 	 (mbe :logic (,fn0 ,@args)  :exec ,fn-mbe-exec-body-ec))
-       
+
        (defun ,fn-mbe-domain ,args
 	 ,@arg-type-info
 	 (declare (xargs ;;:measure (,fn-measure ,@args)))
 		   ))
 	 (mbe :logic (,fn0-domain ,@args) :exec ,fn-mbe-domain-exec-body-ec))
-       
+
        )
-      
+
       (in-theory (disable (,fn-mbe) (,fn-mbe-domain)))
 
       (defthm ,fn0-to-fn-mbe
 	(and (equal (,fn0 ,@args) (,fn-mbe ,@args))
 	     (equal (,fn0-domain ,@args) (,fn-mbe-domain ,@args))))
-      
+
       (local (in-theory (disable ,fn0-to-fn-mbe)))
 
       (defun ,fn-mbe-measure ,args
@@ -1153,25 +1178,25 @@
       (in-theory (disable (,fn-mbe-measure)))
 
       (defthm ,fn-mbe-definition
-	(equal (,fn-mbe ,@args) 
+	(equal (,fn-mbe ,@args)
 	       (if (,fn-mbe-domain ,@args)
 		   ,fn-mbe-tbody
 		 (,fdefault ,@args)))
 	:hints (("Goal" :expand (:with ,fn0-definition (,fn0 ,@args))))
-	:rule-classes ((:definition 
+	:rule-classes ((:definition
 			:install-body t
 			:controller-alist ,(default-calist fn-mbe args))))
 
       (local (in-theory (disable ,fn-mbe-definition)))
-      
+
       (defthm ,fn-mbe-domain-definition
 	(equal (,fn-mbe-domain ,@args)
 	       ,fn-mbe-domain-tbody)
 	:hints (("Goal" :expand (:with ,fn0-domain-definition (,fn0-domain ,@args))))
-	:rule-classes ((:definition 
+	:rule-classes ((:definition
 			:install-body t
 			:controller-alist ,(default-calist fn-mbe-domain args))))
-      
+
       (local (in-theory (disable ,fn-mbe-domain-definition)))
 
       (defthm ,fn-mbe-measure-definition
@@ -1180,10 +1205,10 @@
 		   ,fn-mbe-measure-tbody
 		 0))
 	:hints (("Goal" :expand (:with ,fn0-measure-definition (,fn0-measure ,@args))))
-	:rule-classes ((:definition 
+	:rule-classes ((:definition
 			:install-body t
 			:controller-alist ,(default-calist fn-mbe-measure args))))
-      
+
       (local (in-theory (disable ,fn-mbe-measure-definition)))
 
       (in-theory (disable ,fn-mbe ,fn-mbe-domain ,fn-mbe-measure))
@@ -1198,20 +1223,20 @@
 	(if (,fn-mbe-domain ,@args)
 	    ,fn-mbe-induction-tbody
 	  nil))
-      
+
      (defthm ,fn-mbe-induction-rule t
        :rule-classes ((:induction :corollary t
 				  :pattern (,fn-mbe ,@args)
 				  :scheme (,fn-mbe-induction ,@args))))
-     
+
      (in-theory (disable (:definition ,fn-mbe-induction) (,fn-mbe-induction)))
-     
+
      (defthm ,fn-mbe-induction-is-fn-mbe-domain
        (equal (,fn-mbe-induction ,@args) (,fn-mbe-domain ,@args))
        :hints (("goal" :induct (,fn-mbe-induction ,@args)
 		:expand ((:with ,fn-mbe-domain-definition (,fn-mbe-domain ,@args))
 			 (,fn-mbe-induction ,@args)))))
-     
+
      (defthm ,open-fn-mbe-domain
        (implies
 	(and
@@ -1220,16 +1245,16 @@
 	(equal (,fn-mbe-domain ,@args)
 	       ,fn-mbe-domain-xbody))
        :hints (("Goal" :expand (:with ,fn-mbe-domain-definition (,fn-mbe-domain ,@args)))))
-     
+
      (local (in-theory (disable ,open-fn-mbe-domain)))
-	
+
      ,@(fn-openers fn-mbe fn-mbe-definition fn-mbe-domain args args ftest `(,fbase ,@args) fn-mbe-xbody)
-     
+
      ,@(fn-openers fn-mbe-measure fn-mbe-measure-definition fn-mbe-domain args args ftest '0 fn-mbe-measure-xbody)
 
      )))
 
-(defun fn-comp (fn 
+(defun fn-comp (fn
 	       fn-comp fn-mbe-domain fn-mbe fn-measure fn-mbe-definition  fn-mbe-measure-definition fn-mbe-domain-definition
 	       fn-comp-induction fn-comp-induction-rule
 	       fn-comp-to-fn-mbe fn-comp-definition
@@ -1240,15 +1265,15 @@
 	 (fn-comp-exec-body      (mk-ibody fn fn-comp `(1-<29> ,depth) args tbody))
 	 (fn-comp-induction-body (mk-alt-body fn-comp fn-comp-induction (cons depth args) fn-comp-xbody))
 	 )
-    
+
     `(
-      
+
       (defun ,fn-comp (,depth ,@args)
 	,@arg-type-info
 	(declare (type (unsigned-byte 29) ,depth))
 	(cond
-	 ((zp<29> ,depth) (if (,fn-mbe-domain ,@args) 
-			      (,fn-mbe ,@args) 
+	 ((zp<29> ,depth) (if (,fn-mbe-domain ,@args)
+			      (,fn-mbe ,@args)
 			    ,default-expr))
 	 (t (mbe :logic (if (,ftest ,@args) (,fbase ,@args)
 			  ,fn-comp-xbody)
@@ -1267,14 +1292,14 @@
 	 ((and (zp ,depth) (not (,fn-mbe-domain ,@args))) nil)
 	 ((,ftest ,@args) t)
 	 (t ,fn-comp-induction-body)))
-      
+
       (defthm ,fn-comp-induction-rule t
 	:rule-classes ((:induction :corollary t
 				   :pattern (,fn-comp ,depth ,@args)
 				   :scheme (,fn-comp-induction ,depth ,@args))))
-      
+
       (in-theory (disable (:induction ,fn-comp)))
-      
+
       (defthmd ,fn-comp-to-fn-mbe
 	(implies
 	 (,fn-mbe-domain ,@args)
@@ -1284,7 +1309,7 @@
 		 :expand (:with ,fn-mbe-definition (,fn-mbe ,@args)))
 		(and stable-under-simplificationp
 		     '(:expand (:with ,fn-mbe-domain-definition (,fn-mbe-domain ,@args))))))
-      
+
       ;; A definition rule for fn-comp that better matches the induction
       (defthm ,fn-comp-definition
 	(equal (,fn-comp ,depth ,@args)
@@ -1298,13 +1323,13 @@
 	:rule-classes ((:definition
 			:install-body t
 			:controller-alist ,(default-calist fn-comp (cons depth args)))))
-      
+
       (local (in-theory (disable ,fn-comp-definition)))
       (in-theory (disable ,fn-comp))
-      
+
       )))
-      
-(defun fn-exec (fn 
+
+(defun fn-exec (fn
 		fn-exec fn-exec-definition fn-comp fn-comp-to-fn-mbe fn-mbe fn-mbe-definition
 		fn-exec-domain fn-exec-domain-definition fn-mbe-domain fn-mbe-domain-definition
 		fn-exec-measure fn-exec-measure-definition fn-mbe-measure fn-mbe-measure-definition
@@ -1322,15 +1347,15 @@
 	 (fn-exec-measure-xbody    (mk-measure-body fn-exec fn-exec-measure args fn-exec-xbody))
 	 (fn-exec-measure-tbody    `(if (,ftest ,@args) 0 ,fn-exec-measure-xbody))
 	 )
-    
+
     `(
 
       (defun ,fn-exec ,args
 	,@arg-type-info
 	(,fn-comp (big-depth-value) ,@args))
-      
+
       (in-theory (disable (,fn-exec)))
-      
+
       (defthmd ,use-total-induction
 	(implies
 	 (and
@@ -1339,11 +1364,11 @@
 	 (equal (,fn-exec ,@args)
 		(,fn-comp (big-depth-fn) ,@args)))
 	:hints (("Goal" :in-theory (append '(,fn-exec big-depth-fn) (theory 'defung-theory)))))
-      
+
       (defun ,fn-exec-domain (,@args)
 	,@arg-type-info
 	(,fn-mbe-domain ,@args))
-      
+
       (in-theory (disable (,fn-exec-domain)))
 
       (defun ,fn-exec-measure (,@args)
@@ -1352,7 +1377,7 @@
       (in-theory (disable (,fn-exec-measure)))
 
       (defthm ,fn-exec-definition
-	(equal (,fn-exec ,@args) 
+	(equal (,fn-exec ,@args)
 	       (if (,fn-exec-domain ,@args)
 		   ,fn-exec-tbody
 		 (,fn-comp (big-depth-value) ,@args)))
@@ -1360,10 +1385,10 @@
 		 :expand (:with ,fn-mbe-definition (,fn-mbe ,@args)))
 		(and stable-under-simplificationp
 		     '(:expand (:with ,fn-mbe-domain-definition (,fn-mbe-domain ,@args)))))
-	:rule-classes ((:definition 
+	:rule-classes ((:definition
 			:install-body t
 			:controller-alist ,(default-calist fn-exec args))))
-      
+
       (local (in-theory (disable ,fn-exec-definition)))
 
       (defthm ,fn-exec-domain-definition
@@ -1371,10 +1396,10 @@
 	       ,fn-exec-domain-tbody)
 	:hints (("Goal" :in-theory (enable ,fn-comp-to-fn-mbe)
 		 :expand (:with ,fn-mbe-domain-definition (,fn-mbe-domain ,@args))))
-	:rule-classes ((:definition 
+	:rule-classes ((:definition
 			:install-body t
 			:controller-alist ,(default-calist fn-exec-domain args))))
-      
+
       (local (in-theory (disable ,fn-exec-domain-definition)))
 
       (defthm ,fn-exec-measure-definition
@@ -1386,10 +1411,10 @@
 		 :expand (:with ,fn-mbe-measure-definition (,fn-mbe-measure ,@args)))
 		(and stable-under-simplificationp
 		     '(:expand (:with ,fn-mbe-domain-definition (,fn-mbe-domain ,@args)))))
-	:rule-classes ((:definition 
+	:rule-classes ((:definition
 			:install-body t
 			:controller-alist ,(default-calist fn-exec-measure args))))
-      
+
       (local (in-theory (disable ,fn-exec-measure-definition)))
 
       (in-theory (disable ,fn-exec ,fn-exec-domain ,fn-exec-measure))
@@ -1401,20 +1426,20 @@
 	(if (,fn-exec-domain ,@args)
 	    ,fn-exec-induction-tbody
 	  nil))
-      
+
      (defthm ,fn-exec-induction-rule t
        :rule-classes ((:induction :corollary t
 				  :pattern (,fn-exec ,@args)
 				  :scheme (,fn-exec-induction ,@args))))
-     
+
      (in-theory (disable (:definition ,fn-exec-induction) (,fn-exec-induction)))
-     
+
      (defthm ,fn-exec-induction-is-fn-exec-domain
        (equal (,fn-exec-induction ,@args) (,fn-exec-domain ,@args))
        :hints (("goal" :induct (,fn-exec-induction ,@args)
 		:expand ((:with ,fn-exec-domain-definition (,fn-exec-domain ,@args))
 			 (,fn-exec-induction ,@args)))))
-     
+
      (defthm ,open-fn-exec-domain
        (implies
 	(and
@@ -1423,17 +1448,17 @@
 	(equal (,fn-exec-domain ,@args)
 	       ,fn-exec-domain-xbody))
        :hints (("Goal" :expand (:with ,fn-exec-domain-definition (,fn-exec-domain ,@args)))))
-     
+
      (local (in-theory (disable ,open-fn-exec-domain)))
-	
+
 
      ,@(fn-openers fn-exec fn-exec-definition fn-exec-domain args args ftest `(,fbase ,@args) fn-exec-xbody)
-     
+
      ,@(fn-openers fn-exec-measure fn-exec-measure-definition fn-exec-domain args args ftest '0 fn-exec-measure-xbody)
 
      )))
 
-(defmacro mk-acl2-symb (&rest strlist) 
+(defmacro mk-acl2-symb (&rest strlist)
     `(intern (concatenate 'string ,@strlist) "ACL2"))
 
 (defmacro strcatl (&rest strlist) `(concatenate 'string ,@strlist))
@@ -1444,7 +1469,7 @@
    (if (endp args) res
      (let ((res (symbols-of (car args) res)))
        (symbols-of-args (cdr args) res))))
- 
+
  (defun symbols-of (term res)
    (if (symbolp term) (cons term res)
      (if (atom term) res
@@ -1452,7 +1477,7 @@
 	 (let ((res (symbols-of-args (cdr term) res)))
 	   (if (atom (car term)) res
 	     (symbols-of (caddr (car term)) res)))))))
- 
+
 )
 
 (defun bind-args (args)
@@ -1595,7 +1620,7 @@
 		     ((lambda (,var) ,term) (if ,dom ,var (,(cdr dx) ,@(cdr fapp)))))
 	  `(mv-let (,dom ,var) ,fapp ,term)))
     `(mv-let (,dom ,var) ,fapp ,term)))
-    
+
 (def::un construct-bindings-rec (blist dom default funmap defmap term)
   (declare (xargs :signature ((binding-listp symbolp symbolp symbol-map lambda-map pseudo-termp) pseudo-termp)
 		  :signature-hints (("Goal" :in-theory (disable open-pseudo-termp)))
@@ -1624,7 +1649,7 @@
    (if (endp list) (mv (revappend res nil) blist vars hit)
      (acl2::met ((term blist vars hit) (monadic-surgery-expr fmap dom default defmap (car list) blist vars hit))
        (monadic-surgery-args-list fmap dom default defmap (cdr list) blist vars (cons term res) hit))))
- 
+
  (defun monadic-surgery-expr (fmap dom default defmap term blist vars hit)
    (declare (xargs :measure (acl2-count term)
 		   :verify-guards nil)
@@ -1665,11 +1690,11 @@
 	       (met ((fvar vars) (gensym+ 'var vars))
 		 (mv fvar (acons fvar `((lambda ,formals ,(construct-bindings bblist dom default fmap defmap body)) ,@args) blist) vars hit))))))
 	(t (mv (cons (car term) args) blist vars hit)))))))
-   
+
 
  )
 
-(acl2::make-flag 
+(acl2::make-flag
  monadic-surgery-clique
  monadic-surgery-expr
  )
@@ -1710,7 +1735,7 @@
     (:rewrite
      (:forward-chaining
       :trigger-terms ((monadic-surgery-args-list fmap dom default defmap list blist vars res hit)))))
-  
+
   (defthm monadic-surgery-expr-type
     (implies (and (symbol-map fmap)
 		  (symbolp dom)
@@ -1784,7 +1809,7 @@
 ;; 2. Computed value, constant type.
 ;; 3. Computed value, dependent type.
 ;;
-;; To do 3 correctly, 
+;; To do 3 correctly,
 
 (defun mk-monadic (fnx fn fn-definition fn0 fn0-definition
 		  fn-domain fn-domain-definition fn0-domain fn0-domain-definition
@@ -1801,7 +1826,7 @@
 	 (vars                (cons default vars))
 	 #+joe
 	 (default-guard       (and (consp default-type)
-				   `((declare (xargs :guard 
+				   `((declare (xargs :guard
 						     ,(if (consp (cdr default-type))
 							  (defun::vals-to-thms-rec 0 default-type default)
 							`(and ,@(defun::translate-declaration-to-guard-list (car default-type) default))))))))
@@ -1832,7 +1857,7 @@
 		      (let ((dom (and dom dom1 t)))
 			(mv dom (if dom val ,default))))
 	     :exec (if (not ,dom) (mv nil ,default) ,fnx-tbody)))
-      
+
       (defun ,fn-domain ,args
 	,@arg-type-info
 	(met ((dom val) ,(if ec-call (map-ec-call-term `(,fnx t ,default-value ,@args) omit)
@@ -1849,7 +1874,7 @@
 
       (defun ,fn-measure ,args
 	(,fn0-measure ,@args))
-      
+
       (defthm ,fn-measure-type
 	(natp (,fn-measure ,@args))
 	:rule-classes ((:forward-chaining :trigger-terms ((,fn-measure ,@args)))
@@ -1858,24 +1883,24 @@
 
       (encapsulate
 	  ()
-	
+
 	(defthm ,fn-definition
 	  (equal (,fn ,@args)
 		 (if (not (,fn-domain ,@args)) ,default-value
 		   ,fn-tbody))
 	  :rule-classes ((:definition :install-body t :controller-alist ,(default-calist fn args)))
 	  :hints (("Goal" :expand (:with ,fn0-domain-definition (,fn0-domain ,@args)))))
-	
+
 	(local (in-theory (disable ,fn-definition)))
-	
+
 	(defthm ,fn-domain-definition
 	  (equal (,fn-domain ,@args)
 		 ,fn-domain-tbody)
 	  :rule-classes ((:definition :install-body t :controller-alist ,(default-calist fn-domain args)))
 	  :hints (("Goal" :expand (:with ,fn0-domain-definition (,fn0-domain ,@args)))))
-	
+
 	(local (in-theory (disable ,fn-domain-definition)))
-	
+
 	(defthm ,fn-measure-definition
 	  (equal (,fn-measure ,@args)
 		 (if (not (,fn-domain ,@args)) 0
@@ -1883,35 +1908,35 @@
 	  :rule-classes ((:definition :install-body t :controller-alist ,(default-calist fn-measure args)))
 	  :hints (("Goal" :expand ((:with ,fn0-domain-definition (,fn0-domain ,@args))
 				   (:with ,fn0-measure-definition (,fn0-measure ,@args))))))
-	
+
 	(in-theory (disable (:definition ,fn)
 			    (:definition ,fn-domain)
 			    (:definition ,fn-measure)))
-	
+
 	)
 
       (encapsulate
 	  ()
 
 	(local (in-theory (disable ,fn-definition)))
-	
+
 	(defun ,fn-induction ,args
 	  (declare (xargs :measure (,fn-measure ,@args)
-			  :hints ((and stable-under-simplificationp 
+			  :hints ((and stable-under-simplificationp
 				       '(:expand (,fn-measure ,@args))))))
 	  (if (not (,fn-domain ,@args)) nil
 	    ,fn-induction-tbody))
-	
+
 	(defthm ,fn-induction-is-fn-domain
 	  (equal (,fn-induction ,@args)
 		 (,fn-domain ,@args))
 	  :hints (("Goal" :induct (,fn-induction ,@args))))
-	
+
 	(defthm ,fn-induction-rule t
 	  :rule-classes ((:induction :corollary t
 				     :pattern (,fn ,@args)
 				     :scheme (,fn-induction ,@args))))
-	
+
 	(defthm ,open-fn-domain
 	  (implies
 	   (and
@@ -1919,7 +1944,7 @@
 	    (not (,ftest ,@args)))
 	   (equal (,fn-domain ,@args) ,fn-domain-xbody))
 	  :hints (("Goal" :expand (:with ,fn-domain-definition (,fn-domain ,@args)))))
-	
+
 	(defthm ,fn-domain-true
 	  (implies
 	   (,ftest ,@args)
@@ -1927,7 +1952,7 @@
 	  :hints (("Goal" :expand (:with ,fn-domain-definition (,fn-domain ,@args)))))
 
 	)
-	
+
       (local (in-theory (disable ,open-fn-domain)))
 
       ,@(fn-openers fn fn-definition fn-domain args args ftest `(,fbase ,@args) fn-xbody)
@@ -1960,9 +1985,9 @@
       ;;(met ((default-type decls) (defun::extract-xarg-key-from-decls :default-type decls))
       (met ((nx decls) (defun::extract-xarg-key-from-decls :non-executable decls))
       (met ((no-ec-call decls) (defun::extract-xarg-key-from-decls :no-ec-call decls))
-      
 
-	(let* 
+
+	(let*
 	    (
 	     (typespec        (or typespec signature))
 
@@ -1976,7 +2001,7 @@
 	     #+joe
 	     (default-type    (or (and (consp default-type) default-type)
 				  (and signature (defun::function-declaration-vals typespec))))
-	     
+
 	     (verify-guards   (defun::get-xarg-keys-from-decls :verify-guards decls))
 	     (xarg-guards     (defun::get-xarg-keys-from-decls :guard decls))
 	     (guard-hints     (defun::get-xarg-keys-from-decls :guard-hints decls))
@@ -1987,11 +2012,11 @@
 	     (typeinfo        (or signature verify-guards xarg-guards type-decls))
 
 	     (ec-call         (and (not nx) (not typeinfo)
-				   (append `(and defung::true acl2::mv acl2::mv-let) 
+				   (append `(and defung::true acl2::mv acl2::mv-let)
 					   (and (consp no-ec-call) (car no-ec-call)))))
-	     
+
 	     (verify-guards   (and (not nx) (not (defun::contains-nil verify-guards))))
-	     
+
 	     (body-symbols (symbols-of tbody nil))
 	     (depth (gensym::gensym 'd body-symbols))
 	     (vars (cons depth body-symbols))
@@ -2032,7 +2057,7 @@
 	     (fn0-measure-smallest (symbol-fns::suffix fn0-measure "-SMALLEST"))
 	     (replace-index-by-fn0-measure    (symbol-fns::prefix "REPLACE-" arb-index "-BY-" fn0-measure))
 	     (replace-index-by-fn0-measure-2  (symbol-fns::suffix replace-index-by-fn0-measure "-2"))
-	     (replace-domain-index-by-fn0-measure 
+	     (replace-domain-index-by-fn0-measure
 	                           (symbol-fns::prefix "REPLACE-" iname "-DOMAIN-INDEX-BY-" fn0-measure))
 	     (fn0            f0name)
 	     (fn0-definition (symbol-fns::suffix f0name "-DEFINITION"))
@@ -2046,7 +2071,7 @@
 	     (fn0-induction (symbol-fns::suffix f0name "-INDUCTION"))
 	     (fn0-induction-rule (symbol-fns::suffix f0name "-INDUCTION-RULE"))
 	     (fn0-induction-is-fn0-domain (symbol-fns::suffix f0name "-INDUCTION-IS-" f0name "-DOMAIN"))
-	     
+
 	     (fn-monadic            (symbol-fns::suffix fname "-MONADIC"))
 	     (fn-definition         (symbol-fns::suffix fn '-definition))
 	     (fn-domain             (symbol-fns::suffix fn '-domain))
@@ -2062,21 +2087,21 @@
 	     (fn-induction-is-fn-domain
 	      (symbol-fns::suffix fn-induction '-is- fn-domain))
 
-	     (decls           (if signature 
-				  (cons `(declare 
-					  (xargs :guard 
+	     (decls           (if signature
+				  (cons `(declare
+					  (xargs :guard
 						 ,(defun::function-declaration-to-guard args signature))) decls)
 				decls))
 	     (inhibited-decls (cons `(declare (xargs :verify-guards nil)) decls))
 	     (arg-type-info   inhibited-decls)
-	     
+
 	     (fn0-typethm      (and typespec
 				    (defun::function-declaration-to-type-thm-hyps fn0 args
 				      nil
-				      typespec 
+				      typespec
 				      (or sig-hints
 					  `(("Goal" :in-theory (disable open-true (,fn0) (,fn0-domain))
-					     :do-not-induct t 
+					     :do-not-induct t
 					     :induct (,fn0 ,@args))
 					    (and stable-under-simplificationp
 						 '(:in-theory (current-theory :here))))))))
@@ -2085,17 +2110,17 @@
 				   typespec
 				   (defun::function-declaration-to-type-thm-hyps fn args
 				     nil
-				     typespec 
+				     typespec
 				     (or sig-hints
 					 `(("Goal" :in-theory (disable open-true (,fn) (,fn-domain))
-					    :do-not-induct t 
+					    :do-not-induct t
 					    :induct (,fn ,@args))
 					   (and stable-under-simplificationp
 						'(:in-theory (current-theory :here))))))))
 
 	     (fn-verifystmt   (and (not nx)
-				   verify-guards 
-				   `((verify-guards 
+				   verify-guards
+				   `((verify-guards
 				      ,fn-monadic
 				      ,@(if guard-hints `(:hints ,@guard-hints)
 					  `(:hints (("Goal" :in-theory (disable open-true
@@ -2109,43 +2134,43 @@
 							 '(:in-theory (current-theory :here)))))))
 				     (verify-guards ,fn-domain)
 				     (verify-guards ,fn))))
-			      
-	     
+
+
 	     )
 
 	  `(encapsulate ()
-	     
+
 	     (encapsulate
 		 ()
-	       
+
 	       (set-ignore-ok t)
 
 	       (local (in-theory (theory 'defung-theory)))
-	       
-	       ,@(indexed-defns fn ifn idom arb-index ftest fdefault fbase depth args arg-type-info 
+
+	       ,@(indexed-defns fn ifn idom arb-index ftest fdefault fbase depth args arg-type-info
 				stest default-value sbase sbody ec-call)
-	       
-	       ,@(indexed-domain-lemmas 
+
+	       ,@(indexed-domain-lemmas
 		  ifn idom arb-index depth d1 d2 args
 		  ftest arb-index-thm mono-determ mono mono-contra idom-lower-bound)
-	       
-	       ,@(min-index 
+
+	       ,@(min-index
 		  idom depth d1 d2 args idom-lower-bound mono mono-contra
 		  ifn-min-index natp-min-index idom-min-index
 		  min-index-bound min-index-smallest)
-	       
-	       ,@(mk-measure 
-		  fn0-measure fn0-measure-type ftest ifn-min-index arb-index ifn idom args depth d1 d2 
+
+	       ,@(mk-measure
+		  fn0-measure fn0-measure-type ftest ifn-min-index arb-index ifn idom args depth d1 d2
 		  idom-min-index min-index-bound min-index-smallest mono mono-contra
 		  arb-index-thm fn0-measure-property fn0-measure-smallest
 		  replace-index-by-fn0-measure replace-index-by-fn0-measure-2
-		  replace-domain-index-by-fn0-measure 
+		  replace-domain-index-by-fn0-measure
 		  mono-determ)
-	       
-	       ,@(real-defs 
-		  ifn fn fn0 fn0-domain depth args ftest fdefault fbase sbody 
+
+	       ,@(real-defs
+		  ifn fn fn0 fn0-domain depth args ftest fdefault fbase sbody
 		  idom fn0-measure arb-index depth mono mono-contra
-		  ifn-min-index idom-min-index 
+		  ifn-min-index idom-min-index
 		  min-index-bound min-index-smallest
 		  not-fn0-domain-implies-zero-fn0-measure fn0-measure-definition
 		  fn0-domain-definition open-fn0-domain fn0-definition fn0-induction
@@ -2153,8 +2178,8 @@
 		  fn0-induction-is-fn0-domain fn0-measure-property fn0-measure-smallest
 		  replace-index-by-fn0-measure replace-index-by-fn0-measure-2
 		  replace-domain-index-by-fn0-measure)
-	       
-	       ,@(and (not nx) 
+
+	       ,@(and (not nx)
 		      (mk-monadic
 		       fn-monadic fn fn-definition fn0 fn0-definition
 		       fn-domain fn-domain-definition fn0-domain fn0-domain-definition
@@ -2169,18 +2194,18 @@
 	     ,@fn0-typethm
 	     ,@fn-typethm
 	     ,@fn-verifystmt
-	     
+
 	     )
-	  
+
 	  )))))))
-  
+
 (set-state-ok t)
 
 (defun translate-extract (fn args body state)
   (declare (xargs :mode :program))
   (met ((doc decls body) (defun::decompose-defun-body body))
     (met ((err tbody) (acl2::pseudo-translate body (list (cons fn args)) (w state)))
-      ;; equality substitutions kill us 
+      ;; equality substitutions kill us
       ;; - Added a "true-fn" patch (wrap-ifs) to avoid this
       (let ((tbody (wrap-ifs tbody)))
 	(let ((event1 (defunger fn args doc decls body tbody))
@@ -2213,35 +2238,35 @@
 	     (fn-total-induction-body         (mk-domain-body fn fn-total-induction args sbody))
 	     (fn-total-induction-is-fn-domain (symbol-fns::suffix fn-total-induction '-is- fn-domain))
 	     )
-	
+
 	`(encapsulate ()
 	   (local
 	    (encapsulate
 		()
-	      
+
 	      (set-ignore-ok t)
-	      
+
 	      (defun ,fn-total-induction ,args
 		,@decls
 		(if ,cond
 		    (if (,ftest ,@args) t
 		      ,fn-total-induction-body)
 		  nil))
-	      
+
 	      (defthm ,fn-total-induction-is-fn-domain
 		(implies
 		 ,cond
 		 (equal (,fn-total-induction ,@args)
 			(,fn-domain ,@args)))
 		:hints (("Goal" :induct (,fn-total-induction ,@args))))
-	      
+
 	      ))
-	   
+
 	   (defthm ,totality-theorem
 	     (implies ,cond
 		      (,fn-domain ,@args))
 	     :hints (("Goal" :induct (,fn-total-induction ,@args))))
-	   
+
 	   )))))
 
 (defun total-event (fn args body state)
@@ -2288,21 +2313,21 @@
   (defthm len-rev3
     (equal (len (rev3 x))
 	   (len x)))
-  
+
   (defthm consp-rev3
     (equal (consp (rev3 x))
 	   (consp x)))
-  
+
   ;; Here we prove that (rev3-domain x) is true whenever
   ;; (true-listp x) is true.
   (def::total rev3 (x)
     (declare (xargs :measure (len x)
 		    :totality-theorem true-listp-rev3-totality))
     (true-listp x))
-  
+
   ;; Now we prove that is it always total.
   (def::total rev3 (x)
     (declare (xargs :measure (len x)))
     t)
-  
+
 ))

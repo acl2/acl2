@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 
 (in-package "DEFUN")
 
@@ -70,50 +95,50 @@
                    (type-decls      (get-type-declarations-from-decls decls))
                    (not-inhibited   (not (contains-nil verify-guards)))
                    (verify-guards   (and not-inhibited (or signature verify-guards xarg-guards type-decls)))
-                   (decls           (if signature 
-                                        (cons `(declare 
-                                                (xargs :guard 
+                   (decls           (if signature
+                                        (cons `(declare
+                                                (xargs :guard
                                                        ,(function-declaration-to-guard args signature))) decls)
                                       decls))
                    (typespec        (or typespec signature))
                    (inhibited-decls (cons `(declare (xargs :verify-guards nil)) decls))
                    (name-induction  (symbol-fns::suffix name '-induction)))
-              
+
               `(progn
-                 
+
                  (defun ,name ,args
                    ,@(and doc (list doc))
                    ,@(if (or verify-guards (member-equal :program xarg-mode)) inhibited-decls decls)
                    ,body)
-                 
+
                  ,@(and (member-equal :program xarg-mode)
                         `((skip-proofs (verify-termination ,name))))
-                 
+
                  ,@(and typespec
                         (function-declaration-to-type-thm name args typespec sig-hints))
-                 
+
                  ,@(and verify-guards `((verify-guards ,name
                                                        ,@(and guard-hints `(:hints ,@guard-hints)))))
-                 
+
                  ,@(and induction-defun cong-specs
                         `((encapsulate
                               ()
                             (set-ignore-ok :warn)
                             (set-irrelevant-formals-ok :warn)
-                            
+
                             ,@induction-defun
-                            
+
                             ,(congruence-induction-reduction-proof name-induction name args)
-                            
+
                             )))
-                 
+
                  ;; And here we can add congruence proofs ..
                  ,@(process-congruence-arguments name args cong-hints cong-specs induction-defun)
-                 
+
                  ,@(and disable `((in-theory (disable ,name))))
-                 
+
                  )))))))))
-    
+
 
 (set-state-ok t)
 
@@ -130,7 +155,7 @@
 			     (defun-fn disable name args body induction-defun)))
 		       (defun-fn disable name args body nil))))
 	  (mv err event state))))))
-      
+
 (defmacro def::un (name args &rest body)
   `(make-event (defun-fn-wrapper nil ',name ',args ',body state)))
 
@@ -163,7 +188,7 @@
 (local
  (encapsulate
      ()
-   
+
    (local
     (encapsulate
 	()
@@ -180,7 +205,7 @@
 
 		 (function zed (integer string) integer string))
 	(mv (+ a 1) b))
-      
+
       ))
 
    ))
@@ -188,7 +213,7 @@
 (local
  (encapsulate
      ()
-   
+
    (local
     (encapsulate
 	()
@@ -202,7 +227,7 @@
 			:signature-hints (("Goal" :in-theory (enable fred)))
 			:guard-hints (("Goal" :in-theory (enable fred)))))
 	(mv (+ a 1) b))
-      
+
       ))
 
    ))
@@ -217,33 +242,33 @@
 
       (defun equiv1 (x y) (equal x y))
       (defun equiv2 (x y) (equal x y))
-      
+
       (defequiv equiv1)
       (defequiv equiv2)
-      
-      (def::un foo (x) 
+
+      (def::un foo (x)
 	(declare (xargs :measure (len x)
 			:congruence ((equiv1) equiv2)
 			:congruence ((equiv2) equiv1)
 			:congruence-hints (("Goal" :in-theory (current-theory :here)))))
 	(if (consp x) (foo (cdr x)) (endp x)))
-      
-      
+
+
 
       ))
    (local
     (encapsulate
 	()
-      
+
       (defun nfixequiv (x y) (equal (nfix x) (nfix y)))
       (defun ifixequiv (x y) (equal (ifix x) (ifix y)))
-      
+
       (defequiv nfixequiv)
       (defequiv ifixequiv)
-      
+
       ;; Multiple return values ..
 
-      (def::un goo (x y) 
+      (def::un goo (x y)
 	(declare (xargs :congruence ((ifixequiv nfixequiv) ifixequiv nfixequiv)))
 	(mv x (nfix y)))
 
@@ -266,5 +291,3 @@
 
       ))
    ))
-
-   

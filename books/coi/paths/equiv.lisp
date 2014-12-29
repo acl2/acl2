@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "PATH")
 (local (include-book "../util/iff"))
 
@@ -148,13 +173,13 @@
   (((dom-subhyps) => *)
    ((dom-subset) => *)
    ((dom-superset) => *))
-  
+
   (local (defun dom-subhyps () nil))
   (local (defun dom-subset () nil))
   (local (defun dom-superset () nil))
-  
+
   (defthm multiplicity-constraint
-    (implies 
+    (implies
      (and
       (dom-subhyps)
       (dominated-by-some arbitrary-element (dom-subset)))
@@ -168,7 +193,7 @@
                 ((not (dominated-by-some (car x) y))
                  (car x))
                 (t (badguy (cdr x) y)))))
- 
+
  (local (in-theory (disable NOT-DOMINATED-BY-SOME-BY-MEMBERSHIP)))
 
  (local (defthm badguy-witness
@@ -183,8 +208,8 @@
    (implies (dom-subhyps)
             (all-dominated-by-some (dom-subset) (dom-superset)))
    :rule-classes nil
-   :hints(("Goal" 
-           :use ((:instance 
+   :hints(("Goal"
+           :use ((:instance
                   multiplicity-constraint
                   (arbitrary-element (badguy (dom-subset) (dom-superset))))))))
 
@@ -256,13 +281,13 @@
   (((setequiv-subhyps) => *)
    ((setequiv-lhs) => *)
    ((setequiv-rhs) => *))
-  
+
   (local (defun setequiv-subhyps () nil))
   (local (defun setequiv-lhs () nil))
   (local (defun setequiv-rhs () nil))
-  
+
   (defthm setequiv-multiplicity-constraint
-    (implies 
+    (implies
      (setequiv-subhyps)
      (and
       (implies
@@ -280,7 +305,7 @@
                 ((not (dominated-by-some (car x) y))
                  (car x))
                 (t (badguy (cdr x) y)))))
- 
+
  (local (in-theory (disable NOT-DOMINATED-BY-SOME-BY-MEMBERSHIP)))
  (local (in-theory (disable DOM-SUBSET-BY-MULTIPLICITY)))
 
@@ -291,17 +316,17 @@
                 (not (dominated-by-some (badguy lhs rhs) rhs))))
           :otf-flg t
           :rule-classes (:rewrite :forward-chaining)))
- 
+
  (defthm setequiv-by-multiplicity-driver
    (implies (setequiv-subhyps)
             (setequiv (setequiv-lhs) (setequiv-rhs)))
    :rule-classes nil
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (enable setequiv)
-           :use ((:instance 
+           :use ((:instance
                   setequiv-multiplicity-constraint
                   (arbitrary-element (badguy (setequiv-lhs) (setequiv-rhs))))
-                 (:instance 
+                 (:instance
                   setequiv-multiplicity-constraint
                   (arbitrary-element (badguy (setequiv-rhs) (setequiv-lhs))))))))
 
@@ -482,41 +507,41 @@ Just checking setequiv reduction.
     (local (defun path-subset-hyps () nil))
     (local (defun path-subset-sub () nil))
     (local (defun path-subset-sup () nil))
-    
+
     (defthmd path-memberp-constraint
       (implies (and (path-subset-hyps)
                     (path-member path-subset-member (path-subset-sub)))
                (path-member path-subset-member (path-subset-sup))))
-    
+
     )
-  
+
   (local (defund badguy (x y)
            (if (endp x)
                nil
              (if (path-member (car x) y)
                  (badguy (cdr x) y)
                (car x)))))
-  
+
   (local (defthm badguy-witness
            (implies (not (path-subset x y))
                     (and (path-member (badguy x y) x)
                          (not (path-member (badguy x y) y))))
            :hints(("Goal" :in-theory (enable badguy)))))
-  
+
   (defthm path-subset-by-membership-driver
     (implies (path-subset-hyps)
              (path-subset (path-subset-sub) (path-subset-sup)))
     :rule-classes nil
-    :hints(("Goal" 
+    :hints(("Goal"
             :use (:instance path-memberp-constraint
-                            (path-subset-member 
+                            (path-subset-member
                              (badguy (path-subset-sub)
                                      (path-subset-sup)))))))
-  
+
   (defadvice path-subset-by-membership
     (implies (path-subset-hyps)
              (path-subset (path-subset-sub) (path-subset-sup)))
-    :rule-classes (:pick-a-point 
+    :rule-classes (:pick-a-point
                    :driver path-subset-by-membership-driver))
   )
 
@@ -574,7 +599,7 @@ Just checking setequiv reduction.
    (equal (path-subset y z)
           (and (path-member a z)
                (path-subset (path-remove a y) (path-remove a z)))))
-  :hints (("goal" :in-theory (disable BOOLEANP-COMPOUND-RECOGNIZER 
+  :hints (("goal" :in-theory (disable BOOLEANP-COMPOUND-RECOGNIZER
                                       PATH-SUBSET-BY-MEMBERSHIP))))
 
 (defthmd car-membership-forward
@@ -593,14 +618,14 @@ Just checking setequiv reduction.
     (local (defun path-equiv-hyps () nil))
     (local (defun path-equiv-a () nil))
     (local (defun path-equiv-b () nil))
-    
+
     (defthmd path-equiv-constraint
       (implies (path-equiv-hyps)
                (equal (path-member path-equiv-member (path-equiv-a))
                       (path-member path-equiv-member (path-equiv-b)))))
-    
+
     )
-  
+
   (local (defun badguy (x y)
            (if (endp x)
                (if (consp y)
@@ -616,7 +641,7 @@ Just checking setequiv reduction.
       (consp (badguy x y))
       (iff (equal (path-member (car (badguy x y)) x)
                   (path-member (car (badguy x y)) y)) nil))))
-  
+
   (local
    (defthmd consp-badguy-to-path-equiv
      (equal (path-equiv x y)
@@ -626,7 +651,7 @@ Just checking setequiv reduction.
                                  path-subset-membership-reduction
                                  path-subset-cdr-forward
                                  path-equiv)))))
-  
+
   (local (defthm badguy-witness
            (implies (not (path-equiv x y))
                     (not (equal (path-member (car (badguy x y)) x)
@@ -634,21 +659,21 @@ Just checking setequiv reduction.
            :hints(("Goal" :in-theory nil
                    :use (consp-badguy-implies
                          consp-badguy-to-path-equiv)))))
-  
+
   (defthm path-equiv-by-membership-driver
     (implies (path-equiv-hyps)
              (path-equiv (path-equiv-a) (path-equiv-b)))
     :rule-classes nil
     :hints(("Goal" :in-theory '(badguy-witness)
             :use (:instance path-equiv-constraint
-                            (path-equiv-member 
+                            (path-equiv-member
                              (car (badguy (path-equiv-a)
                                           (path-equiv-b))))))))
-  
+
   (defadvice path-equiv-by-membership
     (implies (path-equiv-hyps)
              (path-equiv (path-equiv-a) (path-equiv-b)))
-    :rule-classes (:pick-a-point 
+    :rule-classes (:pick-a-point
                    :driver path-equiv-by-membership-driver))
 
   (in-theory (disable path-equiv-by-membership))
@@ -817,7 +842,7 @@ DAG
 ;;
 
 (defthm hack-lemma
-  (IMPLIES (AND 
+  (IMPLIES (AND
             (PATH-SUBDOM LIST B)
             (NOT (DOMINATED-BY-SOME X LIST))
             (DOMINATES X A)
@@ -937,7 +962,7 @@ DAG
     (path-subdom sub sup)
     (not (path::strictly-dominated-by-some x sup))
     (dominates-some x sup))
-   (and 
+   (and
     (not (path::strictly-dominated-by-some x sub))
     (dominates-some x sub))))
 

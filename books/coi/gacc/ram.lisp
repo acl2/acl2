@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "GACC")
 
 (include-book "ram0")
@@ -54,7 +79,7 @@
 
 (defthm negative-fix-size
   (implies (<= size 0)
-           (equal (fix-size size) 
+           (equal (fix-size size)
                   8))
   :hints (("Goal" :in-theory (enable fix-size))))
 
@@ -87,7 +112,7 @@
            (integerp size))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable multiple-of-8))))
- 
+
 (defthm fix-size-when-size-is-not-an-integerp
   (implies (not (integerp size))
            (equal (fix-size size)
@@ -102,9 +127,9 @@
              8
            (* 8 (+ 1 (floor (+ -1 size) 8)))
            ))
-  :hints (("Goal" :in-theory (e/d (max-offset ;floor 
+  :hints (("Goal" :in-theory (e/d (max-offset ;floor
                                    FIX-SIZE
-                                   ) 
+                                   )
                                   ( ;UNFIXED-SIZE-MAX-OFFSET ;looped
                                    ))
            :do-not '(generalize eliminate-destructors))))
@@ -205,7 +230,7 @@
                 (disjoint (sblk rsize rptr) (sblk wsize wptr)))
        (implies (<= (+ (ifix wptr) (1+ (max-offset wsize))) (ifix rptr))
                 (disjoint (sblk rsize rptr) (sblk wsize wptr))))
-  :hints (("goal" :in-theory (enable sblk 
+  :hints (("goal" :in-theory (enable sblk
                                      blk-disjoint-from-blk-1
                                      blk-disjoint-from-blk-2))))
 
@@ -219,7 +244,7 @@
 
 
 
-(encapsulate 
+(encapsulate
  ()
  (local (defun offset-equal-induction (s1 s2)
           (declare (xargs :measure (max (nfix s1) (nfix s2))))
@@ -256,10 +281,10 @@
   :hints (("goal" :cases ((iff (integerp o1) (integerp o2)))
            :in-theory (e/d (;ifix
                             max-offset-to-fix-size-rev
-                              blk 
-                              sblk 
+                              blk
+                              sblk
                               fix-size
-                              ) 
+                              )
                            (;BLK-REC-NON-INTEGER-PTR
                              max-offset-to-fix-size
                             )))))
@@ -351,7 +376,7 @@
            (equal (rx-rec ptr off size (memory-clr x ram))
                   (rx-rec ptr off size ram)))
   :hints (("goal" :in-theory (enable memory-clr))))
- 
+
 (defthm rd-over-wx-rec
   (implies
    (and
@@ -628,7 +653,7 @@
                 (<= 0 (ifix off))
                 (<= (ifix off) (ifix max))
                 )
-           (equal (equal ram1 (wx-rec ptr off max value ram2)) 
+           (equal (equal ram1 (wx-rec ptr off max value ram2))
                   t))
   :hints (("Goal" :in-theory (enable wx-rec rx-rec ;open-wfixw ;wcar wcons wcdr
                                      )
@@ -669,7 +694,7 @@
              acl2::loghead (* 8 (nfix (- (ifix max2) (ifix off2))))
                            value1)
             (;wfixw 8 (- (ifix max2) (ifix off2))
-             acl2::loghead (* 8 (nfix (- (ifix max2) (ifix off2))))                   
+             acl2::loghead (* 8 (nfix (- (ifix max2) (ifix off2))))
                            value2))
      (equal ram1 ram2)
      (<= 0 (ifix off2))
@@ -705,7 +730,7 @@
                 (<= woff wmax)
                 )
            (equal (wx-rec base woff wmax value ram)
-                  (wr-list (blk-rec base woff wmax) 
+                  (wr-list (blk-rec base woff wmax)
                            (enlistw (- wmax woff) value) ram)))
   :hints (("goal" :induct (wx-rec base woff wmax value ram)
            :in-theory (e/d (wx-rec
@@ -713,7 +738,7 @@
                             open-blk-rec
                             wr-list
 			    gacc::wr==wr
-			    GACC::MEMORY-CLR-DIFFERENTIAL 
+			    GACC::MEMORY-CLR-DIFFERENTIAL
                                         ;open-wx-rec
                             )
                            (wr==r!
@@ -753,42 +778,42 @@
   :hints (("Goal" :in-theory (enable clr-list-over-memory-clr))))
 
 
-(defthmd wr==ram 
-  (equal (equal (wr a (loghead8 v) ram1) ram2) 
-         (and (equal (loghead8 v) (rd a ram2)) 
-              (equal (z*-rec `(,a) ram1) 
+(defthmd wr==ram
+  (equal (equal (wr a (loghead8 v) ram1) ram2)
+         (and (equal (loghead8 v) (rd a ram2))
+              (equal (z*-rec `(,a) ram1)
                      (z*-rec `(,a) ram2))))
   :hints (("Goal" :in-theory (enable wr==r!))))
- 
 
-(defun z*-rec-induction (a list ram1 ram2 v) 
-  (if (consp list) 
-      (z*-rec-induction a (cdr list) (memory-clr (car list) ram1) 
-                        (memory-clr (car list) ram2) v) 
+
+(defun z*-rec-induction (a list ram1 ram2 v)
+  (if (consp list)
+      (z*-rec-induction a (cdr list) (memory-clr (car list) ram1)
+                        (memory-clr (car list) ram2) v)
     (equal (equal a ram1) (equal ram2 v))))
 
 (defthm z*-rec-of-wr
   (implies (not (memberp a list))
-           (equal (equal (z*-rec list (wr a (loghead8 v) ram1)) 
-                         (z*-rec list ram2)) 
-                  (and (equal (loghead8 v) (rd a ram2)) 
-                       (equal (z*-rec (cons a list) ram1) 
-                              (z*-rec (cons a list) ram2))))) 
-  :hints (("goal" :in-theory (enable 
+           (equal (equal (z*-rec list (wr a (loghead8 v) ram1))
+                         (z*-rec list ram2))
+                  (and (equal (loghead8 v) (rd a ram2))
+                       (equal (z*-rec (cons a list) ram1)
+                              (z*-rec (cons a list) ram2)))))
+  :hints (("goal" :in-theory (enable
                               wr==r!
                               memberp ;bzo
                               )
            :do-not '(generalize eliminate-destructors)
            :induct (z*-rec-induction a list ram1 ram2 v))))
- 
-(defthm z*-rec-over-wr  
-  (implies (memberp a list) 
-           (equal (equal (z*-rec list (wr a v ram1)) 
-                         (z*-rec list ram2)) 
-                  (equal (z*-rec list ram1) 
+
+(defthm z*-rec-over-wr
+  (implies (memberp a list)
+           (equal (equal (z*-rec list (wr a v ram1))
+                         (z*-rec list ram2))
+                  (equal (z*-rec list ram1)
                          (z*-rec list ram2))))
   :hints (("goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable 
+           :in-theory (enable
 ;memberp ;bzo
                        ))
           ("Subgoal *1/1" :cases ((equal (car list) a)))))
@@ -799,7 +824,7 @@
   (implies (disjoint (blk-rec ptr off size) list)
            (equal (rx-rec ptr off size (z*-rec list ram))
                   (rx-rec ptr off size ram))))
-                                           
+
 
 ;stringe rule...
 (defthm equality-implies-equal-reads
@@ -816,7 +841,7 @@
 
 (defun ram==wx-hyp (size ptr value ram)
   (declare (type t size ptr value ram))
-  (equal (acl2::loghead (fix-size size) ;wfixn 8 size 
+  (equal (acl2::loghead (fix-size size) ;wfixn 8 size
                 (ifix value) ;drop the ifix once loghead's guards are weakened
                 )
          (rx size ptr ram)))
@@ -848,7 +873,7 @@
                   t))
   :hints (("Goal" :in-theory (e/d (rx wx
                                       RAM==WX-REC
-                                      ram==wx-rec) 
+                                      ram==wx-rec)
                                   ( ;WFIXN-REWRITE-TO-LOGHEAD ;why
                                    MAX-OFFSET
                                    )))))
@@ -857,10 +882,10 @@
 ;why do we have a separate function for this?
 (defun wx==wx-hyp (size value1 value2)
   (declare (type t size value1 value2))
-  (equal (acl2::loghead (fix-size size) ;wfixn 8 size 
+  (equal (acl2::loghead (fix-size size) ;wfixn 8 size
                 (ifix value1)
                 )
-         (acl2::loghead (fix-size size) ;wfixn 8 size 
+         (acl2::loghead (fix-size size) ;wfixn 8 size
                 (ifix value2)
                 )))
 
@@ -872,7 +897,7 @@
                 (equal size1 size2)
                 (wx==wx-hyp size2 value1 value2)
                 (equal ram1 ram2))
-           (equal (equal (wx size1 addr1 value1 ram1) 
+           (equal (equal (wx size1 addr1 value1 ram1)
                          (wx size2 addr2 value2 ram2))
                   t))
   :hints (("Goal" :cases ((integerp value1))
@@ -884,7 +909,7 @@
                 (equal wsize rsize)
                 )
            (equal (rx rsize rptr (wx wsize wptr value ram))
-                  (acl2::loghead (fix-size rsize) ;wfixn 8 rsize 
+                  (acl2::loghead (fix-size rsize) ;wfixn 8 rsize
                                  value)))
   :hints (("Goal" :in-theory (enable rx wx))))
 
@@ -959,7 +984,7 @@
                   (wx wsize wptr wvalue (wx size ptr value ram))))
   :rule-classes ((:rewrite :loop-stopper ((wptr ptr wx))))
   :hints (("goal" :in-theory (enable wx
-                                     sblk blk 
+                                     sblk blk
                                      ))))
 
 ;exported?
@@ -968,7 +993,7 @@
                      (sblk wsize wptr))
            (equal (rx rsize rptr (wx wsize wptr value ram))
                   (rx rsize rptr ram)))
-  :hints (("goal" :in-theory (enable sblk blk 
+  :hints (("goal" :in-theory (enable sblk blk
                                      rx wx
                                      ))))
 
@@ -993,7 +1018,7 @@
   (implies (< woff (+ (ifix off) (ifix ptr)))
            (equal (wx-rec ptr off size val1
                           (wr woff val2 ram))
-                  (wr woff val2 
+                  (wr woff val2
                       (wx-rec ptr off size val1 ram))))
   :hints (("Goal" :in-theory (enable wx-rec)
            :induct (wx-rec ptr off size val1
@@ -1003,7 +1028,7 @@
 (defthmd open-wx-rec
   (and (implies (> (ifix max) (ifix off))
                 (equal (wx-rec base off max value ram)
-                       (let ((off (ifix off)) 
+                       (let ((off (ifix off))
                              (max (ifix max)))
                          (let ((ram (wx-rec (ifix base) (1+ off) max (acl2::logtail 8 (ifix value)) ram)))
                            (wr (+ off (ifix base))
@@ -1017,10 +1042,10 @@
 (defthmd open-rx-rec
   (and (implies (> (ifix max) (ifix off))
                 (equal (rx-rec base off max ram)
-                       (let ((off (ifix off)) 
+                       (let ((off (ifix off))
                              (max (ifix max)))
                          (let ((v (rd (+ off (ifix base)) ram)))
-                           (acl2::logapp ;wcons 
+                           (acl2::logapp ;wcons
                             8 v
                                   (rx-rec (ifix base)
                                           (1+ off)
@@ -1033,10 +1058,10 @@
 (defun wx==ram-induction-8 (off ptr ram1 size value)
   (declare (xargs :measure (nfix (- (ifix size) (ifix off)))))
   (if (< (ifix off) (ifix size))
-      (wx==ram-induction-8 (+ 1 (ifix off)) (ifix ptr) 
-                         (wr (+ (ifix off) (ifix ptr)) (acl2::loghead ;wcar 
-                                                        8 value) ram1) 
-                         (ifix size) (acl2::logtail ;wcdr 
+      (wx==ram-induction-8 (+ 1 (ifix off)) (ifix ptr)
+                         (wr (+ (ifix off) (ifix ptr)) (acl2::loghead ;wcar
+                                                        8 value) ram1)
+                         (ifix size) (acl2::logtail ;wcdr
                                       8 value))
     (equal ptr (equal ram1 value))))
 
@@ -1068,7 +1093,7 @@
   (implies (and (equal (wx-rec ptr off size value ram1) ram2)
                 (integerp off)
                 (integerp size)
-                (< off size)) 
+                (< off size))
            (equal (;wfixw 8 (- size off)
                    acl2::loghead (* 8 (nfix  (- size off)))
                    value)
@@ -1086,7 +1111,7 @@
   (implies (and (equal ram2 (wx-rec ptr off size value ram1))
                 (integerp off)
                 (integerp size)
-                (< off size)) 
+                (< off size))
            (equal (acl2::loghead (* 8 (nfix  (- size off))) value)
                   (rx-rec ptr off size ram2)))
   :hints (("Goal" :by wx==ram-rec-value-same)))
@@ -1101,13 +1126,13 @@
                        (rx-rec ptr off size ram2)))
            (equal (wx-rec ptr off size val ram2)
                   ram2))
-  :hints (("Goal" :in-theory (e/d (wx-rec rx-rec) 
+  :hints (("Goal" :in-theory (e/d (wx-rec rx-rec)
                                   (open-wx-rec open-rx-rec)))))
 
 (defthmd z*-same-wx-rec-0
   (equal (z*-rec (blk-rec ptr off size) ram)
          (wx-rec ptr off size 0 ram))
-  :hints (("Goal" :in-theory (e/d (wx-rec blk-rec) 
+  :hints (("Goal" :in-theory (e/d (wx-rec blk-rec)
                                   (z*-rec-of-wx-rec)))))
 
 
@@ -1121,20 +1146,20 @@
                   (equal val2 val3)
                   (equal (wr a val3 ram2) ram2))
              (equal (wr a val2 ram1) ram2))))
- 
+
  (defthm other-way-1
    (implies (and (equal (z*-rec (blk-rec ptr off size) ram1)
                         (z*-rec (blk-rec ptr off size) ram2))
                  (equal ( ;wfixw 8 (- size off)
                          acl2::loghead (* 8 (nfix  (- size off)))
-                         value) 
+                         value)
                         (rx-rec ptr off size ram2))
                  (< off size)
                  (integerp off)
                  (integerp size)
                  (<= 0 off))
             (equal (wx-rec ptr off size value ram1) ram2))
-   :hints (("Goal" :in-theory (enable open-wx-rec 
+   :hints (("Goal" :in-theory (enable open-wx-rec
                                       z*-same-wx-rec-0
                                       open-rx-rec
                                       rx-rec blk-rec ;open-wfixw; wcar wcdr wcons
@@ -1149,8 +1174,8 @@
   (implies (and (equal (z*-rec (blk-rec ptr off size) ram1)
                        (z*-rec (blk-rec ptr off size) ram2))
                 (equal (;wfixw 8 (- size off)
-                        acl2::loghead (* 8 (nfix  (- size off)))                              
-                              value) 
+                        acl2::loghead (* 8 (nfix  (- size off)))
+                              value)
                        (rx-rec ptr off size ram2))
                 (< off size)
                 (integerp off)
@@ -1164,13 +1189,13 @@
 ;exported?
 (defthmd wx==ram-rec
   (implies (and (<= 0 off)
-                (< off size) 
+                (< off size)
                 (integerp off)
                 (integerp size))
            (equal (equal (wx-rec ptr off size value ram1) ram2)
                   (and (equal (z*-rec (blk-rec ptr off size) ram1)
                               (z*-rec (blk-rec ptr off size) ram2))
-                       (equal (acl2::loghead (* 8 (nfix (- size off))) value) 
+                       (equal (acl2::loghead (* 8 (nfix (- size off))) value)
                               (rx-rec ptr off size ram2)))))
   :hints (("Goal" :in-theory (disable open-rx-rec)
            :use ((:instance other-way-1)
@@ -1212,7 +1237,7 @@
     :hints (("Goal" :in-theory (enable blk-rec)
              :do-not-induct t))
     :rule-classes nil))
-  
+
  (local
   (defthm lemma2
     (implies (and (not (integerp ptr))
@@ -1221,7 +1246,7 @@
                   (integerp size)
                   (< off size)
                   (subbagp (cons off (blk-rec 0 (+ 1 off) size)) y))
-             (equal (z*-rec y (wr off (acl2::loghead ;wcar 
+             (equal (z*-rec y (wr off (acl2::loghead ;wcar
                                        8 value)
                                   (wx-rec (ifix ptr)
                                           (+ 1 (ifix off))
@@ -1235,7 +1260,7 @@
              ;:cases ((< (+ 1 off) size))
              ))
     :rule-classes nil))
- 
+
 ;disable ifix?
  (defthm z*-over-wx-subbagp
    (implies (and (integerp off)
@@ -1259,11 +1284,11 @@
   (equal (z*-rec (blk-rec ptr off size)
                  (z*-rec list (wx-rec ptr off size value ram1)))
          (z*-rec list (z*-rec (blk-rec ptr off size) ram1)))
-  :hints (("Goal" :in-theory (disable z*-rec-commutativity 
+  :hints (("Goal" :in-theory (disable z*-rec-commutativity
                                       open-wx-rec open-blk-rec)
-           :use (:instance z*-rec-commutativity 
+           :use (:instance z*-rec-commutativity
                            (x (blk-rec ptr off size))
-                           (y list) 
+                           (y list)
                            (ram (wx-rec ptr off size value ram1))))))
 
 (defthm z*-rec-over-wx-rec
@@ -1283,7 +1308,7 @@
                 (integerp off)
                 (integerp size))
            (equal (acl2::loghead (* 8 (nfix (- size off))) value)
-                  (rx-rec ptr off size 
+                  (rx-rec ptr off size
                           (z*-rec list (wx-rec ptr off size value ram)))))
   :hints (("goal" :in-theory (e/d (;wfixw
                                      blk-rec
@@ -1294,7 +1319,7 @@
                                         ))
            :induct (wx==ram-induction-8 off ptr ram size value))))
 
-(encapsulate 
+(encapsulate
  ()
 
  (local
@@ -1320,7 +1345,7 @@
                          (z*-rec list (wx-rec ptr off size value ram1))))
              (equal (z*-rec (append (blk-rec ptr off size) list) ram2)
                     (z*-rec (append (blk-rec ptr off size) list) ram1)))))
- 
+
  (local
   (defthm z*-of-wx-rec-4
     (implies (and (<= 0 off)
@@ -1373,7 +1398,7 @@
                     (z*-rec list ram2)))
     :hints (("Goal" :in-theory (e/d (wx==ram-rec) ( ;WFIXW-REDUCTION
                                                    ))))))
- 
+
  (local
   (defthm other-way-of-2
     (implies (and (<= 0 off)
@@ -1391,7 +1416,7 @@
                     (z*-rec list (wx-rec ptr off size value ram1))))
     :hints (("Goal" :in-theory (e/d (wx==ram-rec) ( ;WFIXW-REDUCTION
                                                    ))))))
- 
+
 
 ;should bring the z*-rec inside the wx-rec?
  (defthmd z*-of-wx-rec
@@ -1413,7 +1438,7 @@
                   (:instance z*-of-wx-rec-8-2)
                   (:instance z*-of-wx-rec-8)
                   (:instance z*-of-wx-rec-4-2)
-                  (:instance z*-of-wx-rec-4)))))                        
+                  (:instance z*-of-wx-rec-4)))))
 
  ) ;closes encapsulate
 
@@ -1424,7 +1449,7 @@
   (equal (wx size ptr (acl2::loghead (fix-size size) value) ram)
          (wx size ptr value ram))
   :hints (("Goal" :cases ((integerp value))
-           :in-theory (enable wx ;wfixn 
+           :in-theory (enable wx ;wfixn
                               wx-rec==wx-rec))))
 
 ;(local (in-theory (disable UNFIXED-SIZE-MAX-OFFSET)))
@@ -1445,8 +1470,8 @@
   (equal (rx size ptr ram)
          (wintlist (rd-list (sblk size ptr) ram)))
   :hints (("goal" :in-theory (enable RX-REC-TO-RD-LIST-REDUCTION
-                                     rx 
-                                     blk 
+                                     rx
+                                     blk
                                      sblk))))
 
 (defthmd wx-to-wr-list-reduction
@@ -1461,7 +1486,7 @@
   (implies (integerp a)
            (equal (wr a v ram)
                   (wx 8 a v ram)))
-  :hints (("goal" :in-theory (e/d (;WFIXW WINTW ;wintn ;wfix 
+  :hints (("goal" :in-theory (e/d (;WFIXW WINTW ;wintn ;wfix
                                    OPEN-WX-REC wx wx-rec)
                                   (WX-REC-TO-WR-LIST-REDUCTION)))))
 
@@ -1493,7 +1518,7 @@
                          (gacc::sblk 32 addr)))
   :hints (("Goal" :in-theory (e/d (gacc::sblk gacc::blk
 ;                                     bag::subbagp
-                                     bag::memberp) 
+                                     bag::memberp)
                                   (BAG::SUBBAGP-CDR-REMOVE-1-REWRITE)))))
 
 
@@ -1502,9 +1527,9 @@
          (loghead 8 value))
   :hints (("Goal" :expand  (gacc::addr-range ad 2)
            :in-theory (enable gacc::rx gacc::wx gacc::open-wx-rec gacc::open-rx-rec))))
-        
 
-;gen...        
+
+;gen...
 (defthm loghead-8-of-rx
   (equal (loghead 8 (gacc::rx 16 a ram))
          (gacc::rx 8 a ram))
@@ -1516,7 +1541,7 @@
   :hints (("Goal" :in-theory (enable gacc::wx-of-rx))))
 (encapsulate
  ()
- 
+
  (local
   (defthm rd-over-wx-rec-crock
     (implies (bag::disjoint (gacc::sblk 8 x)
@@ -1537,7 +1562,7 @@
  ;;    (implies (addresses-disjoint x 8 addr size)
  ;;             (equal (gacc::rd x (gacc::wx size addr val ram))
  ;;                    (gacc::rd x ram)))
- ;;    :hints (("Goal" :use rd-over-wx-rec-crock 
+ ;;    :hints (("Goal" :use rd-over-wx-rec-crock
  ;;             :in-theory (enable addresses-disjoint gacc::wx))
  ;;            ))
 
@@ -1545,11 +1570,11 @@
    (implies (not (bag::memberp (ifix x) (gacc::sblk size addr)))
             (equal (gacc::rd x (gacc::wx size addr val ram))
                    (gacc::rd x ram)))
-   :hints (("Goal" :use rd-over-wx-rec-crock 
+   :hints (("Goal" :use rd-over-wx-rec-crock
             :in-theory (enable ;addresses-disjoint
                         gacc::wx GACC::SBLK-8-REWRITE))
            ))
- 
+
  ) ;; end encapsulate
 
 
@@ -1591,7 +1616,7 @@
                   (gacc::wx numbits 0 val ram)))
   :hints (("Goal" :in-theory (enable gacc::wx))))
 
-;; 
+;;
 ;; (defthm my-wx-over-wx-both
 ;;   (equal (gacc::wx size ptr value (gacc::wx wsize wptr wvalue ram))
 ;;          (if (bag::disjoint (gacc::sblk size  ptr)
@@ -1619,7 +1644,7 @@
 ;;   (integerp (wfixn b n value)))
 
 ;; (defthm wfixn-0
-;;   (equal (wfixn b n 0) 
+;;   (equal (wfixn b n 0)
 ;;          0)
 ;;   :hints (("Goal" :in-theory (enable wfixn))))
 
@@ -1646,9 +1671,9 @@
 ;;            (equal (wfixn b n (+ a (wfixn b n x)))
 ;;                   (wfixn b n (+ a x))))
 ;;   :hints (("goal" :in-theory (enable wfixn wfixw-reduction))))
- 
+
 ;; (defthm wfixn-ifix
-;;   (equal (wfixn b n (ifix x)) 
+;;   (equal (wfixn b n (ifix x))
 ;;          (wfixn b n x))
 ;;   :hints (("goal" :in-theory (enable wfixn wfixw-reduction))))
 
@@ -1676,7 +1701,7 @@
 ;;                               acl2::imod ;bzo
 ;;                               max-offset-rewrites-to-floor
 ;;                               WFIXW-REDUCTION
-;;                               WFIXN 
+;;                               WFIXN
 ;;                               acl2::LOGHEAD))))
 
 ;; ;bzo
@@ -1725,7 +1750,7 @@
 ;;   :hints (("goal" :use unfixed-size-wfixn)))
 
 ;; (defthm signed-byte-p-of-wfixn
-;;   (implies (< (fix-size n) m) 
+;;   (implies (< (fix-size n) m)
 ;;            (equal (acl2::signed-byte-p m (wfixn 8 n x))
 ;;                   (integerp m)))
 ;;   :hints (("Goal" :in-theory (enable wfixn-rewrite-to-loghead))))
@@ -1749,7 +1774,7 @@
 
 ;; (defthm wintn-wfixn
 ;;   (implies (wintn s n x)
-;;            (equal (wfixn s n x) 
+;;            (equal (wfixn s n x)
 ;;                   x))
 ;;   :hints (("Goal" :in-theory (enable wintn wfixn))))
 
@@ -1760,10 +1785,10 @@
 ;;                         (< 0 size)
 ;;                         (wintn 8 size x))
 ;;                    (acl2::unsigned-byte-p size x))
-;;           :hints(("goal" 
+;;           :hints(("goal"
 ;;                   :cases ((acl2-numberp size))
-;;                   :in-theory (e/d (wintn 
-;;                                    wintw 
+;;                   :in-theory (e/d (wintn
+;;                                    wintw
 ;; ;multiple-of-8
 ;;                                    wfixw-unsigned-byte-p
 ;;                                    max-offset
@@ -1791,8 +1816,8 @@
 ;;                       t
 ;;                     (wintn 8 8 x)  ;simplify this?
 ;;                     )))
-;;   :hints (("Goal" :in-theory (enable wintn 
-;;                                      wintw 
+;;   :hints (("Goal" :in-theory (enable wintn
+;;                                      wintw
 ;;                                      WFIXW-REDUCTION
 ;;                                      MAX-OFFSET-REWRITES-TO-FLOOR))))
 
@@ -1821,7 +1846,7 @@
 ;;            (equal (wfixn 8 n x)
 ;;                   x))
 ;;   :hints (("Goal" :use (:instance wintn-wfixn (s 8))
-;;            :in-theory (disable wfixn 
+;;            :in-theory (disable wfixn
 ;;                                wintn-wfixn
 ;;                                wintn))))
 
@@ -1833,7 +1858,7 @@
 ;;   (wintn b s (wfixn b s v))
 ;;   :hints (("goal" :in-theory (enable wintn wfixn wintw))))
 
-;; can be expensive? 
+;; can be expensive?
 ;; (defthmd wintn-+
 ;;   (implies (wintn b w y)
 ;;            (<= 0 y))
@@ -1909,7 +1934,7 @@
 ;;            (equal (max-offset (+ -8 x))
 ;;                   (+ -1 (max-offset x))))
 ;;   :hints (("Goal" :in-theory (enable max-offset))))
-         
+
 
 
 ;bbzo
@@ -1918,7 +1943,7 @@
 ;;          (acl2::unsigned-byte-p (+ 8 (* 8 (MAX-OFFSET N))) v))
 ;;   :hints (("Goal" :in-theory (e/d (wintn MAX-OFFSET-FIX-SIZE) ( ;UNFIXED-SIZE-MAX-OFFSET
 ;;                                                                       )))))
-        
+
 
 ;; ;generalized above
 ;; (defthm wintn-unsigned-byte-p
@@ -1927,8 +1952,8 @@
 ;;                     (equal size 32))
 ;;                 (wintn 8 size x))
 ;;            (acl2::unsigned-byte-p size x))
-;;   :hints(("goal" :in-theory (e/d (wintn 
-;;                                   wintw 
+;;   :hints(("goal" :in-theory (e/d (wintn
+;;                                   wintw
 ;;                                   wfixw-unsigned-byte-p)
 ;;                                  (wfixw)))))
 
@@ -1941,7 +1966,7 @@
 
 
 
-                 
+
 ;; adapt?
 ;; (defthm wx-rec-wfixw
 ;;   (implies
@@ -2002,4 +2027,3 @@
 ;;            (equal (wfixn 8 fsize (rx size ptr ram))
 ;;                   (rx size ptr ram)))
 ;;   :hints (("Goal" :in-theory (enable rx wfixn))))
-
