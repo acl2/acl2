@@ -5733,6 +5733,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       y
     (revappend (cdr x) (cons (car x) y))))
 
+(defthm true-listp-revappend-type-prescription
+  (implies (true-listp y)
+           (true-listp (revappend x y)))
+  :rule-classes :type-prescription)
+
 (defthm character-listp-revappend
   (implies (true-listp x)
            (equal (character-listp (revappend x y))
@@ -6083,8 +6088,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (xargs :guard (and (true-listp l)
                               (true-listp ac))))
   (cond ((zp i)
-         (reverse ac))
+         (revappend ac nil))
         (t (first-n-ac (1- i) (cdr l) (cons (car l) ac)))))
+
+(defthm true-listp-first-n-ac-type-prescription
+  (implies (true-listp ac)
+           (true-listp (first-n-ac i l ac)))
+  :rule-classes :type-prescription)
 
 (defun take (n l)
   (declare (xargs :guard
@@ -7499,6 +7509,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       l
     (nthcdr (+ n -1) (cdr l))))
 
+(defthm true-listp-nthcdr-type-prescription
+  (implies (true-listp x)
+           (true-listp (nthcdr n x)))
+  :rule-classes :type-prescription)
+
 (defun logbitp (i j)
   (declare (xargs :guard (and (integerp j)
                               (integerp i)
@@ -7647,7 +7662,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                   (eqlable-listp seq)))))
   (cond
    ((endp seq)
-    (reverse acc))
+    (revappend acc nil))
    ((eql old (car seq))
     (substitute-ac new old (cdr seq) (cons new acc)))
    (t
@@ -7669,6 +7684,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (coerce (substitute-ac new old (coerce seq 'list) nil)
               'string)
     (substitute-ac new old seq nil)))
+
+(defthm stringp-substitute-type-prescription
+  (implies (stringp seq)
+           (stringp (substitute new old seq)))
+  :rule-classes :type-prescription)
+
+(defthm true-listp-substitute-type-prescription
+  (implies (not (stringp seq))
+           (true-listp (substitute new old seq)))
+  :rule-classes :type-prescription)
 
 #+acl2-loop-only
 (defun sublis (alist tree)
@@ -17407,6 +17432,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (character-listp (nthcdr n x)))))
 
  (verify-termination-boot-strap subseq))
+
+(defthm stringp-subseq-type-prescription
+  (implies (stringp seq)
+           (stringp (subseq seq start end)))
+  :rule-classes :type-prescription)
+
+(defthm true-listp-subseq-type-prescription
+  (implies (not (stringp seq))
+           (true-listp (subseq seq start end)))
+  :rule-classes :type-prescription)
 
 ; The following constants and the next two functions, pathname-os-to-unix and
 ; pathname-unix-to-os, support the use of Unix-style filenames in ACL2 as

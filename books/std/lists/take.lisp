@@ -96,20 +96,6 @@ recommend using @('take-redefinition') instead of @('(:definition take)').</p>"
                     :pattern (take n x)
                     :scheme (simpler-take-induction n x))))
 
-  ;; The built-in type-prescription for take is awful:
-  ;;
-  ;; (OR (CONSP (TAKE N L))
-  ;;            (EQUAL (TAKE N L) NIL)
-  ;;            (STRINGP (TAKE N L)))
-  ;;
-  ;; So fix it...
-
-  (in-theory (disable (:type-prescription take)))
-
-  (defthm true-listp-of-take
-    (true-listp (take n xs))
-    :rule-classes :type-prescription)
-
   (defthm consp-of-take
     (equal (consp (take n xs))
            (not (zp n))))
