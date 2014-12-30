@@ -278,6 +278,11 @@ for exploring code in any programming language specified by an ACL2 model to
 discover certain properties of the code.  Demos of Codewalker are also in that
 directory.</p>
 
+<p>The new directory @('projects/hybrid-systems/') is a
+specification/verification project by Shant Harutuntian using ACL2(r) (see
+@(see real)), in support of his 2007 Ph.D. dissertation, with a few recent
+updates (because of ACL2 changes) made by Cuong Chau.</p>
+
 <p>There are also several new small tools and books.</p>
 
 <ul>

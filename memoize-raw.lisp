@@ -5192,6 +5192,7 @@
 ; messages off.  We're disabling EGC anyway, but when we've experimented with
 ; leaving it on, the EGC messages are way too verbose.
 
+  #+(or ccl cmu gcl) ; Lisps where gc-verbose is supported
   (gc-verbose t nil)
 
 ; We turn off EGC because it doesn't seem to work well with memoizing

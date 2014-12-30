@@ -25159,6 +25159,11 @@ Lisp definition."
     #+ccl (ccl::gc-verbose arg1 arg2)
     #+cmu (setq ext:*gc-verbose* arg1)
     #+gcl (setq si:*notify-gbc* arg1)
+
+; Warning: If you change the Lisps for which GC-VERBOSE is supported (by
+; changing the #- expression below), make the corresponding change to #-
+; expressions where gc-verbose is called (currently, in acl2h-init).
+
     #-(or ccl cmu gcl)
     (format t "GC-VERBOSE is not supported in this Common Lisp.~%Contact the ~
                ACL2 developers if you would like to help add such support.")
