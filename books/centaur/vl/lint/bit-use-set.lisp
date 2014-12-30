@@ -1017,7 +1017,7 @@ warnings."
          (warnings (vl-warninglist-fix warnings))
 
          ((when (vl-atomicstmt-p x))
-          (case (tag (vl-stmt-kind x))
+          (case (vl-stmt-kind x)
             ;; - Nothing to do for null statements.
             ;; - Don't think we want to do anything for eventtriggerstmts?
             ;; - Don't think we want to do anything for deassign statements?
