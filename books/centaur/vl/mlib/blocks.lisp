@@ -71,7 +71,9 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
        ,@(project-over-modelement-types '(__elts__ vl-__type__list-p))
        ;; And also fields for generates and ports, since these are not modelements
        (generates vl-genelementlist-p)
-       (ports     vl-portlist-p))
+       (ports     vl-portlist-p)
+       (name      maybe-stringp :rule-classes :type-prescription
+                  "Just a debugging aide, not intended to be semantically meaningful."))
       :extra-binder-names (ifports)
       :tag :vl-genblob
       :layout :tree)
@@ -218,6 +220,7 @@ fields can be reinstalled into the module using @(see vl-genblob->module).</p>"
 
     (b* (((vl-module x)))
       (make-vl-genblob
+       :name x.name
        ,@(template-append
           '(:__elts__ x.__elts__)
           (vl-typenames-to-tmplsubsts
@@ -491,6 +494,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
     :bad-generate-bindings
     :verify-guards
     :guard-hints
+    :global-extra-decls
     :no-new-x))
 
 (defun kwd-alist->filtered-key-args (kwd-alist omit-names)
@@ -557,6 +561,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
                  bad-generate-bindings
                  (verify-guards t)
                  guard-hints
+                 global-extra-decls
                  no-new-x)
         kwd-alist)
 
@@ -604,6 +609,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
          :verify-guards nil
          ,@define-keys
          ,@traditional-decls/docs
+         ,@global-extra-decls
          ,body)
 
        (define ,apply-to-generates ((x vl-genelementlist-p)
@@ -611,6 +617,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
          :returns ,(maybe-mv-fn `(,@returns
                                   ,@(and new-x '((new-x vl-genelementlist-p)))))
          :measure (vl-genblob-generates-count x)
+         ,@global-extra-decls
          (b* (((when (atom x))
                (b* (,@acc-fix-bindings
                     ,@empty-list-bindings)
@@ -627,6 +634,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
          :returns ,(maybe-mv-fn `(,@returns
                                   ,@(and new-x '((new-x vl-genelement-p)))))
          :measure (vl-genblob-generate-count x)
+         ,@global-extra-decls
          (vl-genelement-case x
            :vl-genblock (b* (,@genblock-bindings
                              ((maybe-mv ,@return-names ,@(and new-x '(new-elems)))
@@ -652,6 +660,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
          :returns ,(maybe-mv-fn `(,@returns
                                   ,@(and new-x '((new-x vl-genelementlist-p)))))
          :measure (vl-genblob-elementlist-count x)
+         ,@global-extra-decls
          (b* (,@elementlist-bindings
               ((maybe-mv ,@return-names ,@(and new-x '(new-blob)))
                (,name (vl-sort-genelements x) . ,formal-names))
@@ -663,6 +672,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
          :returns ,(maybe-mv-fn `(,@returns
                                   ,@(and new-x '((new-x vl-genarrayblocklist-p)))))
          :measure (vl-genblob-genarrayblocklist-count x)
+         ,@global-extra-decls
          (b* (((when (atom x))
                (b* (,@acc-fix-bindings
                     ,@empty-list-bindings)
@@ -679,6 +689,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
          :returns ,(maybe-mv-fn `(,@returns
                                   ,@(and new-x '((new-x vl-genarrayblock-p)))))
          :measure (vl-genblob-genarrayblock-count x)
+         ,@global-extra-decls
          (b* (((vl-genarrayblock x))
               ,@genarrayblock-bindings
               ((maybe-mv ,@return-names ,@(and new-x '(new-elems)))

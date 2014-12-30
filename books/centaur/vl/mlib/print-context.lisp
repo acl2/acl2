@@ -121,8 +121,8 @@
                   (vl-print-loc (vl-initial->loc x))))
 
       (:vl-typedef
-       (vl-ps-seq (vl-basic-cw "Typedef at ")
-                  (vl-print-loc (vl-typedef->loc x))))
+       (vl-ps-seq (vl-basic-cw "Typedef of ")
+                  (vl-print-wirename (vl-typedef->name x))))
 
       (:vl-fwdtypedef
        (vl-ps-seq (vl-basic-cw "Fwdtypedef at ")

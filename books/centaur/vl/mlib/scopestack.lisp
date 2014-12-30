@@ -270,24 +270,31 @@ in it, such as a function, task, or block statement."
   :parents (scopestack)
   :tag :vl-blockscope
   :layout :tree
-  ((decls vl-blockitemlist-p)))
+  ((decls vl-blockitemlist-p
+          "Declarations in this scope.")
+
+   (name  maybe-stringp :rule-classes :type-prescription
+          "Just a debugging aide.  This lets us see the name of this scope when
+           we want to print scopes, etc.")))
 
 (define vl-fundecl->blockscope ((x vl-fundecl-p))
   :returns (scope vl-blockscope-p)
   :parents (vl-blockscope vl-scopestack-push)
-  (make-vl-blockscope :decls (vl-fundecl->decls x)))
+  (make-vl-blockscope :decls (vl-fundecl->decls x)
+                      :name  (vl-fundecl->name x)))
 
 (define vl-taskdecl->blockscope ((x vl-taskdecl-p))
   :returns (scope vl-blockscope-p)
   :parents (vl-blockscope vl-scopestack-push)
-  (make-vl-blockscope :decls (vl-taskdecl->decls x)))
+  (make-vl-blockscope :decls (vl-taskdecl->decls x)
+                      :name  (vl-taskdecl->name x)))
 
 (define vl-blockstmt->blockscope ((x vl-stmt-p))
   :guard (eq (vl-stmt-kind x) :vl-blockstmt)
   :returns (scope vl-blockscope-p)
   :parents (vl-blockscope vl-scopestack-push)
-  (make-vl-blockscope :decls (vl-blockstmt->decls x)))
-
+  (make-vl-blockscope :decls (vl-blockstmt->decls x)
+                      :name  (vl-blockstmt->name x)))
 
 
 
@@ -490,7 +497,8 @@ in it, such as a function, task, or block statement."
   (fty::defalist vl-scopeitem-alist
     :parents (vl-scopeitem)
     :key-type stringp
-    :val-type vl-scopeitem-p)
+    :val-type vl-scopeitem-p
+    :count vl-scopeitem-alist-count)
 
   (defoption vl-maybe-scopeitem-p vl-scopeitem-p))
 
@@ -774,7 +782,9 @@ be very cheap in the single-threaded case.</p>"
       (deftranssum vl-scope
         :short "Recognizer for a syntactic element that can have named elements within it."
         (,@(template-proj 'vl-__type__ subst)
-           vl-scopeinfo))
+         ;; [Jared] allowing scopeinfos to be scopes is a little weird, but see
+         ;; for instance transforms/unparam/top for a place where this is useful.
+         vl-scopeinfo))
 
       (defthm vl-scope-p-tag-forward
         ;; BOZO is this better than the rewrite rule we currently add?

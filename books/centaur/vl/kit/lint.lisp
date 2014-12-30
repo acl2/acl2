@@ -32,6 +32,7 @@
 (include-book "../loader/loader")
 
 (include-book "../lint/bit-use-set")
+(include-book "../lint/lucid")
 (include-book "../lint/check-case")
 (include-book "../lint/check-namespace")
 (include-book "../lint/disconnected")
@@ -466,26 +467,35 @@ shown.</p>"
        (design (cwtime (vl-design-make-implicit-wires design)))
        (design (cwtime (vl-design-portdecl-sign design)))
        (design (cwtime (vl-design-portcheck design)))
+       (design (cwtime (vl-design-argresolve design)))
+       (design (cwtime (vl-design-resolve-indexing design)))
+
+       (- (cw "~%vl-lint: starting general checks...~%"))
+       (design (cwtime (vl-design-check-namespace design)))
        (design (cwtime (vl-design-check-case design)))
        (design (cwtime (vl-design-duperhs-check design)))
        (design (cwtime (vl-design-duplicate-detect design)))
        (design (cwtime (vl-design-condcheck design)))
        (design (cwtime (vl-design-leftright-check design)))
-       (design (cwtime (vl-design-drop-missing-submodules design)))
+       (design (cwtime (vl-design-origexprs design)))
+
        ;; BOZO reinstate this??
        ;; (mods (cwtime (vl-modulelist-add-undefined-names mods)))
-       (design (cwtime (vl-design-resolve-indexing design)))
-       ;; (design (cwtime (vl-design-portdecl-sign design)))
-       (design (cwtime (vl-design-origexprs design)))
-       (design (cwtime (vl-design-check-namespace design)))
+       (design (cwtime (vl-design-lucid design)))
 
-       (- (cw "~%vl-lint: processing arguments, parameters...~%"))
-       (design (cwtime (vl-design-argresolve design)))
+       (design
+        ;; Best not to do this until after lucid checking.
+        (cwtime (vl-design-drop-missing-submodules design)))
+
+
        (design
         ;; Bug fixed 2014-12-19: don't do this until after argresolve, because
         ;; in SystemVerilog it can get confused by .* or .foo style port
-        ;; connections.
+        ;; connections.  Also it's best not to do this until after lucid
+        ;; checking because it would screw up lucid's checks.  Actually why
+        ;; are we even doing this?
         (cwtime (vl-design-elim-unused-vars design)))
+
        (design (cwtime (vl-design-dupeinst-check design)))
 
        ;; BOZO not exactly sure where this should go, maybe this will work.
@@ -799,6 +809,11 @@ shown.</p>"
         :vl-fussy-size-warning-2-minor
         :vl-fussy-size-warning-3-minor))
 
+(defconst *lucid-warnings*
+  (list :vl-lucid-error
+        :vl-lucid-unused
+        :vl-lucid-spurious
+        :vl-lucid-unset))
 
 
 
@@ -820,6 +835,7 @@ shown.</p>"
           *fussy-size-minor-warnings*
           *same-ports-warnings*
           *same-ports-minor-warnings*
+          *lucid-warnings*
           ))
 
 (defconst *warnings-ignored*
@@ -929,6 +945,12 @@ you can see \"vl-trunc-minor.txt\" to review them.")))
          "vl-disconnected.txt"
          (vl-ps-update-autowrap-col 68)
          (vl-lint-print-warnings "vl-disconnected.txt" "Disconnected Wire" *disconnected-warnings* reportcard)))
+
+       (state
+        (with-ps-file
+         "vl-lucid.txt"
+         (vl-ps-update-autowrap-col 68)
+         (vl-lint-print-warnings "vl-lucid.txt" "Lucidity Checking" *lucid-warnings* reportcard)))
 
        (state
         (with-ps-file
