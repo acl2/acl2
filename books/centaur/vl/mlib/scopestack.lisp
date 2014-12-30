@@ -1202,7 +1202,9 @@ be very cheap in the single-threaded case.</p>"
         (template
           `(progn
              (define vl-scope-find-__result__
-               :short "Look up a plain identifier to find a __result__ in a scope."
+               :short (cat "Look up a plain identifier to find a "
+                           (str::downcase-string (symbol-name '__result__))
+                           " in a scope.")
                ((name  stringp)
                 (scope vl-scope-p))
                :returns (__result__ (iff (vl-__resulttype__-p __result__) __result__))
@@ -1240,7 +1242,9 @@ be very cheap in the single-threaded case.</p>"
                (memoize 'vl-scope-__result__-alist-aux))
 
              (define vl-scope-__result__-alist
-               :short "Make a fast lookup table for __result__s in a scope.  Memoized."
+               :short (cat "Make a fast lookup table for "
+                           (str::downcase-string (symbol-name '__result__))
+                           "s in a scope.  Memoized.")
                ((scope vl-scope-p))
                :returns (alist vl-__resulttype__-alist-p)
                (make-fast-alist (vl-scope-__result__-alist-aux scope))
@@ -1251,7 +1255,7 @@ be very cheap in the single-threaded case.</p>"
                                  (vl-scope-find-__result__ name scope (:@ :import design))))))
 
              (define vl-scope-find-__result__-fast
-               :short "Like @(see vl-scope-find-__result__), but uses a fast lookup table"
+               :short (cat "Like @(see VL-SCOPE-FIND-" (symbol-name '__result__) "), but uses a fast lookup table")
                ((name stringp)
                 (scope vl-scope-p))
                :enabled t
@@ -1269,7 +1273,9 @@ be very cheap in the single-threaded case.</p>"
                                      (__result__-ss vl-scopestack-p
                                                     "The scopestack showing the
                                                      context of the declaration"))
-                        :short "Find a __definition__ as well as info about where it was found"
+                        :short (cat "Find a "
+                                    (str::downcase-string (symbol-name '__definition__))
+                                    ", as well as info about where it was found.")
                         :measure (vl-scopestack-count ss)
                         (b* ((ss (vl-scopestack-fix ss)))
                           (vl-scopestack-case ss
