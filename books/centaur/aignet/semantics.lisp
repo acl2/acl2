@@ -899,10 +899,20 @@ assignments.</p>"
   :parents (aignet-logic)
   :short "Sequential semantics of aignets"
   :long "<p>The sequential semantics of aignets is given by the function
-ID-EVAL-SEQ.  This takes an aignet, a time frame number, a node ID, a 2D bit
+LIT-EVAL-SEQ.  This takes an aignet, a time frame number, a literal, a 2D bit
 array assigning values to the primary inputs on each frame, and an initial
-assignment to the registers.  It produces the value of that ID under those
-sequential assignments.</p>"
+assignment to the registers.  It produces the value of that literal under those
+sequential assignments.</p>
+
+<p>The following theorem describes @('lit-eval-seq') in terms of combinational evaluation:
+ @(thm lit-eval-seq-in-terms-of-lit-eval)</p>
+
+<p>Here, @('frame-regvals') is a function that creates a register value array
+from the previous frame's sequential evaluations of the next-state nodes
+corresponding to each register.  That is, to get the value of a literal at a
+particular timeframe, first evaluate the register next-states at the previous
+timeframe, then combinationally evaluate the literal with the resulting
+register values and the current frame's input values.</p>"
 
   (local (in-theory (disable acl2::bfix-when-not-1
                              acl2::nfix-when-not-natp)))

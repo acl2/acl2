@@ -21,36 +21,55 @@
 
 
 
-(defsection aignet-seq-eval
+(defsection aignet-eval
  :parents (aignet)
-  :short "Evaluation semantics of AIGNET networks"
+  :short "Evaluating AIGNET networks"
   :autodoc nil
   :long "
 <p>The (combinational) semantics of an AIGNET network is given by the function
-@({'(lit-eval lit vals aignet)').})
-Net-eval is simply an array of bits holding a value for each node in the
-network.  However, lit-eval only uses the values that are stored for primary
-input and register output nodes to compute evaluations.   Furthermore, lit-eval
-does no memoization, so it is not intended to be used in execution.  Rather, it
-is a simple specification for the semantics of nodes.</p>
+@({(lit-eval lit invals regvals aignet).})
+Invals and regvals are bit arrays containing a value for each (respectively)
+primary input and register node in the network.  But because this function is a
+simple recursive specification for the semantics of a node and not written for
+performance, it is likely to perform badly (worst-case exponential time in the
+size of the network).</p>
 
-<p>To actually execute evaluations of nodes, use the functions
-@({(aignet-eval n vals aignet)})
-and
-@({(aignet-eval-frame n k vals frames aignet)})
-both of which return <tt>aignet-vals</tt>.  Instead of giving the evaluation of
-one literal, these record the evaluations of every node (starting at
-<tt>n</tt>) in the <tt>aignet-vals</tt> table. Then,
-@({(get-bit id vals)})
-or
-@({(aignet-eval-lit lit vals)})
-may be used to retrieve them.  These values are then provably equal to,
-respectively,
-@({(lit-eval (mk-lit id 0) vals aignet)})
-and
-@({(lit-eval lit vals aignet),})
-by the following theorem:
-@(thm aignet-eval-lit-of-aignet-eval)</p>
+<p>To actually execute evaluations of nodes, instead do the following:</p>
+
+@({
+ (b* ((vals ;; Resize vals to have one bit for each aignet node.
+       (resize-bits (num-nodes aignet) vals))
+      (vals ;; Copy primary input values from invals into vals.
+       (aignet-invals->vals invals vals aignet))
+      (vals ;; Copy register values from regvals into vals.
+       (aignet-regvals->vals regvals vals aignet))
+      (vals ;; Record the evaluations of all other nodes in vals.
+       (aignet-eval vals aignet))
+      (lit-value1 ;; Look up the value of a particular literal of interest.
+       (aignet-eval-lit lit1 vals))
+      (lit-value2 ;; Look up another literal.
+       (aignet-eval-lit lit2 vals)))
+  ...)
+ })
+
+<p>(Note: invals and regvals have a different layout than vals; they include
+only one entry per (respectively) primary input or register instead of one
+entry per node, so they are indexed by I/O number whereas vals is indexed by
+node ID.)</p>
+
+<p>The following theorem shows the correspondence between a literal looked up
+in @('vals') after running aignet-eval and the @('lit-eval') of that
+literal:</p>
+ @(thm aignet-eval-lit-of-aignet-eval)</p>
+
+<p>These theorems resolve the copying between invals/regvals and @('vals'):
+ @(thm aignet-vals->invals-of-aignet-invals->vals)
+ @(thm aignet-vals->invals-of-aignet-regvals->vals)
+ @(thm aignet-vals->regvals-of-aignet-regvals->vals)
+ @(thm aignet-vals->regvals-of-aignet-invals->vals)</p>
+
+<p>See @(see aignet-seq-eval) for discussion of sequential evaluation.</p>
+
 
 <p>The difference between @('aignet-eval') and @('aignet-eval-frame') is that
 aignet-eval-frame is designed to be used as part of a sequential simulation.
