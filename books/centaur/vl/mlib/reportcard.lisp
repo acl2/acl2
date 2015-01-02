@@ -347,8 +347,7 @@ builds a @(see vl-reportcard-p) that maps @('orignames') to warnings.  We take
 care to ensure that all of the warnings associated with each name are properly
 cleaned up and merged.</p>"
 
-  (b* (((vl-design x) x)
-       (acc nil)
+  (b* ((acc nil)
        (acc (vl-design-origname-reportcard-aux x acc))
        (ret (vl-clean-reportcard acc)))
     (fast-alist-free acc)
