@@ -1233,8 +1233,12 @@
                                (member-eq 'exit quit-conditions))))
                  (and (null val)
                       (member-eq 'value quit-conditions)))
-             (pprogn (f-put-global 'in-verify-flg nil state)
-                     (mv signal val state)))
+
+; We set 'in-verify-flg back to nil when exiting explicitly from verify-fn and,
+; in case we never get that chance because of an interrupt or abort, in
+; ld-read-eval-print.
+
+             (mv signal val state))
             (t (let ((new-last-value
 
 ; We ultimately "succeed" if and only if every instruction "succeeds".  We use
@@ -1402,7 +1406,8 @@
                (pc-main1 (append instructions *standard-oi*)
                          (list 'exit) t state))))))))
        (cond ((equal erp *pc-complete-signal*)
-              (value val))
+              (pprogn (f-put-global 'in-verify-flg nil state)
+                      (value val)))
              (t (mv erp val state))))))))
 
 (defun print-unproved-goals-message (goals state)
