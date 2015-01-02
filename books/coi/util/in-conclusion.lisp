@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 
 #|
 ;; Support for detecting when a term is (or is not) in the current
@@ -41,13 +66,13 @@
     nil))
 
 (defmacro in-conclusion ()
-  `(bind-free (in-conclusion-fn nil acl2::mfc acl2::state) 
+  `(bind-free (in-conclusion-fn nil acl2::mfc acl2::state)
               (in-conclusion-free-variable)))
 
 (defun check-term (negated expr term)
   (declare (type t term))
   (cond
-   ((equal negated :negated) 
+   ((equal negated :negated)
     (equal expr term))
    ((equal negated :any)
     (or (equal expr term)
@@ -55,12 +80,12 @@
              (equal (car term) 'not)
              (consp (cdr term))
              (equal expr (cadr term)))))
-   (t 
+   (t
     (and (consp term)
          (equal (car term) 'not)
          (consp (cdr term))
          (equal expr (cadr term))))))
-      
+
 (defun member-of-clause (negated expr clause)
   (declare (type t clause))
   (if (consp clause)
@@ -85,11 +110,11 @@
 
 ;; ==================================
 
-;; This stuff should probably move to (or come from) syntax:: .. 
+;; This stuff should probably move to (or come from) syntax:: ..
 
 (defun syn__consp (term)
   (declare (type t term))
-  (and 
+  (and
    (equal_len 3 term)
    (equal (car term) 'cons)))
 
@@ -141,7 +166,7 @@
   (declare (xargs :guard (consp term)))
   `(and
     (equal in-conclusion-check-term (list ,@(cdr term)))
-    (bind-free (in-conclusion-check-fn ,top ',(car term) in-conclusion-check-term acl2::mfc acl2::state) 
+    (bind-free (in-conclusion-check-fn ,top ',(car term) in-conclusion-check-term acl2::mfc acl2::state)
                (in-conclusion-free-variable))))
 
 (defun backchaining-check-fn (mfc state)
@@ -158,7 +183,5 @@
        (list (cons 'in-conclusion-free-variable `(quote t)))))
 
 (defmacro not-in-conclusion ()
-  `(bind-free (not-in-conclusion-fn acl2::mfc acl2::state) 
+  `(bind-free (not-in-conclusion-fn acl2::mfc acl2::state)
               (in-conclusion-free-variable)))
-
-

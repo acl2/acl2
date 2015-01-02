@@ -5733,6 +5733,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       y
     (revappend (cdr x) (cons (car x) y))))
 
+(defthm true-listp-revappend-type-prescription
+  (implies (true-listp y)
+           (true-listp (revappend x y)))
+  :rule-classes :type-prescription)
+
 (defthm character-listp-revappend
   (implies (true-listp x)
            (equal (character-listp (revappend x y))
@@ -6083,8 +6088,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (xargs :guard (and (true-listp l)
                               (true-listp ac))))
   (cond ((zp i)
-         (reverse ac))
+         (revappend ac nil))
         (t (first-n-ac (1- i) (cdr l) (cons (car l) ac)))))
+
+(defthm true-listp-first-n-ac-type-prescription
+  (implies (true-listp ac)
+           (true-listp (first-n-ac i l ac)))
+  :rule-classes :type-prescription)
 
 (defun take (n l)
   (declare (xargs :guard
@@ -7499,6 +7509,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       l
     (nthcdr (+ n -1) (cdr l))))
 
+(defthm true-listp-nthcdr-type-prescription
+  (implies (true-listp x)
+           (true-listp (nthcdr n x)))
+  :rule-classes :type-prescription)
+
 (defun logbitp (i j)
   (declare (xargs :guard (and (integerp j)
                               (integerp i)
@@ -7647,7 +7662,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                   (eqlable-listp seq)))))
   (cond
    ((endp seq)
-    (reverse acc))
+    (revappend acc nil))
    ((eql old (car seq))
     (substitute-ac new old (cdr seq) (cons new acc)))
    (t
@@ -7669,6 +7684,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (coerce (substitute-ac new old (coerce seq 'list) nil)
               'string)
     (substitute-ac new old seq nil)))
+
+(defthm stringp-substitute-type-prescription
+  (implies (stringp seq)
+           (stringp (substitute new old seq)))
+  :rule-classes :type-prescription)
+
+(defthm true-listp-substitute-type-prescription
+  (implies (not (stringp seq))
+           (true-listp (substitute new old seq)))
+  :rule-classes :type-prescription)
 
 #+acl2-loop-only
 (defun sublis (alist tree)
@@ -12283,8 +12308,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; consider adding such functions to the list *oneify-primitives*.
 
   '(relieve-hyp-synp ; *deep-gstack*
-    apply-abbrevs-to-lambda-stack1 ; *nth-update-tracingp*
-    nth-update-rewriter ; *nth-update-tracingp*
     ev-w-lst ; *the-live-state*
     simplify-clause1 ; dmr-flush
     ev-rec-acl2-unwind-protect ; *acl2-unwind-protect-stack*
@@ -12304,12 +12327,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     user-stobj-alist-safe ; chk-user-stobj-alist
     comp-fn ; compile-uncompiled-defuns
     fmt-ppr ; print-infix
-    get-memo ; *nu-memos*
     acl2-raw-eval ; eval
     pstack-fn ; *pstk-stack*
     dmr-start-fn ; dmr-start-fn-raw
-    memo-exit ; *nu-memos*
-    memo-key1 ; *nu-memos*
     ev-fncall-meta ; *metafunction-context*
     ld-loop ; *ld-level*
     print-summary ; dmr-flush
@@ -12325,7 +12345,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     prove-loop ; *deep-gstack*
     chk-virgin ; chk-virgin2
     w-of-any-state ; live-state-p
-    lambda-abstract ; *lambda-abstractp*
     ld-fn-body ; reset-parallelism-variables, *first-entry-to-ld-fn-body-flg*
     untranslate ; *the-live-state*
     longest-common-tail-length-rec ; eq
@@ -12335,7 +12354,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     add-polys ; *add-polys-counter*
     dmr-stop-fn ; dmr-stop-fn-raw
     ld-print-results ; print-infix
-    apply-abbrevs-to-lambda-stack ; *nth-update-tracingp*
     flpr ; print-flat-infix
     close-trace-file-fn ; *trace-output*
     ev-fncall-rec ; raw-ev-fncall
@@ -12585,7 +12603,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     wormhole verify-termination-boot-strap start-proof-tree
     f-decrement-big-clock defabsstobj defstobj defund defttag
     defdoc push-gframe defthmd f-get-global
-    set-nu-rewriter-mode
 
 ; Most of the following were discovered after we included macros defined in
 ; #+acl2-loop-only whose definitions are missing in #-acl-loop-only.
@@ -17416,6 +17433,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
  (verify-termination-boot-strap subseq))
 
+(defthm stringp-subseq-type-prescription
+  (implies (stringp seq)
+           (stringp (subseq seq start end)))
+  :rule-classes :type-prescription)
+
+(defthm true-listp-subseq-type-prescription
+  (implies (not (stringp seq))
+           (true-listp (subseq seq start end)))
+  :rule-classes :type-prescription)
+
 ; The following constants and the next two functions, pathname-os-to-unix and
 ; pathname-unix-to-os, support the use of Unix-style filenames in ACL2 as
 ; described in the Essay on Pathnames in interface-raw.lisp.
@@ -20355,12 +20382,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq key :let*-abstractionp)
          (member-eq val '(t nil)))
 
-; Rockwell Addition: See the doc string associated with
-; set-nu-rewriter-mode.
-
-        ((eq key :nu-rewriter-mode)
-         (member-eq val '(nil t :literals)))
-
         ((eq key :backchain-limit)
          (and (true-listp val)
               (equal (length val) 2)
@@ -21147,30 +21168,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                      (table-alist 'acl2-defaults-table wrld)))
       *default-rewrite-stack-limit*))
 
-#+acl2-loop-only
-(defmacro set-nu-rewriter-mode (x)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (progn (table acl2-defaults-table :nu-rewriter-mode ,x)
-           (table acl2-defaults-table :nu-rewriter-mode))))
-
-#-acl2-loop-only
-(defmacro set-nu-rewriter-mode (x)
-  (declare (ignore x))
-  nil)
-
-(defun nu-rewriter-mode (wrld)
-  (declare (xargs :mode :program))
-  (cdr (assoc-eq :nu-rewriter-mode
-                 (table-alist 'acl2-defaults-table wrld))))
-
-; Through Version_2.9.4, we set the nu-rewriter mode by default as follows:
-; (set-nu-rewriter-mode nil)
-; But nil is the default anyhow, and we prefer to keep the acl2-defaults-table
-; clean so that its initial value agrees with the value in
-; chk-raise-portcullis1.  This isn't essentially, but for example it avoids
-; laying down extra table forms when we :puff.
-
 ; Terminology: case-split-limitations refers to a list of two
 ; "numbers" (either of which might be nil meaning infinity), sr-limit
 ; is the name of the first number, and case-limit is the name of the
@@ -21214,11 +21211,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   nil)
 
 ; Up through Version_2.9.4 we set case split limitations as follows:
-; (set-case-split-limitations *default-case-split-limitations*)
-; But as explained in the comment above for set-nu-rewriter-mode, we prefer to
-; start with an acl2-defaults-table that agrees with the one in
-; chk-raise-portcullis1.  So we instead we set the initial acl2-defaults-table
-; as follows, in end-prehistoric-world.
+; (set-case-split-limitations *default-case-split-limitations*).  But we prefer
+; to start with an acl2-defaults-table that agrees with the one in
+; chk-raise-portcullis1; this isn't essential, but for example it avoids laying
+; down extra table forms when we :puff.  So we instead we set the initial
+; acl2-defaults-table as follows, in end-prehistoric-world.
 
 (defconst *initial-acl2-defaults-table*
   `((:DEFUN-MODE . :LOGIC)
@@ -25162,6 +25159,11 @@ Lisp definition."
     #+ccl (ccl::gc-verbose arg1 arg2)
     #+cmu (setq ext:*gc-verbose* arg1)
     #+gcl (setq si:*notify-gbc* arg1)
+
+; Warning: If you change the Lisps for which GC-VERBOSE is supported (by
+; changing the #- expression below), make the corresponding change to #-
+; expressions where gc-verbose is called (currently, in acl2h-init).
+
     #-(or ccl cmu gcl)
     (format t "GC-VERBOSE is not supported in this Common Lisp.~%Contact the ~
                ACL2 developers if you would like to help add such support.")

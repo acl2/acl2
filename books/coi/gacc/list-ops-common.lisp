@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "GACC")
 
 ;try to include less of super-ihs:
@@ -98,7 +123,7 @@
            :in-theory (e/d (LIST::NTH-0-BECOMES-CAR
                              NTH-0-BECOMES-CAR-gen
                             (:induction nth)
-                            logapp-list) 
+                            logapp-list)
                            ( ACL2::EQUAL-LOGAPP-X-Y-Z ;bzo
                             ACL2::EQUAL-LOGAPP-X-Y-Z-CONSTANTS
                             )))))
@@ -108,7 +133,7 @@
 
 ;;
 ;; LOGEXT-LIST
-;;        
+;;
 
 (defund logext-list (size i-list)
   (declare (xargs :guard (integer-listp i-list))
@@ -173,7 +198,7 @@
   (implies (integer-listp vals)
            (equal (ifix-list vals)
                   vals)))
- 
+
 (defthm integer-listp-of-logext-list
   (integer-listp (logext-list n x))
   :hints (("Goal" :in-theory (enable logext-list))))
@@ -236,7 +261,7 @@
            (equal (logapp-list size1 i-list (loghead size2 j))
                   (loghead-list (+ size1 size2)  (logapp-list size1 i-list j))))
   :hints (("Goal" :in-theory (e/d (logapp-list
-                                   ACL2::LOGTAIL-LOGHEAD-BETTER) 
+                                   ACL2::LOGTAIL-LOGHEAD-BETTER)
                                   (ACL2::LOGHEAD-LOGTAIL)))))
 
 
@@ -335,7 +360,7 @@
          (repeat (len ivals) (acl2::logcdr j))))
 
 (defthm loghead-list-of-repeat-15
-  (equal (loghead-list 15 (repeat n v))        
+  (equal (loghead-list 15 (repeat n v))
          (repeat n  (loghead 15 v)))
   :hints (("Goal" :in-theory (enable loghead-list repeat))))
 
@@ -405,7 +430,7 @@
                                                         )))))
 
 ;move
-(defthm subbagp-of-two-logapp-list-calls 
+(defthm subbagp-of-two-logapp-list-calls
   (implies (and (bag::subbagp vals1 vals2)
                 (integer-listp vals1)
                 (integer-listp vals2)
@@ -437,7 +462,7 @@
            (equal (loghead-list width x)
                   (list::fix x)
                   ))
-  :hints (("Goal" :in-theory (enable loghead-list))))        
+  :hints (("Goal" :in-theory (enable loghead-list))))
 
 (defthm unique-of-logext-list
   (implies (and (integerp n) (< 0 n))
@@ -484,7 +509,7 @@
   (("Goal" :in-theory (enable loghead-list
                               logapp-list acl2::loghead-logapp))))
 
-(theory-invariant (incompatible (:rewrite loghead-list-of-logapp-list) 
+(theory-invariant (incompatible (:rewrite loghead-list-of-logapp-list)
                                 (:rewrite logapp-list-of-loghead)))
 
 
@@ -499,7 +524,7 @@
 ;;            (equal (logapp-list size1 i-list (loghead size2 j))
 ;;                   (loghead-list (+ size1 size2)  (logapp-list size1 i-list j))))
 ;;   :hints (("Goal" :in-theory (e/d (logapp-list
-;;                                    ACL2::LOGTAIL-LOGHEAD-BETTER) 
+;;                                    ACL2::LOGTAIL-LOGHEAD-BETTER)
 ;;                                   (ACL2::LOGHEAD-LOGTAIL)))))
 
 ;;
@@ -542,7 +567,7 @@
          (if (endp list)
              0
            (wintlist (cdr list)))))
-        
+
 ;bzo gen!
 (defthm loghead-16-of-wintlist
   (equal (loghead 16 (wintlist byte-list))
@@ -569,7 +594,7 @@
 (defund enlistw (size v)
   (declare (type integer v)
            (type (integer 0 *) size))
-  (if (zp size) 
+  (if (zp size)
       nil
     (cons (acl2::loghead 8 v)
           (enlistw (1- size) (acl2::logtail 8 v)))))
@@ -642,7 +667,7 @@
           (if (zp size1)
               (list size1 size2 v)
             (elistw-induct (+ -1 size1) (+ -1 size2) (acl2::logtail 8 v)))))
- 
+
  (defthm enlistw-wfixw
    (implies (<= (nfix size1) (nfix size2))
             (equal (enlistw size1 (acl2::loghead (* 8 (nfix size2)) v))
@@ -678,7 +703,7 @@
                  )
             (equal (enlistw size1 (acl2::loghead n v))
                    (enlistw size1 v)))
-   :hints (("goal" :induct (elistw-induct2 size1 n v) 
+   :hints (("goal" :induct (elistw-induct2 size1 n v)
             :do-not '(generalize eliminate-destructors)
             :in-theory (enable enlistw zp)))))
 
@@ -688,7 +713,7 @@
 (defund wfixlist (list)
   (declare (xargs :guard (integer-listp list)))
   (if (consp list)
-      (cons (acl2::loghead 8 ;wfixn 8 1 
+      (cons (acl2::loghead 8 ;wfixn 8 1
                            (car list)) ;should this be  (wfixn 8 8 (car list))?
             (wfixlist (cdr list)))
     nil))
@@ -697,7 +722,7 @@
 (defund wfixedlist (list)
   (declare (type t list))
   (if (consp list)
-      (and (acl2::unsigned-byte-p 8 ;wintn 8 1 
+      (and (acl2::unsigned-byte-p 8 ;wintn 8 1
                   (car list))  ;should this be  (wintn 8 8 (car list))?
            (wfixedlist (cdr list)))
     (null list) ;maybe we don't want to do this check, now that we have nice list congruences??
@@ -743,7 +768,7 @@
          (;wfixw 8 size
           acl2::loghead (* 8 (nfix size))
           v))
-  :hints (("goal" :in-theory (enable ;wintn 
+  :hints (("goal" :in-theory (enable ;wintn
                                      ;open-wfixw
                               enlistw
                               ;wfixlist
@@ -861,7 +886,7 @@
 
 (defthm my-wfixlist-when-numbytes-is-not-positive
   (implies (<= numbytes 0)
-           (equal (my-wfixlist numbytes byte-list) 
+           (equal (my-wfixlist numbytes byte-list)
                   nil))
   :hints (("Goal" :in-theory (enable my-wfixlist))))
 
@@ -932,7 +957,7 @@
 
 (defthm wfixedlist-of-repeat
   (equal (wfixedlist (repeat size elem))
-         (if (zp size) 
+         (if (zp size)
              t
            (unsigned-byte-p 8 elem)))
   :hints (("Goal" :in-theory (enable wfixedlist repeat))))
@@ -1019,7 +1044,7 @@
            (gacc::unsigned-byte-p-list n (bag::remove-1 a x)))
   :hints (("Goal" :in-theory (enable gacc::unsigned-byte-p-list bag::remove-1))))
 
-(defthm unsigned-byte-p-list-implies-integer-listp 
+(defthm unsigned-byte-p-list-implies-integer-listp
   (implies (gacc::unsigned-byte-p-list n lst) ;n is a free var
            (equal (integer-listp lst)
                   (true-listp lst))))
@@ -1028,7 +1053,7 @@
 ;use this one instead?
 (DEFUN INTEGER-LISTP-better (ACL2::L)
   (DECLARE (XARGS :GUARD T))
-  (COND ((ATOM ACL2::L) 
+  (COND ((ATOM ACL2::L)
          t)
         (T (AND (INTEGERP (CAR ACL2::L))
                 (INTEGER-LISTP-better (CDR ACL2::L))))))
@@ -1075,7 +1100,7 @@
                                   (gacc::logapp-list 16 x j))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable gacc::logapp-list bag::remove-1))))
-        
+
 (local
  (defun 2-list-induct (l1 l2)
    (if (endp l1)
@@ -1099,8 +1124,8 @@
   (implies (and (gacc::unsigned-byte-p-list 16 vals1)
                 (gacc::unsigned-byte-p-list 16 vals2)
                 (bag::unique vals2) ;okay?
-                (true-listp vals1) 
-                (true-listp vals2) 
+                (true-listp vals1)
+                (true-listp vals2)
                 )
            (equal (bag::subbagp (gacc::logapp-list 16 vals1 j)
                                 (gacc::logapp-list 16 vals2 j))

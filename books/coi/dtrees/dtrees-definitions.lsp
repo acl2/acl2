@@ -1,3 +1,33 @@
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ; Jared: what's this file for?  It's not certifiable, so I'm
 ; renaming it to a .lsp extension for Make compatibility
 
@@ -9,7 +39,7 @@
 ;(in-package "DTREES")
 
 ;;
-;; This file isolates dtrees definitions and types. The file currently contains 
+;; This file isolates dtrees definitions and types. The file currently contains
 ;; the following ACL2 constructs as they occur in the dtrees book:
 ;; - defun
 ;; - defund
@@ -49,7 +79,7 @@
 
 (defthm dtreefix-when-dtreep
   (implies (dtreep dtree)
-           (equal (dtreefix dtree) 
+           (equal (dtreefix dtree)
                   dtree))
   :hints(("Goal" :in-theory (enable dtreefix))))
 
@@ -71,7 +101,7 @@
                               (dtreemapp map))
                   :verify-guards nil))
   (if (map::empty-exec map)
-      (map::emptymap)    
+      (map::emptymap)
     (map::set (map::head map)
               (dtreefix (map::get (map::head map) map))
               (dtreemapfix (map::tail map)))))
@@ -86,7 +116,7 @@
 
 (defthm dtreemapfix-when-dtreemapp
   (implies (dtreemapp map)
-           (map::equiv (dtreemapfix map) 
+           (map::equiv (dtreemapfix map)
                        map))
   :hints(("Goal" :in-theory (enable dtreemapfix))))
 
@@ -99,7 +129,7 @@
 (defthm in-of-head-of-dtreemapfix-when-nonempty
   (implies (not (map::empty map))
            (map::in (map::head (dtreemapfix map)) map))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable map::in-head)
           :use (:instance map::in-head
                           (map (dtreemapfix map))))))
@@ -212,7 +242,7 @@
 (defthm dtreep-of-get
   (dtreep (get path dtree))
   :hints(("Goal" :in-theory (enable get))))
-  
+
 (defthm get-of-dtreefix
   (equal (get path (dtreefix dtree))
          (get path dtree))
@@ -289,7 +319,7 @@
   (declare (xargs :guard (dtreep dtree)))
   (if (consp path)
       (and (map::in (car path) (children dtree))
-           (in (cdr path) 
+           (in (cdr path)
                (map::get (car path) (children dtree))))
     t))
 
@@ -388,7 +418,7 @@
   (let ((map (dtreemapfix map)))
     (if (map::empty-exec map)
         (list nil)
-      (set::union (set::multicons 
+      (set::union (set::multicons
                     (map::head map)
                     (aux-domain (children (map::get (map::head map) map))))
                    (aux-domain (map::tail map))))))
@@ -406,7 +436,7 @@
 (defund domain (dtree)
   (declare (xargs :guard (dtreep dtree)))
   (aux-domain (children dtree)))
-  
+
 (defthm domain-of-dtreefix
   (equal (domain (dtreefix dtree))
          (domain dtree))
@@ -424,7 +454,7 @@
 
 (defthm in-nil-domain
   (set::in nil (domain dtree))
-  :rule-classes ((:forward-chaining 
+  :rule-classes ((:forward-chaining
                   :trigger-terms ((domain dtree)))))
 
 ;; We introduce four functions: (haschild name dtree) returns true iff a dtree
@@ -629,7 +659,7 @@
 ;; hood for deps.  Finally, we also provide a function, depsmap, which computes
 ;; the dependency set for a map of dtrees.
 
-(mutual-recursion 
+(mutual-recursion
 
  (defund mrdeps (dtree)
    (declare (xargs :guard (dtreep dtree)
@@ -663,7 +693,7 @@
                   :verify-guards nil))
   (mbe :logic (deps1 (domain dtree) dtree)
        :exec (mrdeps dtree)))
-  
+
 (defund depsmap (map)
   (declare (xargs :guard (and (mapp map)
                               (dtreemapp map))
@@ -711,7 +741,7 @@
 
 ;; MEMBERSHIP IN THE DEPS SET
 ;;
-;; An essential and "obvious" property of the deps set is that, if a is an 
+;; An essential and "obvious" property of the deps set is that, if a is an
 ;; element of the localdeps for any node within the tree, a is also a member
 ;; of the deps set.  This is relatively straightforward for the simple deps
 ;; function, but proving this property is more complicated for the mutually
@@ -720,7 +750,7 @@
 ;; Recall that what we want to prove is something like the following:
 ;;
 ;;   Given a dtree, dtree.
-;;   Given a path p, with (in p dtree).  
+;;   Given a path p, with (in p dtree).
 ;;   Given *p = (get p dtree), i.e., the tree p points to.
 ;;   Given (set::in dep (localdeps *p)).
 ;;   Show that: (in dep (mrdeps dtree)).
@@ -753,7 +783,7 @@
 ;;   Given that p is a consp.
 ;;
 ;; Once we phrase the theorem right, it goes through without much of a problem.
-;; The tricky part with mutual recursion seems to be just stating the property 
+;; The tricky part with mutual recursion seems to be just stating the property
 ;; that you are trying to prove.
 
 (defthm in-deps1-when-in-localdeps
@@ -773,7 +803,7 @@
 (defthm in-deps-when-in-localdeps
   (implies (set::in a (localdeps dtree))
            (set::in a (deps dtree)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable in-deps-when-in-localdeps-of-get)
           :use (:instance in-deps-when-in-localdeps-of-get
                           (path nil)))))
@@ -781,7 +811,7 @@
 (defthm empty-of-localdeps-of-get-when-deps-empty
   (implies (set::empty (deps dtree))
            (set::empty (localdeps (get path dtree))))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable in-deps-when-in-localdeps-of-get)
           :use (:instance in-deps-when-in-localdeps-of-get
                           (a (set::head (localdeps (get path dtree))))))))
@@ -789,7 +819,7 @@
 (defthm empty-of-localdeps-when-deps-empty
   (implies (set::empty (deps dtree))
            (set::empty (localdeps dtree)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable empty-of-localdeps-of-get-when-deps-empty)
           :use (:instance empty-of-localdeps-of-get-when-deps-empty
                           (path nil)))))
@@ -814,7 +844,7 @@
 
 (local (defthm open-mrdepsmap-empty
          (implies (map::empty map)
-                  (equal (mrdepsmap map) 
+                  (equal (mrdepsmap map)
                          (set::emptyset)))
          :hints(("Goal" :in-theory (enable mrdepsmap)))))
 
@@ -880,7 +910,7 @@
 (defthm in-deps1-is-in-localdeps-of-get-depsource1
   (implies (not (set::in a (localdeps dtree)))
            (equal (set::in a (deps1 locs dtree))
-                  (set::in a (localdeps 
+                  (set::in a (localdeps
                                (get (depsource1 a locs dtree) dtree)))))
   :hints(("Goal" :in-theory (enable deps1 depsource1))))
 
@@ -894,7 +924,7 @@
    (if (set::in a (localdeps dtree))
        (mv t nil)
      (mrdepsourcemap a (children dtree))))
- 
+
  (defund mrdepsourcemap (a map)
    (declare (xargs :guard (dtreemapp map)
                    :measure (countmap map)
@@ -949,7 +979,7 @@
 ;; that (set::in a (mrdeps dtree)), and we are done. QED.
 ;;
 ;; The vice-versa case is just the same, but with mrdepsource instead.
-      
+
 (local (defthm in-mrdeps-when-in-deps
          (implies (set::in a (deps dtree))
                   (set::in a (mrdeps dtree)))
@@ -967,7 +997,7 @@
                                   (a a)
                                   (path (mv-nth 1 (mrdepsource a dtree)))
                                   (dtree dtree)))))))
-         
+
 (defthm mrdeps-is-deps
   (equal (mrdeps dtree)
          (deps dtree)))
@@ -987,7 +1017,7 @@
 (defthm deps1-of-dtreefix
   (equal (deps1 locs (dtreefix dtree))
          (deps1 locs dtree))
-  :hints(("Goal" :in-theory (e/d (deps1) 
+  :hints(("Goal" :in-theory (e/d (deps1)
                                  (set::double-containment)))))
 
 (defthm deps-of-dtreefix
@@ -997,7 +1027,7 @@
 
 (defthm depsmap-when-empty
   (implies (map::empty map)
-           (equal (depsmap map) 
+           (equal (depsmap map)
                   (set::emptyset)))
   :hints(("Goal" :in-theory (enable depsmap))))
 
@@ -1018,15 +1048,15 @@
                 (set::in a (depsmap sub)))
            (set::in a (depsmap super)))
   :hints(("Goal" :in-theory (enable depsmap))
-         ("Subgoal *1/3" 
-          :in-theory (e/d (depsmap) 
+         ("Subgoal *1/3"
+          :in-theory (e/d (depsmap)
                           (equal-of-gets-when-submap))
           :use (:instance equal-of-gets-when-submap
                           (map::key (map::head sub))
                           (map::sub sub)
                           (map::super super)))
-         ("Subgoal *1/2" 
-          :in-theory (e/d (depsmap) 
+         ("Subgoal *1/2"
+          :in-theory (e/d (depsmap)
                           (map::submap-transitive-one
                            map::submap-transitive-two))
           :use (:instance map::submap-transitive-one
@@ -1040,13 +1070,13 @@
            (if (set::in a (deps (map::get (map::head map) map)))
                (map::head map)
              (findtree a (map::tail map))))))
- 
+
 (local (defthm findtree-works
          (implies (set::in a (depsmap map))
                   (and (map::in (findtree a map) map)
                        (set::in a (deps (map::get (findtree a map) map)))))
          :hints(("Goal" :in-theory (enable depsmap findtree)))))
- 
+
 (defthm in-depsmap-when-in-depsmap-of-erase
   (implies (set::in a (depsmap (map::erase name map)))
            (set::in a (depsmap map)))
@@ -1055,7 +1085,7 @@
           :use (:instance findtree-works
                           (a a)
                           (map (map::erase name map))))))
-                            
+
 (defthm in-deps-when-not-in-erase-from-map
   (implies (and (set::in a (depsmap map))
                 (not (set::in a (depsmap (map::erase name map)))))
@@ -1611,7 +1641,7 @@
 
 ;; We say that x is a subtree of y if both (1) the domain of x is a subset of
 ;; the domain of y, and (2) for every path in the domain of x, the localdeps of
-;; this path in x are a subset of the localdeps of this path in y.  
+;; this path in x are a subset of the localdeps of this path in y.
 
 (defund subtree1 (locs sub super)
   (declare (xargs :guard (and (set::setp locs)
@@ -1619,7 +1649,7 @@
                               (dtreep super))))
   (or (set::empty locs)
       (and (in (set::head locs) super)
-           (set::subset 
+           (set::subset
             (localdeps (get (set::head locs) sub))
             (localdeps (get (set::head locs) super)))
            (subtree1 (set::tail locs) sub super))))
@@ -1682,7 +1712,7 @@
    (implies (and (subtree sub super)
                  (set::in a (localdeps (get path sub))))
             (set::in a (localdeps (get path super))))
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (disable subset-of-localdeps-of-gets-when-subtree)
            :use (:instance subset-of-localdeps-of-gets-when-subtree))))
 
@@ -1715,14 +1745,14 @@
 
 (defthm subtree-of-get-with-get
   (implies (subtree sub super)
-           (subtree (get path sub) 
+           (subtree (get path sub)
                     (get path super))))
 
 (defthm in-children-of-super-when-in-children-of-subtree
   (implies (and (subtree sub super)
                 (map::in key (children sub)))
            (map::in key (children super)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable in-children-is-in-of-singleton-path))))
 
 (defthm subset-of-domains-when-subtree
@@ -1761,13 +1791,13 @@
   (implies (and (subtree sub super)
                 (set::in a (deps sub)))
            (set::in a (deps super)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :use (:instance in-deps-of-get-super-when-in-deps-of-get-subtree
                           (path nil)))))
 
 (defthm subset-of-deps-when-subtree
   (implies (subtree sub super)
-           (set::subset (deps sub) 
+           (set::subset (deps sub)
                          (deps super))))
 
 
@@ -1785,7 +1815,7 @@
                               (dtreep super))))
   (or (set::empty locs)
       (and (in (set::head locs) super)
-           (set::subset 
+           (set::subset
             (deps (get (set::head locs) sub))
             (deps (get (set::head locs) super)))
            (subdeps1 (set::tail locs) sub super))))
@@ -1848,7 +1878,7 @@
   (implies (and (subdeps sub super)
                 (set::in a (deps (get path sub))))
            (set::in a (deps (get path super))))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable subset-of-deps-of-gets-when-subdeps)
           :use (:instance subset-of-deps-of-gets-when-subdeps))))
 
@@ -1888,9 +1918,9 @@
   (implies (and (subdeps sub super)
                 (map::in key (children sub)))
            (map::in key (children super)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable in-children-is-in-of-singleton-path))))
-          
+
 (defthm subset-of-domains-when-subdeps
   (implies (subdeps sub super)
            (set::subset (map::domain (children sub))
@@ -1926,10 +1956,10 @@
            (equal (map::in key sub)
                   nil))
   :hints(("Goal" :in-theory (enable subtreemap))))
-                      
+
 (defthm subtree-of-gets-when-subtreemap
   (implies (subtreemap sub super)
-           (equal (subtree (map::get key sub) 
+           (equal (subtree (map::get key sub)
                            (map::get key super))
                   (if (map::in key sub)
                       t
@@ -1937,7 +1967,7 @@
                              (map::get key super)))))
   :hints(("Goal" :in-theory (enable subtreemap))))
 
-       
+
 (defthm subtreemap-reflexive
   (subtreemap x x))
 
@@ -1967,7 +1997,7 @@
   (implies (subtree sub super)
            (subtreemap (children sub)
                        (children super)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable get-of-children-is-get-of-singleton-path))))
 
 (defund subdepsmap (sub super)
@@ -1996,11 +2026,11 @@
 
 (defthm subdeps-of-gets-when-subdepsmap
   (implies (subdepsmap sub super)
-           (equal (subdeps (map::get key sub) 
+           (equal (subdeps (map::get key sub)
                            (map::get key super))
                   (if (map::in key sub)
                       t
-                    (subdeps (map::emptymap) 
+                    (subdeps (map::emptymap)
                              (map::get key super)))))
   :hints(("Goal" :in-theory (enable subdepsmap))))
 
@@ -2033,7 +2063,7 @@
   (implies (subdeps sub super)
            (subdepsmap (children sub)
                        (children super)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable get-of-children-is-get-of-singleton-path))))
 
 (defthm subdepsmap-when-subtreemap
@@ -2043,14 +2073,14 @@
 ;; We introduce dtree equivalences using "mutual subtrees" and "mutual
 ;; subdeps", so that dtrees are equivalent iff (1) their domains are the same,
 ;; and (2) the localdeps/deps at every path within both trees are the same
-;; sets.  
+;; sets.
 
 (defund equiv (x y)
   (declare (xargs :guard (and (dtreep x)
                               (dtreep y))))
   (and (subtree x y)
        (subtree y x)))
-         
+
 (defund equivdeps (x y)
   (declare (xargs :guard (and (dtreep x)
                               (dtreep y))))
@@ -2551,11 +2581,11 @@
   (implies (set::setp x)
            (equal (list::memberp a x)
                   (set::in a x)))
-  :hints(("Goal" :in-theory (enable set::sfix 
+  :hints(("Goal" :in-theory (enable set::sfix
                                     set::setp
-                                    set::in 
-                                    set::empty 
-                                    set::head 
+                                    set::in
+                                    set::empty
+                                    set::head
                                     set::tail))))
 
 
@@ -2563,12 +2593,12 @@
 ;; Mini Essay on The Definition of Leafp
 ;;
 ;; Although it seems like a simple idea, there are actually many ways that we
-;; could go about defining leafp.  
+;; could go about defining leafp.
 ;;
 ;; One approach, and the approach that we use for the actual defun of leafp, is
 ;; to think of leafp as a recursive function that is basically a copy of "in",
 ;; except that in the base case, we ensure that the final node we arrive at has
-;; no children.  This approach might be convenient to use in inductive proofs 
+;; no children.  This approach might be convenient to use in inductive proofs
 ;; about leafp.
 ;;
 ;; An alternate approach is to define leafp nonrecursively.  In particular,
@@ -2599,7 +2629,7 @@
   (declare (xargs :guard (dtreep dtree)))
   (if (consp path)
       (and (map::in (car path) (children dtree))
-           (leafp (cdr path) 
+           (leafp (cdr path)
                   (map::get (car path) (children dtree))))
     (map::empty (children dtree))))
 
@@ -2628,7 +2658,7 @@
 ;;                   (leafp path dtree)))
 ;;   :hints(("Goal" :in-theory (enable leafp-redefinition-in))))
 
-;; (theory-invariant 
+;; (theory-invariant
 ;;  (incompatible (:rewrite children-empty-when-in-dtree)
 ;;                (:definition leafp-redefinition-in)))
 
@@ -2641,7 +2671,7 @@
                 (in b dtree))
            (equal (path::dominates a b)
                   (list::equiv a b)))
-  :hints(("Goal" :in-theory (enable leafp in path::dominates)))) 
+  :hints(("Goal" :in-theory (enable leafp in path::dominates))))
 
 (defthm dominates-when-leafp-two
   (implies (and (in b dtree)    ;; dtree is free
@@ -2674,14 +2704,14 @@
                 (in b dtree))
            (equal (path::strictly-dominates a b)
                   nil))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (e/d (path::strictly-dominates)
                           (dominates-when-leafp-one))
           :use (:instance dominates-when-leafp-one))))
 
 (defthm strictly-dominates-when-leafp-two
   (implies (and (in b dtree)    ;; dtree is free
-                (leafp a dtree))               
+                (leafp a dtree))
            (equal (path::strictly-dominates a b)
                   nil)))
 
@@ -2701,7 +2731,7 @@
   (implies (leafp path dtree)
            (equal (deps (get path dtree))
                   (localdeps (get path dtree))))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable leafp-redefinition-in)
           :use (:instance mrdeps (dtree (get path dtree))))))
 
@@ -2711,13 +2741,13 @@
                   '(nil)))
   :hints(("Goal" :in-theory (enable leafp-redefinition-in domain))))
 
-(defthm in-of-get-when-leafp 
+(defthm in-of-get-when-leafp
   (implies (leafp path dtree)
            (equal (in a (get path dtree))
                   (list::equiv a nil)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable leafp-redefinition-in)
-          :use (:instance in-of-domain 
+          :use (:instance in-of-domain
                           (path (list::fix a))
                           (dtree (get path dtree))))))
 
@@ -2725,7 +2755,7 @@
   (implies (leafp path dtree)
            (equal (in (append path a) dtree)
                   (list::equiv a nil)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable in-of-get-when-leafp)
           :use (:instance in-of-get-when-leafp))))
 
@@ -2776,9 +2806,9 @@
   (equal (set::in path (leafdomain1 paths dtree))
          (and (set::in path paths)
               (leafp path dtree)))
-  :hints(("Goal" :in-theory (e/d (leafdomain1) 
+  :hints(("Goal" :in-theory (e/d (leafdomain1)
                                  (set::in)))))
-      
+
 (defund leafdomain (dtree)
   (declare (xargs :guard (dtree::dtreep dtree)))
   (leafdomain1 (domain dtree) dtree))
@@ -2786,7 +2816,7 @@
 (defthm listsetp-of-leafdomain
   (set::listsetp (leafdomain dtree))
   :hints(("Goal" :in-theory (enable leafdomain))))
-       
+
 (defthm in-leafdomain
   (equal (set::in path (leafdomain dtree))
          (and (in path dtree)
@@ -2804,10 +2834,10 @@
   (declare (xargs :guard (and (set::listsetp localdeps)
                               (mapp children)
                               (dtreemapp children))))
-  (list :dtree 
+  (list :dtree
         (set::listsetfix localdeps)
         (dtreemapfix children)))
-  
+
 (defthm dtreep-of-rawdtree
   (dtreep (rawdtree localdeps children))
   :hints(("Goal" :in-theory (enable rawdtree dtreep))))
@@ -2851,7 +2881,7 @@
 (defthm deps-of-leaf
   (equal (deps (leaf locals))
          (set::listsetfix locals))
-  :hints(("Goal"          
+  :hints(("Goal"
           :in-theory (disable set::double-containment)
           :use (:instance mrdeps (dtree (leaf locals))))))
 
@@ -2912,7 +2942,7 @@
   (implies (royalp path dtree)
            (equal (set::empty (deps dtree))
                   nil))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable empty-of-deps-when-nonempty-of-localdeps-of-get)
           :use (:instance empty-of-deps-when-nonempty-of-localdeps-of-get))))
 
@@ -2945,7 +2975,7 @@
 ;; Membership strategy for proving (royalp path dtree)
 
  ;; Suppose that (royalp-hyps) is true, that our constraints are true, and
- ;; suppose towards contradiction that the following is true: 
+ ;; suppose towards contradiction that the following is true:
  ;;  (not (royalp (royalp-path) (royalp-dtree)))
 
  ;; Now, since the domination constraint is true for any royalp-member, it is
@@ -2963,9 +2993,9 @@
                                   (map::get (car path) (children dtree))))
               nil))))
 
- ;; To generate our contradiction, we will need to show that the hypotheses in 
+ ;; To generate our contradiction, we will need to show that the hypotheses in
  ;; our constraints are satisifed.  Of course, the hypothesis for the localdeps
- ;; constraint is trivial, since we assumed (royalp-hyps) is true.  For the 
+ ;; constraint is trivial, since we assumed (royalp-hyps) is true.  For the
  ;; domination constraint, this also relieves the first hypothesis.
 
  ;; The second hypothesis of the domination constraint can be shown using a
@@ -2986,7 +3016,7 @@
           (and (set::empty (localdeps dtree))
                (or (atom path)
                    (and (map::in (car path) (children dtree))
-                        (voidp (cdr path) 
+                        (voidp (cdr path)
                                (map::get (car path) (children dtree))))))))
 
  ;; We observe that no royal path is ever void:
@@ -3026,10 +3056,10 @@
                           (not (voidp path dtree))))
           :hints(("Goal" :in-theory (enable path::strictly-dominates)
                   :use find-royal-does-nothing))))
-        
- ;; Here is how we argue that the final hypothesis is true.  Since we assumed 
+
+ ;; Here is how we argue that the final hypothesis is true.  Since we assumed
  ;; (towards contradiction) that (not (royalp (royalp-path) (royalp-dtree))),
- ;; then we know that 
+ ;; then we know that
  ;;  (path::strictly-dominates (find-royal (royalp-path) (royalp-dtree))
  ;;                            (royalp-path))
  ;; exactly when (not (voidp (royalp-path) (royalp-dtree))).  But by our
@@ -3040,14 +3070,14 @@
 
  (local (defthm localdeps-of-find-royal-nonempty-when-input-nonempty
           (implies (not (set::empty (localdeps (get path dtree))))
-                   (not (set::empty (localdeps 
+                   (not (set::empty (localdeps
                                      (get (find-royal path dtree) dtree)))))
           :hints(("Goal" :in-theory (enable find-royal get)))))
 
  (defthm royalp-by-membership-driver
    (implies (royalp-hyps)
             (royalp (royalp-path) (royalp-dtree)))
-   :hints(("Goal" 
+   :hints(("Goal"
            :use ((:instance royalp-constraint-localdeps)
                  (:instance royalp-constraint-domination
                             (royalp-member
@@ -3056,7 +3086,7 @@
  (defadvice royalp-by-membership
    (implies (royalp-hyps)
             (royalp (royalp-path) (royalp-dtree)))
-   :rule-classes (:pick-a-point :driver royalp-by-membership-driver))          
+   :rule-classes (:pick-a-point :driver royalp-by-membership-driver))
 
 (defund royaldomain1 (paths dtree)
   (declare (xargs :guard (and (set::setp paths)
@@ -3083,7 +3113,7 @@
   (equal (set::in path (royaldomain1 paths dtree))
          (and (set::in path paths)
               (royalp path dtree)))
-  :hints(("Goal" :in-theory (e/d (royaldomain1) 
+  :hints(("Goal" :in-theory (e/d (royaldomain1)
                                  (set::in)))))
 
 (defun royaldomain (dtree)
@@ -3093,7 +3123,7 @@
 (defthm listsetp-of-royaldomain
   (set::listsetp (royaldomain dtree))
   :hints(("Goal" :in-theory (enable royaldomain))))
-       
+
 (defthm in-royaldomain
   (equal (set::in path (royaldomain dtree))
          (and (in path dtree)

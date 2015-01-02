@@ -2987,12 +2987,14 @@ endmodule
                "The arguments to the function, e.g., @('input [7:0] a') below.
                 Functions must have at least one input.  We check this in our
                 parser, but we don't syntactically enforce this requirement in
-                the @('vl-fundecl-p') structure.  Furthermore, functions may
-                only have inputs (i.e., they can't have outputs or inouts), but
-                our @(see vl-taskport-p) structures have a direction.  This
-                direction should always be @(':vl-input') for a function's
-                input; we again check this in our parser, but not in the
-                @('vl-fundecl-p') structure itself.")
+                the @('vl-fundecl-p') structure.  In Verilog-2005, functions
+                may only have inputs (i.e., they can't have outputs or inouts),
+                but our @(see vl-portdecl-p) structures have a direction, so in
+                the context of a function declaration this direction should
+                always be @(':vl-input').  In SystemVerilog functions can have
+                other kinds of ports, but functions with output/inout ports
+                have restrictions and can't be used in expressions like normal
+                functions.")
 
    (decls      vl-blockitemlist-p
                "Any local variable declarations for the function, e.g., the

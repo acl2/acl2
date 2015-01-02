@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ALIST")
 
 ;;
@@ -34,7 +59,7 @@
 	       (if (list::memberp a (keys y))
 		   (assoc a x)
 		 nil))))
-  
+
 (defthmd assoc-from-assoc-equiv-keys-alt
   (implies
    (and
@@ -68,12 +93,12 @@
        (bindequiv y z))
       (bindequiv x z))
      :rule-classes (:rewrite :forward-chaining)
-     :hints ((and stable-under-simplificationp 
+     :hints ((and stable-under-simplificationp
 		  (acl2::occur-lst 'ARBITRARY-ELEMENT clause)
 		  '(:cases ((list::memberp ARBITRARY-ELEMENT (keys z)))))
 	     (and stable-under-simplificationp
 		  (acl2::occur-lst 'ARBITRARY-ELEMENT clause)
-		  '(:in-theory (e/d (assoc-from-assoc-equiv-keys-alt) 
+		  '(:in-theory (e/d (assoc-from-assoc-equiv-keys-alt)
 				    (ASSOC-EQUIV-MEMBERP
 				     assoc-from-assoc-equiv-keys))))
 	     )))
@@ -87,8 +112,8 @@
 
   (defequiv bindequiv
     :hints (("Goal" :in-theory (disable bindequiv))))
-  
-  
+
+
   )
 
 
@@ -96,8 +121,8 @@
   :hints (("Goal" :in-theory (enable bindequiv keyquiv))))
 
 (defcong bindequiv  cons-equiv (assoc a x) 2
-  :hints ((and stable-under-simplificationp 
-		  `(:in-theory (e/d (assoc-from-assoc-equiv-keys-alt) 
+  :hints ((and stable-under-simplificationp
+		  `(:in-theory (e/d (assoc-from-assoc-equiv-keys-alt)
 				    (ASSOC-EQUIV-MEMBERP
 				     assoc-from-assoc-equiv-keys))))))
 
@@ -129,13 +154,13 @@
   (((bindequiv-hyps) => *)
    ((bindequiv-lhs) => *)
    ((bindequiv-rhs) => *))
-  
+
   (local (defun bindequiv-hyps () nil))
   (local (defun bindequiv-lhs  () nil))
   (local (defun bindequiv-rhs  () nil))
-  
+
   (defthm bindequiv-subdomain-multiplicity-constraint
-    (implies 
+    (implies
      (bindequiv-hyps)
      (cons-equiv (assoc arbitrary-element (bindequiv-lhs))
 		 (assoc arbitrary-element (bindequiv-rhs))))
@@ -162,12 +187,12 @@
 						   (assocequiv-lhs  bindequiv-rhs)
 						   (assocequiv-rhs  bindequiv-lhs)))
 		  ))))
- 
+
  (ADVISER::defadvice bindequiv-by-multiplicity
 		     (implies (bindequiv-hyps)
 			      (bindequiv (bindequiv-lhs) (bindequiv-rhs)))
 		     :rule-classes (:pick-a-point :driver bindequiv-by-multiplicity-driver))
- 
+
  )
 
 (in-theory (disable bindequiv))
@@ -203,7 +228,7 @@
    (bindequiv (cons a (cons b x))
 	      (cons a x))))
 
-;; 
+;;
 
 (defmacro alist::use-equivp (domain x y)
   `(alist::assoc-equiv ,domain ,x ,y))
@@ -242,7 +267,7 @@
    (alist::use-equiv :lhs x
 		     :rhs y
 		     :domain d2)))
-   
+
 (defthm assoc-use-cong
   (implies
    (and
@@ -386,7 +411,7 @@
     (list::memberp key (alist::keys y)))
    (alist::cons-equiv (assoc key x)
 		      (and (list::memberp key (alist::keys x)) (assoc key y)))))
-		      
+
 
 (defthmd cross-domain-binding-cons
   (implies
@@ -471,4 +496,3 @@
     (unified-domain-binding y a)
     (list::subsetp x y))
    (unified-domain-binding x a)))
-

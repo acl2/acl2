@@ -673,6 +673,9 @@
  (defthm nat-listp--nthcdr
    (implies (nat-listp l)
             (nat-listp (nthcdr i l)))
+   :hints ; Added by Matt K. to defeat new rule post-Version 6.5, as indicated:
+   (("Goal"
+     :in-theory (disable (:t acl2::true-listp-nthcdr-type-prescription))))
    :rule-classes (:rewrite :type-prescription)))
 
 (defthm nthcdr-weighted-split-nat--nat-listp

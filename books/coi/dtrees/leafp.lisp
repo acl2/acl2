@@ -1,18 +1,43 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;;
 ;; Dependency Trees for Data Dependency Analysis
-;; Jared Davis 
+;; Jared Davis
 ;;
 ;;
 ;; INTRODUCTION
 ;;
 ;; We introduce functions for talking only about the leaves of a dtree.  The
 ;; function (leafp path dtree) is a predicate which returns true only if path
-;; is (in path dtree) and (get path dtree) has no children.  We say that a 
+;; is (in path dtree) and (get path dtree) has no children.  We say that a
 ;; path is a leaf of a dtree whenever it satisfies leafp for that dtree.
 ;;
 ;; The function (leafdomain dtree) returns exactly the set paths which satisfy
@@ -38,11 +63,11 @@
   (implies (set::setp x)
            (equal (list::memberp a x)
                   (set::in a x)))
-  :hints(("Goal" :in-theory (enable set::sfix 
+  :hints(("Goal" :in-theory (enable set::sfix
                                     set::setp
-                                    set::in 
-                                    set::empty 
-                                    set::head 
+                                    set::in
+                                    set::empty
+                                    set::head
                                     set::tail))))
 
 
@@ -50,12 +75,12 @@
 ;; Mini Essay on The Definition of Leafp
 ;;
 ;; Although it seems like a simple idea, there are actually many ways that we
-;; could go about defining leafp.  
+;; could go about defining leafp.
 ;;
 ;; One approach, and the approach that we use for the actual defun of leafp, is
 ;; to think of leafp as a recursive function that is basically a copy of "in",
 ;; except that in the base case, we ensure that the final node we arrive at has
-;; no children.  This approach might be convenient to use in inductive proofs 
+;; no children.  This approach might be convenient to use in inductive proofs
 ;; about leafp.
 ;;
 ;; An alternate approach is to define leafp nonrecursively.  In particular,
@@ -86,7 +111,7 @@
   (declare (xargs :guard (dtreep dtree)))
   (if (consp path)
       (and (map::in (car path) (children dtree))
-           (leafp (cdr path) 
+           (leafp (cdr path)
                   (map::get (car path) (children dtree))))
     (map::empty (children dtree))))
 
@@ -121,7 +146,7 @@
 ;;                   (leafp path dtree)))
 ;;   :hints(("Goal" :in-theory (enable leafp-redefinition-in))))
 
-;; (theory-invariant 
+;; (theory-invariant
 ;;  (incompatible (:rewrite children-empty-when-in-dtree)
 ;;                (:definition leafp-redefinition-in)))
 
@@ -134,7 +159,7 @@
                 (in b dtree))
            (equal (path::dominates a b)
                   (list::equiv a b)))
-  :hints(("Goal" :in-theory (enable leafp in path::dominates)))) 
+  :hints(("Goal" :in-theory (enable leafp in path::dominates))))
 
 (defthm dominates-when-leafp-two
   (implies (and (in b dtree)    ;; dtree is free
@@ -167,14 +192,14 @@
                 (in b dtree))
            (equal (path::strictly-dominates a b)
                   nil))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (e/d (path::strictly-dominates)
                           (dominates-when-leafp-one))
           :use (:instance dominates-when-leafp-one))))
 
 (defthm strictly-dominates-when-leafp-two
   (implies (and (in b dtree)    ;; dtree is free
-                (leafp a dtree))               
+                (leafp a dtree))
            (equal (path::strictly-dominates a b)
                   nil)))
 
@@ -185,7 +210,7 @@
  ;; We already know from above that any leaf will not strictly dominate any
  ;; path in the dtree.  We now need to reverse this, and show that when some
  ;; path does not strictly dominate any path, then it is a leaf.
- ;; 
+ ;;
  ;; Suppose towards contradiction that there is some path that is not a leaf,
  ;; and yet does not strictly dominate any path in the tree.  Well, since it is
  ;; not a leaf, it has nonempty children, which means that it has at least one
@@ -213,21 +238,21 @@
           (implies (and (not (path::strictly-dominates-some path (domain dtree)))
                         (in path dtree))
                    (leafp path dtree))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (e/d (leafp-redefinition-in)
                                   (path::strictly-dominates-some-by-membership))
                   :use ((:instance path::strictly-dominates-some-by-membership
                                    (path::b (append path (list (map::head (children (get path dtree))))))
                                    (path::a path)
                                    (path::x (domain dtree))))))))
-                           
+
  (defthm leafp-when-not-strictly-dominates-some-of-domain
    (implies (not (path::strictly-dominates-some path (domain dtree)))
             (equal (leafp path dtree)
                    (in path dtree))))
 
 )
- 
+
 (defthm strictly-dominates-some-when-leafp
   (implies (leafp a dtree)
            (equal (path::strictly-dominates-some a (domain dtree))
@@ -243,7 +268,7 @@
   (implies (leafp path dtree)
            (equal (deps (get path dtree))
                   (localdeps (get path dtree))))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable leafp-redefinition-in)
           :use (:instance mrdeps (dtree (get path dtree))))))
 
@@ -253,13 +278,13 @@
                   '(nil)))
   :hints(("Goal" :in-theory (enable leafp-redefinition-in domain))))
 
-(defthm in-of-get-when-leafp 
+(defthm in-of-get-when-leafp
   (implies (leafp path dtree)
            (equal (in a (get path dtree))
                   (list::equiv a nil)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable leafp-redefinition-in)
-          :use (:instance in-of-domain 
+          :use (:instance in-of-domain
                           (path (list::fix a))
                           (dtree (get path dtree))))))
 
@@ -267,7 +292,7 @@
   (implies (leafp path dtree)
            (equal (in (append path a) dtree)
                   (list::equiv a nil)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable in-of-get-when-leafp)
           :use (:instance in-of-get-when-leafp))))
 
@@ -321,9 +346,9 @@
   (equal (set::in path (leafdomain1 paths dtree))
          (and (set::in path paths)
               (leafp path dtree)))
-  :hints(("Goal" :in-theory (e/d (leafdomain1) 
+  :hints(("Goal" :in-theory (e/d (leafdomain1)
                                  (set::in)))))
-      
+
 (verify-guards leafdomain1)
 
 (defund leafdomain (dtree)
@@ -336,11 +361,10 @@
 (defthm listsetp-of-leafdomain
   (set::listsetp (leafdomain dtree))
   :hints(("Goal" :in-theory (enable leafdomain))))
-       
+
 (defthm in-leafdomain
   (equal (set::in path (leafdomain dtree))
          (and (in path dtree)
               (leafp path dtree)
               (true-listp path)))
   :hints(("Goal" :in-theory (enable leafdomain))))
-

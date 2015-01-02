@@ -25,7 +25,7 @@
 ; A. Hunt, Jr.  The design of this system of Hash CONS, function memoization,
 ; and fast association lists (applicative hash tables) was initially
 ; implemented by Boyer and Hunt.  Contributions have been made since then by
-; Jared David, Matt Kaufmann, J Moore, and Sol Swords.
+; Jared Davis, Matt Kaufmann, J Moore, and Sol Swords.
 
 (in-package "ACL2")
 
@@ -5192,6 +5192,7 @@
 ; messages off.  We're disabling EGC anyway, but when we've experimented with
 ; leaving it on, the EGC messages are way too verbose.
 
+  #+(or ccl cmu gcl) ; Lisps where gc-verbose is supported
   (gc-verbose t nil)
 
 ; We turn off EGC because it doesn't seem to work well with memoizing

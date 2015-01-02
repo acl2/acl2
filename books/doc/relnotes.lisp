@@ -48,9 +48,10 @@
 
 (defxdoc note-7-0-books
   :parents (note-7-0)
-  :short "Release notes for the ACL2 Community Books for ACL2 7.0 (BOZO month??)"
+  :short "Release notes for the ACL2 Community Books for ACL2 7.0 (January
+2015)"
 
-; Current through 2014-12-05, modulo  a couple of bozos
+; Current through 2014-12-29, modulo a couple of bozos
 
   :long "<p>The following is a brief summary of changes made to the @(see
 community-books) between the releases of ACL2 6.5 and 7.0.</p>
@@ -132,8 +133,13 @@ books on incompatible Lisps.</li>
 arguments to shell commands on some platforms when certifying large numbers of
 books.</li>
 
+<li>The new @(':ignore-certs') feature of @(see include-book) is now used in
+special two-pass books like @('std/strings/defs-program.lisp'), and should help
+to make building these books more reliable.</li>
+
 <li>Hundreds of old Makefiles from the @(see books-certification-classic) era
-have been eliminated.</li>
+have been eliminated.  Some obsolete GCL-specific directives have also been
+eliminated.</li>
 
 <li>Installing @(see quicklisp) now works from behind a proxy.  See <i>Using a
 Proxy</i> in @(see books-certification) for details.</li>
@@ -222,9 +228,16 @@ BSD-3-Clause style license instead of the GNU General Public License.</p>
 the GNU General Public License or a BSD-3-Clause style license, are now instead
 released under a (more permissive) MIT/X11-style license.</p>
 
+<p>Several books contributed by Oracle, which were formerly released under the
+GNU General Public License, are now instead released under an MIT/X11-style
+license.</p>
+
 <p>The @(see ubdds) library and a few \"miscellaneous\" books have also been
 transitioned from the GNU General Public License to a 3-clause BSD style
 license.</p>
+
+<p>Several books in the @('coi') library, which previously lacked explicit
+license information, now have explicit MIT/X11-style licenses.</p>
 
 
 <h2>New Libraries and Documentation</h2>
@@ -238,6 +251,8 @@ the @(see xdoc) format.  Some highlights:</p>
 <li>The @(see ihs) documentation has been considerably updated.</li>
 <li>The @(see defsort) macro is now documented.</li>
 <li>The @(see sneaky) documentation has been considerably expanded.</li>
+<li>Topics like @(see lists), @(see strings), @(see alists), etc., now
+group together some related @(see programming) functions.</li>
 </ul>
 
 <p>The ACL2 @(see Sidekick) is an experimental and very preliminary graphical
@@ -263,7 +278,12 @@ for exploring code in any programming language specified by an ACL2 model to
 discover certain properties of the code.  Demos of Codewalker are also in that
 directory.</p>
 
-<p>There are also several new small tools:</p>
+<p>The new directory @('projects/hybrid-systems/') is a
+specification/verification project by Shant Harutuntian using ACL2(r) (see
+@(see real)), in support of his 2007 Ph.D. dissertation, with a few recent
+updates (because of ACL2 changes) made by Cuong Chau.</p>
+
+<p>There are also several new small tools and books.</p>
 
 <ul>
 
@@ -280,9 +300,14 @@ to a functional instantiation.</li>
 <li>The new tool, @(see def-saved-obligs), can be used to save proof
 obligations for an event as independent defthms.</li>
 
+<li>The new tool, @('books/system/dead-source-code.lisp'), may be useful
+for finding dead code in the ACL2 sources.</li>
+
+<li>The new book @('books/system/cantor-pairing-bijective.lisp') contains a
+proof of bijectivity (onto and one-one) of the cantor-pairing function
+@('hl-nat-combine').</li>
+
 </ul>
-
-
 
 <h2>Changes to Major Libraries</h2>
 
@@ -294,7 +319,7 @@ have been fixed and it has been extended to show more results.  The jump-to box
 has been extended with a @('Alt+/') hotkey (or perhaps some other key
 combination like @('Ctrl+/'), depending on your browser).  Middle clicking on
 XDOC links should now properly open them in new tabs and the fonts have been
-updated.</p>
+updated.  Some ugly quotes are now replaced by ``smart'' replacements.</p>
 
 <p>Significant work has been done to try to make XDOC content accessible to
 search engines such as Google.  A new PHP script largely replaces previous
@@ -464,6 +489,22 @@ write-date of compiled files, to avoid including stale files.</p>
 <p>The utilities @(see profile-acl2) and @(see profile-all) now work in the
 ACL2 loop, and are documented.</p>
 
+<p>The @('watch') utility works again.  Thanks to Bob Boyer for providing
+fixes.  To use this utility:</p>
+
+@({
+   (include-book \"centaur/memoize/old/watch\" :dir :system :ttags :all)
+   :q
+   (watch)
+   (lp)
+   ; Now in Emacs, bring into a buffer the file reported by (watch), whose
+   ; name is of the form watch-output-temp-n.lsp.  Then execute ACL2 forms.
+})
+
+<p>The @(see untranslate-patterns) tool is now compatible with @(see define)'s
+@(see untranslate-preprocess) hook.</p>
+
+
 <h3>OSLIB</h3>
 
 <p>OSLIB has been reorganized to try to make it somewhat more coherent.  Most
@@ -479,44 +520,6 @@ portable across Lisps.</p>
 
 
 <h2>Changes to Centaur Libraries</h2>
-
-<h3>Other</h3>
-
-<p>The @(see getopt) library now has a basic test suite.</p>
-
-<p>The @('centaur/misc/sharedlibs') code for relocating shared libraries has
-been extended with a test/demo script.  The sharedlibs functions no longer
-cause errors when used on non-CCL Lisps (they simply print a message,
-instead.)</p>
-
-<p>The @(see template-subst) tool has been expanded with some additional
-functions.</p>
-
-<p>The @(see profile-all) and @(see profile-acl2) functions can now be used
-from within the ACL2 loop instead of only from raw Lisp.</p>
-
-<p>The @(see flag::def-doublevar-induction) macro has been extended and improved.</p>
-
-
-<h3>@(see Quicklisp)</h3>
-
-<p>Quicklisp can now read proxy information from the @('HTTP_PROXY_WITH_PORT')
-environment variable.  See also the \"Using a proxy\" page in @(see
-books-certification).  BOZO move that into Quicklisp?  Blah, all this stuff
-always ends up duplicated everywhere.</p>
-
-<p>Quicklisp now includes books for loading the @('uiop') library and a more
-sensible @('cl-fad') book.  These libraries may be useful for doing file system
-things.  The CCL-only restrictions on @('bordeaux-threads') and
-@('hunchentoot') have been dropped since these libraries seem to be working
-fine on modern SBCL distributions.  A book for the @('html-template') library
-has also been added.</p>
-
-<p>The Quicklisp build should be more robust.  It now checks for existing
-Quicklisp installations and produce a sensible error message instead of dying
-horribly.</p>
-
-
 
 <h3>@(see bitops)</h3>
 
@@ -560,34 +563,57 @@ already-defined predicates.</p>
 <p>By default, @(see fty::deffixtype) now verifies the guards on the equivalence
 relations it introduces.</p>
 
+<h3>@(see Quicklisp)</h3>
 
-<h3>@(see esim)/@(see 4v)</h3>
+<p>Quicklisp can now read proxy information from the @('HTTP_PROXY_WITH_PORT')
+environment variable.  See also the \"Using a proxy\" page in @(see
+books-certification).  BOZO move that into Quicklisp?  Blah, all this stuff
+always ends up duplicated everywhere.</p>
 
-<p>There is a new tool for @(see stv) decomposition theorems,
+<p>Quicklisp now includes books for loading the @('uiop') library and a more
+sensible @('cl-fad') book.  These libraries may be useful for doing file system
+things.  The CCL-only restrictions on @('bordeaux-threads') and
+@('hunchentoot') have been dropped since these libraries seem to be working
+fine on modern SBCL distributions.  A book for the @('html-template') library
+has also been added.</p>
+
+<p>The Quicklisp build should be more robust.  It now checks for existing
+Quicklisp installations and produce a sensible error message instead of dying
+horribly.</p>
+
+
+<h3>Other</h3>
+
+<p>The @(see getopt) library now has a basic test suite.</p>
+
+<p>The @('centaur/misc/sharedlibs') code for relocating shared libraries has
+been extended with a test/demo script.  The sharedlibs functions no longer
+cause errors when used on non-CCL Lisps (they simply print a message,
+instead.)</p>
+
+<p>The @(see template-subst) tool has been expanded with some additional
+functions.</p>
+
+<p>The @(see profile-all) and @(see profile-acl2) functions can now be used
+from within the ACL2 loop instead of only from raw Lisp.</p>
+
+<p>The @(see flag::def-doublevar-induction) macro has been extended and improved.</p>
+
+<p>For @(see esim), there is a new tool for @(see stv) decomposition theorems,
 @('oracle/stv-decomp-theory-expander.lisp'), and a demo of using this tool in
-@('centaur/regression/composed-stv.lisp').</p>
+@('centaur/regression/composed-stv.lisp').  The documentation tables for STVs
+should now look nicer in the printer-friendly xdoc view.</p>
 
-<p>There are a few new @(see *sexpr-rewrites*).</p>
+<p>In the @(see 4v) library, there are a few new @(see *sexpr-rewrites*).</p>
 
-<p>The documentation tables for STVs should now look nicer in the
-printer-friendly xdoc view.</p>
-
-
-<h3>@(see aignet)</h3>
-
-<p>Minor bug-fix to avoid complaint in @('bind-free') routine.</p>
-
-
-<h3>@(see satlink)</h3>
+<p>Minor bug-fix to avoid complaint in an @(see aignet) @('bind-free')
+routine.</p>
 
 <p>Added @(see satlink::gather-benchmarks), a plugin for collecting DIMACS
 files that SATLINK sends to the SAT solver. You could use this to gather
 benchmarks for evaluating SAT solvers or for the SAT solving competitions.</p>
 
-<h3>@(see gl)</h3>
-
-<p>Fixed a bug in @('trace-gl-interp').</p>
-
+<p>In @(see gl), fixed a bug in @('trace-gl-interp').</p>
 
 
 
@@ -651,8 +677,9 @@ and transforms to keep things working.</li>
 interface improvements.  For instance, the VL @(see vl::server) has been
 entirely rewritten and is now included in the @(see vl::kit); it allows you to
 view Verilog modules in a web browser.  The loader has been made more
-user-friendly and more gracefully handles search paths, errors, etc.</p>")
-
+user-friendly and more gracefully handles search paths, errors, etc.  The
+@(see vl::lint)er has been tweaked to provide better output and to run more
+quickly.</p>")
 
 
 

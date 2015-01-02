@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "GACC")
 
 ;Bbzo replaces rams.lisp
@@ -44,7 +69,7 @@
 ;;                                         (rd (+ 2 ad) ram))
 ;;                           (rd (+ 3 ad) ram))
 ;;           (acl2::logapp 8 (rd ad ram) (rd-bytes-exec (+ -1 numwords) (+ 1 ad) ram)))))))
-  
+
 
 (defun addresses-of-data-word-univ (word-ad)
   (declare (type integer word-ad))
@@ -72,7 +97,7 @@
                                                          read-data-word-exec
                                                          acl2::ash-as-logapp
                                                          word-ad-to-byte-ads
-                                                         acl2::sum-with-shift-becomes-logapp-constant-version) 
+                                                         acl2::sum-with-shift-becomes-logapp-constant-version)
                                                         (acl2::logapp-0-part-2-better))))))
 ;  (mbe :exec (read-data-word-exec denvr offset ram)
 ;      :logic
@@ -105,7 +130,7 @@
            ;;                                                          read-data-word-exec
            ;;                                                          acl2::ash-as-logapp
            ;;                                                          word-ad-to-byte-ads
-           ;;                                                          acl2::sum-with-shift-becomes-logapp-constant-version) 
+           ;;                                                          acl2::sum-with-shift-becomes-logapp-constant-version)
            ;;                                                         (acl2::logapp-0-part-2-better)))))
            )
 ;  (mbe :exec (read-data-word-exec denvr offset ram)
@@ -183,7 +208,7 @@
            (write-data-word-univ ad2 val2 (write-data-word-univ ad1 val1 ram))))
   :rule-classes ((:rewrite :loop-stopper ((ad2 ad1))))
   :hints (("Goal" :in-theory (enable WRITE-DATA-WORD-UNIV))))
-        
+
 (defund clear-data-word-univ (word-ad ram)
   (declare (type integer word-ad)
            (xargs :guard (aamp-ramp ram))
@@ -195,8 +220,8 @@
          (and (equal (loghead 16 value) (read-data-word-univ ad ram2))
               (equal (clear-data-word-univ ad ram1)
                      (clear-data-word-univ ad ram2))))
-  :hints (("Goal" :in-theory (enable WRITE-DATA-WORD-UNIV 
-                                     READ-DATA-WORD-UNIV 
+  :hints (("Goal" :in-theory (enable WRITE-DATA-WORD-UNIV
+                                     READ-DATA-WORD-UNIV
                                      WORD-AD-TO-BYTE-ADS
                                      ACL2::EQUAL-LOGAPP-X-Y-Z
                                      WR==R!
@@ -249,7 +274,7 @@
            ;;                                                   read-data-word-exec
            ;;                                                   acl2::logext-logapp
            ;;                                                   acl2::ash-as-logapp
-           ;;                                                   read-data-words-exec) 
+           ;;                                                   read-data-words-exec)
            ;;                                                  (acl2::logapp-0-part-2-better
            ;;                                                   acl2::loghead-sum-split-into-2-when-i-is-a-constant)))))
            )
@@ -272,7 +297,7 @@
            (equal (read-data-words-univ numwords ad ram)
                   0))
   :hints (("Goal" :in-theory (enable read-data-words-univ))))
-       
+
 (defthm read-data-words-univ-when-ad-is-not-an-integerp
   (implies (not (integerp ad))
            (equal (read-data-words-univ numwords ad ram)
@@ -346,14 +371,14 @@
 ;;
 ;; WR-BYTES
 ;;
-;;bzo add mbe          
+;;bzo add mbe
 
 (defund write-data-words-univ (numwords word-ad value ram)
   (declare (type integer word-ad value)
            (type (integer 0 *) numwords)
            (xargs :guard (aamp-ramp ram))
            )
-  (wr-list (addresses-of-data-words-univ numwords word-ad) 
+  (wr-list (addresses-of-data-words-univ numwords word-ad)
            ;;(logext-list 32 (word-ads-to-byte-ads (addr-range word-ad numwords)))
 ;           (word-list-to-byte-list (split-into-words numwords value))
            (enlistw (* 2 numwords) value)
@@ -391,7 +416,7 @@
                      (offset-range-wrap 31 (ifix ad2) numwords2))
            (equal (write-data-words-univ numwords1 ad1 v1 (write-data-words-univ numwords2 ad2 v2 ram))
                   (write-data-words-univ numwords2 ad2 v2 (write-data-words-univ numwords1 ad1 v1 ram))))
-  :hints (("Goal" :in-theory (e/d (write-data-words-univ) 
+  :hints (("Goal" :in-theory (e/d (write-data-words-univ)
                                   (DISJOINT-OF-TWO-OFFSET-RANGE-WRAPS
                                     disjoint-of-word-ads-to-byte-ads
                                     disjoint-of-two-addr-ranges)))))
@@ -432,11 +457,11 @@
                           (acl2::loghead (* 16 (ifix numwords)) v)))
           :hints (("Goal" :expand (OFFSET-RANGE-WRAP 31 AD NUMWORDS)
                    :do-not '(generalize eliminate-destructors)
-                   :in-theory (e/d (ENLISTW read-data-words-univ write-data-words-univ 
+                   :in-theory (e/d (ENLISTW read-data-words-univ write-data-words-univ
                                       WORD-AD-TO-BYTE-ADS
                                       rd-list ;bzo
                                       LOGHEAD-LIST-32-OF-WORD-ADS-TO-BYTE-ADS
-                                             
+
                                       ) (WORD-ADS-TO-BYTE-ADS-OF-LOGHEAD-LIST))
 ;                   :induct (induct-fun ad numwords v)
                    ))))
@@ -482,7 +507,7 @@
                           (offset-range-wrap 31 ad2 numwords2))
            (equal (read-data-words-univ numwords1 ad1 (write-data-words-univ numwords2 ad2 v2 ram))
                   (read-data-words-univ numwords1 ad1 ram)))
-  :hints (("Goal" :in-theory (e/d (write-data-words-univ read-data-words-univ) 
+  :hints (("Goal" :in-theory (e/d (write-data-words-univ read-data-words-univ)
                                   (disjoint-of-word-ads-to-byte-ads
                                    DISJOINT-OF-TWO-ADDR-RANGES)))))
 
@@ -506,20 +531,20 @@
   (implies (<= NUMWORDS 2147483648)
            (equal (equal (write-data-words-univ numwords ad v ram1) ram2)
                   (if (integerp numwords)
-                      (and (equal (loghead (* 16 numwords) v) 
+                      (and (equal (loghead (* 16 numwords) v)
                                   (read-data-words-univ numwords ad ram2))
                            (equal (clear-data-words-univ numwords ad ram1)
                                   (clear-data-words-univ numwords ad ram2)))
                     (equal ram1 ram2))))
   :hints (("Goal" :in-theory (enable write-data-words-univ read-data-words-univ clear-data-words-univ))))
-                 
+
 ;; (defthm clear-data-words-univ-of-wr-cover
 ;;   (implies (list::memberp ad (addr-range ad2 numwords))
 ;;            (equal (clear-data-words-univ numwords ad2 (wr ad val ram))
 ;;                   (clear-data-words-univ numwords ad2 ram)))
 ;;   :hints (("Goal" :in-theory (enable clear-data-words-univ))))
 
-  
+
 ;; ;replacement for rx, except when numwords is 0?
 ;; (defun rx2 (size a ram)
 ;;   (read-data-words-univ (* 1/8 (fix-size numwords) ad ram)))
@@ -630,7 +655,7 @@
   :hints (("Goal" :expand ((OFFSET-RANGE-WRAP 31 ad NUMWORDS)
                            (OFFSET-RANGE-WRAP 31 0 NUMWORDS))
            :in-theory (e/d (write-data-words-univ write-data-word-univ
-                                             WORD-AD-TO-BYTE-ADS) 
+                                             WORD-AD-TO-BYTE-ADS)
                            ( ;makeaddr-of-+-loghead
                             )))))
 
@@ -638,7 +663,7 @@
   (implies (and (syntaxp (quotep numwords))
                 (not (zp numwords)))
            (equal (read-data-words-univ numwords ad ram)
-                  (logapp 16 
+                  (logapp 16
                           (read-data-word-univ ad ram)
                           (read-data-words-univ (+ -1 numwords)
                                                 (+ 1 (ifix ad))
@@ -687,12 +712,12 @@
                   (fetch-code-byte cenvr offset ram)))
   :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (write-data-word 
+           :in-theory (e/d (write-data-word
                             acl2::loghead-logcdr
                             write-data-word-univ
                             make-code-addr
                             word-ad-to-byte-ads
-                            fetch-code-byte no-code-data-clash) 
+                            fetch-code-byte no-code-data-clash)
                            (addresses-of-data-word-univ
                             make-code-addr
                             acl2::logcdr-loghead)))))
@@ -704,13 +729,13 @@
            (equal (read-data-word denvr offset (write-data-word-univ ad val ram))
                   (read-data-word denvr offset ram)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (write-data-word 
+           :in-theory (e/d (write-data-word
                             read-data-word
                             acl2::loghead-logcdr
                             write-data-word-univ
                             make-code-addr
                             word-ad-to-byte-ads
-                            fetch-code-byte no-code-data-clash) 
+                            fetch-code-byte no-code-data-clash)
                            (addresses-of-data-word-univ
                             addresses-of-data-word
                             make-code-addr
@@ -723,13 +748,13 @@
            (equal (read-data-word-univ ad (write-data-word denvr offset val ram))
                   (read-data-word-univ ad ram)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (write-data-word 
+           :in-theory (e/d (write-data-word
                             read-data-word-univ
                             acl2::loghead-logcdr
                             write-data-word-univ
                             make-code-addr
                             word-ad-to-byte-ads
-                            fetch-code-byte no-code-data-clash) 
+                            fetch-code-byte no-code-data-clash)
                            (addresses-of-data-word-univ
                             addresses-of-data-word
                             make-code-addr
@@ -748,13 +773,13 @@
            (equal (write-data-word-univ ad val1 (write-data-word denvr offset val2 ram))
                   (write-data-word denvr offset val2 (write-data-word-univ ad val1 ram))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (write-data-word 
+           :in-theory (e/d (write-data-word
                             read-data-word-univ
                             acl2::loghead-logcdr
                             write-data-word-univ
                             make-code-addr
                             word-ad-to-byte-ads
-                            fetch-code-byte no-code-data-clash) 
+                            fetch-code-byte no-code-data-clash)
                            (addresses-of-data-word-univ
                             addresses-of-data-word
                             make-code-addr
@@ -771,7 +796,7 @@
   :hints (("Goal" :use (:instance write-data-word-univ-of-write-data-word)
            :in-theory (disable write-data-word-univ-of-write-data-word))))
 
-(theory-invariant (incompatible (:rewrite write-data-word-univ-of-write-data-word) 
+(theory-invariant (incompatible (:rewrite write-data-word-univ-of-write-data-word)
                                 (:rewrite write-data-word-of-write-data-word-univ)))
 
 
@@ -825,7 +850,7 @@
                           (addresses-of-data-word-univ ad))
            (equal (read-data-word denvr offset (clear-data-word-univ ad ram))
                   (read-data-word denvr offset ram)))
-  :hints (("Goal" :in-theory (e/d (clear-data-word-univ) 
+  :hints (("Goal" :in-theory (e/d (clear-data-word-univ)
                                   (DISJOINT-OF-TWO-WORD-AD-TO-BYTE-ADS ;bzo
                                    )))))
 
@@ -834,12 +859,12 @@
                           (addresses-of-data-word-univ ad))
            (equal (read-data-word-univ ad (clear-data-word denvr offset ram))
                   (read-data-word-univ ad ram)))
-  :hints (("Goal" :in-theory (e/d (clear-data-word) 
+  :hints (("Goal" :in-theory (e/d (clear-data-word)
                                   (DISJOINT-OF-TWO-WORD-AD-TO-BYTE-ADS ;bzo
                                    WRITE-DATA-WORD-EQUAL-REWRITE)
                                    ))))
 
-(defthm read-data-words-univ-of-logext-special-case 
+(defthm read-data-words-univ-of-logext-special-case
   (equal (gacc::read-data-words-univ 2 (logext 32 x) ram)
          (gacc::read-data-words-univ 2 x ram))
   :hints (("Goal" :in-theory (enable gacc::read-data-words-univ))))

@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;; map-cons.lisp
 ;; Definition of map-cons and theorems about it.
 
@@ -24,7 +49,7 @@
          (defthm test-for-type-prescription-of-map-cons
            (true-listp (map-cons n l))
            :rule-classes nil
-           :hints(("Goal" 
+           :hints(("Goal"
                    :in-theory (union-theories '((:type-prescription map-cons))
                                               (theory 'minimal-theory))))))))
 
@@ -37,7 +62,7 @@
 
 (defthm map-cons-type-2
   (implies (not (consp x))
-           (equal (map-cons a x) 
+           (equal (map-cons a x)
                   nil))
   :rule-classes :type-prescription
   :hints(("Goal" :in-theory (enable map-cons))))
@@ -53,7 +78,7 @@
 
 (defthm map-cons-of-cons
   (equal (map-cons a (cons b x))
-         (cons (cons a b) 
+         (cons (cons a b)
                (map-cons a x)))
   :hints(("Goal" :in-theory (enable map-cons))))
 
@@ -116,4 +141,3 @@
 	    (equal (car x) y)
 	    (member (cdr x) list)))
   :hints (("goal" :in-theory (enable member map-cons))))
-

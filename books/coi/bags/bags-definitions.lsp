@@ -1,3 +1,33 @@
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ; Jared: what's this file for?  It's not certifiable, so I'm
 ; renaming it to a .lsp extension for Make compatibility
 
@@ -9,7 +39,7 @@
 (in-package "BAGS")
 
 ;;
-;; This file isolates bags definitions and types. The file currently 
+;; This file isolates bags definitions and types. The file currently
 ;; contains the following ACL2 constructs as they occur in the bags book:
 ;; - defun
 ;; - defund
@@ -22,7 +52,7 @@
 ;isn't nfix enabled?
 (defthm not-zp-nfix-reduction
   (implies (not (zp n))
-           (and (equal (nfix n) 
+           (and (equal (nfix n)
                        n)
                 (equal (nfix (1- n)) ;will this fire?  how do we normalize differences?
                        (1- n)))))
@@ -30,7 +60,7 @@
 ;isn't nfix enabled?
 (defthm zp-nfix
   (implies (zp n)
-           (equal (nfix n) 
+           (equal (nfix n)
                   0)))
 
 (defthm dumb
@@ -96,7 +126,7 @@
   :hints(("Goal" :in-theory (enable remove-1))))
 
 
-;; jcd - a stronger type prescription, (true-listp (remove-1 a x)), is 
+;; jcd - a stronger type prescription, (true-listp (remove-1 a x)), is
 ;; now automatically deduced, so we don't add this rule anymore.
 ;;
 ;; (defthm remove-1-true-listp-type-prescription
@@ -140,7 +170,7 @@
 ;; jcd - changed rhs to list-fix.
 (defthm non-membership-remove-1
   (implies (not (memberp a x))
-           (equal (remove-1 a x) 
+           (equal (remove-1 a x)
                   (list::fix x)))
   :hints (("Goal" :in-theory (enable remove-1))))
 
@@ -187,7 +217,7 @@
 (defthmd non-membership-removal-free
   (implies (and (not (memberp b x)) ;b is a free variable
                 (equal b a))
-           (equal (remove-1 a x) 
+           (equal (remove-1 a x)
                   (list::fix x)))) ; jcd - added list::fix
 
 ;expensive?
@@ -218,7 +248,7 @@
   (implies (and (not (memberp a (remove-1 b x)))
                 (memberp a x))
            (equal b a))
-  :rule-classes :forward-chaining) 
+  :rule-classes :forward-chaining)
 
 
 ;; jcd - added a list::fix to y.
@@ -318,7 +348,7 @@
                   nil))
   :hints (("Goal" :in-theory (enable remove-bag))))
 
-;; jcd - changed rhs to nil.  
+;; jcd - changed rhs to nil.
 (defthm remove-bag-of-non-consp-cheap
   (implies (not (consp y))
            (equal (remove-bag x y)
@@ -326,7 +356,7 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable remove-bag))))
 
-;; jcd - removed this, we now inferred that (remove-bag x y) always returns 
+;; jcd - removed this, we now inferred that (remove-bag x y) always returns
 ;; a true list.
 ;;
 ;; (defthm true-listp-remove-bag
@@ -363,7 +393,7 @@
 ;; jcd - changed rhs to list::fix y
 (defthm remove-bag-not-consp-x
   (implies (not (consp x))
-           (equal (remove-bag x y) 
+           (equal (remove-bag x y)
                   (list::fix y)))
   :hints (("Goal" :in-theory (enable remove-bag))))
 
@@ -421,7 +451,7 @@
                 (remove-bag x y))
            (equal (remove-bag x y)
                   (list a)))
-  :hints (("Goal" :in-theory (enable remove-1 
+  :hints (("Goal" :in-theory (enable remove-1
                                      remove-bag))))
 
 
@@ -435,7 +465,7 @@
                        (memberp (car y) x))
                   (equal (remove-bag x y)
                          (remove-bag (remove-1 (car y) x) (cdr y))))
-         :hints (("Goal" 
+         :hints (("Goal"
                   :in-theory (e/d (remove-bag)
                                   (REMOVE-BAG-REMOVE-1 ; bzo
                                    consp-remove-1-rewrite ; speedup
@@ -449,7 +479,7 @@
            (equal (remove-bag x y)
                   (if (memberp (car y) x)
                       (remove-bag (remove-1 (car y) x) (cdr y))
-                    (cons (car y) 
+                    (cons (car y)
                           (remove-bag x (cdr y)))))))
 
 ;was expensive when enabled?
@@ -457,9 +487,9 @@
   (equal (remove-bag x (append y z))
          (append (remove-bag x y)
                  (remove-bag (remove-bag y x) z)))
-  :hints (("Goal" :in-theory (e/d (remove-bag 
+  :hints (("Goal" :in-theory (e/d (remove-bag
                                    append-of-remove-1-two
-                                   append-of-remove-1-one) 
+                                   append-of-remove-1-one)
                                   (remove-1-append)))))
 
 
@@ -498,7 +528,7 @@
                   (remove-bag x y)))
   :hints (("Goal" :in-theory (enable remove-bag))))
 
-;; jcd - changed rhs to list::fix 
+;; jcd - changed rhs to list::fix
 ;bzo renamed -2 because of clash..
 ;rename
 (defthm remove-bag-append-2
@@ -517,7 +547,7 @@
            (equal (remove-bag x y)
                   (remove-1 (car x) (remove-bag (cdr x) y))))
   :hints (("goal" :do-not-induct t
-           :in-theory (enable memberp 
+           :in-theory (enable memberp
                               remove-bag
                               REMOVE-BAG-ADDS-NO-TERMS
                               remove-bag-over-remove-1))))
@@ -538,7 +568,7 @@
    :hints (("Goal" :in-theory (enable remove-bag))))
 
 
-;; jcd - removing this rule, it is trivial with our congruence rule for 
+;; jcd - removing this rule, it is trivial with our congruence rule for
 ;; list::equiv over remove-bag 1.
 ;;
 ;; (defthm remove-bag-of-list-fix-one
@@ -549,8 +579,8 @@
 
 
 ;; jcd - Removing this theorem, this should be trivial now that remove-bag
-;; always returns a true list.  
-;; 
+;; always returns a true list.
+;;
 ;; jcd - Strenghtened the rhs from (remove-bag x (list::fix y)) to (remove-bag x
 ;; y).
 ;;
@@ -615,14 +645,14 @@
                   (not (consp x))))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
-;; jcd - what is this crazy rule?  subsumed by our regular boolean 
+;; jcd - what is this crazy rule?  subsumed by our regular boolean
 ;; rewrite?
 (defthm equal-of-subbagp-becomes-iff
   (implies (booleanp z)
            (equal (equal (subbagp x y) z)
                   (iff (subbagp x y) z))))
 
-;; jcd - removing this rule, we don't need it with the congruence 
+;; jcd - removing this rule, we don't need it with the congruence
 ;; (defthm subbagp-of-list-fix-one
 ;;   (equal (subbagp (list::fix x) y)
 ;;          (subbagp x y))
@@ -718,7 +748,7 @@
                         (equal (car x) nil)
                         (not (consp (cdr x)))))
              (not (consp x)))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use (:instance subbagp-of-remove-1-and-remove-1 (a (car y)))
            :in-theory (disable subbagp-of-remove-1-and-remove-1
                                SUBBAGP-OF-REMOVE-1-AND-REMOVE-1-STRONG))))
@@ -730,7 +760,7 @@
                   nil))
   :hints (("Goal" :in-theory (enable remove-bag))))
 
-;add a remove-bag iff rule?          
+;add a remove-bag iff rule?
 (defthm consp-remove-bag-rewrite
   (equal (consp (remove-bag x y))
          (not (subbagp y x)))
@@ -778,13 +808,13 @@
 (defthm subbagp-append-append-left
   (implies (subbagp x z)
            (subbagp (append x y) (append z y)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (enable subbagp))))
 
 (defthm subbagp-append-append
   (implies (and (subbagp x z)
                 (subbagp y w))
-           (subbagp (append x y) 
+           (subbagp (append x y)
                     (append z w)))
   :hints (("Goal" :in-theory (enable subbagp))))
 
@@ -799,16 +829,16 @@
 
 (defthm subbagp-implies-common-members-are-irrelevant
   (implies (subbagp x y)
-           (subbagp (remove-1 a x) 
+           (subbagp (remove-1 a x)
                     (remove-1 a y))))
 
-;bzo maybe we want to leave the remove-1 where it is??         
+;bzo maybe we want to leave the remove-1 where it is??
 (defthm subbagp-of-remove-1-both
   (equal (subbagp (remove-1 a x) y)
          (if (memberp a x)
              (subbagp x (cons a y))
            (subbagp x y)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (e/d (subbagp)
                            ;; disables give a minor speed boost
                            (memberp-subbagp consp-remove-1-rewrite)))))
@@ -825,7 +855,7 @@
            (subbagp x (cons a y))))
   :hints (("Goal" :in-theory (e/d (subbagp)
                                   (memberp-subbagp) ; minor speed boost
-                                  )))) 
+                                  ))))
 
 ;bzo expensive?
 ;rename to mention car?
@@ -842,7 +872,7 @@
                      (remove-bag x z)))
    :hints (("Goal" :in-theory (enable remove-bag))))
 
-               
+
 ;reverse lhs too?
 (defthm subbagp-remove-1
   (subbagp (remove-1 a x) x))
@@ -872,8 +902,8 @@
 |#
 
 (defthmd subbagp-cons-car-memberp
-  (implies (subbagp (cons a x) y) 
-           (memberp a y)) 
+  (implies (subbagp (cons a x) y)
+           (memberp a y))
   :hints (("Goal" :in-theory (enable subbagp))))
 
 ;which way do we want to rewrite this?
@@ -913,7 +943,7 @@
                 (subbagp x (remove-1 a y)))
            (memberp a (remove-bag x y)))
   :hints(("Goal" :in-theory (enable remove-bag
-                                    equality-from-mem-and-remove 
+                                    equality-from-mem-and-remove
                                     ))))
 
 ;bzo name clashed with something in gacc, so I added the -2.  did all
@@ -941,7 +971,7 @@
                 (subbagp x z))
            (subbagp (append x y) z))
   :hints (("goal" :in-theory (e/d (subbagp)
-                                  (consp-remove-1-rewrite ; speedup 
+                                  (consp-remove-1-rewrite ; speedup
                                    subbagp-of-non-consp-two ; speedup
                                    subbagp-chaining ; speedup
                                    subbagp-cdr-lemma ; speedup
@@ -965,7 +995,7 @@
   (implies (subbagp x y)
            (equal (remove-bag x (append y z))
                   (append (remove-bag x y) (list::fix z))))
-  :hints(("Goal" 
+  :hints(("Goal"
            :in-theory (e/d (subbagp remove-bag)
                            (consp-remove-1-rewrite ; speedup
                             subbagp-cdr-lemma ; speedup
@@ -1010,11 +1040,11 @@
 
 (defthm subbagp-of-remove-bag-and-remove-1
   (implies (memberp a x)
-           (subbagp (remove-bag x bag) 
+           (subbagp (remove-bag x bag)
                     (remove-1 a bag)))
-  :hints  (("Goal" 
+  :hints  (("Goal"
             :in-theory (disable subbagp-of-remove-bag-and-remove-bag-2)
-            :use ((:instance subbagp-of-remove-bag-and-remove-bag-2 
+            :use ((:instance subbagp-of-remove-bag-and-remove-bag-2
                              (x2 (list a)))))))
 
 
@@ -1082,7 +1112,7 @@
 
 ;; jcd - note that to get this through, I had to leave perm-commutative enabled
 ;; so that not-perm-of-cons-onto-same could get a chance to fire.  I think we
-;; might want to prove "both versions" of not-perm-of-cons-onto-same instead? 
+;; might want to prove "both versions" of not-perm-of-cons-onto-same instead?
 ;; Is this an insight that should be applied to other theorems as well?
 
 ;alt version?
@@ -1141,7 +1171,7 @@
 ;;   :hints (("Goal" :in-theory (enable perm))))
 
 ;; jcd - getting rid of this theorem since we already have the duplicate
-;; theorem perm-cons-x-y-z below, and it has a better name.  (dammit man, 
+;; theorem perm-cons-x-y-z below, and it has a better name.  (dammit man,
 ;; how do you disable anything when you prove theorems three times!)
 ;;
 ;; (defthm perm-cons-x-y-z
@@ -1151,18 +1181,18 @@
 ;;   :hints (("goal" :in-theory (enable perm))))
 
 (defthm perm-of-cons-and-cons
-  (equal (perm (cons a x) 
+  (equal (perm (cons a x)
                (cons a y))
          (perm x y))
    :hints (("Goal" :in-theory (enable perm))))
 
 
-;; jcd - getting rid of this theorem since it duplicates the theorem 
-;; below.  
+;; jcd - getting rid of this theorem since it duplicates the theorem
+;; below.
 ;;
 ;; ;bzo ;add the two "cross" cases for this.
 ;; (defthm perm-append-x-y-z
-;;   (equal (perm (append x y) 
+;;   (equal (perm (append x y)
 ;;                (append x z))
 ;;          (perm y z))
 ;;   :hints (("goal" :in-theory (enable binary-append perm))))
@@ -1176,7 +1206,7 @@
 
 
 
-;; jcd - removing this rule.  we already have this for list::equiv, and since 
+;; jcd - removing this rule.  we already have this for list::equiv, and since
 ;; list::equiv refines perm, this is kind of like proving (iff foo bar) after
 ;; you already have proven (equal foo bar).
 ;;
@@ -1185,7 +1215,7 @@
 ;;         nil))
 
 ;instead move remove-1 outside of append within a perm context??
-(defthm perm-cons-append 
+(defthm perm-cons-append
   (implies (memberp a y)
            (perm (cons a (append x (remove-1 a y)))
                  (append x y)))
@@ -1228,8 +1258,8 @@
                 (memberp a y))
            (equal (perm (remove-1 a x) (remove-1 a y))
                   (perm x y)))
-  :hints (("Goal" 
-           :use (:instance perm-of-cons-and-cons 
+  :hints (("Goal"
+           :use (:instance perm-of-cons-and-cons
                            (x (remove-1 a x)) (y (remove-1 a y)))
            :in-theory (disable perm-of-cons-and-cons
                                perm-implies-perm-cons-2
@@ -1246,7 +1276,7 @@
                (perm x (remove-1 a y))
              (perm x y)))))
 
-;drop? 
+;drop?
 (local (defthmd perm-membership-reduction
          (implies (and (memberp a x)
                        (memberp a y)
@@ -1263,7 +1293,7 @@
   (implies (subbagp y z)
            (perm (append x (remove-bag y z))
                  (remove-bag y (append x z))))
-  :hints (("goal" :in-theory (e/d (remove-bag) 
+  :hints (("goal" :in-theory (e/d (remove-bag)
                                   (remove-bag-append
                                    consp-remove-1-rewrite
                                    )))))
@@ -1313,10 +1343,10 @@
 
 ;; jcd - try to move closer to append-common-reduction?  horrible name...
 (defthm perm-append-y-z-a
-  (equal (perm (append x z) 
+  (equal (perm (append x z)
                (append y z))
          (perm x y))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable append-common-reduction)
            :use (:instance append-common-reduction
                            (x z) (y y) (z x)))))
@@ -1338,7 +1368,7 @@
 ;nests which could have common stuff "cancelled".  (consider a bind-free rule).
 
 (defthm perm-append-x-a-y-append-a-z
-  (equal (perm (append w z) 
+  (equal (perm (append w z)
                (append x (append w y)))
          (perm z (append x y))))
 
@@ -1467,7 +1497,7 @@
 
 (defthm perm-of-append-of-remove-bag-same
   (implies (subbagp x y)
-           (perm (append x (remove-bag x y)) 
+           (perm (append x (remove-bag x y))
                  y))
   :hints (("Goal" :in-theory (e/d (subbagp)
                                   (subbagp-cdr-remove-1-rewrite ; incompat
@@ -1476,7 +1506,7 @@
                                    subbagp-cdr-lemma ; speedup
                                    subbagp-of-non-consp-two ; speedup
                                    )))))
-           
+
 (defthmd perm-of-append-one
   (implies (subbagp x z)
            (equal (perm (append x y) z)
@@ -1557,7 +1587,7 @@
 (defund disjoint (x y)
   (declare (type t x y))
   (if (consp x)
-      (if (memberp (car x) y) 
+      (if (memberp (car x) y)
           nil
         (disjoint (cdr x) y))
     t))
@@ -1579,16 +1609,16 @@
 
 (defthm disjoint-of-non-consp-one
   (implies (not (consp x))
-           (equal (disjoint x y) 
+           (equal (disjoint x y)
                   t))
   :hints (("Goal" :in-theory (enable disjoint))))
 
 (defthm disjoint-of-non-consp-two
   (implies (not (consp y))
-           (equal (disjoint x y) 
+           (equal (disjoint x y)
                   t))
   :hints (("Goal" :in-theory (enable disjoint))))
-   
+
 (defthm disjoint-commutative
   (equal (disjoint x y)
          (disjoint y x))
@@ -1656,7 +1686,7 @@
                   (not (consp y))))
   :hints (("Goal" :in-theory (enable disjoint))))
 
-;bzo rename params on these? 
+;bzo rename params on these?
 ;rename?
 (defthm subbagp-disjoint
    (implies (and (disjoint w z)
@@ -1673,7 +1703,7 @@
                  (subbagp x z)
                  (subbagp y w))
             (disjoint x y))
-   :hints (("Goal" :in-theory (disable subbagp-disjoint) 
+   :hints (("Goal" :in-theory (disable subbagp-disjoint)
            :use (:instance subbagp-disjoint (w z) (z w)))))
 
 (defthm memberp-car-when-disjoint
@@ -1707,7 +1737,7 @@
 (defthmd disjoint-memberp-implies-non-membership
   (implies (and (disjoint x y) ;y is a free variable
                 (memberp a y))
-           (equal (memberp a x) 
+           (equal (memberp a x)
                   nil)))
 
 ;changing disjoint could improve this rule..
@@ -1729,7 +1759,7 @@
 ;;          (disjoint x y))
 ;;   :hints (("Goal" :in-theory (enable list::fix disjoint))))
 
-;; ;; jcd - removing this rule, it is trivial with our congruence rule for perm 
+;; ;; jcd - removing this rule, it is trivial with our congruence rule for perm
 ;; ;; over disjoint 1.
 ;; (defthm disjoint-of-list-fix-one
 ;;   (equal (disjoint (list::fix x) y)
@@ -1782,7 +1812,7 @@
 ;; jcd - changed rhs to list::fix
 (defthmd disjoint-remove-bag
   (implies (disjoint x y)
-           (equal (remove-bag x y) 
+           (equal (remove-bag x y)
                   (list::fix y)))
   :hints (("goal" :in-theory (enable disjoint))))
 
@@ -1806,7 +1836,7 @@
   (implies (disjoint x z)
            (equal (disjoint z (remove-bag x y))
                   (disjoint y z)))
-  :hints(("goal" 
+  :hints(("goal"
           :in-theory (disable disjoint-commutative)
           :use (:instance disjoint-commutative
                           (x z) (y (remove-bag x y))))))
@@ -1950,7 +1980,7 @@
   (implies (and (not (unique x))
                 (unique y))
            (not (subbagp x y)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (e/d (subbagp unique)
                            (subbagp-cdr-remove-1-rewrite ; incompatible
                             consp-remove-1-rewrite ; speedup
@@ -1988,7 +2018,7 @@
          (and (not (memberp a x))
               (unique x)))
   :hints (("Goal" :in-theory (enable unique))))
-         
+
 ;; jcd - added this rule
 (defthm unique-of-cdr
   (implies (unique x)
@@ -2066,7 +2096,7 @@
 
 (defthm count-when-non-member
   (implies (not (memberp a x))
-           (equal (count a x) 
+           (equal (count a x)
                   0))
   :hints (("Goal" :in-theory (enable count))))
 
@@ -2130,8 +2160,8 @@
 (defthm unique-means-count-at-most-one
   (implies (unique x)
            (<= (count a x) 1))
-  :hints (("goal" 
-           :use unique-means-not-memberp-of-remove-1-same 
+  :hints (("goal"
+           :use unique-means-not-memberp-of-remove-1-same
            :in-theory (disable unique-means-not-memberp-of-remove-1-same))))
 
 (defthmd memberp-from-count
@@ -2151,7 +2181,7 @@
                   (if (memberp a y)
                       nil
                     (subbagp x y))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use (:instance subbagp-false-from-counts (y (remove-1 a y)))
            :in-theory (disable subbagp-false-from-counts))))
 
@@ -2175,7 +2205,7 @@
            (perm (remove-bag x (cons a y))
                  (cons a (remove-bag x y))
                  ))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (e/d (remove-bag)
                            (consp-remove-1-rewrite ; speedup
                             consp-remove-bag-rewrite ; speedup
@@ -2265,7 +2295,7 @@
 ;non-consp args (return that non-consp arg or return nil?).
 
 ;; jcd - changing remove-all to return a true list, like the other remove
-;; functions. 
+;; functions.
 (defund remove-all (a x)
   (declare (type t a x))
   (if (consp x)
@@ -2309,12 +2339,12 @@
 ;;
 ;; (defthm non-membership-remove-all
 ;;   (implies (not (memberp a x))
-;;            (equal (remove-all a x) 
+;;            (equal (remove-all a x)
 ;;                   (list::fix x)))
 ;;   :hints (("Goal" :in-theory (enable remove-all))))
 
 ;; jcd - changed rhs from x to (list::fix x)
-(defthm remove-all-does-nothing 
+(defthm remove-all-does-nothing
   (implies (not (memberp a x))
            (equal (remove-all a x)
                   (list::fix x)))
@@ -2344,7 +2374,7 @@
   (equal (equal x (remove-all a x))
          (and (true-listp x)
               (not (memberp a x)))))
-                
+
 (defthm remove-all-of-cons-same
   (equal (remove-all a (cons a x))
          (remove-all a x))
@@ -2376,7 +2406,7 @@
   (equal (remove-1 a (remove-all b x))
          (remove-all b (remove-1 a x))))
 
-;make remove-all analogues of all the remove-1 theorems!      
+;make remove-all analogues of all the remove-1 theorems!
 
 (defthm remove-all-of-remove-1-same-one
   (equal (remove-all a (remove-1 a x))
@@ -2472,7 +2502,7 @@
 ;returns the intersection of two bags.  the count of an element in the
 ;intersection is the minimum of its counts in the arguments.
 
-;; jcd - changed this to always return nil instead of x when x is not a 
+;; jcd - changed this to always return nil instead of x when x is not a
 ;; consp, so that it will always return a true list.
 (defund bag-intersection (x y)
   (declare (type t x y))
@@ -2605,7 +2635,7 @@
   (implies (and (unique-subbagps y x2 z)
                 (subbagp x x2))
            (unique-subbagps x y z))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable unique-subbagps-from-unique-subbagps-and-subbagp-2)
            :use unique-subbagps-from-unique-subbagps-and-subbagp-2)))
 
@@ -2668,16 +2698,16 @@
            (unique-memberp-and-subbagp a y z))
   :hints (("Goal" :in-theory (e/d (unique-memberp-and-subbagp
                                    unique-subbagps)
-                                  (count-of-remove-bag-when-member-of-both-bags                                   
+                                  (count-of-remove-bag-when-member-of-both-bags
                                    ))
-           :use count-of-remove-bag-when-member-of-both-bags 
+           :use count-of-remove-bag-when-member-of-both-bags
            )))
 
 (defthm unique-memberp-and-subbagp-when-unique-subbagps-and-memberp-alt
   (implies (and (unique-subbagps y x z)
                 (memberp a x))
            (unique-memberp-and-subbagp a y z))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use (:instance unique-memberp-and-subbagp-when-unique-subbagps-and-memberp)
            :in-theory (disable unique-memberp-and-subbagp-when-unique-subbagps-and-memberp))))
 
@@ -2685,21 +2715,21 @@
   (implies (and (unique-memberp-and-subbagp a x z)
                 (subbagp z y))
            (unique-memberp-and-subbagp a x y))
-  :hints (("Goal" :in-theory (enable unique-memberp-and-subbagp 
+  :hints (("Goal" :in-theory (enable unique-memberp-and-subbagp
                                      unique-subbagps))))
 
 (defthm unique-memberp-and-subbagp-when-unique-memberp-and-subbagp-and-subbagp-two
   (implies (and (unique-memberp-and-subbagp a y z) ; y is a free var
                 (subbagp x y))
            (unique-memberp-and-subbagp a x z))
-  :hints (("Goal" :in-theory (enable unique-memberp-and-subbagp 
+  :hints (("Goal" :in-theory (enable unique-memberp-and-subbagp
                                      unique-subbagps))))
 
 (defthm unique-memberps-when-unique-memberp-and-subbagp-and-memberp
   (implies (and (unique-memberp-and-subbagp a x z)
                 (memberp b x))
            (unique-memberps a b z))
-  :hints (("Goal" :in-theory (enable unique-memberp-and-subbagp 
+  :hints (("Goal" :in-theory (enable unique-memberp-and-subbagp
                                      unique-memberps))))
 
 (defthm unique-memberps-when-unique-memberp-and-subbagp-and-memberp-alt
@@ -2707,7 +2737,7 @@
                 (memberp a x))
            (unique-memberps a b y))
   :hints (("Goal" :cases ((equal a b))
-           :in-theory (enable unique-memberp-and-subbagp 
+           :in-theory (enable unique-memberp-and-subbagp
                               unique-memberps))))
 
 (defthm unique-memberps-when-unique-memberp-and-subbagp-and-memberp-three
@@ -2771,7 +2801,7 @@
 ;; ;bad name?
 ;; (defthm perm-not-consp
 ;;   (implies (perm x x-equiv)
-;;            (iff (not (consp (remove-bag p x))) 
+;;            (iff (not (consp (remove-bag p x)))
 ;;                 (not (consp (remove-bag p x-equiv)))))
 ;;   :hints (("Goal" :induct (perm-remove-bag-induction p x x-equiv)
 ;;            :in-theory (enable remove-bag))
@@ -2808,12 +2838,12 @@
 ;;   (declare (xargs :guard (and (equal y y)
 ;;                               (equal a a))))
 ;;   (if (consp x)
-;;       (perm-remove-bag-induction-2 (cdr x) (remove-1 (car x) y) 
+;;       (perm-remove-bag-induction-2 (cdr x) (remove-1 (car x) y)
 ;;                                    (remove-1 (car x) a))
 ;;     nil))
 ;; |#
 
-;; #| 
+;; #|
 ;;  (local
 ;;   (defthm perm-implies-consp-remove-bag-correlation
 ;;     (implies
@@ -2899,13 +2929,13 @@
 ;;     (implies (subbagp x list)
 ;;              (equal (perm (append x y) list)
 ;;                     (perm y (remove-bag x list))))
-;;     :hints (("Goal" :in-theory (enable perm subbagp remove-bag 
+;;     :hints (("Goal" :in-theory (enable perm subbagp remove-bag
 ;;                                        memberp-of-cons
 ;;                                        binary-append)))))
 ;; |#
 
 ;; #|
-;; 
+;;
 ;; (defthmd subbagp-perm-subbagp-cons
 ;;   (implies (and (subbagp (append (cdr u) v)
 ;;                         (remove-1 (car u) y))
@@ -2948,7 +2978,7 @@
 ;;   (equal (remove-bag y (list::fix y))
 ;;          (remove-bag x y))
 ;;   :hints (("Goal" :in-theory (enable remove-bag list::fix))))
-;; |#       
+;; |#
 
 ;; #|
 ;; bzo not quite right
@@ -2957,7 +2987,7 @@
 ;;          (and (subbagp x (remove-bag y z))
 ;;               (subbagp y z)))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-;;            :in-theory (enable subbagp append remove-1))))              
+;;            :in-theory (enable subbagp append remove-1))))
 ;; |#
 
 ;; #|
@@ -2990,7 +3020,7 @@
 ;; |#
 
 ;; #|
-;; 
+;;
 ;; (defthmd remove-all-of-car
 ;;   (equal (remove-all (car x) x)
 ;;          (if (consp x)
@@ -3011,7 +3041,7 @@
 ;; (defthmd non-membership-removal-free
 ;;   (implies (and (not (memberp b x)) ;b is a free variable
 ;;                 (equal b a))
-;;            (equal (remove-all a x) 
+;;            (equal (remove-all a x)
 ;;                   x)))
 ;; |#
 
@@ -3031,7 +3061,7 @@
 ;;   (implies (and (not (memberp a (remove-all b x)))
 ;;                 (memberp a x))
 ;;            (equal b a))
-;;   :rule-classes :forward-chaining) 
+;;   :rule-classes :forward-chaining)
 ;; |#
 
 ;; #|
@@ -3127,25 +3157,25 @@
                 )
            (equal (list::memberp a x)
                   nil)))
-               
+
 (defthm subbagp-of-x-and-cons-car-x
   (implies (consp x)
            (equal (bag::subbagp x (cons (car x) y))
                   (bag::subbagp (cdr x) y))))
 
-;looped?        
+;looped?
 ;; (defthm subbagp-of-singleton
 ;;   (equal (bag::subbagp x (cons a nil))
 ;;          (or (bag::empty-bagp x)
 ;;              (list::equiv a (cons a nil))
 ;; ;             (and (equal 1 (len x)) ;rephrase as congruence to singleton bag?
 ;;  ;                 (equal a (car x)))
-             
+
 ;;              ))
 ;;   :hints (("Goal" :cases ( (equal 1 (len x)))
 ;;            :in-theory (enable list::memberp-of-cons
 ;;                               bag::subbagp-of-cons))))
-                  
+
 
 (defthm subbagp-of-singleton
   (equal (bag::subbagp x (cons a nil))
@@ -3248,13 +3278,13 @@
   (:REWRITE MEMBERSHIP-EXTRACTION-INSTANCE)
   ))
 
-(in-theory 
- (disable 
+(in-theory
+ (disable
   (:REWRITE *TRIGGER*-UNIQUE-SUBBAGPS-IMPLIES-DISJOINTNESS)
   (:REWRITE *TRIGGER*-SUBBAGP-PAIR-DISJOINT) ;can we get rid of this then?
  ))
 
-;we look through HYPS for a term of the form (subbagp x y) 
+;we look through HYPS for a term of the form (subbagp x y)
 ;if such an item is found, we return (mv t y).  else, we return (mv nil nil)
 ;what if multple such things might be found?
 (defun find-exact-subbagp-instance (x hyps)
@@ -3288,7 +3318,7 @@
   (if (consp hyps)
       (let ((entry (car hyps)))
         (let ((hit ;(not (subbagp term zed))
-               (and 
+               (and
                 (consp entry)
                 (equal (car entry) 'not)
                 (consp (cdr entry))
@@ -3297,7 +3327,7 @@
                 (consp (cdr (cadr entry)))
                 (consp (cddr (cadr entry)))
                 (let ((term (cadr (cadr entry)))
-                      (zed (caddr (cadr entry)))) 
+                      (zed (caddr (cadr entry))))
                   (and (syntax-subbagp-fn nil x term)
                        (cons term zed))))))
           (if hit
@@ -3325,7 +3355,7 @@
                       (and hit
                            (or (find-bounded-subbagp-path t   x1 hyps y hyps (1- n) (cons (cons x1 t) (cons (cons x0 nil) res)))
                                (find-bounded-subbagp-path nil x  nrh  y hyps (1- n) res))))))))))
-  
+
 (defun reverse-path (path res)
   (declare (type t path res))
   (if (consp path)
@@ -3336,7 +3366,7 @@
     res))
 
 ;what does this do?
-;we look through HYPS for a term of the form (subbagp x BLAH) 
+;we look through HYPS for a term of the form (subbagp x BLAH)
 ;if such an item is found, we test whether BLAH equals y.  else, we return nil
 ;what if multple such things might be found?
 (defun subbagp-instance (x y hyps)
@@ -3369,7 +3399,7 @@
                nil))))))
 
 
-;add guard?                     
+;add guard?
 (defun subbagp-chain (x xlist x0)
   (if (consp xlist)
       (and (if (cdar xlist) (hide-subbagp x (caar xlist)) (meta-subbagp x (caar xlist)))
@@ -3378,7 +3408,7 @@
         (hide-subbagp x x0)
       (meta-subbagp x x0))))
 
-;add guard?                     
+;add guard?
 (defun subbagp-hyp (key x xlist y)
   (and key (subbagp-chain x xlist y)))
 
@@ -3445,7 +3475,7 @@
   (if (consp xlist)
       (let ((z0 (if (consp (car xlist)) (caar xlist) nil)))
         (met ((uni syntax) (find-unique-instance z0 hyps))
-          (if uni 
+          (if uni
               (if syntax
                   xlist
                 (append `((,uni . nil) (,z0 . t)) (cdr xlist))) ;reversed since list still needs to be reversed
@@ -3515,7 +3545,7 @@
 
 ;; hide-unique is defined in meta as unique
 
-;add guard?                     
+;add guard?
 (defun unique-chain (x xlist uni)
   (if (consp xlist)
       (and (if (cdar xlist) (hide-subbagp x (caar xlist)) (meta-subbagp x (caar xlist)));(subbagp x (car xlist))
@@ -3526,7 +3556,7 @@
       (and (meta-subbagp x uni)
            (hide-unique uni)))))
 
-;add guard?                     
+;add guard?
 (defun unique-hyp (key x xlist uni)
   (and key (unique-chain x xlist uni)))
 
@@ -3573,7 +3603,7 @@
                               (list-whose-caars-are-pseudo-termsp ylist)
                               (pseudo-term-listp hyps))
                   ))
-  
+
   (if (and (consp ylist)
            (consp (car ylist)))
       (met ((hit syn p q) (find-disjointness  x (caar ylist) hyps))
@@ -3591,12 +3621,12 @@
   (if (and (consp xlist)
            (consp (car xlist)))
       (met ((hit syn p q ylist2) (find-disjointness*  (caar xlist) ylist hyps))
-           (if hit 
+           (if hit
                (mv hit syn xlist ylist2 p q)
              (find-disjointness** (cdr xlist) ylist hyps)))
     (mv nil nil nil nil nil nil)))
 
-;checks for subbagp paths up to disjoint 
+;checks for subbagp paths up to disjoint
 ;argument for disjointness comes from a disjoint in hyps
 (defun disjoint-disjointness (x y hyps)
   (declare (type t x hyps)
@@ -3616,7 +3646,7 @@
                      x0
                      (reverse-path newy '(quote t)) ;ylist
                      y0
-                     `(quote ,syn) 
+                     `(quote ,syn)
                      p
                      q)) ;z's are irrelevent in this argument
 ;but use z positions for subbagp-pair type argument
@@ -3789,8 +3819,8 @@
       (let ((xlist (revlist xlist nil))
             (ylist (revlist ylist nil)))               ; smallest to largest
         (met ((xlist ylist zlist) (find-shared-ancestor xlist ylist nil)) ; x/y largest to smallest
-             
-             (let ((newzlist (find-unique-instance-list (revlist zlist nil) hyps))) 
+
+             (let ((newzlist (find-unique-instance-list (revlist zlist nil) hyps)))
                ;; newzlist path from something unique down subbagps
                (met ((hit newxlist x0 newylist y0 z zlist z0) (find-unique-subbagp** xlist ylist newzlist hyps))
                     (mv hit (reverse-path newxlist '(quote t))
@@ -3821,12 +3851,12 @@
                   )
            (ignore state))
   (let ((hyps (mfc-clause mfc)))
-    (and (or flg 
+    (and (or flg
              t
              (mfc-ancestors mfc) ;bzo why are we doing these checks?
              (in-clause-disjoint x y hyps)
              )
-         (met ((hit xlist* x0* ylist* y0* z* zlist* z0*) (unique-disjointness x y hyps)) 
+         (met ((hit xlist* x0* ylist* y0* z* zlist* z0*) (unique-disjointness x y hyps))
               (if hit
                   `((,key . (quote :unique))
                     (,xlist . ,xlist*)
@@ -3853,12 +3883,12 @@
   (subbagp-pair x y x y)
   :hints (("goal" :in-theory (enable subbagp-pair))))
 
-;add guard?                     
+;add guard?
 (defun unique-subbagp-chain (x0 y0 z zlist z0)
   (and (unique-subbagps x0 y0 z)
        (unique-chain z zlist z0)))
 
-;add guard?                     
+;add guard?
 (defun disjoint-hyp (key x xlist x0 y ylist y0 z-syn zlist-p z0-q)
   (cond
    ((equal key ':disjoint)
@@ -3896,7 +3926,7 @@
                  (consp (cdr (cadr entry)))
                  (consp (cddr (cadr entry)))
                  (equal (cadr (cadr entry)) x))
-            (find-memberp-instance-list x (cdr clause) 
+            (find-memberp-instance-list x (cdr clause)
                                        (cons (caddr (car (cdr entry))) res))
           (find-memberp-instance-list x (cdr clause) res)))
     res))
@@ -3924,7 +3954,7 @@
                 (PSEUDO-TERM-LISTP res)
                 )
            (PSEUDO-TERM-LISTP (FIND-MEMBERP-INSTANCE-LIST x clause res))))
- 
+
 (defun memberp-membership (x y hyps)
   (declare (type t x y hyps)
            (xargs :guard (and (pseudo-termp x)
@@ -3934,7 +3964,7 @@
   (let ((x0list (find-memberp-instance-list x hyps nil)))
     (met ((hit x0 path) (find-memberp-subbagp-list x0list y hyps))
          (mv hit x0 path))))
-        
+
 (defun in-hyps-memberp (x y hyps)
   (declare (type t x y hyps))
   (if (consp hyps)
@@ -3969,9 +3999,9 @@
                     (,x0 . ,val)
                     (,xlist . ,list))
                 nil)))))
-         
 
-;add guard?                     
+
+;add guard?
 (defun memberp-hyp (key x x0 xlist y)
   (and key
        (hide-memberp x x0)
@@ -3980,7 +4010,7 @@
 (defthm memberp-computation
   (implies
    (and
-    (bind-free (bind-memberp-argument 'key 'xlist 'x0 x y mfc state) 
+    (bind-free (bind-memberp-argument 'key 'xlist 'x0 x y mfc state)
                (key x0 xlist))
     (memberp-hyp key x x0 xlist y)
     )
@@ -4027,7 +4057,7 @@
                   ))
   (if (consp memlist)
       (let ((x* (car memlist)))
-        (let ((disjoint-arg 
+        (let ((disjoint-arg
                (bind-disjoint-argument t 'key 'xlist 'x0 'ylist 'y0 'z 'zlist 'z0 x* y mfc state)))
           (if disjoint-arg
               (mv t x* disjoint-arg)
@@ -4061,13 +4091,13 @@
                               (,x* . ,x*1))
                             disjoint-arg)
                   nil))))))
-               
-;add guard?                     
+
+;add guard?
 (defun non-memberp-hyp (hit x* key x xlist x0 y ylist y0 z zlist z0)
   (and hit
        (hide-memberp x x*)
        (disjoint-hyp key x* xlist x0 y ylist y0 z zlist z0)))
-  
+
 (defthm non-memberp-computation
   (implies
    (and
@@ -4142,19 +4172,19 @@
                `((,which . (quote ,(car x)))
                  (,val   . ,(cdr x)))))))))
 
-;add guard?                     
+;add guard?
 (defun disjoint-other-hyp (which x y z)
   (if which
       (disjoint (append x (remove-bag x y))
                 z)
     (disjoint (append x (remove-bag x z)) y)))
-   
+
 (defthm disjoint-other-memberp
   (implies (and (bind-remove-bag-instance y z which x)
                 (disjoint-other-hyp which x y z))
            (disjoint y z)))
 
-;add guard?                     
+;add guard?
 (defun collect-list (term)
   (if (and (consp term)
            (equal (car term) 'remove-1))
@@ -4162,14 +4192,14 @@
              ,(collect-list (caddr term)))
     `(quote nil)))
 
-;add guard?                     
+;add guard?
 (defun collect-rest (term)
   (if (and (consp term)
            (equal (car term) 'remove-1))
       (collect-rest (caddr term))
     term))
 
-;add guard?                     
+;add guard?
 (defun bind-list (list rest term)
   `((,list . ,(collect-list term))
     (,rest . ,(collect-rest term))))
@@ -4206,7 +4236,7 @@
         (if (equal 'binary-append (car term))
             (if (consp (caddr term))
                 (if (and ;(consp (cdr term))
-                 
+
                      (equal 'binary-append (car (caddr term)))
     ;(consp (cdaddr term))
                      (equal (cadr term)
@@ -4218,7 +4248,7 @@
                 nil))
           nil))
     nil))
-  
+
 (defun bind-x-to-repeated-subbag (term)
   (declare (xargs :guard (pseudo-termp term)))
   (let* ((bag (find-repeated-subbag term)))
@@ -4249,7 +4279,7 @@
 ;; Test it out...
 (local
  (defthm test-of-show-not-unique-1
-   (implies (consp x) 
+   (implies (consp x)
             (not (bag::unique (append x x y))))))
 ;When we're rewriting a term, it may be one of the top-level literals in the goal, may be a subterm of a top-level
 ;literal, or may not even appear in the goal at all (because it arose during backchaining). This function tests
@@ -4282,7 +4312,7 @@
            (equal (car cons-nest2) 'cons))
       (if (equal (cadr cons-nest1) (cadr cons-nest2))
           (cons-equal-meta-function-helper (caddr cons-nest1) (caddr cons-nest2)) ;skip syntactically equal stuff
-        (list 
+        (list
          'if
          (list 'equal (cadr cons-nest1) (cadr cons-nest2))
          (cons-equal-meta-function-helper (caddr cons-nest1) (caddr cons-nest2))
@@ -4309,9 +4339,9 @@
            (consp (cddr term))
            (consp (caddr term))
            (equal (car (caddr term)) 'cons)  ;(caddr term) should be of the form (cons blah3 blah4)
-           
+
            (equal (car term) 'equal)
-           
+
 ;           (consp (cdr (cadr term))) ;check the arities:
  ;          (consp (cddr (cadr term)))
   ;         (consp (cdr (caddr term)))
@@ -4321,13 +4351,13 @@
       (cons-equal-meta-function-helper (cadr term) (caddr term))
     term))
 
-(in-theory (disable HYPothesis-PARITY MFC-CLAUSE))                                       
+(in-theory (disable HYPothesis-PARITY MFC-CLAUSE))
 
 (defthmd cons-equal-smart-meta
   (equal (cons-ev term a)
          (cons-ev (cons-equal-meta-function term mfc state) a))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)))
-  :rule-classes ((:meta :trigger-fns (equal))))           
+  :rule-classes ((:meta :trigger-fns (equal))))
 
 #|
 ; this one should fire first?
@@ -4366,9 +4396,9 @@
            (consp (cddr term))
            (consp (caddr term))
            (equal (car (caddr term)) 'cons)  ;(caddr term) should be of the form (cons blah3 blah4)
-           
+
            (equal (car term) 'equal)
-           
+
 ;           (consp (cdr (cadr term))) ;check the arities:
  ;          (consp (cddr (cadr term)))
   ;         (consp (cdr (caddr term)))
@@ -4429,10 +4459,10 @@
            (equal (equal (cons a b) (cons c d))
                   (cons-equal-dummy a b c d)))
   :hints (("Goal" :in-theory (enable cons-equal-dummy))))
-                                
+
 (defun cons-equal-dummy-meta-function (term)
   (declare (type t term))
-  (if (and; (hypothesis-parity term mfc state) ;TERM appears as a hypothesis (or a negated conclusion)           
+  (if (and; (hypothesis-parity term mfc state) ;TERM appears as a hypothesis (or a negated conclusion)
            (consp term)
            (consp (cdr term))
            (consp (cddr term))
@@ -4597,7 +4627,7 @@
     (if flg
         (symbol-listp-all-vars1-induction nil (cdr x) ans)
       (list (symbol-listp-all-vars1-induction t (car x) ans)
-            (symbol-listp-all-vars1-induction nil (cdr x) (all-vars1 (car x) ans)))))) 
+            (symbol-listp-all-vars1-induction nil (cdr x) (all-vars1 (car x) ans))))))
 
 (defthm symbol-listp-all-vars1-flg
   (if flg
@@ -4631,7 +4661,7 @@
     (if flg
         (true-listp-all-vars1-induction nil (cdr x) ans)
       (list (true-listp-all-vars1-induction t (car x) ans)
-            (true-listp-all-vars1-induction nil (cdr x) (all-vars1 (car x) ans)))))) 
+            (true-listp-all-vars1-induction nil (cdr x) (all-vars1 (car x) ans))))))
 
 (defthm true-listp-all-vars1-flg
   (if flg
@@ -4657,7 +4687,7 @@
                 (true-listp ans))
            (true-listp (all-vars1-lst x ans)))
   :hints (("Goal" :by (:instance true-listp-all-vars1-flg (flg nil)))))
- 
+
 (in-theory (disable all-vars1 all-vars1-lst))
 
 
@@ -4794,7 +4824,7 @@
 ;Returns a term representing the conjunctionof TERM1 and TERM2.
 (defund make-conjunction (term1 term2)
   (declare (type t term1 term2))
-  (if (equal term1 ''t)  
+  (if (equal term1 ''t)
       term2 ;conjoining something with "true" has no effect
     (if (equal term2 ''t)
         term1 ;conjoining something with "true" has no effect
@@ -4864,17 +4894,17 @@
 ;; this. Previously, the hyps generated by hypothesis metafunctions could not include calls to SYNP (which is what
 ;; BIND-FREE expands into.)  We also add a backchain limit of 0 to our :meta rules, because nothing more than type
 ;; reasoning should be needed to relieve the hyps, since they can straight from the type-alist.  Having a backchain
-;; limit also ensures that the rule won't loop by finding in the generated hypothesis the very term bring rewritten.  
+;; limit also ensures that the rule won't loop by finding in the generated hypothesis the very term bring rewritten.
 ;; (A change to ACL2 allowed the use of backchain limits with :meta rules.)
 
 
 ;; This generates what is essentially a call to bind-free that binds each var in VARS to themselves.  (Actually,
 ;; bind-free is a macro, and we must generate a term, so we generate a call to SYNP, which is what the call to
-;; bind-free would expans into.)  
+;; bind-free would expans into.)
 ;; NOTE! If VARS is nil, you probably don't want to call this function, since it will
 ;; return what is essentially a call to bind-free with a nil, and returning nil is how a bind-free function signals
 ;; failure.
-;;  bzo add a guard that  vars is not nil?  
+;;  bzo add a guard that  vars is not nil?
 
 ;This partly follows a defun from Matt Kaufmann.
 (defund bind-vars-to-selves (vars)
@@ -4895,7 +4925,7 @@
              (lhs-vars (all-vars term))
              (extra-vars (acl2::set-difference-eq hyp-vars lhs-vars)))
         (if extra-vars ;if there are no extra vars, we can't just have "bind-free" return an empty alist, since that's how bind-free indicates failure.
-            (make-conjunction (bind-vars-to-selves extra-vars) hyp) 
+            (make-conjunction (bind-vars-to-selves extra-vars) hyp)
           hyp))
     ''nil))
 
@@ -4971,7 +5001,7 @@
 
 ;This partly follows something from Matt Kaufmann.
 (defun hyp-for-show-subbagp-from-mfc (term mfc state)
-  (declare (type t term mfc state) 
+  (declare (type t term mfc state)
            (ignore state)
            (xargs :guard (pseudo-termp term)))
   (if (and (consp term)
@@ -4979,7 +5009,7 @@
            )
       (let* ((type-alist (acl2::mfc-type-alist mfc))
              (len (usb16-fix (len type-alist))))
-        (bind-extra-vars-in-hyp 
+        (bind-extra-vars-in-hyp
          (hyp-for-show-subbagp-from-type-alist-fn nil (cadr term) (caddr term) len type-alist type-alist 1) term))
     ''nil))
 
@@ -5070,7 +5100,7 @@
                         :backchain-limit-lst 0 ;just in case...
                         ))
   :hints (("Goal" :do-not-induct t
-           :in-theory (enable 
+           :in-theory (enable
                        hyp-for-show-unique-from-type-alist-irrelevant
                        syntax-show-common-members-irrelevant
                        )
@@ -5102,7 +5132,7 @@
                 (equal w (syntax-ev y a))
                 )
            (unique-subbagps v w (syntax-ev bag a)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :do-not '(generalize eliminate-destructors)
            :in-theory (enable hyp-for-show-unique-subbagps-from-type-alist-fn)))
   :rule-classes (:rewrite :forward-chaining))
@@ -5191,7 +5221,7 @@
            )
       (let* ((type-alist (acl2::mfc-type-alist mfc))
              (len (usb16-fix (len type-alist))))
-        (bind-extra-vars-in-hyp (hyp-for-show-disjoint-from-type-alist-fn 
+        (bind-extra-vars-in-hyp (hyp-for-show-disjoint-from-type-alist-fn
                                  nil (cadr term) (caddr term) len type-alist type-alist) term))
     ''nil))
 
@@ -5261,7 +5291,7 @@
     term))
 
 (defun hyp-for-show-memberp-from-mfc (term mfc state)
-  (declare (ignore state) 
+  (declare (ignore state)
            (xargs :guard (pseudo-termp term))
            (type t term mfc state))
   (if (and (consp term)
@@ -5272,7 +5302,7 @@
            )
       (let* ((type-alist (acl2::mfc-type-alist mfc))
              (len (usb16-fix (len type-alist))))
-        (bind-extra-vars-in-hyp (hyp-for-show-memberp-from-type-alist-fn 
+        (bind-extra-vars-in-hyp (hyp-for-show-memberp-from-type-alist-fn
                                  nil (cadr term) (caddr term) len type-alist type-alist 1) term))
     ''nil))
 
@@ -5298,7 +5328,7 @@
 
 
 
-(local 
+(local
  (defthm cons-iff
    (iff (cons x y)
         t)))
@@ -5448,11 +5478,11 @@
                                (pseudo-termp v)
                                (pseudo-termp x)
                                (pseudo-termp bag)
-                               (equal w (usb16-fix (len whole-type-alist)))) 
+                               (equal w (usb16-fix (len whole-type-alist))))
                   :guard-hints  (("Goal" :do-not '(preprocess)))))
   (and (equal v (cadr fact))
        (ts-non-nil (cadr entry))
-       (show-unique-subbagps-from-type-alist 
+       (show-unique-subbagps-from-type-alist
         x (caddr fact) bag w whole-type-alist whole-type-alist 1)
        (equal nil (cdddr fact))))
 
@@ -5469,11 +5499,11 @@
                                (pseudo-termp v)
                                (pseudo-termp x)
                                (pseudo-termp bag)
-                               (equal w (usb16-fix (len whole-type-alist)))) 
+                               (equal w (usb16-fix (len whole-type-alist))))
                   :guard-hints  (("Goal" :do-not '(preprocess)))))
   (and (syntax-memberp v (cadr fact))
-       (conjoin-fact-and-hyp 
-        fact (hyp-for-show-unique-subbagps-from-type-alist 
+       (conjoin-fact-and-hyp
+        fact (hyp-for-show-unique-subbagps-from-type-alist
               x (caddr fact) bag w whole-type-alist whole-type-alist 1))))
 
 (defun hyp-for-show-unique-memberp-and-subbagp-from-type-alist-memberp-case (a v x bag entry fact type-alist w whole-type-alist)
@@ -5491,13 +5521,13 @@
                                (pseudo-termp v)
                                (pseudo-termp x)
                                (pseudo-termp bag)
-                               (equal w (usb16-fix (len whole-type-alist)))) 
+                               (equal w (usb16-fix (len whole-type-alist))))
                   :guard-hints  (("Goal" :do-not '(preprocess)))))
   (and (equal v (cadr fact))
        (ts-non-nil (cadr entry))
        (equal nil (cdddr fact))
-       (conjoin-fact-and-hyp 
-        fact (hyp-for-show-unique-subbagps-from-type-alist 
+       (conjoin-fact-and-hyp
+        fact (hyp-for-show-unique-subbagps-from-type-alist
               x (caddr fact) bag w whole-type-alist whole-type-alist 1))))
 
 
@@ -5517,8 +5547,8 @@
                                      ))))
 
 (defthm UNIQUE-MEMBERP-AND-SUBBAGP-WHEN-UNIQUE-SUBBAGPS-AND-MEMBERP-ALT-trigger
-  (IMPLIES 
-   (AND 
+  (IMPLIES
+   (AND
     (MEMBERP A X)
     (UNIQUE-SUBBAGPS Y X BAG))
    (UNIQUE-MEMBERP-AND-SUBBAGP A Y BAG)))
@@ -5532,9 +5562,9 @@
    (unique-memberp-and-subbagp v x bag)))
 
 (defthm show-unique-memberp-and-subbagp-from-type-alist-works-right
-  (implies (and (syntax-ev (hyp-for-show-unique-memberp-and-subbagp-from-type-alist 
+  (implies (and (syntax-ev (hyp-for-show-unique-memberp-and-subbagp-from-type-alist
                             v x bag n type-alist w whole-type-alist flg) a)
-                (hyp-for-show-unique-memberp-and-subbagp-from-type-alist 
+                (hyp-for-show-unique-memberp-and-subbagp-from-type-alist
                  v x bag n type-alist w whole-type-alist flg))
            (unique-memberp-and-subbagp (syntax-ev v a)
                                        (syntax-ev x a)
@@ -5614,10 +5644,10 @@
                   :guard-hints  (("Goal" :do-not '(preprocess)))))
   (and(ts-non-nil (cadr entry))
       (or (and (equal v (cadr fact))
-               (show-unique-memberp-and-subbagp-from-type-alist 
+               (show-unique-memberp-and-subbagp-from-type-alist
                 b (caddr fact) bag w whole-type-alist w whole-type-alist 1))
           (and (equal b (cadr fact))
-               (show-unique-memberp-and-subbagp-from-type-alist 
+               (show-unique-memberp-and-subbagp-from-type-alist
                 v (caddr fact) bag w whole-type-alist w whole-type-alist 1)))
       (equal nil (cdddr fact))))
 
@@ -5643,13 +5673,13 @@
        (equal nil (cdddr fact))
        (or (and (equal v (cadr fact))
                 (conjoin-fact-and-hyp fact
-                                      (hyp-for-show-unique-memberp-and-subbagp-from-type-alist 
+                                      (hyp-for-show-unique-memberp-and-subbagp-from-type-alist
                                        b (caddr fact) bag w whole-type-alist w whole-type-alist 1)))
            (and (equal b (cadr fact))
                 (conjoin-fact-and-hyp fact
-                                      (hyp-for-show-unique-memberp-and-subbagp-from-type-alist 
+                                      (hyp-for-show-unique-memberp-and-subbagp-from-type-alist
                                        v (caddr fact) bag w whole-type-alist w whole-type-alist 1))))))
-                          
+
 
 (defthm hyp-for-show-unique-memberps-from-type-alist-memberp-case-iff
   (iff (hyp-for-show-unique-memberps-from-type-alist-memberp-case a v b bag entry fact type-alist w whole-type-alist)
@@ -5672,11 +5702,11 @@
                   :guard-hints  (("Goal" :do-not '(preprocess)))))
   (or (and (syntax-memberp v (cadr fact))
            (conjoin-fact-and-hyp fact
-                                 (hyp-for-show-unique-memberp-and-subbagp-from-type-alist 
+                                 (hyp-for-show-unique-memberp-and-subbagp-from-type-alist
                                   b (caddr fact) bag w whole-type-alist w whole-type-alist 1)))
       (and (syntax-memberp b (cadr fact))
            (conjoin-fact-and-hyp fact
-                                 (hyp-for-show-unique-memberp-and-subbagp-from-type-alist 
+                                 (hyp-for-show-unique-memberp-and-subbagp-from-type-alist
                                   v (caddr fact) bag w whole-type-alist w whole-type-alist 1)))
       ))
 
@@ -5710,7 +5740,7 @@
                             default-car default-cdr
                             )
                            (;for efficiency:
-                            
+
                             DEFAULT-CAR
                             ;;LIST::EQUAL-OF-BOOLEANS-REWRITE
                             acl2::iff-reduction
@@ -5730,7 +5760,7 @@
            (let* ((type-alist (acl2::mfc-type-alist mfc))
                   (len (usb16-fix (len type-alist)))
                   )
-             (show-unique-memberps-from-type-alist-fn 
+             (show-unique-memberps-from-type-alist-fn
               nil (cadr term) (caddr term) (cadddr term) len type-alist len type-alist 1)))
       ''t
     term))
@@ -5748,8 +5778,8 @@
       (let* ((type-alist (acl2::mfc-type-alist mfc))
              (len (usb16-fix (len type-alist)))
              )
-        (bind-extra-vars-in-hyp 
-         (hyp-for-show-unique-memberps-from-type-alist-fn 
+        (bind-extra-vars-in-hyp
+         (hyp-for-show-unique-memberps-from-type-alist-fn
           nil (cadr term) (caddr term) (cadddr term) len type-alist len type-alist 1) term))
     ''nil))
 
@@ -5775,7 +5805,7 @@
 ;Ways to show (not (equal x y)):
 ; Find (not (memberp x BLAH)) and show (memberp y BLAH), or vice-versa.
 ; Find (memberp x BLAH) and show (not (memberp y BLAH)), or vice-versa.
-; Find (disjoint BLAH1 BLAH2) and show that a is a memberp of BLAH1 and b is a memberp of BLAH2, or vice versa.  (perhaps subset chains will intervene...)  
+; Find (disjoint BLAH1 BLAH2) and show that a is a memberp of BLAH1 and b is a memberp of BLAH2, or vice versa.  (perhaps subset chains will intervene...)
 
 ; Find (unique BLAH) and show a and b are unique-memberps of BLAH. or that (list a) and (list b) are unique-subbagps of BLAH?? no? won't catch memberp facts?
 
@@ -5799,7 +5829,7 @@
 (defun show-not-equal-from-type-alist-member-case (a x y n entry fact type-alist whole-type-alist)
   (declare (ignore  type-alist)
            (xargs :guard (and (acl2::type-alistp whole-type-alist)
-                              (acl2::type-alistp type-alist) 
+                              (acl2::type-alistp type-alist)
                               (not (endp type-alist))
                               (pseudo-termp x)
                               (pseudo-termp y)
@@ -5814,27 +5844,27 @@
 ;  (replaced member by member-equal).]
                                   (equal (car fact) 'acl2::member-equal)))
                   :guard-hints (("Goal"
-                                 
+
                                  :do-not '(generalize eliminate-destructors)))))
   (or (and (ts-nil (cadr entry))
            (or (and (equal x (cadr fact))
-                    (show-memberp-from-type-alist 
+                    (show-memberp-from-type-alist
                      y (caddr fact) n whole-type-alist whole-type-alist 1)
                     (equal nil (cdddr fact)))
                (and (equal y (cadr fact))
-                    (show-memberp-from-type-alist 
+                    (show-memberp-from-type-alist
                      x (caddr fact) n whole-type-alist whole-type-alist 1)
                     (equal nil (cdddr fact)))))
       (and (ts-non-nil (cadr entry))
            (or (and (equal x (cadr fact))
-                    (show-non-memberp-from-type-alist 
+                    (show-non-memberp-from-type-alist
                      y (caddr fact) n whole-type-alist whole-type-alist)
                     (equal nil (cdddr fact)))
                (and (equal y (cadr fact))
-                    (show-non-memberp-from-type-alist 
+                    (show-non-memberp-from-type-alist
                      x (caddr fact) n whole-type-alist whole-type-alist)
                     (equal nil (cdddr fact)))))))
-  
+
 ;pulling this stuff out into a separate function
 ;  one more function call would be done when member or memberp facts are found in the type-alist
 ;  but now the guard conjecture for hyp-for-show-not-equal-from-type-alist takes 3 seconds instead of 145.
@@ -5845,7 +5875,7 @@
 (defun hyp-for-show-not-equal-from-type-alist-member-case (a x y n entry fact type-alist whole-type-alist)
   (declare (ignore  type-alist)
            (xargs :guard (and (acl2::type-alistp whole-type-alist)
-                              (acl2::type-alistp type-alist) 
+                              (acl2::type-alistp type-alist)
                               (not (endp type-alist))
                               (pseudo-termp x)
                               (pseudo-termp y)
@@ -5860,27 +5890,27 @@
 ;  (replaced member by member-equal).]
                                   (equal (car fact) 'acl2::member-equal)))
                   :guard-hints (("Goal"
-                                 
+
                                  :do-not '(generalize eliminate-destructors)))))
   (or (and (ts-nil (cadr entry))
            (equal nil (cdddr fact))
            (or (and (equal x (cadr fact))
-                    (conjoin-negated-fact-and-hyp 
-                     fact 
+                    (conjoin-negated-fact-and-hyp
+                     fact
                      (hyp-for-show-memberp-from-type-alist y (caddr fact) n whole-type-alist whole-type-alist 1)))
                (and (equal y (cadr fact))
-                    (conjoin-negated-fact-and-hyp 
-                     fact 
+                    (conjoin-negated-fact-and-hyp
+                     fact
                      (hyp-for-show-memberp-from-type-alist x (caddr fact) n whole-type-alist whole-type-alist 1)))))
       (and (ts-non-nil (cadr entry))
            (equal nil (cdddr fact))
            (or (and (equal x (cadr fact))
-                    (conjoin-fact-and-hyp 
-                     fact (hyp-for-show-non-memberp-from-type-alist 
+                    (conjoin-fact-and-hyp
+                     fact (hyp-for-show-non-memberp-from-type-alist
                            y (caddr fact) n whole-type-alist whole-type-alist)))
                (and (equal y (cadr fact))
-                    (conjoin-fact-and-hyp 
-                     fact (hyp-for-show-non-memberp-from-type-alist 
+                    (conjoin-fact-and-hyp
+                     fact (hyp-for-show-non-memberp-from-type-alist
                            x (caddr fact) n whole-type-alist whole-type-alist)))))))
 
 (defthm show-not-equal-from-type-alist-iff-hyp-for-show-not-equal-from-type-alist
@@ -5969,7 +5999,7 @@
 
 ;; ;bzo new stuff. remove skip--proofs.  replace unique-subbagps?
 
-;; ;this all is written in an out-of-date style;compare it to the other stuff in this file 
+;; ;this all is written in an out-of-date style;compare it to the other stuff in this file
 
 ;; (defund show-subbagp2-from-type-alist (x y n type-alist whole-type-alist
 ;;                                          perform-syntax-test)
@@ -5994,7 +6024,7 @@
 ;;                            (ts-non-nil (cadr entry)) ;check that the type is either t or non-nil
 ;;  ;                          (consp (cdr fact))
 ;;   ;                         (consp (cddr fact))
-                           
+
 ;;                            (syntax-subbagp (cadr fact) x)
 ;;                            (syntax-subbagp (caddr fact) y)
 
@@ -6039,24 +6069,24 @@
 ;;                            (ts-non-nil (cadr entry)) ;check that the type is either t or non-nil
 ;;     ;                       (consp (cdr fact))
 ;;      ;                      (consp (cddr fact))
-                           
+
 ;;                            (syntax-subbagp (cadr fact) x)
 ;;                            (syntax-subbagp (caddr fact) y)
-                           
+
 ;;                            (met ((hit smaller-cadr smaller-x) (syntax-remove-bag (cadr fact) x))
 ;;                                 (declare (ignore hit smaller-cadr))
 ;;                                 (met ((hit2 smaller-caddr smaller-y) (syntax-remove-bag (caddr fact) y))
 ;;                                      (declare (ignore hit2 smaller-caddr))
-;;                                      (let ((hyp (hyp-for-show-subbagp2-from-type-alist 
+;;                                      (let ((hyp (hyp-for-show-subbagp2-from-type-alist
 ;;                                                  smaller-x
 ;;                                                  smaller-y
 ;;                                                  (+ -1 n) whole-type-alist whole-type-alist
 ;;                                                  1)))
-;;                                        (if (and hyp 
+;;                                        (if (and hyp
 ;;                                                 (equal nil (cdddr fact)))
 ;;                                            (make-conjunction fact hyp)
 ;;                                          nil))))
-                           
+
 ;;                            )
 ;;                       (hyp-for-show-subbagp2-from-type-alist x y n (cdr type-alist) whole-type-alist
 ;;                                                              0)))
@@ -6205,7 +6235,7 @@
   (memberp x list))
 
 ;We expect TERM to be of the form (memberp x y).  If not, we do nothing.
-;If so, we call syntax-memberp.  If that function returns t, that means we can show 
+;If so, we call syntax-memberp.  If that function returns t, that means we can show
 ;syntactically that X is a memberp of Y.  If that function returns nil, we don't know whether
 ;X is a memberp of Y; in this case, we must return something equivalent to TERM,
 ;so we return TERM itself !
@@ -6220,7 +6250,7 @@
       term
     (if (syntax-memberp-fn nil (cadr term) (caddr term))
         ''t
-      term 
+      term
       )))
 
 (defthm syntax-memberp-implies-memberp
@@ -6257,7 +6287,7 @@
           (met ((hit result) (run-remove-1 a (cdr x)))
                (mv hit (cons (car x) result))))
       (mv nil nil)))
-  
+
 (defthm v1-run-remove-1
   (equal (val 1 (run-remove-1 a x))
          (remove-1 a x)))
@@ -6354,7 +6384,7 @@ old version:
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable syntax-subbagp-fn))))
 
-;add guard?                     
+;add guard?
 (defund meta-remove-bag (x y)
   (remove-bag x y))
 
@@ -6365,19 +6395,19 @@ old version:
 |#
 
 ;remove this?
-;add guard?                     
-(defun any-subbagp (term list) 
-  (declare (type t term list)) 
-  (if (consp list) 
-      (or (subbagp term (car list)) 
-          (any-subbagp term (cdr list))) 
+;add guard?
+(defun any-subbagp (term list)
+  (declare (type t term list))
+  (if (consp list)
+      (or (subbagp term (car list))
+          (any-subbagp term (cdr list)))
     nil))
 
 
 
 
 
-;add guard?                     
+;add guard?
 (defund hide-disjoint (x y)
   (disjoint x y))
 
@@ -6388,7 +6418,7 @@ old version:
   :hints (("Goal" :in-theory (enable hide-disjoint))))
 
 
-;add guard?                     
+;add guard?
 (defund hide-unique (list)
   (unique list))
 
@@ -6399,7 +6429,7 @@ old version:
   :hints (("Goal" :in-theory (enable hide-unique))))
 
 
-;add guard?                     
+;add guard?
 (defund hide-subbagp (x y)
   (subbagp x y))
 
@@ -6413,7 +6443,7 @@ old version:
   (hide-subbagp z z)
   :hints (("Goal" :in-theory (enable hide-subbagp))))
 
-;add guard?                     
+;add guard?
 (defund hide-memberp (x y)
   (memberp x y))
 
@@ -6459,7 +6489,7 @@ old version:
 |#
 
 (defthm v0-remove-1-subbagp
-  (implies 
+  (implies
    (v0 (syntax-remove-bag-1 list1 list2))
    (subbagp (syntax-ev list1 a) (syntax-ev list2 a)))
   :rule-classes (:rewrite :forward-chaining))
@@ -6521,7 +6551,7 @@ old version:
            (memberp elem (syntax-ev term2 a)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable syntax-remove-bag-fn))))
- 
+
 
 
 
@@ -6603,7 +6633,7 @@ old version:
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable syntax-remove-bag-fn))))
-     
+
 ;trying
 (local (in-theory (disable SYNTAX-REMOVE-BAG-1-FN SYNTAX-MEMBERP-FN)))
 
@@ -6642,7 +6672,7 @@ old version:
                                   (SYNTAX-REMOVE-1 OTHER-TERM TERM)))))
   :hints (("Goal" :in-theory (enable SYNTAX-REMOVE-1-fn
                                      SYNTAX-REMOVE-BAG-1-FN SYNTAX-MEMBERP-FN))))
-  
+
 (defthm smith-blah
   (IMPLIES (NOT (SYNTAX-MEMBERP elem term))
            (NOT (SYNTAX-MEMBERP elem (VAL 2 (SYNTAX-REMOVE-BAG other-term term)))))
@@ -6663,7 +6693,7 @@ old version:
 
 
 (in-theory (disable SYNTAX-MEMBERP-FN))
- 
+
 (defthm hack-eric
   (implies (and (val 0 (syntax-remove-bag-1 other-term y))
                 (not (syntax-memberp x y))
@@ -6686,7 +6716,7 @@ old version:
            (not (syntax-memberp x (syntax-intersection other-term y))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (syntax-intersection syntax-memberp
-                              ) 
+                              )
                            (poopsmith
                             (:induction  syntax-memberp))))))
 
@@ -6720,7 +6750,7 @@ old version:
   :hints (("Goal" :in-theory (disable syntax-remove-bag-cannot-increase-count-two)
            :use (:instance syntax-remove-bag-cannot-increase-count-two (term1 (val 1 (syntax-remove-bag term1 term2))) (term2 term3)))))
 
-(defthm checkinemail    
+(defthm checkinemail
   (<= (count (syntax-ev elem a)
              (syntax-ev (syntax-intersection term1 term2) a))
       (count (syntax-ev elem a)
@@ -6729,13 +6759,13 @@ old version:
            :in-theory (enable syntax-intersection-fn))))
 
 (defthm syntax-remove-bag-does-the-right-thing-helper
-  (equal (- (count elem (syntax-ev term1 a)) 
+  (equal (- (count elem (syntax-ev term1 a))
             (count elem (syntax-ev term2 a)))
          (- (count elem (syntax-ev (v1 (syntax-remove-bag term1 term2)) a))
             (count elem (syntax-ev (v2 (syntax-remove-bag term1 term2)) a))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (syntax-remove-bag-fn)
-                           (v1-syntax-remove-1-perm-remove-1 
+                           (v1-syntax-remove-1-perm-remove-1
                             ;for efficiency:
                             SYNTAX-REMOVE-BAG-1-FN
                             MEMBERP-OF-SYNTAX-REMOVE-BAG-ONE
@@ -6747,9 +6777,9 @@ old version:
   (implies (not (syntax-memberp elem term))
            (equal (val 1 (syntax-remove-1 elem term))
                   term)))
-                              
 
-(in-theory (disable SYNTAX-REMOVE-BAG-1-fn SYNTAX-MEMBERP-fn))                   
+
+(in-theory (disable SYNTAX-REMOVE-BAG-1-fn SYNTAX-MEMBERP-fn))
 
 (in-theory (disable SUBBAGP-OF-REMOVE-1-FROM-SUBBAGP)) ;why needed?
 
@@ -6971,7 +7001,7 @@ old version:
             (list (caddr term)))
         (let ((hit (syntax-memberp x list)))
           (if hit
-              '(quote t) 
+              '(quote t)
             term)))
     term))
 
@@ -7008,7 +7038,7 @@ PUTBACK
    :hints (("Goal" :in-theory (enable syntax-remove-bag))))
 |#
 
-;bzo it would be nice if this returned a simplified term even if the first arg didn't simplify to nil.  
+;bzo it would be nice if this returned a simplified term even if the first arg didn't simplify to nil.
 (defun syntax-meta-remove-bag-wrapper (term)
    (declare (type t term)
             (xargs :guard (pseudo-termp term)))
@@ -7019,7 +7049,7 @@ PUTBACK
             (null  (cdddr term)))
        (met ((hit v1 v2) (syntax-remove-bag-fn nil (cadr term) (caddr term)))
             (if (and hit
-                     (equal v1 '(quote nil))  
+                     (equal v1 '(quote nil))
                      )
                 ;bzo consider remove-bag here?
                 ;`(meta-remove-bag ,v1 ,v2)
@@ -7106,7 +7136,7 @@ PUTBACK
                 (equal in2 (not in1))
                 )
            (equal (perm list1 list2)
-                  (perm (replace-perm in1 x y list1) 
+                  (perm (replace-perm in1 x y list1)
                         (replace-perm in2 x y list2))))
   :hints (("Goal" :in-theory (enable meta-subbagp meta-remove-bag))))
 
@@ -7117,14 +7147,14 @@ PUTBACK
   (declare (type t term1 term2))
   (met ((hit xterm1 xterm2) (syntax-remove-bag term1 term2))
        (declare (ignore xterm2))
-       (if (not hit) 
+       (if (not hit)
            (mv nil nil)
          (met ((hit xterm1 sub) (syntax-remove-bag xterm1 term1))
               (declare (ignore xterm1))
-              (mv 
+              (mv
                hit ;should this be t?  what if xterm1 is nil?
                sub)))))
- 
+
 (defun bind-common-elements (term1 term2 key)
   (declare (type t term1 term2 key))
   (met ((hit common) (common-elements term1 term2))
@@ -7156,7 +7186,7 @@ PUTBACK
 ;  perm-common-elimination
   ))
 
-;; Nonetheless, perm-common-elimination should be used in 
+;; Nonetheless, perm-common-elimination should be used in
 ;; place of such hack rules as these ..
 
 (in-theory
@@ -7189,7 +7219,7 @@ PUTBACK
 ;  perm-not-consp-nil
  ; perm-remove-bag-x-x
 ;  perm-append
-  perm-cons-append 
+  perm-cons-append
   perm-append-remove-1
 ;  perm-remove-1
  ; perm-remove-bag
@@ -7210,7 +7240,7 @@ PUTBACK
 (in-theory
  (disable
 ;  meta-remove-bag
- ;meta-remove-1 
+ ;meta-remove-1
   ))
 
 ;returns the list of all BLAH such that mfc contains a literal of the form (not (memberp x BLAH)).
@@ -7220,7 +7250,7 @@ PUTBACK
 (defun get-irrel-list-from-clause (x z clause)
   (declare (type t x clause)
 ;           (xargs :guard (pseudo-termp term))
-           )  
+           )
   (if (not (consp clause))
       nil
     (let ((literal (car clause)))
@@ -7252,7 +7282,7 @@ PUTBACK
         nest)
     (if (equal (car nest) 'cons)
         (list 'cons (cadr nest) (simplify-cons-and-append-nest-given-irrelevant-lists (caddr nest) irrel-list))
-      (if (equal (car nest) 'binary-append) 
+      (if (equal (car nest) 'binary-append)
        ;We don't have to recur on (cadr nest) because we know it won't be an append or a cons, because of how
        ;nests of those functions get normalized?
           (if (memberp (cadr nest) irrel-list) ;we're appending something irrelevant, so drop it
@@ -7265,7 +7295,7 @@ PUTBACK
           nest))
       )
     ))
-       
+
 (set-state-ok t)
 
 
@@ -7280,8 +7310,8 @@ PUTBACK
     (let ((irrel-list (get-irrel-list-from-clause (cadr term) (caddr term) (mfc-clause mfc))))
       (if (not (consp irrel-list))
           term
-        (list 'list::memberp 
-              (cadr term) 
+        (list 'list::memberp
+              (cadr term)
               (simplify-cons-and-append-nest-given-irrelevant-lists (caddr term) irrel-list))))))
 
 (defun make-not-memberp-claim (x term)
@@ -7298,7 +7328,7 @@ PUTBACK
         )
     (if (equal (car nest) 'cons)
         (hyp-fun-simplify-cons-and-append-nest-given-irrelevant-lists x (caddr nest) irrel-list)
-      (if (equal (car nest) 'binary-append) 
+      (if (equal (car nest) 'binary-append)
        ;We don't have to recur on (cadr nest) because we know it won't be an append or a cons, because of how
        ;nests of those functions get normalized?
           (if (memberp (cadr nest) irrel-list) ;we're appending something irrelevant, so drop it
@@ -7341,7 +7371,7 @@ PUTBACK
             (list2 (caddr term)))
         (let ((hit (syntax-subbagp-fn nil list1 list2)))
           (if hit
-              '(quote t) 
+              '(quote t)
             term)))
     term))
 
@@ -7371,7 +7401,7 @@ PUTBACK
 ;(my-syntax-subbagp '(cons a x) '(cons b (cons a x)))
 ;(my-syntax-subbagp '(cons a x) '(cons a x))
 
-#| 
+#|
 
 ;key lemma for *meta*-syntax-ev-syntax-subbagp
 ;bzo rename
@@ -7392,7 +7422,7 @@ PUTBACK
            (perm (syntax-ev (val 1 (syntax-subbagp-helper term1 term2)) a)
                  (remove-bag (syntax-ev term1 a) (syntax-ev term2 a))))
   :hints (("Goal" :in-theory (enable syntax-subbagp-helper-fn))))
- 
+
 (defthm syntax-subbagp-helper-implements-subbagp
   (implies (v0 (syntax-subbagp-helper term1 term2))
            (subbagp (syntax-ev term1 a) (syntax-ev term2 a)))
@@ -7472,7 +7502,7 @@ PUTBACK
                `(perm ,newarg1 ,newarg2)
              term))
     term))
-           
+
 ;expensive?
 (defthm subbagp-other-way
   (implies (subbagp y x)
@@ -7480,7 +7510,7 @@ PUTBACK
                   (perm x y)))
   :hints (("Goal" :in-theory (enable subbagp perm))))
 
-      
+
 (defthm meta-perm-cancel
   (equal (syntax-ev term a)
          (syntax-ev (perm-cancel-metafunction term) a))
@@ -7545,7 +7575,7 @@ PUTBACK
            (subbagp (syntax-ev (v1 (syntax-remove-bag term1 term2)) a)
                     (syntax-ev (v2 (syntax-remove-bag term1 term2)) a)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable syntax-remove-bag; 
+           :in-theory (enable syntax-remove-bag;
                               ;subbagp
                               ))))
 
@@ -7555,7 +7585,7 @@ PUTBACK
          (subbagp (syntax-ev (v1 (syntax-remove-bag term1 term2)) a)
                   (syntax-ev (v2 (syntax-remove-bag term1 term2)) a)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable syntax-remove-bag ; 
+           :in-theory (enable syntax-remove-bag ;
 ;subbagp
                               ))))
 
@@ -7566,8 +7596,8 @@ PUTBACK
                  (syntax-count elem term2))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable syntax-remove-bag))))
-                 
-         
+
+
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable syntax-remove-bag; subbagp
                               ))))
@@ -7631,7 +7661,7 @@ to handle
 (defun neq (x y)
   (not (equal x y)))
 
-;Look through the clause for a (non-negated) literal of the form 
+;Look through the clause for a (non-negated) literal of the form
 ;(memberp a BLAH) where BLAH syntactically contains b.
 ;or a (non-negated) literal of the form:
 ;(memberp b BLAH) where BLAH syntactically contains a.
@@ -7657,7 +7687,7 @@ to handle
            (equal (car term) 'equal)
            (consp (cdr term))
            (consp (cddr term))
-           (find-memberp-literal-that-shows-a-and-b-differ-fn 
+           (find-memberp-literal-that-shows-a-and-b-differ-fn
             nil (cadr term) (caddr term) (mfc-clause mfc))
            (null (cdddr term))
            )
@@ -7675,11 +7705,11 @@ to handle
            (consp (cddr term))
            (null (cdddr term))
            )
-      `(not ,(find-memberp-literal-that-shows-a-and-b-differ-fn 
+      `(not ,(find-memberp-literal-that-shows-a-and-b-differ-fn
               nil (cadr term) (caddr term) (mfc-clause mfc)))
     ''nil))
 
-(local 
+(local
  (defthm syntactic-membership-meta-rule-helper
    (implies (syntax-memberp x y)
             (memberp (ev3 x a)
@@ -7814,7 +7844,7 @@ to handle
  (implies (and (ev3 (find-negated-memberp-literal-in-clause x list clause) a)
                (find-negated-memberp-literal-in-clause x list clause))
           (memberp (ev3 x a) (ev3 list a )))))
-          
+
 
 (local
  (defthm syntactic-membership-meta-rule-helper-2
@@ -7826,7 +7856,7 @@ to handle
    :hints (("Goal" :do-not '(generalize eliminate-destructors)
             :in-theory (e/d (memberp) (;FIND-NEGATED-MEMBERP-LITERAL-IN-CLAUSE
                                               ))))))
-   
+
 ; ; Greve almost considers this a special case.
 (defthm meta-rule-for-two-memberp-literals
   (implies (ev3 (hyp-metafunction-for-two-memberp-literals-blah term mfc state) a)
@@ -7903,7 +7933,7 @@ to handle
            (equal (foo (equal a b))
                   (foo nil)))
   :hints (("Goal" :in-theory (disable DISJOINT-OF-CONS-TWO
-                                      
+
                                       DISJOINT-OF-SINGLETON-TWO
                                       DISJOINT-OF-SINGLETON-ONE))))
 
@@ -7912,7 +7942,7 @@ to handle
 
 (defthm blah
   (implies (
-  
+
   (not (equal a b))
 
 ;why doesn't hijacking the disjoint rule work for this?
@@ -7953,7 +7983,7 @@ to handle
 In general:
 
   I would suggest: if neither a nor b appear as
-an argument to member in the hypothesis, 
+an argument to member in the hypothesis,
 wrap them in a list and pass them to the
 disjoint computation.
 
@@ -8046,18 +8076,18 @@ member.
 
 ;(in-theory (disable append-associative)) ;try
 
-(defund any-subbagp (term list) 
-  (declare (type t term list)) 
-  (if (consp list) 
-      (or (subbagp term (car list)) 
-          (any-subbagp term (cdr list))) 
-    nil)) 
+(defund any-subbagp (term list)
+  (declare (type t term list))
+  (if (consp list)
+      (or (subbagp term (car list))
+          (any-subbagp term (cdr list)))
+    nil))
 
-(defund flat (zlist)  
-  (if (consp zlist) 
+(defund flat (zlist)
+  (if (consp zlist)
       (append (car zlist)
-              (flat (cdr zlist))) 
-    nil)) 
+              (flat (cdr zlist)))
+    nil))
 
 (defthm true-listp-flat
   (true-listp (flat list))
@@ -8074,7 +8104,7 @@ member.
                   nil))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable flat))))
-  
+
 (defthm flat-of-singleton
   (equal (flat (cons x nil))
          (list::fix x))
@@ -8086,12 +8116,12 @@ member.
   :hints (("Goal" :in-theory (enable flat))))
 
 ;could we just say that TERM is disjoint from (flat LIST) ?
-(defund disjoint-list (term list) 
-  (declare (type t term list)) 
-  (if (consp list) 
-      (and (disjoint term (car list)) 
-           (disjoint-list term (cdr list))) 
-    t)) 
+(defund disjoint-list (term list)
+  (declare (type t term list))
+  (if (consp list)
+      (and (disjoint term (car list))
+           (disjoint-list term (cdr list)))
+    t))
 
 ;disable?
 ;rename?
@@ -8099,22 +8129,22 @@ member.
   (implies (not (consp list))
            (disjoint-list x list))
   :hints (("goal" :in-theory (enable disjoint-list flat))))
- 
-(defthm open-disjoint-list 
-  (and 
-   (equal (disjoint-list term (cons entry rest)) 
-          (and (disjoint term entry) 
-               (disjoint-list term rest))) 
+
+(defthm open-disjoint-list
+  (and
+   (equal (disjoint-list term (cons entry rest))
+          (and (disjoint term entry)
+               (disjoint-list term rest)))
    (equal (disjoint-list term nil) t))
   :hints (("Goal" :in-theory (enable disjoint-list))))
 
-(defthm any-subbagp-implies-subbagp-flat 
-  (implies (any-subbagp term list) 
+(defthm any-subbagp-implies-subbagp-flat
+  (implies (any-subbagp term list)
            (subbagp term (flat list)))
   :rule-classes (:rewrite :forward-chaining)
   :hints (("Goal" :in-theory (enable flat any-subbagp))))
 
-(defthm disjoint-list-implies-disjoint-flat 
+(defthm disjoint-list-implies-disjoint-flat
   (implies (disjoint-list term list)
            (disjoint term (flat list)))
   :rule-classes (:rewrite :forward-chaining)
@@ -8139,7 +8169,7 @@ member.
 ;bzo
 (defthm flat-perm
   (implies (perm x y)
-           (equal (perm (flat x) (flat y)) 
+           (equal (perm (flat x) (flat y))
                   t))
   :hints (("goal" :in-theory (enable perm memberp remove-1 flat))))
 
@@ -8164,8 +8194,8 @@ member.
   :hints (("goal" :do-not '(generalize eliminate-destructors)
 ;           :do-not-induct t
 ;           :induct (REMOVE-BAG F2 F1)
-           :in-theory (e/d (subbagp 
-                            remove-bag flat) 
+           :in-theory (e/d (subbagp
+                            remove-bag flat)
                            (;SUBBAGP-OF-REMOVE-1-BOTH
                             SUBBAGP-CDR-REMOVE-1-REWRITE
                             ;SUBBAGP-APPEND-2
@@ -8227,7 +8257,7 @@ member.
   (equal (disjoint-list (append x y) list)
          (and (disjoint-list x list)
               (disjoint-list y list)))
-  :hints (("goal" :in-theory (enable ;disjoint-of-append 
+  :hints (("goal" :in-theory (enable ;disjoint-of-append
 ;disjoint-list-reduction
                               ))))
 
@@ -8237,7 +8267,7 @@ member.
   (implies (and (memberp x list1)
                 (consp x)
                 (subbagp (flat list1) list2))
-           (equal (disjoint x list2) 
+           (equal (disjoint x list2)
                   nil))
   :hints (("Goal" :use (:instance DISJOINT-OF-FLAT-HELPER-2 (lst x) (lst-of-lsts list1)))))
 

@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 #|
 
 ;; def::un : A stand-in for defun when the going gets rough.
@@ -22,8 +47,8 @@
 ;;   along with its very own "Improved Induction Scheme"!  It even
 ;;   does "The Right Thing" with definitions like:
 ;;
-;;   (def::un foo (a x) 
-;;     (cons a 
+;;   (def::un foo (a x)
+;;     (cons a
 ;;       (if (consp x) (foo a (cdr x)) nil)))
 
 ;;   (fn_terminates args): A predicate that allows you to assume that
@@ -32,7 +57,7 @@
 ;;   (fn_always_terminates): A constant function that allows you to
 ;;   assume termination for all inputs.
 
-;;   (fn_measure args) : A measure function that can be used to 
+;;   (fn_measure args) : A measure function that can be used to
 ;;   admit other functions with similar recursive structure.
 
 ;;   How do you use it?  Just like defun:
@@ -166,9 +191,9 @@
     ((consp t1)
      (cond
       ((consp (car t1))
-       (fn-dive (lambda-bod t1) 
+       (fn-dive (lambda-bod t1)
                 (1+ n)
-                (cons (lambda-vars t1) kstk) 
+                (cons (lambda-vars t1) kstk)
                 (cons (lambda-args t1) vstk)))
       (t
        (mv t t1 n kstk vstk))))
@@ -223,7 +248,7 @@
     c2))
 
 (mutual-recursion
- 
+
  (defun lift-induction-fn (fn induct term)
    (cond
     ((not (consp term)) nil)
@@ -248,7 +273,7 @@
            (append acond bcond)))))
     (t
      (lift-induction-args fn induct (cdr term)))))
- 
+
  (defun lift-induction-args (fn induct args)
    (if (consp args)
        (let ((c1 (lift-induction-fn fn induct (car args))))
@@ -286,7 +311,7 @@
                       (mv (syn::and bcase case bthen) then))
                      (t ; belse
                       (mv (syn::and bcase (syn-not case) belse) else)))))))
-    
+
     ((consp (car term))
      (met ((vars args) (lift-base-vars fn (lambda-vars term) (cdr term) vars))
           (met ((base body) (lift-base-fn fn (lambda-bod term) vars))
@@ -296,7 +321,7 @@
      (met ((base args) (lift-base-args fn (cdr term) vars))
           (if base (mv base `(,(car term) ,@args))
             (mv nil :ignore))))))
-     
+
  (defun lift-base-args (fn args vars)
    (declare (xargs :measure (acl2-count args)))
    (if (consp args)
@@ -306,7 +331,7 @@
                      (mv (syn::and tbase abase) (cons term args))
                    (mv nil :ignore))))
      (mv t nil)))
-                 
+
  (defun lift-base-vars (fn vars args v0)
    (declare (xargs :measure (acl2-count args)))
    (if (consp args)
@@ -358,7 +383,7 @@
           (cons `(,case (if ,test ,term1 ,term2))
                 (if-conditional-test (cdr cases) term1 term2))))
     nil))
-          
+
 (defun if-cond-rec (case term cases)
   (if (consp cases)
       (let ((cond (car cases)))
@@ -382,7 +407,7 @@
           (cons `(,(car cond) ,term)
                 (map-fn-over-conditional-args fn (cdr args)))))
     nil))
-  
+
 
 (defun insert-conditional-term-into-conditional-args (case term args)
   (if (consp args)
@@ -450,10 +475,10 @@
     nil))
 
 ;; The only problem with this is that we are leaving base case tests
-;; 
+;;
 
 (mutual-recursion
- 
+
  (defun lift-fn-guards-trunc (frec term)
    (declare (xargs :measure (acl2-count term)))
    (cond
@@ -540,7 +565,7 @@
          (met ((rec cond args) (lift-fn-guards-args frec (cdr term)))
            (if cond (mv t t (map-fn-over-conditional-args fn args))
              (mv rec nil term)))))))))
- 
+
  )
 
 ;; ===================================================================
@@ -581,7 +606,7 @@
         ((equal fn 'quote) nil)
         (t
          (rec-args frec (cdr term))))))))
- 
+
  (defun rec-args (frec args)
    (if (consp args)
        (or (rec-fn frec (car args))
@@ -592,12 +617,12 @@
 
 (defun extract-base-fn (frec term)
   (declare (xargs :measure (acl2-count term)))
-  (cond 
+  (cond
    ;;
    ;; symbols are not recursive
    ;;
    ((not (consp term)) (mv t term))
-   
+
    ;;
    ;; what about function applications?
    ;;
@@ -606,7 +631,7 @@
       (cond
        ((equal fn frec)
         (mv nil :ignore))
-       
+
        ((equal fn 'if)
         (let ((ifrec (rec-fn frec (cadr term))))
           ;;
@@ -626,15 +651,15 @@
                   (mv nil :ignore))
                  (t
                   (mv t (or (and thenbase then) (and elsebase else))))))))))
-       
+
        ((equal fn 'quote)
         (mv t term))
-       
+
        (t
-        
+
         (let ((arec (rec-args frec (cdr term))))
           (if arec (mv nil :ignore)
-            (if (consp fn) 
+            (if (consp fn)
                 (met ((fbase fbody) (extract-base-fn frec (lambda-bod term)))
                   (if fbase
                       (mv t `((lambda ,(lambda-vars term) ,fbody) ,@(cdr term)))
@@ -643,12 +668,12 @@
 
 (defun extract-rec-fn (frec term)
   (declare (xargs :measure (acl2-count term)))
-  (cond 
+  (cond
    ;;
    ;; symbols are not recursive
    ;;
    ((not (consp term)) (mv nil term))
-   
+
    ;;
    ;; what about function applications?
    ;;
@@ -657,7 +682,7 @@
       (cond
        ((equal fn frec)
         (mv t term))
-       
+
        ((equal fn 'if)
         (let ((ifrec (rec-fn frec (cadr term))))
           ;;
@@ -683,27 +708,27 @@
                   (mv t (syn::lazy-if (cadr term) then else)))
                  (t
                   (mv t (if thenrec then else)))))))))
-       
+
        ((equal fn 'quote)
         (mv nil term))
-       
+
        (t
-        
+
         (let ((arec (rec-args frec (cdr term))))
           (if arec (mv t term)
-            (if (consp fn) 
+            (if (consp fn)
                 (met ((brec fbody) (extract-rec-fn frec (lambda-bod term)))
                   (mv brec `((lambda ,(lambda-vars term) ,fbody) ,@(cdr term))))
               (mv nil term))))))))))
 
 (defun extract-case-fn (frec term)
   (declare (xargs :measure (acl2-count term)))
-  (cond 
+  (cond
    ;;
    ;; symbols are not recursive
    ;;
    ((not (consp term)) (mv nil nil))
-   
+
    ;;
    ;; what about function applications?
    ;;
@@ -712,7 +737,7 @@
       (cond
        ((equal fn frec)
         (mv t *t*))
-       
+
        ((equal fn 'if)
         (let ((ifrec (rec-fn frec (cadr term))))
           ;;
@@ -737,19 +762,19 @@
                  ((and thenrec elserec)
                   (mv t (syn::lazy-if (cadr term) then else)))
                  (t
-                  (mv t (if thenrec (syn::and (cadr term) then) 
+                  (mv t (if thenrec (syn::and (cadr term) then)
                           (syn::and (syn-not (cadr term)) else))))))))))
-       
+
        ((equal fn 'quote)
         (mv nil nil))
-       
+
        (t
-        
+
         (let ((arec (rec-args frec (cdr term))))
           (if arec (mv t *t*)
-            (if (consp fn) 
+            (if (consp fn)
                 (met ((crec cbody) (extract-case-fn frec (lambda-bod term)))
-                  (if crec 
+                  (if crec
                       (mv t `((lambda ,(lambda-vars term) ,cbody) ,@(cdr term)))
                     (mv nil term)))
               (mv nil term))))))))))
@@ -769,7 +794,7 @@
             (strip-mv-nth (cdr args) (cdr symbols) (caddr term) (cons (car symbols) res))
           (mv mv res args symbols)))
     (mv mv res args symbols)))
-              
+
 (mutual-recursion
 
  (defun un-mv-nth-args (args)
@@ -812,13 +837,13 @@
 
 
 ;; We evaluate the arguments outside in.
-;; comp-step computes either: 
+;; comp-step computes either:
 ;; 1. a list of values which constitute the arguments to goo
 ;; 2. a value representing either a return value
 ;;    or the value of an "if" test.
 
 ;; We replace a recursive call with a reference to a
-;; particular value on the return list. 
+;; particular value on the return list.
 
 (defun lambda-wrap-steps (vars steps args)
   (if (consp steps)
@@ -833,7 +858,7 @@
   (declare (ignore key))
   (val val list))
 
-(mutual-recursion 
+(mutual-recursion
 
  (defun compute-fn-spec (fn key val term spec0 spec)
    (cond
@@ -848,16 +873,16 @@
     ((equal (car term) 'quote)
      (mv key val term spec nil))
     ((equal fn (car term))
-     (met ((key ignore args argspec steps) 
+     (met ((key ignore args argspec steps)
            (compute-fn-spec-args fn key (len spec0) (cdr term) nil spec0 spec0 nil))
        (declare (ignore ignore))
-       (mv (1+ key) (1+ val) `(key-val (quote ,key) (quote ,val) gensym::vals) 
-           (cons (cons key (revappend argspec nil)) spec) 
+       (mv (1+ key) (1+ val) `(key-val (quote ,key) (quote ,val) gensym::vals)
+           (cons (cons key (revappend argspec nil)) spec)
            (cons (cons key (list `(list ,@args))) steps))))
     (t
      (met ((key val args spec steps) (compute-fn-spec-args fn key val (cdr term) nil spec0 spec nil))
        (mv key val `(,(car term) ,@args) spec steps)))))
-   
+
  (defun compute-fn-spec-args (fn key val args res spec0 spec steps)
    (if (consp args)
        (met ((key val term spec bsteps) (compute-fn-spec fn key val (car args) spec0 spec))
@@ -905,14 +930,14 @@
        (cons `(,fn ,@(cdr term)) alt)))
     (t
      (alt-args frec fn (cdr term)))))
- 
+
  (defun alt-args (frec fn args)
    (if (consp args)
        (let ((alt1 (alt-body frec fn (car args))))
          (let ((alt2 (alt-args frec fn (cdr args))))
            (revappend alt1 alt2)))
      nil))
- 
+
  )
 
 (defun map-join-over-list (join x list)
@@ -1074,28 +1099,28 @@
          (fn_excess                  (symbol-fns::suffix fn `_excess))
          (fn_excess_natp             (symbol-fns::suffix fn `_excess_natp))
          (fn_closed_to_open          (symbol-fns::suffix fn `_closed_to_open))
-         
+
          (ICond  (lift-induction-fn fn-closed fn_induction (replace-frec fn fn-closed TBody)))
 
     )
 
     (met ((case base) (defun::lift-base (list fn) TBody args))
-    
+
      `(encapsulate
        ()
-       
+
        (set-irrelevant-formals-ok t)
        (set-ignore-ok t)
-       
+
        #+joe
        (in-theory
-        (union-theories 
+        (union-theories
          nil
          (theory 'minimal-theory)))
 
        (defund ,goo-spec ()
          ',spec)
-       
+
        (defund ,goo-comp-step (key args gensym::vals)
          (let ,(bind-args args 'args)
            (case key
@@ -1105,7 +1130,7 @@
        (defund ,goo-base-step (args)
          (let ,(bind-args args 'args)
            ,base))
-       
+
        (defund ,goo-done (args)
          (let ,(bind-args args 'args)
            (not ,case)))
@@ -1116,7 +1141,7 @@
                (spec (caddr list))
                (vals (cadddr list))
                (vstk (cadddr (cdr list))))
-           (if (and 
+           (if (and
                 (or (,goo-done args)
                     (not (consp spec)))
                 (not (consp vstk))
@@ -1124,11 +1149,11 @@
                (if (,goo-done args)
                    (,goo-base-step args)
                  (,goo-comp-step fn args (rev vals)))
-             (if (and 
+             (if (and
                   (or (,goo-done args)
                       (not (consp spec)))
                   (not (consp vstk)))
-                 (let ((arg (let ((val 
+                 (let ((arg (let ((val
                                    (if (,goo-done args) (,goo-base-step args)
                                      (,goo-comp-step fn args (rev vals)))))
                               (let ((vstk (car stk)))
@@ -1151,7 +1176,7 @@
 
        (defund ,goo_terminates (args fn spec vals vstk)
          (,goo-stk-1_terminates (list args fn spec vals vstk) nil))
-       
+
        (defthm ,goo_terminates_type
          (booleanp (,goo_terminates args fn spec vals vstk))
          :hints (("Goal" :in-theory (enable ,goo_terminates))))
@@ -1180,31 +1205,31 @@
           (booleanp (,goo_terminates-call val))
           (booleanp (,goo_terminates-call-open val)))
          :hints (("Goal" :in-theory (enable ,goo_terminates-call))))
-         
+
 
        (defund ,goo_measure-call (val)
          (let ((spec (,goo-spec)))
            (,goo_measure val (car spec) (cdr spec) nil nil)))
-       
+
        (defun ,goo_measure-call-open (val)
          (let ((spec (,goo-spec)))
            (,goo_measure val (car spec) (cdr spec) nil nil)))
-       
+
        (defthmd ,goo_true
          (true (,goo args fn spec vals vstk))
          :hints (("Goal" :in-theory (enable ,goo
                                             ,goo_terminates
                                             ,goo_measure
-                                            ,goo-call 
+                                            ,goo-call
                                             ,goo_terminates-call
                                             ,goo_measure-call)
                   :use (:functional-instance goo_true
                                              ,@functional-instance))))
-       
+
        (defthm ,goo_definition
          (equal (,goo args fn spec vals vstk)
                 (if (or (not (,goo_terminates args fn spec vals vstk))
-                        (and (or (,goo-done args) 
+                        (and (or (,goo-done args)
                                  (not (consp spec)))
                              (not (consp vstk))))
                     (if (,goo-done args)
@@ -1222,12 +1247,12 @@
          :hints (("Goal" :in-theory (enable ,goo
                                             ,goo_terminates
                                             ,goo_measure
-                                            ,goo-call 
+                                            ,goo-call
                                             ,goo_terminates-call
                                             ,goo_measure-call)
                   :use (:functional-instance goo_definition
                                              ,@functional-instance))))
-       
+
        (defthm ,goo_measure_definition
          (implies
           (,goo_terminates args fn spec vals vstk)
@@ -1236,7 +1261,7 @@
                   ((and
                     (,goo-done args)
                     (not (consp vstk))) (mm :base0 (o)))
-                  ((and 
+                  ((and
                     (not (consp spec))
                     (not (consp vstk))) (mm :base1 (o)))
                   ((and
@@ -1263,7 +1288,7 @@
                                             ,goo
                                             ,goo_terminates
                                             ,goo_measure
-                                            ,goo-call 
+                                            ,goo-call
                                             ,goo_terminates-call
                                             ,goo_measure-call)
                   :use (:functional-instance goo_measure_definition
@@ -1277,7 +1302,7 @@
             (not (consp vstk)))
            (,goo_terminates args fn spec vals vstk))
           (implies
-           (and 
+           (and
             (not (consp spec))
             (not (consp vstk)))
            (,goo_terminates args fn spec vals vstk))
@@ -1312,20 +1337,20 @@
          :hints (("Goal" :in-theory (enable ,goo
                                             ,goo_terminates
                                             ,goo_measure
-                                            ,goo-call 
+                                            ,goo-call
                                             ,goo_terminates-call
                                             ,goo_measure-call)
                   :use (:functional-instance goo_terminates_definition
                                              ,@functional-instance))))
-       
+
        (defthm ,goo_measure_natp
          (natp (,goo_measure args fn spec vals vstk))
-         :rule-classes ((:forward-chaining 
+         :rule-classes ((:forward-chaining
                          :trigger-terms ((,goo_measure args fn spec vals vstk))))
          :hints (("Goal" :in-theory (enable ,goo
                                             ,goo_terminates
                                             ,goo_measure
-                                            ,goo-call 
+                                            ,goo-call
                                             ,goo_terminates-call
                                             ,goo_measure-call)
                   :use (:functional-instance goo_measure_natp
@@ -1340,7 +1365,7 @@
          :hints (("Goal" :in-theory (enable ,goo
                                             ,goo_terminates
                                             ,goo_measure
-                                            ,goo-call 
+                                            ,goo-call
                                             ,goo_terminates-call
                                             ,goo_measure-call)
                   :use (:functional-instance goo_measure_bound
@@ -1355,7 +1380,7 @@
                                       ,goo_measure-call
                                       ,goo_measure_bound))))
 
-       (defund ,fn_terminates ,args 
+       (defund ,fn_terminates ,args
 	 (,goo_terminates-call-open (list ,@args)))
 
        (defund ,fn_measure ,args (,goo_measure-call-open (list ,@args)))
@@ -1380,7 +1405,7 @@
              (,fn_measure-closed ,@args))
          :hints (("Goal" :in-theory '(,goo_measure-call-open
                                       ,goo_measure-call
-                                      ,fn_measure 
+                                      ,fn_measure
                                       ,fn_measure-closed)))
          :rule-classes (:linear))
 
@@ -1421,7 +1446,7 @@
          :rule-classes ((:definition :clique (,fn ,fn-closed)
                                      :controller-alist ((,fn-closed ,@(tlist args))
                                                         (,fn ,@(tlist args)))))
-         :hints (("Goal" :in-theory (enable 
+         :hints (("Goal" :in-theory (enable
                                      ,fn
                                      ,fn_terminates
                                      ,fn_measure
@@ -1440,7 +1465,7 @@
           (,fn_terminates ,@args)
           (<= 0 (,fn_excess ,@args)))
          :rule-classes (:forward-chaining :linear)
-         :hints (("Goal" :in-theory (enable 
+         :hints (("Goal" :in-theory (enable
                                      ,fn
                                      ,fn_terminates
                                      ,fn_measure
@@ -1462,7 +1487,7 @@
          :hints (("Goal" :in-theory (enable ,fn_excess))
                  (and stable-under-simplificationp
                       '(:in-theory (enable ,fn_measure)))))
-       
+
 
        (defthmd ,fn_measure_definition
          (implies
@@ -1488,8 +1513,8 @@
        ;; construct an executable counterpart for it here.
 
        #+joe
-       (verify-guards ',fn_terminates 
-		      :hints (("Goal" :in-theory (enable 
+       (verify-guards ',fn_terminates
+		      :hints (("Goal" :in-theory (enable
 						  ,fn
 						  ,fn_terminates
 						  ,fn_measure
@@ -1504,17 +1529,17 @@
            ,case
            (equal (,fn_terminates ,@args)
                   ,(alt-body-fn fn-closed fn_terminates-closed 'and (replace-frec fn fn-closed TBody)))))
-         :rule-classes ((:definition 
+         :rule-classes ((:definition
                          :clique (,fn_terminates ,fn_terminates-closed)
                          :controller-alist ((,fn_terminates-closed ,@(tlist args))
 					    (,fn_terminates ,@(tlist args)))
                          :corollary
                          (equal (,fn_terminates ,@args)
-                                (if ,case 
+                                (if ,case
                                     ,(alt-body-fn fn-closed fn_terminates-closed 'and (replace-frec fn fn-closed TBody))
                                   t))
                          :hints (("Goal" :in-theory nil))))
-         :hints (("Goal" :in-theory (enable 
+         :hints (("Goal" :in-theory (enable
                                      ,fn
                                      ,fn_terminates
                                      ,fn_measure
@@ -1559,7 +1584,7 @@
                   ,@ICond)
                (list ,@args))
            (list ,@args)))
-       
+
        (defthmd ,fn_terminates-closed-open
          (equal (,fn_terminates-closed ,@args)
 		(,fn_terminates ,@args))
@@ -1599,12 +1624,12 @@
        (defthm ,fn_closed_to_open
          (and
           (equal (,fn-closed ,@args) (,fn ,@args))
-          
+
           ;; Measure is (currently) used in only one place so our
           ;; linear rule relating open and closed should be sufficient.
           ;;
           ;;(equal (,fn_measure-closed ,@args) (,fn_measure ,@args))
-          
+
           ;; We have added a forward chaining rule that pretty much
           ;; does this.
           ;;
@@ -1625,11 +1650,11 @@
                                       ))))
 
        (defthm ,fn_induction_rule t
-         :rule-classes ((:induction 
+         :rule-classes ((:induction
                          :pattern (,fn ,@args)
                          :condition t
                          :scheme (,fn_induction ,@args))))
-        
+
        #+joe
        (mutual-recrusion
 
@@ -1637,12 +1662,12 @@
 	  (declare (xargs :measure (,fn_measure ,@args)))
 	  (mbe :logic (,fn ,@args)
 	       :exec ))
-	
+
 	(defun ,fn_terminates_alt ,args
 	  (declare (xargs :measure (,fn_measure ,@args)))
 	  (mbe :logic (,fn_terminates ,@args)
 	       :exec ))
-	
+
 	)
 
 
@@ -1736,7 +1761,7 @@
     ()
 
     (defstub zed-test (x) nil)
-    
+
     (local
      (encapsulate
       ()
@@ -1748,13 +1773,13 @@
           (zed_terminates a b c)
           (equal (zed a b c)
                  (if (zed-test a) (zed (1+ a) b c) (+ b c))))))))
-    
-    
+
+
     (local
      (encapsulate
       ()
       (local
-       (def::un zed (a b c) 
+       (def::un zed (a b c)
          (if (zed-test a) (+ b c)
            (+ (zed (1+ a) (zed (+ 2 a) b c)
                    (+ (zed (+ 3 a) (+ b c) c)
@@ -1769,7 +1794,7 @@
                            (+ (zed (+ 3 a) (+ b c) c)
                               (zed b (+ a c) a)))))))))
       ))
-    
+
     (local
      (encapsulate
       ()
@@ -1789,13 +1814,13 @@
                   ((and (< 0 m) (= n 0)) (yak (1- m) 1))
                   (t (yak (1- m) (yak m (1- n)))))))))
       ))
-    
-    
+
+
     (local
      (encapsulate
       ()
       (local
-       (def::un zed (a b c) 
+       (def::un zed (a b c)
          (let ((z (+ a b c)))
            (if (zed-test z) (+ a b c)
              (zed (1- a) (1- b) (1- c))))))
@@ -1816,14 +1841,14 @@
      (encapsulate
          ()
        (local
-        (def::un zed (a b c) 
+        (def::un zed (a b c)
           (cons (if (zed-test a) (zed (1- a) b c) (+ a b c))
                 (list a b c))))
        (local
         (defthm zed_check
           (implies
            (zed_terminates a b c)
-           (equal (zed a b c) 
+           (equal (zed a b c)
                   (cons (if (zed-test a) (zed (1- a) b c) (+ a b c))
                         (list a b c))))))
        ))
@@ -1832,15 +1857,15 @@
      (encapsulate
       ()
       (local
-       (def::un zzed (a b c) 
+       (def::un zzed (a b c)
          (if (zed-test c) (if (zed-test a) b (zzed (1+ a) b c))
-           (zzed (if (zed-test a) b (zzed (1+ a) b c)) 
-                 (if (zed-test (if (zed-test a) b (zzed (1+ a) b c))) 
-                     c 
-                   (zzed (1+ a) (1+ b) (1+ c))) 
-                 (if (zed-test b) 
-                     (if (zed-test (if (zed-test a) b (zzed (1+ a) b c))) c 
-                       (zzed (1+ a) (1+ b) (1+ c))) 
+           (zzed (if (zed-test a) b (zzed (1+ a) b c))
+                 (if (zed-test (if (zed-test a) b (zzed (1+ a) b c)))
+                     c
+                   (zzed (1+ a) (1+ b) (1+ c)))
+                 (if (zed-test b)
+                     (if (zed-test (if (zed-test a) b (zzed (1+ a) b c))) c
+                       (zzed (1+ a) (1+ b) (1+ c)))
                    (zzed (1+ a) (1- b) c))))))
       (local
        (defthm zzed-check
@@ -1848,13 +1873,13 @@
           (zzed_terminates a b c)
           (equal (zzed a b c)
                  (if (zed-test c) (if (zed-test a) b (zzed (1+ a) b c))
-                   (zzed (if (zed-test a) b (zzed (1+ a) b c)) 
-                         (if (zed-test (if (zed-test a) b (zzed (1+ a) b c))) 
-                             c 
-                           (zzed (1+ a) (1+ b) (1+ c))) 
-                         (if (zed-test b) 
-                             (if (zed-test (if (zed-test a) b (zzed (1+ a) b c))) c 
-                               (zzed (1+ a) (1+ b) (1+ c))) 
+                   (zzed (if (zed-test a) b (zzed (1+ a) b c))
+                         (if (zed-test (if (zed-test a) b (zzed (1+ a) b c)))
+                             c
+                           (zzed (1+ a) (1+ b) (1+ c)))
+                         (if (zed-test b)
+                             (if (zed-test (if (zed-test a) b (zzed (1+ a) b c))) c
+                               (zzed (1+ a) (1+ b) (1+ c)))
                            (zzed (1+ a) (1- b) c))))))))
        ))
 
@@ -1862,7 +1887,7 @@
      (encapsulate
       ()
       (local
-       (def::un zed (a b c) 
+       (def::un zed (a b c)
          (let ((x (if (zed-test a) b (zed (1+ a) b c))))
            (let ((y (if (zed-test x) c (zed (1+ a) (1+ b) (1+ c)))))
              (let ((z (if (zed-test b) y (zed (1+ a) (1- b) c))))
@@ -1879,7 +1904,7 @@
                        (if (zed-test c) x
                          (zed x y z)))))))))
       ))
-    
+
     ))))
 
 #|
@@ -1942,11 +1967,11 @@
           (1 (LIST (STP '4 N)))
           (2 (LIST (STP '5 N)))
           (t nil))))
- 
 
-(mutual-recursion 
- 
- 
+
+(mutual-recursion
+
+
  (defun spec-interpreter (args spec)
    (declare (xargs :measure (acl2-count spec)))
    (if (consp spec)
@@ -1954,8 +1979,8 @@
          (let ((vals (spec-list-interpreter args (cdr spec))))
            (foo-step key args vals)))
      nil))
- 
- 
+
+
  (defun spec-list-interpreter (args spec)
    (declare (xargs :measure (acl2-count spec)))
    (if (consp spec)
@@ -1968,7 +1993,7 @@
 
 ;;
 ;; Now, just replace "foo" in the interpreter with "interpreter"
-;; 
+;;
 (defun interpreter (args)
   (spec-interpreter args (foo-spec)))
 
@@ -2008,7 +2033,7 @@
   (equal (if (if ifcase ifrec ifbase)
              (if thencase thenrec thenbase)
            (if elsecase elserec elsebase))
-         
+
          (if ifcase
              (if ifrec
                  (if thencase thenrec thenbase)
@@ -2027,7 +2052,7 @@ dag
 ;; (extract-base-fn 'fn `(cons a (if (test a) (fn a b) (goo c))))
 
 #+joe
-(extract-base-fn 'BINARY-+ 
+(extract-base-fn 'BINARY-+
                  '((LAMBDA (A C AB)
                            (CONS A
                                  (IF (NATP A)

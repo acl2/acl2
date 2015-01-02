@@ -464,6 +464,7 @@ details.</p>"
     type))
 
 (define vl-nonatom->original-operator ((x vl-expr-p))
+  :parents (origexprs)
   :short "Get the original operator from a non-atomic expression."
   :guard (not (vl-atom-p x))
   :returns (op vl-op-p)

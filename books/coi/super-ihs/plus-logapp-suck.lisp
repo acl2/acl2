@@ -1,3 +1,33 @@
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 (local
@@ -20,20 +50,20 @@
 
      (defun local-ifloor (i j)
        (floor (ifix i) (ifix j)))
-     
+
      (defun local-imod (i j)
        (mod (ifix i) (ifix j)))
-     
+
      (defun local-expt2 (n)
        (expt 2 (nfix n)))
-     
+
      (defun local-logcar (i)
        (local-imod i 2))
-     
+
      (defun local-loghead (size i)
        (local-imod i (local-expt2 size)))
-     
-     (defun local-logapp (size i j) 
+
+     (defun local-logapp (size i j)
        (let ((j (ifix j)))
 	 (+ (local-loghead size i) (* j (local-expt2 size)))))
 
@@ -42,28 +72,28 @@
   (defthm local-ifloor-defn
     (equal (local-ifloor i j)
 	   (floor (ifix i) (ifix j))))
-  
-  (defthm local-imod-defn 
+
+  (defthm local-imod-defn
     (equal (local-imod i j)
 	   (mod (ifix i) (ifix j))))
-  
-  (defthm local-expt2-defn 
+
+  (defthm local-expt2-defn
     (equal (local-expt2 n)
 	   (expt 2 (nfix n))))
-  
+
   (defthm local-logcar-defn
     (equal (local-logcar i)
 	   (local-imod i 2)))
-  
+
   (defthm local-loghead-defn
     (equal (local-loghead size i)
 	   (local-imod i (local-expt2 size))))
-  
+
   (defthm local-logapp-defn
-    (equal (local-logapp size i j) 
+    (equal (local-logapp size i j)
 	   (let ((j (ifix j)))
 	     (+ (local-loghead size i) (* j (local-expt2 size))))))
-  
+
   )
 
 
@@ -72,18 +102,18 @@
 
   (local
    (progn ; to allow non-local include-book
-     
+
      (include-book "arithmetic-3/bind-free/top" :dir :system)
-     
+
      (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system)
-     
+
      (SET-DEFAULT-HINTS '((NONLINEARP-DEFAULT-HINT STABLE-UNDER-SIMPLIFICATIONP
 						   HIST PSPV)))
-     
+
      (defthm crock
        (implies (integerp x)
 		(integerp (* x (/ x)))))
-     
+
      (defthm mod-+-1
        (implies (and (integerp x)
 		     (integerp n)
@@ -97,33 +127,33 @@
 					       (x (+ i 1)))
 		:in-theory (disable |(* a (/ a))|)))
        :otf-flg t)
-     
+
      (defthm integerp-crock
        (implies (and (< 0 x)
 		     (< x 1))
 		(not (integerp x))))
-     
+
      (defthm not-integerp-/-expt-2-n
        (implies (and (integerp n)
 		     (< 0 n))
 		(not (integerp (/ (expt 2 n))))))
-     
+
      (defthm integerp-crock-2a
        (implies (integerp x)
 		(integerp (* 2 x))))
-     
+
      (defthm integerp-crock-2
        (implies (and (rationalp x)
 		     (not (integerp x)))
 		(not (integerp (* 1/2 x))))
        :hints (("Goal" :use (:instance integerp-crock-2a
 				       (x (* 1/2 x))))))
-     
+
      (defun ind-fn (n)
        (if (zp n)
 	   0
 	 (ind-fn (+ -1 n))))
-     
+
      (defthm integerp-crock-3
        (implies (and (integerp v)
 		     (integerp n)
@@ -134,11 +164,11 @@
        :hints (("Goal" :induct (ind-fn n))
 	       ("Subgoal *1/2.1" :use (:instance integerp-crock-2
 						 (x (+ (/ (EXPT 2 (+ -1 N)))
-						       (* V (/ (EXPT 2 (+ -1 
+						       (* V (/ (EXPT 2 (+ -1
 									  N))))))))))
-     
+
      ))
-  
+
   (defthm plus-of-local-logapp-suck-in-local-logcar
     (implies
      (and
@@ -151,7 +181,7 @@
 	    (local-logapp n (+ 1 v) x)))
     :hints (("Goal" :cases ((equal n 1))))
     :otf-flg t)
-  
+
   )
 
 ))

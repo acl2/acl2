@@ -1,14 +1,39 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 #|                                        ;
 In this ACL2 book, we prove that the square root function can be approximated
 in ACL2.  In particular, we prove the following theorem:
 
  (defthm convergence-of-iter-sqrt
-   (implies (and (rationalp x)        
+   (implies (and (rationalp x)
                  (rationalp epsilon)
                  (< 0 epsilon)
                  (<= 0 x))
@@ -60,7 +85,7 @@ To load this book, it is sufficient to do something like this:
 ;drop
 (local (in-theory (enable (force)))) ;unfortunate that i had to do this
 
-(local (in-theory (disable distributivity-alt))) 
+(local (in-theory (disable distributivity-alt)))
 
 ;(include-book (:relative :back "arithmetic" "top")
 ;              :load-compiled-file nil)
@@ -80,7 +105,7 @@ To load this book, it is sufficient to do something like this:
     (let ((mid (/ (+ low high) 2)))
       (if (<= (* mid mid) x)
           (iterate-sqrt-range mid high x (1- num-iters))
-        (iterate-sqrt-range low mid x 
+        (iterate-sqrt-range low mid x
                             (1- num-iters))))))
 
 ;;
@@ -101,7 +126,7 @@ To load this book, it is sufficient to do something like this:
   (implies (and (rationalp low)
                 (rationalp high)
                 (< low high))
-           (< (car (iterate-sqrt-range low high x 
+           (< (car (iterate-sqrt-range low high x
                                        num-iters))
               (cdr (iterate-sqrt-range low high x
                                        num-iters))))
@@ -286,7 +311,7 @@ To load this book, it is sufficient to do something like this:
 
 
                                 )))))
- 
+
  ;;
  ;; Now, we translate the theorem above into the desired terms.  What we have
  ;; is that (/ epsilon (+ b b)) is less than (/ epsilon (+ b a)) when a is less
@@ -334,11 +359,11 @@ To load this book, it is sufficient to do something like this:
    :hints (("Goal"
             :use ((:instance sqrt-epsilon-delta-aux-4)
                   (:instance sqrt-epsilon-delta-aux-7))
-            :in-theory (e/d () 
+            :in-theory (e/d ()
                             (sqrt-epsilon-delta-aux-4
                              SQRT-EPSILON-DELTA-AUX-6
-                             <-*-/-LEFT 
-                             <-*-/-RIGHT 
+                             <-*-/-LEFT
+                             <-*-/-RIGHT
                              <-*-LEFT-CANCEL
                              sqrt-epsilon-delta-aux-7
                              ))
@@ -416,11 +441,11 @@ To load this book, it is sufficient to do something like this:
                  (< low high)
                  (<= x (* high high))
                  (<= delta (/ epsilon (+ high high))))
-            (let ((range (iterate-sqrt-range low high x 
+            (let ((range (iterate-sqrt-range low high x
                                              num-iters)))
               (implies (< (- (cdr range) (car range))
                           delta)
-                       (< (- x 
+                       (< (- x
                              (* (car range) (car range)))
                           epsilon))))
    :hints (("Goal"
@@ -435,7 +460,7 @@ To load this book, it is sufficient to do something like this:
                              (a (car (iterate-sqrt-range low high x num-iters)))
                              (b (cdr (iterate-sqrt-range low high x num-iters)))))
             :in-theory (e/d (
-                             ) 
+                             )
                             (iter-sqrt-epsilon-delta-aux-2
                              sqrt-epsilon-delta))
 
@@ -544,7 +569,7 @@ To load this book, it is sufficient to do something like this:
                       low high x
                       (guess-num-iters (- high low)
                                        (/ epsilon
-                                          (+ high 
+                                          (+ high
                                              high))))))
           (car range)))
     nil))
@@ -644,7 +669,7 @@ To load this book, it is sufficient to do something like this:
                                     (y (- right left)))
              :in-theory (disable left-cancellation-for-*)))
     :rule-classes nil))
-                
+
  ;;
  ;; Using that, we show Acl2 how to derive an inequality contradiction that
  ;; it'll see in the next proof.
@@ -673,7 +698,7 @@ To load this book, it is sufficient to do something like this:
  ;;
  ;; So now, we can prove a general form of our theorem without appealing to the
  ;; iter-sqrt functions (with all the added complication that excites Acl2's
- ;; rewriting heuristics) 
+ ;; rewriting heuristics)
  ;;
  (local
   (defthm aux
@@ -699,7 +724,7 @@ To load this book, it is sufficient to do something like this:
  ;; This is the second major point, since it shows how we can force
  ;; iterate-sqrt-range to iterate long enough to produce a small enough range.
  ;; Together with the first major result, this will prove the convergence of
- ;; iter-sqrt-range. 
+ ;; iter-sqrt-range.
  ;;
  (defthm iterate-sqrt-range-reduces-range-size-to-delta
    (implies (and (rationalp high)
@@ -734,7 +759,7 @@ To load this book, it is sufficient to do something like this:
                                                            delta))))))
             :in-theory (disable iterate-sqrt-reduces-range-size
                                 guess-num-iters-is-a-good-guess
-                                ceiling 
+                                ceiling
                                 aux
                                 )))))
 
@@ -753,7 +778,7 @@ To load this book, it is sufficient to do something like this:
  ;;
  (local
   (defthm convergence-of-iter-sqrt-1
-    (implies (and (rationalp x)        
+    (implies (and (rationalp x)
                   (rationalp epsilon)
                   (< 0 epsilon)
                   (<= 0 x))
@@ -765,7 +790,7 @@ To load this book, it is sufficient to do something like this:
  ;;
  (local
   (defthm convergence-of-iter-sqrt-2
-    (implies (and (rationalp x)        
+    (implies (and (rationalp x)
                   (rationalp epsilon)
                   (< 0 epsilon)
                   (<= 0 x))
@@ -800,10 +825,10 @@ To load this book, it is sufficient to do something like this:
 
  ;;
  ;; For stylistic reasons, we combine the two results above into a single
- ;; theorem. 
+ ;; theorem.
  ;;
  (defthm convergence-of-iter-sqrt
-   (implies (and (rationalp x)   
+   (implies (and (rationalp x)
                  (rationalp epsilon)
                  (< 0 epsilon)
                  (<= 0 x))

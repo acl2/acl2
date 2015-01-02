@@ -62,21 +62,6 @@ some reason, you have disabled @('reverse') itself.</p>"
     (equal (true-listp (reverse x))
            (not (stringp x))))
 
-  ;; ACL2's built-in type-prescription rule is weaker than it should be:
-  ;;
-  ;; (OR (CONSP (REVERSE X))
-  ;;     (EQUAL (REVERSE X) NIL)
-  ;;     (STRINGP (REVERSE X)))
-  ;;
-  ;; So let's install a better one...
-
-  (in-theory (disable (:type-prescription reverse)))
-
-  (defthm reverse-type
-    (or (stringp (reverse x))
-        (true-listp (reverse x)))
-    :rule-classes :type-prescription)
-
   (local (defthm len-zero
            (equal (equal 0 (len x))
                   (atom x))))

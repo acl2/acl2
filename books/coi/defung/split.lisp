@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "DEFUNG")
 
 ;; The body is decomposed into a cond expression.  The cond expression
@@ -20,13 +45,13 @@
 ;;
 ;; ==================================================================
 
-(defun true-fn (x) 
+(defun true-fn (x)
   (declare (type t x)) x)
 
 (in-theory (disable (:type-prescription true-fn)))
 
 (defthm quoted-true
-  (implies 
+  (implies
    (syntaxp (quotep x))
    (equal (true-fn (hide x)) x))
   :hints (("Goal" :expand (:free (x) (hide x))))
@@ -94,7 +119,7 @@
 
 (encapsulate
     ()
-  
+
   (local
    (defthm acl2-count-syn-arg
      (implies
@@ -103,7 +128,7 @@
 	 (acl2-count term)))
      :hints (("Goal" :induct (syn::nth i term)
 	      :in-theory (enable acl2-count syn::nth)))))
-   
+
   (local
    (defthm syn-len-implication
      (implies
@@ -188,8 +213,8 @@
     (pseudo-term-listp sig))
    (pseudo-term-listp (normalize-args args sig))))
 
-(defthm len-normalize-args 
-  (equal (len (normalize-args args sig)) 
+(defthm len-normalize-args
+  (equal (len (normalize-args args sig))
 	 (len sig)))
 
 ;; ==================================================================
@@ -331,7 +356,7 @@
       (syn::if (syn::arg 1 test) else then)
     (syn::if test then else)))
 
-(defthm psueod-termp-unnot-test 
+(defthm psueod-termp-unnot-test
   (implies
    (and
     (pseudo-termp test)
@@ -364,7 +389,7 @@
 		    (unnot-test test then else))))))))))
    ((syn::funcall 'not 1 term)
     (iff-fix-rec t (not negate) ctx (syn::arg 1 term)))
-   (t 
+   (t
     (if negate `(not ,term) term))))
 
 (defthm pseudo-termp-iff-fix-rec
@@ -374,7 +399,7 @@
   :hints (("Goal" :in-theory (enable syn::funcall)
 	   :expand (:free (n x) (syn::nth n x)))))
 
-(verify-guards iff-fix-rec 
+(verify-guards iff-fix-rec
 	       :hints (("Goal" :in-theory (enable syn::funcall)
 			:expand (:free (n x) (syn::nth n x)))))
 
@@ -451,9 +476,9 @@
 	 (consp (cdr x))
 	 (consp (cddr x))
 	 (null (cdddr x))))
-  
+
   (local (in-theory (enable weak-lambda-function-p)))
-  
+
   (defund lambda-function-p (x)
     (declare (type t x))
     (and (true-listp x)
@@ -461,9 +486,9 @@
 	 (eq (car x) 'acl2::lambda)
 	 (symbol-listp (cadr x))
 	 (pseudo-termp (caddr x))))
-  
+
   (local (in-theory (enable lambda-function-p)))
-  
+
   (local
    (defthm sum-quoted-constants
      (implies
@@ -508,7 +533,7 @@
   (defund lambda-function-formals (x)
     (declare (type (satisfies lambda-function-p) x))
     (cadr x))
-  
+
   (local (in-theory (enable lambda-function-formals)))
 
   (defthm symbol-listp-lambda-function-formals
@@ -517,11 +542,11 @@
      (symbol-listp (lambda-function-formals x)))
     :rule-classes (:rewrite
 		   (:forward-chaining :trigger-terms ((lambda-function-formals x)))))
-  
+
   (defund lambda-function-body (x)
     (declare (type (satisfies lambda-function-p) x))
     (caddr x))
-  
+
   (local (in-theory (enable lambda-function-body)))
 
   (defthm pseudo-termp-lambda-function-formals
@@ -530,7 +555,7 @@
      (pseudo-termp (lambda-function-body x)))
     :rule-classes (:rewrite
 		   (:forward-chaining :trigger-terms ((lambda-function-body x)))))
-  
+
   (defthm lambda-function-body-decreases
     (implies
      (weak-lambda-function-p x)
@@ -549,7 +574,7 @@
     (declare (type (satisfies symbol-listp) formals)
 	     (type (satisfies pseudo-termp) body))
     `(lambda ,formals ,body))
-  
+
   (in-theory (disable (:type-prescription lambda-function)))
 
   (local (in-theory (enable lambda-function)))
@@ -568,14 +593,14 @@
      (lambda-function-p (lambda-function formals body)))
     :rule-classes (:rewrite
 		   (:forward-chaining :trigger-terms ((lambda-function formals body)))))
-  
+
   (defthm lambda-function-accessors
     (and
      (equal (lambda-function-formals (lambda-function formals body))
 	    formals)
      (equal (lambda-function-body (lambda-function formals body))
 	    body)))
-  
+
   (defthm open-pseudo-termp
     (and
      (implies
@@ -618,10 +643,10 @@
     (pseudo-term-listp args)
     (equal (len formals) (len args)))
    (pseudo-termp (lambda-application formals body args)))
-  :hints (("Goal" :in-theory (enable LAMBDA-FUNCTION-FORMALS 
-				     LENGTH LAMBDA-FUNCTION-P 
-				     OPEN-PSEUDO-TERMP 
-				     lambda-function 
+  :hints (("Goal" :in-theory (enable LAMBDA-FUNCTION-FORMALS
+				     LENGTH LAMBDA-FUNCTION-P
+				     OPEN-PSEUDO-TERMP
+				     lambda-function
 				     lambda-application))))
 
 (defun not-quote-fn-p (fn)
@@ -661,16 +686,16 @@
 	   `(if ,(defung::true! (car args)) ,@(cdr args)))
 	  (t
 	   (cons (car term) args)))))))
- 
+
  )
- 
+
 ;; ==================================================================
 ;;
 ;; hide-ifs
 ;;
 ;; replace 'if' with 'if-macro' if the condition does not impact
 ;; the recursive nature of the expression.
-;; 
+;;
 ;;
 ;; ==================================================================
 
@@ -730,7 +755,7 @@
     (met ((ahit args) (hide-ifs-args fset (cdr term)))
       (let ((fhit (member (car term) fset)))
 	(mv (or ahit fhit) `(,(car term) ,@args)))))))
- 
+
 (defun hide-ifs-key-postcondition (key val)
   (declare (type t key val))
   (cond
@@ -938,7 +963,7 @@
     (if negate
 	(syn::if test else then)
       (syn::if test then else)))))
-      
+
 
 (defthm pseudo-termp-normalize-ite
   (implies
@@ -1017,7 +1042,7 @@
    ((consp args)
     (merge-ite-rec (car args) (cdr args) (cons x arg) fn))
    (t (iff-fix nil nil (cons fn (revappend arg (list x)))))))
-    
+
 (defthm pseudo-termp-merge-ite-rec
   (implies
    (and
@@ -1085,7 +1110,7 @@
 	  ;; I'm not sure I need to do this ..
 	  (normalize-ite nil test then else)))
     (xmerge-ite (lambda-function formals body) args)))
- 
+
 (defthm pseudo-termp-lift-conditions-over-lambda-application
   (implies
    (and
@@ -1117,7 +1142,7 @@
 ;;
 ;; Note that for our purposes the term fed into this function has
 ;; had any irrelevant 'if' expressions "hidden" via renaming.
-;; 
+;;
 ;; ==================================================================
 
 (defmacro lift-ifs-term (term)
@@ -1170,7 +1195,7 @@
    (t
     (let ((args (lift-ifs-args (cdr term))))
       (xmerge-ite (car term) args)))))
- 
+
 (defun lift-ifs-key-postcondition (key val)
   (declare (type t key val))
   (cond
@@ -1190,7 +1215,7 @@
 	      (if (not (consp args)) nil
 		(cons (lift-ifs-term (car args))
 		      (lift-ifs-args (cdr args)))))))))
-	    
+
  (defthm len-lift-ifs-args
    (equal (len (lift-ifs-key :args args))
 	  (len args))
@@ -1460,7 +1485,7 @@
 (defun remove-default (def list)
   (declare (type (satisfies pseudo-term-listp) list))
   (if (endp list) nil
-    (if (equal (car list) def) 
+    (if (equal (car list) def)
 	(remove-default def (cdr list))
       (cons (car list) (remove-default def (cdr list))))))
 
@@ -1566,7 +1591,7 @@
 	 ((atom term) nil)
 	 ((equal (car term) 'quote) nil)
 	 ((weak-lambda-function-p (car term))
-	  (append 
+	  (append
 	   (aux-function-args fmap ag def (cdr term))
 	   (map-lambda-over-list (lambda-function-formals (car term))
 				 (aux-function fmap ag def (lambda-function-body (car term)))
@@ -1589,7 +1614,7 @@
 	    (if hit
 		(append (aux-function-args fmap ag def (cdr term)) (list aux))
 	      (aux-function-args fmap ag def (cdr term))))))
-      
+
       (if (endp args) nil
 	(append (aux-function fmap ag def (car args))
 		(aux-function-args fmap ag def (cdr args)))))))
@@ -1601,7 +1626,7 @@
 
 (defthm pseudo-term-listp-aux-function
   (implies
-   (and 
+   (and
     (pseudo-fn-map fmap)
     (not-quote-symbolp ag)
     (pseudo-termp def)

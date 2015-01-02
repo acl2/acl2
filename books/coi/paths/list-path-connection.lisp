@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
  (in-package "ACL2")
 
 ;;This book provides functions to translate back and forth between lists
@@ -30,7 +55,7 @@
 
 (defthm nth-equal-car-when-unique-rewrite
   (implies (and (bag::unique lst)
-                (< n (len lst)) 
+                (< n (len lst))
                 (consp lst))
            (equal (equal (nth n lst) (car lst))
                   (equal (nfix n) 0)))
@@ -44,7 +69,7 @@
            (equal (list::find-index (nth n key-names) key-names)
                   n))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (list::find-index nth) 
+           :in-theory (e/d (list::find-index nth)
                            (;find-index-of-cdr
                             )))))
 
@@ -72,8 +97,8 @@
   (if (endp key-names)
       nil ;the empty list
     (cons (g (car key-names) r)
-          (record-to-list 
-           ;(clr (car key-names) 
+          (record-to-list
+           ;(clr (car key-names)
                 r;
                 ;) ;trying...
            (cdr key-names)))))
@@ -102,7 +127,7 @@
 ;;   (declare (xargs :verify-guards nil))
 ;;   (if (not (consp keys))
 ;;       (list keys r)
-;;     (ind (cdr keys) 
+;;     (ind (cdr keys)
 ;;          (clr (set::head (RKEYS R)) r);
 ;;          ;(gacc::wr (set::head keys) (gacc::rd (set::head keys) tr) tr)
 ;;          )))
@@ -190,18 +215,18 @@
            :in-theory (e/d (list-to-record
                             list::find-index
                             list::CDR-OF-clear-NTH
-                            ) 
+                            )
                            (;FIND-INDEX-OF-CDR
                             )))))
 
 
-        
+
 (defthm g-of-list-to-record-irrel
   (implies (not (list::memberp key keys))
            (equal (g key (list-to-record lst keys))
                   nil))
   :hints (("Goal" :in-theory (enable LIST-TO-RECORD))))
-          
+
 
 ;; (thm
 ;;  (equal (LIST-TO-RECORD (UPDATE-NTH n val lst) key-names)
@@ -209,7 +234,7 @@
 ;;             (path::s (nth n key-names) val (LIST-TO-RECORD lst key-names))
 ;;           (LIST-TO-RECORD lst key-names)))
 ;;  :hints (("Goal" :in-theory (enable LIST-TO-RECORD))))
- 
+
 ;(in-theory (disable TAG-LOCATION-ELIMINATION))
 
 (local (defun cdr-minus1-induction (x n)
@@ -218,7 +243,7 @@
            (cdr-minus1-induction (cdr x) (+ -1 n)))))
 
 (defthm nth-of-record-to-list
-  (implies (and (natp n) 
+  (implies (and (natp n)
                 (bag::unique keys)
                 (< n (len keys)))
            (equal (nth n (record-to-list r keys))
@@ -251,7 +276,7 @@
 ;;   (if (or (not (integerp n))
 ;;           (< n 0))
 ;;       nil
-;;     (s n 
+;;     (s n
 ;;        (wrap (nth n lst))
 ;;        (list-to-record-aux (+ -1 n) lst))))
 
@@ -264,7 +289,7 @@
 ;;     (update-nth (set::head keys) ;nfix?
 ;;                 (unwrap (g (set::head keys) r))
 ;;                 (record-to-list-aux (set::tail keys) r))))
-              
+
 ;; (defun record-to-list (r)
 ;;   (record-to-list-aux (rkeys r) r))
 
@@ -320,7 +345,7 @@
 ;; (thm
 ;;  (implies t
 ;;           (equal (record-to-list (s a v r))
-;;                  (update-nth (nfix a) 
+;;                  (update-nth (nfix a)
 
 
 
@@ -376,7 +401,7 @@
              (bag::unique key-names))
             (equal (list-to-record (record-to-list r key-names) key-names)
                    r))
-   :hints (("Goal" 
+   :hints (("Goal"
             :in-theory (e/d (list-to-record)
                             (REMOVE))
             :induct (ind101 key-names r)
@@ -400,7 +425,7 @@
                    (update-nth (list::find-index key key-names)
                                nil lst)
                    key-names)))
-  :hints (("Goal" :in-theory (e/d (path::clrp path::sp s-becomes-clr) 
+  :hints (("Goal" :in-theory (e/d (path::clrp path::sp s-becomes-clr)
                                   (path::sp==r path::s-to-sp s==r PATH::SP-TO-CLRP)))))
 
 ;gen to non singletons?
@@ -426,9 +451,9 @@
            :expand ((list-to-record (update-nth 0 nil (update-nth n nil lst))
                                           key-names))
            :in-theory (e/d (list::clear-nth
-                            list-to-record 
+                            list-to-record
                             list::update-nth-of-cdr
-                            list::clear-nth-of-cdr) 
+                            list::clear-nth-of-cdr)
                            (list::cdr-of-update-nth
                             LIST::UPDATE-NTH-BECOMES-CLEAR-NTH
                             LIST::UPDATE-NTH-EQUAL-REWRITE

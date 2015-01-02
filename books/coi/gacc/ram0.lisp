@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "GACC")
 
 ;This book introduces the functions RD, WR, RX, and WX for reading and writing to a memory, and proves basic theorems about them.
@@ -88,7 +113,7 @@
                   (<= (nfix m) (word-size))) (cons n m)
             (dual-induct (- (nfix n) (word-size)) (- (nfix m) (word-size))))))
 
-;rephrase in terms of < 
+;rephrase in terms of <
 ;trying with this non local...
  (defthm <=max-offset
    (implies (and (<= n m)
@@ -224,7 +249,7 @@
 ;If SIZE is not a multiple of 8, it gets rounded up to a multiple of 8.  Thus, we read whole bytes.
 ;If SIZE is 0, it gets treated as if it were 8.
 ;Data from the lower addresses goes into the lower-order positions of the result.
-(defund rx (size a ram) 
+(defund rx (size a ram)
   (declare (type t size a ram))
   (rx-rec a 0 (1+ (max-offset size)) ram))
 
@@ -294,7 +319,7 @@
 ;; WX-REC
 ;;
 
-;I changed this to call logtail and loghead instead of wcar and wcdr. -ews 
+;I changed this to call logtail and loghead instead of wcar and wcdr. -ews
 
 ;bzo - I believe the calls to ifix on value below could be dropped if the
 ;guards on the following functions were changed to not include (integerp i):
@@ -371,10 +396,3 @@
            (equal (wx size a v ram)
                   (wx 0 a v ram)))
   :hints (("goal" :in-theory (enable wx max-offset))))
-
-
-
-
-
-
-

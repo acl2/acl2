@@ -50,7 +50,7 @@
 
 (defaggregate vls-data
   :parents (server)
-  :short "Data that is available to a @(see command-handler)."
+  :short "Data that is available to @(see vls-commands)."
   :tag :vls-data
   ((good vl-design-p
          "The successfully translated portion of the design.")

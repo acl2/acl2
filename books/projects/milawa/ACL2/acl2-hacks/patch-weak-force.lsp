@@ -25,6 +25,8 @@
 (defun rewrite-atm (atm not-flg bkptr gstack type-alist wrld
                         simplify-clause-pot-lst rcnst current-clause state)
 
+;;; Modified 12/24/2014 to avoid the nu-rewriter, which is being eliminated.
+
 ; This function rewrites atm with nth-update-rewriter, recursively.
 ; Then it rewrites the result with rewrite, in the given context,
 ; maintaining iff.
@@ -151,17 +153,25 @@
              (hitp atm1 ttree1)
 ; Rockwell Addition
              (cond
+;;; Modified 12/24/2014 to avoid the nu-rewriter, which is being eliminated.
+#||
               ((eq (nu-rewriter-mode wrld) :literals)
                (nth-update-rewriter t atm nil
                                     (access rewrite-constant rcnst
                                             :current-enabled-structure)
                                     wrld state))
+||#
               (t (mv nil nil nil)))
-             (let ((atm2 (if hitp
+             (let ((atm2
+;;; Modified 12/24/2014 to avoid the nu-rewriter, which is being eliminated.
+#||
+                    (if hitp
                              (lambda-abstract
                               (cleanup-if-expr atm1 nil nil)
                               (pkg-witness (current-package state)))
-                           atm)))
+                           atm)
+||#
+                    atm))
                (mv-let (ans1 ans2)
                        (rewrite-entry
                         (rewrite atm2

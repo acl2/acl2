@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 
 (in-package "ACL2")
 
@@ -75,7 +100,7 @@
       (let ((term1 (car hints))
 	    (term2 (cdr hints)))
 	(let ((clause (replace-1 term1 term2 clause)))
-	  (list 
+	  (list
 	   clause
 	   (list (clause-implies term2 term1)))))
     (list clause)))
@@ -94,7 +119,7 @@
    (and
     (pseudo-term-listp cl)
     (alistp a)
-    (rewrite-equiv-eval (conjoin-clauses 
+    (rewrite-equiv-eval (conjoin-clauses
 			 (rewrite-equiv-clause-processor cl hints)) a))
    (rewrite-equiv-eval (disjoin cl) a))
   :rule-classes :clause-processor
@@ -103,7 +128,7 @@
 ;;
 ;; This would probably work better as a clause processor.
 ;;
-;; What we would need to do is to create two subgoals: one 
+;; What we would need to do is to create two subgoals: one
 ;; containing the new rewrite-equiv in place of the equivalence
 ;; and the other with an assertion that the old equivalence
 ;; justified the replacment.
@@ -154,7 +179,7 @@
     `(slow-rewrite-equiv-hint stable-under-simplificationp nil '(equal) clause)))
 
 (local
- (encapsulate 
+ (encapsulate
   ()
 
 (defstub foo (x) nil)
@@ -175,7 +200,7 @@
    (fred (+ 3 (goo x))))
 
  )
- 
+
 ;;
 ;; This theorem does not prove without the rewrite-with-equality hint ..
 ;;
@@ -209,7 +234,7 @@
   ()
 
   (defun equiv (x y) (equal x y))
-  
+
   (defequiv equiv)
 
   (defcong equiv equal (fred x) 1)

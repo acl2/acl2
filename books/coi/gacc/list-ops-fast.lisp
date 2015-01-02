@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "GACC")
 
 (include-book "mem-fast")
@@ -144,7 +169,7 @@
 (defthm nthcdr-of-rd-list
   (equal (nthcdr n (rd-list ads ram))
          (rd-list (nthcdr n ads) ram))
-  :hints (("Goal" :in-theory (enable nthcdr rd-list))))                 
+  :hints (("Goal" :in-theory (enable nthcdr rd-list))))
 
 (in-theory (enable (:induction nth))) ;bzo
 
@@ -181,7 +206,7 @@
 ;;defun. -ews
 ;;
 ;bzo rename list param to ads?
-;bzo disable 
+;bzo disable
 
 ;bzo give a fast body?
 (defund wr-list (list vals ram)
@@ -195,7 +220,7 @@
   (if (and (consp list)
 ;(consp vals)
            )
-      (wr (car list) (car vals) 
+      (wr (car list) (car vals)
           (wr-list (cdr list) (cdr vals) ram))
     ram))
 
@@ -217,7 +242,7 @@
   (implies
    (consp list)
    (equal (wr-list list vals ram)
-          (wr (car list) (car vals) 
+          (wr (car list) (car vals)
               (wr-list (cdr list) (cdr vals) ram))))
   :hints (("goal" :in-theory (enable wr-list))))
 
@@ -242,7 +267,7 @@
            (equal (wr-list ads vals ram)
                   ram))
   :hints (("Goal" :in-theory (enable wr-list))))
-                 
+
 
 
 (defthm wr-list-over-wr
@@ -258,7 +283,7 @@
            (equal (wr-list (append x y) (append a b) ram)
                   (wr-list y b (wr-list x a ram))))
   :hints (("goal" :induct (list::len-len-induction x a)
-           :in-theory (enable disjoint binary-append)))) 
+           :in-theory (enable disjoint binary-append))))
 
 
 
@@ -267,7 +292,7 @@
            (equal (rd-list ads (wr ad v ram))
                   (rd-list ads ram)))
   :hints (("Goal" :in-theory (enable rd-list))))
- 
+
 (defthm wfixlist-rd-list
   (equal (wfixlist (rd-list list ram))
          (rd-list list ram))
@@ -277,7 +302,7 @@
 ;;  (equal (wr-list ads v1 (wr-list ads v2 ram))
 ;;         (wr-list ads v1 ram))
 ;;  :hints (("Goal" :in-theory (enable wr==r!))))
-        
+
 ;bzo move
 (defthm wr-list-of-wr-same
   (implies (memberp x list)
@@ -327,7 +352,7 @@
            (equal (rd ad (wr-list ads val ram))
                   (rd ad ram)))
   :hints (("Goal" :in-theory (enable wr-list))))
-                 
+
 (defthm rd-list-of-wr-list-diff
   (implies (bag::disjoint ads1 ads2)
            (equal (rd-list ads1 (wr-list ads2 vals ram))
@@ -436,7 +461,7 @@
   (implies (syntaxp (not (equal vals ''nil)))
            (equal (equal (wr-list ads vals ram2) (wr-list ads vals ram1))
                   (equal (wr-list ads nil ram2) (wr-list ads nil ram1)))))
-        
+
 
 ;gen the len of ads?
 (defthm wr-list-of-my-wfixlist
@@ -452,7 +477,7 @@
                   (wr-list ads vals2 ram)))
   :hints (("Goal" :use ((:instance wr-list-of-my-wfixlist (vals vals1))
                         (:instance wr-list-of-my-wfixlist (vals vals2)))
-           :in-theory (disable wr-list-of-my-wfixlist) ))) 
+           :in-theory (disable wr-list-of-my-wfixlist) )))
 
 
 ;; The (unique ads) hyp is necessary.  If ads contains duplicates but the
@@ -470,7 +495,7 @@
 (defthm wr-list-equal-rewrite
   (implies (unique ads)
            (equal (equal (wr-list ads vals ram1) ram2)
-                  (and (equal (my-wfixlist (len ads) vals) 
+                  (and (equal (my-wfixlist (len ads) vals)
                               (rd-list ads ram2))
                        (equal (clr-list ads ram1)
                               (clr-list ads ram2)))))
@@ -483,7 +508,7 @@
   (implies (list::memberp ad ads)
            (equal (gacc::rd ad (gacc::wr-list ads vals ram))
                   (acl2::loghead 8 (nth (list::find-index ad ads) vals))))
-  :hints (("Goal" :in-theory (e/d (LIST::MEMBERP-WHEN-NOT-MEMBERP-OF-CDR gacc::wr-list list::FIND-INDEX) 
+  :hints (("Goal" :in-theory (e/d (LIST::MEMBERP-WHEN-NOT-MEMBERP-OF-CDR gacc::wr-list list::FIND-INDEX)
                                   (bag::FIND-INDEX-OF-CDR)))))
 
 ;bzo theory invar?
@@ -491,7 +516,7 @@
   (equal (gacc::clr-list x ram)
          (gacc::wr-list x (repeat (len x) 0) ram))
   :hints (("Goal" :in-theory (enable gacc::wr-list gacc::clr-list))))
-        
+
 
 (defthm clr-list-of-append
   (equal (gacc::clr-list (append x y) ram)

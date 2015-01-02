@@ -63,16 +63,6 @@ ability to write nice rules about @('subseq-list').</p>
 
 <p>It is often pretty reasonable to just leave @('subseq-list') enabled.</p>"
 
-  ;; BOZO, the built-in type prescription for subseq-list is lousy,
-  ;;   (or (consp x) (equal x nil) (stringp x)),
-  ;; so replace it with something more sensible:
-
-  (in-theory (disable (:type-prescription subseq-list)))
-
-  (defthm true-listp-subseq-list
-    (true-listp (subseq-list x start end))
-    :rule-classes :type-prescription)
-
   (defthm len-of-subseq-list
     (equal (len (subseq-list x start end))
            (nfix (- end start))))

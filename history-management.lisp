@@ -2150,7 +2150,6 @@
                  HEREDITARILY-CONSTRAINED-FNNAMES
                  #+:non-standard-analysis CLASSICALP
                  DEF-BODIES
-                 NTH-UPDATE-REWRITER-TARGETP
                  INDUCTION-MACHINE
                  JUSTIFICATION
                  UNNORMALIZED-BODY

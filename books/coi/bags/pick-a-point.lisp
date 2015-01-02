@@ -1,14 +1,39 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;; pick-a-point.lisp
 ;; Pick a Point Method for Proving Subbagp
 
 
 ;; THE PICK A POINT SUBBAG STRATEGY
-;; 
+;;
 ;; I describe the "pick a point subset strategy" in my 2004 ACL2 Workshop
 ;; Paper, "Finite Set Theory based on Fully Ordered Lists", and you can find a
 ;; copy of the set theory library in the :osets directory.  Essentially, the
@@ -31,7 +56,7 @@
 ;;  (in a (union x y))      = (or (in a x) (in a y))
 ;;  (in a (intersect x y))  = (and (in a x) (in a y))
 ;;  (in a (difference x y)) = (and (in a x) (not (in a y)))
-;; 
+;;
 ;; And so forth.  The reason these theorems are so good is that the rewritten
 ;; term on the right hand sides have NO complicated functions!  For example,
 ;; the theorem about union completely removes the union term from the goal,
@@ -55,11 +80,11 @@
   (((bag-hyps) => *)
    ((subbag) => *)
    ((superbag) => *))
-  
+
   (local (defun bag-hyps () nil))
   (local (defun subbag () nil))
   (local (defun superbag () nil))
-  
+
   (defthm multiplicity-constraint
     (implies (bag-hyps)
              (<= (count arbitrary-element (subbag))
@@ -73,20 +98,20 @@
                 ((not (<= (count (car x) x)
                           (count (car x) y)))
                  (car x))
-                (t (badguy (cdr x) 
+                (t (badguy (cdr x)
                            (remove-1 (car x) y))))))
- 
+
  (local (defthm badguy-witness
           (implies (not (subbagp x y))
                    (not (<= (count (badguy x y) x)
                             (count (badguy x y) y))))))
- 
+
  (defthm subbag-by-multiplicity-driver
    (implies (bag-hyps)
             (subbagp (subbag) (superbag)))
    :rule-classes nil
-   :hints(("Goal" 
-           :use ((:instance 
+   :hints(("Goal"
+           :use ((:instance
                   multiplicity-constraint
                   (arbitrary-element (badguy (subbag) (superbag))))))))
 

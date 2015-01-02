@@ -35,7 +35,7 @@
 (include-book "../mlib/subst")
 (include-book "../mlib/allexprs")
 (include-book "../mlib/namefactory")
-(include-book "centaur/depgraph/toposort" :dir :system)
+;; (include-book "centaur/depgraph/toposort" :dir :system)
 (include-book "../mlib/find")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
@@ -253,90 +253,90 @@ approach.</p>")
 ;
 ; -----------------------------------------------------------------------------
 
-(define vl-function-dep-graph
-  :parents (vl-depsort-functions)
-  :short "Build a dependency graph for function definitions."
-  ((x vl-fundecllist-p))
-  :returns (alist "Alist associating funtion names (strings) to the the lists
-                   of all functions that are called in their bodies (string
-                   lists, perhaps with duplicates).  Suitable for sorting with
-                   @(see depgraph::toposort)."
-                  (equal (alist-keys alist)
-                         (vl-fundecllist->names x)))
-  :long "<p>If we run into a recursive function, the dep graph will have a
-         self-dependency.</p>"
-  (b* (((when (atom x))
-        nil)
-       (fun1  (car x))
-       (name1 (vl-fundecl->name fun1))
-       (deps1 (vl-exprlist-funnames (vl-fundecl-allexprs fun1))))
-    (hons-acons name1 deps1
-                (vl-function-dep-graph (cdr x)))))
+;; (define vl-function-dep-graph
+;;   :parents (vl-depsort-functions)
+;;   :short "Build a dependency graph for function definitions."
+;;   ((x vl-fundecllist-p))
+;;   :returns (alist "Alist associating funtion names (strings) to the the lists
+;;                    of all functions that are called in their bodies (string
+;;                    lists, perhaps with duplicates).  Suitable for sorting with
+;;                    @(see depgraph::toposort)."
+;;                   (equal (alist-keys alist)
+;;                          (vl-fundecllist->names x)))
+;;   :long "<p>If we run into a recursive function, the dep graph will have a
+;;          self-dependency.</p>"
+;;   (b* (((when (atom x))
+;;         nil)
+;;        (fun1  (car x))
+;;        (name1 (vl-fundecl->name fun1))
+;;        (deps1 (vl-exprlist-funnames (vl-fundecl-allexprs fun1))))
+;;     (hons-acons name1 deps1
+;;                 (vl-function-dep-graph (cdr x)))))
 
-(define vl-depsort-functions
-  :short "Rearrange function declarations so that they are in dependency order,
-if possible."
-  ((x        vl-fundecllist-p)
-   (warnings vl-warninglist-p))
-  :returns
-  (mv (successp)
-      (warnings vl-warninglist-p)
-      (sorted-x vl-fundecllist-p))
+;; (define vl-depsort-functions
+;;   :short "Rearrange function declarations so that they are in dependency order,
+;; if possible."
+;;   ((x        vl-fundecllist-p)
+;;    (warnings vl-warninglist-p))
+;;   :returns
+;;   (mv (successp)
+;;       (warnings vl-warninglist-p)
+;;       (sorted-x vl-fundecllist-p))
 
-  :long "<p>Since functions can call one another and can be listed in any
-order, it is useful to be able to put them into a dependency order; we take
-advantage of this when we flatten their templates, see @(see
-vl-flatten-funtemplates).</p>
+;;   :long "<p>Since functions can call one another and can be listed in any
+;; order, it is useful to be able to put them into a dependency order; we take
+;; advantage of this when we flatten their templates, see @(see
+;; vl-flatten-funtemplates).</p>
 
-<p>We will fail if there are any circular function dependencies or recursive
-functions; in this case @('successp') is nil and a fatal warning will be
-added.</p>"
-  (b* ((x     (vl-fundecllist-fix x))
-       (graph (vl-function-dep-graph x))
+;; <p>We will fail if there are any circular function dependencies or recursive
+;; functions; in this case @('successp') is nil and a fatal warning will be
+;; added.</p>"
+;;   (b* ((x     (vl-fundecllist-fix x))
+;;        (graph (vl-function-dep-graph x))
 
-       ;; Quick sanity check for unique function names
-       (dupes (duplicated-members (alist-keys graph)))
-       ((when dupes)
-        (fast-alist-free graph)
-        (mv nil
-            (fatal :type :vl-bad-functions
-                   :msg "Multiple function declarations for ~&0."
-                   :args (list dupes))
-            x))
+;;        ;; Quick sanity check for unique function names
+;;        (dupes (duplicated-members (alist-keys graph)))
+;;        ((when dupes)
+;;         (fast-alist-free graph)
+;;         (mv nil
+;;             (fatal :type :vl-bad-functions
+;;                    :msg "Multiple function declarations for ~&0."
+;;                    :args (list dupes))
+;;             x))
 
-       ;; Try to topologically sort the dependency graph; if this fails then
-       ;; order is just the names of the functions that are in a loop.
-       ((mv successp order) (depgraph::toposort graph))
-       (- (fast-alist-free graph))
-       ((unless successp)
-        (mv nil
-            (fatal :type :vl-function-loop
-                   :msg "Functions have circular dependencies: ~&0."
-                   :args (list order))
-            x))
+;;        ;; Try to topologically sort the dependency graph; if this fails then
+;;        ;; order is just the names of the functions that are in a loop.
+;;        ((mv successp order) (depgraph::toposort graph))
+;;        (- (fast-alist-free graph))
+;;        ((unless successp)
+;;         (mv nil
+;;             (fatal :type :vl-function-loop
+;;                    :msg "Functions have circular dependencies: ~&0."
+;;                    :args (list order))
+;;             x))
 
-       ;; We successfully put the function names into dependency order, so
-       ;; just rearrange the functions into this dependency order.
-       (sorted-x (vl-reorder-fundecls order x)))
-    (mv t (ok) sorted-x))
+;;        ;; We successfully put the function names into dependency order, so
+;;        ;; just rearrange the functions into this dependency order.
+;;        (sorted-x (vl-reorder-fundecls order x)))
+;;     (mv t (ok) sorted-x))
 
-  :prepwork
-  ((local (defthm crock
-            (implies (and (string-listp y)
-                          (subsetp-equal x y)
-                          (true-listp x))
-                     (string-listp x))))
+;;   :prepwork
+;;   ((local (defthm crock
+;;             (implies (and (string-listp y)
+;;                           (subsetp-equal x y)
+;;                           (true-listp x))
+;;                      (string-listp x))))
 
-   (local (defthm crock2
-            (implies (string-listp (alist-keys graph))
-                     (string-listp (mv-nth 1 (depgraph::toposort graph)))))))
+;;    (local (defthm crock2
+;;             (implies (string-listp (alist-keys graph))
+;;                      (string-listp (mv-nth 1 (depgraph::toposort graph)))))))
 
-  ///
-  (defthm vl-depsort-functions-under-set-equiv
-    ;; This shows that no functions are added/lost as a result of depsorting.
-    (set-equiv (mv-nth 2 (vl-depsort-functions x warnings))
-               (vl-fundecllist-fix x))
-    :hints(("Goal" :in-theory (enable set-equiv)))))
+;;   ///
+;;   (defthm vl-depsort-functions-under-set-equiv
+;;     ;; This shows that no functions are added/lost as a result of depsorting.
+;;     (set-equiv (mv-nth 2 (vl-depsort-functions x warnings))
+;;                (vl-fundecllist-fix x))
+;;     :hints(("Goal" :in-theory (enable set-equiv)))))
 
 
 

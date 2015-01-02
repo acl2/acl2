@@ -1,11 +1,36 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;;
 ;; Dependency Trees for Data Dependency Analysis
-;; Jared Davis 
+;; Jared Davis
 ;;
 ;;
 ;; INTRODUCTION
@@ -15,7 +40,7 @@
 ;;
 ;;   (1) p is in the dtree, i.e., (in p dtree)
 ;;
-;;   (2) the localdeps of p are nonempty, i.e., 
+;;   (2) the localdeps of p are nonempty, i.e.,
 ;;        (not (set::empty (localdeps (get p dtree))))
 ;;
 ;;   (3) for all a, the following is true:
@@ -94,7 +119,7 @@
   (implies (royalp path dtree)
            (equal (set::empty (deps dtree))
                   nil))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable empty-of-deps-when-nonempty-of-localdeps-of-get)
           :use (:instance empty-of-deps-when-nonempty-of-localdeps-of-get))))
 
@@ -139,7 +164,7 @@
 
   (defthmd royalp-constraint-localdeps
     (implies (royalp-hyps)
-             (not (set::empty 
+             (not (set::empty
                    (localdeps (get (royalp-path) (royalp-dtree)))))))
 
   (defthmd royalp-constraint-domination
@@ -149,7 +174,7 @@
              (set::empty (localdeps (get royalp-member (royalp-dtree)))))))
 
  ;; Suppose that (royalp-hyps) is true, that our constraints are true, and
- ;; suppose towards contradiction that the following is true: 
+ ;; suppose towards contradiction that the following is true:
  ;;  (not (royalp (royalp-path) (royalp-dtree)))
 
  ;; Now, since the domination constraint is true for any royalp-member, it is
@@ -167,9 +192,9 @@
                                   (map::get (car path) (children dtree))))
               nil))))
 
- ;; To generate our contradiction, we will need to show that the hypotheses in 
+ ;; To generate our contradiction, we will need to show that the hypotheses in
  ;; our constraints are satisifed.  Of course, the hypothesis for the localdeps
- ;; constraint is trivial, since we assumed (royalp-hyps) is true.  For the 
+ ;; constraint is trivial, since we assumed (royalp-hyps) is true.  For the
  ;; domination constraint, this also relieves the first hypothesis.
 
  ;; The second hypothesis of the domination constraint can be shown using a
@@ -190,7 +215,7 @@
           (and (set::empty (localdeps dtree))
                (or (atom path)
                    (and (map::in (car path) (children dtree))
-                        (voidp (cdr path) 
+                        (voidp (cdr path)
                                (map::get (car path) (children dtree))))))))
 
  ;; We observe that no royal path is ever void:
@@ -230,10 +255,10 @@
                           (not (voidp path dtree))))
           :hints(("Goal" :in-theory (enable path::strictly-dominates)
                   :use find-royal-does-nothing))))
-        
- ;; Here is how we argue that the final hypothesis is true.  Since we assumed 
+
+ ;; Here is how we argue that the final hypothesis is true.  Since we assumed
  ;; (towards contradiction) that (not (royalp (royalp-path) (royalp-dtree))),
- ;; then we know that 
+ ;; then we know that
  ;;  (path::strictly-dominates (find-royal (royalp-path) (royalp-dtree))
  ;;                            (royalp-path))
  ;; exactly when (not (voidp (royalp-path) (royalp-dtree))).  But by our
@@ -244,14 +269,14 @@
 
  (local (defthm localdeps-of-find-royal-nonempty-when-input-nonempty
           (implies (not (set::empty (localdeps (get path dtree))))
-                   (not (set::empty (localdeps 
+                   (not (set::empty (localdeps
                                      (get (find-royal path dtree) dtree)))))
           :hints(("Goal" :in-theory (enable find-royal get)))))
 
  (defthm royalp-by-membership-driver
    (implies (royalp-hyps)
             (royalp (royalp-path) (royalp-dtree)))
-   :hints(("Goal" 
+   :hints(("Goal"
            :use ((:instance royalp-constraint-localdeps)
                  (:instance royalp-constraint-domination
                             (royalp-member
@@ -260,7 +285,7 @@
  (defadvice royalp-by-membership
    (implies (royalp-hyps)
             (royalp (royalp-path) (royalp-dtree)))
-   :rule-classes (:pick-a-point :driver royalp-by-membership-driver))          
+   :rule-classes (:pick-a-point :driver royalp-by-membership-driver))
 
  )
 
@@ -296,7 +321,7 @@
   (equal (set::in path (royaldomain1 paths dtree))
          (and (set::in path paths)
               (royalp path dtree)))
-  :hints(("Goal" :in-theory (e/d (royaldomain1) 
+  :hints(("Goal" :in-theory (e/d (royaldomain1)
                                  (set::in)))))
 
 (verify-guards royaldomain1)
@@ -311,7 +336,7 @@
 (defthm listsetp-of-royaldomain
   (set::listsetp (royaldomain dtree))
   :hints(("Goal" :in-theory (enable royaldomain))))
-       
+
 (defthm in-royaldomain
   (equal (set::in path (royaldomain dtree))
          (and (in path dtree)

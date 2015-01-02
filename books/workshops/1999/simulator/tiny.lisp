@@ -34,8 +34,6 @@ September 1999
 (include-book "../../../meta/meta")
 (include-book "../../../ihs/logops-lemmas")
 
-(set-nu-rewriter-mode nil)
-
 (disable-theory (theory 'logops-functions))
 
 (set-verify-guards-eagerness 2) 

@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 ;; What we want to do is export the primary theories here into
@@ -65,7 +90,7 @@
           nil)
       (set::union (cons-onto-all '0 (mem::domain-aux (car mem-tree) (+ -1 depth)))
                   (cons-onto-all '1 (mem::domain-aux (cdr mem-tree) (+ -1 depth)))))))
-  
+
 
 ;this bits are in reverse order (least significant bit comes first in the list)
 (defun convert-reversed-bit-list-to-integer (bit-list)
@@ -74,7 +99,7 @@
     (+ (car bit-list)
        (* 2 (convert-reversed-bit-list-to-integer (cdr bit-list))))))
 
-;; (defmacro def-set-processor (&key (processor-name 'unsupplied) 
+;; (defmacro def-set-processor (&key (processor-name 'unsupplied)
 ;;                                   (element-processor 'unsupplied)  ;can this be a term?
 ;;                                   (predicate 'unsupplied))
 ;;   `(defun ,processor-name (set) ;can this take more than one arg?
@@ -109,9 +134,9 @@
                           (lambda (x) (convert-reversed-bit-lists-to-integers x))))
                         (a lst)
                         (x lst-of-lsts)
-                 
+
                         ))))
-  
+
 (defun mem::mem-tree-domain (mem-tree depth)
   (convert-reversed-bit-lists-to-integers (mem::domain-aux mem-tree depth)))
 
@@ -135,7 +160,7 @@
                 ;;always return nats less than size?  Not necessarily.  There
                 ;;may be nats less than 2^depth but greater than size.  We
                 ;;have to filter them out.
-                
+
                 (SET::FILTER<not-NATP-LESS-THAN-SIZE> (set::rkeys record-part) size)
                 )))
 
@@ -165,19 +190,19 @@
 (encapsulate
  ()
  (local (include-book "data-structures/memories/memory-impl" :dir :system))
- 
+
  ;;dup
  (defthm mem::_store-memory
    (mem::_memory-p (mem::_store mem::addr mem::elem mem::mem))
    :hints(("Goal" :in-theory (enable mem::_memory-p))))
- 
+
  (defthm mem::_store-memory-main
    (equal (mem::memory-p (mem::_store mem::addr mem::elem mem::mem))
           (mem::memory-p mem::mem)))
- 
+
  (defthm mem::_memtree-store-memtree-2
    (mem::_memtree-p (mem::_memtree-store-nil mem::addr mem::mtree mem::depth) mem::depth)
-   :hints(("Goal"))) 
+   :hints(("Goal")))
 
  )
 
@@ -201,18 +226,18 @@
    :hints (("Goal" :in-theory (enable MEM::|_ADDRESS-P| EXPT-SPLIT))))
 
     ;what should we do with 0?
-    ;we could also represent 0 with the bit-list nil, but consider (mem::domain (mem::store 0 4 (mem::new 4))) = '(0) 
+    ;we could also represent 0 with the bit-list nil, but consider (mem::domain (mem::store 0 4 (mem::new 4))) = '(0)
     ;len is the lenght of the bit list.  we need it. consider whether 0 should be '(0) or '(0 0) of '(0 0 0), etc.
  (defun convert-integer-to-reversed-bit-list (n len)
    (if (zp len)
        nil ;the empty bit list
      (cons (mod n 2)
            (convert-integer-to-reversed-bit-list (floor n 2) (+ -1 len)))))
- 
+
  (defthm mod-by-2-cases
    (implies (and (not (EQUAL 0 (MOD ADDR 2)))
                  (integerp addr))
-            (EQUAL (MOD ADDR 2) 
+            (EQUAL (MOD ADDR 2)
                    1))
    :hints (("Goal" :cases ((integerp addr))
             :in-theory (enable mod-by-2))))
@@ -220,7 +245,7 @@
  (defthm floor-non-negative-hack
    (implies (<= 0 x)
             (not (< (FLOOR x 2) 0))))
- 
+
  (defthm floor-hack
    (implies (< ADDR (* 2 (EXPT 2 (+ -1 DEPTH))))
             (< (FLOOR ADDR 2)
@@ -232,8 +257,8 @@
                    A))
    :hints (("Goal" :use (:instance mod-fl-2 (x a) (y 2)))))
 
- 
- 
+
+
  )
 
 
@@ -249,7 +274,7 @@
                           (lambda (x) (cons-onto-all item x))))
                         (a lst)
                         (x lst-of-lsts)
-                 
+
                         ))))
 
 
@@ -303,7 +328,7 @@
                                     MEM::|_ADDRESS-FIX|)
           :do-not '(generalize eliminate-destructors)
           :EXPAND ((MEM::|_MEMTREE-STORE| ADDR ELEM NIL DEPTH)))))
-        
+
 
 
 
@@ -334,7 +359,7 @@
                               MEM::|_ADDRESS-P|
                               MEM::|_MEMTREE-FIX|
     ;MEM::|_MEMTREE-P|
-                              MEM::|_ADDRESS-FIX|) 
+                              MEM::|_ADDRESS-FIX|)
                            (;LIST::EQUAL-CONS-CASES ;bzo why?
                             )))))
 
@@ -389,7 +414,7 @@
 
 ;bzo drop?
        (if (equal 1 (cadr mem)) ;log2 on 0 is weird, so we handle this case specially
-           (equal 1 (caddr mem))        
+           (equal 1 (caddr mem))
          (equal (mem::|_LOG2| (+ -1 (cadr mem)))
                 (caddr mem)))))
 
@@ -413,7 +438,7 @@
                    (lambda (x) (SET::FILTER<NOT-NATP-LESS-THAN-SIZE> x size))))
                  (a a)
                  (x x)
-                 
+
                  ))))
 
 (defthm FILTER<NATP-LESS-THAN-SIZE>-of-insert
@@ -433,9 +458,9 @@
                           (lambda (x) (SET::FILTER<NATP-LESS-THAN-SIZE> x size))))
                         (a a)
                         (x x)
-                 
+
                         ))))
-          
+
 (defthm domain-of-store-v-non-nil
   (implies (and ;(MEM::MEMORY-P mem)
 ;(WFR (CDDDR MEM))
@@ -451,7 +476,7 @@
                               MEM::|_ADDRESS-P|
                               MEM::SIZE
                               MEM::STORE MEM::|_STORE|
-                              MEM::|_FROM-MEM| 
+                              MEM::|_FROM-MEM|
                               MEM::|_BAD-MEMORY-P|
                               MEM::|_MEMORY-P|
                               MEM::|_MEMORY-MTREE|
@@ -461,8 +486,8 @@
                               MEM::|_MEMORY-FAST|
                               MEM::|_MEMORY-SIZE|
                               MEM::|_MEMORY-RECORD|
-                              
-                              ) 
+
+                              )
                            (SET::DOUBLE-CONTAINMENT-expensive
                             )))))
 
@@ -470,7 +495,7 @@
 
 ;for typed records gotta unwrap the domain...
 
-(in-theory (disable mem::domain)) ;move back               
+(in-theory (disable mem::domain)) ;move back
 
 ;bzo add to sets library
 (defthm delete-of-insert-diff
@@ -560,10 +585,10 @@
 ;;     (and (equal len (len (set::head x)))
 ;;          (all-have-len len (set::tail x)))))
 
-(defun len-equal (a len) 
+(defun len-equal (a len)
   (declare (xargs :guard t))
   (equal (len a) (rfix len)))
-  
+
 (set::quantify-predicate (len-equal a len))
 
 
@@ -680,7 +705,7 @@
   (implies (and (not (natp a))
                 (force (set::all<bit-listp> bit-lists)))
            (not (set::in a (convert-reversed-bit-lists-to-integers bit-lists))))
-  :hints (("Goal" :in-theory (enable SET::ALL<BIT-LISTP> 
+  :hints (("Goal" :in-theory (enable SET::ALL<BIT-LISTP>
                                      )
            :do-not '(generalize eliminate-destructors))))
 
@@ -772,7 +797,7 @@
    (NOT
     (SET::IN (CONVERT-REVERSED-BIT-LIST-TO-INTEGER a)
              (CONVERT-REVERSED-BIT-LISTS-TO-INTEGERS x))))
-  :hints (("Goal" :in-theory (enable set::in 
+  :hints (("Goal" :in-theory (enable set::in
                                      )
            :do-not '(generalize eliminate-destructors))))
 
@@ -871,7 +896,7 @@
 (defthm all-bit-listp-of-domain-aux
   (set::all<bit-listp> (mem::domain-aux tree depth))
     :hints (("Goal" :in-theory (enable mem::domain-aux acl2::equal-booleans-reducton))))
-;; LIST::EQUAL-OF-BOOLEANS-REWRITE 
+;; LIST::EQUAL-OF-BOOLEANS-REWRITE
 
 (defthm setp-of-domain-aux
   (set::setp (mem::domain-aux tree depth))
@@ -923,13 +948,13 @@
                                                 (CAR (CDR (CDR MEM))))))
            :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (set::delete-of-union-push-into-both
-                              
+
                             good-memoryp
                             MEM::DOMAIN
                             MEM::|_ADDRESS-P|
                             MEM::SIZE
                             MEM::STORE MEM::|_STORE|
-                            MEM::|_FROM-MEM| 
+                            MEM::|_FROM-MEM|
                             MEM::|_BAD-MEMORY-P|
                             MEM::|_MEMORY-P|
                             MEM::|_MEMORY-MTREE|
@@ -939,7 +964,7 @@
                             MEM::|_MEMORY-FAST|
                             MEM::|_MEMORY-SIZE|
                             MEM::|_MEMORY-RECORD|
-                            ) 
+                            )
                            (SET::DOUBLE-CONTAINMENT-expensive
                             SET::UNION-DELETE-y
                             SET::UNION-DELETE-x)))))
@@ -965,7 +990,7 @@
   (equal (mem::domain (mem::new size))
          nil)
   :hints (("Goal" :in-theory (enable MEM::DOMAIN-AUX
-                                     mem::new 
+                                     mem::new
                                      mem::domain
                                      mem::mem-tree-domain))))
 
@@ -1158,12 +1183,12 @@
                                MEM::|_MEMORY-P|
                                )))))
 
-(in-theory (disable MEM::MEM-TREE-DOMAIN))                             
+(in-theory (disable MEM::MEM-TREE-DOMAIN))
 
 (defthm mem-tree-domain-after-store
   (implies (good-memoryp mem)
            (equal (MEM::MEM-TREE-DOMAIN (CAAR (MEM::STORE A V MEM))
-                                        (CADDR ;(MEM::STORE A V 
+                                        (CADDR ;(MEM::STORE A V
                                          MEM
                                          ;)
                                          ))
@@ -1180,9 +1205,9 @@
 ;           :use (:instance domain-of-store) ;gross way to prove this...
            :cases ((SET::EMPTY (MEM::DOMAIN-AUX (CAR (CAR MEM))
                                                       (CAR (CDR (CDR MEM))))))
-           
+
            :in-theory (e/d (MEM::DOMAIN
-                            
+
                             MEM::MEM-TREE-DOMAIN
                             MEM::STORE
                             MEM::MEMORY-P
@@ -1199,8 +1224,8 @@
                             MEM::|_MEMORY-FIX|
                             GOOD-MEMORYP
                             MEM::|_MEMORY-RECORD|
-                            ) 
-                           (domain-of-store)))))            
+                            )
+                           (domain-of-store)))))
 
 
 (local (in-theory (disable SIGNED-BYTE-P)))
@@ -1245,4 +1270,3 @@
   (implies (acl2::good-memoryp mem)
            (acl2::good-memoryp (mem::clear addr mem)))
   :hints (("Goal" :in-theory (enable mem::clear))))
-

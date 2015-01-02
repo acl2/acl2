@@ -3164,7 +3164,7 @@
 ; might be:
 ; (warning$-cw ctx "The :REWRITE rule ~x0 loops forever." name).
 
-  `(let ((state-vars (default-state-vars #-hons nil #+hons :hons))
+  `(let ((state-vars (default-state-vars nil))
          (wrld nil))
      (warning$-cw1 ,ctx nil ,@args)))
 

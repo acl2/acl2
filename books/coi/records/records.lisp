@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 ;;This book is sort of a wrapper around misc/records.  It includes that book
@@ -40,7 +65,7 @@
 
 (defthm g-of-clr
   (equal (g a1 (clr a2 r))
-         (if (equal a1 a2) 
+         (if (equal a1 a2)
              nil
            (g a1 r)))
   :hints (("Goal" :in-theory (enable clr))))
@@ -85,7 +110,7 @@
                        (<< e a)
                        (<< e (caar r)))
                   (<< e (caar (s-aux a v r))))))
- 
+
 ; jcd - extracted this from later encapsulate and made it local to this book
 ; so that it won't be exported
 (local (defthm s-aux-preserves-rcdp
@@ -113,7 +138,7 @@
 
    (defthm s-aux-same-g-aux
      (implies (rcdp r)
-              (equal (s-aux a (g-aux a r) r) 
+              (equal (s-aux a (g-aux a r) r)
                      r)))
 
    (defthm s-aux-same-s-aux
@@ -143,7 +168,7 @@
      (implies (rcdp x)
               (equal (acl2->rcd (rcd->acl2 x))
                      x)))
- 
+
    (defthm acl2->rcd-returns-rcdp
      (rcdp (acl2->rcd x)))
 
@@ -186,7 +211,7 @@
      :hints (("goal" :do-not '(generalize eliminate-destructors)
               :in-theory (e/d (rcdp) (list::equal-cons-cases))
               :induct (s-g-induction a r1 r2))))
-  
+
    (defthm s-aux==r-aux
      (implies (and (syntaxp (not (equal v '(quote 0))))
                    (rcdp r1)
@@ -204,7 +229,7 @@
 
    (defthm worht
      (implies (rcdp y)
-              (equal (equal x (rcd->acl2 y)) 
+              (equal (equal x (rcd->acl2 y))
                      (equal (acl2->rcd x) y))))
 
    ))
@@ -240,7 +265,7 @@
    (defthm s-aux-non-nil-cannot-be-nil
      (implies (and v (rcdp r))
               (s-aux a v r)))
-   
+
    (defthm cdr-s-aux
      (equal (cdr (s-aux a v r))
             (cdr (cond ((or (endp r) (<< a (caar r)))
@@ -249,11 +274,11 @@
                         (if v (cons (cons a v) (cdr r))
                           (cdr r)))
                        (t (cons (car r) (s-aux a v (cdr r))))))))
-   
+
    (defun len-len-induction (r1 r2)
      (if (or (endp r1) (endp r2)) nil
        (cons (cons (car r1) (car r2)) (len-len-induction (cdr r1) (cdr r2)))))
-   
+
    (defthm s-aux-equal-differential
      (implies (and (rcdp rcd1)
                    (rcdp rcd2)
@@ -263,7 +288,7 @@
               (equal (equal (g-aux a rcd1)
                           (g-aux a rcd2)) nil))
      :hints (("goal" :induct (len-len-induction rcd1 rcd2))))
-   
+
    (defthm rcd->acl2-preserves-equality
      (implies
       (and
@@ -272,7 +297,7 @@
       (equal (equal (rcd->acl2 x) (rcd->acl2 y))
            (equal x y)))
      :hints (("goal" :in-theory (enable rcd->acl2))))
-   
+
    (defthm car-s-aux
      (equal (car (s-aux a v r))
             (car (cond ((or (endp r) (<< a (caar r)))
@@ -281,16 +306,16 @@
                         (if v (cons (cons a v) (cdr r))
                           (cdr r)))
                        (t (cons (car r) (s-aux a v (cdr r))))))))
-   
+
    (defthm s-aux-preserves-rcdp
      (implies
       (rcdp r)
       (rcdp (s-aux a v r))))
-   
+
    (defthm rcdp-acl2->rcd
      (rcdp (acl2->rcd x))
      :hints (("goal" :in-theory (enable acl2->rcd))))
-   
+
    (local
     (defthm acl2->rcd-preserves-equality
       (implies
@@ -298,7 +323,7 @@
        (equal (equal x y)
               (equal (acl2->rcd x) (acl2->rcd y))))
       :hints (("goal" :in-theory (enable acl2->rcd)))))
-   
+
    (defthm s-equal-differential-g
      (implies (and (equal (s a v rcd1)
                           (s a v rcd2))
@@ -306,13 +331,13 @@
               (equal (equal (g a rcd1) (g a rcd2))
                      nil))
      :hints (("goal" :in-theory (enable s g))))
- 
+
    (defthm s-equal-differential-v
      (implies (and (equal (s a v1 rcd1)
                           (s a v2 rcd2))
                    (not (equal rcd1 rcd2)))
               (equal (equal v1 v2) t)))
- 
+
    ))
 
 ;Part of this is hung on equal
@@ -338,7 +363,7 @@
                   (s a v rcd2)) nil))
    :hints (("goal" :in-theory nil
             :use ((:instance s-equal-differential (v1 v) (v2 v))))))
- 
+
  (defthm clr-differential
    (implies
     (equal (clr a r1) (clr a r2))
@@ -346,8 +371,8 @@
            (equal (g a r1)
                   (g a r2))))
    :hints (("goal" :in-theory '(clr g-s-differential s-equal-differential))))
- 
- 
+
+
  )
 
 ; jcd - made this local to this book, so it won't be exported
@@ -365,11 +390,11 @@
 (local (defthm iff-s-aux-cases
          (implies (rcdp r)
                   (iff (s-aux a v r)
-                       (not (or (and (ENDP R) 
+                       (not (or (and (ENDP R)
                                      (not V))
-                                (and (consp r) 
-                                     (not v) 
-                                     (EQUAL A (CAAR R)) 
+                                (and (consp r)
+                                     (not v)
+                                     (EQUAL A (CAAR R))
                                      (not (cdr r)))))))))
 
 ; jcd - change this to more simple if form
@@ -408,7 +433,7 @@
 
 ; jcd - made this local to this book, so it won't be exported
 ; ews - doh! I needed this (at least temporarily) to be non-local
-(local 
+(local
  (defthm wfkeyed-s-aux
          (implies (and (not (ifrp r))
                        (rcdp r)
@@ -433,19 +458,19 @@
   :rule-classes (:forward-chaining))
 
 ; jcd - added this rule (s-nil-nil-wfr)
-(encapsulate 
+(encapsulate
  nil
- 
+
  (defthm wfr-cancellations
    (implies (wfr r)
             (and (equal (rcd->acl2 r) r)
                  (equal (acl2->rcd r) r)))
    :hints(("Goal" :in-theory (enable rcd->acl2 acl2->rcd))))
- 
+
  (local (defthm s-aux-nil-nil-wfr
           (implies (rcdp r)
                    (wfr (s-aux nil nil r)))))
- 
+
  (local (defthm acl2->rcd-rcd
           (rcdp (acl2->rcd r))
           :hints(("Goal" :in-theory (enable acl2->rcd)))))
@@ -528,4 +553,3 @@
          (clr a r)))
 
 (theory-invariant (incompatible (:rewrite s-becomes-clr) (:definition clr)))
-

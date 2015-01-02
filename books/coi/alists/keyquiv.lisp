@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;; equiv.lisp
 ;; Primitive alist fixing and equivalence relations.
 
@@ -16,7 +41,7 @@
 (local (include-book "../util/iff"))
 
 ;; Interpreting Objects as Conses (consfix)
-;; 
+;;
 ;; We can think of a mapping between all ACL2 objects and conses, so that any
 ;; atom is mapped to (nil . nil) and any cons is mapped to itself.  The
 ;; function consfix applies this mapping for us, i.e., it interprets any ACL2
@@ -30,15 +55,15 @@
       x
     (cons nil nil)))
 
-(local 
- (encapsulate 
+(local
+ (encapsulate
   ()
   ;; Here we check to make sure that our type prescription rule is as strong as
   ;; we think it is.  Don't remove this event even though it has no effect on
   ;; the logical world.
   (local (defthm test-type-prescription-of-consfix
            (consp (consfix x))
-           :hints(("Goal" 
+           :hints(("Goal"
                    :in-theory (union-theories '((:type-prescription consfix))
                                               (theory 'minimal-theory))))))))
 
@@ -50,7 +75,7 @@
 
 (defthm consfix-when-consp
   (implies (consp x)
-           (equal (consfix x) 
+           (equal (consfix x)
                   x))
   :hints(("Goal" :in-theory (enable consfix))))
 
@@ -59,7 +84,7 @@
          (consp x))
   :hints(("Goal" :in-theory (enable consfix))))
 
-(defthm consfix-of-cons 
+(defthm consfix-of-cons
   (equal (consfix (cons a b))
          (cons a b)))
 
@@ -76,8 +101,8 @@
 ;; (defthm consfix-of-cdr
 ;;   (equal (cdr (consfix a))
 ;;          (cdr a)))
-         
-         
+
+
 
 
 
@@ -272,14 +297,14 @@
    ((assocequiv-list) => *)
    ((assocequiv-lhs) => *)
    ((assocequiv-rhs) => *))
-  
+
   (local (defun assocequiv-hyps () nil))
   (local (defun assocequiv-lhs  () nil))
   (local (defun assocequiv-rhs  () nil))
   (local (defun assocequiv-list () nil))
-  
+
   (defthm subdomain-multiplicity-constraint
-    (implies 
+    (implies
      (and
       (assocequiv-hyps)
       (memberp arbitrary-element (assocequiv-list)))
@@ -295,22 +320,22 @@
 				  (assoc (car list) y)))
                  (car list))
                 (t (badguy (cdr list) x y)))))
- 
+
  (local (defthm badguy-witness
           (implies (not (assoc-equiv list x y))
                    (not (cons-equiv (assoc (badguy list x y) x)
 				    (assoc (badguy list x y) y))))))
- 
+
  (local (defthm badguy-witness-2
           (implies (not (memberp (badguy list x y) list))
                    (assoc-equiv list x y))))
- 
+
  (defthm assocequiv-by-multiplicity-driver
    (implies (assocequiv-hyps)
             (assoc-equiv (assocequiv-list) (assocequiv-lhs) (assocequiv-rhs)))
    :rule-classes nil
-   :hints(("Goal" 
-           :use ((:instance 
+   :hints(("Goal"
+           :use ((:instance
                   subdomain-multiplicity-constraint
                   (arbitrary-element (badguy (assocequiv-list) (assocequiv-lhs) (assocequiv-rhs))))))))
 
@@ -383,7 +408,7 @@
 	 (memberp a (keys x)))
 	(equal (car c) a))
        :rule-classes (:forward-chaining))
-     
+
      (defthm memberp-implies-memberp-car-keys
        (implies
 	(and
@@ -391,18 +416,18 @@
 	 (equal (car c) a))
 	(memberp a (keys y)))
        :rule-classes (:forward-chaining))
-     
+
      (defthm memberp-keys-remove-implies-memberp-keys
        (implies
 	(memberp a (keys (remove c x)))
 	(memberp a (keys x)))
        :rule-classes (:forward-chaining))
-     
+
      (encapsulate
 	 ()
-       
+
        (local (include-book "../lists/remove-induction"))
-       
+
        (defthm keys-remove
 	 (implies
 	  (and
@@ -410,7 +435,7 @@
 	   (memberp a (keys x)))
 	  (memberp a (keys y)))
 	 :hints (("Goal" :induct (list::remove-induction-2 x y))))
-       
+
        )))
 
 
@@ -461,9 +486,9 @@
   (local (defun setequiv-hyps () nil))
   (local (defun setequiv-lhs () nil))
   (local (defun setequiv-rhs () nil))
-  
+
   (defthm setequiv-multiplicity-constraint
-    (implies 
+    (implies
      (setequiv-hyps)
      (equal (memberp arbitrary-element (setequiv-lhs))
 	    (memberp arbitrary-element (setequiv-rhs))))
@@ -479,13 +504,13 @@
   (((keyquiv-hyps) => *)
    ((keyquiv-lhs) => *)
    ((keyquiv-rhs) => *))
-  
+
   (local (defun keyquiv-hyps () nil))
   (local (defun keyquiv-lhs  () nil))
   (local (defun keyquiv-rhs  () nil))
-  
+
   (defthm keyquiv-subdomain-multiplicity-constraint
-    (implies 
+    (implies
      (keyquiv-hyps)
      (and (cons-equiv (assoc arbitrary-element (keyquiv-lhs))
 		      (assoc arbitrary-element (keyquiv-rhs)))
@@ -521,7 +546,7 @@
 		     (implies (keyquiv-hyps)
 			      (keyquiv (keyquiv-lhs) (keyquiv-rhs)))
 		     :rule-classes (:pick-a-point :driver keyquiv-by-multiplicity-driver))
- 
+
  )
 
 (defun setv (a v alist)
@@ -600,7 +625,7 @@
    (not (equal a b))
    (keyquiv (clr a (setv b v r))
 	    (setv b v (clr a r)))))
-	  
+
 (defthm clr-of-setv
   (keyquiv (clr a (setv a v r))
 	   (clr a r)))
@@ -645,13 +670,13 @@
 (defthm acl2-count-getv-<=
   (<= (acl2-count (alist::getv key alist1)) (acl2-count alist1))
   :rule-classes (:linear))
-   
+
 (defthm acl2-count-getv-<
   (implies
    (memberp key (alist::keys alist1))
    (< (acl2-count (alist::getv key alist1)) (acl2-count alist1)))
   :rule-classes (:linear))
-   
+
 (in-theory (disable setv getv clr)) ;;  keys))
 
 ;; This should be true in general
@@ -679,7 +704,7 @@
     (equal (assoc-equiv (list::remove-list a b) x y)
 	   (assoc-equiv b x y))))
  )
- 
+
 (defthm keyquiv-from-setequiv-assoc-equiv
   (implies
    (and
@@ -716,4 +741,3 @@
 	  (and stable-under-simplificationp
 	       '(:do-not-induct t :cases ((list::memberp arbitrary-element list)))))
   :rule-classes nil)
-

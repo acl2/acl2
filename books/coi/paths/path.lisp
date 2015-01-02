@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "PATH")
 (include-book "../lists/repeat")
 (include-book "../bags/top")
@@ -202,7 +227,7 @@
                   (dominates p1 p2)
                   )))
 
-(theory-invariant (incompatible (:rewrite dominates-of-cdr-and-cdr-one) 
+(theory-invariant (incompatible (:rewrite dominates-of-cdr-and-cdr-one)
                                 (:definition dominates)))
 
 
@@ -241,11 +266,11 @@
   (implies (not (diverges-from-all (car paths2) paths1))
            (equal (all-diverge-from-all paths1 paths2)
                   (not (consp paths2))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use (:instance
                  ;; jcd - unusually long name...
-                 not-all-diverge-from-all-when-not-diverges-from-all-of-car 
-                 (paths1 paths2) 
+                 not-all-diverge-from-all-when-not-diverges-from-all-of-car
+                 (paths1 paths2)
                  (paths2 paths1))
            :in-theory (disable not-all-diverge-from-all-when-not-diverges-from-all-of-car))))
 
@@ -255,7 +280,7 @@
 
 
 
-;; jcd bzo - lots of the rules that follow are probably good candidates to 
+;; jcd bzo - lots of the rules that follow are probably good candidates to
 ;; either remove or more fully integrate into diverge.lisp.
 
 
@@ -275,7 +300,7 @@
              (and (not  (equal b x1))
                   (not  (equal a x1))
                   (bag::unique-memberps a b x2))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :cases ((equal a b))
            :in-theory (enable bag::unique-memberps))))
 
@@ -334,8 +359,8 @@
   (implies (and (list::memberp a y)
                 (all-diverge y))
            (diverges-from-all a (bag::remove-1 a y))))
-;;   :hints (("Goal" :in-theory (enable diverges-from-all 
-;;                                      bag::remove-1 
+;;   :hints (("Goal" :in-theory (enable diverges-from-all
+;;                                      bag::remove-1
 ;;                                      list::memberp))))
 
 ;; jcd this seems redundant...
@@ -358,7 +383,7 @@
 
 
 ;; jcd - added this lemma, which seems to be good for doing proofs by
-;; multiplicity, etc.  
+;; multiplicity, etc.
 ;; bzo move to diverge.lisp
 (defthm count-of-member-when-all-diverge
   (implies (all-diverge bag)
@@ -374,12 +399,12 @@
                 (bag::subbagp x bag)
                 (all-diverge bag))
            (diverges-from-all a (bag::remove-bag x bag))))
-;;   :hints (("Goal" :in-theory (enable diverges-from-all 
-;;                                      all-diverge 
+;;   :hints (("Goal" :in-theory (enable diverges-from-all
+;;                                      all-diverge
 ;;                                      bag::SUBBAGP
 ;;                                      bag::REMOVE-BAG))))
-                                     
- 
+
+
 (defthm all-diverge-from-all-when-unique-subbagps-and-all-diverge
   (implies (and (all-diverge bag)
                 (bag::unique-subbagps x y bag))
@@ -432,7 +457,7 @@
            (diverge x y))
   :hints (("Goal" :in-theory (enable list::firstn))))
 
-;; jcd good rule?  
+;; jcd good rule?
 (defthm not-dominates-from-<-of-len-and-len
   (implies (< (len y) (len x))
            (not (dominates x y))))
@@ -481,18 +506,18 @@
            (dominates x y))
   :hints (("Goal" :do-not '(generalize eliminate-destructors preprocess)
            :in-theory (e/d (acl2::cons-equal-rewrite
-                              list::fix dominates list::firstn) 
+                              list::fix dominates list::firstn)
                            (list::EQUAL-OF-FIXES)))))
 
 (defthm diverge-of-firstn-hack
   (implies (and (diverge x y)
                 (<= (len x) (len y)))
            (diverge x (list::firstn (len x) y)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :cases ((< (LEN X) (LEN Y)))
-           :in-theory (enable dominates-when-lens-equal 
+           :in-theory (enable dominates-when-lens-equal
                               dominates-from-equiv-hack
-                              list::firstn 
+                              list::firstn
                               diverge))))
 
 ;make this better?
@@ -501,10 +526,10 @@
            (diverge (append x x2)
                     (append y y2)))
   :otf-flg t
-  :hints (("Goal" 
-           :use (:instance diverge-when-firstns-diverge 
-                           (n (min (len x) (len y))) 
-                           (x (append x x2)) 
+  :hints (("Goal"
+           :use (:instance diverge-when-firstns-diverge
+                           (n (min (len x) (len y)))
+                           (x (append x x2))
                            (y (append y y2))))))
 
 
@@ -590,7 +615,7 @@
 (in-theory (enable g-of-s-redux)) ;add this to records?
 
 (local (in-theory (enable list::memberp-of-cons)))
-(local (in-theory (enable bag::unique-of-cons)))         
+(local (in-theory (enable bag::unique-of-cons)))
 
 
 ;; jcd - removed this, it's a duplicate of the rule in :lists
@@ -617,12 +642,12 @@
 
 ;;
 ;; append-onto-lists (rename? append-onto-each?)
-;; 
+;;
 
 ;Append VAL onto each member of LISTS and return the result.
 (defund append-onto-lists (val lists)
   (if (endp lists)
-      nil 
+      nil
     (cons (append val (car lists))
           (append-onto-lists val (cdr lists)))))
 
@@ -662,7 +687,7 @@
   :hints (("Goal" :in-theory (enable append-onto-lists))))
 
 ;; bzo rename
-(defthm not-strictly-dominated-by-some-of-append-onto-lists-better 
+(defthm not-strictly-dominated-by-some-of-append-onto-lists-better
   (implies (not (strictly-dominates p2 p))
            (not (strictly-dominated-by-some p (append-onto-lists p2 blah))))
   :hints (("Goal" :in-theory (enable append-onto-lists))))
@@ -704,7 +729,7 @@
     (if (equal key (car keys))
         (car vals)
       (assoc-2 key (cdr keys) (cdr vals)))))
-      
+
 
 ; bzo move to alists
 ;possible efficiency change: don't keep calling keys on alist2!
@@ -718,11 +743,11 @@
       (compose-alists-aux (cdr alist1) alist2))))
 
 (defun compose-alists (alist1 alist2)
-  (compose-alists-aux (remove-shadowed-pairs alist1) 
+  (compose-alists-aux (remove-shadowed-pairs alist1)
                       (remove-shadowed-pairs alist2)))
 
-;(compose-alists '((1 . a) (2 . b) (3 . c) (4 . d)) 
-;                '((blah . hah) (b . bb) (d . dd))) 
+;(compose-alists '((1 . a) (2 . b) (3 . c) (4 . d))
+;                '((blah . hah) (b . bb) (d . dd)))
 ; '((2 . bb) (4 . dd))
 
 (defthm not-in-keys-of-compose-alists-aux
@@ -736,16 +761,16 @@
 (defthm unique-of-keys-of-compose-alists-aux
   (implies (bag::unique (keys a1))
            (bag::unique (keys (compose-alists-aux a1 a2)))))
-          
+
 (defthm unique-of-keys-of-compose-alists
   (bag::unique (keys (compose-alists a1 a2))))
 
 
-;(compose-alists '((1 . a) (2 . b) (2 . d) (3 . c) (4 . d)) 
+;(compose-alists '((1 . a) (2 . b) (2 . d) (3 . c) (4 . d))
 ;                '((blah . hah) (b . bb) (d . dd)))
 ;  '((2 . bb) (4 . dd))
 
-          
+
 ; bzo move to alists
 ;removes pairs from alist1 whose keys are also in alist2
 (defun alist-diff (alist1 alist2)
@@ -820,17 +845,17 @@
            (equal (s key val (s-list keys vals r))
                   (s-list keys vals (s key val r))))
   :hints (("subgoal *1/2" :in-theory (e/d (s-list) (S-DIFF-S))
-           :use ((:instance S-DIFF-S 
-                            (acl2::a key) 
-                            (acl2::x 0) 
-                            (acl2::b  (CAR KEYS)) 
-                            (acl2::y (CAR VALS)) 
+           :use ((:instance S-DIFF-S
+                            (acl2::a key)
+                            (acl2::x 0)
+                            (acl2::b  (CAR KEYS))
+                            (acl2::y (CAR VALS))
                             (acl2::r (S-LIST (CDR KEYS) (CDR VALS) R)))
-                 (:instance S-DIFF-S 
-                            (acl2::a key) 
-                            (acl2::x 0) 
-                            (acl2::b  (CAR KEYS)) 
-                            (acl2::y (CAR VALS)) 
+                 (:instance S-DIFF-S
+                            (acl2::a key)
+                            (acl2::x 0)
+                            (acl2::b  (CAR KEYS))
+                            (acl2::y (CAR VALS))
                             (acl2::r (S-LIST (CDR KEYS) (CDR VALS) (S KEY VAL R))))))
           ("Goal" :in-theory (enable s-list))))
 
@@ -840,14 +865,14 @@
                   (s key val (s-list keys vals r))))
   :hints (("Goal" :use (:instance s-of-s-list-not-memberp-case))))
 
-(theory-invariant (incompatible (:rewrite s-of-s-list-not-memberp-case) 
+(theory-invariant (incompatible (:rewrite s-of-s-list-not-memberp-case)
                                 (:rewrite s-list-of-s-not-memberp-case)))
 
 (defthm s-list-of-s-memberp-case
   (implies (list::memberp key keys)
            (equal (s-list keys vals (s key val r))
                   (s-list keys vals r)))
-  :hints (("Goal" :in-theory (e/d (s-list 
+  :hints (("Goal" :in-theory (e/d (s-list
                                    s-of-s-list-not-memberp-case)
                                   (s-list-of-s-not-memberp-case)))))
 
@@ -860,7 +885,7 @@
   :hints (("Goal" :in-theory (enable))))
 
 ;;
-;; G-LIST 
+;; G-LIST
 ;;
 
 (defund g-list (list r)
@@ -913,7 +938,7 @@
 
 (defthm g-list-of-remove-1-helper
   (implies (equal (g-list lst st1) (g-list lst st2))
-           (equal (equal (g-list (bag::remove-1 val lst) st1) 
+           (equal (equal (g-list (bag::remove-1 val lst) st1)
                          (g-list (bag::remove-1 val lst) st2))
                   t))
   :hints (("Goal" :in-theory (enable g-list
@@ -1018,7 +1043,7 @@
                   (copy alist r1 r2)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (disable copy)
-           :use (:instance copy-of-s-1-non-memberp-case-helper 
+           :use (:instance copy-of-s-1-non-memberp-case-helper
                            (alist (remove-shadowed-pairs alist))))))
 
 ;; jcd - added this
@@ -1035,7 +1060,7 @@
           (if (consp keys)
               (my-induct (cdr keys) (1- n))
             (list keys n))))
- 
+
  (defthm assoc-2-of-repeat-of-when-memberp
    (implies (<= (len keys) (nfix n))
             (equal (assoc-2 a keys (repeat n v))
@@ -1050,12 +1075,12 @@
           (implies (and (bag::unique (keys alist))
                         (list::memberp a (range alist)))
                    (equal (copy alist (s a v r1) r2)
-                          (s-list (pre-image a alist) 
-                                  (repeat (num-keys-for a alist) v) 
+                          (s-list (pre-image a alist)
+                                  (repeat (num-keys-for a alist) v)
                                   (copy alist r1 r2))))
           :hints (("Goal" :in-theory (enable copy s-list)))))
 
- 
+
  ;; Since one spot in r1 can provide a value for many spots in r2, setting A in
  ;; r1 may require us to set many things in r2.  ( if many spots in r2 are
  ;; getting the value from spot A in r1).
@@ -1063,19 +1088,19 @@
  (defthm copy-of-s-1-memberp-case
    (implies (list::memberp a (range alist))
             (equal (copy alist (s a v r1) r2)
-                   (s-list (pre-image a alist) 
-                           (repeat (num-keys-for a alist) v) 
+                   (s-list (pre-image a alist)
+                           (repeat (num-keys-for a alist) v)
                            (copy alist r1 r2))))
-   :hints (("Goal" 
+   :hints (("Goal"
             :in-theory (disable copy-of-s-1-memberp-case-helper)
-            :use (:instance copy-of-s-1-memberp-case-helper 
+            :use (:instance copy-of-s-1-memberp-case-helper
                             (alist (remove-shadowed-pairs alist)))))))
 
 (defthm copy-of-s-1-memberp-both
   (equal (copy alist (s a v r1) r2)
          (if (list::memberp a (range alist))
-             (s-list (pre-image a alist) 
-                     (repeat (num-keys-for a alist) v) 
+             (s-list (pre-image a alist)
+                     (repeat (num-keys-for a alist) v)
                      (copy alist r1 r2))
            (copy alist r1 r2))))
 
@@ -1098,8 +1123,8 @@
   (implies (not (list::memberp a (keys alist))) ;say domain instead of keys?
            (equal (copy alist r1 (s a v r2))
                   (s a v (copy alist r1 r2))))
-  :hints (("Goal" 
-           :in-theory (e/d (copy keys s-of-copy-non-memberp-case) 
+  :hints (("Goal"
+           :in-theory (e/d (copy keys s-of-copy-non-memberp-case)
                            (copy-of-s-2-memberp-case)))))
 
 (defthm copy-of-s-2-both
@@ -1130,7 +1155,7 @@
   ;; the chance to fire here.  Perhaps not-memberp-of-car-in-cdr-when-unique
   ;; should use a free variable instead?  Would that be too expensive?
   (implies (bag::unique (strip-cars x))
-           (not (memberp (caar x) 
+           (not (memberp (caar x)
                          (cdr (strip-cars x))))))
 
 (encapsulate
@@ -1141,15 +1166,15 @@
                         (bag::unique (keys a21)))
                    (equal (copy a32 (copy a21 r1 r2) r3)
                           (copy (compose-alists-aux a32 a21) r1 (copy a32 r2 r3))))
-          :hints (("Goal" 
+          :hints (("Goal"
                    :in-theory (enable copy)))))
 
  (defthm copy-associative
    (equal (copy a32 (copy a21 r1 r2) r3)
           (copy (compose-alists a32 a21) r1 (copy a32 r2 r3)))
    :hints (("Goal"
-            :use (:instance  copy-associative-helper 
-                             (a21 (remove-shadowed-pairs a21))  
+            :use (:instance  copy-associative-helper
+                             (a21 (remove-shadowed-pairs a21))
                              (a32 (remove-shadowed-pairs a32)))
             :in-theory (disable copy-associative-helper)))))
 
@@ -1301,13 +1326,13 @@
 ;;            :in-theory (enable dominates append nthcdr))))
 
 ;; jcd - copy of dominates rule
-;; (defcong list::equiv equal (dominates p1 p2) 1 
-;;   :hints (("Goal" :in-theory (e/d (list::equiv dominates) 
+;; (defcong list::equiv equal (dominates p1 p2) 1
+;;   :hints (("Goal" :in-theory (e/d (list::equiv dominates)
 ;;                                   (list::EQUAL-OF-FIXES)))))
 
 ;; jcd - copy of domiantes rule
-;; (defcong list::equiv equal (dominates p1 p2) 2 
-;;   :hints (("Goal" :in-theory (e/d (list::equiv dominates) 
+;; (defcong list::equiv equal (dominates p1 p2) 2
+;;   :hints (("Goal" :in-theory (e/d (list::equiv dominates)
 ;;                                   (list::EQUAL-OF-FIXES)))))
 
 ;; jcd - copy of dominates rule len-when-dominated
@@ -1350,7 +1375,7 @@
 ;;   :hints (("Goal" :in-theory (enable dominates))))
 
 ;; jcd - moved to dominates.lisp
-;; (encapsulate 
+;; (encapsulate
 ;;  ()
 ;;  (local (defthm dominates-of-append-and-append-forward
 ;;           (implies (dominates (append x z) (append x y))
@@ -1390,7 +1415,7 @@
 
 ;; bzo get rid of this, see dominates.lisp:all-conses
 ;; (defun contains-a-non-consp (list)
-;;   (declare (type t list))  
+;;   (declare (type t list))
 ;;   (if (consp list)
 ;;       (if (not (consp (car list)))
 ;;           t
@@ -1415,7 +1440,7 @@
 ;; jcd - copy of dominates rule
 ;; (defthm dominated-by-some-of-non-consp-one
 ;;   (implies (not (consp p))
-;;            (equal (dominated-by-some p paths) 
+;;            (equal (dominated-by-some p paths)
 ;;                   (contains-a-non-consp paths)))
 ;;   :hints (("Goal" :in-theory (enable dominated-by-some))))
 
@@ -1426,9 +1451,9 @@
 ;;                   nil))
 ;;   :hints (("Goal" :in-theory (enable dominated-by-some))))
 
-;; jcd - bzo remove this 
+;; jcd - bzo remove this
 ;; (defthm dominated-by-some-of-nil-one
-;;   (equal (dominated-by-some nil paths) 
+;;   (equal (dominated-by-some nil paths)
 ;;          (contains-a-non-consp paths)))
 
 ;; jcd - bzo remove this
@@ -1612,11 +1637,11 @@
 ;;   :hints (("Goal" :in-theory (enable diverge))))
 
 ;; jcd - copy in diverge.lisp
-;; (defcong list::equiv equal (diverge p1 p2) 1 
+;; (defcong list::equiv equal (diverge p1 p2) 1
 ;;   :hints (("Goal" :in-theory (e/d (diverge) ()))))
 
 ;; jcd - copy in diverge.lisp
-;; (defcong list::equiv equal (diverge p1 p2) 2 
+;; (defcong list::equiv equal (diverge p1 p2) 2
 ;;   :hints (("Goal" :in-theory (e/d (diverge) ()))))
 
 
@@ -1891,19 +1916,19 @@
 (defun remove-shadowed-pairs2 (alist)
   (if (endp alist)
       nil
-    (cons (car alist) 
-          (remove-shadowed-pairs2 
+    (cons (car alist)
+          (remove-shadowed-pairs2
            (remove-pairs-dominated-by (caar alist) (cdr alist))))))
 
 (defthm remove-shadowed-pairs2-of-cons
   (equal (remove-shadowed-pairs2 (cons pair alist))
-         (cons pair (remove-shadowed-pairs2 
+         (cons pair (remove-shadowed-pairs2
                      (remove-pairs-dominated-by (car pair) alist)))))
 
 (defthm remove-shadowed-pairs2-of-remove-pairs-dominated-by
   (equal (remove-shadowed-pairs2 (remove-pairs-dominated-by p alist))
          (remove-pairs-dominated-by p (remove-shadowed-pairs2 alist))))
-        
+
 (defthm remove-shadowed-pairs2-idempotent
   (equal (remove-shadowed-pairs2 (remove-shadowed-pairs2 alist))
          (remove-shadowed-pairs2 alist)))
@@ -1977,8 +2002,8 @@
                  (gp p r))
           :hints (("Goal" :in-theory (enable gp)))))
 
- (defcong list::equiv equal (gp p r) 1 
-   :hints (("Goal" 
+ (defcong list::equiv equal (gp p r) 1
+   :hints (("Goal"
             :in-theory (disable gp-of-list-fix)
             :use ((:instance gp-of-list-fix (p p))
                   (:instance gp-of-list-fix (p list::p-equiv)))))))
@@ -2007,8 +2032,8 @@
 (defund sp (path v r)
   (declare (type t path v r))
   (if (consp path)
-      (s (car path) 
-         (sp (cdr path) v (g (car path) r)) 
+      (s (car path)
+         (sp (cdr path) v (g (car path) r))
          r)
     v))
 
@@ -2065,7 +2090,7 @@
                       (gp p r)
                     (s k val r))))
            :hints (("Goal" :in-theory (enable gp))))
-                 
+
 (defthm sp-of-s-diff
   (implies (not (equal k (car p)))
            (equal (sp p v (s k val r))
@@ -2113,7 +2138,7 @@
              (if (equal k (car p))
                  (s k (sp (cdr p) v val) r)
                (s k val (sp p v r)))
-           v)))        
+           v)))
 
 (defthm sp-equal-rewrite
   (implies (syntaxp (not (equal v ''nil)))
@@ -2138,10 +2163,10 @@
 ;;   (if (or (endp x) (endp y))
 ;;       (cons x y)
 ;;     (2-cdrs-induct (cdr x) (cdr y))))
-  
+
 ;; bzo rename this to something about paths, make it local, do something?
 (defun 2-cdrs-induct-and-more (x y r)
-  (if (or (endp x) 
+  (if (or (endp x)
           (endp y))
       (list x y r)
     (2-cdrs-induct-and-more (cdr x) (cdr y) (G (CAR x) R))))
@@ -2157,10 +2182,10 @@
   (implies (diverge p1 p2)
            (equal (gp p1 (sp p2 v r))
                   (gp p1 r)))
-  :hints (("Goal" 
-           :in-theory (enable dominates 
-                              diverge   
-                              gp))))    
+  :hints (("Goal"
+           :in-theory (enable dominates
+                              diverge
+                              gp))))
 
 
 
@@ -2170,7 +2195,7 @@
   (implies (dominates p2 p1)
            (equal (gp p1 (sp p2 v r))
                   (gp (nthcdr (len p2) p1) v)))
-  :hints (("Goal" :in-theory (enable dominates 
+  :hints (("Goal" :in-theory (enable dominates
                                      sp))))
 
 
@@ -2179,7 +2204,7 @@
   (implies (dominates p1 p2)
            (equal (gp p1 (sp p2 v r))
                   (sp (nthcdr (len p1) p2) v (gp p1 r))))
-  :hints (("Goal" :in-theory (enable dominates 
+  :hints (("Goal" :in-theory (enable dominates
                                      gp))))
 
 ;handles all the cases.
@@ -2232,7 +2257,7 @@
            (equal (sp p1 v1 (sp p2 v2 r))
                   (sp p2 v2 (sp p1 v1 r))))
   :rule-classes ((:rewrite :loop-stopper ((p1 p2))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :induct (2-cdrs-induct-and-more p1 p2 r)
            :in-theory (enable sp))))
 
@@ -2243,9 +2268,9 @@
   :hints (("Goal" :in-theory (enable sp))))
 
 ;bzo maybe this is the wrong thing to disable?
-(in-theory (disable sp-of-sp-one)) 
+(in-theory (disable sp-of-sp-one))
 
-(theory-invariant (incompatible (:rewrite SP-OF-SP-DOMINATING-CASE-TWO) 
+(theory-invariant (incompatible (:rewrite SP-OF-SP-DOMINATING-CASE-TWO)
                                 (:rewrite SP-OF-SP-ONE)))
 
 (defthm sp-of-sp
@@ -2265,9 +2290,9 @@
                  (sp p v r))
           :hints (("Goal" :in-theory (enable sp)))))
 
- (defcong list::equiv equal (sp p v r) 1 
-   :hints (("Goal" 
-            :in-theory (disable sp-equal-rewrite 
+ (defcong list::equiv equal (sp p v r) 1
+   :hints (("Goal"
+            :in-theory (disable sp-equal-rewrite
                                 sp-of-list-fix)
             :use ((:instance sp-of-list-fix (p p))
                   (:instance sp-of-list-fix (p list::p-equiv))))))
@@ -2280,7 +2305,7 @@
                 (dominates big small))
            (equal (equal (sp big v r1) (sp big v r2))
                   t))
-  :hints (("Goal" :in-theory (enable dominates 
+  :hints (("Goal" :in-theory (enable dominates
                                      sp))))
 
 
@@ -2296,7 +2321,7 @@
 ;;     (cons (cons (nthcdr n (caar alist)) (cdar alist))
 ;;           (nthcdr-from-keys n (cdr alist)))))
 
-;; (defthm nthcdr-from-keys-of-0 
+;; (defthm nthcdr-from-keys-of-0
 ;;   (equal (nthcdr-from-keys 0 alist)
 ;;          (alist::alistfix alist))
 ;;   :hints (("Goal" :in-theory (enable nthcdr-from-keys))))
@@ -2455,7 +2480,7 @@
   (equal (mp alist r1 (g k r2))
          (g k (mp (cons-onto-keys k alist) r1 r2))))
 
-;might loop?            
+;might loop?
 (defthm mp-of-gp
   (equal (mp alist r1 (gp p r2))
          (gp p (mp (append-onto-keys p alist) r1 r2))))
@@ -2463,8 +2488,8 @@
 (defthm sp-of-mp-of-remove-pairs-dominated-by
   (implies (dominates p1 p2)
            (equal (sp p1 val (mp (remove-pairs-dominated-by p2 alist) r1 r2))
-                  (sp p1 val (mp alist r1 r2)))) 
-  
+                  (sp p1 val (mp alist r1 r2))))
+
   :hints (("subgoal *1/2" :cases ((dominates (caar alist) p1)
                                   (dominates p1 (caar alist))))))
 
@@ -2562,7 +2587,7 @@
            (equal (gp p (mp alist r1 r2))
                   ;could make a single call to gp?
                   (gp (nthcdr (len (first-dominator p (keys alist))) p)
-                      (gp (cdr (assoc (first-dominator p (keys alist)) alist)) 
+                      (gp (cdr (assoc (first-dominator p (keys alist)) alist))
                           r1)))))
 
 
@@ -2582,7 +2607,7 @@
 ;;            :in-theory (e/d (keep-but-chop-strictly-dominated-pairs
 ;;                             diverge
 ;;                             all-diverge
-;;                             ) 
+;;                             )
 ;;                            ((:induction KEEP-BUT-CHOP-STRICTLY-DOMINATED-PAIRS)
 ;;                             MP-OF-GP
 ;;                             ))
@@ -2600,7 +2625,7 @@
 ;; ;:induct (MP ALIST R1 R2)
 ;;           :in-theory (e/d (keep-but-chop-strictly-dominated-pairs
 ;;                              diverge
-;;                              ) 
+;;                              )
 ;;                           ((:induction KEEP-BUT-CHOP-STRICTLY-DOMINATED-PAIRS)
 ;;                            MP-OF-GP
 ;;                            assoc
@@ -2621,7 +2646,7 @@
     (if (dominates (caar alist) p)
         nil ; we stop looking, since (car alist) dominates any relevant pairs we might find later on
       (if (dominates p (caar alist))
-          (cons (cons (nthcdr (len p) (caar alist)) (cdar alist)) 
+          (cons (cons (nthcdr (len p) (caar alist)) (cdar alist))
                 (keep-but-chop-relevant-pairs p (cdr alist)))
         (keep-but-chop-relevant-pairs p (cdr alist))))))
 
@@ -2654,14 +2679,14 @@
 ;bzo get rid of the "all-diverge"
 (defthm gp-of-mp-all-diverge
   (implies (all-diverge (keys alist))
-           (equal (gp p (mp alist r1 r2)) 
+           (equal (gp p (mp alist r1 r2))
                   (if (diverges-from-all p (keys alist))
                       (gp p r2)
                     (if (dominated-by-some p (keys alist))
                         (gp (nthcdr (len (first-dominator p (keys alist))) p)
                             (gp (cdr (assoc (first-dominator p (keys alist)) alist)) r1))
                       (mp (keep-but-chop-relevant-pairs p alist) r1 (gp p r2)))))))
-           
+
 
 
 
@@ -2670,7 +2695,7 @@
 ;2HARDCASE
 ;this comment is out of date!
 ; This is the case where one or more of the keys in ALIST dominate P.  So the result of calling gp on mp
-;doesn't depend on R2 at all (note that R2 does not appear in the conclusion).  
+;doesn't depend on R2 at all (note that R2 does not appear in the conclusion).
 
 ;We know at least one key in ALIST dominates P. Biggest-dominator finds the biggest such key.  Call it D.  We look
 ;up (with assoc) D in ALIST to find the spot in R1 associated with it.  Then we read the value of that spot in R1.
@@ -2682,23 +2707,23 @@
 (defthm gp-of-mp-when-dominated-by-some
   (implies (dominated-by-some p (keys alist))
            (equal (gp p (mp alist r1 r2))
-                  (mp (keep-but-chop-relevant-pairs p alist)  
-                           r1 
+                  (mp (keep-but-chop-relevant-pairs p alist)
+                           r1
                            (gp (nthcdr (len (first-dominator p (keys alist))) p)
                                (gp (cdr (assoc (first-dominator p (keys alist)) alist)) r1))
                            )))
   :hints (("Goal" :in-theory (disable mp-of-gp))))
 
 ;prove rules to simplify the RHS when we do know that all keys in ALIST diverge?
-;MAIN LEMMA so far             
+;MAIN LEMMA so far
 ;no hypotheses!
 (defthm gp-of-mp
-  (equal (gp p (mp alist r1 r2)) 
+  (equal (gp p (mp alist r1 r2))
          (if (diverges-from-all p (keys alist))
              (gp p r2)
            (if (dominated-by-some p (keys alist))
-               (mp (keep-but-chop-relevant-pairs p alist)  
-                        r1 
+               (mp (keep-but-chop-relevant-pairs p alist)
+                        r1
                         (gp (nthcdr (len (first-dominator p (keys alist))) p)
                             (gp (cdr (assoc (first-dominator p (keys alist)) alist))
                                 r1)))
@@ -2711,17 +2736,17 @@
          (mp alist1 r1 (mp alist2 r1 r2)))
   :hints (("Goal" :in-theory (e/d ((:induction binary-append)
                                    ) ( ;efficiency:
-                                   KEEP-BUT-CHOP-RELEVANT-PAIRS 
+                                   KEEP-BUT-CHOP-RELEVANT-PAIRS
                                    ALL-DOMINATED-BY-SOME
                                    SP-DOES-NOTHING ;was expensive...
                                    )))))
 
-                                     
 
 
 
-          
-;Process ALIST by handling each pair as follows:  
+
+
+;Process ALIST by handling each pair as follows:
 ;If the key of the pair diverges with P, drop the pair.
 ;If P dominates the key of the pair, chop P off of the front of the key.
 ;If the key of the pair dominates P (i.e., the key indicates a piece of state bigger than the piece P indicates), replace the
@@ -2748,7 +2773,7 @@
             (cons (cons nil ;this means this pair in the alist for (mp alist r1 r2) will set all of r2!
                         (append (cdar alist) tail) ; we move part of the path from the car of the pair to the cdr of the pair!
                         )
-    ;                nil 
+    ;                nil
                   (effect-on-spot p (cdr alist))
                   ))))
     nil))
@@ -2759,7 +2784,7 @@
 
 ;; jcd - added this
 (defcong alist::alist-equiv equal (effect-on-spot p alist) 2
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable effect-on-spot)
           :induct (list::len-len-induction alist alist::alist-equiv))))
 
@@ -2810,17 +2835,17 @@
 
 
 
-(in-theory (disable gp-of-mp))          
+(in-theory (disable gp-of-mp))
 
 ;; bzo slow proof
 ;; bzo figure out why :definition of strictly-dominates is necessary
 (defthm gp-of-mp-better
-  (equal (gp p (mp alist r1 r2)) 
+  (equal (gp p (mp alist r1 r2))
          (mp (effect-on-spot p alist) r1 (gp p r2)))
   :hints (("Goal" :in-theory (e/d (effect-on-spot
                                      ;; bzo why do we need this?
                                      strictly-dominates
-                                     ) 
+                                     )
                                   (SP-DOES-NOTHING ;efficiency
                                    )))))
 
@@ -2831,7 +2856,7 @@
 
 ;find the first dominator of p, look it up in the alist, and g the associated value from r1.  then, g with what's left of P to get a p-sized chunk.
 ;this could be a single call to g?
-;then have a call to mp to update 
+;then have a call to mp to update
 
 (in-theory (disable MP-OF-GP)) ;looped!
 
@@ -2845,14 +2870,14 @@
 ; call (effect-on-spot R a21), then append S to all the keys in the result what if not all of R gets set by
 ;guys in R1?  set the rest using R2?
 
-;The call to remove-pairs-dominated-by is necessary.  Here's an example that illustrates why.  
-;Let a32 be '(((1 2) . (:z)) ((1 2) . (:x))) and let a21 be '(((:x) . (:foo))) 
+;The call to remove-pairs-dominated-by is necessary.  Here's an example that illustrates why.
+;Let a32 be '(((1 2) . (:z)) ((1 2) . (:x))) and let a21 be '(((:x) . (:foo)))
 
 ;Now, a32 tells us that spot (1 2) in r3 is getting set to what's at spot (:z) in r2.  The shadowed set of spot (1
 ;2) to what's at (:x) is irrelevant.  But when computing the composition, we ignore the pair of a32; since a21
 ;doesn't affect (:z), the composition need not include a pair fo (1 2).  But if we processed the second pair of
 ;a32, we might add the pair ((1 2) . (:foo)) to the composition.  This would be wrong!  As we said, the second
-;pair of a32 is irrelevant, so we should not add anything to the composition on its behalf. 
+;pair of a32 is irrelevant, so we should not add anything to the composition on its behalf.
 
 ;Let a32 be '(((1 2) . (:z)) ((1) . (:x))) and let a21 be '(((:x) . (:foo)))
 
@@ -2861,14 +2886,14 @@
 (defun my-compose-alists (a32 a21)
   (if (endp a32)
       nil
-    (append (append-onto-keys (caar a32) 
-                              (remove-shadowed-pairs2 
+    (append (append-onto-keys (caar a32)
+                              (remove-shadowed-pairs2
                                (effect-on-spot (cdar a32) a21)))
             (my-compose-alists
              (remove-pairs-dominated-by (caar a32)
                                         (cdr a32))
              a21))))
-    
+
 ;; (my-compose-alists '(((3) . (2))) '(((2) . (1))))
 ;; (my-compose-alists '(((3) . (2))) '((nil . (1))))
 ;; (my-compose-alists '(((3) . (2))) '(((2 4) . (1))))
@@ -2896,12 +2921,12 @@
 ;;            :in-theory (enable REMOVE-SHADOWED-PAIRS)
 ;;            :do-not '(generalize eliminate-destructors))))
 
-               
+
 (defthm diverges-from-all-of-keys-of-my-compose-alists
   (implies (diverges-from-all p (keys alist1))
            (diverges-from-all p (keys (my-compose-alists alist1 alist2))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-          
+
 (defthm sp-of-mp-of-append-onto-keys
   (equal (sp p v (mp (append-onto-keys p alist) r1 r2))
          (sp p v r2)))
@@ -2910,7 +2935,7 @@
   (implies (diverges-from-all p (keys alist))
            (equal (sp p v (mp alist r1 r2))
                   (mp alist r1 (sp p v r2)))))
-                 
+
 (defthmd mp-of-sp-diverges-from-all-case
   (implies (diverges-from-all p (keys alist))
            (equal (mp alist r1 (sp p v r2))
@@ -2923,20 +2948,20 @@
 ;bzo loops with defn remove-1? bag::CONS-CAR-ONTO-REMOVE-1-OF-CDR
 
 ;; (defthm all-diverges-from-all-diverge-and-subbagp
-;;   (implies (and (all-diverge paths2) 
+;;   (implies (and (all-diverge paths2)
 ;;                 (bag::subbagp paths paths2))
 ;;            (all-diverge paths))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;;            :induct t
 ;;            :expand (ALL-DIVERGE PATHS)
-;;            :in-theory (enable bag::subbagp 
+;;            :in-theory (enable bag::subbagp
 ;;                                      ;all-diverge
 ;;                                      )))
 ;;   )
-;;  
+;;
 ;; ;kill
 ;; (defthm all-diverges-from-all-diverge-and-subbagp
-;;   (implies (and (all-diverge paths2) 
+;;   (implies (and (all-diverge paths2)
 ;;                 (bag::subbagp paths paths2))
 ;;            (all-diverge paths))
 ;;   :hints (("Goal" ;:induct (2-cdrs-induct paths paths2)
@@ -2956,7 +2981,7 @@
 ;;  :hints (("Goal" :induct t
 ;;           :do-not '(generalize eliminate-destructors)
 ;;           :in-theory (e/d (mp) ((:induction REMOVE-PAIRS-DOMINATED-BY))))))
-        
+
 
 (defthm all-diverge-of-keys-of-remove-pairs-dominated-by
   (implies (all-diverge (keys alist))
@@ -2989,7 +3014,7 @@
     (if (dominates-some (caar alist) (keys (cdr alist)))
         nil
       (no-shadowed-pairs (cdr alist)))))
-                 
+
 ;; jcd - added this
 (defcong alist::alist-equiv equal (no-shadowed-pairs alist) 1
   :hints(("Goal" :induct (list::len-len-induction alist alist::alist-equiv))))
@@ -3012,23 +3037,23 @@
   (not (dominates-some p (keys (remove-pairs-dominated-by p alist)))))
 
 ;add ti. did we turn the right one off?
-(in-theory (disable SP-OF-MP-WHEN-NOT-DOMINATED-BY-SOME)) 
+(in-theory (disable SP-OF-MP-WHEN-NOT-DOMINATED-BY-SOME))
 ;(in-theory (disable MP-of-sp-DIVERGES-FROM-ALL-CASE))
 
 ;; jcd - this proof improved tremendously using the new dominates stuff
 (defthm mp-of-sp-when-not-dominated-by-some
   (implies (not (dominated-by-some p (keys alist))) ;drop?
            (equal (mp alist r1 (sp p v r2))
-                  (sp p 
+                  (sp p
                       (mp (effect-on-spot p alist) r1 v)
                       (mp alist r1 r2)))))
 
 (defthmd helper-eric
   (implies (dominated-by-some p (keys alist))
-           (equal (mp (effect-on-spot p alist) r1 v) 
+           (equal (mp (effect-on-spot p alist) r1 v)
                   (gp p (mp alist r1 r2))))
   :hints (("Goal" :in-theory (e/d (effect-on-spot)
-                                  (sp-does-nothing 
+                                  (sp-does-nothing
                                    )))))
 
 ;watch for loops
@@ -3037,8 +3062,8 @@
          (sp p
              (mp (effect-on-spot p alist) r1 v)
              (mp alist r1 r2)))
-  :hints (("Goal" 
-           :use (helper-eric 
+  :hints (("Goal"
+           :use (helper-eric
                  (:instance mp-of-sp-when-not-dominated-by-some))
            :in-theory (disable mp-of-sp-when-not-dominated-by-some))))
 
@@ -3098,14 +3123,14 @@
   (implies (and (consp a32)
                 (not (strictly-dominated-by-some (caar a32) (keys (cdr a32)))))
            (equal (effect-on-spot (caar a32) (my-compose-alists a32 a21))
-                  (path-alist-fix 
+                  (path-alist-fix
                    (remove-shadowed-pairs2 (effect-on-spot (cdar a32) a21)))))
   :hints (("Goal" :expand (my-compose-alists a32 a21))))
 
 (defthmd sp-of-mp-hack
   (equal (sp p v (mp a32 r2 r3))
          (sp p v (mp (remove-pairs-dominated-by p a32) r2 r3))))
-        
+
 
 ;; (thm
 ;;  (equal (my-compose-alists (remove-pairs-dominated-by p alist) a21)
@@ -3117,12 +3142,12 @@
 (defthm remove-pairs-dominated-by-of-my-compose-alists-remove-pairs-dominated-by
   (equal (remove-pairs-dominated-by p (my-compose-alists (remove-pairs-dominated-by p alist) a21))
          (remove-pairs-dominated-by p (my-compose-alists alist a21)))
-  :hints (("Goal" 
-           :expand (my-compose-alists 
-                    (cons (car alist) 
+  :hints (("Goal"
+           :expand (my-compose-alists
+                    (cons (car alist)
                           (remove-pairs-dominated-by p (cdr alist))) a21)
            )))
-                
+
 (defthm remove-pairs-dominated-by-of-caar-and-my-compose-alists
   (equal (remove-pairs-dominated-by (caar a32) (my-compose-alists a32 a21))
          (remove-pairs-dominated-by (caar a32) (my-compose-alists (cdr a32) a21))))
@@ -3134,7 +3159,7 @@
 
 
 
-; some odd forcing occurs in the proof?  
+; some odd forcing occurs in the proof?
 
 ; We do not believe that the hyp (no-submissives (keys a32)) can be dropped.
 ; If there are submissives, it's impossible to write compose-alists to do the
@@ -3143,22 +3168,22 @@
   (implies (no-submissives (keys a32)) ;can't drop this hyp!
            (equal (mp a32 (mp a21 r1 r2) r3)
                   (mp (my-compose-alists a32 a21) r1 (mp a32 r2 r3))))
-  
-  :hints (("Subgoal *1/3"  
-           :use ((:instance sp-of-mp-hack 
-                            (p (caar a32)) 
-                            (v nil) 
-                            (a32 (my-compose-alists (cdr a32) a21)) 
-                            (r2 r1) 
+
+  :hints (("Subgoal *1/3"
+           :use ((:instance sp-of-mp-hack
+                            (p (caar a32))
+                            (v nil)
+                            (a32 (my-compose-alists (cdr a32) a21))
+                            (r2 r1)
                             (r3  (mp (cdr a32) r2 r3)))
-                 (:instance sp-of-mp-hack 
-                            (p (caar a32)) 
-                            (v nil) 
-                            (a32  (my-compose-alists a32 a21)) 
-                            (r2 r1) 
-                            (r3  (mp (cdr a32) r2 r3)))))          
-          ("Goal" 
-           :in-theory (e/d (strip-cars) 
+                 (:instance sp-of-mp-hack
+                            (p (caar a32))
+                            (v nil)
+                            (a32  (my-compose-alists a32 a21))
+                            (r2 r1)
+                            (r3  (mp (cdr a32) r2 r3)))))
+          ("Goal"
+           :in-theory (e/d (strip-cars)
                            (my-compose-alists)))))
 
 
@@ -3176,7 +3201,7 @@
 
 
 
-        
+
 
 ;; (thm
 ;;  (implies (and (consp a32)
@@ -3382,7 +3407,7 @@
 ;; (defthm remove-pairs-dominated-by-list2-of-remove-pairs-dominated-by
 ;;   (equal (remove-pairs-dominated-by-list2 p-list (remove-pairs-dominated-by p alist))
 ;;          (remove-pairs-dominated-by p (remove-pairs-dominated-by-list2 p-list alist))))
-        
+
 
 ;; ;bzo gross subgoal hint
 ;; (defthm remove-shadowed-pairs2-of-append
@@ -3404,14 +3429,14 @@
 ;;                        p2))
 ;;      :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;;               :in-theory (enable dominates append))))
-            
+
 
 ;; ;go the other way?
 ;; (defthm remove-pairs-dominated-by-of-append-onto-keys
 ;;   (equal (remove-pairs-dominated-by (append p path) (append-onto-keys p alist))
 ;;          (append-onto-keys p (remove-pairs-dominated-by path alist)))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-        
+
 
 ;; (defthm remove-shadowed-pairs2-of-append-onto-keys
 ;;   (equal (remove-shadowed-pairs2 (append-onto-keys p alist))
@@ -3449,7 +3474,7 @@
 ;;  (equal (remove-pairs-dominated-by p (my-compose-alists alist1 alist2))
 ;;         (my-compose-alists (remove-pairs-dominated-by p alist1) alist2))
 ;;  :hints (("Goal" :do-not '(generalize eliminate-destructors))))
- 
+
 
 ;; (thm
 ;;  (equal (remove-pairs-dominated-by-list2 p-list (my-compose-alists alist1 alist2))
@@ -3496,18 +3521,18 @@
 ;;                              ;(:induction remove-shadowed-pairs2)
 ;;                              )
 ;;           :do-not '(generalize eliminate-destructors))))
-        
 
 
 
-  
+
+
 ;; ;LIST is a list of paths.  Extact the values from each of those paths in R.
 ;; (defund gp-list (list r)
 ;;   (if (consp list)
 ;;       (cons (gp (car list) r)
 ;;             (gp-list (cdr list) r))
 ;;     nil))
-               
+
 
 
 ;; (defun lookup (val alist)
@@ -3527,7 +3552,7 @@
 ;; (thm
 ;;  (implies (
 ;;  (equal (GP-LIST paths (SP p v r))
- 
+
 
 ;; ;not true! consider when a little guy precedes a big guy.
 ;; (thm
@@ -3538,8 +3563,8 @@
 ;;                           r1)))
 ;;  :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;;           :in-theory (e/d (gp-list
-                             
-;;                              ) 
+
+;;                              )
 ;;                           (;(:induction remove-shadowed-pairs2)
 ;;                            )))))
 
@@ -3551,30 +3576,30 @@
 ;;                  r1))
 ;;  :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;;           :in-theory (e/d (gp-list
-                             
-;;                              ) 
+
+;;                              )
 ;;                           (;(:induction remove-shadowed-pairs2)
 ;;                            )))))
 
 ;; (thm
 ;;  (implies (no-shadowed-pairs alist)
 ;;           (equal (gp-list plist (mp alist r1 r2))
-                 
+
 ;;                  (mp (effect-on-spot p alist) r1 (gp p r2))
 
 ;; ;look at resti                 gp-of-mp
-                 
-        
-        
+
+
+
 
 ;; ;not true! consider when a little guy precedes a big guy.
 ;; (thm
-;;  (equal (equal (mp alist r1 r2) r3) 
+;;  (equal (equal (mp alist r1 r2) r3)
 ;;         (and (equal (clrp-list (keys (remove-shadowed-pairs2 alist)) r2)
 ;;                     (clrp-list (keys (remove-shadowed-pairs2 alist)) r3))
 ;;              (equal (gp-list (keys (remove-shadowed-pairs2 alist)) r3)
 ;;                     (gp-list (range alist) r1)))))
- 
+
 
 
 
@@ -3592,7 +3617,7 @@
 ;;  :hints (("Goal" :in-theory (disable (:induction mp))))
 ;;  )
 
-                             
+
 
 ;; ;try going the other way?
 ;; (defthm mp-associative-hard
@@ -3600,9 +3625,9 @@
 ;;            (equal (mp a32 (mp a21 r1 r2) r3)
 ;;                   (mp (my-compose-alists a32 a21) r1 (mp a32 r2 r3))))
 ;;   :hints (("Subgoal *1/3'''" :in-theory (enable mp-of-sp))
-;;           ("Goal" ;:induct (2-cdrs-induct a32 a21) 
-           
-;;            :in-theory (e/d (ALL-DIVERGE) 
+;;           ("Goal" ;:induct (2-cdrs-induct a32 a21)
+
+;;            :in-theory (e/d (ALL-DIVERGE)
 ;;                            (;(:induction mp)
 ;;                             ;SP-EQUAL-REWRITE
 ;;                             ;MY-COMPOSE-ALISTS
@@ -3630,14 +3655,14 @@
 ;;  :hints (("Goal" :induct t
 ;;           :in-theory (enable append)
 ;;           :expand ((EFFECT-ON-SPOT P (APPEND ALIST1 ALIST2))))))
- 
+
 ;; (thm
 ;;  (equal (effect-on-spot p (append alist1 alist2))
 ;;         (if (dominated-by-some p (keys alist1))
 ;;             (effect-on-spot p alist1)
 ;;           (append (effect-on-spot p alist1)
 ;;                   (effect-on-spot p alist2)))))
-  
+
 
 ;; (thm
 ;;  (implies (dominated-by-some p (keys alist))
@@ -3653,7 +3678,7 @@
 ;;                    (let ((fd (first-dominator p (keys alist))))
 ;;                      (let ((tail (nthcdr (len fd) p)))
 ;;                        (cons (cons nil (append (cdr (assoc fd alist)) tail)
-;;                                    ) 
+;;                                    )
 ;;                              nil)))))))
 
 
@@ -3662,7 +3687,7 @@
 ;;            (and (no-shadowed-pairs a32)
 ;;                 ;(no-shadowed-pairs a21)
 ;;                 )
-                
+
 ;;            (equal (mp a32 (mp a21 r1 r2) r3)
 ;;                   (mp (my-compose-alists a32 a21) r1 (mp a32 r2 r3))))
 ;;   :hints (;("Subgoal *1/3''" :in-theory (enable  sp-of-mp-diverges-from-all-case))
@@ -3712,9 +3737,9 @@
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;;            :expand ( ;(NTHCDR-FROM-KEYS (LEN P) ALIST)
 ;;                     )
-;;            :in-theory (enable ;gp 
-;;                               nthcdr-from-keys 
-;;                               mp 
+;;            :in-theory (enable ;gp
+;;                               nthcdr-from-keys
+;;                               mp
 ;; ;len
 ;;                               ))))
 
@@ -3776,7 +3801,7 @@
 ;;           :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;;                    :in-theory (e/d (mp s-list)
 ;;                                    ())))))
- 
+
 ;; ;Since one spot in r1 can provide a value for many spots in r2, setting A in r1 may require us to set many things in r2.
 ;; ;( if many spots in r2 are getting the value from spot A in r1).
 ;;  (defthm mp-of-s-1-memberp-case
@@ -3851,7 +3876,7 @@
 
 
 
- 
+
 ;; ;;get rid of pp and pp-list?
 ;; ;;decide what to name functions like diverge, etc.
 ;; ;;add guards to all of these functions
@@ -3867,12 +3892,12 @@
 ;; ;; =========================================================================
 
 
-;; ;; A function to increase the depth of a list of index paths with a 
+;; ;; A function to increase the depth of a list of index paths with a
 ;; ;; single index (a) using cons.
 
 ;; ;bzo should be prefix-bag?
 ;; (defund prefix-list (a list)
-;;   (declare (type t a list))  
+;;   (declare (type t a list))
 ;;   (if (consp list)
 ;;       (cons (cons a (car list))
 ;;             (prefix-list a (cdr list)))
@@ -3920,7 +3945,7 @@
 ;;   (implies (bag::unique list)
 ;;            (bag::unique (prelist-fix a list)))
 ;;   :hints (("Goal" :in-theory (enable bag::UNIQUE-OF-CONS bag::unique prelist-fix))))
-        
+
 ;; (defthm car-of-pp-non-nil
 ;;   (implies (consp path)
 ;;            (car (pp path)))
@@ -3933,7 +3958,7 @@
 ;; (defthm nil-not-memberp-of-cdr-path
 ;;   (not (list::memberp nil (pp path)))
 ;;   :hints (("Goal" :in-theory (enable pp))))
-  
+
 ;; (defthm consp-of-pp
 ;;   (equal (consp (pp path))
 ;;          (consp path))
@@ -3964,17 +3989,17 @@
 ;; ;make case for when a doesn't match what gets prefixed
 ;; (encapsulate
 ;;  ()
- 
+
 ;;  (local (defthm memberp-of-cons-and-prelist-fix-one
 ;;           (implies (list::memberp (cons a x) (prelist-fix a yy))
 ;;                    (list::memberp x yy))
 ;;           :hints (("Goal" :in-theory (enable prelist-fix)))))
- 
+
 ;;  (local (defthm memberp-of-cons-and-prelist-fix-two
 ;;           (implies (list::memberp x yy)
 ;;                    (list::memberp (cons a x) (prelist-fix a yy)))
 ;;           :hints (("Goal" :in-theory (enable prelist-fix)))))
- 
+
 ;;  (defthm memberp-of-cons-and-prelist-fix
 ;;    (equal (list::memberp (cons a x) (prelist-fix a yy))
 ;;           (list::memberp x yy))))
@@ -3987,7 +4012,7 @@
 ;;          (prelist-fix a (bag::remove-1 x yy)))
 ;;   :hints (("Goal" :in-theory (e/d (prelist-fix bag::remove-1
 ;;                                      ) ( bag::CONS-CAR-ONTO-REMOVE-1-OF-CDR)))))
-        
+
 ;; (defthm subbagp-of-prelist-fix-and-prelist-fix
 ;;   (equal (bag::subbagp (prelist-fix a x)
 ;;                        (prelist-fix a y))
@@ -3997,7 +4022,7 @@
 ;;                             bag::SUBBAGP-IMPLIES-MEMBERSHIP
 ;;                             (:induction bag::SUBBAGP)
 ;;                             bag::SUBBAGP ;drop?
-;;                             ) 
+;;                             )
 ;;                            (bag::SUBBAGP-CDR-REMOVE-1-REWRITE)))))
 
 ;; ;; subpath/subgag-p relationship ..
@@ -4046,7 +4071,7 @@
 ;; bzo why does this call s instead of sp?
 ;; ;Change R by setting the values at the paths in PATHS to the corresponding values in VALS.
 ;; ;PATHS is a list of paths.  VALS is a list of values
-;; ;Returns a changed version of R.  
+;; ;Returns a changed version of R.
 ;; ;bzo perhap this does the calls to sp in the wrong order.  maybe this should not be tail-recursive.  bzo are there other functions which do stuff in the wrong order?
 ;; ;bzo maybe this should stop when it runs out of vals?
 
@@ -4176,7 +4201,7 @@
 ;; ;;
 ;; ;; A mapping is something that maps indices in one data structure
 ;; ;; to indices in another.  A mapping is an association list between
-;; ;; two bags.  
+;; ;; two bags.
 ;; ;;
 
 ;; ;; The use set (bag) of the map is just the keys of an association list ..
@@ -4289,10 +4314,10 @@
 
 ;; ;; Some helper functions ..
 
-;; (defun remove-all (x list) 
-;;   (if (consp x) 
-;;       (let ((list (remove (car x) list))) 
-;;         (remove-all (cdr x) list)) 
+;; (defun remove-all (x list)
+;;   (if (consp x)
+;;       (let ((list (remove (car x) list)))
+;;         (remove-all (cdr x) list))
 ;;     list))
 
 ;; ;; remove every alist instance whose key matches the key argument
@@ -4316,12 +4341,12 @@
 ;; ;; The holy grail ..
 
 ;; ;; Consider the composition of the following maps (A.B) and (C.D):
-;; ;; 
+;; ;;
 ;; ;;                   C        D
 ;; ;;                 +---+    +---+
 ;; ;;                 | u |    | 0 |
 ;; ;;    A        B   | v |    | 1 |
-;; ;;  +---+    +---+ |   | -> |   | 
+;; ;;  +---+    +---+ |   | -> |   |
 ;; ;;  | a |    | w | | w |    | 2 |
 ;; ;;  | b |    | x | | x |    | 3 |
 ;; ;;  |   | -> |   | +---+    +---+
@@ -4357,7 +4382,7 @@
 ;;                 (let ((mad (dot (def mba) bd)))
 ;;                   (let ((mcd (remove-all-keys b^c mcd)))
 ;;                     (mv mad mcd)))))))))))
-  
+
 ;; #+joe
 ;; (defthm mp-list-normalization
 ;;   (implies
@@ -4406,7 +4431,7 @@
 ;; ;;
 ;; ;; We will eventually want a z*-style function for comparing data
 ;; ;; structures ..
-;; ;; 
+;; ;;
 
 ;; ;; We will probably need something like this rule eventually ..
 
@@ -4454,7 +4479,7 @@
 ;; ;; representation??  Can arbitrary manipulations of arbitrary abstract data
 ;; ;; structures be modeled efficiently?
 
-;; ;; Perhaps a "differential" analysis would produce a suitable mapping 
+;; ;; Perhaps a "differential" analysis would produce a suitable mapping
 ;; ;; function?  If we knew how the pointers changed under the abstract function,
 ;; ;; we could then map those changes into the implementation ??
 
@@ -4615,18 +4640,18 @@
 ;; ;; Define a function that operates on a simple list data structure in memory.
 ;; ;; Have the function insert an element into the list.
 
-;; ;; Can you show that that function maps to an abstract representation 
+;; ;; Can you show that that function maps to an abstract representation
 ;; ;; of the same functionality?
 
-;; 
+;;
 
 ;; ;; How about a little object-orientation ..
 
 ;; (defstructure zed
-;;   a 
+;;   a
 ;;   b
 ;;   :extends (foo
-;;             :pred foo-p 
+;;             :pred foo-p
 ;;             :keys foo-keys))
 
 
@@ -4652,17 +4677,17 @@
 ;;   :type foop
 ;;   :default value)
 
-;; 
+;;
 
 
 
-;; 
+;;
 ;; (thm
 ;;    (implies (diverge p1 p2)
 ;;             (equal (sp p1 val (mp (remove-pairs-dominated-by p2 alist) r1 r2))
 ;;                    (sp p1 val (mp alist r1 r2))))
 ;;    :hints (("Goal" :in-theory (enable diverge))))
-   
+
 
 ;; (thm
 ;;  (IMPLIES (AND (NOT (DOMINATES P1 P2))
@@ -4677,7 +4702,7 @@
 ;; (thm
 ;;  (implies (not (dominates p2 p1))
 ;;           (equal (sp p1 val (mp (remove-pairs-dominated-by p2 alist) r1 r2))
-;;                  (sp p1 val (mp alist r1 r2)))) 
+;;                  (sp p1 val (mp alist r1 r2))))
 ;;  :hints (("Goal" :in-theory (enable diverge)
 ;;           :cases ((diverge p1 p2)))))
 
@@ -4766,7 +4791,7 @@
 
 (defthm clrp-list-of-non-consp
   (implies (not (consp paths))
-           (equal (clrp-list paths r) 
+           (equal (clrp-list paths r)
                   r))
   :hints (("Goal" :in-theory (enable clrp-list))))
 
@@ -4779,7 +4804,7 @@
 ; nil .. some versions of the records/maps stuff have this)
 
 
-;replace SP-EQUAL-REWRITE with this? 
+;replace SP-EQUAL-REWRITE with this?
 ;bzo should we rewrite (equal v (clrp path r)) ?
 (defthmd sp-equal-rewrite-2
   (equal (equal (sp path v r) r2)
@@ -4802,7 +4827,7 @@
   :rule-classes ((:rewrite :loop-stopper ((p p2))))
   :hints (("Goal" :in-theory (e/d (clrp)
                                   (sp-to-clrp)))))
-        
+
 
 ;which way should this go?
 (defthm clrp-of-clrp-list
@@ -4815,9 +4840,9 @@
          (clrp p (clrp-list paths r)))
   :hints (("Goal" :in-theory (enable clrp-list))))
 
-(theory-invariant (incompatible (:rewrite clrp-of-clrp-list) 
+(theory-invariant (incompatible (:rewrite clrp-of-clrp-list)
                                 (:rewrite clrp-list-of-clrp)))
- 
+
 (defthm clrp-of-sp-when-dominates
   (implies (dominates p p2)
            (equal (clrp p (sp p2 v r))
@@ -4847,12 +4872,12 @@
   (implies (diverges-from-all p paths)
            (equal (gp p (clrp-list paths r))
                   (gp p r)))
-  :hints (("Goal" :in-theory (e/d (clrp-list clrp-list-of-clrp) 
+  :hints (("Goal" :in-theory (e/d (clrp-list clrp-list-of-clrp)
                                   (clrp-of-clrp-list)))))
 
 
 
-;Greve might want this disabled?                 
+;Greve might want this disabled?
 (defthm clrp-list-of-sp-when-diverges-from-all
   (implies (diverges-from-all p paths)
            (equal (clrp-list paths (sp p v r))
@@ -4864,16 +4889,16 @@
   (equal (clrp-list paths (clrp p r))
          (clrp-list (append paths (list p)) r))
   :hints (("Goal" :in-theory (enable clrp-list))))
-         
+
 
 ;; ;; what is this stuff for
-;; (defun failed-location (key) 
-;;   (declare (ignore key)) 
-;;   nil) 
+;; (defun failed-location (key)
+;;   (declare (ignore key))
+;;   nil)
 
 ;; (defun tag-location (key bool)
-;;   (implies (not bool) 
-;;            (failed-location key)))        
+;;   (implies (not bool)
+;;            (failed-location key)))
 
 ;; (defthm tag-location-reduction
 ;;   (implies bool
@@ -4903,7 +4928,7 @@
            (equal (gp p (clrp p2 r))
                   nil))
   :hints (("Goal" :in-theory (e/d (clrp) (sp-to-clrp)))))
-                              
+
 (defthm gp-of-clrp-list-when-dominated-by-some
   (implies (dominated-by-some p paths)
            (equal (gp p (clrp-list paths r))
@@ -4940,9 +4965,9 @@
   (
    (hide x)
    (bag::hide-unique list)
-   (bag::hide-subbagp x y) 
-   (bag::hide-disjoint x y) 
-   (bag::hide-memberp a x) 
+   (bag::hide-subbagp x y)
+   (bag::hide-disjoint x y)
+   (bag::hide-memberp a x)
    (bag::perm x y)
    (bag::unique list)
 ;   (implies-if a term)
@@ -4963,13 +4988,13 @@
    (bag::any-subbagp x list) ;remove this?
    (list::finalcdr x)
    (list::fix x)
-   (bag::subbagp x y) 
-   (bag::memberp a x) 
+   (bag::subbagp x y)
+   (bag::memberp a x)
 ; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
 ;  (replaced member by member-equal).]
-   (acl2::member-equal a x) 
+   (acl2::member-equal a x)
    (bag::disjoint x y)
-;   (synp vars form term) 
+;   (synp vars form term)
    (equal x y)
    (diverge a b)
    (all-diverge x)
@@ -4985,7 +5010,7 @@
 
 ;lifting this lemma up to be about the new evaluator...
 (defthm show-unique-memberps-from-type-alist-works-right-for-paths
-  (implies (and (path-syntax-ev 
+  (implies (and (path-syntax-ev
                  (bag::hyp-for-show-unique-memberps-from-type-alist v b bag n type-alist w whole-type-alist flg) bag::a)
                 (bag::hyp-for-show-unique-memberps-from-type-alist v b bag n type-alist w whole-type-alist flg))
            (bag::unique-memberps (path-syntax-ev v  bag::a)
@@ -5096,7 +5121,7 @@
            (fact (car entry)))
       (or (and (consp fact)
                (or (and (equal (car fact) 'all-diverge)
-                        (bag::ts-non-nil (cadr entry)) 
+                        (bag::ts-non-nil (cadr entry))
                         (bag::show-unique-memberps-from-type-alist a b (cadr fact) n whole-type-alist n whole-type-alist 1)
                         (equal nil (cddr fact)))
                    (and (equal (car fact) 'all-diverge-from-all)
@@ -5109,7 +5134,7 @@
           (show-diverge-from-type-alist a b n (cdr type-alist) whole-type-alist)))))
 
 (defirrelevant show-diverge-from-type-alist 1 bag::a (a b n type-alist whole-type-alist)
-  :hints (("goal" :in-theory (enable 
+  :hints (("goal" :in-theory (enable
                               show-diverge-from-type-alist
                               bag::hyp-for-show-memberp-from-type-alist-irrelevant
                               bag::hyp-for-show-unique-memberps-from-type-alist-irrelevant
@@ -5134,29 +5159,29 @@
            (fact (car entry)))
       (or (and (consp fact)
                (or (and (equal (car fact) 'all-diverge)
-                        (bag::ts-non-nil (cadr entry)) 
+                        (bag::ts-non-nil (cadr entry))
                         (equal nil (cddr fact))
-                        (bag::conjoin-fact-and-hyp 
-                         fact (bag::hyp-for-show-unique-memberps-from-type-alist 
+                        (bag::conjoin-fact-and-hyp
+                         fact (bag::hyp-for-show-unique-memberps-from-type-alist
                                a b (cadr fact) n whole-type-alist n whole-type-alist 1)))
                    (and (equal (car fact) 'all-diverge-from-all)
                         (bag::ts-non-nil (cadr entry))
                         (equal nil (cdddr fact))
-                        (or (bag::conjoin-fact-and-two-hyps 
-                             fact (bag::hyp-for-show-memberp-from-type-alist 
+                        (or (bag::conjoin-fact-and-two-hyps
+                             fact (bag::hyp-for-show-memberp-from-type-alist
                                    a (cadr fact) n whole-type-alist whole-type-alist 1)
-                             (bag::hyp-for-show-memberp-from-type-alist 
+                             (bag::hyp-for-show-memberp-from-type-alist
                               b (caddr fact) n whole-type-alist whole-type-alist 1))
-                            (bag::conjoin-fact-and-two-hyps 
-                             fact (bag::hyp-for-show-memberp-from-type-alist 
+                            (bag::conjoin-fact-and-two-hyps
+                             fact (bag::hyp-for-show-memberp-from-type-alist
                                    a (caddr fact) n whole-type-alist whole-type-alist 1)
-                             (bag::hyp-for-show-memberp-from-type-alist 
+                             (bag::hyp-for-show-memberp-from-type-alist
                               b (cadr fact) n whole-type-alist whole-type-alist 1))))))
           (hyp-for-show-diverge-from-type-alist a b n (cdr type-alist) whole-type-alist)))))
 
 
 (defirrelevant hyp-for-show-diverge-from-type-alist 1 bag::a (a b n type-alist whole-type-alist)
-  :hints (("goal" :in-theory (enable 
+  :hints (("goal" :in-theory (enable
                               hyp-for-show-diverge-from-type-alist
                               bag::hyp-for-show-memberp-from-type-alist-irrelevant
                               bag::hyp-for-show-unique-memberps-from-type-alist-irrelevant
@@ -5218,7 +5243,7 @@
            (equal 'diverge (car term)))
       (let* ((type-alist (acl2::mfc-type-alist mfc))
              (len (bag::usb16-fix (len type-alist))))
-        (bag::bind-extra-vars-in-hyp (hyp-for-show-diverge-from-type-alist-fn 
+        (bag::bind-extra-vars-in-hyp (hyp-for-show-diverge-from-type-alist-fn
                                       nil (cadr term) (caddr term) len type-alist type-alist) term))
     ''nil))
 
@@ -5288,13 +5313,13 @@
            (fact (car entry)))
       (or (and (consp fact)
                (and (equal (car fact) 'all-diverge)
-                    (bag::ts-non-nil (cadr entry)) 
+                    (bag::ts-non-nil (cadr entry))
                     (bag::show-subbagp-from-type-alist x (cadr fact) n whole-type-alist whole-type-alist 1)
                     (equal nil (cddr fact))))
           (show-all-diverge-from-type-alist x n (cdr type-alist) whole-type-alist)))))
 
 (defirrelevant show-all-diverge-from-type-alist 1 bag::a (x n type-alist whole-type-alist)
-  :hints (("goal" :in-theory (enable 
+  :hints (("goal" :in-theory (enable
                               show-all-diverge-from-type-alist
                               bag::hyp-for-show-subbagp-from-type-alist-irrelevant
                               ))))
@@ -5316,16 +5341,16 @@
            (fact (car entry)))
       (or (and (consp fact)
                (and (equal (car fact) 'all-diverge)
-                    (bag::ts-non-nil (cadr entry)) 
+                    (bag::ts-non-nil (cadr entry))
                     (equal nil (cddr fact))
-                    (bag::conjoin-fact-and-hyp 
-                     fact  (bag::hyp-for-show-subbagp-from-type-alist 
+                    (bag::conjoin-fact-and-hyp
+                     fact  (bag::hyp-for-show-subbagp-from-type-alist
                             x (cadr fact) n whole-type-alist whole-type-alist 1))
                     ))
           (hyp-for-show-all-diverge-from-type-alist x n (cdr type-alist) whole-type-alist)))))
 
 (defirrelevant hyp-for-show-all-diverge-from-type-alist 1 bag::a (x n type-alist whole-type-alist)
-  :hints (("goal" :in-theory (enable 
+  :hints (("goal" :in-theory (enable
                               hyp-for-show-all-diverge-from-type-alist
                               bag::hyp-for-show-subbagp-from-type-alist-irrelevant
                               ))))
@@ -5484,11 +5509,11 @@
            (fact (car entry)))
       (or (and (consp fact)
                (or (and (equal (car fact) 'all-diverge)
-                        (bag::ts-non-nil (cadr entry)) 
+                        (bag::ts-non-nil (cadr entry))
                         (bag::show-unique-subbagps-from-type-alist x y (cadr fact) n whole-type-alist whole-type-alist 1)
                         (equal nil (cddr fact)))
                    (and (equal (car fact) 'all-diverge-from-all)
-                        (bag::ts-non-nil (cadr entry)) 
+                        (bag::ts-non-nil (cadr entry))
                         (or (and (bag::show-subbagp-from-type-alist x (cadr fact) n whole-type-alist whole-type-alist 1)
                                  (bag::show-subbagp-from-type-alist y (caddr fact) n whole-type-alist whole-type-alist 1))
                             (and (bag::show-subbagp-from-type-alist x (caddr fact) n whole-type-alist whole-type-alist 1)
@@ -5521,24 +5546,24 @@
            (fact (car entry)))
       (or (and (consp fact)
                (or (and (equal (car fact) 'all-diverge)
-                        (bag::ts-non-nil (cadr entry)) 
+                        (bag::ts-non-nil (cadr entry))
                         (equal nil (cddr fact))
-                        (bag::conjoin-fact-and-hyp 
-                         fact (bag::hyp-for-show-unique-subbagps-from-type-alist 
+                        (bag::conjoin-fact-and-hyp
+                         fact (bag::hyp-for-show-unique-subbagps-from-type-alist
                                x y (cadr fact) n whole-type-alist whole-type-alist 1))
                         )
                    (and (equal (car fact) 'all-diverge-from-all)
-                        (bag::ts-non-nil (cadr entry)) 
+                        (bag::ts-non-nil (cadr entry))
                         (equal nil (cdddr fact))
-                        (or (bag::conjoin-fact-and-two-hyps 
-                             fact (bag::hyp-for-show-subbagp-from-type-alist 
+                        (or (bag::conjoin-fact-and-two-hyps
+                             fact (bag::hyp-for-show-subbagp-from-type-alist
                                    x (cadr fact) n whole-type-alist whole-type-alist 1)
-                             (bag::hyp-for-show-subbagp-from-type-alist 
+                             (bag::hyp-for-show-subbagp-from-type-alist
                               y (caddr fact) n whole-type-alist whole-type-alist 1))
-                            (bag::conjoin-fact-and-two-hyps 
-                             fact (bag::hyp-for-show-subbagp-from-type-alist 
+                            (bag::conjoin-fact-and-two-hyps
+                             fact (bag::hyp-for-show-subbagp-from-type-alist
                                    x (caddr fact) n whole-type-alist whole-type-alist 1)
-                             (bag::hyp-for-show-subbagp-from-type-alist 
+                             (bag::hyp-for-show-subbagp-from-type-alist
                               y (cadr fact) n whole-type-alist whole-type-alist 1))))))
           (hyp-for-show-all-diverge-from-all-from-type-alist x y n (cdr type-alist) whole-type-alist)))))
 
@@ -5598,8 +5623,8 @@
            (equal 'all-diverge-from-all (car term)))
       (let* ((type-alist (acl2::mfc-type-alist mfc))
              (len (bag::usb16-fix (len type-alist))))
-        (bag::bind-extra-vars-in-hyp 
-         (hyp-for-show-all-diverge-from-all-from-type-alist-fn 
+        (bag::bind-extra-vars-in-hyp
+         (hyp-for-show-all-diverge-from-all-from-type-alist-fn
           nil (cadr term) (caddr term) len type-alist type-alist) term))
     ''nil))
 
@@ -5612,7 +5637,7 @@
                         :backchain-limit-lst 0 ;just in case...
                         ))
   :hints (("Goal" :do-not-induct t
-           :in-theory (enable 
+           :in-theory (enable
                        hyp-for-show-all-diverge-from-all-from-type-alist-irrelevant
                        )
            :do-not '(generalize eliminate-destructors))))
@@ -5652,7 +5677,7 @@
 ;; (syntax-diverge '(cons 'a x) '(cons 'b y))
 ;; (syntax-diverge '(cons a (cons 'b x)) '(append (cons a2 '(not-b)) z))
 
-;; ;x and y are terms (nests of conses and appends). 
+;; ;x and y are terms (nests of conses and appends).
 ;; ;this function determines whether we know synatctically that x and y diverge (because x any y have different constants at corresponding locations...)
 ;; (defun syntax-diverge (x y)
 ;;   (if (and (equal (car x) 'quote)  ;call syntax-consp?
@@ -5664,12 +5689,12 @@
 ;;       (if (equal (car x) 'cons)
 ;;           (or (syntax-not-equal (cadr x) (syntax-car y))
 ;;               (syntax-diverge
-        
-  
+
+
 
 ;; (syntax-dominates 'x '(append x y))
 ;; (syntax-dominates ''(a) '(append (cons 'a b) y)) ; hmmm.... maybe we do want append and cons normalization on.  we would have to have it for bags if we used the bag constructors for those.  paths really are built of cons and append...
-   
+
 ;; (defun syntax-dominates (x y)
 
 ;; ;will DIVERGE-OF-CONS-AND-CONS be too expensive too keep enabled? it can do a lot of the work...
@@ -5784,7 +5809,7 @@
                  r))))
   :hints (("Goal" :in-theory (e/d (clrp
 ;; jcd trying backchain limit dominates-when-not-diverge-and-not-dominates
-                                   
+
                                    ) (sp-to-clrp))
            :do-not '(generalize eliminate-destructors))))
 
@@ -5796,7 +5821,7 @@
                   t))
   :hints (("Goal" :use (:instance  sp-equal-rewrite-2 (r r1) (path p) (v (gp p r1)))
            :in-theory (e/d (clrp) (sp-to-clrp)))))
-                 
+
 
 (defthm clrp-of-clrp-when-dominates-one
   (implies (dominates p1 p2)
@@ -5817,7 +5842,7 @@
            (equal (equal (clrp p2 r1) (clrp p2 r2))
                   t))
   :hints (("Goal" :in-theory (e/d (clrp) (sp-to-clrp)))))
-                 
+
 ;this is kind of gross.
 (defthm clrp-of-duplicate-inside-mp
   (equal (clrp p (mp alist r1 r2))
@@ -5825,7 +5850,7 @@
   :rule-classes nil
   :hints (("Goal" :in-theory (enable equal-from-equal-of-clrps-and-equal-of-gps)
            :do-not '(generalize eliminate-destructors))))
-  
+
 (defthm mp-of-clrp-when-dominated-by-some
   (implies (dominated-by-some p (keys alist))
            (equal (mp alist r1 (clrp p r2))
@@ -5900,7 +5925,7 @@
 ;;  (implies (all-diverge-from-all paths (keys alist))
 ;;           (equal (clrp-list paths (mp alist r1 r2))
 ;;                  (mp alist r1 (clrp-list paths r2)))))
-                  
+
 
 ;; for each key in alist
 ;; if it diverges with all in paths, move it outside
@@ -6010,7 +6035,7 @@
          (if test (min x z)
            (min y z))))
 
-(encapsulate 
+(encapsulate
  ()
  (local (defthm fw
           (implies (and (<= (len x) n)
@@ -6073,7 +6098,7 @@
 
 ;; (defun number-of-divergers (p paths)
 ;;   (if (endp paths)
-      
+
 
 ;; (thm
 ;;  (equal (effect-on-spot p (pair-with-selves vars))
@@ -6109,14 +6134,14 @@
                               (list::fix p2))
                         (effect-on-spot p (pair-with-selves x)))))
   :otf-flg t
-  :hints (("Goal" 
-           :in-theory (enable strictly-dominates) 
+  :hints (("Goal"
+           :in-theory (enable strictly-dominates)
            :expand ( (effect-on-spot p
                                      (cons (cons p2 p2)
                                            (pair-with-selves x)))
                      (pair-with-selves (cons p2 x))))))
 
-                     
+
 
 (defthm mp-of-cons-of-cons-of-nil
   (equal (mp (cons (cons nil p) anything) st st2)
@@ -6135,8 +6160,8 @@
                   (cons (cons (nthcdr (len p) (list::fix p2))
                               (list::fix v))
                         (effect-on-spot p x))))
-  :hints (("Goal" 
-           :in-theory (enable strictly-dominates) 
+  :hints (("Goal"
+           :in-theory (enable strictly-dominates)
            :expand (  (effect-on-spot p (cons (cons p2 v) x))))))
 
 (defthm effect-on-spot-of-cons-of-cons-equal
@@ -6144,14 +6169,14 @@
          (cons (cons nil (list::fix v))
                (effect-on-spot p rest)))
   :hints (("Goal" :expand ( (effect-on-spot p (cons (cons p v) rest))))))
-        
-       
-        
+
+
+
 ;handle this?
 ;;   (ALL-DIVERGE (LIST THEDRIVER THEITEM LEFTNODE NIL UPNODE
 ;;                            (GP '(:UPOFFSET) (GP THEDRIVER ST))
 ;;                            (GP '(:UPOFFSET) (GP THEDRIVER ST))
-;;                            (GP '(:UPOFFSET) (GP THEDRIVER ST))))        
+;;                            (GP '(:UPOFFSET) (GP THEDRIVER ST))))
 
 (in-theory (enable PAIR-WITH-SELVES)) ;remove this enable eventually?
 
@@ -6172,7 +6197,7 @@
   (equal (CLRP P (MP (cons (CONS P V) rest) r1 r2))
          (CLRP P (MP rest r1 r2)))
   :hints (("Goal" :expand ( (MP (cons (CONS P V) rest) r1 r2)))))
-        
+
 
 ;introduces another call to mp; okay?
 (defthm clrp-of-mp-of-cons-of-cons-when-diverges
@@ -6186,7 +6211,7 @@
          (MP (append alist1 alist2) r1 r2))
   :hints (("Goal" :in-theory (enable mp))))
 
-(in-theory (disable MP-OF-APPEND)) 
+(in-theory (disable MP-OF-APPEND))
 (theory-invariant (incompatible (:rewrite MP-OF-APPEND)
                                 (:rewrite mp-collect)))
 
@@ -6203,7 +6228,7 @@
                   (mp alist (mp rest r1 r2) r3)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable mp diverges-from-all vals))))
-                 
+
 
 (in-theory (disable DIVERGES-FROM-ALL-OF-CONS
                     STRICTLY-DOMINATED-BY-SOME))
@@ -6238,7 +6263,7 @@
       nil
     (let* ((entry (car type-alist))
            (fact (car entry)))
-      (or (and (consp fact) 
+      (or (and (consp fact)
                (and (equal 'all-diverge (car fact))
                     (bag::ts-non-nil (cadr entry))
                     (bag::show-unique-memberps-from-type-alist x y (cadr fact) n whole-type-alist n whole-type-alist 1)
@@ -6269,8 +6294,8 @@
                (and (equal 'all-diverge (car fact))
                     (bag::ts-non-nil (cadr entry))
                     (equal nil (cdddr fact))
-                    (bag::conjoin-fact-and-hyp 
-                     fact (bag::hyp-for-show-unique-memberps-from-type-alist 
+                    (bag::conjoin-fact-and-hyp
+                     fact (bag::hyp-for-show-unique-memberps-from-type-alist
                            x y (cadr fact) n whole-type-alist n whole-type-alist 1))
                      ))
           (hyp-for-show-not-equal-from-type-alist-path-version x y n (cdr type-alist) whole-type-alist)))))
@@ -6343,7 +6368,7 @@
       (let* ((type-alist (acl2::mfc-type-alist mfc))
              (len (bag::usb16-fix (len type-alist)))
              )
-        (bag::bind-extra-vars-in-hyp 
+        (bag::bind-extra-vars-in-hyp
           (hyp-for-show-not-equal-from-type-alist-path-version-fn
            nil (cadr term) (caddr term) len type-alist type-alist) term))
     ''nil))
@@ -6436,7 +6461,7 @@
   (list::memberp a list)
   (equal (clrp-list list r)
          (clrp a (clrp-list (bag::remove-1 a list) r))))
- :hints (("goal" :in-theory (e/d (list::memberp bag::remove-1 clrp-list) 
+ :hints (("goal" :in-theory (e/d (list::memberp bag::remove-1 clrp-list)
                                  (clrp-to-clrp-list)))))
 
 
@@ -6445,7 +6470,7 @@
            (iff (equal (clrp-list plist r)
                        (clrp-list plist-equiv r)) t))
   :hints (("goal" :in-theory (e/d (clrp-list-membership-rewrite
-                                   list::memberp bag::perm clrp-list) 
+                                   list::memberp bag::perm clrp-list)
                                   (clrp-to-clrp-list)))))
 
 (defcong pperm equal (clrp-list plist r) 1
@@ -6664,10 +6689,10 @@
         (and (equal (gp path r1) (gp path r2))
              (equal (clrp path r1) (clrp path r2)))))
   :hints (("goal" :in-theory (e/d (open-sp ;acl2::clr
-                                           clrp atom-record-reduction-binding-1 gp) 
+                                           clrp atom-record-reduction-binding-1 gp)
                                   (g-to-gp s-to-sp clrp-to-clrp-list SP-TO-CLRP sp==r ;acl2::S==R
                                            )))))
-  
+
 (defthmd path-record-reduction-binding-1
   (implies
    (equal (gp path r1) (gp path r2))
@@ -6711,7 +6736,7 @@
           (gp-list list r2))
    (iff (equal (gp-list list (clrp a r1))
                (gp-list list (clrp a r2))) t))
-  :hints (("goal" :in-theory (e/d (gp-list-equal-sp-reduction clrp) 
+  :hints (("goal" :in-theory (e/d (gp-list-equal-sp-reduction clrp)
                                   (SP-TO-CLRP clrp-to-clrp-list)))))
 
 (defun clrp-list-induction (list r1 r2)
@@ -6791,7 +6816,7 @@
         (cons (car p1) (common-prefix (cdr p1) (cdr p2)))
       nil)))
 
-(defthm common-prefix-assoc 
+(defthm common-prefix-assoc
   (equal
    (common-prefix p1 p2)
    (common-prefix p2 p1)))
@@ -6905,9 +6930,9 @@
                                                              ACL2::S==R ;bzo looped
                                                              )))))
 
-(theory-invariant (incompatible (:rewrite sp-to-clrp) 
+(theory-invariant (incompatible (:rewrite sp-to-clrp)
                                 (:rewrite clrp-of-cons)
-                                ))        
+                                ))
 
 (defthm diverge-of-non-consp-one-cheap
   (implies (not (consp x))

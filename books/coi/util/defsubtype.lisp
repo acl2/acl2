@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 
 (in-package "ACL2")
 
@@ -13,7 +38,7 @@
 (set-verify-guards-eagerness 2)
 
 ;; ===================================================================
-;; 
+;;
 ;; Define the rule-set classes used to characterize the subtype rules.
 ;;
 ;; ===================================================================
@@ -51,7 +76,7 @@
 	(or (equal arg (car body))
 	    (arg-appears-in-body arg (cdr body)))))
     nil))
-	
+
 (defun all-args-appear-in-body (args body)
   (if (consp args)
       (and (arg-appears-in-body (car args) body)
@@ -108,20 +133,20 @@
 	#+joe(ignore (not (all-args-appear-in-body args body)))
 	)
     (mv-let (rec test rbody) (recursive-function name body)
-    
+
 	    (let ((implies-name-hyps (if rec `(and ,test ,rbody) body))
 		  (implies-name-conc `(,name ,@args))
 		  (name-implies-hyps (if rec `(and (,name ,@args) ,test) `(,name ,@args)))
 		  (name-implies-conc (if rec rbody body))
 		  )
-	      
+
 	      `(encapsulate
 		   ()
-		 
+
 		 (defun ,name ,args
 		   ,@declare
 		   ,body)
-		 
+
 		 (local (in-theory (disable (,name))))
 
 		 (defthm ,implies-name
@@ -129,23 +154,22 @@
 		    ,implies-name-hyps
 		    ,implies-name-conc)
 		   :rule-classes (:rewrite :forward-chaining))
-		 
-		 
+
+
 		 (defthm ,name-implies
 		   (implies
 		    ,name-implies-hyps
 		    ,name-implies-conc)
 		   :rule-classes (:rewrite :forward-chaining))
-		 
+
 		 (in-theory (disable (:rewrite ,name-implies)))
 		 ,@(if rec nil `((in-theory (disable ,name))))
-		 
+
 		 (rule-set type-backchain (:rewrite ,name-implies))
 		 (rule-set type-definitions ,name)
-		 
+
 		 )))))
-    
+
 (defmacro def::subtype (name args &rest body)
   (met ((decls body) (defun::strip-decls body))
        (def::subtype-events name args decls body)))
-

@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 ;make the inclusion of arithmetic stuff local?
@@ -49,7 +74,7 @@
   :hints (("Goal" :in-theory (enable ash))))
 
 ;bzo think more about the type of ash
-                 
+
 (defthm equal-ash-pos-0
   (implies (<= 0 c)
            (equal (equal (ash i c) 0)
@@ -104,7 +129,7 @@
                 (integerp x)
                 )
            (< b (ash x s)))
-  :hints (("goal" :in-theory (e/d (ash expt) 
+  :hints (("goal" :in-theory (e/d (ash expt)
                                   (FLOOR-OF-SHIFT-RIGHT-2)))))
 
 (defthm ash-bound3
@@ -161,7 +186,7 @@
                 )
            (equal (ASH (ASH x m) n)
                   (ash x (+ m n))))
-  :hints (("goal" :in-theory (enable ash ; LOGOPS-RECURSIVE-DEFINITIONS-THEORY 
+  :hints (("goal" :in-theory (enable ash ; LOGOPS-RECURSIVE-DEFINITIONS-THEORY
                                      expt
                                      ))))
 
@@ -179,12 +204,12 @@
   (implies (and (<= n 0)
                 (integerp n)
                 )
-           (equal (ash -1 n) 
+           (equal (ash -1 n)
                   -1))
   :hints (("goal" :in-theory (enable ash ;LRDT
                                      ))))
 
-(defthm ash-non-decreasing 
+(defthm ash-non-decreasing
   (implies (and (integerp k)
                 (<= 0 k)
                 (integerp n)
@@ -240,7 +265,7 @@
 ;;                 )
 ;;            (equal (ash (ash x m) n)
 ;;                   (ash x (+ m n))))
-;;   :hints (("goal" 
+;;   :hints (("goal"
 ;;            :in-theory (e/d (;LRDT expt2* ;ash-as-logtail ash-as-logapp open-logcons
 ;;                             expt
 ;;                             ash

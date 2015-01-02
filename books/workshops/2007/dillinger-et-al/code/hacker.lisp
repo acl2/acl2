@@ -761,7 +761,6 @@
     acl2::set-backchain-limit
     acl2::set-default-backchain-limit
     acl2::set-rewrite-stack-limit
-    acl2::set-nu-rewriter-mode
     acl2::set-case-split-limitations
     acl2::set-match-free-default
     acl2::add-match-free-override

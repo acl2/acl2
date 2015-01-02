@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 (defthm not-hide-forward
@@ -59,7 +84,7 @@
       (let ((term (car clause)))
         (let ((term (equiv-term equivs term)))
           (if term
-              (rewrite-equiv-hint once (cons `(not (hide (rewrite-equiv ,(optimize-equiv-term term)))) 
+              (rewrite-equiv-hint once (cons `(not (hide (rewrite-equiv ,(optimize-equiv-term term))))
                                              cases) equivs (cdr clause))
             (rewrite-equiv-hint once cases equivs (cdr clause)))))
     (if cases
@@ -96,7 +121,7 @@ in presenting your hints.  See :DOC hints.
       (let ((term (car clause)))
         (let ((term (equiv-term equivs term)))
           (if term
-              (rewrite-equiv-hint once (cons `(not (hide (rewrite-equiv ,(optimize-equiv-term term)))) 
+              (rewrite-equiv-hint once (cons `(not (hide (rewrite-equiv ,(optimize-equiv-term term))))
                                              cases) equivs (cdr clause))
             (rewrite-equiv-hint once cases equivs (cdr clause)))))
     (if (and stable cases)
@@ -147,7 +172,7 @@ in presenting your hints.  See :DOC hints.
       (let ((term (car clause)))
         (let ((term (equiv-var-term equivs term)))
           (if term
-              (slow-rewrite-equiv-hint once (cons `(not (hide (rewrite-equiv ,(optimize-equiv-term term)))) 
+              (slow-rewrite-equiv-hint once (cons `(not (hide (rewrite-equiv ,(optimize-equiv-term term))))
                                              cases) equivs (cdr clause))
             (slow-rewrite-equiv-hint once cases equivs (cdr clause)))))
     (if cases
@@ -159,16 +184,16 @@ in presenting your hints.  See :DOC hints.
 
 (defun slow-rewrite-equiv-hint (stbl once equivs clause)
   (declare (type t clause))
-  (if stbl 
+  (if stbl
       (let ((term (find-equiv equivs clause)))
-        (if term 
+        (if term
             (if once nil
               (let ((term `(not (hide (rewrite-equiv ,(optimize-equiv-term term))))))
-                `(:computed-hint-replacement 
+                `(:computed-hint-replacement
                   ((slow-rewrite-equiv-hint stable-under-simplificationp 't ',equivs clause))
                   :cases (,term))))
           (if once
-              `(:computed-hint-replacement  
+              `(:computed-hint-replacement
                 ((slow-rewrite-equiv-hint stable-under-simplificationp 'nil ',equivs clause)) :cases (t))
             nil)))
     nil))
@@ -180,7 +205,7 @@ in presenting your hints.  See :DOC hints.
   `(slow-rewrite-equiv-hint stable-under-simplificationp nil '(equal) clause))
 
 (local
- (encapsulate 
+ (encapsulate
   ()
 
 (defstub foo (x) nil)
@@ -201,7 +226,7 @@ in presenting your hints.  See :DOC hints.
    (fred (+ 3 (goo x))))
 
  )
- 
+
 ;;
 ;; This theorem does not prove without the rewrite-with-equality hint ..
 ;;
@@ -234,7 +259,7 @@ in presenting your hints.  See :DOC hints.
   ()
 
   (defun equiv (x y) (equal x y))
-  
+
   (defequiv equiv)
 
   (defcong equiv equal (fred x) 1)

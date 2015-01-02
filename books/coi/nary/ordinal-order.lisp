@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 (include-book "ordinals/lexicographic-ordering" :dir :system)
@@ -97,14 +122,14 @@
      (o-p x)
      (o-p y))
     (oconsp (ocons x y))))
- 
+
  (defthm op-ocons
    (implies
     (and
      (o-p x)
      (o-p y))
     (o-p (ocons x y))))
- 
+
  (defthm oconsp-equal
    (implies
     (and
@@ -122,7 +147,7 @@
 (in-theory (disable ocons ocar ocdr oconsp))
 
 ;;
- 
+
 (defun len-len-induction (x y)
   (declare (xargs :measure (+ (len x) (len y))))
   (if (and (consp x) (consp y))
@@ -159,15 +184,15 @@
    (DEFthm CODE-CHAR-CHAR-CODE-IS-IDENTITY-weaker
      (IMPLIES (CHARACTERP C)
 	      (EQUAL (CODE-CHAR (CHAR-CODE C)) C)))
-   
+
    (in-theory (disable CODE-CHAR-CHAR-CODE-IS-IDENTITY))
-   
+
    (defthm characterp-reduction
      (equal (characterp x)
 	    (equal x (code-char (char-code x)))))
 
    ))
-   
+
  (defthm equal-chartoo-reduction
    (implies
     (and
@@ -482,7 +507,7 @@
    (equal (equal x y)
 	  (and (not (o<< x y))
 	       (not (o<< y x)))))
-  :hints (("Goal" :in-theory (enable equal-*too-reduction 
+  :hints (("Goal" :in-theory (enable equal-*too-reduction
 				     ordinal-double-containment))))
 
 (defthm o<<-is-well-founded

@@ -1,11 +1,36 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;;
 ;; Dependency Trees for Data Dependency Analysis
-;; Jared Davis 
+;; Jared Davis
 ;;
 
 (in-package "DTREE")
@@ -21,10 +46,10 @@
   (declare (xargs :guard (and (set::listsetp localdeps)
                               (mapp children)
                               (dtreemapp children))))
-  (list :dtree 
+  (list :dtree
         (set::listsetfix localdeps)
         (dtreemapfix children)))
-  
+
 (defthm dtreep-of-rawdtree
   (dtreep (rawdtree localdeps children))
   :hints(("Goal" :in-theory (enable rawdtree dtreep))))
@@ -45,7 +70,7 @@
 
 ;; One major property that we need to know about our dtree construction is that
 ;; we can substitute in equivalent children and end up with an equivalent
-;; result.  
+;; result.
 
 (encapsulate
  ()
@@ -54,20 +79,20 @@
           (implies (and (subdepsmap sub super)
                         (in a (rawdtree locals sub)))
                    (in a (rawdtree locals super)))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (disable subdeps-of-gets-when-subdepsmap)
                   :use (:instance subdeps-of-gets-when-subdepsmap
                                   (key (car a)))
                   :expand ((in a (rawdtree locals sub))
                            (in a (rawdtree locals super)))))))
-                        
+
  (local (defthm lemma2
           ;; Interestingly, the mutually recursive version of deps is easier to
           ;; work with here...
           (implies (subdepsmap sub super)
                    (set::subset (deps (rawdtree locals sub))
                                  (deps (rawdtree locals super))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (disable set::double-containment-expensive)
                   :use ((:instance mrdeps (dtree (rawdtree locals sub)))
                         (:instance mrdeps (dtree (rawdtree locals super))))))))
@@ -76,13 +101,13 @@
           (implies (subdepsmap sub super)
                    (set::subset (deps (get a (rawdtree locals sub)))
                                 (deps (get a (rawdtree locals super)))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (disable subdeps-of-gets-when-subdepsmap)
                   :use (:instance subdeps-of-gets-when-subdepsmap
                                   (key (car a)))
                   :expand ((get a (rawdtree locals sub))
                            (get a (rawdtree locals super)))))))
-                 
+
  (defthm subdeps-of-rawdtrees-when-subdepsmap
    (implies (subdepsmap sub super)
             (subdeps (rawdtree locals sub)
@@ -98,17 +123,17 @@
           (implies (subtreemap sub super)
                    (set::subset (localdeps (rawdtree locals sub))
                                 (localdeps (rawdtree locals super))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (disable set::double-containment-expensive)
                   :use ((:instance mrdeps (dtree (rawdtree locals sub)))
                         (:instance mrdeps (dtree (rawdtree locals super))))))))
 
  (local (defthm lemma6
           (implies (subtreemap sub super)
-                   (set::subset 
+                   (set::subset
                     (localdeps (get a (rawdtree locals sub)))
                     (localdeps (get a (rawdtree locals super)))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (disable subtree-of-gets-when-subtreemap)
                   :use ((:instance subtree-of-gets-when-subtreemap
                                    (key (car a))))
@@ -134,21 +159,21 @@
 (encapsulate
  ()
 
- (local (defthm in-deps-rawdtree  
+ (local (defthm in-deps-rawdtree
           (equal (set::in a (deps (rawdtree localdeps children)))
                  (or (set::in a (set::listsetfix localdeps))
                      (set::in a (depsmap children))))
-          :hints(("Goal" 
-                  :use (:instance mrdeps 
+          :hints(("Goal"
+                  :use (:instance mrdeps
                                   (dtree (rawdtree localdeps children)))))))
- 
+
  (defthm deps-rawdtree
    (equal (deps (rawdtree localdeps children))
-          (set::union (set::listsetfix localdeps) 
+          (set::union (set::listsetfix localdeps)
                       (depsmap children))))
 
 )
-               
+
 
 
 
@@ -172,18 +197,18 @@
                                       (children dtree)))
                  (localdeps dtree))
           :hints(("Goal" :in-theory (disable set::double-containment-expensive)
-                  :use ((:instance mrdeps 
+                  :use ((:instance mrdeps
                                    (dtree (rawdtree (localdeps dtree)
                                                      (children dtree))))
                         (:instance mrdeps
                                    (dtree dtree)))))))
 
  (local (defthm lemma3
-          (equal (localdeps (get path (rawdtree (localdeps dtree) 
+          (equal (localdeps (get path (rawdtree (localdeps dtree)
                                                 (children dtree))))
                  (localdeps (get path dtree)))
           :hints(("Goal"
-                  :in-theory (e/d (get) 
+                  :in-theory (e/d (get)
                                   (set::double-containment-expensive))))))
 
  (defthm rawdtree-of-localdeps-and-children-under-equiv
@@ -226,7 +251,7 @@
 (defthm deps-of-leaf
   (equal (deps (leaf locals))
          (set::listsetfix locals))
-  :hints(("Goal"          
+  :hints(("Goal"
           :in-theory (disable set::double-containment-expensive)
           :use (:instance mrdeps (dtree (leaf locals))))))
 
@@ -246,4 +271,3 @@
              (leaf locals)
            *default*))
   :hints(("Goal" :in-theory (enable get))))
-

@@ -210,8 +210,11 @@
 (include-book "misc/simp" :dir :system)
 (include-book "misc/without-waterfall-parallelism" :dir :system)
 (include-book "misc/with-waterfall-parallelism" :dir :system)
+(include-book "misc/seq" :dir :system)
+(include-book "misc/seqw" :dir :system)
 
 (include-book "centaur/memoize/old/profile" :dir :system)
+(include-book "centaur/memoize/old/watch" :dir :system)
 
 #||
 

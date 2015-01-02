@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "GACC")
 
 ;; Keep this list of include-books in sync with the list in the .acl2 file:
@@ -14,7 +39,7 @@
 (in-theory (disable (:executable-counterpart skel)))
 
 ;Added by Eric
-(local (in-theory (disable memberp 
+(local (in-theory (disable memberp
 ;                           acl2::MEMBERP-Subbagp-NOT-CONSP-VERSION
                            REMOVE-BAG
                            REMOVE-1)))
@@ -41,19 +66,19 @@
 ;move these?
 (defthm non-integerp-ifix
   (implies (not (integerp x))
-           (equal (ifix x) 
+           (equal (ifix x)
                   0))
   :hints (("goal" :in-theory (enable ifix))))
 
 (defthm integerp-ifix
   (implies (integerp x)
-           (equal (ifix x) 
+           (equal (ifix x)
                   x))
   :hints (("goal" :in-theory (enable ifix))))
 
-(in-theory 
- (enable 
-  slot-p 
+(in-theory
+ (enable
+  slot-p
   slot-extensionality!!
   ))
 
@@ -101,8 +126,8 @@
 
 (in-theory (disable max-offset-fix-size))
 
-(theory-invariant 
- (incompatible 
+(theory-invariant
+ (incompatible
   (:rewrite max-offset-fix-size)
   (:rewrite unfixed-size-max-offset)
   ))
@@ -143,7 +168,7 @@
       (memberp base term)))
 |#
 
-              
+
 (defun syntax-ptr (base ptr woff wbase)
   (declare (type t base ptr))
   (if (and (consp ptr)
@@ -200,7 +225,7 @@
   `(equal (sblk ,s1 (+<> ,o1 ,base))
           (sblk ,s2 (+<> ,o2 ,base))))
 
-;bzo 
+;bzo
 (defthm open-len
   (implies (and (syntaxp (syntax-consp-or-symbol list))
                 (consp list))
@@ -217,31 +242,31 @@
 
 (encapsulate
  ()
- 
+
  (local
   (encapsulate
    ()
-   
+
    (defthm zp-max-offset
      (equal (equal (max-offset s) 0)
             (equal (fix-size s) 8))
      :hints (("goal" :in-theory (e/d (max-offset fix-size)
                                      (unfixed-size-max-offset))
               :expand (fix-size s))))
-   
+
    (defthm max-offset-offset-size
      (equal (max-offset (offset-size len))
             (nfix len))
      :hints (("goal" :in-theory (e/d (max-offset) ( unfixed-size-max-offset)))))
-   
+
    (defthm max-offset-offset-size-free
      (implies
       (equal (fix-size s) (offset-size len))
       (equal (max-offset s)
              (nfix len))))
-   
+
    ))
- 
+
  (defun base-appears-shallow (ptr)
    (declare (type t ptr))
    (or (and (symbolp ptr)
@@ -250,7 +275,7 @@
             (consp (cdr ptr))
             (symbolp (cadr ptr))
             (equal (symbol-name (cadr ptr)) "BASE"))))
- 
+
 ;if either is a 'base, then bind it to wbase, otherwise return nil
  (defun syntax-ptr-instance (ptr woff wbase)
    (declare (type t ptr))
@@ -269,9 +294,9 @@
          `((,woff  . (quote 0))
            (,wbase . ,ptr))
        nil)))
- 
+
 ;bzo try getting rid of the bind-free?
- 
+
  (defthm equal-sblk-extensionality-2
    (implies (and (bind-free (syntax-ptr-instance ptr 'o1 'base) (o1 base))
                  (equal ptr (+ o1 base))
@@ -287,7 +312,7 @@
                                     (ifix o2))))))
    :hints (("goal" :in-theory (e/d (sblk blk sblk-parms sblkp len)
                                    (unfixed-size-max-offset relocate-blk-rec-offset)))))
- 
+
  (defthm equal-sblk-extensionality
    (implies (and (bind-free (syntax-ptr 'base ptr 'o1 'base)
                             (o1 base))
@@ -306,11 +331,11 @@
    :hints
    (("goal"
      :in-theory
-     (e/d (sblk blk sblk-parms sblkp 
-                len 
+     (e/d (sblk blk sblk-parms sblkp
+                len
                 )
           (unfixed-size-max-offset relocate-blk-rec-offset)))))
- 
+
  )
 
 
@@ -341,7 +366,7 @@
       (let ((slot (car spec)))
         (if (and (slot-p slot)
                  (compare base size off (slot-size slot) (slot-off slot)))
-            (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+            (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                    (ifix (slot-val slot)))
           (rv size off base (cdr spec))))
     0))
@@ -364,7 +389,7 @@
     spec))
 
 (defthm ws-when-base-is-not-an-integerp
-  (implies (not (integerp gacc::base))  
+  (implies (not (integerp gacc::base))
            (equal (ws size gacc::off gacc::base skel gacc::spec)
                   (ws size gacc::off 0 skel gacc::spec)))
   :hints (("Goal" :in-theory (enable ws))))
@@ -398,7 +423,7 @@
       (let ((slot (car spec)))
         (if (and (slot-p slot)
                  (compare base size off (slot-size slot) (slot-off slot)))
-            (cons (update-slot slot :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+            (cons (update-slot slot :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                 (ifix val)))
                   (cdr spec))
           (cons slot
@@ -413,7 +438,7 @@
            (let ((slot (car spec)))
              (if (and (slot-p slot)
                       (compare base size off (slot-size slot) (slot-off slot)))
-                 (cons (update-slot slot :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+                 (cons (update-slot slot :val (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                                      val))
                        (cdr spec))
                (cons slot
@@ -457,7 +482,7 @@
   (implies
    (memberp (sblk size (+<> off base)) (keys-spec w base spec))
    (equal (rv size off base (wv size off base value spec))
-          (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+          (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                  value))))
 
 (defthm vanishing-ws
@@ -534,11 +559,11 @@
    (equal (h*-spec hop (ws size off base skel spec))
           (let ((skel (fix-skel skel)))
             (let ((wbase (skel-base skel)))
-              (ws size off base (skel (acl2::loghead (gacc::fix-size size) ;wfixn 8 size 
+              (ws size off base (skel (acl2::loghead (gacc::fix-size size) ;wfixn 8 size
                                              (op-base (op-how hop) :ptr wbase 0))
                                       (h*-spec hop (skel-spec (fix-skel skel))))
                   (h*-spec hop spec))))))
-  :hints (("goal" :in-theory (enable ;unfixed-size-wfixn 
+  :hints (("goal" :in-theory (enable ;unfixed-size-wfixn
                                      g? fix-skel)
            :induct (ws size off base skel spec))))
 
@@ -644,7 +669,7 @@
           (and (consp (cadr acl2::id))
                `(:do-not '(generalize preprocess eliminate-destructors fertilize eliminate-irrelevance)
                          :do-not-induct t
-                         :in-theory (enable ifix list::memberp 
+                         :in-theory (enable ifix list::memberp
                                             fix-skel)))))
 
 
@@ -689,7 +714,7 @@
            (equal (GACC::RV GACC::SIZE GACC::OFF GACC::BASE (cons gacc::slot GACC::SPEC))
                   (GACC::RV GACC::SIZE GACC::OFF GACC::BASE GACC::SPEC)))
   :hints (("Goal" :in-theory (enable gacc::rv))))
-       
+
 (defthm rv-of-cons-both
   (equal (GACC::RV GACC::SIZE GACC::OFF GACC::BASE (cons gacc::slot GACC::SPEC))
          (if  (AND (GACC::SLOT-P GACC::SLOT)
@@ -755,8 +780,8 @@
                     (and (equal (zv (list sblk) base spec1)
                                 (zv (list sblk) base spec2))
                          (implies (memberp sblk (keys-spec :all base spec1))
-                                  (equal (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
-                                                        value) 
+                                  (equal (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
+                                                        value)
                                          (rv wsize woff base spec2)))))))
 ;  :otf-flg t
   :hints (("goal" ; :in-theory (enable acl2::memberp-of-cons)
@@ -781,7 +806,7 @@
 ;                       numtype
                                ))
            :induct (spec-spec-induction spec1 spec2)
-           :do-not '(generalize eliminate-destructors ;fertilize 
+           :do-not '(generalize eliminate-destructors ;fertilize
                                 eliminate-irrelevance)
            :do-not-induct t)))
 
@@ -799,7 +824,7 @@
             (and (equal (zv (list sblk) base spec2)
                         (zv (list sblk) base spec1))
                  (implies (memberp sblk (keys-spec :all base spec1))
-                          (equal (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
+                          (equal (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
                                         value) (rv wsize woff base spec2)))))))
   :hints (("goal" :in-theory (disable zv-introduction-left)
 
@@ -832,11 +857,11 @@
   (implies
    (and
     (fixed-spec-p spec)
-    (acl2::unsigned-byte-p (gacc::fix-size size) ;wintn 8 size 
+    (acl2::unsigned-byte-p (gacc::fix-size size) ;wintn 8 size
            (skel-base skel))
     (fixed-spec-p (skel-spec skel)))
    (fixed-spec-p (ws size off base skel spec)))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (enable ;unfixed-size-wintn
                               fix-skel)
            :induct (ws size off base skel spec))))
@@ -852,9 +877,9 @@
 ;bzo move
 ;similar rule for wintn?
 ;; (defthm wfixn-of-fix-size
-;;   (equal (acl2::loghead (gacc::fix-size (fix-size wsize)) ;wfixn 8 (fix-size wsize) 
+;;   (equal (acl2::loghead (gacc::fix-size (fix-size wsize)) ;wfixn 8 (fix-size wsize)
 ;;                 value)
-;;          (wfixn 8 wsize 
+;;          (wfixn 8 wsize
 ;;                 value))
 ;;   :hints (("Goal" :in-theory (enable unfixed-size-wfixn))))
 
@@ -863,28 +888,28 @@
 (encapsulate
  ()
 
-;do we really want all this stuff to be local? 
+;do we really want all this stuff to be local?
  (local
   (encapsulate
    ()
-   
+
    (in-theory
     (enable
      zv-over-wv
      ))
-   
+
    (defthm zv-zv
      (equal (zv list1 base (zv list2 base spec))
             (zv list2 base (zv list1 base spec)))
      :hints (("goal" :in-theory (disable zv-introduction-right
                                          zv-introduction-left))))
-   
+
    (defthm zv-concatenation
      (equal (zv list1 base (zv list2 base spec))
             (zv (append list1 list2) base spec))
      :hints (("goal" :in-theory (e/d (binary-append)
                                      (zv-introduction-left zv-introduction-right)))))
-   
+
    (defthm wv-zv-wv
      (equal (wv wsize woff base v1 (zv list base (wv wsize woff base v2 spec)))
             (wv wsize woff base v1 (zv list base spec)))
@@ -892,18 +917,18 @@
               :in-theory (e/d ( ;default-car default-cdr
                                )
                               (zv-introduction-left zv-introduction-right)))))
-   
+
    (defthm rv-over-zv
      (implies
       (not (memberp (sblk rsize (+<> roff base)) list))
       (equal (rv rsize roff base (zv list base spec))
              (rv rsize roff base spec)))
      :hints (("goal" :do-not '(generalize eliminate-destructors)
-              :in-theory (e/d (ifix memberp 
+              :in-theory (e/d (ifix memberp
                                     )
                               ())
               :induct (zv list base spec))))
-   
+
    (defthm wv-under-zv
      (implies
       (not (memberp (sblk wsize (+<> woff base)) list))
@@ -911,15 +936,15 @@
              (wv wsize woff base value (zv list base spec))))
      :hints (("goal" :induct (zv list base spec)
               :in-theory (e/d (ifix ;default-car default-cdr
-                               memberp 
+                               memberp
 ;                               unfixed-size-wfixn
  ;                              unfixed-size-wintn
                                )
                               (zv-introduction-left zv-introduction-right)))))
-   
-   
+
+
    ))
- 
+
 ;mine
  (defthm zv-induction
    (implies
@@ -932,14 +957,14 @@
                 (and (equal (zv (cons sblk list) base spec1)
                             (zv (cons sblk list) base spec2))
                      (implies (memberp sblk (keys-spec :all base spec1))
-                              (equal (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
+                              (equal (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
                                             value) (rv wsize woff base spec2)))))
          ))
    :hints (("Goal" :in-theory (e/d (fixed-spec-p-zv wv-under-zv rv-over-zv
                                                     keys-spec-zv zv-introduction-left
                                                     zv-introduction-right
-                                                    zv-concatenation 
-                                                    list::append-of-cons) 
+                                                    zv-concatenation
+                                                    list::append-of-cons)
                                    (vanishing-wv
                                     zv-over-wv
                                     split-blk
@@ -948,7 +973,7 @@
 
 
 
- 
+
  ) ;end the encapsulate
 
 (in-theory
@@ -1036,9 +1061,9 @@
           (and (consp (cadr acl2::id))
                `(:do-not '(generalize preprocess eliminate-destructors fertilize eliminate-irrelevance)
                          :do-not-induct t
-                         :in-theory (enable ;acl2::memberp-of-cons 
-                                     slot-extensionality! 
-                                     ifix 
+                         :in-theory (enable ;acl2::memberp-of-cons
+                                     slot-extensionality!
+                                     ifix
                                      fix-skel)))))
 
 |#
@@ -1062,7 +1087,7 @@
                          :do-not-induct t
                          :expand (;(H*-SPEC (OP :NIL :Z) SPEC1)
                                   )
-                         :in-theory (e/d () 
+                         :in-theory (e/d ()
                                          (FIX
                                           ;PTR?
                                           ;split-blk
@@ -1138,7 +1163,7 @@
 
 
 (defthmd zs-over-ws
-  (implies 
+  (implies
    (equal value (skel 0 nil))
    (equal (zs list1 base (ws size off base value spec))
           (ws size off base value (zs list1 base spec))))
@@ -1149,28 +1174,28 @@
 
 (encapsulate
  ()
- 
+
  (local
   (encapsulate
    ()
-   
+
    (in-theory
     (enable
      zs-over-ws
      ))
-   
+
    (defthm zs-zs
      (equal (zs list1 base (zs list2 base spec))
             (zs list2 base (zs list1 base spec)))
      :hints (("goal" :in-theory (disable zs-introduction-right
                                          zs-introduction-left))))
-   
+
    (defthm zs-concatenation
      (equal (zs list1 base (zs list2 base spec))
             (zs (append list1 list2) base spec))
      :hints (("goal" :in-theory (e/d (binary-append)
                                      (zs-introduction-left zs-introduction-right)))))
-   
+
    (defthm ws-zs-ws
      (equal (ws wsize woff base v1 (zs list base (ws wsize woff base v2 spec)))
             (ws wsize woff base v1 (zs list base spec)))
@@ -1188,13 +1213,13 @@
       (equal (rs rsize roff base (zs list base spec))
              (rs rsize roff base spec)))
      :hints (("goal" :do-not '(generalize eliminate-destructors)
-              :in-theory (e/d (ifix ;SBLK-PARMS 
+              :in-theory (e/d (ifix ;SBLK-PARMS
                                memberp) ( ;UNFIXED-SIZE-WS
 ;UNFIXED-SIZE-MAX-OFFSET
 ;UNFIXED-SIZE-SBLK
                                ))
               :induct (zs list base spec))))
-   
+
    (defthm ws-under-zs
      (implies
       (not (memberp (sblk wsize (+<> woff base)) list))
@@ -1204,10 +1229,10 @@
               :in-theory (e/d (ifix ;default-car default-cdr
                                memberp)
                               (zs-introduction-left zs-introduction-right)))))
-   
-   
+
+
    ))
- 
+
  (defthm zs-induction
    (implies
     (and
@@ -1221,13 +1246,13 @@
                          (equal (fix-skel value) (rs wsize woff base spec2))))))
    :hints (("goal" :in-theory (e/d (fixed-spec-p-zs keys-spec-zs zs-introduction-left
                                                     zs-introduction-right
-                                                    zs-concatenation) 
+                                                    zs-concatenation)
                                    (vanishing-wv
                                     open-zs)))))
 
 
 
- 
+
  )
 
 
@@ -1252,15 +1277,15 @@
 
 ;I think the failed-location / tag-location stuff gives us debugging information in failed proofs.
 
-(defund failed-location (key) 
-  (declare (ignore key)) 
-  nil) 
+(defund failed-location (key)
+  (declare (ignore key))
+  nil)
 
 (in-theory (disable (:executable-counterpart failed-location)))
 (in-theory (disable (:type-prescription failed-location)))
 
 (defun tag-location (key bool)
-  (implies (not bool) (failed-location key)))        
+  (implies (not bool) (failed-location key)))
 
 (defthm zz-wv-introduction
   (implies
@@ -1271,11 +1296,11 @@
                  (and (equal (zz (list sblk) nil base spec1)
                              (zz (list sblk) nil base spec2))
                       (implies (memberp sblk (keys-spec :all base spec1))
-                               (tag-location woff (equal (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
-                                                                value) 
+                               (tag-location woff (equal (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
+                                                                value)
                                                          (rv wsize woff base spec2)))))))
         ))
-  :hints (("goal" :in-theory '(tag-location failed-location zz zs 
+  :hints (("goal" :in-theory '(tag-location failed-location zz zs
                                             zv-introduction-left zv-introduction-right))))
 
 
@@ -1286,7 +1311,7 @@
                 (and (equal (zz nil (list sblk) base spec1)
                             (zz nil (list sblk) base spec2))
                      (implies (memberp sblk (keys-spec :ptr base spec1))
-                              (tag-location woff (equal (fix-skel value) 
+                              (tag-location woff (equal (fix-skel value)
                                                         (rs wsize woff base spec2)))))))
 ;;        (equal (equal spec2
 ;;                      (ws wsize woff base value spec1))
@@ -1294,10 +1319,10 @@
 ;;                 (and (equal (zz nil (list sblk) base spec2)
 ;;                             (zz nil (list sblk) base spec1))
 ;;                      (implies (memberp sblk (keys-spec :ptr base spec1))
-;;                               (tag-location woff (equal (rs wsize woff base spec2) 
+;;                               (tag-location woff (equal (rs wsize woff base spec2)
 ;;                                                         (fix-skel value)))))))
        )
-  :hints (("goal" :in-theory '(tag-location failed-location zz zv 
+  :hints (("goal" :in-theory '(tag-location failed-location zz zv
                                             zs-introduction-left zs-introduction-right))))
 
 (in-theory
@@ -1341,17 +1366,17 @@
                (and (equal (zz vlist (cons sblk slist) base spec1)
                            (zz vlist (cons sblk slist) base spec2))
                     (implies (memberp sblk (keys-spec :ptr base spec1))
-                             (tag-location woff (equal (fix-skel value) 
+                             (tag-location woff (equal (fix-skel value)
                                                        (rs wsize woff base spec2))))))
 ;;         (equal (equal (zz vlist slist base spec2)
 ;;                       (zz vlist slist base (ws wsize woff base value spec1)))
 ;;                (and (equal (zz vlist (cons sblk slist) base spec2)
 ;;                            (zz vlist (cons sblk slist) base spec1))
 ;;                     (implies (memberp sblk (keys-spec :ptr base spec1))
-;;                              (tag-location woff (equal (fix-skel value) 
+;;                              (tag-location woff (equal (fix-skel value)
 ;;                                                        (rs wsize woff base spec2))))))
         ))
-  :hints (("goal" :in-theory '(tag-location failed-location zz 
+  :hints (("goal" :in-theory '(tag-location failed-location zz
                                             zv-over-ws zs-induction rs-zv keys-spec-zv))))
 
 (defthm zs-over-zv
@@ -1367,8 +1392,8 @@
   zv-over-zs
   ))
 
-(theory-invariant 
- (incompatible 
+(theory-invariant
+ (incompatible
   (:rewrite zs-over-zv)
   (:rewrite zv-over-zs)
   ))
@@ -1384,23 +1409,23 @@
                (and (equal (zz (cons sblk vlist) slist base spec1)
                            (zz (cons sblk vlist) slist base spec2))
                     (implies (memberp sblk (keys-spec :all base spec1))
-                             (tag-location woff (equal (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
+                             (tag-location woff (equal (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
                                                                       value
                                                                       )
                                                        (rv wsize woff base spec2))))))
         ))
-  :hints (("goal" :in-theory '(tag-location failed-location zz 
+  :hints (("goal" :in-theory '(tag-location failed-location zz
                                             fixed-spec-p-zs
-                                            zs-over-zv 
-                                            zs-over-wv 
-                                            zv-induction 
-                                            rv-zs 
+                                            zs-over-zv
+                                            zs-over-wv
+                                            zv-induction
+                                            rv-zs
                                             keys-spec-zs))))
 
 ;              ))
 
-(in-theory 
- (disable 
+(in-theory
+ (disable
   failed-location
   (:type-prescription failed-location)
   (failed-location)
@@ -1468,9 +1493,9 @@
    (and
     (x? fop)
     (equal v (rs wsize woff base spec))
-    (equal (f*-spec fop (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
+    (equal (f*-spec fop (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
                                (skel-base (fix-skel skel))) (skel-spec (fix-skel skel)))
-           (f*-spec fop (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
+           (f*-spec fop (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
                                (skel-base v)) (skel-spec v)))
     )
    (equal (f*-spec fop ptr (ws wsize woff base skel spec))
@@ -1483,7 +1508,7 @@
           (and (consp (cadr acl2::id))
                `(:do-not '(generalize preprocess eliminate-destructors fertilize eliminate-irrelevance)
                          :do-not-induct t
-                         :in-theory (e/d (;unfixed-size-wfixn unfixed-size-wintn 
+                         :in-theory (e/d (;unfixed-size-wfixn unfixed-size-wintn
                                                              open-ws) (;WFIXN-OF-FIX-SIZE
                                                                        ))
                          ))))
@@ -1508,7 +1533,7 @@
     (equal (op-which hop) :all)
     (not (g-op hop)))
    (equal (h*-spec hop (wv wsize woff base value spec))
-          (wv wsize woff base (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize 
+          (wv wsize woff base (acl2::loghead (gacc::fix-size wsize) ;wfixn 8 wsize
                                              value) (h*-spec hop spec))))
   :hints (("goal" :induct (wv wsize woff base value spec)
            :in-theory (e/d (g? open-wv ;unfixed-size-wfixn
@@ -1526,7 +1551,7 @@
   (implies
    (fixed-spec-p spec)
    (and (fixed-spec-p (skel-spec (rs size off base spec)))
-        (acl2::unsigned-byte-p (gacc::fix-size size) ;wintn 8 size 
+        (acl2::unsigned-byte-p (gacc::fix-size size) ;wintn 8 size
                (skel-base (rs size off base spec)))))
   :hints (("goal" :in-theory (enable ;UNFIXED-SIZE-WINTN
                                       )

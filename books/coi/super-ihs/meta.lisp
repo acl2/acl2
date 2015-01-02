@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 (include-book "loghead")
@@ -17,7 +42,7 @@
 ;Returns a term representing the conjunctionof TERM1 and TERM2.
 (defund make-conjunction (term1 term2)
   (declare (type t term1 term2))
-  (if (equal term1 ''t)  
+  (if (equal term1 ''t)
       term2 ;conjoining something with "true" has no effect
     (if (equal term2 ''t)
         term1 ;conjoining something with "true" has no effect
@@ -93,7 +118,7 @@
   (if (not (consp term))
       `(integerp ,term)
     (case (car term)
-          (binary-+ (make-conjunction 
+          (binary-+ (make-conjunction
                      (hyp-for-addends n (cadr term))
                      (hyp-for-addends n (caddr term))))
           (unary-- (hyp-for-addend n (cadr term)))
@@ -167,7 +192,7 @@
                            (loghead-sum-eval (strip-logheads-from-sum n term) alist))))
   :hints (("Goal" :in-theory (e/d (make-conjunction
                                      strip-loghead-from-term
-                                     CALL-TO-LOGHEAD-WITH-N-OR-GREATER-SIZE) 
+                                     CALL-TO-LOGHEAD-WITH-N-OR-GREATER-SIZE)
                                   (UNSIGNED-BYTE-P-LOGHEAD-FORWARD-CHAINING ;i think this prevents specious simplification
                                    ))
            :do-not '(generalize eliminate-destructors))))
@@ -184,7 +209,7 @@
 
 ;; ;test
 ;; (thm
-;;  (implies (and (integerp x) 
+;;  (implies (and (integerp x)
 ;;                (integerp y)
 ;;                (integerp z)
 ;;                (integerp w)
@@ -192,4 +217,3 @@
 ;;           (equal (loghead 16 (+ y (loghead 444 z) w (- (loghead 32 x))))
 ;;                  (loghead 16 (+ y z w (- x)))))
 ;;  :hints (("Goal" :in-theory '(meta-rule-eric))))
-                 

@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 ;We include arithmetic facts only locally to keep this book from enforcing an choice of arithmetic theories on its user.
@@ -53,7 +78,7 @@
     (implies (and (integerp x)
                   (integerp y))
              (integerp (* x y)))))
-          
+
 
  (defthm integerp-*-means
    (implies (and (integerp (* r x))
@@ -62,9 +87,9 @@
                  (rationalp r)
                  )
             (integerp x))
-   :hints (("goal" 
-            :use ((:instance integerp-*-means-l1 
-                             (x (* x r)) 
+   :hints (("goal"
+            :use ((:instance integerp-*-means-l1
+                             (x (* x r))
                              (y (denominator r))))))
    :rule-classes :forward-chaining))
 
@@ -85,7 +110,7 @@
     (cond ((zip n) nil)
           ((not (evenp n)) (ind1 (if (< n 0) (+ n 1) (- n 1))))
           (t (ind1 (if (< n 0) (+ n 1) (- n 2)))))))
- 
+
 
  (local
   (defthm evenp-+1-lemma
@@ -96,7 +121,7 @@
              (integerp (+ 1/2 (* 1/2 n))))
     :hints (("goal"
              :in-theory (e/d (evenp) (evenp-+-2))
-             :use ((:instance evenp-+-2 
+             :use ((:instance evenp-+-2
                               (n (1+ n))
                               (x -2)))))))
 
@@ -144,10 +169,10 @@
              (equal (evenp (+ x n))
                     (evenp n)))
     :hints (("goal"
-             :use ((:instance evenp-+-2 
+             :use ((:instance evenp-+-2
                               (n (+ 2 n))
                               (x 2))
-                   (:instance evenp-+-2 
+                   (:instance evenp-+-2
                               (n (+ -2 n))
                               (x -2)))))))
 
@@ -255,7 +280,7 @@
 
 ;;
 ;; ODDP
-;; 
+;;
 
 (in-theory (disable oddp))
 
@@ -290,12 +315,12 @@
   (equal (oddp (expt 2 j))
          (or (not (integerp j))
              (<= j 0)))
-  :hints (("Goal" :in-theory (enable oddp 
+  :hints (("Goal" :in-theory (enable oddp
                                      expt ;improve evenp rule and drop
                                      EXPONENTS-ADD-UNRESTRICTED))))
 
 ;consider adding (disabled!) versions of these without the backchain-limits?
-(defthmd even-odd-different-1 
+(defthmd even-odd-different-1
   (implies (and (evenp a)
                 (not (evenp b)))
            (not (equal a b)))
@@ -303,7 +328,7 @@
 
 ;bzo do we need both of these rules?
 ;consider adding (disabled!) versions of these without the backchain-limits?
-(defthmd even-odd-different-2 
+(defthmd even-odd-different-2
   (implies (and (not (evenp a))
                 (evenp b))
            (not (equal a b)))
@@ -326,7 +351,7 @@
   :hints (("Goal" :in-theory (enable oddp))))
 
 (defthm oddp-of-*
-  (implies (and (integerp a) 
+  (implies (and (integerp a)
                 (integerp b)
                 )
            (equal (oddp (* a b))
@@ -351,7 +376,7 @@
    (equal (equal (expt 2 a) (1+ (* 2 b)))
           (and (zp a) (zip b))))
   :hints (("goal" :in-theory (enable expt))))
- 
+
 (defthm *ark*-equal-1+-+-*2-*2
   (implies (and (integerp a) (integerp b) (integerp c)
                 (<= 0 a))
@@ -388,18 +413,18 @@
 
 
 (defthm equal-i+-*2
-  (implies (and (integerp a) 
-                (integerp b) 
+  (implies (and (integerp a)
+                (integerp b)
                 (integerp i)
                 (<= 0 a)
                 (not (evenp i)))
            (equal (equal (expt 2 a) (+ i (* 2 b)))
                   (and (zp a) (equal b (- (* 1/2 (+ -1 i)))))))
   :hints (("Goal" :in-theory (enable even-odd-different-2 even-odd-different-1))))
-  
+
 (defthm equal-i+-+-*2-*2
-  (implies (and (integerp a) 
-                (integerp b) 
+  (implies (and (integerp a)
+                (integerp b)
                 (integerp c)
                 (integerp i)
                 (<= 0 a)
@@ -410,9 +435,9 @@
 
 
 ;; (defthm +i-*2-is-different-from-*2
-;;   (implies (and (integerp a) 
-;;                 (integerp b) 
-;;                 (integerp i) 
+;;   (implies (and (integerp a)
+;;                 (integerp b)
+;;                 (integerp i)
 ;;                 (not (evenp i)))
 ;;            (not (equal (+ i (* 2 a)) (* 2 b)))))
 ;;   :hints (("goal"

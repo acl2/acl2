@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 #|
 
 Things to do:
@@ -30,7 +55,7 @@ Things to do:
 
 (local (in-theory (enable (:rewrite wf-syntax-prefix-implies-true-listp)
 			  (:definition wf-syntax-prefix))))
-	   
+
 ;(defcong list::equiv list::equiv
 ;  (cons a x) 2)
 
@@ -181,7 +206,7 @@ Things to do:
 (defun syntax-quote-shared-prefix (p1 p2)
   (declare (type t p1 p2))
   (if (consp p1)
-      (cond 
+      (cond
        ((syn::consp p2)
 	(let ((v (syn::car p2)))
 	  (if (syn::quotep v)
@@ -248,7 +273,7 @@ Things to do:
 	 (gp (append r0 p1) (sp (append r0 p2) v st)))
   :hints (("goal" :in-theory (e/d (append
 				   ;path::open-gp  ;looped
-                                   gp 
+                                   gp
                                    sp)
 				  (path::g-to-gp)))))
 
@@ -258,7 +283,7 @@ Things to do:
 ;; approximation (I don't know how we would prove the
 ;; theory in that case??)
 ;;
-;; That being the case, how will we extend this to 
+;; That being the case, how will we extend this to
 ;; lists of paths??  By triggering on gp?
 ;;
 (defthm gp-of-sp-bind-shared-prefix
@@ -279,7 +304,7 @@ Things to do:
 
 ;; You could strengthen this if x and y were "boolean"
 ;; This would require that meta functions return (syn::bool)
-;; values.  That would allow you to 
+;; values.  That would allow you to
 
 (defthm booleanp-conjoin
   (implies
@@ -308,7 +333,7 @@ Things to do:
 	(and (pd-eval x a)
 	     (pd-eval y a))))
   :hints (("goal" :in-theory (enable syn::conjoin))))
- 
+
 (defthm booleanp-make-conjunction
   (implies
    (and
@@ -387,12 +412,12 @@ Things to do:
       (let ((n (bag::usb16-fix (len whole-alist))))
 	(or (and (syn::funcall 'all-diverge 1 fact)
 		 (bag::ts-non-nil (cadr entry))
-		 (bag::show-unique-memberp-and-subbagp-from-type-alist x list 
-								       (syn::arg 1 fact) 
+		 (bag::show-unique-memberp-and-subbagp-from-type-alist x list
+								       (syn::arg 1 fact)
 								       n whole-alist n whole-alist 1))
 	    (and (syn::funcall 'all-diverge-from-all 2 fact)
 		 (bag::ts-non-nil (cadr entry))
-		 (bag::show-memberp-from-type-alist x (syn::arg 1 fact) 
+		 (bag::show-memberp-from-type-alist x (syn::arg 1 fact)
 						    n whole-alist whole-alist 1)
 		 (bag::show-subbagp-from-type-alist list (syn::arg 2 fact) n whole-alist whole-alist 1))
 	    (and (syn::funcall 'diverges-from-all 2 fact)
@@ -425,13 +450,13 @@ Things to do:
 	   (n (bag::usb16-fix (len whole-alist))))
       (or (and (syn::funcall 'all-diverge 1 fact)
 	       (bag::ts-non-nil (cadr entry))
-	       (syn::and (bag::hyp-for-show-unique-memberp-and-subbagp-from-type-alist x list 
-										       (syn::arg 1 fact) 
+	       (syn::and (bag::hyp-for-show-unique-memberp-and-subbagp-from-type-alist x list
+										       (syn::arg 1 fact)
 										       n whole-alist n whole-alist 1)
 			 fact))
 	  (and (syn::funcall 'all-diverge-from-all 2 fact)
 	       (bag::ts-non-nil (cadr entry))
-	       (syn::and (bag::hyp-for-show-memberp-from-type-alist x (syn::arg 1 fact) 
+	       (syn::and (bag::hyp-for-show-memberp-from-type-alist x (syn::arg 1 fact)
 								    n whole-alist whole-alist 1)
 			 (bag::hyp-for-show-subbagp-from-type-alist list (syn::arg 2 fact) n whole-alist whole-alist 1)
 			 fact))
@@ -566,7 +591,7 @@ Things to do:
     (pd-eval (hyp-for-show-diverges-from-all-from-quote-list x list type-alist) bag::a))
    (diverges-from-all (pd-eval x bag::a) list))
   :rule-classes (:rewrite :forward-chaining)
-  :hints (("goal" :in-theory (e/d (syn::open-nth syn::conjoin diverges-from-all) 
+  :hints (("goal" :in-theory (e/d (syn::open-nth syn::conjoin diverges-from-all)
                                   (DIVERGES-FROM-ALL-OF-CDR ;efficiency
                                    NOT-STRICTLY-DOMINATED-BY-SOME-WHEN-DIVERGES-FROM-ALL
                                    )))))
@@ -611,7 +636,7 @@ Things to do:
 		  (syn::true))
 	      (hyp-for-simplify-diverges-from-all-from-cons-list x (syn::cdr list) type-alist)))
    ((syn::appendp list)
-    (syn::and 
+    (syn::and
      (hyp-for-simplify-diverges-from-all-from-cons-list x (syn::arg 1 list) type-alist)
      (hyp-for-simplify-diverges-from-all-from-cons-list x (syn::arg 2 list) type-alist)))
    ((syn::quotep list)
@@ -684,8 +709,8 @@ Things to do:
 			(bag::show-subbagp-from-type-alist list (syn::arg 1 fact) n whole-alist whole-alist 1))))
 	  (and (syn::funcall 'all-diverge 1 fact)
 	       (bag::ts-non-nil (cadr entry))
-	       (bag::show-unique-subbagps-from-type-alist x list 
-							  (syn::arg 1 fact) 
+	       (bag::show-unique-subbagps-from-type-alist x list
+							  (syn::arg 1 fact)
 							  n whole-alist whole-alist 1))
 	  (show-all-diverge-from-all-type-alist x list n (cdr type-alist) whole-alist)))))
 
@@ -715,9 +740,9 @@ Things to do:
 			     fact)))
 	  (and (syn::funcall 'all-diverge 1 fact)
 	       (bag::ts-non-nil (cadr entry))
-	       (syn::and 
-		(bag::hyp-for-show-unique-subbagps-from-type-alist x list 
-								   (syn::arg 1 fact) 
+	       (syn::and
+		(bag::hyp-for-show-unique-subbagps-from-type-alist x list
+								   (syn::arg 1 fact)
 								   n whole-alist whole-alist 1)
 		fact))
 	  (hyp-for-show-all-diverge-from-all-type-alist x list n (cdr type-alist) whole-alist)))))
@@ -822,7 +847,7 @@ Things to do:
     (if (show-all-diverge-from-all-type-alist x list (bag::usb16-fix (len type-alist)) type-alist type-alist)
 	(mv t (syn::true))
       (mv nil `(all-diverge-from-all ,x ,list))))))
-  
+
 (defirrelevant simplify-all-diverge-from-all-cons-list 1 bag::a (swap x list type-alist)
   :hints (("goal" :in-theory (enable
 			      simplify-diverges-from-all-from-cons-list-irrelevant
@@ -897,7 +922,7 @@ Things to do:
   :hints (("goal" :induct (simplify-all-diverge-from-all-cons-list swap x list type-alist)
 	   :in-theory (e/d (syn::open-nth
 			    all-diverge-from-all-append-1
-			    all-diverge-from-all-append-2) 
+			    all-diverge-from-all-append-2)
 			   (ALL-DIVERGE-FROM-ALL-BY-MEMBERSHIP)))
 	  (and acl2::stable-under-simplificationp
 	       `(:in-theory (enable syn::conjoin)))))
@@ -918,7 +943,7 @@ Things to do:
 					     (path-syntax-ev  pd-eval)
 					     (path-syntax-ev-list pd-eval-list))
            :in-theory (enable pd-eval-constraint-0))))
- 
+
 
 (defthm pd-eval-show-all-diverge-from-all-from-type-alist-works-right
   (IMPLIES
@@ -1017,7 +1042,7 @@ Things to do:
 (defthm hyp-for-simplify-all-diverge-from-cons-list-works
   (implies
    (pd-eval (hyp-for-simplify-all-diverge-from-cons-list list type-alist) bag::a)
-   (equal (pd-eval (v1 (simplify-all-diverge-from-cons-list list type-alist)) bag::a) 
+   (equal (pd-eval (v1 (simplify-all-diverge-from-cons-list list type-alist)) bag::a)
 	  (all-diverge (pd-eval list bag::a))))
   ;; :rule-classes (:rewrite :forward-chaining)
   :hints (("goal" :induct (SIMPLIFY-ALL-DIVERGE-FROM-CONS-LIST-FN BAG::A LIST TYPE-ALIST)
@@ -1030,7 +1055,7 @@ Things to do:
 	       '(:in-theory (e/d (all-diverge-cons
 				  all-diverge-append
 				  syn::open-nth
-				  syn::conjoin) 
+				  syn::conjoin)
 				 (ALL-DIVERGE-FROM-ALL-BY-MEMBERSHIP-DRIVER
 				  ALL-DIVERGE-FROM-ALL-BY-MEMBERSHIP-DRIVER
 				  ALL-DIVERGE-FROM-ALL-BY-MEMBERSHIP
@@ -1079,7 +1104,7 @@ Things to do:
   :rule-classes ((:meta :trigger-fns (all-diverge)
                         :backchain-limit-lst 0 ;just in case...
                         ))
-  :hints (("Goal" :in-theory (enable 
+  :hints (("Goal" :in-theory (enable
 			      syn::open-nth
 			      hyp-for-simplify-all-diverge-from-cons-list-irrelevant
 			      simplify-all-diverge-from-cons-list-irrelevant
@@ -1188,7 +1213,7 @@ Things to do:
   :rule-classes ((:meta :trigger-fns (diverges-from-all)
                         :backchain-limit-lst 0
                         )))
-  
+
 
 ;; All diverge from all .. assuming we are dealing in atomic functions.
 
@@ -1196,8 +1221,8 @@ Things to do:
 
 ;; (show-diverges-from-all term mfc state)
 ;; (bag::subbagp x y)
-;;  => (show-diverges-..) 
-;; 
+;;  => (show-diverges-..)
+;;
 ;; (show-diverge-from-mfc term mfc state)
 ;; (bag::memberp x list)
 ;; => (show-diverges-from-all a x mfc state)
@@ -1214,7 +1239,7 @@ Things to do:
     (dominates b x)
     (dominates s b))
    (dominates s x)))
-  
+
 (defun fix-prefix (prefix)
   (declare (type (satisfies wf-syntax-prefix) prefix))
   (if (consp prefix)
@@ -1763,9 +1788,9 @@ Things to do:
 			      syntax-keys
 			      ))))
 
-(syn::extend-eval 
+(syn::extend-eval
  key-eval
- ( 
+ (
   (strip-cars list)
   (car x)
   ))
@@ -1828,7 +1853,7 @@ Things to do:
 ;;       (let ((prefixes (common-prefixes (car list1) list2)))
 ;; 	(common-prefixes-list prefixes (cdr list1) list2))
 ;;     prefixes))
-	
+
 
 ;; (defignore syntax-remove-1-prefixed-tail-dominator bag::a (list pre n x)
 ;;   (declare (type (satisfies alistp) pre)
@@ -1862,7 +1887,7 @@ Things to do:
 ;;    (t (mv nil nil))))
 
 ;; (defignored (prefix n list1 list2)
-  
+
 
 ;; (defignored syntax-remove-list-prefixed-tail-dominator bag::a (prefix n list1 list2)
 ;;   (declare (type t list1 list2))
@@ -1903,10 +1928,10 @@ Things to do:
 ;; 			      syntax-common-prefix-p-irrelevant
 ;; 			      ))))
 
-;; (defignored 
-  
+;; (defignored
 
-    
+
+
 ;; |#
 
 (in-theory (disable sp-to-clrp))
@@ -1977,8 +2002,8 @@ Things to do:
 	 (clrp b (clrp a r)))
   :rule-classes ((:rewrite :loop-stopper ((b a)))))
 
-(theory-invariant 
- (incompatible 
+(theory-invariant
+ (incompatible
   (:rewrite clrp-commute-2)
   (:rewrite clrp-of-clrp)))
 
@@ -1994,7 +2019,7 @@ Things to do:
 			       clrp-of-clrp
 			       meta-rule-to-show-prefix-domination
 			       )))))
-	       
+
 (defthm nthcdr-of-dominator
   (implies
    (dominates x a)
@@ -2022,10 +2047,10 @@ Things to do:
   (implies
    (not (dominated-by-some a list))
    (equal (clrp-list list (sp a v st))
-	  (sp a (clrp-list (map-nthcdr (len a) (dominated a list)) v) 
+	  (sp a (clrp-list (map-nthcdr (len a) (dominated a list)) v)
 	      (clrp-list list st))))
   :hints (("goal" :induct (clrp-list list st)
-	   :in-theory (e/d 
+	   :in-theory (e/d
 		       (
 			clrp-commute-2
 			diverge
@@ -2044,7 +2069,7 @@ Things to do:
    (dominates a x)
    (equal (gp a (clrp x st))
 	  (clrp (nthcdr (len a) x) (gp a st))))
-  :hints (("goal" :in-theory (enable 
+  :hints (("goal" :in-theory (enable
 			      diverge
 			      clrp
 			      GP-OF-SP
@@ -2056,7 +2081,7 @@ Things to do:
    (equal (gp a (clrp-list list st))
 	  (clrp-list (map-nthcdr (len a) (dominated a list)) (gp a st))))
   :hints (("goal" :induct (clrp-list list st)
-	   :in-theory (e/d 
+	   :in-theory (e/d
 		       (
 			;; jcd - not necessary clrp-commute-2
 			;; jcd - not necessary diverge
@@ -2410,8 +2435,8 @@ DAG
 		 (simplify fn x y n (cdr alist) whole))))
 	  (and (syn::funcall 'all-diverge 1 fact)
 	       (bag::ts-non-nil (cadr entry))
-	       (bag::show-unique-subbagps-from-type-alist x list 
-							  (syn::arg 1 fact) 
+	       (bag::show-unique-subbagps-from-type-alist x list
+							  (syn::arg 1 fact)
 							  (bag::usb16-fix (len whole-alist)) whole-alist whole-alist 1))))
 	(:diverge
 	 (cond
@@ -2437,7 +2462,7 @@ DAG
 							(bag::usb16-fix (len whole-alist))))))
 	(:diverges-from-all
 	 )
-	
+
 	     (or (and sx sy)
 		 (and sx (met ((c2 a2 q2) (deconstruct a))
 			   (and (simplify-list :diverges-from-all c2 y)
@@ -2450,19 +2475,19 @@ DAG
 		 (simplify fn x y n (cdr alist) whole))))
 	  (and (syn::funcall 'all-diverge 1 fact)
 	       (bag::ts-non-nil (cadr entry))
-	       (bag::show-unique-subbagps-from-type-alist x list 
-							  (syn::arg 1 fact) 
+	       (bag::show-unique-subbagps-from-type-alist x list
+							  (syn::arg 1 fact)
 							  (bag::usb16-fix (len whole-alist)) whole-alist whole-alist 1)))
 	  (t
 	   (simplify fn x y n (cdr alist) whole))))
-	
+
 	  (:
 
-		
+
     (:all-diverge
      (case fn
        (:diverge
-	(unique-members 
+	(unique-members
      )
 
   (case fn
@@ -2531,9 +2556,9 @@ DAG
    ((syn::consp list)
     (if (syntax-dominates-some (syn::car list) x)
 	(syntax-unique-portions (syn::cdr list) x (cons xr) y yr)
-      
-      
-      
+
+
+
 
 ;;
 ;; Cannot seem to independently say what we want

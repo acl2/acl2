@@ -1023,6 +1023,7 @@
             'state
             (list 'quote doc)
             (list 'quote event-form)))
+    #+acl2-legacy-doc
     (defmacro defdoc (&whole event-form name doc)
       (list 'defdoc-fn
             (list 'quote name)
@@ -1511,7 +1512,8 @@
                          mutual-recursion-fn defmacro-fn defconst-fn
                          defstobj-fn
                          defthm-fn defaxiom-fn progn-fn encapsulate-fn
-                         include-book-fn deflabel-fn defdoc-fn
+                         include-book-fn deflabel-fn
+                         #+acl2-legacy-doc defdoc-fn
                          deftheory-fn in-theory-fn in-arithmetic-theory-fn
                          regenerate-tau-database-fn
                          push-untouchable-fn remove-untouchable-fn
@@ -3741,7 +3743,6 @@
      (NTH ACL2-BUILT-INS)
      (NTH-ALIASES-TABLE STOBJ) ; was SWITCHES-PARAMETERS-AND-MODES
      (NTHCDR ACL2-BUILT-INS)
-     (NU-REWRITER MISCELLANEOUS)
      (NULL ACL2-BUILT-INS)
      (NUMBER-SUBTREES HONS-AND-MEMOIZATION)
      (NUMERATOR ACL2-BUILT-INS)
@@ -4062,7 +4063,6 @@
      (SET-NON-LINEAR POINTERS) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-NON-LINEARP
       NON-LINEAR-ARITHMETIC) ; was SWITCHES-PARAMETERS-AND-MODES
-     (SET-NU-REWRITER-MODE NU-REWRITER) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-OVERRIDE-HINTS OVERRIDE-HINTS) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-OVERRIDE-HINTS! OVERRIDE-HINTS) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-PARALLEL-EXECUTION PARALLELISM) ; was SWITCHES-PARAMETERS-AND-MODES
@@ -5290,7 +5290,6 @@
      set-match-free-default
      set-measure-function
      set-non-linearp
-     set-nu-rewriter-mode
      set-override-hints-macro
      set-prover-step-limit
      set-rewrite-stack-limit
@@ -5388,7 +5387,7 @@
 ;                                 associated FORMALS triples.]
 ; defabsstobj-fn             (name STOBJ . names) [as above for defstobj-fn]
 ; deflabel-fn                (name LABEL . T)
-; defdoc-fn                  ---
+; #+acl2-legacy-doc defdoc-fn ---
 ; deftheory-fn               (name THEORY . &)
 ; defchoose-fn               (name FORMALS . &)
 ; verify-guards-fn           ---
@@ -5624,7 +5623,6 @@
                              set-match-free-default
                              set-measure-function
                              set-non-linearp
-                             set-nu-rewriter-mode
                              set-prover-step-limit
                              set-rewrite-stack-limit
                              set-ruler-extenders

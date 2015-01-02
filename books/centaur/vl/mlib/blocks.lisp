@@ -62,7 +62,7 @@ hassle.</p>
       :short "A collection of module elements (see @(see vl-modelement)),
 generates, and ports."
 
-      :long "<p>A genblob can be made from a @(see vl-modelementlist) by
+      :long "<p>A genblob can be made from a @(see vl-genelementlist-p) by
 sorting the elements by type; see @(see vl-sort-genelements).</p>
 
 <p>Its fields each contain the list of elements of the given type.</p>"

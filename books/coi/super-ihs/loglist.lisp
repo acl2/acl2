@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 (include-book "byte-p")
 (include-book "logapp")
@@ -14,10 +39,10 @@
 (encapsulate
  ()
  (local (defthmd equal-logapp-x-y-z-helper
-          (implies (and (integerp n) 
-                        (integerp x) 
-                        (integerp y) 
-                        (integerp z) 
+          (implies (and (integerp n)
+                        (integerp x)
+                        (integerp y)
+                        (integerp z)
                         (<= 0 n))
                    (equal (equal (logapp n x y) z)
                           (and (equal (loghead n x) (loghead n z))
@@ -62,7 +87,7 @@
                 (<= 0 n))
            (equal (logapp n (logior w y) (logior x z))
                   (logior (logapp n w x) (logapp n y z))))
-  :hints (("goal" :in-theory (enable LRDT)))) 
+  :hints (("goal" :in-theory (enable LRDT))))
 
 (defthm logapp-logand
   (implies (and (integerp w)
@@ -103,7 +128,7 @@
 
 (defthm loghead-logior
   (implies (and (integerp n)
-                (integerp x) 
+                (integerp x)
                 (integerp y)
                 (<= 0 n))
            (equal (loghead n (logior x y))
@@ -129,7 +154,7 @@
                     (ash (loghead (- n1 n2) x) n2))))
   :hints (("goal" :in-theory (e/d (loghead*-better ash* LRDT
                                                    zp
-                                                   ) 
+                                                   )
                                   ( ;LOGHEAD-OF-*-EXPT-ALT
                                    )))))
 
@@ -217,7 +242,7 @@
                   (or (equal x (expt 2 n))
                       (equal x 0))))
   :rule-classes nil
-  :hints (("goal" 
+  :hints (("goal"
            :induct (loghead n x)
            :expand (logcdr x)
            :in-theory (e/d (lrdt expt ;logcdr
@@ -240,7 +265,7 @@
 (local (in-theory (disable UNSIGNED-BYTE-P-OF-LOGCDR))) ;this doesn't play well with LRDT
 
 (defthm equal-loghead-lognot-all-ones
-  (implies (and (integerp n)    
+  (implies (and (integerp n)
                 (integerp x)
                 (<= 0 n))
            (equal (equal (loghead n (lognot x)) (1- (expt 2 n)))
@@ -283,7 +308,7 @@
   (implies (and (integerp n)
                 (<= 0 n)
                 (unsigned-byte-p n x))
-           (equal (loghead n (- (logext n x))) 
+           (equal (loghead n (- (logext n x)))
                   (loghead n (- x))))
   :hints (("goal" :in-theory (e/d (LRDT open-logcons) (LOGEXTU-AS-LOGHEAD ;forcing
                                                        LOGHEAD-OF-MINUS
@@ -296,7 +321,7 @@
                 (<= 0 n))
            (equal (loghead n (logxor x y))
                   (logxor (loghead n x) (loghead n y))))
-  :hints (("goal" :in-theory (enable LRDT)))) 
+  :hints (("goal" :in-theory (enable LRDT))))
 
 (defthm loghead-lognot-loghead
   (implies (and (integerp n1)
@@ -306,8 +331,8 @@
                 (<= 0 n1))
            (equal (loghead n1 (lognot (loghead n2 x)))
                   (loghead n1 (lognot x))))
-  :hints (("goal" 
-           :in-theory (e/d (LRDT logendp) (LOGHEAD-OF-MINUS 
+  :hints (("goal"
+           :in-theory (e/d (LRDT logendp) (LOGHEAD-OF-MINUS
                                            )))))
            ;:induct (sub1-sub1-logcdr-induction n2 n1 x))))
 
@@ -325,7 +350,7 @@
 
 (encapsulate
  ()
- 
+
  (local
   (defthm loghead-lognot-logext-helper
     (implies (and (equal (logcar x) 1)
@@ -386,7 +411,7 @@
   :hints (("Goal" :use (:instance loghead-logapp (size (ifix size)))
            :in-theory (disable loghead-logapp))))
 
-(in-theory (disable loghead-logapp)) 
+(in-theory (disable loghead-logapp))
 
 (defthmd logtail-loghead-better
   (equal (logtail size1 (loghead size i))
@@ -395,7 +420,7 @@
   :hints (("Goal" :use (:instance logtail-loghead)
            :in-theory (disable logtail-loghead))))
 
-(in-theory (disable logtail-loghead)) 
+(in-theory (disable logtail-loghead))
 
 (defthm loghead-logtail
   (equal (loghead i (logtail j x))
@@ -424,7 +449,7 @@
   :hints (("Goal" :use (:instance logtail-logapp)
            :in-theory (disable logtail-logapp))))
 
-(in-theory (disable logtail-logapp)) 
+(in-theory (disable logtail-logapp))
 
 (encapsulate
  ()
@@ -436,7 +461,7 @@
                               (logapp size i (loghead (- (ifix size1) (nfix size)) j))
                             0)))
           :hints (("Goal" :use (:instance loghead-logapp (i (ifix i)))
-                   :in-theory (e/d (logtail-loghead-better) 
+                   :in-theory (e/d (logtail-loghead-better)
                                    (loghead-logapp
                                     LOGHEAD-LOGTAIL))))))
 
@@ -472,8 +497,8 @@
   :hints (("Goal" :use (:instance associativity-of-logapp)
            :in-theory (disable associativity-of-logapp))))
 
-(in-theory (disable associativity-of-logapp)) 
-  
+(in-theory (disable associativity-of-logapp))
+
 ;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
 ;; logtail
 ;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
@@ -485,7 +510,7 @@
                 (<= 0 n))
            (equal (logtail n (logior x y))
                   (logior (logtail n x) (logtail n y))))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (disable logapp-logior)
            :use ((:instance logapp-logior
                             (w (loghead n x))
@@ -500,7 +525,7 @@
                 (<= 0 n))
            (equal (logtail n (logand x y))
                   (logand (logtail n x) (logtail n y))))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (disable logapp-logand)
            :use ((:instance logapp-logand
                             (w (loghead n x))
@@ -514,11 +539,8 @@
                 (<= 0 n))
            (equal (logtail n (lognot x))
                   (lognot (logtail n x))))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (disable logapp-lognot)
            :use ((:instance logapp-lognot
                             (x (loghead n x))
                             (y (logtail n x)))))))
-
-
-

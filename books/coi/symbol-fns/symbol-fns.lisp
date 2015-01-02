@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "SYMBOL-FNS")
 
 (defun symbol-list-to-string (list)
@@ -45,10 +70,10 @@
   (declare (type t entry))
   (cond
    ((symbolp entry) (symbol-name entry))
-   ((integerp entry) 
+   ((integerp entry)
     (if (<= 0 entry)
 	(coerce (explode-nonnegative-integer entry 10 nil) 'acl2::string)
-      (concatenate 'acl2::string "-" 
+      (concatenate 'acl2::string "-"
 		   (coerce (explode-nonnegative-integer (- entry) 10 nil) 'acl2::string))))
    ((stringp entry) entry)
    (t "")))
@@ -56,7 +81,7 @@
 (defthm stringp-to-string
   (stringp (to-string atom))
   :hints (("Goal" :in-theory (enable to-string))))
-  
+
 (defun to-symbol-in-package-of (x witness)
   (declare (type t x witness))
   (intern-in-package-of-symbol (to-string x) (safe-symbol witness)))
@@ -79,23 +104,23 @@
 
 
 (defmacro join-symbols (witness &rest rst)
-  `(intern-in-package-of-symbol (list-to-string (list ,@rst)) 
+  `(intern-in-package-of-symbol (list-to-string (list ,@rst))
 				(safe-witness ,witness)))
 
 (defmacro prefix (&rest rst)
   (let ((base (car (last rst))))
     `(join-symbols ,base ,@rst)))
-  
+
 (defmacro suffix (base &rest rst)
   `(join-symbols ,base ,base ,@rst))
 
 (defund make-numbered-symbol (witness symbol number)
   (declare (type (integer 0 *) number)
 	   (type (satisfies symbolp) witness symbol))
-  (intern-in-package-of-symbol 
-   (concatenate 'acl2::string 
+  (intern-in-package-of-symbol
+   (concatenate 'acl2::string
 		(symbol-name symbol)
-		(coerce (explode-nonnegative-integer number 10 nil) 'acl2::string)) 
+		(coerce (explode-nonnegative-integer number 10 nil) 'acl2::string))
    (safe-witness witness)))
 
 (defthm symbolp-make-numbered-symbol
@@ -144,7 +169,7 @@
     (<= 0 number)
     (symbol-listp list))
    (symbol-listp (number-symbol-list witness list number))))
-  
+
 (defund map-symbol-to-package (symbol witness)
   (declare (type symbol witness))
   (if (symbolp symbol)
@@ -158,7 +183,7 @@
 
 (defmacro enkey (symbol)
   `(map-symbol-to-package ,symbol :key))
-		 
+
 (defun map-symbol-list-to-package (list witness)
   (declare (type symbol witness))
   (if (consp list)
@@ -186,7 +211,7 @@
    (symbolp symbol)
    (equal (symbol-fix symbol) symbol))
   :hints (("goal" :in-theory (enable symbol-fix))))
- 
+
 (defthm symbol-listp-implies-true-listp
   (implies
    (symbol-listp list)

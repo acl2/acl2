@@ -1,11 +1,36 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;;
 ;; Simple Equivalence-Based Maps for ACL2
-;; Jared Davis 
+;; Jared Davis
 ;;
 ;;
 ;; INTRODUCTION
@@ -33,7 +58,7 @@
 ;;
 ;;   (equiv x y)             returns true iff both:
 ;;                            (1) x and y have the same domain, and
-;;                            (2) every key in this shared domain has the 
+;;                            (2) every key in this shared domain has the
 ;;                                same value in both maps
 ;;
 ;;
@@ -94,10 +119,10 @@
 ;;
 ;;
 ;; 2. Map Domains versus Record Key Sets
-;; 
+;;
 ;; Our library also provides a well defined notion of a map's domain.  In the
 ;; records book, there is no such explicit notion.
-;; 
+;;
 ;; With some work, we can define, say, "keys" which returns the set of keys
 ;; which have a non-nil value in a record.  But, this is not really as flexible
 ;; as we would like -- for example, we cannot (s a val r) and expect a to be a
@@ -131,7 +156,7 @@
 ;; Our hope is that our actual implementation need not be examined by the user
 ;; of the map library.  Furthermore, we strongly discourage relying upon the
 ;; specific details of our implementation in "external" code, because this
-;; violates the principle of abstraction.  
+;; violates the principle of abstraction.
 ;;
 ;; Nevertheless, surely there are choices we have made that we should document
 ;; for anyone who is interested in reimplementing maps or modifying this file
@@ -161,7 +186,7 @@
 ;; map.  The cardinality of the map's domain serves a similar function.  Maybe
 ;; this is an insight -- len makes sense when applied to lists, but maybe there
 ;; should be some kind of alist-len function instead.
-;; 
+;;
 ;; We have not concerned ourselves much with runtime efficiency.  Originally we
 ;; wrote our primitive list-like operations (head, tail) using the set
 ;; operations on the domain of the map.  In other words, (empty map) was
@@ -224,9 +249,9 @@
 (defund domain (map)
   (declare (xargs :guard (mapp map)
                   :verify-guards nil))
-  (mbe :logic (cond ((atom map) 
+  (mbe :logic (cond ((atom map)
                      (set::emptyset))
-                    ((atom (car map)) 
+                    ((atom (car map))
                      (domain (cdr map)))
                     (t (set::insert (caar map)
                                      (domain (cdr map)))))
@@ -281,7 +306,7 @@
               (acl2-count map)))
   :rule-classes :linear
   :hints(("Goal" :in-theory (enable erase domain)
-          :induct (erase key map))))                
+          :induct (erase key map))))
 
 (defthm acl2-count-of-erase-weak-linear
   (<= (acl2-count (erase key map))
@@ -423,7 +448,7 @@
        :exec (cond ((atom map)
                      nil)
                     (t (cons (car map)
-                             (optimize 
+                             (optimize
                               (erase (caar map) (cdr map))))))))
 
 (verify-guards optimize
@@ -508,7 +533,7 @@
 
 
 
-;; I've decided to make tail a macro rather than a function.  
+;; I've decided to make tail a macro rather than a function.
 ;; Erasing the head of the map is no different than erasing any other
 ;; key, but this is a convenience abbreviation.
 
@@ -543,7 +568,7 @@
 
 
 
-                  
+
 (defund submap (sub super)
   (declare (xargs :guard (and (mapp sub)
                               (mapp super))))
@@ -567,7 +592,7 @@
 
 (defthm subset-of-submap-domain-with-supermap-domain
   (implies (submap sub super)
-           (set::subset (domain sub) 
+           (set::subset (domain sub)
                          (domain super))))
 
 
@@ -612,18 +637,18 @@
   (((submap-hyps) => *)
    ((submap-sub) => *)
    ((submap-super) => *))
-  
+
   (local (defun submap-hyps () nil))
   (local (defun submap-sub () nil))
   (local (defun submap-super () nil))
-  
+
   (defthmd submap-membership-constraint
     (implies (submap-hyps)
              (implies (in submap-key (submap-sub))
                       (and (in submap-key (submap-super))
                            (equal (get submap-key (submap-sub))
                                   (get submap-key (submap-super)))))))
-  
+
   )
 
  (local (defund submap-badguy (sub super)
@@ -644,19 +669,19 @@
                       (or (not (in (submap-badguy sub super) super))
                           (not (equal (get (submap-badguy sub super) sub)
                                       (get (submap-badguy sub super) super))))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable submap submap-badguy)
                   :induct (submap-badguy sub super)))))
-  
+
  (defthmd submap-by-membership-driver
    (implies (submap-hyps)
             (submap (submap-sub) (submap-super)))
-   :hints(("Goal" 
-           :use ((:instance submap-badguy-witness 
+   :hints(("Goal"
+           :use ((:instance submap-badguy-witness
                             (sub (submap-sub))
                             (super (submap-super)))
                  (:instance submap-membership-constraint
-                            (submap-key (submap-badguy (submap-sub) 
+                            (submap-key (submap-badguy (submap-sub)
                                                        (submap-super))))))))
 
  (defadvice submap-by-membership
@@ -691,7 +716,7 @@
   (implies (submap sub super)
            (submap (set key val sub)
                    (set key val super))))
-               
+
 
 
 (defund equiv (x y)
@@ -748,12 +773,12 @@
 
 (defcong equiv equiv (optimize map) 1
   :hints(("Goal" :in-theory (enable equiv))))
-   
+
 
 
 ;; The following rule is necessarily weaker than its variant in misc/records,
 ;; because of the way that the map's domain has been separated from its range.
-          
+
 (defthm set-of-get-same
   (equiv (set key (get key map) map)
          (if (in key map)
@@ -762,7 +787,7 @@
   :hints(("Goal" :in-theory (enable equiv))))
 
 
-;; bzo - We might want to add a rule like this?  
+;; bzo - We might want to add a rule like this?
 ;;
 ;;  (implies (and (set::in key (domain map))
 ;;                (equal (get key map) val)))
@@ -776,20 +801,20 @@
 ;;
 ;;
 ;; BACKGROUND
-;; 
+;;
 ;; Suppose you are trying to simplify a nest of erases, such as:
 ;;
 ;;  (erase k1 (erase k2 (erase k3 (erase k4 ... (erase kn X) ... ))))
 ;;
-;; Becuase it really doesn't matter what order erases occur in, imagine a 
+;; Becuase it really doesn't matter what order erases occur in, imagine a
 ;; function ERASE* which erases a whole set of keys.  In other words, instead
 ;; of thinking of the above as a nest of erases, think of it as a single
 ;; function call (ERASE* {k1, k2, ..., kn} X).
 ;;
 ;; Our notion of progress is basically that, whenever A is a proper subset of
 ;; B, then (ERASE* A X) is better than (ERASE* B X).  So, our goal is to make
-;; progress by noticing that keys can be eliminated.  What we would ideally 
-;; like to do is ask, for every ki, 
+;; progress by noticing that keys can be eliminated.  What we would ideally
+;; like to do is ask, for every ki,
 ;;
 ;;   Is ki in (dom (ERASE* {k1, k2, ..., k_{i-1}, k_{i+1}, ..., kn} X))?
 ;;
@@ -808,12 +833,12 @@
 ;; Aside from the question of how to actually perform such queries, this could
 ;; potentially be an expensive operation as N grows large.
 ;;
-;; One way to "query" the system is to aggressively case-split so that, for 
+;; One way to "query" the system is to aggressively case-split so that, for
 ;; each query we would like to make (e.g., is k3 == k4?), we consider two
 ;; cases: (1) where k3 == k4 and (2) where k3 != k4.  These become explicit
 ;; hypotheses for the prover to consider, and now if it can show, say, that
 ;; k3 == k4, then case (2) becomes vacuously true and case (1) has a nice
-;; piece of additional information which can be used to simplify the erase 
+;; piece of additional information which can be used to simplify the erase
 ;; nest.
 ;;
 ;; But taken literally, this case splitting would introduce 2^|queries| cases.
@@ -822,7 +847,7 @@
 ;; cases that the end user is going to have to wade through.  So, it seems
 ;; clear that we can't really take this approach.
 ;;
-;; 
+;;
 ;; RESTRAINED SIMPLIFICATION
 ;;
 ;; Is it even our job to try to ask these questions?  After all, our goal is to
@@ -905,18 +930,18 @@
 ;; might consider the following theorem:
 ;;
 ;; (thm
-;;   (equiv (erase (foo1 x) 
-;;                 (erase (foo2 x) 
-;;                        (erase (foo3 x) 
+;;   (equiv (erase (foo1 x)
+;;                 (erase (foo2 x)
+;;                        (erase (foo3 x)
 ;;                               (erase (foo4 x)
-;;                                      (erase (foo5 x) 
-;;                                             (erase (foo6 x) 
+;;                                      (erase (foo5 x)
+;;                                             (erase (foo6 x)
 ;;                                                    Y))))))
-;;          (erase (foo3 x) 
-;;                 (erase (foo2 x) 
-;;                        (erase (foo4 x) 
-;;                               (erase (foo6 x) 
-;;                                      (erase (foo5 x) 
+;;          (erase (foo3 x)
+;;                 (erase (foo2 x)
+;;                        (erase (foo4 x)
+;;                               (erase (foo6 x)
+;;                                      (erase (foo5 x)
 ;;                                             Y)))))))
 ;;
 ;; When the restrained strategy is used, the goal is dispatched automatically
@@ -948,8 +973,8 @@
 ;;
 ;; In order to achieve this, our reordering rules will have loop stoppers in
 ;; place so that swaps will only be made if the terms are out of order.
-;; 
-;; When we write rules such as 
+;;
+;; When we write rules such as
 ;;
 ;;     (equiv (erase key1 (erase key2 map))
 ;;            (erase key2 (erase key1 map))))
@@ -1011,15 +1036,15 @@
 ;; right way to simplify erase of erase.  But, "set"s can't just be arbitrarily
 ;; reordered like "erase"s, unless they are to different locations.
 ;;
-;; I thought for awhile that maybe the best thing to do for set-of-set would 
+;; I thought for awhile that maybe the best thing to do for set-of-set would
 ;; then be to just do the case split.  But, I found that this doesn't work.  In
 ;; particular, we need a loop stopper in order to prevent ourselves from going
 ;; into infinite loops on the not-equal case.  But then the rule won't fire on
 ;; the equal case either!
 ;;
 ;; So, here is what I am going to do.  I will just write two rules: a simple
-;; (hypothesis free) rewrite to handle the "same" case, and a conditional 
-;; rewrite rule to handle the "different" case.  But, I'll add a "case-split" 
+;; (hypothesis free) rewrite to handle the "same" case, and a conditional
+;; rewrite rule to handle the "different" case.  But, I'll add a "case-split"
 ;; to the set-of-set case, so that even if the hypothesis fails, we'll break
 ;; into cases.  This way, we have an the aggressive splitting strategy that
 ;; nonetheless still applies to "same" addresses.
@@ -1043,7 +1068,7 @@
   :rule-classes ((:rewrite :loop-stopper ((key1 key2 set))))
   :hints(("Goal" :in-theory (enable equiv))))
 
-(defthm set-of-erase-same 
+(defthm set-of-erase-same
   (equiv (set key val (erase key map))
          (set key val map))
   :hints(("Goal" :in-theory (enable equiv))))
@@ -1063,13 +1088,13 @@
 ;; We finally install untranslate patterns to make maintain our abstractions
 ;; of in, tail, and empty during proofs.
 
-(ACL2::add-untranslate-pattern (set::in ?key (domain ?map)) 
+(ACL2::add-untranslate-pattern (set::in ?key (domain ?map))
                                (in ?key ?map))
 
-(ACL2::add-untranslate-pattern (set::empty (domain ?map)) 
+(ACL2::add-untranslate-pattern (set::empty (domain ?map))
                                (empty ?map))
 
-(ACL2::add-untranslate-pattern (erase (head ?map) ?map) 
+(ACL2::add-untranslate-pattern (erase (head ?map) ?map)
                                (tail ?map))
 
 (ACL2::optimize-untranslate-patterns)

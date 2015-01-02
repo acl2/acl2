@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "PATH")
 (include-book "../lists/basic")
 (include-book "../lists/map-cons")
@@ -262,7 +287,7 @@
   (equal (syntax-diverge (v0 (syntax-remove-common-prefix t1 t0))
                          (v1 (syntax-remove-common-prefix t1 t0)))
          (syntax-diverge t1 t0))
-  :hints (("goal" :in-theory (e/d (syntax-diverge-commute) 
+  :hints (("goal" :in-theory (e/d (syntax-diverge-commute)
                                   (;for efficiency:
                                    SYN::OPEN-LEN
                                    SYNTAX-QUOTE-DIVERGE)))))
@@ -1262,7 +1287,7 @@
                        (syn::open-nth
                         syn::conjoin
                         syn::open-len
-                        
+
                         syntax-domination-implies-domination
                         syntax-domination-implies-consp
                         memberp-not-consp-prefixes
@@ -1284,7 +1309,7 @@
                         TAIL-DOMINATES-P
                         SYNTAX-QUOTE-TAIL-DOMINATES-FN
                         DOMINATES-SAME-LEN-CHEAP
-                        
+
                         ))
            :induct (show-syntax-tail-dominates-fn bag::a x y type-alist))
           ))
@@ -2069,14 +2094,14 @@
 (defirrelevant hyp-for-show-prefix-diverge-from-type-alist 1 bag::a (a b type-alist whole-alist)
   :hints (("goal" :in-theory (e/d (hyp-for-syntax-contains-unique-prefixed-tail-dominators-irrelevant
                                    hyp-for-show-prefix-diverge-from-type-alist
-                                   ) 
+                                   )
                                   (;efficiency:
                                    HYP-FOR-SYNTAX-CONTAINS-UNIQUE-PREFIXED-TAIL-DOMINATORS-FN
                                    HYP-FOR-SYNTAX-CONTAINS-PREFIXED-TAIL-DOMINATOR-FN
                                    HYP-FOR-SHOW-SYNTAX-PREFIXED-TAIL-DOMINATOR-P-FN
                                    SYN::OPEN-LEN
                                    HYP-FOR-SHOW-SYNTAX-DOMINATES-P-FN
-                                   
+
                                    )))))
 
 (local (in-theory (disable HYP-FOR-SYNTAX-CONTAINS-UNIQUE-PREFIXED-TAIL-DOMINATORS-FN)))
@@ -2110,9 +2135,9 @@
 
   (bag::hide x)
   (bag::hide-unique list)
-  (bag::hide-subbagp x y) 
-  (bag::hide-disjoint x y) 
-  (bag::hide-memberp a x) 
+  (bag::hide-subbagp x y)
+  (bag::hide-disjoint x y)
+  (bag::hide-memberp a x)
   (bag::perm x y)
   (bag::unique list)
   (bag::if a b c)
@@ -2131,12 +2156,12 @@
   (bag::any-subbagp x list) ;remove this?
   (list::finalcdr x)
   (list::fix x)
-  (bag::subbagp x y) 
-  (list::memberp a x) 
+  (bag::subbagp x y)
+  (list::memberp a x)
 ; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
 ;  (replaced member by member-equal).]
-  (acl2::member-equal a x) 
-  (bag::disjoint x y) 
+  (acl2::member-equal a x)
+  (bag::disjoint x y)
   ))
 
 (DEFTHM
