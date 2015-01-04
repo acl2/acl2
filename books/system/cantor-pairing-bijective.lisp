@@ -2,6 +2,7 @@
 ;; is bijective. The crux of the proof is an explicit definition of the inverse
 ;; of the cantor pairing function.
 ;; - harshrc [2014-12-27 Sat] -- adapted from proof dating May 2010.
+;; [2015-1-3] Added sum-inverse bounds to fill gap in given proof (pointed by Grant Passmore).
 
 (in-package "ACL2")
 
@@ -15,6 +16,17 @@
       0
     (+ (nfix n) (sum (- n 1)))))
 
+(defthm sum-natp
+  (implies (natp n)
+           (and (integerp (sum n))
+                (>= (sum n) 0)))
+  :rule-classes (:type-prescription :rewrite))
+
+(defthm sum-bound
+  (implies (natp n)
+           (>= (sum n) n))
+  :rule-classes (:linear :rewrite))
+
 ; If (sum n) = M, then (sum-inverse M M) = n
 (defun sum-inverse (M x)
   "return greatest number n <= x such that (sum n) <= M"
@@ -25,9 +37,9 @@
       (sum-inverse M (1- x)))))
 
 
-(encapsulate ; export sum-inverse-sum-corollary
- nil
- (local (include-book "ordinals/lexicographic-ordering" :dir :system))
+;(encapsulate ; 
+; nil
+ (local (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system))
 
 ;explicit induction hint used below
  (local
@@ -70,7 +82,28 @@
                  (<= i p))
             (equal (sum-inverse (+ i (sum p)) (+ i (sum p)))
                    p)))
- )
+ 
+ 
+ 
+ (defthm sum-sum-inverse-bound1
+  (implies (and (natp n)
+                (natp y)
+                (>= y n))
+           (<= (sum (sum-inverse n y)) n))
+  :hints (("Goal" :induct (sum-inverse-ind-hint n y i)))
+  :rule-classes (:linear :rewrite))
+ 
+ (defthm sum-sum-inverse-bound2
+  (implies (and (natp n)
+                (natp y)
+                (>= (sum y) n)
+                )
+           (>= (sum (sum-inverse n y)) (- n (sum-inverse n y))))
+  :hints (("Goal" :induct (sum-inverse n y))
+          ("Subgoal *1/3" :cases ((> (sum (- y 1)) n))))
+  :rule-classes (:linear :rewrite))
+ 
+ ;)
 
 
 ; Main Proof
@@ -87,6 +120,8 @@
            (i  (- (sum-inverse n n) j)))  
       (list i j))))
 
+
+
 ; Cantor pairing is surjective
 ; To show: \forall n \exists a,b \in N s.t. (cantor-pairing a b) = n 
 ; = { Skolemization }
@@ -96,7 +131,9 @@
   (let ((a (car (cantor-pairing-inverse n)))
         (b (cadr (cantor-pairing-inverse n))))
     (implies (natp n)
-             (equal (cantor-pairing a b) n)))
+             (and (natp a)
+                  (natp b)
+                  (equal (cantor-pairing a b) n))))
   :rule-classes nil)
 
 
@@ -117,7 +154,8 @@
   :rule-classes nil
   :hints (("Goal" :in-theory (disable cantor-pairing cantor-pairing-inverse)
                   :use ((:instance cantor-pairing-inverse-is-an-inverse (a a1) (b b1))
-                        (:instance cantor-pairing-inverse-is-an-inverse (a a2) (b b2))))))
+                        (:instance cantor-pairing-inverse-is-an-inverse (a a2) (b b2))))))#|ACL2s-ToDo-Line|#
+
 
 
 
