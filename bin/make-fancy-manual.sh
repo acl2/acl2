@@ -55,17 +55,16 @@ if [ ! -f $books/system/doc/rendered-doc-combined.lsp ] ; then
     exit 1
 fi
 
-# Create HTML files (instructions from David Rager):
-# Commented out unless/until HTML files are generated and this
-# is found to be useful, presumably for web searching.
-#   pushd $books/doc/manual
-#   chmod +x ./xdata2sql4seo.pl
-#   perl xdata2sql.pl
-#   ./xdata2sql4seo.pl
-#   chmod o+r ./xdata-seo.db
-#   chmod ugo+r xdata.db
-#   chmod ugo+rx index-seo.php
-#   popd
+# Create version of the manual optimized for search engines
+# (instructions from David Rager):
+pushd $books/doc/manual
+chmod +x ./xdata2sql4seo.pl
+perl xdata2sql.pl
+./xdata2sql4seo.pl
+chmod o+r ./xdata-seo.db
+chmod ugo+r xdata.db
+chmod ugo+rx index-seo.php
+popd
 
 # Copy from source to destination and move to destination/manual/.
 echo "cp -pr $books/doc/manual $destdir/manual"
