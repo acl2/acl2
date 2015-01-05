@@ -48,39 +48,41 @@
                              (rec-limit natp))
   :guard (eq (vl-datatype-kind x) :vl-usertype)
   :short "Resolves a datatype of usertype kind to a concrete
-datatype, i.e. anything but a user typename.  Not recursive."
-  :long "<p>Always returns a datatype; however, in various failure cases, it
-may still be a usertype.  Returns a scopestack suffix representing the scope in
-which the typedef was found.</p>
+datatype, i.e. anything but a user typename."
+  :long "<p>The input is guarded to be a usertype.  If it is defined as another
+usertype (possibly with packed/unpacked dimensions), then we recur until it is
+defined as something other than a usertype.  However, the final type may still
+have usertypes within it, i.e. as struct/union member types.</p>
 
+<p>Also returns the scopestack representing the scope in which the
+final type declaration was found.</p>
+
+<p>This function is strict with respect to packed vs. unpacked dimensions;
+i.e., if a usertype is defined as having unpacked dimensions, it will warn if
+any packed dimensions are applied to that type.  Arguably this check should be
+done elsewhere, in which case this function could ignore the distinction
+between packed and unpacked dimensions.  However, it is important to preserve
+the order of dimensions, and it's not clear how to handle cases that mix the
+two: packed dimensions are always treated as \"inner\" or \"most rapidly
+varying\" dimensions.  So if we have (illegal) nested typedefs that place
+unpacked dimensions inside of packed dimensions, we have no way to express that
+as a single, usertype-free datatype, unless we change some packed dimensions
+into unpacked ones or vice versa:</p>
 
 @({
-  typedef logic [3:0] mynibble;
-  typedef mynibble [7:0] my32;
-  typedef my32 [0:3] membank [63:0];
-  // error: since membank now has unpacked dims, we can't give it more packed dims:
-  // typedef membank [3:0] memchunk;
-  // this works:
-  typedef membank memchunk [3:0];
+ typedef logic t1 [5:1];  // unpacked dimension
+ typedef t1 [3:0] t2;     // packed dimension applied to unpacked datatype
+
+ typedef logic [3:0] t3 [5:1];  // not the same as t2
+
+ typedef logic [5:1] [3:0] t4;  // same dimensions as t2, but all dimensions packed
+ typedef logic t5 [5:1] [3:0];  // same dimensions as t2, but all dimensions unpacked
  })
 
-<p>Suppose we are asked to resolve the memchunk type.  We first recur through
-the typdefs to the definition of mynibble, which is a coretype of logic with a
-packed dims entry of [3:0].</p>
+<p>We don't have this problem for the (also illegal) case where packed
+dimensions are applied to an unpacked structure or union, so we don't warn in
+this case; this should be checked separately.</p>"
 
-<p>Then we pop up to where we are considering the definition of my32.  Here we
-add [7:0] to the packed dimesions of the datatype.  This is ok since logic is an ok
-type for packed dimensions and we don't have any unpacked dimensions yet.</p>
-
-<p>When we get to membank we add [0:3] as another packed dimension, but now we
-return [63:0] as an additional unpacked dimension not attached to the datatype.</p>
-
-<p>If memchunk had a packed dimension in its definition as in the commented-out
-version, we'd fail because now we have unpacked dimensions so we can't add more
-packed ones.  However, it's fine to add more unpacked dimensions.</p>
-
-<p>Also returns the scopestack representing the scope in which the final type
-declaration was found.</p>"
   :returns (mv (warning (iff (vl-warning-p warning) warning))
                (type vl-datatype-p)
                (scope vl-scopestack-p))
@@ -162,6 +164,29 @@ declaration was found.</p>"
     :measure (two-nats-measure reclimit (vl-datatype-count x))
     :returns (mv (warning (iff (vl-warning-p warning) warning))
                  (type vl-datatype-p))
+    :short "Resolves all usertypes within a datatype, recursively."
+    :long "<p>A recursion limit is needed in case a usertype is defined in
+terms of itself.</p>
+
+<p>Always returns a datatype; however, when a warning is present, it may still
+contain usertypes.</p>
+
+<p>This function (actually its subroutine, @(see vl-usertype-resolve)) is
+somewhat strict with respect to packed vs. unpacked dimensions; see @(see
+vl-usertype-resolve) for a more extensive discussion.</p>
+
+<p>An example to work through: suppose we want to resolve the usertype memchunk
+into a usertype-free datatype --</p>
+
+@({
+  typedef logic [3:0] mynibble;
+  typedef mynibble [7:0] my32;
+  typedef my32 [0:3] membank [63:0];
+  // error: since membank now has unpacked dims, we can't give it more packed dims:
+  // typedef membank [3:0] memchunk;
+  // this works:
+  typedef membank memchunk [3:0];
+ })"
     (b* ((x (vl-datatype-fix x)))
       (vl-datatype-case x
         :vl-coretype (mv nil x)
@@ -302,7 +327,7 @@ it's the first packed dimension (or the declared range of a net type).</p>"
 (define vl-datatype-range-conservative
   :short "Get the range, if any, for a data type."
   :long "<p>The datatype should be fully resolved, as in the output from @(see
-vl-datatype-resolve-usertypes).</p>
+vl-datatype-usertype-elim).</p>
 
 <p>This is like @(see vl-datatype-range), but it only works on
 single-dimensional vectors of basic 1-bit types.  Why?  A lot of existing code
