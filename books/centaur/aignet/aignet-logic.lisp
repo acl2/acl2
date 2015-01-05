@@ -964,31 +964,45 @@
                      (equal (stype (car (lookup-id ro aignet)))
                             (reg-stype)))))
          aignet)
+        ((and (equal (stype (car aignet)) (reg-stype))
+              (nat-equiv (node-count aignet) reg-id))
+         aignet)
         (t (lookup-reg->nxst reg-id (cdr aignet))))
   ///
   (defcong nat-equiv equal (lookup-reg->nxst reg-id aignet) 1)
   (defcong list-equiv list-equiv (lookup-reg->nxst reg-id aignet) 2)
-  (defthm car-of-lookup-reg->nxst
-    (implies (consp (lookup-reg->nxst reg-id aignet))
+  (defthm car-of-lookup-reg->nxst-when-nxst
+    (implies (and (consp (lookup-reg->nxst reg-id aignet))
+                  ;; (not (equal (stype (car (lookup-reg->nxst reg-id aignet)))
+                  ;;             (reg-stype)))
+                  (not (equal (node-count (lookup-reg->nxst reg-id aignet))
+                              (nfix reg-id))))
              (and (equal (stype (car (lookup-reg->nxst reg-id aignet))) (nxst-stype))
                   (equal (nxst-node->reg (car (lookup-reg->nxst reg-id aignet)))
                          (nfix reg-id)))))
-  
+
+  ;; (defthm lookup-reg->nxst-count-when-reg
+  ;;   (implies (equal (stype (car (lookup-reg->nxst reg-id aignet)))
+  ;;                   (reg-stype))
+  ;;            (equal (node-count (lookup-reg->nxst reg-id aignet))
+  ;;                   (nfix reg-id))))
+
   (defthm aignet-extension-p-of-lookup-reg->nxst
     (aignet-extension-p aignet (lookup-reg->nxst reg-id aignet))
     :hints(("Goal" :in-theory (enable aignet-extension-p))))
 
-  (defthm stype-of-lookup-reg->nxst
-    (implies (consp (lookup-reg->nxst n aignet))
-             (equal (stype (car (lookup-reg->nxst n aignet)))
-                    (nxst-stype))))
+  ;; (defthm stype-of-lookup-reg->nxst
+  ;;   (implies (consp (lookup-reg->nxst n aignet))
+  ;;            (equal (stype (car (lookup-reg->nxst n aignet)))
+  ;;                   (nxst-stype))))
+
   (defthm node-count-of-lookup-reg->nxst
     (implies (consp (lookup-reg->nxst n aignet))
-             (< (nfix n) (node-count (lookup-reg->nxst n aignet))))
+             (<= (nfix n) (node-count (lookup-reg->nxst n aignet))))
     :rule-classes :linear)
 
   (defthm lookup-reg->nxst-out-of-bounds
-    (implies (<= (node-count aignet) (nfix id))
+    (implies (< (node-count aignet) (nfix id))
              (not (consp (lookup-reg->nxst id aignet))))))
 
 
