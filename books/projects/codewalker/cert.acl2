@@ -8,9 +8,10 @@
                      '(push pop pc program step)))
 
 ; Added by Matt K.:
-; The use of codewalker seems to require that waterfall parallelism be turned
-; off (in ACL2(p)).  The problem is that generate-def-semantics-name calls
+
+; The use of codewalker seems to require that parallelism be turned off (in
+; ACL2(p)).  The problem is that generate-def-semantics-name calls
 ; fmt1-to-string, which leads to a call of with-local-state, which is
 ; prohibited under waterfall parallelism.
 #+acl2-par
-(set-waterfall-parallelism nil)
+#!acl2(set-parallel-execution nil)
