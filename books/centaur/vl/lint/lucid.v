@@ -113,3 +113,14 @@ endmodule
 
 
 
+
+module m3 (output logic [3:0] perfectly_ok) ;
+
+  logic [3:0] part_used;
+  logic [3:0] part_set;
+
+  assign part_used = 0;
+  assign part_set[2:0] = part_used[1];
+  assign perfectly_ok = part_set;
+
+endmodule

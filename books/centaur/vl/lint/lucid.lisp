@@ -34,8 +34,12 @@
 (include-book "../mlib/strip")
 (include-book "../mlib/fmt")
 (include-book "../mlib/print-warnings")
+(include-book "../mlib/range-tools")
+(include-book "../mlib/datatype-tools")
 (include-book "../mlib/reportcard")
 (include-book "../util/cwtime")
+(include-book "../util/sum-nats")
+(include-book "../util/merge-indices")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -1477,6 +1481,281 @@ created when we process their packages, etc.</p>"
     (or (eq (vl-lucidocc-kind (car x)) :solo)
         (vl-lucid-some-solo-occp (cdr x)))))
 
+
+;; Performance BOZO - we would probably be better off using something like
+;; sparse bitsets here, but that would require developing something like
+;; nats-from that produces a sparse bitset.  That's fine but might take an hour
+;; or two of work.
+
+
+(define vl-fast-range-p ((x vl-packeddimension-p))
+  :prepwork ((local (in-theory (enable vl-packeddimension-p))))
+  :hooks nil
+  :inline t
+  (mbe :logic (vl-range-p x)
+       :exec (not (eq x :vl-unsized-dimension))))
+
+(define vl-lucid-range->bits ((x vl-range-p))
+  :guard (vl-range-resolved-p x)
+  :returns (bits (and (nat-listp bits)
+                      (setp bits)))
+  (b* (((vl-range x))
+       (msb (vl-resolved->val x.msb))
+       (lsb (vl-resolved->val x.lsb))
+       (min (min msb lsb))
+       (max (max msb lsb)))
+    ;; We add one to max because nats-from enumerates [a, b)
+    (nats-from min (+ 1 max))))
+
+(deflist vl-lucid-all-slices-p (x)
+  :guard (vl-lucidocclist-p x)
+  (eq (vl-lucidocc-kind x) :slice))
+
+(define vl-lucid-resolved-slice-p ((x vl-lucidocc-p))
+  :guard (equal (vl-lucidocc-kind x) :slice)
+  :returns (resolvedp booleanp :rule-classes :type-prescription)
+  (b* (((vl-lucidocc-slice x)))
+    (and (vl-expr-resolved-p x.left)
+         (vl-expr-resolved-p x.right))))
+
+(define vl-lucid-resolved-slice->bits ((x vl-lucidocc-p))
+  :guard (and (equal (vl-lucidocc-kind x) :slice)
+              (vl-lucid-resolved-slice-p x))
+  :returns (indices (and (nat-listp indices)
+                         (setp indices)))
+  :prepwork ((local (in-theory (enable vl-lucid-resolved-slice-p))))
+  (b* (((vl-lucidocc-slice x))
+       (msb (vl-resolved->val x.left))
+       (lsb (vl-resolved->val x.right))
+       (min (min msb lsb))
+       (max (max msb lsb)))
+    ;; We add one to max because nats-from enumerates [a, b)
+    (nats-from min (+ 1 max))))
+
+(deflist vl-lucid-all-slices-resolved-p (x)
+  :guard (and (vl-lucidocclist-p x)
+              (vl-lucid-all-slices-p x))
+  (vl-lucid-resolved-slice-p x))
+
+(define vl-lucid-resolved-slices->bits ((x vl-lucidocclist-p))
+  :guard (and (vl-lucid-all-slices-p x)
+              (vl-lucid-all-slices-resolved-p x))
+  :returns (indices (and (nat-listp indices)
+                         (setp indices)))
+  (if (atom x)
+      nil
+    (union (vl-lucid-resolved-slice->bits (car x))
+           (vl-lucid-resolved-slices->bits (cdr x)))))
+
+(define vl-lucid-valid-bits-for-datatype ((x  vl-datatype-p)
+                                          (ss vl-scopestack-p))
+  :returns (mv (simple-p booleanp :rule-classes :type-prescription)
+               (bits     (and (nat-listp bits)
+                              (setp bits))))
+  (b* (((mv warning x) (vl-datatype-usertype-elim x ss 1000))
+       ((when warning)
+        ;; Some kind of error resolving the user-defined data types, let's
+        ;; not try to analyze this at all.
+        (mv nil nil)))
+    (vl-datatype-case x
+      (:vl-coretype
+       (case x.name
+         ((:vl-logic :vl-reg :vl-bit)
+          ;; Integer vector types.  We'll support one packed dimension here,
+          ;; i.e., we're looking for things like wire [3:0] w;
+          (b* (((when (consp x.udims))
+                (mv nil nil))
+               ((when (atom x.pdims))
+                ;; No packed or unpacked dimensions.  Single bit.
+                (mv t '(0)))
+               ((unless (and (atom (cdr x.pdims))
+                             (vl-fast-range-p (first x.pdims))
+                             (vl-range-resolved-p (first x.pdims))))
+                ;; Too many or unresolved dimensions -- too hard.
+                (mv nil nil)))
+            (mv t (vl-lucid-range->bits (first x.pdims)))))
+
+         ((:vl-byte :vl-shortint :vl-int :vl-longint :vl-integer :vl-time)
+          ;; Integer atom types.  If there aren't any dimensions then it still
+          ;; makes sense to treat them as bits.
+          (if (or (consp x.pdims)
+                  (consp x.udims))
+              (mv nil nil)
+            (case x.name
+              (:vl-byte     (mv t (nats-from 0 8)))
+              (:vl-shortint (mv t (nats-from 0 16)))
+              (:vl-int      (mv t (nats-from 0 32)))
+              (:vl-longint  (mv t (nats-from 0 64)))
+              (:vl-integer  (mv t (nats-from 0 32)))
+              (:vl-time     (mv t (nats-from 0 64)))
+              (otherwise    (mv (impossible) nil)))))
+
+         (otherwise
+          ;; Something trickier like a string, c handle, event, void, real, etc.
+          ;; Too hard, don't consider it.
+          (mv nil nil))))
+      (:vl-struct
+       ;; Probably don't want to deal with structs yet
+       (mv nil nil))
+      (:vl-union
+       ;; BOZO eventually maybe try to do something with unions
+       (mv nil nil))
+      (:vl-enum
+       ;; BOZO eventually maybe try to do something with enums
+       (mv nil nil))
+      (:vl-usertype
+       ;; This shouldn't happen because usertype-elim should have gotten
+       ;; rid of it.
+       (mv nil nil)))))
+
+
+(define vl-pp-merged-index ((x vl-merged-index-p) &key (ps 'ps))
+  :prepwork ((local (in-theory (enable vl-merged-index-p))))
+  (cond ((consp x)
+         (vl-ps-seq (vl-print "[")
+                    (vl-print (cdr x))
+                    (vl-print ":")
+                    (vl-print (car x))
+                    (vl-print "]")))
+        (x
+         (vl-print-nat x))
+        (t
+         (vl-print "NIL"))))
+
+(define vl-pp-merged-index-list ((x vl-merged-index-list-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-merged-index (car x))
+               (if (consp (cdr x))
+                   (if (consp (cddr x))
+                       (vl-print ", ")
+                     (vl-print " and "))
+                 ps)
+               (vl-pp-merged-index-list (cdr x)))))
+
+(define vl-lucid-summarize-bits ((x (and (nat-listp x)
+                                         (setp x))))
+  :returns (summary stringp :rule-classes :type-prescription)
+  (b* (;; X are indices from low to high.
+       ;; They need to be in that order for merging to work.  So merge them
+       ;; in low to high order.
+       (merged (vl-merge-contiguous-indices x))
+       ;; For printing we want them in high to low order, so reverse them.
+       (merged (rev merged)))
+    ;; Now turn them into nice looking strings.
+    (with-local-ps (vl-pp-merged-index-list merged)))
+  :prepwork
+  ((local (defthm l0
+            (implies (nat-listp x)
+                     (vl-maybe-nat-listp x))
+            :hints(("Goal" :induct (len x))))))
+  ///
+  (assert! (equal (vl-lucid-summarize-bits '(1 2 3)) "[3:1]"))
+  (assert! (equal (vl-lucid-summarize-bits '(1 2 3 5 6 7)) "[7:5] and [3:1]"))
+  (assert! (equal (vl-lucid-summarize-bits '(1 2 4 6 7 11)) "11, [7:6], 4 and [2:1]")))
+
+
+(define vl-lucid-dissect-var-main ((ss         vl-scopestack-p)
+                                   (item       (or (vl-paramdecl-p item)
+                                                   (vl-vardecl-p item)))
+                                   (used       vl-lucidocclist-p)
+                                   (set        vl-lucidocclist-p))
+  :returns (warnings vl-warninglist-p)
+  (b* ((used     (vl-lucidocclist-fix used))
+       (set      (vl-lucidocclist-fix set))
+       (warnings nil)
+
+       ((when (and (atom used) (atom set)))
+        ;; No uses and no sets of this variable.  It seems best, in this case,
+        ;; to issue only a single warning about this spurious variable, rather
+        ;; than separate unused/unset warnings.
+        (warn :type :vl-lucid-spurious
+              :msg "~a0 is never used or set anywhere."
+              :args (list item)))
+
+       (used-solop (vl-lucid-some-solo-occp used))
+       (set-solop  (vl-lucid-some-solo-occp set))
+       ((when (and used-solop set-solop))
+        ;; The variable is both used and set in full somewhere, so there is
+        ;; clearly nothing we need to warn about and we don't need to do any
+        ;; further bit-level analysis.
+        warnings)
+
+       (datatype-for-indexing
+        (b* (((when (eq (tag item) :vl-vardecl))
+              (vl-vardecl->type item))
+             (paramtype (vl-paramdecl->type item)))
+          (vl-paramtype-case paramtype
+            (:vl-implicitvalueparam
+             ;; This is a really hard case.  I'm going to not try to support
+             ;; it, under the theory that we're going to be doing lucid
+             ;; checking after unparameterization, and at that point most
+             ;; parameters should be used in simple ways.
+             nil)
+            (:vl-explicitvalueparam paramtype.type)
+            (:vl-typeparam
+             ;; Doesn't make any sense to try to index into a type.
+             nil))))
+
+       ((mv simplep valid-bits)
+        (if datatype-for-indexing
+            (vl-lucid-valid-bits-for-datatype datatype-for-indexing ss)
+          ;; Else, too hard to do any kind of indexing
+          (mv nil nil)))
+
+       ;; Try to warn about any unused bits
+       (warnings
+        (b* (((when (atom used))
+              ;; No uses of this variable at all.  No need to do any special
+              ;; bit-level analysis.
+              (warn :type :vl-lucid-unused
+                    :msg "~a0 is set but is never used."
+                    :args (list item)))
+             ((when used-solop)
+              ;; The variable is used somewhere all by itself without any
+              ;; indexing, so there's no reason to do any bit-level analysis.
+              warnings)
+             ((unless (and simplep
+                           (vl-lucid-all-slices-p used)
+                           (vl-lucid-all-slices-resolved-p used)))
+              ;; We found uses of the variable but we don't understand what the
+              ;; valid bits are or what some of these indices are referring to,
+              ;; so this is too hard and we're not going to try to issue any
+              ;; warnings.
+              warnings)
+             ;; Otherwise, we *do* understand all the uses of this variable
+             ;; so we can figure out which bits are used.
+             (used-bits   (vl-lucid-resolved-slices->bits used))
+             (unused-bits (difference valid-bits used-bits))
+             ((unless unused-bits)
+              ;; All of the bits get used somewhere so this is fine.
+              warnings))
+          (warn :type :vl-lucid-unused
+                :msg "~a0 has some bits that are never used: ~s1"
+                :args (list item (vl-lucid-summarize-bits unused-bits)))))
+
+       ;; Try to warn about any unset bits
+       (warnings
+        (b* (((when (atom set))
+              (warn :type :vl-lucid-unset
+                    :msg "~a0 is used but is never initialized."
+                    :args (list item)))
+             ((when set-solop)
+              warnings)
+             ((unless (and simplep
+                           (vl-lucid-all-slices-p set)
+                           (vl-lucid-all-slices-resolved-p set)))
+              warnings)
+             (set-bits    (vl-lucid-resolved-slices->bits set))
+             (unset-bits  (difference valid-bits set-bits))
+             ((unless unset-bits)
+              warnings))
+          (warn :type :vl-lucid-unset
+                :msg "~a0 has some bits that are never set: ~s1"
+                :args (list item (vl-lucid-summarize-bits unset-bits))))))
+    warnings))
+
+
 (define vl-lucid-dissect-pair ((key vl-lucidkey-p)
                                (val vl-lucidval-p)
                                (reportcard vl-reportcard-p))
@@ -1533,25 +1812,8 @@ created when we process their packages, etc.</p>"
          (vl-extend-reportcard topname w reportcard)))
 
       ((:vl-paramdecl :vl-vardecl)
-       ;; BOZO eventually do a bit-level analysis here.
-       (b* ((type (cond ((and (atom val.used) (atom val.set)) :vl-lucid-spurious)
-                        ((atom val.used)                      :vl-lucid-unused)
-                        ((atom val.set)                       :vl-lucid-unset)
-                        (t                                    nil)))
-            ((unless type)
-             reportcard)
-            (w (make-vl-warning :type type
-                                :msg (if (eq (tag key.item) :vl-paramdecl)
-                                         "~a0: parameter is ~s1."
-                                       "~a0: variable is ~s1.")
-                                :args (list key.item
-                                            (case type
-                                              (:vl-lucid-spurious "never used or set anywhere")
-                                              (:vl-lucid-unused   "initialized but never actually used")
-                                              (:vl-lucid-unset    "used but isn't ever initialized")))
-                                :fn __function__
-                                :fatalp nil)))
-         (vl-extend-reportcard topname w reportcard)))
+       (b* ((warnings (vl-lucid-dissect-var-main key.scopestack key.item val.used val.set)))
+         (vl-extend-reportcard-list topname warnings reportcard)))
 
       (:vl-interfaceport
        reportcard)
@@ -1619,6 +1881,10 @@ created when we process their packages, etc.</p>"
        (design     (vl-annotate-design design))
        (ans        (vl-design-lucid design)))
     (mv ans state)))
+
+(top-level;
+ (with-local-ps
+   (vl-print-reportcard (vl-design-origname-reportcard *ans*))))
 
 
 

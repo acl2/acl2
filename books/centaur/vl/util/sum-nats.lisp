@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -354,4 +354,9 @@ reasonable default we say the minimum of the empty list is @('0').</p>"
      :hints(("Goal"
              :induct (ind n a b)
              :do-not '(generalize fertilize)
-             :in-theory (enable nth nats-from))))))
+             :in-theory (enable nth nats-from)))))
+
+  (defthm setp-of-nats-from
+    (setp (nats-from a b))
+    :hints(("Goal" :in-theory (enable set::primitive-rules
+                                      << lexorder alphorder)))))
