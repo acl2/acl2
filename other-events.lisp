@@ -426,13 +426,18 @@
 ;   :hints (("Goal" :use gcl-not-allegro))
 ;   :rule-classes nil)
 
-; However, it is not practical to bind safe-mode to t during the boot-strap
-; with user::*fast-acl2-gcl-build*, because we have not yet compiled the *1*
-; functions (see add-trip).  For the sake of uniformity, we go ahead and allow
-; raw Lisp calls, avoiding safe mode during the boot-strap, even for other
-; lisps.
+; The following comment is no longer relevant, because the #-acl2-loop-only
+; code above for the boot-strap case allows us to assume here that (global-val
+; 'boot-strap-flg wrld) is nil.
 
-             (not (global-val 'boot-strap-flg wrld))))
+;   However, it is not practical to bind safe-mode to t during the boot-strap
+;   with user::*fast-acl2-gcl-build*, because we have not yet compiled the *1*
+;   functions (see add-trip).  For the sake of uniformity, we go ahead and
+;   allow raw Lisp calls, avoiding safe mode during the boot-strap, even for
+;   other lisps.
+
+             t ; (not (global-val 'boot-strap-flg wrld))
+             ))
            (simple-translate-and-eval form nil
                                       nil
                                       "The second argument of defconst"
