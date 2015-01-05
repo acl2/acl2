@@ -353,12 +353,17 @@
   #+acl2-loop-only
   (declare (ignore name))
   #-acl2-loop-only
-  (let ((full-book-name (car (global-val 'include-book-path wrld))))
-    (when full-book-name
-      (let ((val (defconst-val-raw full-book-name name)))
-        (when (not (eq val *hcomp-fake-value*))
-          (return-from defconst-val
-            (value val))))))
+  (cond
+   ((global-val 'boot-strap-flg wrld)
+    (assert (boundp name))
+    (return-from defconst-val
+                 (value (symbol-value name))))
+   (t (let ((full-book-name (car (global-val 'include-book-path wrld))))
+        (when full-book-name
+          (let ((val (defconst-val-raw full-book-name name)))
+            (when (not (eq val *hcomp-fake-value*))
+              (return-from defconst-val
+                           (value val))))))))
   (er-let*
    ((pair (state-global-let*
            ((safe-mode
