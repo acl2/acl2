@@ -80,7 +80,7 @@
 (include-book "centaur/clex/example" :dir :system)
 (include-book "centaur/nrev/demo" :dir :system)
 
-(include-book "cgen/top" :dir :system)
+(include-book "acl2s/cgen/top" :dir :system)
 
 (include-book "centaur/defrstobj/defrstobj" :dir :system)
 
