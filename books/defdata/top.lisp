@@ -459,3 +459,75 @@ The following keyword arguments are supported by the @('sig') macro:
 </p>
 "
 )
+
+
+(defxdoc register-user-combinator
+  :parents (defdata)
+  :short "Register a user-defined combinator (and add sugar to the defdata language)"
+  :long
+"
+<h3>Introduction</h3>
+
+<p> We (even the user) can add syntactic sugar on top of the core defdata
+language. In addition it is also possible to specify the theory support for
+such a construct via the <tt>:post-pred-hook-fns</tt> keyword option. (See
+defdata/alistof.lisp for implementation details).</p>
+
+<h3>Example</h3>
+Here is how we added alistof to the defdata language:
+@({
+  (register-user-combinator alistof 
+   :arity 2 :verbose t
+   :aliases (acl2::alistof)
+   :expansion (lambda (_name _args) `(OR nil (acons ,(car _args) ,(cadr _args) ,_name)))
+   :syntax-restriction-fn proper-symbol-listp
+   :syntax-restriction-msg \"alistof syntax restriction: ~x0 should be type names.\"
+   :polymorphic-type-form (alistof :a :b)
+   :post-pred-hook-fns (user-alistof-theory-events))
+})
+
+<h3>General Form:</h3>
+@({
+  (register-user-combinator combinator-name 
+                            :arity num 
+                            :expansion term 
+                            [optional args])
+})
+
+
+"
+)
+
+
+(defxdoc defdata-attach
+  :parents (defdata)
+  :short "Attach/modify metadata for a defdata type"
+  :long
+"
+<h3>Examples:</h3>
+@({
+  (defdata-attach pos :enum/test nth-small-pos-testing)
+  
+  (defdata-attach imem :enumerator nth-imem-custom :override-ok t)
+})
+
+<h3>General Form:</h3>
+@({
+  (defdata-attach typename 
+       [:enum/test enum-fn]
+       [:equiv eq-rel]
+       [:equiv-fixer eq-fix-fn]
+       [:sampling constant-list]
+       [overridable metadata]
+       )
+
+})
+<p>
+Defdata-attach can be used to attach custom test enumerators for certain
+types. This way one can tune Cgen's test data generation capability for certain
+scenarios.
+
+Warning: Most of the optional keyword arguments are currently unsupported and
+the use of :override-ok can be unsound.</p>
+"
+)
