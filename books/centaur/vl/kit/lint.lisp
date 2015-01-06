@@ -478,43 +478,38 @@ shown.</p>"
        (design (cwtime (vl-design-condcheck design)))
        (design (cwtime (vl-design-leftright-check design)))
        (design (cwtime (vl-design-origexprs design)))
-
-       ;; BOZO reinstate this??
-       ;; (mods (cwtime (vl-modulelist-add-undefined-names mods)))
-       (design (cwtime (vl-design-lucid design)))
-
-       (design
-        ;; Best not to do this until after lucid checking.
-        (cwtime (vl-design-drop-missing-submodules design)))
-
-
-       (design
-        ;; Bug fixed 2014-12-19: don't do this until after argresolve, because
-        ;; in SystemVerilog it can get confused by .* or .foo style port
-        ;; connections.  Also it's best not to do this until after lucid
-        ;; checking because it would screw up lucid's checks.  Actually why
-        ;; are we even doing this?
-        (cwtime (vl-design-elim-unused-vars design)))
-
        (design (cwtime (vl-design-dupeinst-check design)))
 
-       ;; BOZO not exactly sure where this should go, maybe this will work.
-       (design (cwtime (vl-design-expand-functions design)))
+       (- (cw "~%vl-lint: elaborating the design...~%"))
 
        ;; BOZO we need to do something to throw away instances with unresolved
        ;; arguments to avoid programming-errors in drop-blankports... and actually
        ;; we hit errors like that later, too.
-       (design (cwtime (vl-design-drop-blankports design)))
-       (design (cwtime (mp-verror-transform-hook design))) ;; BOZO really keep this???
+       ;; (design (cwtime (vl-design-drop-blankports design)))
        (design (cwtime (vl-design-follow-hids design)))
-       (design (cwtime (vl-design-clean-params design)))
+       ;; (design (cwtime (vl-design-clean-params design)))
        ;; (design (cwtime (vl-design-check-good-paramdecls design)))
        (design (cwtime (vl-design-unparameterize design)))
        (- (vl-gc))
 
-       (- (cw "~%vl-lint: processing ranges, statements...~%"))
        (design (cwtime (vl-design-rangeresolve design)))
        (design (cwtime (vl-design-selresolve design)))
+       (design (cwtime (vl-design-lucid design)))
+       (design
+        ;; Best not to do this until after lucid checking.
+        (cwtime (vl-design-drop-missing-submodules design)))
+
+       ;; BOZO not exactly sure where this should go, maybe this will work.
+       ;; (design (cwtime (vl-design-expand-functions design)))
+
+       ;; (design
+       ;;  ;; Bug fixed 2014-12-19: don't do this until after argresolve, because
+       ;;  ;; in SystemVerilog it can get confused by .* or .foo style port
+       ;;  ;; connections.  Also it's best not to do this until after lucid
+       ;;  ;; checking because it would screw up lucid's checks.  Actually why
+       ;;  ;; are we even doing this?
+       ;;  (cwtime (vl-design-elim-unused-vars design)))
+
        (design (cwtime (vl-design-check-selfassigns design)))
        (design (cwtime (vl-design-lint-stmt-rewrite design)))
        (design (cwtime (vl-design-stmtrewrite design 1000)))
