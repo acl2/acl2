@@ -1624,11 +1624,11 @@
 ; Since (mod x y) = (- x (* (floor x y) y)), the domain of MOD is given
 ; by domain-of-binary-arithmetic-function:
 
-(defun lower-bound->-guarded (a-rel a b-rel b)
+(defun lower-bound-> (a-rel a b-rel b)
   (declare (xargs :guard (and (booleanp a-rel)
-                              (or (null a) (real/rationalp a))
+                              (or (null a) (rationalp a))
                               (booleanp b-rel)
-                              (or (null b) (real/rationalp b)))))
+                              (or (null b) (rationalp b)))))
 
 ; See Specification of Bound Comparisons, above.
 
@@ -1640,11 +1640,11 @@
               (>= a b)
               (> a b)))))
 
-(defun upper-bound-<-guarded (a-rel a b-rel b)
+(defun upper-bound-< (a-rel a b-rel b)
   (declare (xargs :guard (and (booleanp a-rel)
-                              (or (null a) (real/rationalp a))
+                              (or (null a) (rationalp a))
                               (booleanp b-rel)
-                              (or (null b) (real/rationalp b)))))
+                              (or (null b) (rationalp b)))))
 
 ; See Specification of Bound Comparisons, above.
 
@@ -1670,21 +1670,21 @@
                               (or (null hi2) (rationalp hi2)))))
   (mv-let
    (lo-rel lo)
-   (if (lower-bound->-guarded lo-rel1 lo1 lo-rel2 lo2)
+   (if (lower-bound-> lo-rel1 lo1 lo-rel2 lo2)
        (mv lo-rel2 lo2)
        (mv lo-rel1 lo1))
    (mv-let
     (hi-rel hi)
-    (if (upper-bound-<-guarded hi-rel1 hi1 hi-rel2 hi2)
+    (if (upper-bound-< hi-rel1 hi1 hi-rel2 hi2)
         (mv hi-rel2 hi2)
         (mv hi-rel1 hi1))
     (make-tau-interval (domain-of-binary-arithmetic-function dom1 dom2)
                    lo-rel lo hi-rel hi))))
 
-(defun squeeze-k-guarded (upper-boundp rel k)
+(defun squeeze-k (upper-boundp rel k)
   (declare (xargs :guard (and (booleanp upper-boundp)
                               (booleanp rel)
-                              (or (null k) (real/rationalp k)))))
+                              (or (null k) (rationalp k)))))
 
 ; K is either NIL (the appopriate infinity) or a rational.  Consider some
 ; interval with INTEGERP domain bounded (above or below as per upper-boundp) by
@@ -1744,8 +1744,8 @@
                      (null hi-rel)
                      (or (null hi) (integerp hi)))
                 (make-tau-interval 'integerp nil lo nil hi))
-               (t (let ((lo (squeeze-k-guarded nil lo-rel lo))
-                        (hi (squeeze-k-guarded  t hi-rel hi)))
+               (t (let ((lo (squeeze-k nil lo-rel lo))
+                        (hi (squeeze-k t hi-rel hi)))
                     (make-tau-interval 'integerp nil lo nil hi)))))
         (t (make-tau-interval dom lo-rel lo hi-rel hi))))
 
