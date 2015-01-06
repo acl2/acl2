@@ -355,6 +355,14 @@
   #-acl2-loop-only
   (cond
    ((global-val 'boot-strap-flg wrld)
+
+; We want the symbol-value of name to be EQ to what is returned, especially to
+; avoid duplication of large values.  Note that starting with Version_7.0, the
+; code here is not necessary when the event being processed is (defconst name
+; (quote val)); see ld-fix-command.  However, here we arrange that the
+; symbol-value is EQ to what is returned by defconst-val even without the
+; assumption that the defconst expression is of the form (quote val).
+
     (assert (boundp name))
     (return-from defconst-val
                  (value (symbol-value name))))

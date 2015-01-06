@@ -7143,8 +7143,9 @@
 ;;;                        ens w ttree pot-lst pt backchain-limit)
 ;;;              (type-set-finish x ts0 ttree0 ts1 ttree1 type-alist))
 
-; The following historical comment comes from when we supported the
-; nu-rewriter.  Perhaps it is worth revisiting the decision described below.
+; The following historical comment comes from when we supported the nu-rewriter
+; (which has since been eliminated).  Perhaps it is worth revisiting the
+; decision described below.
 
 ;   When we introduced the nu-rewriter, we made clausify no longer
 ;   expand lambdas so aggressively.  This meant that type-set began to

@@ -799,6 +799,11 @@
       (('defconst name ('quote val) . &)
        (assert (boundp name))
        (let ((old-val (symbol-value name)))
+
+; Note that we are in the boot-strap, where we presumably don't use
+; redefinition.  If we later do so, we should see this assertion fire and then
+; we can figure out what to do.
+
          (assert (equal val old-val))
          (when (not (eq val old-val))
            (let ((caddr-form (caddr form))) ; (quote val)
