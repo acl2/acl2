@@ -300,12 +300,13 @@ to a functional instantiation.</li>
 <li>The new tool, @(see def-saved-obligs), can be used to save proof
 obligations for an event as independent defthms.</li>
 
-<li>The new tool, @('books/system/dead-source-code.lisp'), may be useful
+<li>The new tool, @('system/dead-source-code.lisp'), may be useful
 for finding dead code in the ACL2 sources.</li>
 
-<li>The new book @('books/system/cantor-pairing-bijective.lisp') contains a
-proof of bijectivity (onto and one-one) of the cantor-pairing function
-@('hl-nat-combine').</li>
+<li>The new books @('system/cantor-pairing-bijective.lisp') and
+@('system/hl-nat-combine-onto.lisp') contain proofs of bijectivity and
+surjectivity (one-one/onto and onto, respectively) of cantor-pairing
+functions.</li>
 
 </ul>
 
@@ -500,7 +501,7 @@ providing the following invariants:</p>
      types).</li>
 <li> Every new polymorphic signature is appropriately instantiated for
      all defdata types of the right shape in the current world. </li>
-<ul>
+</ul>
 
 <p> Dependent type hypotheses are supported by @('sig') -- e.g. the
 polymorphic signature of <tt>nth</tt> is specified as follows.  </p>
@@ -519,7 +520,7 @@ robust. Destructor Elimination is now available for records.</p>
 <p>
 @('Defdata') has been re-engineered to have a plug-in like
 architecture. The following macros provide ways to extend the Defdata
-language and its semantics.</p
+language and its semantics.</p>
 <dl>
 <dd> @('register-type') -- Register a name as a defdata type (with its associated metadata).</dd>
 <dd> @('register-data-constructor') -- Register a data constructor (for product types).</dd>
@@ -578,6 +579,10 @@ oslib::basename), @(see oslib::copy), and @(see oslib::catpaths).</p>
 functions have been improved to return better error information, and made more
 portable across Lisps.</p>
 
+<h3>Tau</h3>
+
+<p>The book @('tau/bounders/elementary-bounders') has been improved by adding
+guards, thanks to Dmitry Nadezhin.</p>
 
 <h2>Changes to Centaur Libraries</h2>
 

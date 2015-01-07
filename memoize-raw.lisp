@@ -5184,7 +5184,7 @@
 
         nil)
 
-  #+ccl
+  #+(and ccl (not mswindows))
   (start-sol-gc)
 
 ; It is can be helpful for the user to know what the garbage collector is doing
