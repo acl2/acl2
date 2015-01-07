@@ -15,7 +15,6 @@ certify-book.sh
 type.lisp
 cgen-search.lisp
 build-enumcalls.lisp
-elim.lisp
 callback.lisp
 prove-cgen.lisp
 top.lisp
@@ -95,7 +94,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 EXAMPLES: See testing-regression.lsp
 
 USAGE:
- (include-book "cgen/top" :dir :system :ttags :all)
+ (include-book "acl2s/cgen/top" :dir :system :ttags :all)
  (acl2s-defaults :set testing-enabled t) ; default is :naive
    
 
@@ -145,7 +144,6 @@ cgen-search.lisp
 callback.lisp
    Hook to call cgen/testing/search on checkpoint goals.
    Implemented using override-hints + backtrack hints.
-
 
 build-enumcalls.lisp
    Code generation for calling enumerators for the current type alist.
