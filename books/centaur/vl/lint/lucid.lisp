@@ -1268,14 +1268,17 @@ created when we process their packages, etc.</p>"
        ;; This doesn't make a whole lot of sense: what does it mean for a
        ;; function to be set?  But if we regard it as meaning, "it has a
        ;; defined value", then the very act of defining the function is kind of
-       ;; like setting it.  At any rate, this is mainly just intended as a way
-       ;; to avoid having to special-case functions later on when reporting
-       ;; that some name is never set.
+       ;; like setting it.
        (st    (vl-lucid-mark-solo-set x.name ss st x))
        (scope (vl-fundecl->blockscope x))
        (ss    (vl-scopestack-push scope ss))
-       (st    (vl-portdecllist-lucidcheck x.portdecls ss st))
+       ;; Now that we've pushed the function scope, mark the function's name
+       ;; (i.e., the return value) as used, because we're imagining that it
+       ;; is "used" by whoever calls the function.
        (st    (vl-lucid-mark-solo-used x.name ss st x))
+       ;; Mark all inputs to the function as set, because we're imagining
+       ;; that they're set by the caller.
+       (st    (vl-portdecllist-lucidcheck x.portdecls ss st))
        (st    (vl-blockitemlist-lucidcheck x.decls ss st)))
     (vl-stmt-lucidcheck x.body ss st x)))
 
@@ -1686,6 +1689,11 @@ created when we process their packages, etc.</p>"
   :returns (warnings vl-warninglist-p)
   (b* ((used     (vl-lucidocclist-fix used))
        (set      (vl-lucidocclist-fix set))
+
+       (name     (if (eq (tag item) :vl-vardecl)
+                     (vl-vardecl->name item)
+                   (vl-paramdecl->name item)))
+
        (warnings nil)
 
        ((when (and (atom used) (atom set)))
@@ -1693,8 +1701,8 @@ created when we process their packages, etc.</p>"
         ;; to issue only a single warning about this spurious variable, rather
         ;; than separate unused/unset warnings.
         (warn :type :vl-lucid-spurious
-              :msg "~a0 is never used or set anywhere. (~s1)"
-              :args (list item
+              :msg "~w0 is never used or set anywhere. (~s1)"
+              :args (list name
                           (with-local-ps (vl-pp-scopestack-path ss)))))
 
        (used-solop (vl-lucid-some-solo-occp used))
@@ -1733,8 +1741,8 @@ created when we process their packages, etc.</p>"
               ;; No uses of this variable at all.  No need to do any special
               ;; bit-level analysis.
               (warn :type :vl-lucid-unused
-                    :msg "~a0 is set but is never used. (~s1)"
-                    :args (list item
+                    :msg "~w0 is set but is never used. (~s1)"
+                    :args (list name
                                 (with-local-ps (vl-pp-scopestack-path ss)))))
              ((when used-solop)
               ;; The variable is used somewhere all by itself without any
@@ -1756,8 +1764,8 @@ created when we process their packages, etc.</p>"
               ;; All of the bits get used somewhere so this is fine.
               warnings))
           (warn :type :vl-lucid-unused
-                :msg "~a0 has some bits that are never used: ~s1. (~s2)"
-                :args (list item
+                :msg "~w0 has some bits that are never used: ~s1. (~s2)"
+                :args (list name
                             (vl-lucid-summarize-bits unused-bits)
                             (with-local-ps (vl-pp-scopestack-path ss))))))
 
@@ -1765,8 +1773,8 @@ created when we process their packages, etc.</p>"
        (warnings
         (b* (((when (atom set))
               (warn :type :vl-lucid-unset
-                    :msg "~a0 is used but is never initialized. (~s1)"
-                    :args (list item
+                    :msg "~w0 is used but is never initialized. (~s1)"
+                    :args (list name
                                 (with-local-ps (vl-pp-scopestack-path ss)))))
              ((when set-solop)
               warnings)
@@ -1779,8 +1787,8 @@ created when we process their packages, etc.</p>"
              ((unless unset-bits)
               warnings))
           (warn :type :vl-lucid-unset
-                :msg "~a0 has some bits that are never set: ~s1. (~s2)"
-                :args (list item
+                :msg "~w0 has some bits that are never set: ~s1. (~s2)"
+                :args (list name
                             (vl-lucid-summarize-bits unset-bits)
                             (with-local-ps (vl-pp-scopestack-path ss))
                             )))))
@@ -1817,8 +1825,8 @@ created when we process their packages, etc.</p>"
        (b* (((when (vl-lucid-some-solo-occp val.used))
              reportcard)
             (w (make-vl-warning :type :vl-lucid-unused
-                                :msg "~a0: function is never used. (~s1)"
-                                :args (list key.item
+                                :msg "~w0: function is never used. (~s1)"
+                                :args (list (vl-fundecl->name key.item)
                                             (with-local-ps (vl-pp-scopestack-path key.scopestack)))
                                 :fn __function__
                                 :fatalp nil)))
@@ -1828,8 +1836,8 @@ created when we process their packages, etc.</p>"
        (b* (((when (vl-lucid-some-solo-occp val.used))
              reportcard)
             (w (make-vl-warning :type :vl-lucid-unused
-                                :msg "~a0: task is never used. (~s1)"
-                                :args (list key.item
+                                :msg "~w0: task is never used. (~s1)"
+                                :args (list (vl-taskdecl->name key.item)
                                             (with-local-ps (vl-pp-scopestack-path key.scopestack)))
                                 :fn __function__
                                 :fatalp nil)))
@@ -1839,8 +1847,8 @@ created when we process their packages, etc.</p>"
        (b* (((when (vl-lucid-some-solo-occp val.used))
              reportcard)
             (w (make-vl-warning :type :vl-lucid-unused
-                                :msg "~a0: type is never used. (~s1)"
-                                :args (list key.item
+                                :msg "~w0: type is never used. (~s1)"
+                                :args (list (vl-typedef->name key.item)
                                             (with-local-ps (vl-pp-scopestack-path key.scopestack)))
                                 :fn __function__
                                 :fatalp nil)))

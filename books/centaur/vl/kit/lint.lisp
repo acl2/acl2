@@ -33,6 +33,7 @@
 (include-book "../lint/lucid")
 (include-book "../lint/check-case")
 (include-book "../lint/check-namespace")
+(include-book "../mlib/hierarchy")
 
 (include-book "../lint/xf-drop-missing-submodules")
 (include-book "../lint/xf-drop-user-submodules")
