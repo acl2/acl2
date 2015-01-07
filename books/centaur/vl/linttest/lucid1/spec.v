@@ -169,4 +169,43 @@ function noreturn (input a);
 endfunction
 
 
-// BOZO some bit-level tests
+
+module m5 () ;
+
+  parameter width = 4;
+
+  wire [3:0] m5_unused, m5_unset;
+  m6 #(width) my_m6 (m5_unused, m5_unset);
+
+  assign m5_unset[2:0] = 0;  // leaves bit 1 unset
+
+  // some bits unset, some bits unused
+  wire [3:0] doublebad;
+  assign doublebad[2:0] = 0;
+  assign m5_unused[2:0] = doublebad[2:0];
+
+endmodule
+
+
+module m6
+  #(parameter width = 1)
+  (output [width-1:0] xout, input [width-1:0] xin);
+  assign xout = xin;
+
+  // This has some unset bits when width is less than 5.
+  wire [5:0] foo;
+  assign foo[width-1:0] = 0;
+
+endmodule
+
+
+module m7 () ;
+
+// just check some complex lhs expressions
+
+  wire unset1, unset2, unset3;
+  wire unused1, unused2, unused3;
+
+  assign {unused1, {{{{{{unused2, unused3}}}}}}} = {{unset1, unset2}, unset3};
+
+endmodule

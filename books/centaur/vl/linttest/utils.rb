@@ -65,16 +65,17 @@ def check_json_file(data)
     raise "Modname isn't a symbol: #{modname}" unless modname.kind_of?(Symbol)
     check_warning_list_syntax(wlist)
   end
+  locations = data[:locations]
+  locations.each do |modname, loc|
+    raise "Modname isn't a symbol: #{modname}" unless modname.kind_of?(Symbol)
+  end
 end
 
-def get_warnings()
-  raise "vl-warnings.json does not exist" unless File.exists?("vl-warnings.json")
-  ans = read_json_file("vl-warnings.json")
-  check_json_file(ans)
-  return ans[:warnings]
-end
-
-WARNINGS = get_warnings()
+raise "vl-warnings.json does not exist" unless File.exists?("vl-warnings.json")
+ans = read_json_file("vl-warnings.json")
+check_json_file(ans)
+WARNINGS = ans[:warnings]
+LOCATIONS = ans[:locations]
 
 
 # Convenience functions for check.rb scripts ---------------------------------
@@ -100,8 +101,9 @@ def some_warning_matches(type, substring, wlist)
 end
 
 def match_warning(mod, type, substring)
-  raise "No warnings for #{mod}" unless WARNINGS.has_key?(mod)
-  ok = some_warning_matches(type, substring, WARNINGS[mod])
+  raise "Invalid description name: #{mod}" unless WARNINGS.has_key?(mod) or LOCATIONS.has_key?(mod)
+  wlist = WARNINGS[mod] || []
+  ok = some_warning_matches(type, substring, wlist)
   if ok
     puts "#{mod}: OK: matched #{type}, #{substring}"
   else
@@ -110,8 +112,9 @@ def match_warning(mod, type, substring)
 end
 
 def outlaw_warning(mod, type, substring)
-  raise "No warnings for #{mod}" unless WARNINGS.has_key?(mod)
-  found = some_warning_matches(type, substring, WARNINGS[mod])
+  raise "Invalid description name: #{mod}" unless WARNINGS.has_key?(mod) or LOCATIONS.has_key?(mod)
+  wlist = WARNINGS[mod] || []
+  found = some_warning_matches(type, substring, wlist)
   if found
     raise "found outlawed warning: #{mod}, #{type}, #{substring}:\n     #{found[:type]} -- #{found[:text]}"
   else

@@ -108,6 +108,26 @@ unused(:"Design Root", "unction noreturn")
 unused(:"Design Root", "nr_unused")
 unset(:"Design Root", "noreturn")
 
+normal(:m5, "of width")
+unused(:m5, "of m5_unused")
+unset(:m5, "of m5_unset")
+
+unset(:m5, "of doublebad")
+unused(:m5, "of doublebad")
+
+normal(:m6, "of width")
+normal(:m6, "of xout")
+normal(:m6, "of xin")
+
+unset(:m6, "foo")
+
+unused(:m7, "of unused1")
+unused(:m7, "of unused2")
+unused(:m7, "of unused3")
+unset(:m7, "of unset1")
+unset(:m7, "of unset2")
+unset(:m7, "of unset3")
+
 test_passed()
 
 

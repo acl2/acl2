@@ -30,12 +30,10 @@
 
 (in-package "VL")
 (include-book "../loader/loader")
-
-(include-book "../lint/bit-use-set")
 (include-book "../lint/lucid")
 (include-book "../lint/check-case")
 (include-book "../lint/check-namespace")
-(include-book "../lint/disconnected")
+
 (include-book "../lint/xf-drop-missing-submodules")
 (include-book "../lint/xf-drop-user-submodules")
 (include-book "../lint/xf-lint-stmt-rewrite")
@@ -343,11 +341,7 @@ shown.</p>"
    (sd-probs  sd-problemlist-p
               "Possible problems noticed by @(see skip-detection).  These are
                in a different format than ordinary @(see warnings), so they
-               aren't included in the @('reportcard').")
-
-   (dalist    us-dbalist-p
-              "Use-set database alist, mapping module names to use-set databases.
-               Might actually not be used for anything.")))
+               aren't included in the @('reportcard').")))
 
 
 (define vl-delete-sd-problems-for-modnames-aux
@@ -538,16 +532,6 @@ shown.</p>"
 
        (design (cwtime (vl-design-remove-unnecessary-modules config.topmods design)))
 
-
-;; SUBSUMED BY LUCID
-       ;; BOZO it seems sort of legitimate to do this before sizing, which
-       ;; might be nice.  Of course, a more rigorous use/set analysis will
-       ;; need to be post-sizing.
-       ;(- (cw "~%vl-lint: finding disconnected wires...~%"))
-       ;(design (cwtime (vl-design-remove-toohard design)))
-       ;(design (cwtime (vl-design-find-disconnected design)))
-;; /LUCID
-
        (- (cw "~%vl-lint: processing expressions...~%"))
        (design (cwtime (vl-design-oddexpr-check design)))
        (design (cwtime (vl-design-oprewrite design)))
@@ -556,15 +540,6 @@ shown.</p>"
        (design (cwtime (vl-design-exprsize design)))
        (design (cwtime (vl-design-constcheck-hook design config.cclimit)))
        (design (cwtime (vl-design-qmarksize-check design)))
-
-;; SUBSUMED BY LUCID
-       ;; This is subsumed by lucid
-       ;(- (cw "~%vl-lint: finding unused/unset wires...~%"))
-       ;; BOZO this probably doesn't quite work here due to replicate not having been done
-       ;((mv design dalist) (cwtime (vl-design-bit-use-set design)))
-       ;(- (vl-gc))
-       (dalist nil)
-;; /LUCID
 
        (- (cw "~%vl-lint: processing assignments...~%"))
        (design (cwtime (vl-design-split design)))
@@ -589,7 +564,7 @@ shown.</p>"
                         :design0 design0
                         :reportcard reportcard
                         :sd-probs sd-probs
-                        :dalist dalist)))
+                        )))
 
 (define run-vl-lint ((config vl-lintconfig-p) &key (state 'state))
   :returns (mv (res vl-lintresult-p :hyp :fguard)
@@ -726,28 +701,6 @@ shown.</p>"
                (vl-design-descriptions x)))
              (vl-println "}")))
 
-(defconst *use-set-warnings*
-  (list :use-set-fudging
-        :use-set-trainwreck
-        :use-set-future-trainwreck
-        :use-set-warn-1-unset
-        :use-set-warn-1-unset-tricky
-        :use-set-warn-2-unused
-        :use-set-warn-2-unused-tricky
-        :use-set-warn-3-spurious
-        :use-set-warn-3-spurious-tricky
-        :use-set-syntax-error
-        :vl-collect-wires-approx
-        :vl-collect-wires-fail
-        :vl-dropped-always
-        :vl-dropped-assign
-        :vl-dropped-initial
-        :vl-dropped-insts
-        :vl-dropped-modinst
-        :vl-warn-function
-        :vl-warn-taskdecl
-        :vl-unsupported-block))
-
 (defconst *basic-warnings*
   (list :bad-mp-verror
         :vl-bad-range
@@ -769,21 +722,6 @@ shown.</p>"
         :vl-warn-truncation-minor
         :vl-warn-integer-size-minor
         :vl-warn-vague-spec))
-
-(defconst *disconnected-warnings*
-  (list :vl-warn-disconnected
-        :vl-warn-disconnected-interesting
-        ;; Caveats that could make the analysis wrong
-        :vl-collect-wires-fail
-        :vl-collect-wires-approx
-        :vl-dropped-always
-        :vl-dropped-assign
-        :vl-dropped-initial
-        :vl-dropped-insts
-        :vl-dropped-modinst
-        :vl-warn-function
-        :vl-warn-taskdecl
-        :vl-unsupported-block))
 
 (defconst *smell-warnings*
   (list :vl-warn-qmark-width
@@ -844,11 +782,9 @@ shown.</p>"
   ;; Warnings that are covered by our regular reports.  Other warnings besides
   ;; these will get put into vl-other.txt
 
-  (append *use-set-warnings*
-          *basic-warnings*
+  (append *basic-warnings*
           *trunc-warnings*
           *trunc-minor-warnings*
-          *disconnected-warnings*
           *smell-warnings*
           *smell-minor-warnings*
           *multidrive-warnings*
@@ -964,12 +900,6 @@ you can see \"vl-trunc-minor.txt\" to review them.")))
 
        (state
         (with-ps-file
-         "vl-disconnected.txt"
-         (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-disconnected.txt" "Disconnected Wire" *disconnected-warnings* reportcard)))
-
-       (state
-        (with-ps-file
          "vl-lucid.txt"
          (vl-ps-update-autowrap-col 68)
          (vl-lint-print-warnings "vl-lucid.txt" "Lucidity Checking" *lucid-warnings* reportcard)))
@@ -1066,17 +996,6 @@ wide addition instead of a 10-bit wide addition.")))
                          (vl-ps-update-autowrap-col 68)
                          (vl-cw "Minor Skip-Detect Warnings.~%~%")
                          (sd-pp-problemlist-long minor)))))
-
-
-       (state
-        (with-ps-file
-         "vl-use-set.txt"
-         (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-use-set.txt"
-                                 "Unused/Unset Wire Warnings"
-                                 *use-set-warnings*
-                                 reportcard)))
-
 
        (state
         (with-ps-file
