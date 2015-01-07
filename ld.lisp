@@ -790,6 +790,27 @@
       (setq *wormhole-iprint-ar* nil))
     state))
 
+(defun ld-fix-command (form)
+  #-acl2-loop-only
+  (when (and (consp form)
+             (eq (car form) 'defconst) ; optimization
+             (global-val 'boot-strap-flg (w *the-live-state*)))
+    (case-match form
+      (('defconst name ('quote val) . &)
+       (assert (boundp name))
+       (let ((old-val (symbol-value name)))
+
+; Note that we are in the boot-strap, where we presumably don't use
+; redefinition.  If we later do so, we should see this assertion fire and then
+; we can figure out what to do.
+
+         (assert (equal val old-val))
+         (when (not (eq val old-val))
+           (let ((caddr-form (caddr form))) ; (quote val)
+             (setf (cadr caddr-form)
+                   old-val)))))))
+  form)
+
 (defun ld-read-command (state)
 
 ; This function reads an ld command from the standard-oi channel of state and
@@ -826,7 +847,7 @@
                              (global-val 'known-package-alist (w state)))
                             (mv nil nil nil `(in-package ,upval) state))
                            (t (mv nil nil nil val state)))))
-                  (t (mv nil nil nil val state)))))))
+                  (t (mv nil nil nil (ld-fix-command val) state)))))))
 
 (defun ld-print-command (keyp form col state)
   (with-base-10

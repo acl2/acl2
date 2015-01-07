@@ -3625,6 +3625,10 @@
 
 ; See Specification of Bound Comparisons, above.
 
+  (declare (xargs :guard (and (booleanp a-rel)
+                              (or (null a) (rationalp a))
+                              (booleanp b-rel)
+                              (or (null b) (rationalp b)))))
   (if (null a)
       t
       (if (null b)
@@ -3640,6 +3644,10 @@
 
 ; See Specification of Bound Comparisons, above.
 
+  (declare (xargs :guard (and (booleanp a-rel)
+                              (or (null a) (rationalp a))
+                              (booleanp b-rel)
+                              (or (null b) (rationalp b)))))
   (if (null a)
       t
       (if (null b)
@@ -3652,6 +3660,10 @@
 
 ; See Specification of Bound Comparisons, above.
 
+  (declare (xargs :guard (and (booleanp a-rel)
+                              (or (null a) (rationalp a))
+                              (booleanp b-rel)
+                              (or (null b) (rationalp b)))))
   (if (null a)
       nil
       (if (null b)
@@ -3664,6 +3676,10 @@
 
 ; See Specification of Bound Comparisons, above.
 
+  (declare (xargs :guard (and (booleanp a-rel)
+                              (or (null a) (rationalp a))
+                              (booleanp b-rel)
+                              (or (null b) (rationalp b)))))
   (if (null a)
       nil
       (if (null b)
@@ -4271,6 +4287,9 @@
 ; because we believe it is faster than Table A because whenever k is an integer
 ; we avoid calls of floor or ceiling.
 
+  (declare (xargs :guard (and (booleanp upper-boundp)
+                              (booleanp rel)
+                              (or (null k) (rationalp k)))))
   (if k
       (if (integerp k)
           (if rel

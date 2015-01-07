@@ -55,7 +55,8 @@ if [ ! -f $books/system/doc/rendered-doc-combined.lsp ] ; then
     exit 1
 fi
 
-# Create HTML files (instructions from David Rager):
+# Create version of the manual optimized for search engines
+# (instructions from David Rager):
 pushd $books/doc/manual
 chmod +x ./xdata2sql4seo.pl
 perl xdata2sql.pl

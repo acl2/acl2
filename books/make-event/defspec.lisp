@@ -437,3 +437,130 @@ sublis-fn.
        (defthm f-is-identity (equal (f x) x))))
 
     (table spec-table 'i 10)))))
+
+; Added by Matt K.  This example responds to an observation from Bob Boyer,
+; that it would be nice for there to be a general method of specifying notions
+; like "bijection" to avoid errors in an ad hoc attempt to specify that a
+; particular function is a bijection.  I don't claim that this example is a
+; anything like a complete solution to that problem -- in particular, it
+; specifies bijection only for a function mapping pairs from a given domain --
+; but I hope it suggests how one might develop a library of such "higher-order"
+; specifications.
+(local (progn
+
+; Specify that a function bij2: dom2 x dom2 -> ran2 is a bijection.
+
+(defspec bijection2
+  (((bij2 * *) => *)
+   ((inv1 *) => *)
+   ((inv2 *) => *)
+   ((dom2 *) => *)
+   ((ran2 *) => *))
+  (local (defun bij2 (x y) (cons x y)))
+  (local (defun inv1 (x) (car x)))
+  (local (defun inv2 (x) (cdr x)))
+  (local (defun dom2 (x) (declare (ignore x)) t))
+  (local (defun ran2 (x) (consp x)))
+  (defthm ran2-bij2
+    (implies (and (dom2 x1)
+                  (dom2 x2))
+             (ran2 (bij2 x1 x2))))
+  (defthm dom2-inv1
+    (implies (ran2 x)
+             (dom2 (inv1 x))))
+  (defthm dom2-inv2
+    (implies (ran2 x)
+             (dom2 (inv2 x))))
+  (defthm bij2-is-injective
+    (implies (and (dom2 x1)
+                  (dom2 x2)
+                  (dom2 y1)
+                  (dom2 y2)
+                  (equal (bij2 x1 x2)
+                         (bij2 y1 y2)))
+             (and (equal x1 y1)
+                  (equal x2 y2)))
+    :rule-classes nil)
+  (defthm bij2-is-surjective
+    (implies (ran2 x)
+             (equal (bij2 (inv1 x) (inv2 x))
+                    x))))
+
+; Include Harsh's revised book.
+
+(include-book "system/cantor-pairing-bijective" :dir :system)
+
+; Separate out three key lemmas.
+
+(defthm lemma1
+  (implies (and (natp x1)
+                (natp x2)
+                (natp y1)
+                (natp y2)
+                (equal (cantor-pairing x1 x2)
+                       (cantor-pairing y1 y2)))
+           (equal x1 y1))
+  :hints (("Goal"
+           :use ((:instance cantor-pairing-one-one
+                            (a1 x1) (b1 x2) (a2 y1) (b2 y2)))))
+  :rule-classes nil)
+
+(defthm lemma2
+  (implies (and (natp x1)
+                (natp x2)
+                (natp y1)
+                (natp y2)
+                (equal (cantor-pairing x1 x2)
+                       (cantor-pairing y1 y2)))
+           (equal x2 y2))
+  :hints (("Goal"
+           :use ((:instance cantor-pairing-one-one
+                            (a1 x1) (b1 x2) (a2 y1) (b2 y2)))))
+  :rule-classes nil)
+
+(defthm lemma3
+  (implies (natp x)
+           (equal (cantor-pairing (car (cantor-pairing-inverse x))
+                                  (cadr (cantor-pairing-inverse x)))
+                  x))
+  :hints (("Goal"
+           :use ((:instance cantor-pairing-onto
+                            (n x)))))
+  :rule-classes nil)
+
+; Prove that cantor-pairing is a bijection.
+
+(definstance bijection2 cantor-pairing-is-bijection
+  :functional-substitution
+  ((bij2 cantor-pairing)
+   (inv1 (lambda (x) (car (cantor-pairing-inverse x))))
+   (inv2 (lambda (x) (cadr (cantor-pairing-inverse x))))
+   (dom2 natp)
+   (ran2 natp))
+  :hints (("Goal" :use (lemma1 lemma2 lemma3))))
+
+; Finally, just for fun, show what was actually proved above.  I would like to
+; use (set-enforce-redundancy t) here.  But unfortunately, one cannot use
+; set-enforce-redundancy in a local context.
+
+(defthm cantor-pairing-is-bijection
+  (and (implies (and (natp x1) (natp x2))
+                (natp (cantor-pairing x1 x2)))
+       (implies (natp x)
+                (natp (car (cantor-pairing-inverse x))))
+       (implies (natp x)
+                (natp (cadr (cantor-pairing-inverse x))))
+       (implies (and (natp x1)
+                     (natp x2)
+                     (natp y1)
+                     (natp y2)
+                     (equal (cantor-pairing x1 x2)
+                            (cantor-pairing y1 y2)))
+                (and (equal x1 y1) (equal x2 y2)))
+       (implies (natp x)
+                (equal (cantor-pairing (car (cantor-pairing-inverse x))
+                                       (cadr (cantor-pairing-inverse x)))
+                       x)))
+  :rule-classes nil)
+
+))

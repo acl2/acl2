@@ -203,36 +203,22 @@ to <A HREF="http://packages.qa.debian.org/a/acl2.html">download a
 binary Debian package for ACL2</A>.  Thanks to Camm Maguire for
 maintaining this package.  Note however that it may take some time
 after each ACL2 release for this binary Debian package to be updated
-for that release.  Here is a shell command that might be used to
-obtain that package (if running Debian).
-
-<pre>
-apt-get -q install gcl gcl-doc
-</pre>
-
-Otherwise, it should be easy to obtain and build GCL yourself.  Note
-that ACL2 requires GCL version 2.6.12 or later.  Also note that GCL
-ANSI executables are needed for default,
-<a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>)
-builds of ACL2.
+for that release.
 
 <p>
 
-You can fetch GCL (version 2.6.12 or later) as a tarball from the
-<a href="http://www.gnu.org/software/gcl/">main GNU website for
-  GCL</a>.  From GCL source you can build an executable by extracting
-  from the tarball, standing in the resulting <code>gcl/</code>
-  directory, and issuing one of the following commands.
+Otherwise, it should be easy to obtain and build GCL yourself.  Note
+that ACL2 requires GCL version 2.6.12 or later, which can be fetched
+as a tarball from the <a href="http://www.gnu.org/software/gcl/">main
+GNU website for GCL</a>.  Also note that GCL ANSI executables are
+needed for default,
+<a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>
+builds of ACL2, so to build GCL from source you should proceed as
+follows while standing in the <code>gcl/</code> directory
+(where <code>--enable-ansi</code> is optional for building ACL2
+executables that are not hons-enabled):
 
 <pre>
-# Recommended for 64-bit Linux:
-./configure --enable-maxpage=1048576 && make
-
-# Recommended for Mac OS:
-./configure && make
-
-# If you want an ANSI build
-# (but add "--enable-maxpage=1048576" in the case of 64-bit Linux, as above):
 ./configure --enable-ansi && make
 </pre>
 

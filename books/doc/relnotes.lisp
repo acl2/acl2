@@ -300,12 +300,13 @@ to a functional instantiation.</li>
 <li>The new tool, @(see def-saved-obligs), can be used to save proof
 obligations for an event as independent defthms.</li>
 
-<li>The new tool, @('books/system/dead-source-code.lisp'), may be useful
+<li>The new tool, @('system/dead-source-code.lisp'), may be useful
 for finding dead code in the ACL2 sources.</li>
 
-<li>The new book @('books/system/cantor-pairing-bijective.lisp') contains a
-proof of bijectivity (onto and one-one) of the cantor-pairing function
-@('hl-nat-combine').</li>
+<li>The new books @('system/cantor-pairing-bijective.lisp') and
+@('system/hl-nat-combine-onto.lisp') contain proofs of bijectivity and
+surjectivity (one-one/onto and onto, respectively) of cantor-pairing
+functions.</li>
 
 </ul>
 
@@ -459,14 +460,74 @@ fal-all-boundp).</p>
 
 
 
-<h3>Defdata</h3>
+<h3>Defdata (Data Definition Framework)</h3>
 
-<p>BOZO big changes to defdata in @('706a134b02d6b96ea36cd0060f4a97812f2e9fa6'),
-write a summary or copy Harsh's message here.</p>
+<p> @('Defdata') has undergone significant improvements.  Automated theorem
+proving support has been increased by a tight integration with @(csee
+Tau-system).  A significant new capability is the support for parametric
+polymorphism via @('sig') rules. There have been many improvements in its
+engineering too.</p>
 
-<p>Also @('7fecb0d6658e817f8c585b8dc6761dafe606ee11')</p>
+<h5>Tau Integration</h5>
+<p>
+Defdata analyzes the predicate definition of every new type and, if
+possible, produces a set of Tau rules that completely characterize
+the type. Defdata thus provides the following guarantee: If Tau is
+complete over the type reasoning theory, then adding a type to the
+current theory via @('defdata') preserves completeness.
+</p>
 
+<h5>Parametric Polymorphism</h5>
+<p>
+Defdata provides a new macro @('sig') which can be used to define
+signatures of polymorphic functions
+such as <tt>append</tt>, <tt>remove1</tt>, <tt>put-assoc</tt> etc:
+</p>
+@({
+  (sig append ((listof :a) (listof :a)) => (listof :a))
+  (sig remove1-equal (all (listof :a)) => (listof :a))
+  (sig put-assoc-equal (:a :b (alistof :a :b)) => (alistof :a :b))
+})
 
+<p>
+Defdata automatically instantiates these generic theorems 
+(type signatures) for previously defined types and as new types are defined
+after the @('sig') forms. Defdata, thus implements parametric polymorphism, by
+providing the following invariants:</p>
+
+<ul>
+<li> Every new defdata type is instantiated for every polymorphic
+     signature (specified via sig) that matches (one of its argument
+     types).</li>
+<li> Every new polymorphic signature is appropriately instantiated for
+     all defdata types of the right shape in the current world. </li>
+</ul>
+
+<p> Dependent type hypotheses are supported by @('sig') -- e.g. the
+polymorphic signature of <tt>nth</tt> is specified as follows.  </p>
+
+@({
+  (sig nth (nat (listof :a)) => :a
+       :satisfies (< x1 (len x2)))
+})
+
+<h5>Other Theory Reasoning</h5>
+
+<p>Theory support for Records (structs) and Maps has been tuned to be more
+robust. Destructor Elimination is now available for records.</p>
+
+<h5>Advanced Usage</h5>
+<p>
+@('Defdata') has been re-engineered to have a plug-in like
+architecture. The following macros provide ways to extend the Defdata
+language and its semantics.</p>
+<dl>
+<dd> @('register-type') -- Register a name as a defdata type (with its associated metadata).</dd>
+<dd> @('register-data-constructor') -- Register a data constructor (for product types).</dd>
+<dd> @('register-user-combinator') -- Add user-defined syntactic sugar to the defdata language. 
+e.g. <i>alistof</i> was added with minimal coding overhead using this facility (See defdata/alistof.lisp).</dd>
+<dd> @('defdata-attach') -- Replaces/subsumes) defdata-testing; it can be used to change or add defdata type metadata. </dd>
+</dl>
 
 
 <h3>Defsort</h3>
@@ -518,6 +579,10 @@ oslib::basename), @(see oslib::copy), and @(see oslib::catpaths).</p>
 functions have been improved to return better error information, and made more
 portable across Lisps.</p>
 
+<h3>Tau</h3>
+
+<p>The book @('tau/bounders/elementary-bounders') has been improved by adding
+guards, thanks to Dmitry Nadezhin.</p>
 
 <h2>Changes to Centaur Libraries</h2>
 

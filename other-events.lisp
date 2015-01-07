@@ -353,12 +353,25 @@
   #+acl2-loop-only
   (declare (ignore name))
   #-acl2-loop-only
-  (let ((full-book-name (car (global-val 'include-book-path wrld))))
-    (when full-book-name
-      (let ((val (defconst-val-raw full-book-name name)))
-        (when (not (eq val *hcomp-fake-value*))
-          (return-from defconst-val
-            (value val))))))
+  (cond
+   ((global-val 'boot-strap-flg wrld)
+
+; We want the symbol-value of name to be EQ to what is returned, especially to
+; avoid duplication of large values.  Note that starting with Version_7.0, the
+; code here is not necessary when the event being processed is (defconst name
+; (quote val)); see ld-fix-command.  However, here we arrange that the
+; symbol-value is EQ to what is returned by defconst-val even without the
+; assumption that the defconst expression is of the form (quote val).
+
+    (assert (boundp name))
+    (return-from defconst-val
+                 (value (symbol-value name))))
+   (t (let ((full-book-name (car (global-val 'include-book-path wrld))))
+        (when full-book-name
+          (let ((val (defconst-val-raw full-book-name name)))
+            (when (not (eq val *hcomp-fake-value*))
+              (return-from defconst-val
+                           (value val))))))))
   (er-let*
    ((pair (state-global-let*
            ((safe-mode
@@ -421,13 +434,18 @@
 ;   :hints (("Goal" :use gcl-not-allegro))
 ;   :rule-classes nil)
 
-; However, it is not practical to bind safe-mode to t during the boot-strap
-; with user::*fast-acl2-gcl-build*, because we have not yet compiled the *1*
-; functions (see add-trip).  For the sake of uniformity, we go ahead and allow
-; raw Lisp calls, avoiding safe mode during the boot-strap, even for other
-; lisps.
+; The following comment is no longer relevant, because the #-acl2-loop-only
+; code above for the boot-strap case allows us to assume here that (global-val
+; 'boot-strap-flg wrld) is nil.
 
-             (not (global-val 'boot-strap-flg wrld))))
+;   However, it is not practical to bind safe-mode to t during the boot-strap
+;   with user::*fast-acl2-gcl-build*, because we have not yet compiled the *1*
+;   functions (see add-trip).  For the sake of uniformity, we go ahead and
+;   allow raw Lisp calls, avoiding safe mode during the boot-strap, even for
+;   other lisps.
+
+             t ; (not (global-val 'boot-strap-flg wrld))
+             ))
            (simple-translate-and-eval form nil
                                       nil
                                       "The second argument of defconst"

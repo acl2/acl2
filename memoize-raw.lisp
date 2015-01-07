@@ -728,7 +728,7 @@
   (make-array n :element-type 'mfixnum :initial-element 0))
 
 (defg *memoize-call-array*
-  '(initial-memoize-call-array 1))
+  (initial-memoize-call-array 1))
 
 ; Essay on the *Memoize-Call-Array*
 
@@ -5184,7 +5184,7 @@
 
         nil)
 
-  #+ccl
+  #+(and ccl (not mswindows))
   (start-sol-gc)
 
 ; It is can be helpful for the user to know what the garbage collector is doing

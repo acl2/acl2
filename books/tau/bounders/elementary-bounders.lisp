@@ -534,6 +534,7 @@
 ; BINARY-+
 
 (defun domain-of-binary-arithmetic-function (domx domy)
+  (declare (xargs :guard (and (symbolp domx) (symbolp domy))))
 
 ; In this function, domx and domy are domain names as found in tau-bounders,
 ; e.g., INTEGERP, RATIONALP, ACL2-NUMBERP, or NIL.  The function returns the
@@ -553,6 +554,14 @@
         (t 'acl2-numberp)))
 
 (defun bounds-of-sum (lo-rel1 lo1 hi-rel1 hi1 lo-rel2 lo2 hi-rel2 hi2)
+  (declare (xargs :guard (and (booleanp lo-rel1)
+                              (or (null lo1) (rationalp lo1))
+                              (booleanp hi-rel1)
+                              (or (null hi1) (rationalp hi1))
+                              (booleanp lo-rel2)
+                              (or (null lo2) (rationalp lo2))
+                              (booleanp hi-rel2)
+                              (or (null hi2) (rationalp hi2)))))
 
 ; Suppose x and y are terms and that it is known that lo1 <? x <? hi1 and lo2
 ; <? y <? hi2, where the relations denoted by ``<?'' are controlled by the four
@@ -587,6 +596,7 @@
     (mv lo-rel lo hi-rel hi))))
 
 (defun tau-bounder-+ (int1 int2)
+  (declare (xargs :guard (and (tau-intervalp int1) (tau-intervalp int2))))
   (let ((dom (domain-of-binary-arithmetic-function
               (tau-interval-dom int1)
               (tau-interval-dom int2))))
@@ -625,6 +635,27 @@
 ; -----------------------------------------------------------------
 ; BINARY-*
 
+(defund extended-rationalp (x)
+  (declare (xargs :guard t))
+  (or (equal x nil)
+      (equal x t)
+      (real/rationalp x)))
+
+(local (defthm |extended-rationalp is rationalp when not nil or t|
+  (implies
+    (and (extended-rationalp x) (not (equal x nil)) (not (equal x t)))
+    (real/rationalp x))
+  :hints (("Goal" :in-theory (enable extended-rationalp)))))
+
+(local (defthm |rationalp is extended-rationalp|
+  (implies (real/rationalp x) (extended-rationalp x))
+  :hints (("Goal" :in-theory (enable extended-rationalp)))))
+
+(local (defthm |rationalp when acl2-numberp and extended-rationalp|
+  (implies
+    (and (acl2-numberp x) (extended-rationalp x))
+    (real/rationalp x))))
+
 ; I now implement ``the bounds of the product are the products of the bounds.''
 ; But this is INSANELY more complicated and depends on the signs of the
 ; intervals, whether they are strict or non-strict, and whether they contain
@@ -641,6 +672,7 @@
 ; the community books in arithmetic-5/.  Thank you Robert!
 
 (defun bounds-of-product-< (x y)
+  (declare (xargs :guard (and (extended-rationalp x) (extended-rationalp y))))
 
 ; X and y are either rationals or nil or t, where nil represents negative
 ; infinity and t represents positive infinity.  We determine whether x < y, and
@@ -659,6 +691,7 @@
                   (< x y))))))
 
 (defun bounds-of-product-<= (x y)
+  (declare (xargs :guard (and (extended-rationalp x) (extended-rationalp y))))
 
 ; X and y are either rationals or nil or t, where nil represents negative
 ; infinity and t represents positive infinity.  We determine whether x <= y.
@@ -676,6 +709,7 @@
                   (<= x y))))))
 
 (defun bounds-of-product-* (x y)
+  (declare (xargs :guard (and (extended-rationalp x) (extended-rationalp y))))
 
 ; X and y are either rationals or nil or t, where nil represents negative
 ; infinity and t represents positive infinity.  We compute (* x y).
@@ -699,6 +733,14 @@
           (* x y))))
 
 (defun bounds-of-product1 (lo-rel1 lo1 hi-rel1 hi1 lo-rel2 lo2 hi-rel2 hi2)
+  (declare (xargs :guard (and (booleanp lo-rel1)
+                              (extended-rationalp lo1)
+                              (booleanp hi-rel1)
+                              (extended-rationalp hi1)
+                              (booleanp lo-rel2)
+                              (extended-rationalp lo2)
+                              (booleanp hi-rel2)
+                              (extended-rationalp hi2))))
 
 ; Warning: This function uses nil and t respectively to represent negative and
 ; positive infinity.  Except for this function and the three extended
@@ -927,6 +969,14 @@
                ))))))
 
 (defun bounds-of-product (lo-rel1 lo1 hi-rel1 hi1 lo-rel2 lo2 hi-rel2 hi2)
+  (declare (xargs :guard (and (booleanp lo-rel1)
+                              (or (null lo1) (real/rationalp lo1))
+                              (booleanp hi-rel1)
+                              (or (null hi1) (real/rationalp hi1))
+                              (booleanp lo-rel2)
+                              (or (null lo2) (real/rationalp lo2))
+                              (booleanp hi-rel2)
+                              (or (null hi2) (real/rationalp hi2)))))
 
 ; We coerce positive infinities to t, use the workhorse function, and then
 ; coerce positive infinities back to nil.  We also insure that weak
@@ -964,6 +1014,7 @@
 ; non-linear.
 
 (defun tau-bounder-* (int1 int2)
+  (declare (xargs :guard (and (tau-intervalp int1) (tau-intervalp int2))))
   (let ((dom (domain-of-binary-arithmetic-function
               (tau-interval-dom int1)
               (tau-interval-dom int2))))
@@ -978,13 +1029,29 @@
                                    (tau-interval-hi int2))
             (make-tau-interval dom lo-rel lo hi-rel hi))))
 
+(local (defthm |tau-intervalp tau-bounder-*|
+  (implies (and (tau-intervalp int1)
+                (tau-intervalp int2))
+           (tau-intervalp (tau-bounder-* int1 int2)))))
+
+(local (defthm |tau-interval-dom tau-bounder-*|
+    (implies (and (tau-intervalp int1)
+                  (tau-intervalp int2)
+                  (or (equal (tau-interval-dom int1) 'integerp)
+                      (equal (tau-interval-dom int1) 'rationalp))
+                  (or (equal (tau-interval-dom int2) 'integerp)
+                      (equal (tau-interval-dom int2) 'rationalp))
+                  (not (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'integerp)))
+             (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'rationalp))
+  :hints (("Goal" :in-theory (disable bounds-of-product)))))
+
 ; Weakness: The following theorem could be strengthened by concluding, in
 ; addition, that if int1 and int2 have INTEGERP domains then the tau-bounder-*
 ; has an INTEGERP domain.  As it stands below, we do not break out the cases
 ; and concluded only that if both int1 and int2 are either INTEGERP or
 ; RATIONALP then so is the product.
 
-(encapsulate
+(local (encapsulate
   ()
   (local (in-theory (disable
                      ;; Horrible godawful hack.
@@ -1068,6 +1135,19 @@
                  (NONLINEARP-DEFAULT-HINT++
                   ID STABLE-UNDER-SIMPLIFICATIONP HIST NIL)))))
 
+  (defthm |in-tau-intervalp tau-bounder-*|
+    (implies (and (tau-intervalp int1)
+                  (tau-intervalp int2)
+                  (or (equal (tau-interval-dom int1) 'integerp)
+                      (equal (tau-interval-dom int1) 'rationalp))
+                  (or (equal (tau-interval-dom int2) 'integerp)
+                      (equal (tau-interval-dom int2) 'rationalp))
+                  (in-tau-intervalp x int1)
+                  (in-tau-intervalp y int2))
+             (in-tau-intervalp (* x y) (tau-bounder-* int1 int2))))))
+
+(encapsulate ()
+  (local (in-theory (disable tau-bounder-*)))
   (defthm tau-bounder-*-correct
     (implies (and (tau-intervalp int1)
                   (tau-intervalp int2)
@@ -1217,6 +1297,12 @@
 
 (defun bounds-of-reciprocal (x dom lo-rel lo hi-rel hi)
   (declare (ignore x))
+  (declare (xargs :guard (and (symbolp dom)
+                              (booleanp lo-rel)
+                              (or (null lo) (real/rationalp lo))
+                              (booleanp hi-rel)
+                              (or (null hi) (real/rationalp hi))
+                              (or (null lo) (null hi) (<= lo hi)))))
 ; This function returns the bounds on (/ x) given bounds on x.  It is assumed x
 ; and the bounds, lo and hi, are in the domain specified by dom, which is
 ; either INTEGERP or RATIONALP.  Furthermore, when dom is INTEGERP, the two
@@ -1268,6 +1354,8 @@
      ((equal 0 lo)
       (cond ((null hi)
              (mv lo-rel 0 nil +oo))         ; [7,8]
+            ((equal 0 hi)
+             (mv nil 0 nil 0))
             (lo-rel
              (mv hi-rel (/ hi) nil +oo))    ; [11]
             (t
@@ -1285,6 +1373,7 @@
       (mv hi-rel (/ hi) lo-rel (/ lo))))))  ; [4]
 
 (defun tau-bounder-/ (int)
+  (declare (xargs :guard (tau-intervalp int)))
   (mv-let (lo-rel lo hi-rel hi)
           (bounds-of-reciprocal 0
                                 (tau-interval-dom int)
@@ -1293,6 +1382,21 @@
                                 (tau-interval-hi-rel int)
                                 (tau-interval-hi int))
           (make-tau-interval 'rationalp lo-rel lo hi-rel hi)))
+
+(local (defthm |tau-intervalp tau-bounder-/|
+  (implies (tau-intervalp int1)
+           (tau-intervalp (tau-bounder-/ int1)))))
+
+(local (defthm |tau-interval-dom tau-bounder-/|
+  (equal (tau-interval-dom (tau-bounder-/ int1)) 'rationalp)
+  :hints (("Goal" :in-theory (disable bounds-of-reciprocal)))))
+
+(local (defthm |in-tau-intervalp tau-bounder-/|
+  (implies (and (tau-intervalp int1)
+                (or (equal (tau-interval-dom int1) 'integerp)
+                    (equal (tau-interval-dom int1) 'rationalp))
+                (in-tau-intervalp x int1))
+           (in-tau-intervalp (/ x) (tau-bounder-/ int1)))))
 
 (defthm tau-bounder-/-correct
   (implies (and (tau-intervalp int1)
@@ -1303,6 +1407,7 @@
                 (in-tau-intervalp (/ x) (tau-bounder-/ int1))
 
                 (equal (tau-interval-dom (tau-bounder-/ int1)) 'rationalp)))
+  :hints (("Goal" :in-theory (disable tau-bounder-/)))
   :rule-classes
   ((:rewrite)
    (:forward-chaining
@@ -1344,6 +1449,17 @@
    (integerp (floor x y))))
 
 (defun tau-bounder-floor (int1 int2)
+  (declare (xargs :guard (and (tau-intervalp int1) (tau-intervalp int2))
+           :guard-hints (("Goal" :cases ((tau-intervalp (tau-bounder-* int1 (tau-bounder-/ int2))))
+                                 :in-theory (disable tau-bounder-* tau-bounder-/))
+                         ("Subgoal 2" :use (
+                           (:instance |tau-intervalp tau-bounder-*|
+                             (int1 int1)
+                             (int2 (tau-bounder-/ int2)))
+                           (:instance |tau-intervalp tau-bounder-/|
+                             (int1 int2))))
+                       )
+  ))
   (let ((int
          (tau-bounder-* int1 (tau-bounder-/ int2))))
     (make-tau-interval 'integerp
@@ -1509,6 +1625,10 @@
 ; by domain-of-binary-arithmetic-function:
 
 (defun lower-bound-> (a-rel a b-rel b)
+  (declare (xargs :guard (and (booleanp a-rel)
+                              (or (null a) (rationalp a))
+                              (booleanp b-rel)
+                              (or (null b) (rationalp b)))))
 
 ; See Specification of Bound Comparisons, above.
 
@@ -1521,6 +1641,10 @@
               (> a b)))))
 
 (defun upper-bound-< (a-rel a b-rel b)
+  (declare (xargs :guard (and (booleanp a-rel)
+                              (or (null a) (rationalp a))
+                              (booleanp b-rel)
+                              (or (null b) (rationalp b)))))
 
 ; See Specification of Bound Comparisons, above.
 
@@ -1534,6 +1658,16 @@
 
 (defun combine-intervals1 (dom1 lo-rel1 lo1 hi-rel1 hi1
                                 dom2 lo-rel2 lo2 hi-rel2 hi2)
+  (declare (xargs :guard (and (symbolp dom1)
+                              (booleanp lo-rel1)
+                              (or (null lo1) (rationalp lo1))
+                              (booleanp hi-rel1)
+                              (or (null hi1) (rationalp hi1))
+                              (symbolp dom2)
+                              (booleanp lo-rel2)
+                              (or (null lo2) (rationalp lo2))
+                              (booleanp hi-rel2)
+                              (or (null hi2) (rationalp hi2)))))
   (mv-let
    (lo-rel lo)
    (if (lower-bound-> lo-rel1 lo1 lo-rel2 lo2)
@@ -1548,6 +1682,9 @@
                    lo-rel lo hi-rel hi))))
 
 (defun squeeze-k (upper-boundp rel k)
+  (declare (xargs :guard (and (booleanp upper-boundp)
+                              (booleanp rel)
+                              (or (null k) (rationalp k)))))
 
 ; K is either NIL (the appopriate infinity) or a rational.  Consider some
 ; interval with INTEGERP domain bounded (above or below as per upper-boundp) by
@@ -1595,21 +1732,26 @@
               (ceiling k 1)))
       nil))
 
-(defun fix-integerp-interval (int)
-  (cond ((eq (tau-interval-dom int) 'integerp)
-         (cond ((and (null (tau-interval-lo-rel int))
-                     (or (null (tau-interval-lo int))
-                         (integerp (tau-interval-lo int)))
-                     (null (tau-interval-hi-rel int))
-                     (or (null (tau-interval-hi int))
-                         (integerp (tau-interval-hi int))))
-                int)
-               (t (let ((lo (squeeze-k nil (tau-interval-lo-rel int) (tau-interval-lo int)))
-                        (hi (squeeze-k  t (tau-interval-hi-rel int) (tau-interval-hi int))))
+(defun make-tau-interval-with-integerp-fix (dom lo-rel lo hi-rel hi)
+  (declare (xargs :guard (and (symbolp dom)
+                              (booleanp lo-rel)
+                              (or (null lo) (rationalp lo))
+                              (booleanp hi-rel)
+                              (or (null hi) (rationalp hi)))))
+  (cond ((eq dom 'integerp)
+         (cond ((and (null lo-rel)
+                     (or (null lo) (integerp lo))
+                     (null hi-rel)
+                     (or (null hi) (integerp hi)))
+                (make-tau-interval 'integerp nil lo nil hi))
+               (t (let ((lo (squeeze-k nil lo-rel lo))
+                        (hi (squeeze-k t hi-rel hi)))
                     (make-tau-interval 'integerp nil lo nil hi)))))
-        (t int)))
+        (t (make-tau-interval dom lo-rel lo hi-rel hi))))
 
 (defun tau-bounder-mod (int1 int2)
+  (declare (xargs :guard (and (tau-intervalp int1)
+                              (tau-intervalp int2))))
   (let ((domx (tau-interval-dom int1))
         (lo-relx (tau-interval-lo-rel int1))
         (lox (tau-interval-lo int1))
@@ -1620,30 +1762,29 @@
         (loy (tau-interval-lo int2))
         (hi-rely (tau-interval-hi-rel int2))
         (hiy (tau-interval-hi int2)))
-    (fix-integerp-interval
-     (cond
-      ((and (rationalp loy)
-            (if lo-rely
-                (<= 0 loy)
-                (< 0 loy)))
+    (cond
+     ((and (rationalp loy)
+           (if lo-rely
+               (<= 0 loy)
+               (< 0 loy)))
 
 ; If y is strictly positive, then (mod x y) lies in the interval between 0 and
 ; y, which means it is bound above (strictly) by hiy.
 
-       (make-tau-interval (domain-of-binary-arithmetic-function domx domy)
-                      nil 0 t hiy))
-      ((and (rationalp hiy)
-            (if hi-rely
-                (<= hiy 0)
-                (< hiy 0)))
+      (make-tau-interval-with-integerp-fix (domain-of-binary-arithmetic-function domx domy)
+                     nil 0 t hiy))
+     ((and (rationalp hiy)
+           (if hi-rely
+               (<= hiy 0)
+               (< hiy 0)))
 
 ; If y is strictly negative, then (mod x y) lies in the interval
 ; between y and 0 which means it is bound below (strictly) by loy.
 
-       (make-tau-interval (domain-of-binary-arithmetic-function domx domy)
-                      t loy nil 0))
+      (make-tau-interval-with-integerp-fix (domain-of-binary-arithmetic-function domx domy)
+                     t loy nil 0))
 
-      (t
+     (t
 
 ; Otherwise, y is not strictly positive and it is not strictly negative, which
 ; means that y is sometimes 0.  Thus, (mod x y) might return x and hence the
@@ -1651,8 +1792,8 @@
 ; negative or positive, in which case (mod x y) is bound below (strictly) by
 ; loy and above (strictly) by hiy.  So we combine the two intervals.
 
-       (combine-intervals1 domx lo-relx lox hi-relx hix
-                           domy lo-rely loy hi-rely hiy))))))
+      (combine-intervals1 domx lo-relx lox hi-relx hix
+                          domy lo-rely loy hi-rely hiy)))))
 
 ; Note that (mod x y) can return a complex-rational when its arguments are
 ; complex-rationals.  The conclusion of the theorem would compare that
@@ -1861,6 +2002,7 @@
 ; If both x and y are negative integers, then x+y < (logand x y) <= (min x y).
 
 (defun shifts-to-all-ones (x)
+  (declare (xargs :guard (integerp x)))
 
 ; Assuming x < 0, how many times must we shift x to make it -1?  This turns out
 ; to be either (log2 (- x)) or (+ 1 (log2 (- x))), depending on whether (- x)
@@ -2191,6 +2333,10 @@
 (defconst *logand-empirical-threshhold* (* 1024 1024))
 
 (defun worth-computingp (lox hix loy hiy)
+  (declare (xargs :guard (and (integerp lox)
+                              (integerp hix)
+                              (integerp loy)
+                              (integerp hiy))))
 
 ; This function is for heuristic purposes only.  It determines whether we
 ; compute the exact minimal and maximal of logand over a pair of intervals by
@@ -2211,6 +2357,10 @@
 ; This function assumes both domains are INTEGERp.
 
 (defun tau-bounder-logand (int1 int2)
+  (declare (xargs :guard (and (tau-intervalp int1)
+                              (tau-intervalp int2)
+                              (equal (tau-interval-dom int1) 'integerp)
+                              (equal (tau-interval-dom int2) 'integerp))))
   (let ((lox (tau-interval-lo int1))
         (hix (tau-interval-hi int1))
         (loy (tau-interval-lo int2))
@@ -2263,6 +2413,28 @@
         (<= y (max x y)))
    :rule-classes :linear))
 
+(local (defthm |tau-intervalp tau-bounder-logand|
+  (implies (and (tau-intervalp int1)
+                (tau-intervalp int2)
+                (equal (tau-interval-dom int1) 'integerp)
+                (equal (tau-interval-dom int2) 'integerp))
+           (tau-intervalp (tau-bounder-logand int1 int2)))
+  :hints (("Goal" :in-theory (disable min max)))
+    ))
+
+(local (defthm |tau-interval-dom tau-bounder-logand|
+  (equal (tau-interval-dom (tau-bounder-logand int1 int2)) 'integerp)))
+
+(local (defthm |in-tau-intervalp tau-bounder-logand|
+  (implies (and (tau-intervalp int1)
+                (tau-intervalp int2)
+                (equal (tau-interval-dom int1) 'integerp)
+                (equal (tau-interval-dom int2) 'integerp)
+                (in-tau-intervalp x int1)
+                (in-tau-intervalp y int2))
+           (in-tau-intervalp (logand x y) (tau-bounder-logand int1 int2)))
+  :hints (("Goal" :in-theory (disable min max)))))
+
 (defthm tau-bounder-logand-correct
   (implies (and (tau-intervalp int1)
                 (tau-intervalp int2)
@@ -2275,7 +2447,7 @@
 
                 (equal (tau-interval-dom (tau-bounder-logand int1 int2)) 'integerp)
             ))
-  :hints (("Goal" :in-theory (disable min max)))
+  :hints (("Goal" :in-theory (disable tau-bounder-logand)))
   :rule-classes
   ((:rewrite)
    (:forward-chaining :trigger-terms ((tau-bounder-logand int1 int2)))
@@ -2288,11 +2460,21 @@
 ; LOGNOT
 
 (defun tau-bounder-lognot (int)
+  (declare (xargs :guard (tau-intervalp int)))
   (let ((lo (tau-interval-lo int))
         (hi (tau-interval-hi int)))
     (make-tau-interval 'integerp
                    nil (if hi (- (- hi) 1) nil)
                    nil (if lo (- (- lo) 1) nil))))
+
+(local (defthm |tau-intervalp tau-bounder-lognot|
+  (implies (and (tau-intervalp int)
+                (equal (tau-interval-dom int) 'integerp))
+           (and (tau-intervalp (tau-bounder-lognot int))
+                (equal (tau-interval-dom (tau-bounder-lognot int)) 'integerp)
+            ))
+  :hints (("Goal" :in-theory (disable min max)))
+    ))
 
 (defthm tau-bounder-lognot-correct
   (implies (and (tau-intervalp int1)
@@ -2319,10 +2501,46 @@
 ; (MIN MINX MINY) <= (LOGIOR X Y) <= (EXPT 2 (LOG2 (MAX MAXX MAXY))).
 
 (defun tau-bounder-logior (int1 int2)
+  (declare (xargs :guard (and (tau-intervalp int1)
+                              (equal (tau-interval-dom int1) 'integerp)
+                              (tau-intervalp int2)
+                              (equal (tau-interval-dom int2) 'integerp))
+           :guard-hints (("Goal" :use (
+                           (:instance |tau-intervalp tau-bounder-lognot|
+                             (int (tau-bounder-logand
+                                    (tau-bounder-lognot int1)
+                                    (tau-bounder-lognot int2))))
+                           (:instance |tau-intervalp tau-bounder-logand|
+                             (int1 (tau-bounder-lognot int1))
+                             (int2 (tau-bounder-lognot int2)))
+                           (:instance |tau-intervalp tau-bounder-lognot|
+                             (int int1))
+                           (:instance |tau-intervalp tau-bounder-lognot|
+                             (int int2)))
+                                  :in-theory (disable tau-intervalp tau-bounder-lognot tau-bounder-logand)))))
   (tau-bounder-lognot
    (tau-bounder-logand
     (tau-bounder-lognot int1)
     (tau-bounder-lognot int2))))
+
+(local (defthm |tau-intervalp tau-bounder-logior|
+  (implies (and (tau-intervalp int1)
+                (tau-intervalp int2)
+                (equal (tau-interval-dom int1) 'integerp)
+                (equal (tau-interval-dom int2) 'integerp))
+           (and (tau-intervalp (tau-bounder-logior int1 int2))
+                (equal (tau-interval-dom (tau-bounder-logior int1 int2)) 'integerp)
+            ))
+  :hints (("Goal"
+    :in-theory
+    (e/d (logior)
+         (tau-intervalp
+          in-tau-intervalp
+          tau-bounder-logand
+          tau-bounder-lognot
+          lognot-logand ; rewrite rule in arithmetic-5 that folds logior
+          (:executable-counterpart make-tau-interval)))))
+    ))
 
 (defthm tau-bounder-logior-correct
   (implies (and (tau-intervalp int1)
@@ -2357,9 +2575,39 @@
 ; (logorc1 x y) = (logior (lognot x) y)
 
 (defun tau-bounder-logorc1 (int1 int2)
+  (declare (xargs :guard (and (tau-intervalp int1)
+                              (equal (tau-interval-dom int1) 'integerp)
+                              (tau-intervalp int2)
+                              (equal (tau-interval-dom int2) 'integerp))
+           :guard-hints (("Goal" :use (
+                           (:instance |tau-intervalp tau-bounder-logior|
+                             (int1 (tau-bounder-lognot int1))
+                             (int2 int2))
+                           (:instance |tau-intervalp tau-bounder-lognot|
+                             (int int1)))
+                                  :in-theory (disable tau-intervalp tau-bounder-logior tau-bounder-lognot)))))
   (tau-bounder-logior
    (tau-bounder-lognot int1)
    int2))
+
+(local (defthm |tau-intervalp tau-bounder-logorc1|
+  (implies (and (tau-intervalp int1)
+                (tau-intervalp int2)
+                (equal (tau-interval-dom int1) 'integerp)
+                (equal (tau-interval-dom int2) 'integerp))
+           (and (tau-intervalp (tau-bounder-logorc1 int1 int2))
+                (equal (tau-interval-dom (tau-bounder-logorc1 int1 int2)) 'integerp)
+            ))
+  :hints (("Goal"
+    :in-theory
+    (e/d (logorc1)
+         (tau-intervalp
+          in-tau-intervalp
+          tau-bounder-logand
+          tau-bounder-lognot
+          |(logior y x)| ; commutative rule for logior
+          (:executable-counterpart make-tau-interval)))))
+    ))
 
 (defthm tau-bounder-logorc1-correct
   (implies (and (tau-intervalp int1)
@@ -2394,9 +2642,42 @@
 ; (logeqv x y) = (logand (logorc1 x y) (logorc1 y x))
 
 (defun tau-bounder-logeqv (int1 int2)
+  (declare (xargs :guard (and (tau-intervalp int1)
+                              (tau-intervalp int2)
+                              (equal (tau-interval-dom int1) 'integerp)
+                              (equal (tau-interval-dom int2) 'integerp))
+           :guard-hints (("Goal" :use (
+                           (:instance |tau-intervalp tau-bounder-logand|
+                             (int1 (tau-bounder-logorc1 int1 int2))
+                             (int2 (tau-bounder-logorc1 int2 int1)))
+                           (:instance |tau-intervalp tau-bounder-logorc1|
+                             (int1 int1)
+                             (int2 int2))
+                           (:instance |tau-intervalp tau-bounder-logorc1|
+                             (int1 int2)
+                             (int2 int1)))
+                                  :in-theory (disable tau-intervalp tau-bounder-logand tau-bounder-logorc1)))))
   (tau-bounder-logand
    (tau-bounder-logorc1 int1 int2)
    (tau-bounder-logorc1 int2 int1)))
+
+(local (defthm |tau-intervalp tau-bounder-logeqv|
+  (implies (and (tau-intervalp int1)
+                (tau-intervalp int2)
+                (equal (tau-interval-dom int1) 'integerp)
+                (equal (tau-interval-dom int2) 'integerp))
+           (and (tau-intervalp (tau-bounder-logeqv int1 int2))
+                (equal (tau-interval-dom (tau-bounder-logeqv int1 int2)) 'integerp)
+            ))
+  :hints (("Goal"
+    :in-theory
+    (e/d (logeqv)
+         (tau-intervalp
+          in-tau-intervalp
+          tau-bounder-logand
+          tau-bounder-logorc1
+          (:executable-counterpart make-tau-interval)))))
+    ))
 
 (defthm tau-bounder-logeqv-correct
   (implies (and (tau-intervalp int1)
@@ -2431,6 +2712,17 @@
 ; (logxor x y) = (lognot (logeqv x y))
 
 (defun tau-bounder-logxor (int1 int2)
+  (declare (xargs :guard (and (tau-intervalp int1)
+                              (tau-intervalp int2)
+                (equal (tau-interval-dom int1) 'integerp)
+                (equal (tau-interval-dom int2) 'integerp))
+           :guard-hints (("Goal" :use (
+                           (:instance |tau-intervalp tau-bounder-lognot|
+                             (int (tau-bounder-logeqv int1 int2)))
+                           (:instance |tau-intervalp tau-bounder-logeqv|
+                             (int1 int1)
+                             (int2 int2)))
+                                  :in-theory (disable tau-intervalp tau-bounder-lognot tau-bounder-logeqv)))))
   (tau-bounder-lognot
    (tau-bounder-logeqv int1 int2)))
 
@@ -2474,6 +2766,8 @@
 ; negative y.
 
 (defun tau-bounder-expt2 (int2)
+  (declare (xargs :guard (and (tau-intervalp int2)
+                              (equal (tau-interval-dom int2) 'integerp))))
   (let ((loy (tau-interval-lo int2))
         (hiy (tau-interval-hi int2)))
     (if loy
@@ -2513,6 +2807,10 @@
 ; and returns the entire rational set in the general case.
 
 (defun tau-bounder-expt (intr inti)
+  (declare (xargs :guard (and (tau-intervalp intr)
+                              (tau-intervalp inti)
+                              (equal (tau-interval-dom intr) 'integerp)
+                              (equal (tau-interval-dom inti) 'integerp))))
   (if
     (and
       (equal (tau-interval-lo intr) 2)
@@ -2546,6 +2844,10 @@
 ; (ash x y) = (floor (* (ifix x) (expt 2 y)) 1)
 
 (defun tau-bounder-ash (int1 int2)
+  (declare (xargs :guard (and (tau-intervalp int1)
+                              (tau-intervalp int2)
+                              (equal (tau-interval-dom int1) 'integerp)
+                              (equal (tau-interval-dom int2) 'integerp))))
   (tau-bounder-floor
    (tau-bounder-* int1
                    (tau-bounder-expt2 int2))

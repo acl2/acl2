@@ -12400,6 +12400,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     chk-absstobj-invariants
     get-stobj-creator
     restore-iprint-ar-from-wormhole
+    ld-fix-command
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
