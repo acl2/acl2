@@ -1,6 +1,6 @@
 #|$ACL2s-Preamble$;
-(ld ;; Newline to fool ACL2/cert.pl dependency scanner
- "portcullis.lsp")
+(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
+ "../portcullis")
 
 ;;Bunch of utility functions for use by just defdata
 (acl2::begin-book t);$ACL2s-Preamble$|#
@@ -11,24 +11,17 @@
 (set-verify-guards-eagerness 2)
 (include-book "tools/bstar" :dir :system)
 
-(defun modify-symbol (prefix sym postfix)
-  (declare (xargs :guard (and (symbolp sym)
-                              (stringp postfix)
-                              (stringp prefix))))
-  (let* ((name (symbol-name sym))
-         (name (string-append prefix name))
-         (name (string-append name postfix)))
-    (if (member-eq sym *common-lisp-symbols-from-main-lisp-package*)
-      (intern-in-package-of-symbol name 'acl2::acl2-pkg-witness)
-      (intern-in-package-of-symbol name sym))))
-(defun modify-symbol-lst (prefix syms postfix)
-  (declare (xargs :guard (and (symbol-listp syms)
-                              (stringp prefix)
-                             (stringp postfix))))
-  (if (endp syms)
-    nil
-    (cons (modify-symbol prefix (car syms) postfix)
-          (modify-symbol-lst prefix (cdr syms) postfix))))
+;; (defun modify-symbol (prefix sym postfix)
+;;   (declare (xargs :guard (and (symbolp sym)
+;;                               (stringp postfix)
+;;                               (stringp prefix))))
+;;   (let* ((name (symbol-name sym))
+;;          (name (string-append prefix name))
+;;          (name (string-append name postfix)))
+;;     (if (member-eq sym *common-lisp-symbols-from-main-lisp-package*)
+;;       (intern-in-package-of-symbol name 'acl2::acl2-pkg-witness)
+;;       (intern-in-package-of-symbol name sym))))
+
 
 (defun str/sym-listp (x)
   (declare (xargs :guard T))
@@ -99,28 +92,52 @@
       
 ;pre-condition: args should be consp
 (defmacro s+ (&rest args)
-  "given a sequence of symbols or strings as args, 
-   it returns the joined symbol with default separator as -"
-  (let* ((sep (extract-kwd-val :separator args :default "-"))
+  "string/symbol(s) concat to return a symbol.
+  :pkg and :separator keyword args recognized."
+  (let* ((sep (extract-kwd-val :separator args :default ""))
          (pkg (extract-kwd-val :pkg args))
          (args (remove-keywords-from-args '(:separator :pkg) args)))
-        
-  `(intern-in-package-of-symbol
-    (join-names (list ,@args) ,sep)
-    (or ',pkg ,(car args)))))
+    `(s+-fn (list ,@args) ,sep ,pkg)))
+
+(defun s+-fn (ss sep pkg)
+  (declare (xargs :guard (and (str/sym-listp ss)
+                              (stringp sep))))
+  (b* (((unless (consp ss)) (er hard? 's+ "~| Expect at least one string/symbol arg, but given ~x0 ~%" ss))
+       (s1 (car ss))
+       (pkg~ (or (and (stringp pkg) (not (equal pkg "")) pkg)
+                 (and (symbolp s1) (symbol-package-name s1))
+                 "DEFDATA"))
+       ;; (- (cw "~| pkg to be used is : ~x0~%" pkg~))
+       )
+    
+  (intern$ (join-names ss sep) pkg~)))
+
+(defun modify-symbol-lst (prefix syms postfix pkg)
+  (declare (xargs :guard (and (symbol-listp syms)
+                              (stringp prefix)
+                              (stringp postfix)
+                              (not (equal pkg ""))
+                              (stringp pkg))))
+  (if (endp syms)
+    nil
+    (cons (s+ prefix (car syms) postfix :pkg pkg)
+          (modify-symbol-lst prefix (cdr syms) postfix pkg))))
+
 
 (defun get-dest-prefix (conx-name)
   (declare (xargs :guard (symbolp conx-name)))
-  (modify-symbol "" conx-name "-"))
+  (concatenate 'string (symbol-name conx-name) "-"))
+
 (defun get-modifier-prefix (conx-name)
   (declare (xargs :guard (symbolp conx-name)))
-  (modify-symbol "SET-" conx-name "-"))
+  (concatenate 'string "SET-" (symbol-name conx-name) "-"))
 
 
 (include-book "data-structures/utilities" :dir :system)
 
 (defloop symbol-names (syms)
-  (for ((sym in syms)) (collect (symbol-names sym))))
+  (declare (xargs :guard (symbol-listp syms)))
+  (for ((sym in syms)) (collect (symbol-name sym))))
 
 
 
@@ -232,8 +249,8 @@
   ;; (declare (xargs :guard (and (proper-symbolp P)
   ;;                             (plist-worldp wrld))))
   (declare (xargs :verify-guards nil))
-  (or (eq P 'acl2::allp)
-      (assoc-eq P (table-alist 'allp-aliases wrld))))
+  (or (eq P 'acl2s::allp)
+      (assoc-eq P (table-alist 'acl2s::allp-aliases wrld))))
                   
 
 ; CHECK with J. TODO What if there is some information in pos-implicants of P1,
@@ -274,10 +291,6 @@
 
 ;----------above is copied from utilities.lisp -----------------------
 
-;;-- (get-predicate-symbol 'integer) ==> INTEGERP
-(defun get-predicate-symbol (sym)
-  (declare (xargs :guard (symbolp sym)))
-  (modify-symbol "" sym "P"))
 
 (local
  (defthm valid-subseq-of-string-is-string
@@ -303,21 +316,37 @@
       NIL))) ;TODO.Beware
       ;(er hard 'get-typesymbol-from-pred "~x0 doesnt follow our convention of predicates ending with 'p'.~%" sym))))
 
-;;-- (get-predicate-symbol-lst '(integer boolean rational)) ==> (INTEGERP BOOLEANP RATIONALP)
-(defun get-predicate-symbol-lst (syms)
-  (declare (xargs :guard (symbol-listp syms)))
+
+;;-- (make-predicate-symbol 'integer "ACL2S B") ==> ACL2S B::INTEGERP
+(defun make-predicate-symbol (sym pkg)
+  (declare (xargs :guard (and (symbolp sym)
+                              (not (equal pkg ""))
+                              (stringp pkg))))
+  (s+ sym "P" :pkg pkg))
+
+(defun make-predicate-symbol-lst (syms pkg)
+  (declare (xargs :guard (and (symbol-listp syms)
+                              (not (equal pkg ""))
+                              (stringp pkg))))
   (if (endp syms)
     nil
-    (cons (get-predicate-symbol (car syms))
-          (get-predicate-symbol-lst (cdr syms)))))
+    (cons (make-predicate-symbol (car syms) pkg)
+          (make-predicate-symbol-lst (cdr syms) pkg))))
 
-(defun get-enumerator-symbol (sym)
-  (declare (xargs :guard (symbolp sym)))
-  (modify-symbol "NTH-" sym ""))
 
-(defun get-uniform-enumerator-symbol (sym)
-  (declare (xargs :guard (symbolp sym)))
-  (modify-symbol "NTH-" sym "/ACC"))
+(defun make-enumerator-symbol (sym pkg)
+  (declare (xargs :guard (and (symbolp sym)
+                              (not (equal pkg ""))
+                              (stringp pkg))))
+
+  (s+ "NTH-" sym :pkg pkg))
+
+(defun make-uniform-enumerator-symbol (sym pkg)
+    (declare (xargs :guard (and (symbolp sym)
+                                (not (equal pkg ""))
+                                (stringp pkg))))
+
+  (s+ "NTH-" sym "/ACC" :pkg pkg))
 
 
 
@@ -545,7 +574,7 @@
                               (= (len fns) (len params)))))
   (if (endp fns)
     nil
-    (if (eq (car fns) 'ACL2::ALLP)
+    (if (eq (car fns) 'ACL2S::ALLP)
         (build-one-param-calls (cdr fns) (cdr params))
       (cons (list (car fns) (car params))
             (build-one-param-calls (cdr fns) (cdr params))))))
@@ -788,7 +817,7 @@
 
 (defstub is-type-predicate (* *) => *)
 (defstub is-a-typeName (* *) => *)
-(defstub is-a-custom-type (* *) => *)
+;; (defstub is-a-custom-type (* *) => *)
 
 (defstub forbidden-names () => *)
 
@@ -814,3 +843,13 @@
       al2
     (cons (car al1)
           (union-alist2 (cdr al1) (delete-assoc-all (caar al1) al2)))))
+
+(defun alist-equiv (A1 A2)
+  (declare (xargs :guard (and (alistp A1)
+                              (alistp A2))))
+  (if (endp A1)
+      (endp A2)
+    (b* ((key (caar A1)))
+      (and ;(equal (get1 key A1) (get1 key A2))
+       (equal (assoc-equal key A1) (assoc-equal key A2))
+       (alist-equiv (delete-assoc-all key A1) (delete-assoc-all key A2))))))

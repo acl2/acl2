@@ -1,3 +1,4 @@
+(include-book "portcullis")
 
 
 ; Added by Jared, justified by ACL2_COMPILE_FLG setting in Makefile

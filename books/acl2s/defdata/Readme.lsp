@@ -15,16 +15,16 @@ splitnat.lisp
 switchnat.lisp
 defdata-regression.lsp
 defdata-util.lisp
-register-data-constructor
-register-type
-register-combinator
-listof
-alistof
-record
-map
-enumerators-gen
-tau-characterization
-builtin-combinators
+register-data-constructor.lisp
+register-type.lisp
+register-combinator.lisp
+listof.lisp
+alistof.lisp
+record.lisp
+map.lisp
+enumerators-gen.lisp
+tau-characterization.lisp
+builtin-combinators.lisp
 defdata-core.lisp
 library-support.lisp
 base.lisp
@@ -41,7 +41,7 @@ top.lisp
  (:ABSTRACT
 "
 USAGE:
- (include-book \"defdata/top\" :dir :system :ttags :all)
+ (include-book \"acl2s/defdata/top\" :dir :system :ttags :all)
 
 There is some system-level documentation in defdata-core.lisp
 ")
@@ -72,10 +72,8 @@ These books were developed as part of ACL2s: "The ACL2 Sedan."
 
 To certify books, do the foll at the shell prompt (in the current directory):
 $ export ACL2=<path to your  saved_acl2>
-$ make
+$ ../build/cert.pl top.lisp
 
-Note: You need java to be installed on your machine and in PATH.
-      acl2-lib.jar automatically generates .acl2 files.
 
 Books:
 

@@ -1,6 +1,6 @@
 #|$ACL2s-Preamble$;
-(ld ;; Newline to fool ACL2/cert.pl dependency scanner
- "portcullis.lsp")
+(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
+ "../portcullis")
 (acl2::begin-book t);$ACL2s-Preamble$|#
 
 #|
@@ -87,13 +87,13 @@ data last modified: [2014-08-06]
        (dest-pred-alist (pairlis$ dex-names dpreds))
        (kwd-alist (acons :arity (len dex-names) (acons :recog recog (acons :dest-pred-alist dest-pred-alist kwd-alist)))))
         
-    `((defthm ,(s+ conx-name 'CONSTRUCTOR-PRED)
+    `((defthm ,(s+ conx-name '-CONSTRUCTOR-PRED)
          (implies ,hyp
                   (,recog (,conx-name . ,dex-names)))
          :hints ,hints
          :rule-classes ,rule-classes)
                       
-       (defthm ,(s+ conx-name 'CONSTRUCTOR-DESTRUCTORS)
+       (defthm ,(s+ conx-name '-CONSTRUCTOR-DESTRUCTORS)
          (implies (,recog x)
                   (and . ,(list-up-lists dpreds (apply-to-x-lst dex-names))))
          :hints ,hints
@@ -101,7 +101,7 @@ data last modified: [2014-08-06]
 
 
        ,@(and proper
-              `((defthm ,(s+ conx-name 'ELIM-RULE)
+              `((defthm ,(s+ conx-name '-ELIM-RULE)
                   (implies (,recog x)
                            (equal (,conx-name . ,(apply-to-x-lst dex-names))
                                   x))
@@ -109,7 +109,7 @@ data last modified: [2014-08-06]
                   :rule-classes ,(if (or recordp rule-classes) '(:elim) rule-classes))
                 
                 
-                (defthm ,(s+ conx-name 'CONSTRUCTOR-DESTRUCTORS-PROPER)
+                (defthm ,(s+ conx-name '-CONSTRUCTOR-DESTRUCTORS-PROPER)
                   (implies ,hyp
                            (and . ,(get-proper-dex-theorems conx-name dex-names)))
                   :hints ,hints

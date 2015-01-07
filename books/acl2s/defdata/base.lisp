@@ -1,27 +1,10 @@
 #|$ACL2s-Preamble$;
-(ld ;; Newline to fool ACL2/cert.pl dependency scanner
- "portcullis.lsp")
+(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
+ "../portcullis")
 (acl2::begin-book t);$ACL2s-Preamble$|#
 
 
-;; [Jared] Marking this book as non-acl2(r) because it attempts to prove:
-;;
-;; (DEFTHM COMMON-LISP::COMPLEX-CONSTRUCTOR-DESTRUCTORS
-;;          (IMPLIES (ACL2-NUMBERP X)
-;;                   (AND (RATIONALP (REALPART X))
-;;                        (RATIONALP (IMAGPART X))))
-;;          :HINTS NIL
-;;          :RULE-CLASSES NIL)
-;;
-;; which, I think, is not a theorem in ACL2(r).
-
-; cert_param: (non-acl2r)
-
-
-(in-package "ACL2")
-
-;Data has separate package namespace 'defdata' and which implements
-;custom data definitions, type constructors(product and union)
+(in-package "ACL2S")
 
 (include-book "splitnat")
 (include-book "switchnat")
@@ -73,8 +56,10 @@
 ; store all aliases of allp in a table. This will be used by subtype-p and
 ; disjoint-p functions. Recall that we have given up homebrew datatype
 ; relationship graphs in favor of its implicit coding in TAU-DATABASE.
-(table defdata::allp-aliases nil)
-(table defdata::allp-aliases 'allp 'all :put) ;all will be registered as a defdata type below.
+(table allp-aliases nil)
+(table allp-aliases 'allp 'all :put) ;all will be registered as a defdata type below.
+
+
 
 
 ;; NOTE: ALL should not be used in subtype/disjoint relations
@@ -711,7 +696,7 @@
 ;                                   where (nth-T (T-index x)) = x
 
 (defmacro register-custom-type  (typename typesize enum pred &key verbose)
-  `(register-type ,typename :size ,typesize :predicate ,pred :enumerator ,enum :verbose ,verbose))
+  `(defdata::register-type ,typename :size ,typesize :predicate ,pred :enumerator ,enum :verbose ,verbose))
 
 (register-custom-type nat t nth-nat natp)
 
@@ -729,16 +714,16 @@
 (register-custom-type boolean 2 nth-boolean  booleanp );taken care of by define-enumeration-type
 (register-custom-type symbol t nth-symbol  symbolp)
 
-(verify-termination legal-constantp)
-(verify-guards legal-constantp)
+(verify-termination acl2::legal-constantp)
+(verify-guards acl2::legal-constantp)
 (defun proper-symbolp (x)
   (declare (xargs :guard t))
   (and (symbolp x)
        (not (or (keywordp x);a keyword
                 (booleanp x);t or nil
-                (legal-constantp x)))))
+                (acl2::legal-constantp x)))))
 
-(in-theory (disable legal-constantp))
+(in-theory (disable acl2::legal-constantp))
 
 (defconst *nice-symbol-names*
   '(x y z a b c i j k p q r s u v w l d e f g h m n))
@@ -761,7 +746,7 @@
              (defdata::random-natural-seed seed)
              (mv (nth-character n) (the (unsigned-byte 31) seed))))
    
-(register-type character :size 62 :enumerator nth-character :predicate characterp :enum/acc nth-character-uniform)
+(defdata::register-type character :size 62 :enumerator nth-character :predicate characterp :enum/acc nth-character-uniform)
 
 
 
@@ -790,7 +775,7 @@
      (mv-let (n seed)
              (defdata::random-natural-seed seed)
              (mv (nth-z n) (the (unsigned-byte 31) seed))))
-(register-type z :size t :enumerator nth-z :predicate zp :enum/acc nth-z-uniform)
+(defdata::register-type z :size t :enumerator nth-z :predicate zp :enum/acc nth-z-uniform)
 
 
 ;Subtype relations betweem the above
@@ -952,13 +937,13 @@
 (defdata acl2-number-list (listof acl2-number) )
 (defdata boolean-list (listof boolean) )
 (defdata symbol-list    (listof symbol) )
-(register-type character-list 
+(defdata::register-type character-list 
                :size t 
                :predicate character-listp
                :enumerator nth-character-list  
-               :prettyified-def (listof character))
+               ::prettyified-def (listof character))
                
-(register-type standard-char-list 
+(defdata::register-type standard-char-list 
                :size t 
                :predicate  standard-char-listp
                :enumerator nth-standard-char-list 
@@ -1146,7 +1131,7 @@
                                    (LET ((X (NTH 1 INFXLST)))
                                         (NTH-TRUE-LIST X))))))))
 
-(register-type true-list 
+(defdata::register-type true-list 
                :size t 
                :predicate true-listp
                :enumerator nth-true-list 
@@ -1407,7 +1392,7 @@
   (declare (xargs :guard (natp n)))
   (* 2 (nth-integer n)))
 
-(register-type even 
+(defdata::register-type even 
                :predicate evenp 
                :enumerator nth-even)
 
@@ -1418,7 +1403,7 @@
     (- n)))
 
 ;(defun nth-odd (n) (1+ (* 2 (nth-integer))))
-(register-type odd 
+(defdata::register-type odd 
                :predicate oddp 
                :enumerator nth-odd)
 

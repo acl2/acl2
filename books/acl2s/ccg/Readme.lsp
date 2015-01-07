@@ -45,8 +45,8 @@ See the LICENSE file distributed with ACL2.
 "))
 
 #|
-(duplicated here from README)
 To enable CCG termination analysis:
+
 (include-book "ccg"  :ttags ((:ccg)) :load-compiled-file nil)
 (ld "ccg-settings.lsp")
 
