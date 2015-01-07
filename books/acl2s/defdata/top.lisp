@@ -1,7 +1,7 @@
 #|$ACL2s-Preamble$;
 ;;Author - Harsh Raju Chamarthi (harshrc)
-(ld ;; Newline to fool ACL2/cert.pl dependency scanner
- "portcullis.lsp")
+(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
+ "../portcullis")
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 (in-package "DEFDATA")
@@ -35,7 +35,8 @@ The defdata framework enables the convenient specification of
 data types in ACL2s, the ACL2 Sedan.  The framework concisely
 supports common data definition patterns, e.g., list types, map
 types, enumerated types, record types, and mutually-recursive
-types. It also provides support for polymorphic functions.
+types. It also provides support for polymorphic functions and 
+tight integration with Tau.
 </p>
 
 <p>
@@ -67,11 +68,12 @@ and exclusion; and it generates events that support polymorphic
 type reasoning.
 </p>
 
-<p> 
-The defdata framework is described in our ACL2 2014 paper (a link
-to the paper appears later). Below, we provide some examples of
-its use.
-</p>
+<p> The defdata framework is described in our ACL2 2014 paper (a link
+to the paper appears later). Below, we provide some examples of its
+use.</p>
+
+<p>Note: If you are trying these examples in a package other than ACL2S,
+then you might have to prefix the basic typenames i.e. acl2s::pos.</p>
 
 <h3>Examples</h3>
 
@@ -257,12 +259,12 @@ is the given by its macroexpansion.
 <h4>Registering user-defined combinators</h4>
 @({
   (register-user-combinator alistof 
-                            :arity 2 :verbose t
-                            :expansion (lambda (_name _args) `(OR nil (acons ,(car _args) ,(cadr _args) ,_name)))
-                            :syntax-restriction-fn proper-symbol-listp
-                            :syntax-restriction-msg \"alistof syntax restriction: ~x0 should be type names.\"
-                            :polymorphic-type-form (alistof :a :b)
-                            :post-pred-hook-fns (user-alistof-theory-events))
+   :arity 2 :verbose t
+   :aliases (acl2::alistof)
+   :expansion (lambda (_name _args) `(OR nil (acons ,(car _args) ,(cadr _args) ,_name)))
+   :syntax-restriction-fn proper-symbol-listp
+   :polymorphic-type-form (alistof :a :b)
+   :post-pred-hook-fns (user-alistof-theory-events))
 })
 
 <h3>Debugging</h3>
@@ -277,6 +279,12 @@ To debug a failed defdata form, you can proceed in multiple ways:
 </p>
 
 <h3>More details</h3> 
+
+<p> Although most constructs of the defdata language are
+package-agnostic, some of the API functions/macros of the Defdata
+framework (like <tt>sig</tt>) reside in the ACL2S package. Use
+list (<tt>*acl2s-exports*</tt>) to import these symbols into your own
+package.</p>
 
 <p> For a comprehensive user guide and more details please refer to the following
 <a href=\"http://arxiv.org/abs/1406.1557\">paper</a> </p>
@@ -341,14 +349,12 @@ Consider the above call of @('register-type'). We expect the following guards to
 <li><i>enum2, tenum2</i> are 2-arity functions that take a natural number and a random seed and return (mv value seed).</li>
 <li> The rest of the options are for experts and are not yet documented. </li>
 </ul>
-
-
 "
 )
 
 (defxdoc register-data-constructor
   :parents (defdata)
-  :short "Register a data constructor (and extend the defdata language)"
+  :short "Register a data constructor (to extend the defdata language)"
   :long
 "
 <h3>Introduction</h3>
@@ -398,10 +404,10 @@ build product types: @('cons'), @('intern$'), @('/') and @('complex').
                              [:hints hints]
                              [:rule-classes rule-classes])
 })
-
-
 "
 )
+
+
 
 
 (defxdoc sig 
@@ -421,6 +427,7 @@ build product types: @('cons'), @('intern$'), @('/') and @('complex').
   ;; x1 corresponds to nat and x2 to (listof :a) 
 
 })
+
 
 
 <h3>General Form:</h3>
@@ -450,10 +457,10 @@ support, contact Pete and Harsh.
 <p>
 The following keyword arguments are supported by the @('sig') macro:
 <ul>
-<li> @(':satisfies') -- specify additional dependent type hypotheses.</li>
-<li> @(':hints') -- @(see hints) option to the generic type signature.</li>
-<li> @(':rule-classes') --  @(see rule-classes) option to the generic type signature.</li>  
-<li> @(':verbose') -- for debugging.</li>  
+<li> :satisfies -- specify additional dependent type hypotheses.</li>
+<li> :hints -- @(see hints) option to the generic type signature.</li>
+<li> :rule-classes --  @(see rule-classes) option to the generic type signature.</li>  
+<li> :verbose -- for debugging.</li>  
 </ul>
 
 </p>
@@ -463,25 +470,25 @@ The following keyword arguments are supported by the @('sig') macro:
 
 (defxdoc register-user-combinator
   :parents (defdata)
-  :short "Register a user-defined combinator (and add sugar to the defdata language)"
+  :short "Register a user-defined combinator (to add sugar to defdata language)"
   :long
 "
 <h3>Introduction</h3>
 
-<p> We (even the user) can add syntactic sugar on top of the core defdata
-language. In addition it is also possible to specify the theory support for
-such a construct via the <tt>:post-pred-hook-fns</tt> keyword option. (See
-defdata/alistof.lisp for implementation details).</p>
+<p> User-defined combinators add syntactic sugar on top of the core
+defdata language. In addition it is also possible to specify the
+theory support for such a construct via the
+<tt>:post-pred-hook-fns</tt> keyword option. (See alistof.lisp for
+example usage).</p>
 
 <h3>Example</h3>
-Here is how we added alistof to the defdata language:
+Here is how we added <i>alistof</i> to the defdata language:
 @({
   (register-user-combinator alistof 
    :arity 2 :verbose t
    :aliases (acl2::alistof)
    :expansion (lambda (_name _args) `(OR nil (acons ,(car _args) ,(cadr _args) ,_name)))
    :syntax-restriction-fn proper-symbol-listp
-   :syntax-restriction-msg \"alistof syntax restriction: ~x0 should be type names.\"
    :polymorphic-type-form (alistof :a :b)
    :post-pred-hook-fns (user-alistof-theory-events))
 })
@@ -493,8 +500,6 @@ Here is how we added alistof to the defdata language:
                             :expansion term 
                             [optional args])
 })
-
-
 "
 )
 
@@ -521,13 +526,13 @@ Here is how we added alistof to the defdata language:
        [overridable metadata]
        )
 
-})
-<p>
-Defdata-attach can be used to attach custom test enumerators for certain
-types. This way one can tune Cgen's test data generation capability for certain
-scenarios.
+}) 
 
-Warning: Most of the optional keyword arguments are currently unsupported and
-the use of :override-ok can be unsound.</p>
+<p> Defdata-attach can be used to attach custom test enumerators for
+certain types. This provides a method to customize Cgen's test data
+generation capability for certain scenarios.</p>
+
+<p> Warning: Other optional keyword arguments are currently
+unsupported and the use of :override-ok can be unsound.</p>
 "
 )
