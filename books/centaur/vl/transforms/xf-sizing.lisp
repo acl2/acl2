@@ -275,6 +275,13 @@
   (verify-guards vl-datatype-exprsize)
   (deffixequiv-mutual vl-datatype-exprsize))
 
+(def-vl-exprsize vl-maybe-datatype
+  :body
+  (if x
+      (vl-datatype-exprsize x ss ctx warnings)
+    (mv nil (ok) nil))
+  :takes-ctx t)
+
 (def-vl-exprsize vl-gatedelay
   :takes-ctx t
   :body (b* (((vl-gatedelay x) x)
@@ -428,9 +435,6 @@
                  rhs: ~a4~%~%"
           :args (list ctx ew lw lvalue expr))))
 
-       
-
-
 (def-vl-exprsize vl-assign
   :body
   (b* (((vl-assign x) x)
@@ -515,8 +519,6 @@
          (b* (((mv warn type) (vl-partselect-expr-type x.expr ss (vl-context x))))
            (and (not warn) type)))
         (otherwise nil)))))
-       
-       
 
 (def-vl-exprsize vl-plainarg
   :takes-ctx t
@@ -599,7 +601,6 @@ the expression.</p>"
                 (mv nil warnings expr-prime)))
              (x-prime (change-vl-plainarg x :expr expr-prime)))
           (mv ok warnings x-prime)))
-
 
 (define vl-plainarglist-exprsize ((x vl-plainarglist-p)
                                   (ss vl-scopestack-p)
@@ -847,6 +848,62 @@ the expression.</p>"
        x)
   :hints(("Goal" :in-theory (enable vl-maybe-delayoreventcontrol-exprsize))))
 
+(def-vl-exprsize vl-vardecl
+  ;; BOZO -- this probably isn't right.  We probably need to consider the size
+  ;; of the variable as a context and pass that size in when sizing the initial value!!
+  :body
+  (b* (((vl-vardecl x) x)
+       (ctx x)
+       ((mv successp1 warnings type-prime)    (vl-datatype-exprsize x.type ss ctx warnings))
+       ((mv successp3 warnings initval-prime) (vl-maybe-expr-size x.initval ss ctx warnings))
+       ((mv successp4 warnings delay-prime)   (vl-maybe-gatedelay-exprsize x.delay ss ctx warnings))
+       (successp (and successp1 successp3 successp4))
+       (x-prime (change-vl-vardecl x
+                                   :type    type-prime
+                                   :initval initval-prime
+                                   :delay   delay-prime)))
+    (mv successp warnings x-prime)))
+
+(def-vl-exprsize-list vl-vardecllist :element vl-vardecl)
+
+
+(def-vl-exprsize vl-paramdecl
+  :body
+  (b* (((vl-paramdecl x) (vl-paramdecl-fix x))
+       (ctx x)
+       ((mv ok warnings type)
+        (vl-paramtype-case x.type
+          :vl-implicitvalueparam
+          (b* (((mv ok1 warnings range) (vl-maybe-range-exprsize x.type.range ss ctx warnings))
+               ((mv ok2 warnings default) (vl-maybe-expr-size x.type.default ss ctx warnings)))
+            (mv (and ok1 ok2) warnings (change-vl-implicitvalueparam
+                                        x.type :range range :default default)))
+          :vl-explicitvalueparam
+          (b* (((mv ok1 warnings type) (vl-datatype-exprsize x.type.type ss ctx warnings))
+               ((mv ok2 warnings default) (vl-maybe-expr-size x.type.default ss ctx warnings)))
+            (mv (and ok1 ok2) warnings
+                (change-vl-explicitvalueparam
+                 x.type :type type :default default)))
+          :vl-typeparam
+          (b* (((mv ok warnings default) (vl-maybe-datatype-exprsize x.type.default ss ctx warnings)))
+            (mv ok warnings (change-vl-typeparam x.type :default default))))))
+    (mv ok warnings (change-vl-paramdecl x :type type))))
+
+(def-vl-exprsize-list vl-paramdecllist :element vl-paramdecl)
+
+(def-vl-exprsize vl-blockitem
+  :body
+  (case (tag x)
+    (:vl-vardecl (vl-vardecl-exprsize x ss warnings))
+    (otherwise   (vl-paramdecl-exprsize x ss warnings))))
+
+(def-vl-exprsize-list vl-blockitemlist :element vl-blockitem)
+
+(local (defthm vl-blockitemlist-exprsize-under-iff
+         (b* (((mv ?ok ?warnings new-x) (vl-blockitemlist-exprsize x ss warnings)))
+           (iff new-x (consp x)))
+         :hints(("Goal" :in-theory (enable vl-blockitemlist-exprsize)))))
+
 (defines vl-stmt-exprsize
 
   (define vl-stmt-exprsize
@@ -933,6 +990,9 @@ the expression.</p>"
                   (x-prime (change-vl-eventtriggerstmt x :id id-prime)))
                (mv successp warnings x-prime)))))
 
+         (ss (if (eq (vl-stmt-kind x) :vl-blockstmt)
+                 (vl-scopestack-push (vl-blockstmt->blockscope x) ss)
+               ss))
          (x.exprs (vl-compoundstmt->exprs x))
          (x.stmts (vl-compoundstmt->stmts x))
          (x.ctrl  (vl-compoundstmt->ctrl x))
@@ -940,18 +1000,14 @@ the expression.</p>"
          ((mv successp1 warnings exprs-prime) (vl-exprlist-size x.exprs ss ctx warnings))
          ((mv successp2 warnings stmts-prime) (vl-stmtlist-exprsize x.stmts ss ctx warnings))
          ((mv successp3 warnings ctrl-prime)  (vl-maybe-delayoreventcontrol-exprsize x.ctrl ss ctx warnings))
-         (warnings
-          (if (atom x.decls)
-              warnings
-            (fatal :type :vl-unsupported-block
-                   :msg "~a0: block ~s1 has declarations, which are not supported."
-                   :args (list ctx (vl-blockstmt->name x)))))
-         (successp (and successp1 successp2 successp3))
+         ((mv successp4 warnings decls-prime) (vl-blockitemlist-exprsize x.decls ss warnings))
+         (successp (and successp1 successp2 successp3 successp4))
          (x-prime
           (change-vl-compoundstmt x
                                   :exprs exprs-prime
                                   :stmts stmts-prime
-                                  :ctrl ctrl-prime)))
+                                  :ctrl ctrl-prime
+                                  :decls decls-prime)))
       (mv successp warnings x-prime)))
 
   (define vl-stmtlist-exprsize
@@ -986,7 +1042,6 @@ the expression.</p>"
 
 (def-vl-exprsize-list vl-alwayslist :element vl-always)
 
-
 (def-vl-exprsize vl-initial
   :body (b* (((vl-initial x) x)
              (ctx x)
@@ -996,7 +1051,6 @@ the expression.</p>"
             (mv successp warnings x-prime)))
 
 (def-vl-exprsize-list vl-initiallist :element vl-initial)
-
 
 (def-vl-exprsize vl-interfaceport
   :body (b* (((vl-interfaceport x))
@@ -1011,7 +1065,6 @@ the expression.</p>"
               (vl-maybe-expr-size x.expr ss (vl-context x) warnings)))
           (mv expr-successp warnings
               (change-vl-regularport x :expr new-expr))))
-
 
 (def-vl-exprsize vl-port
   :body (b* ((x (vl-port-fix x)))
@@ -1036,64 +1089,6 @@ the expression.</p>"
 
 (def-vl-exprsize-list vl-portdecllist :element vl-portdecl)
 
-(def-vl-exprsize vl-vardecl
-  ;; BOZO -- this probably isn't right.  We probably need to consider the size
-  ;; of the variable as a context and pass that size in when sizing the initial value!!
-  :body
-  (b* (((vl-vardecl x) x)
-       (ctx x)
-       ((mv successp1 warnings type-prime)    (vl-datatype-exprsize x.type ss ctx warnings))
-       ((mv successp3 warnings initval-prime) (vl-maybe-expr-size x.initval ss ctx warnings))
-       ((mv successp4 warnings delay-prime)   (vl-maybe-gatedelay-exprsize x.delay ss ctx warnings))
-       (successp (and successp1 successp3 successp4))
-       (x-prime (change-vl-vardecl x
-                                   :type    type-prime
-                                   :initval initval-prime
-                                   :delay   delay-prime)))
-    (mv successp warnings x-prime)))
-
-(def-vl-exprsize-list vl-vardecllist :element vl-vardecl)
-
-(def-vl-exprsize vl-maybe-datatype
-  :body
-  (if x
-      (vl-datatype-exprsize x ss ctx warnings)
-    (mv nil (ok) nil))
-  :takes-ctx t)
-
-(def-vl-exprsize vl-paramdecl
-  :body
-  (b* (((vl-paramdecl x) (vl-paramdecl-fix x))
-       (ctx x)
-       ((mv ok warnings type)
-        (vl-paramtype-case x.type
-          :vl-implicitvalueparam
-          (b* (((mv ok1 warnings range) (vl-maybe-range-exprsize x.type.range ss ctx warnings))
-               ((mv ok2 warnings default) (vl-maybe-expr-size x.type.default ss ctx warnings)))
-            (mv (and ok1 ok2) warnings (change-vl-implicitvalueparam
-                                        x.type :range range :default default)))
-          :vl-explicitvalueparam
-          (b* (((mv ok1 warnings type) (vl-datatype-exprsize x.type.type ss ctx warnings))
-               ((mv ok2 warnings default) (vl-maybe-expr-size x.type.default ss ctx warnings)))
-            (mv (and ok1 ok2) warnings
-                (change-vl-explicitvalueparam
-                 x.type :type type :default default)))
-          :vl-typeparam
-          (b* (((mv ok warnings default) (vl-maybe-datatype-exprsize x.type.default ss ctx warnings)))
-            (mv ok warnings (change-vl-typeparam x.type :default default))))))
-    (mv ok warnings (change-vl-paramdecl x :type type))))
-
-
-       
-
-(def-vl-exprsize vl-blockitem
-  :body
-  (case (tag x)
-    (:vl-vardecl (vl-vardecl-exprsize x ss warnings))
-    (otherwise   (vl-paramdecl-exprsize x ss warnings))))
-
-(def-vl-exprsize-list vl-blockitemlist :element vl-blockitem)
-
 (def-vl-exprsize vl-fundecl
   :body
   (b* (((vl-fundecl x) x)
@@ -1109,9 +1104,10 @@ the expression.</p>"
                            :rettype rettype
                            :decls decls
                            :body body))))
-       
+
 (def-vl-exprsize-list vl-fundecllist :element vl-fundecl)
 
+;; BOZO should size task declarations too
 
 
 (def-genblob-transform vl-genblob-exprsize ((ss vl-scopestack-p)
@@ -1128,7 +1124,8 @@ the expression.</p>"
        ((mv & warnings initials)   (vl-initiallist-exprsize   x.initials   ss warnings))
        ((mv & warnings portdecls)  (vl-portdecllist-exprsize  x.portdecls  ss warnings))
        ((mv & warnings vardecls)   (vl-vardecllist-exprsize   x.vardecls   ss warnings))
-       ((mv warnings generates)    (vl-generates-exprsize     x.generates  ss  warnings))
+       ((mv & warnings paramdecls) (vl-paramdecllist-exprsize x.paramdecls ss warnings))
+       ((mv warnings generates)    (vl-generates-exprsize     x.generates  ss warnings))
        ((mv & warnings ports)      (vl-portlist-exprsize      x.ports      ss warnings))
        ((mv & warnings fundecls)   (vl-fundecllist-exprsize   x.fundecls   ss warnings)))
 
@@ -1143,6 +1140,7 @@ the expression.</p>"
          :initials initials
          :portdecls portdecls
          :vardecls vardecls
+         :paramdecls paramdecls
          :generates generates
          :fundecls fundecls)))
   :apply-to-generates vl-generates-exprsize)
@@ -1170,9 +1168,17 @@ the expression.</p>"
   (b* (((vl-design x) x)
        (ss (vl-scopestack-init x))
        (mods (vl-modulelist-exprsize x.mods ss))
-       ((mv ?ok warnings fundecls) (vl-fundecllist-exprsize x.fundecls ss x.warnings)))
+       (warnings x.warnings)
+       ((mv ?ok warnings fundecls)   (vl-fundecllist-exprsize   x.fundecls   ss warnings))
+       ((mv ?ok warnings paramdecls) (vl-paramdecllist-exprsize x.paramdecls ss warnings))
+       ((mv ?ok warnings vardecls)   (vl-vardecllist-exprsize   x.vardecls   ss warnings))
+       ;; BOZO packages, interfaces, ...
+       )
     (vl-scopestacks-free)
-    (change-vl-design x :mods mods
-                      :fundecls fundecls
-                      :warnings warnings)))
+    (change-vl-design x
+                      :mods       mods
+                      :fundecls   fundecls
+                      :warnings   warnings
+                      :paramdecls paramdecls
+                      :vardecls   vardecls)))
 

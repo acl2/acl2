@@ -892,7 +892,8 @@ type @('logic[3:0]').</li> </ul>"
        ((unless item)
         (mv (make-vl-warning :type :vl-hidexpr-type-fail
                              :msg "Couldn't find an item named ~s0"
-                             :args (list name1))
+                             :args (list name1)
+                             :fn __function__)
             nil))
        ((when (or (eq (tag item) :vl-modinst)
                   (eq (tag item) :vl-interfaceport)))
@@ -902,13 +903,15 @@ type @('logic[3:0]').</li> </ul>"
                                    :msg "Can't find a type for ~s0 because it ~
                                          is a ~s1 name"
                                    :args (list name1 (if (eq (tag item) :vl-modinst)
-                                                         "modinst" "interface port")))
+                                                         "modinst" "interface port"))
+                                   :fn __function__)
                   nil))
              ((unless (vl-fast-atom-p idx1))
               (mv (make-vl-warning :type :vl-hidexpr-type-fail
                                    :msg "Indexing into instance arrays not ~
                                          yet supported: ~a0"
-                                   :args (list (vl-expr-fix x)))
+                                   :args (list (vl-expr-fix x))
+                                   :fn __function__)
                   nil))
              ((mv modname instname)
               (if (eq (tag item) :vl-modinst)
@@ -928,7 +931,8 @@ type @('logic[3:0]').</li> </ul>"
                                                modname
                                                (if (eq (tag item) :vl-modinst)
                                                    "modinst" "interface port")
-                                               instname))
+                                               instname)
+                                   :fn __function__)
                   nil))
              (new-ss (vl-scopestack-push mod new-ss)))
           (vl-hidexpr-find-type (vl-hidexpr-rest x) new-ss)))
@@ -946,7 +950,8 @@ type @('logic[3:0]').</li> </ul>"
               (mv (make-vl-warning :type :vl-hidexpr-type-fail
                                    :msg "Can't find a type for ~s0 because it ~
                                          is a generate block name."
-                                   :args (list name1))
+                                   :args (list name1)
+                                   :fn __function__)
                   nil))
              (genblob (vl-sort-genelements (vl-genblock->elems item)))
              (new-ss (vl-scopestack-push genblob new-ss)))
@@ -957,20 +962,23 @@ type @('logic[3:0]').</li> </ul>"
               (mv (make-vl-warning :type :vl-hidexpr-type-fail
                                    :msg "Can't find a type for ~s0 because it ~
                                          is a generate array name."
-                                   :args (list name1))
+                                   :args (list name1)
+                                   :fn __function__)
                   nil))
              ((unless (eq (vl-expr-kind idx1) :nonatom))
               (mv (make-vl-warning :type :vl-hidexpr-type-fail
                                    :msg "Can't index into a generate array ~
                                          without an index: ~a0."
-                                   :args (list idx1))
+                                   :args (list idx1)
+                                   :fn __function__)
                   nil))
              ((vl-nonatom idx1))
              ((unless (vl-expr-resolved-p (second idx1.args)))
               (mv (make-vl-warning :type :vl-hidexpr-type-fail
                                    :msg "Can't index into a generate array ~
                                          because the index is unresoved: ~a0."
-                                   :args (list idx1))
+                                   :args (list idx1)
+                                   :fn __function__)
                   nil))
              (blk (vl-genarrayblocklist-find-block (vl-resolved->val (second idx1.args))
                                                    (vl-genarray->blocks item)))
@@ -978,7 +986,8 @@ type @('logic[3:0]').</li> </ul>"
               (mv (make-vl-warning :type :vl-hidexpr-type-fail
                                    :msg "The generate array has no block with ~
                                          the given index: ~a0."
-                                   :args (list idx1))
+                                   :args (list idx1)
+                                   :fn __function__)
                   nil))
              (genblob (vl-sort-genelements (vl-genarrayblock->elems blk)))
              (new-ss (vl-scopestack-push genblob new-ss)))
@@ -986,7 +995,8 @@ type @('logic[3:0]').</li> </ul>"
 
     (mv (make-vl-warning :type :vl-hidexpr-type-fail
                          :msg "Looking up ~s0: item type not supported: ~s1~%"
-                         :args (list name1 (tag item)))
+                         :args (list name1 (tag item))
+                         :fn __function__)
         nil)))
 
 

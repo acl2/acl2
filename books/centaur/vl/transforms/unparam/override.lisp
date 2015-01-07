@@ -389,7 +389,7 @@ types.</p>"
     (vl-override-parameter-with-expr decl value ss warnings ctx)))
 
 (defconst *vl-fake-context*
-  (make-vl-context :mod "fake module"
+  (make-vl-context :mod "fakemodule"
                    :elem *vl-fake-elem-for-vl-consteval*))
 
 (define vl-paramdecl-final-value ((decl vl-paramdecl-p)

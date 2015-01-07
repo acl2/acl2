@@ -470,6 +470,11 @@ shown.</p>"
        (design (cwtime (vl-design-argresolve design)))
        (design (cwtime (vl-design-resolve-indexing design)))
 
+       ;; Pre-unparameterization Lucidity Check -- this is a bad time for
+       ;; bit-level analysis, but it's a good time for checking parameter
+       ;; usages.
+       (design (cwtime (vl-design-lucid design :paramsp t)))
+
        (- (cw "~%vl-lint: starting general checks...~%"))
        (design (cwtime (vl-design-check-namespace design)))
        (design (cwtime (vl-design-check-case design)))
@@ -486,21 +491,26 @@ shown.</p>"
        ;; arguments to avoid programming-errors in drop-blankports... and actually
        ;; we hit errors like that later, too.
        ;; (design (cwtime (vl-design-drop-blankports design)))
-       (design (cwtime (vl-design-follow-hids design)))
+       ;;(design (cwtime (vl-design-follow-hids design)))
        ;; (design (cwtime (vl-design-clean-params design)))
        ;; (design (cwtime (vl-design-check-good-paramdecls design)))
        (design (cwtime (vl-design-unparameterize design)))
-       (- (vl-gc))
-
        (design (cwtime (vl-design-rangeresolve design)))
        (design (cwtime (vl-design-selresolve design)))
-       (design (cwtime (vl-design-lucid design)))
+
+       ;; Post-unparameterization Lucidity Check -- this is a bad time for
+       ;; checking parameters (because they've been eliminated) but it's a
+       ;; much better time to do bit-level analysis, because things like
+       ;; foo[width-1:0] should hopefully be resolved now.
+       (design (cwtime (vl-design-lucid design :paramsp nil)))
+
        (design
         ;; Best not to do this until after lucid checking.
         (cwtime (vl-design-drop-missing-submodules design)))
 
+       ;; BOZO do we even need to do this?
        ;; BOZO not exactly sure where this should go, maybe this will work.
-       ;; (design (cwtime (vl-design-expand-functions design)))
+       
 
        ;; (design
        ;;  ;; Bug fixed 2014-12-19: don't do this until after argresolve, because
@@ -513,7 +523,7 @@ shown.</p>"
        (design (cwtime (vl-design-check-selfassigns design)))
        (design (cwtime (vl-design-lint-stmt-rewrite design)))
        (design (cwtime (vl-design-stmtrewrite design 1000)))
-       (design (cwtime (vl-design-hid-elim design)))
+       ;;(design (cwtime (vl-design-hid-elim design)))
 
        ;; Now that HIDs are gone, we can throw away any modules we don't care
        ;; about, if we have been given any topmods.
@@ -529,24 +539,32 @@ shown.</p>"
        (design (cwtime (vl-design-remove-unnecessary-modules config.topmods design)))
 
 
+;; SUBSUMED BY LUCID
        ;; BOZO it seems sort of legitimate to do this before sizing, which
        ;; might be nice.  Of course, a more rigorous use/set analysis will
        ;; need to be post-sizing.
-       (- (cw "~%vl-lint: finding disconnected wires...~%"))
-       (design (cwtime (vl-design-remove-toohard design)))
-       (design (cwtime (vl-design-find-disconnected design)))
+       ;(- (cw "~%vl-lint: finding disconnected wires...~%"))
+       ;(design (cwtime (vl-design-remove-toohard design)))
+       ;(design (cwtime (vl-design-find-disconnected design)))
+;; /LUCID
 
        (- (cw "~%vl-lint: processing expressions...~%"))
        (design (cwtime (vl-design-oddexpr-check design)))
        (design (cwtime (vl-design-oprewrite design)))
+       ;; Sizing doesn't do well unless we expand functions
+       (design (cwtime (vl-design-expand-functions design)))
        (design (cwtime (vl-design-exprsize design)))
        (design (cwtime (vl-design-constcheck-hook design config.cclimit)))
        (design (cwtime (vl-design-qmarksize-check design)))
 
-       (- (cw "~%vl-lint: finding unused/unset wires...~%"))
+;; SUBSUMED BY LUCID
+       ;; This is subsumed by lucid
+       ;(- (cw "~%vl-lint: finding unused/unset wires...~%"))
        ;; BOZO this probably doesn't quite work here due to replicate not having been done
-       ((mv design dalist) (cwtime (vl-design-bit-use-set design)))
-       (- (vl-gc))
+       ;((mv design dalist) (cwtime (vl-design-bit-use-set design)))
+       ;(- (vl-gc))
+       (dalist nil)
+;; /LUCID
 
        (- (cw "~%vl-lint: processing assignments...~%"))
        (design (cwtime (vl-design-split design)))
@@ -651,7 +669,10 @@ shown.</p>"
 (define vl-jp-reportcard-aux ((x vl-reportcard-p) &key (ps 'ps))
   (b* (((when (atom x))
         ps)
-       ((cons modname warnings) (car x)))
+       ((cons modname warnings) (car x))
+       (modname (if (eq modname :design)
+                    "Design Root"
+                  modname)))
     (vl-ps-seq (vl-indent 1)
                (jp-str modname)
                (vl-print ":")
@@ -659,7 +680,13 @@ shown.</p>"
                (if (atom (cdr x))
                    ps
                  (vl-println ","))
-               (vl-jp-reportcard-aux (cdr x)))))
+               (vl-jp-reportcard-aux (cdr x))))
+  :prepwork
+  ((local (defthm l0
+            (implies (and (vl-reportcardkey-p x)
+                          (not (equal x :design)))
+                     (stringp x))
+            :hints(("Goal" :in-theory (enable vl-reportcardkey-p)))))))
 
 (define vl-jp-reportcard ((x vl-reportcard-p) &key (ps 'ps))
   (vl-ps-seq (vl-print "{")

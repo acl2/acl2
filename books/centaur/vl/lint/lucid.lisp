@@ -118,10 +118,14 @@ be the same.</p>"
   :parents (lucid)
   :layout :tree
   :short "State for the lucid transform."
-  ((db vl-luciddb-p "The main database."))
-  :long "<p>At the moment this is just a wrapper structure for the database.
-We use this structure just to make it easy to add extra fields, in case we want
-to have more than the fast alist.</p>")
+  ((db      vl-luciddb-p
+            "Main database mapping keys to their use/set occurrences.")
+
+   (paramsp booleanp :rule-classes :type-prescription
+            "Should we issue warnings for parameters?  It generally will only
+             make sense to do this <i>before</i> unparameterization has taken
+             place, because unparameterization should generally get rid of any
+             sensible parameters.")))
 
 
 ; State Initialization --------------------------------------------------------
@@ -332,9 +336,12 @@ created when we process their packages, etc.</p>"
 (define vl-lucidstate-init
   :parents (lucid)
   :short "Construct the initial @(see lucid) state for a design."
-  ((x vl-design-p))
+  ((x vl-design-p)
+   &key
+   ((paramsp booleanp) 't))
   :returns (st vl-lucidstate-p)
-  (make-vl-lucidstate :db (vl-luciddb-init x)))
+  (make-vl-lucidstate :db (vl-luciddb-init x)
+                      :paramsp paramsp))
 
 
 ; State Debugging -------------------------------------------------------------
@@ -931,7 +938,8 @@ created when we process their packages, etc.</p>"
           st)
 
         :vl-usertype
-        (b* ((st (vl-rhsexpr-lucidcheck x.kind ss st ctx))
+        (b* (
+(st (vl-rhsexpr-lucidcheck x.kind ss st ctx))
              (st (vl-packeddimensionlist-lucidcheck x.pdims ss st ctx))
              (st (vl-packeddimensionlist-lucidcheck x.udims ss st ctx)))
           st))))
@@ -1445,6 +1453,20 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck-list modulelist :element module)
 
+
+(def-vl-lucidcheck package
+  :body
+  (b* (((vl-package x))
+       (ss (vl-scopestack-push x ss))
+       (st (vl-fundecllist-lucidcheck x.fundecls ss st))
+       (st (vl-taskdecllist-lucidcheck x.taskdecls ss st))
+       (st (vl-typedeflist-lucidcheck x.typedefs ss st))
+       (st (vl-paramdecllist-lucidcheck x.paramdecls ss st))
+       (st (vl-vardecllist-lucidcheck x.vardecls ss st)))
+    st))
+
+(def-vl-lucidcheck-list packagelist :element package)
+
 (define vl-design-lucidcheck-main ((x  vl-design-p)
                                    (ss vl-scopestack-p)
                                    (st vl-lucidstate-p))
@@ -1458,7 +1480,8 @@ created when we process their packages, etc.</p>"
        (st (vl-paramdecllist-lucidcheck x.paramdecls ss st))
        (st (vl-vardecllist-lucidcheck x.vardecls ss st))
        (st (vl-typedeflist-lucidcheck x.typedefs ss st))
-       ;; bozo interfaces, packages, programs, configs, udps, ...
+       (st (vl-packagelist-lucidcheck x.packages ss st))
+       ;; bozo interfaces, programs, configs, udps, ...
        )
     st))
 
@@ -1670,8 +1693,9 @@ created when we process their packages, etc.</p>"
         ;; to issue only a single warning about this spurious variable, rather
         ;; than separate unused/unset warnings.
         (warn :type :vl-lucid-spurious
-              :msg "~a0 is never used or set anywhere."
-              :args (list item)))
+              :msg "~a0 is never used or set anywhere. (~s1)"
+              :args (list item
+                          (with-local-ps (vl-pp-scopestack-path ss)))))
 
        (used-solop (vl-lucid-some-solo-occp used))
        (set-solop  (vl-lucid-some-solo-occp set))
@@ -1709,8 +1733,9 @@ created when we process their packages, etc.</p>"
               ;; No uses of this variable at all.  No need to do any special
               ;; bit-level analysis.
               (warn :type :vl-lucid-unused
-                    :msg "~a0 is set but is never used."
-                    :args (list item)))
+                    :msg "~a0 is set but is never used. (~s1)"
+                    :args (list item
+                                (with-local-ps (vl-pp-scopestack-path ss)))))
              ((when used-solop)
               ;; The variable is used somewhere all by itself without any
               ;; indexing, so there's no reason to do any bit-level analysis.
@@ -1731,15 +1756,18 @@ created when we process their packages, etc.</p>"
               ;; All of the bits get used somewhere so this is fine.
               warnings))
           (warn :type :vl-lucid-unused
-                :msg "~a0 has some bits that are never used: ~s1"
-                :args (list item (vl-lucid-summarize-bits unused-bits)))))
+                :msg "~a0 has some bits that are never used: ~s1. (~s2)"
+                :args (list item
+                            (vl-lucid-summarize-bits unused-bits)
+                            (with-local-ps (vl-pp-scopestack-path ss))))))
 
        ;; Try to warn about any unset bits
        (warnings
         (b* (((when (atom set))
               (warn :type :vl-lucid-unset
-                    :msg "~a0 is used but is never initialized."
-                    :args (list item)))
+                    :msg "~a0 is used but is never initialized. (~s1)"
+                    :args (list item
+                                (with-local-ps (vl-pp-scopestack-path ss)))))
              ((when set-solop)
               warnings)
              ((unless (and simplep
@@ -1751,31 +1779,35 @@ created when we process their packages, etc.</p>"
              ((unless unset-bits)
               warnings))
           (warn :type :vl-lucid-unset
-                :msg "~a0 has some bits that are never set: ~s1"
-                :args (list item (vl-lucid-summarize-bits unset-bits))))))
+                :msg "~a0 has some bits that are never set: ~s1. (~s2)"
+                :args (list item
+                            (vl-lucid-summarize-bits unset-bits)
+                            (with-local-ps (vl-pp-scopestack-path ss))
+                            )))))
     warnings))
-
 
 (define vl-lucid-dissect-pair ((key vl-lucidkey-p)
                                (val vl-lucidval-p)
-                               (reportcard vl-reportcard-p))
+                               (reportcard vl-reportcard-p)
+                               (st  vl-lucidstate-p))
   :returns (reportcard vl-reportcard-p)
   (b* ((reportcard (vl-reportcard-fix reportcard))
+       ((vl-lucidstate st))
        ((vl-lucidkey key))
        ((vl-lucidval val))
        (topname
         ;; The top-level design element to blame, from the scopestack, for any
-        ;; warnings.  If this is a top-level name, "" is good enough to give us
-        ;; a floating warning, which could be needed for errors about, e.g.,
-        ;; top-level functions, parameters, etc.
+        ;; warnings.  If there isn't any containing element, we'll just blame
+        ;; the whole :design.
         (or (vl-scopestack-top-level-name key.scopestack)
-            ""))
+            :design))
        ((when val.errors)
         ;; We won't warn about anything else.
         (b* ((w (make-vl-warning
                  :type :vl-lucid-error
                  :msg "Error computing use/set information for ~s0.  Debugging details: ~x1."
-                 :args (list (with-local-ps (vl-pp-lucidkey key)) val.errors)
+                 :args (list (with-local-ps (vl-pp-lucidkey key))
+                             val.errors)
                  :fatalp nil
                  :fn __function__)))
           (vl-extend-reportcard topname w reportcard))))
@@ -1785,8 +1817,9 @@ created when we process their packages, etc.</p>"
        (b* (((when (vl-lucid-some-solo-occp val.used))
              reportcard)
             (w (make-vl-warning :type :vl-lucid-unused
-                                :msg "~a0: function is never used."
-                                :args (list key.item)
+                                :msg "~a0: function is never used. (~s1)"
+                                :args (list key.item
+                                            (with-local-ps (vl-pp-scopestack-path key.scopestack)))
                                 :fn __function__
                                 :fatalp nil)))
          (vl-extend-reportcard topname w reportcard)))
@@ -1795,8 +1828,9 @@ created when we process their packages, etc.</p>"
        (b* (((when (vl-lucid-some-solo-occp val.used))
              reportcard)
             (w (make-vl-warning :type :vl-lucid-unused
-                                :msg "~a0: task is never used."
-                                :args (list key.item)
+                                :msg "~a0: task is never used. (~s1)"
+                                :args (list key.item
+                                            (with-local-ps (vl-pp-scopestack-path key.scopestack)))
                                 :fn __function__
                                 :fatalp nil)))
          (vl-extend-reportcard topname w reportcard)))
@@ -1805,14 +1839,22 @@ created when we process their packages, etc.</p>"
        (b* (((when (vl-lucid-some-solo-occp val.used))
              reportcard)
             (w (make-vl-warning :type :vl-lucid-unused
-                                :msg "~a0: type is never used."
-                                :args (list key.item)
+                                :msg "~a0: type is never used. (~s1)"
+                                :args (list key.item
+                                            (with-local-ps (vl-pp-scopestack-path key.scopestack)))
                                 :fn __function__
                                 :fatalp nil)))
          (vl-extend-reportcard topname w reportcard)))
 
-      ((:vl-paramdecl :vl-vardecl)
+      (:vl-vardecl
        (b* ((warnings (vl-lucid-dissect-var-main key.scopestack key.item val.used val.set)))
+         (vl-extend-reportcard-list topname warnings reportcard)))
+
+      (:vl-paramdecl
+       (b* (((unless st.paramsp)
+             ;; Don't do any analysis of parameters unless it's permitted.
+             reportcard)
+            (warnings (vl-lucid-dissect-var-main key.scopestack key.item val.used val.set)))
          (vl-extend-reportcard-list topname warnings reportcard)))
 
       (:vl-interfaceport
@@ -1824,32 +1866,35 @@ created when we process their packages, etc.</p>"
        ;; to say about those.
        reportcard))))
 
-(define vl-lucid-dissect-database ((db         vl-luciddb-p)
-                                   (reportcard vl-reportcard-p))
+(define vl-lucid-dissect-database ((db         vl-luciddb-p "Already shrunk.")
+                                   (reportcard vl-reportcard-p)
+                                   (st         vl-lucidstate-p))
   :returns (reportcard vl-reportcard-p)
   :measure (vl-luciddb-count db)
   (b* ((db (vl-luciddb-fix db))
        ((when (atom db))
         (vl-reportcard-fix reportcard))
        ((cons key val) (car db))
-       (reportcard (vl-lucid-dissect-pair key val reportcard)))
-    (vl-lucid-dissect-database (cdr db) reportcard)))
+       (reportcard (vl-lucid-dissect-pair key val reportcard st)))
+    (vl-lucid-dissect-database (cdr db) reportcard st)))
 
 (define vl-lucid-dissect ((st vl-lucidstate-p))
   :returns (reportcard vl-reportcard-p)
   (b* (((vl-lucidstate st))
        (copy (fast-alist-fork st.db nil))
        (-    (fast-alist-free copy)))
-    (vl-lucid-dissect-database copy nil)))
+    (vl-lucid-dissect-database copy nil st)))
 
-(define vl-design-lucid ((x vl-design-p))
+(define vl-design-lucid ((x vl-design-p)
+                         &key
+                         ((paramsp booleanp) 't))
   :returns (new-x vl-design-p)
   :guard-debug t
   (b* ((x  (cwtime (hons-copy (vl-design-fix x))
                    :name vl-design-lucid-hons
                    :mintime 1))
        (ss (vl-scopestack-init x))
-       (st (cwtime (vl-lucidstate-init x)))
+       (st (cwtime (vl-lucidstate-init x :paramsp paramsp)))
        (st (cwtime (vl-design-lucidcheck-main x ss st)))
        (reportcard (cwtime (vl-lucid-dissect st))))
     (vl-scopestacks-free)

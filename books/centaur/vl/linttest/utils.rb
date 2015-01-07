@@ -91,8 +91,9 @@ end
 
 def some_warning_matches(type, substring, wlist)
   wlist.each do |w|
-    if (w[:type] == type and w[:text].include?(substring))
-      return true
+    if ((type == "*" or w[:type] == type) and
+        (substring == "*" or w[:text].include?(substring)))
+      return w
     end
   end
   return false
@@ -102,9 +103,19 @@ def match_warning(mod, type, substring)
   raise "No warnings for #{mod}" unless WARNINGS.has_key?(mod)
   ok = some_warning_matches(type, substring, WARNINGS[mod])
   if ok
-    puts "#{mod}: found #{type}, #{substring}"
+    puts "#{mod}: OK: matched #{type}, #{substring}"
   else
-    raise "not found: #{mod}, #{type}, #{substring}"
+    raise "failed to match required warning: #{mod}, #{type}, #{substring}"
+  end
+end
+
+def outlaw_warning(mod, type, substring)
+  raise "No warnings for #{mod}" unless WARNINGS.has_key?(mod)
+  found = some_warning_matches(type, substring, WARNINGS[mod])
+  if found
+    raise "found outlawed warning: #{mod}, #{type}, #{substring}:\n     #{found[:type]} -- #{found[:text]}"
+  else
+    puts "#{mod}: OK: none match #{type}, #{substring}"
   end
 end
 

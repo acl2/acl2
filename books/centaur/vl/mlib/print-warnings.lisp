@@ -254,9 +254,17 @@ warnings\".</p>"
        ((when (atom x))
         ps)
        ((cons name warnings) (car x)))
-    (vl-ps-seq (vl-print-warnings-with-named-header name (vl-elide-warnings warnings elide))
+    (vl-ps-seq (vl-print-warnings-with-named-header
+                (if (equal name :design) "Design Root" name)
+                (vl-elide-warnings warnings elide))
                (vl-println "")
-               (vl-print-reportcard-aux (cdr x) elide))))
+               (vl-print-reportcard-aux (cdr x) elide)))
+  :prepwork
+  ((local (defthm l0
+            (implies (and (vl-reportcardkey-p x)
+                          (not (equal x :design)))
+                     (stringp x))
+            :hints(("Goal" :in-theory (enable vl-reportcardkey-p)))))))
 
 (define vl-print-reportcard ((x vl-reportcard-p)
                              &key
@@ -279,7 +287,6 @@ warnings\".</p>"
   :short "Pretty-print a @(see vl-reportcard-p) into a string."
   :long "<p>See also @(see vl-print-reportcard).</p>"
   (with-local-ps (vl-print-reportcard x :elide elide)))
-
 
 (defsection vl-trace-warnings
   :parents (warnings)

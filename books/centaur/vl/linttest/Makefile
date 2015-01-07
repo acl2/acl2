@@ -72,3 +72,4 @@ clean:
 	rm -f */vl-warnings.json
 	rm -f */vl-warnings.ok
 	rm -f */check.log
+	rm -f vl-*.txt vl-warnings.json
