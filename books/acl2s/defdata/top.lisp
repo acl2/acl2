@@ -458,8 +458,8 @@ support, contact Pete and Harsh.
 The following keyword arguments are supported by the @('sig') macro:
 <ul>
 <li> :satisfies -- specify additional dependent type hypotheses.</li>
-<li> :hints -- @(see hints) option to the generic type signature.</li>
-<li> :rule-classes --  @(see rule-classes) option to the generic type signature.</li>  
+<li> :hints -- @(see acl2::hints) option to the generic type signature.</li>
+<li> :rule-classes --  @(see acl2::rule-classes) option to the generic type signature.</li>  
 <li> :verbose -- for debugging.</li>  
 </ul>
 

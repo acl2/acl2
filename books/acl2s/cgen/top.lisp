@@ -313,7 +313,7 @@ print a message reporting success.  Finally, the conjecture may be true, but
 ACL2 cannot prove it.  For all of these three cases, we consider testing to
 have succeeded, so @('test?') will report success. </p>
 
-<p>@('test?') is an embedded event and can be used in ACL2 @(see books). But it
+<p>@('test?') is an embedded event and can be used in ACL2 @(see acl2::books). But it
 is recommended to use them only in the design and in the debug phase, since its
 use requires trust-tags.</p>
 
