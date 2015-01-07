@@ -75,10 +75,11 @@ short and long are keyword arguments to defxdoc.
                  :setter setter)
               :put)
        ,@(and short
-              `((defxdoc ,name :parents (cgen acl2s-defaults) :short ,short :long ,long))))))
+              `((defxdoc ,name :parents (acl2::cgen acl2::acl2s-defaults) :short ,short :long ,long))))))
 
 
 (defxdoc acl2s-defaults
+  :parents (acl2::acl2-sedan acl2::cgen)
   :short "Getting and setting defaults for various parameters in Cgen (ACL2 Sedan)"                                 
   :long  
   "

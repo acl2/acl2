@@ -24,7 +24,7 @@
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc defdata
-  :parents (defdata acl2-sedan cgen)
+  :parents (acl2::acl2-sedan acl2::macro-libraries acl2::cgen)
   :short "A Data Definition Framework"
   :long
 "
@@ -292,7 +292,7 @@ package.</p>
 )
 
 (defxdoc register-type
-  :parents (defdata cgen)
+  :parents (defdata acl2::cgen)
   :short "Register a name as a defdata type"
   :long
 "
@@ -411,7 +411,7 @@ build product types: @('cons'), @('intern$'), @('/') and @('complex').
 
 
 (defxdoc sig 
-  :parents (defdata)
+  :parents (defdata acl2::macro-libraries)
   :short "Specify type signatures for polymorphic functions"
   :long
 "
@@ -505,7 +505,7 @@ Here is how we added <i>alistof</i> to the defdata language:
 
 
 (defxdoc defdata-attach
-  :parents (defdata)
+  :parents (defdata acl2::cgen)
   :short "Attach/modify metadata for a defdata type"
   :long
 "

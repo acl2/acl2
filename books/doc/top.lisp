@@ -80,8 +80,6 @@
 (include-book "centaur/clex/example" :dir :system)
 (include-book "centaur/nrev/demo" :dir :system)
 
-(include-book "acl2s/cgen/top" :dir :system)
-
 (include-book "centaur/defrstobj/defrstobj" :dir :system)
 
 (include-book "centaur/esim/stv/stv-top" :dir :system)
@@ -215,6 +213,11 @@
 
 (include-book "centaur/memoize/old/profile" :dir :system)
 (include-book "centaur/memoize/old/watch" :dir :system)
+
+;Put ACL2s doc last, since ccg.lisp inclusion might cause problems -- harshrc
+(include-book "acl2s/doc" :dir :system)
+
+
 
 #||
 
