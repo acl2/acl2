@@ -123,7 +123,7 @@ that behave the same as the ones above, execpt that they don't take the
     `(table ,histtable
             ',pair
             (cons ',tmpname
-                  (cdr (assoc ',pair
+                  (cdr (assoc-equal ',pair
                               (table-alist ',histtable world)))))))
 
 (defun check-deps-satisfied (deps fn stobjname histtable state)
