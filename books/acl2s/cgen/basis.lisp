@@ -1,11 +1,5 @@
 #|$ACL2s-Preamble$;
-(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
- "../portcullis")
-(acl2::begin-book t);$ACL2s-Preamble$|#
 
-(in-package "CGEN")
-
-(include-book "tools/bstar" :dir :system)
 
 ;;;;naming convention (only for readability):
 ;;;;  function: end with $ for each stobj updating/creating function
@@ -64,9 +58,13 @@
 
 ;;;;debug/print,trace,stats/log
 
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "portcullis.lsp")
+(acl2::begin-book t);$ACL2s-Preamble$|#
 
+(in-package "CGEN")
 
-
+(include-book "tools/bstar" :dir :system)
 
 ;========================Function Metadata table <=======================
 ; This table stores metadata about the functions introduced using def in

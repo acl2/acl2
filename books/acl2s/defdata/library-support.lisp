@@ -1,6 +1,6 @@
 #|$ACL2s-Preamble$;
-(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
- "../portcullis")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "portcullis.lsp")
 (begin-book);$ACL2s-Preamble$|#
 
 (in-package "ACL2")

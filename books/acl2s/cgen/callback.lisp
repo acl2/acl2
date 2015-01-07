@@ -1,7 +1,7 @@
 #|$ACL2s-Preamble$;
 ;; Author - Harsh Raju Chamarthi (harshrc)
-(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
- "../portcullis")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "portcullis.lsp")
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 
@@ -480,7 +480,7 @@ Nested testing not allowed! Skipping testing of new goal...~%"
 ;;; to test each goal.  Another reason is that because computed-hints
 ;;; with :COMPUTED-HINT-REPLACEMENT t is not additive like
 ;;; override-hints it can cause a hint to be not selected otherwise.
-(defmacro acl2s::enable-acl2s-random-testing ()
+(defmacro acl2::enable-acl2s-random-testing ()
 ;; this has to be a makevent because enable-acl2s-random-testing is the
 ;; expansion result of the make-event in set-acl2s-random-testing-enabled
 `(make-event  
@@ -519,7 +519,7 @@ Nested testing not allowed! Skipping testing of new goal...~%"
              acl2::keyword-alist)))
      )))
 
-(defmacro acl2s::disable-acl2s-random-testing ()
+(defmacro acl2::disable-acl2s-random-testing ()
 `(make-event  
      '(progn
         (acl2::remove-override-hints 
@@ -628,6 +628,7 @@ Nested testing not allowed! Skipping testing of new goal...~%"
        (event-stack~ (cons :ignore-cgen event-stack)) ;ensure this keyword is never a event ctx
        (state (f-put-global 'event-stack event-stack~ state))
        (ctx (compute-event-ctx ctx-form))
+
        ((unless (allowed-cgen-event-ctx-p ctx))
         (prog2$
          (cw? (> vl 8) 
@@ -635,17 +636,15 @@ Nested testing not allowed! Skipping testing of new goal...~%"
          state))
        
        (cgen-state (@ cgen-state))
-       ;TODO: Perhaps just flush cgen-state here. Reason: currently allowed ctx
-       ; are not usually nested: i.e Why would someone call thm inside a
-       ; thm?. But I am not convinced...
+       
        ((unless (null cgen-state))
         (prog2$
-         (cw? (debug-flag vl)
+         (cw? (> vl 8)
               "~|CEgen/Warning: initialize-event -- nested event ignored...~%")
          state))
-       
+
        ((mv start state) (acl2::read-run-time state))
-       (cgen-state (init-cgen-state/event (acl2s::acl2s-defaults-alist) start ctx))
+       (cgen-state (init-cgen-state/event (acl2::acl2s-defaults-alist) start ctx))
        (- (cw? (debug-flag vl)
               "~|CEgen/Note: CGEN-STATE initialized for ctx ~x0~%" ctx))
        (state (f-put-global 'cgen-state cgen-state state))
@@ -670,7 +669,6 @@ Nested testing not allowed! Skipping testing of new goal...~%"
        (event-stack~ (cdr event-stack))
        (state (f-put-global 'event-stack event-stack~ state))
 
-       
        ((when (eq (car event-stack) :ignore-cgen))
         (prog2$
          (cw? (> vl 8)
@@ -697,7 +695,7 @@ Nested testing not allowed! Skipping testing of new goal...~%"
         (if print-summary-p
             (print-testing-summary cgen-state ctx state) ;state is important also because we call trans-eval inside this fun
           (value nil)))
-       (- (cw? (debug-flag vl)
+       (- (cw? (system-debug-flag vl)
               "~|CEgen/Note: CGEN-STATE finalized for ctx ~x0~%" ctx))
        (state (f-put-global 'cgen-state nil state))) ;clean up cgen state
     state))

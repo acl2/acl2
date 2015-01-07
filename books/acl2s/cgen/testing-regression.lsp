@@ -1,30 +1,18 @@
+;$ACL2s-LMode$;Demo
+
 ;; this regression file aims at testing the various features of 
 ;; counterexample generation in ACL2 Sedan
 
 
-(add-include-book-dir :acl2s-modes "../")
+;(add-include-book-dir :acl2s-modes "../")
 (ld "acl2s-mode.lsp" :dir :acl2s-modes)
 
-;(include-book "cgen/top" :dir :acl2s-modes)
-(acl2s-defaults :set verbosity-level 2)
-
-;++++++++++++++testcase 0 [check if checkpoints are tested]++++++++++++++++++++
-
-(acl2s-defaults :set num-counterexamples 10)
-(test? (implies (and (posp (car x))
-                       (posp (cdr x)))
-                  (= (cdr x) (len x))))
-
-(test? (implies  (natp x) (posp x)) :verbosity-level 2)
-
-
+;(include-book "top")
+(acl2s-defaults :set sampling-method :uniform-random)
+;(acl2s-defaults :set search-strategy :incremental)
 (acl2s-defaults :set verbosity-level 2)
 
 ;++++++++++++++++testcase 1 [classic reverse example]++++++++++++++++++++++++++
-(acl2s-defaults :set num-counterexamples 3) ;default
-(acl2s-defaults :set testing-enabled :naive)
-
-
 ;Define Reverse function
 (defun rev1 (x)
   (if (endp x)
@@ -33,24 +21,24 @@
 
 (test? (equal (rev1 (rev1 x)) x))
 
-
-
-
 (acl2s-defaults :set testing-enabled T)
-;(trace$ cgen::compute-event-ctx cgen::allowed-cgen-event-ctx-p cgen::init-cgen-state/event)
-;(acl2s-defaults :set verbosity-level 5)
 (thm (equal (rev1 (rev1 x)) x))
-
-
-
-(acl2s-defaults :set testing-enabled :naive)
 
 ;Modify the conjecture, add the type hypothesis
 (test? (implies (true-listp x)
                 (equal (rev1 (rev1 x)) x)))
-
+;; Issues
+;; 1. If a function is not golden (guards not verified), then test?
+;; errors out. e.g above rev is not golden and above test? fails with:
+#|
+ACL2 Error in ( DEFUN DEFDATA::CONCLUSION-VAL-CURRENT ...):  The body
+for DEFDATA::CONCLUSION-VAL-CURRENT calls the function REV, the guards
+of which have not yet been verified.  See :DOC verify-guards.
+|#
+;; This happens for each conclusion-val, hypothesis-val and next-sigma
+;; This forced me to add (set-verify-guards-eagerness 0) to test?
+;; progn loop. But what about thm and defthm ?
 ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-(in-package "ACL2S")
 
 ;; testcase 2 (Shape of triangle - example from testing literature)
 (defdata triple (list pos pos pos))
@@ -74,7 +62,7 @@
 
 (acl2s-defaults :set num-trials 1000000)
 (acl2s-defaults :set testing-enabled :naive)
-(acl2s-defaults :set cgen-timeout 15)
+
 (time$
 ; 27th Aug '12
 ;Note: random is slightly less than twice as fast as BE
@@ -89,26 +77,21 @@
                (> (third x) 256)
                (= (third x)
                   (* (second x) (first x))))
-          (not (equal "isosceles" (shape x)))))
-)
-
+          (not (equal "isosceles" (shape x))))))
 
 (acl2s-defaults :set num-trials 1000)
 ;; fixed a bug where get-testing-enabled fn was giving wrong answer
 ;; leading to backtrack hints being added twice when we eval the
 ;; following form twice. Idempotency is very important.
 
-(acl2s-defaults :set testing-enabled t)
-
+(acl2s-defaults :set testing-enabled T)
 
 ;; whoa! Without arithmetic-5, I get nowhere with the
 ;; below example. 
 ;; 20th March 2013 - lets try arithmetic with meta
-
 ;(include-book "arithmetic/top-with-meta" :dir :system)
 ; But even without these books, now the following works fine,
 ; but with the above book, it produces way more cts (201 vs 4)
-(acl2s-defaults :set verbosity-level 2)
 (test?
  (implies (and (triplep x)
                (trianglep x)
@@ -118,7 +101,6 @@
           (not (equal "isosceles" (shape x)))))
 
 
-(acl2s-defaults :set verbosity-level 2)
 
 ;; testcase 3 (memory updates dont commute)
 ;NOTE: The following example too, 'simple' works good enough
@@ -132,9 +114,6 @@
 ;If Address is found in Memory, update it, or else add it to the end
 ;of the memory.
 (defdata memory (listof (cons nat integer)))
-
-  
-
 ;ISSUE: map not working due to guards
 
 ;; (defdata memory (map nat integer))
@@ -144,9 +123,9 @@
 (defun update (address value memory)
   (cond ((endp memory)
          (acons address value nil))
-        ((equal address (acons-caar memory))
+        ((equal address (caar memory))
          (acons address value (cdr memory)))
-        ((< address (acons-caar memory))
+        ((< address (caar memory))
          (acons address value memory))
         (t (cons (car memory) (update address value (cdr memory))))))
 
@@ -156,18 +135,28 @@
     (make-ordered-list (- n 1) (cons n acc))))
 
 (make-ordered-list 4 nil)
+
+(defun cons-up-lists (l1 l2)
+  (declare (xargs :guard (and (true-listp l1)
+                              (true-listp l2)
+                              (= (len l1)
+                                 (len l2)))))
+  (if (endp l1)
+    nil
+    (cons (cons (car l1) (car l2))
+          (cons-up-lists (cdr l1) (cdr l2)))))
+
 (defun nth-ordered-memory (n)
-  ;(declare (xargs :guard (natp n))) ;fix the guard eagerness in nth-ordered-memory-uniform
   (declare (xargs :mode :program))
   (let* ((m (nth-memory n))
          (len (len m))
          (vals (strip-cdrs m))
          (keys (make-ordered-list len nil)))
-    (pairlis$ keys vals)))
+    (cons-up-lists keys vals)))
 
 ;attach a custom test enumerator to a defdata type
-(defdata-attach memory :test-enumerator nth-ordered-memory :verbose t)               
-(acl2s-defaults :Set verbosity-level 2)
+(defdata-attach memory :test-enumerator nth-ordered-memory)               
+
 ;Conjecture - version#1
 (test?
  (equal (update a1 v1 (update a2 v2 m))
@@ -177,9 +166,12 @@
 
 
 ; Conjecture - version 2
+
 (test?
  (implies (and (memoryp m)
                (natp a1)
+               ;(< a1 56) ;ranges
+               ;(< 4 a1)
                (natp a2))
           (equal (update a1 v1 (update a2 v2 m))
                  (update a2 v2 (update a1 v1 m)))))
@@ -192,7 +184,6 @@
 
 ;Conjecture - version#3
 ;TODO - I am not trying hard to refute conclusion in incremental
-(acl2s-defaults :set verbosity-level 2)
 (test?
  (implies (and (memoryp m)
                (natp a1)
@@ -210,14 +201,16 @@
                ;(or (in-memory a1 m) (in-memory a2 m))
                (not (equal a1 a2)))
           (equal (update a1 v1 (update a2 v2 m))
-                 (update a2 v2 (update a1 v1 m))))
- :hints (("Goal" :in-theory (enable update acons acons-caar acons-cdar))))
+                 (update a2 v2 (update a1 v1 m)))))
+
 
 ;; testcase 4 (Russinoff's example)
+(acl2s-defaults :set verbosity-level 3)
 (test? (implies (and (real/rationalp a)
                      (real/rationalp b)
                      (real/rationalp c)
-                     (< 0 a)
+                     ;(<= 0 a)
+                     (<= a 1)
                      (< 0 b)
                      (< 0 c)
                      (<= (expt a 2) (* b (+ c 1)))
@@ -244,6 +237,7 @@
                      (<= b (* 4 c)))
                 (< (expt (- a 1) 2) (* b c))))
 
+;not giving top-level counterexamples in :incremental
 (time$
 (test? (implies (and (real/rationalp a)
                      (real/rationalp b)
@@ -264,20 +258,7 @@
               (< (expt (- a 1) 2) (* b c)))
      :hints (("goal" :cases ((< 0 b)))))
 ;08/22/12 ACL2 v5.0 The above thm no longer goes through
-;09/05/13 ACL2 v6.2 - its goes through now
 
-; testcase 4.1 (from Pete)
-
-(acl2s-defaults :set search-strategy :simple)
-(acl2s-defaults :set verbosity-level 2)
-(test?
- (IMPLIES (AND (integerp x)
-               (integerp y)
-               (integerp z)
-               (< x 20)
-               (< y (+ 25 x))
-               (< z (+ x y)))
-          (< z 62)))
 
 ;; testcase 5 (only finds cts if arithmetic-5 library is loaded)
 (test?
@@ -312,8 +293,8 @@
                         (list 'and formula formula)
                         (list 'or formula formula)
                         (list 'implies formula formula)))
-
 ;ISSUE: made defdata idempotent (redundant events)
+
 (defun simplify (f)
   ;:input-contract (formulap f)
   ;:output-contract (formulap (simplify f))
@@ -366,19 +347,10 @@
            (list 'and (nnf lhs) (nnf (list 'not rhs)))))
         (t f)))
 
-;(acl2s-defaults :set sampling-method :uniform-random)
-(assign evalable-printing-abstractions nil)
-
-(test? ;simp-nnf-commute
+(thm ;simp-nnf-commute
   (implies (formulap f)
   (equal (nnf (simplify f))
          (simplify (nnf f)))))
-
-(assign evalable-printing-abstractions '(list cons))
-
-
-; TODO: print-testing-summary should not appear after the summary when a new
-;form is called.
 
 ;; testcase 8 (Moore's example)
 (defun square-root1 (i ri)
@@ -405,12 +377,13 @@
 (defdata small-pos (enum '(1 2 3 4 5 6 7 8 9)))
 
 (acl2s-defaults :set testing-enabled T)
-;(acl2s-defaults :set num-trials 2500)
+(acl2s-defaults :set num-trials 2500)
 (acl2s-defaults :set sampling-method :random)
 ;No luck without arithmetic-5.
 ;Lets add arith-5 lib and see now. Still no luck
 ; 19th March - I saw some counterexamples with (ld acl2s-mode.lsp)
 ; 20th March 2013 - arithmetic/top-with-meta no luck.
+; 15 July 2013 - incremental finds it now in some subgoal!
 (test? 
   (implies (and (integerp c1)
                 (integerp c2)
@@ -443,7 +416,7 @@
                 (< 0 x)))
   :rule-classes :compound-recognizer)
 
-;Sep 5 2013 - strange timeout + cts, but no summary. (incremental)
+(acl2s-defaults :set search-strategy :simple) ;incremental
 (test? 
   (implies (and (integerp c1)
                 (integerp c2)
@@ -457,40 +430,9 @@
                 (equal 0 (+ (* c1 x1) (* c2 x2) (* c3 x3))))
            (and (= 0 c1) (= 0 c2) (= 0 c3))))
 
-;; testcase 10
-(defund hash (k)
-  (let* ((m (expt 2 23))
-         (a 309017/500000)
-         (s (* k a))
-         (x (- s (floor s 1))))
-    (mod (floor (* m x) 1)
-         (expt 2 32))))
+(acl2s-defaults :set verbosity-level 2)
 
-(defun g (x y z)
-  (if (and (equal x (hash y))
-           (equal y (hash z)))
-      'error
-    0))
-
-(acl2s-defaults :set testing-enabled T) ;if simple, then only T works
-
-(test? (implies (and (integerp x)
-                     (integerp y)
-                     (integerp z))
-                (/= (g x y z) 'error)))
-
-(acl2s-defaults :set testing-enabled :naive) ;for incremental, naive works too
-; Actually :simple works too with naive.
-(test? (implies (and (integerp x)
-                     (integerp y)
-                     (integerp z)
-                     (equal x (hash y))
-                     (equal y (hash z)))
-                NIL))
-
-
-
-;; testcase 11 (Euler Counterexample)
+;; testcase 10 (Euler Counterexample)
 ;fermat number: f(n) = 1 + 2^2^n
 (defun f (n)
   (1+ (expt 2 (expt 2 n))))
@@ -536,9 +478,12 @@
 
 
 ;Note: incremental does a really bad job with this test?
-(acl2s-defaults :set search-strategy :simple)
-
+;(acl2s-defaults :set search-strategy :simple)
+(acl2s-defaults :set subgoal-timeout 15)
 ;BOZO 20th March 2013 - arithmetic-5 caused the following to hang.
+;ADDENDUM 9 July 2013 - timeout does not work if prover hangs.
+(acl2s-defaults :set testing-enabled :naive)
+(acl2s-defaults :set search-strategy :simple)
 (test?
  (implies (and (posp k)
                (posp n)
@@ -563,6 +508,8 @@
 
 ;The third case
 (acl2s-defaults :set num-trials 1000)
+(acl2s-defaults :set testing-enabled T)
+
 ;; Fermats last theorem
 ; No counterexamples and proof is probably out of ACL2's reach!
 ; TODO: fix timeout issues. Here exponentiation probably causes problem
@@ -575,222 +522,46 @@
           (not (equal (+ (expt a n) (expt b n))
                       (expt c n)))))
 
+(acl2s-defaults :set search-strategy :incremental)
 
-; pipeline test case example
-;---------------pete's email before demo Summer 2013 pipeline example-------------
-(defdata reg nat)
-(defdata program-counter nat)
-(defdata register (map reg integer))
+;; testcase 11
+(defund hash (k)
+  (let* ((m (expt 2 23))
+         (a 309017/500000)
+         (s (* k a))
+         (x (- s (floor s 1))))
+    (mod (floor (* m x) 1)
+         (expt 2 32))))
 
-(defdata dmemory (map nat integer))
-                      
-(defdata operation-code (enum '(add sub mul load loadi store bez jump)))
+(defun g (x y z)
+  (if (and (equal x (hash y))
+           (equal y (hash z)))
+      'error
+    0))
 
-(defdata inst (record (opcode . operation-code)
-                      (rc . reg)
-                      (ra . reg)
-                      (rb . reg)))
+(acl2s-defaults :set testing-enabled T) ;if simple, then only T works
 
-(defdata imemory (map nat inst))
+(test? (implies (and (integerp x)
+                     (integerp y)
+                     (integerp z))
+                (/= (g x y z) 'error)))
 
-(defdata ISA (record (pc . program-counter)
-                     (regs . register)
-                     (imem . imemory)
-                     (dmem . dmemory)))
-
-(defdata latch1 (record (validp . boolean)
-                        (op . operation-code)
-                        (rc . reg)
-                        (ra . reg)
-                        (rb . reg)
-                        (pch . program-counter)))
-
-(defdata latch2 (record (validp . boolean)
-                        (op . operation-code)
-                        (rc . reg)
-                        (ra-val . integer)
-                        (rb-val . integer)
-                        (pch . program-counter)))
-
-(defdata MAA (record  (pc . program-counter)
-                     (regs . register)
-                     (imem . imemory)
-                     (dmem . dmemory)
-                     (ltch1 . latch1)
-                     (ltch2 . latch2)))
-
-(acl2s-defaults :set testing-enabled t)
-(acl2s-defaults :set num-trials 1000)
-(acl2s-defaults :set num-witnesses 0)
-(acl2s-defaults :set num-counterexamples 10)
-(acl2s-defaults :set verbosity-level 3)
-(acl2s-defaults :set cgen-timeout 101)
-;Here is one of the 3000 subgoals which failed:
-
-(acl2s-defaults :set sampling-method :random)
-
-;Sep 5 2013 - incremental took long time, but no results
-(acl2s-defaults :set search-strategy :simple) 
-
-
-#|
-;Cgen refuted version of this without hyps (NICE)
-; INteresting: DIff induction scheme gives more cex. 
-; i.e inducting on acl2::mset-wf gave (V 3), (X ((8 . -1/4))) and (A 8)
-; so now i need to change hyp mget a x to (integerp (mget a x))
-(defthm stronger-registerp-modifier-lemma
-  (implies (and (integerp (mget-wf a x))
-                ;(wf-keyp a)
-                v 
-                )
-           (equal (REGISTERP (MSET-WF A V X))
-                  (AND (REGISTERP X) (REGP A) (INTEGERP V))))
-  :hints (("Goal" :induct (acl2::mset-wf a v x)
-                  :in-theory (e/d (registerp acl2::good-map)
-                                  (map-elim-rule regp integerp acl2::wf-keyp)))))
-
-
-|#
-
-(in-theory (disable operation-codep ACL2::NON-NIL-IF-MGET-NON-NIL))
-
-(test?
- (implies (and (maap w)
-               (equal (mget :pc w)
-                      (+ 1 (mget :pch (mget :ltch2 w))))
-               
-               (mget (mget :pch (mget :ltch2 w)) (mget :imem w)) ;added later
-               
-               (equal t (mget :validp (mget :ltch2 w)))
-               
-               (equal (mget (mget :rb (mget (mget :pch (mget :ltch2 w)) (mget :imem w)))
-                            (mget :regs w))
-                      (mget :rb-val (mget :ltch2 w)))
-               
-               (equal (mget :opcode (mget (mget :pch (mget :ltch2 w)) (mget :imem w)))
-                      'bez)
-               
-               (equal 0
-                      (mget (mget :ra (mget (mget :pch (mget :ltch2 w)) (mget :imem w)))
-                            (mget :regs w)))
-               (equal 0 (mget :ra-val (mget :ltch2 w))))
-          (not (equal (mget :op (mget :ltch2 w)) 'bez))))
- 
+(acl2s-defaults :set testing-enabled :naive) ;for incremental, naive works too
+; Actually :simple works too with naive.
+(test? (implies (and (integerp x)
+                     (integerp y)
+                     (integerp z)
+                     (equal x (hash y))
+                     (equal y (hash z)))
+                NIL))
 
 
 
-;(acl2s-defaults :set search-strategy :incremental)
-;GOOD EXAMPLE 
-(defun perm (x y)
-  (if (endp x)
-    (endp y)
-    (and (member (car x) y)
-         (perm (cdr x) (remove1 (car x) y)))))
-
-(acl2s-defaults :set testing-enabled t)
-(test? ;remove-once-perm
-  (implies (and (consp X)
-                (member-equal a Y))
-           (equal (perm (remove-equal a X)
-                        (remove-equal a Y))
-                  (perm X Y))))
 
 
 
-(thm (implies (and (booleanp p)
-                    (booleanp q))
-               (not (equal (implies p q)
-                           (implies q p)))))
 
 
-#|
-; test case for timeouts and interrupt behavior
-(set-guard-checking :all)
-
-(acl2s-defaults :set testing-enabled t)
-(acl2s-defaults :set verbosity-level 4)
-(defunc ^ (k n)
-  ; k^n
-  :input-contract (and (natp k) (natp n))
-  :output-contract (natp (^ k n))
-  (if (equal n 0) ;(zp n)
-    1
-    (* k (^ k (- n 1)))))
-
-
-(defunc ! (n)
-  :input-contract (natp n)
-  :output-contract (posp (! n))
-  (if (equal n 0) ;(zp n)
-    1
-    (* n (! (- n 1)))))
-
-(acl2s-defaults :set testing-enabled :naive)
-
-(acl2s-defaults :set cgen-timeout 1)
-(acl2s-defaults :set verbosity-level 5)
-
-(test?
- (implies (and (natp n)
-               (< 3 n))
-          (< (^ 2 n) (! n))))
-|#
-
-; pretty amazing
-(defun make-inverse-map (A i)
-  (if (endp A)
-      '()
-    (cons (cons (car A) i)
-          (make-inverse-map (cdr A) (1+ i)))))
-
-(acl2s-defaults :set sampling-method :uniform-random)
-;(acl2s-defaults :set search-strategy :simple)
-(acl2s-defaults :set verbosity-level 2)
-
-;(include-book "data-structures/list-defthms" :dir :system)
-;(include-book "std/lists/top" :dir :system)
-(include-book "std/alists/top" :dir :system)
-(include-book "misc/eval" :dir :system)
-(acl2::must-fail
- (test?; make-inverse-map-with-update-nth
-  (implies (and (pos-listp A)
-                (no-duplicatesp A)
-                (natp k)
-                (natp i)
-                (posp e)
-                (member e A)
-                (< i (len A)))
-           (equal (make-inverse-map (update-nth i e A) k)
-                  (put-assoc-equal e (+ k i) (make-inverse-map A k))))))
-
-(acl2::must-fail
- (test?; make-inverse-map-with-update-nth
-  (implies (and (pos-listp A)
-                (no-duplicatesp A)
-                (natp k)
-                (natp i)
-                (posp e)
-                (member e A)
-                (< i (len A)))
-           (equal (make-inverse-map (update-nth i e A) k)
-                  (put-assoc e (+ k i) (delete-assoc (nth i A) (make-inverse-map A k))))))
-)
-
-(acl2::must-fail
-(test?; make-inverse-map-with-update-nth
-  (implies (and (pos-listp A)
-                (no-duplicatesp A)
-                (natp k)
-                (natp i)
-                (natp j)
-                (not (= i j))
-                (posp e)
-                ;(member e A)
-                (< i (len A)))
-           (acl2::alist-equiv (make-inverse-map (update-nth i (nth j A) A) k)
-                        (put-assoc (nth j A) (+ k i) 
-                                   (delete-assoc (nth i A) (make-inverse-map A k))))))
-)
 
 
 
@@ -933,6 +704,35 @@
            (equal (defdata::permutation (sets::delete a X)
                         (sets::delete a Y))
                   (defdata::permutation X Y))))
+
+(defun perm (x y)
+  (if (endp x)
+      (endp y)
+    (and (member-equal (car x) y)
+         (perm (cdr x) (remove1-equal (car x) y)))))
+
+(defun forall-in (x y)
+  (if (endp x)
+      t
+    (and (member-equal (car x) y)
+         (forall-in (cdr x) y))))
+
+(test?
+ (implies (and (pos-listp x)
+               (pos-listp y)
+               )
+          (equal (perm x y)
+                 (and (= (len x) (len y))
+                      (forall-in x y)
+                      (forall-in y x)))))
+
+(test?
+ (implies (and (pos-listp x)
+               (pos-listp y))
+          (iff (perm x y)
+               (and (= (len x) (len y))
+                    (subsetp-equal x y)
+                    (subsetp-equal y x)))))
  
 ;#|
 ;air turbulence logic puzzle (Jim Steinberg gave me the link)
@@ -1007,19 +807,23 @@ We falsified the conjecture. Here is the counterexample:
 (in-theory (disable hash))
 
 
-(defun f (x y)
+(defun f1 (x y)
   (if (equal x (hash y))
     'error
     0))
-(acl2s-defaults :set instantiation-method :incremental)
-(test? (/= (f x y) 'error))
+
+(acl2s-defaults :set verbosity-level 4)
+(trace$ defdata::cts-wts-search defdata::assign-propagate (defdata::simple-search :entry (list :simple (first arglist) (second arglist) (third arglist) (fourth arglist)) :exit :b))
+(trace$ (defdata::incremental-search :entry (list :incremental (first arglist) (second arglist) (third arglist)) :exit :b)
+        (defdata::backtrack :entry (list :backtrack (first arglist)) :exit :b))
+(test? (/= (f1 x y) 'error))
 
 (test? ;(implies (and (integerp x) (integerp y))
                 (NOT (EQUAL X (HASH Y))))
 
 (set-acl2s-random-testing-enabled nil)
 (thm (implies (and (integerp x) (integerp y))
-                (/= (f x y) 'error)))
+                (/= (f1 x y) 'error)))
 
 (set-acl2s-random-testing-enabled t)
 
@@ -1043,6 +847,7 @@ We falsified the conjecture. Here is the counterexample:
                (equal w (max x y)))
           (< w z))))
 
+(acl2s-defaults :set testing-enabled t) 
 ;tests multiple dest-elim
 (test? (implies (AND (CONSP X)
                 (NOT (EQUAL (LEN X) 2))

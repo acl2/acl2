@@ -1,4 +1,4 @@
-(in-package "ACL2")
+
 
 ;; Common events (found in ACL2s session modes)
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)

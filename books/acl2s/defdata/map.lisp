@@ -1,6 +1,6 @@
 #|$ACL2s-Preamble$;
-(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
- "../portcullis")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "portcullis.lsp")
 (acl2::begin-book t);$ACL2s-Preamble$|#
 
 #|
@@ -83,19 +83,8 @@ data last modified: [2014-08-06]
                     (_valpred_ (mget acl2::a x)))
            :hints (("Goal" :in-theory (e/d 
                                        (_pred_ mget acl2::extensible-records)
-                                       (_keypred_ _valpred_)))))
-
-
-      (defthm _pred_-SELECTOR-generalize
-           (implies (and (_pred_ x)
-                         ;(mget acl2::a x) shifted below
-                         )
-                    (or (_valpred_ (mget acl2::a x))
-                        (equal (mget acl2::a x) nil)))
-           :hints (("Goal" :in-theory (e/d 
-                                       (_pred_ mget acl2::extensible-records)
                                        (_keypred_ _valpred_))))
-           :rule-classes :generalize)
+           :rule-classes (:rewrite :generalize))
 
       ;; (local
       ;;  (defthm _pred_MODIFIER-SUPPORT
@@ -118,13 +107,11 @@ data last modified: [2014-08-06]
   ))
 
 (program)
-(defun map-theory-events (name keybody valbody new-types kwd-alist wrld)
+(defun map-theory-events (name keybody valbody kwd-alist  wrld)
  ; (declare (xargs :mode :program))
 ;assumption: key/val body are core defdata exps (holds because user-combinators occur only at top-level)
-  (b* ((M (append new-types (table-alist 'type-metadata-table wrld)))
-       (pred (predicate-name name M))
-       ((when (not (proper-symbolp pred))) (er hard? 'map-theory-events "~| Couldnt find predicate name for ~x0.~%" name))
-       
+  (b* ((M (table-alist 'type-metadata-table wrld))
+       (pred (or (predicate-name name M) (get-predicate-symbol name)))
        ((mv ?symbol-alist-subtypep ?keypred) 
         (if (and (proper-symbolp keybody) (assoc-eq keybody M))
             (mv (subtype-p (predicate-name keybody M) 'acl2::symbolp wrld) (predicate-name keybody M))
@@ -164,11 +151,11 @@ data last modified: [2014-08-06]
 
 (defun map-theory-ev (p top-kwd-alist wrld)
   (b* (((cons name A) p)
-       ((acl2::assocs odef new-types kwd-alist) A) ;what about pdef?
+       ((acl2::assocs odef kwd-alist) A) ;what about pdef?
        (kwd-alist (append kwd-alist top-kwd-alist)))
        
     (case-match odef
-      (('MAP key-body val-body) (map-theory-events name key-body val-body new-types kwd-alist wrld))
+      (('MAP key-body val-body) (map-theory-events name key-body val-body kwd-alist wrld))
       (& '()))))
              
 
@@ -195,7 +182,6 @@ data last modified: [2014-08-06]
 (deflabel map)
 (register-user-combinator map
                           :arity 2 :verbose t
-                          :aliases (acl2::map)
                           :expansion (lambda (_name _args) `(OR nil (mset ,(car _args) ,(cadr _args) ,_name)))
                           :syntax-restriction-fn proper-symbol-listp
                           :syntax-restriction-msg "map syntax restriction: ~x0 should be type names."

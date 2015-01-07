@@ -1,7 +1,7 @@
 #|$ACL2s-Preamble$;
 ;;Author - Harsh Raju Chamarthi (harshrc)
-(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
- "../portcullis")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "portcullis.lsp")
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 (in-package "CGEN")
@@ -354,16 +354,18 @@ history s-hist.")
 
 (logic)
 
-;; (defun keywordify (sym)
-;;   (declare (xargs :guard (symbolp sym)))
-;;   (intern-in-package-of-symbol (symbol-name sym) :key))
+(defun keywordify (sym)
+  (declare (xargs :guard (symbolp sym)))
+  (intern-in-package-of-symbol (symbol-name sym) :key))
 
-;; (defun keywordify-lst (syms)
-;;   (declare (xargs :guard (symbol-listp syms)))
-;;   (if (endp syms)
-;;       '()
-;;     (cons (keywordify (car syms))
-;;           (keywordify-lst (cdr syms)))))
+(defun keywordify-lst (syms)
+  (declare (xargs :guard (symbol-listp syms)))
+  (if (endp syms)
+      '()
+    (cons (keywordify (car syms))
+          (keywordify-lst (cdr syms)))))
+
+(defconst *cgen-param-keywords* (keywordify-lst acl2::*acl2s-parameters*))
 
 (defun make-cgen-params-from-args (kwd-val-lst ans.)
   "Returns alist satisfying cgen-params-p, given args obtained from macro keyword args"
@@ -373,18 +375,21 @@ history s-hist.")
   (b* (((when (atom kwd-val-lst)) ans.)
        (arg1 (first kwd-val-lst))
        (ctx 'make-cgen-params-from-args)
-       ((unless (member arg1 acl2s::*acl2s-parameters*)) ;ignore/move-on
+       ((unless (member arg1 *cgen-param-keywords*)) ;ignore/move-on
         (make-cgen-params-from-args (cddr kwd-val-lst) ans.))
        ((when (atom (rest kwd-val-lst)))
         (er hard? ctx "~x0: keyword ~x1 has no argument." ctx arg1))
  
        (value (second kwd-val-lst))
-       (ans. (acons arg1 value ans.)))
+       (i (position arg1 *cgen-param-keywords*)) 
+; use the fact that they are in same order
+       (param-key (nth i acl2::*acl2s-parameters*))
+       (ans. (acons param-key value ans.)))
     (make-cgen-params-from-args (cddr kwd-val-lst) ans.)))
 
 (defun make-cgen-state-fn (form kwd-val-lst wrld)
   (b* ((override-params (make-cgen-params-from-args kwd-val-lst '()))
-       (params (acl2s::acl2s-defaults-value-alist. (table-alist 'acl2s::acl2s-defaults-table wrld) override-params '())))
+       (params (acl2::acl2s-defaults-fn. (table-alist 'acl2::acl2s-defaults-table wrld) override-params '())))
     (list (cons 'PARAMS params)
           (cons 'USER-SUPPLIED-TERM :undefined)
           (cons 'DISPLAYED-GOAL form)
@@ -418,7 +423,7 @@ history s-hist.")
               -> (mv (oneof nil :falsifiable :? t) cgen-state state))
         )
   (b* ((ctx (cget top-ctx))
-       (vl  (cget verbosity-level))
+       (vl  (cget verbosity-level ))
 
        ((unless (equal (cget displayed-goal) form))
         (prog2$ (cw? (normal-output-flag vl) 
@@ -484,7 +489,6 @@ history s-hist.")
                                                      :initial-element (list 'ACL2::ALL)))
                          (get-acl2-type-alist (list term) vars)))
          (tau-interval-alist (tau-interval-alist-clause (clausify-hyps-concl hyps concl) vars))
-
 ; put cgen-state in state, so that nested testing via events is caught and disallowed.
          (state (f-put-global 'cgen-state cgen-state state))
          ((mv ?error-or-timeoutp cgen-state state) (cgen-search-fn "top" hyps concl 
@@ -507,7 +511,6 @@ history s-hist.")
 ; put modified cgen-state back in globals, so that the computed hint
 ; callback can access it
          (state (f-put-global 'cgen-state cgen-state state)) 
-
 
          
 ; 2 July '13 (bug: hard error reported as proof without induction)
@@ -550,11 +553,7 @@ history s-hist.")
 
          ((mv end state) (acl2::read-run-time state))
          (cgen-state (cput end-time end))
-         (gcs% (cget gcs))
-
-         (state (f-put-global 'cgen-state nil state)) ;We set cgen-state global, its our job to reset it.
-
-         )
+         (gcs% (cget gcs)))
     
     ;;in
     (cond ((posp (access gcs% cts)) (mv :falsifiable cgen-state state))

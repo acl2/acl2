@@ -1,6 +1,6 @@
 #|$ACL2s-Preamble$;
-(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
- "../portcullis")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "portcullis.lsp")
 (acl2::begin-book t);$ACL2s-Preamble$|#
 
 #|
@@ -141,8 +141,7 @@ B is the builtin combinator table."
 (defun pred-event (p top-kwd-alist wrld)
   "make a predicate defun event."
   (b* (((cons name A) p)
-       (curr-pkg (get1 :current-package top-kwd-alist))
-       (pred-name (make-predicate-symbol name curr-pkg))
+       (pred-name (get-predicate-symbol name))
        ((when (allows-arity pred-name 1 wrld)) nil) ;already defined
        
        ((acl2::assocs ndef ?N new-constructors new-types kwd-alist) A)
@@ -173,8 +172,7 @@ B is the builtin combinator table."
 
 (defun already-defined-pred-defthm-event (p top-kwd-alist wrld)
   (b* (((cons name A) p)
-       (curr-pkg (get1 :current-package top-kwd-alist))
-       (pred-name (make-predicate-symbol name curr-pkg))
+       (pred-name (get-predicate-symbol name))
        ((unless (allows-arity pred-name 1 wrld)) nil)
        ((acl2::assocs ndef ?N new-types kwd-alist) A)
        (C (table-alist 'data-constructor-table wrld))
@@ -184,7 +182,7 @@ B is the builtin combinator table."
        (avoid-lst (append (forbidden-names) (strip-cars N)))
        (xvar (if (member-eq 'v avoid-lst) 'v (acl2::generate-variable 'v avoid-lst nil nil wrld)))
        (pred-body (make-pred-I ndef xvar kwd-alist M C B wrld)))
-    `((defthm ,(s+ name "P-TESTTHM")
+    `((defthm ,(s+ name 'P-TESTTHM)
         (equal (,pred-name ,xvar)
                ,pred-body)
         :rule-classes nil
@@ -264,7 +262,7 @@ B is the builtin combinator table."
     ,@(predicate-events1 D kwd-alist wrld)
 
     (local (in-theory (acl2::disable* . ,disable-rules))) ;TODO.Note: we can shift this above to make CCG faster
-    (local (in-theory (enable ,@(make-predicate-symbol-lst (strip-cars D) (get1 :current-package kwd-alist)))))
+    (local (in-theory (enable ,@(get-predicate-symbol-lst (strip-cars D)))))
       
     ;; ,@(new-conx/record-events D kwd-alist) ;constructor/destructor defs and related
     ,@(funcalls-append (get1 :post-pred-hook-fns kwd-alist) (list D kwd-alist wrld) wrld)
@@ -411,7 +409,7 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
                 ((unless (proper-symbolp comb))
                  (er hard? ctx "~| Expecting ~x0 to be a symbol.~%" comb))
                 (ccomb (deref-combinator-alias comb B))
-                ((when (member-eq ccomb '(acl2s::range acl2s::member))) '()))
+                ((when (member-eq ccomb '(range member))) '()))
                                    
              (collect-names-texps (cdr texp) ctx B)))))
 
@@ -472,9 +470,9 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
                 (bcomb (deref-combinator-alias comb B))
                 ((when bcomb)
                  (case bcomb ;range and member are exceptional
-                   (acl2s::range (or (member-eq (cadr texp) '(acl2s::integer acl2s::rational))
+                   (range (or (member-eq (cadr texp) '(integer rational))
                               (er hard? ctx "~| Range domain ~x0 should be one of integer or rational.~%" (cadr texp))))
-                   (acl2s::member t)
+                   (member t)
                    (or (if (> (len (remove-duplicates-equal (cdr texp))) 1) ;arity of OR
                            (check-syntax-texps (cdr texp) scope tnames ctx wrld)
                          (er hard? ctx "~| ~x0 expects atleast 2 (distinct) arguments.~%" comb)))
@@ -520,8 +518,8 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
                 (C (table-alist 'data-constructor-table wrld)))
              (cond (bcomb ;builtin combinator
                     (case bcomb
-                      (acl2s::range (parse-range-exp (third texp) (cadr texp) ctx wrld))
-                      (acl2s::member (parse-enum-exp (cadr texp) ctx wrld))
+                      (range (list 'range (cadr texp) (parse-range-exp (third texp) (cadr texp) ctx wrld)))
+                      (member (list 'member (parse-enum-exp (cadr texp) ctx wrld)))
                       (or (b* ((rest (normalize-union-texps (parse-texps (cdr texp) tnames ctx wrld) tnames wrld)))
                             (if (consp (cdr rest))
                                 (cons 'or  rest)
@@ -595,19 +593,18 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
                 (C (table-alist 'data-constructor-table wrld)))
              (cond ((assoc-eq comb B) ;builtin combinator
                     (case comb
-                      (acl2s::range nil)
-                      (acl2s::member nil)
+                      (range nil)
+                      (member nil)
                       (t (undefined-product-texps (cdr texp) ctx N wrld))))
                    ((assoc-eq comb C) ;data constructor -- extend scope
                     (undefined-product-texps (cdr texp) ctx (append (collect-names-texps (cdr texp) ctx B) N) wrld))
                    (t ;possible new  constructor -- extend scope
 ;TODO: add dependent expression support here.
-                    (if (not (acl2::new-namep (car texp) wrld))
-                        (er hard? ctx "~| ~x0 should be a fresh logical name.~%"  (car texp))
+                    (if (and (acl2::new-namep (car texp) wrld)
 ; lets not allow nested new constructors/records -- too much flexibility.
-                      (if (valid-record-fields-p (cdr texp) (append (collect-names-texps (cdr texp) ctx B) N))
+                             (valid-record-fields-p (cdr texp) (append (collect-names-texps (cdr texp) ctx B) N)))
                         (list texp)
-                        (er hard? ctx "~| Bad Syntax! Did you want to define a new record? Each record argument should be of form (field-name . type-name). There should be no name overlap among fields and types.~%" )))))))))
+                      (er hard? ctx "~| ~x0 is expected to be a constructor. But it has not been registered. If you expected it to be automatically registered, ~x0 should be a fresh logical name and each argument should be of form (field-name . type-name). Please do not use same names for both fields and types.~%" (car texp)))))))))
 
 (defun undefined-product-texps (texps ctx N wrld)
   (if (endp texps)
@@ -630,40 +627,38 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
     ((!tname . args) (if (assoc-eq name conx-entries) ;new record being constructed
                          (cons 'record args)
                       (cons name args)))
-    (('RANGE dom range-exp) (list 'range dom (kwote range-exp)))
     (& nbody))))
 
 
 
-(defun data-constructor-basis (prod curr-pkg M)
+(defun data-constructor-basis (prod kwd-alist M)
+  (declare (ignorable kwd-alist))
   (b* ((conx-name (car prod))
        (fname-tname-alist (cdr prod))
        (fnames (strip-cars fname-tname-alist))
        (preds (predicate-names (strip-cdrs fname-tname-alist) M))
-       (recog (make-predicate-symbol conx-name curr-pkg))
+       (recog (get-predicate-symbol conx-name))
        (fname-pred-alist (pairlis$ fnames preds))
-       (prefix (get-dest-prefix conx-name))
-       (selector-fn-names (modify-symbol-lst prefix fnames "" curr-pkg))
+       (prefix (symbol-name (get-dest-prefix conx-name)))
+       (selector-fn-names (modify-symbol-lst prefix fnames ""))
        (dest-pred-alist (pairlis$ selector-fn-names preds)))
     (cons conx-name (acons :arity (len (cdr prod)) (acons :recog recog 
                                                           (acons :dest-pred-alist dest-pred-alist 
                                                                  (acons :field-pred-alist fname-pred-alist '())))))))
        
-(defloop data-constructor-bases (prods curr-pkg M)
-  (for ((prod in prods)) (collect (data-constructor-basis prod curr-pkg M))))
+(defloop data-constructor-bases (prods kwd-alist M)
+  (for ((prod in prods)) (collect (data-constructor-basis prod kwd-alist M))))
 
 
-(defun type-metadata-basis (tname curr-pkg)
+(defun type-metadata-basis (tname)
   (declare (xargs :guard (symbolp tname)))
-  (b* ((minimal-vals (list (make-predicate-symbol tname curr-pkg) 
-                           (make-enumerator-symbol tname curr-pkg) 
-                           (make-uniform-enumerator-symbol tname curr-pkg)))
+  (b* ((minimal-vals (list (get-predicate-symbol tname) (get-enumerator-symbol tname) (get-uniform-enumerator-symbol tname)))
        (minimal-keys '(:predicate :enumerator :enum/acc)))
     (cons tname (pairlis$ minimal-keys minimal-vals))))
 
-(defloop type-metadata-bases (tnames curr-pkg)
+(defloop type-metadata-bases (tnames)
     (declare (xargs :guard (symbol-listp tnames)))
-  (for ((tname in tnames)) (collect (type-metadata-basis tname curr-pkg))))
+  (for ((tname in tnames)) (collect (type-metadata-basis tname))))
 
 
 
@@ -674,7 +669,7 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
 
 
 
-(defun parse-data-def (def tnames args curr-pkg ctx wrld)
+(defun parse-data-def (def tnames args ctx wrld)
   (declare (ignorable args))
   (b* (
        ((unless (consp def))
@@ -710,8 +705,8 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
        (prods (undefined-product-texp nbody ctx '() wrld))
 
 ;new types and constructors are new entries in M and C respectively that we assume!
-       (new-types (type-metadata-bases tnames curr-pkg))
-       (new-constructors (data-constructor-bases prods curr-pkg (append new-types M)))
+       (new-types (type-metadata-bases tnames)) 
+       (new-constructors (data-constructor-bases prods kwd-alist (append new-types M)))
 
 ; notify downstream code of recursive records and recursive types
        (new-preds (predicate-names tnames (append new-types M)))
@@ -748,9 +743,9 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
                       (cons 'kwd-alist kwd-alist)))))
     
 
-(defloop parse-data-defs (ds tnames kwd-args curr-pkg ctx wrld)
+(defloop parse-data-defs (ds tnames kwd-args ctx wrld)
   (for ((d in ds)) 
-       (collect (parse-data-def d tnames kwd-args curr-pkg ctx wrld))))
+       (collect (parse-data-def d tnames kwd-args ctx wrld))))
 
 
 #||
@@ -780,7 +775,7 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
       alst
     (delete-assoc-eq-lst (cdr keys) (delete-assoc-eq (car keys) alst))))
 
-(defun parse-defdata (args curr-pkg wrld)
+(defun parse-defdata (args wrld)
   (b* (((mv ds kwd-val-list) (separate-kwd-args args '()))
        (ctx 'parse)
 
@@ -792,14 +787,13 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
       (kwd-alist (put-assoc-eq :termination-method current-termination-method-entry kwd-alist))
 
       (tnames (if (symbolp (car ds)) (list (car ds)) (strip-cars ds)))
-      (theory-name (s+ (car tnames) "-THEORY" :pkg curr-pkg))
+      (theory-name (s+ (car tnames) 'theory))
       (kwd-alist (put-assoc-eq :theory-name theory-name kwd-alist))
       (kwd-alist (put-assoc-eq :clique tnames kwd-alist))
-      (preds (make-predicate-symbol-lst tnames curr-pkg)) ;these are not yet defined, so we choose the predicate naming convention
+      (preds (get-predicate-symbol-lst tnames)) ;these are not yet defined, so we choose the predicate naming convention
       (kwd-alist (put-assoc-eq :post-pred-events 
                                `((acl2::def-ruleset! ,theory-name ',preds)) ;definitions
                                  kwd-alist))
-      (kwd-alist (put-assoc-eq :current-package curr-pkg kwd-alist))
 
       ((unless (and (consp ds) 
                      (true-listp ds)))
@@ -807,7 +801,7 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
 
       ((when (and (not (symbolp (car ds)))
                   (consp (cdr ds)))) ;atleast 2 types
-       (list (parse-data-defs ds tnames rest-args curr-pkg ctx wrld) kwd-alist))
+       (list (parse-data-defs ds tnames rest-args ctx wrld) kwd-alist))
 
 
        (d (if (symbolp (car ds)) ds (car ds))) 
@@ -820,7 +814,7 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
                       of form (defdata <id> <type-exp> [:hints <hints>
                      ...]).~%" )))
 
-    (list (parse-data-defs (list d) tnames args curr-pkg ctx wrld) kwd-alist)))
+    (list (parse-data-defs (list d) tnames args ctx wrld) kwd-alist)))
 
     
 (defmacro defdata (&rest args)
@@ -830,7 +824,7 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
                   :gag-mode t
                   :stack :push
        (make-event
-        (defdata-events (parse-defdata ',args (current-package state) (w state)) (w state))))))
+        (defdata-events (parse-defdata ',args (w state)) (w state))))))
 
 
 
@@ -911,12 +905,12 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
  
 (defmacro defdata-subtype (T1 T2 
                                &key (rule-classes '(:tau-system))
-                               verbose
+                               verbosep
                                hints otf-flg doc)
   (declare (xargs :guard (and (proper-symbolp T1)
                               (proper-symbolp T2)
                               )))
-  `(with-output ,@(and (not verbose) '(:off :all)) :stack :push
+  `(with-output ,@(and (not verbosep) '(:off :all)) :stack :push
 
        (make-event 
         (compute-defdata-relation ',T1 ',T2  
@@ -925,12 +919,12 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
 
 (defmacro defdata-disjoint (T1 T2 
                                &key (rule-classes '(:tau-system))
-                               verbose
+                               verbosep
                                hints otf-flg doc)
   (declare (xargs :guard (and (proper-symbolp T1)
                               (proper-symbolp T2)
                               )))
-  `(with-output ,@(and (not verbose) '(:off :all)) :stack :push
+  `(with-output ,@(and (not verbosep) '(:off :all)) :stack :push
 
        (make-event 
         (compute-defdata-relation ',T1 ',T2  
@@ -940,6 +934,38 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
 
 (logic)
 ; misc functions needed by other files in cgen
+(defun get-typesymbol-from-pred-P-naming-convention (sym)
+  (declare (xargs :guard (and (symbolp sym))
+                  :guard-hints (("Goal" :in-theory (disable acl2::length acl2::subseq)))))
+
+  (let* ((pred-name (acl2::symbol-name sym))
+        (len-predname (acl2::length pred-name)))
+    (if (and
+         (< 1 len-predname) ;atleast have "p" and one more char
+         (equal #\P (acl2::char pred-name (1- len-predname)))) ;WTF, smallcase p wouldnt work
+      (let ((typename (acl2::subseq pred-name 0 (1- len-predname))));strip last char which is 'p'
+        (intern-in-package-of-symbol typename sym))
+      NIL)))
+
+;if true then returns the type name (not the predicate)
+;is true is Tp is a predicate and nth-T or *T-values* is defined in world
+;Sig: Sym * World -> Sym
+(defun is-custom-type-predicate (pred wrld)
+  (declare (xargs :verify-guards nil
+                  :guard (and (symbolp pred)
+                              (plist-worldp wrld)
+                              )))
+(let* ((typ (get-typesymbol-from-pred-P-naming-convention pred))
+       (values (modify-symbol "*"  typ "-VALUES*"))
+       (enum   (modify-symbol "NTH-" typ "")))
+  (if (allows-arity pred 1 wrld)
+    (if (or (allows-arity enum 1 wrld) ;is enum defined in wrld
+            (acl2-getprop values 'acl2::const wrld) 
+;;or is values defined in wrld
+            )
+      typ ;THIS CAN BE NIL, if pred doesnt follow naming convention, works out well in any case
+      nil)
+    nil)))
 
 ;;is a predicate explicitly recognized in the defdata framework? 
 ;;if true then returns the corresponding type
@@ -956,6 +982,7 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
         (is-datadef-type-predicate fn-name (cdr M))))))
 
 
+
 ;is a possible type (ASK:should we also pick compound recognizers?)
 ;is either custom type pred or datadef pred
 ;if true then returns the type name (not the predicate)
@@ -964,19 +991,42 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
   (declare (xargs :verify-guards nil
                   :guard (and (symbolp fn-name)
                               (plist-worldp wrld))))
-  (is-datadef-type-predicate fn-name (table-alist 'type-metadata-table wrld)));is in types table
-  
+  (or (is-datadef-type-predicate fn-name (table-alist 'type-metadata-table wrld));is in types table
+      (is-custom-type-predicate fn-name wrld)));is a custom type in the current world
+
 (defun is-type-predicate-gv (fn w)
   (declare (xargs :guard t))
   (ec-call (is-type-predicate-current fn w)))
 
 (defattach is-type-predicate is-type-predicate-gv)
 
+;Sig: Sym * World -> Sym (typename)
+;purpose: Check wether argument is a custom defined type and not a
+;defdata pred
+(defun is-a-custom-type-current (type wrld)
+  (declare (xargs :verify-guards nil))
+  (if (proper-symbolp type);shud be a variable symbol
+    (if (predicate-name type) ;is registered
+      nil
+      (let ((pred (get-predicate-symbol type)))
+        (if (is-custom-type-predicate pred wrld) ;or is a custom type
+          type
+          nil)))
+    nil))
 
+(defun is-a-custom-type-gv (type wrld)
+  (declare (xargs :guard t))
+  (ec-call (is-a-custom-type-current type wrld)))
+
+(defattach is-a-custom-type is-a-custom-type-gv)
+
+
+
+;is either a defdata defined type or a custom typename
 (defun is-a-typeName-current (type wrld)
   (declare (xargs :verify-guards nil))
-  (predicate-name type wrld))
-  
+  (or (predicate-name type wrld)
+      (is-a-custom-type type wrld)))
 
 (defun is-a-typeName-gv (type wrld)
   (declare (xargs :guard t))
@@ -996,10 +1046,8 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
 * Initial Essay on Design
 <2014-04-20 Sun 08:01>
 
-Read this in org-mode.
-
 This is a rewrite of [[file:defdata.lisp]] whose original author is Peter
-Dillinger. 
+Dillinger.
 
 The design of defdata library revolves around two data structures; the
 [[Combinators and Constructors][first]] contains information that describes the syntax of the defdata

@@ -1,6 +1,6 @@
 #|$ACL2s-Preamble$;
-(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
- "../portcullis")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "portcullis.lsp")
 (acl2::begin-book t);$ACL2s-Preamble$|#
 
 #|
@@ -442,7 +442,7 @@ data last modified: [2014-08-06]
             (and rule-=>-Px 
                  `((DEFTHM ,(symbol-fns::prefix 'def '=> name)
                      ,rule-=>-Px
-                     :HINTS (("Goal" :IN-THEORY (e/d (,(car Px)) (,@disabled ,@(strip-cars new-constructors)))))
+                     :HINTS (("Goal" :IN-THEORY (e/d (,(car Px)) (,@disabled))))
                      :RULE-CLASSES (,@(and rule-=>-Px-tau-acceptable-p (list :TAU-SYSTEM)) :REWRITE))))
             (and rule-Px-=>
                  `((DEFTHM ,(symbol-fns::suffix name '=> 'def) 

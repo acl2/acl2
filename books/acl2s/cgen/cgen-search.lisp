@@ -1,7 +1,7 @@
 #|$ACL2s-Preamble$;
 ;; Author - Harsh Raju Chamarthi (harshrc)
-(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
- "../portcullis")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "portcullis.lsp")
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 
@@ -257,9 +257,9 @@
 (defun cget-param-fn (key cgen-state)
   (declare (xargs ;:verify-guards nil
                   :guard (and (cgen-state-p cgen-state)
-                              (acl2s::acl2s-parameter-p key))))
+                              (member-eq key acl2::*acl2s-parameters*))))
   (let* ((params (cget-fn 'params cgen-state))
-         (entry (assoc-eq (defdata::keywordify key) params)))
+         (entry (assoc-eq key params)))
     (if (consp entry)
         (cdr entry)
       nil)))
@@ -268,11 +268,9 @@
   "get value of key from cgen-state. if key is a param-key is acl2s-parameters,
 then appropriately get the corresponding value stored in the param field of
 cgen-state"
-  (cond ((member-eq key *cgen-state-fields*)
-         (list 'CGET-FN (kwote key) 'CGEN-STATE))
-        ((acl2s::acl2s-parameter-p key)
-         (list 'CGET-PARAM-FN (kwote key) 'CGEN-STATE))
-        (t (er hard 'cget "~| Unsupported cgen-state field/key: ~x0~%" key))))
+  (if (member-eq key *cgen-state-fields*)
+      (list 'CGET-FN (kwote key) 'CGEN-STATE)
+    (list 'CGET-PARAM-FN (kwote key) 'CGEN-STATE)))
 
 (defun cput-fn (key val cgen-state)
   (declare (xargs :guard (and (cgen-state-p cgen-state)
@@ -334,25 +332,24 @@ cgen-state"
   (declare (xargs :verify-guards nil :guard t))
    (b* (((acl2::assocs 
          ;cgen/testing parameters (keep in sync with acl2s-parameter)
-          (num-trials :num-trials)
-          (verbosity-level :verbosity-level)
-          (num-counterexamples :num-counterexamples)
-          (num-witnesses :num-witnesses)
-          (sampling-method :sampling-method)
-          (backtrack-limit :backtrack-limit)
-          (search-strategy :search-strategy)
-          (testing-enabled :testing-enabled)
-          (cgen-timeout :cgen-timeout)
-          (print-cgen-summary :print-cgen-summary)
-          ) v))
+         num-trials
+         verbosity-level
+         num-counterexamples
+         num-witnesses
+         sampling-method
+         backtrack-limit
+         search-strategy
+         testing-enabled
+         cgen-timeout
+         print-cgen-summary) v))
     (and (fixnump num-trials)
          (fixnump verbosity-level)
          (fixnump num-counterexamples)
          (fixnump num-witnesses)
          (member-eq sampling-method *sampling-method-values*)
          (fixnump backtrack-limit)
-         (member-eq search-strategy acl2s::*search-strategy-values*)
-         (member-eq testing-enabled acl2s::*testing-enabled-values*)
+         (member-eq search-strategy acl2::*search-strategy-values*)
+         (member-eq testing-enabled acl2::*testing-enabled-values*)
          (rationalp cgen-timeout)
          (booleanp print-cgen-summary))))
          
@@ -1151,7 +1148,7 @@ processed, the annotation of edges is also returned"
         :doc "put defdata type typ in alist for key v")
   (b* (((cons & cs%) (assoc-eq v v-cs%-alst.))
        (dt (access cs% defdata-type))
-       (- (cw? (and (verbose-stats-flag vl) (not (eq 'acl2s::all dt))) 
+       (- (cw? (and (verbose-stats-flag vl) (not (eq 'acl2::all dt))) 
 "CEgen/Note: Overwriting defdata type for ~x0. ~x1 -> ~x2~|" v dt typ))
        (cs% (change cs% defdata-type typ)))
    (put-assoc-eq v cs% v-cs%-alst.)))
@@ -1293,7 +1290,7 @@ into eq-constraint field and put interval into range constraint field")
 "~|CEgen/Warning: Ignoring rest of union types ~x0 ~|" (cddr prior-t)))
          (typ-given (if (and (consp prior-t) (consp (cdr prior-t)))
                         (cadr prior-t)
-                      'ACL2S::ALL))
+                      'ACL2::ALL))
          ((when (defdata::possible-constant-value-p typ-given))
 ; is a singleton, then treat it as a eq-constraint
 ; BOZO: meet-type-alist does it differently. (03/04/13)
@@ -1322,7 +1319,7 @@ into eq-constraint field and put interval into range constraint field")
 
 (defconst *empty-cs%*
   (acl2::make cs%
-        :defdata-type 'acl2s::all 
+        :defdata-type 'acl2::all 
         :spilled-types '()
         :eq-constraint 'defdata::empty-eq-constraint
         :range (acl2::make-tau-interval nil nil nil nil nil)
@@ -2511,19 +2508,19 @@ Why is ACL2 not good at this?
 ")
 
   
-  (b* ((N (get1 :num-trials defaults 0)) ;shudnt it be 100?
+  (b* ((N (get1 'num-trials defaults 0)) ;shudnt it be 100?
 ;Note: I dont need to provide the default arg 0 above, since we are
 ;sure the defaults alist we get is complete i.e it would definitely
-;contain the key ':num-trials'. But I am envisioning a scenario, where
+;contain the key 'num-trials'. But I am envisioning a scenario, where
 ;I might call this function on its own and not via test?, then this
 ;functionality is useful for debugging.
-       (vl (get1 :verbosity-level defaults 1))
-       (sm (get1 :sampling-method defaults :uniform-random))
-       (ss (get1 :search-strategy defaults :simple))
-       (blimit (get1 :backtrack-limit defaults 2))
-       (num-cts (get1 :num-counterexamples defaults 3))
-       (num-wts (get1 :num-witnesses defaults 3))
-       (timeout-secs (get1 :cgen-timeout defaults 10))
+       (vl (get1 'verbosity-level defaults 1))
+       (sm (get1 'sampling-method defaults :uniform-random))
+       (ss (get1 'search-strategy defaults :simple))
+       (blimit (get1 'backtrack-limit defaults 2))
+       (num-cts (get1 'num-counterexamples defaults 3))
+       (num-wts (get1 'num-witnesses defaults 3))
+       (timeout-secs (get1 'cgen-timeout defaults 10))
 ; mv-sig-alist : for each mv fn in H,C, stores its output arity
        (mv-sig-alist (mv-sig-alist (cons C H) (w state)))
        (vars (vars-in-dependency-order H C vl (w state))))

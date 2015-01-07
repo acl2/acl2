@@ -1,6 +1,6 @@
 #|$ACL2s-Preamble$;
-(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
- "../portcullis")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "portcullis.lsp")
 
 ;;Bunch of utility functions for use by datadef and test?
 ;;mostly copied from data.lisp and acl2-check.lisp
@@ -148,6 +148,66 @@
 
 
 
+
+;; (mutual-recursion
+;; (defun constant-value-expressionp-lst (expr-lst wrld)
+;;   (declare (xargs :guard (plist-worldp wrld)))
+;;   (if (atom expr-lst)
+;;     t
+;;     (and (constant-value-expressionp (car expr-lst) wrld)
+;;          (constant-value-expressionp-lst (cdr expr-lst) wrld))))
+
+;; ;very slow
+;; (defun constant-value-expressionp (expr wrld)
+;;    (declare (xargs :guard (plist-worldp wrld)))
+;;   (cond ((null expr) t)
+;;         ((possible-constant-value-p expr) t)
+;;         ((atom expr) (possible-constant-value-p expr))
+;;         ((not (defined-fun-or-macrop (car expr) wrld)) nil)
+;;         (t (constant-value-expressionp-lst (cdr expr) wrld)))
+;;     )
+;; )
+
+
+
+;; ; begin some auxilliary stuff for defdata
+
+;; ;get the predicate function symbol for a type-name if it exists
+;; (defun er-get-predicate (type-name ctx wrld state)
+;;   (declare (xargs :mode :program
+;;                   :stobjs (state)
+;;             :guard (and (symbolp type-name)
+;;                               (symbolp ctx)
+;;                               (plist-worldp wrld))))
+;;   (let ((psym (get-predicate-symbol type-name)))
+;;     (if (plausible-predicate-functionp psym wrld)
+;;       (value psym)
+;;       (er soft ctx
+;;           "Predicate ~x0 for type ~x1 is not defined."
+;;           psym type-name))))
+
+;; ;get the constant value associated with constant expression 'def'
+;; (defun er-get-constant-value (def ctx wrld state)
+;;   (declare (xargs :mode :program
+;;                   :stobjs (state)
+;;                   :guard (plist-worldp wrld)))
+;;   (cond ((and (consp def)
+;;              (eq 'quote (car def))
+;;              (consp (cdr def))
+;;              (null (cddr def)))
+;;          (value (cadr def)))
+;;         ((and (atom def)
+;;               (or (not (symbolp def))
+;;                   (keywordp def)
+;;                   (booleanp def)))
+;;          (value def))
+;;         (t 
+;;          (let ((p (acl2-getprop def 'const wrld)))
+                               
+;;            (if (and (symbolp def)
+;;                     (quotep p))
+;;                (value (cadr p))
+;;              (er soft ctx "Illegal/undefined constant value: ~x0" def))))))
 
 ;;-- evaluates expr and returns its value if expr does not return a multi-value answer
 (defun trans-eval-single-value (expr ctx state)

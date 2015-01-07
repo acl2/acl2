@@ -1,7 +1,7 @@
 #|$ACL2s-Preamble$;
 ;;Author - Harsh Raju Chamarthi (harshrc)
-(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
- "../portcullis")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "portcullis.lsp")
 (acl2::begin-book t);$ACL2s-Preamble$|#
 
 (in-package "CGEN"
@@ -18,50 +18,50 @@
  (defun get-type-from-type-set-decoded (ts-decoded)
    ;(declare (xargs :guard (symbolp ts-decoded)))
    (cond   ;primitve types
-    ((eq ts-decoded '*TS-ZERO*)                  '('0) )
-    ((eq ts-decoded '*TS-POSITIVE-INTEGER*)      '(acl2s::pos) )     ;;; positive integers
-    ((eq ts-decoded '*TS-POSITIVE-RATIO*)        '(acl2s::positive-ratio) )     ;;; positive non-integer rationals
-    ((eq ts-decoded '*TS-NEGATIVE-INTEGER*)      '(acl2s::neg) ) ;;; negative integers
-    ((eq ts-decoded '*TS-NEGATIVE-RATIO*)        '(acl2s::negative-ratio) ) ;;; negative non-integer rationals
-    ((eq ts-decoded '*TS-COMPLEX-RATIONAL*)      '(acl2s::complex-rational) );;; complex rationals
+    ((eq ts-decoded '*TS-ZERO*)                  '(0) )
+    ((eq ts-decoded '*TS-POSITIVE-INTEGER*)      '(pos) )     ;;; positive integers
+    ((eq ts-decoded '*TS-POSITIVE-RATIO*)        '(positive-ratio) )     ;;; positive non-integer rationals
+    ((eq ts-decoded '*TS-NEGATIVE-INTEGER*)      '(neg) ) ;;; negative integers
+    ((eq ts-decoded '*TS-NEGATIVE-RATIO*)        '(negative-ratio) ) ;;; negative non-integer rationals
+    ((eq ts-decoded '*TS-COMPLEX-RATIONAL*)      '(complex-rational) );;; complex rationals
     ((eq ts-decoded '*TS-NIL*)                   '('nil) );;; {nil}
     ((eq ts-decoded '*TS-T*)                     '('t) );;; {t}
-    ((eq ts-decoded '*TS-NON-T-NON-NIL-SYMBOL*)  '(acl2s::symbol) );;; symbols other than nil, t
-    ((eq ts-decoded '*TS-PROPER-CONS*)           '(acl2s::proper-cons) );;; null-terminated non-empty lists
-    ((eq ts-decoded '*TS-IMPROPER-CONS*)         '(acl2s::improper-cons) );;; conses that are not proper
-    ((eq ts-decoded '*TS-STRING*)                '(acl2s::string) );;; strings
-    ((eq ts-decoded '*TS-CHARACTER*)             '(acl2s::character) );;; characters
+    ((eq ts-decoded '*TS-NON-T-NON-NIL-SYMBOL*)  '(symbol) );;; symbols other than nil, t
+    ((eq ts-decoded '*TS-PROPER-CONS*)           '(proper-cons) );;; null-terminated non-empty lists
+    ((eq ts-decoded '*TS-IMPROPER-CONS*)         '(improper-cons) );;; conses that are not proper
+    ((eq ts-decoded '*TS-STRING*)                '(string) );;; strings
+    ((eq ts-decoded '*TS-CHARACTER*)             '(character) );;; characters
     
 ;non-primitive types but defined in ground acl2 theory and base.lisp
-    ((eq ts-decoded '*TS-UNKNOWN*)               '(acl2s::all) );should give out error?
-    ((eq ts-decoded '*TS-NON-NIL* )              '(acl2s::all-but-nil))
-    ((eq ts-decoded '*TS-ACL2-NUMBER*)           '(acl2s::acl2-number) )
-    ((eq ts-decoded '*TS-RATIONAL-ACL2-NUMBER*)  '(acl2s::acl2-number) )
-    ((eq ts-decoded '*TS-RATIONAL* )             '(acl2s::rational) )
-    ((eq ts-decoded '*TS-TRUE-LIST-OR-STRING*)   '(acl2s::true-list acl2s::string)) 
-    ((eq ts-decoded '*TS-SYMBOL*   )             '(acl2s::symbol) )
-    ((eq ts-decoded '*TS-INTEGER*   )            '(acl2s::integer) )
-    ((eq ts-decoded '*TS-NON-POSITIVE-RATIONAL*) '(acl2s::acl2s::negative-rational '0))
-    ((eq ts-decoded '*TS-NON-NEGATIVE-RATIONAL*) '(acl2s::positive-rational '0))
-    ((eq ts-decoded '*TS-NEGATIVE-RATIONAL* )    '(acl2s::negative-rational) )
-    ((eq ts-decoded '*TS-POSITIVE-RATIONAL* )    '(acl2s::positive-rational) )
-    ((eq ts-decoded '*TS-NON-NEGATIVE-INTEGER*)  '(acl2s::nat));(0 pos)) 
-    ((eq ts-decoded '*TS-NON-POSITIVE-INTEGER*)  '(acl2s::neg '0)) 
-    ((eq ts-decoded '*TS-RATIO*)                 '(acl2s::ratio) )
-    ((eq ts-decoded '*TS-CONS*  )                '(acl2s::cons) )
-    ((eq ts-decoded '*TS-BOOLEAN*)               '(acl2s::boolean) )
-    ((eq ts-decoded '*TS-TRUE-LIST*)             '(acl2s::true-list) )
+    ((eq ts-decoded '*TS-UNKNOWN*)               '(all) );should give out error?
+    ((eq ts-decoded '*TS-NON-NIL* )              '(all) )
+    ((eq ts-decoded '*TS-ACL2-NUMBER*)           '(acl2-number) )
+    ((eq ts-decoded '*TS-RATIONAL-ACL2-NUMBER*)  '(acl2-number) )
+    ((eq ts-decoded '*TS-RATIONAL* )             '(rational) )
+    ((eq ts-decoded '*TS-TRUE-LIST-OR-STRING*)   '(true-list string)) 
+    ((eq ts-decoded '*TS-SYMBOL*   )             '(symbol) )
+    ((eq ts-decoded '*TS-INTEGER*   )            '(integer) )
+    ((eq ts-decoded '*TS-NON-POSITIVE-RATIONAL*) '(negative-rational 0))
+    ((eq ts-decoded '*TS-NON-NEGATIVE-RATIONAL*) '(positive-rational 0))
+    ((eq ts-decoded '*TS-NEGATIVE-RATIONAL* )    '(negative-rational) )
+    ((eq ts-decoded '*TS-POSITIVE-RATIONAL* )    '(positive-rational) )
+    ((eq ts-decoded '*TS-NON-NEGATIVE-INTEGER*)  '(nat));(0 pos)) 
+    ((eq ts-decoded '*TS-NON-POSITIVE-INTEGER*)  '(neg 0)) 
+    ((eq ts-decoded '*TS-RATIO*)                 '(ratio) )
+    ((eq ts-decoded '*TS-CONS*  )                '(cons) )
+    ((eq ts-decoded '*TS-BOOLEAN*)               '(boolean) )
+    ((eq ts-decoded '*TS-TRUE-LIST*)             '(true-list) )
     
-    ((eq ts-decoded '*TS-EMPTY*)                 '(acl2s::empty));is it possible?
+    ((eq ts-decoded '*TS-EMPTY*)                 '(empty));is it possible?
     (t  (if (consp ts-decoded)
             (cond 
              ((equal 'TS-UNION (car ts-decoded))
               (get-types-from-type-set-decoded-lst (cdr ts-decoded) nil))
              ((and (equal 'TS-COMPLEMENT (car ts-decoded))
                    (equal (cadr ts-decoded) '*TS-CONS*))
-              '(acl2s::atom))
-             (t '(acl2s::all)))
-          '(acl2s::all)))))
+              '(atom))
+             (t '(all)))
+          '(all)))))
  
 (defun get-types-from-type-set-decoded-lst (ts-lst ans)
    (if (endp ts-lst)
@@ -146,7 +146,7 @@
        (vt-acl2-alst (if erp ;contradiction
                          (pairlis$ vars (make-list (len vars)
                                                    :initial-element 
-                                                   (list 'ACL2S::ALL)))
+                                                   (list 'ACL2::ALL)))
                        (decode-acl2-type-alist type-alist vars))))
    vt-acl2-alst))
 
@@ -329,8 +329,8 @@
   (declare (xargs :verify-guards nil))
   ;; (decl :sig ((possible-defdata-type-p possible-defdata-type-p
 ;;                plist-world) -> possible-defdata-type-p)
-  (b* (((when (or (eq 'ACL2S::EMPTY typ1)
-                  (eq 'ACL2S::EMPTY typ2))) 'ACL2S::EMPTY)
+  (b* (((when (or (eq 'acl2::empty typ1)
+                  (eq 'acl2::empty typ2))) 'acl2::empty)
        ((when (eq typ2 typ1)) typ2)
        (M (table-alist 'defdata::type-metadata-table wrld))
        ((unless (and (defdata::proper-symbolp typ1)
@@ -338,7 +338,7 @@
         (prog2$
          (cw? (verbose-stats-flag vl)
               "~|CEgen/Note: ~x0 or ~x1 not a name. ~ Meet returning universal type ALL.~|" typ1 typ2)
-         'acl2s::all))
+         'acl2::all))
                      
        (typ1-al-entry (assoc-eq typ1 M))
        (typ2-al-entry (assoc-eq typ2 M))
@@ -346,19 +346,18 @@
         (prog2$
          (cw? (verbose-stats-flag vl)
               "~|CEgen/Note: ~x0 or ~x1 not a defdata type. ~ Meet returning universal type ALL.~|" typ1 typ2)
-         'acl2s::all))
-       ((when (defdata::is-allp-alias typ1 wrld)) typ2)
-       ((when (defdata::is-allp-alias typ2 wrld)) typ1)
+         'acl2::all))
+       ((when (eq 'acl2::all typ1)) typ2)
+       ((when (eq 'acl2::all typ2)) typ1)
        (P1 (cdr (assoc-eq :predicate (cdr typ1-al-entry))))
        (P2 (cdr (assoc-eq :predicate (cdr typ2-al-entry))))
      ;  (- (cw? (debug-flag vl) "~|CEgen/Debug/meet --  P1: ~x0   P2: ~x1 .~|" P1 P2))
        ((when (defdata::subtype-p P1 P2 wrld))   typ1)
        ((when (defdata::subtype-p P2 P1 wrld))   typ2)
-       ((when (defdata::disjoint-p P2 P1 wrld))  'ACL2S::EMPTY) ;Should we instead define the NULL type??? Modified: so Ans is YES instead of Ans: NO, the way its used now, this is right!
-
-;; ;give preference to custom type Non-registered custom types DEPRECATED <2014-11-01 Sat>
-;;        ((when (defdata::is-a-custom-type typ1 wrld)) typ1)
-;;        ((when (defdata::is-a-custom-type typ2 wrld)) typ2)
+       ((when (defdata::disjoint-p P2 P1 wrld))  'acl2::empty) ;Should we instead define the NULL type??? Modified: so Ans is YES instead of Ans: NO, the way its used now, this is right!
+;give preference to custom type
+       ((when (defdata::is-a-custom-type typ1 wrld)) typ1)
+       ((when (defdata::is-a-custom-type typ2 wrld)) typ2)
 
 ; choose the one that was defined later (earlier in 
 ; reverse chronological order)
@@ -445,7 +444,7 @@
    H vl wrld
    (pairlis$ vars (make-list (len vars)
                              :initial-element 
-                             (list 'ACL2S::ALL)))))
+                             (list 'ACL2::ALL)))))
 
 (defmacro   debug-flag  (vl)
   `(> ,vl 3))
@@ -476,9 +475,7 @@
                             (b* (((mv dt st) (if (defdata::proper-symbolp typ1)
                                                  (mv typ1 typ2)
                                                (mv typ2 typ1)))
-                                 (M (table-alist 'defdata::type-metadata-table wrld))
-                                 (P (defdata::predicate-name dt M))
-
+                                 (P (defdata::get-predicate-symbol dt))
                                  ;; args to ev-fncall-w is a list of evaluated values.
                                  ((mv erp res) (acl2::ev-fncall-w P (list (if (quotep st) ;possible bug caught, what if st is not quoted!
                                                                               (acl2::unquote st)
@@ -489,15 +486,15 @@
                                  (- (cw? (and (not erp) (not res) (debug-flag vl))
                                          "~|CEgen/Debug:: ~x0 evaluated to nil~|" (cons P (list st))))
                                  ((when erp)
-                                  (mv t 'ACL2S::EMPTY)))
-                              (if res (mv nil st) (mv nil 'ACL2S::EMPTY)))))
+                                  (mv t 'acl2::empty)))
+                              (if res (mv nil st) (mv nil 'acl2::empty)))))
   (if (endp A1)
       (mv nil '())
     (b* (((cons var types1) (car A1))
          (typ1 (get-type... types1))
          (ctx 'meet-type-alist)
          (types2-entry (assoc-eq var A2))
-         (types2 (if types2-entry (cdr types2-entry) '(ACL2S::ALL)))
+         (types2 (if types2-entry (cdr types2-entry) '(ACL2::ALL)))
          (typ2 (get-type... types2))
          ((unless (and (possible-defdata-type-p typ1) 
                        (possible-defdata-type-p typ2)))
@@ -515,7 +512,7 @@
 
             ((and (defdata::possible-constant-value-p typ1)
                   (defdata::possible-constant-value-p typ2))
-             (mv nil (acons var (list 'ACL2S::EMPTY) rest)))
+             (mv nil (acons var (list 'acl2::empty) rest)))
 
             (t
              (b* (((mv erp ans) (eval-and-get-meet typ1 typ2)))

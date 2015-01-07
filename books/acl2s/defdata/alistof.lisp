@@ -1,6 +1,6 @@
 #|$ACL2s-Preamble$;
-(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
- "../portcullis")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "portcullis.lsp")
 (acl2::begin-book t);$ACL2s-Preamble$|#
 
 #|
@@ -47,13 +47,12 @@ data last modified: [2014-08-06]
     ))
 
 (program)
-(defun alistof-theory-events (name keybody valbody new-types kwd-alist wrld)
+(defun alistof-theory-events (name keybody valbody kwd-alist wrld)
   (declare (ignorable valbody))
   (declare (xargs :mode :program))
 ;assumption: key/val body are core defdata exps (holds because user-combinators occur only at top-level)
-  (b* ((M (append new-types (table-alist 'type-metadata-table wrld)))
-       (pred (predicate-name name M))
-       ((when (not (proper-symbolp pred))) (er hard? 'alistof-theory-events "~| Couldnt find predicate name for ~x0.~%" name))
+  (b* ((M (table-alist 'type-metadata-table wrld))
+       (pred (or (predicate-name name M) (get-predicate-symbol name)))
        ((mv symbol-alist-subtypep ?keypred) 
         (if (and (proper-symbolp keybody) (assoc-eq keybody M))
             (mv (subtype-p (predicate-name keybody M) 'acl2::symbolp wrld) (predicate-name keybody M))
@@ -93,11 +92,11 @@ data last modified: [2014-08-06]
 
 (defun alistof-theory-ev (p top-kwd-alist wrld)
   (b* (((cons name A) p)
-       ((acl2::assocs odef new-types kwd-alist) A) ;what about pdef?
+       ((acl2::assocs odef kwd-alist) A) ;what about pdef?
        (kwd-alist (append kwd-alist top-kwd-alist)))
        
     (case-match odef
-      (('ALISTOF key-body val-body) (alistof-theory-events name key-body val-body new-types kwd-alist wrld))
+      (('ALISTOF key-body val-body) (alistof-theory-events name key-body val-body kwd-alist wrld))
       (& '()))))
              
 
@@ -123,10 +122,9 @@ data last modified: [2014-08-06]
 (logic)
 (deflabel alistof)
 (register-user-combinator alistof 
- :arity 2 :verbose t
- :aliases (acl2::alistof)
- :expansion (lambda (_name _args) `(OR nil (acons ,(car _args) ,(cadr _args) ,_name)))
- :syntax-restriction-fn proper-symbol-listp
- :syntax-restriction-msg "alistof syntax restriction: ~x0 should be type names."
- :polymorphic-type-form (alistof :a :b)
- :post-pred-hook-fns (user-alistof-theory-events))
+                          :arity 2 :verbose t
+                          :expansion (lambda (_name _args) `(OR nil (acons ,(car _args) ,(cadr _args) ,_name)))
+                          :syntax-restriction-fn proper-symbol-listp
+                          :syntax-restriction-msg "alistof syntax restriction: ~x0 should be type names."
+                          :polymorphic-type-form (alistof :a :b)
+                          :post-pred-hook-fns (user-alistof-theory-events))

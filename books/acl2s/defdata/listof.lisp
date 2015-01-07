@@ -1,6 +1,6 @@
 #|$ACL2s-Preamble$;
-(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
- "../portcullis")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "portcullis.lsp")
 (acl2::begin-book t);$ACL2s-Preamble$|#
 
 #|
@@ -34,12 +34,11 @@ data last modified: [2014-08-06]
           )))
 
 (program)
-(defun listof-theory-events (name cbody new-types kwd-alist wrld)
+(defun listof-theory-events (name cbody kwd-alist wrld)
   (declare (xargs :mode :program))
 ;assumption: cbody is a core defdata exp (holds because user-combinators occur only at top-level)
-  (b* ((M (append new-types (table-alist 'type-metadata-table wrld)))
-       (pred (predicate-name name M))
-       ((when (not (proper-symbolp pred))) (er hard? 'listof-theory-events "~| Couldnt find predicate name for ~x0.~%" name))
+  (b* ((M (table-alist 'type-metadata-table wrld))
+       (pred (or (predicate-name name M) (get-predicate-symbol name)))
        ((mv atom-list-subtypep ?cpred) 
         (if (and (proper-symbolp cbody) (assoc-eq cbody M))
             (mv (subtype-p (predicate-name cbody M) 'acl2::atom wrld) (predicate-name cbody M))
@@ -79,11 +78,11 @@ data last modified: [2014-08-06]
 
 (defun listof-theory-ev (p top-kwd-alist wrld)
   (b* (((cons name A) p)
-       ((acl2::assocs odef new-types kwd-alist) A) ;what about pdef?
+       ((acl2::assocs odef kwd-alist) A) ;what about pdef?
        (kwd-alist (append kwd-alist top-kwd-alist)))
        
     (case-match odef
-      (('LISTOF cbody) (listof-theory-events name cbody new-types kwd-alist wrld))
+      (('LISTOF cbody) (listof-theory-events name cbody kwd-alist wrld))
       (& '()))))
              
 
@@ -111,7 +110,7 @@ data last modified: [2014-08-06]
 (deflabel listof)
 (register-user-combinator listof 
                           :arity 1 :verbose t
-                          :aliases (subset acl2::subset acl2::listof)
+                          :aliases (subset)
                           :expansion (lambda (_name _args) `(OR nil (cons ,(car _args) ,_name)))
                           :polymorphic-type-form (listof :a)
                           :post-pred-hook-fns (user-listof-theory-events))

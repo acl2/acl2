@@ -1,6 +1,6 @@
 #|$ACL2s-Preamble$;
-(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
- "../portcullis")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "portcullis.lsp")
 (begin-book t);$ACL2s-Preamble$|#
 
 #|           
@@ -21,7 +21,7 @@ is accepted by ACL2s, but this is not
 
 |#
 
-(in-package "ACL2S")
+(in-package "ACL2")
 
 (include-book "splitnat")
 (include-book "switchnat")
@@ -181,7 +181,7 @@ is accepted by ACL2s, but this is not
   (declare (xargs :guard t))
   (b* (((unless (symbolp x)) nil)
        ((when (keywordp x)) nil)
-       ((unless (acl2::legal-variablep x)) nil)
+       ((unless (legal-variablep x)) nil)
        (name (symbol-name x))
        (clist (coerce name 'list)))
       (var-char-listp clist)))
