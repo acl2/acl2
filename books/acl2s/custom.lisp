@@ -211,7 +211,7 @@
 #!ACL2
 (defmacro acl2s-common-settings ()
 `(progn
-   (include-book "defunc" :dir :acl2s-modes :ttags :all)
+   (include-book "defunc" :ttags :all)
    
    (make-event
     (er-progn
