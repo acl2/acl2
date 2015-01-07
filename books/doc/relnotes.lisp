@@ -1843,7 +1843,7 @@ patterned-congruence) rules.</p>
 
 <p>@('clause-processors/magic-ev') now has special handling for OR.</p>
 
-<p>The @(see testing) library has been enhanced.</p>
+<p>The @(see Cgen) library has been enhanced.</p>
 
 <p>@(see tshell) now has improved output-filtering capability, which @(see
 satlink) takes advantage of.</p>
