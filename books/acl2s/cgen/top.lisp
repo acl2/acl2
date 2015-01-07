@@ -154,8 +154,8 @@
 
 (include-book "xdoc/top" :dir :system)
 
-(defxdoc cgen
-  :parents (debugging acl2-sedan)
+(defxdoc acl2::cgen
+  :parents (acl2::debugging acl2::acl2-sedan)
   :short "Counterexample Generation a.k.a Disproving for ACL2"
   :long 
 "
@@ -239,7 +239,7 @@ package.</p>
  )
 
 (defxdoc cgen::flush
-  :parents (cgen)
+  :parents (acl2::cgen)
   :short "Flush/Reset the Cgen state globals to sane values."
   :long "
   Flush the transient Cgen state globals (<tt>cgen::event-stack</tt>, <tt>cgen::cgen-state</tt>) to <tt>nil</tt>.
@@ -252,7 +252,7 @@ package.</p>
 
 
 (defxdoc test?
-  :parents (cgen)
+  :parents (acl2::cgen)
   :short "Test/Check a conjecture for counterexamples."
   :long
 "
@@ -433,7 +433,7 @@ conjecture.  </p>
 
 
 (defxdoc prove/cgen
-  :parents (cgen)
+  :parents (acl2::cgen)
   :short "top-level API function for Cgen/testing."
   :long
 "<h3>Introduction</h3> 

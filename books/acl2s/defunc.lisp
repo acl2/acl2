@@ -798,8 +798,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc defunc
-  :parents (defunc)
-  :short "Function definitions with contracts @(see defun)"
+  :parents (acl2::acl2-sedan acl2::macro-libraries)
+  :short "Function definitions with contracts @(see acl2::defun)"
   :long
 "
 <h3>Examples</h3>
@@ -845,7 +845,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 <h3>Purpose</h3>
 <p>
-The macro @('defunc') is an extension of @('defun') with <b>contracts</b>.
+The macro @('defunc') is an extension of @('acl2::defun') with <b>contracts</b>.
 </p>
 
 <p> Using @('defunc') one can specify input and output
@@ -905,7 +905,7 @@ The general form of @('defunc') is:
 })
 
 <p>
-The form of @('defunc') is just like @(see defun) except that is allows
+The form of @('defunc') is just like @(see acl2::defun) except that is allows
 extra keyword options.  Note that the keyword options can go anywhere
 between the formals (parameters) and the end of @('defunc') macro.
 The supported keyword options with the syntax restrictions and actions are noted
@@ -914,11 +914,11 @@ below.
 
 <dl>
 <dt>Keyword Options</dt>
-<dd>@(':input-contract ic') -- <i>ic</i> is a @(see term); required.</dd>
-<dd>@(':output-contract oc') -- <i>oc</i> is a @(see term); required.</dd>
+<dd>@(':input-contract ic') -- <i>ic</i> is a @(see acl2::term); required.</dd>
+<dd>@(':output-contract oc') -- <i>oc</i> is a @(see acl2::term); required.</dd>
 <dd>@(':function-contract-hints hints :rule-classes rc ...') --
-options to the function contract @(see defthm).</dd>
-<dd>@(':body-contracts-hints hints') -- give @(see hints) to aid the body contracts proof.</dd>
+options to the function contract @(see acl2::defthm).</dd>
+<dd>@(':body-contracts-hints hints') -- give @(see acl2::hints) to aid the body contracts proof.</dd>
 
 <p> The following keyword options are usually set at the
 session-wide-level (see the <tt>set-defunc-*</tt> macros documented below);
@@ -946,8 +946,8 @@ To debug a failed defunc form, you can proceed in multiple ways:
 <li> Submit the events shown above the failure message to replicate the error.</li>
 <li> At the session editor (or emacs prompt), submit/evaluate
      @(':trans1 (defunc ...)')
-     And from the output, evaluate the form that says @('(defunc-events ...)').</li>
-<li>Use keyword options @(':verbose t') (or @(':debug t')) and examine the ACL2 output.</li>
+     And from the output, evaluate the form that says <tt>(defunc-events ...)</tt>.</li>
+<li>Use keyword options <tt>:verbose t</tt> (or <tt>:debug t</tt>) and examine the ACL2 output.</li>
 </ul>
 </p>
 "
