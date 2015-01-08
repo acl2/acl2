@@ -59,7 +59,7 @@
     interesting-applications            ;;; j
     acknowledgments                     ;;; k
     real                                ;;; l
-    hons-and-memoization                ;;; m
+    hons-enabled                        ;;; m
     parallelism                         ;;; n
     acl2-doc                            ;;; o
     acl2                                ;;; p
@@ -268,11 +268,9 @@ href=\"#documentation\">documentation</a>.</li>
 
 <li><b>Extensions.</b><br>The ACL2 distribution includes the following
 extensions, which were developed by the individuals shown.  <b>NOTE:</b>Not
-included in this list is ACL2(h) &mdash; that is, <a href=\"~sm\">support for
-hash cons, applicative hash tables, and function memoization for reuse of
-previously computed results</a> &mdash; because these features are now built
-into ACL2 executables by default (that is, ACL2 is ACL2(h) by default).  Thanks
-to Bob Boyer, Warren A. Hunt, Jr., Jared Davis, and Sol Swords for their
+included in this list is ACL2(h), because it is now the default build of ACL2:
+that is, ACL2 is <a href=\"~sm\">hons-enabled</a> by default.  Thanks to Bob
+Boyer, Warren A. Hunt, Jr., Jared Davis, and Sol Swords for their
 contributions; see the <a href=\"~sk\">acknowledgments</a>.
 
   <UL>
