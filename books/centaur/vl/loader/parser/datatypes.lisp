@@ -114,6 +114,51 @@
         (rest  := (vl-parse-0+-packed-dimensions))
         (return (cons first rest))))
 
+
+(defparser vl-parse-var-dimension ()
+  :result (vl-packeddimension-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+        (:= (vl-match-token :vl-lbrack))
+        (when (vl-is-token? :vl-rbrack)
+          (:= (vl-match))
+          (return :vl-unsized-dimension))
+        (msb := (vl-parse-expression))
+        (when (vl-is-token? :vl-colon)
+          (:= (vl-match))
+          (lsb := (vl-parse-expression)))
+        (:= (vl-match-token :vl-rbrack))
+        (return (if lsb
+                    ;; Regular [msb:lsb] range
+                    (make-vl-range :msb msb :lsb lsb)
+                  ;; Single dimension [msb], meaning [0:msb-1]
+                  (make-vl-range
+                   :msb (vl-make-index 0)
+                   :lsb (make-vl-nonatom
+                         :op :vl-binary-minus
+                         :args (list msb (vl-make-index 1))))))))
+
+(defparser vl-parse-0+-var-dimensions ()
+  ;; Match { packed_dimension }
+  :result (vl-packeddimensionlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong-on-value
+  (seq tokstream
+        (unless (vl-is-token? :vl-lbrack)
+          (return nil))
+        (first := (vl-parse-var-dimension))
+        (rest  := (vl-parse-0+-var-dimensions))
+        (return (cons first rest))))
+
+
+
+
+
+
 (defaggregate vl-coredatatype-info
   :parents (vl-parse-core-data-type)
   :tag nil
@@ -390,7 +435,7 @@ dimensions.</p>
         (when (vl-is-token? :vl-lbrack)
           ;; BOZO this doesn't yet support all the possible variable_dimension things, but
           ;; we'll at least support arbitrary lists of packed dimensions.
-          (dims := (vl-parse-0+-packed-dimensions)))
+          (dims := (vl-parse-0+-var-dimensions)))
 
         (when (vl-is-token? :vl-equalsign)
           (:= (vl-match))
