@@ -41,7 +41,7 @@
     ((eq ts-decoded '*TS-TRUE-LIST-OR-STRING*)   '(acl2s::true-list acl2s::string)) 
     ((eq ts-decoded '*TS-SYMBOL*   )             '(acl2s::symbol) )
     ((eq ts-decoded '*TS-INTEGER*   )            '(acl2s::integer) )
-    ((eq ts-decoded '*TS-NON-POSITIVE-RATIONAL*) '(acl2s::acl2s::negative-rational '0))
+    ((eq ts-decoded '*TS-NON-POSITIVE-RATIONAL*) '(acl2s::negative-rational '0))
     ((eq ts-decoded '*TS-NON-NEGATIVE-RATIONAL*) '(acl2s::positive-rational '0))
     ((eq ts-decoded '*TS-NEGATIVE-RATIONAL* )    '(acl2s::negative-rational) )
     ((eq ts-decoded '*TS-POSITIVE-RATIONAL* )    '(acl2s::positive-rational) )
