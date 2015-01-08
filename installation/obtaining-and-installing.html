@@ -1,5 +1,6 @@
 <HTML>
-<HEAD><TITLE>ACL2 Version 6.5 Installation Guide: Obtaining and Installing ACL2</TITLE></HEAD>
+<HEAD><TITLE>ACL2 Version 6.5 Installation Guide: Obtaining and
+    Installing <a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/index.html">ACL2</TITLE></HEAD>
 
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" STYLE="font-family:'Verdana'">
 
@@ -43,30 +44,23 @@
 <p><hr size=4 noshade><p>
 
 ACL2 is more than just the executable image.  In particular, it comes
-with a user's manual, but you will almost certainly want to obtain the
-distributed books.  Start here and we will take you through the whole
-process of obtaining and installing ACL2.
+with
+a <a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/index.html#User's-Manual">user's
+manual</a>, and the system is distributed with libraries developed by
+the ACL2 community, the
+<i><a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/?topic=ACL2____COMMUNITY-BOOKS">community
+  books</a></i>.  Start here and we will take you through the whole
+  process of obtaining and installing ACL2.
 
 <p>
 
-First, create a directory in which to store ACL2 Version 6.5.  We will
+First, create a directory under which to store ACL2 Version 6.5.  We will
 call this directory <I>dir</I>.  For example, <I>dir</I> might be
-<CODE>/home/jones/acl2/v6-5</CODE>.
+<CODE>/home/jones/acl2/</CODE>.
 
 <H3>NOTE: If you intend to obtain an incremental release (e.g. 2.9.4 as opposed
 to 2.9), please see the <a href="../new.html">ACL2 News</a> for instructions.
 Otherwise, continue reading here.</H3>
-
-<p>
-
-A collection of <em>books</em> (ACL2 input files typically including
-definitions and theorems) has been developed over the years for use
-with ACL2, called the "community books".  It is very useful to
-obtain these books, which are distributed via SVN from the Google
-Code <a href="https://code.google.com/p/acl2-books/">acl2-books
-project website</a> or, as gzipped tarfiles, from
-<code><a href="http://acl2.org">http://acl2.org</a></code>.
-Directions are included below.
 
 <BR><HR noshade size=8><BR>
 <H2><A NAME="Shortcuts">Pre-built Binary Distributions</A></H2>
@@ -217,80 +211,42 @@ conversion.)
 
 <UL>
 
-<LI>Save <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-5/distrib/acl2.tar.gz">
-    acl2.tar.gz</A> on directory <I>dir</I>.  (You can
-    run <code>md5sum</code> and compare
-    with <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-5/distrib/acl2-tar-gz-md5sum">
-    acl2-tar-gz-md5sum</A> if you wish to verify the transmission.)
+<LI>Save <A HREF="https://github.com/acl2/acl2/archive/6.5.tar.gz">
+    6.5.tar.gz</A> on directory <I>dir</I>.
   </LI>
 <BR>
 
-<LI>Execute the following four Unix commands.  (<b>Note</b>:
-Gnu tar is preferred, as there have been some problems with long file
-names when using tar provided by SunOS.  You may want to use the -i
-option, "<code>tar xpvfi acl2.tar</code>", if you have problems with
-other than Gnu tar.  You can see if you have Gnu tar by running
-"<code>tar -v</code>".)
+<LI>Execute the following four Unix commands to obtain the ACL2 system
+and community books.  (<b>Note</b>: Gnu tar is preferred, as there
+have been some problems with long file names when using tar provided
+by SunOS.  You may want to use the -i option, "<code>tar xpvfi
+6.5.tar</code>", if you have problems with other than Gnu tar.  You
+can see if you have Gnu tar by running "<code>tar -v</code>".)  The
+resulting tarball will consist of approximately 60 MB and its
+extracted directory will consist of approximately 270 MB.  Additional
+space is required to build an executable image, perhaps 85 to 260 MB
+depending on the platform (including the host Lisp); and more will be
+required to <A HREF="using.html#Certifying">certify books</A>.
+
 
 <BR><BR>
 <CODE>cd <I>dir</I></CODE><BR>
-<CODE>tar xfz acl2.tar.gz</CODE><BR>
-<CODE>rm acl2.tar.gz</CODE><BR>
-<CODE>cd acl2-sources</CODE><BR>
+<CODE>tar xfz 6.5.tar.gz</CODE><BR>
+<CODE>rm 6.5.tar.gz</CODE><BR>
+<CODE>cd acl2-6.5</CODE><BR>
 <BR>
 </LI>
 
-<LI><A NAME="Obtaining-books"</A>We strongly suggest that you now
-       install the community books,
-       using <b><font color="red">one</font></b> of the following
-       methods, while still connected to the new <acl2-sources/>
-       directory.
-       <BR><BR>
+</UL>
 
-<UL>
+<p>
 
-  <li><b>Easy download.</b>  Fetch a gzipped tarfile of the community
-    books
-    from <code><a href="http://acl2.org">http://acl2.org</a></code>,
-    and then extract as follows to create a <code>books/</code>
-    subdirectory:<BR>
-
-    <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz books-6.5.tar.gz</code>
-  </li>
-
-  <li><b><font color="red">OR</font></b>, obtain a read-only copy
-    using SVN to be placed in a new subdirectory, <code>books/</code>:<br>
-
-      <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;svn checkout http://acl2-books.googlecode.com/svn/branches/6.5 books</code>
-  </li>
-	
-  <li><b><font color="red">OR</font></b>, for read-write access,
-    become a member of the acl2-books project by contacting one of the
-    project administrators
-    (see <a href="https://code.google.com/p/acl2-books/">the
-    acl2-books project page</a>). Then:<br>
+<b>Note</b>: Alternatively, for read-write access, become a member of
+the acl2-books project
+by <a href="https://github.com/acl2/acl2#contributors-wanted">contacting
+one of the project administrators as described on acl2-books project
+page</a>.
 	  
-    <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;svn checkout https://acl2-books.googlecode.com/svn/branches/6.5 books --username &lt;name&gt;</code>
-  </li>
-  <BR>
-
-</UL>
-
-<B><font color="red">NOTE</font></B>:  The second and third methods
-provide all of the community books, but the first omits the
-<code>workshops/</code> subdirectories of these <code>books/</code>,
-which contains books contributed in support of papers presented at
-ACL2 workshops.  You can fetch the gzipped tarball for
-the <code>workshops/</code> directory
-from <code><a href="http://acl2.org">http://acl2.org</a></code>.  Then
-put that gzipped tarfile in the <CODE>acl2-sources/books/</CODE>
-directory, connect to that directory, and extract to create
-a <CODE>workshops/</CODE> subdirectory:<BR>
-
-<CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz workshops-6.5.tar.gz</CODE><BR>
-
-</UL>
-
 <BR><HR noshade size=8><BR>
 <H2><A NAME="Create-Image">Creating or Obtaining an Executable Image</A></H2>
 
@@ -344,31 +300,31 @@ If you downloaded a <A
 HREF="#Pre-Built-Images">pre-built ACL2 image</A>, you may skip this section.
 <!-- End of only for non-incremental releases. -->
 Connect to <I>dir</I> as above and execute <BR><BR> <CODE>cd
-acl2-sources</CODE><BR> <CODE>make LISP=</CODE><I>xxx</I><BR>
+acl2-6.5</CODE><BR> <CODE>make LISP=</CODE><I>xxx</I><BR>
 <BR>
 where <I>xxx</I> is the command to run your local Common Lisp.
 <P>
 By default, if no <CODE>LISP=</CODE><I>xxx</I> is specified,
 <CODE>LISP=ccl</CODE> is used.  On our hosts, <CODE>ccl</CODE> is the name of
-Clozure Common Lisp (CCL), which can be obtained as explained <a
-href="requirements.html#Obtaining-CCL">in the Requirements document</a>.
+Clozure Common Lisp (CCL), which can be obtained as <a
+href="requirements.html#Obtaining-CCL">explained in the Requirements document</a>.
 
 <P>
 
-This will create executable <code>saved_acl2</code> in the
-<code>acl2-sources</code> directory.
+This will create executable <code>saved_acl2h</code> in the
+<code>acl2-6.5</code> directory.
 
 <P>
 
 The time taken to carry out this process depends on the host processor
 but may be only a few minutes for a fast processor.  The size of the
-resulting binary image is dependent on which Lisp was used, but it may
+resulting binary image is dependent on which Lisp was used, but it may be
 a couple hundred megabytes or so.
 
 <P>
 This <CODE>make</CODE> works for the Common Lisp implementations listed
 in <A HREF="requirements.html">Requirements document</A> on systems we
-have tested.  See the file <CODE>acl2-sources/GNUmakefile</CODE> for
+have tested.  See the file <CODE>acl2-6.5/GNUmakefile</CODE> for
 further details.  If this <CODE>make</CODE> command does not work for
 you, please see the instructions below for <A HREF="#Non-Unix">other
 than Unix-like systems</A>.
@@ -401,13 +357,13 @@ Otherwise, proceed as follows.
 
 Your Common Lisp should be one of those listed in
 <A HREF="requirements.html">Requirements document</A>.  Filenames
-below should default to the <I>dir</I><CODE>/acl2-sources</CODE>
+below should default to the <I>dir</I><CODE>/acl2-6.5</CODE>
 directory; please connect to that directory before continuing.
 
 <OL>
-<P><LI> Remove file <CODE>nsaved_acl2</CODE> if it exists.</LI>
+<P><LI> Remove file <CODE>nsaved_acl2h</CODE> if it exists.</LI>
 
-<P><LI> Start up Common Lisp in the <CODE>acl2-sources</CODE> directory
+<P><LI> Start up Common Lisp in the <CODE>acl2-6.5</CODE> directory
 and submit the following sequence of commands.
 
 <PRE>
@@ -418,12 +374,14 @@ and submit the following sequence of commands.
 </PRE>
 
   The commands above will compile the ACL2 sources and create compiled object
-  files on your <CODE>acl2-sources</CODE> subdirectory.
+  files on your <CODE>acl2-6.5</CODE> subdirectory.  Here we assume
+  that executables have extension <code>.dxl</code>, but this will
+  depend on your host Lisp and operating system.
 </LI>
 
 <P><LI> Now exit your Common Lisp and invoke a fresh copy of it (mainly to avoid
   saving an image with the garbage created by the compilation process). Again
-  arrange to connect to the <CODE>acl2-sources</CODE> subdirectory. In the
+  arrange to connect to the <CODE>acl2-6.5</CODE> subdirectory. In the
   fresh Lisp <a name="initialization-first-pass">type</a>:
 
 <PRE>
@@ -444,7 +402,7 @@ and submit the following sequence of commands.
 </LI>
 
 <P><LI> So now exit your Common Lisp and invoke a fresh copy of it (again arranging
-  to connect to your <CODE>acl2-sources</CODE> subdirectory). Then, in the
+  to connect to your <CODE>acl2-6.5</CODE> subdirectory). Then, in the
   fresh Lisp type:
 
 <PRE>
@@ -452,49 +410,49 @@ and submit the following sequence of commands.
   (load "init.lisp")
   (in-package "ACL2")
   (save-acl2 (quote (initialize-acl2))
-             "saved_acl2")
+             "saved_acl2h")
 </PRE>
 
   You have now saved an image.  Exit Lisp now.  Subsequent steps will put the
   image in the right place.
 
-<P><LI> Remove <CODE>osaved_acl2</CODE> if it exists.
+<P><LI> Remove <CODE>osaved_acl2h</CODE> if it exists.
 
-<P><LI> <b>IF</b> <CODE>saved_acl2</CODE> and <CODE>saved_acl2.dxl</CODE> both exist <b>THEN</b>:
+<P><LI> <b>IF</b> <CODE>saved_acl2h</CODE> and <CODE>saved_acl2h.dxl</CODE> both exist <b>THEN</b>:
 <ul>
-     <li>move <CODE>saved_acl2.dxl</CODE> to <CODE>osaved_acl2.dxl</CODE></li>
-     <li>move <CODE>saved_acl2</CODE> to <CODE>osaved_acl2</CODE>
-         and edit <CODE>osaved_acl2</CODE>, changing <CODE>saved_acl2.dxl</CODE>
-         (at end of line) to <CODE>osaved_acl2.dxl</CODE></li>
+     <li>move <CODE>saved_acl2h.dxl</CODE> to <CODE>osaved_acl2h.dxl</CODE></li>
+     <li>move <CODE>saved_acl2h</CODE> to <CODE>osaved_acl2h</CODE>
+         and edit <CODE>osaved_acl2h</CODE>, changing <CODE>saved_acl2h.dxl</CODE>
+         (at end of line) to <CODE>osaved_acl2h.dxl</CODE></li>
 </ul>
-     <b>ELSE IF</b> <CODE>saved_acl2</CODE> exists <b>THEN</b>:
+     <b>ELSE IF</b> <CODE>saved_acl2h</CODE> exists <b>THEN</b>:
 <ul>
-     <li>move <CODE>saved_acl2</CODE> to <CODE>osaved_acl2</CODE></li>
+     <li>move <CODE>saved_acl2h</CODE> to <CODE>osaved_acl2h</CODE></li>
 </ul>
 </LI>
 
-<P><LI> Move <CODE>nsaved_acl2</CODE> to <CODE>saved_acl2</CODE>.</LI>
+<P><LI> Move <CODE>nsaved_acl2h</CODE> to <CODE>saved_acl2h</CODE>.</LI>
 
 <P><LI> For some Common Lisps, a
-     file <CODE>nsaved_acl2.</CODE><em>suffix</em> is created for some
+     file <CODE>nsaved_acl2h.</CODE><em>suffix</em> is created for some
      <em>suffix</em>.
-     Move it to: <CODE>saved_acl2.</CODE><em>suffix</em></LI>
+     Move it to: <CODE>saved_acl2h.</CODE><em>suffix</em></LI>
 
-<P><LI> Make sure <CODE>saved_acl2</CODE> is executable.  For Windows
+<P><LI> Make sure <CODE>saved_acl2h</CODE> is executable.  For Windows
 this involves two mini-steps:
 
 <blockquote>
 
-(a) Remove the <code>"$*"</code> from the <code>saved_acl2</code>
+(a) Remove the <code>"$*"</code> from the <code>saved_acl2h</code>
 script (because Windows does not understand <code>$*</code>).
 Consequently, any arguments you pass to ACL2 via the command line will
 be ignored.
 
 <p>
 
-(b) Rename <code>saved_acl2</code> to <code>saved_acl2.bat</code>, for
+(b) Rename <code>saved_acl2h</code> to <code>saved_acl2h.bat</code>, for
 example by executing the following command.<br><br>
-<code>rename saved_acl2 saved_acl2.bat</code>
+<code>rename saved_acl2h saved_acl2h.bat</code>
 
 </blockquote>
 </LI>
@@ -528,7 +486,10 @@ for Windows instead of reading this section.
 
 <p>
 
-Otherwise here are steps to follow.
+Otherwise here are steps to follow.  (These are quite old and may have
+bugs.  Please report any bugs to
+the <A HREF="mailto:kaufmann@cs.utexas.edu">Matt Kaufmann</A>ACL2
+implementors</A>.)
 
 <ol>
 <li><b>FIRST</b> get GCL running on your Windows system using <b>ONE</b> of the
@@ -570,7 +531,7 @@ C:\gcl\gclm\lib\gcl-2.6.2\unixport\saved_gcl.exe -dir C:/gcl/gclm/lib/gcl-2.6.2/
 <li><b>THIRD</b>, follow the <A HREF="#Non-Unix">instructions for
     other than Unix-like systems</A> above, though the resulting file
     may be called
-<code>saved_acl2.exe</code> rather than <code>saved_acl2</code>.
+<code>saved_acl2h.exe</code> rather than <code>saved_acl2h</code>.
 
 <!-- NOTE to developers: v6-5 below indicates a normal release, which is OK. -->
 <!-- Do not edit that for incremental releases. -->
@@ -642,7 +603,7 @@ HREF="#Sources-Non-Unix">other</A> platforms.
 (If you downloaded a <A
 HREF="#Pre-Built-Images">pre-built ACL2 image</A>, then you may skip this section.)
 <!-- End of only for non-incremental releases. -->
-Connect to subdirectory <CODE>acl2-sources</CODE> of <I>dir</I>,
+Connect to subdirectory <CODE>acl2-6.5</CODE> of <I>dir</I>,
 start up your Common Lisp, and compile by executing the following forms.
 <I>This sequence of steps need only be performed once.</I>
 
@@ -653,7 +614,7 @@ start up your Common Lisp, and compile by executing the following forms.
 </PRE>
 
 Now each time you want to use ACL2, you need only execute the following forms
-after starting up Common Lisp in subdirectory <CODE>acl2-sources</CODE> of
+after starting up Common Lisp in subdirectory <CODE>acl2-6.5</CODE> of
 <I>dir</I>.
 
 <PRE>
@@ -675,13 +636,10 @@ Now proceed to read more about <A HREF="using.html">Using ACL2</A>.
 <BR><HR noshade size=8><BR>
 <H2><A NAME="Summary">Summary of Distribution</A></H2>
 
-The ACL2
-    distribution, <code><A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-5/distrib/acl2.tar.gz">
-    acl2.tar.gz</A></code>, includes the ACL2 source files as well as
-    the following files and directories (and a few others not
-    mentioned here).  Note that a <code>books/</code> directory
-    is <b>not included</b>; see instructions above to fetch the community
-    books.
+The ACL2 system and community books distribution includes the ACL2
+    source files, including the following files and directories (and a
+    few others not mentioned here), as well as the community books in
+    <code>books/</code>.
 <PRE>
   LICENSE       ; ACL2 license file
   GNUmakefile   ; For GNU make
@@ -698,45 +656,29 @@ Also available are the following.
 <li><code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/distrib/images/">images/</a></code>:
 Some gzip'd tar'd executables; see <code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/distrib/images/Readme.html">images/Readme.html</a></code></li>
 
-<li><code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/distrib/split/">split/</a></code>: The result of splitting up <code>acl2.tar.gz</code></li>
+<li><code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/distrib/split/">split/</a></code>: The result of splitting up <code>6.5.tar.gz</code></li>
 
 </ul>
 
-<P>
-We estimate that the entire <code>acl2.tar.gz</code> consists of
-approximately 4 MB, which extracts to about 15 MB, and the size of
-gzipped tarfile <code>books-6.5.tar.gz</code> (obtained as described
-<a href="#Obtaining-books">above</a>) is about 15 MB, which extracts
-to about 87 MB.  (Gzipped tarfile <code>workshops-6.5.tar.gz</code>
-and corresponding directory <code>workshops</code>, which are
-mentioned above, have sizes of about 37 MB and 58 MB, respectively.)
-Additional space is required to build an image, perhaps 50 to 300
-megabytes depending on the platform (including the host Lisp); and
-more will be required to <A HREF="using.html#Certifying">certify
-books</A>.
-
-<p>
-
-<b><font size="+2">[<a href="installation.html">Back to Installation Guide.</a>]</font></b>
-
 <BR><HR noshade size=8><BR>
-<H2><A NAME="Bleeding-edge">Bleeding-edge Distributions via SVN</A></H2>
+<H2><A NAME="Bleeding-edge">Bleeding-edge Distributions via Git</A></H2>
 
 We strongly recommend that ACL2 users update their local copies of the
 system and community books at each ACL2 release.  While that should
 suffice for many ACL2 users, nevertheless for those who prefer to
 obtain the latest developments, the ACL2 source code and community
 books have been made available between ACL2 releases, by way of
-revision control using SVN.
-<i>The authors of ACL2 consider SVN distributions to be experimental;
+revision control using git.
+<i>The authors of ACL2 consider git distributions to be experimental;
 while they will likely be fully functional in most cases, they could
 however be incomplete, fragile, and unable to pass our own
-regression.</i> If you decide to use SVN versions of either the ACL2
-or the community books, then you should use both, as they tend to be
-kept in sync.  See the project
-websites, <code><A HREF="http://acl2-books.googlecode.com/">acl2-books</A></code>
-and <code><A HREF="http://acl2-devel.googlecode.com/">acl2-devel</A></code>,
-for the ACL2 community books and development sources, respectively.
+regression.</i>  See
+the <a href="https://github.com/acl2/acl2">project website</a> for
+more information.
+
+<BR><HR>
+
+<b><font size="+2">[<a href="installation.html">Back to Installation Guide.</a>]</font></b>
 
 <BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR>
 
