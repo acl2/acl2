@@ -137,59 +137,9 @@ has said: "If someone is running Debian, all they want to do is
 they wish as well, e.g. emacs, infix, etc."  Alternatively, Debian GNU
 Linux users may wish
 to <A HREF="http://packages.qa.debian.org/a/acl2.html">download the
-Debian package for Linux</A>.  Or, see following annotated log,
-provided by Camm Maguire, to see another way to proceed.
-
-<pre>
-     camm@localhost:~$ cd /tmp
-     camm@localhost:/tmp$ mkdir a
-     camm@localhost:/tmp$ cd a
-     camm@localhost:/tmp/a$ wget ftp://ftp.debian.org/debian/pool/main/a/acl2/acl2*5.0*_{i386,all}*b
-
-     ;;; or ftp, use browser, etc.  I.e. download the .deb files.  Replace
-     ;;; i386 above with amd64 if the target is a 64bit Ubuntu machine.
-     ;;; Other target names should be self explanatory.  The 'all'
-     ;;; designation refers to binary independent data. 
-
-     camm@localhost:/tmp/a$ ls
-     acl2_5.0-1_i386.deb	   acl2-books-certs_5.0-1_all.deb   acl2-doc_5.0-1_all.deb    acl2-infix_5.0-1_i386.deb        acl2-source_5.0-1_all.deb
-     acl2-books_5.0-1_i386.deb  acl2-books-source_5.0-1_all.deb  acl2-emacs_5.0-1_all.deb  acl2-infix-source_5.0-1_all.deb
-     camm@localhost:/tmp/a$ for i in *b; do ar x $i; tar zxf data.tar.gz; done
-
-     ;;; unpack files in current directory
-
-     camm@localhost:/tmp/a$ sed -e 's,usr,tmp/a/usr,g' usr/bin/acl2 &gt;tmp && chmod 755 tmp && mv tmp usr/bin/acl2
-
-     ;;; Edit shell script wrapper to refer to the local path
-
-     camm@localhost:/tmp/a$ usr/bin/acl2
-     GCL (GNU Common Lisp)  2.6.7 CLtL1    Aug 22 2012 15:25:31
-     Source License: LGPL(gcl,gmp), GPL(unexec,bfd,xgcl)
-     Binary License:  GPL due to GPL'ed components: (XGCL READLINE UNEXEC)
-     Modifications of this banner must retain notice of a compatible license
-     Dedicated to the memory of W. Schelter
-
-     Use (help) to get some basic information on how to use GCL.
-     Temporary directory for compiler files set to /tmp/
-
-      ACL2 Version 5.0 built August 25, 2012  11:53:08.
-      Copyright (C) 2012  University of Texas at Austin
-      ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and you
-      are welcome to redistribute it under certain conditions.  For details,
-      see the GNU General Public License.
-
-      Initialized with (INITIALIZE-ACL2 'INCLUDE-BOOK *ACL2-PASS-2-FILES*).
-      See the documentation topic note-5-0 for recent changes.
-      Note: We have modified the prompt in some underlying Lisps to further
-      distinguish it from the ACL2 prompt.
-
-     ACL2 Version 5.0.  Level 1.  Cbd "/tmp/a/".
-     System books directory "/tmp/a/usr/share/acl2-5.0/books/".
-     Type :help for help.
-     Type (good-bye) to quit completely out of ACL2.
-
-     ACL2 !&gt;
-</pre>
+ACL2 Debian package for Linux</A>.  An alternate location you might
+want to check
+is <code><a href="http://backports.debian.org">backports.debian.org</a></code>.
 
 </UL>
 
