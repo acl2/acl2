@@ -28,7 +28,7 @@ not only the ACL2 system but, in the <code>books/</code> subdirectory,
 the <i><a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/?topic=ACL2____COMMUNITY-BOOKS">community
 books</a></i> (libraries).  The ACL2 <i>system</i> is developed at the
 University of Texas at Austin
-and <a href="obtaining-and-installing.html#Sources">can also be
+and <a href="obtaining-and-installing.html#Summary">can also be
 obtained or explored separately</a>.
 
 <ol>
@@ -36,13 +36,13 @@ obtained or explored separately</a>.
 <li>Fetch gzipped tar
     file <code><a href="https://github.com/acl2/acl2/archive/6.5.tar.gz">6.5.tar.gz</a></code><br>
     but
-    <font color="red">Note</font>:<br>Avoid doing this in a directory
+    <font color="red">Note</font>: Avoid doing this in a directory
     whose pathname contains whitespace.</li>
 
 <li>Execute the following to create subdirectory <code>acl2-6.5/</code>.
   (These installation instructions assume that you don't rename that
   directory, though you are welcome to do so.)<br>
-<code>tar xfz acl2.tar.gz</code></li>
+<code>tar xfz 6.5.tar.gz</code></li>
 
 <li><a href="requirements.html">Obtain a Common Lisp implementation</a> if you don't
 already have one.</li>
@@ -69,10 +69,11 @@ or something fancier such as the following:
 <pre>
 (time nice make -j 8 ACL2=/u/smith/bin/acl2 certify-books) >& make-certify-books.log
 </pre>
-The resulting log file, <code>make-certify-books.log</code>, should
-contain no occurrences of the string ``CERTIFICATION FAILED''; a
-normal exit (status 0) should guarantee this.  If you want additional
-explanation and further options, see the documentation
+This may take up to several hours.  The resulting log
+file, <code>make-certify-books.log</code>, should contain no
+occurrences of the string ``CERTIFICATION FAILED''; a normal exit
+(status 0) should guarantee this.  If you want additional explanation
+and further options, see the documentation
 for <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-5/combined-manual/index.html?topic=ACL2____BOOKS-CERTIFICATION">BOOKS-CERTIFICATION</A>.
 
 </ol>

@@ -123,7 +123,7 @@ windows-gcl-jared.html
 # The following is distributed but is not under source control
 doc/manual:
 download
-# HTML -- not distributed
+HTML
 LICENSE
 # Makefile -- not distributed
 res
@@ -133,7 +133,7 @@ res
 doc/manual/download:
 
 # The following is distributed but is not under source control
-doc/manual/images:
+doc/manual/HTML:
 *
 
 # The following is distributed but is not under source control

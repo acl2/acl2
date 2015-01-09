@@ -37,7 +37,7 @@
     </UL>
   </UL>
   <LI><A HREF="#Running">Running Without Building an Executable Image</A>
-  <LI><A HREF="#Summary">Summary of Distribution</A>
+  <LI><A HREF="#Summary">Summary of ACL2 System Distribution</A>
   <LI><A HREF="#Bleeding-edge">Bleeding-edge Distributions via SVN</A>
 </UL>
 
@@ -146,8 +146,8 @@ is <code><a href="http://backports.debian.org">backports.debian.org</a></code>.
 <BR><HR noshade size=8><BR>
 <H2><A NAME="Sources">Obtaining the Sources and Community Books</A></H2>
 
-Obtain the sources and place them in directory
-<I>dir</I> as follows.
+Here is how to obtain the sources and community books and place them
+in a directory, <I>dir</I>.
 
 <p>
 
@@ -205,8 +205,9 @@ build that image from the sources you have already obtained.
 <!-- The following is only for non-incremental releases. -->
 However, you may
 be able to <A HREF="#Pre-Built-Images">take a short cut by downloading an
-ACL2 image</A>, in which case you can skip ahead to <A HREF="#Summary">Summary of
-Distribution</A>.  Otherwise you should click on one of the links just below.
+ACL2 image</A>, in which case you can skip ahead to the page on
+<A HREF="using.html">Using ACL2</A>.  Otherwise you should click on
+one of the links just below.
 <!-- End of only for non-incremental releases. -->
 Choose the last option if you are using a Common Lisp on which you cannot save
 an image (e.g., a trial version of Allegro Common Lisp).
@@ -584,12 +585,27 @@ HREF="#Create-Image">above</A>.
 Now proceed to read more about <A HREF="using.html">Using ACL2</A>.
 
 <BR><HR noshade size=8><BR>
-<H2><A NAME="Summary">Summary of Distribution</A></H2>
+<H2><A NAME="Summary">Summary of ACL2 System Distribution</A></H2>
 
-The ACL2 system and community books distribution includes the ACL2
-    source files, including the following files and directories (and a
-    few others not mentioned here), as well as the community books in
-    <code>books/</code>.
+This section, which is optional, discusses how to browse a
+distribution that includes ACL2 only, without the
+<a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/?topic=ACL2____COMMUNITY-BOOKS">community
+books</a>.
+
+<p>
+
+We discuss <a href="#Sources">above</a> how to obtain a gzipped
+tarfile that contains both the ACL2 sources and
+the <a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/?topic=ACL2____COMMUNITY-BOOKS">community
+books</a>.  Below we describe the ACL2 distribution only (without the
+community books) from the University of Texas at Austin.  Its files
+are available by exploring the
+the <code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/distrib/">distrib/<a></code>
+directory on this website or by obtaining a gzipped tarfile,
+<code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/distrib/acl2.tar.gz">acl2.tar.gz</a></code>,
+which contains all those files: ACL2 source files as well as the
+following (and a few others not mentioned here).
+
 <PRE>
   LICENSE       ; ACL2 license file
   GNUmakefile   ; For GNU make
@@ -606,7 +622,7 @@ Also available are the following.
 <li><code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/distrib/images/">images/</a></code>:
 Some gzip'd tar'd executables; see <code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/distrib/images/Readme.html">images/Readme.html</a></code></li>
 
-<li><code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/distrib/split/">split/</a></code>: The result of splitting up <code>6.5.tar.gz</code></li>
+<li><code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/distrib/split/">split/</a></code>: The result of splitting up <code>acl2.tar.gz</code></li>
 
 </ul>
 

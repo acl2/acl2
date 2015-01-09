@@ -498,7 +498,6 @@ proofs: compile-ok
 # update the documentation for the :DOC command at the terminal, of
 # course; for that, you'll need to rebuild ACL2.
 DOC: acl2-manual STATS
-	echo "@@@ Got to here"
 	cd books ; rm -f system/doc/render-doc.cert system/doc/rendered-doc.lsp
 	rm -f doc/home-page.html
 	$(MAKE) doc.lisp doc/home-page.html
