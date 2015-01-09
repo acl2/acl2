@@ -247,6 +247,8 @@ subset of the valid @('data_type')s:</p>
 
 <p>We include @('void') here only because it's convenient to do so.</p>")
 
+
+
 (define vl-packeddimension-p (x)
   :short "Recognizes ranges and unsized dimensions."
   :long "<p>From the SystemVerilog-2012 grammar:</p>

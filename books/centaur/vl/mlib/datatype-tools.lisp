@@ -32,6 +32,7 @@
 (in-package "VL")
 (include-book "scopestack")
 (include-book "range-tools")
+(include-book "coretypes")
 (include-book "../util/sum-nats")
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system))))
@@ -700,3 +701,28 @@ packed or we'll fail.</p>"
       (:vl-usertype
        ;; BOZO maybe some day extend this to be able to do lookups
        (fail "vl-datatype-exprtype can't handle unresolved usertypes")))))
+
+
+(define vl-datatype-bitselect-ok ((x vl-datatype-p))
+  :returns (okp)
+  :parents (datatype-tools)
+  :short "Determines whether this datatype can be bitselected."
+  :long "<p>The input datatype should not have packed or unpacked dimensions;
+if it does, then it's definitely OK to index into it (though it's only a
+bitselect if it's the last packed dimension).  The input datatype should have
+usertypes resolved.</p>"
+  :guard (and (not (consp (vl-datatype->pdims x)))
+              (not (consp (vl-datatype->udims x))))
+  (vl-datatype-case x
+    (:vl-coretype
+     (b* (((vl-coredatatype-info xinfo) (vl-coretypename->info x.name)))
+       ;; Checks whether this is an integer atom type.  If it's an integer
+       ;; vector type, it's only selectable if it has dims.
+       (and xinfo.size (not (eql xinfo.size 1)))))
+    (:vl-struct x.packedp)
+    (:vl-union  x.packedp)
+    (:vl-enum   nil) ;; BOZO is this correct?
+    (:vl-usertype nil)))
+       
+     
+

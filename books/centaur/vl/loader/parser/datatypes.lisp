@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "ranges")
+(include-book "../../mlib/coretypes")
 (local (include-book "tools/do-not" :dir :system))
 (local (include-book "../../util/arithmetic"))
 (local (acl2::do-not generalize fertilize))
@@ -155,21 +156,6 @@
         (return (cons first rest))))
 
 
-
-
-
-
-(defaggregate vl-coredatatype-info
-  :parents (vl-parse-core-data-type)
-  :tag nil
-  :legiblep nil
-  ((coretypename      vl-coretypename-p   "what to translate it into")
-   (default-signedp   booleanp            "what's the default signedness?")
-   (takes-signingp    booleanp            "does it have an optional [signing] part?")
-   (takes-dimensionsp booleanp            "does it optionally take dimensions?")))
-
-(defval *vl-core-data-type-table*
-  :parents (vl-parse-core-data-type)
   ;; data_type ::=
   ;;    integer_vector_type [signing] { packed_dimension }
   ;;  | integer_atom_type [signing]
@@ -177,38 +163,34 @@
   ;;  | 'string'
   ;;  | 'chandle'
   ;;  | 'event'
-  (list ;; Note: for default signedness see Table 6-8, "integer data types", page 68.
-    ;; special extra core types                                      default signed      [signing]?    dimensions?
-    (cons :vl-kwd-string    (vl-coredatatype-info   :vl-string         nil                 nil           nil))
-    (cons :vl-kwd-event     (vl-coredatatype-info   :vl-event          nil                 nil           nil))
-    (cons :vl-kwd-chandle   (vl-coredatatype-info   :vl-chandle        nil                 nil           nil))
-    ;; non-integer types                                             N/A
-    (cons :vl-kwd-shortreal (vl-coredatatype-info   :vl-shortreal      nil                 nil           nil))
-    (cons :vl-kwd-real      (vl-coredatatype-info   :vl-real           nil                 nil           nil))
-    (cons :vl-kwd-realtime  (vl-coredatatype-info   :vl-realtime       nil                 nil           nil))
-    ;; integer atom types
-    (cons :vl-kwd-byte      (vl-coredatatype-info   :vl-byte           t                   t             nil))
-    (cons :vl-kwd-shortint  (vl-coredatatype-info   :vl-shortint       t                   t             nil))
-    (cons :vl-kwd-int       (vl-coredatatype-info   :vl-int            t                   t             nil))
-    (cons :vl-kwd-longint   (vl-coredatatype-info   :vl-longint        t                   t             nil))
-    (cons :vl-kwd-integer   (vl-coredatatype-info   :vl-integer        t                   t             nil))
-    (cons :vl-kwd-time      (vl-coredatatype-info   :vl-time           nil                 t             nil))
-    ;; integer vector types
-    (cons :vl-kwd-bit       (vl-coredatatype-info   :vl-bit            nil                 t             t))
-    (cons :vl-kwd-logic     (vl-coredatatype-info   :vl-logic          nil                 t             t))
-    (cons :vl-kwd-reg       (vl-coredatatype-info   :vl-reg            nil                 t             t))))
 
-(defval *vl-core-data-type-keywords*
-  :parents (vl-parse-core-data-type)
-  :showval t
-  (alist-keys *vl-core-data-type-table*))
+
+(encapsulate nil
+  (local (defun vl-coredatatype-infolist->keywords (x)
+           (if (atom x)
+               nil
+             (cons (vl-coredatatype-info->keyword (car x))
+                   (vl-coredatatype-infolist->keywords (cdr x))))))
+  (make-event
+   `(defconst *vl-core-data-type-keywords*
+      ',(remove nil (vl-coredatatype-infolist->keywords *vl-core-data-type-table*)))))
+
+(define vl-coretypekwd->info ((x keywordp))
+  :guard (member-eq x *vl-core-data-type-keywords*)
+  :short "Find the properties (@(see vl-coredatatype-info) structure) for a coretype
+          by its token name (for parsing)."
+  :returns (info vl-coredatatype-info-p :hyp :guard
+                 :hints(("Goal" :in-theory (enable vl-coredatatype-infolist-find-type)
+                         :cases ((vl-coretypename-p x)))))
+  (vl-coredatatype-infolist-find-kwd x *vl-core-data-type-table*))
 
 (defsection vl-parse-core-data-type
   ;; Parses the simple, non-recursive core data types
   :parents nil
 
   (local (in-theory (enable vl-is-some-token?
-                            vl-type-of-matched-token)))
+                            vl-type-of-matched-token
+                            vl-match-any)))
 
   (defparser vl-parse-core-data-type ()
     :guard (vl-is-some-token? *vl-core-data-type-keywords*)
@@ -216,7 +198,7 @@
     :resultp-of-nil nil
     :fails gracefully
     :count strong
-    (b* ((entry (cdr (assoc (vl-token->type (car (vl-tokstream->tokens))) *vl-core-data-type-table*)))
+    (b* ((entry (vl-coretypekwd->info (vl-token->type (car (vl-tokstream->tokens)))))
          ((vl-coredatatype-info entry) entry))
       (seq tokstream
             (:= (vl-match-any)) ;; guard ensures there's at least one token

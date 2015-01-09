@@ -1055,6 +1055,8 @@ datatype is multidimensional.</p>"
 
 ||#
 
+    
+
 (define vl-index-find-type ((x vl-expr-p)
                             (ss vl-scopestack-p))
   :returns (mv (warning (iff (vl-warning-p warning) warning))
@@ -1086,14 +1088,22 @@ datatype is multidimensional.</p>"
         ;; should more appropriately be done elsewhere.
         (mv nil (vl-datatype-update-udims (cdr udims) sub-type)))
        (pdims (vl-datatype->pdims sub-type))
-       ((unless (consp pdims))
-        (mv (make-vl-warning :type :vl-bad-indexing-operator
-                             :msg "Can't apply an index operator to ~a0 because it ~
-                         has no dimensions; its type is ~a1."
-                             :args (list (first x.args) sub-type))
-            nil)))
-    ;; An index operator applied to packed dimensions makes the datatype unsigned.
-    (mv nil (vl-datatype-update-pdims (cdr pdims) (vl-datatype-set-unsigned sub-type))))
+       ((when (consp pdims))
+        ;; An index operator applied to packed dimensions makes the datatype unsigned.
+        (mv nil (vl-datatype-update-pdims (cdr pdims) (vl-datatype-set-unsigned sub-type))))
+       ;; If there are no dimensions, the index has to be a bitselect; check
+       ;; whether this is ok.
+       ((when (vl-datatype-bitselect-ok sub-type))
+        ;; We have a bitselect of some packed non-array type.  The result is
+        ;; therefore an unsigned single bit.
+        (mv nil
+            (make-vl-coretype :name :vl-logic))))
+    (mv (make-vl-warning :type :vl-bad-indexing-operator
+                         :msg "Can't apply an index operator to ~a0 ~
+                                   because it has no dimensions; its type is ~
+                                   ~a1."
+                         :args (list (first x.args) sub-type))
+        nil))
   ///
   (verify-guards vl-index-find-type
     :hints(("Goal" :in-theory (e/d (acl2::member-of-cons)
@@ -1208,11 +1218,25 @@ datatype is multidimensional.</p>"
        (udims (vl-datatype->udims sub-type))
        (pdims (vl-datatype->pdims sub-type))
        ((unless (or (consp udims) (consp pdims)))
-        (mv (make-vl-warning :type :vl-bad-indexing-operator
-                             :msg "~a0: Can't apply an index operator to ~a1 because it ~
-                         has no dimensions; its type is ~a2."
+        (b* (((unless (vl-datatype-bitselect-ok sub-type))
+              (mv (make-vl-warning :type :vl-bad-indexing-operator
+                             :msg "~a0: Can't apply an index operator to ~a1 because
+                                   it ~ has no dimensions; its type is ~a2."
                              :args (list ctx (first x.args) sub-type))
-            nil))
+                  nil))
+             ((mv warning size) (vl-datatype-size sub-type))
+             ((when warning) (mv warning nil))
+             ;; The type is some packed thing, and we have its size.  As long
+             ;; as the partselect is in range, we'll just return a new logic
+             ;; with the correct dimension on it.
+             (range (make-vl-range :msb (vl-make-index (1- size))
+                                   :lsb (vl-make-index 0)))
+             ((mv warning new-dim1)
+              (vl-partselect-type-top-dimension-replacement range x ctx))
+             ((when warning) (mv warning nil))
+             (new-type (make-vl-coretype :name :vl-logic
+                                         :pdims (list new-dim1))))
+          (mv nil new-type)))
        (dim1 (if (consp udims) (car udims) (car pdims)))
        ((mv warning new-dim1)
         (vl-partselect-type-top-dimension-replacement dim1 x ctx))
