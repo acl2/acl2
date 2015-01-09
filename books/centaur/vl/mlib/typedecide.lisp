@@ -48,32 +48,24 @@
 
 
 
-(define vl-hidexpr-typedecide ((x        vl-expr-p)
-                               (ss       vl-scopestack-p)
-                               (ctx     vl-context-p "context")
-                               (warnings vl-warninglist-p))
-  :guard (vl-hidexpr-p x)
-  :returns (mv (new-warnings vl-warninglist-p)
-               (type vl-maybe-exprtype-p))
-  (b* ((x (vl-expr-fix x))
-       (?ctx (vl-context-fix ctx))
-       ((mv warning datatype) (vl-hidexpr-find-type x ss))
-       ((when warning)
-        (mv (cons (change-vl-warning warning :fatalp t)
-                  (vl-warninglist-fix warnings))
-            nil))
-       ((mv ok errmsg type) (vl-datatype-exprtype datatype))
-       ((unless ok)
-        (mv (fatal :type :vl-hidexpr-typedecide-fail
-                   :msg "~a0: Signedness of datatype failed: ~s1"
-                   :args (list ctx errmsg))
-            nil)))
-    (mv (ok) type))
-  ///
-  (defrule warning-irrelevance-of-vl-hidexpr-typedecide
-    (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-             (equal (mv-nth 1 (vl-hidexpr-typedecide x ss ctx warnings))
-                    (mv-nth 1 (vl-hidexpr-typedecide x ss nil nil))))))
+
+#|
+
+(trace$
+ #!vl (vl-index-typedecide
+       :entry (list 'vl-index-typedecide
+                    (with-local-ps (vl-pp-expr x)))
+       :exit (b* (((list warnings-out type) values))
+               (list 'vl-index-typedecide
+                     (with-local-ps
+                       (vl-print-warnings (butlast warnings-out (len warnings))))
+                     type))))
+               
+                           
+                     
+
+
+|#
 
 (define vl-index-typedecide ((x        vl-expr-p)
                              (ss       vl-scopestack-p)
@@ -176,7 +168,7 @@ producing some warnings.</p>"
                   :args (list (vl-context-fix ctx) (vl-expr-fix x)))
             nil)))
     
-    (vl-hidexpr-typedecide x ss ctx warnings))
+    (vl-index-typedecide x ss ctx warnings))
 
   ///
   (defrule warning-irrelevance-of-vl-atom-typedecide
@@ -233,6 +225,19 @@ producing some warnings.</p>"
 
 (deflist vl-maybe-exprtype-list-p (x)
   (vl-maybe-exprtype-p x))
+
+
+#|
+
+(trace$
+ #!vl (vl-expr-typedecide-aux
+       :entry (list 'vl-expr-typedecide-aux
+                    x (vl-pps-expr x))
+       :exit (b* (((list warnings type) values))
+               (list 'vl-expr-typedecide-aux
+                     type))))
+
+|#
 
 (with-output :off (event)
   :evisc (:gag-mode (evisc-tuple 3 4 nil nil))
@@ -300,8 +305,8 @@ produce unsigned values.</li>
            ((when (vl-fast-atom-p x))
             (vl-atom-typedecide x ss ctx warnings))
 
-           ((when (vl-hidexpr-p x))
-            (vl-hidexpr-typedecide x ss ctx warnings))
+           ((when (vl-index-expr-p x))
+            (vl-index-typedecide x ss ctx warnings))
 
            ((when (vl-$bits-call-p x))
             (mv (ok) :vl-signed))
@@ -316,9 +321,6 @@ produce unsigned values.</li>
             (vl-exprlist-typedecide-aux args ss ctx warnings mode)))
 
         (case op
-
-          ((:vl-bitselect :vl-index)
-           (vl-index-typedecide x ss ctx warnings))
 
           ((:vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
             :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon)
@@ -420,7 +422,7 @@ produce unsigned values.</li>
                      :args (list ctx))
                :vl-unsigned))
 
-          ((:vl-index :vl-hid-dot :vl-scope
+          ((:vl-index :vl-bitselect :vl-hid-dot :vl-scope
 
             ;; BOZO these might not belong here, but it seems like the
             ;; safest place to put them until they're implemented

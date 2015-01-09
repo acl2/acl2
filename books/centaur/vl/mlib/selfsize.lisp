@@ -36,34 +36,6 @@
 (local (std::add-default-post-define-hook :fix))
 
 
-(define vl-hidexpr-selfsize ((x        vl-expr-p)
-                             (ss       vl-scopestack-p)
-                             (ctx      vl-context-p)
-                             (warnings vl-warninglist-p))
-  :guard (vl-hidexpr-p x)
-  :returns (mv (new-warnings vl-warninglist-p)
-               (size maybe-posp :rule-classes :type-prescription))
-  (b* ((x (vl-expr-fix x))
-       (?ctx (vl-context-fix ctx))
-       ((mv warning datatype) (vl-hidexpr-find-type x ss))
-       ((when warning)
-        (mv (cons (change-vl-warning warning :fatalp t)
-                  (vl-warninglist-fix warnings))
-            nil))
-       ;; this will warn if it has unpacked dims
-       ((mv warning size) (vl-datatype-size datatype))
-       ((when warning)
-        (mv (cons (change-vl-warning warning :fatalp t)
-                  (vl-warninglist-fix warnings))
-            nil)))
-    (mv (ok) size))
-  ///
-  (defrule warning-irrelevance-of-vl-hidexpr-selfsize
-    (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-             (equal (mv-nth 1 (vl-hidexpr-selfsize x ss ctx warnings))
-                    (mv-nth 1 (vl-hidexpr-selfsize x ss nil nil))))))
-
-
 (define vl-index-selfsize ((x vl-expr-p "the index expression")
                            (ss vl-scopestack-p)
                            (ctx vl-context-p "context")
@@ -186,8 +158,7 @@ are not really supposed to have sizes.</p>"
     (let ((ret1 (vl-atom-selfsize x ss ctx warnings))
           (ret2 (vl-atom-selfsize x ss nil nil)))
       (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-               (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))
-    :hints(("Goal" :in-theory (enable vl-hidexpr-selfsize)))))
+               (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))))
 
 
 (define vl-syscall-selfsize

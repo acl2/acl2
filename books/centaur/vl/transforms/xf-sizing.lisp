@@ -429,7 +429,19 @@
           :args (list ctx ew lw lvalue expr))))
 
        
+#||
 
+(trace$
+ #!Vl (vl-assign-exprsize
+       :entry (list 'vl-assign-exprsize
+                    (with-local-ps (vl-pp-assign x)))
+       :exit (list 'vl-assign-exprsize
+                   (b* (((list & warnings-out res) values))
+                     (with-local-ps
+                       (vl-print-warnings (butlast warnings-out (len warnings))))
+                     res))))
+
+||#
 
 (def-vl-exprsize vl-assign
   :body

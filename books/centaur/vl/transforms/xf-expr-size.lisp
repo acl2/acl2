@@ -483,6 +483,14 @@ details.</p>")
   (local (in-theory (disable acl2::nat-listp-when-not-consp
                              len-of-vl-nonatom->args-when-vl-hidexpr-p)))
 
+  (defthm index-unsigned-when-size-zero
+    (b* (((mv & size) (vl-index-selfsize x ss ctx warnings))
+         ((mv & type) (vl-index-typedecide x ss ctx warnings)))
+      (implies (equal size 0)
+               (equal type :vl-unsigned)))
+    :hints(("Goal" :in-theory (enable vl-index-selfsize
+                                      vl-index-typedecide))))
+
   ;; (local (defthm len-of-cdr-less
   ;;          (implies (and (syntaxp (quotep n))
   ;;                        (natp n)
@@ -536,6 +544,7 @@ details.</p>")
                                         vl-funcall-selfsize
                                         ;; vl-$bits-call-p
                                         vl-exprtype-max
+                                        vl-index-expr-p
                                         acl2::member-of-cons
                                         ;; vl-unsigned-when-size-zero-lst
                                         )))
@@ -1273,8 +1282,7 @@ identifier or HID."
              (implies (and (vl-hidexpr-p x)
                            (not (vl-atom-p x)))
                       (not (equal size 0))))
-           :hints(("Goal" :in-theory (enable vl-expr-selfsize
-                                             vl-hidexpr-selfsize)
+           :hints(("Goal" :in-theory (enable vl-expr-selfsize)
                    :expand ((vl-expr-selfsize x ss ctx nil))))))
 
   (local (defthm vl-expr-selfsize-of-index
@@ -1287,8 +1295,7 @@ identifier or HID."
                       (not (equal size 0))))
            :hints(("Goal" :in-theory (enable acl2::member-of-cons
                                              vl-partselect-selfsize
-                                             vl-index-selfsize
-                                             vl-hidexpr-selfsize)
+                                             vl-index-selfsize)
                    :expand ((:Free (ctx) (vl-expr-selfsize x ss ctx nil)))))))
 
   (local (defthm vl-index-expr-p-when-hidexpr-p
@@ -4456,7 +4463,6 @@ replace a key/value assignment pattern."
                                tag-when-vl-weirdint-p
                                tag-when-vl-constint-p
                                tag-when-vl-string-p
-                               vl-hidexpr-selfsize
                                vl-index-selfsize)))))
 
 (define vl-arrayslice-expr-size-assigncontext ((lhs-type vl-datatype-p)
@@ -4583,7 +4589,6 @@ replace a key/value assignment pattern."
                                tag-when-vl-weirdint-p
                                tag-when-vl-constint-p
                                tag-when-vl-string-p
-                               vl-hidexpr-selfsize
                                vl-partselect-selfsize)
                             (vl-$bits-call-p))))))
 

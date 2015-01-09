@@ -700,11 +700,11 @@ will be used.</p>
 
 <p>that is, it has one unpacked dimension @('[0:6]') and two packed dimensions.
 Suppose our expression is @('bar[5][7][2]'), where bar is of type foo.  Then we
-should return @('bit[4:2]') as our resolved datatype, with no packed
+should return @('bit[4:2]') as our resolved datatype, with no unpacked
 dimensions, because the first two indices correspond to the unpacked dimension
 and the second to the first packed dimension.  On the other hand if we had
-@('bar[5]'), we should return @('bit[3:0][4:2]') as the type and @('[0:8]') as
-the remaining unpacked dimensions.</p>"
+@('bar[5]'), we should return @('bit') with packed dimensions @('[3:0][4:2]')
+and unpacked dimension @('[0:8]').</p>"
   :guard (vl-hidindex-p x)
   :returns (mv (warning (iff (vl-warning-p warning) warning))
                (type1 (iff (vl-datatype-p type1) (not warning))))
@@ -1030,6 +1030,30 @@ datatype is multidimensional.</p>"
           (vl-index-expr-p (first x.args))
         (vl-hidexpr-p x)))))
 
+
+#||
+
+(trace$ #!vl
+        (vl-index-find-type
+         :entry
+         (list 'vl-index-find-type (with-local-ps (vl-pp-expr x))
+               ;; (if (equal (vl-pps-expr x) "popcounts[30]")
+               ;;     (break$)
+               ;;   nil)
+               )
+         :exit
+         (cons 'vl-index-find-type
+               (b* (((list warning type) values))
+                 (list type
+                       (with-local-ps 
+                         (if warning
+                             (vl-print-warnings (list warning))
+                           (vl-ps-seq (vl-pp-datatype type)
+                                      (vl-print " udims: ")
+                                      (vl-pp-packeddimensionlist
+                                       (vl-datatype->udims type))))))))))
+
+||#
 
 (define vl-index-find-type ((x vl-expr-p)
                             (ss vl-scopestack-p))

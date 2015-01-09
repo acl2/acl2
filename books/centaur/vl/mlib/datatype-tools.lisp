@@ -619,6 +619,24 @@ packed or we'll fail.</p>"
                       :exec (if x.signedp (change-vl-union    x :signedp nil) x))
     :otherwise   (vl-datatype-fix x)))
 
+#||
+
+(trace$
+ #!VL (vl-datatype-exprtype
+       :entry (list* 'vl-datatype-exprtype
+                     x
+                     (with-local-ps (vl-pp-datatype x))
+                     (and (eq (vl-datatype-kind x) :vl-coretype)
+                          (list :name (vl-coretype->name x)
+                                :signedp (vl-coretype->signedp x))))
+       :exit (cons 'vl-datatype-exprtype
+                   (b* (((mv & err type) values))
+                     (if err
+                         (list err)
+                       (list :type type))))))
+
+||#
+
 
 (define vl-datatype-exprtype
   :parents (datatype-tools vl-expr-typedecide)
