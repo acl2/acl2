@@ -26,9 +26,9 @@
   :short "Evaluating AIGNET networks"
   :autodoc nil
   :long "
-<p>The (combinational) semantics of an AIGNET network is given by the function
+<p>The (combinational) semantics of an AIGNET network is given by the function</p>
 @({(lit-eval lit invals regvals aignet).})
-Invals and regvals are bit arrays containing a value for each (respectively)
+<p>Invals and regvals are bit arrays containing a value for each (respectively)
 primary input and register node in the network.  But because this function is a
 simple recursive specification for the semantics of a node and not written for
 performance, it is likely to perform badly (worst-case exponential time in the
@@ -62,11 +62,11 @@ in @('vals') after running aignet-eval and the @('lit-eval') of that
 literal:</p>
  @(thm aignet-eval-lit-of-aignet-eval)</p>
 
-<p>These theorems resolve the copying between invals/regvals and @('vals'):
+<p>These theorems resolve the copying between invals/regvals and @('vals'):</p>
  @(thm aignet-vals->invals-of-aignet-invals->vals)
  @(thm aignet-vals->invals-of-aignet-regvals->vals)
  @(thm aignet-vals->regvals-of-aignet-regvals->vals)
- @(thm aignet-vals->regvals-of-aignet-invals->vals)</p>
+ @(thm aignet-vals->regvals-of-aignet-invals->vals)
 
 <p>See @(see aignet-seq-eval) for discussion of sequential evaluation.</p>
 
@@ -82,7 +82,7 @@ desired values, and skips them.  The final result is equivalent to the result
 of @('aignet-vals') after first copying the RI values to the corresponding ROs
 and the inputs from the appropriate frame.</p>
 
-<p>For higher-level functions for simulation, see the book \"aignet-sim.lisp\".</p>
+<p>For higher-level functions for simulation, see the book \"aig-sim.lisp\".</p>
 "
   (local (in-theory (disable acl2::bfix-when-not-1
                              acl2::nfix-when-not-natp)))
