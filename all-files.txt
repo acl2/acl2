@@ -132,24 +132,27 @@ res
 # The following is distributed but is not under source control
 doc/manual/download:
 
-# The following is distributed but is not under source control
-doc/manual/HTML:
-*
+# The following is currently empty.  Perhaps HTML should be generated
+# before running "make copy-distribution".
+# doc/manual/HTML:
+# *
 
 # The following is distributed but is not under source control
 doc/manual/lib:
-*
+*.*
+katex
+typeahead-bundle
 
-./doc/manual/lib/katex:
+doc/manual/lib/katex:
 fonts
 katex.min.css
 katex.min.js
 README.md
 
-./doc/manual/lib/katex/fonts:
+doc/manual/lib/katex/fonts:
 *.*
 
-./doc/manual/lib/typeahead-bundle:
+doc/manual/lib/typeahead-bundle:
 *.*
 
 doc/manual/res:
