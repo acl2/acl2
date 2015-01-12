@@ -422,21 +422,27 @@ produce unsigned values.</li>
                      :args (list ctx))
                :vl-unsigned))
 
-          ((:vl-index :vl-bitselect :vl-hid-dot :vl-scope
+          ((;; Should have handled these above.
+            :vl-index :vl-bitselect :vl-hid-dot :vl-scope
 
             ;; BOZO these might not belong here, but it seems like the
             ;; safest place to put them until they're implemented
             :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
             :vl-tagged :vl-binary-cast
-
             :vl-pattern-multi
             :vl-pattern-type
             :vl-pattern-positional
             :vl-pattern-keyvalue
             :vl-keyvalue
 
+            ;; Sizing just shouldn't encounter these
+            :vl-unary-preinc :vl-unary-predec :vl-unary-postinc :vl-unary-postdec
+            :vl-binary-assign
+            :vl-binary-plusassign :vl-binary-minusassign
+            :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
+            :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
+            :vl-binary-shlassign :vl-binary-shrassign :vl-binary-ashlassign :vl-binary-ashrassign
             )
-           ;; Should have handled these above.
            (mv warnings nil))
 
           ((:vl-mintypmax)

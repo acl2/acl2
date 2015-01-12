@@ -1669,7 +1669,7 @@ minor warning for assignments where the rhs is a constant.</p>"
 
 (local (in-theory (enable maybe-natp-fix)))
 
-(local (def-ruleset my-disables
+(local (def-ruleset! my-disables
          '( ;(:rules-of-class :type-prescription :here)
            set::double-containment
            default-car
@@ -2529,11 +2529,11 @@ minor warning for assignments where the rhs is a constant.</p>"
             ;; safest place to put them until they're implemented
             :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
             :vl-tagged :vl-binary-cast
-          :vl-pattern-multi
-          :vl-pattern-type
-          :vl-pattern-positional
-          :vl-pattern-keyvalue
-          :vl-keyvalue
+            :vl-pattern-multi
+            :vl-pattern-type
+            :vl-pattern-positional
+            :vl-pattern-keyvalue
+            :vl-keyvalue
 
             )
            (if (vl-$bits-call-p x)
@@ -2564,6 +2564,20 @@ minor warning for assignments where the rhs is a constant.</p>"
                         :msg "~a0: add sizing support for ~x1."
                         :args (list ctx op))
                  x)))
+
+          ((;; Sizing just shouldn't encounter these
+            :vl-unary-preinc :vl-unary-predec :vl-unary-postinc :vl-unary-postdec
+            :vl-binary-assign
+            :vl-binary-plusassign :vl-binary-minusassign
+            :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
+            :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
+            :vl-binary-shlassign :vl-binary-shrassign :vl-binary-ashlassign :vl-binary-ashrassign)
+           (mv nil
+               (fatal :type :vl-bad-operator
+                      :msg "~a0: sizing should not encounter ~x1 because it should ~
+                            get eliminated by the increment-elim transform."
+                      :args (list ctx op))
+               x))
 
           (otherwise
            (progn$ (impossible)

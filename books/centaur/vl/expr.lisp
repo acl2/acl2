@@ -80,6 +80,10 @@ directly, but rather to use @(see vl-op-p) and @(see vl-op-arity).</p>
 <li>@(' ~| ') becomes @(':vl-unary-nor')</li>
 <li>@(' ^  ') becomes @(':vl-unary-xor')</li>
 <li>@(' ^~ ') or @(' ~^ ') becomes @(':vl-unary-xnor')</li>
+<li>@(' ++a ') becomes @(':vl-unary-preinc')</li>
+<li>@(' a++ ') becomes @(':vl-unary-postinc')</li>
+<li>@(' --a ') becomes @(':vl-unary-predec')</li>
+<li>@(' a-- ') becomes @(':vl-unary-postdec')</li>
 </ul>
 
 <h5>Basic Binary Operators (arity 2)</h5>
@@ -109,6 +113,24 @@ directly, but rather to use @(see vl-op-p) and @(see vl-op-arity).</p>
 <li>@(' <<  ') becomes @(':vl-binary-shl')</li>
 <li>@(' >>> ') becomes @(':vl-binary-ashr')</li>
 <li>@(' <<< ') becomes @(':vl-binary-ashl')</li>
+</ul>
+
+<h5>Assignments within Expressions (SystemVerilog)</h5>
+
+<ul>
+<li>@(' (a = b)    ') becomes @(':vl-binary-assign')</li>
+<li>@(' (a += b)   ') becomes @(':vl-binary-plusassign')</li>
+<li>@(' (a -= b)   ') becomes @(':vl-binary-minusassign')</li>
+<li>@(' (a *= b)   ') becomes @(':vl-binary-timesassign')</li>
+<li>@(' (a /= b)   ') becomes @(':vl-binary-divassign')</li>
+<li>@(' (a %= b)   ') becomes @(':vl-binary-remassign')</li>
+<li>@(' (a &= b)   ') becomes @(':vl-binary-andassign')</li>
+<li>@(' (a |= b)   ') becomes @(':vl-binary-orassign')</li>
+<li>@(' (a ^= b)   ') becomes @(':vl-binary-xorassign')</li>
+<li>@(' (a <<= b)  ') becomes @(':vl-binary-shlassign')</li>
+<li>@(' (a >>= b)  ') becomes @(':vl-binary-shrassign')</li>
+<li>@(' (a <<<= b) ') becomes @(':vl-binary-ashlassign')</li>
+<li>@(' (a >>>= b) ') becomes @(':vl-binary-ashrassign')</li>
 </ul>
 
 <h5>Basic Ternary Operators (arity 3)</h5>
@@ -210,6 +232,10 @@ SystemVerilog-2012 Standard.</p>"
    (cons :vl-unary-nor      (make-vl-opinfo :arity 1 :text "~|"))
    (cons :vl-unary-xor      (make-vl-opinfo :arity 1 :text "^"))
    (cons :vl-unary-xnor     (make-vl-opinfo :arity 1 :text "~^")) ;;; or ^~
+   (cons :vl-unary-preinc   (make-vl-opinfo :arity 1 :text "++")) ;; ++a
+   (cons :vl-unary-predec   (make-vl-opinfo :arity 1 :text "--")) ;; --a
+   (cons :vl-unary-postinc  (make-vl-opinfo :arity 1 :text "++")) ;; a++
+   (cons :vl-unary-postdec  (make-vl-opinfo :arity 1 :text "--")) ;; a--
 
    ;; Basic Binary Operators
    (cons :vl-binary-plus    (make-vl-opinfo :arity 2 :text "+"))
@@ -238,6 +264,21 @@ SystemVerilog-2012 Standard.</p>"
    (cons :vl-binary-shl     (make-vl-opinfo :arity 2 :text "<<"))
    (cons :vl-binary-ashr    (make-vl-opinfo :arity 2 :text ">>>"))
    (cons :vl-binary-ashl    (make-vl-opinfo :arity 2 :text "<<<"))
+
+   ;; Assignments within Expressions (SystemVerilog)
+   (cons :vl-binary-assign         2)   ;;; (a = b)
+   (cons :vl-binary-plusassign     2)   ;;; (a += b)
+   (cons :vl-binary-minusassign    2)   ;;; (a -= b)
+   (cons :vl-binary-timesassign    2)   ;;; (a *= b)
+   (cons :vl-binary-divassign      2)   ;;; (a /= b)
+   (cons :vl-binary-remassign      2)   ;;; (a %= b)
+   (cons :vl-binary-andassign      2)   ;;; (a &= b)
+   (cons :vl-binary-orassign       2)   ;;; (a |= b)
+   (cons :vl-binary-xorassign      2)   ;;; (a ^= b)
+   (cons :vl-binary-shlassign      2)   ;;; (a <<= b)
+   (cons :vl-binary-shrassign      2)   ;;; (a >>= b)
+   (cons :vl-binary-ashlassign     2)   ;;; (a <<<= b)
+   (cons :vl-binary-ashrassign     2)   ;;; (a >>>= b)
 
    ;; Special Binary Operators (these associate right to left)
    (cons :vl-implies        (make-vl-opinfo :arity 2 :text "->"))
