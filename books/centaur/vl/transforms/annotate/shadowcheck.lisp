@@ -717,17 +717,6 @@ explicit declarations.</p>")
                            (mv st warnings))))
     (mv st warnings)))
 
-(def-vl-allexprs
-  ;; BOZO move me to allexprs
-  :type vl-alias
-  :nrev-body
-  (b* (((vl-alias x) x)
-       (nrev (nrev-push x.lhs nrev))
-       (nrev (nrev-push x.rhs nrev)))
-    nrev)
-  :body
-  (b* (((vl-alias x)))
-    (list x.lhs x.rhs)))
 
 (define vl-shadowcheck-alias ((x        vl-alias-p)
                               (st       vl-shadowcheck-state-p)
