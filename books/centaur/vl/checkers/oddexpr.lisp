@@ -203,7 +203,7 @@ giving motivation for these actions, etc.</p>
 ;   a op1 b op2 c |  parsed as        bad-type?   error-prone?
 ; ----------------+----------------------------------------------------------------------------------------------------
 ;   a - b + c     |  (a - b) + c      see above
-;   a - b - c     |  (a - b) - c      no          yes              warn
+;   a - b - c     |  (a - b) - c      no          maybe, see below
 ;   a - b << c    |  (a - b) << c     no          yes              warn
 ;   a - b < c     |  (a - b) < c      no          no
 ;   a - b == c    |  (a - b) == c     no          no
@@ -213,9 +213,14 @@ giving motivation for these actions, etc.</p>
 ;   a - b && c    |  (a - b) && c     yes         --               warn
 ;   a - b || c    |  (a - b) || c     yes         --               warn
 ; ----------------+----------------------------------------------------------------------------------------------------
+;
+; For a long time we warned about A - B - C, but this seems to be a common
+; cause of false positives.  My takeaway is that our logic designers do seem to
+; be comfortable with the associativity of minus, so I'm not going to warn
+; about this.
 
     ;; (outer-op     .  inner-op)    .   action
-    ((:minus-class   . :minus-class)  . :check-precedence)
+    ;; ((:minus-class   . :minus-class)  . :check-precedence)
     ((:shift-class   . :minus-class)  . :check-precedence)
     ((:bitand-class  . :minus-class)  . :check-precedence)
     ((:xor-class     . :minus-class)  . :check-precedence)
@@ -599,7 +604,7 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
                  ps))
         (t
          (vl-ps-seq
-          (vl-print " - ")
+          (vl-print "     - ")
           (vl-cw "~s0: ~a1~%" (caar x) (cdar x))
           (vl-pp-oddexpr-details (cdr x))))))
 
@@ -614,8 +619,8 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
         nil))
     (list (make-vl-warning
            :type :vl-warn-oddexpr
-           :msg (cat "~a0: found ~s1 that suggest precedence problems may ~ be
-                      present.  Details:~%"
+           :msg (cat "~a0: found ~s1 that suggest precedence problems may be ~
+                      present.  Maybe add explicit parens?  Details:~%"
                      (with-local-ps (vl-pp-oddexpr-details details)))
            :args (list ctx
                        (if (vl-plural-p details)

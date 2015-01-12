@@ -503,12 +503,12 @@ details.</p>")
   (local (in-theory (disable max acl2::len-when-atom
                              default-car default-cdr
                              vl-context-fix-when-vl-context-p
-                             vl-context-p-of-ctxelement
+                             vl-context-p-when-vl-ctxelement-p
                              double-containment
                              vl-expr-selfsize
                              vl-expr-typedecide-aux
                              vl-$bits-call-p)))
-  
+
   ;; (local (Defthm vl-exprtype-max-when-one-unsigned
   ;;          (implies (or (equal a :vl-unsigned)
   ;;                       (equal b :vl-unsigned))
@@ -544,7 +544,7 @@ details.</p>")
               ;;                          (acl2::parse-clause-id "Subgoal *1/13''")))
               ;;      (cw "clause: ~x0~%" (acl2::prettyify-clause clause nil world)))
               )
-      
+
       :flag :expr)
     (defthm vl-exprlist-unsigned-when-size-zero-aux
       (b* (((mv & sizes) (vl-exprlist-selfsize x ss ctx1 warnings1))
@@ -559,7 +559,7 @@ details.</p>")
                            (cons a b) (cons c d))))))
       :flag :list)))
 
-               
+
 
 
 
@@ -1319,7 +1319,7 @@ identifier or HID."
                (and (equal (mv-nth 0 ret1) (mv-nth 0 ret2))
                     (equal (mv-nth 2 ret1) (mv-nth 2 ret2))))))
 
-  
+
 
 
   ;; (defrule vl-expr-welltyped-p-of-vl-hidexpr-expandsizes-unresolved-index
@@ -1352,7 +1352,7 @@ identifier or HID."
   :parents (vl-expr-expandsizes)
   :short "Propagate the final width and type of an expression into a weird
 integer atom."
-  
+
   ((x          vl-expr-p)
    (finalwidth natp)
    (finaltype  vl-exprtype-p)
@@ -1485,7 +1485,7 @@ integer atom."
               (t (mv t (ok) (change-vl-atom x
                                             :finalwidth finalwidth
                                             :finaltype (vl-exprtype-fix finaltype)))))))
-       
+
     ;; Otherwise, we shouldn't have tried to size this.
     (mv nil
         (fatal :type :vl-programming-error
@@ -1576,6 +1576,26 @@ a signed value since Verilog-XL doesn't handle them correctly.</p>"
                 \"a >> {b}\" instead of \"a >> b\"."
           :args (list ctx rhs))))
 
+;; (define vl-collect-top-level-summands
+;;   :short "Collect arguments to top-level @('+') and @('-') operators."
+;;   ((x vl-expr-p
+;;       "Some expression whose top-level operator should be a @('+') or @('-')
+;;        term."))
+;;   :returns
+;;   (summands vl-exprlist-p
+;;             "The arguments to top-level @('+') and @('-') operators. For
+;;              instance, if @('x') is an expression like @('a + b + c + d'), then
+;;              this collects the list @('(a b c d)').")
+;;   :parents (vl-warn-about-implicit-truncation)
+;;   :measure (vl-expr-count x)
+;;   (b* (((when (vl-fast-atom-p x))
+;;         (list x))
+;;        ((vl-nonatom x))
+;;        ((when (or (eq x.op :vl-binary-plus)
+;;                   (eq x.op :vl-binary-minus)))
+;;         (append (vl-collect-top-level-summands (first x.args))
+;;                 (vl-collect-top-level-summands (second x.args)))))
+;;     (list x)))
 
 (define vl-warn-about-implicit-extension
   :short "Lint-like warnings about right hand sides being extended."
@@ -1615,15 +1635,15 @@ minor warning for assignments where the rhs is a constant.</p>"
   (b* ((lhs-size   (lnfix lhs-size))
        (x-selfsize (lnfix x-selfsize))
        (x          (vl-expr-fix x))
-       (ctx       (vl-context-fix ctx))
-
-       (ops     (vl-expr-ops x))
+       (ctx        (vl-context-fix ctx))
 
        ((when (and (vl-fast-atom-p x)
                    (vl-constint-p (vl-atom->guts x))
                    (vl-constint->wasunsized (vl-atom->guts x))))
         ;; Completely trivial, don't give any warning.
         (ok))
+
+       (ops     (vl-expr-ops x))
 
        (minorp (and (or (member-equal :vl-binary-plus ops)
                         (member-equal :vl-binary-minus ops))
@@ -1709,7 +1729,7 @@ minor warning for assignments where the rhs is a constant.</p>"
 
 
 
-          
+
 
 (with-output :off (prove)
   (defines vl-expr-size
@@ -1878,7 +1898,7 @@ minor warning for assignments where the rhs is a constant.</p>"
 
            ;; ((when (vl-hidexpr-p x))
            ;;  (vl-hidexpr-expandsizes x finalwidth finaltype ss ctx warnings))
-           
+
            (op   (vl-nonatom->op x))
 
            ;; ((when (member op '(:vl-index
@@ -2517,7 +2537,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                               :msg "~a0: failing to sign extend a $bits call"
                               :args (list ctx))
                        x)
-                 (b* ((ans1 (change-vl-nonatom x :finalwidth 32 
+                 (b* ((ans1 (change-vl-nonatom x :finalwidth 32
                                                :finaltype finaltype))
                       ((when (< finalwidth 32))
                        (mv nil
@@ -2893,7 +2913,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                                              append)
                    :expand ((take (vl-op-arity op) (cons a b)))
                    :cases ((natp (vl-op-arity op)))))))
-  
+
   (local (defthm vl-arity-fix-by-len
            (implies (equal (len x) (vl-op-arity op))
                     (equal (vl-arity-fix op x) x))
@@ -3009,7 +3029,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                                   (op (vl-nonatom->op x)))
                                  (:instance len-of-vl-nonatom->args))
                     :in-theory (disable len-of-vl-nonatom->args)))))
-  
+
 
 
   (local (defthm posp-of-nfix
@@ -3185,7 +3205,7 @@ for the moment.</p>"
                          :msg "Couldn't resolve type of ~a0."
                          :args (list x))
         nil)))
-    
+
 
 
 (define vl-castexpr->datatype ((x vl-expr-p) (ss vl-scopestack-p))
@@ -3224,7 +3244,7 @@ for the moment.</p>"
   (b* (((vl-atom x))
        (warnings (vl-warninglist-fix warnings)))
     (case (tag x.guts)
-      ((:vl-constint :vl-weirdint :vl-extint) 
+      ((:vl-constint :vl-weirdint :vl-extint)
        (mv t *simple-vector-datatype* warnings))
       ((:vl-hidpiece :vl-id)
        (b* (((mv warning type)
@@ -3710,7 +3730,7 @@ replace a positional assignment pattern."
                                   (vl-parse-keyval-pattern-array
                                    (vl-exprlist-fix fields) range orig-x ctx warnings))
                          :in-theory (disable (:d vl-parse-keyval-pattern-array))))))
-                         
+
   (b* ((warnings (vl-warninglist-fix warnings))
        (ctx (vl-context-fix ctx))
        (orig-x (vl-expr-fix orig-x))
@@ -3777,7 +3797,7 @@ replace a positional assignment pattern."
                                   (vl-parse-keyval-pattern-struct
                                    (vl-exprlist-fix fields) members orig-x ctx warnings))
                          :in-theory (disable (:d vl-parse-keyval-pattern-struct))))))
-                         
+
   (b* ((warnings (vl-warninglist-fix warnings))
        (ctx (vl-context-fix ctx))
        (orig-x (vl-expr-fix orig-x))
@@ -4868,9 +4888,3 @@ datatype size and the type is unsigned.</p>"
       (implies ok
                (posp (vl-expr->finalwidth new-lhs))))
     :rule-classes :type-prescription))
-
-      
-
-            
-          
- 

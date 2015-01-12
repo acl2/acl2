@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 
 (in-package "DEFUN")
 
@@ -26,7 +51,7 @@
 ;;  :doc    A documentation string
 ;;  :decls  Declarations
 ;;  :body   The actual body of the function
-;; 
+;;
 ;; ===================================================================
 
 (local
@@ -452,7 +477,7 @@
   (declare (type (satisfies declaration-listp) decls))
   (if (consp decls)
       (let ((decl (car decls)))
-	(met ((declaration signature sig-hints body) 
+	(met ((declaration signature sig-hints body)
 	      (extract-function-declaration-from-body-rec (declaration-body decl) declaration signature sig-hints nil))
 	  (let ((res (cons (cons 'declare (revappend body nil)) res)))
 	    (extract-function-declaration-rec (cdr decls) declaration signature sig-hints res))))
@@ -479,7 +504,7 @@
 			 (signature-to-declaration (car signature))
 		       nil))
 	  (sig-hints (and (consp sig-hints)
-			  (coi-debug::assert (< (len signature) 2) :value (car sig-hints) 
+			  (coi-debug::assert (< (len signature) 2) :value (car sig-hints)
 					 :message "Multiple :sig-hints Bindings")))
 	  (declaration (if (and declaration
 				(coi-debug::assert (function-declaration-p declaration)
@@ -583,27 +608,27 @@
   ;; along with rules for reasoning about pseudo-termp stuff ..
   ;;
   ;; ((lambda (x y z) body) args)
-  
+
   (local (in-theory (enable acl2::lambda-expr-p)))
-  
+
   (defund lambda-formals (lambda)
     (declare (type (satisfies acl2::lambda-expr-p) lambda))
     (cadr (car lambda)))
-  
+
   (defund lambda-body (lambda)
     (declare (type (satisfies acl2::lambda-expr-p) lambda))
     (caddr (car lambda)))
-  
+
   (defund lambda-args (lambda)
     (declare (type (satisfies acl2::lambda-expr-p) lambda))
     (cdr lambda))
-  
+
   (defund make-lambda-application (formals body args)
     (declare (type t formals body args))
     (cons `(lambda ,formals ,body) args))
-  
+
   (local (in-theory (enable lambda-formals lambda-body lambda-args make-lambda-application)))
-  
+
   (defthm pseudo-termp-make-lambda-application
     (implies
      (and
@@ -616,7 +641,7 @@
     :rule-classes (:rewrite
 		   (:forward-chaining
 		    :trigger-terms ((make-lambda-application formals body args)))))
-  
+
   (defthm symbol-listp-lambda-formals
     (implies
      (and
@@ -626,7 +651,7 @@
     :rule-classes (:rewrite
 		   (:forward-chaining
 		    :trigger-terms ((lambda-formals lambda)))))
-  
+
   (defthm pseudo-term-listp-lambda-args
     (implies
      (and
@@ -636,7 +661,7 @@
     :rule-classes (:rewrite
 		   (:forward-chaining
 		    :trigger-terms ((lambda-args lambda)))))
-  
+
   (defthm pseudo-termp-lambda-body
     (implies
      (and
@@ -646,28 +671,28 @@
     :rule-classes (:rewrite
 		   (:forward-chaining
 		    :trigger-terms ((lambda-body lambda)))))
-  
+
   (defthm lambda-body-measure
     (implies
      (acl2::lambda-expr-p lambda)
      (< (acl2-count (lambda-body lambda))
 	(acl2-count lambda)))
     :rule-classes (:linear :forward-chaining))
-  
+
   (defthm lambda-formals-measure
     (implies
      (acl2::lambda-expr-p lambda)
      (< (acl2-count (lambda-formals lambda))
 	(acl2-count lambda)))
     :rule-classes (:linear :forward-chaining))
-  
+
   (defthm lambda-args-measure
     (implies
      (acl2::lambda-expr-p lambda)
      (< (acl2-count (lambda-args lambda))
 	(acl2-count lambda)))
     :rule-classes (:linear :forward-chaining))
-  
+
 
   )
 
@@ -709,7 +734,7 @@
    (pseudo-term-listp (revappendx x y))))
 
 (mutual-recursion
- 
+
  (defun collect-free-variables (bound term res)
    (declare (xargs :measure (acl2-count term)))
    (declare (type t term))
@@ -728,7 +753,7 @@
 		 (memberx term res)) res
 	   (cons term res))
        res)))
- 
+
  (defun collect-free-variables-args (bound args res)
    (declare (xargs :measure (acl2-count args)))
    (declare (type t args))
@@ -761,7 +786,7 @@
 	   (EQUAL (LEN (LAMBDA-FORMALS LAMBDA))
 		  (LEN (LAMBDA-ARGS LAMBDA))))
   :hints (("Goal" :in-theory (enable LAMBDA-FORMALS LAMBDA-ARGS))))
-  
+
 (defthm symbol-listp-is-pseudo-term-listp
   (implies
    (symbol-listp x)
@@ -792,7 +817,7 @@
    (equal (equal (+ a b) (+ c b))
 	  (equal a c))))
 
-  
+
 
 (defun translate-declaration-to-guard1 (x var)
   (declare (type t x))
@@ -977,7 +1002,7 @@
     (list x var))
 
    (t x)
-   
+
    ))
 
 (mutual-recursion
@@ -1107,7 +1132,7 @@
 	  (guards-from-declare-body args (cdr body)))
          ((and (equal (car entry) 'acl2::type)
 	       (consp (cdr entry)))
-          (cons (defun::type-declaration-to-predicate (cadr entry) (cddr entry)) 
+          (cons (defun::type-declaration-to-predicate (cadr entry) (cddr entry))
 		(guards-from-declare-body args (cdr body))))
          ((equal (car entry) 'acl2::xargs)
 	  (let ((xarg-guards (defun::get-xarg-key-from-body :guard (cdr entry))))
@@ -1214,8 +1239,8 @@
       (met ((typespec signature sig-hints decls) (extract-function-declaration decls))
 	(declare (ignore typespec sig-hints))
 	(let ((decls (if signature
-			 (cons `(declare 
-				 (xargs :guard 
+			 (cons `(declare
+				 (xargs :guard
 					,(function-declaration-to-guard (defun-args defun) signature))) decls)
 		       decls)))
 	  `(,(defun-type defun) ,(defun-name defun) ,(defun-args defun)
@@ -1235,7 +1260,7 @@
 		  :congruence-hints ((("Goal" ..))
 				     nil)))
   ..)
-	   
+
 |#
 
 ;; Support for multiple-value return congruences
@@ -1374,7 +1399,7 @@
 
 (defun congruence-spec-listp (list)
   (declare (type t list))
-  (if (consp list) 
+  (if (consp list)
       (and (congruence-spec (car list))
 	   (congruence-spec-listp (cdr list)))
     (null list)))
@@ -1794,7 +1819,7 @@
   (true-listp (process-congruence-arguments fn args hints spec rec)))
 
 (in-theory (disable process-congruence-arguments))
-    
+
 (mutual-recursion
  (defun replace-function-names-args (keys suffix args)
    (declare (xargs :measure (acl2-count args)))
@@ -1807,7 +1832,7 @@
    (if (consp fn)
        (cond
 	((acl2::lambda-expr-p fn)
-	 (defun::make-lambda-application 
+	 (defun::make-lambda-application
 	   (defun::lambda-formals fn)
 	   (replace-function-names keys suffix (defun::lambda-body fn))
 	   (replace-function-names-args keys suffix (defun::lambda-args fn))))

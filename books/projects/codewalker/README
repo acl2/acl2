@@ -1,0 +1,86 @@
+``Codewalker'' is a utility for exploring code in any programming language
+specified by an ACL2 model to discover certain properties of the code.
+
+Two main facilities are provided by Codewalker: the abstraction of a piece of
+code into an ACL2 ``semantic function'' that returns the same machine state,
+and the ``projection'' of such a function into another function that computes
+the final value of a given state component using only the values of the
+relevant initial state components.  [Documentation continues as per below.]
+
+CONTENTS:
+
+This directory contains Codewalker (as of June, 2014), the demonstration file
+discussed in the Codewalker documentation, and a file demonstrating how
+Codewalker might be modified to handle programs that do not always terminate.
+
+The files involved are
+
+README                          this file
+if-tracker.lisp                 used by simplify-under-hyps
+simplify-under-hyps.lisp        a utility to simplify a term[*]
+terminatricks.lisp              Terminatricks
+codewalker.lisp                 Codewalker
+m1-version-3.lisp               like the distributed M1 book but stobj based
+basic-demo.lsp                  demo of Codewalker on an m1-version-3 program
+
+In addition, there are various files containing simple examples of Codewalker
+applied to code in the M1 (``toy JVM'') model:
+
+demo-fact.lisp
+demo-fact-count-up.lisp
+
+DOCUMENTATION:
+
+The first 50 pages of codewalker.lisp is just a long comment documenting
+Codewalker.  The documentation consists of the following sections:
+
+Here are the major sections of this file.  We recommend they be read in this
+order, by the audiences identified:
+
+[For All Potential Users and Developers:]
+
+A Friendly Introduction to Codewalker
+   a worked example of def-model-api, def-semantics, and def-projection for
+   a very simple machine, M1, including examples of output produced by
+   Codewalker
+
+Reference Guide to Def-Model-API, Def-Semantics, and Def-Projection
+   a full explanation of the options available
+
+Appendix A: More on Four Similiar Data Structures
+  :updater-drivers, :constructor-drivers, :state-comps-and-types, and
+  :var-names.  an elaboration of several features; you may or may not be
+  interested in this material, depending on whether the explanations in
+  earlier sections suffice for your use
+
+Limitations and Mitigations
+   what Codewalker cannot handle and a few suggestions that might permit
+   Codewalker to help you, some, anyway
+
+[For Developers Only:]
+
+Following Some Examples through the Implementation
+   the same examples as in the Friendly Introduction, but seen from the
+   ``inside;'' examples of internal functions and data structures are
+   shown to give a sense of how Codewalker works
+
+Guide to the Implementation of Codewalker
+   descriptions of the books upon which Codewalker is built, the basic data
+   structures driving Codewalker, and high level sketches of the individual
+   steps used by def-semantics and def-projection to derive their results;
+   following these high level descriptions are more detailed descriptions of
+   each step, including reference to the relevant function names in the Code
+
+The Code for Codewalker
+   the definitions of all the functions and data structures in Codewalker,
+   interspersed with comments explaining many low-level details not covered
+   in the material above; these comments freely use the terminology
+   introduced above and may be hard to understand if you haven't read the
+   foregoing material
+
+How to Certify Codewalker
+   instructions for how to rebuild all the books and replay the the simple
+   examples discussed in the Friendly Introduction
+
+Search codewalker.lisp for the section headers above to find the beginning of
+each section below.

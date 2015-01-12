@@ -938,7 +938,7 @@ same direction.\"</blockquote>
        (return ans)))
 
 (defaggregate vl-tf-parsed-var-id
-  :short "Temporary structure used when parsing @('list_of_tf_variable_identifiers)."
+  :short "Temporary structure used when parsing @('list_of_tf_variable_identifiers')."
   :tag :vl-tf-parsed-var-id
   ((name    vl-idtoken-p)
    (udims   vl-packeddimensionlist-p)

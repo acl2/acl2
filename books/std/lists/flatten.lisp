@@ -51,6 +51,12 @@
 
 (add-macro-alias append-without-guard binary-append-without-guard)
 
+(defxdoc append-without-guard
+  :parents (std/lists append)
+  :short "Version of @(see append) that has a guard of @('t')"
+  :long "See @(see std::strict-list-recognizers) for a discussion of whether
+ requring lists to be @('nil')-terminated is right for you.")
+
 (defsection flatten
   :parents (std/lists)
   :short "@(call flatten) appends together the elements of @('x')."

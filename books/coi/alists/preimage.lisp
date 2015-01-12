@@ -1,13 +1,38 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;; preimage.lisp
 ;;
 ;; In an alist, we say that the preimage of some value, val, is the set of all
 ;; keys which are bound to val in that alist.  Our preimage function actually
-;; returns a list of such keys, which happen to be unique, but which are not 
+;; returns a list of such keys, which happen to be unique, but which are not
 ;; necessarily a set (at least, not in the :osets sense).
 
 (in-package "ALIST")
@@ -22,13 +47,13 @@
   (declare (xargs :guard (alistp x)))
   (if (consp x)
       (if (equal (cdar x) val)
-          (cons (caar x) 
+          (cons (caar x)
                 (preimage-aux val (cdr x)))
         (preimage-aux val (cdr x)))
     nil))
 
 (defcong alist-equiv equal (preimage-aux val x) 2
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable preimage-aux)
           :induct (len-len-induction x x-equiv))))
 
@@ -103,8 +128,8 @@
   (implies (not (memberp val (strip-cdrs x)))
            (equal (preimage val x)
                   nil))
-  :hints(("Goal" :in-theory (enable preimage))))                
-  
+  :hints(("Goal" :in-theory (enable preimage))))
+
 (defthm not-memberp-of-preimage
   (implies (not (memberp key (strip-cars x)))
            (equal (memberp key (preimage val x))
@@ -140,15 +165,15 @@
 (defthm preimage-of-cdar-with-self
   (equal (preimage (cdar x) x)
          (if (consp x)
-             (cons (caar x) 
-                   (preimage (cdar x) 
+             (cons (caar x)
+                   (preimage (cdar x)
                              (clearkey (caar x) (cdr x))))
            nil))
-  :hints(("Goal" :in-theory (e/d (preimage) 
+  :hints(("Goal" :in-theory (e/d (preimage)
                                  (preimage-aux-of-cdar-with-self))
           :use (:instance preimage-aux-of-cdar-with-self
                           (x (deshadow x))))))
-         
+
 (defthm preimage-of-cdr-when-not-cdar-and-unique
   (implies (and (not (equal (cdar x) a))
                 (BAG::unique (strip-cars x)))

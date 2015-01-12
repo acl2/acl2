@@ -1,3 +1,33 @@
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ; Jared: what's this file for?  It's not certifiable, so I'm
 ; renaming it to a .lsp extension for Make compatibility
 
@@ -9,7 +39,7 @@
 ;(in-package "SUPER-IHS")
 
 ;;
-;; This file isolates super-ihs definitions and types. The file currently 
+;; This file isolates super-ihs definitions and types. The file currently
 ;; contains the following ACL2 constructs as they occur in the super-ihs book:
 ;; - defun
 ;; - defund
@@ -28,11 +58,11 @@
   :hints (("Goal" :in-theory (enable logext logapp))))
 
 (defthm logext-when-i-is-zero
-  (equal (logext size 0) 
+  (equal (logext size 0)
          0)
-  :hints (("goal" :in-theory (e/d (logext 
-                                   logapp 
-                                   ) 
+  :hints (("goal" :in-theory (e/d (logext
+                                   logapp
+                                   )
                                   (LOGAPP-0)))))
 
 (defthm logext-when-size-is-not-an-integerp
@@ -46,7 +76,7 @@
 
 ;rhs?
 (defthm logext-when-size-is-0
-  (equal (logext 0 i) 
+  (equal (logext 0 i)
          (if (equal (logcar i) 0)
              0
            -1))
@@ -81,7 +111,7 @@
                 (<= 0 n))
            (equal (evenp (logext n x))
                   (evenp (ifix x))))
-  :hints (("Goal" :in-theory (e/d (logext) 
+  :hints (("Goal" :in-theory (e/d (logext)
                                   (evenp loghead)))))
 
 (defthm equal-logext-0
@@ -122,10 +152,10 @@
 
 (defthm equal-logcons-0
   (equal (equal (logcons x y) 0)
-         (and (equal (bfix x) 0) 
+         (and (equal (bfix x) 0)
               (equal (ifix y) 0)))
-  :hints (("goal" :in-theory (enable logcons 
-                                     even-odd-different-2 
+  :hints (("goal" :in-theory (enable logcons
+                                     even-odd-different-2
                                      ))))
 
 (defthm evenp-of-logcons
@@ -156,19 +186,19 @@
   :hints (("Goal" :in-theory (enable logcdr))))
 
 (defthmd logcdr-of-zero
-  (equal (logcdr 0) 
+  (equal (logcdr 0)
          0)
   :hints (("goal" :in-theory (enable logcdr ifix))))
 
 (defthm logcdr-when-i-is-not-an-integerp
   (implies (not (integerp i))
-           (equal (logcdr i) 
+           (equal (logcdr i)
                   0))
   :hints (("goal" :in-theory (enable logcdr ifix))))
 
 ;more like this?
 (defthm logcdr-greater-than-0-rewrite
-  (equal (< 0 (logcdr x))        
+  (equal (< 0 (logcdr x))
          (and (integerp x)
               (<= 2 x))))
 
@@ -190,7 +220,7 @@
               (if (integerp x)
                   (unsigned-byte-p (1+ n) x)
                 t)))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (e/d (logcdr unsigned-byte-p ; expt
                                    EXPONENTS-ADD-UNRESTRICTED
                                    )
@@ -250,19 +280,19 @@
            (equal (logcdr (expt 2 n))
                   (expt 2 (1- n))))
   :hints (("goal" :in-theory (enable logcdr))))
-           
+
 (defthm logcdr---expt
   (implies (and (integerp n)
                 (<= 0 n))
            (equal (logcdr (- (expt 2 n)))
-                  (if (equal n 0) 
-                      -1 
+                  (if (equal n 0)
+                      -1
                     (- (expt 2 (1- n))))))
   :hints (("goal" :in-theory (enable logcdr))))
 
 (defthm logcdr-+2
   (implies (integerp x)
-           (equal (logcdr (+ 2 x)) 
+           (equal (logcdr (+ 2 x))
                   (1+ (logcdr x))))
   :hints (("goal" :in-theory (enable logcdr))))
 
@@ -287,7 +317,7 @@
 (defthmd logcdr-*-1/2-expt
   (implies (and (syntaxp (quotep n))
                 (integerp (* n m)))
-           (equal (logcdr (* n m)) 
+           (equal (logcdr (* n m))
                   (floor (* n m) 2)))
   :hints (("goal" :in-theory (enable logcdr))))
 
@@ -301,7 +331,7 @@
 
 (defthm logcar-when-i-is-not-an-integerp
   (implies (not (integerp i))
-           (equal (logcar i) 
+           (equal (logcar i)
                   0))
   :hints (("goal" :in-theory (enable logcar ifix))))
 
@@ -352,7 +382,7 @@
                     (if (acl2-numberp i)
                         0
                       (logcar j)))))
-  :hints (("Goal" :use (:instance logcar-+ (i j) (j i)) 
+  :hints (("Goal" :use (:instance logcar-+ (i j) (j i))
            :in-theory (disable logcar-+))))
 
 (defthm logcar-evenp
@@ -375,7 +405,7 @@
                 (integerp k))
            (equal (logcar (+ i j (* 2 k)))
                   (logcar (+ i j))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance logcar-i+2*j (i (+ i j)) (j k))))))
 
 (defthm logcar-range
@@ -448,7 +478,7 @@
   :hints (("goal" :in-theory (enable logbitp ifix))))
 
 (defthm logbitp-when-i-is-zero
-  (equal (logbitp 0 j) 
+  (equal (logbitp 0 j)
          (equal (logcar j) 1))
   :hints (("goal" :in-theory (enable logbit logbitp))))
 
@@ -497,7 +527,7 @@
 
 (defthm logbit-when-i-is-not-an-integerp
   (implies (not (integerp i))
-           (equal (logbit pos i) 
+           (equal (logbit pos i)
                   0))
   :hints
   (("Goal" :in-theory (enable logbit))))
@@ -534,7 +564,7 @@
   :hints (("Goal" :in-theory (enable logbit))))
 
 (defthm logbit-of-one
-  (equal (logbit pos 1) 
+  (equal (logbit pos 1)
          (if (zp pos)
              1
            0))
@@ -569,14 +599,14 @@
 
 (defthm logapp-when-size-is-not-an-integerp
   (implies (not (integerp size))
-           (equal (logapp size i j) 
+           (equal (logapp size i j)
                   (ifix j)))
   :hints (("Goal" :in-theory (enable logext
                                      LOGAPP))))
 
 (defthm logapp-when-size-is-negative
   (implies (< size 0)
-           (equal (logapp size i j) 
+           (equal (logapp size i j)
                   (ifix j)))
   :hints (("Goal" :in-theory (enable logext
                                      LOGAPP))))
@@ -674,7 +704,7 @@ In this Acl2 book, we prove that the square root function can be approximated
 in Acl2.  In particular, we prove the following theorem:
 
  (defthm convergence-of-iter-sqrt
-   (implies (and (rationalp x)        
+   (implies (and (rationalp x)
                  (rationalp epsilon)
                  (< 0 epsilon)
                  (<= 0 x))
@@ -722,7 +752,7 @@ To load this book, it is sufficient to do something like this:
 ;drop
 (local (in-theory (enable (force)))) ;unfortunate that i had to do this
 
-(local (in-theory (disable distributivity-alt))) 
+(local (in-theory (disable distributivity-alt)))
 
 ;(include-book (:relative :back "arithmetic" "top")
 ;              :load-compiled-file nil)
@@ -742,7 +772,7 @@ To load this book, it is sufficient to do something like this:
     (let ((mid (/ (+ low high) 2)))
       (if (<= (* mid mid) x)
           (iterate-sqrt-range mid high x (1- num-iters))
-        (iterate-sqrt-range low mid x 
+        (iterate-sqrt-range low mid x
                             (1- num-iters))))))
 
 ;;
@@ -763,7 +793,7 @@ To load this book, it is sufficient to do something like this:
   (implies (and (rationalp low)
                 (rationalp high)
                 (< low high))
-           (< (car (iterate-sqrt-range low high x 
+           (< (car (iterate-sqrt-range low high x
                                        num-iters))
               (cdr (iterate-sqrt-range low high x
                                        num-iters))))
@@ -885,7 +915,7 @@ To load this book, it is sufficient to do something like this:
                       low high x
                       (guess-num-iters (- high low)
                                        (/ epsilon
-                                          (+ high 
+                                          (+ high
                                              high))))))
           (car range)))
     nil))
@@ -953,7 +983,7 @@ To load this book, it is sufficient to do something like this:
                                ceiling-greater-than-quotient
                                guess-num-iters-aux-is-a-good-guess))))
 
-(in-theory (disable 
+(in-theory (disable
             LOGNOT
             LOGCOUNT
             LOGBITP
@@ -972,7 +1002,7 @@ To load this book, it is sufficient to do something like this:
             BINARY-LOGXOR
             LOGNOR
             BITP
-            logcar 
+            logcar
             LOGCDR
             LOGCONS
             LOGBIT
@@ -1106,8 +1136,8 @@ To load this book, it is sufficient to do something like this:
 (defun sub1-logcdr-logcdr-carry-induction (m x y c)
   (if (zp m)
       (or x y c)
-    (sub1-logcdr-logcdr-carry-induction 
-     (1- m) 
+    (sub1-logcdr-logcdr-carry-induction
+     (1- m)
      (logcdr x)
      (logcdr y)
      (b-ior (b-and (logcar x) (logcar y))
@@ -1117,8 +1147,8 @@ To load this book, it is sufficient to do something like this:
 (defun sub1-logcdr-logcdr-logcdr-carry-induction (m x y z c)
   (if (zp m)
       (or x y c z)
-    (sub1-logcdr-logcdr-logcdr-carry-induction 
-     (1- m) 
+    (sub1-logcdr-logcdr-logcdr-carry-induction
+     (1- m)
      (logcdr x)
      (logcdr y)
      (logcdr z)
@@ -1129,8 +1159,8 @@ To load this book, it is sufficient to do something like this:
 (defun sub1-sub1-logcdr-logcdr-carry-induction (m n x y c)
   (if (or (zp m) (zp n))
       (or x y c)
-    (sub1-sub1-logcdr-logcdr-carry-induction 
-     (1- m) 
+    (sub1-sub1-logcdr-logcdr-carry-induction
+     (1- m)
      (1- n)
      (logcdr x)
      (logcdr y)
@@ -1188,7 +1218,7 @@ To load this book, it is sufficient to do something like this:
     (+-r (logcdr a)
          (logcdr b)
          (b-maj (logcar a) (logcar b) c))))
-  
+
 (defthm +-induction t
   :rule-classes ((:induction :pattern (+ a b c)
                              :condition (unsigned-byte-p 1 c)
@@ -1209,7 +1239,7 @@ To load this book, it is sufficient to do something like this:
   (or (logendp x)
       (logendp y)
       (logbinr (logcdr x) (logcdr y))))
-  
+
 (defthm logand-induction t
   :rule-classes ((:induction :pattern (logand x y)
                              :condition t
@@ -1226,7 +1256,7 @@ To load this book, it is sufficient to do something like this:
                              :scheme (logbinr x y))))
 
 (defun loglistr (n x)
-  (if (zp n) 
+  (if (zp n)
       (ifix x)
     (logcons 0 (loglistr (1- n) (logcdr x)))))
 
@@ -1284,7 +1314,7 @@ To load this book, it is sufficient to do something like this:
   (cond ((or (zip m) (zp n)) x)
         ((< m 0) (loglist-ashr (1+ m) n (logcdr x)))
         (t (loglist-ashr (1- m) (1- n) x))))
-        
+
 (defthm loglist-ash-induction t
   :rule-classes ((:induction :pattern (loglistr n (ash x m))
                              :condition t
@@ -1331,9 +1361,9 @@ To load this book, it is sufficient to do something like this:
 (defthm loglist-+-induction t
    :rule-classes ((:induction :pattern (loglistr n (+ x y c))
                               :condition t
-                              :scheme (sub1-logcdr-logcdr-carry-induction n 
-                                                                          x 
-                                                                          y 
+                              :scheme (sub1-logcdr-logcdr-carry-induction n
+                                                                          x
+                                                                          y
                                                                           c))))
 
 ;same for lognot:
@@ -1401,7 +1431,7 @@ To load this book, it is sufficient to do something like this:
 ;;                 (< 0 n)
 ;;                 (unsigned-byte-p n y))
 ;;            (equal (if (equal 0 (logand (expt 2 (1- n)) y))
-;;                       y 
+;;                       y
 ;;                     (logior (- (expt 2 n)) y))
 ;;                   (logext n y)))
 ;;   :rule-classes nil
@@ -1419,7 +1449,7 @@ To load this book, it is sufficient to do something like this:
 ;;                 (< 0 n)
 ;;                 (unsigned-byte-p 1 (nth a x)))
 ;;            (not (logbitp n (nth a x))))
-;;   :hints (("goal" 
+;;   :hints (("goal"
 ;;            :in-theory (enable unsigned-byte-p logbitp*)
 ;;            :cases ((equal (nth a x) 0)))))
 
@@ -1437,7 +1467,7 @@ To load this book, it is sufficient to do something like this:
                 )
            (unsigned-byte-p n (+ p (* 4 x))))
   :hints (("Goal" :in-theory (e/d (logapp) ( UNSIGNED-BYTE-P-LOGAPP))
-           :use (:instance UNSIGNED-BYTE-P-LOGAPP (size n) (size1 2) (i p) (j x))))) 
+           :use (:instance UNSIGNED-BYTE-P-LOGAPP (size n) (size1 2) (i p) (j x)))))
 
 ;; ;drop??? see next lemma
 ;; (defthmd logcdr-all-ones-lemma
@@ -1446,10 +1476,10 @@ To load this book, it is sufficient to do something like this:
 ;;                 (integerp n)
 ;;                 (< 0 n)
 ;;                 )
-;;            (equal (logcdr x) 
+;;            (equal (logcdr x)
 ;;                   (loghead (1- n) -1)))
 ;;   :rule-classes nil
-;;   :hints (("goal" 
+;;   :hints (("goal"
 ;;            :induct (unsigned-byte-p n x)
 ;;            :in-theory (enable LRDT))))
 
@@ -1461,10 +1491,10 @@ To load this book, it is sufficient to do something like this:
            (equal (unsigned-byte-p n (+ 1 x))
                   (and (integerp n)
                        (<= 0 n)
-                       (not (equal x 
+                       (not (equal x
                                    (loghead n -1) ;all ones!
                                    )))))
-  :hints (("goal" 
+  :hints (("goal"
            :induct (unsigned-byte-p n x)
            :in-theory (e/d (LRDT) (unsigned-byte-p* ;for acl2 3.0
                                    )))))
@@ -1489,7 +1519,7 @@ To load this book, it is sufficient to do something like this:
                   (< x (expt 2 (+ -1 n)))))
   :hints (("Goal" :in-theory (disable LOGBITP-TO-BOUND-WHEN-USB)
            :use (:instance logbitp-to-bound-when-usb))))
-                 
+
 (defthm logand-non-negative
   (implies (or (<= 0 x) (<= 0 y))
            (<= 0 (logand x y)))
@@ -1668,7 +1698,7 @@ To load this book, it is sufficient to do something like this:
   (equal (loghead-30-exec i)
          (loghead 30 i))
   :hints (("Goal" :in-theory (enable loghead-30-exec))))
-           
+
 (defund logbitp-30-exec (j)
   (declare (type (unsigned-byte 31) j))
   (not (equal 0 (logand 1073741824 j))))
@@ -1759,7 +1789,7 @@ To load this book, it is sufficient to do something like this:
 
 ;;
 ;; ODDP
-;; 
+;;
 
 (in-theory (disable oddp))
 
@@ -1794,12 +1824,12 @@ To load this book, it is sufficient to do something like this:
   (equal (oddp (expt 2 j))
          (or (not (integerp j))
              (<= j 0)))
-  :hints (("Goal" :in-theory (enable oddp 
+  :hints (("Goal" :in-theory (enable oddp
                                      expt ;improve evenp rule and drop
                                      EXPONENTS-ADD-UNRESTRICTED))))
 
 ;consider adding (disabled!) versions of these without the backchain-limits?
-(defthmd even-odd-different-1 
+(defthmd even-odd-different-1
   (implies (and (evenp a)
                 (not (evenp b)))
            (not (equal a b)))
@@ -1807,7 +1837,7 @@ To load this book, it is sufficient to do something like this:
 
 ;bzo do we need both of these rules?
 ;consider adding (disabled!) versions of these without the backchain-limits?
-(defthmd even-odd-different-2 
+(defthmd even-odd-different-2
   (implies (and (not (evenp a))
                 (evenp b))
            (not (equal a b)))
@@ -1827,7 +1857,7 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal" :in-theory (enable oddp))))
 
 (defthm oddp-of-*
-  (implies (and (integerp a) 
+  (implies (and (integerp a)
                 (integerp b)
                 )
            (equal (oddp (* a b))
@@ -1852,7 +1882,7 @@ To load this book, it is sufficient to do something like this:
    (equal (equal (expt 2 a) (1+ (* 2 b)))
           (and (zp a) (zip b))))
   :hints (("goal" :in-theory (enable expt))))
- 
+
 (defthm *ark*-equal-1+-+-*2-*2
   (implies (and (integerp a) (integerp b) (integerp c)
                 (<= 0 a))
@@ -1889,18 +1919,18 @@ To load this book, it is sufficient to do something like this:
 
 
 (defthm equal-i+-*2
-  (implies (and (integerp a) 
-                (integerp b) 
+  (implies (and (integerp a)
+                (integerp b)
                 (integerp i)
                 (<= 0 a)
                 (not (evenp i)))
            (equal (equal (expt 2 a) (+ i (* 2 b)))
                   (and (zp a) (equal b (- (* 1/2 (+ -1 i)))))))
   :hints (("Goal" :in-theory (enable even-odd-different-2 even-odd-different-1))))
-  
+
 (defthm equal-i+-+-*2-*2
-  (implies (and (integerp a) 
-                (integerp b) 
+  (implies (and (integerp a)
+                (integerp b)
                 (integerp c)
                 (integerp i)
                 (<= 0 a)
@@ -1911,9 +1941,9 @@ To load this book, it is sufficient to do something like this:
 
 
 ;; (defthm +i-*2-is-different-from-*2
-;;   (implies (and (integerp a) 
-;;                 (integerp b) 
-;;                 (integerp i) 
+;;   (implies (and (integerp a)
+;;                 (integerp b)
+;;                 (integerp i)
 ;;                 (not (evenp i)))
 ;;            (not (equal (+ i (* 2 a)) (* 2 b)))))
 ;;   :hints (("goal"
@@ -2080,7 +2110,7 @@ To load this book, it is sufficient to do something like this:
                 (<= 0 I)
                 (rationalp y)
                 )
-           (EQUAL (FLOOR I Y)        
+           (EQUAL (FLOOR I Y)
                   1)))
 
 
@@ -2167,8 +2197,8 @@ To load this book, it is sufficient to do something like this:
   (declare (type (signed-byte 32) a)
            (type (signed-byte 32) b)
            (type (signed-byte 32) c))
-  (if (= a 0) 
-      c 
+  (if (= a 0)
+      c
     b))
 
 ;; We want to open c_conditional when the test value is a constant, since in
@@ -2239,7 +2269,7 @@ To load this book, it is sufficient to do something like this:
 ;; ADD32
 ;;
 
-(defund add32 (a b) 
+(defund add32 (a b)
   (declare
     (xargs :guard
          (and (signed-byte-p 32 a)
@@ -2256,7 +2286,7 @@ To load this book, it is sufficient to do something like this:
 
 ;is this ever used?
 ;I'm somewhat surprised that this doesn't chop its result down to 32 bits or something. -ews
-(defun addu32 (a b) 
+(defun addu32 (a b)
   (declare (xargs :guard (and (unsigned-byte-p 32 a)
                               (unsigned-byte-p 32 b))))
   (+ a b))
@@ -2266,7 +2296,7 @@ To load this book, it is sufficient to do something like this:
 ;;
 
 ;I'm somewhat surprised that this doesn't chop its result down to 16 bits or something. -ews
-(defun addu16 (a b) 
+(defun addu16 (a b)
   (declare (xargs :guard (and (unsigned-byte-p 16 a)
                               (unsigned-byte-p 16 b))))
   (+ a b))
@@ -2283,7 +2313,7 @@ To load this book, it is sufficient to do something like this:
 ;; ;; optimized for integers.  Thus we define xor32 and do compiler
 ;; ;; replacments on it.
 ;; ;does this ever get used?
-;; (defun xor32 (a b) 
+;; (defun xor32 (a b)
 ;;   (declare
 ;;     (xargs :guard
 ;;          (and (signed-byte-p 32 a)
@@ -2328,7 +2358,7 @@ To load this book, it is sufficient to do something like this:
 
 (local (in-theory (enable FALSIFY-UNSIGNED-BYTE-P)))
 
-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;           
+;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
 ;; signed-byte-p, unsigned-byte-p
 ;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
 
@@ -2383,21 +2413,21 @@ To load this book, it is sufficient to do something like this:
                 )
            (equal (signed-byte-p n x)
                   (integerp n)))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (enable signed-byte-p unsigned-byte-p)
            :use ((:instance EXPT-IS-INCREASING-FOR-BASE>1
                             (r 2)
                             (i free)
                             (j (1- n)))))))
-           
+
 (defthm unsigned-byte-p-subtype
   (implies (and (unsigned-byte-p free x) ;free is a free variable
                 (<= free n)
                 )
            (equal (unsigned-byte-p n x)
-                  (integerp n)  
+                  (integerp n)
                   ))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (enable signed-byte-p unsigned-byte-p)
            :use ((:instance EXPT-IS-INCREASING-FOR-BASE>1
                             (r 2)
@@ -2419,7 +2449,7 @@ To load this book, it is sufficient to do something like this:
            (and (<= (- m) x)
                 (<= x (+ -1 m))))
   :hints (("goal" :in-theory (enable signed-byte-p))))
- 
+
 (defthm unsigned-byte-p-logcdr-bridge5
   (implies (and (unsigned-byte-p (1+ n) (1+ x))
                 (equal (logcar x) 1)
@@ -2470,9 +2500,9 @@ To load this book, it is sufficient to do something like this:
                 (integerp x))
            (equal (unsigned-byte-p n (ash x m))
                   (unsigned-byte-p (max 0 (- n m)) x)))
-  :hints (("goal" 
-           :in-theory (e/d (LRDT 
-                            unsigned-byte-p*) 
+  :hints (("goal"
+           :in-theory (e/d (LRDT
+                            unsigned-byte-p*)
                            (ash* ;fixes a loop that manifested itself in the move to 3.0
                             open-logcons)))))
 
@@ -2502,12 +2532,12 @@ To load this book, it is sufficient to do something like this:
                   (if (equal 0 x)
                       t
                     (SIGNED-BYTE-P (- N m) X))))
- 
+
   :otf-flg t
   :hints (("Goal" ; :induct (logcdr-induction x)
 ;:nonlinearp t
            :cases ((< x 0))
-           :in-theory (enable ;lrdt 
+           :in-theory (enable ;lrdt
                        SIGNED-BYTE-P
                        EXPONENTS-ADD-UNRESTRICTED
                        ))))
@@ -2528,17 +2558,17 @@ To load this book, it is sufficient to do something like this:
 ;;   :hints (("Goal" :in-theory (disable signed-byte-p-of-shift)
 ;;            :use ((:instance signed-byte-p-of-shift)
 ;;                  (:instance signed-byte-p-of-shift (x (- x)))))))
-           
+
 
 ;;   :otf-flg t
 ;;   :hints (("Goal" ; :induct (logcdr-induction x)
 ;; ;:nonlinearp t
 ;;            :cases ((< x 0))
-;;            :in-theory (enable ;lrdt 
+;;            :in-theory (enable ;lrdt
 ;;                        SIGNED-BYTE-P
 ;;                        EXPONENTS-ADD-UNRESTRICTED
 ;;                        ))))
-        
+
 
 
 (defthm unsigned-byte-p-1+
@@ -2560,7 +2590,7 @@ To load this book, it is sufficient to do something like this:
                 (unsigned-byte-p 1 c))
            (unsigned-byte-p n (+ c x y)))
   :rule-classes nil
-  :hints (("goal" :in-theory (e/d (unsigned-byte-p EXPONENTS-ADD-UNRESTRICTED) 
+  :hints (("goal" :in-theory (e/d (unsigned-byte-p EXPONENTS-ADD-UNRESTRICTED)
                                   (unsigned-byte-p-+)))))
 
 (defthm unsigned-byte-p-+-bridge
@@ -2628,7 +2658,7 @@ To load this book, it is sufficient to do something like this:
 (defthm ash-logior
   (equal (ash (logior x y) n)
          (logior (ash x n) (ash y n)))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (e/d (LRDT zip) (ash*))
            :cases ((<= 0 n)))))
 
@@ -2644,13 +2674,13 @@ To load this book, it is sufficient to do something like this:
                 )
            (equal (ash (ash x m) n)
                   (ash x (+ m n))))
-  :hints (("goal" 
-           :in-theory (e/d (LRDT expt2* ;ash 
+  :hints (("goal"
+           :in-theory (e/d (LRDT expt2* ;ash
                                  ;logtail*-better
-                                 ash-as-logtail 
+                                 ash-as-logtail
                                  ash-as-logapp
                                  open-logcons
-                                 zip) 
+                                 zip)
                            (logapp-0-part-2-better
                             EXPT-2-CRUNCHER)))))
 
@@ -2688,7 +2718,7 @@ To load this book, it is sufficient to do something like this:
 ;;                 (<= 0 n))
 ;;            (equal (ASH (ASH x m) n)
 ;;                   (ash x (+ m n)))))
-;;   :hints (("goal" 
+;;   :hints (("goal"
 ;;            :in-theory (enable LRDT ash-as-logtail ash-as-logapp))))
 
 ;; ;seems useless, and is proven instantly without hints.
@@ -2697,13 +2727,13 @@ To load this book, it is sufficient to do something like this:
 ;;                 (< n 0)
 ;;                 (unsigned-byte-p (- n) (nth n1 (nth n2 x))))
 ;;            (equal (ash (nth n1 (nth n2 x)) n) 0)))
-;;   :hints (("goal" :use (:instance ASH-GOES-TO-0 
-;;                                   (count (- n)) 
-;;                                   (size (- n)) 
+;;   :hints (("goal" :use (:instance ASH-GOES-TO-0
+;;                                   (count (- n))
+;;                                   (size (- n))
 ;;                                   (i x)))))
 
 (defthm ash--1
-  (equal (ash x -1) 
+  (equal (ash x -1)
          (logcdr x))
   :hints (("goal" :in-theory (enable ash
                                      logcons ;bzo?
@@ -2723,7 +2753,7 @@ To load this book, it is sufficient to do something like this:
                   (if (< i n)
                       (logbitp i x)
                     (logbitp (1- n) x))))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (enable LRDT)
            :induct (sub1-sub1-logcdr-induction i n x))))
 
@@ -2824,7 +2854,7 @@ To load this book, it is sufficient to do something like this:
                 (unsigned-byte-p n y))
            (logbitp n (+ x y c)))
   :rule-classes nil
-  :hints (("goal" :in-theory (enable LRDT open-logcons)))) 
+  :hints (("goal" :in-theory (enable LRDT open-logcons))))
 
 (defthm logbitp-+-usb-v2
   (implies (and (integerp n)
@@ -2872,7 +2902,7 @@ To load this book, it is sufficient to do something like this:
 
 (defthm logbitp-+-usb-v4
   (implies (and (integerp n)
-                (< 0 n)    
+                (< 0 n)
                 (not (logbitp (1- n) x))
                 (unsigned-byte-p n x)
                 (unsigned-byte-p n y)
@@ -2881,21 +2911,21 @@ To load this book, it is sufficient to do something like this:
                 (not (logbitp n (+ y x)))))
   :hints (("goal" :use (:instance logbitp-+-usb-v4-helper (c 0)))))
 
-;; (deftheory overflow-bits 
-;;   '(logbitp-+-usb-v4 
-;;    logbitp-+-usb-v3 
-;;    logbitp-+-usb-v2 
-;;    logbitp-+-usb-v1 
-;;    logbitp-+-simple2 
+;; (deftheory overflow-bits
+;;   '(logbitp-+-usb-v4
+;;    logbitp-+-usb-v3
+;;    logbitp-+-usb-v2
+;;    logbitp-+-usb-v1
+;;    logbitp-+-simple2
 ;;    logbitp-+-simple
 ;;    unsigned-byte-p-+))
 
 (in-theory (disable ;overflow-bits
-            logbitp-+-usb-v4 
-            logbitp-+-usb-v3 
-            logbitp-+-usb-v2 
-            logbitp-+-usb-v1 
-            logbitp-+-simple2 
+            logbitp-+-usb-v4
+            logbitp-+-usb-v3
+            logbitp-+-usb-v2
+            logbitp-+-usb-v1
+            logbitp-+-simple2
             logbitp-+-simple
             unsigned-byte-p-+))
 
@@ -2985,7 +3015,7 @@ To load this book, it is sufficient to do something like this:
            (equal (logbitp n1 (+ x (loghead n2 y) c))
                   (logbitp n1 (+ x y c))))
   :rule-classes nil
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (enable LRDT open-logcons)
            :induct (sub1-sub1-logcdr-logcdr-carry-induction n1 n2 x y c))))
 
@@ -3005,13 +3035,13 @@ To load this book, it is sufficient to do something like this:
                                      (logbitp n1 (+ x z y)))
                               (equal (logbitp n1 (+ x (loghead n2 y) z))
                                      (logbitp n1 (+ x y z)))))))
-  :hints (("goal" :use 
+  :hints (("goal" :use
            ((:instance logbitp-+-loghead-helper (c 0))
             (:instance logbitp-+-loghead-helper (c 0) (x (+ x z)))))))
 
 (defthm logbitp-+-logext-bridge
   (implies (and (integerp n1)
-                (integerp n2)    
+                (integerp n2)
                 (integerp x)
                 (integerp y)
                 (<= 0 n1)
@@ -3023,7 +3053,7 @@ To load this book, it is sufficient to do something like this:
                                      (logbitp n1 (+ x z y)))
                               (equal (logbitp n1 (+ x (logext n2 y) z))
                                      (logbitp n1 (+ x y z)))))))
-  :hints (("goal" :use 
+  :hints (("goal" :use
            ((:instance logbitp-+-logext (i n1) (x (+ x z)) (n n2))))))
 
 (defthm logbitp-+-logext-bridge
@@ -3040,7 +3070,7 @@ To load this book, it is sufficient to do something like this:
                                      (logbitp n1 (+ x z y)))
                               (equal (logbitp n1 (+ x (logext n2 y) z))
                                      (logbitp n1 (+ x y z)))))))
-  :hints (("goal" :use 
+  :hints (("goal" :use
            ((:instance logbitp-+-logext (i n1) (x (+ x z)) (n n2))))))
 
 (defthm logbitp---*2
@@ -3061,7 +3091,7 @@ To load this book, it is sufficient to do something like this:
 
 (defthmd negate-as-bits
   (implies (integerp x)
-           (equal (- x) 
+           (equal (- x)
                   (1+ (lognot x))))
   :hints (("goal" :in-theory (enable LRDT logendp open-logcons))))
 
@@ -3074,7 +3104,7 @@ To load this book, it is sufficient to do something like this:
                 (integerp x))
            (equal (logbitp n (- x))
                   (not (logbitp n (1- x)))))
-  :hints (("goal" 
+  :hints (("goal"
            :induct (logbitp n x) ;not necessary, but speeds things up
            :in-theory (enable LRDT negate-as-bits))))
 
@@ -3124,16 +3154,16 @@ To load this book, it is sufficient to do something like this:
 
 (defthm negate-as-bits-reverse
   (implies (integerp x)
-           (equal (1+ (lognot x)) 
+           (equal (1+ (lognot x))
                   (- x)))
   :hints (("goal" :in-theory (enable LRDT logendp))))
 
 (defthm negate-as-bits-reverse-bridge
   (implies (and (integerp x)
                 (integerp y))
-           (equal (+ 1 x (lognot y)) 
+           (equal (+ 1 x (lognot y))
                   (+ x (- y))))
-  :hints (("goal" 
+  :hints (("goal"
            :use (:instance negate-as-bits-reverse (x y))
            :in-theory (disable negate-as-bits-reverse))))
 
@@ -3158,7 +3188,7 @@ To load this book, it is sufficient to do something like this:
 
 (defthm logbitp-+-expt-n
   (implies (and (integerp x) ;drop?
-                (integerp n) 
+                (integerp n)
                 (<= 0 n))
            (equal (logbitp n (+ (expt 2 n) x))
                   (not (logbitp n x))))
@@ -3191,7 +3221,7 @@ To load this book, it is sufficient to do something like this:
                 (<= 0 n)
                 (equal (loghead (1+ n) x) 0))
            (equal (logbitp n (+ x y)) (logbitp n y)))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (enable LRDT)
            :induct (sub1-logcdr-logcdr-induction n x y))))
 
@@ -3346,7 +3376,7 @@ To load this book, it is sufficient to do something like this:
                 (<= (1- m) n))
            (and (<= (- (expt 2 n)) (logext m x))
                 (<= (logext m x) (1- (expt 2 n)))))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (e/d (signed-byte-p) (signed-byte-p-logext))
            :use ((:instance signed-byte-p-logext (i x) (size1 (1+ n)) (size m))))))
 
@@ -3364,7 +3394,7 @@ To load this book, it is sufficient to do something like this:
                   (if (<= n m)
                       (logext n x)
                     (loghead m x))))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (e/d (LRDT) (logext* LOGHEAD*))
            :induct (sub1-sub1-logcdr-induction n m x))))
 
@@ -3372,12 +3402,12 @@ To load this book, it is sufficient to do something like this:
   (implies (and (< m n)
                 (<= 0 m)
                 (integerp m)
-                (integerp n)     
+                (integerp n)
                 )
            (equal (logext n (ash x m))
                   (ash (logext (- n m) x) m)))
   :hints (("goal"; :induct t
-           :in-theory (e/d (LRDT) (ASH-RECOLLAPSE 
+           :in-theory (e/d (LRDT) (ASH-RECOLLAPSE
                                    )))))
 
 (defthm logext-logior
@@ -3390,7 +3420,7 @@ To load this book, it is sufficient to do something like this:
          (logext n (logior x y))))
 
 (theory-invariant (incompatible (:rewrite logext-logior) (:rewrite logior-of-logext-and-logext)))
-  
+
 ;; This should be in the loghead section, but it uses so many logext
 ;; rules we place it here.
 
@@ -3461,7 +3491,7 @@ To load this book, it is sufficient to do something like this:
 ;; (defthm logtail-logext-hack
 ;;   (equal (logtail 16 (logext 32 x))
 ;;          (logext 16 (logtail 16 x)))
-;;   :hints (("Goal" :in-theory (enable ;logtail 
+;;   :hints (("Goal" :in-theory (enable ;logtail
 ;;                                      logext ifix))))
 
 ;We make this a separate rule so it will be enabled even when logext-logapp is disabled.
@@ -3506,9 +3536,9 @@ To load this book, it is sufficient to do something like this:
                 (unsigned-byte-p n y))
            (equal (ash (+ x y) (- n))
                   (if (unsigned-byte-p n (+ x y))
-                      0 
+                      0
                     1)))
-  :hints (("goal" 
+  :hints (("goal"
            :use (:instance ash-downto-1-or-0-helper (x (+ x y)))
            :in-theory (disable unsigned-byte-p-+))))
 
@@ -3549,8 +3579,8 @@ To load this book, it is sufficient to do something like this:
                 (equal n (1+ m)))
            (equal (ash (logext n x) (- m))
                   (if (logbitp m x) -1 0)))
-  :hints (("goal" :use (:instance ash-sbp-downto-1-or-0-helper 
-                                  (n m) 
+  :hints (("goal" :use (:instance ash-sbp-downto-1-or-0-helper
+                                  (n m)
                                   (x (logext n x))))))
 
 (defthm ash-sbp-downto-1-or-0-bridge
@@ -3560,7 +3590,7 @@ To load this book, it is sufficient to do something like this:
                 (unsigned-byte-p n y))
            (equal (ash (+ x (- y)) (- n))
                   (if (logbitp n (+ x (- y))) -1 0)))
-  :hints (("goal" :use (:instance ash-sbp-downto-1-or-0-helper 
+  :hints (("goal" :use (:instance ash-sbp-downto-1-or-0-helper
                                   (x (+ x (- y))))
            :in-theory (enable unsigned-byte-p signed-byte-p))))
 
@@ -3568,7 +3598,7 @@ To load this book, it is sufficient to do something like this:
 
 ;; Needed just for the FCP models?
 (defthm equal-ash-expt-0-fact
-  (implies (and (integerp n)                
+  (implies (and (integerp n)
                 (integerp x)
                 (<= 0 n))
            (equal (equal (ash (+ x (expt 2 n)) (- n)) 0)
@@ -3606,25 +3636,25 @@ To load this book, it is sufficient to do something like this:
                 (unsigned-byte-p n y))
            (equal (ash (+ k x (- y)) (- n))
                   (if (logbitp n (+ x (- y))) 0 1)))
-  :hints (("goal" :use (:instance ash-sbp-expt-downto-1-or-0-helper 
+  :hints (("goal" :use (:instance ash-sbp-expt-downto-1-or-0-helper
                                   (x (+ x (- y)))))))
 
 (defthm equal-ash-+---expt--1
   (implies (and (integerp n)
-                (<= 0 n) 
+                (<= 0 n)
                 (signed-byte-p (1+ n) x))
            (equal (equal (ash (+ x (- (expt 2 n))) (- n)) -1)
                   (not (logbitp n x))))
   :hints (("goal" :in-theory (enable LRDT expt))))
 
 (defthm equal-ash-+---expt--1-rewrite
-  (implies (and (syntaxp (quotep k)) (integerp k) 
+  (implies (and (syntaxp (quotep k)) (integerp k)
                 (equal (- (expt 2 (1- (integer-length (- k))))) k)
                 (equal n (1- (integer-length (- k))))
                 (signed-byte-p (1+ n) x))
            (equal (equal (ash (+ k x) (- n)) -1)
                   (not (logbitp n x))))
-  :hints (("goal" :use (:instance equal-ash-+---expt--1 
+  :hints (("goal" :use (:instance equal-ash-+---expt--1
                                   (n (1- (integer-length (- k))))))))
 
 (defthm ash-logext-neg
@@ -3675,15 +3705,15 @@ To load this book, it is sufficient to do something like this:
                 (integerp n)
                 (<= 0 n)
                 )
-           (equal (ash x (- n)) 
+           (equal (ash x (- n))
                   (logbit n x)))
 ;  :rule-classes nil
-  :hints (("goal" 
+  :hints (("goal"
            :induct (logbitp n x)
            :in-theory (enable LRDT logbit))))
            ;; :induct (sub1-logcdr-induction n x)
 ;;            :in-theory (enable LOGOPS-RECURSIVE-DEFINITIONS-THEORY logbit))))
-  
+
 ;; (defthm ash--15-special
 ;;   (implies
 ;;    (unsigned-byte-p 16 x)
@@ -3695,7 +3725,7 @@ To load this book, it is sufficient to do something like this:
 ;;   (implies (and (integerp n1)
 ;;                 (integerp n2)
 ;;                 (integerp x)
-;;                 (<= 0 n1) 
+;;                 (<= 0 n1)
 ;;                 (< n2 0))
 ;;            (equal (ash (loghead n1 x) n2)
 ;;                   (if (<= n1 (- n2))
@@ -3723,7 +3753,7 @@ To load this book, it is sufficient to do something like this:
                 (< 0 n))
            (equal (< (+ (logext n x) (logext n y)) 0)
                   (logbitp n (+ (logext n x) (logext n y)))))
-  :hints (("goal" :use (:instance sign-as-logbitp 
+  :hints (("goal" :use (:instance sign-as-logbitp
                                   (x (+ (logext n x) (logext n y)))))))
 
 (defthm sign-logext-as-logbitp
@@ -3733,7 +3763,7 @@ To load this book, it is sufficient to do something like this:
                   (logbitp (1- n) x)))
   :hints (("goal" :use (:instance sign-as-logbitp (x (logext n x)) (n (1- n))))))
 
-(in-theory (disable 
+(in-theory (disable
             B-NOT
             B-AND
             B-IOR
@@ -3756,7 +3786,7 @@ To load this book, it is sufficient to do something like this:
          (b-ior a (b-ior b c)))
   :hints (("Goal" :in-theory (enable b-ior))))
 
-(local (in-theory (enable b-xor b-eqv b-nand b-nor 
+(local (in-theory (enable b-xor b-eqv b-nand b-nor
                           b-andc1 b-andc2 b-orc1 b-orc2 b-not)))
 
 
@@ -3782,7 +3812,7 @@ To load this book, it is sufficient to do something like this:
 
 (defthm b-xor-constant
   (implies (and (equal y 0)
-                (syntaxp (quotep y))    
+                (syntaxp (quotep y))
                 (not (equal x y))
                 (unsigned-byte-p 1 x)
                 (unsigned-byte-p 1 z))
@@ -3951,11 +3981,11 @@ To load this book, it is sufficient to do something like this:
 (in-theory (enable natp))
 
 ;since UNSIGNED-BYTE-P-FORWARD-TO-NONNEGATIVE-INTEGERP is built into acl2 and we have acl2::unsigned-byte-p-forward-to-expt-bound:
-(in-theory (disable ACL2::UNSIGNED-BYTE-P-FORWARD)) 
+(in-theory (disable ACL2::UNSIGNED-BYTE-P-FORWARD))
 
-(local (in-theory (enable FALSIFY-UNSIGNED-BYTE-P))) 
+(local (in-theory (enable FALSIFY-UNSIGNED-BYTE-P)))
 
-(in-theory (disable 
+(in-theory (disable
 ;            (:REWRITE ZP-OPEN)
  ;           (:REWRITE ZIP-OPEN)
 
@@ -4006,7 +4036,7 @@ To load this book, it is sufficient to do something like this:
 ;            (:REWRITE <-0-+-NEGATIVE-2)
 ;            (:REWRITE <-+-NEGATIVE-0-1)
 ;           (:REWRITE <-+-NEGATIVE-0-2)
-;dsh  Removed for ACL2 2.9.2, where NATP-CR and POSP-CR no longer exist.  
+;dsh  Removed for ACL2 2.9.2, where NATP-CR and POSP-CR no longer exist.
 ;     This change doesn't appear to affect proofs under ACL2 2.9.
 ;            (:COMPOUND-RECOGNIZER NATP-CR)
 ;            (:COMPOUND-RECOGNIZER POSP-CR)
@@ -4186,7 +4216,7 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal" :in-theory (enable ash))))
 
 ;bzo think more about the type of ash
-                 
+
 (defthm equal-ash-pos-0
   (implies (<= 0 c)
            (equal (equal (ash i c) 0)
@@ -4241,7 +4271,7 @@ To load this book, it is sufficient to do something like this:
                 (integerp x)
                 )
            (< b (ash x s)))
-  :hints (("goal" :in-theory (e/d (ash expt) 
+  :hints (("goal" :in-theory (e/d (ash expt)
                                   (FLOOR-OF-SHIFT-RIGHT-2)))))
 
 (defthm ash-bound3
@@ -4298,7 +4328,7 @@ To load this book, it is sufficient to do something like this:
                 )
            (equal (ASH (ASH x m) n)
                   (ash x (+ m n))))
-  :hints (("goal" :in-theory (enable ash ; LOGOPS-RECURSIVE-DEFINITIONS-THEORY 
+  :hints (("goal" :in-theory (enable ash ; LOGOPS-RECURSIVE-DEFINITIONS-THEORY
                                      expt
                                      ))))
 
@@ -4316,12 +4346,12 @@ To load this book, it is sufficient to do something like this:
   (implies (and (<= n 0)
                 (integerp n)
                 )
-           (equal (ash -1 n) 
+           (equal (ash -1 n)
                   -1))
   :hints (("goal" :in-theory (enable ash ;LRDT
                                      ))))
 
-(defthm ash-non-decreasing 
+(defthm ash-non-decreasing
   (implies (and (integerp k)
                 (<= 0 k)
                 (integerp n)
@@ -4377,7 +4407,7 @@ To load this book, it is sufficient to do something like this:
 ;;                 )
 ;;            (equal (ash (ash x m) n)
 ;;                   (ash x (+ m n))))
-;;   :hints (("goal" 
+;;   :hints (("goal"
 ;;            :in-theory (e/d (;LRDT expt2* ;ash-as-logtail ash-as-logapp open-logcons
 ;;                             expt
 ;;                             ash
@@ -4515,7 +4545,7 @@ To load this book, it is sufficient to do something like this:
 ;this was causing lots of generalization to occur, introducing mod into goals which had nothing to do with mod.
 (in-theory (disable (:generalize MOD-X-Y-=-X+Y)))
 
-(in-theory (disable 
+(in-theory (disable
             (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT)
             (:DEFINITION FLOOR)
             (:DEFINITION CEILING)
@@ -4569,7 +4599,7 @@ To load this book, it is sufficient to do something like this:
 (defthm integerp-/
   (implies (and (integerp n)
                 (not (equal n 0)))
-           (equal (integerp (/ n)) 
+           (equal (integerp (/ n))
                   (or (equal n 1) (equal n -1))))
   :hints (("goal" :use ((:instance integerp-0-1 (x (/ n)))
                         (:instance integerp-0-1 (x (/ n)))))))
@@ -4798,8 +4828,8 @@ To load this book, it is sufficient to do something like this:
                      y)))
   :otf-flg t
   :hints (("Goal" :in-theory (e/d (evenp mod
-                                         FLOOR-NORMALIZES-TO-HAVE-J-BE-1) 
-                                  (;acl2::evenp-collapse 
+                                         FLOOR-NORMALIZES-TO-HAVE-J-BE-1)
+                                  (;acl2::evenp-collapse
                                    mod-cancel)))))
 
 (DEFTHM INTEGERP-+-MINUS-*-1
@@ -4816,7 +4846,7 @@ To load this book, it is sufficient to do something like this:
 (DEFTHM INTEGERP-+-MINUS-*-4
   (IMPLIES (AND (INTEGERP I) (INTEGERP J))
            (INTEGERP (* I J))))
- 
+
 (in-theory (disable INTEGERP-+-MINUS-*)) ;bzo
 
 
@@ -4867,7 +4897,7 @@ To load this book, it is sufficient to do something like this:
   (implies (syntaxp (not (quotep x))) ;without the not-quotep test, the rule matches things like: (< -1 x)
            (equal (< (- x) y)
                   (< 0 (+ x y)))))
-  
+
 (defthm move-negated-term-to-other-side-of-<-term-1-on-rhs
   (implies (syntaxp (not (quotep y))) ;without the not-quotep test, the rule matches things like: (< x -1) ?
            (equal (< x (- y))
@@ -5052,7 +5082,7 @@ To load this book, it is sufficient to do something like this:
            :in-theory (disable acl2::integerp-expt))))
 
 (defthm integerp-prod-of-3-first-two
-  (implies (and (integerp (* a b)) 
+  (implies (and (integerp (* a b))
                 (integerp c))
            (integerp (* a b c)))
   :hints (("Goal" :in-theory (disable acl2::integerp-+-minus-*-4)
@@ -5149,8 +5179,8 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal" :in-theory (enable loghead))))
 
 (defthm loghead-when-i-is-0
-  (equal (loghead size 0) 
-         0) 
+  (equal (loghead size 0)
+         0)
   :hints (("Goal" :in-theory (enable loghead))))
 
 (in-theory (disable loghead-size-0)) ;loghead-when-i-is-0 is better
@@ -5192,12 +5222,12 @@ To load this book, it is sufficient to do something like this:
          (if (< (nfix size1) (nfix size))
              (loghead (nfix size1) i)
            (loghead (nfix size) i)))
-  :hints (("Goal" :in-theory (e/d () 
+  :hints (("Goal" :in-theory (e/d ()
                                   (loghead-loghead
                                    loghead-leq))
            :use loghead-loghead)))
 
-(in-theory (disable loghead-loghead)) 
+(in-theory (disable loghead-loghead))
 
 (defthm loghead-does-nothing-rewrite
   (equal (equal (loghead n x) x)
@@ -5228,15 +5258,15 @@ To load this book, it is sufficient to do something like this:
   (equal (logcar (loghead size i))
          (if (or (not (integerp size))
                  (<= size 0))
-             0 
+             0
            (logcar i)))
   :hints
   (("Goal" :use logcar-loghead
     :in-theory (e/d (
-                     ) 
+                     )
                     (logcar-loghead)))))
 
-(in-theory (disable logcar-loghead)) 
+(in-theory (disable logcar-loghead))
 
 
 
@@ -5270,7 +5300,7 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal" :use (:instance loghead-+-cancel)
            :in-theory (disable loghead-+-cancel))))
 
-(in-theory (disable loghead-+-cancel)) 
+(in-theory (disable loghead-+-cancel))
 
 ;make more versions of this
 ;bzo normalize the leading constant of things like (LOGHEAD 16 (+ 65535 x)).
@@ -5311,7 +5341,7 @@ To load this book, it is sufficient to do something like this:
              (loghead size (+ i1 i2 j))
            (loghead size (+ i1 i2))))
   :hints (("Goal" :use (:instance loghead-+-loghead-better (i (+ i1 i2)) (j j)))))
-  
+
 ; improve loghead-cancel-better-alt, etc.
 (defthm loghead-sum-subst-helper
   (implies (and (equal (loghead n x) y)
@@ -5367,7 +5397,7 @@ To load this book, it is sufficient to do something like this:
 (defthm loghead-of-minus
   (equal (loghead n (- x))
          (if (integerp x)
-             (if (equal 0 (loghead n x)) 
+             (if (equal 0 (loghead n x))
                  0
                (- (expt 2 n) (loghead n x)) ;the usual case
                )
@@ -5385,7 +5415,7 @@ To load this book, it is sufficient to do something like this:
                   (EQUAL (LOGHEAD size (+ j A)) (LOGHEAD size K))))
   :hints (("Goal" :use (:instance LOGHEAD-+-CANCEL-BETTER (size size) (i j) (j a) (k (- k j)))))
   )
-        
+
 (defthm loghead-plus-constant-equal-constant
   (implies (and (syntaxp (and (quotep j)
                               (quotep k)))
@@ -5409,10 +5439,10 @@ To load this book, it is sufficient to do something like this:
                       (+ -1 (expt 2 n))
                     (+ -1 (loghead n x)))))
   :hints (("Goal" :in-theory (e/d (loghead
-                                     UNSIGNED-BYTE-P 
+                                     UNSIGNED-BYTE-P
                                      INTEGER-RANGE-P ;prove a rule for integer-range-p of (+ 1 x)
                                      imod
-                                     ) 
+                                     )
                                   (mod-cancel
                                    MOD-STRETCH-BASE ;looped!
                                    MOD-STRETCH-BASE-2 ;looped!
@@ -5515,7 +5545,7 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal" ;:in-theory (e/d (unary-/-of-expt loghead expt-gather) (expt-minus EXPONENTS-ADD))
            :use (:instance INTEGERP-EXPT (n (- n m)))
            :in-theory (e/d (loghead ifix
-                                    mod-cancel) 
+                                    mod-cancel)
                            (INTEGERP-OF-INVERSE-OF-EXPT
                                           MOD-X-I*J ;yucky force!
                                            ))
@@ -5572,7 +5602,7 @@ To load this book, it is sufficient to do something like this:
 (defthm loghead-hack
   (equal (loghead 16 (+ -65535 off))
          (loghead 16 (+ 1 off)))
-  :hints (("Goal" :in-theory (enable loghead 
+  :hints (("Goal" :in-theory (enable loghead
                                      imod ifix))))
 
 (defthm loghead-induction t
@@ -5599,10 +5629,10 @@ To load this book, it is sufficient to do something like this:
                             loghead*-better
                             unsigned-byte-p*
                             logcdr--
-                          
+
                             ) ( ;evenp-of-logcons
                             UNSIGNED-BYTE-P-FORWARD
-                            ARITH-MOVE-NEGATED-TERM 
+                            ARITH-MOVE-NEGATED-TERM
                             expt-2-cruncher)))))
 
 ;See also the rule loghead-almost.
@@ -5634,7 +5664,7 @@ To load this book, it is sufficient to do something like this:
                       (+ (loghead n i) (loghead n j))
                     (+ (loghead n i) (loghead n j) (- (expt 2 n))))))
   :hints (("Goal" :in-theory (disable loghead-split-into-2-cases)
-           :use (:instance loghead-split-into-2-cases 
+           :use (:instance loghead-split-into-2-cases
                            (n n)
                            (x (+ (loghead n i) (loghead n j)))
                            ))))
@@ -5695,12 +5725,12 @@ To load this book, it is sufficient to do something like this:
 ;;             :do-not-induct t
 ;;             :in-theory (e/d (loghead-sum-split-into-2-cases
 ;;      ;UNSIGNED-BYTE-P-FORWARD-TO-NONNEGATIVE-INTEGERP
-;;                              ) 
+;;                              )
 ;;                             (LOGHEAD-TYPE ;bzo these disables are gross!
 ;;                              loghead-identity
 ;;                              LOGHEAD-DOES-NOTHING-REWRITE
 ;;                              UNSIGNED-BYTE-P-LOGHEAD-FORWARD-CHAINING)))))
-       
+
 (defthm loghead-cancel-lemma
   (implies (and (integerp a)
                 (integerp size)
@@ -5766,13 +5796,13 @@ To load this book, it is sufficient to do something like this:
 
 (defthmd loghead-hack2
   (implies (and (equal (expt 2 n) (+ (loghead n a) (loghead n b)))
-                (integerp a) 
+                (integerp a)
                 (integerp b)
                 )
            (equal (loghead n (+ a b))
                   0))
   :hints (("Goal" :in-theory (enable loghead-sum-split-into-2-cases))))
-        
+
 ;; Allows ACL2 to quicly see that facts like this contradict:
 ;; (EQUAL x (LOGHEAD 16 (+ 4 y)))
 ;; (EQUAL (LOGHEAD 16 (+ 3 x)) y))
@@ -5792,7 +5822,7 @@ To load this book, it is sufficient to do something like this:
   (equal (evenp (loghead size i))
          (or (zp size)
              (evenp (ifix i))))
-  :hints (("Goal" :in-theory (e/d (loghead imod) 
+  :hints (("Goal" :in-theory (e/d (loghead imod)
                                   (mod-cancel)))))
 
 ;; ;bzo zz will going against acl2's order be bad?
@@ -5855,7 +5885,7 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal" :use (:instance acl2::loghead-+-cancel-0 (acl2::i i) (acl2::j j) (acl2::size size))
            :in-theory (disable acl2::loghead-+-cancel-0))))
 
-(in-theory (disable acl2::loghead-+-cancel-0)) 
+(in-theory (disable acl2::loghead-+-cancel-0))
 
 (defthm loghead-+-cancel-0-alt
   (implies (and (integerp m)
@@ -5895,7 +5925,7 @@ To load this book, it is sufficient to do something like this:
            (equal (equal x (loghead n (+ b y)))
                   nil))
   :hints (("Goal" :use (:instance acl2::loghead-cancel-lemma-3 (acl2::n n) (acl2::b b) (acl2::x x) (acl2::a a))
-           :in-theory (disable acl2::loghead-cancel-lemma-3))))                 
+           :in-theory (disable acl2::loghead-cancel-lemma-3))))
 
 
 
@@ -6002,7 +6032,7 @@ To load this book, it is sufficient to do something like this:
   (implies (and (integerp j)
                 (<= 0 size)
                 (integerp size)
-                (integerp x) 
+                (integerp x)
                 )
            (equal (loghead size (+ x (* j (expt 2 size))))
                   (loghead size x))))
@@ -6010,8 +6040,8 @@ To load this book, it is sufficient to do something like this:
 (defthm loghead-of-sum-with-multiple-of-expt-2-size-alt
   (implies (and (integerp j)
                 (<= 0 size)
-                (integerp size) 
-                (integerp x) 
+                (integerp size)
+                (integerp x)
                 )
            (equal (loghead size (+ (* j (expt 2 size)) x))
                   (loghead size x))))
@@ -6059,7 +6089,7 @@ To load this book, it is sufficient to do something like this:
   :rule-classes ((:rewrite)
                  (:forward-chaining :trigger-terms ((lognot i)))))
 
-(defthm lognot-neg 
+(defthm lognot-neg
   (implies (integerp a)
            (equal (< (lognot a) 0)
                   (<= 0 a)))
@@ -6118,7 +6148,7 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal" :use (:instance logand-with-mask (size  (INTEGER-LENGTH MASK)))
            :in-theory (e/d () (logand-with-mask)))))
 
-(in-theory (disable logand-with-mask)) 
+(in-theory (disable logand-with-mask))
 
 
 
@@ -6136,13 +6166,13 @@ To load this book, it is sufficient to do something like this:
   :hints
   (("Goal" :in-theory (e/d (
 ;                            LOGHEAD-WITH-SIZE-NON-POSITIVE
-                            ) 
+                            )
                            (logextu-as-loghead))
     :use  logextu-as-loghead)))
 
 (defthm logand-bit-0
   (implies (unsigned-byte-p 1 x)
-           (equal (logand x y) 
+           (equal (logand x y)
                   (b-and x (logcar y))))
   :hints (("goal" :in-theory (e/d (LRDT logand-zip) (LOGHEAD* logand*))))
   :rule-classes ((:rewrite :backchain-limit-lst 1)))
@@ -6150,7 +6180,7 @@ To load this book, it is sufficient to do something like this:
 ;prove from the other
 (defthm logand-bit-1
   (implies (unsigned-byte-p 1 x)
-           (equal (logand y x) 
+           (equal (logand y x)
                   (b-and x (logcar y))))
   :hints (("goal" :in-theory (e/d (LRDT logand-zip) (LOGHEAD* logand*))))
   :rule-classes ((:rewrite :backchain-limit-lst 1)))
@@ -6170,11 +6200,11 @@ To load this book, it is sufficient to do something like this:
                  (equal (logand a c) 0)
                  (integerp a)
                  (integerp c))
-            (equal (logand a b c) 
+            (equal (logand a b c)
                    0))
    :hints (("goal" :in-theory (enable LRDT
                                       logendp
-                                      even-odd-different-1 
+                                      even-odd-different-1
                                       even-odd-different-2
                                       ))))
 
@@ -6201,7 +6231,7 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal" :in-theory (enable integer-length))))
 
 (defthm logand-expt-constant-version
-  (implies (and (syntaxp (quotep n)) 
+  (implies (and (syntaxp (quotep n))
                 (equal (expt 2 (1- (integer-length n))) n)
                 (integerp n))
            (equal (logand n x)
@@ -6220,17 +6250,17 @@ To load this book, it is sufficient to do something like this:
 
 ;just use logand-expt-constant-version?
 (defthm equal-logand-expt-rewrite
-  (implies (and (syntaxp (quotep n)) 
+  (implies (and (syntaxp (quotep n))
                 (equal (expt 2 (1- (integer-length n))) n)
                 (integerp n)
                 )
            (equal (equal (logand n x) k)
-                  (if (logbitp (1- (integer-length n)) x) 
-                      (equal k n) 
+                  (if (logbitp (1- (integer-length n)) x)
+                      (equal k n)
                     (equal k 0))))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (e/d (LRDT) (logand*))
-           :use (:instance equal-logand-expt 
+           :use (:instance equal-logand-expt
                            (n (1- (integer-length n)))))))
 
 (defthm logand---expt
@@ -6239,12 +6269,12 @@ To load this book, it is sufficient to do something like this:
                 (signed-byte-p (1+ n) x))
            (equal (logand (- (expt 2 n)) x)
                   (if (logbitp n x) (- (expt 2 n)) 0)))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (enable LRDT expt2* ash open-logcons))))
 
 (defthm logand---expt-rewrite
-  (implies (and (syntaxp (quotep k)) 
-                (integerp k) 
+  (implies (and (syntaxp (quotep k))
+                (integerp k)
                 (equal (- (expt 2 (1- (integer-length (- k))))) k)
                 (signed-byte-p (integer-length (- k)) x))
            (equal (logand k x)
@@ -6290,9 +6320,9 @@ To load this book, it is sufficient to do something like this:
   :hints (("goal" :in-theory (enable LRDT))))
 
 (defthm logand-bfix
-  (and (equal (logand (bfix x) y) 
+  (and (equal (logand (bfix x) y)
               (b-and (bfix x) (logcar y)))
-       (equal (logand y (bfix x)) 
+       (equal (logand y (bfix x))
               (b-and (bfix x) (logcar y)))))
 
 (defthm *ash*-equal-logand-ash-pos-0
@@ -6312,10 +6342,10 @@ To load this book, it is sufficient to do something like this:
            (equal (equal (- (expt 2 n)) (logand (- (expt 2 n)) x))
                   (equal (ash x (- n)) -1)))
   :rule-classes nil
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (e/d (LRDT expt2*
-                                 ) 
-                           (LOGCONS-OF-0 
+                                 )
+                           (LOGCONS-OF-0
                             )))))
 
 (defthm equal-logand---expt---expt
@@ -6325,8 +6355,8 @@ To load this book, it is sufficient to do something like this:
                 (equal (- (expt 2 (1- (integer-length (- k))))) k))
            (equal (equal k (logand k x))
                   (equal (ash x (- (1- (integer-length (- k))))) -1)))
-  :hints (("goal" 
-           :use (:instance *ash*-equal-logand---expt---expt-helper 
+  :hints (("goal"
+           :use (:instance *ash*-equal-logand---expt---expt-helper
                            (n (1- (integer-length (- k))))))))
 
 (defthm logand---expt-v2
@@ -6338,15 +6368,15 @@ To load this book, it is sufficient to do something like this:
   :hints (("goal" :in-theory (enable LRDT expt2*))))
 
 (defthm logand---expt-rewrite-v2
-  (implies (and (syntaxp (quotep k)) 
-                (integerp k) 
+  (implies (and (syntaxp (quotep k))
+                (integerp k)
                 (equal (- (expt 2 (1- (integer-length (- k))))) k)
                 (unsigned-byte-p (integer-length (- k)) x))
            (equal (logand k x)
-                  (if (logbitp (1- (integer-length (- k))) x) 
-                      (expt 2 (1- (integer-length (- k)))) 
+                  (if (logbitp (1- (integer-length (- k))) x)
+                      (expt 2 (1- (integer-length (- k))))
                     0)))
-  :hints (("goal" :use (:instance logand---expt-v2 
+  :hints (("goal" :use (:instance logand---expt-v2
                                   (n (1- (integer-length (- k))))))))
 
 (defthm equal-logand---expt-0
@@ -6357,17 +6387,17 @@ To load this book, it is sufficient to do something like this:
                   (unsigned-byte-p n x)))
   :hints (("goal"
            :in-theory (e/d (LRDT)
-                           (logand---expt-v2 
-                            logand---expt-rewrite-v2 
+                           (logand---expt-v2
+                            logand---expt-rewrite-v2
                             logand---expt)))))
 
 (defthm equal-logand---expt-0-rewrite
   (implies (and (integerp x)
-                (syntaxp (quotep k)) (integerp k) 
+                (syntaxp (quotep k)) (integerp k)
                 (equal (- (expt 2 (1- (integer-length (- k))))) k))
            (equal (equal (logand k x) 0)
                   (unsigned-byte-p (1- (integer-length (- k))) x)))
-  :hints (("goal" :use (:instance equal-logand---expt-0 
+  :hints (("goal" :use (:instance equal-logand---expt-0
                                   (n (1- (integer-length (- k))))))))
 
 ;see from-rtl.lisp for more stuff about logand (and perhaps other functions...)
@@ -6383,7 +6413,7 @@ To load this book, it is sufficient to do something like this:
   (equal (logand x x y)
          (logand x y))
   :hints (("Goal" :in-theory (e/d (LOGAND-ZIP)
-                                  (logand 
+                                  (logand
                                    COMMUTATIVITY-OF-LOGAND
                                    logand-associative))
            :use (:instance logand-associative
@@ -6432,9 +6462,9 @@ To load this book, it is sufficient to do something like this:
            (equal (logbitp n (logcdr y))
                   (logbitp (+ 1 n) y)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (logbitp 
+           :in-theory (e/d (logbitp
                             logcdr
-                            exponents-add-unrestricted) 
+                            exponents-add-unrestricted)
                            (FLOOR-OF-SHIFT-RIGHT-2)))))
 
 ;similarly for logtail?
@@ -6470,17 +6500,17 @@ To load this book, it is sufficient to do something like this:
            (equal (equal (logior y z) x)
                   (and (logbitp (1- (integer-length x)) (logior y z))
                        (equal 0 (logand (lognot x) (logior y z))))))
-  :hints (("goal" 
-           :do-not '(;generalize eliminate-destructors 
+  :hints (("goal"
+           :do-not '(;generalize eliminate-destructors
                       ;          fertilize ;bzo. why didn't it fertilize completely?
                                 )
-           :in-theory (e/d (LRDT 
-                              even-odd-different-2 
+           :in-theory (e/d (LRDT
+                              even-odd-different-2
                               even-odd-different-1
                               expt2*
                               EQUAL-B-NOT-LOGCAR
                               ;ash
-                              ) 
+                              )
                            (integer-length*
                             LOGCONS-OF-0
                             ))
@@ -6533,7 +6563,7 @@ To load this book, it is sufficient to do something like this:
                       (ash (loghead (1+ m) (1+ x)) (1- n))
                     (ash (loghead (1+ m) x) (1- n)))))
   :rule-classes nil
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (e/d (LRDT loghead* equal-logior-*2) (LOGHEAD-SUM-SPLIT-INTO-2-WHEN-I-IS-A-CONSTANT
                                                             LOGCONS-OF-0))
            :induct (sub1-induction n))))
@@ -6550,7 +6580,7 @@ To load this book, it is sufficient to do something like this:
                   (if (equal (logcar x) 0)
                       (ash (loghead (1+ m) (1+ x)) (1- n))
                     (ash (loghead (1+ m) x) (1- n)))))
-  :hints (("goal" :use (:instance logior-expt-ash-loghead-bridge-helper 
+  :hints (("goal" :use (:instance logior-expt-ash-loghead-bridge-helper
                                   (n (integer-length v))))))
 
 (defthm logior-expt-ash-loghead-bridge-bridge
@@ -6604,7 +6634,7 @@ To load this book, it is sufficient to do something like this:
                 (unsigned-byte-p n v)
                 (not (unsigned-byte-p n (+ v a))))
            (equal (+ v (logior a (ash x n)))
-                  (logior (loghead n (+ v a)) 
+                  (logior (loghead n (+ v a))
                           (ash (1+ x) n))))
   :hints (("goal" :in-theory (e/d (logior-as-+
 ;                                   ash-+-pos
@@ -6612,7 +6642,7 @@ To load this book, it is sufficient to do something like this:
                                    )
                                   ( UNSIGNED-BYTE-P-+-EASY
                                    UNSIGNED-BYTE-P-+)))
-          ("goal''" :in-theory (e/d (ash-+-pos 
+          ("goal''" :in-theory (e/d (ash-+-pos
                                      LOGHEAD-ALMOST
                                      )
                                     ( UNSIGNED-BYTE-P-+)))))
@@ -6623,8 +6653,8 @@ To load this book, it is sufficient to do something like this:
 (defthm logior-lognot
   (equal (logior x (lognot x))
          -1)
-  :hints (("goal" 
-           :in-theory (enable LRDT logendp)))) 
+  :hints (("goal"
+           :in-theory (enable LRDT logendp))))
 
 (defthm logor-lognot-1
   (implies (and (integerp x)
@@ -6636,18 +6666,18 @@ To load this book, it is sufficient to do something like this:
                                    (k y))))))
 
 (defthm logior-duplicate
-  (equal (logior x x) 
+  (equal (logior x x)
          (ifix x))
-  :hints (("goal" 
+  :hints (("goal"
            :induct (logcdr-induction x)
-           :in-theory (enable LRDT zip 
+           :in-theory (enable LRDT zip
                               ))))
 
 ;add to rtl library?
 (defthm logior-duplicate-1
-  (equal (logior x x y) 
+  (equal (logior x x y)
          (logior x y))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (e/d () ( logior-associative))
            :use ((:instance logior-associative
                             (i x)
@@ -6669,26 +6699,26 @@ To load this book, it is sufficient to do something like this:
 
 ;; ;; moved to logcar
 ;; ;; (defthm logcar-logxor
-;; ;;   (implies (and (integerp a) 
+;; ;;   (implies (and (integerp a)
 ;; ;;                 (integerp b))
-;; ;;            (equal (logcar (logxor a b)) 
+;; ;;            (equal (logcar (logxor a b))
 ;; ;;                   (b-xor (logcar a) (logcar b))))
 ;; ;;   :hints (("goal" :in-theory (enable
 ;; ;;                               LOGOPS-RECURSIVE-DEFINITIONS-THEORY
 ;; ;;                               simplify-bit-functions))))
 
 ;; (defthm logxor-lognot
-;;   (implies (and (integerp a) 
+;;   (implies (and (integerp a)
 ;;                 (integerp b))
 ;;            (and (equal (logxor (lognot a) b) (lognot (logxor a b)))
 ;;                 (equal (logxor a (lognot b)) (lognot (logxor a b)))))
-;;   :hints (("goal" 
+;;   :hints (("goal"
 ;;            :in-theory (enable LRDT simplify-bit-functions))))
 
 
 
 ;; (defthm logxor-cancel2
-;;   (implies (and (integerp a) 
+;;   (implies (and (integerp a)
 ;;                 (integerp b))
 ;;            (equal (logxor b (logxor b a)) a))
 ;;   :hints (("goal" :use (:instance commutativity-of-logxor
@@ -6720,7 +6750,7 @@ To load this book, it is sufficient to do something like this:
 ;;                 (integerp y))
 ;;            (and
 ;;             (equal (logior z (logxor x y))
-;;                    (logior z 
+;;                    (logior z
 ;;                            (logior (logand x (lognot y))
 ;;                                    (logand (lognot x) y))))
 ;;             (equal (logior (logxor x y) z)
@@ -6754,7 +6784,7 @@ To load this book, it is sufficient to do something like this:
  :hints (("goal" :in-theory (enable LRDT logendp))))
           ;; :induct (logcdr-logcdr-induction x y)
 ;;            :in-theory (enable LOGOPS-RECURSIVE-DEFINITIONS-THEORY))))
- 
+
 (defthm lognand-rewrite
  (implies (and (integerp x)
                (integerp y))
@@ -6804,7 +6834,7 @@ To load this book, it is sufficient to do something like this:
             (implies (and (>= i 0))
                      (<= (logand j i) i)))))
 
-(in-theory (disable logand-upper-bound)) 
+(in-theory (disable logand-upper-bound))
 
 (defthm equal-logapp-x-y-z-constants
   (implies (and (syntaxp (quotep z))
@@ -6828,7 +6858,7 @@ To load this book, it is sufficient to do something like this:
                 (<= 0 n))
            (equal (logapp n (logior w y) (logior x z))
                   (logior (logapp n w x) (logapp n y z))))
-  :hints (("goal" :in-theory (enable LRDT)))) 
+  :hints (("goal" :in-theory (enable LRDT))))
 
 (defthm logapp-logand
   (implies (and (integerp w)
@@ -6869,7 +6899,7 @@ To load this book, it is sufficient to do something like this:
 
 (defthm loghead-logior
   (implies (and (integerp n)
-                (integerp x) 
+                (integerp x)
                 (integerp y)
                 (<= 0 n))
            (equal (loghead n (logior x y))
@@ -6895,7 +6925,7 @@ To load this book, it is sufficient to do something like this:
                     (ash (loghead (- n1 n2) x) n2))))
   :hints (("goal" :in-theory (e/d (loghead*-better ash* LRDT
                                                    zp
-                                                   ) 
+                                                   )
                                   ( ;LOGHEAD-OF-*-EXPT-ALT
                                    )))))
 
@@ -6983,7 +7013,7 @@ To load this book, it is sufficient to do something like this:
                   (or (equal x (expt 2 n))
                       (equal x 0))))
   :rule-classes nil
-  :hints (("goal" 
+  :hints (("goal"
            :induct (loghead n x)
            :expand (logcdr x)
            :in-theory (e/d (lrdt expt ;logcdr
@@ -7006,7 +7036,7 @@ To load this book, it is sufficient to do something like this:
 (local (in-theory (disable UNSIGNED-BYTE-P-OF-LOGCDR))) ;this doesn't play well with LRDT
 
 (defthm equal-loghead-lognot-all-ones
-  (implies (and (integerp n)    
+  (implies (and (integerp n)
                 (integerp x)
                 (<= 0 n))
            (equal (equal (loghead n (lognot x)) (1- (expt 2 n)))
@@ -7049,7 +7079,7 @@ To load this book, it is sufficient to do something like this:
   (implies (and (integerp n)
                 (<= 0 n)
                 (unsigned-byte-p n x))
-           (equal (loghead n (- (logext n x))) 
+           (equal (loghead n (- (logext n x)))
                   (loghead n (- x))))
   :hints (("goal" :in-theory (e/d (LRDT open-logcons) (LOGEXTU-AS-LOGHEAD ;forcing
                                                        LOGHEAD-OF-MINUS
@@ -7062,7 +7092,7 @@ To load this book, it is sufficient to do something like this:
                 (<= 0 n))
            (equal (loghead n (logxor x y))
                   (logxor (loghead n x) (loghead n y))))
-  :hints (("goal" :in-theory (enable LRDT)))) 
+  :hints (("goal" :in-theory (enable LRDT))))
 
 (defthm loghead-lognot-loghead
   (implies (and (integerp n1)
@@ -7072,8 +7102,8 @@ To load this book, it is sufficient to do something like this:
                 (<= 0 n1))
            (equal (loghead n1 (lognot (loghead n2 x)))
                   (loghead n1 (lognot x))))
-  :hints (("goal" 
-           :in-theory (e/d (LRDT logendp) (LOGHEAD-OF-MINUS 
+  :hints (("goal"
+           :in-theory (e/d (LRDT logendp) (LOGHEAD-OF-MINUS
                                            )))))
            ;:induct (sub1-sub1-logcdr-induction n2 n1 x))))
 
@@ -7125,7 +7155,7 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal" :use (:instance loghead-logapp (size (ifix size)))
            :in-theory (disable loghead-logapp))))
 
-(in-theory (disable loghead-logapp)) 
+(in-theory (disable loghead-logapp))
 
 (defthmd logtail-loghead-better
   (equal (logtail size1 (loghead size i))
@@ -7134,7 +7164,7 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal" :use (:instance logtail-loghead)
            :in-theory (disable logtail-loghead))))
 
-(in-theory (disable logtail-loghead)) 
+(in-theory (disable logtail-loghead))
 
 (defthm loghead-logtail
   (equal (loghead i (logtail j x))
@@ -7160,7 +7190,7 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal" :use (:instance logtail-logapp)
            :in-theory (disable logtail-logapp))))
 
-(in-theory (disable logtail-logapp)) 
+(in-theory (disable logtail-logapp))
 
 ;move to logapp.lisp?
 (defthm associativity-of-logapp-better
@@ -7174,8 +7204,8 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal" :use (:instance associativity-of-logapp)
            :in-theory (disable associativity-of-logapp))))
 
-(in-theory (disable associativity-of-logapp)) 
-  
+(in-theory (disable associativity-of-logapp))
+
 ;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
 ;; logtail
 ;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
@@ -7187,7 +7217,7 @@ To load this book, it is sufficient to do something like this:
                 (<= 0 n))
            (equal (logtail n (logior x y))
                   (logior (logtail n x) (logtail n y))))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (disable logapp-logior)
            :use ((:instance logapp-logior
                             (w (loghead n x))
@@ -7202,7 +7232,7 @@ To load this book, it is sufficient to do something like this:
                 (<= 0 n))
            (equal (logtail n (logand x y))
                   (logand (logtail n x) (logtail n y))))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (disable logapp-logand)
            :use ((:instance logapp-logand
                             (w (loghead n x))
@@ -7216,14 +7246,14 @@ To load this book, it is sufficient to do something like this:
                 (<= 0 n))
            (equal (logtail n (lognot x))
                   (lognot (logtail n x))))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (disable logapp-lognot)
            :use ((:instance logapp-lognot
                             (x (loghead n x))
                             (y (logtail n x)))))))
 
 (defthm logcar-lognot
-  (equal (logcar (lognot a)) 
+  (equal (logcar (lognot a))
          (b-not (logcar a)))
   :hints (("Goal" :in-theory (enable  logops-recursive-definitions-theory))))
 
@@ -7236,7 +7266,7 @@ To load this book, it is sufficient to do something like this:
 (defthm logcar-logior
   (equal (logcar (logior a b))
          (b-ior (logcar a) (logcar b)))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (enable logior logops-recursive-definitions-theory))))
 
 ;move 3rd hyp to conclusion?
@@ -7244,7 +7274,7 @@ To load this book, it is sufficient to do something like this:
   (implies (and (integerp n)
                 (integerp x)
                 (< 0 n))
-           (equal (logcar (logext n x)) 
+           (equal (logcar (logext n x))
                   (logcar x)))
   :hints (("goal" :in-theory (enable logext logbitp oddp; evenp
                                      ))))
@@ -7255,14 +7285,14 @@ To load this book, it is sufficient to do something like this:
                 (integerp n)
         ;        (integerp x)
                 )
-           (equal (logcar (ash x n)) 
+           (equal (logcar (ash x n))
                   (logbit (- n) x)))
   :hints (("goal" :in-theory (e/d (LRDT logbit) (logtail* ;was forcing
                                                  )))))
 
 (defthm logcar-ash-both
   (implies (integerp n)
-           (equal (logcar (ash x n)) 
+           (equal (logcar (ash x n))
                   (if (< 0 n)
                       0
                     (logbit (- n) x))))
@@ -7311,10 +7341,10 @@ To load this book, it is sufficient to do something like this:
                 t)))
   :hints (("goal"
            :cases ((evenp x))
-           :in-theory (e/d (logcdr 
-                            signed-byte-p 
+           :in-theory (e/d (logcdr
+                            signed-byte-p
                             expt
-                            ) 
+                            )
                            (expt-2-cruncher
                             FLOOR-OF-SHIFT-RIGHT-2
                             )))))
@@ -7332,7 +7362,7 @@ To load this book, it is sufficient to do something like this:
   (implies (integerp x)
            (equal (logcdr (* 4 x))
                   (* 2 x)))
-  :hints (("goal" :in-theory (enable logcdr))))  
+  :hints (("goal" :in-theory (enable logcdr))))
 
 
 (defthm logcdr-logcar
@@ -7348,29 +7378,29 @@ To load this book, it is sufficient to do something like this:
 (defthm logcdr-+1
   (implies (integerp x)
            (and (implies (equal (logcar x) 0)
-                         (equal (logcdr (+ 1 x)) 
+                         (equal (logcdr (+ 1 x))
                                 (logcdr x)))
                 (implies (equal (logcar x) 1)
-                         (equal (logcdr (+ 1 x)) 
+                         (equal (logcdr (+ 1 x))
                                 (+ 1 (logcdr x))))
                 (implies (and (integerp y)
                               (equal (logcar x) 1))
-                         (equal (logcdr (+ 1 x y)) 
+                         (equal (logcdr (+ 1 x y))
                                 (+ 1 (logcdr x) (logcdr y))))
                 (implies (and (integerp y)
                               (equal (logcar x) 1))
-                         (equal (logcdr (+ 1 y x)) 
+                         (equal (logcdr (+ 1 y x))
                                 (+ 1 (logcdr x) (logcdr y))))))
   :hints (("Goal" :in-theory (enable logcons))))
 
 (defthm logcdr-+3
   (and (implies (and (integerp x)
                      (equal (logcar x) 0))
-                (equal (logcdr (+ 3 x)) 
+                (equal (logcdr (+ 3 x))
                        (+ 1 (logcdr x))))
        (implies (and (integerp x)
                      (equal (logcar x) 1))
-                (equal (logcdr (+ 3 x)) 
+                (equal (logcdr (+ 3 x))
                        (+ 2 (logcdr x)))))
   :hints (("goal" :in-theory (enable logcar logcdr))))
 
@@ -7384,10 +7414,10 @@ To load this book, it is sufficient to do something like this:
   (implies (and (integerp n)
                 ;(integerp x)
                 (< 1 n))
-           (equal (logcdr (logext n x)) 
+           (equal (logcdr (logext n x))
                   (logext (1- n) (logcdr x))))
   :hints (("goal" :in-theory (enable LRDT))))
-           
+
 (defthm logcdr-bitop
   (and (equal (logcdr (b-and x y)) 0)
        (equal (logcdr (b-ior x y)) 0)
@@ -7414,7 +7444,7 @@ To load this book, it is sufficient to do something like this:
 ;;                   (+ (logcdr a)
 ;;                      (logcdr b)
 ;;                      (b-maj (logcar a) (logcar b) 0)))))
-  
+
 ;; (defthm logcdr-+-carry-bit
 ;;   (implies (and (integerp a)
 ;;                 (integerp b)
@@ -7427,22 +7457,22 @@ To load this book, it is sufficient to do something like this:
 (in-theory (disable logtail))
 
 (defthm logtail-when-i-is-zero
-  (equal (logtail pos 0) 
-         0) 
+  (equal (logtail pos 0)
+         0)
   :hints (("Goal" :in-theory (enable logtail))))
 
-(in-theory (disable logtail-size-0)) 
+(in-theory (disable logtail-size-0))
 
 (defthm logtail-when-i-is-not-an-integerp
   (implies (not (integerp i))
-           (equal (logtail pos i) 
+           (equal (logtail pos i)
                   0))
   :hints
   (("Goal" :in-theory (enable logtail))))
 
 (defthm logtail-when-pos-is-not-positive
   (implies (<= pos 0)
-           (equal (logtail pos i) 
+           (equal (logtail pos i)
                   (ifix i)
                   ))
   :hints (("Goal" :in-theory (enable logtail))))
@@ -7456,7 +7486,7 @@ To load this book, it is sufficient to do something like this:
 
 (defthm logtail-when-pos-is-not-an-integerp
   (implies (not (integerp pos))
-           (equal (logtail pos i) 
+           (equal (logtail pos i)
                   (ifix i)
                   ))
   :hints (("Goal" :in-theory (enable logtail))))
@@ -7506,12 +7536,12 @@ To load this book, it is sufficient to do something like this:
 
 ;the ifix was causing case splits
 (defthm logtail-0-i-better
-  (equal (logtail 0 i) 
+  (equal (logtail 0 i)
          (ifix i)))
 
 (defthmd logtail-0-i-better-no-split
   (implies (integerp i)
-           (equal (logtail 0 i) 
+           (equal (logtail 0 i)
                   i)))
 
 (in-theory (disable logtail-0-i))
@@ -7567,7 +7597,7 @@ To load this book, it is sufficient to do something like this:
                 (integerp n)
                 (<= 0 n))
            (<= (lshu n x s) bound))
-  :hints (("goal" :use (:instance unsigned-byte-p-lshu 
+  :hints (("goal" :use (:instance unsigned-byte-p-lshu
                                   (size n) (size1 n)
                                   (i x) (cnt s))
            :in-theory (disable unsigned-byte-p-lshu)))
@@ -7587,7 +7617,7 @@ To load this book, it is sufficient to do something like this:
            (< (* x d) c))
   :hints (("goal" :cases ((<= (* x d) (* a x)))
            :in-theory (enable *-PRESERVES->=-FOR-NONNEGATIVES))))
-          
+
 (defthmd <-expt-bridge
   (implies (and (< (* V (EXPT 2 S)) (EXPT 2 N1))
                 (<= 0 v)
@@ -7613,7 +7643,7 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal" :do-not-induct t
            :in-theory (e/d (lshu
                             <-expt-bridge
-                            UNSIGNED-BYTE-P 
+                            UNSIGNED-BYTE-P
                             ASH-BOUND4
                             ASH-BOUND3a)
                            ()))))
@@ -7624,14 +7654,14 @@ To load this book, it is sufficient to do something like this:
                 (integerp n2)
                 (<= 0 n2)
                 (integerp s)
-                (<= 0 n1)    
+                (<= 0 n1)
                 (< s n1)
                 (integerp v)
                 (<= 0 v)
                 )
            (<= (lshu n2 v s) (1- (expt 2 n1))))
   :rule-classes nil
-  :hints (("goal" :use (lshu-bound-2) 
+  :hints (("goal" :use (lshu-bound-2)
            :in-theory (e/d (UNSIGNED-BYTE-P)
                            (  lshu-bound-2 EXPT-MINUS)))))
 
@@ -7681,7 +7711,7 @@ To load this book, it is sufficient to do something like this:
 ;Returns a term representing the conjunctionof TERM1 and TERM2.
 (defund make-conjunction (term1 term2)
   (declare (type t term1 term2))
-  (if (equal term1 ''t)  
+  (if (equal term1 ''t)
       term2 ;conjoining something with "true" has no effect
     (if (equal term2 ''t)
         term1 ;conjoining something with "true" has no effect
@@ -7751,7 +7781,7 @@ To load this book, it is sufficient to do something like this:
   (if (not (consp term))
       `(integerp ,term)
     (case (car term)
-          (binary-+ (make-conjunction 
+          (binary-+ (make-conjunction
                      (hyp-for-addends n (cadr term))
                      (hyp-for-addends n (caddr term))))
           (unary-- (hyp-for-addend n (cadr term)))
@@ -7799,7 +7829,7 @@ To load this book, it is sufficient to do something like this:
                            (loghead-sum-eval (strip-logheads-from-sum n term) alist))))
   :hints (("Goal" :in-theory (e/d (make-conjunction
                                      strip-loghead-from-term
-                                     CALL-TO-LOGHEAD-WITH-N-OR-GREATER-SIZE) 
+                                     CALL-TO-LOGHEAD-WITH-N-OR-GREATER-SIZE)
                                   (UNSIGNED-BYTE-P-LOGHEAD-FORWARD-CHAINING ;i think this prevents specious simplification
                                    ))
            :do-not '(generalize eliminate-destructors))))
@@ -7836,7 +7866,7 @@ To load this book, it is sufficient to do something like this:
 ; rules that simplify max and min expressions, in case we later disable min and max.
 
 (defthm equal-max-x-x
-  (equal (max x x) 
+  (equal (max x x)
          x))
 
 (defthm max-linear
@@ -7857,13 +7887,13 @@ To load this book, it is sufficient to do something like this:
    (equal
     (equal (max a b) b)
     (<= a b)))))
-   
+
 (defthm max-constants
   (implies
    (and
     (syntaxp (quotep x))
     (syntaxp (quotep y)))
-   (equal 
+   (equal
     (max x (max y z))
     (max (max x y) z))))
 
@@ -7950,7 +7980,7 @@ To load this book, it is sufficient to do something like this:
 
 (defthm equal-a-min-a
   (implies
-   (and 
+   (and
     (rationalp a)
     (rationalp b))
    (and
@@ -8022,7 +8052,7 @@ To load this book, it is sufficient to do something like this:
    (and
     (syntaxp (quotep x))
     (syntaxp (quotep y)))
-   (equal 
+   (equal
     (min x (min y z))
     (min (min x y) z))))
 
@@ -8049,7 +8079,7 @@ To load this book, it is sufficient to do something like this:
                               simplify-bit-functions))))
 
 (defthm logxor-lognot-one
-  (implies (and (integerp a) 
+  (implies (and (integerp a)
                 (integerp b))
            (equal (logxor (lognot a) b)
                   (lognot (logxor a b)))))
@@ -8073,10 +8103,10 @@ To load this book, it is sufficient to do something like this:
                                      LOGAND-NEG
                                      ))))
 
-(defthm integerp-logand 
+(defthm integerp-logand
   (integerp (logand x y)))
 
-(defthm integerp-logxor 
+(defthm integerp-logxor
   (integerp (logxor x y)))
 
 (defthm integerp-logior
@@ -8085,10 +8115,10 @@ To load this book, it is sufficient to do something like this:
 (defthm integerp-logext
   (integerp (logext x y)))
 
-(defthm rationalp-logand 
+(defthm rationalp-logand
   (rationalp (logand x y)))
 
-(defthm rationalp-logxor 
+(defthm rationalp-logxor
   (rationalp (logxor x y)))
 
 (defthm rationalp-logior
@@ -8104,7 +8134,7 @@ To load this book, it is sufficient to do something like this:
 ;;     (< 0 n) ;; extraneous
 ;;     (integerp n) ;; extraneous
 ;;     (integerp x)  ;; extraneous
-;;     (integerp m) 
+;;     (integerp m)
 ;;     (<= n m))
 ;;    (not (logbitp m x)))
 ;;   :hints (("Goal"
@@ -8118,7 +8148,7 @@ To load this book, it is sufficient to do something like this:
            (not (logbitp m x)))
   :otf-flg t
   :hints (("Goal" :in-theory (e/d (ifix ;LOGBITP-WITH-NON-INTEGER ;UNSIGNED-BYTE-p
-                                        ) 
+                                        )
                                   (LOGBITP-N-UNSIGNED-BYTE-P-N
                                    OPEN-LOGCONS))
            :use (:instance LOGBITP-N-UNSIGNED-BYTE-P-N (n m)))))
@@ -8203,7 +8233,7 @@ To load this book, it is sufficient to do something like this:
 ;;            :do-not '(generalize eliminate-destructors)
 ;;            )))
 
- 
+
 
 
 
@@ -8215,11 +8245,11 @@ To load this book, it is sufficient to do something like this:
            (equal (logext n (+ x (expt 2 n)))
                   (logext n x)))
   :hints (("goal" :in-theory (e/d (LRDT
-                                     open-logcons) 
-                                  (LOGCONS-OF-0 
+                                     open-logcons)
+                                  (LOGCONS-OF-0
                                    )))))
 
-(local (in-theory (enable open-logcons))) 
+(local (in-theory (enable open-logcons)))
 
 (local (in-theory (disable logcons-of-0)))
 
@@ -8278,7 +8308,7 @@ To load this book, it is sufficient to do something like this:
                             UNSIGNED-BYTE-P
                             INTEGER-RANGE-P
                             ;logext
-                            ) 
+                            )
                            (
 ;                            expt2*
                             SIGN-LOGEXT-AS-LOGBITP)))))
@@ -8298,9 +8328,9 @@ To load this book, it is sufficient to do something like this:
                             UNSIGNED-BYTE-P
                             INTEGER-RANGE-P
                             ;logext
-                            ) 
+                            )
                            (SIGN-LOGEXT-AS-LOGBITP)))))
- 
+
 
 ;improve
 ;go the other way too?
@@ -8423,7 +8453,7 @@ To load this book, it is sufficient to do something like this:
                 (<= 0 SIZE1)
                 )
            (equal (unsigned-byte-p size (logapp size1 i j))
-                  (and (integerp size) 
+                  (and (integerp size)
                        (<= 0 size)
                        (if (integerp j)
                            (unsigned-byte-p (- size size1) j)
@@ -8434,7 +8464,7 @@ To load this book, it is sufficient to do something like this:
            :in-theory (e/d (FALSIFY-UNSIGNED-BYTE-P)
                            ( unsigned-byte-p-logapp)))))
 
-(in-theory (disable unsigned-byte-p-logapp)) 
+(in-theory (disable unsigned-byte-p-logapp))
 
 (defthm ash-<=-to-sbp
   (implies (and (signed-byte-p (- 32 N) V)
@@ -8445,7 +8475,7 @@ To load this book, it is sufficient to do something like this:
                 (<= -2147483648 (ASH V N))))
   :hints (("goal"
 
-           :in-theory (disable ASH-AS-LOGTAIL 
+           :in-theory (disable ASH-AS-LOGTAIL
                                signed-byte-p-ash
                                )
            :use ((:instance signed-byte-p-ash (x v) (n 32) (m n))))))
@@ -8663,9 +8693,9 @@ To load this book, it is sufficient to do something like this:
 ;think more about how we want to handle claims about bit vectors of length 1.  do we prefer to normalize all the claims to claims about 0, or do we
 ;want to leave  (equal (logcar x) 1) to get ACL2 to substitute 1 for (logcar x)? -ews
 ;eric saw something similar to this at AMD.
-(defthm equal-logcar-1 
-  (equal (equal (logcar x) 1) 
-         (not (equal (logcar x) 0))) 
+(defthm equal-logcar-1
+  (equal (equal (logcar x) 1)
+         (not (equal (logcar x) 0)))
   :hints (("goal" :in-theory (enable))))
 
 
@@ -8706,7 +8736,7 @@ To load this book, it is sufficient to do something like this:
                 (< 0 n))
            (<= (logext n x) x))
   :rule-classes :linear
-  :hints (("goal" :in-theory (e/d (SIGNED-BYTE-P) (logext-identity 
+  :hints (("goal" :in-theory (e/d (SIGNED-BYTE-P) (logext-identity
                                                    logext-does-nothing-rewrite
                                                    signed-byte-p-logext
                                                    SIGNED-BYTE-P-OF-LOGEXT
@@ -8758,7 +8788,7 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable logapp))))
 
-(in-theory (disable logcar-logapp)) 
+(in-theory (disable logcar-logapp))
 
 (defthm logbitp-logapp-better
   (equal (logbitp pos (logapp size i j))
@@ -8773,16 +8803,16 @@ To load this book, it is sufficient to do something like this:
 (defthm logext-of-logext-same
   (equal (logext size (logext size i))
          (logext size i))
-  :hints (("Goal" :in-theory (e/d (logext) 
+  :hints (("Goal" :in-theory (e/d (logext)
                                   (EQUAL-LOGAPP-X-Y-Z
-                                   EQUAL-LOGAPP-X-Y-Z-CONSTANTS                                   
+                                   EQUAL-LOGAPP-X-Y-Z-CONSTANTS
                                    ;;LOGHEAD-LOGAPP
                                    )))))
 
 (defthm logext-+-logext-better-alt
   (equal (logext size (+ (logext size j) i))
          (logext size (+ (ifix j) i)))
-  :hints (("Goal" :use (:instance  logext-+-logext-better) 
+  :hints (("Goal" :use (:instance  logext-+-logext-better)
            :in-theory (disable  logext-+-logext-better))))
 
 (defthm logbitp-of-product-with-2
@@ -8803,7 +8833,7 @@ To load this book, it is sufficient to do something like this:
                   )))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (FLOOR-NORMALIZES-TO-HAVE-J-BE-1 EXPONENTS-ADD-UNRESTRICTED logbitp) ()))))
-        
+
 (defthm logbitp-of-*-expt-2-special
   (implies (and (integerp x)
                 (<= 0 n)
@@ -8844,7 +8874,7 @@ To load this book, it is sufficient to do something like this:
 ;have no affect on subsequent proofs.
 
 ;stuff enabled or added by the @logops book:
-(in-theory (enable 
+(in-theory (enable
 ;            (:EXECUTABLE-COUNTERPART IMMEDIATE-FORCE-MODEP) ;trying without this...
 ;            (:INDUCTION EXPT) ;trying without this
             ))
@@ -8852,7 +8882,7 @@ To load this book, it is sufficient to do something like this:
 
 ;stuff disabled by the @logops book:
 ;bzo remove stuff from this!
-(in-theory (disable 
+(in-theory (disable
             (:FORWARD-CHAINING INTEGERP-*-MEANS)
             (:DEFINITION LOGENDP)
             (:DEFINITION B-MAJ)
@@ -8922,7 +8952,7 @@ To load this book, it is sufficient to do something like this:
             (:REWRITE UNSIGNED-BYTE-P-+-EASY)
             (:FORWARD-CHAINING UNSIGNED-BYTE-P-+-EASY-FC)
             (:REWRITE UNSIGNED-BYTE-P-+-BRIDGE2)
- ;           (:REWRITE SIGNED-BYTE-P-+)                          
+ ;           (:REWRITE SIGNED-BYTE-P-+)
 ;            (:REWRITE SIGNED-BYTE-P-UNSIGNED-BYTE-P)
 ;            (:REWRITE UNSIGNED-BYTE-P-SUBTYPE)
 ;            (:REWRITE SIGNED-BYTE-P-SUBTYPE)
@@ -9095,8 +9125,8 @@ To load this book, it is sufficient to do something like this:
 
 
 
-;;; The true-listp guard to nth and update-nth is used elswhere, 
-;;; There are two versions, which are identical except that our 
+;;; The true-listp guard to nth and update-nth is used elswhere,
+;;; There are two versions, which are identical except that our
 ;;; guard is that the index is in the list, not that the list is true.
 
 
@@ -9163,7 +9193,7 @@ To load this book, it is sufficient to do something like this:
    (and
     (signed-byte-p 32 x)
     (signed-byte-p 32 y))
-   (and 
+   (and
     (<= (- (expt 2 31)) (LOGIOR x y))
     (<= (logior x y) (1- (expt 2 31)))))
   :hints (("goal" :in-theory (disable  signed-byte-p-logops)
@@ -9175,7 +9205,7 @@ To load this book, it is sufficient to do something like this:
    (and
     (signed-byte-p 32 x)
     (signed-byte-p 32 y))
-   (and 
+   (and
     (<= (- (expt 2 31)) (LOGXOR x y))
     (<= (logxor x y) (1- (expt 2 31)))))
   :hints (("goal" :in-theory (disable  signed-byte-p-logops)
@@ -9186,7 +9216,7 @@ To load this book, it is sufficient to do something like this:
 (defthm logxor-bit-bound
   (implies
     (and (unsigned-byte-p 1 x) (unsigned-byte-p 1 y))
-  (and 
+  (and
    (<= 0 (logxor x y))
    (<= (logxor x y) 1)))
   :hints (("goal" :in-theory (disable UNSIGNED-BYTE-P-LOGXOR)
@@ -9215,7 +9245,7 @@ To load this book, it is sufficient to do something like this:
            (<= (LOGAND X Y) 2147483647)))
 
 
-;The out rules in the next series may not handle all these cases, 
+;The out rules in the next series may not handle all these cases,
 ;so it has been left it in this file, but commented out
 
 
@@ -9293,7 +9323,7 @@ To load this book, it is sufficient to do something like this:
 
 ;; BY: This book is rather fragile.  For example, it seems previously to have
 ;;     been certified with EXPT enabled, but it is currently disabled, so I
-;;     had to deal with that throughout. 
+;;     had to deal with that throughout.
 
 
 ;drop?
@@ -9327,7 +9357,7 @@ To load this book, it is sufficient to do something like this:
            ;:do-not '(generalize eliminate-destructors)
            :in-theory (enable LOGOPS-RECURSIVE-DEFINITIONS-THEORY b-and b-xor open-logcons))))
 
-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;           
+;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
 ;; signed-byte-p, unsigned-byte-p
 ;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
 
@@ -9384,7 +9414,7 @@ To load this book, it is sufficient to do something like this:
 ;trying without this...
 ;; (defthm loghead-24-16-bridge
 ;;   (implies (unsigned-byte-p 16 x)
-;;            (equal (loghead 24 x) 
+;;            (equal (loghead 24 x)
 ;;                   x)))
 
 ;Prove a bound on (loghead n x) perhaps?
@@ -9473,7 +9503,7 @@ To load this book, it is sufficient to do something like this:
   (implies (and (integerp x)
                 (integerp y))
            (and (equal (logior z (logxor x y))
-                       (logior z 
+                       (logior z
                                (logior (logand x (lognot y))
                                        (logand (lognot x) y))
                                ))
@@ -9510,7 +9540,7 @@ To load this book, it is sufficient to do something like this:
 
 (in-theory (enable ash-as-logtail))  ;do we want this enabled or not?
 
-;; added this one. 
+;; added this one.
 ;drop?
 (defthmd *ark*-fold-in-two-crock
   (implies (and (acl2-numberp x)
@@ -9628,7 +9658,7 @@ To load this book, it is sufficient to do something like this:
   (implies (and (integerp n1)
                 (integerp n2)
                 (integerp x)
-                (<= 0 n1) 
+                (<= 0 n1)
                 (< n2 0))
            (equal (ash (loghead n1 x) n2)
                   (if (<= n1 (- n2))
@@ -9640,7 +9670,7 @@ To load this book, it is sufficient to do something like this:
 ;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
 ;; floor
 ;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
-    
+
 (in-theory (enable floor-*-1/2-expt-2))
 
 (in-theory (enable sign-+-logext-logext-as-logbitp))
@@ -9701,7 +9731,7 @@ To load this book, it is sufficient to do something like this:
                     )))
   :hints (("Goal" :use (:instance logextu-as-loghead))))
 
-;bzo move, 
+;bzo move,
 ;generalize: rewrite a claim about signed-byte-p of a constant to a claim about the index.
 (defthm signed-byte-p-of-1
   (equal (signed-byte-p n 1)
@@ -9709,10 +9739,10 @@ To load this book, it is sufficient to do something like this:
               (< 1 n)))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
 
-;bzo we could need a rule like this for subtracting 2, subtracting 3, etc. 
+;bzo we could need a rule like this for subtracting 2, subtracting 3, etc.
 ;(and the rules for those cases would get grosser) I bet that subtracting 1
-;covers most of the cases we'll see in practice.this rule gives us a little 
-;flexibility around the ends of the unsigned-byte-p range without just 
+;covers most of the cases we'll see in practice.this rule gives us a little
+;flexibility around the ends of the unsigned-byte-p range without just
 ;opening up to arithmetic
 (defthm unsigned-byte-p-of-one-less-than-x
   (implies (syntaxp (not (quotep x))) ;prevents loops (i think because acl2 unifies say, the constant 42 with the pattern (+ -1 x)
@@ -9757,7 +9787,7 @@ To load this book, it is sufficient to do something like this:
 ;; (defthm plus-of-logapp-suck-in
 ;;   (implies (unsigned-byte-p 16 (+ x y))
 ;;            (equal (+ x (logapp 16 y j))
-;;                   (if (unsigned-byte-p 16 y) 
+;;                   (if (unsigned-byte-p 16 y)
 ;;                       (logapp 16 (+ x y) j)
 ;;                     (+ (loghead 16 y) (- y) (logapp 16 (+ x y) j)) ;this seems strange
 ;;                     )))
@@ -9769,7 +9799,7 @@ To load this book, it is sufficient to do something like this:
 (defthm plus-of-logapp-suck-in
   (implies (unsigned-byte-p n (+ x y))
            (equal (+ x (logapp n y j))
-                  (if (unsigned-byte-p n y) 
+                  (if (unsigned-byte-p n y)
                       (logapp n (+ x y) j)
                     (+ (loghead n y) (- y) (logapp n (+ x y) j)) ;this seems strange
                     )))
@@ -9778,7 +9808,7 @@ To load this book, it is sufficient to do something like this:
 (defthm plus-of-logapp-suck-in-alt
   (implies (unsigned-byte-p n (+ x z y))
            (equal (+ x z (logapp n y j))
-                  (if (unsigned-byte-p n y) 
+                  (if (unsigned-byte-p n y)
                       (logapp n (+ x z y) j)
                     (+ (loghead n y) (- y) (logapp n (+ x z y) j)) ;this seems strange
                     )))
@@ -9792,7 +9822,7 @@ To load this book, it is sufficient to do something like this:
            (equal (+ (- (* 1/2 x))
                      (- (* 1/2 x))
                      y)
-                  (+ (- x) 
+                  (+ (- x)
                      y))))
 
 (defthm logtail-of-loghead-becomes-logbit
@@ -9802,7 +9832,7 @@ To load this book, it is sufficient to do something like this:
                 )
            (equal (logtail m (loghead n x))
                   (logbit m x)))
-  :hints (("Goal" :in-theory (e/d (logtail-loghead-better) 
+  :hints (("Goal" :in-theory (e/d (logtail-loghead-better)
                                   (loghead-logtail)))))
 
 (defthm loghead-split
@@ -9825,7 +9855,7 @@ To load this book, it is sufficient to do something like this:
                            (equal (loghead size i)
                                   (loghead size i2))))))
   :hints (("Goal" :in-theory (enable logapp-equal-logapp-rewrite))))
-                    
+
 
 (defthmd loghead-split-special
   (implies (and (syntaxp (equal x 'x))
@@ -9835,7 +9865,7 @@ To load this book, it is sufficient to do something like this:
            (equal (loghead n x)
                   (logapp (+ -1 n) (loghead (+ -1 n) x) (logbit (+ -1 n) x))))
  :hints (("Goal" :use (:instance  loghead-split))))
-        
+
 ;kill the 16 version
 ;keep this disabled.
 (defthmd equal-of-logheads-split
@@ -9897,10 +9927,10 @@ To load this book, it is sufficient to do something like this:
                 (equal (ash z n) z) ; bzo ;figure out what this should simplify to and prove a rule, then rephrase this rule
                 )))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (floor-normalizes-to-have-j-be-1 
-                            logtail 
-                            loghead 
-                            ash) 
+           :in-theory (e/d (floor-normalizes-to-have-j-be-1
+                            logtail
+                            loghead
+                            ash)
                            ( ;(:type-prescription floor)
                             (:type-prescription floor)
                             )))))
@@ -9957,7 +9987,7 @@ To load this book, it is sufficient to do something like this:
 ;;                             oddp
 ;;                             evenp
 ;;                             ifix
-;;                             ) 
+;;                             )
 ;;                            (loghead-of-prod-lemma
 ;;                             mod-cancel
 ;;                             evenp-collapse
@@ -9970,7 +10000,7 @@ To load this book, it is sufficient to do something like this:
 ;;                   (loghead n (* i (ifix j)))))
 ;;   :hints (("Goal" ; :use (:instance  loghead-of-prod-lemma (x (logapp 31 a -1)) (y k))
 ;;            :in-theory (e/d (logext
-;;                             loghead logapp 
+;;                             loghead logapp
 ;;                             imod
 ;;                             logbitp
 ;;                             oddp
@@ -9979,7 +10009,7 @@ To load this book, it is sufficient to do something like this:
 ;;                             mod-stretch-base
 ;;                             mod-stretch-base-2
 ;;                             EXPONENTS-ADD-UNRESTRICTED
-;;                             ) 
+;;                             )
 ;;                            (loghead-of-prod-lemma
 ;;                             mod-cancel
 ;;                             evenp-collapse
@@ -10005,7 +10035,7 @@ To load this book, it is sufficient to do something like this:
                 (integerp x)
                 (integerp m)
                 (< 0 n)
-                
+
                 (< 0 (+ n m)))
            (equal (ash (logext n x) m)
                   (logext (+ n m)
@@ -10019,7 +10049,7 @@ To load this book, it is sufficient to do something like this:
                 (integerp b))
            (equal (+ a (ASH b k))
                   (logapp k a b)))
-  :hints (("Goal" :in-theory (e/d (ASH-AS-LOGAPP) 
+  :hints (("Goal" :in-theory (e/d (ASH-AS-LOGAPP)
                                   (LOGAPP-0-PART-2-BETTER)))))
 
 
@@ -10053,11 +10083,11 @@ To load this book, it is sufficient to do something like this:
                       (and (equal b (logtail size x))
                            (< (loghead size a) (loghead size x))))))
   :hints (("Goal" ; :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (LOGAPP 
+           :in-theory (e/d (LOGAPP
                               imod ifloor
-                              LOGTAIL 
+                              LOGTAIL
                               mod-cancel
-                              loghead) 
+                              loghead)
                            ()))))
 
 ;bzo clean up rhs?
@@ -10102,7 +10132,7 @@ To load this book, it is sufficient to do something like this:
                     (+ -1 x))))
   :hints (("Goal" :in-theory (enable ash logcdr ifloor))))
 
-(in-theory (disable ash-logcdr-1)) 
+(in-theory (disable ash-logcdr-1))
 
 (defthm logcdr-logapp
   (equal (logcdr (logapp size i j))
@@ -10159,7 +10189,7 @@ To load this book, it is sufficient to do something like this:
                                    INTEGER-RANGE-P
                                    logbitp
                                    EXPONENTS-ADD-UNRESTRICTED ;shouldn't be needed?
-                                   ) 
+                                   )
                                   (FLOOR-BY-TWICE-HACK)))))
 
 ;; (defthm usb-tighten
@@ -10169,11 +10199,11 @@ To load this book, it is sufficient to do something like this:
 ;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
 ;;   :hints (("Goal" :in-theory (e/d (unsigned-byte-p
 ;;                                      INTEGER-RANGE-P
-;;                                      logbitp) 
+;;                                      logbitp)
 ;;                                   (FLOOR-BY-TWICE-HACK)))))
 
 ;think more about this
-;looped! 
+;looped!
 (defthmd loghead-when-know-top-bit
   (implies (and (equal (logbit m x) b) ;using m so that this will be sure to match
                 (equal m (+ -1 n))
@@ -10262,7 +10292,7 @@ To load this book, it is sufficient to do something like this:
                   ))
   :hints (("Goal" :cases ((integerp y))
            :in-theory (e/d (mod)))))
- 
+
 ;generalize to handle addends other than 1 with corresponding predicates (like "multiple of 4" than even)?
 ;prove without using elimination?
 ;bzo gen
@@ -10306,7 +10336,7 @@ To load this book, it is sufficient to do something like this:
            (equal (+ a (* j b))
                   (logapp (expo j) a b)))
   :hints (("Goal" :in-theory (e/d (ash ;POWER2P
-                                       ) 
+                                       )
                                   (FLOOR-BY-TWICE-HACK sum-with-shift-becomes-logapp
                                                        EXPO-COMPARISON-REWRITE-TO-BOUND
                                                        EXPO-COMPARISON-REWRITE-TO-BOUND-2))
@@ -10338,7 +10368,7 @@ To load this book, it is sufficient to do something like this:
                        (or (equal x (expt 2 (+ -1 n)))
                            (and (signed-byte-p n x)
                            (not (equal x (- (expt 2 (+ -1 n))))))))))
-  :hints (("Goal" :in-theory (enable signed-byte-p 
+  :hints (("Goal" :in-theory (enable signed-byte-p
                                      integer-range-p ;prove a rule for integer-range-p of (+ 1 x)
                                      ))))
 
@@ -10350,7 +10380,7 @@ To load this book, it is sufficient to do something like this:
            (equal (logbitp n (+ -1 x))
                   (not (logbitp n x))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (logbitp loghead ;floor 
+           :in-theory (e/d (logbitp loghead ;floor
                                     imod
     ;oddp evenp expt
                                     )
@@ -10375,7 +10405,7 @@ To load this book, it is sufficient to do something like this:
            (equal (logbitp n (+ -1 x))
                   (logbitp n x)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (logbitp loghead ;floor 
+           :in-theory (e/d (logbitp loghead ;floor
                                     imod
     ;oddp evenp expt
                                     )
@@ -10389,7 +10419,7 @@ To load this book, it is sufficient to do something like this:
                       (not (LOGBITP n X))
                     (LOGBITP n X))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (LOGBITP LOGHEAD ;floor 
+           :in-theory (e/d (LOGBITP LOGHEAD ;floor
                                     imod
 ;oddp EVENP expt
                                     )
@@ -10409,7 +10439,7 @@ To load this book, it is sufficient to do something like this:
                     (logtail n x))))
   :hints (("Goal" :in-theory (enable logtail
                                      loghead
-                                     UNSIGNED-BYTE-P 
+                                     UNSIGNED-BYTE-P
                                      INTEGER-RANGE-P ;prove a rule for integer-range-p of (+ 1 x)
                                      ))))
 
@@ -10427,7 +10457,7 @@ To load this book, it is sufficient to do something like this:
                     (+ -1 (logext 32 x)))))
   :otf-flg t
   :hints (("Goal" :in-theory (enable logext
-                                     UNSIGNED-BYTE-P 
+                                     UNSIGNED-BYTE-P
                                      INTEGER-RANGE-P ;prove a rule for integer-range-p of (+ 1 x)
                                      ))))
 
@@ -10489,7 +10519,7 @@ To load this book, it is sufficient to do something like this:
                 (integerp c))
            (equal (LOGHEAD n (+ a (- (LOGEXT n b)) c))
                   (LOGHEAD n (+ a (- (ifix b)) c)))))
-           
+
 (defthm removeme7
   (implies (and (integerp k)
                 (integerp a))
@@ -10497,7 +10527,7 @@ To load this book, it is sufficient to do something like this:
                   (loghead n (+ a (- (* k (ifix b))))))))
 
 ;;Note the overflow case:
-;;(truncate (- (expt 2 31)) -1) is equal to (expt2 31), which is not a signed-byte-p 32.                                  
+;;(truncate (- (expt 2 31)) -1) is equal to (expt2 31), which is not a signed-byte-p 32.
 ;bzo gen
 (defthm signed-byte-p-of-truncate
   (implies (and (signed-byte-p 32 i)
@@ -10554,13 +10584,13 @@ To load this book, it is sufficient to do something like this:
 
 (defthmd hackz
   (implies (natp i)
-           (equal (+ (/ a) 
+           (equal (+ (/ a)
                      (* I (/ a)))
                   (/ (+ 1 i) a))))
 
 (defthm hackzz
   (implies (natp i)
-           (equal (+ (/ (+ 1 I)) 
+           (equal (+ (/ (+ 1 I))
                      (* I (/ (+ 1 I))))
                   1))
   :hints (("Goal" :in-theory (disable DISTRIBUTIVITY-ALT)
@@ -10645,7 +10675,7 @@ To load this book, it is sufficient to do something like this:
                     (logbitp n x))))
   :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (LOGBITP LOGHEAD ;floor 
+           :in-theory (e/d (LOGBITP LOGHEAD ;floor
                                     mod-helper-2
                      ;oddp EVENP expt
                                     imod
@@ -10715,14 +10745,14 @@ To load this book, it is sufficient to do something like this:
 (defthmd one-way
   (IMPLIES (AND (INTEGERP (* 1/2 (FLOOR X 16384)))
                 (INTEGERP X))
-           (EQUAL (MOD X 16384) 
+           (EQUAL (MOD X 16384)
                   (MOD X 32768)))
   :hints (("Goal" :in-theory (disable evenp-collapse))))
 
 
 ;keep this disabled most of the time
 (defthmd loghead-split-x-rewrite
-  (implies (and (syntaxp (equal x 'x)) 
+  (implies (and (syntaxp (equal x 'x))
                 (integerp n)
                 (< 0 n))
            (equal (loghead n x)
@@ -10732,7 +10762,7 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal" :by loghead-split)))
 
 (defthmd loghead-split-y-rewrite
-  (implies (and (syntaxp (equal x 'y)) 
+  (implies (and (syntaxp (equal x 'y))
                 (integerp n)
                 (< 0 n))
            (equal (loghead n x)
@@ -10808,7 +10838,7 @@ To load this book, it is sufficient to do something like this:
                   (logtail (- n m) x)))
   :hints (("Goal" :use (:instance INTEGERP-EXPT (n (- n m)))
            :in-theory (e/d (logtail ifloor ifix FLOOR-NORMALIZES-TO-HAVE-J-BE-1
-                              EXPONENTS-ADD-UNRESTRICTED) 
+                              EXPONENTS-ADD-UNRESTRICTED)
                            (INTEGERP-EXPT)))))
 
 (defthm logtail-shift-constant-version
@@ -10949,7 +10979,7 @@ To load this book, it is sufficient to do something like this:
 
 
 (defthm loghead-of-difference-equal-0-rewrite-alt
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp y)
                 (<= 0 n)
                 (integerp n)
@@ -10957,13 +10987,13 @@ To load this book, it is sufficient to do something like this:
            (equal (equal 0 (loghead n (+ y (- x))))
                   (equal (loghead n x) (loghead n y))))
   :hints
-  (("Goal" :in-theory (e/d (;loghead 
+  (("Goal" :in-theory (e/d (;loghead
                             LOGHEAD-SUM-SPLIT-INTO-2-CASES
                             imod ifix) (mod-=-0)))))
 
 
 (defthm loghead-of-difference-equal-0-rewrite
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp y)
                 (<= 0 n)
                 (integerp n)
@@ -10971,9 +11001,9 @@ To load this book, it is sufficient to do something like this:
            (equal (equal 0 (loghead n (+ (- x) y)))
                   (equal (loghead n x) (loghead n y))))
   :hints
-  (("Goal" :in-theory (e/d (;loghead 
+  (("Goal" :in-theory (e/d (;loghead
                             LOGHEAD-SUM-SPLIT-INTO-2-CASES
-                            imod ifix) (mod-=-0))))) 
+                            imod ifix) (mod-=-0)))))
 
 ;bzo harvest the stuff below
 
@@ -10996,7 +11026,7 @@ To load this book, it is sufficient to do something like this:
   (implies (and (unsigned-byte-p 16 x)
                 (integerp n)
                 (< 0 n))
-           (equal (ash x n) 
+           (equal (ash x n)
                   (ash (ash x (1- n)) 1)))
   :hints (("Goal" :in-theory (e/d (ash expt)(unsigned-byte-p)))))
 
@@ -11019,7 +11049,7 @@ To load this book, it is sufficient to do something like this:
 ;move?
 ;rephrase conclusion?
 
-(defthm shift-bounds 
+(defthm shift-bounds
   (implies (unsigned-byte-p 16 x)
            (<= (lshu 32 x 16) (- (expt 2 32) (expt 2 16))))
   :hints (("Goal" :in-theory (e/d (lshu loghead ash) nil))))
@@ -11029,7 +11059,7 @@ To load this book, it is sufficient to do something like this:
 ;; (defthm sbp-of-logapp-hack
 ;;   (implies (signed-byte-p 16 b)
 ;;            (signed-byte-p 32 (logapp 16 a b)))
-;;   :hints (("Goal" :in-theory (enable logapp 
+;;   :hints (("Goal" :in-theory (enable logapp
 ;;                                      signed-byte-p
 ;;                                      integer-range-p))))
 
@@ -11051,7 +11081,7 @@ To load this book, it is sufficient to do something like this:
 ;We want to extend an inequality like (< x 65535) to (< x 65536) when we also know (not (equal x 65535)) and (integerp x).
 ;Writing the rule with the free variable means we really must find the disquality right there in the context.
 ;Perhaps this should pay attention to whether we're trying to satisfy or falsity the <.
-;seemed to loop. 
+;seemed to loop.
 (defthmd extend-<
   (implies (and (not (equal x free))
                 (equal free k)
@@ -11079,21 +11109,21 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal" :in-theory (enable logbitp signed-byte-p))))
 (in-theory (disable LOGBITP-TEST-OF-TOP-BIT))
 
-;; 
+;;
 ;; (defthm loghead-subst-32
 ;;   (implies (and (equal (loghead 32 x) k)
 ;;                 (syntaxp (quotep k))
 ;;                 )
-;;            (equal (loghead 31 x) 
+;;            (equal (loghead 31 x)
 ;;                   (loghead 31 k))))
 
- 
+
 ;bzo gen
 (defthm loghead-subst-2
   (implies (and (equal (loghead 31 x) k)
                 (syntaxp (quotep k))
                 )
-           (equal (loghead 32 x) 
+           (equal (loghead 32 x)
                   (logapp 31 k (logbit 31 x))
                   )))
 
@@ -11117,7 +11147,7 @@ To load this book, it is sufficient to do something like this:
 (defthm logeqv-commutative
   (equal (logeqv x y)
          (logeqv y x))
-  :hints (("Goal" :in-theory (e/d (logeqv lognot) 
+  :hints (("Goal" :in-theory (e/d (logeqv lognot)
                                   (LOGAND-LOGIOR ;bzo forcing
                                    )))))
 
@@ -11154,7 +11184,7 @@ To load this book, it is sufficient to do something like this:
                   (equal -1 x)))
   :hints (("Goal" :use (:instance divide-both-sides-hack (x (- y)) (y (* x y)) (z y))))
   )
-                 
+
 ;gen?
 (defthm ash-equal-minus-expt2n
   (implies (and (< 0 n)
@@ -11181,8 +11211,8 @@ To load this book, it is sufficient to do something like this:
                            (<= 0 y))
                       (and (< x 0)
                            (< y 0)))))
-  :hints (("Goal" :in-theory (enable logeqv 
-                                     logorc1 
+  :hints (("Goal" :in-theory (enable logeqv
+                                     logorc1
                                      ))))
 
 ;; (defthm logeqv-pos
@@ -11223,7 +11253,7 @@ To load this book, it is sufficient to do something like this:
   (equal (logbit n (logcar x))
          (if (and (< 0 n)
                   (integerp n))
-             0 
+             0
            (logcar x))))
 
 ;changed the RHS to do a case-split because 0 is so much simpler than (ash (logbit (+ -1 n) x) (+ -1 n))
@@ -11295,11 +11325,11 @@ To load this book, it is sufficient to do something like this:
 
 ;gen the 1
 (defthm loghead-equal-logapp-same-rewrite
-  (implies (and (integerp n) 
+  (implies (and (integerp n)
                 (< 0 n))
            (equal (equal (loghead n x) (logapp (+ -1 n) x 1))
                   (equal 1 (logbit (+ -1 n) x)))))
-        
+
 (defthm loghead-equal-loghead-one-shorter-rewrite
   (implies (and (integerp x)
                 (integerp n)
@@ -11355,13 +11385,13 @@ To load this book, it is sufficient to do something like this:
            (equal (logbit pos i)
                   (logbit pos j))))
 
- 
-;; 
+
+;;
 ;; (defthm logbitp-subst-32
 ;;   (implies (and (equal (loghead 32 x) k)
 ;;                 (syntaxp (quotep k))
 ;;                 )
-;;            (equal (logbitp 31 x) 
+;;            (equal (logbitp 31 x)
 ;;                   (logbitp 31 k))))
 
 ;can this loop?
@@ -11428,8 +11458,8 @@ To load this book, it is sufficient to do something like this:
                        (equal (loghead (+ -1 n) x) 0))))
   :otf-flg t
   :hints (("Goal" :in-theory (e/d (ash
-                                   LOGHEAD-SPLIT-X-REWRITE) 
-                                  (loghead-when-mostly-0 
+                                   LOGHEAD-SPLIT-X-REWRITE)
+                                  (loghead-when-mostly-0
                                    LOGTAIL-LEAVES-SINGLE-BIT
                                    LOGHEAD-EQUAL-LOGAPP-SAME-REWRITE
                                    LOGAPP-0-PART-1-BETTER
@@ -11452,7 +11482,7 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal" :in-theory (enable logext ash))))
 
 (defthm logext-equal-min-value-hack-gen-constant-version
-  (implies (and (syntaxp (and (quotep k) 
+  (implies (and (syntaxp (and (quotep k)
                               (quotep n)
                               ))
                 (equal k (- (expt 2 (+ -1 n))))
@@ -11501,8 +11531,8 @@ To load this book, it is sufficient to do something like this:
 
 ;Can cause a case split.
 (defthmd loghead-suck-in-one-plus
-  (implies (and (syntaxp (and (consp x) 
-                              (equal (car x) 'binary-+) 
+  (implies (and (syntaxp (and (consp x)
+                              (equal (car x) 'binary-+)
                               (quotep (cadr x))))
                 (integerp x)
                 (<= 0 n)
@@ -11596,7 +11626,7 @@ To load this book, it is sufficient to do something like this:
                 (<= 0 n))
            (equal (logapp n (loghead n x) y)
                   (logapp n x y))))
-        
+
 
 ;; ;kind of weird
 ;; ;bzo gross hints
@@ -11649,7 +11679,7 @@ To load this book, it is sufficient to do something like this:
                 (<= (expt 2 n) y))
            (equal (equal x y)
                   nil)))
-        
+
 (defthm loghead-cancel-constants-hack
   (implies (and (syntaxp (and (quotep k1)   ;i think i want these syntaxp hyps, right?
                               (quotep k2)))
@@ -11690,7 +11720,7 @@ To load this book, it is sufficient to do something like this:
 
 
 (defthm loghead-of-logext-hack-1
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp y))
            (equal (loghead size (+ (- (logext size x)) y))
                   (loghead size (+ (- x) y))))
@@ -11703,7 +11733,7 @@ To load this book, it is sufficient to do something like this:
                                LOGHEAD-+-CANCEL-BETTER))))
 
 (defthm loghead-of-logext-hack-1-alt
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp y))
            (equal (loghead size (+ y (- (logext size x))))
                   (loghead size (+ y (- x)))))
@@ -11716,7 +11746,7 @@ To load this book, it is sufficient to do something like this:
                                LOGHEAD-+-CANCEL-BETTER))))
 
 (defthm loghead-of-logext-hack-2
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp y)
                 (integerp i)
                 )
@@ -11726,7 +11756,7 @@ To load this book, it is sufficient to do something like this:
   )
 
 (defthm loghead-of-logext-hack-3
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp y)
                 (integerp i)
                 )
@@ -11748,7 +11778,7 @@ To load this book, it is sufficient to do something like this:
                          (loghead size zblah2)))))
 
 (defthm loghead-of-logext-hack-4
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp y)
                 (integerp i)
                 (integerp z)
@@ -11761,7 +11791,7 @@ To load this book, it is sufficient to do something like this:
            :use ((:instance loghead-of-sum-of-prod-of-loghead-lemma (n size) (y -1) (a (+ z y w)) (x x))))))
 
 (defthm loghead-of-logext-hack-5
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp y)
                 (integerp i)
                 (integerp w)
@@ -11780,7 +11810,7 @@ To load this book, it is sufficient to do something like this:
                 (integerp b))
            (equal (< (+ 1/2 b) a)
                   (<= (+ 1 b) a))))
-                 
+
 (defthm divides-hack-more
   (equal (integerp (+ 1/65536 (* 1/65536 x)))
          (divides 65536 (+ 1 x)))
@@ -11825,7 +11855,7 @@ To load this book, it is sufficient to do something like this:
                   (loghead (+ 1 n) a)))
   :hints (("Goal" :in-theory (e/d (equal-logapp-x-y-z
                                      logtail-loghead-better
-                                     ) 
+                                     )
                                   (loghead-logtail)))))
 
 
@@ -11924,7 +11954,7 @@ To load this book, it is sufficient to do something like this:
                 )
            (equal (LOGEXT size (+ a b d (* k (LOGEXT size c))))
                   (LOGEXT size (+ a b (* k c) d)))))
-  
+
 (defthm logapp-recombine-logext-case
   (implies (and (<= n size) ;other case?
                 (integerp size))
@@ -11941,7 +11971,7 @@ To load this book, it is sufficient to do something like this:
 
 ;bzo - gen?
 (defthm loghead-sum-weird
-  (implies (and (integerp y) 
+  (implies (and (integerp y)
                 (integerp x)
                 (integerp z)
                 (<= n size)
@@ -11960,7 +11990,7 @@ To load this book, it is sufficient to do something like this:
 (defthm logapp-chop-hack-1
   (implies (and (<= n size)
                 (integerp size)
-                (integerp y) 
+                (integerp y)
                 (integerp x)
                 (integerp n)
                 (<= 0 n)
@@ -12014,9 +12044,9 @@ To load this book, it is sufficient to do something like this:
                 )
            (equal (LOGAPP m (+ w v x y (* N (LOGEXT size z))) xx)
                   (LOGAPP m (+ w v x y (* N z)) xx))))
- 
+
 (defthm loghead-hack-blah
-  (implies (and (integerp y) 
+  (implies (and (integerp y)
                 (integerp z)
                 (<= 0 size)
                 (integerp size))
@@ -12077,7 +12107,7 @@ To load this book, it is sufficient to do something like this:
 ;; ;                                   loghead-split-special
 ;; ;                                  logbit ;bzo
 ;; ;                                 equal-of-logheads-split
-;;                                    ) 
+;;                                    )
 ;;                                   ()))))
 
 ;trying...
@@ -12138,7 +12168,7 @@ To load this book, it is sufficient to do something like this:
 ;;   (equal (logapp 16 val (loghead 16 (logtail 16 val)))
 ;;          (loghead 32 val))
 ;;   :hints (("Goal" :in-theory (e/d (logtail-loghead-better
-;;                                      equal-logapp-x-y-z) 
+;;                                      equal-logapp-x-y-z)
 ;;                                   (loghead-logtail)))))
 
 (defthm logapp-recollapse
@@ -12149,7 +12179,7 @@ To load this book, it is sufficient to do something like this:
            (equal (logapp n val (loghead m (logtail n val)))
                   (loghead (+ n m) val)))
   :hints (("Goal" :in-theory (e/d (logtail-loghead-better
-                                   equal-logapp-x-y-z) 
+                                   equal-logapp-x-y-z)
                                   (loghead-logtail)))))
 
 
@@ -12202,7 +12232,7 @@ To load this book, it is sufficient to do something like this:
                 (< off 1))
            (equal (< (+ off x) y)
                   (< x y))))
-                 
+
 
 (defthmd non-multiple-addend-doesnt-matter-when-comparing-multiples
   (implies (and (integerp z)
@@ -12220,7 +12250,7 @@ To load this book, it is sufficient to do something like this:
                                   (x (/ x y))
                                   (y (/ z y)))))
   )
-                 
+
 
 (defthmd compare-of-add-to-shifted
   (implies (and (unsigned-byte-p m off)
@@ -12260,7 +12290,7 @@ To load this book, it is sufficient to do something like this:
                                        (z (- (EXPT 2 N)))
                                        )
            )
-          ("Goal" 
+          ("Goal"
            :cases ((< x 0))
            :in-theory (enable UNSIGNED-BYTE-P))))
 
@@ -12350,10 +12380,10 @@ To load this book, it is sufficient to do something like this:
   (implies (and (integerp size) (< 0 size))
            (equal (logext size (expt 2 (+ -1 size)))
                   (-  (expt 2 (+ -1 size)))))
-  :hints (("Goal" :in-theory (e/d (logext EQUAL-LOGAPP-X-Y-Z) 
+  :hints (("Goal" :in-theory (e/d (logext EQUAL-LOGAPP-X-Y-Z)
                                   (logapp-subst-in-first-arg ;LOGAPP-HACK2 ;bzo
                                    )))))
- 
+
 ;bzo gen
 (defthmd minus-of-logext
   (implies (and (integerp size)
@@ -12364,7 +12394,7 @@ To load this book, it is sufficient to do something like this:
                       (expt 2 (+ -1 size))
                     (logext size (- i)))))
   :hints (("Goal" :use ((:instance LOGEXT-LOGHEAD (n size) (m size) (x i)))
-           :in-theory (e/d (ASH-1-EXPT-REWRITE) 
+           :in-theory (e/d (ASH-1-EXPT-REWRITE)
                            (LOGEXT-LOGHEAD
                             DUMB ;why?!
                             )))))
@@ -12401,7 +12431,7 @@ To load this book, it is sufficient to do something like this:
                 (< 0 size1))
            (equal (logext size1 (logext size2 x))
                   (logext size1 x))))
-        
+
 (defthmd loghead-split-when-usb-one-longer
   (implies (and (unsigned-byte-p (+ 1 n) x)
                 (integerp n)
@@ -12452,7 +12482,7 @@ To load this book, it is sufficient to do something like this:
 
 
 (defthmd loghead-0-hack
- (implies (and (equal (loghead 16 offset1) 
+ (implies (and (equal (loghead 16 offset1)
                       (loghead 16 offset2))
                (integerp offset1)
                (integerp offset2))
@@ -12477,8 +12507,8 @@ To load this book, it is sufficient to do something like this:
                                    (n size2)
                                    (y (logtail size2 (loghead size1 x)))
                                    (z  (loghead size1 x))))
-          
-           :in-theory (e/d (loghead-equal-rewrite) 
+
+           :in-theory (e/d (loghead-equal-rewrite)
                            (equal-logapp-x-y-z
                             equal-logapp-x-y-z-constants
                             LOGAPP-RECOMBINE-LOGHEAD-CASE
@@ -12504,7 +12534,7 @@ To load this book, it is sufficient to do something like this:
                   (equal (logtail size2 (loghead size1 x)) 0)))
   :hints (("Goal" :in-theory (e/d (LOGTAIL-LOGHEAD-BETTEr
                                    LOGEXT-SUBST-WITH-LOGHEAD
-                                   LOGTAIL-LOGEXT) 
+                                   LOGTAIL-LOGEXT)
                                   (LOGTAIL-EQUAL-0
                                    LOGEXT-LOGTAIL
                                    LOGHEAD-LOGTAIL)))))
@@ -12526,8 +12556,8 @@ To load this book, it is sufficient to do something like this:
                                    (n size2)
                                    (y (logtail size2 (logext size1 x)))
                                    (z  (logext size1 x))))
-          
-           :in-theory (e/d (loghead-equal-rewrite) 
+
+           :in-theory (e/d (loghead-equal-rewrite)
                            (LOGAPP-RECOMBINE-LOGEXT-CASE
                             equal-logapp-x-y-z
                             equal-logapp-x-y-z-constants
@@ -12598,7 +12628,7 @@ To load this book, it is sufficient to do something like this:
                        (unsigned-byte-p size (loghead size1 x)))))
   :hints (("Goal" :use (:instance expt-weakly-monotonic-linear)
            :in-theory (e/d (logapp UNSIGNED-BYTE-P
-                                   ) 
+                                   )
                            (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
                             EXPT-COMPARE)))))
 
@@ -12612,7 +12642,7 @@ To load this book, it is sufficient to do something like this:
                   (ifix x)))
   :hints (("Goal" :cases ((and (integerp n)
                                (<= 0 n)))
-           :in-theory (e/d (ash-as-logapp) 
+           :in-theory (e/d (ash-as-logapp)
                            (logapp-0-part-2-better)))))
 
 (defthm logtail-of-sum-of-ash-alt
@@ -12659,14 +12689,14 @@ To load this book, it is sufficient to do something like this:
   (implies (and (unsigned-byte-p 16 x)
                 (<= 0 k)
                 (integerp k))
-           (equal (unsigned-byte-p 16 (+ (- k) x))         
+           (equal (unsigned-byte-p 16 (+ (- k) x))
                   (<= k x))))
 
 (defthm unsigned-byte-p-becomes-inequality-alt
   (implies (and (unsigned-byte-p 16 x)
                 (<= 0 k)
                 (integerp k))
-           (equal (unsigned-byte-p 16 (+ x (- k)))         
+           (equal (unsigned-byte-p 16 (+ x (- k)))
                   (<= k x))))
 
 (defthmd usb-of-sum-with-two-other-addends-hack
@@ -12717,7 +12747,7 @@ To load this book, it is sufficient to do something like this:
 ;why did this suddenly become necessary?
 (defthm logbit-too-big-no-free-vars
   (implies (unsigned-byte-p n x)
-           (equal (logbit n x) 
+           (equal (logbit n x)
                   0))
   :hints (("Goal" :in-theory (enable logbit logbitp))))
 
@@ -12796,7 +12826,7 @@ To load this book, it is sufficient to do something like this:
                 (unsigned-byte-p 16 i)
                 (<= (- 65536 bigconst) i) ;most likely to fail?
                 (<= 0 bigconst)
-                (integerp bigconst) 
+                (integerp bigconst)
                 )
            (equal (loghead 16 (+ bigconst i))
                   (+ (- bigconst 65536) i)))
@@ -12829,7 +12859,7 @@ To load this book, it is sufficient to do something like this:
 
 
 (defthm loghead-equality-impossible
-  (implies (and (syntaxp (and (quotep k1) 
+  (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)))
                 (not (equal 0 (loghead 16 (+ k1 k2))))
                 (unsigned-byte-p 16 x) ;not needed?
@@ -12839,9 +12869,9 @@ To load this book, it is sufficient to do something like this:
            (equal (equal x (+ k1 (loghead 16 (+ k2 x)))) ;note that x appears twice in LHS
                   nil))
   :hints (("Goal" :in-theory (e/d (loghead-sum-split-into-2-cases
-                                   loghead-of-minus) 
+                                   loghead-of-minus)
                                   (unsigned-byte-p-loghead-forward-chaining
-;loghead-type 
+;loghead-type
 ;(:type-prescription loghead)
                                    )))))
 
@@ -12858,7 +12888,7 @@ To load this book, it is sufficient to do something like this:
            (not (UNSIGNED-BYTE-P n (LOGAPP m i j)))))
 
 (defthm loghead-lower-bound-when-top-bit-one
-  (implies (and (logbitp (+ -1 n) x) 
+  (implies (and (logbitp (+ -1 n) x)
                 (integerp n)
                 (< 0 n)
                 (integerp x))
@@ -12894,7 +12924,7 @@ To load this book, it is sufficient to do something like this:
                   (ifix x)
                   ))
   :hints (("Goal" :use (:instance logapp-reassemble (i x))
-           :in-theory (e/d (LOGAPP) 
+           :in-theory (e/d (LOGAPP)
                            (logapp-reassemble
                             EQUAL-LOGAPP-X-Y-Z-CONSTANTS
                             LOGAPP-DOES-NOTHING-REWRITE))))
@@ -12932,7 +12962,7 @@ To load this book, it is sufficient to do something like this:
                 (INTEGERP N)
                 (< 0 N))
            (SIGNED-BYTE-P N (+ X (- (EXPT 2 (+ -1 N))))))
-  :hints (("Goal" :in-theory (enable SIGNED-BYTE-P 
+  :hints (("Goal" :in-theory (enable SIGNED-BYTE-P
                                      unSIGNED-BYTE-P
                                      EXPONENTS-ADD-UNRESTRICTED))))
 
@@ -12953,7 +12983,7 @@ To load this book, it is sufficient to do something like this:
            (equal (logext n (+ k x))
                   (+ (- (expt 2 (+ -1 n))) x)))
   :hints (("Goal" :in-theory (enable logext logbitp-+-expt-n-rewrite))))
-        
+
 ;gen!?
 (defthm half-cancel
   (equal (+ x (- (* 1/2 x)) y)
@@ -12965,7 +12995,7 @@ To load this book, it is sufficient to do something like this:
                 (< 0 n))
            (equal (EQUAL x (+ (expt 2 n) (LOGEXT n x)))
                   (<= (expt 2 (+ -1 n)) x)))
-  :hints (("Goal" :in-theory (enable logext 
+  :hints (("Goal" :in-theory (enable logext
                                      logapp
                                      EXPONENTS-ADD-UNRESTRICTED))))
 
@@ -13008,7 +13038,7 @@ To load this book, it is sufficient to do something like this:
 
 ;generalize: if the logior of y and the lognot of z is not -1, then (equal (logior z x) y) = nil.
 
-(defthm logior-hack 
+(defthm logior-hack
   (implies (and (not (logbitp 8 y))
                 (integerp x) ;drop
                 )
@@ -13044,7 +13074,7 @@ To load this book, it is sufficient to do something like this:
                   (and (integerp x)
                        (equal 0 (loghead n x))
                        (equal (ifix y) (logtail n x))))))
-        
+
 ;trying a switch of the direction to associate logapp!  doing it this way
 ;means the sizes in the logapp nest are the sizes of their corresponding
 ;values, rather than sums of the sizes of several values
@@ -13061,7 +13091,7 @@ To load this book, it is sufficient to do something like this:
 ;This one's :executable-counterpart stays enabled.
 (defund expt-execute (r i) (expt r i))
 
-;Allows expt calls with small exponents to be computed  
+;Allows expt calls with small exponents to be computed
 ;You can change 1000 to your own desired bound.
 (defthmd expt-execute-rewrite
   (implies (and (syntaxp (and (quotep r) (quotep i) (< (abs (cadr i)) 1000))))
@@ -13202,7 +13232,7 @@ To load this book, it is sufficient to do something like this:
                   (loghead m (+ z x)))))
 
 
-        
+
 ;bzo gen the 0?
 ;; (defthm loghead-plus-constant-compare-to-zero
 ;;   (implies (and (syntaxp (quotep j))
@@ -13220,7 +13250,7 @@ To load this book, it is sufficient to do something like this:
                 (integerp c))
            (equal (logapp size (ash x c) y)
                   (logapp size 0 y))))
-        
+
 (defthm equal-logapp-with-logtail-of-self-rewrite
   (equal (equal y (acl2::logapp 16 x (acl2::logtail 16 y)))
          (and (integerp y)
@@ -13407,9 +13437,9 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal" :in-theory (enable unsigned-byte-p signed-byte-p))))
 
 ;this might be expensive?
-(defthm equal-bit-1 
-  (implies (unsigned-byte-p 1 x) 
-           (equal (equal x 1) 
+(defthm equal-bit-1
+  (implies (unsigned-byte-p 1 x)
+           (equal (equal x 1)
                   (not (equal x 0)))))
 
 (defthm unsigned-byte-p-+-easy

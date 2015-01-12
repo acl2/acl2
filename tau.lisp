@@ -236,7 +236,7 @@
 ; predicate in one variable.  The variable is always VAR.  Denote this
 ; predicate as (guard VAR).  Then the entire (THE type expr) is translated into
 ; ((LAMBDA (VAR) (THE-CHECK (guard VAR) 'type VAR)) expr).  The-check is
-; defined to have a guard that logically is its first argumennt, so when we
+; defined to have a guard that logically is its first argument, so when we
 ; generate guards for the translation above we generate the obligation to prove
 ; (guard expr).  Futhermore, the definition of the-check is such that unless
 ; the value of state global 'guard-checking-on is :none, executing it in the
@@ -3625,6 +3625,10 @@
 
 ; See Specification of Bound Comparisons, above.
 
+  (declare (xargs :guard (and (booleanp a-rel)
+                              (or (null a) (rationalp a))
+                              (booleanp b-rel)
+                              (or (null b) (rationalp b)))))
   (if (null a)
       t
       (if (null b)
@@ -3640,6 +3644,10 @@
 
 ; See Specification of Bound Comparisons, above.
 
+  (declare (xargs :guard (and (booleanp a-rel)
+                              (or (null a) (rationalp a))
+                              (booleanp b-rel)
+                              (or (null b) (rationalp b)))))
   (if (null a)
       t
       (if (null b)
@@ -3652,6 +3660,10 @@
 
 ; See Specification of Bound Comparisons, above.
 
+  (declare (xargs :guard (and (booleanp a-rel)
+                              (or (null a) (rationalp a))
+                              (booleanp b-rel)
+                              (or (null b) (rationalp b)))))
   (if (null a)
       nil
       (if (null b)
@@ -3664,6 +3676,10 @@
 
 ; See Specification of Bound Comparisons, above.
 
+  (declare (xargs :guard (and (booleanp a-rel)
+                              (or (null a) (rationalp a))
+                              (booleanp b-rel)
+                              (or (null b) (rationalp b)))))
   (if (null a)
       nil
       (if (null b)
@@ -4271,6 +4287,9 @@
 ; because we believe it is faster than Table A because whenever k is an integer
 ; we avoid calls of floor or ceiling.
 
+  (declare (xargs :guard (and (booleanp upper-boundp)
+                              (booleanp rel)
+                              (or (null k) (rationalp k)))))
   (if k
       (if (integerp k)
           (if rel

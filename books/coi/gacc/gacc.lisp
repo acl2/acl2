@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "GACC")
 
 ;; Keep this list of include-books in sync with the list in the .acl2 file:
@@ -17,7 +42,7 @@
 ;for efficiency:
 ;(local (in-theory (disable BAG::DISJOINT-APPEND-REDUCTION)))
 
-(in-theory (disable 
+(in-theory (disable
             (:REWRITE DEFAULT-<-2)
             (:REWRITE DEFAULT-<-1)
             (:REWRITE DEFAULT-+-2)
@@ -40,7 +65,7 @@
                (and (equal (car skel) 'quote)
                     (consp (cdr skel))
                     (not (null (cadr skel))))))))
-      
+
 
 (defun syntax-atom (m)
   (declare (type t m))
@@ -57,7 +82,7 @@
 ;bzo
 (defthm integerp-+
   (implies
-   (and 
+   (and
     (integerp x)
     (integerp y))
    (integerp (+ x y))))
@@ -117,7 +142,7 @@
 ;; supports a hierarcical decomposition of data description.  The
 ;; primary concern is whether we need to expose certain aspects of the
 ;; skel structure in order to do so .. ?
-;; 
+;;
 ;; (if (consp skel)
 ;;   (let ((entry (car skel))
 ;;     (let ((key (car entry)))
@@ -156,11 +181,11 @@
   (declare (type t skel))
   (if (consp skel)
       (let ((entry (car skel)))
-        (and (skel-entry-body entry (acl2::unsigned-byte-p (fix-size size) ;wintn 8 size 
+        (and (skel-entry-body entry (acl2::unsigned-byte-p (fix-size size) ;wintn 8 size
                                                            ptr) (weak-skel type))
              (weak-skel (cdr skel))))
     (null skel)))
-   
+
 (defthm weak-skel-implies-true-listp
   (implies
    (weak-skel skel)
@@ -172,7 +197,7 @@
                 (consp skel))
            (equal (weak-skel skel)
                   (let ((entry (car skel)))
-                    (and (skel-entry-body entry (acl2::unsigned-byte-p (fix-size size) ;wintn 8 size 
+                    (and (skel-entry-body entry (acl2::unsigned-byte-p (fix-size size) ;wintn 8 size
                                                                        ptr) (weak-skel type))
                          (weak-skel (cdr skel)))))))
 
@@ -196,7 +221,7 @@
 (defthm blks-of-cons
   (equal (blks (cons a skel))
          (append  (BLK (+ (IFIX (CADR a)) (CADDR a))
-                       (1+ (MAX-OFFSET (CADDDR a)))) 
+                       (1+ (MAX-OFFSET (CADDDR a))))
                   (blks skel)))
   :hints (("Goal" :in-theory (e/d (blks) (ifix)))))
 
@@ -265,7 +290,7 @@
   (implies (not (consp skel))
            (not (mesh skel)))
   :hints (("Goal" :in-theory (enable mesh))))
-         
+
 (defthmd open-mesh
   (and
    (implies
@@ -324,21 +349,21 @@
   (if (consp skel)
       (let ((entry (car skel)))
         (and (skel-entry-body entry
-                              (wf-skel type) 
-                              (acl2::unsigned-byte-p (fix-size size) ptr) ;(wintn 8 size ptr) 
+                              (wf-skel type)
+                              (acl2::unsigned-byte-p (fix-size size) ptr) ;(wintn 8 size ptr)
                               (unique (blks type))
                               (uniform-base type)
                               )
              (wf-skel (cdr skel))))
     (null skel)))
-   
+
 (defthm open-wf-skel
   (implies (and (syntaxp (syntax-consp-or-symbol skel))
                 (consp skel))
            (equal (wf-skel skel)
                   (let ((entry (car skel)))
-                    (and (skel-entry-body entry 
-                                          (wf-skel type) 
+                    (and (skel-entry-body entry
+                                          (wf-skel type)
                                           (acl2::unsigned-byte-p (fix-size size) ptr) ;(wintn 8 size ptr)
                                           (unique (blks type))
                                           (uniform-base type)
@@ -387,7 +412,7 @@
 
 (defthm rmax-bound-rewrite
   (implies
-   (and 
+   (and
     (<= (size-rec max1 skel) rmax)
     (< (+ index (max-offset size)) (nfix max1)))
    (< (+ index (max-offset size)) rmax))
@@ -441,9 +466,9 @@
 ;; other functions that used g* .. hmm.
 ;;
 ;; Actually, I think we want to use x* in the following manner ..
-;; 
+;;
 ;; (x* ptr (g* ptr dtype ram) (fn ram))
-;; 
+;;
 ;; x* allows us to extract the functionality of fn as it applies to
 ;; the original structure (g* ..).
 ;;
@@ -924,9 +949,9 @@
 ;; rx/wx - x*/g*/s* rules
 ;;
 
-(in-theory (disable DEFAULT-*-2 DEFAULT-*-1 
-                    ACL2::INTEGERP-+-MINUS-* 
-                    ACL2::INTEGERP-*-CONSTANT-MEANS-1 
+(in-theory (disable DEFAULT-*-2 DEFAULT-*-1
+                    ACL2::INTEGERP-+-MINUS-*
+                    ACL2::INTEGERP-*-CONSTANT-MEANS-1
 ;                    ACL2::TOP-BIT-MEANS-<
                     ACL2::INTEGERP-+-MINUS-*
                     ;DISJOINT-BLK-FREE-BACKCHAINING-1
@@ -981,7 +1006,7 @@
     (and
      (syntaxp (not (syntax-consp-or-quote rskel)))
      (equal v (g* rptr rskel ram)) ;; make it simplify this first ..
-     (disjoint (flatten v) 
+     (disjoint (flatten v)
                (blk wptr (1+ (max-offset wsize))))
      (wf-skel rskel)
      )
@@ -1014,7 +1039,7 @@
 (defthm rx-over-s*-mesh
   (implies
    (and
-    (disjoint (flatten wskel) 
+    (disjoint (flatten wskel)
               (blk rptr (1+ (max-offset rsize))))
     (wf-skel wskel)
     )
@@ -1054,7 +1079,7 @@
     :hints (("goal" :do-not '(generalize eliminate-destructors)
              :in-theory (e/d (bag::disjoint-of-append-one ;yuck
                               bag::disjoint-of-append-two
-                              ) 
+                              )
                              ( ;for efficiency:
                               wf-skel
                               mesh
@@ -1197,13 +1222,13 @@
            :in-theory (e/d (bag::disjoint-of-append-one ;yuck
                               mesh
                               blks
-                              bag::disjoint-of-append-two) 
+                              bag::disjoint-of-append-two)
                            (ifix)))))
 
 (defthm subbagp-blks-g*-fix-lemma
   (subbagp (BLKS (G*-FIX PTR C2 a))
            (BLKS a)))
-     
+
 (defthm disjoint-blks-g*-fix
   (implies (disjoint (blks a) b)
            (disjoint (blks (g*-fix ptr c a)) b))
@@ -1249,7 +1274,7 @@
                (g* ptr skel ram)))
 
 
-(in-theory (disable 
+(in-theory (disable
             G*-OVER-S*-S*
             BLKS-G*-REDUCTION-CASESPLIT
             ))

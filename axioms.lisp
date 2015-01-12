@@ -2887,9 +2887,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; argument of return-last, because logically the third argument provides the
 ; value(s) of a return-last call -- the exception being the evaluation of the
 ; :exec argument of an mbe call (or, equivalent evaluation by way of mbe1,
-; etc.).  We not only bind *aokp* to t, but we also bind *attached-fn-called*
-; so that no changes to this variable will prevent the storing of memoization
-; results.
+; etc.).  Note that with the binding of *aokp*, we guarantee that changes to
+; *aokp* during evaluation of arg2 won't prevent the storing of memoization
+; results.  For further explanation on this point, see the comment in *aokp*.
 
 ; See also the related treatment of aokp in ev-rec-return-last.
 
@@ -2901,8 +2901,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                      (eq (car arg2) ; no point in doing extra bindings below
                          'quote)))
             arg2)
-           (t `(let ((*aokp* t)
-                     #+hons (*attached-fn-called* t))
+           (t `(let ((*aokp* t))
                  ,arg2)))))
     (cond ((and fn (fboundp fn))
 
@@ -4996,8 +4995,39 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defvar *aokp*
 
-; We set *aokp* to t simply so that we can use attachments in raw Lisp.  It
-; will be bound suitably inside the ACL2 loop by calls of raw-ev-fncall.
+; The variable *aokp* indicates that state of using attachments, and can take
+; any of three sorts of values, as follows.
+
+; nil
+;   Attachments are not allowed.
+
+; t
+;   Attachments are allowed, but the value currently being computed does not
+;   depend on any attachments.
+
+; fn
+;   Attachments are allowed, and the value currently being computed depends on
+;   the attachment to the function symbol, fn.
+
+; A case that illustrates these values is (prog2$ <expr1> <expr2>), which is
+; really (return-last 'progn <expr1> <expr2>).  The #-acl2-loop-only definition
+; of return-last replaces <expr1> by (let ((*aokp* t)) <expr1>).  So
+; attachments are allowed during the evaluation of <expr1> and moreover, any
+; use of attachments in <expr1> (and any setting of *aokp* to a function
+; symbol) will be ignored when evaluating <expr2> and when returning from
+; prog2$.  This is reasonable, since the values of <expr2> and the prog2$ call
+; do not depend on any attachments used in the evaluation of <expr1>.
+
+; We initialize *aokp* to t simply so that we can use attachments at the top
+; level of the ACL2 loop and also in raw Lisp.  This variable is bound suitably
+; inside the ACL2 loop by calls of raw-ev-fncall.
+
+; Before Version_7.0, *aokp* was Boolean and a separate special variable,
+; *attached-fn-called*, was used for holding a function symbol whose
+; attachement has been called.  By folding that role into *aokp* we reduced the
+; time for (defthm spec-body ...) in
+; books/misc/misc2/reverse-by-separation.lisp from 188 seconds to 181 seconds,
+; a savings of about 4%.
 
   t)
 
@@ -5005,12 +5035,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '*aokp*)
 
 #+hons
-(defvar *attached-fn-called* nil)
-
-#+hons
 (defmacro update-attached-fn-called (fn)
-  `(when (null *attached-fn-called*)
-     (setq *attached-fn-called* ,fn)))
+  `(when (eq *aokp* t)
+     (setq *aokp* ,fn)))
 
 (defmacro throw-or-attach (fn formals &optional *1*-p)
 
@@ -5706,6 +5733,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       y
     (revappend (cdr x) (cons (car x) y))))
 
+(defthm true-listp-revappend-type-prescription
+  (implies (true-listp y)
+           (true-listp (revappend x y)))
+  :rule-classes :type-prescription)
+
 (defthm character-listp-revappend
   (implies (true-listp x)
            (equal (character-listp (revappend x y))
@@ -6056,8 +6088,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (xargs :guard (and (true-listp l)
                               (true-listp ac))))
   (cond ((zp i)
-         (reverse ac))
+         (revappend ac nil))
         (t (first-n-ac (1- i) (cdr l) (cons (car l) ac)))))
+
+(defthm true-listp-first-n-ac-type-prescription
+  (implies (true-listp ac)
+           (true-listp (first-n-ac i l ac)))
+  :rule-classes :type-prescription)
 
 (defun take (n l)
   (declare (xargs :guard
@@ -7472,6 +7509,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       l
     (nthcdr (+ n -1) (cdr l))))
 
+(defthm true-listp-nthcdr-type-prescription
+  (implies (true-listp x)
+           (true-listp (nthcdr n x)))
+  :rule-classes :type-prescription)
+
 (defun logbitp (i j)
   (declare (xargs :guard (and (integerp j)
                               (integerp i)
@@ -7620,7 +7662,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                   (eqlable-listp seq)))))
   (cond
    ((endp seq)
-    (reverse acc))
+    (revappend acc nil))
    ((eql old (car seq))
     (substitute-ac new old (cdr seq) (cons new acc)))
    (t
@@ -7642,6 +7684,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (coerce (substitute-ac new old (coerce seq 'list) nil)
               'string)
     (substitute-ac new old seq nil)))
+
+(defthm stringp-substitute-type-prescription
+  (implies (stringp seq)
+           (stringp (substitute new old seq)))
+  :rule-classes :type-prescription)
+
+(defthm true-listp-substitute-type-prescription
+  (implies (not (stringp seq))
+           (true-listp (substitute new old seq)))
+  :rule-classes :type-prescription)
 
 #+acl2-loop-only
 (defun sublis (alist tree)
@@ -8588,8 +8640,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
-  (declare (xargs :guard
-                  (member-eq load-compiled-file *load-compiled-file-values*)))
+; Rather than specify a guard, we call chk-include-book-inputs.
+
   (list 'include-book-fn
         (list 'quote user-book-name)
         'state
@@ -12256,8 +12308,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; consider adding such functions to the list *oneify-primitives*.
 
   '(relieve-hyp-synp ; *deep-gstack*
-    apply-abbrevs-to-lambda-stack1 ; *nth-update-tracingp*
-    nth-update-rewriter ; *nth-update-tracingp*
     ev-w-lst ; *the-live-state*
     simplify-clause1 ; dmr-flush
     ev-rec-acl2-unwind-protect ; *acl2-unwind-protect-stack*
@@ -12277,12 +12327,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     user-stobj-alist-safe ; chk-user-stobj-alist
     comp-fn ; compile-uncompiled-defuns
     fmt-ppr ; print-infix
-    get-memo ; *nu-memos*
     acl2-raw-eval ; eval
     pstack-fn ; *pstk-stack*
     dmr-start-fn ; dmr-start-fn-raw
-    memo-exit ; *nu-memos*
-    memo-key1 ; *nu-memos*
     ev-fncall-meta ; *metafunction-context*
     ld-loop ; *ld-level*
     print-summary ; dmr-flush
@@ -12298,7 +12345,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     prove-loop ; *deep-gstack*
     chk-virgin ; chk-virgin2
     w-of-any-state ; live-state-p
-    lambda-abstract ; *lambda-abstractp*
     ld-fn-body ; reset-parallelism-variables, *first-entry-to-ld-fn-body-flg*
     untranslate ; *the-live-state*
     longest-common-tail-length-rec ; eq
@@ -12308,7 +12354,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     add-polys ; *add-polys-counter*
     dmr-stop-fn ; dmr-stop-fn-raw
     ld-print-results ; print-infix
-    apply-abbrevs-to-lambda-stack ; *nth-update-tracingp*
     flpr ; print-flat-infix
     close-trace-file-fn ; *trace-output*
     ev-fncall-rec ; raw-ev-fncall
@@ -12355,6 +12400,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     chk-absstobj-invariants
     get-stobj-creator
     restore-iprint-ar-from-wormhole
+    ld-fix-command
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
@@ -12558,7 +12604,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     wormhole verify-termination-boot-strap start-proof-tree
     f-decrement-big-clock defabsstobj defstobj defund defttag
     defdoc push-gframe defthmd f-get-global
-    set-nu-rewriter-mode
 
 ; Most of the following were discovered after we included macros defined in
 ; #+acl2-loop-only whose definitions are missing in #-acl-loop-only.
@@ -12905,10 +12950,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (gstackp . nil)
     (guard-checking-on . t)
     (host-lisp . nil)
+    (ignore-cert-files . nil)
     (illegal-to-certify-message . nil)
     (in-local-flg . nil)
     (in-prove-flg . nil)
-    (in-verify-flg . nil)
+    (in-verify-flg . nil) ; value can be set to the ld-level
     (including-uncertified-p . nil) ; valid only during include-book
     (infixp . nil)                   ; See the Essay on Infix below
     (inhibit-output-lst . (summary)) ; Without this setting, initialize-acl2
@@ -17388,6 +17434,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
  (verify-termination-boot-strap subseq))
 
+(defthm stringp-subseq-type-prescription
+  (implies (stringp seq)
+           (stringp (subseq seq start end)))
+  :rule-classes :type-prescription)
+
+(defthm true-listp-subseq-type-prescription
+  (implies (not (stringp seq))
+           (true-listp (subseq seq start end)))
+  :rule-classes :type-prescription)
+
 ; The following constants and the next two functions, pathname-os-to-unix and
 ; pathname-unix-to-os, support the use of Unix-style filenames in ACL2 as
 ; described in the Essay on Pathnames in interface-raw.lisp.
@@ -20327,12 +20383,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq key :let*-abstractionp)
          (member-eq val '(t nil)))
 
-; Rockwell Addition: See the doc string associated with
-; set-nu-rewriter-mode.
-
-        ((eq key :nu-rewriter-mode)
-         (member-eq val '(nil t :literals)))
-
         ((eq key :backchain-limit)
          (and (true-listp val)
               (equal (length val) 2)
@@ -21119,30 +21169,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                      (table-alist 'acl2-defaults-table wrld)))
       *default-rewrite-stack-limit*))
 
-#+acl2-loop-only
-(defmacro set-nu-rewriter-mode (x)
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (progn (table acl2-defaults-table :nu-rewriter-mode ,x)
-           (table acl2-defaults-table :nu-rewriter-mode))))
-
-#-acl2-loop-only
-(defmacro set-nu-rewriter-mode (x)
-  (declare (ignore x))
-  nil)
-
-(defun nu-rewriter-mode (wrld)
-  (declare (xargs :mode :program))
-  (cdr (assoc-eq :nu-rewriter-mode
-                 (table-alist 'acl2-defaults-table wrld))))
-
-; Through Version_2.9.4, we set the nu-rewriter mode by default as follows:
-; (set-nu-rewriter-mode nil)
-; But nil is the default anyhow, and we prefer to keep the acl2-defaults-table
-; clean so that its initial value agrees with the value in
-; chk-raise-portcullis1.  This isn't essentially, but for example it avoids
-; laying down extra table forms when we :puff.
-
 ; Terminology: case-split-limitations refers to a list of two
 ; "numbers" (either of which might be nil meaning infinity), sr-limit
 ; is the name of the first number, and case-limit is the name of the
@@ -21186,11 +21212,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   nil)
 
 ; Up through Version_2.9.4 we set case split limitations as follows:
-; (set-case-split-limitations *default-case-split-limitations*)
-; But as explained in the comment above for set-nu-rewriter-mode, we prefer to
-; start with an acl2-defaults-table that agrees with the one in
-; chk-raise-portcullis1.  So we instead we set the initial acl2-defaults-table
-; as follows, in end-prehistoric-world.
+; (set-case-split-limitations *default-case-split-limitations*).  But we prefer
+; to start with an acl2-defaults-table that agrees with the one in
+; chk-raise-portcullis1; this isn't essential, but for example it avoids laying
+; down extra table forms when we :puff.  So we instead we set the initial
+; acl2-defaults-table as follows, in end-prehistoric-world.
 
 (defconst *initial-acl2-defaults-table*
   `((:DEFUN-MODE . :LOGIC)
@@ -21985,7 +22011,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;     (declare (xargs :mode :program))
 ;     (or (rw-tagged-objects-subsetp (tagged-objects 'rw-cache-nil-tag ttree)
 ;                                    (tagged-objects 'rw-cache-any-tag ttree))
-;         (prog2$ (cw string)
+;         (progn$ (cw string)
+;                 (cw "~|~x0:~|  ~x1~|~x2:~|  ~x3~|~%"
+;                     '(tagged-objects 'rw-cache-nil-tag ttree)
+;                     (tagged-objects 'rw-cache-nil-tag ttree)
+;                     '(tagged-objects 'rw-cache-any-tag ttree)
+;                     (tagged-objects 'rw-cache-any-tag ttree))
 ;                 (break$))))
 ;
 ;   (trace$ (relieve-hyps
@@ -22736,10 +22767,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (progn
 
-; The following variables implement time limits.  Only bind-acl2-time-limit
-; should bind *acl2-time-limit*, as described in a comment in
-; bind-acl2-time-limit, where one may find a a discussion of how these
-; variables are handled.
+; The following variables implement prover time limits.  The variable
+; *acl2-time-limit* is nil by default, but is set to a positive time limit (in
+; units of internal-time-units-per-second) by with-prover-time-limit, and is
+; set to 0 to indicate that a proof with a time limit has been interrupted (see
+; our-abort).
+
+; The variable *acl2-time-limit-boundp* is used in bind-acl2-time-limit, which
+; provides the only legal way to bind bind *acl2-time-limit*.  For more
+; information about these variables, see bind-acl2-time-limit.
 
 (defparameter *acl2-time-limit* nil)
 
@@ -22972,6 +23008,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(abort!))
 
 (defun p! ()
+
+; If p! is executed inside a brr wormhole break, it will cause an abort out of
+; the brkpt1 call.  The message "Pop up to ACL2 top-level" might be a bit
+; misleading in that case, but it appears to be accurate: the brr wormhole from
+; brkpt1 is indeed exited.
+
   (declare (xargs :guard t))
   #-acl2-loop-only
   (throw 'local-top-level :pop)
@@ -22992,6 +23034,59 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #-acl2-loop-only
 (defparameter *inhibit-wormhole-activityp* nil)
+
+(defmacro bind-acl2-time-limit (form &optional (limit 'nil limit-p))
+
+; The raw Lisp code for this macro arranges that *acl2-time-limit* is restored
+; to its global value (presumably nil) after we exit its top-level call.
+; Consider the following key example of how this can work.  Suppose
+; *acl2-time-limit* is set to 0 by our-abort because of an interrupt.
+; Inspection of the code for our-abort shows that *acl2-time-limit-boundp* must
+; be true in that case; but then we must be in the dynamic scope of
+; bind-acl2-time-limit, as that is the only legal way for
+; *acl2-time-limit-boundp* to be bound or set.  But inside bind-acl2-time-limit
+; we are only modifying a let-bound *acl2-time-limit*, not its global value.
+; In summary, setting *acl2-time-limit* to 0 by our-abort will not change the
+; global value of *acl2-time-limit*.
+
+; However, the description above is a bit flawed if we enter a wormhole.  We
+; really want a fresh binding of *acl2-time-limit* in that case, as illustrated
+; by the following example, which explains the call of bind-acl2-time-limit in
+; wormhole1.
+
+;   (defun foo (x) (cons x x))
+;   (brr t)
+;   (monitor '(:definition foo) t)
+;   ; The following succeeds if we type :go at the breaks.
+;   ; But suppose we don't:
+;   (with-prover-time-limit
+;    1/10
+;    (thm (equal (append (append x y) (foo z))
+;                (append x y (foo z)))))
+;   ; Now in the break...
+;   ; Try the following several times, and eventually you'll see it quit with an
+;   ; error due to being out of time!
+;   (thm (equal (append (append x y) z)
+;               (append x y z)))
+;   ; The following fails after enough THM calls just above, but that's not
+;   ; surprising, since time-limits are based on total cpu time, which includes
+;   ; time in the wormhole.
+;   :go
+
+  #-acl2-loop-only
+  (cond (limit-p ; then definitely bind
+         `(let ((*acl2-time-limit-boundp* t)
+                (*acl2-time-limit* ,limit))
+            ,form))
+        (t `(if *acl2-time-limit-boundp*
+                ,form
+              (let ((*acl2-time-limit-boundp* t)
+                    (*acl2-time-limit* *acl2-time-limit*))
+                ,form))))
+  #+acl2-loop-only
+  (declare (ignore limit limit-p))
+  #+acl2-loop-only
+  form)
 
 (defun wormhole1 (name input form ld-specials)
 
@@ -23078,13 +23173,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (f-put-global 'wormhole-status
                     (cdr (assoc-equal name *wormhole-status-alist*))
                     state)
-      (ld-fn (append
-              `((standard-oi . (,form . ,*standard-oi*))
-                (standard-co . ,*standard-co*)
-                (proofs-co . ,*standard-co*))
-              ld-specials)
-             state
-             t)
+      (bind-acl2-time-limit
+
+; See the comments in bind-acl2-time-limit to understand why we are using it
+; here.
+
+       (ld-fn (append
+               `((standard-oi . (,form . ,*standard-oi*))
+                 (standard-co . ,*standard-co*)
+                 (proofs-co . ,*standard-co*))
+               ld-specials)
+              state
+              t)
+       nil)
       (eval *wormhole-cleanup-form*)
       (pop (car *acl2-unwind-protect-stack*))
       nil))))
@@ -25059,6 +25160,11 @@ Lisp definition."
     #+ccl (ccl::gc-verbose arg1 arg2)
     #+cmu (setq ext:*gc-verbose* arg1)
     #+gcl (setq si:*notify-gbc* arg1)
+
+; Warning: If you change the Lisps for which GC-VERBOSE is supported (by
+; changing the #- expression below), make the corresponding change to #-
+; expressions where gc-verbose is called (currently, in acl2h-init).
+
     #-(or ccl cmu gcl)
     (format t "GC-VERBOSE is not supported in this Common Lisp.~%Contact the ~
                ACL2 developers if you would like to help add such support.")

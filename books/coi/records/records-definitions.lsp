@@ -1,3 +1,33 @@
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ; Jared: what's this file for?  It's not certifiable, so I'm
 ; renaming it to a .lsp extension for Make compatibility
 
@@ -10,7 +40,7 @@
 ;(in-package "RECORDS")
 
 ;;
-;; This file isolates records definitions and types. The file currently 
+;; This file isolates records definitions and types. The file currently
 ;; contains the following ACL2 constructs as they occur in the records book:
 ;; - defun
 ;; - defund
@@ -22,12 +52,12 @@
 
 ; For write tests we will just zero out a block of memory.  It doesn't really
 ; matter what addresses we use, because they're all the same depth from the
-; root.  For read tests, we'll just sequentially scan a block of memory. 
+; root.  For read tests, we'll just sequentially scan a block of memory.
 
 (defun zero-memory (i mem)
   (declare (xargs :guard (and (memory-p mem)
                               (address-p i mem)))
-           (type (signed-byte 29) i))                              
+           (type (signed-byte 29) i))
   (if (mbe :logic (zp i)
            :exec (= i 0))
       (store 0 0 mem)
@@ -44,7 +74,7 @@
     (let ((element (load i mem)))
       (declare (ignore element))
       (scan-memory (the-fixnum (1- i)) mem))))
-                  
+
 (local (defthm signed-byte-natural
          (implies (force (natp x))
                   (equal (signed-byte-p 29 x)
@@ -81,7 +111,7 @@
   (if (mbt (_memtree-p mtree depth))
       mtree
     nil))
-  
+
 (defthm _memtree-fix-memtree
   (_memtree-p (_memtree-fix mtree depth) depth))
 
@@ -145,7 +175,7 @@
   (and (integerp (_address-fix addr depth))
        (<= 0 (_address-fix addr depth)))
   :rule-classes :type-prescription)
-                      
+
 (in-theory (disable _address-fix _memtree-fix))
 
 (defthm _address-floor-2
@@ -201,7 +231,7 @@
   (mbe :logic (_memtree-load addr mtree depth)
        :exec (if (= depth 0)
                  mtree
-               (_fix-addr/depth-memtree-load 
+               (_fix-addr/depth-memtree-load
                 (the-fixnum (ash addr -1))
                 (if (= (the-fixnum (logand addr 1)) 0)
                     (car mtree)
@@ -236,14 +266,14 @@
 
 
 ; We now provide a store function.  I think this definition is pretty standard
-; following from the definition of load.  
+; following from the definition of load.
 ;
 ; One interesting aspect is that we require that our element is non-nil.  This
 ; is because we would really like to keep our trees in a canonical form, where
 ; "nil" elements are not even stored, and paths to them are not created.  But,
-; this function would not preserve this property if we gave it "nil" to store. 
+; this function would not preserve this property if we gave it "nil" to store.
 ; For example, (_memtree-store 0 nil nil 2) = ((nil)) instead of nil, violating
-; our notion of canonicality.  Indeed, this creates problems when we try to 
+; our notion of canonicality.  Indeed, this creates problems when we try to
 ; prove properties of the form (store addr (load addr mem) mem) = mem.
 ;
 ; To address this, we actually provide a separate function below,
@@ -266,7 +296,7 @@
             (cons (_memtree-store quotient elem (car mtree) (1- depth))
                   (cdr mtree))
           (cons (car mtree)
-                (_memtree-store quotient elem (cdr mtree) 
+                (_memtree-store quotient elem (cdr mtree)
                                 (1- depth))))))))
 
 ; As with loading, we create an efficient version that assumes addr and depth
@@ -284,12 +314,12 @@
                  elem
                (let ((quotient (the-fixnum (ash addr -1))))
                  (if (= (the-fixnum (logand addr 1)) 0)
-                     (cons (_fix-addr/depth-memtree-store 
+                     (cons (_fix-addr/depth-memtree-store
                             quotient elem (car mtree) (the-fixnum (1- depth)))
                            (cdr mtree))
                    (cons (car mtree)
-                         (_fix-addr/depth-memtree-store 
-                          quotient elem (cdr mtree) 
+                         (_fix-addr/depth-memtree-store
+                          quotient elem (cdr mtree)
                           (the-fixnum (1- depth)))))))))
 
 ; And as before, we create a "self-optimizing" version which drops the
@@ -306,16 +336,16 @@
                  (_fix-addr/depth-memtree-store addr elem mtree depth)
                (let ((quotient (ash addr -1)))
                  (if (= (the-fixnum (logand addr 1)) 0)
-                     (cons (_fixnum-memtree-store 
+                     (cons (_fixnum-memtree-store
                             quotient elem (car mtree) (the-fixnum (1- depth)))
                            (cdr mtree))
                    (cons (car mtree)
-                         (_fixnum-memtree-store 
-                          quotient elem (cdr mtree) 
+                         (_fixnum-memtree-store
+                          quotient elem (cdr mtree)
                           (the-fixnum (1- depth)))))))))
 
 
-; Now we are ready to implement "memory erasing", that is, storing nils into 
+; Now we are ready to implement "memory erasing", that is, storing nils into
 ; our memory.  We want to keep our trees in canonical format, so we go to some
 ; lengths to eliminate branches that are no longer needed.
 
@@ -331,8 +361,8 @@
       (if (atom mtree)
           nil
         (let ((quotient (floor addr 2)))
-          (if (= (mod addr 2) 0)              
-              (let ((left (_memtree-store-nil quotient (car mtree) 
+          (if (= (mod addr 2) 0)
+              (let ((left (_memtree-store-nil quotient (car mtree)
                                               (1- depth)))
                     (right (cdr mtree)))
                 (if (and (null left) (null right)) ; canonicalize away!
@@ -357,8 +387,8 @@
                    nil
                  (let ((quotient (the-fixnum (ash addr -1))))
                    (if (= (the-fixnum (logand addr 1)) 0)
-                       (let ((left (_fix-addr/depth-memtree-store-nil 
-                                    quotient (car mtree) 
+                       (let ((left (_fix-addr/depth-memtree-store-nil
+                                    quotient (car mtree)
                                     (the-fixnum (1- depth))))
                              (right (cdr mtree)))
                          (if (and (null left)
@@ -366,8 +396,8 @@
                              nil
                            (cons left right)))
                      (let ((left (car mtree))
-                           (right (_fix-addr/depth-memtree-store-nil 
-                                   quotient (cdr mtree) 
+                           (right (_fix-addr/depth-memtree-store-nil
+                                   quotient (cdr mtree)
                                    (the-fixnum (1- depth)))))
                        (if (and (null left)
                                 (null right))
@@ -386,8 +416,8 @@
                    nil
                  (let ((quotient (ash addr -1)))
                    (if (= (the-fixnum (logand addr 1)) 0)
-                       (let ((left (_fixnum-memtree-store-nil 
-                                    quotient (car mtree) 
+                       (let ((left (_fixnum-memtree-store-nil
+                                    quotient (car mtree)
                                     (the-fixnum (1- depth))))
                              (right (cdr mtree)))
                          (if (and (null left)
@@ -395,8 +425,8 @@
                              nil
                            (cons left right)))
                      (let ((left (car mtree))
-                           (right (_fixnum-memtree-store-nil 
-                                   quotient (cdr mtree) 
+                           (right (_fixnum-memtree-store-nil
+                                   quotient (cdr mtree)
                                    (the-fixnum (1- depth)))))
                        (if (and (null left)
                                 (null right))
@@ -425,7 +455,7 @@
 ;
 ; This is the same technique used in my ordered sets book in order to enforce
 ; the non-sets convention, and you can think of these as "a poor man's
-; congruence rules".  Take for example _memtree-load-fix-a below, which 
+; congruence rules".  Take for example _memtree-load-fix-a below, which
 ; says that the following:
 ;
 ; (defthm _memtree-load-fix-addr
@@ -471,7 +501,7 @@
 (defthm _memtree-load-fix-depth
   (equal (_memtree-load addr mtree (nfix depth))
          (_memtree-load addr mtree depth))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable _memtree-fix-nfix)
           :use ((:instance _memtree-fix-nfix)))))
 
@@ -525,7 +555,7 @@
 ;;; Key Lemmas: "equivalent" _addresses can be interchanged in stores
 
 ; These lemmas needs to stay disabled because they can easily cause loops.  It
-; doesn't seem that simple loop stoppers fix the issue, and I'm too lazy to 
+; doesn't seem that simple loop stoppers fix the issue, and I'm too lazy to
 ; figure out a better solution.
 
 (local (defthmd _memtree-store-addr-switch-1
@@ -572,7 +602,7 @@
               (_memtree-p mtree depth)))))
 
 ; We implement a typical fixing function for memories.  Our default memory is
-; an empty tree with size 1 and depth 1.  
+; an empty tree with size 1 and depth 1.
 
 (defun _memory-fix (mem)
   (declare (xargs :guard (_memory-p mem)))
@@ -624,7 +654,7 @@
            (signed-byte-p 29 (_memory-depth mem))))
 
 (defthm _memory-mtree-length/depth
-  (<= (_memory-size mem) 
+  (<= (_memory-size mem)
       (expt 2 (_memory-depth mem)))
   :rule-classes :linear)
 
@@ -676,9 +706,9 @@
   (implies (not (_memory-p mem))
            (equal (_memory-record mem) nil)))
 
-(in-theory (disable _memory-depth 
-                    _memory-mtree 
-                    _memory-fast 
+(in-theory (disable _memory-depth
+                    _memory-mtree
+                    _memory-fast
                     _memory-record
                     _memory-size))
 
@@ -689,7 +719,7 @@
 ; give a multi-step process for removing hyptheses:
 ;
 ;  (1) determine a normal form for the data structure such that "equivalent"
-;  structures are equal. 
+;  structures are equal.
 ;
 ;  (2) define the desired operations assuming well formed data structures (we
 ;  already did this too, our load and store operations)
@@ -771,7 +801,7 @@
 (defthm _to-mem-identity
   (implies (not (_bad-memory-p x))
            (equal (_to-mem x) x)))
-               
+
 (in-theory (disable _to-mem))
 
 
@@ -824,12 +854,12 @@
 ;
 ; Below is the "user's notion" of what a memory is.  It should always be
 ; disabled.  Basically, we require that a user's memory is always has a depth
-; and size of at least one.  
+; and size of at least one.
 ;
 ; This gives us the crucial property that "bad memories" are not memories in
 ; the user's sense.  Why is this so important?  Well, we are very much
-; concerned with efficiency of operations.  As long as we know that our 
-; arguments are not bad, we can skip all of this mapping and just provide 
+; concerned with efficiency of operations.  As long as we know that our
+; arguments are not bad, we can skip all of this mapping and just provide
 ; high speed execution using MBE.
 
 (defun memory-p (mem)
@@ -887,9 +917,9 @@
           (equal size 1))
       (cons (cons nil t) (cons 1 (cons 1 nil)))
     (let ((depth (_log2 (1- size))))
-      (cons 
+      (cons
        (cons nil (signed-byte-p 29 depth))
-       (cons size 
+       (cons size
              (cons depth nil))))))
 
 (defthm _new-memory
@@ -898,7 +928,7 @@
 
 (defthm new-memory
   (memory-p (new size))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable _memory-p
                              _memory-size
                              _memory-depth))))
@@ -946,20 +976,20 @@
        :exec (let* ((fast (cdar mem))
                     (mtree (caar mem))
                     (depth (caddr mem)))
-               (if fast 
+               (if fast
                    (_fixnum-memtree-load addr mtree depth)
                  (_memtree-load addr mtree depth)))))
 
 (defun _store (addr elem mem)
   (declare (xargs :guard (and (memory-p mem)
                               (address-p addr mem))
-                  :guard-hints (("Goal" 
+                  :guard-hints (("Goal"
                                  :use (:instance _address-from-address)
                                  :in-theory (enable _memory-p
                                                     _memory-mtree
                                                     _memory-fast
                                                     _memory-depth
-                                                    _memory-record                                                    
+                                                    _memory-record
                                                     _memory-size)))))
   (mbe :logic (let ((fast   (_memory-fast mem))
                     (mtree  (_memory-mtree mem))
@@ -978,7 +1008,7 @@
                     (fast   (cdar mem))
                     (memcdr (cdr mem))
                     (depth  (cadr memcdr)))
-               (cons (cons (if fast 
+               (cons (cons (if fast
                                (if elem
                                    (_fixnum-memtree-store addr elem mtree depth)
                                  (_fixnum-memtree-store-nil addr mtree depth))
@@ -997,14 +1027,14 @@
 (defthm _store-size
   (equal (_memory-size (_store addr elem mem))
          (_memory-size mem))
-  :hints(("Goal" :in-theory (e/d (_memory-size) 
+  :hints(("Goal" :in-theory (e/d (_memory-size)
                                  (_store-memory))
           :use (:instance _store-memory))))
 
 (defthm _store-fast
   (equal (_memory-fast (_store addr elem mem))
          (_memory-fast mem))
-  :hints(("Goal" :in-theory (e/d (_memory-fast) 
+  :hints(("Goal" :in-theory (e/d (_memory-fast)
                                  (_store-memory))
           :use (:instance _store-memory))))
 
@@ -1012,21 +1042,21 @@
   (equal (_memory-mtree (_store addr elem mem))
          (if (address-p addr mem)
              (if elem
-                 (_memtree-store addr elem 
+                 (_memtree-store addr elem
                                  (_memory-mtree mem)
                                  (_memory-depth mem))
-               (_memtree-store-nil addr 
+               (_memtree-store-nil addr
                                    (_memory-mtree mem)
                                    (_memory-depth mem)))
            (_memory-mtree mem)))
-  :hints(("Goal" :in-theory (e/d (_memory-mtree) 
+  :hints(("Goal" :in-theory (e/d (_memory-mtree)
                                  (_store-memory))
           :use (:instance _store-memory))))
 
 (defthm _store-depth
   (equal (_memory-depth (_store addr elem mem))
          (_memory-depth mem))
-  :hints(("Goal" :in-theory (e/d (_memory-depth) 
+  :hints(("Goal" :in-theory (e/d (_memory-depth)
                                  (_store-memory))
           :use (:instance _store-memory))))
 
@@ -1035,7 +1065,7 @@
           (if (address-p addr mem)
               (_memory-record mem)
             (s addr elem (_memory-record mem))))
-  :hints(("Goal" :in-theory (e/d (_memory-record) 
+  :hints(("Goal" :in-theory (e/d (_memory-record)
                                  (_store-memory))
           :use (:instance _store-memory))))
 
@@ -1096,14 +1126,14 @@
        :exec  (let* ((fast (cdar mem))
                      (mtree (caar mem))
                      (depth (caddr mem)))
-                (if fast 
+                (if fast
                     (_fixnum-memtree-load addr mtree depth)
                   (_memtree-load addr mtree depth)))))
 
 (defun store (addr elem mem)
   (declare (xargs :guard (and (memory-p mem)
                               (address-p addr mem))
-                  :guard-hints(("Goal" 
+                  :guard-hints(("Goal"
                                 :use (:instance _address-from-address)
                                 :in-theory (enable _memory-p
                                                    _memory-mtree
@@ -1116,7 +1146,7 @@
                     (fast   (cdar mem))
                     (memcdr (cdr mem))
                     (depth  (cadr memcdr)))
-               (cons (cons (if fast 
+               (cons (cons (if fast
                                (if elem
                                    (_fixnum-memtree-store addr elem mtree depth)
                                  (_fixnum-memtree-store-nil addr mtree depth))
@@ -1183,7 +1213,7 @@
        :exec (_log2-tr n 0)))
 
 (defthm _log2-equiv
-  (implies (and (natp n) 
+  (implies (and (natp n)
                 (natp acc))
            (equal (_log2-tr n acc)
                   (+ (_log2 n) acc))))
@@ -1254,7 +1284,7 @@
 
 
 
-; We also note that upon creation, the value of every address in a memory 
+; We also note that upon creation, the value of every address in a memory
 ; happens to be nil.
 
 (defthm load-new
@@ -1345,13 +1375,13 @@ For example,
      (integerp x)
      (<= (- (expt 2 15)) x)
      (< x (expt 2 15))))
-  
+
   (defun fix-sbp16 (x)
     (declare (xargs :guard t))
     (if (sbp16 x) x 0))
-  
+
   (defrecord sbp :rd getbv :wr putbv :fix fix-sbp16 :typep sbp16)
-  
+
 The "raw" record structure introduced in the standard records book is
 used to define records defined using defrecord, and the functions for
 accessing and updating a record that are introduced by defrecord are
@@ -1362,7 +1392,7 @@ and set elements of record r for address a and value v.  We prove the
 following lemmas, each of which also holds of "raw" records:
 
 (defthm g-same-s
-  (equal (g a (s a v r)) 
+  (equal (g a (s a v r))
          v))
 
 (defthm g-diff-s
@@ -1371,7 +1401,7 @@ following lemmas, each of which also holds of "raw" records:
                   (g a r))))
 
 (defthm s-same-g
-  (equal (s a (g a r) r) 
+  (equal (s a (g a r) r)
          r))
 
 (defthm s-same-s
@@ -1387,10 +1417,10 @@ following lemmas, each of which also holds of "raw" records:
 In addition, the defrecord macro proves one additional lemma that is
 not provable about raw records:
 
-(defthm typep-g 
+(defthm typep-g
   (typep (g a r)))
 
-for a typep predicate provided by the user.  
+for a typep predicate provided by the user.
 
 What makes this implementation of records interesting is that it has
 the peculiar property that each of the lemmas has no "type"
@@ -1633,7 +1663,7 @@ November 2002
 (defthmd abstract-localfixedpoint
   (equal (localfixedpoint x)
          (subsetp (rkeys x) (list nil)))
-  :hints (("Goal" :in-theory (enable 
+  :hints (("Goal" :in-theory (enable
                               localfixedpoint
                               g
                               rkeys
@@ -1768,9 +1798,9 @@ November 2002
 
 ;; AUX
 (defun ifrp-s-aux (a v r)
-  (if (endp r) 
+  (if (endp r)
       (and (ifrp v) (not a))
-    (if (null (cdr r)) 
+    (if (null (cdr r))
         (if (<< a (caar r))
             (and (not v) (ifrp r))
           (and (null (caar r))
@@ -2012,23 +2042,23 @@ November 2002
 
 (defthm iff-s
   (iff (s a v r)
-       (or v 
+       (or v
            (and r (if (acl2::fixedpoint r) a
                     (not (subsetp (rkeys r) (list a)))))))
   :hints (("Goal" :in-theory (e/d (iff-s-to-iff-s-fixedpoint
-                                   gar-as-memberp 
+                                   gar-as-memberp
                                    fixedpoint-impact-on-keys)
                                   (LIST::MEMBERP-WHEN-NOT-MEMBERP-OF-CDR-CHEAP)))
           ("Subgoal 3''" :in-theory (enable list::memberp))))
 
 (defthm fixedpoint-s
   (equal (fixedpoint (s a v r))
-         (or 
+         (or
           ;; Results from (not (s a v r))
           (not (or v
                    (and r (if (acl2::fixedpoint r) a
                             (not (subsetp (rkeys r) (list a)))))))
-          (and 
+          (and
            ;; Results from (localfixedpoint (s a v r))
            (if v (subsetp (cons a (rkeys r)) (list nil))
              (subsetp (rkeys r) (list a nil)))
@@ -2082,7 +2112,7 @@ November 2002
           nil)
       (set::union (cons-onto-all '0 (mem::domain-aux (car mem-tree) (+ -1 depth)))
                   (cons-onto-all '1 (mem::domain-aux (cdr mem-tree) (+ -1 depth)))))))
-  
+
 
 ;this bits are in reverse order (least significant bit comes first in the list)
 (defun convert-reversed-bit-list-to-integer (bit-list)
@@ -2091,7 +2121,7 @@ November 2002
     (+ (car bit-list)
        (* 2 (convert-reversed-bit-list-to-integer (cdr bit-list))))))
 
-;; (defmacro def-set-processor (&key (processor-name 'unsupplied) 
+;; (defmacro def-set-processor (&key (processor-name 'unsupplied)
 ;;                                   (element-processor 'unsupplied)  ;can this be a term?
 ;;                                   (predicate 'unsupplied))
 ;;   `(defun ,processor-name (set) ;can this take more than one arg?
@@ -2126,9 +2156,9 @@ November 2002
                           (lambda (x) (convert-reversed-bit-lists-to-integers x))))
                         (a lst)
                         (x lst-of-lsts)
-                 
+
                         ))))
-  
+
 (defun mem::mem-tree-domain (mem-tree depth)
   (convert-reversed-bit-lists-to-integers (mem::domain-aux mem-tree depth)))
 
@@ -2150,7 +2180,7 @@ November 2002
                 ;;always return nats less than size?  Not necessarily.  There
                 ;;may be nats less than 2^depth but greater than size.  We
                 ;;have to filter them out.
-                
+
                 (SET::FILTER<not-NATP-LESS-THAN-SIZE> (set::rkeys record-part) size)
                 )))
 
@@ -2193,7 +2223,7 @@ November 2002
                           (lambda (x) (cons-onto-all item x))))
                         (a lst)
                         (x lst-of-lsts)
-                 
+
                         ))))
 
 ;bzo may ben expensive?
@@ -2246,7 +2276,7 @@ November 2002
                                     MEM::|_ADDRESS-FIX|)
           :do-not '(generalize eliminate-destructors)
           :EXPAND ((MEM::|_MEMTREE-STORE| ADDR ELEM NIL DEPTH)))))
-        
+
 
 
 
@@ -2277,7 +2307,7 @@ November 2002
                               MEM::|_ADDRESS-P|
                               MEM::|_MEMTREE-FIX|
     ;MEM::|_MEMTREE-P|
-                              MEM::|_ADDRESS-FIX|) 
+                              MEM::|_ADDRESS-FIX|)
                            (;LIST::EQUAL-CONS-CASES ;bzo why?
                             )))))
 
@@ -2332,7 +2362,7 @@ November 2002
 
 ;bzo drop?
        (if (equal 1 (cadr mem)) ;log2 on 0 is weird, so we handle this case specially
-           (equal 1 (caddr mem))        
+           (equal 1 (caddr mem))
          (equal (mem::|_LOG2| (+ -1 (cadr mem)))
                 (caddr mem)))))
 
@@ -2356,7 +2386,7 @@ November 2002
                    (lambda (x) (SET::FILTER<NOT-NATP-LESS-THAN-SIZE> x size))))
                  (a a)
                  (x x)
-                 
+
                  ))))
 
 (defthm FILTER<NATP-LESS-THAN-SIZE>-of-insert
@@ -2376,9 +2406,9 @@ November 2002
                           (lambda (x) (SET::FILTER<NATP-LESS-THAN-SIZE> x size))))
                         (a a)
                         (x x)
-                 
+
                         ))))
-          
+
 (defthm domain-of-store-v-non-nil
   (implies (and ;(MEM::MEMORY-P mem)
 ;(WFR (CDDDR MEM))
@@ -2394,7 +2424,7 @@ November 2002
                               MEM::|_ADDRESS-P|
                               MEM::SIZE
                               MEM::STORE MEM::|_STORE|
-                              MEM::|_FROM-MEM| 
+                              MEM::|_FROM-MEM|
                               MEM::|_BAD-MEMORY-P|
                               MEM::|_MEMORY-P|
                               MEM::|_MEMORY-MTREE|
@@ -2404,8 +2434,8 @@ November 2002
                               MEM::|_MEMORY-FAST|
                               MEM::|_MEMORY-SIZE|
                               MEM::|_MEMORY-RECORD|
-                              
-                              ) 
+
+                              )
                            (SET::DOUBLE-CONTAINMENT
                             )))))
 
@@ -2413,7 +2443,7 @@ November 2002
 
 ;for typed records gotta unwrap the domain...
 
-(in-theory (disable mem::domain)) ;move back               
+(in-theory (disable mem::domain)) ;move back
 
 ;bzo add to sets library
 (defthm delete-of-insert-diff
@@ -2500,10 +2530,10 @@ November 2002
 ;;     (and (equal len (len (set::head x)))
 ;;          (all-have-len len (set::tail x)))))
 
-(defun len-equal (a len) 
+(defun len-equal (a len)
   (declare (xargs :guard t))
   (equal (len a) (rfix len)))
-  
+
 (defthm all-len-equal-of-union
   (equal (set::all<len-equal> (set::union x y) depth)
          (and (set::all<len-equal> x depth)
@@ -2589,7 +2619,7 @@ November 2002
   (implies (and (not (natp a))
                 (force (set::all<bit-listp> bit-lists)))
            (not (set::in a (convert-reversed-bit-lists-to-integers bit-lists))))
-  :hints (("Goal" :in-theory (enable SET::ALL<BIT-LISTP> 
+  :hints (("Goal" :in-theory (enable SET::ALL<BIT-LISTP>
                                      )
            :do-not '(generalize eliminate-destructors))))
 
@@ -2681,7 +2711,7 @@ November 2002
    (NOT
     (SET::IN (CONVERT-REVERSED-BIT-LIST-TO-INTEGER a)
              (CONVERT-REVERSED-BIT-LISTS-TO-INTEGERS x))))
-  :hints (("Goal" :in-theory (enable set::in 
+  :hints (("Goal" :in-theory (enable set::in
                                      )
            :do-not '(generalize eliminate-destructors))))
 
@@ -2780,7 +2810,7 @@ November 2002
 (defthm all-bit-listp-of-domain-aux
   (set::all<bit-listp> (mem::domain-aux tree depth))
     :hints (("Goal" :in-theory (enable mem::domain-aux acl2::equal-booleans-reducton))))
-;; LIST::EQUAL-OF-BOOLEANS-REWRITE 
+;; LIST::EQUAL-OF-BOOLEANS-REWRITE
 
 (defthm setp-of-domain-aux
   (set::setp (mem::domain-aux tree depth))
@@ -2829,13 +2859,13 @@ November 2002
                                                 (CAR (CDR (CDR MEM))))))
            :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (set::delete-of-union-push-into-both
-                              
+
                             good-memoryp
                             MEM::DOMAIN
                             MEM::|_ADDRESS-P|
                             MEM::SIZE
                             MEM::STORE MEM::|_STORE|
-                            MEM::|_FROM-MEM| 
+                            MEM::|_FROM-MEM|
                             MEM::|_BAD-MEMORY-P|
                             MEM::|_MEMORY-P|
                             MEM::|_MEMORY-MTREE|
@@ -2845,7 +2875,7 @@ November 2002
                             MEM::|_MEMORY-FAST|
                             MEM::|_MEMORY-SIZE|
                             MEM::|_MEMORY-RECORD|
-                            ) 
+                            )
                            (SET::DOUBLE-CONTAINMENT
                             SET::UNION-DELETE-y
                             SET::UNION-DELETE-x)))))
@@ -2871,7 +2901,7 @@ November 2002
   (equal (mem::domain (mem::new size))
          nil)
   :hints (("Goal" :in-theory (enable MEM::DOMAIN-AUX
-                                     mem::new 
+                                     mem::new
                                      mem::domain
                                      mem::mem-tree-domain))))
 
@@ -3064,12 +3094,12 @@ November 2002
                                MEM::|_MEMORY-P|
                                )))))
 
-(in-theory (disable MEM::MEM-TREE-DOMAIN))                             
+(in-theory (disable MEM::MEM-TREE-DOMAIN))
 
 (defthm mem-tree-domain-after-store
   (implies (good-memoryp mem)
            (equal (MEM::MEM-TREE-DOMAIN (CAAR (MEM::STORE A V MEM))
-                                        (CADDR ;(MEM::STORE A V 
+                                        (CADDR ;(MEM::STORE A V
                                          MEM
                                          ;)
                                          ))
@@ -3086,9 +3116,9 @@ November 2002
 ;           :use (:instance domain-of-store) ;gross way to prove this...
            :cases ((SET::EMPTY (MEM::DOMAIN-AUX (CAR (CAR MEM))
                                                       (CAR (CDR (CDR MEM))))))
-           
+
            :in-theory (e/d (MEM::DOMAIN
-                            
+
                             MEM::MEM-TREE-DOMAIN
                             MEM::STORE
                             MEM::MEMORY-P
@@ -3105,8 +3135,8 @@ November 2002
                             MEM::|_MEMORY-FIX|
                             GOOD-MEMORYP
                             MEM::|_MEMORY-RECORD|
-                            ) 
-                           (domain-of-store)))))            
+                            )
+                           (domain-of-store)))))
 
 
 (local (in-theory (disable SIGNED-BYTE-P)))
@@ -3218,7 +3248,7 @@ November 2002
 
 (defthm g-of-clr
   (equal (g a1 (clr a2 r))
-         (if (equal a1 a2) 
+         (if (equal a1 a2)
              nil
            (g a1 r)))
   :hints (("Goal" :in-theory (enable clr))))
@@ -3255,7 +3285,7 @@ November 2002
                        (<< e a)
                        (<< e (caar r)))
                   (<< e (caar (s-aux a v r))))))
- 
+
 ; jcd - extracted this from later encapsulate and made it local to this book
 ; so that it won't be exported
 (local (defthm s-aux-preserves-rcdp
@@ -3277,11 +3307,11 @@ November 2002
 (local (defthm iff-s-aux-cases
          (implies (rcdp r)
                   (iff (s-aux a v r)
-                       (not (or (and (ENDP R) 
+                       (not (or (and (ENDP R)
                                      (not V))
-                                (and (consp r) 
-                                     (not v) 
-                                     (EQUAL A (CAAR R)) 
+                                (and (consp r)
+                                     (not v)
+                                     (EQUAL A (CAAR R))
                                      (not (cdr r)))))))))
 
 ; jcd - change this to more simple if form
@@ -3320,7 +3350,7 @@ November 2002
 
 ; jcd - made this local to this book, so it won't be exported
 ; ews - doh! I needed this (at least temporarily) to be non-local
-(local 
+(local
  (defthm wfkeyed-s-aux
          (implies (and (not (ifrp r))
                        (rcdp r)

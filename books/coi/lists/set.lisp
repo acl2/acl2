@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "LIST")
 
 (include-book "remove")
@@ -14,7 +39,7 @@
 ;; DAG -- it would be nice to push this back ..
 (defthm disjoint-remove-list
   (disjoint (remove-list x y) x)
-  :rule-classes ((:forward-chaining 
+  :rule-classes ((:forward-chaining
 		  :trigger-terms ((remove-list x y)))))
 
 (defun setequiv (x y)
@@ -138,7 +163,7 @@
  ()
 
  (local (include-book "remove-induction"))
- 
+
  (defcong setequiv equal (disjoint x y) 1
    :hints (("Goal" :in-theory (enable disjoint-remove-reduction-1
 				      open-setequiv-on-memberp
@@ -171,7 +196,7 @@
 			   (a x)
 			   (x (append x y))
 			   (y z)))))
-	   
+
 (defchoose setfix x (y)
   (setequiv x y)
   :strengthen t)
@@ -193,7 +218,7 @@
  ()
 
  ;; anything that fixes to this point is equiv
- 
+
  (local
   (defthm any-fix-is-equiv
     (implies (equal y (setfix x))
@@ -212,7 +237,7 @@
    (equal (setequiv x y)
 	  (equal (setfix x) (setfix y)))
    :hints (("Goal" :in-theory (enable equal-setfix-implies-setequiv))))
-   
+
  )
 
 (defthm setfixed-p-setfix
@@ -247,9 +272,9 @@
   (local (defun setequiv-hyps () nil))
   (local (defun setequiv-lhs () nil))
   (local (defun setequiv-rhs () nil))
-  
+
   (defthm setequiv-multiplicity-constraint
-    (implies 
+    (implies
      (setequiv-hyps)
      (equal (memberp arbitrary-element (setequiv-lhs))
 	    (memberp arbitrary-element (setequiv-rhs))))
@@ -258,26 +283,26 @@
 
  (local (defun badguy (x y)
 	  (declare (xargs :measure (len x)))
-          (cond ((atom x) 
+          (cond ((atom x)
 		 (if (consp y) (car y) nil))
                 ((not (memberp (car x) y))
                  (car x))
                 (t (badguy (remove (car x) x)
 			   (remove (car x) y))))))
- 
+
  (local (include-book "remove-induction"))
 
  (local (defthm badguy-witness
           (equal (setequiv x y)
 		 (equal (memberp (badguy x y) x)
 			(memberp (badguy x y) y)))))
- 
+
  (defthm setequiv-by-multiplicity-driver
    (implies (setequiv-hyps)
             (setequiv (setequiv-lhs) (setequiv-rhs)))
    :rule-classes nil
-   :hints(("Goal" 
-           :use ((:instance 
+   :hints(("Goal"
+           :use ((:instance
                   setequiv-multiplicity-constraint
                   (arbitrary-element (badguy (setequiv-lhs) (setequiv-rhs))))))))
 
@@ -365,7 +390,7 @@
 (defthmd subsetp-setintersection-helper
   (implies
    (subsetp x y)
-   (equal (setintersection x y) 
+   (equal (setintersection x y)
 	  (if (null y) (list::fix x) x))))
 
 (local (in-theory (enable subsetp-setintersection-helper)))
@@ -541,5 +566,3 @@
   :rule-classes (:rewrite
 		 (:forward-chaining
 		  :trigger-terms ((remove a x)))))
-
-

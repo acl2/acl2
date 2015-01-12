@@ -157,8 +157,8 @@ message in HTML format.</p>"""})
   :long "<p>At startup the VL server will automatically define hunchentoot
 command handlers corresponding to all of the commands in this table.</p>
 
-<p>The proper way to extend this table is with @(see define-vls-json-command)
-or @(see define-vls-html-command).</p>"
+<p>The proper way to extend this table is with @(see define-vls-json) or @(see
+define-vls-html).</p>"
 
   (table vl-server 'commands
          ;; Commands is just a list of all VL server commands that have been
@@ -205,11 +205,23 @@ or @(see define-vls-html-command).</p>"
        (table vl-server 'commands
               (cons ',info (get-vls-commands world))))))
 
-(defmacro define-vls-json (name formals &rest rest)
-  (define-vls-command-fn name formals :json rest))
 
-(defmacro define-vls-html (name formals &rest rest)
-  (define-vls-command-fn name formals :html rest))
+(defsection define-vls-json
+  :parents (commands-table)
+  :short "Add a JSON-producing command to the VL server."
+  :long "<p>See @('server.lisp') for several examples.</p>"
+
+  (defmacro define-vls-json (name formals &rest rest)
+    (define-vls-command-fn name formals :json rest)))
+
+
+(defsection define-vls-html
+  :parents (commands-table)
+  :short "Add an HTML-producing command to the VL server."
+  :long "<p>See @('server.lisp') for several examples.</p>"
+
+  (defmacro define-vls-html (name formals &rest rest)
+    (define-vls-command-fn name formals :html rest)))
 
 
 (local

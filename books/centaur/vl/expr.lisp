@@ -40,17 +40,30 @@
 
 (local (xdoc::set-default-parents expressions))
 
+(defaggregate vl-opinfo
+  :parents (*vl-ops-table*)
+  :tag :vl-opinfo
+  ((arity   maybe-natp
+            :rule-classes :type-prescription
+            "For operators that have a fixed number of arguments this is the
+             associated arity.  For operations that do not have fixed
+             arities (e.g., concatenation, function calls, ...), we just say
+             the arity is @('nil').")
+
+   (text    maybe-stringp
+            :rule-classes :type-prescription
+            "Printed representation of this operator like @('\"+\"'), if
+             applicable.  This is intended for use in lightweight pretty
+             printing, i.e., if you are writing a warning about a particular
+             expression, you might want to refer to a \"+ operator\" or
+             similar.")))
+
 (defval *vl-ops-table*
-  :short "Table of operators and their arities."
+  :short "Table binding valid operators to their @(see vl-opinfo) structures."
 
   :long "<p>The constant @(srclink *vl-ops-table*) defines the valid operators
 in our expression representation.  It is preferred not to access this table
 directly, but rather to use @(see vl-op-p) and @(see vl-op-arity).</p>
-
-<p>The @('*vl-ops-table*') is an alist that maps our operators (keyword
-symbols) to their arities.  For operations that do not have fixed
-arities (e.g., concatenation, function calls, ...), we map the operator to
-@('nil').</p>
 
 <p>Here is how we represent the various Verilog operators:</p>
 
@@ -209,48 +222,48 @@ SystemVerilog-2012 Standard.</p>"
 
   (list
    ;; Basic Unary Operators
-   (cons :vl-unary-plus            1)   ;;; +
-   (cons :vl-unary-minus           1)   ;;; -
-   (cons :vl-unary-lognot          1)   ;;; !
-   (cons :vl-unary-bitnot          1)   ;;; ~
-   (cons :vl-unary-bitand          1)   ;;; &
-   (cons :vl-unary-nand            1)   ;;; ~&
-   (cons :vl-unary-bitor           1)   ;;; |
-   (cons :vl-unary-nor             1)   ;;; ~|
-   (cons :vl-unary-xor             1)   ;;; ^
-   (cons :vl-unary-xnor            1)   ;;; ~^ or ^~
-   (cons :vl-unary-preinc          1)   ;;; ++a
-   (cons :vl-unary-predec          1)   ;;; --a
-   (cons :vl-unary-postinc         1)   ;;; a++
-   (cons :vl-unary-postdec         1)   ;;; a--
+   (cons :vl-unary-plus     (make-vl-opinfo :arity 1 :text "+"))
+   (cons :vl-unary-minus    (make-vl-opinfo :arity 1 :text "-"))
+   (cons :vl-unary-lognot   (make-vl-opinfo :arity 1 :text "!"))
+   (cons :vl-unary-bitnot   (make-vl-opinfo :arity 1 :text "~"))
+   (cons :vl-unary-bitand   (make-vl-opinfo :arity 1 :text "&"))
+   (cons :vl-unary-nand     (make-vl-opinfo :arity 1 :text "~&"))
+   (cons :vl-unary-bitor    (make-vl-opinfo :arity 1 :text "|"))
+   (cons :vl-unary-nor      (make-vl-opinfo :arity 1 :text "~|"))
+   (cons :vl-unary-xor      (make-vl-opinfo :arity 1 :text "^"))
+   (cons :vl-unary-xnor     (make-vl-opinfo :arity 1 :text "~^")) ;;; or ^~
+   (cons :vl-unary-preinc   (make-vl-opinfo :arity 1 :text "++")) ;; ++a
+   (cons :vl-unary-predec   (make-vl-opinfo :arity 1 :text "--")) ;; --a
+   (cons :vl-unary-postinc  (make-vl-opinfo :arity 1 :text "++")) ;; a++
+   (cons :vl-unary-postdec  (make-vl-opinfo :arity 1 :text "--")) ;; a--
 
    ;; Basic Binary Operators
-   (cons :vl-binary-plus           2)   ;;; +
-   (cons :vl-binary-minus          2)   ;;; -
-   (cons :vl-binary-times          2)   ;;; *
-   (cons :vl-binary-div            2)   ;;; /
-   (cons :vl-binary-rem            2)   ;;; %
-   (cons :vl-binary-eq             2)   ;;; ==
-   (cons :vl-binary-neq            2)   ;;; !=
-   (cons :vl-binary-ceq            2)   ;;; ===
-   (cons :vl-binary-cne            2)   ;;; !==
-   (cons :vl-binary-wildeq         2)   ;;; ==?
-   (cons :vl-binary-wildneq        2)   ;;; !=?
-   (cons :vl-binary-logand         2)   ;;; &&
-   (cons :vl-binary-logor          2)   ;;; ||
-   (cons :vl-binary-power          2)   ;;; **
-   (cons :vl-binary-lt             2)   ;;; <
-   (cons :vl-binary-lte            2)   ;;; <=
-   (cons :vl-binary-gt             2)   ;;; >
-   (cons :vl-binary-gte            2)   ;;; >=
-   (cons :vl-binary-bitand         2)   ;;; &
-   (cons :vl-binary-bitor          2)   ;;; |
-   (cons :vl-binary-xor            2)   ;;; ^
-   (cons :vl-binary-xnor           2)   ;;; ~^ or ^~
-   (cons :vl-binary-shr            2)   ;;; >>
-   (cons :vl-binary-shl            2)   ;;; <<
-   (cons :vl-binary-ashr           2)   ;;; >>>
-   (cons :vl-binary-ashl           2)   ;;; <<<
+   (cons :vl-binary-plus    (make-vl-opinfo :arity 2 :text "+"))
+   (cons :vl-binary-minus   (make-vl-opinfo :arity 2 :text "-"))
+   (cons :vl-binary-times   (make-vl-opinfo :arity 2 :text "*"))
+   (cons :vl-binary-div     (make-vl-opinfo :arity 2 :text "/"))
+   (cons :vl-binary-rem     (make-vl-opinfo :arity 2 :text "%"))
+   (cons :vl-binary-eq      (make-vl-opinfo :arity 2 :text "=="))
+   (cons :vl-binary-neq     (make-vl-opinfo :arity 2 :text "!="))
+   (cons :vl-binary-ceq     (make-vl-opinfo :arity 2 :text "==="))
+   (cons :vl-binary-cne     (make-vl-opinfo :arity 2 :text "!=="))
+   (cons :vl-binary-wildeq  (make-vl-opinfo :arity 2 :text "==?"))
+   (cons :vl-binary-wildneq (make-vl-opinfo :arity 2 :text "!=?"))
+   (cons :vl-binary-logand  (make-vl-opinfo :arity 2 :text "&&"))
+   (cons :vl-binary-logor   (make-vl-opinfo :arity 2 :text "||"))
+   (cons :vl-binary-power   (make-vl-opinfo :arity 2 :text "**"))
+   (cons :vl-binary-lt      (make-vl-opinfo :arity 2 :text "<"))
+   (cons :vl-binary-lte     (make-vl-opinfo :arity 2 :text "<="))
+   (cons :vl-binary-gt      (make-vl-opinfo :arity 2 :text ">"))
+   (cons :vl-binary-gte     (make-vl-opinfo :arity 2 :text ">="))
+   (cons :vl-binary-bitand  (make-vl-opinfo :arity 2 :text "&"))
+   (cons :vl-binary-bitor   (make-vl-opinfo :arity 2 :text "|"))
+   (cons :vl-binary-xor     (make-vl-opinfo :arity 2 :text "^"))
+   (cons :vl-binary-xnor    (make-vl-opinfo :arity 2 :text "~^")) ;;; or ^~
+   (cons :vl-binary-shr     (make-vl-opinfo :arity 2 :text ">>"))
+   (cons :vl-binary-shl     (make-vl-opinfo :arity 2 :text "<<"))
+   (cons :vl-binary-ashr    (make-vl-opinfo :arity 2 :text ">>>"))
+   (cons :vl-binary-ashl    (make-vl-opinfo :arity 2 :text "<<<"))
 
    ;; Assignments within Expressions (SystemVerilog)
    (cons :vl-binary-assign         2)   ;;; (a = b)
@@ -268,61 +281,69 @@ SystemVerilog-2012 Standard.</p>"
    (cons :vl-binary-ashrassign     2)   ;;; (a >>>= b)
 
    ;; Special Binary Operators (these associate right to left)
-   (cons :vl-implies               2)   ;;; ->
-   (cons :vl-equiv                 2)   ;;; <->
+   (cons :vl-implies        (make-vl-opinfo :arity 2 :text "->"))
+   (cons :vl-equiv          (make-vl-opinfo :arity 2 :text "<->"))
 
    ;; Basic Ternary Operators
-   (cons :vl-qmark                 3)   ;;; e.g., 1 ? 2 : 3
-   (cons :vl-mintypmax             3)   ;;; e.g., (1 : 2 : 3)
+   (cons :vl-qmark          (make-vl-opinfo :arity 3 :text nil))
+   (cons :vl-mintypmax      (make-vl-opinfo :arity 3 :text nil))
 
    ;; Selection Operators
-   (cons :vl-index                 2) ;;; e.g., foo[1] before determining bitselect
-   (cons :vl-bitselect             2) ;;; e.g., foo[1] for wire bit selections
-   (cons :vl-select-colon          3) ;;; e.g., foo[3 : 1]  before determining simple vector
-   (cons :vl-select-pluscolon      3) ;;; e.g., foo[3 +: 1]
-   (cons :vl-select-minuscolon     3) ;;; e.g., foo[3 -: 1]
-   (cons :vl-partselect-colon      3) ;;; e.g., foo[3 : 1]
-   (cons :vl-partselect-pluscolon  3) ;;; e.g., foo[3 +: 1]
-   (cons :vl-partselect-minuscolon 3) ;;; e.g., foo[3 -: 1]
+   (cons :vl-index                 (make-vl-opinfo :arity 2 :text nil)) ;;; e.g., foo[1] before determining bitselect
+   (cons :vl-bitselect             (make-vl-opinfo :arity 2 :text nil)) ;;; e.g., foo[1] for wire bit selections
+   (cons :vl-select-colon          (make-vl-opinfo :arity 3 :text nil)) ;;; e.g., foo[3 : 1]  before determining simple vector
+   (cons :vl-select-pluscolon      (make-vl-opinfo :arity 3 :text nil)) ;;; e.g., foo[3 +: 1]
+   (cons :vl-select-minuscolon     (make-vl-opinfo :arity 3 :text nil)) ;;; e.g., foo[3 -: 1]
+   (cons :vl-partselect-colon      (make-vl-opinfo :arity 3 :text nil)) ;;; e.g., foo[3 : 1]
+   (cons :vl-partselect-pluscolon  (make-vl-opinfo :arity 3 :text nil)) ;;; e.g., foo[3 +: 1]
+   (cons :vl-partselect-minuscolon (make-vl-opinfo :arity 3 :text nil)) ;;; e.g., foo[3 -: 1]
 
    ;; Concatenation and Replication Operators
-   (cons :vl-concat                nil) ;;; e.g., { 1, 2, 3 }
-   (cons :vl-multiconcat           2)   ;;; e.g., { 3 { 2, 1 } }
+   (cons :vl-concat                (make-vl-opinfo :arity nil :text nil)) ;;; e.g., { 1, 2, 3 }
+   (cons :vl-multiconcat           (make-vl-opinfo :arity 2   :text nil)) ;;; e.g., { 3 { 2, 1 } }
 
    ;; Streaming Concatenations (SystemVerilog)
-   (cons :vl-stream-left           nil)   ;;; {<<{...args...}}
-   (cons :vl-stream-right          nil)   ;;; {>>{...args...}}
-   (cons :vl-stream-left-sized     nil)   ;;; {<< size {...args...}}
-   (cons :vl-stream-right-sized    nil)   ;;; {>> size {...args...}}
-   (cons :vl-with-index            2)     ;;; e.g., foo with [1]
-   (cons :vl-with-colon            3)     ;;; e.g., foo with [3 : 1]
-   (cons :vl-with-pluscolon        3)     ;;; e.g., foo with [3 +: 1]
-   (cons :vl-with-minuscolon       3)     ;;; e.g., foo with [3 -: 1]
+   (cons :vl-stream-left           (make-vl-opinfo :arity nil :text nil))   ;;; {<<{...args...}}
+   (cons :vl-stream-right          (make-vl-opinfo :arity nil :text nil))   ;;; {>>{...args...}}
+   (cons :vl-stream-left-sized     (make-vl-opinfo :arity nil :text nil))   ;;; {<< size {...args...}}
+   (cons :vl-stream-right-sized    (make-vl-opinfo :arity nil :text nil))   ;;; {>> size {...args...}}
+   (cons :vl-with-index            (make-vl-opinfo :arity 2   :text nil))   ;;; e.g., foo with [1]
+   (cons :vl-with-colon            (make-vl-opinfo :arity 3   :text nil))   ;;; e.g., foo with [3 : 1]
+   (cons :vl-with-pluscolon        (make-vl-opinfo :arity 3   :text nil))   ;;; e.g., foo with [3 +: 1]
+   (cons :vl-with-minuscolon       (make-vl-opinfo :arity 3   :text nil))   ;;; e.g., foo with [3 -: 1]
 
    ;; Function Calls
-   (cons :vl-funcall               nil)   ;;; e.g., foo(1,2,3)
-   (cons :vl-syscall               nil)   ;;; e.g., $foo(1,2,3)
+   (cons :vl-funcall               (make-vl-opinfo :arity nil :text nil))   ;;; e.g., foo(1,2,3)
+   (cons :vl-syscall               (make-vl-opinfo :arity nil :text nil))   ;;; e.g., $foo(1,2,3)
 
    ;; Hierarchical Identifiers and Scoping
-   (cons :vl-hid-dot               2)   ;;; e.g., foo.bar
-   (cons :vl-scope                 2)   ;;; e.g., foo::xbar
+   (cons :vl-hid-dot               (make-vl-opinfo :arity 2   :text "."))    ;;; e.g., foo.bar
+   (cons :vl-scope                 (make-vl-opinfo :arity 2   :text "::"))   ;;; e.g., foo::xbar
 
    ;; Tagged Union Expressions, should have arity 1 or 2
-   (cons :vl-tagged nil) ;; e.g., "tagged Valid 13" or "tagged Invalid"
+   (cons :vl-tagged                (make-vl-opinfo :arity nil :text "tagged")) ;; e.g., "tagged Valid 13" or "tagged Invalid"
 
    ;; Casting Expressions
-   (cons :vl-binary-cast           2)    ;;; e.g., int'(2.0)
+   (cons :vl-binary-cast           (make-vl-opinfo :arity 2   :text "'"))    ;;; e.g., int'(2.0)
 
    ;; Assignment Pattern stuff
-   (cons :vl-pattern-positional nil) ;; '\{ expression { , expression } \}
-   (cons :vl-pattern-multi      2)   ;; '\{ expression \{ expression {, expression} \} \}, e.g. '{3{a,b}}
-   (cons :vl-pattern-keyvalue   nil) ;; '\{ structure_pattern_key : expression { , key : expression } \}
-   (cons :vl-keyvalue           2)   ;; key : value  (within vl-pattern-keyvalue)
-   (cons :vl-pattern-type       2)   ;; type'{...}, first argument 
+   (cons :vl-pattern-positional    (make-vl-opinfo :arity nil :text nil)) ;;; '\{ expression { , expression } \}
+   (cons :vl-pattern-multi         (make-vl-opinfo :arity 2   :text nil)) ;;; '\{ expression \{ expression {, expression} \} \}, e.g. '{3{a,b}}
+   (cons :vl-pattern-keyvalue      (make-vl-opinfo :arity nil :text nil)) ;;; '\{ structure_pattern_key : expression { , key : expression } \}
+   (cons :vl-keyvalue              (make-vl-opinfo :arity 2   :text nil)) ;;; key : value  (within vl-pattern-keyvalue)
+   (cons :vl-pattern-type          (make-vl-opinfo :arity 2   :text nil)) ;;; type'{...}, first argument 
 
    ))
 
-
+(define vl-ops-table ()
+  :inline t
+  *vl-ops-table*
+  ///
+  (defthm alistp-of-vl-ops-table
+    (alistp (vl-ops-table)))
+  (defthm eqlable-alistp-of-vl-ops-table
+    (eqlable-alistp (vl-ops-table)))
+  (in-theory (disable (:e vl-ops-table))))
 
 (define vl-op-p (x)
   :short "Recognizer for valid operators."
@@ -332,16 +353,23 @@ up operators directly in the table, since this way we can disable @('vl-op-p')
 and avoid large case splits.</p>"
   :inline t
   ;; Per basic testing, assoc is faster than hons-get here.
-  (if (assoc x *vl-ops-table*)
+  (if (assoc x (vl-ops-table))
       t
     nil)
   ///
+  (local (in-theory (enable vl-ops-table)))
+
   (defthm type-when-vl-op-p
     (implies (vl-op-p x)
              (and (symbolp x)
                   (not (equal x t))
                   (not (equal x nil))))
-    :rule-classes :compound-recognizer))
+    :rule-classes :compound-recognizer)
+
+  (defthm vl-opinfo-p-of-lookup-when-vl-op-p
+    (implies (vl-op-p x)
+             (and (vl-opinfo-p (cdr (assoc x (vl-ops-table))))
+                  (vl-opinfo-p (cdr (hons-assoc-equal x (vl-ops-table))))))))
 
 (define vl-op-fix ((x vl-op-p))
   :returns (op vl-op-p)
@@ -365,12 +393,10 @@ and avoid large case splits.</p>"
   :define t
   :forward t)
 
-
 (fty::deflist vl-oplist
               :elt-type vl-op-p
               :true-listp nil
               :elementp-of-nil nil)
-
 
 (define vl-op-arity ((x vl-op-p))
   :returns (arity maybe-natp :rule-classes :type-prescription)
@@ -383,10 +409,16 @@ return @('nil').</p>
 <p>We prefer to use @('vl-op-arity') instead of looking up operators directly
 in the table, since this way we can disable @('vl-op-arity') and avoid large
 case splits.</p>"
+  (b* ((op   (vl-op-fix x))
+       (info (cdr (assoc op (vl-ops-table)))))
+    (vl-opinfo->arity info)))
 
-  :inline t
-  (cdr (assoc (vl-op-fix x) *vl-ops-table*)))
-
+(define vl-op-text ((x vl-op-p))
+  :returns (text maybe-stringp :rule-classes :type-prescription)
+  :short "Look up the text of an operator."
+  (b* ((op   (vl-op-fix x))
+       (info (cdr (assoc op (vl-ops-table)))))
+    (vl-opinfo->text info)))
 
 (defenum vl-exprtype-p
   (:vl-signed :vl-unsigned)
@@ -1764,6 +1796,6 @@ fairly easily solve the HIDEXPR problem.</p>"
     (or . ,(make-cases (strip-cars *vl-ops-table*)))
     :rule-classes ((:forward-chaining
                     :trigger-terms ((vl-nonatom->op x))))
-    :enable (vl-op-p acl2::hons-assoc-equal-of-cons)
+    :enable (vl-op-p acl2::hons-assoc-equal-of-cons vl-ops-table)
     :disable vl-op-p-of-vl-nonatom->op
     :use ((:instance vl-op-p-of-vl-nonatom->op))))

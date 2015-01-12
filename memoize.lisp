@@ -18,8 +18,7 @@
 ; University of Texas at Austin
 ; Austin, TX 78712 U.S.A.
 
-; memoize.lisp -- Logical definitions for memoization functions, only
-; to be included in the experimental HONS version of ACL2.
+; memoize.lisp -- Logical definitions for memoization functions.
 
 ; The original version of this file was contributed by Bob Boyer and
 ; Warren A. Hunt, Jr.  The design of this system of Hash CONS,
@@ -299,44 +298,52 @@
           (value-triple nil))
 
   #+acl2-loop-only
-  (let* ((inline recursive)
-         (form
-          (cond
-           ((eq commutative t)
-            `(make-event
-              (let* ((fn ,fn)
-                     (commutative
-                      (intern-in-package-of-symbol
-                       (concatenate 'string (symbol-name fn) "-COMMUTATIVE")
-                       fn)))
-                (list ; use encapsulate so that each form is printed first
-                 'encapsulate
-                 ()
-                 (list 'value-triple ; avoid redundancy for the encapsulate
-                       (kwote (cons (max-absolute-event-number (w state))
-                                    (car (global-val 'include-book-path
-                                                     (w state))))))
-                 (list 'defthm commutative
-                       (list 'equal
-                             (list fn 'x 'y)
-                             (list fn 'y 'x))
-                       :rule-classes nil)
-                 (memoize-form (kwote fn) ',condition ',condition-p
-                               ',condition-fn ',hints ',otf-flg ',inline
-                               (kwote commutative)
-                               ',forget
-                               ',memo-table-init-size
-                               ',aokp
-                               ',stats
-                               ',ideal-okp)))))
-           (t (memoize-form fn condition condition-p condition-fn
-                            hints otf-flg inline commutative forget
-                            memo-table-init-size aokp stats ideal-okp)))))
-    (cond (verbose form)
-          (t `(with-output
-               :off (summary prove event)
-               :gag-mode nil
-               ,form)))))
+  (cond
+   ((symbolp fn)
+    (er hard 'memoize
+        "It is illegal for the first argument of MEMOIZE to be a symbol.  ~
+         Note that the arguments to MEMOIZE are evaluated; so perhaps you ~
+         intended the first argument to be (QUOTE ~x0) or, equivalently, '~x0."
+        fn))
+   (t
+    (let* ((inline recursive)
+           (form
+            (cond
+             ((eq commutative t)
+              `(make-event
+                (let* ((fn ,fn)
+                       (commutative
+                        (intern-in-package-of-symbol
+                         (concatenate 'string (symbol-name fn) "-COMMUTATIVE")
+                         fn)))
+                  (list ; use encapsulate so that each form is printed first
+                   'encapsulate
+                   ()
+                   (list 'value-triple ; avoid redundancy for the encapsulate
+                         (kwote (cons (max-absolute-event-number (w state))
+                                      (car (global-val 'include-book-path
+                                                       (w state))))))
+                   (list 'defthm commutative
+                         (list 'equal
+                               (list fn 'x 'y)
+                               (list fn 'y 'x))
+                         :rule-classes nil)
+                   (memoize-form (kwote fn) ',condition ',condition-p
+                                 ',condition-fn ',hints ',otf-flg ',inline
+                                 (kwote commutative)
+                                 ',forget
+                                 ',memo-table-init-size
+                                 ',aokp
+                                 ',stats
+                                 ',ideal-okp)))))
+             (t (memoize-form fn condition condition-p condition-fn
+                              hints otf-flg inline commutative forget
+                              memo-table-init-size aokp stats ideal-okp)))))
+      (cond (verbose form)
+            (t `(with-output
+                 :off (summary prove event)
+                 :gag-mode nil
+                 ,form)))))))
 
 (defmacro unmemoize (fn)
   (declare (xargs :guard t))

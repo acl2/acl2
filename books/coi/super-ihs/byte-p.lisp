@@ -1,14 +1,39 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 (include-book "logpair")
 
 (local (in-theory (enable FALSIFY-UNSIGNED-BYTE-P)))
 
-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;           
+;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
 ;; signed-byte-p, unsigned-byte-p
 ;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
 
@@ -63,21 +88,21 @@
                 )
            (equal (signed-byte-p n x)
                   (integerp n)))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (enable signed-byte-p unsigned-byte-p)
            :use ((:instance EXPT-IS-INCREASING-FOR-BASE>1
                             (r 2)
                             (i free)
                             (j (1- n)))))))
-           
+
 (defthm unsigned-byte-p-subtype
   (implies (and (unsigned-byte-p free x) ;free is a free variable
                 (<= free n)
                 )
            (equal (unsigned-byte-p n x)
-                  (integerp n)  
+                  (integerp n)
                   ))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (enable signed-byte-p unsigned-byte-p)
            :use ((:instance EXPT-IS-INCREASING-FOR-BASE>1
                             (r 2)
@@ -94,7 +119,7 @@
                         (integerp x)
                         (<= free n))
                    (signed-byte-p n x))
-          :hints (("goal" 
+          :hints (("goal"
                    :in-theory (enable signed-byte-p unsigned-byte-p)
                    :use ((:instance EXPT-IS-INCREASING-FOR-BASE>1
                                     (r 2)
@@ -123,7 +148,7 @@
            (and (<= (- m) x)
                 (<= x (+ -1 m))))
   :hints (("goal" :in-theory (enable signed-byte-p))))
- 
+
 (defthm unsigned-byte-p-logcdr-bridge5
   (implies (and (unsigned-byte-p (1+ n) (1+ x))
                 (equal (logcar x) 1)
@@ -174,9 +199,9 @@
                 (integerp x))
            (equal (unsigned-byte-p n (ash x m))
                   (unsigned-byte-p (max 0 (- n m)) x)))
-  :hints (("goal" 
-           :in-theory (e/d (LRDT 
-                            unsigned-byte-p*) 
+  :hints (("goal"
+           :in-theory (e/d (LRDT
+                            unsigned-byte-p*)
                            (ash* ;fixes a loop that manifested itself in the move to 3.0
                             open-logcons)))))
 
@@ -206,12 +231,12 @@
                   (if (equal 0 x)
                       t
                     (SIGNED-BYTE-P (- N m) X))))
- 
+
   :otf-flg t
   :hints (("Goal" ; :induct (logcdr-induction x)
 ;:nonlinearp t
            :cases ((< x 0))
-           :in-theory (enable ;lrdt 
+           :in-theory (enable ;lrdt
                        SIGNED-BYTE-P
                        EXPONENTS-ADD-UNRESTRICTED
                        ))))
@@ -232,17 +257,17 @@
 ;;   :hints (("Goal" :in-theory (disable signed-byte-p-of-shift)
 ;;            :use ((:instance signed-byte-p-of-shift)
 ;;                  (:instance signed-byte-p-of-shift (x (- x)))))))
-           
+
 
 ;;   :otf-flg t
 ;;   :hints (("Goal" ; :induct (logcdr-induction x)
 ;; ;:nonlinearp t
 ;;            :cases ((< x 0))
-;;            :in-theory (enable ;lrdt 
+;;            :in-theory (enable ;lrdt
 ;;                        SIGNED-BYTE-P
 ;;                        EXPONENTS-ADD-UNRESTRICTED
 ;;                        ))))
-        
+
 
 
 (encapsulate
@@ -256,12 +281,12 @@
                         (< 0 m))
                    (equal (signed-byte-p n (ash x m))
                           (signed-byte-p (- n m) x)))
-          :hints (("goal" :in-theory (e/d (;ash 
-                                             LRDT 
+          :hints (("goal" :in-theory (e/d (;ash
+                                             LRDT
                                              even-odd-different-2
-                                             even-odd-different-1 
-                                             ) 
-                                          (logcdr-ash logcons-of-0 
+                                             even-odd-different-1
+                                             )
+                                          (logcdr-ash logcons-of-0
                                                       ))))))
 
  (local (defthm signed-byte-p-ash-neg
@@ -301,7 +326,7 @@
                  t)))
    :hints (("Goal" :use (SIGNED-BYTE-P-ASH-NEG
                          SIGNED-BYTE-P-ASH-POS)
-            :in-theory (disable acl2::signed-byte-p-ash-neg 
+            :in-theory (disable acl2::signed-byte-p-ash-neg
                                 acl2::signed-byte-p-ash-pos
                                 )))))
 
@@ -327,7 +352,7 @@
                 (unsigned-byte-p 1 c))
            (unsigned-byte-p n (+ c x y)))
   :rule-classes nil
-  :hints (("goal" :in-theory (e/d (unsigned-byte-p EXPONENTS-ADD-UNRESTRICTED) 
+  :hints (("goal" :in-theory (e/d (unsigned-byte-p EXPONENTS-ADD-UNRESTRICTED)
                                   (unsigned-byte-p-+)))))
 
 (defthm unsigned-byte-p-+-bridge
@@ -387,7 +412,3 @@
               (or (not (equal n 0))
                   (not (logbitp m x)))))
   :hints (("goal" :in-theory (enable logbit unsigned-byte-p))))
-
-
-
-

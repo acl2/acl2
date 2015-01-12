@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;; nth-and-update-nth.lisp
 ;; Rules about nth and update-nth.
 
@@ -17,7 +42,7 @@
 (in-theory (disable nth update-nth))
 
 ;; List Congruences
-;; 
+;;
 ;; A first observation is that nth and update-nth respect equiv for their list
 ;; argument to some degree.
 
@@ -64,7 +89,7 @@
            (nth (+ -1 n) y)))
   :hints (("Goal" :in-theory (enable nth))))
 
-;; jcd - this rule is inspired by the standard list-defthms book, but is 
+;; jcd - this rule is inspired by the standard list-defthms book, but is
 ;; improved by dropping the true-listp hyp.
 
 (defthm nth-with-large-index
@@ -74,7 +99,7 @@
   :hints(("Goal" :in-theory (enable nth))))
 
 ;; jcd - copied this rule from the data-structures/list-defthms.lisp file,
-;; and this is strong enough to prove update-nth-update-nth-diff below 
+;; and this is strong enough to prove update-nth-update-nth-diff below
 ;; without even including data-structures/list-defthms.  BTW, I think there
 ;; are going to be lots of useful rules in the data-structures library that
 ;; we haven't included yet.
@@ -108,7 +133,7 @@
               l))
   :hints(("Goal" :in-theory (enable nthcdr nth))))
 
-;; jcd - added this rule, inspired by list-defthms.lisp, but modified for 
+;; jcd - added this rule, inspired by list-defthms.lisp, but modified for
 ;; repeat instead of make-list-ac.
 
 (encapsulate
@@ -118,7 +143,7 @@
           (if (not (zp n1))
               (double-sub1-induct (1- n1) (1- n2))
             n2)))
- 
+
  (defthm nat-repeat
    (equal (nth i (repeat j v))
           (if (< (nfix i) (nfix j))
@@ -127,7 +152,7 @@
    :hints(("Goal" :in-theory (enable repeat nth)
            :induct (double-sub1-induct i j))))
 )
-           
+
 
 ;; Theorems about Update-Nth
 ;;
@@ -140,7 +165,7 @@
 ;;
 ;; (defthm update-nth-nil
 ;;   (equal (update-nth n v nil)
-;;          (append (repeat n nil) 
+;;          (append (repeat n nil)
 ;;                  (list v)))
 ;;   :hints (("Goal" :in-theory (enable update-nth append))))
 
@@ -169,7 +194,7 @@
 
 
 ;; TEMP (jcd) removed this rule since it is now subsumed by
-;; update-nth-non-consp.  Previous comment asked if we can just say what 
+;; update-nth-non-consp.  Previous comment asked if we can just say what
 ;; update-nth is equal to in the non-consp case, and indeed, we just did.
 ;;
 ;; (defthm len-update-nth-ncons
@@ -183,8 +208,8 @@
 ;; replace this rule with our better rule, and then disable the original,
 ;; weak rule since it is no longer necessary.
 ;;
-;; bzo (jcd) - Matt Kaufmann says that in v2.9.3 and beyond, the built in 
-;; len-update-nth rule will be changed to this.  After v2.9.3, we should 
+;; bzo (jcd) - Matt Kaufmann says that in v2.9.3 and beyond, the built in
+;; len-update-nth rule will be changed to this.  After v2.9.3, we should
 ;; remove this disable and this rule, and use the built in rule instead.
 ;;
 ;; TEMP (jcd) - added this to disable the original rule.
@@ -193,7 +218,7 @@
 
 (defthm len-update-nth-better
   (equal (len (update-nth n val x))
-         (max (1+ (nfix n)) 
+         (max (1+ (nfix n))
               (len x)))
   :hints (("Goal" :in-theory (enable update-nth))))
 
@@ -204,16 +229,16 @@
            (car l)))
   :hints(("Goal" :in-theory (enable update-nth))))
 
-(defthm fix-of-update-nth 
+(defthm fix-of-update-nth
   (equal (fix (update-nth key val l))
          (if (< (nfix key) (len l))
              (update-nth key val (fix l))
            (append l (repeat (+ key (- (len l))) nil) (list val))))
-  :hints(("Goal" :in-theory (e/d (repeat update-nth) 
+  :hints(("Goal" :in-theory (e/d (repeat update-nth)
                                  (list-equiv-hack ;bzo
                                   )))))
 
-;; bzo (jcd) - add a rule for cdr of update nth?      
+;; bzo (jcd) - add a rule for cdr of update nth?
 
 ;; TEMP (jcd) - this rule was originally named update-nth-update-nth-better and
 ;; was a replacement for ACL2::update-nth-update-nth as provided by the
@@ -225,7 +250,7 @@
   (equal (update-nth j b (update-nth i a l))
          (if (equal (nfix i) (nfix j))
              (update-nth j b l)
-           (update-nth i a (update-nth j b l))))           
+           (update-nth i a (update-nth j b l))))
   :rule-classes
   ((:rewrite :corollary
              (implies (equal (nfix i) (nfix j))
@@ -238,7 +263,7 @@
                              (update-nth i a (update-nth j b l))))))
   :hints(("Goal" :in-theory (enable update-nth))))
 
-;; bzo (jcd) - can we strengthen this rule by dropping the hyps and adding 
+;; bzo (jcd) - can we strengthen this rule by dropping the hyps and adding
 ;; nfixes?
 
 (defthm firstn-update-nth
@@ -275,7 +300,7 @@
                        (< n (len l2))
                        (equal (firstn n (append l1 (repeat (- n (len l1)) nil))) (firstn n l2))
                        (equal (nthcdr (1+ n) l1) (nthcdr (1+ n) l2)))))
-  :hints (("Goal" :in-theory (enable nth update-nth 
+  :hints (("Goal" :in-theory (enable nth update-nth
                                      repeat ;bzo why?
                                      ))))
 
@@ -300,12 +325,12 @@
   :hints (("Goal" :in-theory (enable nth update-nth))))
 
 (defthm update-nth-update-nth-diff
-  (implies (not (equal (nfix i1) 
+  (implies (not (equal (nfix i1)
                        (nfix i2)))
            (equal (update-nth i1 v1 (update-nth i2 v2 l))
                   (update-nth i2 v2 (update-nth i1 v1 l))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable update-nth 
+           :in-theory (enable update-nth
                               nthcdr ;why?
                               )))
   :rule-classes ((:rewrite :loop-stopper ((i1 i2)))))
@@ -331,7 +356,7 @@
 
 (defund clear-nth (key lst)
   (update-nth key nil lst))
-  
+
 ;bzo handle this better!
 (defthm update-nth-equal-update-nth-rewrite
   (implies (AND (syntaxp (not (and (equal val2 ''nil)
@@ -375,7 +400,7 @@
            (nth n1 lst)))
   :hints (("Goal" :in-theory (enable clear-nth))))
 
-;t-p rule? 
+;t-p rule?
 (defthm true-listp-of-clear-nth
   (implies (true-listp lst)
            (true-listp (clear-nth n lst)))
@@ -389,8 +414,8 @@
               (equal (clear-nth n lst1) (clear-nth n lst2))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable ;LIST::EQUAL-UPDATE-NTH-CASESPLIT
-;                      LIST::LEN-OF-CDR 
-                       UPDATE-NTH 
+;                      LIST::LEN-OF-CDR
+                       UPDATE-NTH
                        clear-nth
                        nth
                        ))))
@@ -408,8 +433,8 @@
                   )))
 
 ;not true!
-;; (defcong equiv equal (clear-nth n l) 2 
-;;   :hints (("Goal" :in-theory (e/d (clear-nth) 
+;; (defcong equiv equal (clear-nth n l) 2
+;;   :hints (("Goal" :in-theory (e/d (clear-nth)
 ;;                                   ( looped:
 ;;                                    UPDATE-NTH-EQUAL-REWRITE)))))
 
@@ -465,7 +490,7 @@
 ;; (defthm firstn-with-large-index
 ;;   (implies (<= (len l) (nfix n))
 ;;            (equal (firstn n l)
-;;                   (fix l))))        
+;;                   (fix l))))
 
 
 ;; TEMP (jcd) - Comments asked if this could be removed, and indeed it seems
@@ -507,7 +532,7 @@
 ;;                 (integerp n)
 ;;                 (<= 0 n))
 ;;            (equal (update-nth n v l)
-;;                   (append 
+;;                   (append
 ;;                    l
 ;;                    (append (repeat (- n (len l)) nil)
 ;;                            (list v)))))
@@ -517,7 +542,7 @@
 ;; since we have firstn-cons, and so I have dropped it.
 ;;
 ;; (defthmd firstn-1-element
-;;   (equal (firstn n (cons a nil)) 
+;;   (equal (firstn n (cons a nil))
 ;;          (if (< 0 (nfix n))
 ;;              (cons a nil)
 ;;            nil)))
@@ -531,7 +556,7 @@
 ;;                   (equal a b))
 ;;              (equal b (list::finalcdr a)))))
 
-;; TEMP (jcd) - The following rule is redundant with len-of-firstn, so I am 
+;; TEMP (jcd) - The following rule is redundant with len-of-firstn, so I am
 ;; removing it.
 ;;
 ;; (defthm len-firstn-better
@@ -545,7 +570,7 @@
 ;;   (equal
 ;;    (equal (acl2::fix-true-listp l) (firstn n l))
 ;;    (<= (len l) (nfix n)))
-;;   :hints (("goal" :in-theory (enable firstn len))))  
+;;   :hints (("goal" :in-theory (enable firstn len))))
 ;;
 ;; dsh
 ;; (defthm nthcdr-fix-true-listp
@@ -558,17 +583,17 @@
 ;;   (equal (firstn n (fix-true-listp l))
 ;;          (firstn n l))
 ;;   :hints (("goal" :in-theory (enable firstn))))
-;;   
+;;
 ;; dsh
 ;; (defthm fix-true-listp-update-nth
 ;;   (equal
 ;;    (update-nth n v (fix-true-listp l))
 ;;    (fix-true-listp (update-nth n v l)))
 ;;   :hints (("goal" :in-theory (enable update-nth nth nthcdr firstn))))
-;;  
-;; BY: These gave problems in acl2-v2.8 because 
+;;
+;; BY: These gave problems in acl2-v2.8 because
 ;;     nth-update-nth was disable in favor of a new
-;;     nth-update-nth-better that doesn't fire. 
+;;     nth-update-nth-better that doesn't fire.
 
 ;; (TEMP) jcd - removed this rule since we already have len-of-nthcdr.
 ;;
@@ -587,7 +612,7 @@
 ;;   :hints (("goal" :in-theory (enable nthcdr))))
 
 
-            
+
 ;From eric's lemmas.  Drat.  I'm going to have to leave this disabled because
 ;it causes big problems when ACL2 rewrites an equality of two update-nth
 ;expressions.  Why?  Well, when ACL2 rewrites an equality of two known-consps,
@@ -629,7 +654,7 @@
          (repeat (+ 1 (nfix n)) nil))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d (list::clear-nth) (LIST::UPDATE-NTH-EQUAL-REWRITE)))))
-        
+
 (defthmd update-nth-of-cdr
   (implies (natp n)
            (equal (UPDATE-NTH n val (CDR LST))
@@ -682,7 +707,7 @@
   :hints (("Goal" :in-theory (e/d (clear-nth) (update-nth-equal-rewrite)))))
 
 (defthm update-nth-becomes-clear-nth
-  (equal (update-nth n nil r) 
+  (equal (update-nth n nil r)
          (clear-nth n r)))
 
 (theory-invariant (incompatible (:rewrite update-nth-becomes-clear-nth) (:definition clear-nth)))
@@ -729,7 +754,7 @@
          (if (zp n)
              (cons nil lst)
            (cons a (list::clear-nth (+ -1 n) lst))))
-  :hints (("Goal" :in-theory (e/d (list::clear-nth) 
+  :hints (("Goal" :in-theory (e/d (list::clear-nth)
                                   (LIST::UPDATE-NTH-BECOMES-CLEAR-NTH
                                    LIST::UPDATE-NTH-EQUAL-REWRITE)))))
 
@@ -776,13 +801,13 @@
            :expand ((nthcdr 1 x) ;bzo
                     (nthcdr 1 y))
            :in-theory (e/d (list::clear-nth
-                            list::equal-update-nth-update-nth) 
+                            list::equal-update-nth-update-nth)
                            (list::update-nth-equal-rewrite
                             list::update-nth-becomes-clear-nth
 ;                            AAMP::EQUAL-OF-IF
                             update-nth)))))
 
-        
+
 ;phrased in this funny way so we don't have to decide to unilaterally write one into the other..
 (defthm nth-0-equal-car
   (equal (equal (nth 0 lst) (car lst))

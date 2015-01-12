@@ -268,7 +268,7 @@
         *macros-to-expand-in-acl2-loop*."))
      (t
       (let ((gc-off t) ; reasonable value, e.g., used by certify-book
-            (state-vars (default-state-vars #-hons nil #+hons :hons))
+            (state-vars (default-state-vars nil))
             (macro-name (car x)))
         (mv-let
          (erp alist)

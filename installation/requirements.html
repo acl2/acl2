@@ -27,7 +27,7 @@ file distributed with ACL2.  See also the documentation topic,
   <UL>
     <LI><A HREF="#Obtaining-Allegro">Obtaining Allegro Common Lisp</A>
     <LI><A HREF="#Obtaining-CCL">Obtaining CCL (OpenMCL)</A>
-    <LI><A HREF="#Obtaining-CLISP">Obtaining CLisp</A>
+    <LI><A HREF="#Obtaining-CLISP">Obtaining CLISP</A>
     <LI><A HREF="#Obtaining-CMUCL">Obtaining CMU Common Lisp</A>
     <LI><A HREF="#Obtaining-GCL">Obtaining GCL</A>
     <LI><A HREF="#Obtaining-LispWorks">Obtaining LispWorks</A>
@@ -56,7 +56,7 @@ alphabetically.
 <ul>
 <LI><A HREF="#Obtaining-Allegro">Allegro Common Lisp</A></B><P>
 <LI><A HREF="#Obtaining-CCL">CCL (OpenMCL)</A></B><P>
-<LI><A HREF="#Obtaining-CLISP">CLisp</A></B><P>
+<LI><A HREF="#Obtaining-CLISP">CLISP</A></B><P>
 <LI><A HREF="#Obtaining-CMUCL">CMU Common Lisp</A></B><P>
 <LI><A HREF="#Obtaining-GCL">GCL</A></B><P>
 <LI><A HREF="#Obtaining-LispWorks">LispWorks</A></B><P>
@@ -186,7 +186,10 @@ Common Lisp implementations.</li>
 
 <li>Only minimal testing is done for ACL2 built on CLISP.</li>
 
-<li>CLISP does not currently support building ACL2(h).</li>
+<li>CLISP does not support building the
+  default, <a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>
+  ACL2 (ACL2(h)), but only (with the limitations expressed above)
+  ACL2(c).</li>
 
 </ul>
 
@@ -203,45 +206,27 @@ to <A HREF="http://packages.qa.debian.org/a/acl2.html">download a
 binary Debian package for ACL2</A>.  Thanks to Camm Maguire for
 maintaining this package.  Note however that it may take some time
 after each ACL2 release for this binary Debian package to be updated
-for that release.  Here is a shell command that might be used to
-obtain that package (if running Debian).
-
-<pre>
-apt-get -q install gcl gcl-doc
-</pre>
-
-Otherwise, it should be easy to obtain and build GCL yourself.  There
-are two recommended versions of GCL for building ACL2: GCL 2.6.8 and
-GCL 2.6.10.  (GCL 2.6.9, which is <i>not</i> recommended, has some
-issues that were fixed in GCL 2.6.10.)  GCL 2.6.8 appeared initially
-to be faster for ACL2 regressions than GCL 2.6.10, but we recently
-measured GCL 2.6.10 (actually GCL 2.6.10pre, as of Oct. 1, 2013) to be
-slightly faster, using non-ANSI builds for both.  We have also had
-better success with GCL 2.6.10 than GCL 2.6.8 on a Mac, where 2.6.8
-ran out of memory for two regression tests but 2.6.10 (again, actually
-2.6.10pre) did not.  Note that GCL 2.6.10 probably has better ANSI
-support than 2.6.8, and ANSI support is needed if you choose to build
-<a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/combined-manual/index.html?topic=ACL2____HONS-AND-MEMOIZATION">ACL2(h)</a>).
+for that release.
 
 <p>
 
-You can fetch either GCL 2.6.8 and GCL 2.6.10 as a tarball from the
-<a href="http://www.gnu.org/software/gcl/">main GNU website for
-  GCL</a>.  From GCL source you can build an executable by extracting
-  from the tarball, standing in the resulting <code>gcl/</code>
-  directory, and issuing one of the following commands.
+Otherwise, it should be easy to obtain and build GCL yourself.  Note
+that ACL2 requires GCL version 2.6.12 or later, which can be fetched
+as a tarball from the <a href="http://www.gnu.org/software/gcl/">main
+GNU website for GCL</a> or perhaps
+from <code><a href="http://backports.debian.org">backports.debian.org</a></code>.
+After unpacking the archive, GCL can be built with
 
 <pre>
-# Recommended for 64-bit Linux:
-./configure --enable-maxpage=1048576 && make
-
-# Recommended for Mac OS:
-./configure && make
-
-# If you want an ANSI build
-# (but add "--enable-maxpage=1048576" in the case of 64-bit Linux, as above):
-./configure --enable-ansi && make
+cd gcl && ./configure --enable-ansi && make
 </pre>
+
+The resulting GCL executable supports building a
+default, <a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>
+ACL2 executable.  If you have reason to build a "classic" ACL2
+executable (ACL2(c)) instead (that is, one that is <i>not</i>
+hons-enabled), you can omit the <code>--enable-ansi</code> flag above
+to generate a smaller GCL executable.
 
 <P><B><A NAME="Obtaining-LispWorks">Obtaining LispWorks</A></B><P>
 

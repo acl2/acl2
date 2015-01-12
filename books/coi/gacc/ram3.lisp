@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "GACC")
 
 (local (include-book "../util/iff"))
@@ -30,7 +55,7 @@
 ;; book on May 15th 2007.  These should be integrated properly with the
 ;; rest of the book and put in the proper place.
 
-(include-book "list-ops-fast") 
+(include-book "list-ops-fast")
 ;;(include-book "list-ops")
 (include-book "wrap")
 
@@ -68,7 +93,7 @@
                   (list (cadr (cadr term)))
                 (list 1))
             (list 1)))))))
-  
+
 ;only works for positive numbers?
 (defun gcd-aux (i j)
   (declare (xargs :measure (nfix j)
@@ -93,7 +118,7 @@
         (car lst)
       (greatest-common-divisor (car lst)
                                (gcd-many (cdr lst))))))
-  
+
 (defthm integerp-of-gcd-many
   (implies (integer-listp lst)
            (integerp (gcd-many lst))))
@@ -105,10 +130,10 @@
 
 (defun greatest-common-constant-factor (term1 term2)
   (declare (xargs :guard (and (pseudo-termp term1)
-                              (pseudo-termp term2))))  
+                              (pseudo-termp term2))))
   (greatest-common-divisor (gcd-many (gather-constant-factors term1))
                            (gcd-many (gather-constant-factors term2))))
-                           
+
 (defun bind-x-to-greatest-common-constant-factor (term1 term2)
   (declare (xargs :guard (and (pseudo-termp term1)
                               (pseudo-termp term2))))
@@ -188,7 +213,7 @@
   (implies (not (equal ad1 ad2))
            (equal (clr ad1 (clr ad2 ram))
                   (clr ad2 (clr ad1 ram))))
-  :hints (("Goal" :in-theory (e/d (clr) (wr-of-0-becomes-clr)))))                 
+  :hints (("Goal" :in-theory (e/d (clr) (wr-of-0-becomes-clr)))))
 
 #+joe
 (DEFTHM RD-OF-clr-both
@@ -216,7 +241,7 @@
 
 ;;
 ;; Converting word addresses to byte addresses.
-;; 
+;;
 
 
 
@@ -320,8 +345,8 @@
               (equal "ST" (symbol-name (caddr nth-call)))
               (or (equal (cadr nth-call) ''4)
                   (equal (cadr nth-call) ''3))))))
-             
-       
+
+
 (defun smaller-offset-term-aux (term1 term2)
   (declare (type t term1 term2)
            (xargs :mode :program))
@@ -338,7 +363,7 @@
               nil
             ;;we must be dealing with two locals ones or two stack ones,
             ;;so we just compare the offsets numerically
-            ;; lexorder is like <=, but what we want is like <, so we use 
+            ;; lexorder is like <=, but what we want is like <, so we use
             ;; the not of the lexorder of the arguments in reverse order
             (not (lexorder (cadr term2) (cadr term1))))))
     (acl2::smaller-term term1 term2)))
@@ -359,10 +384,10 @@
     term))
 
 ;;(smaller-offset-term '(BINARY-+ '2 (NTH '3 ST)) '(BINARY-+ '2 (NTH '4 ST)))
-(defun smaller-offset-term (term1 term2)      
+(defun smaller-offset-term (term1 term2)
   (declare (xargs :mode :program))
   (smaller-offset-term-aux (convert-term-to-plus-form term1) (convert-term-to-plus-form term2)))
-    
+
 ;The arguments to this function are terms
 (defun smaller-params (denvr1 offset1 denvr2 offset2)
   (declare (xargs :mode :program))
@@ -459,15 +484,15 @@
 ;I'm intending to leave this open in this file
 ;logext 15 of denv?
 (defun addresses-of-data-word (denvr offset)
-  (word-ad-to-byte-ads (logapp 16 
-                               offset 
+  (word-ad-to-byte-ads (logapp 16
+                               offset
                                (loghead 15 denvr) ;;(logext 15 denvr) ;bzo drop this?
                                )))
 
 ;; Read the 2-byte word of data at offset OFFSET in data environment DENVR in
 ;; RAM.  The byte at the lower address goes into the least significant bits of
 ;; the result.
-;; 
+;;
 (defund read-data-word (denvr offset ram)
   (declare (type (unsigned-byte 15) denvr)
            (type (unsigned-byte 16) offset)
@@ -476,7 +501,7 @@
                                                          read-data-word-exec
                                                          acl2::ash-as-logapp
                                                          word-ad-to-byte-ads
-                                                         acl2::sum-with-shift-becomes-logapp-constant-version) 
+                                                         acl2::sum-with-shift-becomes-logapp-constant-version)
                                                         (acl2::logapp-0-part-2-better))))))
   (mbe :exec (read-data-word-exec denvr offset ram)
        :logic (wintlist (rd-list (addresses-of-data-word denvr offset)
@@ -515,7 +540,7 @@
                                      WORD-AD-TO-BYTE-ADS))))
 
 (defthm read-data-word-when-offset-is-not-an-integerp
-  (implies (not (integerp offset)) 
+  (implies (not (integerp offset))
            (equal (read-data-word denvr offset ram)
                   (read-data-word denvr 0 ram)))
   :hints (("Goal" :in-theory (enable read-data-word))))
@@ -587,7 +612,7 @@
 
 ;;
 ;; WRITE-DATA-WORD
-;;               
+;;
 
 
 ;; For execution only.
@@ -607,7 +632,7 @@
          (byte0 (loghead 8 value))
          (byte1 (loghead 8 (logtail 8 value)))
          )
-    (wr ad0 byte0 
+    (wr ad0 byte0
         (wr ad1 byte1 ram))))
 
 
@@ -734,7 +759,7 @@
 
 
 (defthm write-data-word-of-sum-of-loghead
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp a)
                 )
            (equal (write-data-word denvr (+ a (loghead 16 x)) val ram)
@@ -766,7 +791,7 @@
                 )
            (equal (write-data-word denvr offset (+ k value) ram)
                   (write-data-word denvr offset (+ (loghead 16 k) value) ram)))
-  :hints (("Goal" :use ((:instance WRITE-DATA-WORD-of-loghead 
+  :hints (("Goal" :use ((:instance WRITE-DATA-WORD-of-loghead
                                    (denvr denvr)
                                    (offset offset)
                                    (ram ram)
@@ -885,12 +910,12 @@
               (equal (clear-data-word denvr offset ram1)
                      (clear-data-word denvr offset ram2))))
   :otf-flg t
-  :hints (("Goal" :in-theory (e/d (WRITE-DATA-WORD READ-DATA-WORD 
+  :hints (("Goal" :in-theory (e/d (WRITE-DATA-WORD READ-DATA-WORD
                                                    WORD-AD-TO-BYTE-ADS
                                                    ACL2::EQUAL-LOGAPP-X-Y-Z
                                                    WR==R!
                                                    clear-data-word
-                                                   ) 
+                                                   )
                                   ()))))
 
 (theory-invariant (incompatible (:rewrite write-data-word-equal-rewrite) (:definition clear-data-word)))
@@ -931,18 +956,18 @@
 ;;            (equal (clear-data-word denvr1 offset1 (write-data-word denvr2 offset2 value ram))
 ;;                   (write-data-word denvr2 offset2 value (clear-data-word denvr1 offset1 ram))))
 ;;   :hints (("Goal" :in-theory (e/d (clear-data-word
-;;                                    acl2::logext-logapp) 
+;;                                    acl2::logext-logapp)
 ;;                                   (write-data-word-equal-rewrite)))))
 
 
 ;; (defthm clear-data-word-of-write-data-word-diff-offsets
-;;   (implies (not (equal (loghead 16 offset1) 
+;;   (implies (not (equal (loghead 16 offset1)
 ;;                        (loghead 16 offset2)))
 ;;            (equal (clear-data-word denvr1 offset1 (write-data-word denvr2 offset2 value ram))
 ;;                   (write-data-word denvr2 offset2 value (clear-data-word denvr1 offset1 ram))))
 ;;   :hints (("Goal" :in-theory (e/d (
 ;;                                    clear-data-word
-;;                                    acl2::logext-logapp) 
+;;                                    acl2::logext-logapp)
 ;;                                   (write-data-word-equal-rewrite)))))
 
 (defthm clear-data-word-subst-in-offset
@@ -965,7 +990,7 @@
              (clear-data-word denvr1 offset1 ram)
            (write-data-word denvr2 offset2 val (clear-data-word denvr1 offset1 ram))))
   :hints (("Goal" :in-theory (e/d (clear-data-word
-                                   acl2::logext-logapp) 
+                                   acl2::logext-logapp)
                                   (write-data-word-equal-rewrite)))))
 
 (defthm write-data-word-subst-in-offset
@@ -977,7 +1002,7 @@
   :hints (("Goal" :in-theory (e/d (write-data-word) (WRITE-DATA-WORD-EQUAL-REWRITE)))))
 
 (defthm clear-data-word-of-sum-of-loghead
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp a)
                 )
            (equal (clear-data-word denvr (+ a (loghead 16 x)) ram)
@@ -1038,7 +1063,7 @@
            (equal (clear-data-word denvr (+ a (loghead 16 (+ b n))) ram)
                   (clear-data-word denvr (+ a b n) ram)))
   :hints (("Goal" :in-theory (e/d (clear-data-word) (write-data-word-equal-rewrite)))))
-        
+
 
 
 
@@ -1049,7 +1074,7 @@
 ;;
 
 
-        
+
 ;;
 ;; WORD-ADS-TO-BYTE-ADS
 ;;
@@ -1106,7 +1131,7 @@
            nil))
   :hints (("Goal" :in-theory (enable word-ads-to-byte-ads
                                      word-ad-to-byte-ads))))
-        
+
 (defthm len-of-word-ads-to-byte-ads
   (equal (len (word-ads-to-byte-ads word-ads))
          (* 2 (len word-ads)))
@@ -1161,7 +1186,7 @@
 
 (defthm disjoint-of-two-calls-to-word-ads-to-byte-ads
   (equal (disjoint (word-ads-to-byte-ads word-ads1) (word-ads-to-byte-ads word-ads2))
-         (or (endp word-ads1) 
+         (or (endp word-ads1)
              (endp word-ads2)
              (disjoint (ifix-list word-ads1) (ifix-list word-ads2))
              ))
@@ -1177,7 +1202,7 @@
   :hints (("Goal" :in-theory (e/d (word-ads-to-byte-ads
                                    acl2::equal-logapp-x-y-z
                                    acl2::ash-as-logapp
-                                   word-ad-to-byte-ads) 
+                                   word-ad-to-byte-ads)
                                   (acl2::logapp-0-part-2-better)))))
 
 
@@ -1197,7 +1222,7 @@
 
 ;drop?
 (defthm unique-of-word-ads-to-byte-ads
-  (implies (and (bag::unique (loghead-list 16 word-ads)) 
+  (implies (and (bag::unique (loghead-list 16 word-ads))
                 (integer-listp word-ads) ;bzo
                 )
            (bag::unique (word-ads-to-byte-ads word-ads))))
@@ -1273,7 +1298,7 @@
         (read-data-word-exec denvr offset ram)
       (if (zp numwords)
           0
-        (logapp 16 
+        (logapp 16
                 (read-data-word-exec denvr offset ram)
                 (read-data-words-exec (+ -1 numwords) denvr (loghead 16 (+ 1 offset)) ram))))))
 
@@ -1282,7 +1307,7 @@
 ;;
 
 (defun addresses-of-data-words (numwords denvr offset)
-  (word-ads-to-byte-ads (logapp-list 16 
+  (word-ads-to-byte-ads (logapp-list 16
                                      (offset-range-wrap 16 offset numwords)
                                      (loghead 15 denvr) ;(logext 15 denvr)
                                      )))
@@ -1308,7 +1333,7 @@
                                                    read-data-word-exec
                                                    acl2::logext-logapp
                                                    acl2::ash-as-logapp
-                                                   read-data-words-exec) 
+                                                   read-data-words-exec)
                                                   (acl2::logapp-0-part-2-better
                                                    acl2::loghead-sum-split-into-2-when-i-is-a-constant))))))
   (mbe :exec (read-data-words-exec numwords denvr offset ram)
@@ -1331,7 +1356,7 @@
            (equal (read-data-words numwords denvr offset ram)
                   0))
   :hints (("Goal" :in-theory (enable read-data-words))))
-                 
+
 (defthm read-data-words-when-numwords-is-not-an-integerp
   (implies (not (integerp numwords))
            (equal (read-data-words numwords denvr offset ram)
@@ -1339,7 +1364,7 @@
   :hints (("Goal" :in-theory (enable read-data-words))))
 
 (defthm read-data-words-when-offset-is-not-an-integerp
-  (implies (not (integerp offset)) 
+  (implies (not (integerp offset))
            (equal (read-data-words numwords denvr offset ram)
                   (read-data-words numwords denvr 0 ram)))
   :hints (("Goal" :in-theory (enable read-data-words))))
@@ -1356,7 +1381,7 @@
                               ))
                 (not (zp numwords)))
            (equal (read-data-words numwords denvr offset ram)
-                  (logapp 16 
+                  (logapp 16
                           (read-data-word denvr offset ram)
                           (read-data-words (+ -1 numwords)
                                            denvr (+ 1 (ifix offset))
@@ -1384,7 +1409,7 @@
                    (read-data-word denvr offset ram)
                    (read-data-words (+ -1 numwords) denvr (+ 1 (ifix offset)) ram))))
   :rule-classes :definition
-  :hints (("Goal" :use (:instance read-data-words-opener) 
+  :hints (("Goal" :use (:instance read-data-words-opener)
            :in-theory (disable read-data-words-opener))))
 
 (defthm read-data-words-of-1
@@ -1467,7 +1492,7 @@
                (byte3 (loghead 8 (logtail 24 value)))
                )
           (wr ad0 byte0 (wr ad1 byte1 (wr ad2 byte2 (wr ad3 byte3 ram)))))
-      (write-data-word-exec 
+      (write-data-word-exec
        denvr offset value ;(loghead 16 value)
        (write-data-words-exec (+ -1 numwords) denvr (+ 1 offset) (logtail 16 value) ram)))))
 
@@ -1508,7 +1533,7 @@
 ;maybe we don't even need the call to offset-range-wrap, since logapp-list chops its args?
 ;16 or 15???
 ;; Wraps around if we reach the end of DENVR.
-;; The low-order bits of VALUE go into the lower addresses in DENV (unless wrapping occurs). 
+;; The low-order bits of VALUE go into the lower addresses in DENV (unless wrapping occurs).
 
 (defund write-data-words (numwords denvr offset value ram)
   (declare (type (integer 0 *) numwords)
@@ -1521,7 +1546,7 @@
                                                   OFFSET-RANGE-WRAP-CONST-OPENER
                                                   WRITE-DATA-WORD-EXEC
                                                   ACL2::LOGEXT-LOGAPP
-                                                  write-data-words-exec) 
+                                                  write-data-words-exec)
                                                  (ACL2::LOGHEAD-SUM-SPLIT-INTO-2-WHEN-I-IS-A-CONSTANT))))))
   (mbe :exec (write-data-words-exec numwords denvr offset value ram)
        :logic (wr-list (addresses-of-data-words numwords denvr offset)
@@ -1560,15 +1585,15 @@
   :hints (("Goal" :expand ((OFFSET-RANGE-WRAP 16 OFFSET NUMWORDS))
            :in-theory (e/d (write-data-words write-data-word
                                              acl2::logext-logapp
-                                             WORD-AD-TO-BYTE-ADS) 
+                                             WORD-AD-TO-BYTE-ADS)
                            ()))))
 
 (defthmd write-data-words-alt-def
   (equal (write-data-words numwords denvr offset value ram)
          (if (zp numwords)
              ram
-           (write-data-word denvr offset 
-                            (loghead 16 value) 
+           (write-data-word denvr offset
+                            (loghead 16 value)
                             (write-data-words (+ -1 numwords)
                                               denvr
                                               (+ 1 (ifix offset))
@@ -1576,7 +1601,7 @@
                                               ram))))
   :rule-classes :definition
   :hints (("Goal" :use (:instance write-data-words-opener)
-           :in-theory (e/d () 
+           :in-theory (e/d ()
                            (write-data-word-equal-rewrite
                             write-data-words-opener
                             )))))
@@ -1716,7 +1741,7 @@
 
 (theory-invariant (incompatible (:rewrite WORD-ADS-TO-BYTE-ADS-OF-LOGHEAD-LIST) (:rewrite loghead-list-32-of-word-ads-to-byte-ads )))
 
-(local 
+(local
  (defthm read-data-word-of-write-data-words-diff-denvrs
    (implies (not (equal (loghead 15 denvr1) (loghead 15 denvr2)))
             (equal (read-data-word denvr1 offset1 (write-data-words numwords denvr2 offset2 value ram))
@@ -1724,7 +1749,7 @@
    :hints (("Goal" :in-theory (e/d (read-data-word write-data-words
                                       loghead-list-32-of-word-ads-to-byte-ads
                                       LOGHEAD-LIST-OF-LOGAPP-LIST
-                                      acl2::logext-logapp) 
+                                      acl2::logext-logapp)
                                    (WORD-ADS-TO-BYTE-ADS-OF-LOGHEAD-LIST
                                     LOGAPP-LIST-OF-LOGHEAD))))))
 
@@ -1735,11 +1760,11 @@
                    (equal (read-data-word denvr offset1 (write-data-words numwords denvr offset2 val ram))
                           (read-data-word denvr offset1 ram)))
           :hints (("Goal" :cases ((zp numwords) (integerp offset1))
-                   :in-theory (e/d (write-data-words 
+                   :in-theory (e/d (write-data-words
                                     acl2::logext-logapp
                                     read-data-word WORD-AD-TO-BYTE-ADS zp write-data-word
                                     acl2::loghead-0-hack
-                                    ACL2::ASH-AS-LOGAPP 
+                                    ACL2::ASH-AS-LOGAPP
                                     zp
                                     LOGHEAD-LIST-of-LOGAPP-LIST
                                     loghead-list-of-word-ads-to-byte-ads-hack)
@@ -1782,19 +1807,19 @@
                                      (LOGTAIL 16 VALUE))))
 
 (encapsulate
- () 
+ ()
 
  ;; The disable of the executable-counterpart of expt, below, was added in
  ;; order to avoid the following error in Allegro CL:
  ;; Error: Attempt to create an integer which is too large to represent.
  ;; The defthm just above it was then necessary.
- 
+
  (local (defthm expt-2-16 (equal (expt 2 16) 65536)))
  (local (in-theory (disable (expt))))
 
  ;; requires denvrs to match
  (local (defthm read-data-word-of-write-data-words-same
-          (implies (and (< (loghead 16 (- offset offset2)) numwords) 
+          (implies (and (< (loghead 16 (- offset offset2)) numwords)
                         (integerp offset)
                         (integerp offset2)
                         (integerp numwords)
@@ -1803,7 +1828,7 @@
                           (nthword (loghead 16 (- offset offset2)) value)))
           :hints (("subgoal *1/2" :use ((:instance WRITE-DATA-WORDS-OF-LOGHEAD-16
                                                    (offset (+ 1 offset2)))
-                                        (:instance write-data-words-opener 
+                                        (:instance write-data-words-opener
                                                    (numwords numwords)
                                                    (denvr denvr)
                                                    (offset offset2)
@@ -1811,7 +1836,7 @@
                   ("Goal" :in-theory (e/d (zp nthword-rewrite
                                               acl2::loghead-of-minus
                                               acl2::loghead-sum-split-into-2-cases
-                                              ) 
+                                              )
                                           (WRITE-DATA-WORDS-OF-LOGHEAD-16
 ;WRITE-DATA-WORDS-EQUAL-REWRITE
                                            WRITE-DATA-WORD-EQUAL-REWRITE))
@@ -1827,13 +1852,13 @@
                   (equal (read-data-word denvr offset1 (write-data-words numwords denvr2 offset2 value ram))
                          (read-data-word denvr offset1 ram)))
           :hints (("Goal" :in-theory (e/d (memberp-of-offset-range
-                                           read-data-word-of-write-data-words-diff-better) 
+                                           read-data-word-of-write-data-words-diff-better)
                                           ()))) ))
 
 
 ;make a vesion for clear?
  (defthm read-data-word-of-write-data-words-all-cases
-   (implies (and (integerp offset1) 
+   (implies (and (integerp offset1)
                  (integerp offset2)
                  )
             (equal (read-data-word denvr1 offset1 (write-data-words numwords denvr2 offset2 value ram))
@@ -1864,7 +1889,7 @@
                             write-data-word
                             acl2::logext-logapp
                             ACL2::ASH-AS-LOGAPP
-                            ) 
+                            )
                            (LOGAPP-LIST-OF-LOGHEAD
                             ;ACL2::EQUAL-LOGAPP-X-Y-Z-CONSTANTS
                             ACL2::LOGAPP-0-PART-2-BETTER
@@ -1874,7 +1899,7 @@
   (implies (integerp x)
            (equal (read-data-word denvr (+ -1 x) (write-data-words 2 denvr (+ -2 x) val ram))
                   (loghead 16 (logtail 16 val))))
-  :hints (("Goal" :in-theory (enable WRITE-DATA-WORDS-OPENER))))     
+  :hints (("Goal" :in-theory (enable WRITE-DATA-WORDS-OPENER))))
 
 
 ;gen or drop?
@@ -1896,9 +1921,9 @@
                                    LOGHEAD-LIST-OF-LOGAPP-LIST
 
                                    ACL2::ASH-AS-LOGAPP
-                                   write-data-words) 
+                                   write-data-words)
                                   (LOGAPP-LIST-OF-LOGHEAD
-                                   
+
                                    READ-DATA-WORDS-OPENER
                                    MEMBERP-OF-OFFSET-RANGE
                                    WRITE-DATA-WORDS-OPENER
@@ -1911,7 +1936,7 @@
            (equal (write-data-words numwords2 denvr2 offset2 val2 (write-data-words numwords1 denvr1 offset1 val1 ram))
                   (write-data-words numwords1 denvr1 offset1 val1 (write-data-words numwords2 denvr2 offset2 val2 ram))))
   :hints (("Goal" :in-theory (e/d (write-data-words
-                                   LOGHEAD-LIST-OF-LOGAPP-LIST) 
+                                   LOGHEAD-LIST-OF-LOGAPP-LIST)
                                   (LOGAPP-LIST-OF-LOGHEAD
                                    READ-DATA-WORDS-OPENER
                                    MEMBERP-OF-OFFSET-RANGE
@@ -1926,7 +1951,7 @@
                 )
            (equal (write-data-words numwords2 denvr2 offset2 val2 (write-data-words numwords1 denvr1 offset1 val1 ram))
                   (write-data-words numwords2 denvr2 offset2 val2 ram)))
-  :hints (("Goal" :in-theory (e/d (write-data-words) 
+  :hints (("Goal" :in-theory (e/d (write-data-words)
                                   (READ-DATA-WORDS-OPENER
                                    MEMBERP-OF-OFFSET-RANGE
                                    WRITE-DATA-WORDS-OPENER
@@ -1960,7 +1985,7 @@
                           (write-data-words numwords denvr offset1 val1 ram)))
           :hints (("Goal" ; :cases (zp numwords)
                    :in-theory (e/d (loghead-list-of-logapp-list
-                                    zp write-data-word write-data-words acl2::logext-logapp) 
+                                    zp write-data-word write-data-words acl2::logext-logapp)
                                    (LOGAPP-LIST-OF-LOGHEAD
                                     ACL2::LOGAPP-0-PART-2-BETTER))
                    ))))
@@ -1978,7 +2003,7 @@
                   (write-data-words numwords1 denvr offset1 val1 ram)))
   :hints (("Goal" :cases (zp numwords)
            :in-theory (e/d (LOGHEAD-LIST-OF-LOGAPP-LIST
-                              zp write-data-word write-data-words acl2::logext-logapp) 
+                              zp write-data-word write-data-words acl2::logext-logapp)
                            (LOGAPP-LIST-OF-LOGHEAD)))))
 
 
@@ -1993,11 +2018,11 @@
                   (write-data-words numwords denvr2 offset2 val2 (write-data-word denvr1 offset1 val1 ram))))
   :rule-classes ((:rewrite :loop-stopper ((denvr1 denvr2))))
   :hints (("Goal" ;:cases ((equal (loghead 15 denvr1) (loghead 15 denvr2)))
-           :in-theory (e/d (write-data-words 
+           :in-theory (e/d (write-data-words
                             write-data-word
                             acl2::logext-logapp
                             LOGHEAD-LIST-OF-LOGAPP-LIST
-                            ) 
+                            )
                            (
                             disjoint-of-WORD-AD-TO-BYTE-ADS
                             LOGAPP-LIST-OF-LOGHEAD
@@ -2015,12 +2040,12 @@
                           (write-data-words numwords denvr offset2 val2 (write-data-word denvr offset1 val1 ram))))
 
           :hints (("Goal" ;:cases ((equal (loghead 15 denvr1) (loghead 15 denvr2)))
-                   :in-theory (e/d (write-data-words 
+                   :in-theory (e/d (write-data-words
                                     write-data-word
                                     acl2::logext-logapp
                                     LOGHEAD-LIST-OF-LOGAPP-LIST
-  
-                                    ) 
+
+                                    )
                                    (disjoint-of-WORD-AD-TO-BYTE-ADS
                                     LOGAPP-LIST-OF-LOGHEAD
                                     disjoint-of-word-ads-to-byte-ads))))))
@@ -2051,12 +2076,12 @@
   (implies (zp numwords)
            (equal (clear-data-words numwords denvr offset ram)
                   ram))
-  :hints (("Goal" :in-theory (e/d (clear-data-words clear-data-word) 
+  :hints (("Goal" :in-theory (e/d (clear-data-words clear-data-word)
                                   (write-data-word-equal-rewrite  write-data-words-opener)))))
 
 ;;
 ;; theorems about write-data-words, etc.
-;; 
+;;
 
 (defthm write-data-words-equal-rewrite
   (implies (<= numwords 65536)
@@ -2065,7 +2090,7 @@
                        (equal (clear-data-words numwords denvr offset ram1)
                               (clear-data-words numwords denvr offset ram2)))))
   :otf-flg t
-  :hints (("Goal" :in-theory (e/d (WRITE-DATA-WORD READ-DATA-WORD 
+  :hints (("Goal" :in-theory (e/d (WRITE-DATA-WORD READ-DATA-WORD
                                                    WORD-AD-TO-BYTE-ADS
                                                    ACL2::EQUAL-LOGAPP-X-Y-Z
                                                    WR==R!
@@ -2073,7 +2098,7 @@
                                                    READ-DATA-WORDS
                                                    WRITE-DATA-WORDS
                                                    LOGHEAD-LIST-OF-LOGAPP-LIST
-                                                   ) 
+                                                   )
                                   (LOGAPP-LIST-OF-LOGHEAD
                                    UNIQUE-OF-WORD-ADS-TO-BYTE-ADS-better)))))
 
@@ -2082,11 +2107,11 @@
            (equal (write-data-words numwords denvr1 offset1 val1 (write-data-word denvr2 offset2 val2 ram))
                   (write-data-word denvr2 offset2 val2 (write-data-words numwords denvr1 offset1 val1 ram))))
   :rule-classes ((:rewrite :loop-stopper ((denvr1 denvr2))))
-  :hints (("Goal" :in-theory (e/d (write-data-words 
+  :hints (("Goal" :in-theory (e/d (write-data-words
                                      write-data-word
                                      acl2::logext-logapp
                                      LOGHEAD-LIST-OF-LOGAPP-LIST
-                                     ) 
+                                     )
                                   (LOGAPP-LIST-OF-LOGHEAD)))))
 
 ;(local (in-theory (disable LOGAPP-LIST-OF-LOGHEAD)))
@@ -2100,7 +2125,7 @@
                    (equal (write-data-words numwords denvr offset1 val1 (write-data-word denvr offset2 val2 ram))
                           (write-data-word denvr offset2 val2 (write-data-words numwords denvr offset1 val1 ram))))
           :rule-classes ((:rewrite :loop-stopper nil))
-          :hints (("Goal" :in-theory (enable write-data-words 
+          :hints (("Goal" :in-theory (enable write-data-words
                                              write-data-word
                                              acl2::logext-logapp
                                              )))))
@@ -2156,7 +2181,7 @@
                   (WRITE-DATA-WORDS numwords denvr2 offset2 value (CLEAR-DATA-WORD denvr1 offset1 ram))))
   :hints (("Goal" :in-theory (e/d (
                                    clear-data-word
-                                   acl2::logext-logapp) 
+                                   acl2::logext-logapp)
                                   (WRITE-DATA-WORD-EQUAL-REWRITE)))))
 
 (defthm clear-data-word-of-write-data-words-diff-offsets
@@ -2165,7 +2190,7 @@
                   (write-data-words numwords denvr2 offset2 value (clear-data-word denvr1 offset1 ram))))
   :hints (("Goal" :in-theory (e/d (
                                    clear-data-word
-                                   acl2::logext-logapp) 
+                                   acl2::logext-logapp)
                                   (write-data-word-equal-rewrite)))))
 
 
@@ -2206,10 +2231,10 @@
            (equal (clear-data-word denvr offset1 (write-data-words numwords denvr offset2 value ram))
                   (write-data-words (+ -1 numwords) denvr offset2 value (clear-data-word denvr offset1 ram))))
   :hints (("Goal" :in-theory (e/d (;offset-range-wrap-const-opener
-;                                  clear-data-word write-data-word 
+;                                  clear-data-word write-data-word
 ;write-data-words
                                    write-data-words-opener
-                                   ) 
+                                   )
                                   (ACL2::LOGHEAD-SUM-SPLIT-INTO-2-WHEN-I-IS-A-CONSTANT
                                    write-data-word-equal-rewrite)))))
 
@@ -2240,10 +2265,10 @@
            (equal (clear-data-word denvr offset (write-data-words numwords denvr offset value ram))
                   (write-data-words (+ -1 numwords) denvr (+ 1 (ifix offset)) (logtail 16 value) (clear-data-word denvr offset ram))))
   :hints (("Goal" :in-theory (e/d (;offset-range-wrap-const-opener
-;                                  clear-data-word write-data-word 
+;                                  clear-data-word write-data-word
 ;write-data-words
                                    write-data-words-opener
-                                   ) 
+                                   )
                                   (ACL2::LOGHEAD-SUM-SPLIT-INTO-2-WHEN-I-IS-A-CONSTANT
                                    write-data-word-equal-rewrite)))))
 
@@ -2262,7 +2287,7 @@
   (equal (write-data-words 2 denvr offset (logext 32 x) ram)
          (write-data-words 2 denvr offset x ram))
   :hints (("Goal" :in-theory (enable write-data-words))))
-         
+
 
 ;bzo allow denvrs to differ
 (defthm read-data-words-of-clear-data-word-diff
@@ -2270,7 +2295,7 @@
            (equal (read-data-words size denvr offset1 (clear-data-word denvr offset2 ram))
                   (read-data-words size denvr offset1 ram)))
   :hints (("Goal" :cases ((EQUAL (LOGHEAD '16 OFFSET2) (LOGHEAD '16 OFFSET1)))
-           :in-theory (e/d (clear-data-word) 
+           :in-theory (e/d (clear-data-word)
                            (WRITE-DATA-WORD-EQUAL-REWRITE)))))
 
 (defthm read-data-words-of-clear-data-words-diff
@@ -2278,7 +2303,7 @@
                           (offset-range-wrap 16 offset2 numwords2))
            (equal (read-data-words numwords1 denvr1 offset1 (clear-data-words numwords2 denvr2 offset2 ram))
                   (read-data-words numwords1 denvr1 offset1 ram)))
-  :hints (("Goal" :in-theory (e/d (clear-data-words) 
+  :hints (("Goal" :in-theory (e/d (clear-data-words)
                                   ()))))
 
 (defthm clear-data-words-of-write-data-word-cover
@@ -2297,7 +2322,7 @@
 
 
 (defthm CLEAR-DATA-WORDS-of-WRITE-DATA-WORDS-partial-overlap-2
-  (implies (and (equal (loghead 16 offset1) (loghead 16 (+ 1 (ifix offset2)))) 
+  (implies (and (equal (loghead 16 offset1) (loghead 16 (+ 1 (ifix offset2))))
                 (integerp offset2)
                 (integerp offset1))
            (equal (CLEAR-DATA-WORDS 2 denvr offset2 (WRITE-DATA-WORDS 2 denvr offset1 value ram))
@@ -2323,7 +2348,7 @@
 
 ;; (thm
 ;;  (equal (CLEAR-DATA-WORD DENVR1 OFFSET1 (WRITE-DATA-WORD DENVR2 OFFSET1 VALUE RAM))
-        
+
 ;; (defthm write-data-word-of-write-data-word-same-value
 ;;   (equal (write-data-word denvr1 offset1 value (write-data-word denvr2 offset2 value ram))
 ;;          (write-data-word denvr2 offset2 value (write-data-word denvr1 offset1 value ram)))
@@ -2334,7 +2359,7 @@
 ;;          (clear-data-word denvr offset (clear-data-word denvr (+ 1 (ifix offset)) ram1))
 ;;          )
 ;;   :hints (("Goal" :in-theory (e/d (clear-data-words
-;;                                    WRITE-DATA-WORDS-OPENER) 
+;;                                    WRITE-DATA-WORDS-OPENER)
 ;;                                   (WRITE-DATA-WORDS-EQUAL-REWRITE ;bzo
 ;;                                    )))))
 
@@ -2346,26 +2371,26 @@
 (defthm read-data-words-of-write-data-word-hack
   (implies (integerp offset)
            (equal (read-data-words 2 denvr (+ -1 offset) (write-data-word denvr offset value ram))
-                  (logapp 16 
+                  (logapp 16
                           (read-data-word denvr (+ -1 offset) ram)
                           (loghead 16 value))))
   :hints (("Goal" :in-theory (enable read-data-words-opener))))
-        
+
 
 ;this loops with the splitting up rules?
 ;move
 (defthmd read-data-words-recollapse
   (implies (equal (loghead 16 offset2) (loghead 16 (+ 1 (ifix offset1))))
-           (equal (logapp 16 
+           (equal (logapp 16
                           (read-data-word denvr offset1 ram)
                           (read-data-word denvr offset2 ram))
                   (read-data-words 2 denvr offset1 ram)))
-  :hints (("Goal" :in-theory (e/d (read-data-words-opener) 
+  :hints (("Goal" :in-theory (e/d (read-data-words-opener)
                                   (ACL2::LOGHEAD-SUM-SPLIT-INTO-2-WHEN-I-IS-A-CONSTANT)))))
 
 (theory-invariant (incompatible (:rewrite READ-DATA-WORDS-RECOLLAPSE) (:definition READ-DATA-WORDS)))
 (theory-invariant (incompatible (:rewrite READ-DATA-WORDS-RECOLLAPSE) (:rewrite READ-DATA-WORDS-OPENER)))
-                 
+
 
 (defthm write-data-words-of-write-data-words-diff-new
   (implies (and (syntaxp (smaller-params denvr2 offset2 denvr1 offset1))
@@ -2379,14 +2404,14 @@
 
 
 
-        
+
 
 
 
 ;more like this?
 ;bzo bad name?
 (defthm clear-data-words-of-write-data-words-partial-overlap-1
-  (implies (and (equal (loghead 16 offset2) (loghead 16 (+ 1 (ifix offset1)))) 
+  (implies (and (equal (loghead 16 offset2) (loghead 16 (+ 1 (ifix offset1))))
                 (integerp offset2)
                 (integerp offset1))
            (equal (clear-data-words 2 denvr offset2 (write-data-words 2 denvr offset1 value ram))
@@ -2425,7 +2450,7 @@
                   (read-data-words numwords denvr1 offset1 ram)))
   :hints (("Goal" :in-theory (enable write-data-word
                                      word-ad-to-byte-ads
-                                     read-data-words 
+                                     read-data-words
                                      acl2::logext-logapp))))
 
 
@@ -2438,7 +2463,7 @@
   )
 
 (in-theory (disable READ-DATA-WORDS-OF-WRITE-DATA-WORD-DIFF))
-        
+
 (DEFTHM READ-DATA-WORD-OF-SUM-NORMALIZE-CONSTANT-addend
   (IMPLIES (AND (SYNTAXP (QUOTEP K))
                 (NOT (UNSIGNED-BYTE-P 16 K))
@@ -2481,7 +2506,7 @@
            (equal (clear-data-words numwords denvr offset1 (clear-data-word denvr offset2 ram))
                   (clear-data-words numwords denvr offset1 ram)))
   :hints (("Goal" :in-theory (e/d (clear-data-words
-                                     clear-data-word) 
+                                     clear-data-word)
                                   (WRITE-DATA-WORD-EQUAL-REWRITE)))))
 
 (defthm clear-data-words-of-clear-data-word-cover-hack
@@ -2490,9 +2515,9 @@
            (equal (clear-data-words numwords denvr 0 (clear-data-word denvr offset2 ram))
                   (clear-data-words numwords denvr 0 ram)))
   :hints (("Goal" :in-theory (enable memberp-of-offset-range
-                                     acl2::loghead-sum-split-into-2-cases 
+                                     acl2::loghead-sum-split-into-2-cases
                                      acl2::loghead-of-minus))))
-  
+
 
 
 
@@ -2534,7 +2559,7 @@
            (equal (write-data-words numwords denvr1 offset1 val1 (write-data-word denvr2 offset2 val2 ram))
                   (write-data-word denvr2 offset2 val2 (write-data-words numwords denvr1 offset1 val1 ram))))
    :rule-classes ((:rewrite :loop-stopper nil))
-   :hints (("Goal" :in-theory (e/d (memberp-of-offset-range) 
+   :hints (("Goal" :in-theory (e/d (memberp-of-offset-range)
                                   (write-data-word-equal-rewrite
                                    write-data-words-equal-rewrite)))))
 
@@ -2617,7 +2642,7 @@
                   (clear-data-words numwords1 denvr offset1 ram)))
   :hints (("Goal" :cases ((<= 0 numwords2))
            :in-theory (enable write-data-words-of-write-data-words-cover))))
-  
+
 
 (defthm write-data-words-of-write-data-words-diff-new-better
   (implies (and (syntaxp (smaller-params denvr2 offset2 denvr1 offset1))
@@ -2661,7 +2686,7 @@
                 )
            (equal (read-data-words numwords denvr offset1 (write-data-word denvr2 offset2 val ram))
                   (read-data-words numwords denvr offset1 ram)))
-  :hints (("Goal" :in-theory (e/d (memberp-of-offset-range) 
+  :hints (("Goal" :in-theory (e/d (memberp-of-offset-range)
                                   ())))  )
 
 (defthm read-data-words-of-clear-data-word-diff-better-better
@@ -2672,7 +2697,7 @@
                 )
            (equal (read-data-words numwords denvr offset1 (clear-data-word denvr2 offset2 ram))
                   (read-data-words numwords denvr offset1 ram)))
-  :hints (("Goal" :in-theory (e/d (clear-data-word) 
+  :hints (("Goal" :in-theory (e/d (clear-data-word)
                                   (WRITE-DATA-WORD-EQUAL-REWRITE)))))
 
 
@@ -2687,7 +2712,7 @@
            (equal (clear-data-words numwords denvr offset ram)
                   (clear-data-word denvr offset (clear-data-words (+ -1 numwords) denvr (+ 1 (ifix offset)) ram))))
   :hints (("Goal" :use (:instance  write-data-words-opener (value 0))
-           :in-theory (e/d (clear-data-words clear-data-word) 
+           :in-theory (e/d (clear-data-words clear-data-word)
                                   (write-data-word-equal-rewrite  write-data-words-opener)))))
 
 
@@ -2834,22 +2859,22 @@
 (defthm make-code-addr-cong16
   (implies (and (equal (loghead 16 offset1)
                        (loghead 16 offset2))
-                (syntaxp (acl2::smaller-term offset2 offset1)) 
+                (syntaxp (acl2::smaller-term offset2 offset1))
                 )
            (equal (make-code-addr cenvr offset1)
                   (make-code-addr cenvr offset2)))
-  :hints (("Goal" :in-theory (enable make-code-addr 
+  :hints (("Goal" :in-theory (enable make-code-addr
                                      logapp ;bzo
                                      ))))
 
 (defthm make-code-addr-cong16-lemma
   (implies (and (equal (loghead 16 offset1)
                        offset2)
-                (syntaxp (acl2::smaller-term offset2 offset1)) 
+                (syntaxp (acl2::smaller-term offset2 offset1))
                 )
            (equal (make-code-addr cenvr offset1)
                   (make-code-addr cenvr offset2)))
-  :hints (("Goal" :in-theory (enable make-code-addr 
+  :hints (("Goal" :in-theory (enable make-code-addr
                                      logapp ;bzo
                                      ))))
 
@@ -2931,7 +2956,7 @@
          (loghead 16 x) ;;(logext 16 x)
          )
   :hints (("Goal" :in-theory (e/d (acl2::logext-logapp
-                                   make-code-addr) 
+                                   make-code-addr)
                                   (
                                    acl2::logtail-logapp)))))
 
@@ -2961,7 +2986,7 @@
          ;; (logapp 1 (acl2::logbit 15 offset) (logext 16 cenvr))
          (logapp 1 (acl2::logbit 15 offset) (loghead 16 cenvr))
          )
-  :hints (("Goal" :in-theory (e/d (make-code-addr ifix ACL2::LOGEXT-LOGAPP) 
+  :hints (("Goal" :in-theory (e/d (make-code-addr ifix ACL2::LOGEXT-LOGAPP)
                                   (acl2::logext-logtail)))))
 
 ;; (defthm <-of-make-code-addr
@@ -2977,7 +3002,7 @@
 ;;                     (< (loghead 31 (logapp 16 offset cenvr)) x))))
 ;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (e/d (make-code-addr logext acl2::logtail-loghead-better
-;;                                             ) 
+;;                                             )
 ;;                                   (;equal-of-if
 ;;                                    acl2::loghead-logtail
 ;;                                    acl2::logext-logapp ;why?
@@ -2991,7 +3016,7 @@
                   (< (loghead 32 (logapp 16 offset cenvr)) x)))
   :otf-flg t
   :hints (("Goal" :in-theory (e/d (make-code-addr logext acl2::logtail-loghead-better
-                                            ) 
+                                            )
                                   (;equal-of-if
                                    acl2::loghead-logtail
                                    acl2::logext-logapp ;why?
@@ -3003,9 +3028,9 @@
                 (not (unsigned-byte-p 16 offset)))
            (equal (make-code-addr cenvr offset)
                   (make-code-addr cenvr (loghead 16 offset)))))
-        
+
 (defthm loghead-15-make-code-addr
-  (implies (and (integerp y) 
+  (implies (and (integerp y)
                 (integerp x))
            (equal (loghead 15 (make-code-addr x y))
                   (loghead 15 y)))
@@ -3161,22 +3186,22 @@
 (defthm make-data-addr-cong16
   (implies (and (equal (loghead 16 offset1)
                        (loghead 16 offset2))
-                (syntaxp (acl2::smaller-term offset2 offset1)) 
+                (syntaxp (acl2::smaller-term offset2 offset1))
                 )
            (equal (make-data-addr denvr offset1)
                   (make-data-addr denvr offset2)))
-  :hints (("Goal" :in-theory (enable make-data-addr 
+  :hints (("Goal" :in-theory (enable make-data-addr
                                      logapp ;bzo
                                      ))))
 
 (defthm make-data-addr-cong16-lemma
   (implies (and (equal (loghead 16 offset1)
                        offset2)
-                (syntaxp (acl2::smaller-term offset2 offset1)) 
+                (syntaxp (acl2::smaller-term offset2 offset1))
                 )
            (equal (make-data-addr denvr offset1)
                   (make-data-addr denvr offset2)))
-  :hints (("Goal" :in-theory (enable make-data-addr 
+  :hints (("Goal" :in-theory (enable make-data-addr
                                      logapp ;bzo
                                      ))))
 
@@ -3249,7 +3274,7 @@
                 (not (unsigned-byte-p 16 offset)))
            (equal (make-data-addr denvr offset)
                   (make-data-addr denvr (loghead 16 offset)))))
-        
+
 (defthm loghead-15-make-data-addr
   (implies (and (integerp y) (integerp x))
            (equal (loghead 15 (make-data-addr x y))
@@ -3384,7 +3409,7 @@
 ;;                     )))
 ;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (e/d (make-data-addr logext acl2::logtail-loghead-better
-;;                                                   ) 
+;;                                                   )
 ;;                                   ( ;equal-of-if
 ;;                                    acl2::loghead-logtail
 ;;                                    acl2::logext-logapp ;why?
@@ -3400,7 +3425,7 @@
                        X)))
   :otf-flg t
   :hints (("Goal" :in-theory (e/d (make-data-addr logext acl2::logtail-loghead-better
-                                                  ) 
+                                                  )
                                   ( ;equal-of-if
                                    acl2::loghead-logtail
                                    acl2::logext-logapp ;why?
@@ -3411,7 +3436,7 @@
          (logapp 1 (acl2::logbit 15 y) (loghead 15 x) ;(logext 15 x)
                  ))
   :hints (("Goal" :cases ((integerp x))
-                          :in-theory (e/d (make-data-addr acl2::logext-logapp) 
+                          :in-theory (e/d (make-data-addr acl2::logext-logapp)
                                   (acl2::logtail-logapp)))))
 
 
@@ -3438,7 +3463,7 @@
 ;; (defthm logtail15-of-make-data-addr
 ;;   (equal (logtail 15 (make-data-addr denvr offset))
 ;;          (logapp 1 (acl2::logbit 15 offset) (logext 16 denvr)))
-;;   :hints (("Goal" :in-theory (e/d (make-data-addr ifix ACL2::LOGEXT-LOGAPP) 
+;;   :hints (("Goal" :in-theory (e/d (make-data-addr ifix ACL2::LOGEXT-LOGAPP)
 ;;                                   (acl2::logext-logtail)))))
 
 (defthm loghead16-logcdr-make-data-addr
@@ -3501,7 +3526,7 @@
 
 ;;
 ;; FETCH-CODE-BYTES
-;; 
+;;
 
 (defthm address-listp-of-loghead-list-32
   (implies (and (mem::memory-p ram)
@@ -3545,7 +3570,7 @@
   (declare (type integer cenvr offset)
            (type (integer 0 *) numbytes)
            (xargs :guard (aamp-ramp ram)))
-  (wintlist 
+  (wintlist
    (rd-list ;;(logext-list 32 (logapp-list 16 (offset-range-wrap 16 offset numbytes) cenvr))
     (loghead-list 32 (logapp-list 16 (offset-range-wrap 16 offset numbytes) cenvr))
     ram)))
@@ -3561,7 +3586,7 @@
          (fetch-code-byte cenvr offset ram))
   :hints (("Goal" :expand (fetch-code-bytes 1 cenvr offset ram)
            :in-theory (enable fetch-code-bytes fetch-code-byte make-code-addr))))
-        
+
 ;bzo fix this! - huh?
 (defthm fetch-code-bytes-when-offset-is-not-an-integerp
   (implies (not (integerp offset))
@@ -3606,7 +3631,7 @@
   :hints (("Goal" :in-theory (enable fetch-code-bytes))))
 
 (defthm unsigned-byte-p-of-fetch-code-bytes-gen
-  (implies (and (<= (* 8 numbytes) n) 
+  (implies (and (<= (* 8 numbytes) n)
                 (integerp numbytes)
                 (<= 0 numbytes)
                 )
@@ -3803,13 +3828,13 @@
                                         fetch-code-bytes-list)
                                   (use-fetch-code-bytes-list-1))
            :use (:instance use-fetch-code-bytes-list-1 (offset (loghead 16 offset))))))
-                 
+
 ;eventually don't go to addr range?
 ;gen
 ;bzo remove the stuff that mentions addr-range?
 ;; (defthm disjoint-of-addr-ranges-of-make-data-addrs
-;;   (implies (and (integerp denvr) 
-;;                 (integerp offset1) 
+;;   (implies (and (integerp denvr)
+;;                 (integerp offset1)
 ;;                 (integerp offset2))
 ;;            (equal (bag::disjoint (addr-range (make-data-addr denvr offset1) 2)
 ;;                                  (addr-range (make-data-addr denvr offset2) 2))
@@ -3820,7 +3845,7 @@
 ;;                                    ;makeaddr
 ;;                                    ACL2::LOGTAIL-LOGHEAD-BETTER
 ;;                                    MAKE-data-ADDR
-;;                                    ) 
+;;                                    )
 ;;                                   ( ;acl2::<-of-ash
 ;;                                    acl2::loghead-logtail
 ;;                                    acl2::extend-<
@@ -3864,7 +3889,7 @@
            (equal (fetch-code-byte cenvr offset (write-data-word ;write-data-word
                                                 denvr offset2 val ram))
                   (fetch-code-byte cenvr offset ram)))
-  :hints (("Goal" :in-theory (enable write-data-word 
+  :hints (("Goal" :in-theory (enable write-data-word
 ;                                     rx-to-rd
                                      make-code-addr
                                      WORD-AD-TO-BYTE-ADS
@@ -3888,7 +3913,7 @@
 (defthm fetch-code-byte-of-write-data-words
   (implies (no-code-data-clash cenvr denvr)
            (equal (fetch-code-byte cenvr offset (write-data-words ;write-data-words
-                                                 2 ;numwords 
+                                                 2 ;numwords
                                                  denvr offset2 val ram))
                   (fetch-code-byte cenvr offset ram)))
   :hints (("Goal" :in-theory (e/d (write-data-words
@@ -3899,7 +3924,7 @@
 ;                                     rx-to-rd
                                    OFFSET-RANGE-WRAP-CONST-OPENER
                                    NO-CODE-DATA-CLASH
-                                   ) 
+                                   )
                                   (WRITE-DATA-WORDS-OPENER)))))
 
 
@@ -3925,7 +3950,7 @@
 ;;                                            ACL2::LOGHEAD-OF-ONE-MORE-THAN-X
 ;;                                            logext
 ;;                                            make-data-addr
-;;                                            ) 
+;;                                            )
 ;;                                           (acl2::LOGAPP-OF-LOGEXT
 ;;                                            ))))))
 
@@ -3949,7 +3974,7 @@
 ;;                           (addr-range (make-data-addr denvr2 offset2)
 ;;                                             2)))
 ;;   :hints (("Goal" :in-theory (e/d (MAKE-DATA-ADDR-EQUAL-REWRITE
-;;                                    disjoint-of-two-addr-ranges) 
+;;                                    disjoint-of-two-addr-ranges)
 ;;                                   (<-OF-MAKE-DATA-ADDR)))))
 
 ;bzo improve these?
@@ -3999,7 +4024,7 @@
            :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (fetch-code-bytes write-data-word WORD-AD-TO-BYTE-ADS
                                              NO-CODE-DATA-CLASH
-                                             ) 
+                                             )
                            (hack-for-code-data-clash
                             hack-for-code-data-clash2
                             ;ACL2::ASSOCIATIVITY-OF-LOGAPP-BETTER
@@ -4042,7 +4067,7 @@
   :hints (("Goal" :use (:instance  fetch-code-byte-of-sum-of-loghead-two)
            :in-theory (disable  fetch-code-byte-of-sum-of-loghead-two))))
 
-        
+
 (local (in-theory (disable ACL2::LOGHEAD-SUM-SPLIT-INTO-2-WHEN-I-IS-A-CONSTANT)))
 
 
@@ -4051,8 +4076,8 @@
            (equal (fetch-code-byte cenvr offset (write-data-word denvr offset2 val ram))
                   (fetch-code-byte cenvr offset ram)))
   :hints (("Goal" :in-theory (e/d (write-data-word
-                                   fetch-code-byte 
-                                   ) 
+                                   fetch-code-byte
+                                   )
                                   (ADDRESSES-OF-DATA-WORD)))))
 
 (defthm fetch-code-byte-of-clear-data-word-bag-phrasing
@@ -4068,13 +4093,13 @@
 
 
 
-  
+
 (encapsulate
  ()
 
 ;this doesn't open up write-data-words but rather uses write-data-words-opener
  (local (defthm FETCH-CODE-BYTE-of-WRITE-DATA-WORDS-helper
-          (implies (and (NO-CODE-DATA-CLASH cenvr denvr) 
+          (implies (and (NO-CODE-DATA-CLASH cenvr denvr)
                         (integerp offset2)
                         )
                    (equal (FETCH-CODE-BYTE cenvr offset (WRITE-DATA-WORDS numwords denvr offset2 value ram))
@@ -4153,7 +4178,7 @@
 ;;             (equal (read-data-word denvr offset (write-data-words numwords denvr offset2 value ram))
 ;;                    (nthword (- (loghead 16 offset) (loghead 16 offset2)) value)))
 ;;    :hints (("Goal" :in-theory (disable read-data-word-of-write-data-words-same )
-;;             :use (:instance  read-data-word-of-write-data-words-same 
+;;             :use (:instance  read-data-word-of-write-data-words-same
 ;;                              (offset (loghead 16 offset))
 ;;                              (offset2 (loghead 16 offset2)))))))
 
@@ -4279,10 +4304,10 @@
                     (write-nth-word (+ (- offset1) offset2)
                                     word
                                     (read-data-words numwords denvr offset1 ram)))
-          
+
            :in-theory (e/d (zp ;write-nth-word
                             MEMBERP-OF-OFFSET-RANGE
-                            acl2::loghead-sum-split-into-2-cases 
+                            acl2::loghead-sum-split-into-2-cases
                             acl2::loghead-of-minus
                             read-data-words-alt-def
                             ) (read-data-words-opener)))
@@ -4306,7 +4331,7 @@
   (equal (write-nth-word 0 value (logapp 16 lowbits highbits))
          (logapp 16 value highbits))
   :hints (("Goal" :in-theory (enable write-nth-word))))
-        
+
 
 ;move?
 (encapsulate
@@ -4323,10 +4348,10 @@
                    :in-theory (e/d (;(expt)
                                     READ-DATA-WORDS-alt-def
                                     ;WRITE-DATA-WORDS-recollapse
-                                    WRITE-DATA-WORDS-alt-def) 
+                                    WRITE-DATA-WORDS-alt-def)
                                    (WRITE-DATA-WORDS-opener
                                     WRITE-DATA-WORDS-EQUAL-REWRITE))
-                   :use (:instance WRITE-DATA-WORDS-opener 
+                   :use (:instance WRITE-DATA-WORDS-opener
                                    (offset offset)
                                    (denvr denvr)
                                    (numwords numwords)
@@ -4386,7 +4411,7 @@
            :expand (WRITE-NTH-WORD N WORD (LOGHEAD (* 16 M) VALUE))
            :in-theory (e/d (WRITE-NTH-WORD
      ;                           logtail-16-of-WRITE-NTH-WORD-back
-                            ) 
+                            )
                            ( logtail-16-of-WRITE-NTH-WORD)))))
 
 (defthm write-data-word-of-write-data-words-same
@@ -4397,13 +4422,13 @@
                 (integerp word)
                 )
            (equal (write-DATA-WORD denvr offset1 word (WRITE-DATA-WORDS numwords denvr offset2 value ram))
-                  (WRITE-DATA-WORDS numwords denvr offset2 
+                  (WRITE-DATA-WORDS numwords denvr offset2
                                           (write-nth-word (loghead 16 (- offset1 offset2)) word value) ram)))
   :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable ;usb-of-sum-with-two-other-addends-hack
                               MEMBERP-OF-OFFSET-RANGE
-                              acl2::loghead-sum-split-into-2-cases 
+                              acl2::loghead-sum-split-into-2-cases
                               acl2::loghead-of-minus
                               )
      ;:induct (WRITE-DATA-WORDS-INDUCT-wrap numwords offset2 value)
@@ -4417,7 +4442,7 @@
                 (integerp word)
                 )
            (equal (clear-DATA-WORD denvr offset1 (WRITE-DATA-WORDS numwords denvr offset2 value ram))
-                  (WRITE-DATA-WORDS numwords denvr offset2 
+                  (WRITE-DATA-WORDS numwords denvr offset2
                                           (write-nth-word (loghead 16 (- offset1 offset2)) 0 value) ram)))
   :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -4433,7 +4458,7 @@
              (LOGAPP 16 word y)
            (LOGAPP 16 x (WRITE-NTH-WORD (+ -1 n) word y))))
   :hints (("Goal" :in-theory (enable WRITE-NTH-WORD))))
-        
+
 
 (defthm write-nth-word-0-when-usb16
   (implies (unsigned-byte-p 16 value)
@@ -4448,7 +4473,7 @@
 
 ;make a both?
 (defthm nthword-of-write-nth-word-diff
-  (implies (and (natp n1) 
+  (implies (and (natp n1)
                 (natp n2)
                 (not (equal n1 n2))
                 )
@@ -4476,7 +4501,7 @@
 (defthm write-nth-word-of-write-nth-word-same
   (equal (write-nth-word n word1 (write-nth-word n word2 value))
          (write-nth-word n word1 value))
-  :hints (("Goal" :in-theory (enable write-nth-word nthword))))                 
+  :hints (("Goal" :in-theory (enable write-nth-word nthword))))
 
 
 
@@ -4507,7 +4532,7 @@
                   (read-data-word denvr offset ram)))
   :rule-classes ((:rewrite :backchain-limit-lst (1 nil)))
   :hints (("Goal" :in-theory (enable read-data-words-alt-def))))
-                 
+
 
 ;bzo generalize this sequence?
 (defthm read-data-word-when-read-data-words-equals-constant
@@ -4597,7 +4622,7 @@
                                    (value value)
                                   )
            :in-theory (disable write-data-words))))
-       
+
 
 
 (defthm write-data-words-of-loghead
@@ -4609,7 +4634,7 @@
            :induct (write-data-words-induct numwords offset value)
            :in-theory (e/d ( WRITE-DATA-WORDS-opener-hack
                            ;  WRITE-DATA-WORDS-alt-def
-                             ) 
+                             )
                            (WRITE-DATA-WORD-EQUAL-REWRITE)))))
 
 (defthm write-data-words-of-sum-normalize-constant-addend-in-value
@@ -4620,7 +4645,7 @@
                 )
            (equal (write-data-words numwords denvr offset (+ k value) ram)
                   (write-data-words numwords denvr offset (+ (loghead (* 16 numwords) k) value) ram)))
-  :hints (("Goal" :use ((:instance WRITE-DATA-WORDs-of-loghead 
+  :hints (("Goal" :use ((:instance WRITE-DATA-WORDs-of-loghead
 ;;                                    (denvr denvr)
 ;;                                    (offset offset)
 ;;                                    (ram ram)
@@ -4643,7 +4668,7 @@
                 )
            (equal (write-data-words numwords denvr offset k ram)
                   (write-data-words numwords denvr offset (loghead (* 16 numwords) k) ram)))
-  :hints (("Goal" :use ((:instance WRITE-DATA-WORDs-of-loghead 
+  :hints (("Goal" :use ((:instance WRITE-DATA-WORDs-of-loghead
 ;;                                    (denvr denvr)
 ;;                                    (offset offset)
 ;;                                    (ram ram)
@@ -4666,7 +4691,7 @@
                 )
            (equal (write-data-words numwords denvr offset (+ (LOGEXT n x) y) ram)
                   (write-data-words numwords denvr offset (+ x y) ram)))
-  :hints (("Goal" :use ((:instance WRITE-DATA-WORDs-of-loghead 
+  :hints (("Goal" :use ((:instance WRITE-DATA-WORDs-of-loghead
                                    ;;                                    (denvr denvr)
                                    ;;                                    (offset offset)
                                    ;;                                    (ram ram)
@@ -4699,7 +4724,7 @@
 (defthmd fetch-code-bytes-recollect
   (implies (and (equal (loghead 16 (+ 2 offset1)) (loghead 16 offset2))
                 (integerp offset1))
-           (equal (logapp 16 
+           (equal (logapp 16
                           (gacc::fetch-code-bytes 2 cenvr offset1 ram)
                           (gacc::fetch-code-byte cenvr offset2 ram))
                   (gacc::fetch-code-bytes 3 cenvr offset1 ram)))
@@ -4781,7 +4806,7 @@
                   (if (<= numwords1 numwords2)
                       (gacc::read-data-words numwords1 denvr offset ram)
                     (gacc::read-data-words numwords2 denvr offset ram))))
-          
+
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable gacc::read-data-words-alt-def
                        )
@@ -4800,7 +4825,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable gacc::read-data-words-alt-def
                        )
-           :induct (gacc::read-data-words-induct-with-n numwords2 offset numwords1))) 
+           :induct (gacc::read-data-words-induct-with-n numwords2 offset numwords1)))
   )
 
 
@@ -4839,7 +4864,7 @@
                 )
            (equal (gacc::write-data-word denvr offset1 val1 (gacc::write-data-word denvr offset2 val2 ram))
                   (gacc::write-data-words 2 denvr offset1 (logapp 16 val1 (ifix val2)) ram)))
-  :hints (("Goal" :in-theory (e/d (gacc::write-data-words-opener) 
+  :hints (("Goal" :in-theory (e/d (gacc::write-data-words-opener)
                                   (acl2::loghead-sum-split-into-2-when-i-is-a-constant)))))
 
 (theory-invariant (incompatible (:rewrite write-data-words-recollapse) (:rewrite gacc::write-data-words-opener)))
@@ -4850,7 +4875,7 @@
 ;           (equal (AAMP::DATA-WRITE-ALLOWED AAMP::DENVR AAMP::OFFSET AAMP::PMU)
 ;                  (AAMP::DATA-WRITE-ALLOWED AAMP::DENVR (loghead 16 AAMP::OFFSET) AAMP::PMU)))
 ;  :hints (("Goal" :in-theory (e/d (AAMP::DATA-WRITE-ALLOWED
-;                                   GACC::MAKE-DATA-ADDR) 
+;                                   GACC::MAKE-DATA-ADDR)
 ;                                  (AAMP::ACCESS-CHECK-BECOMES-DATA-WRITE-ALLOWED)))))
 
 
@@ -4891,7 +4916,7 @@
 
 ;gen?
 (defthm gacc::write-nth-word-0-0
-  (equal (gacc::write-nth-word n 0 0) 
+  (equal (gacc::write-nth-word n 0 0)
          0)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable gacc::write-nth-word))))
@@ -4939,7 +4964,7 @@
 
 (theory-invariant (incompatible (:rewrite write-data-words-recollapse) (:rewrite gacc::write-data-words-opener-2)))
 
-;bzo push this change back?         
+;bzo push this change back?
 (in-theory (disable list::nthcdr-of-firstn))
 (in-theory (enable list::firstn-of-nthcdr))
 
@@ -4950,7 +4975,7 @@
                                           (gacc::write-data-words (- nwords 2) denvr
                                                                   (loghead 16 (+ 2 offset1))
                                                                   (logtail 32 val) ram))))
-  :hints (("Goal" :in-theory (e/d (gacc::write-data-words-opener-2) 
+  :hints (("Goal" :in-theory (e/d (gacc::write-data-words-opener-2)
                                   (gacc::write-data-words-opener)))))
 
 ;bzo gen
@@ -5002,7 +5027,7 @@
   :hints (("Goal" :in-theory (disable gacc::loghead-times-8-of-wintlist)
            :use (:instance gacc::loghead-times-8-of-wintlist
                            (gacc::byte-list byte-list)
-                           (gacc::numbytes (+ -8 (* 2 numwords))))) 
+                           (gacc::numbytes (+ -8 (* 2 numwords)))))
           ))
 
 (defthm logtail-times-16-of-read-data-words-hack
@@ -5019,7 +5044,7 @@
                                   )
 
            :in-theory (disable gacc::logtail-times-16-of-read-data-words)))
-  
+
   )
 
 ;bzo remove the -hack version?
@@ -5110,7 +5135,7 @@
                   (and (acl2::unsigned-byte-p 32 ad)
                        (equal (acl2::logtail 17 ad) (acl2::loghead 15 denvr))
                        (< (acl2::loghead 16 (- (acl2::loghead 16 (acl2::logtail 1 ad))
-                                               offset)) 
+                                               offset))
                           numwords))))
   :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -5141,7 +5166,7 @@
   (equal (gacc::word-ads-to-byte-ads (list::fix ads))
          (gacc::word-ads-to-byte-ads ads))
   :hints (("Goal" :in-theory (enable gacc::word-ads-to-byte-ads))))
-         
+
 (defthm word-ads-to-byte-ads-of-remove-1
   (implies (and (gacc::unsigned-byte-p-list 31 ads)
                 (acl2::unsigned-byte-p 31 x))
@@ -5180,11 +5205,11 @@
   (("Goal" :do-not '(generalize eliminate-destructors)
                :induct (2-list-induct ads1 ads2)
     :in-theory (e/d (len gacc::word-ads-to-byte-ads
-                         WORD-AD-TO-BYTE-ADS) 
+                         WORD-AD-TO-BYTE-ADS)
                     (list::len-cdr-equal-len-cdr-rewrite
                      BAG::SUBBAG-BY-MULTIPLICITY
                      ;GACC::WORD-AD-TO-BYTE-ADS
-                     
+
                      )))))
 
 ;bzo improve GACC::SUBBAGP-OF-WORD-ADS-TO-BYTE-ADS-AND-WORD-ADS-TO-BYTE-ADS to not use integer-listp but rather the better one
@@ -5268,7 +5293,7 @@
 
 ;one is even and the other odd
 (defthm cadr-of-addresses-of-data-words-not-equal-car-of-addresses-of-data-word
-  (implies (and (integerp numwords) 
+  (implies (and (integerp numwords)
                 (< 0 numwords))
            (not (equal (cadr (gacc::addresses-of-data-words numwords denvr1 offset1))
                        (car (gacc::addresses-of-data-word denvr2 offset2)))))
@@ -5276,7 +5301,7 @@
 
 ;one is even and the other odd
 (defthm cadr-of-addresses-of-data-word-not-equal-car-of-addresses-of-data-words
-  (implies (and (integerp numwords) 
+  (implies (and (integerp numwords)
                 (< 0 numwords))
            (not (equal (cadr (gacc::addresses-of-data-word denvr2 offset2))
                        (car (gacc::addresses-of-data-words numwords denvr1 offset1)))))
@@ -5284,9 +5309,9 @@
 
 ;one is even and the other odd
 (defthm cadr-of-addresses-of-data-words-not-equal-car-of-addresses-of-data-words
-  (implies (and (integerp numwords1) 
+  (implies (and (integerp numwords1)
                 (< 0 numwords1)
-                (integerp numwords2) 
+                (integerp numwords2)
                 (< 0 numwords2))
            (not (equal (cadr (gacc::addresses-of-data-words numwords2 denvr2 offset2))
                        (car (gacc::addresses-of-data-words numwords1 denvr1 offset1)))))
@@ -5307,7 +5332,7 @@
            (equal (gacc::rd ad (gacc::write-data-word denvr offset value ram))
                   (gacc::rd ad ram)))
   :hints (("Goal" :in-theory (enable gacc::write-data-word))))
-        
+
 (defthm rd-of-write-data-word-same
   (implies (and (equal (acl2::loghead 15 denvr) (acl2::logtail 17 ad))
                 (equal (acl2::loghead 16 offset) (acl2::loghead 16 (acl2::logtail 1 ad)))
@@ -5315,11 +5340,11 @@
                 (ACL2::UNSIGNED-BYTE-P '32 AD) ;drop?
                 )
            (equal (gacc::rd ad (gacc::write-data-word denvr offset value ram))
-                  (acl2::loghead 8 (acl2::logtail 
+                  (acl2::loghead 8 (acl2::logtail
                                     (* 8 (acl2::logcar ad)) ;if ad is even, take word 0, else take word 1
                                     value))
                   ))
-  :hints (("Goal" :in-theory (enable gacc::write-data-word 
+  :hints (("Goal" :in-theory (enable gacc::write-data-word
                                      WORD-AD-TO-BYTE-ADS
                                      GACC::ADDRESSES-OF-DATA-WORD
                                      ACL2::EQUAL-LOGAPP-X-Y-Z))))
@@ -5344,7 +5369,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable gacc::write-data-words
                               MEMBERP-OF-OFFSET-RANGE))))
-        
+
 (defthm find-index-of-word-ads-to-byte-ads
   (implies (and (integerp ad)
                 (acl2::integer-listp word-ads)
@@ -5353,7 +5378,7 @@
                   (+ (acl2::logcar ad)
                      (* 2 (list::find-index (acl2::logcdr ad) word-ads)))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable gacc::word-ads-to-byte-ads 
+           :in-theory (enable gacc::word-ads-to-byte-ads
                               WORD-AD-TO-BYTE-ADS
                               (:definition list::find-index)
                               acl2::equal-logapp-x-y-z
@@ -5366,7 +5391,7 @@
 ;;; and put them in the proper palces.
 
 (defthm addresses-of-data-word-normalize-leading-constant
-  (implies (and (syntaxp (and (quotep k) 
+  (implies (and (syntaxp (and (quotep k)
                               (not (acl2::unsigned-byte-p 16 (cadr k)))))
                 (integerp k)
                 (integerp offset))
@@ -5374,7 +5399,7 @@
                   (GACC::ADDRESSES-OF-DATA-WORD cenvr (+ (acl2::loghead 16 k) offset)))))
 
 (defthm addresses-of-data-words-normalize-leading-constant
-  (implies (and (syntaxp (and (quotep k) 
+  (implies (and (syntaxp (and (quotep k)
                               (not (acl2::unsigned-byte-p 16 (cadr k)))))
                 (integerp k)
                 (integerp offset))
@@ -5382,7 +5407,7 @@
                   (GACC::ADDRESSES-OF-DATA-WORDS n cenvr (+ (acl2::loghead 16 k) offset)))))
 
 (defthm fetch-code-byte-normalize-leading-constant
-  (implies (and (syntaxp (and (quotep k) 
+  (implies (and (syntaxp (and (quotep k)
                               (not (acl2::unsigned-byte-p 16 (cadr k)))))
                 (integerp k)
                 (integerp offset))
@@ -5413,7 +5438,7 @@
                   (GACC::FETCH-CODE-BYTES 3 X0
                                           x
                                           X23))
-         
+
          (GACC::FETCH-CODE-BYTES 3 X0
                                  x
                                  X23)))
@@ -5443,7 +5468,7 @@
                   (GACC::FETCH-CODE-BYTES 2 X0
                                           x
                                           X23))
-         
+
          (GACC::FETCH-CODE-BYTES 2 X0
                                  x
                                  X23)))
@@ -5454,7 +5479,7 @@
                   (+ 1 (GACC::FETCH-CODE-BYTES 2 X0
                                                x
                                                X23)))
-         
+
          (+ 1 (GACC::FETCH-CODE-BYTES 2 X0
                                       x
                                       X23)))
@@ -5484,7 +5509,7 @@
                   (+ 1 (GACC::FETCH-CODE-BYTES 1 X0
                                                x
                                                X23)))
-         
+
          (+ 1 (GACC::FETCH-CODE-BYTES 1 X0
                                       x
                                       X23)))

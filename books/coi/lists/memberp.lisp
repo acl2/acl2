@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;; memberp.lisp
 ;; The memberp function and theorems about it
 
@@ -19,7 +44,7 @@
 (defund memberp (a x)
   (declare (type t a x))
   (if (consp x)
-      (if (equal a (car x)) 
+      (if (equal a (car x))
           t
         (memberp a (cdr x)))
     nil))
@@ -29,14 +54,14 @@
 ;; Make sure memberp's :type-prescription rule is as strong as we think.  Don't
 ;; remove this just because its has no effect on the world.
 
-(local 
+(local
  (encapsulate
   ()
   (local (defthm memberp-type-prescription-test
            (or (equal (memberp a x) t)
                (equal (memberp a x) nil))
            :rule-classes nil
-           :hints (("Goal" 
+           :hints (("Goal"
                     :in-theory (union-theories '((:type-prescription memberp))
                                                (theory 'minimal-theory))))))))
 
@@ -106,7 +131,7 @@
 
 ;; jcd - i think memberp-of-non-consp should be enabled instead
 (defthm memberp-of-nil
-  (equal (memberp a nil) 
+  (equal (memberp a nil)
          nil)
   :hints (("goal" :in-theory (enable memberp))))
 
@@ -286,7 +311,7 @@
  (
   ((non-member *) => *)
   )
- 
+
  (local
   (defun max-member (list)
     (if (consp list)
@@ -317,7 +342,7 @@
  (local
   (defun non-member (list)
     (1+ (max-member list))))
- 
+
  (defthm not-memberp-non-member
    (not (memberp (non-member list) list)))
 

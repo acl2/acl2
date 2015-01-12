@@ -800,7 +800,7 @@ multiply declared names here.</p>
 
 <p>We don't try to add any port declarations here, because we have to sort of
 get through the whole module to make sure there isn't an explicit declaration
-later on.  We handle that in @(see vl-make-implicit-wires).</p>"
+later on.  We handle that in @(see vl-make-implicit-wires-main).</p>"
 
   :measure (len x)
   :hooks ((:fix

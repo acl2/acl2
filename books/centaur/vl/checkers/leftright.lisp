@@ -108,6 +108,56 @@ e').</p>"
     (append (vl-collect-ac-args op (first args))
             (vl-collect-ac-args op (second args)))))
 
+
+
+(local (defthm hons-duplicated-members-when-no-duplicatesp-equal
+         (implies (no-duplicatesp-equal x)
+                  (equal (hons-duplicated-members x)
+                         nil))
+         :hints(("Goal"
+                 :do-not-induct t
+                 :do-not '(generalize fertilize)
+                 :in-theory (disable acl2::member-equal-of-hons-duplicated-members)
+                 :use ((:instance acl2::member-equal-of-hons-duplicated-members
+                        (acl2::a (car (hons-duplicated-members x)))
+                        (acl2::x x)))))))
+
+(local (defthm vl-exprlist-p-of-hons-duplicated-members
+         (implies (vl-exprlist-p x)
+                  (vl-exprlist-p (hons-duplicated-members x)))))
+
+(define vl-leftright-exprlist-duplicates ((x vl-exprlist-p))
+  :guard (true-listp x)
+  :short "Optimized duplicate expression gatherer for leftright checking."
+  :long "<p>Originally I just used duplicated-members to check for duplicates.
+Profiling revealed that this was expensive.  To speed it up, I made a
+benchmark out of some real calls of duplicated-members for leftright checking.
+Out of 396,966 calls, 396,945 of them (99.99+%) had no duplicated members.
+Furthermore, short lists are extremely common:</p>
+
+<ul>
+<li>150,302 of them have only 2 elements (37%)</li>
+<li>45,301 of them have only 3 elements (11%)</li>
+<li>31,930 of them have only 4 elements (8%)</li>
+<li>25,516 of them have only 5 elements (6%)</li>
+</ul>
+
+<p>However, there are occasionally very long lists with over 600+ members.
+This function is just an optimized alternative to duplicated-members that seems
+to perform well on this kind of data set.  We gain significant performance out
+of this function by memoizing @(see vl-expr-strip).</p>"
+  :enabled t
+
+  (mbe :logic (hons-duplicated-members x)
+       :exec
+       (b* (((when (longer-than-p 25 x))
+             (hons-duplicated-members x))
+            ;; Short list.
+            ((when (no-duplicatesp-equal x))
+             nil))
+         ;; Not unique, so actually compute it.
+         (hons-duplicated-members x))))
+
 (defines vl-expr-leftright-check
   :short "Search for strange expressions like @('A [op] A')."
   :long "<p>We search through the expression @('x') for sub-expressions of the
@@ -142,7 +192,7 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
           (b* ((subexprs     (append (vl-collect-ac-args op (first args))
                                      (vl-collect-ac-args op (second args))))
                (subexprs-fix (vl-exprlist-strip subexprs))
-               (dupes        (duplicated-members subexprs-fix))
+               (dupes        (vl-leftright-exprlist-duplicates subexprs-fix))
                ((when dupes)
                 (cons (make-vl-warning
                        :type :vl-warn-leftright
@@ -187,7 +237,7 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
                  :fn __function__)
                 (vl-exprlist-leftright-check args ctx)))
 
-         ((when (and (member op '(:vl-partselect-colon))
+         ((when (and (member op '(:vl-partselect-colon :vl-select-colon))
                      (equal (vl-expr-strip (second args))
                             (vl-expr-strip (third args)))))
           (cons (make-vl-warning
@@ -196,9 +246,15 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
                  :args (list ctx x)
                  :fatalp nil
                  :fn __function__)
-                ;; Note: we might want to not recur here, for similar reasons to the
-                ;; special hack above for minuses in net/reg/var decls.
+
+                ;; Special hack: I decided not to recur here for the same
+                ;; reasons as in net/reg/var declarations.
                 (vl-exprlist-leftright-check args ctx)))
+
+         ((when (member op '(:vl-index :vl-bitselect)))
+          ;; Special hack: I decided not to recur here for the same reasons
+          ;; as in net/reg/var declarations.
+          nil)
 
          ((when (and (member op '(:vl-qmark))
                      (equal (vl-expr-strip (second args))
@@ -222,7 +278,6 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
       (append (vl-expr-leftright-check (car x) ctx)
               (vl-exprlist-leftright-check (cdr x) ctx)))))
 
-
 (define vl-exprctxalist-leftright-check
   :short "@(call vl-exprctxalist-leftright-check) extends @(see
 vl-expr-leftright-check) across an @(see vl-exprctxalist-p)."
@@ -230,10 +285,7 @@ vl-expr-leftright-check) across an @(see vl-exprctxalist-p)."
   :returns (warnings vl-warninglist-p)
   (if (atom x)
       nil
-    (append (mbe :logic (vl-expr-leftright-check (caar x) (cdar x))
-                 :exec (if (vl-context1-p (cdar x))
-                           (vl-expr-leftright-check (caar x) (cdar x))
-                         (ec-call (vl-expr-leftright-check (caar x) (cdar x)))))
+    (append (vl-expr-leftright-check (caar x) (cdar x))
             (vl-exprctxalist-leftright-check (cdr x)))))
 
 (define vl-module-leftright-check
@@ -256,8 +308,11 @@ warnings to the module."
 (define vl-design-leftright-check ((x vl-design-p))
   :returns (new-x vl-design-p)
   (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-leftright-check x.mods))))
+       ((vl-design x) x)
+       (new-mods (vl-modulelist-leftright-check x.mods)))
+    (clear-memoize-table 'vl-expr-strip)
+    (change-vl-design x :mods new-mods)))
+
 
 
 

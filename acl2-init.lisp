@@ -263,8 +263,8 @@ implementations.")
 ; but it doesn't currently seem worth the trouble to figure that out.
 #+(and hons (not cltl2))
 (progn
-  (format t "~%ERROR: It is illegal to build the experimental HONS version
-       of ACL2 in this non-ANSI Common Lisp.~%~%")
+  (format t "~%ERROR: It is illegal to build a hons-enabled version~%~
+             of ACL2 in this non-ANSI Common Lisp.  See :DOC hons-enabled.~%~%")
   (acl2::exit-lisp))
 
 ; Fix a bug in SBCL 1.0.49 (https://bugs.launchpad.net/bugs/795705), thanks to
@@ -684,16 +684,23 @@ implementations.")
 (defvar *saved-mode*)
 
 (defconstant *acl2-snapshot-string*
-  (if (getenv$-raw "ACL2_RELEASE_P")
-      ""
-    "
+
+; Note to developers (users should ignore this!): Replace this value by "" when
+; making a release.
+
+; Temporarily, for a release:
+; ""
+
+; Normally:
+  "
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  + WARNING: This is NOT an ACL2 release; it is a development snapshot. +
  + The authors of ACL2 consider such distributions to be experimental; +
  + they may be incomplete, fragile, and unable to pass our own         +
  + regression tests.                                                   +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-"))
+"
+  )
 
 (defvar *saved-string*
   (concatenate
@@ -708,7 +715,7 @@ implementations.")
 
    "~a"
    #+hons
-   "~%~% Experimental modification for HONS, memoization, and applicative hash~
+   "~%~% Includes support for hash cons, memoization, and applicative hash~
     ~% tables.~%"
    #+acl2-par
    "~%~% Experimental modification for parallel evaluation.  Please expect at~

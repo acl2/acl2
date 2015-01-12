@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 ;;
@@ -199,7 +224,7 @@
 	 (len list)))
 
 (defthm pseudo-termp-listp-replace-common-subterm
-  (implies 
+  (implies
    (and
     (pseudo-termp var)
     (pseudo-term-listp clauses))
@@ -296,7 +321,7 @@
    (equal (gensym::eval-list (v1 (generalize-clause-processor clause subterm))
 			     (generalize-clause-alist clause a subterm))
 	  (gensym::eval-list clause a))))
-  
+
 (defthm generalize-clause-alist-reduction
   (implies
    (and
@@ -304,7 +329,7 @@
     (pseudo-termp subterm))
    (equal (gensym::eval-list clause (generalize-clause-alist clause a subterm))
 	  (gensym::eval-list clause a))))
-  
+
 (in-theory (disable generalize-clause-processor generalize-clause-alist))
 
 (in-theory (enable GENSYM::EVAL-CONSTRAINT-6))
@@ -317,7 +342,7 @@
 
 (defthmd disjoin-congruence
   (implies
-   (equal (gensym::eval-list args1 a1) 
+   (equal (gensym::eval-list args1 a1)
 	  (gensym::eval-list args2 a2))
    (iff (iff (gensym::eval (disjoin args1) a1)
 	     (gensym::eval (disjoin args2) a2)) t))
@@ -414,7 +439,7 @@
 	    (type-p  (cdr hint)))
 	(met ((var new) (generalize-clause-processor clause subterm))
 	     (declare (ignore new))
-	     (if (and (generalize-termp subterm) (symbolp type-p) (not (equal type-p 'quote)) var) 
+	     (if (and (generalize-termp subterm) (symbolp type-p) (not (equal type-p 'quote)) var)
 		 (generalize-clause-alist clause a subterm)
 	       a)))
     a))
@@ -477,7 +502,7 @@
   (let ((hint (pattern-match-args 'gensym::generalize patterns clause)))
     (and hint
 	 (let ((hints `(:clause-processor (generalize-clause-processor-wrapper clause ',hint))))
-	   `(:computed-hint-replacement 
+	   `(:computed-hint-replacement
 	     ((generalize-clause-hint id clause world))
 	     ,@hints)))))
 

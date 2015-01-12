@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;; diverge.lisp
 ;; Divergence relations for lists
 
@@ -16,7 +41,7 @@
 ;; ----------------------------------------------------------------------------
 ;;
 ;;                                   PART 1
-;; 
+;;
 ;;                           The Diverge Relation
 ;;
 ;; ----------------------------------------------------------------------------
@@ -40,7 +65,7 @@
 ;; bzo (jcd) - We use plural "dominates" but singular "diverge".  I think that
 ;; diverge should be changed to diverges.  Eric disagrees: He thinks it is
 ;; natural to say that "a dominates b" and also to say that "a and b diverge".
-;; I prefer to say, "a diverges from b".  In any event, I will stick with 
+;; I prefer to say, "a diverges from b".  In any event, I will stick with
 ;; "diverge" for now.
 ;;
 ;; bzo (jcd) - Diverge is symmetric; should we prove each rule for both of the
@@ -53,10 +78,10 @@
   (and (not (dominates x y))
        (not (dominates y x))))
 
-(defcong list::equiv equal (diverge x y) 1 
+(defcong list::equiv equal (diverge x y) 1
   :hints(("Goal" :in-theory (enable diverge))))
 
-(defcong list::equiv equal (diverge x y) 2 
+(defcong list::equiv equal (diverge x y) 2
   :hints(("Goal" :in-theory (enable diverge))))
 
 (defthm not-diverge-forward-to-dominates-cases
@@ -70,7 +95,7 @@
 ;; bzo (jcd) - I'm not sure why we have the above rule but not other forward
 ;; chaining rules.  For example, perhaps we want a rule that says if they do
 ;; diverge, then neither dominates.  And, if one dominates, then they do not
-;; diverge.  I have added the following three forward chaining rules to go 
+;; diverge.  I have added the following three forward chaining rules to go
 ;; along with this idea.  I'm not sure if this will break anything.
 
 (defthm diverge-forward-to-non-domination
@@ -222,8 +247,8 @@
            (equal (equal (append x a)
                          (append y b))
                   nil))
-  :hints(("Goal" :in-theory (enable diverge 
-                                    dominates 
+  :hints(("Goal" :in-theory (enable diverge
+                                    dominates
                                     ))))
 
 
@@ -233,13 +258,13 @@
 ;; ----------------------------------------------------------------------------
 ;;
 ;;                                   PART 2
-;; 
+;;
 ;;                  Extending the Diverge Relation to Lists
 ;;
 ;; ----------------------------------------------------------------------------
 
 
-;; diverges-from-all 
+;; diverges-from-all
 ;;
 ;; Given a list a, and a list of lists x, we say that a diverges-from-all x if
 ;; every list b in x satisfies (diverge a b).
@@ -310,11 +335,11 @@
 (defthm diverges-of-cdr-by-diverges-from-all
   (implies (diverges-from-all a x)
            (equal (diverge a (car x))
-                  (consp x))))                
+                  (consp x))))
 
 (defthm diverges-from-all-of-append
   (equal (diverges-from-all a (append x y))
-         (and (diverges-from-all a x) 
+         (and (diverges-from-all a x)
               (diverges-from-all a y)))
   :hints (("Goal" :in-theory (enable append))))
 
@@ -348,21 +373,21 @@
             (if (diverge a (car x))
                 (badguy a (cdr x))
               (car x)))))
- 
+
  (local (defthm badguy-witness
           (implies (not (diverges-from-all a x))
                    (and (memberp (badguy a x) x)
                         (not (diverge a (badguy a x)))))
           :hints(("Goal" :in-theory (enable badguy)))))
- 
+
  (defthm diverges-from-all-by-membership-driver
    (implies (diverges-from-all-hyps)
             (diverges-from-all (diverges-from-all-path)
                                (diverges-from-all-list)))
    :rule-classes nil
-   :hints(("Goal" 
+   :hints(("Goal"
            :use (:instance diverges-from-all-constraint
-                           (diverges-from-all-member 
+                           (diverges-from-all-member
                             (badguy (diverges-from-all-path)
                                     (diverges-from-all-list)))))))
 
@@ -370,7 +395,7 @@
    (implies (diverges-from-all-hyps)
             (diverges-from-all (diverges-from-all-path)
                                (diverges-from-all-list)))
-   :rule-classes (:pick-a-point 
+   :rule-classes (:pick-a-point
                   :driver diverges-from-all-by-membership-driver))
  )
 
@@ -503,13 +528,13 @@
 ;; ----------------------------------------------------------------------------
 ;;
 ;;                                   PART 3
-;; 
+;;
 ;;                     The All-Diverge-From-All Relation
 ;;
 ;; ----------------------------------------------------------------------------
 
 ;; Given x and y, both list of lists, we say that (all-diverge-from-all x y)
-;; whenever every path a in x and every path b in y satisfy (diverge x y).  
+;; whenever every path a in x and every path b in y satisfy (diverge x y).
 
 (defund all-diverge-from-all (x y)
   (declare (type t x y))
@@ -535,7 +560,7 @@
   (local (defun all-diverge-from-all-hyps () nil))
   (local (defun all-diverge-from-all-one () nil))
   (local (defun all-diverge-from-all-two () nil))
-  (defthm all-diverge-from-all-constraint 
+  (defthm all-diverge-from-all-constraint
     (implies (and (all-diverge-from-all-hyps)
                   (memberp all-diverge-from-all-e1 (all-diverge-from-all-one))
                   (memberp all-diverge-from-all-e2 (all-diverge-from-all-two)))
@@ -543,7 +568,7 @@
                       all-diverge-from-all-e2))
     :rule-classes nil))
 
- ;; Proving that this constraint is sufficient is a little complicated.  We 
+ ;; Proving that this constraint is sufficient is a little complicated.  We
  ;; actually need two badguys!  dfa-badguy is a badguy for diverges-from-all,
  ;; and returns whichever element of x a diverges from.
 
@@ -575,7 +600,7 @@
                    (and (memberp (adfa-badguy x y) x)
                         (not (diverges-from-all (adfa-badguy x y) y))))
           :hints(("Goal" :in-theory (enable adfa-badguy
-                                            all-diverge-from-all 
+                                            all-diverge-from-all
                                             )))))
 
  ;; Now to prove our theorem, we need to set up e1 to be the member of x that
@@ -587,13 +612,13 @@
    (implies (all-diverge-from-all-hyps)
             (all-diverge-from-all (all-diverge-from-all-one)
                                   (all-diverge-from-all-two)))
-   :hints(("Goal" 
+   :hints(("Goal"
            :use ((:instance all-diverge-from-all-constraint
-                            (all-diverge-from-all-e1 
+                            (all-diverge-from-all-e1
                              (adfa-badguy (all-diverge-from-all-one)
                                           (all-diverge-from-all-two)))
                             (all-diverge-from-all-e2
-                             (dfa-badguy (adfa-badguy 
+                             (dfa-badguy (adfa-badguy
                                           (all-diverge-from-all-one)
                                           (all-diverge-from-all-two))
                                          (all-diverge-from-all-two))))))))
@@ -607,7 +632,7 @@
    :rule-classes (:pick-a-point
                   :driver all-diverge-from-all-by-membership-driver))
 )
-    
+
 
 ;; To get any use out of the strategy, we have to be able to reason about
 ;; membership in all-diverge-from-all.  The following are crucial lemmas that
@@ -654,7 +679,7 @@
 
 
 ;; We'll now show that all-diverge-from-all is commutative.  This is a pretty
-;; straightforward membership argument now.  I've left the original proofs in 
+;; straightforward membership argument now.  I've left the original proofs in
 ;; comments below so that you can see the improvement:
 ;;
 ;; ;bzo generalize the car to any memberp?
@@ -712,7 +737,7 @@
                 (memberp a y))
            (equal (all-diverge-from-all x y)
                   (not (consp x))))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable all-diverge-from-all-symmetric)
           :use (:instance all-diverge-from-all-symmetric
                           (x y) (y x)))))
@@ -726,7 +751,7 @@
   (equal (all-diverge-from-all (cons a x) y)
          (and (diverges-from-all a y)
               (all-diverge-from-all x y)))
-  :hints(("Goal"           
+  :hints(("Goal"
           :use (:instance all-diverge-from-all
                           (x (cons a x))
                           (y y)))))
@@ -735,7 +760,7 @@
   (equal (all-diverge-from-all x (cons a y))
          (and (diverges-from-all a x)
               (all-diverge-from-all x y)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable all-diverge-from-all-symmetric)
           :use ((:instance all-diverge-from-all-symmetric
                            (x (cons a y)) (y x))
@@ -804,7 +829,7 @@
 ;; ----------------------------------------------------------------------------
 ;;
 ;;                                   PART 3
-;; 
+;;
 ;;                           The All-Diverge Relation
 ;;
 ;; ----------------------------------------------------------------------------
@@ -851,7 +876,7 @@
             (if (memberp (car x) (cdr x))
                 (car x)
               (which? (cdr x))))))
- 
+
  (local (defthm lemma
           (implies (not (bag::unique x))
                    (and (memberp (which? x) x)
@@ -863,11 +888,11 @@
                         (not (diverge a b)))
                    (not (all-diverge x)))
           :hints(("Goal" :in-theory (enable all-diverge)))))
-                
+
  (defthm unique-when-all-diverge
    (implies (all-diverge x)
             (bag::unique x))
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (disable bag::memberp-of-remove-1-same)
            :use (:instance lemma2
                            (a (which? x))
@@ -882,7 +907,7 @@
 ;; to pick two "different" members of x.  Essentially, we would like to say
 ;; that (all-diverge x) is true exactly when:
 ;;
-;;   1.  (bag::unique x), and 
+;;   1.  (bag::unique x), and
 ;;   2.  Forall a,b in x with a != b, (diverge a b)
 ;;
 ;; Fortunately, we can capture these constraints with a properly crafted
@@ -908,7 +933,7 @@
                   (not (equal all-diverge-member-a all-diverge-member-b)))
              (diverge all-diverge-member-a all-diverge-member-b))
     :rule-classes nil))
-   
+
  (local (defund dfa-badguy (a x)
           (if (endp x)
               nil
@@ -932,8 +957,8 @@
  (local (defthmd adfa-badguy-works
           (implies (not (all-diverge x))
                    (and (memberp (adfa-badguy x) x)
-                        (not (diverges-from-all 
-                              (adfa-badguy x) 
+                        (not (diverges-from-all
+                              (adfa-badguy x)
                               (bag::remove-1 (adfa-badguy x) x)))))
           :hints(("Goal" :in-theory (enable adfa-badguy)))))
 
@@ -957,7 +982,7 @@
  ;; (memberp b (bag::remove-1 a x)), it must be the case that a != b and also
  ;; we know that b is a member of x.
  ;;
- ;; Well now, we are set up to show our contradiction.  We know that a and 
+ ;; Well now, we are set up to show our contradiction.  We know that a and
  ;; b are both members of x, they are not equal, and they do not diverge.  But
  ;; this is a direct violation of our second constraint!  QED.
 
@@ -965,15 +990,15 @@
    (implies (all-diverge-hyps)
             (all-diverge (all-diverge-term)))
    :rule-classes nil
-   :hints(("Goal" 
+   :hints(("Goal"
            :use ((:instance all-diverge-constraint-unique)
                  (:instance all-diverge-constraint-membership
-                            (all-diverge-member-a 
+                            (all-diverge-member-a
                              (adfa-badguy (all-diverge-term)))
-                            (all-diverge-member-b 
-                             (dfa-badguy 
+                            (all-diverge-member-b
+                             (dfa-badguy
                               (adfa-badguy (all-diverge-term))
-                              (bag::remove-1 
+                              (bag::remove-1
                                (adfa-badguy (all-diverge-term))
                                (all-diverge-term)))))
                  (:instance adfa-badguy-works
@@ -988,7 +1013,7 @@
             (all-diverge (all-diverge-term)))
    :rule-classes (:pick-a-point :driver all-diverge-by-membership-driver))
  )
-                  
+
 
 ;; To effectively use the all-diverge-by-membership approach, we need to be
 ;; able to know that arbitrary members of a list which satisfies all-diverge
@@ -1002,7 +1027,7 @@
            (equal (diverge a b)
                   (not (equal a b))))
   :hints(("Goal" :in-theory (enable all-diverge))))
-                
+
 
 ;; Given our membership strategy, we can now painlessly prove a number of nice
 ;; rewrite rules about all-diverge.
@@ -1079,5 +1104,5 @@
 ;;
 ;; (defthm all-diverge-implies-unequal-extensions
 ;;   (implies (all-diverge (list x y))
-;;            (not (equal (append x a) 
+;;            (not (equal (append x a)
 ;;                        (append y b)))))

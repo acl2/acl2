@@ -80,8 +80,6 @@
 (include-book "centaur/clex/example" :dir :system)
 (include-book "centaur/nrev/demo" :dir :system)
 
-(include-book "cgen/top" :dir :system)
-
 (include-book "centaur/defrstobj/defrstobj" :dir :system)
 
 (include-book "centaur/esim/stv/stv-top" :dir :system)
@@ -210,8 +208,19 @@
 (include-book "misc/simp" :dir :system)
 (include-book "misc/without-waterfall-parallelism" :dir :system)
 (include-book "misc/with-waterfall-parallelism" :dir :system)
+(include-book "misc/seq" :dir :system)
+(include-book "misc/seqw" :dir :system)
 
 (include-book "centaur/memoize/old/profile" :dir :system)
+(include-book "centaur/memoize/old/watch" :dir :system)
+
+; The following include-book causes a name conflict for set-equal, which is
+; defined both in arithmetic-5/lib/basic-ops/building-blocks.lisp and in
+; data-structures/set-defuns.lisp.  So for now, at least, it is commented out.
+; (include-book "data-structures/top" :dir :system)
+
+;Put ACL2s doc last, since ccg.lisp inclusion might cause problems -- harshrc
+(include-book "acl2s/doc" :dir :system)
 
 #||
 

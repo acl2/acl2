@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "GACC")
 
 ;(include-book "../lists/memberp")
@@ -24,7 +49,7 @@
            (xargs :measure (acl2-count k)))
   (if (zp k)
       nil
-    (cons (ifix base) 
+    (cons (ifix base)
           (addr-range (+ 1 (ifix base)) (1- k)))))
 
 ;consider disabling (:executable-counterpart addr-range) as we do for gacc::sblk?
@@ -185,7 +210,7 @@
   :hints (("Goal" :cases ((and (integerp size2) (integerp size1))
                           (and (not (integerp size2)) (integerp size1))
                           (and (integerp size2) (not (integerp size1)))
-                          
+
                           )
            :in-theory (enable ifix zp bag::subbagp-of-cons addr-range))))
 
@@ -246,7 +271,7 @@
 
 
 (encapsulate
- () 
+ ()
  (local (defthm disjoint-of-two-addr-ranges-helper
           (implies (integerp base2)
                    (equal (BAG::DISJOINT (ADDR-RANGE base1 size1) (ADDR-RANGE base2 size2))
@@ -303,7 +328,7 @@
 (encapsulate
  ()
  (local (defthm equal-of-two-addr-ranges-helper
-          (implies (and (not (zp size)) 
+          (implies (and (not (zp size))
                         (not (zp size2)))
                    (equal (EQUAL (ADDR-RANGE base size)
                                  (ADDR-RANGE base2 size2))
@@ -318,7 +343,7 @@
           (if (zp size)
               (zp size2)
             (if (zp size2)
-                nil 
+                nil
               (and (equal size size2)
                    (equal (ifix base)
                           (ifix base2))))))

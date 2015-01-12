@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 (include-book "ihs/ihs-lemmas" :dir :system)
@@ -19,19 +44,19 @@
   :hints (("Goal" :in-theory (enable logcdr))))
 
 (defthmd logcdr-of-zero
-  (equal (logcdr 0) 
+  (equal (logcdr 0)
          0)
   :hints (("goal" :in-theory (enable logcdr ifix))))
 
 (defthm logcdr-when-i-is-not-an-integerp
   (implies (not (integerp i))
-           (equal (logcdr i) 
+           (equal (logcdr i)
                   0))
   :hints (("goal" :in-theory (enable logcdr ifix))))
 
 ;more like this?
 (defthm logcdr-greater-than-0-rewrite
-  (equal (< 0 (logcdr x))        
+  (equal (< 0 (logcdr x))
          (and (integerp x)
               (<= 2 x))))
 
@@ -53,7 +78,7 @@
               (if (integerp x)
                   (unsigned-byte-p (1+ n) x)
                 t)))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (e/d (logcdr unsigned-byte-p ; expt
                                    EXPONENTS-ADD-UNRESTRICTED
                                    )
@@ -87,11 +112,11 @@
                   (<= n 0))
              (equal (logcdr (ash x n))
                     (ash x (1- n))))
-    :hints (("goal" :in-theory (enable 
-                                ash 
+    :hints (("goal" :in-theory (enable
+                                ash
                                 EXPONENTS-ADD-UNRESTRICTED
                                 )))))
-             
+
  (defthm logcdr-ash
    (implies (and (integerp n)
                  ;(integerp x)
@@ -146,19 +171,19 @@
            (equal (logcdr (expt 2 n))
                   (expt 2 (1- n))))
   :hints (("goal" :in-theory (enable logcdr))))
-           
+
 (defthm logcdr---expt
   (implies (and (integerp n)
                 (<= 0 n))
            (equal (logcdr (- (expt 2 n)))
-                  (if (equal n 0) 
-                      -1 
+                  (if (equal n 0)
+                      -1
                     (- (expt 2 (1- n))))))
   :hints (("goal" :in-theory (enable logcdr))))
 
 (defthm logcdr-+2
   (implies (integerp x)
-           (equal (logcdr (+ 2 x)) 
+           (equal (logcdr (+ 2 x))
                   (1+ (logcdr x))))
   :hints (("goal" :in-theory (enable logcdr))))
 
@@ -183,7 +208,7 @@
 (defthmd logcdr-*-1/2-expt
   (implies (and (syntaxp (quotep n))
                 (integerp (* n m)))
-           (equal (logcdr (* n m)) 
+           (equal (logcdr (* n m))
                   (floor (* n m) 2)))
   :hints (("goal" :in-theory (enable logcdr))))
 

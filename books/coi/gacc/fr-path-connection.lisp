@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 ;this is a version of tr-path-connection that uses fast memories instead of typed records.
@@ -17,7 +42,7 @@
 (include-book "../osets/extras")
 (include-book "../paths/path") ;don't use much of this
 
-              
+
 ;;
 ;; mypush (turn a record into a fast memory)
 ;;
@@ -29,7 +54,7 @@
     (gacc::wr (set::head keys)
               (g (set::head keys) r)
               (mypush-aux (set::tail keys) r size))))
-              
+
 (defund mypush (r size)
   (mypush-aux (set::rkeys r) r size))
 
@@ -60,7 +85,7 @@
              (loghead 8 (g a r))
            0))
   :hints (("Goal" :in-theory (enable mypush))))
-    
+
 (defthm memory-clr-of-new
   (equal (gacc::memory-clr a (mem::new size))
          (mem::new size))
@@ -97,7 +122,7 @@
    (if (set::empty rkeys)
        (list a rkeys r)
      (if (equal a (set::head (set::insert a rkeys)))
-         (list a rkeys r)  
+         (list a rkeys r)
        (my-ind a (set::tail rkeys) (s (set::head rkeys) (g (set::head rkeys) r) r))))))
 
 
@@ -215,7 +240,7 @@
   (equal (mypush-aux (set::insert key rkeys) (clr key r) size)
          (mypush-aux rkeys (clr key r) size))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-                 
+
 
 (defthm mypush-irrel
   (implies (not (set::in key rkeys))
@@ -228,13 +253,13 @@
   (equal (mypush-aux rkeys (clr a r) size)
          (mypush-aux (set::delete a rkeys) r size))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-        
+
 
 (defthm mypush-irrel2
   (implies (not (set::in key rkeys))
            (equal (mypush-aux rkeys (s key v r) size)
                   (mypush-aux rkeys r size)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors))))        
+  :hints (("Goal" :do-not '(generalize eliminate-destructors))))
 
 ;; (thm
 ;;  (equal (mypush-aux (set::insert a rkeys) (s a v r))
@@ -275,7 +300,7 @@
        (gacc::rd (set::head keys) tr)
        (mylift-aux (set::tail keys) tr))))
 
-;bzo 
+;bzo
 (defund mylift (m)
   (mylift-aux (mem::domain m) m))
 
@@ -319,7 +344,7 @@
 ;for dave
 (defthm g-of-mylift
   (equal (g a (mylift tr))
-         (if (set::in a (mem::domain; rkeys 
+         (if (set::in a (mem::domain; rkeys
                          tr))
              (loghead 8 (gacc::rd a tr))
            nil))
@@ -349,7 +374,7 @@
   (implies (EQUAL (LOGHEAD 8 V) 0)
            (equal (GACC::WR A V TR)
                   (gacc::memory-clr A TR))))
-          
+
 
 ;bzo improve CLR-OVER-CLR?
 
@@ -387,7 +412,7 @@
                   (set::delete (set::head s) (set::delete key s))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :expand ((set::delete key s)))))
-                 
+
 (defthm clr-of-mylift-aux
   (equal (clr key (mylift-aux rkeys tr))
          (mylift-aux (set::delete key rkeys) (gacc::memory-clr key tr)))
@@ -404,7 +429,7 @@
 
 (defun non-nil (x)
   (declare (xargs :guard t))
-  (not (null x))) 
+  (not (null x)))
 
 ;; ;sheesh even the guard has a guard...
 ;; (set::quantify-predicate (mem::address-p key mem) :arg-guard ((MEM::MEMORY-P MEM)))
@@ -415,7 +440,7 @@
        (not (equal 0 val))))
 
 (defun check-tr-entry (val)
-  (and ;(GACC::WF-USBP8 (cdr val)) 
+  (and ;(GACC::WF-USBP8 (cdr val))
    (equal nil (cdr val))
    (check-tr-val (car val))))
 
@@ -466,7 +491,7 @@
        (check-fr-keys (mem::domain tr) tr)))
 
 (defthm mylift-of-wr-1
-  (implies (and (good-memoryp tr) 
+  (implies (and (good-memoryp tr)
                 (not (EQUAL 0 (LOGHEAD 8 V))))
            (equal (mylift (gacc::wr a v tr))
                   (s a (val-fix v) (mylift tr))))
@@ -540,9 +565,9 @@
 
 ;skipping for now...
 ;; (defthm not-consp-g-of-cdr-but-consp-g
-;;   (IMPLIES (AND (NOT (CONSP (mem::load ;G 
+;;   (IMPLIES (AND (NOT (CONSP (mem::load ;G
 ;;                              A (CDR TR))))
-;;                 (CONSP (mem::load ;G 
+;;                 (CONSP (mem::load ;G
 ;;                         A TR))
 ;;                 (WFR TR) ;was wfr-weak
 ;;                 )
@@ -636,7 +661,7 @@
 ;;   (equal (mylift-aux rkeys (gacc::memory-clr a t))
 ;;          (mylift-aux (set::delete a rkeys) t))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-        
+
 
 (defthm rd-of-s-irrel
   (implies (not (equal key1 key2))
@@ -647,11 +672,11 @@
 
 (defthm mylift-irrel2
   (implies (not (set::in key rkeys))
-           (equal (mylift-aux rkeys (mem::store ;s 
+           (equal (mylift-aux rkeys (mem::store ;s
                                      key v tr))
                   (mylift-aux rkeys tr)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-         
+
 
 ;; (thm
 ;;  (IMPLIES (AND (WFR TR)
@@ -668,7 +693,7 @@
 ;;   (IMPLIES (and (CHECK-FR-KEYS keys TR)
 ;;                 (set::in a keys)
 ;;                 (consp tr))
-;;            (NOT (EQUAL (LOGHEAD 8 (CAR (mem::load ;G 
+;;            (NOT (EQUAL (LOGHEAD 8 (CAR (mem::load ;G
 ;;                                         A TR))) 0))))
 
 ;ttt
@@ -687,7 +712,7 @@
                   nil
                   ))
   :hints (("Goal" :in-theory (enable GOOD-MEMORYP
-                                     MEM::LOAD 
+                                     MEM::LOAD
                                      MEM::MEMORY-P
                                      MEM::|_BAD-MEMORY-P|
                                      MEM::SIZE
@@ -710,7 +735,7 @@
                   nil))
   :hints (("Goal" :in-theory (enable MEM::DOMAIN
                                      GOOD-MEMORYP
-                                     MEM::LOAD 
+                                     MEM::LOAD
                                      MEM::MEMORY-P
                                      MEM::|_BAD-MEMORY-P|
                                      MEM::SIZE
@@ -738,10 +763,10 @@
                 (set::subset (mem::domain r) keys)
                 (set::in a (mem::domain r)))
            (check-fr-key a r)))
-          
+
 
 (defthm mylift-of-wr-0-case
-  (implies (and (wf-fr tr) ;(wfr tr) 
+  (implies (and (wf-fr tr) ;(wfr tr)
                 (good-memoryp tr)
                 (equal 0 (loghead 8 v)))
            (equal (mylift (gacc::wr a v tr))
@@ -759,7 +784,7 @@
                             check-fr-keys
                             check-fr-key
                             GACC::MEMORY-CLR
-                            ) 
+                            )
                            (WR-OF-0-IS-CLR
                             LOGHEAD*-BETTER ;bzo why isn't this disabled?
                             LOGCAR-LOGCDR-ELIM
@@ -770,7 +795,7 @@
 ;bzo can we improve this?
 ;for dave
 (defthm mylift-of-wr
-  (implies (and; (good-memoryp tr) 
+  (implies (and; (good-memoryp tr)
                 (wf-fr tr)
                 ;v
                 )
@@ -780,7 +805,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :use ((:instance mylift-of-wr-0-case)
                  (:instance mylift-of-wr-1))
-           :in-theory (disable MYLIFT 
+           :in-theory (disable MYLIFT
                                g-of-mylift
                                ))))
 
@@ -791,12 +816,12 @@
 ;bzo move
 (defthm load-of-store-redux
   (equal (mem::load a (mem::store b v r))
-         (if (equal a b) 
-             v 
+         (if (equal a b)
+             v
            (mem::load a r))))
 
 ;bzo really what's checked by CHECK-FR-KEYS is the value -rename
-       
+
 (defthm check-fr-keys-of-store
   (implies (and (check-fr-keys keys tr)
                 (or (null v)
@@ -805,13 +830,13 @@
            (check-fr-keys keys (mem::store a v tr)))
   :hints (("Goal" :in-theory (enable check-fr-keys check-fr-key)
            :do-not '(generalize eliminate-destructors))))
-  
+
 (defthm check-fr-keys-of-s-irrel
   (implies (not (set::in a keys))
            (equal (check-fr-keys keys (mem::store a nil tr))
                   (check-fr-keys keys tr)))
   :hints (("Goal" :in-theory (enable check-fr-keys check-fr-key))))
-                 
+
 (defthm delete-when-would-be-head
   (implies (equal a (set::head (set::insert a keys)))
            (equal (set::delete a keys)
@@ -864,16 +889,16 @@
 
 ;ttt
 ;; (defthm consp-g-when-g-and-check-fr-keys
-;;   (implies (and (check-fr-keys (mem::domain ;rkeys 
+;;   (implies (and (check-fr-keys (mem::domain ;rkeys
 ;;                                 tr) tr)
-;;                 (mem::load ;g 
+;;                 (mem::load ;g
 ;;                  a tr) ;is not nil
-;;                 (good-memoryp ;;wfr 
+;;                 (good-memoryp ;;wfr
 ;;                  tr)
 ;;                 )
 ;;            (consp (mem::load ;g
 ;;                    a tr)))
-;;   :hints (("Goal" :use (:instance consp-g-when-in-keys-and-check-fr-keys (keys (mem::domain ;rkeys 
+;;   :hints (("Goal" :use (:instance consp-g-when-in-keys-and-check-fr-keys (keys (mem::domain ;rkeys
 ;;                                                                                 tr)))
 ;;            :in-theory (e/d (check-fr-keys) (consp-g-when-in-keys-and-check-fr-keys)))))
 
@@ -893,7 +918,7 @@
 ;;                               WFR
 ;;                               WFKEY
 ;;                               ))))
- 
+
 
 (defthm use-check-fr-key-1
   (implies (check-fr-key a tr)
@@ -987,13 +1012,13 @@
 ;;            (set::all<non-nil> (mem::domain ;rkeys
 ;;                                tr)))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-;;            :in-theory (enable ;wfr 
+;;            :in-theory (enable ;wfr
 ;;                        wfkeyed wfkey rkeys))))
 
 ;trying without...
 ;; (defthm all-non-nil-of-rkeys2
 ;;   (implies (wf-fr tr)
-;;            (set::all<non-nil> (mem::domain ;RKEYS 
+;;            (set::all<non-nil> (mem::domain ;RKEYS
 ;;                                TR)))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;;            :in-theory (enable wfr WFKEYED))))
@@ -1010,7 +1035,7 @@
    (if (or (not (set::setp keys))
            (set::empty keys))
        (list keys tr)
-     (ind (set::tail keys) 
+     (ind (set::tail keys)
           (GACC::MEMORY-CLR (SET::HEAD (mem::domain ;;RKEYS
                                         TR)) tr) ;
     ;(gacc::wr (set::head keys) (gacc::rd (set::head keys) tr) tr)
@@ -1023,9 +1048,9 @@
                 )
            (equal (mem::domain ;;rkeys
                    (gacc::memory-clr a tr))
-                  (if (gacc::wf-usbp8 (mem::load ;g 
+                  (if (gacc::wf-usbp8 (mem::load ;g
                                        a tr))
-                      (if (cdr (mem::load ;g 
+                      (if (cdr (mem::load ;g
                                 a tr))
                           (set::insert a (mem::domain ;;rkeys
                                           tr))
@@ -1105,7 +1130,7 @@
 ;;             (wf-fr tr)
 ;;                 ;tr ;need to say something stronger now to imply the domain isn't empty...
 ;;                 )
-;;            (wfkey (set::head (mem::domain ;rkeys 
+;;            (wfkey (set::head (mem::domain ;rkeys
 ;;                               tr))))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;;            :in-theory (e/d (;wfr rkeys wfkey wfkeyed
@@ -1163,14 +1188,14 @@
                                           ))
           ("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable ;MEM::|_MEMORY-P|
-                       
+
                        MEM::MEM-TREE-DOMAIN
-                       mem::domain 
+                       mem::domain
                        mem::new
                        good-memoryp
                        MEM::MEMORY-P
 ;MEM::SIZE
-                              
+
                        MEM::|_MEMORY-P|
                        MEM::|_MEMORY-FIX|
                        MEM::|_MEMORY-SIZE|
@@ -1188,9 +1213,9 @@
   (implies (good-memoryp fr)
            (equal (mem::size (gacc::memory-clr a fr))
                   (mem::size fr)))
-  :hints (("Goal" :in-theory (e/d (GACC::MEMORY-CLR 
+  :hints (("Goal" :in-theory (e/d (GACC::MEMORY-CLR
                                    GACC::WR
-                                   GOOD-MEMORYP) 
+                                   GOOD-MEMORYP)
                                   (WR-OF-0-IS-CLR)))))
 
 (defthm wf-fr-of-memory-clr
@@ -1260,10 +1285,10 @@
                   fr))
   :hints (("subgoal *1/1" :use (:instance empty-domain-means))
           ("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d ( ;wfr 
+           :in-theory (e/d ( ;wfr
                             CHECK-FR-KEY
                             CHECK-FR-KEYS
-                            mypush-aux mylift-aux) 
+                            mypush-aux mylift-aux)
                            ( ;gacc::wr==r!
                             ))
            :induct (ind rkeys fr)
@@ -1288,7 +1313,7 @@
   (if (set::empty keys)
       nil ;the empty record
     (s ;mem::store
-     (set::head keys) 
+     (set::head keys)
        (val-fix (g (set::head keys) r))
        (typed-fix-aux (set::tail keys) r))))
 
@@ -1310,12 +1335,12 @@
                                     A TR))
                               (SET::INSERT A (mem::domain ;RKEYS
                                               TR))
-                              (SET::DELETE A (mem::domain ;RKEYS 
+                              (SET::DELETE A (mem::domain ;RKEYS
                                               TR)))
                           (SET::INSERT A (mem::domain ;RKEYS
                                           TR)))
                       (IF (GACC::USBP8-ZP V)
-                          (mem::domain ; RKEYS 
+                          (mem::domain ; RKEYS
                            TR)
                           (SET::INSERT A (mem::domain ;RKEYS
                                           TR))))))
@@ -1356,7 +1381,7 @@
    (if (or (not (set::setp keys))
            (set::empty keys))
        (list keys r)
-     (ind3 (set::tail keys) 
+     (ind3 (set::tail keys)
            (CLR (SET::HEAD (SET::RKEYS R)) r) ;
     ;(gacc::wr (set::head keys) (gacc::rd (set::head keys) tr) tr)
            ))))
@@ -1387,7 +1412,7 @@
 ;;                                  ) (S-PRESERVES-WFR)))))
 
 
-(defthmd g-when-not-g-of-cdr 
+(defthmd g-when-not-g-of-cdr
   (implies (and (not (g key (cdr r)))
                 (wfr r)
                 )
@@ -1444,7 +1469,7 @@
            (equal (mem::load ;g
                    key (mypush-aux keys r size))
                   nil))
-  :hints (("Goal" :in-theory (e/d (GACC::WR) 
+  :hints (("Goal" :in-theory (e/d (GACC::WR)
                                   (NOT-IN-DOMAIN-MEANS-LOAD-IS-NIL
                                    NOT-CHECK-FR-KEYS-1))
            :do-not '(generalize eliminate-destructors))))
@@ -1491,7 +1516,7 @@
 ;                (set::all<non-nil> keys) ;drop?
                 (posp size)
                 (equal keys (set::rkeys r)))
-           (equal (mylift-aux (mem::domain ;rkeys 
+           (equal (mylift-aux (mem::domain ;rkeys
                                (mypush-aux keys r size))
                               (mypush-aux keys r size))
                   (typed-fix-aux keys r)))
@@ -1526,7 +1551,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;          :induct (ind3 keys r)
            )))
-          
+
 (defthm typed-fix-does-nothing-helper
   (implies (and (all-vals-okay-aux keys r)
                 (equal keys (set::rkeys r))
@@ -1543,7 +1568,7 @@
   (declare (xargs :verify-guards nil))
   (and (wfr r)
        (all-vals-okay-aux (set::rkeys r) r)))
-  
+
 ;for Dave
 ;bzo is this stuff common to both tr- and fr-?
 (defthm typed-fix-does-nothing
@@ -1551,17 +1576,17 @@
            (equal (typed-fix r)
                   r))
   :hints (("Goal" :in-theory (enable typed-fix well-typed-record)
-           :do-not '(generalize eliminate-destructors))))          
+           :do-not '(generalize eliminate-destructors))))
 
 (defthm good-memoryp-implies-non-nil-hack
   (implies (not x)
            (not (acl2::good-memoryp x))))
-          
+
 (defthm wr-non-nil-when-good-memoryp
   (implies (acl2::good-memoryp m)
            (GACC::WR a v m))
   :otf-flg t
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance acl2::good-memoryp-of-store
                             (acl2::a a)
                             (acl2::v (CDR (MEM::LOAD A M)))
@@ -1576,7 +1601,7 @@
                             (acl2::v (CONS (ACL2::LOGHEAD 8 V)
                                            (CDR (MEM::LOAD A M))))
                             (acl2::mem m)))
-                          
+
            :in-theory (e/d (GACC::WR) (acl2::good-memoryp-of-store)))))
 ;; (thm
 ;;  (ACL2::MYPUSH-AUX keys (set::rkeys r) size))
@@ -1636,7 +1661,7 @@
 (defthm clr-of-mylift
   (implies (good-memoryp m)
            (equal (clr key (acl2::mylift m))
-                  (acl2::mylift ( ;gacc::memory-clr 
+                  (acl2::mylift ( ;gacc::memory-clr
                                  mem::clear
                                  key m))))
   :hints (("Goal" :in-theory (enable acl2::mylift))))
@@ -1726,7 +1751,7 @@
   :hints (("Goal" :use (:instance wf-fr-of-MYPUSH-AUX (keys2 (set::rkeys R)))
            :in-theory (e/d (mypush wf-fr) (wf-fr-of-MYPUSH-AUX)))))
 
-;bzo or put this elsewhere and don't include paths for this book (there's not much pathy stuff here?)          
+;bzo or put this elsewhere and don't include paths for this book (there's not much pathy stuff here?)
 (defthm gp-of-mylift-singleton
   (equal (path::gp (list a) (acl2::mylift tr))
          (if (set::in a (mem::domain tr))
@@ -1738,7 +1763,7 @@
 (defthm well-typed-record-of-clrp-singleton
   (implies (acl2::well-typed-record m)
            (acl2::well-typed-record (path::clrp (list key) m)))
-  :hints (("Goal" :in-theory (e/d (path::clrp-singleton-becomes-clr) 
+  :hints (("Goal" :in-theory (e/d (path::clrp-singleton-becomes-clr)
                                   (path::clr-becomes-clrp-singleton
                                    )))))
 
@@ -1746,7 +1771,7 @@
   (implies (acl2::good-memoryp m)
            (equal (path::clrp (list key) (acl2::mylift m))
                   (acl2::mylift (mem::clear key m))))
-  :hints (("Goal" :in-theory (e/d (path::clrp-singleton-becomes-clr) 
+  :hints (("Goal" :in-theory (e/d (path::clrp-singleton-becomes-clr)
                                   (path::SP==R ;bzo looped
                                    path::clr-becomes-clrp-singleton)))))
 
@@ -1852,7 +1877,7 @@
   (implies (and (set::in acl2::key keys)
                 (acl2::check-fr-keys keys acl2::m))
            (not (cdr (mem::load acl2::key acl2::m))))
-  :hints (("Goal" :in-theory (enable acl2::check-fr-keys)))) 
+  :hints (("Goal" :in-theory (enable acl2::check-fr-keys))))
 
 (defthm not-cdr-load
  (implies (ACL2::WF-FR ACL2::M)
@@ -1875,7 +1900,7 @@
                            (acl2::key ACL2::KEY)
                            (acl2::keys (MEM::DOMAIN ACL2::M))
                            (acl2::tr acl2::m))
-                                  
+
            :in-theory (e/d (acl2::mylift) (acl2::mylift-irrel)))))
 
 (in-theory (disable acl2::clr-of-mylift))

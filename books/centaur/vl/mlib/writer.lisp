@@ -482,84 +482,6 @@ displays.  The module browser's web pages are responsible for defining the
   :inline t
   (vl-pp-atomguts (vl-atom->guts x)))
 
-(with-output :off (event)
-  (define vl-op-string ((x vl-op-p))
-    :returns (str stringp :rule-classes :type-prescription)
-    (case (vl-op-fix x)
-      (:vl-unary-bitnot "~")
-      (:vl-binary-bitand "&")
-      (:vl-binary-bitor "|")
-
-      (:vl-unary-plus "+")
-      (:vl-unary-minus "-")
-      (:vl-unary-lognot "!")
-      (:vl-unary-bitand "&")
-      (:vl-unary-nand "~&")
-      (:vl-unary-bitor "|")
-      (:vl-unary-nor "~|")
-      (:vl-unary-xor "^")
-      (:vl-unary-xnor "~^")
-
-      (:vl-unary-preinc "++")
-      (:vl-unary-postinc "++")
-      (:vl-unary-predec "++")
-      (:vl-unary-postdec "++")
-
-      (:vl-binary-plus "+")
-      (:vl-binary-minus "-")
-      (:vl-binary-times "*")
-      (:vl-binary-div "/")
-      (:vl-binary-rem "%")
-      (:vl-binary-eq "==")
-      (:vl-binary-neq "!=")
-      (:vl-binary-ceq "===")
-      (:vl-binary-cne "!==")
-      (:vl-binary-wildeq "==?")
-      (:vl-binary-wildneq "!=?")
-      (:vl-binary-logand "&&")
-      (:vl-binary-logor "||")
-      (:vl-binary-power "**")
-      (:vl-binary-lt "<")
-      (:vl-binary-lte "<=")
-      (:vl-binary-gt ">")
-      (:vl-binary-gte ">=")
-      (:vl-binary-xor "^")
-      (:vl-binary-xnor "~^")
-      (:vl-binary-shr ">>")
-      (:vl-binary-shl "<<")
-      (:vl-binary-ashr ">>>")
-      (:vl-binary-ashl "<<<")
-
-      (:vl-binary-assign      "=")
-      (:vl-binary-plusassign  "+=")
-      (:vl-binary-minusassign "-=")
-      (:vl-binary-timesassign "*=")
-      (:vl-binary-divassign   "/=")
-      (:vl-binary-remassign   "%=")
-      (:vl-binary-andassign   "&=")
-      (:vl-binary-orassign    "|=")
-      (:vl-binary-xorassign   "^=")
-      (:vl-binary-shlassign   "<<=")
-      (:vl-binary-shrassign   ">>=")
-      (:vl-binary-ashlassign  "<<<=")
-      (:vl-binary-ashrassign  ">>>=")
-
-      (:vl-implies "->")
-      (:vl-equiv "<->")
-
-      (:vl-partselect-colon ":")
-      (:vl-partselect-pluscolon "+:")
-      (:vl-partselect-minuscolon "-:")
-
-      (:vl-select-colon ":")
-      (:vl-select-pluscolon "+:")
-      (:vl-select-minuscolon "-:")
-
-      (:vl-scope "::")
-
-      (t
-       (or (raise "Bad operator: ~x0.~%" x) "")))))
-
 (defmacro vl-ops-precedence-table ()
   ''(;; These aren't real operators as far as the precedence rules are
      ;; concerned, but they need to bind even more tightly than +, -, etc.
@@ -710,7 +632,7 @@ displays.  The module browser's web pages are responsible for defining the
                       (implies (and (member k y)
                                     (set-equiv x y))
                                (member k x))))
-             (local (in-theory (e/d (vl-op-fix vl-op-p)
+             (local (in-theory (e/d (vl-op-fix vl-op-p vl-ops-table)
                                     (acl2::hons-assoc-equal-of-cons
                                      acl2::member-of-cons
                                      acl2::member-when-atom)))))
@@ -721,6 +643,15 @@ displays.  The module browser's web pages are responsible for defining the
   (more-returns
    (precedence (unsigned-byte-p 8 precedence)
                :name byte-p-of-vl-op-precedence)))
+
+(define vl-op-string ((x vl-op-p))
+  :returns (string stringp :rule-classes :type-prescription)
+  :inline t
+  (b* ((str (vl-op-text x))
+       ((unless str)
+        (raise "Bad operator: ~x0~%" x)
+        ""))
+    str))
 
 (define vl-op-precedence-< ((x vl-op-p) (y vl-op-p))
   :inline t
@@ -1033,7 +964,11 @@ its arguments, if necessary.</p>"
                     (vl-ps-seq (vl-pp-expr (first args))
                                (vl-print "[")
                                (vl-pp-expr (second args))
-                               (vl-print-str (vl-op-string op))
+                               (vl-print-str
+                                (case op
+                                  ((:vl-partselect-colon :vl-select-colon)           ":")
+                                  ((:vl-partselect-pluscolon :vl-select-pluscolon)   "+:")
+                                  ((:vl-partselect-minuscolon :vl-select-minuscolon) "-:")))
                                (vl-pp-expr (third args))
                                (vl-print "]")))))
 

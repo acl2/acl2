@@ -8173,43 +8173,6 @@
       (wrld4 (update-w big-mutrec
                        (putprop-x-lst2-unless names 'split-types-term
                                               split-types-terms *t* wrld3)))
-
-; Rockwell Addition:  To save time, the nu-rewriter doesn't look at
-; functions unless they contain nu-rewrite targets, as defined in
-; rewrite.lisp.  Here is where I store the property that says whether a
-; function is a target.
-
-      (wrld5 (update-w
-              big-mutrec
-              (cond ((eq (car names) 'NTH)
-                     (putprop 'nth 'nth-update-rewriter-targetp
-                              t wrld4))
-                    ((getprop (car names) 'recursivep nil
-                              'current-acl2-world wrld4)
-
-; Nth-update-rewriter does not go into recursive functions.  We could consider
-; redoing this computation when installing a new definition rule, as well as
-; the putprop below, but that's a heuristic decision that doesn't seem to be so
-; important.
-
-                     wrld4)
-                    ((nth-update-rewriter-targetp (car bodies) wrld4)
-
-; This precomputation of whether the body of the function is a
-; potential target for nth-update-rewriter is insensitive to whether
-; the functions being seen are disabled.  If the function being
-; defined calls a non-recursive function that uses NTH, then this
-; function is marked as being a target.  If later that subroutine is
-; disabled, then nth-update-rewriter will not go into it and this
-; function may no longer really be a potential target.  But if we do
-; not ``memoize'' the computation this way then it may be
-; exponentially slow, going repeatedly into large bodies called
-; more than one time in a function.
-
-                     (putprop (car names)
-                              'nth-update-rewriter-targetp
-                              t wrld4))
-                    (t wrld4))))
       #+:non-standard-analysis
       (assumep
        (value (or (eq (ld-skip-proofsp state) 'include-book)
@@ -8220,7 +8183,7 @@
                       (verify-valid-std-usage names arglists bodies
                                               std-hints otf-flg
                                               (caddr tuple)
-                                              ctx ens wrld5 state)
+                                              ctx ens wrld4 state)
                     (value (cons col (caddr tuple)))))
       #+:non-standard-analysis
       (col (value (car col/ttree1)))
@@ -8229,40 +8192,40 @@
               #-:non-standard-analysis
               (value (caddr tuple))))
      (mv-let
-      (wrld6 ttree2)
+      (wrld5 ttree2)
       (putprop-body-lst names arglists bodies normalizeps
                         (getprop (car names) 'recursivep nil
-                                 'current-acl2-world wrld5)
-                        (make-controller-alist names wrld5)
+                                 'current-acl2-world wrld4)
+                        (make-controller-alist names wrld4)
                         #+:non-standard-analysis std-p
-                        ens wrld5 wrld5 nil)
+                        ens wrld4 wrld4 nil)
       (er-progn
-       (update-w big-mutrec wrld6)
+       (update-w big-mutrec wrld5)
        (mv-let
-        (wrld7 ttree2 state)
+        (wrld6 ttree2 state)
         (putprop-type-prescription-lst names
                                        subversive-p
                                        (fn-rune-nume (car names)
-                                                     t nil wrld6)
-                                       ens wrld6 ttree2 state)
+                                                     t nil wrld5)
+                                       ens wrld5 ttree2 state)
         (er-progn
-         (update-w big-mutrec wrld7)
+         (update-w big-mutrec wrld6)
          (er-let*
-          ((wrld8 (update-w big-mutrec
-                            (putprop-level-no-lst names wrld7)))
-           (wrld9 (update-w big-mutrec
+          ((wrld7 (update-w big-mutrec
+                            (putprop-level-no-lst names wrld6)))
+           (wrld8 (update-w big-mutrec
                             (putprop-primitive-recursive-defunp-lst
-                             names wrld8)))
-           (wrld9a (update-w big-mutrec
-                             (putprop-hereditarily-constrained-fnnames-lst
-                              names bodies wrld9)))
+                             names wrld7)))
+           (wrld9 (update-w big-mutrec
+                            (putprop-hereditarily-constrained-fnnames-lst
+                             names bodies wrld8)))
            (wrld10 (update-w big-mutrec
                              (put-invariant-risk
                               names
                               bodies
                               non-executablep
                               (update-doc-database-lst names docs pairs
-                                                       wrld9a))))
+                                                       wrld9))))
            (wrld11 (update-w big-mutrec
                              (putprop-x-lst1
                               names 'pequivs nil

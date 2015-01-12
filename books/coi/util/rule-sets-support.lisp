@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 
 (in-package "RULE-SETS")
 
@@ -17,7 +42,7 @@
   (equal (true-listp (append x y))
          (true-listp y)))
 
-(defun wf-rule-list (list) 
+(defun wf-rule-list (list)
   (declare (type t list))
   (true-listp list))
 
@@ -84,7 +109,7 @@
 ;; ===================================================================
 
 (defun wf-set-ref-list (list)
-  (declare (type t list)) 
+  (declare (type t list))
   (if (consp list)
       (and (wf-set-ref (car list))
            (wf-set-ref-list (cdr list)))
@@ -150,7 +175,7 @@
        (wf-rule-list (omit-rules entry))
        (wf-set-ref-list (include-sets entry))
        (wf-set-ref-list (omit-sets entry))))
-       
+
 (defthm wf-version-entry-implications
   (implies
    (wf-version-entry entry)
@@ -171,8 +196,8 @@
         (wf-set-ref-list (include-sets entry))
         (wf-set-ref-list (omit-sets entry)))
    (wf-version-entry entry))
-  :rule-classes (:rewrite 
-                 (:forward-chaining 
+  :rule-classes (:rewrite
+                 (:forward-chaining
                   :trigger-terms
                   ((wf-version-entry entry)))))
 
@@ -184,8 +209,8 @@
 
 (defthm version-entry-is-weak-version-entry
   (weak-version-entry (version-entry versi0n include-rules omit-rules include-sets omit-sets))
-  :rule-classes ((:forward-chaining 
-                  :trigger-terms 
+  :rule-classes ((:forward-chaining
+                  :trigger-terms
                   ((version-entry versi0n include-rules omit-rules include-sets omit-sets)))))
 
 
@@ -210,14 +235,14 @@
         (wf-set-ref-list include-sets)
         (wf-set-ref-list omit-sets))
    (wf-version-entry (version-entry versi0n include-rules omit-rules include-sets omit-sets)))
-  :rule-classes ((:forward-chaining 
-                  :trigger-terms 
+  :rule-classes ((:forward-chaining
+                  :trigger-terms
                   ((version-entry versi0n include-rules omit-rules include-sets omit-sets)))))
 
 (in-theory (disable wf-version-entry weak-version-entry version-entry))
 (in-theory (disable versi0n include-rules omit-rules include-sets omit-sets))
 
-(defmacro new-version-entry (&key 
+(defmacro new-version-entry (&key
                              (version 'nil)
                              (include-rules 'nil)
                              (omit-rules 'nil)
@@ -225,7 +250,7 @@
                              (omit-sets 'nil))
   `(version-entry ,version ,include-rules ,omit-rules ,include-sets ,omit-sets))
 
-(defmacro update-version-entry (set &key 
+(defmacro update-version-entry (set &key
                                     (version 'nil)
                                     (include-rules 'nil)
                                     (omit-rules 'nil)
@@ -273,14 +298,14 @@
           (car list)
         (get-version-entry set (cdr list)))
     (new-version-entry :version set)))
- 
+
 (defthm wf-version-entry-get-version-entry
   (implies
    (and
     (wf-version-list list)
     (eqlablep set))
    (wf-version-entry (get-version-entry set list)))
-  :rule-classes (:rewrite 
+  :rule-classes (:rewrite
                  (:forward-chaining :trigger-terms
                                     ((get-version-entry set list)))))
 
@@ -300,7 +325,7 @@
     (wf-version-entry entry)
     (wf-version-list list))
    (wf-version-list (set-version-entry set entry list)))
-  :rule-classes (:rewrite 
+  :rule-classes (:rewrite
                  (:forward-chaining :trigger-terms
                                     ((set-version-entry set entry list)))))
 
@@ -339,7 +364,7 @@
        (eqlablep (set-name entry))
        (eqlablep (default-set-version entry))
        (wf-version-list (version-list entry))))
-       
+
 (defthm wf-rule-set-entry-implications
   (implies
    (wf-rule-set-entry entry)
@@ -356,8 +381,8 @@
         (eqlablep (default-set-version entry))
        (wf-version-list (version-list entry)))
    (wf-rule-set-entry entry))
-  :rule-classes (:rewrite 
-                 (:forward-chaining 
+  :rule-classes (:rewrite
+                 (:forward-chaining
                   :trigger-terms
                   ((wf-rule-set-entry entry)))))
 
@@ -368,8 +393,8 @@
 
 (defthm rule-set-entry-is-weak-rule-set-entry
   (weak-rule-set-entry (rule-set-entry set-name default-set-version version-list))
-  :rule-classes ((:forward-chaining 
-                  :trigger-terms 
+  :rule-classes ((:forward-chaining
+                  :trigger-terms
                   ((rule-set-entry set-name default-set-version version-list)))))
 
 
@@ -388,7 +413,7 @@
         (eqlablep default-set-version)
         (wf-version-list version-list))
    (wf-rule-set-entry (rule-set-entry set-name default-set-version version-list)))
-  :rule-classes ((:forward-chaining :trigger-terms 
+  :rule-classes ((:forward-chaining :trigger-terms
                                     ((rule-set-entry set-name default-set-version version-list)))))
 
 (in-theory (disable wf-rule-set-entry weak-rule-set-entry rule-set-entry))
@@ -399,7 +424,7 @@
                                    (version-list 'nil))
   `(rule-set-entry ,set-name ,default-set-version ,version-list))
 
-(defmacro update-rule-set-entry (set &key 
+(defmacro update-rule-set-entry (set &key
                                      (set-name 'nil)
                                      (default-set-version 'nil)
                                      (version-list 'nil))
@@ -443,14 +468,14 @@
           (car list)
         (get-rule-set-entry set (cdr list)))
     (new-rule-set-entry :set-name set)))
- 
+
 (defthm wf-rule-set-entry-get-rule-set-entry
   (implies
    (and
     (wf-rule-set-list list)
     (eqlablep set))
    (wf-rule-set-entry (get-rule-set-entry set list)))
-  :rule-classes (:rewrite 
+  :rule-classes (:rewrite
                  (:forward-chaining :trigger-terms
                                     ((get-rule-set-entry set list)))))
 
@@ -470,7 +495,7 @@
     (wf-rule-set-entry entry)
     (wf-rule-set-list list))
    (wf-rule-set-list (set-rule-set-entry set entry list)))
-  :rule-classes (:rewrite 
+  :rule-classes (:rewrite
                  (:forward-chaining :trigger-terms
                                     ((set-rule-set-entry set entry list)))))
 
@@ -539,7 +564,7 @@
 
 (defthm rule-set-is-weak-rule-set
   (weak-rule-set (rule-set default-library default-version rule-set-list))
-  :rule-classes ((:forward-chaining :trigger-terms 
+  :rule-classes ((:forward-chaining :trigger-terms
                                     ((rule-set default-library default-version rule-set-list)))))
 
 (defthm rule-set-accessor-of-constructor
@@ -557,7 +582,7 @@
         (eqlablep default-version)
         (wf-rule-set-list rule-set-list))
    (wf-rule-set (rule-set default-library default-version rule-set-list)))
-  :rule-classes ((:forward-chaining :trigger-terms 
+  :rule-classes ((:forward-chaining :trigger-terms
                                     ((rule-set default-library default-version rule-set-list)))))
 
 (in-theory (disable wf-rule-set weak-rule-set rule-set))
@@ -568,7 +593,7 @@
                              (rule-set-list   'nil))
   `(rule-set ,default-library ,default-version ,rule-set-list))
 
-(defmacro update-rule-set (set &key 
+(defmacro update-rule-set (set &key
                                (default-library 'nil)
                                (default-version 'nil)
                                (rule-set-list 'nil))
@@ -609,7 +634,7 @@
 	(and (ref-exists ref rule-set)
 	     (ref-set-exists (cdr list) rule-set)))
     t))
-  
+
 ;; ===================================================================
 ;; add-rules-to-ref-in-rule-set
 ;; ===================================================================
@@ -629,9 +654,9 @@
 	 (version        (if (consp ref) (cdr ref) (default-set-version rule-set-entry)))
 	 (version-entry  (get-version-entry version version-list))
 	 (version-entry  (update-version-entry version-entry
-					       :include-rules (append include-rules 
+					       :include-rules (append include-rules
 								      (include-rules version-entry))
-					       :omit-rules (append omit-rules 
+					       :omit-rules (append omit-rules
 								   (omit-rules version-entry))))
 	 (version-list   (set-version-entry version version-entry version-list))
 	 (rule-set-entry (update-rule-set-entry rule-set-entry
@@ -715,9 +740,9 @@
          (version        (if (consp ref) (cdr ref) (default-set-version rule-set-entry)))
          (version-entry  (get-version-entry version version-list))
          (version-entry  (update-version-entry version-entry
-                                               :include-sets (append include-sets 
+                                               :include-sets (append include-sets
                                                                       (include-sets version-entry))
-                                               :omit-sets (append omit-sets 
+                                               :omit-sets (append omit-sets
                                                                    (omit-sets version-entry))))
          (version-list   (set-version-entry version version-entry version-list))
          (rule-set-entry (update-rule-set-entry rule-set-entry
@@ -795,7 +820,7 @@
 
 ;; ===================================================================
 ;; d/e list:
-;; 
+;;
 ;;   A list containing pairs of lists.  The first list in a given pair
 ;; is the disable set, the second is an enable set.
 ;;
@@ -823,7 +848,7 @@
 ;; ===================================================================
 
 (mutual-recursion
- 
+
  (defun ref-list-to-disable (list rule-set disable)
    (if (consp list)
        (let ((disable (ref-to-disable (car list) rule-set disable)))
@@ -842,7 +867,7 @@
           ;;
           (disable        (append (include-rules version-entry) disable)))
      (ref-list-to-disable (include-sets version-entry) rule-set disable)))
-   
+
  (defun ref-list-to-de (list rule-set res)
    (declare (xargs :mode :program))
    (if (consp list)
@@ -872,7 +897,7 @@
 	  (res            (cons (list (ref-list-to-disable (omit-sets version-entry) rule-set nil))
 				res)))
      (ref-list-to-de (include-sets version-entry) rule-set res)))
- 
+
  )
 
 (defun define-new-set (ref extends omits rule-set)
@@ -964,7 +989,7 @@
          t world))
     (if (equal theory :here) (current-theory :here) (acl2::RUNIC-THEORY theory WORLD))))
 
-#| 
+#|
 
   o First, implement the exising rule set infrastructure with this as
 an underpinning.
@@ -988,7 +1013,7 @@ an underpinning.
           (error "Cannot Redefine"))
       (cons (cons new old) list))))
 
-;; If we need to change "active" versions, 
+;; If we need to change "active" versions,
 ;; - back out of the current version
 ;; - enstate the new version
 
@@ -1012,9 +1037,9 @@ an underpinning.
 
 ;;
 ;; Perhaps class relations are established only during definition.
-;; 
+;;
 
-(new-rule-set name 
+(new-rule-set name
               :extends ..
               :omits ..)
 
@@ -1025,4 +1050,3 @@ an underpinning.
 :omit-sets (p d q)
 
 |#
-

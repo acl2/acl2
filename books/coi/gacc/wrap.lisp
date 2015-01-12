@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "GACC")
 
 ;A book about wrapped address ranges...
@@ -147,7 +172,7 @@
                 (list::memberp offset3 (OFFSET-RANGE-WRAP width offset1 size1))
                 (list::memberp offset4 (OFFSET-RANGE-WRAP width offset2 size2)))
            (not (equal offset3 offset4))))
-                        
+
 (defthmd offset-range-wrap-const-opener ;bzo yuck!
   (implies (and (syntaxp (quotep size))
                 (not (zp size))
@@ -156,7 +181,7 @@
                   (cons (loghead width base)
                         (offset-range-wrap width (loghead width (+ 1 (ifix base)))
                                            (+ -1 size)))))
-  :hints (("Goal" :in-theory (enable offset-range-wrap)))) 
+  :hints (("Goal" :in-theory (enable offset-range-wrap))))
 
 (defthm offset-range-wrap-of-logext
   (equal (offset-range-wrap width (acl2::logext width base) size)
@@ -178,7 +203,7 @@
 ;; (thm
 ;;  (implies (and (<= (loghead width offset2) (loghead width offset1))
 ;;                (<= (loghead width offset1) (loghead width (+ offset2 size2)))
-;;                (integerp offset1) 
+;;                (integerp offset1)
 ;;                (integerp offset2)
 ;;                (integerp size1)
 ;;                (integerp size2))
@@ -214,7 +239,7 @@
                 (list::memberp offset4 (offset-range-wrap width offset1 size1))
                 (list::memberp offset3 bag))
            (not (equal offset4 offset3))))
-      
+
 
 (defthm cdr-of-offset-range-wrap
   (equal (cdr (offset-range-wrap width base size))
@@ -244,7 +269,7 @@
  ;;                    :induct ( OFFSET-RANGE-WRAP-induct-with-x y size x)
  ;;                    :in-theory (e/d (acl2::loghead-sum-split-into-2-cases
  ;;                                     list::memberp-of-cons
- ;;                                     offset-range-wrap) 
+ ;;                                     offset-range-wrap)
  ;;                                    (ACL2::LOGHEAD-SUM-CHOP-FIRST-ARG-WHEN-CONSTANT
  ;;                                     ))))))
 
@@ -261,7 +286,7 @@
                    :expand (LIST::MEMBERP X (OFFSET-RANGE-WRAP width Y SIZE))
                    :in-theory (e/d (acl2::loghead-sum-split-into-2-cases
                                     list::memberp-of-cons
-                                    offset-range-wrap) 
+                                    offset-range-wrap)
                                    (ACL2::LOGHEAD-SUM-CHOP-FIRST-ARG-WHEN-CONSTANT
                                     ))))))
 
@@ -285,7 +310,7 @@
                                     ACL2::LOGHEAD-SUM-SPLIT-INTO-2-CASES
                                     list::memberp-of-cons
                                     acl2::LOGHEAD-OF-ONE-LESS-THAN-X
-                                    offset-range-wrap) 
+                                    offset-range-wrap)
                                    (ACL2::LOGHEAD-SUM-CHOP-FIRST-ARG-WHEN-CONSTANT
      ;ACL2::UNSIGNED-BYTE-P-OF-X+1
                                     ))))))
@@ -310,7 +335,7 @@
                                     ACL2::LOGHEAD-SUM-SPLIT-INTO-2-CASES
                                     list::memberp-of-cons
                                     acl2::LOGHEAD-OF-ONE-LESS-THAN-X
-                                    offset-range-wrap) 
+                                    offset-range-wrap)
                                    (ACL2::LOGHEAD-SUM-CHOP-FIRST-ARG-WHEN-CONSTANT
                                     ACL2::UNSIGNED-BYTE-P-FORWARD-TO-EXPT-BOUND
                                     ))))))
@@ -328,7 +353,7 @@
                                 (< 0 size))
                            (equal x 0)
                          nil)
-                           
+
                    (if (integerp y)
                        (and (< (loghead (nfix width) (- x y)) size)
                             (unsigned-byte-p width x)
@@ -457,7 +482,7 @@
                   (<= (+ size1 (loghead width (+ base1 (- base2)))) size2))
          :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;:induct (OFFSET-RANGE-WRAP '16 BASE1 SIZE1)
-                  :in-theory (enable 
+                  :in-theory (enable
                               ACL2::LOGHEAD-SUM-SPLIT-INTO-2-CASES
                               ACL2::LOGHEAD-SUM-SPLIT-INTO-2-WHEN-I-IS-A-CONSTANT
                               OFFSET-RANGE-WRAP)))))
@@ -539,7 +564,7 @@
           :hints (("Goal" :induct t
 ;                   :do-not '(generalize eliminate-destructors)
                    :in-theory (e/d ( ;ACL2::LOGHEAD-SUM-SPLIT-INTO-2-CASES
-                                    offset-rangep) 
+                                    offset-rangep)
                                    (ACL2::LOGHEAD-IDENTITY-2))))))
 
  (local (defthm fw2
@@ -574,7 +599,7 @@
                             (LIST::MEMBERP 65535 X))
                    :in-theory (e/d (ACL2::LOGHEAD-SUM-SPLIT-INTO-2-CASES
                                     offset-rangep
-                                    (:induction offset-rangep)) 
+                                    (:induction offset-rangep))
                                    (ACL2::LOGHEAD-IDENTITY-2
                                     ACL2::LOGHEAD-EQUAL-REWRITE-CONSTANT-CASE
 ;acl2::loghead-of-1
@@ -586,7 +611,7 @@
    (implies (and (offset-rangep width x)
                  (<= 0 width)
                  (integerp width)
-                 )       
+                 )
             (equal (list::memberp a x)
                    (and (unsigned-byte-p width a)
                         (< (loghead width (- a (car x))) (len x)))))
@@ -634,10 +659,10 @@
                       )
              :in-theory (e/d (ACL2::LOGHEAD-OF-ONE-LESS-THAN-X
                               ACL2::LOGHEAD-SUM-SPLIT-INTO-2-CASES
-                              memberp-when-offset-rangep) 
+                              memberp-when-offset-rangep)
                              (bag::SUBBAGP-FROM-SUBBAGP-OF-CDR-CHEAP
                               LIST::FIX-EQUIV ;bzo
-                             
+
                               subbagp-cdr-when-memberp-car)))
             ("Goal" :do-not '(generalize eliminate-destructors)
              :induct (induct4 x y)
@@ -654,14 +679,14 @@
 ;;                           (<= (+ (len x) (loghead width (- (car x) (car y)))) (loghead width (len y)))
 ;;                           )
 ;;                    t))))
- 
 
-(defthm offset-rangep-of-offset-range-wrap            
+
+(defthm offset-rangep-of-offset-range-wrap
   (implies (and (integerp width)
                 (<= 0 width))
            (offset-rangep width (offset-range-wrap width base size)))
   :hints (("Goal" :in-theory (enable offset-rangep offset-range-wrap))))
-                
+
 (defthm len-of-offset-range-wrap
   (implies (and (integerp width)
                 (<= 0 width))
@@ -739,7 +764,7 @@
                         (unsigned-byte-p width size2) ;drop?
                         (<= size1 (expt 2 width))
                         (integerp width)
-                        (<= 0 width)                
+                        (<= 0 width)
                         )
                    (equal (bag::subbagp (offset-range-wrap width base1 size1)
                                         (offset-range-wrap width base2 size2))
@@ -754,8 +779,8 @@
                    :use ((:instance helper2)
                          (:instance helper3)
                          (:instance helper1))
-                   :in-theory (disable helper2 
-                                       helper3 
+                   :in-theory (disable helper2
+                                       helper3
                                        hard-way
                                        helper1
                                        )))))
@@ -767,7 +792,7 @@
                  (integerp base1)
                  (integerp base2)
                  (integerp width)
-                 (<= 0 width)                
+                 (<= 0 width)
                  )
             (equal (bag::subbagp (offset-range-wrap width base1 size1)
                                  (offset-range-wrap width base2 size2))
@@ -805,7 +830,7 @@
                 (case-split (integerp base4))
                 (unsigned-byte-p width size4)
                 (integerp width)
-                (<= 0 width)                
+                (<= 0 width)
 
                 )
            (BAG::DISJOINT (OFFSET-RANGE-WRAP width base1 size1)
@@ -842,7 +867,7 @@
                 )
            (equal (offset-range-wrap width (+ off1 off2) size)
                   (if (integerp off3)
-                      
+
                       (offset-range-wrap width (+ off1 off3) size)
                     (offset-range-wrap width off1 size)
                     )))
@@ -863,7 +888,7 @@
                         )
            :in-theory (disable offset-range-wrap-of-loghead
                                ))))
-           
+
 
 
 
@@ -930,16 +955,16 @@
                        (or (equal 0 (nfix size1))
                            (equal (loghead width base1)
                                   (loghead width base2))))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use (:instance EQUIV-OF-TWO-OFFSET-RANGES-TRUE-LIST-CASE
                            (x  (offset-range-wrap width base1 size1))
                            (y  (offset-range-wrap width base2 size2))))))
 
 (defun get-enabled-structure (pspv)
-  (strip-cdrs 
-   (cdr 
-    (access enabled-structure 
-            (access rewrite-constant 
+  (strip-cdrs
+   (cdr
+    (access enabled-structure
+            (access rewrite-constant
                     (access prove-spec-var pspv :rewrite-constant)
                     :current-enabled-structure)
             :theory-array))))
@@ -953,7 +978,7 @@
     nil))
 
 
-        
+
 (encapsulate
  ()
 
@@ -975,7 +1000,7 @@
                   ("Goal" :do-not '(generalize eliminate-destructors)
                    :in-theory (e/d (offset-range-wrap
                                     ;;ACL2::LOGHEAD-OF-ONE-MORE-THAN-X
-                                    ) 
+                                    )
                                    ( ;MEMBERP-OF-OFFSET-RANGE
                                     ACL2::LOGHEAD-IDENTITY-2 ;think about this...
                                     SUBBAGP-OF-TWO-OFFSET-RANGE-WRAPS))))))
@@ -997,7 +1022,7 @@
                   ("Goal" :do-not '(generalize eliminate-destructors)
                    :induct t
                    :in-theory (e/d (offset-range-wrap
-                                    ) 
+                                    )
                                    (LIST::MEMBERP-OF-CONS
                                                                         ACL2::LOGHEAD-IDENTITY-2 ;think about this...
                                     USE-DISJOINT-OF-OFFSET-RANGE-WRAPS-HACK-BETTER-2
@@ -1067,7 +1092,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :induct (sub1-sub1-induct num n)
            :in-theory (enable REPEAT))))
- 
+
 
 (encapsulate
  ()
@@ -1150,7 +1175,7 @@
             :do-not '(generalize eliminate-destructors)
             :expand ((OFFSET-RANGE-WRAP width (+ N OFFSET) (+ (- N) NUMBYTES))
                      )
-            :in-theory (e/d (offset-range-wrap 
+            :in-theory (e/d (offset-range-wrap
                              nthcdr
                              ACL2::LOGHEAD-SUM-SPLIT-INTO-2-CASES
                              )

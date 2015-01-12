@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 (include-book "xdoc/top" :dir :system)
@@ -20,8 +45,8 @@
 ; (defmacro def::doc (name &key (section 'nil) (one-liner '"") (notes '"") (details 'nil))
 ;   (let ((section (or (and section (if (symbolp section) (symbol-name section) section)) (symbol-name name)))
 ;         (details (or details (symbol-name name))))
-;     (let ((doc `(concatenate 'string 
-; 
+;     (let ((doc `(concatenate 'string
+;
 ; ":Doc-Section " ,section "
 ; "
 ; ,one-liner
@@ -31,7 +56,7 @@
 ; ,details
 ; "
 ; "
-; 
+;
 ; )))
 ;       `(make-event
 ;         `(DEFDOC ,',name ,,doc)))))
@@ -76,18 +101,18 @@
 ;;; The following legacy doc string was replaced Nov. 2014 by the
 ;;; auto-generated defxdoc form just below.
 ; (def::doc def::doc
-;   
+;
 ;   :section def::doc
-;   
+;
 ;   :one-liner "A simple macro for easing the documentation process"
-;   
+;
 ;   :details (docstring
 ; "
-; 
+;
 ;   The def::doc macro eases the process of constructing documentation
 ; strings for ACL2 symbols. "(docref"doc")".  Macro keywords are used to
 ; identify content for each of the primary documentation elements:
-; 
+;
 ; "(verbatim"
 ; :section     Either a symbol or string identifying the section
 ; :one-liner   A simple one-line overview of the symbol

@@ -34,7 +34,7 @@ acl2hpr: saved_acl2hpr
 # immediately, and waiting 100 seconds isn't enough for SBCL builds.
 saved_acl2: $(ACL2_DEPS)
 	echo "Making ACL2() on $(LISP)"
-	time make --file=GNUmakefile LISP=$(LISP) > make-acl2.log
+	time make --file=GNUmakefile LISP=$(LISP) ACL2_HONS= > make-acl2.log
 	./books/build/wait.pl make-acl2.log
 	cat make-acl2.log
 	./books/build/wait.pl saved_acl2
@@ -50,7 +50,7 @@ saved_acl2h: $(ACL2_DEPS)
 
 saved_acl2p: $(ACL2_DEPS)
 	echo "Making ACL2(p) on $(LISP)"
-	time make --file=GNUmakefile LISP=$(LISP) ACL2_PAR=p > make-acl2.log
+	time make --file=GNUmakefile LISP=$(LISP) ACL2_HONS= ACL2_PAR=p > make-acl2.log
 	./books/build/wait.pl make-acl2.log
 	cat make-acl2.log
 	./books/build/wait.pl saved_acl2p
@@ -58,7 +58,7 @@ saved_acl2p: $(ACL2_DEPS)
 
 saved_acl2r: $(ACL2_DEPS)
 	echo "Making ACL2(r) on $(LISP)"
-	time make --file=GNUmakefile LISP=$(LISP) ACL2_REAL=r > make-acl2.log
+	time make --file=GNUmakefile LISP=$(LISP) ACL2_HONS= ACL2_REAL=r > make-acl2.log
 	./books/build/wait.pl make-acl2.log
 	cat make-acl2.log
 	./books/build/wait.pl saved_acl2r
@@ -82,7 +82,7 @@ saved_acl2hr: $(ACL2_DEPS)
 
 saved_acl2pr: $(ACL2_DEPS)
 	echo "Making ACL2(pr) on $(LISP)"
-	time make --file=GNUmakefile LISP=$(LISP) ACL2_PAR=p ACL2_REAL=r > make-acl2.log
+	time make --file=GNUmakefile LISP=$(LISP) ACL2_HONS= ACL2_PAR=p ACL2_REAL=r > make-acl2.log
 	./books/build/wait.pl make-acl2.log
 	cat make-acl2.log
 	./books/build/wait.pl saved_acl2pr

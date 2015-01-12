@@ -342,7 +342,7 @@
 
 
 (defconst *message*
- "~|~%We suspect this conjecture sould be proven by functional ~
+ "~|~%We suspect this conjecture should be proven by functional ~
   instantiation of ~x0.  This suspicion is caused by ~x2, so ~
   if this is not what you want to do, then you should disable ~
   ~x2.  Accordingly, we suggest the following hint: ~

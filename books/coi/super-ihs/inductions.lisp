@@ -1,15 +1,40 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 (local (include-book "arithmetic"))
 (include-book "ihs/ihs-definitions" :dir :system)
 (include-book "ihs/ihs-lemmas" :dir :system)
 
-(in-theory (disable 
+(in-theory (disable
             LOGNOT
             LOGCOUNT
             LOGBITP
@@ -28,7 +53,7 @@
             BINARY-LOGXOR
             LOGNOR
             BITP
-            logcar 
+            logcar
             LOGCDR
             LOGCONS
             LOGBIT
@@ -162,8 +187,8 @@
 (defun sub1-logcdr-logcdr-carry-induction (m x y c)
   (if (zp m)
       (or x y c)
-    (sub1-logcdr-logcdr-carry-induction 
-     (1- m) 
+    (sub1-logcdr-logcdr-carry-induction
+     (1- m)
      (logcdr x)
      (logcdr y)
      (b-ior (b-and (logcar x) (logcar y))
@@ -173,8 +198,8 @@
 (defun sub1-logcdr-logcdr-logcdr-carry-induction (m x y z c)
   (if (zp m)
       (or x y c z)
-    (sub1-logcdr-logcdr-logcdr-carry-induction 
-     (1- m) 
+    (sub1-logcdr-logcdr-logcdr-carry-induction
+     (1- m)
      (logcdr x)
      (logcdr y)
      (logcdr z)
@@ -185,8 +210,8 @@
 (defun sub1-sub1-logcdr-logcdr-carry-induction (m n x y c)
   (if (or (zp m) (zp n))
       (or x y c)
-    (sub1-sub1-logcdr-logcdr-carry-induction 
-     (1- m) 
+    (sub1-sub1-logcdr-logcdr-carry-induction
+     (1- m)
      (1- n)
      (logcdr x)
      (logcdr y)
@@ -244,7 +269,7 @@
     (+-r (logcdr a)
          (logcdr b)
          (b-maj (logcar a) (logcar b) c))))
-  
+
 (defthm +-induction t
   :rule-classes ((:induction :pattern (+ a b c)
                              :condition (unsigned-byte-p 1 c)
@@ -265,7 +290,7 @@
   (or (logendp x)
       (logendp y)
       (logbinr (logcdr x) (logcdr y))))
-  
+
 (defthm logand-induction t
   :rule-classes ((:induction :pattern (logand x y)
                              :condition t
@@ -282,7 +307,7 @@
                              :scheme (logbinr x y))))
 
 (defun loglistr (n x)
-  (if (zp n) 
+  (if (zp n)
       (ifix x)
     (logcons 0 (loglistr (1- n) (logcdr x)))))
 
@@ -340,7 +365,7 @@
   (cond ((or (zip m) (zp n)) x)
         ((< m 0) (loglist-ashr (1+ m) n (logcdr x)))
         (t (loglist-ashr (1- m) (1- n) x))))
-        
+
 (defthm loglist-ash-induction t
   :rule-classes ((:induction :pattern (loglistr n (ash x m))
                              :condition t
@@ -387,9 +412,9 @@
 (defthm loglist-+-induction t
    :rule-classes ((:induction :pattern (loglistr n (+ x y c))
                               :condition t
-                              :scheme (sub1-logcdr-logcdr-carry-induction n 
-                                                                          x 
-                                                                          y 
+                              :scheme (sub1-logcdr-logcdr-carry-induction n
+                                                                          x
+                                                                          y
                                                                           c))))
 
 ;same for lognot:

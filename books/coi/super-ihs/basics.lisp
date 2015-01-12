@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 ;why does basics include all this stuff?
@@ -22,9 +47,9 @@
 (in-theory (enable natp))
 
 ;since UNSIGNED-BYTE-P-FORWARD-TO-NONNEGATIVE-INTEGERP is built into acl2 and we have acl2::unsigned-byte-p-forward-to-expt-bound:
-(in-theory (disable ACL2::UNSIGNED-BYTE-P-FORWARD)) 
+(in-theory (disable ACL2::UNSIGNED-BYTE-P-FORWARD))
 
-(local (in-theory (enable FALSIFY-UNSIGNED-BYTE-P))) 
+(local (in-theory (enable FALSIFY-UNSIGNED-BYTE-P)))
 
 ;(include-book "ihs/@logops" :dir :system) ;This had the effect of disabling all the user's stuff when he included @logops book via super-ihs !
 
@@ -32,7 +57,7 @@
 
 
 
-(in-theory (disable 
+(in-theory (disable
 ;            (:REWRITE ZP-OPEN)
  ;           (:REWRITE ZIP-OPEN)
 
@@ -83,7 +108,7 @@
 ;            (:REWRITE <-0-+-NEGATIVE-2)
 ;            (:REWRITE <-+-NEGATIVE-0-1)
 ;           (:REWRITE <-+-NEGATIVE-0-2)
-;dsh  Removed for ACL2 2.9.2, where NATP-CR and POSP-CR no longer exist.  
+;dsh  Removed for ACL2 2.9.2, where NATP-CR and POSP-CR no longer exist.
 ;     This change doesn't appear to affect proofs under ACL2 2.9.
 ;            (:COMPOUND-RECOGNIZER NATP-CR)
 ;            (:COMPOUND-RECOGNIZER POSP-CR)
@@ -223,7 +248,7 @@
                         lognotr lognot-induction
                         logbinr logand-induction logior-induction logxor-induction
                         loglistr loglist-fwd-r loghead-induction logtail-induction
-                        ubp-induction sbp-induction 
+                        ubp-induction sbp-induction
                         logbitp-induction logext-induction
                         loglist-+-induction
                         #|logappr|# logapp-induction
@@ -247,7 +272,7 @@
      loghead*
      logbitp*
      )))
-                    
+
 (in-theory (disable LRDT))
 
 (in-theory (disable unsigned-byte-p-plus)) ;; an unneeded rule, that slows things down
@@ -259,6 +284,3 @@
        (equal (equal (b-not (logcar x)) 1)
               (equal (logcar x) 0)))
   :hints (("goal" :in-theory (enable b-not logcar))))
-
-
-

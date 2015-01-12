@@ -88,8 +88,12 @@ library."
              (or (true-listp x)
                  (< (len x) (nfix n))))
       :rule-classes ((:rewrite)
-                     (:type-prescription :corollary (implies (true-listp x)
-                                                             (true-listp (nthcdr n x)))))
+; Commented out by Matt K. after ACL2 Version 6.5 with the addition of new
+; built-in rule true-listp-nthcdr-type-prescription.
+;                    (:type-prescription :corollary (implies (true-listp x)
+;                                                            (true-listp
+;                                                             (nthcdr n x))))
+                     )
       :hints(("Goal"
               :in-theory (disable nthcdr)
               :use ((:instance lemma1)

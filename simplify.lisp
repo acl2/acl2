@@ -4297,11 +4297,6 @@
 
 ; End of Historical Plaque
 
-; Rockwell Addition: The nu-rewriter is applied to literals.  So
-; rewrite-atm is changed below.  In addition, we optionally lambda
-; abstract the result.  We also clean up in certain ways.  New code
-; extends all the way to the defun of rewrite-atm.
-
 ; Essay on Lambda Abstraction
 
 ; We will do some lambda abstraction when we rewrite literals.  That
@@ -4373,7 +4368,45 @@
 
 (mutual-recursion
 
- (defun maximal-multiple (x term-lst winner)
+(defun foccurrences (term1 term2 ans)
+
+; We ``count'' the number of occurrences of term1 in term2,
+; ``summing'' the result into ans to be tail recursive, except:
+
+; ans = nil means we've seen 0
+; ans = t   means we've seen 1
+; ans = >   means we've seen 2 or more
+
+; Thus, nil + 1 = t
+;       t + 1   = >
+;       > + 1   = >
+; so (+ ans 1) is (if ans '> t) and we can short-circuit whenever ans
+; is >.
+
+; Observe that if (eq (foccurrences term1 term2 t) '>) is t, then term1
+; occurs at least once in term2.  This could also be tested by asking
+; whether (foccurrences term1 term2 nil) is non-nil, but that idiom is
+; less efficient because the former short-circuits as soon as the
+; first occurrence is found, while the latter doesn't short-circuit
+; until the second occurrence (if any) is found.
+
+  (cond
+   ((equal term1 term2) (if ans '> t))
+   ((eq ans '>) '>)
+   ((variablep term2) ans)
+   ((fquotep term2) ans)
+   (t (foccurrences-lst term1 (fargs term2) ans))))
+
+(defun foccurrences-lst (term lst ans)
+  (cond ((endp lst) ans)
+        ((eq ans '>) '>)
+        (t (foccurrences-lst term
+                             (cdr lst)
+                             (foccurrences term (car lst) ans))))))
+
+(mutual-recursion
+
+(defun maximal-multiple (x term-lst winner)
 
 ; In this definition, x is a term, but I am using it as though it were
 ; just the set of all of its subterms.  I wish to find a non-atomic
@@ -4381,24 +4414,24 @@
 ; terms term-lst.  Winner is either nil or the maximal multiple found
 ; so far.
 
-   (cond
-    ((or (variablep x)
-         (fquotep x))
-     winner)
-    ((eq (foccurrences-lst x term-lst nil) '>)
-     (cond ((equal winner nil) x)
-           ((eq (foccurrences x winner t) '>) winner)
-           ((eq (foccurrences winner x t) '>) x)
-           (t winner)))
-    (t (maximal-multiple-lst (fargs x) term-lst winner))))
+  (cond
+   ((or (variablep x)
+        (fquotep x))
+    winner)
+   ((eq (foccurrences-lst x term-lst nil) '>)
+    (cond ((equal winner nil) x)
+          ((eq (foccurrences x winner t) '>) winner)
+          ((eq (foccurrences winner x t) '>) x)
+          (t winner)))
+   (t (maximal-multiple-lst (fargs x) term-lst winner))))
 
- (defun maximal-multiple-lst (x-lst term-lst winner)
-   (cond ((endp x-lst) winner)
-         (t (maximal-multiple-lst (cdr x-lst)
-                                  term-lst
-                                  (maximal-multiple (car x-lst)
-                                                    term-lst
-                                                    winner))))))
+(defun maximal-multiple-lst (x-lst term-lst winner)
+  (cond ((endp x-lst) winner)
+        (t (maximal-multiple-lst (cdr x-lst)
+                                 term-lst
+                                 (maximal-multiple (car x-lst)
+                                                   term-lst
+                                                   winner))))))
 
 ; So, to find a non-atomic maximal multiple subterm of a single term,
 ; term, do (maximal-multiple term (list term) nil).  More generally,
@@ -4435,30 +4468,6 @@
 ; is the singleton containing term.
 
   (maximal-multiples1 (list term) nil (all-vars term) pkg-witness))
-
-(defun lambda-abstract1 (vars terms)
-  (cond
-   ((endp vars) (car terms))
-   (t (let* ((body (lambda-abstract1 (cdr vars) (cdr terms)))
-             (new-vars (remove1-eq (car vars) (all-vars body))))
-        (cons-term (make-lambda (cons (car vars) new-vars)
-                                body)
-                   (cons (car terms) new-vars))))))
-
-(defun lambda-abstract (term pkg-witness)
-
-; Rockwell Addition:  Non-equivalent read conditionals!
-
-  #-acl2-loop-only ; Rockwell Addition
-  (cond (*lambda-abstractp*
-         (mv-let (vars terms)
-                 (maximal-multiples term pkg-witness)
-                 (lambda-abstract1 vars terms)))
-        (t term))
-  #+acl2-loop-only ; Rockwell Addition
-  (mv-let (vars terms)
-          (maximal-multiples term pkg-witness)
-          (lambda-abstract1 vars terms)))
 
 ; We also will clean up certain IF-expressions.
 
@@ -4628,8 +4637,8 @@
                         simplify-clause-pot-lst rcnst current-clause state
                         step-limit ttree0)
 
-; This function rewrites atm with nth-update-rewriter, recursively.  Then it
-; rewrites the result with rewrite, in the given context, maintaining iff.
+; This function rewrites atm with rewrite, in the given context, maintaining
+; iff.
 
 ; Note that not-flg is only used heuristically, as it is the responsibility of
 ; the caller to account properly for it.  Current-clause is also used only
@@ -4792,60 +4801,38 @@
            ((and knownp (not not-flg) (not nilp))
             (mv step-limit *t* ttree nil))
            (t
-            (mv-let
-             (hitp atm1 ttree1)
-; Rockwell Addition
-             (cond
-              ((eq (nu-rewriter-mode wrld) :literals)
-               (nth-update-rewriter t atm nil
-                                    (access rewrite-constant rcnst
-                                            :current-enabled-structure)
-                                    wrld state))
-              (t (mv nil nil nil)))
-             (let ((atm2 (if hitp
-                             (lambda-abstract
-                              (cleanup-if-expr atm1 nil nil)
-                              (pkg-witness (current-package state)))
-                           atm))
-                   (lemmas0 (tagged-objects 'lemma ttree0))
-                   (lemmas1 (and hitp (tagged-objects 'lemma ttree1)))
-                   (ttree00 (remove-tag-from-tag-tree 'lemma ttree0)))
-               (sl-let (ans1 ans2)
-                       (rewrite-entry
-                        (rewrite atm2
-                                 nil
-                                 bkptr)
-                        :rdepth (rewrite-stack-limit wrld)
-                        :step-limit step-limit
-                        :type-alist type-alist
-                        :obj '?
-                        :geneqv *geneqv-iff*
-                        :pequiv-info nil
-                        :wrld wrld
-                        :fnstack nil
-                        :ancestors nil
-                        :backchain-limit (access rewrite-constant rcnst
-                                                 :backchain-limit-rw)
-                        :simplify-clause-pot-lst simplify-clause-pot-lst
-                        :rcnst rcnst
-                        :gstack gstack
-                        :ttree (if hitp
-                                   (cons-tag-trees
-                                    (remove-tag-from-tag-tree 'lemma ttree1)
-                                    ttree00)
-                                 ttree00))
-                       (let* ((old-lemmas (if lemmas0
-                                              (union-equal lemmas1 lemmas0)
-                                            lemmas1))
-                              (new-lemmas (tagged-objects 'lemma ans2))
-                              (final-lemmas (if old-lemmas
-                                                (union-equal new-lemmas
-                                                             old-lemmas)
-                                              new-lemmas))
-                              (ttree (maybe-extend-tag-tree
-                                      'lemma
-                                      final-lemmas
-                                      (remove-tag-from-tag-tree 'lemma ans2))))
+            (let ((lemmas0 (tagged-objects 'lemma ttree0))
+                  (ttree00 (remove-tag-from-tag-tree 'lemma ttree0)))
+              (sl-let (ans1 ans2)
+                      (rewrite-entry
+                       (rewrite atm
+                                nil
+                                bkptr)
+                       :rdepth (rewrite-stack-limit wrld)
+                       :step-limit step-limit
+                       :type-alist type-alist
+                       :obj '?
+                       :geneqv *geneqv-iff*
+                       :pequiv-info nil
+                       :wrld wrld
+                       :fnstack nil
+                       :ancestors nil
+                       :backchain-limit (access rewrite-constant rcnst
+                                                :backchain-limit-rw)
+                       :simplify-clause-pot-lst simplify-clause-pot-lst
+                       :rcnst rcnst
+                       :gstack gstack
+                       :ttree ttree00)
+                      (let* ((old-lemmas lemmas0)
+                             (new-lemmas (tagged-objects 'lemma ans2))
+                             (final-lemmas (if old-lemmas
+                                               (union-equal new-lemmas
+                                                            old-lemmas)
+                                             new-lemmas))
+                             (ttree (maybe-extend-tag-tree
+                                     'lemma
+                                     final-lemmas
+                                     (remove-tag-from-tag-tree 'lemma ans2))))
 
 ; But we need to do even more work to prevent type-set from removing
 ; ``facts'' from the goal.  Here is another (edited) transcript:
@@ -4911,34 +4898,34 @@
 ; which a proof succeeds or fails depending on the order of hypotheses really
 ; gets Robert's goat.
 
-                         (cond ((not (or (equal ans1 *nil*)
-                                         (equal ans1 *t*)))
+                        (cond ((not (or (equal ans1 *nil*)
+                                        (equal ans1 *t*)))
 
 ; We have, presumably, not removed any facts, so we allow this rewrite.
 
-                                (mv step-limit ans1 ttree
-                                    (and knownp *trivial-non-nil-ttree*)))
-                               ((and (nvariablep atm2)
-                                     (not (fquotep atm2))
-                                     (equivalence-relationp (ffn-symb atm2)
-                                                            wrld))
+                               (mv step-limit ans1 ttree
+                                   (and knownp *trivial-non-nil-ttree*)))
+                              ((and (nvariablep atm)
+                                    (not (fquotep atm))
+                                    (equivalence-relationp (ffn-symb atm)
+                                                           wrld))
 
 ; We want to blow away equality (and equivalence) hypotheses, because for
 ; example there may be a :use or :cases hint that is intended to blow away (by
 ; implication) such hypotheses.
 
-                                (mv step-limit ans1 ttree nil))
-                               ((equal ans1 (if not-flg *nil* *t*))
+                               (mv step-limit ans1 ttree nil))
+                              ((equal ans1 (if not-flg *nil* *t*))
 
 ; We have proved the original literal from which atm is derived; hence we have
 ; proved the clause.  So we report this reduction.
 
-                                (mv step-limit ans1 ttree nil))
-                               ((all-type-reasoning-tags-p ans2)
+                               (mv step-limit ans1 ttree nil))
+                              ((all-type-reasoning-tags-p ans2)
 
 ; Type-reasoning alone has been used, so we are careful in what we allow.
 
-                                (cond ((lambda-subtermp atm2)
+                               (cond ((lambda-subtermp atm)
 
 ; We received an example from Jared Davis in which a hypothesis of the form
 ; (not (let ...)) rewrites to true with a tag-tree of nil, and hence was kept
@@ -4964,8 +4951,8 @@
 ; or *nil*, we can probably feel comfortable in adding conditions as we have
 ; done with the lambda-subtermp test above.
 
-                                       (mv step-limit ans1 ttree nil))
-                                      ((eq (fn-symb atm2) 'implies)
+                                      (mv step-limit ans1 ttree nil))
+                                     ((eq (fn-symb atm) 'implies)
 
 ; We are contemplating throwing away the progress made by the above call of
 ; rewrite.  However, we want to keep progress made by expanding terms of the
@@ -4973,32 +4960,32 @@
 ; reasonable to keep this in sync with the corresponding use of subcor-var in
 ; rewrite.
 
-                                       (prepend-step-limit
-                                        3
-                                        (try-type-set-and-clause
-                                         (subcor-var (formals 'implies wrld)
-                                                     (list (fargn atm2 1)
-                                                           (fargn atm2 2))
-                                                     (body 'implies t wrld))
-                                         ans1 ttree ttree0 current-clause wrld
-                                         (access rewrite-constant rcnst
-                                                 :current-enabled-structure)
-                                         knownp)))
-                                      (t
+                                      (prepend-step-limit
+                                       3
+                                       (try-type-set-and-clause
+                                        (subcor-var (formals 'implies wrld)
+                                                    (list (fargn atm 1)
+                                                          (fargn atm 2))
+                                                    (body 'implies t wrld))
+                                        ans1 ttree ttree0 current-clause wrld
+                                        (access rewrite-constant rcnst
+                                                :current-enabled-structure)
+                                        knownp)))
+                                     (t
 
 ; We make one last effort to allow removal of certain ``trivial'' facts from
 ; the goal.
 
-                                       (prepend-step-limit
-                                        3
-                                        (try-type-set-and-clause
-                                         atm2
-                                         ans1 ttree ttree0 current-clause wrld
-                                         (access rewrite-constant rcnst
-                                                 :current-enabled-structure)
-                                         knownp)))))
-                               (t
-                                (mv step-limit ans1 ttree nil)))))))))))
+                                      (prepend-step-limit
+                                       3
+                                       (try-type-set-and-clause
+                                        atm
+                                        ans1 ttree ttree0 current-clause wrld
+                                        (access rewrite-constant rcnst
+                                                :current-enabled-structure)
+                                        knownp)))))
+                              (t
+                               (mv step-limit ans1 ttree nil))))))))))
 
 ; Now we develop the functions for finding trivial equivalence hypotheses and
 ; stuffing them into the clause, transforming {(not (equal n '27)) (p n x)},
@@ -8158,9 +8145,7 @@
   (list (cons (car *fake-rune-for-linear*)
               "linear arithmetic")
         (cons (car *fake-rune-for-type-set*)
-              "primitive type reasoning")
-        (cons (car *fake-rune-for-nu-rewriter*)
-              "the nu-rewriter")))
+              "primitive type reasoning")))
 
 (defun rune-< (x y)
   (cond

@@ -1,11 +1,36 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;;
 ;; Dependency Trees for Data Dependency Analysis
-;; Jared Davis 
+;; Jared Davis
 ;;
 ;;
 ;; INTRODUCTION
@@ -69,7 +94,7 @@
    (implies (and (dtreemapp map)
                  (map::in a map))
             (dtreep (map::get a map)))
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (enable dtreemapp)
            :use (:functional-instance
                  predicate-when-in-typed-mapp
@@ -88,9 +113,9 @@
    (implies (dtreemapp map)
             (equal (dtreemapp (map::set key val map))
                    (dtreep val)))
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (enable dtreemapp)
-           :use (:instance (:functional-instance 
+           :use (:instance (:functional-instance
                             typed-mapp-of-set
                             (map::predicate
                              (lambda (key val) (dtreep val)))
@@ -102,7 +127,7 @@
  (defthm dtreemapp-of-erase
    (implies (dtreemapp map)
             (dtreemapp (map::erase key map)))
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (enable dtreemapp)
            :use (:instance (:functional-instance
                             typed-mapp-of-erase
@@ -113,9 +138,9 @@
                            (map::key key)))))
 
  (defcong map::equiv equal (dtreemapp map) 1
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (enable dtreemapp)
-           :use (:functional-instance  
+           :use (:functional-instance
                  equiv-implies-equal-typed-mapp-1
                  (map::predicate
                   (lambda (key val) (dtreep val)))
@@ -136,8 +161,8 @@
  (defthm dtreemapp-by-membership-driver
    (implies (dtreemapp-hyps)
             (dtreemapp (dtreemapp-map)))
-   :hints(("Goal" 
-           :use (:functional-instance 
+   :hints(("Goal"
+           :use (:functional-instance
                  typed-mapp-by-membership
                  (map::predicate (lambda (key val) (dtreep val)))
                  (typed-mapp (lambda (map) (dtreemapp map)))
@@ -148,7 +173,7 @@
    (implies (dtreemapp-hyps)
             (dtreemapp (dtreemapp-map)))
    :rule-classes (:pick-a-point :driver dtreemapp-by-membership-driver))
-                          
+
  )
 
 
@@ -159,8 +184,8 @@
 ;; coerce their argument to a dtree.  Bad dtrees will be converted to the
 ;; default dtree, which simply has no dependences and no children.
 
-(defconst *default* 
-  (list :dtree 
+(defconst *default*
+  (list :dtree
         (set::emptyset) ; no dependences
         (map::emptymap))) ; no children
 
@@ -176,7 +201,7 @@
 
 (defthm dtreefix-when-dtreep
   (implies (dtreep dtree)
-           (equal (dtreefix dtree) 
+           (equal (dtreefix dtree)
                   dtree))
   :hints(("Goal" :in-theory (enable dtreefix))))
 
@@ -201,7 +226,7 @@
                               (dtreemapp map))
                   :verify-guards nil))
   (if (map::empty-exec map)
-      (map::emptymap)    
+      (map::emptymap)
     (map::set (map::head map)
               (dtreefix (map::get (map::head map) map))
               (dtreemapfix (map::tail map)))))
@@ -218,7 +243,7 @@
 
 (defthm dtreemapfix-when-dtreemapp
   (implies (dtreemapp map)
-           (map::equiv (dtreemapfix map) 
+           (map::equiv (dtreemapfix map)
                        map))
   :hints(("Goal" :in-theory (enable dtreemapfix))))
 
@@ -244,7 +269,7 @@
 
 (encapsulate
  ()
- 
+
  (local (defthm lemma
           (implies (and (submap sub super)
                         (map::in key sub))
@@ -253,7 +278,7 @@
           :hints(("Goal"
                   :in-theory (disable equal-of-gets-when-submap)
                   :use (:instance equal-of-gets-when-submap
-                                  (map::sub sub)                                  
+                                  (map::sub sub)
                                   (map::super super)
                                   (map::key key)
                                   )))))
@@ -270,12 +295,12 @@
 (defthm in-of-head-of-dtreemapfix-when-nonempty
   (implies (not (map::empty map))
            (map::in (map::head (dtreemapfix map)) map))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable map::in-head)
           :use (:instance map::in-head
                           (map (dtreemapfix map))))))
-  
- 
+
+
 
 
 
@@ -366,7 +391,7 @@
   :hints(("Goal" :in-theory (enable count children dtreefix))))
 
 
-(encapsulate 
+(encapsulate
  ()
 
  (local (defun flat-countmap (domain map)
@@ -381,7 +406,7 @@
                           (+ (count (map::get a x))
                              (flat-countmap domain x))))
           :hints(("Goal" :induct (set::insert a domain))
-                 ("Subgoal *1/1" 
+                 ("Subgoal *1/1"
                   :expand (flat-countmap (set::insert a domain) x)))))
 
  (local (defthm lemma2
@@ -401,11 +426,11 @@
               nil
             (list (count-induction (map::get (map::head x) x))
                   (count-induction (map::tail x))))))
- 
+
  (local (defthm flatten-map-count
           (equal (countmap x)
                  (flat-countmap (map::domain x) x))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable countmap)
                   :induct (count-induction x)))))
 
@@ -484,7 +509,7 @@
 (defthm dtreep-of-get
   (dtreep (get path dtree))
   :hints(("Goal" :in-theory (enable get))))
-  
+
 (defthm get-of-dtreefix
   (equal (get path (dtreefix dtree))
          (get path dtree))
@@ -504,10 +529,10 @@
  (local (defun my-induct (path1 path2 dtree)
           (if (and (consp path1)
                    (consp path2))
-              (my-induct (cdr path1) (cdr path2) 
+              (my-induct (cdr path1) (cdr path2)
                          (map::get (car path1) (children dtree)))
             (list path1 path2 dtree))))
-        
+
  (defcong list::equiv equal (get path dtree) 1
    :hints(("Goal"
            :in-theory (enable get)
@@ -580,7 +605,7 @@
   (declare (xargs :guard (dtreep dtree)))
   (if (consp path)
       (and (map::in (car path) (children dtree))
-           (in (cdr path) 
+           (in (cdr path)
                (map::get (car path) (children dtree))))
     t))
 
@@ -602,12 +627,12 @@
  (local (defun my-induct (path1 path2 dtree)
           (if (and (consp path1)
                    (consp path2))
-              (my-induct (cdr path1) (cdr path2) 
+              (my-induct (cdr path1) (cdr path2)
                          (map::get (car path1) (children dtree)))
             (list path1 path2 dtree))))
- 
+
  (defcong list::equiv equal (in path dtree) 1
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (enable in)
            :induct (my-induct path list::path-equiv dtree))))
 
@@ -698,7 +723,7 @@
   (let ((map (dtreemapfix map)))
     (if (map::empty-exec map)
         (list nil)
-      (set::union (set::multicons 
+      (set::union (set::multicons
                     (map::head map)
                     (aux-domain (children (map::get (map::head map) map))))
                    (aux-domain (map::tail map))))))
@@ -711,17 +736,17 @@
 
 (encapsulate
  ()
-         
+
  (local (defun path/domain-induct (path map)
           (declare (xargs :measure (countmap map)))
           (let ((map (dtreemapfix map)))
             (if (map::empty map)
                 (list path map)
-              (list (path/domain-induct 
+              (list (path/domain-induct
                      (cdr path)
                      (children (map::get (map::head map) map)))
                     (path/domain-induct path (map::tail map)))))))
-  
+
  (local (defthm aux-domain-true-lists
           (implies (set::in path (aux-domain map))
                    (true-listp path))
@@ -749,32 +774,32 @@
           (implies (and (consp path)
                         (dtreemapp map)
                         (set::in path (aux-domain map)))
-                   (set::in (cdr path) 
+                   (set::in (cdr path)
                              (aux-domain (children (map::get (car path) map)))))
           :hints(("Goal" :induct (path/domain-induct path map))
                  ("Subgoal *1/2" :expand (aux-domain map)))))
 
- (local 
+ (local
   (defthm in-aux-domain-bothways
     (implies (and (consp path)
                   (dtreemapp map))
-             (equal 
+             (equal
               (set::in path (aux-domain map))
               (and (map::in (car path) map)
-                   (set::in (cdr path) 
-                             (aux-domain (children 
+                   (set::in (cdr path)
+                             (aux-domain (children
                                           (map::get (car path) map)))))))))
 
  (defthm in-of-aux-domain-when-consp
    (implies (consp path)
-            (equal 
+            (equal
              (set::in path (aux-domain map))
              (and (map::in (car path) (dtreemapfix map))
-                  (set::in (cdr path) 
-                            (aux-domain (children 
-                                         (map::get (car path) 
+                  (set::in (cdr path)
+                            (aux-domain (children
+                                         (map::get (car path)
                                                    (dtreemapfix map))))))))
-   :hints(("Goal" 
+   :hints(("Goal"
            :use (:instance in-aux-domain-bothways
                            (map (dtreemapfix map))))))
 
@@ -787,11 +812,11 @@
  (local (defthm lemma
           (implies (set::in a (aux-domain (dtreemapfix map)))
                    (set::in a (aux-domain map)))))
- 
+
  (local (defthm lemma2-for-aux-domain-of-dtreemapfix
           (implies (set::in a (aux-domain map))
                    (set::in a (aux-domain (dtreemapfix map))))))
- 
+
  (defthm aux-domain-of-dtreemapfix
    (equal (aux-domain (dtreemapfix map))
           (aux-domain map)))
@@ -809,7 +834,7 @@
 (defund domain (dtree)
   (declare (xargs :guard (dtreep dtree)))
   (aux-domain (children dtree)))
-  
+
 (defthm domain-of-dtreefix
   (equal (domain (dtreefix dtree))
          (domain dtree))
@@ -827,7 +852,7 @@
 
 (defthm in-nil-domain
   (set::in nil (domain dtree))
-  :rule-classes ((:forward-chaining 
+  :rule-classes ((:forward-chaining
                   :trigger-terms ((domain dtree)))))
 
 (encapsulate
@@ -844,4 +869,3 @@
    (equal (set::empty (domain dtree))
           nil))
 )
-

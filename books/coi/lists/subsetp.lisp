@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "LIST")
 
 (include-book "../adviser/adviser")
@@ -93,13 +118,13 @@
   (((set-hyps) => *)
    ((subset) => *)
    ((superset) => *))
-  
+
   (local (defun set-hyps () nil))
   (local (defun subset () nil))
   (local (defun superset () nil))
-  
+
   (defthm multiplicity-constraint
-    (implies 
+    (implies
      (and
       (set-hyps)
       (memberp arbitrary-element (subset)))
@@ -113,11 +138,11 @@
                 ((not (memberp (car x) y))
                  (car x))
                 (t (badguy (cdr x) y)))))
- 
+
  (local (defthm badguy-witness
           (implies (not (subsetp x y))
                    (not (memberp (badguy x y) y)))))
- 
+
  (local (defthm badguy-not-member
 	  (implies
 	   (not (memberp (badguy x y) x))
@@ -127,8 +152,8 @@
    (implies (set-hyps)
             (subsetp (subset) (superset)))
    :rule-classes nil
-   :hints(("Goal" 
-           :use ((:instance 
+   :hints(("Goal"
+           :use ((:instance
                   multiplicity-constraint
                   (arbitrary-element (badguy (subset) (superset))))))))
 

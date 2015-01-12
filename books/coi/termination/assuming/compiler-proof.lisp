@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 ;; consider adding extra termination/measure functions to foo
@@ -47,7 +72,7 @@
      ;;((foo-x_measure *) => *)
 
      )
-  
+
   (local
    (encapsulate
        ()
@@ -60,7 +85,7 @@
      (defstub foo-cont (arg) nil)
 
      #+joe
-     (defun foo-x_terminates (arg) 
+     (defun foo-x_terminates (arg)
        (declare (ignore arg))
        t)
 
@@ -70,7 +95,7 @@
        0)
 
      ;; With something like this definition ..
-     
+
      (defminterm foo-stk (arg stk)
        (if (or (and (not (consp stk))
 		    (foo-done arg)))
@@ -81,9 +106,9 @@
 	   (if (foo-tail arg)
 	       (foo-stk (foo-step-tail arg) stk)
 	     (foo-stk (foo-step arg) (cons (foo-cont arg) stk))))))
-     
+
      ))
-  
+
   #+joe
   (defthm natp-foo-x_measure
     (<= 0 (foo-x_measure arg))
@@ -136,9 +161,9 @@
 		 (foo-stk_terminates (foo-step-tail arg) stk)
 	       (foo-stk_terminates (foo-step arg)
 				   (cons (foo-cont arg) stk))))))))
-  
+
   )
-	
+
 
 (defun foo-stk (arg stk)
   (declare (xargs :verify-guards nil
@@ -174,7 +199,7 @@
 	     (cons (foo-cont arg) stk1)
 	     (cons (foo-cont arg) stk2)))))
     (list stk1 stk2)))
-  
+
 (defthm foo-stk_terminates_from_foo-stk_terminates
   (implies (and (foo-stk_terminates arg s)
 		(head-equal r s)
@@ -185,25 +210,25 @@
 
 (encapsulate
     ()
-  
+
   (local
    (encapsulate
        ()
-     
+
      (defthm foo-stk_terminates_list_equal
        (implies (and (foo-stk_terminates arg s)
 		     (list-equal r s))
 		(foo-stk_terminates arg r)))
-     
+
      (defthm not_foo-stk_terminates_list_equal
        (implies (and (not (foo-stk_terminates arg r))
 		     (list-equal r s))
 		(not (foo-stk_terminates arg s))))
-     
+
      ))
-  
+
   (defcong list-equal iff (foo-stk_terminates arg r) 2)
-  
+
   )
 
 (defthm foo-stk_terminates_nil
@@ -211,10 +236,10 @@
 		(syntaxp (not (quotep s))))
 	   (foo-stk_terminates arg nil))
   :rule-classes (:forward-chaining))
-  
+
 (defcong list-equal equal (foo-stk arg r) 2
   :hints (("goal" :induct (foo-stk_induction arg r r-equiv))))
-  
+
 
 
 (defthmd car-append
@@ -246,7 +271,7 @@
 	   :use (:instance foo-stk_terminates_on_foo-stk
 			   (s nil)
 			   (r (cons a r))))))
-  
+
 (defthm foo-stk_measure_bound
   (implies
    (foo-stk_terminates arg stk)
@@ -268,7 +293,7 @@
   :hints (("goal" :do-not '(eliminate-destructors generalize)
 	   :do-not-induct t
 	   :induct (foo-stk arg s))))
-  
+
 (defthm foo-stk_measure_reduction
   (implies
    (foo-stk_terminates arg (cons a r))
@@ -359,7 +384,7 @@
 	  (foo_terminates (foo-stk-step (foo (foo-step arg)) (foo-cont arg)))))))
   :hints (("Goal" :cases ((foo-done arg))
 	   :expand (:free (x) (hide x))
-	   :in-theory (e/d 
+	   :in-theory (e/d
 		       nil ;(foo_terminates)
 		       (foo_measure_spec
 			foo_spec))
@@ -419,16 +444,16 @@
 
      (defund goo-spec ()
        `(a (b (c) (d)) (e)))
-     
+
      (defund goo-comp-step (fn args vals)
        `(,fn ,args ,@vals))
-     
+
      (defund goo-base-step (args)
        `(goo ,args))
-     
+
      (defund goo-done (args)
        (consp args))
-     
+
      (defminterm goo-stk-1 (list stk)
        (let ((args (car list))
 	     (fn   (cadr list))
@@ -436,7 +461,7 @@
 	     (vals (cadddr list))
 	     (vstk (cadddr (cdr list))))
 	 ;; base
-	 (if (and 
+	 (if (and
 	      (or (goo-done args)
 		  (not (consp spec)))
 	      (not (consp vstk))
@@ -445,11 +470,11 @@
 	     (if (goo-done args)
 		 (goo-base-step args)
 	       (goo-comp-step fn args (rev vals)))
-	   (if (and 
+	   (if (and
 		(or (goo-done args)
 		    (not (consp spec)))
 		(not (consp vstk)))
-	       (let ((arg (let ((val 
+	       (let ((arg (let ((val
 				 ;; (foo-base-step arg)
 				 (if (goo-done args) (goo-base-step args)
 				   (goo-comp-step fn args (rev vals)))))
@@ -487,19 +512,19 @@
 		  (vals (cadddr list))
 		  (vstk (cadddr (cdr list))))
 	      ;; base
-	      (if (and 
+	      (if (and
 		   (or (goo-done args)
 		       (not (consp spec)))
 		   (not (consp vstk))
 		   (not (consp stk)))
 		  ;; first
 		  (o)
-		(if (and 
+		(if (and
 		     (or (goo-done args)
 			 (not (consp spec)))
 		     (not (consp vstk)))
 		    ;; second
-		    (let ((arg (let ((val 
+		    (let ((arg (let ((val
 				      ;; (foo-base-step arg)
 				      (if (goo-done args) (goo-base-step args)
 					(goo-comp-step fn args (rev vals)))))
@@ -534,7 +559,7 @@
 	    (spec (caddr list))
 	    (vals (cadddr list))
 	    (vstk (cadddr (cdr list))))
-	(and 
+	(and
 	 (goo-done args)
 	 (not (consp vstk))
 	 (not (consp stk))))
@@ -545,7 +570,7 @@
 	    (spec (caddr list))
 	    (vals (cadddr list))
 	    (vstk (cadddr (cdr list))))
-	(and 
+	(and
 	 (not (consp spec))
 	 (not (consp vstk))
 	 (not (consp stk))))
@@ -566,7 +591,7 @@
 		 (spec (caddr list))
 		 (vals (cadddr list))
 		 (vstk (cadddr (cdr list))))
-	     (let ((arg (let ((val 
+	     (let ((arg (let ((val
 				      ;; (foo-base-step arg)
 				      (if (goo-done args) (goo-base-step args)
 					(goo-comp-step fn args (rev vals)))))
@@ -591,7 +616,7 @@
 		 (spec (caddr list))
 		 (vals (cadddr list))
 		 (vstk (cadddr (cdr list))))
-	     (let ((arg (let ((val 
+	     (let ((arg (let ((val
 				      ;; (foo-base-step arg)
 				      (if (goo-done args) (goo-base-step args)
 					(goo-comp-step fn args (rev vals)))))
@@ -655,7 +680,7 @@
 	       (goo-stk-1_terminates (list args (caar spec) (cdar spec) nil vstk) stk)))))
 
      ))
-      
+
 
   )
 
@@ -668,7 +693,7 @@
 	(vstk (cadddr (cdr list))))
     (if (goo-stk-1_terminates list stk)
 	;; base
-	(if (and 
+	(if (and
 	     (or (goo-done args)
 		 (not (consp spec)))
 	     (not (consp vstk))
@@ -677,11 +702,11 @@
 	    (if (goo-done args)
 		(goo-base-step args)
 	      (goo-comp-step fn args (rev vals)))
-	  (if (and 
+	  (if (and
 	       (or (goo-done args)
 		   (not (consp spec)))
 	       (not (consp vstk)))
-	      (let ((arg (let ((val 
+	      (let ((arg (let ((val
 				;; (foo-base-step arg)
 				(if (goo-done args) (goo-base-step args)
 				  (goo-comp-step fn args (rev vals)))))
@@ -745,7 +770,7 @@
 	(vstk (cadddr (cdr list))))
     (not (or (goo-done args)
 	     (not (consp spec))))))
-  
+
 ;; (foo-stk-step val cont)
 (defund goo-stk-step-1 (val cont)
   (let ((vstk cont))
@@ -797,7 +822,7 @@
 	(vals (cadddr list))
 	(vstk (cadddr (cdr list))))
     (if (or (not (goo_terminates args fn spec vals vstk))
-	    (and (or (goo-done args) 
+	    (and (or (goo-done args)
 		     (not (consp spec)))
 		 (not (consp vstk))))
 	(if (goo-done args)
@@ -833,7 +858,7 @@
 
 (defthm goo_true
   (true (goo args fn spec vals vstk))
-  :hints (("Goal" :use (:functional-instance 
+  :hints (("Goal" :use (:functional-instance
 			(:instance foo_true
 				   (arg (list args fn spec vals vstk)))
 			(foo                goo-1)
@@ -865,7 +890,7 @@
    (syntaxp (symbolp args))
    (equal (goo args fn spec vals vstk)
 	  (if (or (not (goo_terminates args fn spec vals vstk))
-		  (and (or (goo-done args) 
+		  (and (or (goo-done args)
 			   (not (consp spec)))
 		       (not (consp vstk))))
 	      (if (goo-done args)
@@ -880,7 +905,7 @@
 		      (goo args fn spec (cons val vals) vstk))))
 	      (let ((vstk (vstk-push args fn (cdr spec) vals vstk)))
 		(goo args (caar spec) (cdar spec) nil vstk))))))
-  :hints (("Goal" :use (:functional-instance 
+  :hints (("Goal" :use (:functional-instance
 			(:instance foo_spec
 				   (arg (list args fn spec vals vstk)))
 			(foo                goo-1)
@@ -919,7 +944,7 @@
      (not (consp vstk)))
     (goo_terminates args fn spec vals vstk))
    (implies
-    (and 
+    (and
      (not (consp spec))
      (not (consp vstk)))
     (goo_terminates args fn spec vals vstk))
@@ -956,7 +981,7 @@
 	   (goo_terminates args (caar spec) (cdar spec) nil vstk))))
    )
 
-  :hints (("Goal" :use (:functional-instance 
+  :hints (("Goal" :use (:functional-instance
 			(:instance foo_terminates_spec
 				   (arg (list args fn spec vals vstk)))
 			(foo                goo-1)
@@ -1002,7 +1027,7 @@
 	   ((and
 	     (goo-done args)
 	     (not (consp vstk))) (o))
-	   ((and 
+	   ((and
 	     (not (consp spec))
 	     (not (consp vstk))) (o))
 	   ((and
@@ -1025,7 +1050,7 @@
 	   (t
 	    (let ((vstk (vstk-push args fn (cdr spec) vals vstk)))
 	      (+ 1 (goo_measure args (caar spec) (cdar spec) nil vstk)))))))
-  :hints (("Goal" :use (:functional-instance 
+  :hints (("Goal" :use (:functional-instance
 			(:instance foo_measure_spec
 				   (arg (list args fn spec vals vstk)))
 			(foo                goo-1)
@@ -1057,7 +1082,7 @@
 
 (defthm goo_measure_natp
   (natp (goo_measure args fn spec vals vstk))
-  :rule-classes ((:forward-chaining 
+  :rule-classes ((:forward-chaining
 		  :trigger-terms ((goo_measure args fn spec vals vstk))))
   :hints (("Goal" :in-theory (enable goo_measure))))
 
@@ -1067,7 +1092,7 @@
    (< 0 (goo_measure args fn spec vals vstk)))
   :rule-classes (:linear)
   :hints (("Goal" :in-theory (enable goo_measure goo_terminates)
-	   :use (:functional-instance 
+	   :use (:functional-instance
 			(:instance foo_measure-bound
 				   (arg (list args fn spec vals vstk)))
 			(foo                goo-1)
@@ -1212,7 +1237,7 @@
 (defun goo-top-imp-1 (arg)
   (if (goo-top-done-1 arg) (goo-top-base-step-1 arg)
     (goo-top-1 (goo-top-stk-step-1 (goo-top-1 (goo-top-step-1 arg)) (goo-top-cont-1 arg)))))
-  
+
 (defun goo-top-imp (args fn spec vals)
   (let ((arg (list args fn spec vals)))
     (goo-top-imp-1 arg)))
@@ -1229,7 +1254,7 @@
    (goo-top_terminates-1 arg)
    (equal (goo-top-1 arg)
 	  (goo-top-imp-1 arg)))
-  :hints (("Goal" :use (:functional-instance 
+  :hints (("Goal" :use (:functional-instance
 			foo_spec
 			#+joe(:instance foo_spec (arg (list args fn spec vals)))
 			(foo                goo-top-1)
@@ -1263,9 +1288,9 @@
 								     STK)))))))))
 (in-theory (disable goo-comp-step goo-call))
 
-(mutual-recursion 
- 
- 
+(mutual-recursion
+
+
  (defun spec-interpreter (args spec)
    (declare (xargs :measure (acl2-count spec)))
    (if (consp spec)
@@ -1273,7 +1298,7 @@
 	 (let ((vals (spec-list-interpreter args (cdr spec))))
 	   (goo-comp-step key args vals)))
      nil))
- 
+
  (defun spec-list-interpreter (args spec)
    (declare (xargs :measure (acl2-count spec)))
    (if (consp spec)
@@ -1283,10 +1308,10 @@
      nil))
 
  )
- 
+
 (defthm
   (equal (goo-1-imp args fn spec vals vstk)
-	 
+
 |#
 
 ;;
@@ -1331,7 +1356,7 @@
 	      (- n 10)))
      :rule-classes (:definition)
      :hints (("Goal" :in-theory (enable mc91))))
-   
+
    (defthmd mc91-terminates-definition
      (and
       (implies
@@ -1353,7 +1378,7 @@
 		  (mc91-measure (mc91 (+ n 11)))))))
      :rule-classes (:definition)
      :hints (("Goal" :in-theory (enable mc91-measure))))
-   
+
    (defthm mc91-measure-bound
      (implies
       (mc91-terminates n)
@@ -1363,7 +1388,7 @@
    (in-theory (enable mc91-terminates-definition mc91-definition mc91-measure-definition))
 
    ))
-   
+
 (defun mc91-induction (n)
   (declare (xargs :measure (mc91-measure n)))
   (if (mc91-terminates n)

@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;; equiv.lisp
 ;; Primitive alist fixing and equivalence relations.
 
@@ -33,7 +58,7 @@
 ;          (assoc x y)))
 
 ;; Interpreting Objects as Conses (consfix)
-;; 
+;;
 ;; We can think of a mapping between all ACL2 objects and conses, so that any
 ;; atom is mapped to (nil . nil) and any cons is mapped to itself.  The
 ;; function consfix applies this mapping for us, i.e., it interprets any ACL2
@@ -47,15 +72,15 @@
       x
     (cons nil nil)))
 
-(local 
- (encapsulate 
+(local
+ (encapsulate
   ()
   ;; Here we check to make sure that our type prescription rule is as strong as
   ;; we think it is.  Don't remove this event even though it has no effect on
   ;; the logical world.
   (local (defthm test-type-prescription-of-consfix
            (consp (consfix x))
-           :hints(("Goal" 
+           :hints(("Goal"
                    :in-theory (union-theories '((:type-prescription consfix))
                                               (theory 'minimal-theory))))))))
 
@@ -67,7 +92,7 @@
 
 (defthm consfix-when-consp
   (implies (consp x)
-           (equal (consfix x) 
+           (equal (consfix x)
                   x))
   :hints(("Goal" :in-theory (enable consfix))))
 
@@ -76,7 +101,7 @@
          (consp x))
   :hints(("Goal" :in-theory (enable consfix))))
 
-(defthm consfix-of-cons 
+(defthm consfix-of-cons
   (equal (consfix (cons a b))
          (cons a b)))
 
@@ -93,8 +118,8 @@
 ;; (defthm consfix-of-cdr
 ;;   (equal (cdr (consfix a))
 ;;          (cdr a)))
-         
-         
+
+
 
 
 
@@ -114,7 +139,7 @@
   :hints(("Goal" :in-theory (enable cons-equiv))))
 
 (defthm consfix-in-cons-equiv
-  (cons-equiv (consfix x) 
+  (cons-equiv (consfix x)
               x)
   :hints(("Goal" :in-theory (enable cons-equiv))))
 
@@ -215,7 +240,7 @@
 
 (defthm alistfix-type-non-consp
   (implies (not (consp x))
-           (equal (alistfix x) 
+           (equal (alistfix x)
                   nil))
   :rule-classes :type-prescription
   :hints(("Goal" :in-theory (enable alistfix))))
@@ -231,12 +256,12 @@
 
 (defthm alistfix-when-non-consp
   (implies (not (consp alist))
-           (equal (alistfix alist) 
+           (equal (alistfix alist)
                   nil)))
 
 (defthm alistfix-when-alist
   (implies (alistp x)
-           (equal (alistfix x) 
+           (equal (alistfix x)
                   x))
   :hints(("Goal" :in-theory (enable alistfix))))
 
@@ -319,7 +344,7 @@
   :hints(("Goal" :in-theory (enable alist-equiv))))
 
 (defrefinement list::equiv alist-equiv
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable alist-equiv)
           :induct (list::len-len-induction ACL2::x ACL2::y))))
 
@@ -327,7 +352,7 @@
   :hints(("Goal" :in-theory (enable alist-equiv))))
 
 (defcong alist-equiv equal (len x) 1
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable alist-equiv)
           :induct (list::len-len-induction x x-equiv))))
 
@@ -352,12 +377,12 @@
 ;; should work.
 
 (defcong alist-equiv cons-equiv (car x) 1
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (e/d (alist-equiv alistfix)
                           (alistfix-type-consp)))))
 
 (defthm alistfix-in-alist-equiv
-  (alist-equiv (alistfix a) 
+  (alist-equiv (alistfix a)
                a)
   :hints(("Goal" :in-theory (enable alist-equiv))))
 

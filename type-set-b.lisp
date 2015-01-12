@@ -215,14 +215,6 @@
 ; This fake rune is used by type-set to record that built-in facts about
 ; primitive functions were used.
 
-; *fake-rune-for-nu-rewriter*
-; This fake rune is used by the nth-update-rewriter to record the fact
-; that either nth-update-nth or nth-update-nth-array was used.  We do
-; not want to use either of the actual runes for those two rules
-; because one or both might be disabled and it would be disturbing to
-; see a rune come into a proof if it is disabled.  To turn off the
-; nu-rewriter, the user should use the nu-rewriter-mode.
-
 ; WARNING: If more fake runes are added, deal with them in *fake-rune-alist*.
 
 (defmacro base-symbol (rune)
@@ -7151,12 +7143,16 @@
 ;;;                        ens w ttree pot-lst pt backchain-limit)
 ;;;              (type-set-finish x ts0 ttree0 ts1 ttree1 type-alist))
 
-; When we introduced the nu-rewriter, we made clausify no longer
-; expand lambdas so aggressively.  This meant that type-set began to
-; see lot more lambdas.  In that environment, the expansion of lambdas
-; here was taking lot of time and generating a lot of conses.  So now
-; we take the efficient AND braindead approach of saying we simply
-; don't know anything about a lambda application.
+; The following historical comment comes from when we supported the nu-rewriter
+; (which has since been eliminated).  Perhaps it is worth revisiting the
+; decision described below.
+
+;   When we introduced the nu-rewriter, we made clausify no longer
+;   expand lambdas so aggressively.  This meant that type-set began to
+;   see a lot more lambdas.  In that environment, the expansion of lambdas
+;   here was taking lot of time and generating a lot of conses.  So now
+;   we take the efficient AND braindead approach of saying we simply
+;   don't know anything about a lambda application.
 
 ;      (type-set-finish x ts0 ttree0 *ts-unknown* ttree type-alist))
 

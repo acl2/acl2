@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;;
 ;; Can wrapper functions be used somehow to eliminate recursion?
 ;;
@@ -33,7 +58,7 @@
 ;; The primary thrust of this discussion involves how one might
 ;; generalize the concept of congruence by extending ACL2's notion of
 ;; a rewriting context.
-;; 
+;;
 ;; = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 ;;
 ;; ACL2 already has a simple notion of rewriting context: the rewriter
@@ -46,7 +71,7 @@
 ;; pushing this context in to terms that it was rewriting, enabling it
 ;; to detect simplifications that might otherwise be too difficult to
 ;; detect using only simple rewrite rules.
-;; 
+;;
 ;; Currently the specification of a new equivalence relation can be
 ;; used to extend ACL2's notion of equivalence, .
 ;;
@@ -56,7 +81,7 @@
 ;; define a new function context:
 ;;
 ;; (defcontext (mod x n) 1)
-;; 
+;;
 ;; This tells the rewriter that (mod _ n) is a valid rewriting
 ;; context.  Now, any time the rewriter encounters a term of the form
 ;; (mod x n), it knows that x can be rewritten in a (mod _ n) context.
@@ -68,9 +93,9 @@
 ;;
 ;; Which results in the following obligation:
 ;;
-;; (implies 
-;;  (set-equal y y-equiv) 
-;;  (set-equal (set-insert x y) 
+;; (implies
+;;  (set-equal y y-equiv)
+;;  (set-equal (set-insert x y)
 ;;                (set-insert x y-equiv)))
 ;;
 ;; Extending context congruence might involve an obligation along
@@ -95,7 +120,7 @@
 ;;
 ;; (mod (+ x y) n) => (mod (+ (mod x n) (mod y n)) n)
 ;;
-;; However, because because (mod _ n) is a known context, the rewriter 
+;; However, because because (mod _ n) is a known context, the rewriter
 ;; merely activates a (mod _ n) context when rewriting each term.  Thus,
 ;; plausable appliations of this rule might include:
 ;;
@@ -106,7 +131,7 @@
 ;; (mod (+ n x y) n) => (mod (+ x y) n)
 ;;
 ;; = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-;; 
+;;
 ;; The mechanics of contextual rewriting might be very similar to the
 ;; way our poor man's rules work below.  In the theory below, we
 ;; present ACL2 with a "congruence" theorem of the form:
@@ -147,7 +172,7 @@
 ;; Because we are unwrapping terms syntactically, we need logical
 ;; tests to guarantee that we have not "broken" anything.
 ;;
-;; The final syntactic check tells us whether we have actually 
+;; The final syntactic check tells us whether we have actually
 ;; done anything.  If term a has actually changed in the course
 ;; of this process, we rewrite (foo a n) into (foo x n).
 ;;
@@ -180,9 +205,9 @@
 ;; - Encountering a term that triggers a "context congruence" rule.
 ;;   We may then rewrite selected arguments in the contexts suggested
 ;;   by the "context congruence" rule.
-;; 
+;;
 ;; = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-;; 
+;;
 ;; Note that congruence based rewriting can often (always?) be
 ;; emulated with context rewriting if we define an appropriate
 ;; "fix" function and use that as a context.
@@ -200,7 +225,7 @@
 ;; technique would be useful, there would also be a significant
 ;; advantage to employing rewriting contexts in standard interpreter
 ;; analysis.
-;; 
+;;
 ;; Imagine a function (cp list st1 st2) that copies a list of address
 ;; locations from st1 to st2.  (cp list _ nil) could be defined as a
 ;; "context" and used to "fix" the memory such that only those values
@@ -215,11 +240,11 @@
 ;;
 ;; And terms like:
 ;;
-;;   (foo (s a v r)) 
+;;   (foo (s a v r))
 ;;
-;; would rewrite "automagically" to 
+;; would rewrite "automagically" to
 ;;
-;;   (foo r) 
+;;   (foo r)
 ;;
 ;; if "a" was not in the "use set" of foo.
 ;;
@@ -251,7 +276,7 @@
 ;;
 ;; Below is an example that can be used to program the ACL2 rewriter
 ;; to perform a poor man's version of contextual rewriting.
-;; 
+;;
 ;; = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
 (in-package "ACL2")
@@ -423,7 +448,7 @@
        (symbolp (car cong))
        (consp (cdr cong))
        (equiv-exp (car cong) (cadr cong))))
-       
+
 (defun wf-cong-list (congs)
   (declare (type t congs))
   (if (consp congs)
@@ -530,7 +555,7 @@
          (wrapped-var?     (safe-symbol (list var "-wrapped?") var))
          (wrapped-var-hyps (safe-symbol (list var "-wrapped-hyps") var))
          )
-    `(encapsulate 
+    `(encapsulate
       ()
 
       (defun ,fix-fn-unfix (term ,@args wrapped unwrap hyp)
@@ -549,7 +574,7 @@
         (declare (ignore ,wrapped-var-hyps ,(ith (1- position) nargs)))
         (if ,wrapped-var? (equal ,wrapped-var (,fix-fn ,@(replace-ith (1- position) var nargs)))
           (equal ,wrapped-var ,var)))
-      
+
       (defthm ,fix-fn-unfix-check-reduction-1
         (,fix-fn-unfix-check t (,fix-fn ,@(replace-ith (1- position) var nargs))
                              ,var ,wrapped-var-hyps ,@nargs))
@@ -563,9 +588,9 @@
          (equal (,fix-fn-unfix-check ,wrapped-var? ,wrapped-var ,var ,wrapped-var-hyps ,@nargs)
                 (if ,wrapped-var? (equal ,wrapped-var (,fix-fn ,@(replace-ith (1- position) var nargs)))
                   (equal ,wrapped-var ,var)))))
-      
+
       (in-theory (disable ,fix-fn-unfix-check))
-      
+
       )))
 
 (defmacro defcontext (term position)
@@ -609,27 +634,27 @@
            (unwrapped-wrapped-var nvar)
            )
       `(
-        (bind-free (,fix-fn-unfix ,ovar ,@fix-args ',var-wrapped? ',unwrapped-var ',var-hyps) 
+        (bind-free (,fix-fn-unfix ,ovar ,@fix-args ',var-wrapped? ',unwrapped-var ',var-hyps)
                    (,var-wrapped? ,unwrapped-var ,var-hyps))
-        
-        ;; var-wrapped => (ovar == (fn .. unwrapped-var ..))  
-        
+
+        ;; var-wrapped => (ovar == (fn .. unwrapped-var ..))
+
         ;; We now ask ACL2 to rewrite under the new context .. if the bound
         ;; variable was not already in such a context.
-        
+
         ,(cond
           ((not (equal equiv 'equal))
                   `(,equiv ,wrapped-var (double-rewrite (if ,var-wrapped? ,ovar ,exp))))
           (t      `(,equiv ,wrapped-var (if ,var-wrapped? ,ovar ,exp))))
 
-        (bind-free (,fix-fn-unfix ,wrapped-var ,@fix-args ',wrapped-var-wrapped? ',unwrapped-wrapped-var ',wrapped-var-hyps) 
+        (bind-free (,fix-fn-unfix ,wrapped-var ,@fix-args ',wrapped-var-wrapped? ',unwrapped-wrapped-var ',wrapped-var-hyps)
                    (,wrapped-var-wrapped? ,unwrapped-wrapped-var ,wrapped-var-hyps))
 
         ;; wrapped-var-wrapped? => (wrapped-var == (fn .. unwrapped-wrapped-var ..))
 
         ;; After rewriting in the new context, we evaluate the resulting term.
         ;; If the term is still (syntactically) wrapped in the context, we
-        ;; remove the context.  
+        ;; remove the context.
 
         ;; Of course, we have to justify our actions when we remove the
         ;; syntactic wrapper.  To avoid re-rewriting the term, we have defined
@@ -637,12 +662,12 @@
         ;; expected value without actually re-wrapping it in the context.
 
         (,fix-fn-unfix-check ,wrapped-var-wrapped? ,wrapped-var ,unwrapped-wrapped-var ,wrapped-var-hyps ,@fix-args)
-        
+
         )
-      
+
       )))
 
-  
+
 (defun generate-cong-hyp-p (cong)
   (declare (xargs :mode :program))
   (let* (;(ovar  (car cong))
@@ -664,7 +689,7 @@
       `(
         ;; We now ask ACL2 to rewrite under the new context .. if the bound
         ;; variable was not already in such a context.
-        
+
         (,equiv ,wrapped-var ,exp)
 
         (bind-free
@@ -675,7 +700,7 @@
 
         ;; After rewriting in the new context, we evaluate the resulting term.
         ;; If the term is still (syntactically) wrapped in the context, we
-        ;; remove the context.  
+        ;; remove the context.
 
         ;; Of course, we have to justify our actions when we remove the
         ;; syntactic wrapper.  To avoid re-rewriting the term, we have defined
@@ -683,9 +708,9 @@
         ;; expected value without actually re-wrapping it in the context.
 
         (,fix-fn-unfix-check-keyed ,wrapped-var ,wrapped-var-wrapped? ,unwrapped-wrapped-var ,wrapped-var-hyps ,lhs ,@key-args)
-        
+
         )
-      
+
       )))
 
 
@@ -724,7 +749,7 @@
          (eex  (cadr cong))
          (nvar (cadr eex)))
     `(not (equal ,ovar ,nvar))))
-    
+
 (defun generate-cong-syntax-hyps-rec (congs)
   (if (consp congs)
       (cons (generate-cong-syntax-hyp (car congs))
@@ -760,9 +785,9 @@
   (let ((cong (if (wf-cong-list cong) cong (list cong))))
     `(and ,@(generate-cong-hyps t cong)
           ,@(and syntaxp `(,(generate-cong-syntax-hyps cong))))))
-  
+
 ;; = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-;; 
+;;
 ;; The defequiv+ macro extends the notion of equivalance relations to
 ;; include arbitrary boolean relations.  In particular, we want to be
 ;; able to rewrite a term while preserving the truth of some boolean
@@ -771,10 +796,10 @@
 ;; b}).  The macro accepts a predicate term expression and a number of
 ;; keywords as below:
 ;;
-;; (defequiv+ 
+;; (defequiv+
 ;;  (< n x)
 ;;  :rhs     n
-;;  :pred    <-pred 
+;;  :pred    <-pred
 ;;  :context <-ctx
 ;;  :equiv   <-equiv
 ;;  )
@@ -782,7 +807,7 @@
 ;; The :rhs term identifies which variable in the predicate expression
 ;; will be construed as the rewritten term.  If left blank, we assume
 ;; a binary relation and we use the second argument.
-;; 
+;;
 ;; The name of the "equivlance relation" constructed by the macro can
 ;; be specified by the user via the :equiv keyword.  By default it is
 ;; computed from the leading function symbol of the provided term by
@@ -791,7 +816,7 @@
 ;; equality between two predicates.  Thus, the equivalance relation
 ;; should only be used to define rewrite rules and not be used to
 ;; express hypotheses.
-;; 
+;;
 ;; Rules expressed in terms of the generated equivalence relation will
 ;; key off of (will rewrite) :context expressions.  The user can
 ;; supply the name of the :context via the macro keyword, or it will
@@ -884,7 +909,7 @@
          (wrapped-var? (safe-symbol (list rhs "-wrapped?") fn-witness))
          (fix-fn-chaining  (safe-symbol (list fix-fn "-CHAINING") fn-witness))
          )
-    `(encapsulate 
+    `(encapsulate
       ()
 
       (set-ignore-ok t)
@@ -892,7 +917,7 @@
 
       (defun ,context-fn (,@lhs-args--)
         t)
-      
+
       ,@(generate-congruences `(,context-fn ,@lhs-args--) congruences)
 
       (defmacro ,context-macro (,lhs &key ,@(make-keyargs (remove lhs lhs-args--)))
@@ -904,10 +929,10 @@
          (equal (,context-fn ,@lhs-args--) t)))
 
       (in-theory (disable (:type-prescription ,context-fn) ,context-fn (,context-fn)))
-      
+
       (defund ,fix-fn (,@args)
         (if (not ,hyps) nil (not (not ,term))))
-      
+
       (in-theory (disable (,fix-fn)))
 
       (defthm ,(safe-symbol (list fix-fn "-OPEN") fix-fn)
@@ -927,7 +952,7 @@
                `((,wrapped . 't)
                  (,unwrap  . ,(ith ,(1+ (locate rhs term)) term))
                  (,hyp     . ,(ith 1 term))))
-              ((equal (car term) ',context-fn) 
+              ((equal (car term) ',context-fn)
                `((,wrapped . 'nil)
                  (,unwrap  . ,,lhs)
                  (,hyp     . 't)))
@@ -935,7 +960,7 @@
                (cw "~%Boolean Binding reduced ~p0 to TRUE~%" ',fix-fn))
               (t
                (cw "~%Boolean Binding Failure on returned term:~%~p0~%" term)))))
-      
+
       (defmacro ,fix-fn-unfix-keyed (term wrapped unwrap ,hyps ,lhs &key ,@(make-keyargs (remove lhs lhs-args--)))
         `(,',fix-fn-unfix ,term ,@(list ,@lhs-args--) ,wrapped ,unwrap ,,hyps))
 
@@ -945,7 +970,7 @@
       (defun ,fix-fn-unfix-check (,wrapped-var? ,wrapped-var ,rhs ,@lhs-args)
         (if ,wrapped-var? (equal ,wrapped-var (,fix-fn ,@args))
           (equal ,rhs ,lhs)))
-      
+
       (defmacro ,fix-fn-unfix-check-keyed (,wrapped-var ,wrapped-var? ,rhs ,hyps ,lhs
                                                          &key ,@(make-keyargs (remove lhs lhs-args--)))
         `(,',fix-fn-unfix-check ,,wrapped-var? ,,wrapped-var ,,rhs ,@(list ,@lhs-args)))
@@ -956,13 +981,13 @@
          (equal (,fix-fn-unfix-check ,wrapped-var? ,wrapped-var ,rhs ,@lhs-args)
                 (if ,wrapped-var? (equal ,wrapped-var (,fix-fn ,@args))
                   (equal ,rhs ,lhs)))))
-        
+
       (defthm ,fix-fn-unfix-check-reduction-2
         (,fix-fn-unfix-check t (,fix-fn ,@args) ,rhs ,@lhs-args))
-      
+
       (defthm ,fix-fn-unfix-check-reduction-3
         (,fix-fn-unfix-check nil ,wrapped-var ,lhs ,@lhs-args))
-      
+
       (in-theory (disable ,fix-fn-unfix-check))
 
       (defmacro ,equiv ,(if keywords `(&key (hyp 'nil) (skip 'nil) ,@keyargs) `(,@macroargs &key (hyp 'nil) (skip 'nil)))
@@ -973,7 +998,7 @@
                     ,(if skip
                          `(skip-rewrite (,',fix-fn ,hyp ,@(list ,@args--)))
                        `(,',fix-fn ,hyp ,@(list ,@args--)))))))
-      
+
       ,@(and chaining
              `(
                (defthm ,fix-fn-chaining
@@ -988,10 +1013,10 @@
                  :rule-classes ((:rewrite :backchain-limit-lst 100))
                  :hints (("Goal" :expand (:free (x) (hide x)))))
                ))
-      
+
       )))
 
-(defmacro defequivp+ (term &key  (lhs 'nil) (rhs 'nil) (pred 'nil) (context 'nil) 
+(defmacro defequivp+ (term &key  (lhs 'nil) (rhs 'nil) (pred 'nil) (context 'nil)
 			   (congruences 'nil)
                            (equiv 'nil) (chaining 't) (keywords 't))
   (declare (xargs :guard (and (symbolp lhs)
@@ -1027,7 +1052,7 @@
 (defcong+ mod-+-cong
 
   (mod (+ a b) n)
-  
+
   :hyps (and
              (rationalp n)
              (rationalp a)
@@ -1040,7 +1065,7 @@
   :hints (("goal" :in-theory (enable mod-+-fixpoint-helper)))
   )
 |#
-;; 
+;;
 ;; Tells us that we will be considering terms of the form (mod (+ a b)
 ;; n).  The :hyps are the hypothesis under which this operation is
 ;; allowed.  The :cong term tell us to rewrite (mod (+ a b) n) into
@@ -1050,7 +1075,7 @@
 ;; this simplification, check the :check conditions to make sure the
 ;; resulting terms justify this transformation.  Perform the proof
 ;; using the supplied :hints.
-;; 
+;;
 ;; defcongp+ creates a theorem context in which ACL2 will appear to
 ;; rewrite terms while preserving a boolean context.  From a user's
 ;; perspective, the primary difference between defcong+ and defcongp+
@@ -1059,14 +1084,14 @@
 ;; the RHS term should reflect the substitution hinted at by the :cong
 ;; relations provided.  In the case below, this means replacing the
 ;; variable "list" by "z".
-;; 
+;;
 #|
 (defcongp+ <-pred-memberp=>
-  
+
   (bag::memberp x list)
 
   :rhs (bag::memberp x z)
-  
+
   :hyps (and
          (syntaxp (not (cw "Here"))))
 
@@ -1083,7 +1108,7 @@
 
 (defmacro defcong+ (name term &key (hyps 'nil) (cong 'nil) (check 'nil) (hints 'nil) (equiv 'equal))
   (declare (type (satisfies wf-cong-list) cong))
-           
+
   `(defthm ,name
      (implies
       (and
@@ -1102,7 +1127,7 @@
        ;; Simplify selected arguments in their new context
 
        ,@(generate-cong-hyps nil cong)
-       
+
        ;; See if anything has changed ..
 
        ,(generate-cong-syntax-hyps cong)
@@ -1119,7 +1144,7 @@
 
 (defmacro defcongp+ (name term &key (rhs 'nil) (hyps 'nil) (cong 'nil) (check 'nil) (hints 'nil) (equiv 'equal))
   (declare (type (satisfies wf-cong-list) cong))
-           
+
   `(defthm ,name
      (implies
       (and
@@ -1138,7 +1163,7 @@
        ;; Simplify selected arguments in their new context
 
        ,@(generate-cong-hyps t cong)
-       
+
        ,@(and rhs (generate-asymmetric-hyps cong))
 
        ;; See if anything has changed ..

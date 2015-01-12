@@ -790,6 +790,27 @@
       (setq *wormhole-iprint-ar* nil))
     state))
 
+(defun ld-fix-command (form)
+  #-acl2-loop-only
+  (when (and (consp form)
+             (eq (car form) 'defconst) ; optimization
+             (global-val 'boot-strap-flg (w *the-live-state*)))
+    (case-match form
+      (('defconst name ('quote val) . &)
+       (assert (boundp name))
+       (let ((old-val (symbol-value name)))
+
+; Note that we are in the boot-strap, where we presumably don't use
+; redefinition.  If we later do so, we should see this assertion fire and then
+; we can figure out what to do.
+
+         (assert (equal val old-val))
+         (when (not (eq val old-val))
+           (let ((caddr-form (caddr form))) ; (quote val)
+             (setf (cadr caddr-form)
+                   old-val)))))))
+  form)
+
 (defun ld-read-command (state)
 
 ; This function reads an ld command from the standard-oi channel of state and
@@ -826,7 +847,7 @@
                              (global-val 'known-package-alist (w state)))
                             (mv nil nil nil `(in-package ,upval) state))
                            (t (mv nil nil nil val state)))))
-                  (t (mv nil nil nil val state)))))))
+                  (t (mv nil nil nil (ld-fix-command val) state)))))))
 
 (defun ld-print-command (keyp form col state)
   (with-base-10
@@ -1043,10 +1064,22 @@
          (t state))
    (mv-let
     (col state)
-    (ld-print-prompt state)
+    (if (and (eql (f-get-global 'in-verify-flg state) 1)
+             (eql (f-get-global 'ld-level state) 1))
+        (mv 0 state)
+      (ld-print-prompt state))
     (mv-let
      (eofp erp keyp form state)
-     (ld-read-command state)
+     (let ((in-verify-flg (f-get-global 'in-verify-flg state)))
+       (cond (in-verify-flg
+              (pprogn (f-put-global 'in-verify-flg nil state)
+                      (cond ((and (eql (f-get-global 'ld-level state) 1)
+                                  (eql in-verify-flg 1))
+                             (pprogn
+                              (print-re-entering-proof-checker nil state)
+                              (mv nil nil nil '(verify) state)))
+                            (t (ld-read-command state)))))
+             (t (ld-read-command state))))
      (cond
       (eofp (cond ((ld-prompt state)
                    (pprogn (princ$ "Bye." (standard-co state) state)

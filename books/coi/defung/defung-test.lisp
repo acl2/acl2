@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 ;; (set-evisc-tuple nil :iprint :same :sites :all)
@@ -168,7 +193,7 @@
 
 (def::ung rfact (n r)
   (declare (type integer n r))
-  (if (= n 0) r 
+  (if (= n 0) r
     (rfact (1- n) (* n r))))
 
 (def::ung fact (n)
@@ -214,25 +239,25 @@
 ;;
 ;; ==================================================================
 
-(def::ung one (n) 
+(def::ung one (n)
   (declare (type (satisfies natp) n))
   (if (zp n) 1 (one (1- n))))
 
-(def::ung one-2 (n) 
+(def::ung one-2 (n)
   (declare (xargs :signature ((natp) natp)))
   (if (zp n) 1 (one-2 (one-2 (1- n)))))
 
-(def::ung one-let (n) 
+(def::ung one-let (n)
   (declare (xargs :signature ((natp) natp)))
-  (if (zp n) 1 
+  (if (zp n) 1
     (let ((n (1- n)))
-      (let ((res (one-let n))) 
+      (let ((res (one-let n)))
 	res))))
 
 (def::ung one-3 (n)
   (declare (xargs :non-executable t
 		  :signature ((natp) natp)))
-  (if (zp n) 1 
+  (if (zp n) 1
     (let ((n (1- n)))
       (let ((n (one-3 n)))
 	(let ((n (one-3 n)))
@@ -246,7 +271,7 @@
 ;; ==================================================================
 
 (def::ung fibc (n)
-  (cond 
+  (cond
    ((zp n) 1)
    ((<= n 1) 1)
    (t (+ (fibc (- n 1)) (fibc (- n 2))))))
@@ -403,7 +428,7 @@
 	(list-2-nat (integerp v))
 	(list-2-list (integer-listp v))
 	(t (booleanp v))))
-  
+
 ;; Why were these failing as :forward-chaining rules?
 ;; - it said unreleaved hyps (?)
 
@@ -498,7 +523,7 @@
 
 (defthm integerp-implies-acl2-numberp
   (implies
-   (integerp x) 
+   (integerp x)
    (acl2-numberp x))
   :rule-classes (:forward-chaining))
 

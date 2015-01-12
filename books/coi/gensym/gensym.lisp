@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 (include-book "coi/symbol-fns/symbol-fns" :dir :system)
@@ -50,10 +75,10 @@
 
  (local (include-book "coi/util/ordinal-order" :dir :system))
 
- (local 
+ (local
   (encapsulate
    ()
-  
+
    (defthmd equal-symbol-reduction
      (implies
       (symbolp x)
@@ -73,7 +98,7 @@
 		    (:instance equal-stringtoo-reduction
 			       (x (symbol-package-name x))
 			       (y (symbol-package-name y)))))))
-   
+
    (defthmd equal-symbol-nil
      (equal (equal x nil)
 	    (and (equal (symbol-name x) "NIL")
@@ -81,14 +106,14 @@
      :hints (("Goal" :use (:instance equal-symbol-reduction
 				     (x x)
 				     (y nil)))))
-   
+
    (defthmd iff-symbol
      (implies
       (not (equal (symbol-name x) "NIL"))
       (equal (equal x nil)
 	     nil))
      :hints (("Goal" :use equal-symbol-nil)))
-   
+
    (DEFTHMd not-equal-intern-in-package-of-symbol-nil
      (IMPLIES (AND (STRINGP STRING)
 		   (SYMBOLP SYMBOL)
@@ -102,16 +127,16 @@
 			 (:DV 1)
 			 (:REWRITE SYMBOL-NAME-INTERN-IN-PACKAGE-OF-SYMBOL)
 			 :TOP :S))
-   
+
    ))
- 
+
  (DEFTHMd iff-intern-in-package-of-symbol
    (IMPLIES (AND (STRINGP STRING)
 		 (SYMBOLP SYMBOL)
 		 (NOT (EQUAL STRING "NIL")))
 	    (INTERN-IN-PACKAGE-OF-SYMBOL STRING SYMBOL))
    :hints (("Goal" :use not-equal-intern-in-package-of-symbol-nil)))
- 
+
  (defthmd equal-string-coerce-reduction
    (implies
     (and
@@ -162,7 +187,7 @@
   (implies
    (not (zp n))
    (contains-numerics (EXPLODE-NONNEGATIVE-INTEGER N 10 list))))
-	 
+
 (defthmd number-strings-contain-numerics
   (implies
    (natp n)
@@ -177,7 +202,7 @@
     (contains-numerics list1)
     (not (contains-numerics list2)))
    (not (equal list1 list2))))
-    
+
 (defthm contains-numerics-append
   (equal (contains-numerics (append x y))
 	 (or (contains-numerics x)
@@ -227,38 +252,38 @@
   :hints (("Goal" :in-theory (enable
 			      equal-string-coerce-reduction
 			      ))))
-   
+
 (defthm equal-append-common-base
-  (equal (equal (append x y) 
+  (equal (equal (append x y)
 		(append x z))
 	 (equal y z)))
-   
+
 (encapsulate
  ()
- 
+
  (local
   (encapsulate
    ()
-   
+
    (local
     (include-book "arithmetic-3/bind-free/top" :dir :system))
-   
+
    (local
     (SET-DEFAULT-HINTS '((NONLINEARP-DEFAULT-HINT STABLE-UNDER-SIMPLIFICATIONP
 						  HIST PSPV))))
-   
+
    (local
     (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
-   
+
    (defun decompose (n)
      (if (zp n) 0
        (+ (* 10 (decompose (floor n 10))) (mod n 10))))
-   
+
    (defthmd decompose-natp
      (implies
       (natp n)
       (equal (decompose n) n)))
-   
+
    (defthmd equal-nat-to-equal-decomposition
      (implies
       (and
@@ -268,26 +293,26 @@
 	     (equal (decompose n)
 		    (decompose m))))
      :hints (("Goal" :in-theory (enable decompose-natp))))
-   
+
    (in-theory (disable digit-to-char))
-   
+
    (defun enni (n)
      (if (zp n) nil
        (cons (digit-to-char (mod n 10)) (enni (floor n 10)))))
-   
+
    (defthmd EXPLODE-NONNEGATIVE-INTEGER-to-enni-consp
      (implies
       (consp list)
       (equal (EXPLODE-NONNEGATIVE-INTEGER N 10 LIST)
-	     (revappend (enni n) list)))) 
-   
+	     (revappend (enni n) list))))
+
    (defthmd EXPLODE-NONNEGATIVE-INTEGER-to-enni
      (equal (EXPLODE-NONNEGATIVE-INTEGER N 10 list)
 	    (if (zp n) (or list (list #\0))
 	      (revappend (enni n) list)))
      :hints (("Goal" :in-theory (enable EXPLODE-NONNEGATIVE-INTEGER-to-enni-consp))))
-   
-   
+
+
    (defun nm-induction (n m)
      (if (or (zp n) (zp m)) (list n m)
        (nm-induction (floor n 10) (floor m 10))))
@@ -302,7 +327,7 @@
        (not (equal n m)))
       (not (equal (digit-to-char n) (digit-to-char m))))
      :hints (("Goal" :in-theory (enable mod digit-to-char))))
-   
+
    (defthm mod-10-bound
      (implies
       (integerp n)
@@ -310,7 +335,7 @@
 	   (<= 0 (mod n 10))))
      :rule-classes (:linear)
      :hints (("Goal" :in-theory (enable mod))))
-   
+
    (defthm not-equal-enni-decompose
      (implies
       (and
@@ -321,7 +346,7 @@
       (not (equal (enni n)
 		  (enni m))))
      :hints (("Goal" :induct (nm-induction n m))))
-   
+
    (defthm not-equal-enni
      (implies
       (and
@@ -337,26 +362,26 @@
      (if (and (consp x) (consp y))
 	 (revappend-x-y-induction (cdr x) (cdr y) (cons (car x) a) (cons (car y) b))
        (list x y a b)))
-   
+
    (defthm len-revappend
      (equal (len (revappend x y))
 	    (+ (len x) (len y))))
-   
+
    (defthm inequality-by-len
      (implies
       (not (equal (len x) (len y)))
       (not (equal x y))))
-   
+
    (defthm x-implies-nz-len
      (implies (and (true-listp x) x) (< 0 (len x)))
      :rule-classes (:linear))
-   
+
    (defthm not-equal-revappend-x
      (implies
       (not (equal a b))
       (not (equal (revappend x a)
 		  (revappend x b)))))
-   
+
    (defthm not-equal-revappend
      (implies
       (and
@@ -367,7 +392,7 @@
       (not (equal (revappend x a)
 		  (revappend y b))))
      :hints (("Goal" :induct (revappend-x-y-induction x y a b))))
-   
+
    (defthm not-equal-explode-nonnegative-integer
      (implies
       (and
@@ -379,7 +404,7 @@
      :hints (("Goal" :in-theory (enable EXPLODE-NONNEGATIVE-INTEGER-to-enni))
 	     ("Subgoal 1" :expand ((DIGIT-TO-CHAR N) (enni n) (ENNI (FLOOR N 10))))
 	     ("Subgoal 2" :expand ((DIGIT-TO-CHAR M) (enni m) (ENNI (FLOOR M 10))))))
-   
+
    (defthm not-equal-integer-to-string
      (implies
       (and
@@ -388,13 +413,13 @@
        (not (equal n m)))
       (not (equal (symbol-fns::to-string n)
 		  (symbol-fns::to-string m))))
-     :hints (("Goal" :in-theory (enable 
+     :hints (("Goal" :in-theory (enable
 				 not-equal-coerce-string
 				 symbol-fns::to-string
 				 ))))
-   
+
    ))
-  
+
  (defun new-symbol (n base)
    (INTERN-IN-PACKAGE-OF-SYMBOL
     (COERCE (APPEND (COERCE (SYMBOL-FNS::TO-STRING BASE)
@@ -403,7 +428,7 @@
 			    'LIST))
 	    'STRING)
     (SYMBOL-FNS::SAFE-WITNESS BASE)))
- 
+
  (defthm not-equal-new-symbol
    (implies
     (and
@@ -453,7 +478,7 @@
      (if (zp n) nil
        (let ((symbol (new-symbol n base)))
 	 (cons symbol (gensym::genvar2-symbols (1- n) base)))))
-   
+
    (defthm greater-n-not-memberp-genvar2-symbols
      (implies
       (and
@@ -462,23 +487,23 @@
        (natp m)
        (< m n))
       (not (list::memberp (new-symbol n base) (gensym::genvar2-symbols m base)))))
-   
+
    (defthm unique-genvar2-symbols
      (implies
       (symbolp base)
       (bag::unique (gensym::genvar2-symbols n base)))
      :hints (("Goal" :in-theory (enable bag::unique))))
-   
+
    (defthm len-genvar2-symbols
      (equal (len (gensym::genvar2-symbols n base)) (nfix n)))
-   
+
    ;; A better definition ..
    (defun genvar3-rec (n base vars)
      (if (zp n) nil
        (let ((symbol (new-symbol n base)))
 	 (if (not (list::memberp symbol vars)) symbol
 	   (genvar3-rec (1- n) base vars)))))
-   
+
    (defthm genvar3-rec-implies-subsetp
      (implies
       (and
@@ -488,21 +513,21 @@
       (genvar3-rec n base vars))
      :hints (("Goal" :in-theory (enable list::memberp)))
      :otf-flg t)
-   
+
    (defun unique-subset-bound-induction (big small)
      (if (consp big)
 	 (if (list::memberp (car big) small)
 	     (unique-subset-bound-induction (cdr big) (remove (car big) small))
 	   (list big small))
        nil))
-   
+
    (defthm len-remove
      (implies
       (list::memberp a list)
       (< (len (remove a list))
 	 (len list)))
      :rule-classes (:linear))
-   
+
    (defthm unique-subset-size-bound
      (implies
       (and
@@ -510,7 +535,7 @@
        (bag::unique big))
       (not (list::subsetp big small)))
      :hints (("Goal" :induct (unique-subset-bound-induction big small))))
-   
+
    (defthm iff-genvar2-rec
      (implies
       (and
@@ -525,13 +550,13 @@
      :hints (("Goal" :in-theory (enable new-symbol))))
 
    ))
- 
+
  (defthm iff-genvar2
    (implies
     (symbolp base)
     (gensym::genvar2 base vars))
    :hints (("Goal" :in-theory (enable gensym::genvar2))))
- 
+
  )
 
 (defthm non-membership-property
@@ -581,4 +606,3 @@
 		  :trigger-terms ((gensym::gensym base vars)))))
 
 (in-theory (disable gensym::gensym))
-

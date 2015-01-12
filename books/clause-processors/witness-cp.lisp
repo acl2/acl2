@@ -2076,12 +2076,20 @@ following additional keywords:</p>
 
 
 
+(defsection witness-enable
+  :parents (witness-cp)
+  :short "Enable some rules for @(see witness-cp)."
 
-(defmacro witness-enable (&rest names)
-  `(make-event (witness-e/d-ruleset-fn ',names t (w state))))
+  (defmacro witness-enable (&rest names)
+    `(make-event (witness-e/d-ruleset-fn ',names t (w state)))))
 
-(defmacro witness-disable (&rest names)
-  `(make-event (witness-e/d-ruleset-fn ',names nil (w state))))
+
+(defsection witness-disable
+  :parents (witness-cp)
+  :short "Disable some rules for @(see witness-cp)."
+
+  (defmacro witness-disable (&rest names)
+    `(make-event (witness-e/d-ruleset-fn ',names nil (w state)))))
 
 
 

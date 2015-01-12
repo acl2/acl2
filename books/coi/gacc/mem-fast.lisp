@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "GACC")
 
 ;; Fast version of mem.lisp.
@@ -21,8 +46,8 @@
 
 ;basically just includes a bunch of super-ihs stuff:
 ;(include-book "bits")
-(include-book "../super-ihs/loghead") 
-(include-book "../super-ihs/unsigned-byte-p") 
+(include-book "../super-ihs/loghead")
+(include-book "../super-ihs/unsigned-byte-p")
 
 (local (in-theory (disable ACL2::LOGCAR-0-REWRITE)))
 
@@ -114,7 +139,7 @@
  (local (defthmd wr-of-loghead8
           (equal (wr a (loghead8 v) ram)
                  (wr a v ram))))
- 
+
  (defthm wr-of-loghead
    (implies (and (<= 8 size)
                  (integerp size))
@@ -182,7 +207,7 @@
 
 ;bzo improve?
 (defthm loghead-of-rd
-  (equal (acl2::loghead 8 ;wfixn 8 1 
+  (equal (acl2::loghead 8 ;wfixn 8 1
                         (rd a ram))
          (rd a ram))
   :hints (("goal" :in-theory (enable ;open-wfixw ;wfixn
@@ -193,9 +218,9 @@
          (wr y val (wr x val ram)))
   :hints (("Goal" :cases ((equal x y)))))
 
-(defthm wr-equality 
+(defthm wr-equality
   (implies (equal (wr off val1 ram1) ;val1 is a free variable
-                  (wr off val1 ram2)) 
+                  (wr off val1 ram2))
            (equal (equal (wr off val2 ram1) (wr off val2 ram2))
                 t))
   :hints (("Goal" :in-theory (enable wr==r!))))
@@ -211,7 +236,7 @@
   (implies (and (equal (wr b val ram1) (wr b val ram2))
                 (syntaxp (acl2::smaller-term ram2 ram1))
                 (not (equal a b)))
-           (equal (rd a ram1) 
+           (equal (rd a ram1)
                   (rd a ram2)))
   :hints (("Goal" :in-theory (disable RD-OF-WR-REDUX WR==R!)
            :use ((:instance RD-OF-WR-REDUX (acl2::a a) (acl2::b b) (acl2::v val) (acl2::r ram1))
@@ -222,7 +247,6 @@
   (implies (and (equal (memory-clr b ram1) (memory-clr b ram2))
                 (syntaxp (acl2::smaller-term ram2 ram1))
                 (not (equal a b)))
-           (equal (rd a ram1) 
+           (equal (rd a ram1)
                   (rd a ram2)))
   :hints (("Goal" :in-theory '(memory-clr rd-subst-when-wr-equal))))
-

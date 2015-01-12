@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 
 (in-package "ACL2")
 
@@ -52,7 +77,7 @@
 (defthmd abstract-localfixedpoint
   (equal (localfixedpoint x)
 	 (list::subsetp (rkeys x) (list nil)))
-  :hints (("Goal" :in-theory (enable 
+  :hints (("Goal" :in-theory (enable
 			      localfixedpoint
 			      g
 			      rkeys
@@ -187,9 +212,9 @@
 
 ;; AUX
 (defun ifrp-s-aux (a v r)
-  (if (endp r) 
+  (if (endp r)
       (and (ifrp v) (not a))
-    (if (null (cdr r)) 
+    (if (null (cdr r))
 	(if (<< a (caar r))
 	    (and (not v) (ifrp r))
 	  (and (null (caar r))
@@ -444,23 +469,23 @@
 
 (defthm iff-s
   (iff (s a v r)
-       (or v 
+       (or v
 	   (and r (if (acl2::fixedpoint r) a
 		    (not (list::subsetp (rkeys r) (list a)))))))
   :hints (("Goal" :in-theory (e/d (iff-s-to-iff-s-fixedpoint
-				   gar-as-memberp 
+				   gar-as-memberp
 				   fixedpoint-impact-on-keys)
 				  (LIST::MEMBERP-WHEN-NOT-MEMBERP-OF-CDR-CHEAP)))
 	  ("Subgoal 3''" :in-theory (enable list::memberp))))
 
 (defthm fixedpoint-s
   (equal (fixedpoint (s a v r))
-	 (or 
+	 (or
 	  ;; Results from (not (s a v r))
 	  (not (or v
 		   (and r (if (acl2::fixedpoint r) a
 			    (not (list::subsetp (rkeys r) (list a)))))))
-	  (and 
+	  (and
 	   ;; Results from (localfixedpoint (s a v r))
 	   (if v (list::subsetp (cons a (rkeys r)) (list nil))
 	     (list::subsetp (rkeys r) (list a nil)))

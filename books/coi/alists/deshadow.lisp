@@ -1,15 +1,40 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;; deshadow.lisp
 ;; Introduces the deshadow function and some theorems about it.
 ;;
 ;; A "shadowed pair" is any cons in an alist whose key duplicates a key which
 ;; appears in an earlier cons.  In other words, shadowed pairs are those which
 ;; would not be accessible through "assoc", because they would be blocked by
-;; earlier entries.  
+;; earlier entries.
 ;;
 ;; We provide a function, deshadow, which removes the shadowed pairs from an
 ;; alist but leaves the other pairs untouched (modulo consfixing) in the same
@@ -55,7 +80,7 @@
 
 (defthm deshadow-of-non-consp
   (implies (not (consp x))
-           (equal (deshadow x) 
+           (equal (deshadow x)
                   nil)))
 
 (defthm consp-of-deshadow
@@ -64,7 +89,7 @@
 
 (defthm deshadow-of-cons
   (equal (deshadow (cons x y))
-         (cons (consfix x) 
+         (cons (consfix x)
                (deshadow (clearkey (car x) y))))
   :hints(("Goal" :in-theory (enable deshadow clearkey))))
 
@@ -115,7 +140,7 @@
 
 (encapsulate
  ()
- 
+
  (local (defun my-induction (a b)
           (declare (xargs :measure (len a)))
           (if (atom a)
@@ -125,7 +150,7 @@
              (clearkey (caar b) (cdr b))))))
 
  (defcong alist-equiv equal (deshadow x) 1
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (enable deshadow)
            :induct (my-induction x x-equiv))))
 )
@@ -172,7 +197,7 @@
  (local (include-book "../bags/pick-a-point"))
 
  (defthm subbagp-strip-cars-of-deshadow
-   (BAG::subbagp (strip-cars (deshadow x)) 
+   (BAG::subbagp (strip-cars (deshadow x))
                  (strip-cars x)))
 )
 
@@ -188,8 +213,8 @@
   :hints(("Goal" :in-theory (enable deshadow))))
 
 
-;; bzo - it seems like we set up this whole deshadow thing thinking about 
-;; assoc, and then we never prove any rules about assoc?  
+;; bzo - it seems like we set up this whole deshadow thing thinking about
+;; assoc, and then we never prove any rules about assoc?
 ;;
 ;; Furthermore, it seems like (equal (deshadow x) (deshadow y)) would be a very
 ;; natural equivalence relation for talking about assoc's.  Perhaps we should

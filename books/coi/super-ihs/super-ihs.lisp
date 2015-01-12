@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 (include-book "hacks")
@@ -33,7 +58,7 @@
  (defthm sbp-loghead
    (implies (< m n)
             (equal (signed-byte-p n (loghead m v))
-                   (and (integerp n) 
+                   (and (integerp n)
                         (< 0 n))))
    :hints (("Goal" :use (sbp-loghead-helper)))))
 
@@ -46,7 +71,7 @@
                               simplify-bit-functions))))
 
 (defthm logxor-lognot-one
-  (implies (and (integerp a) 
+  (implies (and (integerp a)
                 (integerp b))
            (equal (logxor (lognot a) b)
                   (lognot (logxor a b)))))
@@ -70,10 +95,10 @@
                                      LOGAND-NEG
                                      ))))
 
-(defthm integerp-logand 
+(defthm integerp-logand
   (integerp (logand x y)))
 
-(defthm integerp-logxor 
+(defthm integerp-logxor
   (integerp (logxor x y)))
 
 (defthm integerp-logior
@@ -82,10 +107,10 @@
 (defthm integerp-logext
   (integerp (logext x y)))
 
-(defthm rationalp-logand 
+(defthm rationalp-logand
   (rationalp (logand x y)))
 
-(defthm rationalp-logxor 
+(defthm rationalp-logxor
   (rationalp (logxor x y)))
 
 (defthm rationalp-logior
@@ -101,7 +126,7 @@
 ;;     (< 0 n) ;; extraneous
 ;;     (integerp n) ;; extraneous
 ;;     (integerp x)  ;; extraneous
-;;     (integerp m) 
+;;     (integerp m)
 ;;     (<= n m))
 ;;    (not (logbitp m x)))
 ;;   :hints (("Goal"
@@ -119,7 +144,7 @@
            (not (logbitp m x)))
   :otf-flg t
   :hints (("Goal" :in-theory (e/d (ifix ;LOGBITP-WITH-NON-INTEGER ;UNSIGNED-BYTE-p
-                                        ) 
+                                        )
                                   (LOGBITP-N-UNSIGNED-BYTE-P-N
                                    OPEN-LOGCONS))
            :use (:instance LOGBITP-N-UNSIGNED-BYTE-P-N (n m)))))
@@ -215,7 +240,7 @@
 ;;            :do-not '(generalize eliminate-destructors)
 ;;            )))
 
- 
+
 
 
 
@@ -227,11 +252,11 @@
            (equal (logext n (+ x (expt 2 n)))
                   (logext n x)))
   :hints (("goal" :in-theory (e/d (LRDT
-                                     open-logcons) 
-                                  (LOGCONS-OF-0 
+                                     open-logcons)
+                                  (LOGCONS-OF-0
                                    )))))
 
-(local (in-theory (enable open-logcons))) 
+(local (in-theory (enable open-logcons)))
 
 (local (in-theory (disable logcons-of-0)))
 
@@ -290,7 +315,7 @@
                             UNSIGNED-BYTE-P
                             INTEGER-RANGE-P
                             ;logext
-                            ) 
+                            )
                            (
 ;                            expt2*
                             SIGN-LOGEXT-AS-LOGBITP)))))
@@ -310,9 +335,9 @@
                             UNSIGNED-BYTE-P
                             INTEGER-RANGE-P
                             ;logext
-                            ) 
+                            )
                            (SIGN-LOGEXT-AS-LOGBITP)))))
- 
+
 
 ;improve
 ;go the other way too?
@@ -446,7 +471,7 @@
                 (<= 0 SIZE1)
                 )
            (equal (unsigned-byte-p size (logapp size1 i j))
-                  (and (integerp size) 
+                  (and (integerp size)
                        (<= 0 size)
                        (if (integerp j)
                            (unsigned-byte-p (- size size1) j)
@@ -457,7 +482,7 @@
            :in-theory (e/d (FALSIFY-UNSIGNED-BYTE-P)
                            ( unsigned-byte-p-logapp)))))
 
-(in-theory (disable unsigned-byte-p-logapp)) 
+(in-theory (disable unsigned-byte-p-logapp))
 
 (defthm ash-<=-to-sbp
   (implies (and (signed-byte-p (- 32 N) V)
@@ -468,7 +493,7 @@
                 (<= -2147483648 (ASH V N))))
   :hints (("goal"
 
-           :in-theory (disable ASH-AS-LOGTAIL 
+           :in-theory (disable ASH-AS-LOGTAIL
                                signed-byte-p-ash
                                )
            :use ((:instance signed-byte-p-ash (x v) (n 32) (m n))))))
@@ -530,7 +555,7 @@
 (encapsulate
  ()
 
- (local 
+ (local
   (defthm negative-bound-loghead-rewrite
     (implies (and (integerp x)
                   (< x 0)
@@ -547,7 +572,7 @@
     :hints (("goal" :in-theory (enable loghead)))))
 
 ;make a similar rule to loghead-equal-rewrite-constant-case?
- (defthm loghead-non-zero-type 
+ (defthm loghead-non-zero-type
    (implies (and (integerp den)
                  (<= den (1- (expt 2 31)))
                  (<= (- (expt 2 31)) den)
@@ -614,7 +639,7 @@
 
 
 
-        
+
 ;loops with LOGCDR-LOGHEAD
 (defthmd loghead-logcdr
   (equal (loghead n (logcdr x))
@@ -732,9 +757,9 @@
 ;think more about how we want to handle claims about bit vectors of length 1.  do we prefer to normalize all the claims to claims about 0, or do we
 ;want to leave  (equal (logcar x) 1) to get ACL2 to substitute 1 for (logcar x)? -ews
 ;eric saw something similar to this at AMD.
-(defthm equal-logcar-1 
-  (equal (equal (logcar x) 1) 
-         (not (equal (logcar x) 0))) 
+(defthm equal-logcar-1
+  (equal (equal (logcar x) 1)
+         (not (equal (logcar x) 0)))
   :hints (("goal" :in-theory (enable))))
 
 
@@ -781,7 +806,7 @@
                 (< 0 n))
            (<= (logext n x) x))
   :rule-classes :linear
-  :hints (("goal" :in-theory (e/d (SIGNED-BYTE-P) (logext-identity 
+  :hints (("goal" :in-theory (e/d (SIGNED-BYTE-P) (logext-identity
                                                    logext-does-nothing-rewrite
                                                    signed-byte-p-logext
                                                    SIGNED-BYTE-P-OF-LOGEXT
@@ -840,7 +865,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable logapp))))
 
-(in-theory (disable logcar-logapp)) 
+(in-theory (disable logcar-logapp))
 
 (defthm logbitp-logapp-better
   (equal (logbitp pos (logapp size i j))
@@ -858,9 +883,9 @@
 (defthm logext-of-logext-same
   (equal (logext size (logext size i))
          (logext size i))
-  :hints (("Goal" :in-theory (e/d (logext) 
+  :hints (("Goal" :in-theory (e/d (logext)
                                   (EQUAL-LOGAPP-X-Y-Z
-                                   EQUAL-LOGAPP-X-Y-Z-CONSTANTS                                   
+                                   EQUAL-LOGAPP-X-Y-Z-CONSTANTS
                                    ;;LOGHEAD-LOGAPP
                                    )))))
 
@@ -869,7 +894,7 @@
 (defthm logext-+-logext-better-alt
   (equal (logext size (+ (logext size j) i))
          (logext size (+ (ifix j) i)))
-  :hints (("Goal" :use (:instance  logext-+-logext-better) 
+  :hints (("Goal" :use (:instance  logext-+-logext-better)
            :in-theory (disable  logext-+-logext-better))))
 
 
@@ -895,7 +920,7 @@
                   )))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (FLOOR-NORMALIZES-TO-HAVE-J-BE-1 EXPONENTS-ADD-UNRESTRICTED logbitp) ()))))
-        
+
 (defthm logbitp-of-*-expt-2-special
   (implies (and (integerp x)
                 (<= 0 n)
@@ -936,7 +961,7 @@
 ;have no affect on subsequent proofs.
 
 ;stuff enabled or added by the @logops book:
-(in-theory (enable 
+(in-theory (enable
 ;            (:EXECUTABLE-COUNTERPART IMMEDIATE-FORCE-MODEP) ;trying without this...
 ;            (:INDUCTION EXPT) ;trying without this
             ))
@@ -944,7 +969,7 @@
 
 ;stuff disabled by the @logops book:
 ;bzo remove stuff from this!
-(in-theory (disable 
+(in-theory (disable
             (:FORWARD-CHAINING INTEGERP-*-MEANS)
             (:DEFINITION LOGENDP)
             (:DEFINITION B-MAJ)
@@ -1014,7 +1039,7 @@
             (:REWRITE UNSIGNED-BYTE-P-+-EASY)
             (:FORWARD-CHAINING UNSIGNED-BYTE-P-+-EASY-FC)
             (:REWRITE UNSIGNED-BYTE-P-+-BRIDGE2)
- ;           (:REWRITE SIGNED-BYTE-P-+)                          
+ ;           (:REWRITE SIGNED-BYTE-P-+)
 ;            (:REWRITE SIGNED-BYTE-P-UNSIGNED-BYTE-P)
 ;            (:REWRITE UNSIGNED-BYTE-P-SUBTYPE)
 ;            (:REWRITE SIGNED-BYTE-P-SUBTYPE)
@@ -1187,8 +1212,8 @@
 
 
 
-;;; The true-listp guard to nth and update-nth is used elswhere, 
-;;; There are two versions, which are identical except that our 
+;;; The true-listp guard to nth and update-nth is used elswhere,
+;;; There are two versions, which are identical except that our
 ;;; guard is that the index is in the list, not that the list is true.
 
 
@@ -1257,7 +1282,7 @@
    (and
     (signed-byte-p 32 x)
     (signed-byte-p 32 y))
-   (and 
+   (and
     (<= (- (expt 2 31)) (LOGIOR x y))
     (<= (logior x y) (1- (expt 2 31)))))
   :hints (("goal" :in-theory (disable  signed-byte-p-logops)
@@ -1269,7 +1294,7 @@
    (and
     (signed-byte-p 32 x)
     (signed-byte-p 32 y))
-   (and 
+   (and
     (<= (- (expt 2 31)) (LOGXOR x y))
     (<= (logxor x y) (1- (expt 2 31)))))
   :hints (("goal" :in-theory (disable  signed-byte-p-logops)
@@ -1280,7 +1305,7 @@
 (defthm logxor-bit-bound
   (implies
     (and (unsigned-byte-p 1 x) (unsigned-byte-p 1 y))
-  (and 
+  (and
    (<= 0 (logxor x y))
    (<= (logxor x y) 1)))
   :hints (("goal" :in-theory (disable UNSIGNED-BYTE-P-LOGXOR)
@@ -1314,7 +1339,7 @@
            (<= (LOGAND X Y) 2147483647)))
 
 
-;The out rules in the next series may not handle all these cases, 
+;The out rules in the next series may not handle all these cases,
 ;so it has been left it in this file, but commented out
 
 
@@ -1394,7 +1419,7 @@
 
 ;; BY: This book is rather fragile.  For example, it seems previously to have
 ;;     been certified with EXPT enabled, but it is currently disabled, so I
-;;     had to deal with that throughout. 
+;;     had to deal with that throughout.
 
 
 ;drop?
@@ -1428,7 +1453,7 @@
            ;:do-not '(generalize eliminate-destructors)
            :in-theory (enable LOGOPS-RECURSIVE-DEFINITIONS-THEORY b-and b-xor open-logcons))))
 
-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;           
+;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
 ;; signed-byte-p, unsigned-byte-p
 ;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
 
@@ -1487,7 +1512,7 @@
 ;trying without this...
 ;; (defthm loghead-24-16-bridge
 ;;   (implies (unsigned-byte-p 16 x)
-;;            (equal (loghead 24 x) 
+;;            (equal (loghead 24 x)
 ;;                   x)))
 
 ;Prove a bound on (loghead n x) perhaps?
@@ -1576,7 +1601,7 @@
   (implies (and (integerp x)
                 (integerp y))
            (and (equal (logior z (logxor x y))
-                       (logior z 
+                       (logior z
                                (logior (logand x (lognot y))
                                        (logand (lognot x) y))
                                ))
@@ -1613,7 +1638,7 @@
 
 (in-theory (enable ash-as-logtail))  ;do we want this enabled or not?
 
-;; added this one. 
+;; added this one.
 ;drop?
 (defthmd *ark*-fold-in-two-crock
   (implies (and (acl2-numberp x)
@@ -1756,7 +1781,7 @@
   (implies (and (integerp n1)
                 (integerp n2)
                 (integerp x)
-                (<= 0 n1) 
+                (<= 0 n1)
                 (< n2 0))
            (equal (ash (loghead n1 x) n2)
                   (if (<= n1 (- n2))
@@ -1768,7 +1793,7 @@
 ;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
 ;; floor
 ;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;-;
-    
+
 (in-theory (enable floor-*-1/2-expt-2))
 
 (in-theory (enable sign-+-logext-logext-as-logbitp))
@@ -1829,7 +1854,7 @@
                     )))
   :hints (("Goal" :use (:instance logextu-as-loghead))))
 
-;bzo move, 
+;bzo move,
 ;generalize: rewrite a claim about signed-byte-p of a constant to a claim about the index.
 (defthm signed-byte-p-of-1
   (equal (signed-byte-p n 1)
@@ -1837,10 +1862,10 @@
               (< 1 n)))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
 
-;bzo we could need a rule like this for subtracting 2, subtracting 3, etc. 
+;bzo we could need a rule like this for subtracting 2, subtracting 3, etc.
 ;(and the rules for those cases would get grosser) I bet that subtracting 1
-;covers most of the cases we'll see in practice.this rule gives us a little 
-;flexibility around the ends of the unsigned-byte-p range without just 
+;covers most of the cases we'll see in practice.this rule gives us a little
+;flexibility around the ends of the unsigned-byte-p range without just
 ;opening up to arithmetic
 (defthm unsigned-byte-p-of-one-less-than-x
   (implies (syntaxp (not (quotep x))) ;prevents loops (i think because acl2 unifies say, the constant 42 with the pattern (+ -1 x)
@@ -1885,7 +1910,7 @@
 ;; (defthm plus-of-logapp-suck-in
 ;;   (implies (unsigned-byte-p 16 (+ x y))
 ;;            (equal (+ x (logapp 16 y j))
-;;                   (if (unsigned-byte-p 16 y) 
+;;                   (if (unsigned-byte-p 16 y)
 ;;                       (logapp 16 (+ x y) j)
 ;;                     (+ (loghead 16 y) (- y) (logapp 16 (+ x y) j)) ;this seems strange
 ;;                     )))
@@ -1897,7 +1922,7 @@
 (defthm plus-of-logapp-suck-in
   (implies (unsigned-byte-p n (+ x y))
            (equal (+ x (logapp n y j))
-                  (if (unsigned-byte-p n y) 
+                  (if (unsigned-byte-p n y)
                       (logapp n (+ x y) j)
                     (+ (loghead n y) (- y) (logapp n (+ x y) j)) ;this seems strange
                     )))
@@ -1906,7 +1931,7 @@
 (defthm plus-of-logapp-suck-in-alt
   (implies (unsigned-byte-p n (+ x z y))
            (equal (+ x z (logapp n y j))
-                  (if (unsigned-byte-p n y) 
+                  (if (unsigned-byte-p n y)
                       (logapp n (+ x z y) j)
                     (+ (loghead n y) (- y) (logapp n (+ x z y) j)) ;this seems strange
                     )))
@@ -1920,7 +1945,7 @@
            (equal (+ (- (* 1/2 x))
                      (- (* 1/2 x))
                      y)
-                  (+ (- x) 
+                  (+ (- x)
                      y))))
 
 (encapsulate
@@ -1934,7 +1959,7 @@
           :hints (("Goal" ; :use (:instance  loghead-of-prod-lemma (x (logapp 31 a -1)) (y k))
                    :in-theory (e/d (logext
                                     EXPONENTS-ADD-UNRESTRICTED
-                                    loghead logapp 
+                                    loghead logapp
                                     imod
                                     logbitp
                                     oddp
@@ -1942,7 +1967,7 @@
                                     ifix
                                     mod-stretch-base
                                     mod-stretch-base-2
-                                    ) 
+                                    )
                                    (loghead-of-prod-lemma
                                     mod-cancel
                                     evenp-collapse
@@ -1962,7 +1987,7 @@
                 )
            (equal (logtail m (loghead n x))
                   (logbit m x)))
-  :hints (("Goal" :in-theory (e/d (logtail-loghead-better) 
+  :hints (("Goal" :in-theory (e/d (logtail-loghead-better)
                                   (loghead-logtail)))))
 
 (defthm loghead-split
@@ -2010,7 +2035,7 @@
                            (equal (loghead size i)
                                   (loghead size i2))))))
   :hints (("Goal" :in-theory (enable logapp-equal-logapp-rewrite))))
-                    
+
 
 (defthmd loghead-split-special
   (implies (and (syntaxp (equal x 'x))
@@ -2020,7 +2045,7 @@
            (equal (loghead n x)
                   (logapp (+ -1 n) (loghead (+ -1 n) x) (logbit (+ -1 n) x))))
  :hints (("Goal" :use (:instance  loghead-split))))
-        
+
 ;kill the 16 version
 ;keep this disabled.
 (defthmd equal-of-logheads-split
@@ -2051,8 +2076,8 @@
                             )))
           :hints (("Goal" :in-theory (e/d (logext
                                            loghead-split-special
-                                           logbit 
-                                           equal-of-logheads-split) 
+                                           logbit
+                                           equal-of-logheads-split)
                                           ())))))
 
 ;kill the 16 version
@@ -2115,10 +2140,10 @@
                 (equal (ash z n) z) ; bzo ;figure out what this should simplify to and prove a rule, then rephrase this rule
                 )))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (floor-normalizes-to-have-j-be-1 
-                            logtail 
-                            loghead 
-                            ash) 
+           :in-theory (e/d (floor-normalizes-to-have-j-be-1
+                            logtail
+                            loghead
+                            ash)
                            ( ;(:type-prescription floor)
                             (:type-prescription floor)
                             )))))
@@ -2175,7 +2200,7 @@
 ;;                             oddp
 ;;                             evenp
 ;;                             ifix
-;;                             ) 
+;;                             )
 ;;                            (loghead-of-prod-lemma
 ;;                             mod-cancel
 ;;                             evenp-collapse
@@ -2188,7 +2213,7 @@
 ;;                   (loghead n (* i (ifix j)))))
 ;;   :hints (("Goal" ; :use (:instance  loghead-of-prod-lemma (x (logapp 31 a -1)) (y k))
 ;;            :in-theory (e/d (logext
-;;                             loghead logapp 
+;;                             loghead logapp
 ;;                             imod
 ;;                             logbitp
 ;;                             oddp
@@ -2197,7 +2222,7 @@
 ;;                             mod-stretch-base
 ;;                             mod-stretch-base-2
 ;;                             EXPONENTS-ADD-UNRESTRICTED
-;;                             ) 
+;;                             )
 ;;                            (loghead-of-prod-lemma
 ;;                             mod-cancel
 ;;                             evenp-collapse
@@ -2223,7 +2248,7 @@
                 (integerp x)
                 (integerp m)
                 (< 0 n)
-                
+
                 (< 0 (+ n m)))
            (equal (ash (logext n x) m)
                   (logext (+ n m)
@@ -2237,7 +2262,7 @@
                 (integerp b))
            (equal (+ a (ASH b k))
                   (logapp k a b)))
-  :hints (("Goal" :in-theory (e/d (ASH-AS-LOGAPP) 
+  :hints (("Goal" :in-theory (e/d (ASH-AS-LOGAPP)
                                   (LOGAPP-0-PART-2-BETTER)))))
 
 
@@ -2274,11 +2299,11 @@
                       (and (equal b (logtail size x))
                            (< (loghead size a) (loghead size x))))))
   :hints (("Goal" ; :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (LOGAPP 
+           :in-theory (e/d (LOGAPP
                               imod ifloor
-                              LOGTAIL 
+                              LOGTAIL
                               mod-cancel
-                              loghead) 
+                              loghead)
                            ()))))
 
 ;bzo clean up rhs?
@@ -2323,7 +2348,7 @@
                     (+ -1 x))))
   :hints (("Goal" :in-theory (enable ash logcdr ifloor))))
 
-(in-theory (disable ash-logcdr-1)) 
+(in-theory (disable ash-logcdr-1))
 
 (defthm logcdr-logapp
   (equal (logcdr (logapp size i j))
@@ -2380,7 +2405,7 @@
                                    INTEGER-RANGE-P
                                    logbitp
                                    EXPONENTS-ADD-UNRESTRICTED ;shouldn't be needed?
-                                   ) 
+                                   )
                                   (FLOOR-BY-TWICE-HACK)))))
 
 ;; (defthm usb-tighten
@@ -2390,11 +2415,11 @@
 ;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
 ;;   :hints (("Goal" :in-theory (e/d (unsigned-byte-p
 ;;                                      INTEGER-RANGE-P
-;;                                      logbitp) 
+;;                                      logbitp)
 ;;                                   (FLOOR-BY-TWICE-HACK)))))
 
 ;think more about this
-;looped! 
+;looped!
 (defthmd loghead-when-know-top-bit
   (implies (and (equal (logbit m x) b) ;using m so that this will be sure to match
                 (equal m (+ -1 n))
@@ -2486,7 +2511,7 @@
                   ))
   :hints (("Goal" :cases ((integerp y))
            :in-theory (e/d (mod)))))
- 
+
 ;generalize to handle addends other than 1 with corresponding predicates (like "multiple of 4" than even)?
 ;prove without using elimination?
 ;bzo gen
@@ -2530,7 +2555,7 @@
            (equal (+ a (* j b))
                   (logapp (expo j) a b)))
   :hints (("Goal" :in-theory (e/d (ash ;POWER2P
-                                       ) 
+                                       )
                                   (FLOOR-BY-TWICE-HACK sum-with-shift-becomes-logapp
                                                        EXPO-COMPARISON-REWRITE-TO-BOUND
                                                        EXPO-COMPARISON-REWRITE-TO-BOUND-2))
@@ -2562,12 +2587,12 @@
                        (or (equal x (expt 2 (+ -1 n)))
                            (and (signed-byte-p n x)
                            (not (equal x (- (expt 2 (+ -1 n))))))))))
-  :hints (("Goal" :in-theory (enable signed-byte-p 
+  :hints (("Goal" :in-theory (enable signed-byte-p
                                      integer-range-p ;prove a rule for integer-range-p of (+ 1 x)
                                      ))))
 
 
-        
+
 (defthm logbitp-of-one-less-case-1
   (implies (and (equal (loghead n x) 0)
                 (integerp x);(natp x)
@@ -2576,7 +2601,7 @@
            (equal (logbitp n (+ -1 x))
                   (not (logbitp n x))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (logbitp loghead ;floor 
+           :in-theory (e/d (logbitp loghead ;floor
                                     imod
     ;oddp evenp expt
                                     )
@@ -2601,7 +2626,7 @@
            (equal (logbitp n (+ -1 x))
                   (logbitp n x)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (logbitp loghead ;floor 
+           :in-theory (e/d (logbitp loghead ;floor
                                     imod
     ;oddp evenp expt
                                     )
@@ -2615,7 +2640,7 @@
                       (not (LOGBITP n X))
                     (LOGBITP n X))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (LOGBITP LOGHEAD ;floor 
+           :in-theory (e/d (LOGBITP LOGHEAD ;floor
                                     imod
 ;oddp EVENP expt
                                     )
@@ -2635,7 +2660,7 @@
                     (logtail n x))))
   :hints (("Goal" :in-theory (enable logtail
                                      loghead
-                                     UNSIGNED-BYTE-P 
+                                     UNSIGNED-BYTE-P
                                      INTEGER-RANGE-P ;prove a rule for integer-range-p of (+ 1 x)
                                      ))))
 
@@ -2653,7 +2678,7 @@
                     (+ -1 (logext 32 x)))))
   :otf-flg t
   :hints (("Goal" :in-theory (enable logext
-                                     UNSIGNED-BYTE-P 
+                                     UNSIGNED-BYTE-P
                                      INTEGER-RANGE-P ;prove a rule for integer-range-p of (+ 1 x)
                                      ))))
 
@@ -2731,7 +2756,7 @@
                 (integerp c))
            (equal (LOGHEAD n (+ a (- (LOGEXT n b)) c))
                   (LOGHEAD n (+ a (- (ifix b)) c)))))
-           
+
 (defthm removeme7
   (implies (and (integerp k)
                 (integerp a))
@@ -2739,7 +2764,7 @@
                   (loghead n (+ a (- (* k (ifix b))))))))
 
 ;;Note the overflow case:
-;;(truncate (- (expt 2 31)) -1) is equal to (expt2 31), which is not a signed-byte-p 32.                                  
+;;(truncate (- (expt 2 31)) -1) is equal to (expt2 31), which is not a signed-byte-p 32.
 ;bzo gen
 (defthm signed-byte-p-of-truncate
   (implies (and (signed-byte-p 32 i)
@@ -2799,13 +2824,13 @@
 
 (defthmd hackz
   (implies (natp i)
-           (equal (+ (/ a) 
+           (equal (+ (/ a)
                      (* I (/ a)))
                   (/ (+ 1 i) a))))
 
 (defthm hackzz
   (implies (natp i)
-           (equal (+ (/ (+ 1 I)) 
+           (equal (+ (/ (+ 1 I))
                      (* I (/ (+ 1 I))))
                   1))
   :hints (("Goal" :in-theory (disable DISTRIBUTIVITY-ALT)
@@ -2923,7 +2948,7 @@
                     (logbitp n x))))
   :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (LOGBITP LOGHEAD ;floor 
+           :in-theory (e/d (LOGBITP LOGHEAD ;floor
                                     mod-helper-2
                      ;oddp EVENP expt
                                     imod
@@ -3002,14 +3027,14 @@
 (defthmd one-way
   (IMPLIES (AND (INTEGERP (* 1/2 (FLOOR X 16384)))
                 (INTEGERP X))
-           (EQUAL (MOD X 16384) 
+           (EQUAL (MOD X 16384)
                   (MOD X 32768)))
   :hints (("Goal" :in-theory (disable evenp-collapse))))
 
 
 ;keep this disabled most of the time
 (defthmd loghead-split-x-rewrite
-  (implies (and (syntaxp (equal x 'x)) 
+  (implies (and (syntaxp (equal x 'x))
                 (integerp n)
                 (< 0 n))
            (equal (loghead n x)
@@ -3019,7 +3044,7 @@
   :hints (("Goal" :by loghead-split)))
 
 (defthmd loghead-split-y-rewrite
-  (implies (and (syntaxp (equal x 'y)) 
+  (implies (and (syntaxp (equal x 'y))
                 (integerp n)
                 (< 0 n))
            (equal (loghead n x)
@@ -3095,7 +3120,7 @@
                   (logtail (- n m) x)))
   :hints (("Goal" :use (:instance INTEGERP-EXPT (n (- n m)))
            :in-theory (e/d (logtail ifloor ifix FLOOR-NORMALIZES-TO-HAVE-J-BE-1
-                              EXPONENTS-ADD-UNRESTRICTED) 
+                              EXPONENTS-ADD-UNRESTRICTED)
                            (INTEGERP-EXPT)))))
 
 (defthm logtail-shift-constant-version
@@ -3236,7 +3261,7 @@
 
 
 (defthm loghead-of-difference-equal-0-rewrite-alt
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp y)
                 (<= 0 n)
                 (integerp n)
@@ -3244,13 +3269,13 @@
            (equal (equal 0 (loghead n (+ y (- x))))
                   (equal (loghead n x) (loghead n y))))
   :hints
-  (("Goal" :in-theory (e/d (;loghead 
+  (("Goal" :in-theory (e/d (;loghead
                             LOGHEAD-SUM-SPLIT-INTO-2-CASES
                             imod ifix) (mod-=-0)))))
 
 
 (defthm loghead-of-difference-equal-0-rewrite
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp y)
                 (<= 0 n)
                 (integerp n)
@@ -3258,9 +3283,9 @@
            (equal (equal 0 (loghead n (+ (- x) y)))
                   (equal (loghead n x) (loghead n y))))
   :hints
-  (("Goal" :in-theory (e/d (;loghead 
+  (("Goal" :in-theory (e/d (;loghead
                             LOGHEAD-SUM-SPLIT-INTO-2-CASES
-                            imod ifix) (mod-=-0))))) 
+                            imod ifix) (mod-=-0)))))
 
 ;bzo harvest the stuff below
 
@@ -3283,7 +3308,7 @@
   (implies (and (unsigned-byte-p 16 x)
                 (integerp n)
                 (< 0 n))
-           (equal (ash x n) 
+           (equal (ash x n)
                   (ash (ash x (1- n)) 1)))
   :hints (("Goal" :in-theory (e/d (ash expt)(unsigned-byte-p)))))
 
@@ -3306,7 +3331,7 @@
 ;move?
 ;rephrase conclusion?
 
-(defthm shift-bounds 
+(defthm shift-bounds
   (implies (unsigned-byte-p 16 x)
            (<= (lshu 32 x 16) (- (expt 2 32) (expt 2 16))))
   :hints (("Goal" :in-theory (e/d (lshu loghead ash) nil))))
@@ -3316,7 +3341,7 @@
 ;; (defthm sbp-of-logapp-hack
 ;;   (implies (signed-byte-p 16 b)
 ;;            (signed-byte-p 32 (logapp 16 a b)))
-;;   :hints (("Goal" :in-theory (enable logapp 
+;;   :hints (("Goal" :in-theory (enable logapp
 ;;                                      signed-byte-p
 ;;                                      integer-range-p))))
 
@@ -3338,7 +3363,7 @@
 ;We want to extend an inequality like (< x 65535) to (< x 65536) when we also know (not (equal x 65535)) and (integerp x).
 ;Writing the rule with the free variable means we really must find the disquality right there in the context.
 ;Perhaps this should pay attention to whether we're trying to satisfy or falsity the <.
-;seemed to loop. 
+;seemed to loop.
 (defthmd extend-<
   (implies (and (not (equal x free))
                 (equal free k)
@@ -3366,21 +3391,21 @@
   :hints (("Goal" :in-theory (enable logbitp signed-byte-p))))
 (in-theory (disable LOGBITP-TEST-OF-TOP-BIT))
 
-;; 
+;;
 ;; (defthm loghead-subst-32
 ;;   (implies (and (equal (loghead 32 x) k)
 ;;                 (syntaxp (quotep k))
 ;;                 )
-;;            (equal (loghead 31 x) 
+;;            (equal (loghead 31 x)
 ;;                   (loghead 31 k))))
 
- 
+
 ;bzo gen
 (defthm loghead-subst-2
   (implies (and (equal (loghead 31 x) k)
                 (syntaxp (quotep k))
                 )
-           (equal (loghead 32 x) 
+           (equal (loghead 32 x)
                   (logapp 31 k (logbit 31 x))
                   )))
 
@@ -3404,7 +3429,7 @@
 (defthm logeqv-commutative
   (equal (logeqv x y)
          (logeqv y x))
-  :hints (("Goal" :in-theory (e/d (logeqv lognot) 
+  :hints (("Goal" :in-theory (e/d (logeqv lognot)
                                   (LOGAND-LOGIOR ;bzo forcing
                                    )))))
 
@@ -3441,7 +3466,7 @@
                   (equal -1 x)))
   :hints (("Goal" :use (:instance divide-both-sides-hack (x (- y)) (y (* x y)) (z y))))
   )
-                 
+
 ;gen?
 (defthm ash-equal-minus-expt2n
   (implies (and (< 0 n)
@@ -3468,8 +3493,8 @@
                            (<= 0 y))
                       (and (< x 0)
                            (< y 0)))))
-  :hints (("Goal" :in-theory (enable logeqv 
-                                     logorc1 
+  :hints (("Goal" :in-theory (enable logeqv
+                                     logorc1
                                      ))))
 
 ;; (defthm logeqv-pos
@@ -3510,7 +3535,7 @@
   (equal (logbit n (logcar x))
          (if (and (< 0 n)
                   (integerp n))
-             0 
+             0
            (logcar x))))
 
 ;changed the RHS to do a case-split because 0 is so much simpler than (ash (logbit (+ -1 n) x) (+ -1 n))
@@ -3582,11 +3607,11 @@
 
 ;gen the 1
 (defthm loghead-equal-logapp-same-rewrite
-  (implies (and (integerp n) 
+  (implies (and (integerp n)
                 (< 0 n))
            (equal (equal (loghead n x) (logapp (+ -1 n) x 1))
                   (equal 1 (logbit (+ -1 n) x)))))
-        
+
 (defthm loghead-equal-loghead-one-shorter-rewrite
   (implies (and (integerp x)
                 (integerp n)
@@ -3642,13 +3667,13 @@
            (equal (logbit pos i)
                   (logbit pos j))))
 
- 
-;; 
+
+;;
 ;; (defthm logbitp-subst-32
 ;;   (implies (and (equal (loghead 32 x) k)
 ;;                 (syntaxp (quotep k))
 ;;                 )
-;;            (equal (logbitp 31 x) 
+;;            (equal (logbitp 31 x)
 ;;                   (logbitp 31 k))))
 
 ;can this loop?
@@ -3715,8 +3740,8 @@
                        (equal (loghead (+ -1 n) x) 0))))
   :otf-flg t
   :hints (("Goal" :in-theory (e/d (ash
-                                   LOGHEAD-SPLIT-X-REWRITE) 
-                                  (loghead-when-mostly-0 
+                                   LOGHEAD-SPLIT-X-REWRITE)
+                                  (loghead-when-mostly-0
                                    LOGTAIL-LEAVES-SINGLE-BIT
                                    LOGHEAD-EQUAL-LOGAPP-SAME-REWRITE
                                    LOGAPP-0-PART-1-BETTER
@@ -3739,7 +3764,7 @@
   :hints (("Goal" :in-theory (enable logext ash))))
 
 (defthm logext-equal-min-value-hack-gen-constant-version
-  (implies (and (syntaxp (and (quotep k) 
+  (implies (and (syntaxp (and (quotep k)
                               (quotep n)
                               ))
                 (equal k (- (expt 2 (+ -1 n))))
@@ -3788,8 +3813,8 @@
 
 ;Can cause a case split.
 (defthmd loghead-suck-in-one-plus
-  (implies (and (syntaxp (and (consp x) 
-                              (equal (car x) 'binary-+) 
+  (implies (and (syntaxp (and (consp x)
+                              (equal (car x) 'binary-+)
                               (quotep (cadr x))))
                 (integerp x)
                 (<= 0 n)
@@ -3894,7 +3919,7 @@
                 (<= 0 n))
            (equal (logapp n (loghead n x) y)
                   (logapp n x y))))
-        
+
 
 ;; ;kind of weird
 ;; ;bzo gross hints
@@ -3947,7 +3972,7 @@
                 (<= (expt 2 n) y))
            (equal (equal x y)
                   nil)))
-        
+
 (defthm loghead-cancel-constants-hack
   (implies (and (syntaxp (and (quotep k1)   ;i think i want these syntaxp hyps, right?
                               (quotep k2)))
@@ -3988,7 +4013,7 @@
 
 
 (defthm loghead-of-logext-hack-1
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp y))
            (equal (loghead size (+ (- (logext size x)) y))
                   (loghead size (+ (- x) y))))
@@ -4001,7 +4026,7 @@
                                LOGHEAD-+-CANCEL-BETTER))))
 
 (defthm loghead-of-logext-hack-1-alt
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp y))
            (equal (loghead size (+ y (- (logext size x))))
                   (loghead size (+ y (- x)))))
@@ -4014,7 +4039,7 @@
                                LOGHEAD-+-CANCEL-BETTER))))
 
 (defthm loghead-of-logext-hack-2
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp y)
                 (integerp i)
                 )
@@ -4024,7 +4049,7 @@
   )
 
 (defthm loghead-of-logext-hack-3
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp y)
                 (integerp i)
                 )
@@ -4046,7 +4071,7 @@
                          (loghead size zblah2)))))
 
 (defthm loghead-of-logext-hack-4
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp y)
                 (integerp i)
                 (integerp z)
@@ -4059,7 +4084,7 @@
            :use ((:instance loghead-of-sum-of-prod-of-loghead-lemma (n size) (y -1) (a (+ z y w)) (x x))))))
 
 (defthm loghead-of-logext-hack-5
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
                 (integerp y)
                 (integerp i)
                 (integerp w)
@@ -4078,7 +4103,7 @@
                 (integerp b))
            (equal (< (+ 1/2 b) a)
                   (<= (+ 1 b) a))))
-                 
+
 (defthm divides-hack-more
   (equal (integerp (+ 1/65536 (* 1/65536 x)))
          (divides 65536 (+ 1 x)))
@@ -4123,7 +4148,7 @@
                   (loghead (+ 1 n) a)))
   :hints (("Goal" :in-theory (e/d (equal-logapp-x-y-z
                                      logtail-loghead-better
-                                     ) 
+                                     )
                                   (loghead-logtail)))))
 
 
@@ -4150,7 +4175,7 @@
 
 
 
-        
+
 
 ;bzo rename these to not mention 32...
 
@@ -4227,7 +4252,7 @@
                 )
            (equal (LOGEXT size (+ a b d (* k (LOGEXT size c))))
                   (LOGEXT size (+ a b (* k c) d)))))
-  
+
 (defthm logapp-recombine-logext-case
   (implies (and (<= n size) ;other case?
                 (integerp size))
@@ -4244,7 +4269,7 @@
 
 ;bzo - gen?
 (defthm loghead-sum-weird
-  (implies (and (integerp y) 
+  (implies (and (integerp y)
                 (integerp x)
                 (integerp z)
                 (<= n size)
@@ -4263,7 +4288,7 @@
 (defthm logapp-chop-hack-1
   (implies (and (<= n size)
                 (integerp size)
-                (integerp y) 
+                (integerp y)
                 (integerp x)
                 (integerp n)
                 (<= 0 n)
@@ -4317,9 +4342,9 @@
                 )
            (equal (LOGAPP m (+ w v x y (* N (LOGEXT size z))) xx)
                   (LOGAPP m (+ w v x y (* N z)) xx))))
- 
+
 (defthm loghead-hack-blah
-  (implies (and (integerp y) 
+  (implies (and (integerp y)
                 (integerp z)
                 (<= 0 size)
                 (integerp size))
@@ -4380,7 +4405,7 @@
 ;; ;                                   loghead-split-special
 ;; ;                                  logbit ;bzo
 ;; ;                                 equal-of-logheads-split
-;;                                    ) 
+;;                                    )
 ;;                                   ()))))
 
 ;trying...
@@ -4441,7 +4466,7 @@
 ;;   (equal (logapp 16 val (loghead 16 (logtail 16 val)))
 ;;          (loghead 32 val))
 ;;   :hints (("Goal" :in-theory (e/d (logtail-loghead-better
-;;                                      equal-logapp-x-y-z) 
+;;                                      equal-logapp-x-y-z)
 ;;                                   (loghead-logtail)))))
 
 (defthm logapp-recollapse
@@ -4452,7 +4477,7 @@
            (equal (logapp n val (loghead m (logtail n val)))
                   (loghead (+ n m) val)))
   :hints (("Goal" :in-theory (e/d (logtail-loghead-better
-                                   equal-logapp-x-y-z) 
+                                   equal-logapp-x-y-z)
                                   (loghead-logtail)))))
 
 
@@ -4505,7 +4530,7 @@
                 (< off 1))
            (equal (< (+ off x) y)
                   (< x y))))
-                 
+
 
 (defthmd non-multiple-addend-doesnt-matter-when-comparing-multiples
   (implies (and (integerp z)
@@ -4523,7 +4548,7 @@
                                   (x (/ x y))
                                   (y (/ z y)))))
   )
-                 
+
 
 (defthmd compare-of-add-to-shifted
   (implies (and (unsigned-byte-p m off)
@@ -4563,7 +4588,7 @@
                                        (z (- (EXPT 2 N)))
                                        )
            )
-          ("Goal" 
+          ("Goal"
            :cases ((< x 0))
            :in-theory (enable UNSIGNED-BYTE-P))))
 
@@ -4610,19 +4635,19 @@
                             (signed-byte-p (- n m) x)))
           :otf-flg t
           :hints (("Subgoal 2" :in-theory (enable EXPONENTS-ADD-UNRESTRICTED
-                                                  signed-byte-p 
+                                                  signed-byte-p
                                                   logapp
                                                   arithhack4
                                                   compare-of-add-to-shifted
                                                   compare-of-add-to-shifted-neg))
                   ("Goal" :cases ((< 0 x)
                                   (= 0 x))
-                   :in-theory (e/d (signed-byte-p 
+                   :in-theory (e/d (signed-byte-p
                                     logapp
                                     arithhack4
                                     compare-of-add-to-shifted
                                     compare-of-add-to-shifted-neg
-                                    ) 
+                                    )
                                    ())))))
 
 
@@ -4638,12 +4663,12 @@
           :otf-flg t
           :hints ( ;bzo gross subgoal hint
                   ("Subgoal 2.1" :in-theory (enable EXPONENTS-ADD-UNRESTRICTED
-                                                    signed-byte-p 
+                                                    signed-byte-p
                                                     logapp
                                                     arithhack4
                                                     compare-of-add-to-shifted
                                                     compare-of-add-to-shifted-neg))
-                  ("subgoal 3" :in-theory (e/d (signed-byte-p 
+                  ("subgoal 3" :in-theory (e/d (signed-byte-p
                                                 logapp
                                                 compare-of-add-to-shifted
                                                 arithhack4) ( ))
@@ -4656,12 +4681,12 @@
                    )
                   ("Goal" :cases ((< 0 x)
                                   (= 0 x))
-                   :in-theory (e/d (signed-byte-p 
+                   :in-theory (e/d (signed-byte-p
                                     logapp
                                     arithhack4
                                     compare-of-add-to-shifted
                                     compare-of-add-to-shifted-neg
-                                    ) 
+                                    )
                                    ())))))
 
  (defthm signed-byte-p-of-logapp
@@ -4675,7 +4700,7 @@
    :hints (("Goal" :use ((:instance signed-byte-p-of-logapp-bk)
                          (:instance signed-byte-p-of-logapp-fw))
             :in-theory (disable signed-byte-p-of-logapp-fw signed-byte-p-of-logapp-bk)))
-                        
+
    :otf-flg t
    ))
 
@@ -4735,10 +4760,10 @@
   (implies (and (integerp size) (< 0 size))
            (equal (logext size (expt 2 (+ -1 size)))
                   (-  (expt 2 (+ -1 size)))))
-  :hints (("Goal" :in-theory (e/d (logext EQUAL-LOGAPP-X-Y-Z) 
+  :hints (("Goal" :in-theory (e/d (logext EQUAL-LOGAPP-X-Y-Z)
                                   (logapp-subst-in-first-arg ;LOGAPP-HACK2 ;bzo
                                    )))))
- 
+
 ;bzo gen
 (defthmd minus-of-logext
   (implies (and (integerp size)
@@ -4749,7 +4774,7 @@
                       (expt 2 (+ -1 size))
                     (logext size (- i)))))
   :hints (("Goal" :use ((:instance LOGEXT-LOGHEAD (n size) (m size) (x i)))
-           :in-theory (e/d (ASH-1-EXPT-REWRITE) 
+           :in-theory (e/d (ASH-1-EXPT-REWRITE)
                            (LOGEXT-LOGHEAD
                             DUMB ;why?!
                             )))))
@@ -4789,7 +4814,7 @@
                 (< 0 size1))
            (equal (logext size1 (logext size2 x))
                   (logext size1 x))))
-        
+
 (defthmd loghead-split-when-usb-one-longer
   (implies (and (unsigned-byte-p (+ 1 n) x)
                 (integerp n)
@@ -4840,7 +4865,7 @@
 
 
 (defthmd loghead-0-hack
- (implies (and (equal (loghead 16 offset1) 
+ (implies (and (equal (loghead 16 offset1)
                       (loghead 16 offset2))
                (integerp offset1)
                (integerp offset2))
@@ -4873,8 +4898,8 @@
                                    (n size2)
                                    (y (logtail size2 (loghead size1 x)))
                                    (z  (loghead size1 x))))
-          
-           :in-theory (e/d (loghead-equal-rewrite) 
+
+           :in-theory (e/d (loghead-equal-rewrite)
                            (equal-logapp-x-y-z
                             equal-logapp-x-y-z-constants
                             LOGAPP-RECOMBINE-LOGHEAD-CASE
@@ -4900,7 +4925,7 @@
                   (equal (logtail size2 (loghead size1 x)) 0)))
   :hints (("Goal" :in-theory (e/d (LOGTAIL-LOGHEAD-BETTEr
                                    LOGEXT-SUBST-WITH-LOGHEAD
-                                   LOGTAIL-LOGEXT) 
+                                   LOGTAIL-LOGEXT)
                                   (LOGTAIL-EQUAL-0
                                    LOGEXT-LOGTAIL
                                    LOGHEAD-LOGTAIL)))))
@@ -4922,8 +4947,8 @@
                                    (n size2)
                                    (y (logtail size2 (logext size1 x)))
                                    (z  (logext size1 x))))
-          
-           :in-theory (e/d (loghead-equal-rewrite) 
+
+           :in-theory (e/d (loghead-equal-rewrite)
                            (LOGAPP-RECOMBINE-LOGEXT-CASE
                             equal-logapp-x-y-z
                             equal-logapp-x-y-z-constants
@@ -4994,7 +5019,7 @@
                        (unsigned-byte-p size (loghead size1 x)))))
   :hints (("Goal" :use (:instance expt-weakly-monotonic-linear)
            :in-theory (e/d (logapp UNSIGNED-BYTE-P
-                                   ) 
+                                   )
                            (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
                             EXPT-COMPARE)))))
 
@@ -5008,7 +5033,7 @@
                   (ifix x)))
   :hints (("Goal" :cases ((and (integerp n)
                                (<= 0 n)))
-           :in-theory (e/d (ash-as-logapp) 
+           :in-theory (e/d (ash-as-logapp)
                            (logapp-0-part-2-better)))))
 
 (defthm logtail-of-sum-of-ash-alt
@@ -5055,14 +5080,14 @@
   (implies (and (unsigned-byte-p 16 x)
                 (<= 0 k)
                 (integerp k))
-           (equal (unsigned-byte-p 16 (+ (- k) x))         
+           (equal (unsigned-byte-p 16 (+ (- k) x))
                   (<= k x))))
 
 (defthm unsigned-byte-p-becomes-inequality-alt
   (implies (and (unsigned-byte-p 16 x)
                 (<= 0 k)
                 (integerp k))
-           (equal (unsigned-byte-p 16 (+ x (- k)))         
+           (equal (unsigned-byte-p 16 (+ x (- k)))
                   (<= k x))))
 
 (defthmd usb-of-sum-with-two-other-addends-hack
@@ -5113,7 +5138,7 @@
 ;why did this suddenly become necessary?
 (defthm logbit-too-big-no-free-vars
   (implies (unsigned-byte-p n x)
-           (equal (logbit n x) 
+           (equal (logbit n x)
                   0))
   :hints (("Goal" :in-theory (enable logbit logbitp))))
 
@@ -5192,7 +5217,7 @@
                 (unsigned-byte-p 16 i)
                 (<= (- 65536 bigconst) i) ;most likely to fail?
                 (<= 0 bigconst)
-                (integerp bigconst) 
+                (integerp bigconst)
                 )
            (equal (loghead 16 (+ bigconst i))
                   (+ (- bigconst 65536) i)))
@@ -5225,7 +5250,7 @@
 
 
 (defthm loghead-equality-impossible
-  (implies (and (syntaxp (and (quotep k1) 
+  (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)))
                 (not (equal 0 (loghead 16 (+ k1 k2))))
                 (unsigned-byte-p 16 x) ;not needed?
@@ -5235,9 +5260,9 @@
            (equal (equal x (+ k1 (loghead 16 (+ k2 x)))) ;note that x appears twice in LHS
                   nil))
   :hints (("Goal" :in-theory (e/d (loghead-sum-split-into-2-cases
-                                   loghead-of-minus) 
+                                   loghead-of-minus)
                                   (unsigned-byte-p-loghead-forward-chaining
-;loghead-type 
+;loghead-type
 ;(:type-prescription loghead)
                                    )))))
 
@@ -5254,7 +5279,7 @@
            (not (UNSIGNED-BYTE-P n (LOGAPP m i j)))))
 
 (defthm loghead-lower-bound-when-top-bit-one
-  (implies (and (logbitp (+ -1 n) x) 
+  (implies (and (logbitp (+ -1 n) x)
                 (integerp n)
                 (< 0 n)
                 (integerp x))
@@ -5290,7 +5315,7 @@
                   (ifix x)
                   ))
   :hints (("Goal" :use (:instance logapp-reassemble (i x))
-           :in-theory (e/d (LOGAPP) 
+           :in-theory (e/d (LOGAPP)
                            (logapp-reassemble
                             EQUAL-LOGAPP-X-Y-Z-CONSTANTS
                             LOGAPP-DOES-NOTHING-REWRITE))))
@@ -5328,7 +5353,7 @@
                 (INTEGERP N)
                 (< 0 N))
            (SIGNED-BYTE-P N (+ X (- (EXPT 2 (+ -1 N))))))
-  :hints (("Goal" :in-theory (enable SIGNED-BYTE-P 
+  :hints (("Goal" :in-theory (enable SIGNED-BYTE-P
                                      unSIGNED-BYTE-P
                                      EXPONENTS-ADD-UNRESTRICTED))))
 
@@ -5349,7 +5374,7 @@
            (equal (logext n (+ k x))
                   (+ (- (expt 2 (+ -1 n))) x)))
   :hints (("Goal" :in-theory (enable logext logbitp-+-expt-n-rewrite))))
-        
+
 ;gen!?
 (defthm half-cancel
   (equal (+ x (- (* 1/2 x)) y)
@@ -5361,7 +5386,7 @@
                 (< 0 n))
            (equal (EQUAL x (+ (expt 2 n) (LOGEXT n x)))
                   (<= (expt 2 (+ -1 n)) x)))
-  :hints (("Goal" :in-theory (enable logext 
+  :hints (("Goal" :in-theory (enable logext
                                      logapp
                                      EXPONENTS-ADD-UNRESTRICTED))))
 
@@ -5404,7 +5429,7 @@
 
 ;generalize: if the logior of y and the lognot of z is not -1, then (equal (logior z x) y) = nil.
 
-(defthm logior-hack 
+(defthm logior-hack
   (implies (and (not (logbitp 8 y))
                 (integerp x) ;drop
                 )
@@ -5440,7 +5465,7 @@
                   (and (integerp x)
                        (equal 0 (loghead n x))
                        (equal (ifix y) (logtail n x))))))
-        
+
 ;trying a switch of the direction to associate logapp!  doing it this way
 ;means the sizes in the logapp nest are the sizes of their corresponding
 ;values, rather than sums of the sizes of several values
@@ -5461,7 +5486,7 @@
 ;This one's :executable-counterpart stays enabled.
 (defund expt-execute (r i) (expt r i))
 
-;Allows expt calls with small exponents to be computed  
+;Allows expt calls with small exponents to be computed
 ;You can change 1000 to your own desired bound.
 (defthmd expt-execute-rewrite
   (implies (and (syntaxp (and (quotep r) (quotep i) (< (abs (cadr i)) 1000))))
@@ -5602,7 +5627,7 @@
                   (loghead m (+ z x)))))
 
 
-        
+
 ;bzo gen the 0?
 ;; (defthm loghead-plus-constant-compare-to-zero
 ;;   (implies (and (syntaxp (quotep j))
@@ -5620,7 +5645,7 @@
                 (integerp c))
            (equal (logapp size (ash x c) y)
                   (logapp size 0 y))))
-        
+
 (defthm equal-logapp-with-logtail-of-self-rewrite
   (equal (equal y (acl2::logapp 16 x (acl2::logtail 16 y)))
          (and (integerp y)

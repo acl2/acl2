@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "GACC")
 
 ;; Keep this list of include-books in sync with the list in the .acl2 file:
@@ -14,7 +39,7 @@
 ;(local (include-book "rtl/rel4/arithmetic/numerator" :dir :system))
 
 (in-theory (disable g* s* x*))
-(in-theory (enable 
+(in-theory (enable
             (:induction s*)
             (:induction g*)
             (:induction x*)
@@ -122,10 +147,10 @@
             DISJOINT-BLK-REC-SUBBAGP
             ;;bag::DISJOINT-of-APPEND
             bag::DISJOINT-COMMUTATIVE ;;bzo really?
-            ;;DISJOINT-NIL         
+            ;;DISJOINT-NIL
             ;;bag::DISJOINT-CONS
             ;;DISJOINT
-            
+
             ;;SUBBAGP RULES
             bag::V2-SYNTAX-REMOVE-bag-IMPLICATION
             bag::V2-SYNTAX-REMOVE-bag-IMPLICATION-LEMMA
@@ -166,7 +191,7 @@
             ;;bag::SUBBAGP-CONS
             ;;SUBBAGP-IMPLIES-SUBBAGP-CONS
             ;;SUBBAGP already out
-            
+
             ;;MEMBERp RULES
             ;;bag::SYNTAX-MEMBERP-IMPLEMENTS-MEMBERP
             ;;bag::UNIQUE-REMOVE-1

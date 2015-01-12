@@ -39,7 +39,7 @@
 (make-event
  '(:or
    (acl2::acl2x-replace (include-book
-                         "pretty")
+                         "pretty" :uncertified-okp :ignore-certs)
                         (value-triple :invisible)
                         :outside-certification
                         (include-book

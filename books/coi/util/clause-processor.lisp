@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 (defevaluator clause-eval clause-eval-list
@@ -11,7 +36,7 @@
    )
   )
 
-(defun clause-eval-clique (x) 
+(defun clause-eval-clique (x)
   (declare (ignore x))
   t)
 
@@ -43,7 +68,7 @@
     (iff (clause-eval (disjoin list) a) nil))
    (implies
     (consp list)
-    (iff (clause-eval (disjoin list) a) 
+    (iff (clause-eval (disjoin list) a)
 	 (or (clause-eval (car list) a)
 	     (clause-eval (disjoin (cdr list)) a))))))
 
@@ -118,7 +143,7 @@
 
     `(encapsulate
 	 ()
-       
+
        (defthm ,eval-clique-proof
 	 (clause-eval-clique (,eval x a))
 	 :rule-classes nil
@@ -128,8 +153,8 @@
 			(clause-eval-list ,eval-list)))
 		 (and stable-under-simplificationp
 		      '(:in-theory (enable ,eval-constraint-0)))))
-		  
-       
+
+
        (defthm ,eval-disjoin2
 	 (iff (,eval (disjoin2 x y) a)
 	      (or (,eval x a)
@@ -138,7 +163,7 @@
 			       clause-eval-disjoin2
 			       (clause-eval ,eval)
 			       (clause-eval-list ,eval-list)))))
-       
+
        (defthm ,eval-conjoin2
 	 (iff (,eval (conjoin2 x y) a)
 	      (and (,eval x a)

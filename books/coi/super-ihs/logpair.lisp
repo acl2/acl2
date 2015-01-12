@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 (include-book "basics")
 
@@ -16,7 +41,7 @@
 (include-book "unsigned-byte-p")
 
 (defthm logcar-lognot
-  (equal (logcar (lognot a)) 
+  (equal (logcar (lognot a))
          (b-not (logcar a)))
   :hints (("Goal" :in-theory (enable  logops-recursive-definitions-theory))))
 
@@ -29,7 +54,7 @@
 (defthm logcar-logior
   (equal (logcar (logior a b))
          (b-ior (logcar a) (logcar b)))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (enable logior logops-recursive-definitions-theory))))
 
 ;move 3rd hyp to conclusion?
@@ -37,7 +62,7 @@
   (implies (and (integerp n)
                 (integerp x)
                 (< 0 n))
-           (equal (logcar (logext n x)) 
+           (equal (logcar (logext n x))
                   (logcar x)))
   :hints (("goal" :in-theory (enable logext logbitp oddp; evenp
                                      ))))
@@ -48,14 +73,14 @@
                 (integerp n)
         ;        (integerp x)
                 )
-           (equal (logcar (ash x n)) 
+           (equal (logcar (ash x n))
                   (logbit (- n) x)))
   :hints (("goal" :in-theory (e/d (LRDT logbit) (logtail* ;was forcing
                                                  )))))
 
 (defthm logcar-ash-both
   (implies (integerp n)
-           (equal (logcar (ash x n)) 
+           (equal (logcar (ash x n))
                   (if (< 0 n)
                       0
                     (logbit (- n) x))))
@@ -104,10 +129,10 @@
                 t)))
   :hints (("goal"
            :cases ((evenp x))
-           :in-theory (e/d (logcdr 
-                            signed-byte-p 
+           :in-theory (e/d (logcdr
+                            signed-byte-p
                             expt
-                            ) 
+                            )
                            (expt-2-cruncher
                             FLOOR-OF-SHIFT-RIGHT-2
                             )))))
@@ -123,11 +148,11 @@
 
 (encapsulate
  ()
- 
+
  (local (in-theory (enable LRDT)))
 
  (defthm logcdr-lognot
-   (equal (logcdr (lognot a)) 
+   (equal (logcdr (lognot a))
           (lognot (logcdr a))))
 
  (defthm logcdr-logand
@@ -157,13 +182,13 @@
                  )
             (equal (logcdr (* x y))
                    (* 1/2 x y)))))
-           
+
 ;see LOGCDR-EVENP-*
 (defthmd *ark*-logcdr-*4
   (implies (integerp x)
            (equal (logcdr (* 4 x))
                   (* 2 x)))
-  :hints (("goal" :in-theory (enable logcdr))))  
+  :hints (("goal" :in-theory (enable logcdr))))
 
 
 (defthm logcdr-logcar
@@ -179,29 +204,29 @@
 (defthm logcdr-+1
   (implies (integerp x)
            (and (implies (equal (logcar x) 0)
-                         (equal (logcdr (+ 1 x)) 
+                         (equal (logcdr (+ 1 x))
                                 (logcdr x)))
                 (implies (equal (logcar x) 1)
-                         (equal (logcdr (+ 1 x)) 
+                         (equal (logcdr (+ 1 x))
                                 (+ 1 (logcdr x))))
                 (implies (and (integerp y)
                               (equal (logcar x) 1))
-                         (equal (logcdr (+ 1 x y)) 
+                         (equal (logcdr (+ 1 x y))
                                 (+ 1 (logcdr x) (logcdr y))))
                 (implies (and (integerp y)
                               (equal (logcar x) 1))
-                         (equal (logcdr (+ 1 y x)) 
+                         (equal (logcdr (+ 1 y x))
                                 (+ 1 (logcdr x) (logcdr y))))))
   :hints (("Goal" :in-theory (enable logcons))))
 
 (defthm logcdr-+3
   (and (implies (and (integerp x)
                      (equal (logcar x) 0))
-                (equal (logcdr (+ 3 x)) 
+                (equal (logcdr (+ 3 x))
                        (+ 1 (logcdr x))))
        (implies (and (integerp x)
                      (equal (logcar x) 1))
-                (equal (logcdr (+ 3 x)) 
+                (equal (logcdr (+ 3 x))
                        (+ 2 (logcdr x)))))
   :hints (("goal" :in-theory (enable logcar logcdr))))
 
@@ -215,10 +240,10 @@
   (implies (and (integerp n)
                 ;(integerp x)
                 (< 1 n))
-           (equal (logcdr (logext n x)) 
+           (equal (logcdr (logext n x))
                   (logext (1- n) (logcdr x))))
   :hints (("goal" :in-theory (enable LRDT))))
-           
+
 (defthm logcdr-bitop
   (and (equal (logcdr (b-and x y)) 0)
        (equal (logcdr (b-ior x y)) 0)
@@ -245,7 +270,7 @@
 ;;                   (+ (logcdr a)
 ;;                      (logcdr b)
 ;;                      (b-maj (logcar a) (logcar b) 0)))))
-  
+
 ;; (defthm logcdr-+-carry-bit
 ;;   (implies (and (integerp a)
 ;;                 (integerp b)

@@ -1,11 +1,36 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;;
 ;; Extending Maps with Types
-;; Jared Davis 
+;; Jared Davis
 ;;
 ;;
 ;; INTRODUCTION
@@ -13,7 +38,7 @@
 ;; We build off of the work in maps.lisp, providing a generic theory of typed
 ;; maps along with several theorems that can be functionally instantiated to
 ;; prove concrete theorems about typed maps.
-                                   
+
 (in-package "MAP")
 (include-book "maps")
 
@@ -60,16 +85,16 @@
 (encapsulate
  (((typed-mapp-hyps) => *)
   ((typed-mapp-map) => *))
- 
+
  (local (defun typed-mapp-hyps () nil))
  (local (defun typed-mapp-map () nil))
- 
+
  (defthm typed-mapp-membership-constraint
    (implies (and (typed-mapp-hyps)
                  (in typed-mapp-key (typed-mapp-map)))
             (predicate typed-mapp-key
                        (get typed-mapp-key (typed-mapp-map))))))
- 
+
 (local (defun typed-mapp-badguy (map)
          (if (empty map)
              nil
@@ -89,7 +114,7 @@
            (typed-mapp (typed-mapp-map)))
   :hints(("Goal" :use (:instance typed-mapp-badguy-witnesses
                                  (map (typed-mapp-map))))))
- 
+
 
 (encapsulate
  ()
@@ -98,13 +123,13 @@
           (implies (and (typed-mapp map)
                         (predicate key val))
                    (typed-mapp (set key val map)))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :use (:functional-instance
                         typed-mapp-by-membership
-                        (typed-mapp-hyps 
+                        (typed-mapp-hyps
                          (lambda () (and (typed-mapp map)
                                          (predicate key val))))
-                        (typed-mapp-map 
+                        (typed-mapp-map
                          (lambda () (set key val map))))))))
 
  (local (defthm lemma2
@@ -121,17 +146,17 @@
                    (predicate key val)))
    :hints(("Goal" :use ((:instance lemma1)
                         (:instance lemma2)))))
- 
+
  )
-                                 
+
 (defthm typed-mapp-of-erase
   (implies (typed-mapp map)
            (typed-mapp (erase key map)))
   :hints(("Goal" :use (:functional-instance
                        typed-mapp-by-membership
-                       (typed-mapp-hyps 
+                       (typed-mapp-hyps
                         (lambda () (typed-mapp map)))
-                       (typed-mapp-map 
+                       (typed-mapp-map
                         (lambda () (erase key map)))))))
 
 
@@ -142,10 +167,10 @@
           (implies (and (equiv x y)
                         (typed-mapp x))
                    (typed-mapp y))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :use (:functional-instance
                         typed-mapp-by-membership
-                        (typed-mapp-hyps 
+                        (typed-mapp-hyps
                          (lambda () (and (equiv x y)
                                          (typed-mapp x))))
                         (typed-mapp-map
@@ -162,4 +187,3 @@
    :hints(("Goal" :cases ((typed-mapp map)))))
 
  )
-

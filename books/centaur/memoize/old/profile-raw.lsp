@@ -656,10 +656,6 @@
             not-safe-for-synthesis-list
             not-to-be-rewrittenp
             not-to-be-rewrittenp1
-            nth-update-rewriter
-            nth-update-rewriter-target-lstp
-            nth-update-rewriter-targetp
-            nu-rewriter-mode
             num-0-to-9-to-char
             num-to-bits
             mz-len-inputs

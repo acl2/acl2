@@ -1,11 +1,36 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 ;;
 ;; Dependency Trees for Data Dependency Analysis
-;; Jared Davis 
+;; Jared Davis
 ;;
 ;;
 ;; deps.lisp
@@ -48,7 +73,7 @@
 ;; hood for deps.  Finally, we also provide a function, depsmap, which computes
 ;; the dependency set for a map of dtrees.
 
-(mutual-recursion 
+(mutual-recursion
 
  (defund mrdeps (dtree)
    (declare (xargs :guard (dtreep dtree)
@@ -82,7 +107,7 @@
                   :verify-guards nil))
   (mbe :logic (deps1 (domain dtree) dtree)
        :exec (mrdeps dtree)))
-  
+
 (defund depsmap (map)
   (declare (xargs :guard (and (mapp map)
                               (dtreemapp map))
@@ -124,7 +149,7 @@
               (set::listsetp (mrdeps x))
             (set::listsetp (mrdepsmap x)))
           :rule-classes nil
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable mrdeps mrdepsmap)
                   :induct (mrdeps-induct flag x)))))
 
@@ -141,8 +166,8 @@
                                   (x map)))))
 
  )
-  
-   
+
+
 (defthm listsetp-of-deps1
   (set::listsetp (deps1 locs dtree))
   :hints(("Goal" :in-theory (enable deps1))))
@@ -164,7 +189,7 @@
 
 ;; MEMBERSHIP IN THE DEPS SET
 ;;
-;; An essential and "obvious" property of the deps set is that, if a is an 
+;; An essential and "obvious" property of the deps set is that, if a is an
 ;; element of the localdeps for any node within the tree, a is also a member
 ;; of the deps set.  This is relatively straightforward for the simple deps
 ;; function, but proving this property is more complicated for the mutually
@@ -173,7 +198,7 @@
 ;; Recall that what we want to prove is something like the following:
 ;;
 ;;   Given a dtree, dtree.
-;;   Given a path p, with (in p dtree).  
+;;   Given a path p, with (in p dtree).
 ;;   Given *p = (get p dtree), i.e., the tree p points to.
 ;;   Given (set::in dep (localdeps *p)).
 ;;   Show that: (in dep (mrdeps dtree)).
@@ -206,7 +231,7 @@
 ;;   Given that p is a consp.
 ;;
 ;; Once we phrase the theorem right, it goes through without much of a problem.
-;; The tricky part with mutual recursion seems to be just stating the property 
+;; The tricky part with mutual recursion seems to be just stating the property
 ;; that you are trying to prove.
 
 (defthm in-deps1-when-in-localdeps
@@ -226,7 +251,7 @@
 (defthm in-deps-when-in-localdeps
   (implies (set::in a (localdeps dtree))
            (set::in a (deps dtree)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable in-deps-when-in-localdeps-of-get)
           :use (:instance in-deps-when-in-localdeps-of-get
                           (path nil)))))
@@ -234,7 +259,7 @@
 (defthm empty-of-localdeps-of-get-when-deps-empty
   (implies (set::empty (deps dtree))
            (set::empty (localdeps (get path dtree))))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable in-deps-when-in-localdeps-of-get)
           :use (:instance in-deps-when-in-localdeps-of-get
                           (a (set::head (localdeps (get path dtree))))))))
@@ -242,7 +267,7 @@
 (defthm empty-of-localdeps-when-deps-empty
   (implies (set::empty (deps dtree))
            (set::empty (localdeps dtree)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable empty-of-localdeps-of-get-when-deps-empty)
           :use (:instance empty-of-localdeps-of-get-when-deps-empty
                           (path nil)))))
@@ -267,7 +292,7 @@
 
 (local (defthm open-mrdepsmap-empty
          (implies (map::empty map)
-                  (equal (mrdepsmap map) 
+                  (equal (mrdepsmap map)
                          (set::emptyset)))
          :hints(("Goal" :in-theory (enable mrdepsmap)))))
 
@@ -289,8 +314,8 @@
               (my-induction :map path (children x))
             (if (map::empty x)
                 path
-              (list (my-induction :dtree 
-                                  (cdr path) 
+              (list (my-induction :dtree
+                                  (cdr path)
                                   (map::get (map::head x) x))
                     (my-induction :map path (map::tail x)))))))
 
@@ -302,14 +327,14 @@
             (implies (and (consp path)
                           (map::in (car path) x)
                           (in (cdr path) (map::get (car path) x))
-                          (set::in dep (localdeps 
-                                         (get (cdr path) 
+                          (set::in dep (localdeps
+                                         (get (cdr path)
                                               (map::get (car path) x)))))
                      (set::in dep (mrdepsmap x))))
           :rule-classes nil
           :hints(("Goal" :in-theory (enable get)
                   :induct (my-induction flag path x)))))
-       
+
  (defthm in-mrdeps-when-in-localdeps
    (implies (and (in path x)
                  (set::in dep (localdeps (get path x))))
@@ -376,7 +401,7 @@
 (defthm in-deps1-is-in-localdeps-of-get-depsource1
   (implies (not (set::in a (localdeps dtree)))
            (equal (set::in a (deps1 locs dtree))
-                  (set::in a (localdeps 
+                  (set::in a (localdeps
                                (get (depsource1 a locs dtree) dtree)))))
   :hints(("Goal" :in-theory (enable deps1 depsource1))))
 
@@ -388,7 +413,7 @@
           (implies (set::in a (deps dtree))
                    (set::in (depsource a dtree) (domain dtree)))
           :hints(("Goal" :in-theory (enable depsource deps)))))
- 
+
  (defthm in-depsource-when-in-deps
    (implies (set::in a (deps dtree))
             (in (depsource a dtree) dtree))
@@ -405,25 +430,25 @@
                         (set::in nil locs))
                    (set::in a (deps1 locs dtree)))
           :hints(("Goal" :in-theory (enable deps1)))))
- 
+
  (local (defthm lemma2
-          (implies (and (set::in a (localdeps dtree))                       
+          (implies (and (set::in a (localdeps dtree))
                         (set::in nil locs)
                         (set::all<true-listp> locs))
                    (set::in (depsource1 a locs dtree) (domain dtree)))
           :hints(("Goal" :in-theory (enable depsource1)))))
- 
+
  (local (defthm lemma3
           (implies (and (set::in a (localdeps dtree))
                         (set::in nil locs))
                    (set::in a (localdeps (get (depsource1 a locs dtree)
                                                dtree))))
           :hints(("Goal" :in-theory (enable depsource1)))))
- 
+
  (defthm in-localdeps-of-get-depsource
    (equal (set::in a (localdeps (get (depsource a dtree) dtree)))
-          (set::in a (deps dtree)))          
-   :hints(("Goal" 
+          (set::in a (deps dtree)))
+   :hints(("Goal"
            :in-theory (e/d (depsource deps)
                            (in-deps1-is-in-localdeps-of-get-depsource1))
            :use (:instance in-deps1-is-in-localdeps-of-get-depsource1
@@ -442,7 +467,7 @@
    (if (set::in a (localdeps dtree))
        (mv t nil)
      (mrdepsourcemap a (children dtree))))
- 
+
  (defund mrdepsourcemap (a map)
    (declare (xargs :guard (dtreemapp map)
                    :measure (countmap map)
@@ -491,14 +516,14 @@
  (local (defthm lemma
           (if (equal flag :dtree)
               (equal (set::in a (mrdeps x))
-                     (mv-nth 0 (mrdepsource a x)))             
+                     (mv-nth 0 (mrdepsource a x)))
             (equal (set::in a (mrdepsmap x))
-                   (mv-nth 0 (mrdepsourcemap a x))))           
+                   (mv-nth 0 (mrdepsourcemap a x))))
           :rule-classes nil
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable mrdeps)
                   :induct (mrdeps-induct flag x)))))
-        
+
 
  ;; We next show that whenever the foundp part of mrdeps is true, the path part
  ;; is "in" the dtree.  This proof is actually rather complicated to state, and
@@ -515,7 +540,7 @@
  ;;   Given an element, a, such that (mv-nth 0 (mrdepsourcemap a map))
  ;;   Show that (in-map (mv-nth 1 (mrdepsourcemap a map)) map)
  ;;
- ;; Where (in-map e map) is understood to mean 
+ ;; Where (in-map e map) is understood to mean
  ;;  (and (set::in (car e) (map::domain map))
  ;;       (in (cdr e) (map::get (car e) map)))
 
@@ -540,7 +565,7 @@
  (defthm mrdepsource-in-dtree
    (implies (set::in a (mrdeps dtree))
             (in (mv-nth 1 (mrdepsource a dtree)) dtree))
-   :hints(("Goal" 
+   :hints(("Goal"
            :use ((:instance lemma
                             (flag :dtree)
                             (x dtree))
@@ -556,27 +581,27 @@
  ;;  Show that (set::in a (localdeps (get path dtree)))
  ;;    Where path = (mv-nth 1 (mrdepsource a dtree))
  ;;
- ;; And for the map case, we need to use the idea of get-map, which is 
+ ;; And for the map case, we need to use the idea of get-map, which is
  ;; similar to in-map above.
  ;;
  ;;  Given a map, map.
  ;;  Given an element, a, such that (mv-nth 0 (mrdepsourcemap a map))
  ;;  Show that (set::in a (localdeps (get-map path map)))
  ;;    Where path = (mv-nth 1 (mrdepsourcemap a map))
- ;;    Where (get-map e map) = (get (cdr e) 
+ ;;    Where (get-map e map) = (get (cdr e)
  ;;                                       (map::get (car e) map))
 
  (local (defthm lemma3
           (if (equal flag :dtree)
               (implies (mv-nth 0 (mrdepsource a x))
-                       (set::in a (localdeps 
+                       (set::in a (localdeps
                                     (get (mv-nth 1 (mrdepsource a x))
                                             x))))
             (implies (mv-nth 0 (mrdepsourcemap a x))
                      (and (consp (mv-nth 1 (mrdepsourcemap a x)))
                           (map::in (car (mv-nth 1 (mrdepsourcemap a x))) x)
-                          (set::in a (localdeps 
-                                       (get 
+                          (set::in a (localdeps
+                                       (get
                                         (cdr (mv-nth 1 (mrdepsourcemap a x)))
                                         (map::get (car (mv-nth 1 (mrdepsourcemap a x)))
                                                    x)))))))
@@ -589,10 +614,10 @@
 
  (defthm in-localdeps-of-get-when-in-mrdeps
    (implies (set::in a (mrdeps dtree))
-            (set::in a (localdeps (get 
+            (set::in a (localdeps (get
                                     (mv-nth 1 (mrdepsource a dtree))
                                     dtree))))
-   :hints(("Goal" 
+   :hints(("Goal"
            :use ((:instance lemma
                             (flag :dtree)
                             (x dtree))
@@ -622,7 +647,7 @@
 ;; that (set::in a (mrdeps dtree)), and we are done. QED.
 ;;
 ;; The vice-versa case is just the same, but with mrdepsource instead.
-      
+
 (local (defthm in-mrdeps-when-in-deps
          (implies (set::in a (deps dtree))
                   (set::in a (mrdeps dtree)))
@@ -640,7 +665,7 @@
                                   (a a)
                                   (path (mv-nth 1 (mrdepsource a dtree)))
                                   (dtree dtree)))))))
-         
+
 (defthm mrdeps-is-deps
   (equal (mrdeps dtree)
          (deps dtree)))
@@ -672,7 +697,7 @@
 (defthm deps1-of-dtreefix
   (equal (deps1 locs (dtreefix dtree))
          (deps1 locs dtree))
-  :hints(("Goal" :in-theory (e/d (deps1) 
+  :hints(("Goal" :in-theory (e/d (deps1)
                                  (set::double-containment-expensive)))))
 
 (defthm deps-of-dtreefix
@@ -682,7 +707,7 @@
 
 (defthm depsmap-when-empty
   (implies (map::empty map)
-           (equal (depsmap map) 
+           (equal (depsmap map)
                   (set::emptyset)))
   :hints(("Goal" :in-theory (enable depsmap))))
 
@@ -703,15 +728,15 @@
                 (set::in a (depsmap sub)))
            (set::in a (depsmap super)))
   :hints(("Goal" :in-theory (enable depsmap))
-         ("Subgoal *1/3" 
-          :in-theory (e/d (depsmap) 
+         ("Subgoal *1/3"
+          :in-theory (e/d (depsmap)
                           (equal-of-gets-when-submap))
           :use (:instance equal-of-gets-when-submap
                           (map::key (map::head sub))
                           (map::sub sub)
                           (map::super super)))
-         ("Subgoal *1/2" 
-          :in-theory (e/d (depsmap) 
+         ("Subgoal *1/2"
+          :in-theory (e/d (depsmap)
                           (map::submap-transitive-one
                            map::submap-transitive-two))
           :use (:instance map::submap-transitive-one
@@ -730,13 +755,13 @@
            (if (set::in a (deps (map::get (map::head map) map)))
                (map::head map)
              (findtree a (map::tail map))))))
- 
+
 (local (defthm findtree-works
          (implies (set::in a (depsmap map))
                   (and (map::in (findtree a map) map)
                        (set::in a (deps (map::get (findtree a map) map)))))
          :hints(("Goal" :in-theory (enable depsmap findtree)))))
- 
+
 (defthm in-depsmap-when-in-depsmap-of-erase
   (implies (set::in a (depsmap (map::erase name map)))
            (set::in a (depsmap map)))
@@ -745,7 +770,7 @@
           :use (:instance findtree-works
                           (a a)
                           (map (map::erase name map))))))
-                            
+
 (defthm in-deps-when-not-in-erase-from-map
   (implies (and (set::in a (depsmap map))
                 (not (set::in a (depsmap (map::erase name map)))))
@@ -759,11 +784,3 @@
           :use (:instance in-depsmap-when-in-deps-of-get
                           (key (map::head map))
                           (map (map::erase name map))))))
-
-
-
-
-
-
-
-

@@ -234,7 +234,7 @@ Verilog, reusing much of @(see vl).</p>")
 (defval *vl-lint-help*
   :parents (lint)
   :short "Usage message for vl lint."
-  :long "@(def *vl-lint-help*)"
+  :showdef nil
   :showval t
 
   (str::cat "
@@ -480,8 +480,12 @@ shown.</p>"
        (design (cwtime (vl-design-check-namespace design)))
 
        (- (cw "~%vl-lint: processing arguments, parameters...~%"))
-       (design (cwtime (vl-design-elim-unused-vars design)))
        (design (cwtime (vl-design-argresolve design)))
+       (design
+        ;; Bug fixed 2014-12-19: don't do this until after argresolve, because
+        ;; in SystemVerilog it can get confused by .* or .foo style port
+        ;; connections.
+        (cwtime (vl-design-elim-unused-vars design)))
        (design (cwtime (vl-design-dupeinst-check design)))
 
        ;; BOZO not exactly sure where this should go, maybe this will work.
@@ -655,6 +659,39 @@ shown.</p>"
 (define vl-jp-reportcard ((x vl-reportcard-p) &key (ps 'ps))
   (vl-ps-seq (vl-print "{")
              (vl-jp-reportcard-aux x)
+             (vl-println "}")))
+
+(define vl-remove-nameless-descriptions ((x vl-descriptionlist-p))
+  :returns (new-x vl-descriptionlist-p)
+  (cond ((atom x)
+         nil)
+        ((not (vl-description->name (car x)))
+         (vl-remove-nameless-descriptions (cdr x)))
+        (t
+         (cons (vl-description-fix (car x))
+               (vl-remove-nameless-descriptions (cdr x))))))
+
+(define vl-jp-description-locations ((x vl-descriptionlist-p) &key (ps 'ps))
+  (b* (((when (atom x))
+        ps)
+       (name (or (vl-description->name (car x))
+                 (raise "Shouldn't have nameless descriptions here but got ~x0" (car x))
+                 ""))
+       (loc  (vl-description->minloc (car x))))
+    (vl-ps-seq (vl-indent 1)
+               (jp-str name)
+               (vl-print ":")
+               (jp-str (vl-location-string loc))
+               (if (atom (cdr x))
+                   ps
+                 (vl-println ", "))
+               (vl-jp-description-locations (cdr x)))))
+
+(define vl-jp-locations ((x vl-design-p) &key (ps 'ps))
+  (vl-ps-seq (vl-print "{")
+             (vl-jp-description-locations
+              (vl-remove-nameless-descriptions
+               (vl-design-descriptions x)))
              (vl-println "}")))
 
 (defconst *use-set-warnings*
@@ -1038,6 +1075,8 @@ wide addition instead of a 10-bit wide addition.")))
         (with-ps-file "vl-warnings.json"
                       (vl-print "{\"warnings\":")
                       (vl-jp-reportcard reportcard)
+                      (vl-print ",\"locations\":")
+                      (vl-jp-locations lintresult.design0)
                       (vl-println "}"))
         :name write-warnings-json)))
 

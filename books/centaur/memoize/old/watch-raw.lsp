@@ -51,7 +51,8 @@
 (defg *watch-forms*
   '("\"A string or a quoted form in *WATCH-FORMS* is ignored.\""
     (print-call-stack)
-    #+Clozure '(bytes-used)
+; Commented out as suggested by Boyer, for general user:
+;   #+Clozure '(bytes-used)
     (memoize-summary)
     (time-since-watch-start)
     (time-of-last-watch-update)
@@ -59,11 +60,12 @@
     ;; [Jared] removing these, they haven't worked since hl-hons
     ;; '(hons-calls/sec-run-time)
     ;; '(hons-hits/calls)
-    '(hons-acons-summary)
-    '(pons-calls/sec-run-time)
-    '(pons-hits/calls)
-    '(pons-summary)
-    '(hons-summary)
+; Commented out as suggested by Boyer, for general user:
+;   '(hons-acons-summary)
+    (pons-calls/sec-run-time)
+    (pons-hits/calls)
+    (pons-summary)
+    (hons-summary)
     ;; [Jared]; removing this because it seems very architecture specific, etc.
     ;; If we really want this, we can add it back with some kind of ttag book.
     ;; '(print-fds)
@@ -73,10 +75,13 @@
     ;; '(print-ancestry)
     ;; [Jared]: removing this 
     ;; #+Clozure '(watch-shell-command "pwd")
-    '(functions-that-may-be-too-fast-to-sensibly-profile)
-    '(physical-memory-on-this-machine)
-    #+Clozure '(number-of-cpus-on-this-machine)
-    #+Clozure (gc-count)
+    (functions-that-may-be-too-fast-to-sensibly-profile)
+; Commented out as suggested by Boyer, for general user:
+;   (physical-memory-on-this-machine)
+; Commented out as suggested by Boyer, for general user:
+;   #+Clozure '(number-of-cpus-on-this-machine)
+; Commented out as suggested by Boyer, for general user:
+;   #+Clozure (gc-count)
     )
 
   "The forms in *WATCH-FORMS* are evaluated periodically and the
@@ -206,6 +211,37 @@
 
 #+Clozure
 (declaim (fixnum *watch-real-seconds-between-dumps*))
+
+(defmacro oft (&rest r) ; For writing to *standard-output*.
+  `(progn (format t ,@r) (force-output *standard-output*)))
+
+(defmacro ofto (&rest r) ; For writing to *terminal-io*
+  `(progn (format *terminal-io* ,@r)
+          (force-output *terminal-io*)))
+
+(defun abbrev (x &optional
+                (level *print-level*)
+                (length *print-length*))
+  (cond ((atom x) x)
+        ((eql level 0) '?)
+        ((eql length 0) '?)
+        (t (let ((pair (assoc-eq-hack
+                        x (table-alist 'evisc-table
+                                       (w *the-live-state*)))))
+             (cond (pair (cdr pair))
+                   (t (let ((a (abbrev (car x)
+                                       (and level (1- level))
+                                       length))
+                            (d (abbrev (cdr x)
+                                       level
+                                       (and length (1- length)))))
+                        (cond ((and (eq a (car x))
+                                    (eq d (cdr x)))
+                               x)
+                              ((and (eq a '?)
+                                    (eq d '?))
+                               '?)
+                              (t (cons a d))))))))))
 
 #+Clozure
 (defn watch-condition ()
@@ -597,83 +633,7 @@
 
 (defun watch (&optional force-dog)
 
-  "WATCH is a raw Lisp function that initiates the printing of
-  profiling information.  (WATCH) sets *WATCH-FILE* to the string that
-  results from the evaluation of *WATCH-FILE-FORM*, a string that is
-  to be the name of a file we call the 'watch file'.
-
-  In Clozure Common Lisp, (WATCH) also initiates the periodic
-  evaluation of (WATCH-DUMP), which evaluates the members of the list
-  *WATCH-FORMS*, but diverts characters for *STANDARD-OUTPUT* to the
-  watch file.  The value of *WATCH-FILE* is returned by both (WATCH)
-  and (WATCH-DUMP).  (WATCH-KILL) ends the periodic printing to the
-  watch file.
-
-  You are most welcome to, even encouraged to, change the members of
-  *WATCH-FORMS* to have your desired output written to the watch file.
-
-  Often (MEMOIZE-SUMMARY) is a member of *WATCH-FORMS*.  It prints
-  information about calls of memoized and/or profiled functions.
-
-  Often (PRINT-CALL-STACK) is a member of *WATCH-FORMS*.  It shows the
-  names of memoized and/or profiled functions that are currently in
-  execution and how long they have been executing.
-
-  Other favorite members of *WATCH-FORMS* include (PRINT-FDS),
-  (BYTES-USED), and (GC-COUNT).
-
-  We suggest the following approach for getting profiling information
-  about calls to Common Lisp functions:
-
-    0. Invoke (WATCH).
-
-    1. Profile some functions that have been defined.
-
-       For example, call (PROFILE-FN 'foo1), ...
-
-       Or, for example, call PROFILE-FILE on the name of a file that
-       contains the definitions of some functions that have been
-       defined.
-
-       Or, as a perhaps extreme example, invoke
-       (PROFILE-ACL2), which will profile many of the functions that
-       have been introduced to ACL2, but may take a minute or two.
-
-       Or, as a very extreme example, invoke
-       (PROFILE-ALL), which will profile many functions, but may take
-       a minute or two.
-
-    2. Run a Lisp computation of interest to you that causes some of
-       the functions you have profiled to be executed.
-
-    3. Invoke (WATCH-DUMP).
-
-    4. Examine, perhaps in Emacs, the watch file, whose name was
-       returned by (WATCH-DUMP).  The watch file contains information
-       about the behavior of the functions you had profiled or
-       memoized during the computation of interest.
-
-  From within ACL2, you may MEMOIZE any of your ACL2 Common Lisp
-  compliant ACL2 functions.  One might MEMOIZE a function that is
-  called repeatedly on the exact same arguments.  Deciding which
-  functions to memoize is tricky.  The information from (WATCH-DUMP)
-  helps.  Sometimes, we are even led to radically recode some of our
-  functions so that they will behave better when memoized.
-
-  In Emacs, the command 'M-X AUTO-REVERT-MODE' toggles auto-revert
-  mode, i.e., causes a buffer to exit auto-revert mode if it is in
-  auto-revert mode, or to enter auto-revert mode if it is not.  In
-  other words, to stop a buffer from being auto-reverted, simply
-  toggle auto-revert mode; toggle it again later if you want more
-  updating.  'M-X AUTO-REVERT-MODE' may be thought of as a way of
-  telling Emacs, 'keep the watch buffer still'.
-
-  In Clozure Common Lisp, if the FORCE-DOG argument to WATCH (default
-  NIL) is non-NIL or if (LIVE-TERMINAL-P) is non-NIL a 'watch dog'
-  thread is created to periodically call (WATCH-DUMP).  The thread is
-  the value of *WATCH-DOG-PROCESS*.
-
-  Invoke (WATCH-HELP) outside of ACL2 for further details."
+; See defxdoc form in watch.lisp for documentation.
 
   #-Clozure
   (declare (ignore force-dog))

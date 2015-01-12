@@ -393,3 +393,33 @@ starting point, not a mandate.</p>
 
 <p>Following these conventions can help lead to more consistently named rules
 whose effect may be more easy to guess.</p>")
+
+(defxdoc where-do-i-place-my-book
+  :parents (best-practices projects books)
+  :short "How to decide where in the books directory structure to place your book"
+  :long "<p>Here is our loose view of the books organization:</p>
+
+  <ol>
+    <li>project-specific stuff</li>
+    <li>useful libraries not yet vetted by the 'std' maintainers</li>
+    <li>libraries 'approved' for the standard approach</li>
+  </ol>
+
+  <p>Books in category (1) easily belong in @('books/projects').</p>
+
+  <p>Books in category (2) can go in the top-level @('books') directory or in
+  projects.  There's so much stuff in the top-level directory, that we suggest
+  @('books/projects') -- especially for people that are new to the ACL2
+  community.</p>
+
+  <p>Once general-use books are vetted by the ACL2 book Czars, they go in the
+  @('std') directory.  Some of the criteria the book czars use to decide
+  whether a book should be in @('std') follow below:</p>
+
+  <ul>
+    <li>Design is consistent with other @('std') books</li>
+    <li>Has some general purpose use -- e.g., data structure books are very
+    much something that you would expect to see in a general framework for a
+    language like Java</li>
+    <li>Has good documentation that explains how to use it</li>
+  </ul>")

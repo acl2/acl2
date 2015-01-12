@@ -88,9 +88,11 @@ perform quite well thanks to @(see mbe).</p>"
                    (list a)))
     :hints(("Goal" :in-theory (enable rev))))
 
-  (defthm true-listp-of-rev
-    (true-listp (rev x))
-    :rule-classes :type-prescription)
+; Commented out by Matt K., since deduced type-prescription rule for rev at
+; definition time already provides this.
+; (defthm true-listp-of-rev
+;   (true-listp (rev x))
+;   :rule-classes :type-prescription)
 
   (defthm rev-of-list-fix
     (equal (rev (list-fix x))

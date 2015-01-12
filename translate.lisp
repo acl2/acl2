@@ -387,7 +387,15 @@
                          hard-error-returns-nilp aok)
   (the #+acl2-mv-as-values (values t t t)
        #-acl2-mv-as-values t
-       (let* ((*aokp* aok)
+       (let* ((*aokp*
+
+; We expect the parameter aok, here and in all functions in the "ev family"
+; that take aok as an argument, to be Boolean.  If it's not, then there is no
+; real harm done: *aokp* would be bound here to a non-Boolean value, suggesting
+; that an attachment has been used when that isn't necessarily the case; see
+; *aokp*.
+
+               aok)
               (pair (assoc-eq 'state latches))
               (w (if pair (w (cdr pair)) w)) ; (cdr pair) = *the-live-state*
               (throw-raw-ev-fncall-flg t)
@@ -1583,12 +1591,7 @@
     (let (#-acl2-loop-only (*aokp*
 
 ; See the #-acl2-loop-only definition of return-last and the comment just
-; below.  Note that fn is not mbe1-raw, so this binding is legal.
-
-; Unlike the raw Lisp definition of return-last, we see no need to bind
-; *attached-fn-called* here (for the #+hons version), because that would amount
-; to trying to manage the use of memoization with calls of top-level calls of
-; ev-rec on behalf of the trans-eval call under ld-read-eval-print.
+; below.  Note that fn is not mbe1-raw, so this binding is appropriate.
 
                             t))
       (ev-rec arg2 alist w user-stobj-alist
@@ -2325,7 +2328,7 @@
                                        nil ; safe-mode
                                        nil ; gc-off
                                        nil ; hard-error-returns-nilp
-                                       t   ; okp
+                                       t   ; aok
                                        )
                           (or (and (null erp) term1)
                               term))
@@ -3161,7 +3164,7 @@
 ; might be:
 ; (warning$-cw ctx "The :REWRITE rule ~x0 loops forever." name).
 
-  `(let ((state-vars (default-state-vars #-hons nil #+hons :hons))
+  `(let ((state-vars (default-state-vars nil))
          (wrld nil))
      (warning$-cw1 ,ctx nil ,@args)))
 
@@ -3435,28 +3438,21 @@
 ; The following alist maps "binders" to the permitted types of
 ; declarations at the top-level of the binding environment.
 
-(defun acceptable-dcls-alist (state-vars)
+(defconst *acceptable-dcls-alist*
 
 ; Warning: Keep this in sync with :DOC declare.
 
-; The declarations when (hons-enabledp state) have been found useful by Bob
-; Boyer for the experimental hons version, but have not yet been carefully
-; evaluated for soundness, so we do not advertise them.  In fact, we decided
-; that inline and notinline are not appropriate to support when we introduced
-; defun-inline.
+; The declarations when (hons-enabledp state) were found useful by Bob Boyer
+; for in the hons-enabled case, but we do not see a way to support such
+; declarations soundly, so we do not support them.  We also do not support
+; inline or notinline directly, as they are supported adequately (and
+; indirectly) by defun-inline and defun-notinline.
 
-  (let ((hons-enabledp (access state-vars state-vars :hons-enabled)))
-    `((let ignore ignorable type
-           ,@(if hons-enabledp
-                 '(dynamic-extent)
-               nil))
-      (mv-let ignore ignorable type)
-      (flet ignore ignorable type) ; for each individual definition in the flet
-      (defmacro ignore ignorable type xargs)
-      (defuns ignore ignorable type optimize xargs
-        ,@(if hons-enabledp
-              '(inline notinline)
-            nil)))))
+  `((let ignore ignorable type)
+    (mv-let ignore ignorable type)
+    (flet ignore ignorable type) ; for each individual definition in the flet
+    (defmacro ignore ignorable type xargs)
+    (defuns ignore ignorable type optimize xargs)))
 
 ; The following list gives the names of binders that permit at most
 ; one documentation string among their declarations.  If this list is
@@ -3527,11 +3523,11 @@
         (t (and (symbolp (car lst))
                 (optimize-alistp (cdr lst))))))
 
-(defun chk-dcl-lst (l vars binder ctx wrld state-vars)
+(defun chk-dcl-lst (l vars binder ctx wrld)
 
 ; L is the list of expanded declares.  Vars is a list of variables
 ; bound in the immediately superior lexical environment.  Binder is
-; a binder, as listed in acceptable-dcls-alist.
+; a binder, as listed in *acceptable-dcls-alist*.
 
   (cond
    ((null l) (value-cmp nil))
@@ -3544,8 +3540,7 @@
                     not.  See :DOC declare."
                    entry))
           (t (let ((dcl (car entry))
-                   (temp (cdr (assoc-eq binder (acceptable-dcls-alist
-                                                state-vars)))))
+                   (temp (cdr (assoc-eq binder *acceptable-dcls-alist*))))
                (cond
                 ((not (member-eq dcl temp))
                  (er-cmp ctx
@@ -3566,17 +3561,6 @@
                 (t
                  (case
                   dcl
-                  ((dynamic-extent notinline inline)
-                   (cond ((access state-vars state-vars :hons-enabled)
-
-; should check we are binding a variable of a let
-
-                          (value-cmp nil))
-                         (t (er-cmp ctx
-                                    "The declaration ~x0 is illegal except in ~
-                                     a hons-enabled ACL2 executable.  See ~
-                                     :DOC hons-and-memoization."
-                                    dcl))))
                   (optimize
                    (cond ((optimize-alistp (cdr entry)) (value-cmp nil))
                          (t (er-cmp ctx
@@ -3700,10 +3684,10 @@
                    (mv t
                        (er hard! 'chk-dcl-lst
                            "Implementation error: A declaration, ~x0, is ~
-                            mentioned in acceptable-dcls-alist but not in ~
+                            mentioned in *acceptable-dcls-alist* but not in ~
                             chk-dcl-lst."
                            dcl))))))))))
-       (chk-dcl-lst (cdr l) vars binder ctx wrld state-vars)))))
+       (chk-dcl-lst (cdr l) vars binder ctx wrld)))))
 
 (defun number-of-strings (l)
   (cond ((null l) 0)
@@ -3722,12 +3706,12 @@
         ((stringp (car l)) (list (car l)))
         (t (get-string (cdr l)))))
 
-(defun collect-declarations-cmp (lst vars binder ctx wrld state-vars)
+(defun collect-declarations-cmp (lst vars binder ctx wrld)
 
 ; Lst is a list of (DECLARE ...) forms, and/or documentation strings.
 ; We check that the elements are declarations of the types appropriate
 ; for binder, which is one of the names bound in
-; acceptable-dcls-alist.  For IGNORE and TYPE declarations, which
+; *acceptable-dcls-alist*.  For IGNORE and TYPE declarations, which
 ; are seen as part of term translation (e.g., in LETs), we check that
 ; the variables mentioned are bound in the immediately superior
 ; lexical scope (i.e., are among the vars (as supplied) bound by
@@ -3759,13 +3743,12 @@
         (t
          (er-let*-cmp
           ((dcls (collect-dcls (remove-strings lst) ctx)))
-          (er-progn-cmp (chk-dcl-lst dcls vars binder ctx wrld state-vars)
+          (er-progn-cmp (chk-dcl-lst dcls vars binder ctx wrld)
                         (value-cmp (append (get-string lst) dcls)))))))
 
 (defun collect-declarations (lst vars binder state ctx)
   (cmp-to-error-triple (collect-declarations-cmp lst vars binder ctx
-                                                 (w state)
-                                                 (default-state-vars t))))
+                                                 (w state))))
 
 (defun listify (l)
   (cond ((null l) *nil*)
@@ -4497,7 +4480,7 @@
 (defun chk-all-but-new-name (name ctx new-type w state)
   (cmp-to-error-triple (chk-all-but-new-name-cmp name ctx new-type w)))
 
-(defun chk-defuns-tuples-cmp (lst local-p ctx wrld state-vars)
+(defun chk-defuns-tuples-cmp (lst local-p ctx wrld)
   (cond ((atom lst)
 
 ; This error message can never arise because we know terms are true
@@ -4527,9 +4510,8 @@
                       (butlast (cddar lst) 1)
                       (cadar lst)
                       (if local-p 'flet 'defuns)
-                      ctx wrld state-vars))
-              (rst (chk-defuns-tuples-cmp (cdr lst) local-p ctx wrld
-                                          state-vars)))
+                      ctx wrld))
+              (rst (chk-defuns-tuples-cmp (cdr lst) local-p ctx wrld)))
              (value-cmp (cons (list* (caar lst)
                                      (cadar lst)
                                      (if (stringp (car edcls))
@@ -4542,8 +4524,7 @@
                               rst)))))))
 
 (defun chk-defuns-tuples (lst local-p ctx wrld state)
-  (cmp-to-error-triple (chk-defuns-tuples-cmp lst local-p ctx wrld
-                                              (default-state-vars t))))
+  (cmp-to-error-triple (chk-defuns-tuples-cmp lst local-p ctx wrld)))
 
 (defun non-trivial-encapsulate-ee-entries (embedded-event-lst)
   (cond ((endp embedded-event-lst)
@@ -5774,7 +5755,7 @@
           (body (car (last x))))
       (mv-let
        (erp fives)
-       (chk-defuns-tuples-cmp defs t ctx wrld state-vars)
+       (chk-defuns-tuples-cmp defs t ctx wrld)
        (let ((names (and (not erp)
                          (strip-cars fives))))
          (mv-let
@@ -5783,7 +5764,7 @@
               (mv erp fives)
 
 ; Note that we do not need to call chk-xargs-keywords, since
-; acceptable-dcls-alist guarantees that xargs is illegal.
+; *acceptable-dcls-alist* guarantees that xargs is illegal.
 
             (er-progn-cmp
              (chk-no-duplicate-defuns-cmp names ctx)
@@ -5924,7 +5905,7 @@
        (t (mv-let
            (erp edcls)
            (collect-declarations-cmp (butlast (cddr x) 1)
-                                     bound-vars 'let ctx wrld state-vars)
+                                     bound-vars 'let ctx wrld)
            (cond
             (erp (mv erp edcls bindings))
             (t
@@ -6165,7 +6146,7 @@
       (mv-let
        (erp edcls)
        (collect-declarations-cmp (butlast (cdddr x) 1)
-                                 (cadr x) 'mv-let ctx wrld state-vars)
+                                 (cadr x) 'mv-let ctx wrld)
        (cond
         (erp ; erp is a ctx and edcls is a msg
          (trans-er erp "~@0" edcls))

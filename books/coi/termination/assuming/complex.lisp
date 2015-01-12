@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 #|
 
   A proof of the universal termination of tarai in the ACL2 logic.
@@ -27,11 +52,11 @@ values (by Cowles) and subsequently all ACL2 objects (by Greve).
   (local (include-book "compiler"))
 
   (local (in-theory (enable tarai_terminates-closed-open)))
-  
+
   (defthm tarai_terminates-definition
     (equal (tarai_terminates x y z)
 	   (if (> x y)
-	       (and 
+	       (and
 		(tarai_terminates (1- x) y z)
 		(tarai_terminates (1- y) z x)
 		(tarai_terminates (1- z) x y)
@@ -40,13 +65,13 @@ values (by Cowles) and subsequently all ACL2 objects (by Greve).
 				  (tarai-open (1- z) x y)))
 	     t))
     :rule-classes ((:definition :controller-alist ((tarai_terminates t t t)))))
-  
+
   (defthm tarai_terminates_opener
     (implies
      (tarai_terminates x y z)
      (equal (tarai x y z)
 	    (tarai-open x y z))))
-  
+
 
   )
 
@@ -60,14 +85,14 @@ values (by Cowles) and subsequently all ACL2 objects (by Greve).
      )
 
   (local (include-book "ordinals/lexicographic-ordering" :dir :system))
-  
+
   (DEFUN LLIST-MACRO (LST)
     (DECLARE (XARGS :GUARD T))
     (IF (CONSP LST)
 	(CONS (CONS 'NFIX (CONS (CAR LST) 'NIL))
 	      (LLIST-MACRO (CDR LST)))
 	NIL))
-  
+
   (DEFMACRO LLIST (&REST LST)
     (CONS 'LIST (LLIST-MACRO LST)))
 
@@ -81,7 +106,7 @@ values (by Cowles) and subsequently all ACL2 objects (by Greve).
     (DECLARE (XARGS :GUARD T))
     (OR (NATP X)
 	(AND (CONSP X) (NATP-LISTP X))))
- 
+
   (DEFthm D<-definition
     (equal (d< X Y)
 	   (AND (CONSP X)
@@ -100,7 +125,7 @@ values (by Cowles) and subsequently all ACL2 objects (by Greve).
 
   (defthm well-founded-l<
     (and (implies (lexp x) (o-p (ltoo x)))
-	 (implies (and (lexp x)                       
+	 (implies (and (lexp x)
 		       (lexp y)
 		       (l< x y))
 		  (o< (ltoo x) (ltoo y))))
@@ -112,7 +137,7 @@ values (by Cowles) and subsequently all ACL2 objects (by Greve).
 
 (encapsulate
     ()
-  
+
   (local
    (defthm hack0
      (implies (and (rationalp x)
@@ -126,21 +151,21 @@ values (by Cowles) and subsequently all ACL2 objects (by Greve).
 	     ("goal'4'" :use ((:instance distributivity (x z)
 					 (y x)
 					 (z (* #c(0 1) y))))))))
-  
+
   (defthm realpart-*
     (implies (rationalp y)
 	     (and (equal (realpart (* y x))
 			 (* y (realpart x)))
 		  (equal (realpart (* x y))
 			 (* y (realpart x))))))
-  
+
   (defthm imagpart-*
     (implies (rationalp y)
 	     (and (equal (imagpart (* y x))
 			 (* y (imagpart x)))
 		  (equal (imagpart (* x y))
 			 (* y (imagpart x))))))
-  
+
   )
 
 
@@ -191,13 +216,13 @@ values (by Cowles) and subsequently all ACL2 objects (by Greve).
 
 ;; THis rule seems to fight with REDUCE-MULTIPLICATIVE-CONSTANT-<
 ;;(in-theory (disable <-UNARY-/-POSITIVE-LEFT))
-  
+
 ;; More fighting ..
 ;;(in-theory (disable <-UNARY-/-NEGATIVE-RIGHT))
 
 (defthm complex-rational-cc
   (complex-rationalp (cc x y))
-  :rule-classes (:rewrite 
+  :rule-classes (:rewrite
 		 (:forward-chaining :trigger-terms ((cc x y)))))
 
 (defthm realpart-cc
@@ -362,7 +387,7 @@ values (by Cowles) and subsequently all ACL2 objects (by Greve).
    (and
     (d-check d x y z)
     (> x y))
-   (L< (tarai-measure d 
+   (L< (tarai-measure d
 		      (tarai-open (1- x) y z)
 		      (tarai-open (1- y) z x)
 		      (tarai-open (1- z) x y))

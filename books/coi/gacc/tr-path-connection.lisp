@@ -1,8 +1,33 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+
 (in-package "ACL2")
 
 ;The book provides a mapping between typed records and the nested record structures accessed by paths.
@@ -21,7 +46,7 @@
 
 (defun set::rkeys (r)
   (list::2set (rkeys r)))
-              
+
 ;;
 ;; mypush (turn a record into a typed-record)
 ;;
@@ -32,7 +57,7 @@
     (gacc::wr (set::head keys)
               (g (set::head keys) r)
               (mypush-aux (set::tail keys) r))))
-              
+
 (defun mypush (r)
   (mypush-aux (set::rkeys r) r))
 
@@ -49,7 +74,7 @@
          (if (set::in a (set::rkeys r))
              (loghead 8 (g a r))
            0)))
-    
+
 (defthm memory-clr-of-mypush-aux
   (equal (gacc::memory-clr key (mypush-aux rkeys r))
          (mypush-aux rkeys (clr key r))))
@@ -80,7 +105,7 @@
   (if (set::empty rkeys)
       (list a rkeys r)
     (if (equal a (set::head (set::insert a rkeys)))
-        (list a rkeys r)  
+        (list a rkeys r)
       (my-ind a (set::tail rkeys) (s (set::head rkeys) (g (set::head rkeys) r) r)))))
 
 
@@ -160,9 +185,9 @@
                            )
            :in-theory (e/d (car-of-insert SET::EMPTY SET::HEAD SET::tail SET::SFIX) ( SET::PICK-A-POINT-SUBSET-STRATEGY))
            :do-not '(generalize eliminate-destructors))))
-                 
 
- 
+
+
 ;combine these cases?
 (defthm mypush-aux-of-insert
   (equal (mypush-aux (set::insert a rkeys) r)
@@ -199,7 +224,7 @@
   (equal (mypush-aux (set::insert key rkeys) (clr key r))
          (mypush-aux rkeys (clr key r)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-                 
+
 
 (defthm mypush-irrel
   (implies (not (set::in key rkeys))
@@ -212,13 +237,13 @@
   (equal (mypush-aux rkeys (clr a r))
          (mypush-aux (set::delete a rkeys) r))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-        
+
 
 (defthm mypush-irrel2
   (implies (not (set::in key rkeys))
            (equal (mypush-aux rkeys (s key v r))
                   (mypush-aux rkeys r)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors))))        
+  :hints (("Goal" :do-not '(generalize eliminate-destructors))))
 
 ;; (thm
 ;;  (equal (mypush-aux (set::insert a rkeys) (s a v r))
@@ -258,7 +283,7 @@
        (gacc::rd (set::head keys) tr)
        (mylift-aux (set::tail keys) tr))))
 
-;bzo 
+;bzo
 (defun mylift (tr)
   (mylift-aux (set::rkeys tr) tr))
 
@@ -300,7 +325,7 @@
   (implies (EQUAL (LOGHEAD 8 V) 0)
            (equal (GACC::WR A V TR)
                   (gacc::memory-clr A TR))))
-          
+
 
 ;bzo improve CLR-OVER-CLR?
 
@@ -347,7 +372,7 @@
                   (set::delete (set::head s) (set::delete key s))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :expand ((set::delete key s)))))
-                 
+
 (defthm clr-of-mylift-aux
   (equal (clr key (mylift-aux rkeys tr))
          (mylift-aux (set::delete key rkeys) (gacc::memory-clr key tr)))
@@ -373,7 +398,7 @@
 ;;        (not (ifrp r)) ;;should really just use a typed version of ifrp?
 ;;        ))
 
-    
+
 (defun wf-tr (tr)
   (and ;;(wfr-weak tr) ;;
        (wfr tr)
@@ -512,7 +537,7 @@
 ;;   (equal (mylift-aux rkeys (gacc::memory-clr a t))
 ;;          (mylift-aux (set::delete a rkeys) t))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-        
+
 
 (defthm rd-of-s-irrel
   (implies (not (equal key1 key2))
@@ -525,7 +550,7 @@
            (equal (mylift-aux rkeys (s key v tr))
                   (mylift-aux rkeys tr)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-         
+
 
 ;; (thm
 ;;  (IMPLIES (AND (WFR TR)
@@ -550,7 +575,7 @@
            (UNSIGNED-BYTE-P 8 (CAR (G A TR)))))
 
 (defthm mylift-of-wr-0-case
- (implies (and (wf-tr tr) ;(wfr tr) 
+ (implies (and (wf-tr tr) ;(wfr tr)
                (equal 0 (loghead 8 v)))
           (equal (mylift (gacc::wr a v tr))
                  ;if what was there was well-formed, we get 0.  otherwise (including if it was 0 before!), we get what was there!
@@ -562,7 +587,7 @@
                 (:instance check-tr-keys-lemma2 (keys (set::rkeys tr))))
           :in-theory (e/d ( ;gacc::wr
                            GACC::MEMORY-CLR
-                           ) 
+                           )
                           (
                            set::rkeys
                            WR-OF-0-IS-CLR
@@ -595,20 +620,20 @@
        (check-tr-val (car val))))
 
 ;bzo really what's checked by CHECK-TR-KEYS is the value -rename
-       
+
 (defthm check-tr-keys-of-s
   (implies (and (check-tr-keys keys tr)
                 (check-tr-entry v) ;the whole entry, not the val
                 )
            (check-tr-keys keys (s a v tr)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-  
+
 
 (defthm CHECK-TR-KEYS-of-s-irrel
   (implies (not (set::in a keys))
            (equal (CHECK-TR-KEYS keys (S A NIL TR))
                   (CHECK-TR-KEYS keys TR))))
-                 
+
 (defthm delete-when-would-be-head
   (implies (equal a (set::head (set::insert a keys)))
            (equal (set::delete a keys)
@@ -702,7 +727,7 @@
 
 (defun non-nil (x)
   (declare (xargs :guard t))
-  (not (null x))) 
+  (not (null x)))
 
 (set-verify-guards-eagerness 2)
 
@@ -758,7 +783,7 @@
                 (wfr tr))
            (set::all<non-nil> (set::rkeys tr)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-;;           :in-theory (enable ;wfr 
+;;           :in-theory (enable ;wfr
 ;;                       wfkeyed wfkey rkeys))))
 
 (defthm all-non-nil-of-rkeys2
@@ -785,7 +810,7 @@
   (if (or (not (set::setp keys))
           (set::empty keys))
       (list keys tr)
-    (ind (set::tail keys) 
+    (ind (set::tail keys)
          (GACC::MEMORY-CLR (SET::HEAD (SET::RKEYS TR)) tr);
          ;(gacc::wr (set::head keys) (gacc::rd (set::head keys) tr) tr)
          )))
@@ -874,9 +899,9 @@
                               (mylift-aux rkeys tr))
                   tr))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d ( ;wfr 
+           :in-theory (e/d ( ;wfr
                             CHECK-TR-KEYS
-                            mypush-aux mylift-aux) 
+                            mypush-aux mylift-aux)
                            ( ;gacc::wr==r!
                             ))
            :induct (ind rkeys tr)
@@ -893,7 +918,7 @@
   (declare (xargs :verify-guards nil))
   (if (set::empty keys)
       nil ;the empty record
-    (s (set::head keys) 
+    (s (set::head keys)
        (val-fix (g (set::head keys) r))
        (typed-fix-aux (set::tail keys) r))))
 
@@ -950,7 +975,7 @@
   (if (or (not (set::setp keys))
           (set::empty keys))
       (list keys r)
-    (ind3 (set::tail keys) 
+    (ind3 (set::tail keys)
          (CLR (SET::HEAD (SET::RKEYS R)) r);
          ;(gacc::wr (set::head keys) (gacc::rd (set::head keys) tr) tr)
          )))
@@ -974,7 +999,7 @@
 
 
 
-(defthmd g-when-not-g-of-cdr 
+(defthmd g-when-not-g-of-cdr
   (implies (and (not (g key (cdr r)))
                 (wfr r))
            (equal (g key r)
@@ -1001,7 +1026,7 @@
            :in-theory (enable rkeys wfkeyed))))
 
 (defthm g-of-nil
-  (implies (and ;(wfkeyed r) 
+  (implies (and ;(wfkeyed r)
                 (wfr r))
            (not (g nil r)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -1117,7 +1142,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;          :induct (ind3 keys r)
            )))
-          
+
 
 (defthm typed-fix-does-nothing-helper
   (implies (and (all-vals-okay-aux keys r)
@@ -1134,13 +1159,13 @@
   (declare (xargs :verify-guards nil))
   (and (wfr r)
        (all-vals-okay-aux (set::rkeys r) r)))
-  
+
 ;for Dave
 (defthm typed-fix-does-nothing
   (implies (well-typed-record r)
            (equal (typed-fix r)
                   r))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors))))          
+  :hints (("Goal" :do-not '(generalize eliminate-destructors))))
 
 
 ;; (thm
@@ -1149,7 +1174,7 @@
 ;;       (not (or (set::empty s)
 ;;                (equal s (list a)) ;gross?
 ;;                ))
-          
+
 ;;       ))
 
 ;; (thm
@@ -1163,8 +1188,8 @@
 ;;  :otf-flg t
 ;;  :hints (("Goal" :in-theory (e/d (set::head set::tail SET::SFIX SET::EMPTY
 ;;                                  CAR-OF-INSERT
-;;                                             ) 
-;;                                  (set::delete 
+;;                                             )
+;;                                  (set::delete
 ;;                                   set::insert))
 ;;           :expand ((SET::SETP S)
 ;;                    (SET::DELETE A S)
@@ -1193,10 +1218,10 @@
 ;;                    )
 ;;           :in-theory (e/d (set::head set::tail SET::SFIX SET::EMPTY
 ;;     CAR-OF-INSERT
-;;                                      ) 
-;;                           (set::delete 
+;;                                      )
+;;                           (set::delete
 ;;                            set::insert)))))
-        
+
 
 
 
@@ -1230,8 +1255,3 @@
 ;;            (unsigned-byte-p 8 val)
 ;;            (not (equal 0 val))
 ;;            (wf-tr (cdr tr))))))
-  
-
-    
-
-

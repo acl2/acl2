@@ -4805,7 +4805,7 @@
 
 ; Warning: Keep this in sync with default-state-vars.
 
-  ((hons-enabled safe-mode . temp-touchable-vars)
+  ((safe-mode . temp-touchable-vars)
    .
    (guard-checking-on ld-skip-proofsp
                       temp-touchable-fns . parallel-execution-enabled))
@@ -4825,12 +4825,10 @@
 ; State-p is t to indicate that we use the current values of the relevant state
 ; globals.  Otherwise we use the specified defaults, which are supplied above
 ; for convenience but can be changed there (i.e., in this code) if better
-; default values are found.  The value :hons for state-p is treated like nil,
-; except that state-var hons-enabled is t rather than nil.
+; default values are found.
 
   (cond ((eq state-p t)
          `(make state-vars
-                :hons-enabled (hons-enabledp state)
                 :safe-mode
                 ,(if safe-mode-p
                      safe-mode
@@ -4857,7 +4855,6 @@
                    '(f-get-global 'parallel-execution-enabled state))))
         (t ; state-p is not t
          `(make state-vars
-                :hons-enabled ,(eq state-p :hons)
                 :safe-mode ,safe-mode
                 :temp-touchable-vars ,temp-touchable-vars
                 :guard-checking-on ,guard-checking-on

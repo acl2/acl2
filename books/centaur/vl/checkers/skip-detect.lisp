@@ -523,7 +523,7 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
     (if (atom ctxexprs)
         nil
       (b* ((expr       (caar ctxexprs))
-           (ctx        (ec-call (vl-context1-fix$inline (cdar ctxexprs))))
+           (ctx        (vl-context1-fix (cdar ctxexprs)))
            (expr-names (vl-expr-names expr))
            (expr-keys  (sd-keygen-list expr-names nil))
            (expr-pats  (sd-patalist expr-keys))
