@@ -1,7 +1,7 @@
 #|$ACL2s-Preamble$;
 ;;Author - Harsh Raju Chamarthi (harshrc)
-(ld ;; Newline to fool ACL2/cert.pl dependency scanner
- "portcullis.lsp")
+(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
+ "../portcullis")
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 
@@ -11,7 +11,7 @@
 ;; See testing-regression.lsp
 
 ;; USAGE:
-;; (include-book "cgen/top" :dir :system :ttags :all)
+;; (include-book "acl2s/cgen/top" :dir :system :ttags :all)
 ;; (acl2s-defaults :set testing-enabled t) ;default is :naive
 
 
@@ -31,7 +31,7 @@
 ;; (acl2s-defaults :set num-witnesses 3)
 ;; (acl2s-defaults :set search-strategy :simple) ;other value is :incremental
 ;; (acl2s-defaults :set sampling-method :random) 
-;; (acl2s-defaults :set cgen-timeout 10) ;0 turns off timeout
+;; (acl2s-defaults :set subgoal-timeout 10) ;0 turns off timeout
 
 
 ;; Note: The use of ttags is primarily for engineering
@@ -40,7 +40,7 @@
 ;; simply remove this book.
 
 
-(in-package "ACL2")
+(in-package "ACL2S")
 
 (include-book "acl2s-parameter")
 (include-book "prove-cgen" :ttags :all)
@@ -114,34 +114,34 @@
        
        ((mv cts-found? state)   
         (cond ((eq res :falsifiable) (prog2$
-                                      (cgen::cw? (normal-output-flag vl)
+                                      (cgen::cw? (cgen::normal-output-flag vl)
                                            "~%Test? found a counterexample.~%")
                                       (mv T state)))
               ((eq res t) (prog2$
-                           (cgen::cw? (and pts? (normal-output-flag vl))
+                           (cgen::cw? (and pts? (cgen::normal-output-flag vl))
                                 "~|Test? failed (probably due to a hard error).~%")
                            (mv nil state)))
 ;Success means the prover actually proved the conjecture under consideration
               ((eq res nil) (prog2$
-                             (cgen::cw? (and pts? (normal-output-flag vl))
+                             (cgen::cw? (and pts? (cgen::normal-output-flag vl))
                                   "~%Test? proved the conjecture under consideration~s0. ~
  Therefore, no counterexamples exist. ~%" (if hints "" " (without induction)"))
                              (mv NIL state)))
 ; either prove failed, or we didnt call prove. Either way if we didnt find a cts
 ; then we say the test? succeeded! But dont print if print-cgen-summary is nil.
               (t (prog2$
-                  (cgen::cw? (and pts? (normal-output-flag vl))
+                  (cgen::cw? (and pts? (cgen::normal-output-flag vl))
                        "~%Test? succeeded. No counterexamples were found.~%")
                   (mv NIL state)))))
 
-       (state (f-put-global 'cgen::cgen-state nil state)));clean up
+       )
       
     (mv cts-found? '(value-triple :invisible) state )))
 
 (defmacro test? (form &rest kwd-val-lst)
   (let* ((vl-entry (assoc-keyword :verbosity-level kwd-val-lst))
          (vl (and vl-entry (cadr vl-entry)))
-         (debug (and (natp vl) (debug-flag vl)))
+         (debug (and (natp vl) (cgen::debug-flag vl)))
          (hints-entry (assoc-keyword :hints kwd-val-lst))
          (hints (and hints-entry (cadr hints-entry))))
     `(with-output
@@ -154,8 +154,8 @@
 
 (include-book "xdoc/top" :dir :system)
 
-(defxdoc cgen
-  :parents (debugging acl2-sedan)
+(defxdoc acl2::cgen
+  :parents (acl2::debugging acl2::acl2-sedan)
   :short "Counterexample Generation a.k.a Disproving for ACL2"
   :long 
 "
@@ -165,7 +165,7 @@ Cgen is available and enabled in all ACL2 Sedan session modes except <i>Compatib
 If it is not already available, you can use Cgen simply be submitting the following
 commands:
 @({
-  (include-book \"cgen/top\" :dir :system :ttags :all)
+  (include-book \"acl2s/cgen/top\" :dir :system :ttags :all)
   (acl2s-defaults :set testing-enabled t)
 })
 </p>
@@ -214,10 +214,9 @@ Cgen falsified a bad generalization, thereby causing ACL2 to
 <h3>Control Parameters</h3>
 
 <p> The Cgen library can be configured via a collection of parameters using the
-  @('acl2s-defaults') macro using the <tt>:get</tt> or <tt>:set</tt>
-  keyword arguments. In particular, see @('num-trials'), @('verbosity-level'),
-  @('testing-enabled'). 
-</p>
+  @('acl2s-defaults') macro using the <tt>:get</tt> or <tt>:set</tt> keyword
+  arguments. In particular, see @('num-trials'), @('verbosity-level'),
+  @('testing-enabled'). All the control parameters are package-agnostic.  </p>
 
 <h3> Advanced Notes </h3>
 
@@ -228,6 +227,10 @@ might also occur if you are using @(see brr). In such cases you can remedy the
 problem, using @(see cgen::flush). Simply submit the command @('(cgen::flush)')
 in the session editor or the ACL2 prompt. </p>
 
+<p>The API functions/macros for Cgen library reside in the ACL2S package. Use
+list (<tt>*acl2s-exports*</tt>) to import these symbols into your own
+package.</p>
+
 <h3>More details</h3> 
 
 <p> To understand more about how testing works, please refer to the following
@@ -236,7 +239,7 @@ in the session editor or the ACL2 prompt. </p>
  )
 
 (defxdoc cgen::flush
-  :parents (cgen)
+  :parents (acl2::cgen)
   :short "Flush/Reset the Cgen state globals to sane values."
   :long "
   Flush the transient Cgen state globals (<tt>cgen::event-stack</tt>, <tt>cgen::cgen-state</tt>) to <tt>nil</tt>.
@@ -249,13 +252,13 @@ in the session editor or the ACL2 prompt. </p>
 
 
 (defxdoc test?
-  :parents (cgen)
+  :parents (acl2::cgen)
   :short "Test/Check a conjecture for counterexamples."
   :long
 "
 <h3>Examples</h3>
 @({
-  (test? (equal (reverse (reverse x)) x))
+  (acl2s::test? (equal (reverse (reverse x)) x))
 
   (test? (implies (and (posp (car x))
                        (posp (cdr x)))
@@ -276,6 +279,7 @@ in the session editor or the ACL2 prompt. </p>
                     (perm X Y))))
 })
 
+Note: test? is in ACL2S package.
   
 <h4>Usage:</h4>
 @({
@@ -309,7 +313,7 @@ print a message reporting success.  Finally, the conjecture may be true, but
 ACL2 cannot prove it.  For all of these three cases, we consider testing to
 have succeeded, so @('test?') will report success. </p>
 
-<p>@('test?') is an embedded event and can be used in ACL2 @(see books). But it
+<p>@('test?') is an embedded event and can be used in ACL2 @(see acl2::books). But it
 is recommended to use them only in the design and in the debug phase, since its
 use requires trust-tags.</p>
 
@@ -429,7 +433,7 @@ conjecture.  </p>
 
 
 (defxdoc prove/cgen
-  :parents (cgen)
+  :parents (acl2::cgen)
   :short "top-level API function for Cgen/testing."
   :long
 "<h3>Introduction</h3> 

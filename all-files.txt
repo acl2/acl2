@@ -5,18 +5,17 @@ acl2-fns.lisp
 acl2-init.lisp
 acl2.lisp
 # acl2-proclaims.lisp -- generated file
-# acl2-status.txt -- generated file
-acl2-startup-info.txt
 # acl2r.lisp -- generated file
+# acl2-status.txt -- generated file
 akcl-acl2-trace.lisp
-# all-files-developers.txt -- developer file
-# all-files-extra.txt -- developer file
 allegro-acl2-trace.lisp
 all-files.txt
+# aux -- developer directory
 axioms.lisp
-basis.lisp
+basis-a.lisp
+basis-b.lisp
 bdd.lisp
-# bin -- under svn control but not distributed
+# bin -- under source control but not distributed
 # books -- no longer distributed at UT
 boot-strap-pass-2.lisp
 build-allegro-exe.cl
@@ -25,8 +24,10 @@ defthm.lisp
 defuns.lisp
 doc
 doc.lisp
+# doc.lisp.backup -- not distributed or under source control
 emacs
 futures-raw.lisp
+# gitlog-all.txt -- not distributed or under source control
 GNUmakefile
 graphics
 history-management.lisp
@@ -53,25 +54,24 @@ other-processes.lisp
 other-releases.html
 parallel.lisp
 parallel-raw.lisp
-# p.lisp -- developer file
 proof-checker-a.lisp
 proof-checker-b.lisp
 proof-checker-pkg.lisp
 prove.lisp
+# README.md -- not distributed (github file)
 rewrite.lisp
-# The following is distributed but is not in the svn repository:
+# The following is distributed but is not under source control:
 saved
 save-gprof.lsp
 serialize.lisp
 serialize-raw.lisp
 simplify.lisp
-# The following is distributed but is not in the svn repository:
+# The following is distributed but is not under source control:
 TAGS
 tau.lisp
 translate.lisp
 type-set-a.lisp
 type-set-b.lisp
-# unversioned-files.txt -- under svn control but not distributed
 workshops.html
 
 acl2-customization-files:
@@ -82,32 +82,34 @@ parallel-top-level.lisp
 pseudo-parallel.lisp
 README
 serial.lisp
+set-compile-fns.lisp
 
-# bin -- under svn control but not distributed
+# bin -- under source control but not distributed
 
 doc:
-# The following is distributed but is not in the svn repository:
+# The following is distributed but is not under source control:
 acl2-code-size.txt
+acl2-wc.txt
 create-acl2-code-size
 create-doc
-# The following is distributed but is not in the svn repository:
+# The following is distributed but is not under source control
 home-page.html
 home-page.lisp
-# The following is distributed but is not in the svn repository:
+# The following is distributed but is not under source control
 HTML
-# The following is distributed but is not in the svn repository:
+# The following is distributed but is not under source control
 manual
 README
 write-acl2-code-size.lisp
 
-# The following is distributed but is not in the svn repository:
+# The following is distributed but is not under source control
 doc/HTML:
 LICENSE
 installation
 *.html
 *.gif
 
-# The following is distributed but is not in the svn repository:
+# The following is distributed but is not under source control
 doc/HTML/installation:
 installation.html
 installing-make.html
@@ -118,21 +120,50 @@ using.html
 windows7.html
 windows-gcl-jared.html
 
-# The following is distributed but is not in the svn repository:
+# The following is distributed but is not under source control
 doc/manual:
+download
+HTML
 LICENSE
+# Makefile -- not distributed
+res
 *.*
 
-# The following is distributed but is not in the svn repository:
+# The following is distributed but is not under source control
 doc/manual/download:
 
-# The following is distributed but is not in the svn repository:
-doc/manual/images:
-*
+# The following is currently empty.  Perhaps HTML should be generated
+# before running "make copy-distribution".
+# doc/manual/HTML:
+# *
 
-# The following is distributed but is not in the svn repository:
+# The following is distributed but is not under source control
 doc/manual/lib:
-*
+*.*
+katex
+typeahead-bundle
+
+doc/manual/lib/katex:
+fonts
+katex.min.css
+katex.min.js
+README.md
+
+doc/manual/lib/katex/fonts:
+*.*
+
+doc/manual/lib/typeahead-bundle:
+*.*
+
+doc/manual/res:
+centaur
+tours
+
+doc/manual/res/centaur:
+centaur-logo.png
+
+doc/manual/res/tours:
+*.gif
 
 emacs:
 acl2-doc.el
@@ -153,5 +184,5 @@ using.html
 windows7.html
 windows-gcl-jared.html
 
-# The following is distributed but is not in the svn repository:
+# The following is distributed but is not under source control
 saved:

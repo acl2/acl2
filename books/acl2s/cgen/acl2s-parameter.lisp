@@ -1,31 +1,41 @@
 #|$ACL2s-Preamble$;
-(ld ;; Newline to fool ACL2/cert.pl dependency scanner
- "portcullis.lsp")
-(acl2::begin-book t :ttags :all);$ACL2s-Preamble$|#
+(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
+ "../portcullis")
+(acl2::begin-book t);$ACL2s-Preamble$|#
 
-(in-package "ACL2")
+(in-package "ACL2S")
 ;(include-book "utilities")
 (include-book "tools/bstar" :dir :system)
 
+; [2014-11-25 Tue] Make key package agnostic by always putting it into
+; keyword package. Thus we look only at symbol-name of the original
+; parameter name.
+
+(defun keywordify (sym)
+  (declare (xargs :guard (symbolp sym)))
+  (intern-in-package-of-symbol (symbol-name sym) :a))
+
 
 ;;; Keep the following defconst synced with all the acl2s parameters
-(defconst *acl2s-parameters* '(num-trials
-                               verbosity-level
-                               num-counterexamples
-                               num-witnesses
+(defconst *acl2s-parameters* '(:num-trials
+                               :verbosity-level
+                               :num-counterexamples
+                               :num-witnesses
                                ;show-top-level-counterexample
-                               sampling-method
-                               backtrack-limit
-                               search-strategy
-                               testing-enabled
-                               cgen-timeout
-                               print-cgen-summary
+                               :sampling-method
+                               :backtrack-limit
+                               :search-strategy
+                               :testing-enabled
+                               :cgen-timeout
+                               :print-cgen-summary
                                ))
 
 ;All user-defined parameters are stored here
 (table acl2s-defaults-table)
 
-(defrec acl2s-param-info% (value guard setter) NIL)
+
+;TODO: This is too complicated -- cant you make this simpler? [2014-11-26 Wed]
+(acl2::defrec acl2s-param-info% (value guard setter) NIL)
 
 (defmacro add-acl2s-parameter (name default
                                     &key 
@@ -58,18 +68,18 @@ short and long are keyword arguments to defxdoc.
 
     `(progn 
        (table acl2s-defaults-table 
-              ',name
+              ',(keywordify name)
               ',(acl2::make acl2s-param-info%
                  :guard guard ;store guard too
                  :value default
                  :setter setter)
               :put)
        ,@(and short
-              `((defxdoc ,name :parents (cgen acl2s-defaults) :short ,short :long ,long))))))
+              `((defxdoc ,name :parents (acl2::cgen acl2::acl2s-defaults) :short ,short :long ,long))))))
 
 
 (defxdoc acl2s-defaults
-  :parents (acl2-sedan)
+  :parents (acl2::acl2-sedan acl2::cgen)
   :short "Getting and setting defaults for various parameters in Cgen (ACL2 Sedan)"                                 
   :long  
   "
@@ -83,7 +93,7 @@ short and long are keyword arguments to defxdoc.
 
 <p>
 The following parameters are available for control via @('acl2s-defaults').
-These are stored in the constant @('*acl2s-parameters*').
+These are stored in the constant @('*acl2s-parameters*') and are package-agnostic.
 
 @({
                   num-trials
@@ -190,11 +200,10 @@ These are stored in the constant @('*acl2s-parameters*').
  :long "
   Specify which of the following strategies to
   use for instantiating free variables of the conjecture
-  under test: @(':simple') or  @(':incremental')
-  or  @(':hybrid') (untested').
+  under test: @(':simple') or  @(':incremental').
   @(':incremental') uses a dpll-like algorithm to search
-  for counterexamples.
-  By default this parameter is set to the symbol @(':simple').
+  for counterexamples (and is currently much slower).
+  By default this parameter is set to @(':simple').
    <code>
     Usage:
     (acl2s-defaults :set search-strategy :simple)
@@ -354,12 +363,13 @@ These are stored in the constant @('*acl2s-parameters*').
 (defun get-acl2s-defaults (param wrld)
   (declare (xargs :verify-guards nil
                   :guard (and (symbolp param) (plist-worldp wrld))))
-  (b* ((param-rec-pair (assoc-eq param (table-alist 'acl2s-defaults-table wrld)))
+  (b* ((kparam (keywordify param))
+       (param-rec-pair (assoc-eq kparam (table-alist 'acl2s-defaults-table wrld)))
        ((unless (consp param-rec-pair))
         (er hard 'acl2s-defaults 
-            "~|Parameter ~x0 not found in acl2s-defaults!~%" param))
+            "~|Parameter ~x0 not found in acl2s defaults!~%" param))
        (r (cdr param-rec-pair))
-       (val (access acl2s-param-info% r :value)))
+       (val (acl2::access acl2s-param-info% r :value)))
     val))
 
 (defmacro acl2s-defaults (&rest rst)
@@ -385,7 +395,7 @@ These are stored in the constant @('*acl2s-parameters*').
        :off summary
        (make-event
         (b* ((param-rec-pair
-             (assoc-eq ',param 
+             (assoc-eq ',(keywordify param)
                       (table-alist 
                        'acl2s-defaults-table (w state))))
              ((unless (consp param-rec-pair))
@@ -394,8 +404,8 @@ These are stored in the constant @('*acl2s-parameters*').
                      ',param))
 ;guard is fixed once it is initialized INVARIANT
              (r (cdr param-rec-pair))
-             (guard (access acl2s-param-info% r :guard))
-             (setter (access acl2s-param-info% r :setter))
+             (guard (acl2::access acl2s-param-info% r :guard))
+             (setter (acl2::access acl2s-param-info% r :setter))
              (v (third ',rst)))
         `(make-event ;state changing event 
            (if (not ,(subst v 'value guard))
@@ -405,8 +415,8 @@ These are stored in the constant @('*acl2s-parameters*').
              (if ',setter
                  (let ((table-update-form
                         `(table acl2s-defaults-table 
-                                  ',',',param 
-                                  ',(change acl2s-param-info% ',r :value ',v))))
+                                  ',',',(keywordify param)
+                                  ',(acl2::change acl2s-param-info% ',r :value ',v))))
 ;;; setter is a macro, so dont quote the args to it whereas the above
 ;;; table macro needs quoted args because its 3rd parameter is &rest rst
                   (value `(,',setter ,',v (,table-update-form));embedded event
@@ -414,8 +424,8 @@ These are stored in the constant @('*acl2s-parameters*').
                            
              (value `(progn
                       (table acl2s-defaults-table 
-                             ',',',param 
-                             ',(change acl2s-param-info% ',r :value ',v))
+                             ',',',(keywordify param)
+                             ',(acl2::change acl2s-param-info% ',r :value ',v))
                       (value-triple ',',v))))))))))))
 
 
@@ -438,8 +448,17 @@ These are stored in the constant @('*acl2s-parameters*').
  :guard (booleanp value))
 
 
+(defun assoc-eq/pkg-agnostic (s al)
+  "If symbol name of s equals a key, return that entry in al"
+  (declare (xargs :guard (and (symbolp s) (symbol-alistp al))))
+  (if (endp al)
+      '()
+    (if (equal (symbol-name (caar al)) (symbol-name s))
+        (car al)
+      (assoc-eq/pkg-agnostic s (cdr al)))))
+
 ; some useful utility functions used in main and in this file
-(defun acl2s-defaults-fn. (defaults override-alist ans.)
+(defun acl2s-defaults-value-alist. (defaults override-alist ans.)
   (declare (xargs :verify-guards nil
                   :guard (and (symbol-alistp defaults)
                               (symbol-alistp override-alist)
@@ -447,19 +466,26 @@ These are stored in the constant @('*acl2s-parameters*').
   (if (endp defaults)
       ans.
     (b* (((cons param rec-val) (car defaults))
-         (val (acl2::access acl2::acl2s-param-info% rec-val :value))
-         (override (assoc-eq param override-alist))
+         (val (acl2::access acl2s-param-info% rec-val :value))
+         (override (assoc-eq/pkg-agnostic param override-alist))
          (val (if override (cdr override) val)))
-      (acl2s-defaults-fn. (cdr defaults) 
-                          override-alist 
-                          (cons (cons param val) ans.)))))
+      (acl2s-defaults-value-alist. (cdr defaults) 
+                                   override-alist 
+                                   (cons (cons param val) ans.)))))
 
 (defmacro acl2s-defaults-alist (&optional override-alist)
   "return alist mapping acl2s-parameters to their default values
 overridden by entries in override-alist"
-  `(acl2s-defaults-fn. (table-alist 'acl2::acl2s-defaults-table (w state))
-                      ,override-alist '()))
+  `(acl2s-defaults-value-alist. (table-alist 'acl2s-defaults-table (w state))
+                                ,override-alist '()))
 
+
+
+
+(defun acl2s-parameter-p (key)
+  (declare (xargs :guard t))
+  (and (symbolp key)
+       (member-eq (keywordify key) *acl2s-parameters*)))
 
 #|ACL2s-ToDo-Line|#
 

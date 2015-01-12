@@ -9,7 +9,7 @@
 
 (include-book "xdoc/top" :dir :system)
 (defxdoc with-timeout
-  :parents (macro-libraries cgen)
+  :parents (acl2::cgen)
   :short  "Evaluate form with a timeout (in seconds)"
   :long
   "<p>Evaluate form with a timeout in seconds. </p>

@@ -1,7 +1,7 @@
 #|$ACL2s-Preamble$;
 ;;Author - Harsh Raju Chamarthi (harshrc)
-(ld ;; Newline to fool ACL2/cert.pl dependency scanner
- "portcullis.lsp")
+(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
+ "../portcullis")
 (begin-book t);$ACL2s-Preamble$|#
 
 
@@ -72,19 +72,19 @@
        (hi-rel (acl2::access acl2::tau-interval interval :hi-rel)))
        
   (case domain
-    (acl2::integer (let ((lo (and lo (if lo-rel (1+ lo) lo))) ;make both inclusive bounds
+    (acl2s::integer (let ((lo (and lo (if lo-rel (1+ lo) lo))) ;make both inclusive bounds
                          (hi (and hi (if hi-rel (1- hi) hi))))
                      (cond ((and lo hi)
                             (acl2::make enum-info% 
                                         :size 't ;(- hi lo)
                                         :category :numeric-range 
-                                        :expr `(acl2::nth-integer-between r ,lo ,hi)
+                                        :expr `(acl2s::nth-integer-between r ,lo ,hi)
                                         :expr2 `(defdata::random-int-between-seed ,lo ,hi seed.)))
                            (lo ;hi is positive infinity
                             (acl2::make enum-info% 
                                         :size 't
                                         :category :numeric-range 
-                                        :expr `(+ ,lo (acl2::nth-nat-testing r))
+                                        :expr `(+ ,lo (acl2s::nth-nat-testing r))
                                         :expr2 `(mv-let (r seed.)
                                                         (defdata::random-small-natural-seed seed.)
                                                         (mv (+ ,lo r) seed.))))
@@ -93,7 +93,7 @@
                             (acl2::make enum-info% 
                                         :size 't
                                         :category :numeric-range 
-                                        :expr `(let ((i-ans (acl2::nth-integer r)))
+                                        :expr `(let ((i-ans (acl2s::nth-integer r)))
                                                  (if (> i-ans ,hi)
                                                      (mod i-ans (1+ ,hi))
                                                    i-ans));ans shud be less than or equal to hi
@@ -108,7 +108,7 @@
                             (acl2::make enum-info% 
                                         :size 't
                                         :category :numeric-range 
-                                        :expr `(- ,hi (acl2::nth-nat-testing r)) ;ans shud be less than or equal to hi
+                                        :expr `(- ,hi (acl2s::nth-nat-testing r)) ;ans shud be less than or equal to hi
                                         :expr2 `(mv-let (r seed.)
                                                         (defdata::random-small-natural-seed seed.)
                                                         (mv (- ,hi r) seed.)))))))
@@ -116,13 +116,13 @@
                             (acl2::make enum-info% 
                                         :size 't ;(- hi lo)
                                         :category :numeric-range 
-                                        :expr `(acl2::nth-rational-between r ,lo ,hi)
+                                        :expr `(acl2s::nth-rational-between r ,lo ,hi)
                                         :expr2 `(defdata::random-rational-between-seed ,lo ,hi seed.)))
                          (lo ;hi is positive infinity
                           (acl2::make enum-info% 
                                       :size 't
                                       :category :numeric-range 
-                                      :expr `(+ ,lo (acl2::nth-positive-rational r))
+                                      :expr `(+ ,lo (acl2s::nth-positive-rational r))
                                       :expr2 `(mv-let (p seed.)
                                                       (defdata::random-probability-seed seed.)
                                                       (mv-let (r seed.)
@@ -133,7 +133,7 @@
                           (acl2::make enum-info% 
                                         :size 't
                                         :category :numeric-range 
-                                        :expr `(let ((rat-ans (acl2::nth-rational r)))
+                                        :expr `(let ((rat-ans (acl2s::nth-rational r)))
                                                  (if (> rat-ans ,hi)
                                                      (mod rat-ans (1+ ,hi))
                                                    rat-ans));ans shud be less than or equal to hi
@@ -152,7 +152,7 @@
                           (acl2::make enum-info% 
                                       :size 't
                                       :category :numeric-range 
-                                      :expr `(- ,hi (acl2::nth-positive-rational r))
+                                      :expr `(- ,hi (acl2s::nth-positive-rational r))
                                       :expr2 `(mv-let (p seed.)
                                                       (defdata::random-probability-seed seed.)
                                                       (mv-let (r seed.)
@@ -349,13 +349,13 @@
 ; interesting numeric type, like 4divp, primep, arithmetic
 ; progression, etc. But you can use / constructor to define some
 ; interesting types, so I need to think about how to make this more general!! TODO
-             ((when (and (defdata::subtype-p TI.pred 'acl2::integerp wrld)
+             ((when (and (defdata::subtype-p TI.pred 'integerp wrld)
                          (non-empty-non-universal-interval-p range)))
-              (make-range-enum-info% 'acl2::integer range))
+              (make-range-enum-info% 'acl2s::integer range))
                                      
-             ((when (and (defdata::subtype-p TI.pred 'acl2::acl2-numberp wrld)
+             ((when (and (defdata::subtype-p TI.pred 'acl2-numberp wrld)
                          (non-empty-non-universal-interval-p range)))
-              (make-range-enum-info% 'acl2::rational range)))
+              (make-range-enum-info% 'acl2s::rational range)))
                                              
               
              ;first check for test-enum
