@@ -360,43 +360,6 @@ created when we process their packages, etc.</p>"
 
 (local (xdoc::set-default-parents vl-pps-lucidstate))
 
-(define vl-scope->name ((x vl-scope-p))
-  :returns (name maybe-stringp :rule-classes :type-prescription)
-  (b* ((x (vl-scope-fix x)))
-    (case (tag x)
-      (:vl-interface  (vl-interface->name x))
-      (:vl-module     (vl-module->name x))
-      (:vl-genblob    (vl-genblob->name x))
-      (:vl-blockscope (vl-blockscope->name x))
-      (:vl-package    (vl-package->name x))
-      ;; Don't know a name for a scopeinfo
-      (otherwise      nil))))
-
-(define vl-scopeitem->name ((x vl-scopeitem-p))
-  :returns (name maybe-stringp :rule-classes :type-prescription)
-  :prepwork
-  ((local (defthm crock
-         (implies (vl-genelement-p x)
-                  (equal (tag x) (vl-genelement-kind x)))
-         :hints(("Goal" :in-theory (enable vl-genelement-p
-                                           vl-genelement-kind
-                                           tag))))))
-  :guard-hints(("Goal" :in-theory (enable vl-scopeitem-p)))
-  (b* ((x (vl-scopeitem-fix x)))
-    (case (tag x)
-      (:vl-modport    (vl-modport->name x))
-      (:vl-modinst    (vl-modinst->instname x))
-      (:vl-gateinst   (vl-gateinst->name x))
-      (:vl-genblock   (vl-genblock->name x))
-      (:vl-genarray   (vl-genarray->name x))
-      ((:vl-genloop :vl-genif :vl-gencase  :vl-genbase) nil)
-      (:vl-interfaceport (vl-interfaceport->ifname x))
-      (:vl-paramdecl     (vl-paramdecl->name x))
-      (:vl-vardecl       (vl-vardecl->name x))
-      (:vl-fundecl       (vl-fundecl->name x))
-      (:vl-taskdecl      (vl-taskdecl->name x))
-      (otherwise         (vl-typedef->name x)))))
-
 (define vl-pp-scope-name ((x vl-scope-p) &key (ps 'ps))
   (b* ((x    (vl-scope-fix x))
        (name (vl-scope->name x)))
