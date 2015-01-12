@@ -34,7 +34,6 @@
 (include-book "override")
 (include-book "scopesubst")
 (include-book "../../mlib/blocks")
-(include-book "../../mlib/hierarchy-basic")
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system))))
 
@@ -978,4 +977,5 @@ introduced.</p>"
 
        (warnings (append warnings1 warnings)))
     (fast-alist-free donelist)
+    (vl-scopestacks-free)
     (change-vl-design x :warnings warnings :mods new-mods)))

@@ -72,6 +72,9 @@
   :long "<p>Keys are honsed, even though this is expensive, so that they can be
 used in fast alists.</p>")
 
+(fty::deflist vl-lucidkeylist
+  :elt-type vl-lucidkey)
+
 (deftagsum vl-lucidocc
   :short "Record of an occurrence of an identifier."
 
@@ -87,7 +90,16 @@ solo occurrence of @('b').</p>" nil)
 part-select.  For individual selects like @('foo[3]'), both left and right will
 be the same.</p>"
    ((left  vl-expr-p)
-    (right vl-expr-p))))
+    (right vl-expr-p)))
+
+;;   (:member
+;;    :short "An occurrence of a structure member."
+;;    :long "<p>We use this to record occurrences of a particular field of a
+;; structure.  For instance, of we have @('myinst') which is an @('instruction_t')
+;; structure, then we might access fields like @('myinst.opcode') and
+;; @('myinst.arg1').</p>"
+;;    ((field stringp :rule-classes :type-prescription)))
+)
 
 (fty::deflist vl-lucidocclist
   :elt-type vl-lucidocc)
@@ -403,6 +415,10 @@ created when we process their packages, etc.</p>"
                        (vl-print ".")
                        (vl-pp-scope-name x.top))))
 
+(define vl-pps-scopestack-path ((x vl-scopestack-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  (with-local-ps (vl-pp-scopestack-path x)))
+
 (define vl-lucid-mash-tag ((x stringp))
   :returns (new-x stringp :rule-classes :type-prescription)
   (b* ((x (string-fix x))
@@ -438,8 +454,10 @@ created when we process their packages, etc.</p>"
 
 (define vl-pp-lucidocc ((x vl-lucidocc-p) &key (ps 'ps))
   (vl-lucidocc-case x
-    (:solo (vl-print ":solo"))
-    (:slice (vl-cw "(:slice ~a0 ~a1)" x.left x.right))))
+    (:solo   (vl-print ":solo"))
+    (:slice  (vl-cw "(:slice ~a0 ~a1)" x.left x.right))
+    ;(:member (vl-cw "(:field ~s0)"     x.field))
+    ))
 
 (define vl-pp-lucidocclist ((x vl-lucidocclist-p) &key (ps 'ps))
   (if (atom x)
@@ -673,6 +691,131 @@ created when we process their packages, etc.</p>"
        (progn$ (impossible)
                st)))))
 
+
+
+;; (define vl-follow-hidexpr-to-decl ((x   vl-expr-p)
+;;                                    (ss  vl-scopestack-p)
+;;                                    ;; Context for error messages
+;;                                    (orig-x vl-expr-p)
+;;                                    (ctx    acl2::any-p))
+;;   :guard (vl-hidexpr-p x)
+;;   :returns (mv (err  (iff (vl-warning-p err) err)
+;;                      "On failure, an error message explaining what went wrong."
+;;                (decl (iff (vl-scopeitem-p item) (not err)))
+;;                (tail (and (iff (vl-expr-p tail) tail)
+;;                           (iff (vl-hidexpr-p tail) tail)))
+                    
+;;   :measure (vl-expr-count x)
+
+
+
+;; (define vl-lucid-mark-hid
+;;   :short "Core marking operation for Lucid identifiers and HIDs."
+;;   ((x        vl-expr-p
+;;              "HID expression to follow.  Typically a simple identifier like @('foo'),
+;;               but might also be more complex, e.g., @('foo.bar[2].baz').")
+;;    (select   vl-maybe-range-p
+;;              "Information on what part of the HID is being used.  Examples: for
+;;               plain @('foo') the select will just be @('NIL'); for @('foo[3]')
+;;               or @('foo.bar[4:0]') it will be @('[3:3]') or @('[4:0]').")
+;;    (ss        vl-scopestack-p
+;;               "Current scopestack we are at, which may change as we descend
+;;                through the hierarchy of @('x').")
+;;    (st        vl-lucidstate-p
+;;               "Lucid state that we're working with.")
+;;    &key
+;;    (usedp    booleanp
+;;              "True means we should mark the item as USED, false means mark it
+;;               as SET."))
+;;   :guard (vl-hidexpr-p x)
+;;   :returns (new-st vl-lucidstate-p)
+;;   :measure (vl-expr-count x)
+
+;;   (b* ((idx1
+;;         ;; Leading name, perhaps with indices
+;;         ;;   foo --> foo
+;;         ;;   foo.bar --> foo
+;;         ;;   foo[3][4].bar.baz --> foo[3][4]
+;;         (vl-hidexpr-first-index x))
+;;        (name1
+;;         ;; Leading name without any indices
+;;         ;;   foo --> foo
+;;         ;;   foo.bar --> foo
+;;         ;;   foo[3][4].bar.baz --> foo
+;;         (vl-hidindex->name idx1))
+;;        ;; Find foo in the current scope
+;;        ((mv item ss) (vl-scopestack-find-item/ss name1 ss))
+;;        ((unless item)
+;;         (mv (make-vl-warning :type :vl-lucid-bad-hid
+;;                              :msg "~a0: trying to resolve ~a1: got to ~a2 in ~s3, ~
+;;                                    but there is no item named ~s4."
+;;                              :args (list ctx orig-expr x (vl-pps-scopestack-path ss) name1)
+;;                              :fn __function__)
+;;             nil nil))
+
+;;        ((when (or (eq (tag item) :vl-vardecl)
+;;                   (eq (tag item) :vl-paramdecl)))
+;;         ;; There could be additional components to this HID, e.g., we might be
+;;         ;; looking at foo.opcode where foo is a instruction_t datatype.  But
+;;         ;; for now we don't want to try to do anything fancy with structure
+;;         ;; fields, so now that we've reached a data type, we just want to stop.
+;;         (mv nil item ss))
+
+;;        ((when (or (eq (tag item) :vl-modinst)
+;;                   (eq (tag item) :vl-interfaceport)))
+;;         ;; Something like foo.bar where foo is a module instance: go ahead and
+;;         ;; go into the module.
+;;         (b* (((unless (vl-hidexpr-dot-p x))
+;;               (mv (make-vl-warning :type :vl-lucid-bad-hid
+;;                                    :msg "~a0: trying to resolve ~a1: got to ~a2 in ~s3, ~
+;;                                          but this is a whole module instance or interface ~
+;;                                          port, so it doesn't make sense for lucid checking."
+                                   
+
+       
+
+;;        ((when (or (eq (tag item) :vl-modinst)
+;;                   (eq (tag item) :vl-interfaceport))
+
+
+
+;;   :long "<p>In the simplest case, we are dealing with an ordinary identifier
+;; and we just need to look up its definition and mark it.</p>
+
+;; @({
+;;    module foo ;
+;;      logic w;
+;;      $display(\"%b\", w); <-- We just want the declaration for w, above.
+;;    endmodule
+;; })
+
+;; <p>This extends rather simply to HIDs that refer to wires in submodules in a
+;; simple way.  For instance:</p>
+
+;; @({
+;;    module bar ;
+;;      foo myfoo (...);
+;;      $display(\"%b\", myfoo.w); <-- We want the declaration for @('w') in foo.
+;;    endmodule
+;; })
+
+;; <p>But we do something more complex for structures.  As a very simple example,
+;; suppose we have:</p>
+
+;; @({
+;;     typedef struct { logic w; } mytype_t;
+;;     module baz ;
+;;       mytype_t blah;
+;;       blah.w          <-- We want the declaration of \"blah\", not of \"w\".
+;;     endmodule
+;; })
+
+;; <p>Interfaces are tricky.  We want to record the names of interfaces that we
+;; have hit, but also go into them and see the declarations within them.  I guess
+;; that would also be the case for typedefs.  So maybe we really want to return a
+;; list of things.
+
+
 (defines vl-rhsexpr-lucidcheck
 
   (define vl-rhsexpr-lucidcheck ((x   vl-expr-p)
@@ -682,29 +825,46 @@ created when we process their packages, etc.</p>"
     :measure (vl-expr-count x)
     :returns (new-st vl-lucidstate-p)
     :verify-guards nil
+    :inline nil
     (b* (((when (vl-atom-p x))
           (vl-rhsatom-lucidcheck x ss st ctx))
          ((vl-nonatom x))
+
          ((when (and (or (eq x.op :vl-index)
                          (eq x.op :vl-bitselect))
                      (vl-idexpr-p (first x.args))))
+          ;; TODO: change vl-idexpr-p above into vl-hidexpr-p and replace this with
+          ;; the generic hidexpr lookup.
+
+; Multiple indexing operators would look like this:  foo.bar[1][2] -->
+;
+;   (index
+;        (index (foo.bar)
+;               1)
+;        2)
+;
+; So I probably need to dive into here to extract foo.bar and find it, and then
+; decide what the hell to do with a multiply indexed occurrence of the thing.
+
+
           (vl-lucid-mark-slice-used (vl-idexpr->name (first x.args))
                                     (second x.args)
                                     (second x.args)
                                     ss st ctx))
+
          ((when (and (or (eq x.op :vl-select-colon)
                          (eq x.op :vl-partselect-colon))
                      (vl-idexpr-p (first x.args))))
           (vl-lucid-mark-slice-used (vl-idexpr->name (first x.args))
                                     (second x.args)
                                     (third x.args)
-                                    ss st ctx))
-         ;; BOZO may wish to specially handle many other operators:
-         ;;  - pluscolon, minuscolon, etc.
-         ;;  - assignment pattern stuff
-         ;;  - tagged operators (recording which tags are used)
-         ;;  - streaming concatenation and with operators
-         )
+                                    ss st ctx)))
+
+      ;; BOZO may wish to specially handle many other operators:
+      ;;  - pluscolon, minuscolon, etc.
+      ;;  - assignment pattern stuff
+      ;;  - tagged operators (recording which tags are used)
+      ;;  - streaming concatenation and with operators
       (vl-rhsexprlist-lucidcheck x.args ss st ctx)))
 
   (define vl-rhsexprlist-lucidcheck ((x   vl-exprlist-p)
@@ -719,7 +879,7 @@ created when we process their packages, etc.</p>"
       (vl-rhsexprlist-lucidcheck (cdr x) ss st ctx)))
 
   ///
-  (verify-guards vl-rhsexpr-lucidcheck)
+  (verify-guards vl-rhsexpr-lucidcheck$notinline)
   (deffixequiv-mutual vl-rhsexpr-lucidcheck))
 
 (define vl-maybe-rhsexpr-lucidcheck ((x   vl-maybe-expr-p)
@@ -771,6 +931,7 @@ created when we process their packages, etc.</p>"
     :measure (vl-expr-count x)
     :returns (new-st vl-lucidstate-p)
     :verify-guards nil
+    :inline nil
     (b* (((when (vl-atom-p x))
           (vl-lhsatom-lucidcheck x ss st ctx))
          ((vl-nonatom x))
@@ -808,7 +969,7 @@ created when we process their packages, etc.</p>"
       (vl-lhsexprlist-lucidcheck (cdr x) ss st ctx)))
 
   ///
-  (verify-guards vl-lhsexpr-lucidcheck)
+  (verify-guards vl-lhsexpr-lucidcheck$notinline)
   (deffixequiv-mutual vl-lhsexpr-lucidcheck))
 
 (defmacro def-vl-lucidcheck (name &key body (guard 't) takes-ctx)

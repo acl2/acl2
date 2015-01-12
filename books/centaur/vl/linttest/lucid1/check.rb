@@ -128,6 +128,12 @@ unset(:m7, "of unset1")
 unset(:m7, "of unset2")
 unset(:m7, "of unset3")
 
+normal(:m8, "of normal_trans")
+unset(:m8, "of unset_trans")
+unused(:m8, "of unused_trans")
+unused(:m8, "of xx0")
+unused(:m8, "of xx1")
+
 test_passed()
 
 

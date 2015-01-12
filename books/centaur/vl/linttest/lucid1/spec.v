@@ -209,3 +209,27 @@ module m7 () ;
   assign {unused1, {{{{{{unused2, unused3}}}}}}} = {{unset1, unset2}, unset3};
 
 endmodule
+
+
+typedef struct packed {
+  logic [3:0]  token;
+  logic        fuzzy;
+  logic [63:0] payload;
+  logic [2:0]  checksum;
+} transaction_t;
+
+module m8 () ;
+
+  transaction_t normal_trans;
+  transaction_t unset_trans;
+  transaction_t unused_trans;
+
+  assign normal_trans.token = 0;
+
+  wire [63:0] xx0 = normal_trans.payload;
+  wire [63:0] xx1 = unset_trans.payload;
+
+  assign unused_trans.payload = 0;
+
+endmodule
+

@@ -36,7 +36,7 @@
 (break-on-error t)
 
 (defconst *lintconfig*
-  (make-vl-lintconfig :start-files (list "./lucid1/spec.v")))
+  (make-vl-lintconfig :start-files (list "./lucid1/temp.v")))
 
 (defun vl-lint-report-wrap (lintresult state)
   (declare (xargs :mode :program :stobjs state))
@@ -79,19 +79,23 @@
          :exit (list 'vl-scopestack-push
                      (with-local-ps (vl-pp-scopestack-path (first acl2::values))))))
 
+(trace$ (vl-rhsatom-lucidcheck
+         :entry (list 'vl-rhsexpr-lucidcheck
+                      :x (vl-pps-expr x)
+                      :ss (with-local-ps (vl-pp-scopestack-path ss))
+                      :st (vl-pps-lucidstate st))
+         :exit (let ((st (first acl2::values)))
+                 (list 'vl-rhsexpr-lucidcheck
+                       (vl-pps-lucidstate st)))))
 
-;; (trace$ (vl-warning :entry (list 'make-vl-warning (break$))
-;;                     :exit (list 'make-vl-warning
-;;                                 (with-local-ps (vl-print-warning acl2::value)))))
-
-;; (trace$ (vl-rhsatom-lucidcheck
-;;          :entry (list 'vl-rhsexpr-lucidcheck
-;;                       :x (vl-pps-expr x)
-;;                       :ss (with-local-ps (vl-pp-scopestack-path ss))
-;;                       :st (vl-pps-lucidstate st))
-;;          :exit (let ((st (first acl2::values)))
-;;                  (list 'vl-rhsexpr-lucidcheck
-;;                        (vl-pps-lucidstate st)))))
+(trace$ (vl-rhsexpr-lucidcheck
+         :entry (list 'vl-rhsexpr-lucidcheck
+                      :x (vl-pps-expr x)
+                      :ss (with-local-ps (vl-pp-scopestack-path ss))
+                      :st (vl-pps-lucidstate st))
+         :exit (let ((st (first acl2::values)))
+                 (list 'vl-rhsexpr-lucidcheck
+                       (vl-pps-lucidstate st)))))
 
 (trace$ (vl-initial-lucidcheck
          :entry (list 'vl-initial-lucidcheck

@@ -33,7 +33,7 @@
 ;; (include-book "../wf-reasonable-p")
 (include-book "disconnected")
 (include-book "../mlib/hierarchy")
-(include-book "../mlib/hierarchy-basic")
+(include-book "../mlib/scopestack")
 (include-book "../mlib/allexprs")
 (include-book "../mlib/lvalues")
 (include-book "../mlib/reportcard")

@@ -40,7 +40,20 @@
 (local (include-book "../util/osets"))
 
 
+(define vl-hid-final-name ((x vl-expr-p))
+  ;; BOZO am I ever used?
+  :guard (vl-hidexpr-p x)
+  :returns (name stringp :rule-classes :type-prescription)
+  :measure (vl-expr-count x)
+  (b* (((when (vl-fast-atom-p x)) (vl-hidname->name x))
+       ((vl-nonatom x) x)
+       ((when (eq x.op :vl-hid-dot))
+        (vl-hid-final-name (second x.args))))
+    (vl-hidindex->name x)))
+
+
 ;; NOTE ----- This is now only used in the linter, I think!
+;; Actually I'm pretty sure it's not used there anymore either!!
 
 (local (defthm crock3
          (implies (and (force (stringp name))
