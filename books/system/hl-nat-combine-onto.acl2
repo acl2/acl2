@@ -1,0 +1,3 @@
+#+acl2-par
+; Added by Matt K.: Lemma fnd-works fails with waterfall-parallelism enabled.
+(set-waterfall-parallelism nil)

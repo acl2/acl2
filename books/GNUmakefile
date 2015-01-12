@@ -843,8 +843,9 @@ BOOKS_SKIP_COMP :=
 # Unusual directory:
 BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard fix-cert/*.cert))
 
-# Contains Lisp-specific readtime conditionals:
+# Contain Lisp-specific readtime conditionals:
 BOOKS_SKIP_COMP += hacking/evalable-ld-printing.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += centaur/misc/memory-mgmt-logic.$(ACL2_COMP_EXT)
 
 # dft-ex.acl2 specifies no compilation; getprop.lisp can give stack
 # overflow in during the load of the expansion file -- perhaps not
@@ -861,12 +862,22 @@ BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2
 # The .acl2 files specify no compilation:
 BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2006/cowles-gamboa-euclid/Euclid/fld-u-poly/*.cert))
 
-# The .acl2 file specifies no compilation:
+# The .acl2 file for ccg.lisp specifies no compilation, so we exclude
+# that books and books that include it.
 BOOKS_SKIP_COMP += acl2s/ccg/ccg.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += acl2s/doc.$(ACL2_COMP_EXT)
 
 # Some .acl2 files specify no compilation, including ed3.acl2, and
 # many books depend on ed3:
 BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2006/cowles-gamboa-euclid/Euclid/*.cert))
+
+# At one time we handled system/pcert/ (using -j 1), which was a
+# special case that was ignored because of its cert_pl_exclude file.
+# But the exclude is no longer there, and we got a **PCERT0->PCERT1
+# CONVERSION FAILED** error for
+# system/pcert/acl2x-pcert-test-2-include.lisp.  So we simply exclude
+# that directory.
+BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard system/pcert/*.cert))
 
 # The .acl2 files specify no compilation:
 BOOKS_SKIP_COMP += workshops/2006/kaufmann-moore/support/rhs1-iff.$(ACL2_COMP_EXT) \
@@ -884,8 +895,15 @@ BOOKS_SKIP_COMP += $(patsubst %-raw.lsp, %.$(ACL2_COMP_EXT), $(shell find . -nam
 # host Lisp").
 BOOKS_SKIP_COMP += centaur/bridge/top.$(ACL2_COMP_EXT)
 
+# Has readtime conditionals #+cmucl and #-cmucl:
+BOOKS_SKIP_COMP += std/io/read-string-tests.$(ACL2_COMP_EXT)
+
 # CLISP says: "Lisp stack overflow":
 BOOKS_SKIP_COMP += workshops/2006/rager/support/ptest-mergesort.$(ACL2_COMP_EXT)
+
+# GCL says: "Condition in IF [or a callee]: INTERNAL-SIMPLE-ERROR:
+# Invocation history stack overflow."  Other Lisps had trouble too.
+BOOKS_SKIP_COMP += system/hons-check/memoize-tests.lisp
 
 # In Makefile-comp, bdd/benchmarks.$(ACL2_COMP_EXT) may depend on
 # bdd/benchmarks.lisp, but we don't want to make either, so we do this
@@ -910,25 +928,6 @@ OK_CERTS := $(filter-out $(BOOKS_SKIP_COMP), $(OK_CERTS))
 	else \
 	echo "Making $$PWD/$@" ; \
 	(echo '(ld `((include-book "$(patsubst %.$(ACL2_COMP_EXT),%,$(@))" :load-compiled-file :comp :ttags :all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2) >& $@.out) ; (ls -al $@ || (echo "**COMPILATION FAILED** for `pwd`/$@" ; exit 1)) ; fi
-
-# Finally, we handle system/pcert/, which is a special case and thus
-# would otherwise be ignored because of its cert_pl_exclude file.  We
-# use -j 1 because the old Makefile-generic, included by the
-# directory's Makefile, doesn't establish dependencies between the
-# compiled files, and this can cause an error when attempting to load
-# another book's partially-built compiled file.  Note that this rule
-# overrides the pattern rule just above (a feature of GNU make).
-system/pcert/sub.$(ACL2_COMP_EXT): \
-  system/deps-pcert.$(ACL2_COMP_EXT)
-	@echo "Making $@"
-	@cd system/pcert/ ; \
-	$(MAKE) -j 1 $(ACL2_COMP_EXT) ACL2_PCERT= >& make-$(ACL2_COMP_EXT).out ; \
-	(cd ../.. ; ls -al $(@D)/*.$(ACL2_COMP_EXT)) ; \
-	if [ `ls -1 *.$(ACL2_COMP_EXT) | wc -l` != `ls -1 *.cert | wc -l` ] ; then \
-	echo "**COMPILATION FAILED** for $(@D);" ; \
-	echo "  search for '**' in `pwd`/make-$(ACL2_COMP_EXT).out to see failures." ; \
-	exit 1 ; \
-	fi
 
 OK_CERTS += system/pcert/sub.$(ACL2_COMP_EXT)
 

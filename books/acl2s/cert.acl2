@@ -1,4 +1,17 @@
 (include-book "portcullis")
 
+; Added by Matt K.: Waterfall paralellism in the definition of make-sym in
+; defunc.lisp because "Override-hints are not officially supported in ACL2(p)."
+; In case this problem arises in other events or books in this directory, we
+; turn off waterfall parallelism.
+#+acl2-par
+(set-waterfall-parallelism nil)
+
+; Added by Matt K.: Without the following, certification for base-theory fails
+; with the error "The use of with-local-state (or, with-local-stobj where STATE
+; is the stobj) is disallowed with parallelism enabled.
+#+acl2-par
+(set-parallel-execution nil)
+
 ; Added by Jared, justified by ACL2_COMPILE_FLG setting in Makefile
 ; cert-flags: ? t :ttags :all

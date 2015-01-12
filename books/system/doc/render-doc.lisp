@@ -77,8 +77,8 @@
 ; The contents of this file are derived from ACL2 Community Book
 ; books/system/acl2-doc.lisp.
 
-; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2014, Regents of the University of Texas
+; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2015, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
