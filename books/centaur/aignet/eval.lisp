@@ -60,7 +60,7 @@ node ID.)</p>
 <p>The following theorem shows the correspondence between a literal looked up
 in @('vals') after running aignet-eval and the @('lit-eval') of that
 literal:</p>
- @(thm aignet-eval-lit-of-aignet-eval)</p>
+ @(thm aignet-eval-lit-of-aignet-eval)
 
 <p>These theorems resolve the copying between invals/regvals and @('vals'):</p>
  @(thm aignet-vals->invals-of-aignet-invals->vals)
