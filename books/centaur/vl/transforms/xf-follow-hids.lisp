@@ -35,11 +35,17 @@
 (include-book "../mlib/hid-tools")
 (include-book "../mlib/stmt-tools")
 (include-book "../mlib/modnamespace")
-(include-book "../mlib/hierarchy-basic")
+(include-book "../mlib/scopestack")
 ;(include-book "../wf-ranges-resolved-p")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 (local (in-theory (enable tag-reasoning)))
+
+
+
+;; BOZO This code is probably all completely bogus and should be replaced by
+;; the stuff in hid-tools.
+
 
 ;; BOZO hid-elim stuff is sort of deprecated and has been split off into another
 ;; file, need to clean this up, and clean up its documentation
