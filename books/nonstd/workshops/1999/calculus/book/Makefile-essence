@@ -40,7 +40,7 @@ proof-outline: tree.cert proof-outline.cert
 	echo '(display-proof-outline-all "outline/outline" "fundamental-theorem-of-calculus")' >> workxxx
 	echo '(value :q)' >> workxxx
 	echo '(acl2::good-bye)' >> workxxx
-	rm -f outline
+	rm -rf outline
 	mkdir outline
 	$(ACL2) < workxxx
 

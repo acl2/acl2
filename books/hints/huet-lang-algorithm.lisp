@@ -89,7 +89,7 @@
          (car bindings))
         (t (is-boundp var fnp (cdr bindings)))))
 
-(defmacro binding (trip) `(cddr ,trip))
+(defmacro hl-binding (trip) `(cddr ,trip))
 
 ; Substitutions always hit free variables, not bound ones.  So a
 ; substitution triple like (i fnp . x), where i is an integer, will
@@ -264,14 +264,14 @@
 
          (cond ((symbolp pterm)
                 (let ((trip (is-boundp pterm nil bindings)))
-                  (cond (trip (hl-ffnnamesp fns (binding trip) nil wrld))
+                  (cond (trip (hl-ffnnamesp fns (hl-binding trip) nil wrld))
                         (t nil))))
                (t nil)))
         ((fquotep pterm) nil)
         ((member-equal (ffn-symb pterm) fns) t)
         ((hl-functional-variablep (ffn-symb pterm) wrld)
          (let ((trip (is-boundp (ffn-symb pterm) t bindings)))
-           (cond (trip (or (hl-ffnnamesp fns (binding trip) bindings wrld)
+           (cond (trip (or (hl-ffnnamesp fns (hl-binding trip) bindings wrld)
                            (hl-ffnnamesp-lst fns (fargs pterm) bindings
                                              wrld)))
                  (t (hl-ffnnamesp-lst fns (fargs pterm) bindings wrld)))))
@@ -290,16 +290,16 @@
     (cond
      ((null trip) t)
      ((eq (car restr) :MUST-IMITATE)
-      (and (not (variablep (binding trip)))
-           (not (fquotep (binding trip)))
-           (equal (ffn-symb (binding trip)) (cadr restr))))
+      (and (not (variablep (hl-binding trip)))
+           (not (fquotep (hl-binding trip)))
+           (equal (ffn-symb (hl-binding trip)) (cadr restr))))
      ((eq (car restr) :MUST-BE-VARIABLE)
-      (let ((val (binding trip)))
+      (let ((val (hl-binding trip)))
         (and (consp val)
              (eq (car val) :CONSTANT)
              (variablep (cadr val)))))
      ((eq (car restr) :MUST-NOT-CONTAIN)
-      (not (hl-ffnnamesp (cdr restr) (binding trip) bindings wrld)))
+      (not (hl-ffnnamesp (cdr restr) (hl-binding trip) bindings wrld)))
      (t nil))))
 
 (defun hl-restrictionsp (bindings restrictions wrld)
@@ -379,7 +379,7 @@
 ; Note that this invariant is preserved below, when we bind pat to
 ; term.
 
-      (cond (trip (cond ((equal (binding trip) term)
+      (cond (trip (cond ((equal (hl-binding trip) term)
                          (list (cons hmax bindings)) )
                         (t nil)))
             (t (let ((new-bindings
@@ -397,13 +397,13 @@
       (cond
        (trip
 
-; (binding temp) is an abbreviated lambda expression, body, denoting
+; (hl-binding temp) is an abbreviated lambda expression, body, denoting
 ; (lambda (v1 ... vn) body), so the pat is essentially
 ; ((lambda (v1 ... vn) body) pat1 ... patn) and we must beta-reduce it
 ; and work on the result.
 
         (hl-one-way-unify1
-         (subst-into-pterm-by-position (binding trip) (fargs pat))
+         (subst-into-pterm-by-position (hl-binding trip) (fargs pat))
          term
          hmax
          bindings

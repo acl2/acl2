@@ -59,7 +59,7 @@
     interesting-applications            ;;; j
     acknowledgments                     ;;; k
     real                                ;;; l
-    hons-and-memoization                ;;; m
+    hons-enabled                        ;;; m
     parallelism                         ;;; n
     acl2-doc                            ;;; o
     acl2                                ;;; p
@@ -104,14 +104,6 @@ and a tool to help you prove properties of those models.<P>
 ACL2 is part of the Boyer-Moore family of provers, for which its authors have
 received the 2005 <A HREF=\"http://awards.acm.org/software_system/\">ACM
 Software System Award</A>.<P>
-
-<TABLE BORDER=\"1\">
-<TR>
-<TD>
-<a href=\"#search\"><font color=\"green\">SEARCH</font></a>
-</TD>
-</TR>
-</TABLE>
 
 </TD>
 </TR>
@@ -248,12 +240,9 @@ Welcome to the ACL2 home page!  We highlight a few aspects of ACL2:
 <ul>
 
 <li><b>Libraries (Books).</b><br>Libraries of <i>books</i> (files containing
-definitions and theorems) extend the code that we have written.  The <A
-HREF=\"HTML/installation/installation.html\">installation instructions</A> explain
-how to fetch the <i>community books</i>, which are contributed and maintained
-by the members of the ACL2 community.  For more information, see the <code><A
-HREF=\"http://acl2-books.googlecode.com/\">acl2-books</A></code> project
-page.</li>
+definitions and theorems) extend the code that we have written.  In particular,
+the distribution tarball includes the <i>community books</i>, which are
+contributed and maintained by the members of the ACL2 community.</li>
 
 <li><b><A NAME=\"documentation\">Documentation</A>.</b><br>There is an
 extensive user's manual for the ACL2 system, and an even more comprehensive
@@ -268,11 +257,9 @@ href=\"#documentation\">documentation</a>.</li>
 
 <li><b>Extensions.</b><br>The ACL2 distribution includes the following
 extensions, which were developed by the individuals shown.  <b>NOTE:</b>Not
-included in this list is ACL2(h) &mdash; that is, <a href=\"~sm\">support for
-hash cons, applicative hash tables, and function memoization for reuse of
-previously computed results</a> &mdash; because these features are now built
-into ACL2 executables by default (that is, ACL2 is ACL2(h) by default).  Thanks
-to Bob Boyer, Warren A. Hunt, Jr., Jared Davis, and Sol Swords for their
+included in this list is ACL2(h), because it is now the default build of ACL2:
+that is, ACL2 is <a href=\"~sm\">hons-enabled</a> by default.  Thanks to Bob
+Boyer, Warren A. Hunt, Jr., Jared Davis, and Sol Swords for their
 contributions; see the <a href=\"~sk\">acknowledgments</a>.
 
   <UL>
@@ -373,12 +360,15 @@ explain how to download and install the community books.
 
 <p>
 
-We strongly encourage users to submit additional books or improve existing
-books, by following the instructions at the <A
-HREF=\"http://acl2-books.googlecode.com/\">acl2-books project page</A>.  In
-particular, the community book <code>books/system/doc/acl2-doc.lisp</code>
-contains the ACL2 system documentation.  Members of the acl2-books project are
-welcome to edit that book in order to improve the system documentation.
+We strongly encourage users to submit additional books and to improve existing
+books.  If you have interest in contributing, there is a <a
+href=\"~s1index.html?topic=ACL2____GIT-QUICK-START\">documentation topic to get
+you started</a>.  You can also visit the <code><A
+HREF=\"https://github.com/acl2/acl2\">ACL2 System and Books</A></code> project
+page on github (just move past the big list of files to find descriptive text).
+Project members are welcome to edit community books.  In particular, the
+community book <code>books/system/doc/acl2-doc.lisp</code> contains the ACL2
+system documentation, and project members are welcome to improve it.
 
 <p>
 
@@ -392,14 +382,7 @@ papers mentioned in that collection contain utilities, scripts, or
 ACL2 books for the problem domains in question.
 
 <BR><HR><BR>
-<H2><A NAME=\"search\">Searching documentation and books</A></H2>
-
-The links below may help you to search the ACL2 documentation and the ACL2
-community books, respectively.
-
-<ul>
-
-<li>
+<H2><A NAME=\"search\">Searching documentation</A></H2>
 
 The web views of <a href=\"#User's-Manual\">The ACL2 User's Manual</a> and <A
 HREF=\"http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/\">ACL2+Books
@@ -407,30 +390,6 @@ Manual</a> allow you to search the short strings of the documentation (which
 are typically summaries of a line or so).  To search the full content for a
 string or regular expression, you may use the Emacs-based <A
 HREF=\"manual/index.html?topic=ACL2____ACL2-DOC\">ACL2-Doc browser</A>.
-
-<p>
-
-<li>
-
-The next link will take you to the community books website (which is external
-to the present ACL2 website), specifically to the section entitled ``Searching
-and browsing the books.''  There, you will see a search box in which you can
-enter your search term.  For example, if you type `<code>tail recursion</code>'
-and then <code>&lt;RETURN&gt;</code>, you will see text from several books in
-the svn trunk that deal with the topic of tail recursion, with an
-accompanying <i>``File Path''</i> shown at the end of each book's text.
-
-<p>
-
-<a
-  href=\"https://code.google.com/p/acl2-books/#Searching_and_browsing_the_books\">SEARCH
-  THE COMMUNITY BOOKS</a></a><br>
-
-</li>
-
-</ul>
-
-<br>
 
 </BODY>
 </HTML>

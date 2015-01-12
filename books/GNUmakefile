@@ -862,7 +862,7 @@ BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2
 BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2006/cowles-gamboa-euclid/Euclid/fld-u-poly/*.cert))
 
 # The .acl2 file specifies no compilation:
-BOOKS_SKIP_COMP += ccg/ccg.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += acl2s/ccg/ccg.$(ACL2_COMP_EXT)
 
 # Some .acl2 files specify no compilation, including ed3.acl2, and
 # many books depend on ed3:
@@ -1017,6 +1017,8 @@ critpath.txt: $(OK_CERTS)
 .PHONY: basic
 basic: arithmetic arithmetic-3 arithmetic-5 ihs std xdoc tools misc data-structures
 
+.PHONY: acl2s
+acl2s: $(filter acl2s/%, $(OK_CERTS))
 
 .PHONY: add-ons
 add-ons: $(filter add-ons/%, $(OK_CERTS))
@@ -1036,14 +1038,8 @@ arithmetic-5: $(filter arithmetic-5/%, $(OK_CERTS))
 .PHONY: bdd
 bdd: $(filter bdd/%, $(OK_CERTS))
 
-.PHONY: ccg
-ccg: $(filter ccg/%, $(OK_CERTS))
-
 .PHONY: centaur
 centaur: $(filter centaur/%, $(OK_CERTS))
-
-.PHONY: cgen
-cgen: $(filter cgen/%, $(OK_CERTS))
 
 .PHONY: clause-processors
 clause-processors: $(filter clause-processors/%, $(OK_CERTS))
@@ -1251,13 +1247,13 @@ dummy:
 # unknown property EXTEND-PROGN! or RETRACT-PROGN!, or else is an
 # unbinding of the PREDEFINED property for PROGN! (indicating a use of
 # :REDEF); presumably these books mess with raw mode.  Since we have
-# had such problems with ccg/ccg.lisp (presumably because it includes
+# had such problems with acl2s/ccg/ccg.lisp (presumably because it includes
 # hacking/hacker), we exclude that book too.
 
 BOOKS_BKCHK_OUT := $(patsubst %.cert,%.bkchk.out,$(OK_CERTS))
 BOOKS_BKCHK_OUT := $(filter-out hacking/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out workshops/2007/dillinger-et-al/code/%, $(BOOKS_BKCHK_OUT))
-BOOKS_BKCHK_OUT := $(filter-out ccg/ccg.bkchk.out, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out acl2s/ccg/ccg.bkchk.out, $(BOOKS_BKCHK_OUT))
 
 .PHONY: chk-include-book-worlds
 chk-include-book-worlds: $(BOOKS_BKCHK_OUT)

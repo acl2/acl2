@@ -27,7 +27,7 @@ file distributed with ACL2.  See also the documentation topic,
   <UL>
     <LI><A HREF="#Obtaining-Allegro">Obtaining Allegro Common Lisp</A>
     <LI><A HREF="#Obtaining-CCL">Obtaining CCL (OpenMCL)</A>
-    <LI><A HREF="#Obtaining-CLISP">Obtaining CLisp</A>
+    <LI><A HREF="#Obtaining-CLISP">Obtaining CLISP</A>
     <LI><A HREF="#Obtaining-CMUCL">Obtaining CMU Common Lisp</A>
     <LI><A HREF="#Obtaining-GCL">Obtaining GCL</A>
     <LI><A HREF="#Obtaining-LispWorks">Obtaining LispWorks</A>
@@ -56,7 +56,7 @@ alphabetically.
 <ul>
 <LI><A HREF="#Obtaining-Allegro">Allegro Common Lisp</A></B><P>
 <LI><A HREF="#Obtaining-CCL">CCL (OpenMCL)</A></B><P>
-<LI><A HREF="#Obtaining-CLISP">CLisp</A></B><P>
+<LI><A HREF="#Obtaining-CLISP">CLISP</A></B><P>
 <LI><A HREF="#Obtaining-CMUCL">CMU Common Lisp</A></B><P>
 <LI><A HREF="#Obtaining-GCL">GCL</A></B><P>
 <LI><A HREF="#Obtaining-LispWorks">LispWorks</A></B><P>
@@ -186,7 +186,10 @@ Common Lisp implementations.</li>
 
 <li>Only minimal testing is done for ACL2 built on CLISP.</li>
 
-<li>CLISP does not currently support building ACL2(h).</li>
+<li>CLISP does not support building the
+  default, <a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>
+  ACL2 (ACL2(h)), but only (with the limitations expressed above)
+  ACL2(c).</li>
 
 </ul>
 
@@ -210,17 +213,20 @@ for that release.
 Otherwise, it should be easy to obtain and build GCL yourself.  Note
 that ACL2 requires GCL version 2.6.12 or later, which can be fetched
 as a tarball from the <a href="http://www.gnu.org/software/gcl/">main
-GNU website for GCL</a>.  Also note that GCL ANSI executables are
-needed for default,
-<a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>
-builds of ACL2, so to build GCL from source you should proceed as
-follows while standing in the <code>gcl/</code> directory
-(where <code>--enable-ansi</code> is optional for building ACL2
-executables that are not hons-enabled):
+GNU website for GCL</a> or perhaps
+from <code><a href="http://backports.debian.org">backports.debian.org</a></code>.
+After unpacking the archive, GCL can be built with
 
 <pre>
-./configure --enable-ansi && make
+cd gcl && ./configure --enable-ansi && make
 </pre>
+
+The resulting GCL executable supports building a
+default, <a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>
+ACL2 executable.  If you have reason to build a "classic" ACL2
+executable (ACL2(c)) instead (that is, one that is <i>not</i>
+hons-enabled), you can omit the <code>--enable-ansi</code> flag above
+to generate a smaller GCL executable.
 
 <P><B><A NAME="Obtaining-LispWorks">Obtaining LispWorks</A></B><P>
 

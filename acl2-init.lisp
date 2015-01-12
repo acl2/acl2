@@ -684,16 +684,23 @@ implementations.")
 (defvar *saved-mode*)
 
 (defconstant *acl2-snapshot-string*
-  (if (getenv$-raw "ACL2_RELEASE_P")
-      ""
-    "
+
+; Note to developers (users should ignore this!): Replace this value by "" when
+; making a release.
+
+; Temporarily, for a release:
+; ""
+
+; Normally:
+  "
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  + WARNING: This is NOT an ACL2 release; it is a development snapshot. +
  + The authors of ACL2 consider such distributions to be experimental; +
  + they may be incomplete, fragile, and unable to pass our own         +
  + regression tests.                                                   +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-"))
+"
+  )
 
 (defvar *saved-string*
   (concatenate
