@@ -213,7 +213,7 @@ and \"preformatted,\" i.e., newlines and spaces should be preserved.</li>
 <p><b>However</b>, it's often better to use the preprocessor's
 <tt>@@('...')</tt> and <tt>@@({...})</tt> macros, respectively.  These are nice
 because they automatically escape special HTML characters like &lt; into
-&amp;lt;, and also automatically add hyperlinks to documented functions.</p>
+&amp;lt; and also automatically add hyperlinks to documented functions.</p>
 
 <p>Whenever you include Lisp code fragments in your documentation, you should
 usually keep everything <b>indented one space</b> to prevent Emacs problems.
