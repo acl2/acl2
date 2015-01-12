@@ -25,8 +25,11 @@ module top ();
   // Since this is ambiguous, the safest thing seems to be to go with the VCS
   // behavior and call this a failtest.
 
-  initial begin
-    w2 = + w2++;
+  logic       clk;
+
+  always @(posedge clk)
+  begin
+    w1 = + w2++;
   end
 
 
