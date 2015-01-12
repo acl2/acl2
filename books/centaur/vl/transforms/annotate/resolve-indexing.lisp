@@ -117,7 +117,7 @@ indexing/partselect operation, that is, some number of indexing operators
 applied to a HID/identifier.  Otherwise, we generate a warning and fail.</p>"
   :returns (mv (warning (iff (vl-warning-p warning) warning))
                (bitselectp "true if successful and the expression is of bitselectable type."))
-  (b* (((mv warning type) (vl-index-find-type x ss))
+  (b* (((mv warning type) (vl-index-find-type x ss (vl-expr-fix x)))
        ((when warning) (mv warning nil)))
     (mv nil (vl-datatype-bitselect-p type))))
 

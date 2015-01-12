@@ -502,8 +502,8 @@
 (define vl-port-unpacked-datatype ((x vl-regularport-p)
                                    (ss vl-scopestack-p))
   :prepwork ((local (defthm vl-index-find-type-when-not-warning
-                      (implies (not (mv-nth 0 (vl-index-find-type x ss)))
-                               (mv-nth 1 (vl-index-find-type x ss)))
+                      (implies (not (mv-nth 0 (vl-index-find-type x ss ctx)))
+                               (mv-nth 1 (vl-index-find-type x ss ctx)))
                       :hints (("goal" :use return-type-of-vl-index-find-type.type
                                :in-theory (disable return-type-of-vl-index-find-type.type)))))
              (local (defthm vl-partselect-expr-type-when-not-warning
@@ -516,12 +516,12 @@
   (b* (((vl-regularport x))
        ((unless x.expr) nil))
     (vl-expr-case x.expr
-      :atom (b* (((mv warn type) (vl-index-find-type x.expr ss)))
+      :atom (b* (((mv warn type) (vl-index-find-type x.expr ss (vl-regularport-fix x))))
               (and (not warn) type))
       :nonatom
       (case x.expr.op
         ((:vl-bitselect :vl-index)
-         (b* (((mv warn type) (vl-index-find-type x.expr ss)))
+         (b* (((mv warn type) (vl-index-find-type x.expr ss (vl-regularport-fix x))))
            (and (not warn) type)))
         ((:vl-select-colon
           :vl-select-pluscolon

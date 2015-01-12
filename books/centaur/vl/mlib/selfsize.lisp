@@ -44,7 +44,7 @@
                (size maybe-posp :rule-classes :type-prescription))
   (declare (ignorable ctx))
   (b* ((warnings  (vl-warninglist-fix warnings))
-       ((mv warning type) (vl-index-find-type x ss))
+       ((mv warning type) (vl-index-find-type x ss (vl-context-fix ctx)))
        ((when warning)
         (mv (cons (change-vl-warning warning :fatalp t) warnings) nil))
        ((mv warning size)

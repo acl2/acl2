@@ -3241,7 +3241,7 @@ for the moment.</p>"
        (mv t *simple-vector-datatype* warnings))
       ((:vl-hidpiece :vl-id)
        (b* (((mv warning type)
-             (vl-index-find-type x ss))
+             (vl-index-find-type x ss (vl-context-fix ctx)))
             ((when warning)
              (mv nil nil (cons warning warnings))))
          (mv t type warnings)))
@@ -3338,7 +3338,7 @@ mean anything.</p>"
         (vl-atom-selfdetermine-type x ss ctx warnings))
        ((vl-nonatom x))
        ((when (member x.op '(:vl-hid-dot :vl-index)))
-        (b* (((mv warning type) (vl-index-find-type x ss))
+        (b* (((mv warning type) (vl-index-find-type x ss (vl-context-fix ctx)))
              ((when warning) (mv nil nil (cons warning (vl-warninglist-fix warnings)))))
           (mv t type warnings)))
        ((when (eq x.op :vl-qmark))
@@ -4424,7 +4424,7 @@ replace a key/value assignment pattern."
   ;; We only need to deal with atoms that could represent an unpacked value.
   (b* ((x (vl-expr-fix x))
        (ctx (vl-context-fix ctx))
-       ((mv warning type) (vl-index-find-type x ss))
+       ((mv warning type) (vl-index-find-type x ss ctx))
        ((when warning) (mv nil x (cons warning (ok))))
        ((unless (equal type (vl-datatype-fix lhs-type)))
         (mv nil x
@@ -4434,7 +4434,7 @@ replace a key/value assignment pattern."
     (mv t x (ok)))
   ///
   (local (Defthm vl-index-find-type-implies
-           (implies (not (mv-nth 0 (vl-index-find-type x ss)))
+           (implies (not (mv-nth 0 (vl-index-find-type x ss ctx)))
                     (if (equal (vl-expr-kind x) :atom)
                         (or (and (vl-id-p (vl-atom->guts x))
                                  (equal (tag (vl-atom->guts x)) :vl-id))
@@ -4816,16 +4816,16 @@ datatype size and the type is unsigned.</p>"
 
 
 
-(define vl-lvalue-type ((x vl-expr-p) (ss vl-scopestack-p))
+(define vl-lvalue-type ((x vl-expr-p) (ss vl-scopestack-p) (ctx acl2::any-p))
   :returns (mv (warning (iff (vl-warning-p warning) warning))
                (type (implies (and (not warning) type)
                               (vl-datatype-p type))))
   (b* (((when (vl-atom-p x))
         ;; has to be an identifier
-        (vl-index-find-type x ss))
+        (vl-index-find-type x ss ctx))
        ((vl-nonatom x))
        ((when (member x.op '(:vl-hid-dot :vl-index :bitselect)))
-        (vl-index-find-type x ss)))
+        (vl-index-find-type x ss ctx)))
        ;; We think the above are the only lvalue ops that can be targets of
        ;; assignment patterns.  The remaining lvalue ops are partselects and
        ;; concats, which don't have indices of their own so we won't support
@@ -4858,7 +4858,7 @@ datatype size and the type is unsigned.</p>"
                           a positive number?"
                    :args (list ctx lhs))))
 
-       ((mv warning lhs-type) (vl-lvalue-type lhs-prime ss))
+       ((mv warning lhs-type) (vl-lvalue-type lhs-prime ss ctx))
        ((when warning) (mv nil lhs-prime rhs (cons warning (ok))))
 
        ((mv ok new-rhs warnings)

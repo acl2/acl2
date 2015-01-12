@@ -1045,7 +1045,34 @@ top-level hierarchical identifiers.</p>"
                            (not err))
                        (consp new-trace))
               :name consp-of-vl-follow-hidexpr-aux.new-trace)
-   (tail vl-hidexpr-p :hyp (vl-hidexpr-p x))))
+   (tail vl-hidexpr-p :hyp (vl-hidexpr-p x)))
+
+  
+  (defthm context-irrelevance-of-vl-follow-hidexpr-aux
+    (implies (syntaxp (or (not (equal ctx (list 'quote nil)))
+                          (not (equal origx  (list 'quote (with-guard-checking :none (vl-expr-fix nil)))))))
+             (b* (((mv err1 trace1 tail1) (vl-follow-hidexpr-aux x trace ss
+                                                              :ctx ctx
+                                                              :strictp strictp
+                                                              :origx origx))
+                  ((mv err2 trace2 tail2) (vl-follow-hidexpr-aux x trace ss
+                                                              :ctx nil
+                                                              :strictp strictp
+                                                              :origx (vl-expr-fix nil))))
+               (and (equal trace1 trace2)
+                    (equal tail1 tail2)
+                    (iff err1 err2))))
+    :hints ((acl2::just-induct-and-expand
+             (vl-follow-hidexpr-aux x trace ss
+                                    :ctx ctx
+                                    :strictp strictp
+                                    :origx origx)
+             :expand-others
+             ((:free (ctx strictp origx)
+               (vl-follow-hidexpr-aux x trace ss
+                                    :ctx ctx
+                                    :strictp strictp
+                                    :origx origx)))))))
 
 (define vl-follow-hidexpr
   :short "Follow a HID to find the associated declaration."
@@ -1148,6 +1175,9 @@ instance, in this case the @('tail') would be
                                :strictp strictp
                                :ctx ctx))
 
+       ;; BOZO eventually this may need to be extended to deal with $root,
+       ;; $unit, etc.  Maybe also scopes if we decide to try to implement
+       ;; scope operators like foo::bar.baz...
        ((when (vl-hidexpr->endp x))
         ;; Item was not found AND it is not of the form foo.bar, so we do NOT
         ;; want to interpret it as any sort of reference to a top-level module.
@@ -1193,7 +1223,21 @@ instance, in this case the @('tail') would be
        (next-ss (vl-scopestack-push mod mod-ss)))
     (vl-follow-hidexpr-aux (vl-hidexpr->rest x) trace next-ss
                            :strictp strictp
-                           :ctx ctx)))
+                           :ctx ctx))
+  ///
+  (more-returns
+   (trace (implies (not err)
+                   (consp trace))
+          :name consp-of-vl-follow-hidexpr.trace)
+   (tail vl-hidexpr-p :hyp (vl-hidexpr-p x)))
+
+  (defthm context-irrelevance-of-vl-follow-hidexpr
+    (implies (syntaxp (not (equal ctx (list 'quote nil))))
+             (b* (((mv err1 trace1 tail1) (vl-follow-hidexpr x ss ctx :strictp strictp))
+                  ((mv err2 trace2 tail2) (vl-follow-hidexpr x ss nil :strictp strictp)))
+               (and (equal trace1 trace2)
+                    (equal tail1 tail2)
+                    (iff err1 err2))))))
 
 
 
@@ -1374,143 +1418,54 @@ type @('logic[3:0]').</li> </ul>"
        (membtype (vl-structmember->type member)))
     (vl-hidexpr-traverse-datatype next-hid membtype)))
 
-(define vl-hidexpr-find-type ((x vl-expr-p)
-                              (ss vl-scopestack-p))
+(define vl-hidexpr-find-type ((x   vl-expr-p)
+                              (ss  vl-scopestack-p)
+                              (ctx acl2::any-p))
   :parents (hid-tools)
   :short "Looks up a HID in a scopestack and looks for a declaration, returning the type and dimensionlist if found."
   :guard (vl-hidexpr-p x)
   :measure (vl-expr-count x)
   :returns (mv (warning (iff (vl-warning-p warning) warning))
                (type (iff (vl-datatype-p type) (not warning))))
-  :prepwork ((local (defthm vl-scope-p-when-vl-module-p-strong
-                      (implies (or (vl-module-p x)
-                                   (vl-interface-p x))
-                               (vl-scope-p x)))))
-  (b* ((idx1 (vl-hidexpr->first x))
-       (name1 (vl-hidindex->name idx1))
-       ((mv item new-ss)
-        (vl-scopestack-find-item/ss name1 ss))
-       ((unless item)
-        (mv (make-vl-warning :type :vl-hidexpr-type-fail
-                             :msg "Couldn't find an item named ~s0"
-                             :args (list name1)
-                             :fn __function__)
-            nil))
-       ((when (or (eq (tag item) :vl-modinst)
-                  (eq (tag item) :vl-interfaceport)))
-        ;; Find the module, push it onto the new scopestack, recur
-        (b* (((when (vl-hidexpr->endp x))
-              (mv (make-vl-warning :type :vl-hidexpr-type-fail
-                                   :msg "Can't find a type for ~s0 because it ~
-                                         is a ~s1 name"
-                                   :args (list name1 (if (eq (tag item) :vl-modinst)
-                                                         "modinst" "interface port"))
-                                   :fn __function__)
-                  nil))
-             ((unless (vl-fast-atom-p idx1))
-              (mv (make-vl-warning :type :vl-hidexpr-type-fail
-                                   :msg "Indexing into instance arrays not ~
-                                         yet supported: ~a0"
-                                   :args (list (vl-expr-fix x))
-                                   :fn __function__)
-                  nil))
-             ((mv modname instname)
-              (if (eq (tag item) :vl-modinst)
-                  (mv (vl-modinst->modname item)
-                      (vl-modinst->instname item))
-                (mv (vl-interfaceport->ifname item)
-                    (vl-interfaceport->name item))))
-             ((mv mod new-ss)
-              (vl-scopestack-find-definition/ss modname new-ss))
-             ((unless (and mod
-                           (or (eq (tag mod) :vl-module)
-                               (eq (tag mod) :vl-interface))))
-              (mv (make-vl-warning :type :vl-hidexpr-type-fail
-                                   :msg "~s0 ~s1 not found for ~s2 ~s3"
-                                   :args (list (if (eq (tag item) :vl-modinst)
-                                                   "Module" "Interface")
-                                               modname
-                                               (if (eq (tag item) :vl-modinst)
-                                                   "modinst" "interface port")
-                                               instname)
-                                   :fn __function__)
-                  nil))
-             (new-ss (vl-scopestack-push mod new-ss)))
-          (vl-hidexpr-find-type (vl-hidexpr->rest x) new-ss)))
-
-       ((when (eq (tag item) :vl-vardecl))
+  (b* ((x (vl-expr-fix x))
+       ((mv err trace tail) (vl-follow-hidexpr x ss ctx))
+       ((when err) (mv err nil))
+       ((vl-hidstep step1) (car trace))
+       ((when (eq (tag step1.item) :vl-vardecl))
         ;; check its datatype
-        (b* (((vl-vardecl item))
+        (b* (((vl-vardecl step1.item))
              ((mv warning res-type)
-              (vl-datatype-usertype-elim item.type new-ss 1000))
+              (vl-datatype-usertype-elim step1.item.type step1.ss 1000))
              ((when warning) (mv warning nil)))
-          (vl-hidexpr-traverse-datatype x res-type)))
-
-       ((when (eq (tag item) :vl-genblock))
-        (b* (((when (vl-hidexpr->endp x))
-              (mv (make-vl-warning :type :vl-hidexpr-type-fail
-                                   :msg "Can't find a type for ~s0 because it ~
-                                         is a generate block name."
-                                   :args (list name1)
-                                   :fn __function__)
-                  nil))
-             (genblob (vl-sort-genelements (vl-genblock->elems item)))
-             (new-ss (vl-scopestack-push genblob new-ss)))
-          (vl-hidexpr-find-type (vl-hidexpr->rest x) new-ss)))
-
-       ((when (eq (tag item) :vl-genarray))
-        (b* (((when (vl-hidexpr->endp x))
-              (mv (make-vl-warning :type :vl-hidexpr-type-fail
-                                   :msg "Can't find a type for ~s0 because it ~
-                                         is a generate array name."
-                                   :args (list name1)
-                                   :fn __function__)
-                  nil))
-             ((unless (eq (vl-expr-kind idx1) :nonatom))
-              (mv (make-vl-warning :type :vl-hidexpr-type-fail
-                                   :msg "Can't index into a generate array ~
-                                         without an index: ~a0."
-                                   :args (list idx1)
-                                   :fn __function__)
-                  nil))
-             ((vl-nonatom idx1))
-             ((unless (vl-expr-resolved-p (second idx1.args)))
-              (mv (make-vl-warning :type :vl-hidexpr-type-fail
-                                   :msg "Can't index into a generate array ~
-                                         because the index is unresoved: ~a0."
-                                   :args (list idx1)
-                                   :fn __function__)
-                  nil))
-             (blk (vl-genarrayblocklist-find-block (vl-resolved->val (second idx1.args))
-                                                   (vl-genarray->blocks item)))
-             ((unless blk)
-              (mv (make-vl-warning :type :vl-hidexpr-type-fail
-                                   :msg "The generate array has no block with ~
-                                         the given index: ~a0."
-                                   :args (list idx1)
-                                   :fn __function__)
-                  nil))
-             (genblob (vl-sort-genelements (vl-genarrayblock->elems blk)))
-             (new-ss (vl-scopestack-push genblob new-ss)))
-          (vl-hidexpr-find-type (vl-hidexpr->rest x) new-ss))))
-
-    (mv (make-vl-warning :type :vl-hidexpr-type-fail
-                         :msg "Looking up ~s0: item type not supported: ~s1~%"
-                         :args (list name1 (tag item))
+          (vl-hidexpr-traverse-datatype tail res-type))))
+    (mv (make-vl-warning :type (if (vl-idexpr-p x)
+                                   :vl-identifier-type-fail
+                                 :vl-hidexpr-type-fail)
+                         :msg "~a0: Failed to find a type for ~s1 because we ~
+                               didn't find a vardecl but rather a ~x2"
+                         :args (list ctx x (tag step1.item))
                          :fn __function__)
-        nil)))
+        nil))
+  ///
+  (defthm context-irrelevance-of-vl-hidexpr-find-type
+    (implies (syntaxp (not (equal ctx ''nil)))
+             (b* (((mv err1 type1) (vl-hidexpr-find-type x ss ctx))
+                  ((mv err2 type2) (vl-hidexpr-find-type x ss nil)))
+               (and (iff err1 err2)
+                    (equal type1 type2))))))
+
 
 
 
 
 
 (define vl-ss-find-hidexpr-range ((x vl-expr-p)
-                                 (ss vl-scopestack-p))
+                                  (ss vl-scopestack-p))
   :guard (vl-hidexpr-p x)
   :prepwork ((local (in-theory (enable vl-hidexpr-p))))
   :returns (mv (warning (iff (vl-warning-p warning) warning))
                (range    vl-maybe-range-p))
-  (b* (((mv warning type) (vl-hidexpr-find-type x ss))
+  (b* (((mv warning type) (vl-hidexpr-find-type x ss (vl-expr-fix x)))
        ((when warning) (mv warning nil)))
     (vl-datatype-range-conservative type)))
 
@@ -1527,7 +1482,7 @@ datatype is multidimensional.</p>"
   :prepwork ((local (in-theory (enable vl-hidexpr-p))))
   :returns (mv (warning (iff (vl-warning-p warning) warning))
                (range    vl-maybe-range-p))
-  (b* (((mv warning type) (vl-hidexpr-find-type x ss))
+  (b* (((mv warning type) (vl-hidexpr-find-type x ss (vl-expr-fix x)))
        ((when warning) (mv warning nil)))
     (vl-datatype-range type)))
 
@@ -1570,7 +1525,8 @@ datatype is multidimensional.</p>"
                  operators applied to it, i.e., bitselect or index operators but
                  not part-select operators.  So for instance: @('foo, foo.bar,
                  foo.bar[3], foo.bar[3][4][5]')")
-   (ss vl-scopestack-p "Scopestack where @('x') occurs."))
+   (ss vl-scopestack-p "Scopestack where @('x') occurs.")
+   (ctx acl2::any-p))
   :returns (mv (warning (iff (vl-warning-p warning) warning)
                         "Success indicator, we fail if we can't follow the HID or
                          this isn't an appropriate expression.")
@@ -1593,11 +1549,11 @@ datatype is multidimensional.</p>"
                    :args (list x)
                    :fn __function__)
                   nil))
-             ((mv warning type) (vl-hidexpr-find-type x ss))
+             ((mv warning type) (vl-hidexpr-find-type x ss ctx))
              ((when warning) (mv warning nil)))
           (mv nil type)))
        ((vl-nonatom x))
-       ((mv warning sub-type) (vl-index-find-type (first x.args) ss))
+       ((mv warning sub-type) (vl-index-find-type (first x.args) ss ctx))
        ((when warning) (mv warning nil))
        (udims (vl-datatype->udims sub-type))
        ((when (consp udims))
@@ -1625,7 +1581,14 @@ datatype is multidimensional.</p>"
   ///
   (verify-guards vl-index-find-type
     :hints(("Goal" :in-theory (e/d (acl2::member-of-cons)
-                                   (vl-index-find-type))))))
+                                   (vl-index-find-type)))))
+
+  (defthm context-irrelevance-of-vl-index-find-type
+    (implies (syntaxp (not (equal ctx ''nil)))
+             (b* (((mv err1 type1) (vl-index-find-type x ss ctx))
+                  ((mv err2 type2) (vl-index-find-type x ss nil)))
+               (and (iff err1 err2)
+                    (equal type1 type2))))))
 
 
 
@@ -1730,7 +1693,7 @@ datatype is multidimensional.</p>"
         (mv (make-vl-warning :type :vl-programming-error
                              :msg "called vl-partselect-selfsize on non-partselect expr")
             nil))
-       ((mv warning sub-type) (vl-index-find-type (first x.args) ss))
+       ((mv warning sub-type) (vl-index-find-type (first x.args) ss ctx))
        ((when warning) (mv warning nil))
        (udims (vl-datatype->udims sub-type))
        (pdims (vl-datatype->pdims sub-type))

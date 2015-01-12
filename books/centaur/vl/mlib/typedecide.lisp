@@ -75,7 +75,7 @@
                (type vl-maybe-exprtype-p))
   (b* ((x (vl-expr-fix x))
        (?ctx (vl-context-fix ctx))
-       ((mv warning datatype) (vl-index-find-type x ss))
+       ((mv warning datatype) (vl-index-find-type x ss ctx))
        ((when warning)
         (mv (cons (change-vl-warning warning :fatalp t)
                   (vl-warninglist-fix warnings))
