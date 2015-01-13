@@ -296,7 +296,39 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
                            (append (vl-hidindex->indices x)
                                    (vl-exprlist-fix acc))))
            :hints(("Goal" :in-theory (enable vl-hidindex->indices-exec)))))
-  (verify-guards vl-hidindex->indices$inline))
+
+  (verify-guards vl-hidindex->indices$inline)
+
+  (defthm vl-hidindex->indices-when-vl-atom-p
+    (implies (vl-atom-p x)
+             (equal (vl-hidindex->indices x)
+                    nil)))
+
+  (local (defthm l0
+           (equal (vl-exprlist-count (append x y))
+                  (+ -1
+                     (vl-exprlist-count x)
+                     (vl-exprlist-count y)))
+           :hints(("Goal" :in-theory (enable append vl-exprlist-count)))))
+
+  (defthm vl-exprlist-count-of-vl-hidindex->indices-weak
+    (implies (vl-hidindex-p x)
+             (<= (vl-exprlist-count (vl-hidindex->indices x))
+                 (vl-expr-count x)))
+    :rule-classes ((:rewrite) (:linear))
+    :hints(("Goal"
+            :induct (vl-hidindex-p x)
+            :in-theory (enable vl-hidindex->indices vl-hidindex-p vl-exprlist-count))))
+
+  (defthm vl-exprlist-count-of-vl-hidindex->indices-strong
+    (implies (and (vl-hidindex-p x)
+                  (not (vl-atom-p x)))
+             (< (vl-exprlist-count (vl-hidindex->indices x))
+                (vl-expr-count x)))
+    :rule-classes ((:rewrite) (:linear))
+    :hints(("Goal"
+            :induct (vl-hidindex-p x)
+            :in-theory (enable vl-hidindex->indices vl-hidindex-p vl-exprlist-count)))))
 
 (define vl-hidindex-count-indices ((x vl-expr-p))
   :guard (vl-hidindex-p x)
@@ -527,7 +559,61 @@ instance:</p>
                 (vl-expr-count x)))
     :rule-classes :linear))
 
+(define vl-hidexpr-collect-indices
+  :short "Collect all expressions from index positions in a hid expression,
+e.g., for @('foo[3][4].bar[5].baz'), we would return a list of expressions for
+@('3 4 5')."
+  ((x vl-expr-p))
+  :guard (vl-hidexpr-p x)
+  :returns (indices vl-exprlist-p)
 
+  :measure (vl-expr-count x)
+  :prepwork ((local (in-theory (enable vl-hidexpr-p))))
+  (b* (((when (vl-fast-atom-p x))
+        nil)
+       ((vl-nonatom x))
+       ((when (eq x.op :vl-hid-dot))
+        (append (vl-hidindex->indices (first x.args))
+                (vl-hidexpr-collect-indices (second x.args)))))
+    (vl-hidindex->indices x))
+  ///
+  (defthm vl-hidexpr-collect-indices-when-atom
+    (implies (vl-atom-p x)
+             (equal (vl-hidexpr-collect-indices x)
+                    nil)))
+
+  (local (defthm l0
+           (equal (vl-exprlist-count (append x y))
+                  (+ -1
+                     (vl-exprlist-count x)
+                     (vl-exprlist-count y)))
+           :hints(("Goal" :in-theory (enable vl-exprlist-count append)))))
+
+  (defthm vl-exprlist-count-of-vl-hidexpr-collect-indices-weak
+    (implies (vl-hidexpr-p x)
+             (<= (vl-exprlist-count (vl-hidexpr-collect-indices x))
+                 (vl-expr-count x)))
+    :rule-classes ((:rewrite) (:linear))
+    :hints(("Goal"
+            :induct (vl-hidexpr-p x)
+            :in-theory (enable vl-hidexpr-p vl-expr-count vl-exprlist-count))))
+
+  (defthm vl-exprlist-count-of-vl-hidexpr-collect-indices-strong
+    (implies (and (vl-hidexpr-p x)
+                  (not (vl-atom-p x)))
+             (< (vl-exprlist-count (vl-hidexpr-collect-indices x))
+                (vl-expr-count x)))
+    :rule-classes ((:rewrite) (:linear))
+    :hints(("Goal"
+            :induct (vl-hidexpr-p x)
+            :in-theory (enable vl-hidexpr-p vl-expr-count vl-exprlist-count))))
+
+  (defthm vl-exprlist-count-of-vl-hidexpr-collect-indices-equal
+    (implies (and (vl-hidexpr-p x)
+                  (case-split (not (vl-atom-p x))))
+             (equal (equal (vl-exprlist-count (vl-hidexpr-collect-indices x))
+                           (vl-expr-count x))
+                    nil))))
 
 (defxdoc following-hids
   :parents (hid-tools)

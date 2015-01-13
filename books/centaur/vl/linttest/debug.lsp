@@ -60,69 +60,77 @@
 
 ;; Lucid Tracing
 
-(trace$ (vl-luciddb-mark-used
-         :entry (list 'vl-luciddb-mark-used
-                      :key (with-local-ps (vl-pp-lucidkey key))
+(trace$ (vl-luciddb-mark
+         :entry (list 'vl-luciddb-mark
+                      mtype
+                      (with-local-ps (vl-pp-lucidkey key))
                       :occ (with-local-ps (vl-pp-lucidocc occ)))
-         :exit (list 'vl-luciddb-mark-used)))
-
-(trace$ (vl-luciddb-mark-set
-         :entry (list 'vl-luciddb-mark-set
-                      :key (with-local-ps (vl-pp-lucidkey key))
-                      :occ (with-local-ps (vl-pp-lucidocc occ)))
-         :exit (list 'vl-luciddb-mark-set)))
+         :exit (list 'vl-luciddb-mark)))
 
 (trace$ (vl-scopestack-push
          :entry (list 'vl-scopestack-push
                       (vl-scope->name scope)
-                      (with-local-ps (vl-pp-scopestack-path x)))
+                      (vl-scopestack->path x))
          :exit (list 'vl-scopestack-push
-                     (with-local-ps (vl-pp-scopestack-path (first acl2::values))))))
+                     (vl-scopestack->path (first values)))))
 
 (trace$ (vl-rhsatom-lucidcheck
-         :entry (list 'vl-rhsexpr-lucidcheck
-                      :x (vl-pps-expr x)
+         :entry (list 'vl-rhsatom-lucidcheck
+                      (vl-pps-expr x)
                       :ss (with-local-ps (vl-pp-scopestack-path ss))
-                      :st (vl-pps-lucidstate st))
+                      :st (vl-pps-lucidstate st)
+                      :raw x)
+         :exit (let ((st (first acl2::values)))
+                 (list 'vl-rhsatom-lucidcheck
+                       (vl-pps-lucidstate st)))))
+
+(trace$ (vl-rhsexpr-lucidcheck$notinline
+         :entry (list 'vl-rhsexpr-lucidcheck
+                      (vl-pps-expr x)
+                      :ss (with-local-ps (vl-pp-scopestack-path ss))
+                      :st (vl-pps-lucidstate st)
+                      :raw x)
          :exit (let ((st (first acl2::values)))
                  (list 'vl-rhsexpr-lucidcheck
                        (vl-pps-lucidstate st)))))
 
-(trace$ (vl-rhsexpr-lucidcheck
-         :entry (list 'vl-rhsexpr-lucidcheck
-                      :x (vl-pps-expr x)
+(trace$ (vl-lhsexpr-lucidcheck$notinline
+         :entry (list 'vl-lhsexpr-lucidcheck
+                      (vl-pps-expr x)
                       :ss (with-local-ps (vl-pp-scopestack-path ss))
-                      :st (vl-pps-lucidstate st))
+                      :st (vl-pps-lucidstate st)
+                      :raw x)
          :exit (let ((st (first acl2::values)))
-                 (list 'vl-rhsexpr-lucidcheck
+                 (list 'vl-lhsexpr-lucidcheck
                        (vl-pps-lucidstate st)))))
 
-(trace$ (vl-initial-lucidcheck
-         :entry (list 'vl-initial-lucidcheck
-                      :x (with-local-ps (vl-pp-initial x))
-                      :ss (with-local-ps (vl-pp-scopestack-path ss))
-                      :st (vl-pps-lucidstate st))
-         :exit (let ((st (first acl2::values)))
-                 (list 'vl-initial-lucidcheck
-                       (vl-pps-lucidstate st)))))
 
-(trace$ (vl-fundecl-lucidcheck
-         :entry (list 'vl-fundecl-lucidcheck
-                      :x (with-local-ps (vl-pp-fundecl x))
-                      :ss (with-local-ps (vl-pp-scopestack-path ss))
-                      :st (vl-pps-lucidstate st))
-         :exit (let ((st (first acl2::values)))
-                 (list 'vl-fundecl-lucidcheck
-                       (vl-pps-lucidstate st)))))
+;; (trace$ (vl-initial-lucidcheck
+;;          :entry (list 'vl-initial-lucidcheck
+;;                       (with-local-ps (vl-pp-initial x))
+;;                       :ss (with-local-ps (vl-pp-scopestack-path ss))
+;;                       :st (vl-pps-lucidstate st))
+;;          :exit (let ((st (first acl2::values)))
+;;                  (list 'vl-initial-lucidcheck
+;;                        (vl-pps-lucidstate st)))))
 
-(trace$ (vl-package-lucidcheck
-         :entry (list 'vl-package-lucidcheck
-                      :x (with-local-ps (vl-pp-package x))
-                      :ss (with-local-ps (vl-pp-scopestack-path ss))
-                      :st (vl-pps-lucidstate st))
-         :exit (let ((st (first acl2::values)))
-                 (list 'vl-package-lucidcheck
-                       (vl-pps-lucidstate st)))))
+;; (trace$ (vl-fundecl-lucidcheck
+;;          :entry (list 'vl-fundecl-lucidcheck
+;;                       (with-local-ps (vl-pp-fundecl x))
+;;                       :ss (with-local-ps (vl-pp-scopestack-path ss))
+;;                       :st (vl-pps-lucidstate st))
+;;          :exit (let ((st (first acl2::values)))
+;;                  (list 'vl-fundecl-lucidcheck
+;;                        (vl-pps-lucidstate st)))))
+
+;; (trace$ (vl-package-lucidcheck
+;;          :entry (list 'vl-package-lucidcheck
+;;                       (with-local-ps (vl-pp-package x))
+;;                       :ss (with-local-ps (vl-pp-scopestack-path ss))
+;;                       :st (vl-pps-lucidstate st))
+;;          :exit (let ((st (first acl2::values)))
+;;                  (list 'vl-package-lucidcheck
+;;                        (vl-pps-lucidstate st)))))
 
 
 

@@ -996,7 +996,12 @@ be very cheap in the single-threaded case.</p>"
 
 (define vl-scopestack-push ((scope vl-scope-p) (x vl-scopestack-p))
   :returns (x1 vl-scopestack-p)
-  (make-vl-scopestack-local :top scope :super x))
+  (progn$
+   ;; [Jared] I'm curious about whether we ever do this.  If so it might screw
+   ;; up some of the stuff in Lucid.
+   (or (not (eq (tag scope) :vl-design))
+       (cw "Note: pushing whole design onto scopestack.~%"))
+   (make-vl-scopestack-local :top scope :super x)))
 
 (define vl-scopestack-pop ((x vl-scopestack-p))
   :returns (super vl-scopestack-p)
@@ -1428,7 +1433,7 @@ transform that has used scopestacks.</p>"
       (:vl-genblock   (vl-genblock->name x))
       (:vl-genarray   (vl-genarray->name x))
       ((:vl-genloop :vl-genif :vl-gencase  :vl-genbase) nil)
-      (:vl-interfaceport (vl-interfaceport->ifname x))
+      (:vl-interfaceport (vl-interfaceport->name x))
       (:vl-paramdecl     (vl-paramdecl->name x))
       (:vl-vardecl       (vl-vardecl->name x))
       (:vl-fundecl       (vl-fundecl->name x))
