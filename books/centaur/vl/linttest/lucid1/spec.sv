@@ -296,6 +296,61 @@ module m9 () ;
 endmodule
 
 
+
+module mh1 () ;
+
+  // These will get set hierarchically in mh2.
+  wire w1_spurious;
+  wire w1_normal;
+  wire w1_unused;
+  wire w1_unset;
+
+endmodule
+
+module mh2 () ;
+
+  mh1 inst1 ();
+  mh1 inst2 ();
+
+  assign inst1.w1_normal = inst2.w1_unset;
+  assign inst2.w1_normal = inst1.w1_unset;
+
+  assign inst1.w1_unused = inst2.w1_normal;
+  assign inst2.w1_unused = inst1.w1_normal;
+
+endmodule
+
+
+module idx1 ();
+
+  parameter [3:0] a1 = 0;
+  parameter [3:0] a2 = 0;
+
+  wire [3:0] normal1 = 0;
+  wire [3:0] normal2 = 0;
+  wire [3:0] normal3 = 0;
+
+  wire unused1;
+  logic [3:0] unused2;
+  logic [3:0] unused3;
+
+  assign  unused1 = normal1[normal2];
+  initial unused2[normal3] = 0;
+
+  assign unused3 = normal1[a1:a2];
+
+endmodule
+
+module idxtop () ;
+
+  // So it won't get thrown away
+  idx1 #(.a1(4), .a2(4)) idxinst ();
+
+endmodule
+
+
+
+
 module mg1 () ;
 
   localparam p1_used = 4;

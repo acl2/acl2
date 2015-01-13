@@ -158,6 +158,22 @@ normal(:m9, "mr_used2 ")
 spurious(:m9, "mr_spurious ")
 
 
+spurious(:mh1, "w1_spurious ")
+normal(:mh1, "w1_normal ")
+unused(:mh1, "w1_unused ")
+unset(:mh1, "w1_unset ")
+
+normal(:idx1, "normal1 ")
+normal(:idx1, "normal2 ")
+normal(:idx1, "normal3 ")
+normal(:idx1, "a1 ")
+normal(:idx1, "a2 ")
+
+unused(:idx1, "unused1 ")
+unused(:idx1, "unused2 ")
+unused(:idx1, "unused3 ")
+
+
 
 
 # I know these don't work yet

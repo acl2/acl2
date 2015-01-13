@@ -34,6 +34,7 @@
 (in-package "VL")
 (set-debugger-enable t)
 (break-on-error t)
+(ld "centaur/jared-customization.lsp" :dir :system)
 
 (defconst *lintconfig*
   (make-vl-lintconfig :start-files (list "./lucid1/temp.v")))
@@ -104,6 +105,39 @@
                  (list 'vl-lhsexpr-lucidcheck
                        (vl-pps-lucidstate st)))))
 
+(with-redef
+  (define vl-luciddb-mark ((mtype (member mtype '(:used :set)))
+                           (key   vl-lucidkey-p)
+                           (occ   vl-lucidocc-p)
+                           (db    vl-luciddb-p)
+                           (ctx   acl2::any-p))
+    :parents (vl-lucidstate-mark-used)
+    :returns (new-db vl-luciddb-p)
+    (b* ((db   (vl-luciddb-fix db))
+         (occ  (vl-lucidocc-fix occ))
+         (key  (vl-lucidkey-fix key))
+
+         (val (cdr (hons-get key db)))
+         ((unless val)
+          (cw "***** Error is Here *****~%~%")
+          (cw "KEY ~x0~%" key)
+          (cw "DB KEYS ~x0~%" (alist-keys db))
+          (break$)
+          ;; BOZO we probably don't expect this to happen, but we'll go ahead and
+          ;; mark it as an error.
+          (let ((err (list __function__ ctx)))
+            (hons-acons key
+                        (change-vl-lucidval *vl-empty-lucidval*
+                                            :used (list occ)
+                                            :errors (list err))
+                        db)))
+
+         ((vl-lucidval val))
+         (val (if (eq mtype :used)
+                  (change-vl-lucidval val :used (cons occ val.used))
+                (change-vl-lucidval val :set (cons occ val.set))))
+         (db  (hons-acons key val db)))
+      db)))
 
 ;; (trace$ (vl-initial-lucidcheck
 ;;          :entry (list 'vl-initial-lucidcheck
@@ -134,7 +168,7 @@
 
 
 
-(ld "centaur/jared-customization.lsp" :dir :system)
+
 (acl2::with-redef
   (define vl-design-lucid ((x vl-design-p)
                            &key
@@ -179,3 +213,174 @@
 
 
 
+
+
+
+
+((:VL-VARDECL (("w1_normal" (:VL-CORETYPE (:VL-LOGIC) NIL)
+                . :VL-WIRE)
+               NIL NIL)
+  (NIL NIL)
+  (NIL)
+  NIL
+  :VL-LOCATION "./lucid1/temp.v" 5 . 2)
+ (:VL-MODULE ((("mh1" NIL)
+               NIL NIL
+               (:VL-VARDECL (("w1_spurious" (:VL-CORETYPE (:VL-LOGIC) NIL)
+                              . :VL-WIRE)
+                             NIL NIL)
+                (NIL NIL)
+                (NIL)
+                NIL
+                :VL-LOCATION "./lucid1/temp.v" 4 . 2)
+               (:VL-VARDECL (("w1_normal" (:VL-CORETYPE (:VL-LOGIC) NIL)
+                              . :VL-WIRE)
+                             NIL NIL)
+                (NIL NIL)
+                (NIL)
+                NIL
+                :VL-LOCATION "./lucid1/temp.v" 5 . 2)
+               (:VL-VARDECL (("w1_unused" (:VL-CORETYPE (:VL-LOGIC) NIL)
+                              . :VL-WIRE)
+                             NIL NIL)
+                (NIL NIL)
+                (NIL)
+                NIL
+                :VL-LOCATION "./lucid1/temp.v" 6 . 2)
+               (:VL-VARDECL (("w1_unset" (:VL-CORETYPE (:VL-LOGIC) NIL)
+                              . :VL-WIRE)
+                             NIL NIL)
+                (NIL NIL)
+                (NIL)
+                NIL
+                :VL-LOCATION "./lucid1/temp.v" 7 . 2))
+              (NIL NIL)
+              NIL NIL)
+  ((NIL NIL)
+   NIL NIL
+   :VL-LOCATION "./lucid1/temp.v" 1 . 0)
+  ((:VL-LOCATION "./lucid1/temp.v" 9 . 0)
+   "mh1")
+  (((:VL-LOCATION "./lucid1/temp.v" 3 . 0)
+    .
+    "// These will get set hierarchically in mh2.
+"))
+  NIL)
+ :GLOBAL :VL-DESIGN
+ ((("VL Syntax 2015-01-12"
+    (:VL-MODULE ((("mh1" NIL)
+                  NIL NIL
+                  (:VL-VARDECL (("w1_spurious" (:VL-CORETYPE (:VL-LOGIC) NIL)
+                                 . :VL-WIRE)
+                                NIL NIL)
+                   (NIL NIL)
+                   (NIL)
+                   NIL
+                   :VL-LOCATION "./lucid1/temp.v" 4 . 2)
+                  (:VL-VARDECL (("w1_normal" (:VL-CORETYPE (:VL-LOGIC) NIL)
+                                 . :VL-WIRE)
+                                NIL NIL)
+                   (NIL NIL)
+                   (NIL)
+                   NIL
+                   :VL-LOCATION "./lucid1/temp.v" 5 . 2)
+                  (:VL-VARDECL (("w1_unused" (:VL-CORETYPE (:VL-LOGIC) NIL)
+                                 . :VL-WIRE)
+                                NIL NIL)
+                   (NIL NIL)
+                   (NIL)
+                   NIL
+                   :VL-LOCATION "./lucid1/temp.v" 6 . 2)
+                  (:VL-VARDECL (("w1_unset" (:VL-CORETYPE (:VL-LOGIC) NIL)
+                                 . :VL-WIRE)
+                                NIL NIL)
+                   (NIL NIL)
+                   (NIL)
+                   NIL
+                   :VL-LOCATION "./lucid1/temp.v" 7 . 2))
+                 (NIL NIL)
+                 NIL NIL)
+     ((NIL NIL)
+      NIL NIL
+      :VL-LOCATION "./lucid1/temp.v" 1 . 0)
+     ((:VL-LOCATION "./lucid1/temp.v" 9 . 0)
+      "mh1")
+     (((:VL-LOCATION "./lucid1/temp.v" 3 . 0)
+       .
+       "// These will get set hierarchically in mh2.
+"))
+     NIL)
+    (:VL-MODULE
+     ((("mh2" NIL) NIL NIL)
+      (NIL NIL)
+      ((:VL-ASSIGN ((:NONATOM (:VL-HID-DOT)
+                     ((:ATOM (:VL-HIDPIECE . "inst1") NIL)
+                      (:ATOM (:VL-HIDPIECE . "w1_normal")
+                       NIL))
+                     NIL)
+                    (:NONATOM (:VL-HID-DOT)
+                     ((:ATOM (:VL-HIDPIECE . "inst2") NIL)
+                      (:ATOM (:VL-HIDPIECE . "w1_unset") NIL))
+                     NIL))
+        NIL NIL
+        :VL-LOCATION "./lucid1/temp.v" 16 . 2)
+       (:VL-ASSIGN ((:NONATOM (:VL-HID-DOT)
+                     ((:ATOM (:VL-HIDPIECE . "inst2") NIL)
+                      (:ATOM (:VL-HIDPIECE . "w1_normal")
+                       NIL))
+                     NIL)
+                    (:NONATOM (:VL-HID-DOT)
+                     ((:ATOM (:VL-HIDPIECE . "inst1") NIL)
+                      (:ATOM (:VL-HIDPIECE . "w1_unset") NIL))
+                     NIL))
+        NIL NIL
+        :VL-LOCATION "./lucid1/temp.v" 17 . 2)
+       (:VL-ASSIGN ((:NONATOM (:VL-HID-DOT)
+                     ((:ATOM (:VL-HIDPIECE . "inst1") NIL)
+                      (:ATOM (:VL-HIDPIECE . "w1_unused")
+                       NIL))
+                     NIL)
+                    (:NONATOM (:VL-HID-DOT)
+                     ((:ATOM (:VL-HIDPIECE . "inst2") NIL)
+                      (:ATOM (:VL-HIDPIECE . "w1_normal")
+                       NIL))
+                     NIL))
+        NIL NIL
+        :VL-LOCATION "./lucid1/temp.v" 19 . 2)
+       (:VL-ASSIGN ((:NONATOM (:VL-HID-DOT)
+                     ((:ATOM (:VL-HIDPIECE . "inst2") NIL)
+                      (:ATOM (:VL-HIDPIECE . "w1_unused")
+                       NIL))
+                     NIL)
+                    (:NONATOM (:VL-HID-DOT)
+                     ((:ATOM (:VL-HIDPIECE . "inst1") NIL)
+                      (:ATOM (:VL-HIDPIECE . "w1_normal")
+                       NIL))
+                     NIL))
+        NIL NIL
+        :VL-LOCATION "./lucid1/temp.v" 20 . 2))
+      NIL
+      (:VL-MODINST (("inst1" . "mh1")
+                    NIL
+                    :VL-PARAMARGS-PLAIN NIL)
+       ((:VL-ARGUMENTS-PLAIN NIL))
+       NIL NIL
+       :VL-LOCATION "./lucid1/temp.v" 13 . 6)
+      (:VL-MODINST (("inst2" . "mh1")
+                    NIL
+                    :VL-PARAMARGS-PLAIN NIL)
+       ((:VL-ARGUMENTS-PLAIN NIL))
+       NIL NIL
+       :VL-LOCATION "./lucid1/temp.v" 14 . 6))
+     ((NIL NIL)
+      NIL NIL
+      :VL-LOCATION "./lucid1/temp.v" 11 . 0)
+     ((:VL-LOCATION "./lucid1/temp.v" 22 . 0)
+      "mh2")
+     NIL NIL))
+   NIL)
+  (NIL)
+  NIL)
+ ((NIL) NIL)
+ (NIL)
+ NIL)

@@ -737,6 +737,22 @@ created when we process their packages, etc.</p>"
 ; We're going to look up IDs with vl-follow-hidexpr.
 ; That will give us a trace.
 
+(define vl-normalize-scopestack ((x vl-scopestack-p))
+  :returns (new-x vl-scopestack-p)
+  :measure (vl-scopestack-count x)
+  :verify-guards nil
+  (b* ((x (vl-scopestack-fix x)))
+    (vl-scopestack-case x
+      :null x
+      :global x
+      :local
+      (vl-scopestack-push (if (eq (tag x.top) :vl-module)
+                              (vl-module->genblob x.top)
+                            x.top)
+                          (vl-normalize-scopestack x.super))))
+  ///
+  (verify-guards vl-normalize-scopestack))
+
 (define vl-hidstep-mark-interfaces ((mtype (member mtype '(:used :set)))
                                     (step  vl-hidstep-p)
                                     (st    vl-lucidstate-p)
@@ -744,7 +760,9 @@ created when we process their packages, etc.</p>"
   :returns (new-st vl-lucidstate-p)
   (b* (((vl-hidstep step))
        ((when (eq (tag step.item) :vl-interfaceport))
-        (b* ((key (make-vl-lucidkey :item step.item :scopestack step.ss))
+        (b* ((key (make-vl-lucidkey
+                   :item step.item
+                   :scopestack (vl-normalize-scopestack step.ss)))
              (occ (make-vl-lucidocc-solo)))
           (vl-lucidstate-mark mtype key occ st ctx))))
     (vl-lucidstate-fix st)))
@@ -776,7 +794,9 @@ created when we process their packages, etc.</p>"
        ;;     analyze it in any meaningful way?
        ;;   - Should our state somehow record/track the fields of structs?
        ((cons (vl-hidstep step) rest) trace)
-       (key (make-vl-lucidkey :item step.item :scopestack step.ss))
+       (key (make-vl-lucidkey
+             :item step.item
+             :scopestack (vl-normalize-scopestack step.ss)))
        (occ (make-vl-lucidocc-solo))
        (st  (vl-hidtrace-mark-interfaces mtype rest st ctx))
        (st  (vl-lucidstate-mark mtype key occ st ctx)))
@@ -798,7 +818,9 @@ created when we process their packages, etc.</p>"
           (change-vl-lucidstate st :warnings st.warnings)))
        ;; BOZO consider doing more with tail, as in hidsolo-mark.
        ((cons (vl-hidstep step) rest) trace)
-       (key (make-vl-lucidkey :item step.item :scopestack step.ss))
+       (key (make-vl-lucidkey
+             :item step.item
+             :scopestack (vl-normalize-scopestack step.ss)))
        (occ (make-vl-lucidocc-slice :left left :right right))
        (st  (vl-hidtrace-mark-interfaces mtype rest st ctx))
        (st  (vl-lucidstate-mark mtype key occ st ctx)))

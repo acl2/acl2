@@ -73,3 +73,4 @@ clean:
 	rm -f */vl-warnings.ok
 	rm -f */check.log
 	rm -f vl-*.txt vl-warnings.json
+	rm -rf */INCA_libs */simv.daidir */simv */csrc */ncverilog.log
