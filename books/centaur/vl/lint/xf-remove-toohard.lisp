@@ -111,6 +111,16 @@ modules for sizing for the linter.</p>")
         :vl-pattern-keyvalue
         :vl-pattern-positional
         :vl-keyvalue
+
+
+        ;; We shouldn't have to handle any of these because we'll have gotten rid
+        ;; of them with the elim-increment transform
+        :vl-unary-preinc :vl-unary-predec :vl-unary-postinc :vl-unary-postdec
+        :vl-binary-assign
+        :vl-binary-plusassign :vl-binary-minusassign
+        :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
+        :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
+        :vl-binary-shlassign :vl-binary-shrassign :vl-binary-ashlassign :vl-binary-ashrassign
         ))
 
 (assert! (equal (mergesort (append *toohard-ops* *not-toohard-ops*))

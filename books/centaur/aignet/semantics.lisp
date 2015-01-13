@@ -899,10 +899,20 @@ assignments.</p>"
   :parents (aignet-logic)
   :short "Sequential semantics of aignets"
   :long "<p>The sequential semantics of aignets is given by the function
-ID-EVAL-SEQ.  This takes an aignet, a time frame number, a node ID, a 2D bit
+LIT-EVAL-SEQ.  This takes an aignet, a time frame number, a literal, a 2D bit
 array assigning values to the primary inputs on each frame, and an initial
-assignment to the registers.  It produces the value of that ID under those
-sequential assignments.</p>"
+assignment to the registers.  It produces the value of that literal under those
+sequential assignments.</p>
+
+<p>The following theorem describes @('lit-eval-seq') in terms of combinational evaluation:
+ @(thm lit-eval-seq-in-terms-of-lit-eval)</p>
+
+<p>Here, @('frame-regvals') is a function that creates a register value array
+from the previous frame's sequential evaluations of the next-state nodes
+corresponding to each register.  That is, to get the value of a literal at a
+particular timeframe, first evaluate the register next-states at the previous
+timeframe, then combinationally evaluate the literal with the resulting
+register values and the current frame's input values.</p>"
 
   (local (in-theory (disable acl2::bfix-when-not-1
                              acl2::nfix-when-not-natp)))
@@ -1075,9 +1085,10 @@ sequential assignments.</p>"
 
   (defthm bitp-of-id-eval-seq
     (bitp (id-eval-seq k id frames initsts aignet))
-    :hints (("goal" :expand ((id-eval-seq k id frames initsts aignet)
-                             (:free (id)
-                                    (id-eval-seq (+ -1 k) id frames initsts aignet))))))
+    :hints (("goal" :induct (id-eval-seq-ind k id aignet)
+             :expand ((id-eval-seq k id frames initsts aignet)
+                      (:free (id)
+                       (id-eval-seq (+ -1 k) id frames initsts aignet))))))
 
   (verify-guards id-eval-seq)
 
@@ -1127,7 +1138,8 @@ sequential assignments.</p>"
   (defthm lookup-reg->nxst-of-non-nxst-extension
     (implies (and (aignet-extension-binding)
                   (equal (stype-count :nxst new)
-                         (stype-count :nxst orig)))
+                         (stype-count :nxst orig))
+                  (<= (nfix id) (node-count orig)))
              (equal (lookup-reg->nxst id new)
                     (lookup-reg->nxst id orig)))
     :hints(("Goal" :in-theory (enable aignet-extension-p
@@ -1533,20 +1545,35 @@ same outputs when run starting at that initial state.</p>"
                                   aignet))))
       (aignet-print-outs (1+ (lnfix n)) aignet)))
 
+  (defthm ctype-of-aignet-lit
+    (implies (aignet-litp lit aignet)
+             (not (equal (CTYPE
+                          (STYPE
+                           (CAR
+                            (LOOKUP-ID
+                             (LIT-ID lit)
+                             AIGNET))))
+                         :OUTPUT)))
+    :hints(("Goal" :in-theory (enable aignet-litp))))
+
   (defund aignet-print-regs (n aignet)
     (declare (Xargs :stobjs aignet
                     :guard (and (natp n)
                                 (<= n (num-regs aignet)))
-                    :guard-hints (("goal" :in-theory (e/d (lookup-stype-in-bounds))))
+                    :guard-hints (("goal" :in-theory (e/d (lookup-stype-in-bounds
+                                                           aignet-litp))))
                     :measure (nfix (- (nfix (num-regs aignet)) (nfix n)))))
     (b* (((when (mbe :logic (zp (- (nfix (num-regs aignet)) (nfix n)))
                      :exec (= (num-regs aignet) n)))
           nil)
-         (ri (reg-id->nxst (regnum->id n aignet) aignet))
+         (id (regnum->id n aignet))
+         (ri (reg-id->nxst id aignet))
          ((when (int= ri 0))
           (aignet-print-regs (1+ (lnfix n)) aignet))
          (- (cw "r~x0 = ~@1~%" n
-                (aignet-print-lit (co-id->fanin ri aignet) aignet))))
+                (if (int= ri id)
+                    (aignet-print-lit (mk-lit id 0) aignet)
+                  (aignet-print-lit (co-id->fanin ri aignet) aignet)))))
       (aignet-print-regs (1+ (lnfix n)) aignet)))
 
   (defund aignet-print (aignet)

@@ -33,17 +33,56 @@
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
+(define vl-reportcardkey-p (x)
+  :parents (vl-reportcard)
+  (or (equal x :design)
+      (stringp x))
+  ///
+  (defthm vl-reportcardkey-p-when-stringp
+    (implies (stringp x)
+             (vl-reportcardkey-p x))))
+
+(define vl-reportcardkey-fix ((x vl-reportcardkey-p))
+  :returns (key vl-reportcardkey-p)
+  :parents (vl-reportcardkey-p)
+  :prepwork ((local (in-theory (enable vl-reportcardkey-p))))
+  :inline t
+  (mbe :logic (if (equal x :design)
+                  x
+                (string-fix x))
+       :exec x)
+  ///
+  (defthm vl-reportcardkey-fix-when-vl-reportcardkey-p
+    (implies (vl-reportcardkey-p x)
+             (equal (vl-reportcardkey-fix x)
+                    x))))
+
+(fty::deffixtype vl-reportcardkey
+  :pred vl-reportcardkey-p
+  :fix  vl-reportcardkey-fix
+  :equiv vl-reportcardkey-equiv
+  :define t
+  :forward t)
+
+(fty::deflist vl-reportcardkeylist
+  :elt-type vl-reportcardkey-p
+  ///
+  (defthm vl-reportcardkeylist-p-when-string-listp
+    (implies (string-listp x)
+             (vl-reportcardkeylist-p x))
+    :hints(("Goal" :induct (len x)))))
+
 (fty::defalist vl-reportcard
-  :key-type stringp
+  :key-type vl-reportcardkey-p
   :val-type vl-warninglist-p
   :count vl-reportcard-count
   :parents (warnings)
   :short "A (typically fast) alist associating names to warnings."
-  :keyp-of-nil nil
-  :valp-of-nil t
-  :long "<p>A <i>report card</i> associates names (strings) to lists of
-warnings.  Typically the names are the names of top-level design
-elements (modules, packages, interfaces, ...).</p>
+  :long "<p>A <i>report card</i> associates @(see vl-reportcardkey-p)s to lists
+of warnings.  Typically the keys are the names of top-level design
+elements (modules, packages, interfaces, ...).  However, as a special case for
+warnings about top-level design elements that aren't in any container, e.g.,
+top-level parameters or functions, we also allow @(':design') as a key.</p>
 
 <p>There are two common uses for report cards.</p>
 
@@ -65,20 +104,13 @@ their related warnings.</li>
 
 (local (xdoc::set-default-parents vl-reportcard))
 
-(defsection vl-reportcard-basics
-
-  (defthm string-listp-of-alist-keys-when-vl-reportcard-p
-    (implies (vl-reportcard-p x)
-             (string-listp (alist-keys x)))
-    :hints(("Goal" :induct (len x)))))
-
 (define vl-extend-reportcard
   :short "Add a single warning to a @(see vl-reportcard-p)."
-  ((name       stringp         "Name of design element to associate the warning with.")
-   (warning    vl-warning-p    "Warning to add.")
-   (reportcard vl-reportcard-p "Report card to extend."))
+  ((name       vl-reportcardkey-p "Name of design element to associate the warning with.")
+   (warning    vl-warning-p       "Warning to add.")
+   (reportcard vl-reportcard-p    "Report card to extend."))
   :returns (new-reportcard vl-reportcard-p)
-  (b* ((name         (string-fix name))
+  (b* ((name         (vl-reportcardkey-fix name))
        (warning      (vl-warning-fix warning))
        (reportcard   (vl-reportcard-fix reportcard))
        (old-warnings (cdr (hons-get name reportcard)))
@@ -87,16 +119,16 @@ their related warnings.</li>
 
 (define vl-extend-reportcard-list
   :short "Add a list of warnings to a @(see vl-reportcard-p)."
-  ((name       stringp           "Name of design element to associate all of these warnings with.")
-   (warnings   vl-warninglist-p  "List of warnings to add.")
-   (reportcard vl-reportcard-p   "Report card to extend."))
+  ((name       vl-reportcardkey-p "Name of design element to associate all of these warnings with.")
+   (warnings   vl-warninglist-p   "List of warnings to add.")
+   (reportcard vl-reportcard-p    "Report card to extend."))
   :returns (new-reportcard vl-reportcard-p)
   :long "<p>We add all the warnings at once, i.e., with a single fast-alist
   update.</p>"
   (b* (((when (atom warnings))
         ;; Silly optimization, don't add warnings if there are no warnings.
         (vl-reportcard-fix reportcard))
-       (name         (string-fix name))
+       (name         (vl-reportcardkey-fix name))
        (warnings     (vl-warninglist-fix warnings))
        (reportcard   (vl-reportcard-fix reportcard))
        (old-warnings (cdr (hons-get name reportcard)))
@@ -176,47 +208,105 @@ redundant/unnecessary information and is suitable for, e.g., printing.</p>"
     ret))
 
 
-(define vl-reportcard-nonfloating
-  :short "Fast alist binding all names of things we can attach warnings to."
+(define vl-design-reportcard-keys
+  :parents (vl-apply-reportcard)
+  :short "Gather a list of all valid @(see reportcard) keys for a design."
   ((design vl-design-p))
-  :returns (fal)
+  :prepwork ((local (in-theory (enable acl2::rcons))))
+  :returns (keys vl-reportcardkeylist-p)
   (b* (((vl-design design) design))
-    (make-lookup-alist
-     (mbe :logic (append (vl-modulelist->names design.mods)
-                         (vl-udplist->names design.udps)
-                         (vl-interfacelist->names design.interfaces)
-                         (vl-programlist->names design.programs)
-                         (vl-packagelist->names design.packages)
-                         (vl-configlist->names design.configs)
-                         (vl-typedeflist->names design.typedefs))
-          :exec (with-local-nrev
-                  (b* ((nrev (vl-modulelist->names-nrev design.mods nrev))
-                       (nrev (vl-udplist->names-nrev design.udps nrev))
-                       (nrev (vl-interfacelist->names-nrev design.interfaces nrev))
-                       (nrev (vl-programlist->names-nrev design.programs nrev))
-                       (nrev (vl-packagelist->names-nrev design.packages nrev))
-                       (nrev (vl-configlist->names-nrev design.configs nrev))
-                       (nrev (vl-typedeflist->names-nrev design.typedefs nrev)))
-                    nrev))))))
+    (mbe :logic (append (vl-modulelist->names design.mods)
+                        (vl-udplist->names design.udps)
+                        (vl-interfacelist->names design.interfaces)
+                        (vl-programlist->names design.programs)
+                        (vl-packagelist->names design.packages)
+                        (vl-configlist->names design.configs)
+                        (vl-typedeflist->names design.typedefs)
+                        '(:design))
+         :exec (with-local-nrev
+                 (b* ((nrev (vl-modulelist->names-nrev design.mods nrev))
+                      (nrev (vl-udplist->names-nrev design.udps nrev))
+                      (nrev (vl-interfacelist->names-nrev design.interfaces nrev))
+                      (nrev (vl-programlist->names-nrev design.programs nrev))
+                      (nrev (vl-packagelist->names-nrev design.packages nrev))
+                      (nrev (vl-configlist->names-nrev design.configs nrev))
+                      (nrev (vl-typedeflist->names-nrev design.typedefs nrev))
+                      (nrev (nrev-push :design nrev)))
+                   nrev))))
+  ///
+  (defthm design-in-vl-design-reportcard-keys
+    (member :design (vl-design-reportcard-keys x))))
 
-(define vl-reportcard-floating
-  :short "Collect up all floating warnings from a report card."
-  ((x           vl-reportcard-p  "Report card we're filtering.")
-   (nonfloating                  "Fast alist of names from @(see vl-reportcard-nonfloating).")
-   (warnings    vl-warninglist-p "Accumulator for floating warnings, may be extended."))
+
+
+(define vl-revive-invalid-warning ((name    stringp)
+                                   (warning vl-warning-p))
+  :returns (new-warning vl-warning-p)
+  :parents (vl-reportcard-revive-invalid-warnings)
+  (b* (((vl-warning warning)))
+    (change-vl-warning warning :msg (cat "In " name " -- " warning.msg))))
+
+(defprojection vl-revive-invalid-warnings ((name stringp)
+                                           (x    vl-warninglist-p))
   :returns (new-warnings vl-warninglist-p)
+  :parents (vl-reportcard-revive-invalid-warnings)
+  (vl-revive-invalid-warning name x))
+
+(local (defthm consp-of-car-when-vl-reportcard-p
+         (implies (vl-reportcard-p x)
+                  (equal (consp (car x))
+                         (consp x)))))
+
+(local (defthm stringp-when-vl-reportcardkey-p
+         (implies (vl-reportcardkey-p x)
+                  (equal (stringp x)
+                         (not (equal x :design))))
+         :hints(("Goal" :in-theory (enable vl-reportcardkey-p)))))
+
+(define vl-reportcard-revive-invalid-warnings-exec ((x vl-reportcard-p)
+                                                    valid-fal
+                                                    nrev)
+  :guard (hons-assoc-equal :design valid-fal)
   :measure (vl-reportcard-count x)
-  (b* ((x        (vl-reportcard-fix x))
-       (warnings (vl-warninglist-fix warnings))
+  :parents (vl-reportcard-revive-invalid-warnings)
+  (b* ((x (vl-reportcard-fix x))
        ((when (atom x))
-        warnings)
+        (nrev-fix nrev))
        ((cons name1 warnings1) (car x))
-       (warnings (if (hons-get name1 nonfloating)
-                     ;; These warnings are NOT floating.
-                     warnings
-                   ;; Else these warnings ARE floating.
-                   (append-without-guard warnings1 warnings))))
-    (vl-reportcard-floating (cdr x) nonfloating warnings)))
+       ((when (hons-get name1 valid-fal))
+        ;; Valid name, so no need to revive its warnings.
+        (vl-reportcard-revive-invalid-warnings-exec (cdr x) valid-fal nrev))
+       ;; Else, it's invalid, so revive it.
+       (nrev (vl-revive-invalid-warnings-nrev name1 warnings1 nrev)))
+    (vl-reportcard-revive-invalid-warnings-exec (cdr x) valid-fal nrev)))
+
+(define vl-reportcard-revive-invalid-warnings
+  :short "Convert any warnings about invalid keys into warnings about the top-level design."
+  ((x vl-reportcard-p) valid-fal)
+  :guard (hons-assoc-equal :design valid-fal)
+  :returns (warnings vl-warninglist-p)
+  :measure (vl-reportcard-count x)
+  :verify-guards nil
+  (mbe :logic
+       (b* ((x (vl-reportcard-fix x))
+            ((when (atom x))
+             nil)
+            ((cons name1 warnings1) (car x))
+            ((when (hons-get name1 valid-fal))
+             ;; Valid name, so no need to revive its warnings.
+             (vl-reportcard-revive-invalid-warnings (cdr x) valid-fal)))
+         (append (vl-revive-invalid-warnings name1 warnings1)
+                 (vl-reportcard-revive-invalid-warnings (cdr x) valid-fal)))
+       :exec
+       (with-local-nrev
+         (vl-reportcard-revive-invalid-warnings-exec x valid-fal nrev)))
+  ///
+  (defthm vl-reportcard-revive-invalid-warnings-exec-removal
+    (equal (vl-reportcard-revive-invalid-warnings-exec x valid-fal nrev)
+           (append nrev (vl-reportcard-revive-invalid-warnings x valid-fal)))
+    :hints(("Goal" :in-theory (enable vl-reportcard-revive-invalid-warnings-exec))))
+
+  (verify-guards vl-reportcard-revive-invalid-warnings))
 
 (define vl-apply-reportcard ((x          vl-design-p)
                              (reportcard vl-reportcard-p))
@@ -229,25 +319,37 @@ the design @('x') by adding the warnings from throughout the report card to the
 appropriate design elements.  For instance, if there is a module named @('foo')
 in the design that currently has two warnings, and the report card lists three
 warnings about @('foo'), then in the new design these warnings will have been
-merged so that @('foo') will now have 5 warnings.</p>"
+merged so that @('foo') will now have 5 warnings.</p>
 
-  (b* (((vl-design x) x)
-       (reportcard      (vl-clean-reportcard reportcard))
-       (nonfloating-fal (vl-reportcard-nonfloating x))
-       (floating (vl-reportcard-floating reportcard nonfloating-fal x.warnings))
-       (- (fast-alist-free nonfloating-fal)))
+<p>One subtlety is that the reportcard may mention modules that aren't in the
+design.  This typically shouldn't happen, but if it does we can at least take
+some kind of debugging action.  See @(see
+vl-warn-about-disembodied-reportcard-hook).</p>"
 
-    (change-vl-design x
-                      :mods       (vl-modulelist-apply-reportcard    x.mods       reportcard)
-                      :udps       (vl-udplist-apply-reportcard       x.udps       reportcard)
-                      :interfaces (vl-interfacelist-apply-reportcard x.interfaces reportcard)
-                      :programs   (vl-programlist-apply-reportcard   x.programs   reportcard)
-                      :packages   (vl-packagelist-apply-reportcard   x.packages   reportcard)
-                      :configs    (vl-configlist-apply-reportcard    x.configs    reportcard)
-                      :typedefs   (vl-typedeflist-apply-reportcard   x.typedefs   reportcard)
-                      :warnings   floating)))
-
-
+  (b* (((vl-design x) (vl-design-fix x))
+       (reportcard    (vl-reportcard-fix reportcard))
+       ((when (atom reportcard))
+        ;; Optimization: if there aren't any warnings there's nothing to do.
+        x)
+       (reportcard     (vl-clean-reportcard reportcard))
+       (valid-keys     (vl-design-reportcard-keys x))
+       (valid-fal      (make-lookup-alist valid-keys))
+       (revived        (vl-reportcard-revive-invalid-warnings reportcard valid-fal))
+       (- (fast-alist-free valid-fal))
+       (new-toplevel   (append-without-guard (cdr (hons-get :design reportcard))
+                                             revived x.warnings))
+       (new-x (change-vl-design
+               x
+               :mods       (vl-modulelist-apply-reportcard    x.mods       reportcard)
+               :udps       (vl-udplist-apply-reportcard       x.udps       reportcard)
+               :interfaces (vl-interfacelist-apply-reportcard x.interfaces reportcard)
+               :programs   (vl-programlist-apply-reportcard   x.programs   reportcard)
+               :packages   (vl-packagelist-apply-reportcard   x.packages   reportcard)
+               :configs    (vl-configlist-apply-reportcard    x.configs    reportcard)
+               :typedefs   (vl-typedeflist-apply-reportcard   x.typedefs   reportcard)
+               :warnings   new-toplevel))
+       (- (fast-alist-free reportcard)))
+    new-x))
 
 (defmacro def-vl-gather-reportcard (name elem &key fn parents elem->name)
   (b* ((mksym-package-symbol (pkg-witness "VL"))
@@ -287,7 +389,8 @@ merged so that @('foo') will now have 5 warnings.</p>"
        (acc (vl-programlist-gather-reportcard   x.programs   acc))
        (acc (vl-packagelist-gather-reportcard   x.packages   acc))
        (acc (vl-configlist-gather-reportcard    x.configs    acc))
-       (acc (vl-typedeflist-gather-reportcard   x.typedefs   acc)))
+       (acc (vl-typedeflist-gather-reportcard   x.typedefs   acc))
+       (acc (vl-extend-reportcard-list :design x.warnings acc)))
     acc))
 
 (define vl-design-reportcard
@@ -323,7 +426,8 @@ design, in terms of the original design element names."
        (acc (vl-programlist-gather-reportcard   x.programs acc))
        (acc (vl-packagelist-gather-reportcard   x.packages acc))
        (acc (vl-configlist-gather-reportcard    x.configs acc))
-       (acc (vl-typedeflist-gather-reportcard   x.typedefs acc)))
+       (acc (vl-typedeflist-gather-reportcard   x.typedefs acc))
+       (acc (vl-extend-reportcard-list :design x.warnings acc)))
     acc))
 
 (define vl-design-origname-reportcard

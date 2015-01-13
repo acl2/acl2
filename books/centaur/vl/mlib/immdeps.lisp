@@ -471,7 +471,10 @@ elements.")
     :flag :datatype
     (b* ((ans (vl-immdeps-fix ans)))
       (vl-datatype-case x
-        (:vl-coretype ans)
+        (:vl-coretype
+         (b* ((ans (vl-packeddimensionlist-immdeps x.pdims ans))
+              (ans (vl-packeddimensionlist-immdeps x.udims ans)))
+           ans))
         (:vl-struct
          (b* ((ans (vl-structmemberlist-immdeps x.members ans))
               (ans (vl-packeddimensionlist-immdeps x.pdims ans))

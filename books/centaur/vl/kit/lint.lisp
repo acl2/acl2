@@ -30,11 +30,11 @@
 
 (in-package "VL")
 (include-book "../loader/loader")
-
-(include-book "../lint/bit-use-set")
+(include-book "../lint/lucid")
 (include-book "../lint/check-case")
 (include-book "../lint/check-namespace")
-(include-book "../lint/disconnected")
+(include-book "../mlib/hierarchy")
+
 (include-book "../lint/xf-drop-missing-submodules")
 (include-book "../lint/xf-drop-user-submodules")
 (include-book "../lint/xf-lint-stmt-rewrite")
@@ -342,11 +342,7 @@ shown.</p>"
    (sd-probs  sd-problemlist-p
               "Possible problems noticed by @(see skip-detection).  These are
                in a different format than ordinary @(see warnings), so they
-               aren't included in the @('reportcard').")
-
-   (dalist    us-dbalist-p
-              "Use-set database alist, mapping module names to use-set databases.
-               Might actually not be used for anything.")))
+               aren't included in the @('reportcard').")))
 
 
 (define vl-delete-sd-problems-for-modnames-aux
@@ -466,49 +462,63 @@ shown.</p>"
        (design (cwtime (vl-design-make-implicit-wires design)))
        (design (cwtime (vl-design-portdecl-sign design)))
        (design (cwtime (vl-design-portcheck design)))
+       (design (cwtime (vl-design-argresolve design)))
+       (design (cwtime (vl-design-resolve-indexing design)))
+
+       ;; Pre-unparameterization Lucidity Check -- this is a bad time for
+       ;; bit-level analysis, but it's a good time for checking parameter
+       ;; usages.
+       (design (cwtime (vl-design-lucid design :paramsp t)))
+
+       (- (cw "~%vl-lint: starting general checks...~%"))
+       (design (cwtime (vl-design-check-namespace design)))
        (design (cwtime (vl-design-check-case design)))
        (design (cwtime (vl-design-duperhs-check design)))
        (design (cwtime (vl-design-duplicate-detect design)))
        (design (cwtime (vl-design-condcheck design)))
        (design (cwtime (vl-design-leftright-check design)))
-       (design (cwtime (vl-design-drop-missing-submodules design)))
-       ;; BOZO reinstate this??
-       ;; (mods (cwtime (vl-modulelist-add-undefined-names mods)))
-       (design (cwtime (vl-design-resolve-indexing design)))
-       ;; (design (cwtime (vl-design-portdecl-sign design)))
        (design (cwtime (vl-design-origexprs design)))
-       (design (cwtime (vl-design-check-namespace design)))
-
-       (- (cw "~%vl-lint: processing arguments, parameters...~%"))
-       (design (cwtime (vl-design-argresolve design)))
-       (design
-        ;; Bug fixed 2014-12-19: don't do this until after argresolve, because
-        ;; in SystemVerilog it can get confused by .* or .foo style port
-        ;; connections.
-        (cwtime (vl-design-elim-unused-vars design)))
        (design (cwtime (vl-design-dupeinst-check design)))
 
-       ;; BOZO not exactly sure where this should go, maybe this will work.
-       (design (cwtime (vl-design-expand-functions design)))
+       (- (cw "~%vl-lint: elaborating the design...~%"))
 
        ;; BOZO we need to do something to throw away instances with unresolved
        ;; arguments to avoid programming-errors in drop-blankports... and actually
        ;; we hit errors like that later, too.
-       (design (cwtime (vl-design-drop-blankports design)))
-       (design (cwtime (mp-verror-transform-hook design))) ;; BOZO really keep this???
-       (design (cwtime (vl-design-follow-hids design)))
-       (design (cwtime (vl-design-clean-params design)))
+       ;; (design (cwtime (vl-design-drop-blankports design)))
+       ;;(design (cwtime (vl-design-follow-hids design)))
+       ;; (design (cwtime (vl-design-clean-params design)))
        ;; (design (cwtime (vl-design-check-good-paramdecls design)))
        (design (cwtime (vl-design-unparameterize design)))
-       (- (vl-gc))
-
-       (- (cw "~%vl-lint: processing ranges, statements...~%"))
        (design (cwtime (vl-design-rangeresolve design)))
        (design (cwtime (vl-design-selresolve design)))
+
+       ;; Post-unparameterization Lucidity Check -- this is a bad time for
+       ;; checking parameters (because they've been eliminated) but it's a
+       ;; much better time to do bit-level analysis, because things like
+       ;; foo[width-1:0] should hopefully be resolved now.
+       (design (cwtime (vl-design-lucid design :paramsp nil)))
+
+       (design
+        ;; Best not to do this until after lucid checking.
+        (cwtime (vl-design-drop-missing-submodules design)))
+
+       ;; BOZO do we even need to do this?
+       ;; BOZO not exactly sure where this should go, maybe this will work.
+       
+
+       ;; (design
+       ;;  ;; Bug fixed 2014-12-19: don't do this until after argresolve, because
+       ;;  ;; in SystemVerilog it can get confused by .* or .foo style port
+       ;;  ;; connections.  Also it's best not to do this until after lucid
+       ;;  ;; checking because it would screw up lucid's checks.  Actually why
+       ;;  ;; are we even doing this?
+       ;;  (cwtime (vl-design-elim-unused-vars design)))
+
        (design (cwtime (vl-design-check-selfassigns design)))
        (design (cwtime (vl-design-lint-stmt-rewrite design)))
        (design (cwtime (vl-design-stmtrewrite design 1000)))
-       (design (cwtime (vl-design-hid-elim design)))
+       ;;(design (cwtime (vl-design-hid-elim design)))
 
        ;; Now that HIDs are gone, we can throw away any modules we don't care
        ;; about, if we have been given any topmods.
@@ -523,25 +533,14 @@ shown.</p>"
 
        (design (cwtime (vl-design-remove-unnecessary-modules config.topmods design)))
 
-
-       ;; BOZO it seems sort of legitimate to do this before sizing, which
-       ;; might be nice.  Of course, a more rigorous use/set analysis will
-       ;; need to be post-sizing.
-       (- (cw "~%vl-lint: finding disconnected wires...~%"))
-       (design (cwtime (vl-design-remove-toohard design)))
-       (design (cwtime (vl-design-find-disconnected design)))
-
        (- (cw "~%vl-lint: processing expressions...~%"))
        (design (cwtime (vl-design-oddexpr-check design)))
        (design (cwtime (vl-design-oprewrite design)))
+       ;; Sizing doesn't do well unless we expand functions
+       (design (cwtime (vl-design-expand-functions design)))
        (design (cwtime (vl-design-exprsize design)))
        (design (cwtime (vl-design-constcheck-hook design config.cclimit)))
        (design (cwtime (vl-design-qmarksize-check design)))
-
-       (- (cw "~%vl-lint: finding unused/unset wires...~%"))
-       ;; BOZO this probably doesn't quite work here due to replicate not having been done
-       ((mv design dalist) (cwtime (vl-design-bit-use-set design)))
-       (- (vl-gc))
 
        (- (cw "~%vl-lint: processing assignments...~%"))
        (design (cwtime (vl-design-split design)))
@@ -566,7 +565,7 @@ shown.</p>"
                         :design0 design0
                         :reportcard reportcard
                         :sd-probs sd-probs
-                        :dalist dalist)))
+                        )))
 
 (define run-vl-lint ((config vl-lintconfig-p) &key (state 'state))
   :returns (mv (res vl-lintresult-p :hyp :fguard)
@@ -646,7 +645,10 @@ shown.</p>"
 (define vl-jp-reportcard-aux ((x vl-reportcard-p) &key (ps 'ps))
   (b* (((when (atom x))
         ps)
-       ((cons modname warnings) (car x)))
+       ((cons modname warnings) (car x))
+       (modname (if (eq modname :design)
+                    "Design Root"
+                  modname)))
     (vl-ps-seq (vl-indent 1)
                (jp-str modname)
                (vl-print ":")
@@ -654,7 +656,13 @@ shown.</p>"
                (if (atom (cdr x))
                    ps
                  (vl-println ","))
-               (vl-jp-reportcard-aux (cdr x)))))
+               (vl-jp-reportcard-aux (cdr x))))
+  :prepwork
+  ((local (defthm l0
+            (implies (and (vl-reportcardkey-p x)
+                          (not (equal x :design)))
+                     (stringp x))
+            :hints(("Goal" :in-theory (enable vl-reportcardkey-p)))))))
 
 (define vl-jp-reportcard ((x vl-reportcard-p) &key (ps 'ps))
   (vl-ps-seq (vl-print "{")
@@ -694,28 +702,6 @@ shown.</p>"
                (vl-design-descriptions x)))
              (vl-println "}")))
 
-(defconst *use-set-warnings*
-  (list :use-set-fudging
-        :use-set-trainwreck
-        :use-set-future-trainwreck
-        :use-set-warn-1-unset
-        :use-set-warn-1-unset-tricky
-        :use-set-warn-2-unused
-        :use-set-warn-2-unused-tricky
-        :use-set-warn-3-spurious
-        :use-set-warn-3-spurious-tricky
-        :use-set-syntax-error
-        :vl-collect-wires-approx
-        :vl-collect-wires-fail
-        :vl-dropped-always
-        :vl-dropped-assign
-        :vl-dropped-initial
-        :vl-dropped-insts
-        :vl-dropped-modinst
-        :vl-warn-function
-        :vl-warn-taskdecl
-        :vl-unsupported-block))
-
 (defconst *basic-warnings*
   (list :bad-mp-verror
         :vl-bad-range
@@ -737,21 +723,6 @@ shown.</p>"
         :vl-warn-truncation-minor
         :vl-warn-integer-size-minor
         :vl-warn-vague-spec))
-
-(defconst *disconnected-warnings*
-  (list :vl-warn-disconnected
-        :vl-warn-disconnected-interesting
-        ;; Caveats that could make the analysis wrong
-        :vl-collect-wires-fail
-        :vl-collect-wires-approx
-        :vl-dropped-always
-        :vl-dropped-assign
-        :vl-dropped-initial
-        :vl-dropped-insts
-        :vl-dropped-modinst
-        :vl-warn-function
-        :vl-warn-taskdecl
-        :vl-unsupported-block))
 
 (defconst *smell-warnings*
   (list :vl-warn-qmark-width
@@ -799,6 +770,11 @@ shown.</p>"
         :vl-fussy-size-warning-2-minor
         :vl-fussy-size-warning-3-minor))
 
+(defconst *lucid-warnings*
+  (list :vl-lucid-error
+        :vl-lucid-unused
+        :vl-lucid-spurious
+        :vl-lucid-unset))
 
 
 
@@ -807,11 +783,9 @@ shown.</p>"
   ;; Warnings that are covered by our regular reports.  Other warnings besides
   ;; these will get put into vl-other.txt
 
-  (append *use-set-warnings*
-          *basic-warnings*
+  (append *basic-warnings*
           *trunc-warnings*
           *trunc-minor-warnings*
-          *disconnected-warnings*
           *smell-warnings*
           *smell-minor-warnings*
           *multidrive-warnings*
@@ -820,6 +794,7 @@ shown.</p>"
           *fussy-size-minor-warnings*
           *same-ports-warnings*
           *same-ports-minor-warnings*
+          *lucid-warnings*
           ))
 
 (defconst *warnings-ignored*
@@ -926,9 +901,9 @@ you can see \"vl-trunc-minor.txt\" to review them.")))
 
        (state
         (with-ps-file
-         "vl-disconnected.txt"
+         "vl-lucid.txt"
          (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-disconnected.txt" "Disconnected Wire" *disconnected-warnings* reportcard)))
+         (vl-lint-print-warnings "vl-lucid.txt" "Lucidity Checking" *lucid-warnings* reportcard)))
 
        (state
         (with-ps-file
@@ -1022,17 +997,6 @@ wide addition instead of a 10-bit wide addition.")))
                          (vl-ps-update-autowrap-col 68)
                          (vl-cw "Minor Skip-Detect Warnings.~%~%")
                          (sd-pp-problemlist-long minor)))))
-
-
-       (state
-        (with-ps-file
-         "vl-use-set.txt"
-         (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-use-set.txt"
-                                 "Unused/Unset Wire Warnings"
-                                 *use-set-warnings*
-                                 reportcard)))
-
 
        (state
         (with-ps-file

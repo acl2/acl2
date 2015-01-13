@@ -401,7 +401,7 @@
          (aignet (add-node aignet))
          (aignet (set-regnum->id ro-num nodes aignet))
          ((mv slot0 slot1)
-          (mk-snode (in-type) 1 0 0 ro-num))
+          (mk-snode (in-type) 1 0 nodes ro-num))
          (aignet (update-node-slot nodes 0 slot0 aignet))
          (aignet (update-node-slot nodes 1 slot1 aignet)))
       aignet))

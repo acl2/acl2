@@ -36,34 +36,6 @@
 (local (std::add-default-post-define-hook :fix))
 
 
-(define vl-hidexpr-selfsize ((x        vl-expr-p)
-                             (ss       vl-scopestack-p)
-                             (ctx      vl-context-p)
-                             (warnings vl-warninglist-p))
-  :guard (vl-hidexpr-p x)
-  :returns (mv (new-warnings vl-warninglist-p)
-               (size maybe-posp :rule-classes :type-prescription))
-  (b* ((x (vl-expr-fix x))
-       (?ctx (vl-context-fix ctx))
-       ((mv warning datatype) (vl-hidexpr-find-type x ss))
-       ((when warning)
-        (mv (cons (change-vl-warning warning :fatalp t)
-                  (vl-warninglist-fix warnings))
-            nil))
-       ;; this will warn if it has unpacked dims
-       ((mv warning size) (vl-datatype-size datatype))
-       ((when warning)
-        (mv (cons (change-vl-warning warning :fatalp t)
-                  (vl-warninglist-fix warnings))
-            nil)))
-    (mv (ok) size))
-  ///
-  (defrule warning-irrelevance-of-vl-hidexpr-selfsize
-    (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-             (equal (mv-nth 1 (vl-hidexpr-selfsize x ss ctx warnings))
-                    (mv-nth 1 (vl-hidexpr-selfsize x ss nil nil))))))
-
-
 (define vl-index-selfsize ((x vl-expr-p "the index expression")
                            (ss vl-scopestack-p)
                            (ctx vl-context-p "context")
@@ -72,7 +44,7 @@
                (size maybe-posp :rule-classes :type-prescription))
   (declare (ignorable ctx))
   (b* ((warnings  (vl-warninglist-fix warnings))
-       ((mv warning type) (vl-index-find-type x ss))
+       ((mv warning type) (vl-index-find-type x ss (vl-context-fix ctx)))
        ((when warning)
         (mv (cons (change-vl-warning warning :fatalp t) warnings) nil))
        ((mv warning size)
@@ -186,8 +158,7 @@ are not really supposed to have sizes.</p>"
     (let ((ret1 (vl-atom-selfsize x ss ctx warnings))
           (ret2 (vl-atom-selfsize x ss nil nil)))
       (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-               (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))
-    :hints(("Goal" :in-theory (enable vl-hidexpr-selfsize)))))
+               (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))))
 
 
 (define vl-syscall-selfsize
@@ -264,35 +235,44 @@ only meant as a heuristic for generating more useful warnings.</p>"
          (op   (vl-nonatom->op x))
          (args (vl-nonatom->args x)))
       (case op
-        ((:vl-bitselect :vl-unary-bitand :vl-unary-nand :vl-unary-bitor
-                        :vl-unary-nor :vl-unary-xor :vl-unary-xnor :vl-unary-lognot
-                        :vl-binary-logand :vl-binary-logor
-                        :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
-                        :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
-                        :vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
-                        :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon
-                        :vl-syscall :vl-funcall :vl-mintypmax :vl-hid-dot
-                         :vl-index :vl-scope
+        ((:vl-bitselect
+          :vl-unary-bitand :vl-unary-nand :vl-unary-bitor
+          :vl-unary-nor :vl-unary-xor :vl-unary-xnor :vl-unary-lognot
+          :vl-binary-logand :vl-binary-logor
+          :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
+          :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
+          :vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
+          :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon
+          :vl-syscall :vl-funcall :vl-mintypmax :vl-hid-dot
+          :vl-index :vl-scope
 
-                        ;; Eventually many of these may be worth considering...
-                        :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
-                        :vl-stream-left :vl-stream-right
-                        :vl-stream-left-sized :vl-stream-right-sized
+          ;; Eventually many of these may be worth considering...
+          :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
+          :vl-stream-left :vl-stream-right
+          :vl-stream-left-sized :vl-stream-right-sized
 
-                        :vl-tagged
+          :vl-tagged
 
-                        :vl-binary-wildeq :vl-binary-wildneq
-                        :vl-implies :vl-equiv
+          :vl-binary-wildeq :vl-binary-wildneq
+          :vl-implies :vl-equiv
 
-                        ;; This can definitely affect sizes, but I'm not sure what to do
-                        ;; about it yet.
-                        :vl-binary-cast
+          ;; This can definitely affect sizes, but I'm not sure what to do
+          ;; about it yet.
+          :vl-binary-cast
           :vl-pattern-multi
           :vl-pattern-type
           :vl-pattern-positional
           :vl-pattern-keyvalue
           :vl-keyvalue
-                        )
+
+          ;; Sizing shouldn't encounter these.
+          :vl-unary-preinc :vl-unary-predec :vl-unary-postinc :vl-unary-postdec
+          :vl-binary-assign
+          :vl-binary-plusassign :vl-binary-minusassign
+          :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
+          :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
+          :vl-binary-shlassign :vl-binary-shrassign :vl-binary-ashlassign :vl-binary-ashrassign
+          )
          ;; Don't gather anything from here.
          nil)
 
@@ -730,7 +710,6 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                               :exec (and (consp arg-sizes) (cdr arg-sizes))))
              (sum-nats arg-sizes))))
 
-
       ((:vl-hid-dot :vl-index :vl-scope
 
         ;; BOZO these might not belong here, but it seems like the
@@ -743,7 +722,17 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
         :vl-pattern-positional
         :vl-pattern-keyvalue
         :vl-keyvalue
+
+        ;; We shouldn't encounter these in sizing, they should be gotten
+        ;; rid of in increment-elim
+        :vl-unary-preinc :vl-unary-predec :vl-unary-postinc :vl-unary-postdec
+        :vl-binary-assign
+        :vl-binary-plusassign :vl-binary-minusassign
+        :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
+        :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
+        :vl-binary-shlassign :vl-binary-shrassign :vl-binary-ashlassign :vl-binary-ashrassign
         )
+
        ;; We don't handle these here.  They should be handled in
        ;; vl-expr-selfsize specially, because unlike all of the other
        ;; operators, we can't assume that their subexpressions' sizes can be

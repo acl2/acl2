@@ -1,26 +1,3 @@
-; This book shows how one can use make-event to try different proof strategies
-; for a given theorem until one works.  Specifically, the strategies employed
-; in this example are the use of different built-in arithmetic books.
-
-; (proof-by-arith event) expands into:
-
-; (encapsulate ()
-;              (local (include-book <book>))
-;              extra-event-1
-;              ...
-;              extra-event-k
-;              event)
-
-; for an appropriate <book> and extra-event-i (1<=i<=k).  By default, book and
-; associated events extra-event-i are taken from *default-arith-book-alist*,
-; where each is tried in sequence until the encapsulate is admitted.
-
-; The general form is
-
-; (proof-by-arith event &optional quietp arith-book-alist)
-
-; where quietp suppresses output during the search, and arith-book-alist can be
-; used in place of *default-arith-book-alist*.
 
 ; Sandip Ray points out that it would be really cool to do this sort of thing
 ; in parallel!  That may happen some day....
@@ -39,6 +16,36 @@
 ||#
 
 (in-package "ACL2")
+
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc proof-by-arith
+  :parents (arithmetic)
+  :short "Attempt to prove a theorem using various arithmetic libraries"
+  :long "This book shows how one can use make-event to try different proof
+ strategies for a given theorem until one works.  Specifically, the strategies
+ employed in this example are the use of different built-in arithmetic books.
+
+ @('(proof-by-arith event)') expands into:
+
+ @({
+ (encapsulate ()
+              (local (include-book <book>))
+              extra-event-1
+              ...
+              extra-event-k
+              event)})
+
+ for an appropriate <book> and extra-event-i (1<=i<=k).  By default, book and
+ associated events extra-event-i are taken from *default-arith-book-alist*,
+ where each is tried in sequence until the encapsulate is admitted.
+
+ The general form is:
+
+ @({(proof-by-arith event &optional quietp arith-book-alist)})
+
+ where @('quietp') suppresses output during the search, and
+ @('arith-book-alist') can be used in place of @('*default-arith-book-alist*').")
 
 (comp '(union-theories-fn1
         set-difference-theories-fn1

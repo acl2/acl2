@@ -39,7 +39,7 @@
 (include-book "inject-comments")
 (include-book "../mlib/flat-warnings")
 (include-book "../mlib/print-warnings")
-(include-book "../mlib/hierarchy-basic")
+(include-book "../mlib/scopestack")
 (include-book "../util/cwtime")
 (include-book "../util/gc")
 (include-book "centaur/misc/hons-extra" :dir :system)

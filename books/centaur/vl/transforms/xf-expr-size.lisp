@@ -483,6 +483,14 @@ details.</p>")
   (local (in-theory (disable acl2::nat-listp-when-not-consp
                              len-of-vl-nonatom->args-when-vl-hidexpr-p)))
 
+  (defthm index-unsigned-when-size-zero
+    (b* (((mv & size) (vl-index-selfsize x ss ctx warnings))
+         ((mv & type) (vl-index-typedecide x ss ctx warnings)))
+      (implies (equal size 0)
+               (equal type :vl-unsigned)))
+    :hints(("Goal" :in-theory (enable vl-index-selfsize
+                                      vl-index-typedecide))))
+
   ;; (local (defthm len-of-cdr-less
   ;;          (implies (and (syntaxp (quotep n))
   ;;                        (natp n)
@@ -536,6 +544,7 @@ details.</p>")
                                         vl-funcall-selfsize
                                         ;; vl-$bits-call-p
                                         vl-exprtype-max
+                                        vl-index-expr-p
                                         acl2::member-of-cons
                                         ;; vl-unsigned-when-size-zero-lst
                                         )))
@@ -1273,8 +1282,7 @@ identifier or HID."
              (implies (and (vl-hidexpr-p x)
                            (not (vl-atom-p x)))
                       (not (equal size 0))))
-           :hints(("Goal" :in-theory (enable vl-expr-selfsize
-                                             vl-hidexpr-selfsize)
+           :hints(("Goal" :in-theory (enable vl-expr-selfsize)
                    :expand ((vl-expr-selfsize x ss ctx nil))))))
 
   (local (defthm vl-expr-selfsize-of-index
@@ -1287,8 +1295,7 @@ identifier or HID."
                       (not (equal size 0))))
            :hints(("Goal" :in-theory (enable acl2::member-of-cons
                                              vl-partselect-selfsize
-                                             vl-index-selfsize
-                                             vl-hidexpr-selfsize)
+                                             vl-index-selfsize)
                    :expand ((:Free (ctx) (vl-expr-selfsize x ss ctx nil)))))))
 
   (local (defthm vl-index-expr-p-when-hidexpr-p
@@ -1662,7 +1669,7 @@ minor warning for assignments where the rhs is a constant.</p>"
 
 (local (in-theory (enable maybe-natp-fix)))
 
-(local (def-ruleset my-disables
+(local (def-ruleset! my-disables
          '( ;(:rules-of-class :type-prescription :here)
            set::double-containment
            default-car
@@ -2522,11 +2529,11 @@ minor warning for assignments where the rhs is a constant.</p>"
             ;; safest place to put them until they're implemented
             :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
             :vl-tagged :vl-binary-cast
-          :vl-pattern-multi
-          :vl-pattern-type
-          :vl-pattern-positional
-          :vl-pattern-keyvalue
-          :vl-keyvalue
+            :vl-pattern-multi
+            :vl-pattern-type
+            :vl-pattern-positional
+            :vl-pattern-keyvalue
+            :vl-keyvalue
 
             )
            (if (vl-$bits-call-p x)
@@ -2557,6 +2564,20 @@ minor warning for assignments where the rhs is a constant.</p>"
                         :msg "~a0: add sizing support for ~x1."
                         :args (list ctx op))
                  x)))
+
+          ((;; Sizing just shouldn't encounter these
+            :vl-unary-preinc :vl-unary-predec :vl-unary-postinc :vl-unary-postdec
+            :vl-binary-assign
+            :vl-binary-plusassign :vl-binary-minusassign
+            :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
+            :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
+            :vl-binary-shlassign :vl-binary-shrassign :vl-binary-ashlassign :vl-binary-ashrassign)
+           (mv nil
+               (fatal :type :vl-bad-operator
+                      :msg "~a0: sizing should not encounter ~x1 because it should ~
+                            get eliminated by the increment-elim transform."
+                      :args (list ctx op))
+               x))
 
           (otherwise
            (progn$ (impossible)
@@ -3234,7 +3255,7 @@ for the moment.</p>"
        (mv t *simple-vector-datatype* warnings))
       ((:vl-hidpiece :vl-id)
        (b* (((mv warning type)
-             (vl-index-find-type x ss))
+             (vl-index-find-type x ss (vl-context-fix ctx)))
             ((when warning)
              (mv nil nil (cons warning warnings))))
          (mv t type warnings)))
@@ -3331,7 +3352,7 @@ mean anything.</p>"
         (vl-atom-selfdetermine-type x ss ctx warnings))
        ((vl-nonatom x))
        ((when (member x.op '(:vl-hid-dot :vl-index)))
-        (b* (((mv warning type) (vl-index-find-type x ss))
+        (b* (((mv warning type) (vl-index-find-type x ss (vl-context-fix ctx)))
              ((when warning) (mv nil nil (cons warning (vl-warninglist-fix warnings)))))
           (mv t type warnings)))
        ((when (eq x.op :vl-qmark))
@@ -4417,7 +4438,7 @@ replace a key/value assignment pattern."
   ;; We only need to deal with atoms that could represent an unpacked value.
   (b* ((x (vl-expr-fix x))
        (ctx (vl-context-fix ctx))
-       ((mv warning type) (vl-index-find-type x ss))
+       ((mv warning type) (vl-index-find-type x ss ctx))
        ((when warning) (mv nil x (cons warning (ok))))
        ((unless (equal type (vl-datatype-fix lhs-type)))
         (mv nil x
@@ -4427,7 +4448,7 @@ replace a key/value assignment pattern."
     (mv t x (ok)))
   ///
   (local (Defthm vl-index-find-type-implies
-           (implies (not (mv-nth 0 (vl-index-find-type x ss)))
+           (implies (not (mv-nth 0 (vl-index-find-type x ss ctx)))
                     (if (equal (vl-expr-kind x) :atom)
                         (or (and (vl-id-p (vl-atom->guts x))
                                  (equal (tag (vl-atom->guts x)) :vl-id))
@@ -4456,7 +4477,6 @@ replace a key/value assignment pattern."
                                tag-when-vl-weirdint-p
                                tag-when-vl-constint-p
                                tag-when-vl-string-p
-                               vl-hidexpr-selfsize
                                vl-index-selfsize)))))
 
 (define vl-arrayslice-expr-size-assigncontext ((lhs-type vl-datatype-p)
@@ -4583,7 +4603,6 @@ replace a key/value assignment pattern."
                                tag-when-vl-weirdint-p
                                tag-when-vl-constint-p
                                tag-when-vl-string-p
-                               vl-hidexpr-selfsize
                                vl-partselect-selfsize)
                             (vl-$bits-call-p))))))
 
@@ -4811,16 +4830,16 @@ datatype size and the type is unsigned.</p>"
 
 
 
-(define vl-lvalue-type ((x vl-expr-p) (ss vl-scopestack-p))
+(define vl-lvalue-type ((x vl-expr-p) (ss vl-scopestack-p) (ctx acl2::any-p))
   :returns (mv (warning (iff (vl-warning-p warning) warning))
                (type (implies (and (not warning) type)
                               (vl-datatype-p type))))
   (b* (((when (vl-atom-p x))
         ;; has to be an identifier
-        (vl-index-find-type x ss))
+        (vl-index-find-type x ss ctx))
        ((vl-nonatom x))
        ((when (member x.op '(:vl-hid-dot :vl-index :bitselect)))
-        (vl-index-find-type x ss)))
+        (vl-index-find-type x ss ctx)))
        ;; We think the above are the only lvalue ops that can be targets of
        ;; assignment patterns.  The remaining lvalue ops are partselects and
        ;; concats, which don't have indices of their own so we won't support
@@ -4853,7 +4872,7 @@ datatype size and the type is unsigned.</p>"
                           a positive number?"
                    :args (list ctx lhs))))
 
-       ((mv warning lhs-type) (vl-lvalue-type lhs-prime ss))
+       ((mv warning lhs-type) (vl-lvalue-type lhs-prime ss ctx))
        ((when warning) (mv nil lhs-prime rhs (cons warning (ok))))
 
        ((mv ok new-rhs warnings)

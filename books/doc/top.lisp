@@ -211,6 +211,8 @@
 (include-book "misc/seq" :dir :system)
 (include-book "misc/seqw" :dir :system)
 
+(include-book "make-event/proof-by-arith" :dir :system)
+
 (include-book "centaur/memoize/old/profile" :dir :system)
 (include-book "centaur/memoize/old/watch" :dir :system)
 
