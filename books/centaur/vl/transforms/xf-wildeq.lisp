@@ -962,6 +962,14 @@ is just a constant integer.  So this is just:</p>
 
 (def-vl-wildelim-list vl-blockitemlist :element vl-blockitem)
 
+(defthm vl-vardecllist-p-of-vl-blockitemlist-wildelim
+  (implies (vl-vardecllist-p x)
+           (vl-vardecllist-p (mv-nth 1 (vl-blockitemlist-wildelim x warnings))))
+  :hints(("Goal" :in-theory (enable vl-blockitemlist-wildelim
+                                    vl-blockitem-wildelim
+                                    vl-vardecllist-p
+                                    tag-when-vl-vardecl-p))))
+
 (def-vl-wildelim vl-delaycontrol
   :takes-ctx t
   :body (b* (((vl-delaycontrol x) x)

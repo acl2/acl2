@@ -1113,13 +1113,12 @@ which could not hold such large values.</p>")
 
        :vl-forstmt
        (jp-object :tag      (jp-sym kind)
-                  :initlhs  (vl-jp-expr x.initlhs)
-                  :initrhs  (vl-jp-expr x.initrhs)
-                  :test     (vl-jp-expr x.test)
-                  :nextlhs  (vl-jp-expr x.nextlhs)
-                  :nextrhs  (vl-jp-expr x.nextrhs)
-                  :body     (vl-jp-stmt x.body)
-                  :atts     (vl-jp-atts x.atts))
+                  :initdecls   (vl-jp-vardecllist x.initdecls)
+                  :initassigns (vl-jp-stmtlist x.initassigns)
+                  :test        (vl-jp-expr x.test)
+                  :stepforms   (vl-jp-stmtlist x.stepforms)
+                  :body        (vl-jp-stmt x.body)
+                  :atts        (vl-jp-atts x.atts))
 
        :vl-blockstmt
        (jp-object :tag        (jp-sym kind)

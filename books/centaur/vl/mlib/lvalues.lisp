@@ -661,27 +661,11 @@ problematic lvalues encountered.</p>" long)))
                                       ;; BOZO add locations to deassign statements
                                       :msg "Deassignment to bad lvalue, ~a0."
                                       :args (list lvalue))))
-            (otherwise (ok))))
+            (otherwise (ok)))))
 
-         ;; It looks to me like none of the compound statements have lvalues
-         ;; except for for loops, which have the initial and next lhs.  So I
-         ;; explicitly check for this here, then recursively check the
-         ;; substatements.
-         ((when (eq (vl-stmt-kind x) :vl-forstmt))
-          (b* (((vl-forstmt x) x)
-               (warnings (if (vl-expr-lvaluep x.initlhs)
-                             (ok)
-                           (warn :type :vl-bad-lvalue
-                                 :msg "Bad lvalue in for-loop initialization: ~a0."
-                                 :args (list x.initlhs)
-                                 :fn 'vl-stmt-lvaluecheck)))
-               (warnings (if (vl-expr-lvaluep x.nextlhs)
-                             (ok)
-                           (warn :type :vl-bad-lvalue
-                                 :msg "Bad lvalue in for-loop step: ~a0."
-                                 :args (list x.nextlhs)
-                                 :fn 'vl-stmt-lvaluecheck))))
-            (vl-stmtlist-lvaluecheck (vl-compoundstmt->stmts x) warnings))))
+         ;; It looks like none of the compound statements have lvalues, now
+         ;; including the for loop, which used to have initial and next lhs but
+         ;; now just have substmts.
       (vl-stmtlist-lvaluecheck (vl-compoundstmt->stmts x) warnings)))
 
   (define vl-stmtlist-lvaluecheck ((x vl-stmtlist-p)

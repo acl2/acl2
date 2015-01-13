@@ -29,5 +29,5 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "unparam/top")
 ;; cert_param: (reloc_stub)
+(include-book "unparam/top")

@@ -688,11 +688,10 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
            (nrev (vl-stmt-allexprs-nrev x.body nrev)))
         nrev)
       :vl-forstmt
-      (b* ((nrev (nrev-push x.initlhs nrev))
-           (nrev (nrev-push x.initrhs nrev))
+      (b* ((nrev (vl-vardecllist-allexprs-nrev x.initdecls nrev))
+           (nrev (vl-stmtlist-allexprs-nrev x.initassigns nrev))
            (nrev (nrev-push x.test nrev))
-           (nrev (nrev-push x.nextlhs nrev))
-           (nrev (nrev-push x.nextrhs nrev))
+           (nrev (vl-stmtlist-allexprs-nrev x.stepforms nrev))
            (nrev (vl-stmt-allexprs-nrev x.body nrev)))
         nrev)
       :vl-repeatstmt
@@ -752,12 +751,11 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
            :vl-foreverstmt      (vl-stmt-allexprs x.body)
            :vl-waitstmt         (cons x.condition (vl-stmt-allexprs x.body))
            :vl-whilestmt        (cons x.condition (vl-stmt-allexprs x.body))
-           :vl-forstmt          (list* x.initlhs
-                                       x.initrhs
-                                       x.test
-                                       x.nextlhs
-                                       x.nextrhs
-                                       (vl-stmt-allexprs x.body))
+           :vl-forstmt          (append (vl-vardecllist-allexprs x.initdecls)
+                                        (vl-stmtlist-allexprs x.initassigns)
+                                        (cons x.test
+                                              (append (vl-stmtlist-allexprs x.stepforms)
+                                                      (vl-stmt-allexprs x.body))))
            :vl-repeatstmt      (cons x.condition (vl-stmt-allexprs x.body))
            :vl-blockstmt       (append (vl-blockitemlist-allexprs x.decls)
                                        (vl-stmtlist-allexprs x.stmts))

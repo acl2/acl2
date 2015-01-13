@@ -367,96 +367,6 @@
         (return-raw
          (vl-parse-modelement-aux atts))))
 
-(define vl-inc-or-dec-expr ((var stringp) (op (member op '(:vl-plusplus :vl-minusminus))))
-  :returns (expr vl-expr-p)
-  :guard-debug t
-  (make-vl-nonatom
-   :op (if (eq op :vl-plusplus)
-           :vl-binary-plus
-         :vl-binary-minus)
-   :args (list (vl-idexpr var nil nil)
-               (make-vl-atom :guts
-                             (make-vl-constint
-                              :origwidth 32
-                              :value 1
-                              :origtype :vl-unsigned
-                              :wasunsized t)))))
-
-(defconst *vl-assignment-operators*
-  '(:vl-equalsign
-    :vl-pluseq
-    :vl-minuseq
-    :vl-timeseq
-    :vl-diveq
-    :vl-remeq
-    :vl-andeq
-    :vl-oreq
-    :vl-xoreq
-    :vl-shleq
-    :vl-shreq
-    :vl-ashleq
-    :vl-ashreq))
-
-(define vl-assign-op-expr ((var stringp)
-                           (op (member op *vl-assignment-operators*))
-                           (rhs vl-expr-p))
-  ;; Given an expression like a = b, returns b.
-  ;; Given a %= b, returns a % b.
-  :returns (expr vl-expr-p)
-  :guard-debug t
-  (if (eq op :vl-equalsign)
-      (vl-expr-fix rhs)
-    (make-vl-nonatom
-     :op (case op
-           (:vl-pluseq  :vl-binary-plus)
-           (:vl-minuseq :vl-binary-minus)
-           (:vl-timeseq :vl-binary-times)
-           (:vl-diveq   :vl-binary-div)
-           (:vl-remeq   :vl-binary-rem)
-           (:vl-andeq   :vl-binary-bitand)
-           (:vl-oreq    :vl-binary-bitor)
-           (:vl-xoreq   :vl-binary-xor)
-           (:vl-shleq   :vl-binary-shl)
-           (:vl-shreq   :vl-binary-shr)
-           (:vl-ashleq  :vl-binary-ashl)
-           (:vl-ashreq  :vl-binary-ashr))
-     :args (list (vl-idexpr var nil nil) rhs))))
-
-
-(defparser vl-parse-genvar-iteration ()
-  ;; Parses:
-  ;; genvar_iteration ::=
-  ;;    genvar_identifier assignment_operator genvar_expression
-  ;;    | inc_or_dec_operator genvar_identifier
-  ;;    | genvar_identifier inc_or_dec_operator
-  ;; Produces (var . next-expr) where var is the name of the assigned variable
-  ;; and next-expr is an expression representing its next value.
-  :result (and (consp val)
-               (stringp (car val))
-               (vl-expr-p (cdr val)))
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (when (vl-is-some-token? '(:vl-plusplus :vl-minusminus))
-         ;; inc_or_dec_operator case
-         (op := (vl-match))
-         (id := (vl-match-token :vl-idtoken))
-         (return (cons (vl-idtoken->name id)
-                       (vl-inc-or-dec-expr (vl-idtoken->name id)
-                                           (vl-token->type op)))))
-       (id := (vl-match-token :vl-idtoken))
-       (when (vl-is-some-token? '(:vl-plusplus :vl-minusminus))
-         ;; inc_or_dec_operator case
-         (op := (vl-match))
-         (return (cons (vl-idtoken->name id)
-                       (vl-inc-or-dec-expr (vl-idtoken->name id)
-                                           (vl-token->type op)))))
-       (eq := (vl-match-some-token *vl-assignment-operators*))
-       (rhs := (vl-parse-expression))
-       (return (cons (vl-idtoken->name id)
-                     (vl-assign-op-expr (vl-idtoken->name id)
-                                        (vl-token->type eq)
-                                        rhs)))))
 
 
 
@@ -495,8 +405,10 @@
          (:= (vl-match-token :vl-semi))
          (continue := (vl-parse-expression))
          (:= (vl-match-token :vl-semi))
-         ((id2 . next) := (vl-parse-genvar-iteration))
-         (when (not (equal (vl-idtoken->name id) id2))
+         ((id2 . next) := (vl-parse-operator-assignment/inc/dec))
+         (when (not (and (vl-idexpr-p id2)
+                         (equal (vl-idtoken->name id)
+                                (vl-idexpr->name id2))))
            (return-raw
             (vl-parse-error "For loop: the initialized variable differed from the incremented variable.")))
          (:= (vl-match-token :vl-rparen))

@@ -518,7 +518,13 @@ attributes is left up to the implementation.</p>"
   :type vl-blockitemlist-p
   :element vl-blockitem-subst)
 
-
+(defthm vl-vardecllist-p-of-vl-blockitemlist-subst
+  (implies (vl-vardecllist-p x)
+           (vl-vardecllist-p (vl-blockitemlist-subst x sigma)))
+  :hints(("Goal" :in-theory (enable vl-blockitemlist-subst
+                                    vl-blockitem-subst
+                                    vl-vardecllist-p
+                                    tag-when-vl-vardecl-p))))
 
 (defines vl-stmt-subst
   :short "Substitute into a @(see vl-stmt-p)"

@@ -471,6 +471,14 @@ so that their overrides are compatible with thier types.</p>"
   :type vl-blockitemlist-p
   :element vl-blockitem-scopesubst)
 
+(defthm vl-vardecllist-p-of-vl-blockitemlist-scopesubst
+  (implies (vl-vardecllist-p x)
+           (vl-vardecllist-p (vl-blockitemlist-scopesubst x ss)))
+  :hints(("Goal" :in-theory (enable vl-vardecllist-p
+                                    tag-when-vl-vardecl-p
+                                    vl-blockitemlist-scopesubst
+                                    vl-blockitem-scopesubst))))
+
 
 
 (defines vl-stmt-scopesubst
