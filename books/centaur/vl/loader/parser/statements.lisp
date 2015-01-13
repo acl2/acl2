@@ -49,6 +49,91 @@
 
 
 
+(define vl-inc-or-dec-expr ((var vl-expr-p) (op (member op '(:vl-plusplus :vl-minusminus))))
+  :returns (expr vl-expr-p)
+  :guard-debug t
+  (make-vl-nonatom
+   :op (if (eq op :vl-plusplus)
+           :vl-binary-plus
+         :vl-binary-minus)
+   :args (list var
+               (make-vl-atom :guts
+                             (make-vl-constint
+                              :origwidth 32
+                              :value 1
+                              :origtype :vl-unsigned
+                              :wasunsized t)))))
+
+(defconst *vl-assignment-operators*
+  '(:vl-equalsign
+    :vl-pluseq
+    :vl-minuseq
+    :vl-timeseq
+    :vl-diveq
+    :vl-remeq
+    :vl-andeq
+    :vl-oreq
+    :vl-xoreq
+    :vl-shleq
+    :vl-shreq
+    :vl-ashleq
+    :vl-ashreq))
+
+(define vl-assign-op-expr ((var vl-expr-p)
+                           (op (member op *vl-assignment-operators*))
+                           (rhs vl-expr-p))
+  ;; Given an expression like a = b, returns b.
+  ;; Given a %= b, returns a % b.
+  :returns (expr vl-expr-p)
+  :guard-debug t
+  (if (eq op :vl-equalsign)
+      (vl-expr-fix rhs)
+    (make-vl-nonatom
+     :op (case op
+           (:vl-pluseq  :vl-binary-plus)
+           (:vl-minuseq :vl-binary-minus)
+           (:vl-timeseq :vl-binary-times)
+           (:vl-diveq   :vl-binary-div)
+           (:vl-remeq   :vl-binary-rem)
+           (:vl-andeq   :vl-binary-bitand)
+           (:vl-oreq    :vl-binary-bitor)
+           (:vl-xoreq   :vl-binary-xor)
+           (:vl-shleq   :vl-binary-shl)
+           (:vl-shreq   :vl-binary-shr)
+           (:vl-ashleq  :vl-binary-ashl)
+           (:vl-ashreq  :vl-binary-ashr))
+     :args (list var rhs))))
+
+
+(defparser vl-parse-operator-assignment/inc/dec ()
+  ;; Parses e.g "a += 1" and returns (a . (a + 1)).  Also handles a++ and ++a.
+  :result (and (consp val)
+                (vl-expr-p (car val))
+                (vl-expr-p (cdr val)))
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (when (vl-is-some-token? '(:vl-plusplus :vl-minusminus))
+         ;; inc_or_dec_operator case
+         (op := (vl-match))
+         (var := (vl-parse-lvalue))
+         (return (cons var
+                       (vl-inc-or-dec-expr var (vl-token->type op)))))
+       (var := (vl-parse-lvalue))
+       (when (vl-is-some-token? '(:vl-plusplus :vl-minusminus))
+         ;; inc_or_dec_operator case
+         (op := (vl-match))
+         (return (cons var
+                       (vl-inc-or-dec-expr var (vl-token->type op)))))
+       (eq := (vl-match-some-token *vl-assignment-operators*))
+       (rhs := (vl-parse-expression))
+       (return (cons var
+                     (vl-assign-op-expr var
+                                        (vl-token->type eq)
+                                        rhs)))))
+
+
+
 ; blocking_assignment ::=
 ;    lvalue '=' [delay_or_event_control] expression
 ;
@@ -394,88 +479,6 @@
            "Failed to parse for loop initialization as either declarations or assignments.")))))
 
 
-(define vl-inc-or-dec-expr ((var vl-expr-p) (op (member op '(:vl-plusplus :vl-minusminus))))
-  :returns (expr vl-expr-p)
-  :guard-debug t
-  (make-vl-nonatom
-   :op (if (eq op :vl-plusplus)
-           :vl-binary-plus
-         :vl-binary-minus)
-   :args (list var
-               (make-vl-atom :guts
-                             (make-vl-constint
-                              :origwidth 32
-                              :value 1
-                              :origtype :vl-unsigned
-                              :wasunsized t)))))
-
-(defconst *vl-assignment-operators*
-  '(:vl-equalsign
-    :vl-pluseq
-    :vl-minuseq
-    :vl-timeseq
-    :vl-diveq
-    :vl-remeq
-    :vl-andeq
-    :vl-oreq
-    :vl-xoreq
-    :vl-shleq
-    :vl-shreq
-    :vl-ashleq
-    :vl-ashreq))
-
-(define vl-assign-op-expr ((var vl-expr-p)
-                           (op (member op *vl-assignment-operators*))
-                           (rhs vl-expr-p))
-  ;; Given an expression like a = b, returns b.
-  ;; Given a %= b, returns a % b.
-  :returns (expr vl-expr-p)
-  :guard-debug t
-  (if (eq op :vl-equalsign)
-      (vl-expr-fix rhs)
-    (make-vl-nonatom
-     :op (case op
-           (:vl-pluseq  :vl-binary-plus)
-           (:vl-minuseq :vl-binary-minus)
-           (:vl-timeseq :vl-binary-times)
-           (:vl-diveq   :vl-binary-div)
-           (:vl-remeq   :vl-binary-rem)
-           (:vl-andeq   :vl-binary-bitand)
-           (:vl-oreq    :vl-binary-bitor)
-           (:vl-xoreq   :vl-binary-xor)
-           (:vl-shleq   :vl-binary-shl)
-           (:vl-shreq   :vl-binary-shr)
-           (:vl-ashleq  :vl-binary-ashl)
-           (:vl-ashreq  :vl-binary-ashr))
-     :args (list var rhs))))
-
-
-(defparser vl-parse-operator-assignment/inc/dec ()
-  ;; Parses e.g "a += 1" and returns (a . (a + 1)).  Also handles a++ and ++a.
-  :result (and (consp val)
-                (vl-expr-p (car val))
-                (vl-expr-p (cdr val)))
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (when (vl-is-some-token? '(:vl-plusplus :vl-minusminus))
-         ;; inc_or_dec_operator case
-         (op := (vl-match))
-         (var := (vl-parse-lvalue))
-         (return (cons var
-                       (vl-inc-or-dec-expr var (vl-token->type op)))))
-       (var := (vl-parse-lvalue))
-       (when (vl-is-some-token? '(:vl-plusplus :vl-minusminus))
-         ;; inc_or_dec_operator case
-         (op := (vl-match))
-         (return (cons var
-                       (vl-inc-or-dec-expr var (vl-token->type op)))))
-       (eq := (vl-match-some-token *vl-assignment-operators*))
-       (rhs := (vl-parse-expression))
-       (return (cons var
-                     (vl-assign-op-expr var
-                                        (vl-token->type eq)
-                                        rhs)))))
 
 
 (defparser vl-parse-1+-for-step-assigns ()
@@ -848,6 +851,19 @@
                    (ret := (vl-parse-blocking-or-nonblocking-assignment atts))
                    (:= (vl-match-token :vl-semi))
                    (return ret)))
+             ((unless erp)
+              (mv erp val tokstream))
+             (tokstream (vl-tokstream-restore backup))
+             ((mv erp val tokstream)
+              (seq tokstream
+                   (loc := (vl-current-loc))
+                   ((lvalue . expr) := (vl-parse-operator-assignment/inc/dec))
+                   (:= (vl-match-token :vl-semi))
+                   (return (make-vl-assignstmt
+                            :type :vl-blocking
+                            :lvalue lvalue
+                            :expr expr
+                            :loc loc))))
              ((unless erp)
               (mv erp val tokstream))
              (tokstream (vl-tokstream-restore backup)))
