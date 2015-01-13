@@ -689,17 +689,17 @@ implementations.")
 ; making a release.
 
 ; Temporarily, for a release:
-""
+; ""
 
 ; Normally:
-;   "
-;  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-;  + WARNING: This is NOT an ACL2 release; it is a development snapshot. +
-;  + The authors of ACL2 consider such distributions to be experimental; +
-;  + they may be incomplete, fragile, and unable to pass our own         +
-;  + regression tests.                                                   +
-;  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-; "
+  "
+  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  + WARNING: This is NOT an ACL2 release; it is a development snapshot. +
+  + The authors of ACL2 consider such distributions to be experimental; +
+  + they may be incomplete, fragile, and unable to pass our own         +
+  + regression tests.                                                   +
+  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ "
   )
 
 (defvar *saved-string*
