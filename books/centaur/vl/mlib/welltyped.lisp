@@ -397,6 +397,15 @@ hierarchical identifiers.</p>"
           ;; to remove them and replace them with appropriate concats.
           nil)
 
+         ((:vl-unary-preinc :vl-unary-predec :vl-unary-postinc :vl-unary-postdec
+           :vl-binary-assign
+           :vl-binary-plusassign :vl-binary-minusassign
+           :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
+           :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
+           :vl-binary-shlassign :vl-binary-shrassign :vl-binary-ashlassign :vl-binary-ashrassign)
+          ;; We don't expect to need to support these in sizing.  They should
+          ;; be gotten rid of early on by the increment-elim transform.
+          nil)
 
          (otherwise
           (impossible))))))

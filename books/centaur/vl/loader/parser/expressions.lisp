@@ -35,11 +35,6 @@
 (local (include-book "../../util/arithmetic"))
 (local (non-parallel-book))
 
-
-; BOZO we can probably speed this up quite a bit by getting rid of the big
-; case-splits in parse-unary-expression and the smaller, similar case splits in
-; the other functions that deal with several operators.
-
 (local (xdoc::set-default-parents parse-expressions))
 
 (local (defthm nfix-of-len
@@ -160,7 +155,14 @@ parsing functions.</p>"
   ///
   (defthm vl-parse-op-when-atom
     (implies (atom (vl-tokstream->tokens))
-             (not (mv-nth 1 (vl-parse-op arity alist))))))
+             (not (mv-nth 1 (vl-parse-op arity alist)))))
+  (defthm vl-parse-op-eof-helper
+    (b* (((mv ?err ?val new-tokstream)
+          (vl-parse-op arity alist :tokstream tokstream)))
+      (implies (consp (vl-tokstream->tokens :tokstream new-tokstream))
+               (consp (vl-tokstream->tokens))))
+    :rule-classes ((:forward-chaining :trigger-terms ((vl-parse-op arity alist))))))
+
 
 
 (in-theory (disable vl-parse-op-alist-p-when-atom
@@ -888,23 +890,105 @@ values.</p>"
                               :args (cons (make-vl-atom :guts fname) args))))))
 
 
-; mintypmax_expression ::=
-;    expression
-;  | expression ':' expression ':' expression
+; Mintypmax and Assignment Expressions.
+;
+; In Verilog-2005 we have:
+;
+;    expression ::= primary | ...
+;    primary    ::= '(' mintypmax_expression ')' | ...
+;
+;    mintypmax_expression ::= expression
+;                           | expression ':' expression ':' expression
+;
+; In SystemVerilog, this gets more complicated because of assignment operators.
+; The mintypmax expression is still the same, but we also get:
+;
+;   expression ::= primary
+;                | '(' operator_assignment ')'
+;                | ...
+;
+;   primary ::= '(' mintypmax_expression ')'
+;
+;   operator_assignment ::= variable_lvalue assignment_operator expression
+;
+;   assignment_operator ::= '=' | '+=' | '-=' | '*=' | '/=' | '%=' | '&='
+;                         | '|=' | '^=' | '<<=' | '>>=' | '<<<=' | '>>>='
+;
+; The variable_lvalue form is really complicated and crazy and I'm just not
+; going to try to implement it correctly.  Instead, I'm going to pretend
+; that the operator_assignment rule is:
+;
+;    operator_assignment ::= expression assignment_operator expression
+;
+; From the perspective of expression, then, it'd be okay to treat the grammar
+; as if it were:
+;
+;   expression ::= primary
+;                | ...      ;; no assignment operator
+;
+;   primary ::= '(' mintypmax_expression ')'
+;
+;   mintypmax_expression ::= expression
+;                          | expression ':' expression ':' expression
+;                          | expression assignment_operator expression
+;
+; This is nice and simple, except that:
+;
+;   - It arguably makes parse-primary too permissive.  For instance, it's now
+;     legal to do: (a = b) as a primary directly, whereas, per a strict reading
+;     of the Verilog grammar, it maybe needs to be ((a = b)) in contexts where
+;     a primary is expected.  This doesn't seem like a big deal at all.
+;
+;   - It makes mintypmax expressions too permissive.  These expressions are
+;     occasionally used outside of expression parsing, in contexts like delays
+;     and parameter assignments.  It does seem unfortunate to allow, e.g.,
+;     submodule connections like .foo(a = b).
+;
+; On the other hand, it doesn't seem *that* bad.  Our increment-elim transform
+; is pretty restrictive and isn't going to allow bad expressions in these
+; places, so if we tolerate them when parsing, that doesn't seem horrible.
+;
+; For now, I'm just going to say this is all okay.  If at some point this
+; bothers us and we decide the parser needs to be more restrictive, we can just
+; add a flag here to say whether or not we want to permit assignment operators.
+; That flag will have to work its way up through vl-parse-primary, as well.
 
   (defparser vl-parse-mintypmax-expression ()
     :measure (two-nats-measure (vl-tokstream-measure) 310)
     (seq tokstream
           (min :s= (vl-parse-expression))
-          (unless (vl-is-token? :vl-colon)
-            (return min))
-          (:= (vl-match))
-          (typ :s= (vl-parse-expression))
-          (:= (vl-match-token :vl-colon))
-          (max := (vl-parse-expression))
-          (return (make-vl-nonatom :op :vl-mintypmax
-                                   :args (list min typ max)))))
 
+          (when (vl-is-token? :vl-colon)
+            (:= (vl-match))
+            (typ :s= (vl-parse-expression))
+            (:= (vl-match-token :vl-colon))
+            (max := (vl-parse-expression))
+            (return (make-vl-nonatom :op :vl-mintypmax
+                                     :args (list min typ max))))
+
+          (when (eq (vl-loadconfig->edition config) :verilog-2005)
+            (return min))
+
+          ;; Add assignment handling here.
+          (op := (vl-parse-op 2 '((:vl-equalsign  . :vl-binary-assign)        ; a = b
+                                  (:vl-pluseq     . :vl-binary-plusassign)    ; (a += b)
+                                  (:vl-minuseq    . :vl-binary-minusassign)   ; (a -= b)
+                                  (:vl-timeseq    . :vl-binary-timesassign)   ; (a *= b)
+                                  (:vl-diveq      . :vl-binary-divassign)     ; (a /= b)
+                                  (:vl-remeq      . :vl-binary-remassign)     ; (a %= b)
+                                  (:vl-andeq      . :vl-binary-andassign)     ; (a &= b)
+                                  (:vl-oreq       . :vl-binary-orassign)      ; (a |= b)
+                                  (:vl-xoreq      . :vl-binary-xorassign)     ; (a ^= b)
+                                  (:vl-shleq      . :vl-binary-shlassign)     ; (a <<= b)
+                                  (:vl-shreq      . :vl-binary-shrassign)     ; (a >>= b)
+                                  (:vl-ashleq     . :vl-binary-ashlassign)    ; (a <<<= b)
+                                  (:vl-ashreq     . :vl-binary-ashrassign)))) ; (a >>>= b)
+          (unless op
+            (return min))
+
+          (rhs := (vl-parse-expression))
+          (return (make-vl-nonatom :op op
+                                   :args (list min rhs)))))
 
 
   (defparser vl-parse-range-expression ()
@@ -1767,33 +1851,101 @@ identifier, so we convert it into a hidpiece.</p>"
 ; impl_expression ::=
 ;    qmark_expression { '->' { attribute_instance } impl_expression }
 ;
-; BOZO add assignment ops
+; Note that we deal with assignment operators separately -- see the comments in
+; vl-parse-mintypmax-expression.
 ;
 ; expression ::= impl_expression
 
   (defparser vl-parse-unary-expression ()
     :measure (two-nats-measure (vl-tokstream-measure) 50)
+
+    ;; unary_expression ::=
+    ;;    unary_operator { attribute_instance } primary
+    ;;  | primary
+    ;;
+    ;; SystemVerilog pre-increment operators are:
+    ;;    inc_or_dec_expression ::= inc_or_dec_operator { attribute_instance } variable_lvalue      ;; pre increments
+    ;;                            | variable_lvalue { attribute_instance } inc_or_dec_operator      ;; post increments
+    ;;
+    ;; We don't handle post-increments here, but the pre-increments fit perfectly here.
+
     (seq tokstream
-          (op := (vl-parse-op 1 '((:vl-plus   . :vl-unary-plus)   ;;; +
-                                  (:vl-minus  . :vl-unary-minus)  ;;; -
-                                  (:vl-lognot . :vl-unary-lognot) ;;; !
-                                  (:vl-bitnot . :vl-unary-bitnot) ;;; ~
-                                  (:vl-bitand . :vl-unary-bitand) ;;; &
-                                  (:vl-nand   . :vl-unary-nand)   ;;; ~&
-                                  (:vl-bitor  . :vl-unary-bitor)  ;;; |
-                                  (:vl-nor    . :vl-unary-nor)    ;;; ~|
-                                  (:vl-xor    . :vl-unary-xor)    ;;; ^
-                                  (:vl-xnor   . :vl-unary-xnor)   ;;; ~^ or ^~
-                                  )))
-          (unless op
-            (primary :s= (vl-parse-primary))
-            (return primary))
+
+         (op := (if (eq (vl-loadconfig->edition config) :verilog-2005)
+                    (vl-parse-op 1 '((:vl-plus   . :vl-unary-plus)   ;;; +
+                                     (:vl-minus  . :vl-unary-minus)  ;;; -
+                                     (:vl-lognot . :vl-unary-lognot) ;;; !
+                                     (:vl-bitnot . :vl-unary-bitnot) ;;; ~
+                                     (:vl-bitand . :vl-unary-bitand) ;;; &
+                                     (:vl-nand   . :vl-unary-nand)   ;;; ~&
+                                     (:vl-bitor  . :vl-unary-bitor)  ;;; |
+                                     (:vl-nor    . :vl-unary-nor)    ;;; ~|
+                                     (:vl-xor    . :vl-unary-xor)    ;;; ^
+                                     (:vl-xnor   . :vl-unary-xnor)   ;;; ~^ or ^~
+                                     ))
+                  ;; SystemVerilog mode:
+                  (vl-parse-op 1 '(;; All the same operators as above...
+                                   (:vl-plus   . :vl-unary-plus)   ;;; +
+                                   (:vl-minus  . :vl-unary-minus)  ;;; -
+                                   (:vl-lognot . :vl-unary-lognot) ;;; !
+                                   (:vl-bitnot . :vl-unary-bitnot) ;;; ~
+                                   (:vl-bitand . :vl-unary-bitand) ;;; &
+                                   (:vl-nand   . :vl-unary-nand)   ;;; ~&
+                                   (:vl-bitor  . :vl-unary-bitor)  ;;; |
+                                   (:vl-nor    . :vl-unary-nor)    ;;; ~|
+                                   (:vl-xor    . :vl-unary-xor)    ;;; ^
+                                   (:vl-xnor   . :vl-unary-xnor)   ;;; ~^ or ^~
+                                   ;; And also pre increment/decrement
+                                   (:vl-plusplus   . :vl-unary-preinc)
+                                   (:vl-minusminus . :vl-unary-predec)))))
+
+         (unless op
+           (primary :s= (vl-parse-primary))
+           (when (eq (vl-loadconfig->edition config) :verilog-2005)
+             (return primary))
+
+           ;; SystemVerilog only -- we handle post-increment operators here.
+           ;; The rule for post increments is:
+           ;;
+           ;;     variable_lvalue { attribute_instance } inc_or_dec_operator
+           ;;
+           ;; so to handle attributes we'll need to backtrack.
+           ;;
+           ;; Subtle.  This is more permissive than we ought to be, i.e., we
+           ;; arguably shouldn't accept input like (a + b)++, but we do
+           ;; anyway, under the theory that we'll check for this kind of thing
+           ;; later in the increment-elim transform.  If at some point we
+           ;; decide this is unacceptable, the easiest fix would be to check
+           ;; something like vl-expr-lvaluep here, and only check for post
+           ;; increment operators in that case.
+           (return-raw
+            (b* ((backup (vl-tokstream-save))
+                 ((mv err val tokstream)
+                  (seq tokstream
+                       (atts := (vl-parse-0+-attribute-instances))
+                       (post := (vl-parse-op 1 '((:vl-plusplus   . :vl-unary-postinc)
+                                                 (:vl-minusminus . :vl-unary-postdec))))
+                       (unless post
+                         (return nil))
+
+                       (return (make-vl-nonatom :op post
+                                                :atts atts
+                                                :args (list primary)))))
+                 ((when (and (not err) val))
+                  (mv nil val tokstream))
+                 (tokstream (vl-tokstream-restore backup)))
+              (mv nil primary tokstream))))
+
           (atts :w= (vl-parse-0+-attribute-instances))
           (primary := (vl-parse-primary))
-          (return (make-vl-nonatom
-                   :op   op
-                   :atts atts
-                   :args (list primary)))))
+
+          ;; We had a prefix unary-operator, so we don't need to try to handle
+          ;; post-increment/decrement operators here, because no matter what
+          ;; the prefix was, it isn't a valid lvalue.  That is, it's malformed
+          ;; to try to write stuff like (|a)++ or (++a)++.
+          (return (make-vl-nonatom :op   op
+                                   :atts atts
+                                   :args (list primary)))))
 
 
 ; power_expression ::=
@@ -2119,6 +2271,9 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (make-vl-nonatom :op op
                                    :args (list first second)
                                    :atts atts))))
+
+
+
 
 
   (defparser vl-parse-expression ()
@@ -2853,5 +3008,31 @@ identifier, so we convert it into a hidpiece.</p>"
 ;;       (implies (atom tokens)
 ;;                errmsg))))
 
+
+
+
+
+
+
+
+; Increment, Decrement, and Assignment Operators
+
+
+; expression ::= inc_or_dec_expression
+;              | '(' operator_assignment ')'
+;
+; inc_or_dec_expression ::= inc_or_dec_operator { attribute_instance } variable_lvalue
+;                         | variable_lvalue { attribute_instance } inc_or_dec_operator
+;
+; inc_or_dec_operator ::= '++' | '--'
+;
+; variable_lvalue ::=
+;    [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
+;  | { variable_lvalue { , variable_lvalue } }
+;  | [ assignment_pattern_expression_type ] assignment_pattern_variable_lvalue
+;  | streaming_concatenation
+
+
+; operator_assignment ::= 
 
 

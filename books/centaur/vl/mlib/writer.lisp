@@ -482,27 +482,26 @@ displays.  The module browser's web pages are responsible for defining the
   :inline t
   (vl-pp-atomguts (vl-atom->guts x)))
 
-
 (defmacro vl-ops-precedence-table ()
   ''(;; These aren't real operators as far as the precedence rules are
      ;; concerned, but they need to bind even more tightly than +, -, etc.
-     (:VL-BITSELECT             . 20)
-     (:VL-PARTSELECT-COLON      . 20)
-     (:VL-PARTSELECT-PLUSCOLON  . 20)
-     (:VL-PARTSELECT-MINUSCOLON . 20)
-     (:VL-INDEX                 . 20)
-     (:VL-SELECT-COLON          . 20)
-     (:VL-SELECT-PLUSCOLON      . 20)
-     (:VL-SELECT-MINUSCOLON     . 20)
-     (:VL-FUNCALL               . 20)
-     (:VL-SYSCALL               . 20)
-     (:VL-HID-DOT               . 20)
-     ;(:VL-HID-ARRAYDOT          . 20)
-     (:VL-SCOPE                 . 20)
-     (:VL-WITH-INDEX            . 20)
-     (:VL-WITH-COLON            . 20)
-     (:VL-WITH-PLUSCOLON        . 20)
-     (:VL-WITH-MINUSCOLON       . 20)
+     (:VL-BITSELECT             . 200)
+     (:VL-PARTSELECT-COLON      . 200)
+     (:VL-PARTSELECT-PLUSCOLON  . 200)
+     (:VL-PARTSELECT-MINUSCOLON . 200)
+     (:VL-INDEX                 . 200)
+     (:VL-SELECT-COLON          . 200)
+     (:VL-SELECT-PLUSCOLON      . 200)
+     (:VL-SELECT-MINUSCOLON     . 200)
+     (:VL-FUNCALL               . 200)
+     (:VL-SYSCALL               . 200)
+     (:VL-HID-DOT               . 200)
+     ;(:VL-HID-ARRAYDOT          . 200)
+     (:VL-SCOPE                 . 200)
+     (:VL-WITH-INDEX            . 200)
+     (:VL-WITH-COLON            . 200)
+     (:VL-WITH-PLUSCOLON        . 200)
+     (:VL-WITH-MINUSCOLON       . 200)
 
 
      ;; In Verilog-2005 Table 5-4, concats are said to have minimal precedence.
@@ -512,83 +511,103 @@ displays.  The module browser's web pages are responsible for defining the
      ;; will be treated just like operands.  That is, we want to write
      ;; &{foo,bar} rather than &({foo,bar}).  For similar reasons, I put the
      ;; mintypmax operand here with precedence 20.
-     (:VL-MINTYPMAX          . 20)
-     (:VL-STREAM-LEFT        . 20)
-     (:VL-STREAM-RIGHT       . 20)
-     (:VL-STREAM-LEFT-SIZED  . 20)
-     (:VL-STREAM-RIGHT-SIZED . 20)
-     (:VL-TAGGED             . 20)
+     (:VL-MINTYPMAX          . 200)
+     (:VL-STREAM-LEFT        . 200)
+     (:VL-STREAM-RIGHT       . 200)
+     (:VL-STREAM-LEFT-SIZED  . 200)
+     (:VL-STREAM-RIGHT-SIZED . 200)
+     (:VL-TAGGED             . 200)
 
      ;; I don't know about these; they seem like they're really a special case
      ;; and they seem a little bit like concats/multiconcats so I'm putting
      ;; them here (Sol).
-     (:VL-CONCAT             . 20)
-     (:VL-MULTICONCAT        . 20)
-     (:VL-PATTERN-POSITIONAL . 20)
-     (:VL-PATTERN-KEYVALUE   . 20)
-     (:VL-PATTERN-MULTI      . 20)
-     (:VL-PATTERN-TYPE       . 20)
-     (:VL-KEYVALUE           . 20)
+     (:VL-CONCAT             . 200)
+     (:VL-MULTICONCAT        . 200)
+     (:VL-PATTERN-POSITIONAL . 200)
+     (:VL-PATTERN-KEYVALUE   . 200)
+     (:VL-PATTERN-MULTI      . 200)
+     (:VL-PATTERN-TYPE       . 200)
+     (:VL-KEYVALUE           . 200)
 
      ;; All of these things with precedence 20 is kind of concerning/confusing.
      ;; Can this really be right?  Well, what's one more?
-     (:VL-BINARY-CAST        . 20)
+     (:VL-BINARY-CAST        . 200)
 
 
      ;; This part is based on Verilog-2005 Table 5-4, and SystemVerilog-2012
      ;; Table 11-2.
-     (:VL-UNARY-PLUS    . 14)
-     (:VL-UNARY-MINUS   . 14)
-     (:VL-UNARY-LOGNOT  . 14)
-     (:VL-UNARY-BITNOT  . 14)
-     (:VL-UNARY-BITAND  . 14)
-     (:VL-UNARY-NAND    . 14)
-     (:VL-UNARY-BITOR   . 14)
-     (:VL-UNARY-NOR     . 14)
-     (:VL-UNARY-XOR     . 14)
-     (:VL-UNARY-XNOR    . 14)
+     (:VL-UNARY-PLUS     . 150)
+     (:VL-UNARY-MINUS    . 150)
+     (:VL-UNARY-LOGNOT   . 150)
+     (:VL-UNARY-BITNOT   . 150)
+     (:VL-UNARY-BITAND   . 150)
+     (:VL-UNARY-NAND     . 150)
+     (:VL-UNARY-BITOR    . 150)
+     (:VL-UNARY-NOR      . 150)
+     (:VL-UNARY-XOR      . 150)
+     (:VL-UNARY-XNOR     . 150)
+     (:vl-unary-preinc   . 150)
+     (:vl-unary-postinc  . 150)
+     (:vl-unary-predec   . 150)
+     (:vl-unary-postdec  . 150)
 
-     (:VL-BINARY-POWER  . 13)
+     (:VL-BINARY-POWER   . 140)
 
-     (:VL-BINARY-TIMES  . 12)
-     (:VL-BINARY-DIV    . 12)
-     (:VL-BINARY-REM    . 12)
+     (:VL-BINARY-TIMES   . 130)
+     (:VL-BINARY-DIV     . 130)
+     (:VL-BINARY-REM     . 130)
 
-     (:VL-BINARY-PLUS   . 11)
-     (:VL-BINARY-MINUS  . 11)
+     (:VL-BINARY-PLUS    . 120)
+     (:VL-BINARY-MINUS   . 120)
 
-     (:VL-BINARY-SHR    . 10)
-     (:VL-BINARY-SHL    . 10)
-     (:VL-BINARY-ASHR   . 10)
-     (:VL-BINARY-ASHL   . 10)
+     (:VL-BINARY-SHR     . 110)
+     (:VL-BINARY-SHL     . 110)
+     (:VL-BINARY-ASHR    . 110)
+     (:VL-BINARY-ASHL    . 110)
 
-     (:VL-BINARY-LT     . 9)
-     (:VL-BINARY-LTE    . 9)
-     (:VL-BINARY-GT     . 9)
-     (:VL-BINARY-GTE    . 9)
+     (:VL-BINARY-LT      . 100)
+     (:VL-BINARY-LTE     . 100)
+     (:VL-BINARY-GT      . 100)
+     (:VL-BINARY-GTE     . 100)
 
-     (:VL-BINARY-EQ     . 8)
-     (:VL-BINARY-NEQ    . 8)
-     (:VL-BINARY-CEQ    . 8)
-     (:VL-BINARY-CNE    . 8)
-     (:vl-binary-wildeq . 8)
-     (:vl-binary-wildneq . 8)
+     (:VL-BINARY-EQ      . 90)
+     (:VL-BINARY-NEQ     . 90)
+     (:VL-BINARY-CEQ     . 90)
+     (:VL-BINARY-CNE     . 90)
+     (:vl-binary-wildeq  . 90)
+     (:vl-binary-wildneq . 90)
 
-     (:VL-BINARY-BITAND . 7)
+     (:VL-BINARY-BITAND  . 80)
 
-     (:VL-BINARY-XOR    . 6)
-     (:VL-BINARY-XNOR   . 6)
+     (:VL-BINARY-XOR     . 70)
+     (:VL-BINARY-XNOR    . 70)
 
-     (:VL-BINARY-BITOR  . 5)
+     (:VL-BINARY-BITOR   . 60)
 
-     (:VL-BINARY-LOGAND . 4)
+     (:VL-BINARY-LOGAND  . 50)
 
-     (:VL-BINARY-LOGOR  . 3)
+     (:VL-BINARY-LOGOR   . 40)
 
-     (:VL-QMARK         . 2)
+     (:VL-QMARK          . 30)
 
-     (:vl-implies . 1)
-     (:vl-equiv   . 1)
+     (:vl-implies        . 20)
+     (:vl-equiv          . 20)
+
+     ;; SystemVerilog assignment operators have lowest precedence
+     (:vl-binary-assign      . 10)
+     (:vl-binary-plusassign  . 10)
+     (:vl-binary-minusassign . 10)
+     (:vl-binary-timesassign . 10)
+     (:vl-binary-divassign   . 10)
+     (:vl-binary-remassign   . 10)
+     (:vl-binary-andassign   . 10)
+     (:vl-binary-orassign    . 10)
+     (:vl-binary-xorassign   . 10)
+     (:vl-binary-shlassign   . 10)
+     (:vl-binary-shrassign   . 10)
+     (:vl-binary-ashlassign  . 10)
+     (:vl-binary-ashrassign  . 10)
+
      ))
 
 (local (in-theory (disable unsigned-byte-p)))
@@ -702,7 +721,7 @@ its arguments, if necessary.</p>"
             ((:vl-unary-plus
               :vl-unary-minus :vl-unary-lognot :vl-unary-bitnot :vl-unary-bitand
               :vl-unary-nand :vl-unary-bitor :vl-unary-nor :vl-unary-xor
-              :vl-unary-xnor)
+              :vl-unary-xnor :vl-unary-preinc :vl-unary-predec)
              (b* (((unless (consp args))
                    (impossible)
                    ps)
@@ -718,6 +737,22 @@ its arguments, if necessary.</p>"
                 (vl-pp-expr arg)
                 (if want-parens-p (vl-print ")") ps)
                 (vl-println? ""))))
+
+            ((:vl-unary-postinc :vl-unary-postdec)
+             (b* (((unless (consp args))
+                   (impossible)
+                   ps)
+                  (arg (first args))
+                  (want-parens-p (if (vl-fast-atom-p arg)
+                                     nil
+                                   (vl-op-precedence-<= (vl-nonatom->op arg) op))))
+               (vl-ps-seq
+                (if want-parens-p (vl-print "(") ps)
+                (vl-pp-expr arg)
+                (if want-parens-p (vl-print ")") ps)
+                (if atts (vl-pp-atts atts) ps)
+                (vl-print-str (vl-op-string op))
+                (vl-println? " "))))
 
             ((:vl-binary-plus
               :vl-binary-minus :vl-binary-times :vl-binary-div :vl-binary-rem
@@ -776,6 +811,27 @@ its arguments, if necessary.</p>"
                           (vl-pp-expr arg2)
                           (if want-parens-2p (vl-print ")") ps)
                           (vl-println? ""))))
+
+            ((:vl-binary-assign
+              :vl-binary-plusassign :vl-binary-minusassign
+              :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
+              :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
+              :vl-binary-shlassign :vl-binary-shrassign :vl-binary-ashlassign :vl-binary-ashrassign)
+             (b* (((unless (consp args))
+                   (impossible)
+                   ps)
+                  ;; I think we never need parens on the arguments, because
+                  ;; these operators are minimal precedence and require their
+                  ;; own parens, so there are no associativity issues here.
+                  (arg1 (first args))
+                  (arg2 (second args)))
+               (vl-ps-seq (vl-print "(")
+                          (vl-pp-expr arg1)
+                          (vl-print-str " ")
+                          (vl-print-str (vl-op-string op))
+                          (vl-println? " ")
+                          (vl-pp-expr arg2)
+                          (vl-println? ")"))))
 
             (:vl-binary-cast
              (b* (((unless (consp args))
@@ -2676,7 +2732,8 @@ expression into a string."
                            (cond ((eq x.lifetime :vl-automatic) (vl-print "automatic "))
                                  ((eq x.lifetime :vl-static)    (vl-print "static "))
                                  (t                             ps))
-                           (vl-pp-datatype x.rettype))
+                           (vl-pp-datatype x.rettype)
+                           (vl-print " "))
                (vl-print-wirename x.name)
                (vl-println ";")
                (vl-pp-portdecllist x.portdecls)

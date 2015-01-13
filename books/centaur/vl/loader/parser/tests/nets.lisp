@@ -345,9 +345,10 @@
 (test-netdecl :input "wire w [1] = 1 ; "
               :successp nil)
 
+;; This used to be illegal but now ncverilog at least supports it (in systemverilog):
 ;; no mixing assignments and plain decls
-(test-netdecl :input "wire w, a = 1 ; "
-              :successp nil)
+;; (test-netdecl :input "wire w, a = 1 ; "
+;;               :successp nil)
 
 (test-netdecl :input "wire (supply1,strong0) vectored signed [4:0] #(3) w1 = 1, w2 = 2 ; "
               :ids ("w1" "w2")

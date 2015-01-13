@@ -1078,7 +1078,7 @@
          (aignet (add-node aignet))
          (aignet (set-regnum->id ro-num nodes aignet))
          ((mv slot0 slot1)
-          (mk-snode (in-type) 1 0 0 ro-num))
+          (mk-snode (in-type) 1 0 nodes ro-num))
          (aignet (update-node-slot nodes 0 slot0 aignet))
          (aignet (update-node-slot nodes 1 slot1 aignet)))
       aignet))
@@ -1134,7 +1134,7 @@
                   (aignet-sizes-ok aignet))
              (b* ((slot0 (id->slot id 0 (aignet-add-reg aignet)))
                   (slot1 (id->slot id 1 (aignet-add-reg aignet)))
-                  ((mv s0 s1) (mk-snode (in-type) 1 0 0 (num-regs aignet))))
+                  ((mv s0 s1) (mk-snode (in-type) 1 0 (num-nodes aignet) (num-regs aignet))))
                (and (equal slot0 s0)
                     (equal slot1 s1)))))
 

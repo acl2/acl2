@@ -150,7 +150,8 @@ formerly the \"location directive\" and printed a location.</p>")
       ((:vl-regularport :vl-interfaceport
         :vl-portdecl :vl-assign :vl-vardecl
         :vl-paramdecl :vl-fundecl :vl-taskdecl
-        :vl-modinst :vl-gateinst :vl-always :vl-initial)
+        :vl-modinst :vl-gateinst :vl-always :vl-initial
+        :vl-typedef)
        (if (or unsafe-okp (vl-ctxelement-p x))
            (vl-pp-ctxelement-summary x)
          (vl-fmt-tilde-x x)))
@@ -196,10 +197,6 @@ formerly the \"location directive\" and printed a location.</p>")
     ((:vl-fwdtypedef)
      (if (or unsafe-okp (vl-fwdtypedef-p x))
          (vl-pp-fwdtypedef x)
-       (vl-fmt-tilde-x x)))
-    ((:vl-typedef)
-     (if (or unsafe-okp (vl-typedef-p x))
-         (vl-pp-typedef x)
        (vl-fmt-tilde-x x)))
     ((:vl-module)
      (if (or unsafe-okp (vl-module-p x))

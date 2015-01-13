@@ -579,7 +579,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :body (list (vl-delaycontrol->value x)))
 
 (def-vl-allexprs
-  :type :vl-evatom
+  :type vl-evatom
   :nrev-body (nrev-push (vl-evatom->expr x) nrev)
   :body (list (vl-evatom->expr x)))
 
@@ -828,7 +828,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :element vl-always)
 
 (def-vl-allexprs
-  :type :vl-port
+  :type vl-port
   :nrev-body
   (b* ((x (vl-port-fix x)))
     (if (eq (tag x) :vl-interfaceport)
@@ -846,7 +846,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
 
 
 (def-vl-allexprs
-  :type :vl-fundecl
+  :type vl-fundecl
   :nrev-body (b* (((vl-fundecl x) x)
                   (nrev (vl-datatype-allexprs-nrev x.rettype nrev))
                   (nrev (vl-portdecllist-allexprs-nrev x.portdecls nrev))
@@ -863,7 +863,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :element vl-fundecl)
 
 (def-vl-allexprs
-  :type :vl-taskdecl
+  :type vl-taskdecl
   :nrev-body (b* (((vl-taskdecl x) x)
                   (nrev (vl-portdecllist-allexprs-nrev x.portdecls nrev))
                   (nrev (vl-blockitemlist-allexprs-nrev x.decls nrev)))
@@ -877,6 +877,19 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :list vl-taskdecllist
   :element vl-taskdecl)
 
+
+(def-vl-allexprs
+  :type vl-alias
+  :nrev-body (b* (((vl-alias x) x)
+                  (nrev (nrev-push x.lhs nrev))
+                  (nrev (nrev-push x.rhs nrev)))
+               nrev)
+  :body (b* (((vl-alias x) x))
+          (list x.lhs x.rhs)))
+
+(def-vl-allexprs-list
+  :list vl-aliaslist
+  :element vl-alias)
 
 (def-vl-allexprs
   :type vl-module
@@ -893,7 +906,8 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
        (nrev (vl-modinstlist-allexprs-nrev x.modinsts nrev))
        (nrev (vl-gateinstlist-allexprs-nrev x.gateinsts nrev))
        (nrev (vl-alwayslist-allexprs-nrev x.alwayses nrev))
-       (nrev (vl-initiallist-allexprs-nrev x.initials nrev)))
+       (nrev (vl-initiallist-allexprs-nrev x.initials nrev))
+       (nrev (vl-aliaslist-allexprs-nrev x.aliases nrev)))
       nrev)
   :body
   (b* (((vl-module x) x))
@@ -907,7 +921,8 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
               (vl-modinstlist-allexprs x.modinsts)
               (vl-gateinstlist-allexprs x.gateinsts)
               (vl-alwayslist-allexprs x.alwayses)
-              (vl-initiallist-allexprs x.initials))))
+              (vl-initiallist-allexprs x.initials)
+              (vl-aliaslist-allexprs x.aliases))))
 
 (def-vl-allexprs-list
   :list vl-modulelist

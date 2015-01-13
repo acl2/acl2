@@ -484,11 +484,13 @@
 
 (defconst *basic-precedence-tests-2012*
   (list 
-   (make-exprtest :input "1--2" :expect 1
-                  :remainder "-- 2")
+   (make-exprtest :input "1--2"
+                  :expect '(:vl-unary-postdec nil 1)
+                  :remainder "2")
 
-   (make-exprtest :input "1++2" :expect 1
-                  :remainder "++ 2")))
+   (make-exprtest :input "1++2"
+                  :expect '(:vl-unary-postinc nil 1)
+                  :remainder "2")))
 
 
 (defconst *basic-atts-tests*
@@ -820,6 +822,113 @@
     (make-exprtest :input "local::bar"
                    :expect '(:vl-scope nil (key :vl-local) (hid "bar")))
 
+
+    ;; SystemVerilog versions -- these should fail to parse the assignment
+    ;; operator because they aren't in parentheses.
+    (make-exprtest :input "a = b"    :expect '(id "a") :remainder "= b")
+    (make-exprtest :input "a += b"   :expect '(id "a") :remainder "+= b")
+    (make-exprtest :input "a -= b"   :expect '(id "a") :remainder "-= b")
+    (make-exprtest :input "a *= b"   :expect '(id "a") :remainder "*= b")
+    (make-exprtest :input "a /= b"   :expect '(id "a") :remainder "/= b")
+    (make-exprtest :input "a %= b"   :expect '(id "a") :remainder "%= b")
+    (make-exprtest :input "a &= b"   :expect '(id "a") :remainder "&= b")
+    (make-exprtest :input "a |= b"   :expect '(id "a") :remainder "|= b")
+    (make-exprtest :input "a ^= b"   :expect '(id "a") :remainder "^= b")
+    (make-exprtest :input "a <<= b"  :expect '(id "a") :remainder "<<= b")
+    (make-exprtest :input "a >>= b"  :expect '(id "a") :remainder ">>= b")
+    (make-exprtest :input "a <<<= b" :expect '(id "a") :remainder "<<<= b")
+    (make-exprtest :input "a >>>= b" :expect '(id "a") :remainder ">>>= b")
+
+   (make-exprtest :input "(a += ~b)"
+                  :expect '(:vl-binary-plusassign ("VL_EXPLICIT_PARENS")
+                            (id "a")
+                            (:vl-unary-bitnot nil (id "b"))))
+
+   (make-exprtest :input "(a += !b)"
+                  :expect '(:vl-binary-plusassign ("VL_EXPLICIT_PARENS")
+                            (id "a")
+                            (:vl-unary-lognot nil (id "b"))))
+
+   (make-exprtest :input "(a = b + 1)"
+                  :expect '(:vl-binary-assign ("VL_EXPLICIT_PARENS")
+                            (id "a")
+                            (:vl-binary-plus nil (id "b") 1)))
+
+   (make-exprtest :input "(a = b & 1)"
+                  :expect '(:vl-binary-assign ("VL_EXPLICIT_PARENS")
+                            (id "a")
+                            (:vl-binary-bitand nil (id "b") 1)))
+
+   (make-exprtest :input "(a = b | 1)"
+                  :expect '(:vl-binary-assign ("VL_EXPLICIT_PARENS")
+                            (id "a")
+                            (:vl-binary-bitor nil (id "b") 1)))
+
+   (make-exprtest :input "(a = b < 1)"
+                  :expect '(:vl-binary-assign ("VL_EXPLICIT_PARENS")
+                            (id "a")
+                            (:vl-binary-lt nil (id "b") 1)))
+
+   (make-exprtest :input "(a = b == 1)"
+                  :expect '(:vl-binary-assign ("VL_EXPLICIT_PARENS")
+                            (id "a")
+                            (:vl-binary-eq nil (id "b") 1)))
+
+   (make-exprtest :input "(a[1] = b << 1)"
+                  :expect '(:vl-binary-assign ("VL_EXPLICIT_PARENS")
+                            (:vl-index nil (id "a") 1)
+                            (:vl-binary-shl nil (id "b") 1)))
+
+   (make-exprtest :input "(a[3:0] += b ? c : d)"
+                  :expect '(:vl-binary-plusassign ("VL_EXPLICIT_PARENS")
+                            (:vl-select-colon nil (id "a") 3 0)
+                            (:vl-qmark nil (id "b") (id "c") (id "d"))))
+
+   (make-exprtest :input "(a -= {b,c})"
+                  :expect '(:vl-binary-minusassign ("VL_EXPLICIT_PARENS")
+                            (id "a")
+                            (:vl-concat nil (id "b") (id "c"))))
+
+   (make-exprtest :input "(a -= {b,c})"
+                  :expect '(:vl-binary-minusassign ("VL_EXPLICIT_PARENS")
+                            (id "a")
+                            (:vl-concat nil (id "b") (id "c"))))
+
+   ;; Increment/decrement stuff
+
+   (make-exprtest :input "a (* FOO *) ++" :expect '(:vl-unary-postinc ("FOO") (id "a")))
+   (make-exprtest :input "a (* FOO *) --" :expect '(:vl-unary-postdec ("FOO") (id "a")))
+
+   (make-exprtest :input "++ (* FOO *) a" :expect '(:vl-unary-preinc ("FOO") (id "a")))
+   (make-exprtest :input "-- (* FOO *) a" :expect '(:vl-unary-predec ("FOO") (id "a")))
+
+
+   (make-exprtest :input "a + b++" :expect '(:vl-binary-plus nil (id "a")
+                                             (:vl-unary-postinc nil (id "b"))))
+
+   (make-exprtest :input "a + ++b" :expect '(:vl-binary-plus nil (id "a")
+                                             (:vl-unary-preinc nil (id "b"))))
+
+   (make-exprtest :input "a + + b" :expect '(:vl-binary-plus nil (id "a")
+                                             (:vl-unary-plus nil (id "b"))))
+
+   ;; Very subtle, see failtests/inc10.v.  This is the behavior I want to
+   ;; implement, because some Verilog tools don't interpret this as +(w++).
+   (make-exprtest :input "+ w++"
+                  :expect '(:vl-unary-plus nil (id "w"))
+                  :remainder "++")
+
+   ;; Followup on previous test
+   (make-exprtest :input "a + + b ++"
+                  :expect '(:vl-binary-plus nil (id "a")
+                            (:vl-unary-plus nil (id "b")))
+                  :remainder "++")
+
+   ;; Followup on previous test
+   (make-exprtest :input "++a++"
+                  :expect '(:vl-unary-preinc nil (id "a"))
+                  :remainder "++")
+
     ))
 
  (defconst *verilog-diff-tests* ;; The expected results for Verilog-2005.
@@ -965,6 +1074,24 @@
    (make-exprtest :input "local::bar"
                   :expect '(id "local")
                   :remainder ": : bar")
+
+   ;; Verilog versions -- these aren't valid operators in Verilog, so most of these
+   ;; should fail because, e.g., in the case of "a += b", we should see "a + ..." where
+   ;; the ... part isn't a valid expression.
+   (make-exprtest :input "a = b"    :expect '(id "a") :remainder "= b")
+   (make-exprtest :input "a += b"   :successp nil)
+   (make-exprtest :input "a -= b"   :successp nil)
+   (make-exprtest :input "a *= b"   :successp nil)
+   (make-exprtest :input "a /= b"   :successp nil)
+   (make-exprtest :input "a %= b"   :successp nil)
+   (make-exprtest :input "a &= b"   :successp nil)
+   (make-exprtest :input "a |= b"   :successp nil)
+   (make-exprtest :input "a ^= b"   :successp nil)
+   (make-exprtest :input "a <<= b"  :successp nil)
+   (make-exprtest :input "a >>= b"  :successp nil)
+   (make-exprtest :input "a <<<= b" :successp nil)
+   (make-exprtest :input "a >>>= b" :successp nil)
+
 
     ))
 
@@ -1283,6 +1410,21 @@
                   :successp nil)
 
 
+   ;; New fancy assignment operators
+   (make-exprtest :input "(a = b)"    :expect '(:vl-binary-assign       ("VL_EXPLICIT_PARENS") (id "a") (id "b")))
+   (make-exprtest :input "(a += b)"   :expect '(:vl-binary-plusassign   ("VL_EXPLICIT_PARENS") (id "a") (id "b")))
+   (make-exprtest :input "(a -= b)"   :expect '(:vl-binary-minusassign  ("VL_EXPLICIT_PARENS") (id "a") (id "b")))
+   (make-exprtest :input "(a *= b)"   :expect '(:vl-binary-timesassign  ("VL_EXPLICIT_PARENS") (id "a") (id "b")))
+   (make-exprtest :input "(a /= b)"   :expect '(:vl-binary-divassign    ("VL_EXPLICIT_PARENS") (id "a") (id "b")))
+   (make-exprtest :input "(a %= b)"   :expect '(:vl-binary-remassign    ("VL_EXPLICIT_PARENS") (id "a") (id "b")))
+   (make-exprtest :input "(a &= b)"   :expect '(:vl-binary-andassign    ("VL_EXPLICIT_PARENS") (id "a") (id "b")))
+   (make-exprtest :input "(a |= b)"   :expect '(:vl-binary-orassign     ("VL_EXPLICIT_PARENS") (id "a") (id "b")))
+   (make-exprtest :input "(a ^= b)"   :expect '(:vl-binary-xorassign    ("VL_EXPLICIT_PARENS") (id "a") (id "b")))
+   (make-exprtest :input "(a <<= b)"  :expect '(:vl-binary-shlassign    ("VL_EXPLICIT_PARENS") (id "a") (id "b")))
+   (make-exprtest :input "(a >>= b)"  :expect '(:vl-binary-shrassign    ("VL_EXPLICIT_PARENS") (id "a") (id "b")))
+   (make-exprtest :input "(a <<<= b)" :expect '(:vl-binary-ashlassign   ("VL_EXPLICIT_PARENS") (id "a") (id "b")))
+   (make-exprtest :input "(a >>>= b)" :expect '(:vl-binary-ashrassign   ("VL_EXPLICIT_PARENS") (id "a") (id "b")))
+
    ;; Associativity tests for new operators
 
    (make-exprtest :input "1 !=? 2 !=? 3" :expect '(:vl-binary-wildneq nil (:vl-binary-wildneq nil 1 2) 3))
@@ -1302,6 +1444,13 @@
    (make-exprtest :input "1 > 2 !=? 3" :expect '(:vl-binary-wildneq nil (:vl-binary-gt nil 1 2) 3))
    (make-exprtest :input "1 !=? 2 & 3" :expect '(:vl-binary-bitand nil (:vl-binary-wildneq nil 1 2) 3))
    (make-exprtest :input "1 !=? 2 | 3" :expect '(:vl-binary-bitor nil (:vl-binary-wildneq nil 1 2) 3))
+
+
+   ;; Increment and decrement operators
+   (make-exprtest :input "a++" :expect '(:vl-unary-postinc nil (id "a")))
+   (make-exprtest :input "a--" :expect '(:vl-unary-postdec nil (id "a")))
+   (make-exprtest :input "++a" :expect '(:vl-unary-preinc nil (id "a")))
+   (make-exprtest :input "--a" :expect '(:vl-unary-predec nil (id "a")))
 
 
    ;; casting tests
