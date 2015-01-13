@@ -34,6 +34,7 @@
 (in-package "VL")
 (set-debugger-enable t)
 (break-on-error t)
+(ld "centaur/jared-customization.lsp" :dir :system)
 
 (defconst *lintconfig*
   (make-vl-lintconfig :start-files (list "./lucid1/temp.v")))
@@ -60,73 +61,114 @@
 
 ;; Lucid Tracing
 
-(trace$ (vl-luciddb-mark-used
-         :entry (list 'vl-luciddb-mark-used
-                      :key (with-local-ps (vl-pp-lucidkey key))
+(trace$ (vl-luciddb-mark
+         :entry (list 'vl-luciddb-mark
+                      mtype
+                      (with-local-ps (vl-pp-lucidkey key))
                       :occ (with-local-ps (vl-pp-lucidocc occ)))
-         :exit (list 'vl-luciddb-mark-used)))
-
-(trace$ (vl-luciddb-mark-set
-         :entry (list 'vl-luciddb-mark-set
-                      :key (with-local-ps (vl-pp-lucidkey key))
-                      :occ (with-local-ps (vl-pp-lucidocc occ)))
-         :exit (list 'vl-luciddb-mark-set)))
+         :exit (list 'vl-luciddb-mark)))
 
 (trace$ (vl-scopestack-push
          :entry (list 'vl-scopestack-push
                       (vl-scope->name scope)
-                      (with-local-ps (vl-pp-scopestack-path x)))
+                      (vl-scopestack->path x))
          :exit (list 'vl-scopestack-push
-                     (with-local-ps (vl-pp-scopestack-path (first acl2::values))))))
+                     (vl-scopestack->path (first values)))))
 
 (trace$ (vl-rhsatom-lucidcheck
-         :entry (list 'vl-rhsexpr-lucidcheck
-                      :x (vl-pps-expr x)
+         :entry (list 'vl-rhsatom-lucidcheck
+                      (vl-pps-expr x)
                       :ss (with-local-ps (vl-pp-scopestack-path ss))
-                      :st (vl-pps-lucidstate st))
+                      :st (vl-pps-lucidstate st)
+                      :raw x)
+         :exit (let ((st (first acl2::values)))
+                 (list 'vl-rhsatom-lucidcheck
+                       (vl-pps-lucidstate st)))))
+
+(trace$ (vl-rhsexpr-lucidcheck$notinline
+         :entry (list 'vl-rhsexpr-lucidcheck
+                      (vl-pps-expr x)
+                      :ss (with-local-ps (vl-pp-scopestack-path ss))
+                      :st (vl-pps-lucidstate st)
+                      :raw x)
          :exit (let ((st (first acl2::values)))
                  (list 'vl-rhsexpr-lucidcheck
                        (vl-pps-lucidstate st)))))
 
-(trace$ (vl-rhsexpr-lucidcheck
-         :entry (list 'vl-rhsexpr-lucidcheck
-                      :x (vl-pps-expr x)
+(trace$ (vl-lhsexpr-lucidcheck$notinline
+         :entry (list 'vl-lhsexpr-lucidcheck
+                      (vl-pps-expr x)
                       :ss (with-local-ps (vl-pp-scopestack-path ss))
-                      :st (vl-pps-lucidstate st))
+                      :st (vl-pps-lucidstate st)
+                      :raw x)
          :exit (let ((st (first acl2::values)))
-                 (list 'vl-rhsexpr-lucidcheck
+                 (list 'vl-lhsexpr-lucidcheck
                        (vl-pps-lucidstate st)))))
 
-(trace$ (vl-initial-lucidcheck
-         :entry (list 'vl-initial-lucidcheck
-                      :x (with-local-ps (vl-pp-initial x))
-                      :ss (with-local-ps (vl-pp-scopestack-path ss))
-                      :st (vl-pps-lucidstate st))
-         :exit (let ((st (first acl2::values)))
-                 (list 'vl-initial-lucidcheck
-                       (vl-pps-lucidstate st)))))
+(with-redef
+  (define vl-luciddb-mark ((mtype (member mtype '(:used :set)))
+                           (key   vl-lucidkey-p)
+                           (occ   vl-lucidocc-p)
+                           (db    vl-luciddb-p)
+                           (ctx   acl2::any-p))
+    :parents (vl-lucidstate-mark-used)
+    :returns (new-db vl-luciddb-p)
+    (b* ((db   (vl-luciddb-fix db))
+         (occ  (vl-lucidocc-fix occ))
+         (key  (vl-lucidkey-fix key))
 
-(trace$ (vl-fundecl-lucidcheck
-         :entry (list 'vl-fundecl-lucidcheck
-                      :x (with-local-ps (vl-pp-fundecl x))
-                      :ss (with-local-ps (vl-pp-scopestack-path ss))
-                      :st (vl-pps-lucidstate st))
-         :exit (let ((st (first acl2::values)))
-                 (list 'vl-fundecl-lucidcheck
-                       (vl-pps-lucidstate st)))))
+         (val (cdr (hons-get key db)))
+         ((unless val)
+          (cw "***** Error is Here *****~%~%")
+          (cw "KEY ~x0~%" key)
+          (cw "DB KEYS ~x0~%" (alist-keys db))
+          (break$)
+          ;; BOZO we probably don't expect this to happen, but we'll go ahead and
+          ;; mark it as an error.
+          (let ((err (list __function__ ctx)))
+            (hons-acons key
+                        (change-vl-lucidval *vl-empty-lucidval*
+                                            :used (list occ)
+                                            :errors (list err))
+                        db)))
 
-(trace$ (vl-package-lucidcheck
-         :entry (list 'vl-package-lucidcheck
-                      :x (with-local-ps (vl-pp-package x))
-                      :ss (with-local-ps (vl-pp-scopestack-path ss))
-                      :st (vl-pps-lucidstate st))
-         :exit (let ((st (first acl2::values)))
-                 (list 'vl-package-lucidcheck
-                       (vl-pps-lucidstate st)))))
+         ((vl-lucidval val))
+         (val (if (eq mtype :used)
+                  (change-vl-lucidval val :used (cons occ val.used))
+                (change-vl-lucidval val :set (cons occ val.set))))
+         (db  (hons-acons key val db)))
+      db)))
+
+;; (trace$ (vl-initial-lucidcheck
+;;          :entry (list 'vl-initial-lucidcheck
+;;                       (with-local-ps (vl-pp-initial x))
+;;                       :ss (with-local-ps (vl-pp-scopestack-path ss))
+;;                       :st (vl-pps-lucidstate st))
+;;          :exit (let ((st (first acl2::values)))
+;;                  (list 'vl-initial-lucidcheck
+;;                        (vl-pps-lucidstate st)))))
+
+;; (trace$ (vl-fundecl-lucidcheck
+;;          :entry (list 'vl-fundecl-lucidcheck
+;;                       (with-local-ps (vl-pp-fundecl x))
+;;                       :ss (with-local-ps (vl-pp-scopestack-path ss))
+;;                       :st (vl-pps-lucidstate st))
+;;          :exit (let ((st (first acl2::values)))
+;;                  (list 'vl-fundecl-lucidcheck
+;;                        (vl-pps-lucidstate st)))))
+
+;; (trace$ (vl-package-lucidcheck
+;;          :entry (list 'vl-package-lucidcheck
+;;                       (with-local-ps (vl-pp-package x))
+;;                       :ss (with-local-ps (vl-pp-scopestack-path ss))
+;;                       :st (vl-pps-lucidstate st))
+;;          :exit (let ((st (first acl2::values)))
+;;                  (list 'vl-package-lucidcheck
+;;                        (vl-pps-lucidstate st)))))
 
 
 
-(ld "centaur/jared-customization.lsp" :dir :system)
+
 (acl2::with-redef
   (define vl-design-lucid ((x vl-design-p)
                            &key
@@ -171,3 +213,174 @@
 
 
 
+
+
+
+
+((:VL-VARDECL (("w1_normal" (:VL-CORETYPE (:VL-LOGIC) NIL)
+                . :VL-WIRE)
+               NIL NIL)
+  (NIL NIL)
+  (NIL)
+  NIL
+  :VL-LOCATION "./lucid1/temp.v" 5 . 2)
+ (:VL-MODULE ((("mh1" NIL)
+               NIL NIL
+               (:VL-VARDECL (("w1_spurious" (:VL-CORETYPE (:VL-LOGIC) NIL)
+                              . :VL-WIRE)
+                             NIL NIL)
+                (NIL NIL)
+                (NIL)
+                NIL
+                :VL-LOCATION "./lucid1/temp.v" 4 . 2)
+               (:VL-VARDECL (("w1_normal" (:VL-CORETYPE (:VL-LOGIC) NIL)
+                              . :VL-WIRE)
+                             NIL NIL)
+                (NIL NIL)
+                (NIL)
+                NIL
+                :VL-LOCATION "./lucid1/temp.v" 5 . 2)
+               (:VL-VARDECL (("w1_unused" (:VL-CORETYPE (:VL-LOGIC) NIL)
+                              . :VL-WIRE)
+                             NIL NIL)
+                (NIL NIL)
+                (NIL)
+                NIL
+                :VL-LOCATION "./lucid1/temp.v" 6 . 2)
+               (:VL-VARDECL (("w1_unset" (:VL-CORETYPE (:VL-LOGIC) NIL)
+                              . :VL-WIRE)
+                             NIL NIL)
+                (NIL NIL)
+                (NIL)
+                NIL
+                :VL-LOCATION "./lucid1/temp.v" 7 . 2))
+              (NIL NIL)
+              NIL NIL)
+  ((NIL NIL)
+   NIL NIL
+   :VL-LOCATION "./lucid1/temp.v" 1 . 0)
+  ((:VL-LOCATION "./lucid1/temp.v" 9 . 0)
+   "mh1")
+  (((:VL-LOCATION "./lucid1/temp.v" 3 . 0)
+    .
+    "// These will get set hierarchically in mh2.
+"))
+  NIL)
+ :GLOBAL :VL-DESIGN
+ ((("VL Syntax 2015-01-12"
+    (:VL-MODULE ((("mh1" NIL)
+                  NIL NIL
+                  (:VL-VARDECL (("w1_spurious" (:VL-CORETYPE (:VL-LOGIC) NIL)
+                                 . :VL-WIRE)
+                                NIL NIL)
+                   (NIL NIL)
+                   (NIL)
+                   NIL
+                   :VL-LOCATION "./lucid1/temp.v" 4 . 2)
+                  (:VL-VARDECL (("w1_normal" (:VL-CORETYPE (:VL-LOGIC) NIL)
+                                 . :VL-WIRE)
+                                NIL NIL)
+                   (NIL NIL)
+                   (NIL)
+                   NIL
+                   :VL-LOCATION "./lucid1/temp.v" 5 . 2)
+                  (:VL-VARDECL (("w1_unused" (:VL-CORETYPE (:VL-LOGIC) NIL)
+                                 . :VL-WIRE)
+                                NIL NIL)
+                   (NIL NIL)
+                   (NIL)
+                   NIL
+                   :VL-LOCATION "./lucid1/temp.v" 6 . 2)
+                  (:VL-VARDECL (("w1_unset" (:VL-CORETYPE (:VL-LOGIC) NIL)
+                                 . :VL-WIRE)
+                                NIL NIL)
+                   (NIL NIL)
+                   (NIL)
+                   NIL
+                   :VL-LOCATION "./lucid1/temp.v" 7 . 2))
+                 (NIL NIL)
+                 NIL NIL)
+     ((NIL NIL)
+      NIL NIL
+      :VL-LOCATION "./lucid1/temp.v" 1 . 0)
+     ((:VL-LOCATION "./lucid1/temp.v" 9 . 0)
+      "mh1")
+     (((:VL-LOCATION "./lucid1/temp.v" 3 . 0)
+       .
+       "// These will get set hierarchically in mh2.
+"))
+     NIL)
+    (:VL-MODULE
+     ((("mh2" NIL) NIL NIL)
+      (NIL NIL)
+      ((:VL-ASSIGN ((:NONATOM (:VL-HID-DOT)
+                     ((:ATOM (:VL-HIDPIECE . "inst1") NIL)
+                      (:ATOM (:VL-HIDPIECE . "w1_normal")
+                       NIL))
+                     NIL)
+                    (:NONATOM (:VL-HID-DOT)
+                     ((:ATOM (:VL-HIDPIECE . "inst2") NIL)
+                      (:ATOM (:VL-HIDPIECE . "w1_unset") NIL))
+                     NIL))
+        NIL NIL
+        :VL-LOCATION "./lucid1/temp.v" 16 . 2)
+       (:VL-ASSIGN ((:NONATOM (:VL-HID-DOT)
+                     ((:ATOM (:VL-HIDPIECE . "inst2") NIL)
+                      (:ATOM (:VL-HIDPIECE . "w1_normal")
+                       NIL))
+                     NIL)
+                    (:NONATOM (:VL-HID-DOT)
+                     ((:ATOM (:VL-HIDPIECE . "inst1") NIL)
+                      (:ATOM (:VL-HIDPIECE . "w1_unset") NIL))
+                     NIL))
+        NIL NIL
+        :VL-LOCATION "./lucid1/temp.v" 17 . 2)
+       (:VL-ASSIGN ((:NONATOM (:VL-HID-DOT)
+                     ((:ATOM (:VL-HIDPIECE . "inst1") NIL)
+                      (:ATOM (:VL-HIDPIECE . "w1_unused")
+                       NIL))
+                     NIL)
+                    (:NONATOM (:VL-HID-DOT)
+                     ((:ATOM (:VL-HIDPIECE . "inst2") NIL)
+                      (:ATOM (:VL-HIDPIECE . "w1_normal")
+                       NIL))
+                     NIL))
+        NIL NIL
+        :VL-LOCATION "./lucid1/temp.v" 19 . 2)
+       (:VL-ASSIGN ((:NONATOM (:VL-HID-DOT)
+                     ((:ATOM (:VL-HIDPIECE . "inst2") NIL)
+                      (:ATOM (:VL-HIDPIECE . "w1_unused")
+                       NIL))
+                     NIL)
+                    (:NONATOM (:VL-HID-DOT)
+                     ((:ATOM (:VL-HIDPIECE . "inst1") NIL)
+                      (:ATOM (:VL-HIDPIECE . "w1_normal")
+                       NIL))
+                     NIL))
+        NIL NIL
+        :VL-LOCATION "./lucid1/temp.v" 20 . 2))
+      NIL
+      (:VL-MODINST (("inst1" . "mh1")
+                    NIL
+                    :VL-PARAMARGS-PLAIN NIL)
+       ((:VL-ARGUMENTS-PLAIN NIL))
+       NIL NIL
+       :VL-LOCATION "./lucid1/temp.v" 13 . 6)
+      (:VL-MODINST (("inst2" . "mh1")
+                    NIL
+                    :VL-PARAMARGS-PLAIN NIL)
+       ((:VL-ARGUMENTS-PLAIN NIL))
+       NIL NIL
+       :VL-LOCATION "./lucid1/temp.v" 14 . 6))
+     ((NIL NIL)
+      NIL NIL
+      :VL-LOCATION "./lucid1/temp.v" 11 . 0)
+     ((:VL-LOCATION "./lucid1/temp.v" 22 . 0)
+      "mh2")
+     NIL NIL))
+   NIL)
+  (NIL)
+  NIL)
+ ((NIL) NIL)
+ (NIL)
+ NIL)

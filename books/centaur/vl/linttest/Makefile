@@ -36,15 +36,15 @@ STARTJOB ?= bash
 VL       ?= $(PWD)/../bin/vl
 RUBY     ?= ruby
 
-SPEC_FILES := $(wildcard */spec.v)
-TEST_DIRS  := $(patsubst %/spec.v, %, $(SPEC_FILES))
-JSON_FILES := $(patsubst %/spec.v, %/vl-warnings.json, $(SPEC_FILES))
-OK_FILES   := $(patsubst %/spec.v, %/vl-warnings.ok, $(SPEC_FILES))
+SPEC_FILES := $(wildcard */spec.sv)
+TEST_DIRS  := $(patsubst %/spec.sv, %, $(SPEC_FILES))
+JSON_FILES := $(patsubst %/spec.sv, %/vl-warnings.json, $(SPEC_FILES))
+OK_FILES   := $(patsubst %/spec.sv, %/vl-warnings.ok, $(SPEC_FILES))
 
-%/vl-warnings.json: %/spec.v
+%/vl-warnings.json: %/spec.sv
 	@echo "Making $*/vl-warnings.json"
 	@rm -f $*/vl-warnings.json $*/vl-*.txt $*/vl-lint.log
-	@cd $*; $(STARTJOB) -c '$(VL) lint spec.v &> vl-lint.log'
+	@cd $*; $(STARTJOB) -c '$(VL) lint spec.sv &> vl-lint.log'
 	@ls -l $*/vl-warnings.json
 
 %/vl-warnings.ok: %/vl-warnings.json %/check.rb utils.rb
@@ -73,3 +73,4 @@ clean:
 	rm -f */vl-warnings.ok
 	rm -f */check.log
 	rm -f vl-*.txt vl-warnings.json
+	rm -rf */INCA_libs */simv.daidir */simv */csrc */ncverilog.log

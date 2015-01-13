@@ -28,8 +28,17 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
+/*+VL `define HAVE_VL */
+
+`ifdef HAVE_VL
 parameter top_spurious;
 parameter top_unset;
+`else
+// NCVerilog/VCS don't like parameters without initial values
+parameter top_spurious = 1;
+parameter top_unset = 1;
+`endif
+
 parameter top_normal = 3;
 parameter top_unused = 4;
 
@@ -218,11 +227,17 @@ typedef struct packed {
   logic [2:0]  checksum;
 } transaction_t;
 
+module m8sub (output transaction_t outtrans, input transaction_t intrans) ;
+  assign outtrans.token[1] = intrans.token[0];
+endmodule
+
+
 module m8 () ;
 
   transaction_t normal_trans;
   transaction_t unset_trans;
   transaction_t unused_trans;
+  transaction_t spurious_trans;
 
   assign normal_trans.token = 0;
 
@@ -231,5 +246,120 @@ module m8 () ;
 
   assign unused_trans.payload = 0;
 
+  transaction_t subout, subin;
+  m8sub mysub (subout, subin);
+
 endmodule
 
+
+interface MemReq ;
+  logic [63:0] w1_spurious;
+  logic        w1_normal;
+  logic [7:0]  w1_unused;
+  logic [3:0]  w1_unset;
+
+  logic [3:0]  w1_partial_unused;
+  logic [63:0] w1_partial_unset;
+endinterface
+
+module m9write (MemReq foo) ;
+  assign foo.w1_normal = 0;
+  assign foo.w1_unused = 0;
+  assign foo.w1_partial_unused = 0;
+  assign foo.w1_partial_unset[5:0] = 0;
+endmodule
+
+module m9writewrap(MemReq foo) ;
+  m9write writecore (foo);
+endmodule
+
+module m9read (MemReq foo) ;
+  logic blah = { foo.w1_normal,
+                 foo.w1_unset,
+                 foo.w1_partial_unused[2:0],
+                 foo.w1_partial_unset };
+endmodule
+
+module m9readwrap(MemReq foo);
+  m9read readcore (foo);
+endmodule
+
+module m9 () ;
+
+  MemReq mr_spurious();
+  MemReq mr_used1();
+  MemReq mr_used2();
+
+  m9writewrap write (mr_used1);
+  m9readwrap read (mr_used2);
+
+endmodule
+
+
+
+module mh1 () ;
+
+  // These will get set hierarchically in mh2.
+  wire w1_spurious;
+  wire w1_normal;
+  wire w1_unused;
+  wire w1_unset;
+
+endmodule
+
+module mh2 () ;
+
+  mh1 inst1 ();
+  mh1 inst2 ();
+
+  assign inst1.w1_normal = inst2.w1_unset;
+  assign inst2.w1_normal = inst1.w1_unset;
+
+  assign inst1.w1_unused = inst2.w1_normal;
+  assign inst2.w1_unused = inst1.w1_normal;
+
+endmodule
+
+
+module idx1 ();
+
+  parameter [3:0] a1 = 0;
+  parameter [3:0] a2 = 0;
+
+  wire [3:0] normal1 = 0;
+  wire [3:0] normal2 = 0;
+  wire [3:0] normal3 = 0;
+
+  wire unused1;
+  logic [3:0] unused2;
+  logic [3:0] unused3;
+
+  assign  unused1 = normal1[normal2];
+  initial unused2[normal3] = 0;
+
+  assign unused3 = normal1[a1:a2];
+
+endmodule
+
+module idxtop () ;
+
+  // So it won't get thrown away
+  idx1 #(.a1(4), .a2(4)) idxinst ();
+
+endmodule
+
+
+
+
+module mg1 () ;
+
+  localparam p1_used = 4;
+
+  wire [3:0] w1_normal;
+
+  // Tricky case: this usage of p1 got missed by our original, naive generate
+  // handling.
+  if (p1_used >= 4) assign w1_normal = 1;
+  else              assign w1_normal = 0;
+
+endmodule

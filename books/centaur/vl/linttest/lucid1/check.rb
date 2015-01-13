@@ -48,91 +48,138 @@ def normal(modname, wirename)
   outlaw_warning(modname, "VL-LUCID-UNUSED", wirename)
 end
 
-normal(:"Design Root", "of top_normal")
-spurious(:"Design Root", "of top_spurious")
-unset(:"Design Root", "of top_unset")
-unused(:"Design Root", "of top_unused")
+normal(:"Design Root", "top_normal ")
+spurious(:"Design Root", "top_spurious ")
+unset(:"Design Root", "top_unset ")
+unused(:"Design Root", "top_unused ")
 
 
-normal(:m0, "of w1_normal")
-spurious(:m0, "of w1_spurious")
-unset(:m0, "of w1_unset")
-unused(:m0, "of w1_unused")
+normal(:m0, "w1_normal ")
+spurious(:m0, "w1_spurious ")
+unset(:m0, "w1_unset ")
+unused(:m0, "w1_unused ")
 
-unused(:"Design Root", "of top_unused_t")
-normal(:"Design Root", "of top_used_t")
+unused(:"Design Root", "Type top_unused_t ")
+normal(:"Design Root", "Type top_used_t ")
 
-unused(:"Design Root", "unction top_f_unused")
-normal(:"Design Root", "unction top_f_used")
+unused(:"Design Root", "Function top_f_unused ")
+normal(:"Design Root", "Function top_f_used ")
 
-normal(:m1, "myout")
+normal(:m1, "myout ")
 
-
-normal(:m2, "of l1_normal")
-spurious(:m2, "of l1_spurious")
-unset(:m2, "of l1_unset")
-unused(:m2, "of l1_unused")
-
-
-normal(:m3, "of delay")
-unset(:m3, "of clk")
-spurious(:m3, "of r1_spurious")
-unset(:m3, "of r1_unset")
-normal(:m3, "of r1_normal")
-unused(:m3, "of r1_unused")
-
-normal(:"Design Root", "of opcode_t")
-unused(:"Design Root", "of instruction_t")
+normal(:m2, "l1_normal ")
+spurious(:m2, "l1_spurious ")
+unset(:m2, "l1_unset ")
+unused(:m2, "l1_unused ")
 
 
-normal(:pkg1, "of p1_normal")
-unset(:pkg1, "of p1_unset")
-unused(:pkg1, "of p1_unused")
-spurious(:pkg1, "of p1_spurious")
+normal(:m3, "delay ")
+unset(:m3, "clk ")
+spurious(:m3, "r1_spurious ")
+unset(:m3, "r1_unset ")
+normal(:m3, "r1_normal ")
+unused(:m3, "r1_unused ")
 
-unset(:pkg1, "of pr1_unset")
-unset(:pkg1, "of pr2_unset")
-unused(:pkg1, "of pr1_unused")
-unused(:pkg1, "of pr2_unused")
-normal(:pkg1, "of pr1_normal")
-normal(:pkg1, "of pr2_normal")
+normal(:"Design Root", "Type opcode_t ")
+unused(:"Design Root", "Type instruction_t ")
 
-normal(:pkg1, "unction pfn_used")
-unused(:pkg1, "unction pfn_unused")
+normal(:pkg1, "p1_normal ")
+unset(:pkg1, "p1_unset ")
+unused(:pkg1, "p1_unused ")
+spurious(:pkg1, "p1_spurious ")
 
-normal(:m4, "u1")
-normal(:m4, "u2")
+unset(:pkg1, "pr1_unset ")
+unset(:pkg1, "pr2_unset ")
+unused(:pkg1, "pr1_unused ")
+unused(:pkg1, "pr2_unused ")
+normal(:pkg1, "pr1_normal ")
+normal(:pkg1, "pr2_normal ")
+
+normal(:pkg1, "Function pfn_used ")
+unused(:pkg1, "Function pfn_unused ")
+
+normal(:m4, "u1 ")
+normal(:m4, "u2 ")
 
 
-unused(:"Design Root", "unction noreturn")
-unused(:"Design Root", "nr_unused")
-unset(:"Design Root", "noreturn")
+unused(:"Design Root", "Function noreturn ")
+unused(:"Design Root", "nr_unused ")
+unset(:"Design Root", "noreturn ")
 
-normal(:m5, "of width")
-unused(:m5, "of m5_unused")
-unset(:m5, "of m5_unset")
+normal(:m5, "width ")
+unused(:m5, "m5_unused ")
+unset(:m5, "m5_unset ")
 
-unset(:m5, "of doublebad")
-unused(:m5, "of doublebad")
+unset(:m5, "doublebad ")
+unused(:m5, "doublebad ")
 
-normal(:m6, "of width")
-normal(:m6, "of xout")
-normal(:m6, "of xin")
+normal(:m6, "width ")
+normal(:m6, "xout ")
+normal(:m6, "xin ")
 
-unset(:m6, "foo")
+unset(:m6, "foo ")
 
-unused(:m7, "of unused1")
-unused(:m7, "of unused2")
-unused(:m7, "of unused3")
-unset(:m7, "of unset1")
-unset(:m7, "of unset2")
-unset(:m7, "of unset3")
+unused(:m7, "unused1 ")
+unused(:m7, "unused2 ")
+unused(:m7, "unused3 ")
+unset(:m7, "unset1 ")
+unset(:m7, "unset2 ")
+unset(:m7, "unset3 ")
 
-normal(:m8, "of normal_trans")
-unset(:m8, "of unset_trans")
-unused(:m8, "of unused_trans")
-unused(:m8, "of xx0")
-unused(:m8, "of xx1")
+normal(:m8sub, "outtrans ");
+normal(:m8sub, "intrans ");
+
+normal(:m8, "normal_trans ")
+unset(:m8, "unset_trans ")
+unused(:m8, "unused_trans ")
+spurious(:m8, "spurious_trans ")
+unused(:m8, "xx0 ")
+unused(:m8, "xx1 ")
+unused(:m8, "subout ");
+unset(:m8, "subin ");
+
+
+normal(:MemReq, "w1_normal ")
+unset(:MemReq, "w1_unset ")
+unused(:MemReq, "w1_unused ")
+unset(:MemReq, "w1_partial_unset ")
+unused(:MemReq, "w1_partial_unused ")
+spurious(:MemReq, "w1_spurious")
+
+normal(:m9write, "foo ")
+normal(:m9read, "foo ")
+unused(:m9read, "blah ")
+
+normal(:m9writewrap, "foo ")
+normal(:m9readwrap, "foo ")
+
+normal(:m9, "mr_used1 ")
+normal(:m9, "mr_used2 ")
+spurious(:m9, "mr_spurious ")
+
+
+spurious(:mh1, "w1_spurious ")
+normal(:mh1, "w1_normal ")
+unused(:mh1, "w1_unused ")
+unset(:mh1, "w1_unset ")
+
+normal(:idx1, "normal1 ")
+normal(:idx1, "normal2 ")
+normal(:idx1, "normal3 ")
+normal(:idx1, "a1 ")
+normal(:idx1, "a2 ")
+
+unused(:idx1, "unused1 ")
+unused(:idx1, "unused2 ")
+unused(:idx1, "unused3 ")
+
+
+
+
+# I know these don't work yet
+#normal(:mg1, "p1_used ")
+#normal(:mg1, "w1_normal ")
+
 
 test_passed()
 

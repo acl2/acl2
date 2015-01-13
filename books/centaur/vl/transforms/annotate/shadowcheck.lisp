@@ -717,7 +717,6 @@ explicit declarations.</p>")
                            (mv st warnings))))
     (mv st warnings)))
 
-
 (define vl-shadowcheck-alias ((x        vl-alias-p)
                               (st       vl-shadowcheck-state-p)
                               (warnings vl-warninglist-p))

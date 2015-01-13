@@ -37,6 +37,7 @@
 (include-book "../mlib/range-tools")
 (include-book "../mlib/datatype-tools")
 (include-book "../mlib/reportcard")
+(include-book "../mlib/hid-tools")
 (include-book "../util/cwtime")
 (include-book "../util/sum-nats")
 (include-book "../util/merge-indices")
@@ -137,7 +138,9 @@ be the same.</p>"
             "Should we issue warnings for parameters?  It generally will only
              make sense to do this <i>before</i> unparameterization has taken
              place, because unparameterization should generally get rid of any
-             sensible parameters.")))
+             sensible parameters.")
+
+   (warnings vl-warninglist-p)))
 
 
 ; State Initialization --------------------------------------------------------
@@ -294,6 +297,119 @@ created when we process their packages, etc.</p>"
     (mv db x))
   :apply-to-generates vl-generates-luciddb-init)
 
+;; (defines vl-genblob-luciddb-init
+;;   ;; Custom handler for generate blocks.  This is tricky.  Every IF and LOOP
+;;   ;; gets its own scopes.
+
+;;   (define vl-genblob-luciddb-init ((x  vl-genblob-p)
+;;                                    (ss vl-scopestack-p)
+;;                                    (db vl-luciddb-p))
+;;     :returns (db vl-luciddb-p)
+;;     :measure (vl-genblob-count x)
+;;     :verify-guards nil
+;;     (b* (((vl-genblob x) (vl-genblob-fix x))
+;;          (ss (vl-scopestack-push x ss))
+;;          (db (vl-scope-luciddb-init x ss db))
+;;          ;; Portdecls, assigns, aliases, vardecls, paramdecls - no subscopes
+;;          (db (vl-fundecllist-luciddb-init x.fundecls ss db))
+;;          (db (vl-taskdecllist-luciddb-init x.taskdecls ss db))
+;;          ;; Modinsts, gateinsts -- no subscopes
+;;          (db (vl-alwayslist-luciddb-init x.alwayses ss db))
+;;          (db (vl-initiallist-luciddb-init x.initials ss db))
+;;          ;; Typedefs, imports, fwdtypedefs, modports -- no subscopes
+;;          (db (vl-generates-luciddb-init x.generates ss db))
+;;          ;; Ports, name -- no subscopes.
+;;          )
+;;       db))
+
+;;   (define vl-generates-luciddb-init ((x  vl-genelementlist-p)
+;;                                      (ss vl-scopestack-p)
+;;                                      (db vl-luciddb-p))
+;;     :returns (db vl-luciddb-p)
+;;     :measure (vl-genblob-generates-count x)
+;;     (b* (((when (atom x))
+;;           (vl-luciddb-fix db))
+;;          (db (vl-genblob-luciddb-init-generate (car x) ss db)))
+;;       (vl-generates-luciddb-init (cdr x) ss db)))
+
+;;   (define vl-genblob-luciddb-init-generate ((x  vl-genelement-p)
+;;                                             (ss vl-scopestack-p)
+;;                                             (db vl-luciddb-p))
+;;     :returns (db vl-luciddb-p)
+;;     :measure (vl-genblob-generate-count x)
+;;     (vl-genelement-case
+;;       x
+;;       ;; BOZO lots to do here, genifs, genloops, etc.
+;;       :vl-genblock (vl-genblob-luciddb-init-elementlist x.elems ss db)
+;;       :vl-genarray
+;;       (b* ((db (vl-genblob-luciddb-init-genarrayblocklist x.blocks ss db)))
+;;         db)))
+
+;;   (define vl-genblob-luciddb-init-elementlist ((x  vl-genelementlist-p)
+;;                                                (ss vl-scopestack-p)
+;;                                                (db vl-luciddb-p))
+;;     :returns (db vl-luciddb-p)
+;;     :measure (vl-genblob-elementlist-count x)
+;;     (b* (((maybe-mv db new-blob)
+;;           (vl-genblob-luciddb-init (vl-sort-genelements x)
+;;                                    ss db)))
+;;       (maybe-mv db (vl-genblob->elems new-blob x))))
+
+;;  (define vl-genblob-luciddb-init-genarrayblocklist
+;;          ((x vl-genarrayblocklist-p)
+;;           (ss vl-scopestack-p)
+;;           (db vl-luciddb-p))
+;;          :returns
+;;          (mv (db vl-luciddb-p)
+;;              (new-x vl-genarrayblocklist-p))
+;;          :measure
+;;          (vl-genblob-genarrayblocklist-count x)
+;;          (b* (((when (atom x))
+;;                (b* ((db (vl-luciddb-fix db)))
+;;                    (maybe-mv db nil)))
+;;               ((maybe-mv db first)
+;;                (vl-genblob-luciddb-init-genarrayblock (car x)
+;;                                                       ss db))
+;;               ((maybe-mv db rest)
+;;                (vl-genblob-luciddb-init-genarrayblocklist (cdr x)
+;;                                                           ss db)))
+;;              (maybe-mv db (cons first rest))))
+
+;;  (define vl-genblob-luciddb-init-genarrayblock ((x vl-genarrayblock-p)
+;;                                                 (ss vl-scopestack-p)
+;;                                                 (db vl-luciddb-p))
+;;    :returns
+;;    (mv (db vl-luciddb-p)
+;;        (new-x vl-genarrayblock-p))
+;;    :measure
+;;    (vl-genblob-genarrayblock-count x)
+;;    (b* (((vl-genarrayblock x))
+;;         ((maybe-mv db new-elems)
+;;          (vl-genblob-luciddb-init-elementlist x.elems ss db)))
+;;      (maybe-mv db
+;;                (change-vl-genarrayblock x
+;;                                                 :elems new-elems))))
+;;  ///
+;;  (local (in-theory (disable vl-genblob-luciddb-init-genarrayblock
+;;                             vl-genblob-luciddb-init-genarrayblocklist
+;;                             vl-genblob-luciddb-init-elementlist
+;;                             vl-genblob-luciddb-init-generate
+;;                             vl-generates-luciddb-init
+;;                             vl-genblob-luciddb-init)))
+;;  (verify-guards vl-genblob-luciddb-init
+;;                 :hints nil)
+;;  (deffixequiv-mutual
+;;       vl-genblob-luciddb-init
+;;       :hints ((and stable-under-simplificationp
+;;                    (std::expand-calls-computed-hint
+;;                         clause
+;;                         '(vl-genblob-luciddb-init-genarrayblock
+;;                               vl-genblob-luciddb-init-genarrayblocklist
+;;                               vl-genblob-luciddb-init-elementlist
+;;                               vl-genblob-luciddb-init-generate
+;;                               vl-generates-luciddb-init
+;;                               vl-genblob-luciddb-init))))))
+
 (define vl-module-luciddb-init ((x  vl-module-p)
                                 (ss vl-scopestack-p)
                                 (db vl-luciddb-p))
@@ -331,6 +447,31 @@ created when we process their packages, etc.</p>"
        (db (vl-package-luciddb-init (car x) ss db)))
     (vl-packagelist-luciddb-init (cdr x) ss db)))
 
+(define vl-interface-luciddb-init ((x  vl-interface-p)
+                                   (ss vl-scopestack-p)
+                                   (db vl-luciddb-p))
+  :returns (new-db vl-luciddb-p)
+  (b* (((vl-interface x) (vl-interface-fix x))
+       (ss (vl-scopestack-push x ss))
+       (db (vl-scope-luciddb-init x ss db))
+
+       ;; BOZO I thought interfaces were supposed to be able to have
+       ;; functions and tasks??
+       ;(db (vl-fundecllist-luciddb-init x.fundecls ss db))
+       ;(db (vl-taskdecllist-luciddb-init x.taskdecls ss db))
+       )
+    ;; BOZO missing generates
+    db))
+
+(define vl-interfacelist-luciddb-init ((x  vl-interfacelist-p)
+                                     (ss vl-scopestack-p)
+                                     (db vl-luciddb-p))
+  :returns (new-db vl-luciddb-p)
+  (b* (((when (atom x))
+        (vl-luciddb-fix db))
+       (db (vl-interface-luciddb-init (car x) ss db)))
+    (vl-interfacelist-luciddb-init (cdr x) ss db)))
+
 (define vl-luciddb-init
   :short "Construct the initial @(see lucid) database for a design."
   ((x vl-design-p))
@@ -339,10 +480,11 @@ created when we process their packages, etc.</p>"
        (ss   (vl-scopestack-init x))
        (db   nil)
        (db   (vl-scope-luciddb-init x ss db))
-       (db   (vl-modulelist-luciddb-init   x.mods      ss db))
-       (db   (vl-fundecllist-luciddb-init  x.fundecls  ss db))
-       (db   (vl-taskdecllist-luciddb-init x.taskdecls ss db))
-       (db   (vl-packagelist-luciddb-init  x.packages  ss db)))
+       (db   (vl-modulelist-luciddb-init    x.mods        ss db))
+       (db   (vl-fundecllist-luciddb-init   x.fundecls    ss db))
+       (db   (vl-taskdecllist-luciddb-init  x.taskdecls   ss db))
+       (db   (vl-packagelist-luciddb-init   x.packages    ss db))
+       (db   (vl-interfacelist-luciddb-init x.interfaces  ss db)))
     db))
 
 (define vl-lucidstate-init
@@ -359,43 +501,6 @@ created when we process their packages, etc.</p>"
 ; State Debugging -------------------------------------------------------------
 
 (local (xdoc::set-default-parents vl-pps-lucidstate))
-
-(define vl-scope->name ((x vl-scope-p))
-  :returns (name maybe-stringp :rule-classes :type-prescription)
-  (b* ((x (vl-scope-fix x)))
-    (case (tag x)
-      (:vl-interface  (vl-interface->name x))
-      (:vl-module     (vl-module->name x))
-      (:vl-genblob    (vl-genblob->name x))
-      (:vl-blockscope (vl-blockscope->name x))
-      (:vl-package    (vl-package->name x))
-      ;; Don't know a name for a scopeinfo
-      (otherwise      nil))))
-
-(define vl-scopeitem->name ((x vl-scopeitem-p))
-  :returns (name maybe-stringp :rule-classes :type-prescription)
-  :prepwork
-  ((local (defthm crock
-         (implies (vl-genelement-p x)
-                  (equal (tag x) (vl-genelement-kind x)))
-         :hints(("Goal" :in-theory (enable vl-genelement-p
-                                           vl-genelement-kind
-                                           tag))))))
-  :guard-hints(("Goal" :in-theory (enable vl-scopeitem-p)))
-  (b* ((x (vl-scopeitem-fix x)))
-    (case (tag x)
-      (:vl-modport    (vl-modport->name x))
-      (:vl-modinst    (vl-modinst->instname x))
-      (:vl-gateinst   (vl-gateinst->name x))
-      (:vl-genblock   (vl-genblock->name x))
-      (:vl-genarray   (vl-genarray->name x))
-      ((:vl-genloop :vl-genif :vl-gencase  :vl-genbase) nil)
-      (:vl-interfaceport (vl-interfaceport->ifname x))
-      (:vl-paramdecl     (vl-paramdecl->name x))
-      (:vl-vardecl       (vl-vardecl->name x))
-      (:vl-fundecl       (vl-fundecl->name x))
-      (:vl-taskdecl      (vl-taskdecl->name x))
-      (otherwise         (vl-typedef->name x)))))
 
 (define vl-pp-scope-name ((x vl-scope-p) &key (ps 'ps))
   (b* ((x    (vl-scope-fix x))
@@ -517,10 +622,11 @@ created when we process their packages, etc.</p>"
 
 (local (xdoc::set-default-parents lucid))
 
-(define vl-luciddb-mark-used ((key vl-lucidkey-p)
-                              (occ vl-lucidocc-p)
-                              (db  vl-luciddb-p)
-                              (ctx acl2::any-p))
+(define vl-luciddb-mark ((mtype (member mtype '(:used :set)))
+                         (key   vl-lucidkey-p)
+                         (occ   vl-lucidocc-p)
+                         (db    vl-luciddb-p)
+                         (ctx   acl2::any-p))
   :parents (vl-lucidstate-mark-used)
   :returns (new-db vl-luciddb-p)
   (b* ((db   (vl-luciddb-fix db))
@@ -539,58 +645,27 @@ created when we process their packages, etc.</p>"
                       db)))
 
        ((vl-lucidval val))
-       (val (change-vl-lucidval val :used (cons occ val.used)))
+       (val (if (eq mtype :used)
+                (change-vl-lucidval val :used (cons occ val.used))
+              (change-vl-lucidval val :set (cons occ val.set))))
        (db  (hons-acons key val db)))
     db))
 
-(define vl-lucidstate-mark-used ((key vl-lucidkey-p)
-                                 (occ vl-lucidocc-p)
-                                 (st  vl-lucidstate-p)
-                                 (ctx acl2::any-p))
+(define vl-lucidstate-mark ((mtype (member mtype '(:used :set)))
+                            (key   vl-lucidkey-p)
+                            (occ   vl-lucidocc-p)
+                            (st    vl-lucidstate-p)
+                            (ctx   acl2::any-p))
   :returns (new-st vl-lucidstate-p)
   (b* (((vl-lucidstate st))
-       (db (vl-luciddb-mark-used key occ st.db ctx)))
+       (db (vl-luciddb-mark mtype key occ st.db ctx)))
     (change-vl-lucidstate st :db db)))
 
-(define vl-luciddb-mark-set ((key vl-lucidkey-p)
-                              (occ vl-lucidocc-p)
-                              (db  vl-luciddb-p)
-                              (ctx acl2::any-p))
-  :parents (vl-lucidstate-mark-set)
-  :returns (new-db vl-luciddb-p)
-  (b* ((db   (vl-luciddb-fix db))
-       (occ  (vl-lucidocc-fix occ))
-       (key  (vl-lucidkey-fix key))
-
-       (val (cdr (hons-get key db)))
-       ((unless val)
-        ;; BOZO we probably don't expect this to happen, but we'll go ahead and
-        ;; mark it as an error.
-        (let ((err (list __function__ ctx)))
-          (hons-acons key
-                      (change-vl-lucidval *vl-empty-lucidval*
-                                          :set (list occ)
-                                          :errors (list err))
-                      db)))
-
-       ((vl-lucidval val))
-       (val (change-vl-lucidval val :set (cons occ val.set)))
-       (db  (hons-acons key val db)))
-    db))
-
-(define vl-lucidstate-mark-set ((key vl-lucidkey-p)
-                                (occ vl-lucidocc-p)
-                                (st  vl-lucidstate-p)
-                                (ctx acl2::any-p))
-  :returns (new-st vl-lucidstate-p)
-  (b* (((vl-lucidstate st))
-       (db (vl-luciddb-mark-set key occ st.db ctx)))
-    (change-vl-lucidstate st :db db)))
-
-(define vl-lucid-mark-solo-used ((name stringp)
-                                 (ss   vl-scopestack-p)
-                                 (st   vl-lucidstate-p)
-                                 (ctx  acl2::any-p))
+(define vl-lucid-mark-simple ((mtype (member mtype '(:used :set)))
+                              (name  stringp)
+                              (ss    vl-scopestack-p)
+                              (st    vl-lucidstate-p)
+                              (ctx   acl2::any-p))
   :returns (new-st vl-lucidstate-p)
   (b* ((st (vl-lucidstate-fix st))
        ((mv item item-ss)
@@ -601,64 +676,155 @@ created when we process their packages, etc.</p>"
         st)
        (key (make-vl-lucidkey :item item :scopestack item-ss))
        (occ (make-vl-lucidocc-solo)))
-    (vl-lucidstate-mark-used key occ st ctx)))
+    (vl-lucidstate-mark mtype key occ st ctx)))
 
-(define vl-lucid-mark-slice-used ((name  stringp)
-                                  (left  vl-expr-p)
-                                  (right vl-expr-p)
-                                  (ss    vl-scopestack-p)
-                                  (st    vl-lucidstate-p)
-                                  (ctx   acl2::any-p))
-  :returns (new-st vl-lucidstate-p)
-  (b* ((st (vl-lucidstate-fix st))
-       ((mv item item-ss)
-        (vl-scopestack-find-item/ss name ss))
-       ((unless item)
-        ;; BOZO eventually turn into a proper bad-id warning
-        (cw "Warning: missing item ~s0.~%" name)
-        st)
-       (key (make-vl-lucidkey :item item :scopestack item-ss))
-       (occ (make-vl-lucidocc-slice :left (vl-expr-strip left)
-                                    :right (vl-expr-strip right))))
-    (vl-lucidstate-mark-used key occ st ctx)))
+;; (define vl-lucid-mark-slice-used ((name  stringp)
+;;                                   (left  vl-expr-p)
+;;                                   (right vl-expr-p)
+;;                                   (ss    vl-scopestack-p)
+;;                                   (st    vl-lucidstate-p)
+;;                                   (ctx   acl2::any-p))
+;;   :returns (new-st vl-lucidstate-p)
+;;   (b* ((st (vl-lucidstate-fix st))
+;;        ((mv item item-ss)
+;;         (vl-scopestack-find-item/ss name ss))
+;;        ((unless item)
+;;         ;; BOZO eventually turn into a proper bad-id warning
+;;         (cw "Warning: missing item ~s0.~%" name)
+;;         st)
+;;        (key (make-vl-lucidkey :item item :scopestack item-ss))
+;;        (occ (make-vl-lucidocc-slice :left (vl-expr-strip left)
+;;                                     :right (vl-expr-strip right))))
+;;     (vl-lucidstate-mark-used key occ st ctx)))
 
-(define vl-lucid-mark-solo-set ((name stringp)
-                                (ss   vl-scopestack-p)
-                                (st   vl-lucidstate-p)
-                                (ctx  acl2::any-p))
-  :returns (new-st vl-lucidstate-p)
-  (b* ((st (vl-lucidstate-fix st))
-       ((mv item item-ss)
-        (vl-scopestack-find-item/ss name ss))
-       ((unless item)
-        ;; BOZO eventually turn into a proper bad-id warning
-        (cw "Warning: missing item ~s0.~%" name)
-        st)
-       (key (make-vl-lucidkey :item item :scopestack item-ss))
-       (occ (make-vl-lucidocc-solo)))
-    (vl-lucidstate-mark-set key occ st ctx)))
+;; (define vl-lucid-mark-solo-set ((name stringp)
+;;                                 (ss   vl-scopestack-p)
+;;                                 (st   vl-lucidstate-p)
+;;                                 (ctx  acl2::any-p))
+;;   :returns (new-st vl-lucidstate-p)
+;;   (b* ((st (vl-lucidstate-fix st))
+;;        ((mv item item-ss)
+;;         (vl-scopestack-find-item/ss name ss))
+;;        ((unless item)
+;;         ;; BOZO eventually turn into a proper bad-id warning
+;;         (cw "Warning: missing item ~s0.~%" name)
+;;         st)
+;;        (key (make-vl-lucidkey :item item :scopestack item-ss))
+;;        (occ (make-vl-lucidocc-solo)))
+;;     (vl-lucidstate-mark-set key occ st ctx)))
 
-(define vl-lucid-mark-slice-set ((name  stringp)
-                                  (left  vl-expr-p)
-                                  (right vl-expr-p)
-                                  (ss    vl-scopestack-p)
-                                  (st    vl-lucidstate-p)
-                                  (ctx   acl2::any-p))
-  :returns (new-st vl-lucidstate-p)
-  (b* ((st (vl-lucidstate-fix st))
-       ((mv item item-ss)
-        (vl-scopestack-find-item/ss name ss))
-       ((unless item)
-        ;; BOZO eventually turn into a proper bad-id warning
-        (cw "Warning: missing item ~s0.~%" name)
-        st)
-       (key (make-vl-lucidkey :item item :scopestack item-ss))
-       (occ (make-vl-lucidocc-slice :left (vl-expr-strip left)
-                                    :right (vl-expr-strip right))))
-    (vl-lucidstate-mark-set key occ st ctx)))
-
+;; (define vl-lucid-mark-slice-set ((name  stringp)
+;;                                   (left  vl-expr-p)
+;;                                   (right vl-expr-p)
+;;                                   (ss    vl-scopestack-p)
+;;                                   (st    vl-lucidstate-p)
+;;                                   (ctx   acl2::any-p))
+;;   :returns (new-st vl-lucidstate-p)
+;;   (b* ((st (vl-lucidstate-fix st))
+;;        ((mv item item-ss)
+;;         (vl-scopestack-find-item/ss name ss))
+;;        ((unless item)
+;;         ;; BOZO eventually turn into a proper bad-id warning
+;;         (cw "Warning: missing item ~s0.~%" name)
+;;         st)
+;;        (key (make-vl-lucidkey :item item :scopestack item-ss))
+;;        (occ (make-vl-lucidocc-slice :left (vl-expr-strip left)
+;;                                     :right (vl-expr-strip right))))
+;;     (vl-lucidstate-mark-set key occ st ctx)))
 
 ; Marking Phase ---------------------------------------------------------------
+
+; We're going to look up IDs with vl-follow-hidexpr.
+; That will give us a trace.
+
+(define vl-normalize-scopestack ((x vl-scopestack-p))
+  :returns (new-x vl-scopestack-p)
+  :measure (vl-scopestack-count x)
+  :verify-guards nil
+  (b* ((x (vl-scopestack-fix x)))
+    (vl-scopestack-case x
+      :null x
+      :global x
+      :local
+      (vl-scopestack-push (if (eq (tag x.top) :vl-module)
+                              (vl-module->genblob x.top)
+                            x.top)
+                          (vl-normalize-scopestack x.super))))
+  ///
+  (verify-guards vl-normalize-scopestack))
+
+(define vl-hidstep-mark-interfaces ((mtype (member mtype '(:used :set)))
+                                    (step  vl-hidstep-p)
+                                    (st    vl-lucidstate-p)
+                                    (ctx   acl2::any-p))
+  :returns (new-st vl-lucidstate-p)
+  (b* (((vl-hidstep step))
+       ((when (eq (tag step.item) :vl-interfaceport))
+        (b* ((key (make-vl-lucidkey
+                   :item step.item
+                   :scopestack (vl-normalize-scopestack step.ss)))
+             (occ (make-vl-lucidocc-solo)))
+          (vl-lucidstate-mark mtype key occ st ctx))))
+    (vl-lucidstate-fix st)))
+
+(define vl-hidtrace-mark-interfaces ((mtype  (member mtype '(:used :set)))
+                                     (trace  vl-hidtrace-p)
+                                     (st     vl-lucidstate-p)
+                                     (ctx    acl2::any-p))
+  :returns (new-st vl-lucidstate-p)
+  (b* (((when (atom trace))
+        (vl-lucidstate-fix st))
+       (st (vl-hidstep-mark-interfaces mtype (car trace) st ctx)))
+    (vl-hidtrace-mark-interfaces mtype (cdr trace) st ctx)))
+
+(define vl-hidsolo-mark ((mtype (member mtype '(:used :set)))
+                         (hid   vl-expr-p)
+                         (ss    vl-scopestack-p)
+                         (st    vl-lucidstate-p)
+                         (ctx   acl2::any-p))
+  :guard (vl-hidexpr-p hid)
+  :returns (new-st vl-lucidstate-p)
+  ;; BOZO this doesn't mark the indices used in the HID expression!!
+  (b* (((mv err trace ?tail) (vl-follow-hidexpr hid ss ctx))
+       ((when err)
+        (b* (((vl-lucidstate st)))
+          (change-vl-lucidstate st :warnings st.warnings)))
+       ;; BOZO consider doing more with tail.  For instance:
+       ;;   - Should we record the tail into the OCC that we create?  Could we
+       ;;     analyze it in any meaningful way?
+       ;;   - Should our state somehow record/track the fields of structs?
+       ((cons (vl-hidstep step) rest) trace)
+       (key (make-vl-lucidkey
+             :item step.item
+             :scopestack (vl-normalize-scopestack step.ss)))
+       (occ (make-vl-lucidocc-solo))
+       (st  (vl-hidtrace-mark-interfaces mtype rest st ctx))
+       (st  (vl-lucidstate-mark mtype key occ st ctx)))
+    st))
+
+(define vl-hidslice-mark ((mtype  (member mtype '(:used :set)))
+                          (hid    vl-expr-p)
+                          (left   vl-expr-p)
+                          (right  vl-expr-p)
+                          (ss     vl-scopestack-p)
+                          (st     vl-lucidstate-p)
+                          (ctx    acl2::any-p))
+  :guard (vl-hidexpr-p hid)
+  :returns (new-st vl-lucidstate-p)
+  ;; BOZO this doesn't mark the indices used in the HID expression!!
+  (b* (((mv err trace ?tail) (vl-follow-hidexpr hid ss ctx))
+       ((when err)
+        (b* (((vl-lucidstate st)))
+          (change-vl-lucidstate st :warnings st.warnings)))
+       ;; BOZO consider doing more with tail, as in hidsolo-mark.
+       ((cons (vl-hidstep step) rest) trace)
+       (key (make-vl-lucidkey
+             :item step.item
+             :scopestack (vl-normalize-scopestack step.ss)))
+       (occ (make-vl-lucidocc-slice :left left :right right))
+       (st  (vl-hidtrace-mark-interfaces mtype rest st ctx))
+       (st  (vl-lucidstate-mark mtype key occ st ctx)))
+    st))
 
 (define vl-rhsatom-lucidcheck ((x   vl-expr-p)
                                (ss  vl-scopestack-p)
@@ -674,14 +840,14 @@ created when we process their packages, etc.</p>"
        (guts (vl-atom->guts x))
        (st   (vl-lucidstate-fix st)))
     (case (tag guts)
-      (:vl-id       (vl-lucid-mark-solo-used (vl-id->name guts) ss st ctx))
-      (:vl-funname  (vl-lucid-mark-solo-used (vl-funname->name guts) ss st ctx))
-      (:vl-typename (vl-lucid-mark-solo-used (vl-typename->name guts) ss st ctx))
-
-      ;; BOZO eventually think about how/whether to handle HIDs and tags?
-      (:vl-hidpiece st)
-      (:vl-tagname  st)
-
+      (:vl-funname  (vl-lucid-mark-simple :used (vl-funname->name guts) ss st ctx))
+      (:vl-typename (vl-lucid-mark-simple :used (vl-typename->name guts) ss st ctx))
+      (:vl-tagname
+       ;; BOZO eventually think about how to handle tags.
+       st)
+      ((:vl-id :vl-hidpiece)
+       (progn$ (raise "Should never get here because we should check for hidexpr-p first.")
+               st))
       ((:vl-constint :vl-weirdint :vl-extint :vl-string
         :vl-real :vl-keyguts :vl-time :vl-basictype
         :vl-sysfunname)
@@ -690,131 +856,6 @@ created when we process their packages, etc.</p>"
       (otherwise
        (progn$ (impossible)
                st)))))
-
-
-
-;; (define vl-follow-hidexpr-to-decl ((x   vl-expr-p)
-;;                                    (ss  vl-scopestack-p)
-;;                                    ;; Context for error messages
-;;                                    (orig-x vl-expr-p)
-;;                                    (ctx    acl2::any-p))
-;;   :guard (vl-hidexpr-p x)
-;;   :returns (mv (err  (iff (vl-warning-p err) err)
-;;                      "On failure, an error message explaining what went wrong."
-;;                (decl (iff (vl-scopeitem-p item) (not err)))
-;;                (tail (and (iff (vl-expr-p tail) tail)
-;;                           (iff (vl-hidexpr-p tail) tail)))
-                    
-;;   :measure (vl-expr-count x)
-
-
-
-;; (define vl-lucid-mark-hid
-;;   :short "Core marking operation for Lucid identifiers and HIDs."
-;;   ((x        vl-expr-p
-;;              "HID expression to follow.  Typically a simple identifier like @('foo'),
-;;               but might also be more complex, e.g., @('foo.bar[2].baz').")
-;;    (select   vl-maybe-range-p
-;;              "Information on what part of the HID is being used.  Examples: for
-;;               plain @('foo') the select will just be @('NIL'); for @('foo[3]')
-;;               or @('foo.bar[4:0]') it will be @('[3:3]') or @('[4:0]').")
-;;    (ss        vl-scopestack-p
-;;               "Current scopestack we are at, which may change as we descend
-;;                through the hierarchy of @('x').")
-;;    (st        vl-lucidstate-p
-;;               "Lucid state that we're working with.")
-;;    &key
-;;    (usedp    booleanp
-;;              "True means we should mark the item as USED, false means mark it
-;;               as SET."))
-;;   :guard (vl-hidexpr-p x)
-;;   :returns (new-st vl-lucidstate-p)
-;;   :measure (vl-expr-count x)
-
-;;   (b* ((idx1
-;;         ;; Leading name, perhaps with indices
-;;         ;;   foo --> foo
-;;         ;;   foo.bar --> foo
-;;         ;;   foo[3][4].bar.baz --> foo[3][4]
-;;         (vl-hidexpr-first-index x))
-;;        (name1
-;;         ;; Leading name without any indices
-;;         ;;   foo --> foo
-;;         ;;   foo.bar --> foo
-;;         ;;   foo[3][4].bar.baz --> foo
-;;         (vl-hidindex->name idx1))
-;;        ;; Find foo in the current scope
-;;        ((mv item ss) (vl-scopestack-find-item/ss name1 ss))
-;;        ((unless item)
-;;         (mv (make-vl-warning :type :vl-lucid-bad-hid
-;;                              :msg "~a0: trying to resolve ~a1: got to ~a2 in ~s3, ~
-;;                                    but there is no item named ~s4."
-;;                              :args (list ctx orig-expr x (vl-pps-scopestack-path ss) name1)
-;;                              :fn __function__)
-;;             nil nil))
-
-;;        ((when (or (eq (tag item) :vl-vardecl)
-;;                   (eq (tag item) :vl-paramdecl)))
-;;         ;; There could be additional components to this HID, e.g., we might be
-;;         ;; looking at foo.opcode where foo is a instruction_t datatype.  But
-;;         ;; for now we don't want to try to do anything fancy with structure
-;;         ;; fields, so now that we've reached a data type, we just want to stop.
-;;         (mv nil item ss))
-
-;;        ((when (or (eq (tag item) :vl-modinst)
-;;                   (eq (tag item) :vl-interfaceport)))
-;;         ;; Something like foo.bar where foo is a module instance: go ahead and
-;;         ;; go into the module.
-;;         (b* (((unless (vl-hidexpr-dot-p x))
-;;               (mv (make-vl-warning :type :vl-lucid-bad-hid
-;;                                    :msg "~a0: trying to resolve ~a1: got to ~a2 in ~s3, ~
-;;                                          but this is a whole module instance or interface ~
-;;                                          port, so it doesn't make sense for lucid checking."
-                                   
-
-       
-
-;;        ((when (or (eq (tag item) :vl-modinst)
-;;                   (eq (tag item) :vl-interfaceport))
-
-
-
-;;   :long "<p>In the simplest case, we are dealing with an ordinary identifier
-;; and we just need to look up its definition and mark it.</p>
-
-;; @({
-;;    module foo ;
-;;      logic w;
-;;      $display(\"%b\", w); <-- We just want the declaration for w, above.
-;;    endmodule
-;; })
-
-;; <p>This extends rather simply to HIDs that refer to wires in submodules in a
-;; simple way.  For instance:</p>
-
-;; @({
-;;    module bar ;
-;;      foo myfoo (...);
-;;      $display(\"%b\", myfoo.w); <-- We want the declaration for @('w') in foo.
-;;    endmodule
-;; })
-
-;; <p>But we do something more complex for structures.  As a very simple example,
-;; suppose we have:</p>
-
-;; @({
-;;     typedef struct { logic w; } mytype_t;
-;;     module baz ;
-;;       mytype_t blah;
-;;       blah.w          <-- We want the declaration of \"blah\", not of \"w\".
-;;     endmodule
-;; })
-
-;; <p>Interfaces are tricky.  We want to record the names of interfaces that we
-;; have hit, but also go into them and see the declarations within them.  I guess
-;; that would also be the case for typedefs.  So maybe we really want to return a
-;; list of things.
-
 
 (defines vl-rhsexpr-lucidcheck
 
@@ -826,45 +867,56 @@ created when we process their packages, etc.</p>"
     :returns (new-st vl-lucidstate-p)
     :verify-guards nil
     :inline nil
-    (b* (((when (vl-atom-p x))
-          (vl-rhsatom-lucidcheck x ss st ctx))
-         ((vl-nonatom x))
+    (b* (((when (vl-hidexpr-p x))
+          (b* ((st (vl-hidsolo-mark :used x ss st ctx))
+               ;; If there are any indices in this expression, then we need to
+               ;; perhaps mark identifiers in them as used as well.
+               (indices (vl-hidexpr-collect-indices x))
+               ((when indices)
+                (vl-rhsexprlist-lucidcheck indices ss st ctx)))
+            st))
 
+         ((when (vl-atom-p x))
+          (vl-rhsatom-lucidcheck x ss st ctx))
+
+         ((vl-nonatom x))
          ((when (and (or (eq x.op :vl-index)
                          (eq x.op :vl-bitselect))
-                     (vl-idexpr-p (first x.args))))
-          ;; TODO: change vl-idexpr-p above into vl-hidexpr-p and replace this with
-          ;; the generic hidexpr lookup.
-
-; Multiple indexing operators would look like this:  foo.bar[1][2] -->
-;
-;   (index
-;        (index (foo.bar)
-;               1)
-;        2)
-;
-; So I probably need to dive into here to extract foo.bar and find it, and then
-; decide what the hell to do with a multiply indexed occurrence of the thing.
-
-
-          (vl-lucid-mark-slice-used (vl-idexpr->name (first x.args))
-                                    (second x.args)
-                                    (second x.args)
-                                    ss st ctx))
+                     ;; BOZO this probably isn't really general enough, i.e.,
+                     ;; we might ideally want to deal with things like
+                     ;; foo[3][4][5] in some different way.  For now, this
+                     ;; should at least mark foo[3].
+                     (vl-hidexpr-p (first x.args))))
+          (b* (((list from idx) x.args)
+               ;; Previous bug: we didn't notice that expressions that were
+               ;; only used in index positions were being used.  So, now be
+               ;; sure to mark identifiers in the index expression as used.
+               (st (vl-hidslice-mark :used from idx idx ss st ctx))
+               (st (vl-rhsexpr-lucidcheck idx ss st ctx))
+               (st (vl-rhsexprlist-lucidcheck (vl-hidexpr-collect-indices from) ss st ctx)))
+            st))
 
          ((when (and (or (eq x.op :vl-select-colon)
                          (eq x.op :vl-partselect-colon))
-                     (vl-idexpr-p (first x.args))))
-          (vl-lucid-mark-slice-used (vl-idexpr->name (first x.args))
-                                    (second x.args)
-                                    (third x.args)
-                                    ss st ctx)))
+                     ;; BOZO as with individual indices, this probably isn't
+                     ;; general enough, i.e., we won't deal with foo[5][4:3]
+                     ;; or foo[6:5][4:3] in a very sensible way.
+                     (vl-hidexpr-p (first x.args))))
+          (b* (((list from left right) x.args)
+               ;; As in the index case, be sure to mark expressions used in
+               ;; the indices.
+               (st (vl-hidslice-mark :used from left right ss st ctx))
+               (st (vl-rhsexpr-lucidcheck left ss st ctx))
+               (st (vl-rhsexpr-lucidcheck right ss st ctx))
+               (st (vl-rhsexprlist-lucidcheck (vl-hidexpr-collect-indices from) ss st ctx)))
+            st))
 
-      ;; BOZO may wish to specially handle many other operators:
-      ;;  - pluscolon, minuscolon, etc.
-      ;;  - assignment pattern stuff
-      ;;  - tagged operators (recording which tags are used)
-      ;;  - streaming concatenation and with operators
+         ;; BOZO may eventually wish to specially handle many other operators:
+         ;;  - pluscolon, minuscolon, etc.
+         ;;  - assignment pattern stuff
+         ;;  - tagged operators (recording which tags are used)
+         ;;  - streaming concatenation and with operators
+         )
       (vl-rhsexprlist-lucidcheck x.args ss st ctx)))
 
   (define vl-rhsexprlist-lucidcheck ((x   vl-exprlist-p)
@@ -891,36 +943,6 @@ created when we process their packages, etc.</p>"
       (vl-rhsexpr-lucidcheck x ss st ctx)
     (vl-lucidstate-fix st)))
 
-(define vl-lhsatom-lucidcheck ((x   vl-expr-p)
-                               (ss  vl-scopestack-p)
-                               (st  vl-lucidstate-p)
-                               (ctx acl2::any-p))
-  :guard-hints(("Goal"
-                :in-theory (disable tag-when-vl-atomguts-p-forward)
-                :use ((:instance tag-when-vl-atomguts-p-forward
-                       (x (vl-atom->guts (vl-expr-fix x)))))))
-  :guard (vl-atom-p x)
-  :returns (new-st vl-lucidstate-p)
-  (b* ((x    (vl-expr-fix x))
-       (guts (vl-atom->guts x))
-       (st   (vl-lucidstate-fix st)))
-    (case (tag guts)
-      (:vl-id       (vl-lucid-mark-solo-set (vl-id->name guts) ss st ctx))
-      (:vl-funname  (vl-lucid-mark-solo-set (vl-funname->name guts) ss st ctx))
-      (:vl-typename (vl-lucid-mark-solo-set (vl-typename->name guts) ss st ctx))
-
-      ;; BOZO eventually think about how/whether to handle HIDs and tags?
-      (:vl-hidpiece st)
-      (:vl-tagname  st)
-
-      ((:vl-constint :vl-weirdint :vl-extint :vl-string
-        :vl-real :vl-keyguts :vl-time :vl-basictype
-        :vl-sysfunname)
-       ;; Nothing at all to do for any of these
-       st)
-      (otherwise
-       (progn$ (impossible)
-               st)))))
 
 (defines vl-lhsexpr-lucidcheck
 
@@ -932,23 +954,54 @@ created when we process their packages, etc.</p>"
     :returns (new-st vl-lucidstate-p)
     :verify-guards nil
     :inline nil
-    (b* (((when (vl-atom-p x))
-          (vl-lhsatom-lucidcheck x ss st ctx))
+    (b* (((when (vl-hidexpr-p x))
+          (b* ((st (vl-hidsolo-mark :set x ss st ctx))
+               ;; Subtle.  If there are any indices in this expression, then we
+               ;; need to perhaps mark identifiers in them as USED as well.
+               ;; For instance, we might be looking at:
+               ;;    foo[width-1:0].bar = 0;
+               ;; Above we have just marked the declaration for BAR as being set.
+               ;; But we also want to mark WIDTH as being USED (not SET) because
+               ;; it is being used to choose where to do the write, etc.
+               (indices (vl-hidexpr-collect-indices x))
+               (st      (vl-rhsexprlist-lucidcheck indices ss st ctx)))
+            st))
+
+         ((when (vl-atom-p x))
+          ;; ATOM that isn't an identifier in an LHS context?  Probably
+          ;; doesn't make sense.  Not going to mark this.
+          (vl-lucidstate-fix st))
+
          ((vl-nonatom x))
          ((when (and (or (eq x.op :vl-index)
                          (eq x.op :vl-bitselect))
-                     (vl-idexpr-p (first x.args))))
-          (vl-lucid-mark-slice-set (vl-idexpr->name (first x.args))
-                                   (second x.args)
-                                   (second x.args)
-                                   ss st ctx))
+                     ;; BOZO this probably isn't really general enough, i.e.,
+                     ;; we might ideally want to deal with things like
+                     ;; foo[3][4][5] in some different way.  For now, this
+                     ;; should at least mark foo[3].
+                     (vl-hidexpr-p (first x.args))))
+          (b* (((list from idx) x.args)
+               ;; We mark FROM as being SET, but we also need to mark anything
+               ;; that is used in index expressions as USED.
+               (st (vl-hidslice-mark :set from idx idx ss st ctx))
+               (st (vl-rhsexpr-lucidcheck idx ss st ctx))
+               (st (vl-rhsexprlist-lucidcheck (vl-hidexpr-collect-indices from) ss st ctx)))
+            st))
+
          ((when (and (or (eq x.op :vl-select-colon)
                          (eq x.op :vl-partselect-colon))
-                     (vl-idexpr-p (first x.args))))
-          (vl-lucid-mark-slice-set (vl-idexpr->name (first x.args))
-                                   (second x.args)
-                                   (third x.args)
-                                   ss st ctx))
+                     ;; BOZO as with individual indices, this probably isn't
+                     ;; general enough, i.e., we won't deal with foo[5][4:3]
+                     ;; or foo[6:5][4:3] in a very sensible way.
+                     (vl-hidexpr-p (first x.args))))
+          (b* (((list from left right) x.args)
+               ;; As above, mark the HID as set but mark the indices as USED.
+               (st (vl-hidslice-mark :set from left right ss st ctx))
+               (st (vl-rhsexpr-lucidcheck left ss st ctx))
+               (st (vl-rhsexpr-lucidcheck right ss st ctx))
+               (st (vl-rhsexprlist-lucidcheck (vl-hidexpr-collect-indices from) ss st ctx)))
+            st))
+
          ;; BOZO may wish to specially handle many other operators:
          ;;  - pluscolon, minuscolon, etc.
          ;;  - assignment pattern stuff
@@ -1041,7 +1094,7 @@ created when we process their packages, etc.</p>"
   :body
   (if (stringp x)
       ;; Type name like foo_t, so mark foo_t as a used type.
-      (vl-lucid-mark-solo-used x ss st ctx)
+      (vl-lucid-mark-simple :used x ss st ctx)
     st))
 
 (def-vl-lucidcheck enumbasetype
@@ -1099,8 +1152,7 @@ created when we process their packages, etc.</p>"
           st)
 
         :vl-usertype
-        (b* (
-(st (vl-rhsexpr-lucidcheck x.kind ss st ctx))
+        (b* ((st (vl-rhsexpr-lucidcheck x.kind ss st ctx))
              (st (vl-packeddimensionlist-lucidcheck x.pdims ss st ctx))
              (st (vl-packeddimensionlist-lucidcheck x.udims ss st ctx)))
           st))))
@@ -1202,20 +1254,20 @@ created when we process their packages, etc.</p>"
             ;; Initial value, so the parameter itself is set.
             ;; Furthermore, we also need to mark the variables that are
             ;; used in the initial value expression as being used.
-            (st (vl-lucid-mark-solo-set x.name ss st x))
+            (st (vl-lucid-mark-simple :set x.name ss st x))
             (st (vl-rhsexpr-lucidcheck x.type.default ss st x)))
          st))
       (:vl-explicitvalueparam
        (b* ((st (vl-datatype-lucidcheck x.type.type ss st x))
             ((unless x.type.default)
              st)
-            (st (vl-lucid-mark-solo-set x.name ss st x))
+            (st (vl-lucid-mark-simple :set x.name ss st x))
             (st (vl-rhsexpr-lucidcheck x.type.default ss st x)))
          st))
       (:vl-typeparam
        (b* (((unless x.type.default)
              st)
-            (st (vl-lucid-mark-solo-set x.name ss st x))
+            (st (vl-lucid-mark-simple :set x.name ss st x))
             (st (vl-datatype-lucidcheck x.type.default ss st x)))
          st)))))
 
@@ -1230,7 +1282,7 @@ created when we process their packages, etc.</p>"
                ;; Initial value, so this variable is set and we also need to
                ;; mark all variables used in the rhs as being used.
                (b* ((st (vl-rhsexpr-lucidcheck x.initval ss st x))
-                    (st (vl-lucid-mark-solo-set x.name ss st x)))
+                    (st (vl-lucid-mark-simple :set x.name ss st x)))
                  st)
              st)))
     st))
@@ -1403,11 +1455,11 @@ created when we process their packages, etc.</p>"
       (:vl-input
        ;; We "pretend" that input ports are set because they ought to be set by
        ;; the superior module, function call, or task invocation.
-       (vl-lucid-mark-solo-set x.name ss st x))
+       (vl-lucid-mark-simple :set x.name ss st x))
       (:vl-output
        ;; We "pretend" that output ports are used because they ought to be used
        ;; the superior module, function call, or task invocation.
-       (vl-lucid-mark-solo-used x.name ss st x))
+       (vl-lucid-mark-simple :used x.name ss st x))
       (:vl-inout
        ;; We don't pretend that inout ports are used or set, because they ought
        ;; to be both used and set within the submodule at some point in time.
@@ -1415,6 +1467,21 @@ created when we process their packages, etc.</p>"
        st))))
 
 (def-vl-lucidcheck-list portdecllist :element portdecl)
+
+(def-vl-lucidcheck interfaceport
+  ;; Unlike regular ports, I think we want to not mark an interface port as
+  ;; being used or set.  The smarts for an interface port will mostly be in our
+  ;; reporting code.  If the thing is never used or set anywhere at all, we'll
+  ;; not report it as an error.  But it's perfectly OK for a module to only
+  ;; read from an interface, or to only write to it.
+  :body
+  (b* (((vl-interfaceport x))
+       (st (vl-packeddimensionlist-lucidcheck x.udims ss st x))
+       ;; BOZO maybe mark the IFNAME as used?
+       )
+    st))
+
+(def-vl-lucidcheck-list interfaceportlist :element interfaceport)
 
 (def-vl-lucidcheck fundecl
   ;; We mark input ports as SET and output ports as USED since otherwise we
@@ -1429,13 +1496,13 @@ created when we process their packages, etc.</p>"
        ;; function to be set?  But if we regard it as meaning, "it has a
        ;; defined value", then the very act of defining the function is kind of
        ;; like setting it.
-       (st    (vl-lucid-mark-solo-set x.name ss st x))
+       (st    (vl-lucid-mark-simple :set x.name ss st x))
        (scope (vl-fundecl->blockscope x))
        (ss    (vl-scopestack-push scope ss))
        ;; Now that we've pushed the function scope, mark the function's name
        ;; (i.e., the return value) as used, because we're imagining that it
        ;; is "used" by whoever calls the function.
-       (st    (vl-lucid-mark-solo-used x.name ss st x))
+       (st    (vl-lucid-mark-simple :used x.name ss st x))
        ;; Mark all inputs to the function as set, because we're imagining
        ;; that they're set by the caller.
        (st    (vl-portdecllist-lucidcheck x.portdecls ss st))
@@ -1449,7 +1516,7 @@ created when we process their packages, etc.</p>"
   (b* (((vl-taskdecl x))
        ;; Subtle.  Mark the task itself as set.  See comments in fundecl
        ;; handling for an explanation.
-       (st    (vl-lucid-mark-solo-set x.name ss st x))
+       (st    (vl-lucid-mark-simple :set x.name ss st x))
        (scope (vl-taskdecl->blockscope x))
        (ss    (vl-scopestack-push scope ss))
        (st    (vl-portdecllist-lucidcheck x.portdecls ss st))
@@ -1471,8 +1538,7 @@ created when we process their packages, etc.</p>"
 (def-vl-lucidcheck typedef
   :body
   (b* (((vl-typedef x))
-       ;; BOZO is a typedef a scope?  Do we need to add it to the scope stack?
-       (st (vl-lucid-mark-solo-set x.name ss st x))
+       (st (vl-lucid-mark-simple :set x.name ss st x))
        (st (vl-datatype-lucidcheck x.type ss st x)))
     st))
 
@@ -1492,8 +1558,9 @@ created when we process their packages, etc.</p>"
        ;; Outputs are like LHSes, they're set not used.
        (vl-lhsexpr-lucidcheck x.expr ss st ctx))
       (otherwise
-       ;; INOUT or error computing direction: treat it as if it were both used
-       ;; and set.  BOZO maybe we should cause an error if not determined?
+       ;; INOUT or interface port or error computing direction: treat it as if
+       ;; it were both used and set.  BOZO maybe we should cause an error if
+       ;; not determined?
        (b* ((st (vl-rhsexpr-lucidcheck x.expr ss st ctx))
             (st (vl-lhsexpr-lucidcheck x.expr ss st ctx)))
          st)))))
@@ -1581,6 +1648,128 @@ created when we process their packages, etc.</p>"
 (def-vl-lucidcheck-list modinstlist :element modinst)
 
 
+
+
+;; (defines vl-genblob-lucidcheck
+;;   ;; I had originally tried to use vl-genblob-transform here.  However, that
+;;   ;; doesn't seem sufficient to deal with things like, e.g.,
+;;   ;;
+;;   ;;    if (condition)
+;;   ;;    assign foo = bar;
+;;   ;;
+;;   ;; Because we need to regard things like <condition> as being used here, and
+;;   ;; that just isn't anything that def-genblob-transform is going to be
+;;   ;; exposing to us.
+;;   (define vl-genblob-lucidcheck ((x vl-genblob-p)
+;;                                  (ss vl-scopestack-p)
+;;                                  (st vl-lucidstate-p))
+;;     :returns (st vl-lucidstate-p)
+;;     :measure (vl-genblob-count x)
+;;     :verify-guards nil
+;;     (b* (((vl-genblob x) (vl-genblob-fix x))
+;;          (ss (vl-scopestack-push x ss))
+;;          (st (vl-portdecllist-lucidcheck x.portdecls ss st))
+;;          (st (vl-assignlist-lucidcheck x.assigns ss st))
+;;          ;; BOZO aliases?
+;;          (st (vl-vardecllist-lucidcheck x.vardecls ss st))
+;;          (st (vl-paramdecllist-lucidcheck x.paramdecls ss st))
+;;          (st (vl-fundecllist-lucidcheck x.fundecls ss st))
+;;          (st (vl-taskdecllist-lucidcheck x.taskdecls ss st))
+;;          (st (vl-modinstlist-lucidcheck x.modinsts ss st))
+;;          (st (vl-gateinstlist-lucidcheck x.gateinsts ss st))
+;;          (st (vl-alwayslist-lucidcheck x.alwayses ss st))
+;;          (st (vl-initiallist-lucidcheck x.initials ss st))
+;;          (st (vl-typedeflist-lucidcheck x.typedefs ss st))
+;;          ;; Imports -- BOZO?  Mark packages as used?
+;;          ;; Fwdtypedefs -- I think it's fine to ignore these
+;;          ;; Modports -- BOZO? weird to have these anyway?
+;;          (st (vl-generates-lucidcheck x.generates ss st))
+;;          ;; Ports -- BOZO?  What do we want to do with these?
+;;          )
+;;       st))
+
+;;   (define vl-generates-lucidcheck ((x  vl-genelementlist-p)
+;;                                    (ss vl-scopestack-p)
+;;                                    (st vl-lucidstate-p))
+;;     :returns (st vl-lucidstate-p)
+;;     :measure (vl-genblob-generates-count x)
+;;     (b* (((when (atom x))
+;;           (vl-lucidstate-fix st))
+;;          (st (vl-genblob-lucidcheck-generate (car x) ss st)))
+;;       (vl-generates-lucidcheck (cdr x) ss st)))
+
+;;   (define vl-genblob-lucidcheck-generate ((x vl-genelement-p)
+;;                                           (ss vl-scopestack-p)
+;;                                           (st vl-lucidstate-p))
+;;     :returns (st vl-lucidstate-p)
+;;     :measure (vl-genblob-generate-count x)
+;;     (vl-genelement-case x
+;;       :vl-genloop
+      
+
+;;       :vl-genif   ...
+;;       :vl-gencase ...
+;;       :vl-genblock (vl-genblob-lucidcheck-elementlist x.elems ss st)
+;;       :vl-genarray (vl-genblob-lucidcheck-genarrayblocklist x.blocks ss st)
+;;       :vl-genbase  ...))
+
+;;   (define vl-genblob-lucidcheck-elementlist ((x vl-genelementlist-p)
+;;                                              (ss vl-scopestack-p)
+;;                                              (st vl-lucidstate-p))
+;;     :returns (st vl-lucidstate-p)
+;;     :measure (vl-genblob-elementlist-count x)
+;;     (vl-genblob-lucidcheck (vl-sort-genelements x) ss st))
+
+;;   (define vl-genblob-lucidcheck-genarrayblocklist ((x vl-genarrayblocklist-p)
+;;                                                    (ss vl-scopestack-p)
+;;                                                    (st vl-lucidstate-p))
+;;     :returns (st vl-lucidstate-p)
+;;     :measure (vl-genblob-genarrayblocklist-count x)
+;;     (b* (((when (atom x))
+;;           (vl-lucidstate-fix st))
+;;          ((maybe-mv st first)
+;;           (vl-genblob-lucidcheck-genarrayblock (car x)
+;;                                                ss st))
+;;          ((maybe-mv st rest)
+;;                (vl-genblob-lucidcheck-genarrayblocklist (cdr x)
+;;                                                         ss st)))
+;;              (maybe-mv st (cons first rest))))
+;;  (define vl-genblob-lucidcheck-genarrayblock
+;;          ((x vl-genarrayblock-p)
+;;           (ss vl-scopestack-p)
+;;           (st vl-lucidstate-p))
+;;          :returns
+;;          (mv (st vl-lucidstate-p)
+;;              (new-x vl-genarrayblock-p))
+;;          :measure
+;;          (vl-genblob-genarrayblock-count x)
+;;          (b* (((vl-genarrayblock x))
+;;               ((maybe-mv st new-elems)
+;;                (vl-genblob-lucidcheck-elementlist x.elems ss st)))
+;;              (maybe-mv st
+;;                        (change-vl-genarrayblock x
+;;                                                 :elems new-elems))))
+;;  ///
+;;  (local (in-theory (disable vl-genblob-lucidcheck-genarrayblock
+;;                             vl-genblob-lucidcheck-genarrayblocklist
+;;                             vl-genblob-lucidcheck-elementlist
+;;                             vl-genblob-lucidcheck-generate
+;;                             vl-generates-lucidcheck
+;;                             vl-genblob-lucidcheck)))
+;;  (verify-guards vl-genblob-lucidcheck
+;;                 :hints nil)
+;;  (deffixequiv-mutual
+;;       vl-genblob-lucidcheck
+;;       :hints ((and stable-under-simplificationp
+;;                    (std::expand-calls-computed-hint
+;;                         clause
+;;                         '(vl-genblob-lucidcheck-genarrayblock
+;;                               vl-genblob-lucidcheck-genarrayblocklist
+;;                               vl-genblob-lucidcheck-elementlist
+;;                               vl-genblob-lucidcheck-generate
+;;                               vl-generates-lucidcheck
+;;                               vl-genblob-lucidcheck))))))
+
 (def-genblob-transform vl-genblob-lucidcheck ((ss vl-scopestack-p)
                                               (st vl-lucidstate-p))
   ;; BOZO I don't really understand what this is doing or whether it's right.
@@ -1601,8 +1790,8 @@ created when we process their packages, etc.</p>"
        (st (vl-typedeflist-lucidcheck   x.typedefs   ss st))
        (st (vl-gateinstlist-lucidcheck  x.gateinsts  ss st))
        (st (vl-modinstlist-lucidcheck   x.modinsts   ss st))
-
-       ;; BOZO ifports, gates, aliases, modinsts, modports, typedefs ...
+       (st (vl-interfaceportlist-lucidcheck x.ifports ss st))
+       ;; BOZO aliases, modports??, typedefs ...
        )
     (mv st x))
   :apply-to-generates vl-generates-lucidcheck)
@@ -1630,6 +1819,20 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck-list packagelist :element package)
 
+(def-vl-lucidcheck interface
+  :body
+  (b* (((vl-interface x))
+       (ss (vl-scopestack-push x ss))
+       (st (vl-portdecllist-lucidcheck  x.portdecls  ss st))
+       (st (vl-vardecllist-lucidcheck   x.vardecls   ss st))
+       (st (vl-paramdecllist-lucidcheck x.paramdecls ss st))
+       ;; bozo do something with modports?
+       ;; bozo generates
+       )
+    st))
+
+(def-vl-lucidcheck-list interfacelist :element interface)
+
 (define vl-design-lucidcheck-main ((x  vl-design-p)
                                    (ss vl-scopestack-p)
                                    (st vl-lucidstate-p))
@@ -1644,7 +1847,8 @@ created when we process their packages, etc.</p>"
        (st (vl-vardecllist-lucidcheck x.vardecls ss st))
        (st (vl-typedeflist-lucidcheck x.typedefs ss st))
        (st (vl-packagelist-lucidcheck x.packages ss st))
-       ;; bozo interfaces, programs, configs, udps, ...
+       (st (vl-interfacelist-lucidcheck x.interfaces ss st))
+       ;; bozo programs, configs, udps, ...
        )
     st))
 
@@ -1985,7 +2189,7 @@ created when we process their packages, etc.</p>"
        (b* (((when (vl-lucid-some-solo-occp val.used))
              reportcard)
             (w (make-vl-warning :type :vl-lucid-unused
-                                :msg "~w0: function is never used. (~s1)"
+                                :msg "Function ~w0 is never used. (~s1)"
                                 :args (list (vl-fundecl->name key.item)
                                             (with-local-ps (vl-pp-scopestack-path key.scopestack)))
                                 :fn __function__
@@ -1996,7 +2200,7 @@ created when we process their packages, etc.</p>"
        (b* (((when (vl-lucid-some-solo-occp val.used))
              reportcard)
             (w (make-vl-warning :type :vl-lucid-unused
-                                :msg "~w0: task is never used. (~s1)"
+                                :msg "Task ~w0 is never used. (~s1)"
                                 :args (list (vl-taskdecl->name key.item)
                                             (with-local-ps (vl-pp-scopestack-path key.scopestack)))
                                 :fn __function__
@@ -2007,7 +2211,7 @@ created when we process their packages, etc.</p>"
        (b* (((when (vl-lucid-some-solo-occp val.used))
              reportcard)
             (w (make-vl-warning :type :vl-lucid-unused
-                                :msg "~w0: type is never used. (~s1)"
+                                :msg "Type ~w0 is never used. (~s1)"
                                 :args (list (vl-typedef->name key.item)
                                             (with-local-ps (vl-pp-scopestack-path key.scopestack)))
                                 :fn __function__
@@ -2026,7 +2230,36 @@ created when we process their packages, etc.</p>"
          (vl-extend-reportcard-list topname warnings reportcard)))
 
       (:vl-interfaceport
-       reportcard)
+       (b* (((when (or val.used val.set))
+             ;; Used or set anywhere at all is good enough for an interface.
+             reportcard)
+            (w (make-vl-warning :type :vl-lucid-spurious
+                                :msg "Interface port ~w0 is never mentioned. (~s1)"
+                                :args (list (vl-interfaceport->name key.item)
+                                            (with-local-ps (vl-pp-scopestack-path key.scopestack)))
+                                :fn __function__
+                                :fatalp nil)))
+         (vl-extend-reportcard topname w reportcard)))
+
+      (:vl-modinst
+       (b* (((vl-modinst key.item))
+            (mod (vl-scopestack-find-definition key.item.modname key.scopestack))
+            ((unless (eq (tag mod) :vl-interface))
+             ;; Something like a UDP or a module instance.  We have no
+             ;; expectation that this should be used anywhere.
+             reportcard)
+            ;; Interface port.  We expect that this is at least used or set
+            ;; somewhere.  It probably doesn't necessarily need to be both used
+            ;; and set.
+            ((when (or val.used val.set))
+             reportcard)
+            (w (make-vl-warning :type :vl-lucid-spurious
+                                :msg "Interface ~w0 is never mentioned. (~s1)"
+                                :args (list key.item.instname
+                                            (with-local-ps (vl-pp-scopestack-path key.scopestack)))
+                                :fn __function__
+                                :fatalp nil)))
+         (vl-extend-reportcard topname w reportcard)))
 
       (otherwise
        ;; Other kinds of items include, for instance, modinsts, gateinsts,
