@@ -272,6 +272,8 @@ only meant as a heuristic for generating more useful warnings.</p>"
           :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
           :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
           :vl-binary-shlassign :vl-binary-shrassign :vl-binary-ashlassign :vl-binary-ashrassign
+
+          :vl-inside :vl-valuerange :vl-valuerangelist
           )
          ;; Don't gather anything from here.
          nil)
@@ -731,6 +733,8 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
         :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
         :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
         :vl-binary-shlassign :vl-binary-shrassign :vl-binary-ashlassign :vl-binary-ashrassign
+
+        :vl-inside :vl-valuerange :vl-valuerangelist
         )
 
        ;; We don't handle these here.  They should be handled in

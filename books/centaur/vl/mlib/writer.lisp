@@ -528,6 +528,8 @@ displays.  The module browser's web pages are responsible for defining the
      (:VL-PATTERN-MULTI      . 200)
      (:VL-PATTERN-TYPE       . 200)
      (:VL-KEYVALUE           . 200)
+     (:VL-VALUERANGELIST     . 200)
+     (:VL-VALUERANGE         . 200)
 
      ;; All of these things with precedence 20 is kind of concerning/confusing.
      ;; Can this really be right?  Well, what's one more?
@@ -569,6 +571,7 @@ displays.  The module browser's web pages are responsible for defining the
      (:VL-BINARY-LTE     . 100)
      (:VL-BINARY-GT      . 100)
      (:VL-BINARY-GTE     . 100)
+     (:VL-INSIDE         . 100)
 
      (:VL-BINARY-EQ      . 90)
      (:VL-BINARY-NEQ     . 90)
@@ -760,7 +763,7 @@ its arguments, if necessary.</p>"
               :vl-binary-wildeq :vl-binary-wildneq
               :vl-binary-logand :vl-binary-logor
               :vl-binary-power
-              :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
+              :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte :vl-inside
               :vl-binary-bitand :vl-binary-bitor
               :vl-binary-xor :vl-binary-xnor
               :vl-binary-shr :vl-binary-shl :vl-binary-ashr :vl-binary-ashl)
@@ -1011,11 +1014,23 @@ its arguments, if necessary.</p>"
                                (vl-pp-expr (second args))
                                (vl-print "}}")))))
 
-            ((:vl-concat)
+            ((:vl-concat :vl-valuerangelist)
              ;; This doesn't need parens because it has maximal precedence
              (vl-ps-seq (vl-print "{")
                         (vl-pp-exprlist args)
                         (vl-print "}")))
+
+            ((:vl-valuerange)
+             (b* (((unless (consp args))
+                   (impossible)
+                   ps)
+                  (arg1 (first args))
+                  (arg2 (second args)))
+               (vl-ps-seq (vl-print "[")
+                          (vl-pp-expr arg1)
+                          (vl-println? ":")
+                          (vl-pp-expr arg2)
+                          (vl-println? "]"))))
 
             ((:vl-stream-left :vl-stream-right)
              (if (atom args)
