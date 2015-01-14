@@ -512,6 +512,20 @@
        (return-raw (vl-parse-1+-for-step-assigns))))
 
 
+(defparser vl-parse-return-statement (atts)
+  :result (vl-stmt-p val)
+  :fails gracefully
+  :resultp-of-nil nil
+  :count strong
+  :guard (vl-atts-p atts)
+  :measure (two-nats-measure (vl-tokstream-measure) 0)
+  (seq tokstream
+       (:= (vl-match-token :vl-kwd-return))
+       (when (vl-is-token? :vl-semi)
+         (return (make-vl-returnstmt :atts atts)))
+       (val := (vl-parse-expression))
+       (return (make-vl-returnstmt :val val :atts atts))))
+
 
 (local (in-theory (disable
 
@@ -783,6 +797,7 @@
                                    :atts atts))))
 
 
+
 ; statement ::=                                                      ;;; starts with
 ;    {attribute_instance} blocking_assignment ';'                    ;;; variable_lvalue
 ;  | {attribute_instance} case_statement                             ;;; 'case', 'casez', 'casex'
@@ -838,6 +853,11 @@
        ;; Task enable handled below
        (:vl-kwd-wait
         (vl-parse-wait-statement atts))
+       (:vl-kwd-return
+        (seq tokstream
+             (ret := (vl-parse-return-statement atts))
+             (:= (vl-match-token :vl-semi))
+             (return ret)))
        (t
         ;; At this point, we can have either a blocking assignment, nonblocking
         ;; assignment, or task enable.  We will backtrack.  It doesn't matter
