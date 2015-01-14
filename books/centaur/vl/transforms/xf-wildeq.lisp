@@ -1071,6 +1071,13 @@ is just a constant integer.  So this is just:</p>
                   ((mv warnings id-prime) (vl-expr-wildelim x.id ctx warnings))
                   (x-prime (change-vl-disablestmt x :id id-prime)))
                (mv warnings x-prime)))
+            (:vl-returnstmt
+             (b* (((vl-returnstmt x) x)
+                  ((mv warnings val)
+                   (if x.val
+                       (vl-expr-wildelim x.val ctx warnings)
+                     (mv warnings x.val))))
+               (mv warnings (change-vl-returnstmt x :val val))))
             (otherwise
              (b* (((vl-eventtriggerstmt x) x)
                   ((mv warnings id-prime) (vl-expr-wildelim x.id ctx warnings))

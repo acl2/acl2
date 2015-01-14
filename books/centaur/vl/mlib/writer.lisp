@@ -2528,6 +2528,12 @@ expression into a string."
                              (vl-print "disable "))
                  (vl-pp-expr x.id)
                  (vl-println " ;"))
+      :vl-returnstmt
+      (vl-ps-seq (vl-pp-stmt-autoindent)
+                 (if x.atts (vl-pp-atts x.atts) ps)
+                 (vl-ps-span "vl_key" (vl-print "return "))
+                 (if x.val (vl-pp-expr x.val) ps)
+                 (vl-println " ;"))
 
       :vl-deassignstmt
       (vl-ps-seq (vl-pp-stmt-autoindent)

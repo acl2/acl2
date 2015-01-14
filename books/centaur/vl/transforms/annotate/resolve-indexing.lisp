@@ -432,6 +432,13 @@ applied to a HID/identifier.  Otherwise, we generate a warning and fail.</p>"
                   ((mv warnings id-prime) (vl-expr-resolve-indexing x.id ss warnings))
                   (x-prime                (change-vl-disablestmt x :id id-prime)))
                (mv warnings x-prime)))
+            (:vl-returnstmt
+             (b* (((vl-returnstmt x) x)
+                  ((mv warnings val)
+                   (if x.val
+                       (vl-expr-resolve-indexing x.val ss warnings)
+                     (mv warnings x.val))))
+               (mv (ok) (change-vl-returnstmt x :val val))))
             (:vl-eventtriggerstmt
              (b* (((vl-eventtriggerstmt x) x)
                   ((mv warnings id-prime) (vl-expr-resolve-indexing x.id ss warnings))

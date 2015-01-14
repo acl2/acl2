@@ -165,7 +165,8 @@
         (eq kind :vl-deassignstmt)
         (eq kind :vl-enablestmt)
         (eq kind :vl-disablestmt)
-        (eq kind :vl-eventtriggerstmt))))
+        (eq kind :vl-eventtriggerstmt)
+        (eq kind :vl-returnstmt))))
 
 (defthm vl-atomicstmt-forward
   (implies (vl-atomicstmt-p x)
@@ -175,7 +176,8 @@
                  (eq kind :vl-deassignstmt)
                  (eq kind :vl-enablestmt)
                  (eq kind :vl-disablestmt)
-                 (eq kind :vl-eventtriggerstmt))))
+                 (eq kind :vl-eventtriggerstmt)
+                 (eq kind :vl-returnstmt))))
   :rule-classes :forward-chaining
   :hints(("Goal" :in-theory (enable vl-atomicstmt-p))))
 
@@ -205,7 +207,8 @@
     :vl-forstmt          x.atts
     :vl-blockstmt        x.atts
     :vl-repeatstmt       x.atts
-    :vl-timingstmt       x.atts))
+    :vl-timingstmt       x.atts
+    :vl-returnstmt       x.atts))
 
 
 (define vl-compoundstmt->stmts
@@ -545,6 +548,7 @@ directly part of the statement.</p>"
       :vl-deassignstmt     (progn$ (impossible) x)
       :vl-enablestmt       (progn$ (impossible) x)
       :vl-disablestmt      (progn$ (impossible) x)
+      :vl-returnstmt       (progn$ (impossible) x)
       :vl-eventtriggerstmt (progn$ (impossible) x)))
   ///
   (defthm change-vl-compoundstmt-core-identity

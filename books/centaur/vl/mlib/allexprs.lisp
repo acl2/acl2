@@ -663,6 +663,9 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
       :vl-disablestmt
       (b* ((nrev (nrev-push x.id nrev)))
         nrev)
+      :vl-returnstmt
+      (b* ((nrev (if x.val (nrev-push x.val nrev) (nrev-fix nrev))))
+        nrev)
       :vl-eventtriggerstmt
       (b* ((nrev (nrev-push x.id nrev)))
         nrev)
@@ -741,6 +744,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
            :vl-deassignstmt     (list x.lvalue)
            :vl-enablestmt       (cons x.id (list-fix x.args))
            :vl-disablestmt      (list x.id)
+           :vl-returnstmt       (and x.val (list x.val))
            :vl-eventtriggerstmt (list x.id)
            :vl-casestmt         (cons x.test
                                       (append (vl-stmt-allexprs x.default)

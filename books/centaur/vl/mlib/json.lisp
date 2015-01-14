@@ -1073,6 +1073,11 @@ which could not hold such large values.</p>")
                   :id     (vl-jp-expr x.id)
                   :atts   (vl-jp-atts x.atts))
 
+       :vl-returnstmt
+       (jp-object :tag    (jp-sym kind)
+                  :atts   (vl-jp-atts x.atts)
+                  :val    (vl-jp-maybe-expr x.val))
+
        :vl-eventtriggerstmt
        (jp-object :tag    (jp-sym kind)
                   :id     (vl-jp-expr x.id)

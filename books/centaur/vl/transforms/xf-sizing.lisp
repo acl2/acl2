@@ -1003,6 +1003,13 @@ the expression.</p>"
                   ((mv successp warnings id-prime) (vl-expr-size nil x.id ss ctx warnings))
                   (x-prime (change-vl-disablestmt x :id id-prime)))
                (mv successp warnings x-prime)))
+            (:vl-returnstmt
+             (b* (((vl-returnstmt x) x)
+                  ((mv successp warnings val-prime)
+                   (if x.val
+                       (vl-expr-size nil x.val ss ctx warnings)
+                     (mv t warnings x.val))))
+               (mv successp warnings (change-vl-returnstmt x :val val-prime))))
 
             (otherwise
              (b* (((vl-eventtriggerstmt x) x)

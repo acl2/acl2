@@ -558,6 +558,12 @@ attributes is left up to the implementation.</p>"
              (b* (((vl-disablestmt x) x))
                (change-vl-disablestmt x
                                       :id (vl-expr-subst x.id sigma))))
+            (:vl-returnstmt
+             (b* (((vl-returnstmt x)))
+               (if x.val
+                   (change-vl-returnstmt x :val (vl-expr-subst x.val sigma))
+                 x)))
+
             (otherwise
              (b* (((vl-eventtriggerstmt x) x))
                (change-vl-eventtriggerstmt x

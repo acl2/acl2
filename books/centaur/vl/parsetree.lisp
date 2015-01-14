@@ -2793,6 +2793,13 @@ block name to each variable name.</p>"
      ((ctrl vl-delayoreventcontrol-p)
       (body vl-stmt-p)
       (atts vl-atts-p)))
+
+    (:vl-returnstmt
+     :base-name vl-returnstmt
+     :layout :tree
+     :short "Representation of return statements."
+     ((val vl-maybe-expr-p)
+      (atts vl-atts-p)))
     ))
 
 ;; NOTE: Other statement subtypes are declared in stmt-tools.  This is here

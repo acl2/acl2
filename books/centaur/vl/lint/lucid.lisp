@@ -1344,6 +1344,11 @@ created when we process their packages, etc.</p>"
         ;; used.  I think for now we'll just ignore them.
         st
 
+        :vl-returnstmt
+        (if x.val
+            (vl-rhsexpr-lucidcheck x.val ss st ctx)
+          st)
+
         :vl-eventtriggerstmt
         ;; I think this is similar to the enable case?
         (b* ((st (vl-rhsexpr-lucidcheck x.id ss st ctx)))

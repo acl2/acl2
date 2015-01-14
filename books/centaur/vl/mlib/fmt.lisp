@@ -166,7 +166,7 @@ formerly the \"location directive\" and printed a location.</p>")
       ((:vl-nullstmt :vl-assignstmt :vl-deassignstmt :vl-enablestmt
         :vl-disablestmt :vl-eventtriggerstmt :vl-casestmt :vl-ifstmt
         :vl-foreverstmt :vl-waitstmt :vl-repeatstmt :vl-whilestmt
-        :vl-forstmt :vl-blockstmt :vl-timingstmt)
+        :vl-forstmt :vl-blockstmt :vl-timingstmt :vl-returnstmt)
        (if (or unsafe-okp (vl-stmt-p x))
            (vl-pp-stmt x)
          (vl-fmt-tilde-x x)))

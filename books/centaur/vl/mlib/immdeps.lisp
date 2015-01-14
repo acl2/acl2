@@ -810,6 +810,8 @@ elements.")
            ans))
         (:vl-disablestmt
          (vl-expr-immdeps x.id ans))
+        (:vl-returnstmt
+         (if x.val (vl-expr-immdeps x.val ans) ans))
         (:vl-eventtriggerstmt
          (vl-expr-immdeps x.id ans))
         (:vl-casestmt

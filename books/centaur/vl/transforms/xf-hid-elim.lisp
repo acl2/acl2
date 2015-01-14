@@ -916,6 +916,15 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
                    (x-prime (change-vl-disablestmt x :id id-prime)))
                 (mv warnings x-prime vardecls)))
 
+             (:vl-returnstmt
+              (b* ((val (vl-returnstmt->val x))
+                   ((mv warnings val-prime vardecls)
+                    (if val
+                        (vl-expr-hid-elim val mods modalist warnings vardecls)
+                      (mv warnings val vardecls)))
+                   (x-prime (change-vl-returnstmt x :val val-prime)))
+                (mv warnings x-prime vardecls)))
+
              (otherwise
               (b* (((mv warnings id-prime vardecls)
                     (vl-expr-hid-elim (vl-eventtriggerstmt->id x) mods modalist warnings vardecls))
