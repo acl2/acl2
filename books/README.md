@@ -60,7 +60,7 @@ certify books in your new directory.
 [ACL2]: http://www.cs.utexas.edu/users/moore/acl2 "ACL2 Home Page"
 [installation]: http://www.cs.utexas.edu/users/moore/acl2/current/HTML/installation/installation.html
 [git]: http://git-scm.com
-[community books][http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____COMMUNITY-BOOKS]
+[community books]: http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____COMMUNITY-BOOKS
 
 
 #### Experimental Development Version
