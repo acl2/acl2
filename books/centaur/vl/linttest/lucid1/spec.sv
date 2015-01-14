@@ -349,6 +349,36 @@ module idxtop () ;
 endmodule
 
 
+interface dsInterface;
+  logic [3:0] dsi_normal;
+  logic [3:0] dsi_spurious;
+  logic [3:0] dsi_unset;
+  logic [3:0] dsi_unused;
+endinterface
+
+module dotstar (output logic [3:0] out1,
+                output logic [3:0] out2,
+		input logic [3:0]  in1,
+		input logic [3:0]  in2,
+                dsInterface dsi) ;
+
+  assign out1 = dsi.dsi_normal;
+  assign out2 = dsi.dsi_unset;
+  assign dsi.dsi_unused = in1;
+  assign dsi.dsi_normal = in2;
+
+endmodule
+
+module dotstarwrap () ;
+
+  logic [3:0] out1, out2, in1, in2;
+  dsInterface dsi ();
+
+  dotstar inst (.*);
+
+endmodule
+
+
 
 
 module mg1 () ;

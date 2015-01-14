@@ -1,4 +1,4 @@
-module top ();
+module top (output topout, input topin);
 
   wire [1:0] o;
   wire 	     i;

@@ -379,12 +379,11 @@ is no argument to that port and we're to infer a blank connection.</p>"
     (equal (len (vl-convert-namedargs-aux args ports))
            (len ports))))
 
-
 (define vl-create-namedarg-for-dotstar
   :parents (vl-expand-dotstar-arguments)
   :short "Create a single missing argument for a @('.*') connection."
   ((name     stringp           "Name of the submodule port that is implicitly connected by @('.*').")
-   (ss       vl-scopestack-p)
+   (ss       vl-scopestack-p   "Scopestack for the superior module.")
    (warnings vl-warninglist-p  "Warnings accumulator.")
    (inst     vl-modinst-p      "Context for warnings."))
   :returns (mv (successp booleanp :rule-classes :type-prescription)
@@ -403,30 +402,68 @@ is no argument to that port and we're to infer a blank connection.</p>"
                    :args (list inst inst.modname name))
             nil))
 
-       ((unless (eq (tag look) :vl-vardecl))
-        (mv nil
-            (fatal :type :vl-bad-instance
-                   :msg "~a0: using .* syntax to instantiate ~m1 would result ~
-                         in connecting port ~s2 to ~a3, which has unsupported ~
-                         type ~x4."
-                   :args (list inst inst.modname name look (tag look)))
-            nil))
+       ((when (eq (tag look) :vl-vardecl))
+        ;; We are supposed to check that, e.g., the variable has a compatible
+        ;; type with the port.  I don't think we want to / can do this yet,
+        ;; because we need to wait for unparameterization.  So at this point
+        ;; I'm just going to call it good enough.
+        ;;
+        ;; We'll mark this as name-only, because name-only ports are supposed
+        ;; to also have this datatype compatibility restriction.  So, if we
+        ;; ever implement such a check downstream, it'll catch ports that were
+        ;; literally .name, and also ports that were introduced by .*
+        ;; connections.
+        (b* ((new-arg (make-vl-namedarg :name       name
+                                        :expr       (vl-idexpr name nil nil)
+                                        :nameonly-p t
+                                        :atts       nil)))
+          (mv t (ok) (list new-arg))))
 
-       ;; We are supposed to check that, e.g., the variable has a compatible type
-       ;; with the port.  I don't think we want to / can do this yet, because we
-       ;; need to wait for unparameterization.  So at this point I'm just going
-       ;; to call it good enough.
-
-       ;; We'll mark this as name-only, because name-only ports are supposed to
-       ;; also have this datatype compatibility restriction.  So, if we ever
-       ;; implement such a check downstream, it'll catch ports that were
-       ;; literally .name, and also ports that were introduced by .*
-       ;; connections.
-       (new-arg (make-vl-namedarg :name       name
-                                  :expr       (vl-idexpr name nil nil)
-                                  :nameonly-p t
-                                  :atts       nil)))
-    (mv t (ok) (list new-arg)))
+       ((when (eq (tag look) :vl-modinst))
+        ;; Possibly an interface that needs to be connected to a compatible
+        ;; interface port.  We definitely need to check somewhere that the
+        ;; port type and the argument type are both of the same interface.
+        ;;
+        ;; However, I don't think this is the right place to do that, because
+        ;; we're going to have to check it for interface compatibility for
+        ;; other kinds of arguments like explicit .foo(foo) style arguments or
+        ;; positional arguments somewhere else, anyway.
+        ;;
+        ;; So, all we'll require here is that the module instance is actually
+        ;; an interface instead of something else (e.g., an actual submodule or
+        ;; a UDP.)  The actual interface compatibility checking is done later;
+        ;; see for instance VL-PLAINARG-EXPRSIZE and failure tests such as
+        ;; failtests/port1.v.
+        (b* (((vl-modinst look))
+             (mod/if (vl-scopestack-find-definition look.modname ss))
+             ((unless mod/if)
+              (mv nil
+                  (fatal :type :vl-bad-instance
+                         :msg "~a0: trying to resolve .* connection for ~
+                               ~w1 (type ~m2): but ~m2 is not defined."
+                         :args (list inst name look.modname))
+                  nil))
+             ((when (eq (tag mod/if) :vl-interface))
+              ;; Good enough for now.  Again we'll mark it name-only.
+              (b* ((new-arg (make-vl-namedarg :name       name
+                                              :expr       (vl-idexpr name nil nil)
+                                              :nameonly-p t
+                                              :atts       nil)))
+                (mv t (ok) (list new-arg)))))
+          (mv nil
+              (fatal :type :vl-bad-instance
+                     :msg "~a0: using .* syntax to instantiate ~m1 would ~
+                           result in connecting port ~s2 to ~a3, which is ~
+                           an instance of a ~x4."
+                     :args (list inst inst.modname name look (tag mod/if)))
+              nil))))
+    (mv nil
+        (fatal :type :vl-bad-instance
+               :msg "~a0: using .* syntax to instantiate ~m1 would result in ~
+                     connecting port ~s2 to ~a3, which has unsupported type ~
+                     ~x4."
+               :args (list inst inst.modname name look (tag look)))
+        nil))
   ///
   (more-returns
    (new-args true-listp :rule-classes :type-prescription)))
@@ -436,7 +473,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
   :parents (vl-expand-dotstar-arguments)
   :short "Create the arguments that @('.*') expands to."
   ((missing  string-listp      "Names of submodule ports that aren't explicitly connected.")
-   (ss       vl-scopestack-p)
+   (ss       vl-scopestack-p   "Scopestack for the superior module.")
    (warnings vl-warninglist-p  "Warnings accumulator.")
    (inst     vl-modinst-p      "Context for warnings."))
   :returns (mv (successp booleanp :rule-classes :type-prescription)
@@ -457,7 +494,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
   :parents (vl-convert-namedargs)
   :short "Expand @('.*') style arguments into explicit .foo(foo) format."
   ((args     vl-namedarglist-p "The explicit arguments besides the @('.*'), i.e., @('.foo(1), .bar(2), ...').")
-   (ss       vl-scopestack-p)
+   (ss       vl-scopestack-p   "Scopestack for the superior module.")
    (ports    vl-portlist-p     "Ports of the submodule.")
    (warnings vl-warninglist-p  "Warnings accumulator.")
    (inst     vl-modinst-p      "Just a context for warnings."))
@@ -497,7 +534,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
 
 (define vl-convert-namedargs
   ((x        "arguments of a module instance, named or plain" vl-arguments-p)
-   (ss       "current scope stack"                            vl-scopestack-p)
+   (ss       "scope stack for the superior module"            vl-scopestack-p)
    (ports    "ports of the submodule"                         vl-portlist-p)
    (warnings "warnings accumulator"                           vl-warninglist-p)
    (inst     "just a context for warnings"                    vl-modinst-p))

@@ -6,7 +6,7 @@ interface simplebus ;
 endinterface
 
 
-module top ;
+module top (output topout, input topin);
 
   simplebus sb ();
 

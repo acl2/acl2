@@ -6,7 +6,7 @@ interface simplebus (foo); // oops, no direction for FOO
 endinterface
 
 
-module top ;
+module top (output topout, input topin);
 
   wire foo;
 

@@ -1,4 +1,4 @@
-module top ();
+module top (output topout, input topin);
 
   logic [3:0] w1;
   logic [3:0] w2;

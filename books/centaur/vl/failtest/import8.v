@@ -14,7 +14,7 @@ endpackage
 import p1::*;
 import p2::*;
 
-module top ;
+module top (output topout, input topin);
 
   wire bar = foo;  // we shouldn't tolerate this
 
