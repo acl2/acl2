@@ -518,7 +518,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
        (warnings (if missing
                      warnings
                    (warn :type :vl-warn-empty-dotstar
-                         :msg "~a0 mentions .*, but explicitly connects all of
+                         :msg "~a0 mentions .*, but explicitly connects all of ~
                                the ports of ~m1, so the .* isn't doing anything."
                          :args (list inst inst.modname))))
 
