@@ -95,44 +95,6 @@
 (define fifo-full-p ((fifo fifo-p))
   (<= *fifo-size-limit* (len fifo))) ; could use equal instead
 
-(define fifo-pop ((fifo fifo-p))
-  :returns (mv (erp booleanp "Non-nil if an error occurs, e.g., the fifo is empty")
-               (val address-data-p :hyp :fguard
-                    :hints (("goal" :in-theory (enable fifo-p))))
-               (new-fifo fifo-p :hyp :fguard
-                         :hints (("goal" :in-theory (enable fifo-p)))))
-  (cond ((atom fifo)
-         (mv t *default-address-data* fifo))
-        (t
-         (mv nil (car fifo) (cdr fifo)))))
-
-(define fifo-push ((val address-data-p)
-                   (fifo fifo-p))
-  :returns (mv (erp booleanp "Non-nil if an error occurs, e.g., the fifo is full")
-               (fifo fifo-p "New fifo containing val (if @('fifo') isn't full)"
-                     :hyp :fguard
-                     :hints (("goal" :in-theory (enable fifo-p fifo-full-p)))))
-  (cond ((fifo-full-p fifo)
-         (mv t fifo))
-        (t
-         (mv nil (append fifo (list val)))))
-  :guard-hints (("goal" :in-theory (enable fifo-p address-data-list-p))))
-
-(def-ruleset fifo-internals
-  '(fifo-p fifo-empty-p fifo-full-p))
-
-(defrule write-and-read
-  :long "If we write something, and read, we get back that thing."
-  (implies (and (address-data-p in)
-                (fifo-p fifo)
-                (fifo-empty-p fifo))
-           (b* (((mv ?erp fifo1)
-                 (fifo-push in fifo))
-                ((mv ?erp (address-data val) ?fifo2)
-                 (fifo-pop fifo1)))
-             (equal val in)))
-  :enable (fifo-pop fifo-push fifo-internals))
-
 (fty::defprod inst ; instruction is already taken... I should really be in my
   ; own package
   ((write booleanp "Non-nil if the FIFO should be written")
@@ -141,13 +103,6 @@
 
 (fty::deflist inst-list
   :elt-type inst)
-
-;; (define instructions-well-formed-p (x)
-;;   (cond ((atom x)
-;;          t)
-;;         (t (and (inst-p (car x))
-;;                 (instructions-well-formed-p (cdr x))))))
-
 
 (define fifo-step
   ((inst inst-p)
@@ -260,7 +215,7 @@
                  (equal out4 in)
                  (equal out5 in))))
   :rule-classes nil
-  :enable (fifo-step fifo-pop fifo-push fifo-internals))
+  :enable (fifo-step))
 
 (defrule 5-writes-and-5-reads
   :long "If we write something, and read four times, one of those four outputs
@@ -298,7 +253,7 @@
                  (equal out4 in)
                  (equal out5 in))))
   :rule-classes nil
-  :enable (fifo-step fifo-pop fifo-push fifo-internals))
+  :enable (fifo-step))
 
 (defrule something-about-len
   (implies (consp x)
@@ -386,7 +341,7 @@
                          (equal out6 in3)
                          (equal out7 in4))))))
   :rule-classes nil
-  :enable (fifo-step fifo-pop fifo-push fifo-internals))
+  :enable (fifo-step))
 
 
 (defrule 4-writes-and-7-reads-are-ordered-with-or
