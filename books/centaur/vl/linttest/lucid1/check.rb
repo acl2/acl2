@@ -174,6 +174,23 @@ unused(:idx1, "unused2 ")
 unused(:idx1, "unused3 ")
 
 
+spurious(:dsInterface, "dsi_spurious")
+normal(:dsInterface, "dsi_normal")
+unused(:dsInterface, "dsi_unused")
+unset(:dsInterface, "dsi_unset")
+
+normal(:dotstar, "out1 ")
+normal(:dotstar, "out2 ")
+normal(:dotstar, "in1 ")
+normal(:dotstar, "in2 ")
+normal(:dotstar, "dsi ")
+
+unused(:dotstarwrap, "out1 ")
+unused(:dotstarwrap, "out2 ")
+unset(:dotstarwrap, "in1 ")
+unset(:dotstarwrap, "in2 ")
+normal(:dotstar, "dsi ")
+
 
 
 # I know these don't work yet
@@ -182,6 +199,3 @@ unused(:idx1, "unused3 ")
 
 
 test_passed()
-
-
-

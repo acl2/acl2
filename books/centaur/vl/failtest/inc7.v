@@ -1,5 +1,5 @@
 
-module top ();
+module top (output topout, input topin);
 
   // Can't have an increment in a submodule instance
   logic [3:0] w1;

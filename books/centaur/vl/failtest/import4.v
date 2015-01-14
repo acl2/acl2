@@ -12,7 +12,7 @@ package p2 ;
 endpackage
 
 
-module top ;
+module top (output topout, input topin);
 
   import p2::*;
 
