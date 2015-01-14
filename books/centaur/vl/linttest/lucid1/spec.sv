@@ -379,8 +379,6 @@ module dotstarwrap () ;
 endmodule
 
 
-
-
 module mg1 () ;
 
   localparam p1_used = 4;
@@ -393,3 +391,63 @@ module mg1 () ;
   else              assign w1_normal = 0;
 
 endmodule
+
+
+
+
+interface ImPort ;
+
+  logic      reqVld;
+  logic [3:0] reqMain;
+  logic       dataVld;
+  logic [63:0] dataMain;
+  logic        dataSpurious;
+
+  modport server (input reqVld, reqMain, output dataVld, dataMain);
+  modport client (output reqVld, reqMain, input dataVld, dataMain);
+
+endinterface
+
+module imserve (
+ input logic  foo,
+ output logic bar,
+ ImPort.server port1, port2
+);
+
+  assign port1.dataVld = port1.reqVld;
+  assign port1.dataMain = 0;
+
+  assign port2.dataVld = port2.reqVld;
+  assign port2.dataMain = 0;
+
+  wire w1_normal;
+  wire w1_spurious;
+  wire w1_unset;
+  wire w1_unused;
+
+  assign w1_normal = w1_unset;
+  assign w1_unused = w1_normal;
+  assign bar = foo;
+
+endmodule
+
+module imservewrap (
+ input logic  foo,
+ output logic bar,
+ ImPort.server port1, port2
+);
+
+  imserve server1 (.*);
+
+endmodule
+
+module imsim ();
+
+  ImPort port1 ();
+  ImPort port2 ();
+
+  logic foo, bar;
+  imservewrap server1 (.*);
+
+endmodule
+

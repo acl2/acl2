@@ -456,7 +456,18 @@ is no argument to that port and we're to infer a blank connection.</p>"
                            result in connecting port ~s2 to ~a3, which is ~
                            an instance of a ~x4."
                      :args (list inst inst.modname name look (tag mod/if)))
-              nil))))
+              nil)))
+
+       ((when (eq (tag look) :vl-interfaceport))
+        ;; As above in the modinst case, we aren't going to try to check any
+        ;; kind of compatibility here.  We did at least find an interface,
+        ;; and that's good enough.
+        (b* ((new-arg (make-vl-namedarg :name       name
+                                        :expr       (vl-idexpr name nil nil)
+                                        :nameonly-p t
+                                        :atts       nil)))
+          (mv t (ok) (list new-arg)))))
+
     (mv nil
         (fatal :type :vl-bad-instance
                :msg "~a0: using .* syntax to instantiate ~m1 would result in ~

@@ -31,15 +31,25 @@
 require_relative '../utils'
 
 def unset(modname, wirename)
+  # It's okay for it to be unset and unused, because some bits may be unset
+  # while other bits may be unused.  However, nothing should ever be marked
+  # as both unset and spurious.
   match_warning(modname, "VL-LUCID-UNSET", wirename)
+  outlaw_warning(modname, "VL-LUCID-SPURIOUS", wirename)
 end
 
 def unused(modname, wirename)
+  # It's okay for it to be unset and unused, because some bits may be unset
+  # while other bits may be unused.  However, nothing should ever be marked as
+  # both unused and spurious.
   match_warning(modname, "VL-LUCID-UNUSED", wirename)
+  outlaw_warning(modname, "VL-LUCID-SPURIOUS", wirename)
 end
 
 def spurious(modname, wirename)
   match_warning(modname, "VL-LUCID-SPURIOUS", wirename)
+  outlaw_warning(modname, "VL-LUCID-UNSET", wirename)
+  outlaw_warning(modname, "VL-LUCID-UNUSED", wirename)
 end
 
 def normal(modname, wirename)
@@ -192,10 +202,36 @@ unset(:dotstarwrap, "in2 ")
 normal(:dotstar, "dsi ")
 
 
+spurious(:ImPort, "dataSpurious ")
+spurious(:ImPort, "reqMain ")
+unused(:ImPort, "dataVld ")
+unused(:ImPort, "dataMain ")
+unset(:ImPort, "reqVld ")
+
+normal(:imserve, "w1_normal ")
+spurious(:imserve, "w1_spurious ")
+unset(:imserve, "w1_unset ")
+unused(:imserve, "w1_unused ")
+normal(:imserve, "foo ")
+normal(:imserve, "bar ")
+
+normal(:imservewrap, "foo ")
+normal(:imservewrap, "bar ")
+normal(:imservewrap, "port1 ")
+normal(:imservewrap, "port2 ")
+
+unset(:imsim, "foo ")
+unused(:imsim, "bar ")
+normal(:imsim, "port1 ")
+normal(:imsim, "port2 ")
 
 # I know these don't work yet
 #normal(:mg1, "p1_used ")
 #normal(:mg1, "w1_normal ")
+
+
+
+
 
 
 test_passed()
