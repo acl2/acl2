@@ -1,5 +1,5 @@
-; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2014, Regents of the University of Texas
+; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2015, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -34,8 +34,8 @@
 ;;; Preconditions.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (1) You will need a profiling GCL image (probably GCL Version 2.6.5 or
-; later).  In a Debian GCL installation, it should suffice to execute
+; (1) You will need a profiling GCL image. In a Debian GCL installation, it
+; should suffice to execute
 
 ; setenv GCL_PROF t
 

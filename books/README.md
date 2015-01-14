@@ -40,22 +40,27 @@ to the most recent ACL2 release; there is also a reasonably up-to-date
 
 #### Latest Stable Release
 
-You may wish to download a pair of gzipped tarfiles: the [ACL2
-System][installation] and the [ACL2 books][acl2.org].  Make sure you
-grab the same version, which should generally be for the most recent
-ACL2 release.
-
-In the future we expect that you will be able to check out both at once
-using [git] by checking out one of the Tags, using syntax such as the
-following.
+You can download a gzipped tarfile or zip file for the latest release,
+which includes the [ACL2 system][ACL2] and the [community
+books][community books].  Simply click on the "release" button at the
+top of github.com/acl2/acl2.  Alternatively you get it from git as
+follows:
 
 ```
-git clone git://github.com/acl2/acl2; cd acl2; git checkout acl2-7.0
+git clone git://github.com/acl2/acl2; cd acl2; git checkout 7.0
 ```
 
+Your current directory is now a copy of ACL2 Version 7.0.  This
+directory is intended for ACL2 use, not for modification using git
+(discussed in Contributing, below).  Please see the [ACL2 home
+page][ACL2], specifically its [installation
+instructions][installation], for how to build an executable and
+certify books in your new directory.
+
+[ACL2]: http://www.cs.utexas.edu/users/moore/acl2 "ACL2 Home Page"
 [installation]: http://www.cs.utexas.edu/users/moore/acl2/current/HTML/installation/installation.html
-[acl2.org]: http://acl2.org/index.html
 [git]: http://git-scm.com
+[community books]: http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____COMMUNITY-BOOKS
 
 
 #### Experimental Development Version
