@@ -558,12 +558,14 @@
 ;;          :hints (("goal" :in-theory (enable fifo-step fifo-p))))
 ;;    (read-values address-data-list-p)))
 
+#|| Commented out by Matt K. (not an embedded event form).
 (fifo-run
  (list (make-inst :write t :write-val *default-address-data* :read t)
        (make-inst :write t :write-val *default-address-data*)
        (make-inst :read t :write-val *default-address-data*))
  nil
  nil)
+||#
 
 (defrule valid-instructions-implies-no-error-base-case-lemma
   (implies (and (INST-P INST)
