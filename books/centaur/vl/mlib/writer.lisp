@@ -1855,7 +1855,6 @@ expression into a string."
         ;; As another special hack, hide declarations that we add for function
         ;; and task inputs and function return values.
         )))
-        
 
 (define vl-pp-vardecl-aux ((x vl-vardecl-p) &key (ps 'ps))
   ;; This just prints a vardecl, but with no final semicolon and no final atts,
@@ -1910,13 +1909,12 @@ expression into a string."
                     (vl-pp-expr x.initval))
        ps))))
 
-
 (define vl-pp-vardecl ((x vl-vardecl-p) &key (ps 'ps))
   (if (vl-vardecl-hiddenp x)
       ps
     (vl-ps-seq (vl-pp-vardecl-aux x)
                (vl-print " ;")
-               (vl-pp-vardecl-atts-end x.atts))))
+               (vl-pp-vardecl-atts-end (vl-vardecl->atts x)))))
 
 (define vl-pp-vardecllist ((x vl-vardecllist-p) &key (ps 'ps))
   (if (atom x)
