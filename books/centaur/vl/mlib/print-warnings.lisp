@@ -246,7 +246,7 @@ warnings\".</p>"
 (define vl-print-reportcard-aux ((x vl-reportcard-p)
                                  (elide maybe-natp)
                                  &key (ps 'ps))
-  :parents (vl-reportcard-p)
+  :parents (vl-print-reportcard)
   :measure (vl-reportcard-count x)
   :verbosep t
   (b* ((x     (vl-reportcard-fix x))
@@ -270,7 +270,7 @@ warnings\".</p>"
                              &key
                              ((elide maybe-natp) '3)
                              (ps 'ps))
-  :parents (vl-reportcard-p)
+  :parents (vl-reportcard)
   :short "Pretty-print a @(see vl-reportcard-p)."
   :long "<p>See also @(see vl-reportcard-to-string).</p>"
   (b* ((x        (vl-reportcard-fix x))
@@ -283,7 +283,7 @@ warnings\".</p>"
                                  &key
                                  ((elide maybe-natp) '3))
   :returns (str stringp :rule-classes :type-prescription)
-  :parents (vl-reportcard-p)
+  :parents (vl-reportcard)
   :short "Pretty-print a @(see vl-reportcard-p) into a string."
   :long "<p>See also @(see vl-print-reportcard).</p>"
   (with-local-ps (vl-print-reportcard x :elide elide)))

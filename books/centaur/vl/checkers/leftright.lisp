@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2014 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -58,10 +58,6 @@ these are pretty minor and uninteresting.</p>")
 (defenum vl-op-ac-p
   (:vl-binary-plus
    :vl-binary-times
-   :vl-binary-eq
-   :vl-binary-neq
-   :vl-binary-ceq
-   :vl-binary-cne
    :vl-binary-logand
    :vl-binary-logor
    :vl-binary-bitand
@@ -107,8 +103,6 @@ e').</p>"
        (args (vl-nonatom->args x)))
     (append (vl-collect-ac-args op (first args))
             (vl-collect-ac-args op (second args)))))
-
-
 
 (local (defthm hons-duplicated-members-when-no-duplicatesp-equal
          (implies (no-duplicatesp-equal x)
@@ -165,8 +159,18 @@ form @('A [op] A'), and generate a warning whenever we find one.  The @('ctx')
 is a @(see vl-context1-p) that says where @('x') occurs, for more helpful
 warnings.  We also use it to suppress warnings in certain cases.</p>"
 
-  (define vl-expr-leftright-check ((x   vl-expr-p)
-                                   (ctx vl-context1-p))
+  (define vl-expr-leftright-check
+    ((x      vl-expr-p
+             "Expression we are considering.")
+     (indexy booleanp
+             "Heuristic info.  We set this to true when we've gone into an
+              index-like expression, e.g., the @('3') in @('foo[3]'), the
+              replication amount in a multiple concatenation, or similar sorts
+              of contexts.  In such a context, we suppress warnings about
+              @('A+A'), @('A-A'), and @('A*A'), because they are occasionally
+              useful in indexing arithmetic.")
+     (ctx    vl-context1-p
+             "Context where the expression occurs."))
     :measure (vl-expr-count x)
     ;; :hints(("Goal" :in-theory (disable (force))))))
     :returns (warnings vl-warninglist-p)
@@ -175,117 +179,240 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
          (op   (vl-nonatom->op x))
          (args (vl-nonatom->args x))
 
-         ((when (and (eq op :vl-binary-minus)
-                     (member (tag (vl-context1->elem ctx)) '(:vl-vardecl))
-                     (equal (vl-expr-strip (first args))
-                            (vl-expr-strip (second args)))
-                     (vl-expr-resolved-p (first args))))
-          ;; Special hack: Don't warn about things like 5 - 5 in the context
-          ;; of net/reg/var declarations.  This can happen for things like:
-          ;;   wire bar[`FOO_MSB-`FOO_LSB:0] = baz[`FOO_MSB:`FOO_LSB]
-          ;; and leads to a lot of spurious warnings.
-          nil)
-
          ((when (vl-op-ac-p op))
-          ;; For associative commutative ops, collect up all the args and
-          ;; see if there are any duplicates.
+          ;; For associative commutative ops, we will be very smart.  We will
+          ;; collect up *all* the args and see if there are any duplicates.
+          ;; This lets us find things like `foo & bar & baz & foo`, even though
+          ;; the occurrences of `foo` are far apart.
           (b* ((subexprs     (append (vl-collect-ac-args op (first args))
                                      (vl-collect-ac-args op (second args))))
                (subexprs-fix (vl-exprlist-strip subexprs))
                (dupes        (vl-leftright-exprlist-duplicates subexprs-fix))
-               ((when dupes)
-                (cons (make-vl-warning
-                       :type :vl-warn-leftright
-                       :msg "~a0: found an ~s1 expression with duplicated ~
-                              arguments, which is ~s2: ~s3"
-                       :args (list ctx
-                                   (vl-op-string op)
-                                   (if (eq op :vl-binary-plus)
-                                       "somewhat odd (why not use wiring to double it?)"
-                                     "odd")
-                                   (with-local-ps (vl-pp-exprlist dupes)))
-                       :fatalp nil
-                       :fn __function__)
-                      ;; This can result in a pile of redundant warnings, but
-                      ;; whatever.  A better alternative would be to recur on
-                      ;; subexprs, but then we'd have to argue about the
-                      ;; acl2-count of collect-ac-args.... ugh.
-                      (vl-exprlist-leftright-check args ctx))))
-            ;; Else, no dupes; fine, keep going.
-            (vl-exprlist-leftright-check args ctx)))
+               ((unless dupes)
+                ;; Fine, keep going to check subexpressions.
+                (vl-exprlist-leftright-check args indexy ctx))
 
-         ((when (and (member op (list :vl-binary-minus :vl-binary-div :vl-binary-rem
-                                      :vl-binary-lt :vl-binary-lte
-                                      :vl-binary-gt :vl-binary-gte
+               ;; Even though there are some duplicates, we don't necessarily
+               ;; want to warn.
+               ;;
+               ;; For many operators, e.g., A&A, A|A, etc., it doesn't make
+               ;; sense for there to be duplicates and we definitely want to
+               ;; warn.  However, for the arithmetic operators, things like
+               ;; A+A, A*A may well be sensible.  We'll suppress warnings about
+               ;; them in certain cases...
+               (suppress-p
+                (and
+                 (member op '(:vl-binary-plus :vl-binary-times))
 
-                                      ;; There's no reason that these are
-                                      ;; necessarily wrong, but it still seems
-                                      ;; kind of weird so I include them
-                                      :vl-binary-shr :vl-binary-shl
-                                      :vl-binary-ashr :vl-binary-ashl))
-                     (equal (vl-expr-strip (first args))
-                            (vl-expr-strip (second args)))))
-          (cons (make-vl-warning
-                 :type :vl-warn-leftright
-                 :msg "~a0: found an expression of the form FOO ~s1 FOO, which is ~s2: ~a3."
-                 :args (list ctx (vl-op-string op)
-                             (if (eq op :vl-binary-plus)
-                                 "somewhat odd (why not use wiring to double it?)"
-                               "odd")
-                             x)
-                 :fatalp nil
-                 :fn __function__)
-                (vl-exprlist-leftright-check args ctx)))
+                 (or
+                  ;; Index computations, especially those involving parameters,
+                  ;; often have duplicate arguments.  For instance, we might
+                  ;; want to do something like wire [SIZE+SIZE+1:0] foo = ...;
+                  ;; Similarly we can end up with expressions involving things
+                  ;; like {SIZE+SIZE+1{bar}}.  So don't warn about A+A,A-A,A*A
+                  ;; in indexy locations.
+                  indexy
 
-         ((when (and (member op '(:vl-partselect-colon :vl-select-colon))
-                     (equal (vl-expr-strip (second args))
-                            (vl-expr-strip (third args)))))
-          (cons (make-vl-warning
-                 :type :vl-warn-partselect-same
-                 :msg "~a0: slightly odd to have a part-select with the same indices: ~a1."
-                 :args (list ctx x)
-                 :fatalp nil
-                 :fn __function__)
+                  ;; Another special case is for simple operations involving
+                  ;; constants.  If we run into something like this:
+                  ;;
+                  ;; assign baz = foo[3] ? (bar + ( 3 + 1 )) :
+                  ;;              foo[2] ? (bar + ( 2 + 1 )) :
+                  ;;              foo[1] ? (bar + ( 1 + 1 )) :  <-- here
+                  ;;              foo[0] ? (bar + ( 0 + 1 )) :
+                  ;;              bar;
+                  ;;
+                  ;; Then the logic designer is just trying to make more
+                  ;; explicit the components being added together, and we don't
+                  ;; want to warn about that.  As a heuristic for suppressing
+                  ;; these, we'll try to ignore sums where the terms are
+                  ;; literally constants.
+                  (vl-exprlist-resolved-p dupes))))
 
-                ;; Special hack: I decided not to recur here for the same
-                ;; reasons as in net/reg/var declarations.
-                (vl-exprlist-leftright-check args ctx)))
+               ((when suppress-p)
+                ;; Fine, no need to warn here, but keep going into
+                ;; subexpressions.
+                (vl-exprlist-leftright-check args indexy ctx)))
 
-         ((when (member op '(:vl-index :vl-bitselect)))
-          ;; Special hack: I decided not to recur here for the same reasons
-          ;; as in net/reg/var declarations.
-          nil)
+            (cons (make-vl-warning
+                   :type :vl-warn-leftright
+                   :msg "~a0: found an ~s1 expression with duplicated ~
+                         arguments, which is ~s2: ~s3"
+                   :args (list ctx
+                               (vl-op-string op)
+                               (if (eq op :vl-binary-plus)
+                                   "somewhat odd (why not use wiring to double it?)"
+                                 "odd")
+                               (with-local-ps (vl-pp-exprlist
+                                               ;; Sort the dupes to try to make sure
+                                               ;; that duplicate warnings print the same.
+                                               (mergesort dupes))))
+                   :fatalp nil
+                   :fn __function__)
+                  ;; This can result in a pile of redundant warnings, but
+                  ;; whatever.  A better alternative would be to recur on
+                  ;; subexprs, but then we'd have to argue about the acl2-count
+                  ;; of collect-ac-args.  I think this is OK because we have
+                  ;; arranged the error message above to print the same, so
+                  ;; these duplicate warnings should get removed when we clean
+                  ;; warnings.
+                  (vl-exprlist-leftright-check args indexy ctx))))
 
          ((when (and (member op '(:vl-qmark))
                      (equal (vl-expr-strip (second args))
                             (vl-expr-strip (third args)))))
+          ;; If we find FOO ? BAR : BAR, that's pretty weird and we should warn about it.
           (cons (make-vl-warning
                  :type :vl-warn-leftright
                  :msg "~a0: found an expression of the form FOO ? BAR : BAR, which is odd: ~a1."
                  :args (list ctx x)
                  :fatalp nil
                  :fn __function__)
-                (vl-exprlist-leftright-check args ctx))))
+                (vl-exprlist-leftright-check args indexy ctx)))
 
-      (vl-exprlist-leftright-check args ctx)))
+         ((when (member op '(:vl-binary-lt :vl-binary-lte
+                             :vl-binary-gt :vl-binary-gte
+                             :vl-binary-eq :vl-binary-neq
+                             :vl-binary-ceq :vl-binary-cne)))
+          ;; If we find something like A < A, or A == A, it is very weird
+          ;; and we definitely want to warn about it.
+          (b* ((warn-p (equal (vl-expr-strip (first args))
+                              (vl-expr-strip (second args))))
+               ((unless warn-p)
+                (vl-exprlist-leftright-check args indexy ctx)))
+            (cons (make-vl-warning
+                   :type :vl-warn-leftright
+                   :msg "~a0: found an expression of the form FOO ~s1 FOO, which is odd: ~a2."
+                   :args (list ctx (vl-op-string op) x)
+                   :fatalp nil
+                   :fn __function__)
+                  (vl-exprlist-leftright-check args indexy ctx))))
+
+         ((when (member op '(:vl-binary-shl :vl-binary-ashl)))
+          ;; If we find something like A << A or A <<< A, then that is pretty
+          ;; weird and we probably want to warn about it.  The one exception
+          ;; that I've come across in practice is that logic designers do
+          ;; sometimes write 1 << 1 when they are building bit masks.  So as
+          ;; a special case, don't warn about 1 << 1.
+          (b* ((warn-p (and (equal (vl-expr-strip (first args))
+                                   (vl-expr-strip (second args)))
+                            (not (and (vl-expr-resolved-p (first args))
+                                      (equal (vl-resolved->val (first args)) 1)))))
+               ((unless warn-p)
+                (vl-exprlist-leftright-check args indexy ctx)))
+            (cons (make-vl-warning
+                   :type :vl-warn-leftright
+                   :msg "~a0: found an expression of the form FOO ~s1 FOO, which is odd: ~a2."
+                   :args (list ctx (vl-op-string op) x)
+                   :fatalp nil
+                   :fn __function__)
+                  (vl-exprlist-leftright-check args indexy ctx))))
+
+         ((when (member op '(:vl-binary-shr :vl-binary-ashr
+                             :vl-binary-div :vl-binary-rem)))
+          ;; If we find something like A >> A or A >>> A, then that is pretty
+          ;; weird and I think we should warn.  I don't think we really want to
+          ;; even tolerate things like 1 >> 1 here, because even that is weird.
+          ;; I think it makes sense to treat division and remainder the same
+          ;; way, why would you ever divide or mod something by itself?
+          (b* ((warn-p (equal (vl-expr-strip (first args))
+                              (vl-expr-strip (second args))))
+               ((unless warn-p)
+                (vl-exprlist-leftright-check args indexy ctx)))
+            (cons (make-vl-warning
+                   :type :vl-warn-leftright
+                   :msg "~a0: found an expression of the form FOO ~s1 FOO, which is odd: ~a2."
+                   :args (list ctx (vl-op-string op) x)
+                   :fatalp nil
+                   :fn __function__)
+                  (vl-exprlist-leftright-check args indexy ctx))))
+
+         ((when (member op '(:vl-binary-minus)))
+          ;; Minus is pretty special.  I think if we find A-A in an index position
+          ;; or being applied to constants, it seems pretty reasonable.  Otherwise
+          ;; it seems pretty weird, why would you subtract something from itself?
+          (b* ((warn-p (and (not indexy)
+                            (not (vl-expr-resolved-p (first args)))
+                            (equal (vl-expr-strip (first args))
+                                   (vl-expr-strip (second args)))))
+               ((unless warn-p)
+                (vl-exprlist-leftright-check args indexy ctx)))
+            (cons (make-vl-warning
+                   :type :vl-warn-leftright
+                   :msg "~a0: found an expression of the form FOO ~s1 FOO, which is odd: ~a2."
+                   :args (list ctx (vl-op-string op) x)
+                   :fatalp nil
+                   :fn __function__)
+                  (vl-exprlist-leftright-check args indexy ctx))))
+
+         ((when (member op '(:vl-partselect-colon :vl-select-colon)))
+          ;; This may occur too often to be useful, so we will give it a
+          ;; different warning type, at least, to make it easy to filter out.
+          (b* ((warn-p (equal (vl-expr-strip (second args))
+                              (vl-expr-strip (third args))))
+               (rest (append (vl-expr-leftright-check (first args) indexy ctx)
+                             ;; Indices need to get processed as indexy.
+                             (vl-expr-leftright-check (second args) t ctx)
+                             (vl-expr-leftright-check (third args) t ctx)))
+               ((unless warn-p)
+                rest))
+            (cons (make-vl-warning
+                   :type :vl-warn-partselect-same
+                   :msg "~a0: slightly odd to have a part-select with the same indices: ~a1."
+                   :args (list ctx x)
+                   :fatalp nil
+                   :fn __function__)
+                  rest)))
+
+         ((when (member op '(:vl-index :vl-bitselect)))
+          ;; Nothing to check here, but we want to make sure to treat the second
+          ;; argument as indexy.
+          (append (vl-expr-leftright-check (first args) indexy ctx)
+                  (vl-expr-leftright-check (second args) t ctx)))
+
+
+         ((when (member op '(:vl-multiconcat)))
+          ;; For {N{a,b,c}}, we want to make sure to treat N as indexy, but the
+          ;; rest of the expressions should be checked as normal.
+          (append (vl-expr-leftright-check (first args) t ctx)
+                  (vl-expr-leftright-check (second args) indexy ctx))))
+
+      (vl-exprlist-leftright-check args indexy ctx)))
 
   (define vl-exprlist-leftright-check ((x vl-exprlist-p)
+                                       (indexy booleanp)
                                        (ctx vl-context1-p))
     :measure (vl-exprlist-count x)
     :returns (warnings vl-warninglist-p)
     (if (atom x)
         nil
-      (append (vl-expr-leftright-check (car x) ctx)
-              (vl-exprlist-leftright-check (cdr x) ctx)))))
+      (append (vl-expr-leftright-check (car x) indexy ctx)
+              (vl-exprlist-leftright-check (cdr x) indexy ctx)))))
+
+(define vl-expr-indexy-via-ctx ((expr vl-expr-p)
+                                (ctx  vl-context1-p))
+  :returns (indexy booleanp :rule-classes :type-prescription)
+  ;; Horrible godawful hack to treat wire the msb/lsb exprs from things
+  ;; like `wire [msb:lsb] foo` as indexy to begin with.
+  (b* ((elem (vl-context1->elem ctx)))
+    (case (tag elem)
+      (:vl-vardecl
+       (if (member-equal expr (vl-datatype-allexprs (vl-vardecl->type elem)))
+           t
+         nil))
+      (otherwise
+       nil))))
 
 (define vl-exprctxalist-leftright-check
   :short "@(call vl-exprctxalist-leftright-check) extends @(see
 vl-expr-leftright-check) across an @(see vl-exprctxalist-p)."
   ((x vl-exprctxalist-p))
   :returns (warnings vl-warninglist-p)
-  (if (atom x)
-      nil
-    (append (vl-expr-leftright-check (caar x) (cdar x))
+  (b* (((when (atom x))
+        nil)
+       ((cons expr ctx) (car x))
+       (indexy (vl-expr-indexy-via-ctx expr ctx)))
+    (append (vl-expr-leftright-check expr indexy ctx)
             (vl-exprctxalist-leftright-check (cdr x)))))
 
 (define vl-module-leftright-check
