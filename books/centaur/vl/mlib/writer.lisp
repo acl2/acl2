@@ -1844,6 +1844,19 @@ expression into a string."
                 (vl-pp-strings-separated-by-commas notes)
                 (vl-println ""))))
 
+(define vl-vardecl-hiddenp ((x vl-vardecl-p))
+  (b* (((vl-vardecl x) x))
+    (or (assoc-equal "VL_PORT_IMPLICIT" x.atts)
+        ;; As a special hack, we now do not print any net declarations that are
+        ;; implicitly derived from the port.  These were just noisy and may not
+        ;; be allowed if we're printing the nets for an ANSI style module.  See
+        ;; also make-implicit-wires.
+        (assoc-equal "VL_HIDDEN_DECL_FOR_TASKPORT" x.atts)
+        ;; As another special hack, hide declarations that we add for function
+        ;; and task inputs and function return values.
+        )))
+        
+
 (define vl-pp-vardecl-aux ((x vl-vardecl-p) &key (ps 'ps))
   ;; This just prints a vardecl, but with no final semicolon and no final atts,
   ;; so we can use it in places where vardecls are separated by commas
@@ -1851,17 +1864,7 @@ expression into a string."
 
   ;; This used to just print nets.  We use custom code here because we need
   ;; to put the vectored/scalared stuff in the middle of the type...
-  (b* (((vl-vardecl x) x)
-       ((when (assoc-equal "VL_PORT_IMPLICIT" x.atts))
-        ;; As a special hack, we now do not print any net declarations that are
-        ;; implicitly derived from the port.  These were just noisy and may not
-        ;; be allowed if we're printing the nets for an ANSI style module.  See
-        ;; also make-implicit-wires.
-        ps)
-       ((when (assoc-equal "VL_HIDDEN_DECL_FOR_TASKPORT" x.atts))
-        ;; As another special hack, hide declarations that we add for function
-        ;; and task inputs and function return values.
-        ps))
+  (b* (((vl-vardecl x) x))
     (vl-ps-seq
      (if (not x.atts)
          ps
@@ -1909,7 +1912,8 @@ expression into a string."
 
 
 (define vl-pp-vardecl ((x vl-vardecl-p) &key (ps 'ps))
-  (b* (((vl-vardecl x)))
+  (if (vl-vardecl-hiddenp x)
+      ps
     (vl-ps-seq (vl-pp-vardecl-aux x)
                (vl-print " ;")
                (vl-pp-vardecl-atts-end x.atts))))
@@ -1922,6 +1926,7 @@ expression into a string."
 
 (define vl-pp-vardecllist-comma-separated ((x vl-vardecllist-p) &key (ps 'ps))
   (b* (((when (atom x)) ps)
+       ;; for this purpose we don't care whether it's hidden
        (ps (vl-pp-vardecl-aux (car x)))
        ((when (atom (cdr x))) ps)
        (ps (vl-print " ,")))
