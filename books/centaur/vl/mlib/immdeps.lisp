@@ -1005,6 +1005,7 @@ elements.")
     (:vl-typedef       (vl-typedef-immdeps x ans))
     (:vl-import        (vl-import-immdeps x ans))
     (:vl-fwdtypedef    ans) ;; no dependencies on a forward typedef
+    (:vl-genvar        ans) ;; no dependencies
     (otherwise         (vl-modport-immdeps x ans))))
 
 

@@ -84,6 +84,8 @@
 
 
 
+
+
 (defparser vl-parse-initial-construct (atts)
   :guard (vl-atts-p atts)
   :result (vl-initiallist-p val)
@@ -186,20 +188,29 @@
   (declare (ignore atts))
   (vl-unimplemented))
 
+(define vl-idtokenlist->genvars ((x vl-idtoken-list-p)
+                                 (atts vl-atts-p))
+  :returns (genvars (and (vl-genvarlist-p genvars)
+                         (true-listp genvars)))
+  (if (atom x)
+      nil
+    (cons (make-vl-genvar :name (vl-idtoken->name (car x))
+                          :atts atts
+                          :loc (vl-token->loc (car x)))
+          (vl-idtokenlist->genvars (cdr x) atts))))
+
 (defparser vl-parse-genvar-declaration (atts)
   :guard (vl-atts-p atts)
   :result (vl-modelementlist-p val)
-  :resultp-of-nil t
   :true-listp t
+  :resultp-of-nil t
   :fails gracefully
   :count strong
-  (declare (ignore atts))
   (seq tokstream
-        (:= (vl-parse-warning :vl-warn-genvar "Genvar declarations are not implemented, we are just skipping this genvar."))
-        (:= (vl-match-token :vl-kwd-genvar))
-        (:= (vl-parse-1+-identifiers-separated-by-commas))
-        (:= (vl-match-token :vl-semi))
-        (return nil)))
+       (:= (vl-match-token :vl-kwd-genvar))
+       (names := (vl-parse-1+-identifiers-separated-by-commas))
+       (return (vl-idtokenlist->genvars names atts))))
+
 
 (defparser vl-parse-parameter-override (atts)
   :guard (vl-atts-p atts)

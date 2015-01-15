@@ -69,7 +69,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2015-01-13")
+  "VL Syntax 2015-01-14")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -3303,6 +3303,14 @@ be non-sliceable, at least if it's an input.</p>"
   :returns (names string-listp)
   (vl-typedef->name x))
 
+(defprod vl-genvar
+  :tag :vl-genvar
+  :short "Representation of a genvar declaration."
+  ((name stringp)
+   (atts vl-atts-p)
+   (loc  vl-location-p)))
+
+(fty::deflist vl-genvarlist :elt-type vl-genvar :elementp-of-nil nil)
 
 (encapsulate nil
 
@@ -3321,7 +3329,8 @@ be non-sliceable, at least if it's an input.</p>"
       typedef
       import
       fwdtypedef
-      modport))
+      modport
+      genvar))
 
   (local (defun typenames-to-tags (x)
            (declare (xargs :mode :program))
@@ -3741,6 +3750,9 @@ do this is to wrap it using @('(vl-context x)').</p>
 
    (initials   vl-initiallist-p
                "Initial blocks like @('initial begin ...').")
+
+   (genvars    vl-genvarlist-p
+               "Genvar declarations.")
 
    (generates vl-genelementlist-p
               "Generate blocks including generate regions and for/if/case blocks.")

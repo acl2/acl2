@@ -1040,7 +1040,10 @@ later on.  We handle that in @(see vl-make-implicit-wires-main).</p>"
                               :msg "~a0: unexpected kind of module item."
                               :args (list item)))
              (newitems (cons (car x) newitems)))
-          (vl-make-implicit-wires-aux (cdr x) st implicit newitems warnings))))
+          (vl-make-implicit-wires-aux (cdr x) st implicit newitems warnings)))
+       ((when (eq tag :vl-genvar))
+        ;; Ignore genvars
+        (vl-make-implicit-wires-aux (cdr x) st implicit newitems warnings)))
     (impossible)
     (mv warnings st implicit newitems)))
 

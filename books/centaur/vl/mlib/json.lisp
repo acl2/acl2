@@ -1296,6 +1296,9 @@ TEXT versions of the message.</p>"
 
 (def-vl-jp-aggregate fwdtypedef)
 
+(def-vl-jp-aggregate genvar)
+(def-vl-jp-list genvar)
+
 (define vl-jp-modelement ((x vl-modelement-p) &key (ps 'ps))
   :guard-hints (("goal" :in-theory (enable vl-modelement-p)))
   (case (tag x)
@@ -1316,6 +1319,8 @@ TEXT versions of the message.</p>"
     (:VL-TYPEDEF ps)
     (:VL-IMPORT (VL-jp-IMPORT X))
     (:VL-FWDTYPEDEF (VL-jp-FWDTYPEDEF X))
+    ;; BOZO implement genvar
+    (:VL-GENVAR (vl-jp-genvar x))
     (OTHERWISE (VL-jp-MODPORT X))))
 
 (def-vl-jp-list modelement)
