@@ -49,6 +49,91 @@
 
 
 
+(define vl-inc-or-dec-expr ((var vl-expr-p) (op (member op '(:vl-plusplus :vl-minusminus))))
+  :returns (expr vl-expr-p)
+  :guard-debug t
+  (make-vl-nonatom
+   :op (if (eq op :vl-plusplus)
+           :vl-binary-plus
+         :vl-binary-minus)
+   :args (list var
+               (make-vl-atom :guts
+                             (make-vl-constint
+                              :origwidth 32
+                              :value 1
+                              :origtype :vl-unsigned
+                              :wasunsized t)))))
+
+(defconst *vl-assignment-operators*
+  '(:vl-equalsign
+    :vl-pluseq
+    :vl-minuseq
+    :vl-timeseq
+    :vl-diveq
+    :vl-remeq
+    :vl-andeq
+    :vl-oreq
+    :vl-xoreq
+    :vl-shleq
+    :vl-shreq
+    :vl-ashleq
+    :vl-ashreq))
+
+(define vl-assign-op-expr ((var vl-expr-p)
+                           (op (member op *vl-assignment-operators*))
+                           (rhs vl-expr-p))
+  ;; Given an expression like a = b, returns b.
+  ;; Given a %= b, returns a % b.
+  :returns (expr vl-expr-p)
+  :guard-debug t
+  (if (eq op :vl-equalsign)
+      (vl-expr-fix rhs)
+    (make-vl-nonatom
+     :op (case op
+           (:vl-pluseq  :vl-binary-plus)
+           (:vl-minuseq :vl-binary-minus)
+           (:vl-timeseq :vl-binary-times)
+           (:vl-diveq   :vl-binary-div)
+           (:vl-remeq   :vl-binary-rem)
+           (:vl-andeq   :vl-binary-bitand)
+           (:vl-oreq    :vl-binary-bitor)
+           (:vl-xoreq   :vl-binary-xor)
+           (:vl-shleq   :vl-binary-shl)
+           (:vl-shreq   :vl-binary-shr)
+           (:vl-ashleq  :vl-binary-ashl)
+           (:vl-ashreq  :vl-binary-ashr))
+     :args (list var rhs))))
+
+
+(defparser vl-parse-operator-assignment/inc/dec ()
+  ;; Parses e.g "a += 1" and returns (a . (a + 1)).  Also handles a++ and ++a.
+  :result (and (consp val)
+                (vl-expr-p (car val))
+                (vl-expr-p (cdr val)))
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (when (vl-is-some-token? '(:vl-plusplus :vl-minusminus))
+         ;; inc_or_dec_operator case
+         (op := (vl-match))
+         (var := (vl-parse-lvalue))
+         (return (cons var
+                       (vl-inc-or-dec-expr var (vl-token->type op)))))
+       (var := (vl-parse-lvalue))
+       (when (vl-is-some-token? '(:vl-plusplus :vl-minusminus))
+         ;; inc_or_dec_operator case
+         (op := (vl-match))
+         (return (cons var
+                       (vl-inc-or-dec-expr var (vl-token->type op)))))
+       (eq := (vl-match-some-token *vl-assignment-operators*))
+       (rhs := (vl-parse-expression))
+       (return (cons var
+                     (vl-assign-op-expr var
+                                        (vl-token->type eq)
+                                        rhs)))))
+
+
+
 ; blocking_assignment ::=
 ;    lvalue '=' [delay_or_event_control] expression
 ;
@@ -296,6 +381,152 @@
                                   (make-vl-nullstmt))
                       :atts     atts)))
 
+(defparser vl-parse-1+-id=expr-pairs (type varp)
+  :guard (and (vl-datatype-p type)
+              (booleanp varp))
+  :result (vl-vardecllist-p val)
+  :true-listp t
+  :resultp-of-nil t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (id := (vl-match-token :vl-idtoken))
+       (:= (vl-match-token :vl-equalsign))
+       (initval := (vl-parse-expression))
+       (return-raw
+        (b* ((vardecl1 (make-vl-vardecl :name (vl-idtoken->name id)
+                                        :type type
+                                        :varp varp
+                                        :initval initval
+                                        :loc (vl-token->loc id)))
+             (backup (vl-tokstream-save))
+             ((mv erp rest tokstream)
+              (seq tokstream
+                   (:= (vl-match-token :vl-comma))
+                   (return-raw (vl-parse-1+-id=expr-pairs type varp))))
+             ((unless erp)
+              (mv nil (cons vardecl1 rest) tokstream))
+             (tokstream (vl-tokstream-restore backup)))
+          (mv nil (list vardecl1) tokstream)))))
+
+(defparser vl-parse-for-variable-declaration ()
+  :result (vl-vardecllist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (when (vl-is-token? :vl-kwd-var)
+         (varp := (vl-match)))
+       (type := (vl-parse-datatype))
+       (return-raw (vl-parse-1+-id=expr-pairs type (if varp t nil)))))
+
+(defparser vl-parse-1+-for-variable-declarations ()
+  :result (vl-vardecllist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (decls1 := (vl-parse-for-variable-declaration))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (decls2 := (vl-parse-1+-for-variable-declarations)))
+       (return (append decls1 decls2))))
+
+
+(defparser vl-parse-1+-for-init-assignments ()
+  :result (vl-stmtlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (loc := (vl-current-loc))
+       ((lvalue . expr) := (vl-parse-assignment))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (rest := (vl-parse-1+-for-init-assignments)))
+       (return (cons (make-vl-assignstmt
+                      :type :vl-blocking
+                      :lvalue lvalue
+                      :expr expr
+                      :loc loc)
+                     rest))))
+
+(defparser vl-parse-for-initialization ()
+  :result (and (consp val)
+               (vl-vardecllist-p (car val))
+               (vl-stmtlist-p (cdr val)))
+  :fails gracefully
+  :count weak
+  (seq tokstream
+       (when (vl-is-token? :vl-semi)
+         (return '(nil . nil)))
+       (return-raw
+        (b* ((backup (vl-tokstream-save))
+             ((mv erp1 vardecls tokstream)
+              (vl-parse-1+-for-variable-declarations))
+             ((unless erp1)
+              (mv nil (cons vardecls nil) tokstream))
+             (tokstream (vl-tokstream-restore backup))
+             ((mv erp2 assigns tokstream)
+              (vl-parse-1+-for-init-assignments))
+             ((unless erp2)
+              (mv nil (cons nil assigns) tokstream))
+             (tokstream (vl-tokstream-restore backup)))
+          (vl-parse-error
+           "Failed to parse for loop initialization as either declarations or assignments.")))))
+
+
+
+
+(defparser vl-parse-1+-for-step-assigns ()
+  :result (vl-stmtlist-p val)
+  :fails gracefully
+  :true-listp t
+  :resultp-of-nil t
+  :count strong
+  (seq tokstream
+       (loc := (vl-current-loc))
+       ((lvalue . expr) := (vl-parse-operator-assignment/inc/dec))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (rest := (vl-parse-1+-for-step-assigns)))
+       (return (cons (make-vl-assignstmt
+                      :type :vl-blocking
+                      :lvalue lvalue
+                      :expr expr
+                      :loc loc)
+                     rest))))
+
+(defparser vl-parse-for-step ()
+  :result (vl-stmtlist-p val)
+  :fails gracefully
+  :true-listp t
+  :resultp-of-nil t
+  :count weak
+  (seq tokstream
+       (when (vl-is-token? :vl-rparen)
+         (return nil))
+       (return-raw (vl-parse-1+-for-step-assigns))))
+
+
+(defparser vl-parse-return-statement (atts)
+  :result (vl-stmt-p val)
+  :fails gracefully
+  :resultp-of-nil nil
+  :count strong
+  :guard (vl-atts-p atts)
+  :measure (two-nats-measure (vl-tokstream-measure) 0)
+  (seq tokstream
+       (:= (vl-match-token :vl-kwd-return))
+       (when (vl-is-token? :vl-semi)
+         (return (make-vl-returnstmt :atts atts)))
+       (val := (vl-parse-expression))
+       (return (make-vl-returnstmt :val val :atts atts))))
+
+
 (local (in-theory (disable
 
                    (:t acl2-count)
@@ -467,18 +698,17 @@
 
          (:= (vl-match-token :vl-kwd-for))
          (:= (vl-match-token :vl-lparen))
-         ((initlhs . initrhs) :s= (vl-parse-assignment))
+         ((initdecls . initassigns) := (vl-parse-for-initialization))
          (:= (vl-match-token :vl-semi))
          (test :s= (vl-parse-expression))
          (:= (vl-match-token :vl-semi))
-         ((nextlhs . nextrhs) :s= (vl-parse-assignment))
+         (stepforms := (vl-parse-for-step))
          (:= (vl-match-token :vl-rparen))
          (body := (vl-parse-statement))
-         (return (make-vl-forstmt :initlhs initlhs
-                                  :initrhs initrhs
+         (return (make-vl-forstmt :initdecls initdecls
+                                  :initassigns initassigns
                                   :test test
-                                  :nextlhs nextlhs
-                                  :nextrhs nextrhs
+                                  :stepforms stepforms
                                   :body body
                                   :atts atts))))
 
@@ -567,6 +797,7 @@
                                    :atts atts))))
 
 
+
 ; statement ::=                                                      ;;; starts with
 ;    {attribute_instance} blocking_assignment ';'                    ;;; variable_lvalue
 ;  | {attribute_instance} case_statement                             ;;; 'case', 'casez', 'casex'
@@ -622,6 +853,11 @@
        ;; Task enable handled below
        (:vl-kwd-wait
         (vl-parse-wait-statement atts))
+       (:vl-kwd-return
+        (seq tokstream
+             (ret := (vl-parse-return-statement atts))
+             (:= (vl-match-token :vl-semi))
+             (return ret)))
        (t
         ;; At this point, we can have either a blocking assignment, nonblocking
         ;; assignment, or task enable.  We will backtrack.  It doesn't matter
@@ -635,6 +871,19 @@
                    (ret := (vl-parse-blocking-or-nonblocking-assignment atts))
                    (:= (vl-match-token :vl-semi))
                    (return ret)))
+             ((unless erp)
+              (mv erp val tokstream))
+             (tokstream (vl-tokstream-restore backup))
+             ((mv erp val tokstream)
+              (seq tokstream
+                   (loc := (vl-current-loc))
+                   ((lvalue . expr) := (vl-parse-operator-assignment/inc/dec))
+                   (:= (vl-match-token :vl-semi))
+                   (return (make-vl-assignstmt
+                            :type :vl-blocking
+                            :lvalue lvalue
+                            :expr expr
+                            :loc loc))))
              ((unless erp)
               (mv erp val tokstream))
              (tokstream (vl-tokstream-restore backup)))

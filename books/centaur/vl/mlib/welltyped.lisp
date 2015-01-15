@@ -407,6 +407,10 @@ hierarchical identifiers.</p>"
           ;; be gotten rid of early on by the increment-elim transform.
           nil)
 
+         ((:vl-inside :vl-valuerange :vl-valuerangelist)
+          ;; Hopefully we can transform these before we get here.
+          nil)
+
          (otherwise
           (impossible))))))
 

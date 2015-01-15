@@ -218,7 +218,23 @@ is a tree of @(':vl-index') operators.</li>
 represented with a binary operator, @(':vl-binary-cast').  The first argument
 is the desired type (e.g., @('int')), and the second argument is the expression
 to cast to this type (e.g., @('2.0')).  See Section 6.24 from the
-SystemVerilog-2012 Standard.</p>"
+SystemVerilog-2012 Standard.</p>
+
+<h5>Inside Expressions</h5>
+
+<p>The SystemVerilog @('inside') expression gets dealt with via three
+operators.  To illustrate consider:</p>
+
+@({
+     foo inside { bar, [a:b], baz }
+})
+
+<p>This will get represented as a top-level @(':vl-inside') operator applied to
+two arguments: @('foo') and the right-hand side.  The right-hand side is a
+single @(':vl-valuerangelist') operator, applied to all of the members of the
+range list.  The individual arguments are ordinary expressions (in the case of
+@('bar') and @('baz')), with value ranges like @('[a:b]') represented by the
+special @(':vl-valuerange') applied to the two arguments.</p>"
 
   (list
    ;; Basic Unary Operators
@@ -333,6 +349,10 @@ SystemVerilog-2012 Standard.</p>"
    (cons :vl-keyvalue              (make-vl-opinfo :arity 2   :text nil)) ;;; key : value  (within vl-pattern-keyvalue)
    (cons :vl-pattern-type          (make-vl-opinfo :arity 2   :text nil)) ;;; type'{...}, first argument 
 
+   ;; Inside Operators
+   (cons :vl-inside                (make-vl-opinfo :arity 2   :text "inside"))
+   (cons :vl-valuerangelist        (make-vl-opinfo :arity nil :text nil))
+   (cons :vl-valuerange            (make-vl-opinfo :arity 2   :text nil))
    ))
 
 (define vl-ops-table ()

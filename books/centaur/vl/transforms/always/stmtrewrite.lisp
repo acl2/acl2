@@ -493,14 +493,10 @@ blocks with names/decls seems tricky due to hierarchical identifiers.</p>"
 
 
 
-(define vl-forstmt-rewrite ((initlhs vl-expr-p)
-                            (initrhs vl-expr-p)
-                            (test    vl-expr-p)
-                            (nextlhs vl-expr-p)
-                            (nextrhs vl-expr-p)
+(define vl-forstmt-rewrite ((x       vl-stmt-p)
                             (body    vl-stmt-p)
-                            (atts    vl-atts-p)
                             (warnings vl-warninglist-p))
+  :guard (eq (vl-stmt-kind x) :vl-forstmt)
   :returns (mv (warnings vl-warninglist-p :hyp :fguard)
                (stmt     vl-stmt-p        :hyp :fguard))
   :short "Eliminate purely null @(see vl-forstmt)s."
@@ -516,16 +512,12 @@ blocks with names/decls seems tricky due to hierarchical identifiers.</p>"
 <p>We could eventually unroll things.  This rewrite is generally meant to allow
 us to ignore for loops with @('$display') statements and similar.</p>"
 
+  ;; BOZO This isn't quite right for cases where significant things happen in
+  ;; the initialization/stepping forms.
   (if (vl-nullstmt-p body)
       (mv warnings body)
     (mv warnings
-        (make-vl-forstmt :initlhs initlhs
-                         :initrhs initrhs
-                         :test test
-                         :nextlhs nextlhs
-                         :nextrhs nextrhs
-                         :body body
-                         :atts atts))))
+        (change-vl-forstmt x :body body))))
 
 (defines vl-stmt-rewrite
   :short "Core statement rewriter."
@@ -591,11 +583,7 @@ us to ignore for loops with @('$display') statements and similar.</p>"
             ((vl-forstmt-p x)
              (b* (((vl-forstmt x) x)
                   ((mv warnings body) (vl-stmt-rewrite x.body unroll-limit warnings))
-                  ((mv warnings new-x) (vl-forstmt-rewrite x.initlhs x.initrhs
-                                                           x.test
-                                                           x.nextlhs x.nextrhs
-                                                           body
-                                                           x.atts warnings)))
+                  ((mv warnings new-x) (vl-forstmt-rewrite x body warnings)))
                (mv warnings new-x)))
 
             (t

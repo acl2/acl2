@@ -454,6 +454,13 @@ is not okay to replace @('foo_t') with, say, a tagged @('union').</p>")
   :element vl-blockitem-typesubst)
 
 
+(defthm vl-vardecllist-p-of-vl-blockitemlist-typesubst
+  (implies (vl-vardecllist-p x)
+           (vl-vardecllist-p (mv-nth 2 (vl-blockitemlist-typesubst x sigma warnings))))
+  :hints(("Goal" :in-theory (enable vl-blockitem-typesubst
+                                    vl-blockitemlist-typesubst))))
+
+
 (defines vl-stmt-typesubst
   :verify-guards nil
 

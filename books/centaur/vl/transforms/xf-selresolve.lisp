@@ -439,6 +439,13 @@ multiconcats throughout an expression."
              (b* (((vl-disablestmt x) x)
                   ((mv warnings id) (vl-expr-selresolve x.id ss warnings)))
                (mv warnings (change-vl-disablestmt x :id id))))
+            (:vl-returnstmt
+             (b* (((vl-returnstmt x) x)
+                  ((mv warnings val)
+                   (if x.val
+                       (vl-expr-selresolve x.val ss warnings)
+                     (mv warnings x.val))))
+               (mv (ok) (change-vl-returnstmt x :val val))))
             (:vl-eventtriggerstmt
              (b* (((vl-eventtriggerstmt x) x)
                   ((mv warnings id) (vl-expr-selresolve x.id ss warnings)))

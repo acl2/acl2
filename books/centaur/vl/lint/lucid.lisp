@@ -1344,6 +1344,11 @@ created when we process their packages, etc.</p>"
         ;; used.  I think for now we'll just ignore them.
         st
 
+        :vl-returnstmt
+        (if x.val
+            (vl-rhsexpr-lucidcheck x.val ss st ctx)
+          st)
+
         :vl-eventtriggerstmt
         ;; I think this is similar to the enable case?
         (b* ((st (vl-rhsexpr-lucidcheck x.id ss st ctx)))
@@ -1376,11 +1381,10 @@ created when we process their packages, etc.</p>"
           st)
 
         :vl-forstmt
-        (b* ((st (vl-lhsexpr-lucidcheck x.initlhs ss st ctx))
-             (st (vl-rhsexpr-lucidcheck x.initrhs ss st ctx))
+        (b* ((st (vl-vardecllist-lucidcheck x.initdecls ss st))
+             (st (vl-stmtlist-lucidcheck x.initassigns ss st ctx))
              (st (vl-rhsexpr-lucidcheck x.test ss st ctx))
-             (st (vl-lhsexpr-lucidcheck x.nextlhs ss st ctx))
-             (st (vl-rhsexpr-lucidcheck x.nextrhs ss st ctx))
+             (st (vl-stmtlist-lucidcheck x.stepforms ss st ctx))
              (st (vl-stmt-lucidcheck x.body ss st ctx)))
           st)
 

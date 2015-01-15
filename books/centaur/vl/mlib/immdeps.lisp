@@ -810,6 +810,8 @@ elements.")
            ans))
         (:vl-disablestmt
          (vl-expr-immdeps x.id ans))
+        (:vl-returnstmt
+         (if x.val (vl-expr-immdeps x.val ans) ans))
         (:vl-eventtriggerstmt
          (vl-expr-immdeps x.id ans))
         (:vl-casestmt
@@ -837,11 +839,10 @@ elements.")
               (ans (vl-stmt-immdeps x.body ans)))
            ans))
         (:vl-forstmt
-         (b* ((ans (vl-expr-immdeps x.initlhs ans))
-              (ans (vl-expr-immdeps x.initrhs ans))
+         (b* ((ans (vl-vardecllist-immdeps x.initdecls ans))
+              (ans (vl-stmtlist-immdeps x.initassigns ans))
               (ans (vl-expr-immdeps x.test ans))
-              (ans (vl-expr-immdeps x.nextlhs ans))
-              (ans (vl-expr-immdeps x.nextrhs ans))
+              (ans (vl-stmtlist-immdeps x.stepforms ans))
               (ans (vl-stmt-immdeps x.body ans)))
            ans))
         (:vl-blockstmt
@@ -1004,6 +1005,7 @@ elements.")
     (:vl-typedef       (vl-typedef-immdeps x ans))
     (:vl-import        (vl-import-immdeps x ans))
     (:vl-fwdtypedef    ans) ;; no dependencies on a forward typedef
+    (:vl-genvar        ans) ;; no dependencies
     (otherwise         (vl-modport-immdeps x ans))))
 
 

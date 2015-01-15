@@ -2050,6 +2050,9 @@ identifier, so we convert it into a hidpiece.</p>"
 ; compare_expression ::=
 ;    shift_expression { compare_op { attribute_instance } shift_expression }
 
+; SystemVerilog adds 'inside' as an operator at this level of precedence as
+; well, so we'll add it here.
+
   (defparser vl-parse-compare-expression-aux ()
     :measure (two-nats-measure (vl-tokstream-measure) 140)
     (seq tokstream
@@ -2057,12 +2060,24 @@ identifier, so we convert it into a hidpiece.</p>"
           (op := (vl-parse-op 2 '((:vl-lt  . :vl-binary-lt)
                                   (:vl-lte . :vl-binary-lte)
                                   (:vl-gt  . :vl-binary-gt)
-                                  (:vl-gte . :vl-binary-gte))))
+                                  (:vl-gte . :vl-binary-gte)
+                                  (:vl-kwd-inside . :vl-inside)
+                                  )))
           (unless op
             (return (list first)))
-          (atts :w= (vl-parse-0+-attribute-instances))
-          (tail := (vl-parse-compare-expression-aux))
-          (return (list* first op atts tail))))
+          (unless (eq op :vl-inside)
+            (atts :w= (vl-parse-0+-attribute-instances))
+            (tail := (vl-parse-compare-expression-aux))
+            (return (list* first op atts tail)))
+          ;; Inside operators are special because the second argument is
+          ;; a value range list.
+          (:= (vl-match-token :vl-lcurly))
+          (args := (vl-parse-1+-open-value-ranges))
+          (:= (vl-match-token :vl-rcurly))
+          (return
+           (b* ((tail (make-vl-nonatom :op :vl-valuerangelist
+                                       :args args)))
+             (list* first op atts (list tail))))))
 
   (defparser vl-parse-compare-expression ()
     :measure (two-nats-measure (vl-tokstream-measure) 150)
@@ -2070,6 +2085,30 @@ identifier, so we convert it into a hidpiece.</p>"
           (mixed := (vl-parse-compare-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
 
+  (defparser vl-parse-open-value-range ()
+    :measure (two-nats-measure (vl-tokstream-measure) 310)
+    (seq tokstream
+         (when (vl-is-token? :vl-lbrack)
+           ;; We want [ a : b ] here
+           (:= (vl-match))
+           (a :w= (vl-parse-expression))
+           (:= (vl-match-token :vl-colon))
+           (b := (vl-parse-expression))
+           (:= (vl-match-token :vl-rbrack))
+           (return (make-vl-nonatom :op :vl-valuerange
+                                    :args (list a b))))
+         ;; Otherwise, just an expression
+         (return-raw (vl-parse-expression))))
+
+
+  (defparser vl-parse-1+-open-value-ranges ()
+    :measure (two-nats-measure (vl-tokstream-measure) 320)
+    (seq tokstream
+         (range1 :s= (vl-parse-open-value-range))
+         (when (vl-is-token? :vl-comma)
+           (:= (vl-match))
+           (rest := (vl-parse-1+-open-value-ranges)))
+         (return (cons range1 rest))))
 
 
 ; equality_op ::= '==' | '!=' | '===' | '!=='
@@ -2394,6 +2433,8 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-val-when-error-claim vl-parse-logor-expression)
       ,(vl-val-when-error-claim vl-parse-qmark-expression)
       ,(vl-val-when-error-claim vl-parse-impl-expression)
+      ,(vl-val-when-error-claim vl-parse-open-value-range)
+      ,(vl-val-when-error-claim vl-parse-1+-open-value-ranges)
       ,(vl-val-when-error-claim vl-parse-expression)
       :hints((and acl2::stable-under-simplificationp
                   (flag::expand-calls-computed-hint
@@ -2474,9 +2515,11 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-warning-claim vl-parse-logor-expression)
         ,(vl-warning-claim vl-parse-qmark-expression)
         ,(vl-warning-claim vl-parse-impl-expression)
-        ,(vl-warning-claim vl-parse-expression)
+        ,(vl-warning-claim vl-parse-open-value-range)
+        ,(vl-warning-claim vl-parse-1+-open-value-ranges)
         ,(vl-warning-claim vl-parse-assignment-pattern)
         ,(vl-warning-claim vl-parse-1+-keyval-expression-pairs)
+        ,(vl-warning-claim vl-parse-expression)
         :hints((and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
                      acl2::clause
@@ -2707,9 +2750,11 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-progress-claim vl-parse-logor-expression)
       ,(vl-progress-claim vl-parse-qmark-expression)
       ,(vl-progress-claim vl-parse-impl-expression)
-      ,(vl-progress-claim vl-parse-expression)
       ,(vl-progress-claim vl-parse-assignment-pattern)
       ,(vl-progress-claim vl-parse-1+-keyval-expression-pairs)
+      ,(vl-progress-claim vl-parse-open-value-range)
+      ,(vl-progress-claim vl-parse-1+-open-value-ranges)
+      ,(vl-progress-claim vl-parse-expression)
       :hints((and acl2::stable-under-simplificationp
                   (flag::expand-calls-computed-hint
                    acl2::clause
@@ -2790,9 +2835,11 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-eof-claim vl-parse-logor-expression :error)
         ,(vl-eof-claim vl-parse-qmark-expression :error)
         ,(vl-eof-claim vl-parse-impl-expression :error)
-        ,(vl-eof-claim vl-parse-expression :error)
         ,(vl-eof-claim vl-parse-assignment-pattern :error)
         ,(vl-eof-claim vl-parse-1+-keyval-expression-pairs :error)
+        ,(vl-eof-claim vl-parse-open-value-range :error)
+        ,(vl-eof-claim vl-parse-1+-open-value-ranges :error)
+        ,(vl-eof-claim vl-parse-expression :error)
         :hints((and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
                      acl2::clause
@@ -2888,9 +2935,11 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-expression-claim vl-parse-logor-expression :expr)
       ,(vl-expression-claim vl-parse-qmark-expression :expr)
       ,(vl-expression-claim vl-parse-impl-expression :expr)
-      ,(vl-expression-claim vl-parse-expression :expr)
       ,(vl-expression-claim vl-parse-assignment-pattern :expr)
       ,(vl-expression-claim vl-parse-1+-keyval-expression-pairs :exprlist)
+      ,(vl-expression-claim vl-parse-open-value-range :expr)
+      ,(vl-expression-claim vl-parse-1+-open-value-ranges :exprlist)
+      ,(vl-expression-claim vl-parse-expression :expr)
       :hints(("Goal"
               :do-not '(generalize fertilize))
              (and stable-under-simplificationp

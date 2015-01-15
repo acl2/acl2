@@ -528,6 +528,8 @@ displays.  The module browser's web pages are responsible for defining the
      (:VL-PATTERN-MULTI      . 200)
      (:VL-PATTERN-TYPE       . 200)
      (:VL-KEYVALUE           . 200)
+     (:VL-VALUERANGELIST     . 200)
+     (:VL-VALUERANGE         . 200)
 
      ;; All of these things with precedence 20 is kind of concerning/confusing.
      ;; Can this really be right?  Well, what's one more?
@@ -569,6 +571,7 @@ displays.  The module browser's web pages are responsible for defining the
      (:VL-BINARY-LTE     . 100)
      (:VL-BINARY-GT      . 100)
      (:VL-BINARY-GTE     . 100)
+     (:VL-INSIDE         . 100)
 
      (:VL-BINARY-EQ      . 90)
      (:VL-BINARY-NEQ     . 90)
@@ -760,7 +763,7 @@ its arguments, if necessary.</p>"
               :vl-binary-wildeq :vl-binary-wildneq
               :vl-binary-logand :vl-binary-logor
               :vl-binary-power
-              :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
+              :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte :vl-inside
               :vl-binary-bitand :vl-binary-bitor
               :vl-binary-xor :vl-binary-xnor
               :vl-binary-shr :vl-binary-shl :vl-binary-ashr :vl-binary-ashl)
@@ -1011,11 +1014,23 @@ its arguments, if necessary.</p>"
                                (vl-pp-expr (second args))
                                (vl-print "}}")))))
 
-            ((:vl-concat)
+            ((:vl-concat :vl-valuerangelist)
              ;; This doesn't need parens because it has maximal precedence
              (vl-ps-seq (vl-print "{")
                         (vl-pp-exprlist args)
                         (vl-print "}")))
+
+            ((:vl-valuerange)
+             (b* (((unless (consp args))
+                   (impossible)
+                   ps)
+                  (arg1 (first args))
+                  (arg2 (second args)))
+               (vl-ps-seq (vl-print "[")
+                          (vl-pp-expr arg1)
+                          (vl-println? ":")
+                          (vl-pp-expr arg2)
+                          (vl-println? "]"))))
 
             ((:vl-stream-left :vl-stream-right)
              (if (atom args)
@@ -1829,7 +1844,11 @@ expression into a string."
                 (vl-pp-strings-separated-by-commas notes)
                 (vl-println ""))))
 
-(define vl-pp-vardecl ((x vl-vardecl-p) &key (ps 'ps))
+(define vl-pp-vardecl-aux ((x vl-vardecl-p) &key (ps 'ps))
+  ;; This just prints a vardecl, but with no final semicolon and no final atts,
+  ;; so we can use it in places where vardecls are separated by commas
+  ;; (i.e. for loop initializations) vs. semicolons.
+
   ;; This used to just print nets.  We use custom code here because we need
   ;; to put the vectored/scalared stuff in the middle of the type...
   (b* (((vl-vardecl x) x)
@@ -1883,8 +1902,17 @@ expression into a string."
            ps
          (vl-ps-seq (vl-print " ")
                     (vl-pp-packeddimensionlist udims))))
-     (vl-print " ;")
-     (vl-pp-vardecl-atts-end x.atts))))
+     (if x.initval
+         (vl-ps-seq (vl-print " = ")
+                    (vl-pp-expr x.initval))
+       ps))))
+
+
+(define vl-pp-vardecl ((x vl-vardecl-p) &key (ps 'ps))
+  (b* (((vl-vardecl x)))
+    (vl-ps-seq (vl-pp-vardecl-aux x)
+               (vl-print " ;")
+               (vl-pp-vardecl-atts-end x.atts))))
 
 (define vl-pp-vardecllist ((x vl-vardecllist-p) &key (ps 'ps))
   (if (atom x)
@@ -1892,6 +1920,12 @@ expression into a string."
     (vl-ps-seq (vl-pp-vardecl (car x))
                (vl-pp-vardecllist (cdr x)))))
 
+(define vl-pp-vardecllist-comma-separated ((x vl-vardecllist-p) &key (ps 'ps))
+  (b* (((when (atom x)) ps)
+       (ps (vl-pp-vardecl-aux (car x)))
+       ((when (atom (cdr x))) ps)
+       (ps (vl-print " ,")))
+    (vl-pp-vardecllist-comma-separated (cdr x))))
 
 
 (define vl-pp-blockitem ((x vl-blockitem-p) &key (ps 'ps))
@@ -2441,6 +2475,24 @@ expression into a string."
     (:vl-unique0  "unique0")
     (otherwise    (or (impossible) ""))))
 
+(define vl-pp-forloop-assigns ((x vl-stmtlist-p) &key (ps 'ps))
+  (b* (((when (atom x)) ps)
+       (x1 (car x))
+       (ps (vl-stmt-case x1
+             (:vl-assignstmt
+              (vl-ps-seq (vl-pp-expr x1.lvalue)
+                         (vl-println? " = ")
+                         (vl-pp-expr x1.expr)))
+             ;; BOZO might need to handle enablestmt for function calls
+             (:otherwise
+              (prog2$ (raise "Bad type of statement for for loop initialization/step: ~x0~%"
+                             (vl-stmt-kind x1))
+                      ps))))
+       ((when (atom (cdr x))) ps)
+       (ps (vl-print ", ")))
+    (vl-pp-forloop-assigns (cdr x))))
+       
+
 (defines vl-pp-stmt
 
   (define vl-pp-stmt ((x vl-stmt-p) &key (ps 'ps))
@@ -2490,6 +2542,12 @@ expression into a string."
                  (vl-ps-span "vl_key"
                              (vl-print "disable "))
                  (vl-pp-expr x.id)
+                 (vl-println " ;"))
+      :vl-returnstmt
+      (vl-ps-seq (vl-pp-stmt-autoindent)
+                 (if x.atts (vl-pp-atts x.atts) ps)
+                 (vl-ps-span "vl_key" (vl-print "return "))
+                 (if x.val (vl-pp-expr x.val) ps)
                  (vl-println " ;"))
 
       :vl-deassignstmt
@@ -2558,11 +2616,16 @@ expression into a string."
                  (if x.atts (vl-pp-atts x.atts) ps)
                  (vl-ps-span "vl_key" (vl-print "for "))
                  (vl-print "(")
-                 (vl-pp-expr x.initlhs) (vl-print " = ") (vl-pp-expr x.initrhs)
+                 (if x.initdecls
+                     ;; There can only be one of initdecls or initassigns.
+                     ;; Either way, special care needs to be taken to print
+                     ;; them comma-separated instead of semicolon-separated.
+                     (vl-pp-vardecllist-comma-separated x.initdecls)
+                   (vl-pp-forloop-assigns x.initassigns))
                  (vl-print "; ")
                  (vl-pp-expr x.test)
                  (vl-print "; ")
-                 (vl-pp-expr x.nextlhs) (vl-print " = ") (vl-pp-expr x.nextrhs)
+                 (vl-pp-forloop-assigns x.stepforms)
                  (vl-println ")")
                  (vl-pp-stmt-indented (vl-pp-stmt x.body))
                  ;; no ending semicolon, the body prints one

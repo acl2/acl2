@@ -340,6 +340,11 @@ consing the original version of X into its attributes.</p>"
              (b* (((vl-disablestmt x)))
                (change-vl-disablestmt x
                                       :id (vl-expr-origexprs x.id))))
+            (:vl-returnstmt
+             (b* (((vl-returnstmt x) x))
+               (change-vl-returnstmt x
+                                     :val (and x.val
+                                               (vl-expr-origexprs x.val)))))
             (:vl-eventtriggerstmt
              (b* (((vl-eventtriggerstmt x)))
                (change-vl-eventtriggerstmt x

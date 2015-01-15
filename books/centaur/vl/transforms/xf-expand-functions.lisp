@@ -2220,6 +2220,14 @@ which is free of function calls on success.</p>"
                      (vl-check-bad-funcalls ctx (list x.id) "disable statements" warnings)))
                  (mv okp warnings nf x vardecls assigns)))
 
+              (:vl-returnstmt
+               (b* (((vl-returnstmt x) x)
+                    ((mv okp warnings)
+                     (if x.val
+                         (vl-check-bad-funcalls ctx (list x.val) "disable statements" warnings)
+                       (mv t warnings))))
+                 (mv okp warnings nf x vardecls assigns)))
+
               (otherwise
                (b* (((vl-eventtriggerstmt x) x)
                     ((mv okp warnings)
@@ -2236,12 +2244,8 @@ which is free of function calls on success.</p>"
            ((mv okp2 warnings) (vl-check-bad-funcalls ctx (vl-maybe-delayoreventcontrol-allexprs x.ctrl)
                                                       "timing controls" warnings))
            ((mv okp3 warnings)
-            (cond ((vl-forstmt-p x)
-                   ;; Don't allow function calls in initlhs or nextlhs.
-                   (vl-check-bad-funcalls ctx (list (vl-forstmt->initlhs x)
-                                                    (vl-forstmt->nextlhs x))
-                                          "left-hand sides of for-loop assignments"
-                                          warnings))
+            (cond ;; Used to check LHSes in for loop initializations/steps, but
+                  ;; now that should be taken care of by the recursive call
                   ((vl-casestmt-p x)
                    ;; Don't allow function calls in match expressions
                    (vl-check-bad-funcalls ctx

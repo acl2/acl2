@@ -442,6 +442,8 @@ produce unsigned values.</li>
             :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
             :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
             :vl-binary-shlassign :vl-binary-shrassign :vl-binary-ashlassign :vl-binary-ashrassign
+
+            :vl-inside :vl-valuerange :vl-valuerangelist
             )
            (mv warnings nil))
 

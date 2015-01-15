@@ -2571,7 +2571,9 @@ minor warning for assignments where the rhs is a constant.</p>"
             :vl-binary-plusassign :vl-binary-minusassign
             :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
             :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
-            :vl-binary-shlassign :vl-binary-shrassign :vl-binary-ashlassign :vl-binary-ashrassign)
+            :vl-binary-shlassign :vl-binary-shrassign :vl-binary-ashlassign :vl-binary-ashrassign
+
+            :vl-inside :vl-valuerange :vl-valuerangelist)
            (mv nil
                (fatal :type :vl-bad-operator
                       :msg "~a0: sizing should not encounter ~x1 because it should ~

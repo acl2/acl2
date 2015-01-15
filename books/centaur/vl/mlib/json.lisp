@@ -1073,6 +1073,11 @@ which could not hold such large values.</p>")
                   :id     (vl-jp-expr x.id)
                   :atts   (vl-jp-atts x.atts))
 
+       :vl-returnstmt
+       (jp-object :tag    (jp-sym kind)
+                  :atts   (vl-jp-atts x.atts)
+                  :val    (vl-jp-maybe-expr x.val))
+
        :vl-eventtriggerstmt
        (jp-object :tag    (jp-sym kind)
                   :id     (vl-jp-expr x.id)
@@ -1113,13 +1118,12 @@ which could not hold such large values.</p>")
 
        :vl-forstmt
        (jp-object :tag      (jp-sym kind)
-                  :initlhs  (vl-jp-expr x.initlhs)
-                  :initrhs  (vl-jp-expr x.initrhs)
-                  :test     (vl-jp-expr x.test)
-                  :nextlhs  (vl-jp-expr x.nextlhs)
-                  :nextrhs  (vl-jp-expr x.nextrhs)
-                  :body     (vl-jp-stmt x.body)
-                  :atts     (vl-jp-atts x.atts))
+                  :initdecls   (vl-jp-vardecllist x.initdecls)
+                  :initassigns (vl-jp-stmtlist x.initassigns)
+                  :test        (vl-jp-expr x.test)
+                  :stepforms   (vl-jp-stmtlist x.stepforms)
+                  :body        (vl-jp-stmt x.body)
+                  :atts        (vl-jp-atts x.atts))
 
        :vl-blockstmt
        (jp-object :tag        (jp-sym kind)
@@ -1292,6 +1296,9 @@ TEXT versions of the message.</p>"
 
 (def-vl-jp-aggregate fwdtypedef)
 
+(def-vl-jp-aggregate genvar)
+(def-vl-jp-list genvar)
+
 (define vl-jp-modelement ((x vl-modelement-p) &key (ps 'ps))
   :guard-hints (("goal" :in-theory (enable vl-modelement-p)))
   (case (tag x)
@@ -1312,6 +1319,8 @@ TEXT versions of the message.</p>"
     (:VL-TYPEDEF ps)
     (:VL-IMPORT (VL-jp-IMPORT X))
     (:VL-FWDTYPEDEF (VL-jp-FWDTYPEDEF X))
+    ;; BOZO implement genvar
+    (:VL-GENVAR (vl-jp-genvar x))
     (OTHERWISE (VL-jp-MODPORT X))))
 
 (def-vl-jp-list modelement)

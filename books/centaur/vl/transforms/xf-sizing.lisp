@@ -912,6 +912,13 @@ the expression.</p>"
 
 (def-vl-exprsize-list vl-blockitemlist :element vl-blockitem)
 
+(defthm vl-vardecllist-p-of-vl-blockitemlist-exprsize
+  (implies (vl-vardecllist-p x)
+           (vl-vardecllist-p (mv-nth 2 (vl-blockitemlist-exprsize x ss warnings))))
+  :hints(("Goal" :in-theory (enable vl-vardecllist-p
+                                    vl-blockitemlist-exprsize
+                                    vl-blockitem-exprsize))))
+
 (local (defthm vl-blockitemlist-exprsize-under-iff
          (b* (((mv ?ok ?warnings new-x) (vl-blockitemlist-exprsize x ss warnings)))
            (iff new-x (consp x)))
@@ -996,6 +1003,13 @@ the expression.</p>"
                   ((mv successp warnings id-prime) (vl-expr-size nil x.id ss ctx warnings))
                   (x-prime (change-vl-disablestmt x :id id-prime)))
                (mv successp warnings x-prime)))
+            (:vl-returnstmt
+             (b* (((vl-returnstmt x) x)
+                  ((mv successp warnings val-prime)
+                   (if x.val
+                       (vl-expr-size nil x.val ss ctx warnings)
+                     (mv t warnings x.val))))
+               (mv successp warnings (change-vl-returnstmt x :val val-prime))))
 
             (otherwise
              (b* (((vl-eventtriggerstmt x) x)

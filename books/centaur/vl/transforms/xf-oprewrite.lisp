@@ -834,6 +834,13 @@ vl-expr-p) @('x') and returns @('(mv warnings-prime x-prime)')."
              (b* (((vl-disablestmt x) x)
                   ((mv warnings id) (vl-expr-oprewrite x.id warnings)))
                (mv warnings (change-vl-disablestmt x :id id))))
+            (:vl-returnstmt
+             (b* (((vl-returnstmt x) x)
+                  ((mv warnings val)
+                   (if x.val
+                       (vl-expr-oprewrite x.val warnings)
+                     (mv warnings x.val))))
+               (mv (ok) (change-vl-returnstmt x :val val))))
             (:vl-eventtriggerstmt
              (b* (((vl-eventtriggerstmt x) x)
                   ((mv warnings id) (vl-expr-oprewrite x.id warnings)))

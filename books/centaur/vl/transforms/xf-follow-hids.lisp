@@ -1086,6 +1086,15 @@ identifier.</p>"
                   (x-prime (change-vl-disablestmt x :id id-prime)))
                (mv warnings x-prime)))
 
+            (:vl-returnstmt
+             (b* (((vl-returnstmt x))
+                  ((mv warnings val-prime)
+                   (if x.val
+                       (vl-expr-follow-hids x.val mod mods modalist toplev warnings)
+                     (mv warnings nil)))
+                  (x-prime (change-vl-returnstmt x :val val-prime)))
+               (mv warnings x-prime)))
+
             (otherwise
              (b* (((mv warnings id-prime)
                    (vl-expr-follow-hids (vl-eventtriggerstmt->id x) mod mods modalist toplev warnings))

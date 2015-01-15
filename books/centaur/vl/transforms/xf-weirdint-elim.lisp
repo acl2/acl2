@@ -414,6 +414,13 @@ will become the arguments to a concatenation."
                                (change-vl-disablestmt x :id id-prime)
                              x)))
                (mv (ok) changedp x-prime)))
+            (:vl-returnstmt
+             (b* (((vl-returnstmt x) x)
+                  ((mv warnings val-changedp val)
+                   (if x.val
+                       (vl-expr-weirdint-elim x.val warnings)
+                     (mv warnings nil x.val))))
+               (mv (ok) val-changedp (change-vl-returnstmt x :val val))))
             (:vl-eventtriggerstmt
              (b* (((mv warnings id-changedp id-prime)
                    (vl-expr-weirdint-elim (vl-eventtriggerstmt->id x) warnings))

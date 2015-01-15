@@ -81,7 +81,8 @@ statements."
       (cons (vl-lint-stmt-rewrite (car x))
             (vl-lint-stmtlist-rewrite (cdr x)))))
   ///
-  (verify-guards vl-lint-stmt-rewrite))
+  (verify-guards vl-lint-stmt-rewrite
+    :hints (("goal" :cases ((eq (vl-stmt-kind x) :vl-forstmt))))))
 
 (define vl-always-lint-stmt-rewrite ((x vl-always-p))
   :returns (new-x vl-always-p)

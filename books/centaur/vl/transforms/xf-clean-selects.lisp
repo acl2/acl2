@@ -174,6 +174,12 @@ where we expect to see wires.</p>")
             (:vl-disablestmt
              x)
 
+            (:vl-returnstmt
+             (b* (((vl-returnstmt x)))
+               (if x.val
+                   (change-vl-returnstmt x :val (vl-expr-clean-selects x.val ss))
+                 x)))
+
             (otherwise
              ;; event trigger statement
              x)))

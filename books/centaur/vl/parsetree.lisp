@@ -69,7 +69,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2015-01-12")
+  "VL Syntax 2015-01-14")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -2706,23 +2706,35 @@ all.</p>"
      :long "<h4>General Form:</h4>
 
 @({
-for( <initlhs> = <initrhs> ; <test> ; <nextlhs> = <nextrhs> )
+for( <for_initialization> ; <test> ; <for_step> )
    <body>
 })
 
-<p>See Section 9.6 (page 130).  The for statement acts like a for-loop in C.
-First, outside the loop, it executes the assignment @('initlhs = initrhs').
-Then it evalutes <i>test</i>.  If <i>test</i> evaluates to zero (or to X or Z)
-then the loop exists.  Otherwise, <i>body</i> is executed, the assignment
-@('nextlhs = nextrhs') is performed, and we loop back to evaluating
-<i>test</i>.</p>"
-     ((initlhs vl-expr-p)
-      (initrhs vl-expr-p)
-      (test    vl-expr-p)
-      (nextlhs vl-expr-p)
-      (nextrhs vl-expr-p)
-      (body    vl-stmt-p)
-      (atts    vl-atts-p)))
+<p>A @('for_initialization') can either be a comma-separated list of variable
+declarations with initial values, or a comma-separated list of assignments (of
+previously declared variables).  A @('for_step') is a comma-separated list of
+variable assignments, increments, or decrements.</p>
+
+<p>We cover both these
+
+<p>See SystemVerilog Section 12.7.1.  The for statement acts like a for-loop in
+C.  First, outside the loop, it executes the @('for_initialization')
+assignments.  Then it evalutes <i>test</i>.  If <i>test</i> evaluates to
+zero (or to X or Z) then the loop exists.  Otherwise, <i>body</i> is executed,
+the @('for_step') is performed, and we loop back to evaluating
+<i>test</i>.</p>
+
+<p>The syntaxp for @('for_initialization') is a little tricky since it can
+either have declarations or assignments to pre-existing variables, but not
+both.  Our representation contains a @(see vl-vardecllist) with initial values
+to cover the declaration case and a @(see vl-stmtlist) to cover the assignment
+case; one or the other of these will be empty.</p>"
+     ((initdecls vl-vardecllist-p)
+      (initassigns vl-stmtlist-p)
+      (test        vl-expr-p)
+      (stepforms   vl-stmtlist-p)
+      (body        vl-stmt-p)
+      (atts        vl-atts-p)))
 
     (:vl-blockstmt
      :base-name vl-blockstmt
@@ -2780,6 +2792,13 @@ block name to each variable name.</p>"
 })"
      ((ctrl vl-delayoreventcontrol-p)
       (body vl-stmt-p)
+      (atts vl-atts-p)))
+
+    (:vl-returnstmt
+     :base-name vl-returnstmt
+     :layout :tree
+     :short "Representation of return statements."
+     ((val vl-maybe-expr-p)
       (atts vl-atts-p)))
     ))
 
@@ -3284,6 +3303,14 @@ be non-sliceable, at least if it's an input.</p>"
   :returns (names string-listp)
   (vl-typedef->name x))
 
+(defprod vl-genvar
+  :tag :vl-genvar
+  :short "Representation of a genvar declaration."
+  ((name stringp)
+   (atts vl-atts-p)
+   (loc  vl-location-p)))
+
+(fty::deflist vl-genvarlist :elt-type vl-genvar :elementp-of-nil nil)
 
 (encapsulate nil
 
@@ -3302,7 +3329,8 @@ be non-sliceable, at least if it's an input.</p>"
       typedef
       import
       fwdtypedef
-      modport))
+      modport
+      genvar))
 
   (local (defun typenames-to-tags (x)
            (declare (xargs :mode :program))
@@ -3722,6 +3750,9 @@ do this is to wrap it using @('(vl-context x)').</p>
 
    (initials   vl-initiallist-p
                "Initial blocks like @('initial begin ...').")
+
+   (genvars    vl-genvarlist-p
+               "Genvar declarations.")
 
    (generates vl-genelementlist-p
               "Generate blocks including generate regions and for/if/case blocks.")
