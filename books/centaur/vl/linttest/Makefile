@@ -41,7 +41,7 @@ TEST_DIRS  := $(patsubst %/spec.sv, %, $(SPEC_FILES))
 JSON_FILES := $(patsubst %/spec.sv, %/vl-warnings.json, $(SPEC_FILES))
 OK_FILES   := $(patsubst %/spec.sv, %/vl-warnings.ok, $(SPEC_FILES))
 
-%/vl-warnings.json: %/spec.sv
+%/vl-warnings.json: %/spec.sv $(VL)
 	@echo "Making $*/vl-warnings.json"
 	@rm -f $*/vl-warnings.json $*/vl-*.txt $*/vl-lint.log
 	@cd $*; $(STARTJOB) -c '$(VL) lint spec.sv &> vl-lint.log'

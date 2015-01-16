@@ -30,6 +30,11 @@
 
 require_relative '../utils'
 
+outlaw_bad_warnings()
+
+# BOZO whaaat is going on here??
+# outlaw_warning_global("VL-PROGRAMMING-ERROR")
+
 def unset(modname, wirename)
   # It's okay for it to be unset and unused, because some bits may be unset
   # while other bits may be unused.  However, nothing should ever be marked
@@ -228,10 +233,6 @@ normal(:imsim, "port2 ")
 # I know these don't work yet
 #normal(:mg1, "p1_used ")
 #normal(:mg1, "w1_normal ")
-
-
-
-
 
 
 test_passed()

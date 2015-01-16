@@ -70,28 +70,28 @@ XLATE_NCV_SV   := $(VL) model spec.v --mem=2 --search=. --verilog-file=impl.ncv.
 XLATE_VCS_V    := $(VL) model spec.v --mem=2 --search=. --verilog-file=impl.vcs.v  --define=VL_SYSTEST_VCS --edition=Verilog
 XLATE_VCS_SV   := $(VL) model spec.v --mem=2 --search=. --verilog-file=impl.vcs.sv --define=VL_SYSTEST_VCS --edition=SystemVerilog --define=SYSTEM_VERILOG_MODE
 
-%/impl.ncv.v: %/spec.v
+%/impl.ncv.v: %/spec.v $(VL)
 	@echo "Making $*/impl.ncv.v"
 	@rm -f %/impl.ncv.v %/impl.ncv.v.out
 	@cd $*; $(STARTJOB) -c \
 	  'echo `hostname` &> impl.ncv.v.out; $(XLATE_NCV_V) &>> impl.ncv.v.out'
 	@ls -l $*/impl.ncv.v
 
-%/impl.ncv.sv: %/spec.v
+%/impl.ncv.sv: %/spec.v $(VL)
 	@echo "Making $*/impl.ncv.sv"
 	@rm -f %/impl.ncv.sv %/impl.ncv.sv.out
 	@cd $*; $(STARTJOB) -c \
 	  'echo `hostname` &> impl.ncv.sv.out; $(XLATE_NCV_SV) &>> impl.ncv.sv.out'
 	@ls -l $*/impl.ncv.sv
 
-%/impl.vcs.v: %/spec.v
+%/impl.vcs.v: %/spec.v $(VL)
 	@echo "Making $*/impl.vcs.v"
 	@rm -f %/impl.vcs.v %/impl.vcs.v.out
 	@cd $*; $(STARTJOB) -c \
 	  'echo `hostname` &> impl.vcs.v.out; $(XLATE_VCS_V) &>> impl.vcs.v.out'
 	@ls -l $*/impl.vcs.v
 
-%/impl.vcs.sv: %/spec.v
+%/impl.vcs.sv: %/spec.v $(VL)
 	@echo "Making $*/impl.vcs.sv"
 	@rm -f %/impl.vcs.sv %/impl.vcs.sv.out
 	@cd $*; $(STARTJOB) -c \

@@ -50,4 +50,12 @@ module dut;
     trunc13 = (foo & 4'b0);
   end
 
+  genvar i;
+  wire [9:0][2:0] warr;
+  generate
+    for(i = 0;i < 10;++i) begin
+      assign warr[i] = foo;
+    end
+  endgenerate
+
 endmodule

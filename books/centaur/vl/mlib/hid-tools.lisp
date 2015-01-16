@@ -1371,7 +1371,8 @@ and unpacked dimension @('[0:8]').</p>"
                              :msg "Too many indices on expression ~a0 ~
                                    relative to dimensions of type ~a1 (with ~
                                    ~x2 additional unpacked dimensions)."
-                             :args (list x type (len unpacked-dims)))
+                             :args (list x type (len unpacked-dims))
+                             :fn __function__)
             nil))
        (type (vl-datatype-update-dims
               (nthcdr remaining-idxcount (redundant-list-fix packed-dims))
@@ -1478,7 +1479,8 @@ type @('logic[3:0]').</li> </ul>"
                              :args (list
                                     (vl-expr-fix x)
                                     (if (consp (vl-datatype->udims baretype))
-                                        "unpacked" "packed")))
+                                        "unpacked" "packed"))
+                             :fn __function__)
             nil))
        
        ;; Next we're going to dot-index into the datatype, so get its
@@ -1488,7 +1490,8 @@ type @('logic[3:0]').</li> </ul>"
         (mv (make-vl-warning :type :vl-hid-datatype-fail
                              :msg "Dot-indexing into a datatype that isn't a ~
                                    struct or union: ~a0"
-                             :args (list (vl-datatype-fix baretype)))
+                             :args (list (vl-datatype-fix baretype))
+                             :fn __function__)
             nil))
 
        ;; Look up the member corresponding to the next name in the hid.
@@ -1499,7 +1502,8 @@ type @('logic[3:0]').</li> </ul>"
         (mv (make-vl-warning :type :vl-structindex-fail
                              :msg "Dot-indexing failed: struct/union member ~
                                    ~s0 not found in type ~a1"
-                             :args (list nextname (vl-datatype-fix baretype)))
+                             :args (list nextname (vl-datatype-fix baretype))
+                             :fn __function__)
             nil))
        (membtype (vl-structmember->type member)))
     (vl-hidexpr-traverse-datatype next-hid membtype)))
@@ -1631,8 +1635,8 @@ datatype is multidimensional.</p>"
         (b* (((unless (vl-hidexpr-p x))
               (mv (make-vl-warning
                    :type :vl-bad-index-expr
-                   :msg "An index operator was applied to a bad subexpression, ~a0."
-                   :args (list x)
+                   :msg "~a0: An index operator was applied to a bad subexpression, ~a1."
+                   :args (list ctx x)
                    :fn __function__)
                   nil))
              ((mv warning type) (vl-hidexpr-find-type x ss ctx))
@@ -1658,9 +1662,9 @@ datatype is multidimensional.</p>"
         (mv nil
             (make-vl-coretype :name :vl-logic))))
     (mv (make-vl-warning :type :vl-bad-indexing-operator
-                         :msg "Can't apply an index operator to ~a0 because ~
-                               it has no dimensions; its type is ~a1."
-                         :args (list (first x.args) sub-type)
+                         :msg "~a0: Can't apply an index operator to ~a1 because ~
+                               it has no dimensions; its type is ~a2."
+                         :args (list ctx (first x.args) sub-type)
                          :fn __function__)
         nil))
 
@@ -1704,7 +1708,8 @@ datatype is multidimensional.</p>"
                              :msg "~a0: Couldn't find type of ~a1 because the ~
                                    most significant dimension of the type of ~
                                    ~a2 was unsized or non-constant."
-                             :args (list ctx x (first x.args)))
+                             :args (list ctx x (first x.args))
+                             :fn __function__)
             nil))
        ((unless (and (vl-expr-resolved-p (third x.args))
                      (or (not (member x.op '(:vl-partselect-colon
@@ -1713,7 +1718,8 @@ datatype is multidimensional.</p>"
         (mv (make-vl-warning :type :vl-partselect-indices-unresolved
                              :msg "~a0: Couldn't find type of ~a1 because the ~
                                    partselect has non-constant indices."
-                             :args (list ctx x))
+                             :args (list ctx x)
+                             :fn __function__)
             nil))
        ((when (member x.op '(:vl-select-colon :vl-partselect-colon)))
         (mv nil (make-vl-range :msb (second x.args) :lsb (third x.args))))
@@ -1721,7 +1727,8 @@ datatype is multidimensional.</p>"
        ((unless (posp width))
         (mv (make-vl-warning :type :vl-partselect-indices-unresolved
                              :msg "~a0: Zero width in partselect operator?"
-                             :args (list ctx x))
+                             :args (list ctx x)
+                             :fn __function__)
             nil))
        ((unless (vl-expr-resolved-p (second x.args)))
         (mv nil (make-vl-range :msb (vl-make-index (1- width)) :lsb (vl-make-index 0))))
@@ -1740,7 +1747,8 @@ datatype is multidimensional.</p>"
                              :msg "~a0: Partselect ~s1 operator yields negative index: ~a2"
                              :args (list ctx (if (eq x.op :vl-partselect-pluscolon)
                                                   "+:" "-:")
-                                         x))
+                                         x)
+                             :fn __function__)
             nil))
        (range (make-vl-range :msb (vl-make-index (if backward-range-p lesser-idx greater-idx))
                              :lsb (vl-make-index (if backward-range-p greater-idx lesser-idx)))))
@@ -1777,7 +1785,9 @@ datatype is multidimensional.</p>"
                           :vl-partselect-pluscolon
                           :vl-partselect-minuscolon)))
         (mv (make-vl-warning :type :vl-programming-error
-                             :msg "called vl-partselect-selfsize on non-partselect expr")
+                             :msg "~a0: called vl-partselect-selfsize on non-partselect expr ~a1"
+                             :args (list ctx x)
+                             :fn __function__)
             nil))
        ((mv warning sub-type) (vl-index-find-type (first x.args) ss ctx))
        ((when warning) (mv warning nil))
@@ -1785,10 +1795,12 @@ datatype is multidimensional.</p>"
        (pdims (vl-datatype->pdims sub-type))
        ((unless (or (consp udims) (consp pdims)))
         (b* (((unless (vl-datatype-bitselect-ok sub-type))
-              (mv (make-vl-warning :type :vl-bad-indexing-operator
-                             :msg "~a0: Can't apply an index operator to ~a1 because
-                                   it ~ has no dimensions; its type is ~a2."
-                             :args (list ctx (first x.args) sub-type))
+              (mv (make-vl-warning
+                   :type :vl-bad-indexing-operator
+                   :msg "~a0: Can't apply an index operator to ~a1 because it ~
+                         has no dimensions; its type is ~a2."
+                   :args (list ctx (first x.args) sub-type)
+                   :fn __function__)
                   nil))
              ((mv warning size) (vl-datatype-size sub-type))
              ((when warning) (mv warning nil))

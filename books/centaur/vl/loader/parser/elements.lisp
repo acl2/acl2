@@ -200,6 +200,15 @@
           (vl-idtokenlist->genvars (cdr x) atts))))
 
 (defparser vl-parse-genvar-declaration (atts)
+  :short "Match genvar_declaration."
+  :long "<p>Verilog-2005 and SystemVerilog-2012 agree on the following
+rules:</p>
+
+@({
+    genvar_declaration ::= 'genvar' list_of_genvar_identifiers ';'
+    list_of_genvar_identifiers ::= genvar_identifier { ',' genvar_identifier }
+    genvar_identifier ::= identifier
+})"
   :guard (vl-atts-p atts)
   :result (vl-modelementlist-p val)
   :true-listp t
@@ -209,6 +218,7 @@
   (seq tokstream
        (:= (vl-match-token :vl-kwd-genvar))
        (names := (vl-parse-1+-identifiers-separated-by-commas))
+       (:= (vl-match-token :vl-semi))
        (return (vl-idtokenlist->genvars names atts))))
 
 

@@ -77,6 +77,16 @@ check_json_file(ans)
 WARNINGS = ans[:warnings]
 LOCATIONS = ans[:locations]
 
+def flat_global_warnings()
+  ret = []
+  WARNINGS.each do |modname, wlist|
+    ret.concat(wlist)
+  end
+  return ret
+end
+
+FLAT_WARNINGS = flat_global_warnings()
+
 
 # Convenience functions for check.rb scripts ---------------------------------
 
@@ -122,3 +132,15 @@ def outlaw_warning(mod, type, substring)
   end
 end
 
+def outlaw_warning_global(type)
+  FLAT_WARNINGS.each { |w|
+    if (w[:type] == type)
+      raise "Found outlawed global warning #{w[:type]} (from #{w[:fn]}) -- #{w[:text]}"
+    end
+  }
+end
+
+def outlaw_bad_warnings()
+  outlaw_warning_global("VL-PARSE-ERROR")
+  outlaw_warning_global("VL-BAD-MODULE-ITEM")
+end

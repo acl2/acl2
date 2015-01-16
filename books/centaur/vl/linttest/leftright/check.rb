@@ -30,6 +30,11 @@
 
 require_relative '../utils'
 
+outlaw_bad_warnings()
+
+# BOZO what is going on??? outlaw_warning_global("VL-PROGRAMMING-ERROR")
+
+
 def yes(modname, wirename)
   match_warning(modname, "VL-WARN-LEFTRIGHT", wirename)
 end

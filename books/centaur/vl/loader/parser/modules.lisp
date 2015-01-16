@@ -69,6 +69,7 @@
                                               :vl-import
                                               ;; :vl-fwdtypedef -- doesn't seem like these should be ok
                                               ;; :vl-modport    -- definitely not ok
+                                              :vl-genvar
                                               )))
        (warnings
         (if (not bad-item)
@@ -96,6 +97,7 @@
                     :alwayses   c.alwayses
                     :initials   c.initials
                     :generates  c.generates
+                    :genvars    c.genvars
                     :imports    c.imports
                     :atts       atts
                     :minloc     minloc
