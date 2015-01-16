@@ -873,7 +873,7 @@
 ; evaluated.  One way to achieve this state of affairs, of course, is to load
 ; the file first.
 
-; Just before releasing Version_2.5 we decided to consider proclaiming for
+; Just before creating Version_2.5 we decided to consider proclaiming for
 ; Lisps other than GCL.  However, our tests in Allegro suggested that this may
 ; not help.  The comment below gives some details.  Perhaps we will proclaim
 ; for MCL in the future.  At any rate, CCL (OpenMCL) is supported starting with
@@ -881,7 +881,7 @@
 ; Section "PROCLAIMING" above.
 
 ; Here is a summary of three comparable user times from certifying all the ACL2
-; books in June 2000, just before Release 2.5 is complete.  The first column,
+; books in June 2000, just before Version_2.5 is complete.  The first column,
 ; labeled "Comp", is the one to be looked at for comparison purposes.  These are
 ; all done on the same Sun workstation, using Allegro 5.0.1.  The meanings of
 ; these numbers are explained below.
