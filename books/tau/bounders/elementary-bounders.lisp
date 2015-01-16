@@ -1,4 +1,4 @@
-; Copyright (C) 2013, ForrestHunt, Inc.
+; Copyright (C) 2015, ForrestHunt, Inc.
 ; Written by J Strother Moore, December, 2012
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
@@ -9,6 +9,9 @@
 
 ; J Strother Moore
 ; Edinburgh, December, 2012
+
+; Acknowledgements: Since its release some additions and improvements were made
+; to this book by Dmitry Nadezhin.  Thanks!
 
 ; Abstract
 
@@ -21,7 +24,7 @@
 ; intervals containing x and y respectively and that returns an interval
 ; containing (fn x y) a ``bounder'' for fn.
 ;
-; I have developed a book that defines bounders for +, *, /, FLOOR, MOD,
+; I have developed a book that defines bounders for +, *, -, /, FLOOR, MOD,
 ; LOGAND, LOGNOT, LOGIOR, LOGORC1, LOGEQV, LOGXOR, EXPT2, and ASH.  The book
 ; proves the correctness of each bounder.  In future work I hope to extend ACL2
 ; so that users can define and verify bounders to improve the tau system.  The
@@ -1262,6 +1265,49 @@
 ;                 (in-tau-intervalp y int2))
 ;            (in-tau-intervalp (* x y) (tau-bounder-* int1 int2))))
 ; NIL
+
+; -----------------------------------------------------------------
+; - - the unary minus operator
+
+; Since (- x) = (* -1 x), we can define:
+
+(defconst *tau-interval-for--1*
+  (make-tau-interval 'integerp nil -1 nil -1))
+
+(defun tau-bounder-- (int)
+  (declare (xargs :guard (tau-intervalp int)))
+  (tau-bounder-* *tau-interval-for--1* int))
+
+(defthm tau-bounder---correct
+  (implies (and (tau-intervalp int1)
+                (or (equal (tau-interval-dom int1) 'integerp)
+                    (equal (tau-interval-dom int1) 'rationalp))
+                (in-tau-intervalp x int1))
+           (and (tau-intervalp (tau-bounder-- int1))
+                (in-tau-intervalp (unary-- x) (tau-bounder-- int1))
+                (implies (not (equal (tau-interval-dom (tau-bounder-- int1)) 'integerp))
+                         (equal (tau-interval-dom (tau-bounder-- int1)) 'rationalp))))
+  :rule-classes
+  ((:rewrite)
+   (:forward-chaining
+    :corollary
+    (implies (and (tau-intervalp int1)
+                  (equal (tau-interval-dom int1) 'integerp)
+                  (in-tau-intervalp x int1))
+             (and (tau-intervalp (tau-bounder-- int1))
+                  (in-tau-intervalp (unary-- x) (tau-bounder-- int1))
+                  (equal (tau-interval-dom (tau-bounder-- int1)) 'integerp)))
+    :trigger-terms ((tau-bounder-- int1)))
+   (:forward-chaining
+    :corollary
+    (implies (and (tau-intervalp int1)
+                  (equal (tau-interval-dom int1) 'rationalp)
+                  (in-tau-intervalp x int1))
+             (and (tau-intervalp (tau-bounder-- int1))
+                  (in-tau-intervalp (unary-- x) (tau-bounder-- int1))
+                  (equal (tau-interval-dom (tau-bounder-- int1)) 'rationalp)))
+    :trigger-terms ((tau-bounder-* int1 int2)))
+   ))
 
 ; -----------------------------------------------------------------
 ; / -- the reciprocal operator
