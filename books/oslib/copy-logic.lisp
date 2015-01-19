@@ -125,21 +125,17 @@ destination is a directory:</p>
 
          ((mv err from-files state) (ls-files fromdir))
          ((when err)
-          (mv (msg "~s0: Error listing files in ~s1: ~s2." __function__ fromdir
-                   ;; from-files is actually an error message (a string) in this case
-                   from-files)
+          (mv (msg "~s0: Error listing files in ~s1: ~@2" __function__ fromdir err)
               state))
          ((mv err from-subdirs state) (ls-subdirs fromdir))
          ((when err)
-          (mv (msg "~s0: Error listing subdirectories in ~s1: ~s2." __function__ fromdir
-                   ;; from-subdirs is actually an error message (a string) in this case
-                   from-subdirs)
+          (mv (msg "~s0: Error listing subdirectories in ~s1: ~@2" __function__ fromdir err)
               state))
 
          ;; Make sure todir exists or create it
          ((mv err to-kind state) (file-kind todir))
          ((when err)
-          (mv (msg "~s0: Error checking type of ~s1: ~@2." __function__ todir err)
+          (mv (msg "~s0: Error checking type of ~s1: ~@2" __function__ todir err)
               state))
          ((unless (or (not to-kind)
                       (eq to-kind :directory)))
