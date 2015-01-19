@@ -61,7 +61,51 @@ module top ;
 
 
 
+  wire lt_normal1 = xx0 < xx1;
+  wire lt_normal2 = xx0 < 5;
+  wire lt_normal3 = '0 < xx0;
 
+  // This should be a warning because 32 doesn't fit.
+  wire lt_warn1 = xx0 < 32;
+
+  // I'm not sure whether we should really issue a warning here.  The wires are
+  // of different sizes, but that's not entirely unreasonable.  Well, I guess
+  // let's warn for now and see if it is too chatty to stand.
+  wire lt_warn2 = xx0 < yy0;
+
+  // These should be minor because they fit.
+  wire ltc_minor1 = xx0 < (cond ? xx1 : 0);
+  wire ltc_minor2 = xx0 < (cond ? xx1 : 5);
+
+
+
+
+  wire eq_normal1 = xx0 == xx1;
+  wire eq_normal2 = xx0 == 5;
+  wire eq_normal3 = '0 == xx0;
+
+  // This should be a warning because 32 doesn't fit.
+  wire eq_warn1 = xx0 == 32;
+
+  // I'm not sure whether we should really issue a warning here.  The wires are
+  // of different sizes, but that's not entirely unreasonable.  Well, I guess
+  // let's warn for now and see if it is too chatty to stand.
+  wire eq_warn2 = xx0 == yy0;
+
+  // These should be minor because they fit.
+  wire eqc_minor1 = xx0 == (cond ? xx1 : 0);
+  wire eqc_minor2 = xx0 == (cond ? xx1 : 5);
+
+
+
+  wire cond_normal1 = cond ? xx1 : xx2;
+  wire cond_normal2 = cond ? xx1 : 0;
+  wire cond_normal3 = cond ? xx1 : '0;
+  wire cond_normal4 = cond ? xx1 : '1;
+
+  wire cond_warn1 = cond ? xx1 : yy1;
+  wire cond_warn2 = cond ? xx0 : 16;    // 16 doesn't fit
+  wire cond_warn3 = cond ? (xx0 & xx1) : (yy0 & yy1);
 
 
 endmodule

@@ -541,7 +541,13 @@ shown.</p>"
 
        (- (cw "~%vl-lint: processing expressions...~%"))
        (design (cwtime (vl-design-oddexpr-check design)))
-       (design (cwtime (vl-design-oprewrite design)))
+
+       ;; [Jared] -- Trying to NOT do oprewrite anymore.  Our sizing warnings
+       ;; do better if we can tell the difference between == and ~^ operators,
+       ;; for instance.
+       ;; (design (cwtime (vl-design-oprewrite design)))
+
+
        ;; Sizing doesn't do well unless we expand functions
        (design (cwtime (vl-design-expand-functions design)))
        (design (cwtime (vl-design-exprsize design)))

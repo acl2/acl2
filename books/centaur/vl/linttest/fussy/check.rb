@@ -137,6 +137,35 @@ fuss("andc_warn4")
 minor("andc_minor1")
 minor("andc_minor2")
 
+normal("lt_normal1")
+normal("lt_normal2")
+normal("lt_normal3")
+
+fuss("lt_warn1")
+fuss("lt_warn2")
+
+minor("ltc_minor1")
+minor("ltc_minor2")
+
+normal("eq_normal1")
+normal("eq_normal2")
+normal("eq_normal3")
+
+fuss("eq_warn1")
+fuss("eq_warn2")
+
+minor("eqc_minor1")
+minor("eqc_minor2")
+
+
+normal("cond_normal1")
+normal("cond_normal2")
+normal("cond_normal3")
+normal("cond_normal4")
+
+fuss("cond_warn1")
+fuss("cond_warn2")
+fuss("cond_warn3")
 
 test_passed()
 
