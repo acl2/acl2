@@ -1020,7 +1020,7 @@
 ; In oneify-cltl-code we handle an "invariant-risk" that stobj invariants
 ; aren't violated upon ill-guarded calls of stobj updaters.  The idea is to
 ; force evaluation to use *1* functions down to those primitives, which always
-; check their guards.  See also the comment in *mbe-as-exec*.  Note that this
+; check their guards.  See also the comment in **1*-as-raw*.  Note that this
 ; is a separate issue from the lack of atomicity of some defabsstobj exports
 ; (which is implemented using *inside-absstobj-update*).
 
@@ -1034,7 +1034,7 @@
 ; danger of invariant violations is from local stobjs.  Since only :program
 ; mode functions are at issue (because a :logic mode function call only slips
 ; into raw Lisp when the function has been guard-verified and the call is
-; guard-checked, and because raw-ev-fncall binds *mbe-as-exec* to nil for
+; guard-checked, and because raw-ev-fncall binds **1*-as-raw* to nil for
 ; :logic mode functions), it seems plausible that we can provide this
 ; optimization for local stobjs.  After all, local stobjs are let-bound rather
 ; than global; so it seems that during proofs, any local stobj encountered will
@@ -1171,23 +1171,13 @@
 
 ; In the case that program-p is 'invariant-risk, we are in the process of
 ; oneifying the body of a :program mode function with invariant-risk, for which
-; any call of an invariant-risk functions is to execute with its *1* function
+; any call of an invariant-risk function is to execute with its *1* function
 ; but other calls should use raw Lisp functions; see the final case in oneify.
 ; Here, though, we want to call the *1* function even if it does not have
 ; invariant-risk, because of the ec-call wrapper.
 
 ; We need to be careful in this case that ec-call really does invoke a *1*
-; function here, and does so properly.  Consider the following example.  If we
-; use the oneify call above (from the case that (not (eq program-p
-; 'invariant-risk))), then EXEC is returned by the call of f-prog2 below, which
-; is incorrect.  The EXEC return value would be OK if f-prog2 were defined with
-; the ec-call wrapper removed, because f-log has no invariant-risk and hence we
-; want it to execute fast using the :exec form from its mbe.  But the ec-call
-; means that we really want to call *1*f-log -- we are no longer slipping into
-; raw Lisp and hence we no longer want the special *mbe-as-exec* handling,
-; which is inappropriate here since it is intended to give the illusion that we
-; are in raw Lisp.  Thus, we call *1*f-log and what's more, we bind
-; *mbe-as-exec* to nil.
+; function here, and does so properly.  Consider the following example.
 
 ;   (defun f-log () (mbe :logic 'logic :exec 'exec))
 ;   (defstobj st (fld :type integer :initially 0))
@@ -1195,16 +1185,28 @@
 ;     (declare (xargs :stobjs st :mode :program))
 ;     (let ((st (update-fld 3 st)))
 ;       (mv (f-log) st)))
-;   (f-prog st)
+;   (f-prog st) ; returns (MV EXEC <updated-state>)
 ;   (defun f-prog2 (st)
 ;     (declare (xargs :stobjs st :mode :program))
 ;     (let ((st (update-fld 3 st)))
 ;       (mv (ec-call (f-log)) st)))
-;   (f-prog2 st) ; EXEC (wrong)
+;   (f-prog2 st) ; should return (MV LOGIC <updated-state>)
+
+; If we use the oneify call above (from the case that (not (eq program-p
+; 'invariant-risk))), then EXEC would returned as a first value by the call of
+; f-prog2 just above, which is incorrect.  The EXEC return value would be OK if
+; f-prog2 were defined with the ec-call wrapper removed, because f-log has no
+; invariant-risk and hence we want it to execute fast using the :exec form from
+; its mbe.  But the ec-call means that we really want to call *1*f-log -- we
+; are no longer slipping into raw Lisp and hence we no longer want the special
+; **1*-as-raw* handling, which is inappropriate here since it is intended to
+; give the illusion that we are in raw Lisp.  Thus, we call *1*f-log and what's
+; more, we bind **1*-as-raw* to nil, to signify that we intend to execute the
+; function call in the logic.
 
              (let ((form (car (last x))))
                `(let* ((args (list ,@(oneify-lst (cdr form) fns w program-p)))
-                       (*mbe-as-exec* nil))
+                       (**1*-as-raw* nil))
                   (apply ',(*1*-symbol (car form)) args))))))
             ((eq fn 'mbe1-raw)
 
@@ -1216,7 +1218,7 @@
 ; put-invariant-risk.
 
 ; See the discussion in (defun-*1* return-last ...).  Here, we discuss only the
-; special variable *mbe-as-exec*.
+; special variable **1*-as-raw*.
 
 ; A practice important to some users (in particular, Jared Davis has emphasized
 ; this) is to wrap calls of functions with symbol-class :ideal (i.e., :logic
@@ -1245,7 +1247,7 @@
 ; in ev-rec-return-last), since at the top level, we are not inside a function
 ; body (so there is no issue of :program or :ideal mode).  If however ev-w or
 ; the like is called in a function body, it will behave as though at the top
-; level, thus also not being sensitive to *mbe-as-exec* for lexically
+; level, thus also not being sensitive to **1*-as-raw* for lexically
 ; apparent calls.  That's OK.
 
              (let ((oneified-logic (oneify (cadddr x) fns w program-p))
@@ -1258,7 +1260,7 @@
                    ,oneified-logic))
                  (t ,(if program-p
                          oneified-exec
-                       `(if *mbe-as-exec*
+                       `(if **1*-as-raw*
                             ,oneified-exec
                           ,oneified-logic))))))
             (t
@@ -1972,7 +1974,7 @@
                              (cons 'fmt-soft-right-margin
                                    (f-get-global 'fmt-soft-right-margin
                                                  *the-live-state*))))))
-             (early-exit-code
+             (early-exit-code-main
               (let ((cl-compliant-code-guard-not-t
 
 ; We lay down code for the common-lisp-compliant case that checks the guard and
@@ -2183,6 +2185,25 @@
                                      (return-from ,*1*fn ,*1*body)))))))))
                     (and cond-clauses
                          (list (cons 'cond cond-clauses)))))))
+             (early-exit-code
+              (and early-exit-code-main
+                   (cond ((and invariant-risk
+                               (not super-stobjs-in))
+
+; If we are under **1*-as-raw*, then our intention is that code executes just
+; as it would in raw Lisp (i.e., without forcing execution via *1* function),
+; except that guards are checked for stobj primitives.  This speial treatment
+; is only required in the invariant-risk case; see **1*-as-raw* and
+; *ignore-invariant-risk*.  Moreover, we want the normal flow in the *1*
+; function for stobj primitives, so we don't give this special treatment when
+; super-stobjs-in is true.  It would be sound to make other exceptions as well,
+; but that would cause unnecessary guard-checking.  Indeed, unnecessary
+; extra guard-checking was done through Version_7.0, which resulted in
+; slowdowns to user code that led us to remove that extra guard-checking.
+
+                          `((when (not **1*-as-raw*)
+                              ,@early-exit-code-main)))
+                         (t early-exit-code-main))))
              (main-body-before-final-call
 
 ; This is the code that is executed before we fall through: to the final labels
@@ -2226,9 +2247,9 @@
                              (eq defun-mode :program))
                         `((cond
                            (*ignore-invariant-risk* (,fn ,@formals))
-                           (t (let ((*mbe-as-exec* t))
+                           (t (let ((**1*-as-raw* t))
 
-; One reason that we bind *mbe-as-exec* above and use labels below is to helps
+; One reason that we bind **1*-as-raw* above and use labels below is to helps
 ; compilers remove tail recursions, since we believe that special variable
 ; binding can get in the way of that.  (We do this regardless of the presence
 ; of recursion, simply because that is simplest and we expect, or at least,
