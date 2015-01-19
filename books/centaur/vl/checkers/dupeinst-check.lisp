@@ -29,10 +29,10 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/expr-tools")
+(include-book "../mlib/scopestack")
 (include-book "../mlib/port-tools")
 (include-book "../mlib/strip")
-(include-book "../mlib/writer")
+(include-book "../mlib/fmt")
 (local (include-book "../util/arithmetic"))
 
 (defxdoc dupeinst-check
@@ -59,6 +59,8 @@ want to identify and eliminate.  For instance, it's especially useful to
 eliminate redundant registers, to improve power usage.</p>")
 
 (local (xdoc::set-default-parents dupeinst-check))
+
+(defconst *dupeinst-check-debug* nil)
 
 (defaggregate vl-dupeinst-key
   :short "Keys used to determine if module instances have the same inputs."
@@ -98,7 +100,6 @@ all in practice.</p>
   :tag :vl-dupeinst-key
   :hons t)
 
-
 (defalist vl-dupeinst-alistp (x)
   :key (vl-dupeinst-key-p x)
   :val (vl-modinstlist-p x)
@@ -108,6 +109,21 @@ all in practice.</p>
 that key, which lets us immediately see which modinsts have the same key.</p>
 @(def vl-dupeinst-alistp)")
 
+(define vl-pp-dupeinst-key ((x vl-dupeinst-key-p) &key (ps 'ps))
+  (b* (((vl-dupeinst-key x)))
+    (vl-ps-seq (vl-print-str x.modname)
+               (vl-print "{")
+               (vl-pp-exprlist x.inputs)
+               (vl-println "}"))))
+
+(define vl-pp-dupeinst-alist ((x vl-dupeinst-alistp) &key (ps 'ps))
+  (b* (((when (atom x))
+        ps)
+       ((cons key insts) (car x)))
+    (vl-ps-seq (vl-print "** ")
+               (vl-pp-dupeinst-key key)
+               (vl-pp-modinstlist insts nil)
+               (vl-pp-dupeinst-alist (cdr x)))))
 
 (define vl-make-dupeinst-alist-aux
   ((x     vl-modinstlist-p)
@@ -120,7 +136,8 @@ that key, which lets us immediately see which modinsts have the same key.</p>
        ((vl-modinst x1) x1)
 
        ((when (eq (vl-arguments-kind x1.portargs) :vl-arguments-named))
-        ;; Args not resolved, skip it
+        (and *dupeinst-check-debug*
+             (vl-cw-ps-seq (vl-cw "~a0: Arguments not resolved, skipping!~%" x1)))
         (vl-make-dupeinst-alist-aux (cdr x) alist))
 
        ((mv inputs ?outputs inouts unknowns)
@@ -128,12 +145,14 @@ that key, which lets us immediately see which modinsts have the same key.</p>
 
        ((unless (and (atom inouts)
                      (atom unknowns)))
-        ;; Too hard, skip it
+        (and *dupeinst-check-debug*
+             (vl-cw-ps-seq (vl-cw "~a0: Arguments too hard (inouts or unknowns).~%" x1)))
         (vl-make-dupeinst-alist-aux (cdr x) alist))
 
        (ins    (vl-plainarglist->exprs inputs))
        ((when (member nil ins))
-        ;; Blanks?  screw it, skip it.
+        (and *dupeinst-check-debug*
+             (vl-cw-ps-seq (vl-cw "~a0: Blanks in argument list.~%" x1)))
         (vl-make-dupeinst-alist-aux (cdr x) alist))
        (ins    (vl-exprlist-strip ins))
        (key    (make-vl-dupeinst-key :modname x1.modname :inputs ins))
@@ -204,6 +223,7 @@ filtered out into minor warnings.</p>
 (define vl-maybe-warn-dupeinst
   ((key      vl-dupeinst-key-p "The shared key for a group of modinsts.")
    (modinsts vl-modinstlist-p  "The modinsts that share this key.")
+   (ss       vl-scopestack-p   "Scopestack for doing module lookups.")
    (warnings vl-warninglist-p  "The @(see warnings) accumulator to extend."))
   :returns (new-warnings vl-warninglist-p)
   :short "Possibly add warnings about a group of module instances."
@@ -216,7 +236,22 @@ a warning about the modules.</p>"
         ;; Nothing to do -- there isn't more than one assignment for this RHS.
         (ok))
 
-       ;; BOZO maybe filter some of this stuff?
+       (mod (vl-scopestack-find-definition (vl-dupeinst-key->modname key) ss))
+       ((when (eq (tag mod) :vl-interface))
+        ;; Don't want to warn about interfaces.
+        (and *dupeinst-check-debug*
+             (vl-cw-ps-seq (vl-cw "Skipping ~s0 because it's an interface:~%")
+                           (vl-pp-dupeinst-key key)
+                           (vl-cw "~%")))
+        (ok))
+       ((when (and (eq (tag mod) :vl-module)
+                   (atom (vl-module->ports mod))))
+        ;; Don't want to warn about modules with no ports.
+        (and *dupeinst-check-debug*
+             (vl-cw-ps-seq (vl-cw "Skipping ~s0 because it has no ports.~%")
+                           (vl-pp-dupeinst-key key)
+                           (vl-cw "~%")))
+        (ok))
 
        (fixed-up-outs (vl-modinstlist-fixed-up-outs modinsts))
        (dupes         (duplicated-members fixed-up-outs))
@@ -241,31 +276,38 @@ a warning about the modules.</p>"
                       modinsts))))
 
 (define vl-warnings-for-dupeinst-alist ((alist    vl-dupeinst-alistp)
+                                        (ss       vl-scopestack-p)
                                         (warnings vl-warninglist-p))
   :returns (new-warnings vl-warninglist-p)
   (b* (((when (atom alist))
         (ok))
        (rhs      (caar alist))
        (assigns  (cdar alist))
-       (warnings (vl-maybe-warn-dupeinst rhs assigns warnings)))
-    (vl-warnings-for-dupeinst-alist (cdr alist) warnings)))
+       (warnings (vl-maybe-warn-dupeinst rhs assigns ss warnings)))
+    (vl-warnings-for-dupeinst-alist (cdr alist) ss warnings)))
 
-(define vl-module-dupeinst-check ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard)
+(define vl-module-dupeinst-check ((x  vl-module-p)
+                                  (ss vl-scopestack-p))
+  :returns (new-x vl-module-p)
   (b* (((vl-module x) x)
-       (alist    (vl-make-dupeinst-alist x.modinsts))
-       (warnings (vl-warnings-for-dupeinst-alist alist x.warnings)))
+       (- (and *dupeinst-check-debug*
+               (cw "Dupeinst checking ~s0~%" x.name)))
+       (ss       (vl-scopestack-push x ss))
+       (modinsts (vl-module->flatten-modinsts x))
+       (alist    (vl-make-dupeinst-alist modinsts))
+       (warnings (vl-warnings-for-dupeinst-alist alist ss x.warnings)))
     (change-vl-module x :warnings warnings)))
 
-(defprojection vl-modulelist-dupeinst-check (x)
-  (vl-module-dupeinst-check x)
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
+(defprojection vl-modulelist-dupeinst-check ((x  vl-modulelist-p)
+                                             (ss vl-scopestack-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-dupeinst-check x ss))
 
 (define vl-design-dupeinst-check ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x)
-       (new-mods (vl-modulelist-dupeinst-check x.mods)))
+  (b* (((vl-design x) (vl-design-fix x))
+       (ss       (vl-scopestack-init x))
+       (new-mods (vl-modulelist-dupeinst-check x.mods ss)))
+    (vl-scopestacks-free)
     (clear-memoize-table 'vl-expr-strip)
     (change-vl-design x :mods new-mods)))

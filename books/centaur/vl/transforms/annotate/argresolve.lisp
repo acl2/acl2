@@ -844,38 +844,47 @@ checking, and add direction/name annotations.</p>"
         (vl-modinstlist-argresolve (cdr x) ss warnings)))
     (mv warnings (cons car cdr))))
 
+(def-genblob-transform vl-genblob-argresolve ((ss       vl-scopestack-p)
+                                              (warnings vl-warninglist-p))
+  :returns ((warnings vl-warninglist-p))
+  (b* (((vl-genblob x) (vl-genblob-fix x))
+       (ss (vl-scopestack-push x ss))
+       ((mv warnings modinsts)  (vl-modinstlist-argresolve x.modinsts ss warnings))
+       ((mv warnings gateinsts) (vl-gateinstlist-dirassign x.gateinsts warnings))
+       ((mv warnings generates) (vl-generates-argresolve x.generates ss warnings)))
+    (mv warnings
+        (change-vl-genblob x
+                           :modinsts modinsts
+                           :gateinsts gateinsts
+                           :generates generates)))
+  :apply-to-generates vl-generates-argresolve)
+
 (define vl-module-argresolve
   :short "Apply the @(see argresolve) transformation to a @(see vl-module-p)."
   :long "<p>This is just glue-code to apply @(see vl-modinst-argresolve) to all
 of the module instances, and @(see vl-gateinst-dirassign) to all of the gate
 instances in the module.</p>"
-  ((x        vl-module-p) (ss vl-scopestack-p))
+  ((x  vl-module-p)
+   (ss vl-scopestack-p))
   :returns (new-x vl-module-p)
   (b* (((when (vl-module->hands-offp x))
         (vl-module-fix x))
-       (warnings (vl-module->warnings x))
-       (ss (vl-scopestack-push (vl-module-fix x) ss))
-       ((mv warnings modinsts)
-        (vl-modinstlist-argresolve (vl-module->modinsts x) ss warnings))
-       ((mv warnings gateinsts)
-        (vl-gateinstlist-dirassign (vl-module->gateinsts x) warnings)))
-    (change-vl-module x
-                      :warnings warnings
-                      :modinsts modinsts
-                      :gateinsts gateinsts)))
+       ((mv warnings genblob)
+        (vl-genblob-argresolve (vl-module->genblob x) ss (vl-module->warnings x)))
+       (x-warn (change-vl-module x :warnings warnings)))
+    (vl-genblob->module genblob x-warn)))
 
 (defprojection vl-modulelist-argresolve ((x    vl-modulelist-p)
                                          (ss   vl-scopestack-p))
   :returns (new-x vl-modulelist-p)
   (vl-module-argresolve x ss))
 
-
 (define vl-design-argresolve
   :short "Top-level @(see argresolve) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
   (b* (((vl-design x) x)
-       (ss (vl-scopestack-init x))
+       (ss   (vl-scopestack-init x))
        (mods (vl-modulelist-argresolve x.mods ss)))
     (vl-scopestacks-free)
     (change-vl-design x :mods mods)))

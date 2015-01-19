@@ -493,6 +493,12 @@ shown.</p>"
        (design (cwtime (vl-design-rangeresolve design)))
        (design (cwtime (vl-design-selresolve design)))
 
+       (design
+        ;; Running another dupeinst check here, after unparameterization, may
+        ;; create redundant warnings, but it may also help to catch things that
+        ;; become duplicates after unparameterization.
+        (cwtime (vl-design-dupeinst-check design)))
+
        ;; Post-unparameterization Lucidity Check -- this is a bad time for
        ;; checking parameters (because they've been eliminated) but it's a
        ;; much better time to do bit-level analysis, because things like

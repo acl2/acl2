@@ -351,6 +351,14 @@ only meant as a heuristic for generating more useful warnings.</p>"
     (and (< (car x) max)
          (nats-below-p max (cdr x)))))
 
+(define vl-expr-extint-p ((x vl-expr-p))
+  :returns (extint-p booleanp :rule-classes :type-prescription)
+  :prepwork ((local (in-theory (enable tag-reasoning))))
+  (mbe :logic (and (vl-atom-p x)
+                   (vl-extint-p (vl-atom->guts x)))
+       :exec (and (vl-fast-atom-p x)
+                  (eq (tag (vl-atom->guts x)) :vl-extint))))
+
 (define vl-tweak-fussy-warning-type
   :parents (vl-op-selfsize)
   :short "Heuristically categorize fussy warnings according to severity."
@@ -391,22 +399,32 @@ details.</p>"
        (a     (vl-expr-fix a))
        (b     (vl-expr-fix b))
 
-       ((when (and (or (and (vl-expr-resolved-p a)
-                            (< (vl-resolved->val a) (ash 1 bsize)))
-                       (and (vl-expr-resolved-p b)
-                            (< (vl-resolved->val b) (ash 1 asize))))
-                   (member op '(:vl-qmark
-                                :vl-binary-eq :vl-binary-neq
+       (a-zerop (and (vl-expr-resolved-p a)
+                     (eql (vl-resolved->val a) 0)))
+       (b-zerop (and (vl-expr-resolved-p b)
+                     (eql (vl-resolved->val b) 0)))
+       ((when (or a-zerop b-zerop))
+        ;; Zeros are very special.  It's very annoying to look at warnings
+        ;; telling you that your zeroes aren't the right size.  So, even in
+        ;; bitwisey contexts, suppress any warnings about zeroes.
+        nil)
+
+       ((when (or (vl-expr-extint-p a)
+                  (vl-expr-extint-p b)))
+        ;; Suppress warnings because '0, '1, etc., are supposed to grow to the
+        ;; size of whatever is around them.
+        nil)
+
+       (a-fits-b-p (and (vl-expr-resolved-p a) (unsigned-byte-p bsize (vl-resolved->val a))))
+       (b-fits-a-p (and (vl-expr-resolved-p b) (unsigned-byte-p asize (vl-resolved->val b))))
+       ((when (and (or a-fits-b-p b-fits-a-p)
+                   (member op '(:vl-binary-eq :vl-binary-neq
                                 :vl-binary-ceq :vl-binary-cne
                                 :vl-binary-lt :vl-binary-lte
-                                :vl-binary-gt :vl-binary-gte
-                                :vl-binary-wildeq :vl-binary-wildneq
-                                :vl-binary-xnor))))
-        ;; Always suppress warnings in the case where one argument or the other
-        ;; is a constant.  Even though its size isn't quite right, it is not
-        ;; *really* wrong.  For instance, if foo was once a three-bit wire but
-        ;; now is a five-bit wire, we might run into an expression like "foo ==
-        ;; 3'b7," which isn't really any kind of problem.
+                                :vl-binary-gt :vl-binary-gte))))
+        ;; Suppress warnings about things like "foo == 3'd7" or "foo == 7"
+        ;; where foo is, say, a 5 bit wire.  We know that the value of the 7
+        ;; fits into the width of foo, so this isn't really wrong.
         nil)
 
        (a32p (eql asize 32))

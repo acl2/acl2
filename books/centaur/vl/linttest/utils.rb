@@ -144,3 +144,6 @@ def outlaw_bad_warnings()
   outlaw_warning_global("VL-PARSE-ERROR")
   outlaw_warning_global("VL-BAD-MODULE-ITEM")
 end
+
+
+
