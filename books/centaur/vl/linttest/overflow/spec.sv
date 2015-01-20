@@ -5,10 +5,10 @@ module top ;
   wire [7:0] warn_bin = 8'b 1111_1111_1111;
   wire [7:0] warn_dec = 8'd 1234567890;
 
-  wire [7:0] normal_hex = 8'hFF;
-  wire [7:0] normal_oct = 8'o177;
-  wire [7:0] normal_bin = 8'b1111_1111;
-  wire [7:0] normal_dec = 8'd255;
+  wire [7:0] normal_hex = 8'hFE;
+  wire [7:0] normal_oct = 8'o176;
+  wire [7:0] normal_bin = 8'b1111_1110;
+  wire [7:0] normal_dec = 8'd254;
 
   wire [31:0] warn_unsized1 = 18446744073709551616;   // 2^64
   wire [31:0] warn_unsized2 = 2147483648;             // 2^31
