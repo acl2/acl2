@@ -501,6 +501,8 @@ integer token."
            would be @('3') for @('3'bx').  Note that we emulate a 32-bit
            Verilog implementation and treat unsized numbers as having width
            32.")
+   (etext vl-echarlist-p
+          "Actual text for this number, for better warnings.")
    (warnings "An ordinary @(see warnings) accumulator."
              vl-warninglist-p))
 
@@ -555,15 +557,15 @@ therefore detect and warn about this very unusual case.</p>"
                         :msg "~l0: unsized numbers with leading X or Z bit ~
                               have a different interpretation in Verilog-1995 ~
                               than in Verilog-2001 and beyond.  You should ~
-                              put an explicit size on this number."
-                        :args (list loc))
+                              put an explicit size on this number: ~s1."
+                        :args (list loc
+                                    (vl-echarlist->string etext)))
                 (ok)))
              (pad        (replicate (- desired-len actual-len) pad-bit))
              (bits-prime (append pad bits)))
           (mv (ok) bits-prime)))
 
        ;; We need to truncate.
-       (bitstr     (vl-bitlist->string bits))
        (bits-prime (rest-n (- actual-len desired-len) bits))
        (warnings
         (if (all-equalp :vl-xval bits)
@@ -580,11 +582,14 @@ therefore detect and warn about this very unusual case.</p>"
                                 get a different value here.  You should add ~
                                 an explicit size specifier."
                              ""))
-                :args (list loc bitstr actual-len desired-len)))))
+                :args (list loc
+                            (vl-echarlist->string etext)
+                            actual-len
+                            desired-len)))))
     (mv (ok) bits-prime))
   ///
   (defthm len-of-vl-correct-bitlist
-    (equal (len (mv-nth 1 (vl-correct-bitlist loc bits width warnings)))
+    (equal (len (mv-nth 1 (vl-correct-bitlist loc bits width etext warnings)))
            (if width
                (nfix width)
              32)))
@@ -597,6 +602,7 @@ therefore detect and warn about this very unusual case.</p>"
                     (vl-correct-bitlist *vl-fakeloc*
                                         (vl-binary-digits-to-bitlist (explode "0111"))
                                         8
+                                        nil
                                         nil)))
                 (and (not warn)
                      (equal (vl-bitlist->string bits) "00000111"))))
@@ -605,6 +611,7 @@ therefore detect and warn about this very unusual case.</p>"
                     (vl-correct-bitlist *vl-fakeloc*
                                         (vl-binary-digits-to-bitlist (explode "1111"))
                                         8
+                                        nil
                                         nil)))
                 (and (not warn)
                      (equal (vl-bitlist->string bits) "00001111"))))
@@ -613,6 +620,7 @@ therefore detect and warn about this very unusual case.</p>"
                     (vl-correct-bitlist *vl-fakeloc*
                                         (vl-binary-digits-to-bitlist (explode "x111"))
                                         8
+                                        nil
                                         nil)))
                 (and (not warn)
                      (equal (vl-bitlist->string bits) "XXXXX111"))))
@@ -621,6 +629,7 @@ therefore detect and warn about this very unusual case.</p>"
                     (vl-correct-bitlist *vl-fakeloc*
                                         (vl-binary-digits-to-bitlist (explode "z111"))
                                         8
+                                        nil
                                         nil)))
                 (and (not warn)
                      (equal (vl-bitlist->string bits) "ZZZZZ111"))))
@@ -630,6 +639,7 @@ therefore detect and warn about this very unusual case.</p>"
                     (vl-correct-bitlist *vl-fakeloc*
                                         (vl-binary-digits-to-bitlist (explode "110111"))
                                         4
+                                        nil
                                         nil)))
                 (and (consp warn)
                      (equal (vl-bitlist->string bits) "0111"))))
@@ -637,6 +647,7 @@ therefore detect and warn about this very unusual case.</p>"
      (assert! (b* (((mv warn ?bits)
                     (vl-correct-bitlist *vl-fakeloc*
                                         (vl-binary-digits-to-bitlist (explode "0111"))
+                                        nil
                                         nil
                                         nil)))
                 (and (not warn)
@@ -647,6 +658,7 @@ therefore detect and warn about this very unusual case.</p>"
      (assert! (b* (((mv warn ?bits)
                     (vl-correct-bitlist *vl-fakeloc*
                                         (vl-binary-digits-to-bitlist (explode "Z111"))
+                                        nil
                                         nil
                                         nil)))
                 (and (consp warn)
@@ -829,7 +841,7 @@ grammar is:</p>
                                      and is being truncated to ~x2 bits, ~
                                      yielding ~x3."
                                :args (list (vl-echar->loc firstchar)
-                                           value
+                                           (vl-echarlist->string etext)
                                            width
                                            val-fix))))
                       ((< value (expt 2 31))
@@ -846,7 +858,7 @@ grammar is:</p>
                       ((< value (expt 2 32))
                        warnings)
                       (t
-                       (warn :type :v-warn-overflow
+                       (warn :type :vl-warn-overflow
                              :msg "~l0: the unsized number ~s1 is over 2^32; ~
                                    we truncate it to ~x2 to emulate a 32-bit ~
                                    Verilog implementation, but it will have a ~
@@ -878,6 +890,7 @@ grammar is:</p>
           (vl-correct-bitlist (vl-echar->loc firstchar)
                               bits
                               value-of-number
+                              etext
                               warnings))
          (token (make-vl-inttoken :etext etext
                                   :width width
