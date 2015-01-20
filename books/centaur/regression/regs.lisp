@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "common")
+(include-book "common" :ttags :all)
 
 (defmodules *translation*
   (vl::make-vl-loadconfig :start-files (list "regs.v")))
