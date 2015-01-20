@@ -248,7 +248,9 @@
                   :hints (("goal"
                            :in-theory (e/d** ((:rules-of-class :executable-counterpart :here)
                                               acl2::open-nat-list-<
-                                              acl2-count len nfix fix
+                                              len nfix fix
+                                              acl2::acl2-count-of-cons
+                                              acl2::acl2-count-of-sum
                                               acl2-count-of-general-consp-car
                                               acl2-count-of-general-consp-cdr
                                               car-cons cdr-cons commutativity-of-+
@@ -266,9 +268,10 @@
                                               g-apply->args-acl2-count-thm
                                               acl2-count-of-car-g-apply->args
                                               acl2-count-of-cadr-g-apply->args
-                                              acl2-count-of-car
                                               (:type-prescription acl2-count)
-                                              (:t len)))))
+                                              (:type-prescription g-ite-depth-sum)
+                                              (:t len))
+                                             ((tau-system)))))
                   :verify-guards nil
                   :guard (and (posp clk)
                               (pseudo-termp x)
