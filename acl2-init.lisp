@@ -685,8 +685,13 @@ implementations.")
 
 (defconstant *acl2-snapshot-string*
 
-; Note to developers (users should ignore this!): Replace this value by "" when
-; making a release.
+; Notes to developers (users should ignore this!):
+
+;   (1) Replace the value below by "" when making a release.
+
+;   (2) More generally, see UT file
+;       /projects/acl2/devel-misc/release.cmds
+;       for release instructions.
 
 ; Temporarily, for a release:
 ; ""

@@ -108,8 +108,8 @@
 
 (setq ql-util::*do-not-prompt* t)
 (ql-dist:install-dist
- "http://beta.quicklisp.org/dist/quicklisp/2014-06-16/distinfo.txt"
-;; "http://beta.quicklisp.org/dist/quicklisp/2014-01-13/distinfo.txt"
+ "http://beta.quicklisp.org/dist/quicklisp/2015-01-13/distinfo.txt"
+;; "http://beta.quicklisp.org/dist/quicklisp/2014-06-16/distinfo.txt"
  :replace t)
 
 (quit)

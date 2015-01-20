@@ -310,7 +310,13 @@
                        (t stobjs-out))))))))
 
 #-acl2-loop-only
-(defvar *mbe-as-exec*
+(defvar **1*-as-raw*
+
+; When a *1* function is called and this variable is true, that function should
+; behave as its corresponding raw Lisp function, except that critical guards
+; for stobj updaters are checked.  We can live with that rather vague
+; specification because this variable is nil unless we are under the call of a
+; program mode function.
 
 ; For the sake of simplicity in the discussion below, we ignore the possibility
 ; that guard-checking is set to :none or :all and we ignore safe-mode.  Also,
@@ -318,21 +324,21 @@
 ; unless someone is hacking; otherwise, the effect of this variable is
 ; defeated.
 
-; Oneify-cltl-code uses this variable, *mbe-as-exec*, to arrange that when a
+; Oneify-cltl-code uses this variable, **1*-as-raw*, to arrange that when a
 ; *1* :logic-mode function that calls mbe is itself called under a *1*
 ; :program-mode function, then the :exec code of that mbe call is evaluated,
 ; not the :logic code.  Our approach is basically as follows.  Globally,
-; *mbe-as-exec* is nil.  But we arrange the following, and explain below.
+; **1*-as-raw* is nil.  But we arrange the following, and explain below.
 ; 
 ; (a) The *1* code for an invariant-risk :program mode function binds
-;     *mbe-as-exec* to t.
+;     **1*-as-raw* to t.
 ; 
-; (b) The *1* code for an mbe call reduces to its :exec code when *mbe-as-exec*
+; (b) The *1* code for an mbe call reduces to its :exec code when **1*-as-raw*
 ;     is true.
 ;
-; (c) Raw-ev-fncall binds *mbe-as-exec* to nil for :logic mode functions.
+; (c) Raw-ev-fncall binds **1*-as-raw* to nil for :logic mode functions.
 ;
-; (d) Oneify binds *mbe-as-exec* to nil when ec-call is applied to a :logic
+; (d) Oneify binds **1*-as-raw* to nil when ec-call is applied to a :logic
 ;     mode function.
 
 ; Without invariant-risk, none of this would be necessary: a :program mode
@@ -372,9 +378,9 @@
 
 ; The proof should fail when calling (foo state st), since logically, the value
 ; of the with-local-stobj form is 3, not 4.  But since foo has invariant-risk,
-; *mbe-as-exec* is bound to t when calling *1*foo, so we might expect that
+; **1*-as-raw* is bound to t when calling *1*foo, so we might expect that
 ; evaluation of the mbe form under (lgc st) would use the :exec form, leading
-; erroneously to a successful proof!  However, we bind *mbe-as-exec* to nil in
+; erroneously to a successful proof!  However, we bind **1*-as-raw* to nil in
 ; raw-ev-fncall precisely to avoid such a probem.
 
 ; To see why we need (d), see the example in a comment in oneify that starts
@@ -399,19 +405,19 @@
               (pair (assoc-eq 'state latches))
               (w (if pair (w (cdr pair)) w)) ; (cdr pair) = *the-live-state*
               (throw-raw-ev-fncall-flg t)
-              (*mbe-as-exec*
+              (**1*-as-raw*
 
-; We defeat the *mbe-as-exec* optimization so that when we use raw-ev-fncall to
+; We defeat the **1*-as-raw* optimization so that when we use raw-ev-fncall to
 ; evaluate a call of a :logic mode term, all of the evaluation will take place
 ; in the logic.  Note that we don't restrict this special treatment to
 ; :common-lisp-compliant functions, because such a function might call an
 ; :ideal mode function wrapped in ec-call.  But we do restrict to :logic mode
 ; functions, since they cannot call :program mode functions and hence there
-; cannot be a subsidiary rebinding of *mbe-as-exec* to t.
+; cannot be a subsidiary rebinding of **1*-as-raw* to t.
 
                (if (logicalp fn w)
                    nil
-                 *mbe-as-exec*))
+                 **1*-as-raw*))
               (*1*fn (*1*-symbol fn))
               (applied-fn (cond
                            ((fboundp *1*fn) *1*fn)

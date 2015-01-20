@@ -285,16 +285,17 @@ created when we process their packages, etc.</p>"
                                                 (db vl-luciddb-p))
   ;; BOZO I don't really understand what this is doing or whether it's right.
   ;; For instance how does this handle arrays?
+  :no-new-x t
   :returns ((db vl-luciddb-p))
   (b* (((vl-genblob x) (vl-genblob-fix x))
-       (ss                 (vl-scopestack-push x ss))
-       (db                 (vl-scope-luciddb-init x ss db))
-       ((mv db ?generates) (vl-generates-luciddb-init x.generates ss db))
-       (db                 (vl-fundecllist-luciddb-init x.fundecls ss db))
-       (db                 (vl-taskdecllist-luciddb-init x.taskdecls ss db))
-       (db                 (vl-alwayslist-luciddb-init x.alwayses ss db))
-       (db                 (vl-initiallist-luciddb-init x.initials ss db)))
-    (mv db x))
+       (ss (vl-scopestack-push x ss))
+       (db (vl-scope-luciddb-init x ss db))
+       (db (vl-generates-luciddb-init x.generates ss db))
+       (db (vl-fundecllist-luciddb-init x.fundecls ss db))
+       (db (vl-taskdecllist-luciddb-init x.taskdecls ss db))
+       (db (vl-alwayslist-luciddb-init x.alwayses ss db))
+       (db (vl-initiallist-luciddb-init x.initials ss db)))
+    db)
   :apply-to-generates vl-generates-luciddb-init)
 
 ;; (defines vl-genblob-luciddb-init
@@ -415,7 +416,7 @@ created when we process their packages, etc.</p>"
                                 (db vl-luciddb-p))
   :returns (new-db vl-luciddb-p)
   (b* ((genblob (vl-module->genblob x))
-       ((mv db ?new-genblob) (vl-genblob-luciddb-init genblob ss db)))
+       (db (vl-genblob-luciddb-init genblob ss db)))
     db))
 
 (define vl-modulelist-luciddb-init ((x  vl-modulelist-p)
@@ -509,7 +510,7 @@ created when we process their packages, etc.</p>"
         (vl-print-str name)
       (vl-ps-seq (vl-print "<unnamed ")
                  (vl-print-str (symbol-name (tag x)))
-                 (vl-cw " : ~x0>" x)))))
+                 (vl-print ">")))))
 
 (define vl-pp-scopestack-path ((x vl-scopestack-p) &key (ps 'ps))
   :measure (vl-scopestack-count x)
@@ -1777,13 +1778,13 @@ created when we process their packages, etc.</p>"
 
 (def-genblob-transform vl-genblob-lucidcheck ((ss vl-scopestack-p)
                                               (st vl-lucidstate-p))
+  :no-new-x t
   ;; BOZO I don't really understand what this is doing or whether it's right.
   ;; For instance how does this handle arrays?
   :returns ((st vl-lucidstate-p))
   (b* (((vl-genblob x)     (vl-genblob-fix x))
        (ss                 (vl-scopestack-push x ss))
-       ((mv st ?generates) (vl-generates-lucidcheck x.generates ss st))
-
+       (st (vl-generates-lucidcheck x.generates ss st))
        (st (vl-assignlist-lucidcheck    x.assigns    ss st))
        (st (vl-alwayslist-lucidcheck    x.alwayses   ss st))
        (st (vl-initiallist-lucidcheck   x.initials   ss st))
@@ -1798,14 +1799,14 @@ created when we process their packages, etc.</p>"
        (st (vl-interfaceportlist-lucidcheck x.ifports ss st))
        ;; BOZO aliases, modports??, typedefs ...
        )
-    (mv st x))
+    st)
   :apply-to-generates vl-generates-lucidcheck)
 
 (def-vl-lucidcheck module
   :body
   (b* (((vl-module x))
        (genblob (vl-module->genblob x))
-       ((mv st ?new-x) (vl-genblob-lucidcheck genblob ss st)))
+       (st (vl-genblob-lucidcheck genblob ss st)))
     st))
 
 (def-vl-lucidcheck-list modulelist :element module)

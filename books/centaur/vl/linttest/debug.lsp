@@ -37,7 +37,7 @@
 (ld "centaur/jared-customization.lsp" :dir :system)
 
 (defconst *lintconfig*
-  (make-vl-lintconfig :start-files (list "./leftright/spec.sv")))
+  (make-vl-lintconfig :start-files (list "./fussy/spec.sv")))
 
 (defun vl-lint-report-wrap (lintresult state)
   (declare (xargs :mode :program :stobjs state))
@@ -53,6 +53,32 @@
                     :search-exts   config.search-exts
                     :include-dirs  config.include-dirs)))
     (vl-load loadconfig)))
+
+(defconsts *lintres*
+  (run-vl-lint-main (vl-loadresult->design *loadres*)
+                    *lintconfig*))
+
+(vl-lint-report-wrap *lintres* state)
+
+
+(defconst *dupeinst-check-debug* t)
+
+(trace$ (vl-module->flatten-modinsts
+         :entry (list 'vl-module->flatten-modinsts (vl-pps-module x))
+         :exit (let ((modinsts (first values)))
+                 (list 'vl-module->flatten-modinsts
+                       (with-local-ps (vl-pp-modinstlist modinsts nil))))))
+
+(trace$ (vl-make-dupeinst-alist
+         :entry (list 'vl-make-dupeinst-alist
+                      (with-local-ps (vl-pp-modinstlist x nil)))
+         :exit (let ((alist (car values)))
+                 (list 'vl-make-dupeinst-alist
+                       (with-local-ps (vl-pp-dupeinst-alist alist))))))
+
+;(trace$ vl-warnings-for-dupeinst-alist)
+
+
 
 (vl-design->packages (vl-loadresult->design *loadres*))
 
@@ -189,11 +215,6 @@
       (vl-cw-ps-seq (vl-print-reportcard reportcard :elide nil))
       (vl-apply-reportcard x reportcard))))
 
-(defconsts *lintres*
-  (run-vl-lint-main (vl-loadresult->design *loadres*)
-                    *lintconfig*))
-
-(vl-lint-report-wrap *lintres* state)
 
 
 (trace$ (vl-fundecl-exprsize :entry

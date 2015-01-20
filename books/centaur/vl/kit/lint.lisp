@@ -493,6 +493,12 @@ shown.</p>"
        (design (cwtime (vl-design-rangeresolve design)))
        (design (cwtime (vl-design-selresolve design)))
 
+       (design
+        ;; Running another dupeinst check here, after unparameterization, may
+        ;; create redundant warnings, but it may also help to catch things that
+        ;; become duplicates after unparameterization.
+        (cwtime (vl-design-dupeinst-check design)))
+
        ;; Post-unparameterization Lucidity Check -- this is a bad time for
        ;; checking parameters (because they've been eliminated) but it's a
        ;; much better time to do bit-level analysis, because things like
@@ -535,7 +541,13 @@ shown.</p>"
 
        (- (cw "~%vl-lint: processing expressions...~%"))
        (design (cwtime (vl-design-oddexpr-check design)))
-       (design (cwtime (vl-design-oprewrite design)))
+
+       ;; [Jared] -- Trying to NOT do oprewrite anymore.  Our sizing warnings
+       ;; do better if we can tell the difference between == and ~^ operators,
+       ;; for instance.
+       ;; (design (cwtime (vl-design-oprewrite design)))
+
+
        ;; Sizing doesn't do well unless we expand functions
        (design (cwtime (vl-design-expand-functions design)))
        (design (cwtime (vl-design-exprsize design)))

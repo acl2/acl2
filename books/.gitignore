@@ -51,3 +51,4 @@ Makefile-certs
 Makefile-sources
 startjob.*.wrap
 .#*
+\#*.*\#

@@ -164,3 +164,4 @@ clean:
 	rm -rf */INCA_libs */*.vcd */*.key
 	rm -rf */simv.*.daidir
 	rm -rf */csrc
+	rm -f */*.tem
