@@ -839,11 +839,12 @@ grammar is:</p>
                                :msg "~l0: the number ~s1 is not within the ~
                                      range [0, 2^~x2) indicated by its size, ~
                                      and is being truncated to ~x2 bits, ~
-                                     yielding ~x3."
+                                     yielding ~x2'd~x3 (hex: ~x2'h~s4)."
                                :args (list (vl-echar->loc firstchar)
                                            (vl-echarlist->string etext)
                                            width
-                                           val-fix))))
+                                           val-fix
+                                           (str::natstr16 val-fix)))))
                       ((< value (expt 2 31))
                        warnings)
                       ((and signedp (< value (expt 2 32)))
@@ -860,13 +861,15 @@ grammar is:</p>
                       (t
                        (warn :type :vl-warn-overflow
                              :msg "~l0: the unsized number ~s1 is over 2^32; ~
-                                   we truncate it to ~x2 to emulate a 32-bit ~
-                                   Verilog implementation, but it will have a ~
+                                   we truncate it to 32'd~x2 (hex: 32'h~s3) ~
+                                   to emulate a 32-bit Verilog ~
+                                   implementation, but it will have a ~
                                    different value on 64-bit tools.  You ~
                                    should add an explicit size."
                               :args (list (vl-echar->loc firstchar)
                                           (vl-echarlist->string number)
-                                          val-fix))))))
+                                          val-fix
+                                          (str::natstr16 val-fix)))))))
             (mv token remainder2 warnings)))
 
          ;; Otherwise, we weren't able to interpret the normalized edigits as a
