@@ -337,6 +337,9 @@
          (set-state-ok t)
          (set-ignore-ok t)
          (set-irrelevant-formals-ok t)
+
+         (local (in-theory (disable (tau-system))))
+
          ;; ,@(if current-geval
          ;;       nil
          (make-geval ,geval nil
@@ -1441,3 +1444,8 @@ ignored.</p>"
                (table-alist
                 'latest-greatest-gl-clause-proc
                 (w state)))))
+
+
+
+
+

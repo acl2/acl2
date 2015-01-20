@@ -13,7 +13,9 @@
 
 (in-package "ACL2")
 
-(defthm acl2-count-of-car
+;; These are strictly weaker than acl2-count-of-sum, below (at least, together
+;; with (:type-prescription acl2-count)).
+(defthmd acl2-count-of-car
   (and (implies (consp x)
                 (< (acl2-count (car x))
                    (acl2-count x)))
@@ -22,7 +24,7 @@
   :hints(("Goal" :in-theory (enable acl2-count)))
   :rule-classes :linear)
 
-(defthm acl2-count-of-cdr
+(defthmd acl2-count-of-cdr
   (and (implies (consp x)
                 (< (acl2-count (cdr x))
                    (acl2-count x)))
@@ -30,6 +32,18 @@
            (acl2-count x)))
   :hints(("Goal" :in-theory (enable acl2-count)))
   :rule-classes :linear)
+
+(defthm acl2-count-of-sum
+  (and (implies (consp x)
+                (< (+ (acl2-count (car x))
+                      (acl2-count (cdr x)))
+                   (acl2-count x)))
+       (<= (+ (acl2-count (car x))
+              (acl2-count (cdr x)))
+           (acl2-count x)))
+  :hints(("Goal" :in-theory (enable acl2-count)))
+  :rule-classes :linear)
+
 
 (defthm acl2-count-of-consp-positive
   (implies (consp x)

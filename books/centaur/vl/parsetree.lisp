@@ -2715,8 +2715,6 @@ declarations with initial values, or a comma-separated list of assignments (of
 previously declared variables).  A @('for_step') is a comma-separated list of
 variable assignments, increments, or decrements.</p>
 
-<p>We cover both these
-
 <p>See SystemVerilog Section 12.7.1.  The for statement acts like a for-loop in
 C.  First, outside the loop, it executes the @('for_initialization')
 assignments.  Then it evalutes <i>test</i>.  If <i>test</i> evaluates to

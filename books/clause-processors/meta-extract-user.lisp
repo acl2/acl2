@@ -553,7 +553,7 @@
 ;; extends mextract-ev.
 (defconst *def-meta-extract-events*
   '(encapsulate nil
-     
+     (local (in-theory nil))
      (def-ev-theoremp evfn)
 
      (defchoose evfn-meta-extract-contextual-badguy (obj) (a mfc state)
@@ -628,6 +628,21 @@
             '((and stable-under-simplificationp
                    '(:in-theory (enable ,rule
                                         evfn-falsify-sufficient)))))))))
+
+     (local
+      (make-event
+       `(in-theory (enable
+                    ,(ev-find-fncall-rule 'evfn 'typespec-check (w state))
+                    ,(ev-find-fncall-rule 'evfn 'if (w state))
+                    ,(ev-find-fncall-rule 'evfn 'equal (w state))
+                    ,(ev-find-fncall-rule 'evfn 'not (w state))
+                    ,(ev-find-fncall-rule 'evfn 'iff (w state))
+                    ,(ev-find-fncall-rule 'evfn 'implies (w state))
+                    ,(ev-lst-find-cons-rule 'evlst-fn (w state))
+                    ,(ev-lst-find-atom-rule 'evlst-fn (w state))
+                    ,(ev-find-quote-rule 'evfn (w state))
+                    ,(ev-find-variable-rule 'evfn (w state))
+                    ,(ev-find-lambda-rule 'evfn (w state))))))
 
      (def-functional-instance
        evfn-meta-extract-typeset

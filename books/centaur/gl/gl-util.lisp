@@ -31,7 +31,7 @@
 (in-package "GL")
 (include-book "tools/flag" :dir :system)
 (include-book "tools/bstar" :dir :system)
-
+(include-book "std/lists/acl2-count" :dir :system)
 
 
 

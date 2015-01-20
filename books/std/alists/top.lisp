@@ -67,7 +67,7 @@
 
 
 (defsection std/alists
-  :parents (std)
+  :parents (std alists)
   :short "A library for reasoning about association list (alist) operations
 like @(see alist-keys), @(see alist-vals), @(see hons-get), etc."
 
