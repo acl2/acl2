@@ -62,14 +62,18 @@ details.</p>")
   :guard (vl-atom-p x)
   :returns (x-strip (and (vl-expr-p x-strip)
                          (eq (vl-expr-kind x-strip) :atom)))
+  :inline t
   (mbe :logic (change-vl-atom x
                               :finalwidth nil
-                              :finaltype nil)
+                              :finaltype nil
+                              :atts nil)
        :exec (if (or (vl-atom->finalwidth x)
-                     (vl-atom->finaltype x))
+                     (vl-atom->finaltype x)
+                     (vl-atom->atts x))
                  (change-vl-atom x
                                  :finalwidth nil
-                                 :finaltype nil)
+                                 :finaltype nil
+                                 :atts nil)
                x)))
 
 (defines vl-expr-strip

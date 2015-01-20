@@ -60,6 +60,7 @@
 (include-book "../transforms/annotate/origexprs")
 (include-book "../transforms/annotate/make-implicit-wires")
 (include-book "../transforms/annotate/portdecl-sign")
+(include-book "../transforms/annotate/udp-elim")
 
 (include-book "../transforms/xf-assign-trunc")
 (include-book "../transforms/xf-blankargs")
@@ -461,6 +462,7 @@ shown.</p>"
        (- (cw "~%vl-lint: initial processing...~%"))
        (design (cwtime (vl-design-make-implicit-wires design)))
        (design (cwtime (vl-design-portdecl-sign design)))
+       (design (cwtime (vl-design-udp-elim design)))
        (design (cwtime (vl-design-portcheck design)))
        (design (cwtime (vl-design-argresolve design)))
        (design (cwtime (vl-design-resolve-indexing design)))

@@ -997,10 +997,12 @@ instead.</p>"
                                 :value 0
                                 :origtype :vl-unsigned))
         (finalwidth nil)
-        (finaltype nil))
+        (finaltype  nil)
+        (atts       nil))
     ;; Black magic horrible thing -- make sure this agrees with the resulting
     ;; definition of vl-expr-p.
-    (cons :atom (cons guts (cons finalwidth finaltype)))))
+    (cons :atom (cons (cons guts finalwidth)
+                      (cons finaltype atts)))))
 
 (define vl-arity-fix ((op vl-op-p) (args))
   :inline t
@@ -1078,13 +1080,13 @@ atomic expression includes some <b>guts</b>, which refer to either an:</p>
 
 <p>Some of these are probably not things you would ordinarily think of as
 atomic expressions.  However, accepting them as atomic expressions lets us
-achieve the straightforward recursive structure we desire for expressions.</p>
+achieve the straightforward recursive structure we desire.</p>
 
 <p>In addition to their guts, each @(see vl-atom-p) includes a</p>
 
 <ul>
 
-<li>@('finalwidth'), which is a @(see maybe-natp), and</li>
+<li>@('finalwidth'), which is a @(see maybe-natp) and</li>
 
 <li>@('finaltype'), which is a @(see vl-maybe-exprtype-p).</li>
 
@@ -1093,6 +1095,13 @@ achieve the straightforward recursive structure we desire for expressions.</p>
 <p>Typically, when we have just parsed the modules, these fields are left
 @('nil'): their values are only filled in during our expression typing and
 sizing computations.</p>
+
+<p>Finally, an atom has @('atts'), which is a @(see vl-atts-p).  These
+attributes are generally @('nil') upon parsing since the Verilog or
+SystemVerilog grammars don't really provide anywhere for @('(* foo = bar, baz
+*)') style attributes to be attached to atomic expressions.  However, we
+occasionally find it convenient to put our own attributes on atoms, e.g., it
+allows us to record that a particular atom came from a parameter.</p>
 
 <h5>Non-Atomic Expressions</h5>
 
@@ -1126,6 +1135,7 @@ basic structural checks recursively over the expression, and also ensures that
 each operator has the proper arity.</p>"
 
   (deftagsum vl-expr
+    :base-case-override :atom
     (:atom
      ;; :short "Representation of atomic expressions."
      ;; :long "<p>See the discussion in @(see vl-expr-p).</p>"
@@ -1142,7 +1152,8 @@ each operator has the proper arity.</p>"
                    ;;  :corollary
                    ;;  (and (symbolp (vl-atom->finaltype x))
                    ;;       (not (equal (vl-atom->finaltype x) t)))))))
-                   ))))
+                   ))
+      (atts      vl-atts-p)))
 
     (:nonatom
      ;;      :short "Structural validity of non-atomic expressions."
@@ -1459,7 +1470,8 @@ instead.</p>"
   (defthm vl-expr->finalwidth-of-vl-atom
     (equal (vl-expr->finalwidth (make-vl-atom :guts guts
                                               :finalwidth finalwidth
-                                              :finaltype finaltype))
+                                              :finaltype finaltype
+                                              :atts atts))
            (maybe-natp-fix finalwidth)))
 
   (defthm vl-expr->finalwidth-of-vl-nonatom
@@ -1488,7 +1500,8 @@ is a @(see vl-maybe-exprtype-p).</p>"
   (defthm vl-expr->finaltype-of-vl-atom
     (equal (vl-expr->finaltype (make-vl-atom :guts guts
                                              :finalwidth finalwidth
-                                             :finaltype finaltype))
+                                             :finaltype finaltype
+                                             :atts atts))
            (vl-maybe-exprtype-fix finaltype)))
 
   (defthm vl-expr->finaltype-of-vl-nonatom

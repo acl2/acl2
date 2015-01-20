@@ -2338,12 +2338,12 @@ minor warning for assignments where the rhs is a constant.</p>"
                  (if (posp (vl-resolved->val a))
                      warnings
                    (warn :type :vl-zero-replication
-                         :msg "~a0: found 0-sized replication operation.  This is ~
-                            well defined by the Verilog standards and is handled ~
-                            correctly by NCVerilog.  However, we have seen bugs ~
-                            in VCS and Verilog-XL.  To avoid mismatches between ~
-                            Verilog tools, you should probably avoid this ~
-                            construct!"
+                         :msg "~a0: found 0-sized replication: ~a1.  This is ~
+                               well defined by the Verilog standards and is ~
+                               handled correctly by NCVerilog.  However, we ~
+                               have seen bugs in VCS and Verilog-XL.  To ~
+                               avoid mismatches between Verilog tools, you ~
+                               should probably avoid this construct!"
                          :args (list ctx x))))
 
                 (inner (change-vl-nonatom x

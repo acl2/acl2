@@ -42,6 +42,7 @@ parameters with their values.")
 
 
 
+
 (defines vl-expr-scopesubst
   :short "Substitute resolved parameters into an expression."
   :long "<p>We assume that the parameters have already been processed
@@ -58,14 +59,23 @@ so that their overrides are compatible with thier types.</p>"
           (b* ((guts (vl-atom->guts x))
                ((unless (vl-fast-id-p guts)) ;; for now
                 x)
-               (item (vl-scopestack-find-item (vl-id->name guts) ss))
+               (name (vl-id->name guts))
+               (item (vl-scopestack-find-item name ss))
                ((unless (and item
                              (eq (tag item) :vl-paramdecl)))
                 x)
                (value (vl-paramdecl-final-value item ss))
-               ((unless (and value (vl-paramvalue-expr-p value))) x))
-            value))
-
+               ((unless (and value
+                             (vl-paramvalue-expr-p value)))
+                x)
+               (atts
+                ;; See for instance vl-pp-atom.  We record the name of the
+                ;; parameter that gave rise to this expression so that we can
+                ;; pretty-print it if desired.  We hons part of this since it
+                ;; will be repeated for all uses of the parameter.
+                (list (hons "VL_PARAMNAME"
+                            (make-vl-atom :guts (make-vl-string :value name))))))
+            (vl-expr-add-atts atts value)))
          (args-prime (vl-exprlist-scopesubst (vl-nonatom->args x) ss)))
       (change-vl-nonatom x :args args-prime)))
 
