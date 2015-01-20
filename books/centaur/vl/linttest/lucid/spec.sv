@@ -451,3 +451,26 @@ module imsim ();
 
 endmodule
 
+
+primitive awfulbuf (o, i) ;
+
+  output o;
+  input  i;
+
+  table
+    0 : 0 ;
+    1 : 1 ;
+  endtable
+
+endprimitive
+
+
+module useprim ;
+
+  wire w1_spurious;
+  wire w1_unused;
+  wire w1_unset;
+
+  awfulbuf (w1_unused, w1_unset);
+
+endmodule

@@ -71,7 +71,11 @@
   :short "A measure for recurring over expressions."
   :long "<p>This measure has a few nice properties.  It respects all of the
 equivalences for expressions and avoids having a function for @(see
-vl-maybe-expr-p).</p>"
+vl-maybe-expr-p).</p>
+
+<p>Note that we don't count the attributes of an atom.  Normally there's not
+any reason to descend into their attributes, so this doesn't really matter.  We
+might some day extend this function to also count atom attributes.</p>"
 
   :verify-guards nil
   :flag vl-expr-flag ;; BOZO no way to override this on deftypes
@@ -94,11 +98,6 @@ vl-maybe-expr-p).</p>"
                         (vl-exprlist-count-raw x)))
             :rule-classes :rewrite))
 
-   (local (defrule vl-expr-count-raw-of-car-weak
-            (<= (vl-expr-count-raw (car x))
-                (vl-exprlist-count-raw x))
-            :rule-classes ((:rewrite) (:linear))))
-
    (local (defrule vl-expr-count-raw-less-than-atts
             ;; BOZO really gross
             (implies x
@@ -111,15 +110,14 @@ vl-maybe-expr-p).</p>"
             (implies x
                      (equal (vl-maybe-expr-count-raw (vl-expr-fix x))
                             (vl-maybe-expr-count-raw x)))
-            :hints(("Goal" :in-theory (enable vl-maybe-expr-count-raw)))))
-   )
-
+            :hints(("Goal" :in-theory (enable vl-maybe-expr-count-raw))))))
 
   (define vl-expr-count ((x vl-expr-p))
     :measure (two-nats-measure (vl-expr-count-raw x) 0)
     :flag :expr
     (vl-expr-case x
-      :atom 1
+      :atom
+      1
       :nonatom
       (+ 1
          (vl-atts-count x.atts)
@@ -1355,3 +1353,18 @@ when all arguments are signed."
                   (consp (cdr (vl-nonatom->args x)))
                   (vl-expr-p (cadr (vl-nonatom->args x)))))))
 
+
+(define vl-expr->atts ((x vl-expr-p))
+  :returns (atts vl-atts-p)
+  :inline t
+  :enabled t
+  (vl-expr-case x
+    :atom x.atts
+    :nonatom x.atts))
+
+(define vl-expr-add-atts ((new-atts vl-atts-p)
+                          (x        vl-expr-p))
+  :returns (new-x vl-expr-p)
+  (vl-expr-case x
+    :atom (change-vl-atom x :atts (append-without-guard new-atts x.atts))
+    :nonatom (change-vl-nonatom x :atts (append-without-guard new-atts x.atts))))

@@ -477,10 +477,35 @@ displays.  The module browser's web pages are responsible for defining the
       (:vl-tagname    (vl-pp-tagname x))
       (otherwise      (vl-pp-sysfunname x)))))
 
+(define vl-atts-find-paramname ((atts vl-atts-p))
+  ;; See vl-expr-scopesubst.  When we substitute a parameter's value into its
+  ;; expression, we add a paramname annotation.
+  :returns (paramname maybe-stringp :rule-classes :type-prescription)
+  (b* ((look (assoc-equal "VL_PARAMNAME" (vl-atts-fix atts)))
+       ((unless look)
+        nil)
+       (val (cdr look))
+       ((unless (and val
+                     (vl-fast-atom-p val)))
+        nil)
+       (guts (vl-atom->guts val))
+       ((unless (vl-fast-string-p guts))
+        nil))
+    (vl-string->value guts)))
+
 (define vl-pp-atom ((x vl-expr-p) &key (ps 'ps))
   :guard (vl-atom-p x)
   :inline t
-  (vl-pp-atomguts (vl-atom->guts x)))
+  (vl-ps-seq
+   (vl-pp-atomguts (vl-atom->guts x))
+   (vl-when-html
+    (b* ((atts (vl-atom->atts x))
+         (name (and atts (vl-atts-find-paramname atts)))
+         ((unless name)
+          ps))
+      (vl-ps-seq (vl-print-markup "<span class='vl_paramname'>")
+                 (vl-print-str name)
+                 (vl-print-markup "</span>"))))))
 
 (defmacro vl-ops-precedence-table ()
   ''(;; These aren't real operators as far as the precedence rules are
@@ -670,7 +695,8 @@ displays.  The module browser's web pages are responsible for defining the
 
 (defmacro vl-pp-expr-special-atts ()
   ''("VL_ORIG_EXPR"
-     "VL_EXPLICIT_PARENS"))
+     "VL_EXPLICIT_PARENS"
+     "VL_PARAMNAME"))
 
 (defrule vl-atts-count-of-vl-remove-keys
   (<= (vl-atts-count (vl-remove-keys keys x))
@@ -1241,7 +1267,7 @@ code.)</p>
 transformation sequence.  When there's no @('VL_ORIG_EXPR') attribute, we just
 print @('x') as is.</p>"
   (b* (((when (vl-fast-atom-p x))
-        (vl-pp-expr x))
+        (vl-pp-atom x))
        (atts   (vl-nonatom->atts x))
        (lookup (cdr (hons-assoc-equal "VL_ORIG_EXPR" atts)))
        ((when lookup)
