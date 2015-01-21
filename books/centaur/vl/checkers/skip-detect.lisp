@@ -336,10 +336,7 @@ patterns, producing a @(see sd-patalist-p)."
   ///
   (defthm sd-problem->-transitive
     (implies (and (sd-problem-> x y)
-                  (sd-problem-> y z)
-                  (sd-problem-p x)
-                  (sd-problem-p y)
-                  (sd-problem-p z))
+                  (sd-problem-> y z))
              (sd-problem-> x z))))
 
 (acl2::defsort

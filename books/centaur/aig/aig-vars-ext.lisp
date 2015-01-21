@@ -30,7 +30,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-(include-book "defsort/defsort" :dir :system)
+;; (include-book "defsort/defsort" :dir :system)
 (include-book "aig-base")
 (include-book "tools/bstar" :dir :system)
 (include-book "std/bitsets/sbitsets" :dir :system)
@@ -42,7 +42,18 @@
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;; floor stuff
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(defsort  :comparablep (lambda (x) (not (consp x))) :compare< alphorder :prefix alphorder)
+
+;; (defun atom< (x y)
+;;   (declare (xargs :guard (and (atom x) (atom y))))
+;;   (mbe :logic (not (alphorder (and (atom y) y) (and (atom x) x)))
+;;        :exec (not (fast-alphorder y x))))
+
+;; (defsort alphorder-sort
+;;   :prefix alphorder
+;;   :comparablep (lambda (x) (not (consp x)))
+;;   :compare< atom<
+;;   :comparable-listp atom-listp
+;;   :true-listp t)
 
 ;; Accumulates the AIG vars of X into acc, excluding those that are only found
 ;; within x inside subtrees that are bound in nodetable.  Accumulates into
