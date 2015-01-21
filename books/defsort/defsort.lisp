@@ -873,30 +873,30 @@ it has a special hack for that particular case.</p>
                               :in-theory (disable ,(mksym prefix "-SORT-CREATES-COMPARABLE-LISTP")))))))
 
            (defthm ,(mksym prefix "-INSERTSORT-SORTS")
-             (,orderedp (,sort x . ,extra-args) . ,extra-args)
+             (,orderedp (,insertsort x . ,extra-args) . ,extra-args)
              :hints(("goal" :use ,(mksym prefix "-SORT-SORTS")
                      :in-theory (disable ,(mksym prefix "-SORT-SORTS")))))
 
            (defthm ,(mksym prefix "-INSERTSORT-NO-DUPLICATESP-EQUAL")
-             (equal (no-duplicatesp-equal (,sort x . ,extra-args))
+             (equal (no-duplicatesp-equal (,insertsort x . ,extra-args))
                     (no-duplicatesp-equal x))
              :hints(("goal" :use ,(mksym prefix "-NO-DUPLICATESP-EQUAL")
                      :in-theory (disable ,(mksym prefix "-NO-DUPLICATESP-EQUAL")))))
 
            (defthm ,(mksym prefix "-INSERTSORT-TRUE-LISTP")
-             (true-listp (,sort x . ,extra-args))
+             (true-listp (,insertsort x . ,extra-args))
              :rule-classes :type-prescription
              :hints(("goal" :use ,(mksym prefix "-TRUE-LISTP")
                      :in-theory (disable ,(mksym prefix "-TRUE-LISTP")))))
 
            (defthm ,(mksym prefix "-INSERTSORT-LEN")
-             (equal (len (,sort x . ,extra-args))
+             (equal (len (,insertsort x . ,extra-args))
                     (len x))
              :hints (("goal" :use ,(mksym prefix "-LEN")
                      :in-theory (disable ,(mksym prefix "-LEN")))))
 
            (defthm ,(mksym prefix "-INSERTSORT-CONSP")
-             (equal (consp (,sort x . ,extra-args))
+             (equal (consp (,insertsort x . ,extra-args))
                     (consp x))
              :hints (("goal" :use ,(mksym prefix "-CONSP")
                       :in-theory (disable ,(mksym prefix "-CONSP"))))))))

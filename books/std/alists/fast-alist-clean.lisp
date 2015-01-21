@@ -149,59 +149,29 @@
                     (equal (last (cdr x))
                            (last x)))))
 
-  (make-event
-   (let* ((fn-body (fgetprop 'fast-alist-clean
-                                  'unnormalized-body
-                                  nil (w state)))
-          ;; BOZO temporary hack to deal with an impending change to the
-          ;; definition of fast-alist-clean; remove when settled
-          (thm-body
-           (cond ((equal fn-body
-                         '(FAST-ALIST-FORK ALIST
-                                           (IF (CONSP ALIST)
-                                               (CDR (LAST ALIST))
-                                               'NIL)))
-                  ;; old version
-                  '(equal (fast-alist-clean x)
-                          (if (atom x)
-                              nil
-                            (if (atom (car x))
-                                (append (fast-alist-clean (cdr x))
-                                        (cdr (last x)))
-                              (append (hons-remove-assoc (caar x) (fast-alist-clean (cdr x)))
-                                      (cons (car x) (cdr (last x))))))))
-                 ((equal fn-body
-                         '(FAST-ALIST-FORK ALIST
-                                           (IF (CONSP ALIST)
-                                               (CDR (LAST ALIST))
-                                               ALIST)))
-                  ;; new version
-                  '(equal (fast-alist-clean x)
-                          (if (atom x)
-                              x
-                            (if (atom (car x))
-                                (fast-alist-clean (cdr x))
-                              (append (hons-remove-assoc (caar x) (fast-alist-clean (cdr x)))
-                                      (cons (car x) (cdr (last x))))))))
-                 (t (er hard? 'fast-alist-clean-by-remove-assoc
-                        "Definition of fast-alist-clean wasn't one of the expected ones~%")))))
-     `(defthmd fast-alist-clean-by-remove-assoc
-        ,thm-body
-        :hints (("goal" :use ((:instance fast-alist-fork-in-terms-of-hons-remove-assocs
-                               (y (if (consp x) (cdr (last x)) nil)))
-                              (:instance fast-alist-fork-in-terms-of-hons-remove-assocs
-                               (y (list (car x))) (x (cdr x)))
-                              (:instance fast-alist-fork-in-terms-of-hons-remove-assocs
-                               (y (if (consp (cdr x)) (cdr (last x)) nil))
-                               (x (cdr x))))
-                 :expand ((fast-alist-fork x x)
-                          (fast-alist-fork x (cdr x))
-                          (fast-alist-fork x nil))
-                 :do-not-induct t
-                 :in-theory (disable fast-alist-fork
-                                     hons-remove-assocs-of-fast-alist-fork
-                                     hons-remove-assoc-of-fast-alist-fork)))
-        :rule-classes ((:definition :controller-alist ((fast-alist-clean t)))))))
+  (defthmd fast-alist-clean-by-remove-assoc
+    (equal (fast-alist-clean x)
+           (if (atom x)
+               x
+             (if (atom (car x))
+                 (fast-alist-clean (cdr x))
+               (append (hons-remove-assoc (caar x) (fast-alist-clean (cdr x)))
+                       (cons (car x) (cdr (last x)))))))
+    :hints (("goal" :use ((:instance fast-alist-fork-in-terms-of-hons-remove-assocs
+                           (y (if (consp x) (cdr (last x)) nil)))
+                          (:instance fast-alist-fork-in-terms-of-hons-remove-assocs
+                           (y (list (car x))) (x (cdr x)))
+                          (:instance fast-alist-fork-in-terms-of-hons-remove-assocs
+                           (y (if (consp (cdr x)) (cdr (last x)) nil))
+                           (x (cdr x))))
+             :expand ((fast-alist-fork x x)
+                      (fast-alist-fork x (cdr x))
+                      (fast-alist-fork x nil))
+             :do-not-induct t
+             :in-theory (disable fast-alist-fork
+                                 hons-remove-assocs-of-fast-alist-fork
+                                 hons-remove-assoc-of-fast-alist-fork)))
+    :rule-classes ((:definition :controller-alist ((fast-alist-clean t)))))
 
   (defthm fast-alist-clean-by-remove-assoc-ind
     t
