@@ -29,9 +29,10 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "hid-tools")
+(include-book "range-tools")
+(include-book "syscalls")
 (include-book "../util/sum-nats")
-(include-book "../mlib/hid-tools")
-(include-book "../mlib/range-tools")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -160,50 +161,6 @@ are not really supposed to have sizes.</p>"
       (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
                (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))))
 
-
-(define vl-syscall-selfsize
-  :parents (vl-expr-selfsize)
-  :short "Compute the self-determined size of an system call."
-  ((args      vl-exprlist-p)
-   (arg-sizes nat-listp)
-   (context   vl-expr-p)
-   (ctx      vl-context-p)
-   (warnings  vl-warninglist-p))
-  :guard (same-lengthp args arg-sizes)
-  :returns
-  (mv (warnings vl-warninglist-p)
-      (size     maybe-natp :rule-classes :type-prescription))
-  (declare (ignorable arg-sizes context ctx))
-  :long "<p><b>Warning</b>: this function should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>This might as well have been part of @(see vl-op-selfsize).  I decided to
-separate it out so that it can be more easily managed if it grows into a
-complex function.  At the moment we only support @('$random').</p>
-
-<h3>$random</h3>
-
-<p>From Section 17.9.1 on page 311, <i>\"The system function
-@('$random')... returns a new 32-bit random number each time it is called.  The
-random number is a signed integer; it can be positive or negative...</i> This
-is rather vague, but I think it probably means two separate things.  First,
-that the values produced by @('$random') are in the range @('[-2^31, 2^31)').
-Second, that the \"return type\" of @('$random') is @('integer'), which of
-course has an implementation-dependent size which some implementation might
-treat as 64-bits.  But since we emulate a 32-bit implementation, we just regard
-the size of @('$random') as 32.</p>"
-
-  (b* ((expr (make-vl-nonatom :op :vl-syscall :args args))
-       ((when (vl-$random-expr-p expr))
-        (mv (ok) 32)))
-    (mv (ok) nil))
-
-  ///
-  (defrule warning-irrelevance-of-vl-syscall-selfsize
-    (let ((ret1 (vl-syscall-selfsize args arg-sizes context ctx warnings))
-          (ret2 (vl-syscall-selfsize args arg-sizes context nil nil)))
-      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-               (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))))
 
 
 (defines vl-interesting-size-atoms
@@ -657,10 +614,6 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
        ;; Concatenations have the sum of their arguments' widths
        (mv (ok) (sum-nats arg-sizes)))
 
-      ((:vl-syscall)
-       ;; We do all syscall sizing in a separate function.
-       (vl-syscall-selfsize args arg-sizes context ctx warnings))
-
       ((:vl-multiconcat)
        ;; For multiple concatenations, the size is its multiplicity times the
        ;; size of the concatenation-part.  The multiplicity can be zero.
@@ -706,13 +659,6 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
             (size (vl-resolved->val width-expr)))
          (mv (ok) size)))
 
-      ((:vl-funcall)
-       ;; BOZO we don't currently try to support function calls.  Eventually it
-       ;; should be easy to support sizing these, since it looks like functions
-       ;; are returned with a syntax like "function [7:0] getbyte;" -- we'll
-       ;; just need to look up the function and return the size of its range.
-       (mv (ok) nil))
-
       ((:vl-mintypmax)
        ;; I do not think it makes any sense to think about the size of a
        ;; mintypmax expression.  We just return nil and cause no warnings since
@@ -731,6 +677,10 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
              (sum-nats arg-sizes))))
 
       ((:vl-hid-dot :vl-index :vl-scope
+
+        ;; See vl-expr-selfsize.  We handle function calls and system calls
+        ;; separately and should never invoke them in vl-op-selfsize.
+        :vl-syscall :vl-funcall
 
         ;; BOZO these might not belong here, but it seems like the
         ;; safest place to put them until they're implemented
@@ -927,6 +877,27 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                (equal (mv-nth 1 ret1)
                       (mv-nth 1 ret2))))))
 
+(define vl-syscall-selfsize ((x        vl-expr-p)
+                             (ss       vl-scopestack-p)
+                             (ctx      vl-context-p)
+                             (warnings vl-warninglist-p))
+  :guard (and (not (vl-atom-p x))
+              (eq (vl-nonatom->op x) :vl-syscall))
+  :returns (mv (warnings vl-warninglist-p)
+               (size maybe-natp :rule-classes :type-prescription))
+  (declare (ignorable ss ctx))
+  (b* ((retinfo (vl-syscall->returninfo x))
+       ((unless retinfo)
+        (mv (ok) nil))
+       (size (vl-coredatatype-info->size retinfo)))
+    (mv (ok) size))
+  ///
+  (defrule warning-irrelevance-of-vl-syscall-selfsize
+    (let ((ret1 (vl-syscall-selfsize x ss ctx warnings))
+          (ret2 (vl-syscall-selfsize x ss nil nil)))
+      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
+               (equal (mv-nth 1 ret1)
+                      (mv-nth 1 ret2))))))
 
 (defines vl-expr-selfsize
   :parents (vl-expr-size)
@@ -946,12 +917,10 @@ modalist so that we can look up HIDs.  An alternative would be to use the
 annotations left by @(see vl-design-follow-hids) like (e.g.,
 @('VL_HID_RESOLVED_RANGE_P')) to see how wide HIDs are.</p>"
 
-  :prepwork ((local (in-theory (disable vl-$bits-call-p))))
-
   (define vl-expr-selfsize
     ((x        vl-expr-p        "Expression whose size we are to compute.")
-     (ss vl-scopestack-p)
-     (ctx     vl-context-p  "Context for warnings.")
+     (ss       vl-scopestack-p  "Scope where the expression occurs.")
+     (ctx      vl-context-p     "Context for warnings.")
      (warnings vl-warninglist-p "Ordinary @(see warnings) accumulator."))
     :returns
     (mv (warnings vl-warninglist-p)
@@ -977,8 +946,8 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
                              :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon)))
           (vl-partselect-selfsize x ss ctx warnings))
 
-         ((when (vl-$bits-call-p x))
-          (mv (ok) 32))
+         ((when (eq op :vl-syscall))
+          (vl-syscall-selfsize x ss ctx warnings))
 
          ((when (eq op :vl-funcall))
           (vl-funcall-selfsize x ss ctx warnings))
@@ -1000,8 +969,8 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
 
   (define vl-exprlist-selfsize
     ((x        vl-exprlist-p    "Expressions whose sizes we are to compute.")
-     (ss vl-scopestack-p)
-     (ctx     vl-context-p  "Context for warnings.")
+     (ss       vl-scopestack-p  "Scope where these expressions occur.")
+     (ctx      vl-context-p     "Context for warnings.")
      (warnings vl-warninglist-p "Ordinary @(see warnings) accumulator."))
     :returns
     (mv (warnings vl-warninglist-p)
@@ -1138,3 +1107,4 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
                       (mv-nth 1 ret2))))
     :use ((:instance l1 (warnings1 warnings) (warnings2 nil))
           (:instance l3 (ctx1 ctx) (ctx2 nil) (warnings nil)))))
+

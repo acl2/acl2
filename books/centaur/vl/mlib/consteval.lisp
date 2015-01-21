@@ -292,10 +292,10 @@
                             (orig vl-expr-p "the $bits call itself")
                             (ss vl-scopestack-p))
   :prepwork ((local (in-theory (disable not))))
-  :guard (not (vl-atom-p orig))
+  :guard (vl-unary-syscall-p "$bits" orig)
   :returns (mv (successp booleanp :rule-classes :type-prescription)
                (ans vl-expr-p))
-  (b* ((orig (vl-expr-fix orig))
+  (b* ((orig            (vl-expr-fix orig))
        (orig.finalwidth (vl-expr->finalwidth orig))
        (orig.finaltype  (vl-expr->finaltype orig))
        ((unless (and (posp orig.finalwidth)
@@ -516,9 +516,9 @@
            (mv t ans)))
 
         ((:vl-syscall)
-         (b* (((unless (vl-$bits-call-p x))
+         (b* (((unless (vl-unary-syscall-p "$bits" x))
                (mv nil x))
-              (obj (second x.args))
+              (obj (vl-unary-syscall->arg x))
               ;; Do we need to do something like this?
               ;; ;; If obj is a constant we should evaluate it first, but
               ;; ;; don't fail if it doesn't work.
@@ -561,8 +561,7 @@
 
      ;; Deferred enabling of vl-expr-welltyped-p:
      ;; Time:  157.17 seconds (prove: 156.96, print: 0.19, other: 0.03)
-     (local (in-theory (disable vl-expr-welltyped-p
-                                arity-stuff-about-vl-$bits-call)))
+     (local (in-theory (disable vl-expr-welltyped-p)))
 
      ;; Fancy trick to try to resolve these membership things faster:
      (local (defthm fancy-solve-member-consts
@@ -683,8 +682,6 @@
               (and stable-under-simplificationp
                    '(:in-theory (enable acl2::member-of-cons)))
               )))
-      
-
 
 
 (define vl-consteval

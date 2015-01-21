@@ -514,14 +514,18 @@ details.</p>")
                              vl-context-p-when-vl-ctxelement-p
                              double-containment
                              vl-expr-selfsize
-                             vl-expr-typedecide-aux
-                             vl-$bits-call-p)))
+                             vl-expr-typedecide-aux)))
 
   ;; (local (Defthm vl-exprtype-max-when-one-unsigned
   ;;          (implies (or (equal a :vl-unsigned)
   ;;                       (equal b :vl-unsigned))
   ;;                   (equal (equal (vl-exprtype-max a b) :vl-unsigned) t))
   ;;          :hints(("Goal" :in-theory (enable vl-exprtype-max)))))
+
+  (local (defthm maybe-posp-of-vl-coredatatype-info->size
+           (maybe-posp (VL-COREDATATYPE-INFO->SIZE (VL-SYSCALL->RETURNINFO X)))
+           :hints(("Goal" :in-theory (enable vl-syscall->returninfo)))
+           :rule-classes :type-prescription))
 
   (defthm-vl-expr-typedecide-aux-flag
     (defthm vl-expr-unsigned-when-size-zero-aux
@@ -542,7 +546,6 @@ details.</p>")
                    '(:in-theory (enable vl-op-selfsize
                                         vl-syscall-selfsize
                                         vl-funcall-selfsize
-                                        ;; vl-$bits-call-p
                                         vl-exprtype-max
                                         vl-index-expr-p
                                         acl2::member-of-cons
@@ -567,8 +570,6 @@ details.</p>")
                           (vl-unsigned-when-size-zero-lst
                            (cons a b) (cons c d))))))
       :flag :list)))
-
-
 
 
 
@@ -602,7 +603,7 @@ we are expanding @('foo') from 3 to 7 bits, we produce a new expression like
 unchanged.</p>"
 
   (b* ((x            (vl-expr-fix x))
-       (ctx         (vl-context-fix ctx))
+       (ctx          (vl-context-fix ctx))
        (finalwidth   (lnfix finalwidth))
        (x.finalwidth (lnfix (vl-expr->finalwidth x)))
 
@@ -672,7 +673,9 @@ unchanged.</p>"
                     (force (vl-expr->finalwidth x))
                     (force (equal (vl-expr->finaltype x) :vl-unsigned)))
                (vl-expr-welltyped-p (mv-nth 2 ret))))
-    :enable (vl-expr-welltyped-p vl-atom-welltyped-p acl2::member-of-cons)))
+    :enable (vl-expr-welltyped-p
+             vl-atom-welltyped-p
+             acl2::member-of-cons)))
 
 
 
@@ -1731,11 +1734,7 @@ minor warning for assignments where the rhs is a constant.</p>"
            ACL2::NATP-WHEN-MAYBE-NATP
            acl2::MEMBER-EQUAL-WHEN-ALL-EQUALP
            vl-warninglist-p-when-not-consp
-           vl-$bits-call-p
            )))
-
-
-
 
 
 (with-output :off (prove)
@@ -1756,8 +1755,8 @@ minor warning for assignments where the rhs is a constant.</p>"
                assignments, such as a self-determined subexpression, the
                @('lhs-size') should be nil.")
        (x        vl-expr-p                             "The expression that we want to size.")
-       (ss vl-scopestack-p)
-       (ctx     vl-context-p                       "Context for sizing error messages.")
+       (ss       vl-scopestack-p)
+       (ctx      vl-context-p                       "Context for sizing error messages.")
        (warnings vl-warninglist-p                      "Ordinary @(see warnings) accumulator."))
       :returns
       (mv (successp booleanp :rule-classes :type-prescription
@@ -2507,9 +2506,9 @@ minor warning for assignments where the rhs is a constant.</p>"
            ;; Skip the function, self-size the arguments.
            (b* (((unless (consp args))
                  (mv nil
-                     (warn :type :vl-programming-error
-                           :msg "~a0: Function call without function name: ~a1"
-                           :args (list ctx x))
+                     (fatal :type :vl-programming-error
+                            :msg "~a0: Function call without function name: ~a1"
+                            :args (list ctx x))
                      x))
                 ((cons fnname fn-args) args)
                 ((mv ok warnings fn-args)
@@ -2522,7 +2521,51 @@ minor warning for assignments where the rhs is a constant.</p>"
                         :finaltype finaltype)))
              (mv ok warnings new-x)))
 
-          ((:vl-syscall :vl-mintypmax :vl-index
+          ((:vl-syscall)
+           (b* (((unless (and (consp args)
+                              (vl-sysfunexpr-p (car args))))
+                 (mv nil
+                     (fatal :type :vl-programming-error
+                            :msg "~a0: system function call without function name: ~a1."
+                            :args (list ctx x))
+                     x))
+                (fnname    (vl-sysfunexpr->name (car args)))
+                ((mv warnings selfwidth) (vl-syscall-selfsize x ss ctx warnings))
+                ((mv warnings selftype)  (vl-syscall-typedecide x ss ctx warnings))
+                ((unless (and selfwidth selftype))
+                 ;; This is probably not what we really want to do here?
+                 (mv nil
+                     (fatal :type :vl-unsupported-syscall
+                            :msg "~a0: system call ~s1 not implemented: ~a2."
+                            :args (list ctx fnname x))
+                     x))
+                (inner (change-vl-nonatom x
+                                          :finalwidth selfwidth
+                                          :finaltype finaltype))
+                ((when (eql selfwidth finalwidth))
+                 (mv t warnings inner))
+                ((when (< finalwidth selfwidth))
+                 (mv nil
+                     (fatal :type :vl-programming-error
+                            :msg "~a0: finalwidth of ~s1 call can't be less ~
+                                  than ~x2; bug with our sizing code: ~a3"
+                            :args (list ctx fnname selfwidth x))
+                     x))
+                ;; Else, we need to extend.
+                ((unless (eq finaltype :vl-unsigned))
+                 (mv nil
+                     (fatal :type :vl-sign-extend-too-lazy
+                            :msg "~a0: sign extending ~s1 system call is not ~
+                                  yet implemented: ~a2."
+                            :args (list ctx fnname x))
+                     x))
+                ((mv ok warnings new-x)
+                 (vl-expandsizes-zeroextend inner finalwidth ctx warnings))
+                ((when ok)
+                 (mv ok warnings new-x)))
+             (mv nil warnings x)))
+
+          ((:vl-mintypmax :vl-index
             :vl-scope :vl-hid-dot
 
             ;; BOZO these might not belong here, but it seems like the
@@ -2534,36 +2577,12 @@ minor warning for assignments where the rhs is a constant.</p>"
             :vl-pattern-positional
             :vl-pattern-keyvalue
             :vl-keyvalue
-
             )
-           (if (vl-$bits-call-p x)
-               (if (and (not (eq finaltype :vl-unsigned)) (< 32 finalwidth))
-                   ;; we'd need to sign-extend, so fail for now
-                   (mv nil
-                       (fatal :type :vl-sign-extend-too-lazy
-                              :msg "~a0: failing to sign extend a $bits call"
-                              :args (list ctx))
-                       x)
-                 (b* ((ans1 (change-vl-nonatom x :finalwidth 32
-                                               :finaltype finaltype))
-                      ((when (< finalwidth 32))
-                       (mv nil
-                           (fatal :type :vl-programming-error
-                                  :msg "~a0: finalwidth of $bits call can't be less than 32"
-                                  :args (list ctx))
-                           x))
-                      ((when (eql finalwidth 32))
-                       (mv t warnings ans1))
-                      ((mv ok warnings new-x)
-                       (vl-expandsizes-zeroextend ans1 finalwidth ctx warnings)))
-                   (if ok
-                       (mv ok warnings new-x)
-                     (mv nil warnings x))))
-             (mv nil
-                 (fatal :type :vl-unsupported
-                        :msg "~a0: add sizing support for ~x1."
-                        :args (list ctx op))
-                 x)))
+           (mv nil
+               (fatal :type :vl-unsupported
+                      :msg "~a0: add sizing support for ~x1."
+                      :args (list ctx op))
+               x))
 
           ((;; Sizing just shouldn't encounter these
             :vl-unary-preinc :vl-unary-predec :vl-unary-postinc :vl-unary-postdec
@@ -3101,6 +3120,24 @@ minor warning for assignments where the rhs is a constant.</p>"
 
   (local (in-theory (enable arg1-exists-by-arity)))
 
+  (local (defthm vl-syscall->returninfo-of-vl-nonatom
+           (implies (and (equal (vl-nonatom->op x) :vl-syscall)
+                         (not (vl-atom-p x))
+                         (vl-atts-p atts)
+                         (vl-maybe-exprtype-p finaltype)
+                         (maybe-natp finalwidth))
+                    (equal (vl-syscall->returninfo (make-vl-nonatom :op :vl-syscall
+                                                                    :args (vl-nonatom->args x)
+                                                                    :atts atts
+                                                                    :finalwidth finalwidth
+                                                                    :finaltype finaltype))
+                           (vl-syscall->returninfo x)))
+           :hints(("Goal" :in-theory (enable vl-syscall->returninfo
+                                             vl-0ary-syscall-p
+                                             vl-unary-syscall-p
+                                             vl-*ary-syscall-p
+                                             vl-$random-expr-p)))))
+
   (defthm-vl-expr-size-flag
 
     (defthm vl-expr-welltyped-p-of-vl-expr-size
@@ -3134,7 +3171,8 @@ minor warning for assignments where the rhs is a constant.</p>"
                          (:free (op atts args finalwidth finaltype)
                           (vl-expr-welltyped-p
                            (vl-nonatom op atts args finalwidth finaltype))))
-                :in-theory (enable vl-$bits-call-p))
+                :in-theory (enable vl-syscall-selfsize)
+                )
               (and stable-under-simplificationp
                    '(:expand ((:free (warnings)
                                (vl-expr-selfsize x ss ctx warnings))
@@ -4117,8 +4155,6 @@ replace a key/value assignment pattern."
              :in-theory (enable vl-op-selfsize
                                 vl-atom-selfsize
                                 vl-exprlist-selfsize
-                                vl-$bits-call-p
-                                ;; vl-expr-selfsize
                                 warning-irrelevance-of-vl-expr-selfsize
                                 warning-irrelevance-of-vl-exprlist-selfsize)))))
 
@@ -4147,8 +4183,6 @@ replace a key/value assignment pattern."
                   :in-theory (enable vl-op-selfsize
                                      vl-atom-selfsize
                                      vl-exprlist-selfsize
-                                     vl-$bits-call-p
-                                     ;; vl-expr-selfsize
                                      warning-irrelevance-of-vl-expr-selfsize
                                      warning-irrelevance-of-vl-exprlist-selfsize)))))
 
@@ -4185,7 +4219,7 @@ replace a key/value assignment pattern."
                                    ;; vl-expr-selfsize
                                    warning-irrelevance-of-vl-expr-selfsize
                                    warning-irrelevance-of-vl-exprlist-selfsize
-                                   vl-$bits-call-p)
+                                   )
                                   (max acl2::posp-rw natp-when-posp acl2::natp-rw))))))
 
 
@@ -4284,8 +4318,6 @@ replace a key/value assignment pattern."
              :in-theory (enable vl-op-selfsize
                                 vl-atom-selfsize
                                 vl-exprlist-selfsize
-                                vl-$bits-call-p
-                                ;; vl-expr-selfsize
                                 warning-irrelevance-of-vl-expr-selfsize
                                 warning-irrelevance-of-vl-exprlist-selfsize)))
     ))
@@ -4606,7 +4638,8 @@ replace a key/value assignment pattern."
                                tag-when-vl-constint-p
                                tag-when-vl-string-p
                                vl-partselect-selfsize)
-                            (vl-$bits-call-p))))))
+                            (;vl-$bits-call-p
+                             ))))))
 
 
 (define vl-atom-size-assigncontext ((lhs-type vl-datatype-p)
@@ -4640,8 +4673,6 @@ replace a key/value assignment pattern."
          ((mv & selfsize) (vl-expr-selfsize new-x ss ctx2 warnings2)))
       (implies (and ok (not warning))
                (equal selfsize typesize)))))
-
-
 
 
 

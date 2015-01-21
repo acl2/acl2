@@ -28,9 +28,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-
 (in-package "VL")
-
 (include-book "../parsetree")
 
 (defprod vl-coredatatype-info
@@ -38,13 +36,19 @@
   :short "Structure to store properties of a coretype."
   :tag nil
   :layout :tree
-  ((coretypename      vl-coretypename-p   "name of the coretype")
-   (keyword           symbolp             "parser keyword for the name")
-   (default-signedp   booleanp            "what's the default signedness?")
-   (takes-signingp    booleanp            "does it have an optional [signing] part?")
-   (takes-dimensionsp booleanp            "does it optionally take dimensions?")
-   (4valuedp          booleanp            "Is each bit of it 4-valued (as opposed to 2-valued)?")
-   (size              maybe-natp          "Size, when an integer vector type, nil otherwise")))
+  ((coretypename      vl-coretypename-p "name of the coretype")
+   (keyword           symbolp :rule-classes :type-prescription
+                      "parser keyword for the name")
+   (default-signedp   booleanp :rule-classes :type-prescription
+                      "what's the default signedness?")
+   (takes-signingp    booleanp :rule-classes :type-prescription
+                      "does it have an optional [signing] part?")
+   (takes-dimensionsp booleanp :rule-classes :type-prescription
+                      "does it optionally take dimensions?")
+   (4valuedp          booleanp :rule-classes :type-prescription
+                      "Is each bit of it 4-valued (as opposed to 2-valued)?")
+   (size              maybe-natp :rule-classes :type-prescription
+                      "Size, when an integer vector type, nil otherwise")))
 
 (fty::deflist vl-coredatatype-infolist :elt-type vl-coredatatype-info)
 
@@ -60,18 +64,18 @@
    (vl-coredatatype-info   :vl-event       :vl-kwd-event       nil               nil         nil    nil       nil  )
    (vl-coredatatype-info   :vl-chandle     :vl-kwd-chandle     nil               nil         nil    nil       nil  )
    (vl-coredatatype-info   :vl-void        nil                 nil               nil         nil    nil       nil  )
-   ;; non-integer types                           N/A                                                                                     
+   ;; non-integer types                           N/A
    (vl-coredatatype-info   :vl-shortreal   :vl-kwd-shortreal   nil               nil         nil    nil       nil  )
    (vl-coredatatype-info   :vl-real        :vl-kwd-real        nil               nil         nil    nil       nil  )
    (vl-coredatatype-info   :vl-realtime    :vl-kwd-realtime    nil               nil         nil    nil       nil  )
-   ;; integer atom types                                                                                                               
+   ;; integer atom types
    (vl-coredatatype-info   :vl-byte        :vl-kwd-byte        t                 t           nil    nil       8    )
    (vl-coredatatype-info   :vl-shortint    :vl-kwd-shortint    t                 t           nil    nil       16   )
    (vl-coredatatype-info   :vl-int         :vl-kwd-int         t                 t           nil    nil       32   )
    (vl-coredatatype-info   :vl-longint     :vl-kwd-longint     t                 t           nil    nil       64   )
    (vl-coredatatype-info   :vl-integer     :vl-kwd-integer     t                 t           nil    t         32   )
    (vl-coredatatype-info   :vl-time        :vl-kwd-time        nil               t           nil    t         64   )
-   ;; integer vector types                                                                                                                
+   ;; integer vector types
    (vl-coredatatype-info   :vl-bit         :vl-kwd-bit         nil               t           t      nil       1    )
    (vl-coredatatype-info   :vl-logic       :vl-kwd-logic       nil               t           t      t         1    )
    (vl-coredatatype-info   :vl-reg         :vl-kwd-reg         nil               t           t      t         1    )))
@@ -102,7 +106,3 @@
                                                    vl-coretypename-p vl-coretypename-fix)
                          :cases ((vl-coretypename-p x)))))
   (vl-coredatatype-infolist-find-type (vl-coretypename-fix x) *vl-core-data-type-table*))
-
-
-
-

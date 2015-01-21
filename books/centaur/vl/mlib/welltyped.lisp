@@ -33,6 +33,7 @@
 (include-book "expr-building")
 (include-book "range-tools")
 (include-book "hid-tools")
+(include-book "syscalls")
 (include-book "../util/sum-nats")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
@@ -132,8 +133,6 @@ hierarchical identifiers.</p>"
          (posp x.finalwidth))))
 
 
-
-
 (defines vl-expr-welltyped-p
   :prepwork ((local (defthm acl2-numberp-of-abs
                       (implies (acl2-numberp x)
@@ -168,16 +167,24 @@ hierarchical identifiers.</p>"
           (and ;; (vl-index-expr-p (first x.args))
            (vl-index-expr-p (first x.args))
            (vl-exprlist-welltyped-p (cdr x.args))
-           (vl-selexpr-welltyped-p x) 
+           (vl-selexpr-welltyped-p x)
            (case x.op
              (:vl-index t)
              (:vl-select-colon (and (vl-expr-resolved-p (second x.args))
                                     (vl-expr-resolved-p (third x.args))))
              (otherwise        (vl-expr-resolved-p (third x.args))))))
-         ((when (vl-$bits-call-p x))
-          (and (eql (vl-expr->finalwidth x) 32)
-               (vl-expr->finaltype x)
-               t))
+
+         ((when (eq x.op :vl-syscall))
+          (b* ((info    (vl-syscall->returninfo x))
+               (retsize (and info (vl-coredatatype-info->size info)))
+               ((unless retsize)
+                ;; Not something that we know, so we won't impose a
+                ;; well-formedness requirement.
+                t))
+            (and (eql (vl-expr->finalwidth x) retsize)
+                 (vl-expr->finaltype x)
+                 t)))
+
          ((when (eq x.op :vl-funcall))
           (and (consp x.args)
                ;; could easily enough check that the first arg is a funname
@@ -358,10 +365,6 @@ hierarchical identifiers.</p>"
                  (eql x.finalwidth (vl-resolved->val c))
                  (eq x.finaltype :vl-unsigned))))
 
-         ((:vl-syscall)
-          ;; BOZO do we want to constrain these in any way?
-          t)
-
          ((:vl-mintypmax)
           ;; These are crazy.  I insist that they must have non-applicable
           ;; type.  This means things like (3:4:5) + 1 are not well-typed.
@@ -469,4 +472,3 @@ hierarchical identifiers.</p>"
   :hints(("Goal" :in-theory (e/d (vl-idexpr
                                   vl-expr-welltyped-p
                                   vl-atom-welltyped-p)))))
-
