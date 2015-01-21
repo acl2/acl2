@@ -347,10 +347,10 @@ HREF=\"~ss\">DOCUMENTATION</A></CODE>.
 <P>
 
 Once you have installed ACL2, you can browse the ACL2 User's Manual locally by
-opening the home page in your browser to view this home page, which is
-<CODE>doc/home-page.html</CODE> in your ACL2 sources directory and following
-the last link shown above; but first you will need to run the following
-command in your ACL2 sources directory.
+viewing a copy of this home page under your ACL2 sources directory at
+<CODE>doc/home-page.html</CODE> and following the last link shown above; but
+first you will need to run the following command in your ACL2 sources
+directory.
 
 <pre>
     make DOC ACL2=&lt;path_to_your_ACL2&gt;
