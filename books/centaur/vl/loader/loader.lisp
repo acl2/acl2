@@ -37,6 +37,7 @@
 (include-book "parser/parser")
 (include-book "filemap")
 (include-book "inject-comments")
+(include-book "inject-warnings")
 (include-book "../mlib/flat-warnings")
 (include-book "../mlib/print-warnings")
 (include-book "../mlib/scopestack")
@@ -434,6 +435,15 @@ descriptions.</li>
                :msg "; ~s0: comment: ~st sec, ~sa bytes~%"
                :args (list filename)
                :mintime st.config.mintime))
+
+       ;; Try to associate low-level, "early" warnings (e.g., from the lexer)
+       ;; with the appropriate modules.
+       ((mv descs pstate)
+        (b* ((warnings (vl-parsestate->warnings pstate))
+             ((mv descs warnings)
+              (vl-descriptionlist-inject-warnings descs warnings))
+             (pstate (change-vl-parsestate pstate :warnings warnings)))
+          (mv descs pstate)))
 
        ;; Merge new descriptions into previous descriptions.
        ((mv descs descalist reportcard)

@@ -234,5 +234,8 @@ normal(:imsim, "port2 ")
 #normal(:mg1, "p1_used ")
 #normal(:mg1, "w1_normal ")
 
+unset(:useprim, "w1_unset ")
+unused(:useprim, "w1_unused ")
+spurious(:useprim, "w1_spurious ")
 
 test_passed()

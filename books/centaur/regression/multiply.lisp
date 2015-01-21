@@ -26,7 +26,7 @@
 
 (in-package "ACL2")
 
-(include-book "common")
+(include-book "common" :ttags :all)
 
 (defmodules *multiply-modules*
   (vl::make-vl-loadconfig

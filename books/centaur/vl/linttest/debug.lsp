@@ -37,11 +37,13 @@
 (ld "centaur/jared-customization.lsp" :dir :system)
 
 (defconst *lintconfig*
-  (make-vl-lintconfig :start-files (list "./fussy/spec.sv")))
+  (make-vl-lintconfig :start-files (list "./overflow/spec.sv")))
 
 (defun vl-lint-report-wrap (lintresult state)
   (declare (xargs :mode :program :stobjs state))
   (vl-lint-report lintresult state))
+
+
 
 (defconsts (*loadres* state)
   (b* (((vl-lintconfig config) *lintconfig*)
@@ -59,6 +61,29 @@
                     *lintconfig*))
 
 (vl-lint-report-wrap *lintres* state)
+
+(trace$ (vl-description-inject-warnings
+         :entry (list 'vl-description-inject-warnings
+                      :name (vl-description->name x)
+                      :minloc (vl-description->minloc x)
+                      :maxloc (vl-description->maxloc x)
+                      :warnings (with-local-ps (vl-print-warnings warnings)))
+         :exit (b* (((list new-x beyond) acl2::values))
+                 (list 'vl-description-inject-warnings
+                       :name (vl-description->name new-x)
+                       :new-self-warnings
+                       (with-local-ps (vl-print-warnings (vl-description->warnings new-x)))
+                       :beyond-warnings
+                       (with-local-ps (vl-print-warnings beyond))))))
+
+(trace$ (vl-location-between-p
+
+
+        descriptionlist-inject-warnings
+
+
+
+
 
 
 (defconst *dupeinst-check-debug* t)
