@@ -1177,15 +1177,6 @@ bug with the standard.  By omitting them, the above reduce to:</p>
    list_of_port_identifiers          ::= identifier {unpacked_dimension} {',' identifier {unpacked_dimension} }
    list_of_variable_identifiers      ::= identifier {variable_dimension} {',' identifier {variable_dimension} }
    list_of_variable_port_identifiers ::= identifier {variable_dimension} {',' identifier {variable_dimension} }
-})
-
-<p>We also don't yet implement variable dimensions, so we'll just implement
-these as:</p>
-
-@({
-   list_of_port_identifiers          ::= identifier {unpacked_dimension} {',' identifier {unpacked_dimension} }
-   list_of_variable_identifiers      ::= identifier {unpacked_dimension} {',' identifier {unpacked_dimension} }
-   list_of_variable_port_identifiers ::= identifier {unpacked_dimension} {',' identifier {unpacked_dimension} }
 })")
 
 (local (xdoc::set-default-parents sv-non-ansi-portdecls))
@@ -1194,10 +1185,6 @@ these as:</p>
   :short "Approximation of @('list_of_port_identifiers'),
   @('list_of_variable_identifiers'), and
   @('list_of_variable_port_identifiers')."
-  ;; For now we just match:
-  ;;    identifier {range} { ',' identifier {range} }
-  ;; We don't handle default values yet.
-  ;; We don't handle fancy dimensions yet.
   :result (vl-parsed-port-identifier-list-p val)
   :true-listp t
   :resultp-of-nil t
@@ -1205,13 +1192,13 @@ these as:</p>
   :count strong
   (seq tokstream
        (id := (vl-match-token :vl-idtoken))
-       (ranges := (vl-parse-0+-ranges))
+       (udims := (vl-parse-0+-variable-dimensions))
        (when (and (vl-is-token? :vl-comma)
                   (vl-lookahead-is-token? :vl-idtoken (cdr (vl-tokstream->tokens))))
          (:= (vl-match))
          (rest := (vl-parse-list-of-port-identifiers)))
        (return (cons (make-vl-parsed-port-identifier :name id
-                                                     :udims ranges)
+                                                     :udims udims)
                      rest))))
 
 (define vl-parsed-portdecl-head->complete-p ((head vl-parsed-portdecl-head-p))
@@ -1441,7 +1428,7 @@ for fancy dimensions, what we'll really try to implement is just:</p>
 @({
     ansi_port_declaration ::=
         net_port_header         identifier {unpacked_dimension}
-      | variable_port_header    identifier {unpacked_dimension}
+      | variable_port_header    identifier {variable_dimension}
       | interface_port_header   identifier {unpacked_dimension}
 
     net_port_header ::= [port_direction] net_port_type
@@ -1577,7 +1564,7 @@ parse-port-types) for notes about how we distinguish between
          ;; It cannot be an interface port header.
          (head  := (vl-parse-port-declaration-head-2012))
          (id    := (vl-match-token :vl-idtoken))
-         (udims := (vl-parse-0+-ranges))
+         (udims := (vl-parse-0+-variable-dimensions))
          (return (make-vl-parsed-ansi-port :dir  dir
                                            :atts atts
                                            :head head
@@ -1586,7 +1573,7 @@ parse-port-types) for notes about how we distinguish between
        ;; Else, no direction; can have interface, net, or variable port type.
        (head  := (vl-parse-ansi-port-header))
        (id    := (vl-match-token :vl-idtoken))
-       (udims := (vl-parse-0+-ranges))
+       (udims := (vl-parse-0+-variable-dimensions))
        (return (make-vl-parsed-ansi-port :dir  nil
                                          :head head
                                          :atts atts

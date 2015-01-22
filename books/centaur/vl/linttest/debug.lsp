@@ -37,7 +37,7 @@
 (ld "centaur/jared-customization.lsp" :dir :system)
 
 (defconst *lintconfig*
-  (make-vl-lintconfig :start-files (list "./overflow/spec.sv")))
+  (make-vl-lintconfig :start-files (list "./params/spec.sv")))
 
 (defun vl-lint-report-wrap (lintresult state)
   (declare (xargs :mode :program :stobjs state))

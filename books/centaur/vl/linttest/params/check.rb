@@ -33,45 +33,17 @@ require_relative '../utils'
 outlaw_bad_warnings()
 outlaw_warning_global("VL-PROGRAMMING-ERROR")
 
-def normal(w)
-  outlaw_warning(:top, "VL-WARN-SAME-PORTS", w)
-  outlaw_warning(:top, "VL-WARN-SAME-INPUTS", w)
-end
+match_warning(:m0, "VL-LUCID-UNUSED", "height");
 
-def sameports(w)
-  match_warning(:top, "VL-WARN-SAME-PORTS", w)
-  outlaw_warning(:top, "VL-WARN-SAME-INPUTS", w)
-end
+match_warning(:m1, "VL-WARN-TRUNCATION", "a & b");
 
-def sameins(w)
-  match_warning(:top, "VL-WARN-SAME-INPUTS", w)
-  outlaw_warning(:top, "VL-WARN-SAME-PORTS", w)
-end
+match_warning(:m2, "VL-LUCID-UNUSED", "alpha")
+match_warning(:m2, "VL-LUCID-UNUSED", "beta")
+match_warning(:m2, "VL-LUCID-UNSET", "omega")
 
-normal("m0_normal")
-sameports("m0_sp_a")
-sameports("m0_sp_b")
-sameins("m0_si_a")
-sameins("m0_si_b")
-
-normal("m1_normal_a")
-normal("m1_normal_b")
-
-normal("i0_normal_a")
-normal("i0_normal_b")
-
-normal("i1_normal_a")
-normal("i1_normal_b")
-
-normal("i1_normal_c")
-normal("i1_normal_d")
-
-sameports("m0arr")
-sameports("xx0")
-sameports("xx1")
-sameports("xx2")
-
-normal("i0arr")
+match_warning(:m3, "VL-LUCID-UNUSED", "alpha")
+match_warning(:m3, "VL-LUCID-UNUSED", "beta")
+match_warning(:m3, "VL-LUCID-UNSET", "omega")
 
 test_passed()
 

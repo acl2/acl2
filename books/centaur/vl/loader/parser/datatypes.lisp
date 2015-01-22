@@ -115,8 +115,13 @@
         (rest  := (vl-parse-0+-packed-dimensions))
         (return (cons first rest))))
 
-
-(defparser vl-parse-var-dimension ()
+(defparser vl-parse-unpacked-dimension ()
+  ;; Matches unpacked_dimension ::= '[' constant_range ']'
+  ;;                              | '[' constant_expression ']'
+  ;;
+  ;; Note (SystemVerilog-2012 page 109): unpacked dimensions like [size] are
+  ;; the same as [0:size-1].  We therefore convert them into
+  ;; vl-packeddimension-p structures like [0:size-1].
   :result (vl-packeddimension-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -141,8 +146,8 @@
                          :op :vl-binary-minus
                          :args (list msb (vl-make-index 1))))))))
 
-(defparser vl-parse-0+-var-dimensions ()
-  ;; Match { packed_dimension }
+(defparser vl-parse-0+-unpacked-dimensions ()
+  ;; Match { unpacked_dimension }
   :result (vl-packeddimensionlist-p val)
   :resultp-of-nil t
   :true-listp t
@@ -151,8 +156,38 @@
   (seq tokstream
         (unless (vl-is-token? :vl-lbrack)
           (return nil))
-        (first := (vl-parse-var-dimension))
-        (rest  := (vl-parse-0+-var-dimensions))
+        (first := (vl-parse-unpacked-dimension))
+        (rest  := (vl-parse-0+-unpacked-dimensions))
+        (return (cons first rest))))
+
+
+(defparser vl-parse-variable-dimension ()
+  ;; Matches  variable_dimension ::= unsized_dimension
+  ;;                               | unpacked_dimension
+  ;;                               | associative_dimension
+  ;;                               | queue_dimension
+  ;;
+  ;; Except that BOZO so far we only implement unpacked_dimension.
+  :result (vl-packeddimension-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (ans := (vl-parse-unpacked-dimension))
+       (return ans)))
+
+(defparser vl-parse-0+-variable-dimensions ()
+  ;; Match { variable_dimension }
+  :result (vl-packeddimensionlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong-on-value
+  (seq tokstream
+        (unless (vl-is-token? :vl-lbrack)
+          (return nil))
+        (first := (vl-parse-variable-dimension))
+        (rest  := (vl-parse-0+-variable-dimensions))
         (return (cons first rest))))
 
 
@@ -417,7 +452,7 @@ dimensions.</p>
         (when (vl-is-token? :vl-lbrack)
           ;; BOZO this doesn't yet support all the possible variable_dimension things, but
           ;; we'll at least support arbitrary lists of packed dimensions.
-          (dims := (vl-parse-0+-var-dimensions)))
+          (dims := (vl-parse-0+-variable-dimensions)))
 
         (when (vl-is-token? :vl-equalsign)
           (:= (vl-match))
