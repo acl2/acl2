@@ -175,15 +175,25 @@ hierarchical identifiers.</p>"
              (otherwise        (vl-expr-resolved-p (third x.args))))))
 
          ((when (eq x.op :vl-syscall))
-          (b* ((info    (vl-syscall->returninfo x))
+          (b* (((unless (consp x.args))
+                nil)
+               ((cons fn fnargs) x.args)
+               ((unless (vl-sysfunexpr-p fn))
+                nil)
+               (fnname  (vl-sysfunexpr->name fn))
+               (info    (vl-syscall->returninfo x))
                (retsize (and info (vl-coredatatype-info->size info)))
                ((unless retsize)
                 ;; Not something that we know, so we won't impose a
                 ;; well-formedness requirement.
                 t))
-            (and (eql (vl-expr->finalwidth x) retsize)
-                 (vl-expr->finaltype x)
-                 t)))
+            (and
+             ;; Requirements on ourself
+             (eql (vl-expr->finalwidth x) retsize)
+             (vl-expr->finaltype x)
+             ;; Requirements on the arguments, if any
+             (or (not (vl-sysfun-should-size-args-p fnname))
+                 (vl-exprlist-welltyped-p fnargs)))))
 
          ((when (eq x.op :vl-funcall))
           (and (consp x.args)

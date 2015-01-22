@@ -161,12 +161,19 @@ producing some warnings.</p>"
        ((when (eq (tag guts) :vl-extint))
         (mv (ok) :vl-signed))
 
-       ((unless (vl-fast-id-p guts))
+       ((unless (or (vl-fast-id-p guts)
+                    (vl-fast-hidpiece-p guts)))
         ;; Other kinds of atoms don't get a type.
-        (mv (warn :type :vl-typedecide-fail
-                  :msg "~a0: Couldn't decide signedness of atom: ~a1"
-                  :args (list (vl-context-fix ctx) (vl-expr-fix x)))
-            nil)))
+
+        ;; [Jared] 2015-01-22.  See the analogous comments in vl-atom-selfsize.
+        ;; We used to cause warnings here but that is silly and we shouldn't
+        ;; warn.
+
+        ;; (mv (warn :type :vl-typedecide-fail
+        ;;           :msg "~a0: Couldn't decide signedness of atom: ~a1"
+        ;;           :args (list (vl-context-fix ctx) (vl-expr-fix x)))
+        ;;     nil)
+        (mv (ok) nil)))
 
     (vl-index-typedecide x ss ctx warnings))
 

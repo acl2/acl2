@@ -120,10 +120,10 @@ determine its size.  This can fail if the identifier is not declared in the
 module, or if its size is not resolved.  In these cases, we add a fatal warning
 to @('warnings') and return @('nil') as the size.</p>
 
-<p>We do not try to size other atoms, such as strings, real numbers, individual
-HID pieces, function names, etc.; instead we just return @('nil') as the size.
-But we do not issue a warning in this case, because it seems like these things
-are not really supposed to have sizes.</p>"
+<p>We do not try to size other atoms, such as real numbers, individual HID
+pieces, function names, system function names, etc.; instead we just return
+@('nil') as the size.  But we do not issue a warning in this case, because it
+seems like these things are not really supposed to have sizes.</p>"
   :guard-hints (("goal" :in-theory (enable vl-hidexpr-p vl-hidname-p)))
   (b* ((x    (vl-expr-fix x))
        (ctx (vl-context-fix ctx))
@@ -147,10 +147,18 @@ are not really supposed to have sizes.</p>"
                     (vl-fast-hidpiece-p guts)))
         ;; Reals, function names, hierarchical identifier pieces, etc., for which
         ;; a size is not applicable.
-        (mv (warn :type :vl-selfsize-fail
-                  :msg "~a0: Couldn't size atom: ~a1"
-                  :args (list ctx x))
-            nil)))
+
+        ;; [Jared] 2015-01-22.  We were formerly causing warnings here.  This
+        ;; contradicted the documentation and led to irritating, spurious warnings
+        ;; about things like "Couldn't size atom: $finish" in statements, which
+        ;; is just silly.  I think it makes more sense NOT to cause any warnings
+        ;; here, so let's do that.
+
+        ;; (mv (warn :type :vl-selfsize-fail
+        ;;           :msg "~a0: Couldn't size atom: ~a1"
+        ;;           :args (list ctx x))
+        ;;     nil)
+        (mv (ok) nil)))
 
     (vl-index-selfsize x ss ctx warnings))
 

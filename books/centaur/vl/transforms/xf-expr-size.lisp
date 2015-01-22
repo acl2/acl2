@@ -1736,7 +1736,6 @@ minor warning for assignments where the rhs is a constant.</p>"
            vl-warninglist-p-when-not-consp
            )))
 
-
 (with-output :off (prove)
   (defines vl-expr-size
     :parents (expression-sizing)
@@ -2529,7 +2528,18 @@ minor warning for assignments where the rhs is a constant.</p>"
                             :msg "~a0: system function call without function name: ~a1."
                             :args (list ctx x))
                      x))
-                (fnname    (vl-sysfunexpr->name (car args)))
+                ((cons fn fnargs) args)
+                (fnname   (vl-sysfunexpr->name (car args)))
+
+                ((mv ok warnings fnargs)
+                 ;; Size the arguments only if we are supposed to do so.  This avoids
+                 ;; trying to size things like $bits.
+                 (if (vl-sysfun-should-size-args-p fnname)
+                     (vl-exprlist-size fnargs ss ctx warnings)
+                   (mv t warnings fnargs)))
+                ((unless ok)
+                 (mv nil warnings x))
+
                 ((mv warnings selfwidth) (vl-syscall-selfsize x ss ctx warnings))
                 ((mv warnings selftype)  (vl-syscall-typedecide x ss ctx warnings))
                 ((unless (and selfwidth selftype))
@@ -2540,6 +2550,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                             :args (list ctx fnname x))
                      x))
                 (inner (change-vl-nonatom x
+                                          :args (cons fn fnargs)
                                           :finalwidth selfwidth
                                           :finaltype finaltype))
                 ((when (eql selfwidth finalwidth))
@@ -3137,6 +3148,33 @@ minor warning for assignments where the rhs is a constant.</p>"
                                              vl-unary-syscall-p
                                              vl-*ary-syscall-p
                                              vl-$random-expr-p)))))
+
+  (local (defthm vl-syscall->returninfo-of-vl-nonatom-reassemble
+           (implies (and (equal (vl-nonatom->op x) :vl-syscall)
+                         (same-lengthp rest (rest (vl-nonatom->args x)))
+                         (vl-exprlist-p rest)
+                         (not (vl-atom-p x))
+                         (vl-atts-p atts)
+                         (vl-maybe-exprtype-p finaltype)
+                         (maybe-natp finalwidth))
+                    (equal (vl-syscall->returninfo (make-vl-nonatom :op :vl-syscall
+                                                                    :args (cons (first (vl-nonatom->args x))
+                                                                                rest)
+                                                                    :atts atts
+                                                                    :finalwidth finalwidth
+                                                                    :finaltype finaltype))
+                           (vl-syscall->returninfo x)))
+           :hints(("Goal" :in-theory (enable vl-syscall->returninfo
+                                             vl-0ary-syscall-p
+                                             vl-unary-syscall-p
+                                             vl-*ary-syscall-p
+                                             vl-$random-expr-p
+                                             my-disables
+                                             )
+                   :expand ((len (vl-nonatom->args x))
+                            (len (cdr (vl-nonatom->args x)))
+                            (len rest)
+                            (len (cdr rest)))))))
 
   (defthm-vl-expr-size-flag
 

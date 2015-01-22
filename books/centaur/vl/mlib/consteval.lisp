@@ -287,7 +287,6 @@
       (:vl-reg      (mv t 1))
       (otherwise    (mv nil nil)))))
 
-
 (define vl-consteval-$bits ((x vl-expr-p "the expression inside the $bits call")
                             (orig vl-expr-p "the $bits call itself")
                             (ss vl-scopestack-p))
@@ -336,7 +335,6 @@
 
    (ans (implies successp (vl-expr-resolved-p ans))
         :name vl-expr-resolved-p-of-vl-consteval-$bits)))
-
 
 (define vl-consteval-concat ((x vl-exprlist-p)
                              (val-acc natp)
@@ -396,9 +394,40 @@
    (ans (vl-expr-resolved-p ans)
         :name vl-expr-resolved-p-of-vl-consteval-concat)))
 
+
+(define vl-clog2 ((n natp))
+  :returns (ans natp :rule-classes :type-prescription)
+  :short "Implementation of the @('$clog2') system function."
+  :long "<p>The SystemVerilog spec (20.8.1, page 567) says that @('$clog2(0)')
+is 0 and that otherwise @('$clog2') should return the ceiling of the log base 2
+of the argument, i.e., the log rounded up to an integer value.</p>
+
+<p>This <b>almost</b> lines up with @(see integer-length) but not quite, so to
+avoid problems at the border cases we just need to subtract one from @('n').
+For instance:</p>
+
+@({
+         n      (integer-length n)     (integer-length (- n 1))    $clog2
+    -----------------------------------------------------------------------
+         0               0                       0                   0
+         1               1                       0                   0
+         2               2                       1                   1
+         3               2                       2                   2
+         4               3                       2                   2
+         5               3                       3                   3
+         6               3                       3                   3
+         7               3                       3                   3
+         8               4                       3                   3
+         9               4                       4                   4
+         10              4                       4                   4
+    -----------------------------------------------------------------------
+})"
+  (integer-length (- (lnfix n) 1)))
+
 (defines vl-consteval-main
   (define vl-consteval-main ((x vl-expr-p)
                              (ss vl-scopestack-p))
+    :inline nil
     :returns (mv (successp booleanp :rule-classes :type-prescription)
                  (ans      vl-expr-p))
     :guard (vl-expr-welltyped-p x)
@@ -516,22 +545,45 @@
            (mv t ans)))
 
         ((:vl-syscall)
-         (b* (((unless (vl-unary-syscall-p "$bits" x))
-               (mv nil x))
-              (obj (vl-unary-syscall->arg x))
-              ;; Do we need to do something like this?
-              ;; ;; If obj is a constant we should evaluate it first, but
-              ;; ;; don't fail if it doesn't work.
-              ;; ((mv ok ev-obj) (vl-consteval-main obj ss))
-              ;; (obj (if ok ev-obj obj))
-              )
-           (vl-consteval-$bits obj x ss)))
+         (cond ((vl-unary-syscall-p "$bits" x)
+                (b* ((obj (vl-unary-syscall->arg x))
+                     ;; Do we need to do something like this?
+                     ;; ;; If obj is a constant we should evaluate it first, but
+                     ;; ;; don't fail if it doesn't work.
+                     ;; ((mv ok ev-obj) (vl-consteval-main obj ss))
+                     ;; (obj (if ok ev-obj obj))
+                     )
+                  (vl-consteval-$bits obj x ss)))
+
+               ((vl-unary-syscall-p "$clog2" x)
+                (b* ((arg (vl-unary-syscall->arg x))
+                     ((unless (vl-expr-welltyped-p arg))
+                      ;; BOZO.  It would perhaps be nice to know this as part
+                      ;; of vl-expr-welltyped-p.  But this could get tricky --
+                      ;; sometimes (e.g., $clog2) we want the arguments to be
+                      ;; welltyped, but other times (e.g., $bits) we don't.
+                      ;; For now I'll just explicitly check it.
+                      (mv nil x))
+                     ((mv aok a) (vl-consteval-main arg ss))
+                     ((unless aok)
+                      (mv nil x))
+                     (val (vl-clog2 (vl-resolved->val a)))
+                     ((unless (< val (expt 2 31)))
+                      ;; Out of range for $clog2.
+                      (mv nil x))
+                     (ans (vl-consteval-ans :value val
+                                            :width x.finalwidth
+                                            :type x.finaltype)))
+                  (mv t ans)))
+
+               (t
+                (mv nil x))))
 
         (:vl-concat
          (b* (((mv argsok args) (vl-consteval-exprlist-main x.args ss))
               ((unless (and argsok (consp args))) (mv nil x)))
            (mv t (vl-consteval-concat args 0 0))))
-              
+
 
 
         ;; BOZO could eventually add support for other operators like
@@ -539,7 +591,7 @@
         ;; good and should be good enough for most cases.
         (otherwise
          (mv nil x)))))
-  
+
 
   (define vl-consteval-exprlist-main ((x vl-exprlist-p)
                                       (ss vl-scopestack-p))
@@ -626,6 +678,19 @@
                    (vl-exprlist-welltyped-p ans)))
         :flag vl-consteval-exprlist-main))
 
+    (local (defthm clog2-has-return-info
+             (implies (vl-unary-syscall-p "$clog2" x)
+                      (vl-syscall->returninfo x))
+             :rule-classes :forward-chaining
+             :hints(("Goal" :in-theory (enable vl-syscall->returninfo)))))
+
+    (local (defthm clog2-helpers
+             (implies (and (vl-unary-syscall-p "$clog2" x)
+                           (vl-expr-welltyped-p x))
+                      (and (equal (vl-expr->finalwidth x) 32)
+                           (vl-expr->finaltype x)))
+             :hints(("Goal" :in-theory (enable vl-syscall->returninfo)))))
+
     (defthm-vl-consteval-main-flag
       (defthm vl-expr-resolved-p-of-vl-consteval-main
         (b* (((mv ?ok ?ans) (vl-consteval-main x ss)))
@@ -676,7 +741,7 @@
 
     (deffixequiv-mutual vl-consteval-main)
 
-    (verify-guards vl-consteval-main
+    (verify-guards vl-consteval-main$notinline
       :hints (("goal" :do-not-induct t
                :expand ((vl-expr-welltyped-p x)))
               (and stable-under-simplificationp
