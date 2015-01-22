@@ -143,6 +143,9 @@ end
 def outlaw_bad_warnings()
   outlaw_warning_global("VL-PARSE-ERROR")
   outlaw_warning_global("VL-BAD-MODULE-ITEM")
+  outlaw_warning_global("VL-NAMESPACE-ERROR")
+  outlaw_warning_global("VL-BAD-VARIABLES")
+  outlaw_warning_global("VL-BAD-INSTANCE")
 end
 
 
