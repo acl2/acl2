@@ -158,33 +158,6 @@
            (equal (equal n (len x))
                   (equal (1- n) (len (cdr x))))))
 
-;; (defrulel rewrite-+-duh
-;;   (equal (< (+ i j) k)
-;;          (< j (- k i))))
-
-(defrule cdr-of-append-when-consp
-  (implies (consp x)
-           (equal (cdr (append x y))
-                  (append (cdr x) y))))
-
-(defruled cdr-of-append
-  (equal (cdr (append x y))
-         (if (consp x)
-             (append (cdr x) y)
-           (cdr y))))
-
-(defrule car-of-append-when-consp
-  (implies (consp x)
-           (equal (car (append x y))
-                  (car x))))
-
-;; 38  (DEFRULE CDR-OF-APPEND-WHEN-CONSP (IMPLIES # #))
-;; 39  (DEFRULE SOMETHING-ABOUT-LEN (IMPLIES # #))
-;; 40  (DEFRULE OTHER-THING-ABOUT-LEN (EQUAL # #))
-;; 41  (IN-THEORY (DISABLE CAR-OF-APPEND))
-;; 42  (DEFRULE CAR-OF-APPEND-WHEN-CONSP (IMPLIES # #))
-
-
 (defrule write-and-5-reads
   :long "If we write something, and read four times, one of those four
          outputs is equal to that input."

@@ -66,6 +66,8 @@
     |A_02Tiny_02Warning_02Sign|         ;;; q
     doc                                 ;;; r
     documentation                       ;;; s
+    copyright                           ;;; t
+    git-quick-start                     ;;; u
   ))
 
 (defconst *home-page*
@@ -251,7 +253,7 @@ See <A HREF=\"#User's-Manual\">below</A> to learn more.</li>
 
 <li><b>License and Copyright.</b><br>ACL2 is freely available under the terms
 of the <a href=\"HTML/LICENSE\">LICENSE</a> file distributed with ACL2.  <a
-href=\"~s1index.html?topic=ACL2____COPYRIGHT\">License, copyright, and
+href=\"~st\">License, copyright, and
 authorship</a> information is available from the ACL2 <a
 href=\"#documentation\">documentation</a>.</li>
 
@@ -319,7 +321,9 @@ remembered from their past experiences with ACL2.
 The <i>ACL2+Books Manual</i> includes not only the ACL2 User's Manual, but also
 documents many of the <A href=\"#Tools\">community books</A> (libraries).  This
 manual, which is written by many authors, is thus more extensive than the ACL2
-system, and is thus potentially more useful.
+system, and is thus potentially more useful.  With the exception of the first
+bulleted link below, links to the manual on this page will all take you to the
+ACL2+Books Manual.
 
 <P>
 
@@ -331,20 +335,40 @@ HREF=\"~ss\">DOCUMENTATION</A></CODE>.
 
 <ul>
 
-<li><A HREF=\"~sp\">ACL2 User's Manual</A></li>
-
-<li><A HREF=\"~s2\">ACL2+Books Manual</A></li>
+<li><A HREF=\"~s2\">ACL2+Books Manual</A> <i>(recommended)</i></li>
 
 <li><A HREF=\"~s3\">ACL2+Books Manual</A> for
 \"<A HREF=\"HTML/installation/obtaining-and-installing.html#Bleeding-edge\">bleeding edge</A>\" distributions</li>
+
+<li><A HREF=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</A></li>
 
 </ul>
 
 <P>
 
 Once you have installed ACL2, you can browse the ACL2 User's Manual locally by
-opening the home page in your browser to view the file
-<CODE>doc/home-page.html</CODE> in your ACL2 sources directory.
+viewing a copy of this home page under your ACL2 sources directory at
+<CODE>doc/home-page.html</CODE> and following the last link shown above; but
+first you will need to run the following command in your ACL2 sources
+directory.
+
+<pre>
+    make DOC ACL2=&lt;path_to_your_ACL2&gt;
+</pre>
+
+<P>
+
+Better yet, you can build the ACL2+Books Manual locally, as follows, though
+this will likely take longer (perhaps a half hour or more, depending on which
+books you have already certified).
+
+<pre>
+    cd acl2-sources/books
+    make manual ACL2=&lt;path_to_your_ACL2&gt;
+</pre>
+
+The resulting ACL2+Books Manual may be accessed by pointing your browser to the
+file <code>books/doc/manual/index.html</code> under your ACL2 sources directory.
 
 <P>
 
@@ -362,13 +386,13 @@ explain how to download and install the community books.
 
 We strongly encourage users to submit additional books and to improve existing
 books.  If you have interest in contributing, there is a <a
-href=\"~s1index.html?topic=ACL2____GIT-QUICK-START\">documentation topic to get
-you started</a>.  You can also visit the <code><A
-HREF=\"https://github.com/acl2/acl2\">ACL2 System and Books</A></code> project
-page on github (just move past the big list of files to find descriptive text).
-Project members are welcome to edit community books.  In particular, the
-community book <code>books/system/doc/acl2-doc.lisp</code> contains the ACL2
-system documentation, and project members are welcome to improve it.
+href=\"~su\">documentation topic to get you started</a>.  You can also visit
+the <code><A HREF=\"https://github.com/acl2/acl2\">ACL2 System and
+Books</A></code> project page on github (just move past the big list of files
+to find descriptive text).  Project members are welcome to edit community
+books.  In particular, the community book
+<code>books/system/doc/acl2-doc.lisp</code> contains the ACL2 system
+documentation, and project members are welcome to improve it.
 
 <p>
 
@@ -439,7 +463,16 @@ HREF=\"manual/index.html?topic=ACL2____ACL2-DOC\">ACL2-Doc browser</A>.
            (pprogn (set-fmt-hard-right-margin 10000 state)
                    (set-fmt-soft-right-margin 10000 state)
                    (observation 'top-level "Writing home-page.html.")
-                   (write-home-page channel state *acl2-user-manual*)
+                   (write-home-page channel
+                                    state
+
+; We formerly supplied *acl2-user-manual* as the following URL.  However, David
+; Hardin reported concern over reaching a broken-link page after following the
+; link from the release notes (in the *acl2-user-manual*) to note-7-0-books
+; (only in the *combined-manual*).  We have thus decided to use the
+; *combined-manual* for all topics, in order to avoid such issues.
+
+                                    *combined-manual*)
                    (close-output-channel channel state))))
 
 ;; Deleted *home-page* and *home-page-references* from ld.lisp.

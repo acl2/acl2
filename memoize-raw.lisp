@@ -5187,13 +5187,23 @@
   #+(and ccl (not mswindows))
   (start-sol-gc)
 
-; It is can be helpful for the user to know what the garbage collector is doing
-; when using HONS and MEMOIZE.  We leave full-gc messages on but turn EGC
-; messages off.  We're disabling EGC anyway, but when we've experimented with
-; leaving it on, the EGC messages are way too verbose.
+; We have decided not to print garbage collector messages, since these can be
+; distracting to ordinary users.  Those who want such messages can put
+; (gc-verbose t), or even (gc-verbose t t), in their ~/acl2-customization.lsp
+; files.  We queried the acl2-help mailing list on [16 Jan 2015 17:34:36] and
+; gave people the opportunity to object (albeit not particularly inviting such
+; objections), but nobody did.  We keep the following historical comment (and
+; code), which provides insight for why this decision required thought.  Note
+; that gc messages are turned off, where we know how to do so, in source file
+; acl2.lisp.
 
-  #+(or ccl cmu gcl) ; Lisps where gc-verbose is supported
-  (gc-verbose t nil)
+;   It is can be helpful for the user to know what the garbage collector is
+;   doing when using HONS and MEMOIZE.  We leave full-gc messages on but turn
+;   EGC messages off.  We're disabling EGC anyway, but when we've experimented
+;   with leaving it on, the EGC messages are way too verbose.
+
+;   #+(or ccl cmu gcl) ; Lisps where gc-verbose is supported
+;   (gc-verbose t nil)
 
 ; We turn off EGC because it doesn't seem to work well with memoizing
 ; worse-than-builtin and sometimes seems buggy; but we want to investigate this

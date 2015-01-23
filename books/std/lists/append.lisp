@@ -120,6 +120,34 @@ library."
                (car x)
              (car y))))
 
+  (defthmd car-of-append-when-consp
+    (implies (consp x)
+             (equal (car (append x y))
+                    (car x))))
+
+  (theory-invariant (incompatible (:rewrite car-of-append-when-consp)
+                                  (:rewrite car-of-append))
+                    :key car-of-append-consp-invariant
+                    :error t)
+
+  (defthmd cdr-of-append
+    (equal (cdr (append x y))
+           (if (consp x)
+               (append (cdr x) y)
+             (cdr y))))
+
+  (defthm cdr-of-append-when-consp
+; We enable the version that requires consp, because it's less likely we want
+; to unconditionally open-up (cdr (append ...)) unless we know ... is a consp.
+    (implies (consp x)
+             (equal (cdr (append x y))
+                    (append (cdr x) y))))
+
+  (theory-invariant (incompatible (:rewrite cdr-of-append-when-consp)
+                                  (:rewrite cdr-of-append))
+                    :key cdr-of-append-consp-invariant
+                    :error t)
+
   (defthm associativity-of-append
     (equal (append (append a b) c)
            (append a (append b c))))

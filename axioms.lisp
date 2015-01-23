@@ -3500,6 +3500,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                               (< n (length s)))))
   (nth n (coerce s 'list)))
 
+#+acl2-loop-only
+(defun sleep (n)
+  (declare (xargs :guard (and (rationalp n)
+                              (<= 0 n))))
+  (declare (ignore n))
+  nil)
+
 (defun proper-consp (x)
   (declare (xargs :guard t))
   (and (consp x)
@@ -12504,6 +12511,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     rassoc-equal remove-equal position-equal
     maybe-finish-output$
     symbol-in-current-package-p
+    sleep
 
 ; Found for hons after fixing note-fns-in-form just before release v4-2.
 

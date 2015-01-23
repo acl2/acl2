@@ -68,6 +68,9 @@
 (set-inhibit-output-lst '(proof-tree))
 
 #!ACL2
+(gc-verbose t)
+
+#!ACL2
 (assign checkpoint-processors
         ;; Some users may not like this setting.  I usually like destructor
         ;; elimination pretty well, so adjust checkpoint printing so that
