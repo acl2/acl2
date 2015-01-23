@@ -100,11 +100,10 @@ discussion related to ACL2 system- and book-related development.
 Everyone can contribute documentation and advice to our [wiki] and
 discuss [problems and feature requests][bugtracker].
 
-If you would like to contribute to this repository, email [Jared
-Davis](mailto:jared@centtech.com) or [David
-Rager](mailto:ragerdl@gmail.com) and ask them to add you to the project.
+If you would like to contribute to this repository, see the topic [git-quick-start].
 Please note the [guidelines for book development][books guidelines].
 
+[git-quick-start]: http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=ACL2____GIT-QUICK-START
 [wiki]: https://github.com/acl2/acl2/wiki
 [bugtracker]: https://github.com/acl2/acl2/issues
 [books guidelines]: https://github.com/acl2/acl2/wiki/Committing-code:-guidelines
