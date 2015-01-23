@@ -29,9 +29,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-
-(include-book "../mlib/hid-tools")
-(include-book "../mlib/range-tools")
+(include-book "hid-tools")
+(include-book "range-tools")
+(include-book "syscalls")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -60,9 +60,9 @@
                      (with-local-ps
                        (vl-print-warnings (butlast warnings-out (len warnings))))
                      type))))
-               
-                           
-                     
+
+
+
 
 
 |#
@@ -161,13 +161,20 @@ producing some warnings.</p>"
        ((when (eq (tag guts) :vl-extint))
         (mv (ok) :vl-signed))
 
-       ((unless (vl-fast-id-p guts))
+       ((unless (or (vl-fast-id-p guts)
+                    (vl-fast-hidpiece-p guts)))
         ;; Other kinds of atoms don't get a type.
-        (mv (warn :type :vl-typedecide-fail
-                  :msg "~a0: Couldn't decide signedness of atom: ~a1"
-                  :args (list (vl-context-fix ctx) (vl-expr-fix x)))
-            nil)))
-    
+
+        ;; [Jared] 2015-01-22.  See the analogous comments in vl-atom-selfsize.
+        ;; We used to cause warnings here but that is silly and we shouldn't
+        ;; warn.
+
+        ;; (mv (warn :type :vl-typedecide-fail
+        ;;           :msg "~a0: Couldn't decide signedness of atom: ~a1"
+        ;;           :args (list (vl-context-fix ctx) (vl-expr-fix x)))
+        ;;     nil)
+        (mv (ok) nil)))
+
     (vl-index-typedecide x ss ctx warnings))
 
   ///
@@ -181,9 +188,9 @@ producing some warnings.</p>"
 
 
 (define vl-funcall-typedecide ((x vl-expr-p)
-                             (ss vl-scopestack-p)
-                             (ctx vl-context-p)
-                             (warnings vl-warninglist-p))
+                               (ss vl-scopestack-p)
+                               (ctx vl-context-p)
+                               (warnings vl-warninglist-p))
   :guard (and (not (vl-atom-p x))
               (eq (vl-nonatom->op x) :vl-funcall))
   :returns (mv (warnings vl-warninglist-p)
@@ -218,6 +225,35 @@ producing some warnings.</p>"
   (defrule warning-irrelevance-of-vl-funcall-typedecide
     (let ((ret1 (vl-funcall-typedecide x ss ctx warnings))
           (ret2 (vl-funcall-typedecide x ss nil nil)))
+      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
+               (equal (mv-nth 1 ret1)
+                      (mv-nth 1 ret2))))))
+
+
+(define vl-syscall-typedecide ((x vl-expr-p)
+                               (ss vl-scopestack-p)
+                               (ctx vl-context-p)
+                               (warnings vl-warninglist-p))
+  :guard (and (not (vl-atom-p x))
+              (eq (vl-nonatom->op x) :vl-syscall))
+  :returns (mv (warnings vl-warninglist-p)
+               (type (and (vl-maybe-exprtype-p type)
+                          (iff (vl-exprtype-p type) type))))
+  (declare (ignorable ss ctx))
+  (b* ((retinfo (vl-syscall->returninfo x))
+       ((unless retinfo)
+        (mv (ok) nil))
+       ((vl-coredatatype-info retinfo))
+       ((unless retinfo.size)
+        ;; Could be something like void or a real number!
+        (mv (ok) nil))
+       (signedp (vl-coredatatype-info->default-signedp retinfo)))
+    (mv (ok)
+        (if signedp :vl-signed :vl-unsigned)))
+  ///
+  (defrule warning-irrelevance-of-vl-syscall-typedecide
+    (let ((ret1 (vl-syscall-typedecide x ss ctx warnings))
+          (ret2 (vl-syscall-typedecide x ss nil nil)))
       (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
                (equal (mv-nth 1 ret1)
                       (mv-nth 1 ret2))))))
@@ -277,12 +313,11 @@ produce unsigned values.</li>
                                           acl2::subsetp-member
                                           (:t member-equal)
                                           (:t vl-nonatom->op)
-                                          vl-$bits-call-p
                                           vl-context-fix-when-vl-context-p))))
 
     (define vl-expr-typedecide-aux ((x        vl-expr-p)
-                                    (ss vl-scopestack-p)
-                                    (ctx     vl-context-p)
+                                    (ss       vl-scopestack-p)
+                                    (ctx      vl-context-p)
                                     (warnings vl-warninglist-p)
                                     (mode     (or (eq mode :probably-wrong)
                                                   (eq mode :probably-right))))
@@ -300,23 +335,15 @@ produce unsigned values.</li>
       :flag :expr
       (b* ((x        (vl-expr-fix x))
            (warnings (vl-warninglist-fix warnings))
-           (ctx     (vl-context-fix ctx))
+           (ctx      (vl-context-fix ctx))
 
-           ((when (vl-fast-atom-p x))
-            (vl-atom-typedecide x ss ctx warnings))
-
-           ((when (vl-index-expr-p x))
-            (vl-index-typedecide x ss ctx warnings))
-
-           ((when (vl-$bits-call-p x))
-            (mv (ok) :vl-signed))
+           ((when (vl-fast-atom-p x))  (vl-atom-typedecide x ss ctx warnings))
+           ((when (vl-index-expr-p x)) (vl-index-typedecide x ss ctx warnings))
 
            (op        (vl-nonatom->op x))
            (args      (vl-nonatom->args x))
-
-           ((when (eq op :vl-funcall))
-            (vl-funcall-typedecide x ss ctx warnings))
-
+           ((when (eq op :vl-funcall)) (vl-funcall-typedecide x ss ctx warnings))
+           ((when (eq op :vl-syscall)) (vl-syscall-typedecide x ss ctx warnings))
            ((mv warnings arg-types)
             (vl-exprlist-typedecide-aux args ss ctx warnings mode)))
 
@@ -407,12 +434,6 @@ produce unsigned values.</li>
                     ;; result type.
                     (mv warnings (and type1 type2 type3
                                       (vl-exprtype-max type1 type2 type3)))))))
-
-          ((:vl-syscall)
-           (if (vl-$random-expr-p x)
-               (mv nil :vl-signed)
-             ;; Otherwise, not a supported system call.
-             (mv warnings nil)))
 
           ((:vl-stream-left :vl-stream-right
             :vl-stream-left-sized :vl-stream-right-sized)
@@ -756,4 +777,3 @@ the expression is an unsupported system call).  In such cases we just return
       (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
                (equal (mv-nth 1 ret1)
                       (mv-nth 1 ret2))))))
-

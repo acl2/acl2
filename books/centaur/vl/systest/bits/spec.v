@@ -1,5 +1,5 @@
 // VL Verilog Toolkit
-// Copyright (C) 2008-2015 Centaur Technology
+// Copyright (C) 2008-2014 Centaur Technology
 //
 // Contact:
 //   Centaur Technology Formal Verification Group
@@ -28,62 +28,68 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-module dut;
+`ifdef SYSTEM_VERILOG_MODE
 
-  wire clk;
-  wire [3:0] foo;
-  wire [2:0] trunc1, trunc2, trunc3, trunc4, trunc5, trunc6, trunc7, trunc8;
+module dut (o1, o2, o3, o4, o5, a, n1, n2);
 
-  assign trunc1 = foo;
-  assign trunc2 = (foo & 4'b0);
+  parameter size = 1;
+  wire make_size_matter = size;
 
-  always_comb
-  begin
-    trunc3 = foo;
-    trunc4 = (foo & 4'b0);
-  end
+  output [40:0] o1, o2, o3, o4, o5;
+  input [3:0]  a, n1, n2;
 
-  always @(posedge clk)
-  begin
-    trunc5 <= foo;
-    trunc6 <= (foo & 4'b0);
-  end
+  // BOZO too hard -- we don't comprehend $bits on the rhs.
+  //  assign o1 = {$bits(o1)};
 
-  always_ff @(posedge clk)
-  begin
-    trunc7 <= foo;
-    trunc8 <= (foo & 4'b0);
-  end
+  wire [$bits(o1):30] o2_temp = -1;
+  assign o2 = {n1,o2_temp,n2};
 
-  function [2:0] truncfun (logic [3:0] i) ;
-    logic [2:0] trunc9;
-    begin
-      trunc9 = i;
-      truncfun = i;
-    end
-  endfunction
+  // BOZO: This is too hard for VL if we put in o2_temp here instead of o2.
+  // wire [$bits( o2_temp[17:0] ):13] o3_temp = -1;
 
-  task trunctask (output [2:0] trunc10, input [3:0] i) ;
-    logic [2:0] trunc11;
-    begin
-      trunc10 = i;
-      trunc11 = i;
-    end
-  endtask
 
-  logic [2:0] trunc12, trunc13;
+  wire [$bits( o2[17:0] ):13] o3_temp = -1;
+  assign o3 = {n1,o3_temp,n2};
 
+  assign o4 = { o3[$bits(n1)+$bits(n2) : 0],
+                n1[$bits(n1)-1] };
+
+  assign o5 = { {$bits(n1){1'b1}},
+                n1,
+                {$bits(n2)-1{1'b0}},
+                n2 };
+
+/*
   initial begin
-    trunc12 = foo;
-    trunc13 = (foo & 4'b0);
-  end
+    #10;
 
-  genvar i;
-  wire [9:0][2:0] warr;
-  generate
-    for(i = 0;i < 10;++i) begin
-      assign warr[i] = foo;
-    end
-  endgenerate
+    $display("o1 = %d", o1);
+
+    $display("o2_temp is %b", o2_temp);
+    $display("o2 = %b",       o2);
+
+    $display("o3_temp is %b", o3_temp);
+    $display("o3 = %b", o3);
+
+    $display("o4 = %b", o4);
+    $display("o5 = %b", o5);
+  end
+ */
 
 endmodule
+
+
+/*+VL
+
+module make_tests () ;
+
+   wire [3:0] a;
+
+   dut #(1) inst (a, a, a, a, a, a, a, a);
+
+endmodule
+
+*/
+
+
+`endif

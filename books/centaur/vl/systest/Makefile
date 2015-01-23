@@ -162,6 +162,7 @@ clean:
 	rm -f */*.sao */*.sao.ver
 	rm -f */*.log */*.out */*.ok
 	rm -rf */INCA_libs */*.vcd */*.key
-	rm -rf */simv.*.daidir
+	rm -rf */simv.*.daidir */simv.v */simv.sv
 	rm -rf */csrc
+	rm -f .joblist */.joblist
 	rm -f */*.tem

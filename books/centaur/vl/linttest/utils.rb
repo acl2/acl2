@@ -1,5 +1,5 @@
 # VL Verilog Toolkit
-# Copyright (C) 2008-2014 Centaur Technology
+# Copyright (C) 2008-2015 Centaur Technology
 #
 # Contact:
 #   Centaur Technology Formal Verification Group
@@ -143,6 +143,9 @@ end
 def outlaw_bad_warnings()
   outlaw_warning_global("VL-PARSE-ERROR")
   outlaw_warning_global("VL-BAD-MODULE-ITEM")
+  outlaw_warning_global("VL-NAMESPACE-ERROR")
+  outlaw_warning_global("VL-BAD-VARIABLES")
+  outlaw_warning_global("VL-BAD-INSTANCE")
 end
 
 

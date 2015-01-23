@@ -1061,58 +1061,6 @@ one which is too large.  BOZO consider a stronger guard.</p>"
   (deffixequiv vl-make-index :args ((n natp))))
 
 
-(define vl-sysfunexpr-p ((x vl-expr-p))
-  (and (vl-fast-atom-p x)
-       (vl-fast-sysfunname-p (vl-atom->guts x))))
-
-(define vl-sysfunexpr->name ((x vl-expr-p))
-  :returns (name stringp :rule-classes :type-prescription)
-  :guard (vl-sysfunexpr-p x)
-  :guard-hints(("Goal" :in-theory (enable vl-sysfunexpr-p)))
-  (vl-sysfunname->name (vl-atom->guts x)))
-
-
-(define vl-$random-expr-p ((x vl-expr-p))
-  :short "Recognize calls of the @('$random') system function."
-
-  :long "<p>The syntax for @('$random') calls is described in Section 17.9.1 on
-page 311:</p>
-
-@({random_function ::= $random[ '(' seed ')' ]})
-
-<p>Note that the @('seed') is supposed to be a reg, integer, or time variable.
-In this recognizer, if a seed is provided we require it to be an identifier,
-but we do not check what kind of identifier it is.</p>"
-
-  (b* (((when (vl-fast-atom-p x))
-        nil)
-       (op   (vl-nonatom->op x))
-       (args (vl-nonatom->args x))
-       ((unless (and (eq op :vl-syscall)
-                     (consp args)
-                     (vl-sysfunexpr-p (first args))
-                     (equal (vl-sysfunexpr->name (first args))
-                            (hons-copy "$random"))))
-        nil)
-       ((when (= (len args) 1))
-        ;; Seedless $random call -- this is fine
-        t)
-       ((when (and (= (len args) 2)
-                   (vl-idexpr-p (second args))))
-        ;; $random(seed) -- seed is supposed to be a reg, integer, or time
-        ;; variable, but we only check that it's an identifier.
-        t))
-    nil)
-  ///
-  (defthm vl-expr-kind-when-vl-$random-expr-p
-    (implies (and (vl-$random-expr-p x)
-                  ;(force (vl-expr-p x))
-                  )
-             (eq (vl-expr-kind x) :nonatom))
-    :rule-classes ((:rewrite :backchain-limit-lst 1))))
-
-
-
 
 (defines vl-expr-atoms-nrev
   :parents (vl-expr-atoms)
@@ -1329,29 +1277,6 @@ when all arguments are signed."
            (vl-exprtype-max x (vl-exprtype-max y z))))
 
   (deffixequiv vl-exprtype-max-fn :args ((x vl-exprtype-p) (y vl-exprtype-p))))
-
-
-
-(define vl-$bits-call-p ((x vl-expr-p))
-  :enabled t
-  (and (not (vl-atom-p x))
-       (b* (((vl-nonatom x))
-            ((unless (and (eq x.op :vl-syscall)
-                          (eql (len x.args) 2)))
-             nil)
-            (fn (first x.args))
-            ((unless (vl-atom-p fn)) nil)
-            ((vl-atom fn))
-            ((unless (eq (tag fn.guts) :vl-sysfunname)) nil)
-            ((vl-sysfunname fn.guts)))
-         (equal fn.guts.name "$bits")))
-  ///
-  (defthmd arity-stuff-about-vl-$bits-call
-    (implies (vl-$bits-call-p x)
-             (and (not (equal (vl-expr-kind x) :atom))
-                  (consp (vl-nonatom->args x))
-                  (consp (cdr (vl-nonatom->args x)))
-                  (vl-expr-p (cadr (vl-nonatom->args x)))))))
 
 
 (define vl-expr->atts ((x vl-expr-p))

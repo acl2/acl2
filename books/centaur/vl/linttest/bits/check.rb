@@ -33,45 +33,69 @@ require_relative '../utils'
 outlaw_bad_warnings()
 outlaw_warning_global("VL-PROGRAMMING-ERROR")
 
-def normal(w)
-  outlaw_warning(:top, "VL-WARN-SAME-PORTS", w)
-  outlaw_warning(:top, "VL-WARN-SAME-INPUTS", w)
+def normal(wire)
+  outlaw_warning(:top, "VL-WARN-TRUNCATION", wire);
+  outlaw_warning(:top, "VL-WARN-EXTENSION", wire);
 end
 
-def sameports(w)
-  match_warning(:top, "VL-WARN-SAME-PORTS", w)
-  outlaw_warning(:top, "VL-WARN-SAME-INPUTS", w)
+def ext(wire)
+  match_warning(:top, "VL-WARN-EXTENSION", wire);
+  outlaw_warning(:top, "VL-WARN-TRUNCATION", wire);
 end
 
-def sameins(w)
-  match_warning(:top, "VL-WARN-SAME-INPUTS", w)
-  outlaw_warning(:top, "VL-WARN-SAME-PORTS", w)
+def trunc(wire)
+  match_warning(:top, "VL-WARN-TRUNCATION", wire);
+  outlaw_warning(:top, "VL-WARN-EXTENSION", wire);
 end
 
-normal("m0_normal")
-sameports("m0_sp_a")
-sameports("m0_sp_b")
-sameins("m0_si_a")
-sameins("m0_si_b")
+normal("normal1")
+ext("ext1")
+trunc("trunc1")
 
-normal("m1_normal_a")
-normal("m1_normal_b")
+normal("normal2")
+normal("normal3")
+normal("normal4")
 
-normal("i0_normal_a")
-normal("i0_normal_b")
+normal("normal_op1")
+ext("ext_op1")
+trunc("trunc_op1")
 
-normal("i1_normal_a")
-normal("i1_normal_b")
+normal("normal_inst1")
+ext("ext_inst1")
+trunc("trunc_inst1")
 
-normal("i1_normal_c")
-normal("i1_normal_d")
+normal("normal_op2")
+ext("ext_op2")
+trunc("trunc_op2")
 
-sameports("m0arr")
-sameports("xx0")
-sameports("xx1")
-sameports("xx2")
+normal("normal_inst2")
+ext("ext_inst2")
+trunc("trunc_inst2")
 
-normal("i0arr")
+normal("normal_op3")
+ext("ext_op3")
+trunc("trunc_op3")
+
+normal("normal_inst3")
+ext("ext_inst3")
+trunc("trunc_inst3")
+
+normal("normal_arr1")
+ext("ext_arr1")
+trunc("trunc_arr1")
+
+normal("normal_arr2")
+ext("ext_arr2")
+trunc("trunc_arr2")
+
+normal("normal_arr3")
+ext("ext_arr3")
+trunc("trunc_arr3")
+
+normal("normal_arr4")
+ext("ext_arr4")
+trunc("trunc_arr4")
+
 
 test_passed()
 

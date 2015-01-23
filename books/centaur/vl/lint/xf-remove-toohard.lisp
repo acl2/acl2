@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "../mlib/writer")
 (include-book "../mlib/allexprs")
+(include-book "../mlib/syscalls")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
