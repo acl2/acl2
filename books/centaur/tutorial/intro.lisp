@@ -69,7 +69,7 @@
 
 ; BOZO probably work on making these includes more coherent.
 
-(include-book "centaur/vl/top" :dir :system)
+(include-book "centaur/vl/defmodules" :dir :system)
 (include-book "centaur/gl/gl" :dir :system)
 (include-book "centaur/aig/g-aig-eval" :dir :system)
 (include-book "centaur/esim/stv/stv-top" :dir :system)

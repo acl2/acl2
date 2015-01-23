@@ -99,7 +99,7 @@
 ; Our first task is to build a model of this Verilog code.  A convenient way to
 ; do this is with VL's DEFMODULES command.  This command has many options
 ; (e.g., for search paths, include dirs, etc.), which you can read about via
-; :XDOC DEFMODULES.  Since we just want to read a single file and don't need to
+; :DOC DEFMODULES.  Since we just want to read a single file and don't need to
 ; load libraries, etc., our use is very simple:
 
 (defmodules *translation*
@@ -165,10 +165,17 @@
 (vl::vl-ppcs-module *alu16-vl*)
 
 ; We can also see a list of any warnings that are associated with this
-; particular module (omitting any warnings for its submodules).  The warning it
-; prints is a "minor" warning and really is not a problem, since in this case
-; the LHS is expected to play a role in the expression's size.  The warning
-; could be suppressed in various ways, e.g., we could add a 16'b0 to the sum.
+; particular module (omitting any warnings for its submodules).
+;
+; The warning reported here is a "minor" warning, and really is not a problem,
+; since in this case the LHS is expected to play a role in the expression's
+; size.  The warning could be suppressed in various ways, e.g., we could add a
+; 16'b0 to the sum.
+;
+; Note that although DEFMODULES does produce some warnings, like this one, it
+; does not analyze your modules very thoroughly.  VL comes with a sophisticated
+; Linter that will catch many more kinds of issues than the DEFMODULES command.
+; See the documentation about the VL "Kit" for details.
 
 (vl::vl-warnings-to-string (vl::vl-module->warnings *alu16-vl*))
 

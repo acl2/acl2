@@ -24,7 +24,7 @@
 ; cert_param: (hons-only)
 ; cert_param: (uses-glucose)
 ; cert_param: (ccl-only)
-(include-book "centaur/vl/top" :dir :system)
+(include-book "centaur/vl/defmodules" :dir :system)
 (include-book "centaur/gl/gl" :dir :system)
 (include-book "centaur/aig/g-aig-eval" :dir :system)
 (include-book "centaur/esim/stv/stv-top" :dir :system)
