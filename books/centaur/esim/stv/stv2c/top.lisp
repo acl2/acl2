@@ -34,7 +34,7 @@
 (in-package "ACL2")
 (include-book "../stv-top")
 (include-book "stv2c")
-(include-book "centaur/vl/top" :dir :system)
+(include-book "centaur/vl/defmodules" :dir :system)
 (include-book "centaur/getopt/top" :dir :system)
 (include-book "centaur/vl/kit/progutils" :dir :system)
 (include-book "oslib/argv" :dir :system)

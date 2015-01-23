@@ -30,9 +30,9 @@
 
 (in-package "VL")
 (include-book "parsetree")
+(include-book "mlib/find")
 (include-book "loader/filemap")
 (include-book "loader/preprocessor/defines")
-(include-book "checkers/use-set-report")
 (local (include-book "util/arithmetic"))
 (local (include-book "util/osets"))
 
@@ -67,12 +67,7 @@
                   "Records all of the @('`define') directives that were
                    encountered during parsing, and their final values. This is
                    sometimes useful for extracting definitions like opcodes,
-                   etc.")
-
-   (useset-report vl-useset-report-p
-                  "A report that contains the results of running the @(see
-                   use-set) analysis; this may help you identify wires that are
-                   undriven or unused."))
+                   etc."))
 
   :tag :vl-translation
 

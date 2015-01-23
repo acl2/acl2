@@ -152,7 +152,6 @@
 ;; books above?  What does stv-debug load?
 ;; (include-book "vcd/vcd-impl")
 
-(include-book "centaur/vl/top" :dir :system)
 (include-book "centaur/vl/doc" :dir :system)
 (include-book "centaur/vl/kit/top" :dir :system)
 (include-book "centaur/vl/mlib/clean-concats" :dir :system)

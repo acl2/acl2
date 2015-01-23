@@ -32,7 +32,7 @@
 (include-book "../loader/parser/lvalues")
 (include-book "../loader/lexer/lexer")
 (include-book "../mlib/fmt")
-(include-book "../checkers/oddexpr") ;; bozo for *fake-modelement*
+(include-book "../lint/oddexpr") ;; bozo for *fake-modelement*
 (include-book "../toe/toe-wirealist")
 (include-book "../transforms/xf-expr-size")
 (local (include-book "../util/arithmetic"))

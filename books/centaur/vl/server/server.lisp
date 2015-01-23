@@ -98,8 +98,7 @@ viewing Verilog designs.")
      ;;:orig-depalist  orig-depalist
      :orig-descalist orig-descalist
      :filemap        trans.filemap
-     :defs           trans.defines
-     :use-set-report trans.useset-report)))
+     :defs           trans.defines)))
 
 (define vl-find-description-insensitive ((name stringp)
                                          (descalist vl-descalist-p))

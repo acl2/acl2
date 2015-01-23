@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2013 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,7 +29,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../top")
+(include-book "../loader/top")
+(include-book "../mlib/hierarchy")
 (include-book "centaur/getopt/top" :dir :system)
 (include-book "std/io/read-file-characters" :dir :system)
 (include-book "progutils")
