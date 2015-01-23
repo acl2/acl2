@@ -193,10 +193,7 @@
           :hints(("Goal" :in-theory (enable string<-l)))))
 
  (defthm transitivity-of-string-less-p
-   (implies (and (stringp x)
-                 (stringp y)
-                 (stringp z)
-                 (string< x y)
+   (implies (and (string< x y)
                  (string< y z))
             (string< x z))
    :hints(("Goal" :in-theory (enable string<)))))

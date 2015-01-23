@@ -57,10 +57,7 @@
 
   (defthm vl-emodwire-<-transitive
     (implies (and (vl-emodwire-< x y)
-                  (vl-emodwire-< y z)
-                  (vl-emodwire-p x)
-                  (vl-emodwire-p y)
-                  (vl-emodwire-p z))
+                  (vl-emodwire-< y z))
              (vl-emodwire-< x z))))
 
 

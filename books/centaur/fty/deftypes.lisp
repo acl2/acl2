@@ -3441,6 +3441,7 @@
 
 (defun deftagsum-prod-doc (sum  ; the containing sum type
                            prod ; one of the products within it
+                           parents ; usually (sum.name)
                            base-pkg state)
   ;; Returns (mv events state)
   (b* (((flexsum sum) sum)
@@ -3456,7 +3457,7 @@
        (acc  (revappend-chars (or prod.long "") acc))
        (long (rchars-to-string acc))
        (top-doc `((defxdoc ,prod.type-name
-                    :parents (,sum.name)
+                    :parents ,parents
                     :short ,prod.short
                     :long ,long)))
        (make/change (defprod-ctor-autodoc prod))
@@ -3472,12 +3473,12 @@
                 )
         state)))
 
-(defun deftagsum-prods-doc (sum prods base-pkg state)
+(defun deftagsum-prods-doc (sum prods parents base-pkg state)
   ;; Returns (mv events state)
   (b* (((when (atom prods))
         (mv nil state))
-       ((mv events1 state) (deftagsum-prod-doc sum (car prods) base-pkg state))
-       ((mv events2 state) (deftagsum-prods-doc sum (cdr prods) base-pkg state)))
+       ((mv events1 state) (deftagsum-prod-doc sum (car prods) parents base-pkg state))
+       ((mv events2 state) (deftagsum-prods-doc sum (cdr prods) parents base-pkg state)))
     (mv (append events1 events2)
         state)))
 
@@ -3535,13 +3536,14 @@
                      :parents ,parents
                      :short ,short
                      :long ,long)))
+       (type-names (flexprodlist->type-names x.prods))
        ((mv prods-doc state)
-        (deftagsum-prods-doc x x.prods base-pkg state)))
+        (deftagsum-prods-doc x x.prods (list x.name) base-pkg state)))
     (mv (append main-doc
                 prods-doc
                 `((xdoc::order-subtopics ,x.name
                                          (,x.pred ,x.fix ,x.kind ,x.equiv ,x.count
-                                          . ,(flexprodlist->type-names x.prods)))))
+                                                  . ,type-names))))
         state)))
 
 (defun defflexsum->defxdoc (x parents kwd-alist base-pkg state)
@@ -3564,13 +3566,16 @@
                      :parents ,parents
                      :short ,short
                      :long ,long)))
+       (type-names (flexprodlist->type-names x.prods))
+       (sum-name-shared-with-prod-name (member x.name type-names))
+       (parents (if sum-name-shared-with-prod-name parents (list x.name)))
        ((mv prods-doc state)
-        (deftagsum-prods-doc x x.prods base-pkg state)))
-    (mv (append main-doc
+        (deftagsum-prods-doc x x.prods parents base-pkg state)))
+    (mv (append (and (not sum-name-shared-with-prod-name) main-doc)
                 prods-doc
                 `((xdoc::order-subtopics ,x.name
                                          (,x.pred ,x.fix ,x.kind ,x.equiv ,x.count
-                                          . ,(flexprodlist->type-names x.prods)))))
+                                          . ,type-names))))
         state)))
 
 (defun flexsum->defxdoc (x parents kwd-alist state)
