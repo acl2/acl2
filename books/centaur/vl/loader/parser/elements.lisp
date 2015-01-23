@@ -200,6 +200,7 @@
           (vl-idtokenlist->genvars (cdr x) atts))))
 
 (defparser vl-parse-genvar-declaration (atts)
+  :parents (parser)
   :short "Match genvar_declaration."
   :long "<p>Verilog-2005 and SystemVerilog-2012 agree on the following
 rules:</p>

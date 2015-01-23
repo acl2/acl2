@@ -101,10 +101,7 @@
 
  (defthm compare<-transitive
    (implies (and (compare< x y)
-                 (compare< y z)
-                 (comparablep x)
-                 (comparablep y)
-                 (comparablep z))
+                 (compare< y z))
             (compare< x z))))
 
 
@@ -817,10 +814,7 @@
   ;; well.)
   (forall (x y z)
           (implies (and (not (compare< x y))
-                        (not (compare< y z))
-                        (comparablep x)
-                        (comparablep y)
-                        (comparablep z))
+                        (not (compare< y z)))
                    (not (compare< x z))))
   :rewrite :direct)
 
@@ -828,9 +822,11 @@
   ;; We need this property of the comparison to make our merge functions
   ;; stable; if we don't know that either compare< or its negation is strict,
   ;; then it doesn't suffice to do only one comparison per element merged.
-  (forall (x) (implies (comparablep x)
-                       (not (compare< x x))))
+  (forall (x) (not (compare< x x)))
   :rewrite :direct)
+
+
+
 
 (local
  (progn
@@ -838,9 +834,7 @@
 
    (defthm compare<-reverse-when-strict
      (implies (and (compare<-strict)
-                   (compare< x y)
-                   (comparablep x)
-                   (comparablep y))
+                   (compare< x y))
               (not (compare< y x)))
      :hints (("goal" :use ((:instance compare<-transitive
                             (x x) (z x) (y y)))
@@ -858,37 +852,38 @@
 
    (defthm compare-equiv-elts-empty-case
      (implies (and (comparable-orderedp x)
-                   (comparable-listp x)
+                   ;; (comparable-listp x)
                    (compare<-negation-transitive)
-                   (comparablep elt)
+                   ;; (comparablep elt)
                    (compare< elt (car x))
                    (not (compare< (car x) elt)))
               (equal (compare-equiv-elts elt x) nil))
      :hints(("Goal" :in-theory (enable compare-equiv-elts comparable-orderedp
                                        comparable-listp))))
 
-   (defthm compare<-by-equiv
-     (implies (and (compare<-negation-transitive)
-                   (not (compare< x y))
-                   (not (compare< y x))
-                   (comparablep x)
-                   (comparablep y)
-                   (comparablep z))
-              (and (implies (compare< y z)
-                            (compare< x z))
-                   (implies (not (compare< y z))
-                            (not (compare< x z)))
-                   (implies (compare< z y)
-                            (compare< z x))
-                   (implies (not (compare< z y))
-                            (not (compare< z x))))))
+   ;; (defthm compare<-by-equiv
+   ;;   (implies (and (compare<-negation-transitive)
+   ;;                 (not (compare< x y))
+   ;;                 (not (compare< y x))
+   ;;                 ;; (comparablep x)
+   ;;                 ;; (comparablep y)
+   ;;                 ;; (comparablep z)
+   ;;                 )
+   ;;            (and (implies (compare< y z)
+   ;;                          (compare< x z))
+   ;;                 (implies (not (compare< y z))
+   ;;                          (not (compare< x z)))
+   ;;                 (implies (compare< z y)
+   ;;                          (compare< z x))
+   ;;                 (implies (not (compare< z y))
+   ;;                          (not (compare< z x))))))
 
-   (defthm not-compare<-by-strict
-     (implies (and (compare<-strict)
-                   (comparablep x)
-                   (comparablep y)
-                   (compare< y x))
-              (not (compare< x y))))
+   ;; (defthm not-compare<-by-strict
+   ;;   (implies (and (compare<-strict)
+   ;;                 ;; (comparablep x)
+   ;;                 ;; (comparablep y)
+   ;;                 (compare< y x))
+   ;;            (not (compare< x y))))
 
    ;; (defthm compare<-by-negated-trans
    ;;   (implies (and (compare<-negation-transitive)
@@ -899,14 +894,27 @@
    ;;                 (comparablep z))
    ;;            (compare< x z)))
 
+
+   (defthm compare-negation-transitive-implies
+     (implies (compare<-negation-transitive)
+              (implies (and (not (compare< b c))
+                            (compare< a c))
+                       (compare< a b))))
+
+   (defthm compare-transitive-implies
+     (implies (and (not (compare< a c))
+                   (compare< a b))
+              (not (compare< b c))))
+
    (defthm compare-equiv-elts-of-comparable-merge
      (implies (and (compare<-negation-transitive)
                    (compare<-strict)
                    (comparable-orderedp x)
                    (comparable-orderedp y)
-                   (comparable-listp x)
-                   (comparable-listp y)
-                   (comparablep elt))
+                   ;; (comparable-listp x)
+                   ;; (comparable-listp y)
+                   ;; (comparablep elt)
+                   )
               (equal (compare-equiv-elts elt (comparable-merge x y))
                      (append (compare-equiv-elts elt x)
                              (compare-equiv-elts elt y))))
@@ -954,8 +962,9 @@
    (defthm compare-equiv-elts-of-comparable-mergesort
      (implies (and (compare<-negation-transitive)
                    (compare<-strict)
-                   (comparable-listp x)
-                   (comparablep elt))
+                   ;; (comparable-listp x)
+                   ;; (comparablep elt)
+                   )
               (equal (compare-equiv-elts elt (comparable-mergesort x))
                      (compare-equiv-elts elt x)))
      :hints(("Goal" :in-theory (e/d ((:i comparable-mergesort)
@@ -990,31 +999,41 @@
                (car x)
              (car y))))))
 
-   (defthm comparablep-of-unequal-lists-badguy
-     (implies (and (comparable-listp x)
-                   (comparable-listp y)
-                   (true-listp x)
-                   (true-listp y)
-                   (not (equal x y)))
-              (comparablep (unequal-lists-badguy x y))))
+   ;; (defthm comparablep-of-unequal-lists-badguy
+   ;;   (implies (not (equal (list-fix x) (list-fix y)))
+   ;;            (comparablep (unequal-lists-badguy x y)))
+   ;;   :hints(("Goal" :in-theory (enable list-fix))))
+
+   (defthm compare-equiv-elts-when-not-consp
+     (implies (not (consp x))
+              (equal (compare-equiv-elts elt x) nil))
+     :hints(("Goal" :in-theory (enable compare-equiv-elts))))
+
+   (defthm compare-equiv-elts-when-past
+     (implies (and (comparable-orderedp x)
+                   (compare< elt (car x))
+                   (not (compare< (car x) elt))
+                   (compare<-negation-transitive))
+              (equal (compare-equiv-elts elt x) nil))
+     :hints(("Goal" :in-theory (enable comparable-orderedp
+                                       compare-equiv-elts))))
+
 
    (defthm compare-equiv-elts-of-unequal-lists
      (implies (and (compare<-negation-transitive)
-                   (comparable-listp x)
-                   (comparable-listp y)
-                   (true-listp x)
-                   (true-listp y)
+                   ;; (comparable-listp x)
+                   ;; (comparable-listp y)
+                   ;; (true-listp x)
+                   ;; (true-listp y)
                    (comparable-orderedp x)
                    (comparable-orderedp y)
-                   (not (equal x y)))
+                   (not (equal (list-fix x) (list-fix y))))
               (not (equal (compare-equiv-elts (unequal-lists-badguy x y) x)
                           (compare-equiv-elts (unequal-lists-badguy x y) y))))
      :hints (("goal" :induct (unequal-lists-badguy x y)
-              :in-theory (enable compare-equiv-elts
-                                 comparable-listp
-                                 comparable-orderedp))
-             (and stable-under-simplificationp
-                  '(:cases ((compare< (car y) (car x)))))))))
+              :expand ((:free (elt) (compare-equiv-elts elt x))
+                       (:free (elt) (compare-equiv-elts elt y)))
+              :in-theory (e/d (comparable-orderedp)))))))
 
 
 (defund comparable-insert (elt x)
@@ -1030,10 +1049,7 @@
  (progn
    (defthm compare-equiv-elts-of-comparable-insert
      (implies (and (compare<-negation-transitive)
-                   (compare<-strict)
-                   (comparable-listp x)
-                   (comparablep b)
-                   (comparablep a))
+                   (compare<-strict))
               (equal (compare-equiv-elts a (comparable-insert b x))
                      (if (iff (compare< a b)
                               (compare< b a))
@@ -1042,9 +1058,7 @@
      :hints(("Goal" :in-theory (enable compare-equiv-elts comparable-insert))))
 
    (defthm comparable-orderedp-of-comparable-insert
-     (implies (and (comparable-orderedp x)
-                   (comparable-listp x)
-                   (comparablep elt))
+     (implies (and (comparable-orderedp x))
               (comparable-orderedp (comparable-insert elt x)))
      :hints(("Goal" :in-theory (enable comparable-orderedp comparable-insert))))
 
@@ -1084,9 +1098,7 @@
  (progn
    (defthm compare-equiv-elts-of-comparable-insertsort
      (implies (and (compare<-negation-transitive)
-                   (compare<-strict)
-                   (comparable-listp x)
-                   (comparablep a))
+                   (compare<-strict))
               (equal (compare-equiv-elts a (comparable-insertsort x))
                      (compare-equiv-elts a x)))
      :hints(("Goal" :in-theory (e/d (comparable-insertsort)
@@ -1097,8 +1109,7 @@
                       (comparable-listp x)))))
 
    (defthm comparable-orderedp-of-comparable-insertsort
-     (implies (comparable-listp x)
-              (comparable-orderedp (comparable-insertsort x)))
+     (comparable-orderedp (comparable-insertsort x))
      :hints(("Goal" :in-theory (e/d (comparable-insertsort)
                                     ((comparable-orderedp)
                                      (comparable-insertsort))))))
@@ -1111,8 +1122,7 @@
 
 (defthm comparable-mergesort-equals-comparable-insertsort
   (implies (and (compare<-negation-transitive)
-                (compare<-strict)
-                (comparable-listp x))
+                (compare<-strict))
            (equal (comparable-mergesort x)
                   (comparable-insertsort x)))
   :hints (("goal" :use ((:instance compare-equiv-elts-of-unequal-lists

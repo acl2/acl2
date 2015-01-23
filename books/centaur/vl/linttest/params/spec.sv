@@ -28,62 +28,27 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-module dut;
+// This is just checking some fancy port handling
 
-  wire clk;
-  wire [3:0] foo;
-  wire [2:0] trunc1, trunc2, trunc3, trunc4, trunc5, trunc6, trunc7, trunc8;
+module m0 #(width = 4, height = 7)
+  (output [width-1:0] o,
+   input [width-1:0] a,
+   input [width-1:0] b);
+  assign o = a & b;
+endmodule
 
-  assign trunc1 = foo;
-  assign trunc2 = (foo & 4'b0);
+module m1 (output logic [3:0][4:0] o,  // 4*5 == 20 bits
+           input logic [4:0][3:0] a,   // 5*4 == 20 bits
+	   input logic [5:0][3:0] b);  // 6*4 == 24 bits
+  assign o = a & b;
+endmodule
 
-  always_comb
-  begin
-    trunc3 = foo;
-    trunc4 = (foo & 4'b0);
-  end
+module m2 (output logic [3:0] omega [4:0],
+           input logic [3:0] alpha [5:0],
+	   input logic [3:0] beta [6:0]);
+endmodule
 
-  always @(posedge clk)
-  begin
-    trunc5 <= foo;
-    trunc6 <= (foo & 4'b0);
-  end
-
-  always_ff @(posedge clk)
-  begin
-    trunc7 <= foo;
-    trunc8 <= (foo & 4'b0);
-  end
-
-  function [2:0] truncfun (logic [3:0] i) ;
-    logic [2:0] trunc9;
-    begin
-      trunc9 = i;
-      truncfun = i;
-    end
-  endfunction
-
-  task trunctask (output [2:0] trunc10, input [3:0] i) ;
-    logic [2:0] trunc11;
-    begin
-      trunc10 = i;
-      trunc11 = i;
-    end
-  endtask
-
-  logic [2:0] trunc12, trunc13;
-
-  initial begin
-    trunc12 = foo;
-    trunc13 = (foo & 4'b0);
-  end
-
-  genvar i;
-  wire [9:0][2:0] warr;
-  generate
-    for(i = 0;i < 10;++i) begin
-      assign warr[i] = foo;
-    end
-  endgenerate
-
+module m3 (output logic [3:0] omega [4],
+           input logic [3:0] alpha [5],
+	   input logic [3:0] beta [6]);
 endmodule

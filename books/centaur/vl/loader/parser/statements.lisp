@@ -714,9 +714,20 @@
 
 
 ; par_block ::=
+;
+; In Verilog-2005:
+;
 ;   'fork' [ ':' identifier { block_item_declaration } ]
 ;      { statement }
 ;   'join'
+;
+; SystemVerilog-2012 extends this to:
+;
+;   'fork' [ ':' identifier ]
+;      { block_item_declaration } ]
+;      { statement_or_null }
+;   'join'
+
 
  (defparser vl-parse-par-block (atts)
    :guard (vl-atts-p atts)
@@ -725,10 +736,16 @@
          (:= (vl-match-token :vl-kwd-fork))
          (when (vl-is-token? :vl-colon)
            (:= (vl-match))
-           (id := (vl-match-token :vl-idtoken))
-           (items :w= (vl-parse-0+-block-item-declarations)))
+           (id := (vl-match-token :vl-idtoken)))
+
+         (when (or id (not (equal (vl-loadconfig->edition config) :verilog-2005)))
+           (items := (vl-parse-0+-block-item-declarations)))
+
          (stmts := (vl-parse-statements-until-join))
          (:= (vl-match-token :vl-kwd-join))
+         (when (and id (not (equal (vl-loadconfig->edition config) :verilog-2005)))
+           (:= (vl-parse-endblock-name (vl-idtoken->name id) "fork/join")))
+
          (return (make-vl-blockstmt :sequentialp nil
                                     :name (and id (vl-idtoken->name id))
                                     :decls items
@@ -737,9 +754,19 @@
 
 
 ; seq_block ::=
+;
+; In Verilog-2005:
+;
 ;    'begin' [ ':' identifier { block_item_declaration } ]
 ;       { statement }
 ;    'end'
+;
+; SystemVerilog-2012 extends this to:
+;
+;  begin [ : block_identifier ]
+;      { block_item_declaration }
+;      { statement_or_null }
+;  end [ : block_identifier ]
 
  (defparser vl-parse-seq-block (atts)
    :guard (vl-atts-p atts)
@@ -748,10 +775,13 @@
          (:= (vl-match-token :vl-kwd-begin))
          (when (vl-is-token? :vl-colon)
            (:= (vl-match))
-           (id := (vl-match-token :vl-idtoken))
-           (items :w= (vl-parse-0+-block-item-declarations)))
+           (id := (vl-match-token :vl-idtoken)))
+         (when (or id (not (equal (vl-loadconfig->edition config) :verilog-2005)))
+           (items := (vl-parse-0+-block-item-declarations)))
          (stmts := (vl-parse-statements-until-end))
          (:= (vl-match-token :vl-kwd-end))
+         (when (and id (not (equal (vl-loadconfig->edition config) :verilog-2005)))
+           (:= (vl-parse-endblock-name (vl-idtoken->name id) "begin/end")))
          (return (make-vl-blockstmt :sequentialp t
                                     :name (and id (vl-idtoken->name id))
                                     :decls items

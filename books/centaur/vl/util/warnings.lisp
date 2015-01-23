@@ -204,10 +204,7 @@ fatal warnings instead of non-fatal warnings.</p>"
   ///
   (defthm vl-warning-<-transitive
     (implies (and (vl-warning-< x y)
-                  (vl-warning-< y z)
-                  (force (vl-warning-p x))
-                  (force (vl-warning-p y))
-                  (force (vl-warning-p z)))
+                  (vl-warning-< y z))
              (vl-warning-< x z))
     :hints(("Goal" :in-theory (enable string<)))))
 

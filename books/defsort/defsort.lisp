@@ -418,27 +418,16 @@ it has a special hack for that particular case.</p>
 
            (local (defthm ,(mksym prefix "-COMPARE<-TRANSITIVE")
                     (implies (and (,compare< x y . ,extra-args)
-                                  (,compare< y z . ,extra-args)
-                                  ,@(and comparablep
-                                         `((,comparablep x . ,extra-args)
-                                           (,comparablep y . ,extra-args)
-                                           (,comparablep z . ,extra-args))))
+                                  (,compare< y z . ,extra-args))
                              (,compare< x z . ,extra-args))))
 
            ,@(and (not weak)
                   `((local (defthm ,(mksym prefix "-COMPARE<-NEGATION-TRANSITIVE")
                              (implies (and (not (,compare< x y . ,extra-args))
-                                           (not (,compare< y z . ,extra-args))
-                                           ,@(and comparablep
-                                                  `((,comparablep x . ,extra-args)
-                                                    (,comparablep y . ,extra-args)
-                                                    (,comparablep z . ,extra-args))))
+                                           (not (,compare< y z . ,extra-args)))
                                       (not (,compare< x z . ,extra-args)))))
                     (local (defthm ,(mksym prefix "-COMPARE<-STRICT")
-                             ,(if comparablep
-                                  `(implies (,comparablep x . ,extra-args)
-                                            (not (,compare< x x . ,extra-args)))
-                                `(not (,compare< x x . ,extra-args)))))))
+                             (not (,compare< x x . ,extra-args))))))
 
            ,@(and comparablep
                   (not (eq compare-guard t))
@@ -757,7 +746,7 @@ it has a special hack for that particular case.</p>
 
            ,@(and comparablep
                   `((defthm ,(mksym prefix "-SORT-CREATES-COMPARABLE-LISTP")
-                      (implies (force (,comparable-listp x . ,extra-args))
+                      (implies (,comparable-listp x . ,extra-args)
                                (,comparable-listp (,sort x . ,extra-args) . ,extra-args))
                       :hints((defsort-functional-inst
                                comparable-listp-of-comparable-mergesort ,subst1)))))
@@ -849,54 +838,50 @@ it has a special hack for that particular case.</p>
                       ,subst2)))
 
           (defthm ,(mksym prefix "-MERGESORT-EQUALS-INSERTSORT")
-            ,(if comparablep
-                 `(implies (,comparable-listp x . ,extra-args)
-                           (equal (,sort x . ,extra-args)
-                                  (,insertsort x . ,extra-args)))
-               `(equal (,sort x . ,extra-args)
-                       (,insertsort x . ,extra-args)))
+            (equal (,sort x . ,extra-args)
+                   (,insertsort x . ,extra-args))
             :hints ((defsort-functional-inst
                       comparable-mergesort-equals-comparable-insertsort
                       ,subst2)))
 
           (defthm ,(mksym prefix "-INSERTSORT-PRESERVES-DUPLICITY")
-             (equal (duplicity a (,sort x . ,extra-args))
+             (equal (duplicity a (,insertsort x . ,extra-args))
                     (duplicity a x))
              :hints(("goal" :use ,(mksym prefix "-SORT-PRESERVES-DUPLICITY")
                      :in-theory (disable ,(mksym prefix "-SORT-PRESERVES-DUPLICITY")))))
 
            ,@(and comparablep
                   `((defthm ,(mksym prefix "-INSERTSORT-CREATES-COMPARABLE-LISTP")
-                      (implies (force (,comparable-listp x . ,extra-args))
-                               (,comparable-listp (,sort x . ,extra-args) . ,extra-args))
+                      (implies (,comparable-listp x . ,extra-args)
+                               (,comparable-listp (,insertsort x . ,extra-args) . ,extra-args))
                       :hints(("goal" :use ,(mksym prefix "-SORT-CREATES-COMPARABLE-LISTP")
                               :in-theory (disable ,(mksym prefix "-SORT-CREATES-COMPARABLE-LISTP")))))))
 
            (defthm ,(mksym prefix "-INSERTSORT-SORTS")
-             (,orderedp (,sort x . ,extra-args) . ,extra-args)
+             (,orderedp (,insertsort x . ,extra-args) . ,extra-args)
              :hints(("goal" :use ,(mksym prefix "-SORT-SORTS")
                      :in-theory (disable ,(mksym prefix "-SORT-SORTS")))))
 
            (defthm ,(mksym prefix "-INSERTSORT-NO-DUPLICATESP-EQUAL")
-             (equal (no-duplicatesp-equal (,sort x . ,extra-args))
+             (equal (no-duplicatesp-equal (,insertsort x . ,extra-args))
                     (no-duplicatesp-equal x))
              :hints(("goal" :use ,(mksym prefix "-NO-DUPLICATESP-EQUAL")
                      :in-theory (disable ,(mksym prefix "-NO-DUPLICATESP-EQUAL")))))
 
            (defthm ,(mksym prefix "-INSERTSORT-TRUE-LISTP")
-             (true-listp (,sort x . ,extra-args))
+             (true-listp (,insertsort x . ,extra-args))
              :rule-classes :type-prescription
              :hints(("goal" :use ,(mksym prefix "-TRUE-LISTP")
                      :in-theory (disable ,(mksym prefix "-TRUE-LISTP")))))
 
            (defthm ,(mksym prefix "-INSERTSORT-LEN")
-             (equal (len (,sort x . ,extra-args))
+             (equal (len (,insertsort x . ,extra-args))
                     (len x))
              :hints (("goal" :use ,(mksym prefix "-LEN")
                      :in-theory (disable ,(mksym prefix "-LEN")))))
 
            (defthm ,(mksym prefix "-INSERTSORT-CONSP")
-             (equal (consp (,sort x . ,extra-args))
+             (equal (consp (,insertsort x . ,extra-args))
                     (consp x))
              :hints (("goal" :use ,(mksym prefix "-CONSP")
                       :in-theory (disable ,(mksym prefix "-CONSP"))))))))
@@ -905,8 +890,5 @@ it has a special hack for that particular case.</p>
 (defmacro defsort (&rest args)
   `(make-event
     (defsort-fn ',args state)))
-
-
-
 
 

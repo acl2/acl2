@@ -1648,8 +1648,9 @@ minor warning for assignments where the rhs is a constant.</p>"
        (ctx        (vl-context-fix ctx))
 
        ((when (and (vl-fast-atom-p x)
-                   (vl-constint-p (vl-atom->guts x))
-                   (vl-constint->wasunsized (vl-atom->guts x))))
+                   (or (vl-extint-p (vl-atom->guts x))
+                       (and (vl-constint-p (vl-atom->guts x))
+                            (vl-constint->wasunsized (vl-atom->guts x))))))
         ;; Completely trivial, don't give any warning.
         (ok))
 
