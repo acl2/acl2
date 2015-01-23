@@ -34,7 +34,7 @@
 (local (include-book "../util/arithmetic"))
 
 (defxdoc condcheck
-  :parents (checkers)
+  :parents (lint)
   :short "Check for @('?:')-expressions with strange conditions."
 
   :long "<p>This is a heuristic for generating warnings.  We look for things

@@ -430,9 +430,9 @@ performance.</p>"
 
 (stv2c (list "--help"))
 
-(stv2c (list "../../../tutorial/alu16.v"))
+(stv2c (list "../../tutorial/alu16.v"))
 
-(stv2c (list "../../../tutorial/alu16.v" "--stv" "my_run.stv"))
+(stv2c (list "../../tutorial/alu16.v" "--stv" "my_run.stv"))
 
 (parse-stv-file "my-run.stv")
 

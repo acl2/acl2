@@ -35,7 +35,7 @@
 (local (include-book "../util/arithmetic"))
 
 (defxdoc leftright-check
-  :parents (checkers)
+  :parents (lint)
   :short "Check for strange expressions like @('A [op] A')."
 
   :long "<p>This is a heuristic for generating warnings, inspired by PVS

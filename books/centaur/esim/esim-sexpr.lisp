@@ -31,9 +31,7 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-
 (in-package "ACL2")
-
 (include-book "esim-paths")
 (include-book "esim-sexpr-support")
 (include-book "std/strings/strsubst" :dir :system)
@@ -44,11 +42,65 @@
 (include-book "centaur/4v-sexpr/sexpr-equivs" :dir :system)
 (local (include-book "esim-sexpr-support-thms"))
 (local (include-book "centaur/4v-sexpr/sexpr-advanced" :dir :system))
-
 (local (in-theory (disable* set::double-containment)))
-
 (set-well-founded-relation nat-list-<)
 
+(defxdoc esim
+  :parents (hardware-verification)
+  :short "ESIM is a simple, hierarchical, bit-level, cycle-based,
+register-transfer level hardware description language.  It is based on a clean,
+monotonic four-valued logic (see @(see acl2::4v)) and features strong support
+for symbolic simulation with @(see gl::gl)."
+
+  :long "<box><p><b>Note:</b> ESIM is no longer being actively developed.  You
+will probably want to instead see its successor, @(see svex).</p></box>
+
+<p>ESIM is a bit-level ``back-end'' for carrying out hardware verification with
+ACL2.  It consists of:</p>
+
+<ul>
+
+<li>A simplistic, bit-level module representation, ``E modules,'' which are
+typically produced from Verilog designs using @(see vl::defmodules).</li>
+
+<li>A family of functions for ``stepping'' an E module to compute expressions
+that capture its next-state and outputs as @(see 4v::4v-sexprs) or as @(see
+faig)s; see @(see esim-steps).</li>
+
+<li>Mechanisms for describing symbolic runs of a module over multiple clock
+phases, such as @(see symbolic-test-vectors).</li>
+
+</ul>
+
+<p>There is a @(see esim-tutorial) that provides a hands-on guide for how to
+use @(see vl), @(see esim), and @(see gl) together to verify some simple
+hardware designs.</p>
+
+<p>Aside from the tutorial, ESIM is not very well documented.  An early version
+of E is described somewhat in:</p>
+
+<p>Warren A. Hunt, Jr. and Sol Swords.  <a
+href='http://dx.doi.org/10.1007/978-3-642-02658-4_28'>Centaur technology media
+unit verification.  Case study: Floating point addition.</a> in Computer Aided
+Verification (CAV '09), June 2009.</p>")
+
+(defxdoc esim-tutorial
+  :parents (esim)
+  :short "The @(see esim) hardware verification tutorial."
+
+  :long "<p>The ESIM tutorial walks through the verification of some very
+simple hardware designs using Centaur's ESIM books.  These hardware designs are
+all contrived and are far simpler than real hardware.  But this makes them easy
+to understand and verify.</p>
+
+<p>The ESIM tutorial is meant to be followed along with interactively.  To
+begin, please go to this file:</p>
+
+@({
+centaur/esim/tutorial/intro.lisp
+})
+
+<p>in your ACL2 books directory (sometimes called @(':dir :system')).</p>")
 
 
 (defconst *esim-sexpr-rewrite* t)
@@ -1627,25 +1679,6 @@ the existing update functions without modification."
   :nst-fnname -simp-nst
   :int-fnname -simp-int
   :features (:probe :simplify))
-
-
-(defxdoc esim
-  :parents (hardware-verification)
-  :short "ESIM is a simple, hierarchical, bit-level, cycle-based,
-register-transfer level hardware description language.  It is based on a clean,
-monotonic four-valued logic (see @(see acl2::4v)) and features strong support
-for symbolic simulation with @(see gl::gl)."
-
-  :long "<p>Unfortunately E is not well documented.  An early version of E is
-described in:</p>
-
-<p>Warren A. Hunt, Jr. and Sol Swords.  <a
-href='http://dx.doi.org/10.1007/978-3-642-02658-4_28'>Centaur technology media
-unit verification.  Case study: Floating point addition.</a> in Computer Aided
-Verification (CAV '09), June 2009.</p>
-
-<p>E modules are typically produced from Verilog designs using @(see vl).</p>")
-
 
 (defmacro 4v-sexpr-to-faig-plain-alist (x onoff)
   `(4v-sexpr-to-faig-alist-fn1 ,x ,onoff nil))

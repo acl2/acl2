@@ -30,18 +30,25 @@
 
 (in-package "ACL2")
 
-(make-event
+; Note, 7/28/2014: if we include
+; (include-book "std/system/top" :dir :system)
+; instead of the following, we get a name conflict.
+(include-book "std/system/non-parallel-book" :dir :system)
 
-; Disabling waterfall parallelism because the include-books are too slow with
-; it enabled, since waterfall parallelism unmemoizes the six or so functions
-; that ACL2(h) memoizes by default (in particular, fchecksum-obj needs to be
-; memoized to include centaur/tutorial/alu16-book).
+(local
+ ;; Disabling waterfall parallelism because the include-books are too slow with
+ ;; it enabled, since waterfall parallelism unmemoizes the six or so functions
+ ;; that ACL2(h) memoizes by default (in particular, fchecksum-obj needs to be
+ ;; memoized to include centaur/esim/tutorial/alu16-book).
 
- (if (and (hons-enabledp state)
-          (f-get-global 'parallel-execution-enabled state))
-     (er-progn (set-waterfall-parallelism nil)
-               (value '(value-triple nil)))
-   (value '(value-triple nil))))
+ ;; [Jared] BOZO: is the above comment about include books even true anymore?
+ ;; If so, maybe waterfall parallelism doesn't have to do this with the new
+ ;; thread-safe memo code?
+
+ ;; [Jared] BOZO: even if waterfall parallelism still disables this memoization,
+ ;; do we care?  The alu16-book demo has been removed from the manual.  (Maybe
+ ;; we should put it back in.  Do we care how long the manual takes to build?)
+ (non-parallel-book))
 
 (include-book "centaur/misc/memory-mgmt" :dir :system)
 (value-triple (set-max-mem (* 4 (expt 2 30))))
@@ -137,10 +144,6 @@
 (include-book "std/strings/base64" :dir :system)
 (include-book "std/strings/pretty" :dir :system)
 
-; Note, 7/28/2014: if we include
-; (include-book "std/system/top" :dir :system)
-; instead of the following, we get a name conflict.
-(include-book "std/system/non-parallel-book" :dir :system)
 
 (include-book "centaur/ubdds/lite" :dir :system)
 (include-book "centaur/ubdds/param" :dir :system)
@@ -181,14 +184,15 @@
 (include-book "tools/remove-hyps" :dir :system)
 (include-book "clause-processors/doc" :dir :system)
 
-; [Jared] removing these to speed up the manual build
-;(include-book "tutorial/intro")
-;(include-book "tutorial/alu16-book")
-;(include-book "tutorial/counter")
+;; [Jared] removing these to speed up the manual build
+;; BOZO should we put them back in?
+;(include-book "centaur/esim/tutorial/intro" :dir :system)
+;(include-book "centaur/esim/tutorial/alu16-book" :dir :system)
+;(include-book "centaur/esim/tutorial/counter" :dir :system)
 
-; [Jared] removed this to avoid depending on glucose and to speed up
-; the manual build
-; (include-book "regression/common")
+;; [Jared] removed this to avoid depending on glucose and to speed up
+;; the manual build
+; (include-book "centaur/regression/common" :dir :system)
 
 
 ;; Not much doc here, but some theorems from arithmetic-5 are referenced by

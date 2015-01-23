@@ -317,9 +317,9 @@
 generate the corresponding E modules."
 
   :long "<p>Note: if you are new to VL and are trying to load some Verilog
-modules, you might want to start with the <i>Centaur Hardware Verification
-Tutorial</i> located in @({ books/centaur/tutorial/intro.lisp }), which shows
-some examples of using @('defmodules') and working with the resulting
+modules, you might want to start with the <i>ESIM Hardware Verification
+Tutorial</i> located in @({ books/centaur/esim/tutorial/intro.lisp }), which
+shows some examples of using @('defmodules') and working with the resulting
 translation.</p>
 
 <p>The @('defmodules') macro allows you to load Verilog files into your ACL2

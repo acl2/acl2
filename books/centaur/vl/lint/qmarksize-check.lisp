@@ -33,7 +33,7 @@
 (local (include-book "../util/arithmetic"))
 
 (defsection qmarksize-check
-  :parents (checkers)
+  :parents (lint)
   :short "Check the sizes of conditional expression tests."
 
   :long "<p>This is a heuristic for generating warnings.</p>

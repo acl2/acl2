@@ -1,4 +1,4 @@
-; Centaur Hardware Verification Tutorial
+; ESIM Hardware Verification Tutorial
 ; Copyright (C) 2012 Centaur Technology
 ;
 ; Contact:
@@ -31,10 +31,10 @@
 (in-package "ACL2")
 
 
-;                  Centaur Hardware Verification Tutorial
+;                  ESIM Hardware Verification Tutorial
 ;
 ; This tutorial walks through the verification of some very simple hardware
-; designs using the Centaur books.  These hardware designs are all contrived
+; designs using Centaur's ESIM books.  These hardware designs are all contrived
 ; and are far simpler than real hardware.  But this makes them easy to
 ; understand and verify.
 ;
@@ -85,19 +85,6 @@
 
 (without-waterfall-parallelism
 (def-gl-clause-processor my-glcp))
-
-
-(defxdoc esim-tutorial
-  :parents (esim)
-  :short "Placeholder topic for tutorial-related things."
-
-  :long "<p>To see the centaur books tutorial, please go to this file:</p>
-
-@({
-centaur/tutorial/intro.lisp
-})
-
-<p>in your ACL2 books directory (sometimes called @(':dir :system')).</p>")
 
 
 ; NEXT STEP:

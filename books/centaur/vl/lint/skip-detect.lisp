@@ -56,7 +56,7 @@
 
 
 (defxdoc skip-detection
-  :parents (checkers)
+  :parents (lint)
   :short "We try to detect missing signals from expressions."
 
   :long "<p>Related wires often have similar names, e.g., in one module we
