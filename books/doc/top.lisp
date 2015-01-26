@@ -160,10 +160,10 @@
 (include-book "centaur/vl/mlib/clean-concats" :dir :system)
 (include-book "centaur/vl/mlib/atts" :dir :system)
 (include-book "centaur/vl/mlib/json" :dir :system)
-(include-book "centaur/vl/transforms/xf-clean-selects" :dir :system)
-(include-book "centaur/vl/transforms/xf-propagate" :dir :system)
-(include-book "centaur/vl/transforms/xf-expr-simp" :dir :system)
-(include-book "centaur/vl/transforms/xf-inline" :dir :system)
+(include-book "centaur/vl/transforms/clean-selects" :dir :system)
+(include-book "centaur/vl/transforms/propagate" :dir :system)
+(include-book "centaur/vl/transforms/expr-simp" :dir :system)
+(include-book "centaur/vl/transforms/inline" :dir :system)
 
 ;; BOZO these are incompatible?  which is right?
 (include-book "centaur/vl/util/prefix-hash" :dir :system)

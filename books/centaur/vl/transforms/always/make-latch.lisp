@@ -31,7 +31,7 @@
 (in-package "VL")
 (include-book "../../primitives")
 (include-book "../occform/util")
-(include-book "../xf-delayredux")
+(include-book "../delayredux")
 
 (define vl-make-1-bit-latch-instances
   ((q-wires  vl-exprlist-p)

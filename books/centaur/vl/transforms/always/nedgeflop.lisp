@@ -34,7 +34,7 @@
 (include-book "../../toe/toe-wirealist")
 (include-book "../../mlib/stmt-tools")
 (include-book "../../mlib/print-warnings")
-(include-book "../xf-delayredux")
+(include-book "../delayredux")
 (include-book "centaur/4v-sexpr/sexpr-building" :dir :system)
 (local (include-book "../../util/arithmetic"))
 
