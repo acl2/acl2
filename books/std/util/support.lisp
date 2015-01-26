@@ -30,7 +30,7 @@
 
 (in-package "STD")
 (include-book "xdoc/top" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 (defxdoc support
   :parents (std/util)

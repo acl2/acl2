@@ -92,7 +92,7 @@
   )
 
 (include-book "xdoc/base" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 (include-book "system/origin" :dir :system)
 

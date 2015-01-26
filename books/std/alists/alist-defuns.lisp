@@ -31,7 +31,7 @@
 
 (in-package "ACL2")
 (include-book "std/util/define" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "../lists/list-defuns")
 (local (include-book "alist-equiv"))
 (local (include-book "append-alist-keys"))

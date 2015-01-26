@@ -17,7 +17,7 @@
 
 (include-book "../Utilities/records")
 (include-book "../Utilities/misc")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 (include-book "../Memory/memory")
 

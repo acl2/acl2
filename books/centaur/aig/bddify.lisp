@@ -41,7 +41,7 @@
 
 (include-book "aig-base")
 (include-book "faig-base")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
 (include-book "tools/include-raw" :dir :system)
 (include-book "misc/hons-help2" :dir :system)

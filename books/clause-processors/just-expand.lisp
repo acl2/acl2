@@ -2,7 +2,7 @@
 (in-package "ACL2")
 (include-book "unify-subst")
 (include-book "meta-extract-user")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "ev-theoremp")
 (include-book "use-by-hint")
 (include-book "std/lists/butlast" :dir :system)

@@ -31,7 +31,7 @@
 
 (in-package "ACL2")
 (include-book "tools/include-raw" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "std/strings/strrpos" :dir :system)
 
 ; This is a horrible hack for disconnecting and reconnecting shared libraries

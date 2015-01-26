@@ -32,7 +32,7 @@
 
 (in-package "ACL2")
 
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 (defxdoc with-fast-alists
   :parents (fast-alists)

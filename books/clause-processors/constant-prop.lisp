@@ -3,7 +3,7 @@
 (in-package "ACL2")
 
 (include-book "sublis-var-meaning")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "join-thms")
 (include-book "meta/pseudo-termp-lemmas" :dir :system)
 

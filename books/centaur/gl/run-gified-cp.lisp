@@ -33,7 +33,7 @@
 (include-book "gobjectp")
 (include-book "gtypes")
 (include-book "tools/mv-nth" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "tools/defevaluator-fast" :dir :system)
 (include-book "clause-processors/unify-subst" :dir :system)
 (include-book "centaur/misc/evaluator-metatheorems" :dir :system)

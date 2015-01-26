@@ -33,7 +33,7 @@
 ; and downcased symbols
 
 (in-package "XDOC")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "std/strings/pretty-program" :dir :system)
 (include-book "str")
 (set-state-ok t)

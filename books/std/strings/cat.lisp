@@ -30,7 +30,7 @@
 
 (in-package "STR")
 (include-book "ieqv")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 (local (include-book "arithmetic"))

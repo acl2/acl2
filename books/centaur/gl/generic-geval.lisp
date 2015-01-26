@@ -31,7 +31,7 @@
 (in-package "GL")
 (include-book "gobjectp")
 (include-book "bvecs")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "tools/templates" :dir :system)
 (include-book "std/util/defmvtypes" :dir :system)
 (include-book "../misc/defapply")

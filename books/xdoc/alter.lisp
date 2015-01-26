@@ -30,7 +30,7 @@
 
 (in-package "XDOC")
 (include-book "top")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 (defun delete-topic-fn (name all-topics)
   (declare (xargs :mode :program))
