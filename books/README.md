@@ -43,11 +43,11 @@ to the most recent ACL2 release; there is also a reasonably up-to-date
 You can download a gzipped tarfile or zip file for the latest release,
 which includes the [ACL2 system][ACL2] and the [community
 books][community books].  Simply click on the "release" button at the
-top of github.com/acl2/acl2.  Alternatively you get it from git as
-follows:
+top of github.com/acl2/acl2.  Alternatively you get a (read-only) copy
+from git as follows:
 
 ```
-git clone git://github.com/acl2/acl2; cd acl2; git checkout 7.0
+git clone git://github.com/acl2-devel/acl2-devel acl2; cd acl2; git checkout 7.0
 ```
 
 Your current directory is now a copy of ACL2 Version 7.0.  This
@@ -100,11 +100,10 @@ discussion related to ACL2 system- and book-related development.
 Everyone can contribute documentation and advice to our [wiki] and
 discuss [problems and feature requests][bugtracker].
 
-If you would like to contribute to this repository, email [Jared
-Davis](mailto:jared@centtech.com) or [David
-Rager](mailto:ragerdl@gmail.com) and ask them to add you to the project.
+If you would like to contribute to this repository, see the documentation topic [git-quick-start].
 Please note the [guidelines for book development][books guidelines].
 
+[git-quick-start]: http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=ACL2____GIT-QUICK-START
 [wiki]: https://github.com/acl2/acl2/wiki
 [bugtracker]: https://github.com/acl2/acl2/issues
 [books guidelines]: https://github.com/acl2/acl2/wiki/Committing-code:-guidelines
