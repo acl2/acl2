@@ -35,7 +35,7 @@
 ; This book is only intended to be locally included!
 
 (in-package "VL")
-(include-book "defs")
+(include-book "centaur/vl/util/defs" :dir :system)
 (include-book "centaur/esim/esim-sexpr-support" :dir :system)
 (include-book "centaur/esim/esim-sexpr-support-thms" :dir :system)
 (local (non-parallel-book))

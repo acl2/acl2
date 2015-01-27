@@ -31,4 +31,4 @@
 (in-package "VL")
 
 ; cert_param: (reloc_stub)
-(include-book "defmodules")
+(include-book "centaur/esim/defmodules" :dir :system)

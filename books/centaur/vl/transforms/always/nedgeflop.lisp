@@ -29,9 +29,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "centaur/esim/vltoe/wirealist" :dir :system) ;; bozo
 (include-book "../../primitives")
 (include-book "../occform/util")
-(include-book "../../toe/toe-wirealist")
 (include-book "../../mlib/stmt-tools")
 (include-book "../../mlib/print-warnings")
 (include-book "../delayredux")

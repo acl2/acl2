@@ -31,7 +31,7 @@
 (in-package "ACL2")
 (include-book "std/util/top" :dir :system)
 (include-book "std/strings/top" :dir :system)
-(include-book "../esim/esim-paths")
+(include-book "../esim-paths")
 
 ; esim-snapshot.lisp -- this is a tool for building nice snapshots from ESIM
 ; runs of VL-generated modules.

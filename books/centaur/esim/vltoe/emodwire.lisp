@@ -29,13 +29,12 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../util/defs")
+(include-book "centaur/vl/util/defs" :dir :system)
 (include-book "centaur/fty/deftypes" :dir :system)
 (local (include-book "misc/assert" :dir :system))
-(local (include-book "../util/arithmetic"))
-(local (include-book "../util/position"))
+(local (include-book "centaur/vl/util/arithmetic" :dir :system))
+(local (include-book "centaur/vl/util/position" :dir :system))
 (local (include-book "std/misc/intern-in-package-of-symbol" :dir :system))
-
 
 (defxdoc exploding-vectors
   :parents (e-conversion)

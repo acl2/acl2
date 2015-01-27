@@ -29,11 +29,12 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "toe-wirealist")
+(include-book "wirealist")
 (include-book "centaur/esim/esim-sexpr-support" :dir :system)
 (include-book "centaur/esim/esim-primitives" :dir :system)
-(local (include-book "../util/arithmetic"))
-(local (include-book "../util/esim-lemmas"))
+(local (include-book "esim-lemmas"))
+(local (include-book "centaur/vl/util/arithmetic" :dir :system))
+
 
 
 (defsection adding-z-drivers

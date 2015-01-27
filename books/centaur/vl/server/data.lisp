@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../translation")
+(include-book "centaur/esim/translation" :dir :system) ;; bozo
 (include-book "../mlib/hierarchy")
 (include-book "../loader/descriptions")
 (local (include-book "../util/arithmetic"))

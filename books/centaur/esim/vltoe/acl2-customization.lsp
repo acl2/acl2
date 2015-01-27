@@ -1,5 +1,5 @@
-; VCD Generator for ESIM
-; Copyright (C) 2010-2012 Centaur Technology
+; VL Verilog Toolkit
+; Copyright (C) 2008-2011 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,9 +28,5 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-#!ACL2
-(in-package "ACL2")
-
-(ld "../vl/acl2-customization.lsp")
-
+(ld "centaur/vl/acl2-customization.lsp" :dir :system)
 (in-package "VL")

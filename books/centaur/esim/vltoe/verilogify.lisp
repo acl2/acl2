@@ -29,10 +29,10 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "toe-emodwire")
-(include-book "../util/merge-indices")
+(include-book "emodwire")
+(include-book "centaur/vl/util/merge-indices" :dir :system)
 (local (include-book "misc/assert" :dir :system))
-(local (include-book "../util/arithmetic"))
+(local (include-book "centaur/vl/util/arithmetic" :dir :system))
 
 
 (defsection vl-emodwire-<

@@ -148,12 +148,12 @@
 (include-book "centaur/ubdds/lite" :dir :system)
 (include-book "centaur/ubdds/param" :dir :system)
 
-(include-book "centaur/vcd/vcd" :dir :system)
-(include-book "centaur/vcd/esim-snapshot" :dir :system)
-(include-book "centaur/vcd/vcd-stub" :dir :system)
+(include-book "centaur/esim/vcd/vcd" :dir :system)
+(include-book "centaur/esim/vcd/esim-snapshot" :dir :system)
+(include-book "centaur/esim/vcd/vcd-stub" :dir :system)
 ;; BOZO causes some error with redefinition?  Are we loading the right
 ;; books above?  What does stv-debug load?
-;; (include-book "vcd/vcd-impl")
+;; (include-book "centaur/esim/vcd/vcd-impl")
 
 (include-book "centaur/vl/doc" :dir :system)
 (include-book "centaur/vl/kit/top" :dir :system)
@@ -192,7 +192,7 @@
 
 ;; [Jared] removed this to avoid depending on glucose and to speed up
 ;; the manual build
-; (include-book "centaur/regression/common" :dir :system)
+; (include-book "centaur/esim/tests/common" :dir :system)
 
 
 ;; Not much doc here, but some theorems from arithmetic-5 are referenced by

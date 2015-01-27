@@ -29,12 +29,12 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "parsetree")
-(include-book "mlib/find")
-(include-book "loader/filemap")
-(include-book "loader/preprocessor/defines")
-(local (include-book "util/arithmetic"))
-(local (include-book "util/osets"))
+(include-book "centaur/vl/parsetree" :dir :system)
+(include-book "centaur/vl/mlib/find" :dir :system)
+(include-book "centaur/vl/loader/filemap" :dir :system)
+(include-book "centaur/vl/loader/preprocessor/defines" :dir :system)
+(local (include-book "centaur/vl/util/arithmetic" :dir :system))
+(local (include-book "centaur/vl/util/osets" :dir :system))
 
 
 (defaggregate vl-translation

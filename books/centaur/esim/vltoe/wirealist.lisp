@@ -29,11 +29,11 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "toe-emodwire")
-(include-book "../mlib/range-tools")
+(include-book "emodwire")
+(include-book "centaur/vl/mlib/range-tools" :dir :system)
 (include-book "std/typed-lists/cons-listp" :dir :system)
-(local (include-book "../util/arithmetic"))
-(local (include-book "../util/intersectp-equal"))
+(local (include-book "centaur/vl/util/arithmetic" :dir :system))
+(local (include-book "centaur/vl/util/intersectp-equal" :dir :system))
 
 
 (defsection empty-intersect-of-vl-emodwires-by-basename

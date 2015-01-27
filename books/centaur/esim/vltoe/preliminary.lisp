@@ -29,13 +29,13 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "toe-wirealist")
-(include-book "toe-verilogify")
-(include-book "../mlib/find")
+(include-book "wirealist")
+(include-book "verilogify")
+(include-book "centaur/vl/mlib/find" :dir :system)
 (include-book "centaur/esim/esim-sexpr-support" :dir :system)
-(local (include-book "../util/arithmetic"))
-(local (include-book "../util/osets"))
-(local (include-book "../util/esim-lemmas"))
+(local (include-book "esim-lemmas"))
+(local (include-book "centaur/vl/util/arithmetic" :dir :system))
+(local (include-book "centaur/vl/util/osets" :dir :system))
 
 (local (in-theory (disable (tau-system))))
 
