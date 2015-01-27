@@ -92,12 +92,19 @@
 
 (defsection lint
   :parents (vl)
-  :short "A linting tool for Verilog."
+  :short "A linting tool for Verilog and SystemVerilog."
 
   :long "<p>A <a
 href='http://en.wikipedia.org/wiki/Lint_%28software%29'>linter</a> is a tool
-that looks for possible bugs in a program.  We now implement such a linter for
-Verilog, reusing much of @(see vl).</p>")
+that looks for possible bugs in a program.  We have used @(see VL) to implement
+a linter for Verilog and SystemVerilog designs.  It can scan your Verilog
+designs for potential bugs like size mismatches, unused wires, etc.</p>
+
+<p>Note: Most of the documentation here is about the implementation of various
+linter checks.  If you just want to run the linter on your own Verilog designs,
+you should see the VL @(see kit).  After building the kit, you should be able
+to run, e.g., @('vl lint --help') to see the @(see *vl-lint-help*)
+message.</p>")
 
 (defoptions vl-lintconfig
   :parents (lint)
@@ -753,7 +760,8 @@ shown.</p>"
         :vl-const-expr-minor))
 
 (defconst *multidrive-warnings*
-  (list :vl-warn-multidrive))
+  (list :vl-warn-multidrive
+        :vl-lucid-multidrive))
 
 (defconst *multidrive-minor-warnings*
   (list :vl-warn-multidrive-minor))

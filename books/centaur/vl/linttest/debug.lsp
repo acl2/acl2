@@ -37,13 +37,11 @@
 (ld "centaur/jared-customization.lsp" :dir :system)
 
 (defconst *lintconfig*
-  (make-vl-lintconfig :start-files (list "./params/spec.sv")))
+  (make-vl-lintconfig :start-files (list "./multi/spec.sv")))
 
 (defun vl-lint-report-wrap (lintresult state)
   (declare (xargs :mode :program :stobjs state))
   (vl-lint-report lintresult state))
-
-
 
 (defconsts (*loadres* state)
   (b* (((vl-lintconfig config) *lintconfig*)
@@ -60,7 +58,20 @@
   (run-vl-lint-main (vl-loadresult->design *loadres*)
                     *lintconfig*))
 
-(vl-lint-report-wrap *lintres* state)
+(vl-lint-report-wrap *lintres* state) 
+
+
+(trace$ (vl-lucid-multidrive-detect
+         :entry (list 'vl-lucid-multidrive-detect
+                      :item item
+                      :set set)))
+
+(trace$ vl-lucid-collect-solo-occs)
+(trace$ vl-lucid-collect-resolved-slices)
+(trace$ vl-lucid-slices-append-bits)
+(trace$ vl-lucid-resolved-slice->bits)
+(trace$ duplicated-members)
+
 
 (trace$ (vl-description-inject-warnings
          :entry (list 'vl-description-inject-warnings
@@ -156,39 +167,39 @@
                  (list 'vl-lhsexpr-lucidcheck
                        (vl-pps-lucidstate st)))))
 
-(with-redef
-  (define vl-luciddb-mark ((mtype (member mtype '(:used :set)))
-                           (key   vl-lucidkey-p)
-                           (occ   vl-lucidocc-p)
-                           (db    vl-luciddb-p)
-                           (ctx   acl2::any-p))
-    :parents (vl-lucidstate-mark-used)
-    :returns (new-db vl-luciddb-p)
-    (b* ((db   (vl-luciddb-fix db))
-         (occ  (vl-lucidocc-fix occ))
-         (key  (vl-lucidkey-fix key))
+;; (with-redef
+;;   (define vl-luciddb-mark ((mtype (member mtype '(:used :set)))
+;;                            (key   vl-lucidkey-p)
+;;                            (occ   vl-lucidocc-p)
+;;                            (db    vl-luciddb-p)
+;;                            (ctx   acl2::any-p))
+;;     :parents (vl-lucidstate-mark-used)
+;;     :returns (new-db vl-luciddb-p)
+;;     (b* ((db   (vl-luciddb-fix db))
+;;          (occ  (vl-lucidocc-fix occ))
+;;          (key  (vl-lucidkey-fix key))
 
-         (val (cdr (hons-get key db)))
-         ((unless val)
-          (cw "***** Error is Here *****~%~%")
-          (cw "KEY ~x0~%" key)
-          (cw "DB KEYS ~x0~%" (alist-keys db))
-          (break$)
-          ;; BOZO we probably don't expect this to happen, but we'll go ahead and
-          ;; mark it as an error.
-          (let ((err (list __function__ ctx)))
-            (hons-acons key
-                        (change-vl-lucidval *vl-empty-lucidval*
-                                            :used (list occ)
-                                            :errors (list err))
-                        db)))
+;;          (val (cdr (hons-get key db)))
+;;          ((unless val)
+;;           (cw "***** Error is Here *****~%~%")
+;;           (cw "KEY ~x0~%" key)
+;;           (cw "DB KEYS ~x0~%" (alist-keys db))
+;;           (break$)
+;;           ;; BOZO we probably don't expect this to happen, but we'll go ahead and
+;;           ;; mark it as an error.
+;;           (let ((err (list __function__ ctx)))
+;;             (hons-acons key
+;;                         (change-vl-lucidval *vl-empty-lucidval*
+;;                                             :used (list occ)
+;;                                             :errors (list err))
+;;                         db)))
 
-         ((vl-lucidval val))
-         (val (if (eq mtype :used)
-                  (change-vl-lucidval val :used (cons occ val.used))
-                (change-vl-lucidval val :set (cons occ val.set))))
-         (db  (hons-acons key val db)))
-      db)))
+;;          ((vl-lucidval val))
+;;          (val (if (eq mtype :used)
+;;                   (change-vl-lucidval val :used (cons occ val.used))
+;;                 (change-vl-lucidval val :set (cons occ val.set))))
+;;          (db  (hons-acons key val db)))
+;;       db)))
 
 ;; (trace$ (vl-initial-lucidcheck
 ;;          :entry (list 'vl-initial-lucidcheck
