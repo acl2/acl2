@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STD")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 ; This book is an awful hack to work around a problem with ACL2.
 ;

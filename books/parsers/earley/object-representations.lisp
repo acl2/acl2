@@ -21,7 +21,7 @@
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defalist" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "std/util/define" :dir :system)
 ;(include-book "countereg-gen/top" :dir :system)
 (include-book "defprimitive")

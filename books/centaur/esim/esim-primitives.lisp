@@ -33,7 +33,7 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "xdoc/top" :dir :system)
 (include-book "plist")
 

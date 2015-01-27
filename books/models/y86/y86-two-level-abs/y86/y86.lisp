@@ -7,7 +7,7 @@
 
 (in-package "ACL2")
 
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 (local (include-book "centaur/gl/gl" :dir :system))
 (include-book "../common/x86-memory")

@@ -34,7 +34,7 @@
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 (include-book "std/lists/remove-duplicates" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))

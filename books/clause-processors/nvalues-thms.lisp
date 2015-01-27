@@ -1,7 +1,7 @@
 
 (in-package "ACL2")
 
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
 (include-book "multi-env-trick")
 (include-book "join-thms")

@@ -37,7 +37,7 @@
 ; dependencies of various files.
 
 (in-package "XDOC")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "make-event/acl2x-help" :dir :system))

@@ -29,7 +29,7 @@
 
 (in-package "ACL2")
 
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 
 (defun scan-for-current-theory (w)

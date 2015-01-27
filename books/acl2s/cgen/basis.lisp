@@ -5,7 +5,7 @@
 
 (in-package "CGEN")
 
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 ;;;;naming convention (only for readability):
 ;;;;  function: end with $ for each stobj updating/creating function

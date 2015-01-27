@@ -30,7 +30,7 @@
 
 (in-package "ACL2")
 (include-book "unsound-read" :ttags :all)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (set-compile-fns t)
 
 (defmacro test-serialize (x &rest write-args)

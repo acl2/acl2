@@ -6,7 +6,7 @@
 
 (in-package "CGEN"
 )
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "basis")
 (include-book "../defdata/defdata-util")
 

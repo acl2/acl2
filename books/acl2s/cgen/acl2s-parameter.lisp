@@ -5,7 +5,7 @@
 
 (in-package "ACL2S")
 ;(include-book "utilities")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 ; [2014-11-25 Tue] Make key package agnostic by always putting it into
 ; keyword package. Thus we look only at symbol-name of the original

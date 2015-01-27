@@ -32,7 +32,7 @@
 
 (in-package "GL")
 (include-book "bvecs")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
 (include-book "ihs/logops-definitions" :dir :system)
 (local (include-book "clause-processors/find-subterms" :dir :system))

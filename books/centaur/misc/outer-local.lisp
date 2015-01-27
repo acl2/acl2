@@ -32,7 +32,7 @@
 
 
 (include-book "xdoc/top" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 ;; Maybe this should be in std instead?  And if successful, maybe integrated
 ;; into defsection and define.

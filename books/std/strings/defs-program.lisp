@@ -33,7 +33,7 @@
 
 (in-package "STR")
 (include-book "std/basic/defs" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 ;(include-book "std/lists/list-defuns" :dir :system)
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "make-event/acl2x-help" :dir :system))

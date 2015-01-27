@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "centaur/misc/beta-reduce-full" :dir :system)
 
 (defun scan-lemmas-for-nume (lemmas nume)

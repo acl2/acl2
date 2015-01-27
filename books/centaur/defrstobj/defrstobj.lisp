@@ -32,7 +32,7 @@
 (include-book "def-typed-record")
 (include-book "generic")
 (include-book "misc/records" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (include-book "centaur/misc/absstobjs" :dir :system)
 (include-book "std/lists/nth" :dir :system)

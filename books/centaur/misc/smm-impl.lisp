@@ -1,7 +1,7 @@
 
 (in-package "ACL2")
 
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "u32-listp")
 (include-book "std/basic/defs" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)

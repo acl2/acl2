@@ -83,7 +83,7 @@ by linearly traversing the alist.</p>")
 #||
 
 (include-book
- "tools/bstar" :dir :system)
+ "std/util/bstar" :dir :system)
 
 (b* ((alist (hons-acons 'a 1 nil))
      (alist (hons-acons 'b 2 alist))

@@ -33,7 +33,7 @@
 (include-book "count-up")
 (include-book "remove-assoc")
 (include-book "arith-equivs")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
 (include-book "misc/definline" :dir :system)
 (include-book "centaur/misc/absstobjs" :dir :system)

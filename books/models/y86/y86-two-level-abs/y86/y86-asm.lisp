@@ -6,7 +6,7 @@
 ; !!!  During GUARD proof, CW commands repeated executed and that
 ; !!!  output is printed to the user.
 
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 (include-book "../common/misc-events")
 (include-book "../common/operations")

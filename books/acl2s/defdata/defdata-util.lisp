@@ -9,7 +9,7 @@
 (in-package "DEFDATA")
 
 (set-verify-guards-eagerness 2)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 ;; (defun modify-symbol (prefix sym postfix)
 ;;   (declare (xargs :guard (and (symbolp sym)
