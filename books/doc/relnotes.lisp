@@ -918,9 +918,8 @@
  Used this to avoid trying to certify certain books that require, e.g., @(see
  tshell).</li>
 
- <li>The Centaur regression/tutorial books have been removed from
- @('doc/top.lisp') to avoid requiring Glucose to build the ACL2+Books
- manual.</li>
+ <li>The @(see esim-tutorial) books have been removed from @('doc/top.lisp') to
+ avoid requiring Glucose to build the ACL2+Books manual.</li>
 
  <li>Certain problematic books have been annotated with @(see
  non-parallel-book), to avoid incompatibilities with @(see
@@ -1831,7 +1830,7 @@
  <li>Added a compiler from @(see symbolic-test-vectors) into C++ programs.</li>
  <li>Guards are now verified on @('map-aig-vars-fast').</li>
  <li>@('esim/stv/stv-decomp-proofs.lisp') adds a special theory for decomposition
- proofs; see the multiplier demo in @('centaur/tutorial').</li>
+ proofs; see the multiplier demo in the @(see esim-tutorial).</li>
  </ul>
 
  <h5>@(see 4v-sexprs) - four-valued logic of esim</h5>
@@ -1841,7 +1840,7 @@
  <li>Documented @(see sexpr-equivs).</li>
  </ul>
 
- <h5>@('centaur/tutorial') - hardware verification demos</h5>
+ <h5>@(see esim-tutorial) - ESIM hardware verification demos</h5>
  <ul>
  <li>The multiplier proof by decomposition now has comments</li>
  <li>Added a decomposition proof using rewriting, instead of by GL</li>

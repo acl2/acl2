@@ -35,7 +35,7 @@
 (include-book "../../mlib/welltyped")
 (include-book "../../mlib/delta")
 (include-book "../../mlib/filter")
-(include-book "../xf-oprewrite") ;; BOZO for vl-qmark-p
+(include-book "../oprewrite") ;; BOZO for vl-qmark-p
 (local (include-book "../../util/arithmetic"))
 
 

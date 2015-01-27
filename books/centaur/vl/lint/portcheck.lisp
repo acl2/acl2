@@ -34,7 +34,7 @@
 (local (include-book "../util/arithmetic"))
 
 (defsection portcheck
-  :parents (checkers)
+  :parents (lint)
   :short "Trivial check to make sure that each module's ports agree with its
   port declarations.")
 

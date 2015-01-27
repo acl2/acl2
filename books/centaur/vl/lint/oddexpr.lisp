@@ -30,12 +30,12 @@
 
 (in-package "VL")
 (include-book "../mlib/ctxexprs")
-(include-book "../transforms/xf-expr-size")
+(include-book "../transforms/expr-size")
 (include-book "../mlib/fmt")
 (local (include-book "../util/arithmetic"))
 
 (defsection oddexpr-check
-  :parents (checkers)
+  :parents (lint)
   :short "Check for odd expressions that might indicate precedence problems."
 
   :long "<p>This is some rough code for finding expressions that might have

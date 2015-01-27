@@ -31,10 +31,10 @@ details).
   can get from the acl2-books project, above).
 
   After getting a copy of VL and glancing through its documentation, you should
-  probably complete the small Centaur Hardware Verification Tutorial.  The
+  probably complete the small ESIM Hardware Verification Tutorial.  The
   starting point is:
 
-    acl2-books/centaur/tutorial/intro.lisp
+    acl2-books/centaur/esim/tutorial/intro.lisp
 
 
                              THE VL MODEL TOOL

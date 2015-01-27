@@ -37,7 +37,7 @@
 
 
 (defsection duplicate-detect
-  :parents (checkers)
+  :parents (lint)
   :short "Check for instances and assignments that are literally identical."
 
   :long "<p>This is a heuristic for generating warnings.  We look for

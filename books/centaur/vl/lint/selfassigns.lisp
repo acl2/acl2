@@ -34,7 +34,7 @@
 (local (include-book "../util/arithmetic"))
 
 (defxdoc selfassigns
-  :parents (checkers)
+  :parents (lint)
   :short "Simple check for self-assignments."
 
   :long "<p>This is just a heuristic check that adds warnings if it sees

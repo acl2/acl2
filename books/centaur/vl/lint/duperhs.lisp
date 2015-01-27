@@ -35,7 +35,7 @@
 (local (include-book "../util/arithmetic"))
 
 (defxdoc duperhs-check
-  :parents (checkers)
+  :parents (lint)
   :short "Check for assignments with the same right-hand side."
   :long "<p>This is a trivially simple check for cases like:</p>
 

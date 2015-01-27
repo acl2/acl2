@@ -45,7 +45,7 @@
 
 #||
 (include-book ;; Handy for testing
- "centaur/tutorial/alu16-book" :dir :system)
+ "centaur/esim/tutorial/alu16-book" :dir :system)
 ||#
 
 (define stv2c-tailchar-p ((x characterp))

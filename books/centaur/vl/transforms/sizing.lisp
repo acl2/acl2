@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "xf-expr-size")
+(include-book "expr-size")
 (include-book "../mlib/blocks")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))

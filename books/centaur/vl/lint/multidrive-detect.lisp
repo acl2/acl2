@@ -39,7 +39,7 @@
 
 
 (defxdoc multidrive
-  :parents (checkers)
+  :parents (lint)
   :short "Check for multiply driven wires."
 
   :long "<p>This is a somewhat fancy check for multiply driven wires, carried

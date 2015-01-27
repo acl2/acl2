@@ -38,29 +38,28 @@
 (include-book "transforms/occform/top")
 (include-book "transforms/unparam/top")
 (include-book "transforms/cn-hooks")
-(include-book "transforms/xf-addinstnames")
-(include-book "transforms/xf-assign-trunc")
-(include-book "transforms/xf-blankargs")
-(include-book "transforms/xf-clean-params")
-(include-book "transforms/xf-delayredux")
-(include-book "transforms/xf-drop-blankports")
-(include-book "transforms/xf-elim-supply")
-(include-book "transforms/xf-expand-functions")
-(include-book "transforms/xf-expr-split")
-(include-book "transforms/xf-follow-hids")
-;; (include-book "transforms/xf-gateredux")
-(include-book "transforms/xf-gatesplit")
-(include-book "transforms/xf-gate-elim")
-(include-book "transforms/xf-oprewrite")
-(include-book "transforms/xf-optimize-rw")
-(include-book "transforms/xf-problem-mods")
-(include-book "transforms/xf-replicate-insts")
-(include-book "transforms/xf-resolve-ranges")
-(include-book "transforms/xf-selresolve")
-(include-book "transforms/xf-sizing")
-(include-book "transforms/xf-unused-vars")
-(include-book "transforms/xf-weirdint-elim")
-(include-book "transforms/xf-wildeq")
+(include-book "transforms/addinstnames")
+(include-book "transforms/assign-trunc")
+(include-book "transforms/blankargs")
+(include-book "transforms/clean-params")
+(include-book "transforms/delayredux")
+(include-book "transforms/drop-blankports")
+(include-book "transforms/elim-supply")
+(include-book "transforms/expand-functions")
+(include-book "transforms/expr-split")
+(include-book "transforms/follow-hids")
+(include-book "transforms/gatesplit")
+(include-book "transforms/gate-elim")
+(include-book "transforms/oprewrite")
+(include-book "transforms/optimize-rw")
+(include-book "transforms/problem-mods")
+(include-book "transforms/replicate-insts")
+(include-book "transforms/resolve-ranges")
+(include-book "transforms/selresolve")
+(include-book "transforms/sizing")
+(include-book "transforms/unused-vars")
+(include-book "transforms/weirdint-elim")
+(include-book "transforms/wildeq")
 
 (include-book "util/clean-alist")
 (include-book "translation")
@@ -317,9 +316,9 @@
 generate the corresponding E modules."
 
   :long "<p>Note: if you are new to VL and are trying to load some Verilog
-modules, you might want to start with the <i>Centaur Hardware Verification
-Tutorial</i> located in @({ books/centaur/tutorial/intro.lisp }), which shows
-some examples of using @('defmodules') and working with the resulting
+modules, you might want to start with the <i>ESIM Hardware Verification
+Tutorial</i> located in @({ books/centaur/esim/tutorial/intro.lisp }), which
+shows some examples of using @('defmodules') and working with the resulting
 translation.</p>
 
 <p>The @('defmodules') macro allows you to load Verilog files into your ACL2

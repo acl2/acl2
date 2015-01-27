@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../transforms/xf-resolve-ranges")
+(include-book "../transforms/resolve-ranges")
 (include-book "../mlib/find")
 (include-book "../mlib/expr-tools")
 (include-book "../mlib/stmt-tools")

@@ -277,8 +277,8 @@ i/o contract seems to be working.  It should be easy to adapt one of the
 solver.</p>
 
 <p>If the @('check-config') passes and you want a more thorough check, you
-might try to run your new solver on, e.g., @('centaur/tutorial/sat.lsp') and
-the various files in @('centaur/regression').</p>")
+might try to run your new solver on, e.g., @('centaur/esim/tutorial/sat.lsp')
+and the various files in @('centaur/regression').</p>")
 
 
 (defsection unsat-checking
