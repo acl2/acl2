@@ -30,8 +30,7 @@
 
 require_relative '../utils'
 
-outlaw_bad_warnings()
-outlaw_warning_global("VL-PROGRAMMING-ERROR")
+# Don't outlaw bad warnings because the "buggy" module has parse errors.
 
 def multi(modname, wirename)
   match_warning(modname, "VL-LUCID-MULTIDRIVE", wirename)
@@ -78,9 +77,9 @@ normal(:m2, "normal_b3")
 
 normal(:m3, "normal_f1")
 normal(:m3, "normal_f2")
-multi(:m3, "multi_f1")
 
 # It's not yet smart enough to get this one:
+# multi(:m3, "multi_f1")
 # multi(:m3, "multi_f2")
 
 normal(:m4, "normal_a1")
@@ -93,6 +92,10 @@ multi(:m4, "multi_a4")
 multi(:m5, "multi_a0")
 normal(:m5, "normal_p1")
 normal(:m5, "normal_p2")
+normal(:Protocol, "req")
+normal(:Protocol, "ack")
+normal(:Protocol, "dat")
+
 
 # It's not smart enough for this.
 # multi(:m5, "multi_p1")
@@ -101,8 +104,37 @@ normal(:m5, "normal_p2")
 normal(:m6, "normal_a1")
 
 # We probably aren't going to try to be smart enough to figure this out:
-multi(:m6, "multi_a1")
+# multi(:m6, "multi_a1")
+
+multi(:m7, "multi_a1")
+normal(:m7, "normal_a1")
+normal(:m7, "normal_a2")
+normal(:m7, "normal_a3")
+normal(:m7, "normal_a4")
+normal(:m7, "normal_a5")
+normal(:m7, "normal_a6")
+normal(:m7, "normal_a7")
+normal(:m7, "normal_a8")
 
 
+multi(:m8, "multi_a1")
+normal(:m8, "normal_a1")
+
+
+multi(:m9, "multi_a1")
+normal(:m9, "normal_i1")
+normal(:m9, "normal_i2")
+normal(:m9, "normal_o1a")
+normal(:m9, "normal_o2a")
+normal(:m9, "normal_o3a")
+normal(:m9, "normal_o1b")
+normal(:m9, "normal_o2b")
+normal(:m9, "normal_o3b")
+
+multi(:m10, "multi_a1")
+normal(:m10, "normal_r1")
+
+multi(:m11, "multi_a1")
+normal(:m11, "clk")
 
 test_passed()

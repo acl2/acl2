@@ -37,24 +37,42 @@
 
 (define vl-pp-ctxelement-summary
   :short "Print a short, human-friendly description of a @(see vl-ctxelement-p)."
-  ((x vl-ctxelement-p) &key (ps 'ps))
+  ((x vl-ctxelement-p)
+   &key
+   ((withloc "Ensure that a location is printed.  By default we generally hide
+              location numbers and simply say things like, \"Assignment to foo.\"
+              However, in some cases it's useful to ensure that a location gets
+              printed, e.g., for multidrive warnings.") 'nil)
+   (ps 'ps))
   (b* ((x (vl-ctxelement-fix x)))
     (case (tag x)
       (:vl-regularport
        (let* ((name (vl-regularport->name x)))
          (if name
              (vl-ps-seq (vl-basic-cw "Port ")
-                        (vl-print-wirename name))
+                        (vl-print-wirename name)
+                        (if withloc
+                            (vl-ps-seq (vl-basic-cw " at ")
+                                       (vl-print-loc (vl-port->loc x)))
+                          ps))
            (vl-ps-seq (vl-basic-cw "Unnamed port at ")
                       (vl-print-loc (vl-port->loc x))))))
       (:vl-interfaceport
        (let* ((name (vl-interfaceport->name x)))
          (vl-ps-seq (vl-basic-cw "Interface port ")
-                    (vl-print-wirename name))))
+                    (vl-print-wirename name)
+                    (if withloc
+                        (vl-ps-seq (vl-basic-cw " at ")
+                                   (vl-print-loc (vl-interfaceport->loc x)))
+                      ps))))
 
       (:vl-portdecl
        (vl-ps-seq (vl-basic-cw "Port declaration of ")
-                  (vl-print-wirename (vl-portdecl->name x))))
+                  (vl-print-wirename (vl-portdecl->name x))
+                  (if withloc
+                      (vl-ps-seq (vl-basic-cw " at ")
+                                 (vl-print-loc (vl-portdecl->loc x)))
+                    ps)))
 
       (:vl-assign
        ;; As a dumb hack, we say if the lvalue is less than 40 characters long
@@ -64,7 +82,11 @@
        (let* ((orig (vl-pps-origexpr (vl-assign->lvalue x))))
          (vl-ps-seq (vl-basic-cw "Assignment to ")
                     (if (< (length orig) 40)
-                        (vl-pp-origexpr (vl-assign->lvalue x))
+                        (vl-ps-seq (vl-pp-origexpr (vl-assign->lvalue x))
+                                   (if withloc
+                                       (vl-ps-seq (vl-basic-cw " at ")
+                                                  (vl-print-loc (vl-assign->loc x)))
+                                     ps))
                       (vl-ps-seq
                        (vl-print (subseq orig 0 40))
                        ;; To reduce the amount of line numbers we see in error
@@ -75,19 +97,35 @@
 
       (:vl-vardecl
        (vl-ps-seq (vl-basic-cw "Declaration of ")
-                  (vl-print-wirename (vl-vardecl->name x))))
+                  (vl-print-wirename (vl-vardecl->name x))
+                  (if withloc
+                      (vl-ps-seq (vl-basic-cw " at ")
+                                 (vl-print-loc (vl-vardecl->loc x)))
+                    ps)))
 
       (:vl-paramdecl
        (vl-ps-seq (vl-basic-cw "Param declaration of ")
-                  (vl-print-wirename (vl-paramdecl->name x))))
+                  (vl-print-wirename (vl-paramdecl->name x))
+                  (if withloc
+                      (vl-ps-seq (vl-basic-cw " at ")
+                                 (vl-print-loc (vl-paramdecl->loc x)))
+                    ps)))
 
       (:vl-fundecl
        (vl-ps-seq (vl-basic-cw "Function ")
-                  (vl-print-wirename (vl-fundecl->name x))))
+                  (vl-print-wirename (vl-fundecl->name x))
+                  (if withloc
+                      (vl-ps-seq (vl-basic-cw " at ")
+                                 (vl-print-loc (vl-fundecl->loc x)))
+                    ps)))
 
       (:vl-taskdecl
        (vl-ps-seq (vl-basic-cw "Task ")
-                  (vl-print-wirename (vl-taskdecl->name x))))
+                  (vl-print-wirename (vl-taskdecl->name x))
+                  (if withloc
+                      (vl-ps-seq (vl-basic-cw " at ")
+                                 (vl-print-loc (vl-taskdecl->loc x)))
+                    ps)))
 
       (:vl-modinst
        (let* ((instname (vl-modinst->instname x))
@@ -96,7 +134,11 @@
              (vl-ps-seq (vl-basic-cw "Instance ")
                         (vl-print-wirename instname)
                         (vl-basic-cw " of ")
-                        (vl-print-modname modname))
+                        (vl-print-modname modname)
+                        (if withloc
+                            (vl-ps-seq (vl-basic-cw " at ")
+                                       (vl-print-loc (vl-modinst->loc x)))
+                          ps))
            (vl-ps-seq (vl-basic-cw "Unnamed instance of ")
                       (vl-print-modname modname)
                       (vl-basic-cw " at ")
@@ -106,10 +148,16 @@
        (b* ((name  (vl-gateinst->name x))
             (type  (vl-gatetype-string (vl-gateinst->type x))))
          (if name
-             (vl-ps-seq (vl-basic-cw "Gate ")
+             (vl-ps-seq (vl-print-str (str::upcase-first type))
+                        (vl-print " gate ")
                         (vl-print-wirename name)
-                        (vl-basic-cw (cat " of type " type)))
-           (vl-ps-seq (vl-basic-cw (cat "Unnamed gate of type " type " at "))
+                        (if withloc
+                            (vl-ps-seq (vl-basic-cw " at ")
+                                       (vl-print-loc (vl-gateinst->loc x)))
+                          ps))
+           (vl-ps-seq (vl-print "Unnamed ")
+                      (vl-print-str type)
+                      (vl-print " gate at ")
                       (vl-print-loc (vl-gateinst->loc x))))))
 
       (:vl-always
@@ -122,7 +170,11 @@
 
       (:vl-typedef
        (vl-ps-seq (vl-basic-cw "Typedef of ")
-                  (vl-print-wirename (vl-typedef->name x))))
+                  (vl-print-wirename (vl-typedef->name x))
+                  (if withloc
+                      (vl-ps-seq (vl-basic-cw " at ")
+                                 (vl-print-loc (vl-typedef->loc x)))
+                    ps)))
 
       (:vl-fwdtypedef
        (vl-ps-seq (vl-basic-cw "Fwdtypedef at ")
@@ -149,23 +201,23 @@
 
 (define vl-ctxelement-summary
   :short "Get a short, human-friendly string describing a @(see vl-ctxelement-p)."
-  ((x vl-ctxelement-p))
+  ((x vl-ctxelement-p) &key (withloc 'nil))
   :returns (str stringp :rule-classes :type-prescription)
-  (with-local-ps (vl-pp-ctxelement-summary x)))
+  (with-local-ps (vl-pp-ctxelement-summary x :withloc withloc)))
 
-(define vl-pp-context-summary ((x vl-context1-p) &key (ps 'ps))
+(define vl-pp-context-summary ((x vl-context1-p) &key (withloc 'nil) (ps 'ps))
   :short "Print a short, human-friendly string describing a @(see vl-context-p)."
   (b* (((vl-context1 x) x))
     (vl-ps-seq (vl-print "In ")
                (vl-print-modname x.mod)
                (vl-println? ", ")
-               (vl-pp-ctxelement-summary x.elem))))
+               (vl-pp-ctxelement-summary x.elem :withloc withloc))))
 
 (define vl-context-summary
   :short "Get a short, human-friendly string describing a @(see vl-context-p)."
-  ((x vl-context1-p))
+  ((x vl-context1-p) &key (withloc 'nil))
   :returns (str stringp :rule-classes :type-prescription)
-  (with-local-ps (vl-pp-context-summary x)))
+  (with-local-ps (vl-pp-context-summary x :withloc withloc)))
 
 (define vl-pp-ctxelement-full
   :short "Pretty-print a full @(see vl-ctxelement-p)."

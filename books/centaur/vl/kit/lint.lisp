@@ -473,10 +473,12 @@ shown.</p>"
        (design (cwtime (vl-design-argresolve design)))
        (design (cwtime (vl-design-resolve-indexing design)))
 
-       ;; Pre-unparameterization Lucidity Check -- this is a bad time for
-       ;; bit-level analysis, but it's a good time for checking parameter
-       ;; usages.
-       (design (cwtime (vl-design-lucid design :paramsp t)))
+       ;; Pre-unparameterization Lucidity Check.
+       (design (cwtime (vl-design-lucid design
+                                        ;; This is a good time to check parameter uses
+                                        :paramsp t
+                                        ;; This is a bad time to check generates
+                                        :generatesp nil)))
 
        (- (cw "~%vl-lint: starting general checks...~%"))
        (design (cwtime (vl-design-check-namespace design)))
@@ -510,8 +512,11 @@ shown.</p>"
        ;; Post-unparameterization Lucidity Check -- this is a bad time for
        ;; checking parameters (because they've been eliminated) but it's a
        ;; much better time to do bit-level analysis, because things like
-       ;; foo[width-1:0] should hopefully be resolved now.
-       (design (cwtime (vl-design-lucid design :paramsp nil)))
+       ;; foo[width-1:0] should hopefully be resolved now.  Also we can
+       ;; sensibly check generates now.
+       (design (cwtime (vl-design-lucid design
+                                        :paramsp nil
+                                        :generatesp t)))
 
        (design
         ;; Best not to do this until after lucid checking.

@@ -72,6 +72,16 @@
 (trace$ vl-lucid-resolved-slice->bits)
 (trace$ duplicated-members)
 
+(trace$ (vl-lucid-valid-bits-for-decl
+         :entry (list 'vl-lucid-valid-bits-for-decl
+                      :item item
+                      :ss (vl-scopestack->path ss))))
+
+(trace$ (vl-inside-true-generate-p
+         :entry (list 'vl-inside-true-generate-p :ss (vl-scopestack->path ss))))
+
+
+
 
 (trace$ (vl-description-inject-warnings
          :entry (list 'vl-description-inject-warnings
@@ -165,6 +175,16 @@
                       :raw x)
          :exit (let ((st (first acl2::values)))
                  (list 'vl-lhsexpr-lucidcheck
+                       (vl-pps-lucidstate st)))))
+
+(trace$ (vl-assign-lucidcheck
+         :entry (list 'vl-assign-lucidcheck
+                      (with-local-ps (vl-pp-assign x))
+                      :ss (with-local-ps (vl-pp-scopestack-path ss))
+                      :st (vl-pps-lucidstate st)
+                      :raw x)
+         :exit (let ((st (first acl2::values)))
+                 (list 'vl-assign-lucidcheck
                        (vl-pps-lucidstate st)))))
 
 ;; (with-redef

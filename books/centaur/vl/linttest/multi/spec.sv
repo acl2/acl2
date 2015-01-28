@@ -288,6 +288,131 @@ module m6 ;
 endmodule
 
 
+module m7 ;
+
+  logic multi_a1;
+  assign multi_a1 = 0;
+  assign multi_a1 = 1;
+
+  function normal_a1 (input w);
+    normal_a1 = w;
+  endfunction
+
+  function normal_a2 (input w, input v);
+    normal_a2 = w;
+    if (v) normal_a2 = 0;
+  endfunction
+
+  wire normal_a3 = normal_a1(1'b1) + normal_a1(1'b0);
+  wire normal_a4 = normal_a2(1'b1, 1'b0) + normal_a2(1'b0, 1'b1);
+
+  function normal_a5 (input w);
+    logic normal_a6;
+    normal_a6 = 0;
+    if (w) normal_a6 = 1;
+    return normal_a6;
+  endfunction
+
+  function normal_a7 (input w);
+    logic normal_a8 = 0;
+    if (w) normal_a8 = 1;
+    return normal_a8;
+  endfunction
+
+endmodule
+
+module m8 ;
+
+  parameter SIZE = 4;
+
+  logic multi_a1;
+  assign multi_a1 = 0;
+  assign multi_a1 = 1;
+
+  logic [3:0] normal_a1;
+  generate
+    if (SIZE > 4) assign normal_a1[0] = 0;
+    else          assign normal_a1[0] = 1;
+  endgenerate
+  generate
+    if (SIZE > 4) assign normal_a1[1] = 0;
+    else          assign normal_a1[1] = 1;
+  endgenerate
+  generate
+    if (SIZE > 4) assign normal_a1[2] = 0;
+    else          assign normal_a1[2] = 1;
+  endgenerate
+  generate
+    if (SIZE > 4) assign normal_a1[3] = 0;
+    else          assign normal_a1[3] = 1;
+  endgenerate
+
+endmodule
+
+
+
+module buggy (output o1, o2, o3, input i1, i2);
+
+  Hello, I am some garbage that is not supposed to parse.
+  This causes the "buggy" module to have a parse error.
+  This is a good stress test for how buggy module instances are handled.
+
+endmodule
+
+
+
+module m9 ;
+
+  wire normal_i1, normal_i2;
+  wire normal_o1a, normal_o2a, normal_o3a;
+  wire normal_o1b, normal_o2b, normal_o3b;
+
+  buggy buggy_a (normal_o1a, normal_o2a, normal_o3a, normal_i1, normal_i2);
+  buggy buggy_b (normal_o1b, normal_o2b, normal_o3b, normal_i1, normal_i2);
+
+  logic multi_a1;
+  assign multi_a1 = 0;
+  assign multi_a1 = 1;
+
+endmodule
+
+
+
+module m10 ;
+
+  reg normal_r1;    // this will get set through HIDs
+
+  wire multi_a1;
+  assign multi_a1 = 0;
+  assign multi_a1 = 1;
+
+endmodule
+
+
+module m11 ;
+
+  m10 inst_a ();
+  m10 inst_b ();
+
+  wire clk;
+
+  always @(posedge clk)
+  begin
+    inst_a.normal_r1 = 0;
+  end
+
+  always @(posedge clk)
+  begin
+    inst_b.normal_r1 = 0;
+  end
+
+  wire multi_a1;
+  assign multi_a1 = 0;
+  assign multi_a1 = 1;
+
+endmodule
+
+
 
 
 // BOZO more things to eventually support and check
