@@ -497,12 +497,18 @@ created when we process their packages, etc.</p>"
   (vl-lucidocc-case x
     (:solo   (vl-ps-seq (vl-print "(:solo :ss ")
                         (vl-pp-scopestack-path x.ss)
+                        (vl-print " :ctx ")
+                        (vl-pp-context-summary x.ctx)
                         (vl-print ")")))
     (:slice  (vl-ps-seq (vl-cw "(:slice ~a0 ~a1 :ss " x.left x.right)
                         (vl-pp-scopestack-path x.ss)
+                        (vl-print " :ctx ")
+                        (vl-pp-context-summary x.ctx)
                         (vl-print ")")))
     (:tail  (vl-ps-seq (vl-print "(:tail :ss ")
                        (vl-pp-scopestack-path x.ss)
+                       (vl-print " :ctx ")
+                       (vl-pp-context-summary x.ctx)
                        (vl-print ")")))
 
 
@@ -967,7 +973,6 @@ created when we process their packages, etc.</p>"
          ;;  - tagged operators (recording which tags are used)
          ;;  - streaming concatenation and with operators
          )
-      (cw "Not index case.")
       (vl-lhsexprlist-lucidcheck x.args ss st ctx)))
 
   (define vl-lhsexprlist-lucidcheck ((x   vl-exprlist-p)
@@ -2084,7 +2089,7 @@ whose arguments are not sensibly resolved.</p>"
         (vl-lucidocclist-drop-bad-modinsts (cdr x))))
     ;; Else everything is peachy.
     (cons (vl-lucidocc-fix (car x))
-          (vl-lucidocclist-drop-generates (cdr x)))))
+          (vl-lucidocclist-drop-bad-modinsts (cdr x)))))
 
 (define vl-lucid-scopestack-subscope-p ((a vl-scopestack-p)
                                         (b vl-scopestack-p))
