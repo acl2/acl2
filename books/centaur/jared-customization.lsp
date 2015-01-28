@@ -255,10 +255,10 @@
 (assign get-internal-time-as-realtime t)
 
 
-#!ACL2
-(defmacro s (&rest args)
-  ;; Shorter name for sidekick lookup function
-  `(acl2::show . ,args))
+;; #!ACL2
+;; (defmacro s (&rest args)
+;;   ;; Shorter name for sidekick lookup function
+;;   `(acl2::show . ,args))
 
 
 ;; (define skip-until-subgoal-fn (prefix id clause)

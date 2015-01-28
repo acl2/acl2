@@ -29,10 +29,11 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "emodwire")
 (include-book "centaur/esim/esim-sexpr-support" :dir :system)
-(include-book "toe-emodwire")
-(local (include-book "../util/arithmetic"))
-(local (include-book "../util/esim-lemmas"))
+(local (include-book "esim-lemmas"))
+(local (include-book "centaur/vl/util/arithmetic" :dir :system))
+
 
 (defsection pat-flatten-rev
 

@@ -29,19 +29,19 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "toe-eocc-allnames")
-(include-book "toe-preliminary")
-(include-book "toe-add-res-modules")
-(include-book "toe-add-zdrivers")
-(include-book "../mlib/remove-bad")
-(include-book "../mlib/atts")
-(local (include-book "../util/arithmetic"))
-(local (include-book "../util/esim-lemmas"))
-(local (include-book "../util/osets"))
+(include-book "eocc-allnames")
+(include-book "preliminary")
+(include-book "add-res-modules")
+(include-book "zdrivers")
+(include-book "centaur/vl/mlib/remove-bad" :dir :system)
+(include-book "centaur/vl/mlib/atts" :dir :system)
+(local (include-book "esim-lemmas"))
+(local (include-book "centaur/vl/util/arithmetic" :dir :system))
+(local (include-book "centaur/vl/util/osets" :dir :system))
 (local (non-parallel-book))
 
 (defxdoc e-conversion
-  :parents (vl)
+  :parents (esim)
   :short "Translation from simplified Verilog modules into E modules."
 
   :long "<p>The conversion from Verilog to E is mostly straightforward because
