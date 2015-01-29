@@ -32,7 +32,7 @@
 (in-package "ACL2")
 ;; (include-book "defsort/defsort" :dir :system)
 (include-book "aig-base")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "std/bitsets/sbitsets" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "centaur/misc/alist-defs" :dir :system)

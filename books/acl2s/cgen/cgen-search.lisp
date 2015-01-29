@@ -8,7 +8,7 @@
 (in-package "CGEN")
 
 ;Useful Macros for concise/convenient code.
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "basis")
 
 (include-book "type")

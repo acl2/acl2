@@ -32,7 +32,7 @@
 
 (in-package "ACL2")
 
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 (mutual-recursion
  (defun magic-ev (x alist state hard-errp aokp)

@@ -34,11 +34,6 @@
 (include-book "../mlib/expr-tools")
 (local (include-book "../util/arithmetic"))
 
-(deflist vl-locationlist-p (x)
-  ;; BOZO find me a home
-  (vl-location-p x)
-  :guard t
-  :elementp-of-nil nil)
 
 
 (defsection duplicate-detect

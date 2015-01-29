@@ -677,7 +677,6 @@ ifeq ($(ACL2_HAS_REALS), )
 ACL2_CUSTOM_TARGETS := \
   system/toothbrush/success.txt \
   clause-processors/SULFA/target.cert \
-  fix-cert/fix-cert.cert \
   projects/translators/l3-to-acl2/target.cert \
   workshops/1999/multiplier/proof.cert \
   workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert \
@@ -718,10 +717,6 @@ clause-processors/SULFA/target.cert: \
 	else \
 	echo "*NOTE*: Skipping SULFA subdirectory (no SAT solver installed; see SULFA/README)." ; \
 	fi
-
-# The following has no dependencies, so doesn't need a "deps" file.
-fix-cert/fix-cert.cert:
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 projects/translators/l3-to-acl2/target.cert: \
   projects/translators/l3-to-acl2-deps.cert
@@ -839,9 +834,6 @@ OK_CERTS := $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(OK_CERTS))
 
 # Start a sequence of assignments to BOOKS_SKIP_COMP:
 BOOKS_SKIP_COMP :=
-
-# Unusual directory:
-BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard fix-cert/*.cert))
 
 # Contain Lisp-specific readtime conditionals:
 BOOKS_SKIP_COMP += hacking/evalable-ld-printing.$(ACL2_COMP_EXT)

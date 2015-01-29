@@ -133,7 +133,7 @@ either more control or flexibility in the underlying representation.</p>")
 
 
 (define vl-string-findloc
-  :parents (vl-location-p)
+  :parents (vl-location)
   :short "Traverse a string to determine the position of a @(see
 vl-location-p)."
 
@@ -170,7 +170,7 @@ vl-location-p)."
 (local (in-theory (enable maybe-stringp)))
 
 (define vl-string-between-locs
-  :parents (vl-location-p)
+  :parents (vl-location)
   :short "Given a string, extract all text that occurs between two @(see
 vl-location-p)s."
   ((x    "String to extract text from.  Typically this should be extracted

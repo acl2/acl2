@@ -39,16 +39,16 @@
   :short "Functions for throwing away attributes, widths, etc., so that
 expressions and module elements can be compared using @(see equal)."
 
-  :long "<p>In many basic kinds of linting and well-formedness checking, it is
-useful to be able to compare module elements using @('equal').  But @('equal')
-can report that elements are different because of, e.g., their location
-information, widths and other annotations on expressions, and other kinds of
-semantically irrelevant attributes.</p>
+  :long "<p>In many basic kinds of @(see lint)ing and well-formedness checking,
+it is useful to be able to compare module elements using @('equal').  But
+@('equal') can report that elements are different because of, e.g., their
+location information, widths and other annotations on expressions, and other
+kinds of semantically irrelevant attributes.</p>
 
-<p>These fixing functions attempt to throw away these kind of semantically
-irrelevant components of module elements, so that they can be compared with
-@('equal').  For instance, we replace all locations with @(see *vl-fakeloc*),
-etc.</p>
+<p>These <b>stripping</b> functions attempt to strip away these kind of
+semantically irrelevant components of module elements, so that they can be
+compared with @('equal').  For instance, we replace all locations with @(see
+*vl-fakeloc*), replace all attributes with @('nil'), etc.</p>
 
 <p>Exactly what we throw away depends on the kind of module element.  In some
 cases this may not be exactly what you want.  See the individual functions for

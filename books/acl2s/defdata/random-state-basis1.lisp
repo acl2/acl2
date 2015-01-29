@@ -6,7 +6,7 @@
 
 (in-package "DEFDATA")
 (set-verify-guards-eagerness 2)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 ;(local (include-book "arithmetic-5/top" :dir :system))
 

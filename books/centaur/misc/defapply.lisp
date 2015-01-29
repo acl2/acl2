@@ -81,7 +81,7 @@
            (logic-function-syms (all-syms-in-world world) world))))))
 
 
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "clause-processors/generalize" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 (include-book "tools/templates" :dir :system)

@@ -31,7 +31,7 @@
 
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (local (include-book "tools/mv-nth" :dir :system))
 (set-state-ok t)
 

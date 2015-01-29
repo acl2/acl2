@@ -27,7 +27,7 @@
 
 (in-package "ACL2")
 
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)

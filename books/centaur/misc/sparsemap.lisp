@@ -33,7 +33,7 @@
 (include-book "count-up")
 (include-book "remove-assoc")
 (include-book "misc/definline" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (local (include-book "sparsemap-impl"))
 (set-enforce-redundancy t)
 

@@ -33,7 +33,7 @@
 (in-package "GL")
 (include-book "gobject-types")
 (include-book "../misc/numlist")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (program)
 
 (defxdoc auto-bindings

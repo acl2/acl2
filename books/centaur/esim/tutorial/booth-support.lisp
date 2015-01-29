@@ -35,7 +35,7 @@
 (local (include-book "centaur/bitops/ihs-extensions" :dir :System))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (include-book "ihs/basic-definitions" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 (defun booth-enc-one (a b)
   (+ (if (logbitp 0 a) b        0)

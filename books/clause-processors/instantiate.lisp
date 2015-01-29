@@ -31,7 +31,7 @@
 (in-package "ACL2")
 (include-book "unify-subst")
 (include-book "tools/flag" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 (defxdoc instantiate-thm-for-matching-terms
   :parents (computed-hints)

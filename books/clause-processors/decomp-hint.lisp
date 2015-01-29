@@ -26,7 +26,7 @@
 
 (include-book "join-thms")
 
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 
 

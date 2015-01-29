@@ -343,7 +343,7 @@ input streams.  So, that might be worth considering.</p>"
   ;; Performance testing code
   #||
   (include-book ;; newline to fool dependency scanner
-    "tools/bstar" :dir :system)
+    "std/util/bstar" :dir :system)
   (defun skip-chars-until-eof (channel state)
     (declare (xargs :mode :program :stobjs state))
     (b* (((mv char/nil state) (read-char$ channel state))

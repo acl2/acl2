@@ -21464,8 +21464,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            :ignore)))
 
 (defmacro add-include-book-dir! (keyword dir)
-  `(change-include-book-dir ,keyword
-                            ,dir
+  `(change-include-book-dir ',keyword
+                            ',dir
                             'add-include-book-dir!
 
 ; We use state in the loop but the live state outside it.  This could be a

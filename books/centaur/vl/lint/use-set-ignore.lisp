@@ -29,12 +29,12 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "centaur/esim/vltoe/wirealist" :dir :system) ;; bozo
 (include-book "../loader/parser/lvalues")
 (include-book "../loader/lexer/lexer")
 (include-book "../mlib/fmt")
 (include-book "../lint/oddexpr") ;; bozo for *fake-modelement*
-(include-book "../toe/toe-wirealist")
-(include-book "../transforms/xf-expr-size")
+(include-book "../transforms/expr-size")
 (local (include-book "../util/arithmetic"))
 
 

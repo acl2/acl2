@@ -1,7 +1,7 @@
 
 (in-package "ACL2")
 
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 (defun untrans-defabsstobj-missing-defthms (forms state)
   (declare (xargs :mode :program :stobjs state))

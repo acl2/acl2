@@ -32,7 +32,7 @@
 
 (in-package "VL")
 (include-book "esim-sexpr-support")
-(include-book "centaur/vl/toe/toe-wirealist" :dir :system)
+(include-book "vltoe/wirealist")
 (local (include-book "std/lists/all-equalp" :dir :system))
 
 (defsection esim-vl

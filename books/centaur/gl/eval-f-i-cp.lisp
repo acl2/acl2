@@ -30,7 +30,7 @@
 
 (in-package "GL")
 (include-book "gl-util")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
 (include-book "misc/hons-help2" :dir :system)
 (include-book "clause-processors/join-thms" :dir :system)

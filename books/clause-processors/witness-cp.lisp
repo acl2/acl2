@@ -36,7 +36,7 @@
 (include-book "use-by-hint")
 (include-book "generalize")
 (include-book "unify-subst")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "ev-theoremp")
 (include-book "tools/def-functional-instance" :dir :system)
 (include-book "data-structures/no-duplicates" :dir :system)

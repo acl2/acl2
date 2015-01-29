@@ -30,7 +30,7 @@
 ; as of December 2015, it's broken.  It is currently intended to be "ld"'d into
 ; a system, not certified or included as a book.
 
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)

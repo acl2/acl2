@@ -13,7 +13,7 @@ data last modified: [2014-08-06]
 
 (in-package "DEFDATA")
 
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 (table defdata-defaults-table nil 
        '((:debug       .  nil)

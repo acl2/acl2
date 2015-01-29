@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../transforms/xf-expr-size")
+(include-book "../transforms/expr-size")
 (include-book "centaur/bitops/fast-logext" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
