@@ -1,6 +1,0 @@
-#!/bin/sh
-
-echo "This is a placeholder saved_acl2 script.  You must first execute"
-echo "run_acl2 in the same directory to update for the new install path."
-
-exit 1
