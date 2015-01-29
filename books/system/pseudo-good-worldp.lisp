@@ -680,15 +680,12 @@
 
 ; Note:  cert-annotations might be NIL after certify-book.  See below.
 
-; The function include-book-alistp exists in our source code but has a slightly
-; richer interface than needed here.  Using it directly would require us to
-; make pseudo-good-worldp a function of the ACL2 Version.  But the world is so
-; version-dependent that there's no reason to pretend to recognize the worlds of
-; older versions.  So we just define pseudo versions of the predicates in
-; our sources.
-
 ; Cert-annotationsp is defined in the source code and uses ttag-alistp.
 ; We need to admit guard-verified versions of each.
+
+(verify-termination sysfile-p)
+
+(verify-termination sysfile-or-string-listp)
 
 (verify-termination ttag-alistp)
 
@@ -713,7 +710,7 @@
 ; is the natural predicate.
 
           (or (null cert-annotations)
-              (cert-annotationsp cert-annotations))
+              (cert-annotationsp cert-annotations t))
           (or (integerp chk-sum)
               (eq chk-sum nil))))
     (& nil)))

@@ -11731,12 +11731,18 @@
     (& nil)))
 
 (defrec cert-obj
+
+; This record represents information stored in a certificate file.  The
+; "-sysfile" variants are used for checksums, employing sysfiles (see
+; sysfile-p) in place of absolute pathnames referencing system books, to
+; support the relocation of system books directories that include .cert files,
+; while the "-abs" variants instead contain the original absolute pathnames,
+; and are used for purposes other than checksums.
+
   ((cmds pre-alist-sysfile . pre-alist-abs)
    (post-alist-sysfile . post-alist-abs)
    expansion-alist
    . 
-
-;; !! Document some fields above
 
 ; The :pcert-info field is used for provisional certification.  Its value is
 ; either an expansion-alist that has not had locals elided (as per elide-locals
@@ -11945,20 +11951,17 @@
                                    ctx state
                                    suspect-book-action-alist evalp)
 
-; !! Update comments for new sysfile handling, as necessary.
-
-; File1 is a book and file2 is its certificate file.  The version string
-; recorded with the file is version.  Ch is an open object input channel to the
-; certificate.  We have already read past the initial (in-package "ACL2"),
-; acl2-version and the :BEGIN-PORTCULLIS-CMDS in ch.  We now read successive
-; commands and, if evalp is true, evaluate them in state.  Ld-skip-proofsp is
-; 'include-book for this operation because these commands have all been
-; successfully carried out in a boot strap world.  If this doesn't cause an
-; error, then we read the optional :expansion-alist, the pre- and post- check
-; sum alists, and the final check sum.  If these objects are (except the
-; optional :expansion-alist) not present or are of the wrong type, or there is
-; additional text in the file, or the final check sum is inaccurate, we cause
-; an error.
+; File1 is a book and file2 is its certificate file.  Ch is an open object
+; input channel to the certificate.  We have already read past the initial
+; (in-package "ACL2"), acl2-version and the :BEGIN-PORTCULLIS-CMDS in ch.  We
+; now read successive commands and, if evalp is true, evaluate them in state.
+; Ld-skip-proofsp is 'include-book for this operation because these commands
+; have all been successfully carried out in a boot strap world.  If this
+; doesn't cause an error, then we read the optional :expansion-alist, the pre-
+; and post- check sum alists, and the final check sum.  If these objects are
+; (except the optional :expansion-alist) not present or are of the wrong type,
+; or there is additional text in the file, or the final check sum is
+; inaccurate, we cause an error.
 
 ; Light-chkp is t when we are content to avoid rigorous checks on the
 ; certificate, say because we are simply interested in some information that
@@ -11969,7 +11972,10 @@
 ; error or to the assumption that the book is uncertified, according to the
 ; suspect-book-action-alist.  If we don't cause an error we return either the
 ; certificate object, which is a cert-obj record, or else we return nil,
-; indicating that the book is presumed uncertified.
+; indicating that the book is presumed uncertified.  The cert-obj record
+; contains not only the "-sysfile" versions of the pre- and post-alist, which
+; are stored in the certificate file, but their conversions to "-abs" versions,
+; in which the sysfiles have been converted to absolute pathnames.
 
   (with-reckless-readtable
 
@@ -24116,7 +24122,7 @@
         (in-encapsulatep (global-val 'embedded-event-lst wrld)
                          nil))))
 
-(defun change-include-book-dir (keyword dir caller state)
+(defun change-include-book-dir (keyword dir0 caller state)
 
 ; Caller is add-include-book-dir, add-include-book-dir!,
 ; delete-include-book-dir!, or delete-include-book-dir.  Dir is nil if and only
@@ -24126,12 +24132,13 @@
 
   (declare (xargs :guard (state-p state)
                   :mode :program))
-  (let* ((ctx (if dir
+  (let* ((ctx (if dir0
                  (cons caller keyword)
                (msg "~x0" (list caller keyword))))
          (bang-p (member-eq caller '(add-include-book-dir!
                                      delete-include-book-dir!)))
-         (dir (sysfile-to-filename dir state)))
+         (dir (and dir0
+                   (sysfile-to-filename dir0 state))))
     (cond ((not (if dir
                     (member-eq caller '(add-include-book-dir
                                         add-include-book-dir!))
@@ -24166,7 +24173,8 @@
                caller keyword))
           ((and dir (not (stringp dir)))
            (er soft ctx
-               "The second argument of ~x0 must be a string, but ~x1 is not."
+               "The second argument of ~x0 must be a string or of the form ~
+                (:SYSTEM . string), but ~x1 is not."
                caller dir))
           (t
            (state-global-let*
