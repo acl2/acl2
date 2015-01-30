@@ -283,6 +283,7 @@
       defconsts
       defval
       more-returns
+      defret
       xdoc
 ;               defaggregate
 ;               defenum

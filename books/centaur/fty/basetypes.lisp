@@ -143,6 +143,11 @@
       (implies (posp x)
                (equal (pos-fix x) x)))
 
+    (defun lposfix (x)
+      ;; enabled
+      (declare (xargs :guard (posp x)))
+      (mbe :logic (pos-fix x) :exec x))
+
     (fty::defbasetype pos-equiv posp :fix pos-fix))
 
   (fty::deffixtype character :pred characterp :fix char-fix :equiv chareqv)

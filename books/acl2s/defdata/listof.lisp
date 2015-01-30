@@ -54,14 +54,12 @@ data last modified: [2014-08-06]
        (str-alist `(("_PRED_" . ,(symbol-name pred)) ("_CPRED_" . ,(symbol-name cpred))))
        (local-events (template-subst local-events-template
                                      :features features
-                                     :subtree-alist nil
                                      :splice-alist splice-alist
                                      :atom-alist atom-alist
                                      :str-alist str-alist
                                      :pkg-sym 'acl2::asdf))
        (export-defthms (template-subst export-defthms-template
                                      :features features
-                                     :subtree-alist nil
                                      :splice-alist splice-alist
                                      :atom-alist atom-alist
                                      :str-alist str-alist

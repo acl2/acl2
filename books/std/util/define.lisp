@@ -1298,3 +1298,127 @@ specifiers is ignored.  You should usually put such documentation into the
 
 (defmacro more-returns (&rest args)
   `(make-event (more-returns-fn ',args (w state))))
+
+
+
+
+; ------------------------------------------------------------------------
+;
+;  Defret -- looks like a defthm, but shares some features with :returns/more-returns
+;
+; ------------------------------------------------------------------------
+
+(defxdoc defret
+  :parents (define returns-specifiers)
+  :short "Prove additional theorems about a @(see define)d
+function, implicitly binding the return variables."
+
+  :long "<p>@('defret') is basically defthm, but has a few extra features.</p>
+
+<p>The main feature is that it automatically binds the declared return values
+for a function, which defaults to the most recent function created using @(see
+define).</p>
+
+<p>It also supports the @(':hyp') keyword similar to define's @(see
+returns-specifiers).</p>
+
+<p>Syntax:</p>
+
+<p>Suppose we have a function created using define with the following signature:
+@({
+ (define my-function ((a natp)
+                      (b stringp)
+                      (c true-listp))
+   :returns (mv (d pseudo-termp)   
+                (e booleanp)
+                (f (tuplep 3 f)))
+   ...)
+ })
+<p>(The guards and return types aren't important for our purposes, just the names.)</p>
+
+<p>A @('defret') form like this:</p>
+@({
+  (defret a-theorem-about-my-function
+     :hyp (something-about a b c)
+     :pre-bind ((q (foo a b c)))
+     (implies (not e)
+              (and (consp d)
+                   (symbolp (car d))
+                   (equal (second d) q)))
+     :fn my-function   ;; defaults to the most recent define
+     :hints ...
+     :rule-classes ...)
+ })
+<p>will then expand to this:</p>
+@({
+ (defthm a-theorem-about-my-function
+   (implies (something-about a b c)
+      (b* ((q (foo a b c))
+           ((mv ?d ?e ?f) (my-function a b c)))
+        (implies (not e)
+                 (and (consp d)
+                      (symbolp (car d))
+                      (equal (second d) q)))))
+   :hints ...
+   :rule-classes ...)
+ })
+
+<p>The @(':hyp :guard') and @(':hyp :fguard') features of @(see
+returns-specifiers) are also supported.</p>
+
+<p>@('Defret') does <i>not</i> support the feature where a single function name
+specifies a type of a return value.  Perhaps we could support it for functions
+with a single return value.</p>
+
+<p>One limitation of @('defret') is that the conclusion term can't refer to a
+formal if there is a return value that has the same name.  To work around this,
+the @(':pre-bind') argument accepts a list of @(see b*') bindings that occur
+before the binding of the return values.  You may also just want to not share
+names between your formals and returns.</p>")
+
+
+
+(defun defret-fn (name args world)
+  (b* ((__function__ 'defret)
+       ((mv kwd-alist args)
+        (extract-keywords `(defret ,name) '(:hyp :fn :hints :rule-classes :pre-bind)
+                          args nil))
+       ((unless (consp args))
+        (raise "No body"))
+       ((when (cdr args))
+        (raise "Extra junk: ~x0" (cdr args)))
+       (concl-term (car args))
+       (fn (let ((look (assoc :fn kwd-alist)))
+             (if look (cdr look) (get-define-current-function world))))
+       (guts (cdr (assoc fn (get-define-guts-alist world))))
+       ((unless guts)
+        (raise "No define-guts for ~x0" fn))
+       ((defguts guts) guts)
+       ((unless guts.returnspecs)
+        (raise "No return names provided for ~x0" fn))
+       (names (returnspeclist->names guts.returnspecs))
+       (ign-names (make-symbols-ignorable names))
+       (formals (look-up-formals guts.name-fn world))
+       (binding `((,(if (consp (cdr ign-names))
+                        `(mv . ,ign-names)
+                      (car ign-names))
+                   (,guts.name-fn . ,formals))))
+       (hyp? (assoc :hyp kwd-alist))
+       (hyp (cond ((eq (cdr hyp?) :guard) (fancy-hyp (look-up-guard guts.name-fn world)))
+                  ((eq (cdr hyp?) :fguard) (fancy-force-hyp (look-up-guard guts.name-fn world)))
+                  (t (cdr hyp?))))
+       (rule-classes? (assoc :rule-classes kwd-alist))
+       (hints? (assoc :hints kwd-alist))
+       (pre-bind (cdr (assoc :pre-bind kwd-alist)))
+       (concl `(b* (,@pre-bind ,@binding) ,concl-term))
+       (thm (if hyp?
+                `(implies ,hyp ,concl)
+              concl)))
+    `(defthm ,name
+       ,thm
+       ,@(and hints?        `(:hints ,(cdr hints?)))
+       ,@(and rule-classes? `(:rule-classes ,(cdr rule-classes?))))))
+
+
+(defmacro defret (name &rest args)
+  `(make-event (defret-fn ',name ',args (w state))))

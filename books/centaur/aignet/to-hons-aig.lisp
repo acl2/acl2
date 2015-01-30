@@ -252,6 +252,8 @@
   :measure (nfix (- (nfix (num-outs aignet))
                     (nfix n)))
   :verify-guards nil
+  :returns (outs (equal (len outs)
+                        (nfix (- (num-outs aignet) (nfix n)))))
   (mbe :logic
        (b* (((when (mbe :logic (zp (- (num-outs aignet)
                                       (nfix n)))
@@ -331,6 +333,10 @@
               (equal (len regnames) (num-regs aignet))
               (true-listp innames)
               (true-listp regnames))
+  :prepwork ((local (defthm alistp-of-pairlis$
+                      (alistp (pairlis$ x y)))))
+  :returns (mv (outs (equal (len outs) (num-outs aignet)))
+               (regs alistp))
   (b* (((local-stobjs aigtrans)
         (mv outlist regalist aigtrans))
        (aigtrans (resize-aigs (num-nodes aignet) aigtrans))
