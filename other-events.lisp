@@ -10164,7 +10164,7 @@
          (temp (member *directory-separator* rlst)))
     (coerce (reverse temp) 'string)))
 
-(defun extend-pathname (dir file-name state)
+(defun extend-pathname (dir0 file-name state)
 
 ; Dir is a string representing an absolute directory name, and file-name is a
 ; string representing a file or directory name.  We want to extend dir by
@@ -10172,6 +10172,9 @@
 ; return something canonical, if possible.
 
   (let* ((os (os (w state)))
+         (dir (if (eq dir0 :system)
+                  (f-get-global 'system-books-dir state)
+                dir0))
          (file-name1 (expand-tilde-to-user-home-dir
                       file-name os 'extend-pathname state))
          (abs-filename (cond
@@ -10179,7 +10182,9 @@
                          file-name1)
                         (t
                          (our-merge-pathnames dir file-name1))))
-         (canonical-filename (canonical-pathname abs-filename nil state)))
+         (canonical-filename (if (eq dir0 :system)
+                                 abs-filename
+                               (canonical-pathname abs-filename nil state))))
     (or canonical-filename
 
 ; If a canonical filename doesn't exist, then presumably the file does not
@@ -10331,14 +10336,36 @@
 ; relative pathnames in include-book forms.  See the comment in
 ; fix-portcullis-cmds.
 
-(defmacro string-prefixp (root string)
+(defun string-prefixp-1 (str1 i str2)
+  (declare (type string str1 str2)
+           (type (unsigned-byte 29) i)
+           (xargs :guard (and (<= i (length str1))
+                              (<= i (length str2)))))
+  (cond ((zpf i) t)
+        (t (let ((i (1-f i)))
+             (declare (type (unsigned-byte 29) i))
+             (cond ((eql (the character (char str1 i))
+                         (the character (char str2 i)))
+                    (string-prefixp-1 str1 i str2))
+                   (t nil))))))
+
+(defun string-prefixp (root string)
 
 ; We return a result propositionally equivalent to
 ;   (and (<= (length root) (length string))
 ;        (equal root (subseq string 0 (length root))))
 ; but, unlike subseq, without allocating memory.
 
-  `(eql 0 (search ,root ,string :start2 0)))
+; At one time this was a macro that checked `(eql 0 (search ,root ,string
+; :start2 0)).  But it seems potentially inefficient to search for any match,
+; only to insist at the end that the match is at 0.
+
+  (declare (type string root string)
+           (xargs :guard (<= (length root) (fixnum-bound))))
+  (let ((len (length root)))
+    (and (<= len (length string))
+         (assert$ (<= len (fixnum-bound))
+                  (string-prefixp-1 root len string)))))
 
 (defun relativize-book-path (filename system-books-dir)
 
@@ -10376,7 +10403,7 @@
 
 (defun sysfile-to-filename (x state)
   (cond ((sysfile-p x)
-         (extend-pathname (f-get-global 'system-books-dir state)
+         (extend-pathname :system
                           (sysfile-filename x)
                           state))
         (t x)))
@@ -12577,28 +12604,30 @@
 
                           (fix-portcullis-cmds dir cmds cbds names
                                                wrld ctx state)))))
-                 (cond
-                  ((eq cert-op :convert-pcert)
-                   (cert-obj-for-convert file dir pre-alist-abs fixed-cmds
-                                         suspect-book-action-alist
-                                         ctx state))
-                  (t
-                   (value
-                    (make cert-obj
-                          :cmds fixed-cmds
-                          :pre-alist-abs
-                          (cond (cert-obj (access cert-obj cert-obj
-                                                  :pre-alist-abs))
-                                (t pre-alist-abs))
-                          :pre-alist-sysfile
-                          (cond (cert-obj (access cert-obj cert-obj
-                                                  :pre-alist-sysfile))
-                                (t (filename-to-sysfile pre-alist-abs
-                                                        state)))
-                          :post-alist-abs nil     ; not needed
-                          :post-alist-sysfile nil ; not needed
-                          :expansion-alist nil    ; explained above
-                          )))))))))
+          (cond
+           ((eq cert-op :convert-pcert)
+            (cert-obj-for-convert file dir pre-alist-abs fixed-cmds
+                                  suspect-book-action-alist
+                                  ctx state))
+           (t
+            (value
+             (make cert-obj
+                   :cmds fixed-cmds
+                   :pre-alist-abs
+                   (cond (cert-obj (access cert-obj cert-obj
+                                           :pre-alist-abs))
+                         (t pre-alist-abs))
+                   :pre-alist-sysfile
+                   (cond
+                    (cert-obj (access cert-obj cert-obj
+                                      :pre-alist-sysfile))
+                    (t (filename-to-sysfile-include-book-alist pre-alist-abs
+                                                               nil
+                                                               state)))
+                   :post-alist-abs nil            ; not needed
+                   :post-alist-sysfile nil        ; not needed
+                   :expansion-alist nil           ; explained above
+                   )))))))))
 
 (defun translate-book-names (filenames cbd state acc)
   (declare (xargs :guard (true-listp filenames))) ; one member can be nil

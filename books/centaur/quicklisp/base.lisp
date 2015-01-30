@@ -33,11 +33,7 @@
 ; cert_param: (uses-quicklisp)
 
 (make-event
- (let ((cbd (cbd)))
-   `(defconst *quicklisp-dir* ',cbd)))
-
-(make-event
- (let* ((dir *quicklisp-dir*))
+ (let* ((dir (cbd)))
    ;; Keep these in sync with install.lsp
    (progn$
     (setenv$ "XDG_CONFIG_HOME" (concatenate 'string dir "asdf-home/config"))
