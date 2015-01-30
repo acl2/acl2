@@ -853,7 +853,7 @@ functions cannot be symbolically executed.</p>
 
 <p>In the event that one is performing a very large decomposition proof (e.g.,
 the theorem @('boothmul-decomp-is-boothmul-via-GL') in book
-@('centaur/tutorial/boothmul.lisp'), one should consider using book
+@('centaur/esim/tutorial/boothmul.lisp'), one should consider using book
 @('centaur/esim/stv/stv-decomp-proofs').</p>")
 
 

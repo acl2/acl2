@@ -20,7 +20,7 @@
 
 ;(include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/deflist" :dir :system)
-;(include-book "tools/bstar" :dir :system)
+;(include-book "std/util/bstar" :dir :system)
 (include-book "std/strings/top" :dir :system)
 (include-book "std/io/base" :dir :system)
 (include-book "std/util/define" :dir :system)

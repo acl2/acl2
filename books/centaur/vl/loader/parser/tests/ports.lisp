@@ -31,7 +31,7 @@
 (in-package "VL")
 (include-book "base")
 (include-book "../ports")
-(include-book "../../../checkers/portcheck") ;; bozo for regularportlist->exprs
+(include-book "../../../lint/portcheck") ;; bozo for regularportlist->exprs
 
 ;; BOZO more unit tests!
 

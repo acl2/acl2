@@ -29,29 +29,28 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../loader/loader")
+(include-book "../loader/top")
 (include-book "../lint/lucid")
 (include-book "../lint/check-case")
 (include-book "../lint/check-namespace")
 (include-book "../mlib/hierarchy")
 
-(include-book "../lint/xf-drop-missing-submodules")
-(include-book "../lint/xf-drop-user-submodules")
-(include-book "../lint/xf-lint-stmt-rewrite")
-(include-book "../lint/xf-remove-toohard")
-(include-book "../lint/xf-suppress-warnings")
-
-(include-book "../checkers/condcheck")
-(include-book "../checkers/duplicate-detect")
-(include-book "../checkers/dupeinst-check")
-(include-book "../checkers/duperhs")
-(include-book "../checkers/leftright")
-(include-book "../checkers/multidrive-detect")
-(include-book "../checkers/oddexpr")
-(include-book "../checkers/portcheck")
-(include-book "../checkers/qmarksize-check")
-(include-book "../checkers/selfassigns")
-(include-book "../checkers/skip-detect")
+(include-book "../lint/drop-missing-submodules")
+(include-book "../lint/drop-user-submodules")
+(include-book "../lint/lint-stmt-rewrite")
+(include-book "../lint/remove-toohard")
+(include-book "../lint/suppress-warnings")
+(include-book "../lint/condcheck")
+(include-book "../lint/duplicate-detect")
+(include-book "../lint/dupeinst-check")
+(include-book "../lint/duperhs")
+(include-book "../lint/leftright")
+(include-book "../lint/multidrive-detect")
+(include-book "../lint/oddexpr")
+(include-book "../lint/portcheck")
+(include-book "../lint/qmarksize-check")
+(include-book "../lint/selfassigns")
+(include-book "../lint/skip-detect")
 
 (include-book "../transforms/cn-hooks")
 (include-book "../transforms/unparam/top")
@@ -62,21 +61,21 @@
 (include-book "../transforms/annotate/portdecl-sign")
 (include-book "../transforms/annotate/udp-elim")
 
-(include-book "../transforms/xf-assign-trunc")
-(include-book "../transforms/xf-blankargs")
-(include-book "../transforms/xf-clean-params")
-(include-book "../transforms/xf-clean-warnings")
-(include-book "../transforms/xf-drop-blankports")
-(include-book "../transforms/xf-expr-split")
-(include-book "../transforms/xf-expand-functions")
-(include-book "../transforms/xf-follow-hids")
-(include-book "../transforms/xf-hid-elim")
-(include-book "../transforms/xf-oprewrite")
-(include-book "../transforms/xf-resolve-ranges")
-(include-book "../transforms/xf-replicate-insts")
-(include-book "../transforms/xf-selresolve")
-(include-book "../transforms/xf-sizing")
-(include-book "../transforms/xf-unused-vars")
+(include-book "../transforms/assign-trunc")
+(include-book "../transforms/blankargs")
+(include-book "../transforms/clean-params")
+(include-book "../transforms/clean-warnings")
+(include-book "../transforms/drop-blankports")
+(include-book "../transforms/expr-split")
+(include-book "../transforms/expand-functions")
+(include-book "../transforms/follow-hids")
+(include-book "../transforms/hid-elim")
+(include-book "../transforms/oprewrite")
+(include-book "../transforms/resolve-ranges")
+(include-book "../transforms/replicate-insts")
+(include-book "../transforms/selresolve")
+(include-book "../transforms/sizing")
+(include-book "../transforms/unused-vars")
 
 (include-book "../../misc/sneaky-load")
 
@@ -93,12 +92,19 @@
 
 (defsection lint
   :parents (vl)
-  :short "A linting tool for Verilog."
+  :short "A linting tool for Verilog and SystemVerilog."
 
   :long "<p>A <a
 href='http://en.wikipedia.org/wiki/Lint_%28software%29'>linter</a> is a tool
-that looks for possible bugs in a program.  We now implement such a linter for
-Verilog, reusing much of @(see vl).</p>")
+that looks for possible bugs in a program.  We have used @(see VL) to implement
+a linter for Verilog and SystemVerilog designs.  It can scan your Verilog
+designs for potential bugs like size mismatches, unused wires, etc.</p>
+
+<p>Note: Most of the documentation here is about the implementation of various
+linter checks.  If you just want to run the linter on your own Verilog designs,
+you should see the VL @(see kit).  After building the kit, you should be able
+to run, e.g., @('vl lint --help') to see the @(see *vl-lint-help*)
+message.</p>")
 
 (defoptions vl-lintconfig
   :parents (lint)
@@ -467,10 +473,12 @@ shown.</p>"
        (design (cwtime (vl-design-argresolve design)))
        (design (cwtime (vl-design-resolve-indexing design)))
 
-       ;; Pre-unparameterization Lucidity Check -- this is a bad time for
-       ;; bit-level analysis, but it's a good time for checking parameter
-       ;; usages.
-       (design (cwtime (vl-design-lucid design :paramsp t)))
+       ;; Pre-unparameterization Lucidity Check.
+       (design (cwtime (vl-design-lucid design
+                                        ;; This is a good time to check parameter uses
+                                        :paramsp t
+                                        ;; This is a bad time to check generates
+                                        :generatesp nil)))
 
        (- (cw "~%vl-lint: starting general checks...~%"))
        (design (cwtime (vl-design-check-namespace design)))
@@ -504,8 +512,11 @@ shown.</p>"
        ;; Post-unparameterization Lucidity Check -- this is a bad time for
        ;; checking parameters (because they've been eliminated) but it's a
        ;; much better time to do bit-level analysis, because things like
-       ;; foo[width-1:0] should hopefully be resolved now.
-       (design (cwtime (vl-design-lucid design :paramsp nil)))
+       ;; foo[width-1:0] should hopefully be resolved now.  Also we can
+       ;; sensibly check generates now.
+       (design (cwtime (vl-design-lucid design
+                                        :paramsp nil
+                                        :generatesp t)))
 
        (design
         ;; Best not to do this until after lucid checking.
@@ -754,7 +765,8 @@ shown.</p>"
         :vl-const-expr-minor))
 
 (defconst *multidrive-warnings*
-  (list :vl-warn-multidrive))
+  (list :vl-warn-multidrive
+        :vl-lucid-multidrive))
 
 (defconst *multidrive-minor-warnings*
   (list :vl-warn-multidrive-minor))

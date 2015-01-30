@@ -32,7 +32,7 @@
 (in-package "ACL2")
 
 (include-book "generalize")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "centaur/misc/equal-sets" :dir :system)
 
 (local (in-theory (disable mv-nth)))

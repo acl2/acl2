@@ -1,3 +1,0 @@
-(in-package "ACL2")
-; cert-flags: ? t :ttags :all
-(certify-book "test-fix-cert2" ? t :ttags :all)

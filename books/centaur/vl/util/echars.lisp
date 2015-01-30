@@ -97,17 +97,18 @@ character with its location.</p>")
 These locations are attached to characters and module items to provide context
 during error reporting.</p>")
 
-
 (defval *vl-fakeloc*
-  :parents (vl-location-p)
+  :parents (vl-location)
   :short "A \"fake\" @(see vl-location-p) which we use when generating our
 own @(see extended-characters) and module items."
 
   (vl-location "[[[ fake location ]]]" 1 0))
 
+(fty::deflist vl-locationlist :elt-type vl-location)
+
 
 (define vl-location-string ((loc vl-location-p))
-  :parents (vl-location-p)
+  :parents (vl-location)
   :short "Convert an @(see vl-location-p) into a string."
   :long "<p>@(call vl-location-string) is often useful in generating warning
 or error messages.  It converts a @(see vl-location-p) object into a string
@@ -123,7 +124,7 @@ of the form <i>filename:line:col</i>.</p>"
 (define vl-location-between-p ((x vl-location-p)
                                (min vl-location-p)
                                (max vl-location-p))
-  :parents (vl-location-p)
+  :parents (vl-location)
   :short "@(call vl-location-between-p) is true exactly when @('x') is in the
 same file as @('min') and @('max'), and inclusively falls between these
 bounds."

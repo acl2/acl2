@@ -37,11 +37,10 @@
 (include-book "portdecl-sign")
 (include-book "resolve-indexing")
 (include-book "udp-elim")
-;; (include-book "../xf-follow-hids") ;; BOZO how much do we actually need this now?
-(include-book "../xf-clean-warnings")
+(include-book "../clean-warnings")
 (include-book "../cn-hooks")
-(include-book "../../checkers/duplicate-detect")
-(include-book "../../checkers/portcheck")
+(include-book "../../lint/duplicate-detect")
+(include-book "../../lint/portcheck")
 (include-book "../../util/cwtime")
 
 (defsection annotate

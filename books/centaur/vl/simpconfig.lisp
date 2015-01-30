@@ -58,31 +58,7 @@
                  "Maximum number of iterations to unroll for loops, etc., when
                   rewriting statements.  This is just a safety valve."
                  :rule-classes :type-prescription
-                 :default 1000)
-
-   (safe-mode-p  booleanp
-                 "Do extra safety checking.  Probably not actually used for
-                  anything."
-                 :rule-classes :type-prescription
-                 :default t)
-
-   ;; Linting options
-
-   (multidrive-detect-p booleanp
-                        "Should we try to detect and report about wires that have
-                         multiple drivers?"
-                        :rule-classes :type-prescription
-                        :default t)
-
-   (use-set-p booleanp
-              "Should we construct a @(see use-set) report?"
-              :rule-classes :type-prescription
-              :default t)
-
-   (use-set-omit-wires string-listp
-                       "Wire names to skip when doing @(see use-set) analysis."
-                       :default nil)
-   ))
+                 :default 1000)))
 
 (defconst *vl-default-simpconfig*
   (make-vl-simpconfig))

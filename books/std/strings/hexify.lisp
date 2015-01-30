@@ -30,7 +30,7 @@
 
 (in-package "STR")
 (include-book "coerce")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (local (include-book "explode-atom"))
 (local (include-book "arithmetic"))
 (local (in-theory (disable explode-atom)))

@@ -69,7 +69,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2015-01-20")
+  "VL Syntax 2015-01-22")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)

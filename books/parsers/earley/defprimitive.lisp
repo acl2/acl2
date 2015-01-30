@@ -19,7 +19,7 @@
 (in-package "ACL2")
 
 (include-book "xdoc/top" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 (defmacro defprimitive (name args body &key default parents short long)
   (b* ((xdoc::mksym-package-symbol

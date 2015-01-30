@@ -45,6 +45,17 @@
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 
+#||
+
+; Fool the dependency scanner into certifying testing books as part
+; of building top.cert
+
+(include-book "../loader/lexer/tests")
+(include-book "../loader/preprocessor/tests")
+(include-book "../loader/parser/tests/top")
+
+||#
+
 (defconst *vl-generic-help*
   "VL Verilog Toolkit
 Copyright (C) 2008-2013 Centaur Technology <http://www.centtech.com>

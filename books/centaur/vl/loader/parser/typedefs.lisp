@@ -116,7 +116,7 @@
           ;; BOZO the following probably isn't right for the 2nd production.
           (datatype := (vl-parse-datatype))
           (id := (vl-match-token :vl-idtoken))
-          (udims := (vl-parse-0+-packed-dimensions))
+          (udims := (vl-parse-0+-variable-dimensions))
           (semi := (vl-match-token :vl-semi))
           (return-raw
            (b* ((val (make-vl-typedef :name (vl-idtoken->name id)

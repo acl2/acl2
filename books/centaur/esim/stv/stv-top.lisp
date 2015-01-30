@@ -936,9 +936,9 @@ irrelevant inputs are removed.</p>"
   showing that the sum of the parts is equivalent to the original whole
   circuit.  We call this proof a <it>compositional equivalence proof.</it></p>
 
-  <p>Currently the most thorough example of such a proof can be found in the book
-  @('centaur/tutorial/boothmul.lisp').  This example highlights two ways of
-  performing a compositional equivalence proof:</p>
+  <p>Currently the most thorough example of such a proof can be found in the
+  book @('centaur/esim/tutorial/boothmul.lisp').  This example highlights two
+  ways of performing a compositional equivalence proof:</p>
 
   <ol>
     <li>By using @(see gl)</li>

@@ -83,7 +83,7 @@
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/deflist" :dir :system)
 (include-book "misc/defun-plus" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ; Setup client state

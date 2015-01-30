@@ -129,7 +129,7 @@ find what you want.</p>")
 ;;      (value `(defconst *acl2-ground-zero-topics* ',topics)))))
 
 (include-book "base")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 ;; ;; Actually install the ground-zero topics
 ;; #!XDOC

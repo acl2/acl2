@@ -19,7 +19,7 @@
 (include-book "../Utilities/bytes-and-words")
 (include-book "../Utilities/disjoint")
 (include-book "../Utilities/records")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

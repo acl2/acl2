@@ -11,7 +11,7 @@
 (in-package "CGEN")
 
 (set-verify-guards-eagerness 2)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 ;(include-book "basis")
 
 ;;-- create a new symbol with prefix or suffix appended

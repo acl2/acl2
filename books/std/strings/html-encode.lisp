@@ -30,7 +30,7 @@
 
 (in-package "STR")
 (include-book "cat")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "misc/definline" :dir :system)  ;; bozo
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "arithmetic"))

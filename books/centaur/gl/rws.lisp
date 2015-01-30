@@ -31,7 +31,7 @@
 (in-package "GL")
 (include-book "clause-processors/use-by-hint" :dir :system)
 (include-book "clause-processors/multi-env-trick" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
 (include-book "tools/flag" :dir :system)
 (include-book "tools/rulesets" :dir :system)

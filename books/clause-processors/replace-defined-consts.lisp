@@ -10,7 +10,7 @@
 
 (include-book "use-by-hint")
 (include-book "multi-env-trick")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "tools/flag" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
 

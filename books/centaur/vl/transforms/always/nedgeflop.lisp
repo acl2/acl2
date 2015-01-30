@@ -29,12 +29,12 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "centaur/esim/vltoe/wirealist" :dir :system) ;; bozo
 (include-book "../../primitives")
 (include-book "../occform/util")
-(include-book "../../toe/toe-wirealist")
 (include-book "../../mlib/stmt-tools")
 (include-book "../../mlib/print-warnings")
-(include-book "../xf-delayredux")
+(include-book "../delayredux")
 (include-book "centaur/4v-sexpr/sexpr-building" :dir :system)
 (local (include-book "../../util/arithmetic"))
 

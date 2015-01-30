@@ -22,11 +22,12 @@
 (defxdoc proof-by-arith
   :parents (arithmetic)
   :short "Attempt to prove a theorem using various arithmetic libraries"
-  :long "This book shows how one can use make-event to try different proof
+  :long "<p>This book shows how one can use make-event to try different proof
  strategies for a given theorem until one works.  Specifically, the strategies
- employed in this example are the use of different built-in arithmetic books.
+ employed in this example are the use of different built-in arithmetic
+ books.</p>
 
- @('(proof-by-arith event)') expands into:
+ <p>@('(proof-by-arith event)') expands into:</p>
 
  @({
  (encapsulate ()
@@ -34,18 +35,21 @@
               extra-event-1
               ...
               extra-event-k
-              event)})
+              event)
+ })
 
- for an appropriate <book> and extra-event-i (1<=i<=k).  By default, book and
- associated events extra-event-i are taken from *default-arith-book-alist*,
- where each is tried in sequence until the encapsulate is admitted.
+ <p>for an appropriate @('<book>') and @('extra-event-i') (@('1 <= i <= k')).
+ By default, @('<book>') and associated events @('extra-event-i') are taken
+ from @('*default-arith-book-alist*'), where each is tried in sequence until
+ the encapsulate is admitted.</p>
 
- The general form is:
+ <p>The general form is:</p>
 
  @({(proof-by-arith event &optional quietp arith-book-alist)})
 
- where @('quietp') suppresses output during the search, and
- @('arith-book-alist') can be used in place of @('*default-arith-book-alist*').")
+ <p>where @('quietp') suppresses output during the search, and
+ @('arith-book-alist') can be used in place of
+ @('*default-arith-book-alist*').</p>")
 
 (comp '(union-theories-fn1
         set-difference-theories-fn1

@@ -29,9 +29,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../translation")
+(include-book "centaur/esim/translation" :dir :system) ;; bozo
 (include-book "../mlib/hierarchy")
-(include-book "../checkers/use-set-report")
 (include-book "../loader/descriptions")
 (local (include-book "../util/arithmetic"))
 
@@ -74,11 +73,7 @@
              to particular locations.")
 
    (defs vl-defines-p
-     "Summary of all @('`define')s encountered while parsing.")
-
-   (use-set-report vl-useset-report-p
-                   "The pre-computed use-set-report for these modules; BOZO consider
-                    eliminating this and generating it dynamically instead."))
+     "Summary of all @('`define')s encountered while parsing."))
 
   :long "<p>A @('vls-data-p') structure just aggregates a bunch of data that is
 produced when we run the translator.</p>

@@ -11,7 +11,7 @@
 (local (include-book "misc/check-state" :dir :system))
 (local (check-hons-enabled (:book "constants.lisp")))
 
-(include-book "tools/bstar"    :dir :system)
+(include-book "std/util/bstar"    :dir :system)
 (include-book "misc-events")
 (include-book "operations")
 

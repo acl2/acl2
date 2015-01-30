@@ -22,7 +22,7 @@
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/lists/repeat" :dir :system) ; redundant
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "std/util/defconsts" :dir :system)
 (include-book "xdoc/top" :dir :system)
 (include-book "misc/assert" :dir :system)
