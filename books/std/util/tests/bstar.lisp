@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-(include-book "bstar")
+(include-book "../bstar")
 (set-state-ok t)
 
 (defun return-two-values (a b)

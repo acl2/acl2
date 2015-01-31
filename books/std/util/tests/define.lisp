@@ -232,6 +232,66 @@
 (assert! (stringp (cdr (assoc :long (xdoc::find-topic 'test-longcat (xdoc::get-xdoc-table (w state)))))))
 
 
+
+; Testing of fancy RET binder.
+
+
+(define mathstuff ((a natp)
+                   (b natp))
+  :returns (mv (sum natp :rule-classes :type-prescription)
+               (prod natp :rule-classes :type-prescription))
+  (b* ((a (nfix a))
+       (b (nfix b)))
+    (mv (+ a b)
+        (* a b))))
+
+;; (def-b*-binder mathstuff-ret
+;;   :decls
+;;   ((declare (xargs :guard (and (eql (len forms) 1)
+;;                                (consp (car forms))
+;;                                (symbolp (caar forms))))))
+;;   :body
+;;   (patbind-ret-fn '((sum . nil) (prod . nil))
+;;                   '(a b)
+;;                   args forms rest-expr))
+
+(define do-math-stuff ((a natp)
+                       (b natp))
+  (b* ((a (nfix a))
+       (b (nfix b))
+       ((ret stuff) (mathstuff a b)))
+    (list :sum stuff.sum 
+          :prod stuff.prod))
+  ///
+  (assert! (equal (do-math-stuff 1 2) (list :sum 3 :prod 2))))
+  
+
+
+(defstobj foost (foo-x))
+
+(defstobj barst (bar-x) :congruent-to foost)
+
+(define modify-foo (x &key (foost 'foost))
+  :returns (foo-out)
+  (update-foo-x x foost))
+
+;; (def-b*-binder modify-foo-ret
+;;   :decls
+;;   ((declare (xargs :guard (and (eql (len forms) 1)
+;;                                (consp (car forms))
+;;                                (symbolp (caar forms))))))
+;;   :body
+;;   (patbind-ret-fn '((foo . foo))
+;;                   '(x &key (foo 'foo))
+;;                   args forms rest-expr))
+
+(define use-bar (x barst)
+  (b* (((ret) (modify-foo x :foost barst)))
+    barst))
+
+
+
+
 ;; Basic testing of hook installation/removal
 
 (defun my-hook (guts opts state)
@@ -406,3 +466,8 @@
 
 (assert! (equal (notinline-test$notinline 2) 2))
 (assert! (equal (notinline-test 2) 2))
+
+
+
+
+

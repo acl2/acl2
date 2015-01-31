@@ -295,6 +295,8 @@
       ;; Things I want to "import" from ACL2 into the STD package.
       assert!
       b*
+      ret
+      def-b*-binder
       progn$
       simpler-take
       repeat
@@ -353,6 +355,7 @@
 (defconst *std-exports*
   '(std
     tag
+    ret
     tag-reasoning
     defprojection
     deflist

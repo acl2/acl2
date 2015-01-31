@@ -1035,6 +1035,10 @@ some kind of separator!</p>
          ,(extend-define-guts-alist guts)
          (set-define-current-function ,guts.name)
 
+         ,@(and guts.returnspecs
+                `((make-event
+                   (make-define-ret-patbinder ',guts (w state)))))
+
          (local
           (make-event
            (if (logic-mode-p ',guts.name-fn (w state))
@@ -1422,3 +1426,161 @@ names between your formals and returns.</p>")
 
 (defmacro defret (name &rest args)
   `(make-event (defret-fn ',name ',args (w state))))
+
+
+
+;; Return binders
+
+#!acl2
+(def-b*-binder ret
+  :decls
+  ((declare (xargs :guard (and (eql (len forms) 1)
+                               (consp (car forms))
+                               (symbolp (caar forms))))))
+  :body
+  (b* ((fncall (car forms))
+       (fnname (car fncall)))
+    `(,(intern-in-package-of-symbol
+        (concatenate 'string "PATBIND-" (symbol-name fnname) "-RET")
+        fnname)
+      ,args ,forms ,rest-expr)))
+
+(defun find-symbols-with-name (name x acc)
+  (if (atom x)
+      (if (and (symbolp x)
+               (equal (symbol-name x) name))
+          (cons x acc)
+        acc)
+    (find-symbols-with-name
+     name (car x) (find-symbols-with-name name (cdr x) acc))))
+
+(defun find-symbol-of-name-in-expr (name rest-expr)
+  (let* ((matches (find-symbols-with-name name rest-expr nil))
+         (matches (remove-duplicates matches)))
+    (cond ((atom matches)
+           ;; Found no symbols with this name.  Warn?
+           (intern$ name "ACL2"))
+          ((consp (cdr matches))
+           (er hard? 'patbind-ret
+               "Found multiple different symbols with the same name: ~x0" matches))
+          (t
+           ;; OK good, found just one symbol with this name, use it.
+           (car matches)))))
+
+
+
+(defun match-define-keyword-formals-with-actuals
+  (formals ;; macro formals without any leading &key stuff, ex: (foo (bar 't) baz)
+   actuals ;; corresponding actuals, ex: '(:foo 1 :baz 3)
+   )
+  (b* (((when (atom formals)) nil)
+       (formal1 (car formals))
+       ((mv name default name-p)
+        (cond ((atom formal1) (mv formal1 nil nil))
+              ((atom (cdr formal1)) (mv (car formal1) nil nil))
+              (t (mv (first formal1)
+                     (acl2::unquote (second formal1))
+                     (third formal1)))))
+       (key (intern$ (symbol-name name) "KEYWORD"))
+       (lookup (assoc-keyword key actuals))
+       (val (if lookup (cadr lookup) default))
+       (rest (match-define-keyword-formals-with-actuals (cdr formals) actuals)))
+    (cons (cons name val)
+          (if name-p
+              (cons (cons name-p (consp lookup)) rest)
+            rest))))
+  
+(defun match-define-optional-formals-with-actuals
+  (formals ;; macro formals without any leading &optional stuff, ex: (foo (bar 't) baz)
+   actuals ;; corresponding actuals, ex: '(:foo 1 :baz 3)
+   )
+  (b* (((when (atom formals)) nil)
+       (formal1 (car formals))
+       ((when (eq formal1 '&key))
+        (match-define-keyword-formals-with-actuals (cdr formals) actuals))
+       ((mv name default name-p)
+        (cond ((atom formal1) (mv formal1 nil nil))
+              ((atom (cdr formal1)) (mv (car formal1) nil nil))
+              (t (mv (first formal1)
+                     (acl2::unquote (second formal1))
+                     (third formal1)))))
+       (val (if (consp actuals) (car actuals) default))
+       (rest (match-define-optional-formals-with-actuals (cdr formals) (cdr actuals))))
+    (cons (cons name val)
+          (if name-p
+              (cons (cons name-p (consp actuals)) rest)
+            rest))))
+
+(defun match-define-formals-with-actuals
+  (formals ;; macro formals
+   actuals ;; corresponding actuals
+   ctx)
+  (b* (((when (atom formals)) nil)
+       (name (car formals))
+       ((when (eq name '&key))
+        (match-define-keyword-formals-with-actuals (cdr formals) actuals))
+       ((when (eq name '&optional))
+        (match-define-optional-formals-with-actuals (cdr formals) actuals))
+       ((when (atom actuals))
+        (er hard? 'match-define-optional-formals-with-actuals
+            "~x0: Not enough arguments" ctx))
+       (val (car actuals))
+       (rest (match-define-formals-with-actuals (cdr formals) (cdr actuals) ctx)))
+    (cons (cons name val) rest)))
+
+
+(defun patbind-ret-mv-names
+  (rets            ;; (return-name . corresponding stobjs-out entry) list
+   varname         ;; NIL for ((ret) ...), or varname for ((ret varname) ...)
+   formals/actuals ;; see below
+   rest-expr       ;; rest-expr from the b*
+   )
+  (b* (((when (atom rets)) nil)
+       ((cons retname stobj) (car rets))
+       ((when stobj)
+        ;; The return name might not be the stobj name, and the stobj name
+        ;; might not be the one in use due to congruent stobjs.  So we parse
+        ;; the function call (elsewhere) and pair up the formals with actual
+        ;; actuals so that we can look up what stobj was passed in and bind
+        ;; that.
+        (cons (cdr (assoc stobj formals/actuals))
+              (patbind-ret-mv-names (cdr rets) varname formals/actuals rest-expr)))
+       (name (if varname
+                 (concatenate 'string (symbol-name varname) "." (symbol-name retname))
+               (symbol-name retname)))
+       (symbol (find-symbol-of-name-in-expr name rest-expr)))
+    (cons symbol
+          (patbind-ret-mv-names (cdr rets) varname formals/actuals rest-expr))))
+
+
+(defun patbind-ret-fn (rets macro-formals args forms rest-expr)
+  (b* ((varname (car args))
+       (call (car forms))
+       (formals/actuals
+        (match-define-formals-with-actuals macro-formals (cdr call) (car forms)))
+       (mv-names (patbind-ret-mv-names rets varname formals/actuals rest-expr)))
+    (if (< 1 (len mv-names))
+        `(mv-let ,mv-names ,(car forms)
+           (declare (ignorable . ,mv-names))
+           ,rest-expr)
+      `(let ((,(car mv-names) ,(car forms)))
+         (declare (ignorable . ,mv-names))
+         ,rest-expr))))
+
+(defun make-define-ret-patbinder (guts world)
+  (declare (xargs :mode :program))
+  (b* (((defguts guts))
+       (name (intern-in-package-of-symbol
+              (concatenate 'string (symbol-name guts.name) "-RET")
+              guts.name)))
+    `(def-b*-binder ,name
+       :body
+       (patbind-ret-fn ',(pairlis$ (returnspeclist->names guts.returnspecs)
+                                   (fgetprop guts.name-fn 'acl2::stobjs-out
+                                             nil world))
+                       ',(or (fgetprop guts.name 'acl2::macro-args
+                                       nil world)
+                             (fgetprop guts.name-fn 'acl2::formals
+                                       nil world))
+                       acl2::args acl2::forms acl2::rest-expr))))
+

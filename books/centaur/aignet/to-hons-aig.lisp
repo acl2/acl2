@@ -32,6 +32,7 @@
 (include-book "semantics")
 (include-book "centaur/aig/aig-base" :dir :system)
 (include-book "centaur/vl/util/cwtime" :dir :system)
+(include-book "std/alists/alist-keys" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (in-theory (disable nth update-nth
                            set::double-containment)))
@@ -336,7 +337,9 @@
   :prepwork ((local (defthm alistp-of-pairlis$
                       (alistp (pairlis$ x y)))))
   :returns (mv (outs (equal (len outs) (num-outs aignet)))
-               (regs alistp))
+               (regs (and (alistp regs)
+                          (equal (acl2::alist-keys regs)
+                                 (acl2::list-fix regnames)))))
   (b* (((local-stobjs aigtrans)
         (mv outlist regalist aigtrans))
        (aigtrans (resize-aigs (num-nodes aignet) aigtrans))
