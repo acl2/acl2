@@ -59,7 +59,7 @@
  ACL2 itself.  For additional details, you may also see the raw <a
  href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
 
- <h3>Deleted Stubs</h3>
+ <h3>Deleted Books (Including Stubs)</h3>
 
  <p>When we move a book, we often add a <b>stub</b> book in its previous
  location to help you transition your @(see include-book) commands.  The @(see
@@ -79,6 +79,9 @@
    --------------------------------------------------------------------------------
  })
 
+ <p>The directory @('fix-cert/') has been deleted, as it is no longer necessary
+ now that it is possible to move the system books directory after
+ certifying its books (see @(see note-7-1)).</p>
 
 ")
 

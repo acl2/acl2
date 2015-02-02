@@ -1786,6 +1786,14 @@
   (chk-package-reincarnation-import-restrictions2 name proposed-imports)
   t)
 
+(defun remove-lisp-suffix (x dotp)
+
+; X is a full-book-name, hence a string ending in ".lisp".  We remove that
+; "lisp" suffix, leaving the final "." if and only if dotp is true.
+
+  (subseq x 0 (- (length x)
+                 (if dotp 5 4))))
+
 (defun convert-book-name-to-cert-name (x cert-op)
 
 ; X is assumed to satisfy chk-book-name.  We generate the corresponding
@@ -1794,20 +1802,20 @@
 ; The cddddr below chops off the "lisp" from the end of the filename but leaves
 ; the dot.
 
-  (coerce (append (reverse (cddddr (reverse (coerce x 'list))))
-                  (case cert-op
-                    ((t)
-                     '(#\c #\e #\r #\t))
-                    ((:create-pcert :create+convert-pcert)
-                     '(#\p #\c #\e #\r #\t #\0))
-                    (:convert-pcert
-                     '(#\p #\c #\e #\r #\t #\1))
-                    (otherwise ; including :write-acl2x
-                     (er hard 'convert-book-name-to-cert-name
-                         "Bad value of cert-op for ~
+  (concatenate 'string
+               (remove-lisp-suffix x nil)
+               (case cert-op
+                 ((t)
+                  "cert")
+                 ((:create-pcert :create+convert-pcert)
+                  "pcert0")
+                 (:convert-pcert
+                  "pcert1")
+                 (otherwise ; including :write-acl2x
+                  (er hard 'convert-book-name-to-cert-name
+                      "Bad value of cert-op for ~
                           convert-book-name-to-cert-name:  ~x0"
-                         cert-op))))
-          'string))
+                      cert-op)))))
 
 (defun unrelativize-book-path (lst dir)
   (cond ((endp lst) nil)
@@ -6224,6 +6232,16 @@
     (&
      (list 'record-expansion event expansion))))
 
+(table acl2-system-table nil nil
+
+; This table is used when we need to lay down an event marker.  We may find
+; other uses for it in the future, in which we will support other keys.  Users
+; should stay away from this table since it might change out from under them!
+; But there is no soundness issue if they do use it.
+
+       :guard
+       (eq key 'empty-event-key))
+
 (defun maybe-add-event-landmark (state)
 
 ; If (and only if) the installed world doesn't end with an event landmark, we
@@ -9688,526 +9706,6 @@
                                 (if (eq old :default) nil old))))
                      (progn-fn1 ev-lst t bindings state)))
 
-(defun make-event-ctx (event-form)
-  (msg "( MAKE-EVENT ~@0~@1)"
-       (tilde-@-abbreviate-object-phrase (cadr event-form))
-       (if (cddr event-form) " ..." "")))
-
-(defun protected-eval (form on-behalf-of ctx state aok)
-
-; We assume that this is executed under a revert-world-on-error, so that we do
-; not have to protect the world here in case of error, though we do set the
-; world back to the starting world when returning a non-erroneous error triple.
-; Form should evaluate either to an ordinary value, val, or to (mv nil val
-; state stobj1 ... stobjk), where k may be 0.  If so, we return (value (list*
-; val new-kpa new-ttags-seen)), where new-kpa and new-ttags-seen are the
-; known-package-alist and value of world global 'ttags-seen immediately after
-; form is evaluated; and if not, we return a soft error.
-
-  (let ((original-wrld (w state)))
-    (protect-system-state-globals
-     (er-let*
-      ((result
-
-; It would be nice to add (state-global-let* ((safe-mode t)) here.  But some
-; *1* functions need always to call their raw Lisp counterparts.  Although we
-; have made progress in oneify-cltl-code to that end by keeping functions like
-; certify-book-fn from being replaced by their *1* counterparts, still that
-; process is not complete, so we play it safe here by avoiding safe-mode.
-
-; If we bind safe-mode to t here, visit occurrences of comments "; Note that
-; safe-mode for make-event will require addition".  Those comments are
-; associated with membership tests that, for now, we avoid for efficiency.
-
-        (trans-eval form ctx state aok)))
-      (let* ((new-kpa (known-package-alist state))
-             (new-ttags-seen (global-val 'ttags-seen (w state)))
-             (stobjs-out (car result))
-             (vals (cdr result))
-             (safep (equal stobjs-out '(nil))))
-        (cond (safep (value (list* vals new-kpa new-ttags-seen)))
-              ((or (null (cdr stobjs-out))
-                   (not (eq (caddr stobjs-out) 'state))
-                   (member-eq nil (cdddr stobjs-out)))
-               (er soft ctx
-                   "The expansion of a make-event form must either return a ~
-                    single ordinary value or else should return a tuple (mv ~
-                    erp val state stobj1 stobj2 ... stobjk) for some k >= 0.  ~
-                    But the shape of ~x0 is ~x1."
-                   form
-                   (prettyify-stobjs-out stobjs-out)))
-              ((stringp (car vals))
-               (er soft ctx
-                   (car vals)))
-              ((tilde-@p (car vals)) ; a message
-               (er soft ctx
-                   "~@0"
-                   (car vals)))
-              ((car vals)
-               (er soft ctx
-                   "Error in MAKE-EVENT ~@0from expansion of:~|  ~y1"
-                   (cond (on-behalf-of
-                          (msg "on behalf of~|  ~y0~|"
-                               on-behalf-of))
-                         (t ""))
-                   form))
-              (t (pprogn
-                  (set-w! original-wrld state)
-                  (value (list* (cadr vals) new-kpa new-ttags-seen))))))))))
-
-(defun make-event-debug-pre (form on-behalf-of state)
-  (cond
-   ((null (f-get-global 'make-event-debug state))
-    (value nil))
-   (t
-    (let ((depth (f-get-global 'make-event-debug-depth state)))
-      (pprogn (fms "~x0> Expanding for MAKE-EVENT~@1~|  ~y2~|"
-                   (list (cons #\0 depth)
-                         (cons #\1 (if on-behalf-of
-                                       (msg " on behalf of~|  ~Y01:"
-                                            on-behalf-of
-                                            (term-evisc-tuple nil state))
-                                     ":"))
-                         (cons #\2 form))
-                   (proofs-co state) state nil)
-              (value depth))))))
-
-(defun make-event-debug-post (debug-depth expansion0 state)
-  (cond ((null debug-depth) state)
-        (t
-         (fms "<~x0 Returning MAKE-EVENT expansion:~|  ~Y12~|"
-              (list (cons #\0 debug-depth)
-                    (cons #\1 expansion0)
-                    (cons #\2 (term-evisc-tuple nil state)))
-              (proofs-co state) state nil))))
-
-(defmacro do-proofs? (do-proofsp form)
-  `(if ,do-proofsp
-       (state-global-let*
-        ((ld-skip-proofsp nil))
-        ,form)
-     ,form))
-
-(table acl2-system-table nil nil
-
-; This table is used when we need to lay down an event marker.  We may find
-; other uses for it in the future, in which we will support other keys.  Users
-; should stay away from this table since it might change out from under them!
-; But there is no soundness issue if they do use it.
-
-       :guard
-       (eq key 'empty-event-key))
-
-(defun make-event-fn2 (expansion0 whole-form in-encapsulatep check-expansion
-                                  wrld ctx state)
-  (mv-let
-   (do-proofsp expansion0)
-   (case-match expansion0
-     ((':DO-PROOFS x)
-      (mv (ld-skip-proofsp state)
-          x))
-     (& (mv nil expansion0)))
-   (er-let* ((expansion1a ; apply macroexpansion to get embedded event form
-              (do-proofs?
-
-; This wrapper of do-proofs? avoids errors in checking expansions when
-; ld-skip-proofsp is 'include-book.  See the "Very Technical Remark" in
-; community book  books/make-event/read-from-file.lisp.
-
-               check-expansion
-               (chk-embedded-event-form
-                expansion0 whole-form wrld ctx state (primitive-event-macros)
-                nil ; portcullisp
-                (f-get-global 'in-local-flg state)
-                in-encapsulatep
-                nil))) 
-             (expansion1
-              (value (or expansion1a
-
-; Else the alleged embedded event form, from the expansion, is nil, presumably
-; because of local.
-
-                         *local-value-triple-elided*)))
-             (stobjs-out-and-raw-result
-              (do-proofs?
-               do-proofsp
-               (trans-eval
-
-; Note that expansion1 is guaranteed to be an embedded event form, which (as
-; checked just below) must evaluate to an error triple.
-
-                expansion1
-                ctx state t))))
-     (let ((raw-result (cdr stobjs-out-and-raw-result)))
-       (cond ((car raw-result)
-              (silent-error state))
-             (t (value (list* expansion1
-                              (car stobjs-out-and-raw-result)
-                              (cadr raw-result)))))))))
-
-(defun make-event-fn2-lst (expansion-lst whole-form in-encapsulatep
-                                         check-expansion wrld ctx state)
-  (cond ((atom expansion-lst)
-         (er soft ctx
-             "Evaluation failed for all expansions."))
-        (t (pprogn
-            (cond
-             ((f-get-global 'make-event-debug state)
-              (fms "Attempting evaluation of next expansion:~|~Y01"
-                   (list (cons #\0 (car expansion-lst))
-                         (cons #\1 (abbrev-evisc-tuple state)))
-                   (proofs-co state)
-                   state
-                   nil))
-             (t state))
-            (mv-let
-             (erp val state)
-             (make-event-fn2 (car expansion-lst)
-                             whole-form in-encapsulatep check-expansion
-                             wrld ctx state)
-             (cond (erp (make-event-fn2-lst (cdr expansion-lst)
-                                            whole-form in-encapsulatep
-                                            check-expansion wrld ctx state))
-                   (t (value val))))))))
-
-(defun make-event-fn1 (expansion0 whole-form in-encapsulatep check-expansion
-                                  wrld ctx state)
-  (cond ((and (consp expansion0)
-              (eq (car expansion0) :OR))
-         (make-event-fn2-lst (cdr expansion0)
-                             whole-form in-encapsulatep check-expansion
-                             wrld ctx state))
-        (t (make-event-fn2 expansion0
-                           whole-form in-encapsulatep check-expansion
-                           wrld ctx state))))
-
-(defun ultimate-expansion (x)
-
-; We dive inside values of :expansion? keywords, starting with x, and stepping
-; past wrappers (in the sense of destructure-expansion).  Except, if
-; :expansion? is provided but :check-expansion is non-nil (hence t), then
-; :expansion? is ignored for this purpose, so that we can avoid destroying the
-; surrounding make-event that should be saved for purposes of :check-expansion.
-; The idea is that when including a book (or doing the second pass of an
-; encapsulate), we replace a make-event form directly by its :expansion? value
-; unless :check-expansion is t, in which case the make-event form and the
-; :expansion?  value are not equivalent, because the make-event form redoes the
-; expansion process.
-
-; Warning: Be careful not to use this function unless each make-event form
-; encountered during the traversal that has a value for the :expansion? keyword
-; can be trusted to have an expansion suitably consistent with that value.
-
-  (case-match x
-    (('make-event & . kwd-alist)
-     (let ((exp (cadr (assoc-keyword :expansion? kwd-alist))))
-       (cond ((and exp
-                   (not (cadr (assoc-keyword :check-expansion kwd-alist))))
-              (ultimate-expansion exp))
-             (t x))))
-    (& (mv-let (w y)
-               (destructure-expansion x)
-               (cond (w (rebuild-expansion w (ultimate-expansion y)))
-                     (t x))))))
-
-(defun make-event-fn (form expansion? check-expansion on-behalf-of whole-form
-                           state)
-  (let ((ctx (make-event-ctx whole-form))
-        #-acl2-loop-only
-        (old-kpa (known-package-alist state)))
-    (with-ctx-summarized
-     ctx
-     (cond
-      ((and (eq (cert-op state) :convert-pcert)
-            (not (f-get-global 'in-local-flg state))
-            (not (consp check-expansion))
-            (not expansion?)
-
-; This case should not happen, because all make-event forms should already be
-; expanded away when we do the Convert procedure of provisional certification,
-; since a suitable expansion-alist should have been stored in the .pcert0 file.
-; We include this check just for robustness.
-
-            (eql (f-get-global 'make-event-debug-depth state)
-
-; We only enforce the above consp requirement at the top-level.  If we have
-; (make-event ... :check-expansion exp ...), and this event is admissible
-; (perhaps when skipping proofs) then we know that the result will be exp and
-; will be independent of the current state.  In particular, exp will not be a
-; call of make-event if form is admissible.
-
-                 0))
-       (er soft ctx
-           "Implementation error: You should not be seeing this message!  ~
-            Please contact the ACL2 implementors.~|~%Make-event expansion is ~
-            illegal during the Convert procedure of provisional certification ~
-            (unless :check-expansion is supplied a consp argument or ~
-            :expansion? is supplied a non-nil argument).  The form ~x0 is ~
-            thus illegal.  The use of a .acl2x file can sometimes solve this ~
-            problem.  See :DOC provisional-certification."
-           whole-form))
-      ((not (or (eq check-expansion nil)
-                (eq check-expansion t)
-                (consp check-expansion)))
-       (er soft ctx
-           "The check-expansion flag of make-event must be t, nil, or a cons ~
-            pair.  The following check-expansion flag is thus illegal: ~x0.  ~
-            See :DOC make-event."
-           check-expansion))
-      ((and expansion?
-            (consp check-expansion))
-
-; We considered allowing :EXPANSION? FORM1 and :CHECK-EXPANSION FORM2 (where
-; FORM2 is not nil or t), and if someone presents a natural example for which
-; this would be useful, we might do so.  But the semantics of this would be
-; potentially confusing.  Which one is consulted when including a book or
-; running in raw Lisp?  If FORM1 = FORM2, this looks redundant.  Otherwise,
-; this is, oddly, inherently contradictory, in the sense that FORM1 should
-; never be the expansion (unless one is deliberately arranging for evaluation
-; of the make-event call to fail -- but there are simpler ways to do that).
-
-; If we decide to support the combination of expansion? and (consp
-; check-expansion), then we need to be careful to handle that combination --
-; something we don't do now, but we code defensively, giving priority to (consp
-; check-expansion).
-
-       (er soft ctx
-           "It is illegal to supply a non-nil value for the keyword argument ~
-            :EXPANSION? of make-event when keyword argument :CHECK-EXPANSION ~
-            is give a value other than T or NIL.  If you think you have a ~
-            reason why such a combination should be supported, please contact ~
-            the ACL2 implementors."))
-      (t
-       (revert-world-on-error
-        (state-global-let*
-         ((make-event-debug-depth (1+ (f-get-global 'make-event-debug-depth
-                                                    state))))
-         (let ((wrld (w state))
-               (skip-check-expansion
-                (and (consp check-expansion)
-                     (let ((info (f-get-global 'certify-book-info state)))
-                       (and info
-                            (access certify-book-info info
-                                    :include-book-phase))))))
-           (er-let*
-               ((debug-depth (make-event-debug-pre form on-behalf-of state))
-                (expansion0/new-kpa/new-ttags-seen
-                 (cond
-                  ((and expansion?
-                        (eq (ld-skip-proofsp state) 'include-book)
-                        (not (f-get-global 'including-uncertified-p state))
-
-; Even if expansion? is specified, we do not assume it's right if
-; check-expansion is t.
-
-                        (assert$ (iff check-expansion
-
-; In code above, we disallowed the combination of non-nil expansion? with a
-; consp value of :check-expansion.
-
-                                      (eq check-expansion t))
-                                 (not (eq check-expansion t))))
-                   (value (list* expansion? nil nil)))
-                  (skip-check-expansion
-                   (value (list* check-expansion nil nil)))
-                  (t
-                   (do-proofs?
-                    (or check-expansion
-
-; For example, a must-fail form in community book books/make-event/defspec.lisp
-; will fail during the Pcertify process of provisional certification unless we
-; turn proofs on during expansion at that point.  It's reasonable to do proofs
-; under make-event expansion during the Pcertify process: after all, we need
-; the expansion done in order for other books to include the make-event's book
-; with the .pcert0 certificate, and also proofs might well be necessary in
-; order to come up with the correct expansion (else why do them?).  We could
-; indeed always do proofs, but it's pretty common to do proofs only during
-; certification as a way of validating some code.  So our approach is only to
-; move proofs from the Convert procedure to the Pcertify procedure.
-
-                        (eq (cert-op state) :create-pcert))
-                    (protected-eval form on-behalf-of ctx state t)))))
-                (expansion0 (value (car expansion0/new-kpa/new-ttags-seen)))
-                (new-kpa (value (cadr expansion0/new-kpa/new-ttags-seen)))
-                (new-ttags-seen
-                 (value (cddr expansion0/new-kpa/new-ttags-seen)))
-                (need-event-landmark-p
-                 (pprogn
-                  (make-event-debug-post debug-depth expansion0 state)
-                  (cond ((or (null new-ttags-seen)
-
-; The condition above holds when the new ttags-seen is nil or was not computed.
-; Either way, no addition has been made to the value of world global
-; 'ttags-seen.
-
-                             (equal new-ttags-seen
-                                    (global-val 'ttags-seen wrld)))
-                         (value nil))
-                        (t (pprogn
-                            (set-w 'extension
-                                   (global-set 'ttags-seen new-ttags-seen
-                                               wrld)
-                                   state)
-                            (value t))))))
-                (wrld0 (value (w state)))
-                (expansion1/stobjs-out/result
-                 (make-event-fn1
-                  expansion0 whole-form
-                  (in-encapsulatep (global-val 'embedded-event-lst wrld0) nil)
-                  check-expansion wrld0 ctx state)))
-             (let* ((expansion1 (car expansion1/stobjs-out/result))
-                    (stobjs-out (cadr expansion1/stobjs-out/result))
-                    (result (cddr expansion1/stobjs-out/result))
-                    (expansion2
-                     (cond
-                      ((f-get-global 'last-make-event-expansion state)
-                       (mv-let
-                        (wrappers base)
-                        (destructure-expansion expansion1)
-
-; At this point we know that (car base) is from the list '(make-event progn
-; progn! encapsulate); indeed, just after the release of v3-5, we ran a
-; regression in community book books/make-event with the code C below replaced
-; by (assert$ (member-eq (car base) X) C), where X is the above quoted list.
-; However, we do not add that assertion, so that for example the ccg book of
-; ACL2s can create make-event expansions out of events other than the four
-; types above, e.g., defun.
-
-                        (declare (ignore base))
-                        (rebuild-expansion
-                         wrappers
-                         (ultimate-expansion
-                          (f-get-global 'last-make-event-expansion state)))))
-                      (t (ultimate-expansion expansion1)))))
-               (assert$
-                (equal stobjs-out *error-triple-sig*) ; evaluated an event form
-                (let ((expected-expansion (if (consp check-expansion)
-                                              check-expansion
-                                            (and (eq (ld-skip-proofsp state)
-                                                     'include-book)
-                                                 check-expansion
-                                                 expansion?))))
-                  (cond ((and expected-expansion
-                              (not (equal expected-expansion ; easy try first
-                                          expansion2))
-                              (not (equal (ultimate-expansion
-                                           expected-expansion)
-                                          expansion2)))
-                         (er soft ctx
-                             "The current MAKE-EVENT expansion differs from ~
-                              the expected (original or specified) expansion. ~
-                              ~ See :DOC make-event.~|~%~|~%Make-event ~
-                              argument:~|~%~y0~|~%Expected ~
-                              expansion:~|~%~y1~|~%Current expansion:~|~%~y2~|"
-                             form
-                             expected-expansion
-                             expansion2))
-                        (t
-                         (let ((actual-expansion
-                                (cond
-                                 ((or (consp check-expansion)
-                                      (equal expansion?
-                                             expansion2) ; easy try first
-                                      (equal (ultimate-expansion
-                                              expansion?)
-                                             expansion2))
-
-; The original make-event form does not generate a make-event replacement (see
-; :doc make-event).
-
-                                  nil)
-                                 (check-expansion
-                                  (assert$
-                                   (eq check-expansion t) ; from macro guard
-                                   (list* 'make-event form
-
-; Note that we deliberately omit :expansion? here, even if it was supplied
-; originally.  If :expansion? had been supplied and appropropriate, then we
-; would be in the previous case, where we don't generate a make-event around
-; the expansion.
-
-                                          :check-expansion expansion2
-                                          (and on-behalf-of
-                                               `(:on-behalf-of
-                                                 ,on-behalf-of)))))
-                                 (t expansion2))))
-                           #-acl2-loop-only
-                           (let ((msg
-
-; We now may check the expansion to see if an unknown package appears.  The
-; following example shows why this can be important.  Consider a book "foo"
-; with this event.
-
-; (make-event
-;  (er-progn
-;   (include-book "foo2") ; introduces "MY-PKG"
-;   (assign bad (intern$ "ABC" "MY-PKG"))
-;   (value `(make-event
-;            (list 'defconst '*a*
-;                  (list 'length
-;                        (list 'symbol-name
-;                              (list 'quote ',(@ bad)))))))))
-;
-
-; where "foo2" is as follows, with the indicated portullis command:
-
-; (in-package "ACL2")
-;
-; ; (defpkg "MY-PKG" nil)
-;
-; (defun foo (x)
-;   x)
-
-; In ACL2 Version_3.4, we certified these books; but then, in a new ACL2
-; session, we got a raw Lisp error about unknown packages when we try to
-; include "foo".
-
-; On the other hand, the bad-lisp-objectp test is potentially expensive for
-; large objects such as are encountered at Centaur Tech. in March 2010.  The
-; value returned by expansion can be expected to be a good lisp object in the
-; world installed at the end of expansion, so if expansion doesn't extend the
-; world with any new packages, then we can avoid this check.
-
-                                  (and (not (eq old-kpa new-kpa))
-                                       (bad-lisp-objectp actual-expansion))))
-                             (when msg
-                               (er hard ctx
-                                   "Make-event expansion for the form ~x0 has ~
-                                    produced an illegal object for the ~
-                                    current ACL2 world.  ~@1"
-                                   form
-                                   msg)))
-                           (pprogn
-                            (f-put-global 'last-make-event-expansion
-                                          actual-expansion
-                                          state)
-                            (cond
-                             ((f-get-global 'make-event-debug state)
-                              (fms "Saving make-event replacement into state ~
-                                    global 'last-make-event-expansion (debug ~
-                                    level ~x0):~|~Y12"
-                                   (list (cons #\0 debug-depth)
-                                         (cons #\1 actual-expansion)
-                                         (cons #\2 (abbrev-evisc-tuple state)))
-                                   (proofs-co state)
-                                   state
-                                   nil))
-                             (t state))
-                            (er-progn
-                             (cond (need-event-landmark-p ; optimization
-
-; We lay down an event landmark if we aren't already looking at one.  Before we
-; did so, an error was reported by print-redefinition-warning in the following
-; example, because we weren't looking at an event landmark.
-
-; (redef!)
-; (make-event (er-progn (defttag t)
-;                       (value '(value-triple nil))))
-
-                                    (maybe-add-event-landmark state))
-                                   (t (value nil)))
-                             (value result))))))))))))))))))
-
 ; Now we develop the book mechanism, which shares a lot with what
 ; we've just done.  In the discussion that follows, Unix is a
 ; trademark of Bell Laboratories.
@@ -10335,6 +9833,16 @@
 
   (subsetp-equal (strip-cddrs alist1)
                  (strip-cddrs alist2)))
+
+(defun cbd-fn (state)
+  (or (f-get-global 'connected-book-directory state)
+      (er hard 'cbd
+          "The connected book directory has apparently not yet been set.  ~
+           This could be a sign that the top-level ACL2 loop, generally ~
+           entered using (LP), has not yet been entered.")))
+
+(defmacro cbd nil
+  `(cbd-fn state))
 
 (defun get-portcullis-cmds (wrld cmds cbds names ctx state)
 
@@ -10664,7 +10172,7 @@
          (temp (member *directory-separator* rlst)))
     (coerce (reverse temp) 'string)))
 
-(defun extend-pathname (dir file-name state)
+(defun extend-pathname (dir0 file-name state)
 
 ; Dir is a string representing an absolute directory name, and file-name is a
 ; string representing a file or directory name.  We want to extend dir by
@@ -10672,6 +10180,9 @@
 ; return something canonical, if possible.
 
   (let* ((os (os (w state)))
+         (dir (if (eq dir0 :system)
+                  (f-get-global 'system-books-dir state)
+                dir0))
          (file-name1 (expand-tilde-to-user-home-dir
                       file-name os 'extend-pathname state))
          (abs-filename (cond
@@ -10679,7 +10190,9 @@
                          file-name1)
                         (t
                          (our-merge-pathnames dir file-name1))))
-         (canonical-filename (canonical-pathname abs-filename nil state)))
+         (canonical-filename (if (eq dir0 :system)
+                                 abs-filename
+                               (canonical-pathname abs-filename nil state))))
     (or canonical-filename
 
 ; If a canonical filename doesn't exist, then presumably the file does not
@@ -10826,58 +10339,140 @@
               x)
           nil x))))
 
-(defun cbd-fn (state)
-  (or (f-get-global 'connected-book-directory state)
-      (er hard 'cbd
-          "The connected book directory has apparently not yet been set.  ~
-           This could be a sign that the top-level ACL2 loop, generally ~
-           entered using (LP), has not yet been entered.")))
-
-(defmacro cbd nil
-  `(cbd-fn state))
-
 ; We now develop code to "fix" the commands in the certification world before
 ; placing them in the portcullis of the certificate, in order to eliminate
 ; relative pathnames in include-book forms.  See the comment in
 ; fix-portcullis-cmds.
 
+(defun string-prefixp-1 (str1 i str2)
+  (declare (type string str1 str2)
+           (type (unsigned-byte 29) i)
+           (xargs :guard (and (<= i (length str1))
+                              (<= i (length str2)))))
+  (cond ((zpf i) t)
+        (t (let ((i (1-f i)))
+             (declare (type (unsigned-byte 29) i))
+             (cond ((eql (the character (char str1 i))
+                         (the character (char str2 i)))
+                    (string-prefixp-1 str1 i str2))
+                   (t nil))))))
+
+(defun string-prefixp (root string)
+
+; We return a result propositionally equivalent to
+;   (and (<= (length root) (length string))
+;        (equal root (subseq string 0 (length root))))
+; but, unlike subseq, without allocating memory.
+
+; At one time this was a macro that checked `(eql 0 (search ,root ,string
+; :start2 0)).  But it seems potentially inefficient to search for any match,
+; only to insist at the end that the match is at 0.
+
+  (declare (type string root string)
+           (xargs :guard (<= (length root) (fixnum-bound))))
+  (let ((len (length root)))
+    (and (<= len (length string))
+         (assert$ (<= len (fixnum-bound))
+                  (string-prefixp-1 root len string)))))
+
+(defun relativize-book-path (filename system-books-dir)
+
+; System-books-dir is presumably the value of state global 'system-books-dir.
+; If the given filename is an absolute pathname extending the absolute
+; directory name system-books-dir, then return (:system . suffix), where suffix
+; is a relative pathname that points to the same file with respect to
+; system-books-dir.
+
+  (declare (xargs :guard (and (stringp filename)
+                              (stringp system-books-dir))))
+  (cond ((and (stringp filename) ; could already be (:system . fname)
+              (string-prefixp system-books-dir filename))
+         (cons :system (subseq filename (length system-books-dir) nil)))
+        (t filename)))
+
+(defun relativize-book-path-lst (lst root)
+  (declare (xargs :guard (and (string-listp lst)
+                              (stringp root))))
+  (cond ((endp lst) nil)
+        (t (cons (relativize-book-path (car lst) root)
+                 (relativize-book-path-lst (cdr lst) root)))))
+
+(defun sysfile-p (x)
+  (and (consp x)
+       (eq (car x) :system)
+       (stringp (cdr x))))
+
+(defun sysfile-filename (x)
+  (declare (xargs :guard (sysfile-p x)))
+  (cdr x))
+
+(defun filename-to-sysfile (filename state)
+  (relativize-book-path filename (f-get-global 'system-books-dir state)))
+
+(defun sysfile-to-filename (x state)
+  (cond ((sysfile-p x)
+         (extend-pathname :system
+                          (sysfile-filename x)
+                          state))
+        (t x)))
+
 (mutual-recursion
 
-(defun make-include-books-absolute (form cbd dir names make-event-parent os ctx
-                                         state)
+(defun make-include-books-absolute (form cbd dir names ctx state)
 
 ; WARNING: Keep this in sync with chk-embedded-event-form,
 ; destructure-expansion, and elide-locals-rec.
 
-; See the comment in fix-portcullis-cmds for a discussion.  Starting after
-; Version_3.6.1, we allow an include-book pathname for a portcullis command to
-; remain a relative pathname if it is relative to the cbd of the book.  That
-; change avoids a failure to certify community book
-; books/fix-cert/test-fix-cert1.lisp that initially occurred when we started
-; including portcullis commands in the check-sum (with the introduction of
-; function check-sum-cert, caused by the renaming of an absolute pathname in an
-; include-book portcullis command.
-
 ; Form is a command from the current ACL2 world that is known to be an embedded
-; event form with respect to names.  Keep this function in sync with
-; chk-embedded-event-form.
+; event form with respect to names.  However, it is not necessarily an event
+; that would actually be stored: in particular, add-include-book-dir (also
+; ..-dir!) can take a relative pathname in the command, but will always be
+; stored as an event using an absolute pathname; and make-event uses this
+; function to convert some relative to absolute pathnames in the make-event
+; expansion of form.
 
-; Cbd is either nil (arising from an argument of t for certify-book; see the
-; corresponding call of chk-acceptable-certify-book1 in
-; chk-acceptable-certify-book) or is the connected-book-directory at the
-; conclusion of form, and hence (since form is an embedded event form) at the
-; beginning of form.  Dir is the directory of the book being certified.  See
-; the include-book case below for how these are used.
+; This function can replace relative pathnames by absolute pathnames, according
+; to each of the following scenarios.
 
-; If make-event-parent is non-nil, then it is a make-event form whose expansion
-; is being considered, and we cause an error rather than converting.
+; (a) We are converting commands in a certification world so that they are
+;     suitable for storing in the portcullis commands section of a certificate
+;     file.
+
+; (b) We are creating a make-event expansion.
+
+; In the case of (a), we want to make pathnames absolute in include-book,
+; add-include-book-dir!, and add-include-book-dir forms -- possibly using
+; sysfile notation (see sysfile-p) -- so that such pathnames are appropriate
+; even if the book and its certificate file are moved.  See the comment in
+; fix-portcullis-cmds for discussion of case (a).  In the case of (b) we do
+; this as well, just in case the make-event form is ultimately in the
+; certification world.  It is tempting not to bother if we are processing the
+; event from a book, during include-book or certify-book, since then we know
+; it's not in the portcullis.  But rather than think about how making those
+; special cases might affect redundancy, we always handle make-event.
+
+; Starting after Version_3.6.1, we allow an include-book pathname for a
+; portcullis command to remain a relative pathname if it is relative to the cbd
+; of the book.  That change avoided a failure to certify community book
+; books/fix-cert/test-fix-cert1.lisp (now defunct) that initially occurred when
+; we started including portcullis commands in the check-sum (with the
+; introduction of function check-sum-cert), caused by the renaming of an
+; absolute pathname in an include-book portcullis command.  Note that since a
+; make-event in a certification world is evaluated without knowing the ultimate
+; cbd for certification, we always convert to an absolute pathname in case (b),
+; the make-event case.
+
+; Cbd is the connected-book-directory just after evaluating form, and hence
+; (since form is an embedded event form) also just before evaluating form.  Dir
+; is the directory of the book being certified (case (a)), but is nil for the
+; make-event case (case (b)).
 
   (cond
    ((atom form) (value form)) ; This should never happen.
    ((eq (car form) 'skip-proofs)
     (er-let* ((x (make-include-books-absolute
-                  (cadr form) cbd dir names make-event-parent os ctx state)))
-             (value (list (car form) x))))
+                  (cadr form) cbd dir names ctx state)))
+      (value (list (car form) x))))
    ((eq (car form) 'local)
 
 ; Local events will be skipped when including a book, and in particular when
@@ -10886,79 +10481,92 @@
 
     (value form))
    ((eq (car form) 'progn)
+
+; Since progn! has forms that need not be events, we don't try to deal with it.
+; We consider this not to present any soundness problems, since progn!
+; requires a ttag.
+
     (er-let* ((rest (make-include-books-absolute-lst
-                     (cdr form) cbd dir names make-event-parent os ctx state)))
-             (value (cons (car form)
-                          rest))))
+                     (cdr form) cbd dir names ctx state)))
+      (value (cons (car form)
+                   rest))))
    ((eq (car form) 'value)
     (value form))
-   ((and (eq (car form) 'include-book)
+   ((eq (car form) 'include-book)
 
-; Recall that we are processing the portcullis commands for a book, bk, that is
-; in the process of being certified.  We may want to ensure that form, an
-; include-book form, uses an absolute pathname, so that form refers to the same
-; book as when originally processed as it does when later being processed as a
-; portcullis command of bk.
-
-; Consider the normal case, where cbd is not nil.  When bk is later included,
-; the connected-book-directory will be bound to dir, which is the directory of
-; the book being certified.  Therefore, if the connected-book-directory at the
-; time form was processed, namely cbd, is the same as dir, then we do not need
-; bk to be an absolute pathname: the same connected-book-directory as when
-; originally processed (namely, cbd) will be used as the
-; connected-book-directory when the book is being included as a portcullis
-; command of bk (namely, connected-book-directory dir).
+; Consider the case that we are processing the portcullis commands for a book,
+; bk, that is in the process of being certified.  We want to ensure that form,
+; an include-book form, refers to an absolute pathname, so that form refers to
+; the same book as when originally processed as it does when later being
+; processed as a portcullis command of bk.  When bk is later included, the
+; connected-book-directory will be bound to dir, which is the directory of the
+; book being certified.  Therefore, if the connected-book-directory at the time
+; form was processed, namely cbd, is the same as dir, then we do not need bk to
+; be an absolute pathname: the same connected-book-directory as when originally
+; processed (namely, cbd) will be used as the connected-book-directory when the
+; book is being included as a portcullis command of bk (namely,
+; connected-book-directory dir).  Well... actually, if bk is a system book, and
+; if the system books are moved, then cbd and dir will change but their
+; equality (and inequality) will be preserved.
 
 ; If cbd is nil then we are recovering portcullis commands from an existing
 ; certificate, so relative pathnames have already been converted to absolute
 ; pathnames when necessary, and no conversion is needed here.
 
+; If cbd is non-nil and dir is nil, then we are converting pathnames for some
+; purposes other than the portcullis of a book being certified, so there is no
+; need to convert to an absolute pathname.
+
+; If we have an absolute pathname, either by conversion or because the
+; include-book originally referenced an absoluate pathname under the system
+; books directory, then we convert to using :dir :syste.
+
 ; To summarize: if cbd is nil or if cbd and dir are equal, we can skip any
 ; pathname conversion and fall through to the next top-level COND branch, where
-; form is returned unchanged.  We thus consider pathname conversion when both
-; of those conditions fail.
+; form is returned unchanged -- except in both cases, an absolute pathname
+; under the system books directory is replaced using :dir :system.
 
-         (and cbd
-              (not (equal cbd dir)))
+    (value
+     (assert$
+      (keyword-value-listp (cddr form)) ; as form is a legal event
+      (cond
+       ((assoc-keyword :dir form)
 
 ; We do not need to convert a relative pathname to an absolute pathname if the
 ; :dir argument already specifies how to do this.  Recall that the table guard
 ; of the acl2-defaults-table specifies that :dir arguments are absolute
 ; pathnames.
 
-         (assert$ (keyword-value-listp (cddr form)) ; as form is a legal event
-                  (not (assoc-keyword :dir form)))
-         (assert$ (stringp (cadr form)) ; as form is a legal event
-                  (not (absolute-pathname-string-p
-                        (cadr form)
-                        nil ; no directory check necessary here
-                        os))))
-    (cond
-     (make-event-parent
-
-; It would be a mistake to create an absolute pathname in a case like
-; (make-event '(include-book "foo") :check-expansion t), because the expansion
-; check would later fail.  Instead, in such a (presumably rare) case, the user
-; needs to modify the make-event form to create an absolute pathname.
-
-      (er soft ctx
-          "Each include-book form in the certification world must be given ~
-           absolute pathname before it is saved in the certificate as a ~
-           portcullis command.  ACL2 generally figures out a suitable ~
-           absolute pathname when the pathname is relative.  But the present ~
-           form, ~x0, comes from the expansion of a make-event form with ~
-           (first) argument ~x1 and non-nil :check-expansion argument. ~ ~
-           Consider changing this make-event form to produce an include-book ~
-           with an absolute pathname instead."
-          form (cadr make-event-parent)))
-     (t (mv-let (full-book-name directory-name familiar-name)
-                (parse-book-name cbd (cadr form) nil ctx state)
-                (declare (ignore directory-name familiar-name))
-                (value (list* 'include-book
-                              full-book-name
-                              (cddr form)))))))
-   ((and (member-eq (car form)
-                    '(add-include-book-dir add-include-book-dir!))
+        form)
+       ((not (equal cbd dir)) ; always true in case (b)
+        (assert$
+         (stringp cbd)
+         (mv-let (full-book-name directory-name familiar-name)
+                 (parse-book-name cbd (cadr form) nil ctx state)
+                 (declare (ignore directory-name familiar-name))
+                 (let ((x (filename-to-sysfile full-book-name state)))
+                   (cond ((consp x) ; (sysfile-p x)
+                          (list* 'include-book
+                                 (sysfile-filename x)
+                                 :dir :system
+                                 (cddr form)))
+                         ((equal x (cadr form))
+                          form)
+                         (t
+                          (list* 'include-book
+                                 x
+                                 (cddr form))))))))
+       (t (assert$
+           (stringp (cadr form))
+           (let ((sysfile (filename-to-sysfile (cadr form) state)))
+             (cond ((consp sysfile) ; (sysfile-p sysfile)
+                    (list* 'include-book
+                           (sysfile-filename sysfile)
+                           :dir :system
+                           (cddr form)))
+                   (t form)))))))))
+   ((member-eq (car form)
+               '(add-include-book-dir add-include-book-dir!))
 
 ; This case is very similar to the include-book case handled in the preceding
 ; COND branch, above.  See that case for explanatory comments.  In order to see
@@ -10988,31 +10596,25 @@
 ; ACL2 Error in ( INCLUDE-BOOK "foo" ...):  There is no file named
 ; "D/SUB/foo.lisp" that can be opened for input.
 
-
-         (and cbd
-              (not (equal cbd dir)))
-         (assert$ (stringp (caddr form)) ; as form is a legal event
-                  (not (absolute-pathname-string-p
-                        (caddr form)
-                        nil ; no directory check necessary here
-                        os))))
-    (cond
-     (make-event-parent
-      (er soft ctx
-          "Each ~&0 call in the certification world must be given an absolute ~
-           pathname before it is saved in the certificate as a portcullis ~
-           command.  ACL2 generally figures out a suitable absolute pathname ~
-           when the pathname is relative.  But the present form, ~x1, comes ~
-           from the expansion of a make-event form with (first) argument ~x2 ~
-           and non-nil :check-expansion argument. ~ Consider changing this ~
-           make-event form to produce a call of ~x3 on an absolute pathname."
-          '(add-include-book-dir add-include-book-dir!)
-          form
-          (cadr make-event-parent)
-          (car form)))
-     (t (value (list (car form)
-                     (cadr form)
-                     (extend-pathname cbd (caddr form) state))))))
+    (value
+     (cond
+      ((sysfile-p (caddr form)) ; already "absolute"
+       form)
+      ((not (equal cbd dir)) ; always true in case (b)
+       (assert$
+        (stringp cbd)
+        (list (car form)
+              (cadr form)
+              (filename-to-sysfile (extend-pathname cbd (caddr form) state)
+                                   state))))
+      (t (let ((sysfile (if (consp (caddr form)) ; presumably sysfile-p holds
+                            (caddr form)
+                          (filename-to-sysfile (caddr form) state))))
+           (cond ((consp sysfile) ; (sysfile-p sysfile)
+                  (list (car form)
+                        (cadr form)
+                        sysfile))
+                 (t form)))))))
    ((member-eq (car form) names)
 
 ; Note that we do not have a special case for encapsulate.  Every include-book
@@ -11022,31 +10624,25 @@
 ; similar to the case for progn.
 
     (value form))
-   ((eq (car form) 'make-event)
-    (let ((expansion (cadr (assoc-keyword :check-expansion (cddr form)))))
-      (cond ((not (consp expansion))
-             (er soft ctx
-                 "Implementation error: we had thought that every make-event ~
-                  form in the certification world would have a consp ~
-                  :check-expansion field, yet we found the following.  Please ~
-                  contact the ACL2 implementors.~|~x0"
-                 form))
-            (t (er-progn (make-include-books-absolute
-                          expansion cbd dir names form os ctx state)
-                         (value form))))))
+   ((eq (car form) 'make-event) ; already fixed
+    (value form))
    ((and (member-eq (car form) '(with-output
                                  with-prover-step-limit
                                  with-prover-time-limit))
          (consp (cdr form)))
     (er-let* ((form1 (make-include-books-absolute
-                      (car (last form)) cbd dir names make-event-parent os ctx
-                      state)))
-             (value (append (butlast form 1) (list form1)))))
+                      (car (last form))
+                      cbd dir names ctx state)))
+      (value (append (butlast form 1) (list form1)))))
    ((getprop (car form) 'macro-body nil 'current-acl2-world (w state))
     (er-let*
-     ((form1 (macroexpand1 form ctx state)))
-     (make-include-books-absolute
-      form1 cbd dir names make-event-parent os ctx state)))
+        ((form1 (macroexpand1 form ctx state)))
+
+; We might consider throwing away the following result, instead returning the
+; original form, if no actual pathname conversion takes place.  We would need
+; to record such information, say, with (mv changedp result).
+
+      (make-include-books-absolute form1 cbd dir names ctx state)))
    (t (value (er hard ctx
                  "Implementation error in make-include-books-absolute:  ~
                   unrecognized event type, ~x0.  Make-include-books-absolute ~
@@ -11054,16 +10650,13 @@
                   Please send this error message to the implementors."
                  (car form))))))
 
-(defun make-include-books-absolute-lst (forms cbd dir names make-event-parent
-                                              os ctx state)
+(defun make-include-books-absolute-lst (forms cbd dir names ctx state)
   (if (endp forms)
       (value nil)
     (er-let* ((first (make-include-books-absolute
-                      (car forms) cbd dir names make-event-parent os ctx
-                      state))
+                      (car forms) cbd dir names ctx state))
               (rest (make-include-books-absolute-lst
-                     (cdr forms) cbd dir names make-event-parent os ctx
-                     state)))
+                     (cdr forms) cbd dir names ctx state)))
              (value (cons first rest)))))
 )
 
@@ -11087,57 +10680,7 @@
    (t
     (first-known-package-alist (cdr wrld-segment)))))
 
-(defmacro string-prefixp (root string)
-
-; We return a result propositionally equivalent to
-;   (and (<= (length root) (length string))
-;        (equal root (subseq string 0 (length root))))
-; but, unlike subseq, without allocating memory.
-
-  `(search ,root ,string :start2 0))
-
-(defun relativize-book-path (filename root)
-
-; If the given filename is an absolute pathname extending the absolute
-; directory name root, then return (:system . suffix), where suffix is a
-; relative pathname that points to the same file with respect to root.
-
-; To admit this in :logic mode with guards verified, first prove:
-
-; (defthm coerce-to-list-is-positive-linear
-;   (implies (and (not (equal filename ""))
-;                 (stringp filename))
-;            (< 0 (len (coerce filename 'list))))
-;   :hints (("Goal"
-;            :use ((:instance coerce-inverse-2
-;                             (x filename)))
-;            :expand ((len (coerce filename 'list)))))
-;   :rule-classes :linear)
-
-  (declare (xargs :guard (and (stringp filename)
-                              (stringp root))))
-  (cond ((and (stringp filename) ; could already be (:system . fname)
-              (string-prefixp root filename))
-         (cons :system (subseq filename (length root) nil)))
-        (t filename)))
-
-(defun relativize-book-path-lst1 (lst root)
-  (declare (xargs :guard (and (string-listp lst)
-                              (stringp root))))
-  (cond ((endp lst) nil)
-        (t (cons (relativize-book-path (car lst) root)
-                 (relativize-book-path-lst1 (cdr lst) root)))))
-
-(defun relativize-book-path-lst (lst root current)
-  (declare (xargs :guard (and (string-listp lst)
-                              (stringp root)
-                              (stringp current))))
-  (cond ((string-prefixp root current)
-         (relativize-book-path-lst1 lst root))
-        (t lst)))
-
-(defun defpkg-items-rec (new-kpa old-kpa system-books-dir
-                                 connected-book-directory ctx w state acc)
+(defun defpkg-items-rec (new-kpa old-kpa system-books-dir ctx w state acc)
 
 ; For background on the discussion below, see the Essay on Hidden Packages.
 
@@ -11163,8 +10706,8 @@
              (n (package-entry-name e)))
         (cond
          ((find-package-entry n old-kpa)
-          (defpkg-items-rec (cdr new-kpa) old-kpa system-books-dir
-            connected-book-directory ctx w state acc))
+          (defpkg-items-rec
+            (cdr new-kpa) old-kpa system-books-dir ctx w state acc))
          (t
           (let* ((imports (package-entry-imports e))
                  (event (package-entry-defpkg-event-form e))
@@ -11178,8 +10721,7 @@
 ; (as is done as of August 2010 by Debian ACL2 release and ACL2s).
 
                   (relativize-book-path-lst (package-entry-book-path e)
-                                            system-books-dir
-                                            connected-book-directory)))
+                                            system-books-dir)))
             (mv-let (erp pair state)
 
 ; It's perfectly OK for erp to be non-nil here.  That case is handled below.
@@ -11191,7 +10733,7 @@
                                          ctx w state nil)
               (defpkg-items-rec
                 (cdr new-kpa) old-kpa system-books-dir
-                connected-book-directory ctx w state
+                ctx w state
                 (cons (list name
                             imports
                             (assert$
@@ -11237,7 +10779,6 @@
          (erp val state)
          (defpkg-items-rec new-kpa old-kpa
            (f-get-global 'system-books-dir state)
-           (f-get-global 'connected-book-directory state)
            ctx w state nil)
          (assert$
           (null erp)
@@ -11377,16 +10918,14 @@
 
 )
 
-(defun hidden-defpkg-events1 (kpa system-books-dir
-                                  connected-book-directory w ctx state acc)
+(defun hidden-defpkg-events1 (kpa system-books-dir w ctx state acc)
 
 ; Warning: Keep this in sync with hidden-depkg-events-simple.
 
   (cond
    ((endp kpa) (value (reverse acc)))
    ((not (package-entry-hidden-p (car kpa)))
-    (hidden-defpkg-events1 (cdr kpa) system-books-dir
-                           connected-book-directory w ctx state acc))
+    (hidden-defpkg-events1 (cdr kpa) system-books-dir w ctx state acc))
    (t
     (let* ((e (car kpa))
            (n (package-entry-name e))
@@ -11398,8 +10937,7 @@
            (tterm (package-entry-tterm e))
            (book-path (relativize-book-path-lst
                        (package-entry-book-path e)
-                       system-books-dir
-                       connected-book-directory)))
+                       system-books-dir)))
       (mv-let
        (erp pair state)
        (simple-translate-and-eval body nil nil
@@ -11407,7 +10945,7 @@
                                   ctx w state nil)
        (hidden-defpkg-events1
         (cdr kpa)
-        system-books-dir connected-book-directory w ctx state
+        system-books-dir w ctx state
         (cons `(defpkg ,name
                  ,(assert$
                    event
@@ -11438,21 +10976,20 @@
    ((inhibit-output-lst *valid-output-names*))
    (hidden-defpkg-events1 kpa
                           (f-get-global 'system-books-dir state)
-                          (f-get-global 'connected-book-directory state)
                           w ctx state nil)))
 
-(defun fix-portcullis-cmds1 (dir cmds cbds ans names os ctx state)
+(defun fix-portcullis-cmds1 (dir cmds cbds ans names ctx state)
   (cond
    ((null cmds) (value ans))
    (t (er-let* ((cmd (make-include-books-absolute (car cmds) (car cbds) dir
-                                                  names nil os ctx state)))
+                                                  names ctx state)))
                (fix-portcullis-cmds1 dir
                                      (cdr cmds)
                                      (cdr cbds)
                                      (cons cmd ans)
-                                     names os ctx state)))))
+                                     names ctx state)))))
 
-(defun fix-portcullis-cmds (dir cmds cbds names os wrld ctx state)
+(defun fix-portcullis-cmds (dir cmds cbds names wrld ctx state)
 
 ; This function is called during certification of a book whose directory's
 ; absolute pathname is dir.  It modifies cmds by making relative pathnames
@@ -11498,7 +11035,7 @@
 ; that cmds is a list of embedded event forms.
 
   (er-let* ((new-cmds (fix-portcullis-cmds1 dir cmds cbds nil names
-                                            os ctx state))
+                                            ctx state))
             (new-defpkgs (hidden-defpkg-events
                           (global-val 'known-package-alist wrld)
                           wrld ctx state)))
@@ -11993,9 +11530,9 @@
 ; X is assumed to satisfy chk-book-name.  We generate the corresponding
 ; .port file name.  See the related function, convert-book-name-to-cert-name.
 
-  (coerce (append (reverse (cddddr (reverse (coerce x 'list))))
-                  '(#\p #\o #\r #\t))
-          'string))
+  (concatenate 'string
+               (remove-lisp-suffix x nil)
+               "port"))
 
 (defun chk-raise-portcullis2 (file1 file2 ch port-file-p ctx state ans)
 
@@ -12192,7 +11729,15 @@
          (< (+ p 2) (length version))
          (equal (subseq version p (+ p 3)) "(r)"))))
 
-(defun ttag-alistp (x)
+(defun sysfile-or-string-listp (x)
+  (declare (xargs :guard (true-listp x)))
+  (cond ((endp x) t)
+        ((or (stringp (car x))
+             (sysfile-p (car x)))
+         (sysfile-or-string-listp (cdr x)))
+        (t nil)))
+
+(defun ttag-alistp (x sysfile-okp)
 
 ; We don't check that pathnames are absolute, but that isn't important here.
 
@@ -12201,10 +11746,12 @@
         (t (and (consp (car x))
                 (symbolp (caar x))
                 (true-listp (cdar x))
-                (string-listp (remove1 nil (cdar x)))
-                (ttag-alistp (cdr x))))))
+                (if sysfile-okp
+                    (sysfile-or-string-listp (remove1 nil (cdar x)))
+                  (string-listp (remove1 nil (cdar x))))
+                (ttag-alistp (cdr x) sysfile-okp)))))
 
-(defun cert-annotationsp (x)
+(defun cert-annotationsp (x sysfile-okp)
   (case-match x
     (((':SKIPPED-PROOFSP . sp)
       (':AXIOMSP . ap)
@@ -12214,48 +11761,23 @@
           (or (null ttags-singleton)
               (case-match ttags-singleton
                 (((':TTAGS . ttags))
-                 (ttag-alistp ttags))
+                 (ttag-alistp ttags sysfile-okp))
                 (& nil)))))
     (& nil)))
 
-(defun include-book-alist-entryp (entry)
-  (and (consp entry)
-       (stringp (car entry)) ;;; full-book-name
-       (consp (cdr entry))
-       (stringp (cadr entry)) ;;; user-book-name
-       (consp (cddr entry))
-       (stringp (caddr entry)) ;;; familiar-name
-       (consp (cdddr entry))
-       (cert-annotationsp (cadddr entry)) ;;; cert-annotations
-       (or (integerp (cddddr entry))      ;;; ev-lst-chk-sum
-           (eq (cddddr entry) nil))))
-
-(defun include-book-alistp1 (x local-markers-allowedp)
-  (cond
-   ((atom x) (equal x nil))
-   ((and local-markers-allowedp
-         (consp (car x))
-         (eq (car (car x)) 'local)
-         (consp (cdr (car x)))
-         (equal (cddr (car x)) nil))
-    (and (include-book-alist-entryp (cadr (car x)))
-         (include-book-alistp1 (cdr x)
-                               local-markers-allowedp)))
-   (t (and (include-book-alist-entryp (car x))
-           (include-book-alistp1 (cdr x)
-                                 local-markers-allowedp)))))
-
-(defun include-book-alistp (x local-markers-allowedp)
-
-; We check whether x is a legal include-book-alist in the given version.  If
-; local-markers-allowedp we consider entries of the form (LOCAL e) to be legal
-; if e is legal; otherwise, LOCAL is given no special meaning.  (We expect to
-; give this special treatment for post-alists; see the comments in
-; make-certificate-file.)
-
-  (include-book-alistp1 x local-markers-allowedp))
-
 (defrec cert-obj
+
+; This record represents information stored in a certificate file.  The
+; "-sysfile" variants are used for checksums, employing sysfiles (see
+; sysfile-p) in place of absolute pathnames referencing system books, to
+; support the relocation of system books directories that include .cert files,
+; while the "-abs" variants instead contain the original absolute pathnames,
+; and are used for purposes other than checksums.
+
+  ((cmds pre-alist-sysfile . pre-alist-abs)
+   (post-alist-sysfile . post-alist-abs)
+   expansion-alist
+   . 
 
 ; The :pcert-info field is used for provisional certification.  Its value is
 ; either an expansion-alist that has not had locals elided (as per elide-locals
@@ -12265,11 +11787,11 @@
 ; the explicit value :unproved is stored when constructing a cert-obj from a
 ; .pcert1 file.
 
-  ((cmds . pre-alist)
-   post-alist expansion-alist . pcert-info)
+   pcert-info)
   t)
 
-(defun check-sum-cert-obj (cmds pre-alist post-alist expansion-alist)
+(defun check-sum-cert-obj (cmds pre-alist-sysfile post-alist-sysfile
+                                expansion-alist)
 
 ; The inputs are potential fields of a cert-obj record.  We deliberately omit
 ; the :pcert-info field of a cert-obj from the checksum: we don't want the
@@ -12277,25 +11799,204 @@
 ; only function is to assist in proofs for the Convert procedure of provisional
 ; certification.
 
-  (check-sum-obj (cons (cons cmds pre-alist)
-                       (cons post-alist expansion-alist))))
+  (check-sum-obj (cons (cons cmds pre-alist-sysfile)
+                       (cons post-alist-sysfile expansion-alist))))
+
+(defun include-book-alist-entry-p (entry sysfile-okp)
+  (and (consp entry)
+       (or (stringp (car entry)) ; full-book-name
+           (and sysfile-okp
+                (sysfile-p (car entry))))
+       (consp (cdr entry))
+       (stringp (cadr entry)) ; user-book-name
+       (consp (cddr entry))
+       (stringp (caddr entry)) ; familiar-name
+       (consp (cdddr entry))
+       (cert-annotationsp (cadddr entry) sysfile-okp) ; cert-annotations
+       (or (integerp (cddddr entry))      ; ev-lst-chk-sum
+           (eq (cddddr entry) nil))))
+
+(defun sysfile-to-filename-ttag-alist-val (lst state)
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        ((null (car lst))
+         (cons nil (sysfile-to-filename-ttag-alist-val (cdr lst) state)))
+        (t (cons (sysfile-to-filename (car lst) state)
+                 (sysfile-to-filename-ttag-alist-val (cdr lst) state)))))
+
+(defun sysfile-to-filename-ttag-alistp (ttag-alist state)
+  (declare (xargs :guard (ttag-alistp ttag-alist t)))
+  (cond ((endp ttag-alist) nil)
+        (t (acons (caar ttag-alist)
+                  (sysfile-to-filename-ttag-alist-val (cdar ttag-alist) state)
+                  (sysfile-to-filename-ttag-alistp (cdr ttag-alist) state)))))
+
+(defun sysfile-to-filename-cert-annotations (ca state)
+  (declare (xargs :guard (cert-annotationsp ca t)))
+  (case-match ca
+    (((':SKIPPED-PROOFSP . sp)
+      (':AXIOMSP . ap)
+      . ttags-singleton)
+     `((:SKIPPED-PROOFSP . ,sp)
+       (:AXIOMSP . ,ap)
+       ,@(and ttags-singleton
+              (case-match ttags-singleton
+                (((':TTAGS . ttags))
+                 `((:TTAGS . ,(sysfile-to-filename-ttag-alistp ttags state))))
+                (& (er hard 'sysfile-to-filename-cert-annotations
+                       "Implementation error: unexpected shape, ~x0."
+                       ca))))))
+    (& (er hard 'sysfile-to-filename-cert-annotations
+           "Implementation error: unexpected shape, ~x0."
+           ca))))
+
+(defun sysfile-to-filename-include-book-entry (entry state)
+  (declare (xargs :guard (include-book-alist-entry-p entry t)))
+  (list* (sysfile-to-filename (car entry) state)
+         (cadr entry)
+         (caddr entry)
+         (sysfile-to-filename-cert-annotations (cadddr entry) state)
+         (cddddr entry)))
+
+(defun sysfile-to-filename-include-book-alist1 (x local-markers-allowedp state
+                                                  acc)
+
+; See sysfile-to-filename-include-book-alist.
+
+; It was tempting to use the "changedp" trick to avoid consing up a new copy of
+; x if it hasn't changed.  But it seems likely that x will change for any
+; non-trivial book (which we expect would likely include at least one community
+; book), and this tail-recursive code is simpler and, who knows, maybe more
+; efficient.
+
+  (cond
+   ((atom x)
+    (if (null x) (reverse acc) :error))
+   (t (let* ((fst (car x))
+             (new-fst
+              (case-match fst
+                (('local entry)
+                 (cond ((and local-markers-allowedp
+                             (include-book-alist-entry-p entry t))
+                        (list 'local (sysfile-to-filename-include-book-entry
+                                      entry state)))
+                       (t :error)))
+                (& (cond ((include-book-alist-entry-p fst t)
+                          (sysfile-to-filename-include-book-entry fst state))
+                         (t :error))))))
+        (cond ((eq new-fst :error) :error)
+              (t (sysfile-to-filename-include-book-alist1
+                  (cdr x)
+                  local-markers-allowedp
+                  state
+                  (cons new-fst acc))))))))
+
+(defun sysfile-to-filename-include-book-alist (x local-markers-allowedp state)
+
+; We check whether x is a legal include-book-alist in the given version.  If
+; local-markers-allowedp we consider entries of the form (LOCAL e) to be legal
+; if e is legal; otherwise, LOCAL is given no special meaning.  (We expect to
+; give this special treatment for post-alists; see the comments in
+; make-certificate-file.)
+
+; If the check succeeds, then we return the result of replacing each
+; full-book-name in x that is a sysfile-p with its corresponding absolute
+; filename.  Otherwise we return :error.
+
+  (sysfile-to-filename-include-book-alist1 x local-markers-allowedp state nil))
+
+(defun filename-to-sysfile-ttag-alist-val (lst state)
+  (declare (xargs :guard (and (true-listp lst)
+                              (string-listp (remove1 nil lst)))))
+  (cond ((endp lst) nil)
+        ((null (car lst))
+         (cons nil (filename-to-sysfile-ttag-alist-val (cdr lst) state)))
+        (t (cons (filename-to-sysfile (car lst) state)
+                 (filename-to-sysfile-ttag-alist-val (cdr lst) state)))))
+
+(defun filename-to-sysfile-ttag-alistp (ttag-alist state)
+  (declare (xargs :guard (ttag-alistp ttag-alist nil)))
+  (cond ((endp ttag-alist) nil)
+        (t (acons (caar ttag-alist)
+                  (filename-to-sysfile-ttag-alist-val (cdar ttag-alist) state)
+                  (filename-to-sysfile-ttag-alistp (cdr ttag-alist) state)))))
+
+(defun filename-to-sysfile-cert-annotations (ca state)
+  (declare (xargs :guard (cert-annotationsp ca nil)))
+  (case-match ca
+    (((':SKIPPED-PROOFSP . sp)
+      (':AXIOMSP . ap)
+      . ttags-singleton)
+     `((:SKIPPED-PROOFSP . ,sp)
+       (:AXIOMSP . ,ap)
+       ,@(and ttags-singleton
+              (case-match ttags-singleton
+                (((':TTAGS . ttags))
+                 `((:TTAGS . ,(filename-to-sysfile-ttag-alistp ttags state))))
+                (& (er hard 'filename-to-sysfile-cert-annotations
+                       "Implementation error: unexpected shape, ~x0."
+                       ca))))))
+    (& (er hard 'filename-to-sysfile-cert-annotations
+           "Implementation error: unexpected shape, ~x0."
+           ca))))
+
+(defun filename-to-sysfile-include-book-entry (entry state)
+  (declare (xargs :guard (include-book-alist-entry-p entry nil)))
+  (list* (filename-to-sysfile (car entry) state)
+         (cadr entry)
+         (caddr entry)
+         (filename-to-sysfile-cert-annotations (cadddr entry) state)
+         (cddddr entry)))
+
+(defun filename-to-sysfile-include-book-alist1 (x local-markers-allowedp state
+                                                  acc)
+
+; See filename-to-sysfile-include-book-alist.
+
+  (cond
+   ((atom x)
+    (if (null x) (reverse acc) :error))
+   (t (let* ((fst (car x))
+             (new-fst
+              (case-match fst
+                (('local entry)
+                 (cond ((and local-markers-allowedp
+                             (include-book-alist-entry-p entry nil))
+                        (list 'local (filename-to-sysfile-include-book-entry
+                                      entry state)))
+                       (t :error)))
+                (& (cond ((include-book-alist-entry-p fst nil)
+                          (filename-to-sysfile-include-book-entry fst state))
+                         (t :error))))))
+        (cond ((eq new-fst :error) :error)
+              (t (filename-to-sysfile-include-book-alist1
+                  (cdr x)
+                  local-markers-allowedp
+                  state
+                  (cons new-fst acc))))))))
+
+(defun filename-to-sysfile-include-book-alist (x local-markers-allowedp state)
+
+; See sysfile-to-filename-include-book-alist.  This simply works in the
+; opposite direction.
+
+  (filename-to-sysfile-include-book-alist1 x local-markers-allowedp state nil))
 
 (defun chk-raise-portcullis (file1 file2 ch light-chkp caller
                                    ctx state
                                    suspect-book-action-alist evalp)
 
-; File1 is a book and file2 is its certificate file.  The version string
-; recorded with the file is version.  Ch is an open object input channel to the
-; certificate.  We have already read past the initial (in-package "ACL2"),
-; acl2-version and the :BEGIN-PORTCULLIS-CMDS in ch.  We now read successive
-; commands and, if evalp is true, evaluate them in state.  Ld-skip-proofsp is
-; 'include-book for this operation because these commands have all been
-; successfully carried out in a boot strap world.  If this doesn't cause an
-; error, then we read the optional :expansion-alist, the pre- and post- check
-; sum alists, and the final check sum.  If these objects are (except the
-; optional :expansion-alist) not present or are of the wrong type, or there is
-; additional text in the file, or the final check sum is inaccurate, we cause
-; an error.
+; File1 is a book and file2 is its certificate file.  Ch is an open object
+; input channel to the certificate.  We have already read past the initial
+; (in-package "ACL2"), acl2-version and the :BEGIN-PORTCULLIS-CMDS in ch.  We
+; now read successive commands and, if evalp is true, evaluate them in state.
+; Ld-skip-proofsp is 'include-book for this operation because these commands
+; have all been successfully carried out in a boot strap world.  If this
+; doesn't cause an error, then we read the optional :expansion-alist, the pre-
+; and post- check sum alists, and the final check sum.  If these objects are
+; (except the optional :expansion-alist) not present or are of the wrong type,
+; or there is additional text in the file, or the final check sum is
+; inaccurate, we cause an error.
 
 ; Light-chkp is t when we are content to avoid rigorous checks on the
 ; certificate, say because we are simply interested in some information that
@@ -12306,7 +12007,10 @@
 ; error or to the assumption that the book is uncertified, according to the
 ; suspect-book-action-alist.  If we don't cause an error we return either the
 ; certificate object, which is a cert-obj record, or else we return nil,
-; indicating that the book is presumed uncertified.
+; indicating that the book is presumed uncertified.  The cert-obj record
+; contains not only the "-sysfile" versions of the pre- and post-alist, which
+; are stored in the certificate file, but their conversions to "-abs" versions,
+; in which the sysfiles have been converted to absolute pathnames.
 
   (with-reckless-readtable
 
@@ -12331,83 +12035,82 @@
             ch ctx state))))
      (state-global-let*
       ((infixp nil))
-      (mv-let
-       (eofp pre-alist state)
-       (read-object ch state)
-       (er-let*
-           ((expansion-alist
-             (cond
-              (eofp (ill-formed-certificate-er
-                     ctx
-                     'chk-raise-portcullis{expansion-alist-1}
-                     file1 file2))
-              ((eq pre-alist :expansion-alist)
-               (mv-let
-                (eofp expansion-alist state)
-                (read-object ch state)
-                (cond
-                 (eofp
-                  (ill-formed-certificate-er
-                   ctx
-                   'chk-raise-portcullis{expansion-alist-2}
-                   file1 file2))
-                 (t (value expansion-alist)))))
-              (t (value nil))))
-            (pre-alist
-             (cond
-              ((eq pre-alist :expansion-alist)
-               (mv-let
-                (eofp pre-alist state)
-                (read-object ch state)
-                (cond
-                 (eofp (ill-formed-certificate-er
-                        ctx
-                        'chk-raise-portcullis{expansion-alist-3}
-                        file1 file2))
-                 (t (value pre-alist)))))
-              (t (value pre-alist))))
-            (pre-alist
-             (cond ((include-book-alistp pre-alist nil)
-                    (value pre-alist))
-                   (t (ill-formed-certificate-er
-                       ctx
-                       'chk-raise-portcullis{pre-alist}
-                       file1 file2 pre-alist)))))
-         (let ((actual-alist (global-val 'include-book-alist (w state))))
-           (mv-let
-            (eofp post-alist3 state)
-            (read-object ch state)
-            (er-let*
-                ((post-alist3
-                  (cond
-                   ((include-book-alistp post-alist3 t)
-                    (value post-alist3))
-                   (t (ill-formed-certificate-er
-                       ctx
-                       'chk-raise-portcullis{post-alist-1}
-                       file1 file2 post-alist3)))))
-              (cond
-               (eofp
-                (ill-formed-certificate-er
-                 ctx
-                 'chk-raise-portcullis{post-alist-2}
-                 file1 file2))
-               (t
-                (mv-let
-                 (eofp chk-sum1 state)
-                 (read-object ch state)
-                 (cond
-                  (eofp
-                   (ill-formed-certificate-er
-                    ctx 'chk-raise-portcullis{chk-sum-1}
-                    file1 file2))
-                  ((not (integerp chk-sum1))
-                   (ill-formed-certificate-er
-                    ctx 'chk-raise-portcullis{chk-sum-2}
-                    file1 file2 chk-sum1))
-                  (t
-                   (mv-let
-                    (eofp temp state)
+      (er-let*
+          ((pre-alist0
+            (mv-let (eofp pre-alist0 state)
+                    (read-object ch state)
+                    (cond
+                     (eofp (ill-formed-certificate-er
+                            ctx
+                            'chk-raise-portcullis{pre-alist-0}
+                            file1 file2))
+                     (t (value pre-alist0)))))
+           (expansion-alist
+            (cond ((eq pre-alist0 :expansion-alist)
+                   (mv-let (eofp expansion-alist state)
+                           (read-object ch state)
+                           (cond (eofp
+                                  (ill-formed-certificate-er
+                                   ctx
+                                   'chk-raise-portcullis{expansion-alist-2}
+                                   file1 file2))
+                                 (t (value expansion-alist)))))
+                  (t (value nil))))
+           (pre-alist-sysfile
+            (cond ((eq pre-alist0 :expansion-alist)
+                   (mv-let (eofp pre-alist1 state)
+                           (read-object ch state)
+                           (cond (eofp (ill-formed-certificate-er
+                                        ctx
+                                        'chk-raise-portcullis{pre-alist-1}
+                                        file1 file2))
+                                 (t (value pre-alist1)))))
+                  (t (value pre-alist0))))
+           (pre-alist-abs
+            (let ((pre-alist-abs0
+                   (sysfile-to-filename-include-book-alist
+                    pre-alist-sysfile
+                    nil ; local-markers-allowedp
+                    state)))
+              (cond ((eq pre-alist-abs0 :error)
+                     (ill-formed-certificate-er
+                      ctx
+                      'chk-raise-portcullis{pre-alist-2}
+                      file1 file2 pre-alist-sysfile))
+                    (t (value pre-alist-abs0)))))
+           (post-alist3-sysfile
+            (mv-let (eofp post-alist1 state)
+                    (read-object ch state)
+                    (cond (eofp (ill-formed-certificate-er
+                                 ctx
+                                 'chk-raise-portcullis{post-alist-1}
+                                 file1 file2))
+                          (t (value post-alist1)))))
+           (post-alist3-abs
+            (let ((post-alist3-abs0
+                   (sysfile-to-filename-include-book-alist
+                    post-alist3-sysfile
+                    t ; local-markers-allowedp
+                    state)))
+              (cond ((eq post-alist3-abs0 :error)
+                     (ill-formed-certificate-er
+                      ctx
+                      'chk-raise-portcullis{post-alist-2}
+                      file1 file2 post-alist3-sysfile))
+                    (t (value post-alist3-abs0)))))
+           (chk-sum1
+            (mv-let (eofp chk-sum1 state)
+                    (read-object ch state)
+                    (cond (eofp (ill-formed-certificate-er
+                                 ctx 'chk-raise-portcullis{chk-sum-1}
+                                 file1 file2))
+                          ((not (integerp chk-sum1))
+                           (ill-formed-certificate-er
+                            ctx 'chk-raise-portcullis{chk-sum-2}
+                            file1 file2 chk-sum1))
+                          (t (value chk-sum1)))))
+           (pcert-info
+            (mv-let (eofp temp state)
                     (read-object ch state)
                     (cond
                      ((not (or eofp
@@ -12416,50 +12119,51 @@
                        ctx
                        'chk-raise-portcullis{pcert-info-1}
                        file1 file2 temp))
-                     (t
-                      (er-let*
-                          ((pcert-info
-                            (cond ((or eofp
-                                       (not (eq caller 'convert-pcert)))
-                                   (value nil))
-                                  (t (mv-let
-                                      (eofp1 temp1 state)
-                                      (read-object ch state)
-                                      (cond
-                                       (eofp1
-                                        (ill-formed-certificate-er
-                                         ctx
-                                         'chk-raise-portcullis{pcert-info-2}
-                                         file1 file2))
-                                       (t (value temp1))))))))
-                        (let ((chk-sum2
-                               (and (not light-chkp) ; optimization
-                                    (check-sum-cert-obj
-                                     portcullis-cmds ; :cmds
-                                     pre-alist       ; :pre-alist
-                                     post-alist3     ; :post-alist
-                                     expansion-alist ; :expansion-alist
-                                     ))))
-                          (cond
-                           ((and (not light-chkp)
-                                 (or (not (integerp chk-sum2))
-                                     (not (int= chk-sum1 chk-sum2))))
-                            (ill-formed-certificate-er
-                             ctx
-                             'chk-raise-portcullis{pcert-info-3}
-                             file1 file2
-                             (list :chk-sum1 chk-sum1 :chk-sum2 chk-sum2
+                     (t (cond ((or eofp
+                                   (not (eq caller 'convert-pcert)))
+                               (value nil))
+                              (t (mv-let
+                                  (eofp1 temp1 state)
+                                  (read-object ch state)
+                                  (cond (eofp1
+                                         (ill-formed-certificate-er
+                                          ctx
+                                          'chk-raise-portcullis{pcert-info-2}
+                                          file1 file2))
+                                        (t (value temp1))))))))))
+           (chk-sum2
+            (value (and (not light-chkp) ; optimization
+                        (check-sum-cert-obj
+                         portcullis-cmds     ; :cmds
+                         pre-alist-sysfile   ; :pre-alist-sysfile
+                         post-alist3-sysfile ; :post-alist-sysfile
+                         expansion-alist     ; :expansion-alist
+                         ))))
+           (actual-alist
+            (value (global-val 'include-book-alist (w state)))))
+        (cond
+         ((and (not light-chkp)
+               (or (not (integerp chk-sum2))
+                   (not (int= chk-sum1 chk-sum2))))
+          (ill-formed-certificate-er
+           ctx
+           'chk-raise-portcullis{chk-sum}
+           file1 file2
+           (list :chk-sum1 chk-sum1 :chk-sum2 chk-sum2
 
 ; Developer debug:
-;                                  :portcullis-cmds portcullis-cmds
-;                                  :pre-alist pre-alist
-;                                  :post-alist3 post-alist3
-;                                  :expansion-alist expansion-alist
-                                   )))
-                           ((and (not light-chkp)
-                                 (not (include-book-alist-subsetp
-                                       pre-alist
-                                       actual-alist)))
+;                :portcullis-cmds portcullis-cmds
+;                :pre-alist-sysfile pre-alist-sysfile
+;                :pre-alist-abs pre-alist-abs
+;                :post-alist3-sysfile post-alist3-sysfile
+;                :post-alist3-abs post-alist3-abs
+;                :expansion-alist expansion-alist
+
+                 )))
+         ((and (not light-chkp)
+               (not (include-book-alist-subsetp
+                     pre-alist-abs
+                     actual-alist)))
 
 ; Note: Sometimes I have wondered how the expression above deals with
 ; LOCAL entries in the alists in question, because
@@ -12471,35 +12175,33 @@
 ; that we avoid needless computation (potentially reading certificate files) if
 ; no action is to be taken.
 
-                            (let ((warning-summary
-                                   (include-book-er-warning-summary
-                                    :uncertified-okp
-                                    suspect-book-action-alist
-                                    state)))
-                              (cond
-                               ((and (equal warning-summary "Uncertified")
-                                     (warning-disabled-p "Uncertified"))
-                                (value nil))
-                               (t
-                                (mv-let
-                                 (msgs state)
-                                 (tilde-*-book-check-sums-phrase pre-alist
-                                                                 actual-alist
-                                                                 state)
-                                 (include-book-er1 file1 file2
-                                                   (cons
-                                                    "After evaluating the ~
-                                                     portcullis commands for ~
-                                                     the book ~x0:~|~*3."
-                                                    (list (cons #\3 msgs)))
-                                                   warning-summary ctx state))))))
-                           (t (value (make cert-obj
-                                           :cmds portcullis-cmds
-                                           :pre-alist pre-alist
-                                           :post-alist post-alist3
-                                           :expansion-alist expansion-alist
-                                           :pcert-info
-                                           pcert-info)))))))))))))))))))))))
+          (let ((warning-summary
+                 (include-book-er-warning-summary
+                  :uncertified-okp
+                  suspect-book-action-alist
+                  state)))
+            (cond
+             ((and (equal warning-summary "Uncertified")
+                   (warning-disabled-p "Uncertified"))
+              (value nil))
+             (t (mv-let (msgs state)
+                        (tilde-*-book-check-sums-phrase pre-alist-abs
+                                                        actual-alist
+                                                        state)
+                        (include-book-er1 file1 file2
+                                          (cons
+                                           "After evaluating the portcullis ~
+                                            commands for the book ~x0:~|~*3."
+                                           (list (cons #\3 msgs)))
+                                          warning-summary ctx state))))))
+         (t (value (make cert-obj
+                         :cmds portcullis-cmds
+                         :pre-alist-sysfile pre-alist-sysfile
+                         :pre-alist-abs pre-alist-abs
+                         :post-alist-sysfile post-alist3-sysfile
+                         :post-alist-abs post-alist3-abs
+                         :expansion-alist expansion-alist
+                         :pcert-info pcert-info)))))))))
 
 (defun chk-certificate-file1 (file1 file2 ch light-chkp caller
                                     ctx state suspect-book-action-alist
@@ -12755,7 +12457,7 @@
                 (equal-modulo-hidden-defpkgs cmds1 (cdr cmds2)))
                (& nil))))))
 
-(defun cert-obj-for-convert (full-book-name dir pre-alist fixed-cmds
+(defun cert-obj-for-convert (full-book-name dir pre-alist-abs fixed-cmds
                                             suspect-book-action-alist
                                             ctx state)
 
@@ -12788,8 +12490,8 @@
                   (value (access cert-obj cert-obj :cmds)))
                nil
                fixed-cmds))
-          ((not (equal pre-alist
-                       (access cert-obj cert-obj :pre-alist)))
+          ((not (equal pre-alist-abs
+                       (access cert-obj cert-obj :pre-alist-abs)))
            (er soft ctx
                "The Convert procedure of provisional certification requires ~
                 that the include-book-alist at the start of that procedure ~
@@ -12798,8 +12500,8 @@
                 The current world's pre-alist is:~|~%  ~y0~|~%The pre-alist ~
                 from the Pcertify procedure (from the .pcert0 file) is:~|~%  ~
                 ~y1~|~%"
-               pre-alist
-               (access cert-obj cert-obj :pre-alist)))
+               pre-alist-abs
+               (access cert-obj cert-obj :pre-alist-abs)))
           (t (value cert-obj)))))
 
 (defun symbol-name-equal (x str)
@@ -12817,10 +12519,10 @@
 
 ; File is a full-book-name.  If certify-book is called with k=t, then here k is
 ; '?, cert-obj is a cert-obj constructed from an existing certificate, and cmds
-; is nil.  Otherwise (in the more usual case), this subroutine is called after
-; we have the k proposed portcullis commands and wrld; cmds and cbds are
-; returned by (get-portcullis-cmds wrld nil nil names ctx state); and cert-obj
-; is nil.
+; and cbds are nil.  Otherwise (in the more usual case), this subroutine is
+; called after we have the k proposed portcullis commands and wrld; cmds and
+; cbds are lists of the same length, returned by (get-portcullis-cmds wrld nil
+; nil names ctx state); and cert-obj is nil.
 
 ; Unless we cause an error, we return a cert-obj constructed from the
 ; certificate file for the given book, file.
@@ -12830,7 +12532,7 @@
 ; other cases, we do not keep an existing expansion-alist, even if the original
 ; argument k for certify-book is t (or any symbol with name "T").
 
-  (let ((pre-alist (global-val 'include-book-alist wrld))
+  (let ((pre-alist-abs (global-val 'include-book-alist wrld))
         (cmds (or cmds
                   (and cert-obj
                        (access cert-obj cert-obj :cmds))))
@@ -12865,7 +12567,7 @@
            to issue a command of the form: (certify-book ~x2 ~x1 ...).  See ~
            :DOC certify-book."
           k (length cmds) user-book-name))
-     ((assoc-equal file pre-alist)
+     ((assoc-equal file pre-alist-abs)
 
 ; Why do we do this?  By insuring that file is not in the include-book-alist
 ; initially, we ensure that it gets into the alist only at the end when we
@@ -12893,6 +12595,13 @@
 ; computing it here.
 
                           (value 'irrelevant))
+                         ((null cbds)
+
+; This case arises when either there are no commands (cmds), or else we are
+; using commands from an existing .cert file; see the call of
+; chk-acceptable-certify-book1 with cmds = nil in chk-acceptable-certify-book.
+
+                          (value cmds))
                          (t
 
 ; Now that we know we have a list of embedded event forms, we are ready to
@@ -12902,23 +12611,31 @@
 ; unconditionally.
 
                           (fix-portcullis-cmds dir cmds cbds names
-                                               (os wrld) wrld ctx
-                                               state)))))
-                 (cond
-                  ((eq cert-op :convert-pcert)
-                   (cert-obj-for-convert file dir pre-alist fixed-cmds
-                                         suspect-book-action-alist
-                                         ctx state))
-                  (t
-                   (value (make cert-obj
-                                :cmds fixed-cmds
-                                :pre-alist
-                                (cond (cert-obj (access cert-obj cert-obj
-                                                        :pre-alist))
-                                      (t pre-alist))
-                                :post-alist nil    ; to be filled in later
-                                :expansion-alist nil ; explained above
-                                )))))))))
+                                               wrld ctx state)))))
+          (cond
+           ((eq cert-op :convert-pcert)
+            (cert-obj-for-convert file dir pre-alist-abs fixed-cmds
+                                  suspect-book-action-alist
+                                  ctx state))
+           (t
+            (value
+             (make cert-obj
+                   :cmds fixed-cmds
+                   :pre-alist-abs
+                   (cond (cert-obj (access cert-obj cert-obj
+                                           :pre-alist-abs))
+                         (t pre-alist-abs))
+                   :pre-alist-sysfile
+                   (cond
+                    (cert-obj (access cert-obj cert-obj
+                                      :pre-alist-sysfile))
+                    (t (filename-to-sysfile-include-book-alist pre-alist-abs
+                                                               nil
+                                                               state)))
+                   :post-alist-abs nil            ; not needed
+                   :post-alist-sysfile nil        ; not needed
+                   :expansion-alist nil           ; explained above
+                   )))))))))
 
 (defun translate-book-names (filenames cbd state acc)
   (declare (xargs :guard (true-listp filenames))) ; one member can be nil
@@ -13299,7 +13016,8 @@
                            (cons (car alist) x)
                            y)))))))))
 
-(defun make-certificate-file1 (file portcullis certification-file post-alist3
+(defun make-certificate-file1 (file portcullis certification-file
+                                    post-alist3-sysfile
                                     expansion-alist pcert-info
                                     cert-op ctx state)
 
@@ -13319,16 +13037,17 @@
    (assert$
     (implies (eq cert-op :convert-pcert)
              (eq (cert-op state) :create+convert-pcert))
-    (let ((chk-sum (check-sum-cert-obj (car portcullis) ; :cmds
-                                       (cdr portcullis) ; :pre-alist
-                                       post-alist3      ; :post-alist
-                                       expansion-alist  ; :expansion-alist
-                                       )))
+    (let ((chk-sum
+           (check-sum-cert-obj (car portcullis)    ; :cmds
+                               (cdr portcullis)    ; :pre-alist-sysfile
+                               post-alist3-sysfile ; :post-alist-sysfile
+                               expansion-alist     ; :expansion-alist
+                               )))
       (cond
        ((not (integerp chk-sum))
         (value (er hard ctx
                    "Check-sum-obj returned a non-integerp value on the ~
-                    portcullis and post-alist3!")))
+                    portcullis and post-alist3-sysfile!")))
        (t
         (with-output-object-channel-sharing
          ch certification-file
@@ -13363,7 +13082,7 @@
                                expansion-alist ch state)))
                      (t state))
                (print-object$ (cdr portcullis) ch state)
-               (print-object$ post-alist3 ch state)
+               (print-object$ post-alist3-sysfile ch state)
                (print-object$ chk-sum ch state)
                (cond (pcert-info
                       (pprogn (print-object$ :PCERT-INFO ch state)
@@ -13377,41 +13096,6 @@
                      (t state))
                (close-output-channel ch state)
                (value certification-file))))))))))))
-
-(defun make-certificate-file-relocated (file portcullis certification-file
-                                             post-alist3 expansion-alist
-                                             pcert-info old-dir
-                                             new-dir cert-op ctx state)
-
-; This function supports the creation of relocated .cert files for Debian GCL
-; distributions.  See make-certificate-file.
-
-; WARNING: Relocating .cert files is not truly supported!  This is just a
-; best-effort attempt to do so.  In particular, consider the question of
-; whether to apply the function replace-string-prefix-in-tree in (car
-; portcullis), which is the list of portcullis commands, and in
-; expansion-alist, which stores results from make-event expansion.  On the one
-; hand, doing so will likely result in an uncertified book after moving the
-; .cert.final file to the .cert file, because post-alist3 contains a checksum
-; for the book as computed by function check-sum-cert, using the portcullis
-; commands and the expansion-alist.  But an explicit uncertified book error
-; seems preferable to leaving the strings unchanged, since they are probably
-; invalid pathnames (based on pathnames at certify-book time, not on the user's
-; current file system).  So we go ahead and include those applications of
-; replace-string-prefix-in-tree.
-
-  (make-certificate-file1
-   file
-   (cons (replace-string-prefix-in-tree ; see comment above
-          (car portcullis) old-dir (length old-dir) new-dir)
-         (replace-string-prefix-in-tree
-          (cdr portcullis) old-dir (length old-dir) new-dir))
-   certification-file
-   (replace-string-prefix-in-tree
-    post-alist3 old-dir (length old-dir) new-dir)
-   (replace-string-prefix-in-tree ; see comment above
-    expansion-alist old-dir (length old-dir) new-dir)
-   pcert-info cert-op ctx state))
 
 (defun make-certificate-file (file portcullis post-alist1 post-alist2
                                    expansion-alist pcert-info
@@ -13429,19 +13113,20 @@
 ; hope) once the .cert file exists, it has all of its contents.
 
 ; We assume file satisfies chk-book-name.  The portcullis is a pair (cmds
-; . pre-alist), where cmds is the list of portcullis commands that created the
-; world in which the certification was done, and pre-alist is the
-; include-book-alist just before certification was done.  Post-alist1 is the
-; include-book-alist after proving the events in file and post-alist2 is the
-; include-book-alist after just including the events in file.  If they are
+; . pre-alist-sysfile), where cmds is the list of portcullis commands that
+; created the world in which the certification was done, and pre-alist-sysfile
+; is the include-book-alist just before certification was done, with
+; full-book-names under the system books converted to sysfiles.  Post-alist1 is
+; the include-book-alist after proving the events in file and post-alist2 is
+; the include-book-alist after just including the events in file.  If they are
 ; different it is because the book included some subbooks within LOCAL forms
 ; and those subbooks did not get loaded for post-alist2.
 
 ; For efficiency, we pass in a check-sum, chk-sum, already computed for:
 ; (make cert-obj
 ;       :cmds (car portcullis)
-;       :pre-alist (cdr portcullis)
-;       :post-alist post-alist3
+;       :pre-alist-sysfile (cdr portcullis)
+;       :post-alist-sysfile post-alist3-sysfile
 ;       :expansion-alist expansion-alist)
 
 ; To verify that a subsequent inclusion is ok, we really only need post-alist2.
@@ -13453,7 +13138,7 @@
 ; know what version of the subbook we used during certification, although the
 ; code at the moment makes no use of that.  So we massage post-alist1 so that
 ; any subbook in it that is not in post-alist2 is marked LOCAL.  Thus,
-; post-alist3, below, will be of the form
+; post-alist3-abs, below, will be of the form
 
 ; ((full1 user1 familiar1 cert-annotations1 . chk-sum1)
 ;  ...
@@ -13474,89 +13159,30 @@
 ; ...
 ; cmdk
 ; :END-PORTCULLIS-CMDS
-; pre-alist
-; post-alist3
+; pre-alist-sysfile
+; post-alist3-sysfile
 ; chk-sum
 
-; where chk-sum is the check sum of ((cmds . pre-alist) . post-alist3).
+; where chk-sum is the check sum of ((cmds . pre-alist-sysfile)
+; . post-alist3-sysfile), where post-alist3-sysfile is the result of converting
+; to sysfiles those full-book-names in post-alist3-abs that are under the
+; system books.
 
 ; The reason the portcullis commands are written this way, rather than
 ; as a single object, is that we can't read them all at once since
 ; they may contain DEFPKGs.  We have to read and eval the cmdi
 ; individually.
 
-; Optionally, create .cert.final file as well; see comment below.
-
-  (let ((certification-file (convert-book-name-to-cert-name file cert-op))
-        (post-alist3 (mark-local-included-books post-alist1 post-alist2)))
-    (er-progn
-
-; For Debian release:
-
-; Warning: The following mechanism should work well in most cases, but it is
-; not guaranteed to be sound.  For example, function fix-path will ignore
-; macros that expand (non-trivially) to event forms that should be handled by
-; fix-path.  With some effort, we could use macroexpand to deal with this
-; issue, by storing the macroexpanded forms in the portcullis in such cases.
-; Even then, however, there would be problems with progn! (albeit only with
-; active trust tags), since we can't really control what's in such forms.  And
-; we would have to be careful to handle make-event forms properly, if we wanted
-; an ironclad correctness guarantee for this mechanism.  End of Warning.
-
-; A .cert.final file is created if state globals 'old-certification-dir and
-; 'new-certification-dir are set to strings.  For example, in your
-; ACL2 customization file you might put:
-
-; (f-put-global 'old-certification-dir "/fix/debian/acl2/acl2-xx/books" state)
-; (f-put-global 'new-certification-dir "/usr/share/acl2-xx/books" state)
-
-; This will create a second certificate file, .cert.final (in addition to the
-; .cert file), with post-alist3 fixed up so that for each string with prefix
-; equal to the value of state global 'old-certification-dir, that prefix is
-; replaced by the value of state global 'new-certification-dir.  The books in
-; defpkg forms of the portcullis are similarly fixed as well.
-
-; Warning: This .cert.final process works as described above, without
-; modification in the case that we are doing provisional certification.  If we
-; want to use this process with provisional certification, some additional work
-; may be required.
-
-     (let ((old-dir
-            (and (f-boundp-global 'old-certification-dir state)
-                 (f-get-global 'old-certification-dir state)))
-           (new-dir
-            (and (f-boundp-global 'new-certification-dir state)
-                 (f-get-global 'new-certification-dir state))))
-       (cond (old-dir
-              (cond ((and (stringp old-dir)
-                          (stringp new-dir)
-                          (not (equal old-dir ""))
-                          (not (equal new-dir ""))
-                          (not (equal (char old-dir (1- (length old-dir)))
-                                      *directory-separator*))
-                          (not (equal (char new-dir (1- (length new-dir)))
-                                      *directory-separator*)))
-                     (make-certificate-file-relocated
-                      file portcullis
-                      (concatenate 'string certification-file ".final")
-                      post-alist3 expansion-alist pcert-info
-                      old-dir new-dir cert-op ctx
-                      state))
-                    (t (er soft ctx
-                           "Attempted to create ~x0 because state global ~
-                            'old-certification-dir is bound to a non-nil ~
-                            value, ~x1.  However, in this case we require that ~
-                            both this variable and 'new-certification-dir are ~
-                            bound to non-empty strings not terminating in ~s2; ~
-                            but this is not the case."
-                           (concatenate 'string certification-file ".final")
-                           old-dir
-                           *directory-separator-string*))))
-             (t (value :irrelevant-value))))
-     (make-certificate-file1 file portcullis
-                             (concatenate 'string certification-file ".temp")
-                             post-alist3 expansion-alist
-                             pcert-info cert-op ctx state))))
+  (let* ((certification-file (convert-book-name-to-cert-name file cert-op))
+         (post-alist3-abs (mark-local-included-books post-alist1 post-alist2))
+         (post-alist3-sysfile (filename-to-sysfile-include-book-alist
+                               post-alist3-abs
+                               t ; local-markers-allowedp
+                               state)))
+    (make-certificate-file1 file portcullis
+                            (concatenate 'string certification-file ".temp")
+                            post-alist3-sysfile expansion-alist
+                            pcert-info cert-op ctx state)))
 
 (defun make-certificate-files (full-book-name portcullis post-alist1
                                               post-alist2 expansion-alist
@@ -14086,9 +13712,9 @@
 
 ; See the Essay on .acl2x Files (Double Certification).
 
-  (coerce (append (reverse (cddddr (reverse (coerce x 'list))))
-                  '(#\a #\c #\l #\2 #\x))
-          'string))
+  (concatenate 'string
+               (remove-lisp-suffix x nil)
+               "acl2x"))
 
 (defun acl2x-alistp (x index len)
   (cond ((atom x)
@@ -14369,10 +13995,10 @@
                                     (value nil))
                                    (t (eval-port-file full-book-name ctx state)))
                              (value (w state))))
-                     (post-alist (value (and cert-obj
-                                             (access cert-obj cert-obj
-                                                     :post-alist))))
-                     (cert-full-book-name (value (car (car post-alist)))))
+                     (post-alist-abs (value (and cert-obj
+                                                 (access cert-obj cert-obj
+                                                         :post-alist-abs))))
+                     (cert-full-book-name (value (car (car post-alist-abs)))))
              (cond
 
 ; We try the redundancy check again, because it will be cert-full-book-name
@@ -14398,8 +14024,8 @@
 ; Cert-obj above is either nil, indicating that the file is uncertified, or is
 ; a cert-obj record, which contains the now raised portcullis and the check sum
 ; alist of the files that should be brought in by this inclusion.  The first
-; element of post-alist is the one for this book.  It should look like this:
-; (full-book-name' user-book-name' familiar-name cert-annotations
+; element of post-alist-abs is the one for this book.  It should look like
+; this: (full-book-name' user-book-name' familiar-name cert-annotations
 ; . ev-lst-chk-sum), where the first two names are irrelevant here because they
 ; reflect where the book was when it was certified rather than where the book
 ; resides now.  However, the familiar-name, cert-annotations and the
@@ -14430,22 +14056,22 @@
                          ((no-errp-1
 
 ; Notice that we are reaching inside the certificate object to retrieve
-; information about the book from the post-alist.  (Car post-alist)) is in fact
-; of the form (full-book-name user-book-name familiar-name cert-annotations
-; . ev-lst-chk-sum).
+; information about the book from the post-alist.  (Car post-alist-abs)) is in
+; fact of the form (full-book-name user-book-name familiar-name
+; cert-annotations . ev-lst-chk-sum).
 
 
                            (cond
                             ((and cert-obj
-                                  (not (equal (caddr (car post-alist))
+                                  (not (equal (caddr (car post-alist-abs))
                                               familiar-name)))
                              (include-book-er
                               full-book-name nil
                               (cons
                                "The cer~-ti~-fi~-cate on file for ~x0 lists ~
                                 the book under the name ~x3 whereas we were ~
-                                expecting it to give the name ~x4.  While we ~
-                                allow a certified book to be moved from one ~
+                                expecting it to give the name ~x4.  While one ~
+                                can often move a certified book from one ~
                                 directory to another after ~
                                 cer~-ti~-fi~-ca~-tion, we insist that it keep ~
                                 the same familiar name.  This allows the ~
@@ -14460,9 +14086,9 @@
                                 what it is worth, the check sum of the file ~
                                 at cer~-ti~-fi~-ca~-tion was ~x5.  Its check ~
                                 sum now is ~x6."
-                               (list (cons #\3 (caddr (car post-alist)))
+                               (list (cons #\3 (caddr (car post-alist-abs)))
                                      (cons #\4 familiar-name)
-                                     (cons #\5 (cddddr (car post-alist)))
+                                     (cons #\5 (cddddr (car post-alist-abs)))
                                      (cons #\6 ev-lst-chk-sum)))
                               :uncertified-okp
                               suspect-book-action-alist
@@ -14471,7 +14097,7 @@
                           (no-errp-2
                            (cond
                             ((and cert-obj
-                                  (not (equal (cddddr (car post-alist))
+                                  (not (equal (cddddr (car post-alist-abs))
                                               ev-lst-chk-sum)))
                              (include-book-er
                               full-book-name nil
@@ -14488,7 +14114,7 @@
 ; Developer debug:
 ;                          ~|~%Developer note: ~
 ;                          the latter was computed as:~|~%~X56"
-                               (list (cons #\3 (cddddr (car post-alist)))
+                               (list (cons #\3 (cddddr (car post-alist-abs)))
                                      (cons #\4 ev-lst-chk-sum)
 
 ; Developer debug:
@@ -14517,7 +14143,7 @@
                                                  :expansion-alist)))
                                  (t (value nil)))))
                        (let* ((cert-annotations
-                               (cadddr (car post-alist)))
+                               (cadddr (car post-alist-abs)))
                               (cert-ttags
                                (cdr (assoc-eq :ttags cert-annotations)))
                               (cert-obj-skipped-proofsp
@@ -14704,7 +14330,7 @@
                                       certified-p
                                       (not (include-book-alist-subsetp
                                             (unmark-and-delete-local-included-books
-                                             (cdr post-alist))
+                                             (cdr post-alist-abs))
                                             actual-alist)))
 
 ; Our next step is to call include-book-er, but we break up that computation so
@@ -14727,7 +14353,7 @@
                                           (msgs state)
                                           (tilde-*-book-check-sums-phrase
                                            (unmark-and-delete-local-included-books
-                                            (cdr post-alist))
+                                            (cdr post-alist-abs))
                                            actual-alist
                                            state)
                                           (include-book-er1
@@ -14739,20 +14365,20 @@
                                (er-progn
 
 ; Now we check that all the subbooks of this one are also compatible with the
-; current settings of suspect-book-action-alist.  The car of post-alist is the
-; part that deals with full-book-name itself.  So we deal below with the cdr,
-; which lists the subbooks.  The cert-obj may be nil, which makes the test
+; current settings of suspect-book-action-alist.  The car of post-alist-abs is
+; the part that deals with full-book-name itself.  So we deal below with the
+; cdr, which lists the subbooks.  The cert-obj may be nil, which makes the test
 ; below a no-op.
 
                                 (chk-cert-annotations-post-alist
-                                 (cdr post-alist)
+                                 (cdr post-alist-abs)
                                  (and cert-obj
                                       (access cert-obj cert-obj :cmds))
                                  full-book-name
                                  suspect-book-action-alist
                                  ctx state)
                                 (let* ((cert-annotations
-                                        (cadddr (car post-alist)))
+                                        (cadddr (car post-alist-abs)))
 
 ; If cert-obj is nil, then cert-annotations is nil.  If cert-obj is
 ; non-nil, then cert-annotations is non-nil.  Cert-annotations came
@@ -14946,8 +14572,10 @@
 ; before Version_2.7 because the relative path name stored in the event was not
 ; sufficient to find the book at :puff/:puff* time.
 
-                                              (or cert-full-book-name
-                                                  full-book-name)
+                                              (remove-lisp-suffix
+                                               (or cert-full-book-name
+                                                   full-book-name)
+                                               t)
                                               cddr-event-form)
                                        'include-book
                                        full-book-name
@@ -14976,7 +14604,7 @@
                                                      (add-to-set-equal
                                                       certification-tuple
                                                       (accumulate-post-alist
-                                                       (cdr post-alist)
+                                                       (cdr post-alist-abs)
                                                        (global-val
                                                         'include-book-alist-all
                                                         wrld3)))
@@ -15015,7 +14643,7 @@
 
                                                             full-book-name
                                                           (skipped-proofsp-in-post-alist
-                                                           post-alist))))
+                                                           post-alist-abs))))
                                                    (if full-book-name
                                                        (global-set
                                                         'skip-proofs-seen
@@ -16259,11 +15887,9 @@
 
 ; The given full-book-name can either be a Unix-style or an OS-style pathname.
 
-  (let ((rev-filename-list (reverse (coerce full-book-name 'list))))
-    (coerce (append (reverse (cddddr rev-filename-list))
-                    (coerce (f-get-global 'compiled-file-extension state)
-                            'list))
-            'string)))
+  (concatenate 'string
+               (remove-lisp-suffix full-book-name nil)
+               (f-get-global 'compiled-file-extension state)))
 
 (defun certify-book-finish-convert (new-post-alist old-post-alist
                                                    full-book-name ctx state)
@@ -16404,7 +16030,10 @@
                      at positions ~x1 and ~x2."
                     pcert1-file (+ n 2) n)))))
           (t (pprogn (close-input-channel chan state)
-                     (value post-alist))))))))))))
+                     (value (sysfile-to-filename-include-book-alist
+                             post-alist
+                             t ; local-markers-allowedp
+                             state)))))))))))))
 
 (defun post-alist-from-pcert1 (pcert1-file msg ctx state)
   (mv-let
@@ -17402,7 +17031,7 @@
                                                             (car
                                                              (access cert-obj
                                                                      cert-obj
-                                                                     :post-alist)))))
+                                                                     :post-alist-abs)))))
                                                       (cdr (assoc-eq
                                                             :SKIPPED-PROOFSP
                                                             cert-ann))))
@@ -17498,7 +17127,7 @@
 
                                      (cons :axiomsp axiomsp)
                                      (cons :ttags ttags-seen)))
-                                   (post-alist1 new-include-book-alist-all))
+                                   (post-alist1-abs new-include-book-alist-all))
                               (er-progn
                                (chk-cert-annotations
                                 cert-annotations portcullis-skipped-proofsp
@@ -17518,8 +17147,8 @@
                                                 cert-annotations
                                                 chk-sum)))
                                    (certify-book-finish-convert
-                                    (cons extra-entry post-alist1)
-                                    (access cert-obj cert-obj :post-alist)
+                                    (cons extra-entry post-alist1-abs)
+                                    (access cert-obj cert-obj :post-alist-abs)
                                     full-book-name ctx state)))
                                 (t
                                  (let ((index/old-wrld
@@ -17659,7 +17288,7 @@
                                                (include-book-alist-wrld2
                                                 (global-val 'include-book-alist
                                                             wrld2))
-                                               (post-alist2
+                                               (post-alist2-abs
                                                 (cond
                                                  (index/old-wrld
 
@@ -17696,7 +17325,8 @@
                                              (t state)))
                                            (er-progn
                                             (chk-certify-book-step-3
-                                             post-alist2 post-alist1 ctx state)
+                                             post-alist2-abs post-alist1-abs
+                                             ctx state)
                                             (state-global-let*
                                              ((connected-book-directory
 
@@ -17749,9 +17379,11 @@
                                                          (cons portcullis-cmds
                                                                (access cert-obj
                                                                        cert-obj
-                                                                       :pre-alist))
-                                                         (cons extra-entry post-alist1)
-                                                         (cons extra-entry post-alist2)
+                                                                       :pre-alist-sysfile))
+                                                         (cons extra-entry
+                                                               post-alist1-abs)
+                                                         (cons extra-entry
+                                                               post-alist2-abs)
                                                          expansion-alist
                                                          pcert-info
                                                          cert-op
@@ -17818,9 +17450,10 @@
 
                                                         (observation
                                                          ctx
-                                                         "Used expansion-alist ~
-                                                        obtained from file ~
-                                                        ~x0."
+                                                         "Used ~
+                                                          expansion-alist ~
+                                                          obtained from file ~
+                                                          ~x0."
                                                          acl2x-file))
                                                        (t state))
                                                       (value
@@ -24526,7 +24159,7 @@
         (in-encapsulatep (global-val 'embedded-event-lst wrld)
                          nil))))
 
-(defun change-include-book-dir (keyword dir caller state)
+(defun change-include-book-dir (keyword dir0 caller state)
 
 ; Caller is add-include-book-dir, add-include-book-dir!,
 ; delete-include-book-dir!, or delete-include-book-dir.  Dir is nil if and only
@@ -24536,11 +24169,13 @@
 
   (declare (xargs :guard (state-p state)
                   :mode :program))
-  (let ((ctx (if dir
+  (let* ((ctx (if dir0
                  (cons caller keyword)
                (msg "~x0" (list caller keyword))))
-        (bang-p (member-eq caller '(add-include-book-dir!
-                                    delete-include-book-dir!))))
+         (bang-p (member-eq caller '(add-include-book-dir!
+                                     delete-include-book-dir!)))
+         (dir (and dir0
+                   (sysfile-to-filename dir0 state))))
     (cond ((not (if dir
                     (member-eq caller '(add-include-book-dir
                                         add-include-book-dir!))
@@ -24575,7 +24210,8 @@
                caller keyword))
           ((and dir (not (stringp dir)))
            (er soft ctx
-               "The second argument of ~x0 must be a string, but ~x1 is not."
+               "The second argument of ~x0 must be a string or of the form ~
+                (:SYSTEM . string), but ~x1 is not."
                caller dir))
           (t
            (state-global-let*
@@ -29263,3 +28899,521 @@
         (prog2$ (cw "~@0" msg)
                 (mv t msg)))))))
 
+(defun make-event-ctx (event-form)
+  (msg "( MAKE-EVENT ~@0~@1)"
+       (tilde-@-abbreviate-object-phrase (cadr event-form))
+       (if (cddr event-form) " ..." "")))
+
+(defun protected-eval (form on-behalf-of ctx state aok)
+
+; We assume that this is executed under a revert-world-on-error, so that we do
+; not have to protect the world here in case of error, though we do set the
+; world back to the starting world when returning a non-erroneous error triple.
+; Form should evaluate either to an ordinary value, val, or to (mv nil val
+; state stobj1 ... stobjk), where k may be 0.  If so, we return (value (list*
+; val new-kpa new-ttags-seen)), where new-kpa and new-ttags-seen are the
+; known-package-alist and value of world global 'ttags-seen immediately after
+; form is evaluated; and if not, we return a soft error.
+
+  (let ((original-wrld (w state)))
+    (protect-system-state-globals
+     (er-let*
+      ((result
+
+; It would be nice to add (state-global-let* ((safe-mode t)) here.  But some
+; *1* functions need always to call their raw Lisp counterparts.  Although we
+; have made progress in oneify-cltl-code to that end by keeping functions like
+; certify-book-fn from being replaced by their *1* counterparts, still that
+; process is not complete, so we play it safe here by avoiding safe-mode.
+
+; If we bind safe-mode to t here, visit occurrences of comments "; Note that
+; safe-mode for make-event will require addition".  Those comments are
+; associated with membership tests that, for now, we avoid for efficiency.
+
+        (trans-eval form ctx state aok)))
+      (let* ((new-kpa (known-package-alist state))
+             (new-ttags-seen (global-val 'ttags-seen (w state)))
+             (stobjs-out (car result))
+             (vals (cdr result))
+             (safep (equal stobjs-out '(nil))))
+        (cond (safep (value (list* vals new-kpa new-ttags-seen)))
+              ((or (null (cdr stobjs-out))
+                   (not (eq (caddr stobjs-out) 'state))
+                   (member-eq nil (cdddr stobjs-out)))
+               (er soft ctx
+                   "The expansion of a make-event form must either return a ~
+                    single ordinary value or else should return a tuple (mv ~
+                    erp val state stobj1 stobj2 ... stobjk) for some k >= 0.  ~
+                    But the shape of ~x0 is ~x1."
+                   form
+                   (prettyify-stobjs-out stobjs-out)))
+              ((stringp (car vals))
+               (er soft ctx
+                   (car vals)))
+              ((tilde-@p (car vals)) ; a message
+               (er soft ctx
+                   "~@0"
+                   (car vals)))
+              ((car vals)
+               (er soft ctx
+                   "Error in MAKE-EVENT ~@0from expansion of:~|  ~y1"
+                   (cond (on-behalf-of
+                          (msg "on behalf of~|  ~y0~|"
+                               on-behalf-of))
+                         (t ""))
+                   form))
+              (t (pprogn
+                  (set-w! original-wrld state)
+                  (value (list* (cadr vals) new-kpa new-ttags-seen))))))))))
+
+(defun make-event-debug-pre (form on-behalf-of state)
+  (cond
+   ((null (f-get-global 'make-event-debug state))
+    (value nil))
+   (t
+    (let ((depth (f-get-global 'make-event-debug-depth state)))
+      (pprogn (fms "~x0> Expanding for MAKE-EVENT~@1~|  ~y2~|"
+                   (list (cons #\0 depth)
+                         (cons #\1 (if on-behalf-of
+                                       (msg " on behalf of~|  ~Y01:"
+                                            on-behalf-of
+                                            (term-evisc-tuple nil state))
+                                     ":"))
+                         (cons #\2 form))
+                   (proofs-co state) state nil)
+              (value depth))))))
+
+(defun make-event-debug-post (debug-depth expansion0 state)
+  (cond ((null debug-depth) state)
+        (t
+         (fms "<~x0 Returning MAKE-EVENT expansion:~|  ~Y12~|"
+              (list (cons #\0 debug-depth)
+                    (cons #\1 expansion0)
+                    (cons #\2 (term-evisc-tuple nil state)))
+              (proofs-co state) state nil))))
+
+(defmacro do-proofs? (do-proofsp form)
+  `(if ,do-proofsp
+       (state-global-let*
+        ((ld-skip-proofsp nil))
+        ,form)
+     ,form))
+
+(defun make-event-fn2 (expansion0 whole-form in-encapsulatep check-expansion
+                                  wrld ctx state)
+  (mv-let
+   (do-proofsp expansion0)
+   (case-match expansion0
+     ((':DO-PROOFS x)
+      (mv (ld-skip-proofsp state)
+          x))
+     (& (mv nil expansion0)))
+   (er-let* ((expansion1a ; apply macroexpansion to get embedded event form
+              (do-proofs?
+
+; This wrapper of do-proofs? avoids errors in checking expansions when
+; ld-skip-proofsp is 'include-book.  See the "Very Technical Remark" in
+; community book  books/make-event/read-from-file.lisp.
+
+               check-expansion
+               (chk-embedded-event-form
+                expansion0 whole-form wrld ctx state (primitive-event-macros)
+                nil ; portcullisp
+                (f-get-global 'in-local-flg state)
+                in-encapsulatep
+                nil))) 
+             (expansion1
+              (if expansion1a
+                  (if (global-val 'boot-strap-flg wrld)
+                      (value expansion1a)
+                    (let ((cbd (cbd)))
+                      (make-include-books-absolute
+                       expansion1a
+                       cbd
+                       nil
+                       (primitive-event-macros)
+                       ctx state)))
+
+; Else the alleged embedded event form, from the expansion, is nil, presumably
+; because of local.
+
+                (value *local-value-triple-elided*)))
+             (stobjs-out-and-raw-result
+              (do-proofs?
+               do-proofsp
+               (trans-eval
+
+; Note that expansion1 is guaranteed to be an embedded event form, which (as
+; checked just below) must evaluate to an error triple.
+
+                expansion1
+                ctx state t))))
+     (let ((raw-result (cdr stobjs-out-and-raw-result)))
+       (cond ((car raw-result)
+              (silent-error state))
+             (t (value (list* expansion1
+                              (car stobjs-out-and-raw-result)
+                              (cadr raw-result)))))))))
+
+(defun make-event-fn2-lst (expansion-lst whole-form in-encapsulatep
+                                         check-expansion wrld ctx state)
+  (cond ((atom expansion-lst)
+         (er soft ctx
+             "Evaluation failed for all expansions."))
+        (t (pprogn
+            (cond
+             ((f-get-global 'make-event-debug state)
+              (fms "Attempting evaluation of next expansion:~|~Y01"
+                   (list (cons #\0 (car expansion-lst))
+                         (cons #\1 (abbrev-evisc-tuple state)))
+                   (proofs-co state)
+                   state
+                   nil))
+             (t state))
+            (mv-let
+             (erp val state)
+             (make-event-fn2 (car expansion-lst)
+                             whole-form in-encapsulatep check-expansion
+                             wrld ctx state)
+             (cond (erp (make-event-fn2-lst (cdr expansion-lst)
+                                            whole-form in-encapsulatep
+                                            check-expansion wrld ctx state))
+                   (t (value val))))))))
+
+(defun make-event-fn1 (expansion0 whole-form in-encapsulatep check-expansion
+                                  wrld ctx state)
+  (cond ((and (consp expansion0)
+              (eq (car expansion0) :OR))
+         (make-event-fn2-lst (cdr expansion0)
+                             whole-form in-encapsulatep check-expansion
+                             wrld ctx state))
+        (t (make-event-fn2 expansion0
+                           whole-form in-encapsulatep check-expansion
+                           wrld ctx state))))
+
+(defun ultimate-expansion (x)
+
+; We dive inside values of :expansion? keywords, starting with x, and stepping
+; past wrappers (in the sense of destructure-expansion).  Except, if
+; :expansion? is provided but :check-expansion is non-nil (hence t), then
+; :expansion? is ignored for this purpose, so that we can avoid destroying the
+; surrounding make-event that should be saved for purposes of :check-expansion.
+; The idea is that when including a book (or doing the second pass of an
+; encapsulate), we replace a make-event form directly by its :expansion? value
+; unless :check-expansion is t, in which case the make-event form and the
+; :expansion?  value are not equivalent, because the make-event form redoes the
+; expansion process.
+
+; Warning: Be careful not to use this function unless each make-event form
+; encountered during the traversal that has a value for the :expansion? keyword
+; can be trusted to have an expansion suitably consistent with that value.
+
+  (case-match x
+    (('make-event & . kwd-alist)
+     (let ((exp (cadr (assoc-keyword :expansion? kwd-alist))))
+       (cond ((and exp
+                   (not (cadr (assoc-keyword :check-expansion kwd-alist))))
+              (ultimate-expansion exp))
+             (t x))))
+    (& (mv-let (w y)
+               (destructure-expansion x)
+               (cond (w (rebuild-expansion w (ultimate-expansion y)))
+                     (t x))))))
+
+(defun make-event-fn (form expansion? check-expansion on-behalf-of whole-form
+                           state)
+  (let ((ctx (make-event-ctx whole-form))
+        #-acl2-loop-only
+        (old-kpa (known-package-alist state)))
+    (with-ctx-summarized
+     ctx
+     (cond
+      ((and (eq (cert-op state) :convert-pcert)
+            (not (f-get-global 'in-local-flg state))
+            (not (consp check-expansion))
+            (not expansion?)
+
+; This case should not happen, because all make-event forms should already be
+; expanded away when we do the Convert procedure of provisional certification,
+; since a suitable expansion-alist should have been stored in the .pcert0 file.
+; We include this check just for robustness.
+
+            (eql (f-get-global 'make-event-debug-depth state)
+
+; We only enforce the above consp requirement at the top-level.  If we have
+; (make-event ... :check-expansion exp ...), and this event is admissible
+; (perhaps when skipping proofs) then we know that the result will be exp and
+; will be independent of the current state.  In particular, exp will not be a
+; call of make-event if form is admissible.
+
+                 0))
+       (er soft ctx
+           "Implementation error: You should not be seeing this message!  ~
+            Please contact the ACL2 implementors.~|~%Make-event expansion is ~
+            illegal during the Convert procedure of provisional certification ~
+            (unless :check-expansion is supplied a consp argument or ~
+            :expansion? is supplied a non-nil argument).  The form ~x0 is ~
+            thus illegal.  The use of a .acl2x file can sometimes solve this ~
+            problem.  See :DOC provisional-certification."
+           whole-form))
+      ((not (or (eq check-expansion nil)
+                (eq check-expansion t)
+                (consp check-expansion)))
+       (er soft ctx
+           "The check-expansion flag of make-event must be t, nil, or a cons ~
+            pair.  The following check-expansion flag is thus illegal: ~x0.  ~
+            See :DOC make-event."
+           check-expansion))
+      ((and expansion?
+            (consp check-expansion))
+
+; We considered allowing :EXPANSION? FORM1 and :CHECK-EXPANSION FORM2 (where
+; FORM2 is not nil or t), and if someone presents a natural example for which
+; this would be useful, we might do so.  But the semantics of this would be
+; potentially confusing.  Which one is consulted when including a book or
+; running in raw Lisp?  If FORM1 = FORM2, this looks redundant.  Otherwise,
+; this is, oddly, inherently contradictory, in the sense that FORM1 should
+; never be the expansion (unless one is deliberately arranging for evaluation
+; of the make-event call to fail -- but there are simpler ways to do that).
+
+; If we decide to support the combination of expansion? and (consp
+; check-expansion), then we need to be careful to handle that combination --
+; something we don't do now, but we code defensively, giving priority to (consp
+; check-expansion).
+
+       (er soft ctx
+           "It is illegal to supply a non-nil value for the keyword argument ~
+            :EXPANSION? of make-event when keyword argument :CHECK-EXPANSION ~
+            is give a value other than T or NIL.  If you think you have a ~
+            reason why such a combination should be supported, please contact ~
+            the ACL2 implementors."))
+      (t
+       (revert-world-on-error
+        (state-global-let*
+         ((make-event-debug-depth (1+ (f-get-global 'make-event-debug-depth
+                                                    state))))
+         (let ((wrld (w state))
+               (skip-check-expansion
+                (and (consp check-expansion)
+                     (let ((info (f-get-global 'certify-book-info state)))
+                       (and info
+                            (access certify-book-info info
+                                    :include-book-phase))))))
+           (er-let*
+               ((debug-depth (make-event-debug-pre form on-behalf-of state))
+                (expansion0/new-kpa/new-ttags-seen
+                 (cond
+                  ((and expansion?
+                        (eq (ld-skip-proofsp state) 'include-book)
+                        (not (f-get-global 'including-uncertified-p state))
+
+; Even if expansion? is specified, we do not assume it's right if
+; check-expansion is t.
+
+                        (assert$ (iff check-expansion
+
+; In code above, we disallowed the combination of non-nil expansion? with a
+; consp value of :check-expansion.
+
+                                      (eq check-expansion t))
+                                 (not (eq check-expansion t))))
+                   (value (list* expansion? nil nil)))
+                  (skip-check-expansion
+                   (value (list* check-expansion nil nil)))
+                  (t
+                   (do-proofs?
+                    (or check-expansion
+
+; For example, a must-fail form in community book books/make-event/defspec.lisp
+; will fail during the Pcertify process of provisional certification unless we
+; turn proofs on during expansion at that point.  It's reasonable to do proofs
+; under make-event expansion during the Pcertify process: after all, we need
+; the expansion done in order for other books to include the make-event's book
+; with the .pcert0 certificate, and also proofs might well be necessary in
+; order to come up with the correct expansion (else why do them?).  We could
+; indeed always do proofs, but it's pretty common to do proofs only during
+; certification as a way of validating some code.  So our approach is only to
+; move proofs from the Convert procedure to the Pcertify procedure.
+
+                        (eq (cert-op state) :create-pcert))
+                    (protected-eval form on-behalf-of ctx state t)))))
+                (expansion0 (value (car expansion0/new-kpa/new-ttags-seen)))
+                (new-kpa (value (cadr expansion0/new-kpa/new-ttags-seen)))
+                (new-ttags-seen
+                 (value (cddr expansion0/new-kpa/new-ttags-seen)))
+                (need-event-landmark-p
+                 (pprogn
+                  (make-event-debug-post debug-depth expansion0 state)
+                  (cond ((or (null new-ttags-seen)
+
+; The condition above holds when the new ttags-seen is nil or was not computed.
+; Either way, no addition has been made to the value of world global
+; 'ttags-seen.
+
+                             (equal new-ttags-seen
+                                    (global-val 'ttags-seen wrld)))
+                         (value nil))
+                        (t (pprogn
+                            (set-w 'extension
+                                   (global-set 'ttags-seen new-ttags-seen
+                                               wrld)
+                                   state)
+                            (value t))))))
+                (wrld0 (value (w state)))
+                (expansion1/stobjs-out/result
+                 (make-event-fn1
+                  expansion0 whole-form
+                  (in-encapsulatep (global-val 'embedded-event-lst wrld0) nil)
+                  check-expansion wrld0 ctx state)))
+             (let* ((expansion1 (car expansion1/stobjs-out/result))
+                    (stobjs-out (cadr expansion1/stobjs-out/result))
+                    (result (cddr expansion1/stobjs-out/result))
+                    (expansion2
+                     (cond
+                      ((f-get-global 'last-make-event-expansion state)
+                       (mv-let
+                        (wrappers base)
+                        (destructure-expansion expansion1)
+
+; At this point we know that (car base) is from the list '(make-event progn
+; progn! encapsulate); indeed, just after the release of v3-5, we ran a
+; regression in community book books/make-event with the code C below replaced
+; by (assert$ (member-eq (car base) X) C), where X is the above quoted list.
+; However, we do not add that assertion, so that for example the ccg book of
+; ACL2s can create make-event expansions out of events other than the four
+; types above, e.g., defun.
+
+                        (declare (ignore base))
+                        (rebuild-expansion
+                         wrappers
+                         (ultimate-expansion
+                          (f-get-global 'last-make-event-expansion state)))))
+                      (t (ultimate-expansion expansion1)))))
+               (assert$
+                (equal stobjs-out *error-triple-sig*) ; evaluated an event form
+                (let ((expected-expansion (if (consp check-expansion)
+                                              check-expansion
+                                            (and (eq (ld-skip-proofsp state)
+                                                     'include-book)
+                                                 check-expansion
+                                                 expansion?))))
+                  (cond ((and expected-expansion
+                              (not (equal expected-expansion ; easy try first
+                                          expansion2))
+                              (not (equal (ultimate-expansion
+                                           expected-expansion)
+                                          expansion2)))
+                         (er soft ctx
+                             "The current MAKE-EVENT expansion differs from ~
+                              the expected (original or specified) expansion. ~
+                              ~ See :DOC make-event.~|~%~|~%Make-event ~
+                              argument:~|~%~y0~|~%Expected ~
+                              expansion:~|~%~y1~|~%Current expansion:~|~%~y2~|"
+                             form
+                             expected-expansion
+                             expansion2))
+                        (t
+                         (let ((actual-expansion
+                                (cond
+                                 ((or (consp check-expansion)
+                                      (equal expansion?
+                                             expansion2) ; easy try first
+                                      (equal (ultimate-expansion
+                                              expansion?)
+                                             expansion2))
+
+; The original make-event form does not generate a make-event replacement (see
+; :doc make-event).
+
+                                  nil)
+                                 (check-expansion
+                                  (assert$
+                                   (eq check-expansion t) ; from macro guard
+                                   (list* 'make-event form
+
+; Note that we deliberately omit :expansion? here, even if it was supplied
+; originally.  If :expansion? had been supplied and appropropriate, then we
+; would be in the previous case, where we don't generate a make-event around
+; the expansion.
+
+                                          :check-expansion expansion2
+                                          (and on-behalf-of
+                                               `(:on-behalf-of
+                                                 ,on-behalf-of)))))
+                                 (t expansion2))))
+                           #-acl2-loop-only
+                           (let ((msg
+
+; We now may check the expansion to see if an unknown package appears.  The
+; following example shows why this can be important.  Consider a book "foo"
+; with this event.
+
+; (make-event
+;  (er-progn
+;   (include-book "foo2") ; introduces "MY-PKG"
+;   (assign bad (intern$ "ABC" "MY-PKG"))
+;   (value `(make-event
+;            (list 'defconst '*a*
+;                  (list 'length
+;                        (list 'symbol-name
+;                              (list 'quote ',(@ bad)))))))))
+;
+
+; where "foo2" is as follows, with the indicated portullis command:
+
+; (in-package "ACL2")
+;
+; ; (defpkg "MY-PKG" nil)
+;
+; (defun foo (x)
+;   x)
+
+; In ACL2 Version_3.4, we certified these books; but then, in a new ACL2
+; session, we got a raw Lisp error about unknown packages when we try to
+; include "foo".
+
+; On the other hand, the bad-lisp-objectp test is potentially expensive for
+; large objects such as are encountered at Centaur Tech. in March 2010.  The
+; value returned by expansion can be expected to be a good lisp object in the
+; world installed at the end of expansion, so if expansion doesn't extend the
+; world with any new packages, then we can avoid this check.
+
+                                  (and (not (eq old-kpa new-kpa))
+                                       (bad-lisp-objectp actual-expansion))))
+                             (when msg
+                               (er hard ctx
+                                   "Make-event expansion for the form ~x0 has ~
+                                    produced an illegal object for the ~
+                                    current ACL2 world.  ~@1"
+                                   form
+                                   msg)))
+                           (pprogn
+                            (f-put-global 'last-make-event-expansion
+                                          actual-expansion
+                                          state)
+                            (cond
+                             ((f-get-global 'make-event-debug state)
+                              (fms "Saving make-event replacement into state ~
+                                    global 'last-make-event-expansion (debug ~
+                                    level ~x0):~|~Y12"
+                                   (list (cons #\0 debug-depth)
+                                         (cons #\1 actual-expansion)
+                                         (cons #\2 (abbrev-evisc-tuple state)))
+                                   (proofs-co state)
+                                   state
+                                   nil))
+                             (t state))
+                            (er-progn
+                             (cond (need-event-landmark-p ; optimization
+
+; We lay down an event landmark if we aren't already looking at one.  Before we
+; did so, an error was reported by print-redefinition-warning in the following
+; example, because we weren't looking at an event landmark.
+
+; (redef!)
+; (make-event (er-progn (defttag t)
+;                       (value '(value-triple nil))))
+
+                                    (maybe-add-event-landmark state))
+                                   (t (value nil)))
+                             (value result))))))))))))))))))

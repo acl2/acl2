@@ -535,7 +535,11 @@
 
 (verify-termination-boot-strap occur)
 
-(verify-termination-boot-strap worse-than-builtin) ; and worse-than-or-equal-builtin
+(verify-termination-boot-strap worse-than-builtin-clocked) ; and mut-rec nest
+
+(verify-termination-boot-strap worse-than-builtin)
+
+(verify-termination-boot-strap worse-than-or-equal-builtin)
 
 (verify-termination-boot-strap ancestor-listp)
 
@@ -1476,13 +1480,162 @@
 
   (memoize 'fchecksum-obj :stats nil :forget t)
   (memoize 'expansion-alist-pkg-names-memoize :stats nil :forget t)
-  (memoize 'worse-than-builtin
-           :stats nil
-           :condition ; Sol Swords suggestion
-           '(and (nvariablep term1)
-                 (not (fquotep term1))
-                 (nvariablep term2)
-                 (not (fquotep term2))))
+
+; Comment on memoizing a worse-than function:
+
+; In Version_7.0 and several preceding versions, we memoized a "worse-than"
+; function as follows.
+
+; (memoize 'worse-than-builtin-memoized :stats nil)
+
+; We now use a clocked version of worse-than and avoid such memoization.  See
+; worse-than-builtin-clocked for comments about potential memoization.
+; To restore such memoization, search for every occurrence of
+; "Comment on memoizing a worse-than function".
+
+; Below, we discuss some earlier experiments on memoizing worse-than-builtin or
+; the like, on two particular community books:
+
+; - books/coi/dtrees/base.lisp does not benefit from memoization of worse-than
+;   functions, and can be slowed down by it.
+
+; - books/centaur/esim/stv/stv2c/stv2c.lisp requires memoization of
+;   worse-than-builtin (or the like) to avoid stalling out in a proof.
+
+; Below we look at some results for the first of these books, using Version_7.0
+; except (where indicated below) a development version that was close to
+; Version_7.0.
+
+; Except where indicated otherwise, we memoized worse-than-builtin for
+; experiments below as follows.
+
+; (memoize 'worse-than-builtin
+;          :stats nil
+;          :condition ; Sol Swords suggestion
+;          '(and (nvariablep term1)
+;                (not (fquotep term1))
+;                (nvariablep term2)
+;                (not (fquotep term2))))
+
+; Specifically, we ran the following commands in the above book's directory.
+
+;   (ld "cert.acl2")
+;   (rebuild "base.lisp" t)
+;   (in-package "DTREE")
+;   (ubt! 'aux-domain-of-dtreemapfix)
+;   (skip-proofs (defthm lemma
+;                  (implies (set::in a (aux-domain (dtreemapfix map)))
+;                           (set::in a (aux-domain map)))))
+
+; In some cases we also ran the following command or the following two commands
+; after the commands above but before evaluating the defthm shown below:
+
+;   (acl2::unmemoize 'acl2::worse-than-builtin)
+;   #!acl2(memoize 'worse-than-builtin
+;            :stats nil
+;            :forget t
+;            :condition ; Sol Swords suggestion
+;            '(and (nvariablep term1)
+;                 (not (fquotep term1))
+;                  (nvariablep term2)
+;                  (not (fquotep term2))))
+
+; Then we submitted the following event.
+
+;   (defthm lemma2-for-aux-domain-of-dtreemapfix
+;     (implies (set::in a (aux-domain map))
+;              (set::in a (aux-domain (dtreemapfix map)))))
+
+; Times and memory use (last two reports from top) from some experiments are
+; shown below.  The key is that all runs with worse-than unmemoized were
+; significantly faster than all runs with worse-than memoized, regardless of
+; various attempts to speed up that memoization.
+
+; With GCL, out of the box:
+; Time:  122.34 seconds (prove: 122.33, print: 0.01, other: 0.00)
+; 11959 kaufmann  20   0 15.3g 2.8g  53m R  100  9.0   2:05.29 gcl-saved_acl2h
+; 11959 kaufmann  20   0 15.3g 2.8g  53m S   21  9.0   2:05.92 gcl-saved_acl2h
+
+; With GCL, after the above unmemoize form:
+; Time:  78.72 seconds (prove: 78.72, print: 0.00, other: 0.00)
+; 11934 kaufmann  20   0 13.2g 854m  53m R  100  2.7   1:18.68 gcl-saved_acl2h
+; 11934 kaufmann  20   0 13.2g 854m  53m S   98  2.7   1:21.64 gcl-saved_acl2h
+
+; With GCL, after the above sequence of unmemoize and memoize:
+; Time:  94.45 seconds (prove: 94.44, print: 0.01, other: 0.00)
+; 11995 kaufmann  20   0 13.8g 727m  53m R  100  2.3   1:35.62 gcl-saved_acl2h
+; 11995 kaufmann  20   0 13.8g 727m  53m S   62  2.3   1:37.47 gcl-saved_acl2h
+
+; With CCL, out of the box:
+; Time:  131.46 seconds (prove: 131.42, print: 0.04, other: 0.00)
+; 12044 kaufmann  20   0  512g 1.8g  17m S  100  5.6   2:10.31 lx86cl64
+; 12044 kaufmann  20   0  512g 1.8g  17m S   81  5.6   2:12.73 lx86cl64
+
+; With CCL, after the above unmemoize form:
+; Time:  89.83 seconds (prove: 89.82, print: 0.00, other: 0.00)
+; 12068 kaufmann  20   0  512g 1.3g  17m S   99  4.2   1:29.91 lx86cl64
+; 12068 kaufmann  20   0  512g 1.4g  17m S   40  4.4   1:31.12 lx86cl64
+
+; With CCL, after the above sequence of unmemoize and memoize:
+; Time:  147.46 seconds (prove: 147.44, print: 0.02, other: 0.00)
+; 12093 kaufmann  20   0  512g 804m  18m S  100  2.5   2:27.86 lx86cl64
+; 12093 kaufmann  20   0  512g 1.0g  18m S   30  3.2   2:28.77 lx86cl64
+
+; All of the above were run with EGC off (the default at the time).  Now we
+; repeat some of the above tests, but after turning EGC on as follows.
+
+; (acl2::value :q) (ccl::egc t) (acl2::lp)
+
+; With CCL, out of the box:
+; Time:  1439.72 seconds (prove: 1439.71, print: 0.01, other: 0.00)
+; 12127 kaufmann  20   0  512g 3.0g  35m S  100  9.4  23:58.68 lx86cl64
+; 12127 kaufmann  20   0  512g 3.0g  35m S   78  9.4  24:01.03 lx86cl64
+
+; With CCL, after the above unmemoize form:
+; Time:  87.27 seconds (prove: 87.26, print: 0.01, other: 0.00)
+; 12362 kaufmann  20   0  512g 407m  35m S  100  1.3   1:25.72 lx86cl64
+; 12362 kaufmann  20   0  512g 417m  35m S   93  1.3   1:28.51 lx86cl64
+
+; With CCL, after the above sequence of unmemoize and memoize:
+; Time:  135.92 seconds (prove: 135.90, print: 0.02, other: 0.00)
+; 12384 kaufmann  20   0  512g 705m  36m S    0  2.2   2:17.39 lx86cl64
+; 12384 kaufmann  20   0  512g 705m  36m S    0  2.2   2:17.40 lx86cl64
+
+; As just above, but after redefining waterfall1 in raw Lisp so that its
+; body is (prog2$ (clear-memoize-table 'worse-than-builtin) <old-body>)
+; Time:  134.38 seconds (prove: 134.37, print: 0.02, other: 0.00)
+; 12631 kaufmann  20   0  512g 691m  36m S   99  2.1   2:14.64 lx86cl64
+; 12631 kaufmann  20   0  512g 698m  36m S   38  2.2   2:15.79 lx86cl64
+
+; All of the above used ACL2 Version_7.0.  The tests below were run with a
+; development copy as of 1/21/2015 (a mere 9 days after the release of 7.0).
+; We continue to turn EGC on at the start, as above.
+
+; With CCL, after the above sequence of unmemoize and memoize:
+; Time:  135.80 seconds (prove: 135.79, print: 0.01, other: 0.00)
+; 13018 kaufmann  20   0  512g 664m  36m S   99  2.1   2:15.91 lx86cl64
+; 13018 kaufmann  20   0  512g 671m  36m S   42  2.1   2:17.16 lx86cl64
+
+; With CCL executable built without start-sol-gc and with EGC on,
+; after the above sequence of unmemoize and memoize:
+; Time:  136.47 seconds (prove: 136.45, print: 0.02, other: 0.00)
+; 13049 kaufmann  20   0  512g  59m  36m S   99  0.2   2:14.93 lx86cl64
+; 13049 kaufmann  20   0  512g  59m  36m S   96  0.2   2:17.81 lx86cl64
+
+; With CCL executable built without start-sol-gc and with EGC on,
+; after the above unmemoize form:
+; Time:  86.33 seconds (prove: 86.33, print: 0.01, other: 0.00)
+; 13178 kaufmann  20   0  512g  58m  35m S  100  0.2   1:27.18 lx86cl64
+; 13178 kaufmann  20   0  512g  58m  35m S   17  0.2   1:27.70 lx86cl64
+
+; With CCL executable built without start-sol-gc and with EGC on, out of the
+; box except for redefining waterfall1 in raw Lisp so that its body is (prog2$
+; (clear-memoize-table 'worse-than-builtin) <old-body>); notice that :forget
+; remains nil.
+; Time:  182.61 seconds (prove: 182.58, print: 0.02, other: 0.00)
+; 13135 kaufmann  20   0  512g 137m  17m S  100  0.4   3:02.78 lx86cl64
+; 13135 kaufmann  20   0  512g 137m  17m S   37  0.4   3:03.90 lx86cl64
+
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

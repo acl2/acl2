@@ -219,9 +219,8 @@
   (or (find-fixtype-for-typename typename alist)
       (find-fixtype-for-pred typename alist)))
 
-(defun get-pred/fix/equiv (kwd-alist our-fixtypes fixtypes typekw)
-  (b* ((type (getarg typekw nil kwd-alist))
-       ((unless type) (mv nil nil 'equal nil))
+(defun get-pred/fix/equiv (type our-fixtypes fixtypes)
+  (b* (((unless type) (mv nil nil 'equal nil))
        (fixtype1 (find-fixtype type our-fixtypes))
        (fixtype (or fixtype1 (find-fixtype type fixtypes)))
        ((unless fixtype)
@@ -333,7 +332,8 @@
                    (cat (symbol-name type-name) "->" (symbol-name name))
                    type-name)
                   kwd-alist))
-       ((mv type fix equiv recp) (get-pred/fix/equiv kwd-alist our-fixtypes fixtypes :type))
+       ((mv type fix equiv recp) (get-pred/fix/equiv (getarg :type nil kwd-alist)
+                                                     our-fixtypes fixtypes))
        (reqfix (getarg :reqfix name kwd-alist)))
     (make-flexprod-field
      :name name
@@ -1191,7 +1191,7 @@
         (er hard? 'parse-flexlist
             "Bad flexlist ~x0: Element type must be a symbol" x))
        ((mv elt-type elt-fix elt-equiv recp)
-        (get-pred/fix/equiv kwd-alist our-fixtypes fixtypes :elt-type))
+        (get-pred/fix/equiv (getarg :elt-type nil kwd-alist) our-fixtypes fixtypes))
        (pred (or (getarg :pred nil kwd-alist)
                  (intern-in-package-of-symbol (cat (symbol-name name) "-P")
                                               name)))
@@ -1293,13 +1293,13 @@
         (er hard? 'parse-flexalist
             "Bad flexalist ~x0: Element type must be a symbol" x))
        ((mv key-type key-fix key-equiv key-recp)
-        (get-pred/fix/equiv kwd-alist our-fixtypes fixtypes :key-type))
+        (get-pred/fix/equiv (getarg :key-type nil kwd-alist) our-fixtypes fixtypes))
        (val-type (getarg :val-type nil kwd-alist))
        ((unless (symbolp val-type))
         (er hard? 'parse-flexalist
             "Bad flexalist ~x0: Element type must be a symbol" x))
        ((mv val-type val-fix val-equiv val-recp)
-        (get-pred/fix/equiv kwd-alist our-fixtypes fixtypes :val-type))
+        (get-pred/fix/equiv (getarg :val-type nil kwd-alist) our-fixtypes fixtypes))
        (pred (or (getarg :pred nil kwd-alist)
                  (intern-in-package-of-symbol (cat (symbol-name name) "-P")
                                               name)))
@@ -3872,36 +3872,34 @@
   (append (cdr (assoc :enable-rules (flextypes->kwd-alist x)))
           (flextypelist-collect-enable-rules (flextypes->types x))))
 
-(defun find-type-prescription-rule-for-rune (rune type-prescriptions)
-  (if (atom type-prescriptions)
+(defun collect-uncond-type-prescriptions-from-list (x ens)
+  (if (atom x)
       nil
-    (if (equal rune (acl2::access acl2::type-prescription (car type-prescriptions) :rune))
-        (car type-prescriptions)
-      (find-type-prescription-rule-for-rune rune (cdr type-prescriptions)))))
+    (if (and (acl2::enabled-numep
+              (acl2::access acl2::type-prescription (car x) :nume) ens)
+             (not (acl2::access acl2::type-prescription (car x) :hyps)))
+        (let ((rune (acl2::access acl2::type-prescription (car x) :rune)))
+          (if (eq (car rune) :type-prescription)
+              (cons rune
+                    (collect-uncond-type-prescriptions-from-list (cdr x) ens))
+            (collect-uncond-type-prescriptions-from-list (cdr x) ens)))
+      (collect-uncond-type-prescriptions-from-list (cdr x) ens))))
 
-(defun find-type-prescription-rule-in-props (rune props)
-  (cond ((endp props) nil)
-        ((eq (cadar props) 'acl2::type-prescriptions)
-         (or (find-type-prescription-rule-for-rune rune (cddar props))
-             (find-type-prescription-rule-in-props rune (cdr props))))
-        (t (find-type-prescription-rule-in-props rune (cdr props)))))
-        
-(defun collect-uncond-type-prescriptions (runic-theory wrld)
-  (if (atom runic-theory)
+
+(defun collect-uncond-type-prescriptions (wrld ens fns-seen)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (if (atom wrld)
       nil
-    (b* ((rune (car runic-theory))
-         ((unless (eq (car rune) :type-prescription))
-          (collect-uncond-type-prescriptions (cdr runic-theory) wrld))
-         (name (cadr rune))
-         (suffix (cdr (acl2::decode-logical-name name wrld)))
-         (segment (acl2::world-to-next-event suffix))
-         (props (acl2::actual-props segment nil nil))
-         (type-prescription (find-type-prescription-rule-in-props rune props))
-         ((when (and type-prescription
-                     (eq (acl2::access acl2::type-prescription type-prescription :hyps) nil)))
-          (cons rune (collect-uncond-type-prescriptions (cdr runic-theory) wrld))))
-      (collect-uncond-type-prescriptions (cdr runic-theory) wrld))))
-      
+    (b* (((list* sym key val) (car wrld))
+         ((unless (eq key 'acl2::type-prescriptions))
+          (collect-uncond-type-prescriptions (cdr wrld) ens fns-seen))
+         ((when (hons-get sym fns-seen))
+          (collect-uncond-type-prescriptions (cdr wrld) ens fns-seen)))
+      (append (collect-uncond-type-prescriptions-from-list val ens)
+              (collect-uncond-type-prescriptions
+               (cdr wrld) ens (hons-acons sym t fns-seen))))))
+
+
 
 
 
@@ -3919,13 +3917,13 @@
              (set-ignore-ok t)
              (set-irrelevant-formals-ok t)
              (local (deftheory deftypes-orig-theory (current-theory :here)))
+             (local (make-event
+                     `(deftheory deftypes-type-theory
+                        ',(collect-uncond-type-prescriptions
+                           (w state) (acl2::ens state) nil))))
              (progn . ,temp-thms)
              (local (in-theory (disable deftypes-orig-theory)))
-             (local (make-event
-                     (let ((acl2::world (w state)))
-                       `(in-theory (enable
-                                    . ,(collect-uncond-type-prescriptions
-                                        (theory 'deftypes-orig-theory) acl2::world))))))
+             (local (in-theory (enable deftypes-type-theory)))
              (local (in-theory (enable deftypes-theory
                                         ,@(flextypes-collect-enable-rules x)
                                         . ,enable-rules)))

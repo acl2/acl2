@@ -122,6 +122,8 @@
   :guard (and (<= n (num-outs aignet))
               (<= (num-nodes aignet) (bits-length vals)))
   :measure (nfix (- (nfix (num-outs aignet)) (nfix n)))
+  :returns (outs (equal (len outs)
+                        (nfix (- (num-outs aignet) (nfix n)))))
   (b* (((when (mbe :logic (zp (- (nfix (num-outs aignet)) (nfix n)))
                    :exec (int= n (num-outs aignet))))
         nil))

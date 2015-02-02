@@ -65,22 +65,83 @@ for generating these sorts of functions/proofs:</p>
 @({
     (template-subst *maptree-template*
                     :features      '(:preserves-acl2-count)
-                    :subtree-alist nil
                     :splice-alist  '((_other-args_ . (n)))
                     :atom-alist    '((_treefn_ . add-to-leaves)
                                      (_leaffn_ . +))
                     :str-alist     '((\"_TREEFN_\" . \"ADD-TO-LEAVES\"))
+                    :subsubsts     nil
                     :pkg-sym       'acl2::asdf)
 })
 
-<p>The process has two main steps.</p>
+<h3>Substitution</h3>
+<p>Filling out the template involves recursively traversing the tree checking
+for various kinds of substitutions to make, as follows.</p>
 
-<h3>Preprocessing</h3>
+<ul>
 
-<p>The first step involves the @(':features') argument and parts of the
-template beginning with @(':@').  It does something like the @('#+') reader
-macro in Lisp.</p>
+<li>
+At each atom in the tree:
+<ul>
+<li> We check whether the leaf is bound in atom-alist; if so, we return its
+    corresponding value.</li>
+<li> If the leaf is a symbol beginning with @('%'), we remove that character
+  and re-intern it in its same package.</li>
+<li> If the leaf is a symbol, we apply str-alist as a substitution to its
+    symbol-name.  If any substitutions are made, we intern the resulting
+    string in the package of pkg-sym.</li>
+</ul></li>
 
+
+<li>At each cons node of the tree:
+<ul>
+<li> We check whether the car of the tree is a feature conditional, of the form
+  @({
+    (:@ <feature-expr> forms ...)
+   })
+
+  If so, we evaluate the feature expression (see the section on features below)
+  and if it is satisfied, recursive substitute on the append of the forms onto
+  the cdr of the tree; otherwise, just recursively substitute the cdr of the
+  tree and ignore the car.</li>
+
+<li> We check whether the car of the tree is a repetition operator, of the form
+  @({
+    (:@proj <subtemplates-name> subforms)
+   })
+  or 
+  @({
+    (:@append <subtemplates-name> subforms)
+   })
+
+  If so, we first look up the subtemplates-name in the @('subsubsts') field of
+  our substitution.  The value should be a list of other substitution objects.
+  These substitutions are each applied to subforms.  For the @(':@proj') case,
+  the results are consed into a list; for the @(':@append') case, appended
+  together.  These are then appended to the cdr and recursively substituted.</li>
+
+<li> We check whether the car of the tree is bound in splice-alist, and if so
+    we append its corresponding value to the recursive substitution of the
+    cdr of the tree.</li>
+<li> Otherwise, we return the cons of the recursive substitutions into the
+    car and cdr.</li>
+</ul></li>
+
+
+</ul>
+
+<p>Therefore, in our example we make the following replacements:</p>
+<ul>
+<li> the symbol _treefn_ is replaced with add-to-leaves and _leaffn_ is
+    replaced with +</li>
+<li> by string substitution, the symbol _treefn_-preserves-acl2-count
+    is replaced with add-to-leaves-preserves-acl2-count</li>
+<li> each occurrence of _other-args_ is replaced by splicing in the list (n),
+    effectively replacing _other-args_ with n.</li>
+</ul>
+<p>(Of course, the proof fails since our leaf transformation isn't actually
+ acl2-count preserving.)</p>
+
+<h3>Feature Processing</h3>
 <p>When @(':@') occurs as the first element of a list, the second element of
 that list is treated as a feature expression, much like in the @('#+') reader
 macro.  A feature expression is:</p>
@@ -101,47 +162,8 @@ into the template and recursively preprocessed.</p>
 <p>In our @('*maptree-template*') example, then, since the feature
 @(':preserves-acl2-count') is present in our @(':features') argument to
 @('template-subst'), we paste in the DEFTHM form.  If it was not present, that
-defthm would effectively disappear.</p>
+defthm would disappear.</p>
 
-<h3>Substitution</h3>
-<p> The second step involves substitution of various kinds into the tree.</p>
-
-<ul>
-
-<li>At each cons node of the tree:
-<ul>
-<li> We check whether the tree is bound in subtree-alist, and if so we
-    return its corresponding value.</li>
-<li> We check whether the car of the tree is bound in splice-alist, and if so
-    we append its corresponding value to the recursive substitution of the
-    cdr of the tree.</li>
-<li> Otherwise, we return the cons of the recursive substitutions into the
-    car and cdr.</li>
-</ul></li>
-
-<li>
-At each atom in the tree:
-<ul>
-<li> We check whether the leaf is bound in atom-alist; if so, we return its
-    corresponding value.</li>
-<li> If the leaf is a symbol, we apply str-alist as a substitution to its
-    symbol-name.  If any substitutions are made, we intern the resulting
-    string in the package of pkg-sym.</li>
-</ul></li>
-
-</ul>
-
-<p>Therefore, in our example we make the following replacements:</p>
-<ul>
-<li> the symbol _treefn_ is replaced with add-to-leaves and _leaffn_ is
-    replaced with +</li>
-<li> by string substitution, the symbol _treefn_-preserves-acl2-count
-    is replaced with add-to-leaves-preserves-acl2-count</li>
-<li> each occurrence of _other-args_ is replaced by splicing in the list (n),
-    effectively replacing _other-args_ with n.</li>
-</ul>
-<p>(Of course, the proof fails since our leaf transformation isn't actually
- acl2-count preserving.)</p>
 ")
 
 
@@ -259,11 +281,11 @@ At each atom in the tree:
    strs           ;; replacements for substrings of symbol names
                   ;; either ("old" . "new") or ("old" "new" . pkg-sym)
    pkg-sym        ;; default package symbol for symbol substring replacements
-   subtrees       ;; replacements for whole (non-atom) subtrees
 
    splices        ;; atoms -> lists, e.g., to replace (foo x) with (bar 'blah x),
                   ;; bind foo to (bar 'blah)
    features       ;; list of keywords for conditional features
+   subsubsts      ;; atoms -> lists of other tmplsubst objects
    ))
 
 
@@ -272,50 +294,89 @@ At each atom in the tree:
 ;; subtrees are substituted first, then atoms, and strings into symbols only if
 ;; that symbol was not bound in atom-alist.
 ;; The subtree and atom alists are kept separate just for efficiency.
-(defun template-subst-rec (tree subst)
-  (b* (((tmplsubst subst))
-       ((when (atom tree))
-        (b* ((look (assoc-equal tree subst.atoms))
-             ((when look) (mv t (cdr look)))
-             ((unless (symbolp tree))
-              (mv nil tree))
-             (res (tmpl-sym-sublis subst.strs tree subst.pkg-sym)))
-          (if (eq res tree)
-              (mv nil tree)
-            (mv t res))))
-       (look (assoc-equal tree subst.subtrees))
-       ((when look) (mv t (cdr look)))
-       (splice-look (and (atom (car tree))
-                         (assoc-equal (car tree) subst.splices)))
-       ((when splice-look)
-        (b* (((mv & cdr)
-              (template-subst-rec (cdr tree) subst)))
-          (mv t (append (cdr splice-look) cdr))))
-       ((mv chcar car)
-        (template-subst-rec (car tree) subst))
-       ((mv chcdr cdr)
-        (template-subst-rec (cdr tree) subst)))
-    (if (or chcar chcdr)
-        (mv t (cons car cdr))
-      (mv nil tree))))
+(mutual-recursion
+ (defun template-subst-rec (tree subst)
+   (declare (xargs :mode :program))
+   (b* (((tmplsubst subst))
+        ((when (atom tree))
+         (b* ((look (assoc-equal tree subst.atoms))
+              ((when look) (mv t (cdr look)))
+              ((unless (symbolp tree))
+               (mv nil tree))
+              (name (symbol-name tree))
+              ((when (and (<= 1 (length name))
+                          (eql (char name 0) #\%)))
+               (mv t (intern-in-package-of-symbol (subseq name 1 nil) tree)))
+              (res (tmpl-sym-sublis subst.strs tree subst.pkg-sym)))
+           (if (eq res tree)
+               (mv nil tree)
+             (mv t res))))
+        ((when (and (consp (car tree))
+                    (eq (caar tree) :@)))
+         (b* (((cons feature-expr subforms) (cdar tree))
+              (first-part (and (check-features subst.features feature-expr)
+                               subforms))
+              ((mv & ans) ;; always changed
+               (template-subst-rec (append first-part (cdr tree)) subst)))
+           (mv t ans)))
+        ((when (and (consp (car tree))
+                    (member (caar tree) '(:@proj :@append))))
+         (b* (((cons subtemp-name subforms) (cdar tree))
+              (subtemplates (cdr (assoc subtemp-name subst.subsubsts)))
+              (sub-res (if (eq (caar tree) :@proj)
+                           (template-proj subforms subtemplates)
+                         (template-append subforms subtemplates)))
+              ((mv & ans) (template-subst-rec (append sub-res (cdr tree)) subst)))
+           (mv t ans)))
+
+        (splice-look (and (atom (car tree))
+                          (assoc-equal (car tree) subst.splices)))
+        ((when splice-look)
+         (b* (((mv & cdr)
+               (template-subst-rec (cdr tree) subst)))
+           (mv t (append (cdr splice-look) cdr))))
+        ((mv chcar car)
+         (template-subst-rec (car tree) subst))
+        ((mv chcdr cdr)
+         (template-subst-rec (cdr tree) subst)))
+     (if (or chcar chcdr)
+         (mv t (cons car cdr))
+       (mv nil tree))))
+
+
+ (defun template-proj (template substs)
+   (declare (xargs :mode :program))
+   (if (atom substs)
+       nil
+     (cons (b* (((mv & res) (template-subst-rec template (car substs))))
+             res)
+           (template-proj template (cdr substs)))))
+
+ (defun template-append (template substs)
+   (declare (xargs :mode :program))
+   (if (atom substs)
+       nil
+     (append (b* (((mv & res) (template-subst-rec template (car substs))))
+               res)
+             (template-append template (cdr substs))))))
 
 (defun template-subst-top (tree subst)
-  (b* ((preproc-tree (template-preproc tree (tmplsubst->features subst)))
-       ((mv & new-tree) (template-subst-rec preproc-tree subst)))
-    new-tree))
+  (b* (((mv & ans) (template-subst-rec tree subst)))
+    ans))
+
 
 (defmacfun template-subst (tree &key features
-                                subtree-alist
+                                subsubsts
                                 splice-alist
                                 atom-alist
                                 str-alist
                                 (pkg-sym ''acl2::foo))
   (template-subst-top tree
                       (make-tmplsubst :features features
-                                      :subtrees subtree-alist
                                       :splices splice-alist
                                       :atoms atom-alist
                                       :strs str-alist
+                                      :subsubsts subsubsts
                                       :pkg-sym pkg-sym)))
 
 ;; This can be used to generate a string substitution from a symbol substitution.
@@ -350,21 +411,6 @@ At each atom in the tree:
     (cons (change-tmplsubst (car x) :features (append features (tmplsubst->features (car x))))
           (tmplsubsts-add-features (cdr x) features))))
 
-(defun template-proj (template substs)
-  (declare (xargs :mode :program))
-  (if (atom substs)
-      nil
-    (cons (template-subst-top template (car substs))
-          (template-proj template (cdr substs)))))
-
-(defun template-append (template substs)
-  (declare (xargs :mode :program))
-  (if (atom substs)
-      nil
-    (append (template-subst-top template (car substs))
-            (template-append template (cdr substs)))))
-
-
 
 (logic)
 
@@ -386,7 +432,6 @@ At each atom in the tree:
     (if (equal
          (template-subst *maptree-template*
                          :features '(:preserves-acl2-count)
-                         :subtree-alist nil
                          :splice-alist '((_other-args_ . (n)))
                          :atom-alist '((_treefn_ . add-to-leaves)
                                        (_leaffn_ . +))

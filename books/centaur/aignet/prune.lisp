@@ -2494,13 +2494,18 @@
                   (equal (nth id mark2) 1))))
        :rewrite :direct)
 
-     (in-theory (disable aignet-mark-seq-invar1))
+     (in-theory (disable aignet-mark-seq-invar1
+                         aignet-mark-seq-invar1-necc))
 
-     (defthm aignet-mark-seq-invar1-mark-preserved
+     (local (in-theory (enable aignet-mark-seq-invar1-necc)))
+
+     (defthmd aignet-mark-seq-invar1-mark-preserved
        (implies (and (aignet-mark-seq-invar1 mark1 mark2 aignet)
                      (aignet-idp id aignet)
                      (equal 1 (get-bit id mark1)))
                 (equal (nth id mark2) 1)))
+
+     (local (in-theory (enable aignet-mark-seq-invar1-mark-preserved)))
 
 
      (defthmd aignet-mark-seq-invar1-transitive-lemma
