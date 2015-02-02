@@ -1786,6 +1786,14 @@
   (chk-package-reincarnation-import-restrictions2 name proposed-imports)
   t)
 
+(defun remove-lisp-suffix (x dotp)
+
+; X is a full-book-name, hence a string ending in ".lisp".  We remove that
+; "lisp" suffix, leaving the final "." if and only if dotp is true.
+
+  (subseq x 0 (- (length x)
+                 (if dotp 5 4))))
+
 (defun convert-book-name-to-cert-name (x cert-op)
 
 ; X is assumed to satisfy chk-book-name.  We generate the corresponding
@@ -1794,20 +1802,20 @@
 ; The cddddr below chops off the "lisp" from the end of the filename but leaves
 ; the dot.
 
-  (coerce (append (reverse (cddddr (reverse (coerce x 'list))))
-                  (case cert-op
-                    ((t)
-                     '(#\c #\e #\r #\t))
-                    ((:create-pcert :create+convert-pcert)
-                     '(#\p #\c #\e #\r #\t #\0))
-                    (:convert-pcert
-                     '(#\p #\c #\e #\r #\t #\1))
-                    (otherwise ; including :write-acl2x
-                     (er hard 'convert-book-name-to-cert-name
-                         "Bad value of cert-op for ~
+  (concatenate 'string
+               (remove-lisp-suffix x nil)
+               (case cert-op
+                 ((t)
+                  "cert")
+                 ((:create-pcert :create+convert-pcert)
+                  "pcert0")
+                 (:convert-pcert
+                  "pcert1")
+                 (otherwise ; including :write-acl2x
+                  (er hard 'convert-book-name-to-cert-name
+                      "Bad value of cert-op for ~
                           convert-book-name-to-cert-name:  ~x0"
-                         cert-op))))
-          'string))
+                      cert-op)))))
 
 (defun unrelativize-book-path (lst dir)
   (cond ((endp lst) nil)
@@ -11522,9 +11530,9 @@
 ; X is assumed to satisfy chk-book-name.  We generate the corresponding
 ; .port file name.  See the related function, convert-book-name-to-cert-name.
 
-  (coerce (append (reverse (cddddr (reverse (coerce x 'list))))
-                  '(#\p #\o #\r #\t))
-          'string))
+  (concatenate 'string
+               (remove-lisp-suffix x nil)
+               "port"))
 
 (defun chk-raise-portcullis2 (file1 file2 ch port-file-p ctx state ans)
 
@@ -13704,9 +13712,9 @@
 
 ; See the Essay on .acl2x Files (Double Certification).
 
-  (coerce (append (reverse (cddddr (reverse (coerce x 'list))))
-                  '(#\a #\c #\l #\2 #\x))
-          'string))
+  (concatenate 'string
+               (remove-lisp-suffix x nil)
+               "acl2x"))
 
 (defun acl2x-alistp (x index len)
   (cond ((atom x)
@@ -14564,8 +14572,10 @@
 ; before Version_2.7 because the relative path name stored in the event was not
 ; sufficient to find the book at :puff/:puff* time.
 
-                                              (or cert-full-book-name
-                                                  full-book-name)
+                                              (remove-lisp-suffix
+                                               (or cert-full-book-name
+                                                   full-book-name)
+                                               t)
                                               cddr-event-form)
                                        'include-book
                                        full-book-name
@@ -15877,11 +15887,9 @@
 
 ; The given full-book-name can either be a Unix-style or an OS-style pathname.
 
-  (let ((rev-filename-list (reverse (coerce full-book-name 'list))))
-    (coerce (append (reverse (cddddr rev-filename-list))
-                    (coerce (f-get-global 'compiled-file-extension state)
-                            'list))
-            'string)))
+  (concatenate 'string
+               (remove-lisp-suffix full-book-name nil)
+               (f-get-global 'compiled-file-extension state)))
 
 (defun certify-book-finish-convert (new-post-alist old-post-alist
                                                    full-book-name ctx state)

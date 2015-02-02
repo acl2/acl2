@@ -2797,23 +2797,17 @@
 (defun puffable-command-blockp (wrld cmd-form)
 
 ; Initially, wrld should be the cdr of a world starting at some
-; command-landmark.  Cmd-form should be the command-tuple form of that
-; landmark (note that it will be nil for the very first
-; command-landmark ever laid down, the one with
-; access-command-tuple-number -1).
+; command-landmark.  Cmd-form should be the command-tuple form of that landmark
+; (note that it will be nil for the very first command-landmark ever laid down,
+; the one with access-command-tuple-number -1).
 
-; This function returns t if the command block starting at wrld satisfies
-; either of the following:
+; This function returns nil except in the following cases.
 
-; (a) the first (last executed) event-tuple in the command block has a
-;     different form than cmd-form, or
-; (b) the first event form is either an encapsulate whose last form is not a
-;     dependent clause processor declaration, or is an include-book.
-
-; Suppose neither obtains.  Then we return nil.  What does this mean?
-; It means the command and event tuples are the same (so no macros
-; were invovled in hiding the event) and the event wasn't an an
-; encapsulate or include-book.
+; (a) Cmd-form is an include-book: return 'include-book.
+; (b) Cmd-form is an encapsulate and the first event form in wrld is a puffable
+;     encapsulate: return 'encapsulate.
+; (c) Cmd-form is neither an include-book nor an encapsulate, and it differs
+;     from the first event form in world: return t.
 
   (cond
    ((or (null wrld)
@@ -2822,10 +2816,21 @@
     nil)
    ((and (eq (car (car wrld)) 'event-landmark)
          (eq (cadr (car wrld)) 'global-value))
-    (or (and cmd-form
-             (not (equal cmd-form (access-event-tuple-form (cddr (car wrld))))))
-        (puffable-encapsulate-p (cddr (car wrld)))
-        (eq (access-event-tuple-type (cddr (car wrld))) 'include-book)))
+    (cond ((atom cmd-form) ; perhaps impossible except for first command
+           nil)
+          ((eq (car cmd-form) 'certify-book)
+           'certify-book)
+          ((eq (car cmd-form) 'include-book)
+           (assert$
+            (eq (car (access-event-tuple-form (cddr (car wrld))))
+                'include-book)
+            'include-book))
+          ((eq (car cmd-form) 'encapsulate)
+           (and (puffable-encapsulate-p
+                 (cddr (car wrld)))
+                'encapsulate))
+          (t (not (equal cmd-form
+                         (access-event-tuple-form (cddr (car wrld))))))))
    (t (puffable-command-blockp (cdr wrld) cmd-form))))
 
 (defun puffable-command-numberp (i state)
@@ -2843,7 +2848,92 @@
                   (cdr wrld)
                   (access-command-tuple-form (cddr (car wrld))))))))
 
-(defun puff-command-block (wrld ans restore-cbd ctx state)
+(defun puff-include-book (wrld final-cmds ctx state)
+
+; We puff an include-book simply by going to the file named by the include-book
+; and return the events in it.  Recursive include-books are not flattened here.
+
+  (let ((full-book-name (access-event-tuple-namex (cddr (car wrld)))))
+    (er-progn
+     (chk-input-object-file full-book-name ctx state)
+     (chk-book-name full-book-name full-book-name ctx state)
+     (er-let*
+         ((ev-lst (read-object-file full-book-name ctx state))
+          (cert-obj (chk-certificate-file
+                     full-book-name
+                     nil
+                     'puff
+                     ctx
+                     state
+                     '((:uncertified-okp . t)
+                       (:defaxioms-okp t)
+                       (:skip-proofs-okp t))
+                     nil)))
+       (let* ((old-chk-sum
+
+; The assoc-equal just below is of the form (full-book-name user-book-name
+; familiar-name cert-annotations . ev-lst-chk-sum).
+
+               (cddddr (assoc-equal full-book-name
+                                    (global-val 'include-book-alist
+                                                (w state)))))
+              (expansion-alist
+
+; We include the expansion-alist only if the book appears to be certified.
+
+               (and old-chk-sum
+                    (and cert-obj
+                         (access cert-obj cert-obj :expansion-alist))))
+              (ev-lst-chk-sum
+               (check-sum-cert (and cert-obj
+                                    (access cert-obj cert-obj
+                                            :cmds))
+                               expansion-alist
+                               ev-lst)))
+         (cond
+          ((not (integerp ev-lst-chk-sum))
+
+; This error should never arise because check-sum-obj is only called on
+; something produced by read-object, which checks that the object is ACL2
+; compatible.  And if it somehow did happen, it is presumably not because of
+; the expansion-alist, which must be well-formed since it is in the book's
+; certificate.
+
+           (er soft ctx
+               "The file ~x0 is not a legal list of embedded event forms ~
+                   because it contains an object, ~x1, which check sum was ~
+                   unable to handle."
+               full-book-name ev-lst-chk-sum))
+          ((and old-chk-sum
+                (not (equal ev-lst-chk-sum old-chk-sum)))
+           (er soft ctx
+               "When the certified book ~x0 was included, its check sum ~
+                   was ~x1.  The check sum for ~x0 is now ~x2.  The file has ~
+                   thus been modified since it was last included and we ~
+                   cannot now recover the events that created the current ~
+                   logical world."
+               full-book-name
+               old-chk-sum
+               ev-lst-chk-sum))
+          (t (value
+              (append
+               (cons `(set-cbd
+                       ,(remove-after-last-directory-separator
+                         full-book-name))
+                     (cons (assert$
+                            (and (consp (car ev-lst))
+                                 (eq (caar ev-lst) 'in-package))
+                            (car ev-lst))
+                           (subst-by-position expansion-alist
+                                              (cdr ev-lst)
+                                              1)))
+               `((maybe-install-acl2-defaults-table
+                  ',(table-alist 'acl2-defaults-table wrld)
+                  state))
+               `((set-cbd ,(cbd)))
+               final-cmds)))))))))
+
+(defun puff-command-block1 (wrld certify-book-p ans ctx state)
 
 ; Wrld is a world that starts just after a command landmark.  We scan down to
 ; the next command landmark and return the list of events in this command
@@ -2852,134 +2942,71 @@
 ; wrld now.  However, we do not recursively flatten the encapsulates and
 ; include-books that are exposed by this flattening.
 
+; Certify-book-p is non-nil when we are puffing a certify-book command.  In
+; that case, if the first event encountered is an include-book of the same
+; book, we puff that include-book command.
+
   (cond
    ((or (null wrld)
         (and (eq (car (car wrld)) 'command-landmark)
              (eq (cadr (car wrld)) 'global-value)))
-    (value (if restore-cbd
-               (append ans (list `(set-cbd ,(cbd))))
-             ans)))
+    (value ans))
    ((and (eq (car (car wrld)) 'event-landmark)
          (eq (cadr (car wrld)) 'global-value))
-    (cond
-     ((eq (access-event-tuple-type (cddr (car wrld))) 'encapsulate)
+    (let* ((event-tuple (cddr (car wrld)))
+           (event-type (access-event-tuple-type event-tuple)))
+      (cond
+       ((and certify-book-p
+             (eq event-type 'include-book)
+             (equal (caar (global-val 'include-book-alist wrld))
+                    (access-event-tuple-namex event-tuple)))
+
+; The include-book here represents the evaluation of all events after the final
+; local event in the book common to the certify-book command and the current
+; include-book event landmark.  We ignore all events in the current world that
+; precede that final local event, instead doing a direct collection of all
+; events in the book.
+
+        (puff-include-book wrld ans ctx state))
+       (t
+        (puff-command-block1
+         (cond ((member-eq event-type
+                           '(encapsulate include-book))
+                (scan-past-deeper-event-landmarks
+                 (access-event-tuple-depth event-tuple)
+                 (cdr wrld)))
+               (t (cdr wrld)))
+         nil ; already found the include-book matching our certify-book
+         (cons (access-event-tuple-form event-tuple)
+               ans)
+         ctx state)))))
+   (t (puff-command-block1 (cdr wrld) certify-book-p ans ctx state))))
+
+(defun puff-command-block (cmd-type wrld final-cmds ctx state)
+
+; Wrld is a world that starts just after a command landmark.  We scan down to
+; the next command landmark and return the list of events in this command
+; block.  We replace every encapsulate and include-book by the events in its
+; body or file, which exposes the LOCAL events that are not actually part of
+; wrld now.  However, we do not recursively flatten the encapsulates and
+; include-books that are exposed by this flattening.
+
+  (case cmd-type
+    (encapsulate
 
 ; In the case of an encapsulate event, flattening means do the body of the
 ; encapsulate -- including the LOCAL events.  Note that this destroys the sense
 ; of those encapsulates that introduce constrained functions!  After flattening
 ; the constrained functions are defined as their witnesses!  We cannot recover
 ; the LOCAL events by a scan through wrld since they are not in wrld.  We must
-; instead re-execute the body of the encapsulate.  Therefore, we just append
-; the body of the encapsulate to our evolving ans.
+; instead re-execute the body of the encapsulate.  Therefore, we just return
+; the body of the encapsulate.
 
-; Now there is a problem here.  The body of the encapsulate might contain a
-; macro form such as (defstub fn (x y) t) which when executed will expand to an
-; encapsulate and which, intuitively, we ought to flatten.  Because it is a
-; macro form, we cannot here recognize it as an encapsulate nor could we figure
-; out its body.
-
-; The way out of this problem, if one wants to recursively flatten, is to
-; re-execute the events in our returned ans, thereby exposing the next layer of
-; flattenable events, and then flatten the area again.
-
-      (puff-command-block
-       (scan-past-deeper-event-landmarks
-        (access-event-tuple-depth (cddr (car wrld)))
-        (cdr wrld))
-       (cond ((puffable-encapsulate-p (cddr (car wrld)))
-              (append (cddr (access-event-tuple-form (cddr (car wrld)))) ans))
-             (t (cons (access-event-tuple-form (cddr (car wrld)))
-                      ans)))
-       restore-cbd ctx state))
-     ((eq (access-event-tuple-type (cddr (car wrld))) 'include-book)
-
-; Comments similar to those about encapsulate apply to include-book.  We simply
-; go to the file named by the include-book and read the events in it, appending
-; them to our ans.  Recursive include-books are not flattened here.
-
-      (let ((full-book-name (access-event-tuple-namex (cddr (car wrld)))))
-        (er-progn
-         (chk-input-object-file full-book-name ctx state)
-         (chk-book-name full-book-name full-book-name ctx state)
-         (er-let*
-          ((ev-lst (read-object-file full-book-name ctx state))
-           (cert-obj (chk-certificate-file
-                      full-book-name
-                      nil
-                      'puff
-                      ctx
-                      state
-                      '((:uncertified-okp . t)
-                        (:defaxioms-okp t)
-                        (:skip-proofs-okp t))
-                      nil))
-           (expansion-alist
-            (value (and cert-obj
-                        (access cert-obj cert-obj :expansion-alist)))))
-          (let
-           ((ev-lst-chk-sum
-             (check-sum-cert (and cert-obj
-                                  (access cert-obj cert-obj
-                                          :cmds))
-                             expansion-alist
-                             ev-lst)))
-           (cond
-            ((not (integerp ev-lst-chk-sum))
-
-; This error should never arise because check-sum-obj is only called on
-; something produced by read-object, which checks that the object is ACL2
-; compatible.  And if it somehow did happen, it is presumably not because of
-; the expansion-alist, which must be well-formed since it is in the book's
-; certificate.
-
-             (er soft ctx
-                 "The file ~x0 is not a legal list of embedded event forms ~
-                  because it contains an object, ~x1, which check sum was ~
-                  unable to handle."
-                 full-book-name ev-lst-chk-sum))
-            (t (let ((temp (assoc-equal full-book-name
-                                        (global-val 'include-book-alist
-                                                    (w state)))))
-
-; Temp is of the form (full-book-name user-book-name familiar-name
-; cert-annotations . ev-lst-chk-sum).
-
-                 (cond
-                  ((and (cddddr temp)
-                        (not (equal ev-lst-chk-sum (cddddr temp))))
-                   (er soft ctx
-                       "When the certified book ~x0 was included, its check ~
-                        sum was ~x1.  The check sum for ~x0 is now ~x2.  The ~
-                        file has thus been modified since it was last ~
-                        included and we cannot now recover the events that ~
-                        created the current logical world."
-                       full-book-name
-                       (cdddr temp)
-                       ev-lst-chk-sum))
-                  (t (puff-command-block
-                      (scan-past-deeper-event-landmarks
-                       (access-event-tuple-depth (cddr (car wrld)))
-                       (cdr wrld))
-                      (append (cons `(set-cbd
-                                      ,(remove-after-last-directory-separator
-                                        full-book-name))
-                                    (cons (assert$
-                                           (and (consp (car ev-lst))
-                                                (eq (caar ev-lst) 'in-package))
-                                           (car ev-lst))
-                                          (subst-by-position expansion-alist
-                                                             (cdr ev-lst)
-                                                             1)))
-                              `((maybe-install-acl2-defaults-table
-                                 ',(table-alist 'acl2-defaults-table wrld)
-                                 state))
-                              ans)
-                      t ctx state)))))))))))
-     (t (puff-command-block (cdr wrld)
-                            (cons (access-event-tuple-form (cddr (car wrld)))
-                                  ans)
-                            restore-cbd ctx state))))
-   (t (puff-command-block (cdr wrld) ans restore-cbd ctx state))))
+     (value (append (cddr (access-event-tuple-form (cddr (car wrld))))
+                    final-cmds)))
+    (include-book (puff-include-book wrld final-cmds ctx state))
+    (certify-book (puff-command-block1 wrld   t final-cmds ctx state))
+    (otherwise    (puff-command-block1 wrld nil final-cmds ctx state))))
 
 (defun commands-back-to (wrld1 wrld2 ans)
 
@@ -3002,22 +3029,21 @@
 ; immediate subevents, and then append to that list the commands in wrld that
 ; chronologically followed cd.
 
-  (er-let*
-   ((cmd-wrld (er-decode-cd cd wrld ctx state)))
-   (cond
-    ((puffable-command-blockp (cdr cmd-wrld)
-                              (access-command-tuple-form (cddr (car cmd-wrld))))
-     (er-let*
-      ((ans (puff-command-block (cdr cmd-wrld)
-                                (commands-back-to wrld cmd-wrld nil)
-                                nil ctx state)))
-      (value ans)))
-    (t (er soft ctx
-           "The command at ~x0, namely ~X12, cannot be puffed.  See :DOC puff."
-           cd
-           (access-command-tuple-form (cddr (car cmd-wrld)))
-           ;;; (evisc-tuple 2 3 nil nil)
-           '(nil 2 3 nil))))))
+  (er-let* ((cmd-wrld (er-decode-cd cd wrld ctx state)))
+    (let ((cmd-type (puffable-command-blockp
+                     (cdr cmd-wrld)
+                     (access-command-tuple-form (cddr (car cmd-wrld)))))
+          (final-cmds (commands-back-to wrld cmd-wrld nil)))
+      (cond
+       (cmd-type
+        (puff-command-block cmd-type (cdr cmd-wrld) final-cmds ctx state))
+       (t (er soft ctx
+              "The command at ~x0, namely ~X12, cannot be puffed.  See :DOC ~
+               puff."
+              cd
+              (access-command-tuple-form (cddr (car cmd-wrld)))
+;;; (evisc-tuple 2 3 nil nil)
+              '(nil 2 3 nil)))))))
 
 (defun puff-fn1 (cd state)
 
