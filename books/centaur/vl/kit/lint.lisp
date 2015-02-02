@@ -45,7 +45,6 @@
 (include-book "../lint/dupeinst-check")
 (include-book "../lint/duperhs")
 (include-book "../lint/leftright")
-(include-book "../lint/multidrive-detect")
 (include-book "../lint/oddexpr")
 (include-book "../lint/portcheck")
 (include-book "../lint/qmarksize-check")
@@ -576,7 +575,6 @@ shown.</p>"
        (- (cw "~%vl-lint: finding skipped and multiply driven wires...~%"))
        ;; NOTE: use design0, not design, if you ever want this to finish. :)
        (sd-probs (cwtime (sd-analyze-design design0)))
-       (design   (cwtime (vl-design-multidrive-detect design)))
 
        (- (cw "~%vl-lint: cleaning up...~%"))
        (design   (cwtime (vl-design-clean-warnings design)))
@@ -764,13 +762,6 @@ shown.</p>"
         :vl-warn-instances-same-minor
         :vl-const-expr-minor))
 
-(defconst *multidrive-warnings*
-  (list :vl-warn-multidrive
-        :vl-lucid-multidrive))
-
-(defconst *multidrive-minor-warnings*
-  (list :vl-warn-multidrive-minor))
-
 (defconst *fussy-size-warnings*
   (list :vl-fussy-size-warning-1
         :vl-fussy-size-warning-2
@@ -800,7 +791,8 @@ shown.</p>"
   (list :vl-lucid-error
         :vl-lucid-unused
         :vl-lucid-spurious
-        :vl-lucid-unset))
+        :vl-lucid-unset
+        :vl-lucid-multidrive))
 
 
 
@@ -814,8 +806,6 @@ shown.</p>"
           *trunc-minor-warnings*
           *smell-warnings*
           *smell-minor-warnings*
-          *multidrive-warnings*
-          *multidrive-minor-warnings*
           *fussy-size-warnings*
           *fussy-size-minor-warnings*
           *same-ports-warnings*
@@ -932,12 +922,6 @@ you can see \"vl-trunc-minor.txt\" to review them.")))
          (vl-lint-print-warnings "vl-lucid.txt" "Lucidity Checking" *lucid-warnings* reportcard)))
 
        (state
-        (with-ps-file
-         "vl-multi.txt"
-         (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-multi.txt" "Multidrive" *multidrive-warnings* reportcard)))
-
-       (state
         (if (not major)
             (progn$
              (cw "; No Skip-Detect Warnings.~%")
@@ -1005,12 +989,6 @@ suppress them by writing something like this:
 
 or similar, to make explicit on the right-hand side that you want an 11-bit
 wide addition instead of a 10-bit wide addition.")))
-
-       (state
-        (with-ps-file
-         "vl-multi-minor.txt"
-         (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-multi-minor.txt" "Minor Multidrive" *multidrive-minor-warnings* reportcard)))
 
        (state
         (if (not minor)
