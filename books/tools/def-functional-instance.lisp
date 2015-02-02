@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-(include-book "bstar")
+(include-book "std/util/bstar" :dir :system)
 
 (defxdoc def-functional-instance
   :parents (functional-instantiation)

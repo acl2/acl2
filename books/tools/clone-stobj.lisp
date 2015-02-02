@@ -29,11 +29,9 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-
-(include-book "bstar")
+(include-book "std/util/bstar" :dir :system)
 (include-book "rulesets")
 (include-book "templates")
-(include-book "xdoc/top" :dir :system)
 
 (program)
 
@@ -61,7 +59,7 @@
                     (cdar fields))
             (clone-stobj-change-symbol (car fields) renaming))
           (clone-stobj-process-fields (cdr fields) renaming))))
-                
+
 
 
 
@@ -80,7 +78,7 @@
   (if (atom field-templates)
       nil
     (cons (caar field-templates)
-          (append 
+          (append
            (keep-nonbool-symbols (cdddar field-templates))
            (stobj-field-template-fnnames (cdr field-templates))))))
 
@@ -108,7 +106,7 @@
                   (concatenate 'string "Clone of stobj "
                                (symbol-name stobjname))
                   :congruent-to stobjname))))
-  
+
 (defun clone-stobj-rewrite (newfn oldfn formals)
   (let ((thmname (intern-in-package-of-symbol
                     (concatenate 'string (symbol-name newfn) "-IS-" (symbol-name oldfn))
@@ -131,7 +129,7 @@
        (oldfn (caar old)))
     (append (clone-stobj-rewrite newfn oldfn formals)
             (clone-stobj-rewrites (cdr new) (cdr old)))))
-      
+
 
 
 
@@ -216,8 +214,8 @@
           (er hard? 'defstobj-clone
               ":Exports is not supported for concrete stobjs")
         (clone-base-stobj-fn stobjname name renaming world)))))
-       
-       
+
+
 
 (defmacro defstobj-clone (newname origname &key
                                   strsubst
@@ -263,4 +261,3 @@ be given.  Prefix and suffix should be strings, and strsubst should be an alist
 with string keys and values.  The @(':pkg') symbol is optional and determines
 into what package new symbols are interned; by default, it is the package of
 the new stobj name.</p>")
-
