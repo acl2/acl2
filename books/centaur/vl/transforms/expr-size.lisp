@@ -735,6 +735,10 @@ relatively simple:</p>
   (defrule natp-of-vl-sign-extend-constint
     (implies (and (force (natp value))
                   (force (posp origwidth))
+                  (syntaxp
+                   ;; Safety valve to avoid blowing up Lisp by creating huge expt calls.
+                   (or (not (quotep origwidth))
+                       (< (acl2::unquote origwidth) 10000)))
                   (force (< value (expt 2 origwidth)))
                   (force (posp finalwidth))
                   (force (< origwidth finalwidth)))
@@ -745,6 +749,10 @@ relatively simple:</p>
   (defrule upper-bound-of-vl-sign-extend-constint
     (implies (and (force (natp value))
                   (force (posp origwidth))
+                  (syntaxp
+                   ;; Safety valve to avoid blowing up Lisp by creating huge expt calls.
+                   (or (not (quotep origwidth))
+                       (< (acl2::unquote origwidth) 10000)))
                   (force (< value (expt 2 origwidth)))
                   (force (posp finalwidth))
                   (force (< origwidth finalwidth)))
