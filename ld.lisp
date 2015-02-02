@@ -2933,7 +2933,7 @@
                `((set-cbd ,(cbd)))
                final-cmds)))))))))
 
-(defun puff-command-block1 (wrld certify-book-p ans ctx state)
+(defun puff-command-block1 (wrld immediate ans ctx state)
 
 ; Wrld is a world that starts just after a command landmark.  We scan down to
 ; the next command landmark and return the list of events in this command
@@ -2942,9 +2942,13 @@
 ; wrld now.  However, we do not recursively flatten the encapsulates and
 ; include-books that are exposed by this flattening.
 
-; Certify-book-p is non-nil when we are puffing a certify-book command.  In
-; that case, if the first event encountered is an include-book of the same
-; book, we puff that include-book command.
+; Immediate is non-nil when we are puffing a certify-book command (immediate =
+; 'certify-book) or encapsulate command (immediate = 'encapsulate).  In the
+; certify-book case, if the first event encountered is an include-book of the
+; same book, we puff that include-book command.  In the encapsulate case, we
+; expect the first event encountered to be an encapsulate event, and we use its
+; event-tuple instead of the command-tuple so that make-event expansions are
+; used, as is the case for other resulting from :puff.
 
   (cond
    ((or (null wrld)
@@ -2956,7 +2960,7 @@
     (let* ((event-tuple (cddr (car wrld)))
            (event-type (access-event-tuple-type event-tuple)))
       (cond
-       ((and certify-book-p
+       ((and (eq immediate 'certify-book)
              (eq event-type 'include-book)
              (equal (caar (global-val 'include-book-alist wrld))
                     (access-event-tuple-namex event-tuple)))
@@ -2968,6 +2972,20 @@
 ; events in the book.
 
         (puff-include-book wrld ans ctx state))
+       ((eq immediate 'encapsulate)
+
+; In the case of an encapsulate event, flattening means to do the body of the
+; encapsulate -- including the LOCAL events.  Note that this destroys the sense
+; of those encapsulates that introduce constrained functions!  After flattening
+; the constrained functions are defined as their witnesses!  We cannot recover
+; the LOCAL events by a scan through wrld since they are not in wrld.  We must
+; instead re-execute the body of the encapsulate.  Therefore, we just return
+; the body of the encapsulate.
+
+        (assert$
+         (eq event-type 'encapsulate)
+         (value (append (cddr (access-event-tuple-form (cddr (car wrld))))
+                        ans))))
        (t
         (puff-command-block1
          (cond ((member-eq event-type
@@ -2976,11 +2994,11 @@
                  (access-event-tuple-depth event-tuple)
                  (cdr wrld)))
                (t (cdr wrld)))
-         nil ; already found the include-book matching our certify-book
+         nil ; already found the immediate match
          (cons (access-event-tuple-form event-tuple)
                ans)
          ctx state)))))
-   (t (puff-command-block1 (cdr wrld) certify-book-p ans ctx state))))
+   (t (puff-command-block1 (cdr wrld) immediate ans ctx state))))
 
 (defun puff-command-block (cmd-type wrld final-cmds ctx state)
 
@@ -2992,20 +3010,9 @@
 ; include-books that are exposed by this flattening.
 
   (case cmd-type
-    (encapsulate
-
-; In the case of an encapsulate event, flattening means do the body of the
-; encapsulate -- including the LOCAL events.  Note that this destroys the sense
-; of those encapsulates that introduce constrained functions!  After flattening
-; the constrained functions are defined as their witnesses!  We cannot recover
-; the LOCAL events by a scan through wrld since they are not in wrld.  We must
-; instead re-execute the body of the encapsulate.  Therefore, we just return
-; the body of the encapsulate.
-
-     (value (append (cddr (access-event-tuple-form (cddr (car wrld))))
-                    final-cmds)))
+    (encapsulate (puff-command-block1 wrld 'encapsulate final-cmds ctx state))
     (include-book (puff-include-book wrld final-cmds ctx state))
-    (certify-book (puff-command-block1 wrld   t final-cmds ctx state))
+    (certify-book (puff-command-block1 wrld 'certify-book final-cmds ctx state))
     (otherwise    (puff-command-block1 wrld nil final-cmds ctx state))))
 
 (defun commands-back-to (wrld1 wrld2 ans)
