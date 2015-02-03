@@ -127,18 +127,18 @@ many names internally, for instance:</p>
         ;; instantiation to make the port list for a module.  That is, they end
         ;; up with `module foo (a, b[3:0], c[1:0], ...)` or similar.
         (warn :type :vl-warn-port-style
-              :msg "~a0: the port itself has a range.  This is legal, but ~
-                    means you can't connect the port by name, etc.  It would ~
-                    be better to move the range to the port's input/output ~
-                    declaration, or to use the more modern \"ANSI\" syntax ~
-                    for combined port declarations."
-              :args (list x))))
+              :msg "~a0: the port expression ~a1 has a range.  This is legal, ~
+                    but means you can't connect the port by name, etc.  It ~
+                    would be better to move the range to the port's ~
+                    input/output declaration, or (better yet) to use the more ~
+                    modern \"ANSI\" syntax for combined port declarations."
+              :args (list x x.expr))))
 
     ;; Otherwise something pretty fancy is going on.  We'll just recommend
     ;; against this out of general principle.
     (warn :type :vl-warn-port-style
-          :msg "~a0: port is not simple."
-          :args (list x))))
+          :msg "~a0: port has complex expression ~a1."
+          :args (list x x.expr))))
 
 (define vl-portlist-check-style ((x vl-portlist-p)
                                  (warnings vl-warninglist-p))
