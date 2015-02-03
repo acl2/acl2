@@ -210,7 +210,7 @@ redundant/unnecessary information and is suitable for, e.g., printing.</p>"
 
 (define vl-design-reportcard-keys
   :parents (vl-apply-reportcard)
-  :short "Gather a list of all valid @(see reportcard) keys for a design."
+  :short "Gather a list of all valid @(see vl-reportcard) keys for a design."
   ((design vl-design-p))
   :prepwork ((local (in-theory (enable acl2::rcons))))
   :returns (keys vl-reportcardkeylist-p)
@@ -322,9 +322,8 @@ warnings about @('foo'), then in the new design these warnings will have been
 merged so that @('foo') will now have 5 warnings.</p>
 
 <p>One subtlety is that the reportcard may mention modules that aren't in the
-design.  This typically shouldn't happen, but if it does we can at least take
-some kind of debugging action.  See @(see
-vl-warn-about-disembodied-reportcard-hook).</p>"
+design.  This typically shouldn't happen.  If it does, these warnings will be
+associated with the top-level design, instead.</p>"
 
   (b* (((vl-design x) (vl-design-fix x))
        (reportcard    (vl-reportcard-fix reportcard))

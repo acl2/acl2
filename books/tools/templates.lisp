@@ -29,8 +29,6 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-
-(include-book "bstar")
 (include-book "defmacfun")
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/da-base" :dir :system)

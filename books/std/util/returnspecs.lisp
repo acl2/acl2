@@ -39,11 +39,14 @@
   :short "A concise way to name, document, and prove basic type-like theorems
 about a function's return values."
 
-  :long "<p>BOZO rewrite this to be more general.</p>
+  :long "<p>The @(see define) macro and some other @(see std/util) macros
+support a @(':returns') option.  This option provides a concise way to name,
+document, and prove basic type-like theorems about the return values of your
+functions.  Named return values also allow your function to be used with the
+special <see topic='@(url acl2::patbind-ret)'>ret</see> binder for @(see
+b*).</p>
 
-<p>A more elaborate extended option is @(':returns').  This is a concise way to
-name, document, and prove basic type-like theorems about the return values of
-your functions.  The general form is:</p>
+<p>The general form is:</p>
 
 @({
     :returns return-spec       ;; for single-value functions

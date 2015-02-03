@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-(include-book "bstar")
+(include-book "std/util/bstar" :dir :system)
 
 ;; Notes.  This book defines a B* binder UNLESS-MATCH which uses a function
 ;; MATCH-TREE to check that a term matches a particular pattern and return an
