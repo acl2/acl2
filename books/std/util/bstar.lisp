@@ -596,18 +596,26 @@ for more details.</p>")
 
 (defmacro def-b*-binder (name &key
                               (parents '(b*-binders))
-                              short long decls body)
+                              (short 'nil short-p)
+                              (long 'nil long-p)
+                              decls
+                              body)
   (let* ((macro-name (macro-name-for-patbind name))
-         (short      (or short
-                         (concatenate 'string
-                                      "@(see acl2::b*) binder form @('" (symbol-name name)
-                                      "') (placeholder).")))
-         (long       (or long
-                         (concatenate 'string
-                                      "<p>This is a b* binder introduced with @(see acl2::def-b*-binder).</p>
-                                      @(def " (symbol-name macro-name) ")"))))
+         (short      (if short-p
+                         short
+                       (concatenate 'string
+                                    "@(see acl2::b*) binder form @('" (symbol-name name)
+                                    "') (placeholder).")))
+         (long       (if long-p
+                         long
+                       (concatenate 'string
+                                    "<p>This is a b* binder introduced with @(see acl2::def-b*-binder).</p>
+                                     @(def " (symbol-name macro-name) ")"))))
     `(progn
-       (defxdoc ,macro-name :parents ,parents :short ,short :long ,long)
+       ,@(if (or parents short long)
+             ;; Want to be able to turn off documentation, e.g., for ret binders
+             `((defxdoc ,macro-name :parents ,parents :short ,short :long ,long))
+           nil)
        (defmacro ,macro-name (args forms rest-expr) ,@decls ,body)
        (table b*-binder-table ',name ',macro-name))))
 
@@ -633,12 +641,12 @@ Pattern constructor ~x0 needs exactly one binding expression, but was given ~x1~
 (defmacro def-patbind-macro (binder destructors
                                     &key
                                     (parents '(b*-binders))
-                                    short
-                                    long)
+                                    (short 'nil short-p)
+                                    (long 'nil long-p))
   `(def-b*-binder ,binder
      :parents ,parents
-     :short ,short
-     :long ,long
+     ,@(and short-p `(:short ,short))
+     ,@(and long-p  `(:long ,long))
      :decls ((declare (xargs :guard (destructure-guard ,binder args forms ,(len destructors)))))
      :body
      (let* ((binding (car forms))

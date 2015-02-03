@@ -64,8 +64,8 @@ ACL2.  It consists of:</p>
 typically produced from Verilog designs using @(see vl::defmodules).</li>
 
 <li>A family of functions for ``stepping'' an E module to compute expressions
-that capture its next-state and outputs as @(see 4v::4v-sexprs) or as @(see
-faig)s; see @(see esim-steps).</li>
+that capture its next-state and outputs as @(see 4v-sexprs) or as @(see faig)s;
+see @(see esim-steps).</li>
 
 <li>Mechanisms for describing symbolic runs of a module over multiple clock
 phases, such as @(see symbolic-test-vectors).</li>

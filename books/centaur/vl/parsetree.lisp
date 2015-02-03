@@ -2724,9 +2724,9 @@ the @('for_step') is performed, and we loop back to evaluating
 
 <p>The syntaxp for @('for_initialization') is a little tricky since it can
 either have declarations or assignments to pre-existing variables, but not
-both.  Our representation contains a @(see vl-vardecllist) with initial values
-to cover the declaration case and a @(see vl-stmtlist) to cover the assignment
-case; one or the other of these will be empty.</p>"
+both.  Our representation contains a @(see vl-vardecllist-p) with initial
+values to cover the declaration case and a @(see vl-stmtlist-p) to cover the
+assignment case; one or the other of these will be empty.</p>"
      ((initdecls vl-vardecllist-p)
       (initassigns vl-stmtlist-p)
       (test        vl-expr-p)
