@@ -73,8 +73,8 @@ to implement a family of Verilog-related tools.  Here are some examples:</p>
 <ul>
 
 <li>VL can build @(see esim) or @(see svex) models of Verilog modules for
-formal verification with @(see ACL2).  This is the basis for much of Centaur's
-formal verification efforts.</li>
+formal verification with ACL2.  This is the basis for much of Centaur's formal
+verification efforts.</li>
 
 <li>The VL @(see kit) is a standalone command-line executable that you can
 build on top of ACL2 and VL.  It includes commands for @(see lint)ing Verilog
@@ -121,7 +121,7 @@ vl-ppcs-module) and perhaps more generally the VL @(see printer).</p>
 <p>After getting a feel for how modules are represented, it would be good to
 look at the available @(see transforms).  For instance, you might look at the
 code for @(see vl-simplify) to see the transforms used in the @(see esim) flow.
-You could also look at @(see run-vl-lint-main) which uses a different
+You could also look at @('run-vl-lint-main') which uses a different
 transformation sequence for toward linting.</p>
 
 <p>If you are going to write any Verilog-processing tools of your own, you

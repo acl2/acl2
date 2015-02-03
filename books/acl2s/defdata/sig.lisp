@@ -617,7 +617,6 @@ constant). In the latter return a lambda expression"
        (str-alist (acons "_PRED_"  (symbol-name pred) '())))
     (template-subst templ
                     :features nil
-                    :subtree-alist nil
                     :splice-alist splice-alist
                     :atom-alist atom-alist
                     :str-alist str-alist

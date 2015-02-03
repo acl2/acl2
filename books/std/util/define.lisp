@@ -265,7 +265,7 @@ compatibility.</dd>
 
 <h4>@('Returns') Specifications</h4>
 
-<p>See @(see returns-specifiers)</p>
+<p>See @(see returns-specifiers).</p>
 
 <h3>The Other Events</h3>
 
@@ -1035,6 +1035,10 @@ some kind of separator!</p>
          ,(extend-define-guts-alist guts)
          (set-define-current-function ,guts.name)
 
+         ,@(and guts.returnspecs
+                `((make-event
+                   (make-define-ret-patbinder ',guts (w state)))))
+
          (local
           (make-event
            (if (logic-mode-p ',guts.name-fn (w state))
@@ -1298,3 +1302,451 @@ specifiers is ignored.  You should usually put such documentation into the
 
 (defmacro more-returns (&rest args)
   `(make-event (more-returns-fn ',args (w state))))
+
+
+
+
+; ------------------------------------------------------------------------
+;
+;  Defret -- looks like a defthm, but shares some features with :returns/more-returns
+;
+; ------------------------------------------------------------------------
+
+(defxdoc defret
+  :parents (define returns-specifiers)
+  :short "Prove additional theorems about a @(see define)d
+function, implicitly binding the return variables."
+
+  :long "<p>@('defret') is basically defthm, but has a few extra features.</p>
+
+<p>The main feature is that it automatically binds the declared return values
+for a function, which defaults to the most recent function created using @(see
+define).</p>
+
+<p>It also supports the @(':hyp') keyword similar to define's @(see
+returns-specifiers).</p>
+
+<p>Syntax:</p>
+
+<p>Suppose we have a function created using define with the following
+signature:</p>
+
+@({
+ (define my-function ((a natp)
+                      (b stringp)
+                      (c true-listp))
+   :returns (mv (d pseudo-termp)
+                (e booleanp)
+                (f (tuplep 3 f)))
+   ...)
+})
+
+<p>(The guards and return types aren't important for our purposes, just the
+names.)</p>
+
+<p>A @('defret') form like this:</p>
+
+@({
+  (defret a-theorem-about-my-function
+     :hyp (something-about a b c)
+     :pre-bind ((q (foo a b c)))
+     (implies (not e)
+              (and (consp d)
+                   (symbolp (car d))
+                   (equal (second d) q)))
+     :fn my-function   ;; defaults to the most recent define
+     :hints ...
+     :rule-classes ...)
+ })
+
+<p>will then expand to this:</p>
+
+@({
+ (defthm a-theorem-about-my-function
+   (implies (something-about a b c)
+      (b* ((q (foo a b c))
+           ((mv ?d ?e ?f) (my-function a b c)))
+        (implies (not e)
+                 (and (consp d)
+                      (symbolp (car d))
+                      (equal (second d) q)))))
+   :hints ...
+   :rule-classes ...)
+})
+
+<p>The @(':hyp :guard') and @(':hyp :fguard') features of @(see
+returns-specifiers) are also supported.</p>
+
+<p>@('Defret') does <i>not</i> support the feature where a single function name
+specifies a type of a return value.  Perhaps we could support it for functions
+with a single return value.</p>
+
+<p>One limitation of @('defret') is that the conclusion term can't refer to a
+formal if there is a return value that has the same name.  To work around this,
+the @(':pre-bind') argument accepts a list of @(see b*) bindings that occur
+before the binding of the return values.  You may also just want to not share
+names between your formals and returns.</p>")
+
+(defun defret-fn (name args world)
+  (b* ((__function__ 'defret)
+       ((mv kwd-alist args)
+        (extract-keywords `(defret ,name) '(:hyp :fn :hints :rule-classes :pre-bind)
+                          args nil))
+       ((unless (consp args))
+        (raise "No body"))
+       ((when (cdr args))
+        (raise "Extra junk: ~x0" (cdr args)))
+       (concl-term (car args))
+       (fn (let ((look (assoc :fn kwd-alist)))
+             (if look (cdr look) (get-define-current-function world))))
+       (guts (cdr (assoc fn (get-define-guts-alist world))))
+       ((unless guts)
+        (raise "No define-guts for ~x0" fn))
+       ((defguts guts) guts)
+       ((unless guts.returnspecs)
+        (raise "No return names provided for ~x0" fn))
+       (names (returnspeclist->names guts.returnspecs))
+       (ign-names (make-symbols-ignorable names))
+       (formals (look-up-formals guts.name-fn world))
+       (binding `((,(if (consp (cdr ign-names))
+                        `(mv . ,ign-names)
+                      (car ign-names))
+                   (,guts.name-fn . ,formals))))
+       (hyp? (assoc :hyp kwd-alist))
+       (hyp (cond ((eq (cdr hyp?) :guard) (fancy-hyp (look-up-guard guts.name-fn world)))
+                  ((eq (cdr hyp?) :fguard) (fancy-force-hyp (look-up-guard guts.name-fn world)))
+                  (t (cdr hyp?))))
+       (rule-classes? (assoc :rule-classes kwd-alist))
+       (hints? (assoc :hints kwd-alist))
+       (pre-bind (cdr (assoc :pre-bind kwd-alist)))
+       (concl `(b* (,@pre-bind ,@binding) ,concl-term))
+       (thm (if hyp?
+                `(implies ,hyp ,concl)
+              concl)))
+    `(defthm ,name
+       ,thm
+       ,@(and hints?        `(:hints ,(cdr hints?)))
+       ,@(and rule-classes? `(:rule-classes ,(cdr rule-classes?))))))
+
+
+(defmacro defret (name &rest args)
+  `(make-event (defret-fn ',name ',args (w state))))
+
+
+
+#!acl2
+(def-b*-binder ret
+  :parents (b*-binders return-specifiers)
+  :short "@(see b*) binder for named return values from functions."
+
+  :long "<box><p>BETA.  Interface may change.</p></box>
+
+<p>@('ret') is a very fancy @(see b*) that can be used to treat the return
+values from a function as a single bundle which you can then access by their
+names.</p>
+
+
+<h3>Introductory Example</h3>
+
+<p>Here is a function, written with @(see define), that returns two values.</p>
+
+@({
+    (define mathstuff ((a natp)
+                       (b natp))
+      :returns (mv (sum natp)
+                   (prod natp))
+      (b* ((a (nfix a))
+           (b (nfix b)))
+        (mv (+ a b)
+            (* a b))))
+})
+
+<p>Normally, to call this function from @(see b*), you might use an @(see mv)
+form like this:</p>
+
+@({
+     (b* (((mv mysum myprod) (mathstuff 3 4)))      ;; (:sum 7 :prod 12)
+       (list :sum  mysum
+             :prod myprod))
+})
+
+<p>Using the @('ret') binder, you might instead write:</p>
+
+@({
+     (b* (((ret mystuff) (mathstuff 3 4)))          ;; (:sum 7 :prod 12)
+       (list :sum  mystuff.sum
+             :prod mystuff.prod))
+})
+
+<p>In other words, the @('ret') binder lets you to treat all of the return
+values for a function as if they were a single aggregate and then refer to the
+individually returned values using a @(see defaggregate)- or C-like
+@('foo.bar') style syntax.</p>
+
+
+<h3>Mechanics</h3>
+
+<p>To a first approximation, the @('ret') binder just expands into an
+equivalent @(see mv) binder that sets up names like @('mystuff.sum') and
+@('mystuff.prod').  However, there are (unfortunately) many subtleties that you
+should be aware of.</p>
+
+
+<h4>Finding the function</h4>
+
+<p>To be able to know the names of the function's return values, the @('ret')
+binder obviously needs to \"know\" what function is being invoked.</p>
+
+<p>It does this, completely barbarically, by just looking at the form on the
+right hand side of the binder, even before any macro expansion.  For instance,
+if we write a binding form like this:</p>
+
+@({
+      ((ret myreturn) (myfn ...))
+})
+
+<p>Then the @('ret') binder will look at the right-hand side and sees that it
+is a call of @('myfn').</p>
+
+<p>Note that it is easy to write right-hand sides that @('ret') <b>does not
+understand</b>.  For instance, if you just put a simple identity functions or
+macro like @(see time$) around your function call, e.g.,</p>
+
+@({
+      ((ret myreturn) (time$ (myfn ...)))
+})
+
+<p>then the @('ret') binder will not understand that you are calling @('myfn')
+and macroexpansion will fail.  Similarly, you can't use @(see let)-bindings or
+similar on the right-hand side.</p>
+
+
+<h4>Introducing the bindings</h4>
+
+<p>Once we know that the function being invoked is @('myfn'), the @('ret')
+binder itself expands into a call of @('patbind-myfn-ret').  Normally, this
+should be a function that is introduced for you automatically at @(see define)
+time.</p>
+
+<p>Because the @('patbind') function is constructed at @('define') time, it
+implicitly \"knows\" the names of the return values for your functions.  It
+also \"knows\" which of your function's return values are @(see acl2::stobj)s
+and how any such stobjs correspond to the arguments of your function.</p>
+
+<p>Given all of this information, it is possible to construct a suitable @(see
+mv) binding that will bind:</p>
+
+<ul>
+
+<li>Each non-stobj return value to a new symbol with a dotted name like
+@('myreturn.foo'), @('myreturn.bar'), or similar; and</li>
+
+<li>Each output stobj to the correct stobj name.</li>
+
+</ul>
+
+<p>Aside from some technical details regarding congruent stobjs (see @(see
+acl2::stobj)) this is almost straightforward.  However, there are a few more
+details that you should understand...</p>
+
+
+<h5>Ignorability</h5>
+
+<p>Consider our @('mathstuff') example.  We might imagine that a binding such
+as:</p>
+
+@({
+     ((ret mystuff) (mathstuff 3 4))
+})
+
+<p>would be expanded into:</p>
+
+@({
+     ((mv mystuff.sum mystuff.prod) (mathstuff 3 4))
+})
+
+<p>This works fine if we use all of the return values, but if we (say) don't
+need @('mystuff.prod'), then we'd get errors unless we went out of our way to
+use something like @(see set-ignore-ok).  To avoid this, the @('ret') binders
+will currently declare <b>all return values as ignorable.</b> We may eventually
+revisit this decision and require some kind of more strict checking here.</p>
+
+
+<h5>Package Naming</h5>
+
+<p>What @(see package) does @('mystuff.sum') belong in?  The most obvious
+candidate is to @(see intern) it into the package of the new variable, i.e.,
+@('mystuff').  Unfortunately this can sometimes be very confusing.  For
+instance, consider a code fragment like this:</p>
+
+@({
+     (b* ((fn         (get-function ...))
+          ((ret args) (extend-args initial-args ...)))
+       (make-answer :fn       fn
+                    :args     args.extensions
+                    :size     args.size
+                    :warnings args.warnings))
+})
+
+<p>The problem here is that @('args') is a symbol in the @(see *acl2-exports*)
+list.  So, if you submit the above code in a typical package, @('foo'), where
+you have imported the symbols from @('*acl2-exports*'), then @('args') is in
+the @('acl2') package, but symbols like @('args.extensions'), which are
+presumably not imported, will instead be in the @('foo') package.</p>
+
+<p>To avoid this confusion, we scan the form for a symbol with the right name,
+regardless of its package.  This scan is done before macros are expanded, so it
+may not work with macros that generate names like @('args.extensions').</p>"
+  :decls
+  ((declare (xargs :guard (and (eql (len forms) 1)
+                               (consp (car forms))
+                               (symbolp (caar forms))))))
+  :body
+  (b* ((fncall (car forms))
+       (fnname (car fncall)))
+    `(,(intern-in-package-of-symbol
+        (concatenate 'string "PATBIND-" (symbol-name fnname) "-RET")
+        fnname)
+      ,args ,forms ,rest-expr)))
+
+(defun find-symbols-with-name (name x acc)
+  (if (atom x)
+      (if (and (symbolp x)
+               (equal (symbol-name x) name))
+          (cons x acc)
+        acc)
+    (find-symbols-with-name
+     name (car x) (find-symbols-with-name name (cdr x) acc))))
+
+(defun find-symbol-of-name-in-expr (name rest-expr)
+  (let* ((matches (find-symbols-with-name name rest-expr nil))
+         (matches (remove-duplicates matches)))
+    (cond ((atom matches)
+           ;; Found no symbols with this name.  Warn?
+           (intern$ name "ACL2"))
+          ((consp (cdr matches))
+           (er hard? 'patbind-ret
+               "Found multiple different symbols with the same name: ~x0" matches))
+          (t
+           ;; OK good, found just one symbol with this name, use it.
+           (car matches)))))
+
+
+
+(defun match-define-keyword-formals-with-actuals
+  (formals ;; macro formals without any leading &key stuff, ex: (foo (bar 't) baz)
+   actuals ;; corresponding actuals, ex: '(:foo 1 :baz 3)
+   )
+  (b* (((when (atom formals)) nil)
+       (formal1 (car formals))
+       ((mv name default name-p)
+        (cond ((atom formal1) (mv formal1 nil nil))
+              ((atom (cdr formal1)) (mv (car formal1) nil nil))
+              (t (mv (first formal1)
+                     (acl2::unquote (second formal1))
+                     (third formal1)))))
+       (key (intern$ (symbol-name name) "KEYWORD"))
+       (lookup (assoc-keyword key actuals))
+       (val (if lookup (cadr lookup) default))
+       (rest (match-define-keyword-formals-with-actuals (cdr formals) actuals)))
+    (cons (cons name val)
+          (if name-p
+              (cons (cons name-p (consp lookup)) rest)
+            rest))))
+
+(defun match-define-optional-formals-with-actuals
+  (formals ;; macro formals without any leading &optional stuff, ex: (foo (bar 't) baz)
+   actuals ;; corresponding actuals, ex: '(:foo 1 :baz 3)
+   )
+  (b* (((when (atom formals)) nil)
+       (formal1 (car formals))
+       ((when (eq formal1 '&key))
+        (match-define-keyword-formals-with-actuals (cdr formals) actuals))
+       ((mv name default name-p)
+        (cond ((atom formal1) (mv formal1 nil nil))
+              ((atom (cdr formal1)) (mv (car formal1) nil nil))
+              (t (mv (first formal1)
+                     (acl2::unquote (second formal1))
+                     (third formal1)))))
+       (val (if (consp actuals) (car actuals) default))
+       (rest (match-define-optional-formals-with-actuals (cdr formals) (cdr actuals))))
+    (cons (cons name val)
+          (if name-p
+              (cons (cons name-p (consp actuals)) rest)
+            rest))))
+
+(defun match-define-formals-with-actuals
+  (formals ;; macro formals
+   actuals ;; corresponding actuals
+   ctx)
+  (b* (((when (atom formals)) nil)
+       (name (car formals))
+       ((when (eq name '&key))
+        (match-define-keyword-formals-with-actuals (cdr formals) actuals))
+       ((when (eq name '&optional))
+        (match-define-optional-formals-with-actuals (cdr formals) actuals))
+       ((when (atom actuals))
+        (er hard? 'match-define-optional-formals-with-actuals
+            "~x0: Not enough arguments" ctx))
+       (val (car actuals))
+       (rest (match-define-formals-with-actuals (cdr formals) (cdr actuals) ctx)))
+    (cons (cons name val) rest)))
+
+
+(defun patbind-ret-mv-names
+  (rets            ;; (return-name . corresponding stobjs-out entry) list
+   varname         ;; NIL for ((ret) ...), or varname for ((ret varname) ...)
+   formals/actuals ;; see below
+   rest-expr       ;; rest-expr from the b*
+   )
+  (b* (((when (atom rets)) nil)
+       ((cons retname stobj) (car rets))
+       ((when stobj)
+        ;; The return name might not be the stobj name, and the stobj name
+        ;; might not be the one in use due to congruent stobjs.  So we parse
+        ;; the function call (elsewhere) and pair up the formals with actual
+        ;; actuals so that we can look up what stobj was passed in and bind
+        ;; that.
+        (cons (cdr (assoc stobj formals/actuals))
+              (patbind-ret-mv-names (cdr rets) varname formals/actuals rest-expr)))
+       (name (if varname
+                 (concatenate 'string (symbol-name varname) "." (symbol-name retname))
+               (symbol-name retname)))
+       (symbol (find-symbol-of-name-in-expr name rest-expr)))
+    (cons symbol
+          (patbind-ret-mv-names (cdr rets) varname formals/actuals rest-expr))))
+
+
+(defun patbind-ret-fn (rets macro-formals args forms rest-expr)
+  (b* ((varname (car args))
+       (call (car forms))
+       (formals/actuals
+        (match-define-formals-with-actuals macro-formals (cdr call) (car forms)))
+       (mv-names (patbind-ret-mv-names rets varname formals/actuals rest-expr)))
+    (if (< 1 (len mv-names))
+        `(mv-let ,mv-names ,(car forms)
+           (declare (ignorable . ,mv-names))
+           ,rest-expr)
+      `(let ((,(car mv-names) ,(car forms)))
+         (declare (ignorable . ,mv-names))
+         ,rest-expr))))
+
+(defun make-define-ret-patbinder (guts world)
+  (declare (xargs :mode :program))
+  (b* (((defguts guts))
+       (name (intern-in-package-of-symbol
+              (concatenate 'string (symbol-name guts.name) "-RET")
+              guts.name)))
+    `(def-b*-binder ,name
+       :parents nil
+       :short nil
+       :long nil
+       :body
+       (patbind-ret-fn ',(pairlis$ (returnspeclist->names guts.returnspecs)
+                                   (fgetprop guts.name-fn 'acl2::stobjs-out
+                                             nil world))
+                       ',(or (fgetprop guts.name 'acl2::macro-args
+                                       nil world)
+                             (fgetprop guts.name-fn 'acl2::formals
+                                       nil world))
+                       acl2::args acl2::forms acl2::rest-expr))))

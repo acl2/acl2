@@ -4224,32 +4224,33 @@
 ; Real times: 0.000, 0.000, 0.010, 0.000, 0.010, 0.020, 0.040, 0.100,
 ; 0.210, ...
 
-(mutual-recursion
+(defmacro decrement-worse-than-clk (clk)
+  (declare (xargs :guard (symbolp clk)))
+  `(if (< ,clk 2) ,clk (1-f ,clk)))
 
-(defun worse-than-builtin (term1 term2)
+(defmacro with-decrement-worse-than-clk (clk form)
+  (declare (xargs :guard (symbolp clk)))
+  `(let ((,clk (decrement-worse-than-clk ,clk)))
+     (declare (type (unsigned-byte 29) ,clk))
+     ,form))
 
-; Term1 is worse-than-builtin term2 if it is basic-worse-than term2 or some
-; proper subterm of it is worse-than-builtin or equal to term2.  However, we
-; know that if two terms are pseudo-variants of each other, then the
-; worse-than-builtin relation does not hold.
+(defmacro worse-than-builtin-clocked-body (clk)
 
-  (declare
-   (xargs :guard (and (pseudo-termp term1)
-                      (pseudo-termp term2))
-          :measure (make-ord 1
-                             (+ 1 (acl2-count term1) (acl2-count term2))
-                             1)
-          :well-founded-relation o<))
-  (cond ((basic-worse-than term1 term2) t)
-        ((pseudo-variantp term1 term2) nil)
-        ((variablep term1)
+; This is simply a way to share code between worse-than-builtin-clocked and
+; worse-than-builtin-memoized.
+
+  (declare (xargs :guard (atom clk))) ; avoid repeated evaluation of clk
+  `(cond
+    ((basic-worse-than term1 term2 ,clk) t)
+    ((pseudo-variantp term1 term2) nil)
+    ((variablep term1)
 
 ; If term1 is a variable and not basic-worse-than term2, what do we know about
 ; term2?  Term2 might be a variable.  Term2 cannot be quote.  Term2 might be a
 ; function application.  So is X worse-than-builtin X or Y or (F X Y)?  No.
 
-         nil)
-        ((fquotep term1)
+     nil)
+    ((fquotep term1)
 
 ; If term1 is a quote and not basic-worse-than term2, what do we know about
 ; term2?  Term2 might be a variable.  Also, term2 might be a quote, but if it
@@ -4257,11 +4258,177 @@
 ; is term1 worse-than-builtin a bigger quote?  No.  Is term1 worse-than-builtin
 ; a variable or function application?  No.
 
-         nil)
+     nil)
+    (t (worse-than-lst (fargs term1) term2 ,clk))))
 
-        (t (worse-than-lst (fargs term1) term2))))
+(mutual-recursion
 
-(defun worse-than-or-equal-builtin (term1 term2)
+; Comment on memoizing a worse-than function: A way to do so is to uncomment
+; the following definition and take other actions described with the comment
+; "Comment on memoizing a worse-than function".
+; (defun worse-than-builtin-memoized (term1 term2)
+;   (declare
+;    (xargs :guard (and (pseudo-termp term1)
+;                       (pseudo-termp term2))
+;           :measure (make-ord 1
+;                              (+ 1 (acl2-count term1) (acl2-count term2))
+;                              1)
+;           :well-founded-relation o<))
+;   (worse-than-builtin-clocked-body 0))
+
+(defun worse-than-builtin-clocked (term1 term2 clk)
+
+; Term1 is worse-than-builtin term2 if it is basic-worse-than term2 or some
+; proper subterm of it is worse-than-builtin or equal to term2.  However, we
+; know that if two terms are pseudo-variants of each other, then the
+; worse-than-builtin relation does not hold.
+
+; This use of a clocked function is new after Version_7.0.  Our investigations
+; into the worse-than heuristic after that release began with an email from
+; Camm Maguire on Jan. 21, 2015, pointing out that books/coi/dtrees/base.lisp
+; was the only book that required more than 2G memory for certification using
+; ACL2(h) 7.0 built on 64-bit GCL.  We found the memoization of
+; worse-than-builtin was the culprit.  An email discussion with Jared Davis
+; included his suggestion of a clocked version, rather like this one, that
+; avoided the use of memoization until reaching a sufficient recursion depth.
+; It occurred to us that with a clocked version, perhaps memoization could be
+; avoided entirely, possibly saving memory and leading to a simpler, arguably
+; more predictable implementation.  Comments below explore these options.
+
+  (declare
+   (type (unsigned-byte 29) clk)
+   (xargs :guard (and (pseudo-termp term1)
+                      (pseudo-termp term2))
+          :measure (make-ord 1
+                             (+ 1 (acl2-count term1) (acl2-count term2))
+                             2)
+          :well-founded-relation o<))
+  (cond
+   ((zpf clk)
+
+; We are out of "time".  The following three options are available:
+
+; Comment on memoizing a worse-than function: To change whether or how that is
+; done, visit the comments below and also search for other comments labeled
+; with "Comment on memoizing a worse-than function".
+
+; (1) Return nil, with the intention that although our "worse-than" code may be
+; incomplete, still it should imply some sort of true worse-than.
+
+    nil
+
+; (2) Return t (an idea put forth by Jared Davis), the idea being that if we
+; get to this point, then big terms are involved and if worse-than is intended
+; to defeat some process, then it is reasonable to do so in this case.
+
+;   t
+
+; (3) Continue, but using memoization as had been done in Version_7.0.
+
+;   (worse-than-builtin-memoized term1 term2)
+
+; We did a number of experiments in late January, 2015, after the release of
+; Version_7.0.  Major results are reported below.  In short, all three
+; approaches improved the performance, with differences perhaps in the noise.
+; It was a close call, but we decided against (3) since its added complexity
+; and possible memory usage didn't seem to provide non-trivial value, and we
+; decided on (1) over (2) because (1) had less risk of destroying existing
+; proofs (albeit with the risk that, unlike (2), some proofs might loop that
+; otherwise would not because of a weaker ancestors-check.
+
+; All results below used the same unloaded machine/platform (64-bit Linux,
+; 3.5 GHz 4-core Intel(R) Xeon(R) with Hyper-Threading), with a command like
+; the following.
+
+;   (setenv TIME_CERT yes ; time nice make -j 8 regression-everything \
+;    OS_HAS_GLUCOSE= USE_QUICKLISP=1 TB_LISP=gcl ACL2=<my_acl2>)
+
+; CCL results are below, then GCL.
+
+;;; CCL
+
+; original
+; Unmodified from the the worse-than implementation in Version_7.0:
+; 52692.173u 1924.728s 2:26:28.33 621.4%	0+0k 1209904+5209720io 862pf+0w
+
+; run-1
+; No memoization of worse-than-builtin, except in stv2c.lisp:
+; 51938.137u 1917.763s 2:22:16.90 630.8%	0+0k 1054112+5206800io 865pf+0w
+
+; run-2
+; No memoization of any worse-than-xx, but use clocked version (bottom
+; out at nil):
+; 52311.357u 1912.043s 2:23:35.01 629.4%	0+0k 841976+5208048io 521pf+0w
+
+; run-3
+; No memoization of any worse-than-xx, but use clocked version (bottom
+; out at t):
+; 52186.933u 1910.623s 2:23:30.81 628.2%	0+0k 835600+5207784io 688pf+0w
+
+; run-4
+; No memoization of any worse-than-xx at the top level, but use
+; clocked version that bottoms out at a memoized version:
+; 51934.529u 1929.868s 2:20:54.27 637.1%	0+0k 1328800+5207736io 939pf+0w
+
+; run-5-try1
+; As just above, but clearing memo tables only between proofs (had
+; tried to do so as in Jared's scheme but had a bug) -- so should be
+; much like run-4:
+; 51968.175u 1876.825s 2:23:26.50 625.6%	0+0k 1378000+5207784io 984pf+0w
+
+; run-5
+; As in run-4, but clearing memo tables as per Jared's scheme, not
+; just between proofs.
+; 52139.274u 1908.239s 2:22:38.12 631.5%	0+0k 1537656+5207808io 1120pf+0w
+
+;;; GCL
+
+; original
+; Unmodified from the the worse-than implementation in Version_7.0:
+; 63181.644u 1732.384s 2:39:00.22 680.4%	0+0k 7886424+10142248io 6495pf+0w
+
+; run-2
+; No memoization of any worse-than-xx, but use clocked version (bottom
+; out at nil):
+; 62302.405u 1732.200s 2:36:22.51 682.4%	0+0k 7585424+10141528io 6709pf+0w
+
+; run-3
+; No memoization of any worse-than-xx, but use clocked version (bottom
+; out at t) -- done kind of late in the game, so might not correspond
+; exactly to run-3 for ccl, but should be close:
+; 62325.511u 1752.913s 2:40:06.65 667.0%	0+0k 7911496+10141232io 6432pf+0w
+
+; run-4
+; No memoization of any worse-than-xx at the top level, but use
+; clocked version that bottoms out at a memoized version:
+; 62211.735u 1773.406s 2:42:14.22 657.3%	0+0k 7263696+9823120io 6140pf+0w
+
+; run-5-try1
+; As just above, but clearing memo tables only between proofs (had
+; tried to do so as in Jared's scheme but had a bug) -- so should be
+; much like run-4:
+; 62414.848u 1681.773s 2:38:58.45 671.9%	0+0k 6878536+9799112io 5834pf+0w
+
+; run-5
+; As in run-4, but clearing memo tables as per Jared's scheme, not
+; just between proofs.
+; 62541.228u 1765.406s 2:38:42.69 675.2%	0+0k 6730944+9798968io 5749pf+0w
+
+    )
+
+; Comment on memoizing a worse-than function: In order to memoize according to
+; scheme (3) above, uncomment the following code.
+
+;  ((eql clk 1)
+;   (let ((ans (worse-than-builtin-memoized term1 term2)))
+;     (prog2$ (clear-memoize-table 'worse-than-builtin-memoized)
+;             ans)))
+
+   (t (let ((clk (1-f clk)))
+        (declare (type (unsigned-byte 29) clk))
+        (worse-than-builtin-clocked-body clk)))))
+
+(defun worse-than-or-equal-builtin-clocked (term1 term2 clk)
 
 ; This function is not really mutually recursive and could be removed from this
 ; nest.  It determines whether term1 is term2 or worse than term2.  This nest
@@ -4281,42 +4448,50 @@
 ; if pseudo-variantp is nil, then the equal returns nil.  So we can simplify
 ; the if above to:
 
-  (declare (xargs :guard (and (pseudo-termp term1)
+  (declare (type (unsigned-byte 29) clk)
+           (xargs :guard (and (pseudo-termp term1)
                               (pseudo-termp term2))
                   :measure (make-ord 1
                                      (+ 1
                                         (acl2-count term1)
                                         (acl2-count term2))
-                                     2)
+                                     3)
                   :well-founded-relation o<))
   (if (pseudo-variantp term1 term2)
       (equal term1 term2)
-    (worse-than-builtin term1 term2)))
+    (worse-than-builtin-clocked term1 term2 (decrement-worse-than-clk clk))))
 
-(defun basic-worse-than-lst1 (args1 args2)
+(defun basic-worse-than-lst1 (args1 args2 clk)
 
 ; Is some element of args2 ``uglier'' than the corresponding element of args1.
 ; Technically, a2 is uglier than a1 if a1 is atomic (a variable or constant)
 ; and a2 is not or a2 is worse-than-builtin a1.
 
-  (declare (xargs :guard (and (pseudo-term-listp args1)
+  (declare (type (unsigned-byte 29) clk)
+           (xargs :guard (and (pseudo-term-listp args1)
                               (pseudo-term-listp args2))
-                  :measure (make-ord 1 (+ 1 (acl2-count args1) (acl2-count args2)) 0)
+                  :measure
+                  (make-ord 1 (+ 1 (acl2-count args1) (acl2-count args2)) 0)
                   :well-founded-relation o<))
   (cond ((endp args1) nil)
         ((or (and (or (variablep (car args1))
                       (fquotep (car args1)))
                   (not (or (variablep (car args2))
                            (fquotep (car args2)))))
-             (worse-than-builtin (car args2) (car args1)))
+             (worse-than-builtin-clocked (car args2)
+                                         (car args1)
+                                         clk))
          t)
-        (t (basic-worse-than-lst1 (cdr args1) (cdr args2)))))
+        (t (basic-worse-than-lst1 (cdr args1)
+                                  (cdr args2)
+                                  clk))))
 
-(defun basic-worse-than-lst2 (args1 args2)
+(defun basic-worse-than-lst2 (args1 args2 clk)
 
 ; Is some element of arg1 worse-than-builtin the corresponding element of args2?
 
-  (declare (xargs :guard (and (pseudo-term-listp args1)
+  (declare (type (unsigned-byte 29) clk)
+           (xargs :guard (and (pseudo-term-listp args1)
                               (pseudo-term-listp args2))
                   :measure (make-ord 1
                                      (+ 1
@@ -4325,10 +4500,10 @@
                                      0)
                   :well-founded-relation o<))
   (cond ((endp args1) nil)
-        ((worse-than-builtin (car args1) (car args2)) t)
-        (t (basic-worse-than-lst2 (cdr args1) (cdr args2)))))
+        ((worse-than-builtin-clocked (car args1) (car args2) clk) t)
+        (t (basic-worse-than-lst2 (cdr args1) (cdr args2) clk))))
 
-(defun basic-worse-than (term1 term2)
+(defun basic-worse-than (term1 term2 clk)
 
 ; We say that term1 is basic-worse-than term2 if
 
@@ -4351,7 +4526,8 @@
 ; Yes, because even though one argument (the second) got worse (it went from 17
 ; to B) another argument (the first) got better (it went from A to 17).
 
-  (declare (xargs :guard (and (pseudo-termp term1)
+  (declare (type (unsigned-byte 29) clk)
+           (xargs :guard (and (pseudo-termp term1)
                               (pseudo-termp term2))
                   :measure (make-ord 1
                                      (+ 1
@@ -4374,15 +4550,23 @@
                 (equal (ffn-symb term1) (ffn-symb term2)))
                (t (eq (ffn-symb term1) (ffn-symb term2))))
          (cond ((pseudo-variantp term1 term2) nil)
-               ((basic-worse-than-lst1 (fargs term1) (fargs term2)) nil)
-               (t (basic-worse-than-lst2 (fargs term1) (fargs term2)))))
+               (t (with-decrement-worse-than-clk
+                   clk
+                   (cond ((basic-worse-than-lst1 (fargs term1)
+                                                 (fargs term2)
+                                                 clk)
+                          nil)
+                         (t (basic-worse-than-lst2 (fargs term1)
+                                                   (fargs term2)
+                                                   clk)))))))
         (t nil)))
 
-(defun some-subterm-worse-than-or-equal (term1 term2)
+(defun some-subterm-worse-than-or-equal (term1 term2 clk)
 
 ; Returns t if some subterm of term1 is worse-than-builtin or equal to term2.
 
-  (declare (xargs :guard (and (pseudo-termp term1)
+  (declare (type (unsigned-byte 29) clk)
+           (xargs :guard (and (pseudo-termp term1)
                               (pseudo-termp term2))
                   :measure (make-ord 1
                                      (+ 1
@@ -4390,41 +4574,50 @@
                                         (acl2-count term2))
                                      1)
                   :well-founded-relation o<))
-  (cond ((variablep term1) (eq term1 term2))
-        ((if (pseudo-variantp term1 term2)  ; see worse-than-or-equal-builtin
+  (cond
+   ((variablep term1) (eq term1 term2))
+   (t (with-decrement-worse-than-clk
+       clk
+       (cond
+        ((if (pseudo-variantp term1 term2) ; see worse-than-or-equal-builtin-clocked
              (equal term1 term2)
-           (basic-worse-than term1 term2))
+           (basic-worse-than term1 term2 clk))
          t)
         ((fquotep term1) nil)
-        (t (some-subterm-worse-than-or-equal-lst (fargs term1) term2))))
+        (t (some-subterm-worse-than-or-equal-lst (fargs term1)
+                                                 term2
+                                                 clk)))))))
 
-(defun some-subterm-worse-than-or-equal-lst (args term2)
-  (declare (xargs :guard (and (pseudo-term-listp args)
+(defun some-subterm-worse-than-or-equal-lst (args term2 clk)
+  (declare (type (unsigned-byte 29) clk)
+           (xargs :guard (and (pseudo-term-listp args)
                               (pseudo-termp term2))
                   :measure (make-ord 1
                                      (+ 1 (acl2-count args) (acl2-count term2))
                                      0)
                   :well-founded-relation o<))
-  (cond ((endp args) nil)
-        (t (or (some-subterm-worse-than-or-equal (car args) term2)
-               (some-subterm-worse-than-or-equal-lst (cdr args) term2)))))
+  (cond
+   ((endp args) nil)
+   (t (or (some-subterm-worse-than-or-equal (car args) term2 clk)
+          (some-subterm-worse-than-or-equal-lst (cdr args) term2 clk)))))
 
-(defun worse-than-lst (args term2)
+(defun worse-than-lst (args term2 clk)
 
 ; We determine whether some element of args contains a subterm that is
 ; worse-than-builtin or equal to term2.  The subterm in question may be the
 ; element of args itself.  That is, we use ``subterm'' in the ``not necessarily
 ; proper subterm'' sense.
 
-  (declare (xargs :guard (and (pseudo-term-listp args)
+  (declare (type (unsigned-byte 29) clk)
+           (xargs :guard (and (pseudo-term-listp args)
                               (pseudo-termp term2))
                   :measure (make-ord 1
                                      (+ 1 (acl2-count args) (acl2-count term2))
                                      0)
                   :well-founded-relation o<))
   (cond ((endp args) nil)
-        (t (or (some-subterm-worse-than-or-equal (car args) term2)
-               (worse-than-lst (cdr args) term2)))))
+        (t (or (some-subterm-worse-than-or-equal (car args) term2 clk)
+               (worse-than-lst (cdr args) term2 clk)))))
 
 )
 
@@ -4446,6 +4639,18 @@
  (local (defun worse-than-or-equal (term1 term2)
           (declare (ignore term1 term2)
                    nil))))
+
+(defmacro worse-than-clk () 15)
+
+(defun worse-than-builtin (term1 term2)
+  (declare (xargs :guard (and (pseudo-termp term1)
+                              (pseudo-termp term2))))
+  (worse-than-builtin-clocked term1 term2 (worse-than-clk)))
+
+(defun worse-than-or-equal-builtin (term1 term2)
+  (declare (xargs :guard (and (pseudo-termp term1)
+                              (pseudo-termp term2))))
+  (worse-than-or-equal-builtin-clocked term1 term2 (worse-than-clk)))
 
 (defattach (worse-than worse-than-builtin)
   :skip-checks t)

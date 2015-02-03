@@ -9293,9 +9293,6 @@
 
   #-acl2-loop-only
   (setq *deep-gstack* nil) ; in case we never call initial-gstack
-  #+(and hons (not acl2-loop-only))
-  (when (memoizedp-raw 'worse-than-builtin)
-    (clear-memoize-table 'worse-than-builtin))
   (prog2$ (clear-pstk)
           (pprogn
            (increment-timer 'other-time state)
@@ -9307,15 +9304,11 @@
            (mv-let (erp ttree state)
                    (bind-acl2-time-limit ; make *acl2-time-limit* be let-bound
                     (prove-loop0 clauses pspv hints ens wrld ctx state))
-                   (progn$
-                    #+(and hons (not acl2-loop-only))
-                    (when (memoizedp-raw 'worse-than-builtin)
-                      (clear-memoize-table 'worse-than-builtin))
-                    (pprogn
-                     (increment-timer 'prove-time state)
-                     (cond
-                      (erp (mv erp nil state))
-                      (t (value ttree)))))))))
+                   (pprogn
+                    (increment-timer 'prove-time state)
+                    (cond
+                     (erp (mv erp nil state))
+                     (t (value ttree))))))))
 
 (defmacro make-pspv (ens wrld &rest args)
 
