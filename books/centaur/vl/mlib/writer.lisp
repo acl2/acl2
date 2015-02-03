@@ -1909,6 +1909,7 @@ expression into a string."
                  (if (not x.scalaredp)
                      ps
                    (vl-println? " scalared")))
+     (vl-print " ")
      (if (and (eq (vl-datatype-kind x.type) :vl-coretype)
               (eq (vl-coretype->name x.type) :vl-logic)
               x.nettype)
