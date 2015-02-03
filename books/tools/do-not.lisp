@@ -35,7 +35,7 @@
 ; projects/milawa/ACL2/acl2-hacks/no-fertilize.lisp.
 
 (in-package "ACL2")
-(include-book "bstar")
+(include-book "std/util/bstar" :dir :system)
 (include-book "xdoc/top" :dir :system)
 
 (defun strip-quotes-for-do-not (x)

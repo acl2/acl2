@@ -49,28 +49,28 @@
       (:vl-regularport
        (let* ((name (vl-regularport->name x)))
          (if name
-             (vl-ps-seq (vl-basic-cw "Port ")
+             (vl-ps-seq (vl-print "Port ")
                         (vl-print-wirename name)
                         (if withloc
-                            (vl-ps-seq (vl-basic-cw " at ")
+                            (vl-ps-seq (vl-print " at ")
                                        (vl-print-loc (vl-port->loc x)))
                           ps))
-           (vl-ps-seq (vl-basic-cw "Unnamed port at ")
+           (vl-ps-seq (vl-print "Unnamed port at ")
                       (vl-print-loc (vl-port->loc x))))))
       (:vl-interfaceport
        (let* ((name (vl-interfaceport->name x)))
-         (vl-ps-seq (vl-basic-cw "Interface port ")
+         (vl-ps-seq (vl-print "Interface port ")
                     (vl-print-wirename name)
                     (if withloc
-                        (vl-ps-seq (vl-basic-cw " at ")
+                        (vl-ps-seq (vl-print " at ")
                                    (vl-print-loc (vl-interfaceport->loc x)))
                       ps))))
 
       (:vl-portdecl
-       (vl-ps-seq (vl-basic-cw "Port declaration of ")
+       (vl-ps-seq (vl-print "Port declaration of ")
                   (vl-print-wirename (vl-portdecl->name x))
                   (if withloc
-                      (vl-ps-seq (vl-basic-cw " at ")
+                      (vl-ps-seq (vl-print " at ")
                                  (vl-print-loc (vl-portdecl->loc x)))
                     ps)))
 
@@ -80,11 +80,11 @@
        ;; real pretty-printer.  But to avoid really long output, we elide lvalues
        ;; that are longer than this (and just print their text version).
        (let* ((orig (vl-pps-origexpr (vl-assign->lvalue x))))
-         (vl-ps-seq (vl-basic-cw "Assignment to ")
+         (vl-ps-seq (vl-print "Assignment to ")
                     (if (< (length orig) 40)
                         (vl-ps-seq (vl-pp-origexpr (vl-assign->lvalue x))
                                    (if withloc
-                                       (vl-ps-seq (vl-basic-cw " at ")
+                                       (vl-ps-seq (vl-print " at ")
                                                   (vl-print-loc (vl-assign->loc x)))
                                      ps))
                       (vl-ps-seq
@@ -96,34 +96,34 @@
                        (vl-print-loc (vl-assign->loc x)))))))
 
       (:vl-vardecl
-       (vl-ps-seq (vl-basic-cw "Declaration of ")
+       (vl-ps-seq (vl-print "Declaration of ")
                   (vl-print-wirename (vl-vardecl->name x))
                   (if withloc
-                      (vl-ps-seq (vl-basic-cw " at ")
+                      (vl-ps-seq (vl-print " at ")
                                  (vl-print-loc (vl-vardecl->loc x)))
                     ps)))
 
       (:vl-paramdecl
-       (vl-ps-seq (vl-basic-cw "Param declaration of ")
+       (vl-ps-seq (vl-print "Param declaration of ")
                   (vl-print-wirename (vl-paramdecl->name x))
                   (if withloc
-                      (vl-ps-seq (vl-basic-cw " at ")
+                      (vl-ps-seq (vl-print " at ")
                                  (vl-print-loc (vl-paramdecl->loc x)))
                     ps)))
 
       (:vl-fundecl
-       (vl-ps-seq (vl-basic-cw "Function ")
+       (vl-ps-seq (vl-print "Function ")
                   (vl-print-wirename (vl-fundecl->name x))
                   (if withloc
-                      (vl-ps-seq (vl-basic-cw " at ")
+                      (vl-ps-seq (vl-print " at ")
                                  (vl-print-loc (vl-fundecl->loc x)))
                     ps)))
 
       (:vl-taskdecl
-       (vl-ps-seq (vl-basic-cw "Task ")
+       (vl-ps-seq (vl-print "Task ")
                   (vl-print-wirename (vl-taskdecl->name x))
                   (if withloc
-                      (vl-ps-seq (vl-basic-cw " at ")
+                      (vl-ps-seq (vl-print " at ")
                                  (vl-print-loc (vl-taskdecl->loc x)))
                     ps)))
 
@@ -131,17 +131,17 @@
        (let* ((instname (vl-modinst->instname x))
               (modname  (vl-modinst->modname x)))
          (if instname
-             (vl-ps-seq (vl-basic-cw "Instance ")
+             (vl-ps-seq (vl-print "Instance ")
                         (vl-print-wirename instname)
-                        (vl-basic-cw " of ")
+                        (vl-print " of ")
                         (vl-print-modname modname)
                         (if withloc
-                            (vl-ps-seq (vl-basic-cw " at ")
+                            (vl-ps-seq (vl-print " at ")
                                        (vl-print-loc (vl-modinst->loc x)))
                           ps))
-           (vl-ps-seq (vl-basic-cw "Unnamed instance of ")
+           (vl-ps-seq (vl-print "Unnamed instance of ")
                       (vl-print-modname modname)
-                      (vl-basic-cw " at ")
+                      (vl-print " at ")
                       (vl-print-loc (vl-modinst->loc x))))))
 
       (:vl-gateinst
@@ -152,7 +152,7 @@
                         (vl-print " gate ")
                         (vl-print-wirename name)
                         (if withloc
-                            (vl-ps-seq (vl-basic-cw " at ")
+                            (vl-ps-seq (vl-print " at ")
                                        (vl-print-loc (vl-gateinst->loc x)))
                           ps))
            (vl-ps-seq (vl-print "Unnamed ")
@@ -161,31 +161,31 @@
                       (vl-print-loc (vl-gateinst->loc x))))))
 
       (:vl-always
-       (vl-ps-seq (vl-basic-cw "Always statement at ")
+       (vl-ps-seq (vl-print "Always statement at ")
                   (vl-print-loc (vl-always->loc x))))
 
       (:vl-initial
-       (vl-ps-seq (vl-basic-cw "Initial statement at ")
+       (vl-ps-seq (vl-print "Initial statement at ")
                   (vl-print-loc (vl-initial->loc x))))
 
       (:vl-typedef
-       (vl-ps-seq (vl-basic-cw "Typedef of ")
+       (vl-ps-seq (vl-print "Typedef of ")
                   (vl-print-wirename (vl-typedef->name x))
                   (if withloc
-                      (vl-ps-seq (vl-basic-cw " at ")
+                      (vl-ps-seq (vl-print " at ")
                                  (vl-print-loc (vl-typedef->loc x)))
                     ps)))
 
       (:vl-fwdtypedef
-       (vl-ps-seq (vl-basic-cw "Fwdtypedef at ")
+       (vl-ps-seq (vl-print "Fwdtypedef at ")
                   (vl-print-loc (vl-fwdtypedef->loc x))))
 
       (:vl-modport
-       (vl-ps-seq (vl-basic-cw "Modport at ")
+       (vl-ps-seq (vl-print "Modport at ")
                   (vl-print-loc (vl-modport->loc x))))
 
       (:vl-alias
-       (vl-ps-seq (vl-basic-cw "Alias at ")
+       (vl-ps-seq (vl-print "Alias at ")
                   (vl-print-loc (vl-alias->loc x))))
 
       (:vl-import
@@ -193,7 +193,7 @@
        (vl-pp-import x))
 
       ((:vl-genif :vl-genloop :vl-gencase :vl-genblock :vl-genarray :vl-genbase)
-       (vl-ps-seq (vl-basic-cw "Generate block at ")
+       (vl-ps-seq (vl-print "Generate block at ")
                   (vl-print-loc (vl-genelement->loc x))))
 
       (otherwise

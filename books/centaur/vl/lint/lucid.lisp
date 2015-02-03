@@ -385,7 +385,7 @@ created when we process their packages, etc.</p>"
                                    (ss vl-scopestack-p)
                                    (db vl-luciddb-p))
   :returns (new-db vl-luciddb-p)
-  (b* (((vl-interface x) (vl-interface-fix x))
+  (b* ((x  (vl-interface-fix x))
        (ss (vl-scopestack-push x ss))
        (db (vl-scope-luciddb-init x ss db))
 
@@ -1664,8 +1664,7 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck module
   :body
-  (b* (((vl-module x))
-       (genblob (vl-module->genblob x))
+  (b* ((genblob (vl-module->genblob x))
        (st (vl-genblob-lucidcheck genblob ss st)))
     st))
 

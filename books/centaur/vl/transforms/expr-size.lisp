@@ -735,6 +735,10 @@ relatively simple:</p>
   (defrule natp-of-vl-sign-extend-constint
     (implies (and (force (natp value))
                   (force (posp origwidth))
+                  (syntaxp
+                   ;; Safety valve to avoid blowing up Lisp by creating huge expt calls.
+                   (or (not (quotep origwidth))
+                       (< (acl2::unquote origwidth) 10000)))
                   (force (< value (expt 2 origwidth)))
                   (force (posp finalwidth))
                   (force (< origwidth finalwidth)))
@@ -745,6 +749,10 @@ relatively simple:</p>
   (defrule upper-bound-of-vl-sign-extend-constint
     (implies (and (force (natp value))
                   (force (posp origwidth))
+                  (syntaxp
+                   ;; Safety valve to avoid blowing up Lisp by creating huge expt calls.
+                   (or (not (quotep origwidth))
+                       (< (acl2::unquote origwidth) 10000)))
                   (force (< value (expt 2 origwidth)))
                   (force (posp finalwidth))
                   (force (< origwidth finalwidth)))
@@ -1586,90 +1594,122 @@ a signed value since Verilog-XL doesn't handle them correctly.</p>"
                 \"a >> {b}\" instead of \"a >> b\"."
           :args (list ctx rhs))))
 
-;; (define vl-collect-top-level-summands
-;;   :short "Collect arguments to top-level @('+') and @('-') operators."
-;;   ((x vl-expr-p
-;;       "Some expression whose top-level operator should be a @('+') or @('-')
-;;        term."))
-;;   :returns
-;;   (summands vl-exprlist-p
-;;             "The arguments to top-level @('+') and @('-') operators. For
-;;              instance, if @('x') is an expression like @('a + b + c + d'), then
-;;              this collects the list @('(a b c d)').")
-;;   :parents (vl-warn-about-implicit-truncation)
-;;   :measure (vl-expr-count x)
-;;   (b* (((when (vl-fast-atom-p x))
-;;         (list x))
-;;        ((vl-nonatom x))
-;;        ((when (or (eq x.op :vl-binary-plus)
-;;                   (eq x.op :vl-binary-minus)))
-;;         (append (vl-collect-top-level-summands (first x.args))
-;;                 (vl-collect-top-level-summands (second x.args)))))
-;;     (list x)))
 
-(define vl-warn-about-implicit-extension
-  :short "Lint-like warnings about right hand sides being extended."
 
-  :long "<p>Extension warnings are very, very good to have, and have found a
-lot of bugs.  However, we need to be pretty clever to avoid getting too many
+(defsection vl-classify-extension-warning-hook
+  :short "Configurable hook for classifying extension warnings."
+
+  :long "<p>Extension warnings are very good to have and have helped us to find
+many bugs.  However, we need to be pretty clever to avoid getting too many
 trivial, nitpicky complaints about assignments that aren't really bugs.</p>
 
-<p>We found that extension warnings were frequently triggered by things like
-@('assign {carry,sum} = a + b') where the designer seems to explicitly intend
-to get the carry bit.  We therefore only cause a minor warning if the
-right-hand side is composed only of additions.  Later it turned out we need to
-permit selects, too.  And later we decided to also add subtraction as a
-permitted operation.</p>
+<p>This hook can be used with @(see defattach) to customize exactly how
+extension warnings are filtered out and easily experiment with new heuristics.
+See @(see vl-default-extension-warning-hook) for the arguments.  The task of
+your function is to classify the type of warning to issue.  Typically the type
+should be one of the following:</p>
+
+<ul>
+<li>@('nil') - do not issue any warnings about this extension,</li>
+<li>@(':vl-warn-extension') - issue a default warning, or</li>
+<li>@(':vl-warn-extension-minor') - issue a minor warning.</li>
+</ul>
+
+<p>However in principle you can return any warning type you like.</p>
+
+<p>Note that your function will only be called when there is an extension
+taking place, so it is generally fine to use a function that is relatively
+expensive or inefficient here.</p>
+
+@(def vl-classify-extension-warning-hook)"
+  :autodoc nil
+
+  (encapsulate
+    (((vl-classify-extension-warning-hook * * * * *) => *
+      :formals (lhs-size x-selfsize x ss ctx)
+      :guard (and (natp lhs-size)
+                  (natp x-selfsize)
+                  (> lhs-size x-selfsize)
+                  (vl-expr-p x)
+                  (vl-scopestack-p ss)
+                  (vl-context-p ctx))))
+
+    (local (defun vl-classify-extension-warning-hook (lhs-size x-selfsize x ss ctx)
+             (declare (ignorable lhs-size x-selfsize x ss ctx))
+             nil))
+
+    (defthm symbolp-of-vl-classify-extension-warning-hook
+      (symbolp (vl-classify-extension-warning-hook lhs-size x-selfsize x ss ctx))
+      :rule-classes :type-prescription)))
+
+(define vl-classify-extension-warning-default
+  :parents (vl-classify-extension-warning-hook)
+  :short "Default heuristic for filtering extension warnings."
+
+  :long "<p>We found that extension warnings were frequently triggered by
+things like @('assign {carry,sum} = a + b') where the designer seems to
+explicitly intend to get the carry bit.  We therefore only cause a minor
+warning if the right-hand side is composed only of additions.  Later it turned
+out we need to permit selects, too.  And later we decided to also add
+subtraction as a permitted operation.</p>
 
 <p>Another kind of extension warning that is stupidly minor is when we just
 have assignments like @('assign foo[127:0] = 0;').  We now do not even create a
 minor warning for assignments where the rhs is a constant.</p>"
 
-  ((lhs-size natp       "We assume this is greater than the size of X, so we are
-                         going to issue an extension warning.")
+  ((lhs-size   natp)
    (x-selfsize natp)
    (x          vl-expr-p)
-   (ss vl-scopestack-p)
-   (ctx       vl-context-p)
-   (warnings   vl-warninglist-p))
-  :returns (new-warnings vl-warninglist-p)
-  :verbosep t
-  (declare (ignorable
-            ;; We add these in case we want to look at sizes of subexpressions
-            ;; in the future.
-            lhs-size ss))
+   (ss         vl-scopestack-p)
+   (ctx        vl-context-p))
+  :guard (> lhs-size x-selfsize)
+  (declare (ignorable lhs-size x-selfsize ss ctx))
 
-  ;; We need to determine what kind of warning to issue.  Note that this can be
-  ;; pretty inefficient since we only call it infrequently.
-
-  (b* ((lhs-size   (lnfix lhs-size))
-       (x-selfsize (lnfix x-selfsize))
-       (x          (vl-expr-fix x))
-       (ctx        (vl-context-fix ctx))
+  (b* ((x (vl-expr-fix x))
 
        ((when (and (vl-fast-atom-p x)
                    (or (vl-extint-p (vl-atom->guts x))
                        (and (vl-constint-p (vl-atom->guts x))
                             (vl-constint->wasunsized (vl-atom->guts x))))))
         ;; Completely trivial, don't give any warning.
-        (ok))
+        nil)
 
-       (ops     (vl-expr-ops x))
-
+       (ops    (vl-expr-ops x))
        (minorp (and (or (member-equal :vl-binary-plus ops)
                         (member-equal :vl-binary-minus ops))
                     (subsetp-equal ops '(:vl-binary-plus
                                          :vl-binary-minus
                                          :vl-partselect-colon
                                          :vl-bitselect)))))
-    (warn :type (if minorp
-                    :vl-warn-extension-minor
-                  :vl-warn-extension)
+    (if minorp
+        :vl-warn-extension-minor
+      :vl-warn-extension))
+  ///
+  (defattach vl-classify-extension-warning-hook
+    vl-classify-extension-warning-default))
+
+(define vl-warn-about-implicit-extension
+  :short "Lint-like warnings about right hand sides being extended."
+  ((lhs-size   natp)
+   (x-selfsize natp)
+   (x          vl-expr-p)
+   (ss         vl-scopestack-p)
+   (ctx        vl-context-p)
+   (warnings   vl-warninglist-p))
+  :guard (> lhs-size x-selfsize)
+  :returns (new-warnings vl-warninglist-p)
+  (b* ((lhs-size   (lnfix lhs-size))
+       (x-selfsize (lnfix x-selfsize))
+       (x          (vl-expr-fix x))
+       (ss         (vl-scopestack-fix ss))
+       (ctx        (vl-context-fix ctx))
+       (type       (vl-classify-extension-warning-hook lhs-size x-selfsize x ss ctx))
+       ((unless type)
+        (ok)))
+    (warn :type type
           :msg "~a0: implicit extension from ~x1-bit expression to ~x2-bit ~
                  lvalue.~%     rhs: ~a3"
           :args (list ctx x-selfsize lhs-size x))))
-
-
 
 (local (in-theory (enable maybe-natp-fix)))
 

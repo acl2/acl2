@@ -31,7 +31,6 @@
 (in-package "VL")
 (include-book "base")
 (include-book "../ports")
-(include-book "../../../lint/portcheck") ;; bozo for regularportlist->exprs
 
 ;; BOZO more unit tests!
 
@@ -120,6 +119,11 @@
 (test-parse-port :input ".foo(a[3 -: 0])"
                  :successp nil)
 
+
+(defprojection vl-regularportlist->exprs ((x vl-regularportlist-p))
+  :parents (vl-portlist-p)
+  :nil-preservingp t
+  (vl-regularport->expr x))
 
 
 

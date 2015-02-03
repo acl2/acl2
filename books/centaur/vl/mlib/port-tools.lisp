@@ -42,7 +42,6 @@
 (local (xdoc::set-default-parents port-tools))
 
 
-
 (define vl-exprlist-to-plainarglist
   ((x    vl-exprlist-p        "list to convert")
    &key
@@ -94,199 +93,172 @@
         (vl-partition-plainargs (cdr x) inputs outputs (cons x1 inouts) unknowns)))
     (vl-partition-plainargs (cdr x) inputs outputs inouts (cons x1 unknowns))))
 
-
-
 (fty::deflist vl-directionlist
   :elt-type vl-direction-p
   :elementp-of-nil nil)
 
-(define vl-basic-portexpr-p ((x vl-maybe-expr-p))
-  :returns (okp booleanp :rule-classes :type-prescription)
-  :short "Recognize non-concatenations that can occur in port expressions."
-  (b* ((x (vl-maybe-expr-fix x))
-       ((unless x)
-        t)
-       ((when (vl-fast-atom-p x))
-        (vl-idexpr-p x))
-       (op (vl-nonatom->op x))
-       (args (vl-nonatom->args x))
-       ((when (eq op :vl-bitselect))
-        (let ((from (first args))
-              (bit  (second args)))
-          (and (vl-idexpr-p from)
-               (vl-expr-resolved-p bit))))
-       ((when (eq op :vl-partselect-colon))
-        (let ((from (first args))
-              (high (second args))
-              (low  (third args)))
-          (and (vl-idexpr-p from)
-               (vl-expr-resolved-p high)
-               (vl-expr-resolved-p low)
-               (>= (vl-resolved->val high)
-                   (vl-resolved->val low))))))
-    nil)
-  ///
-  ;; BOZO not sure what to do about this.
-  ;; (defthm vl-basic-portexpr-p-when-degenerate
-  ;;   (implies (and (not (vl-atom-p x))
-  ;;                 (not (vl-nonatom-p x))
-  ;;                 (vl-maybe-expr-p x))
-  ;;            (equal (vl-basic-portexpr-p x)
-  ;;                   (not x)))
-  ;;   :hints(("Goal" :in-theory (enable vl-basic-portexpr-p))))
-  )
-
-(deflist vl-basic-portexprlist-p (x)
-  (vl-basic-portexpr-p x)
-  :guard (vl-exprlist-p x))
 
 
-(define vl-portexpr-p
-  :short "Recognizer for well-formed port expressions."
-  ((x vl-maybe-expr-p))
-  :returns (okp booleanp :rule-classes :type-prescription)
-  :long "<p>Our @(see vl-port-p) recognizer does not place any restrictions
-upon a port's expression, except that it should satisfy @(see
-vl-maybe-expr-p).</p>
+(defxdoc port-expressions
+  :short "Recognizers and functions for working with well-formed port
+expressions."
 
-<p>But from 12.3.2, \"the port reference for each port in the list of ports at
-the top of each module declaration can be one of the following:</p>
+  :long "<p>Our @(see vl-port-p) recognizer doesn't place any restrictions on a
+port's expression, except that it should satisfy @(see vl-maybe-expr-p).</p>
+
+<p>However, per Verilog-2005, Section 12.3.2, \"the port reference for each
+port in the list of ports at the top of each module declaration can be one of
+the following:</p>
 
 <ul>
 <li>A simple identifier or escaped identifier</li>
 <li>A bit-select of a vector declared within the module</li>
 <li>A part-select of a vector declared within the module</li>
-<li>A concatenation of any of the above.\"</li>
+<li>A concatenation of any of the above.</li>
 </ul>
+
+<p>SystemVerilog-2012 presents identical rules in Section 23.2.2.1.</p>
 
 <p>Note that nested concatenations are not permitted under these rules, e.g.,
 whereas @('.a({b,c,d})') is a valid port, @('.a({b,{c,d}})') is not.  Simple
-tests suggest that indeed Cadence permits only one concatenation, not nested
-concatenations.</p>
+tests suggest that indeed none of Verilog-XL, NCVerilog, or VCS permits any
+nested concatenations here; see for instance @('failtest/port13.v').</p>
 
-<p>We now introduce a recognizer that tolerates most of these expressions,
-except that we make two additional restrictions:</p>
+<p>We now introduce recognizers for the accepted expressions.</p>
 
-<ul>
+<p><u>Portexprs</u>.  We recognize the set of expressions described above with
+@(see vl-portexpr-p).  Note that this function only checks the basic shape of
+its argument&mdash;it doesn't check that the names are unique or valid or that
+indices are sensible or anything like that.</p>
 
-<li>For any bit-select, @('w[i]'), the bit @('i') being selected must be a
-resolved, constant integer, and</li>
+<p><u>Well-formed ports</u>.  We extend the idea of portexprs to check whole
+ports in @(see vl-port-wellformed-p).  This function accepts any interface
+ports or blank ports without complaint.  However, for any regular ports with
+regular expressions, it insists that the expression is a portexpr.</p>
 
-<li>For any part-select, @('w[a,b]') the indexes @('a') and @('b') must be
-resolved, constant integers, with @('a >= b').</li>
+<p><u>Internalnames.</u> Given a valid portexpr, we can easily collect up the
+identifiers that occur within it.  The main function to do this for a portexpr
+is @(see vl-portexpr->internalnames).  This is a bit different than, e.g., just
+using @(see vl-expr-names), because it omits any names that occur in index
+expressions.</p>")
 
-</ul>
+(local (xdoc::set-default-parents port-expressions))
 
-<p>Note that Cadence seems to impose similar restrictions, e.g., it rejects
-attempts to write @('w[width-1]') where @('width') is one of the module's
-parameters.  On the other hand, Cadence does tolerate port expressions such as
-@('w[3-1]').  I think the right way for VL to support these kinds of
-expressions is to apply @(see vl-expr-selresolve) to the port expressions
-before considering whether they are valid.</p>
+(define vl-atomicportexpr-p ((x vl-expr-p))
+  :returns (okp booleanp :rule-classes :type-prescription)
+  :short "Recognize non-concatenations that can occur in port expressions."
+  (b* (((when (vl-fast-atom-p x))
+        (vl-idexpr-p x))
+       ((vl-nonatom x))
+       ((when (and (or (eq x.op :vl-bitselect)
+                       (eq x.op :vl-index))))
+        (vl-idexpr-p (first x.args)))
+       ((when (and (or (eq x.op :vl-select-colon)
+                       (eq x.op :vl-partselect-colon))))
+        (vl-idexpr-p (first x.args))))
+    nil))
 
-<p>We call the first three kinds of expressions <em>basic</em> port expressions
-and recognize them with @(call vl-basic-portexpr-p).  We then introduce @(call
-vl-portexpr-p), which tolerates basic port expressions or concatenations of
-basic port expressions.</p>"
+(deflist vl-atomicportexprlist-p (x)
+  :guard (vl-exprlist-p x)
+  (vl-atomicportexpr-p x))
 
-  (b* (((when (vl-basic-portexpr-p x))
+(define vl-portexpr-p ((x vl-expr-p))
+  :returns (okp booleanp :rule-classes :type-prescription)
+  :short "Recognizes all expressions that can validly occur in a (non-blank) port."
+  (b* (((when (vl-atomicportexpr-p x))
         t)
        ((when (vl-fast-atom-p x))
         nil)
-       (op   (vl-nonatom->op x))
-       (args (vl-nonatom->args x)))
-    (and (eq op :vl-concat)
-         (vl-basic-portexprlist-p args))))
+       ((vl-nonatom x)))
+    (and (eq x.op :vl-concat)
+         (vl-atomicportexprlist-p x.args))))
 
+(define vl-maybe-portexpr-p ((x vl-maybe-expr-p))
+  :short "Recognizes all expressions that can validly occur in a (possibly blank) port."
+  :returns (okp booleanp :rule-classes :type-prescription)
+  (b* ((x (vl-maybe-expr-fix x)))
+    (or (not x)
+        (vl-portexpr-p x)))
+  ///
+  (defthm vl-maybe-portexpr-p-when-nonnil
+    (implies x
+             (equal (vl-maybe-portexpr-p x)
+                    (vl-portexpr-p x)))))
 
 (define vl-port-wellformed-p ((x vl-port-p))
   :short "Recognizer for ports whose expressions are well-formed."
   (b* ((x (vl-port-fix x)))
     (or (eq (tag x) :vl-interfaceport)
-        (vl-portexpr-p (vl-regularport->expr x))))
-  ///
-  (defthm vl-portexpr-p-of-vl-port->expr
-    (implies (and (vl-port-wellformed-p x)
-                  (not (equal (tag x) :vl-interfaceport))
-                  (vl-port-p x))
-             (vl-portexpr-p (vl-regularport->expr x)))))
+        (vl-maybe-portexpr-p (vl-regularport->expr x)))))
 
 (deflist vl-portlist-wellformed-p (x)
+  :short "Recognizer for port lists whose expressions are well-formed."
   (vl-port-wellformed-p x)
   :guard (vl-portlist-p x)
   :elementp-of-nil t
   ///
   (deffixequiv vl-portlist-wellformed-p :args ((x vl-portlist-p))))
 
-
-
-(define vl-flatten-portexpr ((x vl-maybe-expr-p))
-  :guard (vl-portexpr-p x)
-  :returns (exprs (and (vl-exprlist-p exprs)
-                       (vl-basic-portexprlist-p exprs))
-                  :hyp :fguard)
-  :hooks nil
-  :short "Flatten a @(see vl-portexpr-p) into a list of @(see
-vl-basic-portexpr-p)s."
-
-  :long "<p>This function just allows us to treat any port expression as a list
-of basic port expressions, so that we can process them in a uniform way.</p>"
-
-  (cond ((not x)
-         nil)
-        ((vl-fast-atom-p x)
-         (list x))
-        ((eq (vl-nonatom->op x) :vl-concat)
-         (vl-nonatom->args x))
-        (t
-         (list x)))
-
-  :prepwork
-  ((local (in-theory (enable vl-portexpr-p
-                             vl-basic-portexpr-p)))))
-
-
-(define vl-basic-portexpr-internal-wirename ((x vl-expr-p))
-  :guard (vl-basic-portexpr-p x)
-  :guard-hints (("Goal" :in-theory (enable vl-basic-portexpr-p)))
-  :parents (vl-port-internal-wirenames)
+(define vl-atomicportexpr->internalname ((x vl-expr-p))
+  :guard (vl-atomicportexpr-p x)
+  :returns (name stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-atomicportexpr-p)))
   (if (vl-fast-atom-p x)
       (vl-idexpr->name x)
     (vl-idexpr->name (first (vl-nonatom->args x)))))
 
-(defprojection vl-basic-portexprlist-internal-wirenames ((x vl-exprlist-p))
-  (vl-basic-portexpr-internal-wirename x)
-  :guard (vl-basic-portexprlist-p x)
-  :parents (vl-port-internal-wirenames)
-  :returns (wirenames string-listp))
-
-(define vl-port-internal-wirenames ((x vl-port-p))
-  :guard (vl-port-wellformed-p x)
+(defprojection vl-atomicportexprlist->internalnames ((x vl-exprlist-p))
+  :guard (vl-atomicportexprlist-p x)
   :returns (names string-listp)
+  (vl-atomicportexpr->internalname x))
+
+(define vl-portexpr->internalnames ((x vl-expr-p))
   :short "Collect the names of any internal wires that are connected to a
 well-formed port and return them as a list of strings."
 
-  :long "<p>Given a well-formed port, we just collect the names of the internal
-wires that are connected to the port.  For instance, in the following
-module,</p>
+  :long "<p>We just collect the names of the internal wires that are connected
+to the port.  For instance, in the following module,</p>
 
 @({
-module mod (a, .b(foo), .c( {bar[2], baz} )) ;
-  ...
-endmodule
+    module mod (a, .b(foo), .c( {bar[2], baz[width-1:0] } )) ;
+      ...
+    endmodule
 })
 
-<p>the internal wires for the first port are @('(\"a\")'), the second port to
+<p>the internalnames for the first port are @('(\"a\")'), the second port to
 @('(\"foo\")'), and for the third port to @('(\"bar\" \"baz\")').</p>
 
-<p>We ignore any bit- or part-selects involved in the port expression and just
-return a list of strings.</p>"
-  (b* ((x (vl-port-fix x)))
-    (and (eq (tag x) :vl-regularport)
-         (vl-basic-portexprlist-internal-wirenames
-          (vl-flatten-portexpr
-           (vl-regularport->expr x))))))
+<p>Note that this is a bit different than, e.g., just using @(see
+vl-expr-names), because we omit any names that occur in index expressions,
+i.e., notice how we omit @('width') in the third port.</p>"
 
+  :guard (vl-portexpr-p x)
+  :returns (names string-listp)
+  :guard-hints(("Goal" :in-theory (enable vl-portexpr-p)))
+  (if (vl-atomicportexpr-p x)
+      (list (vl-atomicportexpr->internalname x))
+    (vl-atomicportexprlist->internalnames (vl-nonatom->args x))))
+
+(define vl-port->internalnames ((x vl-port-p))
+  :guard (vl-port-wellformed-p x)
+  :guard-hints(("Goal" :in-theory (enable vl-port-wellformed-p)))
+  :returns (names string-listp)
+  (b* ((x (vl-port-fix x))
+       ((when (eq (tag x) :vl-interfaceport))
+        nil)
+       (expr (vl-regularport->expr x))
+       ((unless expr)
+        nil))
+    (vl-portexpr->internalnames expr)))
+
+(defmapappend vl-portlist->internalnames (x)
+  (vl-port->internalnames x)
+  :guard (and (vl-portlist-p x)
+              (vl-portlist-wellformed-p x))
+  ///
+  (defthm string-listp-of-vl-portlist->internalnames
+    (string-listp (vl-portlist->internalnames x)))
+  (deffixequiv vl-portlist->internalnames :args ((x vl-portlist-p))))
 
 
 (define vl-port-direction-aux
@@ -355,7 +327,7 @@ and add a warning that this case is very unusual.</p>"
         ;; No simple direction for interface port.
         (mv (ok) nil))
 
-       (names (vl-port-internal-wirenames port))
+       (names (vl-port->internalnames port))
        ((mv successp warnings dirs)
         (vl-port-direction-aux names scope warnings port))
        ((unless successp)
