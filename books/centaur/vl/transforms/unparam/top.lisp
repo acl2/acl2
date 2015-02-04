@@ -481,7 +481,13 @@ introduced.</p>"
                                   vl-warninglist-p-when-subsetp-equal)))
                (local (defthm vl-genelement-fix-under-iff
                         (vl-genelement-fix x)
-                        :hints(("Goal" :in-theory (enable (tau-system)))))))
+                        :hints(("Goal" :in-theory (enable (tau-system))))))
+               (local (defthm elemlist-count-of-body-lt-loop-count
+                        (implies (equal (vl-genelement-kind x) :vl-genloop)
+                                 (< (vl-genelementlist-count (list (vl-genloop->body x)))
+                                    (vl-genelement-count x)))
+                        :hints(("Goal" :in-theory (enable vl-genelement-count
+                                                          vl-genelementlist-count))))))
     (define vl-generate-resolve
       ((x vl-genelement-p "The generate block to resolve")
        (ss vl-scopestack-p "The scopestack with the current module and final parameters")
@@ -495,12 +501,24 @@ introduced.</p>"
         (vl-genelement-case x
           :vl-genbase (mv t (ok) (change-vl-genbase x :item (vl-modelement-scopesubst x.item ss)))
 
-          ;; Didn't expect to see these resolved forms yet; leave them.
           :vl-genblock
-          (mv t (warn :type :vl-already-resolved-generate
-                      :msg "~a0: Didn't expect to see an already-resolved genblock."
-                      :args (list x))
-              x)
+          (b* ((blob (vl-sort-genelements x.elems))
+               ((vl-genblob blob))
+               ((mv ok warnings blob-ss ?final-paramdecls)
+                (vl-scope-finalize-params blob blob.paramdecls
+                                          (make-vl-paramargs-named)
+                                          warnings ss *vl-fake-context*)) ;; BOZO figure out a real context
+               ((unless ok)
+                (mv nil warnings (vl-genelement-fix x)))
+               ((mv ok warnings res-elems) (vl-genelementlist-resolve x.elems blob-ss warnings))
+               ((unless ok)
+                (mv nil warnings (vl-genelement-fix x))))
+            (mv t warnings
+                (change-vl-genblock x :elems res-elems)))
+            
+
+          ;; Didn't expect to see these resolved forms yet; leave them.
+          
           :vl-genarray
           (mv t (warn :type :vl-already-resolved-generate
                       :msg "~a0: Didn't expect to see an already-resolved genarray."
@@ -515,19 +533,15 @@ introduced.</p>"
                                :args (list x x.test))
                     x))
                (testval (vl-resolved->val testval))
-               (block (if (eql 0 testval) x.else x.then))
-               ((vl-generateblock block))
-               ((mv ok warnings elems) (vl-generateblock-resolve block.elems ss warnings)))
-            (mv ok warnings (make-vl-genblock :name block.name :elems elems :loc x.loc)))
+               (subelem (if (eql 0 testval) x.else x.then)))
+            (vl-generate-resolve subelem ss warnings))
 
           :vl-gencase
           (b* ((test (vl-expr-scopesubst x.test ss))
                ((mv ok warnings elem)
                 (vl-gencaselist-resolve x.cases test x ss warnings))
-               ((when elem) (mv ok warnings elem))
-               ((vl-generateblock x.default))
-               ((mv ok warnings elems) (vl-generateblock-resolve x.default.elems ss warnings)))
-            (mv ok warnings (make-vl-genblock :name x.default.name :elems elems :loc x.loc)))
+               ((when elem) (mv ok warnings elem)))
+            (vl-generate-resolve x.default ss warnings))
 
           :vl-genloop
           (b* (((mv ok initval) (vl-consteval (vl-expr-scopesubst x.initval ss) ss))
@@ -536,16 +550,19 @@ introduced.</p>"
                                :msg "~a0: Failed to evaluate the initial value expression ~a1."
                                :args (list x x.initval))
                     x))
-               ((vl-generateblock x.genblock))
-               (blob (vl-sort-genelements x.genblock.elems))
+               ((mv body.name body.elems)
+                (if (eql (vl-genelement-kind x.body) :vl-genblock)
+                    (mv (vl-genblock->name x.body) (vl-genblock->elems x.body))
+                  (mv nil (list x.body))))
+               (blob (vl-sort-genelements body.elems))
                ((mv ok warnings arrayblocks)
                 (vl-genloop-resolve 100000 ;; recursion limit
-                                    blob x.genblock.elems
+                                    blob body.elems
                                     x.var (vl-resolved->val initval)
                                     x.nextval x.continue
                                     x ss warnings)))
             (mv ok warnings
-                (make-vl-genarray :name x.genblock.name :var x.var :blocks arrayblocks
+                (make-vl-genarray :name body.name :var x.var :blocks arrayblocks
                                   :loc x.loc))))))
 
 
@@ -564,22 +581,6 @@ introduced.</p>"
         (mv (and ok1 ok2) warnings (cons first rest))))
 
 
-    (define vl-generateblock-resolve ((x vl-genelementlist-p)
-                                      (ss vl-scopestack-p "without the current block on it yet")
-                                      (warnings vl-warninglist-p))
-      :returns (mv (ok)
-                   (warnings1 vl-warninglist-p)
-                   (new-elems vl-genelementlist-p))
-      :measure (two-nats-measure (vl-genelementlist-count x) 10)
-      (b* ((blob (vl-sort-genelements x))
-           ((vl-genblob blob))
-           ((mv ok warnings blob-ss ?final-paramdecls)
-            (vl-scope-finalize-params blob blob.paramdecls
-                                      (make-vl-paramargs-named)
-                                      warnings ss *vl-fake-context*)) ;; BOZO figure out a real context
-           ((unless ok)
-            (mv nil warnings (vl-genelementlist-fix x))))
-        (vl-genelementlist-resolve x blob-ss warnings)))
 
     (define vl-gencaselist-resolve ((x vl-gencaselist-p)
                                     (test vl-expr-p)
@@ -599,14 +600,9 @@ introduced.</p>"
            ((mv ok warnings matchp) (vl-gencase-some-match test exprs1 ss warnings))
            ((unless ok)
             (mv nil warnings (vl-genelement-fix orig-x)))
-
            ((unless matchp)
-            (vl-gencaselist-resolve (cdr x) test orig-x ss warnings))
-
-           ((vl-generateblock block1))
-           ((mv ok warnings elems) (vl-generateblock-resolve block1.elems ss warnings)))
-
-        (mv ok warnings (make-vl-genblock :name block1.name :elems elems :loc (vl-gencase->loc orig-x)))))
+            (vl-gencaselist-resolve (cdr x) test orig-x ss warnings)))
+        (vl-generate-resolve block1 ss warnings)))
 
     (define vl-genloop-resolve ((clk natp "recursion limit")
                                 (blob vl-genblob-p "elements inside the block")
@@ -681,7 +677,7 @@ introduced.</p>"
     ///
     (local (in-theory (disable vl-generate-resolve (:t vl-generate-resolve)
                                vl-genelementlist-resolve (:t vl-genelementlist-resolve)
-                               vl-generateblock-resolve (:t vl-generateblock-resolve)
+                               ;; vl-generateblock-resolve (:t vl-generateblock-resolve)
                                vl-gencaselist-resolve (:t vl-gencaselist-resolve)
                                vl-genloop-resolve (:t vl-genloop-resolve)
                                acl2::mv-nth-cons-meta)))
@@ -695,7 +691,7 @@ introduced.</p>"
                    (flag::expand-calls-computed-hint
                     clause '(vl-generate-resolve
                              vl-genelementlist-resolve
-                             vl-generateblock-resolve
+                             ;; vl-generateblock-resolve
                              vl-gencaselist-resolve
                              vl-genloop-resolve)))))))
 
@@ -733,10 +729,6 @@ introduced.</p>"
   :apply-to-generates vl-generates-collect-modinst-paramsigs
   :combine-bindings ((successp (and successp1 successp2)))
   :empty-list-bindings ((successp t))
-  :bad-generate-bindings ((successp nil)
-                          (warnings (fatal :type :vl-programming-error
-                                           :msg "~a0: Generates should have been resolved"
-                                           :args (list (vl-genelement-fix x)))))
   :prepwork ((local (in-theory (disable cons-equal
                                         vl-genelement-p-by-tag-when-vl-scopeitem-p
                                         acl2::subsetp-when-atom-right

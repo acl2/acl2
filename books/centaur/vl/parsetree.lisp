@@ -69,7 +69,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2015-01-22")
+  "VL Syntax 2015-02-04")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -3439,17 +3439,17 @@ initially kept in a big, mixed list.</p>"
         (initval    vl-expr-p        "initial value of the iterator")
         (continue   vl-expr-p        "continue the loop until this is false")
         (nextval    vl-expr-p        "next value of the iterator")
-        (genblock   vl-generateblock "body of the loop")
-        (loc   vl-location)))
+        (body       vl-genelement "body of the loop")
+        (loc        vl-location)))
 
       (:vl-genif
        :base-name vl-genif
        :layout :tree
        :short "An if generate construct"
        ((test       vl-expr-p        "the test of the IF")
-        (then       vl-generateblock "the block for the THEN case")
-        (else       vl-generateblock "the block for the ELSE case; empty if not provided")
-        (loc   vl-location)))
+        (then       vl-genelement "the block for the THEN case")
+        (else       vl-genelement "the block for the ELSE case; empty if not provided")
+        (loc        vl-location)))
 
       (:vl-gencase
        :base-name vl-gencase
@@ -3457,8 +3457,8 @@ initially kept in a big, mixed list.</p>"
        :short "A case generate construct"
        ((test      vl-expr-p         "the expression to test against the cases")
         (cases     vl-gencaselist    "the case generate items, except the default")
-        (default   vl-generateblock  "the default, which may be an empty generateblock if not provided")
-        (loc   vl-location)))
+        (default   vl-genelement  "the default, which may be an empty genblock if not provided")
+        (loc       vl-location)))
 
       (:vl-genblock
        :base-name vl-genblock
@@ -3491,7 +3491,7 @@ initially kept in a big, mixed list.</p>"
       :elementp-of-nil nil
       :measure (two-nats-measure (acl2-count x) 1))
 
-    (fty::defalist vl-gencaselist :key-type vl-exprlist :val-type vl-generateblock
+    (fty::defalist vl-gencaselist :key-type vl-exprlist :val-type vl-genelement
       :true-listp t
       :measure (two-nats-measure (acl2-count x) 5))
 
@@ -3504,10 +3504,6 @@ initially kept in a big, mixed list.</p>"
        (elems    vl-genelementlist-p))
       :measure (two-nats-measure (acl2-count x) 3))
 
-    (defprod vl-generateblock
-      ((name     maybe-stringp      "name of the generate block if provided")
-       (elems   vl-genelementlist   "elements of the block"))
-      :measure (two-nats-measure (acl2-count x) 3))
     :enable-rules (acl2::o-p-of-two-nats-measure
                    acl2::o<-of-two-nats-measure
                    acl2-count-of-car
