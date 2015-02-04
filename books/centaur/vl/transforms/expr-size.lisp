@@ -547,7 +547,10 @@ details.</p>")
                                         vl-syscall-selfsize
                                         vl-funcall-selfsize
                                         vl-exprtype-max
-                                        vl-index-expr-p
+
+                                        ;; BOZO faint sound of screaming, muffled by the waves above
+                                        vl-indexexpr-p
+                                        vl-scopeexpr-p
                                         acl2::member-of-cons
                                         ;; vl-unsigned-when-size-zero-lst
                                         )))
@@ -1309,10 +1312,13 @@ identifier or HID."
                                              vl-index-selfsize)
                    :expand ((:Free (ctx) (vl-expr-selfsize x ss ctx nil)))))))
 
-  (local (defthm vl-index-expr-p-when-hidexpr-p
+  (local (defthm vl-indexexpr-p-when-hidexpr-p
            (implies (vl-hidexpr-p x)
-                    (vl-index-expr-p x))
-           :hints(("Goal" :in-theory (e/d (vl-hidexpr-p vl-index-expr-p vl-hidindex-p)
+                    (vl-indexexpr-p x))
+           :hints(("Goal" :in-theory (e/d (vl-hidexpr-p
+                                           vl-scopeexpr-p
+                                           vl-indexexpr-p
+                                           vl-hidindex-p)
                                           ((force)))))))
 
 
@@ -1327,7 +1333,7 @@ identifier or HID."
              vl-idexpr-p
              vl-hidexpr-p
              vl-hidindex-p
-             vl-index-expr-p
+             vl-indexexpr-p
              vl-expr-welltyped-p))
 
   (defrule warning-irrelevance-of-vl-hidexpr-expandsizes
@@ -1977,7 +1983,7 @@ minor warning for assignments where the rhs is a constant.</p>"
             :vl-select-colon
             :vl-select-pluscolon
             :vl-select-minuscolon)
-           (b* (((unless (vl-index-expr-p (first args)))
+           (b* (((unless (vl-indexexpr-p (first args)))
                  (mv nil
                      (fatal :type :vl-bad-expression
                             :msg "~a0: ~x1 is not a well-formed index expression."

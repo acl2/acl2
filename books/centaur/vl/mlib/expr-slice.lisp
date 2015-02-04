@@ -665,16 +665,23 @@ need to convert them into individual bits in the same order.</p>"
                          (vl-hidexpr-p x)))
            :hints(("Goal" :in-theory (enable vl-hidexpr-p)))))
 
-  (local (defthm vl-index-expr-p-of-replace-nonatom-size/type
+  (local (defthm vl-scopeexpr-p-of-replace-nonatom-size/type
            (implies (not (equal (vl-expr-kind x) :atom))
-                    (iff (vl-index-expr-p (change-vl-nonatom x :finalwidth w :finaltype y))
-                         (vl-index-expr-p x)))
-           :hints(("Goal" :in-theory (enable vl-index-expr-p)))))
+                    (iff (vl-scopeexpr-p (change-vl-nonatom x :finalwidth w :finaltype y))
+                         (vl-scopeexpr-p x)))
+           :hints(("Goal" :in-theory (enable vl-scopeexpr-p)))))
 
-  (local (defthm index-expr-p-when-hidexpr-p
+  (local (defthm vl-indexexpr-p-of-replace-nonatom-size/type
+           (implies (not (equal (vl-expr-kind x) :atom))
+                    (iff (vl-indexexpr-p (change-vl-nonatom x :finalwidth w :finaltype y))
+                         (vl-indexexpr-p x)))
+           :hints(("Goal" :in-theory (enable vl-indexexpr-p)))))
+
+  (local (defthm vl-indexexpr-p-when-hidexpr-p
            (implies (vl-hidexpr-p x)
-                    (vl-index-expr-p x))
-           :hints(("Goal" :in-theory (enable vl-index-expr-p)))))
+                    (vl-indexexpr-p x))
+           :hints(("Goal" :in-theory (enable vl-indexexpr-p
+                                             vl-scopeexpr-p)))))
 
   (local (defthm vl-hidexpr-welltyped-p-of-replace-nonatom-size/type
            (implies (and (vl-hidexpr-p x)
@@ -689,7 +696,6 @@ need to convert them into individual bits in the same order.</p>"
                                           (abs
                                            acl2::member-of-cons
                                            (force)))))))
-  
 
   (defthm vl-exprlist-welltyped-p-of-vl-msb-bitslice-hidexpr-base
     (let ((ret (vl-msb-bitslice-hidexpr-base x ss warnings)))

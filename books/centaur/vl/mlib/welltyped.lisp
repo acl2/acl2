@@ -164,8 +164,8 @@ hierarchical identifiers.</p>"
           ;; in order to size them, so we record that here.
           ;; BOZO it might be nice to know that the operand is an index expr,
           ;; but we'd have to check it in sizing
-          (and ;; (vl-index-expr-p (first x.args))
-           (vl-index-expr-p (first x.args))
+          (and
+           (vl-indexexpr-p (first x.args))
            (vl-exprlist-welltyped-p (cdr x.args))
            (vl-selexpr-welltyped-p x)
            (case x.op

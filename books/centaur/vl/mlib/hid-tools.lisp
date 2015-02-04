@@ -53,50 +53,159 @@
 
 (defxdoc hid-tools
   :parents (mlib)
-  :short "Functions for working with hierarchical identifiers."
+  :short "Functions for working with hierarchical identifiers, scopes, and
+indexing expressions."
 
-  :long "<p>Here are some examples of hierarchical identifiers:</p>
+  :long "<h3>VL Terminology</h3>
+
+<p>SystemVerilog provides a very rich syntax for referring to objects in
+different scopes and throughout the module hierarchy.  To deal with this rich
+syntax, we will need a bit of jargon.  These terms are notions in VL that may
+not necessarily be found in the Verilog/SystemVerilog standards.</p>
+
+<p><u>Identifiers.</u> We say the following expressions are just
+<b>identifiers</b>.  Note that Verilog/SystemVerilog sometimes distinguishes
+between plain and escaped identifiers.  While our @(see lexer) needs to
+understand these as different notions, internally there is no difference.</p>
 
 @({
+    foo
+    \\foo$bar
+})
+
+<p>Note that any indexing/selection operations after an identifier is
+<b>not</b> part of the identifier.  For instance, @('foo[3]') and @('foo[3:0]')
+are not identifiers: they are index/selection operations applied to the
+identifier @('foo').  (This may seem obvious, but we draw your attention to it
+because hierarchical identifiers are similar.)</p>
+
+<p><u>Hierarchical identifiers</u>.  Identifiers can be chained together,
+perhaps with indexing, to form <b>hierarchical identifiers</b>.  Here are
+examples of hierarchical identifiers:</p>
+
+@({
+    foo                     // any ID is a HID
+    \\foo$bar
+    foo.bar                 // fancier HIDs
+    foo.bar.baz
     foo.bar[3].baz          // Verilog-2005 or SystemVerilog-2012
     foo.bar[3][4].baz       // SystemVerilog-2012
 })
 
-<h3>Low-Level Representation</h3>
+<p>Hierarchical identifiers may have internal indexing expressions.  However,
+subsequent indexing/selection operations is <b>not</b> part of the HID itself.
+For instance, we say that @('foo.bar[3].baz[2]') and @('foo.bar[3].baz[3:0]')
+are <b>not</b> a hierarchical identifiers.  Instead, these are
+indexing/selection operators applied to a HID.</p>
 
-<p>VL internally represents hierarchical identifiers as compound @(see
-vl-expr-p) objects.  We expect to represent the above expressions as
-follows:</p>
+<p><u>Scope expressions</u>.  Hierarchical identifiers can be prefixed with
+scoping operations, e.g., for packages.  Here are some examples of scope
+expressions:</p>
 
 @({
-            .                     .
-           / \\                   / \\
-       foo    .               foo   .
-             / \\                   / \\
-           []   baz               []  baz
-          /  \\                   /  \\
-       bar    3                 []   4
-                               /  \\
-                             bar   3
+     foo                             // any ID is a scope expression
+     \\foo$bar
+     foo.bar                         // any HID is a scope expression
+     foo.bar.baz
+     foo.bar[3].baz
+     foo.bar[3][4].baz
+     mypkg::foo                      // fancier scope expressions
+     mypkg::foo.bar
+     $unit::foo::bar.baz[3].beep
 })
 
-<p>Where each @('.') represents a @(':vl-hid-dot') operator, each @('[]')
-represents a @(':vl-index') operator, and the names are represented as @(see
-vl-hidpiece-p) atoms.</p>
+<p>As with ordinary identifiers and hierarchical identifiers, scope expressions
+do <b>not</b> have any indexing/selection operators.  For example,
+@('mypkg::foo[3]') is not a scope expression, but is instead an indexing
+operator applied to the scope expression @('mypkg::foo').</p>
 
-<p>This representation is not very strongly typed and permits nonsensical
-expressions like @('foo.5.bar.(1+2)'), which should never be produced by our
-parser or by well-behaving internal VL code.  This sort of thing often makes
-the internal representation inconvenient to work with.</p>
+<p><u>Index expressions</u>.  Scope expressions can be indexed into by some
+number of individual bit/array-indexing operations.  Here are some examples of
+index expressions:</p>
+
+@({
+     foo                             // any ID is an index expression
+     \\foo$bar
+     foo.bar                         // any HID is an index expression
+     foo.bar.baz
+     foo.bar[3].baz
+     foo.bar[3][4].baz
+     mypkg::foo                      // any scope expression is an index expression
+     mypkg::foo.bar
+     $unit::foo::bar.baz[3].beep
+     foo[3]                          // fancier index expressions
+     foo[3][4][5]
+     foo.bar[3]
+     mypkg::foo[3][4][5]
+     $unit::foo::bar.baz[3].beep[2][1][0]
+})
+
+<p>Note that an index expression does <b>not</b> have any part/range selects in
+it.  That is, an expression like @('foo[3][5:0]') is not an index expression;
+instead it is a part-selection operator applied to the index expression
+@('foo[3]').</p>
+
+<p>Part/range selection is just an ordinary operator and we do not give it any
+special designation.  Why give special treatment to indexing, then?  In short,
+part-selection is much simpler than indexing because there can be at most a
+single part-select, whereas there can be many levels of array indexing that we
+will typically need to recursively follow.</p>
+
+<h3>Low Level Representation</h3>
+
+<p>VL internally represents hierarchical identifiers as compound @(see
+vl-expr-p) objects.  To understand the general structure, consider a very
+complex index expression such as:</p>
+
+@({
+     ape::bat::cat.dog[3][2][1].elf[7][6][5]
+})
+
+<p>We expect to represent this sort of expression using the recursive structure
+suggested by the parentheses here.  This recursive structure matches the jargon
+above.</p>
+
+@({
+    Indexing is the outermost operation:
+
+      (((  ape::bat::cat.dog[3][2][1].elf   )[7] )[6] )[5]
+           ------------------------------   ---------------
+           scope expression part              index part
+
+
+    Followed by scoping:
+
+           ape::(bat::    (cat.dog[3][2][1].elf))
+           -----------     --------------------
+           scope part         hid part
+
+
+    Followed by the hierarchy:
+
+                         cat . (dog [3][2][1]) . elf
+
+    With hierarchical indexing going from outermost to innermost:
+
+                           ((dog [3])[2])[1]
+})
+
+<p>Where each @('.') is represented by a @(':vl-hid-dot') operator, each
+@('[]') by a @(':vl-index') operator, each @('::') by a @(':vl-scope')
+operator, and the names are represented as @(see vl-hidpiece-p) atoms.</p>
 
 <h3>Abstract Representation</h3>
 
+<p>The low-level @(see vl-expr-p) representation is not very strongly typed and
+permits nonsensical expressions like @('foo.5.bar.(1+2)'), which should never
+be produced by our parser or by well-behaving internal VL code.  This sort of
+thing often makes it inconvenient to work with.</p>
+
 <p>In @(see abstract-hids), we set up wrapper functions that provide an
 interface for working with hierarchical identifier expressions at a somewhat
-higher level.  These wrapper functions, like @(see vl-hidexpr-p), provide
-stronger checks to ensure that an expression is a well-formed hierarchical
-identifier that meets our usual expectations.  They also allow you to ignore
-most of the details of the internal HID structure.</p>
+higher level.  These wrapper functions provide stronger checks to ensure that
+an expression is a well-formed hierarchical identifier, scope expression, or
+index expression that meets our usual expectations.  It is generally much
+better to program to this interface than to the low level representation.</p>
 
 <h3>Following HIDs</h3>
 
@@ -105,12 +214,19 @@ most of the details of the internal HID structure.</p>
 (defsection abstract-hids
   :parents (hid-tools)
   :short "Recognizers for certain kinds of HID expressions."
-  :long "<p>Quick guide:</p>
+
+  :long "<p>We now develop useful wrapper functionality that allows us to treat
+hierarchical, scope, and index expressions in a sensible way.  Note that these
+are technical terms with precise meanings; see @(see hid-tools) for
+background.</p>
+
+<p>Quick guide, bottom up:</p>
 
 <dl>
+
 <dt>@(see vl-hidname-p)</dt>
 <dd>A single ID or HIDPIECE atom without any indices or dots.</dd>
-<dd>Examples: @('bar')</dd>
+<dd>Examples: @('bar'), @('\\foo$bar')</dd>
 <dd>@(see vl-hidname->name) gets the name as a string.</dd>
 
 <dt>@(see vl-hidindex-p)</dt>
@@ -121,17 +237,27 @@ most of the details of the internal HID structure.</p>
 
 <dt>@(see vl-hidexpr-p)</dt>
 <dd>A full HID with dots and interior indices, but no \"external\" indices.</dd>
-<dd>Examples:
-<ul>
-<li>Plain atoms like @('foo'), @('bar')</li>
-<li>Dotted HIDs, e.g., @('foo.bar'), @('foo[3].bar')</li>
-<li><b>Not</b> things like @('foo.bar.baz[2]').</li>
-</ul>
-</dd>
+<dd>Examples: @('foo'), @('foo.bar'), @('foo[3].bar')</dd>
 <dd>@(see vl-hidexpr->endp) says whether there's a dot.</dd>
 <dd>@(see vl-hidexpr->first) gets the first hidindex, e.g., @('foo[3]') for
 @('foo[3].bar').  In the @('endp') case this is just the whole expression.</dd>
 <dd>@(see vl-hidexpr->rest) gets the rest.  Can't be used in the endp case.</dd>
+
+<dt>@(see vl-scopename-p)</dt>
+<dd>Name of a scope.  For instance, @(':vl-local'), @(':vl-$unit'), or a string.</dd>
+
+<dt>@(see vl-scopeexpr-p)</dt>
+<dd>Extends hidexprs with scope operators.</dd>
+<dd>Example: @('ape::bat::cat.dog[3].elf')</dd>
+<dd>@(see vl-scopeexpr->scopes) lists the scope names, e.g., @('ape'), @('bat').</dd>
+<dd>@(see vl-scopeexpr->hid) gets the hidexpr, i.e., @('cat.dog[3].elf')</dd>
+
+<dt>@(see vl-indexexpr-p)</dt>
+<dd>Extends scopeexprs with indexing operators.</dd>
+<dd>Example: @('foo::bar.baz[3][4][5]')</dd>
+<dd>@(see vl-indexexpr->scopeexpr) gets the scope expression.</dd>
+<dd>@(see vl-indexexpr->indices) gets the indices as an expression list.</dd>
+
 </dl>")
 
 ;; Compatibility wrappers for old function names
@@ -588,6 +714,190 @@ e.g., for @('foo[3][4].bar[5].baz'), we would return a list of expressions for
              (equal (equal (vl-exprlist-count (vl-hidexpr-collect-indices x))
                            (vl-expr-count x))
                     nil))))
+
+
+
+(define vl-scopename-p (x)
+  :short "Recognizes names that can be used in scope operators."
+  :long "<p>This is an abstraction that is mostly intended to serve as a return
+type for @(see vl-scopeexpr->scopes).</p>"
+  :returns bool
+  (or (eq x :vl-local)
+      (eq x :vl-$unit)
+      (stringp x)))
+
+(define vl-scopename-fix ((x vl-scopename-p))
+  :returns (name vl-scopename-p)
+  :inline t
+  (mbe :logic (if (vl-scopename-p x)
+                  x
+                :vl-local)
+       :exec x)
+  ///
+  (defthm vl-scopename-fix-when-vl-scopename-p
+    (implies (vl-scopename-p x)
+             (equal (vl-scopename-fix x) x))))
+
+(fty::deffixtype vl-scopename
+  :pred vl-scopename-p
+  :fix vl-scopename-fix
+  :equiv vl-scopename-equiv
+  :define t
+  :forward t)
+
+(fty::deflist vl-scopenamelist :elt-type vl-scopename)
+
+
+(define vl-fast-keyguts-p ((x vl-atomguts-p))
+  :enabled t
+  :inline t
+  (mbe :logic (vl-keyguts-p (vl-atomguts-fix x))
+       :exec (eq (tag x) :vl-keyguts)))
+
+(define vl-scopeatom-p ((x vl-expr-p))
+  :prepwork ((local (in-theory (enable tag-reasoning))))
+  (and (vl-atom-p x)
+       (or (vl-hidname-p x)
+           (let* ((guts (vl-atom->guts x)))
+             (and (vl-fast-keyguts-p guts)
+                  (let ((type (vl-keyguts->type guts)))
+                    (or (vl-keygutstype-equiv type :vl-$unit)
+                        (vl-keygutstype-equiv type :vl-local))))))))
+
+(define vl-scopeatom->name ((x vl-expr-p))
+  :guard (vl-scopeatom-p x)
+  :returns (name vl-scopename-p)
+  :prepwork ((local (in-theory (enable vl-scopeatom-p
+                                       vl-scopename-p
+                                       vl-scopename-fix))))
+  (b* ((x (vl-expr-fix x)))
+    (if (vl-hidname-p x)
+        (vl-hidname->name x)
+      (vl-scopename-fix (vl-keyguts->type (vl-atom->guts x))))))
+
+(define vl-scopeexpr-p ((x vl-expr-p))
+  :returns (bool)
+  :short "Recognizes well-formed hierarchical scope expressions."
+  :long "<p>Example: @('foo::bar::a.b[1][2].c').</p>"
+  :measure (vl-expr-count x)
+  :prepwork ((local (in-theory (enable vl-hidexpr-p))))
+  (b* (((when (vl-fast-atom-p x))
+        (mbe :logic (vl-hidexpr-p x)
+             :exec (vl-hidname-p x)))
+       ((vl-nonatom x) x)
+       ((when (vl-op-equiv x.op :vl-scope))
+        (and (vl-scopeatom-p (first x.args))
+             (vl-scopeexpr-p (second x.args)))))
+    (vl-hidexpr-p x)))
+
+(define vl-scopeexpr->scopes ((x vl-expr-p))
+  :guard (vl-scopeexpr-p x)
+  :returns (names vl-scopenamelist-p)
+  :measure (vl-expr-count x)
+  :prepwork ((local (in-theory (enable vl-scopeexpr-p))))
+  (b* (((when (vl-fast-atom-p x))
+        nil)
+       ((vl-nonatom x) x)
+       ((when (vl-op-equiv x.op :vl-scope))
+        (cons (vl-scopeatom->name (first x.args))
+              (vl-scopeexpr->scopes (second x.args)))))
+    nil))
+
+(define vl-scopeexpr->hid ((x vl-expr-p))
+  :guard (vl-scopeexpr-p x)
+  :returns (hid vl-expr-p)
+  :measure (vl-expr-count x)
+  :prepwork ((local (in-theory (enable vl-scopeexpr-p))))
+  (b* ((x (vl-expr-fix x))
+       ((when (vl-fast-atom-p x))
+        x)
+       ((vl-nonatom x) x)
+       ((when (vl-op-equiv x.op :vl-scope))
+        (vl-scopeexpr->hid (second x.args))))
+    x)
+  ///
+  (defret vl-hidexpr-p-of-vl-scopeexpr->hid
+    (implies (vl-scopeexpr-p x)
+             (vl-hidexpr-p hid))))
+
+
+(define vl-indexexpr-p ((x vl-expr-p))
+  :returns (bool)
+  :measure (vl-expr-count x)
+  :prepwork ((local (in-theory (enable vl-scopeexpr-p
+                                       vl-hidexpr-p))))
+  (b* (((when (vl-fast-atom-p x))
+        (mbe :logic (vl-scopeexpr-p x)
+             :exec (vl-hidname-p x)))
+       ((vl-nonatom x))
+       ((when (or (vl-op-equiv x.op :vl-index)
+                  (vl-op-equiv x.op :vl-bitselect)))
+        (vl-indexexpr-p (first x.args))))
+    (vl-scopeexpr-p x)))
+
+(define vl-indexexpr->scopeexpr ((x vl-expr-p))
+  :guard (vl-indexexpr-p x)
+  :returns (scopeexpr vl-expr-p)
+  :measure (vl-expr-count x)
+  :prepwork ((local (in-theory (enable vl-indexexpr-p))))
+  (b* ((x (vl-expr-fix x))
+       ((when (vl-fast-atom-p x))
+        x)
+       ((vl-nonatom x))
+       ((when (or (vl-op-equiv x.op :vl-index)
+                  (vl-op-equiv x.op :vl-bitselect)))
+        (vl-indexexpr->scopeexpr (first x.args))))
+    x)
+  ///
+  (defret vl-scopeexpr-p-of-vl-indexexpr->scopeexpr
+    (implies (vl-indexexpr-p x)
+             (vl-scopeexpr-p (vl-indexexpr->scopeexpr x)))))
+
+(define vl-indexexpr->indices-exec ((x   vl-expr-p)
+                                    (acc vl-exprlist-p))
+  :guard (vl-indexexpr-p x)
+  :returns (indices vl-exprlist-p)
+  :parents (vl-indexexpr->indices)
+  :measure (vl-expr-count x)
+  :prepwork ((local (in-theory (enable vl-indexexpr-p))))
+  (b* ((acc (vl-exprlist-fix acc))
+       ((when (vl-fast-atom-p x))
+        acc)
+       ((vl-nonatom x) x)
+       ((when (or (vl-op-equiv x.op :vl-index)
+                  (vl-op-equiv x.op :vl-bitselect)))
+        (vl-indexexpr->indices-exec (first x.args)
+                                    (cons (vl-expr-fix (second x.args))
+                                          acc))))
+    acc))
+
+(define vl-indexexpr->indices ((x vl-expr-p))
+  :guard (vl-indexexpr-p x)
+  :returns (indices vl-exprlist-p)
+  :measure (vl-expr-count x)
+  :prepwork ((local (in-theory (enable vl-indexexpr-p))))
+  :verify-guards nil
+  :inline t
+  (mbe :logic
+       (b* (((when (vl-fast-atom-p x))
+             nil)
+            ((vl-nonatom x))
+            ((when (or (vl-op-equiv x.op :vl-index)
+                       (vl-op-equiv x.op :vl-bitselect)))
+             (append (vl-indexexpr->indices (first x.args))
+                     (list (second x.args)))))
+         nil)
+       :exec
+       (vl-indexexpr->indices-exec x nil))
+  ///
+  (local (in-theory (enable vl-indexexpr->indices-exec)))
+  (defthm vl-indexexpr->indices-exec-removal
+    (equal (vl-indexexpr->indices-exec x acc)
+           (append (vl-indexexpr->indices x)
+                   (vl-exprlist-fix acc))))
+  (verify-guards vl-indexexpr->indices$inline))
+
+
 
 (defxdoc following-hids
   :parents (hid-tools)
@@ -1547,14 +1857,6 @@ datatype is multidimensional.</p>"
        ((when warning) (mv warning nil)))
     (vl-datatype-range type)))
 
-(define vl-index-expr-p ((x vl-expr-p))
-  :measure (vl-expr-count x)
-  (if (vl-fast-atom-p x)
-      (vl-hidexpr-p x)
-    (b* (((vl-nonatom x)))
-      (if (member x.op '(:vl-index :vl-bitselect))
-          (vl-index-expr-p (first x.args))
-        (vl-hidexpr-p x)))))
 
 
 #||

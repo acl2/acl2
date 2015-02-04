@@ -97,6 +97,8 @@
       impossible
       tuplep
       all-equalp
+      ret
+      defret
 
       std::mksym
       std::mksym-package-symbol
