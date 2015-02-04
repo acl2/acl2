@@ -1040,7 +1040,6 @@ expressions have been sized correctly.</p>"
   ((local (in-theory (disable MEMBER-EQUAL-WHEN-MEMBER-EQUAL-OF-CDR-UNDER-IFF
                               ARG1-EXISTS-BY-ARITY
                               acl2::natp-when-maybe-natp
-                              vl-hidindex-resolved-p-when-vl-hidexpr-resolved-p
                               vl-warninglist-fix-when-vl-warninglist-p
                               double-containment
                               abs not))))

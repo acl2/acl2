@@ -119,7 +119,6 @@
                            double-containment
                            abs
                            VL-NONATOM->OP-WHEN-HIDINDEX-RESOLVED-P
-                           VL-HIDINDEX-RESOLVED-P-WHEN-VL-HIDEXPR-RESOLVED-P
                            VL-EXPR-RESOLVED-P-OF-CAR-WHEN-VL-EXPRLIST-RESOLVED-P
                            VL-ATOM-P-OF-CAR-WHEN-VL-ATOMLIST-P
                            ACL2::CONSP-UNDER-IFF-WHEN-TRUE-LISTP
@@ -134,11 +133,9 @@
                            ACL2::POSP-RW
                            SUM-NATS-WHEN-ALL-EQUALP-1
                            acl2::MEMBER-EQUAL-WHEN-ALL-EQUALP
-                           VL-HIDINDEX-P-WHEN-VL-HIDEXPR-P
                            all-equalp
                            CONSP-OF-VL-EXPRLIST->FINALWIDTHS
                            LEN-OF-VL-NONATOM->ARGS-WHEN-VL-HIDINDEX-P
-                           VL-HIDEXPR-P-WHEN-VL-HIDINDEX-P
                            (:TYPE-PRESCRIPTION VL-HIDINDEX-P)
                            LEN-OF-VL-NONATOM->ARGS-WHEN-VL-HIDEXPR-P
                            (:TYPE-PRESCRIPTION VL-NONATOM->OP$INLINE)
