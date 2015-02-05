@@ -30,8 +30,8 @@
 
 (in-package "VL")
 (include-book "add")
-(local (include-book "../../util/arithmetic"))
-(local (include-book "../../util/osets"))
+(local (include-book "centaur/vl/util/arithmetic" :dir :system))
+(local (include-book "centaur/vl/util/osets" :dir :system))
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))

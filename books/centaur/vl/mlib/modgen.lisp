@@ -29,13 +29,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../../primitives")
-(include-book "../../mlib/expr-tools")
-(include-book "../../mlib/expr-building")
-(include-book "../../mlib/range-tools")
-(include-book "../../mlib/namefactory")
-(local (include-book "../../util/arithmetic"))
-(local (include-book "../../util/osets"))
+(include-book "range-tools")
+(local (include-book "../util/arithmetic"))
+(local (include-book "../util/osets"))
 (local (std::add-default-post-define-hook :fix))
 (local (xdoc::set-default-parents occform))
 

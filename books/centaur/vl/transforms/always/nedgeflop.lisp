@@ -31,7 +31,7 @@
 (in-package "VL")
 (include-book "centaur/esim/vltoe/wirealist" :dir :system) ;; bozo
 (include-book "../../primitives")
-(include-book "../occform/util")
+(include-book "../../mlib/modgen")
 (include-book "../../mlib/stmt-tools")
 (include-book "../../mlib/print-warnings")
 (include-book "../delayredux")

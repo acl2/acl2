@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "../../primitives")
-(include-book "../occform/util")
+(include-book "../../mlib/modgen")
 (include-book "../delayredux")
 
 (define vl-make-1-bit-latch-instances
