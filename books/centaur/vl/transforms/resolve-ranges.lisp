@@ -303,21 +303,17 @@ these expressions.</p>")
 
 (def-vl-rangeresolve-list vl-paramdecllist :element vl-paramdecl)
 
-(def-vl-rangeresolve vl-blockitem
-  :body (case (tag x)
-          (:vl-vardecl   (vl-vardecl-rangeresolve   x ss warnings))
-          (otherwise     (vl-paramdecl-rangeresolve x ss warnings))))
-
-(def-vl-rangeresolve-list vl-blockitemlist :element vl-blockitem)
 
 (def-vl-rangeresolve vl-fundecl
   :body (b* (((vl-fundecl x) x)
              ((mv warnings rettype) (vl-datatype-rangeresolve x.rettype ss warnings))
-             ((mv warnings decls)  (vl-blockitemlist-rangeresolve x.decls ss warnings))
+             ((mv warnings vardecls)  (vl-vardecllist-rangeresolve x.vardecls ss warnings))
+             ((mv warnings paramdecls)  (vl-paramdecllist-rangeresolve x.paramdecls ss warnings))
              ((mv warnings portdecls) (vl-portdecllist-rangeresolve x.portdecls ss warnings)))
           (mv warnings (change-vl-fundecl x
                                           :rettype rettype
-                                          :decls  decls
+                                          :vardecls  vardecls
+                                          :paramdecls paramdecls
                                           :portdecls portdecls))))
 
 (def-vl-rangeresolve-list vl-fundecllist :element vl-fundecl)

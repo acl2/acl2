@@ -135,7 +135,7 @@ remove @('else') expressions.</p>")
 
          ((when (vl-blockstmt-p x))
           (b* (((vl-blockstmt x) x)
-               ((when (or x.name x.decls (not x.sequentialp)))
+               ((when (or x.name x.vardecls x.paramdecls (not x.sequentialp)))
                 ;; Too hard to think about, just stop here.
                 (stop outer-cond x warnings)))
             ;; Else, simple begin/else block: dive into it

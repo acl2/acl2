@@ -217,7 +217,9 @@ flattened or anything like that.</p>"
           (b* (((vl-blockstmt x) x))
             (and x.sequentialp  ;; BOZO could we also support fork/join?
                  (not x.name)
-                 (not x.decls)
+                 (not x.vardecls)
+                 (not x.paramdecls)
+                 (not x.imports)
                  (vl-stmtlist-cblock-p x.stmts)))))
 
       ;; We don't support anything else.

@@ -668,6 +668,7 @@ explicit declarations.</p>")
   (b* ((x (vl-blockitem-fix x)))
     (case (tag x)
       (:vl-vardecl (vl-shadowcheck-vardecl x st warnings))
+      (:vl-import  (vl-shadowcheck-import  x st warnings))
       (otherwise   (vl-shadowcheck-paramdecl x st warnings)))))
 
 (define vl-shadowcheck-blockitemlist ((x        vl-blockitemlist-p)
@@ -746,6 +747,16 @@ explicit declarations.</p>")
           (b* ((varnames (mergesort (vl-exprlist-varnames (vl-stmt-allexprs x)))))
             (vl-shadowcheck-reference-names varnames x st warnings)))
 
+         ((when (eq (vl-stmt-kind x) :vl-forstmt))
+          ;; BOZO Need to think about this more carefully.
+          (b* (((vl-forstmt x))
+               (st (vl-shadowcheck-push-scope (vl-forstmt->blockscope x) st))
+               ((mv st warnings) (vl-shadowcheck-blockitemlist x.initdecls st warnings))
+               (local-exprs (vl-compoundstmt->exprs x))
+               (local-names (vl-exprlist-varnames local-exprs))
+               ((mv st warnings) (vl-shadowcheck-reference-names local-names x st warnings)))
+            (vl-shadowcheck-stmtlist (vl-compoundstmt->stmts x) ctx st warnings)))
+
          ((unless (eq (vl-stmt-kind x) :vl-blockstmt))
           ;; No other statement has a scope, but compound statements might have block
           ;; statements inside of them.  See vl-stmt-check-undeclared.  We don't use
@@ -762,7 +773,7 @@ explicit declarations.</p>")
 
          (st (vl-shadowcheck-push-scope (vl-blockstmt->blockscope x) st))
          ;; Process declarations for the block, if any
-         ((mv st warnings) (vl-shadowcheck-blockitemlist x.decls st warnings))
+         ((mv st warnings) (vl-shadowcheck-blockitemlist x.loaditems st warnings))
          ;; Process sub-statements, if any
          ((mv st warnings) (vl-shadowcheck-stmtlist x.stmts ctx st warnings))
          (st (vl-shadowcheck-pop-scope st))
@@ -844,7 +855,7 @@ explicit declarations.</p>")
        ;;
        ;; ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings))
 
-       ((mv st warnings) (vl-shadowcheck-blockitemlist x.decls st warnings))
+       ((mv st warnings) (vl-shadowcheck-blockitemlist x.blockitems st warnings))
        ((mv st warnings) (vl-shadowcheck-stmt x.body x st warnings))
        (- (vl-shadowcheck-debug "  >> popping out of function ~x0.~%" x.name))
        (st (vl-shadowcheck-pop-scope st)))
@@ -862,7 +873,7 @@ explicit declarations.</p>")
 
        (st (vl-shadowcheck-push-scope (vl-taskdecl->blockscope x) st))
        ((mv st warnings) (vl-shadowcheck-portdecllist x.portdecls st warnings))
-       ((mv st warnings) (vl-shadowcheck-blockitemlist x.decls st warnings))
+       ((mv st warnings) (vl-shadowcheck-blockitemlist x.blockitems st warnings))
        ((mv st warnings) (vl-shadowcheck-stmt x.body x st warnings))
        (st (vl-shadowcheck-pop-scope st))
 

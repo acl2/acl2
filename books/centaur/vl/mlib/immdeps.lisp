@@ -35,6 +35,8 @@
 (include-book "centaur/depgraph/mergesort-alist-values" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
+(local (in-theory (disable (tau-system))))
+
 
 (defxdoc immdeps
   :parents (hierarchy)
@@ -627,6 +629,18 @@ elements.")
 (def-vl-immdeps-list vl-vardecllist vl-vardecl :ctxp nil)
 
 
+
+(def-vl-immdeps vl-import
+  ;; We just add a dependency onto the package being imported from.
+  :ctxp nil
+  :body
+  (b* (((vl-import x))
+       (ctx x))
+    (vl-immdeps-add-pkgdep x.pkg ans)))
+
+(def-vl-immdeps-list vl-importlist vl-import :ctxp nil)
+
+
 (def-vl-immdeps vl-plainarg
   :body
   (b* (((vl-plainarg x)))
@@ -725,17 +739,6 @@ elements.")
     (vl-paramtype-immdeps x.type ans)))
 
 (def-vl-immdeps-list vl-paramdecllist vl-paramdecl :ctxp nil)
-
-
-(def-vl-immdeps vl-blockitem
-  :ctxp nil
-  :body
-  (case (tag x)
-    (:vl-vardecl (vl-vardecl-immdeps x ans))
-    (otherwise   (vl-paramdecl-immdeps x ans))))
-
-(def-vl-immdeps-list vl-blockitemlist vl-blockitem :ctxp nil)
-
 
 (def-vl-immdeps vl-evatom
   :body
@@ -847,7 +850,9 @@ elements.")
            ans))
         (:vl-blockstmt
          (b* ((ss (vl-scopestack-push (vl-blockstmt->blockscope x) ss))
-              (ans (vl-blockitemlist-immdeps x.decls ans))
+              (ans (vl-importlist-immdeps x.imports ans))
+              (ans (vl-paramdecllist-immdeps x.paramdecls ans))
+              (ans (vl-vardecllist-immdeps x.vardecls ans))
               (ans (vl-stmtlist-immdeps x.stmts ans)))
            ans))
         (:vl-timingstmt
@@ -929,7 +934,9 @@ elements.")
        (ans (vl-datatype-immdeps x.rettype ans))
        (ans (vl-portdecllist-immdeps x.portdecls ans))
        (ss  (vl-scopestack-push (vl-fundecl->blockscope x) ss))
-       (ans (vl-blockitemlist-immdeps x.decls ans)))
+       (ans (vl-importlist-immdeps x.imports ans))
+       (ans (vl-paramdecllist-immdeps x.paramdecls ans))
+       (ans (vl-vardecllist-immdeps x.vardecls ans)))
     (vl-stmt-immdeps x.body ans)))
 
 (def-vl-immdeps-list vl-fundecllist vl-fundecl :ctxp nil)
@@ -941,21 +948,13 @@ elements.")
   (b* (((vl-taskdecl x))
        (ss  (vl-scopestack-push (vl-taskdecl->blockscope x) ss))
        (ans (vl-portdecllist-immdeps x.portdecls ans))
-       (ans (vl-blockitemlist-immdeps x.decls ans)))
+       (ans (vl-importlist-immdeps x.imports ans))
+       (ans (vl-paramdecllist-immdeps x.paramdecls ans))
+       (ans (vl-vardecllist-immdeps x.vardecls ans)))
     (vl-stmt-immdeps x.body ans)))
 
 (def-vl-immdeps-list vl-taskdecllist vl-taskdecl :ctxp nil)
 
-
-(def-vl-immdeps vl-import
-  ;; We just add a dependency onto the package being imported from.
-  :ctxp nil
-  :body
-  (b* (((vl-import x))
-       (ctx x))
-    (vl-immdeps-add-pkgdep x.pkg ans)))
-
-(def-vl-immdeps-list vl-importlist vl-import :ctxp nil)
 
 (def-vl-immdeps vl-modport-port
   :ctxp nil
@@ -985,7 +984,8 @@ elements.")
 
 
 (def-vl-immdeps vl-modelement
-  :prepwork ((local (in-theory (enable vl-modelement-p))))
+  :prepwork ((local (in-theory (enable vl-modelement-p
+                                       tag-reasoning))))
   :ctxp nil
   :body
   (case (tag x)

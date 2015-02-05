@@ -228,22 +228,14 @@ approach.</p>")
 
 (local (xdoc::set-default-parents expand-functions))
 
-(define vl-remove-fake-function-vardecls ((x vl-blockitemlist-p))
-  :returns (new-x vl-blockitemlist-p)
+(define vl-remove-fake-function-vardecls ((x vl-vardecllist-p))
+  :returns (new-x vl-vardecllist-p)
   (b* (((when (atom x))
         nil)
-       (x1 (vl-blockitem-fix (car x)))
-       ((when (and (mbe :logic (vl-vardecl-p x1)
-                        :exec (eq (tag x1) :vl-vardecl))
-                   (assoc-equal "VL_HIDDEN_DECL_FOR_TASKPORT" (vl-vardecl->atts x1))))
+       (x1 (vl-vardecl-fix (car x)))
+       ((when (assoc-equal "VL_HIDDEN_DECL_FOR_TASKPORT" (vl-vardecl->atts x1)))
         (vl-remove-fake-function-vardecls (cdr x))))
-    (cons x1 (vl-remove-fake-function-vardecls (cdr x))))
-  :prepwork
-  ((local (defthm crock
-            (implies (vl-blockitem-p x)
-                     (equal (vl-vardecl-p x)
-                            (equal (tag x) :vl-vardecl)))
-            :hints(("Goal" :in-theory (enable (tau-system))))))))
+    (cons x1 (vl-remove-fake-function-vardecls (cdr x)))))
 
 
 
@@ -346,71 +338,6 @@ approach.</p>")
 ;
 ; -----------------------------------------------------------------------------
 
-(define vl-check-fun-parameters-deforder
-  :parents (vl-fundecl-expand-params)
-  :short "Ensure that a function's parameters are defined before they are
-          used."
-
-  ((x          vl-blockitemlist-p)
-   (bad-params string-listp
-               "Initially the list of all parameter declaration names for this
-                function.  We remove their names as we encounter their
-                declarations, and add fatal warnings if we find a declaration
-                that is using @('bad-params').")
-   (warnings   vl-warninglist-p)
-   (function   vl-fundecl-p))
-  :returns (mv (okp booleanp :rule-classes :type-prescription)
-               (warnings vl-warninglist-p))
-
-  :long "<p>The Verilog specification does not address whether parameters need
-to be introduced before being used, but other tools like Verilog-XL and
-NCVerilog require it.</p>
-
-<p>There is probably good reason for us to also require it.  For instance, the
-parameters in a function can shadow global parameters, but on Verilog-XL and
-NCVerilog the shadowing only happens after they are introduced.  This can lead
-to strange behavior, e.g., if we have a function with declarations like
-these:</p>
-
-@({
- reg [width-1:0] r;
- parameter width = 5;
- reg [width-1:0] s;
-})
-
-<p>Then if there's a @('width') parameter defined outside the function, in the
-module, @('r') and @('s') can end up having different widths!</p>
-
-<p>We think that is crazy and therefore don't allow function parameters to
-shadow module parameters.  But, it seems useful to still check that if there
-are any uses of parameters in other declarations from the function, then they'd
-better come after the parameter is introduced.</p>"
-
-  (b* (((when (atom x))
-        (mv t (ok)))
-       (x1     (car x))
-       (x1-tag (tag x1))
-       (allexprs (case x1-tag
-                   (:vl-paramdecl (vl-paramdecl-allexprs x1))
-                   (:vl-vardecl   (vl-vardecl-allexprs x1))
-                   (otherwise     (impossible))))
-       (names    (vl-exprlist-names allexprs))
-       (bad-used (intersectp-equal bad-params names))
-       ((when bad-used)
-        (mv nil
-            (fatal :type :vl-function-param-used-before-def
-                   :msg "In ~a0, the parameter~s1 ~&2 ~s3 used before being ~
-                         declared; we don't permit this since it isn't ~
-                         tolerated by other tools such as Verilog-XL and ~
-                         NCVerilog."
-                   :args (list function
-                               (if (vl-plural-p bad-used) "s" "")
-                               bad-used
-                               (if (vl-plural-p bad-used) "are" "is")))))
-       (bad-params (if (eq x1-tag :vl-paramdecl)
-                       (remove-equal (vl-paramdecl->name x1) bad-params)
-                     bad-params)))
-    (vl-check-fun-parameters-deforder (cdr x) bad-params warnings function)))
 
 ;; (define vl-check-fun-params-no-overlap
 ;;   :parents (vl-fundecl-expand-params)
@@ -529,18 +456,16 @@ okay (since eliminating parameters changes the function's namespace).</p>"
 
   (b* ((x (vl-fundecl-fix x))
        ((vl-fundecl x) x)
-       (real-decls (vl-remove-fake-function-vardecls x.decls))
+       (real-vardecls (vl-remove-fake-function-vardecls x.vardecls))
 
-       ((mv vardecls paramdecls) (vl-filter-blockitems real-decls))
-
-       ((unless paramdecls)
+       ((unless x.paramdecls)
         ;; Common case of no parameters -- no need to check or change anything.
         (mv t (ok) x))
 
-       (param-names (vl-paramdecllist->names paramdecls))
+       (param-names (vl-paramdecllist->names x.paramdecls))
        (local-namespace
         (append (list x.name) ;; functions' name needs to be included since it gets assigned to at the end
-                (vl-vardecllist->names vardecls)
+                (vl-vardecllist->names real-vardecls)
                 param-names))
 
        ;; Make sure there are no name clashes, for good measure.
@@ -552,32 +477,21 @@ okay (since eliminating parameters changes the function's namespace).</p>"
                    :args (list x dupes))
             x))
 
-       ;; Make sure these params don't overlap with other module items in a
-       ;; tricky way.
-       ;; ((mv okp warnings) (vl-check-fun-params-no-overlap paramdecls scope warnings x))
-       ;; ((unless okp) (mv nil warnings x))
-
-       ;; Make sure these params are only used after they are defined.  This
-       ;; relies on the function declarations being the same order they're
-       ;; found in the file, which should be true of our parser.
-       ((mv okp warnings)
-        (vl-check-fun-parameters-deforder real-decls param-names warnings x))
-       ((unless okp) (mv nil warnings x))
 
        ;; Make sure the parameters are simple enough for us to handle.
        ((mv okp warnings)
-        (vl-fun-paramdecllist-types-okp paramdecls warnings x))
+        (vl-fun-paramdecllist-types-okp x.paramdecls warnings x))
        ((unless okp) (mv nil warnings x))
 
        ;; Okay, everything looks good.  We want to now just expand the parameters
        ;; away by rewriting them with their values.
-       (sigma (vl-fundecl-param-sigma paramdecls))
+       (sigma (vl-fundecl-param-sigma x.paramdecls))
        ((with-fast sigma))
 
-       (vardecls   (vl-vardecllist-subst vardecls sigma))
+       (vardecls   (vl-vardecllist-subst x.vardecls sigma))
        (body       (vl-stmt-subst x.body sigma))
        (new-x      (change-vl-fundecl x
-                                      :decls vardecls
+                                      :vardecls vardecls
                                       :body body)))
 
     (mv t warnings new-x)))
@@ -909,8 +823,7 @@ variables and inputs.</p>"
                                         subsetp-equal-when-first-two-same-yada-yada
                                         set::subset-difference))))
 
-  (b* ((real-decls (vl-remove-fake-function-vardecls (vl-fundecl->decls function)))
-       ((mv vardecls ?paramdecls) (vl-filter-blockitems real-decls))
+  (b* ((vardecls (vl-remove-fake-function-vardecls (vl-fundecl->vardecls function)))
        (varnames (vl-vardecllist->names vardecls))
        (innames  (vl-portdecllist->names (vl-fundecl->portdecls function)))
        ((mv okp warnings written-vars read-vars read-inputs)
@@ -1121,7 +1034,9 @@ generated list of assignments.  Otherwise we fail with fatal warnings.</p>"
                  (vl-blockstmt-p body)
                  (vl-blockstmt->sequentialp body)
                  (not (vl-blockstmt->name body))
-                 (not (vl-blockstmt->decls body)))
+                 (not (vl-blockstmt->vardecls body))
+                 (not (vl-blockstmt->paramdecls body))
+                 (not (vl-blockstmt->imports body)))
             (vl-blockstmt->stmts body)
           (list body)))
 
@@ -1339,7 +1254,7 @@ involves a lot of sanity checking, and will fail if the function includes
 unsupported constructs or doesn't meet our other sanity criteria.</p>"
 
   (b* (((vl-fundecl x) x)
-       (real-decls (vl-remove-fake-function-vardecls x.decls))
+       (vardecls (vl-remove-fake-function-vardecls x.vardecls))
 
        ;; ((unless (or (eq x.rtype :vl-unsigned)
        ;;              (eq x.rtype :vl-signed)))
@@ -1348,17 +1263,6 @@ unsupported constructs or doesn't meet our other sanity criteria.</p>"
        ;;                       types other than plain/reg or 'signed', but this ~
        ;;                       function has type ~s1."
        ;;                 :args (list x x.rtype))))
-
-       ((mv vardecls paramdecls)
-        (vl-filter-blockitems real-decls))
-
-       ((when paramdecls)
-        (mv nil (fatal :type :vl-programming-error
-                       :msg "In ~a0, we expected function parameter ~
-                             declarations to be handled before trying to make ~
-                             expansion templates.  There must be a bug in ~
-                             VL's expand-functions transformation."
-                       :args (list x))))
 
        ((mv okp warnings) (vl-fun-vardecllist-types-okp vardecls warnings x))
        ((unless okp) (mv nil warnings)) ;; already warned
@@ -2236,14 +2140,17 @@ which is free of function calls on success.</p>"
 
            (x.exprs (vl-compoundstmt->exprs x))
            (x.stmts (vl-compoundstmt->stmts x))
-           (x.decls (vl-compoundstmt->decls x))
+           (x.vardecls (vl-compoundstmt->vardecls x))
+           (x.paramdecls (vl-compoundstmt->paramdecls x))
            (x.ctrl  (vl-compoundstmt->ctrl x))
 
-           ((mv okp1 warnings) (vl-check-bad-funcalls ctx (vl-blockitemlist-allexprs x.decls)
-                                                      "block declarations" warnings))
-           ((mv okp2 warnings) (vl-check-bad-funcalls ctx (vl-maybe-delayoreventcontrol-allexprs x.ctrl)
+           ((mv okp1 warnings) (vl-check-bad-funcalls ctx (vl-vardecllist-allexprs x.vardecls)
+                                                      "variable declarations" warnings))
+           ((mv okp2 warnings) (vl-check-bad-funcalls ctx (vl-paramdecllist-allexprs x.paramdecls)
+                                                      "parameter declarations" warnings))
+           ((mv okp3 warnings) (vl-check-bad-funcalls ctx (vl-maybe-delayoreventcontrol-allexprs x.ctrl)
                                                       "timing controls" warnings))
-           ((mv okp3 warnings)
+           ((mv okp4 warnings)
             (cond ;; Used to check LHSes in for loop initializations/steps, but
                   ;; now that should be taken care of by the recursive call
                   ((vl-casestmt-p x)
@@ -2255,11 +2162,11 @@ which is free of function calls on success.</p>"
                   (t
                    (mv t warnings))))
 
-           ((mv okp4 warnings nf exprs-prime vardecls assigns)
+           ((mv okp5 warnings nf exprs-prime vardecls assigns)
             (vl-exprlist-expand-function-calls x.exprs ss nf vardecls assigns warnings ctx loc 100))
-           ((mv okp5 warnings nf stmts-prime vardecls assigns)
+           ((mv okp6 warnings nf stmts-prime vardecls assigns)
             (vl-stmtlist-expand-function-calls x.stmts ss nf vardecls assigns warnings ctx loc))
-           ((unless (and okp1 okp2 okp3 okp4 okp5))
+           ((unless (and okp1 okp2 okp3 okp4 okp5 okp6))
             (mv nil warnings nf x vardecls assigns))
            (x-prime (change-vl-compoundstmt x
                                             :exprs exprs-prime

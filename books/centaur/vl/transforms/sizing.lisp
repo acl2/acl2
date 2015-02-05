@@ -904,25 +904,16 @@ the expression.</p>"
 
 (def-vl-exprsize-list vl-paramdecllist :element vl-paramdecl)
 
-(def-vl-exprsize vl-blockitem
-  :body
-  (case (tag x)
-    (:vl-vardecl (vl-vardecl-exprsize x ss warnings))
-    (otherwise   (vl-paramdecl-exprsize x ss warnings))))
+(defthm vl-vardecllist-exprsize-under-iff
+  (iff (mv-nth 2 (vl-vardecllist-exprsize x ss warnings))
+       (consp x))
+  :hints(("Goal" :in-theory (enable vl-vardecllist-exprsize))))
 
-(def-vl-exprsize-list vl-blockitemlist :element vl-blockitem)
+(defthm vl-paramdecllist-exprsize-under-iff
+  (iff (mv-nth 2 (vl-paramdecllist-exprsize x ss warnings))
+       (consp x))
+  :hints(("Goal" :in-theory (enable vl-paramdecllist-exprsize))))
 
-(defthm vl-vardecllist-p-of-vl-blockitemlist-exprsize
-  (implies (vl-vardecllist-p x)
-           (vl-vardecllist-p (mv-nth 2 (vl-blockitemlist-exprsize x ss warnings))))
-  :hints(("Goal" :in-theory (enable vl-vardecllist-p
-                                    vl-blockitemlist-exprsize
-                                    vl-blockitem-exprsize))))
-
-(local (defthm vl-blockitemlist-exprsize-under-iff
-         (b* (((mv ?ok ?warnings new-x) (vl-blockitemlist-exprsize x ss warnings)))
-           (iff new-x (consp x)))
-         :hints(("Goal" :in-theory (enable vl-blockitemlist-exprsize)))))
 
 (defines vl-stmt-exprsize
 
@@ -1017,24 +1008,28 @@ the expression.</p>"
                   (x-prime (change-vl-eventtriggerstmt x :id id-prime)))
                (mv successp warnings x-prime)))))
 
-         (ss (if (eq (vl-stmt-kind x) :vl-blockstmt)
-                 (vl-scopestack-push (vl-blockstmt->blockscope x) ss)
-               ss))
+         (ss (vl-stmt-case x
+               :vl-blockstmt (vl-scopestack-push (vl-blockstmt->blockscope x) ss)
+               :vl-forstmt (vl-scopestack-push (vl-forstmt->blockscope x) ss)
+               :otherwise ss))
          (x.exprs (vl-compoundstmt->exprs x))
          (x.stmts (vl-compoundstmt->stmts x))
          (x.ctrl  (vl-compoundstmt->ctrl x))
-         (x.decls (vl-compoundstmt->decls x))
+         (x.vardecls (vl-compoundstmt->vardecls x))
+         (x.paramdecls (vl-compoundstmt->paramdecls x))
          ((mv successp1 warnings exprs-prime) (vl-exprlist-size x.exprs ss ctx warnings))
          ((mv successp2 warnings stmts-prime) (vl-stmtlist-exprsize x.stmts ss ctx warnings))
          ((mv successp3 warnings ctrl-prime)  (vl-maybe-delayoreventcontrol-exprsize x.ctrl ss ctx warnings))
-         ((mv successp4 warnings decls-prime) (vl-blockitemlist-exprsize x.decls ss warnings))
-         (successp (and successp1 successp2 successp3 successp4))
+         ((mv successp4 warnings vardecls-prime) (vl-vardecllist-exprsize x.vardecls ss warnings))
+         ((mv successp5 warnings paramdecls-prime) (vl-paramdecllist-exprsize x.paramdecls ss warnings))
+         (successp (and successp1 successp2 successp3 successp4 successp5))
          (x-prime
           (change-vl-compoundstmt x
                                   :exprs exprs-prime
                                   :stmts stmts-prime
                                   :ctrl ctrl-prime
-                                  :decls decls-prime)))
+                                  :vardecls vardecls-prime
+                                  :paramdecls paramdecls-prime)))
       (mv successp warnings x-prime)))
 
   (define vl-stmtlist-exprsize
@@ -1122,14 +1117,17 @@ the expression.</p>"
        ((mv ok1 warnings portdecls) (vl-portdecllist-exprsize x.portdecls ss warnings))
        ((mv ok2 warnings rettype)   (vl-datatype-exprsize x.rettype ss x warnings))
        (ss (vl-scopestack-push (vl-fundecl->blockscope x) ss))
-       ((mv ok3 warnings decls)
-        (vl-blockitemlist-exprsize x.decls ss warnings))
-       ((mv ok4 warnings body) (vl-stmt-exprsize x.body ss x warnings)))
-    (mv (and ok1 ok2 ok3 ok4) warnings
+       ((mv ok3 warnings vardecls)
+        (vl-vardecllist-exprsize x.vardecls ss warnings))
+       ((mv ok4 warnings paramdecls)
+        (vl-paramdecllist-exprsize x.paramdecls ss warnings))
+       ((mv ok5 warnings body) (vl-stmt-exprsize x.body ss x warnings)))
+    (mv (and ok1 ok2 ok3 ok4 ok5) warnings
         (change-vl-fundecl x
                            :portdecls portdecls
                            :rettype rettype
-                           :decls decls
+                           :vardecls vardecls
+                           :paramdecls paramdecls
                            :body body))))
 
 (def-vl-exprsize-list vl-fundecllist :element vl-fundecl)

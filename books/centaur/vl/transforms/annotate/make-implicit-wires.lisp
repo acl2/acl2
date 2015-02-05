@@ -537,6 +537,33 @@ imported names."
                   "~a0: identifiers ~&2 are used but not yet declared.")
            :args (list ctx (car undeclared) undeclared))))
 
+(define vl-import-check-undeclared ((x vl-import-p)
+                                    (st vl-implicitst-p)
+                                    (warnings vl-warninglist-p))
+  :returns
+  (mv (new-warnings vl-warninglist-p)
+      (new-st       vl-implicitst-p))
+  (b* (((vl-import x) (vl-import-fix x))
+       (package  (vl-scopestack-find-package x.pkg (vl-implicitst->ss st)))
+       (warnings (if package
+                     (ok)
+                   (fatal :type :vl-bad-import
+                          :msg "~a0: trying to import from undefined package ~s1."
+                          :args (list x x.pkg))))
+       (imports  (vl-implicitst->imports st))
+       (imports  (if (eq x.part :vl-import*)
+                     ;; Add all the names from the package onto imports.
+                     (hons-shrink-alist
+                      ;; If the package wasn't found and we tried to
+                      ;; import foo::* from it, we've already caused a
+                      ;; fatal warning, so it's okay to fudge here.
+                      (and package
+                           (vl-package-scope-item-alist-top package))
+                      imports)
+                   (hons-acons (the string x.part) t imports)))
+       (st       (change-vl-implicitst st :imports imports)))
+    (mv warnings st)))
+
 (define vl-blockitem-check-undeclared
   :short "Check for undeclared wires in an arbitrary @(see vl-blockitem-p), and
 extends @('decls') with the newly declared name."
@@ -548,6 +575,8 @@ extends @('decls') with the newly declared name."
   (mv (new-warnings vl-warninglist-p)
       (new-st       vl-implicitst-p))
   (b* ((x (vl-blockitem-fix x))
+       ((when (eq (tag x) :vl-import))
+        (vl-import-check-undeclared x st warnings))
        ((mv name exprs)
         (case (tag x)
           (:vl-vardecl   (mv (vl-vardecl->name x)   (vl-vardecl-exprs-for-implicit-wires x)))
@@ -584,10 +613,10 @@ vl-blockitemlist-p)."
 sure that all identifiers used anywhere within them have been declared.</p>
 
 <p>Named blocks are the only complication.  They have their own scope and can
-have their own declarations, which come before their sub-statements.  So, if we
-see a named block, we basically fork the decls to create a local namespace, add
-all of the local declarations to it, and then check all the sub-statements in
-this extended namespace.</p>"
+have their own declarations and imports, which come before their
+sub-statements.  So, if we see a named block, we basically fork the decls and
+imports to create a local namespace, add all of the local declarations to it,
+and then check all the sub-statements in this extended namespace.</p>"
 
   (define vl-stmt-check-undeclared
     ((ctx       vl-modelement-p "Where this statement occurs.")
@@ -611,9 +640,10 @@ this extended namespace.</p>"
                ;; we've seen, since things in the module's scope can still be
                ;; referenced from within the named block.
                (local-decls (hons-shrink-alist st.decls nil))
-               (local-st    (change-vl-implicitst st :decls local-decls))
+               (local-imports (hons-shrink-alist st.imports nil))
+               (local-st    (change-vl-implicitst st :decls local-decls :imports local-imports))
                ;; Add in all local declarations.
-               ((mv warnings local-st) (vl-blockitemlist-check-undeclared x.decls local-st warnings))
+               ((mv warnings local-st) (vl-blockitemlist-check-undeclared x.loaditems local-st warnings))
                ;; Check all the sub-statements in the extended scope.
                (warnings (vl-stmtlist-check-undeclared ctx x.stmts local-st warnings)))
             ;; Note that a named block doesn't have any other kinds of
@@ -699,13 +729,15 @@ problem.</p>"
        ;; Now make a local scope and add the local declarations, as in named
        ;; block statements.
        (local-decls (hons-shrink-alist (vl-implicitst->decls st) nil))
-       (local-st    (change-vl-implicitst st :decls local-decls))
+       (local-imports (hons-shrink-alist (vl-implicitst->imports st) nil))
+       (local-st    (change-vl-implicitst st :decls local-decls :imports local-imports))
 
        ;; Now check/add the block items.  As we do this, we're acting like the
        ;; inputs haven't been declared yet.  That's not quite right, but it
        ;; should be practically pretty reasonable since it's not valid to refer
        ;; to an input in the other declarations.
-       ((mv warnings local-st) (vl-blockitemlist-check-undeclared x.decls local-st warnings))
+       ((mv warnings local-st)
+        (vl-blockitemlist-check-undeclared x.blockitems local-st warnings))
 
        ;; Okay, now add the inputs to the local scope, since it's valid to
        ;; refer to them in the body.  Also add in the function's name since it
@@ -744,14 +776,15 @@ it has the same problems with parameters.</p>"
        ;; Now make a local scope and add the local declarations, as in named
        ;; block statements.
        (local-decls (hons-shrink-alist (vl-implicitst->decls st) nil))
-       (local-st    (change-vl-implicitst st :decls local-decls))
+       (local-imports (hons-shrink-alist (vl-implicitst->imports st) nil))
+       (local-st    (change-vl-implicitst st :decls local-decls :imports local-imports))
 
        ;; Now check/add the block items.  As we do this, we're acting like the
        ;; ports haven't been declared yet.  That's not quite right, but it
        ;; should be practically pretty reasonable since it's not valid to refer
        ;; to a port in the other declarations.
        ((mv warnings local-st)
-        (vl-blockitemlist-check-undeclared x.decls local-st warnings))
+        (vl-blockitemlist-check-undeclared x.blockitems local-st warnings))
 
        ;; Okay, now add the ports to the local scope, since it's valid to
        ;; refer to them in the body.

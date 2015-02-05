@@ -624,20 +624,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
             (vl-delayoreventcontrol-allexprs x)
           nil))
 
-(def-vl-allexprs
-  :type vl-blockitem
-  :nrev-body
-  (case (tag x)
-    (:vl-vardecl   (vl-vardecl-allexprs-nrev x nrev))
-    (otherwise     (vl-paramdecl-allexprs-nrev x nrev)))
-  :body
-  (case (tag x)
-    (:vl-vardecl   (vl-vardecl-allexprs x))
-    (otherwise     (vl-paramdecl-allexprs x))))
 
-(def-vl-allexprs-list
-  :list vl-blockitemlist
-  :element vl-blockitem)
 
 (defines vl-stmt-allexprs-nrev
   :verbosep t
@@ -702,7 +689,8 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
            (nrev (vl-stmt-allexprs-nrev x.body nrev)))
         nrev)
       :vl-blockstmt
-      (b* ((nrev (vl-blockitemlist-allexprs-nrev x.decls nrev))
+      (b* ((nrev (vl-vardecllist-allexprs-nrev x.vardecls nrev))
+           (nrev (vl-paramdecllist-allexprs-nrev x.paramdecls nrev))
            (nrev (vl-stmtlist-allexprs-nrev x.stmts nrev)))
         nrev)
       :vl-timingstmt
@@ -761,7 +749,8 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
                                               (append (vl-stmtlist-allexprs x.stepforms)
                                                       (vl-stmt-allexprs x.body))))
            :vl-repeatstmt      (cons x.condition (vl-stmt-allexprs x.body))
-           :vl-blockstmt       (append (vl-blockitemlist-allexprs x.decls)
+           :vl-blockstmt       (append (vl-vardecllist-allexprs x.vardecls)
+                                       (vl-paramdecllist-allexprs x.paramdecls)
                                        (vl-stmtlist-allexprs x.stmts))
            :vl-timingstmt      (append (vl-stmt-allexprs x.body)
                                        (vl-delayoreventcontrol-allexprs x.ctrl)))
@@ -852,12 +841,14 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :nrev-body (b* (((vl-fundecl x) x)
                   (nrev (vl-datatype-allexprs-nrev x.rettype nrev))
                   (nrev (vl-portdecllist-allexprs-nrev x.portdecls nrev))
-                  (nrev (vl-blockitemlist-allexprs-nrev x.decls nrev)))
+                  (nrev (vl-vardecllist-allexprs-nrev x.vardecls nrev))
+                  (nrev (vl-paramdecllist-allexprs-nrev x.paramdecls nrev)))
                (vl-stmt-allexprs-nrev x.body nrev))
   :body (b* (((vl-fundecl x) x))
           (append (vl-datatype-allexprs x.rettype)
                   (vl-portdecllist-allexprs x.portdecls)
-                  (vl-blockitemlist-allexprs x.decls)
+                  (vl-vardecllist-allexprs x.vardecls)
+                  (vl-paramdecllist-allexprs x.paramdecls)
                   (vl-stmt-allexprs x.body))))
 
 (def-vl-allexprs-list
@@ -868,11 +859,13 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :type vl-taskdecl
   :nrev-body (b* (((vl-taskdecl x) x)
                   (nrev (vl-portdecllist-allexprs-nrev x.portdecls nrev))
-                  (nrev (vl-blockitemlist-allexprs-nrev x.decls nrev)))
+                  (nrev (vl-vardecllist-allexprs-nrev x.vardecls nrev))
+                  (nrev (vl-paramdecllist-allexprs-nrev x.paramdecls nrev)))
                (vl-stmt-allexprs-nrev x.body nrev))
   :body (b* (((vl-taskdecl x) x))
           (append (vl-portdecllist-allexprs x.portdecls)
-                  (vl-blockitemlist-allexprs x.decls)
+                  (vl-vardecllist-allexprs x.vardecls)
+                  (vl-paramdecllist-allexprs x.paramdecls)
                   (vl-stmt-allexprs x.body))))
 
 (def-vl-allexprs-list

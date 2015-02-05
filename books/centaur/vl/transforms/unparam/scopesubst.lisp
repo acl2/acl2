@@ -470,24 +470,6 @@ so that their overrides are compatible with thier types.</p>"
        x)
   :hints(("Goal" :in-theory (enable vl-maybe-delayoreventcontrol-scopesubst))))
 
-(def-vl-scopesubst vl-blockitem-scopesubst
-  :type vl-blockitem-p
-  :body (b* ((x (vl-blockitem-fix x)))
-          (case (tag x)
-            (:vl-vardecl   (vl-vardecl-scopesubst x ss))
-            (otherwise     (vl-paramdecl-scopesubst x ss)))))
-
-(def-vl-scopesubst-list vl-blockitemlist-scopesubst
-  :type vl-blockitemlist-p
-  :element vl-blockitem-scopesubst)
-
-(defthm vl-vardecllist-p-of-vl-blockitemlist-scopesubst
-  (implies (vl-vardecllist-p x)
-           (vl-vardecllist-p (vl-blockitemlist-scopesubst x ss)))
-  :hints(("Goal" :in-theory (enable vl-vardecllist-p
-                                    tag-when-vl-vardecl-p
-                                    vl-blockitemlist-scopesubst
-                                    vl-blockitem-scopesubst))))
 
 
 
@@ -537,7 +519,8 @@ so that their overrides are compatible with thier types.</p>"
          x
          :exprs (vl-exprlist-scopesubst (vl-compoundstmt->exprs x) ss)
          :stmts (vl-stmtlist-scopesubst (vl-compoundstmt->stmts x) ss)
-         :decls (vl-blockitemlist-scopesubst (vl-compoundstmt->decls x) ss)
+         :vardecls (vl-vardecllist-scopesubst (vl-compoundstmt->vardecls x) ss)
+         :paramdecls (vl-paramdecllist-scopesubst (vl-compoundstmt->paramdecls x) ss)
          :ctrl (vl-maybe-delayoreventcontrol-scopesubst (vl-compoundstmt->ctrl x) ss)))))
 
   (define vl-stmtlist-scopesubst ((x     vl-stmtlist-p)
@@ -591,7 +574,8 @@ so that their overrides are compatible with thier types.</p>"
        (ss (vl-scopestack-push (vl-fundecl->blockscope x) ss)))
     (change-vl-fundecl x
                        :rettype (vl-datatype-scopesubst x.rettype ss)
-                       :decls  (vl-blockitemlist-scopesubst x.decls ss)
+                       :vardecls  (vl-vardecllist-scopesubst x.vardecls ss)
+                       :paramdecls  (vl-paramdecllist-scopesubst x.paramdecls ss)
                        :portdecls (vl-portdecllist-scopesubst x.portdecls ss)
                        :body   (vl-stmt-scopesubst x.body ss))))
 

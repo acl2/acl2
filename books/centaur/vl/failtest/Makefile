@@ -40,20 +40,20 @@ SVOK_FILES := $(patsubst %.v, %.svok, $(SPEC_FILES))
 
 
 %.vok: %.v $(VL)
-	@echo "Making $*.ok"
-	@rm -f $*.vok
-	@$(STARTJOB) -c "$(VL) model $*.v --mem=2 --search=. --mustfail=top --edition=Verilog --model-file=$*.v.model.sao --esims-file=$*.v.esims.sao --verilog-file=$*.v.pp &> $*.vok.log"
-	@rm $*.v.esims.sao $*.v.model.sao $*.v.model.sao.ver $*.v.pp
-	@cp $*.vok.log $*.vok
-	@ls -l $*.vok
+	echo "Making $*.ok"
+	rm -f $*.vok
+	$(STARTJOB) -c "$(VL) model $*.v --mem=2 --search=. --mustfail=top --edition=Verilog --model-file=$*.v.model.sao --esims-file=$*.v.esims.sao --verilog-file=$*.v.pp &> $*.vok.log"
+	rm $*.v.esims.sao $*.v.model.sao $*.v.model.sao.ver $*.v.pp
+	cp $*.vok.log $*.vok
+	ls -l $*.vok
 
 %.svok: %.v $(VL)
-	@echo "Making $*.svok"
-	@rm -f $*.svok
-	@$(STARTJOB) -c "$(VL) model $*.v --mem=2 --search=. --mustfail=top --edition=SystemVerilog --model-file=$*.sv.model.sao --esims-file=$*.sv.esims.sao --verilog-file=$*.sv.pp &> $*.svok.log"
-	@rm $*.sv.esims.sao $*.sv.model.sao $*.sv.model.sao.ver $*.sv.pp
-	@cp $*.svok.log $*.svok
-	@ls -l $*.svok
+	echo "Making $*.svok"
+	rm -f $*.svok
+	$(STARTJOB) -c "$(VL) model $*.v --mem=2 --search=. --mustfail=top --edition=SystemVerilog --model-file=$*.sv.model.sao --esims-file=$*.sv.esims.sao --verilog-file=$*.sv.pp &> $*.svok.log"
+	rm $*.sv.esims.sao $*.sv.model.sao $*.sv.model.sao.ver $*.sv.pp
+	cp $*.svok.log $*.svok
+	ls -l $*.svok
 
 all: $(VOK_FILES) $(SVOK_FILES)
 

@@ -40,7 +40,8 @@
                         double-containment
                         acl2::prefixp-when-equal-lengths
                         acl2::consp-when-member-equal-of-cons-listp
-                        acl2::consp-when-member-equal-of-atom-listp))))
+                        acl2::consp-when-member-equal-of-atom-listp
+                        (tau-system)))))
 
 (defxdoc parse-functions
   :parents (parser)
@@ -161,12 +162,17 @@ information.</p>"
                                    :type rettype
                                    :atts (list
                                           (list (hons-copy "VL_HIDDEN_DECL_FOR_TASKPORT")))
-                                   :loc  loc)))
+                                   :loc  loc))
+       (decls (append port-vars (list ret-var) decls))
+       ((mv vardecls paramdecls imports) (vl-sort-blockitems decls)))
     (make-vl-fundecl :name       name
                      :lifetime   lifetime
                      :rettype    rettype
                      :portdecls  inputs
-                     :decls      (append port-vars (list ret-var) decls)
+                     :blockitems decls
+                     :vardecls   vardecls
+                     :paramdecls paramdecls
+                     :imports    imports
                      :body       body
                      :atts       atts
                      :loc        loc)))
@@ -184,11 +190,16 @@ information.</p>"
   :long "<p>This mainly just adds the @('VL_HIDDEN_DECL_FOR_TASKPORT')
 variables.  See the description of <i>decls</i> in @(see vl-taskdecl) for more
 information.</p>"
-  (b* ((port-vars (vl-make-hidden-variables-for-portdecls ports)))
+  (b* ((port-vars (vl-make-hidden-variables-for-portdecls ports))
+       (decls (append port-vars decls))
+       ((mv vardecls paramdecls imports) (vl-sort-blockitems decls)))
     (make-vl-taskdecl :name      name
                       :lifetime  lifetime
                       :portdecls ports
-                      :decls     (append port-vars decls)
+                      :blockitems decls
+                      :vardecls   vardecls
+                      :paramdecls paramdecls
+                      :imports    imports
                       :body      body
                       :atts      atts
                       :loc       loc)))

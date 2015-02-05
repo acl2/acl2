@@ -36,7 +36,8 @@
 (include-book "../util/print")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
-(local (in-theory (disable double-containment)))
+(local (in-theory (disable double-containment
+                           (tau-system))))
 
 (define vl-pp-strings-separated-by-commas ((x string-listp) &key (ps 'ps))
   (cond ((atom x)
@@ -413,6 +414,7 @@ displays.  The module browser's web pages are responsible for defining the
                              (vl-keyguts->type x)))))
 
 (define vl-pp-extint ((x vl-extint-p) &key (ps 'ps))
+  :prepwork ((local (in-theory (enable (tau-system)))))
   (b* (((vl-extint x) x))
     (vl-print-str
      (case x.value
@@ -459,7 +461,8 @@ displays.  The module browser's web pages are responsible for defining the
 
 
 (define vl-pp-atomguts ((x vl-atomguts-p) &key (ps 'ps))
-  :guard-hints (("Goal" :in-theory (enable vl-atomguts-p)))
+  :guard-hints (("Goal" :in-theory (enable vl-atomguts-p
+                                           tag-reasoning)))
   (let ((x (vl-atomguts-fix x)))
     (case (tag x)
       (:vl-id         (vl-pp-id x))
@@ -1958,18 +1961,6 @@ expression into a string."
     (vl-pp-vardecllist-comma-separated (cdr x))))
 
 
-(define vl-pp-blockitem ((x vl-blockitem-p) &key (ps 'ps))
-  (b* ((x (vl-blockitem-fix x)))
-    (case (tag x)
-      (:vl-vardecl   (vl-pp-vardecl x))
-      (:vl-paramdecl (vl-pp-paramdecl x))
-      (otherwise     (progn$ (impossible) ps)))))
-
-(define vl-pp-blockitemlist ((x vl-blockitemlist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-blockitem (car x))
-               (vl-pp-blockitemlist (cdr x)))))
 
 
 
@@ -2445,12 +2436,48 @@ expression into a string."
                (vl-pp-eventcontrol ctrl))))
 
 (define vl-pp-delayoreventcontrol ((x vl-delayoreventcontrol-p) &key (ps 'ps))
-  :guard-hints (("Goal" :in-theory (enable vl-delayoreventcontrol-p)))
+  :guard-hints (("Goal" :in-theory (enable vl-delayoreventcontrol-p
+                                           tag-reasoning)))
   (b* ((x (vl-delayoreventcontrol-fix x)))
     (case (tag x)
       (:vl-delaycontrol (vl-pp-delaycontrol x))
       (:vl-eventcontrol (vl-pp-eventcontrol x))
       (otherwise        (vl-pp-repeateventcontrol x)))))
+
+
+
+
+;; BOZO move to parsetree
+(encapsulate
+  ()
+  (local (defthm l0
+           (implies (vl-importpart-p x)
+                    (equal (stringp x)
+                           (not (equal x :vl-import*))))
+           :hints(("Goal" :in-theory (enable vl-importpart-p)))))
+
+  (defthm stringp-of-vl-import->part
+    (implies (vl-import-p x)
+             (equal (stringp (vl-import->part x))
+                    (not (equal (vl-import->part x) :vl-import*))))))
+
+(define vl-pp-import ((x vl-import-p) &key (ps 'ps))
+  :guard-hints(("Goal" :in-theory (enable vl-importpart-p)))
+  (b* (((vl-import x) x))
+    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key" (vl-print "import "))
+               (vl-print-modname x.pkg)
+               (vl-print "::")
+               (if (eq x.part :vl-import*)
+                   (vl-print "*")
+                 (vl-print-str x.part))
+               (vl-println " ;"))))
+
+(define vl-pp-importlist ((x vl-importlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-import (car x))
+               (vl-pp-importlist (cdr x)))))
 
 
 
@@ -2479,12 +2506,31 @@ expression into a string."
           (ps (vl-ps-update-autowrap-ind _pp_stmt_autowrap_ind_)))
      ps))
 
-(define vl-pp-blockitemlist-indented ((x vl-blockitemlist-p) &key (ps 'ps))
+
+(define vl-pp-vardecllist-indented ((x vl-vardecllist-p)
+                                    &key (ps 'ps))
   (if (atom x)
       ps
-    (vl-ps-seq
-     (vl-pp-stmt-indented (vl-pp-blockitem (car x)))
-     (vl-pp-blockitemlist-indented (cdr x)))))
+    (vl-ps-seq (vl-pp-stmt-autoindent)
+               (vl-pp-vardecl (car x))
+               (vl-pp-vardecllist-indented (cdr x)))))
+
+(define vl-pp-paramdecllist-indented ((x vl-paramdecllist-p)
+                                    &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-stmt-autoindent)
+               (vl-pp-paramdecl (car x))
+               (vl-pp-paramdecllist-indented (cdr x)))))
+
+(define vl-pp-importlist-indented ((x vl-importlist-p)
+                                    &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-stmt-autoindent)
+               (vl-pp-import (car x))
+               (vl-pp-importlist-indented (cdr x)))))
+
 
 (define vl-casetype-string ((x vl-casetype-p))
   :returns (str stringp :rule-classes :type-prescription)
@@ -2524,7 +2570,13 @@ expression into a string."
        
 
 (defines vl-pp-stmt
-
+  :prepwork ((local (in-theory (disable not)))
+             (local (defthm vl-deassignstmt->type-possibilities
+                      (or (eq (vl-deassignstmt->type x) :vl-deassign)
+                          (eq (vl-deassignstmt->type x) :vl-release))
+                      :hints (("goal" :use vl-deassign-type-p-of-vl-deassignstmt->type
+                               :in-theory '(vl-deassign-type-p)))
+                      :rule-classes ((:forward-chaining :trigger-terms ((vl-deassignstmt->type x)))))))
   (define vl-pp-stmt ((x vl-stmt-p) &key (ps 'ps))
     :measure (vl-stmt-count x)
     (vl-stmt-case x
@@ -2631,11 +2683,16 @@ expression into a string."
                     (vl-print " : ")
                     (vl-ps-span "vl_id"
                                 (vl-print-str (vl-maybe-escape-identifier x.name)))
-                    (if (not x.decls)
-                        (vl-println "")
-                      (vl-ps-seq
-                       (vl-println "")
-                       (vl-pp-blockitemlist-indented x.decls)))))
+                    (vl-println "")))
+                 (if (not x.imports)
+                     ps
+                   (vl-pp-importlist-indented x.imports))
+                 (if (not x.paramdecls)
+                     ps
+                   (vl-pp-paramdecllist-indented x.paramdecls))
+                 (if (not x.vardecls)
+                     ps
+                   (vl-pp-vardecllist-indented x.vardecls))
                  (vl-pp-stmt-indented (vl-pp-stmtlist x.stmts))
                  (vl-pp-stmt-autoindent)
                  (vl-ps-span "vl_key" (vl-print-str (if x.sequentialp "end" "join")))
@@ -2830,7 +2887,9 @@ expression into a string."
                (vl-print-wirename x.name)
                (vl-println ";")
                (vl-pp-portdecllist x.portdecls)
-               (vl-pp-blockitemlist x.decls)
+               (vl-pp-importlist x.imports)
+               (vl-pp-paramdecllist x.paramdecls)
+               (vl-pp-vardecllist x.vardecls)
                (vl-print "  ")
                (vl-pp-stmt x.body)
                (vl-basic-cw "~|") ;; newline only if necessary
@@ -2860,7 +2919,9 @@ expression into a string."
                (vl-print-wirename x.name)
                (vl-println ";")
                (vl-pp-portdecllist x.portdecls)
-               (vl-pp-blockitemlist x.decls)
+               (vl-pp-importlist x.imports)
+               (vl-pp-paramdecllist x.paramdecls)
+               (vl-pp-vardecllist x.vardecls)
                (vl-print "  ")
                (vl-pp-stmt x.body)
                (vl-basic-cw "~|") ;; newline only if necessary
@@ -2926,38 +2987,6 @@ expression into a string."
     (vl-ps-seq (vl-pp-typedef (car x))
                (vl-pp-typedeflist (cdr x)))))
 
-
-;; BOZO move to parsetree
-(encapsulate
-  ()
-  (local (defthm l0
-           (implies (vl-importpart-p x)
-                    (equal (stringp x)
-                           (not (equal x :vl-import*))))
-           :hints(("Goal" :in-theory (enable vl-importpart-p)))))
-
-  (defthm stringp-of-vl-import->part
-    (implies (vl-import-p x)
-             (equal (stringp (vl-import->part x))
-                    (not (equal (vl-import->part x) :vl-import*))))))
-
-(define vl-pp-import ((x vl-import-p) &key (ps 'ps))
-  :guard-hints(("Goal" :in-theory (enable vl-importpart-p)))
-  (b* (((vl-import x) x))
-    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
-               (vl-ps-span "vl_key" (vl-print "import "))
-               (vl-print-modname x.pkg)
-               (vl-print "::")
-               (if (eq x.part :vl-import*)
-                   (vl-print "*")
-                 (vl-print-str x.part))
-               (vl-println " ;"))))
-
-(define vl-pp-importlist ((x vl-importlist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-import (car x))
-               (vl-pp-importlist (cdr x)))))
 
 
 

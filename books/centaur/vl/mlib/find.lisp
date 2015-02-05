@@ -60,26 +60,26 @@
 ; To keep parsetree.lisp lighter we don't include some of the vl-foolist->names
 ; style functions.  So, we fill these in to start with.
 
-(define vl-blockitem->name ((x vl-blockitem-p))
-  :parents (vl-blockitem)
-  :returns (name stringp :rule-classes :type-prescription)
-  :prepwork ((local (defthm tag-when-vl-blockitem-p
-                      (implies (vl-blockitem-p x)
-                               (or (equal (tag x) :vl-vardecl)
-                                   (equal (tag x) :vl-paramdecl)))
-                      :rule-classes :forward-chaining))
-             (local (defthm vl-blockitem-p-of-vl-blockitem-fix-forward
-                      (vl-blockitem-p (vl-blockitem-fix x))
-                      :rule-classes ((:forward-chaining :trigger-terms ((vl-blockitem-fix x)))))))
-  (b* ((x (vl-blockitem-fix x)))
-    (case (tag x)
-      (:vl-vardecl (vl-vardecl->name x))
-      (otherwise   (vl-paramdecl->name x)))))
+;; (define vl-blockitem->name ((x vl-blockitem-p))
+;;   :parents (vl-blockitem)
+;;   :returns (name stringp :rule-classes :type-prescription)
+;;   :prepwork ((local (defthm tag-when-vl-blockitem-p
+;;                       (implies (vl-blockitem-p x)
+;;                                (or (equal (tag x) :vl-vardecl)
+;;                                    (equal (tag x) :vl-paramdecl)))
+;;                       :rule-classes :forward-chaining))
+;;              (local (defthm vl-blockitem-p-of-vl-blockitem-fix-forward
+;;                       (vl-blockitem-p (vl-blockitem-fix x))
+;;                       :rule-classes ((:forward-chaining :trigger-terms ((vl-blockitem-fix x)))))))
+;;   (b* ((x (vl-blockitem-fix x)))
+;;     (case (tag x)
+;;       (:vl-vardecl (vl-vardecl->name x))
+;;       (otherwise   (vl-paramdecl->name x)))))
 
-(defprojection vl-blockitemlist->names ((x vl-blockitemlist-p))
-  :returns (names string-listp)
-  :parents (vl-blockitemlist-p)
-  (vl-blockitem->name x))
+;; (defprojection vl-blockitemlist->names ((x vl-blockitemlist-p))
+;;   :returns (names string-listp)
+;;   :parents (vl-blockitemlist-p)
+;;   (vl-blockitem->name x))
 
 (defprojection vl-paramdecllist->names ((x vl-paramdecllist-p))
   :returns (names string-listp)
@@ -572,8 +572,8 @@ fast alists binding names to items that can be used for this purpose.</p>")
   :maybe-stringp t
   :sum-type      t)
 
-(def-vl-finder blockitem
-  :sum-type t)
+;; (def-vl-finder blockitem
+;;   :sum-type t)
 
 
 
