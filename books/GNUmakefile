@@ -85,6 +85,10 @@
 #                 Experimental; needed for certain books.  Quicklisp is a
 #                 packaging system for Common Lisp libraries, sort of like CPAN
 #                 for Perl or RubyGems for Ruby.  May not work with some Lisps.
+#                 This might still work if the system books directory is
+#                 relocated after certification.  But if, after the move, you
+#                 want to certify books that depend on quicklisp, you should
+#                 probably run "make quicklisp_clean" first.
 #
 # Advanced Options:
 #
