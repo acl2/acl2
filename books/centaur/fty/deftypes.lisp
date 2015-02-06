@@ -1935,6 +1935,7 @@
        :short ,short
        :inline t
        :measure ,sum.measure
+       (declare (xargs :measure-debug t))
        ,@(and flagp `(:flag ,sum.name))
        :returns (,newx ,sum.pred
                        :hints('(:in-theory (disable ,sum.fix ,sum.pred)
@@ -2361,9 +2362,13 @@
                                                         x.acc-name)
                    (implies (not ,prod.guard)
                             (equal (,x.acc-name ,sum.xvar)
-                                   ,(if x.fix
-                                        `(,x.fix nil)
-                                      nil)))
+                                   ,(if (eq x.reqfix x.name)
+                                        (if x.fix
+                                            `(,x.fix nil)
+                                          nil)
+                                      `(b* ((,sum.xvar nil)
+                                            . ,(flexprod-fields-typefix-bindings prod.fields))
+                                         ,x.reqfix))))
                    :hints(("Goal" :in-theory
                            (disable ,@(and sum.kind `(,sum.kind)))))))))
 

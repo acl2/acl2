@@ -39,7 +39,7 @@
 (local (in-theory (disable double-containment)))
 (local (in-theory (disable vl-atts-p-of-cdr-when-vl-atts-p
                            vl-atts-p-when-subsetp-equal
-                           alistp-when-vl-atts-p-rewrite
+                           ;; alistp-when-vl-atts-p-rewrite
                            default-car default-cdr
                            acl2::lower-bound-of-car-when-nat-listp
                            stringp-when-true-listp
@@ -69,7 +69,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2015-02-05")
+  "VL Syntax 2115-02-05")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -110,64 +110,57 @@ regular view of the source code.</p>")
 
 (local (xdoc::set-default-parents syntax))
 
-(defoption maybe-stringp stringp
-  ;; BOZO misplaced, also has documentation issues
-  :parents nil
-  :fix maybe-string-fix
-  :equiv maybe-string-equiv
-  :pkg vl::foo)
+;; (defprod vl-range
+;;   :short "Representation of ranges on wire declarations, instance array
+;; declarations, and so forth."
+;;   :tag :vl-range
+;;   :layout :tree
 
-(defprod vl-range
-  :short "Representation of ranges on wire declarations, instance array
-declarations, and so forth."
-  :tag :vl-range
-  :layout :tree
+;;   ((msb vl-expr-p)
+;;    (lsb vl-expr-p))
 
-  ((msb vl-expr-p)
-   (lsb vl-expr-p))
+;;   :long "<p>Ranges are discussed in Section 7.1.5.</p>
 
-  :long "<p>Ranges are discussed in Section 7.1.5.</p>
+;; <p>Ranges in declarations and array instances look like @('[msb:lsb]'), but do
+;; not confuse them with part-select expressions which have the same syntax.</p>
 
-<p>Ranges in declarations and array instances look like @('[msb:lsb]'), but do
-not confuse them with part-select expressions which have the same syntax.</p>
+;; <p>The expressions in the @('msb') and @('lsb') positions are expected to
+;; resolve to constants.  Note that the parser does not try to simplify these
+;; expressions, but some simplification is performed in transformations such as
+;; @(see rangeresolve) and @(see unparameterization).</p>
 
-<p>The expressions in the @('msb') and @('lsb') positions are expected to
-resolve to constants.  Note that the parser does not try to simplify these
-expressions, but some simplification is performed in transformations such as
-@(see rangeresolve) and @(see unparameterization).</p>
+;; <p>Even after the expressions have become constants, the Verilog-2005 standard
+;; does not require @('msb') to be greater than @('lsb'), and neither index is
+;; required to be zero.  In fact, even negative indicies seem to be permitted,
+;; which is quite amazing and strange.</p>
 
-<p>Even after the expressions have become constants, the Verilog-2005 standard
-does not require @('msb') to be greater than @('lsb'), and neither index is
-required to be zero.  In fact, even negative indicies seem to be permitted,
-which is quite amazing and strange.</p>
+;; <p>While we do not impose any restrictions in @('vl-range-p') itself, some
+;; transformations expect the indices to be resolved to integers.  However, we now
+;; try to support the use of both ascending and descending ranges.</p>")
 
-<p>While we do not impose any restrictions in @('vl-range-p') itself, some
-transformations expect the indices to be resolved to integers.  However, we now
-try to support the use of both ascending and descending ranges.</p>")
+;; (defoption vl-maybe-range-p vl-range-p
+;;   :parents (syntax vl-range-p)
+;;   ///
+;;   (defthm type-when-vl-maybe-range-p
+;;     (implies (vl-maybe-range-p x)
+;;              (or (consp x)
+;;                  (not x)))
+;;     :rule-classes :compound-recognizer))
 
-(defoption vl-maybe-range-p vl-range-p
-  :parents (syntax vl-range-p)
-  ///
-  (defthm type-when-vl-maybe-range-p
-    (implies (vl-maybe-range-p x)
-             (or (consp x)
-                 (not x)))
-    :rule-classes :compound-recognizer))
+;; (fty::deflist vl-maybe-range-list
+;;               :elt-type vl-maybe-range-p
+;;               :elementp-of-nil t
+;;               :true-listp nil)
 
-(fty::deflist vl-maybe-range-list
-              :elt-type vl-maybe-range-p
-              :elementp-of-nil t
-              :true-listp nil)
+;; (fty::deflist vl-rangelist
+;;               :elt-type vl-range-p
+;;               :elementp-of-nil nil
+;;               :true-listp nil)
 
-(fty::deflist vl-rangelist
-              :elt-type vl-range-p
-              :elementp-of-nil nil
-              :true-listp nil)
-
-(fty::deflist vl-rangelist-list
-              :elt-type vl-rangelist-p
-              :true-listp nil
-              :elementp-of-nil t)
+;; (fty::deflist vl-rangelist-list
+;;               :elt-type vl-rangelist-p
+;;               :true-listp nil
+;;               :elementp-of-nil t)
 
 
 
@@ -179,11 +172,11 @@ try to support the use of both ascending and descending ranges.</p>")
 ;
 ; -----------------------------------------------------------------------------
 
-(defenum vl-randomqualifier-p
-  (nil
-   :vl-rand
-   :vl-randc)
-  :short "Random qualifiers that can be put on struct or union members.")
+;; (defenum vl-randomqualifier-p
+;;   (nil
+;;    :vl-rand
+;;    :vl-randc)
+;;   :short "Random qualifiers that can be put on struct or union members.")
 
 (defenum vl-nettypename-p
   (:vl-wire ;; Most common so it goes first.
@@ -206,398 +199,8 @@ correspond to the possible types.</p>")
 
 (defoption vl-maybe-nettypename-p vl-nettypename-p)
 
-(defenum vl-coretypename-p
-  (;; integer vector types, i put these first since they're common
-   :vl-logic
-   :vl-reg
-   :vl-bit
-   ;; integer atom types:
-   :vl-byte
-   :vl-shortint
-   :vl-int
-   :vl-longint
-   :vl-integer
-   :vl-time
-   ;; non integer types:
-   :vl-shortreal
-   :vl-real
-   :vl-realtime
-   ;; misc core data types
-   :vl-string
-   :vl-chandle
-   :vl-event
-   ;; it's convenient to include void here even though it's not part
-   ;; of the grammar for data_type
-   :vl-void
-   )
-  :short "Basic kinds of data types."
-  :long "<p>Our <i>core types</i> basically correspond to the following small
-subset of the valid @('data_type')s:</p>
-
-@({
-     data_type_or_void ::= data_type | 'void'
-     data_type ::=
-         integer_vector_type [signing] { packed_dimension }
-       | integer_atom_type [signing]
-       | non_integer_type
-       | 'string'
-       | 'chandle'
-       | 'event'
-       | <non core types >
-})
-
-<p>We include @('void') here only because it's convenient to do so.</p>")
 
 
-
-(define vl-packeddimension-p (x)
-  :short "Recognizes ranges and unsized dimensions."
-  :long "<p>From the SystemVerilog-2012 grammar:</p>
-@({
-    unsized_dimension ::= '[' ']'
-    packed_dimension ::= '[' constant_range ']' | unsized_dimension
-})"
-
-  (or (eq x :vl-unsized-dimension)
-      (vl-range-p x))
-  ///
-  (defthm vl-packeddimension-p-when-vl-range-p
-    (implies (vl-range-p x)
-             (vl-packeddimension-p x)))
-  (defthm vl-range-p-when-vl-packeddimension-p
-    (implies (and (not (equal x :vl-unsized-dimension))
-                  (vl-packeddimension-p x))
-             (vl-range-p x))))
-
-(define vl-packeddimension-fix ((x vl-packeddimension-p))
-  :returns (x-fix vl-packeddimension-p)
-  :inline t
-  (mbe :logic (if (vl-packeddimension-p x)
-                  x
-                (vl-range-fix x))
-       :exec x)
-  :prepwork ((local (in-theory (enable vl-packeddimension-p))))
-  ///
-  (defthm vl-packeddimension-fix-when-vl-packeddimension-p
-    (implies (vl-packeddimension-p x)
-             (equal (vl-packeddimension-fix x)
-                    x))))
-
-(deffixtype vl-packeddimension
-  :pred vl-packeddimension-p
-  :fix vl-packeddimension-fix
-  :equiv vl-packeddimension-equiv
-  :define t
-  :forward t)
-
-(fty::deflist vl-packeddimensionlist
-  :elt-type vl-packeddimension
-  :elementp-of-nil nil)
-
-(defoption vl-maybe-packeddimension-p vl-packeddimension-p)
-
-
-(define vl-enumbasekind-p (x)
-  :parents (vl-enumbasetype-p)
-  :short "Kinds of base types for enums."
-  :long "<p>The SystemVerilog-2012 rules for @('enum_base_type') are:</p>
-
-@({
-      enum_base_type ::=
-          integer_atom_type   [signing]
-        | integer_vector_type [signing] [packed_dimension]
-        | type_identifier               [packed_dimension]
-})
-
-<p>A @('vl-enumbasetag-p') corresponds to the main part of this, i.e., it is
-either:</p>
-
-<ul>
- <li>A string, corresponding to the name of the @('type_identifier')</li>
- <li>A symbol like @(':vl-byte'), corresponding to an @('integer_atom_type'), or</li>
- <li>A symbol like @(':vl-logic'), corresponding to an @('integer_vector_type').</li>
-</ul>
-
-<p>Per Section 6.19, the default type is @('int').</p>"
-
-  (or (stringp x)
-      ;; integer atom types
-      (eq x :vl-byte)
-      (eq x :vl-shortint)
-      (eq x :vl-int)
-      (eq x :vl-longint)
-      (eq x :vl-integer)
-      (eq x :vl-time)
-      ;; integer vector types
-      (eq x :vl-bit)
-      (eq x :vl-logic)
-      (eq x :vl-reg)))
-
-(define vl-enumbasekind-fix ((x vl-enumbasekind-p))
-  :returns (x-fix vl-enumbasekind-p)
-  :inline t
-  (mbe :logic (if (vl-enumbasekind-p x)
-                  x
-                :vl-logic)
-       :exec x)
-  ///
-  (defthm vl-enumbasekind-fix-when-vl-enumbasekind-p
-    (implies (vl-enumbasekind-p x)
-             (equal (vl-enumbasekind-fix x)
-                    x))))
-
-(deffixtype vl-enumbasekind
-  :pred vl-enumbasekind-p
-  :fix vl-enumbasekind-fix
-  :equiv vl-enumbasekind-equiv
-  :define t
-  :forward t)
-
-(defprod vl-enumbasetype
-  :tag :vl-enumbasetype
-  :layout :tree
-  :short "The base types for SystemVerilog enumerations."
-  ((kind    vl-enumbasekind-p)
-   (signedp booleanp :rule-classes :type-prescription)
-   (dim     vl-maybe-packeddimension-p))
-
-  :long "<p>The base type for an enumeration is given by the following
-SystemVerilog grammar rule:</p>
-
-@({
-      enum_base_type ::=
-          integer_atom_type [signing]
-        | integer_vector_type [signing] [packed_dimension]
-        | type_identifier [packed_dimension]
-})
-
-<p>The main part of this (integer_atom_type, integer_vector_type, or
-type_identifier) is captured by the <b>kind</b> field.</p>
-
-<p>The <b>signedp</b> field isn't sensible for @('type_identifiers') but we
-include it for uniformity.  For the other kinds of enums, it captures whether
-the @('signed') keyword was mentioned.  or @('unsigned') keywords were
-mentioned.</p>
-
-<p>The optional dimension, if applicable.  BOZO we don't currently support
-unsized dimensions.</p>")
-
-(defprod vl-enumitem
-  :tag :vl-enumitem
-  :layout :tree
-  :short "A single member of an @('enum')."
-  ;; enum_name_declaration ::=
-  ;;   enum_identifier [ [ integral_number [ : integral_number ] ] ] [ = constant_expression ]
-  ((name  stringp           :rule-classes :type-prescription)
-   (range vl-maybe-range-p)
-   (value vl-maybe-expr-p)))
-
-(fty::deflist vl-enumitemlist
-  :elt-type vl-enumitem-p
-  :elementp-of-nil nil)
-
-
-;    variable_dimension ::= unsized_dimension
-;                         | unpacked_dimension
-;                         | associative_dimension
-;                         | queue_dimension
-;
-;    unsized_dimension ::= '[' ']'
-;
-;    unpacked_dimension ::= '[' constant_range ']'
-;                         | '[' constant_expression ']'
-;
-;    associative_dimension ::= '[' data_type ']'
-;                            | '[' '*' ']'
-;
-;    queue_dimension ::= '[' '$' [ ':' constant_expression ] ']'
-
-(deftypes data-types
-
-; BOZO it's a little unfortunate to have to put these measures in here.
-; Without these measures, in the case where a STRUCTMEMBER is an atom, the
-; fixing function just recurs on (cadr x) and so on without ever checking
-; consp, so we just need to rig things up so that structmember can always recur
-; to datatype.  It'd be nice if that were more automatic.
-
-  (deftagsum vl-datatype
-    :measure (two-nats-measure (acl2-count x) 0)
-    (:vl-coretype
-     :layout :tree
-     :base-name vl-coretype
-     :short "Representation of basic SystemVerilog data types like @('integer')
-             and @('string'), and also @('void')."
-
-     ((name    vl-coretypename-p
-               "Kind of primitive data type, e.g., @('byte'), @('string'),
-                etc.")
-
-      (signedp booleanp :rule-classes :type-prescription
-               "Only valid for integer types, indicates whether the integer
-                type is signed or not.")
-
-      (pdims    vl-packeddimensionlist-p
-               "Only valid for integer vector types (bit, logic, reg).  If present
-                these are for an 'packed' array dimensions, i.e., the [7:0] part
-                of a declaration like @('bit [7:0] memory [255:0]').  There can be
-                arbitrarily many of these.")
-
-      (udims   vl-packeddimensionlist-p
-               "Unpacked array dimensions.")))
-
-    (:vl-struct
-     :layout :tree
-     :base-name vl-struct
-     :short "Representation of SystemVerilog structs."
-     ;; data_type ::= ... | struct_union [ 'packed' [signing] ] '{'
-     ;;                       struct_union_member { struct_union_member }
-     ;;                     '}' { packed_dimension }
-     ((packedp booleanp :rule-classes :type-prescription)
-      (signedp booleanp :rule-classes :type-prescription)
-      (members vl-structmemberlist-p)
-      (pdims    vl-packeddimensionlist-p)
-      (udims    vl-packeddimensionlist-p)))
-
-    (:vl-union
-     :layout :tree
-     :base-name vl-union
-     :short "Representation of SystemVerilog unions."
-     ;; data_type ::= ... | struct_union [ 'packed' [signing] ] '{'
-     ;;                       struct_union_member { struct_union_member }
-     ;;                     '}' { packed_dimension }
-     ((packedp booleanp :rule-classes :type-prescription)
-      (signedp booleanp :rule-classes :type-prescription)
-      (taggedp booleanp :rule-classes :type-prescription)
-      (members vl-structmemberlist-p)
-      (pdims    vl-packeddimensionlist-p)
-      (udims    vl-packeddimensionlist-p)))
-
-    (:vl-enum
-     :layout :tree
-     :base-name vl-enum
-     :short "Representation of SystemVerilog enumerations."
-     ;; data_type ::= ... | 'enum' [ enum_base_type ] '{'
-     ;;                        enum_name_declaration { ',' enum_name_declaration }
-     ;;                     '}' { packed_dimension }
-     ((basetype vl-enumbasetype)
-      (items    vl-enumitemlist-p)
-      (pdims    vl-packeddimensionlist-p)
-      (udims    vl-packeddimensionlist-p)))
-
-    (:vl-usertype
-     :layout :tree
-     :base-name vl-usertype
-     ;; data_type ::= ... | [ class_scope | package_scope ] type_identifier { packed_dimension }
-     ((kind vl-expr-p "Kind of this type, should be an identifier or some
-                       kind of scoped/hierarchical identifier.")
-      (pdims    vl-packeddimensionlist-p)
-      (udims    vl-packeddimensionlist-p)))
-
-
-    ;;  BOZO not yet implemented:
-    ;;
-    ;; data_type ::= ...
-    ;;  | 'virtual' [ 'interface' ] interface_identifier [ parameter_value_assignment ] [ '.' modport_identifier ]
-    ;;  | class_type
-    ;;  | type_reference
-    )
-
-  (fty::deflist vl-structmemberlist
-    :measure (two-nats-measure (acl2-count x) 0)
-    :elt-type vl-structmember
-    :elementp-of-nil nil)
-
-  (defprod vl-structmember
-    :measure (two-nats-measure (acl2-count x) 1)
-    :count vl-structmember-count
-    :tag :vl-structmember
-    :layout :tree
-    :short "A single member of a struct or union."
-    ;;   struct_union_member ::=  { attribute_instance } [random_qualifier]
-    ;;                            data_type_or_void
-    ;;                            list_of_variable_decl_assignments ';'
-    ((atts vl-atts-p)
-     (rand vl-randomqualifier-p)
-     (type vl-datatype-p)
-     ;; now we want a single variable_decl_assignment
-     (name stringp :rule-classes :type-prescription)
-     (rhs  vl-maybe-expr-p)
-     )
-    :long "<p>Currently our structure members are very limited.  In the long
-run we may want to support more of the SystemVerilog grammar.  It allows a list
-of variable declaration assignments, which can have fancy dimensions and
-different kinds of @('new') operators.</p>
-
-<p>Notes for the future:</p>
-
-@({
-   variable_decl_assignment ::=
-         variable_identifier { variable_dimension } [ '=' expression ]
-       | dynamic_array_variable_identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
-       | class_variable_identifier [ '=' class_new ]
-})
-
-<p>These fancy _identifiers are all just identifiers.  So really this is:</p>
-
-@({
-     variable_decl_assignment ::=
-         identifier { variable_dimension }                   [ '=' expression ]
-       | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
-       | identifier                                          [ '=' class_new ]
-})
-
-<p>The @('new') keyword can occur in a variety of places.  One of these is
-related to defining constructors for classes, e.g., in class constructor
-prototypes/declarations we can have things like</p>
-
-@({
-     function ... new (...) ...
-})
-
-<p>And @('super.new(...)') and so on.  But for now let's think of these as
-separate cases; that is, our approach to @('new') in other contexts doesn't
-necessarily need to have anything to do with these constructors, which we might
-instead handle more explicitly.</p>
-
-<p>The other places where @('new') can occur are in:</p>
-
-@({
-    dynamic_array_new ::= new '[' expression ']' [ '(' expression ')' ]
-
-    class_new ::= [ class_scope ] 'new' [ '(' list_of_arguments ')' ]
-                | 'new' expression
-})
-
-<p>Which in turn can occur in blocking assignments:</p>
-
-@({
-         [some fancy lhs] = dynamic_array_new
-      or [some other fancy lhs] = class_new
-      or other things not involving new
-})
-
-<p>(Which is interesting because we also have to support a lot of other new
-kinds of assignments like @('+=') and @('*='), so maybe this could become a
-@('new=') kind of assignment or something.)</p>
-
-<p>And they can also occur in variable decl assignments:</p>
-
-@({
-          simple id [ = expression ]
-      or  some fancy lhs with some various dimensions [= dynamic_array_new]
-      or  some simple lhs [= class_new]
-})
-
-<p>Which can occur in:</p>
-
-<ul>
-<li>SVA assertion variable declarations</li>
-<li>Data declarations (e.g., top-level @('const suchandso = new ...')</li>
-<li>Structure members in structs and unions.</li>
-</ul>
-
-<p>So maybe we don't so much need these to be expressions.  Maybe we can get
-away with them as alternate kinds of assignments.</p>"))
 
 (define vl-datatype->pdims ((x vl-datatype-p))
   :returns (pdims vl-packeddimensionlist-p)
@@ -673,8 +276,6 @@ away with them as alternate kinds of assignments.</p>"))
                   :vl-enum (change-vl-enum x :udims udims)
                   :vl-usertype (change-vl-usertype x :udims udims))))
 
-
-(defoption vl-maybe-datatype-p vl-datatype-p)
 
 
 (defval *vl-plain-old-integer-type*
@@ -1709,6 +1310,7 @@ variety.</p>"
 
 
 
+
 (defsection vl-paramvalue
   :parents (vl-paramargs)
   :short "Representation for the actual values given to parameters."
@@ -1736,130 +1338,137 @@ corresponds to the SystemVerilog @('param_exprewssion') grammar rule:</p>
 <p>But note that @('$') is a valid @(see vl-expr-p) so this essentially
 collapses into only two cases: expression or data type.</p>")
 
-(encapsulate
-  ()
-  (local (xdoc::set-default-parents vl-paramvalue))
-
-  (local (defthmd l0
-           (implies (vl-expr-p x)
-                    (equal (vl-expr-kind x)
-                           (tag x)))
-           :hints(("Goal" :in-theory (enable vl-expr-kind vl-expr-p tag)))))
-
-  (local (defthmd l1
-           (implies (vl-datatype-p x)
-                    (equal (vl-datatype-kind x)
-                           (tag x)))
-           :hints(("Goal" :in-theory (enable vl-datatype-kind tag vl-datatype-p)))))
-
-  (local (defthm l2
-           (implies (vl-expr-p x)
-                    (or (eq (tag x) :atom)
-                        (eq (tag x) :nonatom)))
-           :rule-classes :forward-chaining
-           :hints(("Goal" :use ((:instance l0))))))
-
-  (local (defthm l3
-           (implies (vl-datatype-p x)
-                    (not (or (eq (tag x) :atom)
-                             (eq (tag x) :nonatom))))
-           :rule-classes :forward-chaining
-           :hints(("Goal" :use ((:instance l1))))))
+(deftagsum vl-paramvalue
+  (:type ((type vl-datatype)))
+  (:expr ((expr vl-expr))))
 
 
-  (define vl-paramvalue-p (x)
-    :short "Recognizer for valid @(see vl-paramvalue) structures."
-    (mbe :logic
-         (or (vl-expr-p x)
-             (vl-datatype-p x))
-         :exec
-         (b* ((tag (tag x)))
-           (if (or (eq tag :atom)
-                   (eq tag :nonatom))
-               (vl-expr-p x)
-             (vl-datatype-p x))))
-    ///
-    (defthm type-when-vl-paramvalue-p
-      (implies (vl-paramvalue-p x)
-               (consp x))
-      :rule-classes :compound-recognizer)
 
-    (defthm vl-paramvalue-p-forward
-      (implies (vl-paramvalue-p x)
-               (or (vl-expr-p x)
-                   (vl-datatype-p x)))
-      :rule-classes :forward-chaining)
+;; (encapsulate
+;;   ()
+;;   (local (xdoc::set-default-parents vl-paramvalue))
 
-    (defthm vl-paramvalue-p-when-vl-expr-p
-      (implies (vl-expr-p x)
-               (vl-paramvalue-p x)))
+;;   (local (defthmd l0
+;;            (implies (vl-expr-p x)
+;;                     (equal (vl-expr-kind x)
+;;                            (tag x)))
+;;            :hints(("Goal" :in-theory (enable vl-expr-kind vl-expr-p tag)))))
 
-    (defthm vl-paramvalue-p-when-vl-datatype-p
-      (implies (vl-datatype-p x)
-               (vl-paramvalue-p x))))
+;;   (local (defthmd l1
+;;            (implies (vl-datatype-p x)
+;;                     (equal (vl-datatype-kind x)
+;;                            (tag x)))
+;;            :hints(("Goal" :in-theory (enable vl-datatype-kind tag vl-datatype-p)))))
 
-  (define vl-paramvalue-fix ((x vl-paramvalue-p))
-    :short "Fixing function for @(see vl-paramvalue) structures."
-    :inline t
-    :returns (x-fix vl-paramvalue-p)
-    (mbe :logic
-         (if (vl-expr-p x)
-             (vl-expr-fix x)
-           (vl-datatype-fix x))
-         :exec
-         x)
-    ///
-    (defthm vl-paramvalue-fix-when-vl-paramvalue-p
-      (implies (vl-paramvalue-p x)
-               (equal (vl-paramvalue-fix x)
-                      x))))
+;;   (local (defthm l2
+;;            (implies (vl-expr-p x)
+;;                     (or (eq (tag x) :atom)
+;;                         (eq (tag x) :nonatom)))
+;;            :rule-classes :forward-chaining
+;;            :hints(("Goal" :use ((:instance l0))))))
 
-  (deffixtype vl-paramvalue
-    :pred vl-paramvalue-p
-    :fix vl-paramvalue-fix
-    :equiv vl-paramvalue-equiv
-    :define t
-    :forward t)
+;;   (local (defthm l3
+;;            (implies (vl-datatype-p x)
+;;                     (not (or (eq (tag x) :atom)
+;;                              (eq (tag x) :nonatom))))
+;;            :rule-classes :forward-chaining
+;;            :hints(("Goal" :use ((:instance l1))))))
 
-  (define vl-paramvalue-expr-p ((x vl-paramvalue-p))
-    :short "Fast recognizer for @(see vl-paramvalue)s that are expressions."
-    :enabled t
-    :inline t
-    (mbe :logic (vl-expr-p (vl-paramvalue-fix x))
-         :exec (b* ((tag (tag x)))
-                 (or (eq tag :atom)
-                     (eq tag :nonatom)))))
 
-  (define vl-paramvalue-datatype-p ((x vl-paramvalue-p))
-    :short "Fast recognizer for @(see vl-paramvalue)s that are expressions."
-    :enabled t
-    :inline t
-    (mbe :logic (vl-datatype-p (vl-paramvalue-fix x))
-         :exec (not (vl-paramvalue-expr-p x))))
+;;   (define vl-paramvalue-p (x)
+;;     :short "Recognizer for valid @(see vl-paramvalue) structures."
+;;     (mbe :logic
+;;          (or (vl-expr-p x)
+;;              (vl-datatype-p x))
+;;          :exec
+;;          (b* ((tag (tag x)))
+;;            (if (or (eq tag :atom)
+;;                    (eq tag :nonatom))
+;;                (vl-expr-p x)
+;;              (vl-datatype-p x))))
+;;     ///
+;;     (defthm type-when-vl-paramvalue-p
+;;       (implies (vl-paramvalue-p x)
+;;                (consp x))
+;;       :rule-classes :compound-recognizer)
 
-  (defxdoc vl-paramvalue-case
-    :short "Case macro for @(see vl-paramvalue)s."
-    :long "@(def vl-paramvalue-case)")
+;;     (defthm vl-paramvalue-p-forward
+;;       (implies (vl-paramvalue-p x)
+;;                (or (vl-expr-p x)
+;;                    (vl-datatype-p x)))
+;;       :rule-classes :forward-chaining)
 
-  (defmacro vl-paramvalue-case (x &key expr datatype)
-    `(if (vl-paramvalue-expr-p ,x)
-         ,expr
-       ,datatype)))
+;;     (defthm vl-paramvalue-p-when-vl-expr-p
+;;       (implies (vl-expr-p x)
+;;                (vl-paramvalue-p x)))
+
+;;     (defthm vl-paramvalue-p-when-vl-datatype-p
+;;       (implies (vl-datatype-p x)
+;;                (vl-paramvalue-p x))))
+
+;;   (define vl-paramvalue-fix ((x vl-paramvalue-p))
+;;     :short "Fixing function for @(see vl-paramvalue) structures."
+;;     :inline t
+;;     :returns (x-fix vl-paramvalue-p)
+;;     (mbe :logic
+;;          (if (vl-expr-p x)
+;;              (vl-expr-fix x)
+;;            (vl-datatype-fix x))
+;;          :exec
+;;          x)
+;;     ///
+;;     (defthm vl-paramvalue-fix-when-vl-paramvalue-p
+;;       (implies (vl-paramvalue-p x)
+;;                (equal (vl-paramvalue-fix x)
+;;                       x))))
+
+;;   (deffixtype vl-paramvalue
+;;     :pred vl-paramvalue-p
+;;     :fix vl-paramvalue-fix
+;;     :equiv vl-paramvalue-equiv
+;;     :define t
+;;     :forward t)
+
+;;   (define vl-paramvalue-expr-p ((x vl-paramvalue-p))
+;;     :short "Fast recognizer for @(see vl-paramvalue)s that are expressions."
+;;     :enabled t
+;;     :inline t
+;;     (mbe :logic (vl-expr-p (vl-paramvalue-fix x))
+;;          :exec (b* ((tag (tag x)))
+;;                  (or (eq tag :atom)
+;;                      (eq tag :nonatom)))))
+
+;;   (define vl-paramvalue-datatype-p ((x vl-paramvalue-p))
+;;     :short "Fast recognizer for @(see vl-paramvalue)s that are expressions."
+;;     :enabled t
+;;     :inline t
+;;     (mbe :logic (vl-datatype-p (vl-paramvalue-fix x))
+;;          :exec (not (vl-paramvalue-expr-p x))))
+
+;;   (defxdoc vl-paramvalue-case
+;;     :short "Case macro for @(see vl-paramvalue)s."
+;;     :long "@(def vl-paramvalue-case)")
+
+;;   (defmacro vl-paramvalue-case (x &key expr datatype)
+;;     `(if (vl-paramvalue-expr-p ,x)
+;;          ,expr
+;;        ,datatype)))
 
 (fty::deflist vl-paramvaluelist
               :elt-type vl-paramvalue-p
               :true-listp nil
               :elementp-of-nil nil
               ///
-              (defthm vl-paramvaluelist-p-when-vl-exprlist-p
-                (implies (vl-exprlist-p x)
-                         (vl-paramvaluelist-p x))
-                :hints(("Goal" :induct (len x)))))
+              ;; (defthm vl-paramvaluelist-p-when-vl-exprlist-p
+              ;;   (implies (vl-exprlist-p x)
+              ;;            (vl-paramvaluelist-p x))
+              ;;   :hints(("Goal" :induct (len x))))
+              )
 
-(local (defthm vl-paramvalue-fix-nonnil
-         (vl-paramvalue-fix x)
-         :hints(("Goal" :in-theory (enable (tau-system))))
-         :rule-classes :type-prescription))
+;; (local (defthm vl-paramvalue-fix-nonnil
+;;          (vl-paramvalue-fix x)
+;;          :hints(("Goal" :in-theory (enable (tau-system))))
+;;          :rule-classes :type-prescription))
 
 (defoption vl-maybe-paramvalue-p vl-paramvalue-p
   :parents (vl-paramargs)
@@ -2524,10 +2133,10 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
                               VL-ATTS-P-OF-CDR-WHEN-VL-ATTS-P
                               ACL2::CONSP-OF-CAR-WHEN-ALISTP
                               acl2::car-when-all-equalp
-                              VL-EXPRLIST-P-OF-CAR-WHEN-VL-EXPRLISTLIST-P
+                              ;; VL-EXPRLIST-P-OF-CAR-WHEN-VL-EXPRLISTLIST-P
                               VL-EXPRLIST-P-OF-CDR-WHEN-VL-EXPRLIST-P
                               VL-EXPR-P-WHEN-VL-MAYBE-EXPR-P
-                              VL-EXPRLISTLIST-P-OF-CDR-WHEN-VL-EXPRLISTLIST-P
+                              ;; VL-EXPRLISTLIST-P-OF-CDR-WHEN-VL-EXPRLISTLIST-P
                               ))))
 
   (fty::deflist vl-stmtlist
@@ -3512,7 +3121,7 @@ initially kept in a big, mixed list.</p>"
        :base-name vl-genloop
        :layout :tree
        :short "A loop generate construct"
-       ((var        vl-id            "the iterator variable")
+       ((var        stringp          "the iterator variable")
         (initval    vl-expr-p        "initial value of the iterator")
         (continue   vl-expr-p        "continue the loop until this is false")
         (nextval    vl-expr-p        "next value of the iterator")
@@ -3551,7 +3160,7 @@ initially kept in a big, mixed list.</p>"
        :layout :tree
        :short "Normalized form of a generate loop."
        ((name      maybe-stringp     "the name of the block array, if named")
-        (var       vl-id             "the iterator variable")
+        (var       stringp           "the iterator variable")
         (blocks    vl-genarrayblocklist-p "the blocks produced by the loop")
         (loc       vl-location)))
 
@@ -3906,12 +3515,12 @@ is trying to instantiate itself!</p>
 in a primitive flop/latch with instances of flop/latch primitives, etc.  So as
 a general rule, we mark the primitives with @('VL_HANDS_OFF') and code our
 transforms to not modules with this attribute.</p>"
-  :prepwork ((local (defthm alistp-when-atts-p
-                      (implies (vl-atts-p x)
-                               (alistp x))
-                      :hints(("Goal" :in-theory (enable alistp))))))
+  ;; :prepwork ((local (defthm alistp-when-atts-p
+  ;;                     (implies (vl-atts-p x)
+  ;;                              (alistp x))
+  ;;                     :hints(("Goal" :in-theory (enable alistp))))))
   :inline t
-  (consp (assoc-equal "VL_HANDS_OFF" (vl-module->atts x))))
+  (consp (hons-assoc-equal "VL_HANDS_OFF" (vl-module->atts x))))
 
 (define vl-module->ifports
   :short "Collect just the interface ports for a module."
