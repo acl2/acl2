@@ -48,7 +48,6 @@
 (include-book "centaur/vl/transforms/elim-supply" :dir :system)
 (include-book "centaur/vl/transforms/expand-functions" :dir :system)
 (include-book "centaur/vl/transforms/expr-split" :dir :system)
-(include-book "centaur/vl/transforms/follow-hids" :dir :system)
 (include-book "centaur/vl/transforms/gatesplit" :dir :system)
 (include-book "centaur/vl/transforms/gate-elim" :dir :system)
 (include-book "centaur/vl/transforms/oprewrite" :dir :system)

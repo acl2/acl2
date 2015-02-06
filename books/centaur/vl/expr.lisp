@@ -411,7 +411,9 @@ and avoid large case splits.</p>"
   :fix vl-op-fix
   :equiv vl-op-equiv
   :define t
-  :forward t)
+  :forward t
+  :inline t
+  :equal eq)
 
 (fty::deflist vl-oplist
               :elt-type vl-op-p

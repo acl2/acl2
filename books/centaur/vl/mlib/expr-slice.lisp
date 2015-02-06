@@ -431,11 +431,11 @@ need to convert them into individual bits in the same order.</p>"
 
 
 
-(local (defthm vl-hidexpr-p-possible-ops
-         (implies (and (vl-hidexpr-p x)
-                       (not (vl-atom-p x)))
-                  (member (vl-nonatom->op x) '(:vl-index :vl-hid-dot)))
-         :hints(("Goal" :in-theory (enable vl-hidexpr-p vl-hidindex-p)))))
+;; (local (defthm vl-hidexpr-p-possible-ops
+;;          (implies (and (vl-hidexpr-p x)
+;;                        (not (vl-atom-p x)))
+;;                   (member (vl-nonatom->op x) '(:vl-hid-dot)))
+;;          :hints(("Goal" :in-theory (enable vl-hidexpr-p vl-hidindex-p)))))
 
 (define vl-msb-bitslice-hidexpr-base
   :parents (vl-msb-bitslice-expr)
@@ -682,6 +682,17 @@ need to convert them into individual bits in the same order.</p>"
                     (vl-indexexpr-p x))
            :hints(("Goal" :in-theory (enable vl-indexexpr-p
                                              vl-scopeexpr-p)))))
+
+  (local (defthm vl-hidexpr-p-of-replace-width/size
+           (implies (and (vl-hidexpr-p x)
+                         (not (vl-atom-p x)))
+                    (vl-hidexpr-p (make-vl-nonatom :op :vl-hid-dot
+                                                   :args (vl-nonatom->args x)
+                                                   :atts atts
+                                                   :finalwidth finalwidth
+                                                   :finaltype finaltype)))
+           :hints(("Goal" :in-theory (e/d (vl-hidexpr-p)
+                                          ((force)))))))
 
   (local (defthm vl-hidexpr-welltyped-p-of-replace-nonatom-size/type
            (implies (and (vl-hidexpr-p x)

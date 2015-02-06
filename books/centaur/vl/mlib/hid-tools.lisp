@@ -53,20 +53,22 @@
 
 (defxdoc hid-tools
   :parents (mlib)
-  :short "Functions for working with hierarchical identifiers, scopes, and
-indexing expressions."
+  :short "Functions for recognizing and following well-formed hierarchical
+identifiers, scoped identifiers, and indexing expressions."
 
   :long "<h3>VL Terminology</h3>
 
 <p>SystemVerilog provides a very rich syntax for referring to objects in
 different scopes and throughout the module hierarchy.  To deal with this rich
-syntax, we will need a bit of jargon.  These terms are notions in VL that may
-not necessarily be found in the Verilog/SystemVerilog standards.</p>
+syntax, we will need a bit of jargon.  These terms are well-defined notions in
+VL, but may not necessarily be found or used in the same way in the
+Verilog/SystemVerilog standards.</p>
 
 <p><u>Identifiers.</u> We say the following expressions are just
-<b>identifiers</b>.  Note that Verilog/SystemVerilog sometimes distinguishes
-between plain and escaped identifiers.  While our @(see lexer) needs to
-understand these as different notions, internally there is no difference.</p>
+<b>identifiers</b>.  Note that the Verilog/SystemVerilog standards sometimes
+distinguish between plain and escaped identifiers.  While our @(see lexer)
+needs to understand these as different notions, internally there is no
+difference.</p>
 
 @({
     foo
@@ -77,7 +79,7 @@ understand these as different notions, internally there is no difference.</p>
 <b>not</b> part of the identifier.  For instance, @('foo[3]') and @('foo[3:0]')
 are not identifiers: they are index/selection operations applied to the
 identifier @('foo').  (This may seem obvious, but we draw your attention to it
-because hierarchical identifiers are similar.)</p>
+because it is less obvious for hierarchical identifiers.)</p>
 
 <p><u>Hierarchical identifiers</u>.  Identifiers can be chained together,
 perhaps with indexing, to form <b>hierarchical identifiers</b>.  Here are
@@ -86,17 +88,19 @@ examples of hierarchical identifiers:</p>
 @({
     foo                     // any ID is a HID
     \\foo$bar
+
     foo.bar                 // fancier HIDs
     foo.bar.baz
+
     foo.bar[3].baz          // Verilog-2005 or SystemVerilog-2012
     foo.bar[3][4].baz       // SystemVerilog-2012
 })
 
 <p>Hierarchical identifiers may have internal indexing expressions.  However,
-subsequent indexing/selection operations is <b>not</b> part of the HID itself.
-For instance, we say that @('foo.bar[3].baz[2]') and @('foo.bar[3].baz[3:0]')
-are <b>not</b> a hierarchical identifiers.  Instead, these are
-indexing/selection operators applied to a HID.</p>
+any subsequent indexing/selection operations are <b>not</b> part of the HID
+itself.  For instance, we say that @('foo.bar[3].baz[2]') and
+@('foo.bar[3].baz[3:0]') are <b>not</b> a hierarchical identifiers.  Instead,
+these are indexing/selection operators applied to a HID.</p>
 
 <p><u>Scope expressions</u>.  Hierarchical identifiers can be prefixed with
 scoping operations, e.g., for packages.  Here are some examples of scope
@@ -105,10 +109,12 @@ expressions:</p>
 @({
      foo                             // any ID is a scope expression
      \\foo$bar
+
      foo.bar                         // any HID is a scope expression
      foo.bar.baz
      foo.bar[3].baz
      foo.bar[3][4].baz
+
      mypkg::foo                      // fancier scope expressions
      mypkg::foo.bar
      $unit::foo::bar.baz[3].beep
@@ -126,13 +132,16 @@ index expressions:</p>
 @({
      foo                             // any ID is an index expression
      \\foo$bar
+
      foo.bar                         // any HID is an index expression
      foo.bar.baz
      foo.bar[3].baz
      foo.bar[3][4].baz
+
      mypkg::foo                      // any scope expression is an index expression
      mypkg::foo.bar
      $unit::foo::bar.baz[3].beep
+
      foo[3]                          // fancier index expressions
      foo[3][4][5]
      foo.bar[3]
@@ -145,48 +154,53 @@ it.  That is, an expression like @('foo[3][5:0]') is not an index expression;
 instead it is a part-selection operator applied to the index expression
 @('foo[3]').</p>
 
-<p>Part/range selection is just an ordinary operator and we do not give it any
-special designation.  Why give special treatment to indexing, then?  In short,
-part-selection is much simpler than indexing because there can be at most a
-single part-select, whereas there can be many levels of array indexing that we
-will typically need to recursively follow.</p>
+<p>Note that part/range selection operations, like @('foo[3:0]'), are just an
+ordinary operator and we do not give them any special designation.  Why, then,
+do we give special treatment to indexing?  In short, part-selection is simpler
+than indexing because there can be at most a single part-select.  In contrast,
+there can be many levels of array indexing, and so typically indexing needs to
+be handled recursively.</p>
 
 <h3>Low Level Representation</h3>
 
 <p>VL internally represents hierarchical identifiers as compound @(see
-vl-expr-p) objects.  To understand the general structure, consider a very
-complex index expression such as:</p>
+vl-expr-p) objects.  To understand the structure, consider a very complex index
+expression such as:</p>
 
 @({
      ape::bat::cat.dog[3][2][1].elf[7][6][5]
 })
 
-<p>We expect to represent this sort of expression using the recursive structure
-suggested by the parentheses here.  This recursive structure matches the jargon
+<p>We expect to represent this sort of expression by nesting operations as
+suggested by the parentheses below.  This arrangement matches the jargon
 above.</p>
 
 @({
     Indexing is the outermost operation:
 
-      (((  ape::bat::cat.dog[3][2][1].elf   )[7] )[6] )[5]
-           ------------------------------   ---------------
-           scope expression part              index part
+      (((  ape::bat::cat.dog[3][2][1].elf     )[7] )[6] )[5]
+           ------------------------------   -------------------
+                    a scopexpr              recursive indexing
 
 
     Followed by scoping:
 
-           ape::(bat::    (cat.dog[3][2][1].elf))
-           -----------     --------------------
-           scope part         hid part
+                 ape::(bat::         (cat.dog[3][2][1].elf)  )
+           ---------------------      --------------------
+             recursive scoping              a hidexpr
 
 
-    Followed by the hierarchy:
+    Followed by hierarchy:
 
-                         cat . (dog [3][2][1]) . elf
+                         cat . ((dog [3][2][1]) . elf)
+                               -----------------------
+                                    sub hidexpr
 
     With hierarchical indexing going from outermost to innermost:
 
-                           ((dog [3])[2])[1]
+                               ((dog [3])[2])[1]
+                               -----------------
+                                  a hidindex
 })
 
 <p>Where each @('.') is represented by a @(':vl-hid-dot') operator, each
@@ -197,30 +211,40 @@ operator, and the names are represented as @(see vl-hidpiece-p) atoms.</p>
 
 <p>The low-level @(see vl-expr-p) representation is not very strongly typed and
 permits nonsensical expressions like @('foo.5.bar.(1+2)'), which should never
-be produced by our parser or by well-behaving internal VL code.  This sort of
-thing often makes it inconvenient to work with.</p>
+be produced by our parser or by well-behaving internal VL code.  Because of
+this, most functions for working with HIDs should not and do not use the
+internal representation directly.</p>
 
-<p>In @(see abstract-hids), we set up wrapper functions that provide an
-interface for working with hierarchical identifier expressions at a somewhat
-higher level.  These wrapper functions provide stronger checks to ensure that
-an expression is a well-formed hierarchical identifier, scope expression, or
-index expression that meets our usual expectations.  It is generally much
-better to program to this interface than to the low level representation.</p>
+<p>Instead, in @(see abstract-hids), we set up wrapper functions that provide
+an interface for working with hierarchical identifier expressions at a somewhat
+higher level.  These wrapper functions include stronger recognizers that ensure
+that an expression is a well-formed hierarchical identifier, scope expression,
+or index expression that meets our usual expectations.  It also provides
+convenient accessor functions for traversing well-formed expressions.</p>
 
 <h3>Following HIDs</h3>
 
-<p>BOZO some documentation would be nice.</p>")
+<p>For many kinds of transformation and analysis, the fundamental operation on
+hierarchical, scoped, or indexed expressions is to follow them to what they
+refer to.  To do this correctly requires an detailed understanding of both the
+concepts above and also @(see scopestack)s for looking up identifiers.</p>
+
+<p>Due to this complexity, most code throughout VL should never try to follow
+hierarchical identifiers on its own.  Instead, most code should be make use of
+the high-level functions described in @(see following-hids).</p>")
+
+
 
 (defsection abstract-hids
   :parents (hid-tools)
   :short "Recognizers for certain kinds of HID expressions."
 
-  :long "<p>We now develop useful wrapper functionality that allows us to treat
+  :long "<p>We now develop wrapper functionality that allows us to treat
 hierarchical, scope, and index expressions in a sensible way.  Note that these
 are technical terms with precise meanings; see @(see hid-tools) for
 background.</p>
 
-<p>Quick guide, bottom up:</p>
+<p>Quick guide, working bottom up:</p>
 
 <dl>
 
@@ -258,76 +282,102 @@ background.</p>
 <dd>@(see vl-indexexpr->scopeexpr) gets the scope expression.</dd>
 <dd>@(see vl-indexexpr->indices) gets the indices as an expression list.</dd>
 
-</dl>")
+</dl>
 
-;; Compatibility wrappers for old function names
+<p>Note that none of these functions places any restrictions on the expressions
+that can occur in index positions.  That is, expressions like
+@('foo[width-1].bar') are perfectly acceptable.</p>")
+
+;; Compatibility wrappers for old function names.  BOZO eventually remove these.
 (defmacro vl-hidexpr-dot-p (x) `(not (vl-hidexpr->endp ,x)))
 (defmacro vl-hidexpr-first-index (x) `(vl-hidexpr->first ,x))
 (defmacro vl-hidexpr-rest (x) `(vl-hidexpr->rest ,x))
 
 (local (xdoc::set-default-parents abstract-hids))
 
+(def-ruleset! vl-hid-legacy-thms nil)
+
+(defmacro defthm-hid-legacy (name &rest args)
+  ;; BOZO there are lots of theorems that shouldn't really need to be around if
+  ;; we're using the abstraction correctly.  I mark these with
+  ;; defthm-hid-legacy so we can disable them and try to stop using them
+  ;; eventually.
+  `(progn (defthmd ,name . ,args)
+          (add-to-ruleset vl-hid-legacy-thms '(,name))))
+
 (define vl-hidname-p ((x vl-expr-p))
   :returns (bool)
   :short "Recognizes simple name expression: either a hidpiece or an id."
-  (and (vl-fast-atom-p x)
+  (and (vl-atom-p x)
        (b* (((vl-atom x) x))
          (or (vl-fast-hidpiece-p x.guts)
              (vl-fast-id-p x.guts))))
   ///
   (defthm vl-hidname-p-when-vl-idexpr-p
+    ;; Even though this sort of breaks the abstraction, I think it's pretty
+    ;; reasonable until/unless we want to add an explicit HIDNAME constructor.
     (implies (vl-idexpr-p x)
              (vl-hidname-p x))
     :hints(("Goal" :in-theory (enable vl-idexpr-p))))
 
   (defthm vl-hidname-p-when-vl-atom
+    ;; Even though this sort of breaks the abstraction, I think it's pretty
+    ;; reasonable until/unless we want to add an explicit HIDNAME constructor.
     (implies (and (vl-atom-p x)
                   (or (vl-hidpiece-p (vl-atom->guts x))
                       (vl-id-p (vl-atom->guts x))))
              (vl-hidname-p x))))
 
 (define vl-hidname->name ((x vl-expr-p))
-  :prepwork ((local (in-theory (enable vl-hidname-p))))
   :guard (vl-hidname-p x)
   :returns (name stringp :rule-classes :type-prescription)
+  :short "Get the name from a @(see vl-hidname-p) as a string."
+  :prepwork ((local (in-theory (enable vl-hidname-p))))
+  :inline t
+  :guard-hints(("Goal" :in-theory (enable vl-id-p
+                                          vl-hidpiece-p
+                                          vl-id->name
+                                          vl-hidpiece->name)))
   (b* (((vl-atom x)))
-    (if (vl-fast-hidpiece-p x.guts)
-        (vl-hidpiece->name x.guts)
-      (vl-id->name x.guts))))
+    ;; The use of MBE here is completely minor.  If we change the
+    ;; vl-id/vl-hidpiece representation it'll have to go away.  For now it
+    ;; gives us a really nice executable definition.
+    (mbe :logic
+         (if (vl-fast-hidpiece-p x.guts)
+             (vl-hidpiece->name x.guts)
+           (vl-id->name x.guts))
+         :exec
+         (cdr x.guts))))
+
 
 (define vl-hidindex-p ((x vl-expr-p))
   :returns (bool)
-  :short "Recognizes well-formed index expressions into hierarchical
-identifiers, e.g., the @('bar[3][4][5]') part of @('foo.bar[3][4][5].baz')."
-
-  :long "<p>We match left-associated trees of indices that ultimately end with
-a @(see vl-hidpiece-p).  We don't restrict the actual index expressions, e.g.,
-an expression such as @('bar[width-1]') is acceptable.</p>"
+  :short "Recognizes well-formed index expressions into hierarchical identifier
+pieces, e.g., the @('bar[3][4][5]') part of @('foo.bar[3][4][5].baz')."
   :measure (vl-expr-count x)
-
-  (if (vl-fast-atom-p x)
-      (vl-hidname-p x)
-    (b* (((vl-nonatom x) x))
-      (and (eq x.op :vl-index)
-           (vl-hidindex-p (first x.args)))))
+  (b* (((when (vl-atom-p x))
+        (vl-hidname-p x))
+       ((vl-nonatom x) x))
+    (and (vl-op-equiv x.op :vl-index)
+         (vl-hidindex-p (first x.args))))
   ///
-  (defthm vl-hidname-p-when-vl-hidindex-p
+  (defthm-hid-legacy vl-hidname-p-when-vl-hidindex-p
     (implies (and (vl-hidindex-p x)
                   (vl-atom-p x))
              (vl-hidname-p x)))
 
-  (defthmd vl-nonatom->op-when-vl-hidindex-p
+  (defthm-hid-legacy vl-nonatom->op-when-vl-hidindex-p
     (implies (and (vl-hidindex-p x)
                   (force (not (vl-atom-p x))))
              (equal (vl-nonatom->op x) :vl-index))
     :rule-classes ((:rewrite) (:forward-chaining)))
 
-  (defthm arity-when-vl-hidindex-p
+  (defthm-hid-legacy arity-when-vl-hidindex-p
     (implies (and (vl-hidindex-p x)
                   (force (not (vl-atom-p x))))
              (equal (vl-op-arity (vl-nonatom->op x)) 2)))
 
-  (defthm len-of-vl-nonatom->args-when-vl-hidindex-p
+  (defthm-hid-legacy len-of-vl-nonatom->args-when-vl-hidindex-p
     (implies (and (vl-hidindex-p x)
                   (force (not (vl-atom-p x))))
              (and ;; blah, so gross....
@@ -338,6 +388,8 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
   (deffixequiv vl-hidindex-p)
 
   (defthm vl-hidindex-p-of-make-vl-atom
+    ;; This is probably fine unless/until we want to add a HIDINDEX
+    ;; constructor.
     (equal (vl-hidindex-p (make-vl-atom :guts guts
                                         :finalwidth finalwidth
                                         :finaltype finaltype))
@@ -346,6 +398,8 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
     :hints(("Goal" :in-theory (enable vl-hidname-p))))
 
   (defthm vl-hidindex-p-of-make-vl-nonatom
+    ;; This is probably fine unless/until we want to add a HIDINDEX
+    ;; constructor.
     (implies (force (vl-hidindex-p (first args)))
              (vl-hidindex-p (make-vl-nonatom :op :vl-index
                                              :args args
@@ -368,19 +422,20 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
              (not (vl-hidindex-p x)))
     :hints(("Goal" :in-theory (disable (force)))))
 
-  (defthm vl-hidindex-p-of-first-of-vl-nonatom->args-when-vl-hidindex-p
+  (defthm-hid-legacy vl-hidindex-p-of-first-of-vl-nonatom->args-when-vl-hidindex-p
     (implies (and (vl-hidindex-p x)
                   (force (not (vl-atom-p x))))
              (vl-hidindex-p (first (vl-nonatom->args x))))))
 
-(local (in-theory (enable vl-nonatom->op-when-vl-hidindex-p)))
+;; (local (in-theory (enable vl-nonatom->op-when-vl-hidindex-p)))
 
 (define vl-hidindex->name ((x vl-expr-p))
   :guard (vl-hidindex-p x)
   :returns (name stringp :rule-classes :type-prescription)
   :short "For instance, @('bar[3][4][5]') &rarr; @('bar')."
   :measure (vl-expr-count x)
-  (b* (((when (vl-fast-atom-p x))
+  :prepwork ((local (in-theory (enable vl-hidindex-p))))
+  (b* (((when (vl-atom-p x))
         (vl-hidname->name x))
        ((vl-nonatom x) x))
     (vl-hidindex->name (first x.args))))
@@ -391,8 +446,9 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
   :returns (indices vl-exprlist-p)
   :parents (vl-hidindex->indices)
   :measure (vl-expr-count x)
+  :prepwork ((local (in-theory (enable vl-hidindex-p))))
   (b* ((acc (vl-exprlist-fix acc))
-       ((when (vl-fast-atom-p x))
+       ((when (vl-atom-p x))
         acc)
        ((vl-nonatom x) x))
     (vl-hidindex->indices-exec (first x.args)
@@ -404,10 +460,11 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
   :returns (indices vl-exprlist-p)
   :short "For instance, @('bar[3][4][5]') &rarr; @('(3 4 5)')."
   :measure (vl-expr-count x)
+  :prepwork ((local (in-theory (enable vl-hidindex-p))))
   :inline t
   :verify-guards nil
   (mbe :logic
-       (b* (((when (vl-fast-atom-p x))
+       (b* (((when (vl-atom-p x))
              nil)
             ((vl-nonatom x) x))
          (append (vl-hidindex->indices (first x.args))
@@ -461,10 +518,11 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
   :returns (idxcount natp :rule-classes :type-prescription)
   :verify-guards nil
   :enabled t
+  :prepwork ((local (in-theory (enable vl-hidindex-p))))
   (mbe :logic
        (len (vl-hidindex->indices x))
        :exec
-       (if (vl-fast-atom-p x)
+       (if (vl-atom-p x)
            0
          (+ 1 (vl-hidindex-count-indices (first (vl-nonatom->args x))))))
   ///
@@ -516,13 +574,15 @@ instance:</p>
          arg1 == foo.bar   (a hid)
          arg2 == 3
 })"
-  (b* (((when (vl-fast-atom-p x))
+  (b* (((when (vl-atom-p x))
         (vl-hidname-p x))
        ((vl-nonatom x) x))
-    (and (eq x.op :vl-hid-dot)
+    (and (vl-op-equiv x.op :vl-hid-dot)
          (vl-hidindex-p (first x.args))
          (vl-hidexpr-p (second x.args))))
   ///
+  (deffixequiv vl-hidexpr-p)
+
   (defthm vl-hidpiece-p-of-when-vl-hidexpr-p
     (implies (and (vl-hidexpr-p x)
                   (vl-atom-p x))
@@ -539,7 +599,7 @@ instance:</p>
                   (force (not (vl-atom-p x))))
              (not (vl-hidexpr-p x))))
 
-  (defthm vl-op-arity-when-vl-hidexpr-p
+  (defthm-hid-legacy vl-op-arity-when-vl-hidexpr-p
     (implies (and (vl-hidexpr-p x)
                   (force (not (vl-atom-p x))))
              (equal (vl-op-arity (vl-nonatom->op x))
@@ -548,7 +608,7 @@ instance:</p>
             :cases ((equal (vl-nonatom->op x) :vl-hid-dot)
                     (equal (vl-nonatom->op x) :vl-index)))))
 
-  (defthm len-of-vl-nonatom->args-when-vl-hidexpr-p
+  (defthm-hid-legacy len-of-vl-nonatom->args-when-vl-hidexpr-p
     (implies (and (vl-hidexpr-p x)
                   (force (not (vl-atom-p x)))
                   (force (vl-expr-p x)))
@@ -557,12 +617,12 @@ instance:</p>
               (consp (vl-nonatom->args x))
               (consp (cdr (vl-nonatom->args x))))))
 
-  (defthm vl-hidindex-p-of-first-of-vl-nonatom->args-when-vl-hidexpr-p
+  (defthm-hid-legacy vl-hidindex-p-of-first-of-vl-nonatom->args-when-vl-hidexpr-p
     (implies (and (vl-hidexpr-p x)
                   (force (not (vl-atom-p x))))
              (vl-hidindex-p (first (vl-nonatom->args x)))))
 
-  (defthm vl-hidexpr-p-of-second-of-vl-nonatom->args-when-vl-hidexpr-p
+  (defthm-hid-legacy vl-hidexpr-p-of-second-of-vl-nonatom->args-when-vl-hidexpr-p
     (implies (and (vl-hidexpr-p x)
                   (force (not (vl-atom-p x))))
              (vl-hidexpr-p (second (vl-nonatom->args x)))))
@@ -621,7 +681,14 @@ instance:</p>
   :guard (vl-hidexpr-p x)
   :returns (endp booleanp :rule-classes :type-prescription)
   :inline t
-  (vl-fast-atom-p x))
+  (vl-atom-p x)
+  ///
+  (defthm vl-hidname-p-when-vl-hidexpr->endp
+    (implies (and (vl-hidexpr->endp x)
+                  (vl-hidexpr-p x))
+             (vl-hidname-p x))
+    :rule-classes ((:rewrite :backchain-limit-lst 1)
+                   (:forward-chaining :trigger-terms ((vl-hidexpr->endp x))))))
 
 (define vl-hidexpr->first
   :short "Get the leftmost @(see vl-hidindex-p) in a hid expression."
@@ -640,7 +707,8 @@ instance:</p>
      foo[3].bar    --> foo[3]
      foo[3][4].bar --> foo[3][4]
 })"
-  (if (and (not (vl-fast-atom-p x))
+  :prepwork ((local (in-theory (enable vl-hidexpr-p))))
+  (if (and (not (vl-atom-p x))
            (eq (vl-nonatom->op x) :vl-hid-dot))
       (first (vl-nonatom->args x))
     (vl-expr-fix x)))
@@ -648,18 +716,37 @@ instance:</p>
 (define vl-hidexpr->rest ((x vl-expr-p))
   :guard (and (vl-hidexpr-p x)
               (not (vl-hidexpr->endp x)))
-  :prepwork ((local (in-theory (enable vl-hidexpr->endp))))
   :returns (rest (and (vl-expr-p rest)
                       (implies (and (vl-hidexpr-p x)
                                     (not (vl-hidexpr->endp x)))
                                (vl-hidexpr-p rest))))
+  :prepwork ((local (in-theory (enable vl-hidexpr-p
+                                       vl-hidexpr->endp))))
   (vl-expr-fix (second (vl-nonatom->args x)))
   ///
   (defthm vl-expr-count-of-vl-hidexpr->rest
     (implies (not (vl-hidexpr->endp x))
              (< (vl-expr-count (vl-hidexpr->rest x))
                 (vl-expr-count x)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defthm vl-expr-count-of-vl-hidexpr-pieces
+    (implies (and (vl-hidexpr-p x)
+                  (not (vl-hidexpr->endp x)))
+             (< (+ (vl-expr-count (vl-hidexpr->first x))
+                   (vl-expr-count (vl-hidexpr->rest x)))
+                (vl-expr-count x)))
+    :rule-classes :linear
+    :hints(("Goal"
+            :expand ((vl-expr-count x)
+                     (vl-exprlist-count (vl-nonatom->args x))
+                     (vl-exprlist-count (cdr (vl-nonatom->args x))))
+            :in-theory (enable vl-hidexpr-p
+                               vl-hidexpr->endp
+                               vl-hidexpr->first
+                               vl-hidexpr->rest)))))
+
+
 
 (define vl-hidexpr-collect-indices
   :short "Collect all expressions from index positions in a hid expression,
@@ -668,19 +755,18 @@ e.g., for @('foo[3][4].bar[5].baz'), we would return a list of expressions for
   ((x vl-expr-p))
   :guard (vl-hidexpr-p x)
   :returns (indices vl-exprlist-p)
-
   :measure (vl-expr-count x)
-  :prepwork ((local (in-theory (enable vl-hidexpr-p))))
-  (b* (((when (vl-fast-atom-p x))
-        nil)
-       ((vl-nonatom x)))
-    (append (vl-hidindex->indices (first x.args))
-            (vl-hidexpr-collect-indices (second x.args))))
+  (if (vl-hidexpr->endp x)
+      nil
+    (append (vl-hidindex->indices (vl-hidexpr->first x))
+            (vl-hidexpr-collect-indices (vl-hidexpr->rest x))))
   ///
-  (defthm vl-hidexpr-collect-indices-when-atom
-    (implies (vl-atom-p x)
+  (defthm vl-hidexpr-collect-indices-when-endp
+    (implies (vl-hidexpr->endp x)
              (equal (vl-hidexpr-collect-indices x)
                     nil)))
+
+  (local (in-theory (enable vl-hidexpr-collect-indices)))
 
   (local (defthm l0
            (equal (vl-exprlist-count (append x y))
@@ -694,23 +780,18 @@ e.g., for @('foo[3][4].bar[5].baz'), we would return a list of expressions for
              (<= (vl-exprlist-count (vl-hidexpr-collect-indices x))
                  (vl-expr-count x)))
     :rule-classes ((:rewrite) (:linear))
-    :hints(("Goal"
-            :induct (vl-hidexpr-p x)
-            :in-theory (enable vl-hidexpr-p vl-expr-count vl-exprlist-count))))
+    :hints(("Goal" :induct (vl-hidexpr-collect-indices x))))
 
   (defthm vl-exprlist-count-of-vl-hidexpr-collect-indices-strong
     (implies (and (vl-hidexpr-p x)
-                  (not (vl-atom-p x)))
+                  (not (vl-hidexpr->endp x)))
              (< (vl-exprlist-count (vl-hidexpr-collect-indices x))
                 (vl-expr-count x)))
-    :rule-classes ((:rewrite) (:linear))
-    :hints(("Goal"
-            :induct (vl-hidexpr-p x)
-            :in-theory (enable vl-hidexpr-p vl-expr-count vl-exprlist-count))))
+    :rule-classes ((:rewrite) (:linear)))
 
   (defthm vl-exprlist-count-of-vl-hidexpr-collect-indices-equal
     (implies (and (vl-hidexpr-p x)
-                  (case-split (not (vl-atom-p x))))
+                  (case-split (not (vl-hidexpr->endp x))))
              (equal (equal (vl-exprlist-count (vl-hidexpr-collect-indices x))
                            (vl-expr-count x))
                     nil))))
@@ -781,7 +862,7 @@ type for @(see vl-scopeexpr->scopes).</p>"
   :long "<p>Example: @('foo::bar::a.b[1][2].c').</p>"
   :measure (vl-expr-count x)
   :prepwork ((local (in-theory (enable vl-hidexpr-p))))
-  (b* (((when (vl-fast-atom-p x))
+  (b* (((when (vl-atom-p x))
         (mbe :logic (vl-hidexpr-p x)
              :exec (vl-hidname-p x)))
        ((vl-nonatom x) x)
@@ -795,7 +876,7 @@ type for @(see vl-scopeexpr->scopes).</p>"
   :returns (names vl-scopenamelist-p)
   :measure (vl-expr-count x)
   :prepwork ((local (in-theory (enable vl-scopeexpr-p))))
-  (b* (((when (vl-fast-atom-p x))
+  (b* (((when (vl-atom-p x))
         nil)
        ((vl-nonatom x) x)
        ((when (vl-op-equiv x.op :vl-scope))
@@ -809,7 +890,7 @@ type for @(see vl-scopeexpr->scopes).</p>"
   :measure (vl-expr-count x)
   :prepwork ((local (in-theory (enable vl-scopeexpr-p))))
   (b* ((x (vl-expr-fix x))
-       ((when (vl-fast-atom-p x))
+       ((when (vl-atom-p x))
         x)
        ((vl-nonatom x) x)
        ((when (vl-op-equiv x.op :vl-scope))
@@ -826,7 +907,7 @@ type for @(see vl-scopeexpr->scopes).</p>"
   :measure (vl-expr-count x)
   :prepwork ((local (in-theory (enable vl-scopeexpr-p
                                        vl-hidexpr-p))))
-  (b* (((when (vl-fast-atom-p x))
+  (b* (((when (vl-atom-p x))
         (mbe :logic (vl-scopeexpr-p x)
              :exec (vl-hidname-p x)))
        ((vl-nonatom x))
@@ -841,7 +922,7 @@ type for @(see vl-scopeexpr->scopes).</p>"
   :measure (vl-expr-count x)
   :prepwork ((local (in-theory (enable vl-indexexpr-p))))
   (b* ((x (vl-expr-fix x))
-       ((when (vl-fast-atom-p x))
+       ((when (vl-atom-p x))
         x)
        ((vl-nonatom x))
        ((when (or (vl-op-equiv x.op :vl-index)
@@ -861,7 +942,7 @@ type for @(see vl-scopeexpr->scopes).</p>"
   :measure (vl-expr-count x)
   :prepwork ((local (in-theory (enable vl-indexexpr-p))))
   (b* ((acc (vl-exprlist-fix acc))
-       ((when (vl-fast-atom-p x))
+       ((when (vl-atom-p x))
         acc)
        ((vl-nonatom x) x)
        ((when (or (vl-op-equiv x.op :vl-index)
@@ -879,7 +960,7 @@ type for @(see vl-scopeexpr->scopes).</p>"
   :verify-guards nil
   :inline t
   (mbe :logic
-       (b* (((when (vl-fast-atom-p x))
+       (b* (((when (vl-atom-p x))
              nil)
             ((vl-nonatom x))
             ((when (or (vl-op-equiv x.op :vl-index)
@@ -1044,8 +1125,7 @@ yet.</p>"
     (make-vl-warning :type type
                      :msg "~a0: error resolving ~a1: ~s2.~%~
                            (Failed to resolve ~a3 in ~s4)."
-                     :args (list ctx origx short x
-                                 (vl-scopestack->path ss))
+                     :args (list ctx origx short x (vl-scopestack->path ss))
                      :fn __function__)))
 
 (define vl-follow-hidexpr-dimcheck
@@ -1100,10 +1180,8 @@ be resolved.</p>"
   :returns (err maybe-stringp :rule-classes :type-prescription)
   (if (atom indices)
       nil
-    (or (vl-follow-hidexpr-dimcheck name (car indices) (car dims)
-                                    :strictp strictp)
-        (vl-follow-hidexpr-dimscheck-aux name (cdr indices) (cdr dims)
-                                         :strictp strictp))))
+    (or (vl-follow-hidexpr-dimcheck name (car indices) (car dims) :strictp strictp)
+        (vl-follow-hidexpr-dimscheck-aux name (cdr indices) (cdr dims) :strictp strictp))))
 
 (define vl-follow-hidexpr-dimscheck
   :short "Check array indices against the corresponding array bounds."
@@ -1178,12 +1256,8 @@ top-level hierarchical identifiers.</p>"
                                (vl-scope-p x)))))
   :hooks ((:fix
            :hints(("Goal"
-                   :expand ((:free (trace ss strictp)
-                             (vl-follow-hidexpr-aux x trace ss
-                                                    :strictp strictp))
-                            (:free (trace ss strictp)
-                             (vl-follow-hidexpr-aux (vl-expr-fix x) trace ss
-                                                    :strictp strictp)))))))
+                   :expand ((:free (trace ss strictp) (vl-follow-hidexpr-aux x trace ss :strictp strictp))
+                            (:free (trace ss strictp) (vl-follow-hidexpr-aux (vl-expr-fix x) trace ss :strictp strictp)))))))
   (b* ((trace (vl-hidtrace-fix trace))
        (x     (vl-expr-fix x))
        (idx1  (vl-hidexpr->first x))
@@ -1205,7 +1279,7 @@ top-level hierarchical identifiers.</p>"
 
        ((when (or (eq (tag item) :vl-fundecl)
                   (eq (tag item) :vl-taskdecl)))
-        (if (vl-fast-atom-p x)
+        (if (vl-hidexpr->endp x)
             ;; Plain reference to, e.g., foo.bar.myfun.  This is OK -- you
             ;; might be writing something like ``logic foo = submod.fn(arg)''
             (mv nil trace x)
@@ -1239,13 +1313,11 @@ top-level hierarchical identifiers.</p>"
              ((mv mod mod-ss)
               (vl-scopestack-find-definition/ss item.modname item-ss))
              ((unless mod)
-              (mv (vl-follow-hidexpr-error (cat "reference through missing module " item.modname)
-                                           item-ss)
+              (mv (vl-follow-hidexpr-error (cat "reference through missing module " item.modname) item-ss)
                   trace x))
              (modtag (tag mod))
              ((when (eq modtag :vl-udp))
-              (mv (vl-follow-hidexpr-error (cat "reference through primitive " item.modname)
-                                           item-ss)
+              (mv (vl-follow-hidexpr-error (cat "reference through primitive " item.modname) item-ss)
                   trace x))
              ((unless (or (eq modtag :vl-module)
                           (eq modtag :vl-interface)))
@@ -1261,8 +1333,7 @@ top-level hierarchical identifiers.</p>"
               ;; The next part of the HID needs to be looked up from within
               ;; MOD, so we need to actually go into the module.
               (vl-scopestack-push mod mod-ss)))
-          (vl-follow-hidexpr-aux (vl-hidexpr->rest x) trace next-ss
-                                 :strictp strictp)))
+          (vl-follow-hidexpr-aux (vl-hidexpr->rest x) trace next-ss :strictp strictp)))
 
        ((when (eq (tag item) :vl-interfaceport))
         (b* (((vl-interfaceport item))
@@ -1368,8 +1439,7 @@ top-level hierarchical identifiers.</p>"
                   trace x))
              (genblob (vl-sort-genelements (vl-genarrayblock->elems block)))
              (next-ss (vl-scopestack-push genblob item-ss)))
-          (vl-follow-hidexpr-aux (vl-hidexpr->rest x) trace next-ss
-                                 :strictp strictp)))
+          (vl-follow-hidexpr-aux (vl-hidexpr->rest x) trace next-ss :strictp strictp)))
 
        ((when (eq (tag item) :vl-typedef))
         ;; I don't think this makes sense?  Can you refer to a type name?  BOZO
@@ -1902,7 +1972,7 @@ datatype is multidimensional.</p>"
   :verify-guards nil
   :measure (vl-expr-count x)
   (b* ((x (vl-expr-fix x))
-       ((when (or (vl-fast-atom-p x)
+       ((when (or (vl-atom-p x)
                   (not (member (vl-nonatom->op x)
                                '(:vl-index :vl-bitselect)))))
         (b* (((unless (vl-hidexpr-p x))
@@ -2221,111 +2291,140 @@ datatype is multidimensional.</p>"
   :returns (bool)
   :short "Determines if every index in a @(see vl-hidindex-p) is resolved."
   :measure (vl-expr-count x)
-  (b* (((when (vl-fast-atom-p x))
-        t)
-       ((vl-nonatom x) x))
-    (and (mbt (eq x.op :vl-index))
-         (vl-hidindex-resolved-p (first x.args))
-         (vl-expr-resolved-p (second x.args))))
+  (vl-exprlist-resolved-p (vl-hidindex->indices x))
+  ;; (b* (((when (vl-atom-p x))
+  ;;       t)
+  ;;      ((vl-nonatom x) x))
+  ;;   (and (mbt (eq x.op :vl-index))
+  ;;        (vl-hidindex-resolved-p (first x.args))
+  ;;        (vl-expr-resolved-p (second x.args))))
   ///
-  (defthm vl-hidindex-resolved-p-when-atom
-    (implies (vl-atom-p x)
-             (vl-hidindex-resolved-p x)))
+  ;; (defthm vl-hidindex-resolved-p-when-atom
+  ;;   (implies (vl-atom-p x)
+  ;;            (vl-hidindex-resolved-p x)))
 
   (deffixequiv vl-hidindex-resolved-p)
 
-  (defthm vl-hidindex-resolved-p-of-make-vl-nonatom
-    (implies (and (force (vl-hidindex-resolved-p (first args)))
-                  (force (vl-expr-resolved-p (second args))))
-             (vl-hidindex-resolved-p (make-vl-nonatom :op :vl-index
-                                                      :args args
-                                                      :atts atts
-                                                      :finalwidth finalwidth
-                                                      :finaltype finaltype)))
-    :hints(("Goal"
-            :in-theory (e/d (vl-arity-fix) ((force)))
-            :expand ((:free (atts args finalwidth finaltype)
-                      (vl-hidindex-resolved-p (make-vl-nonatom :op :vl-index
-                                                               :args args
-                                                               :atts atts
-                                                               :finalwidth finalwidth
-                                                               :finaltype finaltype)))))))
+  ;; (defthm vl-hidindex-resolved-p-of-make-vl-nonatom
+  ;;   (implies (and (force (vl-hidindex-resolved-p (first args)))
+  ;;                 (force (vl-expr-resolved-p (second args))))
+  ;;            (vl-hidindex-resolved-p (make-vl-nonatom :op :vl-index
+  ;;                                                     :args args
+  ;;                                                     :atts atts
+  ;;                                                     :finalwidth finalwidth
+  ;;                                                     :finaltype finaltype)))
+  ;;   :hints(("Goal"
+  ;;           :in-theory (e/d (vl-arity-fix) ((force)))
+  ;;           :expand ((:free (atts args finalwidth finaltype)
+  ;;                     (vl-hidindex-resolved-p (make-vl-nonatom :op :vl-index
+  ;;                                                              :args args
+  ;;                                                              :atts atts
+  ;;                                                              :finalwidth finalwidth
+  ;;                                                              :finaltype finaltype)))))))
 
-  (defthmd vl-nonatom->op-when-hidindex-resolved-p
-    (implies (and (vl-hidindex-resolved-p x)
-                  (force (not (vl-atom-p x))))
-             (equal (vl-nonatom->op x) :vl-index)))
+  ;; (defthmd vl-nonatom->op-when-hidindex-resolved-p
+  ;;   (implies (and (vl-hidindex-resolved-p x)
+  ;;                 (force (not (vl-atom-p x))))
+  ;;            (equal (vl-nonatom->op x) :vl-index)))
 
-  (defthm vl-hidindex-resolved-p-of-arg1-when-vl-hidindex-resolved-p
-    (implies (and (vl-hidindex-resolved-p x)
-                  (force (not (vl-atom-p x))))
-             (vl-hidindex-resolved-p (first (vl-nonatom->args x)))))
+  ;; (defthm vl-hidindex-resolved-p-of-arg1-when-vl-hidindex-resolved-p
+  ;;   (implies (and (vl-hidindex-resolved-p x)
+  ;;                 (force (not (vl-atom-p x))))
+  ;;            (vl-hidindex-resolved-p (first (vl-nonatom->args x)))))
 
-  (defthm vl-expr-resolved-p-of-arg2-when-vl-hidindex-resolved-p
-    (implies (and (vl-hidindex-resolved-p x)
-                  (force (not (vl-atom-p x))))
-             (vl-expr-resolved-p (second (vl-nonatom->args x))))))
+  ;; (defthm vl-expr-resolved-p-of-arg2-when-vl-hidindex-resolved-p
+  ;;   (implies (and (vl-hidindex-resolved-p x)
+  ;;                 (force (not (vl-atom-p x))))
+  ;;            (vl-expr-resolved-p (second (vl-nonatom->args x)))))
+  )
 
 
 (define vl-hidexpr-resolved-p ((x vl-expr-p))
   :guard (vl-hidexpr-p x)
-  :prepwork ((local (in-theory (enable vl-nonatom->op-when-hidindex-resolved-p))))
+  ;; :prepwork ((local (in-theory (enable vl-nonatom->op-when-hidindex-resolved-p))))
   :returns (bool)
   :short "Determines if every index throughout a @(see vl-hidexpr-p) is resolved."
   :guard-debug t
   :measure (vl-expr-count x)
-  (b* (((when (vl-fast-atom-p x)) t)
-       ((vl-nonatom x) x))
-    (and (vl-hidindex-resolved-p (first x.args))
-         (vl-hidexpr-resolved-p (second x.args))))
+  (if (vl-hidexpr->endp x)
+      t
+    (and (vl-hidindex-resolved-p (vl-hidexpr->first x))
+         (vl-hidexpr-resolved-p (vl-hidexpr->rest x))))
   ///
-  (defthm vl-hidexpr-resolved-p-when-atom
-    (implies (vl-atom-p x)
+  (defthm vl-hidexpr-resolved-p-when-endp
+    (implies (vl-hidexpr->endp x)
              (vl-hidexpr-resolved-p x)))
 
-  (defthm vl-hidindex-resolved-p-of-arg1-when-vl-hidexpr-resolved-p
-    (implies (and (vl-hidexpr-resolved-p x)
-                  (force (not (vl-atom-p x))))
-             (vl-hidindex-resolved-p (first (vl-nonatom->args x)))))
+  (defthm vl-hidexpr-resolved-p-when-not-endp
+    ;; Really I should be using something like a of-cons rule here, but without
+    ;; a constructor...
+    (implies (not (vl-hidexpr->endp x))
+             (equal (vl-hidexpr-resolved-p x)
+                    (and (vl-hidindex-resolved-p (vl-hidexpr->first x))
+                         (vl-hidexpr-resolved-p (vl-hidexpr->rest x)))))
+    :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
-  (defthm vl-hidexpr-resolved-p-of-arg2-when-vl-hidexpr-resolved-p
-    (implies (and (vl-hidexpr-resolved-p x)
-                  (force (not (vl-atom-p x))))
-             (vl-hidexpr-resolved-p (second (vl-nonatom->args x)))))
+  ;; (defthm vl-hidexpr-resolved-p-when-atom
+  ;;   (implies (vl-atom-p x)
+  ;;            (vl-hidexpr-resolved-p x)))
 
-  (defthm vl-hidexpr-resolved-p-of-make-vl-nonatom-for-dot
-    (implies (and (force (vl-hidindex-resolved-p (first args)))
-                  (force (vl-hidexpr-resolved-p (second args))))
-             (vl-hidexpr-resolved-p (make-vl-nonatom :op :vl-hid-dot
-                                                     :args args
-                                                     :atts atts
-                                                     :finalwidth finalwidth
-                                                     :finaltype finaltype)))
-    :hints(("Goal"
-            :expand (:free (atts args finalwidth finaltype)
-                      (vl-hidexpr-resolved-p (make-vl-nonatom :op :vl-hid-dot
-                                                              :args args
-                                                              :atts atts
-                                                              :finalwidth finalwidth
-                                                              :finaltype finaltype)))
-            :in-theory (e/d (vl-arity-fix) ((force)))))))
+  ;; (defthm vl-hidindex-resolved-p-of-arg1-when-vl-hidexpr-resolved-p
+  ;;   (implies (and (vl-hidexpr-resolved-p x)
+  ;;                 (force (not (vl-atom-p x))))
+  ;;            (vl-hidindex-resolved-p (first (vl-nonatom->args x)))))
+
+  ;; (defthm vl-hidexpr-resolved-p-of-arg2-when-vl-hidexpr-resolved-p
+  ;;   (implies (and (vl-hidexpr-resolved-p x)
+  ;;                 (force (not (vl-atom-p x))))
+  ;;            (vl-hidexpr-resolved-p (second (vl-nonatom->args x)))))
+
+  ;; (defthm vl-hidexpr-resolved-p-of-make-vl-nonatom-for-dot
+  ;;   (implies (and (force (vl-hidindex-resolved-p (first args)))
+  ;;                 (force (vl-hidexpr-resolved-p (second args))))
+  ;;            (vl-hidexpr-resolved-p (make-vl-nonatom :op :vl-hid-dot
+  ;;                                                    :args args
+  ;;                                                    :atts atts
+  ;;                                                    :finalwidth finalwidth
+  ;;                                                    :finaltype finaltype)))
+  ;;   :hints(("Goal"
+  ;;           :expand (:free (atts args finalwidth finaltype)
+  ;;                     (vl-hidexpr-resolved-p (make-vl-nonatom :op :vl-hid-dot
+  ;;                                                             :args args
+  ;;                                                             :atts atts
+  ;;                                                             :finalwidth finalwidth
+  ;;                                                             :finaltype finaltype)))
+  ;;           :in-theory (e/d (vl-arity-fix) ((force))))))
+  )
 
 
+
+(define vl-flatten-hidindex-aux ((indices (and (vl-exprlist-p indices)
+                                               (vl-exprlist-resolved-p indices)))
+                                 acc)
+  :parents (vl-flatten-hidindex)
+  :returns (new-acc character-listp :hyp (character-listp acc))
+  (b* (((when (atom indices))
+        acc)
+       (acc (cons #\[ acc))
+       (acc (revappend (str::natchars (vl-resolved->val (car indices))) acc))
+       (acc (cons #\] acc)))
+    (vl-flatten-hidindex-aux (cdr indices) acc)))
 
 (define vl-flatten-hidindex ((x vl-expr-p))
   :guard (and (vl-hidindex-p x)
               (vl-hidindex-resolved-p x))
   :returns (flat-string stringp :rule-classes :type-prescription)
-  :short "Converts a @(see vl-hidindex-p) into a string like
-@('\"bar[3][4][5]\"')."
+  :short "Converts a @(see vl-hidindex-p) into a string like @('\"bar[3][4][5]\"')."
   :measure (vl-expr-count x)
-  (b* (((when (vl-fast-atom-p x))
-        (vl-hidname->name x))
-       ((vl-nonatom x) x))
-    (cat (vl-flatten-hidindex (first x.args))
-         "["
-         (str::natstr (vl-resolved->val (second x.args)))
-         "]")))
+  :guard-hints(("Goal" :in-theory (enable vl-hidindex-resolved-p)))
+  (b* ((name    (vl-hidindex->name x))
+       (indices (vl-hidindex->indices x))
+       ((when (atom indices))
+        name)
+       (acc nil)
+       (acc (str::revappend-chars name acc))
+       (acc (vl-flatten-hidindex-aux indices acc)))
+    (str::rchars-to-string acc)))
 
 (define vl-flatten-hidexpr ((x vl-expr-p))
   :guard (and (vl-hidexpr-p x)
@@ -2334,42 +2433,42 @@ datatype is multidimensional.</p>"
   :short "Converts a hierarchical identifier expression into a string like
 @('foo.bar[3][4][5].baz')."
   :measure (vl-expr-count x)
-  (b* (((when (vl-fast-atom-p x)) (vl-hidname->name x))
-       ((vl-nonatom x) x))
-    (cat (vl-flatten-hidindex (first x.args))
+  (if (vl-hidexpr->endp x)
+      (vl-hidname->name x)
+    (cat (vl-flatten-hidindex (vl-hidexpr->first x))
          "."
-         (vl-flatten-hidexpr (second x.args)))))
+         (vl-flatten-hidexpr (vl-hidexpr->rest x)))))
 
-(define vl-explode-hidindex
-  :short "Explode a (resolved) @(see vl-hidindex-p) into a flat list of
-          its components."
-  ((x vl-expr-p "The hidindex to explode, e.g., @('foo[3][4][5]')"))
-  :guard (and (vl-hidindex-p x)
-              (vl-hidindex-resolved-p x))
-  :returns (pieces true-listp :rule-classes :type-prescription
-                   "A flat, mixed list of strings and numbers, e.g.,
-                   @('(\"foo\" 3 4 5)').")
-  :measure (vl-expr-count x)
-  (b* (((when (vl-fast-atom-p x))
-        (list (vl-hidname->name x)))
-       ((vl-nonatom x) x)
-       (from (vl-explode-hidindex (first x.args)))
-       (idx  (vl-resolved->val (second x.args))))
-    (append from (list idx))))
+;; (define vl-explode-hidindex
+;;   :short "Explode a (resolved) @(see vl-hidindex-p) into a flat list of
+;;           its components."
+;;   ((x vl-expr-p "The hidindex to explode, e.g., @('foo[3][4][5]')"))
+;;   :guard (and (vl-hidindex-p x)
+;;               (vl-hidindex-resolved-p x))
+;;   :returns (pieces true-listp :rule-classes :type-prescription
+;;                    "A flat, mixed list of strings and numbers, e.g.,
+;;                    @('(\"foo\" 3 4 5)').")
+;;   :measure (vl-expr-count x)
+;;   (b* (((when (vl-atom-p x))
+;;         (list (vl-hidname->name x)))
+;;        ((vl-nonatom x) x)
+;;        (from (vl-explode-hidindex (first x.args)))
+;;        (idx  (vl-resolved->val (second x.args))))
+;;     (append from (list idx))))
 
-(define vl-explode-hid
-  :short "Explode a (resolved) @(see vl-hidexpr-p) into a flat list of its
-          components."
-  ((x vl-expr-p "The hidexpr to explode, e.g., foo.bar[2][3].baz."))
-  :guard (and (vl-hidexpr-p x)
-              (vl-hidexpr-resolved-p x))
-  :returns
-  (pieces true-listp :rule-classes :type-prescription
-          "A flat, mixed list of strings and numbers, e.g.,
-           @('(\"foo\" \"bar\" 2 3 \"baz\")').")
-  :measure (vl-expr-count x)
-  (b* (((when (vl-fast-atom-p x))
-        (list (vl-hidname->name x)))
-       ((vl-nonatom x) x))
-    (append (vl-explode-hidindex (first x.args))
-            (vl-explode-hid (second x.args)))))
+;; (define vl-explode-hid
+;;   :short "Explode a (resolved) @(see vl-hidexpr-p) into a flat list of its
+;;           components."
+;;   ((x vl-expr-p "The hidexpr to explode, e.g., foo.bar[2][3].baz."))
+;;   :guard (and (vl-hidexpr-p x)
+;;               (vl-hidexpr-resolved-p x))
+;;   :returns
+;;   (pieces true-listp :rule-classes :type-prescription
+;;           "A flat, mixed list of strings and numbers, e.g.,
+;;            @('(\"foo\" \"bar\" 2 3 \"baz\")').")
+;;   :measure (vl-expr-count x)
+;;   (b* (((when (vl-atom-p x))
+;;         (list (vl-hidname->name x)))
+;;        ((vl-nonatom x) x))
+;;     (append (vl-explode-hidindex (first x.args))
+;;             (vl-explode-hid (second x.args)))))

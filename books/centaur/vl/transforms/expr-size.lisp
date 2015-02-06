@@ -1752,7 +1752,7 @@ minor warning for assignments where the rhs is a constant.</p>"
            natp-when-member-equal-of-nat-listp
            vl-context-fix-when-vl-context-p
            vl-warninglist-fix-when-vl-warninglist-p
-           vl-nonatom->op-when-hidindex-resolved-p
+           ;; vl-nonatom->op-when-hidindex-resolved-p
            vl-nonatom->op-when-vl-hidindex-p
            vl-atom-p-of-car-when-vl-atomlist-p
            acl2::true-listp-member-equal
@@ -1979,10 +1979,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                                           :finaltype finaltype)))
              (mv t warnings new-x)))
 
-          ((:vl-index
-            :vl-select-colon
-            :vl-select-pluscolon
-            :vl-select-minuscolon)
+          ((:vl-index)
            (b* (((unless (vl-indexexpr-p (first args)))
                  (mv nil
                      (fatal :type :vl-bad-expression
@@ -1998,8 +1995,25 @@ minor warning for assignments where the rhs is a constant.</p>"
                 ((mv successp warnings indices)
                  (vl-exprlist-size (cdr args) ss ctx warnings))
                 ((unless successp) (mv nil warnings x))
+                (new-x (change-vl-nonatom x
+                                          :args (cons (first args) indices)
+                                          :finalwidth finalwidth
+                                          :finaltype finaltype)))
+             (mv t warnings new-x)))
+
+          ((:vl-select-colon
+            :vl-select-pluscolon
+            :vl-select-minuscolon)
+           (b* (((unless (posp finalwidth))
+                 (mv nil
+                     (fatal :type :vl-bad-expression
+                            :msg "~a0: ~x1 has 0 width?"
+                            :args (list ctx x))
+                     x))
+                ((mv successp warnings indices)
+                 (vl-exprlist-size (cdr args) ss ctx warnings))
+                ((unless successp) (mv nil warnings x))
                 (resolved-ok (case op
-                               (:vl-index t)
                                (:vl-select-colon
                                 (and (vl-expr-resolved-p (first indices))
                                      (vl-expr-resolved-p (second indices))))
@@ -3070,7 +3084,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                           default-car
                           default-cdr
                           acl2::true-listp-member-equal
-                          VL-NONATOM->OP-WHEN-HIDINDEX-RESOLVED-P
+                          ;; VL-NONATOM->OP-WHEN-HIDINDEX-RESOLVED-P
                           set::double-containment
                           acl2::subsetp-member
                           acl2::zp-open
@@ -3152,17 +3166,22 @@ minor warning for assignments where the rhs is a constant.</p>"
                     (vl-hidindex-p
                      (make-vl-nonatom :op (vl-nonatom->op x)
                                       :args (vl-nonatom->args x)
-                                      :atts atts :finalwidth fw :finaltype ft)))
+                                      :atts atts
+                                      :finalwidth fw
+                                      :finaltype ft)))
            :hints(("Goal" :in-theory (e/d (vl-hidindex-p)
                                           ((force)))))))
 
   (local (defthm hidexpr-p-of-reassemble
            (implies (and (vl-hidexpr-p x)
-                         (not (equal (vl-expr-kind x) :atom)))
+                         (not (equal (vl-expr-kind x) :atom))
+                         (equal (vl-nonatom->op x) op))
                     (vl-hidexpr-p
-                     (make-vl-nonatom :op (vl-nonatom->op x)
+                     (make-vl-nonatom :op op
                                       :args (vl-nonatom->args x)
-                                      :atts atts :finalwidth fw :finaltype ft)))
+                                      :atts atts
+                                      :finalwidth fw
+                                      :finaltype ft)))
            :hints(("Goal" :in-theory (e/d (vl-hidexpr-p)
                                           ((force)))))))
 

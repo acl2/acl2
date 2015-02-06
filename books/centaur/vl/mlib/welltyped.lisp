@@ -132,7 +132,6 @@ hierarchical identifiers.</p>"
     (and x.finaltype
          (posp x.finalwidth))))
 
-
 (defines vl-expr-welltyped-p
   :prepwork ((local (defthm acl2-numberp-of-abs
                       (implies (acl2-numberp x)
@@ -149,13 +148,16 @@ hierarchical identifiers.</p>"
     (b* (((when (vl-fast-atom-p x))
           (vl-atom-welltyped-p x))
          ((vl-nonatom x) x)
+
          ((when (eq x.op :vl-hid-dot))
-          ;; BOZO it might be nice to know that x is an index expr, but we'd
-          ;; have to check it in sizing
           (and (vl-hidexpr-p x)
                (vl-selexpr-welltyped-p x)))
-         ((when (member x.op '(:vl-index
-                               :vl-select-colon
+
+         ((when (eq x.op :vl-index))
+          (and (vl-indexexpr-p (first x.args))
+               (vl-expr-welltyped-p (second x.args))))
+
+         ((when (member x.op '(:vl-select-colon
                                :vl-select-pluscolon
                                :vl-select-minuscolon)))
           ;; These are special because we don't require the args to be sized.
@@ -164,15 +166,12 @@ hierarchical identifiers.</p>"
           ;; in order to size them, so we record that here.
           ;; BOZO it might be nice to know that the operand is an index expr,
           ;; but we'd have to check it in sizing
-          (and
-           (vl-indexexpr-p (first x.args))
-           (vl-exprlist-welltyped-p (cdr x.args))
-           (vl-selexpr-welltyped-p x)
-           (case x.op
-             (:vl-index t)
-             (:vl-select-colon (and (vl-expr-resolved-p (second x.args))
-                                    (vl-expr-resolved-p (third x.args))))
-             (otherwise        (vl-expr-resolved-p (third x.args))))))
+          (and (vl-exprlist-welltyped-p (cdr x.args))
+               (vl-selexpr-welltyped-p x)
+               (case x.op
+                 (:vl-select-colon (and (vl-expr-resolved-p (second x.args))
+                                        (vl-expr-resolved-p (third x.args))))
+                 (otherwise        (vl-expr-resolved-p (third x.args))))))
 
          ((when (eq x.op :vl-syscall))
           (b* (((unless (consp x.args))

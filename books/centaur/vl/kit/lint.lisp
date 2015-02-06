@@ -67,8 +67,6 @@
 (include-book "../transforms/drop-blankports")
 (include-book "../transforms/expr-split")
 (include-book "../transforms/expand-functions")
-(include-book "../transforms/follow-hids")
-(include-book "../transforms/hid-elim")
 (include-book "../transforms/oprewrite")
 (include-book "../transforms/resolve-ranges")
 (include-book "../transforms/replicate-insts")

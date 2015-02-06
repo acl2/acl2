@@ -118,7 +118,8 @@
                            rem
                            double-containment
                            abs
-                           VL-NONATOM->OP-WHEN-HIDINDEX-RESOLVED-P
+                           ;; VL-NONATOM->OP-WHEN-HIDINDEX-RESOLVED-P
+                           ;; VL-NONATOM->OP-WHEN-VL-HIDINDEX-P
                            VL-EXPR-RESOLVED-P-OF-CAR-WHEN-VL-EXPRLIST-RESOLVED-P
                            VL-ATOM-P-OF-CAR-WHEN-VL-ATOMLIST-P
                            ACL2::CONSP-UNDER-IFF-WHEN-TRUE-LISTP
@@ -140,7 +141,7 @@
                            LEN-OF-VL-NONATOM->ARGS-WHEN-VL-HIDEXPR-P
                            (:TYPE-PRESCRIPTION VL-NONATOM->OP$INLINE)
                            VL-EXPR-KIND-WHEN-VL-$RANDOM-EXPR-P
-                           VL-NONATOM->OP-WHEN-VL-HIDINDEX-P
+
                            acl2::CAR-WHEN-ALL-EQUALP
 
                            ACL2::CANCEL_TIMES-EQUAL-CORRECT
