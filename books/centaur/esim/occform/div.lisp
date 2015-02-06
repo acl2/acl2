@@ -30,8 +30,8 @@
 
 (in-package "VL")
 (include-book "add")
-(local (include-book "../../util/arithmetic"))
-(local (include-book "../../util/osets"))
+(local (include-book "centaur/vl/util/arithmetic" :dir :system))
+(local (include-book "centaur/vl/util/osets" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
 
@@ -554,7 +554,7 @@ N-step restoring division algorithm.</p>"
 #||
 
 (include-book
- "../../mlib/writer")
+ "centaur/vl/mlib/writer" :dir :system)
 
 (top-level
  (with-ps-file "div4_support.v"

@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,5 +28,5 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(include-book "../../portcullis")
-; cert-flags: ? t :ttags :all
+(ld "centaur/vl/acl2-customization.lsp" :dir :system)
+(in-package "VL")

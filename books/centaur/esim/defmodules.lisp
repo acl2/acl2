@@ -29,14 +29,14 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "vltoe/top")
 (include-book "translation")
+(include-book "vltoe/top")
+(include-book "occform/top")
 (include-book "centaur/vl/loader/top" :dir :system)
 (include-book "centaur/vl/lint/portcheck" :dir :system)
 (include-book "centaur/vl/mlib/comment-writer" :dir :system)
 (include-book "centaur/vl/transforms/annotate/top" :dir :system)
 (include-book "centaur/vl/transforms/always/top" :dir :system)
-(include-book "centaur/vl/transforms/occform/top" :dir :system)
 (include-book "centaur/vl/transforms/unparam/top" :dir :system)
 (include-book "centaur/vl/transforms/cn-hooks" :dir :system)
 (include-book "centaur/vl/transforms/addinstnames" :dir :system)
