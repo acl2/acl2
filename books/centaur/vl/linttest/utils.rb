@@ -146,6 +146,7 @@ def outlaw_bad_warnings()
   outlaw_warning_global("VL-NAMESPACE-ERROR")
   outlaw_warning_global("VL-BAD-VARIABLES")
   outlaw_warning_global("VL-BAD-INSTANCE")
+  outlaw_warning_global("VL-TRICKY-SCOPE")
 end
 
 

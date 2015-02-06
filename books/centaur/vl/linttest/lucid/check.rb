@@ -238,4 +238,6 @@ unset(:useprim, "w1_unset ")
 unused(:useprim, "w1_unused ")
 spurious(:useprim, "w1_spurious ")
 
+unused(:trickyscope, "counter_unused ")
+
 test_passed()
