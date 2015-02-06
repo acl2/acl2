@@ -138,4 +138,15 @@ module top ;
   wire cond_warn3 = cond ? (xx0 & xx1) : (yy0 & yy1);
 
 
+  //@VL LINT_IGNORE
+  wire [3:0] supp_normal1 = xx0 & yy0;
+
+  //@VL LINT_IGNORE_FUSSY_SIZE_WARNING
+  wire [3:0] supp_normal2 = xx0 & yy0;
+
+  //@VL LINT_IGNORE_FUSSY
+  wire [3:0] supp_normal3 = xx0 & yy0;
+
+
+
 endmodule
