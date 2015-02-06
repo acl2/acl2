@@ -1577,6 +1577,7 @@ identifier, so we convert it into a hidpiece.</p>"
            (:= (vl-match))
            (firstval :s= (vl-parse-expression))
            (when (vl-is-token? :vl-rcurly)
+             (:= (vl-match))
              ;; just one key/val pair
              (return (make-vl-nonatom :op :vl-pattern-keyvalue
                                       :args (list (make-vl-nonatom
