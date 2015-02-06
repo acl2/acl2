@@ -114,7 +114,9 @@ between the order of the assignments and the surrounding if structures.</p>"
          ((when (eq kind :vl-blockstmt))
           (and (vl-blockstmt->sequentialp x)
                (not (vl-blockstmt->name x))
-               (not (vl-blockstmt->decls x))
+               (not (vl-blockstmt->vardecls x))
+               (not (vl-blockstmt->paramdecls x))
+               (not (vl-blockstmt->imports x))
                (vl-edgesplitstmtlist-p (vl-blockstmt->stmts x)))))
       nil))
 

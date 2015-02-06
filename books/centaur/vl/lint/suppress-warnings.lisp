@@ -106,7 +106,6 @@ either upper or lower case, treating - and _ as equivalent, and with or without
   :returns (mashed stringp :rule-classes :type-prescription)
   (vl-mash-warning-string (symbol-name x)))
 
-
 (define vl-lint-attname-says-ignore ((attname stringp)
                                      (mashed-warning-type stringp))
   :returns (ignorep booleanp :rule-classes :type-prescription)
@@ -118,7 +117,7 @@ either upper or lower case, treating - and _ as equivalent, and with or without
         ;; Ignore everything!
         t))
     ;; Otherwise, only ignore certain warning types
-    (equal mashed-att mashed-warning-type))
+    (str::istrprefixp mashed-att mashed-warning-type))
   ///
   (local
    (assert!
@@ -131,7 +130,16 @@ either upper or lower case, treating - and _ as equivalent, and with or without
            (vl-lint-attname-says-ignore "LINT_IGNORE_VL_ODDEXPR" wmash)
            (vl-lint-attname-says-ignore "LiNt_IgNoRe_Vl_WaRn_OdDeXpR" wmash)
            (not (vl-lint-attname-says-ignore "LINT_IGNORE_FOO" wmash))
-           (not (vl-lint-attname-says-ignore "LINT_IGNORE_VL_FOO" wmash)))))))
+           (not (vl-lint-attname-says-ignore "LINT_IGNORE_VL_FOO" wmash))))))
+
+  (local
+   (assert!
+    (let ((wmash (vl-warning-type-mash :vl-warn-fussy-size-warning-3)))
+      (and (vl-lint-attname-says-ignore "lint_ignore" wmash)
+           (vl-lint-attname-says-ignore "lint_ignore_fussy" wmash)
+           (vl-lint-attname-says-ignore "LINT_IGNORE_FUSSY_SIZE" wmash)
+           (vl-lint-attname-says-ignore "LINT_IGNORE_FUSSY_SIZE_WARNING" wmash)
+           (vl-lint-attname-says-ignore "LINT_IGNORE_FUSSY_SIZE_WARNING-3" wmash))))))
 
 (define vl-lint-atts-say-ignore ((atts vl-atts-p)
                                  (mashed-warning-type stringp))

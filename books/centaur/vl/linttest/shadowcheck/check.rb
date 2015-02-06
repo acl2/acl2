@@ -1,5 +1,5 @@
 # VL Verilog Toolkit
-# Copyright (C) 2008-2014 Centaur Technology
+# Copyright (C) 2008-2015 Centaur Technology
 #
 # Contact:
 #   Centaur Technology Formal Verification Group
@@ -28,38 +28,29 @@
 #
 # Original author: Jared Davis <jared@centtech.com>
 
-.PHONY: all clean
+require_relative '../utils'
 
-STARTJOB ?= bash
-VL       ?= $(PWD)/../bin/vl
+def fine(modname, wirename)
+  outlaw_warning(modname, "VL-PROGRAMMING-ERROR", wirename)
+  outlaw_warning(modname, "VL-ILLEGAL-IMPORT", wirename)
+  outlaw_warning(modname, "VL-IMPORT-CONFLICT", wirename)
+  outlaw_warning(modname, "VL-TRICKY-SCOPE", wirename)
+end
 
-SPEC_FILES := $(wildcard *.v)
-VOK_FILES  := $(patsubst %.v, %.vok,  $(SPEC_FILES))
-SVOK_FILES := $(patsubst %.v, %.svok, $(SPEC_FILES))
+def tricky(modname, wirename)
+  match_warning(modname, "VL-TRICKY-SCOPE", wirename)
+  outlaw_warning(modname, "VL-PROGRAMMING-ERROR", wirename)
+  outlaw_warning(modname, "VL-ILLEGAL-IMPORT", wirename)
+  outlaw_warning(modname, "VL-IMPORT-CONFLICT", wirename)
+end
 
+fine(:m0, "clk")
+fine(:m0, "shadowed_p1")
+fine(:m0, "fine_w1")
+fine(:m0, "fine_r2")
 
+fine(:m1, "clk")
+tricky(:m1, "shadowed_p1")
+fine(:m1, "whatever")
 
-%.vok: %.v $(VL)
-	echo "Making $*.ok"
-	rm -f $*.vok
-	$(STARTJOB) -c "$(VL) model $*.v --mem=2 --search=. --mustfail=top --edition=Verilog --model-file=$*.v.model.sao --esims-file=$*.v.esims.sao --verilog-file=$*.v.pp &> $*.vok.log"
-	rm $*.v.esims.sao $*.v.model.sao $*.v.model.sao.ver $*.v.pp
-	cp $*.vok.log $*.vok
-	ls -l $*.vok
-
-%.svok: %.v $(VL)
-	echo "Making $*.svok"
-	rm -f $*.svok
-	$(STARTJOB) -c "$(VL) model $*.v --mem=2 --search=. --mustfail=top --edition=SystemVerilog --model-file=$*.sv.model.sao --esims-file=$*.sv.esims.sao --verilog-file=$*.sv.pp &> $*.svok.log"
-	rm $*.sv.esims.sao $*.sv.model.sao $*.sv.model.sao.ver $*.sv.pp
-	cp $*.svok.log $*.svok
-	ls -l $*.svok
-
-all: $(VOK_FILES) $(SVOK_FILES)
-
-
-
-clean:
-	rm -f *.vok *.svok *.log *.sao *.pp *.sao.ver
-	rm -rf csrc INCA_libs simv.daidir
-	rm -f simv ucli.key *.log
+test_passed()

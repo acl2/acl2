@@ -507,24 +507,6 @@ attributes is left up to the implementation.</p>"
        x)
   :hints(("Goal" :in-theory (enable vl-maybe-delayoreventcontrol-subst))))
 
-(def-vl-subst vl-blockitem-subst
-  :type vl-blockitem-p
-  :body (b* ((x (vl-blockitem-fix x)))
-          (case (tag x)
-            (:vl-vardecl   (vl-vardecl-subst x sigma))
-            (otherwise     (vl-paramdecl-subst x sigma)))))
-
-(def-vl-subst-list vl-blockitemlist-subst
-  :type vl-blockitemlist-p
-  :element vl-blockitem-subst)
-
-(defthm vl-vardecllist-p-of-vl-blockitemlist-subst
-  (implies (vl-vardecllist-p x)
-           (vl-vardecllist-p (vl-blockitemlist-subst x sigma)))
-  :hints(("Goal" :in-theory (enable vl-blockitemlist-subst
-                                    vl-blockitem-subst
-                                    vl-vardecllist-p
-                                    tag-when-vl-vardecl-p))))
 
 (defines vl-stmt-subst
   :short "Substitute into a @(see vl-stmt-p)"
@@ -572,7 +554,8 @@ attributes is left up to the implementation.</p>"
          x
          :exprs (vl-exprlist-subst (vl-compoundstmt->exprs x) sigma)
          :stmts (vl-stmtlist-subst (vl-compoundstmt->stmts x) sigma)
-         :decls (vl-blockitemlist-subst (vl-compoundstmt->decls x) sigma)
+         :vardecls (vl-vardecllist-subst (vl-compoundstmt->vardecls x) sigma)
+         :paramdecls (vl-paramdecllist-subst (vl-compoundstmt->paramdecls x) sigma)
          :ctrl (vl-maybe-delayoreventcontrol-subst (vl-compoundstmt->ctrl x) sigma)))))
 
   (define vl-stmtlist-subst ((x     vl-stmtlist-p)
@@ -622,7 +605,8 @@ attributes is left up to the implementation.</p>"
   (b* (((vl-fundecl x) x))
     (change-vl-fundecl x
                        :rettype (vl-datatype-subst x.rettype sigma)
-                       :decls (vl-blockitemlist-subst x.decls sigma)
+                       :vardecls (vl-vardecllist-subst x.vardecls sigma)
+                       :paramdecls (vl-paramdecllist-subst x.paramdecls sigma)
                        :portdecls (vl-portdecllist-subst x.portdecls sigma)
                        :body (vl-stmt-subst x.body sigma))))
 

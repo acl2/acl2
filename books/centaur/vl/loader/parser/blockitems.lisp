@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "datatypes")
 (include-book "paramdecls")
+(include-book "imports")
 (local (include-book "../../util/arithmetic"))
 
 (defxdoc parse-blockitems
@@ -60,6 +61,7 @@ out some duplication and indirection:</p>
 <li>variables can be of many new built-in or user-defined types</li>
 <li>initializers can have \"new\", etc., instead of just being expressions</li>
 <li>ranges for each variable_type can now be lists of variable_dimensions</li>
+<li>package import statements are also considered data declarations, for whatever reason.</li>
 </ul>
 
 <p>The new grammar looks like this:</p>
@@ -101,7 +103,7 @@ out some duplication and indirection:</p>
 })")
 
 (local (xdoc::set-default-parents parse-blockitems))
-
+(local (in-theory (disable (tau-system))))
 
 ; -------------------------------------------------------------------------
 ;
@@ -377,39 +379,46 @@ out some duplication and indirection:</p>
           (return :vl-automatic))
         (return nil)))
 
-(defparser vl-parse-main-data-declaration (atts)
-  ;; SystemVerilog-2012 Only.
-  ;;
-  ;;    data_declaration ::=
-  ;;       ['const'] ['var'] [lifetime] data_type_or_implicit list_of_variable_decl_assignments ';'
-  ;;     | ...
-  ;;
-  :guard (vl-atts-p atts)
-  :result (vl-vardecllist-p val)
-  :guard-debug t
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seq tokstream
-        (loc := (vl-current-loc))
-        (when (vl-is-token? :vl-kwd-const)
-          (const := (vl-match)))
-        (when (vl-is-token? :vl-kwd-var)
-          (var := (vl-match)))
-        (lifetime := (vl-maybe-parse-lifetime))
-        ;; In the implicit case (which is only legal when the 'var' keyword is provided), it
-        ;; seems like we probably need to just use backtracking.  After all, we have:
-        ;;    implicit_data_type ::= [ signing ] { packed_dimension }
-        ;; so the whole thing can be null, and if it is null, then we're left with the task
-        ;; of distinguishing between a data_type, which could just be an identifier, versus
-        ;; a variable_decl_assignment, which could also just be an identifier.  So we're
-        ;; really not going to know which one we're dealing with until we read the whole
-        ;; data type and then see if there are any variables that come afterward.
-        (return-raw
-         (b* ((backup (vl-tokstream-save))
-              ((mv explicit-err explicit-val tokstream)
-               (seq tokstream
+
+(encapsulate nil ;; vl-parse-main-data-declaration
+  (local (in-theory (disable not iff
+                             acl2::lower-bound-of-len-when-sublistp
+                             acl2::len-when-prefixp
+                             acl2::len-when-atom)))
+
+  (defparser vl-parse-main-data-declaration (atts)
+    ;; SystemVerilog-2012 Only.
+    ;;
+    ;;    data_declaration ::=
+    ;;       ['const'] ['var'] [lifetime] data_type_or_implicit list_of_variable_decl_assignments ';'
+    ;;     | ...
+    ;;
+    :guard (vl-atts-p atts)
+    :result (vl-vardecllist-p val)
+    :guard-debug t
+    :resultp-of-nil t
+    :true-listp t
+    :fails gracefully
+    :count strong
+    (seq tokstream
+         (loc := (vl-current-loc))
+         (when (vl-is-token? :vl-kwd-const)
+           (const := (vl-match)))
+         (when (vl-is-token? :vl-kwd-var)
+           (var := (vl-match)))
+         (lifetime := (vl-maybe-parse-lifetime))
+         ;; In the implicit case (which is only legal when the 'var' keyword is provided), it
+         ;; seems like we probably need to just use backtracking.  After all, we have:
+         ;;    implicit_data_type ::= [ signing ] { packed_dimension }
+         ;; so the whole thing can be null, and if it is null, then we're left with the task
+         ;; of distinguishing between a data_type, which could just be an identifier, versus
+         ;; a variable_decl_assignment, which could also just be an identifier.  So we're
+         ;; really not going to know which one we're dealing with until we read the whole
+         ;; data type and then see if there are any variables that come afterward.
+         (return-raw
+          (b* ((backup (vl-tokstream-save))
+               ((mv explicit-err explicit-val tokstream)
+                (seq tokstream
                      ;; Try to match the explicit data type case.
                      (datatype := (vl-parse-datatype))
                      (assigns := (vl-parse-1+-variable-decl-assignments-separated-by-commas))
@@ -422,20 +431,20 @@ out some duplication and indirection:</p>
                                          :type     datatype
                                          :atts     atts
                                          :loc      loc))))
-              ((unless explicit-err)
-               ;; Successfully matched explicit data type case, return answer
-               (mv explicit-err explicit-val tokstream))
+               ((unless explicit-err)
+                ;; Successfully matched explicit data type case, return answer
+                (mv explicit-err explicit-val tokstream))
 
-              ((unless var)
-               ;; Not allowed to have implicit data type because didn't say 'var'.
-               ;; Just return the failure from the explicit case.
-               (mv explicit-err explicit-val tokstream))
+               ((unless var)
+                ;; Not allowed to have implicit data type because didn't say 'var'.
+                ;; Just return the failure from the explicit case.
+                (mv explicit-err explicit-val tokstream))
 
-              (tokstream (vl-tokstream-restore backup))
+               (tokstream (vl-tokstream-restore backup))
 
-              ;; Try to handle the implicit case.
-              ((mv implicit-err implicit-val tokstream)
-               (seq tokstream
+               ;; Try to handle the implicit case.
+               ((mv implicit-err implicit-val tokstream)
+                (seq tokstream
                      ;; Try to match the implicit data type case.
                      ;;    implicit_data_type ::= [ signing ] { packed_dimension }
                      (when (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned))
@@ -462,17 +471,17 @@ out some duplication and indirection:</p>
                                                 :pdims dims)
                                          :atts atts
                                          :loc loc))))
-              ((unless implicit-err)
-               (mv implicit-err implicit-val tokstream))
+               ((unless implicit-err)
+                (mv implicit-err implicit-val tokstream))
 
-              (tokstream (vl-tokstream-restore backup)))
+               (tokstream (vl-tokstream-restore backup)))
 
-           ;; Blah, tricky case.  We have errors for both the explicit and
-           ;; implicit attempts.  It's not clear that one error is better than
-           ;; the other.  In module parsing we run into a similar thing and try
-           ;; to take "whichever got farther."  I think, here, it's probably
-           ;; not so bad to just go with the explicit error.
-           (mv explicit-err explicit-val tokstream)))))
+            ;; Blah, tricky case.  We have errors for both the explicit and
+            ;; implicit attempts.  It's not clear that one error is better than
+            ;; the other.  In module parsing we run into a similar thing and try
+            ;; to take "whichever got farther."  I think, here, it's probably
+            ;; not so bad to just go with the explicit error.
+            (mv explicit-err explicit-val tokstream))))))
 
 ;; BOZO eventually support other allowed data declarations: type declarations,
 ;; package import declarations, and net type declarations.  But to do this
@@ -610,8 +619,10 @@ out some duplication and indirection:</p>
           ;; Unusual case: have to explicitly eat a semicolon here.
           (:= (vl-match-token :vl-semi))
           (return elems))
+        (when (vl-is-token? :vl-kwd-import)
+          (return-raw (vl-parse-package-import-declaration atts)))
         ;; Otherwise, we are presumably in the data_declaration case.  Eventually we will
-        ;; need to extend this to handle typedefs, imports, etc., but for now we'll at least
+        ;; need to extend this to handle typedefs, etc., but for now we'll at least
         ;; get the main data declarations.
         (elems := (vl-parse-main-data-declaration atts))
         (return elems)))

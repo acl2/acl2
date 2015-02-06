@@ -50,7 +50,9 @@
 (local (defthm vl-atomicstmt-p-of-vl-blockstmt
          (equal (vl-atomicstmt-p (make-vl-blockstmt :sequentialp sequentialp
                                                     :name name
-                                                    :decls decls
+                                                    :vardecls vardecls
+                                                    :paramdecls paramdecls
+                                                    :imports imports
                                                     :stmts stmts
                                                     :atts atts))
                 nil)
@@ -583,7 +585,9 @@ statements, non-blocking assignments to whole identifiers."
           (b* (((vl-blockstmt x) x))
             (and x.sequentialp  ;; BOZO could we also support fork/join?
                  (not x.name)
-                 (not x.decls)
+                 (not x.vardecls)
+                 (not x.paramdecls)
+                 (not x.imports)
                  (vl-edgesynth-stmtlist-p x.stmts)))))
 
       ;; We don't support anything else.
@@ -668,11 +672,16 @@ statements, non-blocking assignments to whole identifiers."
     (implies (and (vl-edgesynth-stmtlist-p stmts)
                   (force (equal sequentialp t))
                   (force (not name))
-                  (force (not decls))
+                  (force (not vardecls))
+                  (force (not paramdecls))
+                  (force (not imports))
                   (force (vl-atts-p atts)))
              (vl-edgesynth-stmt-p (make-vl-blockstmt :sequentialp sequentialp
                                                      :name name
-                                                     :decls decls
+                                                     :vardecls vardecls
+                                                     :paramdecls paramdecls
+                                                     :imports imports
+                                                     :loaditems loaditems
                                                      :stmts stmts
                                                      :atts atts))))
 
@@ -691,8 +700,12 @@ statements, non-blocking assignments to whole identifiers."
   (defthm vl-blockstmt->decls-when-vl-edgesynth-stmt-p
     (implies (and (vl-edgesynth-stmt-p x)
                   (force (vl-blockstmt-p x)))
-             (equal (vl-blockstmt->decls x)
-                    nil)))
+             (and (equal (vl-blockstmt->vardecls x)
+                         nil)
+                  (equal (vl-blockstmt->paramdecls x)
+                         nil)
+                  (equal (vl-blockstmt->imports x)
+                         nil))))
 
   (defthm vl-edgesynth-stmtlist-p-of-vl-blockstmt->stmts
     (implies (and (vl-edgesynth-stmt-p x)

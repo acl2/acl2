@@ -952,22 +952,7 @@ is just a constant integer.  So this is just:</p>
 
 (def-vl-wildelim-list vl-paramdecllist :element vl-paramdecl)
 
-(def-vl-wildelim vl-blockitem
-  :body
-  (let ((x (vl-blockitem-fix x)))
-    (case (tag x)
-      (:vl-vardecl (vl-vardecl-wildelim x warnings))
-      (otherwise   (vl-paramdecl-wildelim x warnings)))))
 
-(def-vl-wildelim-list vl-blockitemlist :element vl-blockitem)
-
-(defthm vl-vardecllist-p-of-vl-blockitemlist-wildelim
-  (implies (vl-vardecllist-p x)
-           (vl-vardecllist-p (mv-nth 1 (vl-blockitemlist-wildelim x warnings))))
-  :hints(("Goal" :in-theory (enable vl-blockitemlist-wildelim
-                                    vl-blockitem-wildelim
-                                    vl-vardecllist-p
-                                    tag-when-vl-vardecl-p))))
 
 (def-vl-wildelim vl-delaycontrol
   :takes-ctx t
@@ -1086,16 +1071,19 @@ is just a constant integer.  So this is just:</p>
          (x.exprs (vl-compoundstmt->exprs x))
          (x.stmts (vl-compoundstmt->stmts x))
          (x.ctrl  (vl-compoundstmt->ctrl x))
-         (x.decls (vl-compoundstmt->decls x))
+         (x.vardecls (vl-compoundstmt->vardecls x))
+         (x.paramdecls (vl-compoundstmt->paramdecls x))
          ((mv warnings exprs-prime) (vl-exprlist-wildelim x.exprs ctx warnings))
          ((mv warnings stmts-prime) (vl-stmtlist-wildelim x.stmts ctx warnings))
          ((mv warnings ctrl-prime)  (vl-maybe-delayoreventcontrol-wildelim x.ctrl ctx warnings))
-         ((mv warnings decls-prime) (vl-blockitemlist-wildelim x.decls warnings))
+         ((mv warnings vardecls-prime) (vl-vardecllist-wildelim x.vardecls warnings))
+         ((mv warnings paramdecls-prime) (vl-paramdecllist-wildelim x.paramdecls warnings))
          (x-prime (change-vl-compoundstmt x
                                           :exprs exprs-prime
                                           :stmts stmts-prime
                                           :ctrl ctrl-prime
-                                          :decls decls-prime)))
+                                          :vardecls vardecls-prime
+                                          :paramdecls paramdecls-prime)))
       (mv warnings x-prime)))
 
   (define vl-stmtlist-wildelim

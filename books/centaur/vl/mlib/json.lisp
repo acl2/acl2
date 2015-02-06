@@ -932,18 +932,18 @@ which could not hold such large values.</p>")
 (def-vl-jp-aggregate paramdecl)
 (def-vl-jp-list paramdecl :newlines 4)
 
-(define vl-jp-blockitem ((x vl-blockitem-p) &key (ps 'ps))
-  :guard-hints (("Goal" :in-theory (enable vl-blockitem-p)))
-  (mbe :logic
-       (cond ((vl-vardecl-p x)    (vl-jp-vardecl x))
-             (t                   (vl-jp-paramdecl x)))
-       :exec
-       (case (tag x)
-         (:vl-vardecl   (vl-jp-vardecl x))
-         (otherwise     (vl-jp-paramdecl x)))))
+(define vl-jp-importpart ((x vl-importpart-p) &key (ps 'ps))
+  :guard-hints(("Goal" :in-theory (enable vl-importpart-p)))
+  (b* ((x (vl-importpart-fix x)))
+    (if (eq x :vl-import*)
+        (jp-str "*")
+      (jp-str x))))
 
-(add-json-encoder vl-blockitem-p vl-jp-blockitem)
-(def-vl-jp-list blockitem)
+(add-json-encoder vl-importpart-p vl-jp-importpart)
+
+(def-vl-jp-aggregate import)
+(def-vl-jp-list import :newlines 4)
+
 
 (define vl-jp-arguments ((x vl-arguments-p) &key (ps 'ps))
   :parents (json-encoders vl-arguments-p)
@@ -1129,7 +1129,9 @@ which could not hold such large values.</p>")
        (jp-object :tag        (jp-sym kind)
                   :sequential (jp-bool x.sequentialp)
                   :name       (jp-maybe-string x.name)
-                  :decls      (vl-jp-blockitemlist x.decls)
+                  :imports    (vl-jp-importlist x.imports)
+                  :paramdecls (vl-jp-paramdecllist x.paramdecls)
+                  :vardecls   (vl-jp-vardecllist x.vardecls)
                   :stmts      (vl-jp-stmtlist x.stmts)
                   :atts       (vl-jp-atts x.atts))
 
@@ -1202,26 +1204,15 @@ which could not hold such large values.</p>")
 (def-vl-jp-aggregate portdecl)
 (def-vl-jp-list portdecl :newlines 4)
 
-(def-vl-jp-aggregate fundecl)
+(def-vl-jp-aggregate fundecl :omit (blockitems))
 (def-vl-jp-list fundecl :newlines 4)
 
-(def-vl-jp-aggregate taskdecl)
+(def-vl-jp-aggregate taskdecl :omit (blockitems))
 (def-vl-jp-list taskdecl :newlines 4)
 
 (def-vl-jp-aggregate assign)
 (def-vl-jp-list assign :newlines 4)
 
-(define vl-jp-importpart ((x vl-importpart-p) &key (ps 'ps))
-  :guard-hints(("Goal" :in-theory (enable vl-importpart-p)))
-  (b* ((x (vl-importpart-fix x)))
-    (if (eq x :vl-import*)
-        (jp-str "*")
-      (jp-str x))))
-
-(add-json-encoder vl-importpart-p vl-jp-importpart)
-
-(def-vl-jp-aggregate import)
-(def-vl-jp-list import :newlines 4)
 
 
 (define vl-jp-warning ((x vl-warning-p) &key (ps 'ps))

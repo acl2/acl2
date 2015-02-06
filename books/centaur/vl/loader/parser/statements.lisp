@@ -746,11 +746,16 @@
          (when (and id (not (equal (vl-loadconfig->edition config) :verilog-2005)))
            (:= (vl-parse-endblock-name (vl-idtoken->name id) "fork/join")))
 
-         (return (make-vl-blockstmt :sequentialp nil
-                                    :name (and id (vl-idtoken->name id))
-                                    :decls items
-                                    :stmts stmts
-                                    :atts atts))))
+         (return
+          (b* (((mv vardecls paramdecls imports) (vl-sort-blockitems items)))
+            (make-vl-blockstmt :sequentialp nil
+                               :name (and id (vl-idtoken->name id))
+                               :vardecls vardecls
+                               :paramdecls paramdecls
+                               :imports imports
+                               :loaditems items
+                               :stmts stmts
+                               :atts atts)))))
 
 
 ; seq_block ::=
@@ -782,11 +787,16 @@
          (:= (vl-match-token :vl-kwd-end))
          (when (and id (not (equal (vl-loadconfig->edition config) :verilog-2005)))
            (:= (vl-parse-endblock-name (vl-idtoken->name id) "begin/end")))
-         (return (make-vl-blockstmt :sequentialp t
-                                    :name (and id (vl-idtoken->name id))
-                                    :decls items
-                                    :stmts stmts
-                                    :atts atts))))
+         (return
+          (b* (((mv vardecls paramdecls imports) (vl-sort-blockitems items)))
+            (make-vl-blockstmt :sequentialp t
+                               :name (and id (vl-idtoken->name id))
+                               :vardecls vardecls
+                               :paramdecls paramdecls
+                               :imports imports
+                               :loaditems items
+                               :stmts stmts
+                               :atts atts)))))
 
 
 ; procedural_timing_control_statement ::=

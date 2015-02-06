@@ -382,7 +382,8 @@ just some useless computation if it's not necessary.</p>"
                      (eq (vl-blockstmt->sequentialp (car stmts)) sequentialp)
                      ;; Do not merge if the subblock has a name or decls!
                      (not (vl-blockstmt->name (car stmts)))
-                     (atom (vl-blockstmt->decls (car stmts)))))
+                     (atom (vl-blockstmt->vardecls (car stmts)))
+                     (atom (vl-blockstmt->paramdecls (car stmts)))))
         ;; Not a sub-block, or too hard to merge.
         (cons (car stmts)
               (vl-flatten-blocks sequentialp (cdr stmts))))
@@ -397,7 +398,8 @@ just some useless computation if it's not necessary.</p>"
 
 (define vl-blockstmt-rewrite ((sequentialp booleanp)
                               (name        maybe-stringp)
-                              (decls       vl-blockitemlist-p)
+                              (vardecls    vl-vardecllist-p)
+                              (paramdecls  vl-paramdecllist-p)
                               (stmts       vl-stmtlist-p)
                               (atts        vl-atts-p)
                               (warnings    vl-warninglist-p))
@@ -427,7 +429,7 @@ blocks with names/decls seems tricky due to hierarchical identifiers.</p>"
 
        ((when (and (or (atom stmts)
                        (atom (cdr stmts)))
-                   (or name decls)))
+                   (or name vardecls paramdecls)))
         (mv (warn :type :vl-collapse-fail
                   ;; BOZO bad error message, context would be good
                   :msg "Not collapsing ~s0 block ~x1 since it has a name or ~
@@ -435,7 +437,8 @@ blocks with names/decls seems tricky due to hierarchical identifiers.</p>"
                   :args (list (if sequentialp "begin/end" "fork/join") name))
             (make-vl-blockstmt :sequentialp sequentialp
                                :name name
-                               :decls decls
+                               :vardecls vardecls
+                               :paramdecls paramdecls
                                :stmts stmts
                                :atts (acons "VL_COLLAPSE_FAIL" nil atts))))
 
@@ -456,7 +459,8 @@ blocks with names/decls seems tricky due to hierarchical identifiers.</p>"
     ;; null statements or flattened some blocks.
     (mv warnings (make-vl-blockstmt :sequentialp sequentialp
                                     :name name
-                                    :decls decls
+                                    :vardecls vardecls
+                                    :paramdecls paramdecls
                                     :stmts stmts
                                     :atts atts))))
 
@@ -569,7 +573,7 @@ us to ignore for loops with @('$display') statements and similar.</p>"
             ((vl-blockstmt-p x)
              (b* (((vl-blockstmt x) x)
                   ((mv warnings stmts)   (vl-stmtlist-rewrite x.stmts unroll-limit warnings))
-                  ((mv warnings x-prime) (vl-blockstmt-rewrite x.sequentialp x.name x.decls
+                  ((mv warnings x-prime) (vl-blockstmt-rewrite x.sequentialp x.name x.vardecls x.paramdecls
                                                                stmts x.atts warnings)))
                (mv warnings x-prime)))
 

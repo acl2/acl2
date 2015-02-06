@@ -474,3 +474,24 @@ module useprim ;
   awfulbuf (w1_unused, w1_unset);
 
 endmodule
+
+
+
+module trickyscope;
+
+  // This once caused a scopestack/shadowcheck mismatch
+
+  integer d;
+  always_comb
+  begin
+    for (int d=0; d < 4 ; d=d+1)
+    begin
+      $display("Hello");
+    end
+  end
+
+  logic [16-1:0] counter_unused;
+  assign counter_unused = 0;
+
+
+endmodule

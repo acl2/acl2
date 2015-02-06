@@ -69,7 +69,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2015-01-22")
+  "VL Syntax 2015-02-05")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -2208,6 +2208,60 @@ endmodule
 
 
 
+(define vl-importpart-p (x)
+  (or (eq x :vl-import*)
+      (stringp x))
+  ///
+  (defthm vl-importpart-p-when-stringp
+    (implies (stringp x)
+             (vl-importpart-p x)))
+
+  (defthm vl-importpart-p-compound-recognizer
+    (implies (vl-importpart-p x)
+             (or (and (symbolp x)
+                      (not (equal x nil))
+                      (not (equal x t)))
+                 (stringp x)))
+    :rule-classes :compound-recognizer))
+
+(define vl-importpart-fix ((x vl-importpart-p))
+  :returns (part vl-importpart-p)
+  (if (vl-importpart-p x)
+      x
+    :vl-import*)
+  ///
+  (defthm vl-importpart-fix-when-vl-importpart-p
+    (implies (vl-importpart-p x)
+             (equal (vl-importpart-fix x)
+                    x))))
+
+(fty::deffixtype vl-importpart
+  :pred vl-importpart-p
+  :fix vl-importpart-fix
+  :equiv vl-importpart-equiv
+  :define t
+  :forward t)
+
+(defprod vl-import
+  :tag :vl-import
+  :layout :tree
+  :short "Representation of a single import item, i.e., @('import foo::bar;')."
+
+  ((pkg  stringp :rule-classes :type-prescription
+         "Package to import everything from, e.g., @('\"foo\"').")
+
+   (part vl-importpart-p
+         "Either: a single name to import, e.g., @('\"bar\"') above, or else
+          the symbol @(':vl-import*'), which means import everything, as in
+          @('import foo::*;').")
+
+   (loc  vl-location-p)
+   (atts vl-atts-p)))
+
+(fty::deflist vl-importlist :elt-type vl-import-p
+  :elementp-of-nil nil)
+
+
 
 (deftranssum vl-blockitem
   :short "Recognizer for a valid block item."
@@ -2217,7 +2271,23 @@ declarations and parameter declarations (parameter and localparam), which we
 represent as @(see vl-vardecl-p) and @(see vl-paramdecl-p) objects,
 respectively.</p>"
   (vl-vardecl
-   vl-paramdecl))
+   vl-paramdecl
+   vl-import))
+
+(defthmd vl-blockitem-possible-tags
+  (implies (vl-blockitem-p x)
+           (or (equal (tag x) :vl-vardecl)
+               (equal (tag x) :vl-paramdecl)
+               (equal (tag x) :vl-import)))
+  :rule-classes :forward-chaining)
+
+(defthmd vl-blockitem-fix-possible-tags
+  (or (equal (tag (vl-blockitem-fix x)) :vl-vardecl)
+      (equal (tag (vl-blockitem-fix x)) :vl-paramdecl)
+      (equal (tag (vl-blockitem-fix x)) :vl-import))
+  :hints (("goal" :use ((:instance vl-blockitem-possible-tags
+                         (x (vl-blockitem-fix x))))))
+  :rule-classes ((:forward-chaining :trigger-terms ((tag (vl-blockitem-fix x))))))
 
 (defthm vl-blockitem-fix-type
   (consp (vl-blockitem-fix x))
@@ -2238,8 +2308,46 @@ respectively.</p>"
     (implies (vl-paramdecllist-p x)
              (vl-blockitemlist-p x))
     :hints(("Goal" :in-theory (enable vl-paramdecllist-p
+                                      vl-blockitemlist-p))))
+  (defthm vl-blockitemlist-p-when-vl-importlist-p
+    (implies (vl-importlist-p x)
+             (vl-blockitemlist-p x))
+    :hints(("Goal" :in-theory (enable vl-importlist-p
                                       vl-blockitemlist-p)))))
 
+
+(define vl-sort-blockitems-aux ((x vl-blockitemlist-p)
+                                ;; accumulators
+                                (vardecls-acc vl-vardecllist-p)
+                                (paramdecls-acc vl-paramdecllist-p)
+                                (imports-acc vl-importlist-p))
+  :prepwork ((local (in-theory (enable vl-blockitem-fix-possible-tags))))
+  :returns (mv (vardecls vl-vardecllist-p)
+               (paramdecls vl-paramdecllist-p)
+               (imports vl-importlist-p))
+  (b* (((when (atom x))
+        (mv (rev (vl-vardecllist-fix vardecls-acc))
+            (rev (vl-paramdecllist-fix paramdecls-acc))
+            (rev (vl-importlist-fix imports-acc))))
+       (x1 (vl-blockitem-fix (car x)))
+       ((mv vardecls-acc paramdecls-acc imports-acc)
+        (case (tag x1)
+          (:vl-vardecl   (mv (cons x1 vardecls-acc)
+                             paramdecls-acc
+                             imports-acc))
+          (:vl-paramdecl (mv vardecls-acc
+                             (cons x1 paramdecls-acc)
+                             imports-acc))
+          (otherwise     (mv vardecls-acc
+                             paramdecls-acc
+                             (cons x1 imports-acc))))))
+    (vl-sort-blockitems-aux (cdr x) vardecls-acc paramdecls-acc imports-acc)))
+
+(define vl-sort-blockitems ((x vl-blockitemlist-p))
+  :returns (mv (vardecls vl-vardecllist-p)
+               (paramdecls vl-paramdecllist-p)
+               (imports vl-importlist-p))
+  (vl-sort-blockitems-aux x nil nil nil))
 
 
 ;                              EVENT CONTROLS
@@ -2767,7 +2875,10 @@ block name to each variable name.</p>"
 
      ((sequentialp booleanp :rule-classes :type-prescription)
       (name        maybe-stringp :rule-classes :type-prescription)
-      (decls       vl-blockitemlist-p)
+      (imports     vl-importlist-p)
+      (paramdecls  vl-paramdecllist-p)
+      (vardecls    vl-vardecllist-p)
+      (loaditems   vl-blockitemlist-p)
       (stmts       vl-stmtlist-p)
       (atts        vl-atts-p)))
 
@@ -3032,14 +3143,21 @@ endmodule
                 have restrictions and can't be used in expressions like normal
                 functions.")
 
-   (decls      vl-blockitemlist-p
-               "Any local variable declarations for the function, e.g., the
-                declarations of @('lowest_pair') and @('next_lowest_pair')
-                below.  <b>Also</b>, variable declarations for the ports and
-                return value (see below).  We represent the declarations as an
-                ordinary @(see vl-blockitemlist-p), and it appears that it may
-                even contain event declarations, parameter declarations, etc.,
-                which seems pretty absurd.")
+   (imports     vl-importlist-p
+                "Local package imports")
+
+   (vardecls    vl-vardecllist-p
+                "Local variable declarations, including ones for the ports and
+                 return value (see below).")
+
+   (paramdecls  vl-paramdecllist-p
+                "Local parameter declarations")
+
+   (blockitems  vl-blockitemlist-p
+                "The declarations within the function, in parse order.  We sort
+                 these out into the imports, vardecls, and paramdecls. It appears
+                 that these may even contain event declarations, parameter declarations,
+                 etc., which seems pretty absurd.")
 
    (body       vl-stmt-p
                "The body of the function.  We represent this as an ordinary statement,
@@ -3107,12 +3225,21 @@ extra declarations are created automatically by the loader.</p>")
    (portdecls  vl-portdecllist-p
                "The input, output, and inout ports for the task.")
 
-   (decls      vl-blockitemlist-p
-               "Any local declarations for the task, e.g., for the task below,
-                the declaration of @('temp') would be found here.  <b>Also</b>,
-                variable declarations for the ports, marked with
-                @('VL_HIDDEN_DECL_FOR_TASKPORT'), just as in our @(see
-                vl-fundecl) representation.")
+   (imports     vl-importlist-p
+                "Local package imports")
+
+   (vardecls    vl-vardecllist-p
+                "Local variable declarations, including ones for the ports and
+                 return value (see below); these are marked with
+                 @('VL_HIDDEN_DECL_FOR_TASKPORT').")
+
+   (paramdecls  vl-paramdecllist-p
+                "Local parameter declarations")
+
+
+   (blockitems  vl-blockitemlist-p
+               "All the local declarations for the task; we sort these out into
+                the imports, vardecls, and paramdecls above.")
 
    (body       vl-stmt-p
                "The statement that gives the actions for this task, i.e., the
@@ -3158,58 +3285,7 @@ include delays, etc.</p>")
   (vl-taskdecl->name x))
 
 
-(define vl-importpart-p (x)
-  (or (eq x :vl-import*)
-      (stringp x))
-  ///
-  (defthm vl-importpart-p-when-stringp
-    (implies (stringp x)
-             (vl-importpart-p x)))
 
-  (defthm vl-importpart-p-compound-recognizer
-    (implies (vl-importpart-p x)
-             (or (and (symbolp x)
-                      (not (equal x nil))
-                      (not (equal x t)))
-                 (stringp x)))
-    :rule-classes :compound-recognizer))
-
-(define vl-importpart-fix ((x vl-importpart-p))
-  :returns (part vl-importpart-p)
-  (if (vl-importpart-p x)
-      x
-    :vl-import*)
-  ///
-  (defthm vl-importpart-fix-when-vl-importpart-p
-    (implies (vl-importpart-p x)
-             (equal (vl-importpart-fix x)
-                    x))))
-
-(fty::deffixtype vl-importpart
-  :pred vl-importpart-p
-  :fix vl-importpart-fix
-  :equiv vl-importpart-equiv
-  :define t
-  :forward t)
-
-(defprod vl-import
-  :tag :vl-import
-  :layout :tree
-  :short "Representation of a single import item, i.e., @('import foo::bar;')."
-
-  ((pkg  stringp :rule-classes :type-prescription
-         "Package to import everything from, e.g., @('\"foo\"').")
-
-   (part vl-importpart-p
-         "Either: a single name to import, e.g., @('\"bar\"') above, or else
-          the symbol @(':vl-import*'), which means import everything, as in
-          @('import foo::*;').")
-
-   (loc  vl-location-p)
-   (atts vl-atts-p)))
-
-(fty::deflist vl-importlist :elt-type vl-import-p
-  :elementp-of-nil nil)
 
 (defprod vl-modport-port
   :parents (vl-interface)
@@ -3439,17 +3515,17 @@ initially kept in a big, mixed list.</p>"
         (initval    vl-expr-p        "initial value of the iterator")
         (continue   vl-expr-p        "continue the loop until this is false")
         (nextval    vl-expr-p        "next value of the iterator")
-        (genblock   vl-generateblock "body of the loop")
-        (loc   vl-location)))
+        (body       vl-genelement "body of the loop")
+        (loc        vl-location)))
 
       (:vl-genif
        :base-name vl-genif
        :layout :tree
        :short "An if generate construct"
        ((test       vl-expr-p        "the test of the IF")
-        (then       vl-generateblock "the block for the THEN case")
-        (else       vl-generateblock "the block for the ELSE case; empty if not provided")
-        (loc   vl-location)))
+        (then       vl-genelement "the block for the THEN case")
+        (else       vl-genelement "the block for the ELSE case; empty if not provided")
+        (loc        vl-location)))
 
       (:vl-gencase
        :base-name vl-gencase
@@ -3457,8 +3533,8 @@ initially kept in a big, mixed list.</p>"
        :short "A case generate construct"
        ((test      vl-expr-p         "the expression to test against the cases")
         (cases     vl-gencaselist    "the case generate items, except the default")
-        (default   vl-generateblock  "the default, which may be an empty generateblock if not provided")
-        (loc   vl-location)))
+        (default   vl-genelement  "the default, which may be an empty genblock if not provided")
+        (loc       vl-location)))
 
       (:vl-genblock
        :base-name vl-genblock
@@ -3491,7 +3567,7 @@ initially kept in a big, mixed list.</p>"
       :elementp-of-nil nil
       :measure (two-nats-measure (acl2-count x) 1))
 
-    (fty::defalist vl-gencaselist :key-type vl-exprlist :val-type vl-generateblock
+    (fty::defalist vl-gencaselist :key-type vl-exprlist :val-type vl-genelement
       :true-listp t
       :measure (two-nats-measure (acl2-count x) 5))
 
@@ -3504,10 +3580,6 @@ initially kept in a big, mixed list.</p>"
        (elems    vl-genelementlist-p))
       :measure (two-nats-measure (acl2-count x) 3))
 
-    (defprod vl-generateblock
-      ((name     maybe-stringp      "name of the generate block if provided")
-       (elems   vl-genelementlist   "elements of the block"))
-      :measure (two-nats-measure (acl2-count x) 3))
     :enable-rules (acl2::o-p-of-two-nats-measure
                    acl2::o<-of-two-nats-measure
                    acl2-count-of-car

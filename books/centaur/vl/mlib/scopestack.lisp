@@ -236,9 +236,8 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
       ;;             to proper typedefs by the end of loading, so we omit them.
 
       ;; Functions, Tasks, and Statements are all grouped together into Blockscopes.
-      ;; These have no imports.
-      (blockscope   ()
-                    (blockitem :acc decls :sum-type t :transsum t))
+      (blockscope   (:import)
+                    vardecl paramdecl)
 
       (design       (:import)
                     paramdecl vardecl fundecl taskdecl typedef)
@@ -269,8 +268,12 @@ in it, such as a function, task, or block statement."
   :parents (scopestack)
   :tag :vl-blockscope
   :layout :tree
-  ((decls vl-blockitemlist-p
-          "Declarations in this scope.")
+  ((imports  vl-importlist-p
+             "Package imports in this scope.")
+   (paramdecls vl-paramdecllist-p
+               "Parameter declarations in this scope.")
+   (vardecls vl-vardecllist-p
+             "Variable declarations in this scope.")
 
    (name  maybe-stringp :rule-classes :type-prescription
           "Just a debugging aide.  This lets us see the name of this scope when
@@ -279,21 +282,37 @@ in it, such as a function, task, or block statement."
 (define vl-fundecl->blockscope ((x vl-fundecl-p))
   :returns (scope vl-blockscope-p)
   :parents (vl-blockscope vl-scopestack-push)
-  (make-vl-blockscope :decls (vl-fundecl->decls x)
-                      :name  (vl-fundecl->name x)))
+  (b* (((vl-fundecl x)))
+    (make-vl-blockscope :vardecls x.vardecls
+                        :imports x.imports
+                        :paramdecls x.paramdecls
+                        :name  x.name)))
 
 (define vl-taskdecl->blockscope ((x vl-taskdecl-p))
   :returns (scope vl-blockscope-p)
   :parents (vl-blockscope vl-scopestack-push)
-  (make-vl-blockscope :decls (vl-taskdecl->decls x)
-                      :name  (vl-taskdecl->name x)))
+  (b* (((vl-taskdecl x)))
+    (make-vl-blockscope :vardecls x.vardecls
+                        :imports x.imports
+                        :paramdecls x.paramdecls
+                        :name  x.name)))
 
 (define vl-blockstmt->blockscope ((x vl-stmt-p))
   :guard (eq (vl-stmt-kind x) :vl-blockstmt)
   :returns (scope vl-blockscope-p)
   :parents (vl-blockscope vl-scopestack-push)
-  (make-vl-blockscope :decls (vl-blockstmt->decls x)
-                      :name  (vl-blockstmt->name x)))
+  (b* (((vl-blockstmt x)))
+    (make-vl-blockscope :vardecls x.vardecls
+                        :imports x.imports
+                        :paramdecls x.paramdecls
+                        :name  x.name)))
+
+(define vl-forstmt->blockscope ((x vl-stmt-p))
+  :guard (eq (vl-stmt-kind x) :vl-forstmt)
+  :returns (scope vl-blockscope-p)
+  :parents (vl-blockscope vl-scopestack-push)
+  (b* (((vl-forstmt x)))
+    (make-vl-blockscope :vardecls x.initdecls)))
 
 
 

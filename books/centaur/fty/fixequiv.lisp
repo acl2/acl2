@@ -513,11 +513,11 @@ syntax of these parameters is extended, as shown in the following examples:</p>
 (defun mutual-fixequivs->fix-thm (fixequiv-al defines-entry kwd-alist world)
   (b* ((thm-macro (std::defines-guts->flag-defthm-macro defines-entry))
        (gutslist (std::defines-guts->gutslist defines-entry))
-       (fns (defgutslist->names gutslist))
+       (fn1 (std::defguts->name-fn (car gutslist)))
        (hints-look (assoc :hints kwd-alist))
        (hints (if hints-look
                   (cdr hints-look)
-                (deffixequiv-mutual-default-hints (car fns) world))))
+                (deffixequiv-mutual-default-hints fn1 world))))
     `(with-output :stack :pop
        (,thm-macro
         ,@(mutual-fixequivs->inductive-fix-thms

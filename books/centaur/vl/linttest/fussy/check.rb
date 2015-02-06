@@ -167,6 +167,11 @@ fuss("cond_warn1")
 fuss("cond_warn2")
 fuss("cond_warn3")
 
+
+normal("supp_normal1")
+normal("supp_normal2")
+normal("supp_normal3")
+
 test_passed()
 
 

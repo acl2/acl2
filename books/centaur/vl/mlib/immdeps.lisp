@@ -35,6 +35,8 @@
 (include-book "centaur/depgraph/mergesort-alist-values" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
+(local (in-theory (disable (tau-system))))
+
 
 (defxdoc immdeps
   :parents (hierarchy)
@@ -627,6 +629,18 @@ elements.")
 (def-vl-immdeps-list vl-vardecllist vl-vardecl :ctxp nil)
 
 
+
+(def-vl-immdeps vl-import
+  ;; We just add a dependency onto the package being imported from.
+  :ctxp nil
+  :body
+  (b* (((vl-import x))
+       (ctx x))
+    (vl-immdeps-add-pkgdep x.pkg ans)))
+
+(def-vl-immdeps-list vl-importlist vl-import :ctxp nil)
+
+
 (def-vl-immdeps vl-plainarg
   :body
   (b* (((vl-plainarg x)))
@@ -725,17 +739,6 @@ elements.")
     (vl-paramtype-immdeps x.type ans)))
 
 (def-vl-immdeps-list vl-paramdecllist vl-paramdecl :ctxp nil)
-
-
-(def-vl-immdeps vl-blockitem
-  :ctxp nil
-  :body
-  (case (tag x)
-    (:vl-vardecl (vl-vardecl-immdeps x ans))
-    (otherwise   (vl-paramdecl-immdeps x ans))))
-
-(def-vl-immdeps-list vl-blockitemlist vl-blockitem :ctxp nil)
-
 
 (def-vl-immdeps vl-evatom
   :body
@@ -847,7 +850,9 @@ elements.")
            ans))
         (:vl-blockstmt
          (b* ((ss (vl-scopestack-push (vl-blockstmt->blockscope x) ss))
-              (ans (vl-blockitemlist-immdeps x.decls ans))
+              (ans (vl-importlist-immdeps x.imports ans))
+              (ans (vl-paramdecllist-immdeps x.paramdecls ans))
+              (ans (vl-vardecllist-immdeps x.vardecls ans))
               (ans (vl-stmtlist-immdeps x.stmts ans)))
            ans))
         (:vl-timingstmt
@@ -929,7 +934,9 @@ elements.")
        (ans (vl-datatype-immdeps x.rettype ans))
        (ans (vl-portdecllist-immdeps x.portdecls ans))
        (ss  (vl-scopestack-push (vl-fundecl->blockscope x) ss))
-       (ans (vl-blockitemlist-immdeps x.decls ans)))
+       (ans (vl-importlist-immdeps x.imports ans))
+       (ans (vl-paramdecllist-immdeps x.paramdecls ans))
+       (ans (vl-vardecllist-immdeps x.vardecls ans)))
     (vl-stmt-immdeps x.body ans)))
 
 (def-vl-immdeps-list vl-fundecllist vl-fundecl :ctxp nil)
@@ -941,21 +948,13 @@ elements.")
   (b* (((vl-taskdecl x))
        (ss  (vl-scopestack-push (vl-taskdecl->blockscope x) ss))
        (ans (vl-portdecllist-immdeps x.portdecls ans))
-       (ans (vl-blockitemlist-immdeps x.decls ans)))
+       (ans (vl-importlist-immdeps x.imports ans))
+       (ans (vl-paramdecllist-immdeps x.paramdecls ans))
+       (ans (vl-vardecllist-immdeps x.vardecls ans)))
     (vl-stmt-immdeps x.body ans)))
 
 (def-vl-immdeps-list vl-taskdecllist vl-taskdecl :ctxp nil)
 
-
-(def-vl-immdeps vl-import
-  ;; We just add a dependency onto the package being imported from.
-  :ctxp nil
-  :body
-  (b* (((vl-import x))
-       (ctx x))
-    (vl-immdeps-add-pkgdep x.pkg ans)))
-
-(def-vl-immdeps-list vl-importlist vl-import :ctxp nil)
 
 (def-vl-immdeps vl-modport-port
   :ctxp nil
@@ -985,7 +984,8 @@ elements.")
 
 
 (def-vl-immdeps vl-modelement
-  :prepwork ((local (in-theory (enable vl-modelement-p))))
+  :prepwork ((local (in-theory (enable vl-modelement-p
+                                       tag-reasoning))))
   :ctxp nil
   :body
   (case (tag x)
@@ -1044,17 +1044,17 @@ elements.")
               (ss         (vl-scopestack-push fake-scope ss))
               (ans        (vl-expr-immdeps x.continue ans))
               (ans        (vl-expr-immdeps x.nextval ans))
-              (ans        (vl-generateblock-immdeps x.genblock ans)))
+              (ans        (vl-genelement-immdeps x.body ans)))
            ans))
         (:vl-genif
          (b* ((ans (vl-expr-immdeps x.test ans))
-              (ans (vl-generateblock-immdeps x.then ans))
-              (ans (vl-generateblock-immdeps x.else ans)))
+              (ans (vl-genelement-immdeps x.then ans))
+              (ans (vl-genelement-immdeps x.else ans)))
            ans))
         (:vl-gencase
          (b* ((ans (vl-expr-immdeps x.test ans))
               (ans (vl-gencaselist-immdeps x.cases ans))
-              (ans (vl-generateblock-immdeps x.default ans)))
+              (ans (vl-genelement-immdeps x.default ans)))
            ans))
         (:vl-genblock
          (b* ((scope (vl-sort-genelements x.elems))
@@ -1095,7 +1095,7 @@ elements.")
           ans)
          ((cons exprs block) (car x))
          (ans (vl-exprlist-immdeps exprs ans))
-         (ans (vl-generateblock-immdeps block ans)))
+         (ans (vl-genelement-immdeps block ans)))
       (vl-gencaselist-immdeps (cdr x) ans)))
 
   (define vl-genarrayblocklist-immdeps ((x   vl-genarrayblocklist-p)
@@ -1124,38 +1124,9 @@ elements.")
          (ss    (vl-scopestack-push scope ss)))
       (vl-genelementlist-immdeps x.elems ans)))
 
-  (define vl-generateblock-immdeps ((x vl-generateblock-p)
-                                    (ans vl-immdeps-p)
-                                    &key
-                                    ((ss vl-scopestack-p) 'ss))
-    :returns (new-ans vl-immdeps-p)
-    :measure (vl-generateblock-count x)
-    :flag :generateblock
-    (b* (((vl-generateblock x))
-         (scope (vl-sort-genelements x.elems))
-         (ss    (vl-scopestack-push scope ss))
-         (ans   (vl-genelementlist-immdeps x.elems ans)))
-      ans))
-
   ///
 
   (verify-guards vl-genelement-immdeps-fn)
-
-  (local (set-default-hints
-          '((and stable-under-simplificationp
-                 '(:expand ((:free (ans ss)     (vl-genelement-immdeps x ans))
-                            (:free (ans ss)     (vl-genelementlist-immdeps x ans))
-                            (:free (ans ss ctx) (vl-gencaselist-immdeps x ans))
-                            (:free (ans ss)     (vl-genarrayblocklist-immdeps x ans))
-                            (:free (ans ss)     (vl-genarrayblock-immdeps x ans))
-                            (:free (ans ss)     (vl-generateblock-immdeps x ans))
-                            (:free (ans ss)     (vl-genelement-immdeps (vl-genelement-fix x) ans))
-                            (:free (ans ss)     (vl-genelementlist-immdeps (vl-genelementlist-fix x) ans))
-                            (:free (ans ss ctx) (vl-gencaselist-immdeps (vl-gencaselist-fix x) ans))
-                            (:free (ans ss)     (vl-genarrayblocklist-immdeps (vl-genarrayblocklist-fix x) ans))
-                            (:free (ans ss)     (vl-genarrayblock-immdeps (vl-genarrayblock-fix x) ans))
-                            (:free (ans ss)     (vl-generateblock-immdeps (vl-generateblock-fix x) ans))
-                            ))))))
 
   (deffixequiv-mutual vl-genelement-immdeps))
 

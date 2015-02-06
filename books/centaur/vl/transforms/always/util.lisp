@@ -241,7 +241,8 @@ singleton statement list.</p>"
 
   (if (and (eq (vl-stmt-kind body) :vl-blockstmt)
            (vl-blockstmt->sequentialp body)
-           (not (vl-blockstmt->decls body)))
+           (not (vl-blockstmt->vardecls body))
+           (not (vl-blockstmt->paramdecls body)))
       (vl-blockstmt->stmts body)
     (list (vl-stmt-fix body))))
 

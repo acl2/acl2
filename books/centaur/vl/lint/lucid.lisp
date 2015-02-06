@@ -44,6 +44,8 @@
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 (local (std::add-default-post-define-hook :fix))
+(local (in-theory (disable (tau-system))))
+
 
 (defthm vl-scopestack->design-of-vl-scopestack-local
   (equal (vl-scopestack->design (vl-scopestack-local scope ss))
@@ -240,8 +242,10 @@ created when we process their packages, etc.</p>"
           (vl-luciddb-fix db))
          ((when
               ;; NOTE -- This must be kept in sync with vl-stmt-lucidcheck!!
-              (and (eq (vl-stmt-kind x) :vl-blockstmt)
-                   (consp (vl-blockstmt->decls x))))
+              ;; Note: used to check whether there were any declarations, and
+              ;; otherwise skip putting it on the scopestack. I am guessing
+              ;; this isn't an important optimiztion.
+              (eq (vl-stmt-kind x) :vl-blockstmt))
           (b* ((blockscope (vl-blockstmt->blockscope x))
                (ss         (vl-scopestack-push blockscope ss))
                (db         (vl-scope-luciddb-init blockscope ss db)))
@@ -1262,13 +1266,6 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck-list vardecllist :element vardecl)
 
-(def-vl-lucidcheck blockitem
-  :body
-  (case (tag x)
-    (:vl-vardecl (vl-vardecl-lucidcheck x ss st))
-    (otherwise   (vl-paramdecl-lucidcheck x ss st))))
-
-(def-vl-lucidcheck-list blockitemlist :element blockitem)
 
 (defines vl-stmt-lucidcheck
 
@@ -1374,10 +1371,10 @@ created when we process their packages, etc.</p>"
         :vl-blockstmt
         (b* ((ss
               ;; NOTE -- this must be kept in sync with vl-stmt-luciddb-init!
-              (if (consp (vl-blockstmt->decls x))
-                  (vl-scopestack-push (vl-blockstmt->blockscope x) ss)
-                ss))
-             (st (vl-blockitemlist-lucidcheck x.decls ss st))
+              (vl-scopestack-push (vl-blockstmt->blockscope x) ss))
+             ;; (st (vl-importlist-lucidcheck x.imports ss st))
+             (st (vl-paramdecllist-lucidcheck x.paramdecls ss st))
+             (st (vl-vardecllist-lucidcheck x.vardecls ss st))
              (st (vl-stmtlist-lucidcheck x.stmts ss st ctx)))
           st))))
 
@@ -1427,25 +1424,27 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck-list initiallist :element initial)
 
-(def-vl-lucidcheck portdecl
-  :body
-  (b* (((vl-portdecl x))
-       (ctx (vl-lucid-ctx ss x))
-       (st  (vl-datatype-lucidcheck x.type ss st ctx)))
-    (case x.dir
-      (:vl-input
-       ;; We "pretend" that input ports are set because they ought to be set by
-       ;; the superior module, function call, or task invocation.
-       (vl-lucid-mark-simple :set x.name ss st ctx))
-      (:vl-output
-       ;; We "pretend" that output ports are used because they ought to be used
-       ;; the superior module, function call, or task invocation.
-       (vl-lucid-mark-simple :used x.name ss st ctx))
-      (:vl-inout
-       ;; We don't pretend that inout ports are used or set, because they ought
-       ;; to be both used and set within the submodule at some point in time.
-       ;; (Otherwise they may as well be just an input or just an output.)
-       st))))
+(encapsulate nil
+  (local (in-theory (enable (tau-system))))
+  (def-vl-lucidcheck portdecl
+    :body
+    (b* (((vl-portdecl x))
+         (ctx (vl-lucid-ctx ss x))
+         (st  (vl-datatype-lucidcheck x.type ss st ctx)))
+      (case x.dir
+        (:vl-input
+         ;; We "pretend" that input ports are set because they ought to be set by
+         ;; the superior module, function call, or task invocation.
+         (vl-lucid-mark-simple :set x.name ss st ctx))
+        (:vl-output
+         ;; We "pretend" that output ports are used because they ought to be used
+         ;; the superior module, function call, or task invocation.
+         (vl-lucid-mark-simple :used x.name ss st ctx))
+        (:vl-inout
+         ;; We don't pretend that inout ports are used or set, because they ought
+         ;; to be both used and set within the submodule at some point in time.
+         ;; (Otherwise they may as well be just an input or just an output.)
+         st)))))
 
 (def-vl-lucidcheck-list portdecllist :element portdecl)
 
@@ -1489,7 +1488,9 @@ created when we process their packages, etc.</p>"
        ;; Mark all inputs to the function as set, because we're imagining
        ;; that they're set by the caller.
        (st    (vl-portdecllist-lucidcheck x.portdecls ss st))
-       (st    (vl-blockitemlist-lucidcheck x.decls ss st)))
+       ;; (st (vl-importlist-lucidcheck x.imports ss st))
+       (st (vl-paramdecllist-lucidcheck x.paramdecls ss st))
+       (st (vl-vardecllist-lucidcheck x.vardecls ss st)))
     (vl-stmt-lucidcheck x.body ss st ctx)))
 
 (def-vl-lucidcheck-list fundecllist :element fundecl)
@@ -1504,7 +1505,9 @@ created when we process their packages, etc.</p>"
        (scope (vl-taskdecl->blockscope x))
        (ss    (vl-scopestack-push scope ss))
        (st    (vl-portdecllist-lucidcheck x.portdecls ss st))
-       (st    (vl-blockitemlist-lucidcheck x.decls ss st)))
+       ;; (st (vl-importlist-lucidcheck x.imports ss st))
+       (st (vl-paramdecllist-lucidcheck x.paramdecls ss st))
+       (st (vl-vardecllist-lucidcheck x.vardecls ss st)))
     (vl-stmt-lucidcheck x.body ss st ctx)))
 
 (def-vl-lucidcheck-list taskdecllist :element taskdecl)
@@ -1773,6 +1776,7 @@ created when we process their packages, etc.</p>"
   :prepwork ((local (in-theory (enable vl-packeddimension-p))))
   :hooks nil
   :inline t
+  :enabled t
   (mbe :logic (vl-range-p x)
        :exec (not (eq x :vl-unsized-dimension))))
 
@@ -1892,6 +1896,7 @@ created when we process their packages, etc.</p>"
 (define vl-lucid-valid-bits-for-decl ((item (or (vl-paramdecl-p item)
                                                 (vl-vardecl-p item)))
                                       (ss   vl-scopestack-p))
+  :prepwork ((local (in-theory (enable tag-reasoning))))
   :returns (mv (simple-p booleanp :rule-classes :type-prescription)
                (bits     (and (nat-listp bits)
                               (setp bits))))
@@ -2374,6 +2379,7 @@ doesn't have to recreate the default heuristics.</p>"
               (vl-vardecl-p item)))
    (set   vl-lucidocclist-p)
    (genp  booleanp "Consider occurrences from generates?"))
+  :prepwork ((local (in-theory (enable tag-reasoning))))
   :returns (warnings vl-warninglist-p)
   (b* ((ss  (vl-scopestack-fix ss))
        (set (vl-lucidocclist-fix set))
@@ -2522,6 +2528,7 @@ doesn't have to recreate the default heuristics.</p>"
    (used       vl-lucidocclist-p)
    (set        vl-lucidocclist-p)
    (genp       booleanp))
+  :prepwork ((local (in-theory (enable tag-reasoning))))
   :returns (warnings vl-warninglist-p)
   (b* ((used     (vl-lucidocclist-fix used))
        (set      (vl-lucidocclist-fix set))
