@@ -1,38 +1,69 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
-;
-; Contact:
-;   David Russinoff
-;   1106 W 9th St., Austin, TX 78703
-;   http://www.russsinoff.com/
-;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.
-;
-; This program is distributed in the hope that it will be useful but WITHOUT ANY
-; WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-; PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-;
-; You should have received a copy of the GNU General Public License along with
-; this program; see the file "gpl.txt" in this directory.  If not, write to the
-; Free Software Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA
-; 02110-1335, USA.
-;
-; Author: David M. Russinoff (david@russinoff.com)
-
 (in-package "ACL2")
 
-(set-enforce-redundancy t)
+(local (include-book "../../rel9/lib/top"))
 
-(include-book "basic")
+(include-book "../../rel9/lib/util")
 
-(local (include-book "base"))
+(local (include-book "arithmetic-5/top" :dir :system))
 
-(set-inhibit-warnings "theory") ; avoid warning in the next event
-(local (in-theory nil))
+;; The following lemmas from arithmetic-5 have given me trouble:
 
+(local-in-theory (disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
+
+(local-defthm fl-half-int
+  (implies (and (integerp n)
+                (not (= n 0))
+                (not (= n -1)))
+           (< (abs (fl (/ n 2))) (abs n)))
+  :rule-classes ())
+
+(local-defun bit-diff (x y)
+  (declare (xargs :measure (+ (abs (ifix x)) (abs (ifix y)))
+                  :hints (("Goal" :use ((:instance fl-half-int (n x))
+                                        (:instance fl-half-int (n y)))))))
+  (if (or (not (integerp x)) (not (integerp y)) (= x y))
+      ()
+    (if (= (bitn x 0) (bitn y 0))
+        (1+ (bit-diff (fl (/ x 2)) (fl (/ y 2))))
+      0)))
+
+(local-defthmd bdd-1
+  (implies (integerp x)
+           (equal (bitn x 0)
+                  (mod x 2)))
+  :hints (("Goal" :use ((:instance bitn (n 0))
+                        (:instance bits (i 0) (j 0))))))
+
+(local-defthmd bdd-2
+  (implies (integerp x)
+           (equal (bitn x 0)
+                  (- x (* 2 (fl (/ x 2))))))
+  :hints (("Goal" :use ((:instance mod-def (y 2)))
+                  :in-theory (enable bdd-1))))
+
+(local-defthm bit-diff-diff
+  (implies (and (integerp x)
+                (integerp y)
+                (not (= x y)))
+           (let ((n (bit-diff x y)))
+             (and (natp n)
+                  (not (= (bitn x n) (bitn y n))))))
+  :rule-classes ()
+  :hints (("Subgoal *1/2" :in-theory (enable bdd-2))
+          ("Subgoal *1/1.2" :in-theory (enable bdd-2))
+          ("Subgoal *1/1.1" :use ((:instance bitn-shift-down (k 1) 
+                                                             (i (BIT-DIFF (FL (* X 1/2)) (FL (* Y 1/2)))))
+                                  (:instance bitn-shift-down (k 1)
+                                                             (x y)
+                                                             (i (BIT-DIFF (FL (* X 1/2)) (FL (* Y 1/2)))))))))
+
+
+
+(defund fl (x)
+  (declare (xargs :guard (real/rationalp x)))
+  (floor x 1))
 
 ;;;**********************************************************************
 ;;;				BVECP
@@ -50,6 +81,14 @@
 		(<= 0 x)
 		(< x (expt 2 k))))
   :rule-classes :forward-chaining)
+
+(defun nats (n) (if (zp n) () (cons (1- n) (nats (1- n)))))
+
+(defthm bvecp-member
+  (implies (and (natp n)
+                (bvecp x n))
+           (member x (nats (expt 2 n))))
+  :rule-classes ())
 
 (defthmd bvecp-monotone
     (implies (and (bvecp x n)
@@ -74,10 +113,6 @@
 		  (bvecp y n))
 	     (bvecp (* x y) (+ m n)))
   :rule-classes ())
-
-(defthmd bvecp-1-rewrite
-  (equal (bvecp x 1)
-	 (or (equal x 0) (equal x 1))))
 
 (defthm bvecp-1-0
   (implies (and (bvecp x 1)
@@ -120,18 +155,19 @@
 		  (case-split (integerp k)))
 	     (bvecp (bits x i j) k)))
 
+;;Here is a variation of bits-bvecp that is less general but does not
+;;require an integerp hypothesis:
+
+(defthm bits-bvecp-simple
+  (implies (equal k (+ 1 i (* -1 j)))
+           (bvecp (bits x i j) k)))
+
 (defthm bits-bounds
     (implies (and (integerp i)
 		  (integerp j))
 	     (and (natp (bits x i j))
 		  (< (bits x i j) (expt 2 (1+ (- i j))))))
   :rule-classes())
-
-;;Here is a variation of bits-bvecp that is less general but does not
-;;require an integerp hypothesis:
-(defthm bits-bvecp-simple
-  (implies (equal k (+ 1 i (* -1 j)))
-           (bvecp (bits x i j) k)))
 
 (defthm mod-bits-equal
   (implies (= (mod x (expt 2 (1+ i))) 
@@ -154,29 +190,6 @@
 	   (equal (bits x i 0)
 		  (mod x (expt 2 (1+ i))))))
 
-(defthmd bits-bits-sum
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp i))
-	   (equal (bits (+ (bits x i 0) y) i 0)
-		  (bits (+ x y) i 0))))
-
-
-;;;; ?? (- x (bits y i 0)) may not be the normal form. 
-(defthmd bits-bits-diff
-  (implies (and (integerp x)
-                (integerp y)
-                (natp i))
-	   (equal (bits (- x (bits y i 0)) i 0)
-		  (bits (- x y) i 0))))
-
-(defthmd bits-bits-times
-    (implies (and (integerp x)
-		  (integerp y)
-		  (integerp i))
-	     (equal (bits (* (bits x i 0) y) i 0)
-		    (bits (* x y) i 0))))
-
 (defthm bits-diff-equal
     (implies (and (natp n)
 		  (integerp x)
@@ -186,8 +199,84 @@
 		  (= (bits (- x y) (1- n) 0) 0)))
   :rule-classes ())
 
+(defthm bits-tail
+  (implies (and (bvecp x (1+ i))
+		(case-split (acl2-numberp i)))
+	   (equal (bits x i 0) x)))
 
-(defthmd bits-mod-2
+(defthm bits-tail-gen
+    (implies (and (integerp x)
+		  (natp i)
+		  (< x (expt 2 i))
+		  (>= x (- (expt 2 (+ 1 i)))))
+	     (equal (bits x i 0)
+		    (if (>= x 0)
+			x
+		      (+ x (expt 2 (+ 1 i)))))))
+
+(defthmd neg-bits-1
+    (implies (and (integerp x)
+		  (natp i)
+		  (natp j)
+		  (< x 0)
+		  (>= x (- (expt 2 j)))
+		  (>= i j))
+	     (equal (bits x i j) 
+                    (1- (expt 2 (1+ (- i j)))))))
+
+(defthmd bits-minus-1
+    (implies (and (natp i)
+		  (natp j)
+		  (>= i j))
+	     (equal (bits -1 i j) 
+                    (1- (expt 2 (1+ (- i j)))))))
+
+(defthm bits-bits-sum
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp i)
+                (integerp j)
+                (integerp k)
+                (>= j 0)
+                (>= k i))
+	   (equal (bits (+ (bits x k 0) y) i j)
+		  (bits (+ x y) i j))))
+
+(defthm bits-bits-sum-alt
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp i)
+                (integerp j)
+                (integerp k)
+                (>= j 0)
+                (>= k i))
+	   (equal (bits (+ x (bits y k 0)) i j)
+		  (bits (+ x y) i j))))
+
+(defthmd bits-bits-diff
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp i)
+                (integerp j)
+                (integerp k)
+                (>= j 0)
+                (>= k i))
+	   (equal (bits (+ x (- (bits y k 0))) i j)
+		  (bits (- x y) i j))))
+
+(defthmd bits-bits-prod
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp i)
+                (integerp j)
+                (integerp k)
+                (>= j 0)
+                (>= k i))
+	   (equal (bits (* x (bits y k 0)) i j)
+		  (bits (* x y) i j))))
+
+
+(defthm bits-fl-diff
   (implies (and (integerp x)
                 (integerp i)
                 (integerp j)
@@ -195,14 +284,15 @@
            (equal (bits x (1- i) j)
                   (- (fl (/ x (expt 2 j)))
                      (* (expt 2 (- i j))
-                        (fl (/ x (expt 2 i))))))))
+                        (fl (/ x (expt 2 i)))))))
+  :rule-classes ())
 
-(defthm bits-neg
+(defthm bits-neg-indices
   (implies (and (< i 0)
                 (integerp x))
            (equal (bits x i j) 0)))
 
-(defthm bits-with-indices-in-the-wrong-order
+(defthm bits-reverse-indices
   (implies (< i j)
 	   (equal (bits x i j)
 		  0)))
@@ -213,49 +303,6 @@
 
 (defthm bits-0
   (equal (bits 0 i j) 0))
-
-
-(defthmd neg-bits-1
-    (implies (and (integerp x)
-		  (natp i)
-		  (natp j)
-		  (< x 0)
-		  (>= x (- (expt 2 j)))
-		  (>= i j))
-	     (equal (bits x i j) 
-                    (+ -1 (expt 2 (+ 1 i (* -1 j)))))))
-
-(defthmd bits-minus-1
-    (implies (and (natp i)
-		  (natp j)
-		  (>= i j))
-	     (equal (bits -1 i j) 
-                    (+ -1 (expt 2 (+ 1 i (* -1 j)))))))
-
-
-(defthm bits-tail
-  (implies (and (bvecp x (1+ i))
-		(case-split (acl2-numberp i)))
-	   (equal (bits x i 0) x)))
-
-(defthm bits-tail-2
-    (implies (and (integerp x)
-		  (natp i)
-		  (< x (expt 2 i))
-		  (>= x (- (expt 2 (+ 1 i)))))
-	     (equal (bits x i 0)
-		    (if (>= x 0)
-			x
-		      (+ x (expt 2 (+ 1 i)))))))
-;;
-
-(defthm bits-drop-from-minus
-  (implies (and (bvecp x (1+ i))
-                (bvecp y (1+ i))
-                (<= y x)
-		(case-split (acl2-numberp i)))
-	   (equal (bits (+ x (* -1 y)) i 0)
-		  (+ x (* -1 y)))))
 
 (defthmd bits-shift-down-1
   (implies (and (<= 0 j)
@@ -272,21 +319,19 @@
 	   (equal (fl (/ (bits x (+ i k) 0) (expt 2 k)))
 		  (bits (fl (/ x (expt 2 k))) i 0))))
 
-(defthm bits-shift-up-1
+(defthmd bits-shift-up-1
   (implies (and (integerp k)
 		(integerp i)
 		(integerp j))
 	   (equal (bits (* (expt 2 k) x) i j)
-		  (bits x (- i k) (- j k))))
-  :rule-classes ())
+		  (bits x (- i k) (- j k)))))
 
-(defthm bits-shift-up-2
+(defthmd bits-shift-up-2
   (implies (and (integerp x)
 		(natp k)
 		(integerp i))
 	   (equal (* (expt 2 k) (bits x i 0))
-		  (bits (* (expt 2 k) x) (+ i k) 0)))
-  :rule-classes ())
+		  (bits (* (expt 2 k) x) (+ i k) 0))))
 
 (defthmd bits-plus-mult-1
   (implies (and (bvecp x k)
@@ -298,7 +343,7 @@
 	   (equal (bits (+ x (* y (expt 2 k))) n m)
 		  (bits y (- n k) (- m k)))))
 
-(defthm bits-plus-mult-2
+(defthmd bits-plus-mult-2
   (implies (and (< n k)
 		(integerp y)
 		(integerp k))
@@ -336,13 +381,12 @@
 ;;bits-match can prove things like this:
 ;;(thm (implies (equal 12 (bits x 15 6))
 ;;		(equal 4 (bits x 8 6))))
-;;See also bits-dont-match.
 
 (defthmd bits-match
   (implies (and (syntaxp (and (quotep i)
 			      (quotep j)
 			      (quotep k)))
-		(equal (bits x i2 j2) k2) ;i2, j2, and k2 are free vars
+		(equal (bits x i2 j2) k2) ;i2, j2, and k2 are free variables
 		(syntaxp (and (quotep i2)
 			      (quotep j2)
 			      (quotep k2)))
@@ -356,7 +400,6 @@
 ;;bits-dont-match can prove things like this:
 ;;(thm (implies (equal 7 (bits x 8 6))
 ;;		(not (equal 4 (bits x 15 6)))))
-;;See also bits-match.
 
 (defthmd bits-dont-match 
   (implies (and (syntaxp (and (quotep i)
@@ -373,8 +416,6 @@
 	   (equal (equal k (bits x i j))
 		  nil)))
 
-(defun bitvec (x n)
-  (if (bvecp x n) x 0))
 
 ;;;**********************************************************************
 ;;;				BITN
@@ -429,6 +470,7 @@
 ;;The following is a special case of bitn-bvecp.
 ;;It is useful as a :forward-chaining rule in concert with bvecp-0-1 and
 ;;bvecp-1-0.
+
 (defthm bitn-bvecp-forward
   (bvecp (bitn x n) 1)
   :rule-classes ((:forward-chaining :trigger-terms ((bitn x n)))))
@@ -467,8 +509,30 @@
 		  (>= x (- (expt 2 n))))
 	     (equal (bitn x n) 1)))
 
+(defthmd bitn-minus-1
+    (implies (natp i)
+	     (equal (bitn -1 i) 1)))
 
-(defthmd bitn-shift
+;; The rewrite rule neg-bitn-2 has the hypotheses (integerp n) and (< x (- (expt 2 k) (expt 2 n))), 
+;; where n does not occur in the lhs.  When n is bound to a large integer, (expt 2 n) blows up. 
+
+(defthmd neg-bitn-2
+    (implies (and (integerp x)
+		  (integerp n)
+		  (integerp k)
+		  (< k n)
+		  (< x (- (expt 2 k) (expt 2 n)))
+		  (>= x (- (expt 2 n))))
+	     (equal (bitn x k) 0)))
+
+(defthm neg-bitn-0
+    (implies (and (integerp x)
+		  (natp n)
+		  (< x (- (expt 2 n)))
+		  (>= x (- (expt 2 (1+ n)))))
+	     (equal (bitn x n) 0)))
+
+(defthmd bitn-shift-up
   (implies (and (integerp n)
 		(integerp k))
 	   (equal (bitn (* x (expt 2 k)) (+ n k))
@@ -480,7 +544,7 @@
 	   (equal (bitn (fl (/ x (expt 2 k))) i)
 		  (bitn x (+ i k)))))
 
-(defthm bitn-bits
+(defthmd bitn-bits
   (implies (and (<= k (- i j))
 		(case-split (<= 0 k))
 		(case-split (integerp i))
@@ -489,13 +553,14 @@
 	   (equal (bitn (bits x i j) k)
 		  (bitn x (+ j k)))))
 
-(defthmd bitn-plus-bits
+(defthm bitn-plus-bits
     (implies (and (<= m n)
 		  (integerp m)
 		  (integerp n))
 	     (= (bits x n m)
 		(+ (* (bitn x n) (expt 2 (- n m)))
-		   (bits x (1- n) m)))))
+		   (bits x (1- n) m))))
+  :rule-classes ())
 
 (defthm bits-plus-bitn
     (implies (and (<= m n)
@@ -547,54 +612,25 @@
            (equal (bitn (sum-b b n) k)
 	          (nth k b))))
 
-; The lemmas sumbits-badguy-is-correct and sumbits-badguy-bounds, below, let
-; one prove equality of two bit vectors of width k by proving each of these has
-; the same value at bit i, for arbitrary i from 0 to k-1.
+;; The next lemma can be used to prove equality of two bit vectors by 
+;; proving that they have the same value at bit n for all n.
 
-(defun sumbits-badguy (x y k)
-  (if (zp k)
-      0
-    (if (not (equal (bitn x (1- k)) (bitn y (1- k))))
-        (1- k)
-      (sumbits-badguy x y (1- k)))))
+(defun bit-diff (x y)
+  (declare (xargs :measure (+ (abs (ifix x)) (abs (ifix y)))))
+  (if (or (not (integerp x)) (not (integerp y)) (= x y))
+      ()
+    (if (= (bitn x 0) (bitn y 0))
+        (1+ (bit-diff (fl (/ x 2)) (fl (/ y 2))))
+      0)))
 
-(defthmd sumbits-badguy-is-correct
-  (implies (and (bvecp x k)
-                (bvecp y k)
-                (equal (bitn x (sumbits-badguy x y k))
-                       (bitn y (sumbits-badguy x y k)))
-                (integerp k)
-                (< 0 k))
-           (equal (equal x y) t)))
-
-(defthmd sumbits-badguy-bounds
-  (implies (and (integerp k)
-                (< 0 k))
-           (let ((badguy (sumbits-badguy x y k)))
-             (and (integerp badguy)
-                  (<= 0 badguy)
-                  (< badguy k)))))
-
-(defun all-bits-p (b k)
-  (if (zp k)
-      t
-    (and (or (= (nth (1- k) b) 0)
-	     (= (nth (1- k) b) 1))
-	 (all-bits-p b (1- k)))))
-
-(defun sum-b (b k)
-  (if (zp k)
-      0
-    (+ (* (expt 2 (1- k)) (nth (1- k) b))
-       (sum-b b (1- k)))))
-
-(defthmd sum-bitn
-  (implies (and (natp n)
-		(all-bits-p b n)
-	        (natp k)
-		(< k n))
-           (equal (bitn (sum-b b n) k)
-	          (nth k b))))
+(defthm bit-diff-diff
+  (implies (and (integerp x)
+                (integerp y)
+                (not (= x y)))
+           (let ((n (bit-diff x y)))
+             (and (natp n)
+                  (not (= (bitn x n) (bitn y n))))))
+  :rule-classes ())
 
 (defthmd bvecp-bitn-1
     (implies (and (bvecp x (1+ n))
@@ -610,23 +646,6 @@
 		(integerp k))
 	   (equal (bitn x k) 1))
   :rule-classes ((:rewrite :match-free :all)))
-
-(defthm neg-bitn-0
-    (implies (and (integerp x)
-		  (natp n)
-		  (< x (- (expt 2 n)))
-		  (>= x (- (expt 2 (1+ n)))))
-	     (equal (bitn x n) 0)))
-
-
-(defthm neg-bitn-2
-    (implies (and (integerp x)
-		  (integerp n)
-		  (integerp k)
-		  (< k n)
-		  (< x (- (expt 2 k) (expt 2 n)))
-		  (>= x (- (expt 2 n))))
-	     (equal (bitn x k) 0)))
 
 (defthmd bitn-expt
     (implies (case-split (integerp n))
@@ -674,12 +693,10 @@
          (bits y (1- n) 0))
     0))
 
-;;Definition of the macro, cat:
-
-;;X is a list of alternating data values and sizes.  CAT-SIZE returns the
-;;formal sum of the sizes.  X must contain at least 1 data/size pair, but we do
-;;not need to specify this in the guard, and leaving it out of that guard
-;;simplifies the guard proof.
+;; We define a macro, CAT, that takes a list of alternating data values and 
+;; sizes.  CAT-SIZE returns the formal sum of the sizes.  The list must contain 
+;; at least 1 data/size pair, but we do not need to specify this in the guard, 
+;; and leaving it out of the guard simplifies the guard proof.
 
 (defun formal-+ (x y)
   (declare (xargs :guard t))
@@ -726,7 +743,7 @@
   (equal (binary-cat x 0 y n)
 	 (bits y (1- n) 0)))
 
-(defthm cat-0
+(defthmd cat-0
   (implies (and (case-split (bvecp y n))
 		(case-split (integerp n))
 		(case-split (integerp m))
@@ -896,14 +913,12 @@
 		      (bitn x (- i n))
 		    0)))))
 
-; We introduce mbe not because we want particularly fast execution, but because
-; the existing logic definition does not satisfy the guard of cat, which can't
-; be changed because of the guard of bits.
+;; We introduce mbe for MULCAT not because we want particularly fast execution, 
+;; but because the existing logic definition does not satisfy the guard of cat, 
+;; which can't be changed because of the guard of bits.
+
 (defund mulcat (l n x)
-  (declare (xargs :guard (and (integerp l)
-                              (< 0 l)
-                              (acl2-numberp n)
-                              (natp x))))
+  (declare (xargs :guard (and (integerp l) (< 0 l) (acl2-numberp n) (natp x))))
   (mbe :logic (if (and (integerp n) (> n 0))
                   (cat (mulcat l (1- n) x)
                        (* l (1- n))
@@ -959,35 +974,32 @@
 	   (equal (bitn (mulcat 1 n x) m)
 		  x)))
 
-;;;;;
 
+;;;**********************************************************************
+;;;		      Signed Integer Encodings
+;;;**********************************************************************
 
-(defun sgndintval (w x)
+(defun intval (w x)
   (if (= (bitn x (1- w)) 1)
       (- x (expt 2 w))
     x))
 
-(defthm sgndintval-bits
+(defthm intval-bits
     (implies (and (integerp x)
 		  (natp w)
 		  (< x (expt 2 (1- w)))
 		  (>= x (- (expt 2 (1- w)))))
-	     (= (sgndintval w (bits x (1- w) 0))
+	     (= (intval w (bits x (1- w) 0))
                 x))
     :rule-classes nil)
 
+(defun sign-extend (n m x)
+  (bits (intval m x) (1- n) 0))
 
-
-(defun signextend (n m x)
-  (bits (SgndIntVal m x) (1- n) 0))
-
-(defthmd sgndintval-signextend
+(defthmd intval-sign-extend
     (implies (and (natp n)
 		  (natp m)
 		  (<= m n)
 		  (bvecp x m))
-	     (equal (sgndintval n (signextend n m x))
-		    (sgndintval m x))))
-
-
-;;;;;
+	     (equal (intval n (sign-extend n m x))
+		    (intval m x))))

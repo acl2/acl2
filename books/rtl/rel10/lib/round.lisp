@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -24,9 +24,14 @@
 
 (in-package "ACL2")
 
-(include-book "arithmetic-5/top" :dir :system)
-(include-book "reps")
-(local (include-book "../lib3/top"))
+(set-enforce-redundancy t)
+
+(local (include-book "../support/top"))
+
+(set-inhibit-warnings "theory")
+(local (in-theory nil))
+
+;; From basic.lisp:
 
 (defund fl (x)
   (declare (xargs :guard (real/rationalp x)))
@@ -36,11 +41,7 @@
   (declare (xargs :guard (real/rationalp x)))
   (- (fl (- x))))
 
-(defund bvecp (x k)
-  (declare (xargs :guard (integerp k)))
-  (and (integerp x)
-       (<= 0 x)
-       (< x (expt 2 k))))
+;; From bits.lisp:
 
 (defund bits (x i j)
   (declare (xargs :guard (and (integerp x)
@@ -53,257 +54,230 @@
        :exec  (if (< i j)
                   0
                 (logand (ash x (- j)) (1- (ash 1 (1+ (- i j))))))))
+
 (defund bitn (x n)
   (declare (xargs :guard (and (integerp x)
                               (integerp n))))
   (mbe :logic (bits x n n)
        :exec  (if (evenp (ash x (- n))) 0 1)))
 
-(defund binary-cat (x m y n)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp y)
-                              (natp m)
-                              (natp n))))
-  (if (and (natp m) (natp n))
-      (+ (* (expt 2 n) (bits x (1- m) 0))
-         (bits y (1- n) 0))
+;; From float.lisp:
+
+(defund sgn (x) 
+  (declare (xargs :guard t))
+  (if (or (not (rationalp x)) (equal x 0))
+      0
+    (if (< x 0) -1 +1)))
+
+(defund expo (x)
+  (declare (xargs :guard t
+                  :measure (:? x)))
+  (cond ((or (not (rationalp x)) (equal x 0)) 0)
+	((< x 0) (expo (- x)))
+	((< x 1) (1- (expo (* 2 x))))
+	((< x 2) 0)
+	(t (1+ (expo (/ x 2))))))
+
+(defund sig (x)
+  (declare (xargs :guard t))
+  (if (rationalp x)
+      (if (< x 0)
+          (- (* x (expt 2 (- (expo x)))))
+        (* x (expt 2 (- (expo x)))))
     0))
 
-(defun formal-+ (x y)
-  (declare (xargs :guard t))
-  (if (and (acl2-numberp x) (acl2-numberp y))
-      (+ x y)
-    (list '+ x y)))
+(defund exactp (x n)
+  (integerp (* (sig x) (expt 2 (1- n)))))
 
-(defun cat-size (x)
-  (declare (xargs :guard (and (true-listp x) (evenp (length x)))))
-  (if (endp (cddr x))
-      (cadr x)
-    (formal-+ (cadr x)
-	      (cat-size (cddr x)))))
+(defun fp+ (x n)
+  (+ x (expt 2 (- (1+ (expo x)) n))))
 
-(defmacro cat (&rest x)
-  (declare (xargs :guard (and x (true-listp x) (evenp (length x)))))
-  (cond ((endp (cddr x))
-         `(bits ,(car x) ,(formal-+ -1 (cadr x)) 0))
-        ((endp (cddddr x))
-         `(binary-cat ,@x))
-        (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
-                      ,(cat-size (cddr x))))))
+;; From reps.lisp:
 
-(defund mulcat (l n x)
-  (declare (xargs :guard (and (integerp l) (< 0 l) (acl2-numberp n) (natp x))))
-  (mbe :logic (if (and (integerp n) (> n 0))
-                  (cat (mulcat l (1- n) x)
-                       (* l (1- n))
-                       x
-                       l)
-                0)
-       :exec  (cond ((eql n 1)
-                     (bits x (1- l) 0))
-                    ((and (integerp n) (> n 0))
-                     (cat (mulcat l (1- n) x)
-                          (* l (1- n))
-                          x
-                          l))
-                    (t 0))))
+(defund bias (q) (- (expt 2 (- q 1)) 1) )
+
+(defund spn (q)
+  (expt 2 (- 1 (bias q))))
+
+(defund spd (p q)
+     (expt 2 (+ 2 (- (bias q)) (- p))))
+
+(defund drepp (x p q)
+  (and (rationalp x)
+       (not (= x 0))
+       (<= (- 2 p) (+ (expo x) (bias q)))
+       (<= (+ (expo x) (bias q)) 0)
+       ;number of bits available in the sig field = p - 1 - ( - bias - expo(x))
+       (exactp x (+ -2 p (expt 2 (- q 1)) (expo x)))))
 
 
 ;;;**********************************************************************
 ;;;                         Truncation
 ;;;**********************************************************************
 
-(defund trunc (x n)
+;(defsection-rtl |Truncation| |Rounding|
+
+(defund rtz (x n)
   (declare (xargs :guard (integerp n)))
   (* (sgn x) 
      (fl (* (expt 2 (1- n)) (sig x))) 
      (expt 2 (- (1+ (expo x)) n))))
 
-(defthmd trunc-integer-type-prescription
-  (implies (and (>= (expo x) n)
-                (case-split (integerp n))
-                )
-           (integerp (trunc x n)))
-  :rule-classes :type-prescription)
-
-(defthmd trunc-rewrite
+(defthmd rtz-rewrite
     (implies (and (rationalp x)
 		  (integerp n)
 		  (> n 0))
-	     (equal (trunc x n)
+	     (equal (rtz x n)
 		    (* (sgn x) 
 		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x))) 
 		       (expt 2 (- (1+ (expo x)) n))))))
 
-(defthmd abs-trunc
-  (equal (abs (trunc x n))
-         (* (fl (* (expt 2 (1- n)) (sig x))) (expt 2 (- (1+ (expo x)) n)))))
+(defthm rtz-integer-type-prescription
+  (implies (and (>= (expo x) n)
+                (case-split (integerp n)))
+           (integerp (rtz x n)))
+  :rule-classes :type-prescription)
 
-(defthm trunc-to-0
-    (implies (and ;(rationalp x)
-		  (integerp n)
+(defthm rtz-neg-bits
+    (implies (and (integerp n)
 		  (<= n 0))
-	     (equal (trunc x n) 0)))
+	     (equal (rtz x n) 0)))
 
-(defthmd sgn-trunc
+(defthmd sgn-rtz
     (implies (and (< 0 n)
                   (rationalp x)
 		  (integerp n))
-	     (equal (sgn (trunc x n))
+	     (equal (sgn (rtz x n))
 		    (sgn x))))
 
-(defthm trunc-positive
+(defthm rtz-positive
    (implies (and (< 0 x)
                  (case-split (rationalp x))
                  (case-split (integerp n))
-                 (case-split (< 0 n))
-                 )
-            (< 0 (trunc x n)))
+                 (case-split (< 0 n)))
+            (< 0 (rtz x n)))
    :rule-classes (:rewrite :linear))
 
-(defthm trunc-negative
+(defthm rtz-negative
   (implies (and (< x 0)
                 (case-split (rationalp x))
                 (case-split (integerp n))
                 (case-split (< 0 n)))
-           (< (trunc x n) 0))
+           (< (rtz x n) 0))
   :rule-classes (:rewrite :linear))
 
-(defthm trunc-0
-  (equal (trunc 0 n) 0))
+(defthm rtz-0
+  (equal (rtz 0 n) 0))
 
-(defthmd trunc-minus
-  (equal (trunc (* -1 x) n)
-         (* -1 (trunc x n))))
+(defthmd abs-rtz
+  (equal (abs (rtz x n))
+         (* (fl (* (expt 2 (1- n)) (sig x))) (expt 2 (- (1+ (expo x)) n)))))
 
-(defthmd trunc-shift
+(defthmd rtz-minus
+  (equal (rtz (* -1 x) n) (* -1 (rtz x n))))
+
+(defthmd rtz-shift
   (implies (integerp n)
-           (equal (trunc (* x (expt 2 k)) n)
-                  (* (trunc x n) (expt 2 k)))))
+           (equal (rtz (* x (expt 2 k)) n)
+                  (* (rtz x n) (expt 2 k)))))
 
-(defthmd trunc-upper-bound
+(defthmd rtz-upper-bound
     (implies (and (rationalp x)
 		  (integerp n))
-	     (<= (abs (trunc x n)) (abs x)))
+	     (<= (abs (rtz x n)) (abs x)))
   :rule-classes :linear)
 
-(defthmd trunc-upper-pos
+(defthmd rtz-upper-pos
     (implies (and (<= 0 x)
                   (rationalp x)
 		  (integerp n))
-	     (<= (trunc x n) x))
+	     (<= (rtz x n) x))
   :rule-classes :linear)
 
-(defthm expo-trunc
+(defthm expo-rtz
     (implies (and (< 0 n)
                   (rationalp x)
 		  (integerp n))
-	     (equal (expo (trunc x n))
+	     (equal (expo (rtz x n))
                     (expo x))))
 
-(defthmd trunc-lower-bound
+(defthmd rtz-lower-bound
     (implies (and (rationalp x)
 		  (integerp n))
-	     (> (abs (trunc x n)) (- (abs x) (expt 2 (- (1+ (expo x)) n)))))
+	     (> (abs (rtz x n)) (- (abs x) (expt 2 (- (1+ (expo x)) n)))))
   :rule-classes :linear)
 
-(defthmd trunc-lower-2
-    (implies (and (rationalp x)
-		  (not (= x 0))
-		  (integerp n)
-		  (> n 0))
-	     (> (abs (trunc x n)) (* (abs x) (- 1 (expt 2 (- 1 n))))))
-  :rule-classes :linear)
-
-(defthmd trunc-lower-2-pos
-    (implies (and (rationalp x)
-		  (> x 0)
-		  (integerp n)
-		  (> n 0))
-	     (> (trunc x n) (* x (- 1 (expt 2 (- 1 n))))))
-  :rule-classes :linear)
-
-(defthm trunc-diff
+(defthm rtz-diff
     (implies (and (rationalp x)
 		  (integerp n)
-                  (> N 0))
-	     (< (abs (- x (trunc x n))) (expt 2 (- (1+ (expo x)) n))))
+                  (> n 0))
+	     (< (abs (- x (rtz x n))) (expt 2 (- (1+ (expo x)) n))))
   :rule-classes ())
 
-(defthm trunc-diff-pos
-    (implies (and (rationalp x)
-		  (>= x 0)
-		  (integerp n)
-		  (> n 0))
-	     (< (- x (trunc x n)) (expt 2 (- (1+ (expo x)) n))))
-  :rule-classes ())
+(defthm rtz-exactp-a
+  (exactp (rtz x n) n))
 
-(defthm trunc-diff-expo
-    (implies (and (rationalp x)
-		  (not (exactp x n))
-		  (integerp n)
-		  (> n 0))
-	     (<= (expo (- x (trunc x n))) (- (expo x) n)))
-  :rule-classes ())
-
-(defthm trunc-exactp-a
-  (exactp (trunc x n) n))
-
-(defthm trunc-exactp-b
+(defthmd rtz-exactp-b
     (implies (and (rationalp x)
 		  (integerp n) 
 		  (> n 0))
-	     (iff (= x (trunc x n))
-		  (exactp x n)))
-  :rule-classes ())
+	     (iff (exactp x n)
+                  (= x (rtz x n)))))
 
-(defthmd trunc-exactp-c
+(defthm rtz-exactp-c
     (implies (and (exactp a n)
 		  (<= a x)
                   (rationalp x)
 		  (integerp n)
 		  (rationalp a))
-	     (<= a (trunc x n))))
+	     (<= a (rtz x n)))
+  :rule-classes ())
 
-(defthmd trunc-monotone
+(defthmd rtz-squeeze
+  (implies (and (rationalp x)
+                (rationalp a)
+                (>= x a)
+                (> a 0)
+                (not (zp n))
+                (exactp a n)
+                (< x (fp+ a n)))
+           (equal (rtz x n) a)))
+
+(defthmd rtz-monotone
   (implies (and (<= x y)
                 (rationalp x)
                 (rationalp y)
                 (integerp n))
-           (<= (trunc x n) (trunc y n)))
+           (<= (rtz x n) (rtz y n)))
   :rule-classes :linear)
 
-(defthm trunc-midpoint
+(defthmd rtz-midpoint
     (implies (and (natp n)
 		  (rationalp x) (> x 0)
 		  (exactp x (1+ n))
 		  (not (exactp x n)))
-	     (= (- x (expt 2 (- (expo x) n)))
-		(trunc x n)))
-  :rule-classes ())
+	     (equal (rtz x n)
+                    (- x (expt 2 (- (expo x) n))))))
 
-(defthmd trunc-trunc
+(defthm rtz-rtz
     (implies (and (>= n m)
                   (integerp n)
 		  (integerp m))
-	     (equal (trunc (trunc x n) m)
-		    (trunc x m))))
+	     (equal (rtz (rtz x n) m)
+		    (rtz x m))))
 
-(defthm plus-trunc
+(defthm plus-rtz
     (implies (and (rationalp x)
 		  (>= x 0)
 		  (rationalp y)
 		  (>= y 0)
 		  (integerp k)
 		  (exactp x (+ k (- (expo x) (expo y)))))
-	     (= (+ x (trunc y k))
-		(trunc (+ x y) (+ k (- (expo (+ x y)) (expo y))))))
+	     (= (+ x (rtz y k))
+		(rtz (+ x y) (+ k (- (expo (+ x y)) (expo y))))))
   :rule-classes ())
 
-(defthm minus-trunc-1
+(defthm minus-rtz
     (implies (and (rationalp x)
 		  (> x 0)
 		  (rationalp y)
@@ -314,266 +288,252 @@
 		  (> (+ k (- (expo (- x y)) (expo y))) 0)
 		  (= n (+ k (- (expo x) (expo y))))
 		  (exactp x (+ k (- (expo x) (expo y)))))
-	     (equal (- x (trunc y k))
-		    (- (trunc (- y x) (+ k (- (expo (- x y)) (expo y)))))))
+	     (= (- x (rtz y k))
+                (- (rtz (- y x) (+ k (- (expo (- x y)) (expo y)))))))
   :rule-classes ())
 
-(defthm bits-trunc
+(defthmd bits-rtz
   (implies (and (= n (1+ (expo x)))
                 (>= x 0)
                 (integerp k)
                 (> k 0))
-           (= (trunc x k)
-              (* (expt 2 (- n k))
-                 (bits x (1- n) (- n k)))))
-  :rule-classes ()
-  :hints (("Goal" :use ((:instance bits_alt-trunc)))))
+           (equal (rtz x k)
+                  (* (expt 2 (- n k))
+                     (bits x (1- n) (- n k))))))
 
-(defthm trunc-logand
-  (implies (and (>= x (expt 2 (1- n)))
-                (< x (expt 2 n))
-                (integerp x) ;(> x 0)
-                (integerp m) (>= m n)
-                (integerp n) (> n k)
-                (integerp k) (> k 0))
-           (= (trunc x k)
-              (logand x (- (expt 2 m) (expt 2 (- n k))))))
-  :rule-classes ())
+(defthmd bits-rtz-bits
+  (implies (and (rationalp x)
+                (>= x 0)
+                (integerp k)
+                (integerp i)
+                (integerp j)
+                (> k 0)
+                (>= (expo x) i)
+                (>= j (- (1+ (expo x)) k)))
+           (equal (bits (rtz x k) i j)
+                  (bits x i j))))
 
-(defthmd trunc-split
+(defthmd rtz-split
   (implies (and (= n (1+ (expo x)))
                 (>= x 0)
                 (integerp m)
                 (> m k)
                 (integerp k)
                 (> k 0))
-           (equal (trunc x m)
-                  (+ (trunc x k)
+           (equal (rtz x m)
+                  (+ (rtz x k)
                      (* (expt 2 (- n m))
-                        (bits x (1- (- n k)) (- n m))))))
-  :hints (("Goal" :use ((:instance trunc-split_alt)))))
+                        (bits x (1- (- n k)) (- n m)))))))
 
+(defthmd rtz-logand
+  (implies (and (>= x (expt 2 (1- n)))
+                (< x (expt 2 n))
+                (integerp x)
+                (integerp m) (>= m n)
+                (integerp n) (> n k)
+                (integerp k) (> k 0))
+           (equal (rtz x k)
+                  (logand x (- (expt 2 m) (expt 2 (- n k)))))))
+;)
 
 ;;;**********************************************************************
 ;;;                    Rounding Away from Zero
 ;;;**********************************************************************
 
-(defund away (x n)
+;(defsection-rtl |Rounding Away from Zero| |Rounding|
+
+(defund raz (x n)
   (* (sgn x) 
      (cg (* (expt 2 (1- n)) (sig x))) 
      (expt 2 (- (1+ (expo x)) n))))
 
-(defthmd away-integer-type-prescription
-  (implies (and (>= (expo x) n)
-                (case-split (integerp n))
-                )
-           (integerp (away x n)))
-  :rule-classes :type-prescription)
-
-(defthmd away-rewrite
+(defthmd raz-rewrite
     (implies (and (rationalp x)
 		  (integerp n)
 		  (> n 0))
-	     (equal (away x n)
+	     (equal (raz x n)
 		    (* (sgn x) 
 		       (cg (* (expt 2 (- (1- n) (expo x))) (abs x))) 
 		       (expt 2 (- (1+ (expo x)) n))))))
 
-(defthmd abs-away
+(defthmd abs-raz
     (implies (and (rationalp x)
 		  (integerp n))
-	     (equal (abs (away x n)) 
+	     (equal (abs (raz x n)) 
 		    (* (cg (* (expt 2 (1- n)) (sig x))) (expt 2 (- (1+ (expo x)) n))))))
 
-(defthm away-to-0
+(defthm raz-integer-type-prescription
+  (implies (and (>= (expo x) n)
+                (case-split (integerp n)))
+           (integerp (raz x n)))
+  :rule-classes :type-prescription)
+
+(defthmd sgn-raz
+  (equal (sgn (raz x n))
+         (sgn x)))
+
+(defthm raz-positive
+  (implies (and (< 0 x)
+                (case-split (rationalp x)))
+           (< 0 (raz x n)))
+  :rule-classes (:rewrite :linear))
+
+(defthm raz-negative
+    (implies (and (< x 0)
+                  (case-split (rationalp x)))
+	     (< (raz x n) 0))
+    :rule-classes (:rewrite :linear))
+
+(defthm raz-0
+  (equal (raz 0 n) 0))
+
+(defthmd raz-minus
+  (equal (raz (* -1 x) n) (* -1 (raz x n))))
+
+(defthm raz-shift
+    (implies (integerp n)
+	     (= (raz (* x (expt 2 k)) n)
+		(* (raz x n) (expt 2 k))))
+  :rule-classes ())
+
+(defthm raz-neg-bits
   (implies (and (<= n 0)
                 (rationalp x)
                 (integerp n))
-           (equal (away x n)
+           (equal (raz x n)
                   (* (sgn x) (expt 2 (+ 1 (expo x) (- n)))))))
 
-(defthmd sgn-away
-  (equal (sgn (away x n))
-         (sgn x)))
-
-(defthm away-positive
-  (implies (and (< 0 x)
-                (case-split (rationalp x)))
-           (< 0 (away x n)))
-  :rule-classes (:rewrite :linear))
-
-(defthm away-negative
-    (implies (and (< x 0)
-                  (case-split (rationalp x))
-                  )
-	     (< (away x n) 0))
-    :rule-classes (:rewrite :linear))
-
-(defthm away-0
-  (equal (away 0 n) 0))
-
-
-(defthmd away-minus
-  (= (away (* -1 x) n) (* -1 (away x n))))
-
-(defthmd away-shift
-    (implies (integerp n)
-	     (= (away (* x (expt 2 k)) n)
-		(* (away x n) (expt 2 k)))))
-
-(defthmd away-lower-bound
+(defthmd raz-lower-bound
     (implies (and (case-split (rationalp x))
 		  (case-split (integerp n)))
-	     (>= (abs (away x n)) (abs x)))
+	     (>= (abs (raz x n)) (abs x)))
   :rule-classes :linear)
 
-(defthmd away-lower-pos
+(defthmd raz-lower-pos
     (implies (and (>= x 0)
                   (case-split (rationalp x))
 		  (case-split (integerp n)))
-	     (>= (away x n) x))
+	     (>= (raz x n) x))
   :rule-classes :linear)
 
-(defthmd away-upper-bound
+(defthmd raz-upper-bound
     (implies (and (rationalp x)
 		  (integerp n)
 		  (> n 0))
-	     (< (abs (away x n)) (+ (abs x) (expt 2 (- (1+ (expo x)) n)))))
+	     (< (abs (raz x n)) (+ (abs x) (expt 2 (- (1+ (expo x)) n)))))
   :rule-classes :linear)
 
-(defthmd away-upper-2
-    (implies (and (rationalp x)
-		  (not (= x 0))
-		  (integerp n)
-		  (> n 0))
-	     (< (abs (away x n)) (* (abs x) (+ 1 (expt 2 (- 1 n))))))
-  :rule-classes :linear)
-
-(defthmd away-diff
+(defthmd raz-diff
     (implies (and (rationalp x)
 		  (integerp n)
 		  (> n 0))
-	     (< (abs (- (away x n) x)) (expt 2 (- (1+ (expo x)) n))))
+	     (< (abs (- (raz x n) x)) (expt 2 (- (1+ (expo x)) n))))
   :rule-classes :linear)
 
-(defthmd away-diff-pos
-    (implies (and (rationalp x)
-		  (>= x 0)
-		  (integerp n)
-		  (> n 0))
-	     (< (- (away x n) x) (expt 2 (- (1+ (expo x)) n))))
-  :rule-classes :linear)
-
-
-(defthm away-expo-upper
+(defthm raz-expo-upper
     (implies (and (rationalp x)
 		  (not (= x 0))
 		  (natp n))
-	     (<= (abs (away x n)) (expt 2 (1+ (expo x)))))
+	     (<= (abs (raz x n)) (expt 2 (1+ (expo x)))))
   :rule-classes ())
 
-
-(defthmd expo-away-lower-bound
+(defthmd expo-raz-upper-bound
     (implies (and (rationalp x)
 		  (natp n))
-	     (>= (expo (away x n)) (expo x)))
+	     (<= (expo (raz x n)) (1+ (expo x))))
   :rule-classes :linear)
 
-
-(defthmd expo-away-upper-bound
+(defthmd expo-raz-lower-bound
     (implies (and (rationalp x)
 		  (natp n))
-	     (<= (expo (away x n)) (1+ (expo x))))
+	     (>= (expo (raz x n)) (expo x)))
   :rule-classes :linear)
 
-
-(defthmd expo-away
+(defthmd expo-raz
     (implies (and (rationalp x)
 		  (natp n)
-		  (not (= (abs (away x n)) (expt 2 (1+ (expo x))))))
-	     (equal (expo (away x n))
+		  (not (= (abs (raz x n)) (expt 2 (1+ (expo x))))))
+	     (equal (expo (raz x n))
                     (expo x))))
 
-(defthmd away-diff-expo
-    (implies (and (rationalp x)
-		  (not (exactp x n))
-		  (integerp n)
-		  (> n 0))
-	     (<= (expo (- (away x n) x)) (- (expo x) n)))
-  :rule-classes :linear)
-
-(defthm away-exactp-a
+(defthm raz-exactp-a
     (implies (case-split (< 0 n))
-	     (exactp (away x n) n)))
+	     (exactp (raz x n) n)))
 
-(defthm away-exactp-b
+(defthmd raz-exactp-b
     (implies (and (rationalp x)
 		  (integerp n) 
 		  (> n 0))
-	     (iff (= x (away x n))
-		  (exactp x n)))
-  :rule-classes ())
+	     (iff (exactp x n)
+                  (= x (raz x n)))))
 
-(defthmd away-exactp-c
+(defthm raz-exactp-c
     (implies (and (exactp a n)
 		  (>= a x)
                   (rationalp x)
 		  (integerp n)
 		  (> n 0)
 		  (rationalp a))
-	     (>= a (away x n))))
+	     (>= a (raz x n)))
+  :rule-classes ())
 
-(defthmd away-monotone
+(defthmd raz-squeeze
+  (implies (and (rationalp x)
+                (rationalp a)
+                (> x a)
+                (> a 0)
+                (not (zp n))
+                (exactp a n)
+                (<= x (fp+ a n)))
+           (equal (raz x n) (fp+ a n))))
+
+(defthmd raz-monotone
     (implies (and (rationalp x)
 		  (rationalp y)
 		  (integerp n)
 		  (<= x y))
-	     (<= (away x n) (away y n)))
+	     (<= (raz x n) (raz y n)))
   :rule-classes :linear)
 
-(defthm trunc-away
+(defthmd rtz-raz
     (implies (and (rationalp x) (> x 0)
 		  (integerp n) (> n 0)
 		  (not (exactp x n)))
-	     (= (away x n)
-		(+ (trunc x n)
-		   (expt 2 (+ (expo x) 1 (- n))))))		
-  :rule-classes ())
+	     (equal (raz x n)
+	            (+ (rtz x n)
+		       (expt 2 (+ (expo x) 1 (- n)))))))
 
-
-(defthm away-midpoint
+(defthmd raz-midpoint
     (implies (and (natp n)
 		  (rationalp x) (> x 0)
 		  (exactp x (1+ n))
 		  (not (exactp x n)))
-	     (= (away x n)
-		(+ x (expt 2 (- (expo x) n)))))
-  :rule-classes ())
+	     (equal (raz x n)
+		    (+ x (expt 2 (- (expo x) n))))))
 
-
-(defthmd away-away
+(defthmd raz-raz
     (implies (and (rationalp x)
 		  (>= x 0)
 		  (integerp n)
 		  (integerp m)
 		  (> m 0)
 		  (>= n m))
-	     (equal (away (away x n) m)
-		    (away x m))))
+	     (equal (raz (raz x n) m)
+		    (raz x m))))
 
-(defthm plus-away
+(defthm plus-raz
   (implies (and (exactp x (+ k (- (expo x) (expo y))))
                 (rationalp x)
                 (>= x 0)
                 (rationalp y)
                 (>= y 0)
                 (integerp k))
-           (= (+ x (away y k))
-              (away (+ x y)
+           (= (+ x (raz y k))
+              (raz (+ x y)
                     (+ k (- (expo (+ x y)) (expo y))))))
   :rule-classes ())
 
-(defthm minus-trunc-2
+(defthm minus-rtz-raz
   (implies (and (rationalp x)
                 (> x 0)
                 (rationalp y)
@@ -584,11 +544,11 @@
                 (> (+ k (- (expo (- x y)) (expo y))) 0)
                 (= n (+ k (- (expo x) (expo y)))) ;; why we need "n"??
                 (exactp x (+ k (- (expo x) (expo y)))))
-           (equal (- x (trunc y k))
-                  (away (- x y) (+ k (- (expo (- x y)) (expo y))))))
+           (= (- x (rtz y k))
+              (raz (- x y) (+ k (- (expo (- x y)) (expo y))))))
   :rule-classes ())
 
-(defthm trunc-plus-minus
+(defthm rtz-plus-minus
     (implies (and (rationalp x)
                   (rationalp y)
                   (not (= x 0))
@@ -600,13 +560,13 @@
                   (= k2 (+ k (expo (+ x y)) (* -1 (expo y))))
                   (exactp x k1)
                   (> k2 0))
-             (equal (+ x (trunc y k))
-                    (if (= (sgn (+ x y)) (sgn y))
-                        (trunc (+ x y) k2)
-                      (away (+ x y) k2))))
-    :rule-classes ())
+             (= (+ x (rtz y k))
+                (if (= (sgn (+ x y)) (sgn y))
+                    (rtz (+ x y) k2)
+                  (raz (+ x y) k2))))
+  :rule-classes ())
 
-(defthm away-imp
+(defthmd raz-imp
     (implies (and (rationalp x)
 		  (> x 0)
 		  (integerp n)
@@ -614,197 +574,219 @@
 		  (integerp m)
 		  (>= m n)
 		  (exactp x m))
-	     (= (away x n)
-		(trunc (+ x
-			  (expt 2 (- (1+ (expo x)) n))
-			  (- (expt 2 (- (1+ (expo x)) m))))
-		       n)))
-  :rule-classes ())
+	     (equal (raz x n)
+		    (rtz (+ x
+		    	    (expt 2 (- (1+ (expo x)) n))
+			    (- (expt 2 (- (1+ (expo x)) m))))
+		         n))))
+;)
 
 ;;;**********************************************************************
-;;;                      Rounding to Nearest Even
+;;;                    Unbiased Rounding
 ;;;**********************************************************************
+
+;(defsection-rtl |Unbiased Rounding| |Rounding|
 
 (defun re (x)
   (- x (fl x)))
 
-
-(defund near (x n)
+(defund rne (x n)
   (let ((z (fl (* (expt 2 (1- n)) (sig x))))
 	(f (re (* (expt 2 (1- n)) (sig x)))))
     (if (< f 1/2)
-	(trunc x n)
+	(rtz x n)
       (if (> f 1/2)
-	  (away x n)
+	  (raz x n)
 	(if (evenp z)
-	    (trunc x n)
-	  (away x n))))))
+	    (rtz x n)
+	  (raz x n))))))
 
-
-(defthm near-choice
-    (or (= (near x n) (trunc x n))
-	(= (near x n) (away x n)))
+(defthm rne-choice
+    (or (= (rne x n) (rtz x n))
+	(= (rne x n) (raz x n)))
   :rule-classes ())
 
-
-(defthmd sgn-near
+(defthmd sgn-rne
     (implies (and (rationalp x)
 		  (integerp n)
 		  (> n 0))
-	     (equal (sgn (near x n))
+	     (equal (sgn (rne x n))
 		    (sgn x))))
 
-(defthm near-positive
+(defthm rne-positive
     (implies (and (< 0 x)
                   (< 0 n)
                   (rationalp x)
 		  (integerp n))
-	     (< 0 (near x n)))
+	     (< 0 (rne x n)))
   :rule-classes (:type-prescription :linear))
 
-(defthmd near-negative
+(defthmd rne-negative
   (implies (and (< x 0)
                 (< 0 n)
                 (rationalp x)
-                (integerp n)
-		)
-           (< (near x n) 0))
+                (integerp n))
+           (< (rne x n) 0))
   :rule-classes (:type-prescription :linear))
 
-(defthm near-0
-  (equal (near 0 n) 
-         0))
+(defthm rne-0
+  (equal (rne 0 n) 0))
 
-(defthm near-exactp-a
+(defthm rne-exactp-a
     (implies (< 0 n)
-	     (exactp (near x n) n)))
+	     (exactp (rne x n) n)))
 
-(defthm near-exactp-b
+(defthmd rne-exactp-b
     (implies (and (rationalp x)
 		  (integerp n) 
 		  (> n 0))
-	     (iff (= x (near x n))
-		  (exactp x n)))
-  :rule-classes ())
+	     (iff (exactp x n)
+                  (= x (rne x n)))))
 
-(defthmd near-exactp-c
+(defthm rne-exactp-c
     (implies (and (exactp a n)
 		  (>= a x)
                   (rationalp x)
 		  (integerp n)
 		  (> n 0)
-		  (rationalp a)
-		  )
-	     (>= a (near x n))))
+		  (rationalp a))
+	     (>= a (rne x n)))
+  :rule-classes ())
 
-(defthmd near-exactp-d
+(defthm rne-exactp-d
     (implies (and (rationalp x)
 		  (integerp n)
 		  (> n 0)
 		  (rationalp a)
 		  (exactp a n)
 		  (<= a x))
-	     (<= a (near x n))))
+	     (<= a (rne x n)))
+  :rule-classes ())
 
-(defthm expo-near
+(defthm expo-rne
     (implies (and (rationalp x)
 		  (> n 0)
                   (integerp n)
-		  (not (= (abs (near x n)) (expt 2 (1+ (expo x))))))
-	     (equal (expo (near x n))
-                    (expo x)))
-  :rule-classes ())
+		  (not (= (abs (rne x n)) (expt 2 (1+ (expo x))))))
+	     (equal (expo (rne x n))
+                    (expo x))))
 
-(defthm near<=away
+(defthm rne<=raz
     (implies (and (rationalp x)
 		  (> x 0)
 		  (integerp n)
 		  (> n 0))
-	     (<= (near x n) (away x n)))
+	     (<= (rne x n) (raz x n)))
   :rule-classes ())
 
-(defthm near>=trunc
+(defthm rne>=rtz
     (implies (and (rationalp x)
 		  (> x 0)
 		  (integerp n)
 		  (> n 0))
-	     (>= (near x n) (trunc x n)))
+	     (>= (rne x n) (rtz x n)))
   :rule-classes ())
 
-(defthmd near-shift
+(defthm rne-shift
     (implies (and (rationalp x)
                   (integerp n)
 		  (integerp k))
-	     (= (near (* x (expt 2 k)) n)
-		(* (near x n) (expt 2 k)))))
+	     (= (rne (* x (expt 2 k)) n)
+		(* (rne x n) (expt 2 k))))
+  :rule-classes ())
 
-(defthmd near-minus
-  (equal (near (* -1 x) n)
-         (* -1 (near x n))))
+(defthmd rne-minus
+  (equal (rne (* -1 x) n) (* -1 (rne x n))))
 
-(defthm near1-a
-    (implies (and (< (abs (- x (trunc x n))) ;; note the abs
-                     (abs (- (away x n) x)))
+(defthmd rne-rtz
+    (implies (and (< (abs (- x (rtz x n)))
+                     (abs (- (raz x n) x)))
                   (rationalp x)
 		  (integerp n))
-	     (equal (near x n)
-                    (trunc x n)))
-  :rule-classes ())
+	     (equal (rne x n)
+                    (rtz x n))))
 
-(defthm near1-b
-  (implies (and (> (abs (- x (trunc x n)))
-                   (abs (- (away x n) x)))
+(defthmd rne-raz
+  (implies (and (> (abs (- x (rtz x n)))
+                   (abs (- (raz x n) x)))
                 (rationalp x)
                 (integerp n))
-           (equal (near x n)
-                  (away x n)))
-  :rule-classes ())
+           (equal (rne x n)
+                  (raz x n))))
 
-(defthm near2
+(defthmd rne-down
+  (implies (and (rationalp x)
+                (rationalp a)
+                (>= x a)
+                (> a 0)
+                (not (zp n))
+                (exactp a n)
+                (< x (+ a (expt 2 (- (expo a) n)))))
+           (equal (rne x n) a)))
+
+(defthmd rne-up
+  (implies (and (rationalp x)
+                (rationalp a)
+                (> a 0)
+                (not (zp n))
+                (exactp a n)
+                (< x (fp+ a n))
+                (> x (+ a (expt 2 (- (expo a) n)))))
+           (equal (rne x n) (fp+ a n))))
+
+(defthm rne-nearest
     (implies (and (exactp y n)
                   (rationalp x)
 		  (rationalp y)
 		  (integerp n)
 		  (> n 0))
-	     (>= (abs (- x y)) (abs (- x (near x n)))))
+	     (>= (abs (- x y)) (abs (- x (rne x n)))))
   :rule-classes ())
 
-(defthm near-est
+(defthm rne-diff
     (implies (and (integerp n) 
 		  (> n 0)
 		  (rationalp x))
-	     (<= (abs (- x (near x n)))
+	     (<= (abs (- x (rne x n)))
 		 (expt 2 (- (expo x) n))))
   :rule-classes ())
 
-(defthm near-monotone
+(defthm rne-diff-cor
+    (implies (and (integerp n) 
+		  (> n 0)
+		  (rationalp x))
+	     (<= (abs (- x (rne x n)))
+		 (* (abs x) (expt 2 (- n)))))
+  :rule-classes ())
+
+(defthm rne-monotone
     (implies (and (<= x y)
                   (rationalp x)
 		  (rationalp y)
-		  ;(<= 0 x) ;; not necessary
 		  (integerp n)
 		  (> n 0))
-	     (<= (near x n) (near y n))))
+	     (<= (rne x n) (rne y n)))
+  :rule-classes ())
 
-(defund near-witness (x y n)
+(defund rne-witness (x y n)
   (if (= (expo x) (expo y))
-      (/ (+ (near x n) (near y n)) 2)
+      (/ (+ (rne x n) (rne y n)) 2)
     (expt 2 (expo y))))
 
-(defthm near-near-lemma
+(defthm rne-rne-lemma
     (implies (and (rationalp x)
 		  (rationalp y)
 		  (< 0 x)
 		  (< x y)
 		  (integerp n)
 		  (> n 0)
-		  (not (= (near x n) (near y n))))
-	     (and (<= x (near-witness x y n))
-		  (<= (near-witness x y n) y)
-		  (exactp (near-witness x y n) (1+ n))))
+		  (not (= (rne x n) (rne y n))))
+	     (and (<= x (rne-witness x y n))
+		  (<= (rne-witness x y n) y)
+		  (exactp (rne-witness x y n) (1+ n))))
   :rule-classes ())
 
-(defthm near-near
+(defthm rne-rne
     (implies (and (rationalp x)
 		  (rationalp y)
 		  (rationalp a)
@@ -817,10 +799,10 @@
 		  (< 0 y)
 		  (< y (fp+ a (1+ n)))
 		  (exactp a (1+ n)))
-	     (<= (near y k) (near x k)))
+	     (<= (rne y k) (rne x k)))
   :rule-classes ())
 
-(defthm near-boundary
+(defthm rne-boundary
     (implies (and (rationalp x)
 		  (rationalp y)
 		  (rationalp a)
@@ -831,394 +813,399 @@
 		  (> n 0)
 		  (exactp a (1+ n))
 		  (not (exactp a n)))
-	     (< (near x n) (near y n)))
+	     (< (rne x n) (rne y n)))
   :rule-classes ())
 
-(defthm near-exact
+(defthm rne-exact
     (implies (and (rationalp x)
 		  (integerp n) 
 		  (> n 1)
 		  (exactp x (1+ n))
 		  (not (exactp x n)))
-	     (exactp (near x n) (1- n)))
+	     (exactp (rne x n) (1- n)))
   :rule-classes ())
 
-
-(defthm near-plus
-  (implies (and (exactp x (1- (+ k (- (expo x) (expo y)))))
-                (rationalp x)
-                (>= x 0)
-                (rationalp y)
-                (>= y 0)
-                (integerp k))
-           (= (+ x (near y k))
-              (near (+ x y)
-                    (+ k (- (expo (+ x y)) (expo y))))))
-  :rule-classes ())
-
-(defthm near-trunc
-    (implies (and (rationalp x) (> x 0)
-		  (integerp n) (> n 1))
-	     (= (near x n)
-		(if (and (exactp x (1+ n)) (not (exactp x n)))
-		    (trunc (+ x (expt 2 (- (expo x) n))) (1- n))
-		  (trunc (+ x (expt 2 (- (expo x) n))) n))))
-  :rule-classes ())
-
-
-;;;**********************************************************************
-;;;                         Rounding to Nearest
-;;;**********************************************************************
-
-(defund near+ (x n)
+(defund rna (x n)
   (if (< (re (* (expt 2 (1- n)) (sig x)))
 	 1/2)
-      (trunc x n)
-    (away x n)))
+      (rtz x n)
+    (raz x n)))
 
-(defthm near+-choice
-    (or (= (near+ x n) (trunc x n))
-	(= (near+ x n) (away x n)))
+(defthm rna-choice
+    (or (= (rna x n) (rtz x n))
+	(= (rna x n) (raz x n)))
   :rule-classes ())
 
-(defthm near+<=away
+(defthm sgn-rna
     (implies (and (rationalp x)
-		  (> x 0)
 		  (integerp n)
 		  (> n 0))
-	     (<= (near+ x n) (away x n)))
-  :rule-classes ())
+	     (equal (sgn (rna x n))
+		    (sgn x))))
 
-(defthm near+>=trunc
-    (implies (and (rationalp x)
-		  (> x 0)
-		  (integerp n)
-		  (> n 0))
-	     (>= (near+ x n) (trunc x n)))
-  :rule-classes ())
-
-(defthmd near+-shift
-    (implies (and (rationalp x)
-		  (integerp n)
-		  (integerp k))
-	     (= (near+ (* x (expt 2 k)) n)
-		(* (near+ x n) (expt 2 k)))))
-
-(defthmd near+-minus
-  (= (near+ (* -1 x) n) (* -1 (near+ x n))))
-
-(defthm near+-positive
+(defthm rna-positive
   (implies (and (rationalp x)
                 (> x 0)
                 (integerp n)
                 (> n 0))
-           (> (near+ x n) 0))
+           (> (rna x n) 0))
   :rule-classes :linear)
 
-(defthm near+-negative
+(defthm rna-negative
     (implies (and (< x 0)
                   (rationalp x)
 		  (integerp n)
 		  (> n 0))
-	     (< (near+ x n) 0))
+	     (< (rna x n) 0))
   :rule-classes :linear)
 
-(defthm near+-0
-  (equal (near+ 0 n) 0))
+(defthm rna-0
+  (equal (rna 0 n) 0))
 
-(defthm near+-0-0
-  (implies (and (case-split (< 0 n))
-                (case-split (rationalp x))
-                (case-split (integerp n)))
-           (equal (equal (near+ x n) 0)
-		  (equal x 0)))
-  :rule-classes ())
+(defthm rna-exactp-a
+    (implies (> n 0)
+	     (exactp (rna x n) n)))
 
-(defthm sgn-near+
-    (implies (and (rationalp x)
-		  (integerp n)
-		  (> n 0))
-	     (equal (sgn (near+ x n))
-		    (sgn x))))
-
-(defthm near+-exactp-a
-    (implies (and (rationalp x)
-		  (integerp n)
-		  (> n 0))
-	     (exactp (near+ x n) n)))
-
-(defthm near+-exactp-b
+(defthmd rna-exactp-b
     (implies (and (rationalp x)
 		  (integerp n) 
 		  (> n 0))
-	     (iff (= x (near+ x n))
-		  (exactp x n)))
-  :rule-classes ())
+	     (iff (exactp x n)
+                  (= x (rna x n)))))
 
-(defthm near+-exactp-c
+(defthm rna-exactp-c
     (implies (and (rationalp x)
 		  (integerp n)
 		  (> n 0)
 		  (rationalp a)
 		  (exactp a n)
 		  (>= a x))
-	     (>= a (near+ x n))))
+	     (>= a (rna x n)))
+  :rule-classes ())
 
-(defthm near+-exactp-d
+(defthm rna-exactp-d
     (implies (and (rationalp x)
 		  (integerp n)
 		  (> n 0)
 		  (rationalp a)
 		  (exactp a n)
 		  (<= a x))
-	     (<= a (near+ x n))))
+	     (<= a (rna x n)))
+  :rule-classes ())
 
-(defthm expo-near+
+(defthmd expo-rna
     (implies (and (rationalp x)
 		  (natp n)
-		  (not (= (abs (near+ x n)) (expt 2 (1+ (expo x))))))
-	     (equal (expo (near+ x n))
-                    (expo x)))
-  :rule-classes ())
+		  (not (= (abs (rna x n)) (expt 2 (1+ (expo x))))))
+	     (equal (expo (rna x n))
+                    (expo x))))
 
-(defthm near+1-a
+(defthm rna<=raz
     (implies (and (rationalp x)
-		  (integerp n)
-		  ; (> n 0) ;; not necessary
-		  (< (abs (- x (trunc x n)))
-                     (abs (- (away x n) x)))) ;; note the abs
-	     (= (near+ x n) (trunc x n)))
-  :rule-classes ())
-
-(defthm near+1-b
-    (implies (and (rationalp x)
-		  (integerp n)
-		  ;; (> n 0)
-		  (> (abs (- x (trunc x n)))
-                     (abs (- (away x n) x))))
-	     (= (near+ x n) (away x n)))
-  :rule-classes ())
-
-(defthm near+2
-    (implies (and  (exactp y n)
-                   (rationalp x)
-                   (rationalp y)
+		  (> x 0)
 		  (integerp n)
 		  (> n 0))
-
-	     (>= (abs (- x y)) (abs (- x (near+ x n)))))
+	     (<= (rna x n) (raz x n)))
   :rule-classes ())
 
-(defthm near+-est
+(defthm rna>=rtz
+    (implies (and (rationalp x)
+		  (> x 0)
+		  (integerp n)
+		  (> n 0))
+	     (>= (rna x n) (rtz x n)))
+  :rule-classes ())
+
+(defthm rna-shift
+    (implies (and (rationalp x)
+		  (integerp n)
+		  (integerp k))
+	     (= (rna (* x (expt 2 k)) n)
+		(* (rna x n) (expt 2 k))))
+  :rule-classes ())
+
+(defthmd rna-minus
+  (equal (rna (* -1 x) n) (* -1 (rna x n))))
+
+(defthmd rna-rtz
+    (implies (and (rationalp x)
+		  (integerp n)
+		  (< (abs (- x (rtz x n)))
+                     (abs (- (raz x n) x))))
+	     (equal (rna x n) (rtz x n))))
+
+(defthmd rna-raz
+    (implies (and (rationalp x)
+		  (integerp n)
+		  (> (abs (- x (rtz x n)))
+                     (abs (- (raz x n) x))))
+	     (equal (rna x n) (raz x n))))
+
+(defthm rna-nearest
+    (implies (and (exactp y n)
+                  (rationalp x)
+                  (rationalp y)
+		  (integerp n)
+		  (> n 0))
+	     (>= (abs (- x y)) (abs (- x (rna x n)))))
+  :rule-classes ())
+
+(defthm rna-diff
     (implies (and (integerp n) 
 		  (> n 0)
 		  (rationalp x))
-	     (<= (abs (- x (near+ x n)))
+	     (<= (abs (- x (rna x n)))
 		 (expt 2 (- (expo x) n))))
   :rule-classes ())
 
-(defthm near+-monotone
+(defthm rna-monotone
   (implies (and (<= x y)
                 (rationalp x)
                 (rationalp y)
-                ;(< 0 x)
                 (natp n))
-           (<= (near+ x n) (near+ y n))))
+           (<= (rna x n) (rna y n)))
+  :rule-classes ())
 
-(defthm near+-midpoint
+(defund rna-witness (x y n)
+  (if (= (expo x) (expo y))
+      (/ (+ (rna x n) (rna y n)) 2)
+    (expt 2 (expo y))))
+
+(defthm rna-rna-lemma
+    (implies (and (rationalp x)
+		  (rationalp y)
+		  (< 0 x)
+		  (< x y)
+		  (integerp n)
+		  (> n 0)
+		  (not (= (rna x n) (rna y n))))
+	     (and (<= x (rna-witness x y n))
+		  (<= (rna-witness x y n) y)
+		  (exactp (rna-witness x y n) (1+ n))))
+  :rule-classes ())
+
+(defthm rna-rna
+    (implies (and (rationalp x)
+		  (rationalp y)
+		  (rationalp a)
+		  (integerp n)
+		  (integerp k)
+		  (> k 0)
+		  (>= n k)		  
+		  (< 0 a)
+		  (< a x)
+		  (< 0 y)
+		  (< y (fp+ a (1+ n)))
+		  (exactp a (1+ n)))
+	     (<= (rna y k) (rna x k)))
+  :rule-classes ())
+
+(defthmd rna-midpoint
     (implies (and (rationalp x)
 		  (integerp n)
 		  (exactp x (1+ n))
 		  (not (exactp x n)))
-	     (equal (near+ x n) (away x n)))
-  :rule-classes ())
+	     (equal (rna x n) (raz x n))))
 
-(defthm near-power-a
+(defthm rne-power-2
     (implies (and (rationalp x) (> x 0)
 		  (integerp n) (> n 1)
 		  (>= (+ x (expt 2 (- (expo x) n)))
 		      (expt 2 (1+ (expo x)))))
-	     (= (near x n)
+	     (= (rne x n)
 		(expt 2 (1+ (expo x)))))
   :rule-classes ())
 
-(defthm near-power-b
+(defthm rtz-power-2
     (implies (and (rationalp x) (> x 0)
 		  (integerp n) (> n 1)
 		  (>= (+ x (expt 2 (- (expo x) n)))
 		      (expt 2 (1+ (expo x)))))
-	     (= (trunc (+ x (expt 2 (- (expo x) n))) n)
+	     (= (rtz (+ x (expt 2 (- (expo x) n))) n)
 		(expt 2 (1+ (expo x)))))
   :rule-classes ())
 
-(defthm near+-power
+(defthm rna-power-2
     (implies (and (rationalp x) (> x 0)
 		  (integerp n) (> n 1)
 		  (>= (+ x (expt 2 (- (expo x) n)))
 		      (expt 2 (1+ (expo x)))))
-	     (= (near+ x n)
+	     (= (rna x n)
 		(expt 2 (1+ (expo x)))))
   :rule-classes ())
 
-(defthm near+-plus
+(defthm plus-rne
+  (implies (and (exactp x (1- (+ k (- (expo x) (expo y)))))
+                (rationalp x)
+                (>= x 0)
+                (rationalp y)
+                (>= y 0)
+                (integerp k))
+           (= (+ x (rne y k))
+              (rne (+ x y)
+                    (+ k (- (expo (+ x y)) (expo y))))))
+  :rule-classes ())
+
+(defthm plus-rna
   (implies (and (exactp x (+ k (- (expo x) (expo y))))
                 (rationalp x)
                 (>= x 0)
                 (rationalp y)
                 (>= y 0)
                 (integerp k))
-           (= (+ x (near+ y k))
-              (near+ (+ x y)
+           (= (+ x (rna y k))
+              (rna (+ x y)
                     (+ k (- (expo (+ x y)) (expo y))))))
   :rule-classes ())
 
-(defthm near+trunc
+(defthmd rne-imp
+    (implies (and (rationalp x) (> x 0)
+		  (integerp n) (> n 1))
+	     (equal (rne x n)
+		    (if (and (exactp x (1+ n)) (not (exactp x n)))
+		        (rtz (+ x (expt 2 (- (expo x) n))) (1- n))
+		      (rtz (+ x (expt 2 (- (expo x) n))) n)))))
+
+(defthmd rna-imp
     (implies (and (rationalp x)
 		  (> x 0)
 		  (integerp n)
 		  (> n 0))
-	     (= (near+ x n)
-		(trunc (+ x (expt 2 (- (expo x) n))) n)))		
-  :rule-classes ())
+	     (equal (rna x n)
+		    (rtz (+ x (expt 2 (- (expo x) n))) n))))
 
-(defthm near+-trunc-cor
+(defthmd rna-imp-cor
     (implies (and (rationalp x)
 		  (integerp m)
 		  (integerp n)
                   (> n m)
 		  (> m 0))
-	     (= (near+ (trunc x n) m)
-		(near+ x m)))
-  :rule-classes ())
+	     (equal (rna (rtz x n) m)
+                    (rna x m))))
+;)
 
 ;;;**********************************************************************
-;;;                          Sticky Rounding
+;;;                          Odd Rounding
 ;;;**********************************************************************
 
-(defund sticky (x n)
-  (cond ((exactp x (1- n)) x)
-	(t (+ (trunc x (1- n))
-              (* (sgn x) (expt 2 (1+ (- (expo x) n))))))))
+;(defsection-rtl |Odd Rounding| |Rounding|
 
-(defthm sgn-sticky
+(defund rto (x n)
+  (if (exactp x (1- n))
+      x
+    (+ (rtz x (1- n))
+       (* (sgn x) (expt 2 (1+ (- (expo x) n)))))))
+
+(defthm sgn-rto
     (implies (and (rationalp x)
 		  (integerp n)
 		  (> n 0))
-	     (equal (sgn (sticky x n))
+	     (equal (sgn (rto x n))
 		    (sgn x))))
 
-(defthmd sticky-positive
+(defthmd rto-positive
     (implies (and (< 0 x)
                   (rationalp x) 
 		  (integerp n)
                   (> n 0))
-	     (> (sticky x n) 0))
+	     (> (rto x n) 0))
   :rule-classes :linear)
 
-(defthmd sticky-negative
+(defthmd rto-negative
     (implies (and (< x 0)
                   (rationalp x) 
 		  (integerp n)
                   (> n 0))
-	     (< (sticky x n) 0))
+	     (< (rto x n) 0))
   :rule-classes :linear)
 
-(defthm sticky-0
-  (equal (sticky 0 n) 0))
+(defthm rto-0
+  (equal (rto 0 n) 0))
 
-(defthmd sticky-minus
-  (equal (sticky (* -1 x) n) (* -1 (sticky x n))))
+(defthmd rto-minus
+  (equal (rto (* -1 x) n) (* -1 (rto x n))))
 
-(defthm sticky-shift
+(defthm rto-shift
     (implies (and (rationalp x)
 		  (integerp n) (> n 0)
 		  (integerp k))
-	     (= (sticky (* (expt 2 k) x) n)
-		(* (expt 2 k) (sticky x n))))		
+	     (= (rto (* (expt 2 k) x) n)
+		(* (expt 2 k) (rto x n))))		
   :rule-classes ())
 
-(defthm expo-sticky
+(defthm expo-rto
     (implies (and (rationalp x) ;; (> x 0)
 		  (integerp n) (> n 0))
-	     (= (expo (sticky x n))
-		(expo x)))
-  :rule-classes ())
+	     (equal (expo (rto x n))
+		    (expo x))))
 
-(defthm sticky-exactp-a
+(defthm rto-exactp-a
     (implies (and (rationalp x)
 		  (integerp n) (> n 0))
-	     (exactp (sticky x n) n))
-  :rule-classes ())
+	     (exactp (rto x n) n)))
 
-(defthm sticky-exactp-b
+(defthmd rto-exactp-b
     (implies (and (rationalp x)
 		  (integerp n) 
 		  (> n 0))
-	     (iff (= x (sticky x n))
-		  (exactp x n)))
-  :rule-classes ())
+	     (iff (exactp x n)
+                  (= x (rto x n)))))
 
-(defthmd sticky-monotone
+(defthmd rto-monotone
   (implies (and (<= x y)
                 (rationalp x)
                 (rationalp y)
                 (natp n))
-           (<= (sticky x n) (sticky y n)))
+           (<= (rto x n) (rto y n)))
   :rule-classes :linear)
 
-(defthm sticky-exactp-m
+(defthm rto-exactp-c
     (implies (and (rationalp x)
 		  (integerp m)
 		  (integerp n) 
 		  (> n m)
 		  (> m 0))
-	     (iff (exactp (sticky x n) m)
-		  (exactp x m)))
-  :rule-classes ())
+	     (iff (exactp (rto x n) m)
+		  (exactp x m))))
 
-(defthm trunc-sticky
+(defthm rtz-rto
     (implies (and (rationalp x)
 		  (integerp m) (> m 0)
 		  (integerp n) (> n m))
-	     (= (trunc (sticky x n) m)
-		(trunc x m)))
-  :rule-classes ())
+	     (equal (rtz (rto x n) m)
+		    (rtz x m))))
 
-(defthm away-sticky
+(defthm raz-rto
     (implies (and (rationalp x)
 		  (integerp m) (> m 0)
 		  (integerp n) (> n m))
-	     (= (away (sticky x n) m)
-		(away x m)))
-  :rule-classes ())
+	     (equal (raz (rto x n) m)
+		    (raz x m))))
 
-(defthm near-sticky
+(defthm rne-rto
     (implies (and (rationalp x)
 		  (integerp m) (> m 0)
 		  (integerp n) (> n (1+ m)))
-	     (= (near (sticky x n) m)
-		(near x m)))
-  :rule-classes ())
+	     (equal (rne (rto x n) m)
+		    (rne x m))))
 
-(defthm near+-sticky
+(defthm rna-rto
     (implies (and (rationalp x)
 		  (integerp m) (> m 0)
 		  (integerp n) (> n (1+ m)))
-	     (= (near+ (sticky x n) m)
-		(near+ x m)))
-  :rule-classes ())
+	     (equal (rna (rto x n) m)
+		    (rna x m))))
 
-(defthm sticky-sticky
+(defthm rto-rto
     (implies (and (rationalp x)
 		  (integerp m)
 		  (> m 1)
 		  (integerp n)
 		  (>= n m))
-	     (= (sticky (sticky x n) m)
-		(sticky x m)))
-  :rule-classes ())
+	     (equal (rto (rto x n) m)
+		    (rto x m))))
 
-(defthm sticky-plus
+(defthm rto-plus
     (implies (and (rationalp x)
 		  (rationalp y)
 		  (not (= y 0))
@@ -1230,56 +1217,57 @@
 		  (> k1 1)
 		  (> k2 1)
 		  (exactp x (1- k1)))
-	     (= (+ x (sticky y k))
-		(sticky (+ x y) k2)))
+	     (= (+ x (rto y k))
+		(rto (+ x y) k2)))
   :rule-classes ())
-
+;)
 
 ;;;**********************************************************************
 ;;;                    IEEE Rounding
 ;;;**********************************************************************
 
-(defund inf (x n)
-  (if (>= x 0)
-      (away x n)
-    (trunc x n)))
+;(defsection-rtl |IEEE Rounding| |Rounding|
 
-(defthmd inf-lower-bound
+(defun rup (x n)
+  (if (>= x 0)
+      (raz x n)
+    (rtz x n)))
+
+(defun rdn (x n)
+  (if (>= x 0)
+      (rtz x n)
+    (raz x n)))
+
+(defthmd rup-lower-bound
     (implies (and (case-split (rationalp x))
 		  (case-split (integerp n)))
-	     (>= (inf x n) x))
+	     (>= (rup x n) x))
   :rule-classes :linear)
 
-(defund minf (x n)
-  (if (>= x 0)
-      (trunc x n)
-    (away x n)))
-
-(defthmd minf-lower-bound
+(defthmd rdn-lower-bound
     (implies (and (case-split (rationalp x))
 		  (case-split (integerp n)))
-	     (<= (minf x n) x))
+	     (<= (rdn x n) x))
   :rule-classes :linear)
 
-(defund IEEE-mode-p (mode)
-  (member mode '(trunc inf minf near)))
+(defund IEEE-rounding-mode-p (mode)
+  (member mode '(rtz rup rdn rne)))
 
-(defund common-rounding-mode-p (mode)
-  (or (IEEE-mode-p mode) (equal mode 'away) (equal mode 'near+)))
+(defund common-mode-p (mode)
+  (or (IEEE-rounding-mode-p mode) (equal mode 'raz) (equal mode 'rna)))
 
-(defthmd ieee-mode-is-common-rounding
-  (implies (IEEE-mode-p mode)
-           (common-rounding-mode-p mode))
-  :hints (("Goal" :in-theory (enable common-rounding-mode-p))))
+(defthm ieee-mode-is-common-mode
+  (implies (IEEE-rounding-mode-p mode)
+           (common-mode-p mode)))
 
 (defund rnd (x mode n)
   (case mode
-    (away (away x n))
-    (near+ (near+ x n))
-    (trunc (trunc x n))
-    (inf (inf x n))
-    (minf (minf x n))
-    (near (near x n))
+    (raz (raz x n))
+    (rna (rna x n))
+    (rtz (rtz x n))
+    (rup (rup x n))
+    (rdn (rdn x n))
+    (rne (rne x n))
     (otherwise 0)))
 
 (defthm rationalp-rnd
@@ -1289,27 +1277,24 @@
 (defthm rnd-choice
   (implies (and (rationalp x)
                 (integerp n)
-                (common-rounding-mode-p mode))
-           (or (= (rnd x mode n) (trunc x n))
-	       (= (rnd x mode n) (away x n))))
+                (common-mode-p mode))
+           (or (= (rnd x mode n) (rtz x n))
+	       (= (rnd x mode n) (raz x n))))
   :rule-classes ())
 
 (defthmd sgn-rnd
-    (implies (and (common-rounding-mode-p mode)
+    (implies (and (common-mode-p mode)
 		  (integerp n)
 		  (> n 0))
 	     (equal (sgn (rnd x mode n))
 		    (sgn x))))
-(defthm rnd-0
-  (equal (rnd 0 mode n)
-         0))
 
 (defthm rnd-positive
   (implies (and (< 0 x)
                 (rationalp x)
                 (integerp n)
                 (> n 0)
-                (common-rounding-mode-p mode))
+                (common-mode-p mode))
            (> (rnd x mode n) 0))
   :rule-classes (:type-prescription))
 
@@ -1318,12 +1303,12 @@
                   (rationalp x)
 		  (integerp n)
 		  (> n 0)
-		  (common-rounding-mode-p mode))
+		  (common-mode-p mode))
 	     (< (rnd x mode n) 0))
   :rule-classes (:type-prescription))
 
-; Unlike the above, we leave the following two as rewrite rules because we may
-; want to use the rewriter to relieve their hypotheses.
+(defthm rnd-0
+  (equal (rnd 0 mode n) 0))
 
 (defthm rnd-non-pos
     (implies (<= x 0)
@@ -1335,104 +1320,143 @@
 	     (<= 0 (rnd x mode n)))
   :rule-classes (:rewrite :type-prescription :linear))
 
-(defund flip (m)
+(defund flip-mode (m)
   (case m
-    (inf 'minf)
-    (minf 'inf)
+    (rup 'rdn)
+    (rdn 'rup)
     (t m)))
 
-(defthm ieee-mode-p-flip
-    (implies (ieee-mode-p m)
-	     (ieee-mode-p (flip m))))
+(defthm ieee-rounding-mode-p-flip-mode
+    (implies (ieee-rounding-mode-p m)
+	     (ieee-rounding-mode-p (flip-mode m))))
 
-(defthm common-rounding-mode-p-flip
-    (implies (common-rounding-mode-p m)
-	     (common-rounding-mode-p (flip m))))
+(defthm common-mode-p-flip-mode
+    (implies (common-mode-p m)
+	     (common-mode-p (flip-mode m))))
 
 (defthmd rnd-minus
   (equal (rnd (* -1 x) mode n)
-         (* -1 (rnd x (flip mode) n))))
+         (* -1 (rnd x (flip-mode mode) n))))
 
 (defthm rnd-exactp-a
     (implies (< 0 n)
 	     (exactp (rnd x mode n) n)))
 
-(defthm rnd-exactp-b
+(defthmd rnd-exactp-b
   (implies (and (rationalp x)
-                (common-rounding-mode-p mode)
+                (common-mode-p mode)
                 (integerp n) 
                 (> n 0))
-           (equal (equal x (rnd x mode n))
-		  (exactp x n))))
+           (equal (exactp x n)
+                  (equal x (rnd x mode n)))))
 
-(defthmd rnd-exactp-c
+(defthm rnd-exactp-c
     (implies (and (rationalp x)
-		  (common-rounding-mode-p mode)
+		  (common-mode-p mode)
 		  (integerp n)
 		  (> n 0)
 		  (rationalp a)
 		  (exactp a n)
 		  (>= a x))
-	     (>= a (rnd x mode n))))
+	     (>= a (rnd x mode n)))
+  :rule-classes ())
 
-(defthmd rnd-exactp-d
+(defthm rnd-exactp-d
     (implies (and (rationalp x)
-		  (common-rounding-mode-p mode)
+		  (common-mode-p mode)
 		  (integerp n)
 		  (> n 0)
 		  (rationalp a)
 		  (exactp a n)
 		  (<= a x))
-	     (<= a (rnd x mode n))))
+	     (<= a (rnd x mode n)))
+  :rule-classes ())
 
-(defthm rnd<=away
+(defthm rnd<=raz
     (implies (and (rationalp x)
 		  (>= x 0)
-		  (common-rounding-mode-p mode)
+		  (common-mode-p mode)
 		  (natp n))
-	     (<= (rnd x mode n) (away x n)))
+	     (<= (rnd x mode n) (raz x n)))
   :rule-classes ())
 
-(defthm rnd>=trunc
+(defthm rnd>=rtz
     (implies (and (rationalp x)
 		  (> x 0) ;; 
-		  (common-rounding-mode-p mode)
-                  (INTEGERP N)
-                  (> N 0))
-	     (>= (rnd x mode n) (trunc x n)))
+		  (common-mode-p mode)
+                  (integerp n)
+                  (> n 0))
+	     (>= (rnd x mode n) (rtz x n)))
   :rule-classes ())
 
-(defthmd rnd-diff
+(defthm rnd<equal
   (implies (and (rationalp x)
-                (integerp n)
+                (rationalp y)
+                (natp n)
+                (common-mode-p mode)
                 (> n 0)
-                (common-rounding-mode-p mode))
-           (< (abs (- x (rnd x mode n))) (expt 2 (- (1+ (expo x)) n)))))
+                (> x 0)
+                (not (exactp x (1+ n)))
+                (< (rtz x (1+ n)) y)
+                (< y x))
+           (= (rnd y mode n) (rnd x mode n)))
+  :rule-classes ()
+  :hints (("Goal" :use (fp-rnd<equal
+                        (:instance rna-rna (y x) (x y) (k n) (a (rtz x (1+ n))))))))
 
-(defthm expo-rnd
+(defthm rnd>equal
+  (implies (and (rationalp x)
+                (rationalp y)
+                (natp n)
+                (common-mode-p mode)
+                (> n 0)
+                (> x 0)
+                (not (exactp x (1+ n)))
+                (> (raz x (1+ n)) y)
+                (> y x))
+           (= (rnd y mode n) (rnd x mode n)))
+  :rule-classes ()
+  :hints (("Goal" :use fp-rnd>equal)))
+
+(defthm rnd-near-equal
+  (implies (and (rationalp x)
+                (rationalp y)
+                (natp n)
+                (common-mode-p mode)
+                (> n 0)
+                (> x 0)
+                (not (exactp x (1+ n))))
+           (let ((d (min (- x (rtz x (1+ n))) (- (raz x (1+ n)) x))))
+             (and (> d 0)
+                  (implies (< (abs (- x y)) d)
+                           (= (rnd y mode n) (rnd x mode n))))))
+  :rule-classes ()
+  :hints (("Goal" :use fp-rnd-near-equal)))
+
+(defthmd expo-rnd
     (implies (and (rationalp x)
 		  (integerp n)
 		  (> n 0)
-		  (common-rounding-mode-p mode)
+		  (common-mode-p mode)
 		  (not (= (abs (rnd x mode n))
 			  (expt 2 (1+ (expo x))))))
-	     (= (expo (rnd x mode n))
-		(expo x)))
-  :rule-classes ())
+	     (equal (expo (rnd x mode n))
+		    (expo x))))
 
-(defthmd rnd-monotone
+(defthm rnd-monotone
     (implies (and (<= x y)
                   (rationalp x)
 		  (rationalp y)
-		  (common-rounding-mode-p mode)
+		  (common-mode-p mode)
                   (INTEGERP N)
                   (> N 0))
-	     (<= (rnd x mode n) (rnd y mode n))))
+	     (<= (rnd x mode n) (rnd y mode n)))
+  :rule-classes ())
 
 (defthm rnd-shift
     (implies (and (rationalp x)
 		  (integerp n)
-		  (common-rounding-mode-p mode)
+		  (common-mode-p mode)
 		  (integerp k))
 	     (= (rnd (* x (expt 2 k)) mode n)
 		(* (rnd x mode n) (expt 2 k))))
@@ -1445,78 +1469,82 @@
                 (>= y 0)
                 (integerp k)
                 (exactp x (+ -1 k (- (expo x) (expo y))))
-                (common-rounding-mode-p mode))
+                (common-mode-p mode))
            (= (+ x (rnd y mode k))
               (rnd (+ x y)
                    mode
                    (+ k (- (expo (+ x y)) (expo y))))))
   :rule-classes ())
 
-(defthmd rnd-sticky
-  (implies (and (common-rounding-mode-p mode)
+(defthmd rnd-rto
+  (implies (and (common-mode-p mode)
                 (rationalp x)
                 (integerp m) 
 		(> m 0)
                 (integerp n) 
 		(>= n (+ m 2)))
-           (equal (rnd (sticky x n) mode m)
+           (equal (rnd (rto x n) mode m)
                   (rnd x mode m))))
 
 (defun rnd-const (e mode n)
   (case mode
-    ((near near+) (expt 2 (- e n)))
-    ((inf away) (1- (expt 2 (1+ (- e n)))))
+    ((rne rna) (expt 2 (- e n)))
+    ((rup raz) (1- (expt 2 (1+ (- e n)))))
     (otherwise 0)))
 
-(defthm rnd-const-thm
-    (implies (and (common-rounding-mode-p mode)
+(defthmd rnd-const-thm
+    (implies (and (common-mode-p mode)
 		  (integerp n)
 		  (> n 1)
 		  (integerp x)
 		  (> x 0)
 		  (>= (expo x) n))
-	     (= (rnd x mode n)
-		(if (and (eql mode 'near)
-			 (exactp x (1+ n))
-			 (not (exactp x n)))
-		    (trunc (+ x (rnd-const (expo x) mode n)) (1- n))
-		  (trunc (+ x (rnd-const (expo x) mode n)) n))))
-  :rule-classes ())
+	     (equal (rnd x mode n)
+		    (if (and (eql mode 'rne)
+			     (exactp x (1+ n))
+                             (not (exactp x n)))
+                        (rtz (+ x (rnd-const (expo x) mode n)) (1- n))
+                      (rtz (+ x (rnd-const (expo x) mode n)) n)))))
 
-(defun roundup (x mode n)
+(defund round-up-p (x sticky mode n)
   (case mode
-    (near+ (= (bitn x (- (expo x) n)) 1))
-    (near (and (= (bitn x (- (expo x) n)) 1)
-               (or (not (exactp x (1+ n)))
+    (rna (= (bitn x (- (expo x) n)) 1))
+    (rne (and (= (bitn x (- (expo x) n)) 1)
+               (or (not (= (bits x (- (expo x) (1+ n)) 0) 0))
+                   (= sticky 1)
                    (= (bitn x (- (1+ (expo x)) n)) 1))))
-    ((inf away) (not (exactp x n)))
+    ((rup raz) (or (not (= (bits x (- (expo x) n) 0) 0))
+                   (= sticky 1)))
     (otherwise ())))
 
-(defthm roundup-thm
-    (implies (and (common-rounding-mode-p mode)
-		  (integerp n)
-		  (> n 1)
-		  (integerp x)
-		  (> x 0)
-		  (>= (expo x) n))
-	     (= (rnd x mode n)
-                (if (roundup x mode n)
-                    (fp+ (trunc x n) n)
-                  (trunc x n))))
-  :rule-classes ()
-  :hints (("Goal" :use roundup_alt-thm)))
-  
+(defthmd round-up-p-thm
+  (implies (and (common-mode-p mode)
+                (rationalp z)
+                (> z 0)
+                (not (zp n))
+                (natp k)
+                (< n k)
+                (<= k (1+ (expo z))))
+           (let* ((x (rtz z k))
+                  (sticky (if (< x z) 1 0)))
+	     (equal (rnd z mode n)
+                    (if (round-up-p x sticky mode n)
+                        (fp+ (rtz z n) n)
+                      (rtz z n))))))
+;)  
 
 ;;;**********************************************************************
 ;;;                         Denormal Rounding 
 ;;;**********************************************************************
+
+;(defsection-rtl |Denormal Rounding| |Rounding|
 
 (defund drnd (x mode p q)
   (rnd x mode (+ p (expo x) (- (expo (spn q))))))
 
 (defthmd drnd-minus
   (equal (drnd (* -1 x) mode p q)
-         (* -1 (drnd x (flip mode) p q))))
+         (* -1 (drnd x (flip-mode mode) p q))))
 
 (defthm drnd-exactp-a
   (implies (and (rationalp x)
@@ -1525,11 +1553,11 @@
                 (> p 1)
                 (integerp q)
                 (> q 0)
-                (common-rounding-mode-p mode))
+                (common-mode-p mode))
            (or (drepp (drnd x mode p q) p q)
                (= (drnd x mode p q) 0)
                (= (drnd x mode p q) (* (sgn x) (spn q)))))
-  :rule-classes nil)
+  :rule-classes ())
 
 (defthmd drnd-exactp-b
   (implies (and (rationalp x)
@@ -1538,11 +1566,11 @@
                 (> p 1)
                 (integerp q)
                 (> q 0)
-                (common-rounding-mode-p mode))
+                (common-mode-p mode))
            (equal (drnd x mode p q)
                   x)))
 
-(defthmd drnd-exactp-c
+(defthm drnd-exactp-c
   (implies (and (rationalp x)
                 (<= (abs x) (spn q))
 		(rationalp a)
@@ -1552,10 +1580,11 @@
                 (> p 1)
                 (integerp q)
                 (> q 0)
-                (common-rounding-mode-p mode))
-           (>= a (drnd x mode p q))))
+                (common-mode-p mode))
+           (>= a (drnd x mode p q)))
+  :rule-classes ())
 
-(defthmd drnd-exactp-d
+(defthm drnd-exactp-d
   (implies (and (rationalp x)
                 (<= (abs x) (spn q))
 		(rationalp a)
@@ -1565,48 +1594,53 @@
                 (> p 1)
                 (integerp q)
                 (> q 0)
-                (common-rounding-mode-p mode))
-           (<= a (drnd x mode p q))))
+                (common-mode-p mode))
+           (<= a (drnd x mode p q)))
+  :rule-classes ())
 
-(defthm drnd-trunc
+(defthm drnd-rtz
   (implies (and (integerp p)
                 (> p 1)
                 (integerp q)
                 (> q 0)
                 (rationalp x)
                 (<= (abs x) (spn q)))
-           (<= (abs (drnd x 'trunc p q))
-               (abs x))))
+           (<= (abs (drnd x 'rtz p q))
+               (abs x)))
+  :rule-classes ())
 
-(defthm drnd-away
+(defthm drnd-raz
   (implies (and (integerp p)
                 (> p 1)
                 (integerp q)
                 (> q 0)
                 (rationalp x)
                 (<= (abs x) (spn q)))
-           (>= (abs (drnd x 'away p q))
-               (abs x))))
+           (>= (abs (drnd x 'raz p q))
+               (abs x)))
+  :rule-classes ())
 
-(defthm drnd-minf
+(defthm drnd-rdn
   (implies (and (integerp p)
                 (> p 1)
                 (integerp q)
                 (> q 0)
                 (rationalp x)
                 (<= (abs x) (spn q)))
-           (<= (drnd x 'minf p q)
-               x)))
+           (<= (drnd x 'rdn p q)
+               x))
+  :rule-classes ())
 
-(defthm drnd-inf
+(defthm drnd-rup
   (implies (and (integerp p)
                 (> p 1)
                 (integerp q)
                 (> q 0)
                 (rationalp x)
                 (<= (abs x) (spn q)))
-           (>= (drnd x 'inf p q)
-               x)))
+           (>= (drnd x 'rup p q)
+               x))
+  :rule-classes ())
 
 (defthm drnd-diff
   (implies (and (rationalp x)
@@ -1615,10 +1649,11 @@
                 (> p 1)
                 (integerp q)
                 (> q 0)
-                (common-rounding-mode-p mode))
-           (< (abs (- x (drnd x mode p q))) (spd p q))))
+                (common-mode-p mode))
+           (< (abs (- x (drnd x mode p q))) (spd p q)))
+  :rule-classes ())
 
-(defthm drnd-near-est
+(defthm drnd-rne-diff
   (implies (and (rationalp x)
                 (<= (abs x) (spn q))
                 (integerp p)
@@ -1626,9 +1661,10 @@
                 (integerp q)
                 (> q 0)
                 (drepp a p q))
-           (>= (abs (- x a)) (abs (- x (drnd x 'near p q))))))
+           (>= (abs (- x a)) (abs (- x (drnd x 'rne p q)))))
+  :rule-classes ())
 
-(defthm drnd-near+-est
+(defthm drnd-rna-diff
   (implies (and (rationalp x)
                 (<= (abs x) (spn q))
                 (integerp p)
@@ -1636,10 +1672,11 @@
                 (integerp q)
                 (> q 0)
                 (drepp a p q))
-           (>= (abs (- x a)) (abs (- x (drnd x 'near+ p q))))))
+           (>= (abs (- x a)) (abs (- x (drnd x 'rna p q)))))
+  :rule-classes ())
 
-(defthm drnd-sticky
-    (implies (and (common-rounding-mode-p mode)
+(defthmd drnd-rto
+    (implies (and (common-mode-p mode)
 		  (natp p)
 		  (> p 1)
 		  (natp q)
@@ -1648,14 +1685,13 @@
                   (<= (abs x) (spn q))
 		  (natp n)
 		  (>= n (+ p (expo x) (- (expo (spn q))) 2)))
-	     (equal (drnd (sticky x n) mode p q)
-		    (drnd x mode p q)))
-  :rule-classes ())
+	     (equal (drnd (rto x n) mode p q)
+		    (drnd x mode p q))))
 
 (defthmd drnd-rewrite
   (implies (and (rationalp x)
                 (<= (abs x) (spn q))
-                (common-rounding-mode-p mode)
+                (common-mode-p mode)
                 (integerp p)
                 (> p 1)
                 (integerp q)
@@ -1665,7 +1701,7 @@
 		     (* (sgn x) (spn q))))))
 
 (defthmd drnd-tiny
-  (implies (and (common-rounding-mode-p mode)
+  (implies (and (common-mode-p mode)
                 (natp p)
                 (> p 1)
                 (natp q)
@@ -1674,14 +1710,14 @@
                 (< 0 x)
                 (< x (/ (spd p q) 2)))
            (equal (drnd x mode p q)
-                  (if (member mode '(away inf))
+                  (if (member mode '(raz rup))
                       (spd p q)
                      0))))
 
 (defthm drnd-tiny-equal
-    (implies (and (common-rounding-mode-p mode)
+    (implies (and (common-mode-p mode)
                   (natp p)
-                  (> p 1) ;;
+                  (> p 1)
                   (natp q)
                   (> q 0)
                   (rationalp x)
@@ -1692,4 +1728,5 @@
                   (< (abs y) (/ (spd p q) 2)))
              (equal (drnd x mode p q)
                     (drnd y mode p q)))
-    :rule-classes nil)
+    :rule-classes ())
+;)

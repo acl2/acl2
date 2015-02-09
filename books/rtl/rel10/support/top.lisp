@@ -24,20 +24,31 @@
 
 (in-package "ACL2")
 
-(include-book "top1")
+(include-book "../../rel9/lib/add")
 
-(include-book "lextra")
+(include-book "../../rel9/lib/mult")
 
-(include-book "fadd-extra")
+(include-book "../../rel9/lib/util")
 
-(include-book "float-extra")
+(include-book "../../rel9/lib/srt")
 
-(include-book "round-extra")
+(include-book "../../rel9/lib/gl")
 
-(include-book "bitn")
+(include-book "../../rel9/lib/masc")
 
-(include-book "guards")
+(include-book "./basic")
 
-; Could probably be part of top1, but was handled later.
-(include-book "badguys")
+(include-book "./bits") 
+
+(include-book "./log")
+
+(include-book "./float")
+
+(include-book "./reps") 
+
+(include-book "./round")
+
+(include-book "./sqrt")
+
+(include-book "./div")
 
