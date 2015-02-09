@@ -482,8 +482,8 @@ type for @(see vl-scopeexpr->scopes).</p>"
   (deftagsum vl-indexpart
     :measure (two-nats-measure (acl2-count x) 100)
     (:full ())
-    (:range ((left  vl-expr-p)
-             (right vl-expr-p)))
+    (:range ((msb  vl-expr-p)
+             (lsb  vl-expr-p)))
     (:pluscolon ((base  vl-expr-p)
                  (width vl-expr-p)))
     (:minuscolon ((base  vl-expr-p)
@@ -502,8 +502,8 @@ type for @(see vl-scopeexpr->scopes).</p>"
   (deftagsum vl-valuerange
     :measure (two-nats-measure (acl2-count x) 100)
     (:single ((val vl-expr-p)))
-    (:range  ((left  vl-expr-p)
-              (right vl-expr-p)))
+    (:range  ((msb  vl-expr-p)
+              (lsb  vl-expr-p)))
     :base-case-override :single)
 
   (fty::deflist vl-valuerangelist
@@ -537,17 +537,20 @@ type for @(see vl-scopeexpr->scopes).</p>"
     :base-case-override :vl-value
 
     (:vl-special
+     :base-name vl-special
      ;; Things like $, null, etc.
      ((key vl-specialkey-p)
       (atts vl-atts-p)
       (type vl-maybe-datatype-p)))
 
     (:vl-value
+     :base-name vl-value
      ((val  vl-value)
       (atts vl-atts-p)
       (type vl-maybe-datatype-p)))
 
     (:vl-index
+     :base-name vl-index
      ((scope   vl-scopeexpr)
       (indices vl-exprlist-p)
       (part    vl-indexpart-p)
@@ -555,12 +558,14 @@ type for @(see vl-scopeexpr->scopes).</p>"
       (type    vl-maybe-datatype-p)))
 
     (:vl-unary
+     :base-name vl-unary
      ((op     vl-unaryop-p)
       (arg    vl-expr-p)
       (atts   vl-atts-p)
       (type   vl-maybe-datatype-p)))
 
     (:vl-binary
+     :base-name vl-binary
      ((op     vl-binaryop-p)
       (left   vl-expr-p)
       (right  vl-expr-p)
@@ -568,6 +573,7 @@ type for @(see vl-scopeexpr->scopes).</p>"
       (type   vl-maybe-datatype-p)))
 
     (:vl-qmark
+     :base-name vl-qmark
      ((test  vl-expr-p)
       (then  vl-expr-p)
       (else  vl-expr-p)
@@ -575,6 +581,7 @@ type for @(see vl-scopeexpr->scopes).</p>"
       (type  vl-maybe-datatype-p)))
 
     (:vl-mintypmax
+     :base-name vl-mintypmax
      ((min   vl-expr-p)
       (typ   vl-expr-p)
       (max   vl-expr-p)
@@ -582,17 +589,20 @@ type for @(see vl-scopeexpr->scopes).</p>"
       (type  vl-maybe-datatype-p)))
 
     (:vl-concat
+     :base-name vl-concat
      ((parts vl-exprlist-p)
       (atts  vl-atts-p)
       (type  vl-maybe-datatype-p)))
 
     (:vl-multiconcat
+     :base-name vl-multiconcat
      ((reps  vl-expr-p)
       (parts vl-exprlist-p)
       (atts  vl-atts-p)
       (type  vl-maybe-datatype-p)))
 
     (:vl-stream
+     :base-name vl-stream
      ((dir   vl-leftright-p)
       (size  vl-maybe-expr-p)
       (parts vl-streamexprlist-p)
@@ -600,6 +610,7 @@ type for @(see vl-scopeexpr->scopes).</p>"
       (type  vl-maybe-datatype-p)))
 
     (:vl-call
+     :base-name vl-call
      ((name    vl-scopeexpr-p)
       (args    vl-exprlist-p)
       (systemp booleanp)
@@ -607,24 +618,28 @@ type for @(see vl-scopeexpr->scopes).</p>"
       (type    vl-maybe-datatype-p)))
 
     (:vl-cast
+     :base-name vl-cast
      ((to      vl-datatype-p)
       (expr    vl-expr-p)
       (atts    vl-atts-p)
       (type    vl-maybe-datatype-p)))
 
     (:vl-inside
+     :base-name vl-inside
      ((elem   vl-expr-p)
       (set    vl-valuerangelist-p)
       (atts    vl-atts-p)
       (type    vl-maybe-datatype-p)))
 
     (:vl-tagged
+     :base-name vl-tagged
      ((tag   stringp)
       (expr  vl-expr-p)
       (atts    vl-atts-p)
       (type    vl-maybe-datatype-p)))
 
     (:vl-pattern
+     :base-name vl-pattern
      ((pattype vl-maybe-datatype-p)
       (pat     vl-assignpat-p)
       (atts    vl-atts-p)
@@ -838,8 +853,8 @@ away with them as alternate kinds of assignments.</p>")
   (deftagsum vl-packeddimension
     :measure (two-nats-measure (acl2-count x) 100)
     (:unsized ())
-    (:range ((left vl-expr-p)
-             (right vl-expr-p))))
+    (:range ((msb vl-expr-p)
+             (lsb vl-expr-p))))
 
   (fty::deflist vl-packeddimensionlist
     :elt-type vl-packeddimension
@@ -2473,3 +2488,14 @@ try to support the use of both ascending and descending ranges.</p>")
 ;;     :enable (vl-op-p acl2::hons-assoc-equal-of-cons vl-ops-table)
 ;;     :disable vl-op-p-of-vl-nonatom->op
 ;;     :use ((:instance vl-op-p-of-vl-nonatom->op))))
+
+(defthm vl-maybe-datatype-p-when-datatype-p
+  (implies (vl-datatype-p x)
+           (vl-maybe-datatype-p x))
+  :hints(("Goal" :in-theory (enable vl-maybe-datatype-p))))
+
+
+
+;; (define vl-expr->type ((x vl-expr-p))
+;;   (vl-expr-case x
+    

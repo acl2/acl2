@@ -30,7 +30,7 @@
 ;                   Sol Swords <sswords@centtech.com> (this book)
 
 (in-package "VL")
-(include-book "expr-tools")
+;; (include-book "expr-tools")
 (include-book "../parsetree")
 (local (std::add-default-post-define-hook :fix))
 
