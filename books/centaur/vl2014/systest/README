@@ -1,0 +1,31 @@
+
+                VL 2014 -- VL Verilog Toolkit, 2014 Edition
+                         System Level Tests
+
+These files do some testing of VL translations using a commerical Verilog
+simulator (typically NCVerilog).  These are essentially system-level or
+end-to-end, blackbox tests of VL.
+
+You should be able to run the tests by just using "make", after first building
+the VL 2014 Verilog Toolkit by running "make vl" in the acl2/books directory.
+
+Each test is in its own directory:
+
+  - The file spec.v will be translated by the "vl model" tool to build a new,
+    impl.v file with the simplified modules.
+
+  - The file compare.v will then be run on the Verilog simulator.  Typically
+    compare.v should load spec.v and impl.v, and compare them in some way.
+
+  - The test bench should print either "error" or "fail" if anything is wrong.
+    The errcheck.pl script will look for this string in the Verilog output log
+    to determine if the test passes.
+
+Miscellaneous notes and tips:
+
+  - To avoid name clashes when loading both spec.v and impl.v, the spec.v file
+    should ordinarily have a parameter.  This will ensure that VL gives it a
+    new name, e.g., \foo$size=1.
+
+  - To suppress a failing test, simply rename spec.v to something else.  The
+    presence of spec.v governs which directories will be run.

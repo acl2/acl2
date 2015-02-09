@@ -1,0 +1,326 @@
+
+----- Hierarchical Identifier Followed by Select -------------------------------------------------------------------------------
+
+Starting Points:
+
+Copied from the SystemVerilog Grammar, modulo constant_expression crap.
+
+     hierarchical_identifier ::= [ '$root' '.' ] { identifier bit_select '.' } identifier
+     bit_select ::= { '[' expression ']' }
+
+     select ::= [ { '.' identifier bit_select } '.' identifier ] bit_select [ '[' part_select_range ']' ]
+
+     part_select_range ::= constant_range | indexed_range
+     constant_range ::= expression ':' expression
+     indexed_range ::= expression '+:' expression
+                     | expression '-:' expression
+
+Aliases for readability:
+
+  hierarchical_identifier --> hid
+  identifier              --> id
+  part_select_range       --> part
+  bit_select              --> bitsel
+  expression              --> expr
+  '['                     --> L
+  ']'                     --> R
+  '.'                     --> DOT
+  '$root'                 --> ROOT
+
+New starting point:
+
+    hid      ::= [ROOT DOT] { id bitsel '.' } id
+    select   ::= [ { DOT id bitsel } DOT id ] bitsel [L part R]
+    bitsel   ::= { L expr R }
+
+with a select is just whether a part select is allowed to follow the damn thing.
+
+
+foo.bar.baz.blah -- fine, just a normal hid
+
+foo.bar.baz.blah [3 : 4]
+ ---- hid -----  --part-
+
+foo[1].bar[2].baz
+ 
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+Simplification of hid all by itself:
+
+Note: we'll freely change the meaning of particular sub-productions.  We just
+want to make sure to preserve the meaning of hidsel.
+
+Starting point:
+
+    hid      ::= [ROOT DOT] { id bitsel '.' } id
+    bitsel   ::= { L expr R }
+
+--> lift replication from bitsel
+
+    hid      ::= [ROOT DOT] { id {bitsel} '.' } id
+    bitsel   ::= L expr R
+
+--> shift replication:
+
+    hid      ::= [ROOT DOT] id { {bitsel} '.' id }
+    bitsel   ::= L expr R
+
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+Simplification of hidsel ::= hid sel
+
+Note: we'll freely change the meaning of particular sub-productions.  We just
+want to make sure to preserve the meaning of hidsel.
+
+Starting point:
+
+    hidsel   ::= hid sel
+    hid      ::= [ROOT DOT] { id bitsel DOT } id
+    sel      ::= [ { DOT id bitsel } DOT id ] bitsel [L part R]
+    bitsel   ::= { L expr R }
+
+--> lift [ROOT DOT] out of hid, into hidsel:
+
+    hidsel   ::= [ROOT DOT] hid sel
+    hid      ::= { id bitsel DOT } id
+    sel      ::= [ { DOT id bitsel } DOT id ] bitsel [L part R]
+    bitsel   ::= { L expr R }
+
+--> rearrange replication in hid:
+
+    hidsel   ::= [ROOT DOT] hid sel
+    hid      ::= id { bitsel DOT id }
+    sel      ::= [ { DOT id bitsel } DOT id ] bitsel [L part R]
+    bitsel   ::= { L expr R }
+
+--> lift replication out of bitsel:
+
+    hidsel   ::= [ROOT DOT] hid sel
+    hid      ::= id { {bitsel} DOT id }
+    sel      ::= [ { DOT id {bitsel} } DOT id ] {bitsel} [L part R]
+    bitsel   ::= L expr R
+
+--> refactor sel:
+
+    hidsel   ::= [ROOT DOT] hid sel
+    hid      ::= id { {bitsel} DOT id }
+    sel      ::= [ { DOT id {bitsel} } DOT id ] {bitsel} [partsel]
+    partsel  ::= L part R
+    bitsel   ::= L expr R
+
+--> lift optional partsel up to hidsel
+
+    hidsel   ::= [ROOT DOT] hid sel [partsel]
+    hid      ::= id { {bitsel} DOT id }
+    sel      ::= [ { DOT id {bitsel} } DOT id ] {bitsel}
+    partsel  ::= L part R
+    bitsel   ::= L expr R
+
+--> eliminate hid, move its contents to the front of sel
+
+    bitsel   ::= L expr R
+    partsel  ::= L part R
+    hidsel   ::= [ROOT DOT] sel [partsel]
+    sel      ::= id { {bitsel} DOT id } [ { DOT id {bitsel} } DOT id ] {bitsel}
+
+--> split optional part of sel into variants:
+
+    bitsel   ::= L expr R
+    partsel  ::= L part R
+    hidsel   ::= [ROOT DOT] sel [partsel]
+
+    sel      ::= id { {bitsel} DOT id } {bitsel}                                  ;; without optional part
+               | id { {bitsel} DOT id } { DOT id {bitsel} } DOT id {bitsel}       ;; with optional part
+
+--> drop redundant middle part:
+
+    sel      ::= id { {bitsel} DOT id } {bitsel}                                  ;; without optional part
+               | id { {bitsel} DOT id } { DOT id {bitsel} } DOT id {bitsel}       ;; with optional part
+
+
+foo[3][4].bar
+
+
+foo[1].bar[2].baz[3]
+
+
+
+
+
+
+
+
+----------bogus-----------
+
+
+
+---> make sel optional part explicit:
+
+    hidsel   ::= [ROOT DOT] sel
+    sel      ::= id {bitsel} {DOT id} {bitsel} [partsel]                                ; optional part dropped
+               | id {bitsel} {DOT id} {DOT id} {bitsel} DOT id {bitsel} [partsel]       ; optional part kept
+    partsel  ::= L part R
+    bitsel   ::= L expr R
+
+---> merge adjacent {DOT id} in sel variant 2:
+
+    hidsel   ::= [ROOT DOT] sel
+    sel      ::= id {bitsel} {DOT id} {bitsel} [partsel]
+               | id {bitsel} {DOT id} {bitsel} DOT id {bitsel} [partsel]
+    partsel  ::= L part R
+    bitsel   ::= L expr R
+
+---> make DOT id {bitsel} part of sel variant 2 optional: (it's clearly optional, see variant 1):
+
+    hidsel   ::= [ROOT DOT] sel
+    sel      ::= id {bitsel} {DOT id} {bitsel} [partsel]
+               | id {bitsel} {DOT id} {bitsel} [DOT id {bitsel}] [partsel]
+                                               \---------------/
+    partsel  ::= L part R
+    bitsel   ::= L expr R
+
+---> but now the highlighted part can be removed, because it's redundant with the preceeding {dot id} {bitsel} from earlier in variant 2:
+
+    hidsel   ::= [ROOT DOT] sel
+    sel      ::= id {bitsel} {DOT id} {bitsel} [partsel]
+               | id {bitsel} {DOT id} {bitsel} [partsel]
+    partsel  ::= L part R
+    bitsel   ::= L expr R
+
+---> fold sel variants:
+
+    hidsel   ::= [ROOT DOT] sel
+    sel      ::= id {bitsel} {DOT id} {bitsel} [partsel]
+    partsel  ::= L part R
+    bitsel   ::= L expr R
+
+---> move optional [partsel] part into top-level hidsel:
+
+    hidsel   ::= [ROOT DOT] sel [partsel]
+    sel      ::= id {bitsel} {DOT id} {bitsel}
+    partsel  ::= L part R
+    bitsel   ::= L expr R
+
+---> recursive reformulation of sel:
+
+    hidsel   ::= [ROOT DOT] sel
+
+    sel ::= id
+          | id {bitsel}
+          | id {bitsel} DOT sel
+
+    partsel  ::= L part R
+    bitsel   ::= L expr R
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+The rule for a plain hierarchical identifier is (ignoring constant_blah):
+
+     hierarchical_identifier ::= [ '$root' '.' ] { identifier bit_select '.' } identifier
+     bit_select ::= { '[' expression ']' }
+
+Refactoring slightly by introducing hierarchical_identifier_aux:
+
+     hierarchical_identifier ::= [ '$root' '.' ] hierarchical_identifier_aux
+     hierarchical_identifier_aux ::= { identifier bit_select '.' } identifier
+     bit_select ::= { '[' expression ']' }
+
+We can trivially rearrange the replication:
+
+     hierarchical_identifier ::= [ '$root' '.' ] hierarchical_identifier_aux
+     hierarchical_identifier_aux ::= identifier { bit_select '.'  identifier }
+     bit_select ::= { '[' expression ']' }
+
+Refactoring slightly, pulling the leading identifier up:
+
+     hierarchical_identifier ::= [ '$root' '.' ] identifier hierarchical_identifier_aux
+     hierarchical_identifier_aux ::= { bit_select '.'  identifier }
+     bit_select ::= { '[' expression ']' }
+
+Reworking slightly:
+
+     hierarchical_identifier ::= [ '$root' '.' ] identifier
+                               | [ '$root' '.' ] identifier hierarchical_identifier_aux
+
+     hierarchical_identifier_aux ::= { bit_select '.'  identifier }
+     bit_select ::= { '[' expression ']' }
+
+
+
+
+Inlining bit_select:
+
+     hierarchical_identifier ::= [ '$root' '.' ] identifier hierarchical_identifier_aux
+     hierarchical_identifier_aux ::= { { '[' expression ']' } '.'  identifier }
+
+
+
+
+---------------------------------------
+
+Often in the grammar, a hierarchical identifier is followed by a select.
+
+
+
+
+
+
+
+bind_target_instance ::= hierarchical_identifier constant_bit_select
+
+constraint_primary ::= [ implicit_class_handle '.' | class_scope ] hierarchical_identifier select
+
+hierarchical_btf_identifier ::= ...other variants...
+                              | [ hierarchical_identifier '.' | class_scope ] method_identifier
+
+wait_statement ::= ...other variants...
+                 | 'wait_order' '(' hierarchical_identifier { ',' hierarchical_identifier } ')' action_block
+
+clockvar ::= hierarchical_identifier
+
+primary ::= ... other variants
+          | [ class_qualifier | package_scope ] hierarchical_identifier select
+
+
+hierarchical_*_identifier
+
+
+--------------- other standins: ------------------
+
+clockvar_expression ::= clockvar select
+
+defparam_assignment ::= hierarchical_parameter_identifier '=' constant_mintypmax_expression
+
+
+
+
+
+
+
+
+  hierarchical_identifier ::= [ '$root' '.' ]
+                              { identifier bit_select '.' } identifier
+
+  select ::= [ { '.' identifier bit_select } '.' identifier ]
+             bit_select
+             [ '[' part_select_range ']' ]
+
+
+
+
+
+

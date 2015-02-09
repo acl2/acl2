@@ -1,5 +1,5 @@
-; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; ESIM Symbolic Hardware Simulator
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,5 +28,5 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(ld "centaur/vl/acl2-customization.lsp" :dir :system)
-(in-package "VL")
+(ld "centaur/vl2014/acl2-customization.lsp" :dir :system)
+(in-package "VL2014")

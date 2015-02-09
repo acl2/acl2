@@ -1,5 +1,5 @@
-// Centaur Hardware Verification Tutorial
-// Copyright (C) 2012 Centaur Technology
+// Centaur Hardware Verification Tutorial for ESIM/VL2014
+// Copyright (C) 2008-2015 Centaur Technology
 //
 // Contact:
 //   Centaur Technology Formal Verification Group

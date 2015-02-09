@@ -333,7 +333,8 @@ for some basic ACL2 types.</p>")
     :out-equiv
     :other-var
     :thm-suffix
-    :basename))
+    :basename
+    :pkg))
 
 
 (def-primitive-aggregate fixequiv
@@ -379,9 +380,11 @@ for some basic ACL2 types.</p>")
        ((unless (and (consp form) (symbolp (car form))))
         (raise "Form should be a function call term, but it's ~x0" form))
        (basename (getarg :basename (car form) kwd-alist))
-       (pkg (if (equal (symbol-package-name basename) "COMMON-LISP")
+       (pkg (or (getarg :pkg nil kwd-alist)
+                basename))
+       (pkg (if (equal (symbol-package-name pkg) "COMMON-LISP")
                 'acl2::foo
-              basename))
+              pkg))
        (under-out-equiv (if (eq out-equiv 'equal) ""
                           (concatenate 'string "-UNDER-" (symbol-name out-equiv))))
        (suffix (getarg :thm-suffix "" kwd-alist))
@@ -477,7 +480,7 @@ for some basic ACL2 types.</p>")
           (fixequiv-events
            (deffixequiv-basic-parse
              (cons ',fn formals)
-             ',arg ',type ',keys state)))))))
+             ',arg ',type (cons (cons :pkg ',fn) ',keys) state)))))))
 
 
 #||

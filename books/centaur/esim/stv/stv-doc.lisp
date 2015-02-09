@@ -1,5 +1,5 @@
 ; ESIM Symbolic Hardware Simulator
-; Copyright (C) 2010-2012 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -35,7 +35,7 @@
 (include-book "stv-util")
 (include-book "stv-widen")
 (include-book "std/strings/stringify" :dir :system)
-(include-book "centaur/vl/util/print-htmlencode" :dir :system)
+(include-book "centaur/vl2014/util/print-htmlencode" :dir :system)
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (include-book "std/strings/explode-nonnegative-integer" :dir :system))
 
@@ -62,14 +62,14 @@ into HTML is controlled by, e.g., @('xdoc/fancy/render.xsl').</p>")
 
 
 (local (defthm natp-of-vl-html-encode-string-aux
-         (natp (mv-nth 0 (vl::VL-HTML-ENCODE-STRING-AUX X N XL COL TABSIZE ACC)))
+         (natp (mv-nth 0 (vl2014::VL-HTML-ENCODE-STRING-AUX X N XL COL TABSIZE ACC)))
          :rule-classes :type-prescription))
 
 (local (defthm character-listp-of-vl-html-encode-string-aux
          (implies (character-listp acc)
-                  (character-listp (mv-nth 1 (vl::VL-HTML-ENCODE-STRING-AUX X N XL COL TABSIZE ACC))))))
+                  (character-listp (mv-nth 1 (vl2014::VL-HTML-ENCODE-STRING-AUX X N XL COL TABSIZE ACC))))))
 
-(local (in-theory (disable vl::vl-html-encode-string-aux)))
+(local (in-theory (disable vl2014::vl-html-encode-string-aux)))
 
 (define stv-name-bits-to-xml ((bits true-listp)
                               (col  natp)
@@ -84,7 +84,7 @@ ever actually use a list of E bits to name their input.</p>"
        ;; Print the name of this bit
        (name1 (stringify (car bits)))
        ((mv col acc)
-        (vl::vl-html-encode-string-aux name1 0 (length name1) (lnfix col) 8 acc))
+        (vl2014::vl-html-encode-string-aux name1 0 (length name1) (lnfix col) 8 acc))
        ;; Print ", " if there are more bits.
        ((mv col acc)
         (if (atom (cdr bits))
@@ -100,7 +100,7 @@ ever actually use a list of E bits to name their input.</p>"
   (cond ((stringp name)
          ;; It already looks like a Verilog name, so this is easy enough.
          (b* (((mv ?col acc)
-               (vl::vl-html-encode-string-aux name 0 (length name) 0 8 acc)))
+               (vl2014::vl-html-encode-string-aux name 0 (length name) 0 8 acc)))
            acc))
         ((true-listp name)
          ;; probably awful
@@ -153,7 +153,7 @@ ever actually use a list of E bits to name their input.</p>"
         ((symbolp entry)
          (b* ((acc (str::revappend-chars "<b>" acc))
               ((mv ?col acc)
-               (vl::vl-html-encode-string-aux (symbol-name entry) 0
+               (vl2014::vl-html-encode-string-aux (symbol-name entry) 0
                                               (length (symbol-name entry))
                                               0 8 acc))
               (acc (str::revappend-chars "</b>" acc)))

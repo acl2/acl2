@@ -1,5 +1,5 @@
-; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; ESIM Symbolic Hardware Simulator
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,13 +29,13 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 
-; vl/util/esim-lemmas.lisp -- lemmas for reasoning about E stuff (patterns,
+; vl2014/util/esim-lemmas.lisp -- lemmas for reasoning about E stuff (patterns,
 ; gpl, etc.)
 ;
 ; This book is only intended to be locally included!
 
-(in-package "VL")
-(include-book "centaur/vl/util/defs" :dir :system)
+(in-package "VL2014")
+(include-book "centaur/vl2014/util/defs" :dir :system)
 (include-book "centaur/esim/esim-sexpr-support" :dir :system)
 (include-book "centaur/esim/esim-sexpr-support-thms" :dir :system)
 (local (non-parallel-book))

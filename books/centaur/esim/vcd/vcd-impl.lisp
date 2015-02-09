@@ -1,5 +1,5 @@
-; VCD Generator for ESIM
-; Copyright (C) 2010-2012 Centaur Technology
+; ESIM Symbolic Hardware Simulator
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,19 +28,19 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "VL")
+(in-package "VL2014")
 (include-book "vcd-stub")
 (include-book "oslib/date" :dir :system)
 (include-book "centaur/misc/tshell" :dir :system)
 (include-book "centaur/aig/faig-constructors" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system)
-(include-book "centaur/vl/util/print" :dir :system)
+(include-book "centaur/vl2014/util/print" :dir :system)
 (include-book "centaur/esim/vltoe/emodwire" :dir :system)
 (include-book "centaur/esim/vltoe/verilogify" :dir :system)
-(include-book "centaur/vl/util/prefix-hash" :dir :system)
+(include-book "centaur/vl2014/util/prefix-hash" :dir :system)
 (local (include-book "misc/assert" :dir :system))
-(local (include-book "centaur/vl/util/arithmetic" :dir :system))
-(local (include-book "centaur/vl/util/osets" :dir :system))
+(local (include-book "centaur/vl2014/util/arithmetic" :dir :system))
+(local (include-book "centaur/vl2014/util/osets" :dir :system))
 (set-state-ok t)
 
 
@@ -1082,7 +1082,7 @@
 
   ;; A warm-fuzzy is that this returns T.
   ;;
-  ;;   (uniquep (loop for i from 1 to 100000 collect (vl::vcd-93-bit-encode i)))
+  ;;   (uniquep (loop for i from 1 to 100000 collect (vl2014::vcd-93-bit-encode i)))
 
   )
 

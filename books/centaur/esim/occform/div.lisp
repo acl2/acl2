@@ -1,5 +1,5 @@
-; VL Verilog Toolkit
-; Copyright (C) 2008-2014 Centaur Technology
+; ESIM Symbolic Hardware Simulator
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,10 +28,10 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "VL")
+(in-package "VL2014")
 (include-book "add")
-(local (include-book "centaur/vl/util/arithmetic" :dir :system))
-(local (include-book "centaur/vl/util/osets" :dir :system))
+(local (include-book "centaur/vl2014/util/arithmetic" :dir :system))
+(local (include-book "centaur/vl2014/util/osets" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
 
@@ -554,7 +554,7 @@ N-step restoring division algorithm.</p>"
 #||
 
 (include-book
- "centaur/vl/mlib/writer" :dir :system)
+ "centaur/vl2014/mlib/writer" :dir :system)
 
 (top-level
  (with-ps-file "div4_support.v"

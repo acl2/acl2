@@ -91,12 +91,12 @@
     :long
     :fix
     :equiv
-    :verbosep))
+    :verbosep
+    :pkg))
 
 (defun defoption-fn (name base-type kwd-alist rest-events state)
   (declare (xargs :mode :program))
   (b* ((__function__ 'defoption)
-       (mksym-package-symbol name)
 
        ((unless (and (symbolp name)
                      (not (booleanp name))
@@ -124,6 +124,8 @@
        (guard-hints      (getarg :guard-hints      nil      kwd-alist))
        (short            (getarg :short            nil      kwd-alist))
        (long             (getarg :long             nil      kwd-alist))
+
+       (mksym-package-symbol (getarg :pkg name kwd-alist))
 
        (fix              (getarg :fix (mksym name-without-p '-fix) kwd-alist))
        (equiv            (getarg :equiv (mksym name-without-p '-equiv) kwd-alist))

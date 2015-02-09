@@ -1,5 +1,5 @@
-; VCD Generator for ESIM
-; Copyright (C) 2010-2012 Centaur Technology
+; ESIM Symbolic Hardware Simulator
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,7 +28,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "VL")
+(in-package "VL2014")
 (set-state-ok t)
 
 (defun vcd-dump-fn (filename snapshots viewer emap state)

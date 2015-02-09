@@ -1,5 +1,5 @@
-; Centaur Hardware Verification Tutorial
-; Copyright (C) 2012 Centaur Technology
+; Centaur Hardware Verification Tutorial for ESIM/VL2014
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -46,6 +46,14 @@
 ; comments.
 
 (in-package "ACL2")
+
+
+
+; NOTE ---- ESIM is still available but it is no longer being actively
+; maintained.  The successor of ESIM is SVEX.  If you don't already have
+; projects based on ESIM, you should probably skip this tutorial and learn
+; about SVEX instead.
+
 
 
 
@@ -103,7 +111,7 @@
 ; load libraries, etc., our use is very simple:
 
 (defmodules *translation*
-  (vl::make-vl-loadconfig
+  (vl2014::make-vl-loadconfig
    :start-files (list "alu16.v")))
 
 ; This *translation* object is a data structure that contains all sorts of
@@ -131,9 +139,9 @@
 ; simplified modules with the following command.  PPCS stands for "pretty print
 ; with comments to string."
 
-(vl::vl-ppcs-modulelist
- (vl::vl-design->mods
-  (vl::vl-translation->good *translation*)))
+(vl2014::vl-ppcs-modulelist
+ (vl2014::vl-design->mods
+  (vl2014::vl-translation->good *translation*)))
 
 ; Here, you will find modules with names like VL_1_BIT_AND, VL_1_BIT_OR, etc.,
 ; until we finally get to the alu16 module.
@@ -152,17 +160,17 @@
 ; from *translation*, and names it *alu16-vl*.
 
 (defconst *alu16-vl*
-  (vl::vl-find-module "alu16"
-                      (vl::vl-design->mods
-                       (vl::vl-translation->good *translation*))))
+  (vl2014::vl-find-module "alu16"
+                      (vl2014::vl-design->mods
+                       (vl2014::vl-translation->good *translation*))))
 
 
 ; This *alu16-vl* object is a "VL Module."  VL modules are the internal, parsed
-; representation of Verilog modules that VL uses; see :XDOC VL::VL-MODULE-P for
+; representation of Verilog modules that VL uses; see :XDOC VL2014::VL-MODULE-P for
 ; more details.  We won't look at this object in much detail, but one thing we
 ; can do is pretty-print it:
 
-(vl::vl-ppcs-module *alu16-vl*)
+(vl2014::vl-ppcs-module *alu16-vl*)
 
 ; We can also see a list of any warnings that are associated with this
 ; particular module (omitting any warnings for its submodules).
@@ -177,7 +185,7 @@
 ; Linter that will catch many more kinds of issues than the DEFMODULES command.
 ; See the documentation about the VL "Kit" for details.
 
-(vl::vl-warnings-to-string (vl::vl-module->warnings *alu16-vl*))
+(vl2014::vl-warnings-to-string (vl2014::vl-module->warnings *alu16-vl*))
 
 
 
@@ -195,7 +203,7 @@
 ; We can extract the E module associated with *alu16-vl* as follows:
 
 (defconst *alu16*
-  (vl::vl-module->esim *alu16-vl*))
+  (vl2014::vl-module->esim *alu16-vl*))
 
 
 ; There are many ways to run an E module.  One of the nicest ways is to use a
@@ -231,7 +239,7 @@
 ; If this was not just a tutorial but were instead a serious ALU that we cared
 ; about and that logic designers were updating, we could extract the `defines
 ; from the Verilog automatically.  The *translation* object records the defines
-; that were encountered; see also :XDOC VL::VL-DEFINES-P.
+; that were encountered; see also :XDOC VL2014::VL-DEFINES-P.
 ;
 ; But let's keep things easy and just manually recreate the opcode list,
 ; instead.

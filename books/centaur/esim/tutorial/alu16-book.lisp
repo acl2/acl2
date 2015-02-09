@@ -1,5 +1,5 @@
-; Centaur Hardware Verification Tutorial
-; Copyright (C) 2012 Centaur Technology
+; Centaur Hardware Verification Tutorial for ESIM/VL2014
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -47,17 +47,25 @@
 (value-triple (set-max-mem (* 3 (expt 2 30))))
 ; cert_param: (hons-only)
 
+
+; NOTE ---- ESIM is still available but it is no longer being actively
+; maintained.  The successor of ESIM is SVEX.  If you don't already have
+; projects based on ESIM, you should probably skip this tutorial and learn
+; about SVEX instead.
+
+
+
 (defmodules *alu16-translation*
-  (vl::make-vl-loadconfig
+  (vl2014::make-vl-loadconfig
    :start-files (list "alu16.v")))
 
 (defconst *alu16*
-  (b* ((good  (vl::vl-translation->good *alu16-translation*))
-       (mods  (vl::vl-design->mods good))
-       (alu16 (vl::vl-find-module "alu16" mods))
+  (b* ((good  (vl2014::vl-translation->good *alu16-translation*))
+       (mods  (vl2014::vl-design->mods good))
+       (alu16 (vl2014::vl-find-module "alu16" mods))
        ((unless alu16)
         (er hard? '*alu16* "Failed to translate alu16?"))
-       (esim  (vl::vl-module->esim alu16))
+       (esim  (vl2014::vl-module->esim alu16))
        ((unless (good-esim-modulep esim))
         (er hard? '*alu16* "Failed to produce a good esim module")))
     esim))

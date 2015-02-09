@@ -1,5 +1,5 @@
-; Centaur Hardware Verification Tutorial
-; Copyright (C) 2012 Centaur Technology
+; Centaur Hardware Verification Tutorial for ESIM/VL2014
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -66,22 +66,29 @@
 (value-triple (tshell-ensure))
 
 
+; NOTE ---- ESIM is still available but it is no longer being actively
+; maintained.  The successor of ESIM is SVEX.  If you don't already have
+; projects based on ESIM, you should probably skip this tutorial and learn
+; about SVEX instead.
+
+
+
 ; Setup.  This should be familiar if you've looked at, e.g., the alu16
 ; tutorial.
 
 (defmodules *boothmul-translation*
   ;; Translate the Verilog
-  (vl::make-vl-loadconfig
+  (vl2014::make-vl-loadconfig
    :start-files (list "boothmul.v")))
 
 (defconst *boothmul*
   ;; Get the E module
-  (b* ((good     (vl::vl-translation->good *boothmul-translation*))
-       (mods     (vl::vl-design->mods good))
-       (boothmul (vl::vl-find-module "boothmul" mods))
+  (b* ((good     (vl2014::vl-translation->good *boothmul-translation*))
+       (mods     (vl2014::vl-design->mods good))
+       (boothmul (vl2014::vl-find-module "boothmul" mods))
        ((unless boothmul)
         (er hard? '*boothmul* "Failed to translate boothmul?"))
-       (esim  (vl::vl-module->esim boothmul))
+       (esim  (vl2014::vl-module->esim boothmul))
        ((unless (good-esim-modulep esim))
         (er hard? '*boothmul* "Failed to produce a good esim module")))
     esim))

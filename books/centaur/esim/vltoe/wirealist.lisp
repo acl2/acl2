@@ -1,5 +1,5 @@
-; VL Verilog Toolkit
-; Copyright (C) 2008-2014 Centaur Technology
+; ESIM Symbolic Hardware Simulator
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,12 +28,12 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "VL")
+(in-package "VL2014")
 (include-book "emodwire")
-(include-book "centaur/vl/mlib/range-tools" :dir :system)
+(include-book "centaur/vl2014/mlib/range-tools" :dir :system)
 (include-book "std/typed-lists/cons-listp" :dir :system)
-(local (include-book "centaur/vl/util/arithmetic" :dir :system))
-(local (include-book "centaur/vl/util/intersectp-equal" :dir :system))
+(local (include-book "centaur/vl2014/util/arithmetic" :dir :system))
+(local (include-book "centaur/vl2014/util/intersectp-equal" :dir :system))
 
 
 (defsection empty-intersect-of-vl-emodwires-by-basename
@@ -274,7 +274,7 @@ replacements.  This should not be too confusing since, e.g., in Verilog
  (prog2$ (gc$)
         (time$
          (loop for i fixnum from 1 to 10000000 do
-               (vl::vl-plain-wire-name "looksLikeAVerilogWire"))))
+               (vl2014::vl-plain-wire-name "looksLikeAVerilogWire"))))
   ||#
 
   :inline t
@@ -355,7 +355,7 @@ are the same you still get one wire.</p>"
   (progn (gc$)
   (time$
   (loop for i from 1 to 1000000 do
-  (vl::vl-emodwires-from-high-to-low "aTypicalWireName" 7 0))))
+  (vl2014::vl-emodwires-from-high-to-low "aTypicalWireName" 7 0))))
   ||#
 
   ;; On fv-1, after adding fast-cat:

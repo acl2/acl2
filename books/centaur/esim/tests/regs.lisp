@@ -1,5 +1,5 @@
-; VL Verilog Toolkit
-; Copyright (C) 2008-2013 Centaur Technology
+; ESIM Symbolic Hardware Simulator
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -32,7 +32,7 @@
 (include-book "common" :ttags :all)
 
 (defmodules *translation*
-  (vl::make-vl-loadconfig :start-files (list "regs.v")))
+  (vl2014::make-vl-loadconfig :start-files (list "regs.v")))
 
 (defun esims-to-defconsts-fn (esims)
   ;; ESIMS are just a list of ESIM modules like
@@ -45,28 +45,28 @@
           (esims-to-defconsts-fn (cdr esims)))))
 
 (value-triple
- (vl::vl-modulelist->names
-  (vl::vl-design->mods
-   (vl::vl-translation->good *translation*))))
+ (vl2014::vl-modulelist->names
+  (vl2014::vl-design->mods
+   (vl2014::vl-translation->good *translation*))))
 
 (value-triple
- (vl::vl-modulelist->names
-  (vl::vl-design->mods
-   (vl::vl-translation->bad *translation*))))
+ (vl2014::vl-modulelist->names
+  (vl2014::vl-design->mods
+   (vl2014::vl-translation->bad *translation*))))
 
 #||
 ;; to debug some problematic module
 
-(vl::vl-pps-module
- (vl::vl-find-module "mreg5$width=1"
-                     (vl::vl-translation->failmods *translation*)))
+(vl2014::vl-pps-module
+ (vl2014::vl-find-module "mreg5$width=1"
+                     (vl2014::vl-translation->failmods *translation*)))
 
 (top-level
- (vl::vl-cw-ps-seq
-  (vl::vl-print-warnings
-   (vl::vl-module->warnings
-    (vl::vl-find-module "mreg5$width=1"
-                        (vl::vl-translation->failmods *translation*))))))
+ (vl2014::vl-cw-ps-seq
+  (vl2014::vl-print-warnings
+   (vl2014::vl-module->warnings
+    (vl2014::vl-find-module "mreg5$width=1"
+                        (vl2014::vl-translation->failmods *translation*))))))
 
 ||#
 
@@ -74,9 +74,9 @@
 (with-output :off (event summary)
   (make-event
    (cons 'progn (acl2::esims-to-defconsts-fn
-                 (vl::vl-modulelist->esims
-                  (vl::vl-design->mods
-                   (vl::vl-translation->good *translation*)))))))
+                 (vl2014::vl-modulelist->esims
+                  (vl2014::vl-design->mods
+                   (vl2014::vl-translation->good *translation*)))))))
 
 (defstv e1
   :mod |*ereg1$width=1*|

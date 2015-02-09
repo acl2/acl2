@@ -1,5 +1,5 @@
-; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; ESIM Symbolic Hardware Simulator
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,13 +28,13 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "VL")
-(include-book "centaur/vl/parsetree" :dir :system)
-(include-book "centaur/vl/mlib/find" :dir :system)
-(include-book "centaur/vl/loader/filemap" :dir :system)
-(include-book "centaur/vl/loader/preprocessor/defines" :dir :system)
-(local (include-book "centaur/vl/util/arithmetic" :dir :system))
-(local (include-book "centaur/vl/util/osets" :dir :system))
+(in-package "VL2014")
+(include-book "centaur/vl2014/parsetree" :dir :system)
+(include-book "centaur/vl2014/mlib/find" :dir :system)
+(include-book "centaur/vl2014/loader/filemap" :dir :system)
+(include-book "centaur/vl2014/loader/preprocessor/defines" :dir :system)
+(local (include-book "centaur/vl2014/util/arithmetic" :dir :system))
+(local (include-book "centaur/vl2014/util/osets" :dir :system))
 
 
 (defaggregate vl-translation

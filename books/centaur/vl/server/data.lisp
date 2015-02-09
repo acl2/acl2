@@ -29,8 +29,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "centaur/esim/translation" :dir :system) ;; bozo
 (include-book "../mlib/hierarchy")
+(include-book "../loader/filemap")
+(include-book "../loader/preprocessor/defines")
 (include-book "../loader/descriptions")
 (local (include-book "../util/arithmetic"))
 
@@ -51,14 +52,7 @@
   :parents (server)
   :short "Data that is available to @(see vls-commands)."
   :tag :vls-data
-  ((good vl-design-p
-         "The successfully translated portion of the design.")
-
-   (bad  vl-design-p
-         "The portion of the design that had errors or is otherwise
-          unsupported.")
-
-   (orig vl-design-p
+  ((orig vl-design-p
          "The original design, as seen very shortly after parsing.")
 
    ;; (orig-depalist (vl-depalist-okp (vl-design->mods orig) orig-depalist)

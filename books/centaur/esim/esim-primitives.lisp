@@ -1,5 +1,5 @@
 ; ESIM Symbolic Hardware Simulator
-; Copyright (C) 2010-2012 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -39,13 +39,13 @@
 
 (defsection esim-primitives
   :parents (esim)
-  :short "The @(see esim) modules that implement @(see vl::vl)'s @(see
-vl::primitives)."
+  :short "The @(see esim) modules that implement @(see vl2014::vl)'s @(see
+vl2014::primitives)."
 
   :long "<p>The patterns used for the :i and :o ports here might look strange.
 For instance, why do we use @('((|a|) (|b|))') as the input pattern for an AND
 gate instead of @('(|a| |b|)')?  This allows our primitives to be directly
-compatible with VL's primitives, as far as @(see vl::vl-portdecls-to-i/o) is
+compatible with VL's primitives, as far as @(see vl2014::vl-portdecls-to-i/o) is
 concerned.</p>
 
 <p><b>BOZO</b> Things to consider:</p>
@@ -88,35 +88,35 @@ aren't using them for anything.</li>
 
 (def-esim-primitive *esim-t*
   :short "Primitive E module for producing T."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-t*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-t*).</p>"
   :i ()
   :o ((|out|))
   :x (:out ((|out| . (t)))))
 
 (def-esim-primitive *esim-f*
   :short "Primitive E module for producing F."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-f*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-f*).</p>"
   :i ()
   :o ((|out|))
   :x (:out ((|out| . (f)))))
 
 (def-esim-primitive *esim-x*
   :short "Primitive E module for producing X."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-x*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-x*).</p>"
   :i ()
   :o ((|out|))
   :x (:out ((|out| . (x)))))
 
 (def-esim-primitive *esim-z*
   :short "Primitive E module for producing Z."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-z*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-z*).</p>"
   :i ()
   :o ((|out|))
   :x (:out ((|out| . (z)))))
 
 (def-esim-primitive *esim-id*
   :short "Primitive E module for identity assignment."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-assign*).  This
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-assign*).  This
 differs from a BUF in that it does not coerce Z into X.  There is probably not
 any way to actually implement this in hardware.</p>"
   :i ((|in|))
@@ -125,7 +125,7 @@ any way to actually implement this in hardware.</p>"
 
 (def-esim-primitive *esim-del*
   :short "Primitive E module for a delayed assignment."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-delay-1*).  However,
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-delay-1*).  However,
 really esim has no concept of delays and this is no different @(see
 *esim-id*).</p>"
   :i ((|in|))
@@ -134,7 +134,7 @@ really esim has no concept of delays and this is no different @(see
 
 (def-esim-primitive *esim-buf*
   :short "Primitive E module for a BUF gate."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-buf*).  This is used
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-buf*).  This is used
 for real BUF gates, not for ordinary assignments; see also @(see
 *esim-id*).</p>"
   :i ((|in|))
@@ -143,56 +143,56 @@ for real BUF gates, not for ordinary assignments; see also @(see
 
 (def-esim-primitive *esim-not*
   :short "Primitive E module for a NOT gate."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-not*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-not*).</p>"
   :i ((|in|))
   :o ((|out|))
   :x (:out ((|out| . (not |in|)))))
 
 (def-esim-primitive *esim-and*
   :short "Primitive E module for an AND gate."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-and*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-and*).</p>"
   :i ((|a|) (|b|))
   :o ((|out|))
   :x (:out ((|out| . (and |a| |b|)))))
 
 (def-esim-primitive *esim-or*
   :short "Primitive E module for an OR gate."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-or*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-or*).</p>"
   :i ((|a|) (|b|))
   :o ((|out|))
   :x (:out ((|out| . (or |a| |b|)))))
 
 (def-esim-primitive *esim-xor*
   :short "Primitive E module for an XOR gate."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-xor*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-xor*).</p>"
   :i ((|a|) (|b|))
   :o ((|out|))
   :x (:out ((|out| . (xor |a| |b|)))))
 
 (def-esim-primitive *esim-nand*
   :short "Primitive E module for a NAND gate."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-nand*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-nand*).</p>"
   :i ((|a|) (|b|))
   :o ((|out|))
   :x (:out ((|out| . (not (and |a| |b|))))))
 
 (def-esim-primitive *esim-nor*
   :short "Primitive E module for a NOR gate."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-nor*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-nor*).</p>"
   :i ((|a|) (|b|))
   :o ((|out|))
   :x (:out ((|out| . (not (or |a| |b|))))))
 
 (def-esim-primitive *esim-xnor*
   :short "Primitive E module for an XNOR gate."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-xnor*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-xnor*).</p>"
   :i ((|a|) (|b|))
   :o ((|out|))
   :x (:out ((|out| . (iff |a| |b|)))))
 
 (def-esim-primitive *esim-ceq*
   :short "Primitive E module for a Verilog @('===') operator."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-ceq*).</p>
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-ceq*).</p>
 
 <p>However, the @('===') operator is inherently unsound and cannot be modeled
 in esim because it is violates @(see 4v-monotonicity).  We just conservatively
@@ -205,14 +205,14 @@ than a @(see *esim-xnor*).</p>"
 
 (def-esim-primitive *esim-safe-mux*
   :short "Primitive E module for a (more conservative) mux."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-approx-mux*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-approx-mux*).</p>"
   :i ((|sel|) (|a|) (|b|))
   :o ((|out|))
   :x (:out ((|out| . (ite* |sel| |a| |b|)))))
 
 (def-esim-primitive *esim-unsafe-mux*
   :short "Primitive E module for a (less conservative) mux."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-mux*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-mux*).</p>"
   :i ((|sel|) (|a|) (|b|))
   :o ((|out|))
   :x (:out ((|out| . (ite |sel| |a| |b|)))))
@@ -223,7 +223,7 @@ than a @(see *esim-xnor*).</p>"
 
 (def-esim-primitive *esim-tri*
   :short "Primitive E module for a tri-state buffer."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-zmux*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-zmux*).</p>"
   :i ((|sel|) (|a|))
   :o ((|out|))
   :x (:out ((|out| . (tristate |sel| |a|)))))
@@ -232,7 +232,7 @@ than a @(see *esim-xnor*).</p>"
 
 ;; (def-esim-primitive *esim-flop*
 ;;   :short "Primitive E module for a register."
-;;   :long "<p>We use this to implement @(see vl::*vl-1-bit-flop*).</p>"
+;;   :long "<p>We use this to implement @(see vl2014::*vl-1-bit-flop*).</p>"
 ;;   :i ((|clk|) (|d|))
 ;;   :o ((|q|))
 ;;   :x (:out ((|q|  . (ite |clk| s- s+)))
@@ -241,7 +241,7 @@ than a @(see *esim-xnor*).</p>"
 
 (def-esim-primitive *esim-latch*
   :short "Primitive E module for a latch."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-latch*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-latch*).</p>"
   :i ((|clk|) (|d|))
   :o ((|q|))
   :x (:out ((|q| . (ite |clk| |d| s)))
@@ -266,49 +266,49 @@ inputs, used to support experimental esim decomposition.</p>"
 
 (def-esim-primitive *esim-bufif0*
   :short "Primitive E module for a kind of bufif0 gate."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-bufif0*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-bufif0*).</p>"
   :i ((|data|) (|ctrl|))
   :o ((|out|))
   :x (:out ((|out| . (tristate (not |ctrl|) |data|)))))
 
 (def-esim-primitive *esim-bufif1*
   :short "Primitive E module for a kind of bufif1 gate."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-bufif1*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-bufif1*).</p>"
   :i ((|data|) (|ctrl|))
   :o ((|out|))
   :x (:out ((|out| . (tristate |ctrl| |data|)))))
 
 (def-esim-primitive *esim-notif0*
   :short "Primitive E module for a kind of notif0 gate."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-notif0*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-notif0*).</p>"
   :i ((|data|) (|ctrl|))
   :o ((|out|))
   :x (:out ((|out| . (tristate (not |ctrl|) (not |data|))))))
 
 (def-esim-primitive *esim-notif1*
   :short "Primitive E module for a kind of notif1 gate."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-notif1*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-notif1*).</p>"
   :i ((|data|) (|ctrl|))
   :o ((|out|))
   :x (:out ((|out| . (tristate |ctrl| (not |data|))))))
 
 (def-esim-primitive *esim-nmos*
   :short "Primitive E module for a kind of nmos gate."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-nmos*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-nmos*).</p>"
   :i ((|data|) (|ctrl|))
   :o ((|out|))
   :x (:out ((|out| . (zif |ctrl| |data| (z))))))
 
 (def-esim-primitive *esim-pmos*
   :short "Primitive E module for a kind of pmos gate."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-pmos*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-pmos*).</p>"
   :i ((|data|) (|ctrl|))
   :o ((|out|))
   :x (:out ((|out| . (zif |ctrl| (z) |data|)))))
 
 (def-esim-primitive *esim-cmos*
   :short "Primitive E module for a kind of cmos gate."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-cmos*).</p>"
+  :long "<p>We use this to implement @(see vl2014::*vl-1-bit-cmos*).</p>"
   :i ((|data|) (|nctrl|) (|pctrl|))
   :o ((|out|))
   :x (:out ((|out| . (res (zif |nctrl| |data| (z))

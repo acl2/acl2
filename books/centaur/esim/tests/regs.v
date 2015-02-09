@@ -1,5 +1,5 @@
-// VL Verilog Toolkit
-// Copyright (C) 2008-2013 Centaur Technology
+// ESIM Symbolic Hardware Simulator
+// Copyright (C) 2008-2015 Centaur Technology
 //
 // Contact:
 //   Centaur Technology Formal Verification Group

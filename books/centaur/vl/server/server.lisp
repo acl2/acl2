@@ -29,6 +29,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+
+#|| BOZO temporary
+
 (include-book "data")
 (include-book "describe")
 (include-book "porttable")
@@ -326,3 +329,4 @@ declaration, ...)."
 (acl2::include-raw "server-raw.lsp"
                    :host-readtable t)
 
+||#
