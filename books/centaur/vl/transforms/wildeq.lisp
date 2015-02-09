@@ -31,7 +31,6 @@
 (in-package "VL")
 ;; (include-book "always/caseelim")
 (include-book "../mlib/delta")
-(include-book "occform/util")
 (include-book "../mlib/caremask")
 (include-book "../mlib/blocks")
 (local (include-book "../util/arithmetic"))

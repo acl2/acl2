@@ -268,6 +268,39 @@ make sure that the name refers to valid input or output bits.</p>"
 ; E.g., the user might want to pull out or initialize some signal in the
 ; top-level module, or in some submodule.
 
+#!VL
+(define vl-explode-hidindex
+  :short "Explode a (resolved) @(see vl-hidindex-p) into a flat list of
+          its components."
+  ((x vl-expr-p "The hidindex to explode, e.g., @('foo[3][4][5]')"))
+  :guard (and (vl-hidindex-p x)
+              (vl-hidindex-resolved-p x))
+  :guard-hints(("Goal" :in-theory (enable vl-hidindex-resolved-p)))
+  :returns (pieces true-listp :rule-classes :type-prescription
+                   "A flat, mixed list of strings and numbers, e.g.,
+                   @('(\"foo\" 3 4 5)').")
+  :measure (vl-expr-count x)
+  (b* ((name    (vl-hidindex->name x))
+       (indices (vl-hidindex->indices x)))
+    (cons name (vl-exprlist-resolved->vals indices))))
+
+#!VL
+(define vl-explode-hid
+  :short "Explode a (resolved) @(see vl-hidexpr-p) into a flat list of its
+          components."
+  ((x vl-expr-p "The hidexpr to explode, e.g., foo.bar[2][3].baz."))
+  :guard (and (vl-hidexpr-p x)
+              (vl-hidexpr-resolved-p x))
+  :returns
+  (pieces true-listp :rule-classes :type-prescription
+          "A flat, mixed list of strings and numbers, e.g.,
+           @('(\"foo\" \"bar\" 2 3 \"baz\")').")
+  :measure (vl-expr-count x)
+  (if (vl-hidexpr->endp x)
+      (list (vl-hidname->name x))
+    (append (vl-explode-hidindex (vl-hidexpr->first x))
+            (vl-explode-hid (vl-hidexpr->rest x)))))
+
 (define stv-hid-split
   :parents (stv-expand)
   :short "Splits up a HID into a list of instance names and a wire name."

@@ -636,50 +636,95 @@ expressions.</p>"
         (vl-parse-error
          "Embedded parameter value assignments #(...) aren't implemented yet."))))
 
-(encapsulate nil
-  (local (defthm not-vl-expr-p-when-not-x
-           (implies (not x)
-                    (not (vl-expr-p x)))))
-
-  (defparser vl-parse-pva-tail ()
-    :short "Match @(' { '::' identifier [parameter_value_assignment] } '::'
+(defparser vl-parse-pva-tail ()
+  :short "Match @(' { '::' identifier [parameter_value_assignment] } '::'
 identifier ') and return an expression."
 
-    :long "<p>Since we start by matching a @('::'), we always turn the
+  :long "<p>Since we start by matching a @('::'), we always turn the
 identifiers into hid pieces instead of ordinary id atoms.</p>
 
 <p>We don't actually support parameter value assignments within expressions
 yet; they'll just cause a parse error.</p>"
 
-    :result (vl-expr-p val)
-    :resultp-of-nil nil
-    :fails gracefully
-    :count strong
-    :verify-guards nil
-    (seq tokstream
-         (:= (vl-match-token :vl-scope))
-         (head := (vl-match-token :vl-idtoken))
-         (when (vl-is-token? :vl-pound)
-           (:= (vl-parse-parameter-value-assignment-hack))
-           (return-raw
-            ;; Should never actually get here until we implement PVAs.
-            (vl-parse-error "Implement PVAs.")))
+  :result (vl-expr-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  :verify-guards nil
 
-         (unless (vl-is-token? :vl-scope)
-           (return
-            (make-vl-atom
-             :guts (make-vl-hidpiece :name (vl-idtoken->name head)))))
+  (seq tokstream
+       (:= (vl-match-token :vl-scope))
+       (head := (vl-match-token :vl-idtoken))
+       (when (vl-is-token? :vl-pound)
+         (:= (vl-parse-parameter-value-assignment-hack))
+         (return-raw
+          ;; Should never actually get here until we implement PVAs.
+          (vl-parse-error "Implement PVAs.")))
 
-         (tail := (vl-parse-pva-tail))
+       (unless (vl-is-token? :vl-scope)
          (return
-          (make-vl-nonatom
-           :op :vl-scope
-           :args (list (make-vl-atom
-                        :guts (make-vl-hidpiece :name (vl-idtoken->name head)))
-                       tail))))))
+          (make-vl-atom
+           :guts (make-vl-hidpiece :name (vl-idtoken->name head)))))
 
-(verify-guards vl-parse-pva-tail-fn)
+       (tail := (vl-parse-pva-tail))
+       (return
+        (make-vl-nonatom
+         :op :vl-scope
+         :args (list (make-vl-atom
+                      :guts (make-vl-hidpiece :name (vl-idtoken->name head)))
+                     tail))))
+  ///
+  (verify-guards vl-parse-pva-tail-fn))
 
+(defparser vl-parse-0+-scope-prefixes ()
+  :short "Match @('{ id '::' }') and return an expression list with all of the
+ids that have been matched."
+  :long "<p>See also @(see vl-parse-indexed-id-2012) and @(see abstract-hids).
+We use this in the tricky case of parsing:</p>
+
+@({
+      { id '::' } hierarchical_identifier select
+})
+
+<p>But per our desired abstract HID representation, we want to keep all of the
+scoping stuff bundled up together, so we prefer to match it first, if it
+exists.</p>"
+  :verify-guards nil
+  :result (vl-exprlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails never
+  :count strong-on-value
+  (seq tokstream
+       (unless (and (vl-is-token? :vl-idtoken)
+                    (vl-lookahead-is-token? :vl-scope (cdr (vl-tokstream->tokens))))
+         (return nil))
+       (first := (vl-match))
+       (:= (vl-match))
+       (rest := (vl-parse-0+-scope-prefixes))
+       (return
+        (cons (make-vl-atom :guts (make-vl-hidpiece :name (vl-idtoken->name first)))
+              rest)))
+  ///
+  (verify-guards vl-parse-0+-scope-prefixes-fn
+    :hints(("Goal" :in-theory (enable vl-lookahead-is-token?
+                                      vl-is-token?
+                                      vl-match))))
+
+  (defthm vl-parse-0+-scope-prefixes-on-eof
+    (implies (not (consp (vl-tokstream->tokens)))
+             (b* (((mv & val new-tokstream) (vl-parse-0+-scope-prefixes)))
+               (and (not val)
+                    (not (consp (vl-tokstream->tokens :tokstream new-tokstream))))))))
+
+(define vl-tack-scopes-onto-hid ((scopes vl-exprlist-p)
+                                 (hid    vl-expr-p))
+  :returns (expr vl-expr-p)
+  (if (atom scopes)
+      (vl-expr-fix hid)
+    (make-vl-nonatom :op :vl-scope
+                     :args (list (car scopes)
+                                 (vl-tack-scopes-onto-hid (cdr scopes) hid)))))
 
 ;; For debugging you may want to comment out functions and add, as a temporary hack:
 ;; (set-bogus-mutual-recursion-ok t)
@@ -1483,10 +1528,15 @@ identifier, so we convert it into a hidpiece.</p>"
           (mv erp rest tokstream)))
       (mv nil (cons first rest) tokstream)))
 
-  (defparser vl-parse-indexed-id-2005 (recursivep)
-    :measure (two-nats-measure (vl-tokstream-measure) 10)
+  (defparser vl-parse-indexed-id-2005 (scopes recursivep)
     ;; This is for:
     ;;   hierarchical_identifier [ { '[' expression ']' } '[' range_expression ']' ]
+    ;;
+    ;; SCOPES is passed in from the outside.  It is NIL if there is no scope
+    ;; part of the expression, or is a (possibly nested) scope expression to be
+    ;; tacked onto the HID part.
+    :measure (two-nats-measure (vl-tokstream-measure) 10)
+    :guard (vl-exprlist-p scopes)
     (seq tokstream
           (hid :s= (vl-parse-hierarchical-identifier recursivep))
           (bexprs :w= (vl-parse-0+-bracketed-expressions))
@@ -1494,60 +1544,37 @@ identifier, so we convert it into a hidpiece.</p>"
             (:= (vl-match))
             (range := (vl-parse-range-expression))
             (:= (vl-match-token :vl-rbrack)))
-          (return (let ((main (vl-build-indexing-nest hid bexprs)))
-                    (if range
-                        (vl-build-range-select main range)
-                      main)))))
-
-  (defparser vl-parse-indexed-id-2012-main (recursivep)
-    :measure (two-nats-measure (vl-tokstream-measure) 11)
-    ;; Matches { id '::' } hierarchical_identifier select
-    ;; This implements the main part of the SystemVerilog-2012 primary production:
-    ;;   [ class_qualifier | package_scope ] hierarchical_identifier select
-    ;; Except that it doesn't handle $local, $unit, this/super, or PVAs.
-    (seq tokstream
-
-         (when (and (vl-is-token? :vl-idtoken)
-                    (vl-lookahead-is-token? :vl-scope (cdr (vl-tokstream->tokens))))
-           (first := (vl-match))
-           (:= (vl-match))
-           (rest := (vl-parse-indexed-id-2012-main t))
-           (return (make-vl-nonatom :op :vl-scope
-                                    :args (list (make-vl-atom :guts (make-vl-hidpiece :name (vl-idtoken->name first)))
-                                                rest))))
-
-         ;; Else, out of foo:: parts, just parse the HID/select part
-         (main :s= (vl-parse-indexed-id-2005 recursivep))
-         (return main)))
+          (return
+           (let* ((ans (vl-tack-scopes-onto-hid scopes hid))
+                  (ans (vl-build-indexing-nest ans bexprs)))
+             (if range
+                 (vl-build-range-select ans range)
+               ans)))))
 
   (defparser vl-parse-indexed-id-2012 ()
     :measure (two-nats-measure (vl-tokstream-measure) 12)
-    ;; This is for  [ class_qualifier | package_scope ] hierarchical_identifier select
+    ;; This is for [ class_qualifier | package_scope ] hierarchical_identifier select
+    ;; Support is somewhat partial right now...
+
     (seq tokstream
-
-         (when (vl-is-token? :vl-kwd-local)
-           (:= (vl-match))
+         (when (vl-is-some-token? '(:vl-kwd-local :vl-$unit))
+           (first := (vl-match))
            (:= (vl-match-token :vl-scope))
-           (main := (vl-parse-indexed-id-2012-main t))
-           (return (make-vl-nonatom :op :vl-scope
-                                    :args (list (make-vl-atom :guts (make-vl-keyguts :type :vl-local))
-                                                main))))
-
-         (when (vl-is-token? :vl-$unit)
-           (:= (vl-match))
-           (:= (vl-match-token :vl-scope))
-           (main := (vl-parse-indexed-id-2012-main t))
-           (return (make-vl-nonatom :op :vl-scope
-                                    :args (list (make-vl-atom :guts (make-vl-keyguts :type :vl-$unit))
-                                                main))))
-
-         (main := (vl-parse-indexed-id-2012-main nil))
-         (return main)))
+           (morescopes := (vl-parse-0+-scope-prefixes))
+           (return-raw
+            (vl-parse-indexed-id-2005 (cons (case (vl-token->type first)
+                                              (:vl-kwd-local (make-vl-atom :guts (make-vl-keyguts :type :vl-local)))
+                                              (:vl-$unit     (make-vl-atom :guts (make-vl-keyguts :type :vl-$unit))))
+                                            morescopes)
+                                      t)))
+         (scopes := (vl-parse-0+-scope-prefixes))
+         (return-raw
+          (vl-parse-indexed-id-2005 scopes (consp scopes)))))
 
   (defparser vl-parse-indexed-id ()
     :measure (two-nats-measure (vl-tokstream-measure) 13)
     (if (eq (vl-loadconfig->edition config) :verilog-2005)
-        (vl-parse-indexed-id-2005 nil)
+        (vl-parse-indexed-id-2005 nil nil)
       (vl-parse-indexed-id-2012)))
 
   (defparser vl-parse-assignment-pattern ()
@@ -1577,6 +1604,7 @@ identifier, so we convert it into a hidpiece.</p>"
            (:= (vl-match))
            (firstval :s= (vl-parse-expression))
            (when (vl-is-token? :vl-rcurly)
+             (:= (vl-match))
              ;; just one key/val pair
              (return (make-vl-nonatom :op :vl-pattern-keyvalue
                                       :args (list (make-vl-nonatom
@@ -2398,8 +2426,7 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-val-when-error-claim vl-parse-hierarchical-identifier :args (recursivep))
       ,(vl-val-when-error-claim vl-parse-function-call)
       ,(vl-val-when-error-claim vl-parse-0+-bracketed-expressions)
-      ,(vl-val-when-error-claim vl-parse-indexed-id-2005 :args (recursivep))
-      ,(vl-val-when-error-claim vl-parse-indexed-id-2012-main :args (recursivep))
+      ,(vl-val-when-error-claim vl-parse-indexed-id-2005 :args (scopes recursivep))
       ,(vl-val-when-error-claim vl-parse-indexed-id-2012)
       ,(vl-val-when-error-claim vl-parse-indexed-id)
       ,(vl-val-when-error-claim vl-parse-assignment-pattern)
@@ -2482,8 +2509,7 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-warning-claim vl-parse-hierarchical-identifier :args (recursivep))
         ,(vl-warning-claim vl-parse-function-call)
         ,(vl-warning-claim vl-parse-0+-bracketed-expressions)
-        ,(vl-warning-claim vl-parse-indexed-id-2005 :args (recursivep))
-        ,(vl-warning-claim vl-parse-indexed-id-2012-main :args (recursivep))
+        ,(vl-warning-claim vl-parse-indexed-id-2005 :args (scopes recursivep))
         ,(vl-warning-claim vl-parse-indexed-id-2012)
         ,(vl-warning-claim vl-parse-indexed-id)
         ,(vl-warning-claim vl-parse-primary-main)
@@ -2717,8 +2743,7 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-progress-claim vl-parse-hierarchical-identifier :args (recursivep))
       ,(vl-progress-claim vl-parse-function-call)
       ,(vl-progress-claim vl-parse-0+-bracketed-expressions :strongp nil)
-      ,(vl-progress-claim vl-parse-indexed-id-2005 :args (recursivep))
-      ,(vl-progress-claim vl-parse-indexed-id-2012-main :args (recursivep))
+      ,(vl-progress-claim vl-parse-indexed-id-2005 :args (scopes recursivep))
       ,(vl-progress-claim vl-parse-indexed-id-2012)
       ,(vl-progress-claim vl-parse-indexed-id)
       ,(vl-progress-claim vl-parse-primary-main)
@@ -2802,8 +2827,7 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-eof-claim vl-parse-hierarchical-identifier :error :args (recursivep))
         ,(vl-eof-claim vl-parse-function-call :error)
         ,(vl-eof-claim vl-parse-0+-bracketed-expressions nil)
-        ,(vl-eof-claim vl-parse-indexed-id-2005 :error :args (recursivep))
-        ,(vl-eof-claim vl-parse-indexed-id-2012-main :error :args (recursivep))
+        ,(vl-eof-claim vl-parse-indexed-id-2005 :error :args (scopes recursivep))
         ,(vl-eof-claim vl-parse-indexed-id-2012 :error)
         ,(vl-eof-claim vl-parse-indexed-id :error)
         ,(vl-eof-claim vl-parse-primary-main :error)
@@ -2902,8 +2926,7 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-expression-claim vl-parse-hierarchical-identifier :expr :args (recursivep))
       ,(vl-expression-claim vl-parse-function-call :expr)
       ,(vl-expression-claim vl-parse-0+-bracketed-expressions :exprlist)
-      ,(vl-expression-claim vl-parse-indexed-id-2005 :expr :args (recursivep))
-      ,(vl-expression-claim vl-parse-indexed-id-2012-main :expr :args (recursivep))
+      ,(vl-expression-claim vl-parse-indexed-id-2005 :expr :args (scopes recursivep))
       ,(vl-expression-claim vl-parse-indexed-id-2012 :expr)
       ,(vl-expression-claim vl-parse-indexed-id :expr)
       ,(vl-expression-claim vl-parse-primary-main :expr)
@@ -2954,15 +2977,15 @@ identifier, so we convert it into a hidpiece.</p>"
 
 (local (in-theory (enable vl-arity-ok-p)))
 
-(local (defthm l1
-         (implies
-          (VL-LOOKAHEAD-IS-TOKEN? :VL-SCOPE (CDR (VL-TOKSTREAM->TOKENS :TOKSTREAM (LIST TOKSTREAM1 TOKSTREAM3))))
-          (CONSP
-           (VL-TOKSTREAM->TOKENS
-            :TOKSTREAM (MV-NTH 2
-                               (VL-MATCH :TOKSTREAM (LIST TOKSTREAM1 TOKSTREAM3))))))
-         :hints(("Goal" :in-theory (enable vl-lookahead-is-token?
-                                           vl-match)))))
+;; (local (defthm l1
+;;          (implies
+;;           (VL-LOOKAHEAD-IS-TOKEN? :VL-SCOPE (CDR (VL-TOKSTREAM->TOKENS :TOKSTREAM (LIST TOKSTREAM1 TOKSTREAM3))))
+;;           (CONSP
+;;            (VL-TOKSTREAM->TOKENS
+;;             :TOKSTREAM (MV-NTH 2
+;;                                (VL-MATCH :TOKSTREAM (LIST TOKSTREAM1 TOKSTREAM3))))))
+;;          :hints(("Goal" :in-theory (enable vl-lookahead-is-token?
+;;                                            vl-match)))))
 
 (with-output
   :off (prove event) :gag-mode :goals

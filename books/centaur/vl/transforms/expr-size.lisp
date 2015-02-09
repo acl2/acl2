@@ -547,7 +547,10 @@ details.</p>")
                                         vl-syscall-selfsize
                                         vl-funcall-selfsize
                                         vl-exprtype-max
-                                        vl-index-expr-p
+
+                                        ;; BOZO faint sound of screaming, muffled by the waves above
+                                        vl-indexexpr-p
+                                        vl-scopeexpr-p
                                         acl2::member-of-cons
                                         ;; vl-unsigned-when-size-zero-lst
                                         )))
@@ -1309,10 +1312,13 @@ identifier or HID."
                                              vl-index-selfsize)
                    :expand ((:Free (ctx) (vl-expr-selfsize x ss ctx nil)))))))
 
-  (local (defthm vl-index-expr-p-when-hidexpr-p
+  (local (defthm vl-indexexpr-p-when-hidexpr-p
            (implies (vl-hidexpr-p x)
-                    (vl-index-expr-p x))
-           :hints(("Goal" :in-theory (e/d (vl-hidexpr-p vl-index-expr-p vl-hidindex-p)
+                    (vl-indexexpr-p x))
+           :hints(("Goal" :in-theory (e/d (vl-hidexpr-p
+                                           vl-scopeexpr-p
+                                           vl-indexexpr-p
+                                           vl-hidindex-p)
                                           ((force)))))))
 
 
@@ -1327,7 +1333,7 @@ identifier or HID."
              vl-idexpr-p
              vl-hidexpr-p
              vl-hidindex-p
-             vl-index-expr-p
+             vl-indexexpr-p
              vl-expr-welltyped-p))
 
   (defrule warning-irrelevance-of-vl-hidexpr-expandsizes
@@ -1746,7 +1752,7 @@ minor warning for assignments where the rhs is a constant.</p>"
            natp-when-member-equal-of-nat-listp
            vl-context-fix-when-vl-context-p
            vl-warninglist-fix-when-vl-warninglist-p
-           vl-nonatom->op-when-hidindex-resolved-p
+           ;; vl-nonatom->op-when-hidindex-resolved-p
            vl-nonatom->op-when-vl-hidindex-p
            vl-atom-p-of-car-when-vl-atomlist-p
            acl2::true-listp-member-equal
@@ -1769,8 +1775,6 @@ minor warning for assignments where the rhs is a constant.</p>"
            (:TYPE-PRESCRIPTION MEMBER-EQUAL)
            VL-EXPANDSIZES-ZEROEXTEND-OF-VL-CONTEXT-FIX-CTX
 
-           VL-HIDINDEX-RESOLVED-P-WHEN-VL-HIDEXPR-RESOLVED-P
-           VL-HIDINDEX-P-WHEN-VL-HIDEXPR-P
            (:TYPE-PRESCRIPTION VL-NONATOM->OP$INLINE)
            ACL2::NATP-WHEN-MAYBE-NATP
            acl2::MEMBER-EQUAL-WHEN-ALL-EQUALP
@@ -1975,11 +1979,8 @@ minor warning for assignments where the rhs is a constant.</p>"
                                           :finaltype finaltype)))
              (mv t warnings new-x)))
 
-          ((:vl-index
-            :vl-select-colon
-            :vl-select-pluscolon
-            :vl-select-minuscolon)
-           (b* (((unless (vl-index-expr-p (first args)))
+          ((:vl-index)
+           (b* (((unless (vl-indexexpr-p (first args)))
                  (mv nil
                      (fatal :type :vl-bad-expression
                             :msg "~a0: ~x1 is not a well-formed index expression."
@@ -1994,8 +1995,25 @@ minor warning for assignments where the rhs is a constant.</p>"
                 ((mv successp warnings indices)
                  (vl-exprlist-size (cdr args) ss ctx warnings))
                 ((unless successp) (mv nil warnings x))
+                (new-x (change-vl-nonatom x
+                                          :args (cons (first args) indices)
+                                          :finalwidth finalwidth
+                                          :finaltype finaltype)))
+             (mv t warnings new-x)))
+
+          ((:vl-select-colon
+            :vl-select-pluscolon
+            :vl-select-minuscolon)
+           (b* (((unless (posp finalwidth))
+                 (mv nil
+                     (fatal :type :vl-bad-expression
+                            :msg "~a0: ~x1 has 0 width?"
+                            :args (list ctx x))
+                     x))
+                ((mv successp warnings indices)
+                 (vl-exprlist-size (cdr args) ss ctx warnings))
+                ((unless successp) (mv nil warnings x))
                 (resolved-ok (case op
-                               (:vl-index t)
                                (:vl-select-colon
                                 (and (vl-expr-resolved-p (first indices))
                                      (vl-expr-resolved-p (second indices))))
@@ -3066,7 +3084,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                           default-car
                           default-cdr
                           acl2::true-listp-member-equal
-                          VL-NONATOM->OP-WHEN-HIDINDEX-RESOLVED-P
+                          ;; VL-NONATOM->OP-WHEN-HIDINDEX-RESOLVED-P
                           set::double-containment
                           acl2::subsetp-member
                           acl2::zp-open
@@ -3148,17 +3166,22 @@ minor warning for assignments where the rhs is a constant.</p>"
                     (vl-hidindex-p
                      (make-vl-nonatom :op (vl-nonatom->op x)
                                       :args (vl-nonatom->args x)
-                                      :atts atts :finalwidth fw :finaltype ft)))
+                                      :atts atts
+                                      :finalwidth fw
+                                      :finaltype ft)))
            :hints(("Goal" :in-theory (e/d (vl-hidindex-p)
                                           ((force)))))))
 
   (local (defthm hidexpr-p-of-reassemble
            (implies (and (vl-hidexpr-p x)
-                         (not (equal (vl-expr-kind x) :atom)))
+                         (not (equal (vl-expr-kind x) :atom))
+                         (equal (vl-nonatom->op x) op))
                     (vl-hidexpr-p
-                     (make-vl-nonatom :op (vl-nonatom->op x)
+                     (make-vl-nonatom :op op
                                       :args (vl-nonatom->args x)
-                                      :atts atts :finalwidth fw :finaltype ft)))
+                                      :atts atts
+                                      :finalwidth fw
+                                      :finaltype ft)))
            :hints(("Goal" :in-theory (e/d (vl-hidexpr-p)
                                           ((force)))))))
 

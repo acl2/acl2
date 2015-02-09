@@ -29,7 +29,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "occform/util")
+(include-book "../primitives")
+(include-book "../mlib/modgen")
 (include-book "../mlib/delta")
 (local (include-book "../util/arithmetic"))
 

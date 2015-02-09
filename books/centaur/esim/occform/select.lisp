@@ -30,9 +30,9 @@
 
 (in-package "VL")
 (include-book "simple")
-(include-book "../../util/next-power-of-2")
-(local (include-book "../../util/arithmetic"))
-(local (include-book "../../util/osets"))
+(include-book "centaur/vl/util/next-power-of-2" :dir :system)
+(local (include-book "centaur/vl/util/arithmetic" :dir :system))
+(local (include-book "centaur/vl/util/osets" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
 (local (non-parallel-book))

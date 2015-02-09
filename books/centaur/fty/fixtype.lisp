@@ -126,24 +126,36 @@ table for later use by @(see deffixequiv) and @(see deffixequiv-mutual).</p>
               :pred widget-p
               :fix  widget-fix
               :equiv widget-equiv
-              ;; optional:
-              :executablep nil  ;; t by default
-              :define t  ;; nil by default: define the equivalence as equal of fix
+  ;; optional:
+              :executablep nil    ;; t by default
+              :define t           ;; nil by default: define the equivalence as equal of fix
+              :inline inline-p    ;; t by default: use defun-inline for the equivalence
+              :equal {eq,eql,...} ;; equal by default; the comparison to use
+              )
 })
 
 <p>The optional arguments:</p>
 
 <ul>
 
+<li>@(':executablep') should be set to NIL if either the fixing function or
+predicate are non-executable or especially expensive.  This mainly affects, in
+@('deffixequiv') and @('deffixequiv-mutual'), whether a theorem is introduced
+that normalizes constants by applying the fixing function to them.</li>
+
 <li>@(':define') is NIL by default; if set to T, then the equivalence relation
 is assumed not to exist yet, and is defined as equality of fix, with
 appropriate rules to rewrite the fix away under the equivalence and to
 propagate the congruence into the fix.</li>
 
-<li>@(':executablep') should be set to NIL if either the fixing function or
-predicate are non-executable or especially expensive.  This mainly affects, in
-@('deffixequiv') and @('deffixequiv-mutual'), whether a theorem is introduced
-that normalizes constants by applying the fixing function to them.</li>
+<li>@(':inline') only matters when @(':define') is T.  When @(':inline') is T,
+the new equivalence relation's function will be introduced using
+@(see defun-inline) instead of @(see defun).</li>
+
+<li>@(':equal') only matters when @('define') is T and defaults to @('equal').
+It allows you to say that the new equivalence relation should use some
+alternate equality predicate like @(see eq), @(see eql), etc., for added
+efficiency.</li>
 
 </ul>
 
@@ -165,7 +177,8 @@ for some basic ACL2 types.</p>")
    ;; pred-of-fix         ;; (foo-p (foo-fix x))
    ;; fix-idempotent       ;; (implies (foo-p x) (equal (foo-fix x) x))
    equiv-means-fixes-equal ;; (implies (foo-equiv x y) (equal (foo-fix x) (foo-fix y)))  (or iff/equal)
-
+   inline
+   equal
    ))
 
 (table fixtypes)
@@ -173,7 +186,7 @@ for some basic ACL2 types.</p>")
 (defun get-fixtypes-alist (world)
   (cdr (assoc 'fixtype-alist (table-alist 'fixtypes world))))
 
-(defun deffixtype-fn (name predicate fix equiv execp definep verbosep hints forward)
+(defun deffixtype-fn (name predicate fix equiv execp definep inline equal verbosep hints forward)
   (if definep
       `(with-output ,@(and (not verbosep) '(:off :all)) :stack :push
          (encapsulate nil
@@ -185,11 +198,14 @@ for some basic ACL2 types.</p>")
                      (value-triple
                       (er hard? 'deffixtype
                           "Failed to prove that ~x0 is idempotent.~%" ',fix)))))
-           (,(if execp 'defun 'defun-nx) ,equiv (x y)
+           (,(cond ((not execp)  'defun-nx)
+                   ((not inline) 'defun)
+                   (t            'defun-inline))
+            ,equiv (x y)
              (declare (xargs :normalize nil
                              ,@(and execp `(:guard (and (,predicate x) (,predicate y))))
                              :verify-guards ,execp))
-             (equal (,fix x) (,fix y)))
+             (,equal (,fix x) (,fix y)))
            (local (in-theory '(,equiv tmp-deffixtype-idempotent
                                       booleanp-compound-recognizer)))
            (defequiv ,equiv)
@@ -225,7 +241,21 @@ for some basic ACL2 types.</p>")
                                (,equiv x y))
                       :rule-classes :forward-chaining)))
            (table fixtypes 'fixtype-alist
-                  (cons (cons ',name ',(fixtype name predicate fix equiv execp equiv))
+                  (cons (cons ',name ',(make-fixtype :name name
+                                                     :pred predicate
+                                                     :fix fix
+                                                     :equiv equiv
+                                                     :executablep execp
+                                                     :equiv-means-fixes-equal
+                                                     ;; BOZO stupid ACL2 is so awful...
+                                                     (if (and execp inline)
+                                                         (intern-in-package-of-symbol
+                                                          (concatenate 'string (symbol-name equiv) "$INLINE")
+                                                          equiv)
+                                                       equiv)
+                                                     :inline inline
+                                                     :equal equal
+                                                     ))
                         (get-fixtypes-alist world)))))
     (b* ((thmname (intern-in-package-of-symbol
                    (concatenate
@@ -249,7 +279,16 @@ for some basic ACL2 types.</p>")
                            You may provide :hints to help."
                           ',equiv ',fix)))))
                 (table fixtypes 'fixtype-alist
-                       (cons (cons ',name ',(fixtype name predicate fix equiv execp thmname))
+                       (cons (cons ',name
+                                   ',(make-fixtype :name name
+                                                   :pred predicate
+                                                   :fix fix
+                                                   :equiv equiv
+                                                   :executablep execp
+                                                   :equiv-means-fixes-equal thmname
+                                                   :inline inline
+                                                   :equal equal
+                                                   ))
                              (get-fixtypes-alist world))))))))
 
 
@@ -258,11 +297,13 @@ for some basic ACL2 types.</p>")
                            define
                            verbosep
                            hints
-                           forward)
+                           forward
+                           (inline 't)
+                           (equal 'equal))
 ; We contemplated making "equal" the default equivalence relation but decided
 ; against it.  See Github Issue 240 for relevant discussion.
   (declare (xargs :guard (and pred fix equiv)))
-  (deffixtype-fn name pred fix equiv execp define verbosep hints forward))
+  (deffixtype-fn name pred fix equiv execp define inline equal verbosep hints forward))
 
 (defun find-fixtype-for-pred (pred alist)
   (if (atom alist)
