@@ -221,7 +221,7 @@
 ;;;		    	    Quotient Refinement
 ;;;**********************************************************************
 
-;(defsection-rtl |Quotient Refinement| |FMA-Based Division|
+(defsection-rtl |Quotient Refinement| |FMA-Based Division|
 
 (defthm init-approx
   (implies (and (rationalp a)
@@ -321,12 +321,13 @@
               (< (abs (- q (/ a b)))
                  (expt 2 (- (1+ e) p)))))
   :rule-classes ())
+)
 
 ;;;**********************************************************************
 ;;;		    	  Reciprocal Refinement
 ;;;**********************************************************************
 
-;(defsection-rtl |Reciprocal Refinement| |FMA-Based Division|
+(defsection-rtl |Reciprocal Refinement| |FMA-Based Division|
 
 (defthm recip-refinement-1
   (let* ((e1 (rne (- 1 (* b y1)) p))
@@ -386,15 +387,15 @@
                   (<= (abs (- 1 (* b yp))) ep))
              (< (abs (- 1 (* b y))) (expt 2 (- p)))))
   :rule-classes ())
-;)
+)
 
 ;;;**********************************************************************
 ;;;		    	      Examples
 ;;;**********************************************************************
 
-;(defsection-rtl |Examples| |FMA-Based Division|
+(include-book "rcp") ; must precede the defsection-rtl
 
-(include-book "rcp")
+(defsection-rtl |Examples| |FMA-Based Division|
 
 (defund rcp24 (b)
   (ndecode (frcp (nencode b 24 8)) 24 8))
@@ -465,5 +466,4 @@
                 (ieee-rounding-mode-p mode))
            (= (divdp a b mode) (rnd (/ a b) mode 53)))
   :rule-classes ())
-;)
-
+)

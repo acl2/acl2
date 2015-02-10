@@ -22,8 +22,6 @@
 ;
 ; Author: David M. Russinoff (david@russinoff.com)
 
-; This file is not documented in Russinoff's online manual; see logn.lisp.
-
 (in-package "ACL2")
 
 (set-enforce-redundancy t) ; for some reason, acl2 4.3 complains about  logand-natp 
@@ -65,22 +63,9 @@
   (mbe :logic (bits x n n)
        :exec  (if (evenp (ash x (- n))) 0 1)))
 
-; Using defsection-rtl-log to deal with "deprecated" issue (see doc.lisp):
-(defsection-rtl-log |Logical Operations|)
-
-; Fix for "deprecated" issue:
-(rtl-order-subtopics |Logical Operations|
-                     (|Binary Operations|
-                      |Complementation|
-                      |Algebraic Properties|))
-
-
 ;;;**********************************************************************
 ;;;                       LOGAND, LOGIOR, and LOGXOR
 ;;;**********************************************************************
-
-; Using defsection-rtl-log to deal with "deprecated" issue (see doc.lisp):
-(defsection-rtl-log |Binary Operations|
 
 (in-theory (disable logand logior logxor))
 
@@ -357,14 +342,10 @@
                 (natp k))
            (equal (fl (/ (logxor x y) (expt 2 k)))
                   (logxor (fl (/ x (expt 2 k))) (fl (/ y (expt 2 k)))))))
-)
 
 ;;;**********************************************************************
 ;;;                               LOGNOT
 ;;;**********************************************************************
-
-; Using defsection-rtl-log to deal with "deprecated" issue (see doc.lisp):
-(defsection-rtl-log |Complementation|
 
 (in-theory (disable lognot))
 
@@ -443,14 +424,10 @@
                 (not (zp n)))
            (equal (lognot (fl (/ x n)))
                   (fl (/ (lognot x) n)))))
-)
 
 ;;;**********************************************************************
 ;;;                         Algebraic Properties
 ;;;**********************************************************************
-
-; Using defsection-rtl-log to deal with "deprecated" issue (see doc.lisp):
-(defsection-rtl-log |Algebraic Properties|
 
 (defthm lognot-lognot
     (implies (case-split (integerp i))
@@ -600,4 +577,3 @@
            (equal (logxor x y)
                   (logior (logand x (lognot y))
                           (logand y (lognot x))))))
-)

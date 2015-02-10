@@ -139,7 +139,7 @@
 ;;;		    	      RTZ-SQRT
 ;;;**********************************************************************
 
-;(defsection-rtl |Truncation| |IEEE-Compliant Square Root|
+(defsection-rtl |Truncation {Square Root}| |IEEE-Compliant Square Root|
 
 (defund rtz-sqrt (x n)
   (if (zp n)
@@ -208,13 +208,13 @@
                 (>= n m))
            (equal (rtz (rtz-sqrt x n) m)
                   (rtz-sqrt x m))))
-;)
+)
 
 ;;;**********************************************************************
 ;;;		    	    RTO-SQRT
 ;;;**********************************************************************
 
-;(defsection-rtl |Odd Rounding| |IEEE-Compliant Square Root|
+(defsection-rtl |Odd Rounding {Square Root}| |IEEE-Compliant Square Root|
 
 (defund rto-sqrt (x n)
   (let ((trunc (rtz-sqrt x (1- n))))
@@ -327,13 +327,13 @@
            (and (iff (< (* q q) x) (< q (rto-sqrt x n)))
                 (iff (> (* q q) x) (> q (rto-sqrt x n)))))
   :rule-classes ())
-;)
+)
 
 ;;;**********************************************************************
 ;;;		    	       QSQRT
 ;;;**********************************************************************
 
-;(defsection-rtl |IEEE Rounding| |IEEE-Compliant Square Root|
+(defsection-rtl |IEEE Rounding {Square Root}| |IEEE-Compliant Square Root|
 
 (defund qsqrt (x n)
   (let ((e (1+ (fl (/ (expo x) 2)))))
@@ -407,4 +407,4 @@
            (and (iff (< (* q q) x) (< q (qsqrt x n)))
                 (iff (> (* q q) x) (> q (qsqrt x n)))))
   :rule-classes ())
-;)
+)

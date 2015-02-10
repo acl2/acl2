@@ -119,8 +119,6 @@
 ;;;                      Bit Vector Addition
 ;;;**********************************************************************
 
-(defsection-rtl |Bit Vector Addition| |Addition|
-
 (defthm half-adder
   (implies (and (bvecp u 1)
                 (bvecp v 1))
@@ -410,13 +408,10 @@
 	     (equal (gen (+ x y) z i 0)
 		    (logand (prop x y i (1+ j))
 			    (gen (+ x y) z j 0)))))
-)
 
 ;;;**********************************************************************
 ;;;                  Leading One Prediction
 ;;;**********************************************************************
-
-(defsection-rtl |Leading One Prediction| |Addition|
 
 (defund lop (a b d k)
   (let ((c (- (bitn a (1- k)) (bitn b (1- k)))))
@@ -510,13 +505,10 @@
 		  (or (= (expo (- a b)) (expo (lamb a b e)))
 		      (= (expo (- a b)) (1- (expo (lamb a b e)))))))
   :rule-classes ())
-)
 
 ;;;**********************************************************************
 ;;;                    Trailing One Prediction
 ;;;**********************************************************************
-
-(defsection-rtl |Trailing One Prediction| |Addition|
 
 (defthm top-thm-1
   (implies (and (natp n)
@@ -541,4 +533,3 @@
                                k 0) 
                          0)))
   :rule-classes ())
-)

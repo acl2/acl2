@@ -153,7 +153,7 @@
 ;;;          Representations With Explicit Leading One
 ;;;***************************************************************
 
-;(defsection-rtl |Representations With Explicit Leading One| |Floating-Point Formats|
+(defsection-rtl |Representations with Explicit Leading One| |Floating-Point Formats|
 
 ;;Bit vectors of length p+q+1, consisting of 1-bit sign field, q-bit 
 ;;exponent field (bias = 2**(q-1)-1), and p-bit significand field, 
@@ -264,13 +264,13 @@
 		  (integerp q))
 	     (equal (edecode (eencode x p q) p q)
 		    x)))
-;)
+)
 
 ;;;***************************************************************
 ;;;          Representations With Implicit Leading One
 ;;;***************************************************************
 
-;(defsection-rtl |Representations With Implicit Leading One| |Floating-Point Formats|
+(defsection-rtl |Representations with Implicit Leading One| |Floating-Point Formats|
 
 ;;Bit vectors of length p+q, consisting of 1-bit sign field, q-bit 
 ;;exponent field (bias = 2**(q-1)-1), and (p-1)-bit significand field, 
@@ -408,13 +408,13 @@
            (>= (abs x) (spn q)))
   :rule-classes
   ((:rewrite :match-free :once)))
-;)
+)
 
 ;;;***************************************************************
 ;;;                Denormal Representations
 ;;;***************************************************************
 
-;(defsection-rtl |Denormal Representations| |Floating-Point Formats|
+(defsection-rtl |Denormal Representations| |Floating-Point Formats|
 
 (defund dencodingp (x p q)
   (and (bvecp x (+ p q))
@@ -641,13 +641,13 @@
 		(and (natp m)
 		     (<= 1 m)
 		     (< m (expt 2 (1- p)))))))
-;)
+)
 
 ;;;***************************************************************
 ;;;                Rebiasing Exponents
 ;;;***************************************************************
 
-;(defsection-rtl |Rebiasing Exponents| |Floating-Point Formats|
+(defsection-rtl |Rebiasing Exponents| |Floating-Point Formats|
 
 (defund rebias-expo (expo old new)
   (+ expo (- (bias new) (bias old))))
@@ -716,4 +716,4 @@
 			 (1+ (- n m))
 			 (bits x (- m 2) 0)
 			 (1- m)))))
-;)
+)

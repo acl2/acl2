@@ -115,7 +115,7 @@
 ;;;                         Truncation
 ;;;**********************************************************************
 
-;(defsection-rtl |Truncation| |Rounding|
+(defsection-rtl |Truncation| |Rounding|
 
 (defund rtz (x n)
   (declare (xargs :guard (integerp n)))
@@ -334,13 +334,13 @@
                 (integerp k) (> k 0))
            (equal (rtz x k)
                   (logand x (- (expt 2 m) (expt 2 (- n k)))))))
-;)
+)
 
 ;;;**********************************************************************
 ;;;                    Rounding Away from Zero
 ;;;**********************************************************************
 
-;(defsection-rtl |Rounding Away from Zero| |Rounding|
+(defsection-rtl |Rounding Away from Zero| |Rounding|
 
 (defund raz (x n)
   (* (sgn x) 
@@ -579,13 +579,13 @@
 		    	    (expt 2 (- (1+ (expo x)) n))
 			    (- (expt 2 (- (1+ (expo x)) m))))
 		         n))))
-;)
+)
 
 ;;;**********************************************************************
 ;;;                    Unbiased Rounding
 ;;;**********************************************************************
 
-;(defsection-rtl |Unbiased Rounding| |Rounding|
+(defsection-rtl |Unbiased Rounding| |Rounding|
 
 (defun re (x)
   (- x (fl x)))
@@ -1082,13 +1082,13 @@
 		  (> m 0))
 	     (equal (rna (rtz x n) m)
                     (rna x m))))
-;)
+)
 
 ;;;**********************************************************************
 ;;;                          Odd Rounding
 ;;;**********************************************************************
 
-;(defsection-rtl |Odd Rounding| |Rounding|
+(defsection-rtl |Odd Rounding| |Rounding|
 
 (defund rto (x n)
   (if (exactp x (1- n))
@@ -1220,13 +1220,13 @@
 	     (= (+ x (rto y k))
 		(rto (+ x y) k2)))
   :rule-classes ())
-;)
+)
 
 ;;;**********************************************************************
 ;;;                    IEEE Rounding
 ;;;**********************************************************************
 
-;(defsection-rtl |IEEE Rounding| |Rounding|
+(defsection-rtl |IEEE Rounding| |Rounding|
 
 (defun rup (x n)
   (if (>= x 0)
@@ -1531,13 +1531,13 @@
                     (if (round-up-p x sticky mode n)
                         (fp+ (rtz z n) n)
                       (rtz z n))))))
-;)  
+)
 
 ;;;**********************************************************************
 ;;;                         Denormal Rounding 
 ;;;**********************************************************************
 
-;(defsection-rtl |Denormal Rounding| |Rounding|
+(defsection-rtl |Denormal Rounding| |Rounding|
 
 (defund drnd (x mode p q)
   (rnd x mode (+ p (expo x) (- (expo (spn q))))))
@@ -1729,4 +1729,4 @@
              (equal (drnd x mode p q)
                     (drnd y mode p q)))
     :rule-classes ())
-;)
+)

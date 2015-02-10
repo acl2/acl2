@@ -1159,11 +1159,12 @@
   (equal (logxor x x) 0)
   :hints (("Goal" :use logxor-self$)))
 
+; Matt K. edit: changed variable x to i to match ihs/logops-lemmas.lisp.
 (defthm lognot-lognot
-    (implies (case-split (integerp x))
-	     (equal (lognot (lognot x))
-		    x))
-  :hints (("Goal" :use (:instance lognot-lognot$ (i x)))))
+    (implies (case-split (integerp i))
+	     (equal (lognot (lognot i))
+		    i))
+  :hints (("Goal" :use (:instance lognot-lognot$))))
 
 (defthmd logior-not-0
   (implies (and (integerp x)

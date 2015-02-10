@@ -68,7 +68,7 @@
 ;;;                 Sign, Significand, and Exponent
 ;;;**********************************************************************
 
-;(defsection-rtl |Floating-Point Decomposition| |Floating-Point Numbers|
+(defsection-rtl |Floating-Point Decomposition| |Floating-Point Numbers|
 
 (defund sgn (x) 
   (declare (xargs :guard t))
@@ -247,13 +247,13 @@
 		    (if (< (* (sig x) (sig y)) 2)
 			(* (sig x) (sig y))
 		      (* 1/2 (sig x) (sig y))))))
-;)
+)
 
 ;;;**********************************************************************
 ;;;                          Exactness
 ;;;**********************************************************************
 
-;(defsection-rtl |Exactness| |Floating-Point Numbers|
+(defsection-rtl |Exactness| |Floating-Point Numbers|
 
 (defund exactp (x n)
   (integerp (* (sig x) (expt 2 (1- n)))))
@@ -504,4 +504,4 @@
                  (> n 0)
                  (exactp x n))
             (equal (expo (fp- x n)) (expo x))))
-;)
+)

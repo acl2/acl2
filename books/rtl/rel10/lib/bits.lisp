@@ -41,7 +41,7 @@
 ;;;				BVECP
 ;;;**********************************************************************
 
-;(defsection-rtl |Recognizing Bit Vectors| |Bit Vectors|
+(defsection-rtl |Recognizing Bit Vectors| |Bit Vectors|
 
 (defund bvecp (x k)
   (declare (xargs :guard (integerp k)))
@@ -99,13 +99,13 @@
 		(not (equal x 0)))
 	   (equal x 1))
   :rule-classes :forward-chaining)
-;)
+)
 
 ;;;**********************************************************************
 ;;;			    BITS
 ;;;**********************************************************************
 
-;(defsection-rtl |Bit Slices| |Bit Vectors|
+(defsection-rtl |Bit Slices| |Bit Vectors|
 
 (defund bits (x i j)
   (declare (xargs :guard (and (integerp x)
@@ -391,13 +391,13 @@
 		(integerp i) (integerp j)  (integerp k) (integerp i2) (integerp j2) (integerp k2))
 	   (equal (equal k (bits x i j))
 		  nil)))
-;)
+)
 
 ;;;**********************************************************************
 ;;;				BITN
 ;;;**********************************************************************
 
-;(defsection-rtl |Bit Extraction| |Bit Vectors|
+(defsection-rtl |Bit Extraction| |Bit Vectors|
 
 (defund bitn (x n)
   (declare (xargs :guard (and (integerp x)
@@ -655,13 +655,13 @@
 		  (equal (mod c (expt 2 (1+ n))) 0))
 	     (equal (bitn (+ c x) n)
 		    (bitn x n))))
-;)
+)
 
 ;;;**********************************************************************
 ;;;			     CAT
 ;;;**********************************************************************
 
-;(defsection-rtl |Concatenation| |Bit Vectors|
+(defsection-rtl |Concatenation| |Bit Vectors|
 
 (defund binary-cat (x m y n)
   (declare (xargs :guard (and (integerp x)
@@ -953,13 +953,13 @@
 		(case-split (integerp n)))
 	   (equal (bitn (mulcat 1 n x) m)
 		  x)))
-;)
+)
 
 ;;;**********************************************************************
 ;;;		      Signed Integer Encodings
 ;;;**********************************************************************
 
-;(defsection-rtl |Signed Integer Encodings| |Bit Vectors|
+(defsection-rtl |Signed Integer Formats| |Bit Vectors|
 
 (defun intval (w x)
   (if (= (bitn x (1- w)) 1)
@@ -985,4 +985,4 @@
 		  (bvecp x m))
 	     (equal (intval n (sign-extend n m x))
 		    (intval m x))))
-;)
+)

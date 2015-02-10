@@ -61,13 +61,12 @@
                   0
                 (logand (ash x (- j)) (1- (ash 1 (1+ (- i j))))))))
 
-
-;(defsection-rtl |Division and Quotient Digit Selection| |SRT Division and Square Root|
-
-
 ;;**********************************************************************************
 ;; Formula for Division Partial Remainder
 ;;**********************************************************************************
+
+(defsection-rtl |SRT Division and Quotient Digit Selection|
+  |SRT Division and Square Root|
 
 (encapsulate (((rho$) => *) ((x$) => *) ((d$) => *) ((h$ *) => *))
   (local (defun rho$ () 1))
@@ -594,13 +593,13 @@
   (implies (not (zp k))
            (div-accessible-p (i% k) (j%) (m%) (n%)))
   :rule-classes ())
-;)
-
-;(defsection-rtl Square Root Extraction|| |SRT Division and Square Root|
+)
 
 ;;**********************************************************************************
 ;; Formula for Square Root Partial Remainder
 ;;**********************************************************************************
+
+(defsection-rtl |SRT Square Root Extraction| |SRT Division and Square Root|
 
 (encapsulate (((rho$$) => *) ((x$$) => *) ((h$$ *) => *))
   (local (defun rho$$ () 1))
@@ -1501,13 +1500,13 @@
                 (not (zp k))
                 (admissible-srt-table-p k rho m n table))
            (exists-srt-table-p k rho m n)))
-;)
-
-;(defsection-rtl |Square Root Seed Tables| |SRT Division and Square Root|
+)
 
 ;;**********************************************************************************
 ;; Seed Table Requirements
 ;;**********************************************************************************
+
+(defsection-rtl |Square Root Seed Tables| |SRT Division and Square Root|
 
 (encapsulate (((rho**) => *) ((k**) => *) ((x**) => *) ((s**) => *))
 
@@ -1610,6 +1609,7 @@
               (fl (* (expt 2 (1- (* (k**) (rho**)))) (q1**)))))
   :rule-classes ())
 
+)
 
 ;;**********************************************************************************
 ;; A Compliant Seed Table

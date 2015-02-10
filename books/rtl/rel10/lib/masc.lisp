@@ -210,6 +210,12 @@
 ;;;                           Arrays
 ;;;**********************************************************************
 
+; Matt K. edit: Commenting out the rest, because rcdp here conflicts with the
+; definition in misc/records.lisp, and both are included when building the
+; ACL2+books manual.
+
+#||
+
 (INCLUDE-BOOK "misc/total-order" :dir :system)
 
 (defmacro default-get-valu () 0)
@@ -338,3 +344,4 @@
 
 (in-theory (disable as ag))
 
+||#

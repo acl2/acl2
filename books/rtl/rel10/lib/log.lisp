@@ -22,8 +22,6 @@
 ;
 ; Author: David M. Russinoff (david@russinoff.com)
 
-; This file is not documented in Russinoff's online manual; see logn.lisp.
-
 (in-package "ACL2")
 
 (set-enforce-redundancy t) ; for some reason, acl2 4.3 complains about  logand-natp 
@@ -105,7 +103,7 @@
 ;;;                       LOGAND, LOGIOR, and LOGXOR
 ;;;**********************************************************************
 
-;(defsection-rtl |Binary Operations| |Logical Operations|
+(defsection-rtl |Binary Operations| |Logical Operations|
 
 (in-theory (disable logand logior logxor))
 
@@ -355,13 +353,13 @@
 		  (case-split (integerp n)))
 	     (equal (bitn (logxor x y) n)
 		    (logxor (bitn x n) (bitn y n)))))
-;)
+)
 
 ;;;**********************************************************************
 ;;;                               LOGNOT
 ;;;**********************************************************************
 
-;(defsection-rtl |Complementation| |Logical Operations|
+(defsection-rtl |Complementation| |Logical Operations|
 
 (in-theory (disable lognot))
 
@@ -432,13 +430,13 @@
                 (bvecp y n))
            (equal (logand y (bits (lognot x) (1- n) 0))
                   (logand y (lognot (bits x (1- n) 0))))))
-;)
+)
 
 ;;;**********************************************************************
 ;;;                         Algebraic Properties
 ;;;**********************************************************************
 
-;(defsection-rtl |Algebraic Properties| |Logical Operations|
+(defsection-rtl |Algebraic Properties| |Logical Operations|
 
 (defthm logand-x-0
     (equal (logand x 0) 0))
@@ -474,10 +472,11 @@
   (equal (logxor x x) 0)
   :hints (("Goal" :use logxor-self$)))
 
+; Matt K. edit: changed variable x to i to match ihs/logops-lemmas.lisp.
 (defthm lognot-lognot
-    (implies (case-split (integerp x))
-	     (equal (lognot (lognot x))
-		    x)))
+    (implies (case-split (integerp i))
+	     (equal (lognot (lognot i))
+		    i)))
 
 (defthmd logior-not-0
   (implies (and (integerp x)
@@ -606,4 +605,4 @@
                 (lognot (logxor x y)))
          (equal (logxor y (lognot x))
                 (lognot (logxor x y)))))
-;)
+)
