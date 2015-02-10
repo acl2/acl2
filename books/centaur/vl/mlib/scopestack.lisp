@@ -218,7 +218,7 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
     :long "<p>Note that this is only for items, i.e., it's not for definitions,
   ports, packages, etc.</p>"
     '((interface    (:import)
-                    paramdecl vardecl modport)
+                    paramdecl vardecl)
       (module       (:import)
                     paramdecl vardecl fundecl taskdecl
                     (modinst :name instname :maybe-stringp t)
@@ -1227,8 +1227,7 @@ be very cheap in the single-threaded case.</p>"
 (defthm tag-of-vl-scopestack-find-item/ss-forward
   (b* (((mv item ?item-ss) (vl-scopestack-find-item/ss name ss)))
     (implies item
-             (or (equal (tag item) :vl-modport)
-                 (equal (tag item) :vl-modinst)
+             (or (equal (tag item) :vl-modinst)
                  (equal (tag item) :vl-gateinst)
                  (equal (tag item) :vl-genloop)
                  (equal (tag item) :vl-genif)
@@ -1446,7 +1445,6 @@ transform that has used scopestacks.</p>"
   :guard-hints(("Goal" :in-theory (enable vl-scopeitem-p)))
   (b* ((x (vl-scopeitem-fix x)))
     (case (tag x)
-      (:vl-modport    (vl-modport->name x))
       (:vl-modinst    (vl-modinst->instname x))
       (:vl-gateinst   (vl-gateinst->name x))
       (:vl-genblock   (vl-genblock->name x))

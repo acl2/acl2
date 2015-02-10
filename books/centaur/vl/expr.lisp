@@ -238,6 +238,8 @@ soon as we do anything with time units.</p>")
 
   )
 
+(fty::deflist vl-valuelist :elt-type vl-value :elementp-of-nil nil)
+
 (defenum vl-selectop-p
   (:vl-select-colon
    :vl-select-pluscolon
@@ -377,7 +379,7 @@ type for @(see vl-scopeexpr->scopes).</p>"
   :define t
   :forward t)
 
-(fty::deflist vl-scopenamelist :elt-type vl-scopename)
+(fty::deflist vl-scopenamelist :elt-type vl-scopename :elementp-of-nil nil)
 
 
 
@@ -484,10 +486,11 @@ type for @(see vl-scopeexpr->scopes).</p>"
     (:full ())
     (:range ((msb  vl-expr-p)
              (lsb  vl-expr-p)))
-    (:pluscolon ((base  vl-expr-p)
-                 (width vl-expr-p)))
-    (:minuscolon ((base  vl-expr-p)
-                  (width vl-expr-p))))
+    (:plusminus
+     :short "Representation of a select such as @('[a +: b]') or @('[a -: b]')."
+     ((base  vl-expr-p)
+      (width vl-expr-p)
+      (minusp booleanp))))
 
 
   (defprod vl-streamexpr
@@ -497,7 +500,8 @@ type for @(see vl-scopeexpr->scopes).</p>"
  
   (fty::deflist vl-streamexprlist
     :measure (two-nats-measure (acl2-count x) 10)
-    :elt-type vl-streamexpr)
+    :elt-type vl-streamexpr
+    :elementp-of-nil nil)
 
   (deftagsum vl-valuerange
     :measure (two-nats-measure (acl2-count x) 100)
@@ -508,7 +512,8 @@ type for @(see vl-scopeexpr->scopes).</p>"
 
   (fty::deflist vl-valuerangelist
     :measure (two-nats-measure (acl2-count x) 10)
-    :elt-type vl-valuerange)
+    :elt-type vl-valuerange
+    :elementp-of-nil nil)
 
   (deftagsum vl-patternkey
     :measure (two-nats-measure (acl2-count x) 100)
@@ -647,7 +652,10 @@ type for @(see vl-scopeexpr->scopes).</p>"
 
   (fty::deflist vl-exprlist
     :measure (two-nats-measure (acl2-count x) 10)
-    :elt-type vl-expr)
+    :elt-type vl-expr
+    :elementp-of-nil nil
+    :true-listp t) ;; true-listp to get nice update identities
+  ;; like (vl-expr-update-subexprs x (vl-expr->subexprs x)) = (vl-expr-fix x)
 
   (fty::defalist vl-atts
     :measure (two-nats-measure (acl2-count x) 10)
@@ -740,8 +748,8 @@ type for @(see vl-scopeexpr->scopes).</p>"
      :layout :tree
      :base-name vl-usertype
      ;; data_type ::= ... | [ class_scope | package_scope ] type_identifier { packed_dimension }
-     ((kind vl-expr-p "Kind of this type, should be an identifier or some
-                       kind of scoped/hierarchical identifier.")
+     ((name vl-scopeexpr-p "Typedef name.  May have a package scope, but should
+                            not otherwise be hierarchical.")
       (pdims    vl-packeddimensionlist-p)
       (udims    vl-packeddimensionlist-p)))
 
@@ -850,15 +858,20 @@ kinds of assignments like @('+=') and @('*='), so maybe this could become a
 <p>So maybe we don't so much need these to be expressions.  Maybe we can get
 away with them as alternate kinds of assignments.</p>")
 
-  (deftagsum vl-packeddimension
-    :measure (two-nats-measure (acl2-count x) 100)
-    (:unsized ())
-    (:range ((msb vl-expr-p)
-             (lsb vl-expr-p))))
+  (fty::defflexsum vl-packeddimension
+    :measure (two-nats-measure (acl2-count x) 105)
+    :kind nil
+    (:unsized :cond (eq x :vl-unsized-dimension)
+     :fields nil
+     :ctor-body ':vl-unsized-dimension)
+    (:range :cond t
+     :fields ((range :acc-body x :type vl-range))
+     :ctor-body range))
 
   (fty::deflist vl-packeddimensionlist
     :elt-type vl-packeddimension
-    :measure (two-nats-measure (acl2-count x) 10))
+    :measure (two-nats-measure (acl2-count x) 10)
+    :elementp-of-nil nil)
 
 
 
@@ -905,7 +918,8 @@ unsized dimensions.</p>")
 
   (fty::deflist vl-enumitemlist
      :elt-type vl-enumitem
-    :measure (two-nats-measure (acl2-count x) 10))
+    :measure (two-nats-measure (acl2-count x) 10)
+    :elementp-of-nil nil)
 
 
   (defprod vl-range
@@ -2182,9 +2196,9 @@ try to support the use of both ascending and descending ranges.</p>")
     :hints(("Goal" :in-theory (enable vl-maybe-expr-p))))
 
   (defthm vl-expr-p-when-vl-maybe-expr-p
-    (implies (vl-maybe-expr-p x)
-             (equal (vl-expr-p x)
-                    (if (double-rewrite x) t nil)))
+    (implies (and (vl-maybe-expr-p x)
+                  (double-rewrite x))
+             (vl-expr-p x))
     :hints(("Goal" :in-theory (enable vl-maybe-expr-p))))
 
   (defthm type-when-vl-maybe-expr-p
@@ -2204,7 +2218,70 @@ try to support the use of both ascending and descending ranges.</p>")
   ;;                   (vl-expr-fix nil)))
   ;;          :hints(("Goal" :in-theory (enable vl-maybe-expr-fix)))))
 
+  (defthm vl-maybe-expr-fix-under-iff
+    (iff (vl-maybe-expr-fix x)
+         x)
+    :hints(("Goal" :in-theory (enable vl-maybe-expr-fix))))
+
   )
+
+(defsection vl-maybe-range-p-rules
+
+  (defthm vl-maybe-range-p-when-vl-range-p
+    (implies (vl-range-p x)
+             (vl-maybe-range-p x))
+    :hints(("Goal" :in-theory (enable vl-maybe-range-p))))
+
+  (defthm vl-range-p-when-vl-maybe-range-p
+    (implies (and (vl-maybe-range-p x)
+                  (double-rewrite x))
+             (vl-range-p x))
+    :hints(("Goal" :in-theory (enable vl-maybe-range-p))))
+
+  (defthm type-when-vl-maybe-range-p
+    (implies (vl-maybe-range-p x)
+             (or (consp x)
+                 (not x)))
+    :rule-classes :compound-recognizer
+    :hints(("Goal" :in-theory (enable vl-maybe-range-p))))
+
+  (defrefinement vl-maybe-range-equiv vl-range-equiv
+    :hints(("Goal" :in-theory (enable vl-maybe-range-fix))))
+
+  ;; (local (defthm vl-expr-fix-of-vl-maybe-expr-fix
+  ;;          (equal (vl-expr-fix (vl-maybe-expr-fix x))
+  ;;                 (if x
+  ;;                     (vl-expr-fix x)
+  ;;                   (vl-expr-fix nil)))
+  ;;          :hints(("Goal" :in-theory (enable vl-maybe-expr-fix)))))
+
+  (defthm vl-maybe-range-fix-under-iff
+    (iff (vl-maybe-range-fix x)
+         x)
+    :hints(("Goal" :in-theory (enable vl-maybe-range-fix))))
+
+  )
+
+(defsection vl-packeddimension-p-rules
+  (defthm vl-range-p-when-vl-packeddimension-p
+    (implies (and (vl-packeddimension-p x)
+                  (not (equal x :vl-unsized-dimension)))
+             (vl-range-p x))
+    :hints(("Goal" :in-theory (enable vl-packeddimension-p))))
+
+  (defthm vl-packeddimension-fix-is-range-fix
+    (implies (not (equal x :vl-unsized-dimension))
+             (equal (vl-packeddimension-fix x)
+                    (vl-range-fix x)))
+    :hints(("Goal" :in-theory (enable vl-packeddimension-fix))))
+
+  (defthm vl-packeddimension-p-when-vl-range-p
+    (implies (vl-range-p x)
+             (vl-packeddimension-p x))
+    :hints(("Goal" :in-theory (enable vl-packeddimension-p)))))
+
+
+
 
 
 
@@ -2496,6 +2573,377 @@ try to support the use of both ascending and descending ranges.</p>")
 
 
 
-;; (define vl-expr->type ((x vl-expr-p))
-;;   (vl-expr-case x
+(define vl-expr->type ((x vl-expr-p))
+  :returns (type vl-maybe-datatype-p)
+  (vl-expr-case x
+    :vl-special x.type
+    :vl-value x.type
+    :vl-index x.type
+    :vl-unary x.type
+    :vl-binary x.type
+    :vl-qmark x.type
+    :vl-mintypmax x.type
+    :vl-concat x.type
+    :vl-multiconcat x.type
+    :vl-stream x.type
+    :vl-call x.type
+    :vl-cast x.type
+    :vl-inside x.type
+    :vl-tagged x.type
+    :vl-pattern x.type)
+  ///
+  (fty::deffixequiv vl-expr->type)
+  (defthm vl-expr-type-when-vl-special
+    (implies (equal (vl-expr-kind x) :vl-special)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-special)))
+                           (equal (vl-expr->type x)
+                                  (vl-special->type x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-special))))
+                           (equal (vl-special->type x)
+                                  (vl-expr->type x))))))
+
+  (defthm vl-expr-type-when-vl-value
+    (implies (equal (vl-expr-kind x) :vl-value)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-value)))
+                           (equal (vl-expr->type x)
+                                  (vl-value->type x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-value))))
+                           (equal (vl-value->type x)
+                                  (vl-expr->type x))))))
+
+  (defthm vl-expr-type-when-vl-index
+    (implies (equal (vl-expr-kind x) :vl-index)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-index)))
+                           (equal (vl-expr->type x)
+                                  (vl-index->type x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-index))))
+                           (equal (vl-index->type x)
+                                  (vl-expr->type x))))))
+
+  (defthm vl-expr-type-when-vl-unary
+    (implies (equal (vl-expr-kind x) :vl-unary)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-unary)))
+                           (equal (vl-expr->type x)
+                                  (vl-unary->type x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-unary))))
+                           (equal (vl-unary->type x)
+                                  (vl-expr->type x))))))
+
+  (defthm vl-expr-type-when-vl-binary
+    (implies (equal (vl-expr-kind x) :vl-binary)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-binary)))
+                           (equal (vl-expr->type x)
+                                  (vl-binary->type x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-binary))))
+                           (equal (vl-binary->type x)
+                                  (vl-expr->type x))))))
+
+  (defthm vl-expr-type-when-vl-qmark
+    (implies (equal (vl-expr-kind x) :vl-qmark)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-qmark)))
+                           (equal (vl-expr->type x)
+                                  (vl-qmark->type x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-qmark))))
+                           (equal (vl-qmark->type x)
+                                  (vl-expr->type x))))))
+
+  (defthm vl-expr-type-when-vl-mintypmax
+    (implies (equal (vl-expr-kind x) :vl-mintypmax)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-mintypmax)))
+                           (equal (vl-expr->type x)
+                                  (vl-mintypmax->type x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-mintypmax))))
+                           (equal (vl-mintypmax->type x)
+                                  (vl-expr->type x))))))
+
+  (defthm vl-expr-type-when-vl-concat
+    (implies (equal (vl-expr-kind x) :vl-concat)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-concat)))
+                           (equal (vl-expr->type x)
+                                  (vl-concat->type x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-concat))))
+                           (equal (vl-concat->type x)
+                                  (vl-expr->type x))))))
+
+  (defthm vl-expr-type-when-vl-multiconcat
+    (implies (equal (vl-expr-kind x) :vl-multiconcat)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-multiconcat)))
+                           (equal (vl-expr->type x)
+                                  (vl-multiconcat->type x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-multiconcat))))
+                           (equal (vl-multiconcat->type x)
+                                  (vl-expr->type x))))))
+
+  (defthm vl-expr-type-when-vl-stream
+    (implies (equal (vl-expr-kind x) :vl-stream)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-stream)))
+                           (equal (vl-expr->type x)
+                                  (vl-stream->type x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-stream))))
+                           (equal (vl-stream->type x)
+                                  (vl-expr->type x))))))
+
+  (defthm vl-expr-type-when-vl-call
+    (implies (equal (vl-expr-kind x) :vl-call)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-call)))
+                           (equal (vl-expr->type x)
+                                  (vl-call->type x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-call))))
+                           (equal (vl-call->type x)
+                                  (vl-expr->type x))))))
+
+  (defthm vl-expr-type-when-vl-cast
+    (implies (equal (vl-expr-kind x) :vl-cast)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-cast)))
+                           (equal (vl-expr->type x)
+                                  (vl-cast->type x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-cast))))
+                           (equal (vl-cast->type x)
+                                  (vl-expr->type x))))))
+
+  (defthm vl-expr-type-when-vl-inside
+    (implies (equal (vl-expr-kind x) :vl-inside)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-inside)))
+                           (equal (vl-expr->type x)
+                                  (vl-inside->type x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-inside))))
+                           (equal (vl-inside->type x)
+                                  (vl-expr->type x))))))
+
+  (defthm vl-expr-type-when-vl-tagged
+    (implies (equal (vl-expr-kind x) :vl-tagged)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-tagged)))
+                           (equal (vl-expr->type x)
+                                  (vl-tagged->type x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-tagged))))
+                           (equal (vl-tagged->type x)
+                                  (vl-expr->type x))))))
+
+  (defthm vl-expr-type-when-vl-pattern
+    (implies (equal (vl-expr-kind x) :vl-pattern)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-pattern)))
+                           (equal (vl-expr->type x)
+                                  (vl-pattern->type x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-pattern))))
+                           (equal (vl-pattern->type x)
+                                  (vl-expr->type x)))))))
+
+
+(define vl-expr->atts ((x vl-expr-p))
+  :returns (atts vl-atts-p)
+  (vl-expr-case x
+    :vl-special x.atts
+    :vl-value x.atts
+    :vl-index x.atts
+    :vl-unary x.atts
+    :vl-binary x.atts
+    :vl-qmark x.atts
+    :vl-mintypmax x.atts
+    :vl-concat x.atts
+    :vl-multiconcat x.atts
+    :vl-stream x.atts
+    :vl-call x.atts
+    :vl-cast x.atts
+    :vl-inside x.atts
+    :vl-tagged x.atts
+    :vl-pattern x.atts)
+  ///
+  (fty::deffixequiv vl-expr->atts)
+  (defthm vl-expr-atts-when-vl-special
+    (implies (equal (vl-expr-kind x) :vl-special)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-special)))
+                           (equal (vl-expr->atts x)
+                                  (vl-special->atts x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-special))))
+                           (equal (vl-special->atts x)
+                                  (vl-expr->atts x))))))
+
+  (defthm vl-expr-atts-when-vl-value
+    (implies (equal (vl-expr-kind x) :vl-value)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-value)))
+                           (equal (vl-expr->atts x)
+                                  (vl-value->atts x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-value))))
+                           (equal (vl-value->atts x)
+                                  (vl-expr->atts x))))))
+
+  (defthm vl-expr-atts-when-vl-index
+    (implies (equal (vl-expr-kind x) :vl-index)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-index)))
+                           (equal (vl-expr->atts x)
+                                  (vl-index->atts x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-index))))
+                           (equal (vl-index->atts x)
+                                  (vl-expr->atts x))))))
+
+  (defthm vl-expr-atts-when-vl-unary
+    (implies (equal (vl-expr-kind x) :vl-unary)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-unary)))
+                           (equal (vl-expr->atts x)
+                                  (vl-unary->atts x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-unary))))
+                           (equal (vl-unary->atts x)
+                                  (vl-expr->atts x))))))
+
+  (defthm vl-expr-atts-when-vl-binary
+    (implies (equal (vl-expr-kind x) :vl-binary)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-binary)))
+                           (equal (vl-expr->atts x)
+                                  (vl-binary->atts x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-binary))))
+                           (equal (vl-binary->atts x)
+                                  (vl-expr->atts x))))))
+
+  (defthm vl-expr-atts-when-vl-qmark
+    (implies (equal (vl-expr-kind x) :vl-qmark)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-qmark)))
+                           (equal (vl-expr->atts x)
+                                  (vl-qmark->atts x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-qmark))))
+                           (equal (vl-qmark->atts x)
+                                  (vl-expr->atts x))))))
+
+  (defthm vl-expr-atts-when-vl-mintypmax
+    (implies (equal (vl-expr-kind x) :vl-mintypmax)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-mintypmax)))
+                           (equal (vl-expr->atts x)
+                                  (vl-mintypmax->atts x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-mintypmax))))
+                           (equal (vl-mintypmax->atts x)
+                                  (vl-expr->atts x))))))
+
+  (defthm vl-expr-atts-when-vl-concat
+    (implies (equal (vl-expr-kind x) :vl-concat)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-concat)))
+                           (equal (vl-expr->atts x)
+                                  (vl-concat->atts x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-concat))))
+                           (equal (vl-concat->atts x)
+                                  (vl-expr->atts x))))))
+
+  (defthm vl-expr-atts-when-vl-multiconcat
+    (implies (equal (vl-expr-kind x) :vl-multiconcat)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-multiconcat)))
+                           (equal (vl-expr->atts x)
+                                  (vl-multiconcat->atts x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-multiconcat))))
+                           (equal (vl-multiconcat->atts x)
+                                  (vl-expr->atts x))))))
+
+  (defthm vl-expr-atts-when-vl-stream
+    (implies (equal (vl-expr-kind x) :vl-stream)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-stream)))
+                           (equal (vl-expr->atts x)
+                                  (vl-stream->atts x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-stream))))
+                           (equal (vl-stream->atts x)
+                                  (vl-expr->atts x))))))
+
+  (defthm vl-expr-atts-when-vl-call
+    (implies (equal (vl-expr-kind x) :vl-call)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-call)))
+                           (equal (vl-expr->atts x)
+                                  (vl-call->atts x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-call))))
+                           (equal (vl-call->atts x)
+                                  (vl-expr->atts x))))))
+
+  (defthm vl-expr-atts-when-vl-cast
+    (implies (equal (vl-expr-kind x) :vl-cast)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-cast)))
+                           (equal (vl-expr->atts x)
+                                  (vl-cast->atts x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-cast))))
+                           (equal (vl-cast->atts x)
+                                  (vl-expr->atts x))))))
+
+  (defthm vl-expr-atts-when-vl-inside
+    (implies (equal (vl-expr-kind x) :vl-inside)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-inside)))
+                           (equal (vl-expr->atts x)
+                                  (vl-inside->atts x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-inside))))
+                           (equal (vl-inside->atts x)
+                                  (vl-expr->atts x))))))
+
+  (defthm vl-expr-atts-when-vl-tagged
+    (implies (equal (vl-expr-kind x) :vl-tagged)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-tagged)))
+                           (equal (vl-expr->atts x)
+                                  (vl-tagged->atts x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-tagged))))
+                           (equal (vl-tagged->atts x)
+                                  (vl-expr->atts x))))))
+
+  (defthm vl-expr-atts-when-vl-pattern
+    (implies (equal (vl-expr-kind x) :vl-pattern)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-pattern)))
+                           (equal (vl-expr->atts x)
+                                  (vl-pattern->atts x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-pattern))))
+                           (equal (vl-pattern->atts x)
+                                  (vl-expr->atts x)))))))
+
+  
+    
     

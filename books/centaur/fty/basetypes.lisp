@@ -233,6 +233,48 @@
       :inline t
       :equal eql))
 
+  (defsection maybe-posp-fix
+    (defthm maybe-posp-when-posp
+      (implies (posp x)
+               (maybe-posp x)))
+
+    (defthmd posp-when-maybe-posp
+      (implies (and (maybe-posp x)
+                    (double-rewrite x))
+               (posp x)))
+
+    (defund-inline maybe-posp-fix (x)
+      (declare (xargs :guard (maybe-posp x)))
+      (mbe :logic (if x (pos-fix x) nil)
+           :exec x))
+
+    (local (in-theory (enable maybe-posp-fix)))
+
+    (defthm maybe-posp-of-maybe-posp-fix
+      (maybe-posp (maybe-posp-fix x))
+      :rule-classes (:rewrite :type-prescription))
+
+    (defthm maybe-posp-fix-when-maybe-posp
+      (implies (maybe-posp x)
+               (equal (maybe-posp-fix x) x)))
+
+    (defthm maybe-posp-fix-under-iff
+      (iff (maybe-posp-fix x) x))
+
+    (defthm maybe-posp-fix-under-pos-equiv
+      (acl2::pos-equiv (maybe-posp-fix x) x)
+      :hints(("Goal" :in-theory (enable maybe-posp-fix))))
+
+    (fty::deffixtype maybe-pos
+      :pred maybe-posp
+      :fix maybe-posp-fix
+      :equiv maybe-pos-equiv
+      :define t
+      :inline t
+      :equal eql))
+
+
+
 
   ;; [Jared] unlocalizing these since this book is now included in std/strings/defs-program
   (defun center-in-n-char-field (str n)
