@@ -721,7 +721,7 @@ correctness criterion we've described.</p>
     (implies (and (sat-lits-wfp sat-lits aignet)
                   (bind-free
                    (match-equiv-or-refinement
-                    'nat-equiv 'id '(lit-id (sat-var->aignet-lit n sat-lits))
+                    'acl2::nat-equiv$inline 'id '(lit-id (sat-var->aignet-lit n sat-lits))
                     mfc state)
                    (n))
                   (nat-equiv id (lit-id (sat-var->aignet-lit n sat-lits)))

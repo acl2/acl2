@@ -25,19 +25,19 @@
 (include-book "common" :ttags :all)
 
 (defmodules *divide-modules*
-  (vl::make-vl-loadconfig
+  (vl2014::make-vl-loadconfig
    :start-files (list "idiv.v")))
 
 (defconst *divide-translation*
-  (vl::vl-design->mods
-   (vl::vl-translation->good *DIVIDE-MODULES*)))
+  (vl2014::vl-design->mods
+   (vl2014::vl-translation->good *DIVIDE-MODULES*)))
 
-; (vl::vl-modulelist-flat-warnings
-;  (vl::vl-translation->failmods *divide-modules*))
+; (vl2014::vl-modulelist-flat-warnings
+;  (vl2014::vl-translation->failmods *divide-modules*))
 
 (defconst *divide-module*
-  (vl::vl-module->esim
-   (vl::vl-find-module "udivider_v5"
+  (vl2014::vl-module->esim
+   (vl2014::vl-find-module "udivider_v5"
                        *divide-translation*)))
 
 (defstv divide-test-vector

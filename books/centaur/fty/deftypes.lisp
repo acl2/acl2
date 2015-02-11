@@ -2072,16 +2072,20 @@
        (stdx (intern-in-package-of-symbol "X" x.pred))
        (stda (intern-in-package-of-symbol "A" x.pred)))
     `((deffixcong ,x.equiv ,x.elt-equiv (car x) x
+        :pkg ,x.equiv
         :hints (("goal" :expand ((,x.fix x))
                  :in-theory (enable acl2::default-car))))
 
       (deffixcong ,x.equiv ,x.equiv (cdr x) x
+        :pkg ,x.equiv
         :hints (("goal" :expand ((,x.fix x)))))
 
       (deffixcong ,x.elt-equiv ,x.equiv (cons x y) x
+        :pkg ,x.equiv
         :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))
 
       (deffixcong ,x.equiv ,x.equiv (cons x y) y
+        :pkg ,x.equiv
         :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))
 
       (defthm ,(intern-in-package-of-symbol (cat "CONSP-OF-" (symbol-name x.fix))
@@ -2131,13 +2135,16 @@
        (stdx (intern-in-package-of-symbol "X" x.pred)))
     `(,@(and x.key-type (eq x.strategy :fix-keys)
              `((deffixcong ,x.key-equiv ,x.equiv (cons (cons k v) x) k
+                 :pkg ,x.equiv
                  :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))))
 
       ,@(and x.val-type
              `((deffixcong ,x.val-equiv ,x.equiv (cons (cons k v) x) v
+                 :pkg ,x.equiv
                  :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))))
 
       (deffixcong ,x.equiv ,x.equiv (cons x y) y
+        :pkg ,x.equiv
         :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))
 
       (defthm ,(intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-ACONS")

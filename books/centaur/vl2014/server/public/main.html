@@ -1,0 +1,108 @@
+<!HTML>
+<html>
+<head>
+<meta charset="UTF-8">
+
+<!--
+; VL 2014 -- VL Verilog Toolkit, 2014 Edition
+; Copyright (C) 2008-2015 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Jared Davis <jared@centtech.com>
+-->
+
+<title>Module Browser</title>
+<!-- TMPL_INCLUDE "header.html" -->
+<link rel="stylesheet" href="toolbar.css"/>
+<script src="toolbar.js"></script>
+<script src="main.js"></script>
+
+<style>
+<!--
+p {
+  margin-left: 1em;
+}
+// -->
+</style>
+
+</head>
+<body>
+
+<div id="toolbar"></div>
+
+<div id="content">
+<h2>Module Browser</h2>
+
+<p><b class="red">NOTE</b> &mdash; extremely unstable at the moment, blame
+Jared...</p>
+
+<h4>Todo list to make this usable</h4>
+
+<ul>
+<li>Individual design element displays</li>
+<li>Translation status page</li>
+</ul>
+
+
+
+<h4>Missing Features from version 2.0</h4>
+
+<ul>
+
+<li>Pictures of the module hierarchy (requires calling out to dot)</li>
+<li>Git blame in the browser (requires calling out to git)</li>
+<li>Links to github, current hash, etc.</li>
+<li>Comment system (silly, scrap it?)</li>
+
+</ul>
+
+<h4>Known Problems and Wishlist</h4>
+
+<ul>
+
+<li>A garbage collection can take the server a full minute, and the user has no
+idea that this is happening. It may look like your browser is waiting for a
+page.</li>
+
+<li>It would be nice to have a hierarchical way of navigating the design, i.e.,
+top-level modules first.</li>
+
+</ul>
+
+
+<h4>Support</h4>
+
+<p>Please contact Jared
+(<a href="mailto:jared@centtech.com">jared@centtech.com</a>, office 3172,
+ext. 5736) with any problems.</p>
+
+</div>
+
+</body>
+</html>
+
+

@@ -31,13 +31,11 @@
 (in-package "VL")
 (include-book "json")
 (include-book "lint")
-(include-book "model")
 (include-book "shell")
 (include-book "pp")
 (include-book "gather")
-(include-book "server")
+;; BOZO temporary (include-book "server")
 (include-book "oslib/argv" :dir :system)
-(include-book "centaur/esim/stv/stv2c/top" :dir :system)
 (include-book "centaur/misc/intern-debugging" :dir :system)
 (include-book "centaur/misc/memory-mgmt" :dir :system)
 (include-book "centaur/misc/tshell" :dir :system)
@@ -67,8 +65,6 @@ Commands:
   help    Print this message, or get help on a particular VL command
   json    Convert Verilog designs into JSON files (for easy parsing)
   lint    Find potential bugs in a Verilog design
-  model   Translate Verilog designs for the ACL2 theorem prover
-  stv2c   Translate symbolic runs of Verilog designs into C++
   pp      Preprocess Verilog designs
   gather  Collect Verilog files into a single file
   server  Start a VL web server (for web-based module browsing)
@@ -110,11 +106,9 @@ commands.</p>
     (list (cons "help"   *vl-generic-help*)
           (cons "json"   *vl-json-help*)
           (cons "lint"   *vl-lint-help*)
-          (cons "model"  *vl-model-help*)
-          (cons "stv2c"  acl2::*stv2c-help*)
           (cons "pp"     *vl-pp-help*)
           (cons "gather" *vl-gather-help*)
-          (cons "server" *vl-server-help*)
+;; BOZO temporary          (cons "server" *vl-server-help*)
           (cons "shell"  *vl-shell-help*)))
 
   (encapsulate
@@ -229,11 +223,6 @@ toolkit with their own commands.</p>
           (exit-ok)
           state))
 
-       ((when (equal cmd "model"))
-        (b* ((state (vl-model args)))
-          (exit-ok)
-          state))
-
        ((when (equal cmd "pp"))
         (b* ((state (vl-pp args)))
           (exit-ok)
@@ -244,15 +233,11 @@ toolkit with their own commands.</p>
           (exit-ok)
           state))
 
-       ((when (equal cmd "stv2c"))
-        (b* ((state (acl2::stv2c args)))
-          (exit-ok)
-          state))
-
-       ((when (equal cmd "server"))
-        (b* ((state (vl-server args)))
-          ;; Do not call exit here, same reason as 'shell'
-          state))
+;; BOZO temporary
+       ;; ((when (equal cmd "server"))
+       ;;  (b* ((state (vl-server args)))
+       ;;    ;; Do not call exit here, same reason as 'shell'
+       ;;    state))
 
        ((when (equal cmd "shell"))
         (b* ((state (vl-shell args)))

@@ -203,7 +203,7 @@
 
   (defthm lookup-id-of-node-count-bind
     (implies (and (bind-free (match-equiv-or-refinement-lst
-                              'nat-equiv 'id
+                              'acl2::nat-equiv$inline 'id
                               '((node-count x)
                                 (+ 1 (node-count (cdr x))))
                               mfc state)
@@ -299,7 +299,7 @@
 
   (defthm lookup-stype-of-stype-count-match
     (implies (and (bind-free (match-equiv-or-refinement
-                              'nat-equiv 'count '(stype-count stype (cdr orig))
+                              'acl2::nat-equiv$inline 'count '(stype-count stype (cdr orig))
                               mfc state)
                              (orig))
                   (nat-equiv count (stype-count stype (cdr orig)))

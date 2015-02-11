@@ -1,0 +1,16 @@
+INCA_libs/
+*.vcd
+*.ok
+impl.*.v
+impl.*.sv
+*.log
+simv
+simv.daidir
+simv.sv
+simv.sv.daidir
+simv.v
+simv.v.daidir
+csrc/
+*.key
+*.sao.ver
+.joblist

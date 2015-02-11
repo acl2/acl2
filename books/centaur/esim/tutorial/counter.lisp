@@ -1,5 +1,5 @@
-; Centaur Hardware Verification Tutorial
-; Copyright (C) 2012 Centaur Technology
+; Centaur Hardware Verification Tutorial for ESIM/VL2014
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -44,6 +44,14 @@
 ; cert_param: (hons-only)
 
 
+; NOTE ---- ESIM is still available but it is no longer being actively
+; maintained.  The successor of ESIM is SVEX.  If you don't already have
+; projects based on ESIM, you should probably skip this tutorial and learn
+; about SVEX instead.
+
+
+
+
 ;; For interactive use, you'll probably want to run (plev)
 #||
 (plev)
@@ -53,24 +61,24 @@
 ; Get counter.v loaded, inspect what we've loaded...
 
 (defmodules *counter-translation*
-  (vl::make-vl-loadconfig
+  (vl2014::make-vl-loadconfig
    :start-files (list "counter.v")))
 
-; (vl::vl-ppcs-modulelist (vl::vl-translation->mods *counter-translation*))
+; (vl2014::vl-ppcs-modulelist (vl2014::vl-translation->mods *counter-translation*))
 
 (defconst *counter-vl*
-  (vl::vl-find-module "counter"
-                      (vl::vl-design->mods
-                       (vl::vl-translation->good *counter-translation*))))
+  (vl2014::vl-find-module "counter"
+                      (vl2014::vl-design->mods
+                       (vl2014::vl-translation->good *counter-translation*))))
 
-; (vl::vl-ppcs-module *counter-vl*)
+; (vl2014::vl-ppcs-module *counter-vl*)
 
 
 
 ; Extract the ESIM module for counter.
 
 (defconst *counter*
-  (vl::vl-module->esim *counter-vl*))
+  (vl2014::vl-module->esim *counter-vl*))
 
 
 (defstv counter-run         ;; name for this test vector

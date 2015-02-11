@@ -1,5 +1,5 @@
-; VCD Generator for ESIM
-; Copyright (C) 2010-2012 Centaur Technology
+; ESIM Symbolic Hardware Simulator
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -30,5 +30,5 @@
 
 #!ACL2
 (in-package "ACL2")
-(ld "centaur/vl/acl2-customization.lsp" :dir :system)
-(in-package "VL")
+(ld "centaur/vl2014/acl2-customization.lsp" :dir :system)
+(in-package "VL2014")

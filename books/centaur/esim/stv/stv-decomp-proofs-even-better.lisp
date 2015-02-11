@@ -1,5 +1,5 @@
 ; ESIM Symbolic Hardware Simulator
-; Copyright (C) 2010-2012 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -65,10 +65,10 @@
 
 (defthmd lookup-each-of-4v-sexpr-eval-alist
   (implies (hons-subset keys (alist-keys sexpr-alist))
-           (equal (vl::look-up-each keys (4v-sexpr-eval-alist sexpr-alist env))
-                  (4v-sexpr-eval-list (vl::look-up-each keys sexpr-alist) env)))
-  :hints(("Goal" :in-theory (e/d (vl::look-up-each-fast
-                                  vl::look-up-each
+           (equal (vl2014::look-up-each keys (4v-sexpr-eval-alist sexpr-alist env))
+                  (4v-sexpr-eval-list (vl2014::look-up-each keys sexpr-alist) env)))
+  :hints(("Goal" :in-theory (e/d (vl2014::look-up-each-fast
+                                  vl2014::look-up-each
                                   4v-sexpr-eval-list)
                                  (4v-sexpr-eval)))))
 
@@ -77,7 +77,7 @@
            (equal (assoc k (stv-assemble-output-alist sexpr-alist out-usersyms))
                   (let ((look (assoc k out-usersyms)))
                     (and look
-                         (cons k (4v-to-nat (vl::look-up-each (cdr look) sexpr-alist)))))))
+                         (cons k (4v-to-nat (vl2014::look-up-each (cdr look) sexpr-alist)))))))
   :hints(("Goal" :in-theory (enable stv-assemble-output-alist
                                     hons-assoc-equal))))
 

@@ -26,26 +26,26 @@
 (include-book "misc/eval" :dir :system)
 
 (defmodules *mods*
-  (vl::make-vl-loadconfig
+  (vl2014::make-vl-loadconfig
    :start-files (list "composed-stv.v")))
 
 (defconst *double-reg*
-  (vl::vl-module->esim
-   (vl::vl-find-module "compose"
-                       (vl::vl-design->mods
-                        (vl::vl-translation->good *mods*)))))
+  (vl2014::vl-module->esim
+   (vl2014::vl-find-module "compose"
+                       (vl2014::vl-design->mods
+                        (vl2014::vl-translation->good *mods*)))))
 
 (defconst *triple-reg*
-  (vl::vl-module->esim
-   (vl::vl-find-module "compose_three"
-                       (vl::vl-design->mods
-                        (vl::vl-translation->good *mods*)))))
+  (vl2014::vl-module->esim
+   (vl2014::vl-find-module "compose_three"
+                       (vl2014::vl-design->mods
+                        (vl2014::vl-translation->good *mods*)))))
 
 (defconst *quadruple-reg*
-  (vl::vl-module->esim
-   (vl::vl-find-module "compose_four"
-                       (vl::vl-design->mods
-                        (vl::vl-translation->good *mods*)))))
+  (vl2014::vl-module->esim
+   (vl2014::vl-find-module "compose_four"
+                       (vl2014::vl-design->mods
+                        (vl2014::vl-translation->good *mods*)))))
 
 (defstv double-reg-full-stv
   :mod *double-reg*
@@ -1132,23 +1132,23 @@ ACL2 !>
          (let ((match (assoc (caar a) b)))
            (if (equal (cdr match)
                       (cdar a))
-               (my-alist-equiv-bad-guy (vl::vl-remove-keys (list (caar a))
+               (my-alist-equiv-bad-guy (vl2014::vl-remove-keys (list (caar a))
                                                            (cdr a))
-                                       (vl::vl-remove-keys (list (caar a))
+                                       (vl2014::vl-remove-keys (list (caar a))
                                                            b))
              (cons (list (car a) match)
                    (my-alist-equiv-bad-guy
 
-                    (vl::vl-remove-keys (list (caar a))
+                    (vl2014::vl-remove-keys (list (caar a))
                                         (cdr a))
-                    (vl::vl-remove-keys (list (caar a))
+                    (vl2014::vl-remove-keys (list (caar a))
                                         b))))))
         (t (cons (car a)
                  (my-alist-equiv-bad-guy
 
-                  (vl::vl-remove-keys (list (caar a))
+                  (vl2014::vl-remove-keys (list (caar a))
                                       (cdr a))
-                  (vl::vl-remove-keys (list (caar a))
+                  (vl2014::vl-remove-keys (list (caar a))
                                       b))))))
 
 ; For example, undo back to

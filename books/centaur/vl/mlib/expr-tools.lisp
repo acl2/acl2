@@ -702,6 +702,7 @@ accumulator-style functions to do the collection.  Under the hood, we also use
                                    (vl-exprlist-names y)))))
 
   (defcong set-equiv set-equiv (vl-exprlist-names x) 1
+    :event-name vl-exprlist-names-preserves-set-equiv
     :hints(("Goal" :in-theory (enable set-equiv))))
 
   (deffixequiv-mutual vl-expr-names))
@@ -838,6 +839,7 @@ accumulator-style functions to do the collection.  Under the hood, we also use
                                    (vl-exprlist-varnames y)))))
 
   (defcong set-equiv set-equiv (vl-exprlist-varnames x) 1
+    :event-name vl-exprlist-varnames-preserves-set-equiv
     :hints(("Goal" :in-theory (enable set-equiv))))
 
   (deffixequiv-mutual vl-expr-varnames))

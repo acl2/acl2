@@ -1,5 +1,5 @@
 ; ESIM Symbolic Hardware Simulator
-; Copyright (C) 2010-2012 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -35,44 +35,44 @@
 (include-book "stv-util")
 (include-book "../esim-vl")
 (include-book "../esim-paths")
-(include-book "centaur/vl/mlib/hid-tools" :dir :system)
-(include-book "centaur/vl/mlib/expr-parse" :dir :system)
-(local (include-book "centaur/vl/util/arithmetic" :dir :system))
+(include-book "centaur/vl2014/mlib/hid-tools" :dir :system)
+(include-book "centaur/vl2014/mlib/expr-parse" :dir :system)
+(local (include-book "centaur/vl2014/util/arithmetic" :dir :system))
 
 
-(define stv-maybe-match-select ((x vl::vl-expr-p))
-  :returns (mv (err? vl::maybe-stringp :rule-classes :type-prescription)
-               (from vl::vl-expr-p :hyp :fguard)
-               (msb? vl::maybe-natp :rule-classes :type-prescription)
-               (lsb? vl::maybe-natp :rule-classes :type-prescription))
+(define stv-maybe-match-select ((x vl2014::vl-expr-p))
+  :returns (mv (err? vl2014::maybe-stringp :rule-classes :type-prescription)
+               (from vl2014::vl-expr-p :hyp :fguard)
+               (msb? vl2014::maybe-natp :rule-classes :type-prescription)
+               (lsb? vl2014::maybe-natp :rule-classes :type-prescription))
   :parents (stv-expand)
   :short "Match an expression with an optional bit- or part-select."
-  (b* (((when (vl::vl-atom-p x))
+  (b* (((when (vl2014::vl-atom-p x))
         (mv nil x nil nil))
-       (op   (vl::vl-nonatom->op x))
-       (args (vl::vl-nonatom->args x))
+       (op   (vl2014::vl-nonatom->op x))
+       (args (vl2014::vl-nonatom->args x))
 
        ((when (eq op :vl-select-colon))
         (b* ((from (first args))
              (msb  (second args))
              (lsb  (third args))
-             ((unless (and (vl::vl-expr-resolved-p msb)
-                           (vl::vl-expr-resolved-p lsb)))
+             ((unless (and (vl2014::vl-expr-resolved-p msb)
+                           (vl2014::vl-expr-resolved-p lsb)))
               (mv (str::cat (symbol-name __function__)
                             ": part select indicies are not resolved: "
-                            (vl::vl-pps-expr x))
+                            (vl2014::vl-pps-expr x))
                   x nil nil)))
-          (mv nil from (vl::vl-resolved->val msb) (vl::vl-resolved->val lsb))))
+          (mv nil from (vl2014::vl-resolved->val msb) (vl2014::vl-resolved->val lsb))))
 
        ((when (eq op :vl-index))
         (b* ((from (first args))
              (bit  (second args))
-             ((unless (vl::vl-expr-resolved-p bit))
+             ((unless (vl2014::vl-expr-resolved-p bit))
               (mv (str::cat (symbol-name __function__)
                             ": bit select index is not resolved: "
-                            (vl::vl-pps-expr x))
+                            (vl2014::vl-pps-expr x))
                   x nil nil))
-             (val (vl::vl-resolved->val bit)))
+             (val (vl2014::vl-resolved->val bit)))
           (mv nil from val val))))
     (mv nil x nil nil)))
 
@@ -89,10 +89,10 @@
 ; :input lines mention inputs, and :output lines mention outputs.
 
 (define stv-wirename-parse ((str stringp))
-  :returns (mv (err?     vl::maybe-stringp :rule-classes :type-prescription)
+  :returns (mv (err?     vl2014::maybe-stringp :rule-classes :type-prescription)
                (basename stringp)
-               (msb?     vl::maybe-natp :rule-classes :type-prescription)
-               (lsb?     vl::maybe-natp :rule-classes :type-prescription))
+               (msb?     vl2014::maybe-natp :rule-classes :type-prescription)
+               (lsb?     vl2014::maybe-natp :rule-classes :type-prescription))
   :parents (stv-expand)
   :short "Match a Verilog-style wire name, bit-select, or part-select."
   :long "<p>Examples:</p>
@@ -107,7 +107,7 @@
 <p>If the wire name isn't of an acceptable form, an error message is returned
 as the first return value.</p>"
 
-  (b* ((expr (vl::vl-parse-expr-from-str str))
+  (b* ((expr (vl2014::vl-parse-expr-from-str str))
        ((unless expr)
         (mv (str::cat (symbol-name __function__)
                       ": failed to parse: " str)
@@ -115,11 +115,11 @@ as the first return value.</p>"
        ((mv err from msb lsb) (stv-maybe-match-select expr))
        ((when err)
         (mv err "" nil nil))
-       ((unless (vl::vl-idexpr-p from))
+       ((unless (vl2014::vl-idexpr-p from))
         (mv (str::cat (symbol-name __function__)
                       ": invalid wire name: " str)
             "" nil nil)))
-    (mv nil (vl::vl-idexpr->name from) msb lsb))
+    (mv nil (vl2014::vl-idexpr->name from) msb lsb))
   ///
   (local
    (progn
@@ -171,7 +171,7 @@ make sure that the name refers to valid input or output bits.</p>"
              ((mv ?err basename msb lsb) (stv-wirename-parse x))
              ((when err)
               (raise "~s0" err))
-             (basename-bits         (vl::esim-vl-find-io basename pat))
+             (basename-bits         (vl2014::esim-vl-find-io basename pat))
              ((unless basename-bits)
               (raise "Trying to expand ~s0, but there is no ~s1 named ~s2 in ~
                       ~x3."
@@ -193,7 +193,7 @@ make sure that the name refers to valid input or output bits.</p>"
               ;; Stupid hack: it would be nicer to write:
               ;; (reverse (vl-emodwires-from-msb-to-lsb basename msb lsb))
               ;; But we just reverse the lsb/msb to avoid the extra consing
-              (vl::vl-emodwires-from-msb-to-lsb basename lsb msb))
+              (vl2014::vl-emodwires-from-msb-to-lsb basename lsb msb))
              ((unless (ordered-subsetp expect-bits basename-bits))
               (raise "Trying to expand ~s0, but the bits being asked for ~s1.~% ~
                       - Found wires: ~x2 through ~x3~% ~
@@ -268,30 +268,63 @@ make sure that the name refers to valid input or output bits.</p>"
 ; E.g., the user might want to pull out or initialize some signal in the
 ; top-level module, or in some submodule.
 
+#!VL2014
+(define vl-explode-hidindex
+  :short "Explode a (resolved) @(see vl-hidindex-p) into a flat list of
+          its components."
+  ((x vl-expr-p "The hidindex to explode, e.g., @('foo[3][4][5]')"))
+  :guard (and (vl-hidindex-p x)
+              (vl-hidindex-resolved-p x))
+  :guard-hints(("Goal" :in-theory (enable vl-hidindex-resolved-p)))
+  :returns (pieces true-listp :rule-classes :type-prescription
+                   "A flat, mixed list of strings and numbers, e.g.,
+                   @('(\"foo\" 3 4 5)').")
+  :measure (vl-expr-count x)
+  (b* ((name    (vl-hidindex->name x))
+       (indices (vl-hidindex->indices x)))
+    (cons name (vl-exprlist-resolved->vals indices))))
+
+#!VL2014
+(define vl-explode-hid
+  :short "Explode a (resolved) @(see vl-hidexpr-p) into a flat list of its
+          components."
+  ((x vl-expr-p "The hidexpr to explode, e.g., foo.bar[2][3].baz."))
+  :guard (and (vl-hidexpr-p x)
+              (vl-hidexpr-resolved-p x))
+  :returns
+  (pieces true-listp :rule-classes :type-prescription
+          "A flat, mixed list of strings and numbers, e.g.,
+           @('(\"foo\" \"bar\" 2 3 \"baz\")').")
+  :measure (vl-expr-count x)
+  (if (vl-hidexpr->endp x)
+      (list (vl-hidname->name x))
+    (append (vl-explode-hidindex (vl-hidexpr->first x))
+            (vl-explode-hid (vl-hidexpr->rest x)))))
+
 (define stv-hid-split
   :parents (stv-expand)
   :short "Splits up a HID into a list of instance names and a wire name."
 
-  ((hid (and (vl::vl-expr-p hid)
-             (vl::vl-hidexpr-p hid))))
+  ((hid (and (vl2014::vl-expr-p hid)
+             (vl2014::vl-hidexpr-p hid))))
 
   :returns (mv (instnames true-listp :rule-classes :type-prescription)
                (wirename stringp :rule-classes :type-prescription))
 
-  (b* (((unless (vl::vl-hidexpr-resolved-p hid))
-        (raise "HID has unresolved indices: ~s0~%" (vl::vl-pps-expr hid))
+  (b* (((unless (vl2014::vl-hidexpr-resolved-p hid))
+        (raise "HID has unresolved indices: ~s0~%" (vl2014::vl-pps-expr hid))
         (mv nil ""))
-       (parts (vl::vl-explode-hid hid))
+       (parts (vl2014::vl-explode-hid hid))
        ((unless (string-listp parts))
         ;; Parts is like ("foo" "bar" 3 "baz") for foo.bar[3].baz, too hard
         (raise "We don't currently support hierarchical identifiers that go ~
                 through array instances, like foo.bar[3].baz.  The HID that ~
-                triggered this error was: ~s0~%" (vl::vl-pps-expr hid))
+                triggered this error was: ~s0~%" (vl2014::vl-pps-expr hid))
         (mv nil ""))
        ((when (< (len parts) 2))
         ;; I don't really see how this could happen.  Maybe it can't happen.
         (raise "Somehow the HID has only one piece?  ~s0~%"
-               (vl::vl-pps-expr hid))
+               (vl2014::vl-pps-expr hid))
         (mv nil ""))
        (instnames (butlast parts 1))
        (wirename  (car (last parts))))
@@ -331,7 +364,7 @@ error.</p>"
       (msb-idx   (or (not msb-idx) (natp msb-idx)) :rule-classes :type-prescription)
       (lsb-idx   (or (not lsb-idx) (natp lsb-idx)) :rule-classes :type-prescription))
 
-  (b* ((expr (vl::vl-parse-expr-from-str str))
+  (b* ((expr (vl2014::vl-parse-expr-from-str str))
        ((unless expr)
         (raise "Failed to parse: ~s0" str)
         (mv nil "" nil nil))
@@ -340,12 +373,12 @@ error.</p>"
         (raise "~s0" err)
         (mv nil "" nil nil))
 
-       ((when (vl::vl-idexpr-p from))
+       ((when (vl2014::vl-idexpr-p from))
         ;; This is legitimate for top-level internal wires like foo[3]; There
         ;; just aren't any instnames to follow.
-        (mv nil (vl::vl-idexpr->name from) msb lsb))
+        (mv nil (vl2014::vl-idexpr->name from) msb lsb))
 
-       ((unless (vl::vl-hidexpr-p from))
+       ((unless (vl2014::vl-hidexpr-p from))
         (raise "Invalid STV wire name: ~s0" str)
         (mv nil "" nil nil))
 
@@ -446,7 +479,7 @@ paths."
 
        ;; 2. Look up this E names for this wire in the wire alist.  Note that
        ;; the WALIST has the bits in MSB-First order!
-       (walist (vl::esim-vl-wirealist submod))
+       (walist (vl2014::esim-vl-wirealist submod))
        (lookup (hons-assoc-equal wirename walist))
        ((unless lookup)
         (raise "Can't follow ~s0: followed the instances ~x1 to an ~x2 ~
@@ -467,7 +500,7 @@ paths."
         ;; Stupid hack: it would be nicer to write:
         ;; (reverse (vl-emodwires-from-msb-to-lsb basename msb lsb))
         ;; But we just reverse the lsb/msb to avoid the extra consing
-        (vl::vl-emodwires-from-msb-to-lsb wirename lsb msb))
+        (vl2014::vl-emodwires-from-msb-to-lsb wirename lsb msb))
 
        ;; Make sure that the bits exist and are properly ordered for this wire
        ((unless (ordered-subsetp expect-bits lsb-first-wires))

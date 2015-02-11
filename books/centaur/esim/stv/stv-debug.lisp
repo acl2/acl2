@@ -1,5 +1,5 @@
 ; ESIM Symbolic Hardware Simulator
-; Copyright (C) 2010-2012 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -37,7 +37,7 @@
 (include-book "oslib/date" :dir :system)
 (include-book "centaur/misc/tshell" :dir :system)
 (include-book "../esim-vcd")
-(local (include-book "centaur/vl/util/arithmetic" :dir :system))
+(local (include-book "centaur/vl2014/util/arithmetic" :dir :system))
 (local (include-book "system/f-put-global" :dir :system))
 
 (local (defthm len-of-4v-sexpr-restrict-with-rw-alists
@@ -219,11 +219,11 @@ especially the first time before things are memoized.</p>"
 
         ;; Actual VCD generation
         ((mv date state) (oslib::date))
-        (dump (vl::vcd-dump-main mod evaled-snapshots date))
+        (dump (vl2014::vcd-dump-main mod evaled-snapshots date))
 
         ((mv & & state) (assign acl2::writes-okp t))
-        (state (time$ (vl::with-ps-file filename
-                                        (vl::vl-ps-update-rchars dump))
+        (state (time$ (vl2014::with-ps-file filename
+                                        (vl2014::vl-ps-update-rchars dump))
                       :mintime 1/2
                       :msg "; vcd-dump file generation: ~st seconds, ~sa bytes.~%"))
 

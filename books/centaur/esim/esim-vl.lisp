@@ -1,5 +1,5 @@
 ; ESIM Symbolic Hardware Simulator
-; Copyright (C) 2010-2012 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -30,7 +30,7 @@
 ; esim-vl.lisp -- integration of VL and ESIM
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "VL")
+(in-package "VL2014")
 (include-book "esim-sexpr-support")
 (include-book "vltoe/wirealist")
 (local (include-book "std/lists/all-equalp" :dir :system))

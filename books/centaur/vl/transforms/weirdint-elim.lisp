@@ -29,7 +29,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "occform/util")
+(include-book "../primitives")
+(include-book "../mlib/modgen")
+(include-book "../mlib/namefactory")
 (include-book "../mlib/allexprs")
 (include-book "../mlib/stmt-tools")
 (local (include-book "../util/arithmetic"))

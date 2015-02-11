@@ -1391,18 +1391,27 @@ manual:
 # VL Toolkit
 
 centaur/vl/bin/vl: centaur/vl/kit/top.cert
-	@echo "Making VL Verilog Toolkit executable"
-	@cd centaur/vl/kit; \
-         ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < save.lsp &> save.out"
+	@echo "Making VL Verilog Toolkit"
+	@cd centaur/vl/kit; ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < save.lsp &> save.out"
 	@ls -la centaur/vl/bin/vl
 
-.PHONY: vl
+centaur/vl2014/bin/vl2014: centaur/vl2014/kit/top.cert
+	@echo "Making VL Verilog Toolkit, 2014 Edition"
+	@cd centaur/vl2014/kit; ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < save.lsp &> save.out"
+	@ls -la centaur/vl2014/bin/vl2014
+
+
+.PHONY: vl vl2014
 vl: centaur/vl/bin/vl
+vl2014: centaur/vl2014/bin/vl2014
+
 
 .PHONY: clean_vl
 clean_vl:
 	@echo "Cleaning centaur/vl/bin directory"
 	@rm -f centaur/vl/bin/*
+	@echo "Cleaning centaur/vl2014/bin directory"
+	@rm -f centaur/vl2014/bin/*
 
 clean: clean_vl
 

@@ -40,7 +40,7 @@
                            default-cdr
                            acl2::subsetp-member
                            acl2::str-fix-default
-                           acl2::stringp-when-maybe-stringp
+                           stringp-when-maybe-stringp
                            (:t member-equal)
                            member-equal
                            default-car
@@ -166,6 +166,7 @@ instances.</p>"
            (vl-modinstlist->instnames x)))
 
   (defcong list-equiv equal (vl-modinstlist->instnames x) 1
+    :event-name vl-modinstlist->instnames-preserves-list-equiv
     :hints(("Goal"
             :in-theory (e/d (list-equiv)
                             (vl-modinstlist->instnames-of-list-fix))
@@ -233,6 +234,7 @@ the number of gate instances in the list.</p>"
            (vl-gateinstlist->names x)))
 
   (defcong list-equiv equal (vl-gateinstlist->names x) 1
+    :event-name vl-gateinstlist->names-preserves-list-equiv
     :hints(("Goal"
             :in-theory (e/d (list-equiv)
                             (vl-gateinstlist->names-of-list-fix))
@@ -306,6 +308,7 @@ may be shorter than the number of elements in the list.</p>"
            (vl-genelementlist->blocknames x)))
 
   (defcong list-equiv equal (vl-genelementlist->blocknames x) 1
+    :event-name vl-genelementlist->blocknames-preserves-list-equiv
     :hints(("Goal"
             :in-theory (e/d (list-equiv)
                             (vl-genelementlist->blocknames-of-list-fix))

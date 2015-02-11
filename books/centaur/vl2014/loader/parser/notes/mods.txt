@@ -1,0 +1,351 @@
+
+PORTS -----------------------------------------
+
+   Verilog-2005:        port_declaration ::= {attribute_instance} inout_declaration
+                                           | {attribute_instance} input_declaration
+                                           | {attribute_instance} output_declaration
+
+  SystemVerilog-2012:
+
+                        port_declaration ::= {attribute_instance} inout_declaration
+                                           | {attribute_instance} input_declaration
+                                           | {attribute_instance} output_declaration
+                                           | {attribute_instance} ref_declaration             // NEW
+                                           | {attribute_instance} interface_port_declaration  // NEW
+
+Let's not bother with ref/interface ports yet.
+
+  SystemVerilog-2012: ref_declaration ::= 'ref' variable_port_type list_of_variable_identifiers
+
+  SystemVerilog-2012: interface_port_declaration ::= interface_identifier list_of_interface_identifiers
+                                                   | interface_identifier '.' modport_identifier list_of_interface_identifiers
+
+
+
+ ------ LIST_OF_PORT_IDENTIFIERS  --------
+
+There is a difference here:
+
+  Verilog-2005:       list_of_port_identifiers ::= identifier { , identifier }
+  SystemVerilog-2012: list_of_port_identifiers ::= identifier { unpacked_dimension } { , identifier { unpacked_dimension } }
+
+However, I don't understand what these dimensions would mean and I don't see
+anything like:
+
+   inout [3:0] foo [6:0][7:0];
+
+In the spec.  So, I think it seems pretty safe not to try to support this.
+
+
+ -------- INOUT PORTS -------------------
+
+  Verilog-2005:       inout_declaration ::= 'inout' [ net_type ] [ 'signed' ] [ range ] list_of_port_identifiers
+  SystemVerilog-2012: inout_declaration ::= 'inout' net_port_type                       list_of_port_identifiers
+
+Meanwhile we have:
+
+   net_port_type ::= [ net_type ] data_type_or_implicit
+                   | identifier                                // a net type identifier, for user-defined net types
+                   | 'interconnect' implicit_data_type
+
+
+   Verilog-2005:       net_type ::= supply0 | supply1 | tri | triand | trior |          tri0 | tri1 | uwire | wire | wand | wor
+   SystemVerilog-2012: net_type ::= supply0 | supply1 | tri | triand | trior | trireg | tri0 | tri1 | uwire | wire | wand | wor
+
+
+
+
+Minor change: net_type can now include trireg.
+
+
+
+
+
+
+
+
+   SystemVerilog-2012: list_of_variable_identifiers ::= identifier { variable_dimension }
+                                                         { , identifier { variable_dimension } }
+
+   SystemVerilog-2012: list_of_variable_port_identifiers ::= identifier { variable_dimension } [ = expression ]
+                                                              { , identifier { variable_dimension } [ = expression ] }
+
+
+
+
+
+
+                      variable_port_type ::= var_data_type
+
+                      var_data_type ::= data_type | var data_type_or_implicit
+
+  SystemVerilog-2012: input_declaration ::= 'input' net_port_type list_of_port_identifiers
+                                          | 'input' variable_port_type list_of_variable_identifiers
+
+  SystemVerilog-2012: output_declaration ::= 'output' net_port_type list_of_port_identifiers
+                                           | 'output' variable_port_type list_of_variable_port_identifiers
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   Verilog-2005:        list_of_port_declarations ::= '(' port_declaration { ',' port_declaration } ')'
+                                                    | '(' ')'
+
+   SystemVerilog-2012:  list_of_port_declarations ::=
+		          '(' [ { attribute_instance} ansi_port_declaration { ',' { attribute_instance} ansi_port_declaration } ] ')'
+
+
+     ansi_port_declaration ::=
+          [ net_port_header | interface_port_header ] port_identifier { unpacked_dimension } [ '=' constant_expression ]
+        | [ variable_port_header ] port_identifier { variable_dimension } [ '=' constant_expression ]
+        | [ port_direction ] '.' port_identifier '(' [ expression ] ')'
+
+
+
+   port_direction ::= 'input' | 'output' | 'inout' | 'ref'
+
+   net_type ::= 'supply0' | 'supply1' | 'tri' | 'triand' | 'trior' | 'trireg'
+              | 'tri0' | 'tri1' | 'uwire' | 'wire' | 'wand' | 'wor'
+
+   net_port_header ::= [ port_direction ] net_port_type
+
+   interface_port_header ::= identifier [ '.' identifier ]
+                           | 'interface' [ '.' identifier ]
+
+   variable_port_header ::= [ port_direction ] variable_port_type
+
+
+
+
+
+------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+Module Syntax
+
+--- Common Elements ---
+
+   Verilog-2005:       module_keyword ::= 'module' | 'macromodule'
+   SystemVerilog-2012: module_keyword ::= 'module' | 'macromodule'
+
+   Verilog-2005:       list_of_ports ::= '(' port { ',' port } ')'
+   SystemVerilog-2012: list_of_ports ::= '(' port { ',' port } ')'
+
+   Verilog-2005:       module_item ::= port_declaration ';' | non_port_module_item
+   SystemVerilog-2012: module_item ::= port_declaration ';' | non_port_module_item
+
+
+--- Parameter assignments have minor extensions, mostly just ranges ---
+
+   Verilog-2005:       list_of_param_assignments ::= param_assignment { ',' param_assignment }
+   SystemVerilog-2012: list_of_param_assignments ::= param_assignment { ',' param_assignment }
+
+   Verilog-2005:        param_assignment ::= identifier '=' constant_mintypmax_expression
+   SystemVerilog-2012:  param_assignment ::= identifier { unpacked_dimension } [ '=' constant_param_expression ]  (NOTE 18)
+
+        ((18: It shall be legal to omit the constant_param_expression from a
+              param_assignment or the data_type from a type_assignment only
+              within a parameter_port_list. However, it shall not be legal to
+              omit them from localparam declarations in a parameter_port_list.))
+
+
+--- Parameter declarations have minor extensions that are basically local ---
+
+   Verilog-2005:        parameter_declaration ::= 'parameter' [ 'signed' ] [ range ] list_of_param_assignments
+                                                | 'parameter' parameter_type list_of_param_assignments
+   SystemVerilog-2012:  parameter_declaration ::= 'parameter' data_type_or_implicit list_of_param_assignments
+                                                | 'parameter' 'type' list_of_type_assignments
+
+   Verilog-2005:        local_parameter_declaration ::= 'localparam' [ 'signed' ] [ range ] list_of_param_assignments
+                                                      | 'localparam' parameter_type list_of_param_assignments
+   SystemVerilog-2012:  local_parameter_declaration ::= 'localparam' data_type_or_implicit list_of_param_assignments
+                                                      | 'localparam' 'type' list_of_type_assignments
+
+   data_type_or_implicit ::= data_type
+                           | implicit_data_type
+
+   implicit_data_type ::= [ signing ] { packed_dimension }
+
+   list_of_type_assignments ::= type_assignment { ',' type_assignment }
+
+   type_assignment ::= identifier [ '=' data_type ]   (NOTE 18)
+
+       ((18: It shall be legal to omit the constant_param_expression from a
+             param_assignment or the data_type from a type_assignment only
+             within a parameter_port_list. However, it shall not be legal to
+             omit them from localparam declarations in a parameter_port_list.))
+
+
+
+--- Parameter Port Lists are significantly extended ---
+
+Verilog-2005:
+
+   module_parameter_port_list ::= '#' '(' parameter_declaration { ',' parameter_declaration } ')'
+
+
+SystemVerilog-2012:
+
+   parameter_port_list ::= '#' '(' list_of_param_assignments { ',' parameter_port_declaration } ')'
+   		         | '#' '(' parameter_port_declaration { ',' parameter_port_declaration } ')'
+                         | '#' '(' ')'
+
+   parameter_port_declaration ::= parameter_declaration
+                                | local_parameter_declaration
+                                | data_type list_of_param_assignments
+                                | type list_of_type_assignments
+
+
+
+--- Non-Ansi Version ---
+
+Verilog-2005:        module_declaration ::= {attribute_instance} module_keyword identifier
+                                                [module_parameter_port_list]
+                     			        list_of_ports ';'
+                                                {module_item}
+                                            'endmodule'
+
+
+SystemVerilog-2012:  module_nonansi_header ::= { attribute_instance } module_keyword [lifetime] identifier        // Lifetime is new
+                                                    { package_import_declaration }                                // Imports are new
+                                                    [parameter_port_list]                                         // Parameter port list is expanded
+						    list_of_ports ';'                                             // Same as before
+
+                     module_declaration    ::= module_nonansi_header
+		                                 [ timeunits_declaration ]                                        // Timeunits are new
+						 { module_item }                                                  // Same as before 
+					       'endmodule' [ ':' identifier ]                                     // Ending ":foo" is new
+
+
+
+--- ANSI Version ---
+
+Verilog-2005:        module_declaration ::= {attribute_instance} module_keyword identifier
+                                                [module_parameter_port_list]
+                                                [list_of_port_declarations] ';'
+                                                {non_port_module_item}
+                                            'endmodule'
+
+
+SystemVerilog-2012:  module_ansi_header ::= { attribute_instance } module_keyword [lifetime] identifier           // Lifetime is new
+                                                { package_import_declaration }                                    // Imports are new
+					        [parameter_port_list]                     // NOTE 1               // Parameter list is expanded
+					        [list_of_port_declarations] ';'           // NOTE 1               // Port declarations are expanded
+
+                     module_declaration ::= module_ansi_header
+ 		                               [ timeunits_declaration ]                                          // Timeunits are new
+ 					       { non_port_module_item }                                           // Same as before
+					    'endmodule' [ ':' identifier ]                                        // Ending ": foo" is new
+
+     ((1: The package import declarations shall be followed by at least a
+          parameter_port_list or a list_of_port_declarations or both. ))
+
+
+
+--- Completely New SystemVerilog versions ---
+
+  It seems pretty safe to not support these yet.
+
+  The "module foo (.*);" version seems to only make sense if there's an earlier "extern" module
+  declaration, e.g.,:
+
+     module_declaration ::=  { attribute_instance } module_keyword [ lifetime ] identifier '(' '.*' ')' ';'
+                                [ timeunits_declaration ] { module_item } 'endmodule' [ ':' identifier ]
+
+  Meanwhile for the extern declarations we have:
+
+   module_declaration ::= 'extern' module_nonansi_header
+                        | 'extern' module_ansi_header
+
+  But probably we should not implement any of this until we need it.
+
+
+
+
+
+
+
+
+
+
+---- Parameter value assignments are new ----------
+
+
+Verilog-2005:
+
+  module_instantiation ::= identifier [parameter_value_assignment] module_instance { ',' module_instance }
+
+  parameter_value_assignment ::= '#' '(' list_of_parameter_assignments ')'
+
+  list_of_parameter_assignments ::= ordered_parameter_assignment { ',' ordered_parameter_assignment }
+			          | named_parameter_assignment   { ',' named_parameter_assignment }
+
+  ordered_parameter_assignment ::= expression
+  named_parameter_assignment   ::= '.' identifier ( [ mintypmax_expression ] )
+
+SystemVerilog-2012:
+
+  module_instantiation ::= identifier [parameter_value_assignment] hierarchical_instance { ',' hierarchical_instance }
+
+  parameter_value_assignment ::= '#' '(' [ list_of_parameter_assignments ] ')'
+
+  list_of_parameter_assignments ::= ordered_parameter_assignment { ',' ordered_parameter_assignment }
+                                  | named_parameter_assignment { ',' named_parameter_assignment }
+
+  ordered_parameter_assignment ::= param_expression
+  named_parameter_assignment   ::= '.' identifier ( [ param_expression ] )
+
+  param_expression ::= mintypmax_expression | data_type | $
+
+
+So the main difference is that we can have data types and $ in the arguments?
+
+
+
+
+
+
+
+
+
+------------------------------------------------------------------------------------
+
+
+Instances
+
+SystemVerilog-2012:
+
+   hierarchical_instance ::= name_of_instance '(' [ list_of_port_connections ] ')'
+
+   name_of_instance ::= instance_identifier { unpacked_dimension }
+
+   list_of_port_connections ::=                                               ;; NOTE 29
+       ordered_port_connection { ',' ordered_port_connection }
+     | named_port_connection   { ',' named_port_connection }
+
+      ((29: The .* token shall appear at most once in a list of port connections))
+
+   ordered_port_connection ::= { attribute_instance } [ expression ]
+
+   named_port_connection ::=
+       { attribute_instance } '.' identifier [ '(' [ expression ] ')' ]
+     | { attribute_instance } '.*'

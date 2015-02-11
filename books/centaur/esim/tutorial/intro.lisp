@@ -1,5 +1,5 @@
 ; ESIM Hardware Verification Tutorial
-; Copyright (C) 2012 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,6 +29,13 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
+
+
+; NOTE ---- ESIM is still available but it is no longer being actively
+; maintained.  The successor of ESIM is SVEX.  If you don't already have
+; projects based on ESIM, you should probably skip this tutorial and learn
+; about SVEX instead.
+
 
 
 ;                  ESIM Hardware Verification Tutorial

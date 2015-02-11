@@ -338,7 +338,7 @@ produce unsigned values.</li>
            (ctx      (vl-context-fix ctx))
 
            ((when (vl-fast-atom-p x))  (vl-atom-typedecide x ss ctx warnings))
-           ((when (vl-index-expr-p x)) (vl-index-typedecide x ss ctx warnings))
+           ((when (vl-indexexpr-p x))  (vl-index-typedecide x ss ctx warnings))
 
            (op        (vl-nonatom->op x))
            (args      (vl-nonatom->args x))

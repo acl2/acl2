@@ -82,10 +82,16 @@
 
   (fty::defbasetype number-equiv acl2-numberp :fix fix)
 
-  (fty::deffixtype true-list :pred true-listp :fix list-fix :equiv list-equiv)
+  (fty::deffixtype true-list
+    :pred true-listp
+    :fix list-fix
+    :equiv list-equiv)
 
   (local (in-theory (enable streqv)))
-  (fty::deffixtype string :pred stringp :fix str-fix :equiv streqv)
+  (fty::deffixtype string
+    :pred stringp
+    :fix str-fix
+    :equiv streqv)
 
   (defun true-p (x)
     (declare (xargs :guard t))
@@ -150,14 +156,20 @@
 
     (fty::defbasetype pos-equiv posp :fix pos-fix))
 
-  (fty::deffixtype character :pred characterp :fix char-fix :equiv chareqv)
+  (fty::deffixtype character
+    :pred characterp
+    :fix char-fix
+    :equiv chareqv)
 
   (defun any-p (x)
     (declare (xargs :guard t)
              (ignore x))
     t)
 
-  (fty::deffixtype any :pred any-p :fix  identity :equiv equal)
+  (fty::deffixtype any
+    :pred any-p
+    :fix  identity
+    :equiv equal)
 
   (defsection bool-equiv-is-just-iff
     (defund bool-fix (x)
@@ -174,7 +186,10 @@
       (implies (booleanp x)
                (equal (bool-fix x) x)))
 
-    (fty::deffixtype bool :pred booleanp :fix bool-fix :equiv iff)
+    (fty::deffixtype bool
+      :pred booleanp
+      :fix bool-fix
+      :equiv iff)
 
     (defcong iff equal (bool-fix x) 1))
 
@@ -210,8 +225,13 @@
       (acl2::nat-equiv (maybe-natp-fix x) x)
       :hints(("Goal" :in-theory (enable maybe-natp-fix))))
 
-    (fty::deffixtype maybe-nat :pred maybe-natp :fix maybe-natp-fix :equiv maybe-nat-equiv
-      :define t))
+    (fty::deffixtype maybe-nat
+      :pred maybe-natp
+      :fix maybe-natp-fix
+      :equiv maybe-nat-equiv
+      :define t
+      :inline t
+      :equal eql))
 
 
   ;; [Jared] unlocalizing these since this book is now included in std/strings/defs-program

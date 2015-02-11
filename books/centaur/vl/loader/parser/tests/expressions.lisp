@@ -815,12 +815,33 @@
                    :expect '(:vl-scope nil (hid "foo")
                              (:vl-scope nil (hid "bar") (hid "baz"))))
 
-
     (make-exprtest :input "$unit::bar"
                    :expect '(:vl-scope nil (key :vl-$unit) (hid "bar")))
 
     (make-exprtest :input "local::bar"
                    :expect '(:vl-scope nil (key :vl-local) (hid "bar")))
+
+    (make-exprtest :input "foo::bar.baz"
+                   :expect '(:vl-scope nil (hid "foo")
+                             (:vl-hid-dot nil (hid "bar") (hid "baz"))))
+
+    (make-exprtest :input "foo::bar.baz[2].beep"
+                   :expect '(:vl-scope nil (hid "foo")
+                             (:vl-hid-dot nil (hid "bar")
+                              (:vl-hid-dot nil (:vl-index nil (hid "baz") 2)
+                                               (hid "beep")))))
+
+    (make-exprtest :input "foo::bar.baz[2]"
+                   :expect '(:vl-index nil
+                             (:vl-scope nil (hid "foo")
+                              (:vl-hid-dot nil (hid "bar") (hid "baz")))
+                             2))
+
+    (make-exprtest :input "foo::bar.baz[4:3]"
+                   :expect '(:vl-select-colon nil
+                             (:vl-scope nil (hid "foo")
+                              (:vl-hid-dot nil (hid "bar") (hid "baz")))
+                             4 3))
 
 
     ;; SystemVerilog versions -- these should fail to parse the assignment

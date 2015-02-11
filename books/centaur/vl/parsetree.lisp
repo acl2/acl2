@@ -114,7 +114,8 @@ regular view of the source code.</p>")
   ;; BOZO misplaced, also has documentation issues
   :parents nil
   :fix maybe-string-fix
-  :equiv maybe-string-equiv)
+  :equiv maybe-string-equiv
+  :pkg vl::foo)
 
 (defprod vl-range
   :short "Representation of ranges on wire declarations, instance array

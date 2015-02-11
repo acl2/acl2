@@ -1,5 +1,5 @@
-; Centaur Hardware Verification Tutorial
-; Copyright (C) 2012 Centaur Technology
+; Centaur Hardware Verification Tutorial for ESIM/VL2014
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -192,16 +192,16 @@
 ; Basic stuff copied from alu16.lsp to get the Verilog module loaded:
 
 (defmodules *translation*
-  (vl::make-vl-loadconfig
+  (vl2014::make-vl-loadconfig
    :start-files (list "alu16.v")))
 
 (defconst *alu16-vl*
-  (vl::vl-find-module "alu16"
-                      (vl::vl-design->mods
-                       (vl::vl-translation->good *translation*))))
+  (vl2014::vl-find-module "alu16"
+                      (vl2014::vl-design->mods
+                       (vl2014::vl-translation->good *translation*))))
 
 (defconst *alu16*
-  (vl::vl-module->esim *alu16-vl*))
+  (vl2014::vl-module->esim *alu16-vl*))
 
 (defstv test-vector         ;; name for this test vector
   :mod *alu16*              ;; the module this vector pertains to

@@ -221,9 +221,10 @@ number."
 
 (encapsulate
   ()
-  (local (in-theory (disable (:type-prescription true-fix)
-                             (:type-prescription true-equiv)
-                             (true-fix) true-fix)))
+  (local (in-theory (disable (:t true-fix)
+                             (:t true-equiv)
+                             (true-fix)
+                             true-fix)))
 
   (fty::defalist vl-namedb-nameset
     :key-type stringp
@@ -360,6 +361,7 @@ number."
     :hints(("Goal" :induct (len x))))
 
   (defcong set-equiv equal (vl-prefix-map-correct-p-aux x pmap names) 1
+    :event-name vl-prefix-map-correct-p-aux-preserves-set-equiv-x
     :hints(("goal"
             :in-theory (enable set-equiv)
             :cases ((vl-prefix-map-correct-p-aux x pmap names)))))
@@ -703,6 +705,7 @@ matches a current prefix.</p>"
             :hints(("Goal" :induct (len x)))))
 
    (defcong set-equiv equal (vl-unlike-any-prefix-p name prefixes) 2
+     :event-name vl-unlike-any-prefix-p-preserves-set-equiv-prefixes
      :hints(("Goal"
              :in-theory (e/d (set-equiv)
                              (vl-unlike-any-prefix-p))
@@ -812,7 +815,7 @@ matches a current prefix.</p>"
         (equal (vl-namedb-allnames new-db)
                (cons fresh-name
                      (vl-namedb-allnames db))))
-      :hints(("Goal" :in-theory (disable ACL2::CONS-OF-STR-FIX-K-UNDER-VL-NAMEDB-NAMESET-EQUIV))))
+      :hints(("Goal" :in-theory (disable CONS-OF-STR-FIX-K-UNDER-VL-NAMEDB-NAMESET-EQUIV))))
 
     (defthm vl-namedb->names-of-vl-namedb-plain-name
       (vl-namedb->names (mv-nth 1 (vl-namedb-plain-name name db)))))

@@ -3665,7 +3665,7 @@
   (defthm lookup-marked-reg-of-marked-reg-count
     (implies (and (bind-free
                    (match-equiv-or-refinement
-                    'nat-equiv 'm '(marked-reg-count n mark aignet)
+                    'acl2::nat-equiv$inline 'm '(marked-reg-count n mark aignet)
                     mfc state))
                   (nat-equiv m (marked-reg-count n mark aignet))
                   (<= (nfix n) (num-regs aignet))

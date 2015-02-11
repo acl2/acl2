@@ -33,9 +33,9 @@
 (in-package "ACL2")
 (include-book "sexpr-fixpoint")
 (include-book "centaur/esim/vltoe/emodwire" :dir :system)
-(include-book "centaur/vl/util/cw-unformatted" :dir :system)
-(local (include-book "centaur/vl/util/arithmetic" :dir :system))
-(local (include-book "centaur/vl/util/osets" :dir :system))
+(include-book "centaur/vl2014/util/cw-unformatted" :dir :system)
+(local (include-book "centaur/vl2014/util/arithmetic" :dir :system))
+(local (include-book "centaur/vl2014/util/osets" :dir :system))
 
 
 ; This file is a plug-in debugging mechanism for loops in the sexpr-fixpoint
@@ -196,8 +196,8 @@
 
 (defund verilog-loop-from-translated-loop (x)
   (declare (xargs :guard t))
-  (if (vl::vl-emodwirelist-p x)
-      (set::mergesort (vl::vl-emodwirelist->basenames x))
+  (if (vl2014::vl-emodwirelist-p x)
+      (set::mergesort (vl2014::vl-emodwirelist->basenames x))
     (cw "Oops, loop contains mal-formed signals, not trying to convert
          it into Verilog.  ~x0.~%" x)))
 
@@ -213,7 +213,7 @@
           (verilog-loops-from-translated-loops-aux (cdr x)))))
 
 (defthm string-list-listp-of-verilog-loops-from-translated-loops-aux
-  (vl::string-list-listp (verilog-loops-from-translated-loops-aux x))
+  (vl2014::string-list-listp (verilog-loops-from-translated-loops-aux x))
   :hints(("Goal" :in-theory (enable verilog-loops-from-translated-loops-aux))))
 
 (defun verilog-loops-from-translated-loops (x)
@@ -221,18 +221,18 @@
   (set::mergesort (remove-equal nil (verilog-loops-from-translated-loops-aux x))))
 
 (defthm string-list-listp-of-verilog-loops-from-translated-loops
-  (vl::string-list-listp (verilog-loops-from-translated-loops x))
+  (vl2014::string-list-listp (verilog-loops-from-translated-loops x))
   :hints(("Goal" :in-theory (enable verilog-loops-from-translated-loops))))
 
 (defund comma-strings-from-verilog-loops (x)
-  (declare (xargs :guard (vl::string-list-listp x)))
+  (declare (xargs :guard (vl2014::string-list-listp x)))
   (if (atom x)
       nil
     (cons (str::strjoin "," (car x))
           (comma-strings-from-verilog-loops (cdr x)))))
 
 (defthm string-listp-of-comma-strings-from-verilog-loops
-  (implies (vl::string-list-listp x)
+  (implies (vl2014::string-list-listp x)
            (string-listp (comma-strings-from-verilog-loops x)))
   :hints(("Goal" :in-theory (enable comma-strings-from-verilog-loops))))
 
@@ -243,7 +243,7 @@
       nil
     (progn$
      (cw "Loop ~x0: " n)
-     (vl::cw-unformatted (car comma-strs)) ;; so it all prints on one line
+     (vl2014::cw-unformatted (car comma-strs)) ;; so it all prints on one line
      (cw "~%")
      (verilog-summarize-translated-loops-aux (+ 1 n) (cdr comma-strs)))))
 
@@ -251,7 +251,7 @@
   (declare (xargs :guard t))
   (b* ((loops (verilog-loops-from-translated-loops x))
        (loops (len-sort loops))
-       ((unless (vl::string-list-listp loops))
+       ((unless (vl2014::string-list-listp loops))
         (er hard? 'verilog-summarize-translated-loops
             "Jared thinks this is impossible."))
        (strs  (comma-strings-from-verilog-loops loops)))

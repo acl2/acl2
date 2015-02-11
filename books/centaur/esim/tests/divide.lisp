@@ -25,7 +25,7 @@
 (include-book "common" :ttags :all)
 
 (defmodules *divide-modules*
-  (vl::make-vl-loadconfig
+  (vl2014::make-vl-loadconfig
    :start-files (list "divide.v")))
 
 (defmacro divide-thm (n)
@@ -63,10 +63,10 @@
 
     `(progn
        (defconst ,constant-name
-         (vl::vl-module->esim
-          (vl::vl-find-module ,module-name
-                              (vl::vl-design->mods
-                               (vl::vl-translation->good *divide-modules*)))))
+         (vl2014::vl-module->esim
+          (vl2014::vl-find-module ,module-name
+                              (vl2014::vl-design->mods
+                               (vl2014::vl-translation->good *divide-modules*)))))
 
        (defstv ,test-vector-name
          :mod ,constant-name

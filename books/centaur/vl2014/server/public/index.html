@@ -1,0 +1,158 @@
+<!HTML>
+<html>
+<head>
+<meta charset="UTF-8">
+
+<!--
+; VL 2014 -- VL Verilog Toolkit, 2014 Edition
+; Copyright (C) 2008-2015 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Jared Davis <jared@centtech.com>
+-->
+
+<title>Module Browser</title>
+<!-- TMPL_INCLUDE "header.html" -->
+<script src="index.js"></script>
+
+<style>
+<!--
+
+body {
+   background-color: #d6ffff;
+}
+
+#content {
+   background-color: #ffffff;
+   border-style: solid;
+   border-color: #ffd0b0;
+   border-width: 3px;
+   border-radius: 20px;
+   box-shadow: 0px 4px 10px 2px rgba(0,64,80,0.8);
+   padding-left: 2em;
+   padding-right: 2em;
+   padding-bottom: 2em;
+   margin: 1em;
+}
+
+.modelwrap {
+   width: 75%;
+   margin-left: 2em;
+}
+
+#loaded table, #unloaded table {
+  border-collapse: collapse;
+}
+
+#loaded tr:hover {
+  background-color: #e0ffe0;
+}
+
+#unloaded tr:hover {
+  background-color: #ffe0e0;
+}
+
+.modelwrap {
+   height: 30em;
+   overflow-y: auto;
+}
+
+.basename, .modelnames {
+  padding-top: .3em;
+  padding-left: 2em;
+  width: 5em;
+}
+
+.basename {
+  color: #606060;
+  width: 15em;
+  font-size: 90%;
+}
+
+.modelnames a {
+   font-family: "Lato", sans-serif;
+   text-decoration: none;
+}
+
+.modelnames a:hover {
+   background-color: #ffff90;
+   font-weight: bold;
+}
+
+hr {
+   margin-top: 2em;
+   margin-bottom: 2em;
+}
+
+
+.icon {
+   vertical-align: middle;
+}
+
+// -->
+</style>
+
+</head>
+<body>
+
+<div id="content">
+
+<div id="loading">
+<h2><img class="icon" src="images/choosemodel-big.png"></img> Choose Model</h2>
+</div>
+
+
+<table width="100%">
+<td width="50%" valign="top">
+<h3>Currently Loaded</h3>
+
+<div class="modelwrap">
+<div id="loaded">
+Loading...
+</div>
+</div>
+
+</td>
+
+<td width="50%" valign="top">
+<h3>Not Loaded</h3>
+
+<div class="modelwrap">
+<div id="unloaded">
+Loading...
+</div>
+</div>
+
+</td>
+</table>
+
+</div>
+
+</body>
+</html>
+
+

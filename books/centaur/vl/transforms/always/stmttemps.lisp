@@ -31,7 +31,7 @@
 (in-package "VL")
 (include-book "util")
 (include-book "conditions")
-(include-book "../occform/util")
+(include-book "../../mlib/modgen")
 (include-book "../../mlib/expr-slice")
 (include-book "../../mlib/delta")
 (local (include-book "../../util/arithmetic"))

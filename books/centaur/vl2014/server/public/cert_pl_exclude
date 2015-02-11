@@ -1,0 +1,2 @@
+This file instructs cert.pl not to try to certify files in this
+directory.

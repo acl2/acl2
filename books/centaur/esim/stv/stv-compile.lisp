@@ -1,5 +1,5 @@
 ; ESIM Symbolic Hardware Simulator
-; Copyright (C) 2010-2012 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -43,9 +43,9 @@
 (include-book "std/util/defprojection" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/lists/final-cdr" :dir :system)
-(include-book "centaur/vl/util/defs" :dir :system)
+(include-book "centaur/vl2014/util/defs" :dir :system)
 (local (include-book "../esim-sexpr-support-thms"))
-(local (include-book "centaur/vl/util/arithmetic" :dir :system))
+(local (include-book "centaur/vl2014/util/arithmetic" :dir :system))
 
 (local (defthm atom-listp-of-pat-flatten1
          (atom-listp (pat-flatten1 x))
@@ -1037,7 +1037,7 @@ collect and how we want to name them.</p>"
        ;;          variables (from :output and :internal lines).  Illegally ~
        ;;          reused variables: ~x0" illegally-reused-simvars))
 
-       (all-in-bits (vl::append-alist-vals-exec in-usersyms gensyms))
+       (all-in-bits (vl2014::append-alist-vals-exec in-usersyms gensyms))
        ((unless (uniquep all-in-bits))
         ;; It's hard to imagine this happening, but if somehow the user gave an
         ;; input simulation variable name that clashed with a gensym, it'd be
