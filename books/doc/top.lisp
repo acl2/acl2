@@ -209,10 +209,13 @@
 (include-book "arithmetic-5/top" :dir :system)
 (include-book "arithmetic/top" :dir :system)
 
-(include-book "rtl/rel9/lib/top" :dir :system)
-(include-book "rtl/rel9/lib/logn" :dir :system)
-(include-book "rtl/rel9/lib/add" :dir :system)
-(include-book "rtl/rel9/lib/mult" :dir :system)
+(include-book "rtl/rel10/lib/top" :dir :system)
+; And books not included in lib/top:
+(include-book "rtl/rel10/lib/add" :dir :system)
+(include-book "rtl/rel10/lib/mult" :dir :system)
+(include-book "rtl/rel10/lib/div" :dir :system)
+(include-book "rtl/rel10/lib/srt" :dir :system)
+(include-book "rtl/rel10/lib/sqrt" :dir :system)
 
 (include-book "centaur/fty/deftypes" :dir :system)
 

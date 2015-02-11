@@ -68,8 +68,6 @@
 ;;;                 Sign, Significand, and Exponent
 ;;;**********************************************************************
 
-(defsection-rtl |Sign Exponent and Significand| |Floating-Point Representation|
-
 (defund sgn (x) 
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
@@ -247,13 +245,10 @@
 		    (if (< (* (sig x) (sig y)) 2)
 			(* (sig x) (sig y))
 		      (* 1/2 (sig x) (sig y))))))
-)
 
 ;;;**********************************************************************
 ;;;                          Exactness
 ;;;**********************************************************************
-
-(defsection-rtl |Exactness| |Floating-Point Representation|
 
 (defund exactp (x n)
   (integerp (* (sig x) (expt 2 (1- n)))))
@@ -482,4 +477,3 @@
                 (exactp y n))
            (<= y (fp- x n)))
   :rule-classes ())
-)

@@ -108,8 +108,6 @@
 ;;;			Radix-4 Booth Encoding
 ;;;**********************************************************************
 
-(defsection-rtl |Radix-4 Booth Encoding| |Multiplication|
-
 (defun theta (i y)
   (+ (bitn y (1- (* 2 i))) 
      (bitn y (* 2 i))
@@ -235,13 +233,10 @@
 	     (= (bits (sum-pp4p-theta x y m n) (1- (+ n (* 2 m))) 0)
                 (* x y)))
   :rule-classes ())
-)
 
 ;;;**********************************************************************
 ;;;                Statically Encoded Multiplier Arrays
 ;;;**********************************************************************
-
-(defsection-rtl |Statically Encoded Multiplier Arrays| |Multiplication|
 
 (defun m-mu-chi (i mode)
   (cond ((equal mode 'mu)  
@@ -334,13 +329,10 @@
 		(+ (expt 2 (+ n (* 2 m)))
 		   (* x y))))
   :rule-classes ())
-)
 
 ;;;**********************************************************************
 ;;;                Encoding Redundant Representations
 ;;;**********************************************************************
-
-(defsection-rtl |Encoding Redundant Representations| |Multiplication|
 
 (defun gamma (i a b c)
    (if (zp i)
@@ -436,13 +428,10 @@
 		(+ (expt 2 (+ n (* 2 m)))
 		   (* x y))))
   :rule-classes ())
-)
 
 ;;;**********************************************************************
 ;;;			Radix-8 Booth Encoding
 ;;;**********************************************************************
-
-(defsection-rtl |Radix-8 Booth Encoding| |Multiplication|
 
 (defun eta (i y)
   (+ (bitn y (1- (* 3 i))) 
@@ -545,4 +534,3 @@
 		(+ (expt 2 (+ n (* 3 m)))
 		   (* x y))))
   :rule-classes ())
-)
