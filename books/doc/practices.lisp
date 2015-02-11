@@ -43,7 +43,12 @@ Davis.</p>
 
 <p>We recommend the use of the Standard Libraries (@(see std)) to ease your
 burden of modeling and reasoning in a formal sytem.  See other subtopics below
-for other best practices.</p>")
+for other best practices.</p>
+
+<p>If you expect your library to be used at all by other people, put your code
+in a package.  Jared, Rager, and Kaufmann spend a large amount of time just
+dealing with name clashes, and it leaves them grumpy.  See @(see
+working-with-packages).")
 
 (local (xdoc::set-default-parents best-practices))
 
