@@ -411,37 +411,37 @@ etc., are overwritten with whatever is in the genblob.</p>"
       :vl-genbase (+ 2 (vl-genblob-elementlist-count (list x))))
     ///
     (std::defret vl-genblob-generate-count-greater-than-genblock-elems
-      (implies (equal (vl-genelement-kind x) :vl-genblock)
+      (implies (vl-genelement-case x :vl-genblock)
                (< (vl-genblob-elementlist-count (vl-genblock->elems x))
                   count))
       :rule-classes :linear)
     (std::defret vl-genblob-generate-count-greater-than-genblockarray-blocks
-      (implies (equal (vl-genelement-kind x) :vl-genarray)
+      (implies (vl-genelement-case x :vl-genarray)
                (< (vl-genblob-genarrayblocklist-count (vl-genarray->blocks x))
                   count))
       :rule-classes :linear)
     (std::defret vl-genblob-generate-count-greater-than-genif-blocks
-      (implies (equal (vl-genelement-kind x) :vl-genif)
+      (implies (vl-genelement-case x :vl-genif)
                (< (+ (vl-genblob-generate-count (vl-genif->then x))
                      (vl-genblob-generate-count (vl-genif->else x)))
                   count))
       :rule-classes :linear)
 
     (std::defret vl-genblob-generate-count-greater-than-gencase-blocks
-      (implies (equal (vl-genelement-kind x) :vl-gencase)
+      (implies (vl-genelement-case x :vl-gencase)
                (< (+ (vl-genblob-generate-count (vl-gencase->default x))
                      (vl-genblob-gencaselist-count (vl-gencase->cases x)))
                   count))
       :rule-classes :linear)
 
     (std::defret vl-genblob-generate-count-greater-than-genloop-blocks
-      (implies (equal (vl-genelement-kind x) :vl-genloop)
+      (implies (vl-genelement-case x :vl-genloop)
                (< (vl-genblob-generate-count (vl-genloop->body x))
                   count))
       :rule-classes :linear)
 
     (std::defret vl-genblob-generate-count-greater-than-genbase-item
-      (implies (equal (vl-genelement-kind x) :vl-genbase)
+      (implies (vl-genelement-case x :vl-genbase)
                (< (vl-genblob-elementlist-count (list x))
                   count))
       :rule-classes :linear))

@@ -2526,7 +2526,7 @@ block name to each variable name.</p>"
 (define vl-blockstmt-p ((x vl-stmt-p))
   :inline t
   :enabled t
-  (eq (vl-stmt-kind x) :vl-blockstmt))
+  (vl-stmt-case x :vl-blockstmt))
 
 
 

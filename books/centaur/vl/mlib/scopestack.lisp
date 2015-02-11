@@ -298,7 +298,7 @@ in it, such as a function, task, or block statement."
                         :name  x.name)))
 
 (define vl-blockstmt->blockscope ((x vl-stmt-p))
-  :guard (eq (vl-stmt-kind x) :vl-blockstmt)
+  :guard (vl-stmt-case x :vl-blockstmt)
   :returns (scope vl-blockscope-p)
   :parents (vl-blockscope vl-scopestack-push)
   (b* (((vl-blockstmt x)))
@@ -308,7 +308,7 @@ in it, such as a function, task, or block statement."
                         :name  x.name)))
 
 (define vl-forstmt->blockscope ((x vl-stmt-p))
-  :guard (eq (vl-stmt-kind x) :vl-forstmt)
+  :guard (vl-stmt-case x :vl-forstmt)
   :returns (scope vl-blockscope-p)
   :parents (vl-blockscope vl-scopestack-push)
   (b* (((vl-forstmt x)))

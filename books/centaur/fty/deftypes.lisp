@@ -372,6 +372,7 @@
    long       ;; xdoc
    inline     ;; inline keywords
    extra-binder-names ;; extra x.foo b* binders for not-yet-implemented accessors
+   count-incr ;; add an extra 1 to count
    ))
 
 (defconst *flexprod-keywords*
@@ -386,6 +387,7 @@
     :long
     :inline
     :require
+    :count-incr
     :extra-binder-names))
 
 (defun parse-flexprod (x sumname sumkind sum-kwds xvar rev-not-prevconds our-fixtypes fixtypes)
@@ -425,7 +427,8 @@
                         (t `(and . ,fullcond-terms))))))
        (inline (get-deftypes-inline-opt (getarg :inline *inline-defaults* sum-kwds) kwd-alist))
        (require (getarg :require t kwd-alist))
-       (extra-binder-names (getarg :extra-binder-names nil kwd-alist)))
+       (extra-binder-names (getarg :extra-binder-names nil kwd-alist))
+       (count-incr (getarg :count-incr nil kwd-alist)))
     (make-flexprod :kind kind
                   :cond cond
                   :guard guard
@@ -439,7 +442,8 @@
                   :extra-binder-names extra-binder-names
                   :short (getarg :short nil kwd-alist)
                   :long (getarg :long nil kwd-alist)
-                  :inline inline)))
+                  :inline inline
+                  :count-incr count-incr)))
 
 (defun parse-flexprods (x sumname sumkind sum-kwds xvar rev-not-prevconds our-fixtypes fixtypes)
   (if (atom x)
@@ -799,7 +803,7 @@
 (defconst *tagprod-formal-keywords* '(:rule-classes :default :reqfix))
 (defconst *tagprod-keywords*
   '(:layout :hons :inline :base-name :require :short :long
-    :extra-binder-names))
+    :extra-binder-names :count-incr))
 
 (defun tagsum-prod-to-flexprod (x xvar sum-kwds lastp have-basep our-fixtypes)
   (b* (((cons kind args) x)
@@ -813,6 +817,7 @@
        (requirep (assoc :require kwd-alist))
        (shortp (assoc :short kwd-alist))
        (longp (assoc :long kwd-alist))
+       (count-incrp (assoc :count-incr kwd-alist))
        (hons (getarg :hons nil kwd-alist))
        (fields (car fields))
        (field-formals (tagprod-parse-formals 'parse-tagsum fields
@@ -843,6 +848,7 @@
           ,@(and base-name `(:type-name ,base-name))
           ,@(and shortp `(:short ,(cdr shortp)))
           ,@(and longp `(:long ,(cdr longp)))
+          ,@(and count-incrp `(:count-incr ,(cdr count-incrp)))
           :ctor-body (,(if hons 'hons 'cons) ,kind ,ctor-body1)
           ,@(and extra-binder-names `(:extra-binder-names ,extra-binder-names)))
         basep)))
@@ -1008,7 +1014,7 @@
     (cons (flexprod-field->default (car fields))
           (flexprod-fields->defaults (cdr fields)))))
 
-(defun defprod-tag-events (pred xvar tag name formals)
+(defun defprod-tag-events-post-pred (pred xvar tag name)
   (b* ((foop pred)
        (x xvar))
     `((defthmd ,(intern-in-package-of-symbol (cat "TAG-WHEN-" (symbol-name foop))
@@ -1028,17 +1034,18 @@
         :rule-classes ((:rewrite :backchain-limit-lst 1))
         :hints(("Goal" :in-theory (enable tag ,foop))))
 
-      (defthm ,(intern-in-package-of-symbol (cat "TAG-OF-" (symbol-name name))
-                                            name)
-        (equal (tag (,name . ,formals))
-               ,tag)
-        :hints (("goal" :in-theory (enable ,name tag))))
+    (add-to-ruleset std::tag-reasoning
+                    '(,(intern-in-package-of-symbol (cat "TAG-WHEN-" (symbol-name foop))
+                                                    name)
+                      ,(intern-in-package-of-symbol (cat (symbol-name foop) "-WHEN-WRONG-TAG")
+                                                    name))))))
 
-      (add-to-ruleset std::tag-reasoning
-                      '(,(intern-in-package-of-symbol (cat "TAG-WHEN-" (symbol-name foop))
-                                                      name)
-                        ,(intern-in-package-of-symbol (cat (symbol-name foop) "-WHEN-WRONG-TAG")
-                                                      name))))))
+(defun defprod-tag-events-post-ctor (tag name formals)
+  `((defthm ,(intern-in-package-of-symbol (cat "TAG-OF-" (symbol-name name))
+                                          name)
+      (equal (tag (,name . ,formals))
+             ,tag)
+      :hints (("goal" :in-theory (enable ,name tag))))))
 
 (defun parse-defprod (x xvar our-fixtypes fixtypes)
   (b* (((cons name args) x)
@@ -1079,9 +1086,14 @@
                     `(acl2-count ,xvar)))
        (field-names (flexprod-fields->names (flexprod->fields (car prods))))
        (post-events (if tag 
-                        (append (defprod-tag-events pred xvar tag name field-names)
+                        (append (defprod-tag-events-post-ctor tag name field-names)
                                 (cdr (assoc :post-events kwd-alist)))
-                      (cdr (assoc :post-events kwd-alist)))))
+                      (cdr (assoc :post-events kwd-alist))))
+       (post-pred-events (if tag
+                             (append (defprod-tag-events-post-pred
+                                       pred xvar tag name)
+                                     (cdr (assoc :post-pred-events kwd-alist)))
+                           (cdr (assoc :post-pred-events kwd-alist)))))
     (make-flexsum :name name
                   :pred pred
                   :fix fix
@@ -1094,6 +1106,7 @@
                   :measure measure
                   :kwd-alist (list* (cons :///-events post-///)
                                     (cons :post-events post-events)
+                                    (cons :post-pred-events post-pred-events)
                                     kwd-alist)
                   :orig-prods orig-prods
                   :inline inline
@@ -1791,12 +1804,51 @@
               ,(cdr (assoc prod.kind kwd-alist))))
           (flexsum-case-macro-conds var prods (cdr kwd-alist)))))
 
+(defun flexsum-case-macro-member-special-form-expand (kinds)
+  (if (atom kinds)
+      '(:otherwise nil)
+    (cons (car kinds)
+          (cons t
+                (flexsum-case-macro-member-special-form-expand (cdr kinds))))))
+
 (defun flexsum-case-macro-fn (var-or-binding rest-args sum)
   (b* (((flexsum sum) sum)
-       (var (if (consp var-or-binding) (car var-or-binding) var-or-binding))
        (kinds (flexprods->kinds sum.prods))
+       ;; Special case: (foo-case x :kind) becomes (foo-case x :kind t :otherwise nil)
+       ((when (case-match rest-args
+                ((kind) (member kind kinds))
+                (& nil)))
+        (if (consp var-or-binding)
+            `(let* ((tmp ,var-or-binding))
+               ,(flexsum-case-macro-fn 'tmp
+                                       (cons (car rest-args) '(t :otherwise nil))
+                                       sum))
+          (flexsum-case-macro-fn var-or-binding
+                                 (cons (car rest-args) '(t :otherwise nil))
+                                 sum)))
+       ;; Special case: (foo-case x '(:kind1 :kind2)) becomes
+       ;;               (foo-case x :kind1 t :kind2 t :otherwise nil)
+       ((when (case-match rest-args
+                (('quote sub-kinds)
+                 (and (true-listp sub-kinds)
+                      (subsetp sub-kinds kinds)))
+                (& nil)))
+        (if (consp var-or-binding)
+            `(let* ((tmp ,var-or-binding))
+               ,(flexsum-case-macro-fn 'tmp
+                                       (flexsum-case-macro-member-special-form-expand
+                                        (cadr (car rest-args)))
+                                       sum))
+          (flexsum-case-macro-fn var-or-binding
+                                 (flexsum-case-macro-member-special-form-expand
+                                  (cadr (car rest-args)))
+                                 sum)))
+                               
+       (var (if (consp var-or-binding) (car var-or-binding) var-or-binding))
+
        (allowed-keywordlist-keys (append kinds '(:otherwise)))
        (allowed-parenthesized-keys (append kinds '(acl2::otherwise :otherwise acl2::&)))
+
        ;; extract :foo bar :baz fuz style arguments
        ((mv kwd-alist rest)
         (extract-keywords sum.case
@@ -2766,7 +2818,8 @@
   (b* (((when (atom prods)) nil)
        ((flexprod x) (car prods))
        (fieldcounts (flexprod-field-counts x.fields xvar types))
-       (count (if fieldcounts `(+ ,(+ 1 (len x.fields)) . ,fieldcounts) 1)))
+       (count (if fieldcounts `(+ ,(+ 1 (len x.fields)) . ,fieldcounts) 1))
+       (count (if x.count-incr `(+ 1 ,count) count)))
     (cons `(,x.kind ,count)
           (flexsum-prod-counts (cdr prods) xvar types))))
 
@@ -2774,7 +2827,10 @@
   (b* (((when (atom prods)) nil)
        ((flexprod x) (car prods))
        (fieldcounts (flexprod-field-counts x.fields xvar types))
-       (prodcount (if fieldcounts `(+ ,(+ 1 (len x.fields)) . ,fieldcounts) 1)))
+       (prodcount (if fieldcounts
+                      `(+ ,(+ 1 (len x.fields)) . ,fieldcounts)
+                    1))
+       (prodcount (if x.count-incr `(+ 1 ,prodcount) prodcount)))
     (cons `(,x.cond ,prodcount)
           (flexsum-prod-counts-nokind (cdr prods) xvar types))))
 

@@ -1116,9 +1116,9 @@ yet.</p>"
   (b* ((x     (vl-hidexpr-fix x))
        (origx (vl-scopeexpr-fix origx))
        (short (string-fix short))
-       (endp (eq (vl-scopeexpr-kind origx) :end))
+       (endp (vl-scopeexpr-case origx :end))
        (type  (if (and endp
-                       (eq (vl-hidexpr-kind (vl-scopeexpr-end->hid origx)) :end))
+                       (vl-hidexpr-case (vl-scopeexpr-end->hid origx) :end))
                   :vl-bad-identifier
                 :vl-bad-hid))
        ((when (and endp
@@ -1736,7 +1736,7 @@ instance, in this case the @('tail') would be
                                :args (list x x.first))
               nil (vl-scopeexpr->hid x)))
          (pkg-ss (vl-scopestack-push package pkg-ss))
-         ((unless (eq (vl-scopeexpr-kind x.rest) :end))
+         ((unless (vl-scopeexpr-case x.rest :end))
           (mv (make-vl-warning :type :vl-bad-scopeexpr
                                :msg "~a0: Multiple levels of :: operators are ~
                                      not yet supported."
@@ -1771,7 +1771,7 @@ instance, in this case the @('tail') would be
                              (ss vl-scopestack-p)
                              (rec-limit natp)
                              (ctx acl2::any-p))
-  :guard (eq (vl-datatype-kind x) :vl-usertype)
+  :guard (vl-datatype-case x :vl-usertype)
   :short "Resolves a datatype of usertype kind to a concrete
 datatype, i.e. anything but a user typename."
   :long "<p>The input is guarded to be a usertype.  If it is defined as another
@@ -1822,7 +1822,7 @@ this case; this should be checked separately.</p>"
                                        datatype? ~a1"
                              :args (list ctx x.name))
             x ss))
-       ((unless (eq (vl-hidexpr-kind (vl-scopeexpr->hid x.name)) :end))
+       ((unless (vl-hidexpr-case (vl-scopeexpr->hid x.name) :end))
         (mv (make-vl-warning :type :vl-resolve-usertypes-fail
                              :msg "~a0: Type names cannot be specified with dotted ~
                                    paths, only package scopes: ~a1"
@@ -1841,7 +1841,7 @@ this case; this should be checked separately.</p>"
             x ss))
        ((vl-typedef item) ref.item)
        ((mv warning subtype final-ss)
-        (if (eq (vl-datatype-kind item.type) :vl-usertype)
+        (if (vl-datatype-case item.type :vl-usertype)
             (vl-usertype-resolve item.type ref.ss (1- rec-limit) ctx)
           (mv nil item.type ref.ss)))
        ((when warning)
@@ -2480,7 +2480,7 @@ type @('logic[3:0]').</li> </ul>"
                (restype (iff (vl-datatype-p restype) (not warning))))
   ;; Resolve the type and dims.
   (b* ((type (vl-datatype-fix type))
-       ((when (eq (vl-hidexpr-kind x) :end))
+       ((when (vl-hidexpr-case x :end))
         ;; We just have an ID.  Return the resolved type.
         (mv nil type))
 
@@ -2543,8 +2543,8 @@ type @('logic[3:0]').</li> </ul>"
               (vl-datatype-usertype-elim step1.item.type step1.ss 1000 ctx))
              ((when warning) (mv warning nil)))
           (vl-hidexpr-traverse-datatype tail res-type))))
-    (mv (make-vl-warning :type (if (and (eq (vl-scopeexpr-kind x) :end)
-                                        (eq (vl-hidexpr-kind (vl-scopeexpr-end->hid x)) :end))
+    (mv (make-vl-warning :type (if (and (vl-scopeexpr-case x :end)
+                                        (vl-hidexpr-case (vl-scopeexpr-end->hid x) :end))
                                    :vl-identifier-type-fail
                                  :vl-hidexpr-type-fail)
                          :msg "~a0: Failed to find a type for ~s1 because we ~
@@ -2591,7 +2591,7 @@ such as @('logic') are packed but not selectable.</p>"
                             (ss vl-scopestack-p
                                 "Scopestack where @('x') is referenced.")
                             (ctx acl2::any-p))
-  :guard (eq (vl-expr-kind x) :vl-index)
+  :guard (vl-expr-case x :vl-index)
   :returns (mv (warning (iff (vl-warning-p warning) warning)
                         "Success indicator, we fail if we can't follow the HID or
                          this isn't an appropriate expression.")
@@ -3121,7 +3121,7 @@ such as @('logic') are packed but not selectable.</p>"
               (vl-hidexpr-resolved-p x.rest)))
   ///
   (defthm vl-hidexpr-resolved-p-when-endp
-    (implies (equal (vl-hidexpr-kind x) :end)
+    (implies (vl-hidexpr-case x :end)
              (vl-hidexpr-resolved-p x)))
 
   (defthm vl-hidexpr-resolved-p-of-vl-hidexpr-dot
@@ -3135,7 +3135,7 @@ such as @('logic') are packed but not selectable.</p>"
 
   (defthm vl-hidexpr-resolved-p-implies-dot
     (implies (and (vl-hidexpr-resolved-p x)
-                  (eq (vl-hidexpr-kind x) :dot))
+                  (vl-hidexpr-case x :dot))
              (and (vl-hidindex-resolved-p (vl-hidexpr-dot->first x))
                   (vl-hidexpr-resolved-p (vl-hidexpr-dot->rest x)))))
 

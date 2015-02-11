@@ -84,7 +84,6 @@ allows us to represent expressions whose types have not yet been computed.</p>"
 
 (deftagsum vl-value
   ;; no types on these
-  (:foo ())
   (:vl-constint
    :hons t
    :layout :tree
@@ -240,10 +239,6 @@ soon as we do anything with time units.</p>")
 
 (fty::deflist vl-valuelist :elt-type vl-value :elementp-of-nil nil)
 
-(defenum vl-selectop-p
-  (:vl-select-colon
-   :vl-select-pluscolon
-   :vl-select-minuscolon))
 
 
 (defenum vl-randomqualifier-p
@@ -382,68 +377,75 @@ type for @(see vl-scopeexpr->scopes).</p>"
 (fty::deflist vl-scopenamelist :elt-type vl-scopename :elementp-of-nil nil)
 
 
+(defconst *vl-unary-ops*
+  '((:vl-unary-plus    . "+")
+    (:vl-unary-minus    . "-")
+    (:vl-unary-lognot   . "!")
+    (:vl-unary-bitnot   . "~")
+    (:vl-unary-bitand   . "&")
+    (:vl-unary-nand     . "~&")
+    (:vl-unary-bitor    . "|")
+    (:vl-unary-nor      . "~|")
+    (:vl-unary-xor      . "^")
+    (:vl-unary-xnor     . "~^")
+    (:vl-unary-preinc   . "++")
+    (:vl-unary-predec   . "--")
+    (:vl-unary-postinc  . "++")
+    (:vl-unary-postdec  . "--")))
 
 
+(make-event
+ `(defenum vl-unaryop-p
+    ,(strip-cars *vl-unary-ops*)))
 
-(defenum vl-unaryop-p
-  (:vl-unary-plus
-   :vl-unary-minus
-   :vl-unary-lognot
-   :vl-unary-bitnot
-   :vl-unary-bitand
-   :vl-unary-nand
-   :vl-unary-bitor
-   :vl-unary-nor
-   :vl-unary-xor
-   :vl-unary-xnor
-   :vl-unary-preinc
-   :vl-unary-predec
-   :vl-unary-postinc
-   :vl-unary-postdec))
+(defconst *vl-binary-ops*
+  '((:vl-binary-plus        . "+")  
+    (:vl-binary-minus       . "-")
+    (:vl-binary-times       . "*")
+    (:vl-binary-div         . "/")
+    (:vl-binary-rem         . "%")
+    (:vl-binary-eq          . "==")
+    (:vl-binary-neq         . "!=")
+    (:vl-binary-ceq         . "===")
+    (:vl-binary-cne         . "!==")
+    (:vl-binary-wildeq      . "==?")
+    (:vl-binary-wildneq     . "!=?")
+    (:vl-binary-logand      . "&&")
+    (:vl-binary-logor       . "||")
+    (:vl-binary-power       . "**")
+    (:vl-binary-lt          . "<")
+    (:vl-binary-lte         . "<=")
+    (:vl-binary-gt          . ">")
+    (:vl-binary-gte         . ">=")
+    (:vl-binary-bitand      . "&")
+    (:vl-binary-bitor       . "|")
+    (:vl-binary-xor         . "^")
+    (:vl-binary-xnor        . "~^")
+    (:vl-binary-shr         . ">>")
+    (:vl-binary-shl         . "<<")
+    (:vl-binary-ashr        . ">>>")
+    (:vl-binary-ashl        . "<<<")
+    (:vl-binary-assign      . "=") 
+    (:vl-binary-plusassign  . "+=")
+    (:vl-binary-minusassign . "-=")
+    (:vl-binary-timesassign . "*=")
+    (:vl-binary-divassign   . "/=")
+    (:vl-binary-remassign   . "%=")
+    (:vl-binary-andassign   . "&=")
+    (:vl-binary-orassign    . "|=")
+    (:vl-binary-xorassign   . "^=")
+    (:vl-binary-shlassign   . "<<=")
+    (:vl-binary-shrassign   . ">>=")
+    (:vl-binary-ashlassign  . "<<<=")
+    (:vl-binary-ashrassign  . ">>>=")
+    (:vl-implies            . "->")
+    (:vl-equiv              . "<->")))
+
+(make-event
+ `(defenum vl-binaryop-p
+    ,(strip-cars *vl-binary-ops*)))
 
 
-(defenum vl-binaryop-p
-  (:vl-binary-plus
-   :vl-binary-minus
-   :vl-binary-times
-   :vl-binary-div
-   :vl-binary-rem
-   :vl-binary-eq
-   :vl-binary-neq
-   :vl-binary-ceq
-   :vl-binary-cne
-   :vl-binary-wildeq
-   :vl-binary-wildneq
-   :vl-binary-logand
-   :vl-binary-logor
-   :vl-binary-power
-   :vl-binary-lt
-   :vl-binary-lte
-   :vl-binary-gt
-   :vl-binary-gte
-   :vl-binary-bitand
-   :vl-binary-bitor
-   :vl-binary-xor
-   :vl-binary-xnor
-   :vl-binary-shr
-   :vl-binary-shl
-   :vl-binary-ashr
-   :vl-binary-ashl
-   :vl-binary-assign
-   :vl-binary-plusassign
-   :vl-binary-minusassign
-   :vl-binary-timesassign
-   :vl-binary-divassign
-   :vl-binary-remassign
-   :vl-binary-andassign
-   :vl-binary-orassign
-   :vl-binary-xorassign
-   :vl-binary-shlassign
-   :vl-binary-shrassign
-   :vl-binary-ashlassign
-   :vl-binary-ashrassign
-   :vl-implies
-   :vl-equiv))
 
 (defenum vl-specialkey-p
   (:vl-null
@@ -459,6 +461,11 @@ type for @(see vl-scopeexpr->scopes).</p>"
 
 (defenum vl-leftright-p
   (:left :right))
+
+(defprod vl-none ()
+  :short "Used when there is no index or select in a place where one is optional;
+          see @(see vl-indexpart) and @(see vl-arrayrange)."
+  :tag :vl-none)
 
 
 (deftypes expressions-and-datatypes
@@ -481,22 +488,64 @@ type for @(see vl-scopeexpr->scopes).</p>"
              (rest  vl-scopeexpr-p)))
     :base-case-override :end)
 
-  (deftagsum vl-indexpart
+  (defprod vl-plusminus
+    :tag :vl-plusminus
+    :layout :tree
+    :short "Representation of a select such as @('[a +: b]') or @('[a -: b]')."
     :measure (two-nats-measure (acl2-count x) 100)
-    (:full ())
-    (:range ((msb  vl-expr-p)
-             (lsb  vl-expr-p)))
-    (:plusminus
-     :short "Representation of a select such as @('[a +: b]') or @('[a -: b]')."
+    ((base  vl-expr-p)
+     (width vl-expr-p)
+     (minusp booleanp)))
+
+  (deftagsum vl-indexpart
+    ;; Note: The way this and vl-arrayrange are defined is a hack to
+    ;; approximate a deftranssum-like approach.  Someday deftypes will support
+    ;; such an approach directly and we won't need the hack.  For now, we have
+    ;; a lot of extra function definitions that aren't necessary, and rewrite
+    ;; rules that normalize them to the form we want.
+    :measure (two-nats-measure (acl2-count x) 100)
+    (:vl-none ())
+    (:vl-range ((msb  vl-expr-p)
+                (lsb  vl-expr-p))
+     :layout :tree
+     :count-incr t) ;; ensure (vl-range-count x) < (vl-indexpart-count x)
+    (:vl-plusminus
      ((base  vl-expr-p)
       (width vl-expr-p)
-      (minusp booleanp))))
+      (minusp booleanp))
+     :layout :tree
+     :count-incr t)) ;; ensure (vl-plusminus-count x) < (vl-indexpart-count x)
 
+  ;; (defprod vl-select
+  ;;   :short "Representation of a single-element select such as @('[a]')."
+  ;;   :tag :vl-select
+  ;;   ((idx vl-expr-p))
+  ;;   :layout :tree
+  ;;   :measure (two-nats-measure (acl2-count x) 100))
+
+  (deftagsum vl-arrayrange
+    :measure (two-nats-measure (acl2-count x) 100)
+    :base-case-override :vl-index
+    (:vl-none ())
+    (:vl-index
+     ((idx vl-expr-p))
+     :layout :tree)
+    (:vl-range
+     ((msb vl-expr-p)
+      (lsb vl-expr-p))
+     :layout :tree
+     :count-incr t)
+    (:vl-plusminus
+     ((base  vl-expr-p)
+      (width vl-expr-p)
+      (minusp booleanp))
+     :layout :tree
+     :count-incr t))
 
   (defprod vl-streamexpr
     :measure (two-nats-measure (acl2-count x) 110)
     ((expr  vl-expr-p)
-     (part  vl-indexpart-p)))
+     (part  vl-arrayrange-p)))
  
   (fty::deflist vl-streamexprlist
     :measure (two-nats-measure (acl2-count x) 10)
@@ -505,9 +554,12 @@ type for @(see vl-scopeexpr->scopes).</p>"
 
   (deftagsum vl-valuerange
     :measure (two-nats-measure (acl2-count x) 100)
+    ;; BOZO we don't use vl-select here because it doesn't seem quite appropriate
     (:single ((val vl-expr-p)))
-    (:range  ((msb  vl-expr-p)
-              (lsb  vl-expr-p)))
+    (:vl-range  ((msb  vl-expr-p)
+                 (lsb  vl-expr-p))
+     :layout :tree
+     :count-incr t)
     :base-case-override :single)
 
   (fty::deflist vl-valuerangelist
@@ -864,9 +916,15 @@ away with them as alternate kinds of assignments.</p>")
     (:unsized :cond (eq x :vl-unsized-dimension)
      :fields nil
      :ctor-body ':vl-unsized-dimension)
-    (:range :cond t
-     :fields ((range :acc-body x :type vl-range))
-     :ctor-body range))
+    (:vl-range :cond t
+     :shape (and (consp x)
+                 (consp (cdr x))
+                 (eq (car x) :vl-range))
+     ;; argh
+     :fields ((msb :acc-body (cadr x) :type vl-expr)
+              (lsb :acc-body (cddr x) :type vl-expr))
+     :ctor-body (cons :vl-range (cons msb lsb))
+     :count-incr t))
 
   (fty::deflist vl-packeddimensionlist
     :elt-type vl-packeddimension
@@ -970,6 +1028,370 @@ try to support the use of both ascending and descending ranges.</p>")
     :kind nil)
 
   )
+
+(defsection vl-indexpart-range
+  (defthm vl-indexpart-is-range
+    (implies (equal (vl-indexpart-kind x) :vl-range)
+             (equal (vl-indexpart-p x)
+                    (vl-range-p x)))
+    :hints(("Goal" :in-theory (enable vl-indexpart-kind)
+            :expand ((vl-indexpart-p x)
+                     (vl-range-p x)))))
+
+  (defthm vl-indexpart-range->msb-is-vl-range->msb
+    (implies (equal (vl-indexpart-kind x) :vl-range)
+             (equal (vl-indexpart-vl-range->msb x)
+                    (vl-range->msb x)))
+    :hints(("Goal" :in-theory (enable vl-indexpart-vl-range->msb
+                                      vl-range->msb))))
+
+  (defthm vl-indexpart-range->lsb-is-vl-range->lsb
+    (implies (equal (vl-indexpart-kind x) :vl-range)
+             (equal (vl-indexpart-vl-range->lsb x)
+                    (vl-range->lsb x)))
+    :hints(("Goal" :in-theory (enable vl-indexpart-vl-range->lsb
+                                      vl-range->lsb))))
+
+  (defthm vl-indexpart-vl-range-is-vl-range
+    (equal (make-vl-indexpart-vl-range :msb msb :lsb lsb)
+           (make-vl-range :msb msb :lsb lsb))
+    :hints(("Goal" :in-theory (enable vl-indexpart-vl-range
+                                      vl-range))))
+
+  (defthm vl-indexpart-kind-when-vl-range-p
+    (implies (vl-range-p x)
+             (equal (vl-indexpart-kind x) :vl-range))
+    :hints(("Goal" :in-theory (enable vl-indexpart-kind vl-range-p))))
+
+  (defthm vl-indexpart-fix-when-vl-range-kind
+    (implies (equal (vl-indexpart-kind x) :vl-range)
+             (equal (vl-indexpart-fix x)
+                    (vl-range-fix x)))
+    :hints(("Goal" :in-theory (enable vl-indexpart-fix-when-vl-range))))
+
+  (defthm vl-range-count-less-than-vl-indexpart-count
+    (implies (equal (vl-indexpart-kind x) :vl-range)
+             (< (vl-range-count x)
+                (vl-indexpart-count x)))
+    :hints (("goal" :expand ((vl-range-count x)
+                             (vl-indexpart-count x))))
+    :rule-classes :linear))
+
+(defsection vl-indexpart-plusminus
+  (defthm vl-indexpart-is-plusminus
+    (implies (equal (vl-indexpart-kind x) :vl-plusminus)
+             (equal (vl-indexpart-p x)
+                    (vl-plusminus-p x)))
+    :hints(("Goal" :in-theory (enable vl-indexpart-kind)
+            :expand ((vl-indexpart-p x)
+                     (vl-plusminus-p x)))))
+
+  (defthm vl-indexpart-plusminus->base-is-vl-plusminus->base
+    (implies (equal (vl-indexpart-kind x) :vl-plusminus)
+             (equal (vl-indexpart-vl-plusminus->base x)
+                    (vl-plusminus->base x)))
+    :hints(("Goal" :in-theory (enable vl-indexpart-vl-plusminus->base
+                                      vl-plusminus->base))))
+
+  (defthm vl-indexpart-plusminus->width-is-vl-plusminus->width
+    (implies (equal (vl-indexpart-kind x) :vl-plusminus)
+             (equal (vl-indexpart-vl-plusminus->width x)
+                    (vl-plusminus->width x)))
+    :hints(("Goal" :in-theory (enable vl-indexpart-vl-plusminus->width
+                                      vl-plusminus->width))))
+
+  (defthm vl-indexpart-plusminus->minusp-is-vl-plusminus->minusp
+    (implies (equal (vl-indexpart-kind x) :vl-plusminus)
+             (equal (vl-indexpart-vl-plusminus->minusp x)
+                    (vl-plusminus->minusp x)))
+    :hints(("Goal" :in-theory (enable vl-indexpart-vl-plusminus->minusp
+                                      vl-plusminus->minusp))))
+
+  (defthm vl-indexpart-vl-plusminus-is-vl-plusminus
+    (equal (make-vl-indexpart-vl-plusminus :base base :width width :minusp minusp)
+           (make-vl-plusminus :base base :width width :minusp minusp))
+    :hints(("Goal" :in-theory (enable vl-indexpart-vl-plusminus
+                                      vl-plusminus))))
+
+  (defthm vl-indexpart-kind-when-vl-plusminus-p
+    (implies (vl-plusminus-p x)
+             (equal (vl-indexpart-kind x) :vl-plusminus))
+    :hints(("Goal" :in-theory (enable vl-indexpart-kind vl-plusminus-p))))
+
+  (defthm vl-indexpart-fix-when-vl-plusminus-kind
+    (implies (equal (vl-indexpart-kind x) :vl-plusminus)
+             (equal (vl-indexpart-fix x)
+                    (vl-plusminus-fix x)))
+    :hints(("Goal" :in-theory (enable vl-indexpart-fix-when-vl-plusminus))))
+
+  (defthm vl-plusminus-count-less-than-vl-indexpart-count
+    (implies (equal (vl-indexpart-kind x) :vl-plusminus)
+             (< (vl-plusminus-count x)
+                (vl-indexpart-count x)))
+    :hints (("goal" :expand ((vl-plusminus-count x)
+                             (vl-indexpart-count x))))
+    :rule-classes :linear))
+
+(defsection vl-indexpart-none
+  (defthm vl-indexpart-is-none
+    (implies (equal (vl-indexpart-kind x) :vl-none)
+             (equal (vl-indexpart-p x)
+                    (vl-none-p x)))
+    :hints(("Goal" :in-theory (enable vl-indexpart-kind)
+            :expand ((vl-indexpart-p x)
+                     (vl-none-p x)))))
+
+  (defthm vl-indexpart-vl-none-is-vl-none
+    (equal (make-vl-indexpart-vl-none)
+           (make-vl-none))
+    :hints(("Goal" :in-theory (enable vl-indexpart-vl-none
+                                      vl-none))))
+
+  (defthm vl-indexpart-kind-when-vl-none-p
+    (implies (vl-none-p x)
+             (equal (vl-indexpart-kind x) :vl-none))
+    :hints(("Goal" :in-theory (enable vl-indexpart-kind vl-none-p))))
+
+  (defthm vl-indexpart-fix-when-vl-none-kind
+    (implies (equal (vl-indexpart-kind x) :vl-none)
+             (equal (vl-indexpart-fix x)
+                    (vl-none-fix x)))
+    :hints(("Goal" :in-theory (enable vl-indexpart-fix-when-vl-none)))))
+
+
+(defsection vl-arrayrange-range
+  (defthm vl-arrayrange-is-range
+    (implies (equal (vl-arrayrange-kind x) :vl-range)
+             (equal (vl-arrayrange-p x)
+                    (vl-range-p x)))
+    :hints(("Goal" :in-theory (enable vl-arrayrange-kind)
+            :expand ((vl-arrayrange-p x)
+                     (vl-range-p x)))))
+
+  (defthm vl-arrayrange-range->msb-is-vl-range->msb
+    (implies (equal (vl-arrayrange-kind x) :vl-range)
+             (equal (vl-arrayrange-vl-range->msb x)
+                    (vl-range->msb x)))
+    :hints(("Goal" :in-theory (enable vl-arrayrange-vl-range->msb
+                                      vl-range->msb))))
+
+  (defthm vl-arrayrange-range->lsb-is-vl-range->lsb
+    (implies (equal (vl-arrayrange-kind x) :vl-range)
+             (equal (vl-arrayrange-vl-range->lsb x)
+                    (vl-range->lsb x)))
+    :hints(("Goal" :in-theory (enable vl-arrayrange-vl-range->lsb
+                                      vl-range->lsb))))
+
+  (defthm vl-arrayrange-vl-range-is-vl-range
+    (equal (make-vl-arrayrange-vl-range :msb msb :lsb lsb)
+           (make-vl-range :msb msb :lsb lsb))
+    :hints(("Goal" :in-theory (enable vl-arrayrange-vl-range
+                                      vl-range))))
+
+  (defthm vl-arrayrange-kind-when-vl-range-p
+    (implies (vl-range-p x)
+             (equal (vl-arrayrange-kind x) :vl-range))
+    :hints(("Goal" :in-theory (enable vl-arrayrange-kind vl-range-p))))
+
+  (defthm vl-arrayrange-fix-when-vl-range-kind
+    (implies (equal (vl-arrayrange-kind x) :vl-range)
+             (equal (vl-arrayrange-fix x)
+                    (vl-range-fix x)))
+    :hints(("Goal" :in-theory (enable vl-arrayrange-fix-when-vl-range))))
+
+  (defthm vl-range-count-less-than-vl-arrayrange-count
+    (implies (equal (vl-arrayrange-kind x) :vl-range)
+             (< (vl-range-count x)
+                (vl-arrayrange-count x)))
+    :hints (("goal" :expand ((vl-range-count x)
+                             (vl-arrayrange-count x))))
+    :rule-classes :linear))
+
+
+(defsection vl-arrayrange-plusminus
+  (defthm vl-arrayrange-is-plusminus
+    (implies (equal (vl-arrayrange-kind x) :vl-plusminus)
+             (equal (vl-arrayrange-p x)
+                    (vl-plusminus-p x)))
+    :hints(("Goal" :in-theory (enable vl-arrayrange-kind)
+            :expand ((vl-arrayrange-p x)
+                     (vl-plusminus-p x)))))
+
+  (defthm vl-arrayrange-plusminus->base-is-vl-plusminus->base
+    (implies (equal (vl-arrayrange-kind x) :vl-plusminus)
+             (equal (vl-arrayrange-vl-plusminus->base x)
+                    (vl-plusminus->base x)))
+    :hints(("Goal" :in-theory (enable vl-arrayrange-vl-plusminus->base
+                                      vl-plusminus->base))))
+
+  (defthm vl-arrayrange-plusminus->width-is-vl-plusminus->width
+    (implies (equal (vl-arrayrange-kind x) :vl-plusminus)
+             (equal (vl-arrayrange-vl-plusminus->width x)
+                    (vl-plusminus->width x)))
+    :hints(("Goal" :in-theory (enable vl-arrayrange-vl-plusminus->width
+                                      vl-plusminus->width))))
+
+  (defthm vl-arrayrange-plusminus->minusp-is-vl-plusminus->minusp
+    (implies (equal (vl-arrayrange-kind x) :vl-plusminus)
+             (equal (vl-arrayrange-vl-plusminus->minusp x)
+                    (vl-plusminus->minusp x)))
+    :hints(("Goal" :in-theory (enable vl-arrayrange-vl-plusminus->minusp
+                                      vl-plusminus->minusp))))
+
+  (defthm vl-arrayrange-vl-plusminus-is-vl-plusminus
+    (equal (make-vl-arrayrange-vl-plusminus :base base :width width :minusp minusp)
+           (make-vl-plusminus :base base :width width :minusp minusp))
+    :hints(("Goal" :in-theory (enable vl-arrayrange-vl-plusminus
+                                      vl-plusminus))))
+
+  (defthm vl-arrayrange-kind-when-vl-plusminus-p
+    (implies (vl-plusminus-p x)
+             (equal (vl-arrayrange-kind x) :vl-plusminus))
+    :hints(("Goal" :in-theory (enable vl-arrayrange-kind vl-plusminus-p))))
+
+  (defthm vl-arrayrange-fix-when-vl-plusminus-kind
+    (implies (equal (vl-arrayrange-kind x) :vl-plusminus)
+             (equal (vl-arrayrange-fix x)
+                    (vl-plusminus-fix x)))
+    :hints(("Goal" :in-theory (enable vl-arrayrange-fix-when-vl-plusminus))))
+
+  (defthm vl-plusminus-count-less-than-vl-arrayrange-count
+    (implies (equal (vl-arrayrange-kind x) :vl-plusminus)
+             (< (vl-plusminus-count x)
+                (vl-arrayrange-count x)))
+    :hints (("goal" :expand ((vl-plusminus-count x)
+                             (vl-arrayrange-count x))))
+    :rule-classes :linear))
+
+(defsection vl-arrayrange-none
+  (defthm vl-arrayrange-is-none
+    (implies (equal (vl-arrayrange-kind x) :vl-none)
+             (equal (vl-arrayrange-p x)
+                    (vl-none-p x)))
+    :hints(("Goal" :in-theory (enable vl-arrayrange-kind)
+            :expand ((vl-arrayrange-p x)
+                     (vl-none-p x)))))
+
+  (defthm vl-arrayrange-vl-none-is-vl-none
+    (equal (make-vl-arrayrange-vl-none)
+           (make-vl-none))
+    :hints(("Goal" :in-theory (enable vl-arrayrange-vl-none
+                                      vl-none))))
+
+  (defthm vl-arrayrange-kind-when-vl-none-p
+    (implies (vl-none-p x)
+             (equal (vl-arrayrange-kind x) :vl-none))
+    :hints(("Goal" :in-theory (enable vl-arrayrange-kind vl-none-p))))
+
+  (defthm vl-arrayrange-fix-when-vl-none-kind
+    (implies (equal (vl-arrayrange-kind x) :vl-none)
+             (equal (vl-arrayrange-fix x)
+                    (vl-none-fix x)))
+    :hints(("Goal" :in-theory (enable vl-arrayrange-fix-when-vl-none)))))
+
+
+(defsection vl-packeddimension-range
+  (defthm vl-packeddimension-is-range
+    (implies (not (equal x :vl-unsized-dimension))
+             (equal (vl-packeddimension-p x)
+                    (vl-range-p x)))
+    :hints(("Goal" 
+            :expand ((vl-packeddimension-p x)
+                     (vl-range-p x)))))
+
+  (defthm vl-packeddimension-range->msb-is-vl-range->msb
+    (implies (not (equal x :vl-unsized-dimension))
+             (equal (vl-packeddimension-vl-range->msb x)
+                    (vl-range->msb x)))
+    :hints(("Goal" :in-theory (enable vl-packeddimension-vl-range->msb
+                                      vl-range->msb))))
+
+  (defthm vl-packeddimension-range->lsb-is-vl-range->lsb
+    (implies (not (equal x :vl-unsized-dimension))
+             (equal (vl-packeddimension-vl-range->lsb x)
+                    (vl-range->lsb x)))
+    :hints(("Goal" :in-theory (enable vl-packeddimension-vl-range->lsb
+                                      vl-range->lsb))))
+
+  (defthm vl-packeddimension-vl-range-is-vl-range
+    (equal (make-vl-packeddimension-vl-range :msb msb :lsb lsb)
+           (make-vl-range :msb msb :lsb lsb))
+    :hints(("Goal" :in-theory (enable vl-packeddimension-vl-range
+                                      vl-range))))
+
+  ;; (defthm vl-packeddimension-kind-when-vl-range-p
+  ;;   (implies (vl-range-p x)
+  ;;            (not (equal x :vl-unsized-dimension)))
+  ;;   :hints(("Goal" :in-theory (enable vl-packeddimension-kind vl-range-p))))
+
+  (defthm vl-packeddimension-fix-when-vl-range-kind
+    (implies (not (equal x :vl-unsized-dimension))
+             (equal (vl-packeddimension-fix x)
+                    (vl-range-fix x)))
+    :hints(("Goal" :in-theory (enable vl-packeddimension-fix-when-vl-range))))
+
+  (defthm vl-range-count-less-than-vl-packeddimension-count
+    (implies (not (equal x :vl-unsized-dimension))
+             (< (vl-range-count x)
+                (vl-packeddimension-count x)))
+    :hints (("goal" :expand ((vl-range-count x)
+                             (vl-packeddimension-count x))))
+    :rule-classes :linear))
+
+
+(defsection vl-valuerange-range
+  (defthm vl-valuerange-is-range
+    (implies (equal (vl-valuerange-kind x) :vl-range)
+             (equal (vl-valuerange-p x)
+                    (vl-range-p x)))
+    :hints(("Goal" :in-theory (enable vl-valuerange-kind)
+            :expand ((vl-valuerange-p x)
+                     (vl-range-p x)))))
+
+  (defthm vl-valuerange-range->msb-is-vl-range->msb
+    (implies (equal (vl-valuerange-kind x) :vl-range)
+             (equal (vl-valuerange-vl-range->msb x)
+                    (vl-range->msb x)))
+    :hints(("Goal" :in-theory (enable vl-valuerange-vl-range->msb
+                                      vl-range->msb))))
+
+  (defthm vl-valuerange-range->lsb-is-vl-range->lsb
+    (implies (equal (vl-valuerange-kind x) :vl-range)
+             (equal (vl-valuerange-vl-range->lsb x)
+                    (vl-range->lsb x)))
+    :hints(("Goal" :in-theory (enable vl-valuerange-vl-range->lsb
+                                      vl-range->lsb))))
+
+  (defthm vl-valuerange-vl-range-is-vl-range
+    (equal (make-vl-valuerange-vl-range :msb msb :lsb lsb)
+           (make-vl-range :msb msb :lsb lsb))
+    :hints(("Goal" :in-theory (enable vl-valuerange-vl-range
+                                      vl-range))))
+
+  (defthm vl-valuerange-kind-when-vl-range-p
+    (implies (vl-range-p x)
+             (equal (vl-valuerange-kind x) :vl-range))
+    :hints(("Goal" :in-theory (enable vl-valuerange-kind vl-range-p))))
+
+  (defthm vl-valuerange-fix-when-vl-range-kind
+    (implies (equal (vl-valuerange-kind x) :vl-range)
+             (equal (vl-valuerange-fix x)
+                    (vl-range-fix x)))
+    :hints(("Goal" :in-theory (enable vl-valuerange-fix-when-vl-range))))
+
+  (defthm vl-range-count-less-than-vl-valuerange-count
+    (implies (equal (vl-valuerange-kind x) :vl-range)
+             (< (vl-range-count x)
+                (vl-valuerange-count x)))
+    :hints (("goal" :expand ((vl-range-count x)
+                             (vl-valuerange-count x))))
+    :rule-classes :linear))
+
+
+
+
+
+             
 
 
 
@@ -2034,7 +2456,7 @@ try to support the use of both ascending and descending ranges.</p>")
 ;; instead.</p>"
 ;;   :inline t
 ;;   :enabled t
-;;   (eq (vl-expr-kind x) :atom))
+;;   (vl-expr-case x :atom))
 
 ;; (deflist vl-atomlist-p (x)
 ;;   (vl-atom-p x)
@@ -2262,23 +2684,61 @@ try to support the use of both ascending and descending ranges.</p>")
 
   )
 
-(defsection vl-packeddimension-p-rules
-  (defthm vl-range-p-when-vl-packeddimension-p
-    (implies (and (vl-packeddimension-p x)
-                  (not (equal x :vl-unsized-dimension)))
-             (vl-range-p x))
-    :hints(("Goal" :in-theory (enable vl-packeddimension-p))))
 
-  (defthm vl-packeddimension-fix-is-range-fix
-    (implies (not (equal x :vl-unsized-dimension))
-             (equal (vl-packeddimension-fix x)
-                    (vl-range-fix x)))
-    :hints(("Goal" :in-theory (enable vl-packeddimension-fix))))
+(defsection vl-maybe-datatype-p-rules
 
-  (defthm vl-packeddimension-p-when-vl-range-p
-    (implies (vl-range-p x)
-             (vl-packeddimension-p x))
-    :hints(("Goal" :in-theory (enable vl-packeddimension-p)))))
+  (defthm vl-maybe-datatype-p-when-vl-datatype-p
+    (implies (vl-datatype-p x)
+             (vl-maybe-datatype-p x))
+    :hints(("Goal" :in-theory (enable vl-maybe-datatype-p))))
+
+  (defthm vl-datatype-p-when-vl-maybe-datatype-p
+    (implies (and (vl-maybe-datatype-p x)
+                  (double-rewrite x))
+             (vl-datatype-p x))
+    :hints(("Goal" :in-theory (enable vl-maybe-datatype-p))))
+
+  (defthm type-when-vl-maybe-datatype-p
+    (implies (vl-maybe-datatype-p x)
+             (or (consp x)
+                 (not x)))
+    :rule-classes :compound-recognizer
+    :hints(("Goal" :in-theory (enable vl-maybe-datatype-p))))
+
+  (defrefinement vl-maybe-datatype-equiv vl-datatype-equiv
+    :hints(("Goal" :in-theory (enable vl-maybe-datatype-fix))))
+
+  ;; (local (defthm vl-expr-fix-of-vl-maybe-expr-fix
+  ;;          (equal (vl-expr-fix (vl-maybe-expr-fix x))
+  ;;                 (if x
+  ;;                     (vl-expr-fix x)
+  ;;                   (vl-expr-fix nil)))
+  ;;          :hints(("Goal" :in-theory (enable vl-maybe-expr-fix)))))
+
+  (defthm vl-maybe-datatype-fix-under-iff
+    (iff (vl-maybe-datatype-fix x)
+         x)
+    :hints(("Goal" :in-theory (enable vl-maybe-datatype-fix))))
+
+  )
+
+;; (defsection vl-packeddimension-p-rules
+;;   (defthm vl-range-p-when-vl-packeddimension-p
+;;     (implies (and (vl-packeddimension-p x)
+;;                   (not (equal x :vl-unsized-dimension)))
+;;              (vl-range-p x))
+;;     :hints(("Goal" :in-theory (enable vl-packeddimension-p))))
+
+;;   (defthm vl-packeddimension-fix-is-range-fix
+;;     (implies (not (equal x :vl-unsized-dimension))
+;;              (equal (vl-packeddimension-fix x)
+;;                     (vl-range-fix x)))
+;;     :hints(("Goal" :in-theory (enable vl-packeddimension-fix))))
+
+;;   (defthm vl-packeddimension-p-when-vl-range-p
+;;     (implies (vl-range-p x)
+;;              (vl-packeddimension-p x))
+;;     :hints(("Goal" :in-theory (enable vl-packeddimension-p)))))
 
 
 
@@ -2566,11 +3026,6 @@ try to support the use of both ascending and descending ranges.</p>")
 ;;     :disable vl-op-p-of-vl-nonatom->op
 ;;     :use ((:instance vl-op-p-of-vl-nonatom->op))))
 
-(defthm vl-maybe-datatype-p-when-datatype-p
-  (implies (vl-datatype-p x)
-           (vl-maybe-datatype-p x))
-  :hints(("Goal" :in-theory (enable vl-maybe-datatype-p))))
-
 
 
 (define vl-expr->type ((x vl-expr-p))
@@ -2594,7 +3049,7 @@ try to support the use of both ascending and descending ranges.</p>")
   ///
   (fty::deffixequiv vl-expr->type)
   (defthm vl-expr-type-when-vl-special
-    (implies (equal (vl-expr-kind x) :vl-special)
+    (implies (vl-expr-case x :vl-special)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-special)))
                            (equal (vl-expr->type x)
@@ -2605,7 +3060,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->type x))))))
 
   (defthm vl-expr-type-when-vl-value
-    (implies (equal (vl-expr-kind x) :vl-value)
+    (implies (vl-expr-case x :vl-value)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-value)))
                            (equal (vl-expr->type x)
@@ -2616,7 +3071,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->type x))))))
 
   (defthm vl-expr-type-when-vl-index
-    (implies (equal (vl-expr-kind x) :vl-index)
+    (implies (vl-expr-case x :vl-index)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-index)))
                            (equal (vl-expr->type x)
@@ -2627,7 +3082,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->type x))))))
 
   (defthm vl-expr-type-when-vl-unary
-    (implies (equal (vl-expr-kind x) :vl-unary)
+    (implies (vl-expr-case x :vl-unary)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-unary)))
                            (equal (vl-expr->type x)
@@ -2638,7 +3093,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->type x))))))
 
   (defthm vl-expr-type-when-vl-binary
-    (implies (equal (vl-expr-kind x) :vl-binary)
+    (implies (vl-expr-case x :vl-binary)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-binary)))
                            (equal (vl-expr->type x)
@@ -2649,7 +3104,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->type x))))))
 
   (defthm vl-expr-type-when-vl-qmark
-    (implies (equal (vl-expr-kind x) :vl-qmark)
+    (implies (vl-expr-case x :vl-qmark)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-qmark)))
                            (equal (vl-expr->type x)
@@ -2660,7 +3115,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->type x))))))
 
   (defthm vl-expr-type-when-vl-mintypmax
-    (implies (equal (vl-expr-kind x) :vl-mintypmax)
+    (implies (vl-expr-case x :vl-mintypmax)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-mintypmax)))
                            (equal (vl-expr->type x)
@@ -2671,7 +3126,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->type x))))))
 
   (defthm vl-expr-type-when-vl-concat
-    (implies (equal (vl-expr-kind x) :vl-concat)
+    (implies (vl-expr-case x :vl-concat)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-concat)))
                            (equal (vl-expr->type x)
@@ -2682,7 +3137,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->type x))))))
 
   (defthm vl-expr-type-when-vl-multiconcat
-    (implies (equal (vl-expr-kind x) :vl-multiconcat)
+    (implies (vl-expr-case x :vl-multiconcat)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-multiconcat)))
                            (equal (vl-expr->type x)
@@ -2693,7 +3148,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->type x))))))
 
   (defthm vl-expr-type-when-vl-stream
-    (implies (equal (vl-expr-kind x) :vl-stream)
+    (implies (vl-expr-case x :vl-stream)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-stream)))
                            (equal (vl-expr->type x)
@@ -2704,7 +3159,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->type x))))))
 
   (defthm vl-expr-type-when-vl-call
-    (implies (equal (vl-expr-kind x) :vl-call)
+    (implies (vl-expr-case x :vl-call)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-call)))
                            (equal (vl-expr->type x)
@@ -2715,7 +3170,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->type x))))))
 
   (defthm vl-expr-type-when-vl-cast
-    (implies (equal (vl-expr-kind x) :vl-cast)
+    (implies (vl-expr-case x :vl-cast)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-cast)))
                            (equal (vl-expr->type x)
@@ -2726,7 +3181,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->type x))))))
 
   (defthm vl-expr-type-when-vl-inside
-    (implies (equal (vl-expr-kind x) :vl-inside)
+    (implies (vl-expr-case x :vl-inside)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-inside)))
                            (equal (vl-expr->type x)
@@ -2737,7 +3192,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->type x))))))
 
   (defthm vl-expr-type-when-vl-tagged
-    (implies (equal (vl-expr-kind x) :vl-tagged)
+    (implies (vl-expr-case x :vl-tagged)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-tagged)))
                            (equal (vl-expr->type x)
@@ -2748,7 +3203,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->type x))))))
 
   (defthm vl-expr-type-when-vl-pattern
-    (implies (equal (vl-expr-kind x) :vl-pattern)
+    (implies (vl-expr-case x :vl-pattern)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-pattern)))
                            (equal (vl-expr->type x)
@@ -2780,7 +3235,7 @@ try to support the use of both ascending and descending ranges.</p>")
   ///
   (fty::deffixequiv vl-expr->atts)
   (defthm vl-expr-atts-when-vl-special
-    (implies (equal (vl-expr-kind x) :vl-special)
+    (implies (vl-expr-case x :vl-special)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-special)))
                            (equal (vl-expr->atts x)
@@ -2791,7 +3246,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->atts x))))))
 
   (defthm vl-expr-atts-when-vl-value
-    (implies (equal (vl-expr-kind x) :vl-value)
+    (implies (vl-expr-case x :vl-value)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-value)))
                            (equal (vl-expr->atts x)
@@ -2802,7 +3257,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->atts x))))))
 
   (defthm vl-expr-atts-when-vl-index
-    (implies (equal (vl-expr-kind x) :vl-index)
+    (implies (vl-expr-case x :vl-index)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-index)))
                            (equal (vl-expr->atts x)
@@ -2813,7 +3268,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->atts x))))))
 
   (defthm vl-expr-atts-when-vl-unary
-    (implies (equal (vl-expr-kind x) :vl-unary)
+    (implies (vl-expr-case x :vl-unary)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-unary)))
                            (equal (vl-expr->atts x)
@@ -2824,7 +3279,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->atts x))))))
 
   (defthm vl-expr-atts-when-vl-binary
-    (implies (equal (vl-expr-kind x) :vl-binary)
+    (implies (vl-expr-case x :vl-binary)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-binary)))
                            (equal (vl-expr->atts x)
@@ -2835,7 +3290,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->atts x))))))
 
   (defthm vl-expr-atts-when-vl-qmark
-    (implies (equal (vl-expr-kind x) :vl-qmark)
+    (implies (vl-expr-case x :vl-qmark)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-qmark)))
                            (equal (vl-expr->atts x)
@@ -2846,7 +3301,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->atts x))))))
 
   (defthm vl-expr-atts-when-vl-mintypmax
-    (implies (equal (vl-expr-kind x) :vl-mintypmax)
+    (implies (vl-expr-case x :vl-mintypmax)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-mintypmax)))
                            (equal (vl-expr->atts x)
@@ -2857,7 +3312,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->atts x))))))
 
   (defthm vl-expr-atts-when-vl-concat
-    (implies (equal (vl-expr-kind x) :vl-concat)
+    (implies (vl-expr-case x :vl-concat)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-concat)))
                            (equal (vl-expr->atts x)
@@ -2868,7 +3323,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->atts x))))))
 
   (defthm vl-expr-atts-when-vl-multiconcat
-    (implies (equal (vl-expr-kind x) :vl-multiconcat)
+    (implies (vl-expr-case x :vl-multiconcat)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-multiconcat)))
                            (equal (vl-expr->atts x)
@@ -2879,7 +3334,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->atts x))))))
 
   (defthm vl-expr-atts-when-vl-stream
-    (implies (equal (vl-expr-kind x) :vl-stream)
+    (implies (vl-expr-case x :vl-stream)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-stream)))
                            (equal (vl-expr->atts x)
@@ -2890,7 +3345,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->atts x))))))
 
   (defthm vl-expr-atts-when-vl-call
-    (implies (equal (vl-expr-kind x) :vl-call)
+    (implies (vl-expr-case x :vl-call)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-call)))
                            (equal (vl-expr->atts x)
@@ -2901,7 +3356,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->atts x))))))
 
   (defthm vl-expr-atts-when-vl-cast
-    (implies (equal (vl-expr-kind x) :vl-cast)
+    (implies (vl-expr-case x :vl-cast)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-cast)))
                            (equal (vl-expr->atts x)
@@ -2912,7 +3367,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->atts x))))))
 
   (defthm vl-expr-atts-when-vl-inside
-    (implies (equal (vl-expr-kind x) :vl-inside)
+    (implies (vl-expr-case x :vl-inside)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-inside)))
                            (equal (vl-expr->atts x)
@@ -2923,7 +3378,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->atts x))))))
 
   (defthm vl-expr-atts-when-vl-tagged
-    (implies (equal (vl-expr-kind x) :vl-tagged)
+    (implies (vl-expr-case x :vl-tagged)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-tagged)))
                            (equal (vl-expr->atts x)
@@ -2934,7 +3389,7 @@ try to support the use of both ascending and descending ranges.</p>")
                                   (vl-expr->atts x))))))
 
   (defthm vl-expr-atts-when-vl-pattern
-    (implies (equal (vl-expr-kind x) :vl-pattern)
+    (implies (vl-expr-case x :vl-pattern)
              (and (implies (syntaxp (and (consp x)
                                          (eq (car x) 'vl-pattern)))
                            (equal (vl-expr->atts x)

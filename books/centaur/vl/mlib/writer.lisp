@@ -290,7 +290,8 @@ displays.  The module browser's web pages are responsible for defining the
        (vl-print-nat col)
        (vl-print-markup "</a>")))))
 
-(define vl-pp-constint ((x vl-constint-p) &key (ps 'ps))
+(define vl-pp-constint ((x vl-value-p) &key (ps 'ps))
+  :guard (vl-value-case x :vl-constint)
   ;; BOZO origwidth/origtype okay here???
   ;; BOZO maybe add origbase or something for printing in the same radix
   ;; as the number was read in?
@@ -312,12 +313,13 @@ displays.  The module browser's web pages are responsible for defining the
                   (vl-print-str "'d"))
                 (vl-print-nat x.value))))
 
-(define vl-pp-weirdint ((x vl-weirdint-p) &key (ps 'ps))
+(define vl-pp-weirdint ((x vl-value-p) &key (ps 'ps))
+  :guard (vl-value-case x :vl-weirdint)
   ;; BOZO origwidth/origtype okay here??
   ;; BOZO maybe add origbase
   (b* (((vl-weirdint x) x))
     (vl-ps-span "vl_int"
-                (vl-print-nat x.origwidth)
+                (vl-print-nat (len x.bits))
                 (if (eq x.origtype :vl-signed)
                     (vl-print-str "'sb")
                   (vl-print-str "'b"))
@@ -358,14 +360,16 @@ displays.  The module browser's web pages are responsible for defining the
                                 ;; \039 format, etc?
                                 (t         (cons car acc)))))))
 
-(define vl-pp-string ((x vl-string-p) &key (ps 'ps))
+(define vl-pp-string ((x vl-value-p) &key (ps 'ps))
+  :guard (vl-value-case x :vl-string)
   (b* (((vl-string x) x)
        (length        (length x.value)))
     (vl-ps-span "vl_str"
                 (vl-print (vl-maybe-escape-string x.value 0 length (list #\")))
                 (vl-println? #\"))))
 
-(define vl-pp-real ((x vl-real-p) &key (ps 'ps))
+(define vl-pp-real ((x vl-value-p) &key (ps 'ps))
+  :guard (vl-value-case x :vl-real)
   (vl-ps-span "vl_real"
               (vl-println? (vl-real->value x))))
 
@@ -1634,7 +1638,7 @@ expression into a string."
                (vl-ps-span "vl_key"
                            (vl-println? (vl-direction-string x.dir)))
                (vl-print " ")
-               (if (and (eq (vl-datatype-kind x.type) :vl-coretype)
+               (if (and (vl-datatype-case x.type :vl-coretype)
                         (eq (vl-coretype->name x.type) :vl-logic))
                    ;; logic type, which is the default -- just print the
                    ;; signedness/packed dims
@@ -1913,7 +1917,7 @@ expression into a string."
                      ps
                    (vl-println? " scalared")))
      (vl-print " ")
-     (if (and (eq (vl-datatype-kind x.type) :vl-coretype)
+     (if (and (vl-datatype-case x.type :vl-coretype)
               (eq (vl-coretype->name x.type) :vl-logic)
               x.nettype)
          ;; netdecl with logic type, which is the default -- just print the
@@ -2096,7 +2100,7 @@ expression into a string."
                     (vl-pp-namedarglist (cdr x) force-newlinesp)))))
 
 (define vl-pp-arguments ((x vl-arguments-p) &key (ps 'ps))
-  (b* ((namedp         (eq (vl-arguments-kind x) :vl-arguments-named))
+  (b* ((namedp         (vl-arguments-case x :vl-arguments-named))
        (args           (vl-arguments-case x
                          :vl-arguments-named (vl-arguments-named->args x)
                          :vl-arguments-plain (vl-arguments-plain->args x)))
@@ -2660,7 +2664,7 @@ expression into a string."
                  (vl-pp-stmt-indented (vl-pp-stmt x.truebranch))
                  (vl-pp-stmt-autoindent)
                  (vl-ps-span "vl_key" (vl-print "else"))
-                 (if (eq (vl-stmt-kind x.falsebranch) :vl-ifstmt)
+                 (if (vl-stmt-case x.falsebranch :vl-ifstmt)
                      ;; It's very common for if/else if structures to be
                      ;; deeply nested.  In this case we don't want to
                      ;; print the sub-statement with extra indentation,
