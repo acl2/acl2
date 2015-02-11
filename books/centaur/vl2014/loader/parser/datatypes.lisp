@@ -828,7 +828,7 @@ dimensions.</p>
     :off prove
     :gag-mode :goals
     (make-event
-     `(defthm-parse-datatype-flag true-listp
+     `(defthm-parse-datatype-flag datatypes-true-listp
         (vl-parse-datatype-or-void t :rule-classes nil)
         (vl-parse-datatype t :rule-classes nil)
         (vl-parse-structmembers (true-listp (mv-nth 1 (vl-parse-structmembers)))

@@ -156,7 +156,7 @@
   ;;                acl2::clause
   ;;                (flag::get-clique-members 'vl-parse-lvalue-fn (w state))))))
 
-  (defthm-parse-lvalues-flag true-listp
+  (defthm-parse-lvalues-flag parse-lvalues-true-listp
     (vl-parse-lvalue
      t
      :rule-classes nil)

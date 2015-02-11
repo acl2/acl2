@@ -159,18 +159,27 @@
 (include-book "centaur/vl/kit/top" :dir :system)
 (include-book "centaur/vl/mlib/clean-concats" :dir :system)
 (include-book "centaur/vl/mlib/atts" :dir :system)
-(include-book "centaur/vl/mlib/json" :dir :system)
 (include-book "centaur/vl/transforms/clean-selects" :dir :system)
 (include-book "centaur/vl/transforms/propagate" :dir :system)
 (include-book "centaur/vl/transforms/expr-simp" :dir :system)
 (include-book "centaur/vl/transforms/inline" :dir :system)
 
-;; BOZO these are incompatible?  which is right?
+(include-book "centaur/vl2014/doc" :dir :system)
+(include-book "centaur/vl2014/kit/top" :dir :system)
+(include-book "centaur/vl2014/mlib/clean-concats" :dir :system)
+(include-book "centaur/vl2014/transforms/clean-selects" :dir :system)
+(include-book "centaur/vl2014/transforms/propagate" :dir :system)
+(include-book "centaur/vl2014/transforms/expr-simp" :dir :system)
+(include-book "centaur/vl2014/transforms/inline" :dir :system)
+
 (include-book "centaur/vl/util/prefix-hash" :dir :system)
-;;(include-book "vl/util/prefixp")
+(include-book "centaur/vl2014/util/prefix-hash" :dir :system)
 
-;; (include-book "vl/mlib/ram-tools")   obsolete
+;; BOZO conflict with prefix-hash stuff above.  Need to fix this.  Also, are
+;; these being used at all?
 
+;; (include-book "centaur/vl/util/prefixp" :dir :system)
+;; (include-book "centaur/vl2014/util/prefixp" :dir :system)
 
 (include-book "hacking/all" :dir :system)
 (include-book "hints/consider-hint" :dir :system)
