@@ -33,7 +33,7 @@
 all:
 
 STARTJOB ?= bash
-VL       ?= $(PWD)/../bin/vl
+VL       ?= $(PWD)/../bin/vl2014
 RUBY     ?= ruby
 
 SPEC_FILES := $(wildcard */spec.sv)
