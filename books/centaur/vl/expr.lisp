@@ -961,7 +961,6 @@ away with them as alternate kinds of assignments.</p>")
 
   (fty::defflexsum vl-packeddimension
     :measure (two-nats-measure (acl2-count x) 105)
-    :kind nil
     (:unsized :cond (eq x :vl-unsized-dimension)
      :fields nil
      :ctor-body ':vl-unsized-dimension)
@@ -1076,6 +1075,8 @@ try to support the use of both ascending and descending ranges.</p>")
 
   )
 
+(fty::deflist vl-rangelist :elt-type vl-range)
+
 
 (define vl-indexpart-range->msb ((x vl-indexpart-p))
   :guard (eq (vl-indexpart-kind x) :range)
@@ -1153,13 +1154,13 @@ try to support the use of both ascending and descending ranges.</p>")
 
 
 (define vl-packeddimension-range->msb ((x vl-packeddimension-p))
-  :guard (not (eq x :vl-unsized-dimension))
+  :guard (eq (vl-packeddimension-kind x) :range)
   :inline t
   :enabled t
   (vl-range->msb (vl-packeddimension->range x)))
 
 (define vl-packeddimension-range->lsb ((x vl-packeddimension-p))
-  :guard (not (eq x :vl-unsized-dimension))
+  :guard (eq (vl-packeddimension-kind x) :range)
   :inline t
   :enabled t
   (vl-range->lsb (vl-packeddimension->range x)))
@@ -2417,6 +2418,13 @@ try to support the use of both ascending and descending ranges.</p>")
          x)
     :hints(("Goal" :in-theory (enable vl-maybe-expr-fix))))
 
+  (defthm vl-expr-count-of-maybe-expr
+    (implies x
+             (< (vl-expr-count x) (vl-maybe-expr-count x)))
+    :hints(("Goal" :expand ((vl-maybe-expr-count x))
+            :in-theory (enable vl-maybe-expr-expr->expr)))
+    :rule-classes :linear)
+
   )
 
 (defsection vl-maybe-range-p-rules
@@ -2453,6 +2461,13 @@ try to support the use of both ascending and descending ranges.</p>")
     (iff (vl-maybe-range-fix x)
          x)
     :hints(("Goal" :in-theory (enable vl-maybe-range-fix))))
+
+  (defthm vl-range-count-of-maybe-range
+    (implies x
+             (< (vl-range-count x) (vl-maybe-range-count x)))
+    :hints(("Goal" :expand ((vl-maybe-range-count x))
+            :in-theory (enable vl-maybe-range-range->range)))
+    :rule-classes :linear)
 
   )
 
@@ -2492,6 +2507,71 @@ try to support the use of both ascending and descending ranges.</p>")
          x)
     :hints(("Goal" :in-theory (enable vl-maybe-datatype-fix))))
 
+  (defthm vl-datatype-count-of-maybe-datatype
+    (implies x
+             (< (vl-datatype-count x) (vl-maybe-datatype-count x)))
+    :hints(("Goal" :expand ((vl-maybe-datatype-count x))
+            :in-theory (enable vl-maybe-datatype-expr->datatype)))
+    :rule-classes :linear)
+
+  )
+
+(defsection vl-maybe-packeddimension-p-rules
+
+  (defthm vl-maybe-packeddimension-p-when-vl-packeddimension-p
+    (implies (vl-packeddimension-p x)
+             (vl-maybe-packeddimension-p x))
+    :hints(("Goal" :in-theory (enable vl-maybe-packeddimension-p))))
+
+  (defthm vl-packeddimension-p-when-vl-maybe-packeddimension-p
+    (implies (and (vl-maybe-packeddimension-p x)
+                  (double-rewrite x))
+             (vl-packeddimension-p x))
+    :hints(("Goal" :in-theory (enable vl-maybe-packeddimension-p))))
+
+  (defthm type-when-vl-packeddimension-p
+    (implies (vl-packeddimension-p x)
+             (or (consp x)
+                 (and (symbolp x)
+                      x
+                      (not (equal x t)))))
+    :hints(("Goal" :in-theory (enable vl-packeddimension-p)))
+    :rule-classes :compound-recognizer)
+
+  (local (defthm vl-packeddimension-p-of-packeddimension-fix-forward
+           (vl-packeddimension-p (vl-packeddimension-fix x))
+           :rule-classes ((:forward-chaining :trigger-terms ((vl-packeddimension-fix x))))))
+
+  (defthm type-when-vl-maybe-packeddimension-p
+    (implies (vl-maybe-packeddimension-p x)
+             (or (consp x)
+                 (and (symbolp x)
+                      (not (eq x t)))))
+    :rule-classes :compound-recognizer
+    :hints(("Goal" :in-theory (enable vl-maybe-packeddimension-p))))
+
+  (defrefinement vl-maybe-packeddimension-equiv vl-packeddimension-equiv
+    :hints(("Goal" :in-theory (enable vl-maybe-packeddimension-fix))))
+
+  ;; (local (defthm vl-packeddimension-fix-of-vl-maybe-packeddimension-fix
+  ;;          (equal (vl-packeddimension-fix (vl-maybe-packeddimension-fix x))
+  ;;                 (if x
+  ;;                     (vl-packeddimension-fix x)
+  ;;                   (vl-packeddimension-fix nil)))
+  ;;          :hints(("Goal" :in-theory (enable vl-maybe-packeddimension-fix)))))
+
+  (defthm vl-maybe-packeddimension-fix-under-iff
+    (iff (vl-maybe-packeddimension-fix x)
+         x)
+    :hints(("Goal" :in-theory (enable vl-maybe-packeddimension-fix))))
+
+  (defthm vl-packeddimension-count-of-maybe-packeddimension
+    (implies x
+             (< (vl-packeddimension-count x) (vl-maybe-packeddimension-count x)))
+    :hints(("Goal" :expand ((vl-maybe-packeddimension-count x))
+            :in-theory (enable vl-maybe-packeddimension-dim->packeddimension)))
+    :rule-classes :linear)
+
   )
 
 ;; (defsection vl-packeddimension-p-rules
@@ -2511,7 +2591,6 @@ try to support the use of both ascending and descending ranges.</p>")
 ;;     (implies (vl-range-p x)
 ;;              (vl-packeddimension-p x))
 ;;     :hints(("Goal" :in-theory (enable vl-packeddimension-p)))))
-
 
 
 
@@ -3169,8 +3248,99 @@ try to support the use of both ascending and descending ranges.</p>")
                   (implies (syntaxp (not (and (consp x)
                                               (eq (car x) 'vl-pattern))))
                            (equal (vl-pattern->atts x)
-                                  (vl-expr->atts x)))))))
+                                  (vl-expr->atts x))))))
+
+  (defthm vl-atts-count-of-vl-expr->atts
+    (< (vl-atts-count (vl-expr->atts x))
+       (vl-expr-count x))
+    :hints(("Goal" :in-theory (disable vl-expr->atts)
+            :expand ((vl-expr-count x))))
+    :rule-classes :linear))
 
   
     
     
+
+
+
+(define vl-datatype->pdims ((x vl-datatype-p))
+  :returns (pdims vl-packeddimensionlist-p)
+  (vl-datatype-case x
+    :vl-coretype x.pdims
+    :vl-struct x.pdims
+    :vl-union x.pdims
+    :vl-enum x.pdims
+    :vl-usertype x.pdims))
+
+(define vl-datatype->udims ((x vl-datatype-p))
+  :returns (udims vl-packeddimensionlist-p)
+  (vl-datatype-case x
+    :vl-coretype x.udims
+    :vl-struct x.udims
+    :vl-union x.udims
+    :vl-enum x.udims
+    :vl-usertype x.udims)
+  ///
+  (defret vl-packeddimensionlist-count-of-vl-datatype->pdims/udims
+    (< (+ (vl-packeddimensionlist-count (vl-datatype->pdims x))
+          (vl-packeddimensionlist-count (vl-datatype->udims x)))
+       (vl-datatype-count x))
+    :hints (("goal" :in-theory (enable vl-datatype->pdims)
+             :expand ((vl-datatype-count x))))
+    :rule-classes :linear))
+
+(define vl-datatype-update-dims ((pdims vl-packeddimensionlist-p)
+                                 (udims vl-packeddimensionlist-p)
+                                 (x vl-datatype-p))
+  :returns (newx (and (vl-datatype-p newx)
+                      (eq (vl-datatype-kind newx) (vl-datatype-kind x))))
+  (vl-datatype-case x
+    :vl-coretype (change-vl-coretype x :pdims pdims :udims udims)
+    :vl-struct   (change-vl-struct   x :pdims pdims :udims udims)
+    :vl-union    (change-vl-union    x :pdims pdims :udims udims)
+    :vl-enum     (change-vl-enum     x :pdims pdims :udims udims)
+    :vl-usertype (change-vl-usertype x :pdims pdims :udims udims))
+  ///
+  (defthm vl-datatype-update-dims-of-own
+    (equal (vl-datatype-update-dims (vl-datatype->pdims x)
+                                    (vl-datatype->udims x)
+                                    x)
+           (vl-datatype-fix x))
+    :hints(("Goal" :in-theory (enable vl-datatype->udims
+                                      vl-datatype->pdims))))
+
+  (defthm vl-datatype->pdims-of-vl-datatype-update-dims
+    (equal (vl-datatype->pdims (vl-datatype-update-dims pdims udims x))
+           (vl-packeddimensionlist-fix pdims))
+    :hints(("Goal" :in-theory (enable vl-datatype->pdims))))
+
+  (defthm vl-datatype->udims-of-vl-datatype-update-dims
+    (equal (vl-datatype->udims (vl-datatype-update-dims pdims udims x))
+           (vl-packeddimensionlist-fix udims))
+    :hints(("Goal" :in-theory (enable vl-datatype->udims)))))
+
+(define vl-datatype-update-pdims ((pdims vl-packeddimensionlist-p) (x vl-datatype-p))
+  :enabled t
+  :prepwork ((local (in-theory (enable vl-datatype-update-dims vl-datatype->udims))))
+  :returns (newx (and (vl-datatype-p newx)
+                      (eq (vl-datatype-kind newx) (vl-datatype-kind x))))
+  (mbe :logic (vl-datatype-update-dims pdims (vl-datatype->udims x) x)
+       :exec  (vl-datatype-case x
+                  :vl-coretype (change-vl-coretype x :pdims pdims)
+                  :vl-struct (change-vl-struct x :pdims pdims)
+                  :vl-union (change-vl-union x :pdims pdims)
+                  :vl-enum (change-vl-enum x :pdims pdims)
+                  :vl-usertype (change-vl-usertype x :pdims pdims))))
+
+(define vl-datatype-update-udims ((udims vl-packeddimensionlist-p) (x vl-datatype-p))
+  :enabled t
+  :prepwork ((local (in-theory (enable vl-datatype-update-dims vl-datatype->pdims))))
+  :returns (newx (and (vl-datatype-p newx)
+                      (eq (vl-datatype-kind newx) (vl-datatype-kind x))))
+  (mbe :logic (vl-datatype-update-dims (vl-datatype->pdims x) udims x)
+       :exec  (vl-datatype-case x
+                  :vl-coretype (change-vl-coretype x :udims udims)
+                  :vl-struct (change-vl-struct x :udims udims)
+                  :vl-union (change-vl-union x :udims udims)
+                  :vl-enum (change-vl-enum x :udims udims)
+                  :vl-usertype (change-vl-usertype x :udims udims))))

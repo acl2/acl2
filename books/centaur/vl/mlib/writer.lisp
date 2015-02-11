@@ -486,187 +486,81 @@ displays.  The module browser's web pages are responsible for defining the
       (:vl-emptyqueue (vl-print "{ }"))
       (otherwise (prog2$ (impossible) ps)))))
 
-(defmacro vl-ops-precedence-table ()
-  ''(;; These aren't real operators as far as the precedence rules are
-     ;; concerned, but they need to bind even more tightly than +, -, etc.
-     (:VL-BITSELECT             . 200)
-     (:VL-PARTSELECT-COLON      . 200)
-     (:VL-PARTSELECT-PLUSCOLON  . 200)
-     (:VL-PARTSELECT-MINUSCOLON . 200)
-     (:VL-INDEX                 . 200)
-     (:VL-SELECT-COLON          . 200)
-     (:VL-SELECT-PLUSCOLON      . 200)
-     (:VL-SELECT-MINUSCOLON     . 200)
-     (:VL-FUNCALL               . 200)
-     (:VL-SYSCALL               . 200)
-     (:VL-HID-DOT               . 200)
-     ;(:VL-HID-ARRAYDOT          . 200)
-     (:VL-SCOPE                 . 200)
-     (:VL-WITH-INDEX            . 200)
-     (:VL-WITH-COLON            . 200)
-     (:VL-WITH-PLUSCOLON        . 200)
-     (:VL-WITH-MINUSCOLON       . 200)
 
-
-     ;; In Verilog-2005 Table 5-4, concats are said to have minimal precedence.
-     ;; But that doesn't really make sense.  For instance, in: a + {b + c} the
-     ;; {b + c} term acts more like an operand than another operator.  So, here
-     ;; I say that concats and multiconcats also have precedence 20, so they
-     ;; will be treated just like operands.  That is, we want to write
-     ;; &{foo,bar} rather than &({foo,bar}).  For similar reasons, I put the
-     ;; mintypmax operand here with precedence 20.
-     (:VL-MINTYPMAX          . 200)
-     (:VL-STREAM-LEFT        . 200)
-     (:VL-STREAM-RIGHT       . 200)
-     (:VL-STREAM-LEFT-SIZED  . 200)
-     (:VL-STREAM-RIGHT-SIZED . 200)
-     (:VL-TAGGED             . 200)
-
-     ;; I don't know about these; they seem like they're really a special case
-     ;; and they seem a little bit like concats/multiconcats so I'm putting
-     ;; them here (Sol).
-     (:VL-CONCAT             . 200)
-     (:VL-MULTICONCAT        . 200)
-     (:VL-PATTERN-POSITIONAL . 200)
-     (:VL-PATTERN-KEYVALUE   . 200)
-     (:VL-PATTERN-MULTI      . 200)
-     (:VL-PATTERN-TYPE       . 200)
-     (:VL-KEYVALUE           . 200)
-     (:VL-VALUERANGELIST     . 200)
-     (:VL-VALUERANGE         . 200)
-
-     ;; All of these things with precedence 20 is kind of concerning/confusing.
-     ;; Can this really be right?  Well, what's one more?
-     (:VL-BINARY-CAST        . 200)
-
-
-     ;; This part is based on Verilog-2005 Table 5-4, and SystemVerilog-2012
-     ;; Table 11-2.
-     (:VL-UNARY-PLUS     . 150)
-     (:VL-UNARY-MINUS    . 150)
-     (:VL-UNARY-LOGNOT   . 150)
-     (:VL-UNARY-BITNOT   . 150)
-     (:VL-UNARY-BITAND   . 150)
-     (:VL-UNARY-NAND     . 150)
-     (:VL-UNARY-BITOR    . 150)
-     (:VL-UNARY-NOR      . 150)
-     (:VL-UNARY-XOR      . 150)
-     (:VL-UNARY-XNOR     . 150)
-     (:vl-unary-preinc   . 150)
-     (:vl-unary-postinc  . 150)
-     (:vl-unary-predec   . 150)
-     (:vl-unary-postdec  . 150)
-
-     (:VL-BINARY-POWER   . 140)
-
-     (:VL-BINARY-TIMES   . 130)
-     (:VL-BINARY-DIV     . 130)
-     (:VL-BINARY-REM     . 130)
-
-     (:VL-BINARY-PLUS    . 120)
-     (:VL-BINARY-MINUS   . 120)
-
-     (:VL-BINARY-SHR     . 110)
-     (:VL-BINARY-SHL     . 110)
-     (:VL-BINARY-ASHR    . 110)
-     (:VL-BINARY-ASHL    . 110)
-
-     (:VL-BINARY-LT      . 100)
-     (:VL-BINARY-LTE     . 100)
-     (:VL-BINARY-GT      . 100)
-     (:VL-BINARY-GTE     . 100)
-     (:VL-INSIDE         . 100)
-
-     (:VL-BINARY-EQ      . 90)
-     (:VL-BINARY-NEQ     . 90)
-     (:VL-BINARY-CEQ     . 90)
-     (:VL-BINARY-CNE     . 90)
-     (:vl-binary-wildeq  . 90)
-     (:vl-binary-wildneq . 90)
-
-     (:VL-BINARY-BITAND  . 80)
-
-     (:VL-BINARY-XOR     . 70)
-     (:VL-BINARY-XNOR    . 70)
-
-     (:VL-BINARY-BITOR   . 60)
-
-     (:VL-BINARY-LOGAND  . 50)
-
-     (:VL-BINARY-LOGOR   . 40)
-
-     (:VL-QMARK          . 30)
-
-     (:vl-implies        . 20)
-     (:vl-equiv          . 20)
-
-     ;; SystemVerilog assignment operators have lowest precedence
-     (:vl-binary-assign      . 10)
-     (:vl-binary-plusassign  . 10)
-     (:vl-binary-minusassign . 10)
-     (:vl-binary-timesassign . 10)
-     (:vl-binary-divassign   . 10)
-     (:vl-binary-remassign   . 10)
-     (:vl-binary-andassign   . 10)
-     (:vl-binary-orassign    . 10)
-     (:vl-binary-xorassign   . 10)
-     (:vl-binary-shlassign   . 10)
-     (:vl-binary-shrassign   . 10)
-     (:vl-binary-ashlassign  . 10)
-     (:vl-binary-ashrassign  . 10)
-
-     ))
-
-(local (in-theory (disable unsigned-byte-p)))
-
-(define vl-op-precedence (x)
-  ;; :prepwork ((local (defun u8-val-alistp (x)
-  ;;                     (if (atom x)
-  ;;                         t
-  ;;                       (and (consp (car x))
-  ;;                            (posp (cdar x))
-  ;;                            (unsigned-byte-p 8 (cdar x))
-  ;;                            (u8-val-alistp (cdr x))))))
-  ;;            (local (defthm posp-of-lookup-when-u8-val-alistp
-  ;;                     (implies (and (u8-val-alistp x)
-  ;;                                   (hons-assoc-equal k x))
-  ;;                              (and (posp (cdr (hons-assoc-equal k x)))
-  ;;                                   (unsigned-byte-p 8 (cdr (hons-assoc-equal k x)))))
-  ;;                     :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
-  ;;            ;; (local (in-theory (e/d (acl2::hons-assoc-equal-iff-member-alist-keys)
-  ;;            ;;                        (acl2::alist-keys-member-hons-assoc-equal))))
-  ;;            ;; (local (defthm member-when-member-set-equiv
-  ;;            ;;          (implies (and (member k y)
-  ;;            ;;                        (set-equiv x y))
-  ;;            ;;                   (member k x))))
-  ;;            ;; (local (in-theory (e/d (vl-op-fix vl-op-p vl-ops-table)
-  ;;            ;;                        (acl2::hons-assoc-equal-of-cons
-  ;;            ;;                         acl2::member-of-cons
-  ;;            ;;                         acl2::member-when-atom))))
-  ;;            )
+(define vl-binaryop-precedence ((x vl-binaryop-p))
   :returns (precedence posp :rule-classes :type-prescription)
-  :inline t
-  (mbe :logic (pos-fix (cdr (assoc x (vl-ops-precedence-table))))
-       :exec (b* ((res (cdr (assoc x (vl-ops-precedence-table)))))
-               (or res
-                   (raise "Bad op: ~x0" x)
-                   (pos-fix res))))
-  ///
-  (more-returns
-   (precedence (unsigned-byte-p 8 precedence)
-               :name byte-p-of-vl-op-precedence)))
+  :prepwork ((local (Defthm vl-binaryop-fix-forward
+                      (vl-binaryop-p (vl-binaryop-fix x))
+                      :rule-classes
+                      ((:forward-chaining :trigger-terms ((vl-binaryop-fix x)))))))
+  (case (vl-binaryop-fix x)
+    (:VL-BINARY-POWER    140)
 
-(define vl-op-precedence-< ((x vl-op-p) (y vl-op-p))
-  :inline t
-  :guard-hints(("Goal" :in-theory (enable vl-op-p)))
-  (< (the (unsigned-byte 8) (vl-op-precedence x))
-     (the (unsigned-byte 8) (vl-op-precedence y))))
+    (:VL-BINARY-TIMES    130)
+    (:VL-BINARY-DIV      130)
+    (:VL-BINARY-REM      130)
 
-(define vl-op-precedence-<= ((x vl-op-p) (y vl-op-p))
-  :inline t
-  :guard-hints(("Goal" :in-theory (enable vl-op-p)))
-  (<= (the (unsigned-byte 8) (vl-op-precedence x))
-      (the (unsigned-byte 8) (vl-op-precedence y))))
+    (:VL-BINARY-PLUS     120)
+    (:VL-BINARY-MINUS    120)
+
+    (:VL-BINARY-SHR      110)
+    (:VL-BINARY-SHL      110)
+    (:VL-BINARY-ASHR     110)
+    (:VL-BINARY-ASHL     110)
+
+    (:VL-BINARY-LT       100)
+    (:VL-BINARY-LTE      100)
+    (:VL-BINARY-GT       100)
+    (:VL-BINARY-GTE      100)
+    (:VL-INSIDE          100)
+
+    (:VL-BINARY-EQ       90)
+    (:VL-BINARY-NEQ      90)
+    (:VL-BINARY-CEQ      90)
+    (:VL-BINARY-CNE      90)
+    (:vl-binary-wildeq   90)
+    (:vl-binary-wildneq  90)
+
+    (:VL-BINARY-BITAND   80)
+
+    (:VL-BINARY-XOR      70)
+    (:VL-BINARY-XNOR     70)
+
+    (:VL-BINARY-BITOR    60)
+
+    (:VL-BINARY-LOGAND   50)
+
+    (:VL-BINARY-LOGOR    40)
+
+    (:vl-implies         20)
+    (:vl-equiv           20)
+
+    ;; SystemVerilog assignment operators have lowest precedence
+    (:vl-binary-assign       10)
+    (:vl-binary-plusassign   10)
+    (:vl-binary-minusassign  10)
+    (:vl-binary-timesassign  10)
+    (:vl-binary-divassign    10)
+    (:vl-binary-remassign    10)
+    (:vl-binary-andassign    10)
+    (:vl-binary-orassign     10)
+    (:vl-binary-xorassign    10)
+    (:vl-binary-shlassign    10)
+    (:vl-binary-shrassign    10)
+    (:vl-binary-ashlassign   10)
+    (:vl-binary-ashrassign   10)
+    (otherwise (impossible))))
+
+
+(define vl-expr-precedence ((x vl-expr-p))
+  :short "Returns a symbol representing the operation that's being done at the top level."
+  :returns (precedence posp :rule-classes :type-prescription)
+  (vl-expr-case x
+    :vl-unary 150
+    :vl-binary (vl-binaryop-precedence x.op)
+    :vl-qmark 30
+    :otherwise 200))
+
 
 (defmacro vl-pp-expr-special-atts ()
   ''("VL_ORIG_EXPR"
@@ -681,10 +575,50 @@ displays.  The module browser's web pages are responsible for defining the
   :disable vl-atts-p-of-vl-remove-keys)
 
 
+(define vl-unaryop-string ((x vl-unaryop-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :prepwork ((local (defthm vl-unaryop-fix-forward
+                      (vl-unaryop-p (vl-unaryop-fix x))
+                      :rule-classes
+                      ((:forward-chaining :trigger-terms ((vl-unaryop-fix x)))))))
+  (cdr (assoc (vl-unaryop-fix x) *vl-unary-ops*)))
+
+(define vl-binaryop-string ((x vl-binaryop-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :prepwork ((local (defthm vl-binaryop-fix-forward
+                      (vl-binaryop-p (vl-binaryop-fix x))
+                      :rule-classes
+                      ((:forward-chaining :trigger-terms ((vl-binaryop-fix x)))))))
+  (cdr (assoc (vl-binaryop-fix x) *vl-binary-ops*)))
+
+
+(define vl-atts-find-paramname ((atts vl-atts-p))
+  ;; See vl-expr-scopesubst.  When we substitute a parameter's value into its
+  ;; expression, we add a paramname annotation.
+  :returns (paramname maybe-stringp :rule-classes :type-prescription)
+  (b* ((look (hons-assoc-equal "VL_PARAMNAME" (vl-atts-fix atts)))
+       ((unless look)
+        nil)
+       (val (cdr look))
+       ((unless val) nil))
+    (vl-expr-case val
+      :vl-value (vl-value-case val.val
+                  :vl-string val.val.value
+                  :otherwise nil)
+      :otherwise nil)))
+
+(define vl-leftright-string ((x vl-leftright-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  (case (vl-leftright-fix x)
+    (:left "<<")
+    (otherwise ">>")))
+
 
 (defines vl-pp-expr
+  :prepwork ((local (in-theory (disable acl2::member-of-cons))))
+  :ruler-extenders :all
   (define vl-pp-indexlist ((x vl-exprlist-p) &key (ps 'ps))
-    :measure (vl-exprlist-count x)
+    :measure (two-nats-measure (vl-exprlist-count x) 10)
     (if (atom x)
         ps
       (vl-ps-seq (vl-print "[")
@@ -693,13 +627,13 @@ displays.  The module browser's web pages are responsible for defining the
                  (vl-pp-indexlist (cdr x)))))
 
   (define vl-pp-hidindex ((x vl-hidindex-p) &key (ps 'ps))
-    :measure (vl-hidindex-count x)
+    :measure (two-nats-measure (vl-hidindex-count x) 10)
     (b* (((vl-hidindex x)))
       (vl-ps-seq (vl-ps-span "vl_id" (vl-print-str x.name))
                  (vl-pp-indexlist x.indices))))
 
   (define vl-pp-hidexpr ((x vl-hidexpr-p) &key (ps 'ps))
-    :measure (vl-hidexpr-count x)
+    :measure (two-nats-measure (vl-hidexpr-count x) 10)
     (vl-hidexpr-case x
       :end (vl-ps-span "vl_id" (vl-print-str x.name))
       :dot (vl-ps-seq (vl-pp-hidindex x.first)
@@ -707,7 +641,7 @@ displays.  The module browser's web pages are responsible for defining the
                       (vl-pp-hidexpr x.rest))))
 
   (define vl-pp-scopeexpr ((x vl-scopeexpr-p) &key (ps 'ps))
-    :measure (vl-scopeexpr-count x)
+    :measure (two-nats-measure (vl-scopeexpr-count x) 10)
     (vl-scopeexpr-case x
       :end (vl-pp-hidexpr x.hid)
       :colon (vl-ps-seq (vl-pp-scopename x.first)
@@ -715,7 +649,7 @@ displays.  The module browser's web pages are responsible for defining the
                         (vl-pp-scopeexpr x.rest))))
 
   (define vl-pp-range ((x vl-range-p) &key (ps 'ps))
-    :measure (vl-range-count x)
+    :measure (two-nats-measure (vl-range-count x) 10)
     (b* (((vl-range x)))
       (vl-ps-seq (vl-print "[")
                  (vl-pp-expr x.msb)
@@ -724,41 +658,43 @@ displays.  The module browser's web pages are responsible for defining the
                  (vl-print "]"))))
 
   (define vl-pp-plusminus ((x vl-plusminus-p) &key (ps 'ps))
-    :measure (vl-range-count x)
+    :measure (two-nats-measure (vl-plusminus-count x) 10)
     (b* (((vl-plusminus x)))
       (vl-ps-seq (vl-print "[")
                  (vl-pp-expr x.base)
                  (vl-print-str (if x.minusp "-:" "+:"))
                  (vl-pp-expr x.width)
                  (vl-print "]"))))
-    
+  
 
   (define vl-pp-indexpart ((x vl-indexpart-p) &key (ps 'ps))
-    :measure (vl-indexpart-count x)
+    :measure (two-nats-measure (vl-indexpart-count x) 10)
     (vl-indexpart-case x
-      :vl-none ps
-      :vl-range (vl-pp-range x.range)
+      :none ps
+      :range (vl-pp-range x.range)
       :plusminus (vl-pp-plusminus x.plusminus)))
 
   (define vl-pp-arrayrange ((x vl-arrayrange-p) &key (ps 'ps))
-    :measure (vl-arrayrange-count x)
+    :measure (two-nats-measure (vl-arrayrange-count x) 10)
     (vl-arrayrange-case x
       :none  ps
       :index (vl-ps-seq (vl-ps-span "vl_key" (vl-print " with "))
                         (vl-print "[")
-                        (vl-pp-expr x.idx)
+                        (vl-pp-expr x.expr)
                         (vl-print "]"))
-      :range (vl-pp-range x.range)
-      :plusminus (vl-pp-plusminus x.plusminus)))
+      :range (vl-ps-seq (vl-ps-span "vl_key" (vl-print " with "))
+                        (vl-pp-range x.range))
+      :plusminus (vl-ps-span "vl_key" (vl-print " with ")
+                             (vl-pp-plusminus x.plusminus))))
 
   (define vl-pp-streamexpr ((x vl-streamexpr-p) &key (ps 'ps))
-    :measure (vl-streamexpr-count x)
+    :measure (two-nats-measure (vl-streamexpr-count x) 10)
     (b* (((vl-streamexpr x)))
       (vl-ps-seq (vl-pp-expr x.expr)
-                 (vl-pp-indexpart x.part))))
+                 (vl-pp-arrayrange x.part))))
 
   (define vl-pp-streamexprlist ((x vl-streamexprlist-p) &key (ps 'ps))
-    :measure (vl-streamexprlist-count x)
+    :measure (two-nats-measure (vl-streamexprlist-count x) 10)
     (if (atom x)
         ps
       (if (atom (cdr x))
@@ -768,13 +704,13 @@ displays.  The module browser's web pages are responsible for defining the
                    (vl-pp-streamexprlist (cdr x))))))
 
   (define vl-pp-valuerange ((x vl-valuerange-p) &key (ps 'ps))
-    :measure (vl-valuerange-count x)
+    :measure (two-nats-measure (vl-valuerange-count x) 10)
     (vl-valuerange-case x
       :range (vl-pp-range x.range)
       :single (vl-pp-expr x.expr)))
 
   (define vl-pp-valuerangelist ((x vl-valuerangelist-p) &key (ps 'ps))
-    :measure (vl-valuerangelist-count x)
+    :measure (two-nats-measure (vl-valuerangelist-count x) 10)
     (if (atom x)
         ps
       (if (atom (cdr x))
@@ -784,14 +720,14 @@ displays.  The module browser's web pages are responsible for defining the
                    (vl-pp-valuerangelist (cdr x))))))
 
   (define vl-pp-patternkey ((x vl-patternkey-p) &key (ps 'ps))
-    :measure (vl-patternkey-count x)
+    :measure (two-nats-measure (vl-patternkey-count x) 10)
     (vl-patternkey-case x
       :expr (vl-pp-expr x.key)
       :type (vl-pp-datatype x.type)
       :default (vl-print "default")))
 
   (define vl-pp-keyvallist ((x vl-keyvallist-p) &key (ps 'ps))
-    :measure (vl-keyvallist-count x)
+    :measure (two-nats-measure (vl-keyvallist-count x) 10)
     (b* ((x (vl-keyvallist-fix x)))
       (if (atom x)
           ps
@@ -804,901 +740,211 @@ displays.  The module browser's web pages are responsible for defining the
                                 (vl-pp-keyvallist (cdr x))))))))
 
   (define vl-pp-assignpat ((x vl-assignpat-p) &key (ps 'ps))
-    :measure (vl-assignpat-count x)
+    :measure (two-nats-measure (vl-assignpat-count x) 10)
+    :ruler-extenders :all
     (vl-ps-seq (vl-print "'{")
                (vl-assignpat-case x
                  :positional (vl-pp-exprlist x.vals)
                  :keyval (vl-pp-keyvallist x.pairs)
-                 :repeat (vl-ps-seq (vl-pp-expr reps)
+                 :repeat (vl-ps-seq (vl-pp-expr x.reps)
                                     (vl-print " { ")
                                     (vl-pp-exprlist x.vals)
                                     (vl-print " }")))
                (vl-print "}")))
 
   (define vl-pp-expr ((x vl-expr-p) &key (ps 'ps))
-    :measure (vl-expr-count x)
-    (
-          
-    
-    
-  
+    :measure (two-nats-measure (vl-expr-count x) 10)
+    :ruler-extenders :all
+    (b* ((atts (vl-expr->atts x))
+         (unspecial-atts (vl-remove-keys (vl-pp-expr-special-atts) atts)))
+      (vl-expr-case x
+
+        :vl-special (vl-pp-specialkey x.key)
+
+        :vl-value (b* ((ps (vl-pp-value x.val))
+                       (paramname (vl-atts-find-paramname atts)))
+                    (vl-when-html
+                     (if paramname
+                         (vl-ps-seq (vl-print-markup "<span class='vl_paramname'>")
+                                    (vl-print-str paramname)
+                                    (vl-print-markup "</span>"))
+                       ps)))
+        
+        :vl-index (vl-ps-seq (vl-pp-scopeexpr x.scope)
+                             (vl-pp-indexlist x.indices)
+                             (vl-pp-indexpart x.part))
+
+        :vl-unary (b* ((prec (vl-expr-precedence x))
+                       (arg-prec (vl-expr-precedence x.arg))
+                       (want-parens (<= arg-prec prec))
+                       ((when (member x.op '(:vl-unary-postinc
+                                             :vl-unary-postdec)))
+                        (vl-ps-seq
+                         (if want-parens (vl-print "(") ps)
+                         (vl-pp-expr x.arg)
+                         (if atts (vl-pp-atts unspecial-atts) ps)
+                         (vl-print-str (vl-unaryop-string x.op))
+                         (vl-println? ""))))
+                    (vl-ps-seq
+                     (vl-print-str (vl-unaryop-string x.op))
+                     (if atts (vl-pp-atts unspecial-atts) ps)
+                     (vl-print-str " ")
+                     (if want-parens (vl-print "(") ps)
+                     (vl-pp-expr x.arg)
+                     (if want-parens (vl-print ")") ps)
+                     (vl-println? "")))
+
+        :vl-binary (b* ((prec (vl-expr-precedence x))
+                        (left-prec (vl-expr-precedence x.left))
+                        (right-prec (vl-expr-precedence x.right))
+                        (right-assocp (member x.op '(:vl-implies :vl-equiv)))
+                        (left-parens (or (< left-prec prec)
+                                         (and right-assocp (eql left-prec prec))
+                                         (hons-assoc-equal "VL_EXPLICIT_PARENS"
+                                                           (vl-expr->atts x.left))))
+                        (right-parens (or (< right-prec prec)
+                                          (and (not right-assocp) (eql right-prec prec))
+                                          (hons-assoc-equal "VL_EXPLICIT_PARENS"
+                                                            (vl-expr->atts x.right))
+                                          (b* ((rightop (vl-expr-case x.right
+                                                          :vl-binary x.right.op
+                                                          :otherwise nil)))
+                                            (or (and (eq x.op :vl-binary-bitand)
+                                                     (eq rightop :vl-binary-bitand))
+                                                (and (eq x.op :vl-binary-bitor)
+                                                     (eq rightop :vl-binary-bitor)))))))
+                     ;; BOZO used to be a special case for assignment
+                     ;; operators, but I think it boils down to precedence and
+                     ;; should work OK -- am I missing something?
+                     (vl-ps-seq
+                      (if left-parens (vl-print "(") ps)
+                      (vl-pp-expr x.left)
+                      (if left-parens (vl-print ")") ps)
+                      (vl-print-str (vl-binaryop-string x.op))
+                      (if atts (vl-pp-atts unspecial-atts) ps)
+                      (vl-println? " ")
+                      (if right-parens (vl-print "(") ps)
+                      (vl-pp-expr x.right)
+                      (if right-parens (vl-print ")") ps)
+                      (vl-println? "")))
+
+        :vl-qmark (b* ((prec (vl-expr-precedence x))
+                       (test-parens (<= (vl-expr-precedence x.test) prec))
+                       (then-parens (<= (vl-expr-precedence x.then) prec))
+                       (else-parens (<  (vl-expr-precedence x.else) prec)))
+                    (vl-ps-seq
+                     (if test-parens (vl-print "(") ps)
+                     (vl-pp-expr x.test)
+                     (if test-parens (vl-print ")") ps)
+                     (vl-print " ? ")
+                     (if atts (vl-ps-seq (vl-pp-atts unspecial-atts) (vl-print " ")) ps)
+                     (vl-println "")
+                     (if then-parens (vl-print "(") ps)
+                     (vl-pp-expr x.then)
+                     (if then-parens (vl-print ")") ps)
+                     (vl-println? " : ")
+                     (if else-parens (vl-print "(") ps)
+                     (vl-pp-expr x.else)
+                     (if else-parens (vl-print ")") ps)))
+
+        :vl-mintypmax (vl-ps-seq
+                       ;; Unlike other operands, I put mintypmax expressions in their own
+                       ;; parens so that I'm basically justified in treating them as having
+                       ;; operand-level precedence.
+                       (vl-print "(")
+                       (vl-pp-expr x.min)
+                       (vl-println? " : ")
+                       (vl-pp-expr x.typ)
+                       (vl-println? " : ")
+                       (vl-pp-expr x.max)
+                       (vl-println? ")"))
+
+        :vl-concat (vl-ps-seq (vl-print "{")
+                              (vl-pp-exprlist x.parts)
+                              (vl-print "}"))
+
+        :vl-multiconcat (vl-ps-seq (vl-print "{")
+                                   (vl-pp-expr x.reps)
+                                   (vl-print "{")
+                                   (vl-pp-exprlist x.parts)
+                                   (vl-print "}}"))
+
+        :vl-stream (vl-ps-seq (vl-print "{")
+                              (vl-print-str (vl-leftright-string x.dir))
+                              (vl-print " ")
+                              (if x.size
+                                  (vl-ps-seq (vl-pp-expr x.size)
+                                             (vl-print " "))
+                                ps)
+                              (vl-print "{")
+                              (vl-pp-streamexprlist x.parts)
+                              (vl-print "}}"))
+
+        :vl-call (vl-ps-seq (vl-pp-scopeexpr x.name)
+                            (vl-print "(")
+                            (vl-pp-exprlist x.args)
+                            (vl-print ")"))
+
+        :vl-cast (vl-ps-seq
+                  ;; Do we ever need parens around the type?
+                  (vl-pp-datatype x.to)
+                  (vl-print "' (")
+                  (vl-pp-expr x.expr)
+                  (vl-print ")"))
+
+        :vl-inside (b* ((parens (< (vl-expr-precedence x.elem) (vl-expr-precedence x))))
+                     (vl-ps-seq
+                      (if parens (vl-print "(") ps)
+                      (vl-pp-expr x.elem)
+                      (if parens (vl-print ")") ps)
+                      (vl-print " inside {")
+                      (vl-pp-valuerangelist x.set)
+                      (vl-print "}")))
+
+        :vl-tagged (b* ((parens (< (vl-expr-precedence x.expr) (vl-expr-precedence x))))
+                     (vl-ps-seq (vl-ps-span "vl_key" (vl-print "tagged "))
+                                (vl-print-str x.tag)
+                                (vl-print " ")
+                                (if parens (vl-print "(") ps)
+                                (vl-pp-expr x.expr)
+                                (if parens (vl-print ")") ps)))
+
+        :vl-pattern (vl-ps-seq
+                     ;; Do we ever need parens around the type?
+                     (if x.pattype (vl-pp-datatype x.pattype) ps)
+                     (vl-pp-assignpat x.pat)))))
+
+  (define vl-pp-exprlist ((x vl-exprlist-p) &key (ps 'ps))
+    :measure (two-nats-measure (vl-exprlist-count x) 10)
+    (if (atom x)
+        ps
+      (vl-ps-seq (vl-pp-expr (car x))
+                 (if (atom (cdr x))
+                     ps
+                   (vl-ps-seq (vl-print ", ")
+                              (vl-pp-exprlist (cdr X)))))))
+
+  (define vl-pp-atts-aux ((x vl-atts-p) &key (ps 'ps))
+    :measure (two-nats-measure (vl-atts-count x) 10)
+    :ruler-extenders :all
+    (b* ((x (vl-atts-fix x)))
+      (if (atom x)
+          ps
+        (vl-ps-seq (vl-print-str (caar x))
+                   (if (cdar x) (vl-pp-expr (cdar x)) ps)
+                   (if (atom (cdr x))
+                       ps
+                     (vl-ps-seq (vl-print ", ")
+                                (vl-pp-atts-aux (cdr x))))))))
+
+  (define vl-pp-atts ((x vl-atts-p) &key (ps 'ps))
+    :measure (two-nats-measure (vl-atts-count x) 20)
+    (vl-ps-seq (vl-print "(* ")
+               (vl-pp-atts-aux x)
+               (vl-print " *)")))
 
-
-(define vl-pp-id ((x vl-id-p) &key (ps 'ps))
-  :inline t
-  (vl-print-wirename (vl-id->name x)))
-
-(define vl-pp-hidpiece ((x vl-hidpiece-p) &key (ps 'ps))
-  (vl-ps-span "vl_id"
-              (vl-print-str (vl-maybe-escape-identifier (vl-hidpiece->name x)))))
-
-(define vl-pp-sysfunname ((x vl-sysfunname-p) &key (ps 'ps))
-  (vl-ps-span "vl_sys"
-              (vl-print-str (vl-sysfunname->name x))))
-
-(define vl-pp-funname ((x vl-funname-p) &key (ps 'ps))
-  (vl-ps-span "vl_id"
-              (vl-print-str (vl-maybe-escape-identifier (vl-funname->name x)))))
-
-(define vl-pp-tagname ((x vl-tagname-p) &key (ps 'ps))
-  (vl-ps-span "vl_tagname"
-              (vl-print-str (vl-tagname->name x))))
-
-(define vl-pp-typename ((x vl-typename-p) &key (ps 'ps))
-  :inline t
-  (vl-print-wirename (vl-typename->name x)))
-
-
-(define vl-keygutstype->string ((x vl-keygutstype-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  (case (vl-keygutstype-fix x)
-    (:vl-null  "null")
-    (:vl-this  "this")
-    (:vl-super "super")
-    (:vl-local "local")
-    (:vl-default "default")
-    (:vl-$     "$")
-    (:vl-$root "$root")
-    (:vl-$unit "$unit")
-    (:vl-emptyqueue "{}")
-    (otherwise (progn$ (impossible) "null"))))
-
-(define vl-pp-keyguts ((x vl-keyguts-p) &key (ps 'ps))
-  (vl-ps-span "vl_key"
-              (vl-print-str (vl-keygutstype->string
-                             (vl-keyguts->type x)))))
-
-
-
-
-
-(define vl-basictypekind->string ((x vl-basictypekind-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  :guard-hints(("Goal" :in-theory (enable vl-basictypekind-p)))
-  (case (vl-basictypekind-fix x)
-    (:vl-byte      "byte")
-    (:vl-shortint  "shortint")
-    (:vl-int       "int")
-    (:vl-longint   "longint")
-    (:vl-integer   "integer")
-    (:vl-time      "time")
-    (:vl-bit       "bit")
-    (:vl-logic     "logic")
-    (:vl-reg       "reg")
-    (:vl-shortreal "shortreal")
-    (:vl-real      "real")
-    (:vl-realtime  "realtime")
-    (:vl-signed    "signed")
-    (:vl-unsigned  "unsigned")
-    (:vl-string    "string")
-    (:vl-const     "const")
-    (otherwise (progn$ (impossible) "reg"))))
-
-(define vl-pp-basictype ((x vl-basictype-p) &key (ps 'ps))
-  (vl-ps-span "vl_key"
-              (vl-print-str (vl-basictypekind->string
-                             (vl-basictype->kind x)))))
-
-
-
-
-(define vl-pp-atomguts ((x vl-atomguts-p) &key (ps 'ps))
-  :guard-hints (("Goal" :in-theory (enable vl-atomguts-p
-                                           tag-reasoning)))
-  (let ((x (vl-atomguts-fix x)))
-    (case (tag x)
-      (:vl-id         (vl-pp-id x))
-      (:vl-constint   (vl-pp-constint x))
-      (:vl-weirdint   (vl-pp-weirdint x))
-      (:vl-string     (vl-pp-string x))
-      (:vl-real       (vl-pp-real x))
-      (:vl-hidpiece   (vl-pp-hidpiece x))
-      (:vl-funname    (vl-pp-funname x))
-      (:vl-typename   (vl-pp-typename x))
-      (:vl-extint     (vl-pp-extint x))
-      (:vl-time       (vl-pp-time x))
-      (:vl-keyguts    (vl-pp-keyguts x))
-      (:vl-basictype  (vl-pp-basictype x))
-      (:vl-tagname    (vl-pp-tagname x))
-      (otherwise      (vl-pp-sysfunname x)))))
-
-(define vl-atts-find-paramname ((atts vl-atts-p))
-  ;; See vl-expr-scopesubst.  When we substitute a parameter's value into its
-  ;; expression, we add a paramname annotation.
-  :returns (paramname maybe-stringp :rule-classes :type-prescription)
-  (b* ((look (assoc-equal "VL_PARAMNAME" (vl-atts-fix atts)))
-       ((unless look)
-        nil)
-       (val (cdr look))
-       ((unless (and val
-                     (vl-fast-atom-p val)))
-        nil)
-       (guts (vl-atom->guts val))
-       ((unless (vl-fast-string-p guts))
-        nil))
-    (vl-string->value guts)))
-
-(define vl-pp-atom ((x vl-expr-p) &key (ps 'ps))
-  :guard (vl-atom-p x)
-  :inline t
-  (vl-ps-seq
-   (vl-pp-atomguts (vl-atom->guts x))
-   (vl-when-html
-    (b* ((atts (vl-atom->atts x))
-         (name (and atts (vl-atts-find-paramname atts)))
-         ((unless name)
-          ps))
-      (vl-ps-seq (vl-print-markup "<span class='vl_paramname'>")
-                 (vl-print-str name)
-                 (vl-print-markup "</span>"))))))
-
-
-
-(with-output :off (event)
-  (defines vl-pp-expr
-    :parents (verilog-printing)
-    :short "Pretty-printer for expressions."
-    :long "<p>@(call vl-pp-expr) pretty-prints the expression @('x') to @(see
-ps). See also @(see vl-pps-expr) and @(see vl-pp-origexpr).</p>
-
-<p>Originally we defensively introduced parens around every operator.  But that
-was kind of ugly.  Now each operator is responsible for putting parens around
-its arguments, if necessary.</p>"
-
-    :prepwork
-    ((local (in-theory (disable MEMBER-EQUAL-WHEN-MEMBER-EQUAL-OF-CDR-UNDER-IFF
-                                double-containment
-                                ACL2::TRUE-LISTP-MEMBER-EQUAL
-                                ACL2::CONSP-MEMBER-EQUAL
-                                ACL2::SUBSETP-MEMBER
-                                default-car
-                                default-cdr
-                                assoc-equal-elim
-                                acl2::consp-under-iff-when-true-listp
-                                acl2::member-equal-when-all-equalp
-                                acl2::cancel_times-equal-correct
-                                acl2::cancel_plus-equal-correct
-                                acl2::CAR-WHEN-ALL-EQUALP
-                                CONSP-WHEN-MEMBER-EQUAL-OF-VL-COMMENTMAP-P
-                                acl2::consp-when-member-equal-of-cons-listp
-                                CONSP-WHEN-MEMBER-EQUAL-OF-VL-ATTS-P
-                                VL-ATOMLIST-P-WHEN-NOT-CONSP
-                                VL-ATOM-P-OF-CAR-WHEN-VL-ATOMLIST-P
-                                acl2::consp-by-len
-                                (tau-system)))))
-
-    (define vl-pp-expr ((x vl-expr-p) &key (ps 'ps))
-      :measure (two-nats-measure (vl-expr-count x) 2)
-      (if (vl-fast-atom-p x)
-          (vl-pp-atom x)
-        (let ((op   (vl-nonatom->op x))
-              (args (vl-nonatom->args x))
-              (atts (vl-remove-keys (vl-pp-expr-special-atts) (vl-nonatom->atts x))))
-          (case op
-            ((:vl-unary-plus
-              :vl-unary-minus :vl-unary-lognot :vl-unary-bitnot :vl-unary-bitand
-              :vl-unary-nand :vl-unary-bitor :vl-unary-nor :vl-unary-xor
-              :vl-unary-xnor :vl-unary-preinc :vl-unary-predec)
-             (b* (((unless (consp args))
-                   (impossible)
-                   ps)
-                  (arg (first args))
-                  (want-parens-p (if (vl-fast-atom-p arg)
-                                     nil
-                                   (vl-op-precedence-<= (vl-nonatom->op arg) op))))
-               (vl-ps-seq
-                (vl-print-str (vl-op-string op))
-                (if atts (vl-pp-atts atts) ps)
-                (vl-print-str " ")
-                (if want-parens-p (vl-print "(") ps)
-                (vl-pp-expr arg)
-                (if want-parens-p (vl-print ")") ps)
-                (vl-println? ""))))
-
-            ((:vl-unary-postinc :vl-unary-postdec)
-             (b* (((unless (consp args))
-                   (impossible)
-                   ps)
-                  (arg (first args))
-                  (want-parens-p (if (vl-fast-atom-p arg)
-                                     nil
-                                   (vl-op-precedence-<= (vl-nonatom->op arg) op))))
-               (vl-ps-seq
-                (if want-parens-p (vl-print "(") ps)
-                (vl-pp-expr arg)
-                (if want-parens-p (vl-print ")") ps)
-                (if atts (vl-pp-atts atts) ps)
-                (vl-print-str (vl-op-string op))
-                (vl-println? " "))))
-
-            ((:vl-binary-plus
-              :vl-binary-minus :vl-binary-times :vl-binary-div :vl-binary-rem
-              :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
-              :vl-binary-wildeq :vl-binary-wildneq
-              :vl-binary-logand :vl-binary-logor
-              :vl-binary-power
-              :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte :vl-inside
-              :vl-binary-bitand :vl-binary-bitor
-              :vl-binary-xor :vl-binary-xnor
-              :vl-binary-shr :vl-binary-shl :vl-binary-ashr :vl-binary-ashl)
-             (b* (((unless (consp args))
-                   (impossible)
-                   ps)
-                  (arg1 (first args))
-                  (arg2 (second args))
-                  ;; they associate left to right, so we only need parens around the first
-                  ;; arg if its precedence is less than ours.
-                  (want-parens-1p (if (vl-fast-atom-p arg1)
-                                      nil
-                                    (or (vl-op-precedence-< (vl-nonatom->op arg1) op)
-                                        (assoc-equal "VL_EXPLICIT_PARENS" (vl-nonatom->atts arg1)))))
-                  (want-parens-2p
-                   (b* (((when (vl-fast-atom-p arg2))
-                         nil)
-
-                        (op2 (vl-nonatom->op arg2))
-                        ((when (vl-op-precedence-<= op2 op))
-                         t))
-
-; We found that Verilog-XL and NCVerilog got upset about expressions like:
-;
-;  a & &b
-;  a | |b
-;
-; even though they seem legal per the Verilog-2005 standard.  So, in our
-; pretty-printer we now add parens around the 2nd operand when we hit these
-; cases, just so that when we write out test benches they work.  We tried a lot
-; of other combinations like a ^ ^b, a && &b, etc., but these tools don't seem
-; to care about those things.
-
-                     (or (and (eq op :vl-binary-bitand)
-                              (eq op2 :vl-unary-bitand))
-                         (and (eq op :vl-binary-bitor)
-                              (eq op2 :vl-unary-bitor))
-                         (assoc-equal "VL_EXPLICIT_PARENS" (vl-nonatom->atts arg2))))))
-
-               (vl-ps-seq (if want-parens-1p (vl-print "(") ps)
-                          (vl-pp-expr arg1)
-                          (if want-parens-1p (vl-print ")") ps)
-                          (vl-print-str " ")
-                          (vl-print-str (vl-op-string op))
-                          (if atts (vl-pp-atts atts) ps)
-                          (vl-println? " ")
-                          (if want-parens-2p (vl-print "(") ps)
-                          (vl-pp-expr arg2)
-                          (if want-parens-2p (vl-print ")") ps)
-                          (vl-println? ""))))
-
-            ((:vl-binary-assign
-              :vl-binary-plusassign :vl-binary-minusassign
-              :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
-              :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
-              :vl-binary-shlassign :vl-binary-shrassign :vl-binary-ashlassign :vl-binary-ashrassign)
-             (b* (((unless (consp args))
-                   (impossible)
-                   ps)
-                  ;; I think we never need parens on the arguments, because
-                  ;; these operators are minimal precedence and require their
-                  ;; own parens, so there are no associativity issues here.
-                  (arg1 (first args))
-                  (arg2 (second args)))
-               (vl-ps-seq (vl-print "(")
-                          (vl-pp-expr arg1)
-                          (vl-print-str " ")
-                          (vl-print-str (vl-op-string op))
-                          (vl-println? " ")
-                          (vl-pp-expr arg2)
-                          (vl-println? ")"))))
-
-            (:vl-binary-cast
-             (b* (((unless (consp args))
-                   (impossible)
-                   ps)
-                  (arg1 (first args))
-                  (arg2 (second args))
-                  (want-parens-1p (if (vl-fast-atom-p arg1)
-                                      nil
-                                    ;; Ugh.  I don't think there's a right way to do this.
-                                    ;; Anything that was a non-atomic primary, like (1 + 2), does need parens
-                                    ;; here.  But certain simple_type expressions like foo.bar.baz should not
-                                    ;; get explicit parens.  Let's just put them in for now and fix it later
-                                    ;; if it bites us.
-                                    t))
-                  ;; Always want parens around the second arg, because, e.g.,
-                  ;; unsigned'(foo) always requires explicit parens.
-                  )
-               (vl-ps-seq (if want-parens-1p (vl-print "(") ps)
-                          (vl-pp-expr arg1)
-                          (if want-parens-1p (vl-print ")") ps)
-                          (vl-print-str "'(")
-                          (vl-pp-expr arg2)
-                          (vl-println? ")"))))
-
-            ((:vl-qmark)
-             (b* (((unless (consp args))
-                   (impossible)
-                   ps)
-                  ((list arg1 arg2 arg3) args)
-                  ;; these associate right to left, so "a ? b : (c ? d : e)" doesn't
-                  ;; need parens, but "(a ? b : c) ? d : e" does need parens.
-
-                  ;; In Verilog-2005 every other operator has precedence greater
-                  ;; than ?:, so we never needed parens around arg3, and only
-                  ;; rarely needed them around arg1/arg2.
-
-                  ;; In SystemVerilog there are some operators (assignment
-                  ;; operators and things like <->) that are lower precedence, so
-                  ;; we need to check.
-                  (want-parens-1p (if (vl-fast-atom-p arg1)
-                                      nil
-                                    (vl-op-precedence-<= (vl-nonatom->op arg1) op)))
-                  (want-parens-2p (if (vl-fast-atom-p arg2)
-                                      nil
-                                    (vl-op-precedence-<= (vl-nonatom->op arg2) op)))
-                  (want-parens-3p (if (vl-fast-atom-p arg3)
-                                      nil
-                                    (vl-op-precedence-< (vl-nonatom->op arg3) op))))
-               (vl-ps-seq (if want-parens-1p (vl-print "(") ps)
-                          (vl-pp-expr arg1)
-                          (if want-parens-1p (vl-print ")") ps)
-
-                          (vl-print-str " ? ")
-                          (if atts
-                              (vl-ps-seq (vl-pp-atts atts)
-                                         (vl-print " "))
-                            ps)
-                          (vl-println? "")
-
-                          (if want-parens-2p (vl-print "(") ps)
-                          (vl-pp-expr arg2)
-                          (if want-parens-2p (vl-print ")") ps)
-
-                          (vl-println? " : ")
-
-                          (if want-parens-3p (vl-print "(") ps)
-                          (vl-pp-expr arg3)
-                          (if want-parens-3p (vl-print ")") ps)
-
-                          (vl-println? ""))))
-
-            ((:vl-implies :vl-equiv)
-             (b* (((unless (consp args))
-                   (impossible)
-                   ps)
-                  ((list arg1 arg2) args)
-                  ;; these associate right to left, so "a <-> (b <-> c)" does
-                  ;; not need parens, but (a <-> b) <-> c does.
-                  (want-parens-1p (if (vl-fast-atom-p arg1)
-                                      nil
-                                    (vl-op-precedence-<= (vl-nonatom->op arg1) op)))
-                  (want-parens-2p (if (vl-fast-atom-p arg2)
-                                      nil
-                                    (vl-op-precedence-< (vl-nonatom->op arg2) op))))
-               (vl-ps-seq (if want-parens-1p (vl-print "(") ps)
-                          (vl-pp-expr arg1)
-                          (if want-parens-1p (vl-print ")") ps)
-                          (vl-print-str (vl-op-string op))
-                          (if atts
-                              (vl-ps-seq (vl-pp-atts atts)
-                                         (vl-print " "))
-                            ps)
-                          (vl-println? "")
-                          (if want-parens-2p (vl-print "(") ps)
-                          (vl-pp-expr arg2)
-                          (if want-parens-2p (vl-print ")") ps)
-                          (vl-println? ""))))
-
-            ((:vl-mintypmax)
-             ;; Unlike other operands, I put mintypmax expressions in their own
-             ;; parens so that I'm basically justified in treating them as having
-             ;; operand-level precedence.
-             (if (not (consp args))
-                 (prog2$ (impossible) ps)
-               (vl-ps-seq (vl-print "(")
-                          (vl-pp-expr (first args))
-                          (vl-println? " : ")
-                          (vl-pp-expr (second args))
-                          (vl-println? " : ")
-                          (vl-pp-expr (third args))
-                          (vl-println? ")"))))
-
-            ((:vl-bitselect :vl-index)
-             ;; These don't need parens because they have maximal precedence
-             (cond ((not (consp args))
-                    (prog2$ (impossible) ps))
-                   (t
-                    (vl-ps-seq (vl-pp-expr (first args))
-                               (vl-print "[")
-                               (vl-pp-expr (second args))
-                               (vl-print "]")))))
-
-            ((:vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
-              :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon)
-             ;; These don't need parens because they have maximal precedence
-             (cond ((not (consp args))
-                    (prog2$ (impossible) ps))
-                   (t
-                    (vl-ps-seq (vl-pp-expr (first args))
-                               (vl-print "[")
-                               (vl-pp-expr (second args))
-                               (vl-print-str
-                                (case op
-                                  ((:vl-partselect-colon :vl-select-colon)           ":")
-                                  ((:vl-partselect-pluscolon :vl-select-pluscolon)   "+:")
-                                  ((:vl-partselect-minuscolon :vl-select-minuscolon) "-:")))
-                               (vl-pp-expr (third args))
-                               (vl-print "]")))))
-
-            ((:vl-hid-dot)
-             ;; These don't need parens because they have maximal precedence
-             (if (atom args)
-                 (prog2$ (impossible) ps)
-               (vl-ps-seq (vl-pp-expr (first args))
-                          (vl-print ".")
-                          (vl-pp-expr (second args)))))
-
-            ((:vl-scope)
-             ;; These don't need parens because they have maximal precedence
-             (if (atom args)
-                 (prog2$ (impossible) ps)
-               (vl-ps-seq (vl-pp-expr (first args))
-                          (vl-print "::")
-                          (vl-pp-expr (second args)))))
-
-            ((:vl-multiconcat)
-             ;; These don't need parens because they have maximal precedence
-             (cond ((atom args)
-                    (prog2$ (impossible) ps))
-
-                   ((and (not (vl-atom-p (second args)))
-                         (eq (vl-nonatom->op (second args)) :vl-concat))
-                    ;; The concat inserts its own braces
-                    (vl-ps-seq (vl-print "{")
-                               (vl-pp-expr (first args))
-                               (vl-println? " ")
-                               (vl-pp-expr (second args))
-                               (vl-print "}")))
-
-                   (t
-                    ;; Otherwise we've simplified the concat away.  Put in braces
-                    ;; around whatever our arg is.
-                    (vl-ps-seq (vl-print "{")
-                               (vl-pp-expr (first args))
-                               (vl-println? " {")
-                               (vl-pp-expr (second args))
-                               (vl-print "}}")))))
-
-            ((:vl-concat :vl-valuerangelist)
-             ;; This doesn't need parens because it has maximal precedence
-             (vl-ps-seq (vl-print "{")
-                        (vl-pp-exprlist args)
-                        (vl-print "}")))
-
-            ((:vl-valuerange)
-             (b* (((unless (consp args))
-                   (impossible)
-                   ps)
-                  (arg1 (first args))
-                  (arg2 (second args)))
-               (vl-ps-seq (vl-print "[")
-                          (vl-pp-expr arg1)
-                          (vl-println? ":")
-                          (vl-pp-expr arg2)
-                          (vl-println? "]"))))
-
-            ((:vl-stream-left :vl-stream-right)
-             (if (atom args)
-                 (progn$ (raise "Bad streaming concatenation")
-                         ps)
-               (vl-ps-seq (vl-print "{")
-                          (vl-print (if (eq op :vl-stream-left) "<<" ">>"))
-                          (vl-print "{")
-                          (vl-pp-exprlist args)
-                          (vl-print "}}"))))
-
-            ((:vl-stream-left-sized :vl-stream-right-sized)
-             (if (atom args)
-                 (progn$ (raise "Bad streaming concatenation")
-                         ps)
-               (vl-ps-seq (vl-print "{")
-                          (vl-print (if (eq op :vl-stream-left-sized) "<<" ">>"))
-                          (vl-pp-expr (first args))
-                          (vl-print " {")
-                          (vl-pp-exprlist (rest args))
-                          (vl-print "}}"))))
-
-            ((:vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon)
-             (if (atom args)
-                 (progn$ (raise "Bad with expression")
-                         ps)
-               (vl-ps-seq (vl-pp-expr (first args))
-                          (vl-ps-span "vl_key" (vl-print " with "))
-                          (vl-print "[")
-                          (vl-pp-expr (second args))
-                          (case op
-                            (:vl-with-index     ps)
-                            (:vl-with-colon     (vl-ps-seq (vl-print ":")
-                                                           (vl-pp-expr (third args))))
-                            (:vl-with-pluscolon (vl-ps-seq (vl-print "+:")
-                                                           (vl-pp-expr (third args))))
-                            (otherwise          (vl-ps-seq (vl-print "-:")
-                                                           (vl-pp-expr (third args)))))
-                          (vl-print "]"))))
-
-            ((:vl-tagged)
-             (if (atom args)
-                 (prog2$ (raise "Bad tagged expr")
-                         ps)
-               (vl-ps-seq (vl-ps-span "vl_key" (vl-print "tagged "))
-                          (vl-pp-expr (first args))
-                          (if (atom (cdr args))
-                              ps
-                            (vl-ps-seq (vl-print " ")
-                                       (vl-pp-expr (second args))))
-                          (vl-println? ""))))
-
-            ((:vl-funcall)
-             ;; This doesn't need parens because it has maximal precedence
-             (if (atom args)
-                 (prog2$ (raise "Bad funcall")
-                         ps)
-               (vl-ps-seq (vl-pp-expr (first args))
-                          (vl-print "(")
-                          (vl-pp-exprlist (rest args))
-                          (vl-println? ")"))))
-
-            ((:vl-syscall)
-             ;; This doesn't need parens because it has maximal precedence
-             (if (atom args)
-                 (prog2$ (raise "Bad syscall.")
-                         ps)
-               (vl-ps-seq (vl-pp-expr (first args))
-                          ;; Something tricky about system calls is: if there
-                          ;; aren't any arguments, then there should not even be
-                          ;; any parens!
-                          (if (consp (rest args))
-                              (vl-print "(")
-                            ps)
-                          (vl-pp-exprlist (rest args))
-                          (if (consp (rest args))
-                              (vl-println? ")")
-                            ps))))
-
-            ((:vl-pattern-positional
-              :vl-pattern-keyvalue)
-             (vl-ps-seq (vl-print "'{ ")
-                        (vl-pp-exprlist args)
-                        (vl-println? "}")))
-
-            ((:vl-pattern-multi)
-             (vl-ps-seq (vl-print "'{  ")
-                        (vl-pp-expr (first args))
-                        (vl-print " ")
-                        (vl-pp-expr (second args))))
-
-            ((:vl-pattern-type)
-             (vl-ps-seq (vl-pp-expr (first args))
-                        (vl-print " ") ;; eh
-                        (vl-pp-expr (second args))))
-
-            ((:vl-keyvalue)
-             (vl-ps-seq (vl-pp-expr (first args))
-                        (vl-print " : ")
-                        (vl-pp-expr (second args))))
-
-
-            (t
-             (prog2$ (raise "Bad op: ~x0.~%" op)
-                     ps))))))
-
-    (define vl-pp-atts-aux ((x vl-atts-p) &key (ps 'ps))
-      :measure (two-nats-measure (vl-atts-count x) 0)
-      (let ((x (vl-atts-fix x)))
-        (cond ((atom x)
-               ps)
-              ;; ((atom (car x)) ;; Non-alist convention
-              ;;  (vl-pp-atts-aux (cdr x)))
-              (t
-               (vl-ps-seq (vl-print-str (caar x)) ;; name
-                          ;; Expr, if exists
-                          (if (cdar x)
-                              (vl-ps-seq (vl-print " = ")
-                                         (vl-pp-expr (cdar x)))
-                            ps)
-                          ;; Comma, if more atts
-                          (if (consp (cdr x))
-                              (vl-println? ", ")
-                            ps)
-                          ;; The rest of the atts
-                          (vl-pp-atts-aux (cdr x)))))))
-
-    (define vl-pp-atts ((x vl-atts-p) &key (ps 'ps))
-      :measure (two-nats-measure (vl-atts-count x) 1)
-      (let ((x (vl-atts-fix x)))
-        (if (and (consp x)
-                 (vl-ps->show-atts-p))
-            (vl-ps-span "vl_cmt"
-                        (vl-print "(* ")
-                        (vl-pp-atts-aux x)
-                        (vl-println? " *)"))
-          ps)))
-
-    (define vl-pp-exprlist ((x vl-exprlist-p) &key (ps 'ps))
-      :measure (two-nats-measure (vl-exprlist-count x) 0)
-      (cond ((atom x)
-             ps)
-            ((atom (cdr x))
-             (vl-pp-expr (car x)))
-            (t
-             (vl-ps-seq (vl-pp-expr (car x))
-                        (vl-println? ", ")
-                        (vl-pp-exprlist (cdr x))))))
-
-    ///
-    (local (defthm vl-pp-atts-aux-when-atom
-             (implies (atom x)
-                      (equal (vl-pp-atts-aux x)
-                             ps))
-             :hints(("Goal" :expand (vl-pp-atts-aux x)))))
-
-    (local (defthm vl-pp-atts-when-atom
-             (implies (atom x)
-                      (equal (vl-pp-atts x)
-                             ps))
-             :hints(("Goal" :expand (vl-pp-atts x)))))
-
-    (local (in-theory (disable acl2::member-of-cons
-                               acl2::member-when-atom
-                               arg1-exists-by-arity
-                               ARG2-EXISTS-BY-ARITY)))
-
-    (local (in-theory (disable vl-pp-expr
-                               vl-pp-atts
-                               vl-pp-atts-aux
-                               vl-pp-exprlist)))
-
-    (deffixequiv-mutual vl-pp-expr
-      :hints(("Goal"
-              :expand ((vl-pp-expr (vl-expr-fix x))
-                       (vl-pp-expr x)
-                       (vl-pp-atts-aux (vl-atts-fix x))
-                       (vl-pp-atts-aux x)
-                       (vl-pp-atts (vl-atts-fix x))
-                       (vl-pp-atts x)
-                       (vl-pp-exprlist (vl-exprlist-fix x))
-                       (vl-pp-exprlist x)
-                       ))))))
-
-
-(define vl-pps-expr ((x vl-expr-p))
-  :returns (pretty-x stringp :rule-classes :type-prescription)
-  :parents (expr-tools verilog-printing)
-  :short "Pretty-print an expression into a string."
-  :long "<p>This pretty-prints an expression \"as is,\" i.e., in its current,
-possibly transformed state.  Depending on what you're trying to do, it may be
-better to use @(see vl-pps-origexpr) instead, which tries to print the
-\"original,\" pre-transformed version of the expression, as it occurred in the
-real Verilog file.</p>"
-  (with-local-ps (vl-pp-expr x)))
-
-(define vl-pp-origexpr ((x vl-expr-p) &key (ps 'ps))
-  :parents (origexprs verilog-printing)
-  :short "Pretty-print the \"original,\" un-transformed version of an
-expression."
-  :long "<p>This is like @(see vl-pp-expr) but, if @('x') has a
-@('VL_ORIG_EXPR') attribute (see @(see origexprs)), we actually pretty-print
-the original version of @('x') rather than the current version (which may be
-simplified, and hence not correspond as closely to the original source
-code.)</p>
-
-<p>This only works if the @(see origexprs) transform is run early in the
-transformation sequence.  When there's no @('VL_ORIG_EXPR') attribute, we just
-print @('x') as is.</p>"
-  (b* (((when (vl-fast-atom-p x))
-        (vl-pp-atom x))
-       (atts   (vl-nonatom->atts x))
-       (lookup (cdr (hons-assoc-equal "VL_ORIG_EXPR" atts)))
-       ((when lookup)
-        (vl-pp-expr lookup)))
-    (vl-pp-expr x)))
-
-(define vl-pps-origexpr ((x vl-expr-p))
-  :returns (pretty-x stringp :rule-classes :type-prescription)
-  :parents (expr-tools verilog-printing)
-  :short "Pretty-print the \"original,\" un-transformed version of an
-expression into a string."
-  (with-local-ps (vl-pp-origexpr x)))
-
-
-(define vl-direction-string ((x vl-direction-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  :guard-hints (("Goal" :in-theory (enable vl-direction-p)))
-  (case (vl-direction-fix x)
-    (:vl-input  "input")
-    (:vl-output "output")
-    (:vl-inout  "inout")
-    (otherwise  (or (impossible) ""))))
-
-(define vl-pp-range ((x vl-range-p) &key (ps 'ps))
-  (b* (((vl-range x) x))
-    (vl-ps-seq (vl-print "[")
-               (vl-pp-expr x.msb)
-               (vl-println? ":")
-               (vl-pp-expr x.lsb)
-               (vl-print "]"))))
-
-(define vl-pps-range ((x vl-range-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  (with-local-ps (vl-pp-range x)))
-
-(define vl-pp-rangelist ((x vl-rangelist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-range (car x))
-               (vl-pp-rangelist (cdr x)))))
-
-(define vl-pp-packeddimension ((x vl-packeddimension-p) &key (ps 'ps))
-  (b* ((x (vl-packeddimension-fix x)))
-    (if (eq x :vl-unsized-dimension)
-        (vl-print "[]")
-      (vl-pp-range x))))
-
-(define vl-pp-packeddimensionlist ((x vl-packeddimensionlist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-packeddimension (car x))
-               (vl-pp-packeddimensionlist (cdr x)))))
-
-
-(define vl-pp-interfaceport ((x vl-interfaceport-p) &key (ps 'ps))
-  ;; Print an interface port like `simplebus.master foo [3:0]`
-  (b* (((vl-interfaceport x) x))
-    (vl-ps-seq (vl-print-modname x.ifname)
-               (if x.modport
-                   (vl-ps-seq (vl-print ".")
-                              (vl-ps-span "vl_id" (vl-print-str (vl-maybe-escape-identifier x.modport))))
-                 ps)
-               (vl-print " ")
-               (vl-ps-span "vl_id" (vl-print-str (vl-maybe-escape-identifier x.name)))
-               (if (consp x.udims)
-                   (vl-ps-seq (vl-print " ")
-                              (vl-pp-packeddimensionlist x.udims))
-                 ps))))
-
-(define vl-pp-regularport ((x vl-regularport-p) &key (ps 'ps))
-  (b* (((vl-regularport x) x)
-
-       ((when (and (not x.name)
-                   (not x.expr)))
-        ;; A truly blank port... we'll put in a comment.
-        (vl-ps-span "vl_cmt" (vl-println? "/* blank port */")))
-
-       ((unless x.name)
-        ;; Just a complex expression like foo[3:0] with no name.
-        (vl-pp-expr x.expr))
-
-       ((when (and x.expr
-                   (vl-fast-atom-p x.expr)
-                   (vl-fast-id-p (vl-atom->guts x.expr))
-                   (equal (vl-id->name (vl-atom->guts x.expr)) x.name)))
-        ;; Ordinary case, internal expression is just the same as the
-        ;; externally visible name.
-        (vl-print-wirename x.name)))
-
-    ;; .name(expr) or .name()
-    (vl-ps-seq (vl-print ".")
-               (vl-ps-span "vl_id"
-                           (vl-print-str (vl-maybe-escape-identifier x.name)))
-               (vl-print "(")
-               (if x.expr
-                   (vl-pp-expr x.expr)
-                 ps)
-               (vl-print ")"))))
-
-(define vl-pp-port ((x vl-port-p) &key (ps 'ps))
-  (b* ((x (vl-port-fix x)))
-    (if (eq (tag x) :vl-interfaceport)
-        (vl-pp-interfaceport x)
-      (vl-pp-regularport x))))
-
-(define vl-pp-portlist ((x vl-portlist-p) &key (ps 'ps))
-  (cond ((atom x)
-         ps)
-        ((atom (cdr x))
-         (vl-pp-port (car x)))
-        (t
-         (vl-ps-seq (vl-pp-port (car x))
-                    (vl-println? ", ")
-                    (vl-pp-portlist (cdr x))))))
-
-(define vl-pp-regularportlist ((x vl-regularportlist-p) &key (ps 'ps))
-  (cond ((atom x)
-         ps)
-        ((atom (cdr x))
-         (vl-pp-regularport (car x)))
-        (t
-         (vl-ps-seq (vl-pp-regularport (car x))
-                    (vl-println? ", ")
-                    (vl-pp-regularportlist (cdr x))))))
-
-(define vl-pp-interfaceportlist ((x vl-interfaceportlist-p) &key (ps 'ps))
-  (cond ((atom x)
-         ps)
-        ((atom (cdr x))
-         (vl-pp-interfaceport (car x)))
-        (t
-         (vl-ps-seq (vl-pp-interfaceport (car x))
-                    (vl-println? ", ")
-                    (vl-pp-interfaceportlist (cdr x))))))
-
-
-
-(define vl-pp-enumbasetype ((x vl-enumbasetype-p) &key (ps 'ps))
-  (b* (((vl-enumbasetype x) x))
-    (vl-ps-seq (vl-pp-enumbasekind x.kind)
-               ;; BOZO this isn't quite right, should only print signedness if it's
-               ;; not the default for this type
-               (vl-ps-span "vl_key" (vl-print (if x.signedp " signed" " unsigned")))
-               (if x.dim
-                   (vl-ps-seq (vl-print " ")
-                              (vl-pp-packeddimension x.dim))
-                 ps))))
-
-(define vl-pp-enumitem ((x vl-enumitem-p) &key (ps 'ps))
-  (b* (((vl-enumitem x) x))
-    (vl-ps-seq (vl-indent 4)
-               (vl-print-wirename x.name)
-               (if x.range
-                   ;; Special case to print [5:5] style ranges as just [5]
-                   (b* ((msb (vl-range->msb x.range))
-                        (lsb (vl-range->lsb x.range))
-                        ((when (and (vl-expr-resolved-p msb)
-                                    (vl-expr-resolved-p lsb)
-                                    (equal (vl-resolved->val msb)
-                                           (vl-resolved->val lsb))))
-                         (vl-ps-seq (vl-print-str "[")
-                                    (vl-print-nat (vl-resolved->val msb))
-                                    (vl-print-str "]"))))
-                     ;; Otherwise just print a normal range
-                     (vl-pp-range x.range))
-                 ps)
-               (if x.value
-                   (vl-ps-seq (vl-print " = ")
-                              (vl-pp-expr x.value))
-                 ps)
-               (vl-println " ;"))))
-
-(define vl-pp-enumitemlist ((x vl-enumitemlist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-enumitem (car x))
-               (vl-pp-enumitemlist (cdr x)))))
-
-(defines vl-pp-datatype
   (define vl-pp-datatype ((x vl-datatype-p) &key (ps 'ps))
-    ;; NOTE: This function doesn't print the udims field, because that
-    ;; typically comes after the name.
-    :measure (vl-datatype-count x)
+    :measure (two-nats-measure (vl-datatype-count x) 10)
     (vl-datatype-case x
       (:vl-coretype
        (vl-ps-seq (vl-indent 2)
@@ -1774,19 +1020,20 @@ expression into a string."
                   (vl-pp-packeddimensionlist x.pdims)))
 
       (:vl-usertype
-       (vl-ps-seq (vl-pp-expr x.kind)
+       (vl-ps-seq (vl-pp-scopeexpr x.name)
                   (vl-print " ")
                   (vl-pp-packeddimensionlist x.pdims)))))
 
   (define vl-pp-structmemberlist ((x vl-structmemberlist-p) &key (ps 'ps))
-    :measure (vl-structmemberlist-count x)
+    :measure (two-nats-measure (vl-structmemberlist-count x) 10)
     (if (atom x)
         ps
       (vl-ps-seq (vl-pp-structmember (car x))
                  (vl-pp-structmemberlist (cdr x)))))
 
   (define vl-pp-structmember ((x vl-structmember-p) &key (ps 'ps))
-    :measure (vl-structmember-count x)
+    :measure (two-nats-measure (vl-structmember-count x) 10)
+    :ruler-extenders :all
     (b* (((vl-structmember x) x))
       (vl-ps-seq (vl-indent 4)
                  (if x.atts (vl-pp-atts x.atts) ps)
@@ -1804,7 +1051,216 @@ expression into a string."
                      (vl-ps-seq (vl-print " = ")
                                 (vl-pp-expr x.rhs))
                    ps)
-                 (vl-println " ;")))))
+                 (vl-println " ;"))))
+
+  (define vl-pp-packeddimension ((x vl-packeddimension-p) &key (ps 'ps))
+    :measure (two-nats-measure (vl-packeddimension-count x) 10)
+    (vl-packeddimension-case x
+      :unsized (vl-print "[]")
+      :range (vl-pp-range x.range)))
+
+  (define vl-pp-packeddimensionlist ((x vl-packeddimensionlist-p) &key (ps 'ps))
+    :measure (two-nats-measure (vl-packeddimensionlist-count x) 10)
+    (if (atom x)
+        ps
+      (vl-ps-seq (vl-pp-packeddimension (car x))
+                 (vl-pp-packeddimensionlist (cdr x)))))
+
+  (define vl-pp-enumbasetype ((x vl-enumbasetype-p) &key (ps 'ps))
+    :measure (two-nats-measure (vl-enumbasetype-count x) 10)
+    (b* (((vl-enumbasetype x) x))
+      (vl-ps-seq (vl-pp-enumbasekind x.kind)
+                 ;; BOZO this isn't quite right, should only print signedness if it's
+                 ;; not the default for this type
+                 (vl-ps-span "vl_key" (vl-print (if x.signedp " signed" " unsigned")))
+                 (if x.dim
+                     (vl-ps-seq (vl-print " ")
+                                (vl-pp-packeddimension x.dim))
+                   ps))))
+
+  (define vl-pp-enumitem ((x vl-enumitem-p) &key (ps 'ps))
+    :measure (two-nats-measure (vl-enumitem-count x) 10)
+    :ruler-extenders :all
+    (b* (((vl-enumitem x) x))
+      (vl-ps-seq (vl-indent 4)
+                 (vl-print-wirename x.name)
+                 (if x.range
+                     ;; Special case to print [5:5] style ranges as just [5]
+                     (b* ((msb (vl-range->msb x.range))
+                          (lsb (vl-range->lsb x.range))
+                          ((when (and (vl-expr-resolved-p msb)
+                                      (vl-expr-resolved-p lsb)
+                                      (equal (vl-resolved->val msb)
+                                             (vl-resolved->val lsb))))
+                           (vl-ps-seq (vl-print-str "[")
+                                      (vl-print-nat (vl-resolved->val msb))
+                                      (vl-print-str "]"))))
+                       ;; Otherwise just print a normal range
+                       (vl-pp-range x.range))
+                   ps)
+                 (if x.value
+                     (vl-ps-seq (vl-print " = ")
+                                (vl-pp-expr x.value))
+                   ps)
+                 (vl-println " ;"))))
+
+  (define vl-pp-enumitemlist ((x vl-enumitemlist-p) &key (ps 'ps))
+    :measure (two-nats-measure (vl-enumitemlist-count x) 10)
+    (if (atom x)
+        ps
+      (vl-ps-seq (vl-pp-enumitem (car x))
+                 (vl-pp-enumitemlist (cdr x)))))
+  ///
+  (deffixequiv-mutual vl-pp-expr))
+
+          
+        
+
+        
+          
+
+(define vl-pps-expr ((x vl-expr-p))
+  :returns (pretty-x stringp :rule-classes :type-prescription)
+  :parents (expr-tools verilog-printing)
+  :short "Pretty-print an expression into a string."
+  :long "<p>This pretty-prints an expression \"as is,\" i.e., in its current,
+possibly transformed state.  Depending on what you're trying to do, it may be
+better to use @(see vl-pps-origexpr) instead, which tries to print the
+\"original,\" pre-transformed version of the expression, as it occurred in the
+real Verilog file.</p>"
+  (with-local-ps (vl-pp-expr x)))
+
+(define vl-pp-origexpr ((x vl-expr-p) &key (ps 'ps))
+  :parents (origexprs verilog-printing)
+  :short "Pretty-print the \"original,\" un-transformed version of an
+expression."
+  :long "<p>This is like @(see vl-pp-expr) but, if @('x') has a
+@('VL_ORIG_EXPR') attribute (see @(see origexprs)), we actually pretty-print
+the original version of @('x') rather than the current version (which may be
+simplified, and hence not correspond as closely to the original source
+code.)</p>
+
+<p>This only works if the @(see origexprs) transform is run early in the
+transformation sequence.  When there's no @('VL_ORIG_EXPR') attribute, we just
+print @('x') as is.</p>"
+  (b* ((atts   (vl-expr->atts x))
+       (lookup (cdr (hons-assoc-equal "VL_ORIG_EXPR" atts)))
+       ((when lookup)
+        (vl-pp-expr lookup)))
+    (vl-pp-expr x)))
+
+(define vl-pps-origexpr ((x vl-expr-p))
+  :returns (pretty-x stringp :rule-classes :type-prescription)
+  :parents (expr-tools verilog-printing)
+  :short "Pretty-print the \"original,\" un-transformed version of an
+expression into a string."
+  (with-local-ps (vl-pp-origexpr x)))
+
+
+(define vl-direction-string ((x vl-direction-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-direction-p)))
+  (case (vl-direction-fix x)
+    (:vl-input  "input")
+    (:vl-output "output")
+    (:vl-inout  "inout")
+    (otherwise  (or (impossible) ""))))
+
+
+(define vl-pps-range ((x vl-range-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  (with-local-ps (vl-pp-range x)))
+
+(define vl-pp-rangelist ((x vl-rangelist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-range (car x))
+               (vl-pp-rangelist (cdr x)))))
+
+
+
+(define vl-pp-interfaceport ((x vl-interfaceport-p) &key (ps 'ps))
+  ;; Print an interface port like `simplebus.master foo [3:0]`
+  (b* (((vl-interfaceport x) x))
+    (vl-ps-seq (vl-print-modname x.ifname)
+               (if x.modport
+                   (vl-ps-seq (vl-print ".")
+                              (vl-ps-span "vl_id" (vl-print-str (vl-maybe-escape-identifier x.modport))))
+                 ps)
+               (vl-print " ")
+               (vl-ps-span "vl_id" (vl-print-str (vl-maybe-escape-identifier x.name)))
+               (if (consp x.udims)
+                   (vl-ps-seq (vl-print " ")
+                              (vl-pp-packeddimensionlist x.udims))
+                 ps))))
+
+(define vl-pp-regularport ((x vl-regularport-p) &key (ps 'ps))
+  (b* (((vl-regularport x) x)
+
+       ((when (and (not x.name)
+                   (not x.expr)))
+        ;; A truly blank port... we'll put in a comment.
+        (vl-ps-span "vl_cmt" (vl-println? "/* blank port */")))
+
+       ((unless x.name)
+        ;; Just a complex expression like foo[3:0] with no name.
+        (vl-pp-expr x.expr))
+
+       ((when (and x.expr
+                   (vl-idexpr-p x.expr)
+                   (equal (vl-idexpr->name x.expr) x.name)))
+        ;; Ordinary case, internal expression is just the same as the
+        ;; externally visible name.
+        (vl-print-wirename x.name)))
+
+    ;; .name(expr) or .name()
+    (vl-ps-seq (vl-print ".")
+               (vl-ps-span "vl_id"
+                           (vl-print-str (vl-maybe-escape-identifier x.name)))
+               (vl-print "(")
+               (if x.expr
+                   (vl-pp-expr x.expr)
+                 ps)
+               (vl-print ")"))))
+
+(define vl-pp-port ((x vl-port-p) &key (ps 'ps))
+  (b* ((x (vl-port-fix x)))
+    (if (eq (tag x) :vl-interfaceport)
+        (vl-pp-interfaceport x)
+      (vl-pp-regularport x))))
+
+(define vl-pp-portlist ((x vl-portlist-p) &key (ps 'ps))
+  (cond ((atom x)
+         ps)
+        ((atom (cdr x))
+         (vl-pp-port (car x)))
+        (t
+         (vl-ps-seq (vl-pp-port (car x))
+                    (vl-println? ", ")
+                    (vl-pp-portlist (cdr x))))))
+
+(define vl-pp-regularportlist ((x vl-regularportlist-p) &key (ps 'ps))
+  (cond ((atom x)
+         ps)
+        ((atom (cdr x))
+         (vl-pp-regularport (car x)))
+        (t
+         (vl-ps-seq (vl-pp-regularport (car x))
+                    (vl-println? ", ")
+                    (vl-pp-regularportlist (cdr x))))))
+
+(define vl-pp-interfaceportlist ((x vl-interfaceportlist-p) &key (ps 'ps))
+  (cond ((atom x)
+         ps)
+        ((atom (cdr x))
+         (vl-pp-interfaceport (car x)))
+        (t
+         (vl-ps-seq (vl-pp-interfaceport (car x))
+                    (vl-println? ", ")
+                    (vl-pp-interfaceportlist (cdr x))))))
+
+
+
 
 (define vl-pp-portdecl ((x vl-portdecl-p) &key (ps 'ps))
   (b* (((vl-portdecl x) x))
@@ -1928,13 +1384,12 @@ expression into a string."
     (cond
      ((and (hide (equal x.rise x.fall))
            (hide (equal x.fall x.high))
-           (vl-fast-atom-p x.rise)
-           (vl-constint-p (vl-atom->guts x.rise)))
+           (vl-expr-resolved-p x.rise))
       ;; Almost always the delays should just be #3, etc.
       (vl-ps-seq
        (vl-print "#")
        (vl-ps-span "vl_int"
-                   (vl-print-nat (vl-constint->value (vl-atom->guts x.rise))))))
+                   (vl-print-nat (vl-resolved->val x.rise)))))
 
      ((and (hide (equal x.rise x.fall))
            (hide (equal x.fall x.high)))
@@ -2009,18 +1464,23 @@ expression into a string."
         ps)
        ((when (and (tuplep 1 x)
                    (equal (caar x) "VL_FOR")))
-        (if (not (and (cdar x)
-                      (vl-atom-p (cdar x))
-                      (vl-string-p (vl-atom->guts (cdar x)))))
-            (prog2$
-             (raise "Expected FROM to contain a string.")
-             ps)
-          (vl-ps-seq
-           (vl-println "")
-           (vl-ps-span "vl_cmt"
-                       (vl-print "/* For ")
-                       (vl-print-str (vl-string->value (vl-atom->guts (cdar x))))
-                       (vl-println " */"))))))
+        (b* ((str (cdar x))
+             (strval (and str
+                          (vl-expr-case str
+                            :vl-value (vl-value-case str.val
+                                        :vl-string str.val.value
+                                        :otherwise nil)
+                            :otherwise nil))))
+          (if (not strval)
+              (prog2$
+               (raise "Expected FROM to contain a string.")
+               ps)
+            (vl-ps-seq
+             (vl-println "")
+             (vl-ps-span "vl_cmt"
+                         (vl-print "/* For ")
+                         (vl-print-str strval)
+                         (vl-println " */")))))))
     (vl-ps-seq (vl-println "")
                (vl-pp-atts x)
                (vl-println ""))))
@@ -2029,7 +1489,7 @@ expression into a string."
   (b* ((x (vl-atts-fix x))
        ((unless x)
         (vl-println ""))
-       (cars    (strip-cars x))
+       (cars    (acl2::alist-keys x))
        (notes   nil)
        (notes   (if (member-equal "VL_IMPLICIT" cars)
                     (cons "Implicit" notes)
@@ -2051,15 +1511,15 @@ expression into a string."
                 (vl-print "// ")
                 (vl-pp-strings-separated-by-commas notes)
                 (vl-println ""))))
-
+ 
 (define vl-vardecl-hiddenp ((x vl-vardecl-p))
   (b* (((vl-vardecl x) x))
-    (or (assoc-equal "VL_PORT_IMPLICIT" x.atts)
+    (or (hons-assoc-equal "VL_PORT_IMPLICIT" x.atts)
         ;; As a special hack, we now do not print any net declarations that are
         ;; implicitly derived from the port.  These were just noisy and may not
         ;; be allowed if we're printing the nets for an ANSI style module.  See
         ;; also make-implicit-wires.
-        (assoc-equal "VL_HIDDEN_DECL_FOR_TASKPORT" x.atts)
+        (hons-assoc-equal "VL_HIDDEN_DECL_FOR_TASKPORT" x.atts)
         ;; As another special hack, hide declarations that we add for function
         ;; and task inputs and function return values.
         )))
@@ -2316,8 +1776,8 @@ expression into a string."
 (define vl-pp-paramvalue ((x vl-paramvalue-p) &key (ps 'ps))
   (b* ((x (vl-paramvalue-fix x)))
     (vl-paramvalue-case x
-      :expr     (vl-pp-expr x)
-      :datatype (vl-pp-datatype x))))
+      :expr     (vl-pp-expr x.expr)
+      :type     (vl-pp-datatype x.type))))
 
 (define vl-pp-paramvaluelist ((x vl-paramvaluelist-p) force-newlinesp &key (ps 'ps))
   (cond ((atom x)
@@ -2371,16 +1831,20 @@ expression into a string."
         ps)
        ((when (and (tuplep 1 x)
                    (equal (caar x) "VL_FOR")))
-        (if (not (and (cdar x)
-                      (vl-atom-p (cdar x))
-                      (vl-string-p (vl-atom->guts (cdar x)))))
-            (prog2$
-             (raise "Expected VL_FOR to contain a string.")
-             ps)
+        (b* ((val (cdar x))
+             (str (and val
+                       (vl-expr-case val
+                         :vl-value (vl-value-case val.val
+                                     :vl-string val.val.value
+                                     :otherwise nil)
+                         :otherwise nil)))
+             ((unless str)
+              (raise "Expected VL_FOR to contain a string.")
+              ps))
           (vl-ps-span "vl_cmt"
                       (vl-println "")
                       (vl-print "/* For ")
-                      (vl-print-str (vl-string->value (vl-atom->guts (cdar x))))
+                      (vl-print-str str)
                       (vl-println " */")))))
     (vl-ps-seq (vl-println "")
                (vl-pp-atts x)
@@ -2513,16 +1977,21 @@ expression into a string."
         ps)
        ((when (and (tuplep 1 x)
                    (equal (caar x) "VL_FOR")))
-        (if (not (and (cdar x)
-                      (vl-atom-p (cdar x))
-                      (vl-string-p (vl-atom->guts (cdar x)))))
-            (prog2$
-             (raise "Expected VL_FOR to contain a string.")
-             ps)
+        (b* ((val (cdar x))
+             (str (and val
+                       (vl-expr-case val
+                         :vl-value (vl-value-case val.val
+                                     :vl-string val.val.value
+                                     :otherwise nil)
+                         :otherwise nil)))
+             ((unless str)
+              (prog2$
+               (raise "Expected VL_FOR to contain a string.")
+               ps)))
           (vl-ps-span "vl_cmt"
                       (vl-println "")
                       (vl-print "/* For ")
-                      (vl-print-str (vl-string->value (vl-atom->guts (cdar x))))
+                      (vl-print-str str)
                       (vl-println " */")))))
     (vl-ps-seq (vl-println "")
                (vl-pp-atts x)
@@ -2564,12 +2033,11 @@ expression into a string."
 
 (define vl-pp-delaycontrol ((x vl-delaycontrol-p) &key (ps 'ps))
   (let ((value (vl-delaycontrol->value x)))
-    (if (and (vl-fast-atom-p value)
-             (vl-fast-constint-p (vl-atom->guts value)))
+    (if (vl-expr-resolved-p value)
         (vl-ps-seq
          (vl-print "#")
          (vl-ps-span "vl_int"
-                     (vl-println? (vl-constint->value (vl-atom->guts value)))))
+                     (vl-println? (vl-resolved->val value))))
       (vl-ps-seq
        (vl-print "#(")
        (vl-pp-expr value)
@@ -3203,13 +2671,13 @@ expression into a string."
       :vl-genloop
       (vl-ps-seq (vl-println "")
                  (vl-print "for (")
-                 (vl-pp-id x.var)
+                 (vl-print-str x.var)
                  (vl-print "=")
                  (vl-pp-expr x.initval)
                  (vl-print "; ")
                  (vl-pp-expr x.continue)
                  (vl-print "; ")
-                 (vl-pp-id x.var)
+                 (vl-print-str x.var)
                  (vl-print "=")
                  (vl-pp-expr x.nextval)
                  (vl-print ")")
