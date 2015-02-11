@@ -245,6 +245,7 @@ its flag in the flag-function.</p>")
     :guard-hints ;; Appended to guard-hints for all sub-functions.
     :hints       ;; Appended to hints for all sub-functions.
     :guard-debug ;; Must agree with any individual guard-debug settings.
+    :measure-debug ;; Must agree with any individual measure-debug settings.
     :well-founded-relation ;; Must agree with any explicit :well-founded-relations
     :otf-flg              ;; Must agree with any explicit otf-flg settings.
     :mode        ;; Must agree with any individual :mode settings.

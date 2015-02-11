@@ -373,6 +373,7 @@
    inline     ;; inline keywords
    extra-binder-names ;; extra x.foo b* binders for not-yet-implemented accessors
    count-incr ;; add an extra 1 to count
+   no-ctor-macros ;; omit maker and changer macros
    ))
 
 (defconst *flexprod-keywords*
@@ -388,7 +389,8 @@
     :inline
     :require
     :count-incr
-    :extra-binder-names))
+    :extra-binder-names
+    :no-ctor-macros))
 
 (defun parse-flexprod (x sumname sumkind sum-kwds xvar rev-not-prevconds our-fixtypes fixtypes)
   (b* (((cons kind kws) x)
@@ -428,7 +430,8 @@
        (inline (get-deftypes-inline-opt (getarg :inline *inline-defaults* sum-kwds) kwd-alist))
        (require (getarg :require t kwd-alist))
        (extra-binder-names (getarg :extra-binder-names nil kwd-alist))
-       (count-incr (getarg :count-incr nil kwd-alist)))
+       (count-incr (getarg :count-incr nil kwd-alist))
+       (no-ctor-macros (getarg :no-ctor-macros nil kwd-alist)))
     (make-flexprod :kind kind
                   :cond cond
                   :guard guard
@@ -443,7 +446,8 @@
                   :short (getarg :short nil kwd-alist)
                   :long (getarg :long nil kwd-alist)
                   :inline inline
-                  :count-incr count-incr)))
+                  :count-incr count-incr
+                  :no-ctor-macros no-ctor-macros)))
 
 (defun parse-flexprods (x sumname sumkind sum-kwds xvar rev-not-prevconds our-fixtypes fixtypes)
   (if (atom x)
@@ -482,6 +486,7 @@
   '(:pred :fix :equiv :kind :count ;; function names
     :case ;; macro name
     :measure ;; term
+    :measure-debug
     :xvar  ;; var name
     :no-count
     :shape
@@ -803,7 +808,8 @@
 (defconst *tagprod-formal-keywords* '(:rule-classes :default :reqfix))
 (defconst *tagprod-keywords*
   '(:layout :hons :inline :base-name :require :short :long
-    :extra-binder-names :count-incr))
+    :extra-binder-names :count-incr
+    :no-ctor-macros))
 
 (defun tagsum-prod-to-flexprod (x xvar sum-kwds lastp have-basep our-fixtypes)
   (b* (((cons kind args) x)
@@ -831,7 +837,8 @@
        (base-name (getarg :base-name nil kwd-alist))
        (ctor-body1 (tagsum-fields-to-ctor-body (strip-cars flexsum-fields) layout hons))
        (shape1 (tagsum-fields-to-shape flexsum-fields `(cdr ,xvar) layout))
-       (extra-binder-names (getarg :extra-binder-names nil kwd-alist)))
+       (extra-binder-names (getarg :extra-binder-names nil kwd-alist))
+       (no-ctor-macros (getarg :no-ctor-macros nil kwd-alist)))
     (mv `(,kind
           :cond ,(if lastp
                      t
@@ -850,7 +857,8 @@
           ,@(and longp `(:long ,(cdr longp)))
           ,@(and count-incrp `(:count-incr ,(cdr count-incrp)))
           :ctor-body (,(if hons 'hons 'cons) ,kind ,ctor-body1)
-          ,@(and extra-binder-names `(:extra-binder-names ,extra-binder-names)))
+          ,@(and extra-binder-names `(:extra-binder-names ,extra-binder-names))
+          ,@(and no-ctor-macros `(:no-ctor-macros ,no-ctor-macros)))
         basep)))
 
 (defun tagsum-prods-to-flexprods (prods xvar sum-kwds have-base-or-override our-fixtypes tagsum-name)
@@ -876,6 +884,7 @@
 (defconst *tagsum-keywords*
   '(:pred :fix :equiv :kind :count ;; function names
     :measure ;; term
+    :measure-debug
     :xvar  ;; var name
     :no-count
     :parents :short :long  ;; xdoc
@@ -960,6 +969,7 @@
 (defconst *defprod-keywords*
   '(:pred :fix :equiv :count ;; function names
     :measure ;; term
+    :measure-debug
     :xvar  ;; var name
     :no-count
     :parents :short :long  ;; xdoc
@@ -974,6 +984,7 @@
     :post-events
     :enable-rules
     :extra-binder-names
+    :no-ctor-macros
     ))
 
 (defun defprod-fields-to-flexsum-prod (fields xvar name kwd-alist)
@@ -991,7 +1002,8 @@
        (shape (tagsum-fields-to-shape flexsum-fields xbody layout))
        (requirep (assoc :require kwd-alist))
        (kind (or tag (intern$ (symbol-name name) "KEYWORD")))
-       (extra-binder-names (getarg :extra-binder-names nil kwd-alist)))
+       (extra-binder-names (getarg :extra-binder-names nil kwd-alist))
+       (no-ctor-macros (getarg :no-ctor-macros nil kwd-alist)))
     `(,kind
       :shape ,(if tag
                     (nice-and `(eq (car ,xvar) ,tag) shape)
@@ -999,7 +1011,9 @@
       :fields ,flexsum-fields
       :type-name ,name
       :ctor-body ,ctor-body
+      
       ,@(and extra-binder-names `(:extra-binder-names ,extra-binder-names))
+      ,@(and no-ctor-macros `(:no-ctor-macros ,no-ctor-macros))
       ,@(and requirep `(:require ,(cdr requirep))))))
 
 (defun flexprod-fields->names (fields)
@@ -1137,6 +1151,7 @@
   '(:pred :fix :equiv :count
     :elt-type
     :measure
+    :measure-debug
     :xvar
     :true-listp
     :elementp-of-nil
@@ -1277,6 +1292,7 @@
     :set :set-fast
     :key-type :val-type
     :measure
+    :measure-debug
     :xvar
     :parents :short :long  ;; xdoc
     :no-count :true-listp
@@ -1562,6 +1578,8 @@
        :short ,short
        :returns ,bool
        :measure ,sum.measure
+       ,@(and (getarg :measure-debug nil sum.kwd-alist)
+              `(:measure-debug t))
        :progn t
        ;; ,(if sum.kind
        ;;      `(case (,sum.kind ,sum.xvar)
@@ -1598,6 +1616,8 @@
              :parents nil
              :progn t
              :measure ,list.measure
+             ,@(and (getarg :measure-debug nil list.kwd-alist)
+                    `(:measure-debug t))
              (if (atom ,list.xvar)
                  ,(if list.true-listp
                       `(eq ,list.xvar nil)
@@ -1664,6 +1684,8 @@
              :parents nil ;; BOZO not clear when to add docs for this
              :progn t
              :measure ,alist.measure
+             ,@(and (getarg :measure-debug nil alist.kwd-alist)
+                    `(:measure-debug t))
              (if (atom ,alist.xvar)
                  ,(if alist.true-listp
                       `(eq ,alist.xvar nil)
@@ -1987,7 +2009,8 @@
        :short ,short
        :inline t
        :measure ,sum.measure
-       (declare (xargs :measure-debug t))
+       ,@(and (getarg :measure-debug nil sum.kwd-alist)
+              `(:measure-debug t))
        ,@(and flagp `(:flag ,sum.name))
        :returns (,newx ,sum.pred
                        :hints('(:in-theory (disable ,sum.fix ,sum.pred)
@@ -2013,6 +2036,8 @@
   (b* (((flexlist list) list))
     `(define ,list.fix ((,list.xvar ,list.pred))
        :measure ,list.measure
+       ,@(and (getarg :measure-debug nil list.kwd-alist)
+              `(:measure-debug t))
        ,@(and flagp `(:flag ,list.name))
        :returns (newx ,list.pred
                       :hints('(:in-theory (disable ,list.fix ,list.pred)
@@ -2037,6 +2062,8 @@
   (b* (((flexalist alist) alist))
     `(define ,alist.fix ((,alist.xvar ,alist.pred))
        :measure ,alist.measure
+       ,@(and (getarg :measure-debug nil alist.kwd-alist)
+              `(:measure-debug t))
        ,@(and flagp `(:flag ,alist.name))
        :returns (newx ,alist.pred
                       :hints('(:in-theory (disable ,alist.fix ,alist.pred)
@@ -2688,12 +2715,12 @@
                               ',binder-accs
                               acl2::args acl2::forms acl2::rest-expr))
 
-        ,(std::da-make-maker-fn prod.ctor-name fieldnames
-                                (flexprod-fields->defaults prod.fields))
-        ,(std::da-make-maker prod.ctor-name fieldnames)
-
-        ,(std::da-make-changer-fn-gen prod.ctor-name field-accs)
-        ,(std::da-make-changer prod.ctor-name fieldnames))
+        ,@(and (not prod.no-ctor-macros)
+               `(,(std::da-make-maker-fn prod.ctor-name fieldnames
+                                         (flexprod-fields->defaults prod.fields))
+                 ,(std::da-make-maker prod.ctor-name fieldnames)
+                 ,(std::da-make-changer-fn-gen prod.ctor-name field-accs)
+                 ,(std::da-make-changer prod.ctor-name fieldnames))))
 
       (local (in-theory (enable ,prod.ctor-name))))))
 
@@ -2850,6 +2877,8 @@
                                                       . ,(flexsum-prod-fns x.prods)))))
         :measure (let ((,x.xvar (,x.fix ,x.xvar)))
                    ,x.measure)
+       ,@(and (getarg :measure-debug nil x.kwd-alist)
+              `(:measure-debug t))
         :progn t
         ,(if x.kind
              `(case (,x.kind ,x.xvar)
@@ -2941,6 +2970,8 @@
                                  :in-theory (disable ,x.count))))
        :measure (let ((,x.xvar (,x.fix ,x.xvar)))
                   ,x.measure)
+       ,@(and (getarg :measure-debug nil x.kwd-alist)
+              `(:measure-debug t))
        :verify-guards nil
        :progn t
        (if (atom ,x.xvar)
@@ -2991,6 +3022,8 @@
                                   :in-theory (disable ,x.count))))
         :measure (let ((,x.xvar (,x.fix ,x.xvar)))
                    ,x.measure)
+       ,@(and (getarg :measure-debug nil x.kwd-alist)
+              `(:measure-debug t))
         :verify-guards nil
         :progn t
         (let ((,x.xvar (mbe :logic (,x.fix ,x.xvar) :exec ,x.xvar)))

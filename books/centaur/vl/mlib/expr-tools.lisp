@@ -472,7 +472,7 @@ like @('foo').</p>"
   :inline t
   (vl-expr-case x
     :vl-index (and (atom x.indices)
-                   (vl-indexpart-case x.part :vl-none)
+                   (vl-indexpart-case x.part :none)
                    (vl-scopeexpr-case x.scope :end)
                    (eq (vl-hidexpr-kind (vl-scopeexpr-end->hid x.scope)) :end))
     :otherwise nil))
@@ -511,7 +511,7 @@ construct fast alists binding identifiers to things, etc.</p>"
   (hons-copy
    (make-vl-index :scope (make-vl-scopeexpr-end :hid (make-vl-hidexpr-end :name name))
                   :indices nil
-                  :part (make-vl-none)
+                  :part (make-vl-indexpart-none)
                   :type type))
   ///
   (local (in-theory (enable vl-idexpr-p vl-idexpr->name)))
@@ -655,13 +655,77 @@ construct fast alists binding identifiers to things, etc.</p>"
            (vl-scopeexpr-fix x))
     :hints(("Goal" :in-theory (enable vl-scopeexpr->subexprs)))))
 
+(define vl-range->subexprs ((x vl-range-p))
+  :returns (subexprs vl-exprlist-p)
+  (b* (((vl-range x)))
+    (list x.msb x.lsb))
+  ///
+  (defret vl-exprlist-count-of-vl-range->subexprs
+    (<= (vl-exprlist-count subexprs)
+        (vl-range-count x))
+    :hints (("goal"
+             :in-theory (enable vl-range-count)))
+    :rule-classes :linear))
+
+(define vl-range-update-subexprs ((x vl-range-p)
+                                  (subexprs vl-exprlist-p))
+  :guard (equal (len subexprs)
+                (len (vl-range->subexprs x)))
+  :returns (new-x vl-range-p)
+  :verify-guards nil
+  :ignore-ok t
+  (change-vl-range
+   x
+   :msb (car subexprs)
+   :lsb (cadr subexprs))
+  ///
+  (verify-guards vl-range-update-subexprs
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((vl-range->subexprs x))))))
+  (defthm vl-range-update-subexprs-identity
+    (equal (vl-range-update-subexprs x (vl-range->subexprs x))
+           (vl-range-fix x))
+    :hints(("Goal" :in-theory (enable vl-range->subexprs)))))
+
+(define vl-plusminus->subexprs ((x vl-plusminus-p))
+  :returns (subexprs vl-exprlist-p)
+  (b* (((vl-plusminus x)))
+    (list x.base x.width))
+  ///
+  (defret vl-exprlist-count-of-vl-plusminus->subexprs
+    (<= (vl-exprlist-count subexprs)
+        (vl-plusminus-count x))
+    :hints (("goal"
+             :in-theory (enable vl-plusminus-count)))
+    :rule-classes :linear))
+
+(define vl-plusminus-update-subexprs ((x vl-plusminus-p)
+                                      (subexprs vl-exprlist-p))
+  :guard (equal (len subexprs)
+                (len (vl-plusminus->subexprs x)))
+  :returns (new-x vl-plusminus-p)
+  :verify-guards nil
+  :ignore-ok t
+  (change-vl-plusminus
+   x
+   :base (car subexprs)
+   :width (cadr subexprs))
+  ///
+  (verify-guards vl-plusminus-update-subexprs
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((vl-plusminus->subexprs x))))))
+  (defthm vl-plusminus-update-subexprs-identity
+    (equal (vl-plusminus-update-subexprs x (vl-plusminus->subexprs x))
+           (vl-plusminus-fix x))
+    :hints(("Goal" :in-theory (enable vl-plusminus->subexprs)))))
+
 
 (define vl-indexpart->subexprs ((x vl-indexpart-p))
   :returns (subexprs vl-exprlist-p)
   (vl-indexpart-case x
-    :vl-none nil
-    :vl-range (list x.msb x.lsb)
-    :vl-plusminus (list x.base x.width))
+    :none nil
+    :range (vl-range->subexprs x.range)
+    :plusminus (vl-plusminus->subexprs x.plusminus))
   ///
   (defret vl-exprlist-count-of-vl-indexpart->subexprs
     (<= (vl-exprlist-count subexprs)
@@ -677,11 +741,9 @@ construct fast alists binding identifiers to things, etc.</p>"
   :returns (new-x vl-indexpart-p)
   :verify-guards nil
   (vl-indexpart-case x
-    :vl-none (vl-indexpart-fix x)
-    :vl-range (change-vl-range
-               x :msb (car subexprs) :lsb (cadr subexprs))
-    :vl-plusminus (change-vl-plusminus
-                   x :base (car subexprs) :width (cadr subexprs)))
+    :none (vl-indexpart-fix x)
+    :range (vl-range->indexpart (vl-range-update-subexprs x.range subexprs))
+    :plusminus (vl-plusminus->indexpart (vl-plusminus-update-subexprs x.plusminus subexprs)))
   ///
   (verify-guards vl-indexpart-update-subexprs
     :hints ((and stable-under-simplificationp
@@ -694,10 +756,10 @@ construct fast alists binding identifiers to things, etc.</p>"
 (define vl-arrayrange->subexprs ((x vl-arrayrange-p))
   :returns (subexprs vl-exprlist-p)
   (vl-arrayrange-case x
-    :vl-none nil
-    :vl-index (list x.idx)
-    :vl-range (list x.msb x.lsb)
-    :vl-plusminus (list x.base x.width))
+    :none nil
+    :index (list x.expr)
+    :range (vl-range->subexprs x.range)
+    :plusminus (vl-plusminus->subexprs x.plusminus))
   ///
   (defret vl-exprlist-count-of-vl-arrayrange->subexprs
     (<= (vl-exprlist-count subexprs)
@@ -713,12 +775,10 @@ construct fast alists binding identifiers to things, etc.</p>"
   :returns (new-x vl-arrayrange-p)
   :verify-guards nil
   (vl-arrayrange-case x
-    :vl-none (vl-arrayrange-fix x)
-    :vl-index (change-vl-arrayrange-vl-index x :idx (car subexprs))
-    :vl-range (change-vl-range
-               x :msb (car subexprs) :lsb (cadr subexprs))
-    :vl-plusminus (change-vl-plusminus
-                   x :base (car subexprs) :width (cadr subexprs)))
+    :none (vl-arrayrange-fix x)
+    :index (vl-expr->arrayrange (car subexprs))
+    :range (vl-range->arrayrange (vl-range-update-subexprs x.range subexprs))
+    :plusminus (vl-plusminus->arrayrange (vl-plusminus-update-subexprs x.plusminus subexprs)))
   ///
   (verify-guards vl-arrayrange-update-subexprs
     :hints ((and stable-under-simplificationp
@@ -802,8 +862,8 @@ construct fast alists binding identifiers to things, etc.</p>"
 (define vl-valuerange->subexprs ((x vl-valuerange-p))
   :returns (subexprs vl-exprlist-p)
   (vl-valuerange-case x
-    :single (list x.val)
-    :vl-range (list x.msb x.lsb))
+    :single (list x.expr)
+    :range  (vl-range->subexprs x.range))
   ///
   (defret vl-exprlist-count-of-vl-valuerange->subexprs
     (<= (vl-exprlist-count subexprs)
@@ -819,9 +879,8 @@ construct fast alists binding identifiers to things, etc.</p>"
   :returns (new-x vl-valuerange-p)
   :verify-guards nil
   (vl-valuerange-case x
-    :single (change-vl-valuerange-single x :val (car subexprs))
-    :vl-range (change-vl-range x :msb (car subexprs)
-                               :lsb (cadr subexprs)))
+    :single (vl-expr->valuerange (car subexprs))
+    :range (vl-range->valuerange (vl-range-update-subexprs x.range subexprs)))
   ///
   (verify-guards vl-valuerange-update-subexprs
     :hints ((and stable-under-simplificationp
@@ -1796,9 +1855,10 @@ in this case see @(see vl-make-integer).</p>"
                              :wasunsized t
                              :value value)
       :type (make-vl-coretype :name :vl-logic
-                              :pdims (list (make-vl-range
-                                            :msb (vl-make-index (1- bits))
-                                            :lsb (vl-make-index 0)))))))
+                              :pdims (list (vl-range->packeddimension
+                                            (make-vl-range
+                                             :msb (vl-make-index (1- bits))
+                                             :lsb (vl-make-index 0))))))))
   ///
   (defthm vl-expr-kind-of-vl-make-integer
     (eq (vl-expr-kind (vl-make-integer n :bits bits)) :vl-value))

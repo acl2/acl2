@@ -373,51 +373,16 @@ displays.  The module browser's web pages are responsible for defining the
   (vl-ps-span "vl_real"
               (vl-println? (vl-real->value x))))
 
-(define vl-pp-id ((x vl-id-p) &key (ps 'ps))
-  :inline t
-  (vl-print-wirename (vl-id->name x)))
-
-(define vl-pp-hidpiece ((x vl-hidpiece-p) &key (ps 'ps))
-  (vl-ps-span "vl_id"
-              (vl-print-str (vl-maybe-escape-identifier (vl-hidpiece->name x)))))
-
-(define vl-pp-sysfunname ((x vl-sysfunname-p) &key (ps 'ps))
-  (vl-ps-span "vl_sys"
-              (vl-print-str (vl-sysfunname->name x))))
-
-(define vl-pp-funname ((x vl-funname-p) &key (ps 'ps))
-  (vl-ps-span "vl_id"
-              (vl-print-str (vl-maybe-escape-identifier (vl-funname->name x)))))
-
-(define vl-pp-tagname ((x vl-tagname-p) &key (ps 'ps))
-  (vl-ps-span "vl_tagname"
-              (vl-print-str (vl-tagname->name x))))
-
-(define vl-pp-typename ((x vl-typename-p) &key (ps 'ps))
-  :inline t
-  (vl-print-wirename (vl-typename->name x)))
+(define vl-pp-time ((x vl-value-p) &key (ps 'ps))
+  :guard (vl-value-case x :vl-time)
+  (b* (((vl-time x) x))
+    (vl-ps-seq
+     (vl-print-str x.quantity)
+     (vl-print (vl-timeunit->string x.units)))))
 
 
-(define vl-keygutstype->string ((x vl-keygutstype-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  (case (vl-keygutstype-fix x)
-    (:vl-null  "null")
-    (:vl-this  "this")
-    (:vl-super "super")
-    (:vl-local "local")
-    (:vl-default "default")
-    (:vl-$     "$")
-    (:vl-$root "$root")
-    (:vl-$unit "$unit")
-    (:vl-emptyqueue "{}")
-    (otherwise (progn$ (impossible) "null"))))
-
-(define vl-pp-keyguts ((x vl-keyguts-p) &key (ps 'ps))
-  (vl-ps-span "vl_key"
-              (vl-print-str (vl-keygutstype->string
-                             (vl-keyguts->type x)))))
-
-(define vl-pp-extint ((x vl-extint-p) &key (ps 'ps))
+(define vl-pp-extint ((x vl-value-p) &key (ps 'ps))
+  :guard (vl-value-case x :vl-extint)
   :prepwork ((local (in-theory (enable (tau-system)))))
   (b* (((vl-extint x) x))
     (vl-print-str
@@ -427,92 +392,99 @@ displays.  The module browser's web pages are responsible for defining the
        (:vl-xval "'x")
        (:vl-zval "'z")))))
 
-(define vl-pp-time ((x vl-time-p) &key (ps 'ps))
-  (b* (((vl-time x) x))
-    (vl-ps-seq
-     (vl-print-str x.quantity)
-     (vl-print (vl-timeunit->string x.units)))))
+(define vl-pp-value ((x vl-value-p) &key (ps 'ps))
+  (vl-value-case x
+    :vl-constint (vl-pp-constint x)
+    :vl-weirdint (vl-pp-weirdint x)
+    :vl-string   (vl-pp-string x)
+    :vl-real     (vl-pp-real x)
+    :vl-time     (vl-pp-time x)
+    :vl-extint   (vl-pp-extint x)))
 
 
-(define vl-basictypekind->string ((x vl-basictypekind-p))
+
+
+(define vl-randomqualifier-string ((x vl-randomqualifier-p))
   :returns (str stringp :rule-classes :type-prescription)
-  :guard-hints(("Goal" :in-theory (enable vl-basictypekind-p)))
-  (case (vl-basictypekind-fix x)
+  :guard-hints(("Goal" :in-theory (enable vl-randomqualifier-p)))
+  (case (vl-randomqualifier-fix x)
+    ('nil         "")
+    (:vl-rand     "rand")
+    (:vl-randc    "randc")
+    (otherwise    (or (impossible) ""))))
+
+(define vl-nettypename-string ((x vl-nettypename-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-nettypename-p)))
+  (case (vl-nettypename-fix x)
+    (:vl-wire    "wire")
+    (:vl-tri     "tri")
+    (:vl-supply0 "supply0")
+    (:vl-supply1 "supply1")
+    (:vl-triand  "triand")
+    (:vl-trior   "trior")
+    (:vl-tri0    "tri0")
+    (:vl-tri1    "tri1")
+    (:vl-trireg  "trireg")
+    (:vl-uwire   "uwire")
+    (:vl-wand    "wand")
+    (:vl-wor     "wor")
+    (otherwise   (or (impossible) ""))))
+
+(define vl-coretypename-string ((x vl-coretypename-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints(("Goal" :in-theory (enable vl-coretypename-p)))
+  (case (vl-coretypename-fix x)
+    (:vl-logic     "logic")
+    (:vl-reg       "reg")
+    (:vl-bit       "bit")
+    (:vl-void      "void")
     (:vl-byte      "byte")
     (:vl-shortint  "shortint")
     (:vl-int       "int")
     (:vl-longint   "longint")
     (:vl-integer   "integer")
     (:vl-time      "time")
-    (:vl-bit       "bit")
-    (:vl-logic     "logic")
-    (:vl-reg       "reg")
     (:vl-shortreal "shortreal")
     (:vl-real      "real")
     (:vl-realtime  "realtime")
-    (:vl-signed    "signed")
-    (:vl-unsigned  "unsigned")
     (:vl-string    "string")
-    (:vl-const     "const")
-    (otherwise (progn$ (impossible) "reg"))))
+    (:vl-chandle   "chandle")
+    (:vl-event     "event")
+    (otherwise     (or (impossible) ""))))
 
-(define vl-pp-basictype ((x vl-basictype-p) &key (ps 'ps))
-  (vl-ps-span "vl_key"
-              (vl-print-str (vl-basictypekind->string
-                             (vl-basictype->kind x)))))
+(define vl-pp-enumbasekind ((x vl-enumbasekind-p) &key (ps 'ps))
+  :guard-hints(("Goal" :in-theory (enable vl-enumbasekind-p)))
+  (b* ((x (vl-enumbasekind-fix x))
+       ((when (stringp x))
+        (vl-print-modname x)))
+    (vl-ps-span "vl_key" (vl-print-str (case x
+                                         (:vl-byte     "byte")
+                                         (:vl-shortint "shortint")
+                                         (:vl-int      "int")
+                                         (:vl-longint  "longint")
+                                         (:vl-integer  "integer")
+                                         (:vl-time     "time")
+                                         (:vl-bit      "bit")
+                                         (:vl-logic    "logic")
+                                         (:vl-reg      "reg"))))))
+
+(define vl-pp-scopename ((x vl-scopename-p) &key (ps 'ps))
+  :prepwork ((local (in-theory (enable vl-scopename-p))))
+  (b* ((x (vl-scopename-fix x)))
+    (cond ((eq x :vl-local) (vl-ps-span "vl_key" (vl-print "local")))
+          ((eq x :vl-$unit) (vl-ps-span "vl_key" (vl-print "$unit")))
+          (t (vl-ps-span "vl_id" (vl-print-str x))))))
+        
 
 
-
-
-(define vl-pp-atomguts ((x vl-atomguts-p) &key (ps 'ps))
-  :guard-hints (("Goal" :in-theory (enable vl-atomguts-p
-                                           tag-reasoning)))
-  (let ((x (vl-atomguts-fix x)))
-    (case (tag x)
-      (:vl-id         (vl-pp-id x))
-      (:vl-constint   (vl-pp-constint x))
-      (:vl-weirdint   (vl-pp-weirdint x))
-      (:vl-string     (vl-pp-string x))
-      (:vl-real       (vl-pp-real x))
-      (:vl-hidpiece   (vl-pp-hidpiece x))
-      (:vl-funname    (vl-pp-funname x))
-      (:vl-typename   (vl-pp-typename x))
-      (:vl-extint     (vl-pp-extint x))
-      (:vl-time       (vl-pp-time x))
-      (:vl-keyguts    (vl-pp-keyguts x))
-      (:vl-basictype  (vl-pp-basictype x))
-      (:vl-tagname    (vl-pp-tagname x))
-      (otherwise      (vl-pp-sysfunname x)))))
-
-(define vl-atts-find-paramname ((atts vl-atts-p))
-  ;; See vl-expr-scopesubst.  When we substitute a parameter's value into its
-  ;; expression, we add a paramname annotation.
-  :returns (paramname maybe-stringp :rule-classes :type-prescription)
-  (b* ((look (assoc-equal "VL_PARAMNAME" (vl-atts-fix atts)))
-       ((unless look)
-        nil)
-       (val (cdr look))
-       ((unless (and val
-                     (vl-fast-atom-p val)))
-        nil)
-       (guts (vl-atom->guts val))
-       ((unless (vl-fast-string-p guts))
-        nil))
-    (vl-string->value guts)))
-
-(define vl-pp-atom ((x vl-expr-p) &key (ps 'ps))
-  :guard (vl-atom-p x)
-  :inline t
-  (vl-ps-seq
-   (vl-pp-atomguts (vl-atom->guts x))
-   (vl-when-html
-    (b* ((atts (vl-atom->atts x))
-         (name (and atts (vl-atts-find-paramname atts)))
-         ((unless name)
-          ps))
-      (vl-ps-seq (vl-print-markup "<span class='vl_paramname'>")
-                 (vl-print-str name)
-                 (vl-print-markup "</span>"))))))
+(define vl-pp-specialkey ((x vl-specialkey-p) &key (ps 'ps))
+  (b* ((x (vl-specialkey-fix x)))
+    (case x
+      (:vl-null (vl-print "null"))
+      (:vl-$    (vl-print "$"))
+      (:vl-emptyqueue (vl-print "{ }"))
+      (otherwise (prog2$ (impossible) ps)))))
 
 (defmacro vl-ops-precedence-table ()
   ''(;; These aren't real operators as far as the precedence rules are
@@ -647,46 +619,42 @@ displays.  The module browser's web pages are responsible for defining the
 
 (local (in-theory (disable unsigned-byte-p)))
 
-(define vl-op-precedence ((x vl-op-p))
-  :prepwork ((local (defun u8-val-alistp (x)
-                      (if (atom x)
-                          t
-                        (and (consp (car x))
-                             (posp (cdar x))
-                             (unsigned-byte-p 8 (cdar x))
-                             (u8-val-alistp (cdr x))))))
-             (local (defthm posp-of-lookup-when-u8-val-alistp
-                      (implies (and (u8-val-alistp x)
-                                    (hons-assoc-equal k x))
-                               (and (posp (cdr (hons-assoc-equal k x)))
-                                    (unsigned-byte-p 8 (cdr (hons-assoc-equal k x)))))
-                      :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
-             (local (in-theory (e/d (acl2::hons-assoc-equal-iff-member-alist-keys)
-                                    (acl2::alist-keys-member-hons-assoc-equal))))
-             (local (defthm member-when-member-set-equiv
-                      (implies (and (member k y)
-                                    (set-equiv x y))
-                               (member k x))))
-             (local (in-theory (e/d (vl-op-fix vl-op-p vl-ops-table)
-                                    (acl2::hons-assoc-equal-of-cons
-                                     acl2::member-of-cons
-                                     acl2::member-when-atom)))))
+(define vl-op-precedence (x)
+  ;; :prepwork ((local (defun u8-val-alistp (x)
+  ;;                     (if (atom x)
+  ;;                         t
+  ;;                       (and (consp (car x))
+  ;;                            (posp (cdar x))
+  ;;                            (unsigned-byte-p 8 (cdar x))
+  ;;                            (u8-val-alistp (cdr x))))))
+  ;;            (local (defthm posp-of-lookup-when-u8-val-alistp
+  ;;                     (implies (and (u8-val-alistp x)
+  ;;                                   (hons-assoc-equal k x))
+  ;;                              (and (posp (cdr (hons-assoc-equal k x)))
+  ;;                                   (unsigned-byte-p 8 (cdr (hons-assoc-equal k x)))))
+  ;;                     :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
+  ;;            ;; (local (in-theory (e/d (acl2::hons-assoc-equal-iff-member-alist-keys)
+  ;;            ;;                        (acl2::alist-keys-member-hons-assoc-equal))))
+  ;;            ;; (local (defthm member-when-member-set-equiv
+  ;;            ;;          (implies (and (member k y)
+  ;;            ;;                        (set-equiv x y))
+  ;;            ;;                   (member k x))))
+  ;;            ;; (local (in-theory (e/d (vl-op-fix vl-op-p vl-ops-table)
+  ;;            ;;                        (acl2::hons-assoc-equal-of-cons
+  ;;            ;;                         acl2::member-of-cons
+  ;;            ;;                         acl2::member-when-atom))))
+  ;;            )
   :returns (precedence posp :rule-classes :type-prescription)
   :inline t
-  (cdr (assoc (vl-op-fix x) (vl-ops-precedence-table)))
+  (mbe :logic (pos-fix (cdr (assoc x (vl-ops-precedence-table))))
+       :exec (b* ((res (cdr (assoc x (vl-ops-precedence-table)))))
+               (or res
+                   (raise "Bad op: ~x0" x)
+                   (pos-fix res))))
   ///
   (more-returns
    (precedence (unsigned-byte-p 8 precedence)
                :name byte-p-of-vl-op-precedence)))
-
-(define vl-op-string ((x vl-op-p))
-  :returns (string stringp :rule-classes :type-prescription)
-  :inline t
-  (b* ((str (vl-op-text x))
-       ((unless str)
-        (raise "Bad operator: ~x0~%" x)
-        ""))
-    str))
 
 (define vl-op-precedence-< ((x vl-op-p) (y vl-op-p))
   :inline t
@@ -711,6 +679,279 @@ displays.  The module browser's web pages are responsible for defining the
   :rule-classes ((:rewrite) (:linear))
   :enable (vl-remove-keys vl-atts-count)
   :disable vl-atts-p-of-vl-remove-keys)
+
+
+
+(defines vl-pp-expr
+  (define vl-pp-indexlist ((x vl-exprlist-p) &key (ps 'ps))
+    :measure (vl-exprlist-count x)
+    (if (atom x)
+        ps
+      (vl-ps-seq (vl-print "[")
+                 (vl-pp-expr (car x))
+                 (vl-print "]")
+                 (vl-pp-indexlist (cdr x)))))
+
+  (define vl-pp-hidindex ((x vl-hidindex-p) &key (ps 'ps))
+    :measure (vl-hidindex-count x)
+    (b* (((vl-hidindex x)))
+      (vl-ps-seq (vl-ps-span "vl_id" (vl-print-str x.name))
+                 (vl-pp-indexlist x.indices))))
+
+  (define vl-pp-hidexpr ((x vl-hidexpr-p) &key (ps 'ps))
+    :measure (vl-hidexpr-count x)
+    (vl-hidexpr-case x
+      :end (vl-ps-span "vl_id" (vl-print-str x.name))
+      :dot (vl-ps-seq (vl-pp-hidindex x.first)
+                      (vl-print ".")
+                      (vl-pp-hidexpr x.rest))))
+
+  (define vl-pp-scopeexpr ((x vl-scopeexpr-p) &key (ps 'ps))
+    :measure (vl-scopeexpr-count x)
+    (vl-scopeexpr-case x
+      :end (vl-pp-hidexpr x.hid)
+      :colon (vl-ps-seq (vl-pp-scopename x.first)
+                        (vl-print "::")
+                        (vl-pp-scopeexpr x.rest))))
+
+  (define vl-pp-range ((x vl-range-p) &key (ps 'ps))
+    :measure (vl-range-count x)
+    (b* (((vl-range x)))
+      (vl-ps-seq (vl-print "[")
+                 (vl-pp-expr x.msb)
+                 (vl-print ":")
+                 (vl-pp-expr x.lsb)
+                 (vl-print "]"))))
+
+  (define vl-pp-plusminus ((x vl-plusminus-p) &key (ps 'ps))
+    :measure (vl-range-count x)
+    (b* (((vl-plusminus x)))
+      (vl-ps-seq (vl-print "[")
+                 (vl-pp-expr x.base)
+                 (vl-print-str (if x.minusp "-:" "+:"))
+                 (vl-pp-expr x.width)
+                 (vl-print "]"))))
+    
+
+  (define vl-pp-indexpart ((x vl-indexpart-p) &key (ps 'ps))
+    :measure (vl-indexpart-count x)
+    (vl-indexpart-case x
+      :vl-none ps
+      :vl-range (vl-pp-range x.range)
+      :plusminus (vl-pp-plusminus x.plusminus)))
+
+  (define vl-pp-arrayrange ((x vl-arrayrange-p) &key (ps 'ps))
+    :measure (vl-arrayrange-count x)
+    (vl-arrayrange-case x
+      :none  ps
+      :index (vl-ps-seq (vl-ps-span "vl_key" (vl-print " with "))
+                        (vl-print "[")
+                        (vl-pp-expr x.idx)
+                        (vl-print "]"))
+      :range (vl-pp-range x.range)
+      :plusminus (vl-pp-plusminus x.plusminus)))
+
+  (define vl-pp-streamexpr ((x vl-streamexpr-p) &key (ps 'ps))
+    :measure (vl-streamexpr-count x)
+    (b* (((vl-streamexpr x)))
+      (vl-ps-seq (vl-pp-expr x.expr)
+                 (vl-pp-indexpart x.part))))
+
+  (define vl-pp-streamexprlist ((x vl-streamexprlist-p) &key (ps 'ps))
+    :measure (vl-streamexprlist-count x)
+    (if (atom x)
+        ps
+      (if (atom (cdr x))
+          (vl-pp-streamexpr (car x))
+        (vl-ps-seq (vl-pp-streamexpr (car x))
+                   (vl-print ", ")
+                   (vl-pp-streamexprlist (cdr x))))))
+
+  (define vl-pp-valuerange ((x vl-valuerange-p) &key (ps 'ps))
+    :measure (vl-valuerange-count x)
+    (vl-valuerange-case x
+      :range (vl-pp-range x.range)
+      :single (vl-pp-expr x.expr)))
+
+  (define vl-pp-valuerangelist ((x vl-valuerangelist-p) &key (ps 'ps))
+    :measure (vl-valuerangelist-count x)
+    (if (atom x)
+        ps
+      (if (atom (cdr x))
+          (vl-pp-valuerange (car x))
+        (vl-ps-seq (vl-pp-valuerange (car x))
+                   (vl-print ", ")
+                   (vl-pp-valuerangelist (cdr x))))))
+
+  (define vl-pp-patternkey ((x vl-patternkey-p) &key (ps 'ps))
+    :measure (vl-patternkey-count x)
+    (vl-patternkey-case x
+      :expr (vl-pp-expr x.key)
+      :type (vl-pp-datatype x.type)
+      :default (vl-print "default")))
+
+  (define vl-pp-keyvallist ((x vl-keyvallist-p) &key (ps 'ps))
+    :measure (vl-keyvallist-count x)
+    (b* ((x (vl-keyvallist-fix x)))
+      (if (atom x)
+          ps
+        (vl-ps-seq (vl-pp-patternkey (caar x))
+                   (vl-print ":")
+                   (vl-pp-expr (cdar x))
+                   (if (atom (cdr x))
+                       ps
+                     (vl-ps-seq (vl-print ", ")
+                                (vl-pp-keyvallist (cdr x))))))))
+
+  (define vl-pp-assignpat ((x vl-assignpat-p) &key (ps 'ps))
+    :measure (vl-assignpat-count x)
+    (vl-ps-seq (vl-print "'{")
+               (vl-assignpat-case x
+                 :positional (vl-pp-exprlist x.vals)
+                 :keyval (vl-pp-keyvallist x.pairs)
+                 :repeat (vl-ps-seq (vl-pp-expr reps)
+                                    (vl-print " { ")
+                                    (vl-pp-exprlist x.vals)
+                                    (vl-print " }")))
+               (vl-print "}")))
+
+  (define vl-pp-expr ((x vl-expr-p) &key (ps 'ps))
+    :measure (vl-expr-count x)
+    (
+          
+    
+    
+  
+
+
+(define vl-pp-id ((x vl-id-p) &key (ps 'ps))
+  :inline t
+  (vl-print-wirename (vl-id->name x)))
+
+(define vl-pp-hidpiece ((x vl-hidpiece-p) &key (ps 'ps))
+  (vl-ps-span "vl_id"
+              (vl-print-str (vl-maybe-escape-identifier (vl-hidpiece->name x)))))
+
+(define vl-pp-sysfunname ((x vl-sysfunname-p) &key (ps 'ps))
+  (vl-ps-span "vl_sys"
+              (vl-print-str (vl-sysfunname->name x))))
+
+(define vl-pp-funname ((x vl-funname-p) &key (ps 'ps))
+  (vl-ps-span "vl_id"
+              (vl-print-str (vl-maybe-escape-identifier (vl-funname->name x)))))
+
+(define vl-pp-tagname ((x vl-tagname-p) &key (ps 'ps))
+  (vl-ps-span "vl_tagname"
+              (vl-print-str (vl-tagname->name x))))
+
+(define vl-pp-typename ((x vl-typename-p) &key (ps 'ps))
+  :inline t
+  (vl-print-wirename (vl-typename->name x)))
+
+
+(define vl-keygutstype->string ((x vl-keygutstype-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  (case (vl-keygutstype-fix x)
+    (:vl-null  "null")
+    (:vl-this  "this")
+    (:vl-super "super")
+    (:vl-local "local")
+    (:vl-default "default")
+    (:vl-$     "$")
+    (:vl-$root "$root")
+    (:vl-$unit "$unit")
+    (:vl-emptyqueue "{}")
+    (otherwise (progn$ (impossible) "null"))))
+
+(define vl-pp-keyguts ((x vl-keyguts-p) &key (ps 'ps))
+  (vl-ps-span "vl_key"
+              (vl-print-str (vl-keygutstype->string
+                             (vl-keyguts->type x)))))
+
+
+
+
+
+(define vl-basictypekind->string ((x vl-basictypekind-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints(("Goal" :in-theory (enable vl-basictypekind-p)))
+  (case (vl-basictypekind-fix x)
+    (:vl-byte      "byte")
+    (:vl-shortint  "shortint")
+    (:vl-int       "int")
+    (:vl-longint   "longint")
+    (:vl-integer   "integer")
+    (:vl-time      "time")
+    (:vl-bit       "bit")
+    (:vl-logic     "logic")
+    (:vl-reg       "reg")
+    (:vl-shortreal "shortreal")
+    (:vl-real      "real")
+    (:vl-realtime  "realtime")
+    (:vl-signed    "signed")
+    (:vl-unsigned  "unsigned")
+    (:vl-string    "string")
+    (:vl-const     "const")
+    (otherwise (progn$ (impossible) "reg"))))
+
+(define vl-pp-basictype ((x vl-basictype-p) &key (ps 'ps))
+  (vl-ps-span "vl_key"
+              (vl-print-str (vl-basictypekind->string
+                             (vl-basictype->kind x)))))
+
+
+
+
+(define vl-pp-atomguts ((x vl-atomguts-p) &key (ps 'ps))
+  :guard-hints (("Goal" :in-theory (enable vl-atomguts-p
+                                           tag-reasoning)))
+  (let ((x (vl-atomguts-fix x)))
+    (case (tag x)
+      (:vl-id         (vl-pp-id x))
+      (:vl-constint   (vl-pp-constint x))
+      (:vl-weirdint   (vl-pp-weirdint x))
+      (:vl-string     (vl-pp-string x))
+      (:vl-real       (vl-pp-real x))
+      (:vl-hidpiece   (vl-pp-hidpiece x))
+      (:vl-funname    (vl-pp-funname x))
+      (:vl-typename   (vl-pp-typename x))
+      (:vl-extint     (vl-pp-extint x))
+      (:vl-time       (vl-pp-time x))
+      (:vl-keyguts    (vl-pp-keyguts x))
+      (:vl-basictype  (vl-pp-basictype x))
+      (:vl-tagname    (vl-pp-tagname x))
+      (otherwise      (vl-pp-sysfunname x)))))
+
+(define vl-atts-find-paramname ((atts vl-atts-p))
+  ;; See vl-expr-scopesubst.  When we substitute a parameter's value into its
+  ;; expression, we add a paramname annotation.
+  :returns (paramname maybe-stringp :rule-classes :type-prescription)
+  (b* ((look (assoc-equal "VL_PARAMNAME" (vl-atts-fix atts)))
+       ((unless look)
+        nil)
+       (val (cdr look))
+       ((unless (and val
+                     (vl-fast-atom-p val)))
+        nil)
+       (guts (vl-atom->guts val))
+       ((unless (vl-fast-string-p guts))
+        nil))
+    (vl-string->value guts)))
+
+(define vl-pp-atom ((x vl-expr-p) &key (ps 'ps))
+  :guard (vl-atom-p x)
+  :inline t
+  (vl-ps-seq
+   (vl-pp-atomguts (vl-atom->guts x))
+   (vl-when-html
+    (b* ((atts (vl-atom->atts x))
+         (name (and atts (vl-atts-find-paramname atts)))
+         ((unless name)
+          ps))
+      (vl-ps-seq (vl-print-markup "<span class='vl_paramname'>")
+                 (vl-print-str name)
+                 (vl-print-markup "</span>"))))))
+
 
 
 (with-output :off (event)
@@ -1411,72 +1652,6 @@ expression into a string."
                     (vl-pp-interfaceportlist (cdr x))))))
 
 
-
-
-(define vl-randomqualifier-string ((x vl-randomqualifier-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  :guard-hints(("Goal" :in-theory (enable vl-randomqualifier-p)))
-  (case (vl-randomqualifier-fix x)
-    ('nil         "")
-    (:vl-rand     "rand")
-    (:vl-randc    "randc")
-    (otherwise    (or (impossible) ""))))
-
-(define vl-nettypename-string ((x vl-nettypename-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  :guard-hints (("Goal" :in-theory (enable vl-nettypename-p)))
-  (case (vl-nettypename-fix x)
-    (:vl-wire    "wire")
-    (:vl-tri     "tri")
-    (:vl-supply0 "supply0")
-    (:vl-supply1 "supply1")
-    (:vl-triand  "triand")
-    (:vl-trior   "trior")
-    (:vl-tri0    "tri0")
-    (:vl-tri1    "tri1")
-    (:vl-trireg  "trireg")
-    (:vl-uwire   "uwire")
-    (:vl-wand    "wand")
-    (:vl-wor     "wor")
-    (otherwise   (or (impossible) ""))))
-
-(define vl-coretypename-string ((x vl-coretypename-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  :guard-hints(("Goal" :in-theory (enable vl-coretypename-p)))
-  (case (vl-coretypename-fix x)
-    (:vl-logic     "logic")
-    (:vl-reg       "reg")
-    (:vl-bit       "bit")
-    (:vl-void      "void")
-    (:vl-byte      "byte")
-    (:vl-shortint  "shortint")
-    (:vl-int       "int")
-    (:vl-longint   "longint")
-    (:vl-integer   "integer")
-    (:vl-time      "time")
-    (:vl-shortreal "shortreal")
-    (:vl-real      "real")
-    (:vl-realtime  "realtime")
-    (:vl-string    "string")
-    (:vl-chandle   "chandle")
-    (:vl-event     "event")
-    (otherwise     (or (impossible) ""))))
-
-(define vl-pp-enumbasekind ((x vl-enumbasekind-p) &key (ps 'ps))
-  :guard-hints(("Goal" :in-theory (enable vl-enumbasekind-p)))
-  (b* ((x (vl-enumbasekind-fix x))
-       ((when (stringp x))
-        (vl-print-modname x)))
-    (vl-ps-span "vl_key" (vl-print-str (case x
-                                         (:vl-byte     "byte")
-                                         (:vl-shortint "shortint")
-                                         (:vl-int      "int")
-                                         (:vl-longint  "longint")
-                                         (:vl-integer  "integer")
-                                         (:vl-time     "time")
-                                         (:vl-bit      "bit")
-                                         (:vl-logic    "logic")
-                                         (:vl-reg      "reg"))))))
 
 (define vl-pp-enumbasetype ((x vl-enumbasetype-p) &key (ps 'ps))
   (b* (((vl-enumbasetype x) x))
