@@ -73,13 +73,11 @@ consing the original version of X into its attributes.</p>"
     :returns (new-x vl-expr-p)
     :measure (vl-expr-count x)
     :verify-guards nil
-    ;; We don't annotate atoms, since they have no attributes.
-    (if (vl-fast-atom-p x)
-        (vl-expr-fix x)
-      (change-vl-nonatom x
-                         :args (vl-exprlist-origexprs (vl-nonatom->args x))
-                         :atts (acons "VL_ORIG_EXPR" (vl-expr-fix x)
-                                      (vl-nonatom->atts x)))))
+    (vl-expr-update-atts
+     (vl-expr-update-subexprs
+      x (vl-exprlist-origexprs (vl-expr->subexprs x)))
+     (acons "VL_ORIG_EXPR" (vl-expr-fix x)
+            (vl-expr->atts x))))
 
   (define vl-exprlist-origexprs ((x vl-exprlist-p))
     :returns (new-x (and (vl-exprlist-p new-x)
@@ -224,8 +222,8 @@ consing the original version of X into its attributes.</p>"
 (def-vl-origexprs vl-paramvalue
   :body
   (vl-paramvalue-case x
-    :expr (vl-expr-origexprs x)
-    :datatype x))  ;; bozo add datatypes
+    :expr (change-vl-paramvalue-expr x :expr (vl-expr-origexprs x.expr))
+    :type x))  ;; bozo add datatypes
 
 (def-vl-origexprs vl-maybe-paramvalue
   :body

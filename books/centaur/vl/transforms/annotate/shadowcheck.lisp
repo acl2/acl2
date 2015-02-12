@@ -34,6 +34,8 @@
 (include-book "../../mlib/fmt")
 (local (include-book "../../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
+(local (in-theory (disable (tau-system))))
+
 
 (defconst *vl-shadowcheck-debug*
   ;; Can be redefined to enable some debugging messages.

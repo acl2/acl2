@@ -176,13 +176,13 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
 (def-vl-allexprs
   :type vl-packeddimension
   :nrev-body
-  (if (eq x :vl-unsized-dimension)
-      (nrev-fix nrev)
-    (vl-range-allexprs-nrev x nrev))
+  (vl-packeddimension-case x
+    :unsized (nrev-fix nrev)
+    :range (vl-range-allexprs-nrev x.range nrev))
   :body
-  (if (eq x :vl-unsized-dimension)
-      nil
-    (vl-range-allexprs x)))
+  (vl-packeddimension-case x
+    :unsized nil
+    :range (vl-range-allexprs x.range)))
 
 (def-vl-allexprs
   :type vl-maybe-packeddimension
@@ -250,7 +250,9 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
             (nrev (vl-packeddimensionlist-allexprs-nrev x.pdims nrev)))
          (vl-packeddimensionlist-allexprs-nrev x.udims nrev)))
       (:vl-usertype
-       (b* ((nrev (nrev-push x.kind nrev))
+       ;; does this really count as an expression? it's a type name
+       (b* ((nrev (nrev-push (make-vl-index :scope x.name :part (make-vl-partselect-none))
+                             nrev))
             (nrev (vl-packeddimensionlist-allexprs-nrev x.pdims nrev))
             (nrev (vl-packeddimensionlist-allexprs-nrev x.udims nrev)))
          nrev))))
@@ -297,7 +299,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
                     (vl-packeddimensionlist-allexprs x.pdims)
                     (vl-packeddimensionlist-allexprs x.udims)))
            (:vl-usertype
-            (cons x.kind
+            (cons (make-vl-index :scope x.name :part (make-vl-partselect-none))
                   (append (vl-packeddimensionlist-allexprs x.pdims)
                           (vl-packeddimensionlist-allexprs x.udims)))))
          :exec
@@ -447,12 +449,12 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :type vl-paramvalue
   :nrev-body
   (vl-paramvalue-case x
-    :expr (nrev-push x nrev)
-    :datatype (vl-datatype-allexprs-nrev x nrev))
+    :expr (nrev-push x.expr nrev)
+    :type (vl-datatype-allexprs-nrev x.type nrev))
   :body
   (vl-paramvalue-case x
-    :expr (list x)
-    :datatype (vl-datatype-allexprs x)))
+    :expr (list x.expr)
+    :type (vl-datatype-allexprs x.type)))
 
 (def-vl-allexprs-list
   :list vl-paramvaluelist
@@ -923,7 +925,3 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :list vl-modulelist
   :element vl-module)
 
-(define vl-module-exprnames-set ((x vl-module-p))
-  ;; This used to have a more optimized definition that avoided reversal, but
-  ;; now with nrev there isn't a way to do it.
-  (mergesort (vl-exprlist-names (vl-module-allexprs x))))

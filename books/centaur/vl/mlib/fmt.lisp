@@ -118,8 +118,9 @@ formerly the \"location directive\" and printed a location.</p>")
 (define vl-fmt-tilde-w (x &key (ps 'ps))
   (cond ((stringp x)
          (vl-print-wirename x))
-        ((vl-id-p x)
-         (vl-print-wirename (vl-id->name x)))
+        ;; BOZO is there anything else this should print as a string?
+        ;; ((vl-id-p x)
+        ;;  (vl-print-wirename (vl-id->name x)))
         (t
          (vl-fmt-tilde-x x))))
 
@@ -135,7 +136,21 @@ formerly the \"location directive\" and printed a location.</p>")
        (if (or unsafe-okp (vl-location-p x))
            (vl-print-loc x)
          (vl-fmt-tilde-x x)))
-      ((:atom :nonatom)
+      ((:vl-special
+        :vl-value
+        :vl-index
+        :vl-unary
+        :vl-binary
+        :vl-qmark
+        :vl-mintypmax
+        :vl-concat
+        :vl-multiconcat
+        :vl-stream
+        :vl-call
+        :vl-cast
+        :vl-inside
+        :vl-tagged
+        :vl-pattern)
        (if (or unsafe-okp (vl-expr-p x))
            (vl-pp-origexpr x)
          (vl-fmt-tilde-x x)))

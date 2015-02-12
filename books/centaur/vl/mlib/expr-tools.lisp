@@ -472,7 +472,7 @@ like @('foo').</p>"
   :inline t
   (vl-expr-case x
     :vl-index (and (atom x.indices)
-                   (vl-indexpart-case x.part :none)
+                   (vl-partselect-case x.part :none)
                    (vl-scopeexpr-case x.scope :end)
                    (eq (vl-hidexpr-kind (vl-scopeexpr-end->hid x.scope)) :end))
     :otherwise nil))
@@ -511,7 +511,7 @@ construct fast alists binding identifiers to things, etc.</p>"
   (hons-copy
    (make-vl-index :scope (make-vl-scopeexpr-end :hid (make-vl-hidexpr-end :name name))
                   :indices nil
-                  :part (make-vl-indexpart-none)
+                  :part (make-vl-partselect-none)
                   :type type))
   ///
   (local (in-theory (enable vl-idexpr-p vl-idexpr->name)))
@@ -720,38 +720,38 @@ construct fast alists binding identifiers to things, etc.</p>"
     :hints(("Goal" :in-theory (enable vl-plusminus->subexprs)))))
 
 
-(define vl-indexpart->subexprs ((x vl-indexpart-p))
+(define vl-partselect->subexprs ((x vl-partselect-p))
   :returns (subexprs vl-exprlist-p)
-  (vl-indexpart-case x
+  (vl-partselect-case x
     :none nil
     :range (vl-range->subexprs x.range)
     :plusminus (vl-plusminus->subexprs x.plusminus))
   ///
-  (defret vl-exprlist-count-of-vl-indexpart->subexprs
+  (defret vl-exprlist-count-of-vl-partselect->subexprs
     (<= (vl-exprlist-count subexprs)
-        (vl-indexpart-count x))
+        (vl-partselect-count x))
     :hints (("goal"
-             :in-theory (enable vl-indexpart-count)))
+             :in-theory (enable vl-partselect-count)))
     :rule-classes :linear))
 
-(define vl-indexpart-update-subexprs ((x vl-indexpart-p)
+(define vl-partselect-update-subexprs ((x vl-partselect-p)
                                       (subexprs vl-exprlist-p))
   :guard (equal (len subexprs)
-                (len (vl-indexpart->subexprs x)))
-  :returns (new-x vl-indexpart-p)
+                (len (vl-partselect->subexprs x)))
+  :returns (new-x vl-partselect-p)
   :verify-guards nil
-  (vl-indexpart-case x
-    :none (vl-indexpart-fix x)
-    :range (vl-range->indexpart (vl-range-update-subexprs x.range subexprs))
-    :plusminus (vl-plusminus->indexpart (vl-plusminus-update-subexprs x.plusminus subexprs)))
+  (vl-partselect-case x
+    :none (vl-partselect-fix x)
+    :range (vl-range->partselect (vl-range-update-subexprs x.range subexprs))
+    :plusminus (vl-plusminus->partselect (vl-plusminus-update-subexprs x.plusminus subexprs)))
   ///
-  (verify-guards vl-indexpart-update-subexprs
+  (verify-guards vl-partselect-update-subexprs
     :hints ((and stable-under-simplificationp
-                 '(:expand ((vl-indexpart->subexprs x))))))
-  (defthm vl-indexpart-update-subexprs-identity
-    (equal (vl-indexpart-update-subexprs x (vl-indexpart->subexprs x))
-           (vl-indexpart-fix x))
-    :hints(("Goal" :in-theory (enable vl-indexpart->subexprs)))))
+                 '(:expand ((vl-partselect->subexprs x))))))
+  (defthm vl-partselect-update-subexprs-identity
+    (equal (vl-partselect-update-subexprs x (vl-partselect->subexprs x))
+           (vl-partselect-fix x))
+    :hints(("Goal" :in-theory (enable vl-partselect->subexprs)))))
 
 (define vl-arrayrange->subexprs ((x vl-arrayrange-p))
   :returns (subexprs vl-exprlist-p)
@@ -1054,7 +1054,7 @@ construct fast alists binding identifiers to things, etc.</p>"
     :vl-index
     (append-without-guard (vl-scopeexpr->subexprs x.scope)
                           x.indices
-                          (vl-indexpart->subexprs x.part))
+                          (vl-partselect->subexprs x.part))
 
     :vl-unary (list x.arg)
     :vl-binary (list x.left x.right)
@@ -1079,7 +1079,21 @@ construct fast alists binding identifiers to things, etc.</p>"
              :expand ((vl-expr-count x)
                       (vl-maybe-expr-count (vl-stream->size x)))
              :in-theory (enable VL-MAYBE-EXPR-EXPR->EXPR)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (local (in-theory (disable cons-equal double-containment)))
+
+  (defthm vl-expr->subexprs-of-vl-expr-update-type
+    (equal (vl-expr->subexprs (vl-expr-update-type x type))
+           (vl-expr->subexprs x))
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (e/d (vl-expr-update-type))))))
+
+  (defthm vl-expr->subexprs-of-vl-expr-update-atts
+    (equal (vl-expr->subexprs (vl-expr-update-atts x atts))
+           (vl-expr->subexprs x))
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (e/d (vl-expr-update-atts)))))))
 
 (define vl-expr-update-subexprs ((x vl-expr-p)
                                  (subexprs vl-exprlist-p))
@@ -1094,7 +1108,7 @@ construct fast alists binding identifiers to things, etc.</p>"
                    x
                    :scope (vl-scopeexpr-update-subexprs x.scope (take nscopesubs subexprs))
                    :indices (take nindices (nthcdr nscopesubs subexprs))
-                   :part (vl-indexpart-update-subexprs x.part (nthcdr (+ nindices nscopesubs) subexprs))))
+                   :part (vl-partselect-update-subexprs x.part (nthcdr (+ nindices nscopesubs) subexprs))))
       :vl-unary
       (change-vl-unary x :arg (car subexprs))
       :vl-binary

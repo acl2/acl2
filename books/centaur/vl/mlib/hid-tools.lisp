@@ -1150,10 +1150,11 @@ Note that we still do bounds checking if the indices and array bounds happen to
 be resolved.</p>"
 
   (b* ((dim (vl-packeddimension-fix dim))
-       ((when (eq dim :vl-unsized-dimension))
+       ((when (vl-packeddimension-case dim :unsized))
         ;; Bounds checking doesn't make sense in this case, so we'll just
         ;; regard this as fine.
         nil)
+       (dim (vl-packeddimension->range dim))
        ((unless (vl-expr-resolved-p index))
         (if strictp
             "unresolved array index"
@@ -1311,7 +1312,7 @@ top-level hierarchical identifiers.</p>"
 
          ((when (eq (tag item) :vl-modinst))
           (b* (((vl-modinst item))
-               (dims    (and item.range (list item.range)))
+               (dims    (and item.range (list (vl-range->packeddimension item.range))))
                ;; Start by checking for sensible array indexing.
                (err (vl-follow-hidexpr-dimscheck name1 indices dims :strictp strictp))
                ((when err)
@@ -2005,10 +2006,11 @@ failure."
   (b* (((when (atom x)) 1)
        (rest (vl-packeddimensionlist-total-size (cdr x)))
        ((unless rest) nil)
-       (first (vl-packeddimension-fix (car x)))
-       ((when (eq first :vl-unsized-dimension)) nil)
-       ((unless (vl-range-resolved-p first)) nil))
-    (* (vl-range-size first) rest)))
+       (first (car x))
+       ((when (vl-packeddimension-case first :unsized)) nil)
+       (range (vl-packeddimension->range first))
+       ((unless (vl-range-resolved-p range)) nil))
+    (* (vl-range-size range) rest)))
 
 
 
@@ -2606,8 +2608,8 @@ such as @('logic') are packed but not selectable.</p>"
   (b* (((vl-index x) (vl-expr-fix x))
        ((mv warning type) (vl-scopeexpr-find-type x.scope ss ctx))
        ((when warning) (mv warning nil))
-       (has-partselect (vl-indexpart-case x.part
-                         :full nil
+       (has-partselect (vl-partselect-case x.part
+                         :none nil
                          :otherwise t))
        (total-indices (+ (if has-partselect 1 0) (len x.indices)))
        (dims (vl-datatype-dims-count type))
@@ -2632,7 +2634,7 @@ such as @('logic') are packed but not selectable.</p>"
           (mv nil (make-vl-coretype :name :vl-logic))))
 
        ((mv warning width)
-        (vl-indexpart-case x.part
+        (vl-partselect-case x.part
           :range
           (b* (((unless (and (vl-expr-resolved-p x.part.msb)
                              (vl-expr-resolved-p x.part.lsb)))
@@ -2668,9 +2670,10 @@ such as @('logic') are packed but not selectable.</p>"
 
        ((when warning) (mv warning nil))
 
-       (new-dim (make-vl-range
-                 :msb (vl-make-index (1- width))
-                 :lsb (vl-make-index 0)))
+       (new-dim (vl-range->packeddimension
+                 (make-vl-range
+                  :msb (vl-make-index (1- width))
+                  :lsb (vl-make-index 0))))
 
        ((when (< dims total-indices))
         ;; We selected away all the dims, and now we're partselecting into some
@@ -2695,8 +2698,6 @@ such as @('logic') are packed but not selectable.</p>"
         (vl-datatype-update-udims
          (cons new-dim (vl-datatype->udims reduced-type))
          reduced-type))))
-       
-        
        
 
 

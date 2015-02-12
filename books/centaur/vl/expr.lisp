@@ -464,7 +464,7 @@ type for @(see vl-scopeexpr->scopes).</p>"
 
 (defprod vl-none ()
   :short "Used when there is no index or select in a place where one is optional;
-          see @(see vl-indexpart) and @(see vl-arrayrange)."
+          see @(see vl-partselect) and @(see vl-arrayrange)."
   :tag :vl-none)
 
 
@@ -515,7 +515,7 @@ type for @(see vl-scopeexpr->scopes).</p>"
      (width vl-expr-p)
      (minusp booleanp)))
 
-  (fty::defflexsum vl-indexpart
+  (fty::defflexsum vl-partselect
     :measure (two-nats-measure (acl2-count x) 105)
     (:none
      :cond (or (atom x)
@@ -527,17 +527,17 @@ type for @(see vl-scopeexpr->scopes).</p>"
     (:range
      :cond (eq (car x) :vl-range)
      :fields ((range :type vl-range :acc-body x
-                     :acc-name vl-indexpart->range))
+                     :acc-name vl-partselect->range))
      :ctor-body range
-     :ctor-name vl-range->indexpart
+     :ctor-name vl-range->partselect
      :extra-binder-names (msb lsb)
      :no-ctor-macros t)
     (:plusminus
      :cond t
      :fields ((plusminus :type vl-plusminus :acc-body x
-                         :acc-name vl-indexpart->plusminus))
+                         :acc-name vl-partselect->plusminus))
      :ctor-body plusminus
-     :ctor-name vl-plusminus->indexpart
+     :ctor-name vl-plusminus->partselect
      :extra-binder-names (base width minusp)
      :no-ctor-macros t))
 
@@ -659,7 +659,7 @@ type for @(see vl-scopeexpr->scopes).</p>"
      :base-name vl-index
      ((scope   vl-scopeexpr)
       (indices vl-exprlist-p)
-      (part    vl-indexpart-p)
+      (part    vl-partselect-p)
       (atts    vl-atts-p)
       (type    vl-maybe-datatype-p)))
 
@@ -760,7 +760,8 @@ type for @(see vl-scopeexpr->scopes).</p>"
 
   (fty::defalist vl-atts
     :measure (two-nats-measure (acl2-count x) 10)
-    :key-type stringp :val-type vl-maybe-expr)
+    :key-type stringp :val-type vl-maybe-expr
+    :true-listp t)
 
   (fty::defflexsum vl-maybe-expr
     :measure (two-nats-measure (acl2-count x) 100)
@@ -1078,35 +1079,35 @@ try to support the use of both ascending and descending ranges.</p>")
 (fty::deflist vl-rangelist :elt-type vl-range)
 
 
-(define vl-indexpart-range->msb ((x vl-indexpart-p))
-  :guard (eq (vl-indexpart-kind x) :range)
+(define vl-partselect-range->msb ((x vl-partselect-p))
+  :guard (eq (vl-partselect-kind x) :range)
   :inline t
   :enabled t
-  (vl-range->msb (vl-indexpart->range x)))
+  (vl-range->msb (vl-partselect->range x)))
 
-(define vl-indexpart-range->lsb ((x vl-indexpart-p))
-  :guard (eq (vl-indexpart-kind x) :range)
+(define vl-partselect-range->lsb ((x vl-partselect-p))
+  :guard (eq (vl-partselect-kind x) :range)
   :inline t
   :enabled t
-  (vl-range->lsb (vl-indexpart->range x)))
+  (vl-range->lsb (vl-partselect->range x)))
 
-(define vl-indexpart-plusminus->base ((x vl-indexpart-p))
-  :guard (eq (vl-indexpart-kind x) :plusminus)
+(define vl-partselect-plusminus->base ((x vl-partselect-p))
+  :guard (eq (vl-partselect-kind x) :plusminus)
   :inline t
   :enabled t
-  (vl-plusminus->base (vl-indexpart->plusminus x)))
+  (vl-plusminus->base (vl-partselect->plusminus x)))
 
-(define vl-indexpart-plusminus->width ((x vl-indexpart-p))
-  :guard (eq (vl-indexpart-kind x) :plusminus)
+(define vl-partselect-plusminus->width ((x vl-partselect-p))
+  :guard (eq (vl-partselect-kind x) :plusminus)
   :inline t
   :enabled t
-  (vl-plusminus->width (vl-indexpart->plusminus x)))
+  (vl-plusminus->width (vl-partselect->plusminus x)))
 
-(define vl-indexpart-plusminus->minusp ((x vl-indexpart-p))
-  :guard (eq (vl-indexpart-kind x) :plusminus)
+(define vl-partselect-plusminus->minusp ((x vl-partselect-p))
+  :guard (eq (vl-partselect-kind x) :plusminus)
   :inline t
   :enabled t
-  (vl-plusminus->minusp (vl-indexpart->plusminus x)))
+  (vl-plusminus->minusp (vl-partselect->plusminus x)))
 
 
 (define vl-arrayrange-range->msb ((x vl-arrayrange-p))
@@ -3064,7 +3065,6 @@ try to support the use of both ascending and descending ranges.</p>")
                            (equal (vl-pattern->type x)
                                   (vl-expr->type x)))))))
 
-
 (define vl-expr->atts ((x vl-expr-p))
   :returns (atts vl-atts-p)
   (vl-expr-case x
@@ -3257,10 +3257,72 @@ try to support the use of both ascending and descending ranges.</p>")
             :expand ((vl-expr-count x))))
     :rule-classes :linear))
 
-  
-    
-    
 
+
+(define vl-expr-update-type ((x vl-expr-p)
+                             (type vl-maybe-datatype-p))
+  :returns (new-x vl-expr-p)
+  (vl-expr-case x
+    :vl-special (change-vl-special x :type type)
+    :vl-value (change-vl-value x :type type) 
+    :vl-index (change-vl-index x :type type) 
+    :vl-unary (change-vl-unary x :type type) 
+    :vl-binary (change-vl-binary x :type type) 
+    :vl-qmark (change-vl-qmark x :type type) 
+    :vl-mintypmax (change-vl-mintypmax x :type type) 
+    :vl-concat (change-vl-concat x :type type) 
+    :vl-multiconcat (change-vl-multiconcat x :type type) 
+    :vl-stream (change-vl-stream x :type type) 
+    :vl-call (change-vl-call x :type type) 
+    :vl-cast (change-vl-cast x :type type) 
+    :vl-inside (change-vl-inside x :type type) 
+    :vl-tagged (change-vl-tagged x :type type) 
+    :vl-pattern (change-vl-pattern x :type type))
+  ///
+  (defret vl-expr->type-of-vl-expr-update-type
+    (equal (vl-expr->type new-x)
+           (vl-maybe-datatype-fix type)))
+  
+  (defret vl-expr-kind-of-vl-expr-update-type
+    (equal (vl-expr-kind new-x)
+           (vl-expr-kind x)))
+
+  (defret vl-expr->atts-of-vl-expr-update-type
+    (equal (vl-expr->atts new-x)
+           (vl-expr->atts x))))
+
+
+(define vl-expr-update-atts ((x vl-expr-p)
+                             (atts vl-atts-p))
+  :returns (new-x vl-expr-p)
+  (vl-expr-case x
+    :vl-special (change-vl-special x :atts atts)
+    :vl-value (change-vl-value x :atts atts) 
+    :vl-index (change-vl-index x :atts atts) 
+    :vl-unary (change-vl-unary x :atts atts) 
+    :vl-binary (change-vl-binary x :atts atts) 
+    :vl-qmark (change-vl-qmark x :atts atts) 
+    :vl-mintypmax (change-vl-mintypmax x :atts atts) 
+    :vl-concat (change-vl-concat x :atts atts) 
+    :vl-multiconcat (change-vl-multiconcat x :atts atts) 
+    :vl-stream (change-vl-stream x :atts atts) 
+    :vl-call (change-vl-call x :atts atts) 
+    :vl-cast (change-vl-cast x :atts atts) 
+    :vl-inside (change-vl-inside x :atts atts) 
+    :vl-tagged (change-vl-tagged x :atts atts) 
+    :vl-pattern (change-vl-pattern x :atts atts))
+  ///
+  (defret vl-expr->atts-of-vl-expr-update-atts
+    (equal (vl-expr->atts new-x)
+           (vl-atts-fix atts)))
+  
+  (defret vl-expr-kind-of-vl-expr-update-atts
+    (equal (vl-expr-kind new-x)
+           (vl-expr-kind x)))
+
+  (defret vl-expr->type-of-vl-expr-update-atts
+    (equal (vl-expr->type new-x)
+           (vl-expr->type x))))
 
 
 (define vl-datatype->pdims ((x vl-datatype-p))

@@ -667,9 +667,9 @@ displays.  The module browser's web pages are responsible for defining the
                  (vl-print "]"))))
   
 
-  (define vl-pp-indexpart ((x vl-indexpart-p) &key (ps 'ps))
-    :measure (two-nats-measure (vl-indexpart-count x) 10)
-    (vl-indexpart-case x
+  (define vl-pp-partselect ((x vl-partselect-p) &key (ps 'ps))
+    :measure (two-nats-measure (vl-partselect-count x) 10)
+    (vl-partselect-case x
       :none ps
       :range (vl-pp-range x.range)
       :plusminus (vl-pp-plusminus x.plusminus)))
@@ -772,7 +772,7 @@ displays.  The module browser's web pages are responsible for defining the
         
         :vl-index (vl-ps-seq (vl-pp-scopeexpr x.scope)
                              (vl-pp-indexlist x.indices)
-                             (vl-pp-indexpart x.part))
+                             (vl-pp-partselect x.part))
 
         :vl-unary (b* ((prec (vl-expr-precedence x))
                        (arg-prec (vl-expr-precedence x.arg))

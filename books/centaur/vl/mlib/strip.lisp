@@ -56,60 +56,31 @@ details.</p>")
 
 (local (xdoc::set-default-parents stripping-functions))
 
-(define vl-atom-strip
-  :short "Throw away widths and types from an atom."
-  ((x vl-expr-p))
-  :guard (vl-atom-p x)
-  :returns (x-strip (and (vl-expr-p x-strip)
-                         (eq (vl-expr-kind x-strip) :atom)))
-  :inline t
-  (mbe :logic (change-vl-atom x
-                              :finalwidth nil
-                              :finaltype nil
-                              :atts nil)
-       :exec (if (or (vl-atom->finalwidth x)
-                     (vl-atom->finaltype x)
-                     (vl-atom->atts x))
-                 (change-vl-atom x
-                                 :finalwidth nil
-                                 :finaltype nil
-                                 :atts nil)
-               x)))
-
 (defines vl-expr-strip
-  :short "Throw away attributes and widths, keeping just the core of an
-expression. (memoized)"
-
-  :long "<p>Note that we gain significant performance in @(see leftright-check)
-by memoizing this function.</p>"
-
   (define vl-expr-strip ((x vl-expr-p))
-    :returns (new-x vl-expr-p)
+    :short "Throw away widths and types from an expression."
     :measure (vl-expr-count x)
-    :flag :expr
+    :returns (x-strip vl-expr-p)
     :verify-guards nil
-    (if (vl-fast-atom-p x)
-        (vl-atom-strip x)
-      (change-vl-nonatom x
-                         :args (vl-exprlist-strip (vl-nonatom->args x))
-                         :atts nil
-                         :finalwidth nil
-                         :finaltype nil)))
-
+    (vl-expr-update-atts
+     (vl-expr-update-type
+      (vl-expr-update-subexprs x (vl-exprlist-strip (vl-expr->subexprs x)))
+      nil)
+     nil))
   (define vl-exprlist-strip ((x vl-exprlist-p))
-    :returns (new-x (and (vl-exprlist-p new-x)
-                         (equal (len new-x) (len x))))
     :measure (vl-exprlist-count x)
-    :flag :list
+    :returns (x-strip vl-exprlist-p)
     (if (atom x)
         nil
       (cons (vl-expr-strip (car x))
-            (vl-exprlist-strip (cdr x)))))
+            (vl-exprlist-strip (cdr x))))
+    ///
+    (defret len-of-vl-exprlist-strip
+      (equal (len x-strip) (len x))))
   ///
-  (deffixequiv-mutual vl-expr-strip)
   (verify-guards vl-expr-strip)
-
-  (memoize 'vl-expr-strip))
+  (deffixequiv-mutual vl-expr-strip))
+                       
 
 (define vl-range-strip ((x vl-range-p))
   :returns (x-strip vl-range-p)
