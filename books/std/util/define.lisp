@@ -145,7 +145,7 @@ example:</p>
    ;; declarations/docstrings must come before body, as in defun
    (declare (type integer n))
    (declare (ignorable channel))
-   \"Traditional doc string.  Boo.\"
+   \"Traditional doc string that the xdoc system ignores.\"
    (declare (xargs :normalize nil))
 
    :guard (< 17 n) ;; extended option
@@ -277,6 +277,10 @@ put.  These events will follow the function's definition, but will be submitted
 theorems that are \"about\" the function that has just been defined.  The
 events in this area will be included in the @(see xdoc), if applicable, as if
 they were part of the same @(see defsection).</p>
+
+<p>Any strings that appear after the @('///') symbol are appended to the
+@(':long') section of the @('define')'s xdoc, in between the events around
+it.</p>
 
 <p>To distinguish the @('other-events') from the @('main-stuff'), we use the
 special symbol @('///') to separate the two.</p>
