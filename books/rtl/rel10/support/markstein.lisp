@@ -4111,7 +4111,7 @@ y < 2^p, and hence x and y are p-exact.
                 (< (abs (- (/ a b) q)) (expt 2 (- (1+ (expo (/ a b))) p))))
            (= (expo (- q (expt 2 (- (expo q) p)))) (expo q)))
   :rule-classes ()
-  :hints (("Goal" ::use (expo-q-10 q-not-expo-q
+  :hints (("Goal" :use (expo-q-10 q-not-expo-q
                         not-midpoint-down-1
                         (:instance fp--non-negative (x q) (n p))
                         (:instance expo-monotone (y q) (x (- q (expt 2 (- (expo q) p)))))
