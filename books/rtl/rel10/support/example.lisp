@@ -22,6 +22,8 @@
     (and (check-mant (1- m))
          (check-mants (1- m)))))
 
+(comp t)
+
 (defthm check-mants-lemma
   (check-mants #x800000))
 
