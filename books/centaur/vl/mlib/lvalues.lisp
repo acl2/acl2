@@ -34,23 +34,13 @@
 (include-book "stmt-tools")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
-
+(local (in-theory (disable (tau-system))))
 
 (defxdoc lvalues
   :parents (mlib)
   :short "Tools for gathering up lvalues and checking the well-formedness of
 expressions in lvalue positions.")
 
-
-(define vl-index-exprp ((x vl-expr-p))
-  :measure (vl-expr-count x)
-  (if (vl-fast-atom-p x)
-      (vl-hidexpr-p x)
-    (b* (((vl-nonatom x))
-         ((when (member x.op '(:vl-bitselect :vl-index)))
-          (and (vl-index-exprp (first x.args))
-               (vl-expr-resolved-p (second x.args)))))
-      (vl-hidexpr-p x))))
 
 (defines vl-expr-lvaluep
   :parents (lvalues vl-expr-p)
@@ -74,31 +64,10 @@ statements.</p>"
 
   (define vl-expr-lvaluep ((x vl-expr-p))
     :measure (vl-expr-count x)
-    (b* (((when (vl-fast-atom-p x))
-          (let ((guts (vl-atom->guts x)))
-            (or (vl-fast-hidpiece-p guts)
-                (vl-fast-id-p guts))))
-         ;; An lvalue should consist of identifiers, part selects, bit selects,
-         ;; concatenations, and multiple concatenations.
-         (op   (vl-nonatom->op x))
-         (args (vl-nonatom->args x)))
-      (case op
-        ((:vl-bitselect :vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
-          :vl-index :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon)
-         ;; foo[index] or foo[a:b] or foo[a+:b] or foo[a-:b] is an okay
-         ;; lvalue as long as foo is an identifier or hierarchical id.
-         (vl-index-exprp (first args)))
-        ((:vl-concat)
-         ;; { foo, bar, baz, ... } is valid if all the components are
-         ;; lvalues.
-         (vl-exprlist-lvaluesp args))
-        ((:vl-hid-dot)
-         ;; hierarchical identifiers are okay for lvalues
-         (vl-hidexpr-p x))
-        (otherwise
-         ;; nothing else is permitted.
-         nil))))
-
+    (vl-expr-case x
+      :vl-index t
+      :vl-concat (vl-exprlist-lvaluesp x.parts)
+      :otherwise nil))
   (define vl-exprlist-lvaluesp ((x vl-exprlist-p))
     :measure (vl-exprlist-count x)
     (if (atom x)
@@ -115,11 +84,10 @@ statements.</p>"
 
   (deffixequiv-mutual vl-expr-lvaluep)
 
-  (defthm vl-exprlist-lvaluesp-of-vl-nonatom->args-when-concat
-    (implies (and (equal (vl-nonatom->op x) :vl-concat)
-                  (force (not (vl-atom-p x)))
+  (defthm vl-exprlist-lvaluesp-of-vl-concat-parts
+    (implies (and (vl-expr-case x :vl-concat)
                   (force (vl-expr-lvaluep x)))
-             (vl-exprlist-lvaluesp (vl-nonatom->args x)))
+             (vl-exprlist-lvaluesp (vl-concat->parts x)))
     :hints(("Goal" :in-theory (enable vl-expr-lvaluep)))))
 
 
@@ -263,6 +231,11 @@ their \"wires\" since they're in a different namespace.</p>")
 
          (defthm ,(mksym 'vl-exprlist-lvaluesp-of- list-collect)
            (vl-exprlist-lvaluesp (,list-collect x)))))))
+
+(local (defthm alistp-when-vl-atts-p-rw
+         (implies (vl-atts-p x)
+                  (alistp x))
+         :hints(("Goal" :in-theory (enable (tau-system))))))
 
 (def-vl-lvalexprs
   :type vl-plainarg

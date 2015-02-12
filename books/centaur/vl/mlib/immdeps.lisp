@@ -237,124 +237,54 @@ that package.</li>
 elements.")
 
 (local (xdoc::set-default-parents immdeps-main))
-
-(define vl-atomguts-immdeps
-  :short "Gather immediate dependencies from an atom."
-  ((guts vl-atomguts-p "Guts of the atom we're dealing with.")
-   (ans  vl-immdeps-p  "Answer we are building.")
+(define vl-scopeexpr-immdeps
+  ((x vl-scopeexpr-p)
+   (ans vl-immdeps-p)
    &key
    ((ss  vl-scopestack-p  "Our current scope.") 'ss)
    ((ctx acl2::any-p      "Context for warnings.") 'ctx))
   :returns (ans vl-immdeps-p)
-  (b* ((ans  (vl-immdeps-fix ans))
-       (guts (vl-atomguts-fix guts)))
-    (case (tag guts)
-
-      ;; Main kinds of items to look up
-      (:vl-id       (vl-immdeps-add-item (vl-id->name guts) ans))
-      (:vl-funname  (vl-immdeps-add-item (vl-funname->name guts) ans))
-      (:vl-typename (vl-immdeps-add-item (vl-typename->name guts) ans))
-
-      ((:vl-constint  ;; 3'b111  -- no dependencies
-        :vl-weirdint  ;; 3'bxx1  -- no dependencies
-        :vl-extint    ;; '1      -- no dependencies
-        :vl-string    ;; "foo"   -- no dependencies
-        :vl-real      ;; 3.14    -- no dependencies
-        :vl-time      ;; 45.2ns  -- no dependencies
-        :vl-basictype ;; byte, short, etc., -- no dependencies
-        :vl-sysfunname ;; $bits, etc. -- no dependencies (users can't add new ones, right?)
-        )
-       ans)
-
-      (:vl-keyguts
-       ;; Tricky, might be looking at something like a this/super/local/etc.  I
-       ;; think we should only see these in HIDs, e.g., $root.foo, and so this
-       ;; function isn't the right place to handle them.  However, we might see
-       ;; things like emptyqueue or null anywhere.  It seems pretty reasonable
-       ;; to just return NIL here.
-       ans)
-
-      (:vl-tagname
-       ;; tricky, need to be able to figure out what kind of union
-       ;; we're dealing with...?
-       (vl-immdeps-add-error ans
-                             :type :vl-immdeps-fudging
-                             :msg "~a0: don't know how to handle tag name ~s1.~%"
-                             :args (list ctx (vl-tagname->name guts))
-                             :fatalp t))
-
-      (:vl-hidpiece
-       ;; We should handle HIDs separately and therefore never see these, right?
-       (vl-immdeps-add-error ans
-                             :type :vl-immdeps-fudging
-                             :msg "~a0: atomic hid piece???  skipping ~s1.~%"
-                             :args (list ctx (vl-hidpiece->name guts))
-                             :fatalp t))
-
-      (otherwise
-       (progn$ (impossible)
-               ans)))))
+  (vl-scopeexpr-case x
+    :end (vl-hidexpr-case x.hid
+           :end (vl-immdeps-add-item x.hid.name ans)
+           :dot (vl-immdeps-add-item
+                 (vl-hidindex->name x.hid.first) ans))
+    :colon
+    (if (stringp x.first)
+        (vl-immdeps-add-item x.first ans)
+      ;; BOZO think about other scopes.
+      ;; local:: is just something to do with randomize, I don't think we care yet.
+      ;; $unit:: is sort of very ambiguous, we might want to treat it as top-level
+      ;; or we might want to just not support it.
+      (vl-immdeps-fix ans))))
 
 
 (defines vl-expr-immdeps
-  :short "Gather immediate dependencies for an expression."
-  :flag-local nil
-
-  (define vl-expr-immdeps ((x   vl-expr-p    "Expression we're processing.")
-                           (ans vl-immdeps-p "Answer we are building.")
-                           &key
-                           ((ss  vl-scopestack-p "Our current scope.") 'ss)
-                           ((ctx acl2::any-p     "Context for warnings.") 'ctx))
-    :returns (ans vl-immdeps-p)
+  :verify-guards nil
+  (define vl-expr-immdeps
+    ((x vl-expr-p)
+     (ans vl-immdeps-p)
+     &key
+     ((ss  vl-scopestack-p  "Our current scope.") 'ss)
+     ((ctx acl2::any-p      "Context for warnings.") 'ctx))
     :measure (vl-expr-count x)
-    :flag :expr
-    (b* ((x   (vl-expr-fix x))
-         (ans (vl-immdeps-fix ans))
+    :returns (ans vl-immdeps-p)
+    (b* ((ans (vl-expr-case x
+                :vl-index (vl-scopeexpr-immdeps x.scope ans)
+                :otherwise ans)))
+      (vl-exprlist-immdeps (vl-expr->subexprs x) ans)))
 
-         ((when (vl-fast-atom-p x))
-          (vl-atomguts-immdeps (vl-atom->guts x) ans))
-
-         ((when (vl-hidexpr-p x))
-          (vl-immdeps-add-error ans
-                                :type :vl-immdeps-fudging
-                                :msg "~a0: add support for hierarchical identifiers.~%"
-                                :args (list ctx x)))
-
-         ((vl-nonatom x))
-
-         ((when (eq x.op :vl-scope))
-          ;; Special case for foo::[...]
-          ;; This is an explicit dependency on the package foo.
-          (b* (((unless (and (vl-atom-p (first x.args))
-                             (vl-fast-hidpiece-p (vl-atom->guts (first x.args)))))
-                ;; Should never happen, right?
-                (vl-immdeps-add-error ans
-                                      :type :vl-programming-error
-                                      :msg "~a0: weird scope operator ~a1."
-                                      :args (list ctx x)
-                                      :fatalp t  ;; should never happen, right?
-                                      ))
-               (pkgname (vl-hidpiece->name (vl-atom->guts (first x.args))))
-               (ans     (vl-immdeps-add-pkgdep pkgname ans))
-               (ans     (vl-expr-immdeps (second x.args) ans)))
-            ans)))
-
-      (vl-exprlist-immdeps x.args ans)))
-
-  (define vl-exprlist-immdeps ((x    vl-exprlist-p)
-                               (ans  vl-immdeps-p)
-                               &key
-                               ((ss  vl-scopestack-p) 'ss)
-                               ((ctx acl2::any-p) 'ctx))
-    :returns (new-ans vl-immdeps-p)
+  (define vl-exprlist-immdeps
+    ((x vl-exprlist-p)
+     (ans vl-immdeps-p)
+     &key
+     ((ss  vl-scopestack-p  "Our current scope.") 'ss)
+     ((ctx acl2::any-p      "Context for warnings.") 'ctx))
     :measure (vl-exprlist-count x)
-    :flag :list
-    :verify-guards nil
-    (b* (((when (atom x))
-          (vl-immdeps-fix ans))
-         (ans (vl-expr-immdeps (car x) ans)))
-      (vl-exprlist-immdeps (cdr x) ans)))
-
+    :returns (ans vl-immdeps-p)
+    (if (atom x)
+        (vl-immdeps-fix ans)
+      (vl-exprlist-immdeps (cdr x) (vl-expr-immdeps (car x) ans))))
   ///
   (verify-guards vl-expr-immdeps-fn)
   (deffixequiv-mutual vl-expr-immdeps))
@@ -419,9 +349,9 @@ elements.")
 
 (def-vl-immdeps vl-packeddimension
   :body
-  (if (eq x :vl-unsized-dimension)
-      ans
-    (vl-range-immdeps x ans)))
+  (vl-packeddimension-case x
+    :unsized ans
+    :range (vl-range-immdeps x.range ans)))
 
 (def-vl-immdeps vl-maybe-packeddimension
   :body
@@ -494,7 +424,7 @@ elements.")
               (ans (vl-packeddimensionlist-immdeps x.udims ans)))
            ans))
         (:vl-usertype
-         (b* ((ans (vl-expr-immdeps x.kind ans))
+         (b* ((ans (vl-scopeexpr-immdeps x.name ans))
               (ans (vl-packeddimensionlist-immdeps x.pdims ans))
               (ans (vl-packeddimensionlist-immdeps x.udims ans)))
            ans)))))
@@ -665,9 +595,9 @@ elements.")
 
 (def-vl-immdeps vl-paramvalue
   :body
-  (if (vl-paramvalue-expr-p x)
-      (vl-expr-immdeps x ans)
-    (vl-datatype-immdeps x ans)))
+  (vl-paramvalue-case x
+    :expr (vl-expr-immdeps x.expr ans)
+    :type (vl-datatype-immdeps x.type ans)))
 
 (def-vl-immdeps-list vl-paramvaluelist vl-paramvalue)
 
@@ -1036,7 +966,7 @@ elements.")
       (vl-genelement-case x
         (:vl-genloop
          (b* (;; Make a fake param for the loop counter, the type and such are irrelevant
-              (fake-param (make-vl-paramdecl :name (vl-id->name x.var)
+              (fake-param (make-vl-paramdecl :name x.var
                                              :type (make-vl-implicitvalueparam)
                                              :loc *vl-fakeloc*))
               (fake-scope (vl-sort-genelements (list (make-vl-genbase :item fake-param))))
