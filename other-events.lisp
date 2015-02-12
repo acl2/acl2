@@ -10539,10 +10539,6 @@
 
         form)
        ((not (equal cbd dir)) ; always true in case (b)
-
-; We introduce an absolute pathname only if we can then remove it in favor of
-; using :dir :system.
-
         (assert$
          (stringp cbd)
          (mv-let (full-book-name directory-name familiar-name)
@@ -10553,6 +10549,19 @@
                           (list* 'include-book
                                  (sysfile-filename x)
                                  :dir :system
+                                 (cddr form)))
+                         ((and dir
+
+; Note that if dir is nil, then we are doing this on behalf of make-event so
+; that the expansion-alist of a .cert file is relocatable.  In that case, there
+; is no need to make the book name absolute, since the usual reason -- a change
+; of cbd -- doesn't apply in the middle of a book certification.  Note that if
+; the make-event occurs in a certification world, then fix-portcullis-cmds will
+; fix, as appropriate, any expansion that is an include-book.
+
+                               (not (equal x (cadr form))))
+                          (list* 'include-book
+                                 x
                                  (cddr form)))
                          (t form))))))
        (t (assert$
