@@ -38,6 +38,7 @@
 (include-book "read-file-objects")
 (include-book "read-ints")
 (include-book "take-bytes")
+(include-book "print-objects")
 
 #||
 ;; Books we won't actually include, but would like cert.pl to build for us.
