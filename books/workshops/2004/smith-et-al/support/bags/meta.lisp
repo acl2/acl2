@@ -1356,7 +1356,8 @@ old version:
    (subbagp (syntax-ev y a)
 	   (remove-bag (syntax-ev x a)
 			(syntax-ev list a))))
-  :hints (("Goal'" :in-theory (disable v1-syntax-remove-bag-implication
+; Matt K. v7-1 mod for avoiding "Goal'", 2/13/2015: "Goal'" changed to "Goal".
+  :hints (("Goal" :in-theory (disable v1-syntax-remove-bag-implication
 				       v2-subbagp-remove-bag)
 	   :use ((:instance v1-syntax-remove-bag-implication (y list))
 		 (:instance v1-syntax-remove-bag-implication (x y)

@@ -240,7 +240,8 @@ appropriate certify-book command.  Something like the following will work:
 				   (p-ft-omega 
 				    (p-unzip-r x)))))))
   :hints (("Goal" :in-theory (disable eval-poly-lemma))
-	  ("Goal''" :use eval-poly-omega-depth))
+; Matt K. v7-1 mod for avoiding "Goal'", 2/13/2015: "Goal''" changed to "Goal'".
+	  ("Goal'" :use eval-poly-omega-depth))
   :rule-classes nil)
 
 (defun p-fft-omega (x)

@@ -1029,6 +1029,20 @@
            (prog2$ (time-tracker :tau :stop)
                    (mv clauses ttree calist)))))
 
+(defun prettyify-clause-simple (cl)
+
+; This variant of prettyify-clause does not call untranslate.
+
+  (cond ((null cl) nil)
+        ((null (cdr cl)) cl)
+        ((null (cddr cl))
+         (fcons-term* 'implies
+                      (dumb-negate-lit (car cl))
+                      (cadr cl)))
+        (t (fcons-term* 'implies
+                        (conjoin (dumb-negate-lit-lst (butlast cl 1)))
+                        (car (last cl))))))
+
 (defun preprocess-clause (cl hist pspv wrld state step-limit)
 
 ; This is the first "real" clause processor (after a little remembered
@@ -1192,21 +1206,18 @@
                                ((and (consp clauses1)
                                      (null (cdr clauses1))
                                      (no-op-histp hist)
-                                     (equal (prettyify-clause
-                                             (car clauses1)
-                                             (let*-abstractionp state)
-                                             wrld)
+                                     (equal (prettyify-clause-simple
+                                             (car clauses1))
                                             (access prove-spec-var pspv
-                                                    :displayed-goal)))
+                                                    :user-supplied-term)))
 
-; In this case preprocess-clause has produced a singleton set of
-; clauses whose only element will be displayed exactly like what the
-; user thinks is the input to prove.  For example, the user might have
-; invoked defthm on (implies p q) and preprocess has managed to to
-; produce the singleton set of clauses containing {(not p) q}.  This
-; is a valuable step in the proof of course.  However, users complain
-; when we report that (IMPLIES P Q) -- the displayed goal -- is
-; reduced to (IMPLIES P Q) -- the prettyification of the output.
+; In this case preprocess-clause has produced a singleton set of clauses whose
+; only element is the translated user input.  For example, the user might have
+; invoked defthm on (implies p q) and preprocess has managed to to produce the
+; singleton set of clauses containing {(not p) q}.  This is a valuable step in
+; the proof of course.  However, users complain when we report that (IMPLIES P
+; Q) -- the displayed goal -- is reduced to (IMPLIES P Q) -- the
+; prettyification of the output.
 
 ; We therefore take special steps to hide this transformation from the
 ; user without changing the flow of control through the waterfall.  In
@@ -1214,6 +1225,42 @@
 ; 'hidden-clause with (irrelevant) value t.  In subsequent places
 ; where we print explanations and clauses to the user we will look for
 ; this tag.
+
+; At one point we called prettify-clause below instead of
+; prettify-clause-simple, and compared the (untranslated) result to the
+; (untranslated) displayed-goal of the pspv.  But we have decided to avoid the
+; expense of untranslating, especially since often the potentially-confusing
+; printing will never take place!  Let's elaborate.  Suppose that the input
+; user-level term t1 translates to termp tt1, and suppose that the result of
+; preprocessing the clause set (list (list tt1)) is a single clause for which
+; prettify-clause-simple returns the (translated) term tt1.  Then we are in
+; this case and we set 'hidden-clause in the returned ttree.  However, suppose
+; that instead prettyify-clause-simple returns tt2 not equal to tt1, although
+; tt2 nevertheless untranslates (perhaps surprisingly) to t1.  Then we are not
+; in this case, and Goal' will print exactly as goal.  This is unfortunate, but
+; we have seen (back in 2003!) that kind of invisible transformation happen for
+; other than Goal:
+
+;   Subgoal 3
+;   (IMPLIES (AND (< I -1)
+;                 (ACL2-NUMBERP J)
+;                 ...)
+;            ...)
+; 
+;   By case analysis we reduce the conjecture to
+; 
+;   Subgoal 3'
+;   (IMPLIES (AND (< I -1)
+;                 (ACL2-NUMBERP J)
+;                 ...)
+;            ...)
+
+; As of this writing we do not handle this sort of situation, not even -- after
+; Version_7.0, when we started using prettyify-clause-simple to avoid the cost
+; of untranslation, instead of prettyify-clause -- for the case considered
+; here, transitioning from Goal to Goal' by preprocess-clause.  Perhaps we will
+; do such a check for all preprocess-clause transformations, but only when
+; actually printing output (so as to avoid the overhead of untranslation).
 
                                 (mv step-limit
                                     'hit
@@ -2081,11 +2128,10 @@
                              ttree)
              (and C
                   (null (cdr C))
-                  (equal (list (prettyify-clause
-                                (car C)
-                                (let*-abstractionp state)
-                                wrld))
-                         constraint-cl)))
+                  constraint-cl
+                  (null (cdr constraint-cl))
+                  (equal (prettyify-clause-simple (car C))
+                         (car constraint-cl))))
          (mv step-limit
              'hit
              (conjoin-clause-sets A C)
@@ -2523,12 +2569,11 @@
                                                 ttree)
                                 (and clauses
                                      (null (cdr clauses))
-                                     (equal (list
-                                             (prettyify-clause
-                                              (car clauses)
-                                              (let*-abstractionp state)
-                                              wrld))
-                                            constraint-cl)))
+                                     constraint-cl
+                                     (null (cdr constraint-cl))
+                                     (equal (prettyify-clause-simple
+                                             (car clauses))
+                                            (car constraint-cl))))
 
 ; If preprocessing produced a single clause that prettyifies to the
 ; clause we had, then act as though it didn't do anything (but use its
@@ -5616,8 +5661,8 @@
   (cl-id clause hist pspv ctx hints hints0 wrld stable-under-simplificationp
          override-hints state)
 
-; See translate-hints1 for "A note on the taxonomy of hints", which explains
-; hint settings.  Relevant background is also provided by :doc topic
+; See translate-hints1 for "A note on the taxonomy of translated hints", which
+; explains hint settings.  Relevant background is also provided by :doc topic
 ; hints-and-the-waterfall, which links to :doc override-hints (also providing
 ; relevant background).
 
@@ -9388,9 +9433,8 @@
 
 (defun prove (term pspv hints ens wrld ctx state)
 
-; Term is a translated term.  Displayed-goal is any object and is
-; irrelevant except for output purposes.  Hints is a list of pairs
-; as returned by translate-hints.
+; Term is a translated term.  Hints is a list of pairs as returned by
+; translate-hints.
 
 ; We try to prove term using the given hints and the rules in wrld.
 
@@ -9403,15 +9447,6 @@
 ; terminate without proving term.  Hence, if the first result is nil,
 ; term was proved.  The second is a ttree that describes the proof, if
 ; term is proved.  The third is the final value of state.
-
-; Displayed-goal is relevant only for output purposes.  We assume that
-; this object was prettyprinted to the user before prove was called
-; and is, in the user's mind, what is being proved.  For example,
-; displayed-goal might be the untranslated -- or pre-translated --
-; form of term.  The only use made of displayed-goal is that if the
-; very first transformation we make produces a clause that we would
-; prettyprint as displayed-goal, we hide that transformation from the
-; user.
 
 ; Commemorative Plaque:
 

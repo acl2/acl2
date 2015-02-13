@@ -1270,6 +1270,10 @@
 ; times in a compare-windows.
 
 (defun prettyify-clause (cl let*-abstractionp wrld)
+
+; We return an untranslated term that is equivalent to cl.  For a simpler
+; function that returns a translated term, see prettyify-clause-simple.
+
   (if let*-abstractionp
       (mv-let (vars terms)
               (maximal-multiples (cons 'list cl) let*-abstractionp)

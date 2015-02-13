@@ -425,8 +425,9 @@
    :hints (("Goal" :in-theory (e/d (bitn_alt-lognot-lemma
                                     bitn-lnot)
                                    ()))
-           ("Goal''" :in-theory (e/d (bitn_alt-is-bitn lnot)
-                                     ()))))
+; Matt K. v7-1 mod for avoiding "Goal'", 2/13/2015: "Goal''" changed to "Goal'".
+           ("Goal'" :in-theory (e/d (bitn_alt-is-bitn lnot)
+                                    ()))))
                   
 ;;;;;
 ;;;;;
