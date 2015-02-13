@@ -41,7 +41,10 @@
   :long "<p>In the logic this function reads from the ACL2 oracle.  In the
 execution we use Common Lisp's @('get-decoded-time') function to figure out
 what the current date and time is.  We think this <i>should</i> work on any
-Common Lisp system.</p>"
+Common Lisp system.</p>
+
+<p>See also @(see universal-time), which returns an integer representation of
+the current time.</p>"
 
   (b* ((- (raise "Raw Lisp definition not installed?"))
        ((mv err val state) (read-acl2-oracle state)))
@@ -49,3 +52,31 @@ Common Lisp system.</p>"
              (stringp val))
         (mv val state)
       (mv "Error reading date." state))))
+
+(define universal-time (&optional (state 'state))
+  :returns (mv (seconds natp :rule-classes :type-prescription)
+               (state state-p1 :hyp (force (state-p1 state))))
+  :short "Get the current timestamp as a natural number, specifically the
+number of seconds since 00:00 January 1, 1900 GMT.  Note well that this is
+<b>not</b> the Unix epoch."
+
+  :long "<p>In the logic this function reads from the ACL2 oracle, so there is
+no logical guarantee that it will return successive times.  (Indeed, the user
+could likely change their computer's clock so that it would report earlier
+times.)</p>
+
+<p>In the execution, we use Common Lisp's @('get-universal-time') function to
+figure out the current time in seconds since the start of 1900.</p>
+
+<p>This is, for whatever reason, a different starting date than the Unix
+epoch (which records time since the start of 1970).  You should therefore be
+careful if you need to compare this timestamp against any those produced by
+external tools.</p>"
+
+  (b* ((- (raise "Raw Lisp definition not installed?"))
+       ((mv err val state) (read-acl2-oracle state)))
+    (if (and (not err)
+             (natp val))
+        (mv val state)
+      (mv 0 state))))
+

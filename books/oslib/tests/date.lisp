@@ -63,3 +63,16 @@
 (assert! (and (natp *second*) (<= *second* 59)))
 
 
+(defconsts (*time1* state)
+  (oslib::universal-time))
+
+(value-triple (sleep 4))
+
+(defconsts (*time2* state)
+  (oslib::universal-time))
+
+(assert! (let ((elapsed (- *time2* *time1*)))
+           (or (and (<= 2 elapsed)
+                    (<= elapsed 6))
+               (cw "Slept for 4 seconds, but ~x0 seconds passed?  Error with universal-time or sleep?"
+                   elapsed))))
