@@ -48,7 +48,7 @@ for other best practices.</p>
 <p>If you expect your library to be used at all by other people, put your code
 in a package.  Jared, Rager, and Kaufmann spend a large amount of time just
 dealing with name clashes, and it leaves them grumpy.  See @(see
-working-with-packages).")
+working-with-packages).</p>")
 
 (local (xdoc::set-default-parents best-practices))
 
