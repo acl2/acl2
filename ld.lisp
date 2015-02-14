@@ -1525,8 +1525,8 @@
 ; Unwind-Protect.  It also seems acceptable because some Lisps don't disable
 ; interrupts during evaluation of unwind-protect cleanup forms, so we expect to
 ; allow interrupts anyhow.  And it seems important to do so, in case printing
-; the gag-state needs to be interrupted; see the call of
-; print-pstack-and-gag-state in prove-loop0.
+; the gag-state needs to be interrupted; see the call of print-summary-on-error
+; in prove-loop0.
 
                        (COND
                         (*ACL2-PANIC-EXIT-STATUS*
@@ -1615,7 +1615,7 @@
 ; printing the checkpoint summary (which is done by a call of acl2-unwind in
 ; the cleanup form of an unwind-protect, on behalf of a call of
 ; acl2-unwind-protect inside prove-loop0 that invokes
-; print-pstack-and-gag-state upon an error).
+; print-summary-on-error upon an error).
 
 ; (defun foo (n acc)
 ;   (if (zp n)

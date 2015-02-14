@@ -9274,14 +9274,33 @@
    (pprogn (f-put-global 'last-step-limit step-limit state)
            (mv erp val state))))
 
-(defun print-pstack-and-gag-state (state)
+(defun print-summary-on-error (state)
 
-; When waterfall parallelism is enabled, and the user has to interrupt a proof
-; twice before it quits, the prover will attempt to print the gag state and
-; pstack.  Based on observation by Rager, the pstack tends to be long and
-; irrelevant in this case.  So, we disable the printing of the pstack when
-; waterfall parallelism is enabled and waterfall-printing is something other
-; than :full.  We considered not involving the current value for
+; This function is called only when a proof attempt causes an error rather than
+; merely returning (mv non-nil val state); see prove-loop0.  We formerly called
+; this function pstack-and-gag-state, but now we also print the runes, and
+; perhaps we will print additional information in the future.
+
+; An alternative approach, which might avoid the need for this function, is
+; represented by the handling of *acl2-time-limit* in our-abort.  The idea
+; would be to continue automatically from the interrupt, but with a flag saying
+; that the proof should terminate immediately.  Then any proof procedure that
+; checks for this flag would return with some sort of error.  If no such proof
+; procedure is invoked, then a second interrupt would immediately take effect.
+; An advantage of such an alternative approach is that it would use a normal
+; control flow, updating suitable state globals so that a normal call of
+; print-summary could be made.  We choose, however, not to pursue this
+; approach, since it might risk annoying users who find that they need to
+; provide two interrupts, and because it seems inherently a bit tricky and
+; perhaps easy to get wrong.
+
+; We conclude with remarks for the case that waterfall parallelism is enabled.
+
+; When the user has to interrupt a proof twice before it quits, the prover will
+; call this function.  Based on observation by Rager, the pstack tends to be
+; long and irrelevant in this case.  So, we disable the printing of the pstack
+; when waterfall parallelism is enabled and waterfall-printing is something
+; other than :full.  We considered not involving the current value for
 ; waterfall-printing, but using the :full setting is a strange thing to begin
 ; with.  So, we make the decision that if a user goes to the effort to use the
 ; :full waterfall-printing mode, that maybe they'd like to see the pstack after
@@ -9291,19 +9310,24 @@
 ; gag-state under these conditions.  However, this is effectively a no-op,
 ; because the parallel waterfall does not save anything to gag-state anyway.
 
-  (cond
-   #+acl2-par
-   ((and (f-get-global 'waterfall-parallelism state)
-         (not (eql (f-get-global 'waterfall-printing state) :full)))
-    state)
-   (t
-    (prog2$
-     (cw
-      "Here is the current pstack [see :DOC pstack]:")
-     (mv-let (erp val state)
-             (pstack)
-             (declare (ignore erp val))
-             (print-gag-state state))))))
+  (let ((chan (proofs-co state)))
+    (pprogn
+     (io? summary nil state (chan)
+          (newline chan state))
+     (print-rules-and-hint-events-summary state)
+     (cond
+      #+acl2-par
+      ((and (f-get-global 'waterfall-parallelism state)
+            (not (eql (f-get-global 'waterfall-printing state) :full)))
+       state)
+      (t
+       (pprogn
+        (newline chan state)
+        (princ$ "Here is the current pstack [see :DOC pstack]:" chan state)
+        (mv-let (erp val state)
+                (pstack)
+                (declare (ignore erp val))
+                (print-gag-state state))))))))
 
 (defun prove-loop0 (clauses pspv hints ens wrld ctx state)
 
@@ -9311,9 +9335,9 @@
 ; let-bound in raw Lisp by bind-acl2-time-limit.
 
 ; The perhaps unusual structure below is intended to invoke
-; print-pstack-and-gag-state only when there is a hard error such as an
-; interrupt.  In the normal failure case, the pstack is not printed and the
-; key checkpoint summary (from the gag-state) is printed after the summary.
+; print-summary-on-error only when there is a hard error such as an interrupt.
+; In the normal failure case, the pstack is not printed and the key checkpoint
+; summary (from the gag-state) is printed after the summary.
 
   (state-global-let*
    ((guard-checking-on nil) ; see the Essay on Guard Checking
@@ -9325,7 +9349,7 @@
                     (prove-loop1 0 nil clauses pspv hints ens wrld ctx
                                  state)
                     (mv nil (cons erp val) state))
-            (print-pstack-and-gag-state state)
+            (print-summary-on-error state)
             state)
            (cond (interrupted-p (mv t nil state))
                  (t (mv (car erp-val) (cdr erp-val) state))))))
