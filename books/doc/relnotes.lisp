@@ -59,6 +59,8 @@
  ACL2 itself.  For additional details, you may also see the raw <a
  href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
 
+ <h2>Organizational, Build System, and Name Changes</h2>
+
  <h3>Deleted Books (Including Stubs)</h3>
 
  <p>When we move a book, we often add a <b>stub</b> book in its previous
@@ -82,6 +84,12 @@
  <p>The directory @('fix-cert/') has been deleted, as it is no longer necessary
  now that it is possible to move the system books directory after
  certifying its books (see @(see note-7-1)).</p>
+
+ <h2>New Libraries and Documentation</h2>
+
+ <p>David Russinoff has contributed a new version of the rtl library:
+ @('rtl/rel10/').  This time the new version depends on a previous version,
+ namely, @('rtl/rel9/').</p>
 
 ")
 

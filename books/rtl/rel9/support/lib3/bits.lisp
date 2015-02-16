@@ -526,6 +526,27 @@
 	     (equal (sumbits x n)
 		    x)))
 
+(defun all-bits-p (b k)
+  (if (zp k)
+      t
+    (and (or (= (nth (1- k) b) 0)
+	     (= (nth (1- k) b) 1))
+	 (all-bits-p b (1- k)))))
+
+(defun sum-b (b k)
+  (if (zp k)
+      0
+    (+ (* (expt 2 (1- k)) (nth (1- k) b))
+       (sum-b b (1- k)))))
+
+(defthmd sum-bitn
+  (implies (and (natp n)
+		(all-bits-p b n)
+	        (natp k)
+		(< k n))
+           (equal (bitn (sum-b b n) k)
+	          (nth k b))))
+
 ; The lemmas sumbits-badguy-is-correct and sumbits-badguy-bounds, below, let
 ; one prove equality of two bit vectors of width k by proving each of these has
 ; the same value at bit i, for arbitrary i from 0 to k-1.

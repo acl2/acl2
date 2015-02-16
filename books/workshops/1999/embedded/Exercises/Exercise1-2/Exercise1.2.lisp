@@ -1120,7 +1120,8 @@
     (< v prod)
     (integerp (/ v prod)))
   (equal v 0))
- :hints (("Goal''" :use (:instance hack-29 (resdiv (/ v prod)))))
+; Matt K. v7-1 mod for avoiding "Goal'", 2/13/2015: "Goal''" changed to "Goal'".
+ :hints (("Goal'" :use (:instance hack-29 (resdiv (/ v prod)))))
  :rule-classes nil)
 
 

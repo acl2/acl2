@@ -39,7 +39,7 @@
 #                    ; As above, but for OpenMCL.
 #   make LISP="lispworks -init /projects/acl2/devel/lispworks-init.lisp" PREFIX=lispworks-
 #                    ; Same as make, except that image is named
-#                    ; lispworks-saved_acl2h and the indicated init file is
+#                    ; lispworks-saved_acl2 and the indicated init file is
 #                    ;  loaded when lispworks is invoked during the build
 #                    ; Note from Rich Cohen:
 #                    ; The "-init -" tell Lispworks not to load the user's
@@ -144,20 +144,24 @@ $(info ACL2_WD is $(ACL2_WD))
 # ACL2_HONS to the empty string.
 ACL2_HONS ?= h
 
-# The variable ACL2_REAL should be defined for the non-standard version and not
-# for the standard version.  Non-standard ACL2 images will include the suffix
-# "r", for example saved_acl2r rather than saved_acl2.  ACL2_HONS (which is "h"
-# by default), ACL2_PAR, ACL2_DEVEL, and ACL2_WAG (for feature
-# write-arithmetic-goals) are similar (with suffixes h, p, d, and w, resp.,
-# rather than r), but for hons-enabled and parallel versions and the feature
-# that writes out arithmetic lemma data to ~/write-arithmetic-goals.lisp
-# (surely only of interest to implementors!).
+# The variable ACL2_REAL should be defined for the non-standard
+# version and not for the standard version.  Non-standard ACL2 images
+# will include the suffix "r", for example saved_acl2r rather than
+# saved_acl2.  Variables ACL2_PAR, ACL2_DEVEL, and ACL2_WAG (for
+# feature write-arithmetic-goals) are similar (with suffixes p, d, and
+# w, resp., rather than r), but for versions that respectively are
+# parallel or (for implementors only) have features :acl2-devel or
+# :write-arithmetic-goals, for special builds pertaining to
+# guard-verified functions or writing out arithmetic lemma data to
+# ~/write-arithmetic-goals.lisp.  Variable ACL2_HONS is h by default,
+# but when its value is the empty string, then suffix "c" is
+# generated, to create an ACL2(c) build.
 
 # DO NOT EDIT ACL2_SUFFIX!  Edit the above-mentioned four variables instead.
 
 ACL2_SUFFIX :=
-ifdef ACL2_HONS
-	ACL2_SUFFIX := $(ACL2_SUFFIX)h
+ifeq ($(ACL2_HONS),)
+	ACL2_SUFFIX := $(ACL2_SUFFIX)c
 endif
 ifdef ACL2_PAR
 	ACL2_SUFFIX := $(ACL2_SUFFIX)p
@@ -490,7 +494,7 @@ proofs: compile-ok
 # WARNING: Sub-targets below have their own warnings!
 # WARNING: This is unlikely to work with ACL2; use ACL2(h).
 # WARNING: We suggest that you supply ACL2=, e.g., make DOC
-# ACL2=/u/acl2/saved_acl2h.  Otherwise parts of the build might use
+# ACL2=/u/acl2/saved_acl2.  Otherwise parts of the build might use
 # copies of ACL2 that surprise you.  (It seems awkward to pass
 # ACL2 through recursive calls of make so we leave this to the
 # user.)
@@ -514,6 +518,7 @@ DOC: acl2-manual STATS
 doc/home-page.html: doc/home-page.lisp
 	cd doc ; rm -rf HTML ; ./create-doc 2>&1 create-doc.out
 
+# The following will implicitly use ACL2=acl2 unless ACL2 is set.
 acl2-manual:
 	rm -rf doc/manual books/system/doc/acl2-manual.cert
 	cd books ; make USE_QUICKLISP=1 system/doc/acl2-manual.cert

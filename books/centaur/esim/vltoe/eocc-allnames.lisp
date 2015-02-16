@@ -1,5 +1,5 @@
-; VL Verilog Toolkit
-; Copyright (C) 2008-2014 Centaur Technology
+; ESIM Symbolic Hardware Simulator
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,11 +28,11 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "VL")
+(in-package "VL2014")
 (include-book "emodwire")
 (include-book "centaur/esim/esim-sexpr-support" :dir :system)
 (local (include-book "esim-lemmas"))
-(local (include-book "centaur/vl/util/arithmetic" :dir :system))
+(local (include-book "centaur/vl2014/util/arithmetic" :dir :system))
 
 
 (defsection pat-flatten-rev

@@ -29,10 +29,13 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+
 (include-book "shell")
 (include-book "../server/server")
 (include-book "../util/gc")
 (include-book "centaur/getopt/top" :dir :system)
+
+#|| BOZO temporary
 
 (make-event
  (let ((public-dir (oslib::catpath *browser-dir* "public")))
@@ -141,3 +144,4 @@ Options:" *nls* *nls* *vl-server-opts-usage* *nls*))
     (vl-shell nil)))
 
 
+||#

@@ -7384,6 +7384,14 @@
 ; books/arithmetic-5/lib/basic-ops/default-hint.lisp  -- one occurrence
 ; books/hints/basic-tests.lisp -- two occurrences
 
+; Note: displayed-goal might no longer be necessary in our own sources.  But
+; community books have been using them, in particlar, books/acl2s/ccg/ccg.lisp.
+; So we keep that field.  To search the community books for "displayed-goal"
+; (or other strings, by analogy):
+
+; find . -name '*.l*sp' -exec fgrep -i -H displayed-goal {} \;
+; find . -name '*.acl2' -exec fgrep -i -H displayed-goal {} \;
+
   ((rewrite-constant induction-hyp-terms . induction-concl-terms)
    (tag-tree hint-settings . tau-completion-alist)
    (pool . gag-state)

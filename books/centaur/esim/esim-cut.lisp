@@ -1,5 +1,5 @@
 ; ESIM Symbolic Hardware Simulator
-; Copyright (C) 2010-2013 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -122,17 +122,17 @@
   ;; generation stuff relies on emodwires (for good reason, e.g., to bundle
   ;; together wires).  So, now, try to make sure our names are good emodwires,
   ;; if they were originally.
-  (b* (((unless (vl::vl-emodwire-p x))
+  (b* (((unless (vl2014::vl-emodwire-p x))
         (intern-in-package-of-symbol
          (str::cat (symbol-name x) suffix)
          x))
-       (basename (vl::vl-emodwire->basename x))
-       (index    (vl::vl-emodwire->index x))
+       (basename (vl2014::vl-emodwire->basename x))
+       (index    (vl2014::vl-emodwire->index x))
        (new-name (str::cat basename suffix))
        ((when (equal new-name "NIL"))
         ;; Stupidity, too hard...
         (raise "This will never happen.")))
-    (vl::vl-emodwire new-name index)))
+    (vl2014::vl-emodwire new-name index)))
 
 (define ecut-wire-names ((x symbolp))
   :returns (names ecutnames-p)

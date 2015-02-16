@@ -34,6 +34,8 @@
 
 (include-book "round-extra")
 
+(include-book "bitn")
+
 (include-book "guards")
 
 ; Could probably be part of top1, but was handled later.

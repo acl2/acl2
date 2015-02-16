@@ -1,5 +1,5 @@
 ; ESIM Symbolic Hardware Simulator
-; Copyright (C) 2010-2012 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -33,7 +33,7 @@
 
 (in-package "ACL2")
 (include-book "stv-util")
-(include-book "centaur/vl/util/defs" :dir :system)
+(include-book "centaur/vl2014/util/defs" :dir :system)
 (include-book "../steps")
 (include-book "std/typed-lists/cons-listp" :dir :system)
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
@@ -353,7 +353,7 @@ and naming them with the output simulation variable bit names.</p>"
        (user-bits  (alist-vals extr1))
        (want-names (alist-keys extr1))
        (outs1      (make-fast-alist outs1))
-       (want-exprs (vl::look-up-each-fast want-names outs1))
+       (want-exprs (vl2014::look-up-each-fast want-names outs1))
        (-          (fast-alist-free outs1))
        (acc        (safe-pairlis-onto-acc user-bits want-exprs acc)))
     (stv-extract-relevant-signals (cdr extract-alists)

@@ -1,0 +1,109 @@
+/*
+VL 2014 -- VL Verilog Toolkit, 2014 Edition
+Copyright (C) 2008-2014 Centaur Technology
+
+Contact:
+  Centaur Technology Formal Verification Group
+  7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+  http://www.centtech.com/
+
+License: (An MIT/X11-style license)
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+Original author: Jared Davis <jared@centtech.com>
+*/
+
+#sourcecode {
+   background-color: #ffffff;
+   border: 3px solid #ffd0b0;
+   border-radius: 5px;
+   box-shadow: 0px 2px 10px 2px rgba(0,64,80,0.7);
+   padding: 1em;
+   margin-bottom: 2em;
+   margin-top: 1em;
+}
+
+#sourcecode pre {
+   margin-top: 0;
+}
+
+#banner_table {
+   width: 100%;
+   background-color: #ffcc99;
+   margin-bottom: 0;
+   margin-top: 1em;
+   padding: 0;
+   border: 1px solid black;
+}
+
+#banner_table h2 {
+   text-align: left;
+   margin: 0;
+   padding: 0;
+}
+
+#banner_table a:hover {
+   background-color: inherit;
+}
+
+#desctype {
+   color: #606060;
+}
+
+#desctype small {
+    font-family: "<!-- TMPL_VAR tt_font -->", monospace;
+}
+
+#hierarchy {
+    padding-top: 1em;
+    padding-left: 1em;
+}
+
+#hierarchy a {
+    font-family: "<!-- TMPL_VAR sans_font -->", sans-serif;
+}
+
+#warnings {
+    width: 60%;
+    float: right;
+    margin-top: 1em;
+   /*  border: 3px solid #ffd0b0; */
+   /*  border-radius: 5px; */
+   /*  padding-top: 2px; */
+   /* box-shadow: 0px 2px 10px 2px rgba(0,64,80,0.2);  */
+
+}
+
+.sep {
+    clear: right;
+}
+
+.expandelided {
+    font-family: "<!-- TMPL_VAR serif_font -->", serif;
+}
+
+
+.warninghead {
+    margin-top: 0;
+    padding-top: 0;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    padding-left: 0.5em;
+}

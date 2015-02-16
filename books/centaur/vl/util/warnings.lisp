@@ -352,6 +352,7 @@ particular interest.</p>"
            :hints(("Goal" :in-theory (enable subsetp-equal)))))
 
   (defcong set-equiv equal (vl-some-warning-fatalp x) 1
+    :event-name vl-some-warning-fatalp-preserves-set-equiv
     :hints(("Goal"
             :cases ((vl-some-warning-fatalp x))
             :in-theory (enable set-equiv)

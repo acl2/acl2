@@ -262,7 +262,7 @@ href="requirements.html#Obtaining-CCL">explained in the Requirements document</a
 
 <P>
 
-This will create executable <code>saved_acl2h</code> in the
+This will create executable <code>saved_acl2</code> in the
 <code>acl2-7.0</code> directory.
 
 <P>
@@ -312,7 +312,7 @@ below should default to the <I>dir</I><CODE>/acl2-7.0</CODE>
 directory; please connect to that directory before continuing.
 
 <OL>
-<P><LI> Remove file <CODE>nsaved_acl2h</CODE> if it exists.</LI>
+<P><LI> Remove file <CODE>nsaved_acl2</CODE> if it exists.</LI>
 
 <P><LI> Start up Common Lisp in the <CODE>acl2-7.0</CODE> directory
 and submit the following sequence of commands.
@@ -361,49 +361,49 @@ and submit the following sequence of commands.
   (load "init.lisp")
   (in-package "ACL2")
   (save-acl2 (quote (initialize-acl2))
-             "saved_acl2h")
+             "saved_acl2")
 </PRE>
 
   You have now saved an image.  Exit Lisp now.  Subsequent steps will put the
   image in the right place.
 
-<P><LI> Remove <CODE>osaved_acl2h</CODE> if it exists.
+<P><LI> Remove <CODE>osaved_acl2</CODE> if it exists.
 
-<P><LI> <b>IF</b> <CODE>saved_acl2h</CODE> and <CODE>saved_acl2h.dxl</CODE> both exist <b>THEN</b>:
+<P><LI> <b>IF</b> <CODE>saved_acl2</CODE> and <CODE>saved_acl2.dxl</CODE> both exist <b>THEN</b>:
 <ul>
-     <li>move <CODE>saved_acl2h.dxl</CODE> to <CODE>osaved_acl2h.dxl</CODE></li>
-     <li>move <CODE>saved_acl2h</CODE> to <CODE>osaved_acl2h</CODE>
-         and edit <CODE>osaved_acl2h</CODE>, changing <CODE>saved_acl2h.dxl</CODE>
-         (at end of line) to <CODE>osaved_acl2h.dxl</CODE></li>
+     <li>move <CODE>saved_acl2.dxl</CODE> to <CODE>osaved_acl2.dxl</CODE></li>
+     <li>move <CODE>saved_acl2</CODE> to <CODE>osaved_acl2</CODE>
+         and edit <CODE>osaved_acl2</CODE>, changing <CODE>saved_acl2.dxl</CODE>
+         (at end of line) to <CODE>osaved_acl2.dxl</CODE></li>
 </ul>
-     <b>ELSE IF</b> <CODE>saved_acl2h</CODE> exists <b>THEN</b>:
+     <b>ELSE IF</b> <CODE>saved_acl2</CODE> exists <b>THEN</b>:
 <ul>
-     <li>move <CODE>saved_acl2h</CODE> to <CODE>osaved_acl2h</CODE></li>
+     <li>move <CODE>saved_acl2</CODE> to <CODE>osaved_acl2</CODE></li>
 </ul>
 </LI>
 
-<P><LI> Move <CODE>nsaved_acl2h</CODE> to <CODE>saved_acl2h</CODE>.</LI>
+<P><LI> Move <CODE>nsaved_acl2</CODE> to <CODE>saved_acl2</CODE>.</LI>
 
 <P><LI> For some Common Lisps, a
-     file <CODE>nsaved_acl2h.</CODE><em>suffix</em> is created for some
+     file <CODE>nsaved_acl2.</CODE><em>suffix</em> is created for some
      <em>suffix</em>.
-     Move it to: <CODE>saved_acl2h.</CODE><em>suffix</em></LI>
+     Move it to: <CODE>saved_acl2.</CODE><em>suffix</em></LI>
 
-<P><LI> Make sure <CODE>saved_acl2h</CODE> is executable.  For Windows
+<P><LI> Make sure <CODE>saved_acl2</CODE> is executable.  For Windows
 this involves two mini-steps:
 
 <blockquote>
 
-(a) Remove the <code>"$*"</code> from the <code>saved_acl2h</code>
+(a) Remove the <code>"$*"</code> from the <code>saved_acl2</code>
 script (because Windows does not understand <code>$*</code>).
 Consequently, any arguments you pass to ACL2 via the command line will
 be ignored.
 
 <p>
 
-(b) Rename <code>saved_acl2h</code> to <code>saved_acl2h.bat</code>, for
+(b) Rename <code>saved_acl2</code> to <code>saved_acl2.bat</code>, for
 example by executing the following command.<br><br>
-<code>rename saved_acl2h saved_acl2h.bat</code>
+<code>rename saved_acl2 saved_acl2.bat</code>
 
 </blockquote>
 </LI>
@@ -482,7 +482,7 @@ C:\gcl\gclm\lib\gcl-2.6.2\unixport\saved_gcl.exe -dir C:/gcl/gclm/lib/gcl-2.6.2/
 <li><b>THIRD</b>, follow the <A HREF="#Non-Unix">instructions for
     other than Unix-like systems</A> above, though the resulting file
     may be called
-<code>saved_acl2h.exe</code> rather than <code>saved_acl2h</code>.
+<code>saved_acl2.exe</code> rather than <code>saved_acl2</code>.
 
 <!-- NOTE to developers: v7-0 below indicates a normal release, which is OK. -->
 <!-- Do not edit that for incremental releases. -->

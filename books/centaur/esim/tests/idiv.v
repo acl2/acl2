@@ -82,7 +82,7 @@ reg rDIVVLD_D2;
 // versions of VL incorrectly permitted (and indeed, likely required!) these to
 // be redeclared.
 //
-// See the documentation of VL::VL-PARSE-PORT-DECLARATION-ATTS-2005 for more
+// See the documentation of VL2014::VL-PARSE-PORT-DECLARATION-ATTS-2005 for more
 // discussion about the Verilog-2005 case, and see SystemVerilog-2012 23.2.2.2
 // (page 666) for the SystemVerilog case.
 //

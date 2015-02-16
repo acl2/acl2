@@ -1,5 +1,5 @@
-; VL Verilog Toolkit
-; Copyright (C) 2008-2014 Centaur Technology
+; ESIM Symbolic Hardware Simulator
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,12 +28,12 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "VL")
-(include-book "centaur/vl/util/defs" :dir :system)
+(in-package "VL2014")
+(include-book "centaur/vl2014/util/defs" :dir :system)
 (include-book "centaur/fty/deftypes" :dir :system)
 (local (include-book "misc/assert" :dir :system))
-(local (include-book "centaur/vl/util/arithmetic" :dir :system))
-(local (include-book "centaur/vl/util/position" :dir :system))
+(local (include-book "centaur/vl2014/util/arithmetic" :dir :system))
+(local (include-book "centaur/vl2014/util/position" :dir :system))
 (local (include-book "std/misc/intern-in-package-of-symbol" :dir :system))
 
 (defxdoc exploding-vectors
@@ -444,11 +444,11 @@ raw-lisp for better performance.</p>"
   #||
   (time$
    (loop for i from 1 to 10000000 do
-         (vl::vl-emodwire-encode "looksLikeAVerilogWire")))
+         (vl2014::vl-emodwire-encode "looksLikeAVerilogWire")))
 
   (time$
    (loop for i from 1 to 10000000 do
-         (vl::vl-emodwire-decode "looksLikeAVerilogWire")))
+         (vl2014::vl-emodwire-decode "looksLikeAVerilogWire")))
   ||#
 
 
@@ -486,7 +486,7 @@ raw-lisp for better performance.</p>"
                (case c
                  ((#\[ #\] #\{ #\. #\! #\/)
                   (return-from vl-emodwire-encode
-                    (vl::vl-emodwire-encode-aux x)))
+                    (vl2014::vl-emodwire-encode-aux x)))
                  (otherwise
                   nil))))
        x))
@@ -498,7 +498,7 @@ raw-lisp for better performance.</p>"
              (let ((c (schar x i)))
                (when (eql c #\{)
                  (return-from vl-emodwire-decode
-                   (vl::vl-emodwire-decode-aux x)))))
+                   (vl2014::vl-emodwire-decode-aux x)))))
        x)))
 
   (defttag nil))
@@ -662,7 +662,7 @@ details.</p>"
 
   #||
   (time (loop for i fixnum from 1 to 10000000 do
-  (vl::vl-emodwire-p 'acl2::|LooksLikeAVerilogWire[3]|)))
+  (vl2014::vl-emodwire-p 'acl2::|LooksLikeAVerilogWire[3]|)))
   ||#
 
 
@@ -826,7 +826,7 @@ details.</p>"
      (assert! (not (vl-emodwire-p 'acl2::f]o[o)))
      (assert! (not (vl-emodwire-p 'acl2::f{o[o)))
      (assert! (not (vl-emodwire-p 'acl2::foo])))
-     (assert! (not (vl-emodwire-p 'vl::foo))))))
+     (assert! (not (vl-emodwire-p 'vl2014::foo))))))
 
 
 (define vl-emodwire-fix ((x vl-emodwire-p))
@@ -1007,13 +1007,13 @@ book and may change if CCL gets a compiler-macro for CONCATENATE.</p>
    ;; 7.276 seconds, 1.12 GB allocated
   (gc$)
   (time$ (loop for i fixnum from 1 to 10000000 do
-               (vl::vl-emodwire "looksLikeAVerilogName" 33))))
+               (vl2014::vl-emodwire "looksLikeAVerilogName" 33))))
 
 (progn
   ;; 10.231 seconds, 2.24 GB allocated
   (gc$)
   (time$ (loop for i fixnum from 1 to 10000000 do
-               (vl::vl-emodwire-plain "looksLikeAVerilogName" 33))))
+               (vl2014::vl-emodwire-plain "looksLikeAVerilogName" 33))))
 
 ||#
 

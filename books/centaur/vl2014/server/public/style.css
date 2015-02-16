@@ -1,0 +1,219 @@
+/*
+VL 2014 -- VL Verilog Toolkit, 2014 Edition
+Copyright (C) 2008-2015 Centaur Technology
+
+Contact:
+  Centaur Technology Formal Verification Group
+  7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+  http://www.centtech.com/
+
+License: (An MIT/X11-style license)
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+Original author: Jared Davis <jared@centtech.com>
+*/
+
+.serif { font-family: "<!-- TMPL_VAR serif_font -->", serif; }
+body   { font-family: "<!-- TMPL_VAR serif_font -->", serif; }
+
+.sans                     { font-family: "<!-- TMPL_VAR sans_font -->", sans-serif; }
+h1,h2,h3,h4,h5,dt         { font-family: "<!-- TMPL_VAR sans_font -->", sans-serif; }
+.vl_start_loc,.vl_end_loc { font-family: "<!-- TMPL_VAR sans_font -->", sans-serif; }
+
+.tt                    { font-family: "<!-- TMPL_VAR tt_font -->", monospace; }
+tt, code, pre, .vl_src { font-family: "<!-- TMPL_VAR tt_font -->", monospace; }
+
+h1,h2,h3 {
+    font-weight: normal;
+}
+
+h2 {
+   font-size: 2.3em;
+   text-align: center;
+}
+
+h3 {
+   font-size: 1.4em;
+}
+
+.red {
+   color: #ff0000;
+}
+
+
+a:hover {
+  background-color: #ffffd0;
+}
+
+
+
+
+/* ---------------------------------------------------------------------- *
+ *                                                                        *
+ *  Source Code Formatting for VL                                         *
+ *                                                                        *
+ * ---------------------------------------------------------------------- */
+
+.vl_src {
+    /* This is a div that is wrapped around the entire source-code fragment being
+       displayed. */
+}
+
+.vl_start_loc,.vl_end_loc {
+    /* "Module start" and "Module end" banners */
+    margin-left: .5in;
+    font-weight: normal;
+    font-size: 13pt;
+}
+
+.vl_loc {
+    /* Actual location for "Module start" and "Module end" banners. */
+    color: #606060;
+}
+
+.vl_line {
+    /* Line numbers that preceede each source code line */
+    background-color: #f0f0f0;
+    color: #608080;
+    padding-right: 3px;
+    font-weight: normal;
+}
+
+.vl_key {
+    /* Verilog keywords */
+    color: #0000d0;
+    font-weight: bold;
+}
+
+.vl_id {
+    /* Verilog identifiers */
+    color: #800080;
+}
+
+.vl_cmt {
+    /* Verilog comments */
+    color: #007000;
+}
+
+.vl_pln {
+    /* Verilog plain tokens (e.g., punctuation) */
+}
+
+.vl_int {
+    /* Verilog integer literals */
+    color: #a00000;
+}
+
+.vl_real {
+    /* Verilog real-number literals */
+  color: #ff9900;
+}
+
+.vl_sys {
+    /* Verilog system identifiers (e.g., $display) */
+    color: #00ff00;
+}
+
+.vl_orig {
+    /* Links to original modules */
+  color: #0000ff;
+}
+
+.vl_trans {
+    /* Links to translated modules */
+  color: #009000;
+}
+
+.vl_bang {
+  /* Source code from //!! lines */
+  background-color: #e0ffff;
+}
+
+.vl_at {
+  /* Source code from //@@ lines */
+  background-color: #ffe0ff;
+}
+
+.vl_wirelink {
+    color: #aa00aa;
+    text-decoration: none;
+}
+
+.vl_wirelink_port {
+    color: #aa00aa;
+    text-decoration: underline;
+}
+
+
+
+
+
+
+/* ---------------------------------------------------------------------- *
+ *                                                                        *
+ *  Warning Formatting for VL                                             *
+ *                                                                        *
+ * ---------------------------------------------------------------------- */
+
+.vl_warning {
+    font-size: 75%;
+}
+
+.vl_warning_more {
+    list-style-type: none;
+    margin-left: .1in;
+    font-size: 75%;
+}
+
+.vl_nonfatal_warning_type {
+    font-family: "<!-- TMPL_VAR sans_font -->", sans-serif;
+    font-weight: bold;
+    color: #c06000;
+}
+
+.vl_fatal_warning_type {
+    font-family: "<!-- TMPL_VAR sans_font -->", sans-serif;
+    font-weight: bold;
+    color: #c00000;
+}
+
+.vl_module_yes_warnings {
+    margin-top: 0px;
+    margin-left: .1in;
+    font-weight: normal;
+    font-size: 13pt;
+    color: #900000;
+}
+
+.vl_module_no_warnings {
+    margin-top: 0px;
+    margin-left: .1in;
+    font-weight: normal;
+    font-size: 13pt;
+    color: #006000;
+}
+
+.vl_warning_list {
+    list-style-type: decimal;
+    background-color: #ffffff;
+    /* border-width: 1px; */
+    /* border-style: solid; */
+    /* border-color: #909090; */
+}

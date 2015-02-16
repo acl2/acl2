@@ -187,6 +187,7 @@ the number of descriptions in the list.</p>"
            (vl-descriptionlist->names x)))
 
   (defcong list-equiv equal (vl-descriptionlist->names x) 1
+    :event-name vl-descriptionlist->names-preserves-list-equiv
     :hints(("Goal"
             :in-theory (e/d (list-equiv)
                             (vl-descriptionlist->names-of-list-fix))

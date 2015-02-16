@@ -1,5 +1,5 @@
-; VCD Generator for ESIM
-; Copyright (C) 2010-2012 Centaur Technology
+; ESIM Symbolic Hardware Simulator
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group

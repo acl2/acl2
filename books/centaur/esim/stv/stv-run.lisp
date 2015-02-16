@@ -1,5 +1,5 @@
 ; ESIM Symbolic Hardware Simulator
-; Copyright (C) 2010-2012 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -35,12 +35,12 @@
 (include-book "stv-util")
 (include-book "std/strings/hexify" :dir :system)
 (include-book "centaur/misc/vecs-ints" :dir :system)
-(include-book "centaur/vl/util/defs" :dir :system)
+(include-book "centaur/vl2014/util/defs" :dir :system)
 (include-book "centaur/4v-sexpr/bitspecs" :dir :system)
 (include-book "centaur/4v-sexpr/sexpr-rewrites" :dir :system)
 (include-book "centaur/4v-sexpr/sexpr-booleval" :dir :system)
 (include-book "centaur/gl/gl-util" :dir :system)
-(local (include-book "centaur/vl/util/arithmetic" :dir :system))
+(local (include-book "centaur/vl2014/util/arithmetic" :dir :system))
 
 
 (defthm true-listp-of-safe-pairlis-onto-acc
@@ -164,7 +164,7 @@ output is X.</p>"
         (raise "out-usersyms should be an alist.")
         rest)
        ((cons user-name bits) (car out-usersyms))
-       (vals      (vl::look-up-each-fast bits bit-out-alist))
+       (vals      (vl2014::look-up-each-fast bits bit-out-alist))
        (true-val  (4v-to-nat vals))
        (- (and (eq true-val 'x)
                (cw "Bits bound to X in ~x0: ~x1~%"
@@ -226,17 +226,17 @@ output is X.</p>"
                               ret))
 
               ;; Also filter the sigs down to just the bits we need.
-              (keep-bits (vl::append-alist-vals out-usersyms))
+              (keep-bits (vl2014::append-alist-vals out-usersyms))
               (sigs      (b* ((tmp (make-fal sigs nil))
                               (ret (fal-extract keep-bits tmp)))
                            (fast-alist-free tmp)
                            ret)))
 
            (mv sigs out-usersyms))
-         
+
          :mintime 1/2
          :msg "; stv-run skips: ~st sec, ~sa bytes.")))
-    
+
     (mv sigs out-usersyms)))
 
 (define stv-run-make-eval-env ((pstv processed-stv-p)
@@ -248,7 +248,7 @@ output is X.</p>"
         (make-fast-alist
          (compiled-stv->in-usersyms
           (processed-stv->compiled-stv pstv)))))
-    
+
     ;; Construct the alist to evaluate with
     (time$ (stv-simvar-inputs-to-bits input-alist in-usersyms)
            :mintime 1/2
@@ -371,7 +371,7 @@ this function is that this function uses @('4v-sexpr-eval-default') instead
 of @(see 4v-sexpr-eval), which means that any variables not bound by the
 user-provided inputs are set to false, instead of (effectively) X.</p>"
 
-  
+
   (time$
    (b* (((mv sigs out-usersyms)
          (stv-run-collect-eval-signals pstv skip))
@@ -456,7 +456,7 @@ circuit meets its spec under a setting of all these don't-care bits to false,
 and this then implies that the circuit meets its spec under every Boolean
 setting of those bits.</p>"
 
-  
+
   (time$
    (b* (((mv sigs ?out-usersyms)
          (stv-run-collect-eval-signals pstv skip))
@@ -547,7 +547,7 @@ function, for all don't-care alists.</li>
 </ul>
 "
 
-  
+
   (time$
    (b* (((mv sigs out-usersyms)
          (stv-run-collect-eval-signals pstv skip))
@@ -602,5 +602,3 @@ function, for all don't-care alists.</li>
                   (:instance 4v-sexpr-boolconst-eval-alist-when-independent
                    (x (mv-nth 0 (stv-run-collect-eval-signals pstv skip)))
                    (env (stv-run-make-eval-env pstv input-alist))))))))
-                    
-

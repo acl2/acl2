@@ -1,5 +1,5 @@
 ; ESIM Symbolic Hardware Simulator
-; Copyright (C) 2010-2012 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,5 +29,5 @@
 (in-package "ACL2")
 (include-book "std/portcullis" :dir :system)
 (ld "tools/flag-package.lsp" :dir :system)
-(include-book "centaur/vl/portcullis" :dir :system)
+(include-book "centaur/vl2014/portcullis" :dir :system)
 (include-book "centaur/gl/portcullis" :dir :system)

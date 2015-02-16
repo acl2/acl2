@@ -589,17 +589,19 @@
     :hints((set-reasoning))))
 
 (defcong acl2::nat-equiv equal (str::natchars n) 1
+  :event-name natchars-preserves-nat-equiv
   :hints(("Goal" :in-theory (enable str::natchars))))
 
-(defcong acl2::nat-equiv equal (natstr n) 1)
+(defcong acl2::nat-equiv equal (natstr n) 1
+  :event-name natstr-preserves-nat-equiv)
 
 (defthm natstr-when-zp
   (implies (zp n)
            (equal (natstr n) "0"))
   :hints(("Goal"
           ;; This is fucking terrible.
-          :in-theory (disable acl2::NAT-EQUIV-IMPLIES-EQUAL-NATSTR-1)
-          :use ((:instance acl2::NAT-EQUIV-IMPLIES-EQUAL-NATSTR-1
+          :in-theory (disable natstr-preserves-nat-equiv)
+          :use ((:instance natstr-preserves-nat-equiv
                  (n 0)
                  (acl2::n-equiv n))))))
 

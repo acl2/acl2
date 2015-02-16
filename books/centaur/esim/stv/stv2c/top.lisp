@@ -1,5 +1,5 @@
 ; ESIM Symbolic Hardware Simulator
-; Copyright (C) 2010-2012 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -36,7 +36,7 @@
 (include-book "centaur/esim/defmodules" :dir :system)
 (include-book "stv2c")
 (include-book "centaur/getopt/top" :dir :system)
-(include-book "centaur/vl/kit/progutils" :dir :system)
+(include-book "centaur/vl2014/kit/progutils" :dir :system)
 (include-book "oslib/argv" :dir :system)
 (include-book "std/io/read-file-objects" :dir :system)
 (local (include-book "std/typed-lists/string-listp" :dir :system))
@@ -45,7 +45,7 @@
 #||
 For debugging, so the program doesn't quit on you at random.
 
-#!VL
+#!VL2014
 (with-redef
  (progn
    (define exit-ok ()
@@ -56,10 +56,10 @@ For debugging, so the program doesn't quit on you at random.
 ||#
 
 (defmacro die (&rest args)
-  `(vl::die . ,args))
+  `(vl2014::die . ,args))
 
 (defmacro exit-ok (&rest args)
-  `(vl::exit-ok . ,args))
+  `(vl2014::exit-ok . ,args))
 
 
 (defoptions stv2c-opts
@@ -124,7 +124,7 @@ For debugging, so the program doesn't quit on you at random.
                 :parser getopt::parse-string
                 :merge acl2::cons)
 
-   (edition     vl::vl-edition-p
+   (edition     vl2014::vl-edition-p
                 :argname "EDITION"
                 "Which edition of the Verilog standard to implement?
                  Default: \"SystemVerilog\" (IEEE 1800-2012).  You can
@@ -319,29 +319,29 @@ BOZO finish this readme
        ((mv (stv-spec stv-spec) state)
         (parse-stv-file opts.stv))
 
-       (loadconfig (vl::make-vl-loadconfig
+       (loadconfig (vl2014::make-vl-loadconfig
                     :edition     opts.edition
                     :strictp     opts.strict
                     :start-files opts.start-files
                     :search-path opts.search-path
                     :search-exts opts.search-exts
-                    :defines (vl::vl-make-initial-defines opts.defines)
+                    :defines (vl2014::vl-make-initial-defines opts.defines)
                     :filemapp nil))
-       (simpconfig (vl::make-vl-simpconfig))
+       (simpconfig (vl2014::make-vl-simpconfig))
 
        (- (cw "stv2c: loading Verilog files~%   ~x0~%" loadconfig))
        ((mv translation state)
-        (vl::defmodules-fn loadconfig simpconfig))
+        (vl2014::defmodules-fn loadconfig simpconfig))
 
-       (mods   (vl::vl-design->mods (vl::vl-translation->good translation)))
-       (vl-mod (vl::vl-find-module stv-spec.mod mods))
+       (mods   (vl2014::vl-design->mods (vl2014::vl-translation->good translation)))
+       (vl-mod (vl2014::vl-find-module stv-spec.mod mods))
        ((unless vl-mod)
         (die "The Verilog module ~s0 (requested by ~s1) wasn't loaded?"
              stv-spec.mod opts.stv)
         state)
 
        (- (cw "stv2c: found requested module ~s0.~%" stv-spec.mod))
-       (esim (vl::vl-module->esim vl-mod))
+       (esim (vl2014::vl-module->esim vl-mod))
        ((unless esim)
         (die "The Verilog module ~s0 wasn't translated successfully.")
         state)
@@ -392,12 +392,12 @@ performance.</p>"
        ((stv2c-opts opts) opts)
 
        ((when opts.help)
-        (vl::vl-cw-ps-seq (vl::vl-print *stv2c-help*))
+        (vl2014::vl-cw-ps-seq (vl2014::vl-print *stv2c-help*))
         (exit-ok)
         state)
 
        ((when opts.readme)
-        (vl::vl-cw-ps-seq (vl::vl-print *stv2c-readme*))
+        (vl2014::vl-cw-ps-seq (vl2014::vl-print *stv2c-readme*))
         (exit-ok)
         state)
 
@@ -412,10 +412,10 @@ performance.</p>"
        (- (cw "stv2c: starting up: ~%"))
 
        (- (cw " - start files: ~x0~%" opts.start-files))
-       (state (vl::must-be-regular-files! opts.start-files))
+       (state (vl2014::must-be-regular-files! opts.start-files))
 
        (- (cw " - stv file: ~x0.~%" opts.stv))
-       (state (vl::must-be-regular-files! (list opts.stv)))
+       (state (vl2014::must-be-regular-files! (list opts.stv)))
 
        (- (cw " - soft heap size ceiling: ~x0 GB~%" opts.mem))
        (- (acl2::set-max-mem ;; newline to appease cert.pl's scanner

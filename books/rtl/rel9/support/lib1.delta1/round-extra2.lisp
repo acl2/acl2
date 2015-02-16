@@ -5945,6 +5945,23 @@
                                                                                         q)))))))
                                   :in-theory (enable expo-2**n)))))
 
+                      (defthmd drnd-tiny
+                        (implies (and (common-rounding-mode-p mode)
+                                      (natp p)
+                                      (> p 1)
+                                      (natp q)
+                                      (> q 0)
+                                      (rationalp x)
+                                      (< 0 x)
+                                      (< x (/ (spd p q) 2)))
+                                 (equal (drnd x mode p q)
+                                        (if (member mode '(away inf))
+                                            (spd p q)
+                                          0)))
+                        :hints (("Goal" :in-theory (enable ieee-mode-p))
+                                ("Subgoal 1" :in-theory (disable spd-/2-rewrite) :use spd-/2-rewrite)
+                                ("Subgoal 2" :in-theory (disable spd-/2-rewrite) :use spd-/2-rewrite)))
+
                       (defthm drnd-tiny-equal-lemma
                         (implies (and (common-rounding-mode-p mode)
                                       (natp p)
@@ -6350,6 +6367,20 @@
 
 
 
+
+  (defthmd drnd-tiny
+    (implies (and (common-rounding-mode-p mode)
+                  (natp p)
+                  (> p 1)
+                  (natp q)
+                  (> q 0)
+                  (rationalp x)
+                  (< 0 x)
+                  (< x (/ (spd p q) 2)))
+             (equal (drnd x mode p q)
+                    (if (member mode '(away inf))
+                        (spd p q)
+                       0))))
 
   (defthm drnd-tiny-equal
     (implies (and (common-rounding-mode-p mode)

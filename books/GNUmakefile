@@ -57,6 +57,9 @@
 #                 books, the jvm models, etc.  Usually, committers to
 #                 acl2-books should run "make all" first.
 #
+#   almost-everything
+#                 An alias for "all"
+#
 #   everything    A very full build, including very slow books.  Most users
 #                 will not want to use this target.  It is useful for, e.g.,
 #                 regression testing before releases.  Note that
@@ -990,6 +993,9 @@ endif # ifeq ($(realpath workshops), )
 
 all: $(OK_CERTS)
 
+.PHONY: almost-everything
+almost-everything: all
+
 # Starting 8/15/2014, everything does not automatically set USE_QUICKLISP=1,
 # even in the HONS case.  In particular, "make everything" no longer makes
 # doc/manual/; for that, specify USE_QUICKLISP=1.
@@ -1385,18 +1391,27 @@ manual:
 # VL Toolkit
 
 centaur/vl/bin/vl: centaur/vl/kit/top.cert
-	@echo "Making VL Verilog Toolkit executable"
-	@cd centaur/vl/kit; \
-         ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < save.lsp &> save.out"
+	@echo "Making VL Verilog Toolkit"
+	@cd centaur/vl/kit; ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < save.lsp &> save.out"
 	@ls -la centaur/vl/bin/vl
 
-.PHONY: vl
+centaur/vl2014/bin/vl2014: centaur/vl2014/kit/top.cert
+	@echo "Making VL Verilog Toolkit, 2014 Edition"
+	@cd centaur/vl2014/kit; ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < save.lsp &> save.out"
+	@ls -la centaur/vl2014/bin/vl2014
+
+
+.PHONY: vl vl2014
 vl: centaur/vl/bin/vl
+vl2014: centaur/vl2014/bin/vl2014
+
 
 .PHONY: clean_vl
 clean_vl:
 	@echo "Cleaning centaur/vl/bin directory"
 	@rm -f centaur/vl/bin/*
+	@echo "Cleaning centaur/vl2014/bin directory"
+	@rm -f centaur/vl2014/bin/*
 
 clean: clean_vl
 

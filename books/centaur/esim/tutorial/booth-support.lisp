@@ -1,5 +1,5 @@
-; Centaur Hardware Verification Tutorial
-; Copyright (C) 2012 Centaur Technology
+; Centaur Hardware Verification Tutorial for ESIM/VL2014
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -36,6 +36,13 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (include-book "ihs/basic-definitions" :dir :system)
 (include-book "std/util/bstar" :dir :system)
+
+; NOTE ---- ESIM is still available but it is no longer being actively
+; maintained.  The successor of ESIM is SVEX.  If you don't already have
+; projects based on ESIM, you should probably skip this tutorial and learn
+; about SVEX instead.
+
+
 
 (defun booth-enc-one (a b)
   (+ (if (logbitp 0 a) b        0)

@@ -1,5 +1,5 @@
 ; ESIM Symbolic Hardware Simulator
-; Copyright (C) 2010-2012 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -61,7 +61,7 @@ ACL2.  It consists of:</p>
 <ul>
 
 <li>A simplistic, bit-level module representation, ``E modules,'' which are
-typically produced from Verilog designs using @(see vl::defmodules).</li>
+typically produced from Verilog designs using @(see vl2014::defmodules).</li>
 
 <li>A family of functions for ``stepping'' an E module to compute expressions
 that capture its next-state and outputs as @(see 4v-sexprs) or as @(see faig)s;

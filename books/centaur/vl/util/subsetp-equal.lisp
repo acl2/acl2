@@ -91,6 +91,7 @@
     :hints((set-reasoning))))
 
 (defcong set-equiv set-equiv (<<-sort x) 1
+  :event-name <<-sort-preserves-set-equiv
   :hints(("Goal"
           :use ((:functional-instance
                  set-equiv-by-duplicity

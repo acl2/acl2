@@ -629,7 +629,7 @@
 ; The value is either nil or the maximum number of functions upon which
 ; memoize-summary reports.  A nil value means report on all."
 
-  20)
+  100)
 
 (defg *condition-nil-as-hit*
 
@@ -4342,7 +4342,7 @@
         (when (< len-fn-pairs len-orig-fn-pairs)
           (format t
                   "~%Reporting on ~:d of ~:d functions because ~
-                 *memoize-summary-limit* = ~a."
+                   *memoize-summary-limit* = ~a."
                   len-fn-pairs
                   len-orig-fn-pairs
                   *memoize-summary-limit*)))
