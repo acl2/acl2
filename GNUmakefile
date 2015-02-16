@@ -25,37 +25,12 @@
 #   make             ; Build ${PREFIXsaved_acl2} from scratch.  Same as make large.
 #   make large       ; Build large-${PREFIXsaved_acl2} from scratch.
 #   make LISP=cl PREFIX=allegro-
-#   make LISP=lisp PREFIX=lucid-
-#   make LISP='gcl -eval "(defparameter user::*fast-acl2-gcl-build* t)"'
-#                    ; Build in GCL, but with a shortcut that cuts the time by
-#                    ; perhaps 2/3 at the cost losing perhaps 1% in run-time
-#                    ; performance.
-#   make LISP='gcl -eval "(push :acl2-mv-as-values *features*)"'
-#                    ; Build in GCL, with mv and mv-let defined in terms of
-#                    ; values and multiple-value-bind (respectively).
-#   make LISP='acl -e "(push :acl2-mv-as-values *features*)"'
-#                    ; As above, but for Allegro CL.
-#   make LISP='openmcl -e "(push :acl2-mv-as-values *features*)"'
-#                    ; As above, but for OpenMCL.
-#   make LISP="lispworks -init /projects/acl2/devel/lispworks-init.lisp" PREFIX=lispworks-
-#                    ; Same as make, except that image is named
-#                    ; lispworks-saved_acl2 and the indicated init file is
-#                    ;  loaded when lispworks is invoked during the build
-#                    ; Note from Rich Cohen:
-#                    ; The "-init -" tell Lispworks not to load the user's
-#                    ; initialisation file.  By default Lispworks will load
-#                    ; ~/.lispworks at start-up, regardless of the current
-#                    ; working directory.  Further, when you attempt to save a
-#                    ; core image, Lispworks notes that you previously loaded
-#                    ; your personal initialisation file, and requires
-#                    ; confirmation before saving the core image.
 #   make TAGS        ; Create tags table, handy for viewing sources with emacs.
 #   make TAGS!       ; Same as TAGS, except forces a rebuild of TAGS.
 #   make certify-books
-#                    ; Certify the community books that might reasonably
-#                    ; be useful to include in proof developments.
+#                    ; Certify a nontrivial, useful subset of the community books.
 #   make regression
-#                    ; Certify all the distributed books and, if present, the
+#                    ; Certify all the community books and, if present, the
 #                    ; workshops/ books as well.
 #   make regression ACL2=xxx
 #                    ; Same as make regression, but use xxx as ACL2, which
@@ -75,6 +50,12 @@
 #   make clean-books ; Remove certificate files, object files, log files,
 #                    ; debris, ..., created by `make certify-books',
 #                    ; `make regression', etc.
+
+#  Shortcuts include the following (also saved_acl2pr, saved_acl2c, etc.):
+
+#   make saved_acl2  ; Build saved_acl2;  essentially, make LISP=$(LISP)
+#   make saved_acl2r ; Build saved_acl2r; essentially, make LISP=$(LISP) ACL2_REAL=r
+#   make saved_acl2p ; Build saved_acl2p; essentially, make LISP=$(LISP) ACL2_PAR=p
 
 ###############################################################################
 
@@ -230,6 +211,11 @@ sources := axioms.lisp memoize.lisp hons.lisp boot-strap-pass-2.lisp\
            other-events.lisp ld.lisp proof-checker-b.lisp interface-raw.lisp\
            serialize.lisp serialize-raw.lisp\
            defpkgs.lisp
+
+sources_extra := GNUmakefile acl2-characters doc.lisp \
+	         acl2.lisp acl2-check.lisp acl2-fns.lisp acl2-init.lisp \
+	         akcl-acl2-trace.lisp allegro-acl2-trace.lisp openmcl-acl2-trace.lisp
+ACL2_DEPS := $(sources) $(sources_extra)
 
 ifdef ACL2_HONS
 	sources := $(sources) hons-raw.lisp memoize-raw.lisp
@@ -842,3 +828,46 @@ ifndef ACL2
 else
 	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds ACL2=$(ACL2)
 endif
+
+# Simple targets that ignores variables not mentioned below, including:
+# ACL2_SUFFIX, PREFIX, ACL2_SAFETY, ACL2_COMPILER_DISABLED, and ACL2_SIZE
+
+saved_acl2: $(ACL2_DEPS)
+	echo "Making ACL2 on $(LISP)"
+	time $(MAKE) LISP=$(LISP)
+	ls -lah saved_acl2
+
+saved_acl2p: $(ACL2_DEPS)
+	echo "Making ACL2(p) on $(LISP)"
+	time $(MAKE) LISP=$(LISP) ACL2_PAR=p
+	ls -lah saved_acl2p
+
+saved_acl2r: $(ACL2_DEPS)
+	echo "Making ACL2(r) on $(LISP)"
+	time $(MAKE) LISP=$(LISP) ACL2_REAL=r
+	ls -lah saved_acl2r
+
+saved_acl2pr: $(ACL2_DEPS)
+	echo "Making ACL2(pr) on $(LISP)"
+	time $(MAKE) LISP=$(LISP) ACL2_PAR=p ACL2_REAL=r
+	ls -lah saved_acl2pr
+
+saved_acl2c: $(ACL2_DEPS)
+	echo "Making ACL2(c) on $(LISP)"
+	time $(MAKE) LISP=$(LISP) ACL2_HONS=
+	ls -lah saved_acl2c
+
+saved_acl2cp: $(ACL2_DEPS)
+	echo "Making ACL2(cp) on $(LISP)"
+	time $(MAKE) LISP=$(LISP) ACL2_HONS= ACL2_PAR=p
+	ls -lah saved_acl2cp
+
+saved_acl2cr: $(ACL2_DEPS)
+	echo "Making ACL2(cr) on $(LISP)"
+	time $(MAKE) LISP=$(LISP) ACL2_HONS= ACL2_REAL=r
+	ls -lah saved_acl2cr
+
+saved_acl2cpr: $(ACL2_DEPS)
+	echo "Making ACL2(cpr) on $(LISP)"
+	time $(MAKE) LISP=$(LISP) ACL2_HONS= ACL2_PAR=p ACL2_REAL=r
+	ls -lah saved_acl2cpr
