@@ -128,6 +128,17 @@ by memoizing this function.</p>"
   :returns (x-strip vl-rangelist-p)
   (vl-range-strip x))
 
+(define vl-packeddimension-strip ((x vl-packeddimension-p))
+  :returns (new-x vl-packeddimension-p)
+  (b* ((x (vl-packeddimension-fix x)))
+    (if (eq x :vl-unsized-dimension)
+        x
+      (vl-range-strip x))))
+
+(defprojection vl-packeddimensionlist-strip ((x vl-packeddimensionlist-p))
+  :returns (new-x vl-packeddimensionlist-p)
+  (vl-packeddimension-strip x))
+
 (define vl-assign-strip ((x vl-assign-p))
   :returns (x-strip vl-assign-p)
   (b* (((vl-assign x) x))
