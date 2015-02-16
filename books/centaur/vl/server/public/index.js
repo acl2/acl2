@@ -36,26 +36,26 @@ function make_model_list_table(data)
 	return div;
     }
 
-    var keys = Object.keys(data);
-    for(var i in keys)
+    console.log("make_model_list_table");
+    console.log(data);
+
+    for(var i = 0;i < data.length;++i)
     {
-	var base = keys[i];
-	var models = data[base];
+	var elem = data[i];
+	var model = elem[":FILENAME"];
+	var date = elem[":DATE"];
+	var compat = elem[":COMPAT"];
+
 	var entry = "";
 	entry += "<tr>";
 	entry += "<td class='modelnames'>";
-	for(var m = 0; m < models.length; m++)
-	{
-	    var model = models[m];
-	    entry += "<a href=\"javascript:void(0)\" ";
-	    entry += "onclick=\"loadModel('" + base + "', '" + model + "')\">";
-	    entry += model;
-	    entry += "</a>";
-	    if (m != models.length - 1)
-		entry += ", ";
-	}
+	entry += "<a href=\"javascript:void(0)\" ";
+	entry += "onclick=\"loadModel('" + model + "')\">";
+	entry += model;
+	entry += "</a>";
+
 	entry += "</td>";
-	entry += "<td class='basename'><nobr>" + base + "</nobr></td>";
+
 	entry += "</tr>";
 	div.append(entry);
     }
@@ -64,6 +64,7 @@ function make_model_list_table(data)
 
 function get_loaded()
 {
+/*
     // Don't use vlsGetJson because this is a special pre-model-loading command
     // that has no MODEL/BASE.
     $.ajax({
@@ -83,6 +84,7 @@ function get_loaded()
 	    $("#loaded").html("<p>Error listing models.</p>");
 	}
     });
+*/
 }
 
 function get_unloaded()

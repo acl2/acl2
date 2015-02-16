@@ -173,9 +173,11 @@ Options:" *nls* *nls* *vl-zip-opts-usage* *nls*))
        ((mv result state) (vl-load loadconfig))
        ((vl-loadresult result) result)
        ((mv date state) (oslib::date))
+       ((mv ltime state) (oslib::universal-time))
        (zip (make-vl-zip :name    opts.name
                          :syntax  *vl-current-syntax-version*
                          :date    date
+                         :ltime   ltime
                          :design  result.design
                          :filemap result.filemap
                          :defines result.defines))

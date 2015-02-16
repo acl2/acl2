@@ -57,12 +57,20 @@ version.</p>")
 (defprod vl-zip
   :tag :vl-zip
   :short "Contents of a .vlzip file."
-  ((name    stringp      "A name for this project.")
-   (syntax stringp      "Syntax version for the VL that created this file.")
-   (date    stringp      "Date stamp for when the file was created.")
-   (design  vl-design-p  "The SystemVerilog design we have captured.")
-   (filemap vl-filemap-p "Raw contents of the actual files that were loaded.")
-   (defines vl-defines-p "Ending @('`define')s after preprocessing.")))
+  ((name    stringp :rule-classes :type-prescription
+            "A name for this project.")
+   (syntax  stringp :rule-classes :type-prescription
+            "Syntax version for the VL that created this file.")
+   (date    stringp :rule-classes :type-prescription
+            "Date stamp for when the file was created.")
+   (ltime   natp :rule-classes :type-prescription
+            "Lisp timestamp for when this file was created.")
+   (design  vl-design-p
+            "The SystemVerilog design we have captured.")
+   (filemap vl-filemap-p
+            "Raw contents of the actual files that were loaded.")
+   (defines vl-defines-p
+            "Ending @('`define')s after preprocessing.")))
 
 (defoption vl-maybe-zip-p vl-zip-p)
 
@@ -83,6 +91,7 @@ version.</p>")
        (state (acl2::print-legibly    (list :name    contents.name)))
        (state (acl2::print-legibly    (list :syntax  contents.syntax)))
        (state (acl2::print-legibly    (list :date    contents.date)))
+       (state (acl2::print-legibly    (list :ltime   contents.ltime)))
        ;; Main contents that we expect to read only if we really want to load the whole design.
        (state (acl2::print-compressed (list :design  contents.design)))
        (state (acl2::print-compressed (list :filemap contents.filemap)))
@@ -96,7 +105,6 @@ version.</p>")
              (state-p1 (vl-write-zip filename contents)))))
 
 
-
 (define vl-read-zip-header-aux
   :parents (vl-read-zip-header)
   ((channel (and (symbolp channel)
@@ -105,33 +113,36 @@ version.</p>")
    ((name    maybe-stringp) 'name)
    ((syntax  maybe-stringp) 'syntax)
    ((date    maybe-stringp) 'date)
+   ((ltime   maybe-natp)    'ltime)
    (state 'state))
   :returns (mv (name    maybe-stringp :rule-classes :type-prescription)
-               (syntax maybe-stringp :rule-classes :type-prescription)
+               (syntax  maybe-stringp :rule-classes :type-prescription)
                (date    maybe-stringp :rule-classes :type-prescription)
+               (ltime   maybe-natp    :rule-classes :type-prescription)
                (new-state))
   :measure (file-measure channel state)
   :prepwork ((local (in-theory (enable o<))))
   (b* ((name    (maybe-string-fix name))
        (syntax  (maybe-string-fix syntax))
        (date    (maybe-string-fix date))
+       (ltime   (mbe :logic (if (maybe-natp ltime) ltime nil) :exec ltime))
        ((unless (mbt (state-p state)))
-        (mv name syntax date state))
+        (mv name syntax date ltime state))
        ((mv eofp obj state) (acl2::read-object channel state))
        ((when eofp)
-        (mv name syntax date state))
+        (mv name syntax date ltime state))
        ((unless (and (tuplep 2 obj)
-                     (symbolp (first obj))
-                     (stringp (second obj))))
+                     (symbolp (first obj))))
         ;; Not a header element.  We don't currently expect to see this, but we
         ;; might add such things in the future, so don't complain.
         (vl-read-zip-header-aux channel))
        ((list key value) obj)
-       (name    (if (eq key :name)   value name))
-       (syntax  (if (eq key :syntax) value syntax))
-       (date    (if (eq key :date)   value date))
-       ((when (and name syntax date))
-        (mv name syntax date state)))
+       (name    (if (and (eq key :name)   (stringp value)) value name))
+       (syntax  (if (and (eq key :syntax) (stringp value)) value syntax))
+       (date    (if (and (eq key :date)   (stringp value)) value date))
+       (ltime   (if (and (eq key :ltime)  (natp value)) value ltime))
+       ((when (and name syntax date ltime))
+        (mv name syntax date ltime state)))
     (vl-read-zip-header-aux channel))
   ///
   (defret state-p1-of-vl-read-zip-version-aux
@@ -149,9 +160,10 @@ version.</p>")
 (define vl-read-zip-header
   :short "Read only the header information out of a vlzip file."
   ((filename stringp) &key (state 'state))
-  :returns (mv (name    maybe-stringp)
-               (syntax  maybe-stringp)
-               (date    maybe-stringp)
+  :returns (mv (name    maybe-stringp :rule-classes :type-prescription)
+               (syntax  maybe-stringp :rule-classes :type-prescription)
+               (date    maybe-stringp :rule-classes :type-prescription)
+               (ltime   maybe-natp :rule-classes :type-prescription)
                (state   state-p1 :hyp (state-p1 state)))
   :long "<p>This should be relatively fast; it doesn't have to read the whole
 file.</p>"
@@ -159,14 +171,15 @@ file.</p>"
        ((mv channel state)
         (open-input-channel filename :object state))
        ((unless channel)
-        (mv nil nil nil state))
-       ((mv name syntax date state)
+        (mv nil nil nil nil state))
+       ((mv name syntax date ltime state)
         (vl-read-zip-header-aux channel
                                 :name nil
                                 :syntax nil
-                                :date nil))
+                                :date nil
+                                :ltime nil))
        (state (close-input-channel channel state)))
-    (mv name syntax date state)))
+    (mv name syntax date ltime state)))
 
 
 (define vl-read-zip-aux
@@ -223,6 +236,7 @@ file.</p>"
      (b* (((assocs (name    :name)
                    (syntax  :syntax)
                    (date    :date)
+                   (ltime   :ltime)
                    (design  :design)
                    (filemap :filemap)
                    (defines :defines))
@@ -239,6 +253,8 @@ file.</p>"
                nil state))
           ((unless (stringp date))
            (mv (msg "Can't load ~x0: missing or invalid :date~%" filename) nil state))
+          ((unless (natp ltime))
+           (mv (msg "Can't load ~x0: missing or invalid :ltime~%" filename) nil state))
           ((unless (vl-design-p design))
            (mv (msg "Can't load ~x0: missing or invalid :design~%" filename) nil state))
           ((unless (vl-filemap-p filemap))
@@ -248,6 +264,7 @@ file.</p>"
           (zip (make-vl-zip :name name
                             :syntax syntax
                             :date date
+                            :ltime ltime
                             :design design
                             :filemap filemap
                             :defines defines)))
@@ -257,9 +274,11 @@ file.</p>"
 (local (include-book "oslib/date" :dir :system))
 (local (make-event
         (b* (((mv date state) (oslib::date))
+             ((mv ltime state) (oslib::universal-time))
              (zip (make-vl-zip :name "Test file."
                                :syntax *vl-current-syntax-version*
                                :date date
+                               :ltime ltime
                                :design (make-vl-design :version *vl-current-syntax-version*)
                                :filemap nil
                                :defines nil))

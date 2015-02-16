@@ -35,7 +35,7 @@
 (include-book "pp")
 (include-book "gather")
 (include-book "zip")
-;; BOZO temporary (include-book "server")
+(include-book "server")
 (include-book "oslib/argv" :dir :system)
 (include-book "centaur/misc/intern-debugging" :dir :system)
 (include-book "centaur/misc/memory-mgmt" :dir :system)
@@ -110,7 +110,7 @@ commands.</p>
           (cons "lint"   *vl-lint-help*)
           (cons "pp"     *vl-pp-help*)
           (cons "gather" *vl-gather-help*)
-;; BOZO temporary          (cons "server" *vl-server-help*)
+          (cons "server" *vl-server-help*)
           (cons "shell"  *vl-shell-help*)
           (cons "zip"    *vl-zip-help*)
           ))
@@ -243,11 +243,10 @@ toolkit with their own commands.</p>
           (exit-ok)
           state))
 
-;; BOZO temporary
-       ;; ((when (equal cmd "server"))
-       ;;  (b* ((state (vl-server args)))
-       ;;    ;; Do not call exit here, same reason as 'shell'
-       ;;    state))
+       ((when (equal cmd "server"))
+        (b* ((state (vl-server args)))
+          ;; Do not call exit here, same reason as 'shell'
+          state))
 
        ((when (equal cmd "shell"))
         (b* ((state (vl-shell args)))
