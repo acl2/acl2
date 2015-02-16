@@ -64,34 +64,34 @@ occasionally rescan this directory to look for new translations.</p>")
 
 (fty::deflist vl-zipinfolist :elt-type vl-zipinfo)
 
-(define vl-zipinfo-order ((x vl-zipinfo-p)
-                          (y vl-zipinfo-p))
-  :short "We order .vlzip files so that the newest files come first (and then
-          arbitrarily after that)."
-  (b* (((vl-zipinfo x))
-       ((vl-zipinfo y)))
-    (or (> x.ltime y.ltime)
-        (and (eql x.ltime y.ltime)
-             ;; Completely arbitrary, total order.
-             (<< x y))))
-  ///
-  (defthm vl-zipinfo-order-irreflexive
-    (not (vl-zipinfo-order x x)))
-  (defthm vl-zipinfo-order-antisymmetric
-    (implies (vl-zipinfo-order x y)
-             (not (vl-zipinfo-order y x))))
-  (defthm vl-zipinfo-order-transitive
-    (implies (and (vl-zipinfo-order x y)
-                  (vl-zipinfo-order y z))
-             (vl-zipinfo-order x z))))
+;; (define vl-zipinfo-order ((x vl-zipinfo-p)
+;;                           (y vl-zipinfo-p))
+;;   :short "We order .vlzip files so that the newest files come first (and then
+;;           arbitrarily after that)."
+;;   (b* (((vl-zipinfo x))
+;;        ((vl-zipinfo y)))
+;;     (or (> x.ltime y.ltime)
+;;         (and (eql x.ltime y.ltime)
+;;              ;; Completely arbitrary, total order.
+;;              (<< x y))))
+;;   ///
+;;   (defthm vl-zipinfo-order-irreflexive
+;;     (not (vl-zipinfo-order x x)))
+;;   (defthm vl-zipinfo-order-antisymmetric
+;;     (implies (vl-zipinfo-order x y)
+;;              (not (vl-zipinfo-order y x))))
+;;   (defthm vl-zipinfo-order-transitive
+;;     (implies (and (vl-zipinfo-order x y)
+;;                   (vl-zipinfo-order y z))
+;;              (vl-zipinfo-order x z))))
 
-(acl2::defsort vl-zipinfolist-sort (x)
-  :compare< vl-zipinfo-order
-  :comparablep vl-zipinfo-p
-  :comparable-listp vl-zipinfolist-p
-  :true-listp nil
-  :weak t ;; BOZO why do I need weak here?
-  )
+;; (acl2::defsort vl-zipinfolist-sort (x)
+;;   :compare< vl-zipinfo-order
+;;   :comparablep vl-zipinfo-p
+;;   :comparable-listp vl-zipinfolist-p
+;;   :true-listp nil
+;;   :weak t ;; BOZO why do I need weak here?
+;;   )
 
 (define vl-scan-for-zipinfos-aux ((dir   stringp)
                                   (files string-listp)
@@ -127,4 +127,4 @@ occasionally rescan this directory to look for new translations.</p>")
         (mv nil state))
        ((mv infos state)
         (vl-scan-for-zipinfos-aux dir files)))
-    (mv (vl-zipinfolist-sort infos) state)))
+    (mv infos state)))

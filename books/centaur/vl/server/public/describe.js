@@ -100,10 +100,10 @@ function onConnected()
 }
 
 $(document).ready(function() {
-   var title = ORIGNAME + "." + WHAT + " &mdash; " + MODEL + " (" + BASE + ")";
+   var title = ORIGNAME + "." + WHAT + " &mdash; " + MODEL;
    $("title").html(title);
    $("#wire_id").html(WHAT);
-   $("#location_id").html("Searching in <b>" + ORIGNAME + "</b><br/><small>" + MODEL + " (" + BASE + ")</small>");
+   $("#location_id").html("Searching in <b>" + ORIGNAME + "</b><br/><small>" + MODEL + ")</small>");
    connect(onConnected);
 });
 
@@ -112,7 +112,7 @@ function showWire(name)
 {
     doDescribe(name);
     // console.log("origname is " + ORIGNAME);
-    // var url = "describe.html?base=" + BASE + "&model=" + MODEL + "&origname=" + ORIGNAME + "&what=" + name;
+    // var url = "describe.html?model=" + MODEL + "&origname=" + ORIGNAME + "&what=" + name;
     // var opts = "status=0,toolbar=1,height=600,width=780,resizable=1,scrollbars=1,location=1";
     // var wname = "describeWindow_mod=" + ORIGNAME + "&what=" + name;
     // var win = window.open(url, wname, opts);
@@ -121,7 +121,7 @@ function showWire(name)
 
 function showModule(name)
 {
-    var url = "display.html?base=" + BASE + "&model=" + MODEL + "&origname=" + name;
+    var url = "display.html?model=" + MODEL + "&origname=" + name;
     var opts = "status=yes,toolbar=yes,height=600,width=780,resizable=yes,scrollbars=yes,location=yes";
     var uniqueNum = new Date().getTime();
     var wname = "module_" + name + "_" + uniqueNum;

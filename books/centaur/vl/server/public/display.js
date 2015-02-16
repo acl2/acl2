@@ -375,7 +375,6 @@ function toggleMarkup()
 function makePortTable()
 {
     var url = "porttable.html?"
-                  + "&base=" + BASE
                   + "&model=" + MODEL
                   + "&origname=" + ORIGNAME;
 			  //var opts = "status=0,toolbar=1,height=600,width=780,resizable=1,scrollbars=1,location=1";
@@ -387,7 +386,6 @@ function makePortTable()
 function showModule(name)
 {
     var page = "display.html?"
-                    + "&base=" + BASE
                     + "&model=" + MODEL
                     + "&origname=" + name;
     if (window.opener == null)
@@ -399,7 +397,6 @@ function showModule(name)
 
 function showWireExt(mod,wire) {
     var url = "describe.html?"
-                  + "&base=" + BASE
                   + "&model=" + MODEL
                   + "&origname=" + mod
  	          + "&what=" + wire;
@@ -411,7 +408,7 @@ function showWireExt(mod,wire) {
 }
 
 function showWire(wire) {
-//    var url = "describe.pl?model=cns&base=2014-09-09-19-12&mod=rregs&trans=&what=" + name;
+//    var url = "describe.pl?model=cns&mod=rregs&trans=&what=" + name;
 //    var opts = "status=0,toolbar=1,height=500,width=700,resizable=1,scrollbars=1,location=1";
 //    var win = window.open(url, "describeWindow", opts);
 //    win.focus();

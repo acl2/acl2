@@ -85,6 +85,20 @@ viewing Verilog designs.")
   (raise "Under the hood definition not installed."))
 
 
+(define vls-data-from-zip ((zip vl-zip-p))
+  :returns (data vls-data-p)
+  :prepwork ((local (in-theory (enable vl-descalist-okp))))
+  (b* (((vl-zip zip))
+       (orig           (cwtime (hons-copy (cwtime (vl-annotate-design zip.design)))))
+       (orig-descalist (fast-alist-free (vl-descalist (vl-design-descriptions orig)))))
+    (make-vls-data
+     :name           zip.name
+     :date           zip.date
+     :ltime          zip.ltime
+     :orig           orig
+     :orig-descalist orig-descalist
+     :filemap        zip.filemap
+     :defs           zip.defines)))
 
 (defalist vls-scannedalist-p (x)
   :key (stringp x) ;; Short file name
@@ -93,11 +107,6 @@ viewing Verilog designs.")
 (defalist vls-loadedalist-p (x)
   :key (stringp x) ;; Short file name
   :val (vls-data-p x))
-
-(local (defthm vl-zipinfolist-p-of-alist-vals-when-vls-scannedalist-p
-         (implies (vls-scannedalist-p x)
-                  (vl-zipinfolist-p (alist-vals x)))
-         :hints(("Goal" :induct (len x)))))
 
 (local (defthm string-listp-of-alist-keys-when-vls-scannedalist-p
          (implies (vls-scannedalist-p x)
@@ -109,6 +118,39 @@ viewing Verilog designs.")
                   (string-listp (alist-keys x)))
          :hints(("Goal" :induct (len x)))))
 
+(define vls-scannedalist-to-json ((x vls-scannedalist-p))
+  (b* (((when (atom x))
+        nil)
+       ((cons name (vl-zipinfo info)) (car x))
+       (entry (list (cons "name"     info.name)
+                    (cons "date"     info.date)
+                    (cons "ltime"    info.ltime)
+                    (cons "compat"   (equal info.syntax *vl-current-syntax-version*)))))
+    (cons (cons name entry)
+          (vls-scannedalist-to-json (cdr x)))))
+
+(define vls-loadedalist-to-json ((x vls-loadedalist-p))
+  (b* (((when (atom x))
+        nil)
+       ((cons name (vls-data data)) (car x))
+       (entry (list (cons "name"    data.name)
+                    (cons "date"    data.date)
+                    (cons "ltime"   data.ltime)
+                    (cons "compat"  t))))
+    (cons (cons name entry)
+          (vls-loadedalist-to-json (cdr x)))))
+
+(define vls-remove-from-scannedalist ((names string-listp)
+                                      (x     vls-scannedalist-p))
+  :returns (new-x vls-scannedalist-p :hyp (vls-scannedalist-p x))
+  (cond ((atom x)
+         nil)
+        ((member-equal (caar x) names)
+         (vls-remove-from-scannedalist names (cdr x)))
+        (t
+         (cons (car x)
+               (vls-remove-from-scannedalist names (cdr x))))))
+
 (define vls-make-scannedalist ((x vl-zipinfolist-p))
   :returns (alist vls-scannedalist-p)
   (if (atom x)
@@ -117,50 +159,10 @@ viewing Verilog designs.")
                 (vl-zipinfo-fix (car x)))
           (vls-make-scannedalist (cdr x)))))
 
-(define vls-zipinfo-jalist ((x vl-zipinfo-p))
-  (b* (((vl-zipinfo x)))
-    (list (cons :filename x.filename)
-          (cons :syntax   x.syntax)
-          (cons :date     x.date)
-          (cons :compat   (equal x.syntax *vl-current-syntax-version*)))))
-
-(define vls-zipinfolist-jalists ((x vl-zipinfolist-p))
-  (if (atom x)
-      nil
-    (cons (vls-zipinfo-jalist (car x))
-          (vls-zipinfolist-jalists (cdr x)))))
-
-(define vls-remove-from-zipinfolist ((names string-listp)
-                                     (x vl-zipinfolist-p))
-  :returns (new-x vl-zipinfolist-p)
-  (cond ((atom x)
-         nil)
-        ((member-equal (vl-zipinfo->name (car x)) names)
-         (vls-remove-from-zipinfolist names (cdr x)))
-        (t
-         (cons (vl-zipinfo-fix (car x))
-               (vls-remove-from-zipinfolist names (cdr x))))))
-
 (define vls-get-unloaded-json ((scanned vls-scannedalist-p)
                                (loaded  vls-loadedalist-p))
-  (vls-zipinfolist-jalists
-   (vls-remove-from-zipinfolist (alist-keys loaded)
-                                (alist-vals scanned))))
-
-(define vls-data-from-zip ((zip vl-zip-p))
-  :returns (data vls-data-p)
-  :prepwork ((local (in-theory (enable vl-descalist-okp))))
-  (b* (((vl-zip zip))
-       (orig           (cwtime (hons-copy (cwtime (vl-annotate-design zip.design)))))
-       (orig-descalist (fast-alist-free (vl-descalist (vl-design-descriptions orig)))))
-    (make-vls-data
-     :name           zip.name
-     :date           zip.date
-     :orig           orig
-     :orig-descalist orig-descalist
-     :filemap        zip.filemap
-     :defs           zip.defines)))
-
+  (vls-scannedalist-to-json
+   (vls-remove-from-scannedalist (alist-keys loaded) scanned)))
 
 
 (define vl-find-description-insensitive ((name stringp)
@@ -391,3 +393,16 @@ declaration, ...)."
 (acl2::include-raw "server-raw.lsp"
                    :host-readtable t)
 
+#||
+(include-book
+ "server")
+
+(b* ((- (acl2::set-max-mem (* 12 (expt 2 30))))
+     ((mv ?err port state)
+      (getenv$ "FVQ_PORT" state))
+     (- (cw "Port is ~x0.~%" port)))
+  (start :port (or (str::strval port) 9999)
+         :root-dir "./zips")
+  state)
+
+||#

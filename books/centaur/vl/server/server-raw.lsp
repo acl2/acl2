@@ -244,13 +244,15 @@ a bleeding edge zip.</p>")
   (cl-user::format t "; vls-load-translation: loading ~s~%" filename)
 
   (b* ((state acl2::*the-live-state*)
+       (fullpath (oslib::catpath *vls-root* filename))
+       (- (cw "; full path to load is ~x0~%" fullpath))
        ((mv err zip ?state)
         (acl2::with-suppression
           ;; BOZO I don't know if we still need WITH-SUPPRESSION, but we needed
           ;; it on SBCL to avoid package-lock problems when we were using
           ;; acl2::unsound-read directly.  Now that we're using ACL2's reading
           ;; routines it might be unnecessary.
-          (vl-read-zip (oslib::catpath *vls-root* filename))))
+          (vl-read-zip fullpath)))
        ((when err)
         (cw "; Error loading ~s0: ~@1.~%" filename err))
        (data (vls-data-from-zip zip)))
@@ -293,6 +295,14 @@ a bleeding edge zip.</p>")
 #+hons
 (acl2::mf-multiprocessing t)
 
+;; BOZO do not do this.
+(defun acl2::bad-lisp-objectp (x)
+  ;; Unsound hack to make loading faster and avoid stack overflows.  It seems
+  ;; to cause stack overflows even when bad-lisp-objectp is memoized.  No idea
+  ;; why.
+  (declare (ignore x))
+  nil)
+
 (let ((support-started nil))
   (defun maybe-start-support-threads ()
     (unless support-started
@@ -310,9 +320,8 @@ a bleeding edge zip.</p>")
       (setq support-started t))))
 
 (defun vls-loaded-translations (db)
-  (alist-keys
-   (bt:with-lock-held ((vls-transdb-loaded-lock db))
-     (vls-transdb-loaded db))))
+  (bt:with-lock-held ((vls-transdb-loaded-lock db))
+                     (vls-transdb-loaded db)))
 
 (defmacro with-vls-bindings (&rest forms)
   `(b* ((?state
@@ -505,26 +514,28 @@ a bleeding edge zip.</p>")
     nil)
 
   (defun start-fn (port public-dir root-dir)
+    (cw "Setting *vls-root* = ~x0~%" root-dir)
     (setq *vls-root* root-dir)
     (maybe-start-support-threads)
     (when vl-server
       (stop))
-    (let* ((state acl2::*the-live-state*)
-           (port (or port
-                     (b* (((mv ? port ?state) (getenv$ "FVQ_PORT" state))
-                          (port-num (str::strval port))
-                          ((when port-num)
-                           port-num))
-                       ;; Else, just use the default port
-                       9999)))
-           (public-dir (or public-dir
-                           (oslib::catpath *browser-dir* "/public/")))
-           (public-dir (if (str::strsuffixp "/" public-dir)
-                           public-dir
-                         (cat public-dir "/")))
-           (server (make-instance 'hunchentoot:easy-acceptor
-                                  :port port
-                                  :document-root public-dir)))
+    (b* ((state acl2::*the-live-state*)
+         (port (or port
+                   (b* (((mv ? port ?state) (getenv$ "FVQ_PORT" state))
+                        (port-num (str::strval port))
+                        ((when port-num)
+                         port-num))
+                     ;; Else, just use the default port
+                     9999)))
+         (public-dir (or public-dir
+                         (oslib::catpath *browser-dir* "/public/")))
+         (public-dir (if (str::strsuffixp "/" public-dir)
+                         public-dir
+                       (cat public-dir "/")))
+         (- (cw "Using public-dir = ~x0~%" public-dir))
+         (server (make-instance 'hunchentoot:easy-acceptor
+                                :port port
+                                :document-root public-dir)))
       (setf (hunchentoot:acceptor-access-log-destination server)
             (oslib::catpath public-dir "access.out"))
       (setf html-template:*default-template-pathname* (pathname public-dir))
@@ -558,22 +569,19 @@ a bleeding edge zip.</p>")
       (vls-try-catch
        :try (b* ((scanned  (vls-scanned-translations *vls-transdb*))
                  (loaded   (vls-loaded-translations *vls-transdb*))
-                 (unloaded (difference (mergesort scanned)
-                                       (mergesort loaded)))
-                 (ans      unloaded))
+                 (ans      (vls-get-unloaded-json scanned loaded)))
               ;;(er hard? 'list-unloaded "error checking test")
-              (vls-success :json
-                           (bridge::json-encode (list (cons :unloaded ans)))))
+              (vls-success :json (bridge::json-encode ans)))
        :catch (vls-fail errmsg))))
 
   (hunchentoot:define-easy-handler (list-loaded :uri "/list-loaded") ()
     (setf (hunchentoot:content-type*) "application/json")
     (with-vls-bindings
       (vls-try-catch
-       :try (b* ((ans (vls-loaded-translations *vls-transdb*)))
+       :try (b* ((loaded (vls-loaded-translations *vls-transdb*))
+                 (ans    (vls-loadedalist-to-json loaded)))
               ;; (er hard? 'list-loaded "Error checking test")
-              (vls-success :json (bridge::json-encode
-                                  (list :loaded ans))))
+              (vls-success :json (bridge::json-encode ans)))
        :catch (vls-fail errmsg))))
 
   (hunchentoot:define-easy-handler (load-model :uri "/load-model" :default-request-type :post)
