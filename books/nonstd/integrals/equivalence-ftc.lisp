@@ -280,7 +280,8 @@
 (defthm-std realp-strict-int-rcdfn-classical-prime
   (IMPLIES (AND (REALP A) (REALP B))
          (REALP (STRICT-INT-RCDFN-CLASSICAL-PRIME A B)))
-  :hints (("Goal'"
+; Matt K. v7-1 mod for ACL2 mod on 2/13/2015: "Goal'" changed to "Goal".
+  :hints (("Goal"
 	   :use ((:instance realp-riemann-rcdfn-classical-prime
 			    (p (make-small-partition a b))))
 	   :in-theory (disable realp-riemann-rcdfn-classical-prime

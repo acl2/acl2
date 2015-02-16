@@ -448,7 +448,8 @@
 	    (equal (standard-part (norm-2C x))
 		   (norm-2C (standard-part x))))
    :hints (("Goal" :in-theory (disable acl2-sqrt))
-	   ("Goal'5'" :cases ((= s 0)))))
+; Matt K. v7-1 mod for ACL2 mod on 2/13/2015: "Goal'5'" changed to "Goal'4'".
+	   ("Goal'4'" :cases ((= s 0)))))
 
  ;; Now, we want to talk about the inverses of complex numbers, so we
  ;; start by defining conjugates.

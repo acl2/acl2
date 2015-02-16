@@ -202,7 +202,8 @@ closed interval.
 		(realp b)
 		(< a b))
 	   (<= (find-max-rcfn-x a b) b))
-  :hints (("Goal''"
+; Matt K. v7-1 mod for ACL2 mod on 2/13/2015: "Goal''" changed to "Goal'".
+  :hints (("Goal'"
 	   :use ((:instance standard-part-<= 
 			    (x (find-max-rcfn-x-n a
 				   a
