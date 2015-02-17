@@ -60,6 +60,10 @@
 #   almost-everything
 #                 An alias for "all"
 #
+#   certify-books Includes a substantial collection of books that may
+#                 suffice for many purposes, omitting some specialized
+#                 directories including all workshops/ directories.
+#
 #   everything    A very full build, including very slow books.  Most users
 #                 will not want to use this target.  It is useful for, e.g.,
 #                 regression testing before releases.  Note that
@@ -1227,8 +1231,13 @@ clean: milawa-clean
 # might use to build all "appropriate" books when installing ACL2.  So
 # please be careful about making major changes to "certify-books" in
 # this Makefile.
+# We might only want to filter out centaur/vl and centaur/vl2014,
+# since those seem relatively expensive -- but we then need to filter
+# out others that depend on those two.
 .PHONY: certify-books
-certify-books: $(filter-out workshops/%, $(OK_CERTS))
+certify-books: $(filter-out centaur/vl/% centaur/vl2014/% doc/% \
+		xdoc/% centaur/4v-sexpr/% centaur/regression/% \
+		centaur/esim/% \ workshops/%, $(OK_CERTS))
 
 # The following dummy target does nothing, e.g., so that you can test
 # the dependency scanning stuff without actually building anything.
