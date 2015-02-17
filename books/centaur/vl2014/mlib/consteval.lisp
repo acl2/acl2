@@ -739,6 +739,11 @@ For instance:</p>
 
     (deffixequiv-mutual vl-consteval-main)
 
+    (local
+     ;; Blah, after a lot of trying to get this rule not to blow up expt, I
+     ;; fail.  It would be nice to come up with a way to prevent these kinds
+     ;; of problems.
+     (in-theory (disable upper-bound-of-vl-sign-extend-constint)))
     (verify-guards vl-consteval-main$notinline
       :hints (("goal" :do-not-induct t
                :expand ((vl-expr-welltyped-p x)))

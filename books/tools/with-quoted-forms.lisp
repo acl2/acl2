@@ -1,6 +1,6 @@
 
 (in-package "ACL2")
-(include-book "bstar")
+(include-book "std/util/bstar" :dir :system)
 
 ;; This book provides a macro WITH-QUOTED-FORMS which may be
 ;; useful for computing complicated :USE hints.  Often we have a term

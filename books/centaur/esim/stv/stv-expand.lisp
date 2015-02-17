@@ -270,6 +270,7 @@ make sure that the name refers to valid input or output bits.</p>"
 
 #!VL2014
 (define vl-explode-hidindex
+  :parents (acl2::stv-hid-parse)
   :short "Explode a (resolved) @(see vl-hidindex-p) into a flat list of
           its components."
   ((x vl-expr-p "The hidindex to explode, e.g., @('foo[3][4][5]')"))
@@ -286,6 +287,7 @@ make sure that the name refers to valid input or output bits.</p>"
 
 #!VL2014
 (define vl-explode-hid
+  :parents (acl2::stv-hid-parse)
   :short "Explode a (resolved) @(see vl-hidexpr-p) into a flat list of its
           components."
   ((x vl-expr-p "The hidexpr to explode, e.g., foo.bar[2][3].baz."))
