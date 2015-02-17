@@ -755,8 +755,10 @@ relatively simple:</p>
                   (force (posp origwidth))
                   (syntaxp
                    ;; Safety valve to avoid blowing up Lisp by creating huge expt calls.
-                   (or (not (quotep origwidth))
-                       (< (acl2::unquote origwidth) 10000)))
+                   (and (or (not (quotep origwidth))
+                            (< (acl2::unquote origwidth) 10000))
+                        (or (not (quotep finalwidth))
+                            (< (acl2::unquote finalwidth) 10000))))
                   (force (< value (expt 2 origwidth)))
                   (force (posp finalwidth))
                   (force (< origwidth finalwidth)))
