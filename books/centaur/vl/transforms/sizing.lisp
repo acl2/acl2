@@ -341,6 +341,9 @@
   ;;
   ;; (2) atoms that were sized but unsigned constant integers that can be
   ;;     chopped down to width-many bits without changing their value.
+  ;;
+  ;; (3) atoms that were parameters that were constant integers and fit into
+  ;;     the desired width.
   (b* ((width   (lnfix width))
        (guts    (vl-atom->guts x))
        ((unless (vl-fast-constint-p guts))
@@ -354,7 +357,11 @@
           (< guts.value (ash 1 width)))
      ;; Case 2:
      (and (eq guts.origtype :vl-unsigned)
-          (< guts.value (ash 1 width)))))
+          (< guts.value (ash 1 width)))
+     ;; Case 3:
+     (and (assoc-equal "VL_PARAMNAME" (vl-atom->atts x))
+          (< guts.value (ash 1 width)))
+     ))
   ///
   (local (assert!
           ;; Basic test to make sure it seems to be working right.
@@ -381,38 +388,91 @@
     (and (vl-okay-to-truncate-expr width (second args))
          (vl-okay-to-truncate-expr width (third args)))))
 
-(define vl-unsized-atom-p ((x vl-expr-p))
+(define vl-unsized-atom-p ((x  vl-expr-p)
+                           (ss vl-scopestack-p))
   :guard (vl-atom-p x)
-  (b* ((guts (vl-atom->guts x)))
-    (or (and (vl-fast-constint-p guts)
-             (vl-constint->wasunsized guts))
-        (and (vl-fast-weirdint-p guts)
-             (vl-weirdint->wasunsized guts)))))
+  :prepwork ((local (in-theory (enable tag-reasoning))))
+  (b* ((guts (vl-atom->guts x))
+       ((when (and (vl-fast-constint-p guts)
+                   (or (vl-constint->wasunsized guts)
+                       (assoc-equal "VL_PARAMNAME" (vl-atom->atts x)))))
+        t)
+       ((when (and (vl-fast-weirdint-p guts)
+                   (vl-weirdint->wasunsized guts)))
+        t)
+       ((unless (vl-fast-id-p guts))
+        nil)
+       (name (vl-id->name guts))
+       (item (vl-scopestack-find-item name ss))
+       ((unless (mbe :logic (vl-paramdecl-p item)
+                     :exec (eq (tag item) :vl-paramdecl)))
+        nil)
+       ((vl-paramdecl item)))
+    (vl-paramtype-case item.type
+      :vl-implicitvalueparam t
+      :vl-typeparam nil
+      :vl-explicitvalueparam
+      ;; BOZO maybe should do something fancier here, but I think
+      ;; probably we're getting pretty esoteric...
+      t)))
 
-(define vl-some-unsized-atom-p ((x vl-exprlist-p))
+(define vl-some-unsized-atom-p ((x  vl-exprlist-p)
+                                (ss vl-scopestack-p))
   :guard (vl-atomlist-p x)
   (if (atom x)
       nil
-    (or (vl-unsized-atom-p (car x))
-        (vl-some-unsized-atom-p (cdr x)))))
+    (or (vl-unsized-atom-p (car x) ss)
+        (vl-some-unsized-atom-p (cdr x) ss))))
+
+(define vl-toobig-constant-atom-p ((width natp)
+                                   (x     vl-expr-p))
+  ;; Recognize any constant integers that don't fit into the given width and
+  ;; are therefore going to be truncated.
+  :guard (vl-atom-p x)
+  (b* ((guts (vl-atom->guts x)))
+    (and (vl-fast-constint-p guts)
+         (not (< (vl-constint->value guts) (ash 1 (lnfix width)))))))
+
+(define vl-collect-toobig-constant-atoms ((width natp)
+                                          (x     vl-exprlist-p))
+  :guard (vl-atomlist-p x)
+  :returns (toobig vl-exprlist-p)
+  (cond ((atom x) nil)
+        ((vl-toobig-constant-atom-p width (car x))
+         (cons (vl-expr-fix (car x))
+               (vl-collect-toobig-constant-atoms width (cdr x))))
+        (t
+         (vl-collect-toobig-constant-atoms width (cdr x)))))
 
 (define vl-maybe-warn-about-implicit-truncation
   ((lvalue   vl-expr-p)
    (expr     vl-expr-p)
-   (ctx     vl-context-p)
+   (ss       vl-scopestack-p)
+   (ctx      vl-context-p)
    (warnings vl-warninglist-p))
+  :guard   (natp (vl-expr->finalwidth lvalue))
   :returns (new-warnings vl-warninglist-p)
   (b* ((lvalue (vl-expr-fix lvalue))
        (expr   (vl-expr-fix expr))
-       (ctx   (vl-context-fix ctx))
+       (ctx    (vl-context-fix ctx))
 
        (lw     (vl-expr->finalwidth lvalue))
        (ew     (vl-expr->finalwidth expr))
 
-       ((when (and (natp lw)
-                   (vl-okay-to-truncate-expr lw expr)))
+       ;; ((unless (natp lw))
+       ;;  ;; BOZO can we prove this never happens?
+       ;;  (ok))
+
+       ((when (vl-okay-to-truncate-expr lw expr))
         ;; Just ignore it, this is nothing to be worried about
         (ok))
+
+       (atoms
+        ;; This tries to smartly collect atoms, for instance, it avoids collecting
+        ;; the `3` in `foo[3] + bar`, but does collect the 4 in `a + 4`.
+        (vl-expr-interesting-size-atoms expr))
+
+       (toobig (vl-collect-toobig-constant-atoms lw atoms))
 
        (probably-minor-p
         ;; We could probably improve this somewhat... if the RHS is 32 bits
@@ -424,7 +484,8 @@
         ;; assign-trunc, because by then the expressions had already been
         ;; split and the temp wires could hide unsized atoms.
         (and (equal ew 32)
-             (vl-some-unsized-atom-p (vl-expr-atoms expr)))))
+             (not toobig)
+             (vl-some-unsized-atom-p atoms ss))))
 
     (warn :type (if probably-minor-p
                     :vl-warn-truncation-minor
@@ -479,7 +540,7 @@
         ;; wider, and in such cases we may wish to warn about truncation.
         (if (and (posp (vl-expr->finalwidth rhs-prime))
                  (< lhs-size (vl-expr->finalwidth rhs-prime)))
-            (vl-maybe-warn-about-implicit-truncation lhs-prime rhs-prime
+            (vl-maybe-warn-about-implicit-truncation lhs-prime rhs-prime ss
                                                      x warnings)
           warnings))
 
@@ -960,7 +1021,7 @@ the expression.</p>"
                    ;; wider, and in such cases we may wish to warn about truncation.
                    (if (and (posp (vl-expr->finalwidth rhs-prime))
                             (< lhs-size (vl-expr->finalwidth rhs-prime)))
-                       (vl-maybe-warn-about-implicit-truncation lhs-prime rhs-prime
+                       (vl-maybe-warn-about-implicit-truncation lhs-prime rhs-prime ss
                                                                 ctx warnings)
                      warnings))
 
