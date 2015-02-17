@@ -34,7 +34,8 @@
 (include-book "shell")
 (include-book "pp")
 (include-book "gather")
-;; BOZO temporary (include-book "server")
+(include-book "zip")
+(include-book "server")
 (include-book "oslib/argv" :dir :system)
 (include-book "centaur/misc/intern-debugging" :dir :system)
 (include-book "centaur/misc/memory-mgmt" :dir :system)
@@ -67,8 +68,9 @@ Commands:
   lint    Find potential bugs in a Verilog design
   pp      Preprocess Verilog designs
   gather  Collect Verilog files into a single file
-  server  Start a VL web server (for web-based module browsing)
+  server  Start a VL web server for web-based module browsing
   shell   Interactive VL shell (for experts)
+  zip     Save a .vlzip file for the VL web server
 
 Use 'vl help <command>' for help on a specific command.
 ")
@@ -108,8 +110,10 @@ commands.</p>
           (cons "lint"   *vl-lint-help*)
           (cons "pp"     *vl-pp-help*)
           (cons "gather" *vl-gather-help*)
-;; BOZO temporary          (cons "server" *vl-server-help*)
-          (cons "shell"  *vl-shell-help*)))
+          (cons "server" *vl-server-help*)
+          (cons "shell"  *vl-shell-help*)
+          (cons "zip"    *vl-zip-help*)
+          ))
 
   (encapsulate
     (((vl-toolkit-help-message *) => *
@@ -196,6 +200,7 @@ toolkit with their own commands.</p>
         ;; chance to enter a break loop if something crashes.  Printing a
         ;; backtrace before aborting, then, can be extremely useful.
         (set-debugger-enable :bt-break))
+       (- (gc-verbose t))
        (- (acl2::tshell-ensure))
        ((mv argv state) (oslib::argv))
 
@@ -233,11 +238,15 @@ toolkit with their own commands.</p>
           (exit-ok)
           state))
 
-;; BOZO temporary
-       ;; ((when (equal cmd "server"))
-       ;;  (b* ((state (vl-server args)))
-       ;;    ;; Do not call exit here, same reason as 'shell'
-       ;;    state))
+       ((when (equal cmd "zip"))
+        (b* ((state (vl-zip-top args)))
+          (exit-ok)
+          state))
+
+       ((when (equal cmd "server"))
+        (b* ((state (vl-server args)))
+          ;; Do not call exit here, same reason as 'shell'
+          state))
 
        ((when (equal cmd "shell"))
         (b* ((state (vl-shell args)))

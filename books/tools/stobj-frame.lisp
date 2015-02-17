@@ -31,7 +31,7 @@
 (in-package "ACL2")
 
 (include-book "rulesets")
-(include-book "bstar")
+(include-book "std/util/bstar" :dir :system)
 (program)
 (set-state-ok t)
 

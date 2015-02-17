@@ -86,11 +86,11 @@ as the following, i.e., with ACL2 defined to be your ACL2 (possibly a
 variant, e.g., ACL2(p)) executable.  Not all community books need to
 be certified; see below for details.
 
-make -j 4 ACL2=/Users/kaufmann/acl2/acl2/saved_acl2h TB_LISP=ccl
+make -j 4 ACL2=/Users/kaufmann/acl2/acl2/saved_acl2 TB_LISP=ccl
 
 To clean (again, where ACL2 is set to your ACL2 executable):
 
-make ACL2=/Users/kaufmann/acl2/acl2/saved_acl2h clean
+make ACL2=/Users/kaufmann/acl2/acl2/saved_acl2 clean
 
 If some basic community books are not certified, the "make" above may
 fail.  However, it will likely succeed (as of this writing) provided

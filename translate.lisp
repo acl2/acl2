@@ -8531,8 +8531,7 @@
 ; state -- the storage of the final stobjs -- is done at the
 ; conclusion of the computation and is not directed by form.
 
-  (let ((wrld (w state))
-        (simple-stobjs-out '(nil)))
+  (let ((wrld (w state)))
     (er-let* ((form (macroexpand1* form ctx wrld state)))
       (cond
        ((and (consp form)
@@ -8543,13 +8542,14 @@
 ; Do some lazy evaluation, in order to avoid translating the unnecessary
 ; branch.
 
-        (er-let* ((arg0 (translate (cadr form) simple-stobjs-out nil t ctx wrld
-                                   state))
-                  (val0 (trans-eval1 arg0 simple-stobjs-out ctx wrld state
-                                     aok)))
-          (if (cdr val0) ; the actual value
-              (trans-eval (caddr form) ctx state aok)
-            (trans-eval (cadddr form) ctx state aok))))
+        (let ((simple-stobjs-out '(nil)))
+          (er-let* ((arg0 (translate (cadr form) simple-stobjs-out nil t ctx wrld
+                                     state))
+                    (val0 (trans-eval1 arg0 simple-stobjs-out ctx wrld state
+                                       aok)))
+            (if (cdr val0) ; the actual value
+                (trans-eval (caddr form) ctx state aok)
+              (trans-eval (cadddr form) ctx state aok)))))
        (t
         (mv-let
          (erp trans bindings state)

@@ -71,3 +71,14 @@
 (assert! (or (not (intersection-equal *acl2dirs* *acl2reg*))
              (cw "Oops, intersecting files and dirs?  ~x0~%"
                  (intersection-equal *acl2dirs* *acl2reg*))))
+
+(defconsts (*err* *val* state)
+  ;; There was once a bug with ls-fn's raw lisp definition where it was
+  ;; returning (mv (msg ...)) instead of (mv (msg ...) nil state) in an error
+  ;; case.  This led to a horrible error message about latch-stobjs1.  At any
+  ;; rate, it's a good idea to test that trying to list non-existent dirs
+  ;; really do cause errors.
+  (oslib::ls "/this-directory-should-not-exist/or-else/this-test/will-fail"))
+
+(assert! *err*)
+(assert! (not *val*))

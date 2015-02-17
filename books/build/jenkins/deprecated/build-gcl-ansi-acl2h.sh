@@ -22,7 +22,7 @@ startjob -c "make acl2h LISP=$LISP &> make.log" \
 
 echo "Building the books."
 cd acl2-devel/books
-make ACL2=$ACL2DIR/acl2-devel/saved_acl2h all $MAKEOPTS
+make ACL2=$ACL2DIR/acl2-devel/saved_acl2 all $MAKEOPTS
 
 echo "Build was successful."
 

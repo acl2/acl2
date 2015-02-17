@@ -56,3 +56,16 @@
                      (str::natstr second))))
       (mv (str::cat month " " date ", " year " " hour ":" minute ":" second)
           state))))
+
+
+(defun universal-time-fn (state)
+
+   (unless (live-state-p state)
+     (er hard? 'universal-time "Universal-time can only be called on a live state.")
+     (mv 0 state))
+
+   (let ((ans (get-universal-time)))
+     (unless (natp ans)
+       (er hard? 'universal-time "Common Lisp's get-universal-time returned a non-natural: ~x0." ans))
+     (mv ans state)))
+

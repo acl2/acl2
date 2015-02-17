@@ -19,7 +19,7 @@
 # TB_LISP ?= ccl
 
 # For example:
-# make ACL2=/Users/kaufmann/acl2/acl2/saved_acl2h TB_LISP=ccl
+# make ACL2=/Users/kaufmann/acl2/acl2/saved_acl2 TB_LISP=ccl
 
 ifneq ($(ACL2), $(notdir $(ACL2)))
 ACL2_DIR := $(dir $(ACL2))

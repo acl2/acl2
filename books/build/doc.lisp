@@ -169,7 +169,7 @@ that your @('perl') executable is in your @('$PATH').</p>
 <p>We assume you have <a href='http://www.cs.utexas.edu/~moore/acl2/'>ACL2</a>
 or one of its variants like ACL2(h), ACL2(p), or ACL2(r) installed, and that
 you know how to launch ACL2&mdash;usually with a script named @('saved_acl2')
-or @('saved_acl2h') or similar.</p>
+or similar.</p>
 
 <p>We assume you have a copy of the ACL2 <a
 href='https://code.google.com/p/acl2-books/'>Community Books</a> for your
@@ -235,7 +235,7 @@ this:</p>
 
 @({
      $ cert.pl
-     ACL2 executable is /home/jared/acl2/saved_acl2h
+     ACL2 executable is /home/jared/acl2/saved_acl2
      System books directory is /home/jared/acl2/books
      ...
 })

@@ -1438,9 +1438,8 @@ implementations.")
 ; The user is welcome to set this value, which according to
 ; http://www.sbcl.org/manual/, is the "Size of the dynamic space reserved on
 ; startup in megabytes."  It can be done either by setting this variable before
-; saving an ACL2 image, or by editing the resulting script (e.g., saved_acl2 or
-; saved_acl2h).  Here we explain the defaults that we provide for this
-; variable.
+; saving an ACL2 image, or by editing the resulting script (e.g., saved_acl2).
+; Here we explain the defaults that we provide for this variable.
 
 ; We observed during development of Version_5.0 that --dynamic-space-size 2000
 ; is necessary in order to complete an ACL2(h) regression with SBCL 1.0.55 on a

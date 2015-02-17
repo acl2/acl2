@@ -153,8 +153,6 @@
 ;;;          REPRESENTATIONS WITH EXPLICIT MSB
 ;;;***************************************************************
 
-(defsection-rtl |Floating-Point Formats| |Floating-Point Representation|
-
 (defund bias (q) (- (expt 2 (- q 1)) 1) )
 
 (defthm bias-non-negative-integerp-type-prescription
@@ -703,4 +701,3 @@
 		(and (natp m)
 		     (<= 1 m)
 		     (< m (expt 2 (1- p)))))))
-)

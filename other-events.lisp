@@ -10440,7 +10440,7 @@
 
 ; (b) We are creating a make-event expansion.
 
-; In the case of (a), we want to make pathnames absolute in include-book,
+; In the case of (a), we want to make some pathnames absolute in include-book,
 ; add-include-book-dir!, and add-include-book-dir forms -- possibly using
 ; sysfile notation (see sysfile-p) -- so that such pathnames are appropriate
 ; even if the book and its certificate file are moved.  See the comment in
@@ -10496,18 +10496,18 @@
 
 ; Consider the case that we are processing the portcullis commands for a book,
 ; bk, that is in the process of being certified.  We want to ensure that form,
-; an include-book form, refers to an absolute pathname, so that form refers to
-; the same book as when originally processed as it does when later being
-; processed as a portcullis command of bk.  When bk is later included, the
-; connected-book-directory will be bound to dir, which is the directory of the
-; book being certified.  Therefore, if the connected-book-directory at the time
-; form was processed, namely cbd, is the same as dir, then we do not need bk to
-; be an absolute pathname: the same connected-book-directory as when originally
-; processed (namely, cbd) will be used as the connected-book-directory when the
-; book is being included as a portcullis command of bk (namely,
-; connected-book-directory dir).  Well... actually, if bk is a system book, and
-; if the system books are moved, then cbd and dir will change but their
-; equality (and inequality) will be preserved.
+; an include-book form, refers to the same book as when originally processed as
+; it does when later being processed as a portcullis command of bk.  When bk is
+; later included, the connected-book-directory will be bound to dir, which is
+; the directory of the book being certified.  Therefore, if the
+; connected-book-directory at the time form was processed, namely cbd, is the
+; same as dir, then we do not need bk to be an absolute pathname: the same
+; connected-book-directory as when originally processed (namely, cbd) will be
+; used as the connected-book-directory when the book is being included as a
+; portcullis command of bk (namely, connected-book-directory dir).
+; Well... actually, if bk is a system book, and if the system books are moved,
+; then cbd and dir will change but their equality (and inequality) will be
+; preserved.
 
 ; If cbd is nil then we are recovering portcullis commands from an existing
 ; certificate, so relative pathnames have already been converted to absolute
@@ -10519,12 +10519,12 @@
 
 ; If we have an absolute pathname, either by conversion or because the
 ; include-book originally referenced an absoluate pathname under the system
-; books directory, then we convert to using :dir :syste.
+; books directory, then we convert to using :dir :system.
 
-; To summarize: if cbd is nil or if cbd and dir are equal, we can skip any
-; pathname conversion and fall through to the next top-level COND branch, where
-; form is returned unchanged -- except in both cases, an absolute pathname
-; under the system books directory is replaced using :dir :system.
+; To summarize much of the above: if cbd is nil or if cbd and dir are equal, we
+; can skip any pathname conversion and fall through to the next top-level COND
+; branch, where form is returned unchanged -- except in both cases, an absolute
+; pathname under the system books directory is replaced using :dir :system.
 
     (value
      (assert$
@@ -10550,12 +10550,20 @@
                                  (sysfile-filename x)
                                  :dir :system
                                  (cddr form)))
-                         ((equal x (cadr form))
-                          form)
-                         (t
+                         ((and dir
+
+; Note that if dir is nil, then we are doing this on behalf of make-event so
+; that the expansion-alist of a .cert file is relocatable.  In that case, there
+; is no need to make the book name absolute, since the usual reason -- a change
+; of cbd -- doesn't apply in the middle of a book certification.  Note that if
+; the make-event occurs in a certification world, then fix-portcullis-cmds will
+; fix, as appropriate, any expansion that is an include-book.
+
+                               (not (equal x (cadr form))))
                           (list* 'include-book
                                  x
-                                 (cddr form))))))))
+                                 (cddr form)))
+                         (t form))))))
        (t (assert$
            (stringp (cadr form))
            (let ((sysfile (filename-to-sysfile (cadr form) state)))
@@ -11020,11 +11028,11 @@
 ; pathname resolves against that cbd to be the correct full book name, then no
 ; modification is necessary.
 
-; This function takes the original cmds and a list of embedded event forms.
-; We return a list of commands that is guaranteed to be free of include-books
-; of relative pathnames, that nevertheless is equivalent to the original cmds
-; from the standpoint of subsequent embedded events.  (Or, we return an error,
-; but in fact we believe that that will not happen.)
+; This function takes the original cmds and a list of embedded event forms.  We
+; return a list of commands that is guaranteed to be free of include-books with
+; inappropriate relative pathnames, that nevertheless is equivalent to the
+; original cmds from the standpoint of subsequent embedded events.  (Or, we
+; return an error, but in fact we believe that that will not happen.)
 
 ; As mentioned at the outset above, this function also adds defpkg events.  We
 ; trust that the portcullis is a legal sequence of commands (actually, events),
@@ -29022,38 +29030,38 @@
                 (f-get-global 'in-local-flg state)
                 in-encapsulatep
                 nil))) 
-             (expansion1
-              (if expansion1a
-                  (if (global-val 'boot-strap-flg wrld)
-                      (value expansion1a)
-                    (let ((cbd (cbd)))
-                      (make-include-books-absolute
-                       expansion1a
-                       cbd
-                       nil
-                       (primitive-event-macros)
-                       ctx state)))
+             (expansion1b
+              (value (or expansion1a
 
 ; Else the alleged embedded event form, from the expansion, is nil, presumably
 ; because of local.
 
-                (value *local-value-triple-elided*)))
+                         *local-value-triple-elided*)))
              (stobjs-out-and-raw-result
               (do-proofs?
                do-proofsp
                (trans-eval
 
-; Note that expansion1 is guaranteed to be an embedded event form, which (as
+; Note that expansion1b is guaranteed to be an embedded event form, which (as
 ; checked just below) must evaluate to an error triple.
 
-                expansion1
+                expansion1b
                 ctx state t))))
      (let ((raw-result (cdr stobjs-out-and-raw-result)))
        (cond ((car raw-result)
               (silent-error state))
-             (t (value (list* expansion1
-                              (car stobjs-out-and-raw-result)
-                              (cadr raw-result)))))))))
+             (t (er-let* ((expansion1
+                           (if (global-val 'boot-strap-flg wrld)
+                               (value expansion1b)
+                             (make-include-books-absolute
+                              expansion1b
+                              (cbd)
+                              nil
+                              (primitive-event-macros)
+                              ctx state))))
+                  (value (list* expansion1
+                                (car stobjs-out-and-raw-result)
+                                (cadr raw-result))))))))))
 
 (defun make-event-fn2-lst (expansion-lst whole-form in-encapsulatep
                                          check-expansion wrld ctx state)

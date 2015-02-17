@@ -100,6 +100,8 @@
       ret
       defret
 
+      acl2::set-max-mem
+
       std::mksym
       std::mksym-package-symbol
       std::extract-keyword-from-args

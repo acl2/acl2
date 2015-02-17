@@ -15804,13 +15804,15 @@
         (t ; term is (caddr (cdr hint)); we allow any term here
          (value@par nil))))
 
-(defun@par translate-hints1 (name-tree lst hint-type override-hints ctx wrld state)
+(defun@par translate-hints1 (name-tree lst hint-type override-hints ctx wrld
+                                       state)
 
 ; A note on the taxonomy of translated hints.  A "hint setting" is a pair of
 ; the form (key . val), such as (:DO-NOT-INDUCT . T) or (:USE . (lmi-lst
-; (h1...hn) ...)).  Lists of such pairs are called "hint settings."  A pair
-; consisting of a clause-id and some hint-settings is called a "(translated)
-; hint".  A list of such pairs is called "(translated) hints."
+; (h1...hn) ...)).  (For example, see translate-use-hint for more about the
+; shape of the latter.)  Lists of such pairs are called "hint settings."  A
+; pair consisting of a clause-id and some hint-settings is called a
+; "(translated) hint".  A list of such pairs is called "(translated) hints."
 
 ; Thus, following the :HINTS keyword to defthm, the user types "hints" (in
 ; untranslated form).  This function takes a lst, which is supposed be some

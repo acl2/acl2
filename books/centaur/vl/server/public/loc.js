@@ -40,7 +40,7 @@ function onConnected()
     $.ajax({
 	url: "/vls-showloc",
 	cache: false,
-	data: {"base":BASE, "model":MODEL, "file":FILE, "line":LINE, "col":COL},
+	data: {"model":MODEL, "file":FILE, "line":LINE, "col":COL},
 	dataType: "text",
 	type: "get",
 	success: function(data,textStatus,jqXHR)
@@ -56,14 +56,14 @@ function onConnected()
 }
 
 $(document).ready(function() {
-   var title = FILE + ":" + LINE + ":" + COL + " &mdash; " + MODEL + " (" + BASE + ")";
+   var title = FILE + ":" + LINE + ":" + COL + " &mdash; " + MODEL;
    $("title").html(title);
 
    var n = FILE.lastIndexOf("/");
    var shortfile = FILE.substring(n+1);
 
    $("#file_id").html(shortfile + ", line " + LINE);
-   $("#location_id").html("<small>" + MODEL + " (" + BASE + ")</small>");
+   $("#location_id").html("<small>" + MODEL + "</small>");
    connect(onConnected);
 });
 

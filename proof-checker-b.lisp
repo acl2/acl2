@@ -4763,16 +4763,17 @@
            ((do-all ,@instrs)
             (quiet (wrap1 ,goal-names))
             (lisp (io? proof-checker nil state
-                       (state-stack)
+                       ()
                        (let ((new-current-goal-name
-                              (access goal (car (goals)) :goal-name)))
+                              (access goal (car (goals)) :goal-name))
+                             (state-stack (state-stack)))
                          (when-goals
                           (fms0 (if (member-equal new-current-goal-name
                                                   ',goal-names)
                                     "~|~%NOTE: Created no new goals.  Current ~
-                                    goal:~%  ~X0n~|"
-                                  "~|~%NOTE: Created ONLY one new goal, which is ~
-                                  the current goal:~%  ~X0n~|")
+                                     goal:~%  ~X0n~|"
+                                  "~|~%NOTE: Created ONLY one new goal, which ~
+                                   is the current goal:~%  ~X0n~|")
                                 (list (cons #\0 new-current-goal-name)
                                       (cons #\n nil))))))))
            t nil nil t))))))

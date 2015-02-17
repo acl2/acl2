@@ -33,6 +33,7 @@
 (include-book "../mlib/typedecide")
 (include-book "../mlib/welltyped")
 (include-book "../mlib/lvalues")
+(include-book "../mlib/strip")
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (local (in-theory (enable acl2::arith-equiv-forwarding lnfix)))
 ;; (local (include-book "clause-processors/autohide" :dir :system))
@@ -754,8 +755,10 @@ relatively simple:</p>
                   (force (posp origwidth))
                   (syntaxp
                    ;; Safety valve to avoid blowing up Lisp by creating huge expt calls.
-                   (or (not (quotep origwidth))
-                       (< (acl2::unquote origwidth) 10000)))
+                   (and (or (not (quotep origwidth))
+                            (< (acl2::unquote origwidth) 10000))
+                        (or (not (quotep finalwidth))
+                            (< (acl2::unquote finalwidth) 10000))))
                   (force (< value (expt 2 origwidth)))
                   (force (posp finalwidth))
                   (force (< origwidth finalwidth)))
@@ -4561,6 +4564,235 @@ replace a key/value assignment pattern."
                                   vl-exprlist-replace-assignpatterns)))))
 
 
+; Checking for datatype equivalence
+;
+; When processing assign patterns like `assign foo.bar = baz`, we need to check
+; for compatibility between the LHS and RHS types.  This is tricky because, for
+; instance, the LHS type might be a `logic` wire whereas the RHS type could be
+; a `reg`.  That's not really a problem, but it means that the types won't be
+; comparable just with EQUAL.  So, here, we try to fix up types to make sure we
+; can compare them with EQUAL.
+
+(defines vl-datatype-assignfix
+  ;; Note: think of this as an AUX function that should only ever be used in
+  ;; vl-datatype-compat-equiv.  (It screws up things like signedness and is
+  ;; generally unsafe to use.)
+  :verify-guards nil
+  :flag-local nil
+
+  (define vl-datatype-assignfix ((x vl-datatype-p))
+    :measure (vl-datatype-count x)
+    :returns (new-x vl-datatype-p)
+    (vl-datatype-case x
+      :vl-struct
+      (change-vl-struct x
+                        ;; I think we don't want to normalize packedp.
+                        :signedp nil
+                        :members (vl-structmemberlist-assignfix x.members)
+                        :pdims   (vl-packeddimensionlist-strip x.pdims)
+                        :udims   (vl-packeddimensionlist-strip x.udims))
+      :vl-union
+      (change-vl-union x
+                       ;; I think we don't want to normalize packedp or taggedp
+                       :signedp nil
+                       :members (vl-structmemberlist-assignfix x.members)
+                       :pdims   (vl-packeddimensionlist-strip x.pdims)
+                       :udims   (vl-packeddimensionlist-strip x.udims))
+      :vl-enum
+      (change-vl-enum x
+                      ;; I don't know what we want to do to basetype
+                      ;; I don't think we want to do anything to items
+                      :pdims (vl-packeddimensionlist-strip x.pdims)
+                      :udims (vl-packeddimensionlist-strip x.udims))
+      :vl-usertype
+      ;; BOZO do we want to resolve the user type?  I think not.  We should do
+      ;; understand better what is allowed, e.g., regarding things like
+      ;;   typedef struct { integer a; } foo_t;
+      ;;   typedef struct { integer a; } bar_t;
+      ;;   assign ... some foo_t ...  =  ... some bar_t ...;
+      (change-vl-usertype x
+                          :kind (vl-expr-fix x.kind)
+                          :pdims (vl-packeddimensionlist-strip x.pdims)
+                          :udims (vl-packeddimensionlist-strip x.udims))
+
+      :vl-coretype
+      ;; Core types are the trickiest.  We need for it to be legal to assign
+      ;; things like `integer` to `reg [31:0]` and so forth.  Our approach is
+      ;; to convert all integer/bit types into a logic type of the appropriate
+      ;; width.
+      (case x.name
+        ((:vl-logic :vl-reg :vl-bit)
+         ;; Simple cases.
+         (change-vl-coretype x
+                             :name    :vl-logic
+                             :signedp nil
+                             :pdims   (vl-packeddimensionlist-strip x.pdims)
+                             :udims   (vl-packeddimensionlist-strip x.udims)))
+        ((:vl-byte :vl-shortint :vl-int :vl-longint :vl-integer :vl-time)
+         (b* ((size (case x.name
+                      (:vl-byte 8)
+                      (:vl-shortint 16)
+                      (:vl-int 32)
+                      (:vl-longint 64)
+                      (:vl-integer 32)
+                      (:vl-time 64)))
+              (implicit-dim (make-vl-range :msb (vl-make-index (1- size))
+                                           :lsb (vl-make-index 0))))
+           (change-vl-coretype x
+                               :name :vl-logic
+                               :signedp nil
+                               :pdims (vl-packeddimensionlist-strip
+                                       (append-without-guard x.pdims (list implicit-dim)))
+                               :udims (vl-packeddimensionlist-strip x.udims))))
+        (otherwise
+         ;; Reals, strings, chandles, etc., probably can't do much here.
+         (vl-datatype-fix x)))))
+
+  (define vl-structmemberlist-assignfix ((x vl-structmemberlist-p))
+    :measure (vl-structmemberlist-count x)
+    :returns (new-x vl-structmemberlist-p)
+    (b* (((when (atom x))
+          nil)
+         ((vl-structmember x1) (car x)))
+      (cons (change-vl-structmember x1
+                                    ;; Don't want to change the name.
+                                    :atts nil
+                                    :rand nil
+                                    :type (vl-datatype-assignfix x1.type)
+                                    ;; I think the RHS shouldn't matter since it's just
+                                    ;; for initial values.
+                                    :rhs nil)
+            (vl-structmemberlist-assignfix (cdr x)))))
+  ///
+  (verify-guards vl-datatype-assignfix)
+  (deffixequiv-mutual vl-datatype-assignfix)
+
+  (local (defthm vl-expr-resolved-p-of-vl-expr-strip
+           (equal (vl-expr-resolved-p (vl-expr-strip x))
+                  (vl-expr-resolved-p x))
+           :hints(("Goal"
+                   :in-theory (enable vl-expr-strip vl-atom-strip vl-expr-resolved-p)
+                   :expand (vl-expr-strip x)))))
+
+  (local (defthm normalize-vl-atom->guts-when-not-vl-atom
+           (implies (and (syntaxp (not (equal x ''nil)))
+                         (not (vl-atom-p x)))
+                    (equal (vl-atom->guts x)
+                           (vl-atom->guts nil)))
+           :hints(("Goal" :in-theory (enable vl-atom->guts)))))
+
+  (local (defthm vl-resolved->val-of-vl-expr-strip
+           (equal (vl-resolved->val (vl-expr-strip x))
+                  (vl-resolved->val x))
+           :hints(("Goal" :in-theory (enable vl-resolved->val vl-atom-strip)
+                   :expand (vl-expr-strip x)))))
+
+  (local (defthm vl-range-size-of-vl-range-strip
+           (equal (vl-range-size (vl-range-strip x))
+                  (vl-range-size x))
+           :hints(("Goal" :in-theory (enable vl-range-size vl-range-strip)))))
+
+  (local (defthm vl-range->msb-of-vl-range-strip
+           (equal (vl-range->msb (vl-range-strip x))
+                  (vl-expr-strip (vl-range->msb x)))
+           :hints(("Goal" :in-theory (enable vl-range-strip)))))
+
+  (local (defthm vl-range->lsb-of-vl-range-strip
+           (equal (vl-range->lsb (vl-range-strip x))
+                  (vl-expr-strip (vl-range->lsb x)))
+           :hints(("Goal" :in-theory (enable vl-range-strip)))))
+
+  (local (defthm vl-range-resolved-p-of-vl-packeddimension-strip
+           (equal (vl-range-resolved-p (vl-packeddimension-strip x))
+                  (vl-range-resolved-p x))
+           :hints(("Goal" :in-theory (enable vl-range-resolved-p
+                                             vl-packeddimension-strip
+                                             vl-packeddimension-fix)))))
+
+  (local (defthm vl-packeddimension-strip-equals-vl-unsized-dimension
+           (equal (equal (vl-packeddimension-strip x) :vl-unsized-dimension)
+                  (equal (vl-packeddimension-fix x) :vl-unsized-dimension))
+           :hints(("Goal" :in-theory (enable vl-packeddimension-strip)))))
+
+  (local (defthm vl-range-resolved-p-of-vl-packeddimension-fix
+           (equal (vl-range-resolved-p (vl-packeddimension-fix x))
+                  (vl-range-resolved-p x))
+           :hints(("Goal" :in-theory (enable vl-packeddimension-fix)))))
+
+  (local (defthm vl-range-size-of-vl-packeddimension-strip
+           (equal (vl-range-size (vl-packeddimension-strip x))
+                  (vl-range-size (vl-packeddimension-fix x)))
+           :hints(("Goal" :in-theory (enable vl-packeddimension-strip
+                                             vl-packeddimension-fix
+                                             vl-packeddimension-p)))))
+
+  (local (defthm vl-packeddimensionlist-total-size-of-vl-packeddimensionlist-strip
+           (equal (vl-packeddimensionlist-total-size (vl-packeddimensionlist-strip x))
+                  (vl-packeddimensionlist-total-size x))
+           :hints(("Goal"
+                   :in-theory (enable vl-packeddimensionlist-strip
+                                      vl-packeddimensionlist-total-size)
+                   :induct (len x)))))
+
+  (local (defthm vl-packeddimensionlist-total-size-of-append
+           (equal (vl-packeddimensionlist-total-size (append x y))
+                  (and (vl-packeddimensionlist-total-size x)
+                       (vl-packeddimensionlist-total-size y)
+                       (* (vl-packeddimensionlist-total-size x)
+                          (vl-packeddimensionlist-total-size y))))
+           :hints(("Goal" :in-theory (enable vl-packeddimensionlist-total-size)))))
+
+  (local (defthm consp-of-vl-structmemberlist-assignfix
+           (equal (consp (vl-structmemberlist-assignfix x))
+                  (consp x))
+           :hints(("Goal"
+                   :induct (len x)
+                   :in-theory (enable vl-structmemberlist-assignfix)
+                   :expand (vl-structmemberlist-assignfix x)))))
+
+  (defthm-vl-datatype-assignfix-flag
+    (defthm vl-datatype-size-of-vl-datatype-assignfix
+      (b* (((mv warnings1 size1) (vl-datatype-size (vl-datatype-assignfix x)))
+           ((mv warnings2 size2) (vl-datatype-size x)))
+        (and (iff warnings1 warnings2)
+             (equal size1 size2)))
+      :flag vl-datatype-assignfix)
+    (defthm vl-structmemberlist-sizes-of-vl-structmemberlist-assignfix
+      (b* (((mv warnings1 size1) (vl-structmemberlist-sizes (vl-structmemberlist-assignfix x)))
+           ((mv warnings2 size2) (vl-structmemberlist-sizes x)))
+        (and (iff warnings1 warnings2)
+             (equal size1 size2)))
+      :flag vl-structmemberlist-assignfix)
+    :hints(("Goal"
+            :do-not '(generalize fertilize)
+            :in-theory (enable vl-datatype-size
+                               vl-structmemberlist-sizes
+                               vl-datatype-assignfix
+                               vl-structmemberlist-assignfix)))))
+
+(define vl-datatype-compat-equiv ((x vl-datatype-p)
+                                  (y vl-datatype-p))
+  (equal (vl-datatype-assignfix x)
+         (vl-datatype-assignfix y))
+  ///
+  (defequiv vl-datatype-compat-equiv)
+
+  (defthm vl-datatype-size.warnings-congruent-for-vl-datatype-compat-equiv
+    (implies (vl-datatype-compat-equiv x y)
+             (iff (mv-nth 0 (vl-datatype-size x))
+                  (mv-nth 0 (vl-datatype-size y))))
+    :rule-classes :congruence
+    :hints(("Goal" :use ((:instance vl-datatype-size-of-vl-datatype-assignfix)
+                         (:instance vl-datatype-size-of-vl-datatype-assignfix (x y))))))
+
+  (defthm vl-datatype-size.size-congruent-for-vl-datatype-compat-equiv
+    (implies (vl-datatype-compat-equiv x y)
+             (equal (mv-nth 1 (vl-datatype-size x))
+                    (mv-nth 1 (vl-datatype-size y))))
+    :rule-classes :congruence
+    :hints(("Goal" :use ((:instance vl-datatype-size-of-vl-datatype-assignfix)
+                         (:instance vl-datatype-size-of-vl-datatype-assignfix (x y)))))))
+
 (define vl-index-expr-size-assigncontext ((lhs-type vl-datatype-p)
                                           (x vl-expr-p)
                                           (ss vl-scopestack-p)
@@ -4576,7 +4808,7 @@ replace a key/value assignment pattern."
        (ctx (vl-context-fix ctx))
        ((mv warning type) (vl-index-find-type x ss ctx))
        ((when warning) (mv nil x (cons warning (ok))))
-       ((unless (equal type (vl-datatype-fix lhs-type)))
+       ((unless (vl-datatype-compat-equiv type lhs-type))
         (mv nil x
             (warn :type :vl-assignpattern-elim-fail
                   :msg "~a0: RHS expression ~a1 is not of type ~a2 (rather, ~a3)"

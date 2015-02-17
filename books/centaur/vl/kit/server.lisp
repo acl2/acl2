@@ -35,8 +35,6 @@
 (include-book "../util/gc")
 (include-book "centaur/getopt/top" :dir :system)
 
-#|| BOZO temporary
-
 (make-event
  (let ((public-dir (oslib::catpath *browser-dir* "public")))
    `(defoptions vl-server-opts
@@ -129,7 +127,6 @@ Options:" *nls* *nls* *vl-server-opts-usage* *nls*))
            max-mem))
        (- (set-vl-gc-baseline))
        (- (set-vl-gc-threshold 1/3-mem))
-       (- (set-vls-root opts.root))
 
        ((unless (<= opts.port 65535))
         (die "Invalid port ~x0~%" opts.port)
@@ -139,9 +136,10 @@ Options:" *nls* *nls* *vl-server-opts-usage* *nls*))
        (- (cw "Starting VL server on ~s0:~x1~%" hostname opts.port))
 
        (- (start :port       opts.port
-                 :public-dir opts.public)))
+                 :public-dir opts.public
+                 :root-dir   opts.root)))
     (cw "Starting VL Shell for the server.~%")
     (vl-shell nil)))
 
 
-||#
+

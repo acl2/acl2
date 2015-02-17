@@ -37,7 +37,7 @@
 (ld "centaur/jared-customization.lsp" :dir :system)
 
 (defconst *lintconfig*
-  (make-vl-lintconfig :start-files (list "./tmp1/spec.sv")))
+  (make-vl-lintconfig :start-files (list "./assignpat/spec.sv")))
 
 (defun vl-lint-report-wrap (lintresult state)
   (declare (xargs :mode :program :stobjs state))
@@ -58,7 +58,13 @@
   (run-vl-lint-main (vl-loadresult->design *loadres*)
                     *lintconfig*))
 
-(vl-lint-report-wrap *lintres* state) 
+(vl-lint-report-wrap *lintres* state)
+
+
+
+
+
+ 
 
 
 (trace$ (vl-lucid-multidrive-detect

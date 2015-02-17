@@ -1787,6 +1787,20 @@
 
 
 
+(defthmd drnd-tiny
+  (implies (and (common-rounding-mode-p mode)
+                (natp p)
+                (> p 1)
+                (natp q)
+                (> q 0)
+                (rationalp x)
+                (< 0 x)
+                (< x (/ (spd p q) 2)))
+           (equal (drnd x mode p q)
+                  (if (member mode '(away inf))
+                      (spd p q)
+                     0))))
+
 (defthm drnd-tiny-equal
     (implies (and (common-rounding-mode-p mode)
                   (natp p)

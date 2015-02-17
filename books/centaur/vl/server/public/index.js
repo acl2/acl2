@@ -36,26 +36,34 @@ function make_model_list_table(data)
 	return div;
     }
 
-    var keys = Object.keys(data);
-    for(var i in keys)
+    log("make_model_list_table");
+    log(data);
+
+    for(var model in data)
     {
-	var base = keys[i];
-	var models = data[base];
+	if (!data.hasOwnProperty(model)) continue;
+	var elem = data[model];
+	assert("name" in elem);
+	assert("date" in elem);
+	assert("compat" in elem);
+
 	var entry = "";
 	entry += "<tr>";
 	entry += "<td class='modelnames'>";
-	for(var m = 0; m < models.length; m++)
-	{
-	    var model = models[m];
+
+	if (elem.compat == "T") {
 	    entry += "<a href=\"javascript:void(0)\" ";
-	    entry += "onclick=\"loadModel('" + base + "', '" + model + "')\">";
-	    entry += model;
-	    entry += "</a>";
-	    if (m != models.length - 1)
-		entry += ", ";
+	    entry += "onclick=\"loadModel('" + model + "')\">";
+	    entry += elem.name;
+	    entry += "</a> ";
 	}
+	else {
+	    entry += elem.name;
+	}
+
+	entry += " &nbsp; <small>" + elem.date + "</small>";
+
 	entry += "</td>";
-	entry += "<td class='basename'><nobr>" + base + "</nobr></td>";
 	entry += "</tr>";
 	div.append(entry);
     }
@@ -65,7 +73,7 @@ function make_model_list_table(data)
 function get_loaded()
 {
     // Don't use vlsGetJson because this is a special pre-model-loading command
-    // that has no MODEL/BASE.
+    // that has no MODEL
     $.ajax({
 	url: "/list-loaded",
 	data: null,
@@ -88,7 +96,7 @@ function get_loaded()
 function get_unloaded()
 {
     // Don't use vlsGetJson because this is a special pre-model-loading command
-    // that has no MODEL/BASE.
+    // that has no MODEL
     $.ajax({
 	url: "/list-unloaded",
 	data: null,
@@ -117,13 +125,13 @@ $(document).ready(function()
 
 var showedLoadingMessage = false;
 
-function loadModel(base, model)
+function loadModel(model)
 {
-    console.log("loadModel(" + base + ", " + model + ")");
+    log("loadModel(" + model + ")");
     $.ajax({
 	url: "/load-model",
 	cache: false,
-	data: {"base":base, "model":model},
+	data: {"model":model},
 	dataType: "json",
 	type: "post",
 	success: function(data,textStatus,jqXHR)
@@ -135,16 +143,16 @@ function loadModel(base, model)
 
 	    var value = data[":VALUE"];
 	    var status = value[":STATUS"];
-	    console.log("Status: " + status);
+	    log("Status: " + status);
 	    if (status == ":LOADED") {
-		window.location = "main.html?base=" + encodeURIComponent(base) + "&model=" + encodeURIComponent(model);
+		window.location = "main.html?model=" + encodeURIComponent(model);
 	    }
 	    else if (status == ":STARTED")
 	    {
 		if (!showedLoadingMessage) {
 		    var msg = "";
 		    msg += "<div id='loadbox'>";
-		    msg += "<h2><b>Loading " + model + " from " + base + "</b></h2>";
+		    msg += "<h2><b>Loading " + model + "</b></h2>";
 		    msg += "<p>This can take some time.  It usually completes within <b>2 minutes</b>, ";
 		    msg += "except for some very large models.</p>";
 		    msg += "<p>The page will automatically refresh when the model is ready.</p>";
@@ -157,7 +165,7 @@ function loadModel(base, model)
 		else {
 		    $("#progress").append(".");
 		}
-		setTimeout(function() { loadModel(base, model); }, 5000);
+		setTimeout(function() { loadModel(model); }, 5000);
 	    }
 	    else {
 		$("#content").html("<p>Unexpected response from server: "

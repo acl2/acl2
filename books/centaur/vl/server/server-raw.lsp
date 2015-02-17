@@ -33,9 +33,7 @@
 (defmacro defxdoc-raw (&rest args)
   `(acl2::defxdoc-raw . ,args))
 
-(defun set-vls-root (new-root)
-  (setq *vls-root* new-root)
-  (cw "; Note: reset *vls-root* to ~s0.~%" new-root))
+(defparameter *vls-root* nil)
 
 
 ; -----------------------------------------------------------------------------
@@ -116,9 +114,6 @@ estimate.  This is because the length of the queue can change immediately after
 
 
 
-
-
-
 ; -----------------------------------------------------------------------------
 ;
 ;                           Translation Loading
@@ -130,68 +125,42 @@ estimate.  This is because the length of the queue can change immediately after
   :short "Translations database for the VL Server."
 
   :long "<p>At a first approximation, the translation database acts like an
-alist mapping translation names (see @(see vl-tname-p)) to their @(see
-vls-data-p) contents.  However, the true story is somewhat more complex due to
-the desire to keep translations loaded in a more persistent way.</p>
+alist mapping @(see vl-zipinfo)s to @(see vls-data-p) contents.  However, the
+true story is somewhat more complex due to the desire to keep zips loaded in a
+more persistent way.</p>
 
 <p>VLS must be fast enough to respond to the web server in real time.  Even
-using @(see serialize-read) with ordinary conses, loading a single translation
-can take over a minute to load, so it is completely infeasible to imagine
-loading translations on a per-connection basis.  Instead, we need some way to
-keep translations pre-loaded.</p>
+using @(see serialize-read) with ordinary conses, loading a single zip can take
+over a minute to load, so it is completely infeasible to imagine loading zips
+on a per-connection basis.  Instead, we need some way to keep zips
+pre-loaded.</p>
 
-<p>This is a challenge due to the number and size of our translations.  At the
-time of this writing, we are translating 12 versions of the chip every day, so
-if we save translations for two weeks and don't translate on the weekend,
-that's 120 models that VLS needs to provide access to.  It's easy to imagine
-these numbers increasing.</p>
+<p>This is a challenge due to the number and size of our zips.  There many be
+many new zips from different projects coming into the data directory every day.
+After a short time there may be hundreds of zips to choose from.</p>
 
 <p>We think it would take too long (and perhaps too much memory) to load
-everything at once.  Instead, we will try to load translations only as the need
-arises.  This might sometimes impose a 1-2 minute wait on a user who wants to
-get started with a translation that isn't already loaded.  But, if we simply
-make sure that all the translations in stable are pre-loaded, then this penalty
-will probably only be encountered by users working with bleeding edge or older
-translations.</p>
-
-<p>It might be a good idea to come up with a way for translations to be
-unloaded after they are no longer being used.  We haven't developed such a
-mechanism yet, partially because our use of honsing means that the incremental
-cost of having another module loaded is relatively low.</p>
-
-<p>We hons translations as they are read.  An unfortunate consequence of this
-is that our module loading is always done by a single loader thread, and hence
-clients might in principle have to wait a long time for their translations to
-be loaded if a long list of translations need to be loaded first.  Another
-disadvantage of this approach, compared with ordinary conses, is that loading a
-model takes perhaps two or three times as long, increasing the wait time for
-the unfortunate user who wants to look at a model that is not yet loaded.</p>
-
-<p>But we think these disadvantages are worth the memory savings since so much
-structure sharing is found between translations.  At the time of this writing,
-we found that to load ten translations took almost exactly twice as long with
-hons (700 seconds instead of 350) but subsequently only required 10 GB of
-memory instead of 16 GB to store (with 7 GB of this having been reserved for
-the ADDR-HT).  As we imagine loading even more translations, this becomes a
-pretty compelling advantage.</p>
-
-<p>Note that all of this honsing is done with respect to the Hons Space in the
-loader thread.  From the perspective of client threads, the modules being dealt
-with are not normed.</p>")
+everything at once.  Instead, we will try to load zips only as the need arises.
+This might sometimes impose a 1-2 minute wait on a user who wants to get
+started with a zip that isn't already loaded.  But by showing users what zips
+are already loaded, this penalty can easily be avoided by users who don't need
+a bleeding edge zip.</p>")
 
 (defstruct vls-transdb
 
-  ;; SCANNED is the list of all translation names that we have detected in
-  ;; /n/fv2/translations.  It is updated occasionally by vls-scanner-thread.
-  ;; You must acquire SCANNED-LOCK when accessing or updating SCANNED.
+  ;; SCANNED is a VLS-SCANNEDALIST-P.  It the list of all .vlzip file names
+  ;; that we have detected in the root directory.  It is updated occasionally
+  ;; by vls-scanner-thread.  You must acquire SCANNED-LOCK when accessing or
+  ;; updating SCANNED.
   (scanned      nil)
   (scanned-lock (bt:make-lock "vls-transdb-scanned-lock"))
 
-  ;; LOADED is an alist mapping tnames to their contents (vls-data-p objects).
-  ;; It is updated by the vls-loader-thread, and perhaps in the future by some
-  ;; kind of vls-unloader-thread.  You must acquire LOADED-LOCK when accessing
-  ;; or updating this field.  Note also that the proper way to get a new
-  ;; translation loaded is to add it to the LOAD-QUEUE via VLS-REQUEST-LOAD.
+  ;; LOADED is a VLS-LOADEDALIST-P mapping .vlzip file names to their
+  ;; vls-data-p structures.  It is updated by the vls-loader-thread, and
+  ;; perhaps in the future by some kind of vls-unloader-thread.  You must
+  ;; acquire LOADED-LOCK when accessing or updating this field.  Note also that
+  ;; the proper way to get a new translation loaded is to add it to the
+  ;; LOAD-QUEUE via VLS-REQUEST-LOAD.
   (loaded      nil)
   (loaded-lock (bt:make-lock "vls-transdb-loaded-lock"))
 
@@ -215,18 +184,19 @@ with are not normed.</p>")
     (loop do
           (cl-user::format t "; vls-scanner-thread: scanning for new translations.~%")
           (handler-case
-           (let ((new-scan (time$ (vl-scan-for-tnames state)
-                                  :msg "; rescan: ~st sec, ~sa bytes~%")))
-             (bt:with-lock-held ((vls-transdb-scanned-lock db))
-                                (setf (vls-transdb-scanned db)
-                                      new-scan))
-             (sleep 600))
-           (error (condition)
-                  (cl-user::format t "Ignoring unexpected error in ~
+            (b* (((mv infos ?state)
+                  (time$ (vl-scan-for-zipinfos *vls-root*)
+                         :msg "; rescan: ~st sec, ~sa bytes~%"))
+                 (alist (vls-make-scannedalist infos)))
+              (bt:with-lock-held ((vls-transdb-scanned-lock db))
+                                 (setf (vls-transdb-scanned db) alist)))
+            (error (condition)
+                   (cl-user::format t "Ignoring unexpected error in ~
                                       vls-scanner-thread: ~S~%"
-                                   condition)))
+                                    condition)))
           (when noloop
-            (return-from vls-scanner-thread)))))
+            (return-from vls-scanner-thread))
+          (sleep 600))))
 
 (defun rescan ()
   (vls-scanner-thread t))
@@ -244,24 +214,26 @@ with are not normed.</p>")
 
 
 
-(defun vls-load-translation (tname db)
 
-; We attempt to load the translation specified by TNAME into DB.
+(defun vls-load-translation (filename db)
+
+; We attempt to load the translation specified by FILENAME into DB.
 ;
 ; We assume that translations are never changed once they have been put into
-; /n/fv2/translations, and so if they have been previously loaded and already
-; exist in the LOADED alist, then they do not need to be re-loaded.
+; *vls-root*.  So if they have been previously loaded and already exist in the
+; LOADED alist, then they do not need to be re-loaded.
 ;
 ; It is critical that this function never be called except from the loader
 ; thread, because the use of honsing here should always be relative to the Hons
 ; Space of the loader thread.
 
   (declare (type vls-transdb db))
-  (cl-user::format t "Running vls-loader-thread in ~a" (bt:thread-name (bt:current-thread)))
+  (cl-user::format t "Running vls-loader-thread in ~a"
+                   (bt:thread-name (bt:current-thread)))
   (bt:with-lock-held
    ;; If it's already loaded, don't try to load it again.
    ((vls-transdb-loaded-lock db))
-   (when (assoc-equal tname (vls-transdb-loaded db))
+   (when (assoc-equal filename (vls-transdb-loaded db))
      (return-from vls-load-translation nil)))
 
 ; BOZO some better alternative to format messages here?  There probably really
@@ -269,29 +241,27 @@ with are not normed.</p>")
 ; error string directly into the trandb-loaded alist, since this runs in a
 ; different thread than the load requests.
 
-  (cl-user::format t "; vls-load-translation: loading base ~s, model ~s~%"
-                   (vl-tname->base tname)
-                   (vl-tname->model tname))
+  (cl-user::format t "; vls-load-translation: loading ~s~%" filename)
 
-  (let* ((filename (vl-tname-xdat-file tname))
-         (trans
-          (acl2::with-suppression
-            ;; BOZO with-suppression is necessary here for SBCL to avoid
-            ;; package lock problems.  I've discussed this with Matt and it
-            ;; sounds like he's probably going to make it so that
-            ;; serialize-read automatically does with-suppression.  Once that
-            ;; happens we should get rid of the with-suppression form here.
-            (acl2::unsound-read filename :hons-mode :always :verbosep t))))
-    (unless (cwtime (vl-translation-p trans))
-      (cl-user::format t "; vls-load-translation: invalid translation data!~%")
-      (return-from vls-load-translation nil))
-    (let* ((data (vls-data-from-translation trans)))
-      (bt:with-lock-held
-       ((vls-transdb-loaded-lock db))
-       (when (assoc-equal tname (vls-transdb-loaded db))
-         (error "translation should not yet be loaded"))
-       (setf (vls-transdb-loaded db)
-             (acons tname data (vls-transdb-loaded db)))))))
+  (b* ((state acl2::*the-live-state*)
+       (fullpath (oslib::catpath *vls-root* filename))
+       (- (cw "; full path to load is ~x0~%" fullpath))
+       ((mv err zip ?state)
+        (acl2::with-suppression
+          ;; BOZO I don't know if we still need WITH-SUPPRESSION, but we needed
+          ;; it on SBCL to avoid package-lock problems when we were using
+          ;; acl2::unsound-read directly.  Now that we're using ACL2's reading
+          ;; routines it might be unnecessary.
+          (vl-read-zip fullpath)))
+       ((when err)
+        (cw "; Error loading ~s0: ~@1.~%" filename err))
+       (data (vls-data-from-zip zip)))
+    (bt:with-lock-held
+     ((vls-transdb-loaded-lock db))
+     (when (assoc-equal filename (vls-transdb-loaded db))
+       (error "translation should not yet be loaded"))
+     (setf (vls-transdb-loaded db)
+           (acons filename data (vls-transdb-loaded db))))))
 
 (defun vls-loader-thread ()
 
@@ -314,8 +284,8 @@ with are not normed.</p>")
     ;; (format t "In vls-loader-thread, hons space is at ~s~%" (ccl::%address-of acl2::*default-hs*))
     (loop do
           (handler-case
-           (let ((tname (ts-dequeue (vls-transdb-load-queue db))))
-             (time$ (vls-load-translation tname db)))
+           (let ((filename (ts-dequeue (vls-transdb-load-queue db))))
+             (time$ (vls-load-translation filename db)))
            (error (condition)
                   (cl-user::format t "Ignoring unexpected error in ~
                                      vls-loader-thread: ~a~%"
@@ -324,6 +294,14 @@ with are not normed.</p>")
 
 #+hons
 (acl2::mf-multiprocessing t)
+
+;; BOZO do not do this.
+(defun acl2::bad-lisp-objectp (x)
+  ;; Unsound hack to make loading faster and avoid stack overflows.  It seems
+  ;; to cause stack overflows even when bad-lisp-objectp is memoized.  No idea
+  ;; why.
+  (declare (ignore x))
+  nil)
 
 (let ((support-started nil))
   (defun maybe-start-support-threads ()
@@ -342,9 +320,8 @@ with are not normed.</p>")
       (setq support-started t))))
 
 (defun vls-loaded-translations (db)
-  (alist-keys
-   (bt:with-lock-held ((vls-transdb-loaded-lock db))
-     (vls-transdb-loaded db))))
+  (bt:with-lock-held ((vls-transdb-loaded-lock db))
+                     (vls-transdb-loaded db)))
 
 (defmacro with-vls-bindings (&rest forms)
   `(b* ((?state
@@ -372,18 +349,18 @@ with are not normed.</p>")
         (acl2::*hard-error-returns-nilp* nil))
      . ,forms))
 
-(defun vls-quick-get-model (tname db)
+(defun vls-quick-get-model (filename db)
   (bt:with-lock-held
     ;; If it's already loaded, don't try to load it again.
     ((vls-transdb-loaded-lock db))
-    (let ((pair (assoc-equal tname (vls-transdb-loaded db))))
+    (let ((pair (assoc-equal filename (vls-transdb-loaded db))))
       (and pair
            (cdr pair)))))
 
-(defun vls-start-model-load (tname db)
+(defun vls-start-model-load (filename db)
   (bt:with-lock-held
     ((vls-transdb-loaded-lock db))
-    (ts-enqueue tname (vls-transdb-load-queue db))))
+    (ts-enqueue filename (vls-transdb-load-queue db))))
 
 (defmacro define-constant (name value &optional doc)
   ;; See the SBCL manual, "Defining Constants"
@@ -458,8 +435,7 @@ with are not normed.</p>")
                (args-except-data (remove-equal 'data info.args))
 
                (params           (append
-                                  '((base :parameter-type 'string)
-                                    (model :parameter-type 'string))
+                                  '((model :parameter-type 'string))
                                   (loop for arg in args-except-data collect `(,arg :parameter-type 'string))))
 
                (content-type     (case info.type
@@ -469,11 +445,11 @@ with are not normed.</p>")
 
                (guts             `(with-vls-bindings
                                     (vls-try-catch
-                                     :try (b* ((data (vls-quick-get-model (make-vl-tname :base base :model model) *vls-transdb*))
+                                     :try (b* ((data (vls-quick-get-model model *vls-transdb*))
                                                ((unless data)
                                                 ,(case info.type
-                                                   (:json '(vls-fail "Error: invalid model (base ~s0, model ~s1)" base model))
-                                                   (:html '(cat "Error: Invalid model (base " base ", model " model)))))
+                                                   (:json '(vls-fail "Error: invalid model (~s0)" model))
+                                                   (:html '(cat "Error: Invalid model " model)))))
                                             (,info.fn . ,info.args))
                                      :catch
                                      ,(case info.type
@@ -537,26 +513,29 @@ with are not normed.</p>")
       (setq vl-server nil))
     nil)
 
-  (defun start-fn (port public-dir)
+  (defun start-fn (port public-dir root-dir)
+    (cw "Setting *vls-root* = ~x0~%" root-dir)
+    (setq *vls-root* root-dir)
     (maybe-start-support-threads)
     (when vl-server
       (stop))
-    (let* ((state acl2::*the-live-state*)
-           (port (or port
-                     (b* (((mv ? port ?state) (getenv$ "FVQ_PORT" state))
-                          (port-num (str::strval port))
-                          ((when port-num)
-                           port-num))
-                       ;; Else, just use the default port
-                       9999)))
-           (public-dir (or public-dir
-                           (oslib::catpath *browser-dir* "/public/")))
-           (public-dir (if (str::strsuffixp "/" public-dir)
-                           public-dir
-                         (cat public-dir "/")))
-           (server (make-instance 'hunchentoot:easy-acceptor
-                                  :port port
-                                  :document-root public-dir)))
+    (b* ((state acl2::*the-live-state*)
+         (port (or port
+                   (b* (((mv ? port ?state) (getenv$ "FVQ_PORT" state))
+                        (port-num (str::strval port))
+                        ((when port-num)
+                         port-num))
+                     ;; Else, just use the default port
+                     9999)))
+         (public-dir (or public-dir
+                         (oslib::catpath *browser-dir* "/public/")))
+         (public-dir (if (str::strsuffixp "/" public-dir)
+                         public-dir
+                       (cat public-dir "/")))
+         (- (cw "Using public-dir = ~x0~%" public-dir))
+         (server (make-instance 'hunchentoot:easy-acceptor
+                                :port port
+                                :document-root public-dir)))
       (setf (hunchentoot:acceptor-access-log-destination server)
             (oslib::catpath public-dir "access.out"))
       (setf html-template:*default-template-pathname* (pathname public-dir))
@@ -590,9 +569,7 @@ with are not normed.</p>")
       (vls-try-catch
        :try (b* ((scanned  (vls-scanned-translations *vls-transdb*))
                  (loaded   (vls-loaded-translations *vls-transdb*))
-                 (unloaded (difference (mergesort scanned)
-                                       (mergesort loaded)))
-                 (ans      (vl-tnames-to-json unloaded)))
+                 (ans      (vls-get-unloaded-json scanned loaded)))
               ;;(er hard? 'list-unloaded "error checking test")
               (vls-success :json (bridge::json-encode ans)))
        :catch (vls-fail errmsg))))
@@ -601,43 +578,23 @@ with are not normed.</p>")
     (setf (hunchentoot:content-type*) "application/json")
     (with-vls-bindings
       (vls-try-catch
-       :try (b* ((ans (vl-tnames-to-json (vls-loaded-translations *vls-transdb*))))
+       :try (b* ((loaded (vls-loaded-translations *vls-transdb*))
+                 (ans    (vls-loadedalist-to-json loaded)))
               ;; (er hard? 'list-loaded "Error checking test")
               (vls-success :json (bridge::json-encode ans)))
        :catch (vls-fail errmsg))))
 
   (hunchentoot:define-easy-handler (load-model :uri "/load-model" :default-request-type :post)
-    ((base  :parameter-type 'string)
-     (model :parameter-type 'string))
+    ((model :parameter-type 'string))
     (setf (hunchentoot:content-type*) "application/json")
     (with-vls-bindings
       (vls-try-catch
-       :try (b* ((tname (make-vl-tname :base base :model model))
-                 ((when (vls-quick-get-model tname *vls-transdb*))
-                  (cw "; Model loaded: ~s0/~s1.~%" base model)
+       :try (b* (((when (vls-quick-get-model model *vls-transdb*))
+                  (cw "; Model loaded: ~s0.~%" model)
                   (vls-success :json (bridge::json-encode (list (cons :status :loaded))))))
-              (cw "; Model starting: ~s0/~s1.~%" base model)
-              (vls-start-model-load tname *vls-transdb*)
+              (cw "; Model starting: ~s0.~%" model)
+              (vls-start-model-load model *vls-transdb*)
               (vls-success :json (bridge::json-encode (list (cons :status :started)))))
        :catch (vls-fail errmsg))))
   )
 
-
-#||
-
-(in-package "VL")
-
-(let ((model (vls-quick-get-model (make-vl-tname :base "2014-10-02-22-09"
-                                                 :model "cns")
-                                  *vls-transdb*))
-      (state acl2::*the-live-state*))
-  (progn$
-   (assign :model model)
-   nil))
-
-(lp)
-
-(defconsts (*data*) (@ :model))
-(vls-data-p *data*)
-
-||#

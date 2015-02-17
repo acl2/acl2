@@ -33,7 +33,7 @@
 all: ncv vcs
 
 STARTJOB ?= bash
-VL       ?= $(PWD)/../bin/vl
+VL       ?= $(PWD)/../bin/vl2014
 
 SPEC_FILES        := $(wildcard */spec.v)
 TEST_DIRS         := $(patsubst %/spec.v, %,                   $(SPEC_FILES))

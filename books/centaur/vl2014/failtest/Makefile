@@ -31,7 +31,7 @@
 .PHONY: all clean
 
 STARTJOB ?= bash
-VL       ?= $(PWD)/../bin/vl
+VL       ?= $(PWD)/../bin/vl2014
 
 SPEC_FILES := $(wildcard *.v)
 VOK_FILES  := $(patsubst %.v, %.vok,  $(SPEC_FILES))

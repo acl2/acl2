@@ -49,7 +49,8 @@
       (error (condition)
              (let ((condition-str (format nil "~a" condition)))
                (mv (msg "~s0: error listing ~s1: ~s2."
-                        'ls path condition-str)))))))
+                        'ls path condition-str)
+                   nil state))))))
 
 
 

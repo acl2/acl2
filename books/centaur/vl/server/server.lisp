@@ -29,9 +29,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-
-#|| BOZO temporary
-
 (include-book "data")
 (include-book "describe")
 (include-book "porttable")
@@ -79,29 +76,94 @@ viewing Verilog designs.")
 (defconsts *browser-dir* (cbd))
 
 (define start (&key (port       maybe-natp)
-                    (public-dir maybe-stringp "Path to @('public/') directory."))
-  (declare (ignorable port
-                      public-dir))
+                    (public-dir maybe-stringp "Path to @('public/') directory.")
+                    (root-dir   stringp       "Path to the data directory."))
+  (declare (ignorable port public-dir root-dir))
   (raise "Under the hood definition not installed."))
 
 (define stop ()
   (raise "Under the hood definition not installed."))
 
-(define vls-data-from-translation ((trans vl-translation-p))
-  :returns (data vls-data-p :hyp :guard)
+
+(define vls-data-from-zip ((zip vl-zip-p))
+  :returns (data vls-data-p)
   :prepwork ((local (in-theory (enable vl-descalist-okp))))
-  (b* (((vl-translation trans) trans)
-       (orig           (cwtime (hons-copy (cwtime (vl-annotate-design trans.orig)))))
-       ;;(orig-depalist  (fast-alist-free (vl-depalist (vl-design->mods orig))))
+  (b* (((vl-zip zip))
+       (orig           (cwtime (hons-copy (cwtime (vl-annotate-design zip.design)))))
        (orig-descalist (fast-alist-free (vl-descalist (vl-design-descriptions orig)))))
     (make-vls-data
-     :good           trans.good
-     :bad            trans.bad
+     :name           zip.name
+     :date           zip.date
+     :ltime          zip.ltime
      :orig           orig
-     ;;:orig-depalist  orig-depalist
      :orig-descalist orig-descalist
-     :filemap        trans.filemap
-     :defs           trans.defines)))
+     :filemap        zip.filemap
+     :defs           zip.defines)))
+
+(defalist vls-scannedalist-p (x)
+  :key (stringp x) ;; Short file name
+  :val (vl-zipinfo-p x))
+
+(defalist vls-loadedalist-p (x)
+  :key (stringp x) ;; Short file name
+  :val (vls-data-p x))
+
+(local (defthm string-listp-of-alist-keys-when-vls-scannedalist-p
+         (implies (vls-scannedalist-p x)
+                  (string-listp (alist-keys x)))
+         :hints(("Goal" :induct (len x)))))
+
+(local (defthm string-listp-of-alist-keys-when-vls-loadedalist-p
+         (implies (vls-loadedalist-p x)
+                  (string-listp (alist-keys x)))
+         :hints(("Goal" :induct (len x)))))
+
+(define vls-scannedalist-to-json ((x vls-scannedalist-p))
+  (b* (((when (atom x))
+        nil)
+       ((cons name (vl-zipinfo info)) (car x))
+       (entry (list (cons "name"     info.name)
+                    (cons "date"     info.date)
+                    (cons "ltime"    info.ltime)
+                    (cons "compat"   (equal info.syntax *vl-current-syntax-version*)))))
+    (cons (cons name entry)
+          (vls-scannedalist-to-json (cdr x)))))
+
+(define vls-loadedalist-to-json ((x vls-loadedalist-p))
+  (b* (((when (atom x))
+        nil)
+       ((cons name (vls-data data)) (car x))
+       (entry (list (cons "name"    data.name)
+                    (cons "date"    data.date)
+                    (cons "ltime"   data.ltime)
+                    (cons "compat"  t))))
+    (cons (cons name entry)
+          (vls-loadedalist-to-json (cdr x)))))
+
+(define vls-remove-from-scannedalist ((names string-listp)
+                                      (x     vls-scannedalist-p))
+  :returns (new-x vls-scannedalist-p :hyp (vls-scannedalist-p x))
+  (cond ((atom x)
+         nil)
+        ((member-equal (caar x) names)
+         (vls-remove-from-scannedalist names (cdr x)))
+        (t
+         (cons (car x)
+               (vls-remove-from-scannedalist names (cdr x))))))
+
+(define vls-make-scannedalist ((x vl-zipinfolist-p))
+  :returns (alist vls-scannedalist-p)
+  (if (atom x)
+      nil
+    (cons (cons (vl-zipinfo->filename (car x))
+                (vl-zipinfo-fix (car x)))
+          (vls-make-scannedalist (cdr x)))))
+
+(define vls-get-unloaded-json ((scanned vls-scannedalist-p)
+                               (loaded  vls-loadedalist-p))
+  (vls-scannedalist-to-json
+   (vls-remove-from-scannedalist (alist-keys loaded) scanned)))
+
 
 (define vl-find-description-insensitive ((name stringp)
                                          (descalist vl-descalist-p))
@@ -305,8 +367,10 @@ declaration, ...)."
   :returns (reportcard vl-reportcard-p)
   (b* (((vls-data data))
        (acc nil)
-       (acc (vl-design-origname-reportcard-aux data.good acc))
-       (acc (vl-design-origname-reportcard-aux data.bad acc))
+       (acc (vl-design-origname-reportcard-aux data.orig acc))
+       ;; Previously this merged the reportcards for good and bad, i.e.,
+       ;; (acc (vl-design-origname-reportcard-aux data.bad acc))... but we
+       ;; don't do that anymore...
        (ret (vl-clean-reportcard acc)))
     (fast-alist-free acc)
     ret))
@@ -328,5 +392,17 @@ declaration, ...)."
 ; (depends-on "server-raw.lsp")
 (acl2::include-raw "server-raw.lsp"
                    :host-readtable t)
+
+#||
+(include-book
+ "server")
+
+(b* ((- (acl2::set-max-mem (* 12 (expt 2 30))))
+     ((mv ?err port state)
+      (getenv$ "FVQ_PORT" state))
+     (- (cw "Port is ~x0.~%" port)))
+  (start :port (or (str::strval port) 9999)
+         :root-dir "./zips")
+  state)
 
 ||#

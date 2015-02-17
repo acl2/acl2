@@ -55,6 +55,15 @@
   ((orig vl-design-p
          "The original design, as seen very shortly after parsing.")
 
+   (name  stringp :rule-classes :type-prescription
+          "Project name for this design.")
+
+   (date  stringp :rule-classes :type-prescription
+          "Date stamp for this zip file.")
+
+   (ltime natp :rule-classes :type-prescription
+          "Lisp time stamp for this zip file.")
+
    ;; (orig-depalist (vl-depalist-okp (vl-design->mods orig) orig-depalist)
    ;;                "A @(see vl-depalist) for the original modules.")
 

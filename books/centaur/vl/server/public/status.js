@@ -57,7 +57,7 @@ function render_bucket (typename, bucket)
 	var name = bucket[i];
 	var ent = "";
 	ent += "<li>";
-	ent += "<a href='display.html?base=" + BASE + "&model=" + MODEL + "&origname=" + name + "'>";
+	ent += "<a href='display.html?model=" + MODEL + "&origname=" + name + "'>";
 	ent += name;
 	ent += "</a>";
 	ent += "</li>";
@@ -73,7 +73,7 @@ function status_init()
     $.ajax({
 	url: "/vls-get-desctypes",
 	cache: true,
-	data: {"base":BASE, "model":MODEL},
+	data: {"model":MODEL},
 	dataType: "json",
 	type: "get",
 	success: function(data,textStatus,jqXHR)
