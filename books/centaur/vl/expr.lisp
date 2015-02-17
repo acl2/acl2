@@ -324,7 +324,15 @@ either:</p>
       ;; integer vector types
       (eq x :vl-bit)
       (eq x :vl-logic)
-      (eq x :vl-reg)))
+      (eq x :vl-reg))
+  ///
+
+  (defthm vl-coretypename-p-when-vl-enumbasekind-p
+    (implies (vl-enumbasekind-p x)
+             (equal (vl-coretypename-p x)
+                    (not (stringp x))))))
+
+  
 
 (define vl-enumbasekind-fix ((x vl-enumbasekind-p))
   :returns (x-fix vl-enumbasekind-p)
@@ -445,6 +453,21 @@ type for @(see vl-scopeexpr->scopes).</p>"
  `(defenum vl-binaryop-p
     ,(strip-cars *vl-binary-ops*)))
 
+(define vl-unaryop-string ((x vl-unaryop-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :prepwork ((local (defthm vl-unaryop-fix-forward
+                      (vl-unaryop-p (vl-unaryop-fix x))
+                      :rule-classes
+                      ((:forward-chaining :trigger-terms ((vl-unaryop-fix x)))))))
+  (cdr (assoc (vl-unaryop-fix x) *vl-unary-ops*)))
+
+(define vl-binaryop-string ((x vl-binaryop-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :prepwork ((local (defthm vl-binaryop-fix-forward
+                      (vl-binaryop-p (vl-binaryop-fix x))
+                      :rule-classes
+                      ((:forward-chaining :trigger-terms ((vl-binaryop-fix x)))))))
+  (cdr (assoc (vl-binaryop-fix x) *vl-binary-ops*)))
 
 
 (defenum vl-specialkey-p
@@ -461,11 +484,6 @@ type for @(see vl-scopeexpr->scopes).</p>"
 
 (defenum vl-leftright-p
   (:left :right))
-
-(defprod vl-none ()
-  :short "Used when there is no index or select in a place where one is optional;
-          see @(see vl-partselect) and @(see vl-arrayrange)."
-  :tag :vl-none)
 
 
 (deftypes expressions-and-datatypes
@@ -3332,7 +3350,63 @@ try to support the use of both ascending and descending ranges.</p>")
     :vl-struct x.pdims
     :vl-union x.pdims
     :vl-enum x.pdims
-    :vl-usertype x.pdims))
+    :vl-usertype x.pdims)
+  ///
+  (fty::deffixequiv vl-datatype->pdims)
+  (defthm vl-datatype-pdims-when-vl-coretype
+    (implies (vl-datatype-case x :vl-coretype)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-coretype)))
+                           (equal (vl-datatype->pdims x)
+                                  (vl-coretype->pdims x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-coretype))))
+                           (equal (vl-coretype->pdims x)
+                                  (vl-datatype->pdims x))))))
+
+  (defthm vl-datatype-pdims-when-vl-struct
+    (implies (vl-datatype-case x :vl-struct)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-struct)))
+                           (equal (vl-datatype->pdims x)
+                                  (vl-struct->pdims x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-struct))))
+                           (equal (vl-struct->pdims x)
+                                  (vl-datatype->pdims x))))))
+
+  (defthm vl-datatype-pdims-when-vl-union
+    (implies (vl-datatype-case x :vl-union)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-union)))
+                           (equal (vl-datatype->pdims x)
+                                  (vl-union->pdims x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-union))))
+                           (equal (vl-union->pdims x)
+                                  (vl-datatype->pdims x))))))
+
+  (defthm vl-datatype-pdims-when-vl-enum
+    (implies (vl-datatype-case x :vl-enum)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-enum)))
+                           (equal (vl-datatype->pdims x)
+                                  (vl-enum->pdims x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-enum))))
+                           (equal (vl-enum->pdims x)
+                                  (vl-datatype->pdims x))))))
+
+  (defthm vl-datatype-pdims-when-vl-usertype
+    (implies (vl-datatype-case x :vl-usertype)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-usertype)))
+                           (equal (vl-datatype->pdims x)
+                                  (vl-usertype->pdims x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-usertype))))
+                           (equal (vl-usertype->pdims x)
+                                  (vl-datatype->pdims x)))))))
 
 (define vl-datatype->udims ((x vl-datatype-p))
   :returns (udims vl-packeddimensionlist-p)
@@ -3343,13 +3417,69 @@ try to support the use of both ascending and descending ranges.</p>")
     :vl-enum x.udims
     :vl-usertype x.udims)
   ///
+  (fty::deffixequiv vl-datatype->udims)
   (defret vl-packeddimensionlist-count-of-vl-datatype->pdims/udims
     (< (+ (vl-packeddimensionlist-count (vl-datatype->pdims x))
           (vl-packeddimensionlist-count (vl-datatype->udims x)))
        (vl-datatype-count x))
-    :hints (("goal" :in-theory (enable vl-datatype->pdims)
+    :hints (("goal" 
              :expand ((vl-datatype-count x))))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defthm vl-datatype-udims-when-vl-coretype
+    (implies (vl-datatype-case x :vl-coretype)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-coretype)))
+                           (equal (vl-datatype->udims x)
+                                  (vl-coretype->udims x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-coretype))))
+                           (equal (vl-coretype->udims x)
+                                  (vl-datatype->udims x))))))
+
+  (defthm vl-datatype-udims-when-vl-struct
+    (implies (vl-datatype-case x :vl-struct)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-struct)))
+                           (equal (vl-datatype->udims x)
+                                  (vl-struct->udims x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-struct))))
+                           (equal (vl-struct->udims x)
+                                  (vl-datatype->udims x))))))
+
+  (defthm vl-datatype-udims-when-vl-union
+    (implies (vl-datatype-case x :vl-union)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-union)))
+                           (equal (vl-datatype->udims x)
+                                  (vl-union->udims x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-union))))
+                           (equal (vl-union->udims x)
+                                  (vl-datatype->udims x))))))
+
+  (defthm vl-datatype-udims-when-vl-enum
+    (implies (vl-datatype-case x :vl-enum)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-enum)))
+                           (equal (vl-datatype->udims x)
+                                  (vl-enum->udims x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-enum))))
+                           (equal (vl-enum->udims x)
+                                  (vl-datatype->udims x))))))
+
+  (defthm vl-datatype-udims-when-vl-usertype
+    (implies (vl-datatype-case x :vl-usertype)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-usertype)))
+                           (equal (vl-datatype->udims x)
+                                  (vl-usertype->udims x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-usertype))))
+                           (equal (vl-usertype->udims x)
+                                  (vl-datatype->udims x)))))))
 
 (define vl-datatype-update-dims ((pdims vl-packeddimensionlist-p)
                                  (udims vl-packeddimensionlist-p)
@@ -3367,9 +3497,7 @@ try to support the use of both ascending and descending ranges.</p>")
     (equal (vl-datatype-update-dims (vl-datatype->pdims x)
                                     (vl-datatype->udims x)
                                     x)
-           (vl-datatype-fix x))
-    :hints(("Goal" :in-theory (enable vl-datatype->udims
-                                      vl-datatype->pdims))))
+           (vl-datatype-fix x)))
 
   (defthm vl-datatype->pdims-of-vl-datatype-update-dims
     (equal (vl-datatype->pdims (vl-datatype-update-dims pdims udims x))
@@ -3383,7 +3511,7 @@ try to support the use of both ascending and descending ranges.</p>")
 
 (define vl-datatype-update-pdims ((pdims vl-packeddimensionlist-p) (x vl-datatype-p))
   :enabled t
-  :prepwork ((local (in-theory (enable vl-datatype-update-dims vl-datatype->udims))))
+  :prepwork ((local (in-theory (enable vl-datatype-update-dims))))
   :returns (newx (and (vl-datatype-p newx)
                       (eq (vl-datatype-kind newx) (vl-datatype-kind x))))
   (mbe :logic (vl-datatype-update-dims pdims (vl-datatype->udims x) x)
@@ -3396,7 +3524,7 @@ try to support the use of both ascending and descending ranges.</p>")
 
 (define vl-datatype-update-udims ((udims vl-packeddimensionlist-p) (x vl-datatype-p))
   :enabled t
-  :prepwork ((local (in-theory (enable vl-datatype-update-dims vl-datatype->pdims))))
+  :prepwork ((local (in-theory (enable vl-datatype-update-dims))))
   :returns (newx (and (vl-datatype-p newx)
                       (eq (vl-datatype-kind newx) (vl-datatype-kind x))))
   (mbe :logic (vl-datatype-update-dims (vl-datatype->pdims x) udims x)
@@ -3406,3 +3534,8 @@ try to support the use of both ascending and descending ranges.</p>")
                   :vl-union (change-vl-union x :udims udims)
                   :vl-enum (change-vl-enum x :udims udims)
                   :vl-usertype (change-vl-usertype x :udims udims))))
+
+
+(define vl-scopeexpr->expr ((x vl-scopeexpr-p))
+  :returns (expr vl-expr-p)
+  (make-vl-index :scope x :part (make-vl-partselect-none)))

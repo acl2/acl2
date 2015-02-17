@@ -131,95 +131,119 @@ formerly the \"location directive\" and printed a location.</p>")
 
 (define vl-fmt-tilde-a (x &key (ps 'ps))
   (let ((unsafe-okp *vl-enable-unsafe-but-fast-printing*))
-    (case (tag x)
-      (:vl-location
-       (if (or unsafe-okp (vl-location-p x))
-           (vl-print-loc x)
-         (vl-fmt-tilde-x x)))
-      ((:vl-special
-        :vl-value
-        :vl-index
-        :vl-unary
-        :vl-binary
-        :vl-qmark
-        :vl-mintypmax
-        :vl-concat
-        :vl-multiconcat
-        :vl-stream
-        :vl-call
-        :vl-cast
-        :vl-inside
-        :vl-tagged
-        :vl-pattern)
-       (if (or unsafe-okp (vl-expr-p x))
-           (vl-pp-origexpr x)
-         (vl-fmt-tilde-x x)))
-      ((:vl-range)
-       (if (or unsafe-okp (vl-range-p x))
-           (vl-pp-range x)
-         (vl-fmt-tilde-x x)))
-      ((:vl-context)
-       (if (or unsafe-okp (vl-context1-p x))
-           (vl-pp-context-summary x)
-         (vl-fmt-tilde-x x)))
-      ((:vl-regularport :vl-interfaceport
-        :vl-portdecl :vl-assign :vl-vardecl
-        :vl-paramdecl :vl-fundecl :vl-taskdecl
-        :vl-modinst :vl-gateinst :vl-always :vl-initial
-        :vl-typedef)
-       (if (or unsafe-okp (vl-ctxelement-p x))
-           (vl-pp-ctxelement-summary x)
-         (vl-fmt-tilde-x x)))
-      ((:vl-plainarg)
-       (if (or unsafe-okp (vl-plainarg-p x))
-           (vl-pp-plainarg x)
-         (vl-fmt-tilde-x x)))
-      ((:vl-namedarg)
-       (if (or unsafe-okp (vl-namedarg-p x))
-           (vl-pp-namedarg x)
-         (vl-fmt-tilde-x x)))
-      ((:vl-nullstmt :vl-assignstmt :vl-deassignstmt :vl-enablestmt
-        :vl-disablestmt :vl-eventtriggerstmt :vl-casestmt :vl-ifstmt
-        :vl-foreverstmt :vl-waitstmt :vl-repeatstmt :vl-whilestmt
-        :vl-forstmt :vl-blockstmt :vl-timingstmt :vl-returnstmt)
-       (if (or unsafe-okp (vl-stmt-p x))
-           (vl-pp-stmt x)
-         (vl-fmt-tilde-x x)))
-      ((:vl-import)
-       (if (or unsafe-okp (vl-import-p x))
-           (vl-pp-import x)
-         (vl-fmt-tilde-x x)))
-    ((:vl-unsized-dimension)
-     (if (or unsafe-okp (vl-packeddimension-p x))
-         (vl-pp-packeddimension x)
-       (vl-fmt-tilde-x x)))
-    ((:vl-enumbasetype)
-     (if (or unsafe-okp (vl-enumbasetype-p x))
-         (vl-pp-enumbasetype x)
-       (vl-fmt-tilde-x x)))
-    ((:vl-enumitem)
-     (if (or unsafe-okp (vl-enumitem-p x))
-         (vl-pp-enumitem x)
-       (vl-fmt-tilde-x x)))
-    ((:vl-coretype :vl-struct :vl-union :vl-enum :vl-usertype)
-     (if (or unsafe-okp (vl-datatype-p x))
-         (vl-pp-datatype x)
-       (vl-fmt-tilde-x x)))
-    ((:vl-structmember)
-     (if (or unsafe-okp (vl-structmember-p x))
-         (vl-pp-structmember x)
-       (vl-fmt-tilde-x x)))
-    ((:vl-fwdtypedef)
-     (if (or unsafe-okp (vl-fwdtypedef-p x))
-         (vl-pp-fwdtypedef x)
-       (vl-fmt-tilde-x x)))
-    ((:vl-module)
-     (if (or unsafe-okp (vl-module-p x))
-         (vl-pp-modulename-link-aux (vl-module->name x)
-                                    (vl-module->origname x))
-       (vl-fmt-tilde-x x)))
-    (otherwise
-     (vl-fmt-tilde-x x)))))
+    (if (atom x)
+        (vl-fmt-tilde-x x)
+      (case (tag x)
+        (:vl-location
+         (if (or unsafe-okp (vl-location-p x))
+             (vl-print-loc x)
+           (vl-fmt-tilde-x x)))
+        ((:vl-special
+          :vl-value
+          :vl-index
+          :vl-unary
+          :vl-binary
+          :vl-qmark
+          :vl-mintypmax
+          :vl-concat
+          :vl-multiconcat
+          :vl-stream
+          :vl-call
+          :vl-cast
+          :vl-inside
+          :vl-tagged
+          :vl-pattern)
+         (if (or unsafe-okp (vl-expr-p x))
+             (vl-pp-origexpr x)
+           (vl-fmt-tilde-x x)))
+        ((:vl-range)
+         (if (or unsafe-okp (vl-range-p x))
+             (vl-pp-range x)
+           (vl-fmt-tilde-x x)))
+        ((:vl-context)
+         (if (or unsafe-okp (vl-context1-p x))
+             (vl-pp-context-summary x)
+           (vl-fmt-tilde-x x)))
+        ((:vl-regularport :vl-interfaceport
+          :vl-portdecl :vl-assign :vl-vardecl
+          :vl-paramdecl :vl-fundecl :vl-taskdecl
+          :vl-modinst :vl-gateinst :vl-always :vl-initial
+          :vl-typedef)
+         (if (or unsafe-okp (vl-ctxelement-p x))
+             (vl-pp-ctxelement-summary x)
+           (vl-fmt-tilde-x x)))
+        ((:vl-plainarg)
+         (if (or unsafe-okp (vl-plainarg-p x))
+             (vl-pp-plainarg x)
+           (vl-fmt-tilde-x x)))
+        ((:vl-namedarg)
+         (if (or unsafe-okp (vl-namedarg-p x))
+             (vl-pp-namedarg x)
+           (vl-fmt-tilde-x x)))
+        ((:vl-nullstmt :vl-assignstmt :vl-deassignstmt :vl-enablestmt
+          :vl-disablestmt :vl-eventtriggerstmt :vl-casestmt :vl-ifstmt
+          :vl-foreverstmt :vl-waitstmt :vl-repeatstmt :vl-whilestmt
+          :vl-forstmt :vl-blockstmt :vl-timingstmt :vl-returnstmt)
+         (if (or unsafe-okp (vl-stmt-p x))
+             (vl-pp-stmt x)
+           (vl-fmt-tilde-x x)))
+        ((:vl-import)
+         (if (or unsafe-okp (vl-import-p x))
+             (vl-pp-import x)
+           (vl-fmt-tilde-x x)))
+        ((:vl-unsized-dimension)
+         (if (or unsafe-okp (vl-packeddimension-p x))
+             (vl-pp-packeddimension x)
+           (vl-fmt-tilde-x x)))
+        ((:vl-enumbasetype)
+         (if (or unsafe-okp (vl-enumbasetype-p x))
+             (vl-pp-enumbasetype x)
+           (vl-fmt-tilde-x x)))
+        ((:vl-enumitem)
+         (if (or unsafe-okp (vl-enumitem-p x))
+             (vl-pp-enumitem x)
+           (vl-fmt-tilde-x x)))
+        ((:vl-coretype :vl-struct :vl-union :vl-enum :vl-usertype)
+         (if (or unsafe-okp (vl-datatype-p x))
+             (vl-pp-datatype x)
+           (vl-fmt-tilde-x x)))
+        ((:vl-structmember)
+         (if (or unsafe-okp (vl-structmember-p x))
+             (vl-pp-structmember x)
+           (vl-fmt-tilde-x x)))
+        ((:vl-fwdtypedef)
+         (if (or unsafe-okp (vl-fwdtypedef-p x))
+             (vl-pp-fwdtypedef x)
+           (vl-fmt-tilde-x x)))
+        ((:vl-module)
+         (if (or unsafe-okp (vl-module-p x))
+             (vl-pp-modulename-link-aux (vl-module->name x)
+                                        (vl-module->origname x))
+           (vl-fmt-tilde-x x)))
+        (otherwise
+         (vl-fmt-tilde-x x))))))
+
+(define vl-fmt-pair-args ((args true-listp))
+  :returns (res alistp)
+  (pairlis$ (take (min (len args) 10)
+                  '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
+            args)
+  ///
+  (local (defthm strip-cdrs-of-pairlis$
+           (equal (strip-cdrs (pairlis$ a b))
+                  (take (len a) b))))
+  (local
+   (defthm acl2-count-of-take
+     (implies (<= n (len x))
+              (<= (acl2-count (take n x))
+                  (acl2-count x)))
+     :hints (("goal" :induct (nth n x)
+              :in-theory (enable acl2::take-redefinition)))
+     :rule-classes :linear))
+  (defthm acl2-count-of-vl-fmt-pair-args
+    (<= (acl2-count (strip-cdrs (vl-fmt-pair-args args)))
+        (acl2-count args))
+    :rule-classes :linear))
 
 (define vl-fmt-aux ((x stringp)
                     (n natp)
@@ -229,7 +253,9 @@ formerly the \"location directive\" and printed a location.</p>")
                     (ps 'ps))
   :verbosep t
   :guard (<= n xl)
-  :measure (nfix (- (nfix xl) (nfix n)))
+  :ruler-extenders :all
+  :measure (two-nats-measure (acl2-count (strip-cdrs alist))
+                             (- (nfix xl) (nfix n)))
   (b* (((when (mbe :logic (zp (- (nfix xl) (nfix n)))
                    :exec (eql xl n)))
         ps)
@@ -253,12 +279,37 @@ formerly the \"location directive\" and printed a location.</p>")
                   (#\w (vl-fmt-tilde-w (cdr lookup)))
                   (#\l (vl-fmt-tilde-a (cdr lookup)))
                   (#\a (vl-fmt-tilde-a (cdr lookup)))
+                  (#\@ (b* ((look (cdr lookup))
+                            ((unless (vl-msg-p look))
+                             (prog2$ (raise "Bad ~~@ argument: ~x0.~%" look)
+                                     ps))
+                            ((vl-msg look)))
+                         (vl-fmt-aux look.msg 0 (length look.msg)
+                                     (vl-fmt-pair-args look.args))))
+                  
                   (otherwise
                    (prog2$ (raise "Unsupported directive: ~~~x0.~%" type)
                            ps))))))))
     (vl-fmt-aux x n xl alist))
   :prepwork
-  ((local (in-theory (disable assoc-equal-elim)))))
+  ((local (in-theory (disable assoc-equal-elim)))
+   (local (defthm acl2-count-of-vl-msg->args
+            (implies (vl-msg-p x)
+                     (<= (acl2-count (vl-msg->args x))
+                         (acl2-count x)))
+            :hints(("Goal" :in-theory (enable vl-msg-p
+                                              vl-msg->args)))
+            :rule-classes :linear))
+   (local (defthm acl2-count-of-assoc
+            (implies (assoc key alist)
+                     (< (acl2-count (cdr (assoc key alist)))
+                        (acl2-count (strip-cdrs alist))))
+            :hints(("Goal" :in-theory (enable assoc-equal strip-cdrs)))
+            :rule-classes :linear))
+   (local (defthm assoc-when-not-consp
+            (implies (not (consp alist))
+                     (not (assoc-equal k alist)))
+            :hints(("Goal" :in-theory (enable assoc-equal)))))))
 
 (define vl-fmt ((x stringp) (alist alistp) &key (ps 'ps))
   :inline t
@@ -272,9 +323,7 @@ formerly the \"location directive\" and printed a location.</p>")
 pretty-printing Verilog constructs as in @(see vl-fmt)."
 
   (defmacro vl-cw (x &rest args)
-    `(vl-fmt ,x (pairlis$
-                 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
-                 (list ,@args)))))
+    `(vl-fmt ,x (vl-fmt-pair-args (list ,@args)))))
 
 
 (define vl-cw-obj ((msg stringp) args &key (ps 'ps))

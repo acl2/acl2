@@ -575,23 +575,6 @@ displays.  The module browser's web pages are responsible for defining the
   :disable vl-atts-p-of-vl-remove-keys)
 
 
-(define vl-unaryop-string ((x vl-unaryop-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  :prepwork ((local (defthm vl-unaryop-fix-forward
-                      (vl-unaryop-p (vl-unaryop-fix x))
-                      :rule-classes
-                      ((:forward-chaining :trigger-terms ((vl-unaryop-fix x)))))))
-  (cdr (assoc (vl-unaryop-fix x) *vl-unary-ops*)))
-
-(define vl-binaryop-string ((x vl-binaryop-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  :prepwork ((local (defthm vl-binaryop-fix-forward
-                      (vl-binaryop-p (vl-binaryop-fix x))
-                      :rule-classes
-                      ((:forward-chaining :trigger-terms ((vl-binaryop-fix x)))))))
-  (cdr (assoc (vl-binaryop-fix x) *vl-binary-ops*)))
-
-
 (define vl-atts-find-paramname ((atts vl-atts-p))
   ;; See vl-expr-scopesubst.  When we substitute a parameter's value into its
   ;; expression, we add a paramname annotation.
