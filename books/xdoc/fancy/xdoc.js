@@ -927,7 +927,9 @@ $(document).ready(function()
 function jumpRender(datum) {
     var key = datum["value"];
     var ret = "";
-    ret += "<p><b class=\"sf\">" + topicName(key) + "</b>";
+    ret += "<p>";
+//    ret += topicUid(key) + " &mdash; ";
+    ret += "<b class=\"sf\">" + topicName(key) + "</b>";
     var shortmsg = topicShortPlaintext(key);
     if (shortmsg != "") {
 	ret += " &mdash; " + shortmsg;
@@ -959,7 +961,29 @@ function jumpInit() {
 	    return data.tokens;
 	},
 	queryTokenizer: Bloodhound.tokenizers.whitespace,
-	sorter: function(a,b) { return alphanum(a.nicename,b.nicename); }
+	sorter: function(a,b)
+	{
+	    // Fancy sorting function for the ordering of the jump-to
+	    // box.  If there is an exact match with what the user typed,
+	    // then we want to show it first.  Otherwise, we'll order the
+	    // topics by their importance, so that we suggest the most
+	    // important topics first.
+	    var a_key = a.value;
+	    var b_key = b.value;
+	    var curr = $("#jump").typeahead('val');
+
+	    // Special cases to ensure any literal matches come first, no
+	    // matter how unimportant they are. :)
+	    if (a.nicename.toLowerCase() == curr.toLowerCase()) return -1;
+	    if (b.nicename.toLowerCase() == curr.toLowerCase()) return 1;
+
+	    // Otherwise, put them in importance order.
+	    var a_id = topicUid(a_key);
+	    var b_id = topicUid(b_key);
+	    if (a_id < b_id) return -1;
+	    if (b_id > a_id) return 1;
+	    return 0;
+	}
     });
 
     engine1.initialize();
