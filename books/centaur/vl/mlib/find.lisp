@@ -40,7 +40,6 @@
                            default-cdr
                            acl2::subsetp-member
                            acl2::str-fix-default
-                           stringp-when-maybe-stringp
                            (:t member-equal)
                            member-equal
                            default-car

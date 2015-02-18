@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "hid-tools")
-(include-book "range-tools")
+(include-book "expr-tools")
 (include-book "syscalls")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
@@ -102,7 +102,7 @@
                (type vl-maybe-exprtype-p))
   (b* ((x (vl-expr-fix x))
        (?ctx (vl-context-fix ctx))
-       ((mv err caveat1 type type-ss) (vl-index-expr-type x ss))
+       ((mv err caveat1 type & type-ss) (vl-index-expr-type x ss))
        ((when err)
         (mv (fatal :type :vl-typedecide-fail
                    :msg "~a0: Failed to find the type of ~a1: ~@2"

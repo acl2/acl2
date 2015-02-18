@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "hid-tools")
-(include-book "range-tools")
+(include-book "expr-tools")
 (include-book "syscalls")
 (include-book "../util/sum-nats")
 (local (include-book "../util/arithmetic"))
@@ -59,7 +59,7 @@
   (b* ((x (vl-expr-fix x))
        (warnings  (vl-warninglist-fix warnings))
        ;; We'll leave complaining about the signedness caveats to typedecide
-       ((mv warning ?sign-caveat type type-ss) (vl-index-expr-type x ss))
+       ((mv warning ?sign-caveat type & type-ss) (vl-index-expr-type x ss))
        ((when warning)
         (mv (fatal :type :vl-selfsize-fail
                    :msg "~a0: Failed to find the type of ~a1: ~@2"
