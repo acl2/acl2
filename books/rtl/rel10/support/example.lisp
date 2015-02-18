@@ -464,6 +464,8 @@
 
 (set-rewrite-stack-limit 10000)
 
+(comp t)
+
 (local-defthm excp-cases
   (implies (member b (h-excps (d) 53))
            (< (abs (- 1 (* b (y3 b)))) (expt 2 -53)))

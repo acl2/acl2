@@ -28,7 +28,7 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-module dut;
+module m0;
 
   wire clk;
   wire [3:0] foo;
@@ -85,5 +85,18 @@ module dut;
       assign warr[i] = foo;
     end
   endgenerate
+
+endmodule
+
+
+
+parameter global_size = 4;
+
+module m1 ;
+
+  wire [3:0] normal1 = 0;
+  wire [3:0] normal2 = 15;
+  wire [3:0] normal3 = global_size;
+  wire [3:0] trunc1 = 16;
 
 endmodule
