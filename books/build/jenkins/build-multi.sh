@@ -45,12 +45,12 @@ echo "Making TARGET   = $TARGET"
 if [ "${LISP:0:3}" == "gcl" ]; then
   USE_QUICKLISP="";
 else
-  USE_QUICKLISP="t";
+  USE_QUICKLISP="1";
 fi
 
 set ACL2_SUFFIX=""
-if [ "$ACL2_HONS" != "" ]; then
-    ACL2_SUFFIX="${ACL2_SUFFIX}h"
+if [ "$ACL2_HONS" == "" ]; then
+    ACL2_SUFFIX="${ACL2_SUFFIX}c"
 fi
 
 if [ "$ACL2_PAR" != "" ]; then
