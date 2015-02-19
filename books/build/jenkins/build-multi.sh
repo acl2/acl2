@@ -49,8 +49,8 @@ else
 fi
 
 set ACL2_SUFFIX=""
-if [ "$ACL2_HONS" != "" ]; then
-    ACL2_SUFFIX="${ACL2_SUFFIX}h"
+if [ "$ACL2_HONS" == "" ]; then
+    ACL2_SUFFIX="${ACL2_SUFFIX}c"
 fi
 
 if [ "$ACL2_PAR" != "" ]; then
