@@ -535,6 +535,10 @@ of proofs.")
                               :verbosep t)))
    (value '(value-triple "xdoc.sao"))))
 
+; GC so the fork for the zip call of xdoc::save has a smaller chance of running
+; out of memory.
+(value-triple (hons-clear t))
+
 (value-triple
  (progn$ (cw "--- Writing ACL2+Books Manual ----------------------------------~%")
          :invisible))
