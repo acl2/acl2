@@ -348,14 +348,19 @@
 
 (defvar *acl2-insert-pats*
 
-;;; Another good default might be '(:not ".*%[ ]*$" ".*$[ ]*$")
+  '(:not ".*%[ ]*$" ".*$[ ]*$")
 
-  '(".*>[ ]*$"		   ; ACL2, GCL, CLISP, LispWorks, CCL debugger
-    ".*[?] $"		   ; CCL
-    ".*): $"		   ; Allegro CL
-    ".*] $"		   ; SBCL debugger
-    ".*[*] $"		   ; CMUCL, SBCL
-    )
+;;; Another good default might be this "positive" list -- instead of
+;;; ruling out shell prompts as done just above, here we allow only
+;;; lines with known Lisp or ACL2 prompts.
+
+; '(".*>[ ]*$"		   ; ACL2, GCL, CLISP, LispWorks, CCL debugger
+;   ".*[?] $"		   ; CCL
+;   ".*): $"		   ; Allegro CL
+;   ".*] $"		   ; SBCL debugger
+;   ".*[*] $"		   ; CMUCL, SBCL
+;  )
+
   "A list of regular expressions for acl2-check-insert to allow on the current line
 or, if the car is :not -- e.g., (:not \".*%[ ]*$\" \".*$[ ]*$\") -- patterns to disallow.")
 

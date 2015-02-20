@@ -273,6 +273,8 @@
  definitions with recursive calls like @('(mc91 (mc91 (+ n 11)))') &mdash;
  while ours were not designed to do so.</p>")
 
+(defpointer defpm def-partial-measure)
+
 (defxdoc defthm-domain
   :parents (macro-libraries)
   :short "Prove termination on a given domain"
