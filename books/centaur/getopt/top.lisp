@@ -40,7 +40,7 @@
 
 
 (defxdoc getopt
-  :parents (acl2::interfacing-tools)
+  :parents (acl2::command-line)
   :short "A library for processing command-line option."
 
   :long "<h3>Introduction</h3>
