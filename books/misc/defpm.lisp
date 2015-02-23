@@ -421,7 +421,7 @@
 
 ; Set the theory to be one that is independent of
 
-      (local (include-book "arithmetic-top-theory"))
+      (local (include-book "misc/arithmetic-top-theory" :dir :system))
       (local (in-theory (theory 'arithmetic-top-theory)))
       (local (in-theory (enable natp)))
 
