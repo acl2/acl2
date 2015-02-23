@@ -22,6 +22,8 @@
 ;;; define functions like fact-test (below).  We might also consider automating
 ;;; the production of additional stuff, as described in comments below.
 
+; (depends-on "arithmetic-top-theory.cert")
+
 (in-package "ACL2")
 
 (include-book "xdoc/top" :dir :system)
@@ -273,6 +275,8 @@
  definitions with recursive calls like @('(mc91 (mc91 (+ n 11)))') &mdash;
  while ours were not designed to do so.</p>")
 
+(defpointer defpm def-partial-measure)
+
 (defxdoc defthm-domain
   :parents (macro-libraries)
   :short "Prove termination on a given domain"
@@ -394,6 +398,13 @@
         (t (cons `(syntaxp (symbolp ,(car formals)))
                  (syntaxp-symbolp-lst (cdr formals))))))
 
+(make-event
+ (pprogn (f-put-global 'defpm-arithmetic-top-book
+                       (extend-pathname (cbd) "arithmetic-top-theory" state)
+                       state)
+         (value '(value-triple :defpm-arithmetic-top-book-set)))
+ :check-expansion t)
+
 (defun defpm-form (test steps measure terminates theory formals)
   (declare (xargs :guard
                   (and (symbol-listp (list measure terminates theory))
@@ -419,7 +430,7 @@
 
 ; Set the theory to be one that is independent of
 
-      (local (include-book "arithmetic-top-theory"))
+      (local (make-event (list 'include-book (@ defpm-arithmetic-top-book))))
       (local (in-theory (theory 'arithmetic-top-theory)))
       (local (in-theory (enable natp)))
 

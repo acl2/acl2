@@ -346,6 +346,50 @@
 	(forward-sexp)
 	(buffer-substring beg (point))))))
 
+(defvar *acl2-insert-pats*
+
+  '(:not ".*%[ ]*$" ".*$[ ]*$")
+
+;;; Another good default might be this "positive" list -- instead of
+;;; ruling out shell prompts as done just above, here we allow only
+;;; lines with known Lisp or ACL2 prompts.
+
+; '(".*>[ ]*$"		   ; ACL2, GCL, CLISP, LispWorks, CCL debugger
+;   ".*[?] $"		   ; CCL
+;   ".*): $"		   ; Allegro CL
+;   ".*] $"		   ; SBCL debugger
+;   ".*[*] $"		   ; CMUCL, SBCL
+;  )
+
+  "A list of regular expressions for acl2-check-insert to allow on the current line
+or, if the car is :not -- e.g., (:not \".*%[ ]*$\" \".*$[ ]*$\") -- patterns to disallow.")
+
+(defun acl2-check-insert ()
+  (save-excursion
+    (forward-line 0)
+    (let ((buf (get-buffer *acl2-shell*)))
+      (cond
+       ((null buf)
+	(error "Nonexistent *acl2-shell* buffer: %s" *acl2-shell*))
+       ((null (get-buffer-process buf))
+	(error "The buffer named %s (the value of *acl2-shell*) has no process!"
+	       *acl2-shell*))
+       (t (let ((patterns *acl2-insert-pats*))
+	    (cond ((null patterns))
+		  ((eq (car patterns) :not)
+		   (while (setq patterns (cdr patterns))
+		     (when (looking-at (car patterns))
+		       (error "Error: Illegal regexp match for line, \"%s\"; see *acl2-insert-pats*"
+			      (car patterns)))))
+		  (t (let ((flg nil))
+		       (while patterns
+			 (cond ((looking-at (car patterns))
+				(setq flg t)
+				(setq patterns nil))
+			       (t (setq patterns (cdr patterns)))))
+		       (or flg
+			   (error "Error: No regexp match for line; see *acl2-insert-pats*")))))))))))
+
 (defun enter-theorem ()
 
   "Normally just insert the last top-level form starting at or before
@@ -366,6 +410,7 @@ scope with control-t o."
   (let ((str (acl2-current-form-string)))
     (switch-to-buffer *acl2-shell*)
     (goto-char (point-max))
+    (acl2-check-insert)
     (insert str))
   (goto-char (point-max)) ; harmless; seemed necessary at one point
   )
@@ -377,6 +422,7 @@ scope with control-t o."
     (other-window 1)
     (switch-to-buffer *acl2-shell*)
     (goto-char (point-max))
+    (acl2-check-insert)
     (insert str)))
 
 (defun event-name ()

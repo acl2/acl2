@@ -225,6 +225,7 @@
 (include-book "misc/with-waterfall-parallelism" :dir :system)
 (include-book "misc/seq" :dir :system)
 (include-book "misc/seqw" :dir :system)
+(include-book "misc/defpm" :dir :system)
 
 (include-book "make-event/proof-by-arith" :dir :system)
 
@@ -533,6 +534,10 @@ of proofs.")
                               (xdoc::get-xdoc-table (w state))
                               :verbosep t)))
    (value '(value-triple "xdoc.sao"))))
+
+; GC so the fork for the zip call of xdoc::save has a smaller chance of running
+; out of memory.
+(value-triple (hons-clear t))
 
 (value-triple
  (progn$ (cw "--- Writing ACL2+Books Manual ----------------------------------~%")

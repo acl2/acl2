@@ -22528,12 +22528,13 @@
                                                         trace-options)))
                        (new-trace-options
 
-; ACL2 has redefined the underlying Lisp trace for GCL and Allegro CL so that
-; they recognize the :exit keyword, and we take advantage of that here.  ACL2
-; has also redefined the :exit keyword for CCL, but since CCL uses feature
-; acl2-mv-as-values, there is no need to specify :exit here.
+; ACL2 has redefined the underlying Lisp trace for GCL, Allegro CL, and CCL so
+; that they recognize the :exit keyword, and we take advantage of that here if
+; (unlikely though that may be) #-acl2-mv-as-values is also true.  When
+; #+acl2-mv-as-values holds, there is no need to specify :exit here.
 
-                        #+(or gcl allegro)
+                        #+(and (not acl2-mv-as-values)
+                               (or gcl allegro ccl))
                         (let ((multiplicity
                                (or (cadr (assoc-keyword :multiplicity
                                                         trace-options))
@@ -22546,7 +22547,8 @@
                                             (mv-refs ,(1- multiplicity))))
                                     trace-options-1))
                            (t trace-options-1)))
-                        #-(or gcl allegro)
+                        #-(and (not acl2-mv-as-values)
+                               (or gcl allegro ccl))
                         (pprogn (when (assoc-keyword :multiplicity
                                                      trace-options)
                                   (let ((state *the-live-state*))
