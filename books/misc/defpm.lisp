@@ -273,6 +273,8 @@
  definitions with recursive calls like @('(mc91 (mc91 (+ n 11)))') &mdash;
  while ours were not designed to do so.</p>")
 
+(defpointer defpm def-partial-measure)
+
 (defxdoc defthm-domain
   :parents (macro-libraries)
   :short "Prove termination on a given domain"
@@ -419,7 +421,7 @@
 
 ; Set the theory to be one that is independent of
 
-      (local (include-book "arithmetic-top-theory"))
+      (local (include-book "misc/arithmetic-top-theory" :dir :system))
       (local (in-theory (theory 'arithmetic-top-theory)))
       (local (in-theory (enable natp)))
 
