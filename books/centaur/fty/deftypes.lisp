@@ -1835,6 +1835,9 @@
 
 (defun flexsum-case-macro-fn (var-or-binding rest-args sum)
   (b* (((flexsum sum) sum)
+       ((when (consp var-or-binding))
+        (er hard? 'flexsum-case-macro "Requires a variable, rather than ~x0" var-or-binding))
+       (var var-or-binding)
        (kinds (flexprods->kinds sum.prods))
        ;; Special case: (foo-case x :kind) becomes (foo-case x :kind t :otherwise nil)
        ((when (case-match rest-args

@@ -35,7 +35,7 @@
 (local (xdoc::set-default-parents oslib))
 
 (define argv (&optional (state 'state))
-  :parents (oslib)
+  :parents (oslib acl2::command-line)
   :returns (mv (arguments string-listp)
                (state state-p1 :hyp (force (state-p1 state))))
   :short "Get the \"application level\" command line arguments passed to ACL2."

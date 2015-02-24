@@ -462,17 +462,64 @@
                         (:instance recip-refine-1 (y1 (y1 b)) (p 53) (y2 (y2 b)) (ep1 (eps1)) (ep2 (eps2))))
                   :in-theory (enable y3p e1))))
 
-(set-rewrite-stack-limit 10000)
+; Added by Matt K., 2/23/2015:
 
-(comp t)
+; The following events allow the proof of excp-cases below to go through
+; without needing to call set-rewrite-stack-limit.  We found that Allegro CL
+; 9.0 goes out to lunch, even with (set-rewrite-stack-limit 10000) and also
+; with (comp t) here.  This is reminiscent of the "snorkeling" used by J Moore
+; in his application of codewalker.
+
+(local (defconst *mem-open-len* 50)) ; other values work too
+
+(local
+ (encapsulate
+  ()
+
+  (local-defthm member-revappend
+    (iff (member-equal a (revappend x y))
+         (or (member-equal a x)
+             (member-equal a y)))
+    :hints (("Goal" :induct (revappend x y))))
+
+  (local-defthm member-open-1-lemma
+    (implies (and (natp n)
+                  (<= n (len lst)))
+             (iff (or (member-equal a lst)
+                      (member-equal a acc))
+                  (or (member-equal a (first-n-ac n lst acc))
+                      (member-equal a (nthcdr n lst)))))
+    :hints (("Goal" :induct (first-n-ac n lst acc)))
+    :rule-classes nil)
+
+  (defthm member-open-1
+    (implies (and (syntaxp (and (quotep lst)
+                                (> (len (unquote lst)) *mem-open-len*)))
+                  (<= *mem-open-len* (len lst)))
+             (iff (member-equal a lst)
+                  (or (member-equal a (take *mem-open-len* lst))
+                      (member-equal a (nthcdr *mem-open-len* lst)))))
+    :hints (("Goal" :use ((:instance member-open-1-lemma
+                                     (n *mem-open-len*)
+                                     (lst lst)
+                                     (acc nil))))))))
+
+(local-defthm member-open-2
+  (implies (syntaxp (and (quotep lst)
+                         (<= (len (unquote lst)) *mem-open-len*)))
+           (equal (member-equal a lst)
+                  (cond ((endp lst) nil)
+                        ((equal a (car lst))
+                         lst)
+                        (t (member-equal a (cdr lst)))))))
+
+(local (in-theory (disable member-equal)))
 
 (local-defthm excp-cases
   (implies (member b (h-excps (d) 53))
            (< (abs (- 1 (* b (y3 b)))) (expt 2 -53)))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable h-excps))))
-
-(set-rewrite-stack-limit *default-rewrite-stack-limit*)
 
 (local-in-theory (disable (h-excps)))
 

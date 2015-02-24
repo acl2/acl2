@@ -679,11 +679,12 @@
   :returns (xx arithtmlist-p)
   (if (atom x)
       nil
-    (cons (arithtm-case (x (car x))
-            :num (arithtm-num (* 2 x.val))
-            :plus (arithtm-plus (arithtm-double x.left)
-                                (arithtm-double x.right))
-            :minus (arithtm-minus (arithtm-double x.arg)))
+    (cons (b* ((x (car x)))
+            (arithtm-case x
+              :num (arithtm-num (* 2 x.val))
+              :plus (arithtm-plus (arithtm-double x.left)
+                                  (arithtm-double x.right))
+              :minus (arithtm-minus (arithtm-double x.arg))))
           (arithtmlist-double (cdr x)))))
 
 
