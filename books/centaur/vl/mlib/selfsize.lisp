@@ -59,22 +59,23 @@
   (b* ((x (vl-expr-fix x))
        (warnings  (vl-warninglist-fix warnings))
        ;; We'll leave complaining about the signedness caveats to typedecide
-       ((mv warning ?sign-caveat type & type-ss) (vl-index-expr-type x ss))
+       ((mv warning opinfo) (vl-index-expr-typetrace x ss))
        ((when warning)
         (mv (fatal :type :vl-selfsize-fail
                    :msg "~a0: Failed to find the type of ~a1: ~@2"
                    :args (list ctx x warning))
             nil))
+       ((vl-operandinfo opinfo))
        ((mv warning size)
-        (vl-datatype-size type type-ss))
+        (vl-datatype-size opinfo.type opinfo.ss))
 
        ((when warning)
         (mv (fatal :type :vl-selfsize-fail
                    :msg "~a0: Failed to find the size of datatype ~a1 for expression ~a2: ~@3"
-                   :args (list ctx type x warning))
+                   :args (list ctx opinfo.type x warning))
             nil))
        
-       ((unless (vl-datatype-packedp type type-ss))
+       ((unless (vl-datatype-packedp opinfo.type opinfo.ss))
         ;; not a sizable datatype
         (mv (ok) nil)))
 
@@ -707,7 +708,7 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
   :returns (mv (warnings vl-warninglist-p)
                (size maybe-natp :rule-classes :type-prescription))
   (b* (((vl-call x) (vl-expr-fix x))
-       ((mv err trace ?tail)
+       ((mv err trace ?context ?tail)
         (vl-follow-scopeexpr x.name ss))
        ((when err)
         (mv (fatal :type :vl-selfsize-fail

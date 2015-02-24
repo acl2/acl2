@@ -1083,7 +1083,6 @@ that the end-user can understand the nature and location of the problem.</dd>
 
 (local (xdoc::set-default-parents following-hids))
 
-;; BOZO it seems like many of the warnings here ought to be fatal.
 
 (defprod vl-hidstep
   :short "A single step along the way of a hierarchical identifier."
@@ -1093,6 +1092,7 @@ step along a HID.</p>"
   :tag :vl-hidstep
   :layout :tree
   ((item vl-scopeitem-p  "Some item encountered along the path of the HID.")
+   (index vl-maybe-expr-p "Instance array/genarray index, if present")
    (ss   vl-scopestack-p "The scope where this item was found.")))
 
 (fty::deflist vl-hidtrace
@@ -1259,7 +1259,11 @@ top-level hierarchical identifiers.</p>"
                                      (vl-interface-p x))
                                  (vl-scope-p x))))
                (local (in-theory (disable double-containment
-                                          tag-reasoning))))
+                                          tag-reasoning)))
+
+               (local (defthm vl-maybe-expr-p-of-car-exprlist
+                        (implies (vl-exprlist-p x)
+                                 (vl-maybe-expr-p (car x))))))
     :hooks ((:fix
              :hints(("Goal"
                      :expand ((:free (trace ss strictp) (vl-follow-hidexpr-aux x trace ss :strictp strictp))
@@ -1277,7 +1281,10 @@ top-level hierarchical identifiers.</p>"
           (mv (vl-follow-hidexpr-error (vmsg "item not found") ss)
               trace x))
 
-         (trace (cons (make-vl-hidstep :item item :ss item-ss) trace))
+         (trace (cons (make-vl-hidstep :item item
+                                       :index (car indices)
+                                       :ss item-ss)
+                      trace))
 
          ((when (or (eq (tag item) :vl-vardecl)
                     (eq (tag item) :vl-paramdecl)))
@@ -1506,6 +1513,50 @@ top-level hierarchical identifiers.</p>"
                                         :strictp strictp
                                         :origx origx))))))))
 
+(deftagsum vl-scopecontext
+  (:local ((levels natp :rule-classes :type-prescription
+                   "How many levels up from the current scope was the item found")))
+  (:root  ())
+  (:package ((pkg vl-package-p)))
+  (:module  ((mod vl-module-p))))
+
+(deftagsum vl-select
+  (:field ((name stringp "The name of the field we're selecting")))
+  (:index ((val  vl-expr-p "The index we're selecting"))))
+
+(defprod vl-selstep
+  ((select vl-select-p   "The field or index being selected")
+   (type vl-datatype-p   "The datatype of the element we've selected")
+   (caveat               "Signedness caveat for this indexing operation.  Signals
+                          a disagreement between implementations on the signedness
+                          of the result.  See @(see vl-datatype-remove-dim).  Only
+                          important if this is the outermost selstep.")
+   (ss vl-scopestack-p   "The scopestack in which the datatype was declared or
+                          typedef'd")))
+
+(fty::deflist vl-seltrace :elt-type vl-selstep :elementp-of-nil nil)
+
+
+(defprod vl-operandinfo
+  ((context  vl-scopecontext-p  "The context in which the HID base was found")
+   (hidtrace vl-hidtrace-p      "The follow-hids trace, i.e. the trace of instances/blocks
+                                 in which the base variable is located")
+   (seltrace vl-seltrace-p      "The select trace, i.e. the types/scopestacks of
+                                 all the fields/indices we've selected into")
+   (part     vl-partselect-p    "The final partselect")
+   (type     vl-datatype-p      "The final datatype of the object, after
+                                 partselecting.")
+   (ss       vl-scopestack-p    "The scopestack for the final datatype")))
+              
+
+(local (defthm nesting-level-of-vl-scopestack-find-item/context
+         (<= (vl-scopestack-nesting-level
+              (mv-nth 1 (vl-scopestack-find-item/context name ss)))
+             (vl-scopestack-nesting-level ss))
+         :hints(("Goal" :in-theory (enable vl-scopestack-find-item/context
+                                           vl-scopestack-nesting-level)))
+         :rule-classes :linear))
+
 (define vl-follow-hidexpr
   :short "Follow a HID to find the associated declaration."
   ((x       vl-hidexpr-p       "Hierarchical identifier to follow.")
@@ -1521,6 +1572,9 @@ top-level hierarchical identifiers.</p>"
              "On success: a non-empty trace that records all the items we went
               through to resolve this HID.  The @(see car) of the trace is the
               final declaration for this HID.")
+      (context (implies (not err) (vl-scopecontext-p context))
+               "On success, a scopecontext object describing where this hid is
+                rooted.")
       (tail  vl-hidexpr-p
              "On success: the remainder of @('x') after arriving at the
               declaration.  This may include array indexing or structure
@@ -1599,21 +1653,32 @@ instance, in this case the @('tail') would be
 
        (trace nil)
 
-       ((mv item &) (vl-scopestack-find-item/ss name1 ss))
+       ((mv item ctx-ss pkg-name) (vl-scopestack-find-item/context name1 ss))
        ((when item)
-        ;; Item is found in the current scope so this is an ordinary, not
-        ;; top-level hierarchical identifier.  Go ahead and just use our
-        ;; downward lookup code.
-        (vl-follow-hidexpr-aux x nil ss
-                               :strictp strictp))
+        (b* (((mv err trace tail)
+              (vl-follow-hidexpr-aux x nil ss :strictp strictp))
+             ((when err) (mv err trace nil tail))
+             ((mv err context)
+              (cond (pkg-name
+                     (b* ((pkg (vl-scopestack-find-package pkg-name ss))
+                          ((unless pkg)
+                           (mv (vmsg "Programming error: found item in ~
+                                      package ~s0 but couldn't find package"
+                                     pkg-name)
+                               nil)))
+                       (mv nil (make-vl-scopecontext-package :pkg pkg))))
+                    ((vl-scopestack-case ctx-ss :global)
+                     (mv nil (make-vl-scopecontext-root)))
+                    (t (mv nil
+                           (make-vl-scopecontext-local
+                            :levels (- (vl-scopestack-nesting-level ss)
+                                       (vl-scopestack-nesting-level ctx-ss))))))))
+          (mv err trace context tail)))
 
-       ;; BOZO eventually this may need to be extended to deal with $root,
-       ;; $unit, etc.  Maybe also scopes if we decide to try to implement
-       ;; scope operators like foo::bar.baz...
        ((when (eq kind :end))
         ;; Item was not found AND it is not of the form foo.bar, so we do NOT
         ;; want to interpret it as any sort of reference to a top-level module.
-        (mv (vl-follow-hidexpr-error "item not found" ss) trace x))
+        (mv (vl-follow-hidexpr-error "item not found" ss) trace nil x))
 
        ;; Otherwise, might be a valid reference into a top-level module?
        (design   (vl-scopestack->design ss))
@@ -1621,19 +1686,19 @@ instance, in this case the @('tail') would be
         ;; We must be using a phony scopestack.  We have no way of knowing what
         ;; the top-level modules are so we have no idea if this is valid.
         (mv (vl-follow-hidexpr-error "item not found" ss)
-            trace x))
+            trace nil x))
 
        (mods     (vl-design->mods design))
        (toplevel (vl-modulelist-toplevel mods))
        ((unless (member-equal name1 toplevel))
         (mv (vl-follow-hidexpr-error "item not found" ss)
-            trace x))
+            trace nil x))
 
        ;; Successfully found a top-level module with the first index name.
        ((when (consp indices))
         ;; Something like topmod[3].foo.bar, doesn't make any sense.
         (mv (vl-follow-hidexpr-error "array indices into top level module" ss)
-            trace x))
+            trace nil x))
 
        (mod     (vl-find-module name1 mods))
        (mod-ss  (vl-scopestack-init design))
@@ -1651,9 +1716,14 @@ instance, in this case the @('tail') would be
        ;; record this sort of thing.  For now, out of sheer pragmatism, I think
        ;; it seems pretty reasonable to just not bother to record the first
        ;; step.
-       (next-ss (vl-scopestack-push mod mod-ss)))
-    (vl-follow-hidexpr-aux rest trace next-ss
-                           :strictp strictp))
+       (next-ss (vl-scopestack-push mod mod-ss))
+
+       ((mv err trace tail)
+        (vl-follow-hidexpr-aux rest trace next-ss
+                               :strictp strictp))
+
+       (context (make-vl-scopecontext-module :mod mod)))
+    (mv err trace context tail))
   ///
   (defret consp-of-vl-follow-hidexpr.trace
     (implies (not err)
@@ -1683,6 +1753,8 @@ instance, in this case the @('tail') would be
              "On success: a non-empty trace that records all the items we went
               through to resolve this HID.  The @(see car) of the trace is the
               final declaration for this HID.")
+      (context (implies (not err) (vl-scopecontext-p context))
+               "On success, a scopecontext showing where the hid is found.")
       (tail  vl-hidexpr-p
              "On success: the remainder of @('x') after arriving at the
               declaration.  This may include array indexing or structure
@@ -1700,21 +1772,26 @@ instance, in this case the @('tail') would be
                       (:vl-local "local")
                       (:vl-$unit "$unit")
                       (otherwise "??UNKNOWN??")))
-              nil (vl-scopeexpr->hid x)))
+              nil nil (vl-scopeexpr->hid x)))
          ((mv package pkg-ss) (vl-scopestack-find-package/ss x.first ss))
          ((unless package)
           (mv (vmsg "~a0: Package ~s1 not found.."
                     x x.first)
-              nil (vl-scopeexpr->hid x)))
+              nil nil (vl-scopeexpr->hid x)))
          (pkg-ss (vl-scopestack-push package pkg-ss))
          ((unless (vl-scopeexpr-case x.rest :end))
           (mv (vmsg "~a0: Multiple levels of :: operators are ~
                                      not yet supported."
                     x)
-              nil (vl-scopeexpr->hid x))))
-      (vl-follow-hidexpr
-       (vl-scopeexpr-end->hid x.rest)
-       pkg-ss  :strictp strictp :origx x)))
+              nil nil (vl-scopeexpr->hid x)))
+         ((mv err trace context tail)
+          (vl-follow-hidexpr
+           (vl-scopeexpr-end->hid x.rest)
+           pkg-ss  :strictp strictp :origx x))
+         ((when err) (mv err trace context tail))
+         ((unless (vl-scopecontext-case context :local))
+          (mv nil trace context tail)))
+      (mv nil trace (make-vl-scopecontext-package :pkg package) tail)))
   ///
   (defret consp-of-vl-follow-scopeexpr.trace
     (implies (not err)
@@ -1749,7 +1826,7 @@ instance, in this case the @('tail') would be
                                    paths, only package scopes: ~a1"
                   nil x)
             nil ss))
-       ((mv err trace ?tail)
+       ((mv err trace ?context ?tail)
         (vl-follow-scopeexpr x ss))
        ((when err)
         (mv err nil ss))
@@ -2920,11 +2997,42 @@ dimensions counts as unsigned.)</p>"
            (vl-datatype-check-usertypes x ss :rec-limit rec-limit))
     :hints(("Goal" :in-theory (enable vl-datatype-check-usertypes)))))
 
-(define vl-datatype-remove-dims ((n natp)
-                                 (x vl-datatype-p)
-                                 (ss vl-scopestack-p))
-  :short "Get the type of a variable of type @('x') after @('n') indexing
-operations are applied to it."
+
+;; (define vl-datatype-indexing-dimension ((x vl-datatype-p)
+;;                                         (ss vl-scopestack-p))
+;;   :returns (dim (iff (vl-packeddimension-p dim) dim))
+;;   (b* ((udims (vl-datatype->udims x))
+;;        ((when (consp udims)) (car udims))
+;;        (pdims (vl-datatype->pdims x))
+;;        ((when (consp pdims)) (car pdims))
+       
+
+
+(define vl-maybe-usertype-resolve ((x vl-datatype-p)
+                                   (ss vl-scopestack-p))
+  :guard (not (vl-datatype-check-usertypes x ss))
+  :returns (mv (new-x vl-datatype-p)
+               (new-ss vl-scopestack-p))
+  (b* ((x (vl-datatype-fix x))
+       (ss (vl-scopestack-fix ss))
+       ((when (or (consp (vl-datatype->pdims x))
+                  (consp (vl-datatype->udims x))))
+        (mv x ss)))
+  (vl-datatype-case x
+    :vl-usertype (b* (((mv err new-x new-ss) (vl-usertype-resolve x.name ss))
+                      ((unless (mbt (not err))) (mv x ss)))
+                   (mv new-x new-ss))
+    :otherwise (mv x ss)))
+  ///
+  (defret vl-datatype-check-usertypes-of-vl-maybe-usertype-resolve
+    (implies (not (vl-datatype-check-usertypes x ss :rec-limit rec-limit))
+             (not (vl-datatype-check-usertypes new-x new-ss :rec-limit rec-limit)))))
+
+
+(define vl-datatype-remove-dim ((x vl-datatype-p)
+                                (ss vl-scopestack-p))
+  :short "Get the type of a variable of type @('x') after an indexing
+operation is applied to it."
   :long "
 <p>The caveat flag returned identifies a case where implementations disagree on
 the signedness of the resulting type.  This caveat occurs when we have packed
@@ -2975,257 +3083,427 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
                (caveat-flag "Indicates caveat about possible signedness ambiguities")
                (new-x (implies (not err) (vl-datatype-p new-x))
                       "Datatype after indexing")
-               (dims  vl-packeddimensionlist-p)
+               (dim   (implies (not err) (vl-packeddimension-p dim))
+                      "Dimension removed from the datatype")
                (new-ss vl-scopestack-p "Scopestack where the most recently looked-up
                                         usertype was defined -- this is the scopestack
                                         needed to look up the next usertype that
                                         might remain in the new type."))
-  :measure (two-nats-measure
-            n
-            (if (and (vl-datatype-case x :vl-usertype)
-                     (not (consp (vl-datatype->udims x)))
-                     (not (consp (vl-datatype->pdims x))))
-                1 0))
-  (b* ((x (vl-datatype-fix x))
-       (ss (vl-scopestack-fix ss))
-       (udims (redundant-list-fix (vl-datatype->udims x)))
-       (pdims (redundant-list-fix (vl-datatype->pdims x)))
-       (nu (len udims))
-       (n (lnfix n))
-       ((when (<= n nu))
+  (b* (((mv x ss) (vl-maybe-usertype-resolve x ss))
+       (udims (vl-datatype->udims x))
+       ((when (consp udims))
         (mv nil nil
             (vl-datatype-update-udims
-             (nthcdr n udims) x)
-            (take n udims)
+             (cdr udims) x)
+            (car udims)
             ss))
-       (n (- n nu))
-       (np (len pdims))
-       ((when (<= n np))
+       (pdims (vl-datatype->pdims x))
+       ((when (consp pdims))
         (b* ((x (vl-datatype-set-unsigned x))
-             (dims (append udims (take n pdims)))
              ((when (or (vl-datatype-case x :vl-usertype)
-                        (< n np)))
+                        (consp (cdr pdims))))
               ;; (unless (and (eql n np)
               ;;              (not (vl-datatype-case x :vl-usertype))))
               (mv nil nil
                   (vl-datatype-update-dims
-                   (nthcdr n pdims)
+                   (cdr pdims)
                    nil ;; no udims
                    x)
-                  dims
+                  (car pdims)
                   ss))
              (new-x (vl-datatype-update-dims nil nil x))
              ((mv & signedness) (vl-datatype-signedness new-x ss)))
-          (mv nil (eq signedness :vl-signed) new-x dims ss)))
-       (n (- n np)))
-    (vl-datatype-case x
-      :vl-usertype
-      (b* (((mv err def new-ss) (vl-usertype-resolve x.name ss))
-           ((when err) (mv err nil nil (append udims pdims) new-ss))
-           ((mv err caveat new-x rest-dims new-ss)
-            (vl-datatype-remove-dims n def new-ss)))
-        (mv err caveat new-x (append udims pdims rest-dims) new-ss))
-      :otherwise
-      (b* ((x (vl-datatype-update-dims nil nil x))
-           ((unless (vl-datatype-packedp x ss))
-            (mv (vmsg "Index applied to non-packed, non-array type ~a0" x)
-                nil nil (append udims pdims) ss))
-           ((unless (eql n 1))
-            (mv (vmsg "Too many indices applied to packed non-array ~a0" x) nil nil (append udims pdims) ss))
-           ((mv err size) (vl-datatype-size x ss))
-           ((when err)
-            (mv err nil nil (append udims pdims) ss))
-           ((unless (posp size))
-            (mv (vmsg "Index applied to ~s0 packed type: ~a1"
-                      (if size "unsizeable" "zero-sized") x)
-                nil nil (append udims pdims) ss))
-           ((when (and (vl-datatype-case x :vl-coretype)
-                       (eql size 1)))
-            (mv (vmsg "Index applied to bit type ~a0" x) nil nil (append udims pdims) ss))
-           (dim (vl-range->packeddimension (make-vl-range :msb (vl-make-index (1- size))
-                                                          :lsb (vl-make-index 0)))))
-        (mv nil nil
-            (make-vl-coretype :name :vl-logic)
-            (append udims pdims (list dim))
-            ss))))
+          (mv nil (eq signedness :vl-signed) new-x (car pdims) ss)))
+       ((unless (vl-datatype-packedp x ss))
+        (mv (vmsg "Index applied to non-packed, non-array type ~a0" x)
+            nil nil nil ss))
+       ((mv err size) (vl-datatype-size x ss))
+       ((when err)
+        (mv err nil nil nil ss))
+       ((unless (posp size))
+        (mv (vmsg "Index applied to ~s0 packed type: ~a1"
+                  (if size "unsizeable" "zero-sized") x)
+            nil nil nil ss))
+       ((when (and (vl-datatype-case x :vl-coretype)
+                   (eql size 1)))
+        (mv (vmsg "Index applied to bit type ~a0" x) nil nil nil ss))
+       (dim (vl-range->packeddimension (make-vl-range :msb (vl-make-index (1- size))
+                                                      :lsb (vl-make-index 0)))))
+    (mv nil nil
+        (make-vl-coretype :name :vl-logic) dim ss))
   ///
-  (defret vl-datatype-check-usertypes-of-remove-dims
+  (defret vl-datatype-check-usertypes-of-remove-dim
     (implies (and (not (vl-datatype-check-usertypes x ss :rec-limit rec-limit))
                   (not err))
              (not (vl-datatype-check-usertypes new-x new-ss :rec-limit rec-limit)))
-    :hints (("goal" :induct t :in-theory (enable vl-datatype-check-usertypes))))
-
-  (defret vl-datatype-remove-dims-true-listp-dims
-    (true-listp dims)
-    :rule-classes :type-prescription)
-
-  (defret vl-datatype-remove-dims-dims-length
-    (implies (not err)
-             (equal (len dims)
-                    (nfix n))))
-
-  (verify-guards vl-datatype-remove-dims
-    :hints ((and stable-under-simplificationp
-                 '(:expand ((:free (rec-limit)
-                             (vl-datatype-check-usertypes x ss :rec-limit rec-limit)))))))
+    :hints (("goal" :in-theory (enable vl-datatype-check-usertypes)))))
 
 
-  (local
-   (defthm vl-datatype-update-dims-compose
-     (equal (vl-datatype-update-dims
-             pdims udims
-             (vl-datatype-update-dims
-              pdims1 udims1 x))
-            (vl-datatype-update-dims
-             pdims udims x))
-     :hints(("Goal" :in-theory (enable vl-datatype-update-dims)))))
+(define vl-selstep-usertypes-ok ((x vl-selstep-p))
+  (b* (((vl-selstep x)))
+    (not (vl-datatype-check-usertypes x.type x.ss))))
+
+(define vl-seltrace-usertypes-ok ((x vl-seltrace-p))
+  (if (atom x)
+      t
+    (and (vl-selstep-usertypes-ok (car x))
+         (vl-seltrace-usertypes-ok (cdr x))))
+  ///
+  (defthm vl-seltrace-usertypes-ok-of-append
+    (implies (and (vl-seltrace-usertypes-ok x)
+                  (vl-seltrace-usertypes-ok y))
+             (vl-seltrace-usertypes-ok (append x y))))
+  (defthm vl-seltrace-usertypes-ok-of-rev
+    (implies (vl-seltrace-usertypes-ok x)
+             (vl-seltrace-usertypes-ok (rev x))))
+  (defthm vl-datatype-check-usertypes-of-first-seltrace
+    (implies (and (vl-seltrace-usertypes-ok x)
+                  (consp x))
+             (not (vl-datatype-check-usertypes
+                   (vl-selstep->type (car x))
+                   (vl-selstep->ss (car x)))))
+    :hints(("Goal" :in-theory (enable vl-selstep-usertypes-ok)))))
 
 
-  (local (Defthm append-of-nil
-           (equal (append nil x) x)
-           :hints(("Goal" :in-theory (enable append)))))
+(define vl-follow-array-indices ((x vl-exprlist-p)
+                                 (type vl-datatype-p)
+                                 (ss vl-scopestack-p))
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (trace vl-seltrace-p))
+  :guard (not (vl-datatype-check-usertypes type ss))
+  (b* (((when (atom x)) (mv nil nil))
+       ((mv err caveat newtype & new-ss)
+        (vl-datatype-remove-dim type ss))
+       ((when err) (mv err nil))
+       ((mv err rest) (vl-follow-array-indices (cdr x) newtype new-ss))
+       ((when err) (mv err nil)))
+    (mv nil (cons (make-vl-selstep
+                   :select (make-vl-select-index :val (car x))
+                   :type   newtype
+                   :caveat caveat
+                   :ss     new-ss)
+                  rest)))
+  ///
+  (defret vl-seltrace-usertypes-ok-of-follow-array-indices
+    (implies (not (vl-datatype-check-usertypes type ss))
+             (vl-seltrace-usertypes-ok trace))
+    :hints(("Goal" :in-theory (enable vl-seltrace-usertypes-ok
+                                      vl-selstep-usertypes-ok))))
 
-  (local (defthm list-fix-of-nthcdr
-           (equal (list-fix (nthcdr n x))
-                  (nthcdr n (list-fix x)))))
-  (local (in-theory (disable acl2::nthcdr-of-list-fix)))
+  (defret true-listp-of-vl-follow-array-indices-trace
+    (true-listp trace)
+    :rule-classes :type-prescription))
 
-  (local (defthm append-take-take-nthcdr
-           (equal (append (take n a)
-                          (take m (nthcdr n a)))
-                  (take (+ (nfix n) (nfix m)) a))
-           :hints (("goal" :induct (nthcdr n a)
-                    :in-theory (enable acl2::take-redefinition nthcdr)))))
 
-  (local (defthm append-take-nthcdr
-           (implies (<= (nfix n) (len a))
-                    (equal (append (take n a)
-                                   (nthcdr n a))
-                           a))
-           :hints (("goal" :induct (nthcdr n a)
-                    :in-theory (enable acl2::take-redefinition nthcdr len)))))
 
-  (local (defthm append-take-take-nthcdr-1
-           (equal (append (take n a)
-                          (take m (nthcdr n a))
-                          x)
-                  (append (take (+ (nfix n) (nfix m)) a) x))
-           :hints (("goal" :induct (nthcdr n a)
-                    :in-theory (enable acl2::take-redefinition nthcdr)))))
 
-  (local (defthm append-take-nthcdr-1
-           (implies (<= (nfix n) (len a))
-                    (equal (append (take n a)
-                                   (nthcdr n a)
-                                   x)
-                           (append a x)))
-           :hints (("goal" :induct (nthcdr n a)
-                    :in-theory (enable acl2::take-redefinition nthcdr len)))))
 
-  (local (in-theory (disable ACL2::INEQUALITY-WITH-NFIX-HYP-1)))
-  ;; (local (defthm nfix-linear
-  ;;          (<= 0 (nfix n))
-  ;;          :rule-classes :linear))
+;; (define vl-datatype-remove-dims ((n natp)
+;;                                  (x vl-datatype-p)
+;;                                  (ss vl-scopestack-p))
+;;   :short "Get the type of a variable of type @('x') after @('n') indexing
+;; operations are applied to it."
+;;   :long "
+;; <p>The caveat flag returned identifies a case where implementations disagree on
+;; the signedness of the resulting type.  This caveat occurs when we have packed
+;; dimensions on a usertype that is declared as signed.  In this case, if we index
+;; into an object down to the usertype, NCV treats the resulting object as signed,
+;; but VCS treats it as unsigned.  The SV spec seems to say NCV's interpretation
+;; is correct: from Sec. 7.4.1, Packed Arrays:</p>
 
-  (local (defthm vl-datatype-kind-of-set-unsigned
-           (equal (vl-datatype-kind (vl-datatype-set-unsigned x))
-                  (vl-datatype-kind x))
-           :hints(("Goal" :in-theory (enable vl-datatype-set-unsigned)))))
+;; <blockquote> If a packed array is declared as signed, then the array viewed as
+;; a single vector shall be signed. The individual elements of the array are
+;; unsigned unless they are of a named type declared as signed. A partselect of a
+;; packed array shall be unsigned.</blockquote>
 
-  (local (defthm packedp-update-dims-of-set-unsigned
-           (equal (vl-datatype-packedp
-                   (vl-datatype-update-dims
-                    pdims udims (vl-datatype-set-unsigned x))
-                   ss)
-                  (vl-datatype-packedp
-                   (vl-datatype-update-dims
-                    pdims udims x)
-                   ss))
-           :hints(("Goal" :in-theory (enable vl-datatype-packedp
-                                             vl-datatype-update-dims
-                                             vl-datatype-set-unsigned)))))
+;; <p>An example:</p>
 
-  (local (defthm size-update-dims-of-set-unsigned
-           (b* (((mv err1 size1)
-                 (vl-datatype-size
-                   (vl-datatype-update-dims
-                    pdims udims (vl-datatype-set-unsigned x))
-                   ss))
-                ((mv err2 size2)
-                 (vl-datatype-size
-                  (vl-datatype-update-dims
-                   pdims udims x)
-                  ss)))
-             (and (iff err1 err2)
-                  (equal size1 size2)))
-           :hints(("Goal" :in-theory (enable vl-datatype-size
-                                             vl-datatype-update-dims
-                                             vl-datatype-set-unsigned)))))
+;; @({
+;;   typedef logic signed [3:0] squad;
 
-  (local (defthm vl-usertype->name-of-update-dims
-           (equal (vl-usertype->name (vl-datatype-update-dims pdims udims x))
-                  (vl-usertype->name x))
-           :hints(("Goal" :in-theory (enable vl-datatype-update-dims
-                                             vl-usertype->name-when-wrong-kind)))))
+;;   squad [3:0] b;
+;;   assign b = 16'hffff;
 
-  (local (defthm vl-usertype->name-of-set-unsigned
-           (equal (vl-usertype->name (vl-datatype-set-unsigned x))
-                  (vl-usertype->name x))
-           :hints(("Goal" :in-theory (enable vl-datatype-set-unsigned
-                                             vl-usertype->name-when-wrong-kind)))))
+;;   logic [7:0] btest;
+;;   assign btest = b[1];
+;;  })
 
-  (local (defthm vl-datatype-set-unsigned-of-update-dims
-           (Equal (vl-datatype-set-unsigned
-                   (vl-datatype-update-dims pdims udims x))
-                  (vl-datatype-update-dims pdims udims (vl-datatype-set-unsigned x)))
-           :hints(("Goal" :in-theory (enable vl-datatype-set-unsigned
-                                             vl-datatype-update-dims)))))
+;; <p>In NCVerilog, btest has the value @('ff'), indicating that @('b[1]') is
+;; considered signed; in VCS, btest has the value @('0f'), indicating that
+;; @('b[1]') is considered unsigned.</p>"
+;;   :prepwork
+;;   ((local (in-theory (disable not equal-of-cons-rewrite
+;;                               equal-of-vl-usertype
+;;                               acl2::len-when-atom
+;;                               acl2::true-listp-of-nthcdr
+;;                               acl2::true-listp-when-string-listp-rewrite
+;;                               acl2::true-listp-when-symbol-listp-rewrite
+;;                               acl2::nfix-when-not-natp
+;;                               acl2::zp-open
+;;                               acl2::consp-under-iff-when-true-listp
+;;                               acl2::list-fix-under-iff
+;;                               acl2::append-when-not-consp
+;;                               acl2::list-fix-when-len-zero
+;;                               acl2::take-of-len-free
+;;                               double-containment))))
 
-  (local (Defthm vl-datatype-set-unsigned-idempotent
-           (equal (vl-datatype-set-unsigned (vl-datatype-set-unsigned x))
-                  (vl-datatype-set-unsigned x))
-           :hints(("Goal" :in-theory (enable vl-datatype-set-unsigned)))))
 
-  (local (in-theory (disable vl-datatype-fix-when-vl-coretype
-                             vl-datatype-fix-when-vl-struct
-                             vl-datatype-fix-when-vl-union
-                             vl-datatype-fix-when-vl-enum
-                             vl-datatype-fix-when-vl-usertype)))
+;;   :guard (not (vl-datatype-check-usertypes x ss))
+;;   :returns (mv (err (iff (vl-msg-p err) err)  "Error message on failure")
+;;                (caveat-flag "Indicates caveat about possible signedness ambiguities")
+;;                (new-x (implies (not err) (vl-datatype-p new-x))
+;;                       "Datatype after indexing")
+;;                (dims  vl-packeddimensionlist-p)
+;;                (new-ss vl-scopestack-p "Scopestack where the most recently looked-up
+;;                                         usertype was defined -- this is the scopestack
+;;                                         needed to look up the next usertype that
+;;                                         might remain in the new type."))
+;;   :measure (two-nats-measure
+;;             n
+;;             (if (and (vl-datatype-case x :vl-usertype)
+;;                      (not (consp (vl-datatype->udims x)))
+;;                      (not (consp (vl-datatype->pdims x))))
+;;                 1 0))
+;;   (b* ((x (vl-datatype-fix x))
+;;        (ss (vl-scopestack-fix ss))
+;;        (udims (redundant-list-fix (vl-datatype->udims x)))
+;;        (pdims (redundant-list-fix (vl-datatype->pdims x)))
+;;        (nu (len udims))
+;;        (n (lnfix n))
+;;        ((when (<= n nu))
+;;         (mv nil nil
+;;             (vl-datatype-update-udims
+;;              (nthcdr n udims) x)
+;;             (take n udims)
+;;             ss))
+;;        (n (- n nu))
+;;        (np (len pdims))
+;;        ((when (<= n np))
+;;         (b* ((x (vl-datatype-set-unsigned x))
+;;              (dims (append udims (take n pdims)))
+;;              ((when (or (vl-datatype-case x :vl-usertype)
+;;                         (< n np)))
+;;               ;; (unless (and (eql n np)
+;;               ;;              (not (vl-datatype-case x :vl-usertype))))
+;;               (mv nil nil
+;;                   (vl-datatype-update-dims
+;;                    (nthcdr n pdims)
+;;                    nil ;; no udims
+;;                    x)
+;;                   dims
+;;                   ss))
+;;              (new-x (vl-datatype-update-dims nil nil x))
+;;              ((mv & signedness) (vl-datatype-signedness new-x ss)))
+;;           (mv nil (eq signedness :vl-signed) new-x dims ss)))
+;;        (n (- n np)))
+;;     (vl-datatype-case x
+;;       :vl-usertype
+;;       (b* (((mv err def new-ss) (vl-usertype-resolve x.name ss))
+;;            ((when err) (mv err nil nil (append udims pdims) new-ss))
+;;            ((mv err caveat new-x rest-dims new-ss)
+;;             (vl-datatype-remove-dims n def new-ss)))
+;;         (mv err caveat new-x (append udims pdims rest-dims) new-ss))
+;;       :otherwise
+;;       (b* ((x (vl-datatype-update-dims nil nil x))
+;;            ((unless (vl-datatype-packedp x ss))
+;;             (mv (vmsg "Index applied to non-packed, non-array type ~a0" x)
+;;                 nil nil (append udims pdims) ss))
+;;            ((unless (eql n 1))
+;;             (mv (vmsg "Too many indices applied to packed non-array ~a0" x) nil nil (append udims pdims) ss))
+;;            ((mv err size) (vl-datatype-size x ss))
+;;            ((when err)
+;;             (mv err nil nil (append udims pdims) ss))
+;;            ((unless (posp size))
+;;             (mv (vmsg "Index applied to ~s0 packed type: ~a1"
+;;                       (if size "unsizeable" "zero-sized") x)
+;;                 nil nil (append udims pdims) ss))
+;;            ((when (and (vl-datatype-case x :vl-coretype)
+;;                        (eql size 1)))
+;;             (mv (vmsg "Index applied to bit type ~a0" x) nil nil (append udims pdims) ss))
+;;            (dim (vl-range->packeddimension (make-vl-range :msb (vl-make-index (1- size))
+;;                                                           :lsb (vl-make-index 0)))))
+;;         (mv nil nil
+;;             (make-vl-coretype :name :vl-logic)
+;;             (append udims pdims (list dim))
+;;             ss))))
+;;   ///
+;;   (defret vl-datatype-check-usertypes-of-remove-dims
+;;     (implies (and (not (vl-datatype-check-usertypes x ss :rec-limit rec-limit))
+;;                   (not err))
+;;              (not (vl-datatype-check-usertypes new-x new-ss :rec-limit rec-limit)))
+;;     :hints (("goal" :induct t :in-theory (enable vl-datatype-check-usertypes))))
 
-  (local (defthm <=-when-equal
-           (implies (equal a b)
-                    (<= a b))))
+;;   (defret vl-datatype-remove-dims-true-listp-dims
+;;     (true-listp dims)
+;;     :rule-classes :type-prescription)
 
-  (defthm vl-datatype-remove-dims-compose
-    (b* (((mv err ?caveat new-x dims new-ss)
-          (vl-datatype-remove-dims (+ (nfix n) (nfix m)) x ss))
-         ((mv err1 ?caveat1 new-x1 dims1 new-ss1)
-          (vl-datatype-remove-dims n x ss))
-         ((mv err2 ?caveat2 new-x2 dims2 new-ss2)
-          (vl-datatype-remove-dims m new-x1 new-ss1)))
-      (implies (not err)
-               (and (not err1)
-                    (not err2)
-                    ;; (equal caveat2 caveat)
-                    (equal new-x2 new-x)
-                    (equal new-ss2 new-ss)
-                    (list-equiv (append dims1 dims2) dims))))
-    :hints (("goal" :induct (vl-datatype-remove-dims n x ss)
-             :in-theory (disable (:d vl-datatype-remove-dims))
-             :expand ((:free (n) (vl-datatype-remove-dims n x ss))
-                      (:free (x ss)
-                       (vl-datatype-remove-dims 1 x ss))
-                      ;; (:free (x) (vl-datatype-size (vl-datatype-update-dims nil nil x) ss))
-                      ))
-            ;; (and stable-under-simplificationp
-            ;;      '(:in-theory (enable 
-            ;;                     vl-datatype-update-dims
-            ;;                     vl-datatype-set-unsigned
-            ;;                     vl-datatype-packedp)))
-            (and stable-under-simplificationp
-                 '(:expand ((:free (x ss)
-                             (vl-datatype-remove-dims m x ss)))))
-            )))
+;;   (defret vl-datatype-remove-dims-dims-length
+;;     (implies (not err)
+;;              (equal (len dims)
+;;                     (nfix n))))
+
+;;   (verify-guards vl-datatype-remove-dims
+;;     :hints ((and stable-under-simplificationp
+;;                  '(:expand ((:free (rec-limit)
+;;                              (vl-datatype-check-usertypes x ss :rec-limit rec-limit)))))))
+
+
+;;   (local
+;;    (defthm vl-datatype-update-dims-compose
+;;      (equal (vl-datatype-update-dims
+;;              pdims udims
+;;              (vl-datatype-update-dims
+;;               pdims1 udims1 x))
+;;             (vl-datatype-update-dims
+;;              pdims udims x))
+;;      :hints(("Goal" :in-theory (enable vl-datatype-update-dims)))))
+
+
+;;   (local (Defthm append-of-nil
+;;            (equal (append nil x) x)
+;;            :hints(("Goal" :in-theory (enable append)))))
+
+;;   (local (defthm list-fix-of-nthcdr
+;;            (equal (list-fix (nthcdr n x))
+;;                   (nthcdr n (list-fix x)))))
+;;   (local (in-theory (disable acl2::nthcdr-of-list-fix)))
+
+;;   (local (defthm append-take-take-nthcdr
+;;            (equal (append (take n a)
+;;                           (take m (nthcdr n a)))
+;;                   (take (+ (nfix n) (nfix m)) a))
+;;            :hints (("goal" :induct (nthcdr n a)
+;;                     :in-theory (enable acl2::take-redefinition nthcdr)))))
+
+;;   (local (defthm append-take-nthcdr
+;;            (implies (<= (nfix n) (len a))
+;;                     (equal (append (take n a)
+;;                                    (nthcdr n a))
+;;                            a))
+;;            :hints (("goal" :induct (nthcdr n a)
+;;                     :in-theory (enable acl2::take-redefinition nthcdr len)))))
+
+;;   (local (defthm append-take-take-nthcdr-1
+;;            (equal (append (take n a)
+;;                           (take m (nthcdr n a))
+;;                           x)
+;;                   (append (take (+ (nfix n) (nfix m)) a) x))
+;;            :hints (("goal" :induct (nthcdr n a)
+;;                     :in-theory (enable acl2::take-redefinition nthcdr)))))
+
+;;   (local (defthm append-take-nthcdr-1
+;;            (implies (<= (nfix n) (len a))
+;;                     (equal (append (take n a)
+;;                                    (nthcdr n a)
+;;                                    x)
+;;                            (append a x)))
+;;            :hints (("goal" :induct (nthcdr n a)
+;;                     :in-theory (enable acl2::take-redefinition nthcdr len)))))
+
+;;   (local (in-theory (disable ACL2::INEQUALITY-WITH-NFIX-HYP-1)))
+;;   ;; (local (defthm nfix-linear
+;;   ;;          (<= 0 (nfix n))
+;;   ;;          :rule-classes :linear))
+
+;;   (local (defthm vl-datatype-kind-of-set-unsigned
+;;            (equal (vl-datatype-kind (vl-datatype-set-unsigned x))
+;;                   (vl-datatype-kind x))
+;;            :hints(("Goal" :in-theory (enable vl-datatype-set-unsigned)))))
+
+;;   (local (defthm packedp-update-dims-of-set-unsigned
+;;            (equal (vl-datatype-packedp
+;;                    (vl-datatype-update-dims
+;;                     pdims udims (vl-datatype-set-unsigned x))
+;;                    ss)
+;;                   (vl-datatype-packedp
+;;                    (vl-datatype-update-dims
+;;                     pdims udims x)
+;;                    ss))
+;;            :hints(("Goal" :in-theory (enable vl-datatype-packedp
+;;                                              vl-datatype-update-dims
+;;                                              vl-datatype-set-unsigned)))))
+
+;;   (local (defthm size-update-dims-of-set-unsigned
+;;            (b* (((mv err1 size1)
+;;                  (vl-datatype-size
+;;                    (vl-datatype-update-dims
+;;                     pdims udims (vl-datatype-set-unsigned x))
+;;                    ss))
+;;                 ((mv err2 size2)
+;;                  (vl-datatype-size
+;;                   (vl-datatype-update-dims
+;;                    pdims udims x)
+;;                   ss)))
+;;              (and (iff err1 err2)
+;;                   (equal size1 size2)))
+;;            :hints(("Goal" :in-theory (enable vl-datatype-size
+;;                                              vl-datatype-update-dims
+;;                                              vl-datatype-set-unsigned)))))
+
+;;   (local (defthm vl-usertype->name-of-update-dims
+;;            (equal (vl-usertype->name (vl-datatype-update-dims pdims udims x))
+;;                   (vl-usertype->name x))
+;;            :hints(("Goal" :in-theory (enable vl-datatype-update-dims
+;;                                              vl-usertype->name-when-wrong-kind)))))
+
+;;   (local (defthm vl-usertype->name-of-set-unsigned
+;;            (equal (vl-usertype->name (vl-datatype-set-unsigned x))
+;;                   (vl-usertype->name x))
+;;            :hints(("Goal" :in-theory (enable vl-datatype-set-unsigned
+;;                                              vl-usertype->name-when-wrong-kind)))))
+
+;;   (local (defthm vl-datatype-set-unsigned-of-update-dims
+;;            (Equal (vl-datatype-set-unsigned
+;;                    (vl-datatype-update-dims pdims udims x))
+;;                   (vl-datatype-update-dims pdims udims (vl-datatype-set-unsigned x)))
+;;            :hints(("Goal" :in-theory (enable vl-datatype-set-unsigned
+;;                                              vl-datatype-update-dims)))))
+
+;;   (local (Defthm vl-datatype-set-unsigned-idempotent
+;;            (equal (vl-datatype-set-unsigned (vl-datatype-set-unsigned x))
+;;                   (vl-datatype-set-unsigned x))
+;;            :hints(("Goal" :in-theory (enable vl-datatype-set-unsigned)))))
+
+;;   (local (in-theory (disable vl-datatype-fix-when-vl-coretype
+;;                              vl-datatype-fix-when-vl-struct
+;;                              vl-datatype-fix-when-vl-union
+;;                              vl-datatype-fix-when-vl-enum
+;;                              vl-datatype-fix-when-vl-usertype)))
+
+;;   (local (defthm <=-when-equal
+;;            (implies (equal a b)
+;;                     (<= a b))))
+
+;;   (defthm vl-datatype-remove-dims-compose
+;;     (b* (((mv err ?caveat new-x dims new-ss)
+;;           (vl-datatype-remove-dims (+ (nfix n) (nfix m)) x ss))
+;;          ((mv err1 ?caveat1 new-x1 dims1 new-ss1)
+;;           (vl-datatype-remove-dims n x ss))
+;;          ((mv err2 ?caveat2 new-x2 dims2 new-ss2)
+;;           (vl-datatype-remove-dims m new-x1 new-ss1)))
+;;       (implies (not err)
+;;                (and (not err1)
+;;                     (not err2)
+;;                     ;; (equal caveat2 caveat)
+;;                     (equal new-x2 new-x)
+;;                     (equal new-ss2 new-ss)
+;;                     (list-equiv (append dims1 dims2) dims))))
+;;     :hints (("goal" :induct (vl-datatype-remove-dims n x ss)
+;;              :in-theory (disable (:d vl-datatype-remove-dims))
+;;              :expand ((:free (n) (vl-datatype-remove-dims n x ss))
+;;                       (:free (x ss)
+;;                        (vl-datatype-remove-dims 1 x ss))
+;;                       ;; (:free (x) (vl-datatype-size (vl-datatype-update-dims nil nil x) ss))
+;;                       ))
+;;             ;; (and stable-under-simplificationp
+;;             ;;      '(:in-theory (enable 
+;;             ;;                     vl-datatype-update-dims
+;;             ;;                     vl-datatype-set-unsigned
+;;             ;;                     vl-datatype-packedp)))
+;;             (and stable-under-simplificationp
+;;                  '(:expand ((:free (x ss)
+;;                              (vl-datatype-remove-dims m x ss)))))
+;;             )))
 
 
 ;; (define vl-hidindex-datatype-resolve-dims ((x vl-hidindex-p)
@@ -3328,25 +3606,6 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 ;;        (membtype (vl-structmember->type member))
 
 
-(define vl-maybe-usertype-resolve ((x vl-datatype-p)
-                                   (ss vl-scopestack-p))
-  :guard (not (vl-datatype-check-usertypes x ss))
-  :returns (mv (new-x vl-datatype-p)
-               (new-ss vl-scopestack-p))
-  (b* ((x (vl-datatype-fix x))
-       (ss (vl-scopestack-fix ss))
-       ((when (or (consp (vl-datatype->pdims x))
-                  (consp (vl-datatype->udims x))))
-        (mv x ss)))
-  (vl-datatype-case x
-    :vl-usertype (b* (((mv err new-x new-ss) (vl-usertype-resolve x.name ss))
-                      ((unless (mbt (not err))) (mv x ss)))
-                   (mv new-x new-ss))
-    :otherwise (mv x ss)))
-  ///
-  (defret vl-datatype-check-usertypes-of-vl-maybe-usertype-resolve
-    (implies (not (vl-datatype-check-usertypes x ss :rec-limit rec-limit))
-             (not (vl-datatype-check-usertypes new-x new-ss :rec-limit rec-limit)))))
 
 (define vl-hidexpr-index-count ((x vl-hidexpr-p))
   :returns (nunres natp :rule-classes :type-prescription)
@@ -3365,76 +3624,36 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 
 
 
+(define vl-follow-data-selects ((x vl-hidexpr-p)
+                                (type vl-datatype-p)
+                                (ss vl-scopestack-p)
+                                (trace vl-seltrace-p "Accumulator"))
 
-(define vl-hidexpr-traverse-datatype ((x vl-hidexpr-p)
-                                      (type vl-datatype-p)
-                                      (ss vl-scopestack-p))
-  :parents (hid-tools)
-  :short "Given a HID expression that indexes into a datatype, find the type
-          of the expression."
-  :long " <p>A helpful invariant to remember when thinking about this function:
-The type input of a given call of this function belong to the base (leftmost)
-variable in the HID.</p>
+  :short "Given a HID expression denoting a variable of the input type, create
+          a trace showing the type of each field select/indexing operation."
 
-<p>Example: Suppose we have the following type declarations</p>
-@({
- typedef struct packed { logic [3:0] foo; } [4:0] foostruct;
- typedef union { foostruct [5:0] bar; logic [2:0] baz; } bunion [0:6];
- typedef struct { bunion fa [0:8], logic [1:0] ba; } bstruct;
- bstruct myvar [8:0];
-})
-
-<p>For this example, we'll write a type with both packed an unpacked dimensions
-with an underscore between the packed and unpacked dims.</p>
-
-<p>A bunion is a type consisting of an unpacked array of 7 elements
-each of which may either be a packed array of 6 foostructs (a packed structure
-containing one 4-bit logic field) or a 3-bit logic; a bstruct is a struct
-containing an unpacked array of 9 bunions and an additional 2-bit logic field;
-and myvar is an unpacked array of 9 bstructs.</p>
-
-<p>Suppose our expression is @('myvar[1].fa[8][4].bar[3][4].foo').</p>
-
-<ul>
-
-<li>First, before calling this function we look up the type of myvar.  We get a
-vardecl, which has a type @('bstruct _ [8:0]'). Then we're ready to run.</li>
-
-<li>Outermost call: We resolve the type bstruct to its struct definition.  We
-cancel our index with the single array dimension, leaving just the struct.  We
-find the element fa inside the struct, and
-recur on the remainder of our expression, @('fa[8][4].bar[3][4].foo'), with the
-structmember's type, @('bunion _ [0:8]').</li>
-
-<li> We resolve the bunion type to the union, and append the unpacked
-dimensions of the type and the element to get @('[0:8][0:6]').  We then check
-the indices from the expression against this type and unpacked dimensions,
-which results in just the bare union type (the definition of bunion, but
-without its unpacked dimension @('[0:6]')).  We find the element bar inside the
-union and recur: @('bar[3][4].foo'), type @('foostruct[5:0]').</li>
-
-<li> We resolve the type foostruct to its struct type, and append the packed
-dimensions to get @('[5:0][4:0]').  We then check the indices from the
-expression, which results in cancelling out the dimension to obtain just the
-bare struct.  We find the element foo of the struct and recur on that.</li>
-
-<li>Finally, we have just the atom @('foo') as our expression, so we return the
-type @('logic[3:0]').</li> </ul>"
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (seltrace vl-seltrace-p))
   :measure (vl-hidexpr-count x)
   :guard (not (vl-datatype-check-usertypes type ss))
   :verify-guards nil
-  :returns (mv (err (iff (vl-msg-p err) err))
-               (restype (iff (vl-datatype-p restype) (not err)))
-               (dims vl-packeddimensionlist-p
-                     "Dimensions of indices along the way")
-               (final-ss vl-scopestack-p "Scopestack in which the last usertype was found"))
 
   ;; Resolve the type and dims.
   (b* ((type (vl-datatype-fix type))
        (ss (vl-scopestack-fix ss))
+
+       (name1 (vl-hidexpr-case x
+                :end x.name
+                :dot (vl-hidindex->name x.first)))
+       (frame (make-vl-selstep
+               :select (make-vl-select-field :name name1)
+               :type type
+               :ss ss))
+       (trace (cons frame (vl-seltrace-fix trace)))
+
        ((when (vl-hidexpr-case x :end))
         ;; We just have an ID.  Return the resolved type.
-        (mv nil type nil ss))
+        (mv nil trace))
 
        ;; Cancel the indices of the first element of the HID with the unpacked
        ;; and packed dims of the type.
@@ -3442,28 +3661,35 @@ type @('logic[3:0]').</li> </ul>"
        ;; Note: We have at least one more dot in this HID, so if we don't have
        ;; a struct or union at the end of this, we have a problem.
        ((vl-hidexpr-dot x))
-       (nindices (len (vl-hidindex->indices x.first)))
        
-       ((mv err ?caveat idxtype dims ss)
-        ;; Ignore the caveat because we're going dot-index into the new type at
-        ;; least once more.
-        (vl-datatype-remove-dims nindices type ss))
-       ((when err) (mv err nil nil ss))
+       ((mv err rev-idxtrace)
+        (vl-follow-array-indices (vl-hidindex->indices x.first) type ss))
 
-       ((mv baretype ss) (vl-maybe-usertype-resolve idxtype ss))
+       ((when err) (mv err nil))
+
+
+       (trace (revappend rev-idxtrace trace))
+
+       ((mv type ss)
+        (if (consp rev-idxtrace)
+            (b* (((vl-selstep frame) (car trace)))
+              (mv frame.type frame.ss))
+          (mv type ss)))
+
+       ((mv type ss) (vl-maybe-usertype-resolve type ss))
 
        ;; Next we're going to dot-index into the datatype, so get its
        ;; structmembers, making sure it's a struct.
-       ((mv ok members) (vl-datatype->structmembers baretype))
+       ((mv ok members) (vl-datatype->structmembers type))
        ((unless (and ok
-                     (atom (vl-datatype->udims baretype))
-                     (atom (vl-datatype->pdims baretype))))
+                     (atom (vl-datatype->udims type))
+                     (atom (vl-datatype->pdims type))))
         (mv (vmsg "Dot-indexing (field ~s0) into a non-struct/union datatype: ~a1"
                   (vl-datatype-update-dims (append-without-guard
-                                            (vl-datatype->udims baretype)
-                                            (vl-datatype->pdims baretype))
-                                           nil baretype))
-            nil nil ss))
+                                            (vl-datatype->udims type)
+                                            (vl-datatype->pdims type))
+                                           nil type))
+            nil))
 
        ;; Look up the member corresponding to the next name in the hid.
        (nextname (vl-hidexpr-case x.rest
@@ -3473,24 +3699,12 @@ type @('logic[3:0]').</li> </ul>"
        ((unless member)
         (mv (vmsg "Dot-indexing failed: struct/union member ~
                                    ~s0 not found in type ~a1"
-                  nextname (vl-datatype-fix baretype))
-            nil nil ss))
-       (membtype (vl-structmember->type member))
-       ((mv err type rest-dims ss)
-        (vl-hidexpr-traverse-datatype x.rest membtype ss)))
-    (mv err type (append dims rest-dims) ss))
+                  nextname (vl-datatype-fix type))
+            nil))
+       (membtype (vl-structmember->type member)))
+    (vl-follow-data-selects x.rest membtype ss trace))
   ///
-
-  (defret true-listp-dims-of-vl-hidexpr-traverse-datatype
-    (true-listp dims)
-    :rule-classes :type-prescription)
-
-  (defret len-dims-of-vl-hidexpr-traverse-datatype
-    (implies (not err)
-             (equal (len dims)
-                    (vl-hidexpr-index-count x)))
-    :hints(("Goal" :in-theory (enable vl-hidexpr-index-count))))
-
+  
   ;; bozo move these two theorems
   (defthm vl-structmemberlist-check-usertypes-of-vl-datatype->structmembers
     (b* (((mv ok members) (vl-datatype->structmembers x)))
@@ -3509,55 +3723,216 @@ type @('logic[3:0]').</li> </ul>"
     :hints(("Goal" :in-theory (enable vl-structmemberlist-check-usertypes
                                       vl-find-structmember))))
 
-  (verify-guards vl-hidexpr-traverse-datatype)
+  (verify-guards vl-follow-data-selects)
 
-  (defret vl-datatype-check-usertypes-of-vl-hidexpr-traverse-datatype
-    (implies (and (not (vl-datatype-check-usertypes type ss :rec-limit rec-limit))
-                  (not err))
-             (not (vl-datatype-check-usertypes restype final-ss :rec-limit rec-limit)))))
+  (defret vl-seltrace-usertypes-ok-of-vl-follow-data-selects
+    (implies (and (not (vl-datatype-check-usertypes type ss))
+                  (vl-seltrace-usertypes-ok trace))
+             (vl-seltrace-usertypes-ok seltrace))
+    :hints(("Goal" :in-theory (enable vl-seltrace-usertypes-ok
+                                      vl-selstep-usertypes-ok))))
 
-(define vl-scopeexpr-find-type ((x   vl-scopeexpr-p)
-                                (ss  vl-scopestack-p))
-  :parents (hid-tools)
-  :short "Looks up a HID in a scopestack and looks for a declaration, returning
-          the type if found, and the scopestack relative to that type."
-  :returns (mv (err (iff (vl-msg-p err) err))
-               (type (iff (vl-datatype-p type) (not err)))
-               (dims vl-packeddimensionlist-p)
-               (type-ss vl-scopestack-p))
-  (b* ((x (vl-scopeexpr-fix x))
-       (ss (vl-scopestack-fix ss))
-       ((mv err trace tail) (vl-follow-scopeexpr x ss))
-       ((when err) (mv err nil nil ss))
-       ((vl-hidstep step1) (car trace))
-       ((when (eq (tag step1.item) :vl-vardecl))
-        ;; check its datatype
-        (b* (((vl-vardecl step1.item))
-             (err (vl-datatype-check-usertypes step1.item.type step1.ss))
-             ((when err) (mv err nil nil step1.ss)))
-          (vl-hidexpr-traverse-datatype tail step1.item.type step1.ss))))
-    (mv (vmsg "Failed to find a type for ~s1 because we ~
-                               didn't find a vardecl but rather a ~x2"
-              nil x (tag step1.item))
-        nil nil ss))
-  ///
-  (defret true-listp-dims-of-vl-scopeexpr-find-type
-    (true-listp dims)
-    :rule-classes :type-prescription)
+  (local (in-theory (disable acl2::car-of-append)))
 
-  (defret len-dims-of-vl-scopeexpr-find-type
+  (defret consp-of-vl-follow-data-selects-seltrace
     (implies (not err)
-             (equal (len dims)
-                    (vl-hidexpr-index-count (mv-nth 2 (vl-follow-scopeexpr x ss)))))
-    :hints(("Goal" :in-theory (enable vl-scopeexpr-index-count))))
+             (consp seltrace))
+    :rule-classes :type-prescription))
 
-  (defret vl-datatype-check-usertypes-of-vl-scopeexpr-find-type
-    (implies (not err)
-             (not (vl-datatype-check-usertypes type type-ss))))
 
-  (defret follow-scopeexpr-when-vl-scopeexpr-find-type
-    (implies (not err)
-             (not (mv-nth 0 (vl-follow-scopeexpr x ss))))))
+
+;; (define vl-hidexpr-traverse-datatype ((x vl-hidexpr-p)
+;;                                       (type vl-datatype-p)
+;;                                       (ss vl-scopestack-p))
+;;   :parents (hid-tools)
+;;   :short "Given a HID expression that indexes into a datatype, find the type
+;;           of the expression."
+;;   :long " <p>A helpful invariant to remember when thinking about this function:
+;; The type input of a given call of this function belong to the base (leftmost)
+;; variable in the HID.</p>
+
+;; <p>Example: Suppose we have the following type declarations</p>
+;; @({
+;;  typedef struct packed { logic [3:0] foo; } [4:0] foostruct;
+;;  typedef union { foostruct [5:0] bar; logic [2:0] baz; } bunion [0:6];
+;;  typedef struct { bunion fa [0:8], logic [1:0] ba; } bstruct;
+;;  bstruct myvar [8:0];
+;; })
+
+;; <p>For this example, we'll write a type with both packed an unpacked dimensions
+;; with an underscore between the packed and unpacked dims.</p>
+
+;; <p>A bunion is a type consisting of an unpacked array of 7 elements
+;; each of which may either be a packed array of 6 foostructs (a packed structure
+;; containing one 4-bit logic field) or a 3-bit logic; a bstruct is a struct
+;; containing an unpacked array of 9 bunions and an additional 2-bit logic field;
+;; and myvar is an unpacked array of 9 bstructs.</p>
+
+;; <p>Suppose our expression is @('myvar[1].fa[8][4].bar[3][4].foo').</p>
+
+;; <ul>
+
+;; <li>First, before calling this function we look up the type of myvar.  We get a
+;; vardecl, which has a type @('bstruct _ [8:0]'). Then we're ready to run.</li>
+
+;; <li>Outermost call: We resolve the type bstruct to its struct definition.  We
+;; cancel our index with the single array dimension, leaving just the struct.  We
+;; find the element fa inside the struct, and
+;; recur on the remainder of our expression, @('fa[8][4].bar[3][4].foo'), with the
+;; structmember's type, @('bunion _ [0:8]').</li>
+
+;; <li> We resolve the bunion type to the union, and append the unpacked
+;; dimensions of the type and the element to get @('[0:8][0:6]').  We then check
+;; the indices from the expression against this type and unpacked dimensions,
+;; which results in just the bare union type (the definition of bunion, but
+;; without its unpacked dimension @('[0:6]')).  We find the element bar inside the
+;; union and recur: @('bar[3][4].foo'), type @('foostruct[5:0]').</li>
+
+;; <li> We resolve the type foostruct to its struct type, and append the packed
+;; dimensions to get @('[5:0][4:0]').  We then check the indices from the
+;; expression, which results in cancelling out the dimension to obtain just the
+;; bare struct.  We find the element foo of the struct and recur on that.</li>
+
+;; <li>Finally, we have just the atom @('foo') as our expression, so we return the
+;; type @('logic[3:0]').</li> </ul>"
+;;   :measure (vl-hidexpr-count x)
+;;   :guard (not (vl-datatype-check-usertypes type ss))
+;;   :verify-guards nil
+;;   :returns (mv (err (iff (vl-msg-p err) err))
+;;                (restype (iff (vl-datatype-p restype) (not err)))
+;;                (dims vl-packeddimensionlist-p
+;;                      "Dimensions of indices along the way")
+;;                (final-ss vl-scopestack-p "Scopestack in which the last usertype was found"))
+
+;;   ;; Resolve the type and dims.
+;;   (b* ((type (vl-datatype-fix type))
+;;        (ss (vl-scopestack-fix ss))
+;;        ((when (vl-hidexpr-case x :end))
+;;         ;; We just have an ID.  Return the resolved type.
+;;         (mv nil type nil ss))
+
+;;        ;; Cancel the indices of the first element of the HID with the unpacked
+;;        ;; and packed dims of the type.
+
+;;        ;; Note: We have at least one more dot in this HID, so if we don't have
+;;        ;; a struct or union at the end of this, we have a problem.
+;;        ((vl-hidexpr-dot x))
+;;        (nindices (len (vl-hidindex->indices x.first)))
+       
+;;        ((mv err ?caveat idxtype dims ss)
+;;         ;; Ignore the caveat because we're going dot-index into the new type at
+;;         ;; least once more.
+;;         (vl-datatype-remove-dims nindices type ss))
+;;        ((when err) (mv err nil nil ss))
+
+;;        ((mv baretype ss) (vl-maybe-usertype-resolve idxtype ss))
+
+;;        ;; Next we're going to dot-index into the datatype, so get its
+;;        ;; structmembers, making sure it's a struct.
+;;        ((mv ok members) (vl-datatype->structmembers baretype))
+;;        ((unless (and ok
+;;                      (atom (vl-datatype->udims baretype))
+;;                      (atom (vl-datatype->pdims baretype))))
+;;         (mv (vmsg "Dot-indexing (field ~s0) into a non-struct/union datatype: ~a1"
+;;                   (vl-datatype-update-dims (append-without-guard
+;;                                             (vl-datatype->udims baretype)
+;;                                             (vl-datatype->pdims baretype))
+;;                                            nil baretype))
+;;             nil nil ss))
+
+;;        ;; Look up the member corresponding to the next name in the hid.
+;;        (nextname (vl-hidexpr-case x.rest
+;;                    :end x.rest.name
+;;                    :dot (vl-hidindex->name x.rest.first)))
+;;        (member (vl-find-structmember nextname members))
+;;        ((unless member)
+;;         (mv (vmsg "Dot-indexing failed: struct/union member ~
+;;                                    ~s0 not found in type ~a1"
+;;                   nextname (vl-datatype-fix baretype))
+;;             nil nil ss))
+;;        (membtype (vl-structmember->type member))
+;;        ((mv err type rest-dims ss)
+;;         (vl-hidexpr-traverse-datatype x.rest membtype ss)))
+;;     (mv err type (append dims rest-dims) ss))
+;;   ///
+
+;;   (defret true-listp-dims-of-vl-hidexpr-traverse-datatype
+;;     (true-listp dims)
+;;     :rule-classes :type-prescription)
+
+;;   (defret len-dims-of-vl-hidexpr-traverse-datatype
+;;     (implies (not err)
+;;              (equal (len dims)
+;;                     (vl-hidexpr-index-count x)))
+;;     :hints(("Goal" :in-theory (enable vl-hidexpr-index-count))))
+
+;;   ;; bozo move these two theorems
+;;   (defthm vl-structmemberlist-check-usertypes-of-vl-datatype->structmembers
+;;     (b* (((mv ok members) (vl-datatype->structmembers x)))
+;;       (implies (and (not (vl-datatype-check-usertypes x ss :rec-limit rec-limit))
+;;                     ok)
+;;                (not (vl-structmemberlist-check-usertypes members ss :rec-limit rec-limit))))
+;;     :hints(("Goal" :in-theory (enable vl-datatype->structmembers
+;;                                       vl-datatype-check-usertypes))))
+  
+;;   (defthm vl-datatype-check-usertypes-of-find-structmember
+;;     (implies (and (not (vl-structmemberlist-check-usertypes members ss :rec-limit rec-limit))
+;;                   (vl-find-structmember name members))
+;;              (not (vl-datatype-check-usertypes
+;;                    (vl-structmember->type (vl-find-structmember name members))
+;;                    ss :rec-limit rec-limit)))
+;;     :hints(("Goal" :in-theory (enable vl-structmemberlist-check-usertypes
+;;                                       vl-find-structmember))))
+
+;;   (verify-guards vl-hidexpr-traverse-datatype)
+
+;;   (defret vl-datatype-check-usertypes-of-vl-hidexpr-traverse-datatype
+;;     (implies (and (not (vl-datatype-check-usertypes type ss :rec-limit rec-limit))
+;;                   (not err))
+;;              (not (vl-datatype-check-usertypes restype final-ss :rec-limit rec-limit)))))
+
+;; (define vl-scopeexpr-find-type ((x   vl-scopeexpr-p)
+;;                                 (ss  vl-scopestack-p))
+;;   :parents (hid-tools)
+;;   :short "Looks up a HID in a scopestack and looks for a declaration, returning
+;;           the type if found, and the scopestack relative to that type."
+;;   :returns (mv (err (iff (vl-msg-p err) err))
+;;                (type (iff (vl-datatype-p type) (not err)))
+;;                (dims vl-packeddimensionlist-p)
+;;                (type-ss vl-scopestack-p))
+;;   (b* ((x (vl-scopeexpr-fix x))
+;;        (ss (vl-scopestack-fix ss))
+;;        ((mv err trace tail) (vl-follow-scopeexpr x ss))
+;;        ((when err) (mv err nil nil ss))
+;;        ((vl-hidstep step1) (car trace))
+;;        ((when (eq (tag step1.item) :vl-vardecl))
+;;         ;; check its datatype
+;;         (b* (((vl-vardecl step1.item))
+;;              (err (vl-datatype-check-usertypes step1.item.type step1.ss))
+;;              ((when err) (mv err nil nil step1.ss)))
+;;           (vl-hidexpr-traverse-datatype tail step1.item.type step1.ss))))
+;;     (mv (vmsg "Failed to find a type for ~s1 because we ~
+;;                                didn't find a vardecl but rather a ~x2"
+;;               nil x (tag step1.item))
+;;         nil nil ss))
+;;   ///
+;;   (defret true-listp-dims-of-vl-scopeexpr-find-type
+;;     (true-listp dims)
+;;     :rule-classes :type-prescription)
+
+;;   (defret len-dims-of-vl-scopeexpr-find-type
+;;     (implies (not err)
+;;              (equal (len dims)
+;;                     (vl-hidexpr-index-count (mv-nth 2 (vl-follow-scopeexpr x ss)))))
+;;     :hints(("Goal" :in-theory (enable vl-scopeexpr-index-count))))
+
+;;   (defret vl-datatype-check-usertypes-of-vl-scopeexpr-find-type
+;;     (implies (not err)
+;;              (not (vl-datatype-check-usertypes type type-ss))))
+
+;;   (defret follow-scopeexpr-when-vl-scopeexpr-find-type
+;;     (implies (not err)
+;;              (not (mv-nth 0 (vl-follow-scopeexpr x ss))))))
 
 
 (define vl-partselect-width ((x vl-partselect-p))
@@ -3592,24 +3967,17 @@ type @('logic[3:0]').</li> </ul>"
   
 
 
-(define vl-index-expr-type ((x vl-expr-p
-                               "An index expression, i.e. a possibly-package-scoped,
-                                possibly-hierarchical identifier with 0 or more
-                                array selects and a possible partselect.")
-                            (ss vl-scopestack-p
-                                "Scopestack where @('x') is referenced."))
+(define vl-index-expr-typetrace
+  ((x vl-expr-p
+      "An index expression, i.e. a possibly-package-scoped, possibly-hierarchical
+       identifier with 0 or more array selects and a possible partselect.")
+   (ss vl-scopestack-p
+       "Scopestack where @('x') is referenced."))
   :guard (vl-expr-case x :vl-index)
   :returns (mv (err (iff (vl-msg-p err) err)
                     "Success indicator, we fail if we can't follow the HID or
                          this isn't an appropriate expression.")
-               (caveat-flg)
-               (type (implies (not err) (vl-datatype-p type))
-                     "The type of the resulting expression after all indexing
-                      is done.")
-               (dims vl-packeddimensionlist-p
-                     "Dimensions corresponding to the array indices in the expression")
-               (type-ss vl-scopestack-p
-                        "Scopestack relative to the type returned."))
+               (opinfo (implies (not err) (vl-operandinfo-p opinfo))))
   :prepwork ((local (defthm natp-abs
                       (implies (integerp x)
                                (natp (abs x)))
@@ -3617,85 +3985,178 @@ type @('logic[3:0]').</li> </ul>"
              (local (in-theory (disable abs))))
   (b* (((vl-index x) (vl-expr-fix x))
        (ss (vl-scopestack-fix ss))
-       ((mv warning type sdims type-ss) (vl-scopeexpr-find-type x.scope ss))
-       ((when warning) (mv warning nil nil nil ss))
-       (has-partselect (vl-partselect-case x.part
-                         :none nil
-                         :otherwise t))
-       ((mv err caveat-flg reduced-type idims reduced-ss)
-        (vl-datatype-remove-dims (len x.indices) type type-ss))
-       ((when err) (mv err nil nil nil reduced-ss))
-       
-       ((unless has-partselect)
-        (mv nil
-            caveat-flg
-            reduced-type
-            (append sdims idims)
-            reduced-ss))
+       ((mv err hidtrace context tail) (vl-follow-scopeexpr x.scope ss))
+       ((when err) (mv err nil))
+       ((vl-hidstep hidstep) (car hidtrace))
+       ((unless (eq (tag hidstep.item) :vl-vardecl))
+        (mv (vmsg "~a0: instead of a vardecl, found ~a1" x hidstep.item) nil))
+       ((vl-vardecl decl) hidstep.item)
+       (err (vl-datatype-check-usertypes decl.type hidstep.ss))
+       ((when err) (mv err nil))
+       ((mv err seltrace) (vl-follow-data-selects tail decl.type hidstep.ss nil))
+       ((when err) (mv err nil))
+       ((vl-selstep selstep) (car seltrace))
+       ((mv err rev-idxtrace)
+        (vl-follow-array-indices x.indices selstep.type selstep.ss))
+       ((when err) (mv err nil))
 
-       ;; Take off one more dimension, and then add a dimension the width of
-       ;; the partselect.
-       
-       ;; Caveat-flag doesn't apply because implementations seem to agree that
-       ;; partselects are always unsigned.
-       ((mv err ?caveat-flg single-type psdims single-ss)
-        (vl-datatype-remove-dims 1 reduced-type reduced-ss))
-       ((when err)
-        (mv err nil nil nil single-ss))
+       (seltrace (revappend rev-idxtrace seltrace))
+       ((vl-selstep selstep) (car seltrace))
 
-       ((mv err width)
-        (vl-partselect-width x.part))
-       ((when err) (mv err nil nil nil single-ss))
 
+       ((when (vl-partselect-case x.part :none))
+        (mv nil (make-vl-operandinfo
+                 :context context
+                 :hidtrace hidtrace
+                 :seltrace seltrace
+                 :part x.part
+                 :type selstep.type
+                 :ss selstep.ss)))
+
+       ((mv err ?caveat single-type & single-ss)
+        (vl-datatype-remove-dim selstep.type selstep.ss))
+       ((when err) (mv err nil))
+
+       ((mv err width) (vl-partselect-width x.part))
+       ((when err) (mv err nil))
        (new-dim (vl-range->packeddimension
-                 (make-vl-range
-                  :msb (vl-make-index (1- width))
-                  :lsb (vl-make-index 0))))
+                 (make-vl-range :msb (vl-make-index (1- width))
+                                :lsb (vl-make-index 0))))
 
-       (dims (append sdims idims psdims))
-
-       ;; The result is now width many elements of
-       ;; type single-type.  So we add a dimension [width-1:0] back onto
-       ;; reduced-type.  However, we need to know whether it should be an
-       ;; unpacked or packed dimension: the way to determine this is whether
-       ;; the last dimension selected was packed or unpacked.
-       (packedp (vl-datatype-packedp reduced-type reduced-ss))
-
-       ((when packedp)
-        (mv nil nil
-            (vl-datatype-update-pdims
-             (cons new-dim (vl-datatype->pdims single-type))
-             single-type)
-            dims
-            single-ss)))
-    (mv nil nil
-        (vl-datatype-update-udims
-         (cons new-dim (vl-datatype->udims single-type))
-         single-type)
-        dims
-        single-ss))
+       (packedp (vl-datatype-packedp selstep.type selstep.ss))
+       (psel-type (if packedp
+                      (vl-datatype-update-pdims
+                       (cons new-dim (vl-datatype->pdims single-type))
+                       single-type)
+                    (vl-datatype-update-udims
+                     (cons new-dim (vl-datatype->udims single-type))
+                     single-type))))
+    (mv nil (make-vl-operandinfo
+             :context context
+             :hidtrace hidtrace
+             :seltrace seltrace
+             :part x.part
+             :type psel-type
+             :ss single-ss)))
   ///
-  (defret vl-datatype-check-usertypes-of-vl-index-expr-type
+  (defret vl-seltrace-usertypes-ok-of-vl-index-expr-typetrace-seltrace
     (implies (not err)
-             (not (vl-datatype-check-usertypes type type-ss))))
+             (vl-seltrace-usertypes-ok (vl-operandinfo->seltrace opinfo))))
 
-  (defret true-listp-dims-of-vl-index-expr-type
-    (true-listp dims)
-    :rule-classes :type-prescription)
-
-  (defret len-dims-of-vl-index-expr-type
+  (defret vl-datatype-usertypes-ok-of-vl-index-expr-typetrace-type
     (implies (not err)
-             (equal (len dims)
-                    (b* (((vl-index x)))
-                      (+ (len x.indices)
-                         (vl-partselect-case x.part :none 0 :otherwise 1)
-                         (vl-hidexpr-index-count
-                          (mv-nth 2 (vl-follow-scopeexpr x.scope ss))))))))
+             (not (vl-datatype-check-usertypes (vl-operandinfo->type opinfo)
+                                               (vl-operandinfo->ss opinfo)))))
 
   (defret follow-scopeexpr-when-vl-index-expr-type
     (implies (not err)
              (b* (((vl-index x)))
                (not (mv-nth 0 (vl-follow-scopeexpr x.scope ss)))))))
+
+;; (define vl-index-expr-typetrace
+;;   ((x vl-expr-p
+;;       "An index expression, i.e. a possibly-package-scoped, possibly-hierarchical
+;;        identifier with 0 or more array selects and a possible partselect.")
+;;    (ss vl-scopestack-p
+;;        "Scopestack where @('x') is referenced."))
+;;   :guard (vl-expr-case x :vl-index)
+;;   :returns (mv (err (iff (vl-msg-p err) err)
+;;                     "Success indicator, we fail if we can't follow the HID or
+;;                          this isn't an appropriate expression.")
+;;                (caveat-flg)
+;;                (type (implies (not err) (vl-datatype-p type))
+;;                      "The type of the resulting expression after all indexing
+;;                       is done.")
+;;                (dims vl-packeddimensionlist-p
+;;                      "Dimensions corresponding to the array indices in the expression")
+;;                (type-ss vl-scopestack-p
+;;                         "Scopestack relative to the type returned."))
+;;   :prepwork ((local (defthm natp-abs
+;;                       (implies (integerp x)
+;;                                (natp (abs x)))
+;;                       :rule-classes :type-prescription))
+;;              (local (in-theory (disable abs))))
+;;   (b* (((vl-index x) (vl-expr-fix x))
+;;        (ss (vl-scopestack-fix ss))
+;;        ((mv warning type sdims type-ss) (vl-scopeexpr-find-type x.scope ss))
+;;        ((when warning) (mv warning nil nil nil ss))
+;;        (has-partselect (vl-partselect-case x.part
+;;                          :none nil
+;;                          :otherwise t))
+;;        ((mv err caveat-flg reduced-type idims reduced-ss)
+;;         (vl-datatype-remove-dims (len x.indices) type type-ss))
+;;        ((when err) (mv err nil nil nil reduced-ss))
+       
+;;        ((unless has-partselect)
+;;         (mv nil
+;;             caveat-flg
+;;             reduced-type
+;;             (append sdims idims)
+;;             reduced-ss))
+
+;;        ;; Take off one more dimension, and then add a dimension the width of
+;;        ;; the partselect.
+       
+;;        ;; Caveat-flag doesn't apply because implementations seem to agree that
+;;        ;; partselects are always unsigned.
+;;        ((mv err ?caveat-flg single-type psdims single-ss)
+;;         (vl-datatype-remove-dims 1 reduced-type reduced-ss))
+;;        ((when err)
+;;         (mv err nil nil nil single-ss))
+
+;;        ((mv err width)
+;;         (vl-partselect-width x.part))
+;;        ((when err) (mv err nil nil nil single-ss))
+
+;;        (new-dim (vl-range->packeddimension
+;;                  (make-vl-range
+;;                   :msb (vl-make-index (1- width))
+;;                   :lsb (vl-make-index 0))))
+
+;;        (dims (append sdims idims psdims))
+
+;;        ;; The result is now width many elements of
+;;        ;; type single-type.  So we add a dimension [width-1:0] back onto
+;;        ;; reduced-type.  However, we need to know whether it should be an
+;;        ;; unpacked or packed dimension: the way to determine this is whether
+;;        ;; the last dimension selected was packed or unpacked.
+;;        (packedp (vl-datatype-packedp reduced-type reduced-ss))
+
+;;        ((when packedp)
+;;         (mv nil nil
+;;             (vl-datatype-update-pdims
+;;              (cons new-dim (vl-datatype->pdims single-type))
+;;              single-type)
+;;             dims
+;;             single-ss)))
+;;     (mv nil nil
+;;         (vl-datatype-update-udims
+;;          (cons new-dim (vl-datatype->udims single-type))
+;;          single-type)
+;;         dims
+;;         single-ss))
+;;   ///
+;;   (defret vl-datatype-check-usertypes-of-vl-index-expr-type
+;;     (implies (not err)
+;;              (not (vl-datatype-check-usertypes type type-ss))))
+
+;;   (defret true-listp-dims-of-vl-index-expr-type
+;;     (true-listp dims)
+;;     :rule-classes :type-prescription)
+
+;;   (defret len-dims-of-vl-index-expr-type
+;;     (implies (not err)
+;;              (equal (len dims)
+;;                     (b* (((vl-index x)))
+;;                       (+ (len x.indices)
+;;                          (vl-partselect-case x.part :none 0 :otherwise 1)
+;;                          (vl-hidexpr-index-count
+;;                           (mv-nth 2 (vl-follow-scopeexpr x.scope ss))))))))
+
+;;   (defret follow-scopeexpr-when-vl-index-expr-type
+;;     (implies (not err)
+;;              (b* (((vl-index x)))
+;;                (not (mv-nth 0 (vl-follow-scopeexpr x.scope ss)))))))
 
 #||
 

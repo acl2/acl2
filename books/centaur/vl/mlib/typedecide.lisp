@@ -92,6 +92,13 @@
                                   "unsigned")))
       (ok))))
 
+(define vl-operandinfo-signedness-caveat ((x vl-operandinfo-p))
+  (b* (((vl-operandinfo x)))
+    (and (vl-partselect-case x.part :none)
+         (consp x.seltrace)
+         (vl-selstep->caveat (car x.seltrace)))))
+       
+
 
 (define vl-index-typedecide ((x        vl-expr-p)
                              (ss       vl-scopestack-p)
@@ -102,17 +109,19 @@
                (type vl-maybe-exprtype-p))
   (b* ((x (vl-expr-fix x))
        (?ctx (vl-context-fix ctx))
-       ((mv err caveat1 type & type-ss) (vl-index-expr-type x ss))
+       ((mv err opinfo) (vl-index-expr-typetrace x ss))
        ((when err)
         (mv (fatal :type :vl-typedecide-fail
                    :msg "~a0: Failed to find the type of ~a1: ~@2"
                    :args (list ctx x err))
             nil))
+       ((vl-operandinfo opinfo))
        ;; we don't need to check that usertypes are ok because
        ;; vl-index-expr-type ensures this
-       ((unless (vl-datatype-packedp type type-ss))
+       ((unless (vl-datatype-packedp opinfo.type opinfo.ss))
         (mv (ok) nil))
-       ((mv caveat2 signedness) (vl-datatype-signedness type type-ss))
+       (caveat1 (vl-operandinfo-signedness-caveat opinfo))
+       ((mv caveat2 signedness) (vl-datatype-signedness opinfo.type opinfo.ss))
        (warnings (vl-signedness-ambiguity-warning
                   x ctx signedness (or caveat1 caveat2) warnings)))
     (mv warnings signedness))
@@ -142,7 +151,7 @@
                (type (and (vl-maybe-exprtype-p type)
                           (iff (vl-exprtype-p type) type))))
   (b* (((vl-call x) (vl-expr-fix x))
-       ((mv err trace ?tail)
+       ((mv err trace ?context ?tail)
         (vl-follow-scopeexpr x.name ss))
        ((when err)
         (mv (fatal :type :vl-typedecide-fail
