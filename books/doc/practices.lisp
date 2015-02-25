@@ -338,7 +338,7 @@ stupid*  wtf*      corollary*   ...
 
 <h4>Rationale</h4>
 
-<p>Using these names may make your book hard to include for people
+<p>Using the above names may make your book hard to include for people
 who (perhaps via macros) are already using these names or who may want to use
 them.</p>
 
@@ -348,21 +348,9 @@ them.</p>
 
 <li>For unconditional, equality-based rules, we base the rule name on a reading
 of the left-hand side, using @('of') as a separator.  This is meant to boost
-readability when the function names involved have their own hyphens.</li>
+readability when the function names involved have their own hyphens.  Examples:
 
-<li>For rules with simple hypotheses, we add @('-when-hyp') to the name.</li>
-
-<li>For rules about other equivalence relations, we add @('-under-equiv') to the
-name.</li>
-
-<li>For rules that specify the upper limit of function's numerical return
-value, we often add @('-limit').</li>
-
-</ol>
-
-<h5>Examples</h5>
-
-@({
+ @({
     (defthm append-of-cons
       (equal (append (cons a x) y)
              (cons a (append x y))))
@@ -370,7 +358,12 @@ value, we often add @('-limit').</li>
     (defthm true-listp-of-append
       (equal (true-listp (append x y))
              (true-listp y)))
+ })
+</li>
 
+<li>For rules with one simple hypothesis, we add @('-when-hyp') to the
+name.  Examples:
+ @({
     (defthm member-when-atom         ;; lhs is (member a x)
       (implies (atom x)
                (not (member a x))))
@@ -379,16 +372,30 @@ value, we often add @('-limit').</li>
       (implies (bitp b)
                (equal (logbitp 0 b)
                       (equal b 1))))
+ })
+</li>
 
+<li>For rules about other equivalence relations, we add @('-under-equiv') to the
+name.  Examples:
+ @({
     (defthm append-under-iff         ;; lhs is (append x y)
       (iff (append x y)
            (or (consp x)
                y)))
+    (defthm union-equal-under-set-equiv  ;; lhs is (union-equal a b)
+      (set-equiv (union-equal a b)
+                 (append a b)))
 
-   (defthm union-equal-under-set-equiv  ;; lhs is (union-equal a b)
-     (set-equiv (union-equal a b)
-                (append a b)))
-})
+ })
+</li>
+
+<li>For rules that specify the upper limit of a function's numerical return
+value, we often add @('-limit'). </li>
+
+<li>For rules that specify both the lower and upper limit of a function's
+numerical return value, we often add @('-bounds').</li>
+
+</ol>
 
 <p>Obviously you can take this too far.  For complex theorems, these
 recommendations would lead to names that are far too long.  Think of them as a
