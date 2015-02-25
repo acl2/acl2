@@ -43,17 +43,18 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
 
-;; (defun atom< (x y)
-;;   (declare (xargs :guard (and (atom x) (atom y))))
-;;   (mbe :logic (not (alphorder (and (atom y) y) (and (atom x) x)))
-;;        :exec (not (fast-alphorder y x))))
+(defun atom< (x y)
+  (declare (xargs :guard (and (atom x) (atom y))))
+  (mbe :logic (not (alphorder (and (atom y) y) (and (atom x) x)))
+       :exec (not (fast-alphorder y x))))
 
-;; (defsort alphorder-sort
-;;   :prefix alphorder
-;;   :comparablep (lambda (x) (not (consp x)))
-;;   :compare< atom<
-;;   :comparable-listp atom-listp
-;;   :true-listp t)
+(defsort alphorder-sort
+  :prefix alphorder
+  :comparablep (lambda (x) (not (consp x)))
+  :compare< atom<
+  :comparable-listp atom-listp
+  :true-listp t
+  :weak t)
 
 ;; Accumulates the AIG vars of X into acc, excluding those that are only found
 ;; within x inside subtrees that are bound in nodetable.  Accumulates into

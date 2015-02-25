@@ -134,8 +134,9 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
       (b* (((when (atom x))
             (mv ,@(project-over-modelement-types
                    '(rev (vl-__type__list-fix        __elts__)))
-                (vl-genelementlist-fix generates))))
-        (vl-genelement-case (xf (car x))
+                (vl-genelementlist-fix generates)))
+           (xf (car x)))
+        (vl-genelement-case xf
           :vl-genbase
           (b* ((x1  xf.item)
                (tag (tag x1)))
@@ -270,8 +271,9 @@ etc., are overwritten with whatever is in the genblob.</p>"
             (vl-modelementlist->genelements
              (append-without-guard
               ,@(project-over-modelement-types '__elts__)))
-            (vl-genelementlist-fix generates)))))
-      (vl-genelement-case (x (car orig-elements))
+            (vl-genelementlist-fix generates))))
+         (x (car orig-elements)))
+      (vl-genelement-case x
         :vl-genbase
         (case (tag x.item)
           ,@(project-over-modelement-types
