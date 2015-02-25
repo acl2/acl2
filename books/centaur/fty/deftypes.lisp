@@ -1793,7 +1793,9 @@
 
 (defun flexsum-case-macro-fn (var-or-binding rest-args sum)
   (b* (((flexsum sum) sum)
-       (var (if (consp var-or-binding) (car var-or-binding) var-or-binding))
+       ((when (consp var-or-binding))
+        (er hard? 'flexsum-case-macro "Requires a variable, rather than ~x0" var-or-binding))
+       (var var-or-binding)
        (kinds (flexprods->kinds sum.prods))
        (allowed-keywordlist-keys (append kinds '(:otherwise)))
        (allowed-parenthesized-keys (append kinds '(acl2::otherwise :otherwise acl2::&)))
