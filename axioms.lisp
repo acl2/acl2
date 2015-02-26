@@ -21286,7 +21286,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (binary-logxor logxor . t)
          (binary-logeqv logeqv . t)
          (binary-por por . t)
-         (binary-pand pand . t))
+         (binary-pand pand . t)
+         (unary-- -)
+         (unary-/ /))
        :clear)
 
 (defmacro add-macro-fn (macro macro-fn &optional right-associate-p)
