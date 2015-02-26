@@ -2359,58 +2359,6 @@
                                                             wrld))
             (untranslate1 (lambda-body (ffn-symb term)) iff-flg untrans-tbl
                           preprocess-fn wrld)))
-          ((and (eq (ffn-symb term) 'nth)
-                (quotep (fargn term 1))
-                (integerp (cadr (fargn term 1)))
-                (<= 0 (cadr (fargn term 1))))
-           (let ((accessor-name (accessor-root (cadr (fargn term 1))
-                                               (fargn term 2)
-                                               wrld)))
-             (list 'nth
-                   (or accessor-name
-                       (cadr (fargn term 1)))
-                   (untranslate1 (fargn term 2) nil untrans-tbl preprocess-fn
-                                 wrld))))
-          ((and (eq (ffn-symb term) 'update-nth)
-                (quotep (fargn term 1))
-                (integerp (cadr (fargn term 1)))
-                (<= 0 (cadr (fargn term 1))))
-           (let ((accessor-name (accessor-root (cadr (fargn term 1))
-                                               (fargn term 3)
-                                               wrld)))
-             (list 'update-nth
-                   (or accessor-name
-                       (cadr (fargn term 1)))
-                   (untranslate1 (fargn term 2) nil untrans-tbl preprocess-fn
-                                 wrld)
-                   (untranslate1 (fargn term 3) nil untrans-tbl preprocess-fn
-                                 wrld))))
-          ((and (eq (ffn-symb term) 'update-nth-array)
-                (quotep (fargn term 1))
-                (integerp (cadr (fargn term 1)))
-                (<= 0 (cadr (fargn term 1))))
-           (let ((accessor-name (accessor-root (cadr (fargn term 1))
-                                               (fargn term 4)
-                                               wrld)))
-             (list 'update-nth-array
-                   (or accessor-name
-                       (cadr (fargn term 1)))
-                   (untranslate1 (fargn term 2) nil untrans-tbl preprocess-fn
-                                 wrld)
-                   (untranslate1 (fargn term 3) nil untrans-tbl preprocess-fn
-                                 wrld)
-                   (untranslate1 (fargn term 4) nil untrans-tbl preprocess-fn
-                                 wrld))))
-          ((eq (ffn-symb term) 'binary-+)
-           (cons '+
-                 (untranslate1-lst (right-associated-args 'binary-+ term)
-                                   nil untrans-tbl preprocess-fn wrld)))
-          ((eq (ffn-symb term) 'unary-/)
-           (list '/ (untranslate1 (fargn term 1) nil untrans-tbl preprocess-fn
-                                  wrld)))
-          ((eq (ffn-symb term) 'unary--)
-           (list '- (untranslate1 (fargn term 1) nil untrans-tbl preprocess-fn
-                                  wrld)))
           ((eq (ffn-symb term) 'if)
            (case-match term
              (('if x1 *nil* *t*)
@@ -2504,18 +2452,45 @@
           (t (let* ((pair (cdr (assoc-eq (ffn-symb term)
                                          untrans-tbl)))
                     (op (car pair))
-                    (flg (cdr pair)))
+                    (flg (cdr pair))
+                    (const
+                     (and (member-eq (ffn-symb term)
+                                     '(nth update-nth update-nth-array))
+                          (quotep (fargn term 1))
+                          (integerp (cadr (fargn term 1)))
+                          (<= 0 (cadr (fargn term 1)))
+                          (accessor-root (cadr (fargn term 1))
+                                         (case (ffn-symb term)
+                                           (nth (fargn term 2))
+                                           (update-nth (fargn term 3))
+                                           (t ; update-nth-array
+                                            (fargn term 4)))
+                                         wrld))))
                (cond
                 (op (cons op
-                          (untranslate1-lst
-                           (cond
-                            ((and flg
-                                  (cdr (fargs term))
-                                  (null (cddr (fargs term))))
-                             (right-associated-args (ffn-symb term)
-                                                    term))
-                            (t (fargs term)))
-                           nil untrans-tbl preprocess-fn wrld)))
+                          (cond
+                           (const ; ignoring flg, which is presumably nil
+                            (cons const
+                                  (untranslate1-lst
+                                   (cdr (fargs term))
+                                   nil untrans-tbl preprocess-fn wrld)))
+                           (t
+                            (untranslate1-lst
+                             (cond
+                              ((and flg
+                                    (cdr (fargs term))
+                                    (null (cddr (fargs term))))
+                               (right-associated-args (ffn-symb term)
+                                                      term))
+                              (t (fargs term)))
+                             nil untrans-tbl preprocess-fn wrld)))))
+                (const
+                 (list* (ffn-symb term)
+                        const
+                        (untranslate1-lst (cdr (fargs term)) nil
+                                          untrans-tbl
+                                          preprocess-fn
+                                          wrld)))
                 (t
                  (mv-let
                   (ad-list base)
