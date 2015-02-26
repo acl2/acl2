@@ -1094,25 +1094,51 @@
 ;   (set-guard-checking nil)
 ;   (f -3)
 
-  (loop for dcl in dcls
-        collect
-        (assert$
-         (and (consp dcl)
-              (eq (car dcl) 'declare))
-         (cond ((assoc-eq 'type (cdr dcl)) ; optimization
-                (cons 'declare
-                      (loop for d in (cdr dcl)
-                            collect
-                            (cond ((eq (car d) 'type)
+; Our fix is to leave some of the DECLAREs in place, in particular so that the
+; compiler can see the IGNOREs, but to fold type declarations into the body as
+; a THE wrapper.
 
-; Experiments in all supported Lisps suggest that duplicating ignorable
-; declarations doesn't produce a warning, so we keep it simple here by paying
-; no heed to whether we have already declared some of these variables
-; ignorable.
+  (let* ((alist nil)
+         (new-dcls
+          (loop for dcl in dcls
+                as dcl2 =
+                (assert$
+                 (and (consp dcl)
+                      (eq (car dcl) 'declare))
+                 (cond ((assoc-eq 'type (cdr dcl)) ; optimization
+                        (let ((dcl2-body
+                               (loop for d in (cdr dcl)
+                                     when
+                                     (cond
+                                      ((eq (car d) 'type)
+                                       (let ((tp (cadr d)))
+                                         (case-match tp
+                                           (('or 't . &)
 
-                                   (cons 'ignorable (cddr d)))
-                                  (t d)))))
-               (t dcl)))))
+; See the-fn.  We excise this no-op type declaration in order to avoid an
+; infinite loop in oneify.
+
+                                            nil)
+                                           (&
+                                            (loop for v in (cddr d)
+                                                  collect
+                                                  (push `(,tp . ,v)
+                                                        alist)))))
+                                       nil)
+                                      (t t))
+                                     collect d)))
+                          (and dcl2-body (cons 'declare dcl2-body))))
+                       (t dcl)))
+                when dcl2
+                collect dcl2)))
+    (values new-dcls alist)))
+
+(defun alist-to-the-for-*1*-lst (type-to-var-alist)
+  (cond ((endp type-to-var-alist)
+         nil)
+        (t (cons `(the-for-*1* ,(caar type-to-var-alist)
+                               ,(cdar type-to-var-alist) )
+                 (alist-to-the-for-*1*-lst (cdr type-to-var-alist))))))
 
 (defun-one-output oneify (x fns w program-p)
 
@@ -1281,17 +1307,20 @@
     (let ((args (oneify-lst (cdr x) fns w program-p)))
       (cons (car x) args)))
    ((eq (car x) 'mv-let)
-    (let ((value-form (oneify (caddr x) fns w program-p))
-          (body-form (oneify (car (last x)) fns w program-p)))
-      `(mv-let ,(cadr x)
-               ,value-form
-
-; We leave some of the DECLAREs in place, in particular so that the compiler
-; can see the IGNOREs.  But type declarations must be removed; see
-; remove-type-dcls.
-
-               ,@(remove-type-dcls (butlast (cdddr x) 1))
-               ,body-form)))
+    (multiple-value-bind
+     (dcls alist)
+     (remove-type-dcls (butlast (cdddr x) 1))
+     (let* ((value-form (oneify (caddr x) fns w program-p))
+            (new-body (cond (alist
+                             `(progn$
+                               ,@(alist-to-the-for-*1*-lst alist)
+                               ,(car (last x))))
+                            (t (car (last x)))))
+            (body-form (oneify new-body fns w program-p)))
+       `(mv-let ,(cadr x)
+                ,value-form
+                ,@dcls
+                ,body-form))))
 
 ;     Feb 8, 1995.  Once upon a time we had the following code here:
 ;    ((eq (car x) 'the)
@@ -1356,24 +1385,33 @@
                           contact the ACL2 implementors."
                          x temp)))))
    ((member-eq (car x) '(let #+acl2-par plet))
-    (let* (#+acl2-par (granularity-decl (and (eq (car x) 'plet)
-                                             (eq (car (cadr x)) 'declare)
-                                             (cadr x)))
+    (let* (#+acl2-par
+           (granularity-decl (and (eq (car x) 'plet)
+                                  (eq (car (cadr x)) 'declare)
+                                  (cadr x)))
            (args #+acl2-par (if granularity-decl (cddr x) (cdr x))
                  #-acl2-par (cdr x))
            (bindings (car args))
-           (post-bindings (cdr args))
-           (value-forms (oneify-lst (strip-cadrs bindings) fns w program-p))
-           (body-form (oneify (car (last post-bindings)) fns w program-p)))
-      `(,(car x)
-        #+acl2-par
-        ,@(and granularity-decl
-               `((declare (granularity
-                           ,(oneify (cadr (cadr (cadr x))) fns w program-p)))))
-        ,(listlis (strip-cars bindings)
-                  value-forms)
-        ,@(remove-type-dcls (butlast post-bindings 1))
-        ,body-form)))
+           (post-bindings (cdr args)))
+      (multiple-value-bind
+       (dcls alist)
+       (remove-type-dcls (butlast post-bindings 1))
+       (let* ((value-forms (oneify-lst (strip-cadrs bindings) fns w program-p))
+              (new-body (cond (alist
+                               `(progn$
+                                 ,@(alist-to-the-for-*1*-lst alist)
+                                 ,(car (last post-bindings))))
+                              (t (car (last post-bindings)))))
+              (body-form (oneify new-body fns w program-p)))
+         `(,(car x)
+           #+acl2-par
+           ,@(and granularity-decl
+                  `((declare (granularity
+                              ,(oneify (cadr (cadr (cadr x))) fns w program-p)))))
+           ,(listlis (strip-cars bindings)
+                     value-forms)
+           ,@dcls
+           ,body-form)))))
    #+acl2-par
    ((member-eq (car x) '(pand por pargs))
     (if (declare-granularity-p (cadr x))

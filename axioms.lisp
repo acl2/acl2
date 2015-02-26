@@ -10053,6 +10053,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 )
 
 (defun the-check (guard x y)
+
+; Warning: Keep this in sync with the-check-for-*1*.
+
   (declare (xargs :guard (or guard (hard-error
                                     nil
                                     "The object ~xa does not satisfy the ~
@@ -10064,6 +10067,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun the-fn (x y)
   (declare (xargs :guard (translate-declaration-to-guard x 'var nil)
+
+; Warning: Keep this in sync with the-fn-for-*1*.
 
 ; As noted above the definition of translate-declaration-to-guard/integer, we
 ; are trying to save a little space in the image.
@@ -10113,8 +10118,44 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro the (x y)
+
+; Warning: Keep this in sync with the-for-*1*.
+
   (declare (xargs :guard (translate-declaration-to-guard x 'var nil)))
   (the-fn x y))
+
+(defun the-check-for-*1* (guard x y var)
+
+; Warning: Keep this in sync with the-check.
+
+  (declare (xargs :guard (or guard (hard-error
+                                    nil
+                                    "The object ~xa does not satisfy the ~
+                                     declaration ~xb for bound variable ~xc."
+                                    (list (cons #\a y)
+                                          (cons #\b x)
+                                          (cons #\c var))))))
+  (declare (ignore x guard var))
+  y)
+
+(defun the-fn-for-*1* (x y)
+
+; Warning: Keep this in sync with the-fn.
+
+  (declare (xargs :guard (and (symbolp y)
+                              (translate-declaration-to-guard x y nil))
+                  :mode :program))
+  (let ((guard (and (symbolp y)
+                    (translate-declaration-to-guard x y nil))))
+    `(the-check-for-*1* ,guard ',x ,y ',y)))
+
+(defmacro the-for-*1* (x y)
+
+; Warning: Keep this in sync with THE.
+
+  (declare (xargs :guard (and (symbolp y)
+                              (translate-declaration-to-guard x y nil))))
+  (the-fn-for-*1* x y))
 
 ; THEORY PROTO-PRIMITIVES
 
