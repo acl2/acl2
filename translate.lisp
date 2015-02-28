@@ -2171,38 +2171,79 @@
    (declare (ignore latches))
    (mv erp val)))
 
-(defun ev-fncall-guard-er-msg (fn guard stobjs-in args w user-stobj-alist extra)
+(defun ev-w (form alist w user-stobj-alist safe-mode gc-off
+                  hard-error-returns-nilp aok)
 
-; Guard is printed directly, so should generally be in untranslated form.
+; WARNING: Do not call this function if alist contains the live state or any
+; other live stobjs and evaluation of form could modify any of those stobjs.
+; Otherwise, the calls of ev-rec below violate requirement (1) in The Essay on
+; EV, which is stated explicitly for ev but, in support of ev, is applicable to
+; ev-rec as well.  Note that users cannot make such a call because they cannot
+; put live stobjs into alist.
+
+; Also see related functions ev-fncall-w and oracle-apply (and macro
+; oracle-funcall).  Their guards pay attention to avoiding calls of untouchable
+; functions, and hence are not themselves untouchable.  But ev-w is untouchable
+; because we don't make any such check, even in the guard.
 
 ; Note that user-stobj-alist is only used for error messages, so this function
-; may be called in the presence of local stobjs.
+; may be called in the presence of local stobjs.  Probably user-stobj-alist
+; could be replaced as nil because of the stobj restriction on alist.
 
-  (prog2$
-   (save-ev-fncall-guard-er fn guard stobjs-in args)
-   (msg
-    "The guard for the~#0~[ :program~/~] function call ~x1, which is ~P23, is ~
-     violated by the arguments in the call ~P45.~@6~@7~@8"
-    (if (programp fn w) 0 1)
-    (cons fn (formals fn w))
-    guard
-    nil ; might prefer (term-evisc-tuple nil state) if we had state here
-    (cons fn
-          (untranslate*-lst
-           (apply-user-stobj-alist-or-kwote user-stobj-alist args nil)
-           nil
-           w))
-    (evisc-tuple 3 4 nil nil)
-    (cond ((and (eq fn 'return-last)
-                (eq (car args) 'mbe1-raw))
-           (msg "  This offending call is equivalent to the more common form, ~
-                 ~x0."
-                `(mbe :logic
-                      ,(untranslate* (kwote (caddr args)) nil w)
-                      :exec
-                      ,(untranslate* (kwote (cadr args)) nil w))))
-          (t ""))
-    (cond ((eq extra :live-stobj)
+  (declare (xargs :guard (and (plist-worldp w)
+                              (termp form w)
+                              (symbol-alistp alist))))
+
+; See the comment in ev for why we don't check the time limit here.
+
+  #-acl2-loop-only
+  (let ((*ev-shortcut-okp* t)
+        (*raw-guard-warningp* (raw-guard-warningp-binding)))
+    (state-free-global-let*
+     ((safe-mode safe-mode)
+      (guard-checking-on
+
+; Guard-checking-on will be t or nil -- not :nowarn, :all, or :none -- but it
+; doesn't seem that this would be a problem, provided the call is made with
+; gc-off set to t if guard-checking-on is either nil or :none (don't forget
+; :none!).
+
+       (not gc-off)))
+     (mv-let
+      (erp val latches)
+      (ev-rec form alist w user-stobj-alist (big-n) safe-mode gc-off
+              nil ; latches
+              hard-error-returns-nilp
+              aok)
+      (progn (when latches
+               (er hard! 'ev-w
+                   "The call ~x0 returned non-nil latches."
+                   (list 'ev-w form alist '<wrld>
+                         (if user-stobj-alist '<user-stobj-alist> nil)
+                         safe-mode gc-off
+                         hard-error-returns-nilp aok)))
+             (mv erp val)))))
+  #+acl2-loop-only
+  (mv-let (erp val latches)
+          (ev-rec form alist w user-stobj-alist (big-n) safe-mode gc-off
+                  nil ; latches
+                  hard-error-returns-nilp
+                  aok)
+          (declare (ignore latches))
+          (mv erp val)))
+
+(defun guard-er-message-coda (fn stobjs-in args w extra erp)
+  (msg "~@0~@1~@2~@3"
+       (cond ((and (eq fn 'return-last)
+                   (eq (car args) 'mbe1-raw))
+              (msg "  This offending call is equivalent to the more common ~
+                    form, ~x0."
+                   `(mbe :logic
+                         ,(untranslate* (kwote (caddr args)) nil w)
+                         :exec
+                         ,(untranslate* (kwote (cadr args)) nil w))))
+             (t ""))
+       (cond ((eq extra :live-stobj)
 
 ; This case occurs if we attempt to execute the call of a "oneified" function
 ; on a live stobj (including state) when the guard of the fn is not satisfied,
@@ -2214,25 +2255,82 @@
 ; error for built-in functions like aset-t-stack that rely on guard-checking to
 ; validate their arguments.
 
-           (msg "~|This error is being reported even though guard-checking ~
-                 has been turned off, because a stobj argument of ~x0 is the ~
-                 ``live'' ~p1 and ACL2 does not support non-compliant live ~
-                 stobj manipulation."
-                fn
-                (find-first-non-nil stobjs-in)))
-          ((eq extra :live-stobj-gc-on)
-           (msg "~|This error will be reported even if guard-checking is ~
-                 turned off, because a stobj argument of ~x0 is the ``live'' ~
-                 ~p1 and ACL2 does not support non-compliant live stobj ~
-                 manipulation."
-                fn
-                (find-first-non-nil stobjs-in)))
-          ((eq extra :no-extra) "") ; :no-extra is unused as of late 10/2013
-          (extra *safe-mode-guard-er-addendum*)
-          (t "~|See :DOC set-guard-checking for information about suppressing ~
-              this check with (set-guard-checking :none), as recommended for ~
-              new users."))
-    (error-trace-suggestion t))))
+              (msg "~|This error is being reported even though guard-checking ~
+                    has been turned off, because a stobj argument of ~x0 is ~
+                    the ``live'' ~p1 and ACL2 does not support non-compliant ~
+                    live stobj manipulation."
+                   fn
+                   (find-first-non-nil stobjs-in)))
+             ((eq extra :live-stobj-gc-on)
+              (msg "~|This error will be reported even if guard-checking is ~
+                    turned off, because a stobj argument of ~x0 is the ~
+                    ``live'' ~p1 and ACL2 does not support non-compliant live ~
+                    stobj manipulation."
+                   fn
+                   (find-first-non-nil stobjs-in)))
+             ((eq extra :no-extra) "") ; :no-extra is unused as of late 10/2013
+             (extra *safe-mode-guard-er-addendum*)
+             (t "~|See :DOC set-guard-checking for information about ~
+                 suppressing this check with (set-guard-checking :none), as ~
+                 recommended for new users."))
+       (error-trace-suggestion t)
+       (if erp
+           (msg "~|~%Note: Evaluation has resulted in an error for the form ~
+                 associated with ~x0 in the table, ~x1, to obtain a custom ~
+                 guard error message.  Consider modifying that table entry; ~
+                 see :doc set-guard-msg."
+                fn 
+                'guard-msg-table)
+         "")))
+
+(defun ev-fncall-guard-er-msg (fn guard stobjs-in args w user-stobj-alist
+                                  extra)
+
+; Guard is printed directly, so should generally be in untranslated form.
+
+; Note that user-stobj-alist is only used for error messages, so this function
+; may be called in the presence of local stobjs.
+
+  (prog2$
+   (save-ev-fncall-guard-er fn guard stobjs-in args)
+   (let ((form (cdr (assoc-eq fn (table-alist 'guard-msg-table w)))))
+     (mv-let
+      (erp msg)
+      (cond (form (ev-w form
+                        (list (cons 'world w)
+                              (cons 'args args)
+                              (cons 'coda
+                                    (guard-er-message-coda
+                                     fn
+                                     stobjs-in
+                                     args
+                                     w
+                                     extra
+                                     nil ; erp [no error yet!]
+                                     )))
+                        w
+                        user-stobj-alist
+                        nil ; safe-mode
+                        t   ; gc-off
+                        t   ; hard-error-returns-nilp
+                        t   ; aok
+                        ))
+            (t (mv nil nil)))
+      (or msg
+          (msg
+           "The guard for the~#0~[ :program~/~] function call ~x1, which is ~
+            ~P23, is violated by the arguments in the call ~P45.~@6"
+           (if (programp fn w) 0 1)
+           (cons fn (formals fn w))
+           guard
+           nil ; might prefer (term-evisc-tuple nil state) if we had state here
+           (cons fn
+                 (untranslate*-lst
+                  (apply-user-stobj-alist-or-kwote user-stobj-alist args nil)
+                  nil
+                  w))
+           (evisc-tuple 3 4 nil nil)
+           (guard-er-message-coda fn stobjs-in args w extra erp)))))))
 
 (defun ev-fncall-guard-er (fn args w user-stobj-alist latches extra)
 
@@ -2753,67 +2851,6 @@
                         (untrans-table wrld)
                         (untranslate-preprocess-fn wrld)
                         wrld))))
-
-(defun ev-w (form alist w user-stobj-alist safe-mode gc-off
-                  hard-error-returns-nilp aok)
-
-; WARNING: Do not call this function if alist contains the live state or any
-; other live stobjs and evaluation of form could modify any of those stobjs.
-; Otherwise, the calls of ev-rec below violate requirement (1) in The Essay on
-; EV, which is stated explicitly for ev but, in support of ev, is applicable to
-; ev-rec as well.  Note that users cannot make such a call because they cannot
-; put live stobjs into alist.
-
-; Also see related functions ev-fncall-w and oracle-apply (and macro
-; oracle-funcall).  Their guards pay attention to avoiding calls of untouchable
-; functions, and hence are not themselves untouchable.  But ev-w is untouchable
-; because we don't make any such check, even in the guard.
-
-; Note that user-stobj-alist is only used for error messages, so this function
-; may be called in the presence of local stobjs.  Probably user-stobj-alist
-; could be replaced as nil because of the stobj restriction on alist.
-
-  (declare (xargs :guard (and (plist-worldp w)
-                              (termp form w)
-                              (symbol-alistp alist))))
-
-; See the comment in ev for why we don't check the time limit here.
-
-  #-acl2-loop-only
-  (let ((*ev-shortcut-okp* t)
-        (*raw-guard-warningp* (raw-guard-warningp-binding)))
-    (state-free-global-let*
-     ((safe-mode safe-mode)
-      (guard-checking-on
-
-; Guard-checking-on will be t or nil -- not :nowarn, :all, or :none -- but it
-; doesn't seem that this would be a problem, provided the call is made with
-; gc-off set to t if guard-checking-on is either nil or :none (don't forget
-; :none!).
-
-       (not gc-off)))
-     (mv-let
-      (erp val latches)
-      (ev-rec form alist w user-stobj-alist (big-n) safe-mode gc-off
-              nil ; latches
-              hard-error-returns-nilp
-              aok)
-      (progn (when latches
-               (er hard! 'ev-w
-                   "The call ~x0 returned non-nil latches."
-                   (list 'ev-w form alist '<wrld>
-                         (if user-stobj-alist '<user-stobj-alist> nil)
-                         safe-mode gc-off
-                         hard-error-returns-nilp aok)))
-             (mv erp val)))))
-  #+acl2-loop-only
-  (mv-let (erp val latches)
-          (ev-rec form alist w user-stobj-alist (big-n) safe-mode gc-off
-                  nil ; latches
-                  hard-error-returns-nilp
-                  aok)
-          (declare (ignore latches))
-          (mv erp val)))
 
 (defun ev-w-lst (lst alist w user-stobj-alist safe-mode gc-off
                      hard-error-returns-nilp aok)
@@ -3606,7 +3643,7 @@
                             (eq (car (cadr entry)) 'or)
                             (eq (cadr (cadr entry)) t))
 
-; The type-spec is (or t x).  There is an excellent change that this comes from
+; The type-spec is (or t x).  There is an excellent chance that this comes from
 ; (the type-spec ...); see the-fn.  So we change the error message a bit for
 ; this case.  Note that the error message is accurate, since (or t x) is
 ; illegal as a type-spec iff x is illegal.  And the message is reasonable
@@ -3763,6 +3800,67 @@
                  (translate-dcl-lst (cdr edcls) wrld)))
         (t (translate-dcl-lst (cdr edcls) wrld))))
 
+(defconst *oneify-primitives*
+
+;;;; Some day we should perhaps remove consp and other such functions from this
+;;;; list because of the "generalized Boolean" problem.
+
+; Add to this list whenever we find a guardless function in #+acl2-loop-only.
+
+  '(if equal cons not consp atom acl2-numberp characterp integerp rationalp
+       stringp symbolp
+
+; We want fmt-to-comment-window (which will arise upon macroexpanding calls of
+; cw) to be executed always in raw Lisp, so we add it to this list in order to
+; bypass its *1* function.
+
+       fmt-to-comment-window
+
+; When we oneify, we sometimes do so on code that was laid down for constrained
+; functions.  Therefore, we put throw on the list.
+
+       throw-raw-ev-fncall
+
+; The next group may be important for the use of safe-mode.
+
+       makunbound-global
+       trans-eval ev ev-lst ev-fncall
+;      fmt-to-comment-window ; already included above
+       sys-call-status
+;      pstack-fn
+       untranslate
+       untranslate-lst
+       trace$-fn-general untrace$-fn-general untrace$-fn1 maybe-untrace$-fn
+       set-w acl2-unwind-protect
+
+; We know that calls of mv-list in function bodies are checked syntactically to
+; satisfy arity and syntactic requirements, so it is safe to call it in raw
+; Lisp rather than somehow considering its *1* function.  We considered adding
+; return-last as well, but not only does return-last have a guard other than T,
+; but indeed (return-last 'mbe1-raw exec logic) macroexpands in raw Lisp to
+; exec, which isn't what we want in oneified code.  We considered adding
+; functions in *defun-overrides*, but there is no need, since defun-overrides
+; makes suitable definitions for *1* functions.
+
+       mv-list
+       ))
+
+(defconst *ec-call-bad-ops*
+
+; We are conservative here, avoiding (ec-call (fn ...)) when we are the least
+; bit nervous about that.  Reasons to be nervous are special treatment of a
+; function symbol by guard-clauses (if) or special treatment in oneify
+; (return-last and anything in *oneify-primitives*).
+
+  (union-equal '(if wormhole-eval return-last)
+               *oneify-primitives*))
+
+(defmacro return-last-call (fn &rest args)
+  `(fcons-term* 'return-last ',fn ,@args))
+
+(defmacro prog2$-call (x y)
+  `(fcons-term* 'return-last ''progn ,x ,y))
+
 (defun dcl-guardian (term-lst)
 
 ; Suppose term-lst is a list of terms, e.g., '((INTEGERP X) (SYMBOLP V)).
@@ -3789,12 +3887,14 @@
                     (equal (fargn term 1) *t*)
                     (equal (fargn term 2) *t*))))
          *t*)
-        (t (fcons-term* 'if
-                        (car term-lst)
-                        (dcl-guardian (cdr term-lst))
-                        '(illegal 'verify-guards
-                                  '"Some TYPE declaration is violated."
-                                  'nil)))))
+        ((null (cdr term-lst))
+         (fcons-term* 'check-dcl-guardian
+                      (car term-lst)
+                      (kwote (car term-lst))))
+        (t (prog2$-call (fcons-term* 'check-dcl-guardian
+                                     (car term-lst)
+                                     (kwote (car term-lst)))
+                        (dcl-guardian (cdr term-lst))))))
 
 (defun ignore-vars (dcls)
   (cond ((null dcls) nil)
@@ -4230,51 +4330,6 @@
     recursive functions."
    stobjs-bound str1 str2 str3))
 
-(defconst *oneify-primitives*
-
-;;;; Some day we should perhaps remove consp and other such functions from this
-;;;; list because of the "generalized Boolean" problem.
-
-; Add to this list whenever we find a guardless function in #+acl2-loop-only.
-
-  '(if equal cons not consp atom acl2-numberp characterp integerp rationalp
-       stringp symbolp
-
-; We want fmt-to-comment-window (which will arise upon macroexpanding calls of
-; cw) to be executed always in raw Lisp, so we add it to this list in order to
-; bypass its *1* function.
-
-       fmt-to-comment-window
-
-; When we oneify, we sometimes do so on code that was laid down for constrained
-; functions.  Therefore, we put throw on the list.
-
-       throw-raw-ev-fncall
-
-; The next group may be important for the use of safe-mode.
-
-       makunbound-global
-       trans-eval ev ev-lst ev-fncall
-;      fmt-to-comment-window ; already included above
-       sys-call-status
-;      pstack-fn
-       untranslate
-       untranslate-lst
-       trace$-fn-general untrace$-fn-general untrace$-fn1 maybe-untrace$-fn
-       set-w acl2-unwind-protect
-
-; We know that calls of mv-list in function bodies are checked syntactically to
-; satisfy arity and syntactic requirements, so it is safe to call it in raw
-; Lisp rather than somehow considering its *1* function.  We considered adding
-; return-last as well, but not only does return-last have a guard other than T,
-; but indeed (return-last 'mbe1-raw exec logic) macroexpands in raw Lisp to
-; exec, which isn't what we want in oneified code.  We considered adding
-; functions in *defun-overrides*, but there is no need, since defun-overrides
-; makes suitable definitions for *1* functions.
-
-       mv-list
-       ))
-
 (defconst *macros-for-nonexpansion-in-raw-lisp*
 
 ; If a symbol, sym, is on this list then the form (sym a1 ... ak) is oneified
@@ -4515,22 +4570,6 @@
          (cons (car embedded-event-lst)
                (non-trivial-encapsulate-ee-entries (cdr embedded-event-lst))))
         (t (non-trivial-encapsulate-ee-entries (cdr embedded-event-lst)))))
-
-(defconst *ec-call-bad-ops*
-
-; We are conservative here, avoiding (ec-call (fn ...)) when we are the least
-; bit nervous about that.  Reasons to be nervous are special treatment of a
-; function symbol by guard-clauses (if) or special treatment in oneify
-; (return-last and anything in *oneify-primitives*).
-
-  (union-equal '(if wormhole-eval return-last)
-               *oneify-primitives*))
-
-(defmacro return-last-call (fn &rest args)
-  `(fcons-term* 'return-last ',fn ,@args))
-
-(defmacro prog2$-call (x y)
-  `(fcons-term* 'return-last ''progn ,x ,y))
 
 (defun name-dropper (lst)
 
@@ -8897,3 +8936,51 @@
                        state t)))
              (cond ((cdr ans) (value l))
                    (t (thereis fn (cdr l) state)))))))
+
+; Now that ev-w, translate, untranslate, and so on are all defined, let us
+; populate guard-msg-table.
+
+(table guard-msg-table nil nil
+       :guard
+       (and (symbolp key)
+            (or (null val)
+                (termp val world))))
+
+(defmacro set-guard-msg (fn form)
+  (declare (xargs :guard (symbolp fn)))
+  `(table guard-msg-table
+          ',fn
+          (mv-let
+           (erp term bindings)
+           (translate1-cmp ',form
+                           '(nil)        ; stobjs-out
+                           nil           ; bindings
+                           t             ; known-stobjs
+                           'set-guard-msg ; ctx
+                           world
+                           (default-state-vars nil))
+           (declare (ignore bindings))
+           (prog2$ (and erp ; erp is ctx, term is msg
+                        (er hard! erp "~@0" term))
+                   term))))
+
+(set-guard-msg the-check
+               (msg "The object ~x0 does not satisfy the type declaration ~
+                     ~x1.~@2"
+                    (nth 2 args)
+                    (nth 1 args)
+                    coda))
+
+(set-guard-msg the-check-for-*1*
+               (msg "The object ~x0 does not satisfy the type declaration ~x1 ~
+                     for bound variable ~x2.~@3"
+                    (nth 2 args)
+                    (nth 1 args)
+                    (nth 3 args)
+                    coda))
+
+(set-guard-msg check-dcl-guardian
+               (msg "The guard condition ~x0, which was generated from a type ~
+                     declaration, has failed.~@1"
+                    (untranslate (cadr args) t world)
+                    coda))

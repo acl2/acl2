@@ -10054,14 +10054,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun the-check (guard x y)
 
-; Warning: Keep this in sync with the-check-for-*1*.
+; See call of (set-guard-msg the-check ...) later in the sources.
 
-  (declare (xargs :guard (or guard (hard-error
-                                    nil
-                                    "The object ~xa does not satisfy the ~
-                                     declaration ~xb."
-                                    (list (cons #\a y)
-                                          (cons #\b x))))))
+  (declare (xargs :guard guard))
   (declare (ignore x guard))
   y)
 
@@ -10126,15 +10121,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun the-check-for-*1* (guard x y var)
 
-; Warning: Keep this in sync with the-check.
+; See call of (set-guard-msg the-check-for-*1* ...) later in the sources.
 
-  (declare (xargs :guard (or guard (hard-error
-                                    nil
-                                    "The object ~xa does not satisfy the ~
-                                     declaration ~xb for bound variable ~xc."
-                                    (list (cons #\a y)
-                                          (cons #\b x)
-                                          (cons #\c var))))))
+  (declare (xargs :guard guard))
   (declare (ignore x guard var))
   y)
 
@@ -26521,3 +26510,11 @@ Lisp definition."
                            \"~s1\"."
                            pos s)
                        0)))))))
+
+(defun check-dcl-guardian (val term)
+
+; See call of (set-guard-msg check-dcl-guardian ...) later in the sources.
+
+  (declare (xargs :guard val))
+  (declare (ignore val term))
+  t)

@@ -7088,6 +7088,7 @@
            memoize
            push
            reset-future-parallelism-variables
+           set-guard-msg
            set-invisible-fns-table
            set-tau-auto-mode
            set-waterfall-parallelism
