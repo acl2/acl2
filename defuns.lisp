@@ -1161,7 +1161,7 @@
 
   (cond ((null measure-alist) wrld)
         (t (putprop-justification-lst
-            (cdr measure-alist) (cdr subset-lst) mp rel ruler-extenders-lst
+            (cdr measure-alist) (cdr subset-lst) mp rel (cdr ruler-extenders-lst)
             subversive-p
             (putprop (caar measure-alist)
                      'justification
