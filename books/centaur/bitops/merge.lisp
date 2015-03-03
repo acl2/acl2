@@ -934,3 +934,91 @@ result."
              (unsigned-byte-p 512 (merge-8-u64s h3 h2 h1 h0 l3 l2 l1 l0))))
   "<h5>Basic @(see nat-equiv) congruences.</h5>"
   (congruences-for-merge (merge-8-u64s h3 h2 h1 h0 l3 l2 l1 l0) 8))
+
+
+
+;; Merging 128s -------------------------------------------------------------
+
+(define merge-2-u128s (h l)
+  (declare (type (unsigned-byte 128) h l))
+  :returns (result natp :rule-classes :type-prescription)
+  :short "Concatenate two 128-bit values together to form a single 256-bit
+result."
+  :inline t
+  (mbe :logic
+       (logior (ash (nfix h) 128)
+               (nfix l))
+       :exec
+       (the (unsigned-byte 256)
+         (logior (the (unsigned-byte 256)
+                   (ash (the (unsigned-byte 128) h)
+                        128))
+                 (the (unsigned-byte 128)
+                   l))))
+
+  ///
+  (defthm unsigned-byte-p-256-of-merge-2-u128s
+    (implies (and (unsigned-byte-p 128 h)
+                  (unsigned-byte-p 128 l))
+             (unsigned-byte-p 256 (merge-2-u128s h l))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-2-u128s h l) 2))
+
+
+(define merge-4-u128s (h1 h0 l1 l0)
+  (declare (type (unsigned-byte 128) h1 h0 l1 l0))
+  :returns (result natp :rule-classes :type-prescription)
+  :short "Concatenate four 128-bit values together to form a single 512-bit
+result."
+  :guard-hints(("Goal" :in-theory (enable merge-2-u128s)))
+  :inline t
+  (mbe :logic
+       (logior (ash (nfix h1) (* 3 128))
+               (ash (nfix h0) (* 2 128))
+               (ash (nfix l1) (* 1 128))
+               (nfix l0))
+       :exec
+       (b* ((high (merge-2-u128s h1 h0))
+            (low  (merge-2-u128s l1 l0)))
+         (the (unsigned-byte 512)
+              (logior (the (unsigned-byte 512)
+                           (ash (the (unsigned-byte 256) high)
+                                256))
+                      (the (unsigned-byte 256) low)))))
+
+  ///
+  (defthm unsigned-byte-p-512-of-merge-4-u128s
+    (implies (and (unsigned-byte-p 128 h1)
+                  (unsigned-byte-p 128 h0)
+                  (unsigned-byte-p 128 l1)
+                  (unsigned-byte-p 128 l0))
+             (unsigned-byte-p 512 (merge-4-u128s h1 h0 l1 l0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-4-u128s h1 h0 l1 l0) 4))
+
+
+
+;; Merging 256s -------------------------------------------------------------
+
+(define merge-2-u256s (h l)
+  (declare (type (unsigned-byte 256) h l))
+  :returns (result natp :rule-classes :type-prescription)
+  :short "Concatenate two 256-bit values together to form a single 512-bit
+result."
+  :inline t
+  (mbe :logic
+       (logior (ash (nfix h) 256)
+               (nfix l))
+       :exec
+       (the (unsigned-byte 512)
+            (logior (the (unsigned-byte 512)
+                         (ash (the (unsigned-byte 256) h)
+                              256))
+                    (the (unsigned-byte 256) l))))
+  ///
+  (defthm unsigned-byte-p-512-of-merge-2-u256s
+    (implies (and (unsigned-byte-p 256 h)
+                  (unsigned-byte-p 256 l))
+             (unsigned-byte-p 512 (merge-2-u256s h l))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-2-u256s h l) 2))
