@@ -124,7 +124,7 @@ well-formed record hypothesis.
            (not (equal (cdar x) 
                        (default-get-valu)))
            (or (null (cdr x))
-               (<< (caar x) (caadr x))))))
+               (acl2::<< (caar x) (caadr x))))))
 
 (defthm rcdp-implies-alistp
   (implies (rcdp x) (alistp x)))
@@ -152,7 +152,7 @@ well-formed record hypothesis.
 (defun ag-aux (a r) ;; record g(et) when r is a well-formed record.
   (declare (xargs :guard (rcdp r)))
   (cond ((or (endp r)
-             (<< a (caar r)))
+             (acl2::<< a (caar r)))
          (default-get-valu))
         ((equal a (caar r))
          (cdar r))
@@ -170,7 +170,7 @@ well-formed record hypothesis.
 (defun as-aux (a v r) ;; record s(et) when x is a well-formed record.
   (declare (xargs :guard (rcdp r)))
   (cond ((or (endp r)
-             (<< a (caar r)))
+             (acl2::<< a (caar r)))
          (acons-if a v r))
         ((equal a (caar r))
          (acons-if a v (cdr r)))
@@ -183,9 +183,9 @@ well-formed record hypothesis.
 (defthm as-aux-is-bounded
   (implies (and (rcdp r)
                 (as-aux a v r)
-                (<< e a)
-                (<< e (caar r)))
-           (<< e (caar (as-aux a v r))))))
+                (acl2::<< e a)
+                (acl2::<< e (caar r)))
+           (acl2::<< e (caar (as-aux a v r))))))
 
 (local
 (defthm as-aux-preserves-rcdp
@@ -251,7 +251,7 @@ well-formed record hypothesis.
 (local
 (defthm ag-aux-is-nil-for-<<
   (implies (and (rcdp r)
-                (<< a (caar r)))
+                (acl2::<< a (caar r)))
            (equal (ag-aux a r)
                   (default-get-valu)))))
 
@@ -368,7 +368,7 @@ well-formed record hypothesis.
                        (default-get-valu)))
            (bvecp (cdar x) k)
            (or (null (cdr x))
-               (<< (caar x) (caadr x))))))
+               (acl2::<< (caar x) (caadr x))))))
 
 (local
 (defthm bvecp-of-default-get-valu-is-true

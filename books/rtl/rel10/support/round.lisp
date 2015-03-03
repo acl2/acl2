@@ -10,7 +10,7 @@
 
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
-(local-in-theory (disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
+(local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
                     simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
 
@@ -57,7 +57,7 @@
                 (< x (+ a (expt 2 (- (expo a) n)))))
            (< (abs (- x a)) (abs (- x (+ a (expt 2 (- (1+ (expo a)) n)))))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (e/d (near-down-1) (normalize-factors-gather-exponents)))))
+  :hints (("Goal" :in-theory (e/d (near-down-1) (acl2::normalize-factors-gather-exponents)))))
 
 (local-defthmd near-down
   (implies (and (rationalp x)
@@ -68,7 +68,7 @@
                 (exactp a n)
                 (< x (+ a (expt 2 (- (expo a) n)))))
            (equal (near x n) a))
-  :hints (("Goal" :in-theory (disable EXPT-IS-INCREASING-FOR-BASE->-1)
+  :hints (("Goal" :in-theory (disable acl2::EXPT-IS-INCREASING-FOR-BASE->-1)
                   :use (near-down-2
                         trunc-squeeze
                         away-squeeze
@@ -85,7 +85,7 @@
                 (> x (+ a (expt 2 (- (expo a) n)))))
            (> (abs (- x a)) (abs (- x (+ a (expt 2 (- (1+ (expo a)) n)))))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (e/d (near-down-1) (normalize-factors-gather-exponents)))))
+  :hints (("Goal" :in-theory (e/d (near-down-1) (acl2::normalize-factors-gather-exponents)))))
 
 (local-defthmd near-up
   (implies (and (rationalp x)
@@ -96,7 +96,7 @@
                 (< x (fp+ a n))
                 (> x (+ a (expt 2 (- (expo a) n)))))
            (equal (near x n) (fp+ a n)))
-  :hints (("Goal" :in-theory (disable EXPT-IS-INCREASING-FOR-BASE->-1)
+  :hints (("Goal" :in-theory (disable acl2::EXPT-IS-INCREASING-FOR-BASE->-1)
                   :use (near-up-2
                         trunc-squeeze
                         away-squeeze
@@ -3142,7 +3142,7 @@
 
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
-(local-in-theory (disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
+(local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
                     simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
 
@@ -3168,8 +3168,8 @@
 		  (<= (rna-witness x y n) y)
 		  (exactp (rna-witness x y n) (1+ n))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (disable NORMALIZE-FACTORS-GATHER-EXPONENTS SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-< 
-                                      |(< (expt x n) (expt x m))| rna)
+  :hints (("Goal" :in-theory (disable ACL2::NORMALIZE-FACTORS-GATHER-EXPONENTS acl2::SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-< 
+                                      acl2::|(< (expt x n) (expt x m))| rna)
 		  :use ((:instance exactp-2**n (n (expo y)) (m (1+ n)))
 			(:instance expo-upper-bound)
 			(:instance expo-monotone)

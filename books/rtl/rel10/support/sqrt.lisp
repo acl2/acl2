@@ -586,7 +586,7 @@ By fp-rnd-rto and fp-rnd-monotone,
 
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
-(local-in-theory (disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
+(local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
                     simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
 

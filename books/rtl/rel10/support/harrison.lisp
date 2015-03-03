@@ -127,8 +127,11 @@
                 (< yp (1+ (expt 2 (- p))))))
   :rule-classes ()
   :hints (("Goal" :use h-9
-                  :in-theory (disable normalize-factors-gather-exponents simplify-products-gather-exponents-< 
-                                      |(< (expt x n) (expt x m))| expt-is-increasing-for-base->-1))))
+                  :in-theory
+                  #!acl2(disable normalize-factors-gather-exponents
+                                 simplify-products-gather-exponents-< 
+                                 |(< (expt x n) (expt x m))|
+                                 expt-is-increasing-for-base->-1))))
 
 (local-defthm h-11
   (implies (and (rationalp yp)
@@ -138,8 +141,11 @@
            (>= yp 1/2))
   :rule-classes ()
   :hints (("goal" :use h-9
-                  :in-theory (disable normalize-factors-gather-exponents simplify-products-gather-exponents-< 
-                                      |(< (expt x n) (expt x m))| expt-is-increasing-for-base->-1))))
+                  :in-theory
+                  #!acl2(disable normalize-factors-gather-exponents
+                                 simplify-products-gather-exponents-< 
+                                 |(< (expt x n) (expt x m))|
+                                 expt-is-increasing-for-base->-1))))
 
 (local-defthm h-12
   (implies (and (rationalp yp)
@@ -175,8 +181,11 @@
                         (:instance exactp-2**n (n 0) (m p))
                         (:instance exactp-fp- (x 1) (n p))
                         (:instance expo-unique (x (fp- 1 p)) (n -1)))
-                  :in-theory (disable normalize-factors-gather-exponents simplify-products-gather-exponents-< 
-                                      |(< (expt x n) (expt x m))| expt-is-increasing-for-base->-1))))
+                  :in-theory
+                  #!acl2(disable normalize-factors-gather-exponents
+                                 simplify-products-gather-exponents-< 
+                                 |(< (expt x n) (expt x m))|
+                                 expt-is-increasing-for-base->-1))))
 
 (local-defthm h-16
   (implies (and (rationalp yp)

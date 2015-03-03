@@ -486,10 +486,10 @@
   (equal (equal 2 (lxor0 i j 1))
          nil)
   :hints (("Goal" :expand ((lxor0 i j 1))
-           :use ((:instance acl2::bvecp-1-rewrite
-                            (acl2::x (bitn i 0)))
-                 (:instance acl2::bvecp-1-rewrite
-                            (acl2::x (bitn j 0)))))))
+           :use ((:instance bvecp-1-rewrite
+                            (x (bitn i 0)))
+                 (:instance bvecp-1-rewrite
+                            (x (bitn j 0)))))))
 
 (local
  (encapsulate
@@ -499,7 +499,7 @@
     (implies (natp j)
              (equal (bitn (1- (expt 2 (1+ j))) j)
                     1))
-    :hints (("Goal" :in-theory (enable acl2::bvecp-bitn-1 bvecp)
+    :hints (("Goal" :in-theory (enable bvecp-bitn-1 bvecp)
              :expand ((expt 2 (+ 1 j))))))
 
   (defthm bitn-of-1-less-than-power-of-2
@@ -508,11 +508,11 @@
                   (< j i))
              (equal (bitn (1- (expt 2 i)) j)
                     1))
-    :hints (("Goal" :use ((:instance acl2::bitn-plus-mult
-                                     (acl2::x (1- (expt 2 (1+ j))))
-                                     (acl2::k (1- (expt 2 (- i (1+ j)))))
-                                     (acl2::m (1+ j))
-                                     (acl2::n j))))))))
+    :hints (("Goal" :use ((:instance bitn-plus-mult
+                                     (x (1- (expt 2 (1+ j))))
+                                     (k (1- (expt 2 (- i (1+ j)))))
+                                     (m (1+ j))
+                                     (n j))))))))
                                    
 (local-defun prop-as-lxor0-thm (i j x y)
   (implies (and (natp i)
@@ -563,19 +563,19 @@
            (prop-as-lxor0-thm i j x y))
   :hints (("Goal" :in-theory (enable log=)
            :expand ((expt 2 (+ 1 i (* -1 j))))
-           :use ((:instance acl2::bitn-plus-bits (acl2::m 0)
+           :use ((:instance bitn-plus-bits (m 0)
                             (n (- i j))
-                            (acl2::x (lxor0 (bits x i j)
-                                           (bits y i j)
-                                           (+ 1 i (* -1 j)))))
-                 (:instance acl2::bvecp-1-rewrite
-                            (acl2::x (bitn x i)))
-                 (:instance acl2::bvecp-1-rewrite
-                            (acl2::x (bitn y i)))
-                 (:instance acl2::bvecp-1-rewrite
-                            (acl2::x (bitn x 0)))
-                 (:instance acl2::bvecp-1-rewrite
-                            (acl2::x (bitn y 0)))))))
+                            (x (lxor0 (bits x i j)
+                                      (bits y i j)
+                                      (+ 1 i (* -1 j)))))
+                 (:instance bvecp-1-rewrite
+                            (x (bitn x i)))
+                 (:instance bvecp-1-rewrite
+                            (x (bitn y i)))
+                 (:instance bvecp-1-rewrite
+                            (x (bitn x 0)))
+                 (:instance bvecp-1-rewrite
+                            (x (bitn y 0)))))))
 
 (local-defthm prop-as-lxor0-thm-proved
   (prop-as-lxor0-thm i j x y)

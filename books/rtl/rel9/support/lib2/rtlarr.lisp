@@ -58,7 +58,7 @@
            (not (equal (cdar x) 
                        (default-get-valu)))
            (or (null (cdr x))
-               (<< (caar x) (caadr x))))))
+               (acl2::<< (caar x) (caadr x))))))
 
 (defthm rcdp-implies-alistp
   (implies (rcdp x) (alistp x)))
@@ -86,7 +86,7 @@
 (defun ag-aux (a r) ;; record g(et) when r is a well-formed record.
   (declare (xargs :guard (rcdp r)))
   (cond ((or (endp r)
-             (<< a (caar r)))
+             (acl2::<< a (caar r)))
          (default-get-valu))
         ((equal a (caar r))
          (cdar r))
@@ -104,7 +104,7 @@
 (defun as-aux (a v r) ;; record s(et) when x is a well-formed record.
   (declare (xargs :guard (rcdp r)))
   (cond ((or (endp r)
-             (<< a (caar r)))
+             (acl2::<< a (caar r)))
          (acons-if a v r))
         ((equal a (caar r))
          (acons-if a v (cdr r)))
@@ -182,7 +182,7 @@
                        (default-get-valu)))
            (bvecp (cdar x) k)
            (or (null (cdr x))
-               (<< (caar x) (caadr x))))))
+               (acl2::<< (caar x) (caadr x))))))
 
 (defthm as-maps-bv-arr-to-bv-arr
   (implies (and (bv-arrp r k)

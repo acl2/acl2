@@ -209,7 +209,7 @@
 	     (= (bits (sum-pp4p-theta x y m n) (1- (+ n (* 2 m))) 0)
                 (* x y)))
   :rule-classes ()
-  :hints (("Goal" :in-theory (e/d (bvecp) (|(* (expt c m) (expt d n))| |(< (expt x n) (expt x m))| expt-is-increasing-for-base->-1 bits-tail))
+  :hints (("Goal" :in-theory (e/d (bvecp) (acl2::|(* (expt c m) (expt d n))| acl2::|(< (expt x n) (expt x m))| acl2::expt-is-increasing-for-base->-1 bits-tail))
                   :use ((:instance bits-tail (x (* x y)) (i (1- (+ n (* 2 m)))))
                         (:instance expt-hack (x (* x y)) (n (+ n (* 2 m))) (m (+ -2 n (* 2 m))))
                         (:instance bvecp-product (m (1- n)) (n (1- (* 2 m))))

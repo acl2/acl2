@@ -75,7 +75,7 @@
 	     (equal (logand i j)
 		    (+ (* 2 (logand (fl (* 1/2 i)) (fl (* 1/2 j))))
 		       (logand (mod i 2) (mod j 2)))))
-  :rule-classes ((:definition :controller-alist ((binary-logand t t)))))
+  :rule-classes ((:definition :controller-alist ((acl2::binary-logand t t)))))
 
 
 (defthmd logior-def
@@ -84,7 +84,7 @@
 	     (equal (logior i j)
 		    (+ (* 2 (logior (fl (* 1/2 i)) (fl (* 1/2 j))))
 		       (logior (mod i 2) (mod j 2)))))
-  :rule-classes ((:definition :controller-alist ((binary-logior t t)))))
+  :rule-classes ((:definition :controller-alist ((acl2::binary-logior t t)))))
 
 
 
@@ -94,7 +94,7 @@
 	     (equal (logxor i j)
 		    (+ (* 2 (logxor (fl (* 1/2 i)) (fl (* 1/2 j))))
 		       (logxor (mod i 2) (mod j 2)))))
-  :rule-classes ((:definition :controller-alist ((binary-logxor t t)))))
+  :rule-classes ((:definition :controller-alist ((acl2::binary-logxor t t)))))
 
 
 

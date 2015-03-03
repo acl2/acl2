@@ -89,7 +89,9 @@
 
  <p>David Russinoff has contributed a new version of the rtl library:
  @('rtl/rel10/').  This time the new version depends on a previous version,
- namely, @('rtl/rel9/').</p>
+ namely, @('rtl/rel9/').  The new @('rtl/rel10/') library has, in turn, been
+ adapted to reside in a new @('\"RTL\"') package; the result is
+ @('rtl/rel11/').</p>
 
 ")
 

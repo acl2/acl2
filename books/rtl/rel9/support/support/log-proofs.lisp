@@ -549,7 +549,7 @@
                    (logand (bits x i j) (bits y i j))))
    :hints (("Goal" :in-theory (set-difference-theories
                                (enable bits)
-                               '(CANCEL_TIMES-EQUAL-CORRECT))
+                               '(ACL2::CANCEL_TIMES-EQUAL-CORRECT))
             :use (bits-logand-11
                   bits-logand-12
                   (:instance cancel-equal-*
@@ -692,7 +692,7 @@
                                      )
                               '(;COLLECT-CONSTANTS-IN-<-OF-SUMS
 ;                                a4 a9
-                                CANCEL_TIMES-EQUAL-CORRECT ;unfortunate
+                                ACL2::CANCEL_TIMES-EQUAL-CORRECT ;unfortunate
                                 CANCEL-COMMON-FACTORS-IN-EQUAL ;unfortunate
                                 ;INTEGER-TIGHTEN-BOUND
                                 ))

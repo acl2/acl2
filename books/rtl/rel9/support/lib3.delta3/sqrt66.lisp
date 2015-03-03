@@ -1709,8 +1709,9 @@ By rnd-sticky and rnd-monotone,
                 (<= (* x x) (* y y))))
   :rule-classes ()
   :hints (("Goal" :use (sq-leq-1 sq-leq-2)
-                  :in-theory (disable normalize-factors-gather-exponents
-                                      simplify-products-gather-exponents-<))))
+                  :in-theory
+                  #!acl2(disable normalize-factors-gather-exponents
+                                 simplify-products-gather-exponents-<))))
 
 (local-defthm exactp-cmp-sticky-sqrt-1
   (implies (and (rationalp x) (>= x 1/4) (< x 1)
@@ -1807,10 +1808,16 @@ By rnd-sticky and rnd-monotone,
   (implies (and (rationalp x) (> x 0))
            (< x (expt 2 (* 2 (1+ (/ (expo x) 2))))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (disable |(* (expt c m) (expt d n))| |(< (expt x n) (expt x m))| EXPT-IS-INCREASING-FOR-BASE->-1
-                                      SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-< NORMALIZE-FACTORS-GATHER-EXPONENTS |(* (expt x m) (expt x n))|)
-                  :use (exactp-cmp-qsqrt-5
-                        expo-upper-bound))))
+  :hints (("Goal"
+           :in-theory
+           #!acl2(disable |(* (expt c m) (expt d n))|
+                          |(< (expt x n) (expt x m))|
+                          EXPT-IS-INCREASING-FOR-BASE->-1
+                          SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<
+                          NORMALIZE-FACTORS-GATHER-EXPONENTS
+                          |(* (expt x m) (expt x n))|)
+           :use (exactp-cmp-qsqrt-5
+                 expo-upper-bound))))
 
 (local-defthm exactp-cmp-qsqrt-7
   (implies (and (rationalp x) (> x 0))
@@ -1868,10 +1875,16 @@ By rnd-sticky and rnd-monotone,
   (implies (and (rationalp x) (> x 0))
            (>= x (expt 2 (1- (expo x)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (disable |(* (expt c m) (expt d n))| |(< (expt x n) (expt x m))| EXPT-IS-INCREASING-FOR-BASE->-1
-                                      SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-< NORMALIZE-FACTORS-GATHER-EXPONENTS |(* (expt x m) (expt x n))|)
-                  :use (exactp-cmp-qsqrt-13
-                        expo-lower-bound))))
+  :hints (("Goal"
+           :in-theory
+           #!acl2(disable |(* (expt c m) (expt d n))|
+                          |(< (expt x n) (expt x m))|
+                          EXPT-IS-INCREASING-FOR-BASE->-1
+                          SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<
+                          NORMALIZE-FACTORS-GATHER-EXPONENTS
+                          |(* (expt x m) (expt x n))|)
+           :use (exactp-cmp-qsqrt-13
+                 expo-lower-bound))))
 
 (local-defthm exactp-cmp-qsqrt-15
   (implies (and (rationalp x) (> x 0))

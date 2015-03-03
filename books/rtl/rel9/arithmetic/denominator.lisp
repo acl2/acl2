@@ -66,5 +66,5 @@
                  (integerp q)
                  )
             (<= (denominator (* p (/ q))) q))
-   :hints (("goal" :use (:instance least-numerator-denominator-<= (n p) (d q))))
+   :hints (("goal" :use (:instance acl2::least-numerator-denominator-<= (n p) (d q))))
    ))

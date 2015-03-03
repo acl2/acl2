@@ -294,7 +294,7 @@ Todo:
            (equal (logand i j)
               (+ (* 2 (logand (fl (* 1/2 i)) (fl (* 1/2 j))))
                  (logand (mod i 2) (mod j 2)))))
-  :rule-classes  ((:definition :controller-alist ((binary-logand t t)))))
+  :rule-classes  ((:definition :controller-alist ((acl2::binary-logand t t)))))
 
 
 (defthm fl-logand-by-2
@@ -372,7 +372,7 @@ Todo:
            (equal (logand x y)
                   (+ (* 2 (logand (fl (/ x 2)) (fl (/ y 2))))
                      (logand (mod x 2) (mod y 2)))))
-  :rule-classes ((:definition :controller-alist ((binary-logand t t)))))
+  :rule-classes ((:definition :controller-alist ((acl2::binary-logand t t)))))
 
 (defthm logand-even-2
   (implies (and (integerp i)

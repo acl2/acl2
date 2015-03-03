@@ -6,7 +6,7 @@
 
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
-(in-theory (disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
+(in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
                     simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
 
@@ -211,7 +211,7 @@ y < 2^p, and hence x and y are p-exact.
                 (< x (+ a (expt 2 (- (expo a) n)))))
            (< (abs (- x a)) (abs (- x (+ a (expt 2 (- (1+ (expo a)) n)))))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (e/d (near-down-1) (normalize-factors-gather-exponents)))))
+  :hints (("Goal" :in-theory (e/d (near-down-1) (acl2::normalize-factors-gather-exponents)))))
 
 (defthmd near-down
   (implies (and (rationalp x)
@@ -222,7 +222,7 @@ y < 2^p, and hence x and y are p-exact.
                 (exactp a n)
                 (< x (+ a (expt 2 (- (expo a) n)))))
            (equal (near x n) a))
-  :hints (("Goal" :in-theory (disable EXPT-IS-INCREASING-FOR-BASE->-1)
+  :hints (("Goal" :in-theory (disable acl2::EXPT-IS-INCREASING-FOR-BASE->-1)
                   :use (near-down-2
                         trunc-squeeze
                         away-squeeze
@@ -239,7 +239,7 @@ y < 2^p, and hence x and y are p-exact.
                 (> x (+ a (expt 2 (- (expo a) n)))))
            (> (abs (- x a)) (abs (- x (+ a (expt 2 (- (1+ (expo a)) n)))))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (e/d (near-down-1) (normalize-factors-gather-exponents)))))
+  :hints (("Goal" :in-theory (e/d (near-down-1) (acl2::normalize-factors-gather-exponents)))))
 
 (defthmd near-up
   (implies (and (rationalp x)
@@ -250,7 +250,7 @@ y < 2^p, and hence x and y are p-exact.
                 (< x (fp+ a n))
                 (> x (+ a (expt 2 (- (expo a) n)))))
            (equal (near x n) (fp+ a n)))
-  :hints (("Goal" :in-theory (disable EXPT-IS-INCREASING-FOR-BASE->-1)
+  :hints (("Goal" :in-theory (disable acl2::EXPT-IS-INCREASING-FOR-BASE->-1)
                   :use (near-up-2
                         trunc-squeeze
                         away-squeeze
@@ -293,10 +293,12 @@ y < 2^p, and hence x and y are p-exact.
                 (< (* a r) 2)))
   :rule-classes ()
   :hints (("Goal" :use (r-exactp-1)
-                  :in-theory (disable |(* 1 x)| |(* a (/ a) b)| |(* a (/ a))| |(* y (* x z))| |(* y x)|
-                                      |(< (/ x) y) with (< 0 x)| |(< x (/ y)) with (< 0 y)| 
-                                      REMOVE-STRICT-INEQUALITIES REMOVE-WEAK-INEQUALITIES
-                                      SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))))
+                  :in-theory
+                  #!acl2
+                  (disable |(* 1 x)| |(* a (/ a) b)| |(* a (/ a))| |(* y (* x z))| |(* y x)|
+                           |(< (/ x) y) with (< 0 x)| |(< x (/ y)) with (< 0 y)| 
+                           REMOVE-STRICT-INEQUALITIES REMOVE-WEAK-INEQUALITIES
+                           SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))))
 
 (defthm r-exactp-3
   (implies (and (rationalp a)
@@ -524,7 +526,7 @@ y < 2^p, and hence x and y are p-exact.
                 (< (abs (- (/ a b) q)) (expt 2 (- 1 p))))
            (> q (- 1 (expt 2 (- p)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (e/d (r-exactp-17) (normalize-factors-gather-exponents))
+  :hints (("Goal" :in-theory (e/d (r-exactp-17) (acl2::normalize-factors-gather-exponents))
                   :use (r-exactp-16))))
 
 (local-defthm r-exactp-19
@@ -860,7 +862,7 @@ y < 2^p, and hence x and y are p-exact.
                 (< (abs (- (/ a b) q)) (expt 2 (- p))))
            (> q (- 1/2 (expt 2 (- (1+ p))))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (e/d (r-exactp-41) (normalize-factors-gather-exponents))
+  :hints (("Goal" :in-theory (e/d (r-exactp-41) (acl2::normalize-factors-gather-exponents))
                   :use (r-exactp-40))))
 
 (local-defthm r-exactp-43
@@ -999,7 +1001,7 @@ y < 2^p, and hence x and y are p-exact.
                 (< (expo q) (expo (/ a b))))
            (>= q (- 1 (expt 2 (- p)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (e/d (r-exactp-51) (normalize-factors-gather-exponents))
+  :hints (("Goal" :in-theory (e/d (r-exactp-51) (acl2::normalize-factors-gather-exponents))
                   :use (r-exactp-48 r-exactp-49 r-exactp-50
                         (:instance fp+2 (x (- 1 (expt 2 (- 1 p)))) (y q) (n p))))))
 
@@ -4597,7 +4599,7 @@ y < 2^p, and hence x and y are p-exact.
            (= (near (+ q (* (- a (* b q)) y)) p)
               (near (/ a b) p)))
   :rule-classes ()
-  :hints (("Goal" :in-theory (e/d (near-down-1) (normalize-factors-gather-exponents))
+  :hints (("Goal" :in-theory (e/d (near-down-1) (acl2::normalize-factors-gather-exponents))
                   :use (expo-q-10 r-neg-19 r-neg-rne-34 q-not-expo-q
                         (:instance fp--non-negative (x q) (n p))
                         (:instance exactp-fp- (x q) (n p))
@@ -5065,7 +5067,7 @@ y < 2^p, and hence x and y are p-exact.
            (= (near (+ q (* (- a (* b q)) y)) p)
               (near (/ a b) p)))
   :rule-classes ()
-  :hints (("Goal" :in-theory (e/d (near-down-1) (normalize-factors-gather-exponents))
+  :hints (("Goal" :in-theory (e/d (near-down-1) (acl2::normalize-factors-gather-exponents))
                   :use (expo-q-10 r-neg-19 r-neg-rne-up-34 q-not-expo-q
                         (:instance fp--non-negative (x q) (n p))
                         (:instance exactp-fp- (x q) (n p))

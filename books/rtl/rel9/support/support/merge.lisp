@@ -979,8 +979,8 @@ test of having this commented out:
                   (bits x (- i n) (- j n))))
   :hints (("Goal" :in-theory (set-difference-theories
                               (enable ocat bvecp)
-                              '(CANCEL_PLUS-EQUAL-CORRECT
-                                CANCEL_PLUS-LESSP-CORRECT))
+                              '(ACL2::CANCEL_PLUS-EQUAL-CORRECT
+                                ACL2::CANCEL_PLUS-LESSP-CORRECT))
            :use ((:instance fl-unique (x (/ (ocat x y n) (expt 2 n))) (n x))
                  (:instance bits-shift-down-1 (i (- i n)) (j (- j n)) (x (ocat x y n)) (k n))
                  ))))
