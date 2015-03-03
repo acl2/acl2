@@ -1,5 +1,3 @@
-(include-book "std/portcullis" :dir :system) ; define std:: symbols below
-
 (defpkg "FLAG" 
   (set-difference-eq
    (union-eq
