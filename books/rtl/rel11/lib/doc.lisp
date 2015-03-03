@@ -192,20 +192,20 @@
   :parents (acl2::arithmetic acl2::hardware-verification)
   :short "A library of register-transfer logic and computer arithmetic"
   :long "<p>This @(see documentation) for @(see community-books) residing under
-  @('rtl/rel10') contains links to David Russinoff's online rtl manual, <i><a
+  @('rtl/rel11') contains links to David Russinoff's online rtl manual, <i><a
   href='http://russinoff.com/libman/index.html'>A Formal Theory of
   Register-Transfer Logic and Computer Arithmetic</a></i>.  The organization of
   that manual is essentially isomorphic to the organization of the tree of
   documentation topics under this RTL topic.  Each leaf topic of that tree
-  corresponds to a section of a book in the directory @('rtl/rel10/lib/').  The
+  corresponds to a section of a book in the directory @('rtl/rel11/lib/').  The
   (leaf) topic for a section has two parts: (1) a link near the top of the page
   points to the corresponding page in the online rtl manual, which contains
   discussion and proofs written in mathematical English; and (2) the rest of
   the page displays definitions and theorems from that section.  Note that the
-  books in @('rtl/rel10/lib/') contain additional definitions and theorems not
+  books in @('rtl/rel11/lib/') contain additional definitions and theorems not
   documented here or in the rtl online manual.</p>
 
-  <p>See file @('rtl/rel10/README') for additional information about this
+  <p>See file @('rtl/rel11/README') for additional information about this
   library.</p>")
 
 (rtl-order-subtopics rtl (|Register-Transfer Logic|
