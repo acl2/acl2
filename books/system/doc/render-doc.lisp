@@ -75,7 +75,7 @@
        (state (princ$ "; Documentation for the ACL2 Theorem Prover
 ; WARNING: GENERATED FILE, DO NOT HAND EDIT!
 ; The contents of this file are derived from ACL2 Community Book
-; books/system/acl2-doc.lisp.
+; books/system/doc/acl2-doc.lisp.
 
 ; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2015, Regents of the University of Texas
@@ -91,7 +91,7 @@
 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ; LICENSE for more details.
 
-; Here are the original authors of books/system/acl2-doc.lisp.
+; Here are the original authors of books/system/doc/acl2-doc.lisp.
 ; Additional contributions may have been made to that file by members
 ; of the ACL2 community.
 
@@ -102,9 +102,9 @@
 ; Austin, TX 78701 U.S.A.
 
 ; WARNING: This file is generated from ACL2 Community Book
-; books/system/acl2-doc.lisp.  To edit ACL2 documentation modify that
-; file, not this one!  Instructions are just above the in-package form
-; in that book.
+; books/system/doc/acl2-doc.lisp.  To edit ACL2 documentation modify
+; that file, not this one!  Instructions are just above the in-package
+; form in that book.
 
 (in-package \"ACL2\")
 

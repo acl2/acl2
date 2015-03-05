@@ -6076,6 +6076,13 @@
 
        (defvar ,the-live-name)
        #+hons ,@(and (null congruent-to)
+
+; It has occurred to us that this defg form might be avoidable when
+; non-memoizable is true, since the purpose of st-lst is probably only to
+; support memoize-flush.  However, it seems harmless enough to lay down this
+; form even when non-memoizable is true, so we go ahead and do so rather than
+; think carefully about avoiding it.
+
                      `((defg ,(st-lst name) nil)))
 
 ; Now we lay down the defuns of the recognizers, accessors and updaters as
