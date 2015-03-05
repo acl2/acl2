@@ -3949,15 +3949,6 @@
          (extra-info-lits (cdr cl) (cons (car cl) acc)))
         (t (extra-info-lits (cdr cl) acc))))
 
-(defun rev-union-equal (x y)
-  (declare (xargs :guard (and (true-listp x)
-                              (true-listp y))))
-  (cond ((endp x) y)
-        ((member-equal (car x) y)
-         (rev-union-equal (cdr x) y))
-        (t
-         (rev-union-equal (cdr x) (cons (car x) y)))))
-
 (defun merge-extra-info-lits (cl cl0 tree)
 
 ; cl0 is in tree.  We want to merge the extra-info-lit elements of cl into cl0.
