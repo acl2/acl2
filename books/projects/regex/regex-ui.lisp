@@ -37,17 +37,17 @@
 (local (include-book "misc/assert" :dir :system))
 
 (defxdoc regex
-  :parents (top)
+  :parents (projects)
   :short "Regular expression library for ACL2"
   :long "<p>This library is modeled after the regular expression parsing
          functionality of GNU grep.  While the code is mostly considered to be
          complete enough for now, we invite those who wish to improve the
          documentation to go ahead and do so.  As of March 2013, this library
          is compliant with 579 of the 646 GNU grep regression suite tests (see
-         book regex/regex-tests for those tests).</p>
+         book projects/regex/regex-tests for those tests).</p>
 
          <p>To start using the regex library, include book
-         <tt>regex/regex-ui</tt>.</p>
+         <tt>projects/regex/regex-ui</tt>.</p>
 
          <p>This library supports \"Basic\", \"Extended\", and \"Fixed\"
          regular expressions (see @(see parse-options)).  Although some
@@ -550,7 +550,7 @@
         for what will be our use of regex-get:</p>
 
 @({
- (include-book \"regex/regex-ui\" :dir :system)
+ (include-book \"projects/regex/regex-ui\" :dir :system)
 
  (defthm dictionary-p-is-string-keyed-alist-p
    (implies (dictionary-p x)

@@ -133,7 +133,7 @@
 
 (include-book "oslib/top" :dir :system)
 
-(include-book "regex/regex-ui" :dir :system)
+(include-book "projects/regex/regex-ui" :dir :system)
 
 (include-book "std/top" :dir :system)
 (include-book "std/basic/inductions" :dir :system)
