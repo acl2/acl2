@@ -274,6 +274,7 @@ in it, such as a function, task, or block statement."
                "Parameter declarations in this scope.")
    (vardecls vl-vardecllist-p
              "Variable declarations in this scope.")
+   (scopetype vl-scopetype-p "Kind of block responsible for this")
 
    (name  maybe-stringp :rule-classes :type-prescription
           "Just a debugging aide.  This lets us see the name of this scope when
@@ -286,6 +287,7 @@ in it, such as a function, task, or block statement."
     (make-vl-blockscope :vardecls x.vardecls
                         :imports x.imports
                         :paramdecls x.paramdecls
+                        :scopetype :vl-fundecl
                         :name  x.name)))
 
 (define vl-taskdecl->blockscope ((x vl-taskdecl-p))
@@ -295,6 +297,7 @@ in it, such as a function, task, or block statement."
     (make-vl-blockscope :vardecls x.vardecls
                         :imports x.imports
                         :paramdecls x.paramdecls
+                        :scopetype :vl-taskdecl
                         :name  x.name)))
 
 (define vl-blockstmt->blockscope ((x vl-stmt-p))
@@ -305,6 +308,7 @@ in it, such as a function, task, or block statement."
     (make-vl-blockscope :vardecls x.vardecls
                         :imports x.imports
                         :paramdecls x.paramdecls
+                        :scopetype :vl-blockstmt
                         :name  x.name)))
 
 (define vl-forstmt->blockscope ((x vl-stmt-p))
@@ -312,8 +316,8 @@ in it, such as a function, task, or block statement."
   :returns (scope vl-blockscope-p)
   :parents (vl-blockscope vl-scopestack-push)
   (b* (((vl-forstmt x)))
-    (make-vl-blockscope :vardecls x.initdecls)))
-
+    (make-vl-blockscope :vardecls x.initdecls
+                        :scopetype :vl-forstmt)))
 
 
 ;; Notes on name spaces -- from SV spec 3.13
@@ -393,17 +397,17 @@ in it, such as a function, task, or block statement."
 ;; Notes on scope rules, from SV spec 23.9.
 
 ;; Elements that define new scopes:
-;;     — Modules
-;;     — Interfaces
-;;     — Programs
-;;     — Checkers
-;;     — Packages
-;;     — Classes
-;;     — Tasks
-;;     — Functions
-;;     — begin-end blocks (named or unnamed)
-;;     — fork-join blocks (named or unnamed)
-;;     — Generate blocks
+;;       Modules
+;;       Interfaces
+;;       Programs
+;;       Checkers
+;;       Packages
+;;       Classes
+;;       Tasks
+;;       Functions
+;;       begin-end blocks (named or unnamed)
+;;       fork-join blocks (named or unnamed)
+;;       Generate blocks
 
 ;; An identifier shall be used to declare only one item within a scope.
 ;; However, perhaps this doesn't apply to global/compilation-unit scope, since
@@ -786,7 +790,9 @@ be very cheap in the single-threaded case.</p>"
   ((locals  vl-scopeitem-alist-p "Locally defined names bound to their declarations")
    (imports vl-importresult-alist-p
             "Explicitly imported names bound to import result, i.e. package-name and declaration)")
-   (star-packages string-listp "Names of packages imported with *"))
+   (star-packages string-listp "Names of packages imported with *")
+   (name maybe-stringp)
+   (scopetype vl-scopetype-p :default ':vl-anonymous-scope))
   :layout :tree
   :tag :vl-scopeinfo)
 
@@ -806,6 +812,39 @@ be very cheap in the single-threaded case.</p>"
                  (or ,@(template-proj '(equal (tag x) :vl-__type__) subst)
                      (equal (tag x) :vl-scopeinfo)))
         :rule-classes :forward-chaining))))
+
+(define vl-scope->scopetype ((x vl-scope-p))
+  :returns (type vl-scopetype-p
+                 :hints(("Goal" :in-theory (enable vl-scopetype-p))))
+  :prepwork ((local (defthm vl-scope-fix-forward
+                      (vl-scope-p (vl-scope-fix x))
+                      :rule-classes
+                      ((:forward-chaining :trigger-terms ((vl-scope-fix x)))))))
+  (b* ((x (vl-scope-fix x))
+       (tag (tag x)))
+    (case tag
+      (:vl-genblob (vl-genblob->scopetype x))
+      (:vl-blockscope (vl-blockscope->scopetype x))
+      (:vl-scopeinfo (vl-scopeinfo->scopetype x))
+      (otherwise
+       ;; (:vl-interface :vl-module :vl-design :vl-package
+       tag))))
+
+(define vl-scope->name ((x vl-scope-p))
+  :returns (name maybe-stringp :rule-classes :type-prescription)
+  (b* ((x (vl-scope-fix x)))
+    (case (tag x)
+      (:vl-interface  (vl-interface->name x))
+      (:vl-module     (vl-module->name x))
+      (:vl-genblob    (vl-genblob->name x))
+      (:vl-blockscope (vl-blockscope->name x))
+      (:vl-package    (vl-package->name x))
+      (:vl-scopeinfo  (vl-scopeinfo->name x))
+      ;; Don't know a name for a scopeinfo
+      (otherwise      nil))))
+
+
+
 
 (define vl-scopeinfo-make-fast ((x vl-scopeinfo-p))
   :parents (vl-scopeinfo-p)
@@ -1103,6 +1142,8 @@ be very cheap in the single-threaded case.</p>"
                          (:vl-__type__
                           (b* (((vl-__type__ scope :quietp t)))
                             (make-vl-scopeinfo
+                             :scopetype (vl-scope->scopetype scope)
+                             :name (vl-scope->name scope)
                              :locals (make-fast-alist
                                       (vl-__type__-scope-__result__-alist scope nil))
                              (:@ :import
@@ -1420,18 +1461,6 @@ transform that has used scopestacks.</p>"
 
 
 ; Scopestack debugging
-
-(define vl-scope->name ((x vl-scope-p))
-  :returns (name maybe-stringp :rule-classes :type-prescription)
-  (b* ((x (vl-scope-fix x)))
-    (case (tag x)
-      (:vl-interface  (vl-interface->name x))
-      (:vl-module     (vl-module->name x))
-      (:vl-genblob    (vl-genblob->name x))
-      (:vl-blockscope (vl-blockscope->name x))
-      (:vl-package    (vl-package->name x))
-      ;; Don't know a name for a scopeinfo
-      (otherwise      nil))))
 
 (define vl-scopeitem->name ((x vl-scopeitem-p))
   :returns (name maybe-stringp :rule-classes :type-prescription)

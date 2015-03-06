@@ -486,6 +486,23 @@ type for @(see vl-scopeexpr->scopes).</p>"
   (:left :right))
 
 
+
+(local
+ (std::set-returnspec-mrec-default-hints nil))
+
+(local (in-theory (disable ACL2::CONSP-OF-CAR-WHEN-ALISTP
+                           acl2::alistp-of-cdr
+                           (:t acl2::nil-fn)
+                           acl2::consp-when-member-equal-of-cons-listp
+                           acl2::alistp-when-hons-duplicity-alist-p
+                           acl2::consp-under-iff-when-true-listp
+                           default-car default-cdr
+                           default-+-2 default-+-1 o< o-finp
+                           acl2::nfix-when-not-natp
+                           (:t acl2::acl2-count-of-consp-positive))))
+
+;; (local (acl2::ruletable-delete-tags! acl2::alistp-rules (:cons-member)))
+
 (deftypes expressions-and-datatypes
   :post-pred-events
   ((local (defthm impossible-cars-of-vl-expr
@@ -736,6 +753,8 @@ type for @(see vl-scopeexpr->scopes).</p>"
     (:vl-call
      :base-name vl-call
      ((name    vl-scopeexpr-p)
+      (typearg vl-maybe-datatype-p
+               "Possible datatype argument, allowed on system calls such as $bits")
       (args    vl-exprlist-p)
       (systemp booleanp)
       (atts    vl-atts-p)
@@ -2860,7 +2879,7 @@ try to support the use of both ascending and descending ranges.</p>")
     (equal (vl-exprlist-fix (nthcdr n x))
            (nthcdr n (vl-exprlist-fix x)))
     :hints(("Goal"
-            :in-theory (e/d (nthcdr)
+            :in-theory (e/d (nthcdr vl-exprlist-fix)
                             (acl2::nthcdr-of-cdr))
             :do-not '(generalize fertilize))))
 

@@ -49,21 +49,18 @@
     :otherwise   nil))
 
 (define vl-index-selfsize ((x vl-expr-p "the index expression")
-                           (ss vl-scopestack-p)
-                           (ctx acl2::any-p "context")
-                           (warnings vl-warninglist-p))
+                           (ss vl-scopestack-p))
   :guard (vl-expr-case x :vl-index)
   :returns (mv (new-warnings vl-warninglist-p)
                (size maybe-natp :rule-classes :type-prescription))
-  (declare (ignorable ctx))
   (b* ((x (vl-expr-fix x))
-       (warnings  (vl-warninglist-fix warnings))
+       (warnings  nil)
        ;; We'll leave complaining about the signedness caveats to typedecide
-       ((mv warning opinfo) (vl-index-expr-typetrace x ss))
-       ((when warning)
+       ((mv err opinfo) (vl-index-expr-typetrace x ss))
+       ((when err)
         (mv (fatal :type :vl-selfsize-fail
-                   :msg "~a0: Failed to find the type of ~a1: ~@2"
-                   :args (list ctx x warning))
+                   :msg "Failed to find the type of ~a0: ~@1"
+                   :args (list x))
             nil))
        ((vl-operandinfo opinfo))
        ((mv warning size)
@@ -71,8 +68,8 @@
 
        ((when warning)
         (mv (fatal :type :vl-selfsize-fail
-                   :msg "~a0: Failed to find the size of datatype ~a1 for expression ~a2: ~@3"
-                   :args (list ctx opinfo.type x warning))
+                   :msg "Failed to find the size of datatype ~a0 for expression ~a1: ~@2"
+                   :args (list opinfo.type x warning))
             nil))
        
        ((unless (vl-datatype-packedp opinfo.type opinfo.ss))
@@ -103,19 +100,12 @@
          (design (make-vl-design :mods (list mod)))
          (ss (vl-scopestack-push mod (vl-scopestack-init design)))
          ((mv warnings size)
-          (vl-index-selfsize expr ss x-vardecl nil)))
+          (vl-index-selfsize expr ss)))
       (if (and (not warnings)
                (eql size 1))
           '(value-triple :ok)
         (er hard? 'test-vl-index-selfsize
-            "Bad result: ~x0~%" (list warnings size))))))
-
-  (defrule warning-irrelevance-of-vl-index-selfsize
-    (let ((ret1 (vl-index-selfsize x ss ctx warnings))
-          (ret2 (vl-index-selfsize x ss nil nil)))
-      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-               (equal (mv-nth 1 ret1)
-                      (mv-nth 1 ret2))))))
+            "Bad result: ~x0~%" (list warnings size)))))))
 
 
 (defines vl-interesting-size-values
@@ -353,9 +343,7 @@ details.</p>"
   :short "Main function for computing self-determined expression sizes."
   ((x         vl-expr-p)
    (left-size  maybe-natp)
-   (right-size maybe-natp)
-   (ctx       acl2::any-p)
-   (warnings  vl-warninglist-p))
+   (right-size maybe-natp))
   :guard
   (vl-expr-case x :vl-binary)
   :returns
@@ -376,6 +364,7 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
 
 
   (b* (((vl-binary x) (vl-expr-fix x))
+       (warnings nil)
        (left-size (maybe-natp-fix left-size))
        (right-size (maybe-natp-fix right-size)))
     (case x.op
@@ -415,13 +404,13 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
              (if (not type)
                  (ok)
                (warn :type type
-                     :msg "~a0: arguments to a ~s1 comparison operator have ~
+                     :msg "arguments to a ~s0 comparison operator have ~
                              different \"self-sizes\".  The smaller argument ~
                              will be implicitly widened to match the larger ~
                              argument. Arguments:~%     ~
-                               - lhs (width ~x2): ~a4~%     ~
-                               - rhs (width ~x3): ~a5~%"
-                     :args (list ctx
+                               - lhs (width ~x1): ~a3~%     ~
+                               - rhs (width ~x2): ~a4~%"
+                     :args (list
                                  (vl-binaryop-string (vl-binary->original-operator x))
                                  left-size right-size x.left x.right)))))
          (mv (ok) 1)))
@@ -461,13 +450,13 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
              (if (not type)
                  (ok)
                (warn :type type
-                     :msg "~a0: arguments to a bitwise ~s1 operator have ~
+                     :msg "arguments to a bitwise ~s0 operator have ~
                              different \"self-sizes\".  The smaller argument ~
                              will be implicitly widened to match the larger ~
                              argument. Arguments:~%     ~
-                               - lhs (width ~x2): ~a4~%     ~
-                               - rhs (width ~x3): ~a5~%"
-                     :args (list ctx
+                               - lhs (width ~x1): ~a3~%     ~
+                               - rhs (width ~x2): ~a4~%"
+                     :args (list
                                  (vl-binaryop-string (vl-binary->original-operator x))
                                  left-size
                                  right-size
@@ -486,19 +475,19 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
         )
 
        (mv (fatal :type :vl-programming-error
-                  :msg "~a0: vl-binaryop-selfsize should not encounter ~a1"
-                  :args (list ctx x))
+                  :msg "vl-binaryop-selfsize should not encounter ~a0"
+                  :args (list x))
            nil))
 
       (otherwise
        (progn$ (impossible)
                (mv (ok) nil)))))
   ///
-  (defrule warning-irrelevance-of-vl-binaryop-selfsize
-    (let ((ret1 (vl-binaryop-selfsize x left-size right-size ctx warnings))
-          (ret2 (vl-binaryop-selfsize x left-size right-size nil nil)))
-      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-               (equal (mv-nth 1 ret1) (mv-nth 1 ret2)))))
+  ;; (defrule warning-irrelevance-of-vl-binaryop-selfsize
+  ;;   (let ((ret1 (vl-binaryop-selfsize x left-size right-size ctx warnings))
+  ;;         (ret2 (vl-binaryop-selfsize x left-size right-size nil nil)))
+  ;;     (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
+  ;;              (equal (mv-nth 1 ret1) (mv-nth 1 ret2)))))
 
   ;; (local (defun make-vl-op-p-cases (ops)
   ;;          (if (atom ops)
@@ -576,9 +565,7 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
   :parents (vl-expr-selfsize)
   :short "Main function for computing self-determined expression sizes."
   ((x         vl-expr-p)
-   (arg-size  maybe-natp)
-   (ctx       acl2::any-p)
-   (warnings  vl-warninglist-p))
+   (arg-size  maybe-natp))
   :guard
   (vl-expr-case x :vl-unary)
   :returns
@@ -598,7 +585,8 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
   :prepwork ((local (in-theory (disable acl2::member-of-cons))))
 
   (b* (((vl-unary x) (vl-expr-fix x))
-       (arg-size (maybe-natp-fix arg-size)))
+       (arg-size (maybe-natp-fix arg-size))
+       (warnings nil))
     (case x.op
       (( ;; All of these operations have one-bit results.
         :vl-unary-bitand :vl-unary-nand :vl-unary-bitor :vl-unary-nor
@@ -614,19 +602,14 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
         :vl-unary-preinc :vl-unary-predec :vl-unary-postinc :vl-unary-postdec)
 
        (mv (fatal :type :vl-programming-error
-                  :msg "~a0: vl-op-selfsize should not encounter ~a1"
-                  :args (list ctx x))
+                  :msg "vl-op-selfsize should not encounter ~a0"
+                  :args (list x))
            nil))
 
       (otherwise
        (progn$ (impossible)
                (mv (ok) nil)))))
   ///
-  (defrule warning-irrelevance-of-vl-unaryop-selfsize
-    (let ((ret1 (vl-unaryop-selfsize x arg-size ctx warnings))
-          (ret2 (vl-unaryop-selfsize x arg-size nil nil)))
-      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-               (equal (mv-nth 1 ret1) (mv-nth 1 ret2)))))
 
   ;; (local (defun make-vl-op-p-cases (ops)
   ;;          (if (atom ops)
@@ -701,67 +684,51 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
 
 
 (define vl-funcall-selfsize ((x vl-expr-p)
-                             (ss vl-scopestack-p)
-                             (ctx acl2::any-p)
-                             (warnings vl-warninglist-p))
+                             (ss vl-scopestack-p))
   :guard (vl-expr-case x :vl-call (not x.systemp) :otherwise nil)
   :returns (mv (warnings vl-warninglist-p)
                (size maybe-natp :rule-classes :type-prescription))
   (b* (((vl-call x) (vl-expr-fix x))
+       (warnings nil)
        ((mv err trace ?context ?tail)
         (vl-follow-scopeexpr x.name ss))
        ((when err)
         (mv (fatal :type :vl-selfsize-fail
-                   :msg "~a0: Failed to find function ~a1: ~@2"
-                   :args (list ctx (vl-scopeexpr->expr x.name) err))
+                   :msg "Failed to find function ~a0: ~@1"
+                   :args (list (vl-scopeexpr->expr x.name) err))
             nil))
        ((vl-hidstep lookup) (car trace))
        ((unless (eq (tag lookup.item) :vl-fundecl))
         (mv (fatal :type :vl-selfsize-fail
-                  :msg "~a0: In function call ~a1, function name does not ~
-                        refer to a fundecl but instead ~a2"
-                  :args (list ctx x lookup.item))
+                  :msg "In function call ~a0, function name does not ~
+                        refer to a fundecl but instead ~a1"
+                  :args (list x lookup.item))
             nil))
        ((vl-fundecl lookup.item))
        ((mv warning size)
         (vl-datatype-size lookup.item.rettype lookup.ss))
        ((when warning)
         (mv (fatal :type :vl-selfsize-fail
-                   :msg "~a0: Error computing the size of type ~a1 of function ~a2: ~@3"
-                   :args (list ctx lookup.item.rettype
+                   :msg "Error computing the size of type ~a0 of function ~a1: ~@2"
+                   :args (list lookup.item.rettype
                                (vl-scopeexpr->expr x.name) err))
             nil))
        ((unless (vl-datatype-packedp lookup.item.rettype lookup.ss))
         (mv (ok) nil)))
-    (mv (ok) size))
-  ///
-  (defrule warning-irrelevance-of-vl-funcall-selfsize
-    (let ((ret1 (vl-funcall-selfsize x ss ctx warnings))
-          (ret2 (vl-funcall-selfsize x ss nil nil)))
-      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-               (equal (mv-nth 1 ret1)
-                      (mv-nth 1 ret2))))))
+    (mv (ok) size)))
 
 (define vl-syscall-selfsize ((x        vl-expr-p)
-                             (ss       vl-scopestack-p)
-                             (ctx      acl2::any-p)
-                             (warnings vl-warninglist-p))
+                             (ss       vl-scopestack-p))
   :guard (vl-expr-case x :vl-call x.systemp :otherwise nil)
   :returns (mv (warnings vl-warninglist-p)
                (size maybe-posp :rule-classes :type-prescription))
-  (declare (ignorable ss ctx))
+  (declare (ignorable ss))
   (b* ((retinfo (vl-syscall->returninfo x))
+       (warnings nil)
        ((unless retinfo)
         (mv (ok) nil))
        (size (vl-coredatatype-info->size retinfo)))
-    (mv (ok) size))
-  ///
-  (defrule warning-irrelevance-of-vl-syscall-selfsize
-    (let ((ret1 (vl-syscall-selfsize x ss ctx warnings))
-          (ret2 (vl-syscall-selfsize x ss nil nil)))
-      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-               (equal (mv-nth 1 ret1)
-                      (mv-nth 1 ret2))))))
+    (mv (ok) size)))
 
 (local (defthm cdr-of-vl-exprlist-fix
          (equal (cdr (vl-exprlist-fix x))
@@ -794,34 +761,36 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
 
   (define vl-expr-selfsize
     ((x        vl-expr-p        "Expression whose size we are to compute.")
-     (ss       vl-scopestack-p  "Scope where the expression occurs.")
-     (ctx      acl2::any-p     "Context for warnings.")
-     (warnings vl-warninglist-p "Ordinary @(see warnings) accumulator."))
+     (ss       vl-scopestack-p  "Scope where the expression occurs."))
     :returns
     (mv (warnings vl-warninglist-p)
         (size     maybe-natp :rule-classes :type-prescription))
     :verify-guards nil
     :measure (vl-expr-count x)
     :flag :expr
-    (b* ((x (vl-expr-fix x)))
+    (b* ((x (vl-expr-fix x))
+         (warnings nil))
       (vl-expr-case x
         :vl-special (mv (ok) nil)
         :vl-value (mv (ok) (vl-value-selfsize x.val))
-        :vl-index (vl-index-selfsize x ss ctx warnings)
+        :vl-index (vl-index-selfsize x ss)
 
         ;; BOZO In some cases we could deduce a size for the expression even if
         ;; we can't get the size of an operand -- e.g. unary bitand, etc.  Are we
         ;; type-checking or just trying to get the size?
-        :vl-unary (b* (((mv warnings argsize) (vl-expr-selfsize x.arg ss ctx warnings)))
-                    (vl-unaryop-selfsize x argsize ctx warnings))
+        :vl-unary (b* (((mv warnings argsize) (vl-expr-selfsize x.arg ss))
+                       ((wmv warnings ans) (vl-unaryop-selfsize x argsize)))
+                    (mv warnings ans))
 
-        :vl-binary (b* (((mv warnings leftsize) (vl-expr-selfsize x.left ss ctx warnings))
-                        ((mv warnings rightsize) (vl-expr-selfsize x.right ss ctx warnings)))
-                     (vl-binaryop-selfsize x leftsize rightsize ctx warnings))
+        :vl-binary (b* (((wmv warnings leftsize) (vl-expr-selfsize x.left ss))
+                        ((wmv warnings rightsize) (vl-expr-selfsize x.right ss))
+                        ((wmv warnings ans) (vl-binaryop-selfsize x leftsize
+                                                                  rightsize)))
+                     (mv warnings ans))
 
         ;; Note: We used to fail if we couldn't size the test.  Should we?
-        :vl-qmark (b* (((mv warnings thensize) (vl-expr-selfsize x.then ss ctx warnings))
-                       ((mv warnings elsesize) (vl-expr-selfsize x.else ss ctx warnings))
+        :vl-qmark (b* (((wmv warnings thensize) (vl-expr-selfsize x.then ss))
+                       ((wmv warnings elsesize) (vl-expr-selfsize x.else ss))
                        ((unless (and thensize elsesize))
                         (mv (ok) nil))
                        (warningtype (and (/= thensize elsesize)
@@ -831,15 +800,15 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
                        (warnings
                         (if warningtype
                             (warn :type warningtype
-                                  :msg "~a0: branches of a ?: operator have different ~
+                                  :msg "branches of a ?: operator have different ~
                                        \"self-sizes\".  The smaller branch will be ~
                                        implicitly widened to match the larger branch. ~
                                        Arguments:~%     ~
           
-                                         - Condition:               ~a1~%     ~
-                                         - True Branch  (size ~x2): ~a4~%     ~
-                                         - False Branch (size ~x3): ~a5~%"
-                                  :args (list ctx
+                                         - Condition:               ~a0~%     ~
+                                         - True Branch  (size ~x1): ~a3~%     ~
+                                         - False Branch (size ~x2): ~a4~%"
+                                  :args (list
                                               x.test
                                               thensize
                                               x.then
@@ -850,20 +819,20 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
 
         :vl-mintypmax (mv (ok) nil)
 
-        :vl-concat (b* (((mv warnings part-sizes) (vl-exprlist-selfsize x.parts ss ctx warnings))
+        :vl-concat (b* (((mv warnings part-sizes) (vl-exprlist-selfsize x.parts ss))
                         ((when (member nil part-sizes))
                          (mv warnings nil)))
                      (mv warnings (sum-nats part-sizes)))
 
         :vl-multiconcat (b* (((unless (vl-expr-resolved-p x.reps))
                               (mv (fatal :type :vl-unresolved-multiplicity
-                                         :msg "~a0: cannot size ~a1 because its ~
+                                         :msg "cannot size ~a0 because its ~
                                              multiplicity has not been ~
                                              resolved."
-                                         :args (list ctx x))
+                                         :args (list x))
                                   nil))
                              ((mv warnings part-sizes)
-                              (vl-exprlist-selfsize x.parts ss ctx warnings))
+                              (vl-exprlist-selfsize x.parts ss))
                              ((when (member nil part-sizes))
                               (mv warnings nil)))
                           (mv (ok) (* (vl-resolved->val x.reps) (sum-nats part-sizes))))
@@ -878,16 +847,16 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
         :vl-stream (mv (ok) nil)
 
         :vl-call (if x.systemp
-                     (vl-syscall-selfsize x ss ctx warnings)
-                   (vl-funcall-selfsize x ss ctx warnings))
+                     (vl-syscall-selfsize x ss)
+                   (vl-funcall-selfsize x ss))
 
         :vl-cast (b* (((mv warning size)
                        (vl-datatype-size x.to ss))
                       ((when warning)
                        (mv (fatal :type :vl-selfsize-fail
-                                  :msg "~a0: Failed to size the type in ~
-                                        cast expression ~a1: ~@2"
-                                  :args (list ctx x warning))
+                                  :msg "Failed to size the type in ~
+                                        cast expression ~a0: ~@1"
+                                  :args (list x warning))
                            nil))
                       ((unless (vl-datatype-packedp x.to ss))
                        (mv (ok) nil)))
@@ -899,22 +868,32 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
         ;; these create tagged unions, which are not vector types
         :vl-tagged (mv (ok) nil)
 
-        ;; these are special like streaming concatenations, only well typed by context
-        :vl-pattern (mv (ok) nil))))
+        ;; these are special like streaming concatenations, only well typed by
+        ;; context, unless they have a datatype.
+        :vl-pattern (b* (((unless x.pattype) (mv (ok) nil))
+                         ((mv warning size) (vl-datatype-size x.pattype ss))
+                         ((when warning)
+                          (mv (fatal :type :vl-selfsize-fail
+                                  :msg "Failed to size the type in ~
+                                        pattern expression ~a0: ~@1"
+                                  :args (list x warning))
+                           nil))
+                         ((unless (vl-datatype-packedp x.pattype ss))
+                          (mv (ok) nil)))
+                      (mv (ok) size)))))
 
   (define vl-exprlist-selfsize
     ((x vl-exprlist-p)
-     (ss       vl-scopestack-p  "Scope where the expression occurs.")
-     (ctx      acl2::any-p     "Context for warnings.")
-     (warnings vl-warninglist-p "Ordinary @(see warnings) accumulator."))
+     (ss       vl-scopestack-p  "Scope where the expression occurs."))
     :returns
     (mv (warnings vl-warninglist-p)
         (sizes     vl-maybe-nat-listp))
     :measure (vl-exprlist-count x)
     :flag :list
-    (b* (((when (atom x)) (mv (ok) nil))
-         ((mv warnings first) (vl-expr-selfsize (car x) ss ctx warnings))
-         ((mv warnings rest) (vl-exprlist-selfsize (cdr x) ss ctx warnings)))
+    (b* ((warnings nil)
+         ((when (atom x)) (mv (ok) nil))
+         ((wmv warnings first) (vl-expr-selfsize (car x) ss))
+         ((wmv warnings rest) (vl-exprlist-selfsize (cdr x) ss)))
       (mv warnings (cons first rest))))
 
   ///
@@ -925,78 +904,18 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
   (local
    (defthm-vl-expr-selfsize-flag
      (defthm true-listp-of-vl-exprlist-selfsize
-       (true-listp (mv-nth 1 (vl-exprlist-selfsize x ss ctx warnings)))
-       :hints ('(:expand ((vl-exprlist-selfsize x ss ctx warnings))))
+       (true-listp (mv-nth 1 (vl-exprlist-selfsize x ss)))
+       :hints ('(:expand ((vl-exprlist-selfsize x ss))))
        :rule-classes :type-prescription
        :flag :list)
      :skip-others t))
 
   (verify-guards vl-expr-selfsize)
 
-
-  (local (defun-sk all-warnings-irrelevant-of-vl-expr-selfsize (x ss)
-           (forall (ctx warnings)
-                   (implies (syntaxp (not (and (equal warnings ''nil)
-                                               (equal ctx ''nil))))
-                            (b* (((mv & size1)
-                                  (vl-expr-selfsize x ss ctx warnings))
-                                 ((mv & size2)
-                                  (vl-expr-selfsize x ss nil nil)))
-                              (equal size1 size2))))
-           :rewrite :direct))
-
-  (local (defun-sk all-warnings-irrelevant-of-vl-exprlist-selfsize (x ss)
-           (forall (ctx warnings)
-                   (implies (syntaxp (not (and (equal warnings ''nil)
-                                               (equal ctx ''nil))))
-                            (b* (((mv & size1)
-                                  (vl-exprlist-selfsize x ss ctx warnings))
-                                 ((mv & size2)
-                                  (vl-exprlist-selfsize x ss nil nil)))
-                              (equal size1 size2))))
-           :rewrite :direct))
-
-  (local (in-theory (disable all-warnings-irrelevant-of-vl-exprlist-selfsize
-                             all-warnings-irrelevant-of-vl-expr-selfsize)))
-
-  (local
-   (defthm-vl-expr-selfsize-flag
-     (defthm l0
-       (all-warnings-irrelevant-of-vl-expr-selfsize x ss)
-       :hints ((and stable-under-simplificationp
-                    '(:expand ((all-warnings-irrelevant-of-vl-expr-selfsize x ss)
-                               (:free (warnings ctx) (vl-expr-selfsize x ss ctx warnings))))))
-       :rule-classes nil
-       :flag :expr)
-
-     (defthm l1
-       (all-warnings-irrelevant-of-vl-exprlist-selfsize x ss)
-       :hints ((and stable-under-simplificationp
-                    '(:expand ((all-warnings-irrelevant-of-vl-exprlist-selfsize x ss)
-                               (:free (warnings ctx) (vl-exprlist-selfsize x ss ctx warnings))))))
-       :rule-classes nil
-       :flag :list)))
-
-  (defrule warning-irrelevance-of-vl-expr-selfsize
-    (let ((ret1 (vl-expr-selfsize x ss ctx warnings))
-          (ret2 (vl-expr-selfsize x ss nil nil)))
-      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-               (equal (mv-nth 1 ret1)
-                      (mv-nth 1 ret2))))
-    :use ((:instance l0)))
-
-  (defrule warning-irrelevance-of-vl-exprlist-selfsize
-    (let ((ret1 (vl-exprlist-selfsize x ss ctx warnings))
-          (ret2 (vl-exprlist-selfsize x ss nil nil)))
-      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-               (equal (mv-nth 1 ret1)
-                      (mv-nth 1 ret2))))
-    :use ((:instance l1)))
-
   (deffixequiv-mutual vl-expr-selfsize))
 
 
-(defenum vl-opacity
+(defenum vl-opacity-p
   (:transparent
    :opaque
    :special))
@@ -1036,6 +955,8 @@ extended to 8 bits, this happens differently depending which group it is in.
 For example, if it is a (transparent) @('+') expression, we extend it by
 extending its operands.  If it is an (opaque) expression, we just zero- or
 sign-extend it and don't change any of its operands.</p>"
+
+  :returns (opacity vl-opacity-p)
 
   (vl-expr-case x
     :vl-value :opaque
@@ -1086,14 +1007,14 @@ sign-extend it and don't change any of its operands.</p>"
     ;; not this function's job to make that distinction.
     :vl-call :opaque
     :vl-cast :opaque
+    :vl-pattern :opaque
 
     :vl-mintypmax :transparent ;; BOZO I don't actually know how these work
 
-    ;; It's not that these are transparent, just special and don't really fit
-    ;; into these two (vector-based) categories.
     :vl-special :special
     :vl-stream :special
     :vl-tagged :special
-    :vl-pattern :special))
+
+    ))
     
 

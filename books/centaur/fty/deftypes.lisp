@@ -1837,7 +1837,6 @@
   (b* (((flexsum sum) sum)
        ((when (consp var-or-binding))
         (er hard? 'flexsum-case-macro "Requires a variable, rather than ~x0" var-or-binding))
-       (var var-or-binding)
        (kinds (flexprods->kinds sum.prods))
        ;; Special case: (foo-case x :kind) becomes (foo-case x :kind t :otherwise nil)
        ((when (case-match rest-args
@@ -4016,6 +4015,10 @@
        (encapsulate nil       ;; was: defsection ,x.name
          (with-output :summary (acl2::form)
            (progn
+             (local (std::set-returnspec-mrec-default-hints nil))
+             (local (std::set-returnspec-default-hints nil))
+             (local (fty::set-deffixequiv-default-hints nil))
+             (local (fty::set-deffixequiv-mutual-default-hints nil))
              ,@(flextype-collect-events :prepwork x.kwd-alist x.types)
              (set-bogus-defun-hints-ok t)
              (set-ignore-ok t)

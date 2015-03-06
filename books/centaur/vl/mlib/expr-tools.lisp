@@ -593,6 +593,12 @@ construct fast alists binding identifiers to things, etc.</p>"
              :in-theory (enable vl-hidexpr-count)))
     :rule-classes :linear))
 
+(local (defthm exprlist-fix-of-take
+         (implies (<= (nfix n) (len x))
+                  (equal (vl-exprlist-fix (take n x))
+                         (take n (vl-exprlist-fix x))))))
+(local (in-theory (disable vl-exprlist-fix-of-take)))
+
 (define vl-hidexpr-update-subexprs ((x vl-hidexpr-p)
                                     (subexprs vl-exprlist-p))
   :guard (equal (len subexprs)
@@ -614,9 +620,17 @@ construct fast alists binding identifiers to things, etc.</p>"
   (verify-guards vl-hidexpr-update-subexprs
     :hints ((and stable-under-simplificationp
                  '(:expand ((vl-hidexpr->subexprs x))))))
+
   (defthm vl-hidexpr-update-subexprs-identity
     (equal (vl-hidexpr-update-subexprs x (vl-hidexpr->subexprs x))
            (vl-hidexpr-fix x))
+    :hints(("Goal" :in-theory (enable vl-hidexpr->subexprs)
+            :induct t)))
+
+  (defthm vl-hidexpr-update-subexprs-identity2
+    (implies (equal (len y) (len (vl-hidexpr->subexprs x)))
+             (equal (vl-hidexpr->subexprs (vl-hidexpr-update-subexprs x y))
+                    (vl-exprlist-fix y)))
     :hints(("Goal" :in-theory (enable vl-hidexpr->subexprs)
             :induct t))))
 
@@ -653,7 +667,14 @@ construct fast alists binding identifiers to things, etc.</p>"
   (defthm vl-scopeexpr-update-subexprs-identity
     (equal (vl-scopeexpr-update-subexprs x (vl-scopeexpr->subexprs x))
            (vl-scopeexpr-fix x))
-    :hints(("Goal" :in-theory (enable vl-scopeexpr->subexprs)))))
+    :hints(("Goal" :in-theory (enable vl-scopeexpr->subexprs))))
+
+  (defthm vl-scopeexpr-update-subexprs-identity2
+    (implies (equal (len y) (len (vl-scopeexpr->subexprs x)))
+             (equal (vl-scopeexpr->subexprs (vl-scopeexpr-update-subexprs x y))
+                    (vl-exprlist-fix y)))
+    :hints(("Goal" :in-theory (enable vl-scopeexpr->subexprs)
+            :induct t))))
 
 (define vl-range->subexprs ((x vl-range-p))
   :returns (subexprs vl-exprlist-p)
@@ -685,6 +706,12 @@ construct fast alists binding identifiers to things, etc.</p>"
   (defthm vl-range-update-subexprs-identity
     (equal (vl-range-update-subexprs x (vl-range->subexprs x))
            (vl-range-fix x))
+    :hints(("Goal" :in-theory (enable vl-range->subexprs))))
+
+  (defthm vl-range-update-subexprs-identity2
+    (implies (equal (len y) (len (vl-range->subexprs x)))
+             (equal (vl-range->subexprs (vl-range-update-subexprs x y))
+                    (vl-exprlist-fix y)))
     :hints(("Goal" :in-theory (enable vl-range->subexprs)))))
 
 (define vl-plusminus->subexprs ((x vl-plusminus-p))
@@ -717,6 +744,12 @@ construct fast alists binding identifiers to things, etc.</p>"
   (defthm vl-plusminus-update-subexprs-identity
     (equal (vl-plusminus-update-subexprs x (vl-plusminus->subexprs x))
            (vl-plusminus-fix x))
+    :hints(("Goal" :in-theory (enable vl-plusminus->subexprs))))
+
+  (defthm vl-plusminus-update-subexprs-identity2
+    (implies (equal (len y) (len (vl-plusminus->subexprs x)))
+             (equal (vl-plusminus->subexprs (vl-plusminus-update-subexprs x y))
+                    (vl-exprlist-fix y)))
     :hints(("Goal" :in-theory (enable vl-plusminus->subexprs)))))
 
 
@@ -751,6 +784,12 @@ construct fast alists binding identifiers to things, etc.</p>"
   (defthm vl-partselect-update-subexprs-identity
     (equal (vl-partselect-update-subexprs x (vl-partselect->subexprs x))
            (vl-partselect-fix x))
+    :hints(("Goal" :in-theory (enable vl-partselect->subexprs))))
+
+  (defthm vl-partselect-update-subexprs-identity2
+    (implies (equal (len y) (len (vl-partselect->subexprs x)))
+             (equal (vl-partselect->subexprs (vl-partselect-update-subexprs x y))
+                    (vl-exprlist-fix y)))
     :hints(("Goal" :in-theory (enable vl-partselect->subexprs)))))
 
 (define vl-arrayrange->subexprs ((x vl-arrayrange-p))
@@ -786,6 +825,12 @@ construct fast alists binding identifiers to things, etc.</p>"
   (defthm vl-arrayrange-update-subexprs-identity
     (equal (vl-arrayrange-update-subexprs x (vl-arrayrange->subexprs x))
            (vl-arrayrange-fix x))
+    :hints(("Goal" :in-theory (enable vl-arrayrange->subexprs))))
+
+  (defthm vl-arrayrange-update-subexprs-identity2
+    (implies (equal (len y) (len (vl-arrayrange->subexprs x)))
+             (equal (vl-arrayrange->subexprs (vl-arrayrange-update-subexprs x y))
+                    (vl-exprlist-fix y)))
     :hints(("Goal" :in-theory (enable vl-arrayrange->subexprs)))))
 
 
@@ -820,6 +865,12 @@ construct fast alists binding identifiers to things, etc.</p>"
   (defthm vl-streamexpr-update-subexprs-identity
     (equal (vl-streamexpr-update-subexprs x (vl-streamexpr->subexprs x))
            (vl-streamexpr-fix x))
+    :hints(("Goal" :in-theory (enable vl-streamexpr->subexprs))))
+
+  (defthm vl-streamexpr-update-subexprs-identity2
+    (implies (equal (len y) (len (vl-streamexpr->subexprs x)))
+             (equal (vl-streamexpr->subexprs (vl-streamexpr-update-subexprs x y))
+                    (vl-exprlist-fix y)))
     :hints(("Goal" :in-theory (enable vl-streamexpr->subexprs)))))
 
 
@@ -856,6 +907,12 @@ construct fast alists binding identifiers to things, etc.</p>"
   (defthm vl-streamexprlist-update-subexprs-identity
     (equal (vl-streamexprlist-update-subexprs x (vl-streamexprlist->subexprs x))
            (vl-streamexprlist-fix x))
+    :hints(("Goal" :in-theory (enable vl-streamexprlist->subexprs))))
+
+  (defthm vl-streamexprlist-update-subexprs-identity2
+    (implies (equal (len y) (len (vl-streamexprlist->subexprs x)))
+             (equal (vl-streamexprlist->subexprs (vl-streamexprlist-update-subexprs x y))
+                    (vl-exprlist-fix y)))
     :hints(("Goal" :in-theory (enable vl-streamexprlist->subexprs)))))
 
 
@@ -888,6 +945,12 @@ construct fast alists binding identifiers to things, etc.</p>"
   (defthm vl-valuerange-update-subexprs-identity
     (equal (vl-valuerange-update-subexprs x (vl-valuerange->subexprs x))
            (vl-valuerange-fix x))
+    :hints(("Goal" :in-theory (enable vl-valuerange->subexprs))))
+
+  (defthm vl-valuerange-update-subexprs-identity2
+    (implies (equal (len y) (len (vl-valuerange->subexprs x)))
+             (equal (vl-valuerange->subexprs (vl-valuerange-update-subexprs x y))
+                    (vl-exprlist-fix y)))
     :hints(("Goal" :in-theory (enable vl-valuerange->subexprs)))))
 
 (define vl-valuerangelist->subexprs ((x vl-valuerangelist-p))
@@ -923,6 +986,12 @@ construct fast alists binding identifiers to things, etc.</p>"
   (defthm vl-valuerangelist-update-subexprs-identity
     (equal (vl-valuerangelist-update-subexprs x (vl-valuerangelist->subexprs x))
            (vl-valuerangelist-fix x))
+    :hints(("Goal" :in-theory (enable vl-valuerangelist->subexprs))))
+
+  (defthm vl-valuerangelist-update-subexprs-identity2
+    (implies (equal (len y) (len (vl-valuerangelist->subexprs x)))
+             (equal (vl-valuerangelist->subexprs (vl-valuerangelist-update-subexprs x y))
+                    (vl-exprlist-fix y)))
     :hints(("Goal" :in-theory (enable vl-valuerangelist->subexprs)))))
 
 
@@ -955,6 +1024,12 @@ construct fast alists binding identifiers to things, etc.</p>"
   (defthm vl-patternkey-update-subexprs-identity
     (equal (vl-patternkey-update-subexprs x (vl-patternkey->subexprs x))
            (vl-patternkey-fix x))
+    :hints(("Goal" :in-theory (enable vl-patternkey->subexprs))))
+
+  (defthm vl-patternkey-update-subexprs-identity2
+    (implies (equal (len y) (len (vl-patternkey->subexprs x)))
+             (equal (vl-patternkey->subexprs (vl-patternkey-update-subexprs x y))
+                    (vl-exprlist-fix y)))
     :hints(("Goal" :in-theory (enable vl-patternkey->subexprs)))))
 
 
@@ -1008,6 +1083,18 @@ construct fast alists binding identifiers to things, etc.</p>"
   (defthm vl-keyvallist-update-subexprs-identity
     (equal (vl-keyvallist-update-subexprs x (vl-keyvallist->subexprs x))
            (vl-keyvallist-fix x))
+    :hints(("Goal" :in-theory (enable vl-keyvallist->subexprs))))
+
+  (local (defthm cons-nth-cdr-nthcdr
+           (implies (< (nfix n) (len x))
+                    (equal (cons (nth n x) (cdr (nthcdr n x)))
+                           (nthcdr n x)))
+           :hints(("Goal" :in-theory (enable nth nthcdr)))))
+
+  (defthm vl-keyvallist-update-subexprs-identity2
+    (implies (equal (len y) (len (vl-keyvallist->subexprs x)))
+             (equal (vl-keyvallist->subexprs (vl-keyvallist-update-subexprs x y))
+                    (vl-exprlist-fix y)))
     :hints(("Goal" :in-theory (enable vl-keyvallist->subexprs)))))
 
 
@@ -1046,6 +1133,12 @@ construct fast alists binding identifiers to things, etc.</p>"
   (defthm vl-assignpat-update-subexprs-identity
     (equal (vl-assignpat-update-subexprs x (vl-assignpat->subexprs x))
            (vl-assignpat-fix x))
+    :hints(("Goal" :in-theory (enable vl-assignpat->subexprs))))
+
+  (defthm vl-assignpat-update-subexprs-identity2
+    (implies (equal (len y) (len (vl-assignpat->subexprs x)))
+             (equal (vl-assignpat->subexprs (vl-assignpat-update-subexprs x y))
+                    (vl-exprlist-fix y)))
     :hints(("Goal" :in-theory (enable vl-assignpat->subexprs)))))
 
 (define vl-expr->subexprs ((x vl-expr-p))
@@ -1152,7 +1245,38 @@ construct fast alists binding identifiers to things, etc.</p>"
 
   (defret vl-expr->atts-of-vl-expr-update-subexprs
     (equal (vl-expr->atts new-x)
-           (vl-expr->atts x))))
+           (vl-expr->atts x)))
+
+  (defret vl-expr-kind-of-vl-expr-update-subexprs
+    (equal (vl-expr-kind new-x)
+           (vl-expr-kind x)))
+
+  (local (defthm append-take-nthcdr
+           (implies (and (natp n)
+                         (natp m)
+                         (<= (+ n m) (len x)))
+                    (equal (append (take n (nthcdr m x))
+                                   (nthcdr (+ n m) x))
+                           (nthcdr m x)))
+           :hints (("goal" :use ((:instance acl2::append-of-take-and-nthcdr
+                                  (acl2::n n) (acl2::x (nthcdr m x))))
+                    :in-theory (disable acl2::append-of-take-and-nthcdr)))))
+
+  (defthm vl-expr-update-subexprs-identity2
+    (implies (equal (len y) (len (vl-expr->subexprs x)))
+             (equal (vl-expr->subexprs (vl-expr-update-subexprs x y))
+                    (vl-exprlist-fix y)))
+    :hints(("Goal" :in-theory (enable vl-expr->subexprs)))))
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2232,3 +2356,60 @@ otherwise, it is a single-bit wide.</p>"
 ;;    (maybe-range (equal (vl-range-p maybe-range) (if maybe-range t nil))
 ;;                 :name vl-range-p-of-vl-slow-find-net/reg-range)))
 
+
+
+
+(defsection random-range-stuff
+
+  (define vl-selwidth ((a natp) (b natp))
+    :returns (w posp :rule-classes :type-prescription)
+    (+ 1 (abs (- (nfix a) (nfix b)))))
+
+  (define vl-range-lsbidx ((x (and (vl-range-p x)
+                                   (vl-range-resolved-p x))))
+    :returns (lsb natp :rule-classes :type-prescription)
+    (b* (((vl-range x) x))
+      (vl-resolved->val x.lsb)))
+
+  (define vl-maybe-range-lsbidx ((x (and (vl-maybe-range-p x)
+                                         (vl-maybe-range-resolved-p x))))
+    :parents (vl-expr->svex)
+    :short "Extract the LSB (right) index from a maybe-range (assuming it's resolved)."
+    :returns (rsh natp :rule-classes :type-prescription)
+    (b* (((unless x) 0))
+      (vl-range-lsbidx x)))
+
+  (define vl-range-msbidx ((x (and (vl-range-p x)
+                                   (vl-range-resolved-p x))))
+    :returns (msb natp :rule-classes :type-prescription)
+    (b* (((vl-range x) x))
+      (vl-resolved->val x.msb)))
+
+  (define vl-maybe-range-msbidx ((x (and (vl-maybe-range-p x)
+                                         (vl-maybe-range-resolved-p x))))
+    :parents (vl-expr->svex)
+    :short "Extract the MSB (right) index from a maybe-range (assuming it's resolved)."
+    :returns (rsh natp :rule-classes :type-prescription)
+    (b* (((unless x) 0))
+      (vl-range-msbidx x)))
+
+  (define vl-range-low-idx ((x (and (vl-range-p x)
+                                    (vl-range-resolved-p x))))
+    :returns (lowidx natp :rule-classes :type-prescription)
+    (min (vl-range-msbidx x) (vl-range-lsbidx x)))
+
+  (define vl-maybe-range-lowidx ((x (and (vl-range-p x)
+                                         (vl-range-resolved-p x))))
+    :returns (lowidx natp :rule-classes :type-prescription)
+    (if x (vl-range-msbidx x) 0))
+
+  (define vl-range-revp ((x (and (vl-range-p x)
+                                 (vl-range-resolved-p x))))
+    (< (vl-range-msbidx x) (vl-range-lsbidx x)))
+
+  (define vl-maybe-range-revp ((x (and (vl-maybe-range-p x)
+                                       (vl-maybe-range-resolved-p x))))
+    :parents (vl-expr->svex)
+    :short "Extract the LSB (right) index from a maybe-range (assuming it's resolved)."
+    :returns (revp)
+    (and x (vl-range-revp x))))

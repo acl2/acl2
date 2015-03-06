@@ -104,7 +104,7 @@ details.</p>")
   (b* ((x (vl-packeddimension-fix x)))
     (if (eq x :vl-unsized-dimension)
         x
-      (vl-range-strip x))))
+      (vl-range->packeddimension (vl-range-strip (vl-packeddimension->range x))))))
 
 (defprojection vl-packeddimensionlist-strip ((x vl-packeddimensionlist-p))
   :returns (new-x vl-packeddimensionlist-p)

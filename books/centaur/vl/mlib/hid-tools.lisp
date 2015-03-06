@@ -1091,8 +1091,9 @@ they encounter along the way.  A <b>hidstep</b> structure represents a single
 step along a HID.</p>"
   :tag :vl-hidstep
   :layout :tree
-  ((item vl-scopeitem-p  "Some item encountered along the path of the HID.")
+  ((name stringp "Name from the hid")
    (index vl-maybe-expr-p "Instance array/genarray index, if present")
+   (item vl-scopeitem-p  "The item encountered along the path of the HID.")
    (ss   vl-scopestack-p "The scope where this item was found.")))
 
 (fty::deflist vl-hidtrace
@@ -1281,17 +1282,27 @@ top-level hierarchical identifiers.</p>"
           (mv (vl-follow-hidexpr-error (vmsg "item not found") ss)
               trace x))
 
-         (trace (cons (make-vl-hidstep :item item
-                                       :index (car indices)
-                                       :ss item-ss)
-                      trace))
-
          ((when (or (eq (tag item) :vl-vardecl)
                     (eq (tag item) :vl-paramdecl)))
           ;; Found the declaration we want.  We aren't going to go any further:
           ;; there may be additional HID indexing stuff left, but if so it's just
           ;; array or structure indexing for the tail.
-          (mv nil trace x))
+          
+          (b* ((trace (cons (make-vl-hidstep :name name1
+                                             :item item
+                                             ;; No indices -- they belong to
+                                             ;; the variable
+                                             :ss item-ss)
+                            trace)))
+            (mv nil trace x)))
+
+         ;; From here on out, if the trace is good and the index exists, the
+         ;; trace includes that index.
+         (trace (cons (make-vl-hidstep :name name1
+                                       :item item
+                                       :index (car indices)
+                                       :ss item-ss)
+                      trace))
 
          ((when (or (eq (tag item) :vl-fundecl)
                     (eq (tag item) :vl-taskdecl)))
@@ -1398,7 +1409,9 @@ top-level hierarchical identifiers.</p>"
                     trace x))
                ;; Else we have something like foo.bar.myblock.mywire or whatever.
                ;; This is fine, we just need to go into the generate block.
-               (genblob (vl-sort-genelements (vl-genblock->elems item)))
+               (genblob (vl-sort-genelements (vl-genblock->elems item)
+                                             :scopetype :vl-genblock
+                                             :name (vl-genblock->name item)))
                (next-ss (vl-scopestack-push genblob item-ss)))
             (vl-follow-hidexpr-aux rest trace next-ss
                                    :strictp strictp)))
@@ -1448,7 +1461,9 @@ top-level hierarchical identifiers.</p>"
                 (mv (vl-follow-hidexpr-error (vmsg "invalid index into generate array: ~x0" blocknum)
                                              item-ss)
                     trace x))
-               (genblob (vl-sort-genelements (vl-genarrayblock->elems block)))
+               (genblob (vl-sort-genelements (vl-genarrayblock->elems block)
+                                             :scopetype :vl-genarrayblock
+                                             :name (vl-genarray->name item)))
                (next-ss (vl-scopestack-push genblob item-ss)))
             (vl-follow-hidexpr-aux rest trace next-ss :strictp strictp)))
 
@@ -1492,6 +1507,10 @@ top-level hierarchical identifiers.</p>"
                          (consp new-trace))
                 :name consp-of-vl-follow-hidexpr-aux.new-trace))
 
+    (defret vl-follow-hidexpr-no-index-on-first
+      (implies (not err)
+               (not (vl-hidstep->index (car new-trace)))))
+
     (defthm context-irrelevance-of-vl-follow-hidexpr-aux
       (implies (syntaxp (not (equal origx  (list 'quote (with-guard-checking :none (vl-scopeexpr-fix nil))))))
                (b* (((mv err1 trace1 tail1) (vl-follow-hidexpr-aux x trace ss
@@ -1511,7 +1530,12 @@ top-level hierarchical identifiers.</p>"
                ((:free (ctx strictp origx)
                  (vl-follow-hidexpr-aux x trace ss
                                         :strictp strictp
-                                        :origx origx))))))))
+                                        :origx origx))))))
+
+    (defret count-of-vl-follow-hidexpr-aux.tail
+      (<= (vl-hidexpr-count tail)
+          (vl-hidexpr-count x))
+      :rule-classes :linear)))
 
 (deftagsum vl-scopecontext
   (:local ((levels natp :rule-classes :type-prescription
@@ -1536,6 +1560,38 @@ top-level hierarchical identifiers.</p>"
 
 (fty::deflist vl-seltrace :elt-type vl-selstep :elementp-of-nil nil)
 
+
+(define vl-seltrace-index-count ((x vl-seltrace-p))
+  :returns (count natp :rule-classes :type-prescription)
+  (if (atom x)
+      0
+    (+ (b* (((vl-selstep x1) (car x)))
+         (vl-select-case x1.select :field 0 :index 1))
+       (vl-seltrace-index-count (cdr x)))))
+
+(define vl-seltrace->indices ((x vl-seltrace-p))
+  :returns (indices vl-exprlist-p)
+  (if (atom x)
+      nil
+    (b* (((vl-selstep x1) (car x)))
+      (vl-select-case x1.select
+        :field (vl-seltrace->indices (cdr x))
+        :index (cons x1.select.val (vl-seltrace->indices (cdr x))))))
+  ///
+  (defret len-of-vl-seltrace->indices
+    (equal (len indices) (vl-seltrace-index-count x))
+    :hints(("Goal" :in-theory (enable vl-seltrace-index-count))))
+
+  (defthm vl-seltrace-indices-of-append
+    (equal (vl-seltrace->indices (append x y))
+           (append (vl-seltrace->indices x)
+                   (vl-seltrace->indices y))))
+
+  (defthm vl-seltrace-indices-of-rev
+    (equal (vl-seltrace->indices (rev x))
+           (rev (vl-seltrace->indices x)))))
+         
+  
 
 (defprod vl-operandinfo
   ((context  vl-scopecontext-p  "The context in which the HID base was found")
@@ -1727,7 +1783,12 @@ instance, in this case the @('tail') would be
   ///
   (defret consp-of-vl-follow-hidexpr.trace
     (implies (not err)
-             (consp trace))))
+             (consp trace)))
+
+  (defret count-of-vl-follow-hidexpr.tail
+    (<= (vl-hidexpr-count tail)
+        (vl-hidexpr-count x))
+    :rule-classes :linear))
 
 
 
@@ -1737,7 +1798,12 @@ instance, in this case the @('tail') would be
   :measure (vl-scopeexpr-count x)
   (vl-scopeexpr-case x
     :end x.hid
-    :colon (vl-scopeexpr->hid x.rest)))
+    :colon (vl-scopeexpr->hid x.rest))
+  ///
+  (defret count-of-vl-scopeexpr->hid
+    (< (vl-hidexpr-count hid)
+       (vl-scopeexpr-count x))
+    :rule-classes :linear))
 
 
 (define vl-follow-scopeexpr
@@ -1795,7 +1861,12 @@ instance, in this case the @('tail') would be
   ///
   (defret consp-of-vl-follow-scopeexpr.trace
     (implies (not err)
-             (consp trace))))
+             (consp trace)))
+
+  (defret count-of-vl-follow-scopeexpr.tail
+    (< (vl-hidexpr-count tail)
+       (vl-scopeexpr-count x))
+    :rule-classes :linear))
 
 
 ;; ------
@@ -1820,8 +1891,9 @@ instance, in this case the @('tail') would be
                        (only sensible if successful)"))
   (b* ((ss (vl-scopestack-fix ss))
        (x (vl-scopeexpr-fix x))
+       (hid (vl-scopeexpr->hid x))
        ;; BOZO Maybe we should use a different type than scopeexpr for a usertype name
-       ((unless (vl-hidexpr-case (vl-scopeexpr->hid x) :end))
+       ((unless (vl-hidexpr-case hid :end))
         (mv (vmsg "Type names cannot be specified with dotted ~
                                    paths, only package scopes: ~a1"
                   nil x)
@@ -3136,7 +3208,17 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
     (implies (and (not (vl-datatype-check-usertypes x ss :rec-limit rec-limit))
                   (not err))
              (not (vl-datatype-check-usertypes new-x new-ss :rec-limit rec-limit)))
-    :hints (("goal" :in-theory (enable vl-datatype-check-usertypes)))))
+    :hints (("goal" :in-theory (enable vl-datatype-check-usertypes))))
+
+  (defret no-error-when-pdims
+    (implies (consp (vl-datatype->pdims x))
+             (not err))
+    :hints(("Goal" :in-theory (enable vl-maybe-usertype-resolve))))
+
+  (defret no-error-when-udims
+    (implies (consp (vl-datatype->udims x))
+             (not err))
+    :hints(("Goal" :in-theory (enable vl-maybe-usertype-resolve)))))
 
 
 (define vl-selstep-usertypes-ok ((x vl-selstep-p))
@@ -3192,7 +3274,23 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 
   (defret true-listp-of-vl-follow-array-indices-trace
     (true-listp trace)
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defret vl-seltrace->indices-of-vl-follow-array-indices
+    (implies (not err)
+             (equal (vl-seltrace->indices trace)
+                    (vl-exprlist-fix x)))
+    :hints(("Goal" :in-theory (enable vl-seltrace->indices))))
+
+  (defret consp-of-vl-follow-array-indices
+    (implies (not err)
+             (equal (consp trace)
+                    (consp x))))
+
+  (defret len-of-vl-follow-array-indices
+    (implies (not err)
+             (equal (len trace)
+                    (len x)))))
 
 
 
@@ -3631,6 +3729,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 
   :short "Given a HID expression denoting a variable of the input type, create
           a trace showing the type of each field select/indexing operation."
+  :long "<p>Implementation notes: This function only </p>"
 
   :returns (mv (err (iff (vl-msg-p err) err))
                (seltrace vl-seltrace-p))
@@ -3642,17 +3741,19 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
   (b* ((type (vl-datatype-fix type))
        (ss (vl-scopestack-fix ss))
 
-       (name1 (vl-hidexpr-case x
-                :end x.name
-                :dot (vl-hidindex->name x.first)))
-       (frame (make-vl-selstep
-               :select (make-vl-select-field :name name1)
-               :type type
-               :ss ss))
-       (trace (cons frame (vl-seltrace-fix trace)))
+       ;; (name1 (vl-hidexpr-case x
+       ;;          :end x.name
+       ;;          :dot (vl-hidindex->name x.first)))
+       ;; (frame (make-vl-selstep
+       ;;         :select (make-vl-select-field :name name1)
+       ;;         :type type
+       ;;         :ss ss))
+       ;; (trace (cons frame (vl-seltrace-fix trace)))
+       (trace (vl-seltrace-fix trace))
 
        ((when (vl-hidexpr-case x :end))
-        ;; We just have an ID.  Return the resolved type.
+        ;; We just have an ID.  It has already been added to the trace (or else
+        ;; it is just a plain variable and the outer hidtrace has its type info).
         (mv nil trace))
 
        ;; Cancel the indices of the first element of the HID with the unpacked
@@ -3701,7 +3802,12 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
                                    ~s0 not found in type ~a1"
                   nextname (vl-datatype-fix type))
             nil))
-       (membtype (vl-structmember->type member)))
+       (membtype (vl-structmember->type member))
+       (next-frame (make-vl-selstep
+                    :select (make-vl-select-field :name nextname)
+                    :type membtype
+                    :ss ss))
+       (trace (cons next-frame trace)))
     (vl-follow-data-selects x.rest membtype ss trace))
   ///
   
@@ -3732,12 +3838,16 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
     :hints(("Goal" :in-theory (enable vl-seltrace-usertypes-ok
                                       vl-selstep-usertypes-ok))))
 
-  (local (in-theory (disable acl2::car-of-append)))
+  (local (in-theory (disable acl2::car-of-append
+                             acl2::consp-under-iff-when-true-listp)))
 
-  (defret consp-of-vl-follow-data-selects-seltrace
+  (defret vl-seltrace-indices-of-vl-follow-data-selects
     (implies (not err)
-             (consp seltrace))
-    :rule-classes :type-prescription))
+             (equal (vl-seltrace->indices seltrace)
+                    (revappend (vl-hidexpr->subexprs x)
+                               (vl-seltrace->indices trace))))
+    :hints(("Goal" :in-theory (enable vl-seltrace->indices
+                                      vl-hidexpr->subexprs)))))
 
 
 
@@ -3966,6 +4076,48 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
       :otherwise (mv (vmsg "Impossible") (impossible)))))
   
 
+(define vl-operandinfo-usertypes-ok ((x vl-operandinfo-p))
+  (b* (((vl-operandinfo x)))
+    (and (not (vl-datatype-check-usertypes x.type x.ss))
+         (vl-seltrace-usertypes-ok x.seltrace)
+         (consp x.hidtrace)
+         (b* (((vl-hidstep hid) (car x.hidtrace))
+              ((unless (eq (tag hid.item) :vl-vardecl)) nil)
+              ((vl-vardecl var) hid.item))
+           (not (vl-datatype-check-usertypes var.type hid.ss)))))
+  ///
+  (defthm vl-operandinfo-usertypes-ok-implies
+    (implies (vl-operandinfo-usertypes-ok x)
+             (b* (((vl-operandinfo x)))
+               (and (not (vl-datatype-check-usertypes x.type x.ss))
+                    (vl-seltrace-usertypes-ok x.seltrace)
+                    (consp x.hidtrace)
+                    (b* (((vl-hidstep hid) (car x.hidtrace))
+                         ((unless (eq (tag hid.item) :vl-vardecl)) nil)
+                         ((vl-vardecl var) hid.item))
+                      (not (vl-datatype-check-usertypes var.type hid.ss))))))))
+           
+(define vl-operandinfo-index-count ((x vl-operandinfo-p))
+  :returns (count natp :rule-classes :type-prescription)
+  ;; Gives the number of indices 
+  (b* (((vl-operandinfo x)))
+    (+ (vl-seltrace-index-count x.seltrace)
+       (vl-partselect-case x.part
+         :none 0
+         :otherwise 2))))
+
+(define vl-operandinfo->indices ((x vl-operandinfo-p))
+  :returns (indices vl-exprlist-p)
+  (b* (((vl-operandinfo x)))
+    (append (vl-partselect-case x.part
+              :none nil
+              :range (list x.part.msb x.part.lsb)
+              :plusminus (list x.part.base x.part.width))
+            (vl-seltrace->indices x.seltrace)))
+  ///
+  (defret len-of-vl-operandinfo->indices
+    (equal (len indices) (vl-operandinfo-index-count x))
+    :hints(("Goal" :in-theory (enable vl-operandinfo-index-count)))))
 
 (define vl-index-expr-typetrace
   ((x vl-expr-p
@@ -3995,14 +4147,19 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
        ((when err) (mv err nil))
        ((mv err seltrace) (vl-follow-data-selects tail decl.type hidstep.ss nil))
        ((when err) (mv err nil))
-       ((vl-selstep selstep) (car seltrace))
+       ((mv seltype selss) (if (consp seltrace)
+                               (b* (((vl-selstep selstep) (car seltrace)))
+                                 (mv selstep.type selstep.ss))
+                             (mv decl.type hidstep.ss)))
        ((mv err rev-idxtrace)
-        (vl-follow-array-indices x.indices selstep.type selstep.ss))
+        (vl-follow-array-indices x.indices seltype selss))
        ((when err) (mv err nil))
 
        (seltrace (revappend rev-idxtrace seltrace))
-       ((vl-selstep selstep) (car seltrace))
-
+       ((mv seltype selss) (if (consp seltrace)
+                               (b* (((vl-selstep selstep) (car seltrace)))
+                                 (mv selstep.type selstep.ss))
+                             (mv decl.type hidstep.ss)))
 
        ((when (vl-partselect-case x.part :none))
         (mv nil (make-vl-operandinfo
@@ -4010,11 +4167,11 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
                  :hidtrace hidtrace
                  :seltrace seltrace
                  :part x.part
-                 :type selstep.type
-                 :ss selstep.ss)))
+                 :type seltype
+                 :ss selss)))
 
        ((mv err ?caveat single-type & single-ss)
-        (vl-datatype-remove-dim selstep.type selstep.ss))
+        (vl-datatype-remove-dim seltype selss))
        ((when err) (mv err nil))
 
        ((mv err width) (vl-partselect-width x.part))
@@ -4023,7 +4180,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
                  (make-vl-range :msb (vl-make-index (1- width))
                                 :lsb (vl-make-index 0))))
 
-       (packedp (vl-datatype-packedp selstep.type selstep.ss))
+       (packedp (vl-datatype-packedp seltype selss))
        (psel-type (if packedp
                       (vl-datatype-update-pdims
                        (cons new-dim (vl-datatype->pdims single-type))
@@ -4039,19 +4196,64 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
              :type psel-type
              :ss single-ss)))
   ///
-  (defret vl-seltrace-usertypes-ok-of-vl-index-expr-typetrace-seltrace
+  (defret vl-seltrace-usertypes-ok-of-vl-index-expr-typetrace
     (implies (not err)
              (vl-seltrace-usertypes-ok (vl-operandinfo->seltrace opinfo))))
+
+  (defret consp-hidtrace-of-vl-index-expr-typetrace
+    (implies (not err)
+             (consp (vl-operandinfo->hidtrace opinfo))))
+
+  (defret vl-hidtrace-top-is-vardecl-of-vl-index-expr-typetrace
+    (implies (not err)
+             (equal (tag (vl-hidstep->item (car (vl-operandinfo->hidtrace opinfo))))
+                    :vl-vardecl)))
+
+  (defret vl-hidtrace-vartype-ok-of-vl-index-expr-typetrace
+    (implies (not err)
+             (not (vl-datatype-check-usertypes
+                   (vl-vardecl->type
+                    (vl-hidstep->item (car (vl-operandinfo->hidtrace opinfo))))
+                   (vl-hidstep->ss (car (vl-operandinfo->hidtrace opinfo)))))))
 
   (defret vl-datatype-usertypes-ok-of-vl-index-expr-typetrace-type
     (implies (not err)
              (not (vl-datatype-check-usertypes (vl-operandinfo->type opinfo)
                                                (vl-operandinfo->ss opinfo)))))
 
+  (defret vl-operandinfo-usertypes-ok-of-vl-index-expr-typetrace
+    (implies (not err)
+             (vl-operandinfo-usertypes-ok opinfo))
+    :hints(("Goal" :in-theory (enable vl-operandinfo-usertypes-ok))))
+
   (defret follow-scopeexpr-when-vl-index-expr-type
     (implies (not err)
              (b* (((vl-index x)))
-               (not (mv-nth 0 (vl-follow-scopeexpr x.scope ss)))))))
+               (not (mv-nth 0 (vl-follow-scopeexpr x.scope ss))))))
+
+  (defthm vl-exprlist-count-of-append
+    (equal (vl-exprlist-count (append a b))
+           (+ -1 (vl-exprlist-count a)
+              (vl-exprlist-count b)))
+    :hints(("Goal" :in-theory (enable vl-exprlist-count append))))
+
+  (defthm vl-exprlist-count-of-rev
+    (equal (vl-exprlist-count (rev x))
+           (vl-exprlist-count x))
+    :hints(("Goal" :in-theory (enable vl-exprlist-count rev))))
+
+  (defret index-count-of-vl-index-expr-typetrace
+    (implies (and (not err)
+                  (equal (vl-expr-kind x) :vl-index))
+             (< (vl-exprlist-count (vl-operandinfo->indices opinfo))
+                (vl-expr-count x)))
+    :hints(("Goal" :in-theory (enable vl-operandinfo->indices
+                                      vl-exprlist-count
+                                      vl-partselect-count
+                                      vl-plusminus-count
+                                      vl-range-count)
+            :expand ((vl-expr-count x))))
+    :rule-classes :linear))
 
 ;; (define vl-index-expr-typetrace
 ;;   ((x vl-expr-p

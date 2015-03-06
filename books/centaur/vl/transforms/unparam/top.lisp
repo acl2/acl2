@@ -502,7 +502,9 @@ introduced.</p>"
           :vl-genbase (mv t (ok) (change-vl-genbase x :item (vl-modelement-scopesubst x.item ss)))
 
           :vl-genblock
-          (b* ((blob (vl-sort-genelements x.elems))
+          (b* ((blob (vl-sort-genelements x.elems
+                                          :scopetype :vl-genblock
+                                          :name x.name))
                ((vl-genblob blob))
                ((mv ok warnings blob-ss ?final-paramdecls)
                 (vl-scope-finalize-params blob blob.paramdecls
@@ -554,7 +556,9 @@ introduced.</p>"
                 (if (eql (vl-genelement-kind x.body) :vl-genblock)
                     (mv (vl-genblock->name x.body) (vl-genblock->elems x.body))
                   (mv nil (list x.body))))
-               (blob (vl-sort-genelements body.elems))
+               (blob (vl-sort-genelements body.elems
+                                          :scopetype :vl-genarrayblock
+                                          :name x.name))
                ((mv ok warnings arrayblocks)
                 (vl-genloop-resolve 100000 ;; recursion limit
                                     blob body.elems
