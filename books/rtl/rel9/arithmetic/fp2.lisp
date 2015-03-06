@@ -37,19 +37,19 @@
 
 ; The following is (minimal-ihs-theory)
 (local (PROGN (IN-THEORY NIL)
-              (IN-THEORY (ENABLE BASIC-BOOT-STRAP
-                                 IHS-MATH QUOTIENT-REMAINDER-RULES
-                                 LOGOPS-LEMMAS-THEORY))))
+              (IN-THEORY (ENABLE ACL2::BASIC-BOOT-STRAP
+                                 ACL2::IHS-MATH ACL2::QUOTIENT-REMAINDER-RULES
+                                 ACL2::LOGOPS-LEMMAS-THEORY))))
 
-(local (in-theory (enable logops-definitions-theory)))
+(local (in-theory (enable acl2::logops-definitions-theory)))
 
 
 
 (defthm a1 (equal (+ x (+ y z)) (+ y (+ x z))))
 (defthm a2 (equal (- x) (* -1 x)))
 
-(local (in-theory (disable functional-commutativity-of-minus-*-right
-                           functional-commutativity-of-minus-*-left)))
+(local (in-theory (disable acl2::functional-commutativity-of-minus-*-right
+                           acl2::functional-commutativity-of-minus-*-left)))
 
 (defthm a3
   (and (implies (syntaxp (and (quotep c1) (quotep c2)))
@@ -108,8 +108,8 @@
   :hints
   (("Goal" :in-theory (set-difference-theories
                        (enable evenp
-                               functional-commutativity-of-minus-*-right
-                               functional-commutativity-of-minus-*-left)
+                               acl2::functional-commutativity-of-minus-*-right
+                               acl2::functional-commutativity-of-minus-*-left)
                        '(a2 a5))))))
 
 (local (defthm evenp-2k

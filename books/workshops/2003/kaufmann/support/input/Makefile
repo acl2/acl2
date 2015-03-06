@@ -6,15 +6,13 @@ override ACL2_PCERT =
 
 BOOKS = defs-in inputs lemmas-in defs-out defs-eq lemmas-out 
 
-FAILED = 0
-
 all: check.txt
 
 # Compare generated .lisp files against expected files, in ../output/ directory.
 check.txt: defs-eq.cert defs-out.cert lemmas-in.cert defs-in.cert inputs.cert lemmas-out.cert 
-	@diff defs-out.lisp ../output/defs-out.lisp || (echo "defs-out.lisp failed" ; $(MAKE) -s --no-print-directory FAILED)
-	@diff defs-eq.lisp ../output/defs-eq.lisp || (echo "defs-eq.lisp failed" ; $(MAKE) -s --no-print-directory FAILED)
-	@diff lemmas-out.lisp ../output/lemmas-out.lisp || (echo "lemmas-out.lisp failed" ; $(MAKE) -s --no-print-directory FAILED)
+	@diff defs-out.lisp ../output/defs-out.lisp || (echo "diff of input/defs-out.lisp with output/defs-out.lisp failed" ; exit 1)
+	@diff defs-eq.lisp ../output/defs-eq.lisp || (echo "diff of input/defs-eq.lisp with output/defs-eq.lisp failed" ; exit 1)
+	@diff lemmas-out.lisp ../output/lemmas-out.lisp || (echo "diff of input/lemmas-out.lisp with output/lemmas-out.lisp failed" ; exit 1)
 	touch check.txt
 
 # Dependencies:

@@ -1,0 +1,48 @@
+We intend to keep this directory organized as follows.
+
+   ./
+   ./top.lisp           --- A summary of exported events.
+                            (We intend to keep this to be the same set of events from
+                             ../lib/top.lisp, in the same order too.)
+
+   ./support            --- Effectively: lib0 + lib0.delta1  (where lib0 is empty)
+
+   ./lib1               --- Summary of exported events in "support/"
+   ./lib1.delta1        --- Updates to lib1
+   ./lib1.delta2        --- Other updates to lib1
+
+
+   ./lib2               --- Summary of exported events in lib1 + lib1.delta<1-N>
+   ./lib2.delta1        --- ....
+   ./lib2.delta2        --- ....
+
+   ...
+
+The file "top.lisp" is a summary of exported events that should be a super set
+of events in "../lib/". So that certification of each book included in the
+"../lib/top.lisp" can pass trivially --- assuming "top.lisp" certifies.
+
+In fact, we intend to maintain "top.lisp" in such away, that it contains
+exactly the same list of events as the"../lib/top.lisp" contains.
+
+The directory "lib1/" is roughly a copy of "../lib" from rel5 of the RTL book.
+It serves as a foundation for developing lib1.delta<1-N>.
+
+The "lib1.deltaN" directories are means for grouping updates to the "lib1/".  A
+book from "lib1.deltaN/" may likely to start with a "(include-book
+"../lib1/top")".  In order to tidy up dependencies between different
+directories, we discourage including books from directories other than current
+directory, "lib1/" or previous "delta"s.
+
+
+In addition to doing "lib1.deltaN" style development, one may (at some point)
+chose to create a "lib2/" that contains a whole set of books so that "../lib"
+is just an almost exact "shadow" of "lib2/".
+
+The directory "support/" contains both the legacy proofs and specific *-helper
+files.  It can be considered as "sum" of the imaginary "lib0/" and
+"lib0.delta1/".
+
+See ../README "How to add new theorems to 'lib/'" section for how to organize
+this directory.
+

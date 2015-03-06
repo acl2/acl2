@@ -10,7 +10,7 @@
 
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
-(local-in-theory (disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
+(local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
                     simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)| mod-logand))
 
@@ -96,7 +96,7 @@
                x
              (+ (* 2 (logand (fl (/ x 2)) (fl (/ y 2))))
                 (logand (mod x 2) (mod y 2))))))
-  :rule-classes ((:definition :controller-alist ((binary-logand t t))))
+  :rule-classes ((:definition :controller-alist ((acl2::binary-logand t t))))
   :hints (("Goal" :use ((:instance logand-def (i x) (j y))))))
 
 (defthmd logior-def$
@@ -108,7 +108,7 @@
                         x
                       (+ (* 2 (logior (fl (/ x 2)) (fl (/ y 2))))
                          (logior (mod x 2) (mod y 2)))))))
-  :rule-classes ((:definition :controller-alist ((binary-logior t t))))
+  :rule-classes ((:definition :controller-alist ((acl2::binary-logior t t))))
   :hints (("Goal" :use ((:instance logior-def (i x) (j y))))))
 
 (defthmd logxor-def$
@@ -122,7 +122,7 @@
                           0
                         (+ (* 2 (logxor (fl (/ x 2)) (fl (/ y 2))))
                            (logxor (mod x 2) (mod y 2))))))))
-  :rule-classes ((:definition :controller-alist ((binary-logxor t t))))
+  :rule-classes ((:definition :controller-alist ((acl2::binary-logxor t t))))
   :hints (("Goal" :use ((:instance logxor-def (i x) (j y))))))
 
 (defthm logand-bnd$
@@ -155,7 +155,7 @@
 	     (equal (mod (logand x y) (expt 2 n))
 		    (logand (mod x (expt 2 n))
                             (mod y (expt 2 n)))))
-  :hints (("Goal" :use mod-logand)))
+  :hints (("Goal" :use acl2::mod-logand)))
 
 (defthmd logior-mod
   (implies (and (integerp x)
@@ -792,7 +792,7 @@
                x
              (+ (* 2 (logand (fl (/ x 2)) (fl (/ y 2))))
                 (logand (mod x 2) (mod y 2))))))
-  :rule-classes ((:definition :controller-alist ((binary-logand t t))))
+  :rule-classes ((:definition :controller-alist ((acl2::binary-logand t t))))
   :hints (("Goal" :use logand-def$)))
 
 (defthmd logior-def
@@ -804,7 +804,7 @@
                         x
                       (+ (* 2 (logior (fl (/ x 2)) (fl (/ y 2))))
                          (logior (mod x 2) (mod y 2)))))))
-  :rule-classes ((:definition :controller-alist ((binary-logior t t))))
+  :rule-classes ((:definition :controller-alist ((acl2::binary-logior t t))))
   :hints (("Goal" :use logior-def$)))
 
 (defthmd logxor-def
@@ -818,7 +818,7 @@
                           0
                         (+ (* 2 (logxor (fl (/ x 2)) (fl (/ y 2))))
                            (logxor (mod x 2) (mod y 2))))))))
-  :rule-classes ((:definition :controller-alist ((binary-logxor t t))))
+  :rule-classes ((:definition :controller-alist ((acl2::binary-logxor t t))))
   :hints (("Goal" :use logxor-def$)))
 
 (defthm logand-bnd

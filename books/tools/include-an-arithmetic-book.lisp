@@ -36,7 +36,7 @@
  <tr><td>@('arithmetic-5')</td><td>@('arithmetic-5/top')</td></tr>
  <tr><td>@('arithmetic-5-nonlinear-weak')</td><td>@('arithmetic-5/top') with weak
       nonlinear hint settings</td></tr>
- <tr><td>@('arithmetic-5-nonlinear-weak')</td><td>@('arithmetic-5/top') with stronger
+ <tr><td>@('arithmetic-5-nonlinear')</td><td>@('arithmetic-5/top') with stronger
       nonlinear hint settings</td></tr>
  </table>
 

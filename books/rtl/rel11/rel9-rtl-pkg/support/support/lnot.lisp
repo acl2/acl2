@@ -1,0 +1,270 @@
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+;
+; Contact:
+;   David Russinoff
+;   1106 W 9th St., Austin, TX 78703
+;   http://www.russsinoff.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.
+;
+; This program is distributed in the hope that it will be useful but WITHOUT ANY
+; WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+; PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License along with
+; this program; see the file "gpl.txt" in this directory.  If not, write to the
+; Free Software Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA
+; 02110-1335, USA.
+;
+; Author: David M. Russinoff (david@russinoff.com)
+
+(in-package "RTL")
+
+(local ; ACL2 primitive
+ (defun natp (x)
+   (declare (xargs :guard t))
+   (and (integerp x)
+        (<= 0 x))))
+
+(defund bvecp (x k)
+  (declare (xargs :guard (integerp k)))
+  (and (integerp x)
+       (<= 0 x)
+       (< x (expt 2 k))))
+
+(defund fl (x)
+  (declare (xargs :guard (real/rationalp x)))
+  (floor x 1))
+
+(defun bits (x i j)
+  (declare (xargs :guard (and (natp x)
+                              (natp i)
+                              (natp j))
+                  :verify-guards nil))
+  (mbe :logic (if (or (not (integerp i))
+                      (not (integerp j)))
+                  0
+                (fl (/ (mod x (expt 2 (1+ i))) (expt 2 j))))
+       :exec  (if (< i j)
+                  0
+                (logand (ash x (- j)) (1- (ash 1 (1+ (- i j))))))))
+
+(defund bitn (x n)
+  (declare (xargs :guard (and (natp x)
+                              (natp n))
+                  :verify-guards nil))
+  (mbe :logic (bits x n n)
+       :exec  (if (evenp (ash x (- n))) 0 1)))
+
+(local (include-book "lnot-proofs"))
+
+#| old definition:
+(defun LNOT (x n)
+  (1- (- (expt 2 n) x)))
+|#
+
+;used to be called COMP1
+(defund lnot (x n)
+  (declare (xargs :guard (and (natp x)
+                              (integerp n)
+                              (< 0 n))
+                  :verify-guards nil))
+  (if (natp n)
+      (+ -1 (expt 2 n) (- (bits x (1- n) 0)))
+    0))
+
+;note that this isn't a rewrite rule b/c we believe it will never need to be
+;BOZO make it one anyway?
+(defthm lnot-nonnegative-integer-type
+  (and (integerp (lnot x n))
+       (<= 0 (lnot x n)))
+  :rule-classes ((:type-prescription :typed-term (lnot x n))))
+
+;lnot-nonnegative-integer-type is strictly better, and we don't need both
+(in-theory (disable (:type-prescription lnot))) 
+
+(defthm lnot-natp
+  (natp (lnot x n)))
+
+(defthm lnot-upper-bound
+  (< (lnot x n) (expt 2 n))
+  :rule-classes (:rewrite :linear)
+  )
+
+;why is bvecp enabled here?
+
+(defthm lnot-bvecp-simple
+  (bvecp (lnot x n) n))
+
+(defthm lnot-bvecp
+  (implies (and (<= n k)
+                (case-split (integerp k)))
+           (bvecp (lnot x n) k)))
+
+;perhaps conclude with bits of x and drop the bvecp hyp?
+(defthm lnot-lnot
+  (implies (and (case-split (natp n))
+                (case-split (bvecp x n))
+                )
+           (equal (lnot (lnot x n) n)
+                  x)))
+
+;reorient this rule?
+(defthmd lnot-times-2
+   (implies (and (case-split (natp x))
+                 (case-split (natp n))
+                 )
+            (equal (+ 1 (* 2 (lnot x n)))
+                   (lnot (* 2 x) (1+ n)))))
+
+(defthm lnot-x-0
+  (equal (lnot x 0) 0))
+
+;gen?
+;make a by-2 version?
+;change param name?
+;make a better rewrite rule
+;RHS isn't simplified!
+(defthmd lnot-fl-original
+  (implies (and (<= k n)
+                ;(bvecp x n)
+                (<= 0 k)
+                (integerp n) 
+                (integerp k)
+                )
+           (equal (fl (* (/ (expt 2 k)) (lnot x n)))
+                  (lnot (fl (/ x (expt 2 k))) (- n k)))))
+
+(defthmd lnot-fl
+  (implies (and (natp n)
+                (natp k))
+           (equal (fl (* (/ (expt 2 k)) (lnot x (+ n k))))
+                  (lnot (fl (/ x (expt 2 k))) n))))
+
+;gen
+;add case-splits
+(defthmd mod-lnot
+  (implies (and (<= k n)
+                (natp k)
+                (integerp n)
+                )
+           (equal (mod (lnot x n) (expt 2 k))
+                  (lnot (mod x (expt 2 k)) k))))
+
+(defthm mod-lnot-by-2
+  (implies (and (< 0 n)
+                (integerp x) ;gen?
+                (integerp n)
+                )
+           (equal (mod (lnot x n) 2)
+                  (lnot (mod x 2) 1))))
+
+;disable?
+(defthm lnot-bits-1
+  (equal (lnot (bits x (1- n) 0) n)
+         (lnot x n)))
+
+(defthmd lnot-ignores-bits-2
+  (implies (and (integerp i)
+                (<= (1- n) i))
+           (equal (lnot (bits x i 0) n)
+                  (lnot x n))))
+
+(defthm bits-lnot
+  (implies (and (case-split (natp j))
+		(case-split (integerp n))
+		(case-split (integerp i)))
+	   (equal (bits (lnot x n) i j)
+                  (if (< i n)
+                      (lnot (bits x i j)
+                            (1+ (- i j)))
+                    (lnot (bits x (1- n) j)
+                          (- n j))))))
+
+;gen?
+(defthm bitn-lnot
+  (implies (and (case-split (natp k))
+                (case-split (natp n))
+                )
+           (equal (bitn (lnot x n) k)
+                  (if (< k n)
+                      (lnot (bitn x k) 1)
+                    0))))
+
+;do we still need this, given bitn-lnot?
+(defthm bitn-lnot-not-equal
+  (implies (and (< k n)
+                (integerp n)
+                (<= 0 n)
+                (integerp k)
+                (<= 0 k)
+                )
+           (not (= (bitn (lnot x n) k)
+                   (bitn x k))))
+  :rule-classes ())
+
+;could generalize these a lot (when lnot equals a constant, take the lnot of both sides)
+;drop bvecp hyp by wrapping bits around conclusion?
+(defthm lnot-bvecp-equal-0
+  (implies (case-split (bvecp x 1))
+           (equal (equal (lnot x 1) 0)
+                  (not (equal x 0)))))
+
+(defthm lnot-bvecp-equal-1
+  (implies (case-split (bvecp x 1))
+           (equal (equal (lnot x 1) 1)
+                  (equal x 0))))
+
+;consider enabling?
+(defthmd lnot-ignores-mod-special
+  (equal (lnot (mod x (expt 2 m)) m)
+         (lnot x m)))
+
+;consider enabling?
+(defthmd lnot-ignores-mod
+  (implies (and (<= m n)
+                (case-split (integerp n)))
+           (equal (lnot (mod x (expt 2 n)) m)
+                  (lnot x m))))
+
+(defthmd lnot-shift
+  (implies (and (case-split (integerp x))
+                (case-split (natp n))
+                (natp k))
+           (equal (lnot (* (expt 2 k) x) n)
+                  (if (<= k n)
+                      (+ (* (expt 2 k) (lnot x (- n k)))
+                         (1- (expt 2 k)))
+                    (1- (expt 2 n)))))
+  :hints (("Goal" :in-theory (enable lnot))))
+
+;consider enabling?
+(defthmd lnot-shift-2
+  (implies (and (syntaxp (not (quotep x))) ;prevents loops
+                (case-split (integerp x))
+                (case-split (< 0 n))
+                (case-split (integerp n))
+                )
+           (equal (lnot (* 2 x) n)
+                  (+ 1 (* 2 (lnot x (1- n))))))
+  :hints (("Goal" :in-theory (enable lnot))))
+
+;disable?
+;BOZO rename the other lnot-fl.  this one should be called lnot-fl.
+(defthm lnot-fl-eric
+  (equal (lnot (fl x) n)
+         (lnot x n)))
+
+(defthm lnot-with-n-not-an-integer
+  (implies (not (integerp n))
+           (equal (lnot x n)
+                  0)))
+
+(defthm lnot-with-n-not-positive
+  (implies (<= n 0)
+           (equal (lnot x n)
+                  0)))

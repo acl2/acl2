@@ -44,18 +44,18 @@
   (local (include-book "arithmetic/inequalities" :dir :system))
   (set-enforce-redundancy t)
 
-  (defmacro fc (x) x)
+  (defmacro acl2::fc (x) x)
 
-  (defthm expt-is-increasing-for-base>1
+  (defthm acl2::expt-is-increasing-for-base>1
     (implies (and (< 1 r)
                   (< i j)
-                  (fc (real/rationalp r))
-                  (fc (integerp i))
-                  (fc (integerp j)))
+                  (acl2::fc (real/rationalp r))
+                  (acl2::fc (integerp i))
+                  (acl2::fc (integerp j)))
              (< (expt r i) (expt r j)))
     :rule-classes (:rewrite :linear))
 
-  (in-theory (disable (:rewrite expt-is-increasing-for-base>1)))))
+  (in-theory (disable (:rewrite acl2::expt-is-increasing-for-base>1)))))
 
 (include-book "sticky") ; needed for some definitions
 (include-book "util")   ; needed for definition of local-defthm
@@ -114,7 +114,7 @@
     (implies (and (integerp n)
                   (> n 0))
              (<= (expt 2 (* -1 n)) 1/2))
-    :hints (("Goal" :use ((:instance expt-is-increasing-for-base>1
+    :hints (("Goal" :use ((:instance acl2::expt-is-increasing-for-base>1
                                      (r 2)
                                      (i (* -1 n))
                                      (j -1)))))

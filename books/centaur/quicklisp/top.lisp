@@ -36,6 +36,7 @@
 (include-book "osicat")
 (include-book "uiop")
 (include-book "html-template")
+(include-book "shellpool")
 
 (defsection quicklisp
   :parents (acl2::interfacing-tools)

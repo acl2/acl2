@@ -28,6 +28,7 @@
 
 
 (local (deftheory jared-disables-1
+         #!acl2
          '(SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<
            (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
            (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
@@ -43,12 +44,14 @@
            )))
 
 (local (deftheory jared-disables-2
+         #!acl2
          '((:TYPE-PRESCRIPTION NOT-INTEGERP-3B)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-1B)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-2B)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-4E))))
 
 (local (deftheory jared-disables-3
+         #!acl2
          '((:TYPE-PRESCRIPTION NOT-INTEGERP-4B)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-4B-EXPT)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-3B-EXPT)
@@ -58,6 +61,7 @@
            )))
 
 (local (deftheory jared-disables-4
+         #!acl2
          '(not-integerp-1a
            not-integerp-2a
            not-integerp-3a
@@ -80,6 +84,7 @@
            default-minus)))
 
 (local (deftheory jared-disables-5
+         #!acl2
          '(EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT
            EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT
            EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT
@@ -967,10 +972,10 @@
                                jared-disables-4
                                jared-disables-5
                                ;; down to 171 secs with the above
-                               default-mod-1
-                               default-mod-ratio
+                               acl2::default-mod-1
+                               acl2::default-mod-ratio
                                abs
-                               zp-open
+                               acl2::zp-open
                                ;; the above were splitting.  removing them gets it to 6s
                                ;; then this one shows up heavily in accumulated persistence
                                LEMMA-4-1-28
@@ -1576,7 +1581,8 @@
                         (:instance cg-sqrt-1 (y (seed l k rho)) (x (expt 2 (* k rho))))))))
 
 (local (encapsulate ()
- (local (set-default-hints
+ (local #!acl2
+        (set-default-hints
          '((nonlinearp-default-hint stable-under-simplificationp
                                     hist pspv))))
  (defthm lemma-4-2-13

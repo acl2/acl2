@@ -494,7 +494,7 @@
 
   (defthm member-open-1
     (implies (and (syntaxp (and (quotep lst)
-                                (> (len (unquote lst)) *mem-open-len*)))
+                                (> (len (acl2::unquote lst)) *mem-open-len*)))
                   (<= *mem-open-len* (len lst)))
              (iff (member-equal a lst)
                   (or (member-equal a (take *mem-open-len* lst))
@@ -506,7 +506,7 @@
 
 (local-defthm member-open-2
   (implies (syntaxp (and (quotep lst)
-                         (<= (len (unquote lst)) *mem-open-len*)))
+                         (<= (len (acl2::unquote lst)) *mem-open-len*)))
            (equal (member-equal a lst)
                   (cond ((endp lst) nil)
                         ((equal a (car lst))

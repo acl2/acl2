@@ -28,6 +28,7 @@
 
 
 (local (deftheory jared-disables-1
+         #!acl2
          '(SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<
            (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
            (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
@@ -43,12 +44,14 @@
            )))
 
 (local (deftheory jared-disables-2
+         #!acl2
          '((:TYPE-PRESCRIPTION NOT-INTEGERP-3B)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-1B)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-2B)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-4E))))
 
 (local (deftheory jared-disables-3
+         #!acl2
          '((:TYPE-PRESCRIPTION NOT-INTEGERP-4B)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-4B-EXPT)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-3B-EXPT)
@@ -58,6 +61,7 @@
            )))
 
 (local (deftheory jared-disables-4
+         #!acl2
          '(not-integerp-1a
            not-integerp-2a
            not-integerp-3a
@@ -562,7 +566,7 @@
                                jared-disables-2
                                jared-disables-3
                                jared-disables-4
-                               zp-open)
+                               acl2::zp-open)
            :use (lemma-3-3-9
                  (:instance lemma-3-2-a-b (k (1- k)))))))
 
@@ -1250,12 +1254,12 @@
                                jared-disables-2
                                jared-disables-3
                                jared-disables-4
-                               |(* x (+ y z))|
-                               not-integerp-1a-expt
-                               not-integerp-2a-expt
-                               not-integerp-3a-expt
-                               not-integerp-4a-expt
-                               default-less-than-2
+                               acl2::|(* x (+ y z))|
+                               acl2::not-integerp-1a-expt
+                               acl2::not-integerp-2a-expt
+                               acl2::not-integerp-3a-expt
+                               acl2::not-integerp-4a-expt
+                               acl2::default-less-than-2
                                )
            :use (sqrt-table-19 sqrt-table-2 sqrt-table-3 sqrt-table-5))))
 
@@ -3620,7 +3624,7 @@
                                jared-disables-2
                                jared-disables-3
                                jared-disables-4
-                               default-less-than-2)
+                               acl2::default-less-than-2)
            :use (d7-p7-1
                  d7-p7-17
                  (:instance *-weakly-monotonic-neg (x h2) 
@@ -4621,23 +4625,23 @@
                            (jared-disables-2
                             jared-disables-3
                             jared-disables-4
-                            EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B
-                            not-integerp-1a-expt
-                            not-integerp-2a-expt
-                            not-integerp-3a-expt
-                            not-integerp-4a-expt
-                            not-integerp-1d-expt
-                            not-integerp-2d-expt
-                            not-integerp-3d-expt
-                            not-integerp-4d-expt
-                            default-expt-1
-                            EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE
-                            EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A
-                            EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE))
+                            acl2::EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B
+                            acl2::not-integerp-1a-expt
+                            acl2::not-integerp-2a-expt
+                            acl2::not-integerp-3a-expt
+                            acl2::not-integerp-4a-expt
+                            acl2::not-integerp-1d-expt
+                            acl2::not-integerp-2d-expt
+                            acl2::not-integerp-3d-expt
+                            acl2::not-integerp-4d-expt
+                            acl2::default-expt-1
+                            acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE
+                            acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A
+                            acl2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE))
            :use (converse-36
                  (:instance converse-37 (i (i-sqrt k rho m n table)) 
                             (j (j-sqrt k rho m n table))
@@ -4724,23 +4728,23 @@
                            (jared-disables-2
                             jared-disables-3
                             jared-disables-4
-                            EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B
-                            not-integerp-1a-expt
-                            not-integerp-2a-expt
-                            not-integerp-3a-expt
-                            not-integerp-4a-expt
-                            not-integerp-1d-expt
-                            not-integerp-2d-expt
-                            not-integerp-3d-expt
-                            not-integerp-4d-expt
-                            default-expt-1
-                            EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE
-                            EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A
-                            EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE))
+                            acl2::EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B
+                            acl2::not-integerp-1a-expt
+                            acl2::not-integerp-2a-expt
+                            acl2::not-integerp-3a-expt
+                            acl2::not-integerp-4a-expt
+                            acl2::not-integerp-1d-expt
+                            acl2::not-integerp-2d-expt
+                            acl2::not-integerp-3d-expt
+                            acl2::not-integerp-4d-expt
+                            acl2::default-expt-1
+                            acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE
+                            acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A
+                            acl2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE))
            :use (converse-36
                         (:instance converse-37 (i (i-sqrt k rho m n table)) 
                                                (j (j-sqrt k rho m n table))
@@ -5021,24 +5025,24 @@
                            (jared-disables-2
                             jared-disables-3
                             jared-disables-4
-                            EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B
-                            not-integerp-1a-expt
-                            not-integerp-2a-expt
-                            not-integerp-3a-expt
-                            not-integerp-4a-expt
-                            not-integerp-1d-expt
-                            not-integerp-2d-expt
-                            not-integerp-3d-expt
-                            not-integerp-4d-expt
-                            default-expt-1
-                            EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE
-                            EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A
-                            EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE))
-
+                            acl2::EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B
+                            acl2::not-integerp-1a-expt
+                            acl2::not-integerp-2a-expt
+                            acl2::not-integerp-3a-expt
+                            acl2::not-integerp-4a-expt
+                            acl2::not-integerp-1d-expt
+                            acl2::not-integerp-2d-expt
+                            acl2::not-integerp-3d-expt
+                            acl2::not-integerp-4d-expt
+                            acl2::default-expt-1
+                            acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE
+                            acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A
+                            acl2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE))
+           
            :use (converse-36
                         (:instance converse-37 (i (i-sqrt k rho m n table)) 
                                                (j (j-sqrt k rho m n table))
@@ -5106,23 +5110,23 @@
                            (jared-disables-2
                             jared-disables-3
                             jared-disables-4
-                            EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B
-                            not-integerp-1a-expt
-                            not-integerp-2a-expt
-                            not-integerp-3a-expt
-                            not-integerp-4a-expt
-                            not-integerp-1d-expt
-                            not-integerp-2d-expt
-                            not-integerp-3d-expt
-                            not-integerp-4d-expt
-                            default-expt-1
-                            EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE
-                            EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A
-                            EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE))
+                            acl2::EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B
+                            acl2::not-integerp-1a-expt
+                            acl2::not-integerp-2a-expt
+                            acl2::not-integerp-3a-expt
+                            acl2::not-integerp-4a-expt
+                            acl2::not-integerp-1d-expt
+                            acl2::not-integerp-2d-expt
+                            acl2::not-integerp-3d-expt
+                            acl2::not-integerp-4d-expt
+                            acl2::default-expt-1
+                            acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE
+                            acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A
+                            acl2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE))
            :use (converse-36
                  (:instance converse-37 (i (i-sqrt k rho m n table)) 
                             (j (j-sqrt k rho m n table))
@@ -5603,23 +5607,23 @@
                            (jared-disables-2
                             jared-disables-3
                             jared-disables-4
-                            EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B
-                            not-integerp-1a-expt
-                            not-integerp-2a-expt
-                            not-integerp-3a-expt
-                            not-integerp-4a-expt
-                            not-integerp-1d-expt
-                            not-integerp-2d-expt
-                            not-integerp-3d-expt
-                            not-integerp-4d-expt
-                            default-expt-1
-                            EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE
-                            EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A
-                            EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE))
+                            acl2::EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT
+                            acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B
+                            acl2::not-integerp-1a-expt
+                            acl2::not-integerp-2a-expt
+                            acl2::not-integerp-3a-expt
+                            acl2::not-integerp-4a-expt
+                            acl2::not-integerp-1d-expt
+                            acl2::not-integerp-2d-expt
+                            acl2::not-integerp-3d-expt
+                            acl2::not-integerp-4d-expt
+                            acl2::default-expt-1
+                            acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE
+                            acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A
+                            acl2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE))
            :use ((:instance converse-39 (i (i-sqrt k rho m n table))
                             (j (j-sqrt k rho m n table)))
                  (:instance d7-p7-lemma 
