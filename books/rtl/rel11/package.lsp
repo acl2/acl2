@@ -9,6 +9,7 @@
    *acl2-exports*
    *common-lisp-symbols-from-main-lisp-package*
    '(defxdoc defsection
+      rtl ; simplifies dealing with this xdoc topic name
       *default-step-limit* ; should perhaps be in *acl2-exports*
       binary-logand binary-logior binary-logxor binary-logeqv ; used in lib/log.lisp
       a b c d e f g h i j k l m n o p q r s t u v w x y z

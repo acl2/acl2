@@ -38,9 +38,6 @@
 (include-book "centaur/gl/portcullis" :dir :system)
 (include-book "centaur/bed/portcullis" :dir :system)
 
-;; So that the "RTL" package is defined (referenced in note-6-5-books):
-(include-book "rtl/rel11/portcullis" :dir :system)
-
 ; Please note:
 ;
 ;  - Jared often has uncommitted edits to this file.  Please coordinate with
@@ -901,7 +898,7 @@
  @('DEFSTRUCTURE') to resolve a name conflicts with the COI books.</p>
 
  <p>The @(see bitops) library's @('sign-extend') function has been renamed to
- @(see fast-logext) to resolve a name conflict with the @(see rtl::rtl)
+ @(see fast-logext) to resolve a name conflict with the @(see rtl)
  library.</p>
 
  <p>The new @('tools/book-conflicts') tool can be used to detect name conflicts
@@ -1063,7 +1060,7 @@
 
  <h5>New Documentation</h5>
 
- <p>The @(see cowles), @(see arithmetic-1), and @(see rtl::rtl) libraries now
+ <p>The @(see cowles), @(see arithmetic-1), and @(see rtl) libraries now
  have some XDOC documentation.</p>
 
  <p>There are now some preliminary recommendations for @(see best-practices) for
