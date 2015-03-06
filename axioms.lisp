@@ -26513,7 +26513,9 @@ Lisp definition."
 
 (defun check-dcl-guardian (val term)
 
-; See call of (set-guard-msg check-dcl-guardian ...) later in the sources.
+; See call of (set-guard-msg check-dcl-guardian ...) later in the sources.  The
+; term argument is included in support of the call (set-guard-msg
+; check-dcl-guardian ...) in these sources.
 
   (declare (xargs :guard val))
   (declare (ignore val term))
