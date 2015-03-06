@@ -32,13 +32,14 @@
 (include-book "expr")
 (include-book "util/commentmap")
 (include-book "util/warnings")
+(include-book "util/defs")
 (include-book "tools/flag" :dir :system)
 (include-book "tools/templates" :dir :system)
 (local (include-book "util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable double-containment)))
 (local (in-theory (disable vl-atts-p-of-cdr-when-vl-atts-p
-                           vl-atts-p-when-subsetp-equal
+                           ;; vl-atts-p-when-subsetp-equal
                            ;; alistp-when-vl-atts-p-rewrite
                            default-car default-cdr
                            acl2::lower-bound-of-car-when-nat-listp
@@ -46,7 +47,7 @@
                            acl2::consp-when-member-equal-of-cons-listp
                            acl2::consp-when-member-equal-of-atom-listp
                            consp-when-member-equal-of-vl-commentmap-p
-                           consp-when-member-equal-of-vl-atts-p
+                           ;; consp-when-member-equal-of-vl-atts-p
                            (tau-system))))
 
 ; ----------------------------------------------------------------------------

@@ -567,6 +567,11 @@ displays.  The module browser's web pages are responsible for defining the
      "VL_EXPLICIT_PARENS"
      "VL_PARAMNAME"))
 
+(defthm vl-atts-p-of-vl-remove-keys
+  (implies (force (vl-atts-p x))
+           (vl-atts-p (vl-remove-keys keys x)))
+  :hints(("Goal" :induct (len x))))
+
 (defrule vl-atts-count-of-vl-remove-keys
   (<= (vl-atts-count (vl-remove-keys keys x))
       (vl-atts-count x))

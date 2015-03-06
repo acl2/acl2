@@ -29,13 +29,20 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "util/defs")
+;; (include-book "util/defs")
 (include-book "util/bits")
-(include-book "util/echars")
+(include-book "util/locations")
 (include-book "util/defoption")
 (include-book "util/deftranssum")
-(local (include-book "util/arithmetic"))
+(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "ihs/basic-definitions" :dir :system)
+;; (include-book "std/osets/top" :dir :system)
+;; (include-book "defsort/duplicated-members" :dir :system)
+;; (local (include-book "util/arithmetic"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "std/lists/take" :dir :system))
+(local (include-book "std/lists/repeat" :dir :system))
+(local (include-book "std/lists/nthcdr" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
 (local (xdoc::set-default-parents expressions))
@@ -108,7 +115,7 @@ allows us to represent expressions whose types have not yet been computed.</p>"
                 and @(''b0101'), but not for sized ones like @('4'b0101')."))
 
    :require
-   (< value (expt 2 origwidth))
+   (unsigned-byte-p origwidth value)
 
    :long "<p>Constant integers are produced from source code constructs like
 @('5'), @('4'b0010'), and @('3'h0').</p>
@@ -490,12 +497,12 @@ type for @(see vl-scopeexpr->scopes).</p>"
 (local
  (std::set-returnspec-mrec-default-hints nil))
 
-(local (in-theory (disable ACL2::CONSP-OF-CAR-WHEN-ALISTP
-                           acl2::alistp-of-cdr
+(local (in-theory (disable ;; ACL2::CONSP-OF-CAR-WHEN-ALISTP
+                           ;; acl2::alistp-of-cdr
                            (:t acl2::nil-fn)
-                           acl2::consp-when-member-equal-of-cons-listp
-                           acl2::alistp-when-hons-duplicity-alist-p
-                           acl2::consp-under-iff-when-true-listp
+                           ;; acl2::consp-when-member-equal-of-cons-listp
+                           ;; acl2::alistp-when-hons-duplicity-alist-p
+                           ;; acl2::consp-under-iff-when-true-listp
                            default-car default-cdr
                            default-+-2 default-+-1 o< o-finp
                            acl2::nfix-when-not-natp
@@ -1516,6 +1523,9 @@ try to support the use of both ascending and descending ranges.</p>")
 (defthm vl-constint-bound-linear
   (< (vl-constint->value x)
      (expt 2 (vl-constint->origwidth x)))
+  :hints (("goal" :use vl-constint-requirements
+           :in-theory (e/d (unsigned-byte-p)
+                           (vl-constint-requirements))))
   :rule-classes :linear)
 
 
@@ -2665,12 +2675,7 @@ try to support the use of both ascending and descending ranges.</p>")
                       nil)))
     :hints(("Goal"
             :in-theory (enable hons-assoc-equal)
-            :induct (hons-assoc-equal key atts))))
-
-  (defthm vl-atts-p-of-vl-remove-keys
-    (implies (force (vl-atts-p x))
-             (vl-atts-p (vl-remove-keys keys x)))
-    :hints(("Goal" :induct (len x)))))
+            :induct (hons-assoc-equal key atts)))))
 
 
 ;; (defsection vl-exprlist-p
@@ -2879,7 +2884,7 @@ try to support the use of both ascending and descending ranges.</p>")
     (equal (vl-exprlist-fix (nthcdr n x))
            (nthcdr n (vl-exprlist-fix x)))
     :hints(("Goal"
-            :in-theory (e/d (nthcdr vl-exprlist-fix)
+            :in-theory (e/d (nthcdr vl-exprlist-fix default-cdr)
                             (acl2::nthcdr-of-cdr))
             :do-not '(generalize fertilize))))
 

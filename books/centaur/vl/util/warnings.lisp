@@ -412,8 +412,20 @@ particular interest.</p>"
   :parents (warnings)
   :short "B* binder to automatically append together returned warnings"
   :body
-  `(b* (,(if (equal args '(vl::warnings))
-             `(vl::__tmp__warnings . ,forms)
-           `((mv . ,(subst 'vl::__tmp__warnings 'vl::warnings args)) . ,forms))
-        (vl::warnings (append-without-guard vl::__tmp__warnings vl::warnings)))
-     ,rest-expr))
+  (b* (((mv ctx args)
+        (b* ((mem (member :ctx args)))
+          (if mem
+              (mv (cadr mem)
+                  (append (take (- (len args) (len mem)) args)
+                          (cddr mem)))
+            (mv nil args)))))
+    `(b* (,(if (equal args '(vl::warnings))
+               `(vl::__tmp__warnings . ,forms)
+             `((mv . ,(subst 'vl::__tmp__warnings 'vl::warnings args)) . ,forms))
+          (vl::warnings (append-without-guard
+                         ,(if ctx
+                              `(vl::vl-warninglist-add-ctx vl::__tmp__warnings
+                                                       ,ctx)
+                            'vl::__tmp__warnings)
+                         vl::warnings)))
+       ,rest-expr)))

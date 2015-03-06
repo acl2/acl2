@@ -30,7 +30,9 @@
 
 (in-package "VL")
 (include-book "../expr")
+(include-book "../util/defs")
 (local (include-book "../util/arithmetic"))
+(local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (non-parallel-book))
 
@@ -1266,7 +1268,8 @@ construct fast alists binding identifiers to things, etc.</p>"
     (implies (equal (len y) (len (vl-expr->subexprs x)))
              (equal (vl-expr->subexprs (vl-expr-update-subexprs x y))
                     (vl-exprlist-fix y)))
-    :hints(("Goal" :in-theory (enable vl-expr->subexprs)))))
+    :hints(("Goal" :in-theory (enable vl-expr->subexprs)
+            :do-not-induct t))))
 
 
 
