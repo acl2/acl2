@@ -119,7 +119,7 @@
                    (if (equal (bitn x 0) 0)
                        (bits y (+ -1 n) 0)
                      (+ (expt 2 n) (bits y (+ -1 n) 0)))))
-   :hints (("Goal" :in-theory (enable acl2::binary-cat)))))
+   :hints (("Goal" :in-theory (enable binary-cat)))))
 
 
 
@@ -180,8 +180,8 @@
  
 
 ;; [Jared] added this to fix the proof after building these into ACL2
-(local (in-theory (disable commutativity-2-of-+
-                           fold-consts-in-+)))
+(local (in-theory (disable acl2::commutativity-2-of-+
+                           acl2::fold-consts-in-+)))
 
 (DEFTHM CAT-FACT-11
   (IMPLIES (EQUAL (CAT X 1 Y 1 Z 1 U 1 V 1 W 1 1 1)

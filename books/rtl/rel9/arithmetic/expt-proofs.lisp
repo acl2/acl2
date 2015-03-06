@@ -60,7 +60,7 @@
    (equal (expt (* a b) i)
           (* (expt a i) (expt b i)))
    :hints
-   (("Goal" :in-theory (enable distributivity-of-expt-over-*))))
+   (("Goal" :in-theory (enable acl2::distributivity-of-expt-over-*))))
 
 ;gen
 ;split off the non-integer case

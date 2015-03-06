@@ -10053,17 +10053,17 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 )
 
 (defun the-check (guard x y)
-  (declare (xargs :guard (or guard (hard-error
-                                    nil
-                                    "The object ~xa does not satisfy the ~
-                                     declaration ~xb."
-                                    (list (cons #\a y)
-                                          (cons #\b x))))))
+
+; See call of (set-guard-msg the-check ...) later in the sources.
+
+  (declare (xargs :guard guard))
   (declare (ignore x guard))
   y)
 
 (defun the-fn (x y)
   (declare (xargs :guard (translate-declaration-to-guard x 'var nil)
+
+; Warning: Keep this in sync with the-fn-for-*1*.
 
 ; As noted above the definition of translate-declaration-to-guard/integer, we
 ; are trying to save a little space in the image.
@@ -10113,8 +10113,38 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro the (x y)
+
+; Warning: Keep this in sync with the-for-*1*.
+
   (declare (xargs :guard (translate-declaration-to-guard x 'var nil)))
   (the-fn x y))
+
+(defun the-check-for-*1* (guard x y var)
+
+; See call of (set-guard-msg the-check-for-*1* ...) later in the sources.
+
+  (declare (xargs :guard guard))
+  (declare (ignore x guard var))
+  y)
+
+(defun the-fn-for-*1* (x y)
+
+; Warning: Keep this in sync with the-fn.
+
+  (declare (xargs :guard (and (symbolp y)
+                              (translate-declaration-to-guard x y nil))
+                  :mode :program))
+  (let ((guard (and (symbolp y)
+                    (translate-declaration-to-guard x y nil))))
+    `(the-check-for-*1* ,guard ',x ,y ',y)))
+
+(defmacro the-for-*1* (x y)
+
+; Warning: Keep this in sync with THE.
+
+  (declare (xargs :guard (and (symbolp y)
+                              (translate-declaration-to-guard x y nil))))
+  (the-fn-for-*1* x y))
 
 ; THEORY PROTO-PRIMITIVES
 
@@ -21245,7 +21275,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (binary-logxor logxor . t)
          (binary-logeqv logeqv . t)
          (binary-por por . t)
-         (binary-pand pand . t))
+         (binary-pand pand . t)
+         (unary-- -)
+         (unary-/ /))
        :clear)
 
 (defmacro add-macro-fn (macro macro-fn &optional right-associate-p)
@@ -26478,3 +26510,11 @@ Lisp definition."
                            \"~s1\"."
                            pos s)
                        0)))))))
+
+(defun check-dcl-guardian (val term)
+
+; See call of (set-guard-msg check-dcl-guardian ...) later in the sources.
+
+  (declare (xargs :guard val))
+  (declare (ignore val term))
+  t)

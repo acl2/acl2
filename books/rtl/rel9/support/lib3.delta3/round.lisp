@@ -583,8 +583,12 @@ But by trunc-split (with n = 1+e, m = 1+e, k = n+1),
              (< f 1/2)))
   :rule-classes ()
   :hints  (("Goal" :use (ru-18 ru-21)
-                   :in-theory (disable |(* x (+ y z))| |(* x (- y))| |(* x (expt x n))| |(* y x)| 
-                                       |(+ (+ x y) z)| |(+ 0 x)| NORMALIZE-FACTORS-GATHER-EXPONENTS SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))))
+                   :in-theory
+                   #!acl2(disable |(* x (+ y z))| |(* x (- y))|
+                                  |(* x (expt x n))| |(* y x)| 
+                                  |(+ (+ x y) z)| |(+ 0 x)|
+                                  NORMALIZE-FACTORS-GATHER-EXPONENTS
+                                  SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))))
 
 (defthm ru-24
   (let ((e (expo r)))
@@ -615,8 +619,12 @@ But by trunc-split (with n = 1+e, m = 1+e, k = n+1),
              (>= f 1/2)))
   :rule-classes ()
   :hints  (("Goal" :use (ru-18 ru-24)
-                   :in-theory (disable |(* x (+ y z))| |(* x (- y))| |(* x (expt x n))| |(* y x)| 
-                                       |(+ (+ x y) z)| |(+ 0 x)| NORMALIZE-FACTORS-GATHER-EXPONENTS SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))))
+                   :in-theory
+                   #!acl2(disable |(* x (+ y z))| |(* x (- y))|
+                                  |(* x (expt x n))| |(* y x)| 
+                                  |(+ (+ x y) z)| |(+ 0 x)|
+                                  NORMALIZE-FACTORS-GATHER-EXPONENTS
+                                  SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))))
 
 (defthm ru-26
   (let ((e (expo r))
@@ -635,8 +643,12 @@ But by trunc-split (with n = 1+e, m = 1+e, k = n+1),
                      0))))
   :rule-classes ()
   :hints  (("Goal" :use (ru-18 ru-24)
-                   :in-theory (disable |(* x (+ y z))| |(* x (- y))| |(* x (expt x n))| |(* y x)| 
-                                       |(+ (+ x y) z)| |(+ 0 x)| NORMALIZE-FACTORS-GATHER-EXPONENTS SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))))
+                   :in-theory
+                   #!acl2(disable |(* x (+ y z))| |(* x (- y))|
+                                  |(* x (expt x n))| |(* y x)| 
+                                  |(+ (+ x y) z)| |(+ 0 x)|
+                                  NORMALIZE-FACTORS-GATHER-EXPONENTS
+                                  SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))))
 
 (defthm ru-27
   (let ((e (expo r))

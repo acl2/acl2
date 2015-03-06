@@ -247,7 +247,7 @@
            (equal (logior i j)
                   (+ (* 2 (logior (fl (* 1/2 i)) (fl (* 1/2 j))))
                      (logior (mod i 2) (mod j 2)))))
-  :rule-classes ((:definition :controller-alist ((binary-logior t t))))
+  :rule-classes ((:definition :controller-alist ((acl2::binary-logior t t))))
   :hints (("goal"; :in-theory (enable  mod)
            :use ((:instance mod-fl-2 (x (logior i j)) (y 2)))
 ;           :use ((:instance mod (x i) (y j)))
@@ -718,8 +718,8 @@
                   :in-theory
                    (set-difference-theories
                        (enable logior logand lognot
-                               functional-commutativity-of-minus-*-right
-                               functional-commutativity-of-minus-*-left)
+                               acl2::functional-commutativity-of-minus-*-right
+                               acl2::functional-commutativity-of-minus-*-left)
                        '(a2 a5))))
   :rule-classes nil)
 

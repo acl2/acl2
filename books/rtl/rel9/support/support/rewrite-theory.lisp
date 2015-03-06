@@ -38,9 +38,9 @@
 
 (defun rewrite-theory-fn (from to wrld)
 ; Returns all rewrite rules introduced after FROM, up to and including TO.
-  (let ((diff (set-difference-theories-fn
-               (universal-theory-fn to wrld)
-               (universal-theory-fn from wrld)
+  (let ((diff (acl2::set-difference-theories-fn
+               (acl2::universal-theory-fn to wrld)
+               (acl2::universal-theory-fn from wrld)
                t ;; Tue Oct 31 09:22:52 2006. Hanbing. changed to accomodate
                  ;; the changes in ACL2 3.0.1
                wrld)))

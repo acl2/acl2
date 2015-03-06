@@ -1,4 +1,4 @@
-(IN-PACKAGE "ACL2")
+(in-package "ACL2")
 
 (INCLUDE-BOOK "../../rel9/lib/masc")
 

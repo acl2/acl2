@@ -27,7 +27,7 @@
 (include-book "../lib3/bits")
 (include-book "../lib3/util")
 
-(set-prover-step-limit *default-step-limit*) 
+(set-prover-step-limit acl2::*default-step-limit*) 
 (local (include-book "../lib3/top"))
 
 (encapsulate ()
@@ -189,6 +189,7 @@
 (local (include-book "arithmetic-5/top" :dir :system))
 
 (local (deftheory jared-disables-1
+         #!acl2
          '(SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<
            (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
            (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
@@ -201,26 +202,30 @@
            (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B)
            (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-RATIONALP-BASE)
            (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NON-0-BASE)
-           (:TYPE-PRESCRIPTION EXPT-2-POSITIVE-INTEGER-TYPE))))
+           ; mattk mod (:TYPE-PRESCRIPTION rtl::EXPT-2-POSITIVE-INTEGER-TYPE)
+           )))
 
 (local (deftheory jared-disables-2
+         #!acl2
          '((:TYPE-PRESCRIPTION NOT-INTEGERP-3B)
-           (:TYPE-PRESCRIPTION EXPT-POSITIVE-INTEGER-TYPE)
-           (:TYPE-PRESCRIPTION EXPT-2-POSITIVE-RATIONAL-TYPE)
+           ; mattk mod (:TYPE-PRESCRIPTION EXPT-POSITIVE-INTEGER-TYPE)
+           ; mattk mod (:TYPE-PRESCRIPTION EXPT-2-POSITIVE-RATIONAL-TYPE)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-1B)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-2B)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-4E))))
 
 (local (deftheory jared-disables-3
+         #!acl2
          '((:TYPE-PRESCRIPTION NOT-INTEGERP-4B)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-4B-EXPT)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-3B-EXPT)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-2B-EXPT)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-1B-EXPT)
-           a14
+           ; mattk mod a14
            (:TYPE-PRESCRIPTION RATIONALP-EXPT-TYPE-PRESCRIPTION)
-           RATIONALP-X
-           (:TYPE-PRESCRIPTION EXPT-POSITIVE-INTEGER-TYPE))))
+           ; mattk mod new: RATIONALP-X
+           ; mattk mod (:TYPE-PRESCRIPTION EXPT-POSITIVE-INTEGER-TYPE)
+           )))
 
 (defund delta0 (j n)
   (1+ (/ j (expt 2 n))))
@@ -951,20 +956,20 @@
                                    (y (/ (+ (delta0 j n) (/ (expt 2 n)))))
                                    (y+ (/ d))))
            :in-theory (disable jared-disables-1
-                                jared-disables-3
-                                NOT-INTEGERP-4E
-                                NOT-INTEGERP-3B
-                                NOT-INTEGERP-2B
-                                NOT-INTEGERP-1B
-                                NOT-INTEGERP-3E
-                                NOT-INTEGERP-2E
-                                NOT-INTEGERP-1E
-                                ;; ---
-                                not-integerp-4a-expt
-                                not-integerp-2a-expt
-                                not-integerp-1d-expt
-                                not-integerp-3d-expt
-                                )
+                               jared-disables-3
+                               acl2::NOT-INTEGERP-4E
+                               acl2::NOT-INTEGERP-3B
+                               acl2::NOT-INTEGERP-2B
+                               acl2::NOT-INTEGERP-1B
+                               acl2::NOT-INTEGERP-3E
+                               acl2::NOT-INTEGERP-2E
+                               acl2::NOT-INTEGERP-1E
+                               ;; ---
+                               acl2::not-integerp-4a-expt
+                               acl2::not-integerp-2a-expt
+                               acl2::not-integerp-1d-expt
+                               acl2::not-integerp-3d-expt
+                               )
            )))
 
 (local-defthm div-table-26
@@ -1811,6 +1816,7 @@
 (include-book "arithmetic-5/top" :dir :system)
 
 (local (deftheory jared-disables-1
+         #!acl2
          '(SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<
            (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
            (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
@@ -1826,12 +1832,14 @@
            )))
 
 (local (deftheory jared-disables-2
+         #!acl2
          '((:TYPE-PRESCRIPTION NOT-INTEGERP-3B)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-1B)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-2B)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-4E))))
 
 (local (deftheory jared-disables-3
+         #!acl2
          '((:TYPE-PRESCRIPTION NOT-INTEGERP-4B)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-4B-EXPT)
            (:TYPE-PRESCRIPTION NOT-INTEGERP-3B-EXPT)
@@ -1841,6 +1849,7 @@
            )))
 
 (local (deftheory jared-disables-4
+         #!acl2
          '(not-integerp-1a
            not-integerp-2a
            not-integerp-3a
@@ -2676,9 +2685,9 @@
                                    jared-disables-2
                                    jared-disables-3
                                    jared-disables-4
-                                   rationalp-x
-                                   default-less-than-1
-                                   default-less-than-2
+                                   acl2::rationalp-x
+                                   acl2::default-less-than-1
+                                   acl2::default-less-than-2
                                    ))
                   :use (converse-27 converse-26 converse-25))))
 
@@ -2796,10 +2805,10 @@
                                    jared-disables-2
                                    jared-disables-3
                                    jared-disables-4
-                                   default-less-than-1
-                                   default-less-than-2
-                                   rationalp-x
-                                   remove-strict-inequalities
+                                   acl2::default-less-than-1
+                                   acl2::default-less-than-2
+                                   acl2::rationalp-x
+                                   acl2::remove-strict-inequalities
                                    ))
                   :use ((:instance converse-30 (p p2) (d d1))
                         (:instance converse-30 (p p2) (d d2))))))
@@ -2923,9 +2932,9 @@
                                    jared-disables-2
                                    jared-disables-3
                                    jared-disables-4
-                                   default-less-than-1
-                                   default-less-than-2
-                                   rationalp-x
+                                   acl2::default-less-than-1
+                                   acl2::default-less-than-2
+                                   acl2::rationalp-x
                                    ))
                   :use ((:instance d1-p1-lemma (d d1) (p p1) (h hmax))
                         (:instance d2-p2-lemma (d d2) (p p2) (h hmin))
@@ -3538,8 +3547,8 @@
                                    jared-disables-2
                                    jared-disables-3
                                    jared-disables-4
-                                   default-expt-2
-                                   default-minus)))))
+                                   acl2::default-expt-2
+                                   acl2::default-minus)))))
 
 
 (local-defthm converse-56
@@ -3590,8 +3599,8 @@
                                    jared-disables-2
                                    jared-disables-3
                                    jared-disables-4
-                                   default-expt-2
-                                   default-minus)))))
+                                   acl2::default-expt-2
+                                   acl2::default-minus)))))
 
 
 (local-defthm converse-57
@@ -3631,8 +3640,8 @@
                        jared-disables-2
                        jared-disables-3
                        jared-disables-4
-                       default-expt-2
-                       default-minus)
+                       acl2::default-expt-2
+                       acl2::default-minus)
            )))
 
 (local-defthm converse-58
@@ -3654,7 +3663,7 @@
                 (< p (* (/ a b) d)))
             (< p d))
   :rule-classes ()
-  :hints (("Goal" :in-theory (disable simplify-products-gather-exponents-<)
+  :hints (("Goal" :in-theory (disable acl2::simplify-products-gather-exponents-<)
                   :use (converse-58))))
 
 (local-defthm converse-60
@@ -3728,16 +3737,16 @@
                        jared-disables-2
                        jared-disables-3
                        jared-disables-4
-                       default-expt-2
-                       default-less-than-2
-                       default-less-than-1
-                       acl2-numberp-x
-                       rationalp-x
-                       NOT-INTEGERP-3A-EXPT
-                       NOT-INTEGERP-4a-expt
-                       NOT-INTEGERP-1a-EXPT
-                       NOT-INTEGERP-2a-EXPT
-                       default-minus))))
+                       acl2::default-expt-2
+                       acl2::default-less-than-2
+                       acl2::default-less-than-1
+                       acl2::acl2-numberp-x
+                       acl2::rationalp-x
+                       acl2::NOT-INTEGERP-3A-EXPT
+                       acl2::NOT-INTEGERP-4a-expt
+                       acl2::NOT-INTEGERP-1a-EXPT
+                       acl2::NOT-INTEGERP-2a-EXPT
+                       acl2::default-minus))))
 
 (local-defthm converse-63
   (implies (and (integerp a)
@@ -3758,7 +3767,7 @@
                 (> p (* (/ a b) d)))
             (> p (- d)))
   :rule-classes ()
-  :hints (("Goal" :in-theory (disable simplify-products-gather-exponents-<)
+  :hints (("Goal" :in-theory (disable acl2::simplify-products-gather-exponents-<)
                   :use (converse-63))))
 
 (local-defthm converse-65
@@ -3813,23 +3822,23 @@
                   (> (abs (- (* (expt 2 rho) p) (* k d))) d))))
   :rule-classes ()
   :hints (("Goal"
-           :in-theory (disable 
+           :in-theory (disable
                        natp
                        abs
                        jared-disables-1
                        jared-disables-2
                        jared-disables-3
                        jared-disables-4
-                       default-expt-2
-                       default-less-than-2
-                       default-less-than-1
-                       acl2-numberp-x
-                       rationalp-x
-                       NOT-INTEGERP-3A-EXPT
-                       NOT-INTEGERP-4a-expt
-                       NOT-INTEGERP-1a-EXPT
-                       NOT-INTEGERP-2a-EXPT
-                       default-minus)
+                       acl2::default-expt-2
+                       acl2::default-less-than-2
+                       acl2::default-less-than-1
+                       acl2::acl2-numberp-x
+                       acl2::rationalp-x
+                       acl2::NOT-INTEGERP-3A-EXPT
+                       acl2::NOT-INTEGERP-4a-expt
+                       acl2::NOT-INTEGERP-1a-EXPT
+                       acl2::NOT-INTEGERP-2a-EXPT
+                       acl2::default-minus)
            :use (converse-48
                  (:instance converse-39 (i (i-witness rho m n table))
                             (j (j-witness rho m n table)))
@@ -3869,8 +3878,8 @@
                                    jared-disables-2
                                    jared-disables-3
                                    jared-disables-4
-                                   default-expt-2
-                                   default-minus
+                                   acl2::default-expt-2
+                                   acl2::default-minus
                                    ;natp
                                    ;abs
                                    ))
@@ -3920,8 +3929,8 @@
                        jared-disables-2
                        jared-disables-3
                        jared-disables-4
-                       default-expt-2
-                       default-minus
+                       acl2::default-expt-2
+                       acl2::default-minus
                        )
            )))
 

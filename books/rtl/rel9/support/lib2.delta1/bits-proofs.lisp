@@ -290,7 +290,7 @@
                                                                             (x (logand i (+ -1 (expt 2 n))))
                                                                             (y (mod i (expt 2 n)))
                                                                             (n n))))
-                                             ("Subgoal 1.1" :in-theory (enable binary-logand))))
+                                             ("Subgoal 1.1" :in-theory (enable acl2::binary-logand))))
                             
 
                                    )
@@ -307,7 +307,7 @@
                                          (mod (FL (* X (EXPT 2 (* -1 J))))
                                               (EXPT 2 (+ 1 I (* -1 J))))))
                          :hints (("Goal" :in-theory (e/d (mod
-                                                          acl2::expt-minus) 
+                                                          expt-minus) 
                                                          ())))))
 
 
@@ -323,7 +323,7 @@
                                                  (+ -1 (EXPT 2 (+ 1 I (* -1 J)))))
                                          (mod (FL (* X (EXPT 2 (* -1 J))))
                                               (EXPT 2 (+ 1 I (* -1 J))))))
-                         :hints (("Goal" :in-theory (e/d (mod acl2::expt-minus
+                         :hints (("Goal" :in-theory (e/d (mod expt-minus
                                                               logand-ones-g)
                                                          ())))))
 

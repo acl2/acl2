@@ -77,11 +77,11 @@
 
 (defthm logeqv-with-non-integer-arg
   (implies (not (integerp i))
-           (and (equal (binary-logeqv i j)
+           (and (equal (acl2::binary-logeqv i j)
                        (lognot j))
-                (equal (binary-logeqv j i)
+                (equal (acl2::binary-logeqv j i)
                        (lognot j))))
-  :hints (("goal" :in-theory (enable binary-logeqv))))
+  :hints (("goal" :in-theory (enable acl2::binary-logeqv))))
 
 (defthm logeqv-self
   (equal (logeqv x x) -1)

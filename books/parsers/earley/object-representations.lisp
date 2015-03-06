@@ -25,7 +25,7 @@
 (include-book "std/util/define" :dir :system)
 ;(include-book "countereg-gen/top" :dir :system)
 (include-book "defprimitive")
-(include-book "regex/regex-ui" :dir :system)
+(include-book "projects/regex/regex-ui" :dir :system)
 
 ;(acl2s-defaults :set testing-enabled t)
 

@@ -1658,7 +1658,7 @@
                            (+ (expt 2 (- e p))
                               (expt 2 (- e p)))))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (disable |(< (expt x n) (expt x m))| NORMALIZE-FACTORS-GATHER-EXPONENTS abs))))
+  :hints (("Goal" :in-theory #!acl2(disable |(< (expt x n) (expt x m))| NORMALIZE-FACTORS-GATHER-EXPONENTS abs))))
 
 (local-defthm rq-34
   (implies (and (rationalp a)
@@ -2005,7 +2005,7 @@
                  (+ (expt 2 (1+ e)) (expt 2 (- (1+ e) p))))))
   :rule-classes ()
   :hints (("Goal" :use (rq-47)
-                  :in-theory (disable NORMALIZE-FACTORS-GATHER-EXPONENTS SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<
+                  :in-theory #!acl2(disable NORMALIZE-FACTORS-GATHER-EXPONENTS SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<
                                       EXPT-IS-INCREASING-FOR-BASE->-1 |(< (expt x n) (expt x m))|))))
 
 (local-defthm rq-49

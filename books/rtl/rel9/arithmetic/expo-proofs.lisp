@@ -822,7 +822,7 @@
   (equal (expt (* a b) i)
          (* (expt a i) (expt b i)))
   :hints
-  (("Goal" :in-theory (enable distributivity-of-expt-over-*))))
+  (("Goal" :in-theory (enable acl2::distributivity-of-expt-over-*))))
 (defthm my-exponents-add
   (implies (and (not (equal 0 r))
                 (acl2-numberp r)

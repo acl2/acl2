@@ -41,7 +41,7 @@
 ;; The definition of nonneg-int-gcd often interacts with the rewrite rule,
 ;; commutativity-of-nonneg-int-gcd, to cause the rewriter to loop and stack
 ;; overflow. 
-(local (in-theory (disable commutativity-of-nonneg-int-gcd)))
+(local (in-theory (disable acl2::commutativity-of-nonneg-int-gcd)))
 
 (local
  (defthm lemma-1
@@ -58,20 +58,20 @@
                  (> x 0)
                  (integerp y)
                  (equal (* x y) z))
-            (equal (nonneg-int-mod z x) 0))
+            (equal (acl2::nonneg-int-mod z x) 0))
    :rule-classes nil))
 
 (local
  (defthm lemma-3
    (implies (and (rationalp x)
                  (integerp (* 2 x x)))
-            (equal (nonneg-int-mod (* 2 (abs (numerator x)))
+            (equal (acl2::nonneg-int-mod (* 2 (abs (numerator x)))
                                    (denominator x))
                    0))
    :hints (("Goal"
             :in-theory (disable abs)
             :use ((:instance
-                   Divisor-of-product-divides-factor
+                   acl2::Divisor-of-product-divides-factor
 	           (x (* 2 (abs (numerator x))))
                    (y (abs (numerator x)))
                    (z (denominator x)))
@@ -81,22 +81,22 @@
                    (x (denominator x))
                    (y (* (denominator x)(numerator (* 2 x x))))
 		   (z (* 2 (abs (numerator x))(abs (numerator x)))))
-		  Nonneg-int-gcd-numerator-denominator)))))
+		  acl2::Nonneg-int-gcd-numerator-denominator)))))
 
 (local
  (defthm lemma-4
    (implies (and (rationalp x)
                  (integerp (* 2 x x)))
-            (equal (nonneg-int-mod 2 (denominator x))
+            (equal (acl2::nonneg-int-mod 2 (denominator x))
                    0))
    :hints (("Goal"
             :in-theory (disable abs)
             :use ((:instance
-                   Divisor-of-product-divides-factor
+                   acl2::Divisor-of-product-divides-factor
 	           (x 2)
                    (y (abs (numerator x)))
                    (z (denominator x)))
-		  Nonneg-int-gcd-numerator-denominator)))))
+		  acl2::Nonneg-int-gcd-numerator-denominator)))))
 
 (local
  (defthm lemma-5
@@ -107,7 +107,7 @@
    :rule-classes nil
    :hints (("Goal"
             :use (:instance
-                  Divisor-<=
+                  acl2::Divisor-<=
                   (d (denominator x))
                   (n 2))))))
 
@@ -127,7 +127,7 @@
    (implies (and (rationalp x)
                  (integerp (* 2 x x))
                  (equal (denominator x) 2))
-            (equal (nonneg-int-mod (* (abs (numerator x))(abs (numerator x)))
+            (equal (acl2::nonneg-int-mod (* (abs (numerator x))(abs (numerator x)))
                                    2)
                    0))
    :hints (("Goal"
@@ -143,16 +143,16 @@
    (implies (and (rationalp x)
                  (integerp (* 2 x x))
                  (equal (denominator x) 2))
-            (equal (nonneg-int-mod (abs (numerator x))
+            (equal (acl2::nonneg-int-mod (abs (numerator x))
                                    2)
                    0))
    :hints (("Goal"
             :use ((:instance
-                   Divisor-of-product-divides-factor
+                   acl2::Divisor-of-product-divides-factor
                    (x (abs (numerator x)))
                    (y (abs (numerator x)))
                    (z (denominator x)))
-                  Nonneg-int-gcd-numerator-denominator
+                  acl2::Nonneg-int-gcd-numerator-denominator
                   lemma-7)))))
 
 (defthm x-2xx
@@ -162,5 +162,5 @@
   :hints (("Goal"
 	   :in-theory (disable abs)
 	   :use (lemma-5
-		 Nonneg-int-gcd-numerator-denominator)))
+		 acl2::Nonneg-int-gcd-numerator-denominator)))
   :rule-classes ())

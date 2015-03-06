@@ -43,3 +43,4 @@
 (ql:quickload :hunchentoot)
 (ql:quickload :uiop)
 (ql:quickload :html-template)
+(ql:quickload :shellpool)

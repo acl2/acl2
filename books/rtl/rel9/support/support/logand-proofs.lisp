@@ -31,7 +31,7 @@
 (local (include-book "lognot"))
 (local (include-book "../../arithmetic/top"))
 
-;(in-theory (disable binary-logand))
+;(in-theory (disable acl2::binary-logand))
 
 (defthm logand-with-zero
   (equal (logand 0 j) 0)
@@ -266,7 +266,7 @@
            (equal (logand i j)
               (+ (* 2 (logand (fl (* 1/2 i)) (fl (* 1/2 j))))
                  (logand (mod i 2) (mod j 2)))))
-  :rule-classes  ((:definition :controller-alist ((binary-logand t t))))
+  :rule-classes  ((:definition :controller-alist ((acl2::binary-logand t t))))
   :hints (("goal" :in-theory (enable logand))))
 
 (defthm fl-logand-by-2
@@ -656,7 +656,7 @@
                   (+ (* 2 (logand (fl (/ x 2)) (fl (/ y 2))))
                      (logand (mod x 2) (mod y 2)))))
   :hints (("Goal" :in-theory (enable LOGAND-DEF)))
-  :rule-classes ((:definition :controller-alist ((binary-logand t t)))))
+  :rule-classes ((:definition :controller-alist ((acl2::binary-logand t t)))))
 
 
 (defthm logand-bnd

@@ -138,7 +138,7 @@
            (equal (logxor i j)
                   (+ (* 2 (logxor (fl (* 1/2 i)) (fl (* 1/2 j))))
                      (logxor (mod i 2) (mod j 2)))))
-  :rule-classes ((:definition :controller-alist ((binary-logxor t t))))
+  :rule-classes ((:definition :controller-alist ((acl2::binary-logxor t t))))
   :hints (("goal" :use (:instance fl-mod-equal 
                                   (x (logxor i j))
                                   (y (+ (* 2 (logxor (fl (* 1/2 i)) (fl (* 1/2 j))))
@@ -191,7 +191,7 @@
                   (+ (* 2 (logxor (fl (/ x 2)) (fl (/ y 2))))
                      (logxor (mod x 2) (mod y 2)))))
   :hints (("Goal" :in-theory (enable logxor-def)))
-  :rule-classes ((:definition :controller-alist ((binary-logxor t t)))))
+  :rule-classes ((:definition :controller-alist ((acl2::binary-logxor t t)))))
 
 ;gen?
 (defthm logxor-upper-bound-tight

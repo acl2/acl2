@@ -85,11 +85,15 @@
  now that it is possible to move the system books directory after
  certifying its books (see @(see note-7-1)).</p>
 
+ <p>The directory @('regex/') has been moved to @('projects/regex/').</p>
+
  <h2>New Libraries and Documentation</h2>
 
  <p>David Russinoff has contributed a new version of the rtl library:
  @('rtl/rel10/').  This time the new version depends on a previous version,
- namely, @('rtl/rel9/').</p>
+ namely, @('rtl/rel9/').  The new @('rtl/rel10/') library has, in turn, been
+ adapted to reside in a new @('\"RTL\"') package; the result is
+ @('rtl/rel11/').</p>
 
 ")
 
@@ -894,7 +898,8 @@
  @('DEFSTRUCTURE') to resolve a name conflicts with the COI books.</p>
 
  <p>The @(see bitops) library's @('sign-extend') function has been renamed to
- @(see fast-logext) to resolve a name conflict with the @(see rtl) library.</p>
+ @(see fast-logext) to resolve a name conflict with the @(see rtl)
+ library.</p>
 
  <p>The new @('tools/book-conflicts') tool can be used to detect name conflicts
  between books.  See its @('README') file for more information.</p>
@@ -1055,8 +1060,8 @@
 
  <h5>New Documentation</h5>
 
- <p>The @(see cowles), @(see arithmetic-1), and @(see rtl) libraries now have
- some XDOC documentation.</p>
+ <p>The @(see cowles), @(see arithmetic-1), and @(see rtl) libraries now
+ have some XDOC documentation.</p>
 
  <p>There are now some preliminary recommendations for @(see best-practices) for
  developing ACL2 books.</p>

@@ -99,7 +99,7 @@
                 (rationalp z))
                 (equal (EQUAL 0 (+ (* X y) (* w y z)))
                        (EQUAL 0 (+ x (* w z)))))
-  :hints (("Goal" :in-theory (disable CANCEL_TIMES-EQUAL-CORRECT)
+  :hints (("Goal" :in-theory (disable ACL2::CANCEL_TIMES-EQUAL-CORRECT)
            :use (:instance  mult-both-sides-of-equal (c y) (a 0) (b (+ x (* w z)))))))
                        
 (defthm edecode-eencode

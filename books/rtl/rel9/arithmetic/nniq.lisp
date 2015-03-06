@@ -323,18 +323,18 @@
                                (nonnegative-integer-quotient x y)))) 
 
              (defthm 
-               Numerator-minus
+               acl2::Numerator-minus
                (equal (numerator (- i))
                       (- (numerator i))))
 
              (defthm
-               Denominator-unary-minus
+               acl2::Denominator-unary-minus
                (implies (rationalp x)
                         (equal (denominator (- x))
                                (denominator x))))
 
              (defthm 
-               Denominator-plus
+               acl2::Denominator-plus
                (implies (and (rationalp r)
                              (integerp i))
                         (equal (denominator (+ i r))
@@ -366,15 +366,15 @@
 (defthm Numerator-minus-eric
   (equal (numerator (* -1 i))
          (* -1 (numerator i)))
-  :hints (("Goal" :in-theory (disable Numerator-minus) 
-           :use Numerator-minus)))
+  :hints (("Goal" :in-theory (disable acl2::Numerator-minus) 
+           :use acl2::Numerator-minus)))
 
 (defthm Denominator-unary-minus-eric
   (implies (rationalp x)
            (equal (denominator (* -1 x))
                   (denominator x)))
-  :hints (("Goal" :in-theory (disable Denominator-unary-minus) 
-           :use Denominator-unary-minus)))
+  :hints (("Goal" :in-theory (disable acl2::Denominator-unary-minus) 
+           :use acl2::Denominator-unary-minus)))
 
 
 
@@ -475,9 +475,9 @@
                              (not (integerp x)))
                         (> (+ 1 (nonnegative-integer-quotient (numerator x) (denominator x))) ;the ceiling of x
                            x))
-               :hints (("Goal" :in-theory (disable QUOTIENT-UPPER-BOUND
+               :hints (("Goal" :in-theory (disable ACL2::QUOTIENT-UPPER-BOUND
                                                    NONNEGATIVE-INTEGER-QUOTIENT)
-                        :use (:instance QUOTIENT-UPPER-BOUND (x (numerator x)) (y (denominator x))))))
+                        :use (:instance ACL2::QUOTIENT-UPPER-BOUND (x (numerator x)) (y (denominator x))))))
              )
 
 
