@@ -794,7 +794,7 @@
   #-acl2-loop-only
   (when (and (consp form)
              (eq (car form) 'defconst) ; optimization
-             (f-get-global 'boot-strap-flg state))
+             (f-get-global 'boot-strap-flg *the-live-state*))
     (case-match form
       (('defconst name ('quote val) . &)
        (assert (boundp name))
