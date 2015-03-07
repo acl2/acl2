@@ -4805,7 +4805,7 @@
 
 ; Warning: Keep this in sync with default-state-vars.
 
-  ((safe-mode . temp-touchable-vars)
+  ((safe-mode boot-strap-flg . temp-touchable-vars)
    .
    (guard-checking-on ld-skip-proofsp
                       temp-touchable-fns . parallel-execution-enabled))
@@ -4814,6 +4814,7 @@
 (defmacro default-state-vars
   (state-p &key
            (safe-mode 'nil safe-mode-p)
+           (boot-strap-flg 'nil boot-strap-flg-p)
            (temp-touchable-vars 'nil temp-touchable-vars-p)
            (guard-checking-on 't guard-checking-on-p)
            (ld-skip-proofsp 'nil ld-skip-proofsp-p)
@@ -4833,6 +4834,10 @@
                 ,(if safe-mode-p
                      safe-mode
                    '(f-get-global 'safe-mode state))
+                :boot-strap-flg
+                ,(if boot-strap-flg-p
+                     boot-strap-flg
+                   '(f-get-global 'boot-strap-flg state))
                 :temp-touchable-vars
                 ,(if temp-touchable-vars-p
                      temp-touchable-vars

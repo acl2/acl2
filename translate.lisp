@@ -918,6 +918,8 @@
 
 (defun acl2-system-namep (name wrld)
 
+; Warning: keep this in sync with acl2-system-namep-state.
+
 ; Name is a name defined in wrld.  We determine whether it is one of ours or is
 ; user-defined.
 
@@ -927,6 +929,13 @@
 
   (cond ((global-val 'boot-strap-flg wrld) t)
         (t (getprop name 'predefined nil 'current-acl2-world wrld))))
+
+(defun acl2-system-namep-state (name state)
+
+; Warning: keep this in sync with acl2-system-namep.  See comments there.
+
+  (cond ((f-get-global 'boot-strap-flg state) t)
+        (t (getprop name 'predefined nil 'current-acl2-world (w state)))))
 
 #+acl2-loop-only
 (encapsulate
@@ -4213,7 +4222,14 @@
                                    'current-acl2-world wrld)
                           alist wrld
                           nil ; user-stobj-alist
-                          (not (global-val 'boot-strap-flg wrld)) ; safe-mode
+                          (not (access state-vars state-vars
+
+; Note that if state-vars comes from (default-state-vars nil), then this flag
+; is nil so safe-mode is t, which is acceptable, merely being needlessly
+; conservative when the actual state global 'boot-strap-flg is t and hence
+; safe-mode could have been nil here.
+
+                                       :boot-strap-flg)) ; safe-mode
                           gc-off nil nil)
                          (cond (erp
                                 (er-cmp ctx
@@ -5192,10 +5208,9 @@
 ; We are in a context where 'state is a member of a list of formals.  Is this
 ; OK?
 
-  (cond ((and (not (global-val 'boot-strap-flg wrld))
-              (not (cdr (assoc-eq :state-ok
-                                  (table-alist 'acl2-defaults-table
-                                               wrld)))))
+  (cond ((not (cdr (assoc-eq :state-ok
+                             (table-alist 'acl2-defaults-table
+                                          wrld))))
          (msg "The variable symbol STATE should not be used as a formal ~
                parameter of a defined function unless you are aware of its ~
                unusual status and the restrictions enforced on its use.  See ~
@@ -5284,13 +5299,13 @@
         ((and (member-eq new-type '(function const stobj macro
                                              constrained-function))
               (equal *main-lisp-package-name* (symbol-package-name name))
-              (not (global-val 'boot-strap-flg w))
               (or
 
 ; Only definitions can be redefined from :program mode to :logic mode.
 
                (not (eq new-type 'function))
-               (not (eq (logical-name-type name w t) 'function))))
+               (not (eq (logical-name-type name w t) 'function)))
+              (not (global-val 'boot-strap-flg w)))
          (er-cmp ctx
                  "Symbols in the main Lisp package, such as ~x0, may not be ~
                   defined or constrained."
@@ -8590,6 +8605,15 @@
                  (and (eq (car x) 'makunbound-global)
                       (or (always-boundp-global (cadr (cadr x)))
                           (member-eq (cadr (cadr x)) *brr-globals*)))
+
+; It is tempting to get the following value of boot-strap from state-vars.  But
+; some calls of translate11 supply state-vars using (default-state-vars nil),
+; which sets field :boot-strap-flg to nil.  So we pay the price of checking the
+; boot-strap-flg directly in wrld.  This seems a relatively minor deal, since
+; presumably makunbound-global and put-global are not called by users all that
+; often.  If performance becomes an issue, we can try deal with the issue at
+; that point.
+
                  (and (global-val 'boot-strap-flg wrld)
                       (not (or (always-boundp-global (cadr (cadr x)))
                                (member-eq (cadr (cadr x)) *brr-globals*))))))

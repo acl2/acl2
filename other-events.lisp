@@ -354,7 +354,7 @@
   (declare (ignore name))
   #-acl2-loop-only
   (cond
-   ((global-val 'boot-strap-flg wrld)
+   ((f-get-global 'boot-strap-flg state)
 
 ; We want the symbol-value of name to be EQ to what is returned, especially to
 ; avoid duplication of large values.  Note that starting with Version_7.0, the
@@ -435,8 +435,8 @@
 ;   :rule-classes nil)
 
 ; The following comment is no longer relevant, because the #-acl2-loop-only
-; code above for the boot-strap case allows us to assume here that (global-val
-; 'boot-strap-flg wrld) is nil.
+; code above for the boot-strap case allows us to assume here that
+; (f-get-global 'boot-strap-flg state) is nil.
 
 ;   However, it is not practical to bind safe-mode to t during the boot-strap
 ;   with user::*fast-acl2-gcl-build*, because we have not yet compiled the *1*
@@ -444,7 +444,7 @@
 ;   allow raw Lisp calls, avoiding safe mode during the boot-strap, even for
 ;   other lisps.
 
-             t ; (not (global-val 'boot-strap-flg wrld))
+             t ; (not (f-get-global 'boot-strap-flg state))
              ))
            (simple-translate-and-eval form nil
                                       nil
@@ -880,7 +880,7 @@
                                (t (er soft ctx "~@0" tbody))))
                    ((redundant-defmacrop name args tguard tbody wrld1)
                     (cond ((and (not (f-get-global 'in-local-flg state))
-                                (not (global-val 'boot-strap-flg (w state)))
+                                (not (f-get-global 'boot-strap-flg state))
                                 (not (f-get-global 'redundant-with-raw-code-okp
                                                    state))
                                 (member-eq name
@@ -1901,7 +1901,7 @@
 ; Packages).
 
   (let ((package-entry
-         (and (not (global-val 'boot-strap-flg w))
+         (and (not (f-get-global 'boot-strap-flg state))
               (find-package-entry
                name
                (global-val 'known-package-alist w)))))
@@ -2002,7 +2002,7 @@
 ; In order to build a profiling image for GCL, we have observed a need to avoid
 ; going into safe-mode when building the system.
 
-          (not (global-val 'boot-strap-flg w))))
+          (not (f-get-global 'boot-strap-flg state))))
         (er-let*
          ((pair (simple-translate-and-eval form nil nil
                                            "The second argument to defpkg"
@@ -13948,7 +13948,7 @@
      (chk-book-name user-book-name full-book-name ctx state)
      (revert-world-on-error
       (cond
-       ((and (not (global-val 'boot-strap-flg wrld0))
+       ((and (not (f-get-global 'boot-strap-flg state))
              full-book-name
              (assoc-equal full-book-name include-book-alist0))
         (stop-redundant-event ctx state))
@@ -14014,7 +14014,7 @@
 ; two book names differ).
 
               ((and (not (equal full-book-name cert-full-book-name))
-                    (not (global-val 'boot-strap-flg wrld2))
+                    (not (f-get-global 'boot-strap-flg state))
                     cert-full-book-name
                     (assoc-equal cert-full-book-name include-book-alist0))
 
@@ -18089,7 +18089,7 @@
 (defun chk-unrestricted-guards-for-user-fns (names wrld ctx state)
   (cond
    ((null names) (value nil))
-   ((or (acl2-system-namep (car names) wrld)
+   ((or (acl2-system-namep-state (car names) state)
         (equal (guard (car names) nil wrld) *t*))
     (chk-unrestricted-guards-for-user-fns (cdr names) wrld ctx state))
    (t (er soft ctx
@@ -26112,7 +26112,7 @@
                              attachments~@0, but ~x1 is in :PROGRAM mode.~@2"
                             unless-ttag f see-doc))))
                 ((and (member-eq f *unattachable-primitives*)
-                      (not (global-val 'boot-strap-flg wrld)))
+                      (not (f-get-global 'boot-strap-flg state)))
                  (er soft ctx
                      "It is illegal to add or remove an attachment to the ~
                       function symbol ~x0 because it is given special ~
@@ -26447,7 +26447,7 @@
                     ~x2): ~x3."
                    t nil :cycles skip-checks))
               ((and skip-checks
-                    (not (or (global-val 'boot-strap-flg wrld)
+                    (not (or (f-get-global 'boot-strap-flg state)
                              (ttag wrld))))
                (er soft ctx
                    "It is illegal to specify a non-nil value of :SKIP-CHECKS ~
@@ -29053,7 +29053,7 @@
        (cond ((car raw-result)
               (silent-error state))
              (t (er-let* ((expansion1
-                           (if (global-val 'boot-strap-flg wrld)
+                           (if (f-get-global 'boot-strap-flg state)
                                (value expansion1b)
                              (make-include-books-absolute
                               expansion1b

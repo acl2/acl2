@@ -6197,7 +6197,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                     ',form))))
                              (t ,form)))))
                `(state-global-let*
-                 ((safe-mode (not (global-val 'boot-strap-flg (w state)))))
+                 ((safe-mode (not (f-get-global 'boot-strap-flg state))))
                  (value ,form))))))
 
 #+acl2-loop-only
@@ -10651,10 +10651,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (assert (not (assoc-equal name *package-alist*)))
       (let* ((incomplete-p t)
              (saved-ever-known-package-alist *ever-known-package-alist*)
-             (wrld (w *the-live-state*))
-             (not-boot-strap (not (getprop 'boot-strap-flg 'global-value nil
-                                           'current-acl2-world
-                                           wrld))))
+             (not-boot-strap (not (f-get-global 'boot-strap-flg *the-live-state*))))
         (setq *defpkg-virgins*
               (remove1-equal name *defpkg-virgins*))
         (unwind-protect
@@ -10673,7 +10670,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                  (strip-cars
                                   (symbol-value 'acl2::*load-compiled-stack*))
                                  (getprop 'include-book-path 'global-value
-                                          nil 'current-acl2-world wrld)))
+                                          nil 'current-acl2-world
+                                          (w *the-live-state*))))
                            :defpkg-event-form event-form)
                           *ever-known-package-alist*))
               (when proposed-imports
@@ -12941,6 +12939,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (acl2p-checkpoints-for-summary . nil)
     (axiomsp . nil)
     (bddnotes . nil)
+    (boot-strap-flg .
+
+; Keep this state global in sync with world global of the same name.  We expect
+; both this and the corresponding world global both to be constant, except when
+; both are changed from t to nil during evaluation of exit-boot-strap-mode.
+; The state global can be useful for avoiding potentially slow calls of
+; getprop, for example as noticed by Sol Swords in function make-event-fn2.
+; While we could probably fix many or most such calls by suitable binding of
+; the world global, it seems simple and reasonable to record the value in this
+; corresponding state global.
+
+                    t)
     (certify-book-info .
 
 ; Certify-book-info is non-nil when certifying a book, in which case it is a
@@ -15070,6 +15080,353 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (and (symbolp channel)
                               (state-p1 state-state))))
   (open-input-channel-any-p1 channel state-state))
+
+; Here we implement acl2-defaults-table, which is used for handling the default
+; defun-mode and other defaults.
+
+; WARNING: If you add a new key to acl-defaults-table, and hence a new set-
+; function for smashing the acl2-defaults-table at that key, then be sure to
+; add that set- function to the list in chk-embedded-event-form!  E.g., when we
+; added the :irrelevant-formals-ok key we also defined
+; set-irrelevant-formals-ok and then added it to the list in
+; chk-embedded-event-form.  Also add similarly to :DOC acl2-defaults-table and
+; to primitive-event-macros.
+
+(defun non-free-var-runes (runes free-var-runes-once free-var-runes-all acc)
+  (declare (xargs :guard (and (true-listp runes)
+                              (true-listp free-var-runes-once)
+                              (true-listp free-var-runes-all))))
+  (if (endp runes)
+      acc
+    (non-free-var-runes (cdr runes)
+                        free-var-runes-once free-var-runes-all
+                        (if (or (member-equal (car runes)
+                                              free-var-runes-once)
+                                (member-equal (car runes)
+                                              free-var-runes-all))
+                            acc
+                          (cons (car runes) acc)))))
+
+(defun free-var-runes (flg wrld)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (cond
+   ((eq flg :once)
+    (global-val 'free-var-runes-once wrld))
+   (t ; (eq flg :all)
+    (global-val 'free-var-runes-all wrld))))
+
+(defthm natp-position-ac ; for admission of absolute-pathname-string-p
+  (implies (and (integerp acc)
+                (<= 0 acc))
+           (or (equal (position-ac item lst acc) nil)
+               (and (integerp (position-ac item lst acc))
+                    (<= 0 (position-ac item lst acc)))))
+  :rule-classes :type-prescription)
+
+; The following constants and the next two functions, pathname-os-to-unix and
+; pathname-unix-to-os, support the use of Unix-style filenames in ACL2 as
+; described in the Essay on Pathnames in interface-raw.lisp.
+
+; The following constants represent our decision to use Unix-style pathnames
+; within ACL2.  See the Essay on Pathnames in interface-raw.lisp.
+
+(defconst *directory-separator*
+  #\/)
+
+(defconst *directory-separator-string*
+  (string *directory-separator*))
+
+(defmacro os-er (os fnname)
+  `(illegal ,fnname
+    "The case where (os (w state)) is ~x0 has not been handled by the ~
+     ACL2 implementors for the function ~x1.  Please inform them of this ~
+     problem."
+    (list (cons #\0 ,os)
+          (cons #\1 ,fnname))))
+
+(defun os (wrld)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (global-val 'operating-system wrld))
+
+(defun absolute-pathname-string-p (str directoryp os)
+
+; Str is a Unix-style pathname.  However, on Windows, Unix-style absolute
+; pathnames may start with a prefix such as "c:"; see mswindows-drive.
+
+; Directoryp is non-nil when we require str to represent a directory in ACL2
+; with Unix-style syntax, returning nil otherwise.
+
+; Function expand-tilde-to-user-home-dir should already have been applied
+; before testing str with this function.
+
+  (declare (xargs :guard (stringp str)))
+  (let ((len (length str)))
+    (and (< 0 len)
+         (cond ((and (eq os :mswindows) ; hence os is not nil
+                     (let ((pos-colon (position #\: str))
+                           (pos-sep (position *directory-separator* str)))
+                       (and pos-colon
+                            (eql pos-sep (1+ pos-colon))))
+                     t))
+               ((eql (char str 0) *directory-separator*)
+                t)
+               (t ; possible hard error for ~ or ~/...
+                (and (eql (char str 0) #\~)
+
+; Note that a leading character of `~' need not get special treatment by
+; Windows.  See also expand-tilde-to-user-home-dir.
+
+                     (not (eq os :mswindows))
+                     (prog2$ (and (or (eql 1 len)
+                                      (eql (char str 1)
+                                           *directory-separator*))
+                                  (hard-error 'absolute-pathname-string-p
+                                              "Implementation error: Forgot ~
+                                               to apply ~
+                                               expand-tilde-to-user-home-dir ~
+                                               before calling ~
+                                               absolute-pathname-string-p. ~
+                                               Please contact the ACL2 ~
+                                               implementors."
+                                              nil))
+                             t))))
+         (if directoryp
+             (eql (char str (1- len)) *directory-separator*)
+           t))))
+
+(defun illegal-ruler-extenders-values (x wrld)
+  (declare (xargs :guard (and (symbol-listp x)
+                              (plist-worldp wrld))))
+  (cond ((endp x) nil)
+        ((or (eq (car x) :lambdas)
+             (function-symbolp (car x) wrld))
+         (illegal-ruler-extenders-values (cdr x) wrld))
+        (t (cons (car x)
+                 (illegal-ruler-extenders-values (cdr x) wrld)))))
+
+(defun table-alist (name wrld)
+
+; Return the named table as an alist.
+
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp wrld))))
+  (getprop name 'table-alist nil 'current-acl2-world wrld))
+
+(defun ruler-extenders-msg-aux (vals return-last-table)
+
+; We return the intersection of vals with the symbols in the cdr of
+; return-last-table.
+
+  (declare (xargs :guard (and (symbol-listp vals)
+                              (symbol-alistp return-last-table))))
+  (cond ((endp return-last-table) nil)
+        (t (let* ((first-cdr (cdar return-last-table))
+                  (sym (if (consp first-cdr) (car first-cdr) first-cdr)))
+             (cond ((member-eq sym vals)
+                    (cons sym
+                          (ruler-extenders-msg-aux vals
+                                                   (cdr return-last-table))))
+                   (t (ruler-extenders-msg-aux vals
+                                               (cdr return-last-table))))))))
+
+(defun ruler-extenders-msg (x wrld)
+
+; This message, if not nil, is passed to chk-ruler-extenders.
+
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (symbol-alistp (fgetprop 'return-last-table
+                                                       'table-alist
+                                                       nil wrld)))))
+  (cond ((member-eq x '(:ALL :BASIC :LAMBDAS))
+         nil)
+        ((and (consp x)
+              (eq (car x) 'quote))
+         (msg "~x0 has a superfluous QUOTE, which you may wish to remove"
+              x))
+        ((not (symbol-listp x))
+         (msg "~x0 is not a true list of symbols" x))
+        (t (let* ((vals (illegal-ruler-extenders-values x wrld))
+                  (suspects (ruler-extenders-msg-aux
+                             vals
+                             (table-alist 'return-last-table wrld))))
+             (cond (vals
+                    (msg "~&0 ~#0~[is not a~/are not~] legal ruler-extenders ~
+                          value~#0~[~/s~].~@1"
+                         vals
+                         (cond (suspects
+                                (msg "  Note in particular that ~&0 ~#0~[is a ~
+                                      macro~/are macros~] that may expand to ~
+                                      calls of ~x1, which you may want to ~
+                                      specify instead."
+                                     suspects 'return-last))
+                               (t ""))))
+                   (t nil))))))
+
+(defmacro chk-ruler-extenders (x soft ctx wrld)
+  (let ((err-str "The proposed ruler-extenders is illegal because ~@0."))
+    `(let ((ctx ,ctx)
+           (err-str ,err-str)
+           (msg (ruler-extenders-msg ,x ,wrld)))
+       (cond (msg ,(cond ((eq soft 'soft) `(er soft ctx err-str msg))
+                         (t `(illegal ctx err-str (list (cons #\0 msg))))))
+             (t ,(cond ((eq soft 'soft) '(value t))
+                       (t t)))))))
+
+(defmacro fixnum-bound () ; most-positive-fixnum in Allegro CL and many others
+  (1- (expt 2 29)))
+
+(defconst *default-step-limit*
+
+; The defevaluator event near the top of community book
+; books/meta/meta-plus-equal.lisp, submitted at the top level without any
+; preceding events, takes over 40,000 steps.  Set the following to 40000 in
+; order to make that event quickly exceed the default limit.
+
+   (fixnum-bound))
+
+(defun include-book-dir-alist-entry-p (key val os)
+  (declare (xargs :guard t))
+  (and (keywordp key)
+       (stringp val)
+       (absolute-pathname-string-p val t os)))
+
+(defun include-book-dir-alistp (x os)
+  (declare (xargs :guard t))
+  (cond ((atom x) (null x))
+        (t (and (consp (car x))
+                (include-book-dir-alist-entry-p (caar x) (cdar x) os)
+                (include-book-dir-alistp (cdr x) os)))))
+
+(table acl2-defaults-table nil nil
+
+; Warning: If you add or delete a new key, there will probably be a change you
+; should make to a list in chk-embedded-event-form.  (Search there for
+; add-include-book-dir, and consider keeping that list alphabetical, just for
+; convenience.)
+
+; Developer suggestion: The following form provides an example of how to add a
+; new key to the table guard, in this case,
+
+; (setf (cadr (assoc-eq 'table-guard
+;                       (get 'acl2-defaults-table *current-acl2-world-key*)))
+;       `(if (eq key ':new-key)
+;            (if (eq val 't) 't (symbol-listp val))
+;          ,(cadr (assoc-eq 'table-guard
+;                           (get 'acl2-defaults-table
+;                                *current-acl2-world-key*)))))
+
+       :guard
+       (cond
+        ((eq key :defun-mode)
+         (member-eq val '(:logic :program)))
+        ((eq key :verify-guards-eagerness)
+         (member val '(0 1 2)))
+        ((eq key :enforce-redundancy)
+         (member-eq val '(t nil :warn)))
+        #+acl2-legacy-doc
+        ((eq key :ignore-doc-string-error)
+         (member-eq val '(t nil :warn)))
+        ((eq key :compile-fns)
+         (member-eq val '(t nil)))
+        ((eq key :measure-function)
+         (and (symbolp val)
+              (function-symbolp val world)
+
+; The length expression below is just (arity val world) but we don't have arity
+; yet.
+
+              (= (length (getprop val 'formals t 'current-acl2-world world))
+                 1)))
+        ((eq key :well-founded-relation)
+         (and (symbolp val)
+              (assoc-eq val (global-val 'well-founded-relation-alist world))))
+        ((eq key :bogus-defun-hints-ok)
+         (member-eq val '(t nil :warn)))
+        ((eq key :bogus-mutual-recursion-ok)
+         (member-eq val '(t nil :warn)))
+        ((eq key :irrelevant-formals-ok)
+         (member-eq val '(t nil :warn)))
+        ((eq key :ignore-ok)
+         (member-eq val '(t nil :warn)))
+        ((eq key :bdd-constructors)
+
+; We could insist that the symbols are function symbols by using
+; (all-function-symbolps val world),
+; but perhaps one wants to set the bdd-constructors even before defining the
+; functions.
+
+         (symbol-listp val))
+        ((eq key :ttag)
+         (or (null val)
+             (and (keywordp val)
+                  (not (equal (symbol-name val) "NIL")))))
+        ((eq key :state-ok)
+         (member-eq val '(t nil)))
+
+; Rockwell Addition: See the doc string associated with
+; set-let*-abstractionp.
+
+        ((eq key :let*-abstractionp)
+         (member-eq val '(t nil)))
+
+        ((eq key :backchain-limit)
+         (and (true-listp val)
+              (equal (length val) 2)
+              (or (null (car val))
+                  (natp (car val)))
+              (or (null (cadr val))
+                  (natp (cadr val)))))
+        ((eq key :step-limit)
+         (and (natp val)
+              (<= val *default-step-limit*)))
+        ((eq key :default-backchain-limit)
+         (and (true-listp val)
+              (equal (length val) 2)
+              (or (null (car val))
+                  (natp (car val)))
+              (or (null (cadr val))
+                  (natp (cadr val)))))
+        ((eq key :rewrite-stack-limit)
+         (unsigned-byte-p 29 val))
+        ((eq key :case-split-limitations)
+
+; In set-case-split-limitations we permit val to be nil and default that
+; to (nil nil).
+
+         (and (true-listp val)
+              (equal (length val) 2)
+              (or (null (car val))
+                  (natp (car val)))
+              (or (null (cadr val))
+                  (natp (cadr val)))))
+        ((eq key :match-free-default)
+         (member-eq val '(:once :all nil)))
+        ((eq key :match-free-override)
+         (or (eq val :clear)
+             (null (non-free-var-runes val
+                                       (free-var-runes :once world)
+                                       (free-var-runes :all world)
+                                       nil))))
+        ((eq key :match-free-override-nume)
+         (integerp val))
+        ((eq key :non-linearp)
+         (booleanp val))
+        ((eq key :tau-auto-modep)
+         (booleanp val))
+        ((eq key :include-book-dir-alist)
+         (and (include-book-dir-alistp val (os world))
+              (null (assoc-eq :SYSTEM val))))
+        ((eq key :ruler-extenders)
+         (or (eq val :all)
+             (chk-ruler-extenders val hard 'acl2-defaults-table world)))
+        #+hons
+        ((eq key :memoize-ideal-okp)
+         (or (eq val :warn)
+             (booleanp val)))
+        (t nil)))
+
+; (set-state-ok t)
+(table acl2-defaults-table :state-ok t)
 
 (defmacro print-case ()
   '(f-get-global 'print-case state))
@@ -17481,31 +17838,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (implies (not (stringp seq))
            (true-listp (subseq seq start end)))
   :rule-classes :type-prescription)
-
-; The following constants and the next two functions, pathname-os-to-unix and
-; pathname-unix-to-os, support the use of Unix-style filenames in ACL2 as
-; described in the Essay on Pathnames in interface-raw.lisp.
-
-; The following constants represent our decision to use Unix-style pathnames
-; within ACL2.  See the Essay on Pathnames in interface-raw.lisp.
-
-(defconst *directory-separator*
-  #\/)
-
-(defconst *directory-separator-string*
-  (string *directory-separator*))
-
-(defmacro os-er (os fnname)
-  `(illegal ,fnname
-    "The case where (os (w state)) is ~x0 has not been handled by the ~
-     ACL2 implementors for the function ~x1.  Please inform them of this ~
-     problem."
-    (list (cons #\0 ,os)
-          (cons #\1 ,fnname))))
-
-(defun os (wrld)
-  (declare (xargs :guard (plist-worldp wrld)))
-  (global-val 'operating-system wrld))
 
 (local (in-theory (enable boundp-global1)))
 
@@ -20067,104 +20399,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro the2s (x y)
   (list 'the-mv 2 x y 1))
 
-; Here we implement acl2-defaults-table, which is used for handling the default
-; defun-mode and other defaults.
-
-; WARNING: If you add a new key to acl-defaults-table, and hence a new set-
-; function for smashing the acl2-defaults-table at that key, then be sure to
-; add that set- function to the list in chk-embedded-event-form!  E.g., when we
-; added the :irrelevant-formals-ok key we also defined
-; set-irrelevant-formals-ok and then added it to the list in
-; chk-embedded-event-form.  Also add similarly to :DOC acl2-defaults-table and
-; to primitive-event-macros.
-
-(defun non-free-var-runes (runes free-var-runes-once free-var-runes-all acc)
-  (declare (xargs :guard (and (true-listp runes)
-                              (true-listp free-var-runes-once)
-                              (true-listp free-var-runes-all))))
-  (if (endp runes)
-      acc
-    (non-free-var-runes (cdr runes)
-                        free-var-runes-once free-var-runes-all
-                        (if (or (member-equal (car runes)
-                                              free-var-runes-once)
-                                (member-equal (car runes)
-                                              free-var-runes-all))
-                            acc
-                          (cons (car runes) acc)))))
-
-(defun free-var-runes (flg wrld)
-  (declare (xargs :guard (plist-worldp wrld)))
-  (cond
-   ((eq flg :once)
-    (global-val 'free-var-runes-once wrld))
-   (t ; (eq flg :all)
-    (global-val 'free-var-runes-all wrld))))
-
-(defthm natp-position-ac ; for admission of absolute-pathname-string-p
-  (implies (and (integerp acc)
-                (<= 0 acc))
-           (or (equal (position-ac item lst acc) nil)
-               (and (integerp (position-ac item lst acc))
-                    (<= 0 (position-ac item lst acc)))))
-  :rule-classes :type-prescription)
-
-(defun absolute-pathname-string-p (str directoryp os)
-
-; Str is a Unix-style pathname.  However, on Windows, Unix-style absolute
-; pathnames may start with a prefix such as "c:"; see mswindows-drive.
-
-; Directoryp is non-nil when we require str to represent a directory in ACL2
-; with Unix-style syntax, returning nil otherwise.
-
-; Function expand-tilde-to-user-home-dir should already have been applied
-; before testing str with this function.
-
-  (declare (xargs :guard (stringp str)))
-  (let ((len (length str)))
-    (and (< 0 len)
-         (cond ((and (eq os :mswindows) ; hence os is not nil
-                     (let ((pos-colon (position #\: str))
-                           (pos-sep (position *directory-separator* str)))
-                       (and pos-colon
-                            (eql pos-sep (1+ pos-colon))))
-                     t))
-               ((eql (char str 0) *directory-separator*)
-                t)
-               (t ; possible hard error for ~ or ~/...
-                (and (eql (char str 0) #\~)
-
-; Note that a leading character of `~' need not get special treatment by
-; Windows.  See also expand-tilde-to-user-home-dir.
-
-                     (not (eq os :mswindows))
-                     (prog2$ (and (or (eql 1 len)
-                                      (eql (char str 1)
-                                           *directory-separator*))
-                                  (hard-error 'absolute-pathname-string-p
-                                              "Implementation error: Forgot ~
-                                               to apply ~
-                                               expand-tilde-to-user-home-dir ~
-                                               before calling ~
-                                               absolute-pathname-string-p. ~
-                                               Please contact the ACL2 ~
-                                               implementors."
-                                              nil))
-                             t))))
-         (if directoryp
-             (eql (char str (1- len)) *directory-separator*)
-           t))))
-
-(defun illegal-ruler-extenders-values (x wrld)
-  (declare (xargs :guard (and (symbol-listp x)
-                              (plist-worldp wrld))))
-  (cond ((endp x) nil)
-        ((or (eq (car x) :lambdas)
-             (function-symbolp (car x) wrld))
-         (illegal-ruler-extenders-values (cdr x) wrld))
-        (t (cons (car x)
-                 (illegal-ruler-extenders-values (cdr x) wrld)))))
-
 ; Intersection$
 
 (defun-with-guard-check intersection-eq-exec (l1 l2)
@@ -20255,227 +20489,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                           ,(xxxjoin 'intersection-eql-exec vars)))
                (t ; (equal test 'equal)
                 `(xxxjoin 'intersection-equal ,args))))))))
-
-(defun table-alist (name wrld)
-
-; Return the named table as an alist.
-
-  (declare (xargs :guard (and (symbolp name)
-                              (plist-worldp wrld))))
-  (getprop name 'table-alist nil 'current-acl2-world wrld))
-
-(defun ruler-extenders-msg-aux (vals return-last-table)
-
-; We return the intersection of vals with the symbols in the cdr of
-; return-last-table.
-
-  (declare (xargs :guard (and (symbol-listp vals)
-                              (symbol-alistp return-last-table))))
-  (cond ((endp return-last-table) nil)
-        (t (let* ((first-cdr (cdar return-last-table))
-                  (sym (if (consp first-cdr) (car first-cdr) first-cdr)))
-             (cond ((member-eq sym vals)
-                    (cons sym
-                          (ruler-extenders-msg-aux vals
-                                                   (cdr return-last-table))))
-                   (t (ruler-extenders-msg-aux vals
-                                               (cdr return-last-table))))))))
-
-(defun ruler-extenders-msg (x wrld)
-
-; This message, if not nil, is passed to chk-ruler-extenders.
-
-  (declare (xargs :guard (and (plist-worldp wrld)
-                              (symbol-alistp (fgetprop 'return-last-table
-                                                       'table-alist
-                                                       nil wrld)))))
-  (cond ((member-eq x '(:ALL :BASIC :LAMBDAS))
-         nil)
-        ((and (consp x)
-              (eq (car x) 'quote))
-         (msg "~x0 has a superfluous QUOTE, which you may wish to remove"
-              x))
-        ((not (symbol-listp x))
-         (msg "~x0 is not a true list of symbols" x))
-        (t (let* ((vals (illegal-ruler-extenders-values x wrld))
-                  (suspects (ruler-extenders-msg-aux
-                             vals
-                             (table-alist 'return-last-table wrld))))
-             (cond (vals
-                    (msg "~&0 ~#0~[is not a~/are not~] legal ruler-extenders ~
-                          value~#0~[~/s~].~@1"
-                         vals
-                         (cond (suspects
-                                (msg "  Note in particular that ~&0 ~#0~[is a ~
-                                      macro~/are macros~] that may expand to ~
-                                      calls of ~x1, which you may want to ~
-                                      specify instead."
-                                     suspects 'return-last))
-                               (t ""))))
-                   (t nil))))))
-
-(defmacro chk-ruler-extenders (x soft ctx wrld)
-  (let ((err-str "The proposed ruler-extenders is illegal because ~@0."))
-    `(let ((ctx ,ctx)
-           (err-str ,err-str)
-           (msg (ruler-extenders-msg ,x ,wrld)))
-       (cond (msg ,(cond ((eq soft 'soft) `(er soft ctx err-str msg))
-                         (t `(illegal ctx err-str (list (cons #\0 msg))))))
-             (t ,(cond ((eq soft 'soft) '(value t))
-                       (t t)))))))
-
-(defmacro fixnum-bound () ; most-positive-fixnum in Allegro CL and many others
-  (1- (expt 2 29)))
-
-(defconst *default-step-limit*
-
-; The defevaluator event near the top of community book
-; books/meta/meta-plus-equal.lisp, submitted at the top level without any
-; preceding events, takes over 40,000 steps.  Set the following to 40000 in
-; order to make that event quickly exceed the default limit.
-
-   (fixnum-bound))
-
-(defun include-book-dir-alist-entry-p (key val os)
-  (declare (xargs :guard t))
-  (and (keywordp key)
-       (stringp val)
-       (absolute-pathname-string-p val t os)))
-
-(defun include-book-dir-alistp (x os)
-  (declare (xargs :guard t))
-  (cond ((atom x) (null x))
-        (t (and (consp (car x))
-                (include-book-dir-alist-entry-p (caar x) (cdar x) os)
-                (include-book-dir-alistp (cdr x) os)))))
-
-(table acl2-defaults-table nil nil
-
-; Warning: If you add or delete a new key, there will probably be a change you
-; should make to a list in chk-embedded-event-form.  (Search there for
-; add-include-book-dir, and consider keeping that list alphabetical, just for
-; convenience.)
-
-; Developer suggestion: The following form provides an example of how to add a
-; new key to the table guard, in this case,
-
-; (setf (cadr (assoc-eq 'table-guard
-;                       (get 'acl2-defaults-table *current-acl2-world-key*)))
-;       `(if (eq key ':new-key)
-;            (if (eq val 't) 't (symbol-listp val))
-;          ,(cadr (assoc-eq 'table-guard
-;                           (get 'acl2-defaults-table
-;                                *current-acl2-world-key*)))))
-
-       :guard
-       (cond
-        ((eq key :defun-mode)
-         (member-eq val '(:logic :program)))
-        ((eq key :verify-guards-eagerness)
-         (member val '(0 1 2)))
-        ((eq key :enforce-redundancy)
-         (member-eq val '(t nil :warn)))
-        #+acl2-legacy-doc
-        ((eq key :ignore-doc-string-error)
-         (member-eq val '(t nil :warn)))
-        ((eq key :compile-fns)
-         (member-eq val '(t nil)))
-        ((eq key :measure-function)
-         (and (symbolp val)
-              (function-symbolp val world)
-
-; The length expression below is just (arity val world) but we don't have arity
-; yet.
-
-              (= (length (getprop val 'formals t 'current-acl2-world world))
-                 1)))
-        ((eq key :well-founded-relation)
-         (and (symbolp val)
-              (assoc-eq val (global-val 'well-founded-relation-alist world))))
-        ((eq key :bogus-defun-hints-ok)
-         (member-eq val '(t nil :warn)))
-        ((eq key :bogus-mutual-recursion-ok)
-         (member-eq val '(t nil :warn)))
-        ((eq key :irrelevant-formals-ok)
-         (member-eq val '(t nil :warn)))
-        ((eq key :ignore-ok)
-         (member-eq val '(t nil :warn)))
-        ((eq key :bdd-constructors)
-
-; We could insist that the symbols are function symbols by using
-; (all-function-symbolps val world),
-; but perhaps one wants to set the bdd-constructors even before defining the
-; functions.
-
-         (symbol-listp val))
-        ((eq key :ttag)
-         (or (null val)
-             (and (keywordp val)
-                  (not (equal (symbol-name val) "NIL")))))
-        ((eq key :state-ok)
-         (member-eq val '(t nil)))
-
-; Rockwell Addition: See the doc string associated with
-; set-let*-abstractionp.
-
-        ((eq key :let*-abstractionp)
-         (member-eq val '(t nil)))
-
-        ((eq key :backchain-limit)
-         (and (true-listp val)
-              (equal (length val) 2)
-              (or (null (car val))
-                  (natp (car val)))
-              (or (null (cadr val))
-                  (natp (cadr val)))))
-        ((eq key :step-limit)
-         (and (natp val)
-              (<= val *default-step-limit*)))
-        ((eq key :default-backchain-limit)
-         (and (true-listp val)
-              (equal (length val) 2)
-              (or (null (car val))
-                  (natp (car val)))
-              (or (null (cadr val))
-                  (natp (cadr val)))))
-        ((eq key :rewrite-stack-limit)
-         (unsigned-byte-p 29 val))
-        ((eq key :case-split-limitations)
-
-; In set-case-split-limitations we permit val to be nil and default that
-; to (nil nil).
-
-         (and (true-listp val)
-              (equal (length val) 2)
-              (or (null (car val))
-                  (natp (car val)))
-              (or (null (cadr val))
-                  (natp (cadr val)))))
-        ((eq key :match-free-default)
-         (member-eq val '(:once :all nil)))
-        ((eq key :match-free-override)
-         (or (eq val :clear)
-             (null (non-free-var-runes val
-                                       (free-var-runes :once world)
-                                       (free-var-runes :all world)
-                                       nil))))
-        ((eq key :match-free-override-nume)
-         (integerp val))
-        ((eq key :non-linearp)
-         (booleanp val))
-        ((eq key :tau-auto-modep)
-         (booleanp val))
-        ((eq key :include-book-dir-alist)
-         (and (include-book-dir-alistp val (os world))
-              (null (assoc-eq :SYSTEM val))))
-        ((eq key :ruler-extenders)
-         (or (eq val :all)
-             (chk-ruler-extenders val hard 'acl2-defaults-table world)))
-        #+hons
-        ((eq key :memoize-ideal-okp)
-         (or (eq val :warn)
-             (booleanp val)))
-        (t nil)))
 
 #+acl2-loop-only
 (defmacro set-enforce-redundancy (x)
@@ -25307,7 +25320,7 @@ Lisp definition."
 
   (declare (xargs :guard t))
   #-acl2-loop-only
-  (when (global-val 'boot-strap-flg (w *the-live-state*))
+  (when (f-get-global 'boot-strap-flg *the-live-state*)
 
 ; We don't know why SBCL 1.0.37 hung during guard verification of
 ; maybe-print-call-history during the boot-strap.  But we sidestep that issue
