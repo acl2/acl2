@@ -4046,10 +4046,9 @@
                               (symbolp (car form)))))
   `(let ((form ',form)
          (fn ',(car form))
-         (ctx ,ctx)
-         (wrld (w state)))
-     (cond ((or (global-val 'boot-strap-flg wrld)
-                (null (attachment-pair fn wrld)))
+         (ctx ,ctx))
+     (cond ((or (f-get-global 'boot-strap-flg state)
+                (null (attachment-pair fn (w state))))
             (value nil))
            (t (let ((form (list 'pprogn
                                 (append form '(state))
@@ -4750,8 +4749,8 @@
 ; compile-uncompiled-defuns and compile-uncompiled-*1*-defuns.
 
          (let ((wrld6 (add-event-landmark form ev-type namex wrld5
-                                          (global-val 'boot-strap-flg
-                                                      currently-installed-wrld))))
+                                          (f-get-global 'boot-strap-flg
+                                                        state))))
            (pprogn
             (f-put-global 'accumulated-ttree ttree state)
             (cond
@@ -6813,7 +6812,7 @@
 ; definitions (from defproxy) without removing attachments, so that system
 ; functions implemented using attachments will not be disrupted.
 
-           (not (global-val 'boot-strap-flg wrld)))
+           (not (f-get-global 'boot-strap-flg state)))
       (er soft ctx
           "The name ~x0 is in use as a ~@1, and it has an attachment.  Before ~
            redefining it you must remove its attachment, for example by ~
@@ -6984,7 +6983,7 @@
          ((and sysdefp
                (not (ttag (w state)))
                (not (and proxy-upgrade-p
-                         (global-val 'boot-strap-flg wrld))))
+                         (f-get-global 'boot-strap-flg state))))
           (er soft ctx
               "Redefinition of system names, such as ~x0, is not permitted ~
                unless there is an active trust tag (ttag).  See :DOC defttag."
@@ -7125,7 +7124,7 @@
 
   (let ((old-type (logical-name-type name wrld nil)))
     (cond
-     ((and (global-val 'boot-strap-flg wrld)
+     ((and (f-get-global 'boot-strap-flg state)
            (not (global-val 'boot-strap-pass-2 wrld))
            (or (not reclassifyingp)
                (consp reclassifyingp)))
@@ -7202,7 +7201,7 @@
              (er soft ctx
                  "Not a virgin name for type ~x0:  ~x1." new-type name))
             (t (value w)))))
-   ((and (global-val 'boot-strap-flg w)
+   ((and (f-get-global 'boot-strap-flg state)
          (not (global-val 'boot-strap-pass-2 w))
          (or (not reclassifyingp)
              (consp reclassifyingp)))

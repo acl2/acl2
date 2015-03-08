@@ -7127,9 +7127,9 @@
   (let* ((cmd (car (make-official-pc-instr instr)))
          (typ (pc-command-type cmd)))
     (and (member-eq typ '(primitive atomic-macro))
-         (acl2-system-namep
+         (acl2-system-namep-state
           (intern-in-package-of-symbol (symbol-name cmd) 'acl2-pc::induct)
-          (w state)))))
+          state))))
 
 (defun non-primitive-instructions (instructions state)
   (cond

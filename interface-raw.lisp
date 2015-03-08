@@ -1712,7 +1712,7 @@
 
                 (eq (symbol-class fn wrld) :common-lisp-compliant)))
           (formals (cadr def))
-          (boot-strap-p (global-val 'boot-strap-flg (w *the-live-state*))))
+          (boot-strap-p (f-get-global 'boot-strap-flg *the-live-state*)))
      (cond
       ((or (and guard-is-t cl-compliant-p-optimization)
            (and boot-strap-p ; optimization (well, except for :redef)
@@ -5604,7 +5604,7 @@
          (eq (cadr trip) 'global-value)
          (consp (cddr trip)))
     (let* ((wrld (w *the-live-state*))
-           (boot-strap-flg (global-val 'boot-strap-flg wrld)))
+           (boot-strap-flg (f-get-global 'boot-strap-flg *the-live-state*)))
       (case (car (cddr trip))
         (defuns
 
@@ -6624,7 +6624,10 @@
 
 (defun-one-output chk-virgin2 (name new-type wrld)
   (cond ((virginp name new-type) nil)
-        ((global-val 'boot-strap-flg wrld)
+        ((f-get-global 'boot-strap-flg *the-live-state*)
+
+; The test above is equivalent to (global-val 'boot-strap-flg wrld).
+
          (setf (get name '*predefined*) t))
 
 ; A name regains its true virginity the moment we decide to give it a
@@ -6922,6 +6925,7 @@
   (set-w 'extension
          (end-prehistoric-world (w *the-live-state*))
          *the-live-state*)
+  (f-put-global 'boot-strap-flg nil *the-live-state*)
   (acl2-unwind *ld-level* nil)
   (f-put-global 'inhibit-output-lst nil *the-live-state*)
   (f-put-global 'slow-array-action :warning *the-live-state*)
@@ -7948,9 +7952,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
   (when btp (print-call-history))
   (cond ((or (debugger-enabledp state)
              (eql *ld-level* 0)
-;            (global-val 'boot-strap-flg (w state)) ; avoid the potential error
-             (getprop 'boot-strap-flg 'global-value nil 'current-acl2-world
-                      (w state)))
+             (f-get-global 'boot-strap-flg state))
          nil)
         (t
          (let ((*debugger-hook* nil) ; extra care to avoid possible loop
@@ -8297,7 +8299,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
               (initial-customization-filename)))
          (cond
           ((or (eq customization-full-file-name :none)
-               (global-val 'boot-strap-flg (w state)))
+               (f-get-global 'boot-strap-flg state))
            nil)
           (customization-full-file-name
 
@@ -8704,7 +8706,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                         :all)
                        (t fns)))
             (fn-file (format nil "~a.lisp" file))
-            (not-boot-strap-p (null (global-val 'boot-strap-flg wrld))))
+            (not-boot-strap-p (null (f-get-global 'boot-strap-flg state))))
 
 ; See the comment just above the call of with-output-object-channel-sharing in
 ; compile-uncompiled-defuns.

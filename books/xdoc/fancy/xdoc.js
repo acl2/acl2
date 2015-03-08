@@ -928,7 +928,7 @@ function jumpRender(datum) {
     var key = datum["value"];
     var ret = "";
     ret += "<p>";
-//    ret += topicUid(key) + " &mdash; ";
+//    ret += topicUid(key) + " &mdash; "; // nice for debugging
     ret += "<b class=\"sf\">" + topicName(key) + "</b>";
     var shortmsg = topicShortPlaintext(key);
     if (shortmsg != "") {
@@ -948,7 +948,10 @@ function jumpInit() {
         tokens.push(topicRawname(key));
         var entry = {"value": key,
 		     "nicename": topicName(key),
-                     "tokens": tokens
+                     "tokens": tokens,
+		     // We precompute these for faster sorting:
+		     "nicelow": topicName(key).toLowerCase(),
+		     "uid": topicUid(key),
 		     };
         ta_data.push(entry);
     }
@@ -960,31 +963,68 @@ function jumpInit() {
 	datumTokenizer: function(data) {
 	    return data.tokens;
 	},
-	queryTokenizer: Bloodhound.tokenizers.whitespace,
-	sorter: function(a,b)
-	{
-	    // Fancy sorting function for the ordering of the jump-to
-	    // box.  If there is an exact match with what the user typed,
-	    // then we want to show it first.  Otherwise, we'll order the
-	    // topics by their importance, so that we suggest the most
-	    // important topics first.
-	    var a_key = a.value;
-	    var b_key = b.value;
-	    var curr = $("#jump").typeahead('val');
+	queryTokenizer: Bloodhound.tokenizers.whitespace
+    });
 
+    // Bloodhound natively lets you supply a sort function that just
+    // compares two elements.  However, that turned out to be too
+    // slow.  By using our own sorting function we can
+    //
+    //  (1) avoid having to look at the current typeahead value on
+    //      every single comparison, which was very slow when doing lots of
+    //      comparisons.
+    //
+    //  (2) pre-filter the array to make this mostly linear.
+    engine1.sorter = function(matches)
+    {
+	//console.log("My sorter called on " + matches.length + " elements.");
+	var curr = $("#jump").typeahead('val').toLowerCase();
+
+	var compare = function(a,b)
+	{
 	    // Special cases to ensure any literal matches come first, no
 	    // matter how unimportant they are. :)
-	    if (a.nicename.toLowerCase() == curr.toLowerCase()) return -1;
-	    if (b.nicename.toLowerCase() == curr.toLowerCase()) return 1;
+	    if (a.nicelow == curr) return -1;
+	    if (b.nicelow == curr) return 1;
 
 	    // Otherwise, put them in importance order.
-	    var a_id = topicUid(a_key);
-	    var b_id = topicUid(b_key);
-	    if (a_id < b_id) return -1;
-	    if (b_id > a_id) return 1;
-	    return 0;
+	    return a.uid - b.uid;
+	};
+
+	if (matches.length < 100) {
+	    // We can just sort it and that'll be plenty fast.
+	    return matches.sort(compare);
 	}
-    });
+
+	// Lots of elements -- do something fancier for more speed.  Since we
+	// are only going to show 20 results, it is definitely safe to throw
+	// away any entries whose UID is larger than some CUTOFF, as long as
+	// CUTOFF is bigger than at least 20 UIDs.  So, gather a reasonable
+	// subset of UIDs, sort them, and pick the 20th one.  Then throw away
+	// everything past it in a linear sweep.
+	var first_uids = [];
+	for(var i = 0; i < 100; ++i) {
+	    first_uids.push(matches[i].uid);
+	}
+	//console.log("Gathered up UIDs: ", first_uids);
+	first_uids = first_uids.sort(function(a,b){ return a-b; });
+	//console.log("Sorted UIDs:", first_uids);
+	var cutoff = first_uids[19];
+
+	var consider = [];
+	for(var i = 0;i < matches.length; ++i) {
+	    var entry = matches[i];
+	    if (entry.nicelow == curr || entry.uid < cutoff) {
+		consider.push(entry);
+	    }
+	}
+	//console.log("Down to " + consider.length + " entries to consider:", consider);
+
+	// Then we just sort whatever survived using our ordinary comparison
+	// function, which now doesn't need to consider the vast majority of
+	// the array.
+	return consider.sort(compare);
+    };
 
     engine1.initialize();
 
