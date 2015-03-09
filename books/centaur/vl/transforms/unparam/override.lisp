@@ -29,8 +29,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../../mlib/consteval")
-(include-book "../../mlib/fmt") ;; blaaaaah bad deps
+(include-book "centaur/svex/vl-svstmt" :dir :system)
+;; (include-book "../../mlib/fmt") ;; blaaaaah bad deps
 (local (include-book "../../util/arithmetic"))
 ;(local (include-book "../../mlib/modname-sets"))
 ;(local (include-book "../../util/osets"))
@@ -40,10 +40,26 @@
 
 (defconst *vl-unparam-debug* nil)
 
+(encapsulate
+  (((vl-unparam-debug-fn * *) => *
+    :formals (function args) :guard t))
+  (local (defun vl-unparam-debug-fn (function args)
+           (Declare (xargs :guard t))
+           (list function args))))
+
+(defun vl-unparam-debug-silent (function args)
+  (declare (xargs :guard t)
+           (ignore function args))
+  nil)
+
+(defattach vl-unparam-debug-fn vl-unparam-debug-silent)
+
 (defmacro vl-unparam-debug (&rest args)
-  `(and *vl-unparam-debug*
-        (progn$ (cw "; UNPARAM: ~s0: " __function__)
-                (vl-cw-ps-seq (vl-cw . ,args)))))
+  `(vl-unparam-debug-fn __function__ (list . ,args)))
+;; (defmacro vl-unparam-debug (&rest args)
+;;   `(and *vl-unparam-debug*
+;;         (progn$ (cw "; UNPARAM: ~s0: " __function__)
+;;                 (vl-cw-ps-seq (vl-cw . ,args)))))
 
 
 (define vl-paramtype->default ((x vl-paramtype-p))
@@ -51,16 +67,13 @@
   :short "Get the default value from any @(see vl-paramtype-p)."
   :returns (value vl-maybe-paramvalue-p)
   (vl-paramtype-case x
-    (:vl-implicitvalueparam x.default)
-    (:vl-explicitvalueparam x.default)
-    (:vl-typeparam          x.default))
-  :prepwork ((local (in-theory (enable vl-maybe-paramvalue-p))))
-  ///
-  (defthm vl-paramtype->default-forward
-    (or (not (vl-paramtype->default x))
-        (vl-expr-p (vl-paramtype->default x))
-        (vl-datatype-p (vl-paramtype->default x)))
-    :rule-classes ((:forward-chaining :trigger-terms ((vl-paramtype->default x))))))
+    (:vl-implicitvalueparam (and x.default
+                                 (vl-paramvalue-expr x.default)))
+    (:vl-explicitvalueparam (and x.default
+                                 (vl-paramvalue-expr x.default)))
+    (:vl-typeparam          (and x.default
+                                 (vl-paramvalue-type x.default))))
+  :prepwork ((local (in-theory (enable vl-maybe-paramvalue-p)))))
 
 
 

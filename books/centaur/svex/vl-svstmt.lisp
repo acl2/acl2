@@ -477,6 +477,15 @@ because... (BOZO)</p>
    (svex :name vars-of-vl-expr-svex-compile
          (svex::svarlist-addr-p (svex::svex-vars svex)))))
 
+(define vl-consteval ((x vl-expr-p)
+                      (ss vl-scopestack-p))
+  :returns (mv (warnings1 vl-warninglist-p)
+               (new-x vl-expr-p))
+  (b* (((mv warnings fns) (vl-expr-compile-fns x ss))
+       ((wmv warnings & new-x)
+        (vl-expr-consteval x (make-vl-svexconf :ss ss :fns fns))))
+    (mv warnings new-x)))
+
 
 
 (define vl-evatomlist-has-edge ((x vl-evatomlist-p))
