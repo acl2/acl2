@@ -48,28 +48,47 @@
 
 (defxdoc bitops/merge
   :parents (bitops)
-  :short "Various common operations for concatenating bytes/words."
+  :short "Efficient operations for concatenating fixed-sized bit vectors."
 
-  :long "<p>These merge operations may be useful for describing SIMD style
-operations, byte swapping operations, and so forth.</p>
+  :long "<p>We now introduce many operations that concatenate together bit
+vectors of some fixed size to create a new, merged bit vector.  For example,
+@(see merge-4-u8s) joins together four 8-bit vectors into a 32-bit result.</p>
 
-<p>Each function here is logically simple, but we go to some lengths to make
-them execute more efficiently.  For instance,</p>
+<p>In general, the function @(see logapp) is a more flexible alternative to the
+operations below&mdash;it can be used to merge bit vectors of different sizes.
+However, since it can only merge two bit-vectors at a time, using @('logapp')
+directly can become quite tedious when you have a lot of vectors to merge.  For
+instance, these merging operations may be especially useful for describing SIMD
+style operations, byte swapping operations, and so forth.</p>
+
+<p>Each of our merging operations is logically simple.  However, we go to some
+lengths to make them execute more efficiently.  This is accomplished by
+providing ample @(see type-spec) declarations and arranging the order of
+operations to use fixnums for as long as possible.  This provides significant
+speedups, for instance:</p>
 
 @({
- (let ((a7 1)
-       (a6 2)
-       (a5 3)
-       (a4 4)
-       (a3 5)
-       (a2 6)
-       (a1 7)
-       (a0 8))
-   ;; logic mode version: 11.112 seconds
-   ;; exec mode version:   1.404 seconds
-   (time (loop for i fixnum from 1 to 100000000 do
-               (merge-8-u8s a7 a6 a5 a4 a3 a2 a1 a0))))
-})")
+    ;; logic mode version: 11.112 seconds
+    ;; exec mode version:   1.404 seconds
+    (let ((a7 1)
+          (a6 2)
+          (a5 3)
+          (a4 4)
+          (a3 5)
+          (a2 6)
+          (a1 7)
+          (a0 8))
+      (time (loop for i fixnum from 1 to 100000000 do
+                  (merge-8-u8s a7 a6 a5 a4 a3 a2 a1 a0))))
+})
+
+<p>Note that when designing these functions, we typically assume that fixnums
+are large enough to hold 56-bit results.  Our definitions should therefore
+perform well on 64-bit Lisps including at least CCL and SBCL.</p>
+
+<p>We prove that each merge produces a result of the correct size (expressed as
+a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
+@(see congruence) for each of its arguments.</p>")
 
 (local (xdoc::set-default-parents bitops/merge))
 
@@ -83,6 +102,60 @@ them execute more efficiently.  For instance,</p>
 
 (defmacro congruences-for-merge (form n)
   `(progn . ,(congruences-for-merge-fn form n)))
+
+
+;; Merging U2s ----------------------------------------------------------------
+
+(define merge-8-u2s (a7 a6 a5 a4 a3 a2 a1 a0)
+  (declare (type (unsigned-byte 2) a7 a6 a5 a4 a3 a2 a1 a0))
+  :returns (result natp :rule-classes :type-prescription)
+  :short "Concatenate eight 2-bit numbers together to form a 16-bit result."
+  :inline t
+  (mbe :logic (logior (ash (lnfix a7) 14)
+                      (ash (lnfix a6) 12)
+                      (ash (lnfix a5) 10)
+                      (ash (lnfix a4) 8)
+                      (ash (lnfix a3) 6)
+                      (ash (lnfix a2) 4)
+                      (ash (lnfix a1) 2)
+                      (lnfix a0))
+       :exec
+       (b* ((ans (the (unsigned-byte 16)
+                      (logior (the (unsigned-byte 16) (ash a1 2))
+                              a0)))
+            (ans (the (unsigned-byte 16)
+                      (logior (the (unsigned-byte 16) (ash a2 4))
+                              (the (unsigned-byte 16) ans))))
+            (ans (the (unsigned-byte 16)
+                      (logior (the (unsigned-byte 16) (ash a3 6))
+                              (the (unsigned-byte 16) ans))))
+            (ans (the (unsigned-byte 16)
+                      (logior (the (unsigned-byte 16) (ash a4 8))
+                              (the (unsigned-byte 16) ans))))
+            (ans (the (unsigned-byte 16)
+                      (logior (the (unsigned-byte 16) (ash a5 10))
+                              (the (unsigned-byte 16) ans))))
+            (ans (the (unsigned-byte 16)
+                      (logior (the (unsigned-byte 16) (ash a6 12))
+                              (the (unsigned-byte 16) ans))))
+            (ans (the (unsigned-byte 16)
+                      (logior (the (unsigned-byte 16) (ash a7 14))
+                              (the (unsigned-byte 16) ans)))))
+         ans))
+  ///
+  (defthm unsigned-byte-p-16-of-merge-8-u2s
+    (implies (and (unsigned-byte-p 2 a7)
+                  (unsigned-byte-p 2 a6)
+                  (unsigned-byte-p 2 a5)
+                  (unsigned-byte-p 2 a4)
+                  (unsigned-byte-p 2 a3)
+                  (unsigned-byte-p 2 a2)
+                  (unsigned-byte-p 2 a1)
+                  (unsigned-byte-p 2 a0))
+             (unsigned-byte-p 16 (merge-8-u2s a7 a6 a5 a4 a3 a2 a1 a0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-8-u2s a7 a6 a5 a4 a3 a2 a1 a0) 8))
+
 
 
 ;; Merging Bytes --------------------------------------------------------------
