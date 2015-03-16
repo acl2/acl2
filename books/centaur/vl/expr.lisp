@@ -46,11 +46,11 @@
 (local (std::add-default-post-define-hook :fix))
 
 (local (xdoc::set-default-parents expressions))
-(defoption maybe-stringp stringp
-  ;; BOZO misplaced, also has documentation issues
-  :parents nil
-  :fix maybe-string-fix
-  :equiv maybe-string-equiv)
+;; (defoption maybe-string stringp :pred maybe-stringp
+;;   ;; BOZO misplaced, also has documentation issues
+;;   :parents nil
+;;   :fix maybe-string-fix
+;;   :equiv maybe-string-equiv)
 
 (define vl-bitlist-nonempty-fix ((x vl-bitlist-p))
   :returns (xx vl-bitlist-p)
@@ -78,7 +78,7 @@
 @(':vl-unsigned').  We may eventually expand this to include other types, such
 as real and string.</p>")
 
-(defoption vl-maybe-exprtype-p vl-exprtype-p
+(defoption vl-maybe-exprtype vl-exprtype-p
   :short "Recognizer for an @(see vl-exprtype-p) or @('nil')."
   :long "<p>We use this for the @('finaltype') fields in our expressions.  It
 allows us to represent expressions whose types have not yet been computed.</p>"
@@ -87,6 +87,7 @@ allows us to represent expressions whose types have not yet been computed.</p>"
     (implies (vl-maybe-exprtype-p x)
              (and (symbolp x)
                   (not (equal x t))))
+    :hints(("Goal" :in-theory (enable vl-maybe-exprtype-p)))
     :rule-classes :compound-recognizer))
 
 (deftagsum vl-value
@@ -341,25 +342,7 @@ either:</p>
 
   
 
-(define vl-enumbasekind-fix ((x vl-enumbasekind-p))
-  :returns (x-fix vl-enumbasekind-p)
-  :inline t
-  (mbe :logic (if (vl-enumbasekind-p x)
-                  x
-                :vl-logic)
-       :exec x)
-  ///
-  (defthm vl-enumbasekind-fix-when-vl-enumbasekind-p
-    (implies (vl-enumbasekind-p x)
-             (equal (vl-enumbasekind-fix x)
-                    x))))
 
-(deffixtype vl-enumbasekind
-  :pred vl-enumbasekind-p
-  :fix vl-enumbasekind-fix
-  :equiv vl-enumbasekind-equiv
-  :define t
-  :forward t)
 
 (define vl-scopename-p (x)
   :short "Recognizes names that can be used in scope operators."
@@ -573,7 +556,8 @@ type for @(see vl-scopeexpr->scopes).</p>"
      :ctor-body range
      :ctor-name vl-range->partselect
      :extra-binder-names (msb lsb)
-     :no-ctor-macros t)
+     ;; :no-ctor-macros t
+     )
     (:plusminus
      :cond t
      :fields ((plusminus :type vl-plusminus :acc-body x
@@ -581,7 +565,8 @@ type for @(see vl-scopeexpr->scopes).</p>"
      :ctor-body plusminus
      :ctor-name vl-plusminus->partselect
      :extra-binder-names (base width minusp)
-     :no-ctor-macros t))
+     ;; :no-ctor-macros t
+     ))
 
   ;; (defprod vl-select
   ;;   :short "Representation of a single-element select such as @('[a]')."
@@ -606,7 +591,8 @@ type for @(see vl-scopeexpr->scopes).</p>"
      :ctor-body range
      :ctor-name vl-range->arrayrange
      :extra-binder-names (msb lsb)
-     :no-ctor-macros t)
+     ;; :no-ctor-macros t
+     )
     (:plusminus
      :cond (eq (car x) :vl-plusminus)
      :fields ((plusminus :type vl-plusminus :acc-body x
@@ -614,14 +600,16 @@ type for @(see vl-scopeexpr->scopes).</p>"
      :ctor-body plusminus
      :ctor-name vl-plusminus->arrayrange
      :extra-binder-names (base width minusp)
-     :no-ctor-macros t)
+     ;; :no-ctor-macros t
+     )
     (:index
      :cond t
      :fields ((expr :type vl-expr :acc-body x
                     :acc-name vl-arrayrange->expr))
      :ctor-body expr
      :ctor-name vl-expr->arrayrange
-     :no-ctor-macros t))
+     ;; :no-ctor-macros t
+     ))
 
   (defprod vl-streamexpr
     :measure (two-nats-measure (acl2-count x) 110)
@@ -644,14 +632,16 @@ type for @(see vl-scopeexpr->scopes).</p>"
      :ctor-body range
      :ctor-name vl-range->valuerange
      :extra-binder-names (msb lsb)
-     :no-ctor-macros t)
+     ;; :no-ctor-macros t
+     )
     (:single
      :cond t
      :fields ((expr :type vl-expr :acc-body x
                     :acc-name vl-valuerange->expr))
      :ctor-body expr
      :ctor-name vl-expr->valuerange
-     :no-ctor-macros t))
+     ;; :no-ctor-macros t
+     ))
 
   (fty::deflist vl-valuerangelist
     :measure (two-nats-measure (acl2-count x) 10)
@@ -885,7 +875,8 @@ type for @(see vl-scopeexpr->scopes).</p>"
      ;; data_type ::= ... | 'enum' [ enum_base_type ] '{'
      ;;                        enum_name_declaration { ',' enum_name_declaration }
      ;;                     '}' { packed_dimension }
-     ((basetype vl-enumbasetype)
+     ((basetype vl-datatype-p)  ;; Note: The syntax for this is restricted, but
+       ;; it might as well just be a datatype.
       (items    vl-enumitemlist-p)
       (pdims    vl-packeddimensionlist-p)
       (udims    vl-packeddimensionlist-p)))
@@ -896,8 +887,55 @@ type for @(see vl-scopeexpr->scopes).</p>"
      ;; data_type ::= ... | [ class_scope | package_scope ] type_identifier { packed_dimension }
      ((name vl-scopeexpr-p "Typedef name.  May have a package scope, but should
                             not otherwise be hierarchical.")
+      (res vl-maybe-datatype-p
+           "The resolved type that name refers to.  If present, it means we've
+            already looked up the type and resolved its value.")
       (pdims    vl-packeddimensionlist-p)
       (udims    vl-packeddimensionlist-p)))
+
+;; Note about the resolved value of datatypes.
+;; Originally to deal with user-defined types we would just substitute
+;; definitions for usertypes.  However, it turns out that this isn't correct:
+;; e.g.
+;;   typedef logic signed [3:0] snib;
+;;   snib [3:0] foo1;
+;; is not the same as just
+;;   logic signed [3:0] [3:0] foo2;
+;; -- foo1 is an unsigned array of signed slots, whereas foo2 is a signed array
+;; of unsigned slots.  (NCV and VCS also treat them differently; we believe NCV
+;; gets it right wrt the spec, whereas VCS seems to do the substitution.)
+
+;; Then we decided we'd just deal with usertypes directly -- we rewrote all our
+;; type-manipulating functions to operate on a datatype and scopestack
+;; simultaneously.  However, we don't want to store scopestacks between
+;; transformations.  So there's a problem with e.g. type parameters: e.g.
+
+;; module bitand_mod #(type and_t = logic [3:0])
+;;         (input and_t a, b, output and_t o);
+;;   assign o = a & b;
+;; endmodule
+
+;; module bitand_parent ();
+;;  typedef logic signed [5:0] my_and_t;
+;;   my_and_t a, b;
+;;   my_and_t o;
+;;  bitand_mod #(.and_t(my_and_t)) inst (a, b, o);
+;; endmodule
+
+;; We want to transform bitand_mod to replace the and_t parameter with the
+;; overridden version my_and_t.  But my_and_t is only defined in
+;; bitand_parent.  So we might want to do something like replacing the and_t
+;; type parameter with
+;;    typedef my_and_t and_t;
+;; or leaving it as a parameter #(type and_t = my_and_t)=
+;; but neither of these work, because my_and_t isn't defined in the scope of
+;; bitand_mod.
+
+;; So our solution is to go back to doing substitution, but instead of strictly
+;; substituting usertype <- definition, we leave the usertype but add the res
+;; field, a maybe-datatype which, if present, means we've resolved this
+;; usertype and its definition is the res.
+
 
 
     ;;  BOZO not yet implemented:
@@ -1015,7 +1053,8 @@ away with them as alternate kinds of assignments.</p>")
      :ctor-body range
      :ctor-name vl-range->packeddimension
      :extra-binder-names (msb lsb)
-     :no-ctor-macros t))
+     ;; :no-ctor-macros t
+     ))
 
   (fty::deflist vl-packeddimensionlist
     :elt-type vl-packeddimension
@@ -1024,35 +1063,35 @@ away with them as alternate kinds of assignments.</p>")
 
 
 
-  (defprod vl-enumbasetype
-    :measure (two-nats-measure (acl2-count x) 120)
-    :tag :vl-enumbasetype
-    :layout :tree
-    :short "The base types for SystemVerilog enumerations."
-    ((kind    vl-enumbasekind-p)
-     (signedp booleanp :rule-classes :type-prescription)
-     (dim     vl-maybe-packeddimension-p))
+;;   (defprod vl-enumbasetype
+;;     :measure (two-nats-measure (acl2-count x) 120)
+;;     :tag :vl-enumbasetype
+;;     :layout :tree
+;;     :short "The base types for SystemVerilog enumerations."
+;;     ((kind    vl-enumbasekind-p)
+;;      (signedp booleanp :rule-classes :type-prescription)
+;;      (dim     vl-maybe-packeddimension-p))
 
-    :long "<p>The base type for an enumeration is given by the following
-SystemVerilog grammar rule:</p>
+;;     :long "<p>The base type for an enumeration is given by the following
+;; SystemVerilog grammar rule:</p>
 
-@({
-      enum_base_type ::=
-          integer_atom_type [signing]
-        | integer_vector_type [signing] [packed_dimension]
-        | type_identifier [packed_dimension]
-})
+;; @({
+;;       enum_base_type ::=
+;;           integer_atom_type [signing]
+;;         | integer_vector_type [signing] [packed_dimension]
+;;         | type_identifier [packed_dimension]
+;; })
 
-<p>The main part of this (integer_atom_type, integer_vector_type, or
-type_identifier) is captured by the <b>kind</b> field.</p>
+;; <p>The main part of this (integer_atom_type, integer_vector_type, or
+;; type_identifier) is captured by the <b>kind</b> field.</p>
 
-<p>The <b>signedp</b> field isn't sensible for @('type_identifiers') but we
-include it for uniformity.  For the other kinds of enums, it captures whether
-the @('signed') keyword was mentioned.  or @('unsigned') keywords were
-mentioned.</p>
+;; <p>The <b>signedp</b> field isn't sensible for @('type_identifiers') but we
+;; include it for uniformity.  For the other kinds of enums, it captures whether
+;; the @('signed') keyword was mentioned.  or @('unsigned') keywords were
+;; mentioned.</p>
 
-<p>The optional dimension, if applicable.  BOZO we don't currently support
-unsized dimensions.</p>")
+;; <p>The optional dimension, if applicable.  BOZO we don't currently support
+;; unsized dimensions.</p>")
 
   (defprod vl-enumitem
     :measure (two-nats-measure (acl2-count x) 120)

@@ -72,7 +72,7 @@ version.</p>")
    (defines vl-defines-p
             "Ending @('`define')s after preprocessing.")))
 
-(defoption vl-maybe-zip-p vl-zip-p)
+(defoption vl-maybe-zip vl-zip-p)
 
 (defttag :open-output-channel!)
 

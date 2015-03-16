@@ -63,16 +63,16 @@
                    :args (list x))
             nil))
        ((vl-operandinfo opinfo))
-       ((mv warning size)
-        (vl-datatype-size opinfo.type opinfo.ss))
-
-       ((when warning)
+       ((mv err size)
+        (vl-datatype-size opinfo.type))
+       
+       ((when err)
         (mv (fatal :type :vl-selfsize-fail
                    :msg "Failed to find the size of datatype ~a0 for expression ~a1: ~@2"
-                   :args (list opinfo.type x warning))
+                   :args (list opinfo.type x err))
             nil))
        
-       ((unless (vl-datatype-packedp opinfo.type opinfo.ss))
+       ((unless (vl-datatype-packedp opinfo.type))
         ;; not a sizable datatype
         (mv (ok) nil)))
 
@@ -705,15 +705,24 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                   :args (list x lookup.item))
             nil))
        ((vl-fundecl lookup.item))
+       ((mv err rettype)
+        (vl-datatype-usertype-resolve lookup.item.rettype lookup.ss))
+       ((when err)
+        (mv (fatal :type :vl-selfsize-fail
+                   :msg "Couldn't resolve return type ~a0 of function ~a1: ~@2"
+                   :args (list lookup.item.rettype
+                               (vl-scopeexpr->expr x.name)
+                               err))
+            nil))
        ((mv warning size)
-        (vl-datatype-size lookup.item.rettype lookup.ss))
+        (vl-datatype-size rettype))
        ((when warning)
         (mv (fatal :type :vl-selfsize-fail
                    :msg "Error computing the size of type ~a0 of function ~a1: ~@2"
-                   :args (list lookup.item.rettype
+                   :args (list rettype
                                (vl-scopeexpr->expr x.name) err))
             nil))
-       ((unless (vl-datatype-packedp lookup.item.rettype lookup.ss))
+       ((unless (vl-datatype-packedp rettype))
         (mv (ok) nil)))
     (mv (ok) size)))
 
@@ -850,15 +859,22 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
                      (vl-syscall-selfsize x ss)
                    (vl-funcall-selfsize x ss))
 
-        :vl-cast (b* (((mv warning size)
-                       (vl-datatype-size x.to ss))
-                      ((when warning)
+        :vl-cast (b* (((mv err to-type)
+                       (vl-datatype-usertype-resolve x.to ss))
+                      ((when err)
+                       (mv (fatal :type :vl-selfsize-fail
+                                  :msg "Failed to resolve the type in ~
+                                        cast expression ~a0: ~@1"
+                                  :args (list x err))
+                           nil))
+                      ((mv err size) (vl-datatype-size to-type))
+                      ((when err)
                        (mv (fatal :type :vl-selfsize-fail
                                   :msg "Failed to size the type in ~
                                         cast expression ~a0: ~@1"
-                                  :args (list x warning))
+                                  :args (list x err))
                            nil))
-                      ((unless (vl-datatype-packedp x.to ss))
+                      ((unless (vl-datatype-packedp to-type))
                        (mv (ok) nil)))
                    (mv (ok) size))
 
@@ -871,14 +887,21 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
         ;; these are special like streaming concatenations, only well typed by
         ;; context, unless they have a datatype.
         :vl-pattern (b* (((unless x.pattype) (mv (ok) nil))
-                         ((mv warning size) (vl-datatype-size x.pattype ss))
-                         ((when warning)
+                         ((mv err pattype) (vl-datatype-usertype-resolve x.pattype ss))
+                         ((when err)
+                          (mv (fatal :type :vl-selfsize-fail
+                                     :msg "Failed to resolve the type in ~
+                                        pattern expression ~a0: ~@1"
+                                     :args (list x err))
+                              nil))
+                         ((mv err size) (vl-datatype-size pattype))
+                         ((when err)
                           (mv (fatal :type :vl-selfsize-fail
                                   :msg "Failed to size the type in ~
                                         pattern expression ~a0: ~@1"
-                                  :args (list x warning))
+                                  :args (list x err))
                            nil))
-                         ((unless (vl-datatype-packedp x.pattype ss))
+                         ((unless (vl-datatype-packedp pattype))
                           (mv (ok) nil)))
                       (mv (ok) size)))))
 

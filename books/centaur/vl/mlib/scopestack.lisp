@@ -522,7 +522,7 @@ in it, such as a function, task, or block statement."
     :val-type vl-scopeitem-p
     :count vl-scopeitem-alist-count)
 
-  (defoption vl-maybe-scopeitem-p vl-scopeitem-p))
+  (defoption vl-maybe-scopeitem vl-scopeitem-p))
 
 
 (defsection import-results

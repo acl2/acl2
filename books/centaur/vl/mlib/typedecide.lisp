@@ -115,10 +115,10 @@
        ((vl-operandinfo opinfo))
        ;; we don't need to check that usertypes are ok because
        ;; vl-index-expr-type ensures this
-       ((unless (vl-datatype-packedp opinfo.type opinfo.ss))
+       ((unless (vl-datatype-packedp opinfo.type))
         (mv (ok) nil))
        (caveat1 (vl-operandinfo-signedness-caveat opinfo))
-       ((mv caveat2 signedness) (vl-datatype-signedness opinfo.type opinfo.ss))
+       ((mv caveat2 signedness) (vl-datatype-signedness opinfo.type))
        (warnings (vl-signedness-ambiguity-warning
                   x signedness (or caveat1 caveat2))))
     (mv warnings signedness)))
@@ -157,16 +157,16 @@
                   :args (list x lookup.item))
             nil))
        ((vl-fundecl lookup.item))
-       (err (vl-datatype-check-usertypes lookup.item.rettype lookup.ss))
+       ((mv err rettype) (vl-datatype-usertype-resolve lookup.item.rettype lookup.ss))
        ((when err)
         (mv (fatal :type :vl-typedecide-fail
                    :msg "In function call ~a0, the function's return ~
                          type ~a1 had unresolvable usertypes: ~@2"
                    :args (list x lookup.item.rettype err))
             nil))
-       ((unless (vl-datatype-packedp lookup.item.rettype lookup.ss))
+       ((unless (vl-datatype-packedp rettype))
         (mv (ok) nil))
-       ((mv caveat signedness) (vl-datatype-signedness  lookup.item.rettype lookup.ss))
+       ((mv caveat signedness) (vl-datatype-signedness rettype))
        (warnings (vl-signedness-ambiguity-warning x signedness caveat)))
     (mv (ok) signedness)))
 
@@ -427,17 +427,17 @@ produce unsigned values.</li>
                             (vl-syscall-typedecide x ss)
                           (vl-funcall-typedecide x ss))
 
-        :vl-cast (b* ((err (vl-datatype-check-usertypes x.to ss))
+        :vl-cast (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to ss))
                       ((when err)
                        (mv (fatal :type :vl-typedecide-fail
                                   :msg "Failed to resolve usertypes for ~
                                         cast expression ~a0: ~@1."
                                   :args (list x err))
                            nil))
-                      ((unless (vl-datatype-packedp x.to ss))
+                      ((unless (vl-datatype-packedp to-type))
                        (mv (ok) nil))
                       ((mv ?caveat signedness)
-                       (vl-datatype-signedness x.to ss)))
+                       (vl-datatype-signedness to-type)))
                    (mv (ok) signedness))
 
         ;; By the spec, it seems this always returns a 1-bit unsigned (test this)
@@ -449,17 +449,18 @@ produce unsigned values.</li>
         ;; these are special like streaming concatenations, only well typed by
         ;; context, unless they have a datatype.
         :vl-pattern (b* (((unless x.pattype) (mv (ok) nil))
-                         (err (vl-datatype-check-usertypes x.pattype ss))
+                         ((mv err pattype) (vl-datatype-usertype-resolve
+                                            x.pattype ss))
                          ((when err)
                           (mv (fatal :type :vl-selfsize-fail
                                   :msg "Failed to resolve usertypes for ~
                                         pattern expression ~a0: ~@1"
                                   :args (list x err))
                            nil))
-                         ((unless (vl-datatype-packedp x.pattype ss))
+                         ((unless (vl-datatype-packedp pattype))
                           (mv (ok) nil))
                          ((mv ?caveat signedness)
-                          (vl-datatype-signedness x.pattype ss)))
+                          (vl-datatype-signedness pattype)))
                       (mv (ok) signedness))))
 
     ///

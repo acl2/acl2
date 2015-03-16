@@ -453,21 +453,21 @@ displays.  The module browser's web pages are responsible for defining the
     (:vl-event     "event")
     (otherwise     (or (impossible) ""))))
 
-(define vl-pp-enumbasekind ((x vl-enumbasekind-p) &key (ps 'ps))
-  :guard-hints(("Goal" :in-theory (enable vl-enumbasekind-p)))
-  (b* ((x (vl-enumbasekind-fix x))
-       ((when (stringp x))
-        (vl-print-modname x)))
-    (vl-ps-span "vl_key" (vl-print-str (case x
-                                         (:vl-byte     "byte")
-                                         (:vl-shortint "shortint")
-                                         (:vl-int      "int")
-                                         (:vl-longint  "longint")
-                                         (:vl-integer  "integer")
-                                         (:vl-time     "time")
-                                         (:vl-bit      "bit")
-                                         (:vl-logic    "logic")
-                                         (:vl-reg      "reg"))))))
+;; (define vl-pp-enumbasekind ((x vl-enumbasekind-p) &key (ps 'ps))
+;;   :guard-hints(("Goal" :in-theory (enable vl-enumbasekind-p)))
+;;   (b* ((x (vl-enumbasekind-fix x))
+;;        ((when (stringp x))
+;;         (vl-print-modname x)))
+;;     (vl-ps-span "vl_key" (vl-print-str (case x
+;;                                          (:vl-byte     "byte")
+;;                                          (:vl-shortint "shortint")
+;;                                          (:vl-int      "int")
+;;                                          (:vl-longint  "longint")
+;;                                          (:vl-integer  "integer")
+;;                                          (:vl-time     "time")
+;;                                          (:vl-bit      "bit")
+;;                                          (:vl-logic    "logic")
+;;                                          (:vl-reg      "reg"))))))
 
 (define vl-pp-scopename ((x vl-scopename-p) &key (ps 'ps))
   :prepwork ((local (in-theory (enable vl-scopename-p))))
@@ -1000,7 +1000,7 @@ displays.  The module browser's web pages are responsible for defining the
       (:vl-enum
        (vl-ps-seq (vl-indent 2)
                   (vl-ps-span "vl_key" (vl-print "enum "))
-                  (vl-pp-enumbasetype x.basetype)
+                  (vl-pp-datatype x.basetype)
                   (vl-println " {")
                   (vl-pp-enumitemlist x.items)
                   (vl-indent 2)
@@ -1054,17 +1054,17 @@ displays.  The module browser's web pages are responsible for defining the
       (vl-ps-seq (vl-pp-packeddimension (car x))
                  (vl-pp-packeddimensionlist (cdr x)))))
 
-  (define vl-pp-enumbasetype ((x vl-enumbasetype-p) &key (ps 'ps))
-    :measure (two-nats-measure (vl-enumbasetype-count x) 10)
-    (b* (((vl-enumbasetype x) x))
-      (vl-ps-seq (vl-pp-enumbasekind x.kind)
-                 ;; BOZO this isn't quite right, should only print signedness if it's
-                 ;; not the default for this type
-                 (vl-ps-span "vl_key" (vl-print (if x.signedp " signed" " unsigned")))
-                 (if x.dim
-                     (vl-ps-seq (vl-print " ")
-                                (vl-pp-packeddimension x.dim))
-                   ps))))
+  ;; (define vl-pp-enumbasetype ((x vl-enumbasetype-p) &key (ps 'ps))
+  ;;   :measure (two-nats-measure (vl-enumbasetype-count x) 10)
+  ;;   (b* (((vl-enumbasetype x) x))
+  ;;     (vl-ps-seq (vl-pp-enumbasekind x.kind)
+  ;;                ;; BOZO this isn't quite right, should only print signedness if it's
+  ;;                ;; not the default for this type
+  ;;                (vl-ps-span "vl_key" (vl-print (if x.signedp " signed" " unsigned")))
+  ;;                (if x.dim
+  ;;                    (vl-ps-seq (vl-print " ")
+  ;;                               (vl-pp-packeddimension x.dim))
+  ;;                  ps))))
 
   (define vl-pp-enumitem ((x vl-enumitem-p) &key (ps 'ps))
     :measure (two-nats-measure (vl-enumitem-count x) 10)

@@ -608,24 +608,30 @@ ignored.</p>"
                                            :namespace (vl-module->name x.mod)
                                            :subpath path)))))
 
-(define vl-seltrace-type/ss ((x vl-seltrace-p)
-                             (opinfo vl-operandinfo-p))
+(define vl-seltrace-type ((x vl-seltrace-p)
+                          (opinfo vl-operandinfo-p))
   :guard (and (vl-seltrace-usertypes-ok x)
               (vl-operandinfo-usertypes-ok opinfo))
   :guard-hints (("goal" :in-theory (enable vl-operandinfo-usertypes-ok)))
-  :returns (mv (type vl-datatype-p)
-               (ss vl-scopestack-p))
+  :returns (type vl-datatype-p)
   (if (consp x)
       (b* (((vl-selstep sel) (car x)))
-        (mv sel.type sel.ss))
+        sel.type)
     (b* ((hid (car (vl-operandinfo->hidtrace opinfo)))
-         ((vl-hidstep hid)))
-      (mv (vl-vardecl->type hid.item) hid.ss)))
+         ((vl-hidstep hid))
+         ((when (eq (tag hid.item) :vl-paramdecl))
+          (vl-explicitvalueparam->type
+              (vl-paramdecl->type hid.item)))
+         ((mv ?err type)
+          (vl-datatype-usertype-resolve
+           (vl-vardecl->type hid.item)
+           hid.ss)))
+      type))
   ///
   (std::defret usertypes-ok-of-vl-seltrace-type/ss
     (implies (and (vl-seltrace-usertypes-ok x)
                   (vl-operandinfo-usertypes-ok opinfo))
-             (not (vl-datatype-check-usertypes type ss)))
+             (vl-datatype-resolved-p type))
     :hints(("Goal" :in-theory (enable vl-operandinfo-usertypes-ok)))))
 
 (define vl-seltrace-to-svar ((x vl-seltrace-p)
@@ -670,21 +676,20 @@ ignored.</p>"
   (defret vars-of-vl-seltrace-to-svex-var
     (svex::svarlist-addr-p (svex::svex-vars svex))))
 
-(define vl-datatype-index-is-bitselect ((x vl-datatype-p)
-                                        (ss vl-scopestack-p))
+(define vl-datatype-index-is-bitselect ((x vl-datatype-p))
   ;; This doesn't check for the error if e.g. we apply an index to a 1-bit
   ;; coretype with no pdims.
-  :guard (not (vl-datatype-check-usertypes x ss))
-  (b* (((mv x ss) (vl-maybe-usertype-resolve x ss))
+  :guard (vl-datatype-resolved-p x)
+  (b* ((x (vl-maybe-usertype-resolve x))
        (udims (vl-datatype->udims x))
        (pdims (vl-datatype->pdims x))
        ((when (consp udims)) nil)
        ((when (atom pdims))
         ;; It's a bitselect if we have a packed type.
-        (vl-datatype-packedp x ss))
+        (vl-datatype-packedp x))
        ;; Now get the type after indexing in once.
        (x-minus-1d (vl-datatype-update-pdims (cdr pdims) x))
-       ((mv x-minus-1d ?ss) (vl-maybe-usertype-resolve x-minus-1d ss)))
+       (x-minus-1d (vl-maybe-usertype-resolve x-minus-1d)))
     ;; We now have a bitselect only if the base type is a 1-bit coretype with no dims.
     (and (atom (vl-datatype->pdims x-minus-1d))
          (atom (vl-datatype->udims x-minus-1d))
@@ -695,10 +700,9 @@ ignored.</p>"
            :otherwise nil))))
 
 (define vl-structmemberlist-shift-bits ((x vl-structmemberlist-p)
-                                        (field stringp)
-                                        (ss vl-scopestack-p))
+                                        (field stringp))
   ;; NOTE: x should be REVERSED from the normal order here.
-  :guard (not (vl-structmemberlist-check-usertypes x ss :rec-limit 1000))
+  :guard (vl-structmemberlist-resolved-p x)
   :verify-guards nil
   :returns (mv (err (iff (vl-msg-p err) err))
                (shift (implies (not err) (natp shift)) :rule-classes :type-prescription))
@@ -707,30 +711,22 @@ ignored.</p>"
         (mv (vmsg "Field not found: ~s0" field) nil))
        ((vl-structmember x1) (car x))
        ((when (equal x1.name field)) (mv nil 0))
-       ((mv err size) (vl-datatype-size x1.type ss))
+       ((mv err size) (vl-datatype-size x1.type))
        ((when err) (mv err nil))
        ((unless size) (mv (vmsg "Couldn't size struct member type: ~a0" x1.type) nil))
-       ((mv err rest) (vl-structmemberlist-shift-bits (cdr x) field ss))
+       ((mv err rest) (vl-structmemberlist-shift-bits (cdr x) field))
        ((when err) (mv err nil)))
     (mv nil (+ size rest)))
   ///
-  (verify-guards vl-structmemberlist-shift-bits
-    :hints (("goal" :in-theory (enable vl-structmemberlist-check-usertypes)))))
+  (verify-guards vl-structmemberlist-shift-bits))
 
 (define vl-datatype-field-shift-amount ((x vl-datatype-p)
-                                        (field stringp)
-                                        (ss vl-scopestack-p))
-  :guard (not (vl-datatype-check-usertypes x ss))
+                                        (field stringp))
+  :guard (vl-datatype-resolved-p x)
   :returns (mv (err (iff (vl-msg-p err) err))
                (shift (implies (not err) (integerp shift)) :rule-classes :type-prescription))
-  :prepwork ((local (defthm vl-structmemberlist-check-usertypes-of-structmembers
-                      (implies (and (not (vl-datatype-check-usertypes x ss))
-                                    (vl-datatype-case x :vl-struct))
-                               (not (vl-structmemberlist-check-usertypes
-                                     (vl-struct->members x) ss :rec-limit 1000)))
-                      :hints (("goal" :expand ((vl-datatype-check-usertypes x ss)))))))
   (b* ((field (string-fix field))
-       ((mv x ss) (vl-maybe-usertype-resolve x ss))
+       (x (vl-maybe-usertype-resolve x))
        (udims (vl-datatype->udims x))
        (pdims (vl-datatype->pdims x))
        ((when (or (consp udims) (consp pdims)))
@@ -742,22 +738,21 @@ ignored.</p>"
                     ;; all union fields are right-aligned
                     (mv nil 0)
                   (mv (vmsg "~s0 is not a member of ~a1" field x) nil))
-      :vl-struct (vl-structmemberlist-shift-bits x.members field ss)
+      :vl-struct (vl-structmemberlist-shift-bits x.members field)
       :otherwise (mv (vmsg "Can't select field ~s0 from non-struct/union datatype ~a1"
                            field x)
                      nil))))
 
 
 (define vl-datatype-index-shift-amount ((x vl-datatype-p)
-                                        (idx svex::svex-p)
-                                        (ss vl-scopestack-p))
-  :guard (not (vl-datatype-check-usertypes x ss))
+                                        (idx svex::svex-p))
+  :guard (vl-datatype-resolved-p x)
   :returns (mv (err (iff (vl-msg-p err) err))
                (shift (implies (not err) (svex::svex-p shift))))
-  (b* (((mv x ss) (vl-maybe-usertype-resolve x ss))
-       ((mv err ?caveat slottype dim slotss) (vl-datatype-remove-dim x ss))
+  (b* ((x (vl-maybe-usertype-resolve x))
+       ((mv err ?caveat slottype dim) (vl-datatype-remove-dim x))
        ((when err) (mv err nil))
-       ((mv err size) (vl-datatype-size slottype slotss))
+       ((mv err size) (vl-datatype-size slottype))
        ((when err) (mv err nil))
        ((unless size) (mv (vmsg "Couldn't size array slot type ~a0" slottype) nil))
        ((when (vl-packeddimension-case dim :unsized))
@@ -876,22 +871,53 @@ if the shift amount is computed elsewhere.</p>"
                   (not (member v (svex-vars x))))
              (not (member v (svex-vars (svex-lsb-shift shift-amt x)))))))
 
+(define vl-seltrace-split ((x vl-seltrace-p)
+                           (unres-count (equal (vl-seltrace-unres-count x)
+                                               unres-count)))
+  :short "Splits a seltrace at the point where all remaining indices are resolved."
+  :prepwork ((local (in-theory (enable vl-seltrace-unres-count))))
+  :returns (mv (unres vl-seltrace-p)
+               (res vl-seltrace-p))
+  :measure (len x)
+  (if (mbe :logic (equal (vl-seltrace-unres-count x) 0)
+           :exec (zp unres-count))
+      (mv nil (vl-seltrace-fix x))
+    (b* (((mv unres res) (vl-seltrace-split (cdr x)
+                                            (if (vl-selstep-resolved-p (car x))
+                                                unres-count
+                                              (1- unres-count)))))
+      (mv (cons (vl-selstep-fix (car x)) unres) res)))
+  ///
+  (defret vl-seltrace-usertypes-ok-of-vl-seltrace-split
+    (implies (vl-seltrace-usertypes-ok x)
+             (and (vl-seltrace-usertypes-ok unres)
+                  (vl-seltrace-usertypes-ok res)))
+    :hints(("Goal" :in-theory (enable vl-seltrace-usertypes-ok))))
 
+  (defret vl-seltrace-index-count-of-vl-seltrace-split
+    (<= (vl-seltrace-index-count unres)
+        (vl-seltrace-index-count x))
+    :hints(("Goal" :in-theory (enable vl-seltrace-index-count)))
+    :rule-classes :linear)
 
+  (defret vl-seltrace-unres-count-of-vl-seltrace-split
+    (and (equal (vl-seltrace-unres-count unres)
+                (vl-seltrace-unres-count x))
+         (equal (vl-seltrace-unres-count res) 0))
+    :rule-classes :linear))
 
 
 (define vl-seltrace-to-svex-vector
   ((x vl-seltrace-p)
    (indices svex::svexlist-p)
-   (unres-count natp)
    (opinfo vl-operandinfo-p
            "The full operandinfo of which the seltrace is a part.")
+   (base-svex svex::svex-p)
    (outer-ss vl-scopestack-p))
   :guard (and (vl-seltrace-usertypes-ok x)
               (vl-operandinfo-usertypes-ok opinfo)
-              (equal (len indices)
-                     (vl-seltrace-index-count x))
-              (equal unres-count (vl-seltrace-unres-count x))
+              (>= (len indices)
+                  (vl-seltrace-index-count x))
               (vl-hidtrace-resolved-p (vl-operandinfo->hidtrace opinfo)))
   :verify-guards nil
   :returns (mv (err (iff (vl-msg-p err) err))
@@ -906,19 +932,13 @@ if the shift amount is computed elsewhere.</p>"
                                (consp x))
                       :hints(("Goal" :in-theory (enable vl-seltrace-unres-count)))
                       :rule-classes :forward-chaining)))
-  (b* ((resolved-p (mbe :logic (equal (vl-seltrace-unres-count x) 0)
-                        :exec (eql unres-count 0)))
-
-       ((mv type type-ss) (vl-seltrace-type/ss x opinfo))
-       ((mv err size) (vl-datatype-size type type-ss))
+  (b* ((type (vl-seltrace-type x opinfo))
+       ((mv err size) (vl-datatype-size type))
        ((when err) (mv err (svex-x)))
        ((unless size) (mv (vmsg "Could not size datatype ~s0" type) (svex-x)))
        
-       ((when resolved-p)
-        (b* (((mv err svex-var)
-              (vl-seltrace-to-svex-var x opinfo outer-ss))
-             ((when err) (mv err (svex-x))))
-          (mv nil (svex::svcall svex::concat (svex-int size) svex-var (svex-x)))))
+       ((when (atom x))
+        (mv nil (svex::svcall svex::concat (svex-int size) base-svex (svex-x))))
              
 
        ;; Unres-count nonzero implies (consp x)
@@ -926,16 +946,16 @@ if the shift amount is computed elsewhere.</p>"
 
        
 
-       ((mv rest-type rest-ss) (vl-seltrace-type/ss (cdr x) opinfo))
-       ((mv rest-type rest-ss) (vl-maybe-usertype-resolve rest-type rest-ss))
+       (rest-type (vl-seltrace-type (cdr x) opinfo))
+       (rest-type (vl-maybe-usertype-resolve rest-type))
 
        ((mv err shift-amt)
         (vl-select-case step.select
           :field (b* (((mv err idx)
-                       (vl-datatype-field-shift-amount rest-type step.select.name rest-ss))
+                       (vl-datatype-field-shift-amount rest-type step.select.name))
                       ((when err) (mv err idx)))
                    (mv nil (svex-int idx)))
-          :index (vl-datatype-index-shift-amount rest-type (car indices) rest-ss)))
+          :index (vl-datatype-index-shift-amount rest-type (car indices))))
        ((when err) (mv err (svex-x)))
 
        ((mv err rest) (vl-seltrace-to-svex-vector
@@ -943,10 +963,8 @@ if the shift amount is computed elsewhere.</p>"
                        (vl-select-case step.select
                          :field indices
                          :index (cdr indices))
-                       (if (vl-select-resolved-p step.select)
-                           unres-count
-                         (1- (lnfix unres-count)))
                        opinfo
+                       base-svex
                        outer-ss))
        ((when err) (mv err (svex-x))))
     (mv err (svex::svcall svex::concat (svex-int size)
@@ -976,7 +994,8 @@ if the shift amount is computed elsewhere.</p>"
                                       vl-select-resolved-p)))))
 
   (defret vars-of-vl-seltrace-to-svex-vector
-    (implies (svex::svarlist-addr-p (svex::svexlist-vars indices))
+    (implies (and (svex::svarlist-addr-p (svex::svexlist-vars indices))
+                  (svex::svarlist-addr-p (svex::svex-vars base-svex)))
              (svex::svarlist-addr-p (svex::svex-vars svex)))
     :hints(("Goal" :in-theory (enable vl-seltrace-to-svex-vector)))))
 
@@ -1025,8 +1044,8 @@ the way.</li>
                  ((unless (vl-select-case sel1.select :index))
                   ;; final select is a field access, so not a bitselect
                   (mv nil x indices))
-                 ((mv type type-ss) (vl-seltrace-type/ss (cdr x.seltrace) x))
-                 ((unless (vl-datatype-index-is-bitselect type type-ss))
+                 (type (vl-seltrace-type (cdr x.seltrace) x))
+                 ((unless (vl-datatype-index-is-bitselect type))
                   ;; final index, but not a bitselect
                   (mv nil x indices))
                  ((vl-select-index idx) sel1.select)
@@ -1103,12 +1122,12 @@ the way.</li>
              (not (member v (svex::svexlist-vars new-indices))))))
 
   
-  
 
 
 (define vl-operandinfo-to-svex ((x vl-operandinfo-p)
                                 (indices svex::svexlist-p)
-                                (ss vl-scopestack-p))
+                                (ss vl-scopestack-p)
+                                (params svex::svex-alist-p))
   :prepwork (;; (local (defthm seltrace-index-count-in-terms-of-operandinfo
              ;;          (equal (vl-seltrace-index-count (vl-operandinfo->seltrace x))
              ;;                 (- (vl-operandinfo-index-count x)
@@ -1136,19 +1155,36 @@ the way.</li>
        ((vl-operandinfo x))
        ((unless (vl-hidtrace-resolved-p x.hidtrace))
         (mv (vmsg "Unresolved hid indices") (svex-x)))
+       ((vl-hidstep decl) (car x.hidtrace))
+       ((mv err base-svex unres-seltrace)
+        (if (eq (tag decl.item) :vl-vardecl)
+            (b* (((mv unres-sels res-sels)
+                  (vl-seltrace-split x.seltrace
+                                     (vl-seltrace-unres-count x.seltrace)))
+                 ((mv err base-var)
+                  (vl-seltrace-to-svex-var res-sels x ss)))
+              (mv err base-var unres-sels))
+          (b* (((mv err var) (vl-seltrace-to-svar nil x ss))
+               ((when err) (mv err nil nil))
+               (look (svex::svex-lookup var params))
+               ((unless look)
+                (mv (vmsg "Parameter definition not found") nil nil))
+               ((unless (svex::svex-addr-p look))
+                (mv (vmsg "Parameter expression malformed") nil nil)))
+            (mv nil look x.seltrace))))
+
+       ((when err) (mv err (svex-x)))
+
        ((when (vl-partselect-case x.part :none))
         ;; Bitselect was taken care of by preproc.  Just remains to convert the seltrace.
-        (vl-seltrace-to-svex-vector x.seltrace indices
-                                    (vl-seltrace-unres-count x.seltrace)
-                                    x ss))
+        (vl-seltrace-to-svex-vector unres-seltrace indices
+                                    x base-svex ss))
        ((vl-plusminus->partselect x.part))
        ((mv err baseexpr)
-        (vl-seltrace-to-svex-vector x.seltrace (cddr indices)
-                                    (vl-seltrace-unres-count x.seltrace)
-                                    x ss))
+        (vl-seltrace-to-svex-vector unres-seltrace (cddr indices) x base-svex ss))
        ((when err) (mv err (svex-x)))
-       ((mv arrtype arrtype-ss) (vl-seltrace-type/ss x.seltrace x))
-       ((mv err ?caveat ?basetype dim ?basess) (vl-datatype-remove-dim arrtype arrtype-ss))
+       (arrtype (vl-seltrace-type x.seltrace x))
+       ((mv err ?caveat ?basetype dim) (vl-datatype-remove-dim arrtype))
        ((when err) (mv err (svex-x)))
        ((when (vl-packeddimension-case dim :unsized))
         (mv (vmsg "Unsized dimension") (svex-x)))
@@ -1173,10 +1209,10 @@ the way.</li>
                     (svex::svcall + base-svex
                                   (svex::svcall + (svex-int -1) width-svex)))))
        ((mv err shift-amt)
-        (vl-datatype-index-shift-amount arrtype sel-lsb arrtype-ss))
+        (vl-datatype-index-shift-amount arrtype sel-lsb))
        ((when err) (mv err (svex-x)))
 
-       ((mv err size) (vl-datatype-size x.type x.ss))
+       ((mv err size) (vl-datatype-size x.type))
        ((when err) (mv err (svex-x)))
        ((unless size)
         (mv (vmsg "Unsizable datatype ~a0" x.type) (svex-x))))
@@ -1244,7 +1280,13 @@ the way.</li>
                          :msg "Too many arguments to ~a0"
                          :args (list x))
                   (svex-x)))
-             ((mv err size) (vl-datatype-size x.typearg ss))
+             ((mv err typearg) (vl-datatype-usertype-resolve x.typearg ss))
+             ((when err)
+              (mv (fatal :type :vl-expr-to-svex-fail
+                         :msg "Couldn't resolve datatype in ~a0: ~@1"
+                         :args (list x (or err "unsizable datatype")))
+                  (svex-x)))
+             ((mv err size) (vl-datatype-size typearg))
              ((when (or err (not size)))
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Couldn't size datatype in ~a0: ~@1"
@@ -1302,18 +1344,34 @@ the way.</li>
            (repeat n (vl-datatype-fix x)))
     :hints(("Goal" :in-theory (enable repeat)))))
 
-(define vl-datatypelist-check-usertypes ((x vl-datatypelist-p)
-                                         (ss vl-scopestack-p))
-  :returns (err (iff (vl-msg-p err) err))
+(define vl-datatypelist-resolved-p ((x vl-datatypelist-p))
   (if (atom x)
-      nil
-    (or (vl-datatype-check-usertypes (car x) ss)
-        (vl-datatypelist-check-usertypes (cdr x) ss)))
+      t
+    (and (vl-datatype-resolved-p (car x))
+        (vl-datatypelist-resolved-p (cdr x))))
   ///
-  (defthm vl-datatypelist-check-usertypes-of-repeat
-    (implies (not (vl-datatype-check-usertypes x ss))
-             (not (vl-datatypelist-check-usertypes (repeat n x) ss)))
+  (defthm vl-datatypelist-resolved-p-of-repeat
+    (implies (vl-datatype-resolved-p x)
+             (vl-datatypelist-resolved-p (repeat n x)))
     :hints(("Goal" :in-theory (enable repeat)))))
+
+(Define vl-datatypelist-usertype-resolve ((x vl-datatypelist-p)
+                                          (ss vl-scopestack-p))
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (new-x vl-datatypelist-p))
+  (b* (((when (atom x)) (mv nil nil))
+       ((mv err1 x1) (vl-datatype-usertype-resolve (car x) ss))
+       ((mv err2 x2) (vl-datatypelist-usertype-resolve (cdr x) ss)))
+    (mv (or err1 err2)
+        (cons x1 x2)))
+  /// 
+  (defret vl-datatypelist-resolved-p-of-vl-datatypelist-usertype-resolve
+    (implies (not err)
+             (vl-datatypelist-resolved-p new-x))
+    :hints(("Goal" :in-theory (enable vl-datatypelist-resolved-p))))
+
+  (defret len-of-vl-datatypelist-usertype-resolve
+    (equal (len new-x) (len x))))
 
 (defprojection vl-portdecllist->types ((x vl-portdecllist-p))
   :returns (types vl-datatypelist-p)
@@ -1323,11 +1381,11 @@ the way.</li>
   :returns (types vl-datatypelist-p)
   (vl-structmember->type x)
   ///
-  (defret vl-datatypelist-check-usertypes-of-vl-structmemberlist->types
-    (implies (not (vl-structmemberlist-check-usertypes x ss :rec-limit 1000))
-             (not (vl-datatypelist-check-usertypes types ss)))
-    :hints(("Goal" :in-theory (enable vl-datatypelist-check-usertypes
-                                      vl-structmemberlist-check-usertypes)))))
+  (defret vl-datatypelist-resolved-p-of-vl-structmemberlist->types
+    (implies (vl-structmemberlist-resolved-p x)
+             (vl-datatypelist-resolved-p types))
+    :hints(("Goal" :in-theory (enable vl-datatypelist-resolved-p
+                                      vl-structmemberlist-resolved-p)))))
 
 
 (local (in-theory (disable nfix)))
@@ -1510,33 +1568,13 @@ the way.</li>
              (not (member v (svex::svex-vars concat))))))
 
 (define vl-compare-datatypes ((a vl-datatype-p)
-                              (a-ss vl-scopestack-p)
-                              (b vl-datatype-p)
-                              (b-ss vl-scopestack-p))
+                              (b vl-datatype-p))
   :returns (err (iff (vl-msg-p err) err))
-  (b* ((a (vl-datatype-fix a))
-       (b (vl-datatype-fix b))
-       (a-ss (vl-scopestack-fix a-ss))
-       (b-ss (vl-scopestack-fix b-ss))
-       ((unless (equal a b))
-        (vmsg "Mismatching datatypes: ~a0, ~a1" a b))
-       ((when (hons-equal a-ss b-ss))
-        nil)
-       ((unless (and (vl-datatype-case a :vl-usertype)
-                     (vl-datatype-case b :vl-usertype)))
-        (vmsg "Mismatching datatypes: ~a0, ~a1" a b))
-       ((vl-usertype a))
-       ((vl-usertype b))
-       ;; BOZO could require this as guard with
-       ;; (not (vl-datatype-check-usertypes ...))
-       ((mv err a a-ss) (vl-usertype-resolve a.name a-ss))
-       ((when err) err)
-       ((mv err b b-ss) (vl-usertype-resolve b.name b-ss))
-       ((when err) err))
-    (if (and (equal a b)
-             (hons-equal a-ss b-ss))
-        nil
-      (vmsg "Mismatching datatypes: ~a0, ~a1" a b))))
+  (if (vl-datatype-equiv a b)
+      nil
+    ;; We'll see how often this bites us...
+    (vmsg "Mismatching datatypes: ~a0, ~a1"
+          (vl-datatype-fix a) (vl-datatype-fix b))))
 
 
 
@@ -1789,7 +1827,136 @@ the way.</li>
   :short "Static configuration object for expr to svex conversion."
   ((ss vl-scopestack-p
        "The scopestack at the source location of the expression.")
-   (fns svex::svex-alist-p "Function definition table")))
+   (fns svex::svex-alist-p "Function definition table")
+   (params svex::svex-alist-p "Parameter definition table")))
+
+
+
+;; (defines vl-expr-paramref-measure
+;;   :prepwork ((local (defthm natp-max
+;;                       (implies (and (natp a) (natp b))
+;;                                (natp (max a b)))
+;;                       :rule-classes :type-prescription))
+;;              (local (in-theory (disable max))))
+;;   :ruler-extenders :all
+;;   (define vl-expr-paramref-measure ((x vl-expr-p)
+;;                                     (ss vl-scopestack-p)
+;;                                     &key ((rec-limit natp) '1000))
+;;     :short "Measure of the recursion depth necessary to recursively process an
+;;             expression plus the expressions assigned to all of the parameters it
+;;             uses.  Nil if there is a dependency loop."
+;;     :returns (rec-depth maybe-natp :rule-classes :type-prescription)
+;;     :measure (two-nats-measure rec-limit (vl-expr-count x))
+;;     (b* ((sub-depth (vl-exprlist-paramref-measure
+;;                      (vl-expr->subexprs x) ss :rec-limit rec-limit))
+;;          ((unless sub-depth) nil)
+;;          (self-depth
+;;           (vl-expr-case x
+;;             :vl-index (b* (((mv err opinfo) (vl-index-expr-typetrace x ss))
+;;                            ((when err) 0)
+;;                            ((vl-operandinfo opinfo))
+;;                            ((vl-hidstep decl) (car opinfo.hidtrace))
+;;                            ((unless (eq (tag decl.item) :vl-paramdecl))
+;;                             0)
+;;                            ((vl-paramdecl decl.item))
+;;                            ((when (zp rec-limit)) nil))
+;;                         (vl-paramtype-case decl.item.type
+;;                           :vl-explicitvalueparam
+;;                           (b* ((meas (vl-expr-paramref-measure decl.item.type.default
+;;                                                                decl.ss
+;;                                                                :rec-limit (1- (lnfix rec-limit)))))
+;;                             (and meas (+ 1 meas)))
+;;                           :otherwise 0))
+;;             :otherwise 0))
+;;          ((unless self-depth) nil))
+;;       (max self-depth sub-depth)))
+
+;;   (define vl-exprlist-paramref-measure ((x vl-exprlist-p)
+;;                                         (ss vl-scopestack-p)
+;;                                         &key ((rec-limit natp) '1000))
+;;     :returns (rec-depth maybe-natp :rule-classes :type-prescription)
+;;     :measure (two-nats-measure rec-limit (vl-exprlist-count x))
+;;     (b* (((when (atom x)) 0)
+;;          (depth1 (vl-expr-paramref-measure (car x) ss :rec-limit rec-limit))
+;;          ((unless depth1) nil)
+;;          (depth2 (vl-exprlist-paramref-measure (cdr x) ss :rec-limit rec-limit))
+;;          ((unless depth2) nil))
+;;       (max depth1 depth2)))
+;;   ///
+;;   (deffixequiv-mutual vl-expr-paramref-measure)
+
+;;   (local (defthm vl-expr-paramref-measure-of-member-exists
+;;            (implies (and (vl-exprlist-paramref-measure x ss :rec-limit rec-limit)
+;;                          ;; (vl-expr-paramref-measure y ss :rec-limit rec-limit)
+;;                          (member y x))
+;;                     (vl-expr-paramref-measure y ss :rec-limit rec-limit))
+;;            :hints (("goal" :induct (member y x)
+;;                     :in-theory (enable (:i member)))
+;;                    (and stable-under-simplificationp
+;;                         '(:expand ((vl-exprlist-paramref-measure x ss :rec-limit rec-limit)
+;;                                    (member-equal y x)))))))
+
+;;   (local (defthm vl-expr-paramref-measure-of-member-bound
+;;            (implies (and (vl-exprlist-paramref-measure x ss :rec-limit rec-limit)
+;;                          ;; (vl-expr-paramref-measure y ss :rec-limit rec-limit)
+;;                          (member y x))
+;;                     (<= (vl-expr-paramref-measure y ss :rec-limit rec-limit)
+;;                         (vl-exprlist-paramref-measure x ss :rec-limit rec-limit)))
+;;            :hints (("goal" :induct (member y x)
+;;                     :in-theory (enable (:i member)))
+;;                    (and stable-under-simplificationp
+;;                         '(:expand ((vl-exprlist-paramref-measure x ss :rec-limit rec-limit)
+;;                                    (member-equal y x))))
+;;                    (and stable-under-simplificationp
+;;                         '(:in-theory (enable max))))
+;;            :rule-classes :linear))
+
+
+;;   (defthm vl-expr-paramref-measure-of-member-subexprs-exists
+;;     (implies (and (member y (vl-expr->subexprs x))
+;;                   (vl-expr-paramref-measure x ss :rec-limit rec-limit))
+;;              (vl-expr-paramref-measure y ss :rec-limit rec-limit))
+;;     :hints (("Goal" :expand ((vl-expr-paramref-measure x ss :rec-limit rec-limit)))))
+
+;;   (defthm vl-expr-paramref-measure-of-member-subexprs-bound
+;;     (implies (and (member y (vl-expr->subexprs x))
+;;                   (vl-expr-paramref-measure x ss :rec-limit rec-limit))
+;;              (<= (vl-expr-paramref-measure y ss :rec-limit rec-limit)
+;;                  (vl-expr-paramref-measure x ss :rec-limit rec-limit)))
+;;     :hints (("Goal" :expand ((vl-expr-paramref-measure x ss :rec-limit rec-limit))
+;;              :in-theory (enable max)))
+;;     :rule-classes (:rewrite :linear)))
+                                
+         
+  
+
+(define vl-funname->svex-funname ((x vl-scopeexpr-p)
+                                  (ss vl-scopestack-p))
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (var (implies (not err) (svex::svar-p var)))
+               (hidtrace vl-hidtrace-p))
+  (b* (((mv err trace context ?tail)
+        (vl-follow-scopeexpr x ss))
+       ((when err) (mv err nil trace))
+       ((unless (vl-hidtrace-resolved-p trace))
+        (mv (vmsg "Function ~a0 has unresolved indices??"
+                  :args (list (vl-scopeexpr-fix x)))
+            nil trace))
+       (path (vl-hidtrace-to-path trace nil))
+       ((mv ?err addr) (vl-scopecontext-to-addr context ss path))
+       ;; Ignore the error here because we really just want to generate a fully
+       ;; scoped name for the function.
+       (fnname (svex::make-svar :name addr)))
+    (mv nil fnname trace))
+  ///
+  (defret consp-of-vl-funname->svex-funname.hidtrace
+    (implies (not err)
+             (consp hidtrace))
+    :rule-classes :type-prescription))
+
+
+
+
 
 (defines vl-expr-to-svex
   :ruler-extenders :all
@@ -1973,7 +2140,7 @@ functions can assume all bits of it are good.</p>"
               svex))
 
         :vl-index
-        (b* (((wmv warnings svex & &)
+        (b* (((wmv warnings svex &)
               (vl-index-expr-to-svex x conf)))
           (mv warnings svex))
 
@@ -2082,7 +2249,7 @@ functions can assume all bits of it are good.</p>"
                              :args (list x))
                       (svex-x))))
               (vl-$bits-call-to-svex x conf.ss))
-          (b* (((wmv warnings svex & &)
+          (b* (((wmv warnings svex &)
                 (vl-funcall-to-svex x conf)))
             (mv warnings svex)))
 
@@ -2093,13 +2260,13 @@ functions can assume all bits of it are good.</p>"
         ;; be a packed struct and the inner expression an assignment pattern
         ;; creating that struct.  So we have to use vl-expr-to-svex-datatyped
         ;; here.
-        (b* ((err (vl-datatype-check-usertypes x.to conf.ss))
+        (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to conf.ss))
              ((when err)
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Usertypes not resolved in cast ~a0: ~@1"
                          :args (list x err))
                   (svex-x))))
-          (vl-expr-to-svex-datatyped x.expr x.to conf.ss conf))
+          (vl-expr-to-svex-datatyped x.expr to-type conf))
 
         :vl-pattern
         (b* (((unless x.pattype)
@@ -2107,13 +2274,13 @@ functions can assume all bits of it are good.</p>"
                          :msg "Untyped assignment pattern: ~a0"
                          :args (list x))
                   (svex-x)))
-             (err (vl-datatype-check-usertypes x.pattype conf.ss))
+             ((mv err pattype) (vl-datatype-usertype-resolve x.pattype conf.ss))
              ((when err)
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Usertypes not resolved in pattern ~a0: ~@1"
                          :args (list x err))
                   (svex-x))))
-          (vl-assignpat-to-svex x.pat x.pattype conf.ss conf x))
+          (vl-assignpat-to-svex x.pat pattype conf x))
         :otherwise
         (mv (ok) (prog2$ (impossible) (svex-x))))))
 
@@ -2122,13 +2289,14 @@ functions can assume all bits of it are good.</p>"
     :guard (vl-expr-case x :vl-index)
     :returns (mv (warnings vl-warninglist-p)
                  (svex (and (svex::svex-p svex) (svex::svarlist-addr-p (svex::svex-vars svex))))
-                 (type vl-maybe-datatype-p)
-                 (type-ss vl-scopestack-p))
+                 (type (and (vl-maybe-datatype-p type)
+                            (implies type
+                                     (vl-datatype-resolved-p type)))))
     :measure (two-nats-measure (vl-expr-count x) 2)    
     (b* ((warnings nil)
          ((unless (mbt (vl-expr-case x :vl-index)))
           (impossible) ;; need this case for measure
-          (mv (ok) (svex-x) nil nil))
+          (mv (ok) (svex-x) nil))
          ((vl-svexconf conf))
          (x (vl-expr-fix x))
          ((mv err opinfo) (vl-index-expr-typetrace x conf.ss))
@@ -2136,102 +2304,93 @@ functions can assume all bits of it are good.</p>"
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Failed to convert expression ~a0: ~@1"
                      :args (list x err))
-              (svex-x) nil nil))
+              (svex-x) nil))
          ((vl-operandinfo opinfo))
          ((wmv warnings svex-indices ?sizes)
           (vl-exprlist-to-svex-selfdet
            (vl-operandinfo->indices opinfo) conf))
+         ((vl-hidstep decl) (car opinfo.hidtrace))
          ((mv err svex)
-          (vl-operandinfo-to-svex opinfo svex-indices conf.ss)))
+          (vl-operandinfo-to-svex opinfo svex-indices conf.ss conf.params)))
       (mv (if err
               (fatal :type :vl-expr-to-svex-fail
                      :msg "Failed to convert expression ~a0: ~@1"
                      :args (list x err))
             (ok))
           svex
-          opinfo.type opinfo.ss))
-    ///
-    (defret vl-index-expr-to-svex-type-ok
-      (implies type
-               (not (vl-datatype-check-usertypes type type-ss)))
-      :hints (("goal" :expand ((vl-index-expr-to-svex x conf))))))
+          opinfo.type)))
 
   (define vl-funcall-to-svex ((x vl-expr-p)
                               (conf vl-svexconf-p))
     :returns (mv (warnings vl-warninglist-p)
                  (svex (and (svex::svex-p svex) (svex::svarlist-addr-p (svex::svex-vars svex))))
-                 (type vl-maybe-datatype-p)
-                 (type-ss vl-scopestack-p))
+                 (type (and (vl-maybe-datatype-p type)
+                            (implies type
+                                     (vl-datatype-resolved-p type)))))
     :guard (vl-expr-case x :vl-call)
     :measure (two-nats-measure (vl-expr-count x) 2)    
     (b* ((warnings nil)
          ((unless (mbt (vl-expr-case x :vl-call)))
           (impossible) ;; need this case for measure
-          (mv (ok) (svex-x) nil nil))
+          (mv (ok) (svex-x) nil))
          ((vl-svexconf conf))
          ((vl-call x) (vl-expr-fix x))
-         ((mv err trace context ?tail)
-          (vl-follow-scopeexpr x.name conf.ss))
+         ((mv err fnname trace) (vl-funname->svex-funname x.name conf.ss))
          ((when err)
           (mv (fatal :type :vl-expr-to-svex-fail
-                     :msg "Failed to find function ~a0"
-                     :args (list x))
-              (svex-x) nil nil))
+                     :msg "Failed to find function ~a0: ~@1"
+                     :args (list x err))
+              (svex-x) nil))
          ((vl-hidstep lookup) (car trace))
          ((unless (eq (tag lookup.item) :vl-fundecl))
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "In function call ~a0, function name does not ~
                         refer to a fundecl but instead ~a1"
                      :args (list x lookup.item))
-              (svex-x) nil nil))
-         ((unless (vl-hidtrace-resolved-p trace))
-          (mv (fatal :type :vl-expr-to-svex-fail
-                     :msg "In function call ~a0, function name has ~
-                         unresolved indices??"
-                     :args (list x))
-              (svex-x) nil nil))
-         (path (vl-hidtrace-to-path trace nil))
-         ((mv ?err addr) (vl-scopecontext-to-addr context conf.ss path))
-         ;; Ignore the error here because we really just want to generate a fully
-         ;; scoped name for the function.
-         (fnname (svex::make-svar :name addr))
+              (svex-x) nil))
          (expr (svex::svex-lookup fnname conf.fns))
          ((unless expr)
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Function not found: ~a0"
                      :args (list x))
-              (svex-x) nil nil))
+              (svex-x) nil))
          ((vl-fundecl decl) lookup.item)
          ((unless (eql (len decl.portdecls) (len x.args)))
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Bad arity for function call: ~a0"
                      :args (list x))
-              (svex-x) nil nil))
+              (svex-x) nil))
          (types (vl-portdecllist->types decl.portdecls))
-         (type-err (vl-datatypelist-check-usertypes types lookup.ss))
+         ((mv type-err types) (vl-datatypelist-usertype-resolve types lookup.ss))
          ((when type-err)
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Failed to resolve usertypes in portlist for ~
                            function call ~a0: ~@1"
                      :args (list x type-err))
-              (svex-x) nil nil))
+              (svex-x) nil))
          ((wmv warnings args-svex)
           (vl-exprlist-to-svex-datatyped
            x.args
            types
-           lookup.ss ;; conf.ss for all of the portdecl types, from function declaration context
            conf))
          (comp-alist (vl-function-pair-inputs-with-actuals decl.portdecls args-svex))
          ((with-fast comp-alist))
-         (ans (svex::svex-subst-memo expr comp-alist)))
+         (ans (svex::svex-subst-memo expr comp-alist))
+         ((mv err rettype) (vl-datatype-usertype-resolve decl.rettype
+                                                         lookup.ss))
+         ((when err)
+          (mv (warn :type :vl-expr-to-svex-fail
+                    :msg "Failed to resolve usertypes in return type for ~
+                          function call ~a0: ~@1"
+                    :args (list x err))
+              ans nil)))
       (clear-memoize-table 'svex::svex-subst-memo)
-      (mv (ok) ans decl.rettype lookup.ss)))
+      (mv (ok) ans rettype)))
 
   (define vl-expr-to-svex-datatyped ((x vl-expr-p)
                                      (type vl-datatype-p)
-                                     (type-ss vl-scopestack-p)
                                      (conf vl-svexconf-p))
-    :guard (not (vl-datatype-check-usertypes type type-ss))
+    :guard (vl-datatype-resolved-p type)
     :measure (two-nats-measure (vl-expr-count x) 16)
     :returns (mv (warnings vl-warninglist-p)
                  (svex (and (svex::svex-p svex) (svex::svarlist-addr-p (svex::svex-vars svex)))))
@@ -2239,7 +2398,7 @@ functions can assume all bits of it are good.</p>"
          (warnings nil)
          ((vl-svexconf conf)) 
          (opacity (vl-expr-opacity x)) 
-         (packedp (vl-datatype-packedp type type-ss))
+         (packedp (vl-datatype-packedp type))
          ((when (and packedp
                      (not (eq opacity :special))
                      (not (vl-expr-case x :vl-pattern))))
@@ -2247,7 +2406,7 @@ functions can assume all bits of it are good.</p>"
           ;; vector-like, and I think that if the datatype is packed we get the
           ;; right results by simply treating the expression as a vector with
           ;; the given size.  We may need to add exceptions to this.
-          (b* (((mv err size) (vl-datatype-size type type-ss))
+          (b* (((mv err size) (vl-datatype-size type))
                ((when (or err (not size)))
                 (mv (fatal :type :vl-expr-to-svex-fail
                            :msg "Couldn't size packed datatype ~a0"
@@ -2259,14 +2418,14 @@ functions can assume all bits of it are good.</p>"
 
       (vl-expr-case x
         :vl-index
-        (b* (((wmv warnings svex itype itype-ss)
+        (b* (((wmv warnings svex itype)
               (vl-index-expr-to-svex x conf))
              ((unless itype)
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Couldn't find type for expression: ~a0"
                          :args (list x))
                   svex))
-             (err (vl-compare-datatypes type type-ss itype itype-ss)))
+             (err (vl-compare-datatypes type itype)))
           (mv (if err
                   (fatal :type :vl-expr-to-svex-fail
                          :msg "Type mismatch: ~a0 has type ~a1 but ~
@@ -2279,9 +2438,9 @@ functions can assume all bits of it are good.</p>"
         (b* (((wmv warnings test-svex ?test-size)
               (vl-expr-to-svex-selfdet x.test nil conf))
              ((wmv warnings then-svex)
-              (vl-expr-to-svex-datatyped x.then type type-ss conf))
+              (vl-expr-to-svex-datatyped x.then type conf))
              ((wmv warnings else-svex)
-              (vl-expr-to-svex-datatyped x.else type type-ss conf)))
+              (vl-expr-to-svex-datatyped x.else type conf)))
           (mv (ok)
               (svex::svcall svex::? test-svex then-svex else-svex)))
 
@@ -2291,14 +2450,14 @@ functions can assume all bits of it are good.</p>"
                          :msg "System call ~a0 supposed to return unpacked type ~a1"
                          :args (list x (vl-datatype-fix type)))
                   (svex-x)))
-             ((wmv warnings svex ftype ftype-ss)
+             ((wmv warnings svex ftype)
               (vl-funcall-to-svex x conf))
              ((unless ftype)
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Couldn't find type for expression: ~a0"
                          :args (list x))
                   svex))
-             (err (vl-compare-datatypes type type-ss ftype ftype-ss)))
+             (err (vl-compare-datatypes type ftype)))
           (mv (if err
                   (fatal :type :vl-expr-to-svex-fail
                          :msg "Type mismatch: ~a0 has type ~a1 but ~
@@ -2308,15 +2467,15 @@ functions can assume all bits of it are good.</p>"
               svex))
 
         :vl-cast
-        (b* ((err (vl-datatype-check-usertypes x.to conf.ss))
+        (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to conf.ss))
              ((when err)
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Usertypes not resolved in cast ~a0: ~@1"
                          :args (list x err))
                   (svex-x)))
              ((wmv warnings svex)
-              (vl-expr-to-svex-datatyped x.expr x.to conf.ss conf))
-             (err (vl-compare-datatypes type type-ss x.to conf.ss)))
+              (vl-expr-to-svex-datatyped x.expr to-type conf))
+             (err (vl-compare-datatypes type to-type)))
           (mv (if err
                   (fatal :type :vl-expr-to-svex-fail
                          :msg "Type mismatch: ~a0 has type ~a1 but ~
@@ -2333,21 +2492,22 @@ functions can assume all bits of it are good.</p>"
 
         :vl-pattern
         (b* (((unless x.pattype)
-              (vl-assignpat-to-svex x.pat type type-ss conf x))
-             (err (vl-datatype-check-usertypes x.pattype conf.ss))
+              (vl-assignpat-to-svex x.pat type conf x))
+             ((mv err pattype)
+              (vl-datatype-usertype-resolve x.pattype conf.ss))
              ((when err)
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Usertypes not resolved in pattern ~a0: ~@1"
                          :args (list x err))
                   (svex-x)))
              ((wmv warnings svex)
-              (vl-assignpat-to-svex x.pat x.pattype conf.ss conf x))
-             (err (vl-compare-datatypes type type-ss x.pattype conf.ss)))
+              (vl-assignpat-to-svex x.pat pattype conf x))
+             (err (vl-compare-datatypes type pattype)))
           (mv (if err
                   (fatal :type :vl-expr-to-svex-fail
                          :msg "Type mismatch: ~a0 has type ~a1 but ~
                                should be ~a2. More: ~@3"
-                         :args (list x x.pattype (vl-datatype-fix type) err))
+                         :args (list x pattype (vl-datatype-fix type) err))
                 (ok))
               svex))
 
@@ -2379,23 +2539,22 @@ functions can assume all bits of it are good.</p>"
 
   (define vl-assignpat-to-svex ((x vl-assignpat-p)
                                 (type vl-datatype-p)
-                                (type-ss vl-scopestack-p)
                                 (conf vl-svexconf-p)
                                 (orig-x vl-expr-p))
-    :guard (not (vl-datatype-check-usertypes type type-ss))
+    :guard (vl-datatype-resolved-p type)
     :measure (two-nats-measure (vl-assignpat-count x) 16)
     :returns (mv (warnings vl-warninglist-p)
                  (svex (and (svex::svex-p svex) (svex::svarlist-addr-p (svex::svex-vars svex)))))
     (b* ((orig-x (vl-expr-fix orig-x))
          (warnings nil)
-         ((mv type type-ss) (vl-maybe-usertype-resolve type type-ss))
+         (type (vl-maybe-usertype-resolve type))
          ;; Makes sure type is not just a bare usertype.  If the result is a
          ;; usertype, it at least has an array dimension.
          ((when (or (consp (vl-datatype->udims type))
                     (consp (vl-datatype->pdims type))))
           ;; Array.
-          (b* (((mv ?err ?caveat slottype dim slot-ss)
-                (vl-datatype-remove-dim type type-ss))
+          (b* (((mv ?err ?caveat slottype dim)
+                (vl-datatype-remove-dim type))
                ;; Never an error because we have dims.
                ((when (vl-packeddimension-case dim :unsized))
                 (mv (fatal :type :vl-expr-to-svex-fail
@@ -2408,10 +2567,10 @@ functions can assume all bits of it are good.</p>"
                            :msg "unresolved dimension in type of assignment pattern ~a0"
                            :args (list orig-x))
                     (svex-x))))
-            (vl-array-assignpat-to-svex x slottype slot-ss range conf orig-x))))
+            (vl-array-assignpat-to-svex x slottype range conf orig-x))))
       (vl-datatype-case type
         :vl-struct
-        (vl-struct-assignpat-to-svex x type.members type-ss conf orig-x)
+        (vl-struct-assignpat-to-svex x type.members conf orig-x)
         :otherwise
         (mv (fatal :type :vl-expr-to-svex-fail
                    :msg "Bad type ~a0 for assignment pattern ~a1"
@@ -2421,12 +2580,11 @@ functions can assume all bits of it are good.</p>"
 
   (define vl-array-assignpat-to-svex ((x vl-assignpat-p)
                                       (slottype vl-datatype-p)
-                                      (slot-ss vl-scopestack-p)
                                       (range vl-range-p)
                                       (conf vl-svexconf-p)
                                       (orig-x vl-expr-p))
     :guard (and (vl-range-resolved-p range)
-                (not (vl-datatype-check-usertypes slottype slot-ss)))
+                (vl-datatype-resolved-p slottype))
     :measure (two-nats-measure (vl-assignpat-count x) 10)
     :returns (mv (warnings vl-warninglist-p)
                  (svex (and (svex::svex-p svex) (svex::svarlist-addr-p (svex::svex-vars svex)))))
@@ -2437,7 +2595,7 @@ functions can assume all bits of it are good.</p>"
                      :positional x.vals
                      :keyval (alist-vals x.pairs)
                      :repeat x.vals))
-         ((mv err slotsize) (vl-datatype-size slottype slot-ss))
+         ((mv err slotsize) (vl-datatype-size slottype))
          ((when (or err (not slotsize)))
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Couldn't size assignpattern slot type ~a0 (expr: ~a1)"
@@ -2449,7 +2607,6 @@ functions can assume all bits of it are good.</p>"
           (vl-exprlist-to-svex-datatyped
            subexprs
            (repeat (len subexprs) slottype)
-           slot-ss
            conf)))
       (vl-assignpat-case x
         :positional
@@ -2498,10 +2655,9 @@ functions can assume all bits of it are good.</p>"
 
   (define vl-struct-assignpat-keyval-resolve ((x vl-keyvallist-p)
                                               (membs vl-structmemberlist-p)
-                                              (type-ss vl-scopestack-p)
                                               (conf vl-svexconf-p)
                                               (orig-x vl-expr-p))
-    :guard (not (vl-structmemberlist-check-usertypes membs type-ss :rec-limit 1000))
+    :guard (vl-structmemberlist-resolved-p membs)
     :measure (two-nats-measure (vl-keyvallist-count x)
                                (len membs))
     ;; BOZO only returning one of the errors...
@@ -2521,7 +2677,7 @@ functions can assume all bits of it are good.</p>"
          ((wmv warnings first)
           (if first
               (vl-expr-to-svex-datatyped
-               first m1.type type-ss conf)
+               first m1.type conf)
             (mv (fatal :type :vl-expr-to-svex-fail
                        :msg "No entry for struct member ~s1 in ~
                                   assignment pattern ~a1"
@@ -2529,21 +2685,21 @@ functions can assume all bits of it are good.</p>"
                 (svex-x))))
          ((wmv warnings rest)
           (vl-struct-assignpat-keyval-resolve
-           x (cdr membs) type-ss conf orig-x)))
+           x (cdr membs) conf orig-x)))
       (mv warnings
           (cons first rest))))
 
   (define vl-struct-assignpat-to-svex ((x vl-assignpat-p)
                                        (membs vl-structmemberlist-p)
-                                       (type-ss vl-scopestack-p)
                                        (conf vl-svexconf-p)
                                        (orig-x vl-expr-p))
     :measure (two-nats-measure (vl-assignpat-count x) 10)
+    :guard (vl-structmemberlist-resolved-p membs)
     :returns (mv (warnings vl-warninglist-p)
                  (svex (and (svex::svex-p svex) (svex::svarlist-addr-p (svex::svex-vars svex)))))
     (b* ((orig-x (vl-expr-fix orig-x))
          (warnings nil)
-         ((mv err widths) (vl-structmemberlist-sizes membs type-ss :rec-limit 1000))
+         ((mv err widths) (vl-structmemberlist-sizes membs))
          ((when (or err (member nil widths)))
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Couldn't size struct members for assignment ~
@@ -2560,7 +2716,7 @@ functions can assume all bits of it are good.</p>"
                   (svex-x)))
              (types (vl-structmemberlist->types membs))
              ((wmv warnings svex-vals)
-              (vl-exprlist-to-svex-datatyped x.vals types type-ss conf)))
+              (vl-exprlist-to-svex-datatyped x.vals types conf)))
           (mv (ok)
               (svex-concat-list widths svex-vals)))
         :repeat
@@ -2578,7 +2734,7 @@ functions can assume all bits of it are good.</p>"
                   (svex-x)))
              ((mv err svex-membs)
               (vl-struct-assignpat-keyval-resolve
-               x.pairs membs type-ss conf orig-x)))
+               x.pairs membs conf orig-x)))
           (mv (if err
                   (fatal :type :vl-expr-to-svex-fail
                          :msg "Bad key/val assignment pattern ~a0: ~@1"
@@ -2588,10 +2744,9 @@ functions can assume all bits of it are good.</p>"
 
   (define vl-exprlist-to-svex-datatyped ((x vl-exprlist-p)
                                          (types vl-datatypelist-p)
-                                         (type-ss vl-scopestack-p)
                                          (conf vl-svexconf-p))
     :guard (and (equal (len types) (len x))
-                (not (vl-datatypelist-check-usertypes types type-ss)))
+                (vl-datatypelist-resolved-p types))
     :measure (two-nats-measure (vl-exprlist-count x) 10)
     :returns (mv (warnings vl-warninglist-p)
                  (svexes
@@ -2603,10 +2758,10 @@ functions can assume all bits of it are good.</p>"
          ((when (atom x)) (mv (ok) nil))
          ((wmv warnings first)
           (vl-expr-to-svex-datatyped
-           (car x) (car types) type-ss conf))
+           (car x) (car types) conf))
          ((wmv warnings rest)
           (vl-exprlist-to-svex-datatyped
-           (cdr x) (cdr types) type-ss conf)))
+           (cdr x) (cdr types) conf)))
       (mv warnings (cons first rest))))
 
   (define vl-exprlist-to-svex-selfdet ((x vl-exprlist-p)
@@ -2651,9 +2806,8 @@ functions can assume all bits of it are good.</p>"
     (verify-guards vl-expr-to-svex-selfdet
       :hints (("goal" :do-not-induct t)
               (and stable-under-simplificationp
-                   '(:expand ((vl-datatypelist-check-usertypes types type-ss)
-                              (:free (rec-limit)
-                               (vl-structmemberlist-check-usertypes membs type-ss))
+                   '(:expand ((vl-datatypelist-resolved-p types)
+                              (vl-structmemberlist-resolved-p membs)
                               (vl-expr-opacity x))
                      :in-theory (enable acl2::natp-when-maybe-natp))))
       :guard-debug t
@@ -2664,7 +2818,6 @@ functions can assume all bits of it are good.</p>"
   (deffixequiv-mutual vl-expr-to-svex
     :hints ((acl2::just-expand-mrec-default-hint 'vl-expr-to-svex-selfdet id t world)
             '(:do-not-induct t))))
-             
 
 #||
 (include-book
@@ -2732,37 +2885,37 @@ functions can assume all bits of it are good.</p>"
   :returns (mv (warnings vl-warninglist-p)
                (svex (and (svex::lhs-p svex)
                           (svex::svarlist-addr-p (svex::lhs-vars svex))))
-               (type vl-maybe-datatype-p)
-               (type-ss vl-scopestack-p))
+               (type (and (vl-maybe-datatype-p type)
+                          (implies type
+                                   (vl-datatype-resolved-p type)))))
   (b* ((warnings nil)
-       (conf (make-vl-svexconf :ss ss :fns nil))
-       ((wmv warnings svex type type-ss)
+       (conf (make-vl-svexconf :ss ss))
+       ((wmv warnings svex type)
         (vl-expr-case x
           :vl-index (vl-index-expr-to-svex x conf)
           :vl-concat (b* (((wmv warnings svex size)
                            (vl-expr-to-svex-selfdet x nil conf))
                           ((unless (posp size))
-                           (mv warnings svex nil nil)))
+                           (mv warnings svex nil)))
                        (mv warnings svex
                            (make-vl-coretype :name :vl-logic
                                              :pdims (list (vl-range->packeddimension
                                                            (make-vl-range
                                                             :msb (vl-make-index (1- size))
-                                                            :lsb (vl-make-index 0)))))
-                           (make-vl-scopestack-null)))
+                                                            :lsb (vl-make-index 0)))))))
           :otherwise (mv (fatal :type :vl-expr-to-svex-fail
                                 :msg "Bad LHS expression: ~a0"
                                 :args (list (vl-expr-fix x)))
-                         (svex-x) nil nil)))
+                         (svex-x) nil)))
        ((unless type)
-        (mv warnings nil type type-ss))
-       ((mv err size) (vl-datatype-size type type-ss))
+        (mv warnings nil type))
+       ((mv err size) (vl-datatype-size type))
        ((when (or err (not size)))
         (mv (fatal :type :vl-expr-to-svex-fail
                    :msg "Couldn't size the datatype ~a0 of ~
                                     LHS expression ~a1: ~@2"
                    :args (list type (vl-expr-fix x) err))
-            nil nil nil))
+            nil nil))
        (lhssvex (svex::svex-concat size
                                    (svex::svex-lhsrewrite svex 0 size)
                                    (svex::svex-z)))
@@ -2770,18 +2923,17 @@ functions can assume all bits of it are good.</p>"
         (mv (fatal :type :vl-expr->svex-lhs-fail
                    :msg "Not a supported LHS expression: ~a0"
                    :args (list (vl-expr-fix x)))
-            nil nil nil)))
-    (mv warnings (svex::svex->lhs lhssvex) type type-ss))
+            nil nil)))
+    (mv warnings (svex::svex->lhs lhssvex) type))
   ///
   (defret vl-expr-to-svex-lhs-type-size-ok
     (implies type
-             (not (mv-nth 0 (vl-datatype-size type type-ss))))
+             (not (mv-nth 0 (vl-datatype-size type))))
     :hints(("Goal" :in-theory (enable vl-datatype-size)))))
 
 
 (define vl-expr-to-svex-untyped ((x vl-expr-p)
-                                 (ss vl-scopestack-p)
-                                 (fns svex::svex-alist-p))
+                                 (conf vl-svexconf-p))
   :short "Convert an expression to svex, and return its datatype."
   :long "<p>In some cases we need to convert an expression and also check what
 type it is returning.  For example, if the expression is the port connection of
@@ -2792,42 +2944,24 @@ we need to get the type of the expression.</p>"
   :returns (mv (warnings vl-warninglist-p)
                (svex (and (svex::svex-p svex)
                           (svex::svarlist-addr-p (svex::svex-vars svex))))
-               (type vl-maybe-datatype-p)
-               (type-ss vl-scopestack-p))
-  (b* ((conf (make-vl-svexconf :ss ss :fns fns))
-       (warnings nil))
+               (type vl-maybe-datatype-p))
+  (b* ((warnings nil))
     (vl-expr-case x
       :vl-index (vl-index-expr-to-svex x conf)
       :otherwise (b* (((wmv warnings svex size)
                        (vl-expr-to-svex-selfdet x nil conf))
                       ((unless (posp size))
-                       (mv warnings svex nil nil)))
+                       (mv warnings svex nil)))
                    (mv warnings svex
                        (make-vl-coretype :name :vl-logic
                                          :pdims (list (vl-range->packeddimension
                                                        (make-vl-range
                                                         :msb (vl-make-index (1- size))
-                                                        :lsb (vl-make-index 0)))))
-                       (make-vl-scopestack-null)))))
+                                                        :lsb (vl-make-index 0)))))))))
   ///
   (defret vl-expr-to-svex-untyped-type-ok
     (implies type
-             (not (vl-datatype-check-usertypes type type-ss)))
-    :hints(("Goal" :in-theory (enable vl-datatype-check-usertypes)))))
-
-(define vl-expr-to-svex-typed ((x vl-expr-p)
-                               (type vl-datatype-p)
-                               (type-ss vl-scopestack-p)
-                               (ss vl-scopestack-p)
-                               (fns svex::svex-alist-p))
-  :short "Convert an expression to svex, given the datatype it should have."
-  :guard (not (vl-datatype-check-usertypes type type-ss))
-  :returns (mv (warnings vl-warninglist-p)
-               (svex (and (svex::svex-p svex)
-                          (svex::svarlist-addr-p (svex::svex-vars svex)))))
-  (b* ((conf (make-vl-svexconf :ss ss :fns fns)))
-    (vl-expr-to-svex-datatyped x type type-ss conf)))
-
+             (vl-datatype-resolved-p type))))
 
 (define vl-upperlower-to-bitlist ((upper integerp)
                                   (lower integerp)
@@ -2885,7 +3019,9 @@ we need to get the type of the expression.</p>"
 
 
 (define vl-expr-consteval ((x vl-expr-p)
-                           (conf vl-svexconf-p))
+                           (conf vl-svexconf-p)
+                           &key
+                           ((ctxsize maybe-natp) 'nil))
   :short "Return an expression equivalent to @('x'), resolved to a constant value if possible."
   :long "<p>Works on vector expressions (including packed arrays/structs/unions).</p>
 
@@ -2898,7 +3034,9 @@ we need to get the type of the expression.</p>"
                                     (equal new-x (vl-expr-fix x))))))
   (b* ((warnings nil)
        ((wmv warnings svex size)
-        (vl-expr-to-svex-selfdet x nil conf))
+        (vl-expr-to-svex-selfdet x ctxsize conf))
+       ((vl-svexconf conf))
+       ((wmv warnings signedness) (vl-expr-typedecide x conf.ss))
        ((when (or (vl-some-warning-fatalp warnings)
                   (not size)
                   (eql size 0)))
@@ -2909,7 +3047,8 @@ we need to get the type of the expression.</p>"
               :otherwise nil))
        ((unless val)
         (mv warnings nil (vl-expr-fix x)))
-       (new-x (make-vl-value :val (vl-4vec-to-value val size))))
+       (new-x (make-vl-value :val (vl-4vec-to-value val size
+                                                    :signedness (or signedness :vl-signed)))))
     (mv warnings t new-x)))
 
 (define vl-exprlist-consteval ((x vl-exprlist-p)
@@ -2939,493 +3078,3 @@ we need to get the type of the expression.</p>"
   (defret len-of-vl-exprlist-consteval
     (equal (len new-x)
            (len x))))
-
-(define vl-range-resolve-indices ((x vl-range-p)
-                                  (conf vl-svexconf-p))
-  :verify-guards nil
-  :returns (mv (warnings1 vl-warninglist-p)
-               (changedp)
-               (new-x (and (vl-range-p new-x)
-                           (implies (not changedp)
-                                    (equal new-x (vl-range-fix x))))))
-  (b* ((warnings nil)
-       ((vl-range x) (vl-range-fix x))
-       ((wmv warnings changedp1 new-msb)
-        (vl-expr-consteval x.msb conf))
-       ((wmv warnings changedp2 new-lsb)
-        (vl-expr-consteval x.lsb conf))
-       (changedp (or changedp1 changedp2)))
-    (mv warnings
-        changedp
-        (mbe :logic (change-vl-range x :msb new-msb :lsb new-lsb)
-             :exec (if changedp
-                       (change-vl-range x :msb new-msb :lsb new-lsb)
-                     x))))
-  ///
-  (verify-guards vl-range-resolve-indices))
-
-(define vl-plusminus-resolve-indices ((x vl-plusminus-p)
-                                  (conf vl-svexconf-p))
-  :verify-guards nil
-  :returns (mv (warnings1 vl-warninglist-p)
-               (changedp)
-               (new-x (and (vl-plusminus-p new-x)
-                           (implies (not changedp)
-                                    (equal new-x (vl-plusminus-fix x))))))
-  (b* ((warnings nil)
-       ((vl-plusminus x) (vl-plusminus-fix x))
-       ((wmv warnings changedp1 new-base)
-        (vl-expr-consteval x.base conf))
-       ((wmv warnings changedp2 new-width)
-        (vl-expr-consteval x.width conf))
-       (changedp (or changedp1 changedp2)))
-    (mv warnings
-        changedp
-        (mbe :logic (change-vl-plusminus x :base new-base :width new-width)
-             :exec (if changedp
-                       (change-vl-plusminus x :base new-base :width new-width)
-                     x))))
-  ///
-  (verify-guards vl-plusminus-resolve-indices))
-
-(define vl-streamexpr-resolve-indices ((x vl-streamexpr-p)
-                                       (conf vl-svexconf-p))
-  :returns (mv (warnings1 vl-warninglist-p)
-               (changedp)
-               (new-x (and (vl-streamexpr-p new-x)
-                           (implies (not changedp)
-                                    (equal new-x (vl-streamexpr-fix x))))))
-  (b* ((warnings nil)
-       ((vl-streamexpr x) (vl-streamexpr-fix x))
-       ((wmv warnings changedp new-part)
-        (vl-arrayrange-case x.part
-          :none (mv (ok) nil x.part)
-          :range
-          (b* (((wmv warnings changedp new-range)
-                (vl-range-resolve-indices x.part.range conf)))
-            (mv warnings changedp
-                (mbe :logic (vl-range->arrayrange new-range)
-                     :exec (if changedp
-                               (vl-range->arrayrange new-range)
-                             x.part))))
-          :plusminus
-          (b* (((wmv warnings changedp new-plusminus)
-                (vl-plusminus-resolve-indices x.part.plusminus conf)))
-            (mv warnings changedp
-                (mbe :logic (vl-plusminus->arrayrange new-plusminus)
-                     :exec (if changedp
-                               (vl-plusminus->arrayrange new-plusminus)
-                             x.part))))
-          :index
-          (b* (((wmv warnings changedp new-expr)
-                (vl-expr-consteval x.part.expr conf)))
-            (mv warnings changedp
-                (mbe :logic (vl-expr->arrayrange new-expr)
-                     :exec (if changedp
-                               (vl-expr->arrayrange new-expr)
-                             x.part)))))))
-    (mv warnings
-        changedp
-        (mbe :logic (change-vl-streamexpr x :part new-part)
-             :exec (if changedp
-                       (change-vl-streamexpr x :part new-part)
-                     x)))))
-          
-
-(define vl-streamexprlist-resolve-indices ((x vl-streamexprlist-p)
-                                           (conf vl-svexconf-p))
-  :verify-guards nil
-  :returns (mv (warnings1 vl-warninglist-p)
-               (changedp)
-               (new-x (and (vl-streamexprlist-p new-x)
-                           (implies (not changedp)
-                                    (equal new-x (vl-streamexprlist-fix x))))
-                      :hints (("goal" :induct t)
-                              (and stable-under-simplificationp
-                                   '(:expand ((vl-streamexprlist-fix x)))))))
-  (b* ((warnings nil)
-       ((when (atom x)) (mv (ok) nil (vl-streamexprlist-fix x)))
-       ((wmv warnings changedp1 new-x1)
-        (vl-streamexpr-resolve-indices (car x) conf))
-       ((wmv warnings changedp2 new-x2)
-        (vl-streamexprlist-resolve-indices (cdr x) conf))
-       (changedp (or changedp1 changedp2)))
-    (mv warnings changedp
-        (mbe :logic (cons new-x1 new-x2)
-             :exec (if changedp
-                       (cons new-x1 new-x2)
-                     x))))
-  ///
-  (verify-guards vl-streamexprlist-resolve-indices))
-
-(define vl-packeddimension-resolve-indices ((x vl-packeddimension-p)
-                                            (conf vl-svexconf-p))
-  :returns (mv (warnings1 vl-warninglist-p)
-               (changedp)
-               (new-x (and (vl-packeddimension-p new-x)
-                           (implies (not changedp)
-                                    (equal new-x (vl-packeddimension-fix x))))))
-  (b* ((warnings nil))
-    (vl-packeddimension-case x
-      :unsized (mv (ok) nil (vl-packeddimension-fix x))
-      :range (b* (((wmv warnings changedp new-range)
-                   (vl-range-resolve-indices x.range conf)))
-               (mv warnings changedp
-                   (vl-range->packeddimension new-range))))))
-
-(define vl-packeddimensionlist-resolve-indices ((x vl-packeddimensionlist-p)
-                                           (conf vl-svexconf-p))
-  :verify-guards nil
-  :returns (mv (warnings1 vl-warninglist-p)
-               (changedp)
-               (new-x (and (vl-packeddimensionlist-p new-x)
-                           (implies (not changedp)
-                                    (equal new-x (vl-packeddimensionlist-fix x))))
-                      :hints (("goal" :induct t)
-                              (and stable-under-simplificationp
-                                   '(:expand ((vl-packeddimensionlist-fix x)))))))
-  (b* ((warnings nil)
-       ((when (atom x)) (mv (ok) nil (vl-packeddimensionlist-fix x)))
-       ((wmv warnings changedp1 new-x1)
-        (vl-packeddimension-resolve-indices (car x) conf))
-       ((wmv warnings changedp2 new-x2)
-        (vl-packeddimensionlist-resolve-indices (cdr x) conf))
-       (changedp (or changedp1 changedp2)))
-    (mv warnings changedp
-        (mbe :logic (cons new-x1 new-x2)
-             :exec (if changedp
-                       (cons new-x1 new-x2)
-                     x))))
-  ///
-  (verify-guards vl-packeddimensionlist-resolve-indices))
-
-
-
-(defines vl-datatype-resolve-indices
-  (define vl-datatype-resolve-indices ((x vl-datatype-p)
-                                       (conf vl-svexconf-p))
-  :verify-guards nil
-  :measure (vl-datatype-count x)
-  ;; :hints((and stable-under-simplificationp
-  ;;             '(:expand ((vl-datatype-count x)
-  ;;                        (vl-structmemberlist-count x)))))
-  :returns (mv (warnings1 vl-warninglist-p)
-               (changedp)
-               (new-x (and (vl-datatype-p new-x)
-                           (implies (not changedp)
-                                    (equal new-x (vl-datatype-fix x))))))
-  (b* ((warnings nil)
-       (x (vl-datatype-fix x))
-       ((wmv warnings changedp1 new-pdims)
-        (vl-packeddimensionlist-resolve-indices (vl-datatype->pdims x) conf))
-       ((wmv warnings changedp2 new-udims)
-        (vl-packeddimensionlist-resolve-indices (vl-datatype->udims x) conf))
-       (changedp (or changedp1 changedp2)))
-    (vl-datatype-case x
-      :vl-coretype
-      (mv warnings
-          changedp
-          (mbe :logic (change-vl-coretype x :pdims new-pdims :udims new-udims)
-               :exec (if changedp
-                         (change-vl-coretype x :pdims new-pdims :udims new-udims)
-                       x)))
-      :vl-struct
-      (b* (((wmv warnings changedp1 new-members)
-            (vl-structmemberlist-resolve-indices x.members conf))
-           (changedp (or changedp1 changedp)))
-        (mv warnings
-          changedp
-          (mbe :logic (change-vl-struct
-                       x :members new-members :pdims new-pdims :udims new-udims)
-               :exec (if changedp
-                         (change-vl-struct
-                          x :members new-members :pdims new-pdims :udims new-udims)
-                       x))))
-      :vl-union
-      (b* (((wmv warnings changedp1 new-members)
-            (vl-structmemberlist-resolve-indices x.members conf))
-           (changedp (or changedp1 changedp)))
-        (mv warnings
-          changedp
-          (mbe :logic (change-vl-union
-                       x :members new-members :pdims new-pdims :udims new-udims)
-               :exec (if changedp
-                         (change-vl-union
-                          x :members new-members :pdims new-pdims :udims new-udims)
-                       x))))
-      :vl-enum
-      (b* (((vl-enumbasetype x.basetype))
-           ((wmv warnings changedp1 new-dim)
-            (if x.basetype.dim
-                (vl-packeddimension-resolve-indices x.basetype.dim conf)
-              (mv warnings nil x.basetype.dim)))
-           (new-basetype (mbe :logic
-                              (change-vl-enumbasetype x.basetype :dim new-dim)
-                              :exec
-                              (if changedp1
-                                  (change-vl-enumbasetype x.basetype :dim new-dim)
-                                x.basetype)))
-           (changedp (or changedp1 changedp)))
-        (mv warnings
-            changedp
-            (mbe :logic (change-vl-enum
-                         x :basetype new-basetype 
-                         :pdims new-pdims :udims new-udims)
-                 :exec (if changedp
-                           (change-vl-enum
-                            x :basetype new-basetype
-                            :pdims new-pdims :udims new-udims)
-                         x))))
-      :vl-usertype
-      (mv warnings
-          changedp
-          (mbe :logic (change-vl-usertype x :pdims new-pdims :udims new-udims)
-               :exec (if changedp
-                         (change-vl-usertype x :pdims new-pdims :udims new-udims)
-                       x))))))
-
-  (define vl-structmemberlist-resolve-indices ((x vl-structmemberlist-p)
-                                               (conf vl-svexconf-p))
-    :verify-guards nil
-    :measure (vl-structmemberlist-count x)
-    :returns (mv (warnings1 vl-warninglist-p)
-                 (changedp)
-                 (new-x (and (vl-structmemberlist-p new-x)
-                             (implies (not changedp)
-                                      (equal new-x (vl-structmemberlist-fix x))))))
-    (b* ((warnings nil)
-         ((when (atom x)) (mv (ok) nil (vl-structmemberlist-fix x)))
-         ((vl-structmember x1) (car x))
-         ((wmv warnings changedp1 new-type1)
-          (vl-datatype-resolve-indices x1.type conf))
-         (memb1 (mbe :logic (change-vl-structmember x1 :type new-type1)
-                     :exec (if changedp1
-                               (change-vl-structmember x1 :type new-type1)
-                             x1)))
-         ((wmv warnings changedp2 new-x2)
-          (vl-structmemberlist-resolve-indices (cdr x) conf))
-         (changedp (or changedp1 changedp2)))
-      (mv warnings changedp
-          (mbe :logic (cons memb1 new-x2)
-               :exec (if changedp
-                         (cons memb1 new-x2)
-                       x)))))
-    ///
-    (verify-guards vl-structmemberlist-resolve-indices)
-    (deffixequiv-mutual vl-datatype-resolve-indices))
-
-
-(define vl-patternkey-resolve-indices ((x vl-patternkey-p)
-                                       (conf vl-svexconf-p))
-  :returns (mv (warnings1 vl-warninglist-p)
-               (changedp)
-               (new-x (and (vl-patternkey-p new-x)
-                           (implies (not changedp)
-                                    (equal new-x (vl-patternkey-fix x))))))
-  (b* ((warnings nil))
-    (vl-patternkey-case x
-      :expr (b* (((wmv warnings changedp new-key)
-                  (vl-expr-consteval x.key conf)))
-              (mv warnings
-                  changedp
-                  (mbe :logic (change-vl-patternkey-expr x :key new-key)
-                       :exec (if changedp
-                                 (change-vl-patternkey-expr x :key new-key)
-                               x))))
-      :type (b* (((wmv warnings changedp new-type)
-                  (vl-datatype-resolve-indices x.type conf)))
-              (mv warnings
-                  changedp
-                  (mbe :logic (change-vl-patternkey-type x :type new-type)
-                       :exec (if changedp
-                                 (change-vl-patternkey-type x :type new-type)
-                               x))))
-      :default (mv (ok) nil (vl-patternkey-fix x)))))
-
-(define vl-keyvallist-resolve-indices ((x vl-keyvallist-p)
-                                       (conf vl-svexconf-p))
-  :prepwork ((local (defthm consp-car-when-vl-keyvallist-p
-                      (implies (vl-keyvallist-p x)
-                               (equal (consp (car x)) (consp x))))))
-                                    
-  :verify-guards nil
-  :measure (vl-keyvallist-count x)
-  :returns (mv (warnings1 vl-warninglist-p)
-               (changedp)
-               (new-x (and (vl-keyvallist-p new-x)
-                           (implies (not changedp)
-                                    (equal new-x (vl-keyvallist-fix x))))))
-  (b* ((warnings nil)
-       (x (vl-keyvallist-fix x)))
-    (if (atom x)
-        (mv (ok) nil x)
-      (b* (((wmv warnings changedp key1)
-            (vl-patternkey-resolve-indices (caar x) conf))
-           (car (mbe :logic (cons key1 (cdar x))
-                     :exec (if changedp
-                               (cons key1 (cdar x))
-                             (car x))))
-           ((wmv warnings changedp2 rest)
-            (vl-keyvallist-resolve-indices (cdr x) conf))
-           (changedp (or changedp changedp2)))
-        (mv warnings
-            changedp
-            (mbe :logic (cons car rest)
-                 :exec (if changedp
-                           (cons car rest)
-                         x))))))
-  ///
-  (verify-guards vl-keyvallist-resolve-indices))
-
-
-(define vl-assignpat-resolve-indices ((x vl-assignpat-p)
-                                      (conf vl-svexconf-p))
-  :returns (mv (warnings1 vl-warninglist-p)
-               (changedp)
-               (new-x (and (vl-assignpat-p new-x)
-                           (implies (not changedp)
-                                    (equal new-x (vl-assignpat-fix x))))))
-  (b* ((warnings nil))
-    (vl-assignpat-case x
-      :positional (mv (ok) nil (vl-assignpat-fix x))
-      :keyval (b* (((wmv warnings changedp pairs)
-                    (vl-keyvallist-resolve-indices x.pairs conf)))
-                (mv warnings changedp
-                    (mbe :logic (change-vl-assignpat-keyval x :pairs pairs)
-                         :exec (if changedp
-                                   (change-vl-assignpat-keyval x :pairs pairs)
-                                 x))))
-      :repeat (b* (((wmv warnings changedp reps)
-                    (vl-expr-consteval x.reps conf)))
-                (mv warnings changedp
-                    (mbe :logic (change-vl-assignpat-repeat x :reps reps)
-                         :exec (if changedp
-                                   (change-vl-assignpat-repeat x :reps reps)
-                                 x)))))))
-                 
-
-
-
-
-(defines vl-expr-resolve-indices
-  (define vl-expr-resolve-indices ((x vl-expr-p)
-                                   (conf vl-svexconf-p))
-    :verify-guards nil
-    :returns (mv (warnings1 vl-warninglist-p)
-                 (changedp)
-                 (new-x (and (vl-expr-p new-x)
-                             (implies (not changedp)
-                                      (equal new-x (vl-expr-fix x))))))
-    :measure (vl-expr-count x)
-    :short "Return an expression equivalent to @('x'), but with certain subexpressions
-            reduced to constants when possible."
-    (b* ((warnings nil)
-         ((wmv warnings changedp subexprs)
-          (vl-exprlist-resolve-indices (vl-expr->subexprs x) conf))
-         (x (mbe :logic (vl-expr-update-subexprs x subexprs)
-                 :exec (if changedp
-                           (vl-expr-update-subexprs x subexprs)
-                         x))))
-      (vl-expr-case x
-        :vl-index
-        ;; All subexpressions are indices and should be resolved if possible.
-        (b* (((wmv warnings changedp2 subexprs)
-              (vl-exprlist-consteval subexprs conf))
-             (changedp (or changedp changedp2))
-             (x (mbe :logic (vl-expr-update-subexprs x subexprs)
-                     :exec (if changedp
-                               (vl-expr-update-subexprs x subexprs)
-                             x))))
-          (mv warnings
-              changedp
-              x))
-        :vl-multiconcat
-        (b* (((wmv warnings changedp2 new-reps)
-              (vl-expr-consteval x.reps conf)))
-          (mv warnings
-              (or changedp changedp2)
-              (mbe :logic (change-vl-multiconcat x :reps new-reps)
-                   :exec (if changedp2
-                             (change-vl-multiconcat x :reps new-reps)
-                           x))))
-        :vl-stream
-        (b* (((wmv warnings changedp2 new-size)
-              (if x.size
-                  (vl-expr-consteval x.size conf)
-                (mv warnings nil nil)))
-             ((wmv warnings changedp3 new-parts)
-              (vl-streamexprlist-resolve-indices x.parts conf)))
-          (mv warnings
-              (or changedp changedp2 changedp3)
-              (mbe :logic (change-vl-stream
-                           x :size new-size :parts new-parts)
-                   :exec (if (or changedp2 changedp3)
-                             (change-vl-stream
-                              x :size new-size :parts new-parts)
-                           x))))
-        :vl-call
-        (b* (((wmv warnings changedp2 new-type)
-              (if x.typearg
-                  (vl-datatype-resolve-indices x.typearg conf)
-                (mv warnings nil x.typearg))))
-          (mv warnings
-              (or changedp changedp2)
-              (mbe :logic (change-vl-call x :typearg new-type)
-                   :exec (if changedp2
-                             (change-vl-call x :typearg new-type)
-                           x))))
-        :vl-cast
-        (b* (((wmv warnings changedp2 new-type)
-              (vl-datatype-resolve-indices x.to conf)))
-          (mv warnings
-              (or changedp changedp2)
-              (mbe :logic (change-vl-cast x :to new-type)
-                   :exec (if changedp2
-                             (change-vl-cast x :to new-type)
-                           x))))
-
-        :vl-pattern
-        (b* (((wmv warnings changedp2 new-type)
-              (if x.pattype
-                  (vl-datatype-resolve-indices x.pattype conf)
-                (mv warnings nil x.pattype)))
-             ((wmv warnings changedp3 new-pat)
-              (vl-assignpat-resolve-indices x.pat conf))
-             (changedp1 (or changedp2 changedp3)))
-          (mv warnings
-              (or changedp changedp1)
-              (mbe :logic (change-vl-pattern x :pattype new-type :pat new-pat)
-                   :exec (if changedp1
-                             (change-vl-pattern x :pattype new-type :pat new-pat)
-                           x))))
-        :otherwise
-        (mv warnings changedp x))))
-
-  (define vl-exprlist-resolve-indices ((x vl-exprlist-p)
-                                       (conf vl-svexconf-p))
-    :verify-guards nil
-    :returns (mv (warnings1 vl-warninglist-p)
-                 (changedp)
-                 (new-x (and (vl-exprlist-p new-x)
-                             (implies (not changedp)
-                                      (equal new-x (vl-exprlist-fix x)))
-                             (equal (len new-x) (len x)))))
-    :measure (vl-exprlist-count x)
-    (b* ((warnings nil)
-         ((when (atom x)) (mv (ok) nil (vl-exprlist-fix x)))
-         ((wmv warnings changedp1 x1)
-          (vl-expr-resolve-indices (car x) conf))
-         ((wmv warnings changedp2 x2)
-          (vl-exprlist-resolve-indices (cdr x) conf))
-         (changedp (or changedp1 changedp2)))
-      (mv warnings changedp
-          (mbe :logic (cons x1 x2)
-               :exec (if changedp
-                         (cons x1 x2)
-                       x)))))
-  ///
-  (local (in-theory (disable vl-expr-resolve-indices
-                             vl-exprlist-resolve-indices)))
-  (verify-guards vl-expr-resolve-indices)
-  (deffixequiv-mutual vl-expr-resolve-indices))
-

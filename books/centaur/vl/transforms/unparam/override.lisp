@@ -36,7 +36,7 @@
 ;(local (include-book "../../util/osets"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (std::add-default-post-define-hook :fix))
-
+(local (in-theory (disable (tau-system))))
 
 (defconst *vl-unparam-debug* nil)
 
@@ -103,11 +103,12 @@
   :short "Try to override a parameter with a new datatype."
   ((decl     vl-paramdecl-p        "Some parameter from the submodule.")
    (datatype vl-datatype-p         "A new datatype to override this parameter with.")
+   (ss       vl-scopestack-p       "Scopestack for the override")
    (warnings vl-warninglist-p      "Warnings accumulator for the submodule.")
    (ctx      vl-context-p          "Context for error messages."))
   :returns (mv (okp       booleanp :rule-classes :type-prescription)
                (warnings  vl-warninglist-p)
-               (new-type  vl-datatype-p "On success, the new replacement type."))
+               (new-param vl-paramdecl-p "The replacement parameter."))
   (b* ((decl     (vl-paramdecl-fix decl))
        (datatype (vl-datatype-fix datatype))
        (ctx      (vl-context-fix ctx))
@@ -121,7 +122,23 @@
                    :msg "~a0: can't override parameter ~s1 with datatype ~a2: ~
                          ~s1 is a value parameter, not a type parameter."
                    :args (list ctx decl.name datatype))
-            datatype))
+            decl))
+
+       ((mv err datatype) (vl-datatype-usertype-resolve datatype ss))
+       ((when err)
+        (vl-unparam-debug "~a0: couldn't resolve usertypes in override ~
+                           datatype ~a1 for parameter ~a2: ~@3~%"
+                          ctx datatype decl err)
+        (mv nil
+            (fatal :type :vl-bad-instance
+                   :msg "~a0: couldn't resolve usertypes in override datatype ~
+                         ~a1 for parameter ~a2: ~@3"
+                   :args (list ctx datatype decl err))
+            decl))
+
+       (new-decl (change-vl-paramdecl
+                  decl
+                  :type (change-vl-typeparam decl.type :default datatype)))
 
        ;; It seems like we might want to do some other kinds of sanity/error
        ;; checking here, but I'm not sure what that would look like.  Well
@@ -148,7 +165,7 @@
        ;(new-decl (change-vl-paramdecl decl :type new-type))
        )
     (vl-unparam-debug "~a0: parameter ~a1 becomes ~a2.~%" ctx decl datatype)
-    (mv t (ok) datatype)))
+    (mv t (ok) new-decl)))
 
 (define vl-convert-parameter-value-to-explicit-type
   :short "Alter the expression given to an explicitly typed parameter so that
@@ -160,6 +177,7 @@
    (ctx      vl-context-p     "Context for error messages.")
    (paramname stringp         "More context for error messages."))
 
+  :guard (vl-datatype-resolved-p type)
   :returns (mv (okp      booleanp :rule-classes :type-prescription)
                (warnings vl-warninglist-p)
                (new-expr vl-expr-p
@@ -175,10 +193,36 @@ types.</p>"
   (b* ((type      (vl-datatype-fix type))
        (expr      (vl-expr-fix expr))
        (ctx      (vl-context-fix ctx))
+       (warnings (ok))
        (paramname (string-fix paramname))
 
-       ((mv ok reduced-expr) (vl-consteval expr ss))
-       ((unless ok)
+       ((unless (vl-datatype-packedp type))
+        (mv nil
+            (fatal :type :vl-bad-instance
+                   :msg "~a0: For now we can only assign to parameters of ~
+                         packed type, unlike ~a1."
+                   :args (list ctx type))
+            expr))
+
+       ;; Assuming we can resolve VAL to a constant expression, we want to
+       ;; evaluate it as something that fits in the width of this datatype.
+       ;; That means getting the type and size from a datatype.
+       ((mv err desired-width) (vl-datatype-size type))
+       ((mv ?caveat desired-signedness)  (vl-datatype-signedness type))
+       ((unless (and (not err) desired-width desired-signedness))
+        (vl-unparam-debug "~a0: can't override ~a1: width or type unknown: ~
+                           width ~a2, type ~a3; ~s4."
+                          ctx paramname desired-width desired-signedness
+                          err)
+        (mv nil
+            (fatal :type :vl-bad-instance
+                   :msg "~a0: can't override parameter ~s1: don't know the ~
+                         correct width/signedness for type ~a2; ~s3."
+                   :args (list ctx paramname type err))
+            expr))
+
+       ((wmv warnings reduced-expr) (vl-consteval expr ss :ctxsize desired-width))
+       ((unless (vl-expr-case reduced-expr :vl-value))
         (vl-unparam-debug "~a0: only reduced ~a1 to ~a2 (not a constant).~%"
                           ctx expr reduced-expr)
         (mv nil
@@ -186,104 +230,73 @@ types.</p>"
                    :msg "~a0: can't override parameter ~s1: failed to reduce ~
                          expression ~a2 to a constant integer."
                    :args (list ctx paramname expr))
-            expr))
-
-       ;; Otherwise, VAL is a resolved expression and we know its actual size
-       ;; and type.  We want to convert it from whatever size/type it currently
-       ;; happens to have into the type that is specified by this parameter.
-       ;; That means getting the type and size from a datatype.
-       ((mv warning desired-width) (vl-packed-datatype-size type))
-       ((mv okp2 errmsg2 desired-type)  (vl-datatype-exprtype type))
-       ((unless (and (not warning) okp2 desired-width desired-type))
-        (vl-unparam-debug "~a0: can't override ~a1: width or type unknown: width ~a2, type ~a3; ~s4/~s5."
-                          ctx paramname desired-width desired-type
-                          warning errmsg2)
-        (mv nil
-            (fatal :type :vl-bad-instance
-                   :msg "~a0: can't override parameter ~s1: don't know the ~
-                         correct width/signedness for type ~a2; ~s3/~s4."
-                   :args (list ctx paramname type warning errmsg2))
-            expr))
-
-       ;; Theory: correct way to do conversion is:
-       ;;   (1) truncate any parameter that is too large (with a warning)
-       ;;   (2) sign-extend signed values to the desired width
-       ;;   (3) zero-extend unsigned values to the desired width
-       ;; I don't think we care about the final type for anything?
-       ;; BOZO develop evidence for this theory, i.e., as new systests.
-       (actual-val    (vl-resolved->val reduced-expr))
-       (actual-width  (vl-expr->finalwidth reduced-expr))
-       (actual-type   (vl-expr->finaltype reduced-expr))
-
-       (signed-interp (if (eq actual-type :vl-signed)
-                          (acl2::fast-logext actual-width actual-val)
-                        actual-val))
-       (fits-p        (if (eq desired-type :vl-signed)
-                          (signed-byte-p desired-width signed-interp)
-                        (unsigned-byte-p desired-width actual-val)))
-
-       (warnings
-        (if fits-p
-            (ok)
-          (warn :type :vl-truncated-parameter
-                :msg "~a0: overriding parameter ~s1 (~x2 bits) with ~
-                       value ~x3 (~x4 bits).  It doesn't fit and has ~
-                       to get truncated!"
-                :args (list ctx paramname desired-width
-                            actual-val actual-width))))
-
-       (new-value (cond ((<= desired-width actual-width)
-                         ;; Maybe a truncation, but definitely not an
-                         ;; extension.
-                         (acl2::loghead desired-width actual-val))
-                        ((eq actual-type :vl-signed)
-                         ;; Sign extension
-                         (acl2::loghead desired-width signed-interp))
-                        (t
-                         ;; Zero extension
-                         actual-val)))
-
-       (new-expr  (vl-consteval-ans :value new-value
-                                    :width desired-width
-                                    :type desired-type)))
+            expr)))
 
     (vl-unparam-debug "~a0: overriding parameter ~a1, new expr is ~a2: ~x2.~%"
-                      ctx paramname new-expr)
-    (mv t warnings new-expr))
+                      ctx paramname reduced-expr)
+    (mv t warnings reduced-expr)))
 
-  :prepwork
-  ((local (defthm l0
-            (implies (and (vl-expr-resolved-p x)
-                          (vl-expr-welltyped-p x))
-                     (< (vl-resolved->val x)
-                        (expt 2 (vl-expr->finalwidth x))))
-            :rule-classes ((:rewrite) (:linear))
-            :hints(("Goal" :in-theory (enable vl-expr-resolved-p
-                                              vl-expr-welltyped-p
-                                              vl-atom-welltyped-p
-                                              vl-expr->finalwidth
-                                              vl-resolved->val))))))
-
-  :guard-hints(("Goal"
-                :in-theory (disable l0)
-                :use ((:instance l0
-                       (x (mv-nth 1 (vl-consteval expr ss))))))))
+(define vl-implicitvalueparam-final-type ((x vl-paramtype-p)
+                                          (override vl-expr-p)
+                                          (ss vl-scopestack-p
+                                              "for override"))
+  :guard (vl-paramtype-case x :vl-implicitvalueparam)
+  :returns (mv (warnings vl-warninglist-p)
+               (err (iff (vl-msg-p err) err))
+               (type (implies (not err) (vl-datatype-p type))))
+  (b* ((override (vl-expr-fix override))
+       ((vl-implicitvalueparam x) (vl-paramtype-fix x))
+       (warnings nil)
+       ((when x.range)
+        ;; BOZO When do we ensure that the range is resolved?  Presumably
+        ;; parameters are allowed to use other parameters in defining their
+        ;; datatypes.
+        (if (vl-range-resolved-p x.range)
+            (mv warnings nil
+                (make-vl-coretype :name :vl-logic
+                                  :pdims (list (vl-range->packeddimension x.range))
+                                  :signedp (eq x.sign :vl-signed)))
+          (mv warnings (vmsg "Unresolved range") nil)))
+       ((wmv warnings size) (vl-expr-selfsize override ss))
+       ((unless (posp size))
+        (mv warnings
+            (vmsg "Unsized or zero-size parameter override: ~a0" override)
+            nil))
+       (dims (list (vl-range->packeddimension
+                    (make-vl-range :msb (vl-make-index (1- size)) :lsb (vl-make-index 0)))))
+       ((when x.sign)
+        (mv warnings nil
+            (make-vl-coretype :name :vl-logic :pdims dims :signedp (eq x.sign :vl-signed))))
+       ((wmv warnings signedness) (vl-expr-typedecide override ss))
+       ((unless signedness)
+        (mv warnings
+            (vmsg "Couldn't decide signedness of parameter override ~a0" override)
+            nil)))
+    (mv warnings nil
+        (make-vl-coretype :name :vl-logic :pdims dims :signedp (eq signedness :vl-signed))))
+  ///
+  (defret vl-datatype-resolved-p-of-vl-implicitvalueparam-final-type
+    (implies (not err)
+             (vl-datatype-resolved-p type))))
+    
 
 (define vl-override-parameter-with-expr
   :short "Try to override a parameter with a new expression."
   ((decl     vl-paramdecl-p        "Some parameter from the submodule.")
-   (expr     vl-expr-p             "The value expression to override this parameter with.")
-   (ss       vl-scopestack-p       "Scopestack")
+   (decl-ss  vl-scopestack-p       "Scopestack where the original parameter is defined")
+   (expr     vl-expr-p             "The value expression to override this parameter with")
+   (ss       vl-scopestack-p       "Scopestack where the expression is")
    (warnings vl-warninglist-p      "Warnings accumulator for the submodule.")
    (ctx      vl-context-p          "Context for error messages."))
   :returns (mv (okp       booleanp :rule-classes :type-prescription)
                (warnings  vl-warninglist-p)
-               (new-value vl-expr-p "On success, final (coerced) value to use
-                                     for this parameter."))
+               (new-param vl-paramdecl-p "On success, final (coerced) value to
+                                          use for this parameter."))
 
   (b* (((vl-paramdecl decl) (vl-paramdecl-fix decl))
        (expr (vl-expr-fix expr))
-       (ctx (vl-context-fix ctx)))
+       (ctx (vl-context-fix ctx))
+       (warnings (ok)))
 
     (vl-paramtype-case decl.type
       (:vl-typeparam
@@ -294,7 +307,7 @@ types.</p>"
                   :msg "~a0: can't override parameter ~s1 with expression, ~
                         ~a2: ~s1 is a type parameter, not a value parameter."
                   :args (list ctx decl.name expr))
-           expr))
+           decl))
 
       (:vl-explicitvalueparam
        ;; See the rules in SystemVerilog 23.10.  I think we should regard this
@@ -304,118 +317,103 @@ types.</p>"
        ;; implicitly has a range.) If this is right, then we are supposed to
        ;; convert the override value (expr) so that it has the type and range
        ;; of this parameter.
-       (b* (((mv okp warnings coerced-expr)
-             (vl-convert-parameter-value-to-explicit-type decl.type.type expr ss warnings ctx decl.name))
+       (b* (((mv err type) (vl-datatype-usertype-resolve decl.type.type decl-ss))
+            ((when err)
+             (mv nil
+                 (fatal :type :vl-bad-instance
+                        :msg "~a0: can't resolve type of parameter declaration ~a1: ~@2"
+                        :args (list ctx decl err))
+                 decl))
+            ((mv okp warnings coerced-expr)
+             (vl-convert-parameter-value-to-explicit-type type expr ss warnings ctx decl.name))
             ((unless okp)
              ;; Already warned.
-             (mv nil warnings expr))
+             (mv nil warnings decl))
             ;; Else, we successfully converted the overwriting expr to have the
             ;; right type.  So, rewrite the parameter declaration to install
             ;; the right value.
             ;; (new-type (change-vl-explicitvalueparam decl.type :default coerced-expr))
             ;; (new-decl (change-vl-paramdecl decl :type new-type))
+            (new-decl (change-vl-paramdecl
+                       decl :type (change-vl-explicitvalueparam
+                                   decl.type
+                                   :default coerced-expr
+                                   ;; set its type to the resolved one, why not.
+                                   :type type)))
             )
          (vl-unparam-debug "~a0: successfully overriding value parameter ~a1 with ~a2.~%"
                            ctx decl coerced-expr)
-         (mv t (ok) coerced-expr)))
+         (mv t (ok) new-decl)))
 
       (:vl-implicitvalueparam
-       ;; See the rules in SystemVerilog-2012 Section 23.10.
-       (b* (((mv ok reduced-expr) (vl-consteval expr ss))
-            ((unless ok)
-             (vl-unparam-debug "~a0: can't override ~a1, only reduced expr ~a2 to ~a3 (not a constant)."
-                               ctx decl expr reduced-expr)
+       ;; See the rules in SystemVerilog-2012 Section 23.10 and 6.20.2.
+       (b* (((wmv warnings err datatype :ctx ctx)
+             (vl-implicitvalueparam-final-type decl.type expr ss))
+            ((when err)
              (mv nil
                  (fatal :type :vl-bad-instance
-                        :msg "~a0: can't override parameter ~s1: failed to ~
-                              reduce expression ~a2 to a constant integer."
-                        :args (list ctx decl.name expr))
-                 expr))
+                        :msg "~a0: Failed to determine datatype for parameter ~
+                              ~a1 overridden with ~a2: ~@3"
+                        :args (list ctx decl expr err))
+                 decl))
 
-            (new-dims
-             ;; After looking through the cases, the rule seems to be: if the
-             ;; parameter provides a range, then that's the range that will be
-             ;; used.  Otherwise, use the range from the final value.
-             (cond (decl.type.range
-                    (list decl.type.range))
-                   ;; For nice cosmetics, don't use a range if we don't need one.
-                   ((eql 1 (vl-expr->finalwidth reduced-expr))
-                    ;; One bit, no dims needed
-                    nil)
-                   (t
-                    (list (vl-make-n-bit-range (vl-expr->finalwidth reduced-expr))))))
-
-            (new-signedp
-             (cond ((and (not decl.type.range) (not decl.type.sign))
-                    ;; "A value parameter declaration with no type or range
-                    ;; specification shall default to the type and range of the
-                    ;; final override value assigned to the parameter."
-                    (eq (vl-expr->finaltype reduced-expr) :vl-signed))
-                   ;; Otherwise, after looking through the cases, the rule
-                   ;; seems to be: if there's an explicit signedness on the
-                   ;; parameter, that's what we are to use.  Otherwise, since
-                   ;; we know (by the WHEN check above) that we're in the case
-                   ;; where we have at least a sign or a range, this should be
-                   ;; unsigned.
-                   (decl.type.sign
-                    (eq decl.type.sign :vl-signed))
-                   (t
-                    ;; Explicit range but no sign: unsigned.
-                    nil)))
-
-            ;; Now we know enough to figure out our explicit final type.
-            (explicit-type (make-vl-coretype :name :vl-logic
-                                             :signedp new-signedp
-                                             :pdims new-dims))
             ((mv okp warnings coerced-expr)
              ;; Do the conversion explicitly, which gives us all the nice warnings.
-             (vl-convert-parameter-value-to-explicit-type explicit-type reduced-expr ss warnings ctx decl.name))
+             (vl-convert-parameter-value-to-explicit-type datatype expr ss warnings ctx decl.name))
             ((unless okp)
              ;; Already warned
-             (mv nil warnings expr))
+             (mv nil warnings decl))
+
             ;; Else, we successfully converted the overwriting expr to have the
             ;; right type.  So, rewrite the parameter declaration to install
             ;; the right value.
-            ;(new-type (make-vl-explicitvalueparam :type explicit-type :default coerced-expr))
-            ;(new-decl (change-vl-paramdecl decl :type new-type))
-            )
+            (new-decl (change-vl-paramdecl
+                       decl :type (make-vl-explicitvalueparam :type datatype :default coerced-expr))))
          (vl-unparam-debug "~a0: successfully overriding ~a1 with ~a2.~%"
                            ctx decl coerced-expr)
-         (mv t (ok) coerced-expr))))))
+         (mv t (ok) new-decl))))))
 
 (define vl-override-parameter-value
   :parents (unparameterization)
   :short "Try to override an arbitrary parameter with its final value."
   ((decl     vl-paramdecl-p     "Some parameter from the submodule.")
+   (decl-ss  vl-scopestack-p    "Scopestack from the submodule")
    (value    vl-paramvalue-p    "Final value to override the parameter with.")
    (ss       vl-scopestack-p    "Scopestack")
    (warnings vl-warninglist-p   "Warnings accumulator for the submodule.")
    (ctx      vl-context-p       "Context for error messages."))
   :returns (mv (okp       booleanp :rule-classes :type-prescription)
                (warnings  vl-warninglist-p)
-               (new-value vl-paramvalue-p
-                          "On success, the new value to use for this parameter."))
-  (b* ((decl  (vl-paramdecl-fix decl))
-       (value (vl-paramvalue-fix value))
-       ((when (vl-paramvalue-datatype-p value))
-        (vl-override-parameter-with-type decl value warnings ctx)))
-    (vl-override-parameter-with-expr decl value ss warnings ctx)))
+               (new-decl vl-paramdecl-p
+                          "On success, the parameter declaration with new value
+                           installed as default."))
+  (b* ((decl  (vl-paramdecl-fix decl)))
+    (vl-paramvalue-case value
+      :expr (vl-override-parameter-with-expr decl decl-ss value.expr ss warnings ctx)
+      :type (vl-override-parameter-with-type decl value.type ss warnings ctx))))
 
-(defconst *vl-fake-context*
-  (make-vl-context :mod "fakemodule"
-                   :elem *vl-fake-elem-for-vl-consteval*))
+(define vl-paramdecl-finalize ((decl vl-paramdecl-p)
+                               (decl-ss vl-scopestack-p
+                                        "Scopestack from the submodule where
+                                            the parameter is defined")
+                               (ss   vl-scopestack-p))
+  :prepwork ((local (defthm override-parameter-value-hack
+                      (mv-nth 2 (vl-override-parameter-value
+                                 decl decl-ss value ss warnings ctx))
+                      :hints (("goal" :use VL-PARAMDECL-P-OF-VL-OVERRIDE-PARAMETER-VALUE.NEW-DECL
 
-(define vl-paramdecl-final-value ((decl vl-paramdecl-p)
-                                  (ss   vl-scopestack-p))
-  :returns (val vl-maybe-paramvalue-p)
+
+
+                               :in-theory (disable VL-PARAMDECL-P-OF-VL-OVERRIDE-PARAMETER-VALUE.NEW-DECL))))))
+  :returns (new-decl (iff (vl-paramdecl-p new-decl) new-decl))
   :guard-debug t
-  (b* (((vl-paramdecl decl))
+  (b* (((vl-paramdecl decl) (vl-paramdecl-fix decl))
        (default (vl-paramtype->default decl.type))
        ((unless default)
         nil)
-       (ctx *vl-fake-context*)
+       (ctx (vl-context-fix decl))
        ((mv okp ?warnings new-value)
-        (vl-override-parameter-value decl default ss nil ctx)))
+        (vl-override-parameter-value decl decl-ss default ss nil ctx)))
     (and okp new-value)))
 
 

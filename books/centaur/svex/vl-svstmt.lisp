@@ -72,19 +72,17 @@ because... (BOZO)</p>
 (define vl-assignstmt->svstmts ((lhs vl-expr-p)
                                 (rhs vl-expr-p)
                                 (blockingp booleanp)
-                                (ss vl-scopestack-p)
-                                (fntable svex::svex-alist-p))
+                                (conf vl-svexconf-p))
   :returns (mv (ok)
                (warnings vl-warninglist-p)
                (res svex::svstmtlist-p))
   (b* ((warnings nil)
-       ((wmv warnings svex-lhs lhs-type lhs-type-ss)
-        (vl-expr-to-svex-lhs lhs ss))
+       ((wmv warnings svex-lhs lhs-type)
+        (vl-expr-to-svex-lhs lhs (vl-svexconf->ss conf)))
        ((unless lhs-type)
         (mv nil warnings nil))
        ((wmv warnings svex-rhs)
-        (vl-expr-to-svex-typed
-         rhs lhs-type lhs-type-ss ss fntable)))
+        (vl-expr-to-svex-datatyped rhs lhs-type conf)))
     (mv t warnings
         (list (svex::make-svstmt-assign :lhs svex-lhs :rhs svex-rhs
                                         :blockingp blockingp))))
@@ -96,8 +94,7 @@ because... (BOZO)</p>
 
 
 (define vl-vardecllist->svstmts ((x vl-vardecllist-p)
-                                   (ss vl-scopestack-p)
-                                   (fntable svex::svex-alist-p))
+                                 (conf vl-svexconf-p))
   :returns (mv (ok)
                (warnings vl-warninglist-p)
                (res (and (svex::svstmtlist-p res)
@@ -107,14 +104,14 @@ because... (BOZO)</p>
        ((when (atom x)) (mv t (ok) nil))
        (x1 (vl-vardecl-fix (car x)))
        ((mv ok warnings rest)
-        (vl-vardecllist->svstmts (cdr x) ss fntable))
+        (vl-vardecllist->svstmts (cdr x) conf))
        ((unless ok) (mv nil warnings rest))
        ((vl-vardecl x1) x1)
        ;; skip if there's no initial value given
        ((unless x1.initval) (mv ok warnings rest))
 
        (lhs (vl-idexpr x1.name nil)))
-    (vl-assignstmt->svstmts lhs x1.initval t ss fntable)))
+    (vl-assignstmt->svstmts lhs x1.initval t conf)))
        
 (local (in-theory (disable member append
                            svex::svarlist-addr-p-when-subsetp-equal
@@ -126,9 +123,8 @@ because... (BOZO)</p>
 (defines vl-stmt->svstmts
   :prepwork ((local (in-theory (disable not))))
   (define vl-stmt->svstmts ((x vl-stmt-p)
-                           (ss vl-scopestack-p)
-                           (fntable svex::svex-alist-p)
-                           (nonblockingp))
+                            (conf vl-svexconf-p)
+                            (nonblockingp))
     :verify-guards nil
     :returns (mv (ok)
                  (warnings vl-warninglist-p)
@@ -155,22 +151,22 @@ because... (BOZO)</p>
                                  :args (list x))
                          (ok)))
              ((wmv ok warnings res)
-              (vl-assignstmt->svstmts x.lvalue x.expr (eq x.type :vl-blocking) ss fntable)))
+              (vl-assignstmt->svstmts x.lvalue x.expr (eq x.type :vl-blocking) conf)))
           (mv ok warnings res))
         :vl-ifstmt
-        (b* (((wmv warnings cond ?type ?type-ss)
-              (vl-expr-to-svex-untyped x.condition ss fntable))
+        (b* (((wmv warnings cond ?type)
+              (vl-expr-to-svex-untyped x.condition conf))
              ((wmv ok1 warnings true)
-              (vl-stmt->svstmts x.truebranch ss fntable nonblockingp))
+              (vl-stmt->svstmts x.truebranch conf nonblockingp))
              ((wmv ok2 warnings false)
-              (vl-stmt->svstmts x.falsebranch ss fntable nonblockingp)))
+              (vl-stmt->svstmts x.falsebranch conf nonblockingp)))
           (mv (and ok1 ok2) warnings
               (list (svex::make-svstmt-if :cond cond :then true :else false))))
         :vl-whilestmt
-        (b* (((wmv warnings cond ?type ?type-ss)
-              (vl-expr-to-svex-untyped x.condition ss fntable))
+        (b* (((wmv warnings cond ?type)
+              (vl-expr-to-svex-untyped x.condition conf))
              ((wmv ok warnings body)
-              (vl-stmt->svstmts x.body ss fntable nonblockingp)))
+              (vl-stmt->svstmts x.body conf nonblockingp)))
           (mv ok warnings (list (svex::make-svstmt-while :cond cond :body body))))
         :vl-forstmt
         (b* ((warnings (if (consp x.initdecls)
@@ -180,15 +176,15 @@ because... (BOZO)</p>
                                  :args (list x))
                          (ok)))
              ((wmv ok1 warnings initstmts1)
-              (vl-vardecllist->svstmts x.initdecls ss fntable))
+              (vl-vardecllist->svstmts x.initdecls conf))
              ((wmv ok2 warnings initstmts2)
-              (vl-stmtlist->svstmts x.initassigns ss fntable nonblockingp))
-             ((wmv warnings cond ?type ?type-ss)
-              (vl-expr-to-svex-untyped x.test ss fntable))
+              (vl-stmtlist->svstmts x.initassigns conf nonblockingp))
+             ((wmv warnings cond ?type)
+              (vl-expr-to-svex-untyped x.test conf))
              ((wmv ok3 warnings stepstmts)
-              (vl-stmtlist->svstmts x.stepforms ss fntable nonblockingp))
+              (vl-stmtlist->svstmts x.stepforms conf nonblockingp))
              ((wmv ok4 warnings body)
-              (vl-stmt->svstmts x.body ss fntable nonblockingp)))
+              (vl-stmt->svstmts x.body conf nonblockingp)))
           (mv (and ok1 ok2 ok3 ok4)
               warnings
               (append-without-guard
@@ -209,9 +205,9 @@ because... (BOZO)</p>
                                  :args (list x))
                          (ok)))
              ;; ((wmv ok1 warnings initstmts)
-             ;;  (vl-vardecllist->svstmts x.vardecls ss fntable))
+             ;;  (vl-vardecllist->svstmts x.vardecls conf))
              ((wmv ok2 warnings bodystmts)
-              (vl-stmtlist->svstmts x.stmts ss fntable nonblockingp)))
+              (vl-stmtlist->svstmts x.stmts conf nonblockingp)))
           (mv (and ok2)
               warnings
               bodystmts))
@@ -221,8 +217,7 @@ because... (BOZO)</p>
                     :args (list x))))))
 
   (define vl-stmtlist->svstmts ((x vl-stmtlist-p)
-                                (ss vl-scopestack-p)
-                                (fntable svex::svex-alist-p)
+                                (conf vl-svexconf-p)
                                 (nonblockingp))
     :returns (mv (ok)
                  (warnings vl-warninglist-p)
@@ -232,8 +227,8 @@ because... (BOZO)</p>
     :measure (vl-stmtlist-count x)
     (b* ((warnings nil)
          ((when (atom x)) (mv t (ok) nil))
-         ((wmv ok1 warnings x1) (vl-stmt->svstmts (car x) ss fntable nonblockingp))
-         ((wmv ok2 warnings x2) (vl-stmtlist->svstmts (cdr x) ss fntable nonblockingp)))
+         ((wmv ok1 warnings x1) (vl-stmt->svstmts (car x) conf nonblockingp))
+         ((wmv ok2 warnings x2) (vl-stmtlist->svstmts (cdr x) conf nonblockingp)))
       (mv (and ok1 ok2) warnings (append-without-guard x1 x2))))
   ///
   (verify-guards vl-stmt->svstmts)
@@ -276,6 +271,82 @@ because... (BOZO)</p>
   (verify-guards vl-expr-functions-called)
   (deffixequiv-mutual vl-expr-functions-called))
 
+;; (fty::deflist vl-opinfolist :elt-type vl-operandinfo)
+
+;; (define vl-operandinfo-param-remove-selects ((x vl-operandinfo-p))
+;;   :guard (and (vl-operandinfo-usertypes-ok x)
+;;               (b* ((hidtrace (vl-operandinfo->hidtrace x))
+;;                    ((vl-hidstep step) (car hidtrace)))
+;;                 (eq (tag step.item) :vl-paramdecl)))
+;;   :returns (new-x vl-operandinfo-p)
+;;   (b* (((vl-operandinfo x))
+;;        (type (vl-explicitvalueparam->type
+;;               (vl-paramdecl->type (vl-hidstep->item (car x.hidtrace))))))
+;;     (change-vl-operandinfo
+;;      x :seltrace nil
+;;      :part (vl-partselect-none)
+;;      :type type))
+;;   ///
+;;   (defret vl-operandinfo-usertypes-ok-of-vl-operandinfo-param-remove-selects
+;;     (implies (and (vl-operandinfo-usertypes-ok x)
+;;                   (b* ((hidtrace (vl-operandinfo->hidtrace x))
+;;                        ((vl-hidstep step) (car hidtrace)))
+;;                     (eq (tag step.item) :vl-paramdecl)))
+;;              (vl-operandinfo-usertypes-ok new-x))
+;;     :hints(("Goal" :in-theory (enable vl-operandinfo-usertypes-ok)))))
+       
+
+;; (std::deflist vl-opinfolist-usertypes-ok (x)
+;;   :guard (vl-opinfolist-p x)
+;;   (vl-operandinfo-usertypes-ok x))
+
+
+
+(defines vl-expr-parameter-refs
+  :verify-guards nil
+  (define vl-expr-parameter-refs ((x vl-expr-p)
+                                  (ss vl-scopestack-p))
+    :returns (params (and (vl-paramreflist-p params)
+                          (setp params)))
+    :measure (vl-expr-count x)
+    (b* ((rest (vl-exprlist-parameter-refs (vl-expr->subexprs x) ss)))
+      (vl-expr-case x
+        :vl-index (b* (((mv err opinfo) (vl-index-expr-typetrace x ss))
+                       ((when err) rest)
+                       ((vl-operandinfo opinfo))
+                       ((vl-hidstep decl) (car opinfo.hidtrace))
+                       ((unless (eq (tag decl.item) :vl-paramdecl))
+                        rest)
+                       ((vl-paramdecl decl.item)))
+                    (vl-paramtype-case decl.item.type
+                      :vl-explicitvalueparam
+                      (b* (((unless decl.item.type.default) rest)
+                           ((unless (vl-hidtrace-resolved-p opinfo.hidtrace)) rest)
+                           ((mv err name) (vl-seltrace-to-svar nil opinfo ss))
+                           ((when err) rest))
+                        (set::insert
+                         (make-vl-paramref
+                          :name name
+                          :expr decl.item.type.default
+                          :type decl.item.type.type
+                          :ss decl.ss)
+                         rest))
+                      :otherwise rest))
+        :otherwise rest)))
+
+  (define vl-exprlist-parameter-refs ((x vl-exprlist-p)
+                                      (ss vl-scopestack-p))
+    :returns (params (and (vl-paramreflist-p params)
+                          (setp params)))
+    :measure (vl-exprlist-count x)
+    (if (atom x)
+        nil
+      (union (vl-expr-parameter-refs (car x) ss)
+             (vl-exprlist-parameter-refs (cdr x) ss))))
+  ///
+  (verify-guards vl-expr-parameter-refs)
+  (deffixequiv-mutual vl-expr-parameter-refs))
+
 (define vl-vardecllist-functions-called ((x vl-vardecllist-p))
   :returns (fnnames (and (vl-scopeexprlist-p fnnames)
                          (setp fnnames)))
@@ -286,8 +357,94 @@ because... (BOZO)</p>
         (vl-vardecllist-functions-called (cdr x))))
     (union (vl-expr-functions-called x1.initval)
            (vl-vardecllist-functions-called (cdr x)))))
-       
+
+(define vl-vardecllist-parameter-refs ((x vl-vardecllist-p)
+                                       (ss vl-scopestack-p))
+  :returns (params (and (vl-paramreflist-p params)
+                        (setp params)))
+  (b* (((when (atom x)) nil)
+       (x1 (vl-vardecl-fix (car x)))
+       ((vl-vardecl x1))
+       ((unless x1.initval)
+        (vl-vardecllist-parameter-refs (cdr x) ss)))
+    (union (vl-expr-parameter-refs x1.initval ss)
+           (vl-vardecllist-parameter-refs (cdr x) ss))))
+
+
   
+
+;; (defines vl-stmt-functions-called
+;;   :verify-guards nil
+;;   (define vl-stmt-functions-called ((x vl-stmt-p))
+;;     :returns (fnnames (and (vl-scopeexprlist-p fnnames)
+;;                            (setp fnnames)))
+;;     :measure (vl-stmt-count x)
+;;     (vl-stmt-case x
+;;       :vl-nullstmt nil
+;;       :vl-assignstmt (union (vl-expr-functions-called x.lvalue)
+;;                             (vl-expr-functions-called x.expr))
+;;       :vl-deassignstmt (vl-expr-functions-called x.lvalue)
+;;       :vl-enablestmt (vl-exprlist-functions-called x.args)
+;;       :vl-disablestmt (vl-expr-functions-called x.id)
+;;       :vl-eventtriggerstmt (vl-expr-functions-called x.id)
+;;       :vl-casestmt (union (vl-expr-functions-called x.test)
+;;                           (union (vl-stmt-functions-called x.default)
+;;                                  (vl-caselist-functions-called x.caselist)))
+;;       :vl-ifstmt (union (vl-expr-functions-called x.condition)
+;;                         (union (vl-stmt-functions-called x.truebranch)
+;;                                (vl-stmt-functions-called x.falsebranch)))
+;;       :vl-foreverstmt (vl-stmt-functions-called x.body)
+;;       :vl-waitstmt (union (vl-expr-functions-called x.condition)
+;;                           (vl-stmt-functions-called x.body))
+;;       :vl-repeatstmt (union (vl-expr-functions-called x.condition)
+;;                             (vl-stmt-functions-called x.body))
+;;       :vl-whilestmt (union (vl-expr-functions-called x.condition)
+;;                            (vl-stmt-functions-called x.body))
+;;       :vl-forstmt (union (union (union (vl-vardecllist-functions-called x.initdecls)
+;;                                        (vl-stmtlist-functions-called x.initassigns))
+;;                                 (vl-expr-functions-called x.test))
+;;                          (union (vl-stmtlist-functions-called x.stepforms)
+;;                                 (vl-stmt-functions-called x.body)))
+;;       :vl-blockstmt (union (vl-vardecllist-functions-called x.vardecls)
+;;                            (vl-stmtlist-functions-called x.stmts))
+;;       :vl-returnstmt (and x.val (vl-expr-functions-called x.val))
+;;       :vl-timingstmt (vl-stmt-functions-called x.body)))
+
+;;   (define vl-stmtlist-functions-called ((x vl-stmtlist-p))
+;;     :returns (fnnames (and (vl-scopeexprlist-p fnnames)
+;;                            (setp fnnames)))
+;;     :measure (vl-stmtlist-count x)
+;;     (if (atom x)
+;;         nil
+;;       (union (vl-stmt-functions-called (car x))
+;;              (vl-stmtlist-functions-called (cdr x)))))
+
+;;   (define vl-caselist-functions-called ((x vl-caselist-p))
+;;     :returns (fnnames (and (vl-scopeexprlist-p fnnames)
+;;                            (setp fnnames)))
+;;     :measure (vl-caselist-count x)
+;;     (b* ((x (vl-caselist-fix x))
+;;          ((when (atom x)) nil)
+;;          ((cons checks body) (car x)))
+;;       (union (union (vl-exprlist-functions-called checks)
+;;                     (vl-stmt-functions-called body))
+;;              (vl-caselist-functions-called (cdr x)))))
+;;   ///
+;;   (verify-guards vl-stmt-functions-called)
+;;   (deffixequiv-mutual vl-stmt-functions-called))
+
+(define vl-atomicstmt->exprs ((x vl-stmt-p))
+  :guard (vl-atomicstmt-p x)
+  :returns (exprs vl-exprlist-p)
+  (vl-stmt-case x
+    :vl-nullstmt nil
+    :vl-assignstmt (list x.lvalue x.expr)
+    :vl-deassignstmt (list x.lvalue)
+    :vl-enablestmt   (list x.id)
+    :vl-disablestmt  (list x.id)
+    :vl-eventtriggerstmt (list x.id)
+    :vl-returnstmt  (and x.val (list x.val))
+    :otherwise (impossible)))
 
 (defines vl-stmt-functions-called
   :verify-guards nil
@@ -295,36 +452,12 @@ because... (BOZO)</p>
     :returns (fnnames (and (vl-scopeexprlist-p fnnames)
                            (setp fnnames)))
     :measure (vl-stmt-count x)
-    (vl-stmt-case x
-      :vl-nullstmt nil
-      :vl-assignstmt (union (vl-expr-functions-called x.lvalue)
-                            (vl-expr-functions-called x.expr))
-      :vl-deassignstmt (vl-expr-functions-called x.lvalue)
-      :vl-enablestmt (vl-exprlist-functions-called x.args)
-      :vl-disablestmt (vl-expr-functions-called x.id)
-      :vl-eventtriggerstmt (vl-expr-functions-called x.id)
-      :vl-casestmt (union (vl-expr-functions-called x.test)
-                          (union (vl-stmt-functions-called x.default)
-                                 (vl-caselist-functions-called x.caselist)))
-      :vl-ifstmt (union (vl-expr-functions-called x.condition)
-                        (union (vl-stmt-functions-called x.truebranch)
-                               (vl-stmt-functions-called x.falsebranch)))
-      :vl-foreverstmt (vl-stmt-functions-called x.body)
-      :vl-waitstmt (union (vl-expr-functions-called x.condition)
-                          (vl-stmt-functions-called x.body))
-      :vl-repeatstmt (union (vl-expr-functions-called x.condition)
-                            (vl-stmt-functions-called x.body))
-      :vl-whilestmt (union (vl-expr-functions-called x.condition)
-                           (vl-stmt-functions-called x.body))
-      :vl-forstmt (union (union (union (vl-vardecllist-functions-called x.initdecls)
-                                       (vl-stmtlist-functions-called x.initassigns))
-                                (vl-expr-functions-called x.test))
-                         (union (vl-stmtlist-functions-called x.stepforms)
-                                (vl-stmt-functions-called x.body)))
-      :vl-blockstmt (union (vl-vardecllist-functions-called x.vardecls)
-                           (vl-stmtlist-functions-called x.stmts))
-      :vl-returnstmt (and x.val (vl-expr-functions-called x.val))
-      :vl-timingstmt (vl-stmt-functions-called x.body)))
+    (if (vl-atomicstmt-p x)
+        (vl-exprlist-functions-called (vl-atomicstmt->exprs x))
+      (union (union (vl-exprlist-functions-called (vl-compoundstmt->exprs x))
+                    (vl-vardecllist-functions-called (vl-compoundstmt->vardecls x)))
+             (vl-stmtlist-functions-called
+              (vl-compoundstmt->stmts x)))))
 
   (define vl-stmtlist-functions-called ((x vl-stmtlist-p))
     :returns (fnnames (and (vl-scopeexprlist-p fnnames)
@@ -334,20 +467,67 @@ because... (BOZO)</p>
         nil
       (union (vl-stmt-functions-called (car x))
              (vl-stmtlist-functions-called (cdr x)))))
-
-  (define vl-caselist-functions-called ((x vl-caselist-p))
-    :returns (fnnames (and (vl-scopeexprlist-p fnnames)
-                           (setp fnnames)))
-    :measure (vl-caselist-count x)
-    (b* ((x (vl-caselist-fix x))
-         ((when (atom x)) nil)
-         ((cons checks body) (car x)))
-      (union (union (vl-exprlist-functions-called checks)
-                    (vl-stmt-functions-called body))
-             (vl-caselist-functions-called (cdr x)))))
   ///
   (verify-guards vl-stmt-functions-called)
   (deffixequiv-mutual vl-stmt-functions-called))
+
+(defines vl-stmt-parameter-refs
+  :verify-guards nil
+  (define vl-stmt-parameter-refs ((x vl-stmt-p)
+                                  (ss vl-scopestack-p))
+    :returns (params (and (vl-paramreflist-p params)
+                          (setp params)))
+    :measure (vl-stmt-count x)
+    (if (vl-atomicstmt-p x)
+        (vl-exprlist-parameter-refs (vl-atomicstmt->exprs x) ss)
+      (union (union (vl-exprlist-parameter-refs (vl-compoundstmt->exprs x) ss)
+                    (vl-vardecllist-parameter-refs (vl-compoundstmt->vardecls x) ss))
+             (vl-stmtlist-parameter-refs
+              (vl-compoundstmt->stmts x) ss))))
+
+  (define vl-stmtlist-parameter-refs ((x vl-stmtlist-p)
+                                      (ss vl-scopestack-p))
+    :returns (params (and (vl-paramreflist-p params)
+                          (setp params)))
+    :measure (vl-stmtlist-count x)
+    (if (atom x)
+        nil
+      (union (vl-stmt-parameter-refs (car x) ss)
+             (vl-stmtlist-parameter-refs (cdr x) ss))))
+  ///
+  (verify-guards vl-stmt-parameter-refs)
+  (deffixequiv-mutual vl-stmt-parameter-refs))
+
+    ;; (vl-stmt-case x
+    ;;   :vl-nullstmt nil
+    ;;   :vl-assignstmt 
+    ;;   :vl-deassignstmt (vl-expr-functions-called x.lvalue)
+    ;;   :vl-enablestmt (vl-exprlist-functions-called x.args)
+    ;;   :vl-disablestmt (vl-expr-functions-called x.id)
+    ;;   :vl-eventtriggerstmt (vl-expr-functions-called x.id)
+    ;;   :vl-casestmt (union (vl-expr-functions-called x.test)
+    ;;                       (union (vl-stmt-functions-called x.default)
+    ;;                              (vl-caselist-functions-called x.caselist)))
+    ;;   :vl-ifstmt (union (vl-expr-functions-called x.condition)
+    ;;                     (union (vl-stmt-functions-called x.truebranch)
+    ;;                            (vl-stmt-functions-called x.falsebranch)))
+    ;;   :vl-foreverstmt (vl-stmt-functions-called x.body)
+    ;;   :vl-waitstmt (union (vl-expr-functions-called x.condition)
+    ;;                       (vl-stmt-functions-called x.body))
+    ;;   :vl-repeatstmt (union (vl-expr-functions-called x.condition)
+    ;;                         (vl-stmt-functions-called x.body))
+    ;;   :vl-whilestmt (union (vl-expr-functions-called x.condition)
+    ;;                        (vl-stmt-functions-called x.body))
+    ;;   :vl-forstmt (union (union (union (vl-vardecllist-functions-called x.initdecls)
+    ;;                                    (vl-stmtlist-functions-called x.initassigns))
+    ;;                             (vl-expr-functions-called x.test))
+    ;;                      (union (vl-stmtlist-functions-called x.stepforms)
+    ;;                             (vl-stmt-functions-called x.body)))
+    ;;   :vl-blockstmt (union (vl-vardecllist-functions-called x.vardecls)
+    ;;                        (vl-stmtlist-functions-called x.stmts))
+    ;;   :vl-returnstmt (and x.val (vl-expr-functions-called x.val))
+    ;;   :vl-timingstmt (vl-stmt-functions-called x.body)))
+
 
 
 ;; Above we define how statements are converted into svstmts given a table
@@ -361,15 +541,17 @@ because... (BOZO)</p>
 
 
 (define vl-fundecl-to-svex  ((x vl-fundecl-p)
-                             (ss vl-scopestack-p)
-                             (fntable svex::svex-alist-p))
+                             (ss vl-scopestack-p
+                                 "Scopestack including the function decl")
+                             (fntable svex::svex-alist-p)
+                             (paramtable svex::svex-alist-p))
   :returns (mv (warnings vl-warninglist-p)
                (svex svex::svex-p))
   (b* (((vl-fundecl x) (vl-fundecl-fix x))
        (warnings nil)
-       (ss (vl-scopestack-push (vl-fundecl->blockscope x) ss))
+       (conf (make-vl-svexconf :ss ss :fns fntable :params paramtable))
        ;; nonblocking assignments not allowed
-       ((wmv ok warnings svstmts) (vl-stmt->svstmts x.body ss fntable nil))
+       ((wmv ok warnings svstmts) (vl-stmt->svstmts x.body conf nil))
        ((unless ok) (mv warnings (svex-x)))
        ((wmv ok warnings svstate)
         (svex::svstmtlist-compile svstmts (svex::make-svstate) 1000
@@ -394,23 +576,71 @@ because... (BOZO)</p>
 (defines vl-funname-svex-compile
   :verify-guards nil
   :prepwork ((set-ruler-extenders '(mv-list return-last :lambdas)))
+  :ruler-extenders :all
+  :measure-debug t
+
+  (define vl-expr-svex-compile ((x vl-expr-p)
+                                (type vl-maybe-datatype-p)
+                                (ss vl-scopestack-p)
+                                &key ((rec-limit natp) '1000))
+    :measure (acl2::nat-list-measure (list rec-limit 0 0))
+    :returns (mv (warnings vl-warninglist-p)
+                 (expr (and (svex::svex-p expr)
+                            (svex::svarlist-addr-p (svex::svex-vars expr))))
+                 (res-type (and (vl-maybe-datatype-p res-type)
+                                (implies res-type
+                                         (vl-datatype-resolved-p res-type)))))
+    (b* ((x (vl-expr-fix x))
+         (subfns (vl-expr-functions-called x))
+         (subparams (vl-expr-parameter-refs x ss))
+         (warnings nil)
+         ((when (and (zp rec-limit)
+                     (or (consp subfns) (consp subparams))))
+          (mv (fatal :type :vl-expr-svex-compile-fail
+                     :msg "Rec-Limit ran out compiling functions/warnings: ~a0"
+                     :args (list x))
+              (svex-x) nil))
+         ((wmv warnings fntable)
+          (if (consp subfns)
+              (vl-funnames-svex-compile subfns ss (1- rec-limit))
+            (mv nil nil)))
+         ((wmv warnings paramtable)
+          (if (consp subparams)
+              (vl-paramrefs-svex-compile subparams (1- rec-limit))
+            (mv nil nil)))
+         (conf (make-vl-svexconf :ss ss :fns fntable :params paramtable)))
+      (if type
+          (b* (((mv err type) (vl-datatype-usertype-resolve type ss))
+               ((when err)
+                (mv (fatal :type :vl-expr-svex-compile-fail
+                           :msg "Type ~a0 is not resolved"
+                           :args (list type))
+                    (svex-x)
+                    nil))
+               ((wmv warnings svex) (vl-expr-to-svex-datatyped x type conf)))
+            (mv warnings svex type))
+        (b* (((wmv warnings svex type) (vl-expr-to-svex-untyped x conf)))
+          (mv warnings svex type)))))
+
   (define vl-funname-svex-compile ((x vl-scopeexpr-p "function name")
                                    (ss vl-scopestack-p)
-                                   (reclimit natp))
+                                   (rec-limit natp))
     :returns (mv (warnings vl-warninglist-p)
+                 (name (implies name (svex::svar-p name)))
                  (expr (and (svex::svex-p expr)
                             (svex::svarlist-addr-p (svex::svex-vars expr)))
                        "The function's return value as an svex expression"))
-    :measure (two-nats-measure reclimit 0)
+    :measure (acl2::nat-list-measure (list rec-limit 0 0))
     (b* ((x (vl-scopeexpr-fix x))
          (warnings nil)
-         ((mv err trace ?context ?tail) (vl-follow-scopeexpr x ss))
+         ((mv err name trace) (vl-funname->svex-funname x ss))
          ((when err)
           (mv (fatal :type :vl-funname-svex-compile-fail
                      :msg "function declaration not found: ~@0"
                      :args (list (make-vl-index :scope x :part
                                                 (vl-partselect-none))
                                  err))
+              nil
               (svex-x)))
          ((vl-hidstep step) (car trace))
          ((unless (eq (tag step.item) :vl-fundecl))
@@ -419,21 +649,41 @@ because... (BOZO)</p>
                      :args (list (make-vl-index :scope x :part
                                                 (vl-partselect-none))
                                  err))
-              (svex-x)))
+              nil (svex-x)))
          ((vl-fundecl decl) step.item)
+         (fn-ss (vl-scopestack-push (vl-fundecl->blockscope decl) step.ss))
          (subfns (vl-stmt-functions-called decl.body))
-         ((wmv warnings fntable)
-          (b* (((unless (consp subfns)) (mv (ok) nil))
-               ((when (zp reclimit))
-                (mv (warn :type :vl-funname-svex-compile-fail
-                          :msg "Reclimit ran out compiling functions: recursion present?"
+         (subparams (vl-stmt-parameter-refs decl.body fn-ss))
+         ((when (and (atom subfns) (atom subparams)))
+          (b* (((mv warnings expr)
+                (vl-fundecl-to-svex decl step.ss nil nil)))
+            (mv warnings name expr)))
+         ((when (zp rec-limit))
+          (mv (warn :type :vl-funname-svex-compile-fail
+                          :msg "Rec-Limit ran out compiling functions: ~
+                                recursion or parameter loops present? (~a0)"
                           :args (list x))
-                    nil))
-               (fn-ss (vl-scopestack-push (vl-fundecl->blockscope decl) step.ss)))
-            (vl-funnames-svex-compile subfns fn-ss (1- reclimit))))
+              nil (svex-x)))
+         ((wmv warnings fntable)
+          (vl-funnames-svex-compile subfns fn-ss (1- rec-limit)))
+         ((wmv warnings paramtable)
+          (vl-paramrefs-svex-compile subparams (1- rec-limit)))
          ((wmv warnings expr)
-          (vl-fundecl-to-svex decl step.ss fntable)))
-      (mv warnings expr)))
+          (vl-fundecl-to-svex decl fn-ss fntable paramtable)))
+      (mv warnings name expr)))
+
+  (define vl-paramref-svex-compile ((x vl-paramref-p)
+                                    (rec-limit natp))
+    :returns (mv (warnings vl-warninglist-p)
+                 (name svex::svar-p)
+                 (expr (and (svex::svex-p expr)
+                            (svex::svarlist-addr-p (svex::svex-vars expr)))))
+    :measure (acl2::nat-list-measure (list rec-limit 1 0))
+    (b* (((vl-paramref x))
+         (warnings nil)
+         ((wmv warnings expr &)
+          (vl-expr-svex-compile x.expr x.type x.ss :rec-limit rec-limit)))
+      (mv warnings x.name expr)))
 
   (define vl-funnames-svex-compile ((x vl-scopeexprlist-p "function names")
                                     (ss vl-scopestack-p)
@@ -441,13 +691,29 @@ because... (BOZO)</p>
     :returns (mv (warnings vl-warninglist-p)
                  (fntable svex::svex-alist-p
                           "Table mapping function names to svex expressions"))
-    :measure (two-nats-measure reclimit (len x))
+    :measure (acl2::nat-list-measure (list reclimit 2 (len x)))
     (b* (((when (atom x)) (mv nil nil))
          (warnings nil)
-         ((wmv warnings expr1) (vl-funname-svex-compile (car x) ss reclimit))
+         ((wmv warnings name1 expr1) (vl-funname-svex-compile (car x) ss reclimit))
          ((wmv warnings rest) (vl-funnames-svex-compile (cdr x) ss reclimit)))
       (mv warnings
-          (cons (cons (svex::make-svar :name (vl-scopeexpr-fix (car x))) expr1)
+          (if name1
+              (cons (cons name1 expr1)
+                    rest)
+            rest))))
+
+  (define vl-paramrefs-svex-compile ((x vl-paramreflist-p)
+                                     (reclimit natp))
+    :returns (mv (warnings vl-warninglist-p)
+                 (paramtable svex::svex-alist-p
+                             "Table mapping parameter names to svex expressions"))
+    :measure (acl2::nat-list-measure (list reclimit 2 (len x)))
+    (b* (((when (atom x)) (mv nil nil))
+         (warnings nil)
+         ((wmv warnings name1 expr1) (vl-paramref-svex-compile (car x) reclimit))
+         ((wmv warnings rest) (vl-paramrefs-svex-compile (cdr x) reclimit)))
+      (mv warnings
+          (cons (cons name1 expr1)
                 rest))))
   ///
   (verify-guards vl-funname-svex-compile :guard-debug t)
@@ -462,30 +728,25 @@ because... (BOZO)</p>
   (b* ((fns (vl-expr-functions-called x)))
     (vl-funnames-svex-compile fns ss 1000)))
 
-(define vl-expr-svex-compile ((x vl-expr-p)
-                              (ss vl-scopestack-p))
-  :short "Translates an expression to svex, first compiling any functions that it uses."
+(define vl-expr-compile-params ((x vl-expr-p)
+                                (ss vl-scopestack-p))
+  :short "Compiles any functions used by an expression into a svex alist."
   :returns (mv (warnings vl-warninglist-p)
-               (svex svex::svex-p))
-  (b* ((warnings nil)
-       ((wmv warnings fntable) (vl-expr-compile-fns x ss))
-       ((wmv warnings expr ?type ?type-ss)
-        (vl-expr-to-svex-untyped x ss fntable)))
-    (mv warnings expr))
-  ///
-  (more-returns
-   (svex :name vars-of-vl-expr-svex-compile
-         (svex::svarlist-addr-p (svex::svex-vars svex)))))
+               (paramtable svex::svex-alist-p))
+  (b* ((params (vl-expr-parameter-refs x ss)))
+    (vl-paramrefs-svex-compile params 1000)))
 
 (define vl-consteval ((x vl-expr-p)
-                      (ss vl-scopestack-p))
+                      (ss vl-scopestack-p)
+                      &key ((ctxsize maybe-natp) 'nil))
   :returns (mv (warnings1 vl-warninglist-p)
                (new-x vl-expr-p))
   (b* (((mv warnings fns) (vl-expr-compile-fns x ss))
+       ((wmv warnings params) (vl-expr-compile-params x ss))
        ((wmv warnings & new-x)
-        (vl-expr-consteval x (make-vl-svexconf :ss ss :fns fns))))
+        (vl-expr-consteval x (make-vl-svexconf :ss ss :fns fns :params params)
+                           :ctxsize ctxsize)))
     (mv warnings new-x)))
-
 
 
 (define vl-evatomlist-has-edge ((x vl-evatomlist-p))
@@ -511,8 +772,8 @@ because... (BOZO)</p>
   (b* (((when (atom x)) (mv nil (svex::svex-quote (svex::2vec 0))))
        ((vl-evatom x1) (car x))
        (warnings nil)
-       ((wmv warnings expr ?type ?type-ss)
-        (vl-expr-to-svex-untyped x1.expr ss nil))
+       ((wmv warnings expr ?type)
+        (vl-expr-to-svex-untyped x1.expr (make-vl-svexconf :ss ss)))
        (delay-expr (svex::svex-add-delay expr 1))
        ;; Note: Ensure these expressions always evaluate to either -1 or 0.
        (trigger1 (case x1.type
@@ -1104,9 +1365,11 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
         (vl-always->svex-checks x ss))
        ((unless ok) (mv warnings nil))
        (fnnames (vl-stmt-functions-called stmt))
+       (params  (vl-stmt-parameter-refs stmt ss))
        ((wmv warnings fntable) (vl-funnames-svex-compile fnnames ss 1000))
+       ((wmv warnings paramtable) (vl-paramrefs-svex-compile params 1000))
        ((wmv ok warnings svstmts)
-        (vl-stmt->svstmts stmt ss fntable t))
+        (vl-stmt->svstmts stmt (make-vl-svexconf :ss ss :fns fntable :params paramtable) t))
        ((unless ok) (mv warnings nil))
        ;; Only use the nonblocking-delay strategy for flops, not latches
        ((wmv ok warnings st)
@@ -1209,15 +1472,3 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
         (vl-alwayslist->svex (cdr x) ss)))
     (mv warnings
         (append-without-guard assigns1 assigns2))))
-
-
-
-
-    
-
-       
-       
-   
-       
-       
-

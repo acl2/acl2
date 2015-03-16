@@ -486,6 +486,14 @@ z.</p>"
     (equal (len (vl-decimal-digits-to-bitlist x))
            1)))
 
+;; get some extra rules about vl-bitlist-p.  BOZO we should have a way of doing
+;; this without providing the whole form
+(local (fty::deflist vl-bitlist
+         :elt-type vl-bit-p
+         :elementp-of-nil nil
+         :true-listp nil
+         :parents (vl-weirdint-p)))
+
 (define vl-correct-bitlist
   :short "Extend (or truncate) a bit-list to match the size specifier for an
 integer token."

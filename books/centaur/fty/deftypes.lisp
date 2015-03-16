@@ -2833,7 +2833,14 @@
                           (:free (b) (append std::a b))
                           (:free (b) (append nil b))
                           (:free (a b c) (append (cons a b) c)))
-                 :in-theory (enable (:i append))))))))
+                 :in-theory (enable (:i append)))))
+
+      (defthm ,(intern-in-package-of-symbol (cat "CONSP-CAR-OF-" (symbol-name x.fix)) x.fix)
+        (equal (consp (car  (,x.fix ,x.xvar)))
+               (consp (,x.fix ,x.xvar)))
+        :hints (("goal" :induct (len ,x.xvar)
+                 :expand ((,x.fix ,x.xvar))
+                 :in-theory (e/d ((:i len)) ((:d ,x.fix)))))))))
 
 (defun flextypelist-fix-postevents (types)
   (if (atom types)

@@ -32,8 +32,9 @@
 (in-package "VL")
 (include-book "lineup")
 (include-book "override")
-(include-book "scopesubst")
+;; (include-book "scopesubst")
 (include-book "../../mlib/blocks")
+(include-book "../../mlib/writer") ;; for generating the new module names...
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system))))
 
@@ -114,21 +115,25 @@ with, we can safely remove @('plus') from our module list.</p>")
                                   (val vl-maybe-paramvalue-p))
   :returns (mv ok
                (new-x vl-paramdecl-p))
+  :guard-debug t
   (b* (((vl-paramdecl x))
        (val (vl-maybe-paramvalue-fix val))
        ((mv ok type)
         (vl-paramtype-case x.type
           :vl-typeparam
-          (if (or (not val) (vl-paramvalue-datatype-p val))
-              (mv t (change-vl-typeparam x.type :default val))
+          (if (or (not val) (vl-paramvalue-case val :type))
+              (mv t (change-vl-typeparam x.type :default
+                                         (and val (vl-paramvalue-type->type val))))
             (mv nil (change-vl-typeparam x.type :default nil)))
           :vl-implicitvalueparam
-          (if (or (not val) (vl-paramvalue-expr-p val))
-              (mv t (change-vl-implicitvalueparam x.type :default val))
+          (if (or (not val) (vl-paramvalue-case val :expr))
+              (mv t (change-vl-implicitvalueparam x.type :default
+                                                  (and val (vl-paramvalue-expr->expr val))))
             (mv nil (change-vl-implicitvalueparam x.type :default nil)))
           :vl-explicitvalueparam
-          (if (or (not val) (vl-paramvalue-expr-p val))
-              (mv t (change-vl-explicitvalueparam x.type :default val))
+          (if (or (not val) (vl-paramvalue-case val :expr))
+              (mv t (change-vl-explicitvalueparam x.type :default
+                                                  (and val (vl-paramvalue-expr->expr val))))
             (mv nil (change-vl-explicitvalueparam x.type :default nil))))))
     (mv ok
         (change-vl-paramdecl x :type type))))
@@ -145,31 +150,96 @@ with, we can safely remove @('plus') from our module list.</p>")
     (cons (vl-paramdecl-remove-default (car x))
           (vl-paramdecllist-remove-defaults (cdr x)))))
 
-
+(define vl-paramdecl-resolve-indices ((x vl-paramdecl-p)
+                                      (ss vl-scopestack-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (new-x vl-paramdecl-p))
+  (b* (((vl-paramdecl x) (vl-paramdecl-fix x))
+       (fns (vl-paramdecl-functions-called x ss))
+       (params (vl-paramdecl-parameter-refs x ss))
+       (warnings nil)
+       ((wmv warnings fntable) (vl-funnames-svex-compile fns ss 1000))
+       ((wmv warnings paramtable)  (vl-paramrefs-svex-compile params 1000))
+       (conf (make-vl-svexconf :ss ss :fns fntable :params paramtable))
+       ((mv warnings type)
+        (vl-paramtype-case x.type
+          :vl-implicitvalueparam
+          (b* (((wmv warnings & range)
+                (if x.type.range
+                    (vl-range-resolve-indices x.type.range conf)
+                  (mv nil nil nil)))
+               ((wmv warnings & default)
+                (if x.type.default
+                    (vl-expr-resolve-indices x.type.default conf)
+                  (mv nil nil nil))))
+            (mv warnings (change-vl-implicitvalueparam
+                          x.type :range range :default default)))
+          :vl-explicitvalueparam
+          (b* (((mv err type)
+                (vl-datatype-usertype-resolve x.type.type ss))
+               (warnings (if err
+                             (warn :type :vl-paramtype-unresolvable
+                                   :msg "Couldn't resolve usertypes in parameter ~a0: ~@1"
+                                   :args (list x type))
+                           warnings))
+               ((wmv warnings & type)
+                (vl-datatype-resolve-indices type conf))
+               ((wmv warnings & default)
+                (if x.type.default
+                    (vl-expr-resolve-indices x.type.default conf)
+                  (mv nil nil nil))))
+            (mv warnings (change-vl-explicitvalueparam
+                          x.type :type type :default default)))
+          :vl-typeparam
+          (if x.type.default
+              (b* (((mv err type)
+                    (vl-datatype-usertype-resolve x.type.default ss))
+                   (warnings (if err
+                                 (warn :type :vl-paramtype-unresolvable
+                                       :msg "Couldn't resolve usertypes in parameter ~a0: ~@1"
+                                       :args (list x type))
+                               warnings))
+                   ((wmv warnings & default)
+                    (if x.type.default
+                        (vl-datatype-resolve-indices type conf)
+                      (mv nil nil nil))))
+                (mv warnings (change-vl-typeparam
+                              x.type :default default)))
+            (mv warnings x.type)))))
+    (mv warnings (change-vl-paramdecl x :type type))))
+      
 
 
 (define vl-scopeinfo-resolve-params ((x vl-paramdecloverridelist-p)
                                      (scopeinfo vl-scopeinfo-p)
-                                     (ss vl-scopestack-p)
+                                     (ss vl-scopestack-p
+                                         "Scopestack in the module whose params
+                                          we're overriding")
+                                     (outer-ss vl-scopestack-p
+                                               "Scopestack for the overrides")
                                      (final-params-acc vl-paramdecllist-p)
                                      (warnings vl-warninglist-p)
                                      (ctx vl-context-p))
+  :prepwork ((local (in-theory (e/d (vl-paramdecloverridelist-fix)
+                                    (append
+                                     vl-context-p-when-vl-ctxelement-p
+                                     acl2::append-when-not-consp)))))
   :returns (mv (successp)
                (warnings vl-warninglist-p)
                (new-scopeinfo vl-scopeinfo-p
                        "input scopeinfo modified with final parameter values")
                (final-params vl-paramdecllist-p))
-  :hooks ((:fix :hints (("Goal" :induct (vl-scopeinfo-resolve-params
-                                         x scopeinfo ss final-params-acc warnings ctx)
-                         :expand ((:free (scopeinfo ss final-params-acc warnings ctx)
-                                   (vl-scopeinfo-resolve-params
-                                         x scopeinfo ss final-params-acc warnings ctx))
-                                  (:free (a b scopeinfo ss final-params-acc warnings ctx)
-                                   (vl-scopeinfo-resolve-params
-                                    (cons a b)
-                                    scopeinfo ss final-params-acc warnings ctx)))
-                         :in-theory (e/d (vl-paramdecloverridelist-fix)
-                                         ((:d vl-scopeinfo-resolve-params)))))))
+  ;; :hooks ((:fix :hints (("Goal" :induct (vl-scopeinfo-resolve-params
+  ;;                                        x scopeinfo ss final-params-acc warnings ctx)
+  ;;                        :expand ((:free (scopeinfo ss final-params-acc warnings ctx)
+  ;;                                  (vl-scopeinfo-resolve-params
+  ;;                                   x scopeinfo ss final-params-acc warnings ctx))
+  ;;                                 (:free (a b scopeinfo ss final-params-acc warnings ctx)
+  ;;                                  (vl-scopeinfo-resolve-params
+  ;;                                   (cons a b)
+  ;;                                   scopeinfo ss final-params-acc warnings ctx)))
+  ;;                        :in-theory (e/d (vl-paramdecloverridelist-fix)
+  ;;                                        ((:d vl-scopeinfo-resolve-params)))))))
 
   (b* (((when (atom x))
         (mv t (ok) (vl-scopeinfo-fix scopeinfo)
@@ -177,31 +247,27 @@ with, we can safely remove @('plus') from our module list.</p>")
              (vl-paramdecllist-fix final-params-acc) nil)))
        ((vl-paramdecloverride x1) (car x))
        (current-ss (vl-scopestack-push (vl-scopeinfo-fix scopeinfo) ss))
-       (subst-decl (vl-paramdecl-scopesubst x1.decl current-ss))
+       (warnings (ok))
+       (ctx (vl-context-fix ctx))
+       ((wmv warnings decl :ctx ctx) (vl-paramdecl-resolve-indices x1.decl current-ss))
+
        (ov-value (or x1.override
                      (vl-paramtype->default
-                      (vl-paramdecl->type subst-decl))))
+                      (vl-paramdecl->type decl))))
        ((unless ov-value)
         (mv nil (fatal :type :vl-bad-inst
                        :msg "~a0: no value for parameter ~s1."
                        :args (list (vl-context-fix ctx) (vl-paramdecl->name x1.decl)))
             (vl-scopeinfo-fix scopeinfo)
             nil))
-       ((mv ok warnings final-value)
-        (vl-override-parameter-value subst-decl ov-value current-ss warnings ctx))
+       (ov-ss (if x1.override
+                  outer-ss
+                current-ss))
+
+       ((mv ok warnings final-paramdecl)
+        (vl-override-parameter-value decl current-ss ov-value ov-ss warnings ctx))
        ((unless ok)
         (mv nil warnings (vl-scopeinfo-fix scopeinfo) nil))
-
-       ((mv ok final-paramdecl)
-        (vl-paramdecl-set-default subst-decl final-value))
-       ((unless ok)
-        (mv nil
-            (warn :type :vl-programming-error
-                  :msg "~a0: Tried to set the value of an type/value ~
-                        parameter ~a1 as value/type ~a2"
-                  :args (list (vl-context-fix ctx) x1.decl final-value))
-            (vl-scopeinfo-fix scopeinfo)
-            nil))
 
        ((vl-scopeinfo scopeinfo))
        (new-scopeinfo (change-vl-scopeinfo
@@ -209,7 +275,7 @@ with, we can safely remove @('plus') from our module list.</p>")
                        :locals (hons-acons (vl-paramdecl->name final-paramdecl)
                                            final-paramdecl
                                            scopeinfo.locals))))
-    (vl-scopeinfo-resolve-params (cdr x) new-scopeinfo ss
+    (vl-scopeinfo-resolve-params (cdr x) new-scopeinfo ss outer-ss
                                  (cons final-paramdecl
                                        final-params-acc)
                                  warnings ctx)))
@@ -220,7 +286,11 @@ with, we can safely remove @('plus') from our module list.</p>")
                                   (formals vl-paramdecllist-p)
                                   (actuals vl-paramargs-p)
                                   (warnings vl-warninglist-p)
-                                  (ss vl-scopestack-p)
+                                  (ss vl-scopestack-p
+                                      "ss where the instantiated module was found,
+                                       without the module itself")
+                                  (outer-ss vl-scopestack-p
+                                            "ss for the instantiating context")
                                   (ctx vl-context-p))
   :returns (mv (successp)
                (warnings vl-warninglist-p)
@@ -241,7 +311,8 @@ with, we can safely remove @('plus') from our module list.</p>")
                    (vl-paramdecllist-remove-defaults formals)
                    (vl-scopeinfo->locals scopeinfo)))))
        ((mv ok warnings scopeinfo-with-real-params final-paramdecls)
-        (vl-scopeinfo-resolve-params overrides scopeinfo-with-empty-params ss nil warnings ctx)))
+        (vl-scopeinfo-resolve-params
+         overrides scopeinfo-with-empty-params ss outer-ss nil warnings ctx)))
     (mv ok warnings (vl-scopestack-push scopeinfo-with-real-params ss)
         final-paramdecls)))
 
@@ -268,8 +339,9 @@ with, we can safely remove @('plus') from our module list.</p>")
   :hooks ((:fix :hints(("Goal" :in-theory (enable (tau-system))))))
   (if x
       (if (and (vl-expr-resolved-p x)
-               (equal (vl-expr->finalwidth x) 32)
-               (equal (vl-expr->finaltype x) :vl-signed))
+               (b* (((mv & size) (vl-expr-selfsize x nil))
+                    ((mv & type) (vl-expr-typedecide x nil)))
+                 (and (eql size 32) (eq type :vl-signed))))
           ;; Special case to avoid things like size=32'sd5.
           (str::natstr (vl-resolved->val x))
         (acl2::substitute #\_ #\Space (vl-pps-expr x)))
@@ -316,12 +388,11 @@ introduced.</p>"
 
 (define vl-unparam-inst
   :parents (unparameterization)
-  :short "Try to unparameterize a single module instance."
-
+  :short "Compute the final parameter values for a single module instance."
   ((inst     vl-modinst-p
              "Instance of some module.  The module being instantiated may or
               may not have parameters.")
-   (ss       vl-scopestack-p)
+   (ss       vl-scopestack-p "Scopestack where the module is instantiated")
    (warnings vl-warninglist-p
              "Warnings accumulator for the submodule.")
    (modname  stringp "Containing module name, for context"))
@@ -339,10 +410,13 @@ introduced.</p>"
 
   :prepwork ((local (defthm vl-scope-p-when-vl-module-p-strong
                       (implies (vl-module-p x)
+                               (vl-scope-p x))))
+             (local (defthm vl-scope-p-when-vl-interface-p-strong
+                      (implies (vl-interface-p x)
                                (vl-scope-p x)))))
 
   (b* (((vl-modinst inst) (vl-modinst-fix inst))
-       (mod (vl-scopestack-find-definition inst.modname ss))
+       ((mv mod mod-ss) (vl-scopestack-find-definition/ss inst.modname ss))
        (ss (vl-scopestack-fix ss))
        ((unless (and mod
                      (or (eq (tag mod) :vl-module)
@@ -354,11 +428,9 @@ introduced.</p>"
                    :args (list inst inst.modname))
             inst nil ss))
 
-       ((when (eq (tag mod) :vl-interface))
-        ;; Interface instance.  BOZO Add support for unparameterizing interfaces.
-        (mv t (ok) inst nil ss))
-
-       ((vl-module mod) mod)
+       (mod.paramdecls (if (eq (tag mod) :vl-module)
+                           (vl-module->paramdecls mod)
+                         (vl-interface->paramdecls mod)))
 
        ((when (atom mod.paramdecls))
         ;; Optimization.  In the common case there are no parameter
@@ -367,13 +439,13 @@ introduced.</p>"
         (if (vl-paramargs-empty-p inst.paramargs)
             (mv t (ok) inst
                 (make-vl-unparam-signature :modname inst.modname)
-                (vl-scopestack-push mod ss))
+                (vl-scopestack-push mod mod-ss))
           (mv nil
               (fatal :type :vl-bad-instance
                      :msg "~a0: parameter arguments given to ~s1, but ~s1 ~
                            does not take any parameters."
                      :args (list inst inst.modname))
-              inst nil ss)))
+              inst nil mod-ss)))
 
        (ctx (make-vl-context :mod modname :elem inst))
 
@@ -382,12 +454,13 @@ introduced.</p>"
                                   mod.paramdecls
                                   inst.paramargs
                                   warnings
+                                  mod-ss
                                   ss
                                   ctx))
        ((unless ok)
         ;; already warned
         (vl-unparam-debug "~a0: failed to finalize params~%" inst)
-        (mv nil warnings inst nil ss))
+        (mv nil warnings inst nil mod-ss))
 
 
        (new-modname      (vl-unparam-newname inst.modname final-paramdecls))
@@ -440,16 +513,24 @@ introduced.</p>"
   :returns (mv (ok)
                (warnings vl-warninglist-p)
                (equalp))
-  (b* ((eq-expr (make-vl-nonatom :op :vl-binary-ceq
-                                 :args (list x y)))
-       ((mv ok res) (vl-consteval eq-expr ss))
-       ((when ok)
-        (mv t (ok) (not (eql 0 (vl-resolved->val res))))))
-    (mv nil
-        (fatal :type :vl-generate-resolve-fail
-               :msg "Couldn't determine whether test expression ~a0 matched case expression ~a1."
-               :args (list (vl-expr-fix x) (vl-expr-fix y)))
-        nil)))
+  (b* ((eq-expr (make-vl-binary :op :vl-binary-ceq
+                                :left x :right y))
+       (warnings (ok))
+       ((wmv warnings res) (vl-consteval eq-expr ss))
+       ((mv ok result)
+        (vl-expr-case res
+          :vl-value (vl-value-case res.val
+                      :vl-constint (mv t (not (eql 0 res.val.value)))
+                      :otherwise (mv nil nil))
+          :otherwise (mv nil nil))))
+    (if ok
+        (mv t warnings result)
+      (mv nil
+          (fatal :type :vl-generate-resolve-fail
+                 :msg "Couldn't determine whether test expression ~a0 matched ~
+                     case expression ~a1."
+                 :args (list (vl-expr-fix x) (vl-expr-fix y)))
+          nil))))
 
 (define vl-gencase-some-match ((x vl-expr-p)
                                (y vl-exprlist-p)
@@ -611,7 +692,7 @@ introduced.</p>"
     (define vl-genloop-resolve ((clk natp "recursion limit")
                                 (blob vl-genblob-p "elements inside the block")
                                 (elems vl-genelementlist-p "elements inside the block")
-                                (var   vl-id-p)
+                                (var   stringp)
                                 (current-val integerp)
                                 (nextval vl-expr-p)
                                 (continue vl-expr-p)

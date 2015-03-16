@@ -316,13 +316,21 @@ current one.  We translate module @('a') as follows:</p>
   (b* ((warnings nil)
        ((when (atom x)) (mv (ok) nil))
        ((vl-vardecl x1) (vl-vardecl-fix (car x)))
-       ((mv err size) (vl-datatype-size x1.type ss))
-       (warnings (if (or err (not size))
-                     (fatal :type :vl-vardecl-unsizable
-                            :msg "~a0: type ~a1 can't be sized: ~@2"
-                            :args (list x1 x1.type
-                                        (or err "non-bitvector type")))
-                   (ok)))
+       ((mv err type) (vl-datatype-usertype-resolve x1.type ss))
+       ((mv warnings size)
+        (b* (((when err)
+              (mv (fatal :type :vl-vardecl-unsizable
+                         :msg "~a0: type ~a1 was not resolved: ~@2"
+                         :args (list x1 x1.type err))
+                  nil))
+             ((mv err size) (vl-datatype-size type))
+             (warnings (if (or err (not size))
+                           (fatal :type :vl-vardecl-unsizable
+                                  :msg "~a0: type ~a1 can't be sized: ~@2"
+                                  :args (list x1 x1.type
+                                              (or err "non-bitvector type")))
+                         (ok))))
+          (mv warnings size)))
        ((wmv warnings rest) (vl-vardecllist-sizes (cdr x) ss)))
     (mv warnings
         (cons size rest)))
@@ -802,18 +810,18 @@ constructed separately.)</p>"
 
 (define vl-instarray-plainarg-type-check ((arraysize maybe-posp)
                                           (y-type vl-datatype-p)
-                                          (y-type-ss vl-scopestack-p)
                                           (y-expr vl-expr-p)
                                           (x-type vl-datatype-p)
-                                          (x-type-ss vl-scopestack-p)
                                           (x-expr vl-expr-p)
                                           (portname stringp))
+  :guard (and (vl-datatype-resolved-p y-type)
+              (vl-datatype-resolved-p x-type))
   :returns (mv (err (iff (vl-msg-p err) err))
                (multi "nil if all ports are connected to x as a whole, t if they're
                        all connected to separate slices")
                (x-size (implies (not err) (posp x-size)) :rule-classes :type-prescription)
                (y-size (implies (not err) (posp y-size)) :rule-classes :type-prescription))
-  (b* (((mv err y-size) (vl-datatype-size y-type y-type-ss))
+  (b* (((mv err y-size) (vl-datatype-size y-type))
        ((when (or err (not y-size) (eql 0 y-size)))
         (mv (vmsg "Couldn't size datatype ~a0 for ~s1 port expression ~a2"
                   (vl-datatype-fix y-type) (string-fix portname) (vl-expr-fix y-expr))
@@ -823,14 +831,14 @@ constructed separately.)</p>"
         ;; If we don't have an instarray, then x-type and y-type are the same
         ;; and x has already been extended, if needed.
         (mv nil nil y-size y-size))
-       ((mv err x-size) (vl-datatype-size x-type x-type-ss))
+       ((mv err x-size) (vl-datatype-size x-type))
        ((when (or err (not x-size) (eql 0 x-size)))
         (mv (vmsg "Couldn't size datatype ~a0 for ~s1 port ~
                          expression ~a2"
                   (vl-datatype-fix x-type) (string-fix portname) (vl-expr-fix x-expr))
             nil nil nil))
-       (y-packed (vl-datatype-packedp y-type y-type-ss))
-       (x-packed (vl-datatype-packedp x-type x-type-ss))
+       (y-packed (vl-datatype-packedp y-type))
+       (x-packed (vl-datatype-packedp x-type))
        ((when (and x-packed y-packed))
         (b* (((when (eql x-size y-size))
               (mv nil nil x-size y-size))
@@ -847,11 +855,11 @@ constructed separately.)</p>"
        ;; Otherwise we either need the types to be compatible or else we need
        ;; x's type to be an arraysize-element unpacked array of things
        ;; compatible with y's type.
-       (compat-err (vl-compare-datatypes y-type y-type-ss x-type x-type-ss))
+       (compat-err (vl-compare-datatypes y-type x-type))
        ((unless compat-err)
         (mv nil nil x-size y-size))
-       ((mv err ?caveat x-basetype dim x-base-ss)
-        (vl-datatype-remove-dim x-type x-type-ss))
+       ((mv err ?caveat x-basetype dim)
+        (vl-datatype-remove-dim x-type))
        ((when err)
         (mv (vmsg "Incompatible type for connection to instancearray port ~s0"
                   (string-fix portname))
@@ -867,7 +875,7 @@ constructed separately.)</p>"
                    (differing dimension sizes)."
                   (string-fix portname))
             nil nil nil))
-       (compat-err2 (vl-compare-datatypes y-type y-type-ss x-basetype x-base-ss))
+       (compat-err2 (vl-compare-datatypes y-type x-basetype))
        ((when compat-err2)
         (mv (vmsg "Incompatible type for connection to instancearray port ~s1 ~
                    (different slot types)." (string-fix portname))
@@ -1021,27 +1029,20 @@ constructed separately.)</p>"
        (y.name (or y.name (cat "unnamed_port_" (natstr argindex))))
        ((unless y.expr)
         (mv (ok) (make-vl-portinfo-blank)))
-       ((wmv warnings y-lhs y-type y-type-ss)
+       ((wmv warnings y-lhs y-type)
         (vl-expr-to-svex-lhs y.expr inst-ss))
        ((unless y-type)
         ;; already warned
         (fail warnings))
-       ((wmv warnings fns) (vl-expr-compile-fns x.expr ss))
-       ((wmv warnings x-svex x-type x-type-ss)
-        (if arraysize
-            ;; Can't just assume the datatype of y, b/c it might be that or it
-            ;; might be arraysize * that.
-            (vl-expr-to-svex-untyped x.expr ss fns)
-          (b* (((wmv warnings x-svex)
-                (vl-expr-to-svex-typed
-                 x.expr y-type y-type-ss ss fns)))
-            (mv warnings x-svex y-type y-type-ss))))
+       ((wmv warnings x-svex x-type)
+        (vl-expr-svex-compile
+         x.expr (if arraysize nil y-type) ss))
 
        ((unless x-type) (fail warnings))
        ((mv err ?multi ?x-size ?y-size)
         (vl-instarray-plainarg-type-check
-         arraysize y-type y-type-ss y.expr
-         x-type x-type-ss x.expr y.name))
+         arraysize y-type y.expr
+         x-type x.expr y.name))
 
        ((when err)
         (fail (fatal :type :vl-plainarg->svex-fail
@@ -1602,14 +1603,12 @@ multi-tick we'd have to generate new names for the intermediate states.</p>"
   :prepwork ((local (in-theory (enable (force)))))
   (b* (((vl-assign x) (vl-assign-fix x))
        (warnings nil)
-       ((wmv warnings lhs lhs-type lhs-type-ss :ctx x)
+       ((wmv warnings lhs lhs-type :ctx x)
         (vl-expr-to-svex-lhs x.lvalue ss))
        ((unless lhs-type) (mv warnings nil))
-       ((wmv warnings fns :ctx x) (vl-expr-compile-fns x.expr ss))
        ((wmv warnings delay :ctx x) (vl-maybe-gatedelay->delay x.delay))
-       ((wmv warnings svex-rhs :ctx x)
-        (vl-expr-to-svex-typed
-         x.expr lhs-type lhs-type-ss ss fns))
+       ((wmv warnings svex-rhs & :ctx x)
+        (vl-expr-svex-compile x.expr lhs-type ss))
        ;; BOZO deal with drive strengths
        ((when (not delay))
         (mv warnings (list (cons lhs (svex::make-driver :value svex-rhs)))))
@@ -1682,32 +1681,34 @@ multi-tick we'd have to generate new names for the intermediate states.</p>"
 
 
 
-;; BOZO vl-datatype->svex-modname (and generally all the things that generate
-;; svex module names) are totally unverified and could be producing name
-;; conflicts, with unpredictable results.
-(define vl-scopestack-namespace ((x vl-scopestack-p) acc)
-  :returns (name-nest)
-  :measure (vl-scopestack-count x)
-  (vl-scopestack-case x
-    :null acc
-    :global (cons ':top acc)
-    :local (vl-scopestack-namespace
-            x.super
-            (cons (let ((name (vl-scope->name x.top)))
-                    (list (tag x.top) (or name "anonymous")))
-                  acc))))
+;; ;; BOZO vl-datatype->svex-modname (and generally all the things that generate
+;; ;; svex module names) are totally unverified and could be producing name
+;; ;; conflicts, with unpredictable results.
+;; (define vl-scopestack-namespace ((x vl-scopestack-p) acc)
+;;   :returns (name-nest)
+;;   :measure (vl-scopestack-count x)
+;;   (vl-scopestack-case x
+;;     :null acc
+;;     :global (cons ':top acc)
+;;     :local (vl-scopestack-namespace
+;;             x.super
+;;             (cons (let ((name (vl-scope->name x.top)))
+;;                     (list (tag x.top) (or name "anonymous")))
+;;                   acc))))
                                     
-(define vl-datatype->svex-modname ((x vl-datatype-p) (ss vl-scopestack-p))
+(define vl-datatype->svex-modname ((x vl-datatype-p))
   :returns (name svex::modname-p
                  :hints(("Goal" :in-theory (enable svex::modname-p))))
   :guard-hints (("Goal" :in-theory (enable svex::modname-p)))
-  (b* (((when (or (consp (vl-datatype->udims x))
-                  (consp (vl-datatype->pdims x))
-                  (not (vl-datatype-case x :vl-usertype))))
-        (svex::modname-fix (vl-scopestack-namespace ss (list (vl-datatype-fix x))))))
-    (hons-copy
-     (svex::modname-fix
-      `(:datatype . ,(vl-scopestack-namespace ss `(,(vl-usertype->name x))))))))
+  (hons-copy
+   (svex::modname-fix (vl-datatype-fix x))))
+  ;; (b* (((when (or (consp (vl-datatype->udims x))
+  ;;                 (consp (vl-datatype->pdims x))
+  ;;                 (not (vl-datatype-case x :vl-usertype))))
+  ;;       (svex::modname-fix (vl-scopestack-namespace ss (list (vl-datatype-fix x))))))
+  ;;   (hons-copy
+  ;;    (svex::modname-fix
+  ;;     `(:datatype . ,(vl-scopestack-namespace ss `(,(vl-usertype->name x))))))))
 
 
 (define vl-datatype-elem->mod-components
@@ -1961,9 +1962,19 @@ ourstruct, above.)</p>"
              ;;                        (consp x))
              ;;                   (and (vl-range-p (car x))
              ;;                        (vl-range-resolved-p (car x))))
-             ;;          :hints(("Goal" :in-theory (enable vl-resolved-rangelist-p)))))
+             ;;          :hints(("Goal" :in-theory (enable
+             ;;          vl-resolved-rangelist-p)))))
+             (local (Defthm append-nil
+                      (equal (append nil x) x)))
              (local (in-theory (disable (tau-system)
                                         acl2::member-of-cons
+                                        acl2::car-of-append
+                                        acl2::consp-of-append
+                                        acl2::append-when-not-consp
+                                        acl2::cancel_times-equal-correct
+                                        default-car;;  default-cdr
+                                        not
+                                        acl2::consp-when-member-equal-of-cons-listp
                                         svex::lhspairs-p-when-subsetp-equal
                                         svex::modalist-p-when-not-consp)))
              (local (in-theory (enable vl-datatype->all-dims)))
@@ -1973,14 +1984,76 @@ ourstruct, above.)</p>"
                              (append (and (modname-p a)
                                           (module-vars b))
                                      (modalist-vars c)))
-                      :hints(("Goal" :in-theory (enable modalist-vars modalist-fix)))))
+                      :hints(("Goal" :in-theory (enable modalist-vars
+                                                        modalist-fix)))))
 
-             (local (defthm posp-rec-limit-when-usertypes-ok
-                      (implies (and (zp rec-limit)
-                                    (vl-datatype-case x :vl-usertype))
-                               (vl-datatype-check-usertypes x ss :rec-limit rec-limit))
-                      :hints (("goal" :expand ((:free (rec-limit)
-                                                (vl-datatype-check-usertypes x ss :rec-limit rec-limit)))))))
+             (local (defthm vl-datatype-count-of-update-dims
+                      (equal (vl-datatype-count
+                              (vl-datatype-update-dims pdims udims x))
+                             (+ (vl-datatype-count x)
+                                (vl-packeddimensionlist-count pdims)
+                                (vl-packeddimensionlist-count udims)
+                                (- (vl-packeddimensionlist-count
+                                    (vl-datatype->pdims x)))
+                                (- (vl-packeddimensionlist-count
+                                    (vl-datatype->udims x)))))
+                      :hints(("Goal" :expand ((vl-datatype-count x)
+                                              (vl-datatype-count
+                                               (vl-datatype-update-dims
+                                                pdims udims x))))
+                             (and stable-under-simplificationp
+                                  '(:in-theory (enable
+                                                vl-datatype-update-dims))))))
+
+             (local (defthm vl-packeddimensionlist-count-of-append
+                      (equal (vl-packeddimensionlist-count (append a b))
+                             (+ -1 (vl-packeddimensionlist-count a)
+                                (vl-packeddimensionlist-count b)))
+                      :hints(("Goal" :in-theory (enable
+                                                 vl-packeddimensionlist-count
+                                                 append)
+                              :induct (append a b)))))
+
+             (local (defthm o<-when-atoms
+                      (implies (and (atom x) (atom y))
+                               (equal (o< x y)
+                                      (< x y)))
+                      :hints(("Goal" :in-theory (enable o<)))))
+
+             (local (defthm vl-packeddimensionlist-count-of-cdr1
+                      (equal (vl-packeddimensionlist-count (cdr a))
+                             (if (consp a)
+                                 (+ -1 (- (vl-packeddimension-count (car a)))
+                                    (vl-packeddimensionlist-count a))
+                               (vl-packeddimensionlist-count a)))
+                      :hints(("Goal" :expand ((vl-packeddimensionlist-count
+                                               a))))))
+
+             (local (in-theory (disable vl-datatype-udims-when-vl-coretype
+                                        vl-datatype-udims-when-vl-struct
+                                        vl-datatype-udims-when-vl-union
+                                        vl-datatype-udims-when-vl-enum
+                                        vl-datatype-udims-when-vl-usertype
+                                        vl-datatype-pdims-when-vl-coretype
+                                        vl-datatype-pdims-when-vl-struct
+                                        vl-datatype-pdims-when-vl-union
+                                        vl-datatype-pdims-when-vl-enum
+                                        vl-datatype-pdims-when-vl-usertype)))
+
+
+             ;; (local (defthm vl-maybe-usertype-resolve-when-dims
+             ;;          (implies (consp (vl-datatype->all-dims x))
+             ;;                   (equal (vl-maybe-usertype-resolve x)
+             ;;                          (vl-datatype-fix x)))
+             ;;          :hints(("Goal" :in-theory (enable vl-datatype->all-dims
+             ;;                                            vl-maybe-usertype-resolve)))))
+
+             ;; (local (defthm posp-rec-limit-when-usertypes-ok
+             ;;          (implies (and (zp rec-limit)
+             ;;                        (vl-datatype-case x :vl-usertype))
+             ;;                   (vl-datatype-check-usertypes x ss :rec-limit rec-limit))
+             ;;          :hints (("goal" :expand ((:free (rec-limit)
+             ;;                                    (vl-datatype-check-usertypes x ss :rec-limit rec-limit)))))))
              ;; #!svex
              ;; (local (defthm module-vars-of-module
              ;;          (equal (module-vars (module wires insts assigns delays aliases))
@@ -1998,10 +2071,9 @@ ourstruct, above.)</p>"
                                         acl2::mv-nth-cons-meta))))
 
   (define vl-datatype->mods ((x vl-datatype-p)
-                             (ss vl-scopestack-p)
-                             (modalist svex::modalist-p)
-                             &key ((rec-limit natp) '1000))
-    :guard (not (vl-datatype-check-usertypes x ss))
+                             ;; (ss vl-scopestack-p)
+                             (modalist svex::modalist-p))
+    :guard (vl-datatype-resolved-p x)
     :returns
     (mv (err   (iff (vl-msg-p err) err))
         (wire1 (implies (not err) (svex::wire-p wire1))
@@ -2014,8 +2086,8 @@ ourstruct, above.)</p>"
         (modalist1 (and (svex::modalist-p modalist1)
                         (implies (svex::svarlist-addr-p (svex::modalist-vars modalist))
                                  (svex::svarlist-addr-p (svex::modalist-vars modalist1))))))
-    :measure (acl2::nat-list-measure
-              (list rec-limit 0))
+    :measure (Vl-datatype-count x)
+    :hints (("goal" :cases ((consp (vl-datatype->all-dims x)))))
     :short "Create an svex module representing a datatype.  This module
 declares the wire names that exist inside the datatype, contains module
 instances representing nested datatypes, and arranges aliases among the various
@@ -2087,15 +2159,12 @@ returns a @(see svex::modalist) of the newly generated modules, but also
 returns the name of the module corresponding to the given datatype (if any) and
 a wire whose range is appropriate for a variable declared to be of the given
 type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
-    (b* ((type-modname (vl-datatype->svex-modname x ss))
+    (b* ((type-modname (vl-datatype->svex-modname x))
          (modalist (svex::modalist-fix modalist))
          (look (svex::modalist-lookup type-modname modalist))
-         ((when (zp rec-limit))
-          (mv (vmsg "Rec-limit ran out processing datatype ~a0" (vl-datatype-fix x))
-              nil nil modalist))
-         ((mv x ss) (vl-maybe-usertype-resolve x ss))
+         (x (vl-maybe-usertype-resolve x))
          (look (or look
-                   (svex::modalist-lookup (vl-datatype->svex-modname x ss) modalist)))
+                   (svex::modalist-lookup (vl-datatype->svex-modname x) modalist)))
          ((when look)
           (b* (((svex::module look))
                (modalist (svex::modalist-fix modalist))
@@ -2107,6 +2176,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
             (mv nil wire type-modname modalist)))
          (dims (vl-datatype->all-dims x))
          (simple-vector-type-p
+          ;; BOZO Check what happens to an unpacked array of single-bit coretypes?
           (and (eq (vl-datatype-kind x) :vl-coretype)
                (member (vl-coretype->name x)
                        '(:vl-logic :vl-reg :vl-bit))
@@ -2124,7 +2194,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                           (cdr dims) nil x))
                (range (vl-packeddimension->range (car dims)))
                ((mv err subwire submod-name modalist)
-                (vl-datatype->mods new-type ss modalist :rec-limit (1- rec-limit)))
+                (vl-datatype->mods new-type modalist))
                ((when err) (mv err nil nil modalist))
                ((svex::wire subwire))
                (msi (vl-range-msbidx range))
@@ -2170,7 +2240,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
               nil (svex::modalist-fix modalist)))
         :vl-struct
         (b* (((mv err subwires submodnames modalist)
-              (vl-structmemberlist->submods x.members ss modalist :rec-limit (1- rec-limit)))
+              (vl-structmemberlist->submods x.members modalist))
              ((when err) (mv err nil nil modalist))
              ((when (atom x.members))
               (mv (vmsg "empty struct") nil nil modalist))
@@ -2184,7 +2254,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
           (mv nil selfwire type-modname modalist))
         :vl-union
         (b* (((mv err subwires submodnames modalist)
-              (vl-structmemberlist->submods x.members ss modalist :rec-limit (1- rec-limit)))
+              (vl-structmemberlist->submods x.members modalist))
              ((when err) (mv err nil nil modalist))
              ((when (atom x.members))
               (mv (vmsg "empty union") nil nil modalist))
@@ -2202,12 +2272,9 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
 
 
   (define vl-structmemberlist->submods ((x vl-structmemberlist-p)
-                                        (ss vl-scopestack-p)
-                                        (modalist svex::modalist-p)
-                                        &key ((rec-limit natp) '1000))
-    :guard (not (vl-structmemberlist-check-usertypes x ss :rec-limit 1000))
-    :measure (acl2::nat-list-measure
-              (list rec-limit (len x)))
+                                        (modalist svex::modalist-p))
+    :guard (vl-structmemberlist-resolved-p x)
+    :measure (vl-structmemberlist-count x)
     :returns
     (mv (err (iff (vl-msg-p err) err))
         (wires (and (svex::wirelist-p wires)
@@ -2222,10 +2289,10 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
     (b* (((when (atom x)) (mv nil nil nil (svex::modalist-fix modalist)))
          ((vl-structmember xf) (car x))
          ((mv err wire1 modname1 modalist)
-          (vl-datatype->mods xf.type ss modalist :rec-limit rec-limit))
+          (vl-datatype->mods xf.type modalist))
          ((when err) (mv err nil nil modalist))
          ((mv err rest-wires rest-modnames modalist)
-          (vl-structmemberlist->submods (cdr x) ss modalist :rec-limit rec-limit))
+          (vl-structmemberlist->submods (cdr x) modalist))
          ((when err) (mv err nil nil modalist)))
       (mv nil
           (cons wire1 rest-wires)
@@ -2233,32 +2300,32 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
           modalist)))
   ///
   (local (in-theory (disable vl-datatype->mods)))
-  (local (defthm usertypes-ok-of-usertype-resolve
-           (implies (not (vl-datatype-check-usertypes x ss))
-                    (not (vl-datatype-check-usertypes
-                          (mv-nth 0 (vl-maybe-usertype-resolve x ss))
-                          (mv-nth 1 (vl-maybe-usertype-resolve x ss)))))
-           :rule-classes
-           ((:forward-chaining :trigger-terms
-             ((vl-maybe-usertype-resolve x ss))))))
+  ;; (local (defthm usertypes-ok-of-usertype-resolve
+  ;;          (implies (not (vl-datatype-check-usertypes x ss))
+  ;;                   (not (vl-datatype-check-usertypes
+  ;;                         (mv-nth 0 (vl-maybe-usertype-resolve x ss))
+  ;;                         (mv-nth 1 (vl-maybe-usertype-resolve x ss)))))
+  ;;          :rule-classes
+  ;;          ((:forward-chaining :trigger-terms
+  ;;            ((vl-maybe-usertype-resolve x ss))))))
 
-  (local (defthm usertypes-ok-of-struct-members
-           (implies (and (not (vl-datatype-check-usertypes x ss))
-                         (equal (vl-datatype-kind x) :vl-struct))
-                    (not (vl-structmemberlist-check-usertypes
-                          (vl-struct->members x) ss :rec-limit 1000)))
-           :hints (("goal" :expand ((vl-datatype-check-usertypes x ss))))))
+  ;; (local (defthm usertypes-ok-of-struct-members
+  ;;          (implies (and (not (vl-datatype-check-usertypes x ss))
+  ;;                        (equal (vl-datatype-kind x) :vl-struct))
+  ;;                   (not (vl-structmemberlist-check-usertypes
+  ;;                         (vl-struct->members x) ss :rec-limit 1000)))
+  ;;          :hints (("goal" :expand ((vl-datatype-check-usertypes x ss))))))
 
-  (local (defthm usertypes-ok-of-union-members
-           (implies (and (not (vl-datatype-check-usertypes x ss))
-                         (equal (vl-datatype-kind x) :vl-union))
-                    (not (vl-structmemberlist-check-usertypes
-                          (vl-union->members x) ss :rec-limit 1000)))
-           :hints (("goal" :expand ((vl-datatype-check-usertypes x ss))))))
+  ;; (local (defthm usertypes-ok-of-union-members
+  ;;          (implies (and (not (vl-datatype-check-usertypes x ss))
+  ;;                        (equal (vl-datatype-kind x) :vl-union))
+  ;;                   (not (vl-structmemberlist-check-usertypes
+  ;;                         (vl-union->members x) ss :rec-limit 1000)))
+  ;;          :hints (("goal" :expand ((vl-datatype-check-usertypes x ss))))))
 
-  (verify-guards vl-datatype->mods-fn
-    :hints ((and stable-under-simplificationp
-                 '(:expand ((vl-structmemberlist-check-usertypes x ss :rec-limit 1000)))))
+  (verify-guards vl-datatype->mods
+    ;; :hints ((and stable-under-simplificationp
+    ;;              '(:expand ((vl-structmemberlist-check-usertypes x ss :rec-limit 1000)))))
     :guard-debug t)
 
   (deffixequiv-mutual vl-datatype->mods))
@@ -2282,14 +2349,20 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
   (b* (((vl-vardecl x) (vl-vardecl-fix x))
        (modalist (svex::modalist-fix modalist))
        (warnings nil)
-       ((mv err size) (vl-datatype-size x.type ss))
+       ((mv err type) (vl-datatype-usertype-resolve x.type ss))
+       ((when err)
+        (mv (fatal :type :vl-vardecl->svex-fail
+                   :msg "~a0: Failed to resolve usertypes: ~@1"
+                   :args (list x err))
+            0 nil nil nil modalist))
+       ((mv err size) (vl-datatype-size type))
        ((when (or err (not size)))
         (mv (fatal :type :vl-vardecl->svex-fail
                    :msg "~a0: Failed to size datatype ~a1: ~@2"
                    :args (list x x.type err))
             0 nil nil nil modalist))
        ((mv err subwire datamod modalist)
-        (vl-datatype->mods x.type ss modalist))
+        (vl-datatype->mods type modalist))
        ((when err)
         (mv (fatal :type :vl-vardecl->svex-fail
                    :msg "~a0: Failed to process datatype ~a1: ~@2"
