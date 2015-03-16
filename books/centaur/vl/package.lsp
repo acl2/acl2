@@ -106,7 +106,7 @@
       std::mksym-package-symbol
       std::extract-keyword-from-args
       std::throw-away-keyword-parts
-      std::defoption
+      ;; std::defoption
 
       fty::defprod
       fty::deftypes

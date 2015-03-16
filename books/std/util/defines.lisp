@@ -275,6 +275,7 @@ its flag in the flag-function.</p>")
 
      :verbosep
      :progn
+     :locally-enable ;; set to nil to skip locally enabling the functions
      )
    *defines-xargs-keywords*))
 
@@ -781,11 +782,12 @@ its flag in the flag-function.</p>")
                                    ,@(and ruler-extenders `(:ruler-extenders ,ruler-extenders))
                                    :hints ,flag-hints))))
 
-       (local
-        (make-event
-         (if (logic-mode-p ',(defguts->name-fn (car gutslist)) (w state))
-             '(in-theory (enable . ,fnnames))
-           '(value-triple :invisible))))
+       ,@(and (getarg :locally-enable t kwd-alist)
+              `((local
+                 (make-event
+                  (if (logic-mode-p ',(defguts->name-fn (car gutslist)) (w state))
+                      '(in-theory (enable . ,fnnames))
+                    '(value-triple :invisible))))))
 
        (defsection rest-events-1
          ,@(and want-xdoc-p `(:extension ,name))
