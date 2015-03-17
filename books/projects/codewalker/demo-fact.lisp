@@ -25,11 +25,6 @@
 
 (encapsulate
  nil
- (defun natp-listp (x)
-   (if (endp x)
-       (equal x nil)
-       (and (natp (car x))
-            (natp-listp (cdr x)))))
 
  (defun hyps (s)
    (declare (xargs :stobjs (s)))
@@ -37,25 +32,36 @@
         (natp (rd :pc s))
         (< (rd :pc s) (len (rd :program s)))
         (< 16 (len (rd :locals s)))
-        (natp-listp (rd :locals s))
-        (natp-listp (rd :stack s))))
+        (integer-listp (rd :locals s))
+        (integer-listp (rd :stack s))))
 
- (defthm natp-listp-nth
-   (implies (and (natp-listp x)
+ (defthm nat-listp-nth
+   (implies (and (nat-listp x)
                  (natp i)
                  (< i (len x)))
             (natp (nth i x)))
    :rule-classes (:rewrite :type-prescription))
 
- (defthm natp-listp-update-nth
-   (implies (and (natp i)
-                 (< i (len x))
-                 (natp (nth i x)))
-            (equal (natp-listp (update-nth i v x))
+ (defthm nat-listp-update-nth
+   (implies (natp (nth i x))
+            (equal (nat-listp (update-nth i v x))
                    (and (natp v)
-                        (natp-listp x)))))
+                        (nat-listp x)))))
 
- (in-theory (disable natp-listp len nth update-nth))
+ (defthm integer-listp-nth
+   (implies (and (integer-listp x)
+                 (natp i)
+                 (< i (len x)))
+            (integerp (nth i x)))
+   :rule-classes (:rewrite :type-prescription))
+
+ (defthm integer-listp-update-nth
+   (implies (integerp (nth i x))
+            (equal (integer-listp (update-nth i v x))
+                   (and (integerp v)
+                        (integer-listp x)))))
+
+ (in-theory (disable nat-listp integer-listp len nth update-nth))
  )
 
 ; Since we're in the M1 package, it is convenient to define
@@ -81,8 +87,8 @@
                     ((WR LOC :VALUE :BASE)
                      (RD LOC :BASE)))
   :constructor-drivers nil
-  :state-comps-and-types  (((NTH I (RD :LOCALS S)) (NATP (NTH I (RD :LOCALS S))))
-                           ((RD :STACK S)          (NATP-LISTP (RD :STACK S)))
+  :state-comps-and-types  (((NTH I (RD :LOCALS S)) (INTEGERP (NTH I (RD :LOCALS S))))
+                           ((RD :STACK S)          (INTEGER-LISTP (RD :STACK S)))
                            ((RD :PC S)             (NATP (RD :PC S))))
   :callp  nil
   :ret-pc nil
@@ -208,7 +214,12 @@
   :init-pc 0
   :focus-regionp nil
   :root-name nil
-  :hyps+ ((program1p s))
+  :hyps+ ((program1p s)
+
+; The following conditions are probably stronger than needed.
+
+          (nat-listp (rd :locals s))
+          (nat-listp (rd :stack s)))
   :annotations nil
   )
 
@@ -364,7 +375,12 @@ M1 !>
   :new-fn FN1-LOOP
   :projector (nth 1 (rd :locals s))
   :old-fn SEM-4
-  :hyps+ ((program1p s))
+  :hyps+ ((program1p s)
+
+; The following conditions are probably stronger than needed.
+
+          (nat-listp (rd :locals s))
+          (nat-listp (rd :stack s)))
   )
 
 #||
@@ -424,7 +440,12 @@ M1 !>
   :new-fn FN1
   :projector (nth 1 (rd :locals s))
   :old-fn SEM-0
-  :hyps+ ((program1p s))
+  :hyps+ ((program1p s)
+
+; The following conditions are probably stronger than needed.
+
+          (nat-listp (rd :locals s))
+          (nat-listp (rd :stack s)))
   )
 
 #||
@@ -467,6 +488,8 @@ M1 !>
 (defthm reg[1]-of-code-is-!
   (implies (and (hyps s)
                 (program1p s)
+                (nat-listp (rd :locals s))
+                (nat-listp (rd :stack s))
                 (equal (rd :pc s) 0))
            (equal (nth 1 (rd :locals (m1 s (clk-0 s))))
                   (! (nth 0 (rd :locals s))))))
