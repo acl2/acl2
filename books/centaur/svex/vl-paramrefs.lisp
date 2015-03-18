@@ -32,34 +32,37 @@
 
 (include-book "vl-expr")
 (include-book "centaur/fty/visitor" :dir :system)
+(include-book "centaur/vl/mlib/blocks" :dir :system)
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
+(local (std::add-default-post-define-hook :fix))
 
-(local (in-theory (disable 
-        (:REWRITE VL-DATATYPE-PDIMS-WHEN-VL-CORETYPE)
-        (:REWRITE VL-DATATYPE-PDIMS-WHEN-VL-ENUM)
-        (:REWRITE VL-DATATYPE-PDIMS-WHEN-VL-STRUCT)
-        (:REWRITE VL-DATATYPE-PDIMS-WHEN-VL-UNION)
-        (:REWRITE VL-DATATYPE-PDIMS-WHEN-VL-USERTYPE)
-        (:REWRITE VL-DATATYPE-UDIMS-WHEN-VL-CORETYPE)
-        (:REWRITE VL-DATATYPE-UDIMS-WHEN-VL-ENUM)
-        (:REWRITE VL-DATATYPE-UDIMS-WHEN-VL-STRUCT)
-        (:REWRITE VL-DATATYPE-UDIMS-WHEN-VL-UNION)
-        (:REWRITE VL-DATATYPE-UDIMS-WHEN-VL-USERTYPE)
-        (:REWRITE VL-EXPR-TYPE-WHEN-VL-BINARY)
-        (:REWRITE VL-EXPR-TYPE-WHEN-VL-CALL)
-        (:REWRITE VL-EXPR-TYPE-WHEN-VL-CAST)
-        (:REWRITE VL-EXPR-TYPE-WHEN-VL-CONCAT)
-        (:REWRITE VL-EXPR-TYPE-WHEN-VL-INDEX)
-        (:REWRITE VL-EXPR-TYPE-WHEN-VL-INSIDE)
-        (:REWRITE VL-EXPR-TYPE-WHEN-VL-MINTYPMAX)
-        (:REWRITE VL-EXPR-TYPE-WHEN-VL-MULTICONCAT)
-        (:REWRITE VL-EXPR-TYPE-WHEN-VL-PATTERN)
-        (:REWRITE VL-EXPR-TYPE-WHEN-VL-QMARK)
-        (:REWRITE VL-EXPR-TYPE-WHEN-VL-SPECIAL)
-        (:REWRITE VL-EXPR-TYPE-WHEN-VL-STREAM)
-        (:REWRITE VL-EXPR-TYPE-WHEN-VL-TAGGED)
-        (:REWRITE VL-EXPR-TYPE-WHEN-VL-UNARY)
-        (:REWRITE VL-EXPR-TYPE-WHEN-VL-VALUE))))
+
+;; (local (in-theory (disable 
+;;         (:REWRITE VL-DATATYPE-PDIMS-WHEN-VL-CORETYPE)
+;;         (:REWRITE VL-DATATYPE-PDIMS-WHEN-VL-ENUM)
+;;         (:REWRITE VL-DATATYPE-PDIMS-WHEN-VL-STRUCT)
+;;         (:REWRITE VL-DATATYPE-PDIMS-WHEN-VL-UNION)
+;;         (:REWRITE VL-DATATYPE-PDIMS-WHEN-VL-USERTYPE)
+;;         (:REWRITE VL-DATATYPE-UDIMS-WHEN-VL-CORETYPE)
+;;         (:REWRITE VL-DATATYPE-UDIMS-WHEN-VL-ENUM)
+;;         (:REWRITE VL-DATATYPE-UDIMS-WHEN-VL-STRUCT)
+;;         (:REWRITE VL-DATATYPE-UDIMS-WHEN-VL-UNION)
+;;         (:REWRITE VL-DATATYPE-UDIMS-WHEN-VL-USERTYPE)
+;;         (:REWRITE VL-EXPR-TYPE-WHEN-VL-BINARY)
+;;         (:REWRITE VL-EXPR-TYPE-WHEN-VL-CALL)
+;;         (:REWRITE VL-EXPR-TYPE-WHEN-VL-CAST)
+;;         (:REWRITE VL-EXPR-TYPE-WHEN-VL-CONCAT)
+;;         (:REWRITE VL-EXPR-TYPE-WHEN-VL-INDEX)
+;;         (:REWRITE VL-EXPR-TYPE-WHEN-VL-INSIDE)
+;;         (:REWRITE VL-EXPR-TYPE-WHEN-VL-MINTYPMAX)
+;;         (:REWRITE VL-EXPR-TYPE-WHEN-VL-MULTICONCAT)
+;;         (:REWRITE VL-EXPR-TYPE-WHEN-VL-PATTERN)
+;;         (:REWRITE VL-EXPR-TYPE-WHEN-VL-QMARK)
+;;         (:REWRITE VL-EXPR-TYPE-WHEN-VL-SPECIAL)
+;;         (:REWRITE VL-EXPR-TYPE-WHEN-VL-STREAM)
+;;         (:REWRITE VL-EXPR-TYPE-WHEN-VL-TAGGED)
+;;         (:REWRITE VL-EXPR-TYPE-WHEN-VL-UNARY)
+;;         (:REWRITE VL-EXPR-TYPE-WHEN-VL-VALUE))))
 
 (local (in-theory (disable (tau-system)
                            vl-warninglist-p-when-subsetp-equal
@@ -116,10 +119,13 @@
                    (and (vl-paramreflist-p params)
                         (setp params)))
   :type-fns ((vl-expr vl-expr-parameter-refs)) ;; not defined yet!
-  :field-fns ((atts :skip))
+  ;; Skip atts because they're not semantically relevant, generates bc they're
+  ;; in a different scope
+  :field-fns ((atts :skip)
+              (generates :skip))
   :fnname-template <type>-parameter-refs)
 
-(fty::defvisitor-for-deftype vl-datatype-parameter-refs
+(fty::defvisitor vl-datatype-parameter-refs
   :type expressions-and-datatypes  :template parameter-refs
   :measure (two-nats-measure :count 0)
 
@@ -137,6 +143,6 @@
   :renames ((vl-expr vl-expr-subexpr-parameter-refs)))
 
 
-(fty::defvisitor vl-parameter-refs
+(fty::defvisitors vl-parameter-refs
   :template parameter-refs
-  :types vl-design)
+  :types (vl-design vl-genblob))

@@ -398,12 +398,11 @@ etc., are overwritten with whatever is in the genblob.</p>"
       :rule-classes :linear)
 
     (defthm vl-genblob-count-of-sort-genelements-normalize
-      (implies (syntaxp (and (not (equal name ''nil))
-                             (not (equal scopetype '':vl-anonymous-scope))))
+      (implies (syntaxp (or (not (equal name ''nil))
+                            (not (equal scopetype '':vl-anonymous-scope))))
                (equal (vl-genblob-count (vl-sort-genelements x
                                                              :name name
-                                                             :scopetype
-                                                             scopetype))
+                                                             :scopetype scopetype))
                       (vl-genblob-count (vl-sort-genelements x))))
       :hints (("goal"
                :in-theory (enable vl-sort-genelements)))))

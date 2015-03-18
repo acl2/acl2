@@ -28,7 +28,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "STD")
+(in-package "VL")
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defenum" :dir :system)
 (include-book "centaur/fty/deftypes" :dir :system)

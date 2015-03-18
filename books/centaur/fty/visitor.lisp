@@ -83,7 +83,15 @@
    renames    ;; alist mapping type names to non-default visitor function names
    measure    ;; measure template
    fixequivs  ;; prove congruences
+   prepwork   ;; template for prepwork, where <type> is substituted
+   reversep   ;; reverse order in which fields are processed
+   wrapper    ;; wrapper around the body of a function, using :body and <type>
+              ;; in template substitutions
+   macrop     ;; indicates that this has a macro wrapper
    wrld))
+
+
+
 
 (defun visitor-return-binder-aux (returns fldname firstp x)
   (if (atom returns)
@@ -115,8 +123,8 @@
     (if (eql (len returns) 1)
         (car lst)
       (cons 'mv lst))))
-          
-(defun visitor-name (x type)
+
+(defun visitor-macroname (x type)
   (b* (((visitorspec x))
        (look (assoc type x.renames)))
     (if look
@@ -127,6 +135,17 @@
         (acl2::tmpl-sym-sublis `(("<TYPE>"    . ,(symbol-name type))
                                  ("<VISITOR>"    . ,(symbol-name x.name)))
                                '<VISITOR>-<TYPE> x.name)))))
+          
+(defun visitor-fnname (x type)
+  (b* (((visitorspec x))
+       (macroname (visitor-macroname x type)))
+    (if x.macrop
+        (intern-in-package-of-symbol
+         (concatenate 'string (symbol-name macroname) "-FN")
+         macroname)
+      macroname)))
+
+
 
 (defun visitor-normalize-fixtype (type wrld)
   (b* (((visitorspec x))
@@ -134,8 +153,6 @@
     (if fty
         (fixtype->name fty)
       type)))
-
-
 
        
 
@@ -157,6 +174,9 @@
                           (cdr type))))
     nil))
        
+
+(defun visitor-formal-names (formals)
+  (strip-cars (std::remove-macro-args 'visitor formals nil)))
 
 
 (defun visitor-prod-field-joins (fields x prodname firstp)
@@ -181,7 +201,7 @@
                                             (symbol-name fld.name))
                                x.xvar)
                               x.xvar
-                              (strip-cars x.formals))))
+                              (visitor-formal-names x.formals))))
           ,@(and (not firstp) x.join)
           . ,rest-bindings))))
          
@@ -234,11 +254,16 @@
                 rest-returns))))
     (cons (cons name rest) rest-returns)))
 
-(defun visitor-return-decls (returns type-pred type-fix)
+(defun visitor-return-decls (returns type-name type-pred type-fix)
   (b* ((returns (if (and (consp returns)
                          (eq (car returns) 'mv))
                     (cdr returns)
                   (list returns)))
+       (returns (acl2::template-subst-top
+                 returns
+                 ;; BOZO bad hack
+                 (acl2::make-tmplsubst
+                  :strs `(("<TYPE>" ,(symbol-name type-name) . ,type-name)))))
        (lst (visitor-return-decls-aux returns type-pred type-fix)))
     (if (eql (len returns) 1)
         (car lst)
@@ -247,11 +272,12 @@
     
 
 
-(defun visitor-prod-body (prod x)
+(defun visitor-prod-subbody (prod x)
   (b* (((flexprod prod))
        ((visitorspec x))
        ((mv changer-args bindings)
-        (visitor-prod-field-joins prod.fields x prod.type-name t)))
+        (visitor-prod-field-joins (if x.reversep (reverse prod.fields) prod.fields)
+                                  x prod.type-name t)))
     `(b* (,@bindings)
        ,(visitor-return-values
          x.returns
@@ -266,150 +292,182 @@
         (subst default :count x.measure)
       default)))
 
-(defun visitor-prod-def (type x mrec)
+(defun visitor-prod-body (type x)
   (b* (((flexsum type))
        ((visitorspec x))
-       ((flexprod prod) (car type.prods))
-       (name (visitor-name x type.name)))
-    `(define ,name ,(subst type.pred :object x.formals)
-       ,@(and mrec
-              `(:measure ,(visitor-measure x `(,type.count ,x.xvar))))
-       :returns ,(visitor-return-decls x.returns type.pred type.fix)
-       :verify-guards nil
-       :hooks nil
-       (b* (((,prod.ctor-name ,x.xvar) (,type.fix ,x.xvar)))
-         ,(visitor-prod-body prod x))
-       ///
-       ,@(and (not mrec) `(,@(and x.fixequivs
-                                  `((deffixequiv ,name)))
-                             (local (in-theory (disable ,name)))
-                             (verify-guards ,name))))))
+       ((flexprod prod) (car type.prods)))
+    `(b* (((,prod.ctor-name ,x.xvar) (,type.fix ,x.xvar)))
+       ,(visitor-prod-subbody prod x))))
+
 
 (defun visitor-prod-bodies (prods x)
   (if (atom prods)
       nil
     (b* (((flexprod prod) (car prods)))
       `(,prod.kind
-        ,(visitor-prod-body prod x)
+        ,(visitor-prod-subbody prod x)
         . ,(visitor-prod-bodies (cdr prods) x)))))
       
  
 
-(defun visitor-sum-def (type x mrec)
+(defun visitor-sum-body (type x)
   (b* (((flexsum type))
        ((when (eql (len type.prods) 1))
-        (visitor-prod-def type x mrec))
-       ((visitorspec x))
-       (name (visitor-name x type.name)))
-    `(define ,name ,(subst type.pred :object x.formals)
-       ,@(and (or mrec type.recp)
-              `(:measure ,(visitor-measure x `(,type.count ,x.xvar))))
-       :returns ,(visitor-return-decls x.returns type.pred type.fix)
-       :verify-guards nil
-       :hooks nil
-       (,type.case ,x.xvar
-         . ,(visitor-prod-bodies type.prods x))
-       ///
-       ,@(and (not mrec) `(,@(and x.fixequivs
-                                  `((deffixequiv ,name)))
-                             (local (in-theory (disable ,name)))
-                             (verify-guards ,name)
-                             )))))
+        (visitor-prod-body type x))
+       ((visitorspec x)))
+    `(,type.case ,x.xvar
+       . ,(visitor-prod-bodies type.prods x))))
+
+(defun visitor-sum-measure (type x mrec)
+  (b* (((flexsum type))
+       ((visitorspec x)))
+    (and (or mrec type.recp)
+         `(:measure ,(visitor-measure x `(,type.count ,x.xvar))))))
                         
 
 
+(defun visitor-list-measure (type x mrec)
+  (declare (ignorable mrec))
+  (b* (((flexlist type))
+       ((visitorspec x)))
+    `(:measure ,(visitor-measure x (if type.count
+                                       `(,type.count ,x.xvar)
+                                     `(len ,x.xvar))))))
+  
 
-(defun visitor-list-def (type x mrec)
+
+(defun visitor-list-body (type x)
   (b* (((flexlist type))
        ((visitorspec x))
-       (name (visitor-name x type.name))
+       (name (visitor-fnname x type.name))
        (elt-fnname (visitor-field-fn nil type.elt-type nil x))
+       (formal-names (visitor-formal-names x.formals))
        ((unless elt-fnname)
         (er hard? 'defvisitor "Nothing to do for list type ~x0 -- use :skip." type.name)))
-    `(define ,name ,(subst type.pred :object x.formals)
-       :measure ,(visitor-measure x (if type.count
-                                        `(,type.count ,x.xvar)
-                                      `(len ,x.xvar)))
-       :returns ,(visitor-return-decls x.returns type.pred type.fix)
-       :verify-guards nil
-       :hooks nil
-       (b* (((when (atom ,x.xvar))
-             (b* (,@x.initial)
-               ,(visitor-return-values x.returns
-                                       (if type.true-listp nil x.xvar)
-                                       x)))
-            (,(visitor-return-binder x.returns 'car t x)
-             (,elt-fnname . ,(subst `(car ,x.xvar)
-                                x.xvar
-                                (strip-cars x.formals))))
-            (,(visitor-return-binder x.returns 'cdr nil x)
-             (,name . ,(subst `(cdr ,x.xvar)
-                              x.xvar
-                              (strip-cars x.formals))))
-            ,@x.join)
-         ,(visitor-return-values
-           x.returns `(cons car cdr) x))
-       ///
-       ,@(and (not mrec) `(,@(and x.fixequivs
-                                  `((deffixequiv ,name)))
-                             (local (in-theory (disable ,name)))
-                             (verify-guards ,name))))))
+    `(b* (((when (atom ,x.xvar))
+           (b* (,@x.initial)
+             ,(visitor-return-values x.returns
+                                     (if type.true-listp nil x.xvar)
+                                     x)))
+          ,@(if x.reversep
+                `((,(visitor-return-binder x.returns 'cdr t x)
+                   (,name . ,(subst `(cdr ,x.xvar)
+                                    x.xvar
+                                    formal-names)))
+                  (,(visitor-return-binder x.returns 'car nil x)
+                   (,elt-fnname . ,(subst `(car ,x.xvar)
+                                          x.xvar
+                                          formal-names))))
+              `((,(visitor-return-binder x.returns 'car t x)
+                 (,elt-fnname . ,(subst `(car ,x.xvar)
+                                        x.xvar
+                                        formal-names)))
+                (,(visitor-return-binder x.returns 'cdr nil x)
+                 (,name . ,(subst `(cdr ,x.xvar)
+                                  x.xvar
+                                  formal-names)))))
+          ,@x.join)
+       ,(visitor-return-values
+         x.returns `(cons car cdr) x))))
+
+(defun visitor-alist-measure (type x mrec)
+  (declare (ignorable mrec))
+  (b* (((flexalist type))
+       ((visitorspec x)))
+    `(:measure ,(visitor-measure x (if type.count
+                                       `(,type.count ,x.xvar)
+                                     `(len (,type.fix ,x.xvar)))))))
 
 
 
-(defun visitor-alist-def (type x mrec)
+(defun visitor-alist-body (type x)
   (b* (((flexalist type))
        ((visitorspec x))
-       (name (visitor-name x type.name))
+       (name (visitor-fnname x type.name))
        (key-fnname (visitor-field-fn nil type.key-type nil x))
        (val-fnname (visitor-field-fn nil type.val-type nil x))
+       (formal-names (visitor-formal-names x.formals))
        ((unless (or key-fnname val-fnname))
         (er hard? 'defvisitor "Nothing to do for alist type ~x0 -- use :skip." type.name)))
-    `(define ,name ,(subst type.pred :object x.formals)
-       :measure ,(visitor-measure x (if type.count
-                                        `(,type.count ,x.xvar)
-                                      `(len (,type.fix ,x.xvar))))
-       :returns ,(visitor-return-decls x.returns type.pred type.fix)
-       :verify-guards nil
-       :hooks nil
-       (b* ((,x.xvar (,type.fix ,x.xvar))
-            ((when (atom ,x.xvar))
-             (b* (,@x.initial)
-               ,(visitor-return-values x.returns
-                                       (if type.true-listp nil x.xvar)
-                                       x)))
-            ,@(and key-fnname
-                   `((,(visitor-return-binder x.returns 'key t x)
-                      (,key-fnname . ,(subst `(caar ,x.xvar)
-                                             x.xvar
-                                             (strip-cars x.formals))))))
-            ,@(and val-fnname
-                   `((,(visitor-return-binder x.returns 'val (not key-fnname) x)
-                      (,val-fnname . ,(subst `(cdar ,x.xvar)
-                                             x.xvar
-                                             (strip-cars x.formals))))
-                     ,@(and key-fnname x.join)))
-            (,(visitor-return-binder x.returns 'cdr nil x)
-             (,name . ,(subst `(cdr ,x.xvar)
-                              x.xvar
-                              (strip-cars x.formals))))
-            ,@x.join)
-         ,(visitor-return-values
-           x.returns
-           `(cons (cons ,(if key-fnname 'key `(caar ,x.xvar))
-                        ,(if val-fnname 'val `(cdar ,x.xvar)))
-                  cdr)
-           x))
-       ///
-       ,@(and (not mrec) `(,@(and x.fixequivs
-                                  `((deffixequiv ,name)))
-                             (local (in-theory (disable ,name)))
-                             (verify-guards ,name))))))
+    `(b* ((,x.xvar (,type.fix ,x.xvar))
+          ((when (atom ,x.xvar))
+           (b* (,@x.initial)
+             ,(visitor-return-values x.returns
+                                     (if type.true-listp nil x.xvar)
+                                     x)))
+          ,@(if x.reversep
+                `((,(visitor-return-binder x.returns 'cdr t x)
+                   (,name . ,(subst `(cdr ,x.xvar)
+                                    x.xvar
+                                    formal-names)))
+                  
+                  
+                  ,@(and val-fnname
+                         `((,(visitor-return-binder x.returns 'val nil x)
+                            (,val-fnname . ,(subst `(cdar ,x.xvar)
+                                                   x.xvar
+                                                   formal-names)))
+                           ,@x.join))
+
+                  ,@(and key-fnname
+                         `((,(visitor-return-binder x.returns 'key nil x)
+                            (,key-fnname . ,(subst `(caar ,x.xvar)
+                                                   x.xvar
+                                                   formal-names)))
+                           ,@x.join)))
+
+              `(,@(and key-fnname
+                       `((,(visitor-return-binder x.returns 'key t x)
+                          (,key-fnname . ,(subst `(caar ,x.xvar)
+                                                 x.xvar
+                                                 formal-names)))))
+                  ,@(and val-fnname
+                         `((,(visitor-return-binder x.returns 'val (not key-fnname) x)
+                            (,val-fnname . ,(subst `(cdar ,x.xvar)
+                                                   x.xvar
+                                                   formal-names)))
+                           ,@(and key-fnname x.join)))
+                  (,(visitor-return-binder x.returns 'cdr nil x)
+                   (,name . ,(subst `(cdr ,x.xvar)
+                                    x.xvar
+                                    formal-names)))
+                  ,@x.join)))
+       ,(visitor-return-values
+         x.returns
+         `(cons (cons ,(if key-fnname 'key `(caar ,x.xvar))
+                      ,(if val-fnname 'val `(cdar ,x.xvar)))
+                cdr)
+         x))))
 
 
 (defun visitor-def (type x mrec)
-  (with-flextype-bindings type
-    (visitor-*-def type x mrec)))
+  (b* ((body (with-flextype-bindings type
+               (visitor-*-body type x)))
+       (measure-args (with-flextype-bindings type
+                       (visitor-*-measure type x mrec)))
+       ((visitorspec x))
+       (type.name (with-flextype-bindings type type.name))
+       (type.pred (with-flextype-bindings type type.pred))
+       (type.fix  (with-flextype-bindings type type.fix))
+       (name (visitor-macroname x type.name))
+       (fnname (visitor-fnname x type.name)))
+    `(define ,name ,(subst type.pred :object x.formals)
+       :returns ,(visitor-return-decls x.returns type.name type.pred type.fix)
+       :verify-guards nil
+       :hooks nil
+       ,@measure-args
+       ,(acl2::template-subst-top
+         x.wrapper
+         (acl2::make-tmplsubst
+          :atoms `((:body . ,body))
+          :strs `(("<TYPE>" ,(symbol-name type.name) . ,type.name))))
+       ///
+       ,@(and (not mrec) `(,@(and x.fixequivs
+                                  `((deffixequiv ,name)))
+                             (local (in-theory (disable ,name)))
+                             (verify-guards ,fnname)
+                             )))))
+    
 
 
 (defun visitor-omit-bound-types (types type-fns)
@@ -433,23 +491,23 @@
 
 (defun visitor-mutual (type-name types x other-fns)
   (b* (((visitorspec x)))
-  `(defines ,(visitor-name x type-name)
+  `(defines ,(visitor-macroname x type-name)
      :locally-enable nil
      ,@other-fns
      ,@(visitor-mutual-aux types x)
      ///
-     (verify-guards ,(visitor-name x
+     (verify-guards ,(visitor-fnname x
                                    (with-flextype-bindings (type (car types))
                                      type.name)))
      ,@(and x.fixequivs
-            `((deffixequiv-mutual ,(visitor-name x type-name)))))))
+            `((deffixequiv-mutual ,(visitor-macroname x type-name)))))))
 
 (defun visitor-add-type-fns (types x)
   (if (atom types)
       nil
     (cons (with-flextype-bindings (type (car types))
             (cons type.name
-                  (visitor-name x type.name)))
+                  (visitor-fnname x type.name)))
           (visitor-add-type-fns (cdr types) x))))
 
 
@@ -525,7 +583,7 @@
                         "Bad return entry ~x0" x)
                     (mv nil nil nil nil))))
                (mv (list (cons formal name))
-                   (and fixp (list (cons formal fix)))
+                   (and fixp (list (list formal fix)))
                    nil nil)))
       (:update  (b* (((mv ?kwd-alist rest-args)
                       (extract-keywords 'visitor-acc-return
@@ -623,7 +681,7 @@
         
 (defconst *defvisitor-template-keys*
   '(:returns :type-fns :field-fns :prod-fns :parents :short :long
-    :fnname-template :fixequivs))
+    :fnname-template :fixequivs :prepwork :reversep :wrapper))
 
 (defun visitor-process-fnspecs (kwd-alist wrld)
   (b* ((type-fns (cdr (assoc :type-fns kwd-alist)))
@@ -672,6 +730,7 @@
 
        (fnname-template (cdr (assoc :fnname-template kwd-alist)))
        (- (visitor-check-fnname-template fnname-template))
+       (macrop (not (equal (std::remove-macro-args 'defvisitor-template formals nil) formals)))
        (x (make-visitorspec
            :name name
            :formals formals
@@ -685,12 +744,19 @@
            :join joins
            :fnname-template fnname-template
            :xvar (visitor-xvar-from-formals formals)
-           :fixequivs (std::getarg :fixequivs t kwd-alist))))
+           :fixequivs (std::getarg :fixequivs t kwd-alist)
+           :prepwork (std::getarg :prepwork nil kwd-alist)
+           :reversep (std::getarg :reversep nil kwd-alist)
+           :wrapper (std::getarg :wrapper :body kwd-alist)
+           :macrop macrop)))
     x))
 
 (defun defvisitor-template-fn (name args)
-  `(table visitor-templates ',name
-          (defvisitor-template-main ',name ',args world)))
+  `(with-output :off :all :on (error)
+     (progn (table visitor-templates ',name
+                   (defvisitor-template-main ',name ',args world))
+            (with-output :stack :pop
+              (value-triple ',name)))))
 
 (defmacro defvisitor-template (name &rest args)
   (defvisitor-template-fn name args))
@@ -716,26 +782,26 @@
 
 
 
-(defconst *defvisitor-for-deftype-keys*
+(defconst *defvisitor-keys*
   '(:type :template :type-fns :field-fns :prod-fns
     :fnname-template :renames :omit-types :include-types
     :measure
     :parents :short :long))
 
 
-(defun defvisitor-for-deftype-fn (args wrld)
+(defun defvisitor-fn (args wrld)
   (b* (((mv name args)
         (if (and (symbolp (car args))
                  (not (keywordp (car args))))
             (mv (car args) (cdr args))
           (mv nil args)))
-       ((mv pre-/// post-///) (std::split-/// 'defvisitor-for-deftype args))
+       ((mv pre-/// post-///) (std::split-/// 'defvisitor args))
        ((mv kwd-alist mrec-fns)
-        (extract-keywords 'defvisitor-for-deftype *defvisitor-for-deftype-keys* pre-/// nil))
+        (extract-keywords 'defvisitor *defvisitor-keys* pre-/// nil))
        (template (cdr (assoc :template kwd-alist)))
        (type (cdr (assoc :type kwd-alist)))
        ((unless (and template type))
-        (er hard? 'defvisitor-for-deftype ":type and :template arguments are mandatory"))
+        (er hard? 'defvisitor ":type and :template arguments are mandatory"))
 
        (x1 (cdr (assoc template (table-alist 'visitor-templates wrld))))
        ((unless x1)
@@ -784,32 +850,33 @@
                             :fnname-template fnname-template
                             :renames renames
                             :measure (cdr (assoc :measure kwd-alist))))
-       (event-name (or name (visitor-name local-x type)))
+       (event-name (or name (visitor-macroname local-x type)))
        (def (if (and (eql (len types) 1)
                      (atom mrec-fns))
                 (visitor-def (car types) local-x nil)
               (visitor-mutual type types local-x mrec-fns))))
     `(defsection-progn ,event-name
        ,(append def post-///)
-       (table visitor-templates ',template ',x))))
+       (with-output :off :all :on (error)
+         (table visitor-templates ',template ',x)))))
 
-(defmacro defvisitor-for-deftype (&rest args)
-  `(make-event
-    (defvisitor-for-deftype-fn ',args (w state))))
+(defmacro defvisitor (&rest args)
+  `(with-output :off (event)
+     (make-event
+      (defvisitor-fn ',args (w state)))))
 
 
 
-(defconst *defvisitor-keys*
+(defconst *defvisitors-keys*
   '(:template    ;; visitor template to use
     :types       ;; Types targeted for toplevel functions
-    :fnname-template :renames       ;; Override default function names
     ))
 
 
 
 ;; We're given the leaf functions (prod-fns, field-fns, type-fns) and the
 ;; top-level types that we want to visit.  Steps to determining the proper
-;; sequence of defvisitor-for-deftype forms:
+;; sequence of defvisitor forms:
 
 ;; 1. Create a graph mapping types to member types, starting from the top-level
 ;; types and going down to the leaves that have predefined functions for them.
@@ -827,7 +894,7 @@
 
 ;; 5. Topologically sort the flextype graph.
 ;; 6. For each flextype in topological
-;; order, issue a defvisitor-for-deftype form to create the appropriate
+;; order, issue a defvisitor form to create the appropriate
 ;; visitors.
 
 
@@ -980,7 +1047,7 @@
       nil
     (if (cdr (hons-get (car types) marks))
         (visitor-check-top-types (cdr types) marks)
-      (er hard? 'defvisitor
+      (er hard? 'defvisitors
           "Type ~x0 doesn't have any descendants that need visiting." (car types)))))
 
 
@@ -1018,11 +1085,7 @@
                    (visitor-types-filter-marked memb-types marks)
                    deftypes-table))
        (prev-ftys (cdr (hons-get fty.name fty-graph)))
-       (fty-graph (if memb-ftys
-                      (if prev-ftys
-                          (hons-acons fty.name (union-eq memb-ftys prev-ftys) fty-graph)
-                        (hons-acons fty.name memb-ftys fty-graph))
-                    fty-graph)))
+       (fty-graph (hons-acons fty.name (union-eq memb-ftys prev-ftys) fty-graph)))
     (visitor-to-fty-graph (cdr type-graph) marks deftypes-table fty-graph)))
 
 
@@ -1050,8 +1113,8 @@
 (defun visitor-fty-defvisitor-form (fty-name marks template-name deftypes-table)
   (b* ((fty (cdr (assoc fty-name deftypes-table)))
        ((unless fty)
-        (er hard? 'defvisitor "Didn't find ~x0 in the deftypes table~%" fty-name)))
-    `(defvisitor-for-deftype :template ,template-name :type ,fty-name
+        (er hard? 'defvisitors "Didn't find ~x0 in the deftypes table~%" fty-name)))
+    `(defvisitor :template ,template-name :type ,fty-name
        :include-types ,(visitor-types-filter-marked
                         (flextypelist-names (flextypes->types fty))
                         marks))))
@@ -1063,19 +1126,19 @@
           (visitor-defvisitor-forms (cdr toposort) marks template-name deftypes-table))))
 
 
-(defun defvisitor-fn (args wrld)
+(defun defvisitors-fn (args wrld)
   (b* (((mv name args)
         (if (and (symbolp (car args))
                  (not (keywordp (car args))))
             (mv (car args) (cdr args))
           (mv nil args)))
-       ((mv pre-/// post-///) (std::split-/// 'defvisitor args))
+       ((mv pre-/// post-///) (std::split-/// 'defvisitors args))
        ((mv kwd-alist mrec-fns)
-        (extract-keywords 'defvisitor *defvisitor-keys* pre-/// nil))
+        (extract-keywords 'defvisitors *defvisitors-keys* pre-/// nil))
        ((when mrec-fns)
-        (er hard? 'defvisitor "Extra mutually-recursive functions aren't ~
-                               allowed in defvisitor, just in ~
-                               defvisitor-for-deftypes."))
+        (er hard? 'defvisitors "Extra mutually-recursive functions aren't ~
+                               allowed in defvisitors, just in ~
+                               defvisitors."))
        (template (cdr (assoc :template kwd-alist)))
        (types (cdr (assoc :types kwd-alist)))
        (types (if (and types (atom types))
@@ -1083,12 +1146,12 @@
                 types))
        ((unless (and template (symbolp template)
                      types (symbol-listp types)))
-        (er hard? 'defvisitor ":types and :template arguments are mandatory ~
+        (er hard? 'defvisitors ":types and :template arguments are mandatory ~
                                and must be a symbol-list and symbol, ~
                                respectively"))
        (x1 (cdr (assoc template (table-alist 'visitor-templates wrld))))
        ((unless x1)
-        (er hard? 'defvisitor "Template ~x0 wasn't defined" template))
+        (er hard? 'defvisitors "Template ~x0 wasn't defined" template))
 
 
        (deftypes-table (table-alist 'flextypes-table wrld))
@@ -1129,26 +1192,47 @@
 
 
 
-(defmacro defvisitor (&rest args)
+(defmacro defvisitors (&rest args)
   `(make-event
-    (defvisitor-fn ',args (w state))))
+    (defvisitors-fn ',args (w state))))
 
 
 
 
 
 (defun update-type-visitor-fn (visitor type fn world)
-  (b* (((fty::visitorspec x)
+  (b* (((visitorspec x)
         (cdr (assoc visitor
-                    (table-alist 'fty::visitor-templates world)))))
-    (fty::change-visitorspec
+                    (table-alist 'visitor-templates world)))))
+    (change-visitorspec
      x :type-fns (cons (cons (visitor-normalize-fixtype type world) fn) x.type-fns))))
 
 
 (defmacro update-type-visitor (visitor type fn)
-  `(table fty::visitor-templates
+  `(table visitor-templates
           ',visitor
           (update-type-visitor-fn ',visitor ',type ',fn world)))
+
+
+(defxdoc defvisitors
+  :parents (fty)
+  :short "Generate visitor functions across types using a visitor template.")
+
+(defxdoc defvisitor
+  :parents (defvisitors)
+  :short "Generate visitor functions for one type or one mutually-recursive clique of types.")
+
+
+(defxdoc defvisitor-template
+  :parents (defvisitors)
+  :short "Create a template that says how to make visitor functions."
+  :long "<p>This is used in combination with @(see defvisitors) and @(see
+defvisitor) to automatically generate \"visitor\" functions, i.e. functions
+that traverse a data structure and do something at specified locations in it.
+E.g., they can be used to transform all fields of a certain type, or to collect
+some information about all occurrences of a certain product field, etc.</p>")
+
+
 
 
 

@@ -2980,6 +2980,12 @@ try to support the use of both ascending and descending ranges.</p>")
     :vl-tagged x.type
     :vl-pattern x.type)
   ///
+  
+  (defthm vl-maybe-datatype-count-of-vl-expr->type
+    (< (vl-maybe-datatype-count (vl-expr->type x))
+       (vl-expr-count x))
+    :rule-classes :linear)
+
   (fty::deffixequiv vl-expr->type)
   (defthm vl-expr-type-when-vl-special
     (implies (vl-expr-case x :vl-special)

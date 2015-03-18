@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "../parsetree")
-(include-book "expr-tools")
+(include-book "centaur/fty/visitor" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -56,137 +56,26 @@ details.</p>")
 
 (local (xdoc::set-default-parents stripping-functions))
 
-(defines vl-expr-strip
-  (define vl-expr-strip ((x vl-expr-p))
-    :short "Throw away widths and types from an expression."
-    :measure (vl-expr-count x)
-    :returns (x-strip vl-expr-p)
-    :verify-guards nil
-    (vl-expr-update-atts
-     (vl-expr-update-type
-      (vl-expr-update-subexprs x (vl-exprlist-strip (vl-expr->subexprs x)))
-      nil)
-     nil))
-  (define vl-exprlist-strip ((x vl-exprlist-p))
-    :measure (vl-exprlist-count x)
-    :returns (x-strip vl-exprlist-p)
-    (if (atom x)
-        nil
-      (cons (vl-expr-strip (car x))
-            (vl-exprlist-strip (cdr x))))
-    ///
-    (defret len-of-vl-exprlist-strip
-      (equal (len x-strip) (len x))))
-  ///
-  (verify-guards vl-expr-strip)
-  (deffixequiv-mutual vl-expr-strip))
-                       
 
-(define vl-range-strip ((x vl-range-p))
-  :returns (x-strip vl-range-p)
-  (b* (((vl-range x) x))
-    (change-vl-range x
-                     :msb (vl-expr-strip x.msb)
-                     :lsb (vl-expr-strip x.lsb))))
+(fty::defvisitor-template strip ((x :object))
+  :returns (new-x :update)
+  :field-fns ((atts (lambda (x) (declare (ignore x)) nil)))
+  :prod-fns ((vl-special     (type (lambda (x) (declare (ignore x)) nil)))
+             (vl-value       (type (lambda (x) (declare (ignore x)) nil)))
+             (vl-index       (type (lambda (x) (declare (ignore x)) nil)))
+             (vl-unary       (type (lambda (x) (declare (ignore x)) nil)))
+             (vl-binary      (type (lambda (x) (declare (ignore x)) nil)))
+             (vl-qmark       (type (lambda (x) (declare (ignore x)) nil)))
+             (vl-mintypmax   (type (lambda (x) (declare (ignore x)) nil)))
+             (vl-concat      (type (lambda (x) (declare (ignore x)) nil)))
+             (vl-multiconcat (type (lambda (x) (declare (ignore x)) nil)))
+             (vl-call        (type (lambda (x) (declare (ignore x)) nil)))
+             (vl-cast        (type (lambda (x) (declare (ignore x)) nil)))
+             (vl-inside      (type (lambda (x) (declare (ignore x)) nil)))
+             (vl-tagged      (type (lambda (x) (declare (ignore x)) nil)))
+             (vl-pattern     (type (lambda (x) (declare (ignore x)) nil))))
+  :fnname-template <type>-strip)
 
-(define vl-maybe-range-strip ((x vl-maybe-range-p))
-  :returns (x-strip vl-maybe-range-p)
-  (if x
-      (vl-range-strip x)
-    nil))
-
-(defprojection vl-rangelist-strip ((x vl-rangelist-p))
-  :returns (x-strip vl-rangelist-p)
-  (vl-range-strip x))
-
-(define vl-packeddimension-strip ((x vl-packeddimension-p))
-  :returns (new-x vl-packeddimension-p)
-  (b* ((x (vl-packeddimension-fix x)))
-    (if (eq x :vl-unsized-dimension)
-        x
-      (vl-range->packeddimension (vl-range-strip (vl-packeddimension->range x))))))
-
-(defprojection vl-packeddimensionlist-strip ((x vl-packeddimensionlist-p))
-  :returns (new-x vl-packeddimensionlist-p)
-  (vl-packeddimension-strip x))
-
-(define vl-assign-strip ((x vl-assign-p))
-  :returns (x-strip vl-assign-p)
-  (b* (((vl-assign x) x))
-    (change-vl-assign x
-                      :lvalue   (vl-expr-strip x.lvalue)
-                      :expr     (vl-expr-strip x.expr)
-                      :delay    nil
-                      :strength nil
-                      :loc      *vl-fakeloc*
-                      :atts     nil)))
-
-(defprojection vl-assignlist-strip ((x vl-assignlist-p))
-  :returns (x-strip vl-assignlist-p)
-  (vl-assign-strip x))
-
-(define vl-plainarg-strip ((x vl-plainarg-p))
-  :returns (x-strip vl-plainarg-p)
-  (b* (((vl-plainarg x) x))
-    (change-vl-plainarg x
-                        :expr     (if x.expr
-                                      (vl-expr-strip x.expr)
-                                    nil)
-                        :atts     nil
-                        :portname nil
-                        :dir      nil)))
-
-(defprojection vl-plainarglist-strip ((x vl-plainarglist-p))
-  :returns (x-strip vl-plainarglist-p)
-  (vl-plainarg-strip x))
-
-(define vl-namedarg-strip ((x vl-namedarg-p))
-  :returns (x-strip vl-namedarg-p)
-  (b* (((vl-namedarg x) x))
-    (change-vl-namedarg x
-                        :expr (if x.expr
-                                  (vl-expr-strip x.expr)
-                                nil)
-                        :atts nil)))
-
-(defprojection vl-namedarglist-strip ((x vl-namedarglist-p))
-  :returns (x-strip vl-namedarglist-p)
-  (vl-namedarg-strip x))
-
-(define vl-arguments-strip ((x vl-arguments-p))
-  :returns (x-strip vl-arguments-p)
-  (vl-arguments-case x
-    :vl-arguments-named (change-vl-arguments-named x :args (vl-namedarglist-strip x.args))
-    :vl-arguments-plain (change-vl-arguments-plain x :args (vl-plainarglist-strip x.args))))
-
-
-(define vl-modinst-strip ((x vl-modinst-p))
-  :returns (x-strip vl-modinst-p)
-  (b* (((vl-modinst x) x))
-    (change-vl-modinst x
-                       :range     (vl-maybe-range-strip x.range)
-                       :portargs  (vl-arguments-strip x.portargs)
-                       :str nil
-                       :delay nil
-                       :atts nil
-                       :loc *vl-fakeloc*)))
-
-(defprojection vl-modinstlist-strip ((x vl-modinstlist-p))
-  :returns (x-strip vl-modinstlist-p)
-  (vl-modinst-strip x))
-
-(define vl-gateinst-strip ((x vl-gateinst-p))
-  :returns (x-strip vl-gateinst-p)
-  (b* (((vl-gateinst x) x))
-    (change-vl-gateinst x
-                        :range     (vl-maybe-range-strip x.range)
-                        :strength  nil
-                        :delay     nil
-                        :args      (vl-plainarglist-strip x.args)
-                        :atts      nil
-                        :loc       *vl-fakeloc*)))
-
-(defprojection vl-gateinstlist-strip ((x vl-gateinstlist-p))
-  :returns (x-strip vl-gateinstlist-p)
-  (vl-gateinst-strip x))
-
+(fty::defvisitors vl-strip
+  :template strip
+  :types (vl-modinstlist vl-gateinstlist vl-assignlist))

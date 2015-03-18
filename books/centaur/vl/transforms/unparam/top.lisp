@@ -35,6 +35,7 @@
 ;; (include-book "scopesubst")
 (include-book "../../mlib/blocks")
 (include-book "../../mlib/writer") ;; for generating the new module names...
+(local (include-book "../../util/default-hints"))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system))))
 
@@ -150,63 +151,21 @@ with, we can safely remove @('plus') from our module list.</p>")
     (cons (vl-paramdecl-remove-default (car x))
           (vl-paramdecllist-remove-defaults (cdr x)))))
 
-(define vl-paramdecl-resolve-indices ((x vl-paramdecl-p)
-                                      (ss vl-scopestack-p))
+
+(define vl-paramdecl-resolve-indices-top ((x vl-paramdecl-p)
+                                          (ss vl-scopestack-p))
   :returns (mv (warnings vl-warninglist-p)
                (new-x vl-paramdecl-p))
-  (b* (((vl-paramdecl x) (vl-paramdecl-fix x))
-       (fns (vl-paramdecl-functions-called x ss))
-       (params (vl-paramdecl-parameter-refs x ss))
-       (warnings nil)
-       ((wmv warnings fntable) (vl-funnames-svex-compile fns ss 1000))
-       ((wmv warnings paramtable)  (vl-paramrefs-svex-compile params 1000))
-       (conf (make-vl-svexconf :ss ss :fns fntable :params paramtable))
-       ((mv warnings type)
-        (vl-paramtype-case x.type
-          :vl-implicitvalueparam
-          (b* (((wmv warnings & range)
-                (if x.type.range
-                    (vl-range-resolve-indices x.type.range conf)
-                  (mv nil nil nil)))
-               ((wmv warnings & default)
-                (if x.type.default
-                    (vl-expr-resolve-indices x.type.default conf)
-                  (mv nil nil nil))))
-            (mv warnings (change-vl-implicitvalueparam
-                          x.type :range range :default default)))
-          :vl-explicitvalueparam
-          (b* (((mv err type)
-                (vl-datatype-usertype-resolve x.type.type ss))
-               (warnings (if err
-                             (warn :type :vl-paramtype-unresolvable
-                                   :msg "Couldn't resolve usertypes in parameter ~a0: ~@1"
-                                   :args (list x type))
-                           warnings))
-               ((wmv warnings & type)
-                (vl-datatype-resolve-indices type conf))
-               ((wmv warnings & default)
-                (if x.type.default
-                    (vl-expr-resolve-indices x.type.default conf)
-                  (mv nil nil nil))))
-            (mv warnings (change-vl-explicitvalueparam
-                          x.type :type type :default default)))
-          :vl-typeparam
-          (if x.type.default
-              (b* (((mv err type)
-                    (vl-datatype-usertype-resolve x.type.default ss))
-                   (warnings (if err
-                                 (warn :type :vl-paramtype-unresolvable
-                                       :msg "Couldn't resolve usertypes in parameter ~a0: ~@1"
-                                       :args (list x type))
-                               warnings))
-                   ((wmv warnings & default)
-                    (if x.type.default
-                        (vl-datatype-resolve-indices type conf)
-                      (mv nil nil nil))))
-                (mv warnings (change-vl-typeparam
-                              x.type :default default)))
-            (mv warnings x.type)))))
-    (mv warnings (change-vl-paramdecl x :type type))))
+  (b* ((prefs (vl-paramdecl-parameter-refs x ss))
+       (fns   (vl-paramdecl-functions-called x))
+       ((mv warnings fntable) (vl-funnames-svex-compile fns ss 1000))
+       ((wmv warnings paramtable) (vl-paramrefs-svex-compile prefs 1000))
+       ((wmv warnings ?changedp new-x)
+        (vl-paramdecl-resolve-indices
+         x (make-vl-svexconf :ss ss :fns fntable :params paramtable))))
+    (mv warnings new-x)))
+       
+
       
 
 
@@ -249,7 +208,10 @@ with, we can safely remove @('plus') from our module list.</p>")
        (current-ss (vl-scopestack-push (vl-scopeinfo-fix scopeinfo) ss))
        (warnings (ok))
        (ctx (vl-context-fix ctx))
-       ((wmv warnings decl :ctx ctx) (vl-paramdecl-resolve-indices x1.decl current-ss))
+       ;; In case the type or size has unresolved indices, resolve indices in the parameter.
+       ;; BOZO This unnecessarily resolves indices in the default expression as
+       ;; well; this is just a performance bug.
+       ((wmv warnings decl :ctx ctx) (vl-paramdecl-resolve-indices-top x1.decl current-ss))
 
        (ov-value (or x1.override
                      (vl-paramtype->default
@@ -477,7 +439,8 @@ introduced.</p>"
     (mv t warnings new-inst unparam-signature mod-ss)))
 
 (define vl-unparam-instlist ((x vl-modinstlist-p)
-                             (ss       vl-scopestack-p)
+                             (ss       vl-scopestack-p
+                                       "Scopestack where the instances occur.")
                              (warnings vl-warninglist-p
                                        "Warnings accumulator for the submodule.")
                              (modname  stringp "Containing module name, for context")
@@ -546,10 +509,25 @@ introduced.</p>"
     (vl-gencase-some-match x (cdr y) ss warnings)))
 
 
+(define vl-genblob-resolve-indices-top ((x vl-genblob-p)
+                                        (ss vl-scopestack-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (new-x vl-genblob-p))
+  (b* ((prefs (vl-genblob-parameter-refs x ss))
+       (fns   (vl-genblob-functions-called x))
+       ((mv warnings fntable) (vl-funnames-svex-compile fns ss 1000))
+       ((wmv warnings paramtable) (vl-paramrefs-svex-compile prefs 1000))
+       ((wmv warnings ?changedp new-x)
+        (vl-genblob-resolve-indices
+         x (make-vl-svexconf :ss ss :fns fntable :params paramtable))))
+    (mv warnings new-x)))
+
+
 (with-output :off (event)
   :evisc (:gag-mode (evisc-tuple 3 4 nil nil ))
   (defines vl-generate-resolve
-    :prepwork ((local (in-theory (disable
+    :prepwork ((local (include-book "centaur/misc/arith-equivs" :dir :system))
+               (local (in-theory (disable
                                   cons-equal
                                   vl-genelement-p-by-tag-when-vl-scopeitem-p
                                   vl-genelement-p-when-member-equal-of-vl-genelementlist-p
@@ -559,7 +537,9 @@ introduced.</p>"
                                   vl-gencaselist-p-when-not-consp
                                   vl-genelementlist-p-when-not-consp
                                   vl-genblob-p-by-tag-when-vl-scope-p
-                                  vl-warninglist-p-when-subsetp-equal)))
+                                  vl-warninglist-p-when-subsetp-equal
+                                  acl2::loghead
+                                  ifix nfix)))
                (local (defthm vl-genelement-fix-under-iff
                         (vl-genelement-fix x)
                         :hints(("Goal" :in-theory (enable (tau-system))))))
@@ -569,35 +549,61 @@ introduced.</p>"
                                     (vl-genelement-count x)))
                         :hints(("Goal" :in-theory (enable vl-genelement-count
                                                           vl-genelementlist-count))))))
+    (define vl-genblob-resolve ((x vl-genblob-p)
+                                (ss vl-scopestack-p)
+                                (warnings vl-warninglist-p))
+      :returns (mv (ok)
+                   (warnings1 vl-warninglist-p)
+                   (new-x vl-genblob-p))
+      :measure (two-nats-measure (vl-genblob-count x) 0)
+      (b* (((vl-genblob x) (vl-genblob-fix x))
+           ((mv ok warnings x-ss ?final-paramdecls)
+            ;; BOZO figure out a real context
+            (vl-scope-finalize-params x x.paramdecls
+                                      (make-vl-paramargs-named)
+                                      warnings ss ss 'fake-context-for-unparam))
+           ((unless ok) (mv nil warnings (vl-genblob-fix x)))
+           (x (change-vl-genblob x :paramdecls final-paramdecls))
+           ((wmv warnings new-x)
+            (vl-genblob-resolve-indices-top x x-ss))
+           ((vl-genblob new-x))
+           ((mv ok warnings new-generates)
+            (vl-generatelist-resolve x.generates x-ss warnings)))
+        (mv ok warnings (change-vl-genblob new-x :generates new-generates))))
+        
+           
+
     (define vl-generate-resolve
       ((x vl-genelement-p "The generate block to resolve")
-       (ss vl-scopestack-p "The scopestack with the current module and final parameters")
+       (ss vl-scopestack-p "Current scopestack with resolved params")
        (warnings vl-warninglist-p))
       :returns (mv (ok)
                    (warnings1 vl-warninglist-p)
                    (new-x vl-genelement-p))
-      :measure (two-nats-measure (vl-genelement-count x) 0)
+      :measure (two-nats-measure (vl-genblob-generate-count x) 0)
       :verify-guards nil
       (b* ((x (vl-genelement-fix x)))
         (vl-genelement-case x
-          :vl-genbase (mv t (ok) (change-vl-genbase x :item (vl-modelement-scopesubst x.item ss)))
+          :vl-genbase (b* ((xlist (list x))
+                           (blob (vl-sort-genelements xlist))
+                           ((mv ok warnings new-blob)
+                            (vl-genblob-resolve blob ss warnings))
+                           ((unless ok) (mv nil warnings (vl-genelement-fix x))))
+                        (mv t warnings
+                            (make-vl-genblock
+                             :elems (vl-genblob->elems new-blob xlist)
+                             :loc (vl-modelement->loc x.item))))
 
           :vl-genblock
           (b* ((blob (vl-sort-genelements x.elems
                                           :scopetype :vl-genblock
                                           :name x.name))
-               ((vl-genblob blob))
-               ((mv ok warnings blob-ss ?final-paramdecls)
-                (vl-scope-finalize-params blob blob.paramdecls
-                                          (make-vl-paramargs-named)
-                                          warnings ss *vl-fake-context*)) ;; BOZO figure out a real context
-               ((unless ok)
-                (mv nil warnings (vl-genelement-fix x)))
-               ((mv ok warnings res-elems) (vl-genelementlist-resolve x.elems blob-ss warnings))
+               ((mv ok warnings new-blob)
+                (vl-genblob-resolve blob ss warnings))
                ((unless ok)
                 (mv nil warnings (vl-genelement-fix x))))
             (mv t warnings
-                (change-vl-genblock x :elems res-elems)))
+                (change-vl-genblock x :elems (vl-genblob->elems new-blob x.elems))))
             
 
           ;; Didn't expect to see these resolved forms yet; leave them.
@@ -609,8 +615,8 @@ introduced.</p>"
               x)
 
           :vl-genif
-          (b* (((mv ok testval) (vl-consteval (vl-expr-scopesubst x.test ss) ss))
-               ((unless ok)
+          (b* (((wmv warnings testval) (vl-consteval x.test ss))
+               ((unless (vl-expr-resolved-p testval))
                 (mv nil (fatal :type :vl-generate-resolve-fail
                                :msg "~a0: Failed to evaluate the test expression ~a1."
                                :args (list x x.test))
@@ -620,29 +626,31 @@ introduced.</p>"
             (vl-generate-resolve subelem ss warnings))
 
           :vl-gencase
-          (b* ((test (vl-expr-scopesubst x.test ss))
-               ((mv ok warnings elem)
-                (vl-gencaselist-resolve x.cases test x ss warnings))
+          ;; BOZO the sizing on this is probably wrong
+          (b* (((mv ok warnings elem)
+                (vl-gencaselist-resolve x.cases x.test x ss warnings))
                ((when elem) (mv ok warnings elem)))
             (vl-generate-resolve x.default ss warnings))
 
           :vl-genloop
-          (b* (((mv ok initval) (vl-consteval (vl-expr-scopesubst x.initval ss) ss))
-               ((unless ok)
+          (b* (((wmv warnings initval) (vl-consteval x.initval ss))
+               ((unless (vl-expr-resolved-p initval))
                 (mv nil (fatal :type :vl-generate-resolve-fail
                                :msg "~a0: Failed to evaluate the initial value expression ~a1."
                                :args (list x x.initval))
                     x))
-               ((mv body.name body.elems)
-                (if (eql (vl-genelement-kind x.body) :vl-genblock)
-                    (mv (vl-genblock->name x.body) (vl-genblock->elems x.body))
-                  (mv nil (list x.body))))
-               (blob (vl-sort-genelements body.elems
-                                          :scopetype :vl-genarrayblock
-                                          :name x.name))
+               (body.name (and (eql (vl-genelement-kind x.body) :vl-genblock)
+                               (vl-genblock->name x.body)))
+               ;; ((mv body.name body.elems)
+               ;;  (if (eql (vl-genelement-kind x.body) :vl-genblock)
+               ;;      (mv (vl-genblock->name x.body) (vl-genblock->elems x.body))
+               ;;    (mv nil (list x.body))))
+               ;; (blob (vl-sort-genelements body.elems
+               ;;                            :scopetype :vl-genarrayblock
+               ;;                            :name nil))
                ((mv ok warnings arrayblocks)
                 (vl-genloop-resolve 100000 ;; recursion limit
-                                    blob body.elems
+                                    x.body
                                     x.var (vl-resolved->val initval)
                                     x.nextval x.continue
                                     x ss warnings)))
@@ -651,18 +659,18 @@ introduced.</p>"
                                   :loc x.loc))))))
 
 
-    (define vl-genelementlist-resolve ((x vl-genelementlist-p)
-                                       (ss vl-scopestack-p)
-                                       (warnings vl-warninglist-p))
+    (define vl-generatelist-resolve ((x vl-genelementlist-p)
+                                     (ss vl-scopestack-p)
+                                     (warnings vl-warninglist-p))
       :returns (mv (ok)
                    (warnings1 vl-warninglist-p)
                    (new-elems vl-genelementlist-p))
-      :measure (two-nats-measure (vl-genelementlist-count x) 0)
+      :measure (two-nats-measure (vl-genblob-generates-count x) 0)
       (b* (((when (atom x)) (mv t (ok) nil))
            ((mv ok1 warnings first)
             (vl-generate-resolve (car x) ss warnings))
            ((mv ok2 warnings rest)
-            (vl-genelementlist-resolve (cdr x) ss warnings)))
+            (vl-generatelist-resolve (cdr x) ss warnings)))
         (mv (and ok1 ok2) warnings (cons first rest))))
 
 
@@ -676,7 +684,7 @@ introduced.</p>"
       :returns (mv (ok)
                    (warnings1 vl-warninglist-p)
                    (new-elem (iff (vl-genelement-p new-elem) new-elem)))
-      :measure (two-nats-measure (vl-gencaselist-count x) 0)
+      :measure (two-nats-measure (vl-genblob-gencaselist-count x) 0)
       (b* ((x (vl-gencaselist-fix x))
            ((when (atom x)) (mv t (ok) nil))
 
@@ -690,8 +698,7 @@ introduced.</p>"
         (vl-generate-resolve block1 ss warnings)))
 
     (define vl-genloop-resolve ((clk natp "recursion limit")
-                                (blob vl-genblob-p "elements inside the block")
-                                (elems vl-genelementlist-p "elements inside the block")
+                                (body vl-genelement-p)
                                 (var   stringp)
                                 (current-val integerp)
                                 (nextval vl-expr-p)
@@ -702,30 +709,32 @@ introduced.</p>"
       :returns (mv (ok)
                    (warnings1 vl-warninglist-p)
                    (new-blocks vl-genarrayblocklist-p))
-      :measure (two-nats-measure (vl-genelementlist-count elems) clk)
+      :measure (two-nats-measure (vl-genblob-generate-count body) clk)
       (b* (((when (zp clk))
             (mv nil
                 (fatal :type :vl-generate-resolve-fail
                        :msg "~a0: Iteration limit ran out in for loop."
                        :args (list (vl-genelement-fix orig-x)))
                 nil))
-           ((vl-genblob blob))
            (var-param (make-vl-paramdecl
-                       :name (vl-id->name var)
+                       :name var
                        :type (make-vl-explicitvalueparam
                               :type *vl-plain-old-integer-type*
-                              :default (vl-make-index current-val))
+                              :default (vl-make-index (acl2::loghead 32 current-val)))
                        :loc *vl-fakeloc*))
-           ((mv ok warnings blob-ss ?final-paramdecls)
-            (vl-scope-finalize-params (vl-genblob-fix blob)
-                                      (cons var-param blob.paramdecls)
+
+           ;; Make a fake scope containing just the index param, and finalize it.
+           ((mv ok warnings idx-ss ?final-paramdecls)
+            (vl-scope-finalize-params (make-vl-genblob)
+                                      (list var-param)
                                       (make-vl-paramargs-named)
-                                      warnings ss *vl-fake-context*)) ;; bozo make real context
+                                      warnings ss ss 'fake-context-for-unparam)) ;; bozo make real context
            ((unless ok)
             (mv nil warnings nil))
 
-           ((mv ok continue-val) (vl-consteval (vl-expr-scopesubst continue blob-ss) blob-ss))
-           ((unless ok)
+           ;; Check whether we continue.
+           ((wmv warnings continue-val) (vl-consteval continue idx-ss))
+           ((unless (vl-expr-resolved-p continue-val))
             (mv nil
                 (fatal :type :vl-generate-resolve-fail
                        :msg "~a0: Failed to evaluate the loop termination expression ~a1"
@@ -735,18 +744,22 @@ introduced.</p>"
            ((when (eql (vl-resolved->val continue-val) 0))
             (mv t warnings nil))
 
-           ((mv ok warnings block-elems)
-            (vl-genelementlist-resolve elems blob-ss warnings))
+           
+
+           ((mv ok warnings new-body)
+            (vl-generate-resolve body idx-ss warnings))
 
            ((unless ok)
             (mv nil warnings nil))
 
            (block1 (make-vl-genarrayblock :index current-val
-                                          :elems block-elems))
+                                          :elems (vl-genelement-case new-body
+                                                   :vl-genblock new-body.elems
+                                                   :otherwise (list new-body))))
 
-           ((mv ok next-value) (vl-consteval (vl-expr-scopesubst nextval blob-ss) blob-ss))
+           ((wmv warnings next-value) (vl-consteval nextval idx-ss))
 
-           ((unless ok)
+           ((unless (vl-expr-resolved-p next-value))
             (mv nil
                 (fatal :type :vl-generate-resolve-fail
                        :msg "~a0: Failed to evaluate the loop increment expression ~a1"
@@ -754,14 +767,15 @@ introduced.</p>"
                 nil))
 
            ((mv ok warnings rest-blocks)
-            (vl-genloop-resolve (1- clk) blob elems var
+            (vl-genloop-resolve (1- clk) body var
                                 (vl-resolved->val next-value)
                                 nextval continue
                                 orig-x ss warnings)))
         (mv ok warnings (cons block1 rest-blocks))))
     ///
-    (local (in-theory (disable vl-generate-resolve (:t vl-generate-resolve)
-                               vl-genelementlist-resolve (:t vl-genelementlist-resolve)
+    (local (in-theory (disable vl-genblob-resolve (:t vl-genblob-resolve)
+                               vl-generate-resolve (:t vl-generate-resolve)
+                               vl-generatelist-resolve (:t vl-generatelist-resolve)
                                ;; vl-generateblock-resolve (:t vl-generateblock-resolve)
                                vl-gencaselist-resolve (:t vl-gencaselist-resolve)
                                vl-genloop-resolve (:t vl-genloop-resolve)
@@ -771,14 +785,7 @@ introduced.</p>"
       :hints (("goal" :expand ((vl-gencaselist-p x))))
       :guard-debug t)
 
-    (deffixequiv-mutual vl-generate-resolve
-      :hints ((and stable-under-simplificationp
-                   (flag::expand-calls-computed-hint
-                    clause '(vl-generate-resolve
-                             vl-genelementlist-resolve
-                             ;; vl-generateblock-resolve
-                             vl-gencaselist-resolve
-                             vl-genloop-resolve)))))))
+    (deffixequiv-mutual vl-generate-resolve)))
 
 
 
@@ -787,7 +794,7 @@ introduced.</p>"
 
 
 (def-genblob-transform vl-genblob-collect-modinst-paramsigs
-  ((ss vl-scopestack-p          "Scopestack for the top level, not extended.")
+  ((ss vl-scopestack-p)
    (warnings vl-warninglist-p)
    (modname stringp)
    (sigalist vl-unparam-sigalist-p))
@@ -801,7 +808,8 @@ introduced.</p>"
             (warnings vl-warninglist-p)
             (sigalist vl-unparam-sigalist-p))
 
-  (b* (((vl-genblob x))
+  (b* (((vl-genblob x) (vl-genblob-fix x))
+       (ss (vl-scopestack-push x ss))
        ((mv ok1 warnings insts sigalist)
         (vl-unparam-instlist x.modinsts ss warnings modname sigalist))
 
@@ -820,6 +828,20 @@ introduced.</p>"
                                         default-car default-cdr)))))
 
 
+(define vl-module-resolve-indices-top ((x vl-module-p)
+                                       (ss vl-scopestack-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (new-x vl-module-p))
+  (b* ((prefs (vl-module-parameter-refs x ss))
+       (fns   (vl-module-functions-called x))
+       ((mv warnings fntable) (vl-funnames-svex-compile fns ss 1000))
+       ((wmv warnings paramtable) (vl-paramrefs-svex-compile prefs 1000))
+       ((wmv warnings ?changedp new-x)
+        (vl-module-resolve-indices
+         x (make-vl-svexconf :ss ss :fns fntable :params paramtable))))
+    (mv warnings new-x)))
+
+
 (define vl-create-unparameterized-module
   ((x vl-module-p)
    (final-paramdecls vl-paramdecllist-p)
@@ -831,36 +853,15 @@ introduced.</p>"
   (b* (((vl-module x))
        (name (vl-unparam-newname x.name final-paramdecls))
        (warnings x.warnings)
-       ((mv ok warnings generates) (vl-genelementlist-resolve x.generates ss warnings))
+       ((mv ok warnings generates) (vl-generatelist-resolve x.generates ss warnings))
        ((unless ok)
         (mv nil (change-vl-module x :warnings warnings) nil))
 
-       (ports (vl-portlist-scopesubst x.ports ss))
-       (portdecls (vl-portdecllist-scopesubst x.portdecls ss))
-       (assigns   (vl-assignlist-scopesubst x.assigns ss))
-       (aliases   (vl-aliaslist-scopesubst x.aliases ss))
-       (paramdecls   (vl-paramdecllist-scopesubst x.paramdecls ss))
-       (vardecls   (vl-vardecllist-scopesubst x.vardecls ss))
-       (fundecls   (vl-fundecllist-scopesubst x.fundecls ss))
-       (modinsts   (vl-modinstlist-scopesubst x.modinsts ss))
-       (gateinsts   (vl-gateinstlist-scopesubst x.gateinsts ss))
-       (alwayses   (vl-alwayslist-scopesubst x.alwayses ss))
-       (initials   (vl-initiallist-scopesubst x.initials ss))
+       ((mv warnings new-x) (vl-module-resolve-indices-top x ss))
 
-       (mod (change-vl-module x
-                              :name name
+       (mod (change-vl-module new-x
                               :generates generates
-                              :ports ports
-                              :portdecls portdecls
-                              :assigns assigns
-                              :aliases aliases
-                              :paramdecls paramdecls
-                              :vardecls vardecls
-                              :fundecls fundecls
-                              :modinsts modinsts
-                              :gateinsts gateinsts
-                              :alwayses alwayses
-                              :initials initials))
+                              :name name))
 
        ;; now change it to a genblob to rewrite the instances & collect the signatures
        (genblob (vl-module->genblob mod))
@@ -1010,7 +1011,7 @@ introduced.</p>"
                                   (vl-module->paramdecls x)
                                   (make-vl-paramargs-named)
                                   warnings
-                                  ss
+                                  ss ss
                                   (vl-context modname)))
        ((unless ok) (mv nil (vl-scopestack-fix ss) warnings)))
     (mv (make-vl-unparam-signature :modname modname :final-params final-paramdecls)
