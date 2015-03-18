@@ -1535,6 +1535,7 @@
                             event-name
                             (rule-classes '(:rewrite))
                             instructions)
+  (declare (xargs :guard (symbolp event-name)))
   (if (and raw-term-supplied-p (eq raw-term nil))
       '(pprogn
         (io? proof-checker nil state

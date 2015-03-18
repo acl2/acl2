@@ -3945,29 +3945,53 @@
                   ss-alist))))
 
 (define-pc-macro save (&optional name do-it-flg)
-  (let ((name (or name (car (event-name-and-types-and-raw-term state-stack))))
-        (ss-alist (ss-alist)))
-    (if name
-        (mv-let (erp reply state)
-                (if (and (assoc-eq name ss-alist)
-                         (null do-it-flg))
-                    (acl2-query 'acl2-pc::save
-                                '("The name ~x0 is already associated with a state-stack.  Do ~
-                                    you really want to overwrite that existing value?"
-                                  :y t :n nil)
-                                (list (cons #\0 name))
-                                state)
-                  (mv nil t state))
-                (declare (ignore erp))
-                (if reply
-                    (pprogn (save-fn name ss-alist state)
-                            (value :succeed))
-                  (pprogn (print-no-change "save aborted.")
-                          (value :fail))))
-      (pprogn (print-no-change "You can't SAVE with no argument, because you didn't ~
-                                originally enter VERIFY using an event name.  Try ~
-                                (SAVE <event_name>) instead.")
-              (value :fail)))))
+  (cond
+   ((not (symbolp name))
+    (pprogn
+     (print-no-change
+      "The first argument supplied to ~x0 must be a symbol, but ~x1 is not a ~
+       symbol.~@2"
+      (list (cons #\0 :save)
+            (cons #\1 name)
+            (cons #\2
+                  (cond ((and (consp name)
+                              (eq (car name) 'quote)
+                              (consp (cdr name))
+                              (symbolp (cadr name))
+                              (null (cddr name)))
+                         (msg "  Perhaps you intended to submit the form ~x0."
+                              `(:save ,(cadr name)
+                                      ,@(and do-it-flg
+                                             (list do-it-flg)))))
+                        (t "")))))
+     (value :fail)))
+   (t
+    (let ((name (or name (car (event-name-and-types-and-raw-term state-stack))))
+          (ss-alist (ss-alist)))
+      (if name
+          (mv-let
+           (erp reply state)
+           (if (and (assoc-eq name ss-alist)
+                    (null do-it-flg))
+               (acl2-query 'acl2-pc::save
+                           '("The name ~x0 is already associated with a ~
+                              state-stack.  Do you really want to overwrite ~
+                              that existing value?"
+                             :y t :n nil)
+                           (list (cons #\0 name))
+                           state)
+             (mv nil t state))
+           (declare (ignore erp))
+           (if reply
+               (pprogn (save-fn name ss-alist state)
+                       (value :succeed))
+             (pprogn (print-no-change "save aborted.")
+                     (value :fail))))
+        (pprogn (print-no-change
+                 "You can't SAVE with no argument, because you didn't ~
+                  originally enter VERIFY using an event name.  Try (SAVE ~
+                  <event_name>) instead.")
+                (value :fail)))))))
 
 (defmacro retrieve (&optional name)
   `(retrieve-fn ',name state))
@@ -4014,7 +4038,7 @@
   (let ((ss-alist (ss-alist)))
     (cond
      ((f-get-global 'in-verify-flg state)
-      (er soft 'verify
+      (er soft 'retrieve
           "You are apparently already inside the VERIFY interactive loop.  It is ~
            illegal to enter such a loop recursively."))
      ((null ss-alist)
@@ -4039,6 +4063,20 @@
                          (read-object *standard-oi* state))
                         (declare (ignore erp))
                         (retrieve-fn val state)))))
+     ((not (symbolp name))
+      (er soft 'retrieve
+          "The argument supplied to ~x0 must be a symbol, but ~x1 is not a ~
+           symbol.~@2"
+          'retrieve
+          name
+          (cond ((and (consp name)
+                      (eq (car name) 'quote)
+                      (consp (cdr name))
+                      (symbolp (cadr name))
+                      (null (cddr name)))
+                 (msg "  Perhaps you intended to submit the form ~x0."
+                      `(retrieve ,(cadr name))))
+                (t ""))))
      (t
       (let* ((ss-pair (cdr (assoc-eq name ss-alist)))
              (saved-ss (car ss-pair))
