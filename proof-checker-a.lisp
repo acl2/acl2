@@ -1547,6 +1547,21 @@
     `(verify-fn ',raw-term ',raw-term-supplied-p ',event-name
                 ',rule-classes ',instructions state)))
 
+(set-guard-msg verify
+               (let ((name (cadr (assoc-keyword :event-name (cdr args)))))
+                 (msg "The :event-name argument for VERIFY must be a symbol, ~
+                       unlike ~x0.~@1"
+                      name
+                      (if (and (consp name)
+                               (eq (car name) 'quote)
+                               (cdr name)
+                               (symbolp (cadr name))
+                               (null (cddr name)))
+                          (msg "  Perhaps you intended the :EVENT-NAME to be ~
+                                ~x0 instead of ~x1."
+                               (cadr name) name)
+                        ""))))
+
 ; Finally, here is some stuff that is needed not only for the proof-checker but
 ; also for :pl.
 
