@@ -88,7 +88,7 @@ no-duplicatesp), e.g., see @(see no-duplicatesp-equal-same-by-duplicity).</p>"
     :hints(("Goal" :in-theory (enable duplicity duplicity-exec))))
 
   (verify-guards duplicity
-    :hints(("Goal" :in-theory (enable duplicity))))
+                 :hints(("Goal" :in-theory (enable duplicity))))
 
   (defthm duplicity-when-not-consp
     (implies (not (consp x))
@@ -140,6 +140,11 @@ no-duplicatesp), e.g., see @(see no-duplicatesp-equal-same-by-duplicity).</p>"
     (implies (not (member-equal a x))
              (equal (duplicity a x)
                     0)))
+
+  (defthm duplicity-when-member-equal
+    (implies (member-equal a x)
+             (> (duplicity a x)
+                0)))
 
   (defthm no-duplicatesp-equal-when-high-duplicity
     (implies (> (duplicity a x) 1)
