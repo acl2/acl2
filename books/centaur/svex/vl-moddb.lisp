@@ -263,6 +263,46 @@ current one.  We translate module @('a') as follows:</p>
 (local (in-theory (disable (tau-system))))
 
 
+(define svex-svar-from-name ((name stringp))
+  :returns (svar svex::svar-p)
+  :prepwork ((local (in-theory (enable svex::name-p))))
+  (svex::make-svar
+   :name (svex::make-address
+          :path (svex::make-path-wire :name (string-fix name))))
+  ///
+  (defret svar-addr-p-of-svex-svar-from-name
+    (svex::svar-addr-p svar)
+    :hints(("Goal" :in-theory (enable svex::svar-addr-p)))))
+
+(define svex-var-from-name ((name stringp))
+  :returns (svex svex::svex-p)
+  :prepwork ((local (in-theory (enable svex::name-p))))
+  (svex::make-svex-var
+   :name (svex-svar-from-name name))
+  ///
+  (defret svarlist-addr-p-of-svex-var-from-name
+    (svex::svarlist-addr-p (svex::svex-vars svex))
+    :hints(("Goal" :in-theory (enable svex::svar-addr-p)))))
+
+(define svex-lhs-from-name ((name stringp)
+                            &key
+                            ((width posp) '1)
+                            ((rsh natp) '0))
+  :returns (lhs svex::lhs-p)
+  :prepwork ((local (in-theory (enable svex::name-p))))
+  (list (svex::make-lhrange
+         :w width
+         :atom (svex::make-lhatom-var
+                :name (svex-svar-from-name name)
+                :rsh rsh)))
+  ///
+
+  (in-theory (disable (:t svex-lhs-from-name)))
+
+  (defret svarlist-addr-p-of-svex-lhs-from-name
+    (svex::svarlist-addr-p (svex::lhs-vars lhs))
+    :hints(("Goal" :in-theory (enable svex::svar-addr-p svex::lhatom-vars)))))
+
 ;; (define vl-cap-lhsexpr ((x vl-expr-p))
 ;;   :returns (mv errp (xx (implies (and (not errp) (vl-expr-p x))
 ;;                                  (and (vl-expr-p xx)
@@ -387,10 +427,7 @@ constructed separately.)</p>"
        (wire (svex::make-wire :name name
                               :width size
                               :low-idx 0))
-       (var (svex::address->svar (svex::make-address
-                                  :path (svex::make-path-wire :name name))))
-       (wire-lhs (list (svex::make-lhrange :w size
-                                           :atom (svex::make-lhatom-var :name var :rsh 0))))
+       (wire-lhs (svex-lhs-from-name name :width size))
        (subself-var (svex::address->svar
                      (svex::make-address
                       :path (svex::make-path-scope :namespace name :subpath :self))))
@@ -399,11 +436,14 @@ constructed separately.)</p>"
                                                      :name subself-var :rsh 0)))))
     (mv (ok) (list wire) (list (cons wire-lhs subself-lhs))))
   ///
+  (local (in-theory (disable svex::lhs-vars-when-consp)))
   (defthm vars-of-vl-interfaceinst->svex
     (svex::svarlist-addr-p
      (svex::lhspairs-vars
       (mv-nth 2 (vl-interfaceinst->svex name ifname context ss))))
-    :hints(("Goal" :in-theory #!svex (enable lhspairs-vars lhatom-vars)))))
+    :hints(("goal" :in-theory (enable svex::lhspairs-vars))
+           (and stable-under-simplificationp
+                '(:in-theory #!svex (enable lhspairs-vars lhatom-vars))))))
 
        
 (define vl-interfaceport->svex ((x vl-interfaceport-p)
@@ -916,6 +956,11 @@ constructed separately.)</p>"
 (fty::deflist vl-portinfolist :elt-type vl-portinfo)
 
 
+
+
+
+
+
 (define vl-portinfo-vars ((x vl-portinfo-p))
   :returns (vars svex::svarlist-p)
   (vl-portinfo-case x
@@ -948,6 +993,117 @@ constructed separately.)</p>"
     (append (vl-portinfo-vars (car x))
             (vl-portinfolist-vars (cdr x)))))
 
+(define vl-gate-plainarg-portinfo ((x vl-plainarg-p)
+                                   (portname stringp)
+                                   (portdir vl-direction-p)
+                                   (argindex natp)
+                                   (ss vl-scopestack-p
+                                       "scopestack where the instance occurs")
+                                   (arraysize maybe-posp))
+  :short "Processes a gate instance argument into a vl-portinfo structure."
+  :returns (mv (warnings vl-warninglist-p)
+               (res vl-portinfo-p))
+  :guard-hints (;; ("goal" :in-theory (enable (force)
+                ;;                            vl-plainarg-size-check))
+                (and stable-under-simplificationp
+                     '(:in-theory (enable svex::name-p)))
+                (and stable-under-simplificationp
+                     '(:in-theory (enable svex::lhssvex-p
+                                          svex::lhssvex-unbounded-p
+                                          svex::svex-concat
+                                          svex::4vec-index-p))))
+  :guard-debug t
+  
+  (b* (((fun (fail warnings)) (mv warnings (make-vl-portinfo-bad)))
+       ((vl-plainarg x) (vl-plainarg-fix x))
+       (portname (string-fix portname))
+       (arraysize (acl2::maybe-posp-fix arraysize))
+       ;; (ss (vl-scopestack-fix ss))
+       ;; (inst-ss (vl-scopestack-fix inst-ss))
+       (warnings nil)
+       ((unless x.expr) (mv (ok) (make-vl-portinfo-blank)))
+
+       ;; ((when (not y.name))
+       ;;  (cw "Warning! No name for port ~x0, module ~s1~%" y inst-modname)
+       ;;  (mv nil nil))
+       (portexpr (vl-idexpr portname nil))
+       (port-lhs (svex-lhs-from-name portname))
+       (port-type (make-vl-coretype :name :vl-logic))
+       ((wmv warnings x-svex x-type)
+        (vl-expr-svex-compile
+         x.expr
+         (if arraysize
+             nil
+           port-type)
+         ss))
+
+       ((unless x-type) (fail warnings))
+       ((mv err ?multi x-size ?port-size)
+        (vl-instarray-plainarg-type-check
+         arraysize port-type portexpr
+         x-type x.expr portname))
+
+       ((when err)
+        (fail (fatal :type :vl-plainarg->svex-fail
+                     :msg "~@0"
+                     :args (list err))))
+
+       (port-outer-lhs (if (and arraysize multi)
+                           (svex-lhs-from-name portname :width (lposfix arraysize))
+                         port-lhs))
+
+       (xsvex (svex::svex-concat x-size
+                                 (svex::svex-lhsrewrite x-svex 0 x-size)
+                                 (svex::svex-z))))
+    (mv (ok)
+        (make-vl-portinfo-regular
+         :portname portname
+         :port-dir (vl-direction-fix portdir)
+         :argindex argindex
+         :port-expr portexpr
+         :conn-expr x.expr
+         :port-inner-lhs port-lhs
+         :port-outer-lhs port-outer-lhs
+         :conn-svex xsvex
+         :port-size 1
+         :conn-size x-size
+         :replicatedp (not multi))))
+  ///
+  (defret vars-of-vl-gate-plainarg-portinfo
+    (svex::svarlist-addr-p (vl-portinfo-vars res))
+    :hints(("Goal" :in-theory (enable vl-portinfo-vars svex::lhatom-vars)))))
+
+(fty::deflist vl-directionlist :elt-type vl-direction-p
+  :elementp-of-nil nil)
+
+(define vl-gate-plainarglist-portinfo ((x vl-plainarglist-p)
+                                       (portnames string-listp)
+                                       (portdirs vl-directionlist-p)
+                                       (argindex natp)
+                                       (ss vl-scopestack-p)
+                                       (arraysize maybe-posp))
+  :guard (and (eql (len x) (len portnames))
+              (eql (len x) (len portdirs)))
+  :returns (mv (warnings vl-warninglist-p)
+               (portinfo vl-portinfolist-p))
+  (if (atom x)
+      (mv nil nil)
+    (b* ((warnings nil)
+         ((wmv warnings portinfo1)
+          (vl-gate-plainarg-portinfo
+           (car x) (car portnames) (car portdirs) argindex ss arraysize))
+         ((wmv warnings portinfo2)
+          (vl-gate-plainarglist-portinfo
+           (cdr x) (cdr portnames) (cdr portdirs)
+           (1+ (lnfix argindex)) ss arraysize)))
+      (mv warnings
+          (cons portinfo1 portinfo2))))
+  ///
+  (defret vars-of-vl-gate-plainarglist-portinfo
+    (svex::svarlist-addr-p (vl-portinfolist-vars portinfo))
+    :hints(("Goal" :in-theory (enable vl-portinfolist-vars)))))
+
+
 (define vl-plainarg-portinfo ((x vl-plainarg-p)
                               (y vl-port-p)
                               (argindex natp)
@@ -970,7 +1126,10 @@ constructed separately.)</p>"
                                           svex::svex-concat
                                           svex::4vec-index-p))))
   :guard-debug t
-  
+  :prepwork ((local (defthm lhssvex-unbounded-p-of-svex-var-from-name
+                      (svex::lhssvex-unbounded-p (svex-var-from-name name))
+                      :hints(("Goal" :in-theory (enable svex-var-from-name
+                                                        svex::lhssvex-unbounded-p))))))
   (b* (((fun (fail warnings)) (mv warnings (make-vl-portinfo-bad)))
        ((vl-plainarg x) (vl-plainarg-fix x))
        (y (vl-port-fix y))
@@ -996,13 +1155,8 @@ constructed separately.)</p>"
                          :msg "Connection to interfaceport ~a0 must be a ~
                                simple ID, for the moment: ~a1"
                          :args (list y.name x.expr))))
-             (xvar (svex::make-svex-var :name (svex::address->svar
-                                               (svex::make-address
-                                                :path (svex::make-path-wire :name (vl-idexpr->name x.expr))))))
-             (yvar (svex::make-svex-var :name (svex::address->svar
-                                               (svex::make-address
-                                                :path
-                                                (svex::make-path-wire :name (vl-idexpr->name x.expr))))))
+             (xvar (svex-var-from-name (vl-idexpr->name x.expr)))
+             (yvar (svex-var-from-name y.name))
              ;; ((mv ok yvar) (svex-add-namespace instname yvar))
              ;; (- (or ok (raise "Programming error: malformed variable in expression ~x0"
              ;;                  yvar)))
@@ -1050,13 +1204,7 @@ constructed separately.)</p>"
                      :args (list err))))
 
        (y-outer-lhs (if arraysize
-                        (list (svex::make-lhrange
-                               :w (if multi (* y-size (lposfix arraysize)) y-size)
-                               :atom (svex::make-lhatom-var
-                                      :name (svex::address->svar
-                                             (svex::make-address
-                                              :path (svex::make-path-wire :name y.name)))
-                                      :rsh 0)))
+                        (svex-lhs-from-name y.name :width (if multi (* y-size (lposfix arraysize)) y-size))
                       y-lhs))
 
        ;; This seems wrong, what is supposed to happen if the port connection
@@ -1066,8 +1214,8 @@ constructed separately.)</p>"
        ;;                 (< xwidth ywidth))
        ;;            (svex::lhs-concat xwidth y-lhs nil)
        ;;          y-lhs))
-       (xsvex (svex::svex-concat y-size
-                                 (svex::svex-lhsrewrite x-svex 0 y-size)
+       (xsvex (svex::svex-concat x-size
+                                 (svex::svex-lhsrewrite x-svex 0 x-size)
                                  (svex::svex-z))))
     (mv (ok)
         (make-vl-portinfo-regular
@@ -1328,14 +1476,14 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
    (instindex integerp)
    (instoffset natp)
    (inst-incr integerp)
-   (inst-modname stringp))
+   (inst-modname svex::modname-p))
   :guard (svex::svarlist-addr-p (vl-portinfolist-vars x))
   :guard-hints ((and stable-under-simplificationp
-                     '(:in-theory (enable svex::modname-p svex::name-p))))
+                     '(:in-theory (enable svex::name-p))))
   :returns (mv (aliases svex::lhspairs-p)
                (modinsts svex::modinstlist-p))
   (b* ((instindex (lifix instindex))
-       (inst-modname (string-fix inst-modname))
+       (inst-modname (svex::modname-fix inst-modname))
 
        ((when (zp instoffset)) (mv nil nil))
        (aliases1
@@ -1469,8 +1617,10 @@ how VL module instances are translated.</p>"
         (vl-plainarglist-portinfo
          x.plainargs i.ports 0 ss inst-modname inst-ss arraywidth))
 
-       ((wmv warnings assigns aliases :ctx x)
+       ((wmv warnings portassigns portaliases :ctx x)
         (vl-portinfolist-to-svex-assigns/aliases portinfo x.instname))
+       (assigns (append-without-guard portassigns assigns))
+       (aliases (append-without-guard portaliases aliases))
 
        ((wmv warnings ifwires ifaliases :ctx x)
         (if (eq (tag inst-mod) :vl-interface)
@@ -1560,6 +1710,365 @@ how VL module instances are translated.</p>"
              (svex::svarlist-addr-p (svex::lhspairs-vars aliases1))))
   (defret vars-of-vl-modinstlist->svex-assigns/aliases-modalist
     (svex::svarlist-addr-p (svex::modalist-vars modalist))))
+
+
+(define vl-gatetypenames-count-up ((n natp)
+                                   (idx natp)
+                                   (basename stringp))
+  :returns (names (and (string-listp names)
+                       (eql (len names) (nfix n))))
+  (if (zp n)
+      nil
+    (cons (cat basename (natstr idx))
+          (vl-gatetypenames-count-up (1- n) (1+ (lnfix idx)) basename)))
+  ///
+  (defret vl-gatetypenames-count-up-under-iff
+    (iff (vl-gatetypenames-count-up n idx basename)
+         (posp n))))
+
+(define svex-vars-from-names ((x string-listp))
+  :returns (svexes svex::svexlist-p)
+  (if (atom x)
+      nil
+    (cons (svex-var-from-name (car x))
+          (svex-vars-from-names (cdr x))))
+  ///
+  (defret len-of-svex-vars-from-names
+    (equal (len svexes) (len x)))
+  (defret svex-vars-from-names-under-iff
+    (iff svexes (consp x)))
+
+  (defret svarlist-addr-p-of-svex-vars-from-names
+    (svex::svarlist-addr-p (svex::svexlist-vars svexes))))
+
+(define svex-lhses-from-names ((x string-listp))
+  :returns (lhses svex::lhslist-p)
+  (if (atom x)
+      nil
+    (cons (svex-lhs-from-name (car x))
+          (svex-lhses-from-names (cdr x))))
+  ///
+  (defret len-of-svex-lhses-from-names
+    (equal (len lhses) (len x)))
+
+  (defret svarlist-addr-p-of-svex-lhses-from-names
+    (svex::svarlist-addr-p (svex::lhslist-vars lhses))
+    :hints(("Goal" :in-theory (enable svex::lhslist-vars)))))
+
+(define svcall-join (operator
+                     (args svex::svexlist-p))
+  :guard (and (assoc operator svex::*svex-op-table*)
+              (consp args))
+  :verify-guards nil
+  :returns (svex svex::svex-p)
+  (if (atom (cdr args))
+      (svex::svex-fix (car args))
+    (svex::svex-call operator (list (car args)
+                                    (svcall-join operator (cdr args)))))
+  ///
+  (verify-guards svcall-join)
+
+  (defret vars-of-svcall-join
+    (implies (not (member v (svex::svexlist-vars args)))
+             (not (member v (svex::svex-vars svex))))))
+
+
+(define vl-gatetype-names/dirs/assigns ((type vl-gatetype-p)
+                                        (nargs natp))
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (unimplemented)
+               (assigns   svex::assigns-p)
+               (portnames (and (string-listp portnames)
+                               (implies (not err)
+                                        (eql (len portnames) (nfix nargs)))))
+               (portdirs (and (vl-directionlist-p portdirs)
+                              (implies (not err)
+                                       (eql (len portdirs) (nfix nargs))))))
+  :prepwork ((local
+              #!svex (defthm assigns-p-of-pairlis
+                       (implies (and (lhslist-p x)
+                                     (driverlist-p y)
+                                     (equal (len x) (len y)))
+                                (assigns-p (pairlis$ x y)))
+                       :hints(("Goal" :in-theory (enable pairlis$ assigns-p))))))
+  (b* ((nargs (lnfix nargs))
+       (type (vl-gatetype-fix type)))
+    (case type
+      ((:vl-cmos :vl-rcmos)
+       (mv (if (eql nargs 4) nil (vmsg "Need 4 arguments for ~x0" type))
+           t nil
+           '("out" "in" "ncontrol" "pcontrol")
+           '(:vl-output :vl-input :vl-input :vl-input)))
+      ((:vl-bufif0 :vl-bufif1 :vl-notif0 :vl-notif1
+        :vl-nmos :vl-rnmos :vl-pmos :vl-rpmos)
+       (mv (if (eql nargs 3) nil (vmsg "Need 3 arguments for ~x0" type))
+           t nil
+           '("out" "in" "control")
+           '(:vl-output :vl-input :vl-input)))
+      ((:vl-and :vl-nand :vl-or :vl-nor :vl-xor :vl-xnor)
+       (if (< nargs 2)
+           (mv (vmsg "Need 2 or more arguments for ~x0" type) nil nil nil nil)
+         (b* ((ins (vl-gatetypenames-count-up (1- nargs) 1 "in"))
+              (svex-ins (svex-vars-from-names ins))
+              (assigns  (list (cons (svex-lhs-from-name "out")
+                                    (svex::make-driver
+                                     :value
+                                     (case type
+                                       (:vl-and  (svcall-join 'svex::bitand svex-ins))
+                                       (:vl-nand (svex::svcall svex::bitnot (svcall-join 'svex::bitand svex-ins)))
+                                       (:vl-or   (svcall-join 'svex::bitor svex-ins))
+                                       (:vl-nor  (svex::svcall svex::bitnot (svcall-join 'svex::bitor svex-ins)))
+                                       (:vl-xor  (svcall-join 'svex::bitxor svex-ins))
+                                       (:vl-xnor (svex::svcall svex::bitnot (svcall-join 'svex::bitxor svex-ins))))))))
+              (portnames (cons "out" ins))
+              (portdirs (cons :vl-output (repeat (1- nargs) :vl-input))))
+         (mv nil nil assigns portnames portdirs))))
+      ((:vl-buf :vl-not)
+       (if (< nargs 2)
+           (mv (vmsg "Need 2 or more arguments for ~x0" type) nil nil nil nil)
+         (b* ((outs (vl-gatetypenames-count-up (1- nargs) 1 "out"))
+              (out-lhses (svex-lhses-from-names outs))
+              (in-var (svex-var-from-name "in"))
+              (assigns (pairlis$ out-lhses
+                                 (repeat (1- nargs)
+                                         (svex::make-driver
+                                          :value
+                                          (case type
+                                            (:vl-buf (svex::svcall svex::unfloat in-var))
+                                            (:vl-not (svex::svcall svex::bitnot in-var)))))))
+              (portnames (append outs '("in")))
+              (portdirs (append (repeat (1- nargs) :vl-output) '(:vl-input))))
+           (mv nil nil assigns portnames portdirs))))
+      ((:vl-tranif0 :vl-tranif1 :vl-rtranif0 :vl-rtranif1)
+       (mv (if (eql nargs 3) nil (vmsg "Need 3 arguments for ~x0" type))
+           t nil
+           '("inout1" "inout2" "control")
+           '(:vl-inout :vl-inout :vl-input)))
+      ((:vl-tran :vl-rtran)
+       (mv (if (eql nargs 2) nil (vmsg "Need 2 arguments for ~x0" type))
+           t nil
+           '("inout1" "inout2")
+           '(:vl-inout :vl-inout)))
+      ((:vl-pullup :vl-pulldown)
+       (mv (if (eql nargs 1) nil (vmsg "Need 1 argument for ~x0" type))
+           t nil
+           '("net")
+           '(:vl-inout)))
+      (otherwise
+       (prog2$ (impossible)
+               (mv (vmsg "Impossible") nil nil nil nil)))))
+  ///
+  (local #!svex (defthm assigns-vars-of-pairlis$
+                  (implies (and (not (member v (lhslist-vars x)))
+                                (not (member v (driverlist-vars y))))
+                           (not (member v (assigns-vars (pairlis$ x y)))))
+                  :hints(("Goal" :in-theory (enable pairlis$
+                                                    assigns-vars
+                                                    driverlist-vars
+                                                    lhslist-vars)))))
+
+  (local #!svex (defthm driverlist-vars-of-repeat
+                  (implies (not (member v (svex-vars (driver->value x))))
+                           (not (member v (driverlist-vars (repeat n x)))))
+                  :hints(("Goal" :in-theory (enable repeat driverlist-vars)))))
+  
+  (defret svarlist-addr-p-of-vl-gatetype-names/dirs/assigns
+    (svex::svarlist-addr-p (svex::assigns-vars assigns))
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (enable svex::assigns-vars))))))
+
+(define svex-gateinst-wirelist ((names string-listp))
+  :returns (wires svex::wirelist-p)
+  :prepwork ((local (in-theory (enable svex::name-p))))
+  (if (atom names)
+      nil
+    (cons (svex::make-wire :name (string-fix (car names))
+                           :width 1
+                           :low-idx 0
+                           :revp nil)
+          (svex-gateinst-wirelist (cdr names)))))
+
+
+(define vl-gate-make-svex-module ((type vl-gatetype-p)
+                                  (nargs natp))
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (portnames (and (string-listp portnames)
+                               (implies (not err)
+                                        (eql (len portnames) (nfix nargs)))))
+               (portdirs (and (vl-directionlist-p portdirs)
+                              (implies (not err)
+                                       (eql (len portdirs) (nfix nargs)))))
+               (svmod (implies (not err) (svex::module-p svmod))))
+  (b* (((mv err unimpl assigns portnames portdirs)
+        (vl-gatetype-names/dirs/assigns type nargs))
+       ((when err) (mv err nil nil nil))
+       (wires (svex-gateinst-wirelist portnames))
+       ((when unimpl) (mv (vmsg "Unimplemented gate: ~x0" (vl-gatetype-fix type))
+                          nil nil nil)))
+    (mv nil portnames portdirs
+        (svex::make-module :wires wires
+                           :assigns assigns)))
+  ///
+  (defret svarlist-addr-p-of-vl-gate-make-svex-module
+    (svex::svarlist-addr-p (svex::module-vars svmod))
+    :hints(("Goal" :in-theory (enable svex::module-vars)))))
+       
+
+
+
+
+
+(define vl-gateinst->svex-assigns/aliases ((x vl-gateinst-p)
+                                          (ss vl-scopestack-p)
+                                          (wires   svex::wirelist-p)
+                                          (assigns svex::assigns-p)
+                                          (aliases svex::lhspairs-p)
+                                          (context-mod svex::modname-p))
+  ;; BOZO deal with gatedelays and transistors someday
+  :returns (mv (warnings vl-warninglist-p)
+               (wires   svex::wirelist-p "Wires representing instantiated interfaces")
+               (assigns1 svex::assigns-p  "Assignments for nontrivial port expressions")
+               (aliases1 svex::lhspairs-p "Aliases for trivial port expressions")
+               (modinsts svex::modinstlist-p "The instance created")
+               (modalist svex::modalist-p    "Possibly a new module implementing an instance array."))
+  :prepwork ((local (defthm vl-scope-p-when-vl-module-p-strong
+                      (implies (or (vl-module-p x)
+                                   (vl-interface-p x))
+                               (vl-scope-p x))))
+             (local (in-theory (enable svex::modname-p svex::name-p))))
+  :short "Produces all the new svex module components associated with a VL module
+          instance or instance array."
+  :long "<p>See @(see vl-hierarchy-svex-translation) for more information on
+how VL module instances are translated.</p>"
+
+  (b* (((vl-gateinst x) (vl-gateinst-fix x))
+       (wires (svex::wirelist-fix wires))
+       (assigns (svex::assigns-fix assigns))
+       (aliases (svex::lhspairs-fix aliases))
+       (context-mod (svex::modname-fix context-mod))
+       (warnings nil)
+
+       (nargs (len x.args))
+       ((mv err portnames portdirs svex-mod)
+        (vl-gate-make-svex-module x.type nargs))
+       ((when err)
+        (mv (fatal :type :vl-gateinst->svex-fail
+                   :msg "~a0: bad gate instance: ~@1"
+                  :args (list x err))
+            wires assigns aliases
+            nil nil))
+
+       ((unless (vl-maybe-range-resolved-p x.range))
+        (mv (fatal :type :vl-gateinst->svex-fail
+                  :msg "~a0: Unresolved gate instance array range"
+                  :args (list x))
+            wires assigns aliases nil nil))
+       (arraywidth (and x.range (vl-range-size x.range)))
+
+       ((unless x.name)
+        ;; This is taken care of in vl-design-addinstnames.
+        (mv (fatal :type :Vl-gateinst->svex-fail
+                   :msg "~a0: Unnamed gate instance not allowed"
+                   :args (list x))
+            wires assigns aliases nil nil))
+
+       ((wmv warnings portinfo)
+        (vl-gate-plainarglist-portinfo
+         x.args portnames portdirs 0 ss arraywidth))
+
+       ((wmv warnings portassigns portaliases :ctx x)
+        (vl-portinfolist-to-svex-assigns/aliases portinfo x.name))
+       (assigns (append-without-guard portassigns assigns))
+       (aliases (append-without-guard portaliases aliases))
+
+       (gate-modname (hons-copy `(:gate ,x.type ,nargs)))
+       (modalist (list (cons gate-modname svex-mod)))
+
+       ((unless arraywidth)
+        ;; no instance array -> we're done.
+        (mv (vl-warninglist-add-ctx warnings x)
+            wires assigns aliases
+            (list (svex::make-modinst :instname x.name :modname gate-modname))
+            nil))
+
+       (array-modname (list :arraymod context-mod x.name))
+
+       (modinst (svex::make-modinst :instname x.name
+                                    :modname array-modname))
+
+       (arraymod-wiredecls (vl-instarray-portlist-wiredecls portinfo arraywidth))
+       ((mv arraymod-aliases arraymod-modinsts)
+        (vl-instarray-nested-aliases
+         portinfo
+         (vl-range-msbidx x.range)
+         arraywidth
+         (if (vl-range-revp x.range) 1 -1)
+         gate-modname))
+
+       (arraymod (svex::make-module :wires arraymod-wiredecls
+                                    :insts arraymod-modinsts
+                                    :aliaspairs arraymod-aliases)))
+
+    (mv warnings wires assigns aliases
+        (list modinst)
+        (cons (cons array-modname arraymod) modalist)))
+  ///
+  (defret vars-of-vl-gateinst->svex-assigns/aliases-assigns
+    (implies (svex::svarlist-addr-p (svex::assigns-vars assigns))
+             (svex::svarlist-addr-p (svex::assigns-vars assigns1))))
+  (defret vars-of-vl-gateinst->svex-assigns/aliases-aliases
+    (implies (svex::svarlist-addr-p (svex::lhspairs-vars aliases))
+             (svex::svarlist-addr-p (svex::lhspairs-vars aliases1))))
+  (defret vars-of-vl-gateinst->svex-assigns/aliases-modalist
+    (svex::svarlist-addr-p (svex::modalist-vars modalist))
+    :hints(("Goal" :in-theory (enable svex::modalist-vars)))))
+
+
+(define vl-gateinstlist->svex-assigns/aliases ((x vl-gateinstlist-p)
+                                              (ss vl-scopestack-p)
+                                              (wires   svex::wirelist-p)
+                                              (assigns svex::assigns-p)
+                                              (aliases svex::lhspairs-p)
+                                              (context-mod svex::modname-p))
+  :short "Collects svex module components for a list of module/interface instances,
+          by collecting results from @(see vl-gateinst->svex-assigns/aliases)."
+  :returns (mv (warnings vl-warninglist-p)
+               (wires1   svex::wirelist-p)
+               (assigns1 svex::assigns-p)
+               (aliases1 svex::lhspairs-p)
+               (gateinsts svex::modinstlist-p)
+               (modalist svex::modalist-p))
+  (b* ((warnings nil)
+       ((when (atom x))
+        (mv nil
+            (svex::wirelist-fix wires)
+            (svex::assigns-fix assigns)
+            (svex::lhspairs-fix aliases)
+            nil nil))
+       ((wmv warnings wires assigns aliases insts1 modalist1)
+        (vl-gateinst->svex-assigns/aliases (car x) ss wires assigns aliases context-mod))
+       ((wmv warnings wires assigns aliases insts2 modalist2)
+        (vl-gateinstlist->svex-assigns/aliases (cdr x) ss wires assigns aliases context-mod)))
+    (mv warnings
+        wires assigns aliases
+        (append-without-guard insts1 insts2)
+        (append-without-guard modalist1 modalist2)))
+  ///
+  (defret vars-of-vl-gateinstlist->svex-assigns/aliases-assigns
+    (implies (svex::svarlist-addr-p (svex::assigns-vars assigns))
+             (svex::svarlist-addr-p (svex::assigns-vars assigns1))))
+  (defret vars-of-vl-gateinstlist->svex-assigns/aliases-aliases
+    (implies (svex::svarlist-addr-p (svex::lhspairs-vars aliases))
+             (svex::svarlist-addr-p (svex::lhspairs-vars aliases1))))
+  (defret vars-of-vl-gateinstlist->svex-assigns/aliases-modalist
+    (svex::svarlist-addr-p (svex::modalist-vars modalist))))
+
+
+
+
+
+
+
 
 (define vl-maybe-gatedelay->delay ((x vl-maybe-gatedelay-p))
   :returns (mv (warnings vl-warninglist-p)
@@ -2540,7 +3049,9 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
        ((wmv warnings assigns) (vl-assigns->svex-assigns x.assigns ss nil))
        ((wmv warnings wires assigns aliases insts arraymod-alist)
         (vl-modinstlist->svex-assigns/aliases x.modinsts ss wires assigns aliases modname))
-       (modalist (hons-shrink-alist arraymod-alist modalist))
+       ((wmv warnings wires assigns aliases ginsts gatemod-alist)
+        (vl-gateinstlist->svex-assigns/aliases x.gateinsts ss wires assigns aliases modname))
+       (modalist (hons-shrink-alist gatemod-alist (hons-shrink-alist arraymod-alist modalist)))
 
        ((wmv warnings always-assigns)
         (vl-alwayslist->svex x.alwayses ss))
@@ -2552,7 +3063,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
          x.generates 0 ss modname modalist))
 
        (module (svex::make-module :wires wires
-                                  :insts (append-without-guard gen-insts datainsts insts)
+                                  :insts (append-without-guard gen-insts datainsts ginsts insts)
                                   :assigns (append-without-guard always-assigns assigns)
                                   :aliaspairs aliases))
        (modalist (hons-shrink-alist arraymod-alist modalist)))

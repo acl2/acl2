@@ -34,6 +34,7 @@
 (include-book "std/io/read-file-lines" :dir :system)
 (include-book "../svtv/debug")
 (include-book "oslib/file-types" :dir :system)
+(local (include-book "centaur/misc/arith-equivs" :dir :System))
 (local (std::add-default-post-define-hook :fix))
 
 (local (in-theory (disable len nth)))
@@ -43,18 +44,13 @@
                       (loadconfig vl-loadconfig-p)
                       &key
                       ((simpconfig vl-simpconfig-p) '(make-vl-simpconfig))
-                      delay-sensitivep
-                      ((primalist vl-primalist-p)
-                       '*vl-gateinst-primitives-alist*)
                       (state 'state))
   (b* (((mv loadresult state)
         (vl-load (vl-loadconfig-fix loadconfig)))
        (design (vl-loadresult->design loadresult))
        ((mv err svex-design good bad)
         (vl-design->svex-design (string-fix topmod) design
-                                (vl-simpconfig-fix simpconfig)
-                                :delay-sensitivep delay-sensitivep
-                                :primalist (vl-primalist-fix primalist)))
+                                (vl-simpconfig-fix simpconfig)))
        ((when err)
         (cw "Failed: ~@0" err)
         (mv nil design state)))
@@ -76,6 +72,8 @@
   (acl2::read-file-lines (cat *testname* "/inputs.data") state))
 ||#
 
+
+
 (define str->4vec-aux ((x stringp)
                        (len natp)
                        (idx natp)
@@ -88,7 +86,7 @@
                (lo integerp :rule-classes :type-prescription))
   :prepwork ((local (in-theory (disable acl2::member-of-cons
                                         member nth
-                                        acl2::nfix-when-not-natp
+                                        ;; acl2::nfix-when-not-natp
                                         (tau-system)
                                         logior ash))))
   :hooks ((:fix :hints (("Goal" :in-theory (disable (:d str->4vec-aux))

@@ -48,6 +48,6 @@
 ;;   (setq *acl2-default-restart-complete* t)
 ;;   nil)
 
-(save-exec "../../../images/cosim-core"
+(save-exec "cosim-core"
            "svex cosim framework is built in."
            :host-lisp-args "-Z 256M")

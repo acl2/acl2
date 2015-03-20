@@ -238,6 +238,13 @@ that package.</li>
 elements.")
 
 (local (xdoc::set-default-parents immdeps-main))
+
+(local (defthm hidname-equals-$root
+         (implies (vl-hidname-p x)
+                  (equal (equal x :vl-$root)
+                         (not (stringp x))))
+         :hints(("Goal" :in-theory (enable vl-hidname-p)))))
+
 (define vl-scopeexpr-top-immdeps
   ((x vl-scopeexpr-p)
    (ans vl-immdeps-p)
@@ -248,8 +255,10 @@ elements.")
   (vl-scopeexpr-case x
     :end (vl-hidexpr-case x.hid
            :end (vl-immdeps-add-item x.hid.name ans)
-           :dot (vl-immdeps-add-item
-                 (vl-hidindex->name x.hid.first) ans))
+           :dot (b* ((name (vl-hidindex->name x.hid.first)))
+                  (if (eq name :vl-$root)
+                      (vl-immdeps-fix ans)
+                    (vl-immdeps-add-item name ans))))
     :colon
     (if (stringp x.first)
         (vl-immdeps-add-item x.first ans)

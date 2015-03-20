@@ -1229,6 +1229,12 @@ be resolved.</p>"
         (t
          (vl-genarrayblocklist-find-block idx (cdr x)))))
 
+(local (defthm stringp-when-hidname-and-not-$root
+         (implies (vl-hidname-p x)
+                  (equal (equal x :vl-$root)
+                         (not (stringp x))))
+         :hints(("Goal" :in-theory (enable vl-hidname-p)))))
+
 (with-output
   :evisc (:gag-mode (evisc-tuple 3 4 nil nil)
           :term nil)
@@ -1276,6 +1282,10 @@ top-level hierarchical identifiers.</p>"
             :end (mv x.name nil nil :end)
             :dot (b* (((vl-hidindex x.first)))
                    (mv x.first.name x.first.indices x.rest :dot))))
+
+         ((when (eq name1 :vl-$root))
+          (mv (vl-follow-hidexpr-error (vmsg "$root is not yet supported") ss)
+              trace x))
 
          ((mv item item-ss) (vl-scopestack-find-item/ss name1 ss))
          ((unless item)
@@ -1708,6 +1718,10 @@ instance, in this case the @('tail') would be
                  (mv x.first.name x.first.indices x.rest :dot))))
 
        (trace nil)
+
+       ((when (eq name1 :vl-$root))
+        (mv (vl-follow-hidexpr-error "$root isn't supported yet" ss)
+            trace nil x))
 
        ((mv item ctx-ss pkg-name) (vl-scopestack-find-item/context name1 ss))
        ((when item)
@@ -3797,20 +3811,25 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
        ;; Next we're going to dot-index into the datatype, so get its
        ;; structmembers, making sure it's a struct.
        ((mv ok members) (vl-datatype->structmembers type))
+       (nextname (vl-hidexpr-case x.rest
+                   :end x.rest.name
+                   :dot (vl-hidindex->name x.rest.first)))
+
+       ;; Look up the member corresponding to the next name in the hid.
        ((unless (and ok
                      (atom (vl-datatype->udims type))
                      (atom (vl-datatype->pdims type))))
         (mv (vmsg "Dot-indexing (field ~s0) into a non-struct/union datatype: ~a1"
+                  nextname
                   (vl-datatype-update-dims (append-without-guard
                                             (vl-datatype->udims type)
                                             (vl-datatype->pdims type))
                                            nil type))
             nil))
-
-       ;; Look up the member corresponding to the next name in the hid.
-       (nextname (vl-hidexpr-case x.rest
-                   :end x.rest.name
-                   :dot (vl-hidindex->name x.rest.first)))
+       ((when (eq nextname :vl-$root))
+        (mv (vmsg "Can't use $root to index into a data structure: ~a0"
+                  (vl-hidexpr-fix x))
+            nil))
        (member (vl-find-structmember nextname members))
        ((unless member)
         (mv (vmsg "Dot-indexing failed: struct/union member ~
@@ -4881,6 +4900,9 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
   :measure (vl-expr-count x)
   :guard-hints(("Goal" :in-theory (enable vl-hidindex-resolved-p)))
   (b* ((name    (vl-hidindex->name x))
+       (name    (if (eq name :vl-$root)
+                    "$root"
+                  name))
        (indices (vl-hidindex->indices x))
        ((when (atom indices))
         name)

@@ -2255,18 +2255,41 @@ functions can assume all bits of it are good.</p>"
 
         :vl-cast
         ;; If we get here, we've already gotten the size/signedness of the cast
-        ;; type and decided it's OK as a vector type.  However, the inner
+        ;; expression and decided it's OK as a vector type.  However, the inner
         ;; expression might not be a vector expression -- e.g. the type could
         ;; be a packed struct and the inner expression an assignment pattern
         ;; creating that struct.  So we have to use vl-expr-to-svex-datatyped
         ;; here.
-        (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to conf.ss))
-             ((when err)
-              (mv (fatal :type :vl-expr-to-svex-fail
-                         :msg "Usertypes not resolved in cast ~a0: ~@1"
-                         :args (list x err))
-                  (svex-x))))
-          (vl-expr-to-svex-datatyped x.expr to-type conf))
+        (vl-casttype-case x.to
+          :type (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to.type conf.ss))
+                     ((when err)
+                      (mv (fatal :type :vl-expr-to-svex-fail
+                                 :msg "Usertypes not resolved in cast ~a0: ~@1"
+                                 :args (list x err))
+                          (svex-x))))
+                  (vl-expr-to-svex-datatyped x.expr to-type conf))
+          :size (b* (((unless (vl-expr-resolved-p x.to.size))
+                      (mv (fatal :type :vl-expr-to-svex-fail
+                                 :msg "Unresolved size cast: ~a0"
+                                 :args (list x))
+                          (svex-x)))
+                     ((mv warnings svex &)
+                      (vl-expr-to-svex-selfdet x.expr nil conf)))
+                  (mv warnings svex))
+          :signedness
+          ;; Don't need to do anything about the signedness here; it only
+          ;; affects the expressions outside this one.  Also, tests seem to
+          ;; indicate that the signedness cast is opaque, so we fortunately
+          ;; don't need a contextsize.
+          (b* (((mv warnings svex &)
+                (vl-expr-to-svex-selfdet x.expr nil conf)))
+            (mv warnings svex))
+          :const
+          ;; What does this even mean?
+          (b* (((mv warnings svex &)
+                (vl-expr-to-svex-selfdet x.expr nil conf)))
+            (mv warnings svex)))
+                     
 
         :vl-pattern
         (b* (((unless x.pattype)
@@ -2467,22 +2490,35 @@ functions can assume all bits of it are good.</p>"
               svex))
 
         :vl-cast
-        (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to conf.ss))
-             ((when err)
-              (mv (fatal :type :vl-expr-to-svex-fail
-                         :msg "Usertypes not resolved in cast ~a0: ~@1"
-                         :args (list x err))
-                  (svex-x)))
-             ((wmv warnings svex)
-              (vl-expr-to-svex-datatyped x.expr to-type conf))
-             (err (vl-compare-datatypes type to-type)))
-          (mv (if err
-                  (fatal :type :vl-expr-to-svex-fail
-                         :msg "Type mismatch: ~a0 has type ~a1 but ~
+        (vl-casttype-case x.to
+          :type (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to.type conf.ss))
+                     ((when err)
+                      (mv (fatal :type :vl-expr-to-svex-fail
+                                 :msg "Usertypes not resolved in cast ~a0: ~@1"
+                                 :args (list x err))
+                          (svex-x)))
+                     ((wmv warnings svex)
+                      (vl-expr-to-svex-datatyped x.expr to-type conf))
+                     (err (vl-compare-datatypes type to-type)))
+                  (mv (if err
+                          (fatal :type :vl-expr-to-svex-fail
+                                 :msg "Type mismatch: ~a0 has type ~a1 but ~
                                should be ~a2. More: ~@3"
-                         :args (list x x.to (vl-datatype-fix type) err))
-                (ok))
-              svex))
+                                 :args (list x x.to (vl-datatype-fix type) err))
+                        (ok))
+                      svex))
+          :const ;; Maybe we just ignore this?
+          (vl-expr-to-svex-datatyped x.expr type conf)
+          :otherwise
+          ;; This seems bogus, we have a non-packed type but we're casting to a
+          ;; signedness or size.
+          (mv (fatal :type :vl-expr-to-svex-fail
+                     :msg "~s0 cast in non-vector context: ~a1"
+                     :args (list (if (eq x.kind :signedness)
+                                     "Signedness"
+                                   "Size")
+                                 x))
+              (svex-x)))
 
         :vl-mintypmax
         (mv (fatal :type :vl-expr-to-svex-fail

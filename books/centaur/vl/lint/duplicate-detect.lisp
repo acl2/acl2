@@ -172,15 +172,30 @@ things might well be copy/paste errors.</p>")
        (rest    (vl-duplicate-assign-warnings (cdr dupes) fixed orig modname)))
     (cons warning rest)))
 
+(defthm len-of-vl-assignlist-strip
+  (equal (len (vl-assignlist-strip x))
+         (len x))
+  :hints(("Goal" :in-theory (enable vl-assignlist-strip))))
+
+(defthm len-of-vl-modinstlist-strip
+  (equal (len (vl-modinstlist-strip x))
+         (len x))
+  :hints(("Goal" :in-theory (enable vl-modinstlist-strip))))
+
+(defthm len-of-vl-gateinstlist-strip
+  (equal (len (vl-gateinstlist-strip x))
+         (len x))
+  :hints(("Goal" :in-theory (enable vl-gateinstlist-strip))))
+
 (define vl-module-duplicate-detect ((x vl-module-p))
   :short "Detect duplicate assignments and instances throughout a module."
   :returns (new-x vl-module-p :hyp :fguard
                   "Same as @('x'), but perhaps with more warnings.")
   (b* (((vl-module x) x)
 
-       (gateinsts-fix (vl-gateinstlist-strip x.gateinsts))
-       (modinsts-fix  (vl-modinstlist-strip x.modinsts))
-       (assigns-fix   (vl-assignlist-strip x.assigns))
+       (gateinsts-fix (list-fix (vl-gateinstlist-strip x.gateinsts)))
+       (modinsts-fix  (list-fix (vl-modinstlist-strip x.modinsts)))
+       (assigns-fix   (list-fix (vl-assignlist-strip x.assigns)))
 
        (gateinst-dupes (duplicated-members gateinsts-fix))
        (modinst-dupes  (duplicated-members modinsts-fix))

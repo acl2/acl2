@@ -1852,6 +1852,19 @@ bits of @('foo'):</p>
 
 (deflist lhslist :elt-type lhs :true-listp t :elementp-of-nil t)
 
+(define lhslist-vars ((x lhslist-p))
+  :measure (len x)
+  :returns (vars svarlist-p)
+  (if (atom x)
+      nil
+    (append (lhs-vars (car x))
+            (lhslist-vars (cdr x))))
+  ///
+  (defthm lhslist-vars-of-append
+    (equal (lhslist-vars (append a b))
+           (append (lhslist-vars a)
+                   (lhslist-vars b)))))
+
 (defthm lhsarrp-is-lhslist-p
   (equal (lhsarr$ap x)
          (lhslist-p x)))

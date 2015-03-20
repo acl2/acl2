@@ -60,7 +60,7 @@
        ((when err)
         (mv (fatal :type :vl-selfsize-fail
                    :msg "Failed to find the type of ~a0: ~@1"
-                   :args (list x))
+                   :args (list x err))
             nil))
        ((vl-operandinfo opinfo))
        ((mv err size)
@@ -859,24 +859,33 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
                      (vl-syscall-selfsize x ss)
                    (vl-funcall-selfsize x ss))
 
-        :vl-cast (b* (((mv err to-type)
-                       (vl-datatype-usertype-resolve x.to ss))
-                      ((when err)
-                       (mv (fatal :type :vl-selfsize-fail
-                                  :msg "Failed to resolve the type in ~
+        :vl-cast (vl-casttype-case x.to
+                   :type (b* (((mv err to-type)
+                               (vl-datatype-usertype-resolve x.to.type ss))
+                              ((when err)
+                               (mv (fatal :type :vl-selfsize-fail
+                                          :msg "Failed to resolve the type in ~
                                         cast expression ~a0: ~@1"
-                                  :args (list x err))
-                           nil))
-                      ((mv err size) (vl-datatype-size to-type))
-                      ((when err)
-                       (mv (fatal :type :vl-selfsize-fail
-                                  :msg "Failed to size the type in ~
+                                          :args (list x err))
+                                   nil))
+                              ((mv err size) (vl-datatype-size to-type))
+                              ((when err)
+                               (mv (fatal :type :vl-selfsize-fail
+                                          :msg "Failed to size the type in ~
                                         cast expression ~a0: ~@1"
-                                  :args (list x err))
-                           nil))
-                      ((unless (vl-datatype-packedp to-type))
-                       (mv (ok) nil)))
-                   (mv (ok) size))
+                                          :args (list x err))
+                                   nil))
+                              ((unless (vl-datatype-packedp to-type))
+                               (mv (ok) nil)))
+                           (mv (ok) size))
+                   :size (b* (((when (vl-expr-resolved-p x.to.size))
+                               (mv (ok) (vl-resolved->val x.to.size))))
+                           (mv (fatal :type :vl-selfsize-fail
+                                      :msg "Unresolved size in cast expression ~a0"
+                                      :args (list x))
+                               nil))
+                   :otherwise (vl-expr-selfsize x.expr ss))
+                              
 
         ;; returns a single bit
         :vl-inside (mv (ok) 1)
@@ -1029,6 +1038,10 @@ sign-extend it and don't change any of its operands.</p>"
     ;; Arguably these two are only applicable if the type is packed, but it's
     ;; not this function's job to make that distinction.
     :vl-call :opaque
+
+    ;; Subtle! It could well be that a signedness-only cast could be
+    ;; transparent where a size or datatype cast is opaque, but vcs and
+    ;; ncverilog seem to treat them all as opaque.
     :vl-cast :opaque
     :vl-pattern :opaque
 

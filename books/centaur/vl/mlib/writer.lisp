@@ -601,6 +601,11 @@ displays.  The module browser's web pages are responsible for defining the
     (:left "<<")
     (otherwise ">>")))
 
+(local (defthm hidname-equals-$root
+         (implies (vl-hidname-p x)
+                  (equal (equal x :vl-$root)
+                         (not (stringp x))))
+         :hints(("Goal" :in-theory (enable vl-hidname-p)))))
 
 (defines vl-pp-expr
   :prepwork ((local (in-theory (disable acl2::member-of-cons))))
@@ -617,7 +622,10 @@ displays.  The module browser's web pages are responsible for defining the
   (define vl-pp-hidindex ((x vl-hidindex-p) &key (ps 'ps))
     :measure (two-nats-measure (vl-hidindex-count x) 10)
     (b* (((vl-hidindex x)))
-      (vl-ps-seq (vl-ps-span "vl_id" (vl-print-str x.name))
+      (vl-ps-seq (vl-ps-span "vl_id"
+                             (vl-print-str (if (eq x.name :vl-$root)
+                                               "$root"
+                                             x.name)))
                  (vl-pp-indexlist x.indices))))
 
   (define vl-pp-hidexpr ((x vl-hidexpr-p) &key (ps 'ps))
@@ -740,6 +748,18 @@ displays.  The module browser's web pages are responsible for defining the
                                     (vl-print " }")))
                (vl-print "}")))
 
+  (define vl-pp-casttype ((x vl-casttype-p) &key (ps 'ps))
+    :measure (two-nats-measure (vl-casttype-count x) 10)
+    (vl-casttype-case x
+      :type (vl-pp-datatype x.type)
+      :size (vl-pp-expr x.size)
+      :signedness (vl-ps-span "vl_key"
+                              (if x.signedp
+                                  (vl-print "signed")
+                                (vl-print "unsigned")))
+      :const (vl-ps-span "vl_key" (vl-print "const"))))
+
+
   (define vl-pp-expr ((x vl-expr-p) &key (ps 'ps))
     :measure (two-nats-measure (vl-expr-count x) 10)
     :ruler-extenders :all
@@ -860,10 +880,12 @@ displays.  The module browser's web pages are responsible for defining the
         :vl-stream (vl-ps-seq (vl-print "{")
                               (vl-print-str (vl-leftright-string x.dir))
                               (vl-print " ")
-                              (if x.size
-                                  (vl-ps-seq (vl-pp-expr x.size)
-                                             (vl-print " "))
-                                ps)
+                              (vl-slicesize-case x.size
+                                :expr (vl-ps-seq (vl-pp-expr x.size.expr)
+                                                 (vl-print " "))
+                                :type (vl-ps-seq (vl-pp-datatype x.size.type)
+                                                 (vl-print " "))
+                                :otherwise ps)
                               (vl-print "{")
                               (vl-pp-streamexprlist x.parts)
                               (vl-print "}}"))
@@ -875,7 +897,7 @@ displays.  The module browser's web pages are responsible for defining the
 
         :vl-cast (vl-ps-seq
                   ;; Do we ever need parens around the type?
-                  (vl-pp-datatype x.to)
+                  (vl-pp-casttype x.to)
                   (vl-print "' (")
                   (vl-pp-expr x.expr)
                   (vl-print ")"))
@@ -889,13 +911,16 @@ displays.  The module browser's web pages are responsible for defining the
                       (vl-pp-valuerangelist x.set)
                       (vl-print "}")))
 
-        :vl-tagged (b* ((parens (< (vl-expr-precedence x.expr) (vl-expr-precedence x))))
+        :vl-tagged (b* ((parens (and x.expr
+                                     (< (vl-expr-precedence x.expr) (vl-expr-precedence x)))))
                      (vl-ps-seq (vl-ps-span "vl_key" (vl-print "tagged "))
                                 (vl-print-str x.tag)
                                 (vl-print " ")
-                                (if parens (vl-print "(") ps)
-                                (vl-pp-expr x.expr)
-                                (if parens (vl-print ")") ps)))
+                                (if x.expr
+                                    (vl-ps-seq (if parens (vl-print "(") ps)
+                                               (vl-pp-expr x.expr)
+                                               (if parens (vl-print ")") ps))
+                                  ps)))
 
         :vl-pattern (vl-ps-seq
                      ;; Do we ever need parens around the type?

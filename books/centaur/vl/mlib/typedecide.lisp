@@ -427,18 +427,21 @@ produce unsigned values.</li>
                             (vl-syscall-typedecide x ss)
                           (vl-funcall-typedecide x ss))
 
-        :vl-cast (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to ss))
-                      ((when err)
-                       (mv (fatal :type :vl-typedecide-fail
-                                  :msg "Failed to resolve usertypes for ~
+        :vl-cast (vl-casttype-case x.to
+                   :type (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to.type ss))
+                              ((when err)
+                               (mv (fatal :type :vl-typedecide-fail
+                                          :msg "Failed to resolve usertypes for ~
                                         cast expression ~a0: ~@1."
-                                  :args (list x err))
-                           nil))
-                      ((unless (vl-datatype-packedp to-type))
-                       (mv (ok) nil))
-                      ((mv ?caveat signedness)
-                       (vl-datatype-signedness to-type)))
-                   (mv (ok) signedness))
+                                          :args (list x err))
+                                   nil))
+                              ((unless (vl-datatype-packedp to-type))
+                               (mv (ok) nil))
+                              ((mv ?caveat signedness)
+                               (vl-datatype-signedness to-type)))
+                           (mv (ok) signedness))
+                   :signedness (mv (ok) (if x.to.signedp :vl-signed :vl-unsigned))
+                   :otherwise (vl-expr-typedecide-aux x.expr ss mode))
 
         ;; By the spec, it seems this always returns a 1-bit unsigned (test this)
         :vl-inside (mv (ok) :vl-unsigned)

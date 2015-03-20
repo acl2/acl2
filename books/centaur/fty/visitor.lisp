@@ -870,6 +870,7 @@
 (defconst *defvisitors-keys*
   '(:template    ;; visitor template to use
     :types       ;; Types targeted for toplevel functions
+    :debug
     ))
 
 
@@ -1178,12 +1179,14 @@
 
        ;; 6. 
        (forms (visitor-defvisitor-forms (reverse rev-toposort) marks template deftypes-table)))
-    (cw "type graph: ~x0~%" type-graph)
-    (cw "leaf types: ~x0~%" leaf-types)
-    (cw "rev-graph:  ~x0~%" rev-graph)
-    (cw "marks:      ~x0~%" marks)
-    (cw "fty-graph:  ~x0~%" fty-graph)
-    (cw "toposort:  ~x0~%" rev-toposort)
+    (and (cdr (assoc :debug kwd-alist))
+         (progn$
+          (cw "type graph: ~x0~%" type-graph)
+          (cw "leaf types: ~x0~%" leaf-types)
+          (cw "rev-graph:  ~x0~%" rev-graph)
+          (cw "marks:      ~x0~%" marks)
+          (cw "fty-graph:  ~x0~%" fty-graph)
+          (cw "toposort:  ~x0~%" rev-toposort)))
 
     `(defsection-progn ,name
        ,@forms

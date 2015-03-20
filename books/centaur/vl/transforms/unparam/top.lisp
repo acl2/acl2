@@ -33,6 +33,7 @@
 (include-book "lineup")
 (include-book "override")
 ;; (include-book "scopesubst")
+(include-book "resolve-indices")
 (include-book "../../mlib/blocks")
 (include-book "../../mlib/writer") ;; for generating the new module names...
 (local (include-book "../../util/default-hints"))

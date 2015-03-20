@@ -1052,6 +1052,13 @@ be very cheap in the single-threaded case.</p>"
    (design :name vl-maybe-design-p-of-vl-scopestack->design
            (vl-maybe-design-p design))))
 
+(define vl-scopestack->toplevel ((x vl-scopestack-p))
+  :returns (top vl-scopestack-p)
+  :measure (vl-scopestack-count x)
+  (vl-scopestack-case x
+    :local (vl-scopestack->toplevel x.super)
+    :otherwise (vl-scopestack-fix x)))
+
 (define vl-scopestack-push ((scope vl-scope-p) (x vl-scopestack-p))
   :returns (x1 vl-scopestack-p)
   (progn$

@@ -375,6 +375,34 @@ type for @(see vl-scopeexpr->scopes).</p>"
 (fty::deflist vl-scopenamelist :elt-type vl-scopename :elementp-of-nil nil)
 
 
+(define vl-hidname-p (x)
+  :short "Recognizes names that can be used inside a hidindex.  Just a name or else $root."
+  :returns bool
+  (or (eq x :vl-$root)
+      (stringp x)))
+
+(define vl-hidname-fix ((x vl-hidname-p))
+  :returns (name vl-hidname-p)
+  :inline t
+  (mbe :logic (if (vl-hidname-p x)
+                  x
+                :vl-$root)
+       :exec x)
+  ///
+  (defthm vl-hidname-fix-when-vl-hidname-p
+    (implies (vl-hidname-p x)
+             (equal (vl-hidname-fix x) x))))
+
+(fty::deffixtype vl-hidname
+  :pred vl-hidname-p
+  :fix vl-hidname-fix
+  :equiv vl-hidname-equiv
+  :define t
+  :forward t)
+
+(fty::deflist vl-hidnamelist :elt-type vl-hidname :elementp-of-nil nil)
+
+
 (defconst *vl-unary-ops*
   '((:vl-unary-plus    . "+")
     (:vl-unary-minus    . "-")
@@ -515,7 +543,7 @@ type for @(see vl-scopeexpr->scopes).</p>"
     :tag :vl-hidindex
     :measure (two-nats-measure (acl2-count x) 110)
     :measure-debug t
-    ((name    stringp)
+    ((name    vl-hidname)
      (indices vl-exprlist-p)))
 
   (deftagsum vl-hidexpr
@@ -658,6 +686,12 @@ type for @(see vl-scopeexpr->scopes).</p>"
     (:type ((type vl-datatype-p)))
     (:default ()))
 
+  (deftagsum vl-slicesize
+    :measure (two-nats-measure (acl2-count x) 100)
+    (:expr ((expr vl-expr-p)))
+    (:type ((type vl-datatype-p)))
+    (:none ()))
+
   (fty::defalist vl-keyvallist
     :measure (two-nats-measure (acl2-count x) 10)
     :key-type vl-patternkey :val-type vl-expr-p)
@@ -669,6 +703,14 @@ type for @(see vl-scopeexpr->scopes).</p>"
     (:repeat     ((reps  vl-expr-p)
                   (vals  vl-exprlist-p)))
     :base-case-override :positional)
+
+  (deftagsum vl-casttype
+    :measure (two-nats-measure (acl2-count x) 10)
+    (:type       ((type vl-datatype-p)))
+    (:size       ((size vl-expr-p)))
+    (:signedness ((signedp booleanp)))
+    (:const      ()))
+
 
   (deftagsum vl-expr
     :measure (two-nats-measure (acl2-count x) 50)
@@ -691,7 +733,7 @@ type for @(see vl-scopeexpr->scopes).</p>"
      :base-name vl-index
      ((scope   vl-scopeexpr)
       (indices vl-exprlist-p)
-      (part    vl-partselect-p)
+      (part    vl-partselect-p :default '(:none))
       (atts    vl-atts-p)
       (type    vl-maybe-datatype-p)))
 
@@ -742,7 +784,7 @@ type for @(see vl-scopeexpr->scopes).</p>"
     (:vl-stream
      :base-name vl-stream
      ((dir   vl-leftright-p)
-      (size  vl-maybe-expr-p)
+      (size  vl-slicesize-p)
       (parts vl-streamexprlist-p)
       (atts  vl-atts-p)
       (type  vl-maybe-datatype-p)))
@@ -759,7 +801,7 @@ type for @(see vl-scopeexpr->scopes).</p>"
 
     (:vl-cast
      :base-name vl-cast
-     ((to      vl-datatype-p)
+     ((to      vl-casttype-p)
       (expr    vl-expr-p)
       (atts    vl-atts-p)
       (type    vl-maybe-datatype-p)))
@@ -773,8 +815,8 @@ type for @(see vl-scopeexpr->scopes).</p>"
 
     (:vl-tagged
      :base-name vl-tagged
-     ((tag   stringp)
-      (expr  vl-expr-p)
+     ((tag     stringp)
+      (expr    vl-maybe-expr-p)
       (atts    vl-atts-p)
       (type    vl-maybe-datatype-p)))
 

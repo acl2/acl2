@@ -1034,6 +1034,44 @@ construct fast alists binding identifiers to things, etc.</p>"
                     (vl-exprlist-fix y)))
     :hints(("Goal" :in-theory (enable vl-patternkey->subexprs)))))
 
+(define vl-slicesize->subexprs ((x vl-slicesize-p))
+  :returns (subexprs vl-exprlist-p)
+  (vl-slicesize-case x
+    :expr (list x.expr)
+    :otherwise nil)
+  ///
+  (defret vl-exprlist-count-of-vl-slicesize->subexprs
+    (<= (vl-exprlist-count subexprs)
+        (vl-slicesize-count x))
+    :hints (("goal"
+             :in-theory (enable vl-slicesize-count)))
+    :rule-classes :linear))
+
+(define vl-slicesize-update-subexprs ((x vl-slicesize-p)
+                                      (subexprs vl-exprlist-p))
+  :guard (equal (len subexprs)
+                (len (vl-slicesize->subexprs x)))
+  :returns (new-x vl-slicesize-p)
+  :verify-guards nil
+  (vl-slicesize-case x
+    :expr (change-vl-slicesize-expr x :expr (car subexprs))
+    :otherwise (vl-slicesize-fix x))
+  ///
+  (verify-guards vl-slicesize-update-subexprs
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((vl-slicesize->subexprs x))))))
+  (defthm vl-slicesize-update-subexprs-identity
+    (equal (vl-slicesize-update-subexprs x (vl-slicesize->subexprs x))
+           (vl-slicesize-fix x))
+    :hints(("Goal" :in-theory (enable vl-slicesize->subexprs))))
+
+  (defthm vl-slicesize-update-subexprs-identity2
+    (implies (equal (len y) (len (vl-slicesize->subexprs x)))
+             (equal (vl-slicesize->subexprs (vl-slicesize-update-subexprs x y))
+                    (vl-exprlist-fix y)))
+    :hints(("Goal" :in-theory (enable vl-slicesize->subexprs)))))
+
+
 
 (define vl-keyvallist->subexprs ((x vl-keyvallist-p))
   :prepwork ((local (in-theory (disable vl-expr-p-when-vl-maybe-expr-p))))
@@ -1157,13 +1195,14 @@ construct fast alists binding identifiers to things, etc.</p>"
     :vl-mintypmax (list x.min x.typ x.max)
     :vl-concat x.parts
     :vl-multiconcat (cons x.reps x.parts)
-    :vl-stream (if x.size
-                   (cons x.size (vl-streamexprlist->subexprs x.parts))
-                 (vl-streamexprlist->subexprs x.parts))
+    :vl-stream (append (vl-slicesize->subexprs x.size)
+                       (vl-streamexprlist->subexprs x.parts))
     :vl-call (append (vl-scopeexpr->subexprs x.name) x.args)
-    :vl-cast (list x.expr)
+    :vl-cast (vl-casttype-case x.to
+               :size (list x.to.size x.expr)
+               :otherwise (list x.expr))
     :vl-inside (cons x.elem (vl-valuerangelist->subexprs x.set))
-    :vl-tagged (list x.expr)
+    :vl-tagged (and x.expr (list x.expr))
     :vl-pattern (vl-assignpat->subexprs x.pat)
     :otherwise nil)
   ///
@@ -1217,21 +1256,26 @@ construct fast alists binding identifiers to things, etc.</p>"
       :vl-multiconcat
       (change-vl-multiconcat x :reps (car subexprs) :parts (cdr subexprs))
       :vl-stream
-      (change-vl-stream
-       x 
-       :size (and x.size (car subexprs))
-       :parts (vl-streamexprlist-update-subexprs x.parts (if x.size (cdr subexprs) subexprs)))
+      (let ((nsizeexprs (len (vl-slicesize->subexprs x.size))))
+        (change-vl-stream
+         x 
+         :size (vl-slicesize-update-subexprs x.size (take nsizeexprs subexprs))
+         :parts (vl-streamexprlist-update-subexprs x.parts (nthcdr nsizeexprs subexprs))))
       :vl-call
       (let ((nnameexprs (len (vl-scopeexpr->subexprs x.name))))
         (change-vl-call x :name (vl-scopeexpr-update-subexprs x.name (take nnameexprs subexprs))
                         :args (nthcdr nnameexprs subexprs)))
       :vl-cast
-      (change-vl-cast x :expr (car subexprs))
+      (vl-casttype-case x.to
+        :size (change-vl-cast x :to (change-vl-casttype-size x.to :size (car subexprs))
+                              :expr (cadr subexprs))
+        :otherwise (change-vl-cast x :expr (car subexprs)))
       :vl-inside
       (change-vl-inside x :elem (car subexprs)
                         :set (vl-valuerangelist-update-subexprs x.set (cdr subexprs)))
-      :vl-tagged
-      (change-vl-tagged x :expr (car subexprs))
+      :vl-tagged (if x.expr
+                     (change-vl-tagged x :expr (car subexprs))
+                   (vl-expr-fix x))
       :vl-pattern
       (change-vl-pattern x :pat (vl-assignpat-update-subexprs x.pat subexprs))
       :otherwise (vl-expr-fix x)))
@@ -1263,6 +1307,17 @@ construct fast alists binding identifiers to things, etc.</p>"
            :hints (("goal" :use ((:instance acl2::append-of-take-and-nthcdr
                                   (acl2::n n) (acl2::x (nthcdr m x))))
                     :in-theory (disable acl2::append-of-take-and-nthcdr)))))
+
+  (local (defthm list-of-car-when-len-1
+           (implies (and (vl-exprlist-p x)
+                         (equal (len x) 1))
+                    (equal (list (car x)) x))
+           :hints(("Goal" :in-theory (enable vl-exprlist-p)))))
+
+  (local (defthm car-of-exprlist
+           (implies (and (vl-exprlist-p x)
+                         (posp (len x)))
+                    (car x))))
 
   (defthm vl-expr-update-subexprs-identity2
     (implies (equal (len y) (len (vl-expr->subexprs x)))

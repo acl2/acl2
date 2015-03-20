@@ -434,7 +434,7 @@ rules:</p>
            (return-raw
             (vl-parse-error "For loop: the initialized variable differed from the incremented variable.")))
          (:= (vl-match-token :vl-rparen))
-         (return (make-vl-genloop :var (make-vl-id :name (vl-idtoken->name id))
+         (return (make-vl-genloop :var (vl-idtoken->name id)
                                   :initval init
                                   :continue continue
                                   :nextval next

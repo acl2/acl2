@@ -35,14 +35,15 @@
 (include-book "centaur/vl/util/gc" :dir :system)
 ;; (include-book "centaur/vl/transforms/always/top-svex" :dir :system)
 (include-book "centaur/vl/transforms/addinstnames" :dir :system)
+(include-book "centaur/vl/transforms/always/eliminitial" :dir :system)
 ;; (include-book "centaur/vl/transforms/assign-trunc" :dir :system)
 ;; (include-book "centaur/vl/transforms/blankargs" :dir :system)
-(include-book "centaur/vl/transforms/clean-params" :dir :system)
+;; (include-book "centaur/vl/transforms/clean-params" :dir :system)
 ;; (include-book "centaur/vl/transforms/delayredux" :dir :system)
 ;; (include-book "centaur/vl/transforms/drop-blankports" :dir :system)
 ;; (include-book "centaur/vl/transforms/expand-functions" :dir :system)
-(include-book "centaur/vl/transforms/gatesplit" :dir :system)
-(include-book "centaur/vl/transforms/gate-elim" :dir :system)
+;; (include-book "centaur/vl/transforms/gatesplit" :dir :system)
+;; (include-book "centaur/vl/transforms/gate-elim" :dir :system)
 (include-book "centaur/vl/transforms/problem-mods" :dir :system)
 ;; (include-book "centaur/vl/transforms/replicate-insts" :dir :system)
 ;; (include-book "centaur/vl/transforms/resolve-ranges" :dir :system)
@@ -68,10 +69,9 @@
   :short "Core transformation sequence for using VL to generate SVEX modules."
   ((design vl-design-p)
    (config vl-simpconfig-p)
-   &key
-   delay-sensitivep
-   ((primalist vl-primalist-p)
-    '*vl-gateinst-primitives-alist*))
+   ;; &key
+   ;; delay-sensitivep
+   )
   :returns (mv (good vl-design-p)
                (bad  vl-design-p))
 
@@ -110,16 +110,16 @@
 
 ; PART 2 ----------------
 
-       (good           (xf-cwtime (vl-design-rangeresolve good)))
-       (good           (xf-cwtime (vl-design-selresolve good)))
+       ;; (good           (xf-cwtime (vl-design-rangeresolve good)))
+       ;; (good           (xf-cwtime (vl-design-selresolve good)))
        ;; ??? Some question about whether stmtrewrite is useful or not
        ;; (good           (xf-cwtime (vl-design-stmtrewrite good config.unroll-limit)))
-       (good           (xf-cwtime (vl-design-exprsize good)))
-       ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
+       ;; (good           (xf-cwtime (vl-design-exprsize good)))
+       ;; ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
 
        ;; (good           (xf-cwtime (vl-design-wildelim good)))
-       (good           (xf-cwtime (vl-design-caseelim good)))
-       ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
+       ;; (good           (xf-cwtime (vl-design-caseelim good)))
+       ;; ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
 
        ;; (good           (xf-cwtime (vl-design-elim-unused-regs good)))
        ;; (good           (xf-cwtime (vl-design-drop-blankports good)))
@@ -155,8 +155,8 @@
        ;; (good          (xf-cwtime (vl-design-weirdint-elim good)))
        ;; ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-       (good          (xf-cwtime (vl-design-gatesplit good)))
-       (good          (xf-cwtime (vl-design-gate-elim good :primalist primalist)))
+       ;; (good          (xf-cwtime (vl-design-gatesplit good)))
+       ;; (good          (xf-cwtime (vl-design-gate-elim good :primalist primalist)))
        (good          (xf-cwtime (vl-design-addinstnames good)))
        ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
@@ -216,11 +216,7 @@
 
 (define vl-design->svex-design ((topmod stringp)
                                 (x vl-design-p)
-                                (config vl-simpconfig-p)
-                                &key
-                                delay-sensitivep
-                                ((primalist vl-primalist-p)
-                                 '*vl-gateinst-primitives-alist*))
+                                (config vl-simpconfig-p))
   :parents (svex)
   :short "Turn a VL design into an SVEX hierarchical design."
   :guard-debug t
@@ -240,9 +236,7 @@
        (x (vl-annotate-svex x))
 
        ((mv good bad)
-        (vl::xf-cwtime (vl-simplify-svex x config
-                                         :delay-sensitivep delay-sensitivep
-                                         :primalist primalist)))
+        (vl::xf-cwtime (vl-simplify-svex x config)))
        ((vl-design good) good)
        ((unless (vl-find-module topmod good.mods))
         (cw "Reportcard for good mods:~%")

@@ -243,7 +243,7 @@ information.</p>"
          (make-vl-coretype :name    :vl-logic
                            :signedp (if signed t nil)
                            :pdims   (and range
-                                         (list range))))))
+                                         (list (vl-range->packeddimension range)))))))
 
 (defparser vl-parse-taskport-declaration (atts)
   :short "Verilog-2005 only.  Match @('tf_input_declaration'), @('tf_output_declaration'), or @('tf_inout_declaration')."
@@ -298,7 +298,7 @@ information.</p>"
                           (:vl-kwd-time     *vl-plain-old-time-type*))
                       (make-vl-coretype :name :vl-logic
                                         :signedp (if signed t nil)
-                                        :pdims (and range (list range)))))
+                                        :pdims (and range (list (vl-range->packeddimension range))))))
               (ret (vl-build-taskports atts dir type names)))
            (mv nil ret tokstream)))))
 
@@ -729,15 +729,17 @@ statements at all.\"</blockquote>
        (return (make-vl-blockstmt :sequentialp t
                                   :stmts stmts))))
 
-(local (defthm vl-packeddimensionlist-p-when-vl-rangelist-p
-         (implies (vl-rangelist-p x)
-                  (vl-packeddimensionlist-p x))
-         :hints(("Goal" :induct (len x)))))
+;; (local (defthm vl-packeddimensionlist-p-when-vl-rangelist-p
+;;          (implies (vl-rangelist-p x)
+;;                   (vl-packeddimensionlist-p x))
+;;          :hints(("Goal" :induct (len x)))))
 
 (local (defthm vl-idtoken-p-of-car-by-vl-is-token-crock
          (implies (vl-is-token? :vl-idtoken)
                   (vl-idtoken-p (car (vl-tokstream->tokens))))
          :hints(("Goal" :in-theory (enable vl-is-token?)))))
+
+(local (in-theory (disable not)))
 
 (defparser vl-parse-tf-port-item (prev)
   :short "Matches @('tf_port_item'), not for prototypes."
@@ -841,8 +843,8 @@ same direction.\"</blockquote>
                   :type (make-vl-coretype :name :vl-logic
                                           :signedp (and signing
                                                         (eq (vl-token->type signing) :vl-kwd-signed))
-                                          :pdims ranges
-                                          :udims udims)
+                                          :pdims (vl-ranges->packeddimensions ranges)
+                                          :udims (vl-ranges->packeddimensions udims))
                   :atts atts
                   :nettype nil)))
 
@@ -895,7 +897,7 @@ same direction.\"</blockquote>
                             (make-vl-coretype :name :vl-logic
                                               :signedp nil
                                               :pdims nil
-                                              :udims udims)
+                                              :udims (vl-ranges->packeddimensions udims))
                           ;; Otherwise, there's no type information at all, and
                           ;; there's no direction, so inherit from the previous
                           ;; port.
@@ -916,7 +918,7 @@ same direction.\"</blockquote>
                 :dir  (cond (dir  dir)
                             (prev (vl-portdecl->dir prev))
                             (t    :vl-input))
-                :type (vl-datatype-update-udims udims type)
+                :type (vl-datatype-update-udims (vl-ranges->packeddimensions udims) type)
                 :atts atts
                 :nettype nil))))
 
@@ -973,7 +975,7 @@ same direction.\"</blockquote>
          (return-raw
           (vl-parse-error "BOZO implement default values for function/task ports.")))
        (return (make-vl-tf-parsed-var-id :name name
-                                         :udims udims))))
+                                         :udims (vl-ranges->packeddimensions udims)))))
 
 (defparser vl-parse-list-of-tf-variable-identifiers ()
   :short "Matches @('list_of_tf_variable_identifiers')."
@@ -1054,7 +1056,7 @@ same direction.\"</blockquote>
                   :type (make-vl-coretype :name    :vl-logic
                                           :signedp (and signing
                                                         (eq (vl-token->type signing) :vl-kwd-signed))
-                                          :pdims   ranges))))
+                                          :pdims   (vl-ranges->packeddimensions ranges)))))
 
        ;; Otherwise, usual ambiguity between data types and identifiers...
 

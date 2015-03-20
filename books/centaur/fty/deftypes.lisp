@@ -2476,10 +2476,17 @@
                    (subsetp kinds keys)))
         (er hard? sum.case "Otherwise is present but all cases are already covered"))
        (kind-kwd-alist (pairlis$ keys vals))
+       
        (body
         (if sum.kind
-            `(case (,sum.kind ,var)
-               . ,(flexsum-case-macro-kinds var sum.prods kind-kwd-alist))
+            (let ((var.kind (intern-in-package-of-symbol
+                             (concatenate 'string (symbol-name var) ".KIND")
+                             (if (equal (symbol-package-name var) "COMMON-LISP")
+                                 'acl2::acl2
+                               var))))
+              `(let* ((,var.kind (,sum.kind ,var)))
+                 (case ,var.kind
+                   . ,(flexsum-case-macro-kinds var sum.prods kind-kwd-alist))))
           (nice-cond (flexsum-case-macro-conds var sum.prods kind-kwd-alist)))))
     (if (consp var-or-binding)
         `(let* ((,var ,(cadr var-or-binding))) ,body)

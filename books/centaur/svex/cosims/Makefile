@@ -35,15 +35,15 @@ all:
 # ---------------------------------------
 #  Building the cosim image
 
-EDIR := ../../..
-ACL2_SYSTEM_BOOKS := $(EDIR)/acl2/books
 STARTJOB ?= $(SHELL)
 
-CORE := $(EDIR)/images/cosim-core
+CORE := ./cosim-core
+
+ACL2_SYSTEM_BOOKS ?= ../../..
 
 $(info Rebuilding Makefile-books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
-	$(EDIR)/bin/cert.pl cosims.lisp \
+	$(ACL2_SYSTEM_BOOKS)/build/cert.pl cosims.lisp \
 		--quiet \
 		--static-makefile Makefile-books \
 		--var-prefix BOOKS_TOP; \
@@ -55,20 +55,13 @@ $(info Done rebuilding makefiles)
 -include Makefile-books
 
 cosim-core: cosims.cert make-cosim.lsp
-	mkdir -p $(EDIR)/images
 	rm -f $(CORE) $(CORE).ccl cosim-core cosim-core.ccl
-	$(STARTJOB) -c "$(EDIR)/bin/acl2 < make-cosim.lsp &> make-cosim.out"
-	ln -s $(CORE) cosim-core
-	ln -s $(CORE).ccl cosim-core.ccl
-	ls -la $(CORE) $(CORE).ccl cosim-core cosim-core.ccl
+	$(STARTJOB) -c "acl2 < make-cosim.lsp &> make-cosim.out"
+	ls -la $(CORE) $(CORE).ccl
 
 all: cosim-core symlinks
 
 .PHONY: symlinks
-symlinks: ccl cosim-core
-
-ccl: $(EDIR)/bin/ccl
-	ln -s $(EDIR)/bin/ccl ccl
 
 # ------------------------------------------
 #  Test setup.
