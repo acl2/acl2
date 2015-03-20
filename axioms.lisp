@@ -3063,7 +3063,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; which expands here into a call of string-append.  However, the :exec case is
 ; only called if we are executing the raw Lisp code for string-append, in which
 ; case we will be executing the raw Lisp code for concatenate, which of course
-; does not call the ACL2 function string-append.
+; does not call the ACL2 function string-append.  (We ensure the preceding
+; sentence by calling verify-termination-boot-strap later in this file.  We
+; have seen an ACL2(p) stack overflow caused in thanks-for-the-hint when this
+; function was in :program mode and we were in safe-mode because we were
+; macroexpanding.)
 
        (concatenate 'string str1 str2)))
 
@@ -24087,6 +24091,10 @@ Lisp definition."
  (verify-termination-boot-strap nonnegative-integer-quotient)
  (verify-termination-boot-strap floor)
  (verify-termination-boot-strap symbol-listp)
+ (verify-termination-boot-strap binary-append) ; for string-append
+; The following avoids an ACL2(p) loop in thanks-for-the-hint; see
+; string-append.
+ (verify-termination-boot-strap string-append)
 
  )
 
