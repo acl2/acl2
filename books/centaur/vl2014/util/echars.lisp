@@ -164,8 +164,8 @@ bounds."
                     (< (logior code (ash col 8) (ash line 30))
                        1152921504606846976))
            :hints(("goal"
-                   :in-theory (disable ACL2::UNSIGNED-BYTE-P-OF-LOGIOR
-                                       ACL2::UNSIGNED-BYTE-P-OF-ASH)
+                   :in-theory (disable BITOPS::UNSIGNED-BYTE-P-OF-LOGIOR
+                                       BITOPS::UNSIGNED-BYTE-P-OF-ASH)
                    :use ((:instance l0))))))
 
   (define vl-echarpack-p (x)

@@ -1,5 +1,5 @@
 ; Centaur Bitops Library
-; Copyright (C) 2010-2013 Centaur Technology
+; Copyright (C) 2010-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,7 +28,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
+(in-package "BITOPS")
 (include-book "std/util/define" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
@@ -40,7 +40,7 @@
 (local (include-book "ihs/quotient-remainder-lemmas" :Dir :system))
 (local (in-theory (disable (force))))
 (local (in-theory (enable* arith-equiv-forwarding)))
-(local (enable-wizard))
+(local (acl2::enable-wizard))
 
 (defsection bitops/rotate
   :parents (bitops)
@@ -207,8 +207,8 @@ since rotating @('width')-many times is the same as not rotating at all.</p>"
   (defthm rotate-left-by-width
     (equal (rotate-left x width width)
            (loghead width x))
-    :hints(("Goal" :in-theory (enable acl2::logbitp-of-rotate-left-split
-                                      acl2::logbitp-of-loghead-split))
+    :hints(("Goal" :in-theory (enable logbitp-of-rotate-left-split
+                                      logbitp-of-loghead-split))
            (equal-by-logbitp-hint))))
 
 
@@ -293,14 +293,15 @@ since rotating @('width')-many times is the same as not rotating at all.</p>"
 enabled when you want to use them.</p>"
 
   (local (in-theory (e/d (case-split-mod-of-decrement)
-                         (max natp nfix ifix floor-mod-elim))))
+                         (max natp nfix ifix acl2::floor-mod-elim))))
 
   (local (defthm integerp-of-/-when-posp
            (implies (posp width)
                     (equal (integerp (/ width))
                            (equal width 1)))
            :hints(("Goal"
-                   :in-theory (disable inverse-of-* equal-*-/-2)
+                   :in-theory (disable inverse-of-*
+                                       acl2::equal-*-/-2)
                    :use ((:instance inverse-of-* (x width)))
                    :nonlinearp t))))
 
@@ -473,8 +474,8 @@ since rotating @('width')-many times is the same as not rotating at all.</p>"
   (defthm rotate-right-by-width
     (equal (rotate-right x width width)
            (loghead width x))
-    :hints(("Goal" :in-theory (enable acl2::logbitp-of-rotate-right-split
-                                      acl2::logbitp-of-loghead-split))
+    :hints(("Goal" :in-theory (enable logbitp-of-rotate-right-split
+                                      logbitp-of-loghead-split))
            (equal-by-logbitp-hint))))
 
 
@@ -517,14 +518,14 @@ since rotating @('width')-many times is the same as not rotating at all.</p>"
 explicitly enabled when you want to use them.</p>"
 
   (local (in-theory (e/d (case-split-mod-of-decrement)
-                         (max natp nfix ifix floor-mod-elim))))
+                         (max natp nfix ifix acl2::floor-mod-elim))))
 
   (local (defthm integerp-of-/-when-posp
            (implies (posp width)
                     (equal (integerp (/ width))
                            (equal width 1)))
            :hints(("Goal"
-                   :in-theory (disable inverse-of-* equal-*-/-2)
+                   :in-theory (disable inverse-of-* acl2::equal-*-/-2)
                    :use ((:instance inverse-of-* (x width)))
                    :nonlinearp t))))
 

@@ -296,7 +296,7 @@ bitset-members).</p>"
            acl2::default-+-2
            acl2::default-car
            acl2::default-cdr
-           acl2::normalize-logbitp-when-mods-equal
+           bitops::normalize-logbitp-when-mods-equal
            (:t acl2::logcar-type)
            (:t acl2::logcar)
            (:t logbitp)

@@ -543,7 +543,7 @@
                               :in-theory (disable acl2::loghead**))
                              (and stable-under-simplificationp
                                   '(:in-theory (e/d (logcons
-                                                     acl2::minus-to-lognot)
+                                                     bitops::minus-to-lognot)
                                                     (acl2::loghead**))))))))
   (let ((sign (bfr-sign-s x)))
     (bfr-loghead-ns (integer-length-bound-s x)
@@ -918,8 +918,9 @@
                                       equal-of-booleans-rewrite
                                       acl2::mod-type
                                       acl2::floor-type-3 acl2::floor-type-1
-                                      acl2::logcons-posp-1 acl2::logcons-posp-2
-                                      acl2::logcons-negp
+                                      bitops::logcons-posp-1
+                                      bitops::logcons-posp-2
+                                      bitops::logcons-negp
                                       acl2::rationalp-mod (:t floor) (:t mod))))))
   (b* (((mv first rest endp) (first/rest/end a))
        (not-b (mbe :logic (bfr-lognot-s b) :exec not-b)))
@@ -1024,7 +1025,7 @@
   :prepwork ((local (in-theory (disable integer-length-of-between-abs-and-minus-abs
                                         logext-of-integer-length-bound
                                         rem
-                                        acl2::logbitp-upper-bound
+                                        bitops::logbitp-upper-bound
                                         acl2::integer-length**)))
              (local (in-theory (enable bfr-sign-abs-not-s))))
   (bfr-ite-bss (bfr-=-ss b nil)

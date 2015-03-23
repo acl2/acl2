@@ -31,7 +31,7 @@
 ;
 ; BOZO properly integrate this with ihsext-basics.lisp.
 
-(in-package "ACL2")
+(in-package "BITOPS")
 (include-book "xdoc/top" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -321,7 +321,7 @@ often useful when optimizing definitions with @(see type-spec) declarations."
                        (expt 2 (+ -1 n n))))
            :rule-classes ((:rewrite) (:linear))
            :hints(("Goal"
-                   :in-theory (disable exponents-add)
+                   :in-theory (disable acl2::exponents-add)
                    :nonlinearp t
                    :use ((:instance step1b)
                          (:instance step2)
@@ -390,7 +390,7 @@ often useful when optimizing definitions with @(see type-spec) declarations."
                         (expt 2 (+ -2 n n))))
            :rule-classes ((:rewrite) (:linear))
            :hints(("Goal"
-                   :in-theory (disable exponents-add)
+                   :in-theory (disable acl2::exponents-add)
                    :nonlinearp t
                    :use ((:instance step1c)
                          (:instance step2)
@@ -789,7 +789,7 @@ often useful when optimizing definitions with @(see type-spec) declarations."
                          (natp n))
                     (< (- x) (expt 2 n)))
            :hints(("Goal"
-                   :in-theory (disable expt-is-increasing-for-base>1)
+                   :in-theory (disable acl2::expt-is-increasing-for-base>1)
                    :use ((:instance l1)
                          (:instance l2))))))
 

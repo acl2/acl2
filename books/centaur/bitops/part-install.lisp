@@ -28,7 +28,7 @@
 ;
 ; Original author: Shilpi Goel <shilpi@centtech.com>
 
-(in-package "ACL2")
+(in-package "BITOPS")
 (include-book "xdoc/top" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)

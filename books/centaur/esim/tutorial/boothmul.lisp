@@ -563,7 +563,7 @@
                                       (boothmul-direct) boothmul-direct
                                       (boothmul-decomp) boothmul-decomp
                                       boothmul-decomp-is-boothmul
-                                      ash-of-n-0
+                                      bitops::ash-of-n-0
                                       right-shift-to-logtail)
            :use ((:instance boothmul-decomp-is-boothmul
                             (pp0 0)

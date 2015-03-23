@@ -103,7 +103,7 @@ and the inputs from the appropriate frame.</p>
   ;; (local (in-theory (enable nth-in-aignet-valsp-bound
   ;;                           nth-in-aignet-valsp-type)))
 
-  (local (in-theory (disable acl2::logxor-equal-0)))
+  (local (in-theory (disable bitops::logxor-equal-0)))
 
   (local (in-theory (enable aignet-idp)))
 

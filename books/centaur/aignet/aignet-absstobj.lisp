@@ -334,7 +334,7 @@
    ;;            :in-theory (disable <-0-of-to-id))))
 
 
-   (local (in-theory (enable ACL2::ELIM-PLUS-ONE)))
+   (local (in-theory (enable bitops::ELIM-PLUS-ONE)))
 
    (defthm |(< (* 2 x) (+ 2 (* 2 y)))|
      (iff (< (* 2 x) (+ 2 (* 2 y)))

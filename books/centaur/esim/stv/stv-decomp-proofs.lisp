@@ -659,8 +659,8 @@
     cdr-of-bool-to-4v-lst
     car-of-bool-to-4v-lst
     logcdr-to-logtail
-    logtail-of-logtail
-    logbitp-of-logtail
+    bitops::logtail-of-logtail
+    bitops::logbitp-of-logtail
     append-of-4v-sexpr-eval-alist
     4v-sexpr-eval-list-of-composition
     equal-of-4v-to-nat-sexpr-eval-lists

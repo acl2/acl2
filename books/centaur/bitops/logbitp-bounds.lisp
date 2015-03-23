@@ -29,7 +29,7 @@
 ; Original author: Anna Slobodova <anna@centtech.com>
 ; Minor modifications by: Shilpi Goel <shilpi@centtech.com>
 
-(in-package "ACL2")
+(in-package "BITOPS")
 (include-book "xdoc/top" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))

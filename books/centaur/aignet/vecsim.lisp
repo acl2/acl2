@@ -504,7 +504,7 @@
                                                           aignet))
                             (reg-vals (aignet-vals->regvals nil vals aignet)))
                       (id-eval m in-vals reg-vals aignet))))
-    :hints(("Goal" :in-theory (disable acl2::logbit-to-logbitp
+    :hints(("Goal" :in-theory (disable bitops::logbit-to-logbitp
                                        aignet-vecsim-iter))))
 
 
@@ -528,7 +528,7 @@
               (nth id (aignet-eval (vecsim-to-eval slot bit s61v vals
                                                    aignet) aignet))))
     :hints (("goal" :in-theory (e/d (aignet-idp)
-                                    (acl2::logbit-to-logbitp
+                                    (bitops::logbit-to-logbitp
                                      aignet-vecsim))
              :cases ((aignet-idp id aignet)))))
 

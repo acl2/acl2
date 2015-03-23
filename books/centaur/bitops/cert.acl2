@@ -1,5 +1,5 @@
 ; Centaur Bitops Library
-; Copyright (C) 2010-2011 Centaur Technology
+; Copyright (C) 2010-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,5 +29,5 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "std/portcullis" :dir :system)
+(include-book "portcullis")
 ; cert-flags: ? t :ttags :all

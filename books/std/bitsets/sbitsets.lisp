@@ -240,10 +240,10 @@ optimized version of @(see sbitset-pair-members).</p>"
 
 
 
-(local (in-theory (disable acl2::logbitp-when-too-small
+(local (in-theory (disable bitops::logbitp-when-too-small
                            ;expt-between-one-and-two
                            ;; arith-3 acl2::expt-is-increasing-for-base->-1
-                           acl2::expt-2-monotonic
+                           bitops::expt-2-monotonic
                            acl2::associativity-of-append)))
 
 (local (defthm integer-listp-of-append
@@ -277,7 +277,7 @@ optimized version of @(see sbitset-pair-members).</p>"
      (implies (and (< a ,*sbitset-block-size*)
                    (natp a))
               (< (expt 2 a) ,(expt 2 *sbitset-block-size*)))
-     :hints(("Goal" :use ((:instance acl2::expt-2-monotonic
+     :hints(("Goal" :use ((:instance bitops::expt-2-monotonic
                                      (a a)
                                      (b ,*sbitset-block-size*))))))))
 
@@ -454,8 +454,8 @@ optimized version of @(see sbitset-pair-members).</p>"
                          n))
             :rule-classes ((:rewrite) (:linear))
             :hints(("Goal"
-                    :in-theory (disable acl2::integer-length-bounded-by-expt)
-                    :use ((:instance acl2::integer-length-bounded-by-expt (a x)))))))
+                    :in-theory (disable bitops::integer-length-bounded-by-expt)
+                    :use ((:instance bitops::integer-length-bounded-by-expt (a x)))))))
 
    (local (defthm l4
             (implies (posp x)
@@ -1165,8 +1165,8 @@ only member is @('a')."
                   (sbitset-blockp (logior x y)))
          :hints(("Goal"
                  :in-theory (e/d (sbitset-blockp)
-                                 (acl2::upper-bound-of-logior-for-naturals))
-                 :use ((:instance acl2::upper-bound-of-logior-for-naturals
+                                 (bitops::upper-bound-of-logior-for-naturals))
+                 :use ((:instance bitops::upper-bound-of-logior-for-naturals
                                   (x x)
                                   (y y)
                                   (n *sbitset-block-size*)))))))
@@ -1339,10 +1339,10 @@ only member is @('a')."
                          (not (zp (logand x y)))))
          :hints(("Goal"
                  :in-theory (e/d (sbitset-blockp)
-                                 (acl2::unsigned-byte-p-of-logand-1
-                                  acl2::unsigned-byte-p-of-logand-2
+                                 (bitops::unsigned-byte-p-of-logand-1
+                                  bitops::unsigned-byte-p-of-logand-2
                                   ))
-                 :use ((:instance acl2::unsigned-byte-p-of-logand-1
+                 :use ((:instance bitops::unsigned-byte-p-of-logand-1
                                   (x x)
                                   (y y)
                                   (n *sbitset-block-size*)))))))
@@ -1456,8 +1456,8 @@ only member is @('a')."
                          (equal (logand x y) 0))
                     (not (logbitp a y)))
            :hints(("Goal"
-                   :in-theory (disable acl2::logbitp-of-logand)
-                   :use ((:instance acl2::logbitp-of-logand
+                   :in-theory (disable bitops::logbitp-of-logand)
+                   :use ((:instance bitops::logbitp-of-logand
                                     (a a)
                                     (x x)
                                     (y y)))))))
@@ -1500,10 +1500,10 @@ only member is @('a')."
                          (not (zp (logand x (lognot y))))))
          :hints(("Goal"
                  :in-theory (e/d (sbitset-blockp)
-                                 (acl2::unsigned-byte-p-of-logand-1
-                                  acl2::unsigned-byte-p-of-logand-2
+                                 (bitops::unsigned-byte-p-of-logand-1
+                                  bitops::unsigned-byte-p-of-logand-2
                                   ))
-                 :use ((:instance acl2::unsigned-byte-p-of-logand-1
+                 :use ((:instance bitops::unsigned-byte-p-of-logand-1
                                   (x x)
                                   (y (lognot y))
                                   (n *sbitset-block-size*)))))))
@@ -1602,8 +1602,8 @@ only member is @('a')."
                          (logbitp a x))
                     (logbitp a y))
            :hints(("Goal"
-                   :in-theory (disable acl2::logbitp-of-logand)
-                   :use ((:instance acl2::logbitp-of-logand
+                   :in-theory (disable bitops::logbitp-of-logand)
+                   :use ((:instance bitops::logbitp-of-logand
                                     (a a)
                                     (x x)
                                     (y (lognot y))))))))
