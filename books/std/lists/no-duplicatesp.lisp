@@ -133,7 +133,8 @@ of an arbitrary element.</p>"
   (defthm duplicity-badguy-has-high-duplicity
     (implies (duplicity-badguy x)
              (< 1 (duplicity (car (duplicity-badguy x)) x)))
-    :hints(("Goal" :in-theory (enable duplicity-badguy))))
+    :hints(("Goal" :in-theory (e/d (duplicity-badguy)
+                                   (duplicity-when-member-equal)))))
 
   (defthm duplicity-badguy-is-complete
     (implies (< 1 (duplicity a x))

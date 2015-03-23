@@ -9,6 +9,10 @@
 ; This demo is based on demo-fact.lisp.  See that file for comments.  Here, we
 ; mostly comment only on what is different about this example.
 
+; Note that this adaptation of basic-demo.lsp has some comments and questions
+; from me (Matt Kaufmann), marked with "!!", that might be resolved later as I
+; get more familiar with Codewalker and/or Codewalker evolves.
+
 ; Unlike demo-fact.lisp, here the loop counts up from 1 to n, where n is the
 ; input, and terminates when the counter is equal to n.  (We could have made it
 ; terminate when the counter exceeds n, but what's the fun in that?)
@@ -24,11 +28,6 @@
 
 (encapsulate
  nil
- (defun natp-listp (x)
-   (if (endp x)
-       (equal x nil)
-       (and (natp (car x))
-            (natp-listp (cdr x)))))
 
  (defun hyps (s)
    (declare (xargs :stobjs (s)))
@@ -36,25 +35,36 @@
         (natp (rd :pc s))
         (< (rd :pc s) (len (rd :program s)))
         (< 16 (len (rd :locals s)))
-        (natp-listp (rd :locals s))
-        (natp-listp (rd :stack s))))
+        (integer-listp (rd :locals s))
+        (integer-listp (rd :stack s))))
 
- (defthm natp-listp-nth
-   (implies (and (natp-listp x)
+ (defthm nat-listp-nth
+   (implies (and (nat-listp x)
                  (natp i)
                  (< i (len x)))
             (natp (nth i x)))
    :rule-classes (:rewrite :type-prescription))
 
- (defthm natp-listp-update-nth
-   (implies (and (natp i)
-                 (< i (len x))
-                 (natp (nth i x)))
-            (equal (natp-listp (update-nth i v x))
+ (defthm nat-listp-update-nth
+   (implies (natp (nth i x))
+            (equal (nat-listp (update-nth i v x))
                    (and (natp v)
-                        (natp-listp x)))))
+                        (nat-listp x)))))
 
- (in-theory (disable natp-listp len nth update-nth))
+ (defthm integer-listp-nth
+   (implies (and (integer-listp x)
+                 (natp i)
+                 (< i (len x)))
+            (integerp (nth i x)))
+   :rule-classes (:rewrite :type-prescription))
+
+ (defthm integer-listp-update-nth
+   (implies (integerp (nth i x))
+            (equal (integer-listp (update-nth i v x))
+                   (and (integerp v)
+                        (integer-listp x)))))
+
+ (in-theory (disable nat-listp integer-listp len nth update-nth))
  )
 
 ; Since we're in the M1 package, it is convenient to define
@@ -80,8 +90,8 @@
                     ((WR LOC :VALUE :BASE)
                      (RD LOC :BASE)))
   :constructor-drivers nil
-  :state-comps-and-types  (((NTH I (RD :LOCALS S)) (NATP (NTH I (RD :LOCALS S))))
-                           ((RD :STACK S)          (NATP-LISTP (RD :STACK S)))
+  :state-comps-and-types  (((NTH I (RD :LOCALS S)) (INTEGERP (NTH I (RD :LOCALS S))))
+                           ((RD :STACK S)          (INTEGER-LISTP (RD :STACK S)))
                            ((RD :PC S)             (NATP (RD :PC S))))
   :callp  nil
   :ret-pc nil
@@ -208,7 +218,9 @@
 ; !! I added force to help with debugging, but it's ultimately not necessary
 ; (neither here, nor in the def-projection for fn1-loop).
   :hyps+ ((program2p s)
-          (force (inv s)))
+          (force (inv s))
+          (nat-listp (rd :locals s))
+          (nat-listp (rd :stack s)))
   :annotations ((clk-6 (declare (xargs :measure (clk-6-measure s))))
                 (sem-6 (declare (xargs :measure (clk-6-measure s)))))
   )
@@ -227,7 +239,9 @@
 ; suitable loop invariant (if that is indeed the issue in general with that
 ; error).
           (loop-pc-p s)
-          (force (inv s)))
+          (force (inv s))
+          (nat-listp (rd :locals s))
+          (nat-listp (rd :stack s)))
   )
 
 (def-projection
@@ -236,7 +250,9 @@
   :old-fn SEM-0
 ; Below we drop (inv s), which is good.  The general principle above sort
 ; of applies here: we're not in a loop, so there is no need for (inv s).
-  :hyps+ ((program2p s))
+  :hyps+ ((program2p s)
+          (nat-listp (rd :locals s))
+          (nat-listp (rd :stack s)))
   )
 
 #||
@@ -328,6 +344,8 @@ M1 !>
 (defthm reg[1]-of-code-is-!
   (implies (and (hyps s)
                 (program2p s)
+                (nat-listp (rd :locals s))
+                (nat-listp (rd :stack s))
                 (posp (nth 0 (rd :locals s)))
                 (equal (rd :pc s) 0))
            (equal (nth 1 (rd :locals (m1 s (clk-0 s))))

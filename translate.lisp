@@ -4175,6 +4175,47 @@
                            form wrld state-vars))
         (t (bind-macro-args1 args (cdr form) nil form wrld state-vars))))
 
+(defun macro-guard-er-msg (x ctx wrld)
+  (let* ((name (car x))
+         (args (cdr x))
+         (form (cdr (assoc-eq name (table-alist 'guard-msg-table wrld)))))
+    (mv-let
+     (erp msg)
+     (cond (form (ev-w form
+                       (list (cons 'world wrld)
+                             (cons 'args args)
+                             (cons 'coda
+                                   (msg "(Note: The custom guard message for ~
+                                         ~x0 references the variable ~x1, ~
+                                         which is essentially ignored for ~
+                                         macros.  Consider modifying the ~
+                                         entry for ~x0 in ~x2.)"
+                                        name 'coda 'guard-msg-table)))
+                       wrld
+                       nil ; user-stobj-alist
+                       nil ; safe-mode
+                       t   ; gc-off
+                       t   ; hard-error-returns-nilp
+                       t   ; aok
+                       ))
+           (t (mv nil nil)))
+     (cond
+      (erp
+       (er-cmp ctx
+               "~|~%Note: Evaluation has resulted in an error for the form ~
+                associated with ~x0 in the table, ~x1, to obtain a custom ~
+                guard error message.  Consider modifying that table entry; ~
+                see :doc set-guard-msg."
+               name
+               'guard-msg-table))
+      (msg (er-cmp ctx "~@0" msg))
+      (t (er-cmp ctx
+                 "In the attempt to macroexpand the form ~x0 the guard, ~x1, ~
+                  for ~x2 failed."
+                 x
+                 (guard name nil wrld)
+                 name))))))
+
 (defun macroexpand1-cmp (x ctx wrld state-vars)
   (let ((gc-off (gc-off1 (access state-vars state-vars :guard-checking-on))))
     (er-let*-cmp
@@ -4207,12 +4248,7 @@
                            guard-val
                            (car x)))
               ((null guard-val)
-               (er-cmp ctx
-                       "In the attempt to macroexpand the form ~x0 the guard, ~
-                        ~x1, for ~x2 failed."
-                       x
-                       (guard (car x) nil wrld)
-                       (car x)))
+               (macro-guard-er-msg x ctx wrld))
               (t (mv-let (erp expansion)
                          (ev-w
                           (getprop (car x) 'macro-body

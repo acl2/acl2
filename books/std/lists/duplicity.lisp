@@ -141,6 +141,19 @@ no-duplicatesp), e.g., see @(see no-duplicatesp-equal-same-by-duplicity).</p>"
              (equal (duplicity a x)
                     0)))
 
+  (defthm duplicity-when-member-equal
+    ;; New lemma by Keshav Kini to complement the nonmember lemma above
+    (implies (member-equal a x)
+             (< 0 (duplicity a x)))
+    :rule-classes ((:rewrite) (:linear)))
+
+  (defthm duplicity-zero-to-member-equal
+    ;; This also seems like a solid rule for normalizing nonzero duplicity into
+    ;; membership.  It's potentially expensive since it targets equal, but I
+    ;; think we are generally okay with that.
+    (iff (equal 0 (duplicity a x))
+         (not (member-equal a x))))
+
   (defthm no-duplicatesp-equal-when-high-duplicity
     (implies (> (duplicity a x) 1)
              (not (no-duplicatesp-equal x))))

@@ -170,32 +170,32 @@
 (defxdoc unsigned-byte-p-discussion
   :parents (unsigned-byte-p)
   :short "Discussion on how to use unsigned-byte-p"
-  :long "@(csee unsigned-byte-p) (and @(see signed-byte-p) for that matter) are
+  :long "<p>@(csee unsigned-byte-p) (and @(see signed-byte-p) for that matter) are
   tricky enough that there is no one-size-fits-all solution that everyone
   should use to reason about them.  Depending on your problem you might try any
-  of these strategies:
+  of these strategies:</p>
 
   <ol>
 
-  <li><p><it>Arithmetic</it> -- Leave unsigned-byte-p's regular definition
+  <li><it>Arithmetic</it> -- Leave unsigned-byte-p's regular definition
   enabled and try to reason about the resulting inequalities.  This sometimes
   works and may be a good approach if you have goals involving \"non bit-vector
   functions\" like +, *, /, etc.  I usually don't use this approach but I
-  haven't done a lot of proofs about true arithmetic functions.</p></li>
+  haven't done a lot of proofs about true arithmetic functions.</li>
 
-  <li><p><it>Induction</it> -- Disable unsigned-byte-p's regular definition but
+  <li><it>Induction</it> -- Disable unsigned-byte-p's regular definition but
   instead enable an alternate definition, e.g., the
   centaur/bitops/ihsext-basics book has unsigned-byte-p**, which is a recursive
   version that works well for induction.  This definition is in the
   ihsext-recursive-redefs ruleset and also works well with other ** definitions
   like logand**.  This is often a good strategy when proving lemmas about
   unsigned-byte-p but is probably mainly useful when reasoning about new
-  recursive functions.</p></li>
+  recursive functions.</li>
 
-  <li><p><it>Vector</it> -- Leave @(see unsigned-byte-p) disabled except to
+  <li><it>Vector</it> -- Leave @(see unsigned-byte-p) disabled except to
   prove lemmas, and expect to reason about (unsigned-byte-p n x) via lemmas.  I
   think I usually prefer this strategy as it feels more reliable/less magical
-  than reasoning about arithmetic inequalities.  Some useful books:</p>
+  than reasoning about arithmetic inequalities.  Some useful books:
 
     <ol>
 
@@ -209,7 +209,7 @@
       obligations that arise from things like (the (unsigned-byte 32)
       x).</li>
 
-    </ol>
+    </ol></li>
   </ol>
 
   <p>We have occasionally written wrapper functions like @('u32p'), but, I
@@ -250,17 +250,17 @@
      :hints((\"Goal\" :use ((:instance upper-bound)))))
   })
 
-  This would be a good rule to try on goals like @('(unsigned-byte-p 10 (* a
+  <p>This would be a good rule to try on goals like @('(unsigned-byte-p 10 (* a
   b))'), but without some insight into @('a') and @('b') it's hard to know how
   to successfully instantiate @('N1/N2').  So you end up resorting to @(':use')
   hints, or special-case variants of this theorem (e.g., another theorem that
-  says 7 bits * 3 bits --> 10 bits), or you do something more sophisticated
-  with bind-free or similar.
+  says 7 bits * 3 bits --&gt; 10 bits), or you do something more sophisticated
+  with bind-free or similar.</p>
 
-  If you find yourself going down this road, you might see in particular Dave
+  <p>If you find yourself going down this road, you might see in particular Dave
   Greve's \"Parameterized Congruences\" paper from the 2006 workshop, which is
   implemented in the coi/nary/nary.lisp book.  You could also look at Sol
-  Swords' book to do something similar, see :doc contextual-rewriting.")
+  Swords' book to do something similar, see :doc contextual-rewriting.</p>")
 
 
 (defsection signed-byte-p-basics

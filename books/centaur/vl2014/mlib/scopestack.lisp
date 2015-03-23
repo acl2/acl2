@@ -393,17 +393,17 @@ in it, such as a function, task, or block statement."
 ;; Notes on scope rules, from SV spec 23.9.
 
 ;; Elements that define new scopes:
-;;     — Modules
-;;     — Interfaces
-;;     — Programs
-;;     — Checkers
-;;     — Packages
-;;     — Classes
-;;     — Tasks
-;;     — Functions
-;;     — begin-end blocks (named or unnamed)
-;;     — fork-join blocks (named or unnamed)
-;;     — Generate blocks
+;;       Modules
+;;       Interfaces
+;;       Programs
+;;       Checkers
+;;       Packages
+;;       Classes
+;;       Tasks
+;;       Functions
+;;       begin-end blocks (named or unnamed)
+;;       fork-join blocks (named or unnamed)
+;;       Generate blocks
 
 ;; An identifier shall be used to declare only one item within a scope.
 ;; However, perhaps this doesn't apply to global/compilation-unit scope, since
@@ -518,7 +518,7 @@ in it, such as a function, task, or block statement."
     :val-type vl-scopeitem-p
     :count vl-scopeitem-alist-count)
 
-  (defoption vl-maybe-scopeitem-p vl-scopeitem-p))
+  (defoption vl-maybe-scopeitem vl-scopeitem-p))
 
 
 (defsection import-results

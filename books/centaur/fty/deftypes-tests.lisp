@@ -1103,3 +1103,56 @@
 (deflist natlist :pred natlistp :elt-type natp)
 
 (defalist timer-alist :pred timer-alistp :key-type symbolp :val-type rational-listp)
+
+
+(defoption maybe-jaredtree jaredtree)
+
+(deftypes faz
+  (deftagsum faz
+    (:list ((q mfazlist)))
+    (:base ((n natp :rule-classes :type-prescription)))
+    :measure (two-nats-measure (acl2-count x) 0))
+  (defoption maybe-faz faz
+    :measure (two-nats-measure (acl2-count x) 1))
+  (deflist mfazlist :elt-type maybe-faz
+    :measure (two-nats-measure (acl2-count x) 0)))
+
+
+
+
+(deftranssum anyple
+  (3ple-d 3ple-e 3ple-f))
+
+(defprod 3ple-d
+  ((first nat)
+   (second int)
+   (third symbol))
+  :tag :d
+  :layout :alist)
+
+(defprod 3ple-e
+  ((first nat)
+   (second int)
+   (third symbol))
+  :tag :e
+  :layout :list)
+
+(defprod 3ple-f
+  ((first nat)
+   (second int)
+   (third symbol))
+  :tag :f
+  :layout :tree)
+
+
+
+;; BOZO This doesn't work because we'd need to somewhat rearchitect the parsing
+;; of deftypes forms to accomodate analyzing the other types in the mutual-recursion to find
+;; their possible tags so that they can be used in the transsum.
+;; (deftypes argle
+;;   (defprod argle
+;;     ((aaa anyple2)
+;;      (bbb anyple))
+;;     :tag :argle)
+;;   (deftranssum anyple2
+;;     (3ple-d 3ple-e 3ple-f argle)))

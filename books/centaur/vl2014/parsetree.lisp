@@ -110,12 +110,31 @@ regular view of the source code.</p>")
 
 (local (xdoc::set-default-parents syntax))
 
-(defoption maybe-stringp stringp
-  ;; BOZO misplaced, also has documentation issues
-  :parents nil
-  :fix maybe-string-fix
-  :equiv maybe-string-equiv
-  :pkg vl2014::foo)
+;; (defoption maybe-string stringp :pred acl2::maybe-stringp$inline
+;;   ;; BOZO misplaced, also has documentation issues
+;;   :parents nil
+;;   :fix maybe-string-fix
+;;   :equiv maybe-string-equiv)
+
+(define maybe-string-fix ((x maybe-stringp))
+  :returns (xx maybe-stringp)
+  :hooks nil
+  (mbe :logic (and x (str-fix x))
+       :exec x)
+  ///
+  (defthm maybe-string-fix-when-maybe-stringp
+    (implies (maybe-stringp x)
+             (equal (maybe-string-fix x) x)))
+
+  (defthm maybe-string-fix-under-iff
+    (iff (maybe-string-fix x) x))
+
+  (fty::deffixtype maybe-string :pred maybe-stringp :fix maybe-string-fix
+    :equiv maybe-string-equiv :define t :forward t)
+
+  (defrefinement maybe-string-equiv streqv
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (enable streqv))))))
 
 (defprod vl-range
   :short "Representation of ranges on wire declarations, instance array
@@ -145,13 +164,14 @@ which is quite amazing and strange.</p>
 transformations expect the indices to be resolved to integers.  However, we now
 try to support the use of both ascending and descending ranges.</p>")
 
-(defoption vl-maybe-range-p vl-range-p
+(defoption vl-maybe-range vl-range-p
   :parents (syntax vl-range-p)
   ///
   (defthm type-when-vl-maybe-range-p
     (implies (vl-maybe-range-p x)
              (or (consp x)
                  (not x)))
+    :hints(("Goal" :in-theory (enable vl-maybe-range-p)))
     :rule-classes :compound-recognizer))
 
 (fty::deflist vl-maybe-range-list
@@ -204,7 +224,7 @@ try to support the use of both ascending and descending ranges.</p>")
 represent these types using certain keyword symbols, whose names
 correspond to the possible types.</p>")
 
-(defoption vl-maybe-nettypename-p vl-nettypename-p)
+(defoption vl-maybe-nettypename vl-nettypename-p)
 
 (defenum vl-coretypename-p
   (;; integer vector types, i put these first since they're common
@@ -294,7 +314,7 @@ subset of the valid @('data_type')s:</p>
   :elt-type vl-packeddimension
   :elementp-of-nil nil)
 
-(defoption vl-maybe-packeddimension-p vl-packeddimension-p)
+(defoption vl-maybe-packeddimension vl-packeddimension-p)
 
 
 (define vl-enumbasekind-p (x)
@@ -674,7 +694,7 @@ away with them as alternate kinds of assignments.</p>"))
                   :vl-usertype (change-vl-usertype x :udims udims))))
 
 
-(defoption vl-maybe-datatype-p vl-datatype-p)
+(defoption vl-maybe-datatype vl-datatype-p)
 
 
 (defval *vl-plain-old-integer-type*
@@ -981,7 +1001,7 @@ and @(':vl-inout'), respectively.</p>
 arguments of gate instances and most arguments of module instances.  See our
 @(see vl-plainarg-p) structures for more information.</p>")
 
-(defoption vl-maybe-direction-p vl-direction-p
+(defoption vl-maybe-direction vl-direction-p
   ///
   (defthm type-when-vl-maybe-direction-p
     (implies (vl-direction-p x)
@@ -1098,12 +1118,13 @@ transformations probably do not handle them properly.</p>
 left as @('nil').  Simulators that care about this will need to carefully
 review the rules for correctly computing these delays.</p>")
 
-(defoption vl-maybe-gatedelay-p vl-gatedelay-p
+(defoption vl-maybe-gatedelay vl-gatedelay-p
   ///
   (defthm type-when-vl-maybe-gatedelay-p
     (implies (vl-maybe-gatedelay-p x)
              (or (not x)
                  (consp x)))
+    :hints(("Goal" :in-theory (enable vl-maybe-gatedelay-p)))
     :rule-classes :compound-recognizer))
 
 (defenum vl-dstrength-p
@@ -1145,12 +1166,13 @@ in 7.13.  But our parser does not try to implement these defaults, and we only
 associate strengths onto module items where they are explicitly
 specified.</p>")
 
-(defoption vl-maybe-gatestrength-p vl-gatestrength-p
+(defoption vl-maybe-gatestrength vl-gatestrength-p
   ///
   (defthm type-when-vl-maybe-gatestrength-p
     (implies (vl-maybe-gatestrength-p x)
              (or (not x)
                  (consp x)))
+    :hints(("Goal" :in-theory (enable vl-maybe-gatestrength-p)))
     :rule-classes :compound-recognizer))
 
 
@@ -1163,12 +1185,13 @@ recognized by @(call vl-cstrength-p).</p>
 <p>BOZO add references to the Verilog-2005 standard, description of what these
 are.</p>")
 
-(defoption vl-maybe-cstrength-p vl-cstrength-p
+(defoption vl-maybe-cstrength vl-cstrength-p
   ///
   (defthm type-when-vl-maybe-cstrength-p
     (implies (vl-maybe-cstrength-p x)
              (and (symbolp x)
                   (not (equal x t))))
+    :hints(("Goal" :in-theory (enable vl-maybe-cstrength-p)))
     :rule-classes :compound-recognizer))
 
 
@@ -1861,13 +1884,14 @@ collapses into only two cases: expression or data type.</p>")
          :hints(("Goal" :in-theory (enable (tau-system))))
          :rule-classes :type-prescription))
 
-(defoption vl-maybe-paramvalue-p vl-paramvalue-p
+(defoption vl-maybe-paramvalue vl-paramvalue-p
   :parents (vl-paramargs)
   ///
   (defthm type-when-vl-maybe-paramvalue-p
     (implies (vl-maybe-paramvalue-p x)
              (or (consp x)
                  (not x)))
+    :hints(("Goal" :in-theory (enable vl-maybe-paramvalue-p)))
     :rule-classes :compound-recognizer))
 
 (defprod vl-namedparamvalue
@@ -2461,7 +2485,7 @@ rid of repeateventcontrol.</p>")
          :hints(("Goal" :in-theory (enable (tau-system))))
          :rule-classes :type-prescription))
 
-(defoption vl-maybe-delayoreventcontrol-p vl-delayoreventcontrol-p)
+(defoption vl-maybe-delayoreventcontrol vl-delayoreventcontrol-p)
 
 
 (defenum vl-assign-type-p
@@ -3627,6 +3651,11 @@ initially kept in a big, mixed list.</p>"
     :hints(("Goal" :in-theory (enable tag vl-genelement-p)))
     :rule-classes :forward-chaining)
 
+  (local (defthm vl-genelement-p-of-vl-genelement-fix-forward-for-tag
+           (vl-genelement-p (vl-genelement-fix x))
+           :rule-classes
+           ((:forward-chaining :trigger-terms ((tag (vl-genelement-fix x)))))))
+
   (deftranssum vl-ctxelement
     ;; Add any tagged product that can be written with ~a and has a loc field.
     (vl-portdecl
@@ -3956,13 +3985,14 @@ transforms to not modules with this attribute.</p>"
   (vl-module->esim x))
 
 
-(defoption vl-maybe-module-p vl-module-p
+(defoption vl-maybe-module vl-module-p
   :short "Recognizer for an @(see vl-module-p) or @('nil')."
   ///
   (defthm type-when-vl-maybe-module-p
     (implies (vl-maybe-module-p x)
              (or (not x)
                  (consp x)))
+    :hints(("Goal" :in-theory (enable vl-maybe-module-p)))
     :rule-classes :compound-recognizer))
 
 
@@ -4012,7 +4042,7 @@ sequential UDP.</li>
 
 </ul>")
 
-(defoption vl-maybe-udpsymbol-p
+(defoption vl-maybe-udpsymbol
   vl-udpsymbol-p)
 
 (defprod vl-udpedge
@@ -4270,7 +4300,7 @@ resulting from parsing some Verilog source code."
 
    ))
 
-(defoption vl-maybe-design-p vl-design-p)
+(defoption vl-maybe-design vl-design-p)
 
 
 

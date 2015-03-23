@@ -50,8 +50,16 @@ copying and pasting code.")
                      (eq (first landmark) 'acl2::event-landmark)
                      (eq (second landmark) 'acl2::global-value)))
         (raise "Expected (EVENT-LANDMARK GLOBAL-VALUE . <event-tuple>) but found ~x0."
-               landmark)))
-    (cddr landmark)))
+               landmark))
+       (tuple (cddr landmark))
+       (form (acl2::access-event-tuple-form tuple)))
+      (cond ((and (consp form)
+                  (eq (car form) 'acl2::verify-termination-boot-strap))
+; Check added by Matt K.  (Without it, the check below involving
+;   (get-event-tuple 'binary-append world)
+; was failing after a 3/20/2015 modification to ACL2 source file axioms.lisp.
+             (get-event-tuple name (cdr ev-world)))
+            (t tuple))))
 
 (defun runes-to-e/ds (runes enables disables state)
   ;; Returns (mv enables disables)

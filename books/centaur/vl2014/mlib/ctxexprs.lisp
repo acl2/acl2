@@ -122,7 +122,10 @@ essentially say where some expressions are from.</p>")
          :hints(("Goal" :in-theory (enable ,collect-nrev
                                            ,collect)))))))
 
-(def-vl-ctxexprs :type vl-port)
+(encapsulate nil
+  (local (in-theory (enable vl-port-p)))
+  (def-vl-ctxexprs :type vl-port))
+
 (def-vl-ctxexprs :type vl-portdecl)
 (def-vl-ctxexprs :type vl-assign)
 (def-vl-ctxexprs :type vl-vardecl)
