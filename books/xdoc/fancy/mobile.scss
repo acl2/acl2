@@ -35,7 +35,7 @@
 
 /* ---------------------------- LAYOUT -------------------------------- */
 
-$topsize: 50px;
+$topsize: 55px;
 $navsize: 16em;
 
 .desktoponly {
@@ -50,8 +50,8 @@ body {
 }
 
 #top {
-//    position: fixed;
-//    z-index: 100;
+    position: fixed;
+    z-index: 100;
     left: 0;
     top: 0;
     height: ($topsize - 5);
@@ -73,26 +73,30 @@ body {
 
 
 #left {
-    z-index: 100;
+    z-index: 300;
     position: fixed;
     left: 0;
-//    top: $topsize;
+    top: $topsize;
     bottom: 0em;
     width: $navsize;
-    padding: 0;
+    height: 100%;
     overflow-y: scroll;
     overflow-x: hidden;
     display: none;
+    padding-left: 0.5em;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-right: 0;
 }
 
 #right {
     border-left: solid 1px;
-//    position: fixed;
+    position: fixed;
     left: 0;
-//    top: $topsize;
+    top: $topsize;
     right: 0em;
     bottom: 0em;
-//    overflow: auto;
+    overflow: auto;
     margin: 0;
     width: 100%;
     padding: {
@@ -163,11 +167,13 @@ body {
 
 .hindex {
   list-style-type: none;
-  padding: 0;
-  font-weight: normal;
-
+  padding: 0em;
+//  font-weight: normal;
+//  font-size: 16pt;
+//  margin-bottom: .5em;
   li {
-      margin-bottom: 0em;
+//      margin-bottom: .5em;
+      margin-bottom: 0;
   }
 
   li li {

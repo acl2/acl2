@@ -511,6 +511,14 @@ function navGo(id)
     actionGoKey(key);
 }
 
+function navToggleVisible()
+{
+    // Small displays (mobile) only -- we hide the navigation until the menu
+    // button is pressed.
+
+    $("#left").toggle();
+}
+
 
 
 // --------------------------------------------------------------------------
@@ -1224,6 +1232,21 @@ function srclink(key)
     encodeURIComponent(srclink_header + rawname));
 }
 
+function normalizeNavigation()
+{
+    // If we are in mobile mode, hide the navigation menu.
+    var width_in_pixels = $(window).width();
+//    console.log("Width in Pixels is ", width_in_pixels);
+    var width_in_em = width_in_pixels / parseFloat($("body").css("font-size"));
+//    console.log("Width in Em ", width_in_em);
+    if (width_in_em < 50) {
+	$("#left").hide();
+    }
+    else {
+	$("#left").show();
+    }
+}
+
 function actionGoKey(key) {
 
     // Warning: if you change this, check for all uses of replaceState,
@@ -1239,6 +1262,7 @@ function actionGoKey(key) {
     window.history.pushState({key:key,rtop:0}, keyTitle(key),
 			     "?topic=" + key);
     datLoadKey(key, 0);
+    normalizeNavigation();
 }
 
 function historySavePlace() {
