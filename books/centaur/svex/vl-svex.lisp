@@ -34,7 +34,7 @@
 (include-book "centaur/vl/simpconfig" :dir :system)
 (include-book "centaur/vl/util/gc" :dir :system)
 ;; (include-book "centaur/vl/transforms/always/top-svex" :dir :system)
-(include-book "centaur/vl/transforms/addinstnames" :dir :system)
+(include-book "centaur/vl/transforms/addnames" :dir :system)
 (include-book "centaur/vl/transforms/always/eliminitial" :dir :system)
 ;; (include-book "centaur/vl/transforms/assign-trunc" :dir :system)
 ;; (include-book "centaur/vl/transforms/blankargs" :dir :system)
@@ -157,7 +157,6 @@
 
        ;; (good          (xf-cwtime (vl-design-gatesplit good)))
        ;; (good          (xf-cwtime (vl-design-gate-elim good :primalist primalist)))
-       (good          (xf-cwtime (vl-design-addinstnames good)))
        ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
        ;; (good          (xf-cwtime (vl-design-elim-supplies good)))
@@ -207,6 +206,8 @@
                           :name xf-mark-design-wires))
        (x (xf-cwtime (vl-design-argresolve x)
                           :name xf-argresolve))
+       (x (xf-cwtime (vl-design-addnames x)
+                     :name xf-addnames))
        (x (xf-cwtime (vl-design-origexprs x)
                           :name xf-origexprs))
        (x (xf-cwtime (vl-design-clean-warnings x)

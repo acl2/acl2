@@ -54,6 +54,8 @@
        ((when err)
         (cw "Failed: ~@0" err)
         (mv nil design state)))
+    (cw "Module names (good): ~x0~%" (vl-modulelist->names (vl-design->mods good)))
+    (cw "Module names (bad): ~x0~%" (vl-modulelist->names (vl-design->mods bad)))
     (cw "Reportcard for good mods:~%")
     (cw-unformatted (vl-reportcard-to-string (vl-design-reportcard good)))
     (cw "Reportcard for bad mods:~%")

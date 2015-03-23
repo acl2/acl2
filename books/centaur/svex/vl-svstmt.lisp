@@ -121,6 +121,36 @@ because... (BOZO)</p>
                            acl2::subsetp-when-atom-right
                            acl2::subsetp-when-atom-left)))
 
+
+(define vl-caselist->caseexprs ((x vl-caselist-p))
+  :returns (caseexprs vl-exprlist-p)
+  :measure (len (vl-caselist-fix x))
+  (b* ((x (vl-caselist-fix x)))
+    (if (atom x)
+        nil
+      (append (caar x)
+              (vl-caselist->caseexprs (cdr x))))))
+
+
+(define vl-caseexprs->svex-test ((x vl-exprlist-p)
+                                 (test svex::svex-p)
+                                 (size natp)
+                                 (conf vl-svexconf-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (cond svex::svex-p))
+  (if (atom x)
+      (mv nil (svex-int 0))
+    (b* (((mv warnings rest) (vl-caseexprs->svex-test (cdr x) test size conf))
+         ((wmv warnings first &) (vl-expr-to-svex-selfdet (car x) (lnfix size) conf)))
+    (mv warnings
+        (svex::svcall svex::bitor
+                      (svex::svcall svex::== test first)
+                      rest))))
+  ///
+  (defret vars-of-vl-caseexprs->svex-test
+    (implies (svex::svarlist-addr-p (svex::svex-vars test))
+             (svex::svarlist-addr-p (svex::svex-vars cond)))))
+
 (defines vl-stmt->svstmts
   :prepwork ((local (in-theory (disable not))))
   (define vl-stmt->svstmts ((x vl-stmt-p)
@@ -212,6 +242,26 @@ because... (BOZO)</p>
           (mv (and ok2)
               warnings
               bodystmts))
+
+        :vl-casestmt
+        (b* ((caseexprs (cons x.test (vl-caselist->caseexprs x.caselist)))
+             ((vl-svexconf conf))
+             ((wmv warnings sizes)
+              (vl-exprlist-selfsize caseexprs conf.ss))
+             ((when (member nil (redundant-list-fix sizes)))
+              ;; already warned
+              (fail (warn :type :vl-stmt->svstmts-failed
+                          :msg "Failed to size some case expression: ~a0"
+                          :args (list x))))
+             (size (max-nats sizes))
+             ((wmv ok1 warnings default) (vl-stmt->svstmts x.default conf nonblockingp))
+             ((wmv warnings test-svex &)
+              (vl-expr-to-svex-selfdet x.test size conf))
+             ((wmv ok2 warnings ans)
+              (vl-caselist->svstmts x.caselist size test-svex default conf nonblockingp)))
+          (mv (and ok1 ok2) warnings ans))
+                    
+
         :otherwise
         (fail (warn :type :vl-stmt->svstmts-fail
                     :msg "Statement type not supported: ~a0."
@@ -231,6 +281,36 @@ because... (BOZO)</p>
          ((wmv ok1 warnings x1) (vl-stmt->svstmts (car x) conf nonblockingp))
          ((wmv ok2 warnings x2) (vl-stmtlist->svstmts (cdr x) conf nonblockingp)))
       (mv (and ok1 ok2) warnings (append-without-guard x1 x2))))
+
+  (define vl-caselist->svstmts ((x vl-caselist-p)
+                                (size natp)
+                                (test svex::svex-p)
+                                (default svex::svstmtlist-p)
+                                (conf vl-svexconf-p)
+                                (nonblockingp))
+    :returns (mv (ok)
+                 (warnings vl-warninglist-p)
+                 (res (and (svex::svstmtlist-p res)
+                           (implies (and (svex::svarlist-addr-p (svex::svex-vars test))
+                                         (svex::svarlist-addr-p (svex::svstmtlist-vars default)))
+                                    (svex::svarlist-addr-p
+                                     (svex::svstmtlist-vars res))))))
+    :measure (vl-caselist-count x)
+    (b* ((x (vl-caselist-fix x))
+         ((when (atom x))
+          (mv t nil (svex::svstmtlist-fix default)))
+         ((cons tests stmt) (car x))
+         ((mv ok1 warnings rest) (vl-caselist->svstmts (cdr x) size test default conf nonblockingp))
+         ((wmv ok2 warnings first) (vl-stmt->svstmts stmt conf nonblockingp))
+         ((wmv warnings test)
+          (vl-caseexprs->svex-test tests test size conf)))
+      (mv (and ok1 ok2)
+          warnings
+          (list (svex::make-svstmt-if :cond test :then first :else rest)))))
+
+         
+         
+
   ///
   (verify-guards vl-stmt->svstmts)
   (deffixequiv-mutual vl-stmt->svstmts))
@@ -357,7 +437,7 @@ because... (BOZO)</p>
          (subparams (vl-stmt-parameter-refs decl.body fn-ss))
          ((when (and (atom subfns) (atom subparams)))
           (b* (((mv warnings expr)
-                (vl-fundecl-to-svex decl step.ss nil nil)))
+                (vl-fundecl-to-svex decl fn-ss nil nil)))
             (mv warnings name expr)))
          ((when (zp rec-limit))
           (mv (warn :type :vl-funname-svex-compile-fail

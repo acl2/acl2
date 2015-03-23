@@ -951,7 +951,8 @@ constructed separately.)</p>"
                (conn-svex svex::svex-p)
                (port-size posp)
                (conn-size posp)
-               (replicatedp))))
+               (replicatedp))
+   :layout :alist))
             
 (fty::deflist vl-portinfolist :elt-type vl-portinfo)
 
@@ -1520,7 +1521,7 @@ vl-instarray-port-wiredecls), which produces (in the example) the declarations</
 details on dealing with modinst arrays.</p>"
   (vl-portinfo-case x
     :regular
-    (b* ((xwidth (if x.replicatedp (* x.port-size (acl2::lposfix arraysize)) x.port-size))
+    (b* ((xwidth (if x.replicatedp x.port-size (* x.port-size (acl2::lposfix arraysize))))
          (portwire (svex::make-wire :name x.portname
                                     :width xwidth
                                     :low-idx 0)))
@@ -3112,7 +3113,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                (modname (if (atom modname)
                             (list modname :genblock (or x.name index))
                           (append-without-guard modname (list :genblock (or x.name index)))))
-               (genblob (vl-sort-genelements x.elems))
+               (genblob (vl-sort-genelements x.elems :scopetype :vl-genblock))
                ((wmv warnings mod modalist)
                 (vl-genblob->svex-modules genblob ss modname modalist)))
             (mv warnings (hons-acons modname mod modalist)
@@ -3128,7 +3129,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                ;; BOZO This is a weird thing to do, but at the moment we need it
                ;; to make our scopes work out.  To fix this, see the discussion
                ;; under vl-path-scope->svex-addr and fix that first.
-               (ss (vl-scopestack-push (vl-sort-genelements nil) ss))
+               (ss (vl-scopestack-push (make-vl-genblob) ss))
                ((wmv warnings modalist block-insts)
                 (vl-genarrayblocks->svex-modules x.blocks ss modname modalist))
                (arraymod (svex::make-module :insts block-insts))
@@ -3176,7 +3177,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
            ((vl-genarrayblock x))
            (modname (svex::modname-fix modname))
            (modname (append-without-guard modname (list x.index)))
-           (genblob (vl-sort-genelements x.elems))
+           (genblob (vl-sort-genelements x.elems :scopetype :vl-genarrayblock))
            ((wmv warnings mod modalist)
             (vl-genblob->svex-modules genblob ss modname modalist)))
         (mv warnings (hons-acons modname mod modalist)

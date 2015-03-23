@@ -122,7 +122,8 @@
   ;; Skip atts because they're not semantically relevant, generates bc they're
   ;; in a different scope
   :field-fns ((atts :skip)
-              (generates :skip))
+              (generates :skip)
+              (fundecls :skip))
   :fnname-template <type>-parameter-refs)
 
 (fty::defvisitor vl-datatype-parameter-refs

@@ -993,6 +993,89 @@ be very cheap in the single-threaded case.</p>"
                                       vl-importlist->star-packages)))))
 
 
+(local (defthm alist-keys-of-vl-scopeitem-alist
+         (implies (vl-scopeitem-alist-p x)
+                  (string-listp (alist-keys x)))
+         :hints(("Goal" :in-theory (enable vl-scopeitem-alist-p
+                                           alist-keys)))))
+
+(local (defthm alist-keys-of-vl-importresult-alist
+         (implies (vl-importresult-alist-p x)
+                  (string-listp (alist-keys x)))
+         :hints(("Goal" :in-theory (enable vl-importresult-alist-p
+                                           alist-keys)))))
+
+(local (defthm alist-keys-of-vl-scopedef-alist
+         (implies (vl-scopedef-alist-p x)
+                  (string-listp (alist-keys x)))
+         :hints(("Goal" :in-theory (enable vl-scopedef-alist-p
+                                           alist-keys)))))
+
+(local (defthm alist-keys-of-vl-package-alist
+         (implies (vl-package-alist-p x)
+                  (string-listp (alist-keys x)))
+         :hints(("Goal" :in-theory (enable vl-package-alist-p
+                                           alist-keys)))))
+
+(local (defthm alist-keys-of-vl-portdecl-alist
+         (implies (vl-portdecl-alist-p x)
+                  (string-listp (alist-keys x)))
+         :hints(("Goal" :in-theory (enable vl-portdecl-alist-p
+                                           alist-keys)))))
+
+(local (defthm string-listp-of-append
+         (implies (and (string-listp a)
+                       (string-listp b))
+                  (string-listp (append a b)))))
+
+
+
+(local (defthm cdr-of-lookup-in-scopeitem-alist
+         (implies (vl-scopeitem-alist-p x)
+                  (iff (cdr (hons-assoc-equal k x))
+                       (hons-assoc-equal k x)))
+         :hints(("Goal" :in-theory (enable vl-scopeitem-alist-p)))))
+
+(local (defthm cdr-of-lookup-in-importresult-alist
+         (implies (vl-importresult-alist-p x)
+                  (iff (cdr (hons-assoc-equal k x))
+                       (hons-assoc-equal k x)))
+         :hints(("Goal" :in-theory (enable vl-importresult-alist-p)))))
+
+(define vl-import-stars-itemnames ((packages string-listp)
+                                   (design vl-maybe-design-p))
+  :returns (names string-listp)
+  (b* (((when (atom packages)) nil)
+       (pkg (string-fix (Car packages)))
+       (package (and design (cdr (hons-get pkg (vl-design-scope-package-alist-top design)))))
+       ((unless package) nil))
+    (append (alist-keys (vl-package-scope-item-alist-top package))
+            (vl-import-stars-itemnames (cdr packages) design)))
+
+  :prepwork
+  ((local (defthm lookup-of-non-string-in-scopeitem-alist
+            (implies (and (not (stringp name))
+                          (string-listp (alist-keys x)))
+                     (not (hons-assoc-equal name x)))
+            :hints(("Goal" :in-theory (enable alist-keys))))))
+
+  ///
+
+  (local (defthm stringp-when-member
+           (implies (member name (vl-import-stars-itemnames packages design))
+                    (stringp name))
+           :hints (("goal" :use ((:instance string-listp-of-vl-import-stars-itemnames))))
+           :rule-classes :forward-chaining))
+
+  (defthm vl-import-stars-itemname-present-when-lookup
+    (iff (member name (vl-import-stars-itemnames packages design))
+         (and (stringp name)
+              (mv-nth 1 (vl-import-stars-find-item name packages design))))
+    :hints(("Goal" :in-theory (e/d (vl-import-stars-find-item)
+                                   (vl-package-scope-item-alist-correct))))))
+       
+
+
 
 
 
@@ -1008,6 +1091,21 @@ be very cheap in the single-threaded case.</p>"
        ((when import-item) (mv (vl-importresult->pkg-name import-item)
                                (vl-importresult->item import-item))))
     (vl-import-stars-find-item name x.star-packages design)))
+
+
+(define vl-scopeinfo->itemnames ((x vl-scopeinfo-p) (design vl-maybe-design-p))
+  :returns (names string-listp)
+  (b* (((vl-scopeinfo x)))
+    (append (alist-keys x.locals)
+            (alist-keys x.imports)
+            (vl-import-stars-itemnames x.star-packages design)))
+  ///
+
+  (defthm vl-scopeinfo->itemnames-present-when-lookup
+    (implies (and (mv-nth 1 (vl-scopeinfo-find-item name x design))
+                  (stringp name))
+             (member name (vl-scopeinfo->itemnames x design)))
+    :hints(("Goal" :in-theory (enable vl-scopeinfo-find-item)))))
 
 
 
@@ -1633,3 +1731,51 @@ returns them as an ordered set."
   ;;                           (vl-modulelist->names mods)))
   ;;   :hints((set-reasoning)))
   )
+
+
+(define vl-scope-namespace ((x vl-scope-p) (design vl-maybe-design-p))
+  :returns (names string-listp)
+  (append (alist-keys (vl-scope-portdecl-alist x))
+          (alist-keys (vl-scope-package-alist x))
+          (alist-keys (vl-scope-definition-alist x))
+          (vl-scopeinfo->itemnames (vl-scope->scopeinfo x design) design))
+  ///
+  (defthm vl-scope-namespace-present-when-item-lookup
+    (implies (and (mv-nth 1 (vl-scope-find-item name x design))
+                  (stringp name))
+             (member name (vl-scope-namespace x design))))
+
+  (local (defthm lookup-in-definition-alist
+           (implies (vl-scopedef-alist-p x)
+                    (iff (hons-assoc-equal name x)
+                         (cdr (hons-assoc-equal name x))))
+           :hints(("Goal" :in-theory (enable vl-scopedef-alist-p)))))
+
+  (local (defthm lookup-in-package-alist
+           (implies (vl-package-alist-p x)
+                    (iff (hons-assoc-equal name x)
+                         (cdr (hons-assoc-equal name x))))
+           :hints(("Goal" :in-theory (enable vl-package-alist-p)))))
+
+  (local (defthm lookup-in-portdecl-alist
+           (implies (vl-portdecl-alist-p x)
+                    (iff (hons-assoc-equal name x)
+                         (cdr (hons-assoc-equal name x))))
+           :hints(("Goal" :in-theory (enable vl-portdecl-alist-p)))))
+
+  (defthm vl-scope-namespace-present-when-definition-lookup
+    (implies (and (vl-scope-find-definition name x)
+                  (stringp name))
+             (member name (vl-scope-namespace x design))))
+
+  (defthm vl-scope-namespace-present-when-package-lookup
+    (implies (and (vl-scope-find-package name x)
+                  (stringp name))
+             (member name (vl-scope-namespace x design))))
+
+  (defthm vl-scope-namespace-present-when-portdecl-lookup
+    (implies (and (vl-scope-find-portdecl name x)
+                  (stringp name))
+             (member name (vl-scope-namespace x design)))))
+
+(defoption vl-maybe-scope vl-scope)

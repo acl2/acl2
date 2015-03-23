@@ -2482,12 +2482,20 @@ if unresolved dimensions are present.</p>"
            (mv nil (and dim-size (* (max-nats widths) dim-size)))))
 
         (:vl-enum
-         (vl-datatype-size x.basetype))
+         (b* (((mv err sub-size)
+               (vl-datatype-size x.basetype))
+              ((when (or err (not sub-size)))
+               (mv err nil)))
+           (mv nil (and dim-size (* sub-size dim-size)))))
 
         (:vl-usertype
          (b* (((unless (mbt (and x.res t)))
-               (mv (vmsg "Usertype unresolved: ~a0" x) nil)))
-           (vl-datatype-size x.res))))))
+               (mv (vmsg "Usertype unresolved: ~a0" x) nil))
+              ((mv err sub-size)
+               (vl-datatype-size x.res))
+              ((when (or err (not sub-size)))
+               (mv err nil)))
+           (mv nil (and dim-size (* sub-size dim-size))))))))
 
   (define vl-structmemberlist-sizes ((x vl-structmemberlist-p))
     :returns (mv (err (iff (vl-msg-p err) err))
@@ -4156,6 +4164,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
   (defret len-of-vl-operandinfo->indices
     (equal (len indices) (vl-operandinfo-index-count x))
     :hints(("Goal" :in-theory (enable vl-operandinfo-index-count)))))
+
 
 (define vl-index-expr-typetrace
   ((x vl-expr-p

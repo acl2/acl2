@@ -523,7 +523,9 @@ e.g. bitselects, partselects, and nonconstant array selects.</p>"
               ;; nesting level in svex-world: one level for the whole array,
               ;; one level for the individual blocks.
               (:vl-genblock (mv nil 1))
-              (:vl-genarrayblock (mv nil 2))
+              (:vl-genarrayblock (mv nil 1))
+              (:vl-fundecl         (mv nil 1))
+              (:vl-anonymous-scope (mv nil 1))
               ;; Perhaps someday we'll need to add something about
               ;; statememts/functions/tasks here, but for the moment all that
               ;; is taken care of elsewhere (and complicated scoping stuff
@@ -1168,6 +1170,7 @@ the way.</li>
                ((when err) (mv err nil nil))
                (look (svex::svex-lookup var params))
                ((unless look)
+                ;; (cw "var: ~x0 look: ~x1 alist: ~x2~%" var look params);; (break$)
                 (mv (vmsg "Parameter definition not found") nil nil))
                ((unless (svex::svex-addr-p look))
                 (mv (vmsg "Parameter expression malformed") nil nil)))
@@ -2243,6 +2246,21 @@ functions can assume all bits of it are good.</p>"
                              :msg "Bad system function name: ~a0"
                              :args (list x))
                       (svex-x)))
+                 ;; ((when (equal simple-name "$clog2"))
+                 ;;  (b* (((unless (eql (len x.args) 1))
+                 ;;        (mv (fatal :type :vl-expr-to-svex-fail
+                 ;;                   :msg "Need 1 argument for $clog2: ~a0"
+                 ;;                   :args (list x))
+                 ;;            (svex-x)))
+                 ;;       ((mv warnings arg-svex ?size)
+                 ;;        (vl-expr-to-svex-selfdet (car x.args) nil conf))
+                 ;;       (arg-svex (svex::svex-reduce-consts arg-svex))
+                 ;;       ((unless (svex::svex-case arg-svex :quote))
+                 ;;        (mv (fatal :type :vl-expr-to-svex-fail
+                 ;;                   :msg "Non-constant argument to $clog2: ~a0"
+                 ;;                   :args (list x))
+                 ;;            (svex-x)))
+
                  ((unless (equal simple-name "$bits"))
                   (mv (fatal :type :vl-expr-to-svex-fail
                              :msg "Unsupported system call: ~a0"
@@ -2538,7 +2556,9 @@ functions can assume all bits of it are good.</p>"
                   (svex-x)))
              ((wmv warnings svex)
               (vl-assignpat-to-svex x.pat pattype conf x))
-             (err (vl-compare-datatypes type pattype)))
+             (err (if (and packedp (vl-datatype-packedp pattype))
+                      nil
+                    (vl-compare-datatypes type pattype))))
           (mv (if err
                   (fatal :type :vl-expr-to-svex-fail
                          :msg "Type mismatch: ~a0 has type ~a1 but ~
@@ -2947,6 +2967,7 @@ functions can assume all bits of it are good.</p>"
         (mv warnings nil type))
        ((mv err size) (vl-datatype-size type))
        ((when (or err (not size)))
+        ;; (break$)
         (mv (fatal :type :vl-expr-to-svex-fail
                    :msg "Couldn't size the datatype ~a0 of ~
                                     LHS expression ~a1: ~@2"

@@ -400,7 +400,7 @@ particular interest.</p>"
   (b* (((vl-warning x)))
     (change-vl-warning x
                        :msg "~a0: ~@1"
-                       :args (list ctx (vmsg x.msg x.args)))))
+                       :args (list ctx (vl-msg x.msg x.args)))))
 
 (defprojection vl-warninglist-add-ctx ((x vl-warninglist-p)
                                        (ctx))

@@ -43,6 +43,7 @@
   (vl-value-case x
     :vl-constint x.origwidth
     :vl-weirdint (len x.bits)
+    :vl-extint   1
     ;; Implementations always make strings at least 1 character wide -- the
     ;; empty string is equivalent to a string containing 1 null character.
     :vl-string   (* 8 (max 1 (length x.value)))

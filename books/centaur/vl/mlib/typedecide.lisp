@@ -594,8 +594,3 @@ the expression is an unsupported system call).  In such cases we just return
                 :args (list x right-type wrong-type)))))
     (mv warnings right-type)))
 
-
-
-
-
-

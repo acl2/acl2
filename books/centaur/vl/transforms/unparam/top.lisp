@@ -430,7 +430,7 @@ introduced.</p>"
 
        (new-inst (change-vl-modinst inst
                                     :modname new-modname
-                                    :paramargs (make-vl-paramargs-plain :args nil)))
+                                    :paramargs (make-vl-paramargs-named)))
 
        (unparam-signature (make-vl-unparam-signature
                            :modname inst.modname
@@ -510,18 +510,46 @@ introduced.</p>"
     (vl-gencase-some-match x (cdr y) ss warnings)))
 
 
+(define vl-fundecl-resolve-indices-top ((x vl-fundecl-p)
+                                        (ss vl-scopestack-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (new-x vl-fundecl-p))
+  (b* ((ss (vl-scopestack-push (vl-fundecl->blockscope x) ss))
+       ;; (fns (vl-fundecl-functions-called x))
+       (prefs (vl-fundecl-parameter-refs x ss))
+       ;; ((mv warnings fntable) (vl-funnames-svex-compile fns ss 1000))
+       ((mv warnings paramtable) (vl-paramrefs-svex-compile prefs 1000))
+       ((wmv warnings ?changedp new-x)
+        (vl-fundecl-resolve-indices
+         x (make-vl-svexconf :ss ss :fns nil :params paramtable))))
+    (mv warnings new-x)))
+
+(define vl-fundecllist-resolve-indices-top ((x vl-fundecllist-p)
+                                            (ss vl-scopestack-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (new-x vl-fundecllist-p))
+  (if (atom x)
+      (mv nil nil)
+    (b* (((mv warnings rest) (vl-fundecllist-resolve-indices-top (cdr x) ss))
+         ((wmv warnings first) (vl-fundecl-resolve-indices-top (car x) ss)))
+      (mv warnings (cons first rest)))))
+
 (define vl-genblob-resolve-indices-top ((x vl-genblob-p)
                                         (ss vl-scopestack-p))
   :returns (mv (warnings vl-warninglist-p)
                (new-x vl-genblob-p))
-  (b* ((prefs (vl-genblob-parameter-refs x ss))
-       (fns   (vl-genblob-functions-called x))
-       ((mv warnings fntable) (vl-funnames-svex-compile fns ss 1000))
-       ((wmv warnings paramtable) (vl-paramrefs-svex-compile prefs 1000))
+  (b* (((vl-genblob x))
+       (prefs (vl-genblob-parameter-refs x ss))
+       ;; (fns   (vl-genblob-functions-called x))
+       ;; ((mv warnings fntable) (vl-funnames-svex-compile fns ss 1000))
+       ((mv warnings paramtable) (vl-paramrefs-svex-compile prefs 1000))
        ((wmv warnings ?changedp new-x)
         (vl-genblob-resolve-indices
-         x (make-vl-svexconf :ss ss :fns fntable :params paramtable))))
-    (mv warnings new-x)))
+         x (make-vl-svexconf :ss ss :fns nil :params paramtable)))
+       (new-ss (vl-scopestack-push new-x (vl-scopestack-pop ss)))
+       ((wmv warnings new-fundecls)
+        (vl-fundecllist-resolve-indices-top (vl-genblob->fundecls x) new-ss)))
+    (mv warnings (change-vl-genblob new-x :fundecls new-fundecls))))
 
 
 (with-output :off (event)
@@ -572,7 +600,12 @@ introduced.</p>"
             (vl-generatelist-resolve x.generates x-ss warnings)))
         (mv ok warnings (change-vl-genblob new-x :generates new-generates))))
         
-           
+
+    ;; For consistency with svex, we need to be very careful about exactly when
+    ;; we push frames onto the scopestack.  The svex scheme is that any
+    ;; generate construct produces a nested module, and loops/arrays produce a
+    ;; module for the whole loop/array plus modules inside it for each
+    ;; repetition.  So we need to take care to follow the same discipline.
 
     (define vl-generate-resolve
       ((x vl-genelement-p "The generate block to resolve")
@@ -724,7 +757,11 @@ introduced.</p>"
                               :default (vl-make-index (acl2::loghead 32 current-val)))
                        :loc *vl-fakeloc*))
 
-           ;; Make a fake scope containing just the index param, and finalize it.
+           ;; Make a fake scope containing just the index param, and finalize
+           ;; it.  This seems dicey wrt svex consitency, but the key thing is
+           ;; that we push 2 frames onto the ss total.  This first one only
+           ;; contains the loop iterator, which won't be referenced in svex
+           ;; since it'll resolve to a constant.
            ((mv ok warnings idx-ss ?final-paramdecls)
             (vl-scope-finalize-params (make-vl-genblob)
                                       (list var-param)
@@ -741,11 +778,9 @@ introduced.</p>"
                        :msg "~a0: Failed to evaluate the loop termination expression ~a1"
                        :args (list (vl-genelement-fix orig-x) (vl-expr-fix continue)))
                 nil))
-
+ 
            ((when (eql (vl-resolved->val continue-val) 0))
             (mv t warnings nil))
-
-           
 
            ((mv ok warnings new-body)
             (vl-generate-resolve body idx-ss warnings))
@@ -753,10 +788,12 @@ introduced.</p>"
            ((unless ok)
             (mv nil warnings nil))
 
+           (param-genelts (vl-modelementlist->genelements final-paramdecls))
            (block1 (make-vl-genarrayblock :index current-val
                                           :elems (vl-genelement-case new-body
-                                                   :vl-genblock new-body.elems
-                                                   :otherwise (list new-body))))
+                                                   :vl-genblock (append param-genelts new-body.elems)
+                                                   :otherwise
+                                                   (append param-genelts (list new-body)))))
 
            ((wmv warnings next-value) (vl-consteval nextval idx-ss))
 
@@ -833,14 +870,20 @@ introduced.</p>"
                                        (ss vl-scopestack-p))
   :returns (mv (warnings vl-warninglist-p)
                (new-x vl-module-p))
-  (b* ((prefs (vl-module-parameter-refs x ss))
-       (fns   (vl-module-functions-called x))
-       ((mv warnings fntable) (vl-funnames-svex-compile fns ss 1000))
-       ((wmv warnings paramtable) (vl-paramrefs-svex-compile prefs 1000))
+  (b* (((vl-module x))
+       (prefs (vl-module-parameter-refs x ss))
+       ;; (fns   (vl-module-functions-called x))
+       ;; ((mv warnings fntable) (vl-funnames-svex-compile fns ss 1000))
+       ((mv warnings paramtable) (vl-paramrefs-svex-compile prefs 1000))
        ((wmv warnings ?changedp new-x)
         (vl-module-resolve-indices
-         x (make-vl-svexconf :ss ss :fns fntable :params paramtable))))
-    (mv warnings new-x)))
+         x (make-vl-svexconf :ss ss :fns nil :params paramtable)))
+       (new-ss (vl-scopestack-push new-x (vl-scopestack-pop ss)))
+       ((wmv warnings new-fundecls)
+        (vl-fundecllist-resolve-indices-top (vl-module->fundecls x) new-ss)))
+    (mv warnings (change-vl-module new-x :fundecls new-fundecls))))
+
+
 
 
 (define vl-create-unparameterized-module
@@ -851,27 +894,69 @@ introduced.</p>"
   :returns (mv (okp)
                (new-mod vl-module-p)
                (sigalist vl-unparam-sigalist-p))
-  (b* (((vl-module x))
-       (name (vl-unparam-newname x.name final-paramdecls))
+  (b* ((name (vl-unparam-newname (vl-module->name x) final-paramdecls))
+       (x (change-vl-module x :name name
+                            :paramdecls final-paramdecls))
+       ((vl-module x))
+       (mod-ss (vl-scopestack-push x ss))
        (warnings x.warnings)
-       ((mv ok warnings generates) (vl-generatelist-resolve x.generates ss warnings))
+       ((mv ok warnings generates) (vl-generatelist-resolve x.generates mod-ss warnings))
        ((unless ok)
+        ;; (cw "not ok~%")
         (mv nil (change-vl-module x :warnings warnings) nil))
 
-       ((mv warnings new-x) (vl-module-resolve-indices-top x ss))
-
-       (mod (change-vl-module new-x
+       (mod (change-vl-module x
                               :generates generates
                               :name name))
+       
+       ((wmv warnings new-x) (vl-module-resolve-indices-top mod mod-ss))
 
        ;; now change it to a genblob to rewrite the instances & collect the signatures
-       (genblob (vl-module->genblob mod))
+       (genblob (vl-module->genblob new-x))
        ((mv ok warnings sigalist new-genblob)
         (vl-genblob-collect-modinst-paramsigs genblob ss warnings x.name nil))
 
-       (final-mod1 (vl-genblob->module new-genblob mod))
+       (final-mod1 (vl-genblob->module new-genblob new-x))
        (final-mod (change-vl-module final-mod1 :warnings warnings)))
     (mv ok final-mod sigalist)))
+
+
+(define vl-interface-resolve-indices-top ((x vl-interface-p)
+                                       (ss vl-scopestack-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (new-x vl-interface-p))
+  (b* ((prefs (vl-interface-parameter-refs x ss))
+       (fns   (vl-interface-functions-called x))
+       ((mv warnings fntable) (vl-funnames-svex-compile fns ss 1000))
+       ((wmv warnings paramtable) (vl-paramrefs-svex-compile prefs 1000))
+       ((wmv warnings ?changedp new-x)
+        (vl-interface-resolve-indices
+         x (make-vl-svexconf :ss ss :fns fntable :params paramtable))))
+    (mv warnings new-x)))
+
+
+(define vl-create-unparameterized-interface
+  ((x vl-interface-p)
+   (final-paramdecls vl-paramdecllist-p)
+   (ss vl-scopestack-p "scopestack with the interface's scopeinfo and final parameters"))
+
+  :returns (mv (okp)
+               (new-mod vl-interface-p))
+  (b* ((name (vl-unparam-newname (vl-interface->name x) final-paramdecls))
+       (x (change-vl-interface x :name name :paramdecls final-paramdecls))
+       ((vl-interface x))
+       (warnings x.warnings)
+       ((mv ok warnings generates) (vl-generatelist-resolve x.generates ss warnings))
+       ((unless ok)
+        (mv nil (change-vl-interface x :warnings warnings)))
+
+       ((wmv warnings new-x) (vl-interface-resolve-indices-top x ss))
+
+       (mod (change-vl-interface new-x
+                                 :name name
+                                 :generates generates
+                                 :warnings warnings)))
+    (mv t mod)))
 
 
 (defines vl-unparameterize-main
@@ -894,39 +979,47 @@ introduced.</p>"
                  (new-mods vl-modulelist-p
                            "All of the modules (not seen before) that you need
                             to meet this signature, including instantiated
-                            ones"
-                  :hints ('(:in-theory (disable vl-unparameterize-main-list
-                                                vl-unparameterize-main)
-                            :expand ((vl-unparameterize-main sig sig-ss donelist depthlimit ss)))))
+                            ones")
+                 (new-interfaces vl-interfacelist-p
+                           "All of the interfaces (not seen before) that you need
+                            to meet this signature, including instantiated
+                            ones")
                  (donelist))
     (b* ((sig (vl-unparam-signature-fix sig))
-         ((when (hons-get sig donelist)) (mv t nil nil donelist))
+         ((when (hons-get sig donelist)) (mv t nil nil nil donelist))
          (warnings nil)
          ((when (zp depthlimit))
           (mv nil
               (fatal :type :vl-unparameterize-loop
                      :msg "Recursion depth ran out in unparameterize -- loop ~
                            in the hierarchy?")
-              nil donelist))
+              nil nil donelist))
 
          (donelist (hons-acons sig t donelist))
 
          ((vl-unparam-signature sig))
          (mod (vl-scopestack-find-definition sig.modname ss))
-         ((unless (and mod (eq (tag mod) :vl-module)))
+         ((unless (and mod (or (eq (tag mod) :vl-module)
+                               (eq (tag mod) :vl-interface))))
           (mv nil
               (fatal :type :vl-unparameterize-programming-error
                      :msg "Couldn't find module ~s0"
                      :args (list sig.modname))
-              nil donelist))
+              nil nil donelist))
+
+         ((when (eq (tag mod) :vl-interface))
+          (b* (((mv ok new-iface)
+                (vl-create-unparameterized-interface mod sig.final-params sig-ss)))
+            (mv (and ok t)
+                warnings nil (list new-iface) donelist)))
 
          ((mv mod-ok new-mod sigalist)
           (vl-create-unparameterized-module mod sig.final-params sig-ss))
 
-         ((mv unparams-ok warnings new-mods donelist)
+         ((mv unparams-ok warnings new-mods new-ifaces donelist)
           (vl-unparameterize-main-list sigalist donelist (1- depthlimit) ss)))
       (mv (and mod-ok unparams-ok)
-          warnings (cons new-mod new-mods) donelist)))
+          warnings (cons new-mod new-mods) new-ifaces donelist)))
 
   (define vl-unparameterize-main-list ((sigs vl-unparam-sigalist-p)
                                        (donelist)
@@ -935,20 +1028,19 @@ introduced.</p>"
     :measure (two-nats-measure depthlimit (len (vl-unparam-sigalist-fix sigs)))
     :returns (mv (successp booleanp :rule-classes :type-prescription)
                  (warnings vl-warninglist-p)
-                 (new-mods vl-modulelist-p
-                  :hints ('(:in-theory (disable vl-unparameterize-main-list
-                                                vl-unparameterize-main)
-                            :expand ((vl-unparameterize-main-list sigs donelist depthlimit ss)))))
+                 (new-mods vl-modulelist-p)
+                 (new-ifaces vl-interfacelist-p)
                  (donelist))
     (b* ((sigs (vl-unparam-sigalist-fix sigs))
-         ((when (atom sigs)) (mv t nil nil donelist))
-         ((mv ok1 warnings1 new-mods1 donelist)
+         ((when (atom sigs)) (mv t nil nil nil donelist))
+         ((mv ok1 warnings1 new-mods1 new-ifaces1 donelist)
           (vl-unparameterize-main (caar sigs) (cdar sigs) donelist depthlimit ss))
-         ((mv ok2 warnings2 new-mods2 donelist)
+         ((mv ok2 warnings2 new-mods2 new-ifaces2 donelist)
           (vl-unparameterize-main-list (cdr sigs) donelist depthlimit ss)))
       (mv (and ok1 ok2)
           (append warnings1 warnings2)
           (append new-mods1 new-mods2)
+          (append new-ifaces1 new-ifaces2)
           donelist)))
   ///
   (local (in-theory (disable vl-unparameterize-main
@@ -973,6 +1065,18 @@ introduced.</p>"
       :flag vl-unparameterize-main)
     (defthm true-listp-of-vl-unparameterize-main-list-mods
       (true-listp (mv-nth 2 (vl-unparameterize-main-list sigs donelist depthlimit ss)))
+      :hints ('(:expand ((vl-unparameterize-main-list sigs donelist depthlimit ss))))
+      :rule-classes :type-prescription
+      :flag vl-unparameterize-main-list))
+
+  (defthm-vl-unparameterize-main-flag
+    (defthm true-listp-of-vl-unparameterize-main-ifaces
+      (true-listp (mv-nth 3 (vl-unparameterize-main sig sig-ss donelist depthlimit ss)))
+      :hints ('(:expand ((vl-unparameterize-main sig sig-ss donelist depthlimit ss))))
+      :rule-classes :type-prescription
+      :flag vl-unparameterize-main)
+    (defthm true-listp-of-vl-unparameterize-main-list-ifaces
+      (true-listp (mv-nth 3 (vl-unparameterize-main-list sigs donelist depthlimit ss)))
       :hints ('(:expand ((vl-unparameterize-main-list sigs donelist depthlimit ss))))
       :rule-classes :type-prescription
       :flag vl-unparameterize-main-list))
@@ -1034,6 +1138,47 @@ introduced.</p>"
           warnings))))
 
 
+(define vl-packages-finalize-params ((packages vl-packagelist-p)
+                                     (design vl-design-p)
+                                     (warnings vl-warninglist-p))
+  :prepwork ((local (in-theory (enable (vl-context-p) vl-context-p))))
+  :short "Resolve parameters in packages."
+  :long "<p>Assumption: packages reference each other only in reverse parse
+order, i.e., later-defined packages can reference parameters inside
+earlier-defined packages.  This gets around some horrible complications in
+implementation.  We still have to do some convoluted stuff with
+scopestacks.</p>"
+
+  :returns (mv (ok)
+               (warnings1 vl-warninglist-p)
+               (packages1 vl-packagelist-p))
+
+  (b* (((when (atom packages))
+        (mv t (ok) nil))
+       ((vl-package pkg1) (vl-package-fix (car packages)))
+       ((vl-design design))
+       (ss (vl-scopestack-init design))
+       ((mv ok warnings & pkg1-params)
+        (vl-scope-finalize-params pkg1
+                                  pkg1.paramdecls
+                                  (make-vl-paramargs-named)
+                                  warnings
+                                  ss ss
+                                  pkg1))
+       (- (vl-scopestacks-free))
+       (new-pkg1 (change-vl-package pkg1 :paramdecls pkg1-params))
+       ((unless ok)
+        (mv nil warnings nil))
+       (design1 (change-vl-design design :packages (cons new-pkg1 design.packages)))
+
+       ((mv ok warnings rest-packages)
+        (vl-packages-finalize-params (cdr packages) design1 warnings))
+       ((unless ok) (mv nil warnings nil)))
+    (mv t warnings (cons pkg1 rest-packages))))
+    
+       
+
+
 (define vl-design-unparameterize
   :short "Top-level @(see unparameterization) transform."
   ((x vl-design-p))
@@ -1042,19 +1187,42 @@ introduced.</p>"
        ;; We won't need this.
        ;; ((vl-design x) (vl-design-unparam-check x))
        ((vl-design x))
-       (ss      (vl-scopestack-init x))
-       (topmods (vl-modulelist-toplevel x.mods))
+       ((mv ok warnings ?top-ss global-params)
+        (vl-scope-finalize-params (vl-design-fix x)
+                                  x.paramdecls
+                                  (make-vl-paramargs-named)
+                                  x.warnings
+                                  (make-vl-scopestack-null)
+                                  (make-vl-scopestack-null)
+                                  "top level design"))
+       (- (vl-scopestacks-free))
+       ((unless ok)
+        (change-vl-design x :warnings warnings))
+
+       (x1 (change-vl-design x :paramdecls global-params :packages nil))
+       ((mv ok warnings new-packages)
+        (vl-packages-finalize-params x.packages x1 warnings))
+
+       ((unless ok)
+        (change-vl-design x1 :warnings warnings))
+
+       (x2 (change-vl-design x1 :packages new-packages))
+       (ss (vl-scopestack-init x2))
+
+       ((vl-design x2))
+
+       (topmods (vl-modulelist-toplevel x2.mods))
 
        ;; This is something Sol wanted for Samev.  The idea is to instance
        ;; every top-level module with its default parameters, so that we don't
        ;; just throw away the whole design if someone is trying to check a
        ;; parameterized module.
-       ((mv top-sigs warnings) (vl-modulelist-default-signatures topmods ss x.warnings))
+       ((mv top-sigs warnings) (vl-modulelist-default-signatures topmods ss warnings))
 
-       ((mv ?ok warnings1 new-mods donelist)
+       ((mv ?ok warnings1 new-mods new-ifaces donelist)
         (vl-unparameterize-main-list top-sigs nil 1000 ss))
 
        (warnings (append warnings1 warnings)))
     (fast-alist-free donelist)
     (vl-scopestacks-free)
-    (change-vl-design x :warnings warnings :mods new-mods)))
+    (change-vl-design x2 :warnings warnings :mods new-mods :interfaces new-ifaces)))

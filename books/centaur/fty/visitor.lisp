@@ -340,7 +340,7 @@
   (b* (((flexlist type))
        ((visitorspec x))
        (name (visitor-fnname x type.name))
-       (elt-fnname (visitor-field-fn nil type.elt-type nil x))
+       (elt-fnname (visitor-field-fn :elt type.elt-type type.name x))
        (formal-names (visitor-formal-names x.formals))
        ((unless elt-fnname)
         (er hard? 'defvisitor "Nothing to do for list type ~x0 -- use :skip." type.name)))
@@ -384,8 +384,8 @@
   (b* (((flexalist type))
        ((visitorspec x))
        (name (visitor-fnname x type.name))
-       (key-fnname (visitor-field-fn nil type.key-type nil x))
-       (val-fnname (visitor-field-fn nil type.val-type nil x))
+       (key-fnname (visitor-field-fn :key type.key-type type.name x))
+       (val-fnname (visitor-field-fn :val type.val-type type.name x))
        (formal-names (visitor-formal-names x.formals))
        ((unless (or key-fnname val-fnname))
         (er hard? 'defvisitor "Nothing to do for alist type ~x0 -- use :skip." type.name)))
@@ -681,7 +681,7 @@
         
 (defconst *defvisitor-template-keys*
   '(:returns :type-fns :field-fns :prod-fns :parents :short :long
-    :fnname-template :fixequivs :prepwork :reversep :wrapper))
+    :fnname-template :renames :fixequivs :prepwork :reversep :wrapper))
 
 (defun visitor-process-fnspecs (kwd-alist wrld)
   (b* ((type-fns (cdr (assoc :type-fns kwd-alist)))
@@ -748,6 +748,7 @@
            :prepwork (std::getarg :prepwork nil kwd-alist)
            :reversep (std::getarg :reversep nil kwd-alist)
            :wrapper (std::getarg :wrapper :body kwd-alist)
+           :renames (std::getarg :renames nil kwd-alist)
            :macrop macrop)))
     x))
 
@@ -832,7 +833,7 @@
        (fnname-template (or (cdr (assoc :fnname-template kwd-alist))
                             x1.fnname-template))
        (- (visitor-check-fnname-template fnname-template))
-       (renames (cdr (assoc :renames kwd-alist)))
+       (renames (append (cdr (assoc :renames kwd-alist)) x1.renames))
        (x1-with-renaming (change-visitorspec x1 :fnname-template fnname-template
                                              :renames renames))
        (unbound-types (visitor-omit-bound-types types x1.type-fns))
