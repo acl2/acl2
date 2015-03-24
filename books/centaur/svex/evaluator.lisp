@@ -145,6 +145,8 @@
     (<         4vec-<              (x y)               "less than")
     (==        4vec-==             (x y)               "equality")
     (==?       4vec-wildeq         (x y)               "wildcard equality")
+    (==??      4vec-symwildeq      (x y)               "wildcard equality")
+    (clog2     4vec-clog2          (x)                 "ceiling of log2")
     (?         4vec-?              (test then else)    "if-then-else")
     (bit?      4vec-bit?           (test then else)    "bitwise if-then-else")))
 

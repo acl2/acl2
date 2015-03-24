@@ -336,8 +336,10 @@
             u-
             *
             <
+            clog2
             ==
-            ==?) t)
+            ==?
+            ==??) t)
           (id (3valued-syntaxp (first x.args)))
           ((res
             resand
@@ -497,6 +499,10 @@
     (3vec-p (4vec-wildeq x y))
   :hints(("Goal" :in-theory (enable 4vec-wildeq))))
 
+  (defthm 3vec-p-of-4vec-symwildeq
+    (3vec-p (4vec-symwildeq x y))
+  :hints(("Goal" :in-theory (enable 4vec-symwildeq))))
+
   (defthm 3vec-p-of-4vec-==
     (3vec-p (4vec-== x y))
     :hints(("Goal" :in-theory (enable 4vec-==))))
@@ -511,6 +517,9 @@
     :hints(("Goal" :in-theory (enable 4vec-rev-blocks 3vec-p))
            (acl2::logbitp-reasoning)))
 
+  (defthm 3vec-p-of-4vec-clog2
+    (3vec-p (4vec-clog2 x))
+    :hints(("Goal" :in-theory (enable 3vec-p 4vec-clog2))))
 
   (defthm 3vec-p-of-eval-when-3valued-syntaxp
     (implies (3valued-syntaxp x)

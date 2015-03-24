@@ -730,6 +730,21 @@
            (4vec-uminus (a4vec-eval x env)))
     :hints(("Goal" :in-theory (enable 4vec-uminus lognot)))))
 
+(define a4vec-clog2 ((x a4vec-p))
+  :returns (res a4vec-p)
+   (b* (((a4vec x) x))
+     (a4vec-ite
+      (aig-and (a2vec-p x)
+               (aig-not (aig-sign-s x.upper)))
+      (b* ((res (aig-integer-length-s (aig-+-ss nil '(t) x.upper))))
+        (a4vec res res))
+      (a4vec-x)))
+  ///
+  (defthm a4vec-clog2-correct
+    (equal (a4vec-eval (a4vec-clog2 x) env)
+           (4vec-clog2 (a4vec-eval x env)))
+    :hints(("Goal" :in-theory (enable 4vec-clog2)))))
+
 (define a4vec-times ((x a4vec-p) (y a4vec-p))
   :returns (res a4vec-p)
   (a4vec-ite
@@ -1331,7 +1346,22 @@
     :hints(("Goal" :in-theory (enable 4vec-wildeq 4vec-bitxor-redef 2vec)))))
 
 
-
+(define a4vec-symwildeq ((a a4vec-p) (b a4vec-p))
+  :returns (res a4vec-p)
+  (b* ((eq (a3vec-bitnot (a3vec-bitxor (a3vec-fix a) (a3vec-fix b))))
+       ((a4vec a)) ((a4vec b))
+       (zmask (aig-logior-ss
+               (aig-logand-ss
+                (aig-lognot-s b.upper) b.lower)
+               (aig-logand-ss
+                (aig-lognot-s a.upper) a.lower))))
+    (a3vec-reduction-and (a3vec-bitor eq (a4vec zmask zmask))))
+  ///
+  (defthm a4vec-symwildeq-correct
+    (equal (a4vec-eval (a4vec-symwildeq a b) env)
+           (4vec-symwildeq (a4vec-eval a env)
+                        (a4vec-eval b env)))
+    :hints(("Goal" :in-theory (enable 4vec-symwildeq 4vec-bitxor-redef 2vec)))))
 
 
 
@@ -1371,8 +1401,10 @@
     (/         a4vec-quotient       (x y)                   "division")
     (%         a4vec-remainder      (x y)                   "modulus")
     (<         a4vec-<              (x y)                   "less than")
+    (clog2     a4vec-clog2          (x)                     "ceiling of log2")
     (==        a3vec-==             ((3v x) (3v y))         "equality")
     (==?       a4vec-wildeq         (x y)                   "wildcard equality")
+    (==??      a4vec-symwildeq      (x y)                   "symmetric wildcard equality")
     (?         a3vec-?              ((3v test) (3vp then) (3vp else)) "if-then-else")
     (bit?      a3vec-bit?           ((3v test) (3vp then) (3vp else)) "bitwise if-then-else")))
 

@@ -1438,3 +1438,24 @@ bb cc dd'), which are then reversed.</p>"
        ((4vec b))
        (zmask (logand (lognot b.upper) b.lower))) ;; b is z
     (3vec-reduction-and (3vec-bitor eq (2vec zmask)))))
+
+(define 4vec-symwildeq ((a 4vec-p) (b 4vec-p))
+  :short "Symmetric wildcard equality: true if for every pair of corresponding
+          bits of a and b, either they are equal or the bit from either a or b
+          is Z."
+  :returns (res 4vec-p)
+  (b* ((eq (3vec-bitnot (4vec-bitxor a b))) ;; 4vec-bitxor-redef
+       ((4vec a))
+       ((4vec b))
+       (zmask (logior (logand (lognot b.upper) b.lower)
+                      (logand (lognot a.upper) a.lower))))
+    (3vec-reduction-and (3vec-bitor eq (2vec zmask)))))
+
+(define 4vec-clog2 ((a 4vec-p))
+  :short "Ceiling of the log2 of a, or X if any non-2-valued bits.  Must be truncated
+          to its width (nonnegative)."
+  :returns (res 4vec-p)
+  (if (and (2vec-p a)
+           (<= 0 (2vec->val a)))
+      (2vec (integer-length (- (2vec->val a) 1)))
+    (4vec-x)))

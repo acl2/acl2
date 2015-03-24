@@ -135,16 +135,19 @@ because... (BOZO)</p>
 (define vl-caseexprs->svex-test ((x vl-exprlist-p)
                                  (test svex::svex-p)
                                  (size natp)
+                                 (casetype vl-casetype-p)
                                  (conf vl-svexconf-p))
   :returns (mv (warnings vl-warninglist-p)
                (cond svex::svex-p))
   (if (atom x)
       (mv nil (svex-int 0))
-    (b* (((mv warnings rest) (vl-caseexprs->svex-test (cdr x) test size conf))
+    (b* (((mv warnings rest) (vl-caseexprs->svex-test (cdr x) test size casetype conf))
          ((wmv warnings first &) (vl-expr-to-svex-selfdet (car x) (lnfix size) conf)))
     (mv warnings
         (svex::svcall svex::bitor
-                      (svex::svcall svex::== test first)
+                      (case (vl-casetype-fix casetype)
+                        ((nil) (svex::svcall svex::== test first))
+                        (otherwise (svex::svcall svex::==?? test first)))
                       rest))))
   ///
   (defret vars-of-vl-caseexprs->svex-test
@@ -258,7 +261,7 @@ because... (BOZO)</p>
              ((wmv warnings test-svex &)
               (vl-expr-to-svex-selfdet x.test size conf))
              ((wmv ok2 warnings ans)
-              (vl-caselist->svstmts x.caselist size test-svex default conf nonblockingp)))
+              (vl-caselist->svstmts x.caselist size test-svex default x.casetype conf nonblockingp)))
           (mv (and ok1 ok2) warnings ans))
                     
 
@@ -286,6 +289,7 @@ because... (BOZO)</p>
                                 (size natp)
                                 (test svex::svex-p)
                                 (default svex::svstmtlist-p)
+                                (casetype vl-casetype-p)
                                 (conf vl-svexconf-p)
                                 (nonblockingp))
     :returns (mv (ok)
@@ -300,10 +304,10 @@ because... (BOZO)</p>
          ((when (atom x))
           (mv t nil (svex::svstmtlist-fix default)))
          ((cons tests stmt) (car x))
-         ((mv ok1 warnings rest) (vl-caselist->svstmts (cdr x) size test default conf nonblockingp))
+         ((mv ok1 warnings rest) (vl-caselist->svstmts (cdr x) size test default casetype conf nonblockingp))
          ((wmv ok2 warnings first) (vl-stmt->svstmts stmt conf nonblockingp))
          ((wmv warnings test)
-          (vl-caseexprs->svex-test tests test size conf)))
+          (vl-caseexprs->svex-test tests test size casetype conf)))
       (mv (and ok1 ok2)
           warnings
           (list (svex::make-svstmt-if :cond test :then first :else rest)))))

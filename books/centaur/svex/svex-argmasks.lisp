@@ -910,6 +910,10 @@
   (list -1 -1)
   :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
 
+(def-svmask clog2 (x)
+  (list -1)
+  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
+
 
 (encapsulate nil
   (local (in-theory (disable svex-eval-when-2vec-p-of-minval
@@ -929,6 +933,32 @@
            (and stable-under-simplificationp
                 '(:in-theory (e/d (svex-apply 4veclist-nth
                                               4vec-wildeq 3vec-reduction-and
+                                              3vec-bitor 3vec-bitnot 4vec-bitxor
+                                              4vec-mask bool->vec 4vec-[=)
+                                  (svex-eval-monotonic svex-eval-gte-empty-env))
+                  :use ((:instance svex-eval-gte-empty-env
+                         (x (car args)))
+                        (:instance svex-eval-gte-empty-env
+                         (x (cadr args))))))
+           (acl2::logbitp-reasoning :passes 2
+                                    :simp-hint nil
+                                    :add-hints nil)
+           (and stable-under-simplificationp
+                '(:bdd (:vars nil)))))
+
+  (def-svmask ==?? (a b)
+    (b* (((4vec bval) (svex-xeval b))
+         ((4vec aval) (svex-xeval a))
+         (b-is-z (logand (lognot bval.upper) bval.lower))
+         (a-is-z (logand (lognot aval.upper) aval.lower)))
+      (list (logior a-is-z (lognot b-is-z))
+            (logior b-is-z (lognot a-is-z))))
+    :hints(("Goal" :in-theory (e/d (svex-apply
+                                    4veclist-nth))
+            :do-not-induct t)
+           (and stable-under-simplificationp
+                '(:in-theory (e/d (svex-apply 4veclist-nth
+                                              4vec-symwildeq 3vec-reduction-and
                                               3vec-bitor 3vec-bitnot 4vec-bitxor
                                               4vec-mask bool->vec 4vec-[=)
                                   (svex-eval-monotonic svex-eval-gte-empty-env))

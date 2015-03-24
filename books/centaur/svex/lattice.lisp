@@ -238,7 +238,9 @@ this relation, i.e.:</p>
   (def-4vec-monotonicity 4vec-bit?)
   (def-4vec-monotonicity 4vec-bit-extract)
   (def-4vec-monotonicity 4vec-rev-blocks)
-  (def-4vec-monotonicity 4vec-wildeq))
+  (def-4vec-monotonicity 4vec-wildeq)
+  (def-4vec-monotonicity 4vec-symwildeq)
+  (def-4vec-monotonicity 4vec-clog2))
 
 (defsection 4veclist-[=
   (acl2::defquant 4veclist-[= (x y)
