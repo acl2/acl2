@@ -1,5 +1,5 @@
 ; Centaur Bitops Library
-; Copyright (C) 2010-2011 Centaur Technology
+; Copyright (C) 2010-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -32,7 +32,7 @@
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
 
-(in-package "ACL2")
+(in-package "BITOPS")
 (include-book "xdoc/top" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (include-book "std/lists/mfc-utils" :dir :system)

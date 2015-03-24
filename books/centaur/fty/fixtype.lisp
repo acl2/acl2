@@ -130,7 +130,11 @@ table for later use by @(see deffixequiv) and @(see deffixequiv-mutual).</p>
               :executablep nil    ;; t by default
               :define t           ;; nil by default: define the equivalence as equal of fix
               :inline inline-p    ;; t by default: use defun-inline for the equivalence
-              :equal {eq,eql,...} ;; equal by default; the comparison to use
+              :equal {eq,eql,...} ;; equal by default: the comparison to use
+              :forward t          ;; nil by default: produce forward-chaining
+                                  ;;                 rules about the equivalence
+              :hints (...)        ;; hints for proving that the equivalence is canonical
+              :verbosep t         ;; nil by default: print verbose output
               )
 })
 
@@ -156,6 +160,25 @@ the new equivalence relation's function will be introduced using
 It allows you to say that the new equivalence relation should use some
 alternate equality predicate like @(see eq), @(see eql), etc., for added
 efficiency.</li>
+
+<li>@(':forward') only matters when @('define') is T.  When @(':forward') is T,
+four additional lemmas will be proved about the new equivalence relation and
+stored as forward chaining rules.  In particular, @('(equal (widget-fix x) y)'),
+@('(equal x (widget-fix y))'), @('(widget-equiv (widget-fix x) y)'), and
+@('(widget-equiv x (widget-fix y))') will all be forward-chained to
+@('(widget-equiv x y)').</li>
+
+<li>@(':hints') only matters when @('define') is NIL.  When @(':hints') is set,
+its value is used as a @(see hints) declaration for the theorem that the new
+equivalence relation is holds between some @('x') and @('y') exactly when
+@('(equal (widget-fix x) (widget-fix y))').
+
+When @('define') is T, the theorem need not be proved, because its statement is
+exactly the definition of the default equivalence relation defined when
+@('define') is specified.</li>
+
+<li>@(':verbosep') is NIL by default; if set to T, then output from the theorem
+prover will not be suppressed during the evaluation of the forms generated.</li>
 
 </ul>
 

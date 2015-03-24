@@ -291,7 +291,7 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
     (equal (mk-lit (lit-id lit)
                    (lit-neg lit))
            (lit-fix lit))
-    :hints(("Goal" :in-theory (disable acl2::logior$))))
+    :hints(("Goal" :in-theory (disable bitops::logior$))))
 
   (local (defthm equal-of-mk-lit-lemma
            (implies (and (natp id) (acl2::bitp neg))
@@ -315,8 +315,8 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
             :in-theory (disable lit-id lit-neg)))))
 
 
-(local (in-theory (e/d (acl2::logxor**)
-                       (acl2::logior$ acl2::logxor$))))
+(local (in-theory (e/d (bitops::logxor**)
+                       (bitops::logior$ bitops::logxor$))))
 
 
 (define lit-negate ((lit litp))

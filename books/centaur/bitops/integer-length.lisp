@@ -34,7 +34,7 @@
 ; Copyright (c) 2005-2006 Kookamara LLC, which is also available under an
 ; MIT/X11 style license.
 
-(in-package "ACL2")
+(in-package "BITOPS")
 (include-book "xdoc/top" :dir :system)
 (include-book "ihs/logops-definitions" :dir :system)
 (local (include-book "ihs/logops-lemmas" :dir :system))
@@ -80,7 +80,7 @@
              (< n (expt 2 (integer-length n))))
     :rule-classes :linear
     :hints(("Goal"
-            :in-theory (enable integer-length*)
+            :in-theory (enable acl2::integer-length*)
             :expand ((:free (b) (expt 2 (+ 1 b))))
             :induct (logcdr-induction-1 n))))
 
@@ -98,13 +98,13 @@
     :rule-classes :linear
     :hints(("Goal"
             :induct (logcdr-induction-2 i j)
-            :in-theory (enable integer-length*))))
+            :in-theory (enable acl2::integer-length*))))
 
   (defthm integer-length-less
     (implies (natp n)
              (<= (integer-length n) n))
     :rule-classes :linear
-    :hints(("Goal" :in-theory (enable integer-length*)
+    :hints(("Goal" :in-theory (enable acl2::integer-length*)
             :induct (logcdr-induction-1 n))))
 
 
@@ -123,7 +123,7 @@
       :hints(("Goal"
               :induct (my-induct n)
               :do-not '(generalize fertilize)
-              :in-theory (enable integer-length*))))
+              :in-theory (enable acl2::integer-length*))))
 
     (defthm |(integer-length (1- (expt 2 n)))|
       (implies (natp n)
@@ -132,7 +132,7 @@
       :hints(("Goal"
               :induct (my-induct n)
               :do-not '(generalize fertilize)
-              :in-theory (enable integer-length* expt)))))
+              :in-theory (enable acl2::integer-length* expt)))))
 
 
 
@@ -143,7 +143,7 @@
                         0
                       (- (integer-length n) 1))))
     :hints(("Goal"
-            :expand ((:with integer-length* (integer-length n)))
+            :expand ((:with acl2::integer-length* (integer-length n)))
             :in-theory (enable logcdr))))
 
   (defthm |2^{(integer-length n) - 1} <= n|
@@ -152,7 +152,7 @@
                  n))
     :hints(("Goal"
             :induct (logcdr-induction-1 n)
-            :expand ((:with integer-length* (integer-length n)))))
+            :expand ((:with acl2::integer-length* (integer-length n)))))
     :rule-classes ((:rewrite) (:linear)))
 
 
@@ -163,7 +163,7 @@
              (< (integer-length (logcdr a))
                 (integer-length a)))
     :rule-classes ((:rewrite) (:linear))
-    :hints(("Goal" :in-theory (enable integer-length*))))
+    :hints(("Goal" :in-theory (enable acl2::integer-length*))))
 
   (defthm integer-length-of-logcdr-weak
     (<= (integer-length (logcdr a))
@@ -196,7 +196,7 @@
                            (posp n)
                            (integerp a))
                       (< (logcdr a) (ash 1 (+ -1 n))))
-             :hints (("goal" :expand ((:with ash* (ash 1 n)))))))
+             :hints (("goal" :expand ((:with acl2::ash* (ash 1 n)))))))
 
     (defthm integer-length-bounded-by-expt
       (implies (and (< a (expt 2 n))
@@ -217,7 +217,7 @@
               :nonlinearp t
               :in-theory (enable expt-2-is-ash)
               :induct (dec-floor2-induct n a)
-              :expand ((:with integer-length* (integer-length a))))))
+              :expand ((:with acl2::integer-length* (integer-length a))))))
 
     (defthm |(integer-length (mod a (expt 2 n)))|
       (implies (and (natp a)

@@ -33,7 +33,7 @@
 ; We prove equal-by-logbitp, a way to prove integers are equal by showing they
 ; agree on every bit.
 
-(in-package "ACL2")
+(in-package "BITOPS")
 (include-book "logbitp-mismatch")
 (include-book "clause-processors/witness-cp" :dir :system)
 (include-book "std/util/wizard" :dir :system)
@@ -734,17 +734,17 @@ etc.</p>"
     '(and stable-under-simplificationp
           '(:computed-hint-replacement
             ((and stable-under-simplificationp
-                  '(:in-theory (e/d* (acl2::logbitp-of-const-split))))
+                  '(:in-theory (e/d* (logbitp-of-const-split))))
              (and stable-under-simplificationp
                   '(:in-theory (e/d* (logbitp-case-splits
                                       logbitp-when-bit
-                                      acl2::logbitp-of-const-split))))
+                                      logbitp-of-const-split))))
              (and stable-under-simplificationp
                   (equal-by-logbitp-hint))
              (and stable-under-simplificationp
                   '(:in-theory (e/d* (logbitp-case-splits
                                       logbitp-when-bit
-                                      acl2::logbitp-of-const-split
+                                      logbitp-of-const-split
                                       b-xor b-ior b-and)))))
             :no-thanks t))))
 
@@ -819,9 +819,9 @@ etc.</p>"
 
 (std::defaggregate eqbylbp-config
   ((restriction pseudo-termp)
-   (witness-rule wcp-witness-rule-p)
-   (instance-rule (and (wcp-instance-rule-p instance-rule)
-                       (equal (len (wcp-instance-rule->vars instance-rule)) 1)))
+   (witness-rule  acl2::wcp-witness-rule-p)
+   (instance-rule (and (acl2::wcp-instance-rule-p instance-rule)
+                       (equal (len (acl2::wcp-instance-rule->vars instance-rule)) 1)))
    (prune-examples)
    (passes posp)
    (simp-hint)
@@ -838,29 +838,29 @@ etc.</p>"
   (b* (((when (atom x)) (mv nil nil))
        ((eqbylbp-config config) config)
        (rule config.witness-rule)
-       ((wcp-witness-rule rule) rule)
+       ((acl2::wcp-witness-rule rule) rule)
        (restriction-term config.restriction)
        ((mv rest-apply rest-terms)
         (eqbylbp-check-witnesses (cdr x) config state))
        ((unless (mbt (and (pseudo-termp (car x))
-                          (wcp-witness-rule-p rule))))
+                          (acl2::wcp-witness-rule-p rule))))
         (mv (cons nil rest-apply)
             rest-terms))
        ((mv unify-ok alist)
-        (simple-one-way-unify rule.term (car x) nil))
+        (acl2::simple-one-way-unify rule.term (car x) nil))
        ((unless unify-ok)
         (mv (cons nil rest-apply)
             rest-terms))
        ((mv er val)
         (if (equal restriction-term ''t)
             (mv nil t)
-          (witness-eval-restriction restriction-term alist state)))
+          (acl2::witness-eval-restriction restriction-term alist state)))
        (- (and er
                (raise "Restriction term evaluation failed! ~x0" er)))
        ((when (or er (not val)))
         (mv (cons nil rest-apply)
             rest-terms))
-       (new-term (substitute-into-term rule.expr alist)))
+       (new-term (acl2::substitute-into-term rule.expr alist)))
     (mv (cons t rest-apply) (cons new-term rest-terms)))
   ///
   (defthm eqbylbp-check-witnesses-len-of-apply-list
@@ -874,7 +874,7 @@ etc.</p>"
   :mode :program
   (b* (((eqbylbp-config config) config)
        ((mv erp rw state)
-        (easy-simplify-term1-fn
+        (acl2::easy-simplify-term1-fn
          x nil config.simp-hint equiv t t 1000 1000 state))
        ((when erp)
         (raise "Logbitp-reasoning: error simplifying ~x0: ~x1" x erp)
@@ -989,7 +989,7 @@ etc.</p>"
      examples config state)))
 
 
-(define eqbylbp-eval-example ((alist pseudo-term-substp)
+(define eqbylbp-eval-example ((alist acl2::pseudo-term-substp)
                               (example pseudo-termp)
                               (config eqbylbp-config-p)
                               state)
@@ -998,10 +998,11 @@ etc.</p>"
   ;; Returns the list of logbitp args present in the simplification of the result.
   (b* (((eqbylbp-config config) config)
        (rule config.instance-rule)
-       ((wcp-instance-rule rule) rule)
+       ((acl2::wcp-instance-rule rule) rule)
        (alist1 (append (pairlis$ rule.vars (list example))
                        alist))
-       (newterm (wcp-beta-reduce-term (substitute-into-term rule.expr alist1)))
+       (newterm (acl2::wcp-beta-reduce-term
+                 (acl2::substitute-into-term rule.expr alist1)))
        ; (- (cw "Term: ~x0~%" newterm))
        ((mv newterm-rw state)
         (eqbylbp-simplify newterm config 'iff state))
@@ -1010,9 +1011,9 @@ etc.</p>"
         )
        )
     (mv includep (eqbylbp-collect-terms newterm-rw) state)))
-  
 
-(define eqbylbp-try-example ((alist pseudo-term-substp)
+
+(define eqbylbp-try-example ((alist acl2::pseudo-term-substp)
                              (example pseudo-termp)
                              (target-logbitp-args pseudo-term-list-listp)
                              (config eqbylbp-config-p) state)
@@ -1034,12 +1035,13 @@ etc.</p>"
              (cw "Rejected: ~x0 (produced: ~x1)~%" example new-logbitp-args))
         (mv nil target-logbitp-args state))
        (new-targets (set-difference-equal new-logbitp-args intersection)))
-    (mv (list (make-wcp-example-app :instrule config.instance-rule
-                                    :bindings (list example)))
+    (mv (list (acl2::make-wcp-example-app
+               :instrule config.instance-rule
+               :bindings (list example)))
         (append new-targets target-logbitp-args)
         state)))
 
-(define eqbylbp-try-examples ((alist pseudo-term-substp)
+(define eqbylbp-try-examples ((alist acl2::pseudo-term-substp)
                               (examples pseudo-term-listp)
                               (target-logbitp-args pseudo-term-list-listp)
                               (config eqbylbp-config-p)
@@ -1060,8 +1062,8 @@ etc.</p>"
        ((mv rest-examples target-logbitp-args state)
         (eqbylbp-try-examples alist (cdr examples) target-logbitp-args config state)))
     (mv (append first-examples rest-examples) target-logbitp-args state)))
-        
-                             
+
+
 
 
 (define eqbylbp-decide-examples-lit ((lit pseudo-termp)
@@ -1075,15 +1077,15 @@ etc.</p>"
         (mv nil target-logbitp-args state))
        ((eqbylbp-config config) config)
        (rule config.instance-rule)
-       ((wcp-instance-rule rule) rule)
+       ((acl2::wcp-instance-rule rule) rule)
        ((mv unify-ok alist)
-        (simple-one-way-unify rule.pred lit nil))
+        (acl2::simple-one-way-unify rule.pred lit nil))
        ((unless unify-ok) (mv nil target-logbitp-args state))
        (restriction-term config.restriction)
        ((mv er res)
         (if (equal restriction-term ''t)
             (mv nil t)
-          (witness-eval-restriction restriction-term alist state)))
+          (acl2::witness-eval-restriction restriction-term alist state)))
        (- (and er
                (raise "Restriction term evaluation failed! ~x0" er)))
        ((unless (and (not er) res))
@@ -1102,9 +1104,9 @@ etc.</p>"
        ; (- (cw "Pruned examples: ~x0~%" examples))
        ((when examples)
         (mv examples target-logbitp-args state)))
-    ;; Include the example consisting of just var itself, 
-    (mv (list (make-wcp-example-app :instrule rule
-                                    :bindings (list var)))
+    ;; Include the example consisting of just var itself,
+    (mv (list (acl2::make-wcp-example-app :instrule rule
+                                          :bindings (list var)))
         (union-equal avail-logbitp-args target-logbitp-args)
         state)))
 
@@ -1142,10 +1144,10 @@ etc.</p>"
 (define wcp-example-apps-listp (x)
   (if (atom x)
       (eq x nil)
-    (and (wcp-example-appsp (car x))
+    (and (acl2::wcp-example-appsp (car x))
          (wcp-example-apps-listp (cdr x))))
   ///
-  (defopen wcp-example-apps-listp-when-consp
+  (acl2::defopen wcp-example-apps-listp-when-consp
     (wcp-example-apps-listp x)
     :hyp (consp x)
     :hint (:expand ((wcp-example-apps-listp x)))
@@ -1155,16 +1157,17 @@ etc.</p>"
                             (examples wcp-example-apps-listp)
                             (config eqbylbp-config-p))
   :guard (eql (len witness-apps) (len examples))
-  :returns (actions wcp-lit-actions-listp)
+  :returns (actions acl2::wcp-lit-actions-listp)
   (if (atom witness-apps)
       nil
-    (cons (make-wcp-lit-actions :witnesses (and (car witness-apps)
-                                                (mbt (eqbylbp-config-p config))
-                                                (list (eqbylbp-config->witness-rule config)))
-                                :examples (and (mbt (wcp-example-appsp (car examples)))
-                                               (car examples)))
+    (cons (acl2::make-wcp-lit-actions
+           :witnesses (and (car witness-apps)
+                           (mbt (eqbylbp-config-p config))
+                           (list (eqbylbp-config->witness-rule config)))
+           :examples (and (mbt (acl2::wcp-example-appsp (car examples)))
+                          (car examples)))
           (eqbylbp-pair-hints (cdr witness-apps) (cdr examples) config))))
-  
+
 
 (define eqbylbp-witness-hints ((clause pseudo-term-listp)
                                (config eqbylbp-config-p)
@@ -1176,7 +1179,7 @@ etc.</p>"
        ; (- (cw "Apply-witnesses: ~x0~%New-lits: ~x1~%" apply-witnesses new-lits))
        ((mv new-lits-simp state)
         (eqbylbp-simplify-each
-         (wcp-beta-reduce-list new-lits) config 'iff state))
+         (acl2::wcp-beta-reduce-list new-lits) config 'iff state))
        (targets (eqbylbp-collect-terms-list (append new-lits-simp clause)))
        (- (and config.verbosep
                (cw "Targets: ~x0~%" targets)))
@@ -1195,11 +1198,11 @@ etc.</p>"
                               verbosep
                               stablep
                               state)
-  
+
   :mode :program
   (b* (((unless stablep) (value nil))
        ((er restrict-term)
-        (translate restrict t nil t 'logbitp-reasoning (w state) state))
+        (acl2::translate restrict t nil t 'logbitp-reasoning (w state) state))
        (witness-rule
         (cdr (assoc 'unequal-by-logbitp-witnessing
                     (table-alist 'witness-cp-witness-rules (w state)))))
@@ -1349,7 +1352,7 @@ instantiations.</li>
 </ul>
 ")
 
-(defmacro logbitp-reasoning (&key 
+(defmacro logbitp-reasoning (&key
                              (restrict 't)
                              (passes '1)
                              (verbosep 'nil)
@@ -1406,6 +1409,3 @@ instantiations.</li>
             (equal (logand mask (ash a1 n))
                    (logand mask (ash a2 n))))
    :hints ((logbitp-reasoning))))
-       
-                               
-

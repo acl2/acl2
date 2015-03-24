@@ -126,7 +126,7 @@ optimization.</p>"
 
   :inline t
   :enabled t
-  :guard-hints(("Goal" :in-theory (disable logand-with-bitmask)))
+  :guard-hints(("Goal" :in-theory (disable bitops::logand-with-bitmask)))
   (if (integerp x)
       (the (signed-byte 61) (logand x (- (ash 1 60) 1)))
     0))
@@ -167,7 +167,7 @@ optimization.</p>"
   ///
   (defthm aig-vecsim60-60-bits
     (signed-byte-p 61 (aig-vecsim60 aig alst))
-    :hints(("Goal" :in-theory (disable logand-with-bitmask))))
+    :hints(("Goal" :in-theory (disable bitops::logand-with-bitmask))))
 
   (verify-guards aig-vecsim60)
 
@@ -346,7 +346,7 @@ bit of each variable."
                         `(:use ((:instance logbitp-of-nonzero-logbitp-witness
                                  (x ,x)))
                           :in-theory (e/d (b-xor
-                                           logbitp-of-loghead-split)
+                                           bitops::logbitp-of-loghead-split)
                                           (logbitp-of-nonzero-logbitp-witness)))))))))
 
 
@@ -838,12 +838,12 @@ bit of each variable."
   (defthm aig-rsim60-lookup-60-bits
     (unsigned-byte-p 60 (aig-rsim60-lookup var renv))
     :hints(("Goal" :in-theory (e/d (aig-rsim60-lookup)
-                                   (logand-with-bitmask)))))
+                                   (bitops::logand-with-bitmask)))))
 
   (defthm aig-rsim60-60-bits
     (signed-byte-p 61 (aig-rsim60 aig renv))
     :hints(("Goal" :in-theory (e/d (aig-rsim60)
-                                   (logand-with-bitmask
+                                   (bitops::logand-with-bitmask
                                     aig-rsim60-lookup-60-bits))
             :induct t)
            (and stable-under-simplificationp
@@ -925,7 +925,7 @@ bit of each variable."
                    :in-theory (enable aig-rsim60 aig-vars aig-eval aig-env-lookup
                                       aig-vecsim60 
                                       subsetp-equal
-                                      logbitp-of-loghead-split)))))
+                                      bitops::logbitp-of-loghead-split)))))
 
   (defthm logbitp-of-aig-rsim60
     (equal (logbitp i (aig-rsim60 aig renv))

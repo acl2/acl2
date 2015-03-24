@@ -193,11 +193,11 @@ cases.  For now we do it dumbly.</p>"
             (<= (acl2::loghead 4 code) 15)
             :rule-classes ((:rewrite) (:linear))
             :hints(("Goal"
-                    :in-theory (disable acl2::unsigned-byte-p-of-loghead)
-                    :use ((:instance acl2::unsigned-byte-p-of-loghead
-                                     (acl2::size 4)
-                                     (acl2::size1 4)
-                                     (acl2::i code)))))))
+                    :in-theory (disable bitops::unsigned-byte-p-of-loghead)
+                    :use ((:instance bitops::unsigned-byte-p-of-loghead
+                                     (bitops::size 4)
+                                     (bitops::size1 4)
+                                     (bitops::i code)))))))
 
    (local (defthm crock2
             (implies (and (integerp code)
@@ -206,11 +206,11 @@ cases.  For now we do it dumbly.</p>"
                      (<= (acl2::logtail 4 code) 15))
             :rule-classes ((:rewrite) (:linear))
             :hints(("Goal"
-                    :in-theory (disable acl2::unsigned-byte-p-of-logtail)
-                    :use ((:instance acl2::unsigned-byte-p-of-logtail
-                                     (acl2::size 4)
-                                     (acl2::size1 4)
-                                     (acl2::i code))))))))
+                    :in-theory (disable bitops::unsigned-byte-p-of-logtail)
+                    :use ((:instance bitops::unsigned-byte-p-of-logtail
+                                     (bitops::size 4)
+                                     (bitops::size1 4)
+                                     (bitops::i code))))))))
 
   (b* ((lo   (logand code #xF))
        (hi   (logand (ash code -4) #xF))

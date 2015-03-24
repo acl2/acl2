@@ -131,7 +131,7 @@
                           (:instance integer-length-lte-by-compare-neg
                            (a y) (b (- (abs x))))
 ; Added by Matt K. to accommodate tau soundness bug fix 7/23/2014:
-                          (:instance acl2::integer-length-monotonic
+                          (:instance bitops::integer-length-monotonic
                                      (i y)
                                      (j (+ -1 (- x)))))
              :cases ((<= 0 y))

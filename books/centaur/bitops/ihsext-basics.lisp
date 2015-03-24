@@ -32,7 +32,7 @@
 ; Original authors: Sol Swords <sswords@centtech.com>
 ;                   Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
+(in-package "BITOPS")
 
 ;; BOZO Some of the rules from logops-lemmas that are made redundant by rules
 ;; here are left still enabled.  Perhaps accumulated-persistence will find the
@@ -65,7 +65,7 @@ off looking at the source code.</p>")
   ()
   (local (include-book "std/util/defredundant" :dir :system))
   (make-event
-   (b* ((imports '(
+   (b* ((imports #!ACL2 '(
 
 ; There are too many rules with forced hyps in logops-lemmas.  We'll locally
 ; include it and redundantly define many of the useful theorems.
@@ -234,7 +234,7 @@ off looking at the source code.</p>")
 
   (defthm logcar-bound
     (<= (logcar x) 1)
-    :hints (("goal" :use ((:instance logcar-type (i x)))))
+    :hints (("goal" :use ((:instance acl2::logcar-type (i x)))))
     :rule-classes :linear)
 
   ;; hopefully we don't need this:
@@ -466,8 +466,8 @@ off looking at the source code.</p>")
                              (> (bfix b) (logcar j))))))
     :hints(("Goal" :in-theory (enable logcons))))
 
-  (add-to-ruleset ihsext-advanced-thms '(logcons-<-0
-                                         logcdr-<-0
+  (add-to-ruleset ihsext-advanced-thms '(acl2::logcons-<-0
+                                         acl2::logcdr-<-0
                                          logcons-<-n-strong
                                          logcons->-n-strong))
 
@@ -560,7 +560,7 @@ off looking at the source code.</p>")
 
 (defsection logbitp**
 
-  (local (in-theory (enable logbitp*)))
+  (local (in-theory (enable acl2::logbitp*)))
 
   ;; (defthmd logbitp-when-not-natp
   ;;   (implies (not (natp i))
@@ -608,7 +608,7 @@ off looking at the source code.</p>")
   ;;                           logcar-when-zip
   ;;                           logcdr-when-zip)))
 
-  (local (in-theory (disable logbitp logbitp*)))
+  (local (in-theory (disable logbitp acl2::logbitp*)))
 
   (defthmd logbitp**
     ;; This is a better replacement for logbitp* that doesn't have unnecessary
@@ -618,7 +618,7 @@ off looking at the source code.</p>")
                   (bit->bool (logcar i)))
                  (t
                   (logbitp (1- pos) (logcdr i)))))
-    :hints(("Goal" :use ((:instance logbitp*
+    :hints(("Goal" :use ((:instance acl2::logbitp*
                           (pos (nfix pos)) (i (ifix i))))))
     :rule-classes ((:definition :clique (logbitp)
                     :controller-alist ((logbitp t t)))))
@@ -626,7 +626,7 @@ off looking at the source code.</p>")
   (add-to-ruleset ihsext-redefs '(logbitp**))
   (add-to-ruleset ihsext-recursive-redefs '(logbitp**))
 
-  ;; (theory-invariant (not (active-runep '(:definition logbitp*)))
+  ;; (theory-invariant (not (active-runep '(:definition acl2::logbitp*)))
   ;;                   :key |Use LOGBITP** instead of LOGBITP*|)
 
   (defun logbitp-ind (pos i)
@@ -701,12 +701,12 @@ off looking at the source code.</p>")
                0
              (logcons (logcar i)
                       (loghead (1- size) (logcdr i)))))
-    :hints (("goal" :use ((:instance loghead*
+    :hints (("goal" :use ((:instance acl2::loghead*
                            (size (nfix size))
                            (i (ifix i))))))
     :rule-classes ((:definition
-                    :clique (loghead$inline)
-                    :controller-alist ((loghead$inline t nil)))))
+                    :clique (acl2::loghead$inline)
+                    :controller-alist ((acl2::loghead$inline t nil)))))
 
   (add-to-ruleset ihsext-recursive-redefs '(loghead**))
   (add-to-ruleset ihsext-redefs '(loghead**))
@@ -760,7 +760,7 @@ off looking at the source code.</p>")
   (local (in-theory (enable* ihsext-recursive-redefs
                              ihsext-inductions)))
 
-  (local (in-theory (disable logbitp-loghead)))
+  (local (in-theory (disable acl2::logbitp-loghead)))
 
   (defthm logbitp-of-loghead-in-bounds
     (implies (< (nfix pos) (nfix size))
@@ -802,7 +802,7 @@ off looking at the source code.</p>")
     :hints (("goal" :in-theory (e/d* (ihsext-recursive-redefs
                                       ihsext-inductions)
                                      (loghead-identity
-                                      loghead-upper-bound
+                                      acl2::loghead-upper-bound
                                       logcdr-<-const))
              :induct (loghead n b)
              :expand ((:free (b) (loghead n b))
@@ -816,7 +816,7 @@ off looking at the source code.</p>")
     :hints (("goal" :in-theory (e/d* (ihsext-recursive-redefs
                                       ihsext-inductions)
                                      (loghead-identity
-                                      loghead-upper-bound
+                                      acl2::loghead-upper-bound
                                       logcdr-<-const))
              :induct (loghead n b)
              :expand ((:free (b) (loghead n b))
@@ -865,12 +865,12 @@ off looking at the source code.</p>")
            (if (zp pos)
                (ifix i)
              (logtail (1- pos) (logcdr i))))
-    :hints (("goal" :use ((:instance logtail*
+    :hints (("goal" :use ((:instance acl2::logtail*
                            (pos (nfix pos))
                            (i (ifix i))))))
     :rule-classes ((:definition
-                    :clique (logtail$inline)
-                    :controller-alist ((logtail$inline t nil)))))
+                    :clique (acl2::logtail$inline)
+                    :controller-alist ((acl2::logtail$inline t nil)))))
 
   (add-to-ruleset ihsext-recursive-redefs '(logtail**))
   (add-to-ruleset ihsext-redefs '(logtail**))
@@ -950,7 +950,7 @@ off looking at the source code.</p>")
              :in-theory (disable (force)
                                  loghead-identity
                                  logtail-identity
-                                 logtail-equal-0))))
+                                 acl2::logtail-equal-0))))
 
   (defthm logtail-of-logtail
     (equal (logtail n (logtail m x))
@@ -960,7 +960,7 @@ off looking at the source code.</p>")
                                  (logtail n x))
              :in-theory (disable (force)
                                  logtail-identity
-                                 logtail-equal-0))))
+                                 acl2::logtail-equal-0))))
 
   (defthm loghead-1-of-logtail
     ;; Maybe too special-purpose?
@@ -1001,7 +1001,7 @@ off looking at the source code.</p>")
           (cond ((zip i) 0)
                 ((equal i -1) 0)
                 (t (1+ (integer-length (logcdr i))))))
-   :hints (("goal" :by integer-length*))
+   :hints (("goal" :by acl2::integer-length*))
    :rule-classes
    ((:definition :clique (integer-length)
      :controller-alist ((integer-length t)))))
@@ -1072,7 +1072,7 @@ off looking at the source code.</p>")
            (logcons (b-not (logcar i))
                     (lognot (logcdr i))))
     :hints(("Goal"
-            :use ((:instance lognot*
+            :use ((:instance acl2::lognot*
                              (i (ifix i))))))
     :rule-classes ((:definition :clique (lognot)
                                 :controller-alist ((lognot t)))))
@@ -1090,9 +1090,9 @@ off looking at the source code.</p>")
                  ((= i -1) 0)
                  (t (logcons (b-not (logcar i))
                              (lognot (logcdr i))))))
-    :hints (("goal" :use ((:instance lognot*
+    :hints (("goal" :use ((:instance acl2::lognot*
                                      (i (ifix i))))
-             :in-theory (disable lognot lognot*)))
+             :in-theory (disable lognot acl2::lognot*)))
     :rule-classes ((:definition
                     :clique (lognot)
                     :controller-alist ((lognot t)))))
@@ -1152,7 +1152,7 @@ off looking at the source code.</p>")
     (equal (logtail n (lognot x))
            (lognot (logtail n x)))
     :hints (("goal" :in-theory (disable logtail-identity
-                                        logtail-equal-0))))
+                                        acl2::logtail-equal-0))))
 
 
   (add-to-ruleset ihsext-basic-thms '(logcar-of-lognot
@@ -1173,9 +1173,9 @@ off looking at the source code.</p>")
              (equal (< (lognot i) j)
                     (> (ifix i) (lognot j))))
     :hints(("Goal" :in-theory (enable lognot)
-            :use ((:instance <-on-others
+            :use ((:instance acl2::<-on-others
                              (x (lognot i)) (y j))
-                  (:instance <-on-others
+                  (:instance acl2::<-on-others
                              (x (lognot k)) (y (ifix i)))))))
 
   (defthm lognot->-const
@@ -1184,9 +1184,9 @@ off looking at the source code.</p>")
              (equal (> (lognot i) j)
                     (< (ifix i) (lognot j))))
     :hints(("Goal" :in-theory (enable lognot)
-            :use ((:instance <-on-others
+            :use ((:instance acl2::<-on-others
                              (y (lognot i)) (x j))
-                  (:instance <-on-others
+                  (:instance acl2::<-on-others
                              (y (lognot j)) (x (ifix i)))))))
 
   (defthm lognot-equal-const
@@ -1242,7 +1242,7 @@ off looking at the source code.</p>")
     (equal (logand i j)
            (logcons (b-and (logcar i) (logcar j))
                     (logand (logcdr i) (logcdr j))))
-    :hints(("Goal" :use ((:instance logand*
+    :hints(("Goal" :use ((:instance acl2::logand*
                           (i (ifix i)) (j (ifix j))))))
     :rule-classes
     ((:definition :clique (binary-logand)
@@ -1272,8 +1272,8 @@ off looking at the source code.</p>")
                  (t (logcons (b-and (logcar i) (logcar j))
                              (logand (logcdr i) (logcdr j))))))
     :hints (("goal" :in-theory (disable logcons logcar logcdr
-                                        logand* logand (force))
-             :use ((:instance logand*
+                                        acl2::logand* logand (force))
+             :use ((:instance acl2::logand*
                     (i (ifix i)) (j (ifix j))))))
     :rule-classes ((:definition
                     :clique (binary-logand)
@@ -1334,7 +1334,7 @@ off looking at the source code.</p>")
            (logand (logtail a x)
                    (logtail a y)))
     :hints(("Goal" :in-theory (disable logtail-identity
-                                       logtail-equal-0))))
+                                       acl2::logtail-equal-0))))
 
   (add-to-ruleset ihsext-basic-thms '(logcar-of-logand
                                       logcdr-of-logand
@@ -1411,7 +1411,7 @@ off looking at the source code.</p>")
            (logand a b c))
     :hints (("goal" :induct (logcdr-3-ind a b c)
              :in-theory (e/d (logand**)
-                             (zip-open
+                             (acl2::zip-open
                               logand$)))))
 
   (defthm commutativity-2-of-logand
@@ -1419,7 +1419,7 @@ off looking at the source code.</p>")
            (logand b a c))
     :hints (("goal" :induct (logcdr-3-ind a b c)
              :in-theory (e/d (logand**)
-                             (zip-open
+                             (acl2::zip-open
                               logand$)))))
 
   (defthm logand-fold-consts
@@ -1533,7 +1533,7 @@ off looking at the source code.</p>")
            (logior (logtail a x)
                    (logtail a y)))
     :hints(("Goal" :in-theory (disable logtail-identity
-                                       logtail-equal-0))))
+                                       acl2::logtail-equal-0))))
 
   (add-to-ruleset ihsext-basic-thms '(logcar-of-logior
                                       logcdr-of-logior
@@ -1568,7 +1568,7 @@ off looking at the source code.</p>")
 
   (add-to-ruleset ihsext-advanced-thms '(logior-<-0))
 
-  (local (in-theory (disable logior-=-0)))
+  (local (in-theory (disable acl2::logior-=-0)))
 
   (defthm logior-equal-0-forward
     (implies (equal (logior i j) 0)
@@ -1619,7 +1619,7 @@ off looking at the source code.</p>")
            (logior a b c))
     :hints (("goal" :induct (logcdr-3-ind a b c)
              :in-theory (e/d (logior**)
-                             (zip-open
+                             (acl2::zip-open
                               logior$)))))
 
   (defthm commutativity-2-of-logior
@@ -1627,7 +1627,7 @@ off looking at the source code.</p>")
            (logior b a c))
     :hints (("goal" :induct (logcdr-3-ind a b c)
              :in-theory (e/d (logior**)
-                             (zip-open
+                             (acl2::zip-open
                               logior$)))))
 
   (defthm logior-fold-consts
@@ -1750,7 +1750,7 @@ off looking at the source code.</p>")
     :hints (("goal" :induct (and (logtail a x)
                                  (logtail a y))
              :in-theory (disable logtail-identity
-                                 logtail-equal-0))))
+                                 acl2::logtail-equal-0))))
 
   (add-to-ruleset ihsext-basic-thms '(logcar-of-logxor
                                       logcdr-of-logxor
@@ -1834,14 +1834,14 @@ off looking at the source code.</p>")
            (logxor a b c))
     :hints (("goal" :induct (logcdr-3-ind a b c)
              :in-theory (e/d (logxor** b-xor)
-                             (zip-open logxor$)))))
+                             (acl2::zip-open logxor$)))))
 
   (defthm commutativity-2-of-logxor
     (equal (logxor a b c)
            (logxor b a c))
     :hints (("goal" :induct (logcdr-3-ind a b c)
              :in-theory (e/d (logxor** b-xor)
-                             (zip-open logxor$)))))
+                             (acl2::zip-open logxor$)))))
 
   (defthm logxor-fold-consts
     (implies (syntaxp (and (quotep a) (quotep b)))
@@ -1860,7 +1860,7 @@ off looking at the source code.</p>")
            (cond ((zip count) (ifix i))
                  ((< count 0) (ash (logcdr i)    (1+ count)))
                  (t           (logcons 0 (ash i (1- count))))))
-    :hints (("goal" :by ash*))
+    :hints (("goal" :by acl2::ash*))
     :rule-classes
     ((:definition :clique (ash)
       :controller-alist ((ash nil t)))))
@@ -2288,7 +2288,7 @@ off looking at the source code.</p>")
 
   (local (in-theory (disable unsigned-byte-p-logand
                              unsigned-byte-p-logior
-                             logior-=-0)))
+                             acl2::logior-=-0)))
 
   (defthmd unsigned-byte-p-logand-fix
     (implies (or (unsigned-byte-p b x)
@@ -2487,7 +2487,7 @@ off looking at the source code.</p>")
     :hints (("goal" :in-theory (e/d* (ihsext-recursive-redefs
                                       ihsext-inductions)
                                      (logcdr-<-const
-                                      mod-x-y-=-x+y-for-rationals))
+                                      acl2::mod-x-y-=-x+y-for-rationals))
              :induct (and (logsquash m x)
                           (logsquash n x))
              :expand ((:free (b) (logsquash n b))
@@ -2501,7 +2501,7 @@ off looking at the source code.</p>")
     :hints (("goal" :in-theory (e/d* (ihsext-recursive-redefs
                                       ihsext-inductions)
                                      (logcdr-<-const
-                                      MOD-X-Y-=-X+Y-for-rationals))
+                                      acl2::MOD-X-Y-=-X+Y-for-rationals))
              :induct (and (logsquash m x)
                           (logsquash n x))
              :expand ((:free (b) (logsquash n b))
@@ -2739,7 +2739,7 @@ off looking at the source code.</p>")
                              ihsext-bounds-thms
                              ihsext-advanced-thms
                              ihsext-arithmetic
-                             logapp*
+                             acl2::logapp*
                              )))
 
   ;; (defthm logapp-of-nfix
@@ -2776,9 +2776,9 @@ off looking at the source code.</p>")
                           (:instance logapp-fixes
                                      (size (1- size)) (i (logcdr i))))
              :in-theory (disable logapp (force)
-                                 int-equiv-implies-equal-logapp-2
-                                 int-equiv-implies-equal-logapp-3
-                                 nat-equiv-implies-equal-logapp-1)))
+                                 acl2::int-equiv-implies-equal-logapp-2
+                                 acl2::int-equiv-implies-equal-logapp-3
+                                 acl2::nat-equiv-implies-equal-logapp-1)))
     :rule-classes ((:definition
                     :clique (logapp)
                     :controller-alist ((logapp t nil nil)))))
@@ -2786,7 +2786,7 @@ off looking at the source code.</p>")
   (add-to-ruleset ihsext-recursive-redefs '(logapp**))
   (add-to-ruleset ihsext-redefs '(logapp**))
 
-  (local (in-theory (e/d (logapp**) (logapp* logapp))))
+  (local (in-theory (e/d (logapp**) (acl2::logapp* logapp))))
 
   (defthmd logapp-induct
     t
@@ -2848,7 +2848,7 @@ off looking at the source code.</p>")
   (local (in-theory (enable* ihsext-recursive-redefs
                              ihsext-inductions)))
 
-  (local (in-theory (disable logbitp-logapp)))
+  (local (in-theory (disable acl2::logbitp-logapp)))
 
   (defthmd logbitp-of-logapp-split
     (equal (logbitp pos (logapp size i j))
@@ -2906,7 +2906,7 @@ off looking at the source code.</p>")
              (logtail (- (nfix n) (nfix size)) j)))
     :hints (("goal" :in-theory (e/d* (ihsext-inductions)
                                      (logtail-identity
-                                      logtail-equal-0
+                                      acl2::logtail-equal-0
                                       (force)))
              :induct (and (logapp size i j)
                           (loghead n i)))))
@@ -3078,7 +3078,7 @@ off looking at the source code.</p>")
                  (t (logcons (logcar i)
                              (logext (1- size) (logcdr i))))))
     :hints(("Goal" :in-theory (disable logext)
-            :use ((:instance logext*
+            :use ((:instance acl2::logext*
                              (size (if (posp size) size 1))
                              (i (ifix i))))))
     :rule-classes ((:definition
@@ -3141,7 +3141,7 @@ off looking at the source code.</p>")
     :hints(("Goal"
             :induct (my-induct m n x)
             :in-theory (e/d (loghead** logext**)
-                            (logextu-as-loghead))
+                            (acl2::logextu-as-loghead))
             :do-not '(eliminate-destructors generalize fertilize)
             :do-not-induct t))))
 
@@ -3160,11 +3160,11 @@ off looking at the source code.</p>")
                  (t (and (bit->bool (logcar i))
                          (bitmaskp (logcdr i))))))
     :hints(("Goal" :in-theory (e/d* (ihsext-inductions
-                                     logmaskp*
+                                     acl2::logmaskp*
                                      ihsext-recursive-redefs)
                                     ((force)))))
-    :rule-classes ((:definition :clique (bitmaskp$inline)
-                    :controller-alist ((bitmaskp$inline t)))))
+    :rule-classes ((:definition :clique (acl2::bitmaskp$inline)
+                    :controller-alist ((acl2::bitmaskp$inline t)))))
 
   (local (in-theory (disable bitmaskp)))
 
@@ -3225,7 +3225,7 @@ off looking at the source code.</p>")
     (equal (logmaskp (lognot mask))
            (equal mask (ash -1 (integer-length mask))))
     :hints (("goal" :induct (integer-length mask)
-             :in-theory (e/d* (logtail** logand** logmaskp*
+             :in-theory (e/d* (logtail** logand** acl2::logmaskp*
                                          integer-length**
                                          lognot**
                                          logapp** ash**
@@ -3277,8 +3277,8 @@ off looking at the source code.</p>")
                                      expt-2-is-ash
                                      ihsext-recursive-redefs)
                                     ((force)))))
-    :rule-classes ((:definition :clique (logmask$inline)
-                    :controller-alist ((logmask$inline t)))))
+    :rule-classes ((:definition :clique (acl2::logmask$inline)
+                    :controller-alist ((acl2::logmask$inline t)))))
 
   (local (in-theory (disable logmask)))
 
@@ -3356,7 +3356,7 @@ off looking at the source code.</p>")
 
   (defthm logrev-type
     ;; Redundant with ihs/basic-definitions.lisp
-    (b* ((nat (logrev$inline size i)))
+    (b* ((nat (acl2::logrev$inline size i)))
       (natp nat))
     :rule-classes :type-prescription)
 
@@ -3431,8 +3431,8 @@ off looking at the source code.</p>")
                  (logior (logrev size (logcdr i))
                          (ash (logcar i) size)))))
       :rule-classes ((:definition
-                      :clique (logrev$inline)
-                      :controller-alist ((logrev$inline t nil))))))
+                      :clique (acl2::logrev$inline)
+                      :controller-alist ((acl2::logrev$inline t nil))))))
 
   (add-to-ruleset ihsext-recursive-redefs '(logrev**))
   (add-to-ruleset ihsext-redefs '(logrev**))
@@ -3440,7 +3440,7 @@ off looking at the source code.</p>")
   (defthmd logrev-induct
     t
     :rule-classes ((:induction
-                    :pattern (logrev$inline size i)
+                    :pattern (acl2::logrev$inline size i)
                     :scheme (logbitp-ind size i))))
 
   (add-to-ruleset ihsext-inductions '(logrev-induct))

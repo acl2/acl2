@@ -28,7 +28,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
+(in-package "BITOPS")
 (include-book "ihsext-basics")
 (include-book "integer-length")
 (local (include-book "equal-by-logbitp"))
@@ -94,7 +94,7 @@ off looking at the source code.</p>")
   (or (equal (logcar a) 0)
       (equal (logcar a) 1))
   :rule-classes ((:forward-chaining :trigger-terms ((logcar a))))
-  :hints(("Goal" :use logcar-type)))
+  :hints(("Goal" :use acl2::logcar-type)))
 
 ;; (defthm |(logbitp 0 x)|
 ;;   (equal (logbitp 0 x)
@@ -452,7 +452,7 @@ off looking at the source code.</p>")
                            logcons-<-n-strong
                            logcons->-n-strong)
                           (ash-1-removal
-                           exponents-add-for-nonneg-exponents
+                           acl2::exponents-add-for-nonneg-exponents
                            expt))))
 
   (defthm |(2^n + a mod 2^n) when a < 2^n+1|
@@ -738,7 +738,7 @@ off looking at the source code.</p>")
     :hints(("Goal" :in-theory (e/d (mod floor natp)
                                    (nonneg-integer-quotient-bound
                                     nonneg-integer-quotient-bound2
-                                    <-*-/-left-commuted))
+                                    acl2::<-*-/-left-commuted))
             :use ((:instance nonneg-integer-quotient-bound
                    (x (numerator (/ x m)))
                    (y (denominator (/ x m))))
