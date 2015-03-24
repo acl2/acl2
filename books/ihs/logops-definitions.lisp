@@ -515,7 +515,7 @@
   (defthm logext-bounds
     (implies (< 0 size)
              (and (>= (logext size i) (- (expt 2 (1- size))))
-                  (< (logext size i) (expt 2 size))))
+                  (< (logext size i) (expt 2 (1- size)))))
     :rule-classes ((:linear :trigger-terms ((logext size i)))
                    (:rewrite))
     :hints (("Goal"
