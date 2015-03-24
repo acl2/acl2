@@ -314,7 +314,7 @@
                                   4veclist-nth
                                   4vec-bit-index
                                   4vec-bit-extract))))
-          (acl2::logbitp-reasoning))
+          (bitops::logbitp-reasoning))
   :otf-flg t)
 
 (def-svmask unfloat (x)
@@ -326,7 +326,7 @@
                                   4vec-mask
                                   3vec-fix
                                   4veclist-nth))))
-          (acl2::logbitp-reasoning)))
+          (bitops::logbitp-reasoning)))
 
 
 (def-svmask id (x)
@@ -338,7 +338,7 @@
                                   4vec-mask
                                   3vec-fix
                                   4veclist-nth))))
-          (acl2::logbitp-reasoning)))
+          (bitops::logbitp-reasoning)))
 
 (def-svmask bitnot (x)
   (list mask)
@@ -351,7 +351,7 @@
                                   3vec-bitnot
                                   4vec-bitnot
                                   4veclist-nth))))
-          (acl2::logbitp-reasoning)))
+          (bitops::logbitp-reasoning)))
 
 (def-svmask onp (x)
   (list mask)
@@ -363,7 +363,7 @@
                                   3vec-fix
                                   4vec-onset
                                   4veclist-nth))))
-          (acl2::logbitp-reasoning)))
+          (bitops::logbitp-reasoning)))
 
 (def-svmask offp (x)
   (list mask)
@@ -375,36 +375,36 @@
                                   3vec-fix
                                   4vec-offset
                                   4veclist-nth))))
-          (acl2::logbitp-reasoning)))
+          (bitops::logbitp-reasoning)))
 
 
 
 (local (in-theory (disable acl2::zip-open
-                           ACL2::LOGAND-NATP-TYPE-2
-                           ACL2::LOGIOR-NATP-TYPE
+                           BITOPS::LOGAND-NATP-TYPE-2
+                           BITOPS::LOGIOR-NATP-TYPE
                            4VEC->LOWER-WHEN-2VEC-P
                            DOUBLE-CONTAINMENT
                            SVEX-EVAL-WHEN-2VEC-P-OF-MINVAL
-                           ACL2::LOGBITP-NONZERO-OF-BIT
-                           ACL2::LOGBITP-WHEN-BITMASKP
-                           ACL2::LOGNOT-NEGP
-                           ACL2::LOGAND-NATP-TYPE-1
+                           BITOPS::LOGBITP-NONZERO-OF-BIT
+                           BITOPS::LOGBITP-WHEN-BITMASKP
+                           BITOPS::LOGNOT-NEGP
+                           BITOPS::LOGAND-NATP-TYPE-1
                            svex-eval-when-quote
                            3vec-p-implies-bits
                            acl2::bfix-when-not-1
-                           acl2::logbitp-of-negative-const
-                           acl2::logbitp-of-mask
-                           acl2::logbitp-of-const
-                           acl2::open-logbitp-of-const-lite-meta
-                           acl2::logior-<-0-linear-2
-                           acl2::logand->=-0-linear-2
-                           acl2::logior-<-0-linear-1
-                           acl2::logand->=-0-linear-1
-                           acl2::logand-<-0-linear
-                           acl2::logior->=-0-linear
-                           acl2::upper-bound-of-logand
-                           acl2::lognot-<-const
-                           acl2::lognot-natp
+                           bitops::logbitp-of-negative-const
+                           bitops::logbitp-of-mask
+                           bitops::logbitp-of-const
+                           bitops::open-logbitp-of-const-lite-meta
+                           bitops::logior-<-0-linear-2
+                           bitops::logand->=-0-linear-2
+                           bitops::logior-<-0-linear-1
+                           bitops::logand->=-0-linear-1
+                           bitops::logand-<-0-linear
+                           bitops::logior->=-0-linear
+                           bitops::upper-bound-of-logand
+                           bitops::lognot-<-const
+                           bitops::lognot-natp
                            not)))
 
 ;; (local (in-theory (enable logbitp-when-4vec-[=-svex-eval)))
@@ -454,7 +454,7 @@
                                   4vec-bitand
                                   4veclist-nth
                                   4vec-bitand-mask))))
-          (acl2::logbitp-reasoning
+          (bitops::logbitp-reasoning
            :add-hints (:in-theory (enable* logbitp-when-4vec-[=-svex-eval-strong)))
           (and stable-under-simplificationp
                '(:bdd (:vars nil)))))
@@ -512,7 +512,7 @@
                                   ;; 4vec-bit?-x-mask
                                   4vec-bit?-y-mask
                                   4vec-bit?-z-mask))))
-          (acl2::logbitp-reasoning
+          (bitops::logbitp-reasoning
            :add-hints (:in-theory (enable* logbitp-when-4vec-[=-svex-eval-strong)))
           (and stable-under-simplificationp
                '(:bdd (:vars nil)))
@@ -534,7 +534,7 @@
                                   4vec-resand
                                   4veclist-nth
                                   4vec-bitand-mask))))
-          (acl2::logbitp-reasoning
+          (bitops::logbitp-reasoning
            :add-hints (:in-theory (enable* logbitp-when-4vec-[=-svex-eval-strong)))
           (and stable-under-simplificationp
                '(:bdd (:vars nil)))))
@@ -568,7 +568,7 @@
                                   4vec-bitor
                                   4veclist-nth
                                   4vec-bitor-mask))))
-          (acl2::logbitp-reasoning
+          (bitops::logbitp-reasoning
            :add-hints (:in-theory (enable* logbitp-when-4vec-[=-svex-eval-strong)))
           (and stable-under-simplificationp
                '(:bdd (:vars nil)))))
@@ -590,7 +590,7 @@
                                   4vec-resor
                                   4veclist-nth
                                   4vec-bitor-mask))))
-          (acl2::logbitp-reasoning
+          (bitops::logbitp-reasoning
            :add-hints (:in-theory (enable* logbitp-when-4vec-[=-svex-eval-strong)))
           (and stable-under-simplificationp
                '(:bdd (:vars nil)))))
@@ -622,7 +622,7 @@
                                   4vec-bitxor
                                   4veclist-nth
                                   4vec-bitxor-mask))))
-          (acl2::logbitp-reasoning
+          (bitops::logbitp-reasoning
            :add-hints (:in-theory (enable* logbitp-when-4vec-[=-svex-eval-strong)))
           (and stable-under-simplificationp
                '(:bdd (:vars nil)))))
@@ -634,7 +634,7 @@
                                     4veclist-nth
                                     4vec-mask
                                     4vec-res))
-          (acl2::logbitp-reasoning)
+          (bitops::logbitp-reasoning)
           (and stable-under-simplificationp
                '(:bdd (:vars nil)))))
 
@@ -645,7 +645,7 @@
                                     4veclist-nth
                                     4vec-mask
                                     4vec-override))
-         (acl2::logbitp-reasoning)
+         (bitops::logbitp-reasoning)
          (and stable-under-simplificationp
               '(:bdd (:vars nil)))))
 
@@ -660,7 +660,7 @@
 (local (defthm loghead-1-is-logbit
          (equal (loghead 1 x)
                 (logbit 0 x))
-         :hints(("Goal" :in-theory (enable acl2::loghead** acl2::logbitp**)))))
+         :hints(("Goal" :in-theory (enable bitops::loghead** bitops::logbitp**)))))
 
 (def-svmask uand (x)
   (list -1)
@@ -681,9 +681,9 @@
                                  2vec-p
                                  4vec-parity
                                  3vec-fix)
-                                (acl2::logior-equal-0))
+                                (bitops::logior-equal-0))
                 :cases ((logbitp 0 (4vmask-fix mask)))))
-         (acl2::logbitp-reasoning)))
+         (bitops::logbitp-reasoning)))
 
 (local (defthm ?-check-lemma-1
          (implies (and (equal (logior (4vec->lower x)
@@ -704,7 +704,7 @@
                                       (4vec->upper y))
                               0)))
          :hints(("Goal" :in-theory (enable 4vec-[=))
-                (acl2::logbitp-reasoning)
+                (bitops::logbitp-reasoning)
                 (and stable-under-simplificationp
                      '(:in-theory (enable bool->bit))))
          :rule-classes nil))
@@ -729,7 +729,7 @@
                                  4vec-?
                                  3vec-?
                                  3vec-fix)
-                                (acl2::logior-equal-0))
+                                (bitops::logior-equal-0))
                 :use ((:instance ?-check-lemma-1
                        (x (svex-eval (car args) nil))
                        (y (svex-eval (car args) env)))
@@ -737,7 +737,7 @@
                        (x (svex-eval (car args) nil))
                        (y (svex-eval (car args) env)))
                       )))
-          (acl2::logbitp-reasoning)
+          (bitops::logbitp-reasoning)
           (and stable-under-simplificationp
                '(:bdd (:vars nil))))
   :otf-flg t)
@@ -767,7 +767,7 @@
                                   4vec-mask
                                   4veclist-nth
                                   4vec-zero-ext))))
-          (acl2::logbitp-reasoning)
+          (bitops::logbitp-reasoning)
           (and stable-under-simplificationp
                '(:bdd (:vars nil)))))
 
@@ -779,8 +779,8 @@
      (ash 1 (- (lnfix n) 1)))))
 
 (local (in-theory (disable acl2::logext-identity
-                           acl2::loghead-identity
-                           acl2::logbitp-when-bit
+                           bitops::loghead-identity
+                           bitops::logbitp-when-bit
                            acl2::nfix-when-not-natp)))
 
 (local (defthm nfix-of-decr-gt
@@ -805,13 +805,13 @@
                                   4vec-sign-ext
                                   4vec-index-p
                                   sign-ext-mask))))
-          (acl2::logbitp-reasoning
+          (bitops::logbitp-reasoning
            :add-hints (:in-theory
-                       (enable* acl2::logbitp-case-splits
-                                acl2::logbitp-of-const-split))
+                       (enable* bitops::logbitp-case-splits
+                                bitops::logbitp-of-const-split))
            :simp-hint (:in-theory
-                       (enable* acl2::logbitp-case-splits
-                                acl2::logbitp-of-const-split))
+                       (enable* bitops::logbitp-case-splits
+                                bitops::logbitp-of-const-split))
            :prune-examples nil)
           (and stable-under-simplificationp
                '(:bdd (:vars nil)))))
@@ -834,7 +834,7 @@
                                   4vec-mask
                                   4veclist-nth
                                   4vec-concat))))
-          (acl2::logbitp-reasoning)))
+          (bitops::logbitp-reasoning)))
 
 (def-svmask rsh (n x)
   (b* (((when (4vmask-empty mask))
@@ -854,7 +854,7 @@
                                   4veclist-nth
                                   4vec-rsh))
                  :cases ((<= 0 (2vec->val (svex-xeval (car args)))))))
-          (acl2::logbitp-reasoning)))
+          (bitops::logbitp-reasoning)))
 
 (def-svmask lsh (n x)
   (b* (((when (4vmask-empty mask))
@@ -874,7 +874,7 @@
                                   4veclist-nth
                                   4vec-lsh))
                  :cases ((<= 0 (2vec->val (svex-xeval (car args)))))))
-          (acl2::logbitp-reasoning)))
+          (bitops::logbitp-reasoning)))
 
 (local (in-theory (disable equal-of-svex-eval)))
 
@@ -918,8 +918,8 @@
 (encapsulate nil
   (local (in-theory (disable svex-eval-when-2vec-p-of-minval
                              svex-eval-when-fncall
-                             acl2::logbitp-when-bit
-                             acl2::logxor-natp-type-2)))
+                             bitops::logbitp-when-bit
+                             bitops::logxor-natp-type-2)))
 
 
 
@@ -940,7 +940,7 @@
                          (x (car args)))
                         (:instance svex-eval-gte-empty-env
                          (x (cadr args))))))
-           (acl2::logbitp-reasoning :passes 2
+           (bitops::logbitp-reasoning :passes 2
                                     :simp-hint nil
                                     :add-hints nil)
            (and stable-under-simplificationp
@@ -966,7 +966,7 @@
                          (x (car args)))
                         (:instance svex-eval-gte-empty-env
                          (x (cadr args))))))
-           (acl2::logbitp-reasoning :passes 2
+           (bitops::logbitp-reasoning :passes 2
                                     :simp-hint nil
                                     :add-hints nil)
            (and stable-under-simplificationp
@@ -1050,18 +1050,18 @@
   (defthm unrev-blocks-correct1
     (equal (unrev-blocks nbits blocksz (rev-blocks nbits blocksz x))
            (loghead nbits x))
-    :hints((acl2::logbitp-reasoning)))
+    :hints((bitops::logbitp-reasoning)))
 
   (defthm unrev-blocks-correct2
     (equal (rev-blocks nbits blocksz (unrev-blocks nbits blocksz x))
            (loghead nbits x))
-    :hints((acl2::logbitp-reasoning))))
+    :hints((bitops::logbitp-reasoning))))
 
 
 
 (encapsulate nil
   (local (include-book "std/lists/index-of" :dir :system))
-  #!acl2
+  #!bitops
   (local (defun remove-nth (n x)
            (declare (xargs :guard (natp n)))
            (if (atom x)
@@ -1077,7 +1077,7 @@
                     (pseudo-termp (nth n x)))))
 
 
-  #!acl2
+  #!bitops
   (local (define my-eqbylbp-solve-for-var ((x pseudo-termp)
                                            (var symbolp)
                                            (target pseudo-termp))
@@ -1113,7 +1113,7 @@
               (caddr x) var
               `(binary-+ ,target (unary-- ,(cadr x)))))))
 
-  (local (defattach acl2::eqbylbp-solve-for-var acl2::my-eqbylbp-solve-for-var))
+  (local (defattach bitops::eqbylbp-solve-for-var bitops::my-eqbylbp-solve-for-var))
 
   (local (defthm lemma1
            (IMPLIES
@@ -1126,7 +1126,7 @@
                           (LOGIOR (LOGNOT m)
                                   (REV-BLOCKS n b x1)))
                    t))
-           :hints ((acl2::logbitp-reasoning))))
+           :hints ((bitops::logbitp-reasoning))))
 
   (local (defthm lemma2
            (IMPLIES
@@ -1139,7 +1139,7 @@
                           (LOGAND m
                                   (REV-BLOCKS n b x1)))
                    t))
-           :hints ((acl2::logbitp-reasoning))))
+           :hints ((bitops::logbitp-reasoning))))
 
   (def-svmask blkrev (n b x)
     (b* (((when (4vmask-empty mask))

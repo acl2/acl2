@@ -871,6 +871,7 @@
 (defconst *defvisitors-keys*
   '(:template    ;; visitor template to use
     :types       ;; Types targeted for toplevel functions
+    :dep-types   ;; Get dependencies of these types
     :debug
     ))
 
@@ -1010,7 +1011,6 @@
          (visitor-type-make-type-graph (car types) x wrld type-graph leaf-types)))
      (visitor-types-make-type-graph (cdr types) x wrld type-graph leaf-types))))
 
-       
 (defun visitor-reverse-graph-putlist (froms to revgraph)
   (if (atom froms)
       revgraph
@@ -1105,6 +1105,21 @@
      (visitor-toposort-types (cdr types) fty-graph seen postorder))))
 
 
+(defun visitor-type-to-fty (type deftypes-table)
+  (b* (((mv fty ?ftype) (search-deftypes-table type deftypes-table))
+       ((unless fty)
+        (er hard? 'defvisitors "Didn't find ~x0 in deftypes table" type))
+       ((flextypes fty)))
+    fty.name))
+
+(defun visitor-types-to-ftys (types deftypes-table)
+  (if (atom types)
+      nil
+    (cons (visitor-type-to-fty (car types) deftypes-table)
+          (visitor-types-to-ftys (cdr types) deftypes-table))))
+
+
+
 (defun flextypelist-names (x)
   (if (atom x)
       nil
@@ -1140,9 +1155,10 @@
        ((when mrec-fns)
         (er hard? 'defvisitors "Extra mutually-recursive functions aren't ~
                                allowed in defvisitors, just in ~
-                               defvisitors."))
+                               defvisitor."))
        (template (cdr (assoc :template kwd-alist)))
-       (types (cdr (assoc :types kwd-alist)))
+       (types (append (cdr (assoc :types kwd-alist))
+                      (cdr (assoc :dep-types kwd-alist))))
        (types (if (and types (atom types))
                   (list types)
                 types))
@@ -1173,9 +1189,11 @@
        ;; 4.
        (fty-graph (visitor-to-fty-graph type-graph marks deftypes-table nil))
 
+       (dep-ftys (visitor-types-to-ftys (cdr (assoc :dep-types kwd-alist)) deftypes-table))
        ;; 5.
-       ((mv seen-al rev-toposort) (visitor-toposort-types (strip-cars fty-graph)
-                                                          fty-graph nil nil))
+       ((mv seen-al rev-toposort) (visitor-toposort-types
+                                   (set-difference-eq (strip-cars fty-graph) dep-ftys)
+                                   fty-graph nil nil))
        (- (fast-alist-free seen-al))
 
        ;; 6. 

@@ -324,8 +324,8 @@ substitution are left in place."
              (local (defthmd logcount-lemma
                       (equal (logcount (loghead n (lognot x)))
                              (- (nfix n) (logcount (loghead n x))))
-                      :hints(("Goal" :in-theory (enable* acl2::ihsext-recursive-redefs
-                                                         acl2::ihsext-inductions)))))
+                      :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                                         bitops::ihsext-inductions)))))
              (local (defthm natp-of-expt-2-30
                       (natp (expt 2 30))
                       :rule-classes :type-prescription))
@@ -333,13 +333,13 @@ substitution are left in place."
                       (implies (and (< (integer-length x) (nfix n))
                                     (<= 0 (ifix x)))
                                (equal (loghead n x) (ifix x)))
-                      :hints(("Goal" :in-theory (enable* acl2::ihsext-recursive-redefs
-                                                         acl2::ihsext-inductions)))))
+                      :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                                         bitops::ihsext-inductions)))))
              (local (defthm integer-length-of-lognot
                       (equal (integer-length (lognot x))
                              (integer-length x))
-                      :hints(("Goal" :in-theory (enable* acl2::ihsext-recursive-redefs
-                                                         acl2::ihsext-inductions)))))
+                      :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                                         bitops::ihsext-inductions)))))
              (local (include-book "arithmetic/top-with-meta" :dir :system))
              (local (in-theory (disable (expt) (loghead)))))
   :guard-hints ((and stable-under-simplificationp

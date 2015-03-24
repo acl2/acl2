@@ -1069,7 +1069,22 @@ later on.  We handle that in @(see vl-make-implicit-wires-main).</p>"
              (newitems (cons (car x) newitems)))
           (vl-make-implicit-wires-aux (cdr x) st implicit newitems warnings)))
 
-       ((when (member tag '(:vl-modport :vl-typedef :vl-fwdtypedef)))
+       ((when (member tag '(:vl-typedef :vl-fwdtypedef)))
+        ;; We aren't processing datatypes in e.g. vardecls, so we'll ignore the type.
+        (b* ((name (if (eq tag :vl-typedef)
+                       (vl-typedef->name item)
+                     (vl-fwdtypedef->name item)))
+             (decls      (hons-acons name nil (vl-implicitst->decls st)))
+             (st         (change-vl-implicitst st :decls decls)))
+          (vl-make-implicit-wires-aux (cdr x) st implicit
+                                      (cons (car x) newitems)
+                                      warnings)))
+        
+
+       ((when (member tag '(:vl-modport
+                            ;; :vl-typedef
+                            ;; :vl-fwdtypedef
+                            )))
         (b* ((warnings (fatal :type :vl-unexpected-modelement
                               :msg "~a0: unexpected kind of module item."
                               :args (list item)))

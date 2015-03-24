@@ -89,7 +89,6 @@
                :otherwise nil))
     :rule-classes :forward-chaining))
 
-
 (defsection vl-unary-syscall->arg
   :short "Access the argument to a @(see vl-unary-syscall-p), not including the
 function name."
@@ -99,6 +98,33 @@ is the first argument to the @(':vl-syscall').</p>
 
   (defmacro vl-unary-syscall->arg (x)
     `(first (vl-call->args ,x))))
+
+
+(define vl-typearg-syscall-p
+  :short "Recognize calls of a particular typearg system function call."
+  ((name stringp   "Name of the particular system call, e.g., @('$bits').")
+   (x    vl-expr-p "Expression to test."))
+  :long "<p>For instance, to see if @('x') is a call of @('$bits'), you could
+         write:</p>
+         @({
+           (vl-typearg-syscall-p \"$bits\" x)
+         })"
+  (vl-expr-case x
+    :vl-call (and x.systemp
+                  (equal x.name (string-fix name))
+                  x.typearg
+                  (atom x.args))
+    :otherwise nil)
+  ///
+  (defthm arity-stuff-about-vl-typearg-syscall-p
+    (implies (vl-typearg-syscall-p name x)
+             (vl-expr-case x
+               :vl-call (and x.systemp
+                             (equal x.name (string-fix name))
+                             x.typearg
+                             (not (consp x.args)))
+               :otherwise nil))
+    :rule-classes :forward-chaining))
 
 
 
@@ -173,7 +199,8 @@ complete.</p>"
            ;; invoked it.
            ',(vl-coretypename->info :vl-time))
 
-          ((vl-unary-syscall-p "$bits" x)
+          ((or (vl-unary-syscall-p "$bits" x)
+               (vl-typearg-syscall-p "$bits" x))
            ;; SystemVerilog 20.6.2: The return type is integer.
            ',(vl-coretypename->info :vl-integer))
 

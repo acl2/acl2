@@ -131,11 +131,11 @@ into HTML is controlled by, e.g., @('xdoc/fancy/render.xsl').</p>")
 (local
  (encapsulate nil
    (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
-   (local (in-theory (enable* acl2::ihsext-bounds-thms)))
-   (local (in-theory (disable acl2::ash-1-removal)))
+   (local (in-theory (enable* bitops::ihsext-bounds-thms)))
+   (local (in-theory (disable bitops::ash-1-removal)))
    (local (in-theory (disable (tau-system)
-                              acl2::loghead-identity
-                              acl2::logsquash-cancel)))
+                              bitops::loghead-identity
+                              bitops::logsquash-cancel)))
 
    (local (defun ind (n width)
             (if (zp n)
@@ -143,45 +143,45 @@ into HTML is controlled by, e.g., @('xdoc/fancy/render.xsl').</p>")
               (ind (1- n) (logcdr width)))))
 
    (local (defthm minus-of-logcons-0
-            (equal (- (acl2::logcons b i))
-                   (+ 1 (acl2::logcons (acl2::b-not b) (lognot i))))
-            :hints(("Goal" :in-theory (enable acl2::minus-to-lognot)))))
+            (equal (- (bitops::logcons b i))
+                   (+ 1 (bitops::logcons (bitops::b-not b) (lognot i))))
+            :hints(("Goal" :in-theory (enable bitops::minus-to-lognot)))))
 
    (local (defthm expand-+
             (implies (and (integerp width) (integerp i))
-                     (equal (+ 1 width (acl2::logcons 1 i))
-                            (acl2::logcons (acl2::logcar width)
-                                           (+ 1 (acl2::logcdr width) i))))
-            :hints (("goal" :use ((:instance acl2::+-of-logcons-with-cin
-                                   (acl2::cin 1)
-                                   (acl2::b1 (acl2::logcar width))
-                                   (acl2::r1 (acl2::logcdr width))
-                                   (acl2::b2 1)
-                                   (acl2::r2 i)))
-                     :in-theory (disable acl2::+-of-logcons-with-cin)))))
+                     (equal (+ 1 width (bitops::logcons 1 i))
+                            (bitops::logcons (bitops::logcar width)
+                                           (+ 1 (bitops::logcdr width) i))))
+            :hints (("goal" :use ((:instance bitops::+-of-logcons-with-cin
+                                   (bitops::cin 1)
+                                   (bitops::b1 (bitops::logcar width))
+                                   (bitops::r1 (bitops::logcdr width))
+                                   (bitops::b2 1)
+                                   (bitops::r2 i)))
+                     :in-theory (disable bitops::+-of-logcons-with-cin)))))
    
    (local (defthm logsquash-linear
             (implies (and (integerp a) (integerp b)
                           (<= a b))
-                     (<= (acl2::logsquash n a) (acl2::logsquash n b)))
-            :hints(("Goal" :in-theory (enable* acl2::logsquash**
-                                               acl2::ihsext-inductions)))
+                     (<= (bitops::logsquash n a) (bitops::logsquash n b)))
+            :hints(("Goal" :in-theory (enable* bitops::logsquash**
+                                               bitops::ihsext-inductions)))
             :rule-classes :linear))
 
    (local (defthm logsquash-linear-2
             (implies (integerp a)
-                     (<= (acl2::logsquash n (+ -1 a)) (acl2::logsquash n a)))
+                     (<= (bitops::logsquash n (+ -1 a)) (bitops::logsquash n a)))
             :rule-classes :linear))
 
    (local (in-theory (disable logsquash-linear)))
 
    (local (defthm logsquash-when-loghead-0
-            (implies (equal 0 (acl2::loghead n a))
-                     (equal (acl2::logsquash n a)
+            (implies (equal 0 (bitops::loghead n a))
+                     (equal (bitops::logsquash n a)
                             (ifix a)))
-            :hints(("Goal" :in-theory (enable* acl2::logsquash**
-                                               acl2::loghead**
-                                               acl2::ihsext-inductions)))))
+            :hints(("Goal" :in-theory (enable* bitops::logsquash**
+                                               bitops::loghead**
+                                               bitops::ihsext-inductions)))))
 
    (local (defthm logcar-gte-0
             (not (< (logcar x) 0))))
@@ -189,15 +189,15 @@ into HTML is controlled by, e.g., @('xdoc/fancy/render.xsl').</p>")
    (local (defthm width-mask-bound
             (implies (posp width)
                      (and (<= (+ width
-                                 (- (acl2::logsquash n (+ -1 width))))
+                                 (- (bitops::logsquash n (+ -1 width))))
                               (ash 1 (nfix n)))
-                          (implies (not (equal 0 (acl2::loghead n width)))
+                          (implies (not (equal 0 (bitops::loghead n width)))
                                    (< (+ width
-                                         (- (acl2::logsquash n (+ -1 width))))
+                                         (- (bitops::logsquash n (+ -1 width))))
                                       (ash 1 (nfix n))))))
             :hints (("goal" :induct (ind n width)
-                     :expand ((:free (w) (acl2::logsquash n w))
-                              (:free (w) (acl2::loghead n w))
+                     :expand ((:free (w) (bitops::logsquash n w))
+                              (:free (w) (bitops::loghead n w))
                               (ash 1 n))
                      :in-theory (enable lognot)))
             :rule-classes :linear))
@@ -206,16 +206,16 @@ into HTML is controlled by, e.g., @('xdoc/fancy/render.xsl').</p>")
             (implies (and (integerp a) (integerp b)
                           (<= a b))
                      (<= (expt 2 a) (expt 2 b)))
-            :hints(("Goal" :in-theory (enable acl2::expt-2-monotonic)
+            :hints(("Goal" :in-theory (enable bitops::expt-2-monotonic)
                     :cases ((< a b))))
             :rule-classes (:rewrite :linear)))
 
    (defthm loghead-by-width-mask
      (implies (posp width)
-              (< (loghead (+ width (- (acl2::logsquash n (+ -1 width)))) i)
+              (< (loghead (+ width (- (bitops::logsquash n (+ -1 width)))) i)
                  (expt 2 (ash 1 (nfix n)))))
      :hints (("goal" :use ((:instance expt-2-monotonic-2
-                            (a (+ width (- (acl2::logsquash n (+ -1 width)))))
+                            (a (+ width (- (bitops::logsquash n (+ -1 width)))))
                             (b (ash 1 (nfix n)))))
               :in-theory (e/d ()
                               (expt-2-monotonic-2
@@ -223,7 +223,7 @@ into HTML is controlled by, e.g., @('xdoc/fancy/render.xsl').</p>")
      :rule-classes :linear)))
 
 (define 4vec-to-hex-chars ((upper integerp) (lower integerp) (width natp))
-  :prepwork ((local (in-theory (enable* acl2::ihsext-bounds-thms))))
+  :prepwork ((local (in-theory (enable* bitops::ihsext-bounds-thms))))
   :measure (nfix width)
   :returns (chars character-listp)
   (b* (((when (zp width)) nil)

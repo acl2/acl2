@@ -101,38 +101,38 @@ this relation, i.e.:</p>
 
 (defsection 4vec-monotonicity
   (set-state-ok t)
-  (local (in-theory (disable acl2::logior-natp-type
-                             acl2::logior-<-0-linear-2
-                             acl2::logand-natp-type-2
-                             acl2::logand->=-0-linear-2
-                             acl2::upper-bound-of-logand
-                             acl2::lognot-negp
-                             acl2::lognot-<-const
-                             acl2::logxor-natp-type-2
-                             acl2::logior->=-0-linear
-                             acl2::logior-<-0-linear-1
-                             acl2::lognot-natp
-                             ACL2::LOGAND->=-0-LINEAR-1
-                             ACL2::LOGAND-<-0-LINEAR
-                             ACL2::UPPER-BOUND-OF-LOGAND
-                             ACL2::IFIX-WHEN-NOT-INTEGERP
-                             acl2::logbitp-when-bitmaskp
-                             acl2::logbitp-nonzero-of-bit
+  (local (in-theory (disable bitops::logior-natp-type
+                             bitops::logior-<-0-linear-2
+                             bitops::logand-natp-type-2
+                             bitops::logand->=-0-linear-2
+                             bitops::upper-bound-of-logand
+                             bitops::lognot-negp
+                             bitops::lognot-<-const
+                             bitops::logxor-natp-type-2
+                             bitops::logior->=-0-linear
+                             bitops::logior-<-0-linear-1
+                             bitops::lognot-natp
+                             BITOPS::LOGAND->=-0-LINEAR-1
+                             BITOPS::LOGAND-<-0-LINEAR
+                             BITOPS::UPPER-BOUND-OF-LOGAND
+                             acl2::IFIX-WHEN-NOT-INTEGERP
+                             bitops::logbitp-when-bitmaskp
+                             bitops::logbitp-nonzero-of-bit
                              3vec-p-implies-bits
                              DEFAULT-<-1
-                             ACL2::LOGXOR-NATP-TYPE-1
-                             ACL2::LOGAND-NATP-TYPE-1
+                             BITOPS::LOGXOR-NATP-TYPE-1
+                             BITOPS::LOGAND-NATP-TYPE-1
                              ;; 4VEC->LOWER-WHEN-2VEC-P
-                             ACL2::LOGBITP-WHEN-BIT
+                             BITOPS::LOGBITP-WHEN-BIT
                              2VEC-P$INLINE
                              (:t logbitp)
                              acl2::bit-functions-type
-                             acl2::logbitp-of-mask
+                             bitops::logbitp-of-mask
                              acl2::bfix-when-not-1
-                             acl2::logand-with-bitmask
-                             acl2::logand-with-negated-bitmask
-                             acl2::logbitp-of-negative-const
-                             acl2::logbitp-of-const
+                             bitops::logand-with-bitmask
+                             bitops::logand-with-negated-bitmask
+                             bitops::logbitp-of-negative-const
+                             bitops::logbitp-of-const
                              ;; Disabling NOT is REALLY important here!
                              not)))
 

@@ -76,9 +76,9 @@
                            acl2::cancel_times-equal-correct
                            acl2::cancel_plus-equal-correct
                            ; acl2::logior-natp-type
-                           acl2::logxor-natp-type-2
-                           acl2::logior-<-0-linear-2
-                           acl2::lognot-negp)))
+                           bitops::logxor-natp-type-2
+                           bitops::logior-<-0-linear-2
+                           bitops::lognot-negp)))
 
 (defun svex-rewrite-lookup-vars (vars)
   (if (atom vars)
@@ -303,13 +303,13 @@
 (define 3valued-syntaxp ((x (or (svex-p x) (not x))))
   :measure (svex-count x)
   :prepwork ((local (in-theory (e/d* ()
-                                     (ACL2::LOGAND->=-0-LINEAR-2
-                                      ACL2::UPPER-BOUND-OF-LOGAND
-                                      ACL2::LOGAND-NATP-TYPE-2
-                                      ACL2::LOGAND-NATP-TYPE-1
-                                      ACL2::LOGNOT-NEGP
-                                      ACL2::LOGIOR-NATP-TYPE
-                                      ACL2::LOGNOT-NATP
+                                     (bitops::LOGAND->=-0-LINEAR-2
+                                      bitops::UPPER-BOUND-OF-LOGAND
+                                      bitops::LOGAND-NATP-TYPE-2
+                                      bitops::LOGAND-NATP-TYPE-1
+                                      bitops::LOGNOT-NEGP
+                                      bitops::LOGIOR-NATP-TYPE
+                                      bitops::LOGNOT-NATP
                                       double-containment
                                       default-car
                                       default-cdr
@@ -599,67 +599,67 @@
   :lhs (bitsel (unfloat n) x)
   :rhs (bitsel n x)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-bit-extract 4vec-bit-index 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
-          :add-hints (:in-theory (enable* acl2::logbitp-case-splits
-                                          acl2::logbitp-when-bit
-                                          acl2::bool->bit)))))
+         (bitops::logbitp-reasoning
+          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
+                                          bitops::logbitp-when-bit
+                                          bitops::bool->bit)))))
 
 (def-svex-rewrite bitsel-of-unfloat-2
   :lhs (bitsel n (unfloat x))
   :rhs (unfloat (bitsel n x))
   :hints(("Goal" :in-theory (enable svex-apply 4vec-bit-extract 4vec-bit-index 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
-          :add-hints (:in-theory (enable* acl2::logbitp-case-splits
-                                          acl2::logbitp-when-bit
-                                          acl2::bool->bit)))))
+         (bitops::logbitp-reasoning
+          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
+                                          bitops::logbitp-when-bit
+                                          bitops::bool->bit)))))
 
 (def-svex-rewrite zerox-of-unfloat-1
   :lhs (zerox (unfloat n) x)
   :rhs (zerox n x)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-zero-ext 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
-          :add-hints (:in-theory (enable* acl2::logbitp-case-splits
-                                          acl2::logbitp-when-bit
-                                          acl2::bool->bit)))))
+         (bitops::logbitp-reasoning
+          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
+                                          bitops::logbitp-when-bit
+                                          bitops::bool->bit)))))
 
 (def-svex-rewrite zerox-of-unfloat-2
   :lhs (zerox n (unfloat x))
   :rhs (unfloat (zerox n x))
   :hints(("Goal" :in-theory (enable svex-apply 4vec-zero-ext 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
-          :add-hints (:in-theory (enable* acl2::logbitp-case-splits
-                                          acl2::logbitp-when-bit
-                                          acl2::bool->bit)))))
+         (bitops::logbitp-reasoning
+          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
+                                          bitops::logbitp-when-bit
+                                          bitops::bool->bit)))))
 
 
 (def-svex-rewrite signx-of-unfloat-1
   :lhs (signx (unfloat n) x)
   :rhs (signx n x)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-sign-ext 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
-          :add-hints (:in-theory (enable* acl2::logbitp-case-splits
-                                          acl2::logbitp-when-bit
-                                          acl2::bool->bit))
+         (bitops::logbitp-reasoning
+          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
+                                          bitops::logbitp-when-bit
+                                          bitops::bool->bit))
           :prune-examples nil)))
 
 (def-svex-rewrite signx-of-unfloat-2
   :lhs (signx n (unfloat x))
   :rhs (unfloat (signx n x))
   :hints(("Goal" :in-theory (enable svex-apply 4vec-sign-ext 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
-          :add-hints (:in-theory (enable* acl2::logbitp-case-splits
-                                          acl2::logbitp-when-bit
-                                          acl2::bool->bit))
+         (bitops::logbitp-reasoning
+          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
+                                          bitops::logbitp-when-bit
+                                          bitops::bool->bit))
           :prune-examples nil)))
 
 (def-svex-rewrite concat-of-unfloat-1
   :lhs (concat (unfloat n) x y)
   :rhs (concat n x y)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
-          :add-hints (:in-theory (enable* acl2::logbitp-case-splits
-                                          acl2::logbitp-when-bit
-                                          acl2::bool->bit))
+         (bitops::logbitp-reasoning
+          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
+                                          bitops::logbitp-when-bit
+                                          bitops::bool->bit))
           :prune-examples nil)))
 
 
@@ -669,40 +669,40 @@
   :lhs (rsh (unfloat n) x)
   :rhs (rsh n x)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-rsh 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
-          :add-hints (:in-theory (enable* acl2::logbitp-case-splits
-                                          acl2::logbitp-when-bit
-                                          acl2::bool->bit))
+         (bitops::logbitp-reasoning
+          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
+                                          bitops::logbitp-when-bit
+                                          bitops::bool->bit))
           :prune-examples nil)))
 
 (def-svex-rewrite rsh-of-unfloat-2
   :lhs (rsh n (unfloat x))
   :rhs (unfloat (rsh n x))
   :hints(("Goal" :in-theory (enable svex-apply 4vec-rsh 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
-          :add-hints (:in-theory (enable* acl2::logbitp-case-splits
-                                          acl2::logbitp-when-bit
-                                          acl2::bool->bit))
+         (bitops::logbitp-reasoning
+          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
+                                          bitops::logbitp-when-bit
+                                          bitops::bool->bit))
           :prune-examples nil)))
 
 (def-svex-rewrite lsh-of-unfloat-1
   :lhs (lsh (unfloat n) x)
   :rhs (lsh n x)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-lsh 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
-          :add-hints (:in-theory (enable* acl2::logbitp-case-splits
-                                          acl2::logbitp-when-bit
-                                          acl2::bool->bit))
+         (bitops::logbitp-reasoning
+          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
+                                          bitops::logbitp-when-bit
+                                          bitops::bool->bit))
           :prune-examples nil)))
 
 (def-svex-rewrite lsh-of-unfloat-2
   :lhs (lsh n (unfloat x))
   :rhs (unfloat (lsh n x))
   :hints(("Goal" :in-theory (enable svex-apply 4vec-lsh 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
-          :add-hints (:in-theory (enable* acl2::logbitp-case-splits
-                                          acl2::logbitp-when-bit
-                                          acl2::bool->bit))
+         (bitops::logbitp-reasoning
+          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
+                                          bitops::logbitp-when-bit
+                                          bitops::bool->bit))
           :prune-examples nil)))
 
 (def-svex-rewrite +-of-unfloat-1
@@ -836,9 +836,9 @@
 ;;   ///
 ;;   (local (in-theory (disable (:d concat-under-mask-meta-aux)
 ;;                              not)))
-;;   (local (in-theory (enable* acl2::ihsext-advanced-thms)))
-;;   (local (in-theory (disable acl2::loghead-identity
-;;                              acl2::logtail-identity
+;;   (local (in-theory (enable* bitops::ihsext-advanced-thms)))
+;;   (local (in-theory (disable bitops::loghead-identity
+;;                              bitops::logtail-identity
 ;;                              unsigned-byte-p
 ;;                              default-car default-cdr)))
 
@@ -847,7 +847,7 @@
 ;;                          (natp width) (natp xwidth))
 ;;                     (equal (ash (logtail width mask) (+ xwidth width))
 ;;                            (ash mask xwidth)))
-;;            :hints ((acl2::logbitp-reasoning))))
+;;            :hints ((bitops::logbitp-reasoning))))
 
 
 ;;   (local (defthm unnest-logapps-under-mask
@@ -861,7 +861,7 @@
 ;;                                         (logapp w1 a (logapp w2 b c)))
 ;;                                 (logand mask
 ;;                                         (logapp (+ w1 w2) 0 c)))))
-;;            :hints ((acl2::logbitp-reasoning))))
+;;            :hints ((bitops::logbitp-reasoning))))
 
 ;;   ;; (local (defthm norm-first-logapp-under-mask
 ;;   ;;          (implies (and (syntaxp (not (equal a ''0)))
@@ -871,7 +871,7 @@
 ;;   ;;                                  (logapp w a b))
 ;;   ;;                          (logior (lognot mask)
 ;;   ;;                                  (logapp w 0 b))))
-;;   ;;          :hints ((acl2::logbitp-reasoning))))
+;;   ;;          :hints ((bitops::logbitp-reasoning))))
 
 ;;   (defthm mask-when-loghead-0
 ;;     (implies (and (equal 0 (loghead (+ (2vec->val w1) (2vec->val w2)) (4vmask-fix mask)))
@@ -882,10 +882,10 @@
 ;;                     (4vec-mask mask (4vec-concat (2vec (+ (2vec->val w1) (2vec->val w2)))
 ;;                                                  '(-1 . 0) c))))
 ;;     :hints(("Goal" :in-theory (enable 4vec-mask 4vec-concat))
-;;            ;; (acl2::logbitp-reasoning
-;;            ;;   ;; :add-hints (:in-theory (enable* acl2::logbitp-case-splits
-;;            ;;   ;;                                 acl2::logbitp-when-bit
-;;            ;;   ;;                                 acl2::bool->bit))
+;;            ;; (bitops::logbitp-reasoning
+;;            ;;   ;; :add-hints (:in-theory (enable* bitops::logbitp-case-splits
+;;            ;;   ;;                                 bitops::logbitp-when-bit
+;;            ;;   ;;                                 bitops::bool->bit))
 ;;            ;;   ;; :prune-examples nil
 ;;            ;;   )
 ;;            ))
@@ -905,10 +905,10 @@
 ;;              :do-not-induct t)
 ;;             ;; (and stable-under-simplificationp
 ;;             ;;      '(:in-theory (enable 4vec-mask 4vec-concat)))
-;;             ;; (acl2::logbitp-reasoning
-;;             ;;  :add-hints (:in-theory (enable* acl2::logbitp-case-splits
-;;             ;;                                  acl2::logbitp-when-bit
-;;             ;;                                  acl2::bool->bit)))
+;;             ;; (bitops::logbitp-reasoning
+;;             ;;  :add-hints (:in-theory (enable* bitops::logbitp-case-splits
+;;             ;;                                  bitops::logbitp-when-bit
+;;             ;;                                  bitops::bool->bit)))
 ;;             ))
 
 ;;   (acl2::defret alist-keys-of-concat-under-mask-meta-aux
@@ -999,7 +999,7 @@
                     (equal (4vec-concat w1 (4vec-concat w2 x y) z)
                            (4vec-concat w1 x z)))
            :hints(("Goal" :in-theory (enable 4vec-concat))
-                  (acl2::logbitp-reasoning))))
+                  (bitops::logbitp-reasoning))))
   (local (defthm 4vec-concat-nest-outer-width-greater
            (implies (and (2vec-p w1)
                          (2vec-p w2)
@@ -1008,7 +1008,7 @@
                     (equal (4vec-concat w1 (4vec-concat w2 x y) z)
                            (4vec-concat w2 x (4vec-concat (2vec (- (2vec->val w1) (2vec->val w2))) y z))))
            :hints(("Goal" :in-theory (enable 4vec-concat))
-                  (acl2::logbitp-reasoning))))
+                  (bitops::logbitp-reasoning))))
   (defthm svex-concat-flatten-correct
     (equal (svex-eval (svex-concat-flatten x width acc) env)
            (4vec-concat (2vec (nfix width )) (svex-eval x env)
@@ -1109,7 +1109,7 @@
 ;;   :rhs (concat w xx y)
 ;;   :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-mask 4vec-lsh))
 ;;          (svex-generalize-lookups)
-;;          (acl2::logbitp-reasoning :prune-examples nil))
+;;          (bitops::logbitp-reasoning :prune-examples nil))
 ;;   :localp t)
 
 
@@ -1126,7 +1126,7 @@
   :rhs (concat w xx y)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-mask 4vec-lsh))
          (svex-generalize-lookups)
-         (acl2::logbitp-reasoning :prune-examples nil))
+         (bitops::logbitp-reasoning :prune-examples nil))
   :localp t)
 
 ;; (def-svex-rewrite concat-under-mask-1-const
@@ -1139,7 +1139,7 @@
 ;;   :rhs yy
 ;;   :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-mask 4vec-lsh))
 ;;          (svex-generalize-lookups)
-;;          (acl2::logbitp-reasoning :prune-examples nil))
+;;          (bitops::logbitp-reasoning :prune-examples nil))
 ;;   :localp t)
 
 (def-svex-rewrite concat-under-mask-2
@@ -1148,7 +1148,7 @@
            (eql 0 (logtail (2vec->val (svex-quote->val w)) mask)))
   :rhs x
   :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-mask 4vec-lsh))
-         (acl2::logbitp-reasoning :prune-examples nil))
+         (bitops::logbitp-reasoning :prune-examples nil))
   ;; :localp t
   )
 
@@ -1161,7 +1161,7 @@
 ;;            (<= (2vec->val (svex-quote->val w1)) (2vec->val (svex-quote->val w2))))
 ;;   :rhs (concat w1 x z)
 ;;   :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-mask 4vec-lsh))
-;;          (acl2::logbitp-reasoning :prune-examples nil)))
+;;          (bitops::logbitp-reasoning :prune-examples nil)))
 
 ;; (def-svex-rewrite concat-of-concat-less
 ;;   ;; DANGER This could add function calls and cause blowup in the number of terms.
@@ -1172,7 +1172,7 @@
 ;;            (bind w3 (svex-quote (2vec (- (2vec->val (svex-quote->val w1)) (2vec->val (svex-quote->val w2)))))))
 ;;   :rhs (concat w2 x (concat w3 y z))
 ;;   :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-mask 4vec-lsh))
-;;          (acl2::logbitp-reasoning :prune-examples nil)))
+;;          (bitops::logbitp-reasoning :prune-examples nil)))
 
 (def-svex-rewrite concat-of-concat-join-consts
   :lhs (concat w1 x1 (concat w2 x2 y))
@@ -1187,7 +1187,7 @@
                                             (2vec->val (svex-quote->val w2)))))))
   :rhs (concat new-w newx y)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-mask 4vec-lsh))
-         (acl2::logbitp-reasoning :prune-examples nil)))
+         (bitops::logbitp-reasoning :prune-examples nil)))
            
 
 ;; (def-svex-rewrite zerox-to-concat
@@ -1203,7 +1203,7 @@
            (<= (2vec->val (svex-quote->val w1)) (2vec->val (svex-quote->val w2))))
   :rhs (zerox w1 x)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-zero-ext 4vec-mask 4vec-lsh))
-         (acl2::logbitp-reasoning :prune-examples nil)))
+         (bitops::logbitp-reasoning :prune-examples nil)))
 
 
 ;; (define rsh-of-concat-meta-aux ((shift natp)
@@ -1237,7 +1237,7 @@
 ;;           (x . ,(svex-fix x)))))
 ;;     (rsh-of-concat-meta-aux (- shift widthval) rest))
 ;;   ///
-;;   (local (in-theory (disable acl2::logtail-identity nth len
+;;   (local (in-theory (disable bitops::logtail-identity nth len
 ;;                              (:d rsh-of-concat-meta-aux))))
 ;;   (defthm eval-of-rsh-of-concat-meta-aux
 ;;     (equal (svex-eval '(rsh shift x)
@@ -1248,7 +1248,7 @@
 ;;             :expand ((rsh-of-concat-meta-aux shift x)))
 ;;            (and stable-under-simplificationp
 ;;                 '(:in-theory (enable 4vec-rsh 4vec-concat
-;;                                      acl2::logtail-of-logapp-split
+;;                                      bitops::logtail-of-logapp-split
 ;;                                      nth-expand)))))
 
 ;;   (defthm rsh-of-concat-no-new-vars
@@ -1499,7 +1499,7 @@
 ;;            (bind sh1 (svex-quote (2vec (- (2vec->val (svex-quote->val sh)) (2vec->val (svex-quote->val w)))))))
 ;;   :rhs (rsh sh1 y)
 ;;   :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-mask 4vec-rsh))
-;;          (acl2::logbitp-reasoning :prune-examples nil)))
+;;          (bitops::logbitp-reasoning :prune-examples nil)))
 
                 
        
@@ -1573,7 +1573,7 @@
 ;;            (bind sh1 (svex-quote (2vec (- (2vec->val (svex-quote->val sh)) (2vec->val (svex-quote->val w)))))))
 ;;   :rhs (rsh sh1 y)
 ;;   :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-mask 4vec-rsh))
-;;          (acl2::logbitp-reasoning :prune-examples nil)))
+;;          (bitops::logbitp-reasoning :prune-examples nil)))
 
 
 
@@ -1584,7 +1584,7 @@
            (bind sh3 (svex-quote (2vec (+ (2vec->val (svex-quote->val sh1)) (2vec->val (svex-quote->val sh2)))))))
   :rhs (rsh sh3 x)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-mask 4vec-rsh 4vec-lsh))
-         (acl2::logbitp-reasoning :prune-examples nil)))
+         (bitops::logbitp-reasoning :prune-examples nil)))
 
 (def-svex-rewrite lsh-to-rsh
   :lhs (lsh sh x)
@@ -1623,7 +1623,7 @@
            (eql 0 (loghead (2vec->val (svex-quote->val w)) mask)))
   :rhs 0
   :hints(("Goal" :in-theory (enable svex-apply 4vec-zero-ext 4vec-mask))
-         (acl2::logbitp-reasoning :prune-examples nil))
+         (bitops::logbitp-reasoning :prune-examples nil))
   :localp t)
 
 (def-svex-rewrite zerox-under-mask-2
@@ -1632,7 +1632,7 @@
            (eql 0 (logtail (2vec->val (svex-quote->val w)) mask)))
   :rhs x
   :hints(("Goal" :in-theory (enable svex-apply 4vec-zero-ext 4vec-mask))
-         (acl2::logbitp-reasoning :prune-examples nil))
+         (bitops::logbitp-reasoning :prune-examples nil))
   :localp t)
 
 (def-svex-rewrite signx-under-mask
@@ -1641,7 +1641,7 @@
            (eql 0 (logtail (2vec->val (svex-quote->val w)) mask)))
   :rhs x
   :hints(("Goal" :in-theory (enable svex-apply 4vec-sign-ext 4vec-mask))
-         (acl2::logbitp-reasoning :prune-examples nil))
+         (bitops::logbitp-reasoning :prune-examples nil))
   :localp t)
 
 (defmacro hidelet (term)
@@ -1649,20 +1649,20 @@
 
 
 (defsection bit?-rewrites
-  (local (in-theory (disable acl2::logand-natp-type-2
-                             acl2::logior-natp-type
-                             acl2::lognot-natp
+  (local (in-theory (disable bitops::logand-natp-type-2
+                             bitops::logior-natp-type
+                             bitops::lognot-natp
                              (:t negp)
                              (:t svexlist-unify)
                              (:t svex-eval)
                              (:t svex-kind)
                              svex-eval-when-quote
-                             acl2::logand-natp-type-1
+                             bitops::logand-natp-type-1
                              4vec->lower-when-2vec-p
-                             acl2::logbitp-nonzero-of-bit
+                             bitops::logbitp-nonzero-of-bit
                              3vec-p-implies-bits
-                             acl2::logbitp-when-bit
-                             acl2::logbitp-when-bitmaskp
+                             bitops::logbitp-when-bit
+                             bitops::logbitp-when-bitmaskp
                              3vec-p-of-eval-when-3valued-syntaxp
                              not)))
 
@@ -1674,10 +1674,10 @@
     :rhs x
     :hints(("Goal" :in-theory (enable svex-apply 4vec-bit? 3vec-bit?
                                       4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
-           (acl2::logbitp-reasoning
+           (bitops::logbitp-reasoning
             ;; :prune-examples nil
-            :add-hints (:in-theory (enable* acl2::bool->bit
-                                            ;; acl2::logbitp-case-splits
+            :add-hints (:in-theory (enable* bitops::bool->bit
+                                            ;; bitops::logbitp-case-splits
                                     logbitp-when-4vec-[=-svex-eval-strong))))
     :localp t)
 
@@ -1689,10 +1689,10 @@
     :rhs y
     :hints(("Goal" :in-theory (enable svex-apply 4vec-bit? 3vec-bit?
                                       4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
-           (acl2::logbitp-reasoning
+           (bitops::logbitp-reasoning
             ;; :prune-examples nil
-            :add-hints (:in-theory (enable* acl2::bool->bit
-                                            acl2::logbitp-case-splits
+            :add-hints (:in-theory (enable* bitops::bool->bit
+                                            bitops::logbitp-case-splits
                                             logbitp-when-4vec-[=-svex-eval-strong))))
     :localp t))
 
@@ -1715,10 +1715,10 @@
   :rhs (unfloat y)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-bitand 3vec-bitand
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
+         (bitops::logbitp-reasoning
           :prune-examples nil
-          :add-hints (:in-theory (enable* acl2::bool->bit
-                                          acl2::logbitp-case-splits
+          :add-hints (:in-theory (enable* bitops::bool->bit
+                                          bitops::logbitp-case-splits
                                           logbitp-when-4vec-[=-svex-eval-strong))))
   :localp t)
 
@@ -1737,10 +1737,10 @@
   :rhs (unfloat x)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-bitand 3vec-bitand
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
+         (bitops::logbitp-reasoning
           :prune-examples nil
-          :add-hints (:in-theory (enable* acl2::bool->bit
-                                          acl2::logbitp-case-splits
+          :add-hints (:in-theory (enable* bitops::bool->bit
+                                          bitops::logbitp-case-splits
                                           logbitp-when-4vec-[=-svex-eval-strong))))
   :localp t)
 
@@ -1756,10 +1756,10 @@
   :rhs y
   :hints(("Goal" :in-theory (enable svex-apply 4vec-resand
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
+         (bitops::logbitp-reasoning
           :prune-examples nil
-          :add-hints (:in-theory (enable* acl2::bool->bit
-                                          acl2::logbitp-case-splits
+          :add-hints (:in-theory (enable* bitops::bool->bit
+                                          bitops::logbitp-case-splits
                                           logbitp-when-4vec-[=-svex-eval-strong))))
   :localp t)
 
@@ -1775,10 +1775,10 @@
   :rhs x
   :hints(("Goal" :in-theory (enable svex-apply 4vec-resand
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
+         (bitops::logbitp-reasoning
           :prune-examples nil
-          :add-hints (:in-theory (enable* acl2::bool->bit
-                                          acl2::logbitp-case-splits
+          :add-hints (:in-theory (enable* bitops::bool->bit
+                                          bitops::logbitp-case-splits
                                           logbitp-when-4vec-[=-svex-eval-strong))))
   :localp t)
 
@@ -1797,10 +1797,10 @@
   :rhs (unfloat y)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-bitor 3vec-bitor
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
+         (bitops::logbitp-reasoning
           :prune-examples nil
-          :add-hints (:in-theory (enable* acl2::bool->bit
-                                          acl2::logbitp-case-splits
+          :add-hints (:in-theory (enable* bitops::bool->bit
+                                          bitops::logbitp-case-splits
                                           logbitp-when-4vec-[=-svex-eval-strong))))
   :localp t)
 
@@ -1819,10 +1819,10 @@
   :rhs (unfloat x)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-bitor 3vec-bitor
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
+         (bitops::logbitp-reasoning
           :prune-examples nil
-          :add-hints (:in-theory (enable* acl2::bool->bit
-                                          acl2::logbitp-case-splits
+          :add-hints (:in-theory (enable* bitops::bool->bit
+                                          bitops::logbitp-case-splits
                                           logbitp-when-4vec-[=-svex-eval-strong))))
   :localp t)
 
@@ -1838,10 +1838,10 @@
   :rhs y
   :hints(("Goal" :in-theory (enable svex-apply 4vec-resor
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
+         (bitops::logbitp-reasoning
           :prune-examples nil
-          :add-hints (:in-theory (enable* acl2::bool->bit
-                                          acl2::logbitp-case-splits
+          :add-hints (:in-theory (enable* bitops::bool->bit
+                                          bitops::logbitp-case-splits
                                           logbitp-when-4vec-[=-svex-eval-strong))))
   :localp t)
 
@@ -1857,10 +1857,10 @@
   :rhs x
   :hints(("Goal" :in-theory (enable svex-apply 4vec-resor
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
+         (bitops::logbitp-reasoning
           :prune-examples nil
-          :add-hints (:in-theory (enable* acl2::bool->bit
-                                          acl2::logbitp-case-splits
+          :add-hints (:in-theory (enable* bitops::bool->bit
+                                          bitops::logbitp-case-splits
                                           logbitp-when-4vec-[=-svex-eval-strong))))
   :localp t)
 
@@ -1877,10 +1877,10 @@
   :rhs y
   :hints(("Goal" :in-theory (enable svex-apply 4vec-res
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
+         (bitops::logbitp-reasoning
           :prune-examples nil
-          :add-hints (:in-theory (enable* acl2::bool->bit
-                                          acl2::logbitp-case-splits
+          :add-hints (:in-theory (enable* bitops::bool->bit
+                                          bitops::logbitp-case-splits
                                           logbitp-when-4vec-[=-svex-eval-strong))))
   :localp t)
 
@@ -1896,10 +1896,10 @@
   :rhs x
   :hints(("Goal" :in-theory (enable svex-apply 4vec-res
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
+         (bitops::logbitp-reasoning
           :prune-examples nil
-          :add-hints (:in-theory (enable* acl2::bool->bit
-                                          acl2::logbitp-case-splits
+          :add-hints (:in-theory (enable* bitops::bool->bit
+                                          bitops::logbitp-case-splits
                                           logbitp-when-4vec-[=-svex-eval-strong))))
   :localp t)
 
@@ -1907,12 +1907,12 @@
 (local (defthm logior-same-2
          (equal (logior x (logior x y))
                 (logior x y))
-         :hints((acl2::logbitp-reasoning))))
+         :hints((bitops::logbitp-reasoning))))
 
 (local (defthm logand-same-2
          (equal (logand x (logand x y))
                 (logand x y))
-         :hints((acl2::logbitp-reasoning))))
+         :hints((bitops::logbitp-reasoning))))
 
 (def-svex-rewrite res-same-1
   :lhs (res x x)
@@ -1923,9 +1923,9 @@
   :lhs (res x (res x y))
   :rhs (res x y)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-res 4vec-mask))
-         (acl2::logbitp-reasoning
-          :add-hints (:in-theory (enable* acl2::bool->bit
-                                          acl2::logbitp-case-splits)))))
+         (bitops::logbitp-reasoning
+          :add-hints (:in-theory (enable* bitops::bool->bit
+                                          bitops::logbitp-case-splits)))))
 
 
 ;; Rewrite (res x y) to a concatenation if for all corresponding bits of x and
@@ -1958,17 +1958,17 @@
   (defthmd logbitp-by-trailing-0-count
     (implies (< (nfix n) (trailing-0-count x))
              (equal (logbitp n x) nil))
-    :hints(("Goal" :in-theory (enable* acl2::logbitp**
-                                       acl2::ihsext-inductions)
+    :hints(("Goal" :in-theory (enable* bitops::logbitp**
+                                       bitops::ihsext-inductions)
             :induct (logbitp n x))))
 
   (defthm trailing-0-count-of-logtail
     (implies (<= (nfix n) (trailing-0-count x))
              (equal (trailing-0-count (logtail n x))
                     (- (trailing-0-count x) (nfix n))))
-    :hints(("Goal" :in-theory (enable* acl2::logtail**
-                                      acl2::logbitp**
-                                      acl2::ihsext-inductions
+    :hints(("Goal" :in-theory (enable* bitops::logtail**
+                                      bitops::logbitp**
+                                      bitops::ihsext-inductions
                                       logbitp-by-trailing-0-count))))
 
   (defthm trailing-0-count-when-integer-length-0
@@ -1988,8 +1988,8 @@
   ;;            (equal (trailing-0-count (logior a b))
   ;;                   (min (trailing-0-count a)
   ;;                        (trailing-0-count b))))
-  ;;   :hints(("Goal" :in-theory (enable* acl2::logior**
-  ;;                                      acl2::ihsext-inductions))))
+  ;;   :hints(("Goal" :in-theory (enable* bitops::logior**
+  ;;                                      bitops::ihsext-inductions))))
   )
 
 
@@ -2004,10 +2004,10 @@
                              (or (zip x)
                                  (eql x -1)))
                       :hints(("Goal" :expand ((integer-length x))))))
-             (local (in-theory (disable acl2::logtail-identity
-                                        acl2::logior-natp-type
+             (local (in-theory (disable bitops::logtail-identity
+                                        bitops::logior-natp-type
                                         svex-eval-when-2vec-p-of-minval
-                                        acl2::logbitp-when-bit
+                                        bitops::logbitp-when-bit
                                         4vec->lower-when-2vec-p
                                         acl2::zip-open))))
   :verify-guards nil
@@ -2054,15 +2054,15 @@
   (local (defthmd logand-of-logtail
            (equal (logand (logtail n x) (logtail n y))
                   (logtail n (logand x y)))
-           :hints ((acl2::logbitp-reasoning))))
+           :hints ((bitops::logbitp-reasoning))))
 
   (defthm trailing-zero-counts-same
     (implies (and (equal (trailing-0-count x) (trailing-0-count y))
                   (equal 0 (logand x y)))
              (or (zip x) (zip y)))
     :hints (("goal" :induct (logand x y)
-             :in-theory (enable* acl2::ihsext-inductions
-                                 acl2::logand**
+             :in-theory (enable* bitops::ihsext-inductions
+                                 bitops::logand**
                                  trailing-0-count)))
     :rule-classes nil)
 
@@ -2076,12 +2076,12 @@
   (local (defthm ash-of-logior
            (equal (ash (logior x y) sh)
                   (logior (ash x sh) (ash y sh)))
-           :hints ((acl2::logbitp-reasoning))))
+           :hints ((bitops::logbitp-reasoning))))
 
   (local (defthm ash-of-logand
            (equal (ash (logand x y) sh)
                   (logand (ash x sh) (ash y sh)))
-           :hints ((acl2::logbitp-reasoning))))
+           :hints ((bitops::logbitp-reasoning))))
 
   (local (defthm 4vec-rsh-of-4vec-res
            (equal (4vec-rsh sh (4vec-res x y))
@@ -2136,7 +2136,7 @@
            (equal (4vec-[= (4vec-z) x)
                   (4vec-equiv x (4vec-z)))
            :hints(("Goal" :in-theory (enable 4vec-[= 4vec-fix-is-4vec-of-fields))
-                  (acl2::logbitp-reasoning))
+                  (bitops::logbitp-reasoning))
            :otf-flg t))
 
   (local (defthmd svex-eval-equal-z
@@ -2151,19 +2151,19 @@
                          (< n (trailing-0-count (logior a b))))
                     (equal (logbitp n a) nil))
            :hints(("Goal" :in-theory (enable* trailing-0-count
-                                              acl2::ihsext-inductions
-                                              acl2::logior**
-                                              acl2::logbitp**)))))
+                                              bitops::ihsext-inductions
+                                              bitops::logior**
+                                              bitops::logbitp**)))))
 
   (local (defthm logbitp-when-<-trailing-0-count-2
            (implies (and (natp n)
                          (< n (trailing-0-count (logior a (lognot b)))))
                     (equal (logbitp n b) t))
            :hints(("Goal" :in-theory (enable* trailing-0-count
-                                              acl2::ihsext-inductions
-                                              acl2::logior**
-                                              acl2::lognot**
-                                              acl2::logbitp**
+                                              bitops::ihsext-inductions
+                                              bitops::logior**
+                                              bitops::lognot**
+                                              bitops::logbitp**
                                               acl2::b-ior)
                    :induct (list (logbitp n a)
                                  (logbitp n b))))))
@@ -2185,7 +2185,7 @@
                                       (4vec-res (svex-eval x env)
                                                 (svex-eval y env))))))
            :hints(("Goal" :in-theory (enable 4vec-concat 4vec-res 4vec-rsh 4vec-non-z-mask))
-                  (acl2::logbitp-reasoning)
+                  (bitops::logbitp-reasoning)
                   (and stable-under-simplificationp
                        '(:in-theory (enable logbitp-when-4vec-[=-svex-eval-strong
                                             bool->bit))))))
@@ -2206,7 +2206,7 @@
                                       (4vec-resand (svex-eval x env)
                                                 (svex-eval y env))))))
            :hints(("Goal" :in-theory (enable 4vec-concat 4vec-resand 4vec-rsh 4vec-non-z-mask))
-                  (acl2::logbitp-reasoning)
+                  (bitops::logbitp-reasoning)
                   (and stable-under-simplificationp
                        '(:in-theory (enable logbitp-when-4vec-[=-svex-eval-strong
                                             bool->bit))))))
@@ -2227,7 +2227,7 @@
                                       (4vec-resor (svex-eval x env)
                                                 (svex-eval y env))))))
            :hints(("Goal" :in-theory (enable 4vec-concat 4vec-resor 4vec-rsh 4vec-non-z-mask))
-                  (acl2::logbitp-reasoning)
+                  (bitops::logbitp-reasoning)
                   (and stable-under-simplificationp
                        '(:in-theory (enable logbitp-when-4vec-[=-svex-eval-strong
                                             bool->bit))))))
@@ -2410,13 +2410,13 @@
            (equal (4vec-resand (4vec-z) x)
                   (4vec-fix x))
            :hints(("Goal" :in-theory (enable 4vec-resand))
-                  (acl2::logbitp-reasoning))))
+                  (bitops::logbitp-reasoning))))
 
   (local (defthm 4vec-resor-of-z
            (equal (4vec-resor (4vec-z) x)
                   (4vec-fix x))
            :hints(("Goal" :in-theory (enable 4vec-resor))
-                  (acl2::logbitp-reasoning))))
+                  (bitops::logbitp-reasoning))))
 
   (defthm res-to-concat-correct
     (implies (and (equal xmask (logtail offset (4vec-non-z-mask (svex-xeval x))))
@@ -2540,10 +2540,10 @@
   :rhs (unfloat y)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-bitxor
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
+         (bitops::logbitp-reasoning
           :prune-examples nil
-          :add-hints (:in-theory (enable* acl2::bool->bit
-                                          acl2::logbitp-case-splits
+          :add-hints (:in-theory (enable* bitops::bool->bit
+                                          bitops::logbitp-case-splits
                                           logbitp-when-4vec-[=-svex-eval-strong))))
   :localp t)
 
@@ -2559,10 +2559,10 @@
   :rhs (bitnot y)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-bitxor
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
+         (bitops::logbitp-reasoning
           :prune-examples nil
-          :add-hints (:in-theory (enable* acl2::bool->bit
-                                          acl2::logbitp-case-splits
+          :add-hints (:in-theory (enable* bitops::bool->bit
+                                          bitops::logbitp-case-splits
                                           logbitp-when-4vec-[=-svex-eval-strong)))))
 
 
@@ -2581,10 +2581,10 @@
   :rhs (unfloat x)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-bitxor
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
+         (bitops::logbitp-reasoning
           :prune-examples nil
-          :add-hints (:in-theory (enable* acl2::bool->bit
-                                          acl2::logbitp-case-splits
+          :add-hints (:in-theory (enable* bitops::bool->bit
+                                          bitops::logbitp-case-splits
                                           logbitp-when-4vec-[=-svex-eval-strong))))
   :localp t)
 
@@ -2600,10 +2600,10 @@
   :rhs (bitnot x)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-bitxor
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
-         (acl2::logbitp-reasoning
+         (bitops::logbitp-reasoning
           :prune-examples nil
-          :add-hints (:in-theory (enable* acl2::bool->bit
-                                          acl2::logbitp-case-splits
+          :add-hints (:in-theory (enable* bitops::bool->bit
+                                          bitops::logbitp-case-splits
                                           logbitp-when-4vec-[=-svex-eval-strong)))))
 
 
@@ -2626,16 +2626,16 @@
 (defthm logand-ash-not-equal-neg-1
   (implies (< 0 (nfix n))
            (not (equal (logand (ash x n) y) -1)))
-  :hints (("goal" :use ((:instance acl2::logbitp-of-logand
+  :hints (("goal" :use ((:instance bitops::logbitp-of-logand
                          (acl2::a 0) (x (ash x n))))
-           :in-theory (disable acl2::logbitp-of-logand))))
+           :in-theory (disable bitops::logbitp-of-logand))))
 
 (defthm logior-ash-not-equal-neg-1
   (implies (< 0 (nfix n))
            (not (equal (logior (ash x n) (ash y n)) -1)))
-  :hints (("goal" :use ((:instance acl2::logbitp-of-logior
+  :hints (("goal" :use ((:instance bitops::logbitp-of-logior
                          (acl2::a 0) (x (ash x n)) (y (ash y n))))
-           :in-theory (disable acl2::logbitp-of-logior))))
+           :in-theory (disable bitops::logbitp-of-logior))))
 
 (def-svex-rewrite uand-of-lsh
   :lhs (uand (lsh n x))
@@ -2662,31 +2662,31 @@
          (equal (logior (logapp n x1 y1)
                         (logapp n x2 y2))
                 (logapp n (logior x1 x2) (logior y1 y2)))
-         :hints ((acl2::logbitp-reasoning))))
+         :hints ((bitops::logbitp-reasoning))))
 
 (local (defthm logand-of-logapp
          (equal (logand (logapp n x1 y1)
                         (logapp n x2 y2))
                 (logapp n (logand x1 x2) (logand y1 y2)))
-         :hints ((acl2::logbitp-reasoning))))
+         :hints ((bitops::logbitp-reasoning))))
 
 (local (defthm logand-of-logext
          (equal (logext n (logand x1 x2))
                 (logand (logext n x1)
                         (logext n x2)))
-         :hints ((acl2::logbitp-reasoning))))
+         :hints ((bitops::logbitp-reasoning))))
 
 (local (defthm logior-of-logext
          (equal (logext n (logior x1 x2))
                 (logior (logext n x1)
                         (logext n x2)))
-         :hints ((acl2::logbitp-reasoning))))
+         :hints ((bitops::logbitp-reasoning))))
 
 (local (defthm logapp-equal-neg-1
          (iff (equal (logapp n x y) -1)
               (and (equal (ifix y) -1)
                    (or (zp n) (equal (logext n x) -1))))
-         :hints ((acl2::logbitp-reasoning :prune-examples nil))))
+         :hints ((bitops::logbitp-reasoning :prune-examples nil))))
 
 
 
@@ -2699,8 +2699,8 @@
 (local (defthm logand-equal-minus-1
          (equal (equal (logand x y) -1)
                 (and (equal x -1) (equal y -1)))
-         :hints ((acl2::logbitp-reasoning
-                  :add-hints (:in-theory (enable* acl2::logbitp-case-splits
+         :hints ((bitops::logbitp-reasoning
+                  :add-hints (:in-theory (enable* bitops::logbitp-case-splits
                                                   acl2::b-and))))))
 
 ;; (local (defthm logext-of-logand-equal-minus-1
@@ -2743,7 +2743,7 @@
                                     4vec-rsh
                                     4vec-index-p
                                     4vec-mask))
-         (acl2::logbitp-reasoning)
+         (bitops::logbitp-reasoning)
          (and stable-under-simplificationp
               '(:in-theory (enable bool->bit)))))
 
@@ -2794,13 +2794,13 @@
 
 (encapsulate nil
   (local (in-theory (disable 2vec-p
-                             acl2::logeqv
-                             acl2::logand-natp-type-2
-                             acl2::logand-natp-type-1
-                             acl2::logior-natp-type
-                             acl2::lognot-natp
-                             acl2::logand->=-0-linear-2
-                             acl2::upper-bound-of-logand
+                             bitops::logeqv
+                             bitops::logand-natp-type-2
+                             bitops::logand-natp-type-1
+                             bitops::logior-natp-type
+                             bitops::lognot-natp
+                             bitops::logand->=-0-linear-2
+                             bitops::upper-bound-of-logand
                              iff not acl2::zip-open)))
   (local (defthm equal-of-b-not
            (implies (syntaxp (quotep b))
@@ -2813,20 +2813,20 @@
     :lhs (? a (? a b c) c)
     :rhs (? a b c)
     :hints(("Goal" :in-theory (e/d (4vec-? 3vec-? svex-apply 4vec-mask)))
-           (acl2::logbitp-reasoning)))
+           (bitops::logbitp-reasoning)))
 
   (def-svex-rewrite qmark-nest-2
     :lhs (? a b (? a b c))
     :rhs (? a b c)
     :hints(("Goal" :in-theory (e/d (4vec-? 3vec-? svex-apply 4vec-mask)))
-           (acl2::logbitp-reasoning)))
+           (bitops::logbitp-reasoning)))
 
   (local (in-theory (disable svex-eval-when-quote
                              svex-eval-when-fncall
                              svex-eval-when-2vec-p-of-minval
                              3vec-p-implies-bits
-                             acl2::logbitp-when-bitmaskp
-                             acl2::logbitp-nonzero-of-bit)))
+                             bitops::logbitp-when-bitmaskp
+                             bitops::logbitp-nonzero-of-bit)))
 
   (def-svex-rewrite qmark-select-1
     :lhs (? a b c)
@@ -2838,8 +2838,8 @@
                                     svex-eval-gte-empty-env))
             :use ((:instance svex-eval-gte-empty-env
                    (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
-           (acl2::logbitp-reasoning
-            :add-hints (:in-theory (enable* acl2::logbitp-case-splits)))))
+           (bitops::logbitp-reasoning
+            :add-hints (:in-theory (enable* bitops::logbitp-case-splits)))))
 
   (def-svex-rewrite qmark-select-0
     :lhs (? a b c)
@@ -2851,8 +2851,8 @@
                                     svex-eval-gte-empty-env))
             :use ((:instance svex-eval-gte-empty-env
                    (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
-           (acl2::logbitp-reasoning
-            :add-hints (:in-theory (enable* acl2::logbitp-case-splits))))))
+           (bitops::logbitp-reasoning
+            :add-hints (:in-theory (enable* bitops::logbitp-case-splits))))))
 
 (encapsulate
   (((svex-rewrite-trace * * * * * *) => *
@@ -2939,7 +2939,7 @@
                              (svex-eval-gte-empty-env
                               svex-eval-monotonic))
              :expand ((4vec-[= (svex-eval n nil) (svex-eval n env))))
-            (acl2::logbitp-reasoning)))
+            (bitops::logbitp-reasoning)))
 
   (defthmd svex-eval-when-4vec-xfree-of-minval-apply
     (implies (and (syntaxp (not (equal env ''nil)))
@@ -2972,7 +2972,7 @@
                            (svex-eval-gte-empty-env
                             svex-eval-monotonic))
            :expand ((4vec-[= (svex-eval n nil) (svex-eval n env))))
-          (acl2::logbitp-reasoning)))
+          (bitops::logbitp-reasoning)))
 
   (deffixequiv 4vec-xfree-under-mask)
 

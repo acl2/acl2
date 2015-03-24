@@ -98,8 +98,8 @@
       (defthm logcar-of-logext
         (equal (logcar (logext n a))
                (logcar a))
-        :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
-                                           acl2::ihsext-recursive-redefs))))
+        :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                           bitops::ihsext-recursive-redefs))))
 
       (defthm sum-negative-prods
         (implies (syntaxp (and (quotep a) (quotep b)))
@@ -191,8 +191,8 @@
      (implies (signed-byte-p n x)
               (equal (logext n (loghead n x))
                      x))
-     :hints(("Goal" :in-theory (e/d* (acl2::ihsext-recursive-redefs
-                                      acl2::ihsext-inductions)
+     :hints(("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
+                                      bitops::ihsext-inductions)
                                      (signed-byte-p)))))
 
    (defthm booth-enc-coeff-lower-bound

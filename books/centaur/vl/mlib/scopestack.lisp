@@ -220,7 +220,7 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
     '((interface    (:import)
                     paramdecl vardecl)
       (module       (:import)
-                    paramdecl vardecl fundecl taskdecl
+                    paramdecl vardecl fundecl taskdecl typedef
                     (modinst :name instname :maybe-stringp t)
                     (gateinst :maybe-stringp t)
                     (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)

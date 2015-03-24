@@ -229,8 +229,8 @@
          (declare (ignore args))
          '(progn)))
 
-(local (in-theory (e/d* (acl2::ihsext-redefs
-                         acl2::ihsext-inductions))))
+(local (in-theory (e/d* (bitops::ihsext-redefs
+                         bitops::ihsext-inductions))))
 
 
 (local (defthm integer-length-bound-s-correct-aig

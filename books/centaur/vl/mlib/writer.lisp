@@ -2800,6 +2800,7 @@ instead of @(see ps).</p>"
                (vl-pp-portlist x.ports)
                (vl-println ");")
                (vl-pp-paramdecllist x.paramdecls)
+               (vl-pp-typedeflist x.typedefs)
                (vl-pp-portdecllist x.portdecls)
                (vl-pp-vardecllist x.vardecls)
                (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires

@@ -120,15 +120,15 @@
                        (logbitp n (4vec->lower x)))
                   (logbitp n (4vec->upper x))))
     :hints (("goal" :use
-             ((:instance acl2::logbitp-of-logand
+             ((:instance bitops::logbitp-of-logand
                (acl2::a n) (x (4vec->lower x)) (acl2::y (lognot (4vec->upper x)))))
-             :in-theory (disable acl2::logbitp-of-logand))))
+             :in-theory (disable bitops::logbitp-of-logand))))
 
   (defthm 4vec-idx->4v-when-3vec-p
     (implies (3vec-p x)
              (not (equal (4vec-idx->4v n x) 'z)))
     :hints(("Goal" :in-theory (enable 3vec-p 4vec-idx->4v)
-            :use ((:instance acl2::logbitp-of-logand
+            :use ((:instance bitops::logbitp-of-logand
                    (acl2::a n) (x (4vec->lower x)) (acl2::y (lognot (4vec->upper x))))))))
 
   (fty::deffixequiv 4vec-p))
@@ -175,7 +175,7 @@
                          (equal (logior x y) (ifix y))))
            :hints ((acl2::equal-by-logbitp-hammer)
                    (and stable-under-simplificationp
-                        '(:use ((:instance acl2::logbitp-of-logand
+                        '(:use ((:instance bitops::logbitp-of-logand
                                  (acl2::a bit)
                                  (acl2::x x)
                                  (acl2::y (lognot y)))))))))
@@ -555,27 +555,27 @@ corresponding bits of the two inputs as follows:</p>
   (local (defthm logior-of-three-negative-1
            (implies (equal (logior a b) -1)
                     (equal (logior a b c) -1))
-           :hints (("goal" :use ((:instance acl2::associativity-of-logior
+           :hints (("goal" :use ((:instance bitops::associativity-of-logior
                                   (acl2::a a) (acl2::b b) (acl2::c c)))
-                    :in-theory (disable acl2::associativity-of-logior)))))
+                    :in-theory (disable bitops::associativity-of-logior)))))
 
   (local (defthm logior-logand-id-1
            (equal (logior b (logand a b))
                   (ifix b))
-           :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
-                                              acl2::ihsext-recursive-redefs)))))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))))
 
   (local (defthm logand-logior-id-1
            (equal (logand b (logior a b))
                   (ifix b))
-           :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
-                                              acl2::ihsext-recursive-redefs)))))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))))
 
   (local (defthm logior-neg-1-when-logand-neg-1
            (implies (equal (logand a b) -1)
                     (equal (logior a b) -1))
-           :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
-                                              acl2::ihsext-recursive-redefs)))))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))))
 
   (define bool->vec (x)
     (if x -1 0)
@@ -663,7 +663,7 @@ the input vector needs to be sign extended regardless of its type -- if it is
                                                   bool->vec
                                                   3vec-fix 3vec-reduction-and
                                                   acl2::b-and acl2::b-ior)
-                                    (acl2::logand-with-negated-bitmask))
+                                    (bitops::logand-with-negated-bitmask))
               :expand ((logand (4vec->lower x) (4vec->upper x))
                        (logior (4vec->lower x) (4vec->upper x))
                        (:free (x) (logbitp 0 x)))))
@@ -749,7 +749,7 @@ vector may be either sign- or 0-extended without affecting the result.</p>"
                                                   bool->vec
                                                   3vec-fix 3vec-reduction-or
                                                   acl2::b-and acl2::b-ior)
-                                    (acl2::logand-with-negated-bitmask))
+                                    (bitops::logand-with-negated-bitmask))
               :expand ((logand (4vec->lower x) (4vec->upper x))
                        (logior (4vec->lower x) (4vec->upper x))
                        (:free (x) (logbitp 0 x)))))
@@ -822,7 +822,7 @@ any X or Z bits or is not positive, the result is all X bits.</p>"
            (acl2::logbitp-reasoning
             :add-hints
             (:in-theory (enable* acl2::logbitp-case-splits
-                                 acl2::logbitp-of-const-split
+                                 bitops::logbitp-of-const-split
                                  acl2::b-and
                                  acl2::b-ior)))))
 
@@ -964,7 +964,7 @@ is negative, then @('x') is right-shifted.</p>"
     (equal (logxor (parity-rec m (logtail n x))
                    (parity-rec n (loghead n x)))
            (parity-rec (+ (nfix m) (nfix n)) x))
-    :hints (("goal" :in-theory (enable* acl2::ihsext-inductions)
+    :hints (("goal" :in-theory (enable* bitops::ihsext-inductions)
              :induct (loghead n x)
              :expand ((loghead n x)
                       (:free (x) (loghead 1 x))
@@ -984,7 +984,7 @@ is negative, then @('x') is right-shifted.</p>"
   (defthm parity-rec-of-loghead-split
     (equal (parity-rec m (loghead n x))
            (parity-rec (min (nfix m) (nfix n)) x))
-    :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions)
+    :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions)
             :induct (list (loghead m x)
                           (loghead n x))
              :expand ((loghead n x)
@@ -1302,7 +1302,7 @@ bits, and the value of @('y') for bits where x is Z.</p>"
                           ((:rules-of-class :type-prescription :here)
                            (:rules-of-class :linear :here)
                            4vec->lower-when-2vec-p 2vec-p
-                           acl2::logior-equal-0
+                           bitops::logior-equal-0
                            acl2::zip-open
                            not)
                           ((:t logior) (:t logand) (:t lognot) (:t logbitp)))))

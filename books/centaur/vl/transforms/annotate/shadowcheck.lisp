@@ -651,6 +651,17 @@ explicit declarations.</p>")
        ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
     (mv st warnings)))
 
+(define vl-shadowcheck-typedef ((x        vl-typedef-p)
+                                (st       vl-shadowcheck-state-p)
+                                (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((vl-typedef x)   (vl-typedef-fix x))
+       (varnames         (mergesort (vl-exprlist-varnames (vl-typedef-allexprs x))))
+       ((mv st warnings) (vl-shadowcheck-reference-names varnames x st warnings))
+       ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
+    (mv st warnings)))
+
 (define vl-shadowcheck-paramdecl ((x        vl-paramdecl-p)
                                   (st       vl-shadowcheck-state-p)
                                   (warnings vl-warninglist-p))
@@ -958,6 +969,11 @@ explicit declarations.</p>")
        ((when (eq tag :vl-import))
         (b* (((mv st warnings) (vl-shadowcheck-import item st warnings)))
           (vl-shadowcheck-aux (cdr x) st warnings)))
+
+       ((when (eq tag :vl-typedef))
+        (b* (((mv st warnings) (vl-shadowcheck-typedef item st warnings)))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
+        
 
        ;; BOZO implement everything else
        (warnings (fatal :type :vl-unexpected-modelement

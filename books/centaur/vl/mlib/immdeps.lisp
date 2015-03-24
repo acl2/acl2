@@ -1263,6 +1263,7 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
        (ans (vl-gateinstlist-immdeps   x.gateinsts  ans))
        (ans (vl-alwayslist-immdeps     x.alwayses   ans))
        (ans (vl-initiallist-immdeps    x.initials   ans))
+       (ans (vl-typedeflist-immdeps     x.typedefs   ans))
        (ans (vl-genelementlist-immdeps x.generates  ans)))
     (vl-immdepgraph-merge (hons-copy x.name) ans graph)))
 

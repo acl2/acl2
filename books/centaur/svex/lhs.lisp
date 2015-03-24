@@ -371,7 +371,7 @@ the order given (LSBs-first).</p>")
     :hints(("Goal" :in-theory (e/d (lhrange-eval
                                     lhs-eval lhatom-eval
                                       4vec-concat 4vec-rsh)
-                                   (acl2::logapp-of-j-0))))))
+                                   (bitops::logapp-of-j-0))))))
 
   ;; (defthm lhrange-combine-width
   ;;   (implies (lhrange-combine x y)

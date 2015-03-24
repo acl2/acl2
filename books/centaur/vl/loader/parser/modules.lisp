@@ -56,7 +56,7 @@
                                               ;; :vl-port    -- not allowed, they were parsed separately
                                               :vl-portdecl
                                               :vl-assign
-                                              ;; :vl-alias   -- bozo, let's not permit these yet
+                                              :vl-alias
                                               :vl-vardecl
                                               :vl-paramdecl
                                               :vl-fundecl
@@ -65,7 +65,7 @@
                                               :vl-gateinst
                                               :vl-always
                                               :vl-initial
-                                              ;; :vl-typedef    -- let's not permit these yet
+                                              :vl-typedef
                                               :vl-import
                                               ;; :vl-fwdtypedef -- doesn't seem like these should be ok
                                               ;; :vl-modport    -- definitely not ok
@@ -99,6 +99,7 @@
                     :generates  c.generates
                     :genvars    c.genvars
                     :imports    c.imports
+                    :typedefs   c.typedefs
                     :atts       atts
                     :minloc     minloc
                     :maxloc     maxloc

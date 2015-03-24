@@ -261,7 +261,7 @@
                         (GL::FIRST/REST/END X)))
                       (IF GL::END
                           (GL::BOOL->SIGN (AIG-EVAL FIRST ENV))
-                          (ACL2::LOGCONS (BOOL->BIT (AIG-EVAL FIRST ENV))
+                          (BITOPS::LOGCONS (BOOL->BIT (AIG-EVAL FIRST ENV))
                                          (AIG-LIST->S REST ENV))))))
   :hints(("Goal" :in-theory (enable aig-list->s))))
 
@@ -273,7 +273,7 @@
 
 (defthm aig-list->s-of-bfr-scons
   (equal (aig-list->s (gl::bfr-scons a b) env)
-         (acl2::logcons (bool->bit (aig-eval a env))
+         (bitops::logcons (bool->bit (aig-eval a env))
                   (aig-list->s b env)))
   :hints(("Goal" :expand ((aig-list->s (gl::bfr-scons a b) env)
                           (aig-list->s b env))
@@ -479,7 +479,7 @@
            (4vec-override (a4vec-eval x env)
                           (a4vec-eval y env)))
     :hints(("Goal" :in-theory (enable 4vec-override))
-           (acl2::logbitp-reasoning))))
+           (bitops::logbitp-reasoning))))
 
 (define a3vec-reduction-and ((x a4vec-p))
   :returns (res a4vec-p)
@@ -519,8 +519,8 @@
            (implies (natp n)
                     (equal (logand x (lognot (ash -1 n)))
                            (loghead n x)))
-           :hints(("Goal" :in-theory (enable* acl2::ihsext-recursive-redefs
-                                              acl2::ihsext-inductions)))))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                              bitops::ihsext-inductions)))))
 
   (defthm a4vec-zero-ext-correct
     (equal (a4vec-eval (a4vec-zero-ext n x) env)
@@ -553,7 +553,7 @@
                                    (logand (ash -1 n)
                                            (bool->vec (logbitp (+ -1 n) x))))
                            (logext n x)))
-           :hints((acl2::logbitp-reasoning))))
+           :hints((bitops::logbitp-reasoning))))
 
 
   (defthm a4vec-sign-ext-correct
@@ -587,7 +587,7 @@
                     (equal (logior (ash y n)
                                    (logand x (lognot (ash -1 n))))
                            (logapp n x y)))
-           :hints((acl2::logbitp-reasoning))))
+           :hints((bitops::logbitp-reasoning))))
 
 
   (defthm a4vec-concat-correct
@@ -652,19 +652,19 @@
   (local (defthm logxor-of-bits
            (implies (and (bitp a) (bitp b))
                     (equal (logxor a b)
-                           (acl2::b-xor a b)))))
+                           (bitops::b-xor a b)))))
 
   (defthm aig-parity-s-correct
     (let ((xv (aig-list->s x env)))
       (implies (<= 0 xv)
                (equal (aig-eval (aig-parity-s x) env)
-                      (acl2::bit->bool (parity-rec (+ 1 (integer-length xv)) xv)))))
+                      (bitops::bit->bool (parity-rec (+ 1 (integer-length xv)) xv)))))
     :hints(("Goal" :in-theory (enable parity-rec
-                                      acl2::loghead** acl2::logtail**)
+                                      bitops::loghead** bitops::logtail**)
             :induct (aig-parity-s x)
             :expand ((aig-list->s x env)
                      (:free (n x) (parity-rec (+ 2 n) x))
-                     (:free (a b) (integer-length (acl2::logcons a b))))))))
+                     (:free (a b) (integer-length (bitops::logcons a b))))))))
 
 (define a4vec-parity ((x a4vec-p))
   :returns (res a4vec-p)
@@ -894,21 +894,21 @@
     (a4vec upper lower))
   ///
   (local (in-theory (disable iff not acl2::zip-open)))
-  (local (in-theory (disable acl2::logand-natp-type-2
-                             acl2::logand-natp-type-1
-                             acl2::logior-natp-type
-                             acl2::logand->=-0-linear-2
-                             acl2::logand->=-0-linear-1
-                             acl2::upper-bound-of-logand
+  (local (in-theory (disable bitops::logand-natp-type-2
+                             bitops::logand-natp-type-1
+                             bitops::logior-natp-type
+                             bitops::logand->=-0-linear-2
+                             bitops::logand->=-0-linear-1
+                             bitops::upper-bound-of-logand
                              aig-list->s
-                             acl2::logbitp-when-bit
-                             acl2::logbitp-nonzero-of-bit
-                             acl2::logbitp-when-bitmaskp
-                             acl2::lognot-negp
-                             acl2::lognot-natp
-                             acl2::logior-<-0-linear-2
-                             acl2::logior-<-0-linear-1
-                             acl2::lognot-<-const
+                             bitops::logbitp-when-bit
+                             bitops::logbitp-nonzero-of-bit
+                             bitops::logbitp-when-bitmaskp
+                             bitops::lognot-negp
+                             bitops::lognot-natp
+                             bitops::logior-<-0-linear-2
+                             bitops::logior-<-0-linear-1
+                             bitops::lognot-<-const
                              acl2::aig-env-lookup)))
   (defthm a3vec-?-correct
     (implies (and (case-split (implies y3p (3vec-p (a4vec-eval y env))))
@@ -919,7 +919,7 @@
                             (a4vec-eval y env)
                             (a4vec-eval z env))))
     :hints(("Goal" :in-theory (enable 3vec-? 3vec-p))
-           (acl2::logbitp-reasoning)
+           (bitops::logbitp-reasoning)
            (and stable-under-simplificationp
                 '(:bdd (:vars nil))))))
 
@@ -961,21 +961,21 @@
     (a4vec upper lower))
   ///
   (local (in-theory (disable iff not acl2::zip-open)))
-  (local (in-theory (disable acl2::logand-natp-type-2
-                             acl2::logand-natp-type-1
-                             acl2::logior-natp-type
-                             acl2::logand->=-0-linear-2
-                             acl2::logand->=-0-linear-1
-                             acl2::upper-bound-of-logand
+  (local (in-theory (disable bitops::logand-natp-type-2
+                             bitops::logand-natp-type-1
+                             bitops::logior-natp-type
+                             bitops::logand->=-0-linear-2
+                             bitops::logand->=-0-linear-1
+                             bitops::upper-bound-of-logand
                              aig-list->s
-                             acl2::logbitp-when-bit
-                             acl2::logbitp-nonzero-of-bit
-                             acl2::logbitp-when-bitmaskp
-                             acl2::lognot-negp
-                             acl2::lognot-natp
-                             acl2::logior-<-0-linear-2
-                             acl2::logior-<-0-linear-1
-                             acl2::lognot-<-const
+                             bitops::logbitp-when-bit
+                             bitops::logbitp-nonzero-of-bit
+                             bitops::logbitp-when-bitmaskp
+                             bitops::lognot-negp
+                             bitops::lognot-natp
+                             bitops::logior-<-0-linear-2
+                             bitops::logior-<-0-linear-1
+                             bitops::lognot-<-const
                              acl2::aig-env-lookup)))
   (defthm a3vec-bit?-correct
     (implies (and (case-split (implies y3p (3vec-p (a4vec-eval y env))))
@@ -986,7 +986,7 @@
                                (a4vec-eval y env)
                                (a4vec-eval z env))))
     :hints(("Goal" :in-theory (enable 3vec-bit? 3vec-p))
-           (acl2::logbitp-reasoning)
+           (bitops::logbitp-reasoning)
            (and stable-under-simplificationp
                 '(:bdd (:vars nil))))))
 
@@ -1165,11 +1165,11 @@
   ///
   (local (defthm ash-of-logcons
            (implies (natp n)
-                    (equal (ash (acl2::logcons b x) n)
-                           (logior (ash (acl2::bfix b) n)
-                                   (acl2::logcons 0 (ash x n)))))
-           :hints(("Goal" :in-theory (enable* acl2::ash**
-                                              acl2::ihsext-inductions)))))
+                    (equal (ash (bitops::logcons b x) n)
+                           (logior (ash (bitops::bfix b) n)
+                                   (bitops::logcons 0 (ash x n)))))
+           :hints(("Goal" :in-theory (enable* bitops::ash**
+                                              bitops::ihsext-inductions)))))
 
   (local (defthm pos-fix-nfix
            (equal (acl2::pos-fix (nfix x))
@@ -1211,7 +1211,7 @@
                                                 blocksz-bitidx
                                                 blocksz
                                                 x)
-             :in-theory (enable acl2::ash-<-0-linear))
+             :in-theory (enable bitops::ash-<-0-linear))
             (and stable-under-simplificationp
                  '(:expand ((aig-list->s blocksz env)
                             (:free (x n) (ash x (+ 1 n)))
@@ -1253,11 +1253,11 @@
   ///
   (local (defthm ash-of-logcons
            (implies (natp n)
-                    (equal (ash (acl2::logcons b x) n)
-                           (logior (ash (acl2::bfix b) n)
-                                   (acl2::logcons 0 (ash x n)))))
-           :hints(("Goal" :in-theory (enable* acl2::ash**
-                                              acl2::ihsext-inductions)))))
+                    (equal (ash (bitops::logcons b x) n)
+                           (logior (ash (bitops::bfix b) n)
+                                   (bitops::logcons 0 (ash x n)))))
+           :hints(("Goal" :in-theory (enable* bitops::ash**
+                                              bitops::ihsext-inductions)))))
 
   (local (defthm pos-fix-nfix
            (equal (acl2::pos-fix (nfix x))
@@ -1300,7 +1300,7 @@
                                                 nbits
                                                 blocksz
                                                 x)
-             :in-theory (enable acl2::ash-<-0-linear))
+             :in-theory (enable bitops::ash-<-0-linear))
             (and stable-under-simplificationp
                  '(:expand ((aig-list->s nbits env)
                             (:free (x n) (ash x (+ 1 n)))
@@ -2052,9 +2052,9 @@
          (implies (natp y)
                   (<= (logcount (logand x y))
                       (logcount y)))
-         :hints(("Goal" :in-theory (e/d* (acl2::logcount**
-                                          acl2::logand**
-                                          acl2::ihsext-inductions))))
+         :hints(("Goal" :in-theory (e/d* (bitops::logcount**
+                                          bitops::logand**
+                                          bitops::ihsext-inductions))))
          :rule-classes :linear))
 
 (define 4vmask-to-a4vec-varcount ((mask natp) (boolmask integerp))
@@ -2067,7 +2067,7 @@
   :returns (mv (upper nat-bool-listp)
                (lower nat-bool-listp))
   :measure (integer-length mask)
-  :hints(("Goal" :in-theory (enable acl2::integer-length**
+  :hints(("Goal" :in-theory (enable bitops::integer-length**
                                     4vmask-fix)))
   (b* ((mask (lnfix mask))
        (nextvar (lnfix nextvar))
@@ -2087,7 +2087,7 @@
   ;; (defthm 4vmask-to-a4vec-rec-nextvar
   ;;   (equal (mv-nth 2 (4vmask-to-a4vec-rec mask nextvar))
   ;;          (+ (* 2 (logcount (nfix mask))) (nfix nextvar)))
-  ;;   :hints(("Goal" :in-theory (enable acl2::logcount**))))
+  ;;   :hints(("Goal" :in-theory (enable bitops::logcount**))))
 
   (defthm 4vmask-to-a4vec-rec-lower-bounds
     (and (nat-bool-list-lower-boundp nextvar (mv-nth 0 (4vmask-to-a4vec-rec mask boolmask nextvar)))
@@ -2104,9 +2104,9 @@
                                      (mv-nth 1 (4vmask-to-a4vec-rec mask boolmask nextvar))))
     :hints(("Goal" :in-theory (enable gl::bfr-scons
                                       4vmask-to-a4vec-varcount
-                                      acl2::logand**
-                                      acl2::logbitp**
-                                      acl2::logcount**)
+                                      bitops::logand**
+                                      bitops::logbitp**
+                                      bitops::logcount**)
             :induct (4vmask-to-a4vec-rec mask boolmask nextvar)
             :expand ((:free (bound a b) (nat-bool-list-upper-boundp bound (cons a b)))
                      (:free (bound) (nat-bool-list-upper-boundp bound nil)))
@@ -2133,9 +2133,9 @@
                       (4vmask-to-a4vec-varcount mask boolmask)))))
     :hints(("Goal" :in-theory (enable nat-bool-list-nats
                                       4vmask-to-a4vec-varcount
-                                      acl2::logand**
-                                      acl2::logcount**
-                                      acl2::logbitp**)))
+                                      bitops::logand**
+                                      bitops::logcount**
+                                      bitops::logbitp**)))
     :rule-classes nil))
 
   ;; (defthm eval-4vmask-to-a4vec-rec-cons-greater
@@ -2163,7 +2163,7 @@
                                  (nextvar natp))
   :returns (env "environment for the resulting 4vmask")
   :measure (integer-length mask)
-  :hints(("Goal" :in-theory (enable acl2::integer-length**
+  :hints(("Goal" :in-theory (enable bitops::integer-length**
                                     4vmask-fix)))
   (b* ((mask (lnfix mask))
        (nextvar (lnfix nextvar))
@@ -2193,10 +2193,10 @@
               (<= (nfix nextvar) v)
               (< v (+ (nfix nextvar)
                       (4vmask-to-a4vec-varcount mask boolmask)))))
-    :hints(("Goal" :in-theory (enable acl2::logcount**
-                                      acl2::logbitp**
+    :hints(("Goal" :in-theory (enable bitops::logcount**
+                                      bitops::logbitp**
                                       4vmask-to-a4vec-varcount
-                                      acl2::logand**)
+                                      bitops::logand**)
             :do-not-induct t
             :induct (4vmask-to-a4vec-rec-env mask boolmask upper lower nextvar))))
 
@@ -2225,13 +2225,13 @@
                     (equal (logand (nfix mask) (aig-list->s lowera env))
                            (logand (nfix mask) lower)))))
     :hints(("Goal" :in-theory (enable 4vmask-to-a4vec-rec
-                                      acl2::logand**
-                                      acl2::logxor**
-                                      acl2::logbitp**
+                                      bitops::logand**
+                                      bitops::logxor**
+                                      bitops::logbitp**
                                       4vmask-fix)
             :induct (4vmask-to-a4vec-rec-env mask boolmask upper lower nextvar))
            (and stable-under-simplificationp
-                '(:in-theory (enable acl2::b-xor))))))
+                '(:in-theory (enable bitops::b-xor))))))
 
 (define 4vec-boolmaskp ((x 4vec-p) (mask integerp))
   (b* (((4vec x) x))
@@ -2294,7 +2294,7 @@
                     (LOGAND b mask)))
             (EQUAL (LOGIOR b (lognot mask))
                    (LOGIOR (LOGNOT mask) a)))
-     :hints ((acl2::logbitp-reasoning))))
+     :hints ((bitops::logbitp-reasoning))))
 
   (defthm eval-4vmask-to-a4vec-with-env
     (b* ((vala (4vmask-to-a4vec mask boolmask nextvar))
@@ -2311,7 +2311,7 @@
             :use ((:instance eval-4vmask-to-a4vec-rec-with-env
                    (upper (4vec->upper val))
                    (lower (4vec->lower val)))))
-           (acl2::logbitp-reasoning)
+           (bitops::logbitp-reasoning)
            ;; (and stable-under-simplificationp
            ;;      '(:bdd (:vars nil)))
            ))
@@ -2950,9 +2950,9 @@ obviously 2-vectors.</p>"
              (?ign (gl::gl-error 'boolcheck-failed)))
           (gl::gl-hide (svexlist-eval x env))))
        ;; (?ign (cw "Boolmasks: ~x0~%" boolmasks))
-       ;; (?ign (acl2::sneaky-push 'boolmasks boolmasks))
-       ;; (?ign (acl2::sneaky-push 'vars vars))
-       ;; (?ign (acl2::sneaky-push 'x x))
+       ;; (?ign (bitops::sneaky-push 'boolmasks boolmasks))
+       ;; (?ign (bitops::sneaky-push 'vars vars))
+       ;; (?ign (bitops::sneaky-push 'x x))
        ((mv err a4vecs) (time$ (svexlist->a4vecs-for-varlist x vars boolmasks)
                                :msg "; svex->aigs: ~st sec, ~sa bytes.~%"))
        ((when err)

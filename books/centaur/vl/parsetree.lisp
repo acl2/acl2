@@ -3372,6 +3372,9 @@ do this is to wrap it using @('(vl-context x)').</p>
    (taskdecls  vl-taskdecllist-p
                "Task declarations, e.g., @('task foo ...').")
 
+   (typedefs   vl-typedeflist-p
+               "Type declarations such as @('typedef logic [3:0] nibble;').")
+
    (assigns    vl-assignlist-p
                "Top-level continuous assignments like @('assign lhs = rhs;').")
 
