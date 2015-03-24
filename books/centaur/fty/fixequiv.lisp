@@ -68,7 +68,7 @@ formal guard given to @(see define).  If the function was not created using
 
 <p>The following form may be used to explicitly specify what to do with each
 argument, or to give hints for each argument's proof.  If a type is given
-explicitly for each argument, then this can work on a functino not created
+explicitly for each argument, then this can work on a function not created
 using @(see define):</p>
 
 @({
@@ -153,7 +153,7 @@ which the individual @('function-of-fix-arg') theorems are corollaries, then
 uses these to prove the constant-normalization and congruence theorems.  (These
 three theorems are discussed in @(see deffixequiv).</p>
 
-<p>As with @(see deffixequiv), you have the choice of either provinding
+<p>As with @(see deffixequiv), you have the choice of either providing
 @(':omit'), @('args'), or both.  However, for @('deffixequiv-mutual') the
 syntax of these parameters is extended, as shown in the following examples:</p>
 

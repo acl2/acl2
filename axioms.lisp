@@ -22827,12 +22827,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; The following variables implement prover time limits.  The variable
 ; *acl2-time-limit* is nil by default, but is set to a positive time limit (in
 ; units of internal-time-units-per-second) by with-prover-time-limit, and is
-; set to 0 to indicate that a proof with a time limit has been interrupted (see
-; our-abort).
+; set to 0 to indicate that a proof has been interrupted (see our-abort).
 
 ; The variable *acl2-time-limit-boundp* is used in bind-acl2-time-limit, which
-; provides the only legal way to bind bind *acl2-time-limit*.  For more
-; information about these variables, see bind-acl2-time-limit.
+; provides the only legal way to bind *acl2-time-limit*.  For more information
+; about these variables, see bind-acl2-time-limit.
 
 (defparameter *acl2-time-limit* nil)
 
@@ -23108,8 +23107,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; However, the description above is a bit flawed if we enter a wormhole.  We
 ; really want a fresh binding of *acl2-time-limit* in that case, as illustrated
-; by the following example, which explains the call of bind-acl2-time-limit in
-; wormhole1.
+; by the following example, which explains the call of bind-acl2-time-limit
+; around ld-fn in wormhole1.
 
 ;   (defun foo (x) (cons x x))
 ;   (brr t)
@@ -23125,7 +23124,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;   ; error due to being out of time!
 ;   (thm (equal (append (append x y) z)
 ;               (append x y z)))
-;   ; The following fails after enough THM calls just above, but that's not
+;   ; Without the call of bind-acl2-time-limit around ld-fn in wormhole1,
+;   ; the following fails after enough THM calls just above.  But that's not
 ;   ; surprising, since time-limits are based on total cpu time, which includes
 ;   ; time in the wormhole.
 ;   :go
