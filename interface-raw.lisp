@@ -7959,9 +7959,18 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                #+ccl ; as above, for CCL revision 12090 and beyond
                (ccl::*break-hook* nil)
                (*package* (find-package (current-package state)))
-               (continue-p (and (find-restart 'continue)
-                                *acl2-time-limit*
-                                (not (eql *acl2-time-limit* 0)))))
+               (continue-p
+
+; If *acl2-time-limit-boundp* is true, then we can safely use our approach of
+; continuing from the break (if possible) and letting the prover notice that
+; *acl2-time-limit* is 0.  That allows the prover to quit sufficiently normally
+; such that state global 'redo-flat-fail is bound in support of :redo-flat.
+; The reason that *acl2-time-limit-boundp* needs to be true is that ultimately,
+; we want *acl2-time-limit* to revert to its default value of nil.
+
+                (and (find-restart 'continue)
+                     *acl2-time-limit-boundp*
+                     (not (eql *acl2-time-limit* 0)))))
            #+ccl ; for CCL revisions before 12090
            (declare (ignorable ccl::*break-hook*))
            (terpri t)
