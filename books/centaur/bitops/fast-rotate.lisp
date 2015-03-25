@@ -267,7 +267,7 @@ expand into a call of a specialized, inlined function.</p>
                                    (coerce (explode-nonnegative-integer
                                             n 10 '())
                                            'string)))
-         (fn-name (intern$ fn-name-string "ACL2"))
+         (fn-name (intern$ fn-name-string "BITOPS"))
          (bound-rule-name (intern$
                            (str::cat "UNSIGNED-BYTE-P-OF-" fn-name-string)
                            "ACL2")))
@@ -344,7 +344,7 @@ expand into a call of a specialized, inlined function.</p>
                                    (coerce (explode-nonnegative-integer
                                             n 10 '())
                                            'string)))
-         (fn-name (intern$ fn-name-string "ACL2"))
+         (fn-name (intern$ fn-name-string "BITOPS"))
          (bound-rule-name (intern$
                            (str::cat "UNSIGNED-BYTE-P-OF-" fn-name-string)
                            "ACL2")))
