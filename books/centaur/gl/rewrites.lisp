@@ -56,7 +56,7 @@
    :hints(("Goal" :in-theory (enable* acl2::ihsext-recursive-redefs)
            :induct (plus-of-logapp-ind n a c carry))
           (and stable-under-simplificationp
-               '(:in-theory (enable acl2::equal-logcons-strong
+               '(:in-theory (enable bitops::equal-logcons-strong
                                     b-xor b-and b-ior))))))
 
 (def-gl-rewrite plus-of-logapp-1
@@ -116,9 +116,9 @@
   (implies (and (integerp a) (integerp b))
            (equal (loghead n (+ a b))
                   (loghead n (+ (loghead n a) (loghead n b)))))
-  :hints(("Goal" :use ((:instance acl2::loghead-of-plus-loghead-first
+  :hints(("Goal" :use ((:instance bitops::loghead-of-plus-loghead-first
                         (m n))
-                       (:instance acl2::loghead-of-plus-loghead-first
+                       (:instance bitops::loghead-of-plus-loghead-first
                         (m n) (a (loghead n b)) (b a))))))
 
 (def-gl-rewrite logbitp-of-plus
@@ -127,7 +127,7 @@
                   (logbitp n (+ (loghead (+ 1 (nfix n)) a)
                                 (loghead (+ 1 (nfix n)) b)))))
   :hints (("goal" :in-theory (e/d* (acl2::bitops-congruences)
-                                   (acl2::bitops-congruence-incompatible)))))
+                                   (bitops::bitops-congruence-incompatible)))))
 
 
 (def-gl-rewrite logand-of-logapp

@@ -311,8 +311,8 @@ into an array access.</p>"
   (defthm unsigned-byte-p-of-bignum-extract
     (unsigned-byte-p 32 (bignum-extract x slice))
     :hints(("Goal"
-            :in-theory (disable acl2::unsigned-byte-p-of-logand-1)
-            :use ((:instance acl2::unsigned-byte-p-of-logand-1
+            :in-theory (disable bitops::unsigned-byte-p-of-logand-1)
+            :use ((:instance bitops::unsigned-byte-p-of-logand-1
                    (n 32)
                    (x (1- (expt 2 32)))
                    (y (ash (ifix x) (* -32 (nfix slice)))))))))

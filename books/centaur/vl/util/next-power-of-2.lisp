@@ -54,6 +54,6 @@
               n))
   :rule-classes ((:rewrite) (:linear))
   :hints(("Goal"
-          :in-theory (disable acl2::|2^{(integer-length n) - 1} <= n|)
-          :use ((:instance acl2::|2^{(integer-length n) - 1} <= n|
+          :in-theory (disable bitops::|2^{(integer-length n) - 1} <= n|)
+          :use ((:instance bitops::|2^{(integer-length n) - 1} <= n|
                            (acl2::n (- n 1)))))))

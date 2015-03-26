@@ -29,7 +29,7 @@
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
 
-(in-package "ACL2")
+(in-package "BITOPS")
 (include-book "std/util/define" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
 (local (include-book "ihsext-basics"))

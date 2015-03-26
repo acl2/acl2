@@ -598,7 +598,7 @@
                           ;; BOZO the above "terrible lemmas" were developed before
                           ;; including bitops, so they're targeting the wrong normal
                           ;; forms...
-                          LOGAND-WITH-BITMASK
+                          bitops::LOGAND-WITH-BITMASK
                           simplify-logior
                           commutativity-of-logior
                           commutativity-of-logand

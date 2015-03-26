@@ -478,7 +478,7 @@
                      (and (bfr-eval hyp ctrex)
                           (not (equal (bfr-list->s x ctrex)
                                       (bfr-list->s y ctrex)))))))
-     :hints(("Goal" :in-theory (e/d* (ACL2::EQUAL-LOGCONS-STRONG
+     :hints(("Goal" :in-theory (e/d* (bitops::EQUAL-LOGCONS-STRONG
                                       bfr-list->s bfr-eval scdr s-endp)
                                      (ctrex-for-always-equal-under-hyp
                                       logcons

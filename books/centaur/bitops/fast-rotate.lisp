@@ -1,5 +1,5 @@
 ; Centaur Bitops Library
-; Copyright (C) 2014 Centaur Technology
+; Copyright (C) 2010-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,7 +28,7 @@
 ;
 ; Original author: Shilpi Goel <shilpi@centtech.com>
 
-(in-package "ACL2")
+(in-package "BITOPS")
 
 (include-book "rotate")
 (include-book "std/strings/cat" :dir :system)
@@ -135,8 +135,8 @@ expand into a call of a specialized, inlined function.</p>
 
   (local
    (set-default-hints
-    '((nonlinearp-default-hint++ id stable-under-simplificationp
-                                 hist nil))))
+    '((acl2::nonlinearp-default-hint++ id stable-under-simplificationp
+                                       hist nil))))
 
   (defthm mod-strict-positive-bound
     (implies (and (< 0 y)
@@ -267,7 +267,7 @@ expand into a call of a specialized, inlined function.</p>
                                    (coerce (explode-nonnegative-integer
                                             n 10 '())
                                            'string)))
-         (fn-name (intern$ fn-name-string "ACL2"))
+         (fn-name (intern$ fn-name-string "BITOPS"))
          (bound-rule-name (intern$
                            (str::cat "UNSIGNED-BYTE-P-OF-" fn-name-string)
                            "ACL2")))
@@ -344,7 +344,7 @@ expand into a call of a specialized, inlined function.</p>
                                    (coerce (explode-nonnegative-integer
                                             n 10 '())
                                            'string)))
-         (fn-name (intern$ fn-name-string "ACL2"))
+         (fn-name (intern$ fn-name-string "BITOPS"))
          (bound-rule-name (intern$
                            (str::cat "UNSIGNED-BYTE-P-OF-" fn-name-string)
                            "ACL2")))

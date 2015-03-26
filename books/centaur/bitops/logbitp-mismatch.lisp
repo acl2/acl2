@@ -28,7 +28,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
+(in-package "BITOPS")
 (include-book "ihs/basic-definitions" :dir :system)
 (include-book "xdoc/top" :dir :system)
 (local (include-book "ihsext-basics"))

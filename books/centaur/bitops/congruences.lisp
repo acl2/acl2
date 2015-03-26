@@ -1,4 +1,3 @@
-
 ; Centaur Bitops Library
 ; Copyright (C) 2010-2011 Centaur Technology
 ;
@@ -56,10 +55,9 @@
 ;; bit operations.
 ;; --------------------------------------------------------------------
 ;; Context-rw.lisp (like coi/nary) allows us to do congruence-like reasoning
-;; with parameters, i.e. 
+;; with parameters, i.e.
 
-
-(in-package "ACL2")
+(in-package "BITOPS")
 (include-book "tools/rulesets" :dir :system)
 (include-book "centaur/misc/context-rw" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
@@ -124,18 +122,18 @@
 (def-context-rule logtail-induces-logsquash-context
   (equal (logtail n (logsquash n i))
          (logtail n i))
-  :fnname logtail$inline)
+  :fnname acl2::logtail$inline)
 
-(in-theory (disable apply-context-for-logtail$inline))
+(in-theory (disable acl2::apply-context-for-logtail$inline))
 
 ;; Removal rule: logtail-of-loghead
 (def-context-rule logtail-pass-loghead-context
   (equal (loghead n (logtail m (loghead (+ (nfix n) (nfix m)) i)))
          (loghead n (logtail m i)))
   :hints(("Goal" :in-theory (disable logsquash)))
-  :fnname loghead$inline)
+  :fnname acl2::loghead$inline)
 
-(in-theory (disable apply-context-for-loghead$inline))
+(in-theory (disable acl2::apply-context-for-loghead$inline))
 
 
 ;; Logic ops are transparent to both types of context.
@@ -149,7 +147,7 @@
 (def-context-rule logior-pass-loghead-context-1
   (equal (loghead n (logior (loghead n a) b))
          (loghead n (logior a b)))
-  :fnname loghead$inline)
+  :fnname acl2::loghead$inline)
 
 (defthm logior-remove-loghead-2
   (implies (<= (nfix n) (nfix m))
@@ -159,7 +157,7 @@
 (def-context-rule logior-pass-loghead-context-2
   (equal (loghead n (logior a (loghead n b)))
          (loghead n (logior a b)))
-  :fnname loghead$inline)
+  :fnname acl2::loghead$inline)
 
 (defthm logior-remove-logsquash-1
   (implies (<= (nfix m) (nfix n))
@@ -197,12 +195,12 @@
 (def-context-rule logand-pass-loghead-context-1
   (equal (loghead n (logand (loghead n a) b))
          (loghead n (logand a b)))
-  :fnname loghead$inline)
+  :fnname acl2::loghead$inline)
 
 (def-context-rule logand-pass-loghead-context-2
   (equal (loghead n (logand a (loghead n b)))
          (loghead n (logand a b)))
-  :fnname loghead$inline)
+  :fnname acl2::loghead$inline)
 
 (local (set-default-hints
         '((logbitp-reasoning)
@@ -244,12 +242,12 @@
 (def-context-rule logxor-pass-loghead-context-1
   (equal (loghead n (logxor (loghead n a) b))
          (loghead n (logxor a b)))
-  :fnname loghead$inline)
+  :fnname acl2::loghead$inline)
 
 (def-context-rule logxor-pass-loghead-context-2
   (equal (loghead n (logxor a (loghead n b)))
          (loghead n (logxor a b)))
-  :fnname loghead$inline)
+  :fnname acl2::loghead$inline)
 
 (defthm logxor-remove-logsquash-1
   (implies (<= (nfix m) (nfix n))
@@ -281,7 +279,7 @@
 (def-context-rule lognot-pass-loghead-context
   (equal (loghead n (lognot (loghead n a)))
          (loghead n (lognot a)))
-  :fnname loghead$inline)
+  :fnname acl2::loghead$inline)
 
 ;; (defthm lognot-remove-logsquash
 ;;   (implies (<= (nfix m) (nfix n))
@@ -311,7 +309,7 @@
 (def-context-rule ash-propagate-loghead-context
   (equal (loghead n (ash (loghead (- (nfix n) (ifix m)) i) m))
          (loghead n (ash i m)))
-  :fnname loghead$inline)
+  :fnname acl2::loghead$inline)
 
 (defthmd ash-of-logsquash
   (equal (ash (logsquash m i) n)
@@ -337,7 +335,7 @@
                   (ash i m)))
   :hints(("Goal" :in-theory (e/d (ifix nfix))))
   :fnname ash)
-  
+
 
 
 ;; Addition/subtraction pass loghead, but not logsquash, contexts
@@ -414,21 +412,21 @@
            (equal (loghead n (- (loghead n b)))
                   (loghead n (- b))))
   :hints(("Goal" :in-theory (enable loghead-of-minus-of-loghead)))
-  :fnname loghead$inline)
+  :fnname acl2::loghead$inline)
 
 (def-context-rule loghead-of-plus-context-1
   (implies (and (integerp a) (integerp b))
            (equal (loghead n (+ (loghead n a) b))
                   (loghead n (+ a b))))
   :hints(("Goal" :in-theory (enable loghead-of-plus-loghead-second)))
-  :fnname loghead$inline)
+  :fnname acl2::loghead$inline)
 
 (def-context-rule loghead-of-plus-context-2
   (implies (and (integerp a) (integerp b))
            (equal (loghead n (+ a (loghead n b)))
                   (loghead n (+ a b))))
   :hints(("Goal" :in-theory (enable loghead-of-plus-loghead-second)))
-  :fnname loghead$inline)
+  :fnname acl2::loghead$inline)
 
 
 
@@ -719,13 +717,13 @@
   :fnname binary-logand)
 
 (def-ruleset! bitops-congruences
-  '(apply-context-for-loghead$inline
+  '(acl2::apply-context-for-loghead$inline
     apply-context-for-logsquash$inline
-    apply-context-for-binary-logior
-    apply-context-for-binary-logand
+    acl2::apply-context-for-binary-logior
+    acl2::apply-context-for-binary-logand
     common-lisp::apply-context-for-logbitp
     common-lisp::apply-context-for-ash
-    apply-context-for-logtail$inline
+    acl2::apply-context-for-logtail$inline
     loghead-of-logsquash-commute
     logsquash-of-loghead-zero
     logsquash-of-loghead-context
@@ -810,10 +808,10 @@
     ))
 ;; logand-with-bitmask?
 
-(in-theory (disable* apply-context-for-loghead$inline
+(in-theory (disable* acl2::apply-context-for-loghead$inline
                      apply-context-for-logsquash$inline
-                     apply-context-for-binary-logior
-                     apply-context-for-binary-logand
+                     acl2::apply-context-for-binary-logior
+                     acl2::apply-context-for-binary-logand
                      common-lisp::apply-context-for-logbitp
                      common-lisp::apply-context-for-ash
-                     apply-context-for-logtail$inline))
+                     acl2::apply-context-for-logtail$inline))

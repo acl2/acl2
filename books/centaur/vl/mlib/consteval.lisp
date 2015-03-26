@@ -340,7 +340,7 @@
   :guard (and (vl-exprlist-resolved-p x)
               (consp x)
               (unsigned-byte-p width-acc val-acc))
-  :guard-hints (("goal" :in-theory (enable acl2::expt-2-is-ash
+  :guard-hints (("goal" :in-theory (enable bitops::expt-2-is-ash
                                            vl-exprlist-resolved-p
                                            vl-expr-resolved-p)))
   :returns (ans vl-expr-p)

@@ -28,7 +28,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
+(in-package "BITOPS")
 (include-book "std/util/define" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (include-book "ihs/logops-definitions" :dir :system)
@@ -44,7 +44,7 @@
          :hints((acl2::equal-by-logbitp-hammer))))
 
 ;; Speed hint
-(local (in-theory (disable ACL2::LOGIOR-<-0-LINEAR-2)))
+(local (in-theory (disable LOGIOR-<-0-LINEAR-2)))
 
 (defxdoc bitops/merge
   :parents (bitops)
