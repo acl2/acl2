@@ -222,7 +222,16 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
           (set-difference-eq
            *vl-modelement-typenames*
            ;; things in genblobs that are not in modules
-           '(typedef fwdtypedef modport))))
+           '(fwdtypedef modport))))
+
+(defconst *vl-interface/genblob-fields*
+  '(port
+    portdecl
+    paramdecl
+    vardecl
+    modport
+    generate
+    import))
 
 (make-event
  `(define vl-module->genblob
@@ -247,6 +256,30 @@ fields can be reinstalled into the module using @(see vl-genblob->module).</p>"
            *vl-module/genblob-fields*))))))
 
 (make-event
+ `(define vl-interface->genblob
+    :short "Convert most of a interface into a @(see vl-genblob)."
+    ((x vl-interface-p))
+    :returns (genblob vl-genblob-p)
+    :long "<p>Certain fields of a @(see vl-interface) aren't also fields of a
+@(see vl-genblob), for instance, a genblob doesn't have warnings, a name,
+location information, etc.</p>
+
+<p>But aside from these fields, most of a interface can be extracted and turned
+into a genblob for easy processing.  After processing the blob, the updated
+fields can be reinstalled into the interface using @(see vl-genblob->interface).</p>"
+
+    (b* (((vl-interface x)))
+      (make-vl-genblob
+       :name x.name
+       :scopetype :vl-interface
+       ,@(template-append
+          '(:__elts__ x.__elts__)
+          (vl-typenames-to-tmplsubsts
+           *vl-interface/genblob-fields*))))))
+
+
+
+(make-event
  `(define vl-genblob->module
     :short "Install fields from a @(see vl-genblob) into a module."
     ((x vl-genblob-p)
@@ -265,6 +298,26 @@ etc., are overwritten with whatever is in the genblob.</p>"
                            '(:__elts__ x.__elts__)
                            (vl-typenames-to-tmplsubsts
                             *vl-module/genblob-fields*))))))
+
+(make-event
+ `(define vl-genblob->interface
+    :short "Install fields from a @(see vl-genblob) into a interface."
+    ((x vl-genblob-p)
+     (orig vl-interface-p))
+    :returns (new-mod vl-interface-p)
+    :long "<p>See @(see vl-interface->genblob).  This is the companion operation
+which takes the fields from the genblob and sticks them back into a interface.</p>
+
+<p>Certain fields of the interface, like its warnings, name, and location
+information, aren't affected.  But the real fields like modinsts, assigns,
+etc., are overwritten with whatever is in the genblob.</p>"
+
+    (b* (((vl-genblob x)))
+      (change-vl-interface orig
+                           ,@(template-append
+                              '(:__elts__ x.__elts__)
+                              (vl-typenames-to-tmplsubsts
+                               *vl-interface/genblob-fields*))))))
 
 
 (make-event

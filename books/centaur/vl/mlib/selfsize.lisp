@@ -50,14 +50,15 @@
     :otherwise   nil))
 
 (define vl-index-selfsize ((x vl-expr-p "the index expression")
-                           (ss vl-scopestack-p))
+                           (ss vl-scopestack-p)
+                           (typeov vl-typeoverride-p))
   :guard (vl-expr-case x :vl-index)
   :returns (mv (new-warnings vl-warninglist-p)
                (size maybe-natp :rule-classes :type-prescription))
   (b* ((x (vl-expr-fix x))
        (warnings  nil)
        ;; We'll leave complaining about the signedness caveats to typedecide
-       ((mv err opinfo) (vl-index-expr-typetrace x ss))
+       ((mv err opinfo) (vl-index-expr-typetrace x ss typeov))
        ((when err)
         (mv (fatal :type :vl-selfsize-fail
                    :msg "Failed to find the type of ~a0: ~@1"
@@ -101,7 +102,7 @@
          (design (make-vl-design :mods (list mod)))
          (ss (vl-scopestack-push mod (vl-scopestack-init design)))
          ((mv warnings size)
-          (vl-index-selfsize expr ss)))
+          (vl-index-selfsize expr ss nil)))
       (if (and (not warnings)
                (eql size 1))
           '(value-triple :ok)
@@ -685,7 +686,8 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
 
 
 (define vl-funcall-selfsize ((x vl-expr-p)
-                             (ss vl-scopestack-p))
+                             (ss vl-scopestack-p)
+                             (typeov vl-typeoverride-p))
   :guard (vl-expr-case x :vl-call (not x.systemp) :otherwise nil)
   :returns (mv (warnings vl-warninglist-p)
                (size maybe-natp :rule-classes :type-prescription))
@@ -707,7 +709,13 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
             nil))
        ((vl-fundecl lookup.item))
        ((mv err rettype)
-        (vl-datatype-usertype-resolve lookup.item.rettype lookup.ss))
+        (b* ((look (hons-get x.name (vl-typeoverride-fix typeov)))
+             ((when look)
+              (if (vl-datatype-resolved-p (cdr look))
+                  (mv nil (cdr look))
+                (mv (vmsg "Programming error: Type override was unresolved")
+                    nil))))
+          (vl-datatype-usertype-resolve lookup.item.rettype lookup.ss :typeov typeov)))
        ((when err)
         (mv (fatal :type :vl-selfsize-fail
                    :msg "Couldn't resolve return type ~a0 of function ~a1: ~@2"
@@ -727,12 +735,10 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
         (mv (ok) nil)))
     (mv (ok) size)))
 
-(define vl-syscall-selfsize ((x        vl-expr-p)
-                             (ss       vl-scopestack-p))
+(define vl-syscall-selfsize ((x        vl-expr-p))
   :guard (vl-expr-case x :vl-call x.systemp :otherwise nil)
   :returns (mv (warnings vl-warninglist-p)
                (size maybe-posp :rule-classes :type-prescription))
-  (declare (ignorable ss))
   (b* ((retinfo (vl-syscall->returninfo x))
        (warnings nil)
        ((unless retinfo)
@@ -771,7 +777,8 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
 
   (define vl-expr-selfsize
     ((x        vl-expr-p        "Expression whose size we are to compute.")
-     (ss       vl-scopestack-p  "Scope where the expression occurs."))
+     (ss       vl-scopestack-p  "Scope where the expression occurs.")
+     (typeov   vl-typeoverride-p "Precomputed overrides for parameter and function types"))
     :returns
     (mv (warnings vl-warninglist-p)
         (size     maybe-natp :rule-classes :type-prescription))
@@ -783,24 +790,24 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
       (vl-expr-case x
         :vl-special (mv (ok) nil)
         :vl-value (mv (ok) (vl-value-selfsize x.val))
-        :vl-index (vl-index-selfsize x ss)
+        :vl-index (vl-index-selfsize x ss typeov)
 
         ;; BOZO In some cases we could deduce a size for the expression even if
         ;; we can't get the size of an operand -- e.g. unary bitand, etc.  Are we
         ;; type-checking or just trying to get the size?
-        :vl-unary (b* (((mv warnings argsize) (vl-expr-selfsize x.arg ss))
+        :vl-unary (b* (((mv warnings argsize) (vl-expr-selfsize x.arg ss typeov))
                        ((wmv warnings ans) (vl-unaryop-selfsize x argsize)))
                     (mv warnings ans))
 
-        :vl-binary (b* (((wmv warnings leftsize) (vl-expr-selfsize x.left ss))
-                        ((wmv warnings rightsize) (vl-expr-selfsize x.right ss))
+        :vl-binary (b* (((wmv warnings leftsize) (vl-expr-selfsize x.left ss typeov))
+                        ((wmv warnings rightsize) (vl-expr-selfsize x.right ss typeov))
                         ((wmv warnings ans) (vl-binaryop-selfsize x leftsize
                                                                   rightsize)))
                      (mv warnings ans))
 
         ;; Note: We used to fail if we couldn't size the test.  Should we?
-        :vl-qmark (b* (((wmv warnings thensize) (vl-expr-selfsize x.then ss))
-                       ((wmv warnings elsesize) (vl-expr-selfsize x.else ss))
+        :vl-qmark (b* (((wmv warnings thensize) (vl-expr-selfsize x.then ss typeov))
+                       ((wmv warnings elsesize) (vl-expr-selfsize x.else ss typeov))
                        ((unless (and thensize elsesize))
                         (mv (ok) nil))
                        (warningtype (and (/= thensize elsesize)
@@ -829,7 +836,7 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
 
         :vl-mintypmax (mv (ok) nil)
 
-        :vl-concat (b* (((mv warnings part-sizes) (vl-exprlist-selfsize x.parts ss))
+        :vl-concat (b* (((mv warnings part-sizes) (vl-exprlist-selfsize x.parts ss typeov))
                         ((when (member nil part-sizes))
                          (mv warnings nil)))
                      (mv warnings (sum-nats part-sizes)))
@@ -842,7 +849,7 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
                                          :args (list x))
                                   nil))
                              ((mv warnings part-sizes)
-                              (vl-exprlist-selfsize x.parts ss))
+                              (vl-exprlist-selfsize x.parts ss typeov))
                              ((when (member nil part-sizes))
                               (mv warnings nil)))
                           (mv (ok) (* (vl-resolved->val x.reps) (sum-nats part-sizes))))
@@ -857,12 +864,12 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
         :vl-stream (mv (ok) nil)
 
         :vl-call (if x.systemp
-                     (vl-syscall-selfsize x ss)
-                   (vl-funcall-selfsize x ss))
+                     (vl-syscall-selfsize x)
+                   (vl-funcall-selfsize x ss typeov))
 
         :vl-cast (vl-casttype-case x.to
                    :type (b* (((mv err to-type)
-                               (vl-datatype-usertype-resolve x.to.type ss))
+                               (vl-datatype-usertype-resolve x.to.type ss :typeov typeov))
                               ((when err)
                                (mv (fatal :type :vl-selfsize-fail
                                           :msg "Failed to resolve the type in ~
@@ -885,7 +892,7 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
                                       :msg "Unresolved size in cast expression ~a0"
                                       :args (list x))
                                nil))
-                   :otherwise (vl-expr-selfsize x.expr ss))
+                   :otherwise (vl-expr-selfsize x.expr ss typeov))
                               
 
         ;; returns a single bit
@@ -897,7 +904,7 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
         ;; these are special like streaming concatenations, only well typed by
         ;; context, unless they have a datatype.
         :vl-pattern (b* (((unless x.pattype) (mv (ok) nil))
-                         ((mv err pattype) (vl-datatype-usertype-resolve x.pattype ss))
+                         ((mv err pattype) (vl-datatype-usertype-resolve x.pattype ss :typeov typeov))
                          ((when err)
                           (mv (fatal :type :vl-selfsize-fail
                                      :msg "Failed to resolve the type in ~
@@ -917,7 +924,8 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
 
   (define vl-exprlist-selfsize
     ((x vl-exprlist-p)
-     (ss       vl-scopestack-p  "Scope where the expression occurs."))
+     (ss       vl-scopestack-p  "Scope where the expression occurs.")
+     (typeov vl-typeoverride-p))
     :returns
     (mv (warnings vl-warninglist-p)
         (sizes     vl-maybe-nat-listp))
@@ -925,8 +933,8 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
     :flag :list
     (b* ((warnings nil)
          ((when (atom x)) (mv (ok) nil))
-         ((wmv warnings first) (vl-expr-selfsize (car x) ss))
-         ((wmv warnings rest) (vl-exprlist-selfsize (cdr x) ss)))
+         ((wmv warnings first) (vl-expr-selfsize (car x) ss typeov))
+         ((wmv warnings rest) (vl-exprlist-selfsize (cdr x) ss typeov)))
       (mv warnings (cons first rest))))
 
   ///
@@ -937,8 +945,8 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
   (local
    (defthm-vl-expr-selfsize-flag
      (defthm true-listp-of-vl-exprlist-selfsize
-       (true-listp (mv-nth 1 (vl-exprlist-selfsize x ss)))
-       :hints ('(:expand ((vl-exprlist-selfsize x ss))))
+       (true-listp (mv-nth 1 (vl-exprlist-selfsize x ss typeov)))
+       :hints ('(:expand ((vl-exprlist-selfsize x ss typeov))))
        :rule-classes :type-prescription
        :flag :list)
      :skip-others t))

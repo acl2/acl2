@@ -88,6 +88,9 @@
    wrapper    ;; wrapper around the body of a function, using :body and <type>
               ;; in template substitutions
    macrop     ;; indicates that this has a macro wrapper
+   defines-args ;; extra keyword args to defines
+   define-args  ;; extra keyword args to define
+   order      ;; topological order ranking for defvisitors under multi
    wrld))
 
 
@@ -289,7 +292,7 @@
 (defun visitor-measure (x default)
   (b* (((visitorspec x)))
     (if x.measure
-        (subst default :count x.measure)
+        (subst x.order :order (subst default :count x.measure))
       default)))
 
 (defun visitor-prod-body (type x)
@@ -322,7 +325,9 @@
   (b* (((flexsum type))
        ((visitorspec x)))
     (and (or mrec type.recp)
-         `(:measure ,(visitor-measure x `(,type.count ,x.xvar))))))
+         `(:measure ,(visitor-measure x (if type.count
+                                            `(,type.count ,x.xvar)
+                                          0))))))
                         
 
 
@@ -450,12 +455,18 @@
        (type.pred (with-flextype-bindings type type.pred))
        (type.fix  (with-flextype-bindings type type.fix))
        (name (visitor-macroname x type.name))
-       (fnname (visitor-fnname x type.name)))
-    `(define ,name ,(subst type.pred :object x.formals)
+       (fnname (visitor-fnname x type.name))
+       (formals (acl2::template-subst-top
+                 x.formals
+                 (acl2::make-tmplsubst
+                  :strs `(("<TYPE>" ,(symbol-name type.name) . ,type.name))
+                  :atoms `((:object . ,type.pred))))))
+    `(define ,name ,formals
        :returns ,(visitor-return-decls x.returns type.name type.pred type.fix)
        :verify-guards nil
        :hooks nil
        ,@measure-args
+       ,@x.define-args
        ,(acl2::template-subst-top
          x.wrapper
          (acl2::make-tmplsubst
@@ -493,6 +504,7 @@
   (b* (((visitorspec x)))
   `(defines ,(visitor-macroname x type-name)
      :locally-enable nil
+     ,@x.defines-args
      ,@other-fns
      ,@(visitor-mutual-aux types x)
      ///
@@ -501,6 +513,34 @@
                                      type.name)))
      ,@(and x.fixequivs
             `((deffixequiv-mutual ,(visitor-macroname x type-name)))))))
+
+
+(defun visitor-multi-aux (types-templates)
+  (if (atom types-templates)
+      nil
+    (b* (((cons types template) (car types-templates)))
+      (append (visitor-mutual-aux types template)
+              (visitor-multi-aux (cdr types-templates))))))
+
+(def-primitive-aggregate visitormulti
+  (name
+   defines-args
+   other-fns
+   fixequivs))
+
+(defun visitor-multi (multicfg  types-templates)
+  (b* (((visitormulti multicfg)))
+    `(defines ,multicfg.name
+       :locally-enable nil
+       ,@multicfg.defines-args
+       ,@multicfg.other-fns
+       ,@(visitor-multi-aux types-templates)
+       ///
+       (verify-guards ,(visitor-fnname (cdar types-templates)
+                                       (with-flextype-bindings (type (car (caar types-templates)))
+                                         type.name)))
+       ,@(and multicfg.fixequivs
+              `((deffixequiv-mutual ,multicfg.name))))))
 
 (defun visitor-add-type-fns (types x)
   (if (atom types)
@@ -787,26 +827,23 @@
   '(:type :template :type-fns :field-fns :prod-fns
     :fnname-template :renames :omit-types :include-types
     :measure
+    :defines-args
+    :define-args
+    :order
     :parents :short :long))
 
-
-(defun defvisitor-fn (args wrld)
-  (b* (((mv name args)
-        (if (and (symbolp (car args))
-                 (not (keywordp (car args))))
-            (mv (car args) (cdr args))
-          (mv nil args)))
-       ((mv pre-/// post-///) (std::split-/// 'defvisitor args))
-       ((mv kwd-alist mrec-fns)
-        (extract-keywords 'defvisitor *defvisitor-keys* pre-/// nil))
-       (template (cdr (assoc :template kwd-alist)))
+(defun process-defvisitor (kwd-alist wrld)
+  ;; returns (mv local-template store-template types)
+  (b* ((template (cdr (assoc :template kwd-alist)))
        (type (cdr (assoc :type kwd-alist)))
        ((unless (and template type))
-        (er hard? 'defvisitor ":type and :template arguments are mandatory"))
+        (er hard? 'defvisitor ":type and :template arguments are mandatory")
+        (mv nil nil nil))
 
        (x1 (cdr (assoc template (table-alist 'visitor-templates wrld))))
        ((unless x1)
-        (er hard? 'defvisitor "Template ~x0 wasn't defined" template))
+        (er hard? 'defvisitor "Template ~x0 wasn't defined" template)
+        (mv nil nil nil))
        ((mv type-fns field-fns prod-fns)
         (visitor-process-fnspecs kwd-alist wrld))
 
@@ -817,13 +854,15 @@
 
        (fty (cdr (assoc type (table-alist 'flextypes-table wrld))))
        ((unless fty)
-        (er hard? 'defvisitor "Type ~x0 not found" type))
+        (er hard? 'defvisitor "Type ~x0 not found" type)
+        (mv nil nil nil))
        ((flextypes fty))
 
        (omit-types (cdr (assoc :omit-types kwd-alist)))
        (include-types (cdr (assoc :include-types kwd-alist)))
        ((when (and omit-types include-types))
-        (er hard? 'defvisitor ":omit-types and :include-types are mutually exclusive"))
+        (er hard? 'defvisitor ":omit-types and :include-types are mutually exclusive")
+        (mv nil nil nil))
        (types (cond (include-types
                      (visitor-include-types fty.types include-types))
                     (omit-types
@@ -842,15 +881,39 @@
 
        ;; this will be the visitorspec that we store in the table afterward; we
        ;; assume the renamings are temporary.
-       (x (change-visitorspec x1 :type-fns new-type-fns
-                              :field-fns x1.field-fns
-                              :prod-fns x1.prod-fns))
+       (store-template (change-visitorspec x1 :type-fns new-type-fns
+                                           :field-fns x1.field-fns
+                                           :prod-fns x1.prod-fns))
 
-       (local-x
-        (change-visitorspec x :wrld wrld
+       (local-template
+        (change-visitorspec store-template
+                            :wrld wrld
                             :fnname-template fnname-template
                             :renames renames
-                            :measure (cdr (assoc :measure kwd-alist))))
+                            :defines-args (cdr (assoc :defines-args kwd-alist))
+                            :define-args (cdr (assoc :define-args kwd-alist))
+                            :measure (cdr (assoc :measure kwd-alist))
+                            :order (cdr (assoc :order kwd-alist)))))
+    (mv local-template store-template types)))
+
+
+
+(defun defvisitor-fn (args wrld)
+  (b* (((mv name args)
+        (if (and (symbolp (car args))
+                 (not (keywordp (car args))))
+            (mv (car args) (cdr args))
+          (mv nil args)))
+       ((mv pre-/// post-///) (std::split-/// 'defvisitor args))
+       ((mv kwd-alist mrec-fns)
+        (extract-keywords 'defvisitor *defvisitor-keys* pre-/// nil))
+
+       ((mv local-x store-x types)
+        (process-defvisitor kwd-alist wrld))
+
+       (template (cdr (assoc :template kwd-alist)))
+       (type (cdr (assoc :type kwd-alist)))
+
        (event-name (or name (visitor-macroname local-x type)))
        (def (if (and (eql (len types) 1)
                      (atom mrec-fns))
@@ -859,7 +922,7 @@
     `(defsection-progn ,event-name
        ,(append def post-///)
        (with-output :off :all :on (error)
-         (table visitor-templates ',template ',x)))))
+         (table visitor-templates ',template ',store-x)))))
 
 (defmacro defvisitor (&rest args)
   `(with-output :off (event)
@@ -868,11 +931,20 @@
 
 
 
+
+
+
+
+
+
+
 (defconst *defvisitors-keys*
   '(:template    ;; visitor template to use
     :types       ;; Types targeted for toplevel functions
     :dep-types   ;; Get dependencies of these types
+    :measure     ;; alt form of measure, applied to all the defvisitor forms
     :debug
+    :order-base  ;; integer to start numbering
     ))
 
 
@@ -1127,36 +1199,28 @@
             y.name)
           (flextypelist-names (cdr x)))))
 
-(defun visitor-fty-defvisitor-form (fty-name marks template-name deftypes-table)
+(defun visitor-fty-defvisitor-form (fty-name order marks template-name deftypes-table kwd-alist)
   (b* ((fty (cdr (assoc fty-name deftypes-table)))
        ((unless fty)
-        (er hard? 'defvisitors "Didn't find ~x0 in the deftypes table~%" fty-name)))
+        (er hard? 'defvisitors "Didn't find ~x0 in the deftypes table~%" fty-name))
+       (measure-look (assoc :measure kwd-alist)))
     `(defvisitor :template ,template-name :type ,fty-name
        :include-types ,(visitor-types-filter-marked
                         (flextypelist-names (flextypes->types fty))
-                        marks))))
+                        marks)
+       :order ,order
+       ,@(and measure-look `(:measure ,(cdr measure-look))))))
 
-(defun visitor-defvisitor-forms (toposort marks template-name deftypes-table)
+(defun visitor-defvisitor-forms (toposort order marks template-name deftypes-table kwd-alist)
   (if (atom toposort)
       nil
-    (cons (visitor-fty-defvisitor-form (car toposort) marks template-name deftypes-table)
-          (visitor-defvisitor-forms (cdr toposort) marks template-name deftypes-table))))
+    (cons (visitor-fty-defvisitor-form (car toposort) order marks template-name deftypes-table
+                                       kwd-alist)
+          (visitor-defvisitor-forms (cdr toposort) (+ 1 order) marks template-name deftypes-table kwd-alist))))
 
-
-(defun defvisitors-fn (args wrld)
-  (b* (((mv name args)
-        (if (and (symbolp (car args))
-                 (not (keywordp (car args))))
-            (mv (car args) (cdr args))
-          (mv nil args)))
-       ((mv pre-/// post-///) (std::split-/// 'defvisitors args))
-       ((mv kwd-alist mrec-fns)
-        (extract-keywords 'defvisitors *defvisitors-keys* pre-/// nil))
-       ((when mrec-fns)
-        (er hard? 'defvisitors "Extra mutually-recursive functions aren't ~
-                               allowed in defvisitors, just in ~
-                               defvisitor."))
-       (template (cdr (assoc :template kwd-alist)))
+(defun process-defvisitors (kwd-alist wrld)
+  ;; Returns defvisitor-forms
+  (b* ((template (cdr (assoc :template kwd-alist)))
        (types (append (cdr (assoc :types kwd-alist))
                       (cdr (assoc :dep-types kwd-alist))))
        (types (if (and types (atom types))
@@ -1197,7 +1261,11 @@
        (- (fast-alist-free seen-al))
 
        ;; 6. 
-       (forms (visitor-defvisitor-forms (reverse rev-toposort) marks template deftypes-table)))
+       (forms (visitor-defvisitor-forms (reverse rev-toposort)
+                                        (or (cdr (assoc :order-base kwd-alist)) 0)
+                                        marks template deftypes-table
+                                        kwd-alist)))
+    
     (and (cdr (assoc :debug kwd-alist))
          (progn$
           (cw "type graph: ~x0~%" type-graph)
@@ -1206,6 +1274,24 @@
           (cw "marks:      ~x0~%" marks)
           (cw "fty-graph:  ~x0~%" fty-graph)
           (cw "toposort:  ~x0~%" rev-toposort)))
+    forms))
+
+
+
+(defun defvisitors-fn (args wrld)
+  (b* (((mv name args)
+        (if (and (symbolp (car args))
+                 (not (keywordp (car args))))
+            (mv (car args) (cdr args))
+          (mv nil args)))
+       ((mv pre-/// post-///) (std::split-/// 'defvisitors args))
+       ((mv kwd-alist mrec-fns)
+        (extract-keywords 'defvisitors *defvisitors-keys* pre-/// nil))
+       ((when mrec-fns)
+        (er hard? 'defvisitors "Extra mutually-recursive functions aren't ~
+                                allowed in defvisitors unless inside ~
+                                defvisitor-multi."))
+       (forms (process-defvisitors kwd-alist wrld)))
 
     `(defsection-progn ,name
        ,@forms
@@ -1217,6 +1303,108 @@
 (defmacro defvisitors (&rest args)
   `(make-event
     (defvisitors-fn ',args (w state))))
+
+
+
+
+
+(defconst *defvisitor-multi-keys*
+  '(:defines-args :fixequivs))
+
+(defconst *defvisitor-inside-multi-keys*
+  (set-difference-eq *defvisitor-keys* *defvisitor-multi-keys*))
+
+(defun process-defvisitor-multi (args wrld)
+  ;; returns (mv types-templates other-fns ///-events table-stores)
+  (b* (((when (atom args)) (mv nil nil nil nil))
+
+       ((mv args other-fns1 ///-events1)
+        (if (and (consp (car args))
+                 (eq (caar args) 'defvisitors))
+            (b* (((mv pre-/// post-///) (std::split-/// 'defvisitors (cdar args)))
+                 ((mv kwd-alist mrec-fns)
+                  (extract-keywords 'defvisitors *defvisitors-keys* pre-/// nil))
+                 (kwd-alist (if (assoc :measure kwd-alist)
+                                kwd-alist
+                              (cons (cons :measure :count) kwd-alist)))
+                 (defvisitor-forms (process-defvisitors kwd-alist wrld)))
+              (mv (append defvisitor-forms (cdr args)) mrec-fns post-///))
+          (mv args nil nil)))
+
+       ((unless (consp (car args)))
+        (er hard? 'defvisitor-multi "Bad arg: ~x0" (car args))
+        (mv nil nil nil nil))
+
+       ((when (eq (caar args) 'define))
+        (b* (((mv types-templates other-fns ///-events table-stores)
+              (process-defvisitor-multi (cdr args) wrld)))
+          (mv types-templates (cons (car args) other-fns) ///-events table-stores)))
+
+       ((unless (eq (caar args) 'defvisitor))
+        (er hard? 'defvisitor-multi "Bad arg: ~x0" (car args))
+        (mv nil nil nil nil))
+       ;; defvisitor.  
+       ((mv pre-/// post-///) (std::split-/// 'defvisitor (cdar args)))
+       ((mv kwd-alist other-fns2)
+        (extract-keywords 'defvisitor *defvisitor-inside-multi-keys* pre-/// nil))
+       ((mv local-template store-template types)
+        (process-defvisitor kwd-alist wrld))
+
+       (wrld (putprop 'visitor-templates
+                      'table-alist
+                      (cons (cons (visitorspec->name store-template) store-template)
+                            (table-alist 'visitor-templates wrld))
+                      wrld))
+
+       ((mv types-templates other-fns ///-events table-stores)
+        (process-defvisitor-multi (cdr args) wrld))
+
+
+
+       (types-templates (cons (cons types local-template) types-templates))
+       (other-fns (append other-fns1 other-fns2 other-fns))
+       (///-events (append ///-events1 post-/// ///-events))
+       (table-stores (cons `(with-output :off :all :on (error)
+                              (table visitor-templates
+                                     ',(cdr (assoc :template kwd-alist))
+                                     ',store-template))
+                           table-stores)))
+    (mv types-templates other-fns ///-events table-stores)))
+
+
+
+(defun defvisitor-multi-fn (args wrld)
+  (b* (((cons name args) args)
+       ((unless (and (symbolp name)
+                     (not (keywordp name))))
+        (er hard? 'defvisitor-multi
+            "Defvisitor-multi requires a name for the form as the first argument"))
+
+       ((mv pre-/// post-///) (std::split-/// 'defvisitor args))
+       ((mv kwd-alist args)
+        (extract-keywords 'defvisitor-multi *defvisitor-multi-keys* pre-/// nil))
+
+       ((mv types-templates other-fns ///-events table-stores)
+        (process-defvisitor-multi args wrld))
+
+       (multicfg (make-visitormulti :defines-args (cdr (assoc :defines-args kwd-alist))
+                                    :fixequivs (getarg :fixequivs t kwd-alist)
+                                    :name name
+                                    :other-fns other-fns))
+       
+       (def (visitor-multi multicfg types-templates)))
+    `(defsection-progn ,name
+       ,(append def ///-events post-///)
+       . ,table-stores)))
+
+
+(defmacro defvisitor-multi (&rest args)
+  `(with-output :off (event)
+     (make-event
+      (defvisitor-multi-fn ',args (w state)))))
+
+
+
 
 
 

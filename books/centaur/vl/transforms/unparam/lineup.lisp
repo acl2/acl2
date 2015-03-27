@@ -153,21 +153,19 @@
   :short "Line up parameter arguments with parameter declarations."
   ((formals  vl-paramdecllist-p "In proper order, from the submodule.")
    (actuals  vl-paramargs-p     "From the instance.")
-   (warnings vl-warninglist-p   "Warnings accumulator for the superior module.")
-   (ctx     vl-context-p       "Context for error messages."))
+   (warnings vl-warninglist-p   "Warnings accumulator for the superior module."))
   :returns
   (mv (successp  booleanp :rule-classes :type-prescription)
       (warnings  vl-warninglist-p)
       (overrides vl-paramdecloverridelist-p))
   (b* ((formals           (vl-paramdecllist-fix formals))
-       (ctx               (vl-context-fix ctx))
 
        ((unless (uniquep (vl-paramdecllist->names formals)))
         ;; Not a great place to check for this, but better safe than sorry.
         (mv nil
             (fatal :type :vl-bad-instance
-                   :msg "~a0: parameters are not unique: ~&1."
-                   :args (list ctx (duplicated-members (vl-paramdecllist->names formals))))
+                   :msg "parameters are not unique: ~&1."
+                   :args (list nil (duplicated-members (vl-paramdecllist->names formals))))
             nil)))
 
     (vl-paramargs-case actuals
@@ -179,8 +177,8 @@
             ((unless (uniquep actual-names))
              (mv nil
                  (fatal :type :vl-bad-instance
-                        :msg "~a0: multiple occurrences of parameter arguments: ~&1."
-                        :args (list ctx (duplicated-members actual-names)))
+                        :msg "multiple occurrences of parameter arguments: ~&1."
+                        :args (list nil (duplicated-members actual-names)))
                  nil))
 
             (illegal-names
@@ -189,8 +187,8 @@
             ((when illegal-names)
              (mv nil
                  (fatal :type :vl-bad-instance
-                        :msg "~a0: parameter~s1 ~&2 ~s2."
-                        :args (list ctx
+                        :msg "parameter~s1 ~&2 ~s2."
+                        :args (list nil
                                     (if (vl-plural-p illegal-names) "s" "")
                                     illegal-names
                                     (if (vl-plural-p illegal-names) "do not exist" "does not exist")))
@@ -207,9 +205,9 @@
             ((unless (<= num-actuals num-formals))
              (mv nil
                  (fatal :type :vl-bad-instance
-                        :msg "~a0: too many parameter values: ~x1 (non-local) ~
+                        :msg "too many parameter values: ~x1 (non-local) ~
                               parameter~s2, but is given ~x3 parameter argument~s5."
-                        :args (list ctx
+                        :args (list nil
                                     num-formals
                                     (if (eql num-formals 1) "" "s")
                                     num-actuals

@@ -141,9 +141,21 @@ would therefore incur some overhead.</p>")
            :hints(("Goal" :in-theory (enable len)))))
 
 
+(fty::defalist vl-svexalist :key-type vl-scopeexpr :val-type svex::svex-p)
 
+(defprod vl-svexconf
+  :short "Static configuration object for expr to svex conversion."
+  ((ss vl-scopestack-p
+       "The scopestack at the source location of the expression.")
+   (typeov vl-typeoverride-p "Scopeexprs mapped to resolved types")
+   (fns    vl-svexalist-p "Function definition table")
+   (params vl-svexalist-p "Parameter definition table")))
 
-
+(define vl-svexconf-free ((x vl-svexconf-p))
+  (b* (((vl-svexconf x)))
+    (progn$ (fast-alist-free x.typeov)
+            (fast-alist-free x.fns)
+            (fast-alist-free x.params))))
 
 
 (define svex-x ()
@@ -619,16 +631,7 @@ ignored.</p>"
   (if (consp x)
       (b* (((vl-selstep sel) (car x)))
         sel.type)
-    (b* ((hid (car (vl-operandinfo->hidtrace opinfo)))
-         ((vl-hidstep hid))
-         ((when (eq (tag hid.item) :vl-paramdecl))
-          (vl-explicitvalueparam->type
-              (vl-paramdecl->type hid.item)))
-         ((mv ?err type)
-          (vl-datatype-usertype-resolve
-           (vl-vardecl->type hid.item)
-           hid.ss)))
-      type))
+    (vl-operandinfo->hidtype opinfo))
   ///
   (std::defret usertypes-ok-of-vl-seltrace-type/ss
     (implies (and (vl-seltrace-usertypes-ok x)
@@ -1124,12 +1127,10 @@ the way.</li>
              (not (member v (svex::svexlist-vars new-indices))))))
 
   
-
-
 (define vl-operandinfo-to-svex ((x vl-operandinfo-p)
                                 (indices svex::svexlist-p)
                                 (ss vl-scopestack-p)
-                                (params svex::svex-alist-p))
+                                (params vl-svexalist-p))
   :prepwork (;; (local (defthm seltrace-index-count-in-terms-of-operandinfo
              ;;          (equal (vl-seltrace-index-count (vl-operandinfo->seltrace x))
              ;;                 (- (vl-operandinfo-index-count x)
@@ -1166,9 +1167,7 @@ the way.</li>
                  ((mv err base-var)
                   (vl-seltrace-to-svex-var res-sels x ss)))
               (mv err base-var unres-sels))
-          (b* (((mv err var) (vl-seltrace-to-svar nil x ss))
-               ((when err) (mv err nil nil))
-               (look (svex::svex-lookup var params))
+          (b* ((look (cdr (hons-get x.prefixname (vl-svexalist-fix params))))
                ((unless look)
                 ;; (cw "var: ~x0 look: ~x1 alist: ~x2~%" var look params);; (break$)
                 (mv (vmsg "Parameter definition not found") nil nil))
@@ -1254,59 +1253,40 @@ the way.</li>
 
 
 
-
-
-
-(define vl-simple-id-name ((x vl-scopeexpr-p))
-  :short "If x is a simple name with no scoping, return the name, otherwise nil."
-  :returns (name maybe-stringp :rule-classes :type-prescription)
-  (vl-scopeexpr-case x
-    :end (vl-hidexpr-case x.hid
-           :end x.hid.name
-           :otherwise nil)
-    :otherwise nil)
-  ///
-  (defret stringp-of-vl-simple-id-name
-    (iff (stringp name) name)))
-
-
-(define vl-$bits-call-to-svex ((x vl-expr-p)
-                               (ss vl-scopestack-p))
-  :guard (vl-expr-case x :vl-call)
+(define vl-$bits-call-resolve-type ((x vl-expr-p)
+                                    (conf vl-svexconf-p))
+  :guard (vl-typearg-syscall-p "$bits" x)
   :returns (mv (warnings vl-warninglist-p)
-               (svex svex::svex-p))
+               (res svex::Svex-p))
   (b* (((vl-call x) (vl-expr-fix x))
+       ((vl-svexconf conf))
        (warnings nil)
-       ((when x.typearg)
-        (b* (((when (consp x.args))
-              (mv (fatal :type :vl-expr-to-svex-fail
-                         :msg "Too many arguments to ~a0"
-                         :args (list x))
-                  (svex-x)))
-             ((mv err typearg) (vl-datatype-usertype-resolve x.typearg ss))
-             ((when err)
-              (mv (fatal :type :vl-expr-to-svex-fail
-                         :msg "Couldn't resolve datatype in ~a0: ~@1"
-                         :args (list x (or err "unsizable datatype")))
-                  (svex-x)))
-             ((mv err size) (vl-datatype-size typearg))
-             ((when (or err (not size)))
-              (mv (fatal :type :vl-expr-to-svex-fail
-                         :msg "Couldn't size datatype in ~a0: ~@1"
-                         :args (list x (or err "unsizable datatype")))
-                  (svex-x))))
-          (mv (ok) (svex-int size))))
-       ((when (< (len x.args) 1))
+       ((mv err typearg)
+        (vl-datatype-usertype-resolve x.typearg conf.ss :typeov conf.typeov))
+       ((when err)
         (mv (fatal :type :vl-expr-to-svex-fail
-                   :msg "Need an argument in ~a0"
-                   :args (list x))
+                   :msg "Couldn't resolve datatype in ~a0: ~@1"
+                   :args (list x (or err "unsizable datatype")))
             (svex-x)))
-       ((when (> (len x.args) 1))
+       ((mv err size) (vl-datatype-size typearg))
+       ((when (or err (not size)))
         (mv (fatal :type :vl-expr-to-svex-fail
-                   :msg "Too many arguments in ~a0"
-                   :args (list x))
-            (svex-x)))
-       ((mv warnings size) (vl-expr-selfsize x ss))
+                   :msg "Couldn't size datatype in ~a0: ~@1"
+                   :args (list x (or err "unsizable datatype")))
+            (svex-x))))
+    (mv (ok) (svex-int size)))
+  ///
+  (defret vars-of-vl-$bits-call-resolve-type
+    (equal (svex::svex-vars res) nil)))
+
+(define vl-$bits-call-resolve-expr ((x vl-expr-p)
+                                    (conf vl-svexconf-p))
+  :guard (vl-unary-syscall-p "$bits" x)
+  :returns (mv (warnings vl-warninglist-p)
+               (res svex::Svex-p))
+  (b* (((vl-call x) (vl-expr-fix x))
+       ((vl-svexconf conf))
+       ((mv warnings size) (vl-expr-selfsize (car x.args) conf.ss conf.typeov))
        ((unless size)
         (mv (fatal :type :vl-expr-to-svex-fail
                    :msg "Couldn't size expression in ~a0"
@@ -1314,8 +1294,10 @@ the way.</li>
             (svex-x))))
     (mv (ok) (svex-int size)))
   ///
-  (defret vars-of-vl-$bits-call-to-svex
-    (svex::svarlist-addr-p (svex::svex-vars svex))))
+  (defret vars-of-vl-$bits-call-resolve-expr
+    (equal (svex::svex-vars res) nil)))
+
+
 
 
 (define vl-function-pair-inputs-with-actuals ((inputs vl-portdecllist-p)
@@ -1826,12 +1808,7 @@ the way.</li>
                   (equal (len (alist-keys x)) (len x)))
          :hints(("Goal" :in-theory (enable alist-keys vl-keyvallist-p)))))
 
-(defprod vl-svexconf
-  :short "Static configuration object for expr to svex conversion."
-  ((ss vl-scopestack-p
-       "The scopestack at the source location of the expression.")
-   (fns svex::svex-alist-p "Function definition table")
-   (params svex::svex-alist-p "Parameter definition table")))
+
 
 
 
@@ -1933,29 +1910,49 @@ the way.</li>
          
   
 
-(define vl-funname->svex-funname ((x vl-scopeexpr-p)
-                                  (ss vl-scopestack-p))
+;; (define vl-funname->svex-funname ((x vl-scopeexpr-p)
+;;                                   (ss vl-scopestack-p))
+;;   :returns (mv (err (iff (vl-msg-p err) err))
+;;                (var (implies (not err) (svex::svar-p var)))
+;;                (hidtrace vl-hidtrace-p))
+;;   (b* (((mv err trace context ?tail)
+;;         (vl-follow-scopeexpr x ss))
+;;        ((when err) (mv err nil trace))
+;;        ((unless (vl-hidtrace-resolved-p trace))
+;;         (mv (vmsg "Function ~a0 has unresolved indices??"
+;;                   :args (list (vl-scopeexpr-fix x)))
+;;             nil trace))
+;;        (path (vl-hidtrace-to-path trace nil))
+;;        ((mv ?err addr) (vl-scopecontext-to-addr context ss path))
+;;        ;; Ignore the error here because we really just want to generate a fully
+;;        ;; scoped name for the function.
+;;        (fnname (svex::make-svar :name addr)))
+;;     (mv nil fnname trace))
+;;   ///
+;;   (defret consp-of-vl-funname->svex-funname.hidtrace
+;;     (implies (not err)
+;;              (consp hidtrace))
+;;     :rule-classes :type-prescription))
+
+(define vl-funname-lookup ((x vl-scopeexpr-p)
+                           (ss vl-scopestack-p))
   :returns (mv (err (iff (vl-msg-p err) err))
-               (var (implies (not err) (svex::svar-p var)))
-               (hidtrace vl-hidtrace-p))
-  (b* (((mv err trace context ?tail)
+               (decl (implies (not err) (vl-fundecl-p decl)))
+               (decl-ss (implies (not err) (vl-scopestack-p decl-ss))))
+  (b* (((mv err trace ?context ?tail)
         (vl-follow-scopeexpr x ss))
        ((when err) (mv err nil trace))
        ((unless (vl-hidtrace-resolved-p trace))
         (mv (vmsg "Function ~a0 has unresolved indices??"
                   :args (list (vl-scopeexpr-fix x)))
-            nil trace))
-       (path (vl-hidtrace-to-path trace nil))
-       ((mv ?err addr) (vl-scopecontext-to-addr context ss path))
-       ;; Ignore the error here because we really just want to generate a fully
-       ;; scoped name for the function.
-       (fnname (svex::make-svar :name addr)))
-    (mv nil fnname trace))
-  ///
-  (defret consp-of-vl-funname->svex-funname.hidtrace
-    (implies (not err)
-             (consp hidtrace))
-    :rule-classes :type-prescription))
+            nil nil))
+       ((vl-hidstep lookup) (car trace))
+       ((unless (eq (tag lookup.item) :vl-fundecl))
+        (mv (vmsg "Function name ~a0 does not refer to a fundecl but instead ~
+                   ~a1"
+                   :args (list (vl-scopeexpr-fix x) lookup.item))
+            nil nil)))
+    (mv nil lookup.item lookup.ss)))
 
 
 
@@ -2000,14 +1997,14 @@ functions can assume all bits of it are good.</p>"
                      :args (list x))
               (svex-x)
               nil))
-         ((wmv warnings signedness) (vl-expr-typedecide x conf.ss))
+         ((wmv warnings signedness) (vl-expr-typedecide x conf.ss conf.typeov))
          ((unless signedness)
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Couldn't decide signedness of expression ~a0."
                      :args (list x))
               (svex-x)
               nil))
-         ((wmv warnings size) (vl-expr-selfsize x conf.ss))
+         ((wmv warnings size) (vl-expr-selfsize x conf.ss conf.typeov))
          ((unless size)
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Couldn't size expression ~a0."
@@ -2042,7 +2039,7 @@ functions can assume all bits of it are good.</p>"
               (svex-x)))
          ((unless (eq opacity :opaque))
           (vl-expr-to-svex-transparent x size signedness conf))
-         ((wmv warnings size) (vl-expr-selfsize x conf.ss))
+         ((wmv warnings size) (vl-expr-selfsize x conf.ss conf.typeov))
          ((unless size)
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Sizing of ~a0 failed unexpectedly."
@@ -2184,10 +2181,10 @@ functions can assume all bits of it are good.</p>"
                       (ok))
                     svex)))
              ;; Vectors -- find sizes first
-             ((wmv warnings left-size) (vl-expr-selfsize x.left conf.ss))
-             ((wmv warnings right-size) (vl-expr-selfsize x.right conf.ss))
-             ((wmv warnings left-type) (vl-expr-typedecide x.left conf.ss))
-             ((wmv warnings right-type) (vl-expr-typedecide x.right conf.ss))
+             ((wmv warnings left-size) (vl-expr-selfsize x.left conf.ss conf.typeov))
+             ((wmv warnings right-size) (vl-expr-selfsize x.right conf.ss conf.typeov))
+             ((wmv warnings left-type) (vl-expr-typedecide x.left conf.ss conf.typeov))
+             ((wmv warnings right-type) (vl-expr-typedecide x.right conf.ss conf.typeov))
              ((unless (and left-size right-size left-type right-type))
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Failed to find size and signedness of expression ~a0"
@@ -2260,13 +2257,21 @@ functions can assume all bits of it are good.</p>"
                  ;;                   :msg "Non-constant argument to $clog2: ~a0"
                  ;;                   :args (list x))
                  ;;            (svex-x)))
+                 ((when (vl-unary-syscall-p "$clog2" x))
+                  (b* (((mv warnings arg-svex ?size)
+                        (vl-expr-to-svex-selfdet (car x.args) nil conf)))
+                    (mv warnings
+                        (svex::svcall svex::clog2 arg-svex))))
+                 
+                 ((when (vl-typearg-syscall-p "$bits" x))
+                  (vl-$bits-call-resolve-type x conf))
 
-                 ((unless (equal simple-name "$bits"))
-                  (mv (fatal :type :vl-expr-to-svex-fail
-                             :msg "Unsupported system call: ~a0"
-                             :args (list x))
-                      (svex-x))))
-              (vl-$bits-call-to-svex x conf.ss))
+                 ((when (vl-unary-syscall-p "$bits" x))
+                  (vl-$bits-call-resolve-expr x conf)))
+              (mv (fatal :type :vl-expr-to-svex-fail
+                         :msg "Unsupported system call: ~a0"
+                         :args (list x))
+                  (svex-x)))
           (b* (((wmv warnings svex &)
                 (vl-funcall-to-svex x conf)))
             (mv warnings svex)))
@@ -2279,7 +2284,8 @@ functions can assume all bits of it are good.</p>"
         ;; creating that struct.  So we have to use vl-expr-to-svex-datatyped
         ;; here.
         (vl-casttype-case x.to
-          :type (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to.type conf.ss))
+          :type (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to.type conf.ss
+                                                                     :typeov conf.typeov))
                      ((when err)
                       (mv (fatal :type :vl-expr-to-svex-fail
                                  :msg "Usertypes not resolved in cast ~a0: ~@1"
@@ -2315,7 +2321,7 @@ functions can assume all bits of it are good.</p>"
                          :msg "Untyped assignment pattern: ~a0"
                          :args (list x))
                   (svex-x)))
-             ((mv err pattype) (vl-datatype-usertype-resolve x.pattype conf.ss))
+             ((mv err pattype) (vl-datatype-usertype-resolve x.pattype conf.ss :typeov conf.typeov))
              ((when err)
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Usertypes not resolved in pattern ~a0: ~@1"
@@ -2340,7 +2346,7 @@ functions can assume all bits of it are good.</p>"
           (mv (ok) (svex-x) nil))
          ((vl-svexconf conf))
          (x (vl-expr-fix x))
-         ((mv err opinfo) (vl-index-expr-typetrace x conf.ss))
+         ((mv err opinfo) (vl-index-expr-typetrace x conf.ss conf.typeov))
          ((when err)
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Failed to convert expression ~a0: ~@1"
@@ -2376,33 +2382,39 @@ functions can assume all bits of it are good.</p>"
           (mv (ok) (svex-x) nil))
          ((vl-svexconf conf))
          ((vl-call x) (vl-expr-fix x))
-         ((mv err fnname trace) (vl-funname->svex-funname x.name conf.ss))
+         ;; ((mv err fnname trace) (vl-funname->svex-funname x.name conf.ss))
+         (expr (cdr (hons-get x.name conf.fns)))
+         ((unless expr)
+          (mv (fatal :type :vl-expr-to-svex-fail
+                     :msg "Function hasn't been preprocessed: ~a0"
+                     :args (list x))
+              (svex-x) nil))
+         (rettype (cdr (hons-get x.name conf.typeov)))
+         ((unless rettype)
+          (mv (fatal :type :vl-expr-to-svex-fail
+                     :msg "Function hasn't been preprocessed (return type missing): ~a0"
+                     :args (list x))
+              (svex-x) nil))
+         ((unless (vl-datatype-resolved-p rettype))
+          (mv (fatal :type :vl-expr-to-svex-fail
+                     :msg "Function hasn't been preprocessed (return type unresolved): ~a0"
+                     :args (list x))
+              (svex-x) nil))
+         ((mv err decl decl-ss) (vl-funname-lookup x.name conf.ss))
          ((when err)
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Failed to find function ~a0: ~@1"
                      :args (list x err))
               (svex-x) nil))
-         ((vl-hidstep lookup) (car trace))
-         ((unless (eq (tag lookup.item) :vl-fundecl))
-          (mv (fatal :type :vl-expr-to-svex-fail
-                     :msg "In function call ~a0, function name does not ~
-                        refer to a fundecl but instead ~a1"
-                     :args (list x lookup.item))
-              (svex-x) nil))
-         (expr (svex::svex-lookup fnname conf.fns))
-         ((unless expr)
-          (mv (fatal :type :vl-expr-to-svex-fail
-                     :msg "Function not found: ~a0"
-                     :args (list x))
-              (svex-x) nil))
-         ((vl-fundecl decl) lookup.item)
+         
+         ((vl-fundecl decl))
          ((unless (eql (len decl.portdecls) (len x.args)))
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Bad arity for function call: ~a0"
                      :args (list x))
               (svex-x) nil))
          (types (vl-portdecllist->types decl.portdecls))
-         ((mv type-err types) (vl-datatypelist-usertype-resolve types lookup.ss))
+         ((mv type-err types) (vl-datatypelist-usertype-resolve types decl-ss))
          ((when type-err)
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Failed to resolve usertypes in portlist for ~
@@ -2417,8 +2429,6 @@ functions can assume all bits of it are good.</p>"
          (comp-alist (vl-function-pair-inputs-with-actuals decl.portdecls args-svex))
          ((with-fast comp-alist))
          (ans (svex::svex-subst-memo expr comp-alist))
-         ((mv err rettype) (vl-datatype-usertype-resolve decl.rettype
-                                                         lookup.ss))
          ((when err)
           (mv (warn :type :vl-expr-to-svex-fail
                     :msg "Failed to resolve usertypes in return type for ~
@@ -2509,7 +2519,7 @@ functions can assume all bits of it are good.</p>"
 
         :vl-cast
         (vl-casttype-case x.to
-          :type (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to.type conf.ss))
+          :type (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to.type conf.ss :typeov conf.typeov))
                      ((when err)
                       (mv (fatal :type :vl-expr-to-svex-fail
                                  :msg "Usertypes not resolved in cast ~a0: ~@1"
@@ -2548,7 +2558,7 @@ functions can assume all bits of it are good.</p>"
         (b* (((unless x.pattype)
               (vl-assignpat-to-svex x.pat type conf x))
              ((mv err pattype)
-              (vl-datatype-usertype-resolve x.pattype conf.ss))
+              (vl-datatype-usertype-resolve x.pattype conf.ss :typeov conf.typeov))
              ((when err)
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Usertypes not resolved in pattern ~a0: ~@1"
@@ -3020,6 +3030,25 @@ we need to get the type of the expression.</p>"
     (implies type
              (vl-datatype-resolved-p type))))
 
+(define vl-expr-to-svex-maybe-typed ((x vl-expr-p)
+                                     (type vl-maybe-datatype-p)
+                                     (conf vl-svexconf-p))
+  :guard (or (not type) (vl-datatype-resolved-p type))
+  :guard-debug t
+  :guard-hints (("goal" :in-theory (enable vl-maybe-datatype-p)))
+  :returns (mv (warnings vl-warninglist-p)
+               (svex (and (svex::svex-p svex)
+                          (svex::svarlist-addr-p (svex::svex-vars svex))))
+               (res-type (and (vl-maybe-datatype-p res-type)
+                              (and (implies res-type
+                                            (vl-datatype-resolved-p res-type))))))
+  (b* ((type (vl-maybe-datatype-fix type)))
+    (if type
+        (b* (((mv warnings svex) (vl-expr-to-svex-datatyped x type conf)))
+          (mv warnings svex (and (mbt (vl-datatype-resolved-p type)) type)))
+      (vl-expr-to-svex-untyped x conf))))
+    
+
 (define vl-upperlower-to-bitlist ((upper integerp)
                                   (lower integerp)
                                   (width natp))
@@ -3093,7 +3122,7 @@ we need to get the type of the expression.</p>"
        ((wmv warnings svex size)
         (vl-expr-to-svex-selfdet x ctxsize conf))
        ((vl-svexconf conf))
-       ((wmv warnings signedness) (vl-expr-typedecide x conf.ss))
+       ((wmv warnings signedness) (vl-expr-typedecide x conf.ss conf.typeov))
        ((when (or (vl-some-warning-fatalp warnings)
                   (not size)
                   (eql size 0)))

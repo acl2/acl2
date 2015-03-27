@@ -40,6 +40,19 @@
 
 (local (xdoc::set-default-parents syscalls))
 
+
+(define vl-simple-id-name ((x vl-scopeexpr-p))
+  :short "If x is a simple name with no scoping, return the name, otherwise nil."
+  :returns (name maybe-stringp :rule-classes :type-prescription)
+  (vl-scopeexpr-case x
+    :end (vl-hidexpr-case x.hid
+           :end x.hid.name
+           :otherwise nil)
+    :otherwise nil)
+  ///
+  (defret stringp-of-vl-simple-id-name
+    (iff (stringp name) name)))
+
 (define vl-0ary-syscall-p
   :short "Recognize calls of a particular zero-ary system function call."
   ((name stringp   "Name of the particular system call, e.g., @('$time').")
@@ -51,7 +64,7 @@
          })"
   (vl-expr-case x
     :vl-call (and x.systemp
-                  (equal x.name (string-fix name))
+                  (equal (vl-simple-id-name x.name) (string-fix name))
                   (atom x.args))
     :otherwise nil)
   ///
@@ -59,7 +72,7 @@
     (implies (vl-0ary-syscall-p name x)
              (vl-expr-case x
                :vl-call (and x.systemp
-                             (equal x.name (string-fix name))
+                             (equal (vl-simple-id-name x.name) (string-fix name))
                              (atom x.args))
                :otherwise nil))
     :rule-classes :forward-chaining))
@@ -76,7 +89,7 @@
          })"
   (vl-expr-case x
     :vl-call (and x.systemp
-                  (equal x.name (string-fix name))
+                  (equal (vl-simple-id-name x.name) (string-fix name))
                   (eql (len x.args) 1))
     :otherwise nil)
   ///
@@ -84,8 +97,9 @@
     (implies (vl-unary-syscall-p name x)
              (vl-expr-case x
                :vl-call (and x.systemp
-                             (equal x.name (string-fix name))
-                             (eql (len x.args) 1))
+                             (equal (vl-simple-id-name x.name) (string-fix name))
+                             (eql (len x.args) 1)
+                             (consp x.args))
                :otherwise nil))
     :rule-classes :forward-chaining))
 
@@ -111,7 +125,7 @@ is the first argument to the @(':vl-syscall').</p>
          })"
   (vl-expr-case x
     :vl-call (and x.systemp
-                  (equal x.name (string-fix name))
+                  (equal (vl-simple-id-name x.name) (string-fix name))
                   x.typearg
                   (atom x.args))
     :otherwise nil)
@@ -120,7 +134,7 @@ is the first argument to the @(':vl-syscall').</p>
     (implies (vl-typearg-syscall-p name x)
              (vl-expr-case x
                :vl-call (and x.systemp
-                             (equal x.name (string-fix name))
+                             (equal (vl-simple-id-name x.name) (string-fix name))
                              x.typearg
                              (not (consp x.args)))
                :otherwise nil))
@@ -140,14 +154,14 @@ is the first argument to the @(':vl-syscall').</p>
          })"
   (vl-expr-case x
     :vl-call (and x.systemp
-                  (equal x.name (string-fix name)))
+                  (equal (vl-simple-id-name x.name) (string-fix name)))
     :otherwise nil)
   ///
   (defthm arity-stuff-about-vl-*ary-syscall-p
     (implies (vl-*ary-syscall-p name x)
              (vl-expr-case x
                :vl-call (and x.systemp
-                             (equal x.name (string-fix name)))
+                             (equal (vl-simple-id-name x.name) (string-fix name)))
                :otherwise nil))
     :rule-classes :forward-chaining))
 

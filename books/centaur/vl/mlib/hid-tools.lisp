@@ -1101,6 +1101,61 @@ step along a HID.</p>"
   :short "A list of @(see vl-hidstep) structures, typically all of the steps
 encountered along a HID.")
 
+(define vl-scopeexpr->hid ((x vl-scopeexpr-p))
+  :returns (hid vl-hidexpr-p)
+  :short "Finds the hidexpr nested inside the scopeexpr."
+  :measure (vl-scopeexpr-count x)
+  (vl-scopeexpr-case x
+    :end x.hid
+    :colon (vl-scopeexpr->hid x.rest))
+  ///
+  (defret count-of-vl-scopeexpr->hid
+    (< (vl-hidexpr-count hid)
+       (vl-scopeexpr-count x))
+    :rule-classes :linear))
+
+(define vl-scopeexpr-replace-hid ((x vl-scopeexpr-p)
+                                  (new-hid vl-hidexpr-p))
+  :returns (new-x vl-scopeexpr-p)
+  :short "Replaces the hidexpr nested inside the scopeexpr."
+  :measure (vl-scopeexpr-count x)
+  :verify-guards nil
+  (vl-scopeexpr-case x
+    :end (change-vl-scopeexpr-end x :hid new-hid)
+    :colon (change-vl-scopeexpr-colon x :rest (vl-scopeexpr-replace-hid x.rest new-hid)))
+  ///
+  (verify-guards vl-scopeexpr-replace-hid))
+
+(define vl-subhid-p ((inner vl-hidexpr-p)
+                     (outer vl-hidexpr-p))
+  :measure (vl-hidexpr-count outer)
+  (if (vl-hidexpr-equiv inner outer)
+      (vl-hidexpr-case outer
+        :end t
+        :dot (stringp (vl-hidindex->name outer.first)))
+    (vl-hidexpr-case outer
+      :dot (vl-subhid-p inner outer.rest)
+      :otherwise nil)))
+
+(define vl-hid-prefix-for-subhid ((outer vl-hidexpr-p)
+                                  (inner vl-hidexpr-p))
+  :guard (vl-subhid-p inner outer)
+  :returns (prefix-hid vl-hidexpr-p)
+  :measure (vl-hidexpr-count outer)
+  :verify-guards nil
+  (vl-hidexpr-case outer
+    :end (vl-hidexpr-fix outer) ;; must be the inner one since it's the last
+    :dot (if (vl-hidexpr-equiv inner outer)
+             (make-vl-hidexpr-end :name (vl-hidindex->name outer.first))
+           (make-vl-hidexpr-dot
+            :first outer.first
+            :rest (vl-hid-prefix-for-subhid outer.rest inner))))
+  ///
+  (verify-guards vl-hid-prefix-for-subhid
+    :hints (("goal" :expand ((vl-subhid-p inner outer)
+                             (vl-subhid-p inner inner))))))
+
+
 (define vl-follow-hidexpr-error
   :short "Report an error while following a HID."
   ((short vl-msg-p         "Brief description of the error.")
@@ -1545,7 +1600,19 @@ top-level hierarchical identifiers.</p>"
     (defret count-of-vl-follow-hidexpr-aux.tail
       (<= (vl-hidexpr-count tail)
           (vl-hidexpr-count x))
-      :rule-classes :linear)))
+      :rule-classes :linear)
+
+    (local (defthm vl-hidname-stringp-when-not-$root
+             (implies (vl-hidname-p x)
+                      (equal (equal x :vl-$root)
+                             (not (stringp x))))
+             :hints(("Goal" :in-theory (enable vl-hidname-p)))))
+
+    (defret vl-subhid-p-of-vl-follow-hidexpr-aux
+      (implies (not err)
+               (vl-subhid-p tail x))
+      :hints(("Goal" :in-theory (enable vl-subhid-p)
+              :induct (vl-follow-hidexpr-aux x trace ss :strictp strictp :origx origx))))))
 
 (deftagsum vl-scopecontext
   (:local ((levels natp :rule-classes :type-prescription
@@ -1606,8 +1673,10 @@ top-level hierarchical identifiers.</p>"
 
 (defprod vl-operandinfo
   ((context  vl-scopecontext-p  "The context in which the HID base was found")
+   (prefixname vl-scopeexpr-p    "The scopeexpr, not including the possible data selects.")
    (hidtrace vl-hidtrace-p      "The follow-hids trace, i.e. the trace of instances/blocks
                                  in which the base variable is located")
+   (hidtype  vl-datatype-p      "The datatype of the final element of the hidtrace.")
    (seltrace vl-seltrace-p      "The select trace, i.e. the types/scopestacks of
                                  all the fields/indices we've selected into")
    (part     vl-partselect-p    "The final partselect")
@@ -1802,22 +1871,21 @@ instance, in this case the @('tail') would be
   (defret count-of-vl-follow-hidexpr.tail
     (<= (vl-hidexpr-count tail)
         (vl-hidexpr-count x))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (local (defthm vl-hidname-stringp-when-not-$root
+           (implies (vl-hidname-p x)
+                    (equal (equal x :vl-$root)
+                           (not (stringp x))))
+           :hints(("Goal" :in-theory (enable vl-hidname-p)))))
+
+  (defret vl-subhid-p-of-vl-follow-hidexpr
+    (implies (not err)
+             (vl-subhid-p tail x))
+    :hints(("Goal" :in-theory (enable vl-subhid-p)))))
 
 
 
-(define vl-scopeexpr->hid ((x vl-scopeexpr-p))
-  :returns (hid vl-hidexpr-p)
-  :short "Finds the hidexpr nested inside the scopeexpr."
-  :measure (vl-scopeexpr-count x)
-  (vl-scopeexpr-case x
-    :end x.hid
-    :colon (vl-scopeexpr->hid x.rest))
-  ///
-  (defret count-of-vl-scopeexpr->hid
-    (< (vl-hidexpr-count hid)
-       (vl-scopeexpr-count x))
-    :rule-classes :linear))
 
 
 (define vl-follow-scopeexpr
@@ -1880,7 +1948,12 @@ instance, in this case the @('tail') would be
   (defret count-of-vl-follow-scopeexpr.tail
     (< (vl-hidexpr-count tail)
        (vl-scopeexpr-count x))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret vl-subhid-p-of-vl-follow-scopeexpr
+    (implies (not err)
+             (vl-subhid-p tail (vl-scopeexpr->hid x)))
+    :hints(("Goal" :in-theory (enable vl-scopeexpr->hid)))))
 
 
 ;; ------
@@ -1983,10 +2056,25 @@ instance, in this case the @('tail') would be
              (vl-datatype-resolved-p (vl-datatype-update-dims pdims udims x)))
     :hints(("Goal" :in-theory (enable vl-datatype-update-dims)))))
 
+(fty::defalist vl-typeoverride :key-type vl-scopeexpr :val-type vl-datatype
+  :short "Alist mapping names to datatypes, used to store resolutions of parameter
+          types that have been computed but not yet put in the design."
+  :long "<p>The names may be of various different kinds of objects, meaning
+slightly different things:</p>
+
+<ul>
+<li>A value parameter name maps to the type of the parameter value</li>
+<li>A type parameter name maps to the resolved type that is that parameter's value</li>
+<li>A typedef name maps to the resolved type</li>
+<li>A function name maps to the resolved return type of the function.</li>
+</ul>")
+
 (defines vl-datatype-usertype-resolve
   (define vl-datatype-usertype-resolve ((x vl-datatype-p)
                                         (ss vl-scopestack-p)
-                                        &key ((rec-limit natp) '1000))
+                                        &key
+                                        ((typeov vl-typeoverride-p) 'nil)
+                                        ((rec-limit natp) '1000))
     :verify-guards nil
     :measure (two-nats-measure rec-limit (vl-datatype-count x))
     :returns (mv (err (iff (vl-msg-p err) err))
@@ -1996,40 +2084,45 @@ instance, in this case the @('tail') would be
         :vl-coretype (mv nil x)
         :vl-struct (b* (((mv err members)
                          (vl-structmemberlist-usertype-resolve
-                          x.members ss :rec-limit rec-limit)))
+                          x.members ss :typeov typeov :rec-limit rec-limit)))
                      (mv err (change-vl-struct x :members members)))
         :vl-union  (b* (((mv err members)
                          (vl-structmemberlist-usertype-resolve
-                          x.members ss :rec-limit rec-limit)))
+                          x.members ss :typeov typeov :rec-limit rec-limit)))
                      (mv err (change-vl-union x :members members)))
         :vl-enum   (b* (((mv err basetype)
                          (vl-datatype-usertype-resolve
-                          x.basetype ss :rec-limit rec-limit)))
+                          x.basetype ss :typeov typeov :rec-limit rec-limit)))
                      (mv err (change-vl-enum x :basetype basetype)))
         :vl-usertype (b* (((when (and x.res (vl-datatype-resolved-p x.res)))
                            (mv nil x))
                           ((mv err def)
-                           (vl-usertype-lookup x.name ss :rec-limit rec-limit)))
+                           (vl-usertype-lookup x.name ss :typeov typeov :rec-limit rec-limit)))
                        (mv err (change-vl-usertype x :res def))))))
+
   (define vl-structmemberlist-usertype-resolve ((x vl-structmemberlist-p)
                                                 (ss vl-scopestack-p)
-                                                &key ((rec-limit natp) '1000))
+                                                &key
+                                                ((typeov vl-typeoverride-p) 'nil)
+                                                ((rec-limit natp) '1000))
     :measure (two-nats-measure rec-limit (vl-structmemberlist-count x))
     :returns (mv (err (iff (vl-msg-p err) err))
                  (new-x vl-structmemberlist-p))
     (b* (((when (atom x)) (mv nil nil))
          ((mv err1 type1)
           (vl-datatype-usertype-resolve
-           (vl-structmember->type (car x)) ss :rec-limit rec-limit))
+           (vl-structmember->type (car x)) ss :typeov typeov :rec-limit rec-limit))
          ((mv err2 rest)
-          (vl-structmemberlist-usertype-resolve (cdr x) ss :rec-limit
+          (vl-structmemberlist-usertype-resolve (cdr x) ss :typeov typeov :rec-limit
                                                 rec-limit)))
       (mv (or err1 err2)
           (cons (change-vl-structmember (car x) :type type1) rest))))
 
   (define vl-usertype-lookup ((x vl-scopeexpr-p "The usertype name to look up")
                               (ss vl-scopestack-p)
-                              &key ((rec-limit natp) '1000))
+                              &key
+                              ((typeov vl-typeoverride-p) 'nil)
+                              ((rec-limit natp) '1000))
   :short "Looks up a usertype name and returns its definition if successful."
   :measure (two-nats-measure rec-limit 0)
   :returns (mv (err (iff (vl-msg-p err) err)
@@ -2039,6 +2132,7 @@ instance, in this case the @('tail') would be
                                    (vl-datatype-p type)))
                      "Fully resolved type, if successful"))
   (b* ((x (vl-scopeexpr-fix x))
+       (typeov (vl-typeoverride-fix typeov))
        (hid (vl-scopeexpr->hid x))
        ;; BOZO Maybe we should use a different type than scopeexpr for a usertype name
        ((unless (vl-hidexpr-case hid :end))
@@ -2046,6 +2140,11 @@ instance, in this case the @('tail') would be
                                    paths, only package scopes: ~a1"
                   nil x)
             nil))
+       (look (hons-get x typeov))
+       ((when look)
+        (if (vl-datatype-resolved-p (cdr look))
+            (mv nil (cdr look))
+          (mv (vmsg "Programming error: unresolved override type") nil)))
        ((mv err trace ?context ?tail)
         (vl-follow-scopeexpr x ss))
        ((when err)
@@ -2057,7 +2156,9 @@ instance, in this case the @('tail') would be
               (mv (vmsg "Recursion limit ran out looking up ~
                                       usertype ~a0" x)
                   nil)))
-          (vl-datatype-usertype-resolve item.type ref.ss :rec-limit (1- rec-limit))))
+          (vl-datatype-usertype-resolve item.type ref.ss
+                                        :typeov nil ;; different scope!
+                                        :rec-limit (1- rec-limit))))
        ((when (eq (tag ref.item) :vl-paramdecl))
         (b* (((vl-paramdecl item) ref.item))
           (vl-paramtype-case item.type
@@ -2080,46 +2181,46 @@ instance, in this case the @('tail') would be
 
   (defthm vl-datatype-usertype-resolve-nonnil
     (mv-nth 1 (vl-datatype-usertype-resolve
-               x ss :rec-limit rec-limit))
+               x ss :typeov typeov :rec-limit rec-limit))
     :hints (("goal" :use ((:instance
                            (:theorem
                             (implies (not x)
                                      (not (vl-datatype-p x))))
                            (x (mv-nth 1 (vl-datatype-usertype-resolve
-                                         x ss :rec-limit rec-limit)))))
+                                         x ss :typeov typeov :rec-limit rec-limit)))))
              :in-theory (disable vl-datatype-usertype-resolve)))
     :rule-classes
     ((:type-prescription :typed-term (mv-nth 1 (vl-datatype-usertype-resolve
-                                                x ss :rec-limit rec-limit)))))
+                                                x ss :typeov typeov :rec-limit rec-limit)))))
 
   (defthm vl-usertype-lookup-nonnil
-    (b* (((mv err res) (vl-usertype-lookup x ss :rec-limit rec-limit)))
+    (b* (((mv err res) (vl-usertype-lookup x ss :typeov typeov :rec-limit rec-limit)))
       (implies (not err)
                res))
     :hints (("goal" :use ((:instance return-type-of-vl-usertype-lookup-fn.type))
              :in-theory (disable return-type-of-vl-usertype-lookup-fn.type)))
     :rule-classes
     ((:type-prescription :typed-term (mv-nth 1 (vl-usertype-lookup
-                                                x ss :rec-limit rec-limit)))))
+                                                x ss :typeov typeov :rec-limit rec-limit)))))
 
   (defthm-vl-datatype-usertype-resolve-flag
     (defthm vl-datatype-resolved-p-of-vl-datatype-usertype-resolve
       (b* (((mv err new-x)
-            (vl-datatype-usertype-resolve x ss :rec-limit rec-limit)))
+            (vl-datatype-usertype-resolve x ss :typeov typeov :rec-limit rec-limit)))
         (implies (not err)
                  (vl-datatype-resolved-p new-x)))
       :hints('(:expand ((vl-datatype-resolved-p x))))
       :flag vl-datatype-usertype-resolve)
     (defthm vl-structmemberlist-resolved-p-of-vl-structmemberlist-usertype-resolve
       (b* (((mv err new-x)
-            (vl-structmemberlist-usertype-resolve x ss :rec-limit rec-limit)))
+            (vl-structmemberlist-usertype-resolve x ss :typeov typeov :rec-limit rec-limit)))
         (implies (not err)
                  (vl-structmemberlist-resolved-p new-x)))
       ;; :hints('(:in-theory (enable vl-structmemberlist-resolved-p)))
       :flag vl-structmemberlist-usertype-resolve)
     (defthm vl-datatype-resolved-p-of-vl-usertype-lookup
       (b* (((mv err type)
-            (vl-usertype-lookup x ss :rec-limit rec-limit)))
+            (vl-usertype-lookup x ss :typeov typeov :rec-limit rec-limit)))
         (implies (not err)
                  (vl-datatype-resolved-p type)))
       :flag vl-usertype-lookup))
@@ -4074,7 +4175,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 (define vl-partselect-width ((x vl-partselect-p))
   :guard (not (vl-partselect-case x :none))
   :returns (mv (err (iff (vl-msg-p err) err))
-               (width (implies (not err) (posp width))))
+               (width (implies (not err) (posp width)) :rule-classes :type-prescription))
   (b* ((x (vl-partselect-fix x)))
     (vl-partselect-case x
       :range
@@ -4106,42 +4207,16 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
   (b* (((vl-operandinfo x)))
     (and (vl-datatype-resolved-p x.type)
          (vl-seltrace-usertypes-ok x.seltrace)
-         (consp x.hidtrace)
-         (b* (((vl-hidstep hid) (car x.hidtrace)))
-           (case (tag hid.item)
-             (:vl-vardecl (b* (((vl-vardecl var) hid.item)
-                               ((mv err ?type)
-                                (vl-datatype-usertype-resolve var.type hid.ss)))
-                            (not err)))
-             (:vl-paramdecl (b* (((vl-paramdecl param) hid.item))
-                              (vl-paramtype-case param.type
-                                :vl-explicitvalueparam
-                                (vl-datatype-resolved-p param.type.type)
-                                :otherwise nil)))
-             (otherwise nil)))))
+         (vl-datatype-resolved-p x.hidtype)
+         (consp x.hidtrace)))
   ///
   (defthm vl-operandinfo-usertypes-ok-implies
     (implies (vl-operandinfo-usertypes-ok x)
              (b* (((vl-operandinfo x)))
                (and (vl-datatype-resolved-p x.type)
                     (vl-seltrace-usertypes-ok x.seltrace)
-                    (consp x.hidtrace)
-                    (b* (((vl-hidstep hid) (car x.hidtrace)))
-                      (and (implies (not (equal (tag hid.item) :vl-vardecl))
-                                    (equal (equal (tag hid.item) :vl-paramdecl) t))
-                           (implies (not (equal (tag hid.item) :vl-paramdecl))
-                                    (equal (equal (tag hid.item) :vl-vardecl) t))
-                           (implies (equal (tag hid.item) :vl-vardecl)
-                                    (b* (((vl-vardecl var) hid.item)
-                                         ((mv err ?type)
-                                          (vl-datatype-usertype-resolve var.type hid.ss)))
-                                      (not err)))
-                           (implies (equal (tag hid.item) :vl-paramdecl)
-                                    (b* (((vl-paramdecl decl) hid.item))
-                                    (and (equal (vl-paramtype-kind decl.type)
-                                                :vl-explicitvalueparam)
-                                         (vl-datatype-resolved-p
-                                          (vl-explicitvalueparam->type decl.type))))))))))))
+                    (vl-datatype-resolved-p x.hidtype)
+                    (consp x.hidtrace))))))
            
 (define vl-operandinfo-index-count ((x vl-operandinfo-p))
   :returns (count natp :rule-classes :type-prescription)
@@ -4166,12 +4241,101 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
     :hints(("Goal" :in-theory (enable vl-operandinfo-index-count)))))
 
 
+
+
+(defthm vl-exprlist-count-of-append
+  (equal (vl-exprlist-count (append a b))
+         (+ -1 (vl-exprlist-count a)
+            (vl-exprlist-count b)))
+  :hints(("Goal" :in-theory (enable vl-exprlist-count append))))
+
+(defthm vl-exprlist-count-of-rev
+  (equal (vl-exprlist-count (rev x))
+         (vl-exprlist-count x))
+  :hints(("Goal" :in-theory (enable vl-exprlist-count rev))))
+
+
+(define vl-datatype-resolve-selects ((type vl-datatype-p)
+                                     (tail vl-hidexpr-p)
+                                     (indices vl-exprlist-p)
+                                     (part vl-partselect-p))
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (seltrace (implies (not err) (vl-seltrace-p seltrace)))
+               (finaltype (implies (not err) (vl-datatype-p finaltype))))
+  :guard (vl-datatype-resolved-p type)
+  (b* (((mv err seltrace) (vl-follow-data-selects tail type nil))
+       ((when err) (mv err nil nil))
+       (type (vl-datatype-fix type))
+       (seltype (if (consp seltrace)
+                    (b* (((vl-selstep selstep) (car seltrace)))
+                      selstep.type)
+                  type))
+       ((mv err rev-idxtrace)
+        (vl-follow-array-indices indices seltype))
+       ((when err) (mv err nil nil))
+
+       (seltrace (revappend rev-idxtrace seltrace))
+       (seltype (if (consp seltrace)
+                    (b* (((vl-selstep selstep) (car seltrace)))
+                      selstep.type)
+                  type))
+
+       ((when (vl-partselect-case part :none))
+        (mv nil seltrace seltype))
+
+       ((mv err ?caveat single-type &)
+        (vl-datatype-remove-dim seltype))
+       ((when err) (mv err nil nil))
+
+       ((mv err width) (vl-partselect-width part))
+       ((when err) (mv err nil nil))
+       (new-dim (vl-range->packeddimension
+                 (make-vl-range :msb (vl-make-index (1- width))
+                                :lsb (vl-make-index 0))))
+
+       (packedp (vl-datatype-packedp seltype))
+       (psel-type (if packedp
+                      (vl-datatype-update-pdims
+                       (cons new-dim (vl-datatype->pdims single-type))
+                       single-type)
+                    (vl-datatype-update-udims
+                     (cons new-dim (vl-datatype->udims single-type))
+                     single-type))))
+    (mv nil seltrace psel-type))
+  ///
+  (defret vl-seltrace-usertypes-ok-of-vl-datatype-resolve-selects
+    (implies (and (not err)
+                  (vl-datatype-resolved-p type))
+             (vl-seltrace-usertypes-ok seltrace)))
+
+  (defret vl-datatype-resolved-p-of-vl-datatype-resolve-selects
+    (implies (and (not err)
+                  (vl-datatype-resolved-p type))
+             (vl-datatype-resolved-p finaltype)))
+
+  (defret vl-seltrace-count-of-vl-datatype-resolve-selects
+    (implies (not err)
+             (< (vl-exprlist-count
+                 (vl-seltrace->indices seltrace))
+                (+ (vl-exprlist-count indices)
+                   (vl-hidexpr-count tail))))
+    :rule-classes :linear))
+
+
+
+
+
+
+
+
+
 (define vl-index-expr-typetrace
   ((x vl-expr-p
       "An index expression, i.e. a possibly-package-scoped, possibly-hierarchical
        identifier with 0 or more array selects and a possible partselect.")
    (ss vl-scopestack-p
-       "Scopestack where @('x') is referenced."))
+       "Scopestack where @('x') is referenced.")
+   (typeov vl-typeoverride-p))
   :guard (vl-expr-case x :vl-index)
   :returns (mv (err (iff (vl-msg-p err) err)
                     "Success indicator, we fail if we can't follow the HID or
@@ -4188,70 +4352,110 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
        ((when err) (mv err nil))
        ((vl-hidstep hidstep) (car hidtrace))
        ((mv err type)
-        (case (tag hidstep.item)
-          (:vl-vardecl (b* ((type1 (vl-vardecl->type hidstep.item)))
-                         (vl-datatype-usertype-resolve type1 hidstep.ss)))
-          (:vl-paramdecl (b* (((vl-paramdecl decl) hidstep.item))
-                           (vl-paramtype-case decl.type
-                             :vl-explicitvalueparam
-                             (if (vl-datatype-resolved-p decl.type.type)
-                                 (mv nil decl.type.type)
-                               (mv (vmsg "Reference to parameter with unresolved type: ~a0"
-                                         x)
-                                   nil))
-                             :otherwise (mv (vmsg "Bad parameter reference: ~a0" x)
-                                            nil))))
-          (otherwise
-           (mv (vmsg "~a0: instead of a vardecl, found ~a1" x hidstep.item) nil))))
-       ((when err) (mv err nil))
-       ((mv err seltrace) (vl-follow-data-selects tail type nil))
-       ((when err) (mv err nil))
-       (seltype (if (consp seltrace)
-                    (b* (((vl-selstep selstep) (car seltrace)))
-                      selstep.type)
-                  type))
-       ((mv err rev-idxtrace)
-        (vl-follow-array-indices x.indices seltype))
+        (b* ((look (hons-get x.scope (vl-typeoverride-fix typeov)))
+             ((when look)
+              (if (vl-datatype-resolved-p (cdr look))
+                  (mv nil (cdr look))
+                (mv (vmsg "Programming error: Type override was unresolved")
+                    nil))))
+          (case (tag hidstep.item)
+            (:vl-vardecl (b* ((type1 (vl-vardecl->type hidstep.item)))
+                           (vl-datatype-usertype-resolve type1 hidstep.ss :typeov typeov)))
+            (:vl-paramdecl (b* (((vl-paramdecl decl) hidstep.item))
+                             (vl-paramtype-case decl.type
+                               :vl-explicitvalueparam
+                               (if (vl-datatype-resolved-p decl.type.type)
+                                   (mv nil decl.type.type)
+                                 (mv (vmsg "Reference to parameter with unresolved type: ~a0"
+                                           x)
+                                     nil))
+                               :otherwise (mv (vmsg "Bad parameter reference: ~a0" x)
+                                              nil))))
+            (otherwise
+             (mv (vmsg "~a0: instead of a vardecl, found ~a1" x hidstep.item) nil)))))
        ((when err) (mv err nil))
 
-       (seltrace (revappend rev-idxtrace seltrace))
-       (seltype (if (consp seltrace)
-                    (b* (((vl-selstep selstep) (car seltrace)))
-                      selstep.type)
-                  type))
+       (prefix-name (vl-scopeexpr-replace-hid
+                     x.scope
+                     (vl-hid-prefix-for-subhid (vl-scopeexpr->hid x.scope) tail)))
 
-       ((when (vl-partselect-case x.part :none))
-        (mv nil (make-vl-operandinfo
-                 :context context
-                 :hidtrace hidtrace
-                 :seltrace seltrace
-                 :part x.part
-                 :type seltype)))
+       ((mv err seltrace final-type)
+        (vl-datatype-resolve-selects type tail x.indices x.part))
 
-       ((mv err ?caveat single-type &)
-        (vl-datatype-remove-dim seltype))
-       ((when err) (mv err nil))
+       ((when err) (mv err nil)))
 
-       ((mv err width) (vl-partselect-width x.part))
-       ((when err) (mv err nil))
-       (new-dim (vl-range->packeddimension
-                 (make-vl-range :msb (vl-make-index (1- width))
-                                :lsb (vl-make-index 0))))
 
-       (packedp (vl-datatype-packedp seltype))
-       (psel-type (if packedp
-                      (vl-datatype-update-pdims
-                       (cons new-dim (vl-datatype->pdims single-type))
-                       single-type)
-                    (vl-datatype-update-udims
-                     (cons new-dim (vl-datatype->udims single-type))
-                     single-type))))
+
     (mv nil (make-vl-operandinfo
              :context context
+             :prefixname prefix-name
              :hidtrace hidtrace
+             :hidtype type
              :seltrace seltrace
              :part x.part
-             :type psel-type)))
+             :type final-type)))
+
+
+
+    ;;    ((mv err seltrace) (vl-follow-data-selects tail type nil))
+    ;;    ((when err) (mv err nil))
+    ;;    (seltype (if (consp seltrace)
+    ;;                 (b* (((vl-selstep selstep) (car seltrace)))
+    ;;                   selstep.type)
+    ;;               type))
+    ;;    ((mv err rev-idxtrace)
+    ;;     (vl-follow-array-indices x.indices seltype))
+    ;;    ((when err) (mv err nil))
+
+    ;;    (seltrace (revappend rev-idxtrace seltrace))
+    ;;    (seltype (if (consp seltrace)
+    ;;                 (b* (((vl-selstep selstep) (car seltrace)))
+    ;;                   selstep.type)
+    ;;               type))
+
+    ;;    (prefix-name (vl-scopeexpr-replace-hid
+    ;;                  x.scope
+    ;;                  (vl-hid-prefix-for-subhid (vl-scopeexpr->hid x.scope) tail)))
+
+
+
+
+    ;;    ((when (vl-partselect-case x.part :none))
+    ;;     (mv nil (make-vl-operandinfo
+    ;;              :context context
+    ;;              :prefixname prefix-name
+    ;;              :hidtrace hidtrace
+    ;;              :hidtype type
+    ;;              :seltrace seltrace
+    ;;              :part x.part
+    ;;              :type seltype)))
+
+    ;;    ((mv err ?caveat single-type &)
+    ;;     (vl-datatype-remove-dim seltype))
+    ;;    ((when err) (mv err nil))
+
+    ;;    ((mv err width) (vl-partselect-width x.part))
+    ;;    ((when err) (mv err nil))
+    ;;    (new-dim (vl-range->packeddimension
+    ;;              (make-vl-range :msb (vl-make-index (1- width))
+    ;;                             :lsb (vl-make-index 0))))
+
+    ;;    (packedp (vl-datatype-packedp seltype))
+    ;;    (psel-type (if packedp
+    ;;                   (vl-datatype-update-pdims
+    ;;                    (cons new-dim (vl-datatype->pdims single-type))
+    ;;                    single-type)
+    ;;                 (vl-datatype-update-udims
+    ;;                  (cons new-dim (vl-datatype->udims single-type))
+    ;;                  single-type))))
+    ;; (mv nil (make-vl-operandinfo
+    ;;          :context context
+    ;;          :prefixname prefix-name
+    ;;          :hidtrace hidtrace
+    ;;          :hidtype type
+    ;;          :seltrace seltrace
+    ;;          :part x.part
+    ;;          :type psel-type)))
   ///
   (defret vl-seltrace-usertypes-ok-of-vl-index-expr-typetrace
     (implies (not err)
@@ -4261,12 +4465,12 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
     (implies (not err)
              (consp (vl-operandinfo->hidtrace opinfo))))
 
-  (defret vl-hidtrace-top-is-vardecl-or-paramdecl-of-vl-index-expr-typetrace
-    (implies (and (not err)
-                  (not (equal (tag (vl-hidstep->item (car (vl-operandinfo->hidtrace opinfo))))
-                              :vl-paramdecl)))
-             (equal (tag (vl-hidstep->item (car (vl-operandinfo->hidtrace opinfo))))
-                    :vl-vardecl)))
+  ;; (defret vl-hidtrace-top-is-vardecl-or-paramdecl-of-vl-index-expr-typetrace
+  ;;   (implies (and (not err)
+  ;;                 (not (equal (tag (vl-hidstep->item (car (vl-operandinfo->hidtrace opinfo))))
+  ;;                             :vl-paramdecl)))
+  ;;            (equal (tag (vl-hidstep->item (car (vl-operandinfo->hidtrace opinfo))))
+  ;;                   :vl-vardecl)))
 
   (defret vl-datatype-usertypes-ok-of-vl-index-expr-typetrace-type
     (implies (not err)
@@ -4282,16 +4486,6 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
              (b* (((vl-index x)))
                (not (mv-nth 0 (vl-follow-scopeexpr x.scope ss))))))
 
-  (defthm vl-exprlist-count-of-append
-    (equal (vl-exprlist-count (append a b))
-           (+ -1 (vl-exprlist-count a)
-              (vl-exprlist-count b)))
-    :hints(("Goal" :in-theory (enable vl-exprlist-count append))))
-
-  (defthm vl-exprlist-count-of-rev
-    (equal (vl-exprlist-count (rev x))
-           (vl-exprlist-count x))
-    :hints(("Goal" :in-theory (enable vl-exprlist-count rev))))
 
   (defret index-count-of-vl-index-expr-typetrace
     (implies (and (not err)

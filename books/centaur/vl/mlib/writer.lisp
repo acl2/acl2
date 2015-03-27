@@ -892,6 +892,12 @@ displays.  The module browser's web pages are responsible for defining the
 
         :vl-call (vl-ps-seq (vl-pp-scopeexpr x.name)
                             (vl-print "(")
+                            (if x.typearg
+                                (vl-ps-seq (vl-pp-datatype x.typearg)
+                                           (if (consp x.args)
+                                               (vl-print ", ")
+                                             ps))
+                              ps)
                             (vl-pp-exprlist x.args)
                             (vl-print ")"))
 
@@ -1034,6 +1040,9 @@ displays.  The module browser's web pages are responsible for defining the
 
       (:vl-usertype
        (vl-ps-seq (vl-pp-scopeexpr x.name)
+                  ;; (if x.res
+                  ;;     (vl-ps-seq (vl-print "=[") (vl-pp-datatype x.res) (vl-print "] "))
+                  ;;   ps)
                   (vl-print " ")
                   (vl-pp-packeddimensionlist x.pdims)))))
 
