@@ -3438,6 +3438,12 @@
 (defun chk-ld-error-action (val ctx state)
   (cond ((member-eq val '(:continue :return :return! :error))
          (value nil))
+        ((and (consp val)
+              (eq (car val) :exit)
+              (consp (cdr val))
+              (natp (cadr val))
+              (null (cddr val)))
+         (value nil))
         (t (er soft ctx *ld-special-error* 'ld-error-action val))))
 
 (defun set-ld-error-action (val state)

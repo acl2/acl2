@@ -1758,14 +1758,6 @@ notation causes an error and (b) the use of ,. is not permitted."
             (get-os)
             *the-live-state*))
 
-(defun cancel-dot-dots (full-pathname)
-  (let ((p (search "/.." full-pathname)))
-    (cond (p (cancel-dot-dots
-              (qfuncall merge-using-dot-dot
-                        (subseq full-pathname 0 p)
-                        (subseq full-pathname (1+ p) (length full-pathname)))))
-          (t full-pathname))))
-
 (defun unix-full-pathname (name &optional extension)
 
 ; We formerly used Common Lisp function merge-pathnames.  But in CCL,
@@ -1788,7 +1780,8 @@ notation causes an error and (b) the use of ,. is not permitted."
                                           extension)
                            name)
                          os state)))
-    (cancel-dot-dots
+    (qfuncall
+     cancel-dot-dots
      (cond ((qfuncall absolute-pathname-string-p name nil os)
             name)
            (t
