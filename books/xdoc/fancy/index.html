@@ -2,7 +2,7 @@
 <html>
 <head id="#head">
 <meta charset="UTF-8">
-
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <!--
 ; XDOC Documentation System for ACL2
 ; Copyright (C) 2009-2013 Centaur Technology
@@ -92,14 +92,15 @@ if (!window.history || !window.history.replaceState) {
 <!-- Font selection.
      If you modify these, also modify:
          print.html - need to copy the links
-         style.css  - search for font names and replace everywhere
+         style.scss  - search for font names and replace everywhere
          print.css  - search for font names and replace everywhere
          xdoc.js    - printerFriendly function
   -->
 <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Noto+Serif">
 <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Lato">
 <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Source+Code+Pro">
-<link rel="stylesheet" type="text/css" href="style.css"/>
+<link rel="stylesheet" type="text/css" href="desktop.css" media="all and (min-width: 50em)"/>
+<link rel="stylesheet" type="text/css" href="mobile.css" media="all and (max-width: 50em)"/>
 
 </head>
 <body>
@@ -108,7 +109,13 @@ if (!window.history || !window.history.replaceState) {
 
   <table border="0" id="toolbar">
     <tr>
-      <th>
+      <th class="mobileonly">
+	<a href="javascript:navToggleVisible()">
+	  <img class="toolbutton" src="menu_mobile.png" alt="Menu"
+	       data-powertip="<p>Open or close the navigation menu.</p>">
+	</a>
+      </th>
+      <th class="desktoponly">
 	<a href="javascript:actionGoKey('ACL2____TOP')">
 	  <img class="toolbutton" src="xdoc-home.png" alt="Top"
 	       data-powertip="<p>Go to the Top topic.</p>">
@@ -123,7 +130,7 @@ if (!window.history || !window.history.replaceState) {
 	       data-powertip="<p>Use flat navigation.</p>"/>
 	</a>
       </th>
-      <th id="letters"></th>
+      <th class="desktoponly" id="letters"></th>
       <td>
  	<form id="jumpform">
 	<label id="jumpmsg" data-powertip="<p>If you know what topic you want, you
@@ -131,7 +138,8 @@ if (!window.history || !window.history.replaceState) {
                                           a package name), then choose the match
                                           when it comes up.</p>">
 	  Jump to </label>
-	<input id="jump" type="text" size="20" class="typeahead"  placeholder="loading..."
+	<input id="jump" type="text" class="typeahead"
+	       placeholder="loading..."
 	       disabled="disabled" accesskey="/"/>
 	<input type="submit" style="position: absolute; left: -9999px; width: 1px; height: 1px;"
 	       hidefocus="true" tabindex="-1"/>
@@ -141,13 +149,13 @@ if (!window.history || !window.history.replaceState) {
 	<form onsubmit="{searchSubmit(); return false;}">
 	<label id="searchmsg">
   	  Search </label>
-        <input id="searchbox" type="text" size="23" placeholder="loading..."
+        <input id="searchbox" type="text" placeholder="loading..."
 	       disabled="disabled"/>
 	<input type="submit" style="position: absolute; left: -9999px; width: 1px; height: 1px;"
 	       hidefocus="true" tabindex="-1"/>
 	</form>
       </td>
-      <th>
+      <th class="desktoponly">
         &#160; &#160;&#160;
 	<a href="javascript:printerFriendly()">
 	  <img class="rtoolbutton" src="printer.png" alt="Printer Friendly"

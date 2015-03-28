@@ -511,6 +511,14 @@ function navGo(id)
     actionGoKey(key);
 }
 
+function navToggleVisible()
+{
+    // Small displays (mobile) only -- we hide the navigation until the menu
+    // button is pressed.
+
+    $("#left").toggleClass("active");
+}
+
 
 
 // --------------------------------------------------------------------------
@@ -824,6 +832,10 @@ function searchGo(str) {
     $("#data").append("<p id='searching_message'>Searching (takes much longer the first time)...</p>");
 
     var query = searchTokenize(str);
+
+    // if we're in mobile mode, hide the navigation bar whenever the
+    // user navigates to a new page.
+    $("#left").removeClass("active");
 
     // Now wait a bit to allow that to render, before starting the search.
     setTimeout(searchGoMain, 10, query);
@@ -1239,6 +1251,10 @@ function actionGoKey(key) {
     window.history.pushState({key:key,rtop:0}, keyTitle(key),
 			     "?topic=" + key);
     datLoadKey(key, 0);
+
+    // if we're in mobile mode, hide the navigation bar whenever the
+    // user navigates to a new page.
+    $("#left").removeClass("active");
 }
 
 function historySavePlace() {

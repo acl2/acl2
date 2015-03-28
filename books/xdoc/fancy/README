@@ -1,0 +1,118 @@
+
+                         ACL2 XDOC FANCY VIEWER
+                          Readme for Developers
+
+Some high-level notes for anyone who wants to hack on the fancy viewer...
+
+
+Major Modes
+===========
+
+The fancy viewer can be operated in two modes:
+
+  1. As a standalone Javascript application without an active web connection
+     and without any help from a web server.  In this case all data must be
+     loaded from local files and all work must be done by the web browser.
+
+  2. As an internet page, supported by a web server which can do database
+     lookups as needed to load topics.  In this case we can easily avoid
+     loading the full database (to avoid high bandwidth requirements).
+
+The choice of modes is governed by config.js.
+
+In the standalone case, the data for the fancy viewer is found in two ordinary
+javascript files:
+
+  - xindex.js essentially contains each topic's name, parent information, and
+    :short string.  The topics here are put into "importance order" so that the
+    searching/jump-to suggestion features can put the important topics first by
+    simply choosing the topics that come first.
+
+  - xdata.js contains the :long data for all of the topics and also the nice,
+    package-relative names for the parents.  It gets loaded only after
+    xindex.js has been loaded, which improves the initial display times.
+
+In the server-supported case, we still load the whole xindex.js file, but we do
+not load xdata.js.  Instead, the :long data is gotten via ajax queries as
+needed.  This requires, on the server side, converting the xdata.js file into
+an sqlite database, and then using a little perl script to extract the data
+from it.
+
+
+Effective Development
+=====================
+
+The particular mode being used is mainly hidden by xdataWhenReady().  This
+function runs an arbitrary callback only after the :long data for certain
+topics is loaded.  In local mode, it just runs your callback right away.  In
+server-supported mode, it runs an AJAX query to get the desired data, and
+invokes your callback once the data is ready.
+
+This wrapper means that almost all development can be done in local mode,
+without worrying about the server-supported mode at all.
+
+To begin doing development, the nicest thing to do is generate a smallish
+manual that you can then quickly refresh while you edit the markup.  For
+instance, you could do this by going into the books/xdoc directory and then
+running the following ACL2 commands:
+
+     (include-book "all")
+     (xdoc::save "./temp-manual" :redef-okp t)
+
+At this point you will have a books/xdoc/temp-manual directory that is a
+functioning manual.
+
+You __could__ edit this manual directly, but it is much nicer to work directly
+out of the books/xdoc/fancy directory so that you can do things like `git diff`
+and you don't have to remember to copy your files over.  So, when I hack on the
+manual, after generating a temporary manual like the above, I run the following
+in the books/xdoc/fancy directory:
+
+     ln -s ../temp-manual/xindex.js .
+     ln -s ../temp-manual/xdata.js .
+
+This way the xdoc/fancy directory itself becomes a functioning manual.  You can
+now point your web browser at the books/xdoc/fancy/index.html file and you will
+have a working local version of the manual which you can easily edit/refresh
+just like developing an ordinary web page.
+
+
+XML to HTML Conversion
+======================
+
+The markup for the :short and :long strings is stored in the XDOC's internal,
+post-preprocessing XML markup language.  That is, any preprocessor directives
+like @(def foo) have already been expanded away, but the strings still contain
+XML tags such as <see topic='...'> which are not ordinary HTML tags.
+
+To turn this XML into real HTML we just use the browser's XSLT capabilities.
+See in particular render.xsl, the stylesheet that converts the XML into HTML,
+and xslt.js, which implements cross-browser renderHtml and renderText
+functions.
+
+Horrible gross wart.  I don't know how to load render.xsl directly without the
+help of a server.  In fact, it appears that it may not be possible to even do
+this on some browsers, for instance see this Stack Overflow question:
+
+    https://stackoverflow.com/questions/3828898/can-chrome-be-made-to-perform-an-xsl-transform-on-a-local-file
+
+So as an embarassingly awful workaround:
+
+   - The Makefile converts render.xsl into a Javascript file, render.js, by
+     just base64 encoding its contents;
+
+   - xslt.js does a base64-decode of this string to get the contents of the
+     XSLT file into the XML transformer.
+
+This could probably be cleaned up.  For instance, there's really no reason we
+need to use base64 here at all; doing so was merely expedient...
+
+
+Stylesheet Matters
+==================
+
+The main stylesheet is style.css.  This is generated from style.scss via Sass,
+which you can get via "gem install sass" or similar, see:
+
+    http://sass-lang.com
+
