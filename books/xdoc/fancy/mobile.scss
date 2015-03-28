@@ -73,7 +73,7 @@ body {
 
 
 #left {
-    z-index: 300;
+    z-index: 50;
     position: fixed;
     left: 0;
     top: $topsize;
@@ -87,6 +87,10 @@ body {
     padding-top: 0;
     padding-bottom: 0;
     padding-right: 0;
+}
+
+#left.active {
+    display: block;
 }
 
 #right {

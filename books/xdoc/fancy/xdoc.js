@@ -516,7 +516,7 @@ function navToggleVisible()
     // Small displays (mobile) only -- we hide the navigation until the menu
     // button is pressed.
 
-    $("#left").toggle();
+    $("#left").toggleClass("active");
 }
 
 
@@ -832,6 +832,10 @@ function searchGo(str) {
     $("#data").append("<p id='searching_message'>Searching (takes much longer the first time)...</p>");
 
     var query = searchTokenize(str);
+
+    // if we're in mobile mode, hide the navigation bar whenever the
+    // user navigates to a new page.
+    $("#left").removeClass("active");
 
     // Now wait a bit to allow that to render, before starting the search.
     setTimeout(searchGoMain, 10, query);
@@ -1232,21 +1236,6 @@ function srclink(key)
     encodeURIComponent(srclink_header + rawname));
 }
 
-function normalizeNavigation()
-{
-    // If we are in mobile mode, hide the navigation menu.
-    var width_in_pixels = $(window).width();
-//    console.log("Width in Pixels is ", width_in_pixels);
-    var width_in_em = width_in_pixels / parseFloat($("body").css("font-size"));
-//    console.log("Width in Em ", width_in_em);
-    if (width_in_em < 50) {
-	$("#left").hide();
-    }
-    else {
-	$("#left").show();
-    }
-}
-
 function actionGoKey(key) {
 
     // Warning: if you change this, check for all uses of replaceState,
@@ -1262,7 +1251,10 @@ function actionGoKey(key) {
     window.history.pushState({key:key,rtop:0}, keyTitle(key),
 			     "?topic=" + key);
     datLoadKey(key, 0);
-    normalizeNavigation();
+
+    // if we're in mobile mode, hide the navigation bar whenever the
+    // user navigates to a new page.
+    $("#left").removeClass("active");
 }
 
 function historySavePlace() {
