@@ -12836,6 +12836,47 @@
 
 )
 
+(defun translate-lmi/instance-fix-alist (un-mentioned-vars formula-vars alist)
+  (cond
+   ((endp un-mentioned-vars) alist)
+   (t (let ((alist (translate-lmi/instance-fix-alist
+                    (cdr un-mentioned-vars) formula-vars alist)))
+        (cond ((eq alist :failed) :failed)
+              (t (let* ((bad-var (car un-mentioned-vars))
+                        (name (symbol-name bad-var))
+                        (tail (member-symbol-name name formula-vars)))
+                   (cond (tail
+                          (cond ((or (assoc-eq (car tail) alist)
+                                     (member-symbol-name name (cdr tail)))
+
+; Consider these events, to see (below) why we need both disjuncts just above.
+
+;  (defpkg "FOO" nil)
+;  (defpkg "BAR" nil)
+;  (defthm my-car-cons (equal (car (cons x foo::y)) x))
+;  (defthm my-car-cons2 (equal (car (cons bar::y foo::y)) bar::y))
+
+; The member-symbol-name disjunct above is needed in order for this to fail.
+;  (thm (equal a a)
+;       :hints
+;       (("Goal" :use ((:instance my-car-cons2 (y 17))))))
+
+; The assoc-eq disjunct above is needed in order for this to fail.
+;  (thm (equal a a)
+;       :hints
+;       (("Goal" :use ((:instance my-car-cons (x x) (foo::y 18) (y 17))))))
+
+
+                                 :failed)
+                                (t (let ((val (cdr (assoc-eq bad-var alist))))
+                                     (assert$
+                                      val
+                                      (acons (car tail)
+                                             val
+                                             (delete-assoc-eq bad-var
+                                                              alist)))))))
+                         (t :failed)))))))))
+
 (defun@par translate-lmi/instance (formula constraints event-names new-entries
                                            extra-bindings-ok substn ctx wrld
                                            state)
@@ -12856,9 +12897,13 @@
    (let* ((vars (all-vars formula))
           (un-mentioned-vars (and (not extra-bindings-ok)
                                   (set-difference-eq (strip-cars alist)
-                                                     vars))))
+                                                     vars)))
+          (alist
+           (if un-mentioned-vars
+               (translate-lmi/instance-fix-alist un-mentioned-vars vars alist)
+             alist)))
      (cond
-      (un-mentioned-vars
+      ((eq alist :failed) ; un-mentioned-vars is non-nil; unable to fix alist
        (er@par soft ctx
          "The formula you wish to instantiate, ~p3, mentions ~#0~[no ~
           variables~/only the variable ~&1~/the variables ~&1~].  Thus, there ~

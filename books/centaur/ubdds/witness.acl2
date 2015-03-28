@@ -19,6 +19,9 @@
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 
 (in-package "ACL2")
-(ld "tools/flag-package.lsp" :dir :system)
+(ld "std/package.lsp" :dir :system)
+; Matt K. mod: The following is redundant with the line above,
+; but causes an error without it.
+; (ld "tools/flag-package.lsp" :dir :system)
 ; cert-flags: ? t :ttags :all
 
