@@ -1690,7 +1690,7 @@ which is free of function calls on success.</p>"
             (mv nil
                 (fatal :type :vl-bad-funcall
                        :msg "In ~a0, there is a call to function ~w1, which ~
-                           could not be expaneded: ~a2."
+                           could not be expanded: ~a2."
                        :args (list ctx funname x))
                 nf x vardecls assigns))
 

@@ -139,7 +139,7 @@
 
 
 
-;; Produces a pattern containing fully expaneded names of all internal signals
+;; Produces a pattern containing fully expanded names of all internal signals
 ;; of a module.
 (mutual-recursion
  (defun mod-internals (mod)
