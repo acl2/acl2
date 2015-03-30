@@ -1222,8 +1222,8 @@
   :long "<p>EXAMPLE:</p>
 
  @({
-  (include-book "defsum")
-  (local (include-book "defsum-thms")
+  (include-book \"defsum\")
+  (local (include-book \"defsum-thms\")
   (set-ignore-ok :warn)
   (defsum my-list
     (my-empty)
