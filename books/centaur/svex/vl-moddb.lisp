@@ -1186,7 +1186,7 @@ constructed separately.)</p>"
        ((unless y.expr)
         (mv (ok) (make-vl-portinfo-blank)))
        ((wmv warnings y-lhs y-type)
-        (vl-expr-to-svex-lhs y.expr inst-ss))
+        (vl-expr-to-svex-lhs y.expr (make-vl-svexconf :ss inst-ss)))
        ((unless y-type)
         ;; already warned
         (fail warnings))
@@ -2118,7 +2118,7 @@ multi-tick we'd have to generate new names for the intermediate states.</p>"
        ((vl-svexconf conf))
        (warnings nil)
        ((wmv warnings lhs lhs-type :ctx x)
-        (vl-expr-to-svex-lhs x.lvalue conf.ss))
+        (vl-expr-to-svex-lhs x.lvalue conf))
        ((unless lhs-type) (mv warnings nil))
        ((wmv warnings delay :ctx x) (vl-maybe-gatedelay->delay x.delay))
        ((wmv warnings svex-rhs :ctx x)

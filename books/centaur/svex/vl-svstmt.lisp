@@ -81,7 +81,7 @@ because... (BOZO)</p>
                (res svex::svstmtlist-p))
   (b* ((warnings nil)
        ((wmv warnings svex-lhs lhs-type)
-        (vl-expr-to-svex-lhs lhs (vl-svexconf->ss conf)))
+        (vl-expr-to-svex-lhs lhs conf))
        ((unless lhs-type)
         (mv nil warnings nil))
        ((wmv warnings svex-rhs)
@@ -653,14 +653,29 @@ over expressions collecting the necessary mappings.</p>
           (vl-svexconf-free fnconf)
           (mv nil warnings new-x orig-conf))
          ((wmv warnings svex) (vl-fundecl-to-svex new-x fnconf))
+         (localname (make-vl-scopeexpr-end
+                       :hid (make-vl-hidexpr-end :name (vl-fundecl->name x))))
+         (type (vl-fundecl->rettype new-x))
          (conf (change-vl-svexconf
                 orig-conf
                 :fns (hons-acons
-                      (make-vl-scopeexpr-end
-                       :hid (make-vl-hidexpr-end :name (vl-fundecl->name x)))
-                      svex orig-conf.fns))))
+                      localname
+                      svex orig-conf.fns)
+                :typeov (hons-acons
+                         localname type orig-conf.typeov))))
       (vl-svexconf-free fnconf)
       (mv ok warnings new-x conf)))
+
+;; #|
+;; (trace$ #!vl (vl-function-compile-and-bind-fn
+;;               :entry (list 'vl-function-compile-and-bind
+;;                            fnname)
+;;               :exit (list 'vl-function-compile-and-bind
+;;                           (car values)
+;;                           (with-local-ps (vl-print-warnings (cadr values)))
+;;                           (strip-cars (vl-svexconf->fns (caddr values))))))
+
+;; |#
 
   (define vl-function-compile-and-bind ((fnname vl-scopeexpr-p)
                                         (conf vl-svexconf-p)
@@ -710,9 +725,15 @@ over expressions collecting the necessary mappings.</p>
           (and (not same-scope) (vl-svexconf-free fnconf))
           (mv nil warnings conf))
          ((when same-scope) (mv t warnings conf))
-         (svex (cdr (hons-get decl.name (vl-svexconf->fns fnconf))))
+         (local-name (make-vl-scopeexpr-end
+                      :hid (make-vl-hidexpr-end :name  decl.name)))
+         (svex (cdr (hons-get local-name (vl-svexconf->fns fnconf))))
+         (type (cdr (hons-get local-name (vl-svexconf->typeov fnconf))))
          (conf (if svex
                    (change-vl-svexconf conf :fns (hons-acons fnname svex conf.fns))
+                 conf))
+         (conf (if type
+                   (change-vl-svexconf conf :typeov (hons-acons fnname type conf.typeov))
                  conf)))
       (vl-svexconf-free fnconf)
       (mv t warnings conf)))

@@ -329,6 +329,26 @@ types.</p>"
                                (with-local-ps
                                  (vl-print-warnings (nth 1 values)))))))
 
+(trace$ #!vl (vl-fundecl-elaborate-aux-fn
+              :entry (list 'fundecl-elaborate-aux
+                           (with-local-ps (vl-pp-fundecl x)))
+              :exit (list 'fundecl-elaborate-aux
+                          (with-local-ps (vl-pp-fundecl (nth 2 values)))
+                          (and (not (car values))
+                               (with-local-ps
+                                 (vl-print-warnings (nth 1 values))))
+                          (strip-cars (vl-svexconf->fns (nth 3 values))))))
+
+(trace$ #!vl (vl-fundecl-elaborate-fn
+              :entry (list 'fundecl-elaborate
+                           (with-local-ps (vl-pp-fundecl x)))
+              :exit (list 'fundecl-elaborate
+                          (with-local-ps (vl-pp-fundecl (nth 2 values)))
+                          (and (not (car values))
+                               (with-local-ps
+                                 (vl-print-warnings (nth 1 values))))
+                          (strip-cars (vl-svexconf->fns (nth 3 values))))))
+
 (trace$ #!vl (vl-index-resolve-if-constant-fn
               :entry (list 'index-resolve-if-constant
                            (with-local-ps (vl-pp-expr x)))

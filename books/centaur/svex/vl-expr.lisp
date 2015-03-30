@@ -725,8 +725,30 @@ ignored.</p>"
   ///
   (verify-guards vl-structmemberlist-shift-bits))
 
+
+#|
+(trace$ #!vl (vl-datatype-field-shift-amount
+              :entry (list 'vl-datatype-field-shift-amount
+                           (with-local-ps (vl-pp-datatype x))
+                           (with-local-ps (vl-pp-packeddimensionlist
+                                           (vl-datatype->udims x)))
+                           field)
+              :exit (list 'vl-datatype-field-shift-amount
+                          (car values)
+                          (cadr values))))
+
+|#
 (define vl-datatype-field-shift-amount ((x vl-datatype-p)
                                         (field stringp))
+  :prepwork ((local (defthm vl-structmemberlist-resolved-p-of-append
+                      (implies (and (vl-structmemberlist-resolved-p x)
+                                    (vl-structmemberlist-resolved-p y))
+                               (vl-structmemberlist-resolved-p (append x y)))
+                      :hints(("Goal" :in-theory (enable append)))))
+             (local (defthm vl-structmemberlist-resolved-p-of-rev
+                      (implies (vl-structmemberlist-resolved-p x)
+                               (vl-structmemberlist-resolved-p (rev x)))
+                      :hints(("Goal" :in-theory (enable rev))))))
   :guard (vl-datatype-resolved-p x)
   :returns (mv (err (iff (vl-msg-p err) err))
                (shift (implies (not err) (integerp shift)) :rule-classes :type-prescription))
@@ -743,11 +765,24 @@ ignored.</p>"
                     ;; all union fields are right-aligned
                     (mv nil 0)
                   (mv (vmsg "~s0 is not a member of ~a1" field x) nil))
-      :vl-struct (vl-structmemberlist-shift-bits x.members field)
+      :vl-struct (vl-structmemberlist-shift-bits (rev x.members) field)
       :otherwise (mv (vmsg "Can't select field ~s0 from non-struct/union datatype ~a1"
                            field x)
                      nil))))
 
+#|
+(trace$ #!vl (vl-datatype-index-shift-amount
+              :entry (list 'vl-datatype-index-shift-amount
+
+                           (with-local-ps (vl-pp-datatype x))
+                           (with-local-ps (vl-pp-packeddimensionlist
+                                           (vl-datatype->udims x)))
+                           idx)
+              :exit (list 'vl-datatype-index-shift-amount
+                          (car values)
+                          (cadr values))))
+
+|#
 
 (define vl-datatype-index-shift-amount ((x vl-datatype-p)
                                         (idx svex::svex-p))
@@ -1161,12 +1196,18 @@ the way.</li>
        ((vl-hidstep decl) (car x.hidtrace))
        ((mv err base-svex unres-seltrace)
         (if (eq (tag decl.item) :vl-vardecl)
-            (b* (((mv unres-sels res-sels)
-                  (vl-seltrace-split x.seltrace
-                                     (vl-seltrace-unres-count x.seltrace)))
+            (b* (;; ((mv unres-sels res-sels)
+                 ;;  (vl-seltrace-split x.seltrace
+                 ;;                     (vl-seltrace-unres-count x.seltrace)))
+                 ;; If we have a bunch of resolved selects, we can encode them
+                 ;; as either an explicit select (right shift + concat) or as a
+                 ;; name, where eventually this will be resolved to a shift by
+                 ;; alias resolution.  Let's go with the former for now since
+                 ;; the latter won't work for elaboration, where we don't yet
+                 ;; have a complete module hierarchy.
                  ((mv err base-var)
-                  (vl-seltrace-to-svex-var res-sels x ss)))
-              (mv err base-var unres-sels))
+                  (vl-seltrace-to-svex-var nil x ss)))
+              (mv err base-var x.seltrace))
           (b* ((look (cdr (hons-get x.prefixname (vl-svexalist-fix params))))
                ((unless look)
                 ;; (cw "var: ~x0 look: ~x1 alist: ~x2~%" var look params);; (break$)
@@ -2947,7 +2988,7 @@ functions can assume all bits of it are good.</p>"
 
 
 (define vl-expr-to-svex-lhs ((x vl-expr-p)
-                             (ss vl-scopestack-p))
+                             (conf vl-svexconf-p))
   :returns (mv (warnings vl-warninglist-p)
                (svex (and (svex::lhs-p svex)
                           (svex::svarlist-addr-p (svex::lhs-vars svex))))
@@ -2955,7 +2996,6 @@ functions can assume all bits of it are good.</p>"
                           (implies type
                                    (vl-datatype-resolved-p type)))))
   (b* ((warnings nil)
-       (conf (make-vl-svexconf :ss ss))
        ((wmv warnings svex type)
         (vl-expr-case x
           :vl-index (vl-index-expr-to-svex x conf)
@@ -2997,6 +3037,7 @@ functions can assume all bits of it are good.</p>"
     (implies type
              (not (mv-nth 0 (vl-datatype-size type))))
     :hints(("Goal" :in-theory (enable vl-datatype-size)))))
+
 
 
 (define vl-expr-to-svex-untyped ((x vl-expr-p)
