@@ -828,8 +828,8 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
                                   :args (list
                                               x.test
                                               thensize
-                                              x.then
                                               elsesize
+                                              x.then
                                               x.else))
                           (ok))))
                     (mv (ok) (max thensize elsesize)))

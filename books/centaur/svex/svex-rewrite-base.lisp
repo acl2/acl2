@@ -431,4 +431,29 @@ runs out).</li>
 
   ;; (in-theory (disable svex-unify-correct
   ;;                     svexlist-unify-correct))
-  )
+
+  (defthm-svex-unify-flag
+    (defthm svex-count-of-unify
+      (b* (((mv ok alist) (svex-unify pat x al)))
+        (implies (and ok
+                      (svex-lookup v alist)
+                      (not (svex-lookup v al)))
+                 (and (<= (svex-count (svex-lookup v alist))
+                          (svex-count x))
+                      (implies (svex-case pat :call)
+                               (< (svex-count (svex-lookup v alist))
+                                  (svex-count x))))))
+      :rule-classes :linear
+      :flag svex-unify)
+    (defthm svex-count-of-unify-list
+      (b* (((mv ok alist) (svexlist-unify pat x al)))
+        (implies (and ok
+                      (svex-lookup v alist)
+                      (not (svex-lookup v al)))
+                 (and (<= (svex-count (svex-lookup v alist))
+                          (svexlist-count x))
+                      (implies (svex-case pat :call)
+                               (< (svex-count (svex-lookup v alist))
+                                  (svexlist-count x))))))
+      :rule-classes :linear
+      :flag svexlist-unify)))

@@ -96,33 +96,33 @@ because... (BOZO)</p>
   (defret vars-of-vl-index-expr-svex/size/type
     (svex::svarlist-addr-p (svex::svex-vars svex))))
 
-#!svex
-(define svex-resolve-single-assignment-aux ((w svex-p)
-                                            (r svex-p)
-                                            (v svex-p)
-                                            (lhs svex-p)
-                                            (rhs svex-p)
-                                            (wholevar svex-p))
+;; #!svex
+;; (define svex-resolve-single-assignment-aux ((w svex-p)
+;;                                             (r svex-p)
+;;                                             (v svex-p)
+;;                                             (lhs svex-p)
+;;                                             (rhs svex-p)
+;;                                             (wholevar svex-p))
 
-  :returns (mv (err (iff (vl::vl-msg-p err) err))
-               (final-rhs (implies (not err) (svex-p final-rhs))))
-  (b* (((unless (svex-equiv v wholevar))
-        (mv (vl::vmsg "Variables mismatched: ~x0, ~x1"
-                      (svex-fix lhs) (svex-fix wholevar)) nil))
-       ((unless (svex-case w :quote))
-        (mv (vl::vmsg "Variable width select in LHS: ~x0" (svex-fix lhs)) nil)))
-    (mv nil
-        (svcall concat r wholevar
-                (svcall concat w rhs
-                        (svcall rsh (svcall + w r) wholevar)))))
-  ///
-  (std::defret vars-of-svex-resolve-single-assignment-aux
-    (implies (and (not (member var (svex-vars w)))
-                  (not (member var (svex-vars r)))
-                  (not (member var (svex-vars v)))
-                  (not (member var (svex-vars rhs)))
-                  (not err))
-             (not (member var (svex-vars final-rhs))))))
+;;   :returns (mv (err (iff (vl::vl-msg-p err) err))
+;;                (final-rhs (implies (not err) (svex-p final-rhs))))
+;;   (b* (((unless (svex-equiv v wholevar))
+;;         (mv (vl::vmsg "Variables mismatched: ~x0, ~x1"
+;;                       (svex-fix lhs) (svex-fix wholevar)) nil))
+;;        ((unless (svex-case w :quote))
+;;         (mv (vl::vmsg "Variable width select in LHS: ~x0" (svex-fix lhs)) nil)))
+;;     (mv nil
+;;         (svcall concat r wholevar
+;;                 (svcall concat w rhs
+;;                         (svcall rsh (svcall + w r) wholevar)))))
+;;   ///
+;;   (std::defret vars-of-svex-resolve-single-assignment-aux
+;;     (implies (and (not (member var (svex-vars w)))
+;;                   (not (member var (svex-vars r)))
+;;                   (not (member var (svex-vars v)))
+;;                   (not (member var (svex-vars rhs)))
+;;                   (not err))
+;;              (not (member var (svex-vars final-rhs))))))
 
 
 #!svex
@@ -132,19 +132,33 @@ because... (BOZO)</p>
   :measure (svex-count lhs)
   :returns (mv (err (iff (vl::vl-msg-p err) err))
                (final-rhs (implies (not err) (svex-p final-rhs))))
-  (b* (((mv ok al) (svex-unify (svcall concat 'w (svcall rsh 'r 'v) (svex-z))
+  (b* (((when (svex-equiv wholevar lhs)) (mv nil (svex-fix rhs)))
+       ((mv ok al) (svex-unify (svcall concat 'w 'a 'b)
                                lhs nil))
        ((when ok)
         (b* ((w (svex-lookup 'w al))
-             (r (svex-lookup 'r al))
-             (v (svex-lookup 'v al)))
-          (svex-resolve-single-assignment-aux w r v lhs rhs wholevar)))
-       ((mv ok al) (svex-unify (svcall concat 'w 'v (svex-z)) lhs nil))
+             (a (svex-lookup 'a al))
+             (b (svex-lookup 'b al))
+             ((when (or (equal b (svex-x))
+                        (equal b (svex-z))))
+              ;; (concat w a Z) = rhs --> b = (concat w rhs (rsh w a))
+              (svex-resolve-single-assignment
+               a (svcall concat w rhs (svcall rsh w a)) wholevar))
+             ((when (equal a (svex-x)))
+              ;; (concat w Z b) = rhs --> b = (rsh w rhs)
+              (svex-resolve-single-assignment
+               b (svcall rsh w rhs) wholevar)))
+          (mv (vl::vmsg "Unexpected form of svex assignment LHS: ~x0" (svex-fix lhs))
+              nil)))
+       ((mv ok al) (svex-unify (svcall rsh 'w 'v) lhs nil))
        ((when ok)
         (b* ((w (svex-lookup 'w al))
              (v (svex-lookup 'v al)))
-          (svex-resolve-single-assignment-aux w (svex-quote (2vec 0)) v lhs rhs wholevar))))
-    (mv (vl::vmsg "Unexpected form of svex assignment LHS: ~x0" (svex-fix lhs))
+          ;; (rsh w v) = rhs --> v = (concat w v rhs)
+          (svex-resolve-single-assignment
+           v (svcall concat w v rhs) wholevar))))
+    (mv (vl::vmsg "Unexpected form of svex assignment LHS: ~x0 (variable: ~x1)"
+                  (svex-fix lhs) (svex-fix wholevar))
         nil))
   ///
   (std::defret vars-of-svex-resolve-single-assignment
