@@ -71,6 +71,260 @@ because... (BOZO)</p>
 (local (xdoc::set-default-parents vl-svstmt.lisp))
 
 
+(define vl-index-expr-svex/size/type ((x vl-expr-p)
+                                      (conf vl-svexconf-p))
+  :guard (vl-expr-case x :vl-index)
+  :returns (mv (ok)
+               (warnings vl-warninglist-p)
+               (svex svex::svex-p)
+               (type (implies ok (vl-datatype-p type)))
+               (size (implies ok (natp size)) :rule-classes :type-prescription))
+  (b* ((warnings nil)
+       ((wmv warnings svex type) (vl-index-expr-to-svex x conf))
+       ((unless type) (mv nil warnings svex nil nil))
+       ((mv err size) (vl-datatype-size type))
+       ((when (or err (not size)))
+        ;; (break$)
+        (mv nil
+            (fatal :type :vl-expr-to-svex-fail
+                   :msg "Couldn't size the datatype ~a0 of ~
+                                    LHS expression ~a1: ~@2"
+                   :args (list type (vl-expr-fix x) (or err (vmsg "unsizeable"))))
+            svex nil nil)))
+    (mv t warnings svex type size))
+  ///
+  (defret vars-of-vl-index-expr-svex/size/type
+    (svex::svarlist-addr-p (svex::svex-vars svex))))
+
+#!svex
+(define svex-resolve-single-assignment-aux ((w svex-p)
+                                            (r svex-p)
+                                            (v svex-p)
+                                            (lhs svex-p)
+                                            (rhs svex-p)
+                                            (wholevar svex-p))
+
+  :returns (mv (err (iff (vl::vl-msg-p err) err))
+               (final-rhs (implies (not err) (svex-p final-rhs))))
+  (b* (((unless (svex-equiv v wholevar))
+        (mv (vl::vmsg "Variables mismatched: ~x0, ~x1"
+                      (svex-fix lhs) (svex-fix wholevar)) nil))
+       ((unless (svex-case w :quote))
+        (mv (vl::vmsg "Variable width select in LHS: ~x0" (svex-fix lhs)) nil)))
+    (mv nil
+        (svcall concat r wholevar
+                (svcall concat w rhs
+                        (svcall rsh (svcall + w r) wholevar)))))
+  ///
+  (std::defret vars-of-svex-resolve-single-assignment-aux
+    (implies (and (not (member var (svex-vars w)))
+                  (not (member var (svex-vars r)))
+                  (not (member var (svex-vars v)))
+                  (not (member var (svex-vars rhs)))
+                  (not err))
+             (not (member var (svex-vars final-rhs))))))
+
+
+#!svex
+(define svex-resolve-single-assignment ((lhs svex-p)
+                                        (rhs svex-p)
+                                        (wholevar svex-p))
+  :measure (svex-count lhs)
+  :returns (mv (err (iff (vl::vl-msg-p err) err))
+               (final-rhs (implies (not err) (svex-p final-rhs))))
+  (b* (((mv ok al) (svex-unify (svcall concat 'w (svcall rsh 'r 'v) (svex-z))
+                               lhs nil))
+       ((when ok)
+        (b* ((w (svex-lookup 'w al))
+             (r (svex-lookup 'r al))
+             (v (svex-lookup 'v al)))
+          (svex-resolve-single-assignment-aux w r v lhs rhs wholevar)))
+       ((mv ok al) (svex-unify (svcall concat 'w 'v (svex-z)) lhs nil))
+       ((when ok)
+        (b* ((w (svex-lookup 'w al))
+             (v (svex-lookup 'v al)))
+          (svex-resolve-single-assignment-aux w (svex-quote (2vec 0)) v lhs rhs wholevar))))
+    (mv (vl::vmsg "Unexpected form of svex assignment LHS: ~x0" (svex-fix lhs))
+        nil))
+  ///
+  (std::defret vars-of-svex-resolve-single-assignment
+    (implies (and (not (member v (svex-vars lhs)))
+                  (not (member v (svex-vars rhs)))
+                  (not err))
+             (not (member v (svex-vars final-rhs))))))
+
+
+  ;;            ((unless (svex-equiv v wholevar))
+  ;;             (mv (vl::vmsg "Variables mismatched: ~x0, ~x1" lhs wholevar) nil))
+  ;;            ((unless (svex-case w :quote))
+  ;;             (mv (vl::vmsg "Variable width select in LHS: ~x0" lhs) nil)))
+  ;;         (mv nil
+  ;;             (svcall concat w rhs
+  ;;                     (svcall rsh w wholevar)))))
+             
+  ;; (svex-case lhs
+  ;;   :quote (mv (vl::vmsg "Unexpectedly encountered constant: ~x0" lhs.val) nil) 
+  ;;   :var (if (svex-equiv lhs wholevar)
+  ;;            (mv nil rhs)
+  ;;          (mv (vl::vmsg "Variables mismatched: ~x0, ~x1" lhs wholevar) nil))
+  ;;   :call
+  ;;   (case lhs.fn
+  ;;     (rsh (b* (((unless (eql (len lhs.args) 2))
+  ;;                (mv (vl::msg "Malformed: ~x0" lhs) nil)))
+  ;;            (svex-resolve-single-assignment
+  ;;             (second lhs.args)
+  ;;             (svcall concat (first lhs.args) wholevar rhs)
+                
+
+
+(define vl-single-procedural-assign->svstmts ((lhs svex::svex-p)
+                                              (lhssize natp)
+                                              (wholevar svex::svex-p)
+                                              (varsize natp)
+                                              (rhs svex::svex-p)
+                                              (blockingp booleanp))
+  :returns (mv (ok)
+               (warnings vl-warninglist-p)
+               (res svex::svstmtlist-p))
+  (b* ((warnings nil)
+       (lhs-simp1 (svex::svex-concat lhssize (svex::svex-lhsrewrite lhs 0 lhssize)
+                                     (svex::svex-z)))
+       ((when (svex::lhssvex-p lhs-simp1))
+        (mv t (ok)
+            (list (svex::make-svstmt-assign
+                   :lhs (svex::svex->lhs lhs-simp1)
+                   :rhs rhs
+                   :blockingp blockingp))))
+       ;; Above covers the case where we have static indices.  Now try and deal
+       ;; with dynamic indices.
+       ;; BOZO This makes it important that svex rewriting normalize select
+       ;; operations to concats and right shifts.  It does this now, and it
+       ;; seems unlikely we'll want to change that.
+       ;; First make sure we can process wholevar into an LHS.
+       (varsvex (svex::svex-concat varsize (svex::svex-lhsrewrite wholevar 0 varsize)
+                                   (svex::svex-z)))
+       ((unless (svex::lhssvex-p varsvex))
+        (mv nil
+            (fatal :type :vl-assignstmt-fail
+                   :msg "Failed to process whole variable as svex LHS -- ~
+                         dynamic instance select or something? ~x0"
+                   :args (list (svex::svex-fix wholevar)))
+            nil))
+       (var-lhs (svex::svex->lhs varsvex))
+
+       (simp-lhs (svex::svex-rewrite lhs-simp1 (svex::svexlist-mask-alist (list lhs-simp1))))
+
+       ((mv err final-rhs)
+        (svex::svex-resolve-single-assignment simp-lhs rhs wholevar))
+
+       ((when err)
+        (mv nil
+            (fatal :type :vl-assignstmt-fail
+                   :msg "Failed to process LHS for dynamic select assignment: ~@0"
+                   :args (list err))
+            nil)))
+    (mv t nil
+        (list
+         (svex::make-svstmt-assign :lhs var-lhs :rhs final-rhs :blockingp blockingp))))
+  ///
+  (defret vars-of-vl-single-procedural-assign->svstmts
+    (implies (and (not (member v (svex::svex-vars lhs)))
+                  (not (member v (svex::svex-vars rhs)))
+                  (not (member v (svex::svex-vars wholevar))))
+             (not (member v (svex::svstmtlist-vars res))))))
+
+
+(defines vl-procedural-assign->svstmts
+  (define vl-procedural-assign->svstmts ((lhs vl-expr-p)
+                                         (rhssvex svex::svex-p)
+                                         (blockingp booleanp)
+                                         (conf vl-svexconf-p))
+    :measure (vl-expr-count lhs)
+    :verify-guards nil
+    :returns (mv ok
+                 (warnings vl-warninglist-p)
+                 (svstmts svex::svstmtlist-p)
+                 (shift (implies ok (natp shift)) :rule-classes :type-prescription))
+    (b* ((warnings nil)
+         (lhs (vl-expr-fix lhs)))
+      (vl-expr-case lhs
+        :vl-index
+        (b* (((wmv ok warnings lhssvex ?type size)
+              (vl-index-expr-svex/size/type lhs conf))
+             ((unless ok)
+              (mv nil warnings nil nil))
+             ((vl-svexconf conf))
+             ((mv err opinfo) (vl-index-expr-typetrace lhs conf.ss conf.typeov))
+             ((when err)
+              (mv nil
+                  (fatal :type :vl-assignstmt-fail
+                         :msg "Failed to get type of LHS ~a0: ~@1"
+                         :args (list lhs err))
+                  nil nil))
+             ((vl-operandinfo opinfo))
+             ((wmv ok warnings wholesvex ?wholetype wholesize)
+              (vl-index-expr-svex/size/type
+               (make-vl-index :scope opinfo.prefixname) conf))
+             ((unless ok) (mv nil warnings nil nil))
+             ((wmv ok warnings svstmts)
+              (vl-single-procedural-assign->svstmts
+               lhssvex size wholesvex wholesize rhssvex blockingp)))
+          (mv ok warnings svstmts (and ok size)))
+        :vl-concat
+        (vl-procedural-assign-concat->svstmts lhs.parts rhssvex blockingp conf)
+        :otherwise
+        (mv nil
+            (fatal :type :vl-assignstmt-fail
+                   :msg "Bad expression in LHS: ~a0"
+                   :args (list lhs))
+            nil nil))))
+
+  (define vl-procedural-assign-concat->svstmts ((parts vl-exprlist-p)
+                                                (rhssvex svex::svex-p)
+                                                (blockingp booleanp)
+                                                (conf vl-svexconf-p))
+    :measure (vl-exprlist-count parts)
+    :returns (mv ok
+                 (warnings vl-warninglist-p)
+                 (svstmts svex::svstmtlist-p)
+                 (shift (implies ok (natp shift)) :rule-classes :type-prescription))
+    (b* (((when (atom parts)) (mv t nil nil 0))
+         ((mv ok warnings svstmts2 shift2)
+          (vl-procedural-assign-concat->svstmts (cdr parts) rhssvex blockingp conf))
+         ((unless ok) (mv nil warnings nil nil))
+         (rhs (svex::svcall svex::rsh (svex-int shift2) rhssvex))
+         ((wmv ok warnings svstmts1 shift1)
+          (vl-procedural-assign->svstmts (car parts) rhs blockingp conf))
+         ((unless ok) (mv nil warnings nil nil)))
+      (mv t warnings (append-without-guard svstmts1 svstmts2)
+          (+ shift1 shift2))))
+  ///
+  (verify-guards vl-procedural-assign->svstmts)
+
+  (defthm-vl-procedural-assign->svstmts-flag
+    (defthm vars-of-vl-procedural-assign->svstmts
+      (b* (((mv ?ok ?warnings ?svstmts ?shift)
+            (vl-procedural-assign->svstmts lhs rhssvex blockingp conf)))
+        (implies (svex::svarlist-addr-p (svex::svex-vars rhssvex))
+                 (svex::svarlist-addr-p
+                  (svex::svstmtlist-vars svstmts))))
+      :flag vl-procedural-assign->svstmts)
+
+    (defthm vars-of-vl-procedural-assign-concat->svstmts
+      (b* (((mv ?ok ?warnings ?svstmts ?shift)
+            (vl-procedural-assign-concat->svstmts parts rhssvex blockingp conf)))
+        (implies (svex::svarlist-addr-p (svex::svex-vars rhssvex))
+                 (svex::svarlist-addr-p
+                  (svex::svstmtlist-vars svstmts))))
+      :flag vl-procedural-assign-concat->svstmts)
+    :hints ((acl2::just-expand-mrec-default-hint
+             'vl-procedural-assign->svstmts id t world)))
+
+  (deffixequiv-mutual vl-procedural-assign->svstmts))
+         
+          
+
+
 
 (define vl-assignstmt->svstmts ((lhs vl-expr-p)
                                 (rhs vl-expr-p)
@@ -80,20 +334,81 @@ because... (BOZO)</p>
                (warnings vl-warninglist-p)
                (res svex::svstmtlist-p))
   (b* ((warnings nil)
-       ((wmv warnings svex-lhs lhs-type)
-        (vl-expr-to-svex-lhs lhs conf))
-       ((unless lhs-type)
-        (mv nil warnings nil))
-       ((wmv warnings svex-rhs)
-        (vl-expr-to-svex-datatyped rhs lhs-type conf)))
-    (mv t warnings
-        (list (svex::make-svstmt-assign :lhs svex-lhs :rhs svex-rhs
-                                        :blockingp blockingp))))
+       (lhs (vl-expr-fix lhs))
+       (rhs (vl-expr-fix rhs)))
+    (vl-expr-case lhs
+      :vl-index
+      ;; If it's an index expression we can look up its type and just process a
+      ;; single assignment
+      (b* (((vl-svexconf conf))
+           ((mv err opinfo) (vl-index-expr-typetrace lhs conf.ss conf.typeov))
+           ((when err)
+            (mv nil
+                (fatal :type :vl-assignstmt-fail
+                       :msg "Failed to get type of LHS ~a0: ~@1"
+                       :args (list lhs err))
+                nil))
+           ((vl-operandinfo opinfo))
+           ((wmv warnings rhssvex)
+            (vl-expr-to-svex-datatyped rhs opinfo.type conf))
+           ((wmv ok warnings svstmts ?shift)
+            (vl-procedural-assign->svstmts lhs rhssvex blockingp conf)))
+        (mv ok warnings svstmts))
+      :vl-concat
+      (b* (((wmv warnings rhssvex ?rhssize)
+            (vl-expr-to-svex-selfdet rhs nil conf))
+           ((wmv ok warnings svstmts ?shift)
+            (vl-procedural-assign->svstmts
+             lhs rhssvex blockingp conf)))
+        (mv ok warnings svstmts))
+      :otherwise
+      (mv nil
+          (fatal :type :vl-lhs-malformed
+                 :msg "Bad lvalue: ~a0"
+                 :args (list lhs))
+          nil)))
   ///
-  (more-returns
-   (res :name vars-of-vl-assignstmt->svstmts
-        (svex::svarlist-addr-p
-         (svex::svstmtlist-vars res)))))
+  (defret vars-of-vl-assignstmt->svstmts
+    (svex::svarlist-addr-p (svex::svstmtlist-vars res))))
+
+  ;; (b* ((warnings nil)
+  ;;      ((wmv warnings svex-lhs lhs-type)
+  ;;       (vl-expr-to-svex-lhs lhs conf))
+  ;;      ((unless lhs-type)
+  ;;       (mv nil warnings nil))
+  ;;      ((wmv warnings svex-rhs)
+  ;;       (vl-expr-to-svex-datatyped rhs lhs-type conf)))
+  ;;   (mv t warnings
+  ;;       (list (svex::make-svstmt-assign :lhs svex-lhs :rhs svex-rhs
+  ;;                                       :blockingp blockingp))))
+  ;; ///
+  ;; (more-returns
+  ;;  (res :name vars-of-vl-assignstmt->svstmts
+  ;;       (svex::svarlist-addr-p
+  ;;        (svex::svstmtlist-vars res)))))
+
+;; (define vl-assignstmt->svstmts ((lhs vl-expr-p)
+;;                                 (rhs vl-expr-p)
+;;                                 (blockingp booleanp)
+;;                                 (conf vl-svexconf-p))
+;;   :returns (mv (ok)
+;;                (warnings vl-warninglist-p)
+;;                (res svex::svstmtlist-p))
+;;   (b* ((warnings nil)
+;;        ((wmv warnings svex-lhs lhs-type)
+;;         (vl-expr-to-svex-lhs lhs conf))
+;;        ((unless lhs-type)
+;;         (mv nil warnings nil))
+;;        ((wmv warnings svex-rhs)
+;;         (vl-expr-to-svex-datatyped rhs lhs-type conf)))
+;;     (mv t warnings
+;;         (list (svex::make-svstmt-assign :lhs svex-lhs :rhs svex-rhs
+;;                                         :blockingp blockingp))))
+;;   ///
+;;   (more-returns
+;;    (res :name vars-of-vl-assignstmt->svstmts
+;;         (svex::svarlist-addr-p
+;;          (svex::svstmtlist-vars res)))))
 
 
 (define vl-vardecllist->svstmts ((x vl-vardecllist-p)
