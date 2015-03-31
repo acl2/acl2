@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "ranges")
+(include-book "expressions")
 (include-book "../../mlib/coretypes")
 (local (include-book "tools/do-not" :dir :system))
 (local (include-book "../../util/arithmetic"))
@@ -49,8 +49,8 @@
                            acl2::consp-when-member-equal-of-atom-listp
                            acl2::len-when-prefixp
                            acl2::consp-under-iff-when-true-listp
-                           consp-when-member-equal-of-vl-commentmap-p
-                           consp-when-member-equal-of-vl-caselist-p
+                           ;; consp-when-member-equal-of-vl-commentmap-p
+                           ;; consp-when-member-equal-of-vl-caselist-p
                            consp-when-member-equal-of-vl-usertypes-p
                            acl2::consp-when-member-equal-of-keyval-alist-p
                            vl-tokenlist-p-when-not-consp

@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "ranges")
+(include-book "expressions")
 (include-book "lvalues")
 (include-book "delays")
 (include-book "strengths")

@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../parsetree")
+(include-book "../expr")
 
 (defprod vl-coredatatype-info
   :parents (vl-datatype)

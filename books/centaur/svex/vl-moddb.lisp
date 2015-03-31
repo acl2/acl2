@@ -35,7 +35,7 @@
 (include-book "svmods")
 (include-book "lhs")
 (include-book "lattice")
-(include-book "vl-svstmt")
+(include-book "vl-elaborate")
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
@@ -911,13 +911,13 @@ constructed separately.)</p>"
        (range (vl-packeddimension->range dim))
        ((when (or (not (vl-range-resolved-p range))
                   (not (eql (vl-range-size range) arraysize))))
-        (mv (vmsg "Incompatible type for connection to instancearray port ~s1 ~
+        (mv (vmsg "Incompatible type for connection to instancearray port ~s0 ~
                    (differing dimension sizes)."
                   (string-fix portname))
             nil nil nil))
        (compat-err2 (vl-compare-datatypes y-type x-basetype))
        ((when compat-err2)
-        (mv (vmsg "Incompatible type for connection to instancearray port ~s1 ~
+        (mv (vmsg "Incompatible type for connection to instancearray port ~s0 ~
                    (different slot types)." (string-fix portname))
             nil nil nil)))
     (mv nil t x-size y-size)))
@@ -3063,7 +3063,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
        (modalist (hons-shrink-alist gatemod-alist (hons-shrink-alist arraymod-alist modalist)))
 
        ((wmv warnings always-assigns)
-        (vl-alwayslist->svex x.alwayses ss)) ;; BOZO convert to svexconf
+        (vl-alwayslist->svex x.alwayses blobconf))
 
        ;; (delays (svex::delay-svarlist->delays (append-without-guard delayvars always-delayvars)))
 

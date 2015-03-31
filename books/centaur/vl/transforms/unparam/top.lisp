@@ -32,6 +32,7 @@
 (in-package "VL")
 (include-book "lineup")
 (include-book "override")
+(include-book "centaur/svex/vl-elaborate" :dir :system)
 ;; (include-book "scopesubst")
 (include-book "../../mlib/blocks")
 (include-book "../../mlib/writer") ;; for generating the new module names...
@@ -909,7 +910,14 @@ introduced.</p>"
 
 
 
-
+;; (trace$ #!vl (vl-create-unparameterized-module
+;;               :entry (list* 'vl-create-unparameterized-module
+;;                            (vl-module->name x)
+;;                            (with-local-ps (vl-pp-paramdecllist final-paramdecls))
+;;                            (b* (((vl-svexconf conf)))
+;;                              (list :typeov (strip-cars conf.typeov)
+;;                                    :params (strip-cars conf.params)
+;;                                    :fns (strip-cars conf.fns))))))
 
 (define vl-create-unparameterized-module
   ((x vl-module-p)
@@ -921,7 +929,8 @@ introduced.</p>"
                (new-mod vl-module-p)
                (siglist vl-unparam-sigalist-p
                          "signatures for this module"))
-  (b* ((name (vl-unparam-newname (vl-module->name x) final-paramdecls))
+  (b* ((origname (vl-module->name x))
+       (name (vl-unparam-newname origname final-paramdecls))
        (x (change-vl-module x :name name
                             :paramdecls final-paramdecls))
        ((vl-module x))

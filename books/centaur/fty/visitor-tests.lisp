@@ -3,7 +3,7 @@
 (include-book "visitor")
 (include-book "basetypes")
 (include-book "centaur/misc/arith-equivs" :dir :system)
-
+(local (std::add-default-post-define-hook :fix))
 
 (logic)
 (set-bogus-mutual-recursion-ok t)
@@ -160,11 +160,12 @@
      (defalist foosum-alist3 :key-type integerp :val-type foosum-p :measure (two-nats-measure (acl2-count x) 1))
      (defalist unused-alist  :key-type stringp :val-type unused-sum :measure (two-nats-measure (acl2-count x) 1)))
 
-   (defvisitor double-sum-nates-of-bunch-of-stuff
+   (defvisitor double-sum-nats-of-bunch-of-stuff
      :type  bunch-of-stuff :template double-sum-nats
      :type-fns ((unused-sum   :skip)
                 (unused-alist :skip)
                 (unusedlist   double-sum-nats-unusedlist))
+     :omit-types (unused-alist unusedlist)
      (define double-sum-nats-unusedlist ((x unusedlist-p)
                                          (incr natp)
                                          (acc natp))

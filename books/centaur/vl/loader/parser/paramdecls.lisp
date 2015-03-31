@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "datatypes")
+(include-book "../../parsetree")
 (local (include-book "../../util/arithmetic"))
 
 (defxdoc parse-paramdecls

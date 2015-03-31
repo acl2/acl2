@@ -3159,6 +3159,54 @@ identifier, so we convert it into a hidpiece.</p>"
 
 
 
+; Dimensions and ranges are introduced with the following rules.
+;
+; dimension ::= '[' dimension_constant_expression ':' dimension_constant_expression ']'
+;
+; range ::= '[' msb_constant_expression ':' lsb_constant_expression ']'
+;
+; But these are all just aliases to constant_expression, which we treat as
+; regular expressions.  Note also that the names above in "range" are
+; misleading, since no particular order is required.  Moreover, we do not make
+; any distinction between dimensions and ranges.  That is, in either case, we
+; call vl-parse-range and produce vl-range-p objects.
+
+(defparser vl-parse-range ()
+  :result (vl-range-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (:= (vl-match-token :vl-lbrack))
+       (msb := (vl-parse-expression))
+       (:= (vl-match-token :vl-colon))
+       (lsb := (vl-parse-expression))
+       (:= (vl-match-token :vl-rbrack))
+       (return (make-vl-range :msb msb
+                              :lsb lsb))))
+
+(defparser vl-parse-0+-ranges ()
+  ;; Note: assumes brackets denote subsequent ranges to be matched, and as a
+  ;; result it may indeed cause an error.
+  :result (vl-rangelist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong-on-value
+  (seq tokstream
+       (unless (vl-is-token? :vl-lbrack)
+         (return nil))
+       (first := (vl-parse-range))
+       (rest := (vl-parse-0+-ranges))
+       (return (cons first rest))))
+
+
+
+
+
+
+
+
 ;; (defparser vl-parse-ps-class-identifier ()
 ;;   :short "Match @('ps_class_identifier'), return an expression."
 ;;   :long "<p>The rules from SystemVerilog-2012:</p>

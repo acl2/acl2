@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "centaur/svex/vl-svstmt" :dir :system)
+(include-book "centaur/svex/vl-elaborate" :dir :system)
 ;; (include-book "../../mlib/fmt") ;; blaaaaah bad deps
 (local (include-book "../../util/arithmetic"))
 ;(local (include-book "../../mlib/modname-sets"))

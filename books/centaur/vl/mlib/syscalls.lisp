@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "coretypes")
+(include-book "../util/defs")
 (local (include-book "arithmetic/top" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 

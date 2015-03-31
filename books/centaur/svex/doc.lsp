@@ -44,6 +44,6 @@
 (local (table xdoc::xdoc 'xdoc::doc
               (cdr (assoc 'doc (table-alist 'xdoc-backup world)))))
 
-(xdoc::save "./manual" :import nil)
+(xdoc::save "./manual" :import nil :redef-okp t)
 
-(i-am-here)
+;; (i-am-here)
