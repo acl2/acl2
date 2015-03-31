@@ -804,7 +804,15 @@ because... (BOZO)</p>
 ;;     :types (vl-stmt)))
 
 
-
+;; (trace$ #!vl (vl-fundecl-to-svex
+;;               :entry (list 'vl-fundecl-to-svex
+;;                            (with-local-ps (vl-pp-fundecl x))
+;;                            (b* (((vl-svexconf conf)))
+;;                              (list :typeov (strip-cars conf.typeov)
+;;                                    :params (strip-cars conf.params)
+;;                                    :fns (strip-cars conf.fns))))
+;;               :exit (list 'vl-fundecl-to-svex
+;;                           (with-local-ps (vl-print-warnings (car values))))))
 
 (define vl-fundecl-to-svex  ((x vl-fundecl-p)
                              (conf vl-svexconf-p
@@ -960,6 +968,42 @@ over expressions collecting the necessary mappings.</p>
     :measure (acl2::nat-list-measure
               (list reclimit :order :count 0)))
 
+;; (trace$ #!vl (vl-fundecl-elaborate-fn
+;;               :cond (equal (Vl-fundecl->name x) "DWF_lzd")
+;;               :entry (list 'vl-fundecl-elaborate
+;;                            "DWF_lzd"
+;;                            (with-local-ps (vl-pp-fundecl x))
+;;                            (b* (((vl-svexconf conf)))
+;;                              (list :typeov (strip-cars conf.typeov)
+;;                                    :params (strip-cars conf.params)
+;;                                    :fns (strip-cars conf.fns))))
+;;               :exit (list 'vl-fundecl-elaborate
+;;                           "DWF_lzd"
+;;                           (with-local-ps (vl-pp-fundecl (caddr values)))
+;;                           (b* (((vl-svexconf conf) (cadddr values)))
+;;                             (list :typeov (strip-cars conf.typeov)
+;;                                   :params (strip-cars conf.params)
+;;                                   :fns (strip-cars conf.fns))))))
+
+;; (trace$ #!vl (vl-fundecl-elaborate-aux-fn
+;;               :entry (list 'vl-fundecl-elaborate-aux
+;;                            (vl-fundecl->name x)
+;;                            (with-local-ps (vl-pp-fundecl x))
+;;                            (b* (((vl-svexconf conf)))
+;;                              (list :typeov (strip-cars conf.typeov)
+;;                                    :params (strip-cars conf.params)
+;;                                    :fns (strip-cars conf.fns))))
+;;               :exit (list 'vl-fundecl-elaborate-aux
+;;                            (vl-fundecl->name x)
+;;                            (car values)
+;;                            (with-local-ps (vl-print-warnings (cadr values)))
+;;                           (with-local-ps (vl-pp-fundecl (caddr values)))
+;;                           (b* (((vl-svexconf conf) (cadddr values)))
+;;                             (list :typeov (strip-cars conf.typeov)
+;;                                   :params (strip-cars conf.params)
+;;                                   :fns (strip-cars conf.fns))))))
+
+
   (define vl-fundecl-elaborate ((x vl-fundecl-p)
                                 (conf vl-svexconf-p)
                                 &key ((reclimit natp) '1000))
@@ -984,14 +1028,13 @@ over expressions collecting the necessary mappings.</p>
          ((wmv warnings svex) (vl-fundecl-to-svex new-x fnconf))
          (localname (make-vl-scopeexpr-end
                        :hid (make-vl-hidexpr-end :name (vl-fundecl->name x))))
-         (type (vl-fundecl->rettype new-x))
+         ((vl-fundecl new-x))
          (conf (change-vl-svexconf
                 orig-conf
-                :fns (hons-acons
-                      localname
-                      svex orig-conf.fns)
+                :fns (hons-acons localname svex orig-conf.fns)
+                :fnports (hons-acons localname new-x.portdecls orig-conf.fnports)
                 :typeov (hons-acons
-                         localname type orig-conf.typeov))))
+                         localname new-x.rettype orig-conf.typeov))))
       (vl-svexconf-free fnconf)
       (mv ok warnings new-x conf)))
 
@@ -1058,11 +1101,15 @@ over expressions collecting the necessary mappings.</p>
                       :hid (make-vl-hidexpr-end :name  decl.name)))
          (svex (cdr (hons-get local-name (vl-svexconf->fns fnconf))))
          (type (cdr (hons-get local-name (vl-svexconf->typeov fnconf))))
+         (portlook (hons-get local-name (vl-svexconf->fnports fnconf)))
          (conf (if svex
                    (change-vl-svexconf conf :fns (hons-acons fnname svex conf.fns))
                  conf))
          (conf (if type
                    (change-vl-svexconf conf :typeov (hons-acons fnname type conf.typeov))
+                 conf))
+         (conf (if portlook
+                   (change-vl-svexconf conf :fnports (hons-acons fnname (cdr portlook) conf.fnports))
                  conf)))
       (vl-svexconf-free fnconf)
       (mv t warnings conf)))

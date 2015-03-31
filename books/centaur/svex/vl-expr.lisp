@@ -143,12 +143,16 @@ would therefore incur some overhead.</p>")
 
 (fty::defalist vl-svexalist :key-type vl-scopeexpr :val-type svex::svex-p)
 
+(fty::defalist vl-fnportalist :key-type vl-scopeexpr :val-type vl-portdecllist)
+
+
 (defprod vl-svexconf
   :short "Static configuration object for expr to svex conversion."
   ((ss vl-scopestack-p
        "The scopestack at the source location of the expression.")
    (typeov vl-typeoverride-p "Scopeexprs mapped to resolved types")
    (fns    vl-svexalist-p "Function definition table")
+   (fnports vl-fnportalist-p "Function portlist table")
    (params vl-svexalist-p "Parameter definition table")))
 
 (define vl-svexconf-free ((x vl-svexconf-p))
@@ -2408,6 +2412,14 @@ functions can assume all bits of it are good.</p>"
           svex
           opinfo.type)))
 
+;; (trace$ #!vl (vl-funcall-to-svex
+;;               :entry (list 'vl-funcall-to-svex
+;;                            (with-local-ps (vl-pp-expr x)))
+;;               :exit (list 'vl-funcall-to-svex
+;;                           (with-local-ps (vl-print-warnings (car values)))
+;;                           (and (caddr values)
+;;                                (with-local-ps (vl-pp-datatype (caddr values)))))))
+
   (define vl-funcall-to-svex ((x vl-expr-p)
                               (conf vl-svexconf-p))
     :returns (mv (warnings vl-warninglist-p)
@@ -2441,41 +2453,34 @@ functions can assume all bits of it are good.</p>"
                      :msg "Function hasn't been preprocessed (return type unresolved): ~a0"
                      :args (list x))
               (svex-x) nil))
-         ((mv err decl decl-ss) (vl-funname-lookup x.name conf.ss))
-         ((when err)
+         (portdecl-look (hons-get x.name conf.fnports))
+         ((unless portdecl-look)
           (mv (fatal :type :vl-expr-to-svex-fail
-                     :msg "Failed to find function ~a0: ~@1"
-                     :args (list x err))
-              (svex-x) nil))
-         
-         ((vl-fundecl decl))
-         ((unless (eql (len decl.portdecls) (len x.args)))
-          (mv (fatal :type :vl-expr-to-svex-fail
-                     :msg "Bad arity for function call: ~a0"
+                     :msg "Function hasn't been preprocessed (port declarations missing): ~a0"
                      :args (list x))
               (svex-x) nil))
-         (types (vl-portdecllist->types decl.portdecls))
-         ((mv type-err types) (vl-datatypelist-usertype-resolve types decl-ss))
-         ((when type-err)
+         (portdecls (cdr portdecl-look))
+         (port-types (vl-portdecllist->types portdecls))
+         ((unless (vl-datatypelist-resolved-p port-types))
           (mv (fatal :type :vl-expr-to-svex-fail
-                     :msg "Failed to resolve usertypes in portlist for ~
-                           function call ~a0: ~@1"
-                     :args (list x type-err))
+                     :msg "Function hasn't been preprocessed (unresolved ~
+                           types in portdecls): ~a0"
+                     :args (list x))
+              (svex-x) nil))
+         ((unless (eql (len port-types) (len x.args)))
+          (mv (fatal :type :vl-expr-to-svex-fail
+                     :msg "Wrong number of arguments in function call ~a0: ~
+                           supposed to be ~x1 ports"
+                     :args (list x (len port-types)))
               (svex-x) nil))
          ((wmv warnings args-svex)
           (vl-exprlist-to-svex-datatyped
            x.args
-           types
+           port-types
            conf))
-         (comp-alist (vl-function-pair-inputs-with-actuals decl.portdecls args-svex))
+         (comp-alist (vl-function-pair-inputs-with-actuals portdecls args-svex))
          ((with-fast comp-alist))
-         (ans (svex::svex-subst-memo expr comp-alist))
-         ((when err)
-          (mv (warn :type :vl-expr-to-svex-fail
-                    :msg "Failed to resolve usertypes in return type for ~
-                          function call ~a0: ~@1"
-                    :args (list x err))
-              ans nil)))
+         (ans (svex::svex-subst-memo expr comp-alist)))
       (clear-memoize-table 'svex::svex-subst-memo)
       (mv (ok) ans rettype)))
 
@@ -2500,6 +2505,7 @@ functions can assume all bits of it are good.</p>"
           ;; the given size.  We may need to add exceptions to this.
           (b* (((mv err size) (vl-datatype-size type))
                ((when (or err (not size)))
+                ;; (break$)
                 (mv (fatal :type :vl-expr-to-svex-fail
                            :msg "Couldn't size packed datatype ~a0"
                            :args (list (vl-datatype-fix type)))
