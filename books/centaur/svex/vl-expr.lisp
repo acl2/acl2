@@ -2961,7 +2961,7 @@ functions can assume all bits of it are good.</p>"
                             :minloc *vl-fakeloc*
                             :maxloc *vl-fakeloc*))
        (ss (vl-scopestack-push mod (vl-scopestack-init (make-vl-design))))
-       (expr (vl-idexpr "a" nil))
+       (expr (vl-idexpr "a"))
        (sel-expr (change-vl-index expr
                                   :part (vl-range->partselect
                                          (make-vl-range :msb (vl-make-index sel-msb)

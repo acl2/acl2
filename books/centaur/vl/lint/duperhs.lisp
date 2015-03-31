@@ -33,6 +33,7 @@
 (include-book "../mlib/expr-tools")
 (include-book "../mlib/writer")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc duperhs-check
   :parents (lint)
@@ -49,19 +50,18 @@ assignments are not necessarily errors, but are kind of odd.</p>")
 
 (local (xdoc::set-default-parents duperhs-check))
 
-(defalist vl-duperhs-alistp (x)
-  :key (vl-expr-p x)        ;; Fixed up RHS
-  :val (vl-assignlist-p x)  ;; Assignments that map to this RHS
-  :keyp-of-nil nil
-  :valp-of-nil t)
+(fty::defalist vl-duperhs-alist
+  :key-type vl-expr-p       ;; Fixed up RHS
+  :val-type vl-assignlist-p ;; Assignments that map to this RHS
+  )
 
 (define vl-make-duperhs-alist-aux ((x     vl-assignlist-p)
-                                   (alist vl-duperhs-alistp))
-  :returns (new-alist vl-duperhs-alistp :hyp :guard)
-  (b* (((when (atom x))
+                                   (alist vl-duperhs-alist-p))
+  :returns (new-alist vl-duperhs-alist-p)
+  (b* ((alist (vl-duperhs-alist-fix alist))
+       ((when (atom x))
         alist)
-       (x1 (car x))
-       ((vl-assign x1) x1)
+       ((vl-assign x1) (vl-assign-fix (car x)))
        (rhs1 (hons-copy (vl-expr-strip x1.expr)))
        (look (hons-get rhs1 alist))
        ;; It doesn't matter if it exists or not, just add it in.
@@ -69,8 +69,8 @@ assignments are not necessarily errors, but are kind of odd.</p>")
     (vl-make-duperhs-alist-aux (cdr x) alist)))
 
 (define vl-make-duperhs-alist ((x vl-assignlist-p))
-  :returns (alist "A slow alist."vl-duperhs-alistp :hyp :fguard)
-  :short "Builds the @(see vl-duperhs-alistp) for a list of assignments."
+  :returns (alist vl-duperhs-alist-p "A slow alist.")
+  :short "Builds the @(see vl-duperhs-alist-p) for a list of assignments."
   (b* ((alist (len x))
        (alist (vl-make-duperhs-alist-aux x alist))
        (ans   (hons-shrink-alist alist nil)))
@@ -100,14 +100,15 @@ will allow us to still flag situations like:</p>
 <p>I later decided I wanted to extend this, and additionally not cause warnings
 for odd but innocuous things like @('~ 1'b0') and @('{1'b0}').</p>"
 
-  (b* (((when (vl-fast-atom-p rhs))
-        (not (vl-fast-id-p (vl-atom->guts rhs))))
-       ((vl-nonatom rhs) rhs))
-    (and (or (eq rhs.op :vl-unary-bitnot)
-             (eq rhs.op :vl-concat))
-         (tuplep 1 rhs.args)
-         (vl-fast-atom-p (first rhs.args))
-         (not (vl-fast-id-p (vl-atom->guts (first rhs.args)))))))
+  (vl-expr-case rhs
+    :vl-value t
+    :vl-unary (and (vl-unaryop-equiv rhs.op :vl-unary-bitnot)
+                   (vl-expr-case rhs.arg :vl-value))
+    :vl-concat (and (tuplep 1 rhs.parts)
+                    (let ((arg (first rhs.parts)))
+                      (vl-expr-case arg :vl-value)))
+    :otherwise nil))
+
 
 (define vl-maybe-warn-duperhs
   :short "Create warnings for assignments that share some RHS."
@@ -115,7 +116,8 @@ for odd but innocuous things like @('~ 1'b0') and @('{1'b0}').</p>"
    (assigns  vl-assignlist-p  "A list of assignments that share this RHS.")
    (warnings vl-warninglist-p "A warnings accumulator to extend."))
   :returns (new-warnings vl-warninglist-p)
-  (b* (((when (or (atom assigns)
+  (b* ((assigns (vl-assignlist-fix assigns))
+       ((when (or (atom assigns)
                   (atom (cdr assigns))))
         ;; Nothing to do -- there isn't more than one assignment for this RHS.
         (ok))
@@ -123,7 +125,7 @@ for odd but innocuous things like @('~ 1'b0') and @('{1'b0}').</p>"
        ((when (vl-duperhs-too-trivial-p rhs))
         (ok))
 
-       (rhs-names (vl-expr-names rhs))
+       (rhs-names (vl-expr-varnames rhs))
        (special-names (append (str::collect-strs-with-isubstr "ph1" rhs-names)
                               (str::collect-strs-with-isubstr "reset" rhs-names)
                               (str::collect-strs-with-isubstr "clear" rhs-names)
@@ -153,10 +155,12 @@ for odd but innocuous things like @('~ 1'b0') and @('{1'b0}').</p>"
                       assigns))))
 
 (define vl-warnings-for-duperhs-alist
-  ((alist    vl-duperhs-alistp  "The duperhs alist we've built for some module.")
+  ((alist    vl-duperhs-alist-p  "The duperhs alist we've built for some module.")
    (warnings vl-warninglist-p   "A warnings accumulator to extend."))
   :returns (new-warnings vl-warninglist-p)
-  (b* (((when (atom alist))
+  :measure (len (vl-duperhs-alist-fix alist))
+  (b* ((alist (vl-duperhs-alist-fix alist))
+       ((when (atom alist))
         (ok))
        (rhs      (caar alist))
        (assigns  (cdar alist))
@@ -166,21 +170,19 @@ for odd but innocuous things like @('~ 1'b0') and @('{1'b0}').</p>"
 (define vl-module-duperhs-check ((x vl-module-p))
   :short "Look for duplicated rhses in a module, and add warnings about them."
   :returns (new-x "A copy of X, perhaps extended with new warnings."
-                  vl-module-p :hyp :fguard)
+                  vl-module-p)
   (b* (((vl-module x) x)
        (alist    (vl-make-duperhs-alist x.assigns))
        (warnings (vl-warnings-for-duperhs-alist alist x.warnings)))
     (change-vl-module x :warnings warnings)))
 
-(defprojection vl-modulelist-duperhs-check (x)
-  (vl-module-duperhs-check x)
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
+(defprojection vl-modulelist-duperhs-check ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-duperhs-check x))
 
 (define vl-design-duperhs-check ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x)
+  (b* (((vl-design x) x)
        (new-mods (vl-modulelist-duperhs-check x.mods)))
     (clear-memoize-table 'vl-expr-strip)
     (change-vl-design x :mods new-mods)))

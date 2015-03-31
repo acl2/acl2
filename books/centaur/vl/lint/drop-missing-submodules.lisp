@@ -65,8 +65,9 @@ transformation process.</p>")
     (cons name1
           (vl-gather-names-of-missing-definitions (cdr names) ss))))
 
-(def-genblob-transform vl-genblob-drop-missing-submodules ((ss            vl-scopestack-p)
-                                                           (dropped-insts vl-modinstlist-p "Accumulator"))
+(def-genblob-transform vl-genblob-drop-missing-submodules
+  ((ss            vl-scopestack-p)
+   (dropped-insts vl-modinstlist-p "Accumulator"))
   :returns ((dropped-insts vl-modinstlist-p))
   (b* (((vl-genblob x) x)
        (ss                        (vl-scopestack-push (vl-genblob-fix x) ss))

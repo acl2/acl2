@@ -313,7 +313,7 @@ occurs anywhere else in the grammar, this should be fine everywhere.</p>"
   (seq tokstream
         (id := (vl-match-token :vl-idtoken))
         (unless (vl-is-token? :vl-lbrack)
-          (return (vl-idexpr (vl-idtoken->name id) nil)))
+          (return (vl-idexpr (vl-idtoken->name id))))
         (:= (vl-match))
         (range := (vl-parse-range-expression))
         (unless (or (eq (vl-erange->type range) :vl-index)
@@ -322,7 +322,7 @@ occurs anywhere else in the grammar, this should be fine everywhere.</p>"
            (vl-parse-error "The +: or -: operators are not allowed in port expressions.")))
         (:= (vl-match-token :vl-rbrack))
         (return (vl-build-range-select
-                 (vl-index->scope (vl-idexpr (vl-idtoken->name id) nil))
+                 (vl-index->scope (vl-idexpr (vl-idtoken->name id)))
                  nil range))))
 
 (defparser vl-parse-1+-port-references-separated-by-commas ()
@@ -1702,7 +1702,7 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
       (:vl-parsed-portdecl-head
        (b* (((vl-parsed-portdecl-head x.head))
             (ports (list (make-vl-regularport :name name
-                                              :expr (vl-idexpr name nil)
+                                              :expr (vl-idexpr name)
                                               :loc loc)))
             (complete-p
              ;; ANSI-style ports ALWAYS create corresponding variable
@@ -1846,7 +1846,7 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
                    warnings
                    (cons (change-vl-regularport (car ports-acc)
                                                 :name name
-                                                :expr (vl-idexpr name nil)
+                                                :expr (vl-idexpr name)
                                                 :loc loc)
                          ports-acc)
                    (cons (change-vl-portdecl (car portdecls-acc) :name name :loc loc) portdecls-acc)
@@ -1856,7 +1856,7 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
             ;; here, so this can't be an interface port.
 
             (ports-acc (cons (make-vl-regularport :name name
-                                                  :expr (vl-idexpr name nil)
+                                                  :expr (vl-idexpr name)
                                                   :loc loc)
                              ports-acc))
 

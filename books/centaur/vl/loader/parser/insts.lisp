@@ -185,7 +185,7 @@ tests at the bottom of this file.</p>")
           (return-raw (vl-parse-error "Expected argument to named port connect.")))
         ;; SystemVerilog-2012: no port argument is okay, this is a .name style port.
         (return (make-vl-namedarg :name (vl-idtoken->name id)
-                                  :expr (vl-idexpr (vl-idtoken->name id) nil)
+                                  :expr (vl-idexpr (vl-idtoken->name id))
                                   :nameonly-p t
                                   :atts atts))))
 

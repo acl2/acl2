@@ -122,6 +122,11 @@ essentially say where some expressions are from.</p>")
          :hints(("Goal" :in-theory (enable ,collect-nrev
                                            ,collect)))))))
 
+(local (defthm vl-ctxelement-p-when-port
+         (implies (vl-port-p x)
+                  (vl-ctxelement-p x))
+         :hints(("Goal" :in-theory (enable vl-port-p)))))
+
 (def-vl-ctxexprs :type vl-port)
 (def-vl-ctxexprs :type vl-portdecl)
 (def-vl-ctxexprs :type vl-assign)

@@ -233,7 +233,7 @@
           (:= (vl-match-token :vl-rparen)))
         (:= (vl-match-token :vl-semi))
         (return
-         (vl-enablestmt (vl-idexpr (vl-sysidtoken->name id) nil)
+         (vl-enablestmt (vl-idexpr (vl-sysidtoken->name id))
                         args atts))))
 
 

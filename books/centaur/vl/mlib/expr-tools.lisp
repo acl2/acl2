@@ -414,26 +414,22 @@ expression-sizing) is a very complex topic.</p>"
                 :val
                 (make-vl-constint :value 0
                                   :origwidth 1
-                                  :origtype :vl-unsigned)
-                :type (make-vl-coretype :name :vl-logic))))
+                                  :origtype :vl-unsigned))))
 
   (defconst |*sized-1'b1*|
     (hons-copy (make-vl-value
                 :val
                 (make-vl-constint :value 1
                                   :origwidth 1
-                                  :origtype :vl-unsigned)
-                :type (make-vl-coretype :name :vl-logic))))
+                                  :origtype :vl-unsigned))))
 
   (defconst |*sized-1'bx*|
     (hons-copy (make-vl-value :val (make-vl-weirdint :bits (list :vl-xval)
-                                                     :origtype :vl-unsigned)
-                             :type (make-vl-coretype :name :vl-logic))))
+                                                     :origtype :vl-unsigned))))
 
   (defconst |*sized-1'bz*|
     (hons-copy (make-vl-value :val (make-vl-weirdint :bits (list :vl-zval)
-                                                     :origtype :vl-unsigned)
-                             :type (make-vl-coretype :name :vl-logic)))))
+                                                     :origtype :vl-unsigned)))))
 
 
 
@@ -499,8 +495,7 @@ like @('foo').</p>"
   (vl-idexpr->name x))
 
 
-(define vl-idexpr ((name stringp)
-                   (type vl-maybe-datatype-p))
+(define vl-idexpr ((name stringp))
   :returns (expr vl-expr-p)
   :short "Construct an @(see vl-idexpr-p)."
   :long "<p>@(call vl-idexpr) constructs a simple identifier expression with
@@ -513,38 +508,36 @@ construct fast alists binding identifiers to things, etc.</p>"
   (hons-copy
    (make-vl-index :scope (make-vl-scopeexpr-end :hid (make-vl-hidexpr-end :name name))
                   :indices nil
-                  :part (make-vl-partselect-none)
-                  :type type))
+                  :part (make-vl-partselect-none)))
   ///
   (local (in-theory (enable vl-idexpr-p vl-idexpr->name)))
 
   (defthm vl-idexpr-p-of-vl-idexpr
-    (vl-idexpr-p (vl-idexpr name type)))
+    (vl-idexpr-p (vl-idexpr name)))
 
   (defthm vl-idexpr->name-of-vl-idexpr
-    (equal (vl-idexpr->name (vl-idexpr name type))
+    (equal (vl-idexpr->name (vl-idexpr name))
            (str-fix name)))
 
-  (defthm vl-expr->type-of-vl-idexpr
-    (equal (vl-expr->type (vl-idexpr name type))
-           (vl-maybe-datatype-fix type)))
+  ;; (defthm vl-expr->type-of-vl-idexpr
+  ;;   (equal (vl-expr->type (vl-idexpr name type))
+  ;;          (vl-maybe-datatype-fix type)))
 
   (defthm vl-expr-kind-of-vl-idexpr
-    (equal (vl-expr-kind (vl-idexpr name type))
+    (equal (vl-expr-kind (vl-idexpr name))
            :vl-index)))
 
 
-(defprojection vl-make-idexpr-list ((x          string-listp)
-                                    (type       vl-maybe-datatype-p))
+(defprojection vl-make-idexpr-list ((x          string-listp))
   :returns (exprs (and (vl-exprlist-p exprs)
                        (vl-idexprlist-p exprs)))
-  (vl-idexpr x type)
+  (vl-idexpr x)
   :long "<p>Each expression is given the specified @('finalwidth') and
 @('finaltype').</p>"
   ///
   (defthm vl-idexprlist->names-of-vl-make-idexpr-list
     (implies (force (string-listp x))
-             (equal (vl-idexprlist->names (vl-make-idexpr-list x type))
+             (equal (vl-idexprlist->names (vl-make-idexpr-list x))
                     x))))
 
 ;; (define replace-list-entries (x y)
@@ -1217,11 +1210,11 @@ construct fast alists binding identifiers to things, etc.</p>"
 
   (local (in-theory (disable cons-equal double-containment)))
 
-  (defthm vl-expr->subexprs-of-vl-expr-update-type
-    (equal (vl-expr->subexprs (vl-expr-update-type x type))
-           (vl-expr->subexprs x))
-    :hints ((and stable-under-simplificationp
-                 '(:in-theory (e/d (vl-expr-update-type))))))
+  ;; (defthm vl-expr->subexprs-of-vl-expr-update-type
+  ;;   (equal (vl-expr->subexprs (vl-expr-update-type x type))
+  ;;          (vl-expr->subexprs x))
+  ;;   :hints ((and stable-under-simplificationp
+  ;;                '(:in-theory (e/d (vl-expr-update-type))))))
 
   (defthm vl-expr->subexprs-of-vl-expr-update-atts
     (equal (vl-expr->subexprs (vl-expr-update-atts x atts))
@@ -1285,9 +1278,9 @@ construct fast alists binding identifiers to things, etc.</p>"
            (vl-expr-fix x))
     :hints(("Goal" :in-theory (enable vl-expr->subexprs))))
 
-  (defret vl-expr->type-of-vl-expr-update-subexprs
-    (equal (vl-expr->type new-x)
-           (vl-expr->type x)))
+  ;; (defret vl-expr->type-of-vl-expr-update-subexprs
+  ;;   (equal (vl-expr->type new-x)
+  ;;          (vl-expr->type x)))
 
   (defret vl-expr->atts-of-vl-expr-update-subexprs
     (equal (vl-expr->atts new-x)
@@ -2049,12 +2042,7 @@ in this case see @(see vl-make-integer).</p>"
       :val (make-vl-constint :origwidth bits
                              :origtype :vl-signed
                              :wasunsized t
-                             :value value)
-      :type (make-vl-coretype :name :vl-logic
-                              :pdims (list (vl-range->packeddimension
-                                            (make-vl-range
-                                             :msb (vl-make-index (1- bits))
-                                             :lsb (vl-make-index 0))))))))
+                             :value value))))
   ///
   (defthm vl-expr-kind-of-vl-make-integer
     (eq (vl-expr-kind (vl-make-integer n :bits bits)) :vl-value))
@@ -2471,3 +2459,7 @@ otherwise, it is a single-bit wide.</p>"
     :short "Extract the LSB (right) index from a maybe-range (assuming it's resolved)."
     :returns (revp)
     (and x (vl-range-revp x))))
+
+
+
+

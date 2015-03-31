@@ -92,7 +92,7 @@
                                                      :lsb (vl-make-index 0))))
                                      :nettype :vl-wire
                                      :loc *vl-fakeloc*))
-         (x-expr (vl-idexpr "x" nil))
+         (x-expr (vl-idexpr "x"))
          (expr (change-vl-index x-expr
                                 :indices (list (vl-make-index 8))))
          (mod (make-vl-module :name "foo" :origname "foo"

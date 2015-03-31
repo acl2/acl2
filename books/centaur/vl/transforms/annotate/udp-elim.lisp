@@ -193,9 +193,9 @@ simply create a shell module that includes fatal @(see warnings).</p>")
                (warnings vl-warninglist-p)
                (assigns  vl-assignlist-p))
   (b* ((outname (vl-portdecl->name output))
-       (outexpr (vl-idexpr outname nil))
+       (outexpr (vl-idexpr outname))
        (innames (vl-portdecllist->names inputs))
-       (inexprs (vl-make-idexpr-list innames nil))
+       (inexprs (vl-make-idexpr-list innames))
        ((unless (consp inexprs))
         (mv nil
             (fatal :type :vl-bad-udp

@@ -390,7 +390,7 @@ and add a warning that this case is very unusual.</p>"
         nil)
        (name (vl-portdecl->name (car x)))
        (loc  (vl-portdecl->loc (car x)))
-       (expr (vl-idexpr name nil)))
+       (expr (vl-idexpr name)))
     (cons (make-vl-regularport :name name :expr expr :loc loc)
           (vl-ports-from-portdecls (cdr x)))))
 

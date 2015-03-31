@@ -198,8 +198,6 @@
                      :name xf-portdecl-sign))
        (x (xf-cwtime (vl-design-udp-elim x)
                      :name xf-udp-elim))
-       (x (xf-cwtime (vl-design-duplicate-detect x)
-                     :name xf-duplicate-detect))
        (x (xf-cwtime (vl-design-portcheck x)
                      :name xf-portcheck))
        (x (xf-cwtime (vl-design-designwires x)

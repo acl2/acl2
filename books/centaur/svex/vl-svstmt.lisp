@@ -441,7 +441,7 @@ because... (BOZO)</p>
        ;; skip if there's no initial value given
        ((unless x1.initval) (mv ok warnings rest))
 
-       (lhs (vl-idexpr x1.name nil)))
+       (lhs (vl-idexpr x1.name)))
     (vl-assignstmt->svstmts lhs x1.initval t conf)))
        
 (local (in-theory (disable member append

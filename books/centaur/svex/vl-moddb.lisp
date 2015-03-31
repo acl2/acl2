@@ -1027,7 +1027,7 @@ constructed separately.)</p>"
        ;; ((when (not y.name))
        ;;  (cw "Warning! No name for port ~x0, module ~s1~%" y inst-modname)
        ;;  (mv nil nil))
-       (portexpr (vl-idexpr portname nil))
+       (portexpr (vl-idexpr portname))
        (port-lhs (svex-lhs-from-name portname))
        (port-type (make-vl-coretype :name :vl-logic))
        ((wmv warnings x-svex x-type)

@@ -263,7 +263,7 @@
                                    :cstrength cstrength))
          (assign (and x1.expr
                       (make-vl-assign :loc loc
-                                      :lvalue (vl-idexpr x1.id nil)
+                                      :lvalue (vl-idexpr x1.id)
                                       :expr x1.expr
                                       :strength gstrength
                                       :delay delay
@@ -316,7 +316,7 @@
                                         (vl-exprlist-p (strip-cdrs x)))))
   (if (atom x)
       nil
-    (cons (cons (vl-idexpr (vl-idtoken->name (caar x)) nil)
+    (cons (cons (vl-idexpr (vl-idtoken->name (caar x)))
                 (cdar x))
           (vl-atomify-assignpairs (cdr x))))
   ///

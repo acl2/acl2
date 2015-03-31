@@ -33,6 +33,7 @@
 (include-book "../mlib/writer")
 (include-book "../mlib/strip")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc leftright-check
   :parents (lint)
@@ -66,21 +67,28 @@ these are pretty minor and uninteresting.</p>")
    :vl-binary-xnor)
   :short "Recognizes the associative/commutative binary @(see vl-op-p)s.")
 
-(defthm vl-op-p-when-vl-op-ac-p
+(defthm vl-binaryop-p-when-vl-op-ac-p
   (implies (vl-op-ac-p x)
-           (vl-op-p x))
+           (vl-binaryop-p x))
   :hints(("Goal" :in-theory (enable vl-op-ac-p))))
 
-(defthm vl-op-arity-when-vl-op-ac-p
-  (implies (vl-op-ac-p x)
-           (equal (vl-op-arity x) 2))
-  :hints(("Goal" :in-theory (enable vl-op-ac-p))))
+;; (defthm vl-op-arity-when-vl-op-ac-p
+;;   (implies (vl-op-ac-p x)
+;;            (equal (vl-op-arity x) 2))
+;;   :hints(("Goal" :in-theory (enable vl-op-ac-p))))
+
+(defthm vl-exprlist-count-of-append
+  (equal (vl-exprlist-count (append a b))
+         (+ -1 (vl-exprlist-count a)
+            (vl-exprlist-count b)))
+  :hints(("Goal" :in-theory (enable vl-exprlist-count append))))
 
 (define vl-collect-ac-args
   :short "Collect the nested arguments to an associative/commutative operator."
-  ((op vl-op-ac-p "An associative and commutative binary operators.")
-   (x  vl-expr-p  "An expression, typically it is an argument to @('op')."))
-  :returns (args vl-exprlist-p :hyp :guard)
+  ((op vl-binaryop-p "An associative and commutative binary operators.")
+   (x  vl-expr-p     "An expression, typically it is an argument to @('op')."))
+  :returns (args vl-exprlist-p)
+  :guard (vl-op-ac-p op)
   :measure (vl-expr-count x)
   :long "<p>If @('x') is itself an @('op') expression, we recursively collect
 up the ac-args of its sub-expressions.  Otherwise we just collect @('x').  For
@@ -92,17 +100,33 @@ instance, if @('op') is @('|') and @('x') is:</p>
 
 <p>Then we return a list with three expressions: @('a'), @('b + c'), and @('d &
 e').</p>"
-
-  (b* (((when (vl-fast-atom-p x))
+  (b* ((x (vl-expr-fix x)))
+    (vl-expr-case x
+      :vl-binary
+      (if (vl-binaryop-equiv x.op op)
+          (append (vl-collect-ac-args op x.left)
+                  (vl-collect-ac-args op x.right))
         (list x))
-       ((unless (eq (vl-nonatom->op x) op))
-        (list x))
-       ((when (mbe :logic (atom x)
-                   :exec nil))
-        (impossible))
-       (args (vl-nonatom->args x)))
-    (append (vl-collect-ac-args op (first args))
-            (vl-collect-ac-args op (second args)))))
+      :otherwise
+      (list x)))
+  ///
+  (defthm vl-exprlist-count-of-collect-ac-args
+    (and (<= (vl-exprlist-count (vl-collect-ac-args op x))
+             (+ 2 (vl-expr-count x)))
+         (implies (vl-expr-case x
+                    :vl-binary (vl-binaryop-equiv x.op op)
+                    :otherwise nil)
+                  (< (vl-exprlist-count (vl-collect-ac-args op x))
+                     (vl-expr-count x))))
+    :hints(("Goal" :induct (vl-collect-ac-args op x)
+            :in-theory (e/d ()
+                            ((:d vl-collect-ac-args)
+                             (tau-system)))
+            :expand ((vl-collect-ac-args op x)
+                     (:free (a b) (vl-exprlist-count (cons a b)))))
+           (and stable-under-simplificationp
+                '(:expand ((vl-expr-count x)))))
+    :rule-classes :linear))
 
 (local (defthm hons-duplicated-members-when-no-duplicatesp-equal
          (implies (no-duplicatesp-equal x)
@@ -115,6 +139,12 @@ e').</p>"
                  :use ((:instance acl2::member-equal-of-hons-duplicated-members
                         (acl2::a (car (hons-duplicated-members x)))
                         (acl2::x x)))))))
+
+(local
+ ;; Jared FROWN
+ (std::deflist vl-exprlist-p (x)
+   (vl-expr-p x)
+   :true-listp t :elementp-of-nil nil))
 
 (local (defthm vl-exprlist-p-of-hons-duplicated-members
          (implies (vl-exprlist-p x)
@@ -142,7 +172,7 @@ to perform well on this kind of data set.  We gain significant performance out
 of this function by memoizing @(see vl-expr-strip).</p>"
   :enabled t
 
-  (mbe :logic (hons-duplicated-members x)
+  (mbe :logic (hons-duplicated-members (vl-exprlist-fix x))
        :exec
        (b* (((when (longer-than-p 25 x))
              (hons-duplicated-members x))
@@ -151,6 +181,8 @@ of this function by memoizing @(see vl-expr-strip).</p>"
              nil))
          ;; Not unique, so actually compute it.
          (hons-duplicated-members x))))
+
+;; BOZO we are repeatedly stripping the expression -- consider not doing that.
 
 (defines vl-expr-leftright-check
   :short "Search for strange expressions like @('A [op] A')."
@@ -174,23 +206,42 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
     :measure (vl-expr-count x)
     ;; :hints(("Goal" :in-theory (disable (force))))))
     :returns (warnings vl-warninglist-p)
-    (b* (((when (vl-fast-atom-p x))
-          nil)
-         (op   (vl-nonatom->op x))
-         (args (vl-nonatom->args x))
 
-         ((when (vl-op-ac-p op))
-          ;; For associative commutative ops, we will be very smart.  We will
-          ;; collect up *all* the args and see if there are any duplicates.
-          ;; This lets us find things like `foo & bar & baz & foo`, even though
-          ;; the occurrences of `foo` are far apart.
-          (b* ((subexprs     (append (vl-collect-ac-args op (first args))
-                                     (vl-collect-ac-args op (second args))))
-               (subexprs-fix (vl-exprlist-strip subexprs))
-               (dupes        (vl-leftright-exprlist-duplicates subexprs-fix))
-               ((unless dupes)
-                ;; Fine, keep going to check subexpressions.
-                (vl-exprlist-leftright-check args indexy ctx))
+    (vl-expr-case x
+
+      (:vl-qmark
+       (let ((subwarnings (vl-exprlist-leftright-check (vl-expr->subexprs args)
+                                                       indexy ctx)))
+         (if (equal (vl-expr-strip x.then)
+                    (vl-expr-strip x.else))
+             ;; If we find FOO ? BAR : BAR, that's pretty weird and we should
+             ;; warn about it.
+             (cons (make-vl-warning
+                    :type :vl-warn-leftright
+                    :msg "~a0: found an expression of the form FOO ? BAR : BAR, ~
+                        which is odd: ~a1."
+                    :args (list ctx x)
+                    :fatalp nil
+                    :fn __function__)
+                   subwarnings)
+           subwarnings)))
+
+      :vl-binary
+      (b* (((when (vl-op-ac-p x.op))
+            ;; For associative commutative ops, we will be very smart.  We will
+            ;; collect up *all* the args and see if there are any duplicates.
+            ;; This lets us find things like `foo & bar & baz & foo`, even
+            ;; though the occurrences of `foo` are far apart.
+            (b* ((subexprs (append (vl-collect-ac-args x.op x.left)
+                                   (vl-collect-ac-args x.op x.right)))
+                 (subexprs-fix (vl-exprlist-strip subexprs))
+                 (dupes        (vl-leftright-exprlist-duplicates subexprs-fix))
+                 ((unless dupes)
+                  ;; Fine, keep going to check subexpressions.
+                  ;; BOZO if we instead recurred on subexprs, we would be able
+                  ;; to skip down all the way to the frontier.  We'll have to 
+                  ;; reason about the count, though.
+                  (vl-exprlist-leftright-check (vl-expr->subexprs x) indexy ctx))
 
                ;; Even though there are some duplicates, we don't necessarily
                ;; want to warn.
@@ -258,17 +309,7 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
                   ;; warnings.
                   (vl-exprlist-leftright-check args indexy ctx))))
 
-         ((when (and (member op '(:vl-qmark))
-                     (equal (vl-expr-strip (second args))
-                            (vl-expr-strip (third args)))))
-          ;; If we find FOO ? BAR : BAR, that's pretty weird and we should warn about it.
-          (cons (make-vl-warning
-                 :type :vl-warn-leftright
-                 :msg "~a0: found an expression of the form FOO ? BAR : BAR, which is odd: ~a1."
-                 :args (list ctx x)
-                 :fatalp nil
-                 :fn __function__)
-                (vl-exprlist-leftright-check args indexy ctx)))
+         
 
          ((when (member op '(:vl-binary-lt :vl-binary-lte
                              :vl-binary-gt :vl-binary-gte
