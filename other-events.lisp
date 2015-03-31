@@ -9877,48 +9877,6 @@
                    names ctx state))))))))
    (t (get-portcullis-cmds (cdr wrld) cmds cbds names ctx state))))
 
-(defun remove-after-last-directory-separator (p)
-  (let* ((p-rev (reverse p))
-         (posn (position *directory-separator* p-rev)))
-    (if posn
-        (subseq p 0 (1- (- (length p) posn)))
-      (er hard 'remove-after-last-directory-separator
-          "Implementation error!  Unable to handle a directory string."))))
-
-(defun merge-using-dot-dot (p s)
-
-; P is a directory pathname without the final "/".  S is a pathname (for a file
-; or a directory) that may start with any number of sequences "../" and "./".
-; We want to "cancel" the leading "../"s in s against directories at the end of
-; p, and eliminate leading "./"s from s (including leading "." if that is all
-; of s).  The result should syntactically represent a directory (end with a "/"
-; or "."  or be "") if and only if s syntactically represents a directory.
-
-; This code is intended to be simple, not necessarily efficient.
-
-  (cond
-   ((equal p "") s)
-   ((equal s "..")
-    (concatenate 'string
-                 (remove-after-last-directory-separator p)
-                 *directory-separator-string*))
-   ((equal s ".")
-    (concatenate 'string
-                 p
-                 *directory-separator-string*))
-   ((and (>= (length s) 3)
-         (eql (char s 0) #\.)
-         (eql (char s 1) #\.)
-         (eql (char s 2) #\/))
-    (merge-using-dot-dot (remove-after-last-directory-separator p)
-                         (subseq s 3 (length s))))
-   ((and (>= (length s) 2)
-         (eql (char s 0) #\.)
-         (eql (char s 1) #\/))
-    (merge-using-dot-dot p (subseq s 2 (length s))))
-   (t
-    (concatenate 'string p *directory-separator-string* s))))
-
 (defun our-merge-pathnames (p s)
 
 ; This is something like the Common Lisp function merge-pathnames.  P and s are

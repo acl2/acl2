@@ -4,10 +4,13 @@
 
 (in-package "ACL2")
 
+(include-book "std/portcullis" :dir :system)
+
 (defpkg "RTL"
   (union-eq
    *acl2-exports*
    *common-lisp-symbols-from-main-lisp-package*
+   STD::*std-exports*
    '(defxdoc defsection
       rtl ; simplifies dealing with this xdoc topic name
       *default-step-limit* ; should perhaps be in *acl2-exports*

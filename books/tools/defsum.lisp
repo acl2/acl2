@@ -1110,7 +1110,7 @@
   :long "<p>Example:</p>
 
  @({
- (include-book ``defsum'')
+ (include-book \"tools/defsum\" :dir :system)
  (set-ignore-ok :warn)
  (defsum my-list
    (my-empty)

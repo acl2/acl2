@@ -358,7 +358,7 @@ The outline may be reflected in the following structure of a top-level
 book, which (at least initially) can use defaxiom or skip-proofs as
 shown in order to defer the proofs of the main lemmas.
 
-(include-book ``lib'')      ; 3. Support
+(include-book "lib")        ; 3. Support
 
 (defaxiom A ...)            ; 2. Main Reduction
 (defaxiom B ...)

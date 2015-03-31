@@ -31,7 +31,9 @@
 (in-package "ACL2")
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 (ld "package.lsp")
-(ld "tools/flag-package.lsp" :dir :system)
+; Matt K. mod: Replace with a form that does not cause an error.
+; (ld "tools/flag-package.lsp" :dir :system)
+(include-book "std/portcullis" :dir :system)
 (include-book "str/portcullis" :dir :system)
 (include-book "xdoc/portcullis" :dir :system)
 

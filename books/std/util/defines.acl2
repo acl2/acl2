@@ -30,5 +30,6 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (include-book "../portcullis")
-(ld "tools/flag-package.lsp" :dir :system)
+; Matt K. mod: The following is redundant with the line above.
+; (ld "tools/flag-package.lsp" :dir :system)
 ; cert-flags: ? t :ttags :all

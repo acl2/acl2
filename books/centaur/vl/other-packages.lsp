@@ -33,7 +33,8 @@
 ;(ld "../g-logic/package.lsp")
 ;(ld "../aig/aigpu/package.lsp")
 (ld "data-structures/define-u-package.lsp" :dir :system)
-(ld "tools/flag-package.lsp" :dir :system)
-(ld "std/package.lsp" :dir :system)
+(include-book "std/portcullis" :dir :system)
+; Matt K. mod: The following is redundant with the line above.
+; (ld "tools/flag-package.lsp" :dir :system)
 (ld "cowles/package.lsp" :dir :system)
 (ld "centaur/getopt/package.lsp" :dir :system)
