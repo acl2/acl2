@@ -168,20 +168,26 @@ body {
 
 /* ------------------------ NAVIGATION MENU ---------------------- */
 
-.hindex {
-  list-style-type: none;
-  padding: 0em;
-//  font-weight: normal;
-//  font-size: 16pt;
-//  margin-bottom: .5em;
-  li {
-//      margin-bottom: .5em;
-      margin-bottom: 0;
-  }
+#nav {
+    font-size: 110%;
+}
 
-  li li {
-      margin-left: 0.5em;
-  }
+.hindex {
+    list-style-type: none;
+    padding: 0em;
+    li {
+	margin-bottom: .1em;
+    }
+
+    li li {
+	margin-left: 0.5em;
+	margin-bottom: 0.1em;
+    }
+
+    img {
+	padding-left: 0.3em;
+	padding-right: 0.3em;
+    }
 }
 
 
@@ -218,6 +224,11 @@ body {
 .box {
   margin-left: .5em;
   margin-right: .5em;
+}
+
+.box p {
+    margin-left: .5em;
+    margin-right: .5em;
 }
 
 .code, .mathblock, .mathblockrendered {

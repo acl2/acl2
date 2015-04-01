@@ -166,6 +166,36 @@ function renderMathFragments ()
     });
 }
 
+function maybePowertip(selector, options)
+{
+    // Gross hack follows.  Sorry.
+    //
+    // I've used PowerTip since the first version of the fancy viewer and it
+    // works great for Desktop browsers.  However, for mobile it seems buggy.
+    // In particular, even though you are touching the screen and have no
+    // mouse, the powertip would still get activated when you would touch the
+    // menu button.  Worse, it wouldn't go away(!) and just sat there blocking
+    // the menu.
+    //
+    // So awful workaround: I now use this stupid wrapper instead of directly
+    // activating .powerTip() -- this lets me track every powertip'able element
+    // has the horrible-powertip-tracker class.  This allows me to write
+    // closeAllPowertips to close all possible powertips.
+    //
+    // Sprinkling calls of closeAllPowertips() throughout the code then
+    // suffices to make sure that, e.g., toggling the navigation menu doesn't
+    // leave you with powertips hanging around.
+
+    $(selector).powerTip(options);
+    $(selector).addClass("horrible-powertip-tracker");
+}
+
+function closeAllPowertips()
+{
+//    console.log("CloseAllPowertips Enters");
+    $(".horrible-powertip-tracker").powerTip('hide');
+//    console.log("CloseAllPowertips Exits");
+}
 
 // --------------------------------------------------------------------------
 //
@@ -381,7 +411,7 @@ function navActivateTooltip(id) {
     // This sort of "should" be part of navMakeNode, but it can't be because
     // the node has to be properly installed into the document before jquery
     // can find it.
-    $("#_golink" + id).powerTip({placement:'se',smartPlacement: true});
+    maybePowertip("#_golink" + id, {placement:'se',smartPlacement: true});
 }
 
 function navExpand(id) {
@@ -438,6 +468,7 @@ function navTree() {
     $("#left").scrollTop(navTree_top);
     $("#flat").hide();
     $("#nav").show();
+    closeAllPowertips();
     nav_mode = "tree";
 }
 
@@ -451,6 +482,7 @@ function navFlat() {
     $("#left").scrollTop(navFlat_top);
     $("#nav").hide();
     $("#flat").show();
+    closeAllPowertips();
     nav_mode = "flat";
 
     if (navFlat_ever_shown) {
@@ -493,7 +525,7 @@ function navFlatReallyInstall() {
                   + "</li>");
     }
     $("#flat").html(dl);
-    $(".flatnav").powerTip({placement:'se',smartPlacement: true});
+    maybePowertip(".flatnav", {placement:'se',smartPlacement: true});
 }
 
 
@@ -517,6 +549,7 @@ function navToggleVisible()
     // button is pressed.
 
     $("#left").toggleClass("active");
+    closeAllPowertips();
 }
 
 
@@ -564,7 +597,7 @@ function datLoadParents(key) {
     }
     acc += "</ul>";
     $("#parents").html(acc);
-    $("#parents a").powerTip({placement:'se',smartPlacement: true});
+    maybePowertip("#parents a", {placement:'se',smartPlacement: true});
     $("#parents").show();
 }
 
@@ -614,7 +647,7 @@ function datExpand(dat_id)
         }
     });
 
-    $(".basepkg").powerTip({placement:'sw',smartPlacement: true});
+    maybePowertip(".basepkg", {placement:'sw',smartPlacement: true});
     renderMathFragments();
 }
 
@@ -725,7 +758,7 @@ function datLoadKey(key, scroll_to)
         dat_id_table = [];
         datLoadParents(key);
         $("#data").append(datLongTopic(key));
-	$(".basepkg").powerTip({placement:'sw',smartPlacement: true});
+	maybePowertip(".basepkg", {placement:'sw',smartPlacement: true});
         $("title").html(keyTitle(key));
 	renderMathFragments();
 	setTimeout("datReallyScrollTo(" + scroll_to + ")", 10);
@@ -836,6 +869,7 @@ function searchGo(str) {
     // if we're in mobile mode, hide the navigation bar whenever the
     // user navigates to a new page.
     $("#left").removeClass("active");
+    closeAllPowertips();
 
     // Now wait a bit to allow that to render, before starting the search.
     setTimeout(searchGoMain, 10, query);
@@ -931,8 +965,8 @@ function searchGoMain(query) {
 $(document).ready(function()
 {
     LazyLoad.js('xindex.js', onIndexLoaded);
-    $(".toolbutton").powerTip({placement: 'se'});
-    $(".rtoolbutton").powerTip({placement: 'sw'});
+    maybePowertip(".toolbutton", {placement: 'se'});
+    maybePowertip(".rtoolbutton", {placement: 'sw'});
 });
 
 
@@ -1057,7 +1091,7 @@ function jumpInit() {
 
     $("#jump").bind('typeahead:selected', jumpGo);
     $("#jump").bind('typeahead:autocompleted', jumpGo);
-    $("#jumpmsg").powerTip({placement:'se'});
+    maybePowertip("#jumpmsg", {placement:'se'});
     $("#jump").attr("placeholder", "append");
     $("#jump").removeAttr("disabled");
 
@@ -1065,7 +1099,7 @@ function jumpInit() {
     $("#jumpform").submit(function(event)
     {
 	// Magic code that took me way too much hacking to get working.
-	console.log("In form submitter.");
+	//console.log("In form submitter.");
 
 	// Don't actually try to "submit" the form.
 	event.preventDefault();
@@ -1255,6 +1289,7 @@ function actionGoKey(key) {
     // if we're in mobile mode, hide the navigation bar whenever the
     // user navigates to a new page.
     $("#left").removeClass("active");
+    closeAllPowertips();
 }
 
 function historySavePlace() {

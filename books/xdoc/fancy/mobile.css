@@ -188,9 +188,12 @@ body { background-color: white; margin: 0; padding: 0; }
 
 /* ---------------------------- COLORS -------------------------------- */
 /* ------------------------ NAVIGATION MENU ---------------------- */
+#nav { font-size: 110%; }
+
 .hindex { list-style-type: none; padding: 0em; }
-.hindex li { margin-bottom: 0; }
-.hindex li li { margin-left: 0.5em; }
+.hindex li { margin-bottom: .1em; }
+.hindex li li { margin-left: 0.5em; margin-bottom: 0.1em; }
+.hindex img { padding-left: 0.3em; padding-right: 0.3em; }
 
 #flat ul { list-style-type: none; margin-left: 1em; padding: 0; }
 #flat li { margin-left: 0; margin-bottom: 0; }
@@ -200,6 +203,8 @@ body { background-color: white; margin: 0; padding: 0; }
 .tt-dropdown-menu { width: 350px; }
 
 .box { margin-left: .5em; margin-right: .5em; }
+
+.box p { margin-left: .5em; margin-right: .5em; }
 
 .code, .mathblock, .mathblockrendered { font-size: 90%; margin-left: 1em; margin-right: 1em; padding: .5em; }
 
