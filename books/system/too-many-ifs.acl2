@@ -2,6 +2,6 @@
 ; can read symbols flag::SYM in too-many-ifs.acl2x at the start of
 ; the Pcertify step.
 
-(in-pakcage "ACL2")
+(in-package "ACL2")
 (include-book "tools/flag" :dir :system)
 (certify-book "too-many-ifs" ? t)

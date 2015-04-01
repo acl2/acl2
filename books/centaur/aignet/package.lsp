@@ -30,8 +30,9 @@
 
 (in-package "ACL2")
 
-(ld "std/package.lsp" :dir :system)
-(ld "tools/flag-package.lsp" :dir :system)
+(include-book "std/portcullis" :dir :system)
+; Matt K. mod: The following is redundant with the line above.
+; (ld "tools/flag-package.lsp" :dir :system)
 (ld "centaur/satlink/package.lsp" :dir :system)
 
 (defconst *aignet-exports*

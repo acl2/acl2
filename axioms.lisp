@@ -20995,7 +20995,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun default-backchain-limit (wrld flg)
   (declare (xargs :guard
-                  (and (member-eq flg '(:ts :rewrite))
+                  (and (member-eq flg '(:ts :rewrite :meta))
                        (plist-worldp wrld)
                        (alistp (table-alist 'acl2-defaults-table wrld))
                        (true-listp (assoc-eq :default-backchain-limit

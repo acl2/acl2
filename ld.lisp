@@ -1039,6 +1039,9 @@
            (mv :return
                (list :stop-ld (f-get-global 'ld-level state))
                state))
+          ((and (consp action)
+                (eq (car action) :exit))
+           (mv action (good-bye-fn (cadr action)) state))
           (t (mv action :error state)))))
 
 (defun initialize-accumulated-warnings ()
@@ -1051,11 +1054,11 @@
 ; This is LD's read-eval-print step.  We read a form from standard-oi, eval it,
 ; and print the result to standard-co, will lots of bells and whistles
 ; controlled by the various LD specials.  The result of this function is a
-; triple (mv signal val state), where signal is one of :CONTINUE, :RETURN, or
-; :ERROR.  When the signal is :continue or :error, val is irrelevant.  When the
-; signal is :return, val is the "reason" we are terminating and is one of
-; :exit, :eof, :error, :filter, or (:stop-ld n) where n is the ld-level at the
-; time of termination.
+; triple (mv signal val state), where signal is one of :CONTINUE, :RETURN,
+; :ERROR, or (:EXIT n).  When the signal is :continue, :error, or (:exit n),
+; val is irrelevant.  When the signal is :return, val is the "reason" we are
+; terminating and is one of :exit, :eof, :error, :filter, or (:stop-ld n) where
+; n is the ld-level at the time of termination.
 
   (pprogn
    (cond ((<= (f-get-global 'ld-level state) 1)
@@ -1106,40 +1109,42 @@
             ((null ans) (mv :continue nil state))
             ((eq ans :error) (mv :error nil state))
             ((eq ans :return) (mv :return :filter state))
-            (t (pprogn
-                (cond ((<= (f-get-global 'ld-level state) 1)
-                       (prog2$ (initialize-accumulated-warnings)
-                               (initialize-timers state)))
-                      (t state))
-                (f-put-global 'last-make-event-expansion nil state)
-                (let* ((old-wrld (w state))
-                       (old-default-defun-mode
-                        (default-defun-mode old-wrld)))
-                  (mv-let
-                   (error-flg trans-ans state)
-                   (revert-world-on-error
-                    (mv-let (error-flg trans-ans state)
-                            (if (raw-mode-p state)
-                                (acl2-raw-eval form state)
-                              (trans-eval form 'top-level state t))
+            (t (assert$
+                (eq ans t)
+                (pprogn
+                 (cond ((<= (f-get-global 'ld-level state) 1)
+                        (prog2$ (initialize-accumulated-warnings)
+                                (initialize-timers state)))
+                       (t state))
+                 (f-put-global 'last-make-event-expansion nil state)
+                 (let* ((old-wrld (w state))
+                        (old-default-defun-mode
+                         (default-defun-mode old-wrld)))
+                   (mv-let
+                    (error-flg trans-ans state)
+                    (revert-world-on-error
+                     (mv-let (error-flg trans-ans state)
+                             (if (raw-mode-p state)
+                                 (acl2-raw-eval form state)
+                               (trans-eval form 'top-level state t))
 
 ; If error-flg is non-nil, trans-ans is (stobjs-out . valx).
 
-                            (er-progn
-                             (chk-absstobj-invariants nil state)
-                             (cond
-                              (error-flg (mv t nil state))
-                              ((and (ld-error-triples state)
-                                    (equal (car trans-ans) *error-triple-sig*)
-                                    (car (cdr trans-ans)))
-                               (mv t nil state))
-                              (t (er-progn
-                                  (maybe-add-command-landmark
-                                   old-wrld
-                                   old-default-defun-mode
-                                   form
-                                   trans-ans state)
-                                  (mv nil trans-ans state)))))))
+                             (er-progn
+                              (chk-absstobj-invariants nil state)
+                              (cond
+                               (error-flg (mv t nil state))
+                               ((and (ld-error-triples state)
+                                     (equal (car trans-ans) *error-triple-sig*)
+                                     (car (cdr trans-ans)))
+                                (mv t nil state))
+                               (t (er-progn
+                                   (maybe-add-command-landmark
+                                    old-wrld
+                                    old-default-defun-mode
+                                    form
+                                    trans-ans state)
+                                   (mv nil trans-ans state)))))))
 
 ; If error-flg is non-nil, trans-ans is (stobjs-out . valx) and we know
 ; that valx is not an erroneous error triple if we're paying attention to
@@ -1150,47 +1155,47 @@
 ; error triple and it signals an error.  Error-flg, now, is set to t
 ; iff we reverted.
 
-                   (cond
-                    (error-flg (ld-return-error state))
-                    ((and (equal (car trans-ans) *error-triple-sig*)
-                          (eq (cadr (cdr trans-ans)) :q))
-                     (mv :return :exit state))
-                    (t (pprogn
-                        (ld-print-results trans-ans state)
-                        (cond
-                         ((and (ld-error-triples state)
-                               (not (eq (ld-error-action state) :continue))
-                               (equal (car trans-ans) *error-triple-sig*)
-                               (let ((val (cadr (cdr trans-ans))))
-                                 (and (consp val)
-                                      (eq (car val) :stop-ld))))
-                          (mv :return
-                              (list* :stop-ld
-                                    (f-get-global 'ld-level state)
-                                    (cdr (cadr (cdr trans-ans))))
-                              state))
-                         (t
+                    (cond
+                     (error-flg (ld-return-error state))
+                     ((and (equal (car trans-ans) *error-triple-sig*)
+                           (eq (cadr (cdr trans-ans)) :q))
+                      (mv :return :exit state))
+                     (t (pprogn
+                         (ld-print-results trans-ans state)
+                         (cond
+                          ((and (ld-error-triples state)
+                                (not (eq (ld-error-action state) :continue))
+                                (equal (car trans-ans) *error-triple-sig*)
+                                (let ((val (cadr (cdr trans-ans))))
+                                  (and (consp val)
+                                       (eq (car val) :stop-ld))))
+                           (mv :return
+                               (list* :stop-ld
+                                      (f-get-global 'ld-level state)
+                                      (cdr (cadr (cdr trans-ans))))
+                               state))
+                          (t
 
 ; We make the convention of checking the new-namep filter immediately after
 ; we have successfully eval'd a form (rather than waiting for the next form)
 ; so that if the user has set the filter up he gets a satisfyingly
 ; immediate response when he introduces the name.
 
-                          (let ((filter (ld-pre-eval-filter state)))
-                            (cond
-                             ((and (not (eq filter :all))
-                                   (not (eq filter :query))
-                                   (not (new-namep filter
-                                                   (w state))))
-                              (er-progn
+                           (let ((filter (ld-pre-eval-filter state)))
+                             (cond
+                              ((and (not (eq filter :all))
+                                    (not (eq filter :query))
+                                    (not (new-namep filter
+                                                    (w state))))
+                               (er-progn
 
 ; We reset the filter to :all even though we are about to exit this LD
 ; with :return.  This just makes things work if "this LD" is the top-level
 ; one and LP immediately reenters.
 
-                               (set-ld-pre-eval-filter :all state)
-                               (mv :return :filter state)))
-                             (t (mv :continue nil state))))))))))))))))))))))
+                                (set-ld-pre-eval-filter :all state)
+                                (mv :return :filter state)))
+                              (t (mv :continue nil state)))))))))))))))))))))))
 
 (defun ld-loop (state)
 
@@ -1220,6 +1225,20 @@
 #-acl2-loop-only
 (defvar *first-entry-to-ld-fn-body-flg*)
 
+(defun get-directory-of-file (p)
+
+; P is an absolute pathname for a file, not a directory.  We return an absolute
+; pathname for the directory of that file.  See also get-parent-directory,
+; which is a related function for directories.
+
+  (let* ((p-rev (reverse p))
+         (posn (position *directory-separator* p-rev)))
+    (if posn
+        (subseq p 0 (1- (- (length p) posn)))
+      (er hard 'get-directory-of-file
+          "Implementation error!  Unable to get directory for file ~x0."
+          p))))
+
 (defun update-cbd (standard-oi0 state)
 
 ; For the case that standard-oi0 is a string (representing a file), we formerly
@@ -1243,7 +1262,7 @@
                   (filename-dir
                    (expand-tilde-to-user-home-dir
                     (concatenate 'string
-                                 (remove-after-last-directory-separator
+                                 (get-directory-of-file
                                   standard-oi0)
                                  *directory-separator-string*)
                     os 'update-cbd state)))
@@ -1634,37 +1653,47 @@
 ;  :otf-flg t
 ;  :hints (("Goal" :do-not '(preprocess))))
 
-  #-acl2-loop-only
-  (cond (*load-compiled-stack*
-         (error "It is illegal to call LD while loading a compiled book, in ~
-                 this case:~%~a .~%See :DOC calling-ld-in-bad-contexts."
-                (caar *load-compiled-stack*)))
-        ((= *ld-level* 0)
-         (return-from
-          ld-fn
-          (let ((complete-flg nil))
-            (unwind-protect
-                (mv-let (erp val state)
-                        (ld-fn0 alist state bind-flg)
-                        (progn (setq complete-flg t)
-                               (mv erp val state)))
-              (when (and (not complete-flg)
-                         (not *acl2-panic-exit-status*))
-                (fms "***NOTE***: An interrupt or error has occurred in the ~
-                      process of cleaning up from an earlier interrupt or ~
-                      error.  This is likely to leave you at the raw Lisp ~
-                      prompt after you abort to the top level.  If so, then ~
-                      execute ~x0 to re-enter the ACL2 read-eval-print ~
-                      loop.~|~%"
-                     (list (cons #\0 '(lp)))
-                     *standard-co*
-                     state
-                     nil)))))))
-  (cond ((not (f-get-global 'ld-okp state))
-         (er soft 'ld
-             "It is illegal to call LD in this context.  See DOC ~
-              calling-ld-in-bad-contexts."))
-        (t (ld-fn0 alist state bind-flg))))
+  (let ((alist (if (assoc-eq 'ld-error-action alist)
+                  alist
+                (acons 'ld-error-action
+                       (let ((action (ld-error-action state)))
+                         (if (and (consp action)
+                                  (eq (car action) :exit))
+                             action
+                           :return!))
+                       alist))))
+                 
+    #-acl2-loop-only
+    (cond (*load-compiled-stack*
+           (error "It is illegal to call LD while loading a compiled book, in ~
+                   this case:~%~a .~%See :DOC calling-ld-in-bad-contexts."
+                  (caar *load-compiled-stack*)))
+          ((= *ld-level* 0)
+           (return-from
+            ld-fn
+            (let ((complete-flg nil))
+              (unwind-protect
+                  (mv-let (erp val state)
+                          (ld-fn0 alist state bind-flg)
+                          (progn (setq complete-flg t)
+                                 (mv erp val state)))
+                (when (and (not complete-flg)
+                           (not *acl2-panic-exit-status*))
+                  (fms "***NOTE***: An interrupt or error has occurred in the ~
+                        process of cleaning up from an earlier interrupt or ~
+                        error.  This is likely to leave you at the raw Lisp ~
+                        prompt after you abort to the top level.  If so, then ~
+                        execute ~x0 to re-enter the ACL2 read-eval-print ~
+                        loop.~|~%"
+                       (list (cons #\0 '(lp)))
+                       *standard-co*
+                       state
+                       nil)))))))
+    (cond ((not (f-get-global 'ld-okp state))
+           (er soft 'ld
+               "It is illegal to call LD in this context.  See DOC ~
+                calling-ld-in-bad-contexts."))
+          (t (ld-fn0 alist state bind-flg)))))
 
 (defmacro ld (standard-oi
               &key
@@ -1681,7 +1710,7 @@
               (ld-post-eval-print 'same ld-post-eval-printp)
               (ld-evisc-tuple 'same ld-evisc-tuplep)
               (ld-error-triples 'same ld-error-triplesp)
-              (ld-error-action ':RETURN!)
+              (ld-error-action 'same ld-error-actionp)
               (ld-query-control-alist 'same ld-query-control-alistp)
               (ld-verbose 'same ld-verbosep))
   `(ld-fn
@@ -1727,7 +1756,9 @@
              (if ld-error-triplesp
                  (list `(cons 'ld-error-triples ,ld-error-triples))
                  nil)
-             (list `(cons 'ld-error-action ,ld-error-action))
+             (if ld-error-actionp
+                 (list `(cons 'ld-error-action ,ld-error-action))
+                 nil)
              (if ld-query-control-alistp
                  (list `(cons 'ld-query-control-alist ,ld-query-control-alist))
                  nil)
@@ -2917,9 +2948,7 @@
                ev-lst-chk-sum))
           (t (value
               (append
-               (cons `(set-cbd
-                       ,(remove-after-last-directory-separator
-                         full-book-name))
+               (cons `(set-cbd ,(get-directory-of-file full-book-name))
                      (cons (assert$
                             (and (consp (car ev-lst))
                                  (eq (caar ev-lst) 'in-package))

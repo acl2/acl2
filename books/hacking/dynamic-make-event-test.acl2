@@ -1,4 +1,4 @@
-(in-package "ACL")
+(in-package "ACL2")
 (ld "hacker-pkg.lsp")
 
 ; We need the following for provisional certification, so that ACL2 can read

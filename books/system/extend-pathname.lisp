@@ -76,9 +76,31 @@
          (equal (len (first-n-ac i l ac))
                 (+ (nfix i) (len ac)))))
 
-(verify-termination remove-after-last-directory-separator)
+(verify-termination find-dot-dot)
 
-(verify-termination merge-using-dot-dot)
+(local (defthm length-subseq
+         (implies (and (stringp s)
+                       (natp m)
+                       (natp n)
+                       (<= m n)
+                       (<= n (length s)))
+                  (equal (length (subseq s m n))
+                         (- n m)))))
+
+(local (defthm length-string-0
+         (implies (and (stringp s)
+                       (not (equal s "")))
+                  (not (equal (length s) 0)))
+         :hints (("Goal"
+                  :use ((:instance coerce-inverse-2 (x s)))
+                  :in-theory (disable coerce-inverse-2)
+                  :expand ((len (coerce s 'list)))))))
+
+(local (in-theory (disable subseq length)))
+
+(verify-termination cancel-dot-dots
+; includes get-parent-directory and merge-using-dot-dot
+                    (declare (xargs :verify-guards nil)))
 
 (verify-termination our-merge-pathnames)
 
