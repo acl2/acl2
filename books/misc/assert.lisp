@@ -11,6 +11,46 @@
 
 (in-package "ACL2")
 
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc assert!
+  :parents (assert$ errors)
+  :short "Form of @(tsee assert$) that is an event"
+  :long "<p>The @('assert!') macro is similar to @('assert$'), but its calls
+  may appear as top-level @(see events) in @(see books) and @(see encapsulate)
+  forms.</p>
+
+ <p>General forms:</p>
+
+ @({
+ (assert! assertion)
+ (assert! assertion event)
+ })
+
+ <p>where @('assertion') is an expression that evaluates to a single non-@(see
+ stobj) value.  If @('assertion') evaluates to @('nil'), then an error occurs.
+ Otherwise the form @('(value-triple :success)') is evaluated unless @('event')
+ is supplied, in which case @('event') is evaluated.</p>
+
+ <p>Example forms:</p>
+
+ @({
+ (assert! (equal 3 3))
+ (assert! (equal 3 3)
+          (defun f (x) (cons x x)))
+ })
+
+ <p>Also see @(see assert!-stobj), which is an analogous utility for assertions
+ that return @('stobj')s.</p>")
+
+(defxdoc assert!-stobj
+  :parents (assert$ errors)
+  :short "Form of @(tsee assert$) that is an event"
+  :long "<p>See @(see assert!).  The only difference between @('assert!-stobj')
+ and @('assert!') is that for @('assert!-stobj'), the assertion should evaluate
+ to multiple values @('(mv val st)'), where @('val') is an ordinary value and
+ @('st') is a @(see stobj).</p>")
+
 (defun assert!-body (assertion form)
 
 ; Note that assertion should evaluate to a single non-stobj value.  See also
@@ -68,15 +108,19 @@
 ; also succeeds at include-book time even if we include the book after
 ; executing another command, because assert! uses make-event with
 ; :check-expansion nil.  See assert-include.lisp.
-(local (make-event
-        (er-let* ((c (getenv$ "ACL2_CUSTOMIZATION" state)))
-          (value
-           (if (and c (not (equal c "NONE")))
-               `(value-triple
-                 (cw "SKIPPING due to ACL2_CUSTOMIZATION=~x0~%" ,c))
-             '(assert! (equal (access-command-tuple-form
-                               (cddr (car (scan-to-command (w state)))))
-                              '(exit-boot-strap-mode))))))))
+; HOWEVER....
+; This book is no longer certified in the initial certification world during
+; regressions, because cert.pl causes LD of books/xdoc/top.port and also, in
+; the current directory, eval.port.  So we comment out the following form.
+;   (local (make-event
+;           (er-let* ((c (getenv$ "ACL2_CUSTOMIZATION" state)))
+;             (value
+;              (if (and c (not (equal c "NONE")))
+;                  `(value-triple
+;                    (cw "SKIPPING due to ACL2_CUSTOMIZATION=~x0~%" ,c))
+;                '(assert! (equal (access-command-tuple-form
+;                                  (cddr (car (scan-to-command (w state)))))
+;                                 '(exit-boot-strap-mode))))))))
 
 ; We turn now to developing an extension of assert! that works with stobjs, in
 ; this case for assertions that return (mv val st) where val is an ordinary
