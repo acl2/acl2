@@ -4351,8 +4351,18 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
        ((mv err hidtrace context tail) (vl-follow-scopeexpr x.scope ss))
        ((when err) (mv err nil))
        ((vl-hidstep hidstep) (car hidtrace))
+
+       ;; Suppose x is foo.bar.baz.fum[0][1][3:2].
+       ;; Suppose foo.bar is the actual vardecl, and .baz.fum are selects into it.
+       ;; We want to see if foo.bar has a cached resolved type.
+
+       ;; Compute foo.bar.
+       (prefix-name (vl-scopeexpr-replace-hid
+                     x.scope
+                     (vl-hid-prefix-for-subhid (vl-scopeexpr->hid x.scope) tail)))
+
        ((mv err type)
-        (b* ((look (hons-get x.scope (vl-typeoverride-fix typeov)))
+        (b* ((look (hons-get prefix-name (vl-typeoverride-fix typeov)))
              ((when look)
               (if (vl-datatype-resolved-p (cdr look))
                   (mv nil (cdr look))
@@ -4375,16 +4385,10 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
              (mv (vmsg "~a0: instead of a vardecl, found ~a1" x hidstep.item) nil)))))
        ((when err) (mv err nil))
 
-       (prefix-name (vl-scopeexpr-replace-hid
-                     x.scope
-                     (vl-hid-prefix-for-subhid (vl-scopeexpr->hid x.scope) tail)))
-
        ((mv err seltrace final-type)
         (vl-datatype-resolve-selects type tail x.indices x.part))
 
        ((when err) (mv err nil)))
-
-
 
     (mv nil (make-vl-operandinfo
              :context context

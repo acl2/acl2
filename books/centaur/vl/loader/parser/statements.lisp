@@ -210,9 +210,7 @@
           (args := (vl-parse-1+-expressions-separated-by-commas))
           (:= (vl-match-token :vl-rparen)))
         (:= (vl-match-token :vl-semi))
-        (return (vl-enablestmt (make-vl-index
-                                :scope (make-vl-scopeexpr-end :hid hid)
-                                :part (make-vl-partselect-none))
+        (return (vl-enablestmt (make-vl-scopeexpr-end :hid hid)
                                args atts))))
 
 
@@ -233,8 +231,11 @@
           (:= (vl-match-token :vl-rparen)))
         (:= (vl-match-token :vl-semi))
         (return
-         (vl-enablestmt (vl-idexpr (vl-sysidtoken->name id))
-                        args atts))))
+         (make-vl-enablestmt :id (make-vl-scopeexpr-end
+                                  :hid (make-vl-hidexpr-end
+                                        :name (vl-sysidtoken->name id)))
+                             :args args
+                             :atts atts))))
 
 
 ; disable_statement ::=
@@ -250,9 +251,7 @@
         (:= (vl-match-token :vl-kwd-disable))
         (id := (vl-parse-hierarchical-identifier nil))
         (:= (vl-match-token :vl-semi))
-        (return (vl-disablestmt (make-vl-index
-                                 :scope (make-vl-scopeexpr-end :hid id)
-                                 :part (make-vl-partselect-none))
+        (return (vl-disablestmt (make-vl-scopeexpr-end :hid id)
                                 atts))))
 
 

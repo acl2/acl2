@@ -315,6 +315,28 @@ in it, such as a function, task, or block statement."
   :guard (vl-stmt-case x :vl-forstmt)
   :returns (scope vl-blockscope-p)
   :parents (vl-blockscope vl-scopestack-push)
+  ;; Note.   We have officially decided that for statemetns are scopes and should
+  ;; be pushed onto the scopestack.  Something like this:
+  ;;
+  ;;    for(int i = 0; i < 10; ++i)
+  ;;      begin
+  ;;       int j = i;
+  ;;       ...
+  ;;      end
+  ;;
+  ;; Therefore involves 2 scopes, an outer scope for I and an inner scope for J.
+  ;; We should push both scopes.
+  ;;
+  ;; Note furthermore that VCS and NCVerilog agree that
+  ;;
+  ;; for (int i=0; i<10; i++)
+  ;;   begin
+  ;;     int i = 15;
+  ;;     $display("i: %x", i);
+  ;;   end
+  ;;
+  ;; Should print i: F ten times.  That seems like it can only happen if there
+  ;; are indeed two separate scopes in play here.
   (b* (((vl-forstmt x)))
     (make-vl-blockscope :vardecls x.initdecls
                         :scopetype :vl-forstmt)))

@@ -915,8 +915,13 @@ constructed separately.)</p>"
                    (differing dimension sizes)."
                   (string-fix portname))
             nil nil nil))
+       (x-base-packed (vl-datatype-packedp x-basetype))
+       ((when (and x-base-packed y-packed
+                   (eql x-size (* arraysize y-size))))
+        (mv nil t x-size y-size))
        (compat-err2 (vl-compare-datatypes y-type x-basetype))
        ((when compat-err2)
+        ;; (cw "Args: ~x0~%" (list arraysize y-type y-expr x-type x-expr portname))
         (mv (vmsg "Incompatible type for connection to instancearray port ~s0 ~
                    (different slot types)." (string-fix portname))
             nil nil nil)))

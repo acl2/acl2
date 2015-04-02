@@ -30,7 +30,8 @@
 
 (in-package "VL")
 (include-book "../mlib/ctxexprs")
-(include-book "../transforms/expr-size")
+(include-book "../mlib/selfsize")
+;; (include-book "../transforms/expr-size")
 (include-book "../mlib/fmt")
 (local (include-book "../util/arithmetic"))
 
@@ -76,7 +77,7 @@ non-@('nil') value.  And we can use this before resolving ranges, etc., which
 makes it useful for simple linting.</p>"
 
   (b* (((mv & size)
-        (vl-expr-selfsize x ss *fake-modelement* nil)))
+        (vl-expr-selfsize x ss nil)))
     size))
 
 (define vl-odd-binop-class
@@ -456,8 +457,8 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
              nil)
             (asize (vl-expr-probable-selfsize a ss))
             (xsize (vl-expr-probable-selfsize x ss))
-            ((when (and (or (not asize) (eql asize 1))
-                        (or (not xsize) (eql xsize 1))))
+            ((when (and (eql asize 1)
+                        (eql xsize 1)))
              ;; Skip it since args are boolean or there was some error determining
              ;; their sizes.
              nil))

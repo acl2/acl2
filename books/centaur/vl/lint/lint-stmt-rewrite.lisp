@@ -46,13 +46,13 @@ constructs.")
   (b* (((unless (vl-enablestmt-p x))
         nil)
        ((vl-enablestmt x) x)
-       ((unless (vl-fast-atom-p x.id))
-        nil)
-       ((vl-atom x.id) x.id)
-       ((unless (vl-fast-sysfunname-p x.id.guts))
-        nil)
-       ((vl-sysfunname x.id.guts) x.id.guts))
-    (and (member-equal x.id.guts.name
+       (sysfunname (vl-scopeexpr-case x.id
+                     :end (vl-hidexpr-case x.id.hid
+                            :end x.id.hid.name
+                            :otherwise nil)
+                     :otherwise nil)))
+    (and sysfunname
+         (member-equal sysfunname
                        (list "$display" "$vcover" "$verror" "$acc_readmem"))
          t)))
 

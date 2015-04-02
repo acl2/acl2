@@ -2214,7 +2214,7 @@ blocking assignments in the @(see increment-elim) transform.</p>")
      :short "Representation of an enable statement."
      :base-name vl-enablestmt
      :layout :tree
-     ((id   vl-expr-p)
+     ((id   vl-scopeexpr-p)
       (args vl-exprlist-p)
       (atts vl-atts-p "Any attributes associated with this statement."))
      :long "<p>Enable statements have an identifier (which should be either a
@@ -2225,7 +2225,7 @@ expression.  They also have a list of arguments, which are expressions.</p>")
      :short "Representation of a disable statement."
      :base-name vl-disablestmt
      :layout :tree
-     ((id   vl-expr-p)
+     ((id   vl-scopeexpr-p)
       (atts vl-atts-p "Any attributes associated with this statement."))
      :long "<p>Disable statements are simpler and just have a hierarchial
 identifier.  Apparently there are no disable statements for system

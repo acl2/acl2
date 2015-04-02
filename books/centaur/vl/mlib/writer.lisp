@@ -2276,7 +2276,7 @@ expression into a string."
       :vl-enablestmt
       (vl-ps-seq (vl-pp-stmt-autoindent)
                  (if x.atts (vl-pp-atts x.atts) ps)
-                 (vl-pp-expr x.id)
+                 (vl-pp-scopeexpr x.id)
                  ;; Bug fixed 2012-10-22: if there are no arguments, we must not
                  ;; print even the parens.  (Doing so isn't syntactically legal.)
                  (if (consp x.args)
@@ -2292,7 +2292,7 @@ expression into a string."
                  (if x.atts (vl-pp-atts x.atts) ps)
                  (vl-ps-span "vl_key"
                              (vl-print "disable "))
-                 (vl-pp-expr x.id)
+                 (vl-pp-scopeexpr x.id)
                  (vl-println " ;"))
       :vl-returnstmt
       (vl-ps-seq (vl-pp-stmt-autoindent)

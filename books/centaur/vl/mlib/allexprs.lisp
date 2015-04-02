@@ -78,11 +78,13 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :fnname-template <type>-allexprs
   :reversep t)
 
+(fty::defvisitors vl-ctxelement-allexprs
+  :template allexprs
+  :types (vl-ctxelement))
+
 (fty::defvisitors vl-allexprs
   :template allexprs
   :types (vl-design))
-
-
 
 
 (fty::defvisitor-template allexprs-nrev ((x :object)

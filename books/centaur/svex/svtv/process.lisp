@@ -53,44 +53,6 @@
                   (integerp (cdr (hons-assoc-equal k x))))
          :hints(("Goal" :in-theory (enable 4vmask-alist-p)))))
 
-(define lhs-check-masks ((x lhs-p) (mask-acc 4vmask-alist-p) (conf-acc 4vmask-alist-p))
-  :measure (len x)
-  :returns (mv (mask-acc1 4vmask-alist-p)
-               (conf-acc1 4vmask-alist-p))
-  (b* ((mask-acc (4vmask-alist-fix mask-acc))
-       (conf-acc (4vmask-alist-fix conf-acc))
-       ((mv first rest) (lhs-decomp x))
-       ((unless first) (mv mask-acc conf-acc))
-       ((lhrange first) first)
-       ((when (eq (lhatom-kind first.atom) :z))
-        (lhs-check-masks rest mask-acc conf-acc))
-       ((lhatom-var first.atom) first.atom)
-       (firstmask (ash (lognot (ash -1 first.w)) first.atom.rsh))
-       (varmask (or (cdr (hons-get first.atom.name mask-acc)) 0))
-       (conflict (logand varmask firstmask))
-       (mask-acc (hons-acons first.atom.name (logior firstmask varmask) mask-acc))
-       (conf-acc (if (eql 0 conflict)
-                         conf-acc
-                       (hons-acons first.atom.name
-                                   (logior conflict
-                                           (or (cdr (hons-get first.atom.name conf-acc))
-                                               0))
-                                   conf-acc))))
-    (lhs-check-masks rest mask-acc conf-acc)))
-
-
-(define assigns-check-masks ((x assigns-p) (mask-acc 4vmask-alist-p) (conf-acc 4vmask-alist-p))
-  :returns (mv (mask-acc1 4vmask-alist-p)
-               (conf-acc1 4vmask-alist-p))
-  :measure (len (assigns-fix x))
-  :hints(("Goal" :in-theory (enable len)))
-  (b* ((x (assigns-fix x))
-       (mask-acc (4vmask-alist-fix mask-acc))
-       (conf-acc (4vmask-alist-fix conf-acc))
-       ((when (atom x))
-        (mv mask-acc conf-acc))
-       ((mv mask-acc conf-acc) (lhs-check-masks (caar x) mask-acc conf-acc)))
-    (assigns-check-masks (cdr x) mask-acc conf-acc)))
 
 (defthm svtv-entry-p-nth
   (implies (and (svtv-entrylist-p x)
@@ -455,7 +417,8 @@
                       (overrides true-list-listp)
                       (outs true-list-listp)
                       (internals true-list-listp)
-                      (design design-p))
+                      (design design-p)
+                      (simplify))
   :parents (defsvtv)
   :short "Main subroutine of @(see defsvtv), which extracts output formulas from
           the provided design."
@@ -557,6 +520,10 @@
                   (svtv-compile
                    0 nphases ins ovlines outs initst updates-for-outs next-states in-vars)
                   :mintime 1))
+
+       (outexprs (if simplify
+                     (svex-alist-rewrite-fixpoint outexprs)
+                   outexprs))
 
        ;; Compute the masks for the input/output varaiables.
        (inmasks (fast-alist-free (fast-alist-clean (svtv-collect-masks ins))))
@@ -755,6 +722,13 @@
             (cons ',(car ins) ,(car ins)))
           (autoins-lookup-cases (cdr ins)))))
 
+(defun autoins-lookup-casesplit (ins var)
+  (declare (xargs :guard t))
+  (if (atom ins)
+      nil
+    (cons `(equal ,var ',(car ins))
+          (autoins-lookup-casesplit (cdr ins) var))))
+
 
 
 
@@ -766,7 +740,9 @@
                     (internals true-list-listp)
                     (design design-p)
                     (design-const symbolp)
-                    labels parents short long)
+                    labels
+                    simplify
+                    parents short long)
   :guard (modalist-addr-p (design->modalist design))
   :irrelevant-formals-ok t
   :hooks nil
@@ -785,7 +761,7 @@
                           (t              (progn$ (raise ":long must be a string.")
                                                   ""))))
 
-       (svtv (defsvtv-main name ins overrides outs internals design))
+       (svtv (defsvtv-main name ins overrides outs internals design simplify))
        ((unless svtv)
         (raise "failed to generate svtv"))
 
@@ -914,7 +890,8 @@ defined with @(see svex::defsvtv).</p>"
                                                     assoc-of-acons
                                                     assoc-of-nil
                                                     car-cons cdr-cons
-                                                    member-equal)))))
+                                                    member-equal))
+                          :cases ,(autoins-lookup-casesplit invars 'k))))
                (defmacro ,name-autoins-body ()
                  ',(svtv-autoins svtv))
 
@@ -989,11 +966,13 @@ defined with @(see svex::defsvtv).</p>"
                         internals
                         parents
                         short
-                        long)
+                        long
+                        simplify) ;; should this be t by default?
   (b* (((unless (xor design mod))
         (er hard? 'defsvtv "DEFSVTV: Must provide either :design or :mod (interchangeable), but not both.~%")))
     `(make-event (defsvtv-fn ',name ,inputs ,overrides ,outputs ,internals
-                   ,(or design mod) ',(or design mod) ,labels ',parents ,short ,long))))
+                   ,(or design mod) ',(or design mod) ,labels ,simplify
+                   ',parents ,short ,long))))
 
 (defxdoc svtv-stimulus-format
   :parents (defsvtv)

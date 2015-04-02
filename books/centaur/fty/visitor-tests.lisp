@@ -19,6 +19,17 @@
             (family stringp)
             (size   natp))))
 
+
+(deftypes mrec-tree
+  (deftagsum mrec-tree-node
+     (:leaf ((name stringp)
+             (value natp)
+             (cost integerp)))
+     (:branch ((children mrec-treelist)
+               (family stringp)
+               (size natp))))
+  (deflist mrec-treelist :elt-type mrec-tree-node))
+
 ; Example 1: Let's visit every LEAF and collect up the names.
 
 ;; First try: this is very simple but collects all the strings, even
@@ -180,3 +191,106 @@
 
    ;; (defvisitor bunch-of-stuff double-sum-nats)
    ))
+
+
+
+
+
+(deftagsum literal
+  (:constant ((value natp)))
+  (:variable ((name symbolp))))
+
+(defprod product
+  ((first  literal-p)
+   (second literal-p)
+   (third  literal-p)))
+
+(defprod sum
+  ((left  product-p)
+   (right product-p)))
+
+;; Lookup table mapping each variable to a sum-of-products.
+(defalist sop-env :key-type symbolp :val-type sum-p)
+
+;; Suppose we have a lookup table and we want to collect all the dependencies
+;; of some expression -- i.e., when we get to a variable we want to collect
+;; it, then look up its formula and collect its dependencies too.  If the
+;; table doesn't have some strict dependency order, then we might not
+;; terminate, so we'll use a recursion limit.
+
+(defvisitor-template collect-deps ((x :object)
+                                   (env sop-env-p)
+                                   (rec-limit natp))
+  :returns (deps (:join (append deps1 deps)
+                  :tmp-var deps1 :initial nil)
+                 symbol-listp)
+
+  ;; We'll call the function to apply to variable names
+  ;; collect-and-recur-on-var.  Note that this hasn't been defined yet -- it
+  ;; needs to be mutually recursive with the other functions in the clique.
+  :prod-fns ((literal-variable (name collect-and-recur-on-var)))
+
+  :fnname-template <type>-collect-deps)
+
+;; A defvisitor-multi form binds together some defvisitor and defvisitors
+;; forms into a mutual recursion with some other functions.  Here, we'll just have
+;; the one defvisitors form inside.
+(defvisitor-multi sum-collect-deps
+
+  (defvisitors :template collect-deps :types (sum)
+    ;; Normally this defvisitors form would create a visitor for a literal,
+    ;; then product, then sum.  Inside a defvisitor-multi, it instead puts
+    ;; all of those definitions into one mutual recursion.
+
+    ;; We have to do something special with the measure.  Defvisitors
+    ;; assigns an order to each of the types so that calling from one
+    ;; visitor to another can generally reduce the measure.  Therefore, we
+    ;; only need to decrease the rec-limit when calling from a lower-level
+    ;; type to a higher-level one -- e.g. when we reach a variable and will
+    ;; recur on a sum.
+    :measure (two-nats-measure rec-limit :order)
+
+    ;; Since our lowest-level visitor (literal-collect-deps) is going to
+    ;; call an intermediate function (collect-and-recur-on-var) which then
+    ;; calls our highest-level visitor (sum-collect-deps), it's convenient
+    ;; to set the order of the lowest-level to 1 so that
+    ;; collect-and-recur-on-var can use 0 as the order in its measure.
+    :order-base 1)
+
+  ;; This function goes in the mutual recursion with the others.
+  (define collect-and-recur-on-var ((x symbolp)
+                                    (env sop-env-p)
+                                    (rec-limit natp))
+    :returns (deps symbol-listp)
+    :measure (two-nats-measure rec-limit 0)
+    (b* ((x (mbe :logic (acl2::symbol-fix x) :exec x))
+         (lookup (hons-get x (sop-env-fix env)))
+         ((unless lookup) (list x))
+         ((when (zp rec-limit))
+          (cw "Recursion limit ran out on ~x0~%" x)
+          (list x)))
+      (cons x (sum-collect-deps (cdr lookup) env (- rec-limit 1))))))
+
+
+;; (let ((al (make-fast-alist
+;;            `((x . ,(sum (product (literal-constant 5)
+;;                                  (literal-variable 'y)
+;;                                  (literal-constant 3))
+;;                         (product (literal-variable 'z)
+;;                                  (literal-constant 4)
+;;                                  (literal-variable 'a))))
+;;              (y . ,(sum (product (literal-constant 1)
+;;                                  (literal-variable 'b)
+;;                                  (literal-constant 3))
+;;                         (product (literal-variable 'z)
+;;                                  (literal-constant 4)
+;;                                  (literal-variable 'a))))
+;;              (z . ,(sum (product (literal-constant 1)
+;;                                  (literal-constant 2)
+;;                                  (literal-constant 3))
+;;                         (product (literal-variable 'b)
+;;                                  (literal-constant 4)
+;;                                  (literal-variable 'a))))))))
+;;   (list (literal-collect-deps (literal-variable 'x) al 100)
+;;         (literal-collect-deps (literal-variable 'y) al 100)
+;;         (literal-collect-deps (literal-variable 'z) al 100)))
