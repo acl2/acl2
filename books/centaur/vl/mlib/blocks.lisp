@@ -278,6 +278,37 @@ fields can be reinstalled into the interface using @(see vl-genblob->interface).
            *vl-interface/genblob-fields*))))))
 
 
+(defconst *vl-package/genblob-fields*
+  '(fundecl
+    taskdecl
+    typedef
+    paramdecl
+    vardecl
+    import))
+
+(make-event
+ `(define vl-package->genblob
+    :short "Convert most of a package into a @(see vl-genblob)."
+    ((x vl-package-p))
+    :returns (genblob vl-genblob-p)
+    :long "<p>Certain fields of a @(see vl-package) aren't also fields of a
+@(see vl-genblob), for instance, a genblob doesn't have warnings, a name,
+location information, etc.</p>
+
+<p>But aside from these fields, most of a package can be extracted and turned
+into a genblob for easy processing.  After processing the blob, the updated
+fields can be reinstalled into the package using @(see vl-genblob->package).</p>"
+
+    (b* (((vl-package x)))
+      (make-vl-genblob
+       :name x.name
+       :scopetype :vl-package
+       ,@(template-append
+          '(:__elts__ x.__elts__)
+          (vl-typenames-to-tmplsubsts
+           *vl-package/genblob-fields*))))))
+
+
 
 (make-event
  `(define vl-genblob->module
@@ -318,6 +349,27 @@ etc., are overwritten with whatever is in the genblob.</p>"
                               '(:__elts__ x.__elts__)
                               (vl-typenames-to-tmplsubsts
                                *vl-interface/genblob-fields*))))))
+
+
+(make-event
+ `(define vl-genblob->package
+    :short "Install fields from a @(see vl-genblob) into a package."
+    ((x vl-genblob-p)
+     (orig vl-package-p))
+    :returns (new-mod vl-package-p)
+    :long "<p>See @(see vl-package->genblob).  This is the companion operation
+which takes the fields from the genblob and sticks them back into a package.</p>
+
+<p>Certain fields of the package, like its warnings, name, and location
+information, aren't affected.  But the real fields like modinsts, assigns,
+etc., are overwritten with whatever is in the genblob.</p>"
+
+    (b* (((vl-genblob x)))
+      (change-vl-package orig
+                           ,@(template-append
+                              '(:__elts__ x.__elts__)
+                              (vl-typenames-to-tmplsubsts
+                               *vl-package/genblob-fields*))))))
 
 
 (make-event

@@ -386,6 +386,10 @@ expression with a @(see vl-context-p) describing its origin.</p>")
   :returns (alist vl-ctxexprlist-p)
   (vl-genblob-ctxexprs (vl-interface->genblob x) (vl-interface->name x) ss))
 
+(define vl-package-ctxexprs ((x vl-package-p) (ss vl-scopestack-p))
+  :returns (alist vl-ctxexprlist-p)
+  (vl-genblob-ctxexprs (vl-package->genblob x) (vl-package->name x) ss))
+
 
 (define vl-design-toplevel-ctxexprs ((x vl-design-p))
   :returns (alist vl-ctxexprlist-p)
@@ -398,3 +402,83 @@ expression with a @(see vl-context-p) describing its origin.</p>")
                       :typedefs x.typedefs)
      "top level design" ;; ??
      (vl-scopestack-init (vl-design-fix x)))))
+
+
+(program)
+
+(defun def-expr-check-fn (name formals ctx-included-in-warnings)
+  (acl2::template-subst-top
+   `(progn
+      (define vl-ctxexprlist-<check> ((x vl-ctxexprlist-p))
+        :returns (warnings vl-warninglist-p)
+        (if (atom x)
+            nil
+          (append (b* (((vl-ctxexpr x) (car x)))
+                    ,(if ctx-included-in-warnings
+                         `(vl-expr-<check> . ,formals)
+                       `(vl-warninglist-add-ctx
+                         (vl-expr-<check> . ,formals)
+                         x.ctx)))
+                  (vl-ctxexprlist-<check> (cdr x)))))
+      (define vl-module-<check> ((x vl-module-p)
+                                 (ss vl-scopestack-p))
+        :returns (new-x vl-module-p)
+        (b* ((warnings (append (vl-ctxexprlist-<check>
+                                (vl-module-ctxexprs x ss))
+                               (vl-module->warnings x))))
+          (change-vl-module x :warnings warnings)))
+
+      (defprojection vl-modulelist-<check> ((x vl-modulelist-p)
+                                            (ss vl-scopestack-p))
+        :returns (new-x vl-modulelist-p)
+        (vl-module-<check> x ss))
+
+      (define vl-interface-<check> ((x vl-interface-p)
+                                    (ss vl-scopestack-p))
+        :returns (new-x vl-interface-p)
+        (b* ((warnings (append (vl-ctxexprlist-<check>
+                                (vl-interface-ctxexprs x ss))
+                               (vl-interface->warnings x))))
+          (change-vl-interface x :warnings warnings)))
+
+      (defprojection vl-interfacelist-<check> ((x vl-interfacelist-p)
+                                               (ss vl-scopestack-p))
+        :returns (new-x vl-interfacelist-p)
+        (vl-interface-<check> x ss))
+
+      (define vl-package-<check> ((x vl-package-p)
+                                  (ss vl-scopestack-p))
+        :returns (new-x vl-package-p)
+        (b* ((warnings (append (vl-ctxexprlist-<check>
+                                (vl-package-ctxexprs x ss))
+                               (vl-package->warnings x))))
+          (change-vl-package x :warnings warnings)))
+
+      (defprojection vl-packagelist-<check> ((x vl-packagelist-p)
+                                             (ss vl-scopestack-p))
+        :returns (new-x vl-packagelist-p)
+        (vl-package-<check> x ss))
+
+      (define vl-design-<check> ((x vl-design-p))
+        (b* (((vl-design x))
+             (ss (vl-scopestack-init (vl-design-fix x)))
+             (mods (vl-modulelist-<check> x.mods ss))
+             (ifs  (vl-interfacelist-<check> x.interfaces ss))
+             (pkgs  (vl-packagelist-<check> x.packages ss))
+             (warnings (append (vl-ctxexprlist-<check>
+                                (vl-design-toplevel-ctxexprs x))
+                               x.warnings)))
+          (change-vl-design x
+                            :mods mods
+                            :interfaces ifs
+                            :packages pkgs
+                            :warnings warnings))))
+   (acl2::make-tmplsubst
+    :strs `(("<CHECK>" ,(symbol-name name) . ,name)))))
+
+(defmacro def-expr-check (name
+                          &key
+                          (formals '(x.expr x.ss))
+                          ctx-included-in-warnings)
+  (def-expr-check-fn name formals ctx-included-in-warnings))
+

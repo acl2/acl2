@@ -738,7 +738,7 @@ problem.</p>"
        ;; should be practically pretty reasonable since it's not valid to refer
        ;; to an input in the other declarations.
        ((mv warnings local-st)
-        (vl-blockitemlist-check-undeclared x.blockitems local-st warnings))
+        (vl-blockitemlist-check-undeclared x.parsed-blockitems local-st warnings))
 
        ;; Okay, now add the inputs to the local scope, since it's valid to
        ;; refer to them in the body.  Also add in the function's name since it
@@ -785,7 +785,7 @@ it has the same problems with parameters.</p>"
        ;; should be practically pretty reasonable since it's not valid to refer
        ;; to a port in the other declarations.
        ((mv warnings local-st)
-        (vl-blockitemlist-check-undeclared x.blockitems local-st warnings))
+        (vl-blockitemlist-check-undeclared x.parsed-blockitems local-st warnings))
 
        ;; Okay, now add the ports to the local scope, since it's valid to
        ;; refer to them in the body.

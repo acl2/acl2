@@ -868,7 +868,7 @@ explicit declarations.</p>")
        ;;
        ;; ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings))
 
-       ((mv st warnings) (vl-shadowcheck-blockitemlist x.blockitems st warnings))
+       ((mv st warnings) (vl-shadowcheck-blockitemlist x.parsed-blockitems st warnings))
        ((mv st warnings) (vl-shadowcheck-stmt x.body x st warnings))
        (- (vl-shadowcheck-debug "  >> popping out of function ~x0.~%" x.name))
        (st (vl-shadowcheck-pop-scope st)))
@@ -886,7 +886,7 @@ explicit declarations.</p>")
 
        (st (vl-shadowcheck-push-scope (vl-taskdecl->blockscope x) st))
        ((mv st warnings) (vl-shadowcheck-portdecllist x.portdecls st warnings))
-       ((mv st warnings) (vl-shadowcheck-blockitemlist x.blockitems st warnings))
+       ((mv st warnings) (vl-shadowcheck-blockitemlist x.parsed-blockitems st warnings))
        ((mv st warnings) (vl-shadowcheck-stmt x.body x st warnings))
        (st (vl-shadowcheck-pop-scope st))
 

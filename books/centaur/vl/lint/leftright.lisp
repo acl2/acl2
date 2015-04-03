@@ -208,7 +208,7 @@ of this function by memoizing @(see vl-expr-strip).</p>"
              :initial nil)
             vl-warninglist-p)
 
-  :type-fns ((vl-expr vl-expr-leftright-check))
+  :type-fns ((vl-expr vl-expr-leftright-check1))
 
   :prod-fns
   ;; Forcibly set indexy Whenever we descend into an index position
@@ -255,10 +255,10 @@ of this function by memoizing @(see vl-expr-strip).</p>"
     :returns (warnings vl-warninglist-p)
     :measure (two-nats-measure (vl-expr-count x) 2)
     (declare (ignore indexy))
-    (vl-expr-leftright-check x t ctx))
+    (vl-expr-leftright-check1 x t ctx))
 
 
-  (define vl-expr-leftright-check
+  (define vl-expr-leftright-check1
     ((x      vl-expr-p
              "Expression we are considering.")
      (indexy booleanp
@@ -487,42 +487,53 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
       (otherwise
        nil))))
 
-(define vl-exprctxalist-leftright-check
-  :short "@(call vl-exprctxalist-leftright-check) extends @(see
-vl-expr-leftright-check) across an @(see vl-exprctxalist-p)."
-  ((x vl-exprctxalist-p))
-  :measure (len (vl-exprctxalist-fix x))
+(define vl-expr-leftright-check ((x vl-expr-p)
+                                 (ctx vl-context1-p))
   :returns (warnings vl-warninglist-p)
-  (b* ((x (vl-exprctxalist-fix x))
-       ((when (atom x))
-        nil)
-       ((cons expr ctx) (car x))
-       (indexy (vl-expr-indexy-via-ctx expr ctx)))
-    (append (vl-expr-leftright-check expr indexy ctx)
-            (vl-exprctxalist-leftright-check (cdr x)))))
+  (vl-expr-leftright-check1
+   x (vl-expr-indexy-via-ctx x ctx) ctx))
 
-(define vl-module-leftright-check
-  :short "@(call vl-module-leftright-check) carries our our @(see
-leftright-check) on all the expressions in a module, and adds any resulting
-warnings to the module."
-  ((x vl-module-p))
-  :returns (new-x vl-module-p)
-  (b* ((ctxexprs     (vl-module-ctxexprs x))
-       (new-warnings (vl-exprctxalist-leftright-check ctxexprs)))
-    (change-vl-module x
-                      :warnings (append new-warnings
-                                        (vl-module->warnings x)))))
 
-(defprojection vl-modulelist-leftright-check ((x vl-modulelist-p))
-  :returns (new-x vl-modulelist-p)
-  (vl-module-leftright-check x))
+(def-expr-check leftright-check
+  :formals (x.expr x.ctx)
+  :ctx-included-in-warnings t)
 
-(define vl-design-leftright-check ((x vl-design-p))
-  :returns (new-x vl-design-p)
-  (b* (((vl-design x) x)
-       (new-mods (vl-modulelist-leftright-check x.mods)))
-    (clear-memoize-table 'vl-expr-strip)
-    (change-vl-design x :mods new-mods)))
+;; (define vl-exprctxalist-leftright-check
+;;   :short "@(call vl-exprctxalist-leftright-check) extends @(see
+;; vl-expr-leftright-check) across an @(see vl-exprctxalist-p)."
+;;   ((x vl-exprctxalist-p))
+;;   :measure (len (vl-exprctxalist-fix x))
+;;   :returns (warnings vl-warninglist-p)
+;;   (b* ((x (vl-exprctxalist-fix x))
+;;        ((when (atom x))
+;;         nil)
+;;        ((cons expr ctx) (car x))
+;;        (indexy (vl-expr-indexy-via-ctx expr ctx)))
+;;     (append (vl-expr-leftright-check expr indexy ctx)
+;;             (vl-exprctxalist-leftright-check (cdr x)))))
+
+;; (define vl-module-leftright-check
+;;   :short "@(call vl-module-leftright-check) carries our our @(see
+;; leftright-check) on all the expressions in a module, and adds any resulting
+;; warnings to the module."
+;;   ((x vl-module-p))
+;;   :returns (new-x vl-module-p)
+;;   (b* ((ctxexprs     (vl-module-ctxexprs x))
+;;        (new-warnings (vl-exprctxalist-leftright-check ctxexprs)))
+;;     (change-vl-module x
+;;                       :warnings (append new-warnings
+;;                                         (vl-module->warnings x)))))
+
+;; (defprojection vl-modulelist-leftright-check ((x vl-modulelist-p))
+;;   :returns (new-x vl-modulelist-p)
+;;   (vl-module-leftright-check x))
+
+;; (define vl-design-leftright-check ((x vl-design-p))
+;;   :returns (new-x vl-design-p)
+;;   (b* (((vl-design x) x)
+;;        (new-mods (vl-modulelist-leftright-check x.mods)))
+;;     (clear-memoize-table 'vl-expr-strip)
+;;     (change-vl-design x :mods new-mods)))
 
 
 

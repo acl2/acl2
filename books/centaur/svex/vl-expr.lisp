@@ -2017,7 +2017,7 @@ the way.</li>
 (define vl-slicesize-resolve ((x vl-slicesize-p)
                               (conf vl-svexconf-p))
   :returns (mv (err (iff (vl-msg-p err) err))
-               (size (implies (not err) (posp size))))
+               (size (implies (not err) (posp size)) :rule-classes :type-prescription))
   (b* ((x (vl-slicesize-fix x)))
     (vl-slicesize-case x
       :none (mv nil 1)

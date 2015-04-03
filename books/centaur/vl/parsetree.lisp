@@ -2723,7 +2723,7 @@ endmodule
    (paramdecls  vl-paramdecllist-p
                 "Local parameter declarations")
 
-   (blockitems  vl-blockitemlist-p
+   (parsed-blockitems  vl-blockitemlist-p
                 "The declarations within the function, in parse order.  We sort
                  these out into the imports, vardecls, and paramdecls. It appears
                  that these may even contain event declarations, parameter declarations,
@@ -2806,8 +2806,7 @@ extra declarations are created automatically by the loader.</p>")
    (paramdecls  vl-paramdecllist-p
                 "Local parameter declarations")
 
-
-   (blockitems  vl-blockitemlist-p
+   (parsed-blockitems  vl-blockitemlist-p
                "All the local declarations for the task; we sort these out into
                 the imports, vardecls, and paramdecls above.")
 

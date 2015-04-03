@@ -169,7 +169,7 @@ information.</p>"
                      :lifetime   lifetime
                      :rettype    rettype
                      :portdecls  inputs
-                     :blockitems decls
+                     :parsed-blockitems decls
                      :vardecls   vardecls
                      :paramdecls paramdecls
                      :imports    imports
@@ -196,7 +196,7 @@ information.</p>"
     (make-vl-taskdecl :name      name
                       :lifetime  lifetime
                       :portdecls ports
-                      :blockitems decls
+                      :parsed-blockitems decls
                       :vardecls   vardecls
                       :paramdecls paramdecls
                       :imports    imports
