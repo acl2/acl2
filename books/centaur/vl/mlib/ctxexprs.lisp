@@ -183,11 +183,7 @@ expression with a @(see vl-context-p) describing its origin.</p>")
     (vl-stmt-ctxexprs x.stmt ctx ss)))
 
 
-
-
-
-
-(defmacro def-vl-ctxexprs (&key type push-p)
+(defmacro def-vl-ctxexprs (&key type)
   (let* ((mksym-package-symbol 'vl::foo)
          (type-p       (mksym type '-p))
          (fix          (mksym type '-fix))
@@ -195,14 +191,14 @@ expression with a @(see vl-context-p) describing its origin.</p>")
          (allexprs     (mksym type '-allexprs)))
     `(define ,collect
        :parents (ctxexprs)
-       ((mod stringp)
-        (x   ,type-p)
+       ((x   ,type-p)
+        (mod stringp)
         (ss  vl-scopestack-p))
        :returns (ctxexprs vl-ctxexprlist-p)
        (let ((x (,fix x)))
          (vl-exprlist-ctxexprs (,allexprs x)
                                (make-vl-context1 :mod mod :elem x)
-                               ss)))
+                               ss)))))
 
 (local (defthm vl-ctxelement-p-when-port
          (implies (vl-port-p x)
@@ -212,14 +208,12 @@ expression with a @(see vl-context-p) describing its origin.</p>")
 (def-vl-ctxexprs :type vl-port)
 (def-vl-ctxexprs :type vl-portdecl)
 (def-vl-ctxexprs :type vl-assign)
+(def-vl-ctxexprs :type vl-alias)
 (def-vl-ctxexprs :type vl-vardecl)
 (def-vl-ctxexprs :type vl-paramdecl)
-(def-vl-ctxexprs :type vl-fundecl)
-(def-vl-ctxexprs :type vl-taskdecl)
 (def-vl-ctxexprs :type vl-modinst)
 (def-vl-ctxexprs :type vl-gateinst)
-(def-vl-ctxexprs :type vl-always)
-(def-vl-ctxexprs :type vl-initial)
+(def-vl-ctxexprs :type vl-typedef)
 
 (defmacro def-vl-ctxexprs-list (&key element list)
   (let* ((mksym-package-symbol 'vl::foo)
@@ -227,79 +221,180 @@ expression with a @(see vl-context-p) describing its origin.</p>")
          (collect-list      (mksym list '-ctxexprs))
          (collect-list-nrev (mksym list '-ctxexprs-nrev))
          (collect-elem      (mksym element '-ctxexprs))
-         (collect-elem-nrev (mksym element '-ctxexprs-nrev)))
+         ;; (collect-elem-nrev (mksym element '-ctxexprs-nrev))
+         )
     `(progn
        (define ,collect-list-nrev
          :parents (,collect-list)
-         ((mod stringp)
-          (x ,list-type-p)
+         ((x ,list-type-p)
+          (mod stringp)
+          (ss vl-scopestack-p)
           nrev)
          (b* (((when (atom x))
                (nrev-fix nrev))
-              (nrev (,collect-elem-nrev mod (car x) nrev)))
-           (,collect-list-nrev mod (cdr x) nrev)))
+              (nrev (nrev-append (,collect-elem (car x) mod ss) nrev)))
+           (,collect-list-nrev (cdr x) mod ss nrev)))
 
        (define ,collect-list
          :parents (ctxexprs)
          :short ,(cat "Collect up a @(see vl-ctxexprlist-p) from a list of @(see "
                       (symbol-name list-type-p) ")s.")
-         ((mod stringp)
-          (x   ,list-type-p))
+         ((x   ,list-type-p)
+          (mod stringp)
+          (ss vl-scopestack-p))
          :returns (alist vl-ctxexprlist-p)
          :verify-guards nil
          (mbe :logic
               (if (atom x)
                   nil
-                (append (,collect-elem mod (car x))
-                        (,collect-list mod (cdr x))))
+                (append (,collect-elem (car x) mod ss)
+                        (,collect-list (cdr x) mod ss)))
               :exec
-              (with-local-nrev (,collect-list-nrev mod x nrev)))
+              (with-local-nrev (,collect-list-nrev x mod ss nrev)))
          ///
          (defthm ,(mksym collect-list-nrev '-removal)
-           (equal (,collect-list-nrev mod x nrev)
-                  (append nrev (,collect-list mod x)))
+           (equal (,collect-list-nrev x mod ss nrev)
+                  (append nrev (,collect-list x mod ss)))
            :hints(("Goal" :in-theory (enable ,collect-list-nrev))))
          (verify-guards ,collect-list)))))
 
 (def-vl-ctxexprs-list :element vl-port      :list vl-portlist)
 (def-vl-ctxexprs-list :element vl-portdecl  :list vl-portdecllist)
 (def-vl-ctxexprs-list :element vl-assign    :list vl-assignlist)
+(def-vl-ctxexprs-list :element vl-alias     :list vl-aliaslist)
 (def-vl-ctxexprs-list :element vl-vardecl   :list vl-vardecllist)
 (def-vl-ctxexprs-list :element vl-paramdecl :list vl-paramdecllist)
 (def-vl-ctxexprs-list :element vl-fundecl   :list vl-fundecllist)
 (def-vl-ctxexprs-list :element vl-taskdecl  :list vl-taskdecllist)
 (def-vl-ctxexprs-list :element vl-modinst   :list vl-modinstlist)
 (def-vl-ctxexprs-list :element vl-gateinst  :list vl-gateinstlist)
+(def-vl-ctxexprs-list :element vl-typedef   :list vl-typedeflist)
 (def-vl-ctxexprs-list :element vl-always    :list vl-alwayslist)
 (def-vl-ctxexprs-list :element vl-initial   :list vl-initiallist)
 
-(define vl-module-ctxexprs ((x vl-module-p))
-  :returns (alist vl-ctxexprlist-p)
-  (b* (((vl-module x) x))
-    (mbe :logic
-         (append (vl-portlist-ctxexprs      x.name x.ports)
-                 (vl-portdecllist-ctxexprs  x.name x.portdecls)
-                 (vl-assignlist-ctxexprs    x.name x.assigns)
-                 (vl-vardecllist-ctxexprs   x.name x.vardecls)
-                 (vl-paramdecllist-ctxexprs x.name x.paramdecls)
-                 (vl-fundecllist-ctxexprs   x.name x.fundecls)
-                 (vl-taskdecllist-ctxexprs  x.name x.taskdecls)
-                 (vl-modinstlist-ctxexprs   x.name x.modinsts)
-                 (vl-gateinstlist-ctxexprs  x.name x.gateinsts)
-                 (vl-alwayslist-ctxexprs    x.name x.alwayses)
-                 (vl-initiallist-ctxexprs   x.name x.initials))
-         :exec
-         (with-local-nrev
-           (b* ((nrev (vl-portlist-ctxexprs-nrev      x.name x.ports      nrev))
-                (nrev (vl-portdecllist-ctxexprs-nrev  x.name x.portdecls  nrev))
-                (nrev (vl-assignlist-ctxexprs-nrev    x.name x.assigns    nrev))
-                (nrev (vl-vardecllist-ctxexprs-nrev   x.name x.vardecls   nrev))
-                (nrev (vl-paramdecllist-ctxexprs-nrev x.name x.paramdecls nrev))
-                (nrev (vl-fundecllist-ctxexprs-nrev   x.name x.fundecls   nrev))
-                (nrev (vl-taskdecllist-ctxexprs-nrev  x.name x.taskdecls  nrev))
-                (nrev (vl-modinstlist-ctxexprs-nrev   x.name x.modinsts   nrev))
-                (nrev (vl-gateinstlist-ctxexprs-nrev  x.name x.gateinsts  nrev))
-                (nrev (vl-alwayslist-ctxexprs-nrev    x.name x.alwayses   nrev))
-                (nrev (vl-initiallist-ctxexprs-nrev   x.name x.initials   nrev)))
-             nrev)))))
 
+(def-genblob-transform vl-genblob-ctxexprs-nrev ((mod stringp)
+                                                 (ss vl-scopestack-p)
+                                                 nrev)
+  :returns (nrev)
+  :no-new-x t
+  :apply-to-generates vl-generates-ctxexprs-nrev
+  :defines-args (:flag-local nil)
+  (b* ((ss (vl-scopestack-push (vl-genblob-fix x) ss))
+       ((vl-genblob x))
+       (nrev (vl-portlist-ctxexprs-nrev      x.ports      mod ss nrev))
+       (nrev (vl-portdecllist-ctxexprs-nrev  x.portdecls  mod ss nrev))
+       (nrev (vl-assignlist-ctxexprs-nrev    x.assigns    mod ss nrev))
+       (nrev (vl-aliaslist-ctxexprs-nrev     x.aliases    mod ss nrev))
+       (nrev (vl-vardecllist-ctxexprs-nrev   x.vardecls   mod ss nrev))
+       (nrev (vl-paramdecllist-ctxexprs-nrev x.paramdecls mod ss nrev))
+       (nrev (vl-fundecllist-ctxexprs-nrev   x.fundecls   mod ss nrev))
+       (nrev (vl-taskdecllist-ctxexprs-nrev  x.taskdecls  mod ss nrev))
+       (nrev (vl-modinstlist-ctxexprs-nrev   x.modinsts   mod ss nrev))
+       (nrev (vl-gateinstlist-ctxexprs-nrev  x.gateinsts  mod ss nrev))
+       (nrev (vl-typedeflist-ctxexprs-nrev   x.typedefs   mod ss nrev))
+       (nrev (vl-alwayslist-ctxexprs-nrev    x.alwayses   mod ss nrev))
+       (nrev (vl-initiallist-ctxexprs-nrev   x.initials   mod ss nrev)))
+    (vl-generates-ctxexprs-nrev     x.generates  mod ss nrev)))
+
+(local (in-theory (disable (:t append)
+                           (:t true-listp)
+                           acl2::append-under-iff
+                           acl2::subsetp-append1)))
+
+(def-genblob-transform vl-genblob-ctxexprs ((mod stringp)
+                                            (ss vl-scopestack-p))
+  :returns ((ctxexprs vl-ctxexprlist-p))
+  :no-new-x t
+  :apply-to-generates vl-generates-ctxexprs
+  :combine-bindings ((ctxexprs (append ctxexprs1 ctxexprs2)))
+  :empty-list-bindings ((ctxexprs nil))
+  :verify-guards nil
+  (mbe :logic
+       (b* ((ss (vl-scopestack-push (vl-genblob-fix x) ss))
+            ((vl-genblob x)))
+         (append (vl-portlist-ctxexprs      x.ports      mod ss)
+                 (vl-portdecllist-ctxexprs  x.portdecls  mod ss)
+                 (vl-assignlist-ctxexprs    x.assigns    mod ss)
+                 (vl-aliaslist-ctxexprs     x.aliases    mod ss)
+                 (vl-vardecllist-ctxexprs   x.vardecls   mod ss)
+                 (vl-paramdecllist-ctxexprs x.paramdecls mod ss)
+                 (vl-fundecllist-ctxexprs   x.fundecls   mod ss)
+                 (vl-taskdecllist-ctxexprs  x.taskdecls  mod ss)
+                 (vl-modinstlist-ctxexprs   x.modinsts   mod ss)
+                 (vl-gateinstlist-ctxexprs  x.gateinsts  mod ss)
+                 (vl-typedeflist-ctxexprs   x.typedefs   mod ss)
+                 (vl-alwayslist-ctxexprs    x.alwayses   mod ss)
+                 (vl-initiallist-ctxexprs   x.initials   mod ss)
+                 (vl-generates-ctxexprs     x.generates  mod ss)))
+       :exec (with-local-nrev (vl-genblob-ctxexprs-nrev x mod ss nrev)))
+  ///
+  (local (in-theory (disable acl2::true-listp-append)))
+  (defthm-vl-genblob-ctxexprs-nrev-flag
+    (defthm vl-genblob-ctxexprs-nrev-elim
+      (implies (true-listp nrev)
+               (equal (vl-genblob-ctxexprs-nrev x mod ss nrev)
+                      (append nrev (vl-genblob-ctxexprs x mod ss))))
+      :flag vl-genblob-ctxexprs-nrev)
+    (defthm vl-generates-ctxexprs-nrev-elim
+      (implies (true-listp nrev)
+               (equal (vl-generates-ctxexprs-nrev x mod ss nrev)
+                      (append nrev (vl-generates-ctxexprs x mod ss))))
+      :flag vl-generates-ctxexprs-nrev)
+    (defthm vl-genblob-ctxexprs-nrev-elim-generate
+      (implies (true-listp nrev)
+               (equal (vl-genblob-ctxexprs-nrev-generate x mod ss nrev)
+                      (append nrev (vl-genblob-ctxexprs-generate x mod ss))))
+      :flag vl-genblob-ctxexprs-nrev-generate)
+    (defthm vl-genblob-ctxexprs-nrev-elim-gencaselist
+      (implies (true-listp nrev)
+               (equal (vl-genblob-ctxexprs-nrev-gencaselist x mod ss nrev)
+                      (append nrev (vl-genblob-ctxexprs-gencaselist x mod ss))))
+      :flag vl-genblob-ctxexprs-nrev-gencaselist)
+    (defthm vl-genblob-ctxexprs-nrev-elim-genarrayblocklist
+      (implies (true-listp nrev)
+               (equal (vl-genblob-ctxexprs-nrev-genarrayblocklist x arrayname mod ss nrev)
+                      (append nrev (vl-genblob-ctxexprs-genarrayblocklist x arrayname mod ss))))
+      :flag vl-genblob-ctxexprs-nrev-genarrayblocklist)
+    (defthm vl-genblob-ctxexprs-nrev-elim-genarrayblock
+      (implies (true-listp nrev)
+               (equal (vl-genblob-ctxexprs-nrev-genarrayblock x arrayname mod ss nrev)
+                      (append nrev (vl-genblob-ctxexprs-genarrayblock x arrayname mod ss))))
+      :flag vl-genblob-ctxexprs-nrev-genarrayblock)
+    :hints ((acl2::just-expand-mrec-default-hint 'vl-genblob-ctxexprs-nrev id t world)
+            (and stable-under-simplificationp
+                 (EQL 0 (ACCESS ACL2::CLAUSE-ID ID :FORCING-ROUND))
+                 (EQUAL '(1) (ACCESS ACL2::CLAUSE-ID ID :POOL-LST))
+                 '(:expand ((vl-genblob-ctxexprs x mod ss)
+                            (vl-generates-ctxexprs x mod ss)
+                            (vl-genblob-ctxexprs-generate x mod ss)
+                            (vl-genblob-ctxexprs-gencaselist x mod ss)
+                            (vl-genblob-ctxexprs-genarrayblocklist x arrayname mod ss)
+                            (vl-genblob-ctxexprs-genarrayblock x arrayname mod ss))))))
+  (verify-guards vl-genblob-ctxexprs
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((vl-genblob-ctxexprs x mod ss)))))))
+       
+  
+
+
+(define vl-module-ctxexprs ((x vl-module-p) (ss vl-scopestack-p))
+  :returns (alist vl-ctxexprlist-p)
+  (vl-genblob-ctxexprs (vl-module->genblob x) (vl-module->name x) ss))
+
+(define vl-interface-ctxexprs ((x vl-interface-p) (ss vl-scopestack-p))
+  :returns (alist vl-ctxexprlist-p)
+  (vl-genblob-ctxexprs (vl-interface->genblob x) (vl-interface->name x) ss))
+
+
+(define vl-design-toplevel-ctxexprs ((x vl-design-p))
+  :returns (alist vl-ctxexprlist-p)
+  (b* (((vl-design x)))
+    (vl-genblob-ctxexprs
+     (make-vl-genblob :vardecls x.vardecls
+                      :taskdecls x.taskdecls
+                      :fundecls x.fundecls
+                      :paramdecls x.paramdecls
+                      :typedefs x.typedefs)
+     "top level design" ;; ??
+     (vl-scopestack-init (vl-design-fix x)))))

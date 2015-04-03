@@ -829,7 +829,7 @@ displays.  The module browser's web pages are responsible for defining the
                       (vl-pp-expr x.left)
                       (if left-parens (vl-print ")") ps)
                       (vl-print-str (vl-binaryop-string x.op))
-                      (if atts (vl-pp-atts unspecial-atts) ps)
+                      (if unspecial-atts (vl-pp-atts unspecial-atts) ps)
                       (vl-println? " ")
                       (if right-parens (vl-print "(") ps)
                       (vl-pp-expr x.right)

@@ -1035,7 +1035,7 @@ constructed separately.)</p>"
        (portexpr (vl-idexpr portname))
        (port-lhs (svex-lhs-from-name portname))
        (port-type (make-vl-coretype :name :vl-logic))
-       ((wmv warnings x-svex x-type)
+       ((wmv warnings x-svex x-type ?x-size)
         (vl-expr-to-svex-maybe-typed
          x.expr
          (if arraysize
@@ -1195,7 +1195,7 @@ constructed separately.)</p>"
        ((unless y-type)
         ;; already warned
         (fail warnings))
-       ((wmv warnings x-svex x-type)
+       ((wmv warnings x-svex x-type ?x-size)
         (vl-expr-to-svex-maybe-typed
          x.expr (if arraysize nil y-type) conf))
 

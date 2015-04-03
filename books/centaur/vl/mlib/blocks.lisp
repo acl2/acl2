@@ -661,6 +661,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
     ;; :elementlist-bindings
     :verify-guards
     :guard-hints
+    :defines-args
     :global-extra-decls
     :no-new-x))
 
@@ -729,6 +730,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
                  return-from-gencase-bindings
                  genloop-bindings
                  return-from-genloop-bindings
+                 defines-args
                  ;; elementlist-bindings
                  ;; return-from-elementlist-bindings
                  (verify-guards t)
@@ -772,7 +774,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
        (return-names2 (append (suffix-syms extra-returns '|2| std::mksym-package-symbol) accumulators))
        (acc-fix-bindings (formals->fixes accumulators formal-infos (fty::get-fixtypes-alist wrld))))
     `(defines ,name
-
+       ,@defines-args
        (define ,name ((x vl-genblob-p) . ,raw-formals)
          :returns ,(maybe-mv-fn `(,@returns
                                   ,@(and new-x '((new-x vl-genblob-p)))))

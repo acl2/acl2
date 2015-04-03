@@ -518,7 +518,7 @@ because... (BOZO)</p>
               (vl-assignstmt->svstmts x.lvalue x.expr (eq x.type :vl-blocking) conf)))
           (mv ok warnings res))
         :vl-ifstmt
-        (b* (((wmv warnings cond ?type)
+        (b* (((wmv warnings cond ?type ?size)
               (vl-expr-to-svex-untyped x.condition conf))
              ((wmv ok1 warnings true)
               (vl-stmt->svstmts x.truebranch conf nonblockingp))
@@ -527,7 +527,7 @@ because... (BOZO)</p>
           (mv (and ok1 ok2) warnings
               (list (svex::make-svstmt-if :cond cond :then true :else false))))
         :vl-whilestmt
-        (b* (((wmv warnings cond ?type)
+        (b* (((wmv warnings cond ?type ?size)
               (vl-expr-to-svex-untyped x.condition conf))
              ((wmv ok warnings body)
               (vl-stmt->svstmts x.body conf nonblockingp)))
@@ -543,7 +543,7 @@ because... (BOZO)</p>
               (vl-vardecllist->svstmts x.initdecls conf))
              ((wmv ok2 warnings initstmts2)
               (vl-stmtlist->svstmts x.initassigns conf nonblockingp))
-             ((wmv warnings cond ?type)
+             ((wmv warnings cond ?type ?size)
               (vl-expr-to-svex-untyped x.test conf))
              ((wmv ok3 warnings stepstmts)
               (vl-stmtlist->svstmts x.stepforms conf nonblockingp))
@@ -803,7 +803,7 @@ because... (BOZO)</p>
   (b* (((when (atom x)) (mv nil (svex::svex-quote (svex::2vec 0))))
        ((vl-evatom x1) (car x))
        (warnings nil)
-       ((wmv warnings expr ?type)
+       ((wmv warnings expr ?type ?size)
         (vl-expr-to-svex-untyped x1.expr conf))
        (delay-expr (svex::svex-add-delay expr 1))
        ;; Note: Ensure these expressions always evaluate to either -1 or 0.
