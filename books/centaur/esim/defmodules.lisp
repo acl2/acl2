@@ -295,7 +295,7 @@
                      (if (vl-plural-p failmods) "s" ""))
               (vl-print-strings-with-commas (vl-modulelist->names failmods) 4)
               (vl-println "")
-              (vl-println "Warnings for failed descriptions:~%")
+              (vl-println "Warnings for failed descriptions:")
               (vl-print-reportcard reportcard)
               (vl-println "")))))
        (- (fast-alist-free reportcard))
