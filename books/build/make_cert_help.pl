@@ -545,7 +545,7 @@ foreach my $pair (@$includes) {
     }
 }
 
-$instrs .= "(set-ld-error-action (quote :continue) state)\n";
+$instrs .= "#!ACL2 (set-ld-error-action (quote :continue) state)\n";
 
 my $cert_flags = parse_certify_flags($acl2file, $usercmds);
 $instrs .= "\n; certify-book command flags: $cert_flags\n";
