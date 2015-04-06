@@ -1,0 +1,223 @@
+#top { background-color: #034569; }
+
+#bottom { background-color: #228A4C; }
+
+#left { background-color: #ffcba3; }
+
+#right { background-color: white; }
+
+.xtable th { background-color: #ffdcb4; }
+
+.xtable tr:nth-child(odd) { background-color: #fff4e8; }
+
+/*.xtable tr:nth-child(odd) td:nth-child(odd) { background-color:#fffff6; } */
+.xtable tr:nth-child(even) { background-color: #ffffff; }
+
+/* .xtable tr:nth-child(even) td:nth-child(odd) { background-color:#fff6ff; } */
+#top, #bottom, #right, #left, #parents { border-color: #3C9DD0; }
+
+body { background-color: white; }
+
+h1, h2, h1 .tt, h2 .tt, h1 .v, h2 .v { color: #A64300; }
+
+h3, h4, h5, h3 .tt, h4 .tt, h5 .tt, h3 .v, h4 .v, h5 .v { color: #FF6700; }
+
+.box { border-color: black; }
+
+.code, .v, .tt { color: #306030; }
+
+.code a, .v a { color: #309030; }
+
+.code, .mathblockrendered { border-color: #3C9DD0; }
+
+#nav a:hover, #flat a:hover { background-color: #FFAB73; }
+
+#data a:hover { background-color: #ffffa0; }
+
+#parents { background-color: #63DB93; }
+
+#parents li a:hover { background-color: #00B74A; text-decoration: none; }
+
+.tt-cursor { background-color: #ffffa0; }
+
+#letters { padding-left: .4em; }
+
+#letters a { color: #3C9DD0; }
+
+#letters a:hover { text-decoration: none; color: white; background-color: #086CA2; }
+
+.dat_long { border-color: #FF6700; }
+
+.from { color: #3C9DD0; }
+
+/* ----------------------- FONTS --------------------------------- */
+/* NOTE: don't just change these, there are also some additional fonts below. */
+body { font-family: "Noto Serif", serif; }
+
+#parents, #toolbar, .basepkg, h1, h2, h3, h4, h5, .sf { font-family: "Lato", sans-serif; }
+
+dt, .hindex, #flat, #still_loading, .xtable th { font-family: "Lato", sans-serif; }
+
+.code, .srclink, .tt, #letters, .from, .v { font-family: "Source Code Pro", monospace; }
+
+/* ----------------------- PARENTS DISPLAY ----------------------- */
+#parents { padding: 10px; border-bottom-width: 1px; border-bottom-style: solid; }
+#parents ul { margin: 0; padding: 0; list-style-type: none; }
+#parents li { display: inline; }
+#parents li a { padding: .2em 1em; }
+
+/* ---------------------- JUMP TO BOX ---------------------------- */
+#jump { width: 10em; }
+
+#searchbox { width: 8em; }
+
+#jumpmsg, #searchmsg { color: white; margin-right: .1em; }
+
+.typeahead { width: 10em; }
+
+#jump, #searchbox { box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.3); border-radius: 3px; border: 2px solid #dadada; background-clip: padding-box; background-color: #ffffa0; }
+
+#jump:focus, #searchbox:focus { outline: none; border-color: #9ecaed; box-shadow: 0 0 10px #9ecaed; }
+
+/* These are fancy things for the typeahead menu: */
+.tt-dropdown-menu { background-color: white; color: black; max-height: 500px; font-size: 90%; overflow-y: auto; overflow-x: hidden; border: 1px black solid; border-radius: 5px; }
+
+.tt-suggestion { border: 1px black solid; padding: .25em; }
+.tt-suggestion tt { font-size: 90%; }
+
+.tt-highlight { background-color: #ffffd0; }
+
+/* ----------------------- CONTENT --------------------------------- */
+img { border: 0px; }
+
+h1 { font-size: 2.2em; text-align: center; margin-bottom: 0; }
+
+h2 { font-size: 1.8em; }
+
+h3 { font-size: 1.5em; }
+
+h4 { font-size: 1.2em; }
+
+h5 { font-size: 1.1em; }
+
+h4, h5 { margin-bottom: 0; }
+
+li { margin-bottom: 0.5em; }
+
+li li { margin-left: -1.0em; margin-bottom: 0em; }
+
+dt { margin-top: 1em; font-weight: bold; }
+
+.box { border-width: 1px; border-style: solid; }
+
+/* math fragments don't need any special positioning */
+.code, .mathblock, .mathblockrendered { border-left-width: 3px; border-left-style: solid; }
+
+a { text-decoration: none; }
+
+a:hover { text-decoration: underline; }
+
+.srclink { text-decoration: none; background-color: #e0e0e0; padding: 2px; /*  font-size: 100%; */ }
+
+.srclink:hover { text-decoration: none; }
+
+hr { margin-top: 2em; }
+
+.dat_long { border-left-style: solid; border-left-width: 2px; margin-left: .2em; padding-left: 1em; }
+
+.ximg { text-align: center; }
+
+.xtable { border-collapse: collapse; border: 1px solid black; }
+
+.xtable td, .xtable th { vertical-align: top; padding: .5em; }
+
+.mathblock { /* not rendered block, so put on a red border */ border-left-color: #ff6060; }
+
+.mathfrag { /* not rendered snippet, so draw it in red */ color: #ff6060; }
+
+/* Extra stuff for Symbolic Test Vectors at Centaur */
+.stv { margin-left: 1em; border: 1px; border-color: black; border-style: solid; }
+.stv th { font-family: "Lato", sans-serif; }
+.stv td { font-family: "Source Code Pro", monospace; text-align: right; padding-left: .5em; padding-right: .5em; }
+
+.stv_labels { background-color: #e0ffc3; }
+.stv_labels th:nth-child(even) { background-color: #e9ffd6; }
+.stv_labels th { font-family: "Lato", sans-serif; text-align: left; border-bottom: 2px; border-bottom-style: solid; border-bottom-color: #b0dda3; border-right: 1px; border-right-style: solid; border-right-color: #b0dda3; }
+
+.stv_input_line { background-color: #ffe0c3; }
+.stv_input_line td:nth-child(even) { background-color: #ffe9d6; }
+.stv_input_line td { border-bottom: 1px; border-bottom-color: #ddb0a3; border-bottom-style: solid; border-right: 1px; border-right-style: solid; border-right-color: #ddb0a3; }
+
+.stv_output_line { background-color: #c3e0ff; }
+.stv_output_line td:nth-child(even) { background-color: #d6e9ff; }
+.stv_output_line td { border-bottom: 1px; border-bottom-color: #a3b0dd; border-bottom-style: solid; border-right: 1px; border-right-style: solid; border-right-color: #a3b0dd; }
+
+.stv_override_line { background-color: #ffb0b0; }
+.stv_override_line td:nth-child(even) { background-color: #ffc0c0; }
+.stv_override_line td { border-bottom: 1px; border-bottom-color: #ff8080; border-bottom-style: solid; border-right: 1px; border-right-style: solid; border-right-color: #ff8080; }
+
+.stv_internal_line { background-color: #ff0000; /* bozo fix colors */ }
+.stv_internal_line td:nth-child(even) { background-color: #ffcc00; /* bozo fix colors */ }
+.stv_internal_line td { border-bottom: 1px; border-bottom-color: #000000; /* bozo fix colors */ border-bottom-style: solid; border-right: 1px; border-right-style: solid; border-right-color: #000000; }
+
+.stv_name { border-right: 2px; border-right-style: solid; border-right-color: #000060; text-align: left; padding-right: 1em; }
+
+/* ---------------------------- LAYOUT -------------------------------- */
+.desktoponly { display: none; }
+
+body { background-color: white; margin: 0; padding: 0; }
+
+#top { position: fixed; z-index: 100; left: 0; top: 0; height: 50px; width: 100%; border-top: solid 2px; border-bottom: solid 3px; }
+
+#toolbar { padding: .4em; }
+#toolbar td { padding-left: 1em; }
+
+#left { z-index: 50; position: fixed; left: 0; top: 55px; bottom: 0em; width: 16em; overflow-y: scroll; overflow-x: hidden; display: none; padding-left: 0.5em; padding-top: 0; padding-bottom: 0; padding-right: 0; }
+
+#left.active { display: block; }
+
+#right { border-left: solid 1px; position: fixed; left: 0; top: 55px; right: 0em; bottom: 0em; overflow: auto; margin: 0; width: 100%; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 1em; }
+
+#data { margin-left: 1em; margin-right: 1em; max-width: 45em; /*    height: 100%; */ }
+
+#still_loading { z-index: 200; position: fixed; left: 350px; top: 120px; border-radius: 7px; background-color: #007730; color: white; padding-left: 30px; padding-right: 30px; padding-top: 10px; padding-bottom: 10px; font-size: 120%; box-shadow: 0px 0px 0px 3px rgba(0, 0, 70, 0.3); }
+
+.from { font-size: 90%; text-align: center; margin-left: 0; margin-right: 0; margin-top: -.2em; padding: 0; }
+
+.basepkg { float: right; background-color: #990000; width: 5em; text-align: center; padding-top: 10px; padding-bottom: 10px; margin: 0; border-color: #ffd0b0; border-width: 3px; border-style: solid; border-radius: 5px; background-color: #ffffff; }
+
+/* ---------------------------- COLORS -------------------------------- */
+/* ------------------------ NAVIGATION MENU ---------------------- */
+#nav { font-size: 110%; }
+
+.hindex { list-style-type: none; padding: 0em; }
+.hindex li { margin-bottom: .1em; }
+.hindex li li { margin-left: 0.5em; margin-bottom: 0.1em; }
+.hindex img { padding-left: 0.3em; padding-right: 0.3em; }
+
+#flat ul { list-style-type: none; margin-left: 1em; padding: 0; }
+#flat li { margin-left: 0; margin-bottom: 0; }
+
+.flatsec { margin-top: 2em; }
+
+.tt-dropdown-menu { width: 350px; }
+
+.box { margin-left: .5em; margin-right: .5em; }
+
+.box p { margin-left: .5em; margin-right: .5em; }
+
+.code, .mathblock, .mathblockrendered { font-size: 90%; margin-left: 1em; margin-right: 1em; padding: .5em; }
+
+.code { overflow-x: auto; }
+
+li .code { margin-left: .5em; }
+
+.xtable { margin-left: 0.5em; margin-right: 0.5em; }
+
+dt { margin-left: 1em; }
+
+dd { margin-left: 1.5em; }
+
+blockquote { margin-left: 1em; margin-right: 1em; }
+
+/*# sourceMappingURL=mobile.css.map */
