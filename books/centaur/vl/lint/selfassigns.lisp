@@ -29,9 +29,10 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/ctxexprs")
 (include-book "../mlib/expr-tools")
+(include-book "lucid")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc selfassigns
   :parents (lint)
@@ -74,6 +75,17 @@ assign {foo, bar} = {baz, foo};
   :returns (bit stringp :rule-classes :type-prescription)
   (cat name "[" (natstr index) "]"))
 
+(define vl-selfassign-bits-from-indices ((name stringp)
+                                         (bits nat-listp))
+  :returns (bits string-listp)
+  (if (atom bits)
+      nil
+    (cons (vl-selfassign-bit name (car bits))
+          (vl-selfassign-bits-from-indices name (cdr bits)))))
+
+(local (in-theory (disable nfix)))
+(local (include-book "centaur/misc/arith-equivs" :dir :system))
+
 (define vl-selfassign-bits ((name stringp)
                             (low  natp)
                             (high natp))
@@ -93,107 +105,78 @@ wires involved in an expression."
   :long "<p>We try to return a list of strings like @('\"foo[3]\"') that are
 approximately the bits indicated by the expression.  This routine is at the
 core of our @(see selfassigns) check, which is just an informal heuristic and
-doesn't need to be particularly correct or accurate.</p>
-
-<p>This is mostly similar to the @(see vl-wirealist-p) facilities, but we trade
-some accuracy to be especially forgiving.  We don't really try to avoid name
-clashes that could be caused by using escaped identifiers.  We also correct for
-other errors in some questionable ways:</p>
-
-<ul>
-
-<li>If we encounter an unresolved bit- or part-select from @('w'), or if we
-encounter a plain @('w') that is not defined, we just return
-@('\"w[0]\"').</li>
-
-<li>We don't do any index checking, so if we see an out-of-bounds bit- or
-part-select we just return strings that refer to non-existent bits.</li>
-
-<li>If we encounter a plain, undefined wire @('w'), we just return
-@('\"w[0]\"').</li>
-
-</ul>
-
-<p>It is somewhat <i>wrong</i> to fudge like this, but these cases won't be hit
-in well-formed modules, and they allow us to handle expressions even in
-malformed modules in a mostly correct way without having to consider how to
-handle problems with collecting bits.</p>"
+doesn't need to be particularly correct or accurate.</p>"
 
   (define vl-expr-approx-bits ((x      vl-expr-p)
-                               (mod    vl-module-p)
-                               (ialist (equal ialist (vl-moditem-alist mod))))
+                               (ss     vl-scopestack-p))
     :returns (approx-bits string-listp)
     :measure (vl-expr-count x)
-    (b* (((when (vl-fast-atom-p x))
-          (if (vl-idexpr-p x)
-              (b* ((name (vl-idexpr->name x))
-                   ;; If there's some problem looking up the range, we'll just
-                   ;; return name[0].
-                   ((mv ?foundp range) (vl-find-net/reg-range name mod ialist))
-                   (range-okp (and range (vl-range-resolved-p range)))
-                   (left  (if range-okp
-                              (vl-resolved->val (vl-range->msb range))
-                            0))
-                   (right (if range-okp
-                              (vl-resolved->val (vl-range->lsb range))
-                            0))
-                   (high (max left right))
-                   (low  (min left right)))
-                (vl-selfassign-bits name low high))
-            nil))
+    (append
+     (vl-expr-case x
+       :vl-index (b* ((varname (vl-scopeexpr-case x.scope
+                                 :end (vl-hidexpr-case x.scope.hid 
+                                        :end x.scope.hid.name
+                                        :otherwise nil)
+                                 :otherwise nil))
+                      ((unless varname) nil)
+                      (no-indices (atom x.indices))
+                      (one-index  (tuplep 1 x.indices))
+                      (no-partselect (vl-partselect-case x.part :none))
+                      ((when (and no-indices no-partselect))
+                       ;; Lone occurrence of "foo" -- try to figure out what the
+                       ;; valid bits of foo are from its declaration.
+                       (b* (((mv err trace ?context ?tail)
+                             (vl-follow-scopeexpr x.scope ss))
+                            ((when err) nil)
+                            ((vl-hidstep step) (car trace))
+                            ((unless (eq (tag step.item) :vl-vardecl))
+                             nil)
+                            ((mv simplep valid-bits)
+                             (vl-lucid-valid-bits-for-decl step.item step.ss))
+                            ((unless simplep)
+                             nil))
+                         (vl-selfassign-bits-from-indices varname valid-bits)))
+                      ((when (and one-index no-partselect))
+                       (if (vl-expr-resolved-p (first x.indices))
+                           (list (vl-selfassign-bit varname
+                                                    (vl-resolved->val (first x.indices))))
+                         nil))
+                      ((when (and no-indices
+                                  (vl-partselect-case x.part :range)))
+                       (b* (((vl-range x.part) (vl-partselect->range x.part))
+                            ((unless (and (vl-expr-resolved-p x.part.msb)
+                                          (vl-expr-resolved-p x.part.lsb)))
+                             nil)
+                            (high (max (vl-resolved->val x.part.msb)
+                                       (vl-resolved->val x.part.lsb)))
+                            (low  (min (vl-resolved->val x.part.msb)
+                                       (vl-resolved->val x.part.lsb))))
+                         (vl-selfassign-bits varname low high))))
+                   ;; Else, too complicated, well whatever.
+                   nil)
+       :otherwise nil)
+     (vl-exprlist-approx-bits (vl-expr->subexprs x) ss)))
 
-         (op   (vl-nonatom->op x))
-         (args (vl-nonatom->args x))
-
-         ((when (and (eq op :vl-bitselect)))
-          (b* (((unless (vl-idexpr-p (first args)))
-                nil)
-               (name (vl-idexpr->name (first args)))
-               (idx  (second args))
-               (idx-val (if (vl-expr-resolved-p idx)
-                            (vl-resolved->val idx)
-                          0)))
-            (list (vl-selfassign-bit name idx-val))))
-
-         ((when (eq op :vl-partselect-colon))
-          (b* (((unless (vl-idexpr-p (first args)))
-                nil)
-               (name  (vl-idexpr->name (first args)))
-               (left  (second args))
-               (right (third args))
-               (left-val (if (vl-expr-resolved-p left)
-                             (vl-resolved->val left)
-                           0))
-               (right-val (if (vl-expr-resolved-p right)
-                              (vl-resolved->val right)
-                            0))
-               (high (max left-val right-val))
-               (low  (min left-val right-val)))
-            (vl-selfassign-bits name low high))))
-
-      (vl-exprlist-approx-bits args mod ialist)))
-
-  (define vl-exprlist-approx-bits
-    ((x      vl-exprlist-p)
-     (mod    vl-module-p)
-     (ialist (equal ialist (vl-moditem-alist mod))))
+  (define vl-exprlist-approx-bits ((x  vl-exprlist-p)
+                                   (ss vl-scopestack-p))
     :measure (vl-exprlist-count x)
     :returns (bits string-listp)
     (if (atom x)
         nil
-      (append (vl-expr-approx-bits (car x) mod ialist)
-              (vl-exprlist-approx-bits (cdr x) mod ialist)))))
+      (append (vl-expr-approx-bits (car x) ss)
+              (vl-exprlist-approx-bits (cdr x) ss))))
+  ///
+  (deffixequiv-mutual vl-expr-approx-bits))
 
 (define vl-assign-check-selfassigns
   :short "@(call vl-assign-check-selfassigns) checks an assignment for
 bits that occur on the lhs and rhs."
   ((x      vl-assign-p)
-   (mod    vl-module-p)
-   (ialist (equal ialist (vl-moditem-alist mod))))
+   (ss     vl-scopestack-p))
   :returns (warnings vl-warninglist-p)
-  (b* (((vl-assign x) x)
-       (lhs-bits (mergesort (vl-expr-approx-bits x.lvalue mod ialist)))
-       (rhs-bits (mergesort (vl-expr-approx-bits x.expr mod ialist)))
+  (b* (((vl-assign x) (vl-assign-fix x))
+       (lhs-bits (mergesort (vl-expr-approx-bits x.lvalue ss)))
+       (rhs-bits (mergesort (vl-expr-approx-bits x.expr ss)))
        (oops     (intersect lhs-bits rhs-bits)))
     (if oops
         (list (make-vl-warning
@@ -204,44 +187,45 @@ bits that occur on the lhs and rhs."
                :fn __function__))
       nil)))
 
-(defmapappend vl-assignlist-check-selfassigns (x mod ialist)
-  (vl-assign-check-selfassigns x mod ialist)
+(defmapappend vl-assignlist-check-selfassigns (x ss)
+  (vl-assign-check-selfassigns x ss)
   :guard (and (vl-assignlist-p x)
-              (vl-module-p mod)
-              (equal ialist (vl-moditem-alist mod)))
+              (vl-scopestack-p ss))
   :transform-true-list-p t)
 
 (defthm vl-warninglist-p-of-vl-assignlist-check-selfassigns
-  (vl-warninglist-p (vl-assignlist-check-selfassigns x mod ialist))
+  (vl-warninglist-p (vl-assignlist-check-selfassigns x ss))
   :hints(("Goal" :induct (len x))))
 
 (define vl-module-check-selfassigns
   :short "Check the assignments of a module for self-assignments to bits."
-  ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard)
+  ((x  vl-module-p)
+   (ss vl-scopestack-p))
+  :returns (new-x vl-module-p)
   :long "<p>@(call vl-module-check-selfassigns) checks all of the assignments
 in the module @('x') for @(see selfassigns), and adds any warnings to the
 module.</p>"
 
-  (b* ((assigns (vl-module->assigns x))
-       ((unless assigns)
+    ;; BOZO doesn't do generates correctly
+  (b* (((vl-module x) (vl-module-fix x))
+       ((unless x.assigns)
         x)
-       (ialist (vl-moditem-alist x))
-       (warnings (vl-assignlist-check-selfassigns assigns x ialist))
-       (- (fast-alist-free ialist))
+       (ss       (vl-scopestack-push x ss))
+       (warnings (vl-assignlist-check-selfassigns x.assigns ss))
        ((unless warnings)
         x))
     (change-vl-module x
-                      :warnings (append warnings (vl-module->warnings x)))))
+                      :warnings (append warnings x.warnings))))
 
-(defprojection vl-modulelist-check-selfassigns (x)
-  (vl-module-check-selfassigns x)
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
+(defprojection vl-modulelist-check-selfassigns ((x vl-modulelist-p)
+                                                (ss vl-scopestack-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-check-selfassigns x ss))
 
 (define vl-design-check-selfassigns ((x vl-design-p))
   :returns (new-design vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-check-selfassigns x.mods))))
+  (b* (((vl-design x) x)
+       (ss (vl-scopestack-init x)))
+    (change-vl-design x
+                      :mods (vl-modulelist-check-selfassigns x.mods ss))))
 

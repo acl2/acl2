@@ -460,6 +460,7 @@ expression with a @(see vl-context-p) describing its origin.</p>")
         (vl-package-<check> x ss))
 
       (define vl-design-<check> ((x vl-design-p))
+        :returns (new-x vl-design-p)
         (b* (((vl-design x))
              (ss (vl-scopestack-init (vl-design-fix x)))
              (mods (vl-modulelist-<check> x.mods ss))

@@ -42,12 +42,12 @@
 (local (in-theory (disable VL-ATTS-P-OF-CDR-WHEN-VL-ATTS-P
                            SUBSETP-EQUAL-WHEN-FIRST-TWO-SAME-YADA-YADA
                            ACL2::CONSP-OF-CAR-WHEN-ALISTP
-                           ALISTP-WHEN-VL-ATTS-P-REWRITE
-                           VL-ATTS-P-WHEN-SUBSETP-EQUAL
+                           ;; ALISTP-WHEN-VL-ATTS-P-REWRITE
+                           ;; VL-ATTS-P-WHEN-SUBSETP-EQUAL
                            acl2::CONSP-OF-CAR-WHEN-CONS-LISTP
                            CONSP-OF-CAR-WHEN-VL-COMMENTMAP-P
                            CONSP-WHEN-MEMBER-EQUAL-OF-VL-COMMENTMAP-P
-                           CONSP-WHEN-MEMBER-EQUAL-OF-VL-ATTS-P
+                           ;; CONSP-WHEN-MEMBER-EQUAL-OF-VL-ATTS-P
                            ACL2::CONSP-UNDER-IFF-WHEN-TRUE-LISTP
                            default-car
                            default-cdr

@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "json")
+;; (include-book "json")
 (include-book "lint")
 (include-book "shell")
 (include-book "pp")
@@ -106,7 +106,7 @@ commands.</p>
 
   (defconst *vl-help-messages*
     (list (cons "help"   *vl-generic-help*)
-          (cons "json"   *vl-json-help*)
+          ;(cons "json"   *vl-json-help*)
           (cons "lint"   *vl-lint-help*)
           (cons "pp"     *vl-pp-help*)
           (cons "gather" *vl-gather-help*)
@@ -218,10 +218,10 @@ toolkit with their own commands.</p>
           (exit-ok)
           state))
 
-       ((when (equal cmd "json"))
-        (b* ((state (vl-json args)))
-          (exit-ok)
-          state))
+       ;; ((when (equal cmd "json"))
+       ;;  (b* ((state (vl-json args)))
+       ;;    (exit-ok)
+       ;;    state))
 
        ((when (equal cmd "lint"))
         (b* ((state (vl-lint args)))

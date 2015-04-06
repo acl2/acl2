@@ -736,14 +736,13 @@ created when we process their packages, etc.</p>"
     (vl-hidtrace-mark-interfaces mtype (cdr trace) ss st ctx)))
 
 (define vl-hidsolo-mark ((mtype (member mtype '(:used :set)))
-                         (hid   vl-expr-p)
+                         (x     vl-scopeexpr-p)
                          (ss    vl-scopestack-p)
                          (st    vl-lucidstate-p)
                          (ctx   vl-context1-p))
-  :guard (vl-hidexpr-p hid)
   :returns (new-st vl-lucidstate-p)
   ;; BOZO this doesn't mark the indices used in the HID expression!!
-  (b* (((mv err trace tail) (vl-follow-hidexpr hid ss ctx))
+  (b* (((mv err trace ?scopectx tail) (vl-follow-scopeexpr x ss))
        ((when err)
         (b* (((vl-lucidstate st)))
           (change-vl-lucidstate st :warnings st.warnings)))
@@ -755,7 +754,7 @@ created when we process their packages, etc.</p>"
        (key (make-vl-lucidkey
              :item step.item
              :scopestack (vl-normalize-scopestack step.ss)))
-       (occ (if (vl-hidexpr->endp tail)
+       (occ (if (vl-hidexpr-case tail :end)
                 (make-vl-lucidocc-solo :ctx ctx :ss ss)
               (make-vl-lucidocc-tail :ctx ctx :ss ss)))
        (st  (vl-hidtrace-mark-interfaces mtype rest ss st ctx))
@@ -763,16 +762,15 @@ created when we process their packages, etc.</p>"
     st))
 
 (define vl-hidslice-mark ((mtype  (member mtype '(:used :set)))
-                          (hid    vl-expr-p)
+                          (hid    vl-scopeexpr-p)
                           (left   vl-expr-p)
                           (right  vl-expr-p)
                           (ss     vl-scopestack-p)
                           (st     vl-lucidstate-p)
                           (ctx    vl-context1-p))
-  :guard (vl-hidexpr-p hid)
   :returns (new-st vl-lucidstate-p)
   ;; BOZO this doesn't mark the indices used in the HID expression!!
-  (b* (((mv err trace tail) (vl-follow-hidexpr hid ss ctx))
+  (b* (((mv err trace ?scopectx tail) (vl-follow-scopeexpr hid ss))
        ((when err)
         (b* (((vl-lucidstate st)))
           (change-vl-lucidstate st :warnings st.warnings)))
@@ -780,7 +778,7 @@ created when we process their packages, etc.</p>"
        (key (make-vl-lucidkey
              :item step.item
              :scopestack (vl-normalize-scopestack step.ss)))
-       (occ (if (vl-hidexpr->endp tail)
+       (occ (if (vl-hidexpr-case tail :end)
                 (make-vl-lucidocc-slice :left left
                                         :right right
                                         :ctx ctx
@@ -791,36 +789,72 @@ created when we process their packages, etc.</p>"
        (st  (vl-lucidstate-mark mtype key occ st ctx)))
     st))
 
-(define vl-rhsatom-lucidcheck ((x   vl-expr-p)
-                               (ss  vl-scopestack-p)
-                               (st  vl-lucidstate-p)
-                               (ctx vl-context1-p))
-  :guard-hints(("Goal"
-                :in-theory (disable tag-when-vl-atomguts-p-forward)
-                :use ((:instance tag-when-vl-atomguts-p-forward
-                       (x (vl-atom->guts (vl-expr-fix x)))))))
-  :guard (vl-atom-p x)
+;; (define vl-rhsatom-lucidcheck ((x   vl-expr-p)
+;;                                (ss  vl-scopestack-p)
+;;                                (st  vl-lucidstate-p)
+;;                                (ctx vl-context1-p))
+;;   :guard-hints(("Goal"
+;;                 :in-theory (disable tag-when-vl-atomguts-p-forward)
+;;                 :use ((:instance tag-when-vl-atomguts-p-forward
+;;                        (x (vl-atom->guts (vl-expr-fix x)))))))
+;;   :guard (vl-atom-p x)
+;;   :returns (new-st vl-lucidstate-p)
+;;   (b* ((x    (vl-expr-fix x))
+;;        (guts (vl-atom->guts x))
+;;        (st   (vl-lucidstate-fix st)))
+;;     (case (tag guts)
+;;       (:vl-funname  (vl-lucid-mark-simple :used (vl-funname->name guts) ss st ctx))
+;;       (:vl-typename (vl-lucid-mark-simple :used (vl-typename->name guts) ss st ctx))
+;;       (:vl-tagname
+;;        ;; BOZO eventually think about how to handle tags.
+;;        st)
+;;       ((:vl-id :vl-hidpiece)
+;;        (progn$ (raise "Should never get here because we should check for hidexpr-p first.")
+;;                st))
+;;       ((:vl-constint :vl-weirdint :vl-extint :vl-string
+;;         :vl-real :vl-keyguts :vl-time :vl-basictype
+;;         :vl-sysfunname)
+;;        ;; Nothing at all to do for any of these
+;;        st)
+;;       (otherwise
+;;        (progn$ (impossible)
+;;                st)))))
+
+(defines vl-collect-usertypes
+  (define vl-collect-usertypes ((x vl-datatype-p))
+    :returns (usertypes vl-scopeexprlist-p)
+    :measure (vl-datatype-count x)
+    (vl-datatype-case x
+      :vl-coretype nil
+      :vl-struct (vl-structmemberlist-collect-usertypes x.members)
+      :vl-union  (vl-structmemberlist-collect-usertypes x.members)
+      :vl-enum   (vl-collect-usertypes x.basetype)
+      :vl-usertype (list x.name)))
+  (define vl-structmemberlist-collect-usertypes ((x vl-structmemberlist-p))
+    :returns (usertypes vl-scopeexprlist-p)
+    :measure (vl-structmemberlist-count x)
+    (if (atom x)
+        nil
+      (append (vl-collect-usertypes (vl-structmember->type (car x)))
+              (vl-structmemberlist-collect-usertypes (cdr x)))))
+  ///
+  (deffixequiv-mutual vl-collect-usertypes))
+
+(define vl-scopeexprlist-mark-solo ((mtype (member mtype '(:used :set)))
+                                    (x     vl-scopeexprlist-p)
+                                    (ss    vl-scopestack-p)
+                                    (st    vl-lucidstate-p)
+                                    (ctx   vl-context1-p))
   :returns (new-st vl-lucidstate-p)
-  (b* ((x    (vl-expr-fix x))
-       (guts (vl-atom->guts x))
-       (st   (vl-lucidstate-fix st)))
-    (case (tag guts)
-      (:vl-funname  (vl-lucid-mark-simple :used (vl-funname->name guts) ss st ctx))
-      (:vl-typename (vl-lucid-mark-simple :used (vl-typename->name guts) ss st ctx))
-      (:vl-tagname
-       ;; BOZO eventually think about how to handle tags.
-       st)
-      ((:vl-id :vl-hidpiece)
-       (progn$ (raise "Should never get here because we should check for hidexpr-p first.")
-               st))
-      ((:vl-constint :vl-weirdint :vl-extint :vl-string
-        :vl-real :vl-keyguts :vl-time :vl-basictype
-        :vl-sysfunname)
-       ;; Nothing at all to do for any of these
-       st)
-      (otherwise
-       (progn$ (impossible)
-               st)))))
+  (if (atom x)
+      (vl-lucidstate-fix st)
+    (vl-scopeexprlist-mark-solo
+     mtype (cdr x) ss (vl-hidsolo-mark mtype (car x) ss st ctx) ctx)))
+
+
+  
+
+
 
 (defines vl-rhsexpr-lucidcheck
 
@@ -832,57 +866,54 @@ created when we process their packages, etc.</p>"
     :returns (new-st vl-lucidstate-p)
     :verify-guards nil
     :inline nil
-    (b* (((when (vl-hidexpr-p x))
-          (b* ((st (vl-hidsolo-mark :used x ss st ctx))
-               ;; If there are any indices in this expression, then we need to
-               ;; perhaps mark identifiers in them as used as well.
-               (indices (vl-hidexpr-collect-indices x))
-               ((when indices)
-                (vl-rhsexprlist-lucidcheck indices ss st ctx)))
-            st))
+    (b* ((st (vl-rhsexprlist-lucidcheck (vl-expr->subexprs x) ss st ctx)))
+      (vl-expr-case x
+        :vl-index (b* ((no-indices (atom x.indices))
+                       (one-index  (tuplep 1 x.indices))
+                       (no-partselect (vl-partselect-case x.part :none))
+                       ((when (and no-indices no-partselect))
+                        (vl-hidsolo-mark :used x.scope ss st ctx))
+                       ((when (and one-index no-partselect))
+                        (vl-hidslice-mark :used x.scope (first x.indices)
+                                          (first x.indices) ss st ctx))
+                       ((when (and no-indices
+                                   (vl-partselect-case x.part :range)))
+                        (b* (((vl-range x.part) (vl-partselect->range x.part))) ;; ugh
+                          (vl-hidslice-mark :used x.scope
+                                            x.part.msb x.part.lsb ss st ctx))))
+                    ;; BOZO something fancy like
+                    ;;    foo[a +: 5]
+                    ;;    foo[a -: 5]
+                    ;;    foo[3][4]
+                    ;;    foo[3][4:0]
+                    ;; Eventually do something more useful with this.  For now,
+                    ;; we will just mark all of FOO as used.
+                    (vl-hidsolo-mark :used x.scope ss st ctx))
 
-         ((when (vl-atom-p x))
-          (vl-rhsatom-lucidcheck x ss st ctx))
+        :vl-call (b* ((st (vl-hidsolo-mark :used x.name ss st ctx))
+                      (st (if x.typearg
+                              (vl-scopeexprlist-mark-solo
+                               :used (vl-collect-usertypes x.typearg)
+                               ss st ctx)
+                            st)))
+                   st)
+        :vl-cast (vl-casttype-case x.to
+                   :type (vl-scopeexprlist-mark-solo
+                          :used (vl-collect-usertypes x.to.type)
+                          ss st ctx)
+                   :otherwise st)
+        :vl-pattern (if x.pattype
+                        (vl-scopeexprlist-mark-solo
+                          :used (vl-collect-usertypes x.pattype)
+                          ss st ctx)
+                      st)
+        :vl-stream (vl-slicesize-case x.size
+                     :type (vl-scopeexprlist-mark-solo
+                            :used (vl-collect-usertypes x.size.type)
+                            ss st ctx)
+                     :otherwise st)
 
-         ((vl-nonatom x))
-         ((when (and (or (eq x.op :vl-index)
-                         (eq x.op :vl-bitselect))
-                     ;; BOZO this probably isn't really general enough, i.e.,
-                     ;; we might ideally want to deal with things like
-                     ;; foo[3][4][5] in some different way.  For now, this
-                     ;; should at least mark foo[3].
-                     (vl-hidexpr-p (first x.args))))
-          (b* (((list from idx) x.args)
-               ;; Previous bug: we didn't notice that expressions that were
-               ;; only used in index positions were being used.  So, now be
-               ;; sure to mark identifiers in the index expression as used.
-               (st (vl-hidslice-mark :used from idx idx ss st ctx))
-               (st (vl-rhsexpr-lucidcheck idx ss st ctx))
-               (st (vl-rhsexprlist-lucidcheck (vl-hidexpr-collect-indices from) ss st ctx)))
-            st))
-
-         ((when (and (or (eq x.op :vl-select-colon)
-                         (eq x.op :vl-partselect-colon))
-                     ;; BOZO as with individual indices, this probably isn't
-                     ;; general enough, i.e., we won't deal with foo[5][4:3]
-                     ;; or foo[6:5][4:3] in a very sensible way.
-                     (vl-hidexpr-p (first x.args))))
-          (b* (((list from left right) x.args)
-               ;; As in the index case, be sure to mark expressions used in
-               ;; the indices.
-               (st (vl-hidslice-mark :used from left right ss st ctx))
-               (st (vl-rhsexpr-lucidcheck left ss st ctx))
-               (st (vl-rhsexpr-lucidcheck right ss st ctx))
-               (st (vl-rhsexprlist-lucidcheck (vl-hidexpr-collect-indices from) ss st ctx)))
-            st))
-
-         ;; BOZO may eventually wish to specially handle many other operators:
-         ;;  - pluscolon, minuscolon, etc.
-         ;;  - assignment pattern stuff
-         ;;  - tagged operators (recording which tags are used)
-         ;;  - streaming concatenation and with operators
-         )
-      (vl-rhsexprlist-lucidcheck x.args ss st ctx)))
+        :otherwise st)))
 
   (define vl-rhsexprlist-lucidcheck ((x   vl-exprlist-p)
                                      (ss  vl-scopestack-p)
@@ -919,65 +950,58 @@ created when we process their packages, etc.</p>"
     :returns (new-st vl-lucidstate-p)
     :verify-guards nil
     :inline nil
-    (b* (((when (vl-atom-p x))
-          (if (vl-hidexpr-p x)
-              ;; No extra indices or anything to worry about marking.
-              (vl-hidsolo-mark :set x ss st ctx)
-            (vl-lucidstate-fix st)))
+    (vl-expr-case x
+      :vl-index (b* ((st
+                      ;; We'll mark it as being SET, but first: we also need to
+                      ;; mark anything that is used in index expressions as
+                      ;; USED.
+                      (vl-rhsexprlist-lucidcheck (vl-expr->subexprs x) ss st ctx))
+                     (no-indices (atom x.indices))
+                     (one-index  (tuplep 1 x.indices))
+                     (no-partselect (vl-partselect-case x.part :none))
+                     ((when (and no-indices no-partselect))
+                      (vl-hidsolo-mark :set x.scope ss st ctx))
+                     ((when (and one-index no-partselect))
+                      (vl-hidslice-mark :set x.scope (first x.indices)
+                                        (first x.indices) ss st ctx))
+                     ((when (and no-indices
+                                 (vl-partselect-case x.part :range)))
+                      (b* (((vl-range x.part) (vl-partselect->range x.part))) ;; ugh
+                        (vl-hidslice-mark :set x.scope
+                                          x.part.msb x.part.lsb ss st ctx))))
+                  ;; BOZO something fancy like
+                  ;;    foo[a +: 5]
+                  ;;    foo[a -: 5]
+                  ;;    foo[3][4]
+                  ;;    foo[3][4:0]
+                  ;; Eventually do something more useful with this.  For now,
+                  ;; we will just mark all of FOO as used.
+                  (vl-hidsolo-mark :set x.scope ss st ctx))
 
-         ((vl-nonatom x))
+      ;; :vl-call (b* ((st (vl-hidsolo-mark :used x.name ss st ctx))
+      ;;               (st (if x.typearg
+      ;;                       (vl-scopeexprlist-mark-solo
+      ;;                        :used (vl-collect-usertypes x.typearg)
+      ;;                        ss st ctx)
+      ;;                     st)))
+      ;;            st)
+      ;; :vl-cast (vl-casttype-case x.to
+      ;;            :type (vl-scopeexprlist-mark-solo
+      ;;                   :used (vl-collect-usertypes x.to.type)
+      ;;                   ss st ctx)
+      ;;            :otherwise st)
+      ;; :vl-pattern (if x.pattype
+      ;;                 (vl-scopeexprlist-mark-solo
+      ;;                  :used (vl-collect-usertypes x.pattype)
+      ;;                  ss st ctx)
+      ;;               st)
+      ;; :vl-stream (vl-slicesize-case x.size
+      ;;              :type (vl-scopeexprlist-mark-solo
+      ;;                     :used (vl-collect-usertypes x.size.type)
+      ;;                     ss st ctx)
+      ;;              :otherwise st)
 
-         ;; BOZO subtle orders because index exprs might be hidexprs.  Make sure we
-         ;; do index exprs first.
-         ((when (and (or (eq x.op :vl-index)
-                         (eq x.op :vl-bitselect))
-                     ;; BOZO this probably isn't really general enough, i.e.,
-                     ;; we might ideally want to deal with things like
-                     ;; foo[3][4][5] in some different way.  For now, this
-                     ;; should at least mark foo[3].
-                     (vl-hidexpr-p (first x.args))))
-          (b* (((list from idx) x.args)
-               ;; We mark FROM as being SET, but we also need to mark anything
-               ;; that is used in index expressions as USED.
-               (st (vl-hidslice-mark :set from idx idx ss st ctx))
-               (st (vl-rhsexpr-lucidcheck idx ss st ctx))
-               (st (vl-rhsexprlist-lucidcheck (vl-hidexpr-collect-indices from) ss st ctx)))
-            st))
-
-         ((when (and (or (eq x.op :vl-select-colon)
-                         (eq x.op :vl-partselect-colon))
-                     ;; BOZO as with individual indices, this probably isn't
-                     ;; general enough, i.e., we won't deal with foo[5][4:3]
-                     ;; or foo[6:5][4:3] in a very sensible way.
-                     (vl-hidexpr-p (first x.args))))
-          (b* (((list from left right) x.args)
-               ;; As above, mark the HID as set but mark the indices as USED.
-               (st (vl-hidslice-mark :set from left right ss st ctx))
-               (st (vl-rhsexpr-lucidcheck left ss st ctx))
-               (st (vl-rhsexpr-lucidcheck right ss st ctx))
-               (st (vl-rhsexprlist-lucidcheck (vl-hidexpr-collect-indices from) ss st ctx)))
-            st))
-
-         ((when (vl-hidexpr-p x))
-          (b* ((st (vl-hidsolo-mark :set x ss st ctx))
-               ;; Subtle.  If there are any indices in this expression, then we
-               ;; need to perhaps mark identifiers in them as USED as well.
-               ;; For instance, we might be looking at:
-               ;;    foo[width-1:0].bar = 0;
-               ;; Above we have just marked the declaration for BAR as being set.
-               ;; But we also want to mark WIDTH as being USED (not SET) because
-               ;; it is being used to choose where to do the write, etc.
-               (indices (vl-hidexpr-collect-indices x))
-               (st      (vl-rhsexprlist-lucidcheck indices ss st ctx)))
-            st))
-
-         ;; BOZO may wish to specially handle many other operators:
-         ;;  - pluscolon, minuscolon, etc.
-         ;;  - assignment pattern stuff
-         ;;  - tagged operators (recording which tags are used)
-         ;;  - streaming concatenation and with operators
-         )
-      (vl-lhsexprlist-lucidcheck x.args ss st ctx)))
+      :otherwise (vl-lhsexprlist-lucidcheck (vl-expr->subexprs x) ss st ctx)))
 
   (define vl-lhsexprlist-lucidcheck ((x   vl-exprlist-p)
                                      (ss  vl-scopestack-p)
@@ -1045,9 +1069,9 @@ created when we process their packages, etc.</p>"
 (def-vl-lucidcheck packeddimension
   :takes-ctx t
   :body
-  (if (eq x :vl-unsized-dimension)
-      st
-    (vl-range-lucidcheck x ss st ctx)))
+  (vl-packeddimension-case x
+    :unsized st
+    :range (vl-range-lucidcheck x.range ss st ctx)))
 
 (def-vl-lucidcheck-list packeddimensionlist :element packeddimension :takes-ctx t)
 
@@ -1058,21 +1082,6 @@ created when we process their packages, etc.</p>"
       (vl-packeddimension-lucidcheck x ss st ctx)
     st))
 
-(def-vl-lucidcheck enumbasekind
-  :takes-ctx t
-  :body
-  (if (stringp x)
-      ;; Type name like foo_t, so mark foo_t as a used type.
-      (vl-lucid-mark-simple :used x ss st ctx)
-    st))
-
-(def-vl-lucidcheck enumbasetype
-  :takes-ctx t
-  :body
-  (b* (((vl-enumbasetype x))
-       (st (vl-enumbasekind-lucidcheck x.kind ss st ctx))
-       (st (vl-maybe-packeddimension-lucidcheck x.dim ss st ctx)))
-    st))
 
 (def-vl-lucidcheck enumitem
   :takes-ctx t
@@ -1114,14 +1123,14 @@ created when we process their packages, etc.</p>"
           (vl-structmemberlist-lucidcheck x.members ss st ctx))
 
         :vl-enum
-        (b* ((st (vl-enumbasetype-lucidcheck x.basetype ss st ctx))
+        (b* ((st (vl-datatype-lucidcheck x.basetype ss st ctx))
              (st (vl-enumitemlist-lucidcheck x.items ss st ctx))
              (st (vl-packeddimensionlist-lucidcheck x.pdims ss st ctx))
              (st (vl-packeddimensionlist-lucidcheck x.udims ss st ctx)))
           st)
 
         :vl-usertype
-        (b* ((st (vl-rhsexpr-lucidcheck x.kind ss st ctx))
+        (b* ((st (vl-hidsolo-mark :used x.name ss st ctx))
              (st (vl-packeddimensionlist-lucidcheck x.pdims ss st ctx))
              (st (vl-packeddimensionlist-lucidcheck x.udims ss st ctx)))
           st))))
@@ -1304,7 +1313,7 @@ created when we process their packages, etc.</p>"
         ;; task will also be marked as used.  BOZO this maybe isn't quite right
         ;; -- if the task has outputs then maybe we need to be marking them as
         ;; set instead of used??
-        (b* ((st (vl-rhsexpr-lucidcheck x.id ss st ctx))
+        (b* ((st (vl-hidsolo-mark :used x.id ss st ctx))
              (st (vl-rhsexprlist-lucidcheck x.args ss st ctx)))
           st)
 
@@ -1572,9 +1581,9 @@ created when we process their packages, etc.</p>"
 
 (def-vl-lucidcheck paramvalue
   :takes-ctx t
-  :body (if (vl-paramvalue-expr-p x)
-            (vl-rhsexpr-lucidcheck x ss st ctx)
-          (vl-datatype-lucidcheck x ss st ctx)))
+  :body (vl-paramvalue-case x
+          :expr (vl-rhsexpr-lucidcheck x.expr ss st ctx)
+          :type (vl-datatype-lucidcheck x.type ss st ctx)))
 
 (def-vl-lucidcheck-list paramvaluelist :element paramvalue :takes-ctx t)
 
@@ -1772,14 +1781,6 @@ created when we process their packages, etc.</p>"
 ;; nats-from that produces a sparse bitset.  That's fine but might take an hour
 ;; or two of work.
 
-(define vl-fast-range-p ((x vl-packeddimension-p))
-  :prepwork ((local (in-theory (enable vl-packeddimension-p))))
-  :hooks nil
-  :inline t
-  :enabled t
-  (mbe :logic (vl-range-p x)
-       :exec (not (eq x :vl-unsized-dimension))))
-
 (define vl-lucid-range->bits ((x vl-range-p))
   :guard (vl-range-resolved-p x)
   :returns (bits (and (nat-listp bits)
@@ -1837,8 +1838,8 @@ created when we process their packages, etc.</p>"
   :returns (mv (simple-p booleanp :rule-classes :type-prescription)
                (bits     (and (nat-listp bits)
                               (setp bits))))
-  (b* (((mv warning x) (vl-datatype-usertype-elim x ss 1000))
-       ((when warning)
+  (b* (((mv err x) (vl-datatype-usertype-resolve x ss :rec-limit 1000))
+       ((when err)
         ;; Some kind of error resolving the user-defined data types, let's
         ;; not try to analyze this at all.
         (mv nil nil)))
@@ -1854,11 +1855,13 @@ created when we process their packages, etc.</p>"
                 ;; No packed or unpacked dimensions.  Single bit.
                 (mv t '(0)))
                ((unless (and (atom (cdr x.pdims))
-                             (vl-fast-range-p (first x.pdims))
-                             (vl-range-resolved-p (first x.pdims))))
+                             (b* ((dim (first x.pdims)))
+                               (vl-packeddimension-case dim :range))
+                             (vl-range-resolved-p
+                              (vl-packeddimension->range (first x.pdims)))))
                 ;; Too many or unresolved dimensions -- too hard.
                 (mv nil nil)))
-            (mv t (vl-lucid-range->bits (first x.pdims)))))
+            (mv t (vl-lucid-range->bits (vl-packeddimension->range (first x.pdims))))))
 
          ((:vl-byte :vl-shortint :vl-int :vl-longint :vl-integer :vl-time)
           ;; Integer atom types.  If there aren't any dimensions then it still
@@ -2033,7 +2036,10 @@ created when we process their packages, etc.</p>"
                     ;; they have a name.  When we turn real generates into
                     ;; genblobs (vl-sort-genelements) they don't.  So, we're
                     ;; only in a "true" generate if there is no name.
-                    (not (vl-genblob->name ss.top))))))
+                    (member (vl-genblob->scopetype ss.top)
+                            '(:vl-genblock
+                              :vl-genarrayblock
+                              :vl-anonymous-scope))))))
 
 (define vl-lucidocclist-drop-generates ((x vl-lucidocclist-p))
   :returns (new-x vl-lucidocclist-p)
@@ -2218,14 +2224,11 @@ whose arguments are not sensibly resolved.</p>"
 
 (define vl-lucid-z-expr-p ((x vl-expr-p))
   ;; Recognizes: any width `Z`, `foo ? bar : Z`, or `foo ? Z : bar`
-  (if (vl-atom-p x)
-      (vl-zatom-p x)
-    (b* (((vl-nonatom x) x))
-      (and (eq x.op :vl-qmark)
-           (or (and (vl-atom-p (cadr x.args))
-                    (vl-zatom-p (cadr x.args)))
-               (and (vl-atom-p (caddr x.args))
-                    (vl-zatom-p (caddr x.args))))))))
+  (or (vl-zatom-p x)
+      (vl-expr-case x
+        :vl-qmark (or (vl-zatom-p x.then)
+                      (vl-zatom-p x.else))
+        :otherwise nil)))
 
 (define vl-lucid-z-assign-p ((x vl-assign-p))
   (vl-lucid-z-expr-p (vl-assign->expr x)))

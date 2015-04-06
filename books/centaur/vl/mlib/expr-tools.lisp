@@ -1755,6 +1755,7 @@ expression, with repetition.</p>"
   (vl-expr-case x
     :vl-value (vl-value-case x.val
                 :vl-weirdint (vl-zbitlist-p x.val.bits)
+                :vl-extint (vl-bit-equiv x.val.value :vl-zval)
                 :otherwise nil)
     :otherwise nil))
 
