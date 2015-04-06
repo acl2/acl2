@@ -291,41 +291,4 @@ occurs, and is used in any warning messages we produce.</p>"
     :guard-debug t)
   (deffixequiv-mutual vl-expr-condcheck))
 
-(define vl-exprctxalist-condcheck ((x vl-exprctxalist-p))
-  :returns (warnings vl-warninglist-p)
-  :short "@(call vl-exprctxalist-condcheck) extends @(see vl-expr-condcheck)
-across an @(see vl-exprctxalist-p)."
-  :measure (len (vl-exprctxalist-fix x))
-  (b* ((x (vl-exprctxalist-fix x)))
-    (if (atom x)
-        nil
-      (append-without-guard
-       (vl-expr-condcheck (caar x) nil (cdar x))
-       (vl-exprctxalist-condcheck (cdr x)))))
-  ///
-  (defret true-listp-of-vl-exprctxalist-condcheck
-    (true-listp warnings)))
-
-(define vl-module-condcheck ((x vl-module-p))
-  :returns (new-x vl-module-p)
-  :short "@(call vl-module-condcheck) carries our our @(see condcheck) on all
-the expressions in a module, and adds any resulting warnings to the module."
-
-  (b* ((ctxexprs     (vl-module-ctxexprs x))
-       (new-warnings (vl-exprctxalist-condcheck ctxexprs)))
-    (change-vl-module x
-                      :warnings (append new-warnings (vl-module->warnings x)))))
-
-(defprojection vl-modulelist-condcheck ((x vl-modulelist-p))
-  :returns (new-x vl-modulelist-p)
-  (vl-module-condcheck x))
-
-(define vl-design-condcheck ((x vl-design-p))
-  :returns (new-x vl-design-p)
-  (b* (((vl-design x) x)
-       (new-mods (vl-modulelist-condcheck x.mods)))
-    (clear-memoize-table 'vl-expr-strip)
-    (change-vl-design x :mods new-mods)))
-
-
-
+(def-expr-check condcheck :formals (x.expr nil x.ctx))

@@ -96,24 +96,83 @@
     
     :short "Resolve constant expressions, parameter values, and datatypes."
     :long "
-<p>Parameters, datatypes, and functions may all be interrelated, but they should all be able to be resolved statically:</p>
+<p>In the previous version of VL, we used to do a series of transforms that:</p>
 
 <ul>
-<li>datatypes resolved so that their dimensions all have constant indices and
-usertypes are resolved</li>
-<li>type parameters determined to be resolved datatypes</li>
-<li>value parameters to constant values with resolved types</li>
-<li>functions compiled to svex expressions in terms of their formals and with
-resolved return types.</li>
+<li>expanded function definitions into assignments (see @(see
+vl2014::expand-functions))</li>
+
+<li>resolved parameter values and created all the necessary versions of
+parametrized modules (see @(see vl2014::unparameterization))</li>
+
+<li>resolved constant indices in datatypes (see @(see
+vl2014::rangeresolve)).</li>
 </ul>
 
-<p>As you might imagine, this involves a complicated mutual recursion.  We
-don't want to replicate the work of @(see vl-expr-to-svex) or make it deal with
-recursive resolution of parameters, functions, etc.  Instead, whenever we call
-it, we first ensure that we've collected mappings for the resolved values above
-in the @(see vl-svexconf) object passed in. So primarily, this function walks
-over expressions collecting the necessary mappings.</p>
+<p>(We'll refer to these three kinds of transformations collectively as
+\"elaboration;\" commercial implementations use that term to mean something
+somewhat similar.)</p>
 
+<p>The problem with this series of transformations is that there may be
+complicated relationships among functions, parameters, and datatypes -- a
+function, parameter, or datatype definition may use functions, parameters, and
+datatypes.  Consider the following sequence of declarations:</p>
+
+@({
+ function integer f1 (logic a);
+    f1 = a ? 3 : 5;
+ endfunction
+
+ parameter p1 = f1(1);
+
+ typedef logic [p1-1:0] t1;
+
+ function t1 f2 (integer b);
+    f2 = ~b;
+ endfunction
+
+ parameter t1 p2 = f2(p1);
+
+ })
+
+<p>From the example we can see that it won't suffice to use our three
+transformations once each in any order.  One solution might be to try the
+tranformations repeatedly in a cycle.  Our solution is instead to allow
+parameters, functions, and types to be resolved as needed while resolving other
+parameters, functions, and types.  We use a lookup table to store previously
+resolved items as a form of memoization.</p>
+
+<p>The lookup table in which we store these values is a @(see vl-svexconf),
+which contains a scopestack and additionally holds the following four
+tables:</p>
+
+<ul>
+
+<li>@('typeov'), mapping from function, parameter, and type names to resolved
+datatypes.  These datatypes have all indices and usertypes resolved.  Functions
+map to their return types, value parameters map to their types, type parameters
+map to their (datatype) values, and type names map to their definitions.</li>
+
+<li>@('fns'), mapping from function names to @(see svex) expressions for
+their return values in terms of their inputs.</li>
+
+<li>@('fnports'), mapping from function names to their resolved list of
+ports (containing resolved datatypes).</li>
+
+<li>@('params'), mapping from parameter names to @(see svex) expressions for
+their values, which should be constant.</li>
+
+</ul>
+
+<p>The elaboration algorithm calls subsidiary algorithms @(see vl-expr-to-svex)
+and @(see vl-fundecl-to-svex), which each use the svexconf lookup tables in a
+read-only manner.  Before translating an expression (or, similarly, function
+declaration) to svex, the elaboration algorithm walks over the expression and
+collects the information it needs to successfully resolve it to an svex
+expression: the types, svex translations, and port lists of functions that the
+expression calls, and types and values of parameters referenced in the
+expression.  This information is stored in the svexconf before translating the
+expression with @(see vl-expr-to-svex).</p>
 
 ")
   

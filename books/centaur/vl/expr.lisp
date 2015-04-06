@@ -1187,6 +1187,7 @@ try to support the use of both ascending and descending ranges.</p>")
   )
 
 (fty::deflist vl-rangelist :elt-type vl-range)
+(fty::deflist vl-scopeexprlist :elt-type vl-scopeexpr)
 
 
 (define vl-partselect-range->msb ((x vl-partselect-p))

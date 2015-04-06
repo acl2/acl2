@@ -494,7 +494,12 @@ collecting any problems that have been reported.</p>"
           (cons first rest)
         rest))))
 
-(defsection sd-analyze-ctxexprs
+(define sd-analyze-ctxexprs ((ctxexprs vl-ctxexprlist-p)
+                              (global-pats sd-patalist-p))
+  :returns (problems sd-problemlist-p
+                     :hyp (sd-patalist-p global-pats)
+                     :hints(("Goal" :in-theory (enable sd-problemlist-p))))
+  :prepwork ((local (in-theory (disable (force)))))
   :short "Perform skip-detection for a list of expressions."
 
   :long "<p><b>Signature:</b> @(call sd-analyze-ctxexprs) returns a list of
@@ -514,40 +519,25 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
 <p>We just call @(see sd-patalist-compare) for every expression in
 @('ctxexprs') and combine the results.</p>"
 
-  (defund sd-analyze-ctxexprs (ctxexprs global-pats)
-    (declare (xargs :guard (and (vl-exprctxalist-p ctxexprs)
-                                (sd-patalist-p global-pats))))
-    (if (atom ctxexprs)
-        nil
-      (b* ((expr       (caar ctxexprs))
-           (ctx        (vl-context1-fix (cdar ctxexprs)))
-           (expr-names (vl-expr-names expr))
-           (expr-keys  (sd-keygen-list expr-names nil))
-           (expr-pats  (sd-patalist expr-keys))
-           (dom        (strip-cars expr-pats))
-           (report1    (sd-patalist-compare dom expr-pats global-pats ctx))
-           (-          (flush-hons-get-hash-table-link expr-pats)))
-          (append report1
-                  (sd-analyze-ctxexprs (cdr ctxexprs) global-pats)))))
+  (if (atom ctxexprs)
+      nil
+    (b* (((vl-ctxexpr x1) (car ctxexprs))
+         (expr-names (vl-expr-varnames x1.expr))
+         (expr-keys  (sd-keygen-list expr-names nil))
+         (expr-pats  (sd-patalist expr-keys))
+         (dom        (strip-cars expr-pats))
+         (report1    (sd-patalist-compare dom expr-pats global-pats x1.ctx))
+         (-          (flush-hons-get-hash-table-link expr-pats)))
+      (append report1
+              (sd-analyze-ctxexprs (cdr ctxexprs) global-pats))))
+  ///
+  (defret true-listp-of-sd-analyze-ctxexprs
+    (true-listp problems)
+    :rule-classes :type-prescription))
 
-  (local (in-theory (enable sd-analyze-ctxexprs)))
-
-  (defthm true-listp-of-sd-analyze-ctxexprs
-    (true-listp (sd-analyze-ctxexprs ctxexprs global-pats))
-    :rule-classes :type-prescription)
-
-  (defthm sd-problemlist-p-of-sd-analyze-ctxexprs
-    (implies (and (force (vl-exprctxalist-p ctxexprs))
-                  (force (sd-patalist-p global-pats)))
-             (sd-problemlist-p (sd-analyze-ctxexprs ctxexprs global-pats)))))
-
-
-
-
-(defthm vl-exprlist-p-of-alist-keys-when-vl-exprctxalist-p
-  (implies (vl-exprctxalist-p x)
-           (vl-exprlist-p (alist-keys x)))
-  :hints(("Goal" :induct (len x))))
+(defprojection vl-ctxexprlist->exprs ((x vl-ctxexprlist-p))
+  :returns (exprs vl-exprlist-p)
+  (vl-ctxexpr->expr x))
 
 (define sd-analyze-module-aux
   :short "Collect all the problems."
@@ -555,14 +545,14 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
   :returns (probs sd-problemlist-p :hyp :fguard "Not sorted yet.")
   (b* (;;(modname (vl-module->name x))
        ;;(- (cw "Analyzing ~s0.~%" modname))
-       (ctxexprs  (cwtime (vl-module-ctxexprs x)
+       (ctxexprs  (cwtime (vl-module-ctxexprs x nil) ;; empty scopestack
                           :mintime 1/2
                           :name sd-harvest-ctxexprs))
 
        ;; BOZO is all-names sufficient?  Should we perhaps also collect all
        ;; declared wire names, in case they aren't ever used in an expression?
 
-       (all-names (cwtime (vl-exprlist-names (alist-keys ctxexprs))
+       (all-names (cwtime (vl-exprlist-varnames (vl-ctxexprlist->exprs ctxexprs))
                           :mintime 1/2
                           :name sd-extract-names))
        (all-keys  (cwtime (mergesort (sd-keygen-list all-names nil))
