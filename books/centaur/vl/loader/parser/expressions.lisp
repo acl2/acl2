@@ -1294,11 +1294,14 @@ with these grammar rules, I believe simple_type is equivalent to:</p>
           ;; can't have $root.  But we don't have to worry about that because
           ;; we know we have an ID, so it can't be root.
           (hid := (vl-parse-hierarchical-identifier nil))
-          (when (and (vl-hidexpr-case hid :end)
-                     (not (vl-parsestate-is-user-defined-type-p (vl-hidexpr-end->name hid)
-                                                                (vl-tokstream->pstate))))
-            (return-raw
-             (vl-parse-error (cat "Not a known type: " (vl-hidexpr-end->name hid)))))
+
+          ;; We don't correctly keep track of what identifiers are user-defined types yet.
+          ;; (when (and (vl-hidexpr-case hid :end)
+          ;;            (not (vl-parsestate-is-user-defined-type-p (vl-hidexpr-end->name hid)
+          ;;                                                       (vl-tokstream->pstate))))
+          ;;   (return-raw
+          ;;    (vl-parse-error (cat "Not a known type: " (vl-hidexpr-end->name hid)))))
+
           (return (make-vl-usertype
                    :name (make-vl-scopeexpr-end :hid hid)))))
 
@@ -1315,14 +1318,14 @@ which are used streaming concatenations.</p>
 
     :measure (two-nats-measure (vl-tokstream-measure) 310)
     (b* ((backup (vl-tokstream-save))
-         ((mv err type tokstream) (vl-parse-simple-type))
-         ((unless err)
-          (mv err (make-vl-slicesize-type :type type) tokstream))
-         (tokstream (vl-tokstream-restore backup))
          ((mv err expr tokstream) (vl-parse-expression))
+         ((unless err)
+          (mv err (make-vl-slicesize-expr :expr expr) tokstream))
+         (tokstream (vl-tokstream-restore backup))
+         ((mv err type tokstream) (vl-parse-simple-type))
          ((when err)
           (mv err nil tokstream)))
-      (mv err (make-vl-slicesize-expr :expr expr) tokstream)))
+      (mv err (make-vl-slicesize-type :type type) tokstream)))
 
   (defparser vl-parse-any-sort-of-concatenation ()
     :short "Match single, multiple, or streaming concatenations, or empty
