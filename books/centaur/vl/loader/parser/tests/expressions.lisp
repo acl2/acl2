@@ -1256,29 +1256,25 @@
 
    (make-exprtest :input "{<< local::opcode {a,b}}"
                   :expect '(:vl-stream-left nil
-                            ;; BOZO is it right that this is a type?
-                            (:vl-usertype (:scope (key :vl-local) "opcode"))
+                            (:index nil (:scope (key :vl-local) "opcode") nil nil)
                             (id "a")
                             (id "b")))
 
    (make-exprtest :input "{<< foo::bar {a,b}}"
                   :expect '(:vl-stream-left nil
-                            ;; BOZO is it right that this is a type?
-                            (:vl-usertype (:scope "foo" "bar"))
+                            (:index nil (:scope "foo" "bar") nil nil)
                             (id "a")
                             (id "b")))
 
    (make-exprtest :input "{<< $unit::bar {a,b}}"
                   :expect '(:vl-stream-left nil
-                            ;; BOZO is it right that this is a type?
-                            (:vl-usertype (:scope (key :vl-$unit) "bar"))
+                            (:index nil (:scope (key :vl-$unit) "bar") nil nil)
                             (id "a")
                             (id "b")))
 
    (make-exprtest :input "{<< foo::bar::baz {a,b}}"
                   :expect '(:vl-stream-left nil
-                            ;; BOZO is it right that this is a type?
-                            (:vl-usertype (:scope "foo" (:scope "bar" "baz")))
+                            (:index nil (:scope "foo" (:scope "bar" "baz")) nil nil)
                             (id "a")
                             (id "b")))
 
