@@ -935,24 +935,26 @@ seen.</p>"
                "True exactly when there was an explicit net type.")
    (var-p      booleanp
                "True exactly when we found a @('var') keyword.")
-   (explicit-p booleanp
-               "True exactly when there was an explicit @('data_type') instead of an
-                @('implicit_data_type').")
-   (implicit-p booleanp
-               "True in the @('implicit_data_type') case IF there was at least
-                some non-empty @('implicit_data_type') was found, i.e., we
-                found a signedness or ranges.  This exclusion might seem weird,
-                but see @(see vl-process-subsequent-ansi-port) for the place
-                where it matters.")
-   (type       vl-datatype-p
-               "The datatype we have parsed (in the explicit case) or
-                inferred (in the implicit case).  In the implicit case,
-                this may not be the real type we are supposed to use.")))
+   (type       vl-maybe-datatype-p
+               "Exists if we found an explicit datatype.")
+   (signing    vl-maybe-exprtype-p
+               "Exists if we had a signedness keyword without an explicit datatype.")
+   (dims       vl-packeddimensionlist-p
+               "Nonempty only if we had packed dimensions without an explicit datatype.")))
 
 (local (defthm crock-idtoken-of-car
          (implies (vl-is-token? :vl-idtoken)
                   (vl-idtoken-p (car (vl-tokstream->tokens))))
          :hints(("Goal" :in-theory (enable vl-is-token?)))))
+
+(define vl-signing-kwd-to-exprtype ((x vl-token-p))
+  :guard (or (eq (vl-token->type x) :vl-kwd-signed)
+             (eq (vl-token->type x) :vl-kwd-unsigned))
+  :returns (signing vl-exprtype-p)
+  (case (vl-token->type x)
+    (:vl-kwd-signed :vl-signed)
+    (t              :vl-unsigned)))
+
 
 (defparser vl-parse-port-declaration-head-2012 ()
   :short "Matches @('net_port_type') or @('variable_port_type').  Assumes that
@@ -1006,13 +1008,9 @@ second @('net_port_type') case.</p>
            (return (make-vl-parsed-portdecl-head
                     :nettype nil
                     :var-p t
-                    :explicit-p nil
-                    :implicit-p t
-                    :type (make-vl-coretype :name :vl-logic
-                                            :signedp (and signing
-                                                          (eq (vl-token->type signing)
-                                                              :vl-kwd-signed))
-                                            :pdims ranges))))
+                    :signing (and signing
+                                  (vl-signing-kwd-to-exprtype signing))
+                    :dims   ranges)))
 
          ;; Possibilities:
          ;; (1) variable_port_type ::= 'var' data_type                          "explicit case"
@@ -1021,9 +1019,8 @@ second @('net_port_type') case.</p>
          ;; In the empty case, we expect that an identifier (the port name)
          ;; follows.  However, a data_type can also be an identifier!
          ;;
-         ;; To disambiguate, we'll check whether we have an identifier that is
-         ;; NOT a type name.  That's the only valid way to be in the empty
-         ;; implicit case.
+         ;; To disambiguate, we'll backtrack based on whether we find the right
+         ;; kind of token after we finish parsing a datatype.  If it's an identi
          (when (and (vl-is-token? :vl-idtoken)
                     (not (vl-parsestate-is-user-defined-type-p
                           (vl-idtoken->name (car (vl-tokstream->tokens)))
@@ -1031,20 +1028,13 @@ second @('net_port_type') case.</p>
            ;; Identifier that is not a known type.  We must be in the empty
            ;; implicit case then, i.e., this is a plain old "var" port.
            (return (make-vl-parsed-portdecl-head :nettype nil
-                                                 :var-p t
-                                                 :explicit-p nil
-                                                 :implicit-p nil ;; NIL due to empty implicit case.
-                                                 :type (make-vl-coretype :name    :vl-logic
-                                                                         :signedp nil
-                                                                         :pdims   nil))))
+                                                 :var-p t)))
 
          ;; The only remaining possibility is that we have:
          ;; (1) variable_port_type ::= 'var' data_type                          "explicit case"
          (type := (vl-parse-datatype))
          (return (make-vl-parsed-portdecl-head :nettype nil
                                                :var-p t
-                                               :explicit-p t
-                                               :implicit-p nil
                                                :type type)))
 
        ;; We have now ruled out leading 'interconnect' and 'var' keywords.
@@ -1068,13 +1058,9 @@ second @('net_port_type') case.</p>
          (return (make-vl-parsed-portdecl-head
                   :nettype nettype
                   :var-p nil
-                  :explicit-p nil
-                  :implicit-p t
-                  :type (make-vl-coretype :name :vl-logic
-                                          :signedp (and signing
-                                                        (eq (vl-token->type signing)
-                                                            :vl-kwd-signed))
-                                          :pdims ranges))))
+                  :signing (and signing
+                                (vl-signing-kwd-to-exprtype signing))
+                  :dims ranges)))
 
        ;; Possibilities:
        ;; (1) net_port_type  ::= [net_type] data_type                         "explicit case"
@@ -1089,20 +1075,13 @@ second @('net_port_type') case.</p>
                         (vl-tokstream->pstate))))
          ;; Empty implicit case.
          (return (make-vl-parsed-portdecl-head :nettype nettype
-                                               :var-p nil
-                                               :explicit-p nil
-                                               :implicit-p nil ;; NIL due to empty implicit case.
-                                               :type (make-vl-coretype :name    :vl-logic
-                                                                       :signedp nil
-                                                                       :pdims   nil))))
+                                               :var-p nil)))
 
        ;; The only remaining possibility is that we must have:
        ;; (1) net_port_type  ::= [net_type] data_type                         "explicit case"
        (type := (vl-parse-datatype))
        (return (make-vl-parsed-portdecl-head :nettype nettype
                                              :var-p nil
-                                             :explicit-p t
-                                             :implicit-p nil
                                              :type type))))
 
 
@@ -1205,7 +1184,7 @@ net or a variable type, then the port is considered completely declared.\"</p>"
   (b* (((vl-parsed-portdecl-head head)))
     (if (or head.nettype
             head.var-p
-            head.explicit-p)
+            head.type)
         ;; I'm pretty sure this is right.
         t
       nil)))
@@ -1240,7 +1219,10 @@ supposed to use here.  See the comments.</p>"
                ;; here.  This seems vaguely plausible?  (We know that the inout
                ;; has to be a net.)
                :nettype    (or head.nettype :vl-wire)
-               :type       head.type
+               :type       (or head.type
+                               (make-vl-coretype :name :vl-logic
+                                                 :signedp (eq head.signing :vl-signed)
+                                                 :pdims head.dims))
                :complete-p (vl-parsed-portdecl-head->complete-p head)
                :atts       atts))))
 
@@ -1264,7 +1246,10 @@ supposed to use here.  See the comments.</p>"
                :nettype    (if head.var-p
                                nil
                              (or head.nettype :vl-wire))
-               :type       head.type
+               :type       (or head.type
+                               (make-vl-coretype :name :vl-logic
+                                                 :signedp (eq head.signing :vl-signed)
+                                                 :pdims head.dims))
                :complete-p (vl-parsed-portdecl-head->complete-p head)
                :atts       atts))))
 
@@ -1286,9 +1271,12 @@ supposed to use here.  See the comments.</p>"
                ;; port list, not about non-ansi style port declarations.
                :nettype    (cond (head.var-p      nil) ;; explicit var -- then var.
                                  (head.nettype    head.nettype) ;; explicit net type, so use it
-                                 (head.explicit-p nil) ;; explicit data type, no net type -- then var.
+                                 (head.type       nil) ;; explicit data type, no net type -- then var.
                                  (t               :vl-wire)) ;; implicit data type, no nettype/var keyword, then default net type
-               :type       head.type
+               :type       (or head.type
+                               (make-vl-coretype :name :vl-logic
+                                                 :signedp (eq head.signing :vl-signed)
+                                                 :pdims head.dims))
                :complete-p (vl-parsed-portdecl-head->complete-p head)
                :atts       atts))))
 
@@ -1576,6 +1564,180 @@ parse-port-types) for notes about how we distinguish between
                                          :id   (make-vl-parsed-port-identifier :name id
                                                                                :udims udims)))))
 
+
+(local (in-theory (disable (tau-system) not nth tokstreamp)))
+
+(defparser vl-parse-optional-var-kwd ()
+  :fails never
+  :count weak
+  (seq tokstream
+       (when (vl-is-token? :vl-kwd-var)
+         (var := (vl-match)))
+       (return var)))
+
+(defparser vl-parse-ansi-portdecl-with-datatype (atts dir nettype var)
+  :guard (and (vl-atts-p atts)
+              (vl-maybe-direction-p dir)
+              (vl-maybe-nettypename-p nettype))
+  :result (vl-parsed-ansi-port-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  ;; 1.  data_type port_identifier { unpacked_dimension }
+  (seq tokstream
+       (type := (vl-parse-datatype))
+       (portname := (vl-match-token :vl-idtoken))
+       (udims := (vl-parse-0+-variable-dimensions))
+       (unless (vl-is-some-token? '(:vl-comma :vl-rparen))
+         (return-raw
+          (vl-parse-error "Unreasonable tokens after
+           \"data_type port_identifier { variable_dimension }\"
+           style port.")))
+       (return (make-vl-parsed-ansi-port :dir dir
+                                         :atts atts
+                                         :head (make-vl-parsed-portdecl-head
+                                                :nettype nettype
+                                                :var-p (and var t)
+                                                :type type)
+                                         :id (make-vl-parsed-port-identifier
+                                              :name portname
+                                              :udims udims)))))
+  
+
+(defparser vl-parse-ansi-portdecl-with-implicit-type (atts dir nettype var)
+  :guard (and (vl-atts-p atts)
+              (vl-maybe-direction-p dir)
+              (vl-maybe-nettypename-p nettype))
+  :result (vl-parsed-ansi-port-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  ;; 2.  [ signing ] { packed_dimension } port_identifier { unpacked_dimension }
+  (seq tokstream
+       (when (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned))
+         (signing := (vl-match)))
+       (when (vl-is-token? :vl-lbrack)
+         (ranges := (vl-parse-0+-ranges)))
+       (portname := (vl-match-token :vl-idtoken))
+       (udims := (vl-parse-0+-variable-dimensions))
+       (unless (vl-is-some-token? '(:vl-comma :vl-rparen))
+         (return-raw
+          (vl-parse-error "Unreasonable tokens after
+      \"[ signing ] { packed_dimension } port_identifier { variable_dimension }\"
+      style port.")))
+       (return (make-vl-parsed-ansi-port :dir dir
+                                         :atts atts
+                                         :head (make-vl-parsed-portdecl-head
+                                                :nettype nettype
+                                                :var-p (and var t)
+                                                :signing (and signing
+                                                              (vl-signing-kwd-to-exprtype signing))
+                                                :dims ranges)
+                                         :id (make-vl-parsed-port-identifier
+                                              :name portname
+                                              :udims udims)))))
+
+(defparser vl-parse-ansi-interface-portdecl (atts dir nettype var)
+  :guard (and (vl-atts-p atts)
+              (vl-maybe-direction-p dir)
+              (vl-maybe-nettypename-p nettype))
+  :result (vl-parsed-ansi-port-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  ;; 3.  interface_identifier [ . modport_identifier ] port_identifier { unpacked_dimension }
+  (seq tokstream
+       (ifname := (vl-match-token :vl-idtoken))
+       (when (vl-is-token? :vl-dot)
+         (:= (vl-match))
+         (modport := (vl-match-token :vl-idtoken)))
+       ;; Presumably we won't get here unless we got the modport
+       ;; above, because it would look like type 1. above instead
+       ;; (with a type identifier).  But we'll leave it general.
+       (portname := (vl-match-token :vl-idtoken))
+       (udims := (vl-parse-0+-variable-dimensions))
+       (unless (vl-is-token? '(:vl-comma :vl-rparen))
+         (return-raw
+          (vl-parse-error "Unreasonable tokens after
+      \"interface_identifier [ . modport_identifier ] port_identifier { unpacked_dimension }\"
+      style port.")))
+       (when (or dir nettype var)
+         (return-raw
+          (vl-parse-error "Interface port with direction, nettype, or var keyword.")))
+       (return (make-vl-parsed-ansi-port :atts atts
+                                         :head (make-vl-parsed-interface-head
+                                                :ifname (vl-idtoken->name ifname)
+                                                :modport (and modport (vl-idtoken->name modport)))
+                                         :id (make-vl-parsed-port-identifier
+                                              :name portname
+                                              :udims udims)))))
+
+(defparser vl-parse-ansi-port-declaration (atts)
+  :short "Matches @('ansi_port_declaration')."
+  :guard (vl-atts-p atts)
+  :result (vl-parsed-ansi-port-p val)
+  :resultp-of-nil nil
+  :true-listp nil
+  :fails gracefully
+  :count strong
+  ;; Here's what we currently support:
+  ;;   [ port_direction ] [ net_type ] data_type port_identifier { unpacked_dimension }
+  ;; | [ port_direction ] [ net_type ] [ signing ] { packed_dimension } port_identifier { unpacked_dimension }
+  ;; | interface_identifier [ . modport_identifier ] port_identifier { unpacked_dimension }
+  ;; | "interface" [ . modport_identifier ] port_identifier { unpacked_dimension }
+  ;; | [ port_direction ] data_type  port_identifier { variable_dimension }
+  ;; | [ port_direction ] var data_type port_identifier { variable_dimension }
+  ;; | [ port_direction ] var [ signing ] { packed_dimension } port_identifier { variable_dimension }
+  ;; 
+  ;; (The generic interface scheme isn't supported and will produce an error.)
+
+  (seq tokstream
+       (dir := (vl-parse-optional-port-direction))
+       (nettype := (vl-parse-optional-nettype))
+       (var := (vl-parse-optional-var-kwd))
+       (return-raw
+        ;; Here's where it gets hairy.  Ignoring the distinction between unpacked_dimension and variable_dimension:
+        ;; 1.  data_type port_identifier { unpacked_dimension }                             (from either the net or variable case)
+        ;; 2.  [ signing ] { packed_dimension } port_identifier { unpacked_dimension }      (from either the net or variable case)
+        ;; 3.  interface_identifier [ . modport_identifier ] port_identifier { unpacked_dimension }
+        ;; 4.  "interface" [ . modport_identifier ] port_identifier { unpacked_dimension }  (parse error).
+        ;;
+        ;; We'll need to use backtracking to tell the difference between 
+        ;;    foo_t [3:0] bar ...   (case 1)
+        ;;    in [3:0] ...          (case 2).
+        ;; We know we're good if the token after is a comma or right paren.
+        ;; 
+        ;; We won't be able to tell the difference between case 3 (with no
+        ;; modport) and case 1; we'll treat it as case 1 and fix it up later.
+
+        (b* ((backup (vl-tokstream-save))
+             ((mv err port tokstream)
+              ;; 1.  data_type port_identifier { unpacked_dimension }
+              (vl-parse-ansi-portdecl-with-datatype atts dir nettype var))
+             ((unless err) (mv nil port tokstream))
+             (pos (vl-tokstream->position)) ;; position that try 1 got to
+             (tokstream (vl-tokstream-restore backup))
+             ((mv err2 port tokstream)
+              ;; 2.  [ signing ] { packed_dimension } port_identifier { unpacked_dimension }
+              (vl-parse-ansi-portdecl-with-implicit-type atts dir nettype var))
+             ((unless err2) (mv nil port tokstream))
+             (pos2 (vl-tokstream->position))
+             ((mv pos err) (vl-choose-parse-error pos err pos2 err2))
+             (tokstream (vl-tokstream-restore backup))
+             ((mv err3 port tokstream)
+              ;; 3.  interface_identifier [ . modport_identifier ] port_identifier { unpacked_dimension }
+              (vl-parse-ansi-interface-portdecl atts dir nettype var))
+             ((unless err3) (mv nil port tokstream))
+             (pos3 (vl-tokstream->position))
+             ((mv pos err) (vl-choose-parse-error pos err pos3 err3))
+             (tokstream (vl-tokstream-restore backup))
+             ((when (vl-is-token? :vl-kwd-interface))
+              (vl-parse-error "BOZO implement explicit 'interface' ports."))
+             (tokstream (vl-tokstream-update-position pos)))
+          (mv err nil tokstream)))))
+                   
+        
+
 (defparser vl-parse-1+-ansi-port-declarations ()
   :short "Matches @(' {attribute_instance} ansi_port_declaration
                       { ',' {attribute_instance} ansi_port_declaration } ')"
@@ -1651,7 +1813,7 @@ is specified.
     (cond (head.nettype head.nettype)  ;; Explicitly provided net type; use it.
           (head.var-p nil)               ;; Explicitly provided 'var' keyword, nettype is NIL.
           ((eq dir :vl-output)
-           (if head.explicit-p
+           (if head.type
                ;; explicit data type so it's a variable (nettype nil)
                nil
              ;; no explicit declaration, use default net type, i.e., plain wire
@@ -1729,7 +1891,10 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
              ;; We don't implement interconnect ports yet so that's no problem.
              ;; Otherwise, if the data type is omitted, then we already made a
              ;; logic datatype when we parsed the header.
-             x.head.type)
+             (or x.head.type
+                 (make-vl-coretype :name :vl-logic
+                                   :signedp (eq x.head.signing :vl-signed)
+                                   :pdims x.head.dims)))
 
             ((cons portdecls vardecls)
              (vl-make-ports-and-maybe-nets (list x.id)
@@ -1818,13 +1983,14 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
             ((when (and (not x.dir)
                         (not x.head.nettype)
                         (not x.head.var-p)
-                        (not x.head.explicit-p)
+                        (not x.head.type)
                         ;; See vl-parsed-portdecl-head.  If there was a signed
                         ;; keyword or ranges, then implicit-p will be set.  So
                         ;; by checking for implicit-p here, we're looking for
                         ;; the case where there is literally nothing but a port
                         ;; name.
-                        (not x.head.implicit-p)))
+                        (not x.head.dims)
+                        (not x.head.signing)))
              ;; Nothing but a port name, inherit stuff from previous port.
              (if prev-ifacep
                  ;; The previous port was an interface, not a regular port.
@@ -1835,6 +2001,7 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
                      warnings
                      (cons (change-vl-interfaceport (car ports-acc)
                                                     :name name
+                                                    :udims x.id.udims
                                                     :loc loc)
                            ports-acc)
                      portdecls-acc
@@ -1842,6 +2009,9 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
                ;; The previous port was a regular port.  It had its own
                ;; direction and so forth.  We just need to inherit its
                ;; properties and make this port be just like it.
+               (b* ((type (vl-datatype-update-udims
+                           x.id.udims
+                           (vl-portdecl->type (car portdecls-acc)))))
                (mv nil
                    warnings
                    (cons (change-vl-regularport (car ports-acc)
@@ -1849,8 +2019,14 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
                                                 :expr (vl-idexpr name)
                                                 :loc loc)
                          ports-acc)
-                   (cons (change-vl-portdecl (car portdecls-acc) :name name :loc loc) portdecls-acc)
-                   (cons (change-vl-vardecl  (car vardecls-acc)  :name name :loc loc) vardecls-acc))))
+                   (cons (change-vl-portdecl (car portdecls-acc)
+                                             :type type
+                                             :name name :loc loc)
+                         portdecls-acc)
+                   (cons (change-vl-vardecl (car vardecls-acc)
+                                            :type type
+                                            :name name :loc loc)
+                         vardecls-acc)))))
 
             ;; Otherwise there is at least SOME direction or type information
             ;; here, so this can't be an interface port.
@@ -1898,9 +2074,13 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
              ;; We don't implement interconnect ports yet so that's no problem.
              ;; Otherwise, if the data type is omitted, then we already made a
              ;; logic datatype when we parsed the header.
-             x.head.type)
+             (or x.head.type
+                 (make-vl-coretype :name :vl-logic
+                                   :signedp (eq x.head.signing :vl-signed)
+                                   :pdims x.head.dims)))
 
             ((cons new-portdecls new-vardecls)
+             ;; This builds the udims into the datatype
              (vl-make-ports-and-maybe-nets (list x.id)
                                            :dir        dir
                                            :nettype    nettype
@@ -1991,8 +2171,9 @@ a non-ANSI style list_of_ports...  </blockquote>"
        (b* (((vl-parsed-portdecl-head port1.head))
             ((when (or port1.head.nettype
                        port1.head.var-p
-                       port1.head.explicit-p
-                       port1.head.implicit-p))
+                       port1.head.type
+                       port1.head.dims
+                       port1.head.signing))
              t))
          nil))
       (otherwise
