@@ -1488,81 +1488,81 @@ parse-port-types) for notes about how we distinguish between
                              *vl-directions-kwd-alist*))))
        (return nil)))
 
-(defparser vl-parse-ansi-port-header ()
-  :parents (sv-ansi-portdecls parse-port-types)
-  :short "Matches @('interface_port_header'), @('net_port_type'), or @('variable_port_type')."
-  :long "<p>See especially the discussion of \"ruling out interfaces\" in @(see
-  parse-port-types).</p>"
-  :result (vl-parsed-ansi-head-p val)
-  :resultp-of-nil nil
-  :true-listp nil
-  :fails gracefully
-  :count weak
-  :prepwork ((local (set-default-hints
-                     '((and stable-under-simplificationp
-                            '(:in-theory (enable vl-idtoken-p
-                                                 vl-lookahead-is-token?
-                                                 vl-match)))))))
-  (seq tokstream
-       (when (vl-is-token? :vl-kwd-interface)
-         (return-raw
-          (vl-parse-error "BOZO implement explicit 'interface' ports.")))
-       (when (and (vl-is-token? :vl-idtoken)
-                  (vl-lookahead-is-token? :vl-dot (cdr (vl-tokstream->tokens)))
-                  (vl-lookahead-is-token? :vl-idtoken (cddr (vl-tokstream->tokens))))
-         ;; Found "foo.bar".
-         ;; This is definitely an interface port with a modport.  See PARSE-PORT-TYPES.
-         (iface := (vl-match))
-         (:= (vl-match))
-         (modport := (vl-match))
-         (return (make-vl-parsed-interface-head :ifname (vl-idtoken->name iface)
-                                                :modport (vl-idtoken->name modport))))
-       (when (and (vl-is-token? :vl-idtoken)
-                  (vl-lookahead-is-token? :vl-idtoken (cdr (vl-tokstream->tokens)))
-                  (not (vl-parsestate-is-user-defined-type-p
-                        (vl-idtoken->name (car (vl-tokstream->tokens)))
-                        (vl-tokstream->pstate))))
-         ;; Found "foo bar" and "foo" is NOT the name of a user-defined type.
-         ;; This has to be an interface port.  See PARSE-PORT-TYPES.
-         ;;   - "foo" is the name of the interface.
-         ;;   - "bar" is the name of the port identifier (which doesn't belong to us)
-         (iface := (vl-match))
-         (return (make-vl-parsed-interface-head :ifname (vl-idtoken->name iface)
-                                                :modport nil)))
-       ;; Otherwise this can't be an interface, so it can only be a variable or
-       ;; port header.
-       (ans := (vl-parse-port-declaration-head-2012))
-       (return ans)))
+;; (defparser vl-parse-ansi-port-header ()
+;;   :parents (sv-ansi-portdecls parse-port-types)
+;;   :short "Matches @('interface_port_header'), @('net_port_type'), or @('variable_port_type')."
+;;   :long "<p>See especially the discussion of \"ruling out interfaces\" in @(see
+;;   parse-port-types).</p>"
+;;   :result (vl-parsed-ansi-head-p val)
+;;   :resultp-of-nil nil
+;;   :true-listp nil
+;;   :fails gracefully
+;;   :count weak
+;;   :prepwork ((local (set-default-hints
+;;                      '((and stable-under-simplificationp
+;;                             '(:in-theory (enable vl-idtoken-p
+;;                                                  vl-lookahead-is-token?
+;;                                                  vl-match)))))))
+;;   (seq tokstream
+;;        (when (vl-is-token? :vl-kwd-interface)
+;;          (return-raw
+;;           (vl-parse-error "BOZO implement explicit 'interface' ports.")))
+;;        (when (and (vl-is-token? :vl-idtoken)
+;;                   (vl-lookahead-is-token? :vl-dot (cdr (vl-tokstream->tokens)))
+;;                   (vl-lookahead-is-token? :vl-idtoken (cddr (vl-tokstream->tokens))))
+;;          ;; Found "foo.bar".
+;;          ;; This is definitely an interface port with a modport.  See PARSE-PORT-TYPES.
+;;          (iface := (vl-match))
+;;          (:= (vl-match))
+;;          (modport := (vl-match))
+;;          (return (make-vl-parsed-interface-head :ifname (vl-idtoken->name iface)
+;;                                                 :modport (vl-idtoken->name modport))))
+;;        (when (and (vl-is-token? :vl-idtoken)
+;;                   (vl-lookahead-is-token? :vl-idtoken (cdr (vl-tokstream->tokens)))
+;;                   (not (vl-parsestate-is-user-defined-type-p
+;;                         (vl-idtoken->name (car (vl-tokstream->tokens)))
+;;                         (vl-tokstream->pstate))))
+;;          ;; Found "foo bar" and "foo" is NOT the name of a user-defined type.
+;;          ;; This has to be an interface port.  See PARSE-PORT-TYPES.
+;;          ;;   - "foo" is the name of the interface.
+;;          ;;   - "bar" is the name of the port identifier (which doesn't belong to us)
+;;          (iface := (vl-match))
+;;          (return (make-vl-parsed-interface-head :ifname (vl-idtoken->name iface)
+;;                                                 :modport nil)))
+;;        ;; Otherwise this can't be an interface, so it can only be a variable or
+;;        ;; port header.
+;;        (ans := (vl-parse-port-declaration-head-2012))
+;;        (return ans)))
 
-(defparser vl-parse-ansi-port-declaration (atts)
-  :short "Matches @('ansi_port_declaration')."
-  :guard (vl-atts-p atts)
-  :result (vl-parsed-ansi-port-p val)
-  :resultp-of-nil nil
-  :true-listp nil
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (dir := (vl-parse-optional-port-direction))
-       (when dir
-         ;; It cannot be an interface port header.
-         (head  := (vl-parse-port-declaration-head-2012))
-         (id    := (vl-match-token :vl-idtoken))
-         (udims := (vl-parse-0+-variable-dimensions))
-         (return (make-vl-parsed-ansi-port :dir  dir
-                                           :atts atts
-                                           :head head
-                                           :id  (make-vl-parsed-port-identifier :name id
-                                                                                :udims udims))))
-       ;; Else, no direction; can have interface, net, or variable port type.
-       (head  := (vl-parse-ansi-port-header))
-       (id    := (vl-match-token :vl-idtoken))
-       (udims := (vl-parse-0+-variable-dimensions))
-       (return (make-vl-parsed-ansi-port :dir  nil
-                                         :head head
-                                         :atts atts
-                                         :id   (make-vl-parsed-port-identifier :name id
-                                                                               :udims udims)))))
+;; (defparser vl-parse-ansi-port-declaration (atts)
+;;   :short "Matches @('ansi_port_declaration')."
+;;   :guard (vl-atts-p atts)
+;;   :result (vl-parsed-ansi-port-p val)
+;;   :resultp-of-nil nil
+;;   :true-listp nil
+;;   :fails gracefully
+;;   :count strong
+;;   (seq tokstream
+;;        (dir := (vl-parse-optional-port-direction))
+;;        (when dir
+;;          ;; It cannot be an interface port header.
+;;          (head  := (vl-parse-port-declaration-head-2012))
+;;          (id    := (vl-match-token :vl-idtoken))
+;;          (udims := (vl-parse-0+-variable-dimensions))
+;;          (return (make-vl-parsed-ansi-port :dir  dir
+;;                                            :atts atts
+;;                                            :head head
+;;                                            :id  (make-vl-parsed-port-identifier :name id
+;;                                                                                 :udims udims))))
+;;        ;; Else, no direction; can have interface, net, or variable port type.
+;;        (head  := (vl-parse-ansi-port-header))
+;;        (id    := (vl-match-token :vl-idtoken))
+;;        (udims := (vl-parse-0+-variable-dimensions))
+;;        (return (make-vl-parsed-ansi-port :dir  nil
+;;                                          :head head
+;;                                          :atts atts
+;;                                          :id   (make-vl-parsed-port-identifier :name id
+;;                                                                                :udims udims)))))
 
 
 (local (in-theory (disable (tau-system) not nth tokstreamp)))
