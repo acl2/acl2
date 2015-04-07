@@ -44,8 +44,10 @@
      (not (cw "Lvalue: ~x0.~%" (car lvalues)))
      (not (cw "Expr: ~x0.~%" (car exprs)))
      (vl-assign-p (car assigns))
-     (equal (car lvalues) (vl-pretty-expr (vl-assign->lvalue (car assigns))))
-     (equal (car exprs) (vl-pretty-expr (vl-assign->expr (car assigns))))
+     (or (equal (car lvalues) (vl-pretty-expr (vl-assign->lvalue (car assigns))))
+         (cw "pretty lvalue: ~x0~%" (vl-pretty-expr (vl-assign->lvalue (car assigns)))))
+     (or (equal (car exprs) (vl-pretty-expr (vl-assign->expr (car assigns))))
+         (cw "pretty expr: ~x0~%" (vl-pretty-expr (vl-assign->expr (car assigns)))))
      (equal str (vl-assign->strength (car assigns)))
      (equal atts (vl-assign->atts (car assigns)))
      (equal rise (and (vl-assign->delay (car assigns))
@@ -107,7 +109,7 @@
              :high nil)
 
 (test-assign :input "assign #36 a[0] = 1 ; "
-             :lvalues ((:vl-index nil (id "a") 0))
+             :lvalues ((:index nil "a" (0) nil))
              :exprs   (1)
              :atts (("some") ("atts"))
              :str nil
@@ -119,7 +121,7 @@
              :successp nil)
 
 (test-assign :input "assign (strong0, pull1) #36 a[7:0] = 1 ; "
-             :lvalues ((:vl-select-colon nil (id "a") 7 0))
+             :lvalues ((:index nil "a" nil (:colon 7 0)))
              :exprs   (1)
              :atts (("some") ("atts"))
              :str (make-vl-gatestrength :zero :vl-strong
@@ -254,7 +256,7 @@
               :type :vl-wor
               :atts (("some") ("atts"))
               :arrdims (nil nil)
-              :range (range 4 0)
+              :range (:range 4 0)
               :vectoredp nil
               :scalaredp t
               :signedp nil
@@ -274,8 +276,8 @@
               :decl-high 3
               :type :vl-uwire
               :atts (("some") ("atts"))
-              :arrdims (((range 3 0) (range 4 1) (range 5 2)) nil)
-              :range (range 4 0)
+              :arrdims (((:range 3 0) (:range 4 1) (:range 5 2)) nil)
+              :range (:range 4 0)
               :vectoredp t
               :scalaredp nil
               :signedp t
@@ -366,7 +368,7 @@
               :type :vl-wire
               :atts (("some") ("atts"))
               :arrdims (nil nil)
-              :range (range 4 0)
+              :range (:range 4 0)
               :vectoredp t
               :scalaredp nil
               :signedp t

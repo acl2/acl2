@@ -41,7 +41,6 @@
 (include-book "expressions")
 (include-book "functions")
 (include-book "gates")
-(include-book "hids")
 (include-book "imports")
 (include-book "insts")
 (include-book "nets")

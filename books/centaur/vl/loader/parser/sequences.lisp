@@ -117,7 +117,7 @@
 
 (defval *vl-end-of-sequence-$*
   :parents (vl-parse-cycledelayrange)
-  (make-vl-atom :guts (make-vl-keyguts :type :vl-$)))
+  (make-vl-special :key :vl-$))
 
 (assert! (vl-expr-p *vl-end-of-sequence-$*))
 

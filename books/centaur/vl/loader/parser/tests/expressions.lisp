@@ -231,54 +231,36 @@
                   :expect '(id "foo"))
 
    (make-exprtest :input "foo[3]"
-                  :expect '(:vl-index nil (id "foo") 3))
+                  :expect '(:index nil "foo" (3) nil))
 
    (make-exprtest :input "foo[1:7]"
-                  :expect '(:vl-select-colon nil (id "foo") 1 7))
+                  :expect '(:index nil "foo" () (:colon 1 7)))
 
    (make-exprtest
     :input "foo[3][4][5][1 +: 2]"
-    :expect '(:vl-select-pluscolon
-              nil
-              (:vl-index nil
-                         (:vl-index nil
-                                    (:vl-index nil (id "foo") 3)
-                                    4)
-                         5)
-              1 2))
+    :expect '(:index nil "foo" (3 4 5) (:pluscolon 1 2)))
 
    (make-exprtest
     :input "foo[3][1 -: 2]"
-    :expect '(:vl-select-minuscolon nil
-                                        (:vl-index nil (id "foo") 3)
-                                        1 2))
-
-
+    :expect '(:index nil "foo" (3) (:minuscolon 1 2)))
 
    ;; HID tests
 
    (make-exprtest :input "foo.bar"
-                  :expect '(:vl-hid-dot nil (hid "foo") (hid "bar")))
+                  :expect '(:index nil (:dot "foo" "bar") nil nil))
 
    (make-exprtest :input "foo.bar.baz"
-                  :expect '(:vl-hid-dot nil (hid "foo")
-                                        (:vl-hid-dot nil (hid "bar")
-                                                     (hid "baz"))))
+                  :expect '(:index nil (:dot "foo" (:dot "bar" "baz")) nil nil))
 
-   (make-exprtest
-    :input "foo[1].bar.baz"
-    :expect '(:vl-hid-dot nil
-                          (:vl-index nil (hid "foo") 1)
-                          (:vl-hid-dot nil (hid "bar") (hid "baz"))))
+   (make-exprtest :input "foo[1].bar.baz"
+                  :expect '(:index nil (:dot (:vl-hid-index "foo" (1)) (:dot "bar" "baz")) nil nil))
 
-   (make-exprtest
-    :input "foo[1].bar[2].baz"
-    :expect '(:vl-hid-dot
-              nil
-              (:vl-index nil (hid "foo") 1)
-              (:vl-hid-dot nil
-                           (:vl-index nil (hid "bar") 2)
-                           (hid "baz"))))
+   (make-exprtest :input "foo[1].bar[2].baz"
+                  :expect '(:index nil
+                            (:dot (:vl-hid-index "foo" (1))
+                             (:dot (:vl-hid-index "bar" (2))
+                              "baz"))
+                            nil nil))
 
    (make-exprtest :input "{3}"
                   :expect '(:vl-concat nil 3))
@@ -295,10 +277,10 @@
    (make-exprtest :input "{3 {}}" :successp nil)
 
    (make-exprtest :input "{3 {4}}"
-                  :expect '(:vl-multiconcat nil 3 (:vl-concat nil 4)))
+                  :expect '(:vl-multiconcat nil 3 4))
 
    (make-exprtest :input "{3 {4, 5}}"
-                  :expect '(:vl-multiconcat nil 3 (:vl-concat nil 4 5)))
+                  :expect '(:vl-multiconcat nil 3 4 5))
 
    (make-exprtest :input "{3 {4 {5}}"
                   :successp nil)
@@ -310,43 +292,35 @@
     :remainder "( )")
 
    (make-exprtest :input "foo(1)"
-                  :expect '(:vl-funcall nil (fun "foo") 1))
+                  :expect '(:vl-funcall nil "foo" 1))
 
    (make-exprtest :input "foo(1, 2)"
-                  :expect '(:vl-funcall nil (fun "foo") 1 2))
+                  :expect '(:vl-funcall nil "foo" 1 2))
 
    (make-exprtest :input "\\foo+bar (1, 2)"
-                  :expect '(:vl-funcall nil (fun "foo+bar") 1 2))
+                  :expect '(:vl-funcall nil "foo+bar" 1 2))
 
    (make-exprtest :input "foo.bar(1, 2)"
-                  :expect '(:vl-funcall nil (:vl-hid-dot nil
-                                                         (hid "foo")
-                                                         (hid "bar"))
-                                        1 2))
+                  :expect '(:vl-funcall nil (:dot "foo" "bar") 1 2))
 
    (make-exprtest
     :input "foo (* bar = 1, baz, boop *) (* baz = 2*) (3, 4, 5)"
-    :expect '(:vl-funcall (("bar" <- 1) "boop" ("baz" <- 2))
-                          (fun "foo")
-                          3 4 5)
+    :expect '(:vl-funcall (("bar" <- 1) "boop" ("baz" <- 2)) "foo" 3 4 5)
     :warnings '(:vl-warn-shadowed-atts))
 
    (make-exprtest
     :input "foo[1].bar[2].baz(3)"
     :expect '(:vl-funcall nil
-                          (:vl-hid-dot nil
-                                       (:vl-index nil (hid "foo") 1)
-                                       (:vl-hid-dot nil
-                                                    (:vl-index nil (hid "bar") 2)
-                                                    (hid "baz")))
-                          3))
+                          (:dot (:vl-hid-index "foo" (1))
+                           (:dot (:vl-hid-index "bar" (2))
+                            "baz"))
+              3))
 
-   (make-exprtest
-    :input "$foo"
-    :expect '(:vl-syscall nil (sys "$foo")))
+   (make-exprtest :input "$foo"
+                  :expect '(:vl-syscall nil "$foo"))
 
    (make-exprtest :input "$foo(1, 2)"
-                  :expect '(:vl-syscall nil (sys "$foo") 1 2))
+                  :expect '(:vl-syscall nil "$foo" 1 2))
 
    (make-exprtest :input "$foo()"
                   :successp nil)
@@ -620,15 +594,14 @@
      :input "null"
      :expect '(key :vl-null))
 
-    (make-exprtest
-     :input "this"
-     :expect '(key :vl-this))
+;; #+broken
+;;     (make-exprtest
+;;      :input "this"
+;;      :expect '(key :vl-this))
 
     (make-exprtest
      :input "$root.foo"
-     :expect '(:vl-hid-dot nil
-                           (key :vl-$root)
-                           (hid "foo")))
+     :expect '(:index nil (:dot :vl-$root "foo") nil nil))
 
     (make-exprtest
      :input "$root[2]"
@@ -636,82 +609,31 @@
 
     (make-exprtest
      :input "$root.foo.bar"
-     :expect '(:vl-hid-dot nil
-                           (key :vl-$root)
-                           (:vl-hid-dot nil
-                                        (hid "foo")
-                                        (hid "bar"))))
+     :expect '(:index nil (:dot :vl-$root (:dot "foo" "bar")) nil nil))
 
     (make-exprtest
      :input "$root.foo[1].bar"
-     :expect '(:vl-hid-dot nil
-                           (key :vl-$root)
-                           (:vl-hid-dot nil
-                                        (:vl-index nil (hid "foo") 1)
-                                        (hid "bar"))))
+     :expect '(:index nil (:dot :vl-$root (:dot (:vl-hid-index "foo" (1)) "bar")) nil nil))
 
     (make-exprtest
      :input "$root.foo[1][2].bar"
-     :expect '(:vl-hid-dot nil
-                           (key :vl-$root)
-                           (:vl-hid-dot nil
-                                        (:vl-index nil
-                                                   (:vl-index nil (hid "foo") 1)
-                                                   2)
-                                        (hid "bar"))))
+     :expect '(:index nil (:dot :vl-$root (:dot (:vl-hid-index "foo" (1 2)) "bar")) nil nil))
 
     (make-exprtest
      :input "$root.foo[1][2].bar[3]"
-     :expect
-     '(:vl-index nil
-                 (:vl-hid-dot nil
-                              (key :vl-$root)
-                              (:vl-hid-dot nil
-                                           (:vl-index nil
-                                                      (:vl-index nil (hid "foo") 1)
-                                                      2)
-                                           (hid "bar")))
-                 3))
+     :expect '(:index nil (:dot :vl-$root (:dot (:vl-hid-index "foo" (1 2)) "bar")) (3) nil))
 
     (make-exprtest
      :input "$root.foo[1][2].bar[3:4]"
-     :expect
-     '(:vl-select-colon
-       nil
-       (:vl-hid-dot nil
-                    (key :vl-$root)
-                    (:vl-hid-dot nil
-                                 (:vl-index nil
-                                            (:vl-index nil (hid "foo") 1)
-                                            2)
-                                 (hid "bar")))
-       3 4))
+     :expect '(:index nil (:dot :vl-$root (:dot (:vl-hid-index "foo" (1 2)) "bar")) nil (:colon 3 4)))
 
     (make-exprtest
      :input "foo[1][2].bar[3:4]"
-     :expect
-     '(:vl-select-colon
-       nil
-       (:vl-hid-dot nil
-                    (:vl-index nil
-                               (:vl-index nil (hid "foo") 1)
-                               2)
-                    (hid "bar"))
-       3 4))
+     :expect '(:index nil (:dot (:vl-hid-index "foo" (1 2)) "bar") nil (:colon 3 4)))
 
     (make-exprtest
      :input "baz.foo[1][2].bar[3:4]"
-     :expect
-     '(:vl-select-colon
-       nil
-       (:vl-hid-dot nil
-                    (hid "baz")
-                    (:vl-hid-dot nil
-                                 (:vl-index nil
-                                            (:vl-index nil (hid "foo") 1)
-                                            2)
-                                 (hid "bar")))
-       3 4))
+     :expect '(:index nil (:dot "baz" (:dot (:vl-hid-index "foo" (1 2)) "bar")) nil (:colon 3 4)))
 
 
     ;; Basic precedence/associativity for arrows/equivs
@@ -781,10 +703,10 @@
                    :successp nil)
 
     (make-exprtest :input "tagged foo"
-                   :expect '(:vl-tagged nil (tag "foo")))
+                   :expect '(:vl-tagged nil "foo"))
 
     (make-exprtest :input "tagged foo 3"
-                   :expect '(:vl-tagged nil (tag "foo") 3))
+                   :expect '(:vl-tagged nil "foo" 3))
 
     (make-exprtest :input "tagged foo 3 + 4"
                    ;; The precedence here seems to be ambiguous.  Until we
@@ -793,55 +715,42 @@
                    :successp nil)
 
     (make-exprtest :input "tagged foo (3 + 4)"
-                   :expect '(:vl-tagged nil (tag "foo")
+                   :expect '(:vl-tagged nil "foo"
                                         (:vl-binary-plus
                                          ("VL_EXPLICIT_PARENS") 3 4)))
 
     (make-exprtest :input "tagged foo {3,4}"
-                   ;; This is too bad.  It would be nice for this to work.
-                   ;; Maybe eventually extend vl-parse-expression with a notion
-                   ;; of unambiguous operators for tagged expressions.
-                   :successp nil)
+                   :expect '(:vl-tagged nil "foo"
+                             (:vl-concat nil 3 4)))
 
     (make-exprtest :input "tagged foo ({3,4})"
-                   :expect '(:vl-tagged nil (tag "foo")
+                   :expect '(:vl-tagged nil "foo"
                                         (:vl-concat
                                          ("VL_EXPLICIT_PARENS") 3 4)))
 
     (make-exprtest :input "foo::bar"
-                   :expect '(:vl-scope nil (hid "foo") (hid "bar")))
+                   :expect '(:index nil (:scope "foo" "bar") nil nil))
 
     (make-exprtest :input "foo::bar::baz"
-                   :expect '(:vl-scope nil (hid "foo")
-                             (:vl-scope nil (hid "bar") (hid "baz"))))
+                   :expect '(:index nil (:scope "foo" (:scope "bar" "baz")) nil nil))
 
     (make-exprtest :input "$unit::bar"
-                   :expect '(:vl-scope nil (key :vl-$unit) (hid "bar")))
+                   :expect '(:index nil (:scope (key :vl-$unit) "bar") nil nil))
 
     (make-exprtest :input "local::bar"
-                   :expect '(:vl-scope nil (key :vl-local) (hid "bar")))
+                   :expect '(:index nil (:scope (key :vl-local) "bar") nil nil))
 
     (make-exprtest :input "foo::bar.baz"
-                   :expect '(:vl-scope nil (hid "foo")
-                             (:vl-hid-dot nil (hid "bar") (hid "baz"))))
+                   :expect '(:index nil (:scope "foo" (:dot "bar" "baz")) nil nil))
 
     (make-exprtest :input "foo::bar.baz[2].beep"
-                   :expect '(:vl-scope nil (hid "foo")
-                             (:vl-hid-dot nil (hid "bar")
-                              (:vl-hid-dot nil (:vl-index nil (hid "baz") 2)
-                                               (hid "beep")))))
+                   :expect '(:index nil (:scope "foo" (:dot "bar" (:dot (:vl-hid-index "baz" (2)) "beep"))) nil nil))
 
     (make-exprtest :input "foo::bar.baz[2]"
-                   :expect '(:vl-index nil
-                             (:vl-scope nil (hid "foo")
-                              (:vl-hid-dot nil (hid "bar") (hid "baz")))
-                             2))
+                   :expect '(:index nil (:scope "foo" (:dot "bar" "baz")) (2) nil))
 
     (make-exprtest :input "foo::bar.baz[4:3]"
-                   :expect '(:vl-select-colon nil
-                             (:vl-scope nil (hid "foo")
-                              (:vl-hid-dot nil (hid "bar") (hid "baz")))
-                             4 3))
+                   :expect '(:index nil (:scope "foo" (:dot "bar" "baz")) nil (:colon 4 3)))
 
 
     ;; SystemVerilog versions -- these should fail to parse the assignment
@@ -897,12 +806,12 @@
 
    (make-exprtest :input "(a[1] = b << 1)"
                   :expect '(:vl-binary-assign ("VL_EXPLICIT_PARENS")
-                            (:vl-index nil (id "a") 1)
+                            (:index nil "a" (1) nil)
                             (:vl-binary-shl nil (id "b") 1)))
 
    (make-exprtest :input "(a[3:0] += b ? c : d)"
                   :expect '(:vl-binary-plusassign ("VL_EXPLICIT_PARENS")
-                            (:vl-select-colon nil (id "a") 3 0)
+                            (:index nil "a" nil (:colon 3 0))
                             (:vl-qmark nil (id "b") (id "c") (id "d"))))
 
    (make-exprtest :input "(a -= {b,c})"
@@ -988,39 +897,34 @@
 
     (make-exprtest
      :input "$root.foo"
-     :expect '(:vl-syscall nil (sys "$root"))
+     :expect '(:vl-syscall nil "$root")
      :remainder ". foo")
 
     (make-exprtest
      :input "$root[2]"
-     :expect '(:vl-syscall nil (sys "$root"))
+     :expect '(:vl-syscall nil "$root")
      :remainder "[ 2 ]")
 
     (make-exprtest
      :input "$root.foo.bar"
-     :expect '(:vl-syscall nil (sys "$root"))
+     :expect '(:vl-syscall nil "$root")
      :remainder ". foo . bar")
 
     (make-exprtest
      :input "$root.foo[1].bar"
-     :expect '(:vl-syscall nil (sys "$root"))
+     :expect '(:vl-syscall nil "$root")
      :remainder ". foo [ 1 ] . bar")
 
     (make-exprtest
      :input "$root.foo[1][2].bar"
-     :expect '(:vl-syscall nil (sys "$root"))
+     :expect '(:vl-syscall nil "$root")
      :remainder ". foo [ 1 ] [ 2 ] . bar")
 
 
     (make-exprtest
-     :input "foo[1].bar[2][3].bar"
-     :expect '(:vl-index nil (:vl-index nil (:vl-hid-dot
-                                             nil
-                                             (:vl-index nil (hid "foo") 1)
-                                             (hid "bar"))
-                                        2)
-                         3)
-     :remainder ". bar")
+     :input "foo[1].bar[2][3].baz"
+     :expect '(:index nil (:dot (:vl-hid-index "foo" (1)) "bar") (2 3) nil)
+     :remainder ". baz")
 
     ;; No implies/equiv operators in Verilog-2005, so these will fail, but
     ;; they'll at least consume the input until the arrow/equiv.
@@ -1089,7 +993,7 @@
 
    ;; new scope operation stuff
    (make-exprtest :input "$unit::bar"
-                  :expect '(:vl-syscall nil (sys "$unit"))
+                  :expect '(:vl-syscall nil "$unit")
                   :remainder ": : bar")
 
    (make-exprtest :input "local::bar"
@@ -1190,30 +1094,22 @@
                   :expect '(:vl-stream-left nil 1 2 (:vl-binary-plus nil 3 4)))
 
    (make-exprtest :input "{<<{1 with [2]}}"
-                  :expect '(:vl-stream-left nil
-                                            (:vl-with-index nil 1 2)))
+                  :expect '(:vl-stream-left nil (1 :with (:arrindex 2))))
 
    (make-exprtest :input "{<<{1 with [(2)]}}"
-                  :expect '(:vl-stream-left nil
-                                            (:vl-with-index nil 1 2)))
+                  :expect '(:vl-stream-left nil (1 :with (:arrindex 2))))
 
    (make-exprtest :input "{<<{1 with [2 + 3]}}"
-                  :expect '(:vl-stream-left
-                            nil
-                            (:vl-with-index nil 1
-                                            (:vl-binary-plus nil 2 3))))
+                  :expect '(:vl-stream-left nil (1 :with (:arrindex (:vl-binary-plus nil 2 3)))))
 
    (make-exprtest :input "{<<{1 with [2:3]}}"
-                  :expect '(:vl-stream-left nil
-                                            (:vl-with-colon nil 1 2 3)))
+                  :expect '(:vl-stream-left nil (1 :with (:range 2 3))))
 
    (make-exprtest :input "{<<{1 with [2+:3]}}"
-                  :expect '(:vl-stream-left nil
-                                            (:vl-with-pluscolon nil 1 2 3)))
+                  :expect '(:vl-stream-left nil (1 :with (:pluscolon 2 3))))
 
    (make-exprtest :input "{<<{1 with [2-:3]}}"
-                  :expect '(:vl-stream-left nil
-                                            (:vl-with-minuscolon nil 1 2 3)))
+                  :expect '(:vl-stream-left nil (1 :with (:minuscolon 2 3))))
 
    (make-exprtest :input "{<<{1 with [2}}"
                   :successp nil)
@@ -1229,9 +1125,7 @@
 
    (make-exprtest :input "{<<{1with[2]}}"
                   ;; BOZO can this be right?  Well, maybe
-                  :expect '(:vl-stream-left nil
-                                            (:vl-with-index nil 1 2)))
-
+                  :expect '(:vl-stream-left nil (1 :with (:arrindex 2))))
 
    (make-exprtest :input "{>>{}}"
                   :successp nil)
@@ -1255,30 +1149,22 @@
                   :expect '(:vl-stream-right nil 1 2 (:vl-binary-plus nil 3 4)))
 
    (make-exprtest :input "{>>{1 with [2]}}"
-                  :expect '(:vl-stream-right nil
-                                             (:vl-with-index nil 1 2)))
+                  :expect '(:vl-stream-right nil (1 :with (:arrindex 2))))
 
    (make-exprtest :input "{>>{1 with [(2)]}}"
-                  :expect '(:vl-stream-right nil
-                                             (:vl-with-index nil 1 2)))
+                  :expect '(:vl-stream-right nil (1 :with (:arrindex 2))))
 
    (make-exprtest :input "{>>{1 with [2 + 3]}}"
-                  :expect '(:vl-stream-right
-                            nil
-                            (:vl-with-index nil 1
-                                            (:vl-binary-plus nil 2 3))))
+                  :expect '(:vl-stream-right nil (1 :with (:arrindex (:vl-binary-plus nil 2 3)))))
 
    (make-exprtest :input "{>>{1 with [2:3]}}"
-                  :expect '(:vl-stream-right nil
-                                             (:vl-with-colon nil 1 2 3)))
+                  :expect '(:vl-stream-right nil (1 :with (:range 2 3))))
 
    (make-exprtest :input "{>>{1 with [2+:3]}}"
-                  :expect '(:vl-stream-right nil
-                                             (:vl-with-pluscolon nil 1 2 3)))
+                  :expect '(:vl-stream-right nil (1 :with (:pluscolon 2 3))))
 
    (make-exprtest :input "{>>{1 with [2-:3]}}"
-                  :expect '(:vl-stream-right nil
-                                             (:vl-with-minuscolon nil 1 2 3)))
+                  :expect '(:vl-stream-right nil (1 :with (:minuscolon 2 3))))
 
    (make-exprtest :input "{>>{1 with [2}}"
                   :successp nil)
@@ -1294,129 +1180,101 @@
 
    (make-exprtest :input "{>>{1with[2]}}"
                   ;; BOZO can this be right?  Well, maybe
-                  :expect '(:vl-stream-right nil
-                                             (:vl-with-index nil 1 2)))
+                  :expect '(:vl-stream-right nil (1 :with (:arrindex 2))))
 
    ;; Sized streaming concatenations
    (make-exprtest :input "{<<byte{a,b}}"
-                  :expect '(:vl-stream-left-sized nil
-                                                  (basic :vl-byte)
-                                                  (id "a")
-                                                  (id "b")))
+                  :expect '(:vl-stream-left nil (:vl-byte signed)
+                            (id "a")
+                            (id "b")))
 
    (make-exprtest :input "{<<shortint{a,b}}"
-                  :expect '(:vl-stream-left-sized nil
-                                                  (basic :vl-shortint)
-                                                  (id "a")
-                                                  (id "b")))
+                  :expect '(:vl-stream-left nil (:vl-shortint signed)
+                            (id "a")
+                            (id "b")))
 
    (make-exprtest :input "{<< int {a,b}}"
-                  :expect '(:vl-stream-left-sized nil
-                                                  (basic :vl-int)
-                                                  (id "a")
-                                                  (id "b")))
+                  :expect '(:vl-stream-left nil (:vl-int signed)
+                            (id "a")
+                            (id "b")))
 
    (make-exprtest :input "{<< longint{a,b}}"
-                  :expect '(:vl-stream-left-sized nil
-                                                  (basic :vl-longint)
-                                                  (id "a")
-                                                  (id "b")))
+                  :expect '(:vl-stream-left nil (:vl-longint signed)
+                            (id "a")
+                            (id "b")))
 
    (make-exprtest :input "{<<integer {a,b}}"
-                  :expect '(:vl-stream-left-sized nil
-                                                  (basic :vl-integer)
-                                                  (id "a")
-                                                  (id "b")))
+                  :expect '(:vl-stream-left nil (:vl-integer signed)
+                            (id "a")
+                            (id "b")))
 
    (make-exprtest :input "{<<time {a,b}}"
-                  :expect '(:vl-stream-left-sized nil
-                                                  (basic :vl-time)
-                                                  (id "a")
-                                                  (id "b")))
+                  :expect '(:vl-stream-left nil (:vl-time unsigned)
+                            (id "a")
+                            (id "b")))
 
    (make-exprtest :input "{<<bit {a,b}}"
-                  :expect '(:vl-stream-left-sized nil
-                                                  (basic :vl-bit)
-                                                  (id "a")
-                                                  (id "b")))
+                  :expect '(:vl-stream-left nil (:vl-bit unsigned)
+                            (id "a")
+                            (id "b")))
 
    (make-exprtest :input "{<< reg {a,b}}"
-                  :expect '(:vl-stream-left-sized nil
-                                                  (basic :vl-reg)
-                                                  (id "a")
-                                                  (id "b")))
+                  :expect '(:vl-stream-left nil (:vl-reg unsigned)
+                            (id "a")
+                            (id "b")))
 
    (make-exprtest :input "{<< logic {a,b}}"
-                  :expect '(:vl-stream-left-sized nil
-                                                  (basic :vl-logic)
-                                                  (id "a")
-                                                  (id "b")))
+                  :expect '(:vl-stream-left nil (:vl-logic unsigned)
+                            (id "a")
+                            (id "b")))
 
    (make-exprtest :input "{<< shortreal{a,b}}"
-                  :expect '(:vl-stream-left-sized nil
-                                                  (basic :vl-shortreal)
-                                                  (id "a")
-                                                  (id "b")))
+                  :expect '(:vl-stream-left nil (:vl-shortreal unsigned)
+                            (id "a")
+                            (id "b")))
 
    (make-exprtest :input "{<< real {a,b}}"
-                  :expect '(:vl-stream-left-sized nil
-                                                  (basic :vl-real)
-                                                  (id "a")
-                                                  (id "b")))
+                  :expect '(:vl-stream-left nil (:vl-real unsigned)
+                            (id "a")
+                            (id "b")))
 
    (make-exprtest :input "{<<realtime {a,b}}"
-                  :expect '(:vl-stream-left-sized nil
-                                                  (basic :vl-realtime)
-                                                  (id "a")
-                                                  (id "b")))
+                  :expect '(:vl-stream-left nil (:vl-realtime unsigned)
+                            (id "a")
+                            (id "b")))
 
    (make-exprtest :input "{<< 8 {a,b}}"
-                  :expect '(:vl-stream-left-sized nil
-                                                  8
-                                                  (id "a")
-                                                  (id "b")))
+                  :expect '(:vl-stream-left nil 8
+                            (id "a")
+                            (id "b")))
 
    (make-exprtest :input "{<< size {a,b}}"
-                  :expect '(:vl-stream-left-sized nil
-                                                  (id "size")
-                                                  (id "a")
-                                                  (id "b")))
+                  :expect '(:vl-stream-left nil
+                            (id "size")
+                            (id "a")
+                            (id "b")))
 
    (make-exprtest :input "{<< local::opcode {a,b}}"
-                  :expect '(:vl-stream-left-sized
-                            nil
-                            (:vl-scope nil
-                                       (key :vl-local)
-                                       (hid "opcode"))
+                  :expect '(:vl-stream-left nil
+                            (:index nil (:scope (key :vl-local) "opcode") nil nil)
                             (id "a")
                             (id "b")))
 
    (make-exprtest :input "{<< foo::bar {a,b}}"
-                  :expect '(:vl-stream-left-sized
-                            nil
-                            (:vl-scope nil
-                                       (hid "foo")
-                                       (hid "bar"))
+                  :expect '(:vl-stream-left nil
+                            (:index nil (:scope "foo" "bar") nil nil)
                             (id "a")
                             (id "b")))
 
    (make-exprtest :input "{<< $unit::bar {a,b}}"
-                  :expect '(:vl-stream-left-sized
-                            nil
-                            (:vl-scope nil
-                                       (key :vl-$unit)
-                                       (hid "bar"))
+                  :expect '(:vl-stream-left nil
+                            (:index nil (:scope (key :vl-$unit) "bar") nil nil)
                             (id "a")
                             (id "b")))
 
    (make-exprtest :input "{<< foo::bar::baz {a,b}}"
-                  :expect '(:vl-stream-left-sized
-                            nil
-                            (:vl-scope nil
-                                       (hid "foo")
-                                       (:vl-scope nil
-                                                  (hid "bar")
-                                                  (hid "baz")))
+                  :expect '(:vl-stream-left nil
+                            (:index nil (:scope "foo" (:scope "bar" "baz")) nil nil)
                             (id "a")
                             (id "b")))
 
@@ -1476,21 +1334,21 @@
 
    ;; casting tests
 
-   (make-exprtest :input "unsigned'(3)" :expect '(:vl-binary-cast nil (basic :vl-unsigned) 3))
-   (make-exprtest :input "signed'(3+4)" :expect '(:vl-binary-cast nil (basic :vl-signed) (:vl-binary-plus nil 3 4)))
-   (make-exprtest :input "const'(3+4)" :expect '(:vl-binary-cast nil (basic :vl-const) (:vl-binary-plus nil 3 4)))
-   (make-exprtest :input "string'(3+4)" :expect '(:vl-binary-cast nil (basic :vl-string) (:vl-binary-plus nil 3 4)))
+   (make-exprtest :input "unsigned'(3)" :expect '(:cast nil :unsigned 3))
+   (make-exprtest :input "signed'(3+4)" :expect '(:cast nil :signed (:vl-binary-plus nil 3 4)))
+   (make-exprtest :input "const'(3+4)"  :expect '(:cast nil :const  (:vl-binary-plus nil 3 4)))
+   (make-exprtest :input "string'(3+4)" :expect '(:cast nil (:vl-string unsigned) (:vl-binary-plus nil 3 4)))
 
-   (make-exprtest :input "logic'(3+4)" :expect '(:vl-binary-cast nil (basic :vl-logic) (:vl-binary-plus nil 3 4)))
-   (make-exprtest :input "myfoo'(3+4)" :expect '(:vl-binary-cast nil (id "myfoo") (:vl-binary-plus nil 3 4)))
+   (make-exprtest :input "logic'(3+4)" :expect '(:cast nil (:vl-logic unsigned) (:vl-binary-plus nil 3 4)))
+   (make-exprtest :input "myfoo'(3+4)" :expect '(:cast nil (id "myfoo") (:vl-binary-plus nil 3 4)))
 
-   (make-exprtest :input "12'(3+4)" :expect '(:vl-binary-cast nil 12 (:vl-binary-plus nil 3 4)))
+   (make-exprtest :input "12'(3+4)" :expect '(:cast nil 12 (:vl-binary-plus nil 3 4)))
 
    ;; weird but legal, 1 + 2 is a valid expr, is a mintypmax expr, so (1 + 2) is a primary.
-   (make-exprtest :input "(1+2)'(3+4)" :expect '(:vl-binary-cast nil (:vl-binary-plus ("VL_EXPLICIT_PARENS") 1 2)
+   (make-exprtest :input "(1+2)'(3+4)" :expect '(:cast nil (:vl-binary-plus ("VL_EXPLICIT_PARENS") 1 2)
                                                                      (:vl-binary-plus nil 3 4)))
 
-   (make-exprtest :input "1+2'(3)" :expect '(:vl-binary-plus nil 1 (:vl-binary-cast nil 2 3)))
+   (make-exprtest :input "1+2'(3)" :expect '(:vl-binary-plus nil 1 (:cast nil 2 3)))
 
    ))
 

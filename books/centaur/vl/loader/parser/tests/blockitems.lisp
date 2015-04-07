@@ -184,13 +184,13 @@
      (make-vl-vardecltest :input "integer a[1:2], b, c; "
                           :type     '(:vl-integer signed)
                           :names    '("a" "b" "c")
-                          :dims     '(((range 1 2)) nil nil)
+                          :dims     '(((:range 1 2)) nil nil)
                           :initvals '(nil nil nil))
 
      (make-vl-vardecltest :input "integer a[1:2][3:4], b, c; "
                           :type     '(:vl-integer signed)
                           :names    '("a" "b" "c")
-                          :dims     '(((range 1 2) (range 3 4)) nil nil)
+                          :dims     '(((:range 1 2) (:range 3 4)) nil nil)
                           :initvals '(nil nil nil))
 
 
@@ -214,13 +214,13 @@
      (make-vl-vardecltest :input    "real a[1:2], b, c; "
                           :type     '(:vl-real unsigned)
                           :names    '("a" "b" "c")
-                          :dims     '(((range 1 2)) nil nil)
+                          :dims     '(((:range 1 2)) nil nil)
                           :initvals '(nil nil nil))
 
      (make-vl-vardecltest :input    "real a[1:2][3:4], b, c; "
                           :type     '(:vl-real unsigned)
                           :names    '("a" "b" "c")
-                          :dims     '(((range 1 2) (range 3 4)) nil nil)
+                          :dims     '(((:range 1 2) (:range 3 4)) nil nil)
                           :initvals '(nil nil nil))
 
 
@@ -244,13 +244,13 @@
      (make-vl-vardecltest :input    '"time a[1:2], b, c; "
                           :type     '(:vl-time unsigned)
                           :names    '("a" "b" "c")
-                          :dims     '(((range 1 2)) nil nil)
+                          :dims     '(((:range 1 2)) nil nil)
                           :initvals '(nil nil nil))
 
      (make-vl-vardecltest :input    '"time a[1:2][3:4], b, c; "
                           :type     '(:vl-time unsigned)
                           :names    '("a" "b" "c")
-                          :dims     '(((range 1 2) (range 3 4)) nil nil)
+                          :dims     '(((:range 1 2) (:range 3 4)) nil nil)
                           :initvals '(nil nil nil))
 
 
@@ -274,13 +274,13 @@
      (make-vl-vardecltest :input    "realtime a[1:2], b, c; "
                           :type     '(:vl-realtime unsigned)
                           :names    '("a" "b" "c")
-                          :dims     '(((range 1 2)) nil nil)
+                          :dims     '(((:range 1 2)) nil nil)
                           :initvals '(nil nil nil))
 
      (make-vl-vardecltest :input    "realtime a[1:2][3:4], b, c; "
                           :type     '(:vl-realtime unsigned)
                           :names    '("a" "b" "c")
-                          :dims     '(((range 1 2) (range 3 4)) nil nil)
+                          :dims     '(((:range 1 2) (:range 3 4)) nil nil)
                           :initvals '(nil nil nil))
 
 
@@ -303,19 +303,19 @@
                           :initvals '(nil))
 
      (make-vl-vardecltest :input    "reg [1:3] a ; "
-                          :type     '(:vl-reg unsigned (range 1 3))
+                          :type     '(:vl-reg unsigned (:range 1 3))
                           :names    '("a")
                           :dims     '(nil)
                           :initvals '(nil))
 
      (make-vl-vardecltest :input    "reg signed [1:3] a ; "
-                          :type     '(:vl-reg signed (range 1 3))
+                          :type     '(:vl-reg signed (:range 1 3))
                           :names    '("a")
                           :dims     '(nil)
                           :initvals '(nil))
 
      (make-vl-vardecltest :input    "reg signed [1:3] a, b, c; "
-                          :type     '(:vl-reg signed (range 1 3))
+                          :type     '(:vl-reg signed (:range 1 3))
                           :names    '("a" "b" "c")
                           :dims     '(nil nil nil)
                           :initvals '(nil nil nil))
@@ -323,13 +323,13 @@
      (make-vl-vardecltest :input    "reg a[1:2], b, c; "
                           :names    '("a" "b" "c")
                           :type     '(:vl-reg unsigned)
-                          :dims     '(((range 1 2)) nil nil)
+                          :dims     '(((:range 1 2)) nil nil)
                           :initvals '(nil nil nil))
 
      (make-vl-vardecltest :input    "reg signed a[1:2][3:4], b, c; "
                           :names    '("a" "b" "c")
                           :type     '(:vl-reg signed)
-                          :dims     '(((range 1 2) (range 3 4)) nil nil)
+                          :dims     '(((:range 1 2) (:range 3 4)) nil nil)
                           :initvals '(nil nil nil))
 
 
@@ -352,8 +352,8 @@
      (make-vl-vardecltest :input    "event a[3:4][5:6], b[1:2], c ; "
                           :type     '(:vl-event unsigned)
                           :names    '("a" "b" "c")
-                          :dims     '(((range 3 4) (range 5 6))
-                                      ((range 1 2))
+                          :dims     '(((:range 3 4) (:range 5 6))
+                                      ((:range 1 2))
                                       nil)
                           :initvals '(nil nil nil))
 
@@ -412,31 +412,31 @@
      (make-vl-vardecltest :input    "integer a[1:2][3:4], b = 5, c = 17 + 8; "
                           :type     '(:vl-integer signed)
                           :names    '("a" "b" "c")
-                          :dims     '(((range 1 2) (range 3 4)) nil nil)
+                          :dims     '(((:range 1 2) (:range 3 4)) nil nil)
                           :initvals '(nil 5 (:vl-binary-plus nil 17 8)))
 
      (make-vl-vardecltest :input    "real a[1:2][3:4], b = 5, c = 17 + 8; "
                           :type     '(:vl-real unsigned)
                           :names    '("a" "b" "c")
-                          :dims     '(((range 1 2) (range 3 4)) nil nil)
+                          :dims     '(((:range 1 2) (:range 3 4)) nil nil)
                           :initvals '(nil 5 (:vl-binary-plus nil 17 8)))
 
      (make-vl-vardecltest :input    "time a[1:2][3:4], b = 5, c = 17 + 8; "
                           :type     '(:vl-time unsigned)
                           :names    '("a" "b" "c")
-                          :dims     '(((range 1 2) (range 3 4)) nil nil)
+                          :dims     '(((:range 1 2) (:range 3 4)) nil nil)
                           :initvals '(nil 5 (:vl-binary-plus nil 17 8)))
 
      (make-vl-vardecltest :input    "realtime a[1:2][3:4], b = 5, c = 17 + 8; "
                           :type     '(:vl-realtime unsigned)
                           :names    '("a" "b" "c")
-                          :dims     '(((range 1 2) (range 3 4)) nil nil)
+                          :dims     '(((:range 1 2) (:range 3 4)) nil nil)
                           :initvals '(nil 5 (:vl-binary-plus nil 17 8)))
 
      (make-vl-vardecltest :input    "reg [7:0] a[1:2][3:4], b = 5, c = 17 + 8; "
                           :names    '("a" "b" "c")
-                          :type     '(:vl-reg unsigned (range 7 0))
-                          :dims     '(((range 1 2) (range 3 4)) nil nil)
+                          :type     '(:vl-reg unsigned (:range 7 0))
+                          :dims     '(((:range 1 2) (:range 3 4)) nil nil)
                           :initvals '(nil 5 (:vl-binary-plus nil 17 8)))
 
 
@@ -511,7 +511,7 @@
                           :initvals '(nil))
 
      (make-vl-vardecltest :input    "const var automatic logic signed [3:0] a;"
-                          :type     '(:vl-logic signed (range 3 0))
+                          :type     '(:vl-logic signed (:range 3 0))
                           :varp     t
                           :constp   t
                           :lifetime :vl-automatic
@@ -520,7 +520,7 @@
                           :initvals '(nil))
 
      (make-vl-vardecltest :input    "const var automatic logic signed [3:0][4:0] a;"
-                          :type     '(:vl-logic signed (range 3 0) (range 4 0))
+                          :type     '(:vl-logic signed (:range 3 0) (:range 4 0))
                           :varp     t
                           :constp   t
                           :lifetime :vl-automatic
@@ -529,12 +529,12 @@
                           :initvals '(nil))
 
      (make-vl-vardecltest :input    "const var static logic signed [3:0][4:0] a [5:0] = 6, b = 1, c[7:0][8:0];"
-                          :type     '(:vl-logic signed (range 3 0) (range 4 0))
+                          :type     '(:vl-logic signed (:range 3 0) (:range 4 0))
                           :varp     t
                           :constp   t
                           :lifetime :vl-static
                           :names    '("a"         "b"      "c")
-                          :dims     '(((range 5 0)) nil ((range 7 0) (range 8 0)))
+                          :dims     '(((:range 5 0)) nil ((:range 7 0) (:range 8 0)))
                           :initvals '(6            1        nil))
 
      (make-vl-vardecltest :input    "logic a;"
@@ -547,7 +547,7 @@
                           :type     '(:vl-logic unsigned)
                           :lifetime :vl-automatic
                           :names    '("a")
-                          :dims     '(((range 3 0)))
+                          :dims     '(((:range 3 0)))
                           :initvals '(nil))
 
      (make-vl-vardecltest :input    "automatic struct { int a; shortreal b; } c [3:0], d;"
@@ -556,7 +556,7 @@
                                       ("b" :vl-shortreal unsigned))
                           :lifetime :vl-automatic
                           :names    '("c" "d")
-                          :dims     '(((range 3 0)) nil)
+                          :dims     '(((:range 3 0)) nil)
                           :initvals '(nil nil))
 
      ))
