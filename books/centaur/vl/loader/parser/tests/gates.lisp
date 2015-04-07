@@ -124,11 +124,11 @@
 (test-parse-gateinst :input "and [3:0] (o, a, b);" :successp nil) ;; range without name
 
 (test-parse-gateinst :input "and foo [3:0] (o, a, b);"
-                     :expect ((:vl-and "foo" ((id "o") (id "a") (id "b")) (range 3 0))))
+                     :expect ((:vl-and "foo" ((id "o") (id "a") (id "b")) (:range 3 0))))
 
 (test-parse-gateinst :input "and foo [3:0] (o, a, b), bar[0:4] (m, n, p);"
-                     :expect ((:vl-and "foo" ((id "o") (id "a") (id "b")) (range 3 0))
-                              (:vl-and "bar" ((id "m") (id "n") (id "p")) (range 0 4))))
+                     :expect ((:vl-and "foo" ((id "o") (id "a") (id "b")) (:range 3 0))
+                              (:vl-and "bar" ((id "m") (id "n") (id "p")) (:range 0 4))))
 
 
 (test-parse-gateinst :input "and #2 foo (o, a, b, c);"
@@ -176,14 +176,14 @@
 
 
 (test-parse-gateinst :input "and #2 foo [3:0] (o, a, b, c);"
-                     :expect ((:vl-and "foo" ((id "o") (id "a") (id "b") (id "c")) (range 3 0) (delay 2 2 2))))
+                     :expect ((:vl-and "foo" ((id "o") (id "a") (id "b") (id "c")) (:range 3 0) (delay 2 2 2))))
 
 (test-parse-gateinst :input "and #2 foo [3:0] (o, a, b, c), bar [1:0] (m, n, o, p);"
-                     :expect ((:vl-and "foo" ((id "o") (id "a") (id "b") (id "c")) (range 3 0) (delay 2 2 2))
-                              (:vl-and "bar" ((id "m") (id "n") (id "o") (id "p")) (range 1 0) (delay 2 2 2))))
+                     :expect ((:vl-and "foo" ((id "o") (id "a") (id "b") (id "c")) (:range 3 0) (delay 2 2 2))
+                              (:vl-and "bar" ((id "m") (id "n") (id "o") (id "p")) (:range 1 0) (delay 2 2 2))))
 
 (test-parse-gateinst :input "and #2 foo [3:0] (o, a, b, c), bar (m, n, o, p);"
-                     :expect ((:vl-and "foo" ((id "o") (id "a") (id "b") (id "c")) (range 3 0) (delay 2 2 2))
+                     :expect ((:vl-and "foo" ((id "o") (id "a") (id "b") (id "c")) (:range 3 0) (delay 2 2 2))
                               (:vl-and "bar" ((id "m") (id "n") (id "o") (id "p")) (delay 2 2 2))))
 
 (test-parse-gateinst :input "and (supply1, pull0) #2 foo (o, a, b);"
@@ -207,7 +207,7 @@
                                (strength :vl-supply :vl-pull)
                                (delay 2 2 2))
                               (:vl-and "bar" ((id "m") (id "n") (id "o"))
-                               (range 3 0)
+                               (:range 3 0)
                                (strength :vl-supply :vl-pull)
                                (delay 2 2 2))))
 
@@ -247,11 +247,11 @@
 (test-parse-gateinst :input "xnor [3:0] (o, a, b);" :successp nil) ;; range without name
 
 (test-parse-gateinst :input "xnor foo [3:0] (o, a, b);"
-                     :expect ((:vl-xnor "foo" ((id "o") (id "a") (id "b")) (range 3 0))))
+                     :expect ((:vl-xnor "foo" ((id "o") (id "a") (id "b")) (:range 3 0))))
 
 (test-parse-gateinst :input "xnor foo [3:0] (o, a, b), bar[0:4] (m, n, p);"
-                     :expect ((:vl-xnor "foo" ((id "o") (id "a") (id "b")) (range 3 0))
-                              (:vl-xnor "bar" ((id "m") (id "n") (id "p")) (range 0 4))))
+                     :expect ((:vl-xnor "foo" ((id "o") (id "a") (id "b")) (:range 3 0))
+                              (:vl-xnor "bar" ((id "m") (id "n") (id "p")) (:range 0 4))))
 
 
 (test-parse-gateinst :input "xnor #2 foo (o, a, b, c);"
@@ -280,14 +280,14 @@
 
 
 (test-parse-gateinst :input "xnor #2 foo [3:0] (o, a, b, c);"
-                     :expect ((:vl-xnor "foo" ((id "o") (id "a") (id "b") (id "c")) (range 3 0) (delay 2 2 2))))
+                     :expect ((:vl-xnor "foo" ((id "o") (id "a") (id "b") (id "c")) (:range 3 0) (delay 2 2 2))))
 
 (test-parse-gateinst :input "xnor #2 foo [3:0] (o, a, b, c), bar [1:0] (m, n, o, p);"
-                     :expect ((:vl-xnor "foo" ((id "o") (id "a") (id "b") (id "c")) (range 3 0) (delay 2 2 2))
-                              (:vl-xnor "bar" ((id "m") (id "n") (id "o") (id "p")) (range 1 0) (delay 2 2 2))))
+                     :expect ((:vl-xnor "foo" ((id "o") (id "a") (id "b") (id "c")) (:range 3 0) (delay 2 2 2))
+                              (:vl-xnor "bar" ((id "m") (id "n") (id "o") (id "p")) (:range 1 0) (delay 2 2 2))))
 
 (test-parse-gateinst :input "xnor #2 foo [3:0] (o, a, b, c), bar (m, n, o, p);"
-                     :expect ((:vl-xnor "foo" ((id "o") (id "a") (id "b") (id "c")) (range 3 0) (delay 2 2 2))
+                     :expect ((:vl-xnor "foo" ((id "o") (id "a") (id "b") (id "c")) (:range 3 0) (delay 2 2 2))
                               (:vl-xnor "bar" ((id "m") (id "n") (id "o") (id "p")) (delay 2 2 2))))
 
 (test-parse-gateinst :input "xnor (supply1, pull0) #2 foo (o, a, b);"
@@ -311,7 +311,7 @@
                                (strength :vl-supply :vl-pull)
                                (delay 2 2 2))
                               (:vl-xnor "bar" ((id "m") (id "n") (id "o"))
-                               (range 3 0)
+                               (:range 3 0)
                                (strength :vl-supply :vl-pull)
                                (delay 2 2 2))))
 
@@ -386,11 +386,11 @@
 (test-parse-gateinst :input "buf(o, a b);" :successp nil) ; missing comma
 
 (test-parse-gateinst :input "buf foo [3:0] (o, a, b);"
-                     :expect ((:vl-buf "foo" ((id "o") (id "a") (id "b")) (range 3 0))))
+                     :expect ((:vl-buf "foo" ((id "o") (id "a") (id "b")) (:range 3 0))))
 
 (test-parse-gateinst :input "buf foo [3:0] (o, a, b), bar[0:4] (m, n, p);"
-                     :expect ((:vl-buf "foo" ((id "o") (id "a") (id "b")) (range 3 0))
-                              (:vl-buf "bar" ((id "m") (id "n") (id "p")) (range 0 4))))
+                     :expect ((:vl-buf "foo" ((id "o") (id "a") (id "b")) (:range 3 0))
+                              (:vl-buf "bar" ((id "m") (id "n") (id "p")) (:range 0 4))))
 
 
 (test-parse-gateinst :input "buf #2 foo (o, a, b, c);"
@@ -418,14 +418,14 @@
                               (:vl-buf "bar" ((id "m") (id "n") (id "o") (id "p")) (delay 2 3 nil))))
 
 (test-parse-gateinst :input "buf #2 foo [3:0] (o, a, b, c);"
-                     :expect ((:vl-buf "foo" ((id "o") (id "a") (id "b") (id "c")) (range 3 0) (delay 2 2 2))))
+                     :expect ((:vl-buf "foo" ((id "o") (id "a") (id "b") (id "c")) (:range 3 0) (delay 2 2 2))))
 
 (test-parse-gateinst :input "buf #2 foo [3:0] (o, a, b, c), bar [1:0] (m, n, o, p);"
-                     :expect ((:vl-buf "foo" ((id "o") (id "a") (id "b") (id "c")) (range 3 0) (delay 2 2 2))
-                              (:vl-buf "bar" ((id "m") (id "n") (id "o") (id "p")) (range 1 0) (delay 2 2 2))))
+                     :expect ((:vl-buf "foo" ((id "o") (id "a") (id "b") (id "c")) (:range 3 0) (delay 2 2 2))
+                              (:vl-buf "bar" ((id "m") (id "n") (id "o") (id "p")) (:range 1 0) (delay 2 2 2))))
 
 (test-parse-gateinst :input "buf #2 foo [3:0] (o, a, b, c), bar (m, n, o, p);"
-                     :expect ((:vl-buf "foo" ((id "o") (id "a") (id "b") (id "c")) (range 3 0) (delay 2 2 2))
+                     :expect ((:vl-buf "foo" ((id "o") (id "a") (id "b") (id "c")) (:range 3 0) (delay 2 2 2))
                               (:vl-buf "bar" ((id "m") (id "n") (id "o") (id "p")) (delay 2 2 2))))
 
 
@@ -451,11 +451,11 @@
 (test-parse-gateinst :input "not(o, a b);" :successp nil) ; missing comma
 
 (test-parse-gateinst :input "not foo [3:0] (o, a, b);"
-                     :expect ((:vl-not "foo" ((id "o") (id "a") (id "b")) (range 3 0))))
+                     :expect ((:vl-not "foo" ((id "o") (id "a") (id "b")) (:range 3 0))))
 
 (test-parse-gateinst :input "not foo [3:0] (o, a, b), bar[0:4] (m, n, p);"
-                     :expect ((:vl-not "foo" ((id "o") (id "a") (id "b")) (range 3 0))
-                              (:vl-not "bar" ((id "m") (id "n") (id "p")) (range 0 4))))
+                     :expect ((:vl-not "foo" ((id "o") (id "a") (id "b")) (:range 3 0))
+                              (:vl-not "bar" ((id "m") (id "n") (id "p")) (:range 0 4))))
 
 
 (test-parse-gateinst :input "not #2 foo (o, a, b, c);"
@@ -483,14 +483,14 @@
                               (:vl-not "bar" ((id "m") (id "n") (id "o") (id "p")) (delay 2 3 nil))))
 
 (test-parse-gateinst :input "not #2 foo [3:0] (o, a, b, c);"
-                     :expect ((:vl-not "foo" ((id "o") (id "a") (id "b") (id "c")) (range 3 0) (delay 2 2 2))))
+                     :expect ((:vl-not "foo" ((id "o") (id "a") (id "b") (id "c")) (:range 3 0) (delay 2 2 2))))
 
 (test-parse-gateinst :input "not #2 foo [3:0] (o, a, b, c), bar [1:0] (m, n, o, p);"
-                     :expect ((:vl-not "foo" ((id "o") (id "a") (id "b") (id "c")) (range 3 0) (delay 2 2 2))
-                              (:vl-not "bar" ((id "m") (id "n") (id "o") (id "p")) (range 1 0) (delay 2 2 2))))
+                     :expect ((:vl-not "foo" ((id "o") (id "a") (id "b") (id "c")) (:range 3 0) (delay 2 2 2))
+                              (:vl-not "bar" ((id "m") (id "n") (id "o") (id "p")) (:range 1 0) (delay 2 2 2))))
 
 (test-parse-gateinst :input "not #2 foo [3:0] (o, a, b, c), bar (m, n, o, p);"
-                     :expect ((:vl-not "foo" ((id "o") (id "a") (id "b") (id "c")) (range 3 0) (delay 2 2 2))
+                     :expect ((:vl-not "foo" ((id "o") (id "a") (id "b") (id "c")) (:range 3 0) (delay 2 2 2))
                               (:vl-not "bar" ((id "m") (id "n") (id "o") (id "p")) (delay 2 2 2))))
 
 
@@ -514,11 +514,11 @@
 (test-parse-gateinst :input "bufif1(o, a b);" :successp nil) ; missing comma
 
 (test-parse-gateinst :input "bufif1 foo [3:0] (o, a, b);"
-                     :expect ((:vl-bufif1 "foo" ((id "o") (id "a") (id "b")) (range 3 0))))
+                     :expect ((:vl-bufif1 "foo" ((id "o") (id "a") (id "b")) (:range 3 0))))
 
 (test-parse-gateinst :input "bufif1 foo [3:0] (o, a, b), bar[0:4] (m, n, p);"
-                     :expect ((:vl-bufif1 "foo" ((id "o") (id "a") (id "b")) (range 3 0))
-                              (:vl-bufif1 "bar" ((id "m") (id "n") (id "p")) (range 0 4))))
+                     :expect ((:vl-bufif1 "foo" ((id "o") (id "a") (id "b")) (:range 3 0))
+                              (:vl-bufif1 "bar" ((id "m") (id "n") (id "p")) (:range 0 4))))
 
 ;; they can have delay3s instead of just delay2s
 
@@ -550,14 +550,14 @@
                               (:vl-bufif1 "bar" ((id "m") (id "n") (id "o")) (delay 2 3 nil))))
 
 (test-parse-gateinst :input "bufif1 #2 foo [3:0] (o, a, b);"
-                     :expect ((:vl-bufif1 "foo" ((id "o") (id "a") (id "b")) (range 3 0) (delay 2 2 2))))
+                     :expect ((:vl-bufif1 "foo" ((id "o") (id "a") (id "b")) (:range 3 0) (delay 2 2 2))))
 
 (test-parse-gateinst :input "bufif1 #2 foo [3:0] (o, a, b), bar [1:0] (m, n, o);"
-                     :expect ((:vl-bufif1 "foo" ((id "o") (id "a") (id "b")) (range 3 0) (delay 2 2 2))
-                              (:vl-bufif1 "bar" ((id "m") (id "n") (id "o")) (range 1 0) (delay 2 2 2))))
+                     :expect ((:vl-bufif1 "foo" ((id "o") (id "a") (id "b")) (:range 3 0) (delay 2 2 2))
+                              (:vl-bufif1 "bar" ((id "m") (id "n") (id "o")) (:range 1 0) (delay 2 2 2))))
 
 (test-parse-gateinst :input "bufif1 #2 foo [3:0] (o, a, b), bar (m, n, o);"
-                     :expect ((:vl-bufif1 "foo" ((id "o") (id "a") (id "b")) (range 3 0) (delay 2 2 2))
+                     :expect ((:vl-bufif1 "foo" ((id "o") (id "a") (id "b")) (:range 3 0) (delay 2 2 2))
                               (:vl-bufif1 "bar" ((id "m") (id "n") (id "o")) (delay 2 2 2))))
 
 (test-parse-gateinst :input "bufif1 (supply1, pull0) #2 foo (o, a, b);"
@@ -581,7 +581,7 @@
                                (strength :vl-supply :vl-pull)
                                (delay 2 2 2))
                               (:vl-bufif1 "bar" ((id "m") (id "n") (id "o"))
-                               (range 3 0)
+                               (:range 3 0)
                                (strength :vl-supply :vl-pull)
                                (delay 2 2 2))))
 
@@ -598,8 +598,8 @@
                      :expect ((:vl-bufif0 "foo" ((id "o") (id "a") (id "b")) (delay 2 3 4))))
 
 (test-parse-gateinst :input "bufif0 foo [3:0] (o, a, b), bar[0:4] (m, n, p);"
-                     :expect ((:vl-bufif0 "foo" ((id "o") (id "a") (id "b")) (range 3 0))
-                              (:vl-bufif0 "bar" ((id "m") (id "n") (id "p")) (range 0 4))))
+                     :expect ((:vl-bufif0 "foo" ((id "o") (id "a") (id "b")) (:range 3 0))
+                              (:vl-bufif0 "bar" ((id "m") (id "n") (id "p")) (:range 0 4))))
 
 (test-parse-gateinst :input "bufif0 (pull0, supply1) #2 foo (o, a, b);"
                      :expect ((:vl-bufif0 "foo" ((id "o") (id "a") (id "b"))
@@ -617,8 +617,8 @@
                      :expect ((:vl-notif0 "foo" ((id "o") (id "a") (id "b")) (delay 2 3 4))))
 
 (test-parse-gateinst :input "notif0 foo [3:0] (o, a, b), bar[0:4] (m, n, p);"
-                     :expect ((:vl-notif0 "foo" ((id "o") (id "a") (id "b")) (range 3 0))
-                              (:vl-notif0 "bar" ((id "m") (id "n") (id "p")) (range 0 4))))
+                     :expect ((:vl-notif0 "foo" ((id "o") (id "a") (id "b")) (:range 3 0))
+                              (:vl-notif0 "bar" ((id "m") (id "n") (id "p")) (:range 0 4))))
 
 (test-parse-gateinst :input "notif0 (pull0, supply1) #2 foo (o, a, b);"
                      :expect ((:vl-notif0 "foo" ((id "o") (id "a") (id "b"))
@@ -635,8 +635,8 @@
                      :expect ((:vl-notif1 "foo" ((id "o") (id "a") (id "b")) (delay 2 3 4))))
 
 (test-parse-gateinst :input "notif1 foo [3:0] (o, a, b), bar[0:4] (m, n, p);"
-                     :expect ((:vl-notif1 "foo" ((id "o") (id "a") (id "b")) (range 3 0))
-                              (:vl-notif1 "bar" ((id "m") (id "n") (id "p")) (range 0 4))))
+                     :expect ((:vl-notif1 "foo" ((id "o") (id "a") (id "b")) (:range 3 0))
+                              (:vl-notif1 "bar" ((id "m") (id "n") (id "p")) (:range 0 4))))
 
 (test-parse-gateinst :input "notif1 (pull0, supply1) #2 foo (o, a, b);"
                      :expect ((:vl-notif1 "foo" ((id "o") (id "a") (id "b"))
@@ -664,8 +664,8 @@
                      :expect ((:vl-cmos "foo" ((id "o") (id "a") (id "b") (id "c")) (delay 2 3 4))))
 
 (test-parse-gateinst :input "cmos foo [3:0] (o, a, b, c), bar[0:4] (m, n, o, p);"
-                     :expect ((:vl-cmos "foo" ((id "o") (id "a") (id "b") (id "c")) (range 3 0))
-                              (:vl-cmos "bar" ((id "m") (id "n") (id "o") (id "p")) (range 0 4))))
+                     :expect ((:vl-cmos "foo" ((id "o") (id "a") (id "b") (id "c")) (:range 3 0))
+                              (:vl-cmos "bar" ((id "m") (id "n") (id "o") (id "p")) (:range 0 4))))
 
 (test-parse-gateinst :input "cmos (pull0, supply1) foo (o, a, b, c);"
                      :successp nil)
@@ -685,8 +685,8 @@
                      :expect ((:vl-rcmos "foo" ((id "o") (id "a") (id "b") (id "c")) (delay 2 3 4))))
 
 (test-parse-gateinst :input "rcmos foo [3:0] (o, a, b, c), bar[0:4] (m, n, o, p);"
-                     :expect ((:vl-rcmos "foo" ((id "o") (id "a") (id "b") (id "c")) (range 3 0))
-                              (:vl-rcmos "bar" ((id "m") (id "n") (id "o") (id "p")) (range 0 4))))
+                     :expect ((:vl-rcmos "foo" ((id "o") (id "a") (id "b") (id "c")) (:range 3 0))
+                              (:vl-rcmos "bar" ((id "m") (id "n") (id "o") (id "p")) (:range 0 4))))
 
 (test-parse-gateinst :input "rcmos (pull0, supply1) foo (o, a, b, c);"
                      :successp nil)
@@ -707,8 +707,8 @@
                      :expect ((:vl-pmos "foo" ((id "o") (id "a") (id "b")) (delay 2 3 4))))
 
 (test-parse-gateinst :input "pmos foo [3:0] (o, a, b), bar[0:4] (m, n, o);"
-                     :expect ((:vl-pmos "foo" ((id "o") (id "a") (id "b")) (range 3 0))
-                              (:vl-pmos "bar" ((id "m") (id "n") (id "o")) (range 0 4))))
+                     :expect ((:vl-pmos "foo" ((id "o") (id "a") (id "b")) (:range 3 0))
+                              (:vl-pmos "bar" ((id "m") (id "n") (id "o")) (:range 0 4))))
 
 (test-parse-gateinst :input "pmos (pull0, supply1) foo (o, a, b);" ;; no strengths on mos gates
                      :successp nil)
@@ -726,8 +726,8 @@
                      :expect ((:vl-rpmos "foo" ((id "o") (id "a") (id "b")) (delay 2 3 4))))
 
 (test-parse-gateinst :input "rpmos foo [3:0] (o, a, b), bar[0:4] (m, n, o);"
-                     :expect ((:vl-rpmos "foo" ((id "o") (id "a") (id "b")) (range 3 0))
-                              (:vl-rpmos "bar" ((id "m") (id "n") (id "o")) (range 0 4))))
+                     :expect ((:vl-rpmos "foo" ((id "o") (id "a") (id "b")) (:range 3 0))
+                              (:vl-rpmos "bar" ((id "m") (id "n") (id "o")) (:range 0 4))))
 
 (test-parse-gateinst :input "rpmos (pull0, supply1) foo (o, a, b);" ;; no strengths on mos gates
                      :successp nil)
@@ -745,8 +745,8 @@
                      :expect ((:vl-nmos "foo" ((id "o") (id "a") (id "b")) (delay 2 3 4))))
 
 (test-parse-gateinst :input "nmos foo [3:0] (o, a, b), bar[0:4] (m, n, o);"
-                     :expect ((:vl-nmos "foo" ((id "o") (id "a") (id "b")) (range 3 0))
-                              (:vl-nmos "bar" ((id "m") (id "n") (id "o")) (range 0 4))))
+                     :expect ((:vl-nmos "foo" ((id "o") (id "a") (id "b")) (:range 3 0))
+                              (:vl-nmos "bar" ((id "m") (id "n") (id "o")) (:range 0 4))))
 
 (test-parse-gateinst :input "nmos (pull0, supply1) foo (o, a, b);" ;; no strengths on mos gates
                      :successp nil)
@@ -764,8 +764,8 @@
                      :expect ((:vl-rnmos "foo" ((id "o") (id "a") (id "b")) (delay 2 3 4))))
 
 (test-parse-gateinst :input "rnmos foo [3:0] (o, a, b), bar[0:4] (m, n, o);"
-                     :expect ((:vl-rnmos "foo" ((id "o") (id "a") (id "b")) (range 3 0))
-                              (:vl-rnmos "bar" ((id "m") (id "n") (id "o")) (range 0 4))))
+                     :expect ((:vl-rnmos "foo" ((id "o") (id "a") (id "b")) (:range 3 0))
+                              (:vl-rnmos "bar" ((id "m") (id "n") (id "o")) (:range 0 4))))
 
 (test-parse-gateinst :input "rnmos (pull0, supply1) foo (o, a, b);" ;; no strengths on mos gates
                      :successp nil)

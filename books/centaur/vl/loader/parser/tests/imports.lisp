@@ -85,7 +85,7 @@
                        (import "foo" "baz" nil)))
 
 (test-import :input "import foo::*, foo::bar;"
-             :atts (list (cons "myatt" (vl-idexpr "myval" nil nil)))
+             :atts (list (cons "myatt" (vl-idexpr "myval")))
              :expect '((import "foo" :vl-import* (("myatt" <- (id "myval"))))
                        (import "foo" "bar"       (("myatt" <- (id "myval"))))))
 

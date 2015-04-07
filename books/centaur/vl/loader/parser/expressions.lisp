@@ -32,6 +32,7 @@
 (include-book "utils")
 (include-book "../../expr")
 (include-book "../../mlib/expr-tools")
+(include-book "../../mlib/coretypes")
 (local (include-book "../../util/arithmetic"))
 (local (non-parallel-book))
 
@@ -553,23 +554,26 @@ literals, unbased unsized literals, @('this'), @('$'), and @('null').</p>"
       (implies val (consp (vl-tokstream->tokens))))))
 
 
-
 (defval *vl-very-simple-type-table*
   :parents (vl-parse-very-simple-type)
   :showval t
-  (list
-   (cons :vl-kwd-byte      (hons-copy (make-vl-coretype :name :vl-byte)))
-   (cons :vl-kwd-shortint  (hons-copy (make-vl-coretype :name :vl-shortint)))
-   (cons :vl-kwd-int       (hons-copy (make-vl-coretype :name :vl-int)))
-   (cons :vl-kwd-longint   (hons-copy (make-vl-coretype :name :vl-longint)))
-   (cons :vl-kwd-integer   (hons-copy (make-vl-coretype :name :vl-integer)))
-   (cons :vl-kwd-time      (hons-copy (make-vl-coretype :name :vl-time)))
-   (cons :vl-kwd-bit       (hons-copy (make-vl-coretype :name :vl-bit)))
-   (cons :vl-kwd-logic     (hons-copy (make-vl-coretype :name :vl-logic)))
-   (cons :vl-kwd-reg       (hons-copy (make-vl-coretype :name :vl-reg)))
-   (cons :vl-kwd-shortreal (hons-copy (make-vl-coretype :name :vl-shortreal)))
-   (cons :vl-kwd-real      (hons-copy (make-vl-coretype :name :vl-real)))
-   (cons :vl-kwd-realtime  (hons-copy (make-vl-coretype :name :vl-realtime)))))
+  (b* (((fun (mk typename))
+        (b* (((vl-coredatatype-info info) (vl-coretypename->info typename)))
+          (cons info.keyword
+                (hons-copy (make-vl-coretype :name typename
+                                             :signedp info.default-signedp))))))
+    (list (mk :vl-byte)
+          (mk :vl-shortint)
+          (mk :vl-int)
+          (mk :vl-longint)
+          (mk :vl-integer)
+          (mk :vl-time)
+          (mk :vl-bit)
+          (mk :vl-logic)
+          (mk :vl-reg)
+          (mk :vl-shortreal)
+          (mk :vl-real)
+          (mk :vl-realtime))))
 
 (defval *vl-very-simple-type-tokens*
   :parents (vl-parse-very-simple-type)
