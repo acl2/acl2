@@ -145,7 +145,7 @@
                    (pstate (make-vl-parsestate :warnings 'blah-warnings))
                    ((mv erp val tokens (vl-parsestate pstate))
                     (vl-parse-module-port-list-top-top))
-                   (val (vl-parsed-ports->ports val))
+                   (val (vl-nonansi-ports->ports val))
                    ((unless ,successp)
                     (cw "Expect failure.  Actual Erp: ~x0.~%" erp)
                     erp))

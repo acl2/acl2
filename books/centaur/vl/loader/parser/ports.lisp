@@ -327,6 +327,7 @@
               (vl-parse-ansi-interface-portdecl atts))
              ((unless err3) (mv nil port tokstream))
              (pos3 (vl-tokstream->position))
+             (tokstream (vl-tokstream-restore backup))
 
              ((mv err port tokstream)
               ;; 1-2
@@ -334,8 +335,8 @@
              ((unless err) (mv nil port tokstream))
              (pos (vl-tokstream->position)) ;; position that try 1 got to
              (tokstream (vl-tokstream-restore backup))
+
              ((mv pos err) (vl-choose-parse-error pos err pos3 err3))
-             (tokstream (vl-tokstream-restore backup))
              (tokstream (vl-tokstream-update-position pos)))
           (mv err nil tokstream)))))
 

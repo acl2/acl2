@@ -655,24 +655,97 @@ try to resume parsing after a problematic function."
 
 (local (xdoc::set-default-parents parse-functions-sv2012))
 
-(defparser vl-parse-function-data-type-or-implicit ()
-  :short "Matches @('function_data_type_or_implicit')."
-  :result (vl-datatype-p val)
+(defprod vl-datatype-or-implicit
+  ((type vl-datatype-p)
+   (implicitp booleanp)))
+
+(defparser vl-parse-function-data-type-and-name (void-allowed-p)
+  :short "Matches @('function_data_type_or_implicit identifier')."
+  :result (and (consp val)
+               (vl-datatype-or-implicit-p (car val))
+               (vl-idtoken-p (cdr val)))
   :fails gracefully
-  :count weak
-  :long "<p>Grammar rules:</p>
+  :count strong
+  :long "<p>This matches the part of a function body consisting of:
+
+@({
+ function_data_type_or_implicit
+          [ interface_identifier '.' | class_scope ] identifier
+ })
+
+<p>Except that we're going to ignore the interface_identifier and class_scope
+part.</p>
+
+<p>The following grammar rules are relevant:
 
 @({
     function_data_type_or_implicit ::= data_type_or_void
                                      | implicit_data_type
 
     data_type_or_void ::= data_type | 'void'
-})"
-  (seq tokstream
-       (when (vl-is-token? :vl-kwd-void)
-         (return (make-vl-coretype :name :vl-void)))
-       (ans := (vl-parse-datatype-or-implicit))
-       (return ans)))
+
+    implicit_data_type ::= [ signing ] { packed_dimension }
+})
+
+<p>So really what we're parsing is:
+
+@({
+   'void' identifier
+ | data_type identifier
+ | [ signing ] { packed_dimension } identifier.
+ })
+
+<p>This requires backtracking because if an identifier is first, we don't know
+if we're in the data type or implicit case.  The way we resolve this is to
+first try the datatype case.  If that works, it's definitely the right one,
+because in all cases our final identifier is going to be followed by some
+punctuation, and so if we parse both a data type and an identifier, we know the
+third option wouldn't have worked (we would've just gotten an identifier and
+then a semicolon or left-paren).</p>
+
+"
+  (b* (((when (and void-allowed-p (vl-is-token? :vl-kwd-void)))
+        ;; No ambiguity here.
+        (seq tokstream
+             (:= (vl-match))
+             (name := (vl-match-token :vl-idtoken))
+             (return (cons (make-vl-datatype-or-implicit
+                            :type (make-vl-coretype :name :vl-void)
+                            :implicitp nil)
+                           name))))
+       (backup (vl-tokstream-save))
+       ((mv err1 val tokstream)
+        (seq tokstream
+             ;; Option 1: parse a datatype.
+             (type := (vl-parse-datatype))
+             (name := (vl-match-token :vl-idtoken))
+             (return (cons (make-vl-datatype-or-implicit
+                            :type type :implicitp nil)
+                           name))))
+       ((unless err1) (mv nil val tokstream))
+       (pos1 (vl-tokstream->position))
+       (tokstream (vl-tokstream-restore backup))
+       ((mv err2 val tokstream)
+        (seq tokstream
+             ;; Option 2: implicit datatype.
+             (when (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned))
+               (signing := (vl-match)))
+             (pdims := (vl-parse-0+-packed-dimensions))
+             (name := (vl-match-token :vl-idtoken))
+             (return (cons (make-vl-datatype-or-implicit
+                            :type
+                            (make-vl-coretype
+                             :name :vl-logic
+                             :signedp (and signing (eq (vl-token->type signing) :vl-kwd-signed))
+                             :pdims pdims)
+                            :implicitp t)
+                           name))))
+       ((unless err2) (mv nil val tokstream))
+       (pos2 (vl-tokstream->position))
+       ((mv pos err) (vl-choose-parse-error pos1 err1 pos2 err2))
+       (tokstream (vl-tokstream-update-position pos)))
+    (mv err nil tokstream)))
+
 
 (defparser vl-parse-function-statements-aux ()
   :parents (vl-parse-function-statements)
@@ -740,6 +813,10 @@ statements at all.\"</blockquote>
          :hints(("Goal" :in-theory (enable vl-is-token?)))))
 
 (local (in-theory (disable not)))
+
+
+
+
 
 (defparser vl-parse-tf-port-item (prev)
   :short "Matches @('tf_port_item'), not for prototypes."
@@ -815,110 +892,59 @@ same direction.\"</blockquote>
        (when (vl-is-token? :vl-kwd-var)
          (var := (vl-match)))
 
-       ;; Styled after vl-parse-port-declaration-head-2012.  We'll check for the
-       ;; implicit data type case first.
-       ;;
-       ;;    data_type_or_implicit ::= data_type | implicit_data_type
-       ;;    implicit_data_type    ::= [ signing ] { packed_dimension }
-       (when (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned))
-         (signing := (vl-match)))
-       (when (vl-is-token? :vl-lbrack)
-         (ranges := (vl-parse-0+-ranges)))
-       (when (or signing ranges)
-         ;; Definitely in the implicit case.
-         (name := (vl-match-token :vl-idtoken))
-         (udims := (vl-parse-0+-ranges))
-         (when (vl-is-token? :vl-equalsign)
-           (return-raw
-            (vl-parse-error "BOZO implement default values for task/function arguments.")))
-         (return (make-vl-portdecl
-                  :name (vl-idtoken->name name)
-                  :loc  (vl-token->loc name)
-                  ;; See direction determination: use explicit direction, or
-                  ;; inherit previous direction, or use input if this is the
-                  ;; first port.
-                  :dir  (cond (dir  dir)
-                              (prev (vl-portdecl->dir prev))
-                              (t    :vl-input))
-                  :type (make-vl-coretype :name :vl-logic
-                                          :signedp (and signing
-                                                        (eq (vl-token->type signing) :vl-kwd-signed))
-                                          :pdims (vl-ranges->packeddimensions ranges)
-                                          :udims (vl-ranges->packeddimensions udims))
-                  :atts atts
-                  :nettype nil)))
+       ;; Implicit or explicit datatype, use vl-function-parse-data-type-and-name.
+       ((type . name) := (vl-parse-function-data-type-and-name nil)) ;; void not allowed
 
-       ;; If we get here, we know there is no implicit data type.  Per the footnote
-       ;; we know there must be a name for this port, so the possibilities for what
-       ;; comes next are either:
-       ;; (1) ``data_type  name``
-       ;; (2) no data type, just ``name``
-       ;;
-       ;; Since a data_type can also be an identifier, to disambiguate, we'll
-       ;; check whether we have an identifier that is NOT a type name.
-       (when (and (vl-is-token? :vl-idtoken)
-                  (not (vl-parsestate-is-user-defined-type-p
-                        (vl-idtoken->name (car (vl-tokstream->tokens)))
-                        (vl-tokstream->pstate))))
-         ;; Identifier that is not a known type.  We must be in the empty
-         ;; implicit case then, i.e., this is a plain, type-free or 'var' type
-         ;; port.
-         (name := (vl-match))
-         (udims := (vl-parse-0+-ranges))
-         (when (vl-is-token? :vl-equalsign)
-           (return-raw
-            (vl-parse-error "BOZO implement default values for task/function arguments.")))
-         (return (make-vl-portdecl
-                  :name (vl-idtoken->name name)
-                  :loc  (vl-token->loc name)
-                  ;; See direction determination: use explicit direction, or
-                  ;; inherit previous direction, or use input if this is the
-                  ;; first port.
-                  :dir  (cond (dir  dir)
-                              (prev (vl-portdecl->dir prev))
-                              (t    :vl-input))
-                  :type (if (or var dir (not prev))
-                            ;; In these cases we're to assume it's a logic wire
-                            ;; and not try to inherit a type from the previous port.
-                            ;;
-                            ;;   - VAR: I think if there's a only just a VAR
-                            ;;     keyword, then that should still count as
-                            ;;     being a type (logic), because that's how it
-                            ;;     works in module ports.
-                            ;;
-                            ;;   - DIR: If there's a direction but no type,
-                            ;;     then we're to assume it's a logic and not
-                            ;;     inherit the previous port's type.  See "Type
-                            ;;     Determination" above.
-                            ;;
-                            ;;   - (NOT PREV): If it's the first port and
-                            ;;     there's no type, then we're to assume it's a
-                            ;;     logic.
-                            (make-vl-coretype :name :vl-logic
-                                              :signedp nil
-                                              :pdims nil
-                                              :udims (vl-ranges->packeddimensions udims))
-                          ;; Otherwise, there's no type information at all, and
-                          ;; there's no direction, so inherit from the previous
-                          ;; port.
-                          (vl-portdecl->type prev))
-                  :atts atts
-                  :nettype nil)))
+       (udims := (vl-parse-0+-variable-dimensions))
 
-       ;; The only remaining possibility is that we have an explicit data type.
-       (type  := (vl-parse-datatype))
-       (name  := (vl-match-token :vl-idtoken))
-       (udims := (vl-parse-0+-ranges))
        (when (vl-is-token? :vl-equalsign)
          (return-raw
           (vl-parse-error "BOZO implement default values for task/function arguments.")))
+
        (return (make-vl-portdecl
                 :name (vl-idtoken->name name)
-                :loc  (vl-token->loc name)
-                :dir  (cond (dir  dir)
-                            (prev (vl-portdecl->dir prev))
-                            (t    :vl-input))
-                :type (vl-datatype-update-udims (vl-ranges->packeddimensions udims) type)
+                :loc (vl-token->loc name)
+                  ;; See direction determination: use explicit direction, or
+                  ;; inherit previous direction, or use input if this is the
+                  ;; first port.
+                :dir (cond (dir dir)
+                           (prev (vl-portdecl->dir prev))
+                           (t :vl-input))
+                :type (b* (((vl-datatype-or-implicit type)))
+
+                        (vl-datatype-update-udims
+                         udims
+                         (if (or (not type.implicitp)
+                                 var dir (not prev)
+                                 (vl-datatype-case type.type
+                                   :vl-coretype (or type.type.pdims
+                                                    type.type.signedp)
+                                   :otherwise nil))
+                             ;; In these cases we're to assume we don't try to
+                             ;; inherit a type from the previous port.
+                             ;;
+                             ;;   - VAR: I think if there's a only just a VAR
+                             ;;     keyword, then that should still count as being a
+                             ;;     type (logic), because that's how it works in
+                             ;;     module ports.
+                             ;;
+                             ;;   - DIR: If there's a direction but no type, then
+                             ;;     we're to assume it's a logic and not inherit the
+                             ;;     previous port's type.  See "Type Determination"
+                             ;;     above.
+                             ;;
+                             ;;   - (NOT PREV): If it's the first port and there's
+                             ;;     no type, then we're to assume it's a logic.
+                             ;;
+                             ;;   - Not implicit: explicit datatype given,
+                             ;;   definitely use that
+                             ;;
+                             ;;   - pdims or signedp: implicit type, but enough type
+                             ;;   info to rule out using the previous.
+                             type.type
+
+                           (vl-portdecl->type prev))))
+
                 :atts atts
                 :nettype nil))))
 
@@ -1162,20 +1188,18 @@ statement.</p>"
           { block_item_declaration }
           { function_statement_or_null }
         'endfunction' [ ':' identifier ]
-})"
+})
+
+<p>As is often the case with data_type_or_implicit forms, we need to backtrack
+to figure out whether an identifier is a datatype or the function name with an
+empty implicit datatype.  We do this in @(see
+vl-parse-function-data-type-and-name).</p>"
 
   (seq tokstream
        (:= (vl-match-token :vl-kwd-function))
        (lifetime := (vl-maybe-parse-lifetime))
-       (rettype  := (vl-parse-function-data-type-or-implicit))
 
-       ;; At this point we should in principle be matching:
-       ;;
-       ;;  [ interface_identifier '.' | class_scope ] identifier
-       ;;
-       ;; But we don't try to support fancy interface/class scope stuff yet,
-       ;; and instead just look for the function's name.
-       (name := (vl-match-token :vl-idtoken))
+       ((rettype . name)  := (vl-parse-function-data-type-and-name t))
 
        ;; BOZO add better error handling stuff here.
 
@@ -1191,7 +1215,7 @@ statement.</p>"
                        (vl-filter-portdecl-or-blockitem-list items)))
                    (list (vl-make-fundecl-for-parser :name      (vl-idtoken->name name)
                                                      :lifetime  lifetime
-                                                     :rettype   rettype
+                                                     :rettype   (vl-datatype-or-implicit->type rettype)
                                                      :inputs    portdecls
                                                      :decls     blockitems
                                                      :body      body
@@ -1210,7 +1234,7 @@ statement.</p>"
        (:= (vl-parse-endblock-name (vl-idtoken->name name) "function/endfunction"))
        (return (list (vl-make-fundecl-for-parser :name       (vl-idtoken->name name)
                                                  :lifetime   lifetime
-                                                 :rettype    rettype
+                                                 :rettype    (vl-datatype-or-implicit->type rettype)
                                                  :inputs     portdecls
                                                  :decls      decls
                                                  :body       body
