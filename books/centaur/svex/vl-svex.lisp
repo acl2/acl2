@@ -237,9 +237,9 @@
        ;; unparametrization and expr sizing, but not e.g. expr splitting or
        ;; occforming.
 
-       (x (vl-remove-unnecessary-elements (list topmod) x))
-
        (x (vl-annotate-svex x))
+
+       (x (vl-remove-unnecessary-elements (list topmod) x))
 
        ((mv good bad)
         (vl::xf-cwtime (vl-simplify-svex x config)))
