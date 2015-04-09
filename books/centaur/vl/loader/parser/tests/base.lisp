@@ -523,10 +523,13 @@
          (n      (min 5 (len tokens))))
     (vl-tokenlist->string-with-spaces (take n tokens))))
 
-(defmacro trace-parser (fn)
+(defmacro trace-parser (fn &key printer)
   `(trace! (,fn
             :entry (list ',fn :tokens (vl-debug-tokstream tokstream))
             :exit (list ',fn
-                        :errmsg (with-local-ps (vl-print-warnings (first values)))
-                        :val (second values)
+                        :errmsg (with-local-ps (vl-print-warning (first values)))
+                        :val ,(if printer 
+                                  `(with-local-ps (,printer (second values)))
+                                `(second values))
                         :remainder (vl-debug-tokstream (third values))))))
+

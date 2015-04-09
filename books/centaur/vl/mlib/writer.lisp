@@ -1291,6 +1291,12 @@ expression into a string."
                (vl-ps-span "vl_key"
                            (vl-println? (vl-direction-string x.dir)))
                (vl-print " ")
+               (if x.nettype
+                   (vl-ps-seq
+                    (vl-ps-span "vl_key"
+                                (vl-println? (vl-nettypename-string x.nettype)))
+                    (vl-print " "))
+                 ps)
                (if (and (vl-datatype-case x.type :vl-coretype)
                         (eq (vl-coretype->name x.type) :vl-logic))
                    ;; logic type, which is the default -- just print the
@@ -1315,6 +1321,50 @@ expression into a string."
       ps
     (vl-ps-seq (vl-pp-portdecl (car x))
                (vl-pp-portdecllist (cdr x)))))
+
+
+;; for debugging
+(define vl-pp-ansi-portdecl ((x vl-ansi-portdecl-p) &key (ps 'ps))
+  (b* (((vl-ansi-portdecl x)))
+    (vl-ps-seq (vl-print "  ")
+               (if x.atts
+                   (vl-ps-seq (vl-pp-atts x.atts)
+                              (vl-print " "))
+                 ps)
+               (if x.dir
+                   (vl-ps-seq
+                    (vl-ps-span "vl_key"
+                                (vl-println? (vl-direction-string x.dir)))
+                    (vl-print " "))
+                 ps)
+               (if x.nettype
+                   (vl-ps-seq
+                    (vl-ps-span "vl_key"
+                                (vl-println? (vl-nettypename-string x.nettype)))
+                    (vl-print " "))
+                 ps)
+               (if x.typename
+                   (vl-ps-seq (vl-print-str x.typename) (vl-print " "))
+                 ps)
+               (if x.type
+                   (vl-ps-seq (vl-pp-datatype x.type) (vl-print " "))
+                 ps)
+               (if x.signedness
+                   (if (eq x.signedness :vl-signed)
+                       (vl-print "signed ")
+                     (vl-print "unsigned "))
+                 ps)
+               (if x.pdims
+                   (vl-ps-seq (vl-pp-packeddimensionlist x.pdims)
+                              (vl-print " "))
+                 ps)
+               (vl-print-wirename x.name)
+               (if x.udims
+                   (vl-ps-seq (vl-print " ")
+                              (vl-pp-packeddimensionlist x.pdims))
+                 ps))))
+
+
 
 
 (define vl-pp-paramdecl ((x vl-paramdecl-p) &key (ps 'ps))

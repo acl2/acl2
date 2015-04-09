@@ -439,6 +439,8 @@ expression-sizing) for details.</p>")
   :true-listp nil
   :elementp-of-nil nil)
 
+
+
 (defthm vl-portlist-p-when-vl-interfaceportlist-p
   (implies (vl-interfaceportlist-p x)
            (vl-portlist-p x))
@@ -523,6 +525,54 @@ expression-sizing) for details.</p>")
                (cons (vl-port-fix a)
                      (vl-collect-interface-ports x))
              (vl-collect-interface-ports x)))))
+
+
+(define vl-collect-regular-ports-exec ((x vl-portlist-p) nrev)
+  :parents (vl-collect-regular-ports)
+  (b* (((when (atom x))
+        (nrev-fix nrev))
+       (x1 (vl-port-fix (car x)))
+       ((when (eq (tag x1) :vl-regularport))
+        (b* ((nrev (nrev-push x1 nrev)))
+          (vl-collect-regular-ports-exec (cdr x) nrev))))
+    (vl-collect-regular-ports-exec (cdr x) nrev)))
+
+(define vl-collect-regular-ports
+  :parents (vl-portlist-p)
+  :short "Filter a @(see vl-portlist-p) to collect only the regular ports."
+  ((x vl-portlist-p))
+  :returns (ifports (and (vl-portlist-p ifports)
+                         (vl-regularportlist-p ifports)))
+  :verify-guards nil
+  (mbe :logic
+       (b* (((when (atom x))
+             nil)
+            (x1 (vl-port-fix (car x)))
+            ((when (eq (tag x1) :vl-regularport))
+             (cons x1 (vl-collect-regular-ports (cdr x)))))
+         (vl-collect-regular-ports (cdr x)))
+       :exec
+       (with-local-nrev
+         (vl-collect-regular-ports-exec x nrev)))
+  ///
+  (defthm vl-collect-regular-ports-exec-removal
+    (equal (vl-collect-regular-ports-exec x nrev)
+           (append nrev (vl-collect-regular-ports x)))
+    :hints(("Goal" :in-theory (enable vl-collect-regular-ports-exec))))
+
+  (verify-guards vl-collect-regular-ports)
+
+  (defthm vl-collect-regular-ports-when-atom
+    (implies (atom x)
+             (equal (vl-collect-regular-ports x)
+                    nil)))
+
+  (defthm vl-collect-regular-ports-of-cons
+    (equal (vl-collect-regular-ports (cons a x))
+           (if (eq (tag (vl-port-fix a)) :vl-regularport)
+               (cons (vl-port-fix a)
+                     (vl-collect-regular-ports x))
+             (vl-collect-regular-ports x)))))
 
 
 (defenum vl-direction-p (:vl-input :vl-output :vl-inout)
@@ -2678,7 +2728,6 @@ endmodule
 ;;   :returns (names string-listp)
 ;;   (vl-taskport->name x))
 
-
 (defprod vl-fundecl
   :short "Representation of a single Verilog function."
   :tag :vl-fundecl
@@ -3321,6 +3370,82 @@ do this is to wrap it using @('(vl-context x)').</p>
   `(vl-context-fix ,x))
 
 
+(defprod vl-ansi-portdecl
+  :short "Temporary representation for port declarations."
+  :long "<p>Some constraints on the presence/absence of some of these fields:</p>
+<ul>
+<li>typename should imply no type, signedness, or pdims</li>
+<li>type should imply no signedness or pdims.</li>
+<li>modport should imply typename and not varp, dir, or nettype</li>
+<ul>
+
+<p>The reason we have these: Parsing ports is fairly ambiguous and there's a
+lot that needs to be fleshed out after we have a fuller picture of the design.
+The worst ambiguity is that there's no syntactic difference in an ANSI portlist
+between an interfaceport of interface foo, and a regular port of type foo (if
+it doesn't have an explicit direction, nettype, or @('var') keyword).  The only
+way to resolve these is to determine whether the interface/type name actually
+refers to an interface or a type.</p>
+
+<p>Another issue, with non-ANSI ports, is that a port declaration may have a
+corresponding net/variable declaration that contains different information
+about its type and nettype.  We resolve this later as well, cross-propagating
+the type information between the variable and port declarations.</p>
+"
+  :tag :vl-ansi-portdecl
+  ((atts vl-atts-p)
+   (dir vl-maybe-direction-p
+        "Direction, if an explicit keyword was present.")
+   (nettype vl-maybe-nettypename-p
+            "Nettype, if present")
+   (varp    booleanp
+            "Indicates whether the var keyword was present.")
+   (typename maybe-stringp
+             "The name of the type, if it was just a simple ID, or the name of
+              the interface, to be determined.")
+   (modport maybe-stringp
+            "Modport of the interface, if specified")
+   (type    vl-maybe-datatype-p
+            "The datatype, if it was explicit")
+   (signedness vl-maybe-exprtype-p
+               "The signedness, if given, and if there is no explicit datatype)")
+   (pdims      vl-packeddimensionlist-p
+               "Dimensions, if given and no explicit datatype")
+   (name       stringp
+               "Name of the port")
+   (udims      vl-packeddimensionlist-p
+               "Dimensions from after the name")
+   (loc        vl-location-p)))
+
+(fty::deflist vl-ansi-portdecllist :elt-type vl-ansi-portdecl)
+
+
+(defprod vl-parse-temps
+  :short "Temporary stuff recorded by parsing that's used to generate real module
+          items by the first annotate transforms, and should be ignored after
+          that."
+  ((ansi-p booleanp
+           "Says whether we parsed this module in the ANSI or non-ANSI style.")
+   (ansi-ports vl-ansi-portdecllist-p
+               "Temporary form of the ports from parsing for ANSI modules. These
+                immediately get processed into the real ports by the port-resolve
+                transform and should be ignored thereafter.")
+   (paramports vl-paramdecllist-p
+               "List of parameter declarations that occur in the parameter port
+                list, rather than in the body of the module.  These must be kept
+                separate in the ANSI case because the ports may refer to parameters,
+                and we therefore need to preserve the textual order so that shadowcheck
+                doesn't fail.")
+   (loaditems vl-genelementlist-p
+              "See @(see make-implicit-wires).  This is a temporary container to
+               hold the module elements, in program order, until the rest of the
+               design has been loaded.  This field is \"owned\" by the @('make-implicit-wires')
+               transform.  You should never access it or modify it in any other
+               code.")))
+
+(defoption vl-maybe-parse-temps vl-parse-temps)
+
+
 (defprod vl-module
   :short "Representation of a single module."
   :tag :vl-module
@@ -3434,16 +3559,9 @@ do this is to wrap it using @('(vl-context x)').</p>
                 displaying the transformed module with comments preserved,
                 e.g., see @(see vl-ppc-module).")
 
-   (loaditems  vl-genelementlist-p
-               "See @(see make-implicit-wires).  This is a temporary container
-                to hold the module elements, in program order, until the rest
-                of the design has been loaded.  This field is \"owned\" by the
-                @('make-implicit-wires') transform.  You should never access it
-                or modify it in any other code.")
-
-   (esim       "This is meant to be @('nil') until @(see esim) conversion, at
-                which point it becomes the E module corresponding to this
-                VL module."))
+   (parse-temps  vl-maybe-parse-temps-p
+                 "Temporary stuff recorded by the parser, used to generate real
+                  module contents."))
   :extra-binder-names (hands-offp
                        ifports
                        modnamespace))
@@ -3521,11 +3639,6 @@ transforms to not modules with this attribute.</p>"
   :rest ((defthm vl-modinstlist-p-of-vl-modulelist->modinsts
            (vl-modinstlist-p (vl-modulelist->modinsts x)))
          (deffixequiv vl-modulelist->modinsts :args ((x vl-modulelist-p)))))
-
-(defprojection vl-modulelist->esims ((x vl-modulelist-p))
-  :parents (vl-modulelist-p)
-  (vl-module->esim x))
-
 
 (defoption vl-maybe-module vl-module-p
   :short "Recognizer for an @(see vl-module-p) or @('nil')."
@@ -3763,6 +3876,7 @@ packages.  Eventually there will be new fields here.</p>")
    (generates  vl-genelementlist-p)
    (imports    vl-importlist-p)
    ;; ...
+
    (warnings vl-warninglist-p)
    (minloc   vl-location-p)
    (maxloc   vl-location-p)
@@ -3770,10 +3884,9 @@ packages.  Eventually there will be new fields here.</p>")
    (origname stringp :rule-classes :type-prescription)
    (comments vl-commentmap-p)
 
-   (loaditems  vl-genelementlist-p
-               "See @(see make-implicit-wires).  This is a temporary container
-                to hold the module elements, in program order, until the rest
-                of the design has been loaded."))
+   (parse-temps  vl-maybe-parse-temps-p
+                 "Temporary stuff recorded by the parser, used to generate real
+                  interface contents."))
 
   :long "BOZO incomplete stub -- we don't really support interfaces yet."
 

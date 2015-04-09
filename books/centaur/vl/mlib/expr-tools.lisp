@@ -463,6 +463,12 @@ selects.</p>"
   (vl-resolved->val x))
 
 
+(define vl-idscope-p ((x vl-scopeexpr-p))
+  :short "Recognize a scopeexpr that is just a plain identifier."
+  (vl-scopeexpr-case x
+    :end (vl-hidexpr-case x.hid :end)
+    :otherwise nil))
+
 (define vl-idexpr-p ((x vl-expr-p))
   :short "Recognize plain identifier expressions."
   :long "<p>This recognizes simple non-hierarchical identifier expressions
@@ -471,8 +477,7 @@ like @('foo').</p>"
   (vl-expr-case x
     :vl-index (and (atom x.indices)
                    (vl-partselect-case x.part :none)
-                   (vl-scopeexpr-case x.scope :end)
-                   (eq (vl-hidexpr-kind (vl-scopeexpr-end->hid x.scope)) :end))
+                   (vl-idscope-p x.scope))
     :otherwise nil))
 
 (deflist vl-idexprlist-p (x)
@@ -480,13 +485,19 @@ like @('foo').</p>"
   :guard (vl-exprlist-p x))
 
 
+(define vl-idscope->name ((x vl-scopeexpr-p))
+  :guard (vl-idscope-p x)
+  :prepwork ((local (in-theory (enable vl-idscope-p))))
+  :returns (name stringp :rule-classes :type-prescription)
+  (vl-hidexpr-end->name (vl-scopeexpr-end->hid x)))
+
 (define vl-idexpr->name ((x vl-expr-p))
   :returns (name stringp :rule-classes :type-prescription)
   :guard (vl-idexpr-p x)
   :short "Get the name from a @(see vl-idexpr-p)."
   :long "<p>Guaranteed to return a string.</p>"
   :inline t
-  (vl-hidexpr-end->name (vl-scopeexpr-end->hid (vl-index->scope x)))
+  (vl-idscope->name (vl-index->scope x))
   :guard-hints(("Goal" :in-theory (enable vl-idexpr-p))))
 
 (defprojection vl-idexprlist->names ((x vl-exprlist-p))
@@ -494,6 +505,18 @@ like @('foo').</p>"
   :guard (vl-idexprlist-p x)
   (vl-idexpr->name x))
 
+
+(define vl-idscope ((name stringp))
+  :returns (scopeexpr vl-scopeexpr-p)
+  (make-vl-scopeexpr-end :hid (make-vl-hidexpr-end :name name))
+  ///
+  (defret vl-idscope-p-of-vl-idscope
+    (vl-idscope-p scopeexpr)
+    :hints(("Goal" :in-theory (enable vl-idscope-p))))
+
+  (defret vl-idscope->name-of-vl-idscope
+    (equal (vl-idscope->name scopeexpr) (string-fix name))
+    :hints(("Goal" :in-theory (enable vl-idscope->name)))))
 
 (define vl-idexpr ((name stringp))
   :returns (expr vl-expr-p)
@@ -506,7 +529,7 @@ identifier may be needed in several contexts, and since we often want to
 construct fast alists binding identifiers to things, etc.</p>"
   :inline t
   (hons-copy
-   (make-vl-index :scope (make-vl-scopeexpr-end :hid (make-vl-hidexpr-end :name name))
+   (make-vl-index :scope (vl-idscope name)
                   :indices nil
                   :part (make-vl-partselect-none)))
   ///

@@ -1009,6 +1009,7 @@ explicit declarations.</p>")
   :returns (mv (st    vl-shadowcheck-state-p)
                (new-x vl-module-p))
   (b* (((vl-module x)    (vl-module-fix x))
+       (x.loaditems (and x.parse-temps (vl-parse-temps->loaditems x.parse-temps)))
        (- (vl-shadowcheck-debug "*** Shadowcheck module ~s0 ***~%" x.name))
        (warnings         x.warnings)
        (st               (vl-shadowcheck-push-scope x st))
@@ -1017,7 +1018,7 @@ explicit declarations.</p>")
        (st               (vl-shadowcheck-pop-scope st))
        (new-x            (change-vl-module x
                                            :warnings warnings
-                                           :loaditems nil)))
+                                           :parse-temps nil)))
     (mv st new-x)))
 
 (define vl-shadowcheck-modules ((x  vl-modulelist-p)

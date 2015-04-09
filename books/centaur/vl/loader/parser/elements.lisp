@@ -286,6 +286,7 @@ rules:</p>
     :fails gracefully
     :count strong
     (b* ((tokens (vl-tokstream->tokens))
+         (edition (vl-loadconfig->edition config))
          ((when (atom tokens))
           (vl-parse-error "Unexpected EOF."))
          (type1 (vl-token->type (car tokens)))
@@ -332,14 +333,7 @@ rules:</p>
          ((when (eq type1 :vl-kwd-always))
           (vl-parse-always-construct atts))
 
-         ((when (and (vl-is-token? :vl-idtoken)
-                     (not (vl-parsestate-is-user-defined-type-p
-                           (vl-idtoken->name (car (vl-tokstream->tokens)))
-                           (vl-tokstream->pstate)))))
-          (vl-parse-udp-or-module-instantiation atts))
-
-
-         ((when (eq (vl-loadconfig->edition config) :verilog-2005))
+         ((when (eq edition :verilog-2005))
           (case type1
             (:vl-kwd-reg        (vl-parse-reg-declaration atts))
             (:vl-kwd-integer    (vl-parse-integer-declaration atts))
@@ -347,6 +341,7 @@ rules:</p>
             (:vl-kwd-time       (vl-parse-time-declaration atts))
             (:vl-kwd-realtime   (vl-parse-realtime-declaration atts))
             (:vl-kwd-event      (vl-parse-event-declaration atts))
+            (:vl-idtoken        (vl-parse-udp-or-module-instantiation atts))
             (t (vl-parse-error "Invalid module or generate item."))))
 
          ;; SystemVerilog extensions ----
@@ -373,7 +368,28 @@ rules:</p>
          ((when (or (eq type1 :vl-kwd-always_ff)
                     (eq type1 :vl-kwd-always_latch)
                     (eq type1 :vl-kwd-always_comb)))
-          (vl-parse-always-construct atts)))
+          (vl-parse-always-construct atts))
+
+         ((when (eq type1 :vl-idtoken))
+          ;; It's either a udp/module/interface instance, a variable decl, or a
+          ;; (non-ansi) interface port decl.  We'll backtrack to distinguish
+          ;; the first two, but we'll parse the interface portdecl as a vardecl
+          ;; and fix it up in annotate.
+          (b* ((backup (vl-tokstream-save))
+               ((mv err1 inst tokstream)
+                (vl-parse-udp-or-module-instantiation atts))
+               ((unless err1) (mv nil inst tokstream))
+               (pos1 (vl-tokstream->position))
+               (tokstream (vl-tokstream-restore backup))
+               ((mv err2 vardecl tokstream)
+                (vl-parse-block-item-declaration-noatts atts))
+               ((unless err2) (mv nil vardecl tokstream))
+               (pos2 (vl-tokstream->position))
+               ((mv pos err) (vl-choose-parse-error pos1 err1 pos2 err2))
+               (tokstream (vl-tokstream-restore backup))
+               (tokstream (vl-tokstream-update-position pos)))
+            (mv err nil tokstream))))
+
       ;; SystemVerilog -- BOZO haven't thought this through very thoroughly, but it's
       ;; probably a fine starting place.
       (vl-parse-block-item-declaration-noatts atts))))
@@ -530,6 +546,7 @@ the one modelement, it consolidates them into an unnamed @('begin/end') block.</
                                        :elems (vl-modelementlist->genelements items)))))
 
       (defparser vl-parse-genelements-until (endkwd)
+        :guard (symbolp endkwd)
         ;;:result (vl-genelementlist-p val)
         ;; :resultp-of-nil t
         ;; :true-listp t

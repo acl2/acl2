@@ -1129,7 +1129,7 @@ don't care, but it might be good to look into this again.</p>"
 
        (new-decl (make-vl-vardecl :name    portdecl.name
                                   :type    portdecl.type
-                                  :atts    (cons (cons "VL_PORT_IMPLICIT" nil) portdecl.atts)
+                                  :atts    (cons '("VL_PORT_IMPLICIT") portdecl.atts)
                                   :loc     portdecl.loc)))
     (cons new-decl
           (vl-make-port-implicit-wires (cdr portdecls) decls))))
@@ -1177,17 +1177,47 @@ all of its identifiers.</p>"
          (all-implicit (append-without-guard normal-implicit port-implicit)))
       (mv all-implicit newitems warnings)))
 
+;; (trace$ #!vl (vl-make-implicit-wires-main
+;;               :entry (list 'vl-module-make-implicit-wires-main
+;;                            (with-local-ps
+;;                              (vl-ps-seq
+;;                               (vl-println "loaditems:")
+;;                               (vl-pp-genelementlist loaditems)
+;;                               (vl-println "ifports:")
+;;                               (vl-pp-interfaceportlist ifports))))
+;;               :exit (list 'vl-module-make-implicit-wires-main
+;;                           (b* (((list implicit newitems warnings-out) values))
+;;                             (with-local-ps
+;;                               (vl-ps-seq
+;;                                (vl-println "implicit:")
+;;                                (vl-pp-vardecllist implicit)
+;;                                (vl-println "newitems:")
+;;                                (vl-pp-genelementlist newitems)
+;;                                (vl-println "warnings:")
+;;                                (vl-print-warnings (butlast warnings-out
+;;                                                            (len warnings)))))))))
+                             
+
 (define vl-module-make-implicit-wires ((x       vl-module-p)
                                        (ss      vl-scopestack-p))
   :returns (new-x vl-module-p)
   (b* (((vl-module x))
+       (x.loaditems (and x.parse-temps
+                         (append (vl-modelementlist->genelements
+                                  (vl-parse-temps->paramports x.parse-temps))
+                                 (vl-parse-temps->loaditems x.parse-temps))))
        ((mv implicit newitems warnings)
         (vl-make-implicit-wires-main x.loaditems x.ifports ss x.warnings))
        (vardecls (append-without-guard implicit x.vardecls)))
     (change-vl-module x
                       :vardecls vardecls
                       :warnings warnings
-                      :loaditems newitems)))
+                      :parse-temps (and x.parse-temps
+                                        (change-vl-parse-temps
+                                         x.parse-temps
+                                         :paramports nil
+                                         :loaditems newitems)))))
+
 
 (defprojection vl-modulelist-make-implicit-wires ((x  vl-modulelist-p)
                                                   (ss vl-scopestack-p))

@@ -209,9 +209,9 @@
     (equal (vl-tokstream->pstate :tokstream (vl-tokstream-fix))
            (vl-tokstream->pstate)))
 
-  (defthm vl-tokstream->pstate-of-vl-tokstream-fix
-    (equal (vl-tokstream->pstate :tokstream (vl-tokstream-fix))
-           (vl-tokstream->pstate)))
+  (defthm vl-tokstream->tokens-of-vl-tokstream-fix
+    (equal (vl-tokstream->tokens :tokstream (vl-tokstream-fix))
+           (vl-tokstream->tokens)))
 
   (defthm vl-tokstream->position-of-vl-tokstream-fix
     (equal (vl-tokstream->position :tokstream (vl-tokstream-fix))
@@ -724,6 +724,7 @@ frequently.</p>")
   :short "Check whether the current token has a particular type."
   ((type "Type of token to match.")
    &key (tokstream 'tokstream))
+  :guard (symbolp type)
   :returns bool
   :inline t
   (b* ((tokens (vl-tokstream->tokens)))
