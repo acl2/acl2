@@ -76,6 +76,7 @@
 ;(include-book "../transforms/sizing")
 ;(include-book "../transforms/unused-vars")
 
+(include-book "centaur/svex/vl-moddb" :dir :system)
 (include-book "../../misc/sneaky-load")
 
 (include-book "../mlib/json")
@@ -557,6 +558,9 @@ shown.</p>"
        ;;               (cw "BOZO lost ~x0 modules somewhere (probably unparameterizing): ~x1~%"
        ;;                   (len lost) lost))
        ;;           design))
+
+       ((mv reportcard ?modalist) (cwtime (vl-design->svex-modalist design)))
+       (design (cwtime (vl-apply-reportcard design reportcard)))
 
        (design (cwtime (vl-design-remove-unnecessary-modules config.topmods design)))
 
