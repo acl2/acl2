@@ -1259,6 +1259,8 @@ the order given (LSBs-first).</p>")
 
   (local (include-book "centaur/misc/equal-sets" :dir :system))
 
+  (local (in-theory (disable ACL2::SET-EQUIV-OF-NIL)))
+
   (defthmd lhs-vars-of-decomp-redef
     (set-equiv (lhs-vars x)
                (b* (((mv first rest) (lhs-decomp x))
