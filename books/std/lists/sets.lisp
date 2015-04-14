@@ -750,3 +750,8 @@ about set equivalence.</p>"
     (equal (element-list-p (union-equal x y))
            (and (element-list-p (list-fix x))
                 (element-list-p (double-rewrite y))))))
+
+(defthm set-equiv-of-nil
+  (equal (set-equiv nil x)
+         (atom x))
+  :hints(("Goal" :in-theory (enable set-equiv))))
