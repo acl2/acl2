@@ -648,12 +648,12 @@ satlink-run).</p>"
        ((acl2::fun (cleanup filename config))
         (b* (((unless (config->remove-temps config))
               nil)
-             ((mv & & &)
+             ((mv & &)
               (acl2::tshell-call (str::cat "rm " filename))))
           nil))
 
        (cmd (str::cat config.cmdline " " filename))
-       ((mv finishedp & lines)
+       ((mv & lines)
         (time$ (acl2::tshell-call cmd
                                   ;; Print only if :verbose t is on, and use a
                                   ;; custom printing function that skips variable
@@ -664,10 +664,6 @@ satlink-run).</p>"
                :args (list cmd)
                :mintime config.mintime))
 
-       ((unless finishedp)
-        (cw "SATLINK: Call of ~s0 somehow did not finish.~%" cmd)
-        (cleanup filename config)
-        (mv :failed env$ state))
        ((unless (string-listp lines))
         (cw "SATLINK: Tshell somehow didn't give us a string list.~%")
         (cleanup filename config)
