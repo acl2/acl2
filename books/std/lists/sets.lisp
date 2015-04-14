@@ -751,9 +751,7 @@ about set equivalence.</p>"
            (and (element-list-p (list-fix x))
                 (element-list-p (double-rewrite y))))))
 
-;; Added by Alessandro Coglio and Eric Smith (Kestrel Institute).
-(defthm set-equiv-of-nil-and-append
-  (equal (set-equiv nil (append x y))
-         (and (set-equiv nil x)
-              (set-equiv nil y)))
-  :hints (("Goal" :in-theory (enable set-equiv))))
+(defthm set-equiv-of-nil
+  (equal (set-equiv nil x)
+         (atom x))
+  :hints(("Goal" :in-theory (enable set-equiv))))
