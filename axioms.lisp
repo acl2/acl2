@@ -2960,6 +2960,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro mbt (x)
   `(mbe1 t ,x))
 
+(defmacro mbt* (x)
+
+; This macro is like mbt, except that not only is it trivial in raw Lisp, it's
+; also trivial in the logic.  Its only purpose is to generate a guard proof
+; obligation.
+
+  `(mbe :logic t
+        :exec (mbe :logic ,x
+                   :exec t)))
+
 (defun binary-append (x y)
   (declare (xargs :guard (true-listp x)))
   (cond ((endp x) y)
@@ -16605,6 +16615,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    "Assertion failed:~%~x0"
                    '(assert$ ,test ,form)))
            ,form))
+
+(defmacro assert* (test form)
+  `(and (mbt* ,test)
+        ,form))
 
 (defun fmt-to-comment-window (str alist col evisc-tuple)
 

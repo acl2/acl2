@@ -4804,10 +4804,14 @@
          t)
         ((flambdap (ffn-symb x))
          nil)
-        (t (and (eq (ffn-symb x) (ffn-symb y))
-                (equivalence-relationp (ffn-symb x) wrld)
-                (equal (fargn x 1) (fargn y 2))
-                (equal (fargn x 2) (fargn y 1))))))
+        (t (let ((fnx (ffn-symb x)))
+             (and (eq fnx (ffn-symb y))
+                  (if (member-eq fnx '(equal iff)) ; optimization
+                      t
+                    (and wrld ; optimization
+                         (equivalence-relationp fnx wrld)))
+                  (equal (fargn x 1) (fargn y 2))
+                  (equal (fargn x 2) (fargn y 1)))))))
 
 (defun ancestors-check1 (lit-atm lit var-cnt fn-cnt p-fn-cnt ancestors tokens)
 
