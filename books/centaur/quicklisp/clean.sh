@@ -47,6 +47,6 @@ echo "Cleaning asdf-home/cache/common-lisp"
 rm -rf asdf-home/cache/common-lisp
 
 echo "Cleaning quicklisp books"
-clean.pl
+../../build/clean.pl
 
 
