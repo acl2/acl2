@@ -1,0 +1,1472 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html> 
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <title>HTML-TEMPLATE - Use HTML templates from Common Lisp</title>
+  <style type="text/css">
+  pre { padding:5px; background-color:#e0e0e0 }
+  h3, h4 { text-decoration: underline; }
+  a { text-decoration: none; padding: 1px 2px 1px 2px; }
+  a:visited { text-decoration: none; padding: 1px 2px 1px 2px; }
+  a:hover { text-decoration: none; padding: 1px 1px 1px 1px; border: 1px solid #000000; } 
+  a:focus { text-decoration: none; padding: 1px 2px 1px 2px; border: none; }
+  a.none { text-decoration: none; padding: 0; }
+  a.none:visited { text-decoration: none; padding: 0; } 
+  a.none:hover { text-decoration: none; border: none; padding: 0; } 
+  a.none:focus { text-decoration: none; border: none; padding: 0; } 
+  a.noborder { text-decoration: none; padding: 0; } 
+  a.noborder:visited { text-decoration: none; padding: 0; } 
+  a.noborder:hover { text-decoration: none; border: none; padding: 0; } 
+  a.noborder:focus { text-decoration: none; border: none; padding: 0; }  
+  pre.none { padding:5px; background-color:#ffffff }
+  </style>
+</head>
+
+<body bgcolor=white>
+
+<h2>HTML-TEMPLATE - Use HTML templates from Common Lisp</h2>
+
+<blockquote>
+<br>&nbsp;<br><h3>Abstract</h3>
+
+HTML-TEMPLATE is a portable library for Common Lisp which can be used
+to fill templates with arbitrary (string) values at runtime.
+(Actually, it doesn't matter whether the result is HTML. It's just
+very likely that this will be what the library is mostly used
+for.)
+<p>
+It is loosely modeled after the Perl module <a
+href="http://html-template.sf.net/">HTML::Template</a> and partially
+compatible with a its syntax, though both libraries contain some
+extensions that the other does not support.
+<p>
+HTML-TEMPLATE translates templates into <a href="#main">efficient closures</a> which
+can be re-used as often as needed. It uses an intelligent <a href="#cache">cache
+mechanism</a> so you can nevertheless update templates while your program
+is running and have the changes take effect immediately.
+<p>
+The rationale behind something like HTML-TEMPLATE or HTML::Template is
+that you want to separate code and layout (I think in Newspeak these
+are called the &quot;Business Layer&quot; and the &quot;Presentation
+Layer&quot;) as much as possible when generating HTML, especially if
+you work with graphical artists who are responsible for the visual
+appearance of your site but aren't programmers. Matter of fact, you
+<em>can't</em> separate code and layout completely. I've worked (or
+had to work) with several different approaches over the years,
+including emitting HTML from CGI scripts directly, using tools like <a
+href="http://perl.apache.org/embperl/">Embperl</a>, <a
+href="http://www.masonhq.com/">Mason</a>, <a
+href="http://www.php.net/">PHP</a> (yuk!), or Java/XML/XLST stuff, or
+employing different <a
+href="http://www.cliki.net/Lisp%20Markup%20Languages">Lisp markup
+languages</a> but found that HTML::Template's approach usually works
+best for me: The graphical designers only need to learn a minimal set
+of new tags and can update their templates independently from the work
+done on the backend. It is simple and it just works. YMMV, of
+course...
+<p>
+HTML-TEMPLATE is intended to be portable and should work with all
+conforming Common Lisp implementations but is mainly tested and
+deployed with <a
+href="http://www.lispworks.com/">LispWorks</a>. <a
+href="#mail">Let us know</a> if you encounter any
+problems.
+<p>
+It comes with a <a
+href="http://www.opensource.org/licenses/bsd-license.php">BSD-style
+license</a> so you can basically do with it whatever you want.
+<p>
+HTML-TEMPLATE is used by <a href="http://planet.lisp.org/">Planet Lisp</a>, <a href="http://www.cleartrip.com/">Cleartrip</a>, <a href="http://lemonodor.com/archives/000950.html">Booble</a>, and <a href="http://heikestephan.de/">Heike Stephan</a>.
+<p>
+<font color=red>Download shortcut:</font> <a href="http://weitz.de/files/html-template.tar.gz">http://weitz.de/files/html-template.tar.gz</a>.
+</blockquote>
+
+<br>&nbsp;<br><h3><a class=none name="contents">Contents</a></h3>
+<ol>
+  <li><a href="#example">Simple example</a>
+  <li><a href="#install">Download and installation</a>
+  <li><a href="#mail">Support and mailing lists</a>
+  <li><a href="#syntax">Syntax</a>
+  <li><a href="#semantics">Semantics</a>
+  <li><a href="#dictionary">The HTML-TEMPLATE dictionary</a>
+  <ol>
+    <li><a href="#main">Creating and using printers</a>
+    <ol>
+      <li><a href="#create-template-printer"><code>create-template-printer</code></a>
+      <li><a href="#fill-and-print-template"><code>fill-and-print-template</code></a>
+    </ol>
+    <li><a href="#cache">The template cache</a>
+    <ol>
+      <li><a href="#clear-template-cache"><code>clear-template-cache</code></a>
+      <li><a href="#delete-from-template-cache"><code>delete-from-template-cache</code></a>
+      <li><a href="#*no-cache-check*"><code>*no-cache-check*</code></a>
+    </ol>
+    <li><a href="#custom">Customization</a>
+    <ol>
+      <li><a href="#*template-start-marker*"><code>*template-start-marker*</code></a>
+      <li><a href="#*template-end-marker*"><code>*template-end-marker*</code></a>
+      <li><a href="#*default-template-pathname*"><code>*default-template-pathname*</code></a>
+      <li><a href="#*default-template-output*"><code>*default-template-output*</code></a>
+      <li><a href="#*convert-nil-to-empty-string*"><code>*convert-nil-to-empty-string*</code></a>
+      <li><a href="#*format-non-strings*"><code>*format-non-strings*</code></a>
+      <li><a href="#*sequences-are-lists*"><code>*sequences-are-lists*</code></a>
+      <li><a href="#*upcase-attribute-strings*"><code>*upcase-attribute-strings*</code></a>
+      <li><a href="#*string-modifier*"><code>*string-modifier*</code></a>
+      <li><a href="#*template-symbol-package*"><code>*template-symbol-package*</code></a>
+      <li><a href="#*force-default*"><code>*force-default*</code></a>
+      <li><a href="#*value-access-function*"><code>*value-access-function*</code></a>
+      <li><a href="#*call-template-access-function*"><code>*call-template-access-function*</code></a>
+      <li><a href="#*call-value-access-function*"><code>*call-value-access-function*</code></a>
+      <li><a href="#*ignore-empty-lines*"><code>*ignore-empty-lines*</code></a>
+      <li><a href="#*warn-on-creation*"><code>*warn-on-creation*</code></a>
+    </ol>
+    <li><a href="#cond">Conditions</a>
+    <ol>
+      <li><a href="#template-error"><code>template-error</code></a>
+      <li><a href="#template-invocation-error"><code>template-invocation-error</code></a>
+      <li><a href="#template-missing-value-error"><code>template-missing-value-error</code></a>
+      <li><a href="#template-not-a-string-error"><code>template-not-a-string-error</code></a>
+      <li><a href="#template-not-a-string-error-value"><code>template-not-a-string-error-value</code></a>
+      <li><a href="#template-syntax-error"><code>template-syntax-error</code></a>
+      <li><a href="#template-syntax-error-stream"><code>template-syntax-error-stream</code></a>
+      <li><a href="#template-syntax-error-line"><code>template-syntax-error-line</code></a>
+      <li><a href="#template-syntax-error-col"><code>template-syntax-error-col</code></a>
+    </ol>
+    <li><a href="#esc">Escaping</a>
+    <ol>
+      <li><a href="#escape-string"><code>escape-string</code></a>
+      <li><a href="#*escape-char-p*"><code>*escape-char-p*</code></a>
+      <li><a href="#escape-string-minimal"><code>escape-string-minimal</code></a>
+      <li><a href="#escape-string-minimal-plus-quotes"><code>escape-string-minimal-plus-quotes</code></a>
+      <li><a href="#escape-string-iso-8859-1"><code>escape-string-iso-8859-1</code></a>
+      <li><a href="#escape-string-all"><code>escape-string-all</code></a>
+    </ol>
+  </ol>
+  <li><a href="#ack">Acknowledgements</a>
+</ol>
+
+<br>&nbsp;<br><h3><a name="example" class=none>Simple example</a></h3>
+
+Although there's a wealth of functions, special variables, condition
+types, and restarts listed <a href="#dictionary">below</a>, most of
+the time you'll just have to deal with <a
+href="#fill-and-print-template">one function</a> and the syntax of the
+templates should be quite easy to grasp.
+Here's a small example.
+<p>
+If you have a text file
+<code>#p"/tmp/foo.tmpl"</code> like this
+
+<pre>
+&lt;table border=1&gt;
+  <font color=red>&lt;!-- TMPL_LOOP <b>rows</b> --&gt;</font>
+    &lt;tr&gt;
+      <font color=blue>&lt;!-- TMPL_LOOP <b>cols</b> --&gt;</font>
+        <font color=brown>&lt;!-- TMPL_IF <b>colorful-style</b> --&gt;</font>
+          &lt;td align=&quot;right&quot; bgcolor=&quot;pink&quot;&gt;<font color=deeppink>&lt;!-- TMPL_VAR <b>content</b> --&gt;</font>&lt;/td&gt;
+        <font color=brown>&lt;!-- TMPL_ELSE --&gt;</font>
+          &lt;td align=&quot;right&quot; &gt;<font color=deeppink>&lt;!-- TMPL_VAR <b>content</b> --&gt;</font>&lt;/td&gt;
+        <font color=brown>&lt;!-- /TMPL_IF --&gt;</font>
+      <font color=blue>&lt;!-- /TMPL_LOOP --&gt;</font>
+    &lt;/tr&gt;
+  <font color=red>&lt;!-- /TMPL_LOOP --&gt;</font>
+&lt;/table&gt;
+</pre>
+
+then the following code
+
+<pre>
+(let* ((rows (loop for i below 49 by 7
+                   collect (list :cols
+                                 (loop for j from i below (+ i 7)
+                                       for string = (format nil &quot;~R&quot; j)
+                                       collect (list :content string
+                                                     :colorful-style (oddp j))))))
+       (values (list :rows rows)))
+  (fill-and-print-template #p&quot;/tmp/foo.tmpl&quot; values))
+</pre>
+
+will produce this HTML table:
+
+<p>
+<table border=1>
+  
+  <tr>
+    
+    <td align="right">zero</td>
+    
+    <td align="right" bgcolor="pink">one</td>
+    
+    <td align="right">two</td>
+    
+    <td align="right" bgcolor="pink">three</td>
+    
+    <td align="right">four</td>
+    
+    <td align="right" bgcolor="pink">five</td>
+    
+    <td align="right">six</td>
+        
+  </tr>
+  
+  <tr>
+    
+    <td align="right" bgcolor="pink">seven</td>
+    
+    <td align="right">eight</td>
+    
+    <td align="right" bgcolor="pink">nine</td>
+    
+    <td align="right">ten</td>
+    
+    <td align="right" bgcolor="pink">eleven</td>
+    
+    <td align="right">twelve</td>
+    
+    <td align="right" bgcolor="pink">thirteen</td>
+        
+  </tr>
+  
+  <tr>
+    
+    <td align="right">fourteen</td>
+    
+    <td align="right" bgcolor="pink">fifteen</td>
+    
+    <td align="right">sixteen</td>
+    
+    <td align="right" bgcolor="pink">seventeen</td>
+    
+    <td align="right">eighteen</td>
+    
+    <td align="right" bgcolor="pink">nineteen</td>
+    
+    <td align="right">twenty</td>
+        
+  </tr>
+  
+  <tr>
+    
+    <td align="right" bgcolor="pink">twenty-one</td>
+    
+    <td align="right">twenty-two</td>
+    
+    <td align="right" bgcolor="pink">twenty-three</td>
+    
+    <td align="right">twenty-four</td>
+    
+    <td align="right" bgcolor="pink">twenty-five</td>
+    
+    <td align="right">twenty-six</td>
+    
+    <td align="right" bgcolor="pink">twenty-seven</td>
+        
+  </tr>
+  
+  <tr>
+    
+    <td align="right">twenty-eight</td>
+    
+    <td align="right" bgcolor="pink">twenty-nine</td>
+    
+    <td align="right">thirty</td>
+    
+    <td align="right" bgcolor="pink">thirty-one</td>
+    
+    <td align="right">thirty-two</td>
+    
+    <td align="right" bgcolor="pink">thirty-three</td>
+    
+    <td align="right">thirty-four</td>
+        
+  </tr>
+  
+  <tr>
+    
+    <td align="right" bgcolor="pink">thirty-five</td>
+    
+    <td align="right">thirty-six</td>
+    
+    <td align="right" bgcolor="pink">thirty-seven</td>
+    
+    <td align="right">thirty-eight</td>
+    
+    <td align="right" bgcolor="pink">thirty-nine</td>
+    
+    <td align="right">forty</td>
+    
+    <td align="right" bgcolor="pink">forty-one</td>
+        
+  </tr>
+  
+  <tr>
+    
+    <td align="right">forty-two</td>
+    
+    <td align="right" bgcolor="pink">forty-three</td>
+    
+    <td align="right">forty-four</td>
+    
+    <td align="right" bgcolor="pink">forty-five</td>
+    
+    <td align="right">forty-six</td>
+    
+    <td align="right" bgcolor="pink">forty-seven</td>
+    
+    <td align="right">forty-eight</td>
+        
+  </tr>
+  
+</table>
+
+<br>&nbsp;<br><h3><a name="install" class=none>Download and installation</a></h3>
+
+HTML-TEMPLATE together with this documentation can be downloaded from <a
+href="http://weitz.de/files/html-template.tar.gz">http://weitz.de/files/html-template.tar.gz</a>. The
+current version is 0.9.1.
+<p>
+If you're on <a href="http://www.debian.org/">Debian</a> you should
+probably use the <a
+href="http://packages.debian.org/cgi-bin/search_packages.pl?keywords=cl-html-template&amp;searchon=names&amp;version=all&amp;release=all">cl-html-template
+Debian package</a> which is available thanks to <a href="http://pvaneynd.mailworks.org/">Peter van Eynde</a> and <a href="http://b9.com/">Kevin
+Rosenberg</a>. There's also a port
+for <a href="http://www.gentoo.org/proj/en/common-lisp/index.xml">Gentoo Linux</a> thanks to Matthew Kennedy.
+<p>
+HTML-TEMPLATE comes with simple system definitions for <a
+href="http://www.cliki.net/mk-defsystem">MK:DEFSYSTEM</a> and <a
+href="http://www.cliki.net/asdf">ASDF</a> so you can either adapt it
+to your needs or just unpack the archive and from within the HTML-TEMPLATE
+directory start your Lisp image and evaluate the form
+<code>(mk:compile-system &quot;html-template&quot;)</code> (or the
+equivalent one for asdf) which should compile and load the whole
+system.  Installation via <a
+href="http://www.cliki.net/asdf-install">asdf-install</a> should also
+be possible.
+<p>
+If for some reason you don't want to use MK:DEFSYSTEM or asdf you
+can just <code>LOAD</code> the file <code>load.lisp</code> or you
+can also get away with something like this:
+
+<pre>
+(loop for name in '("packages" "specials" "errors" "util" "template" "api")
+      do (compile-file (make-pathname :name name
+                                      :type "lisp"))
+         (load name))
+</pre>
+
+Note that on CL implementations which use the Python compiler
+(i.e. CMUCL, SBCL, SCL) you can concatenate the compiled object files
+to create one single object file which you can load afterwards:
+
+<pre>
+cat {packages,specials,errors,util,template,api}.x86f > html-template.x86f
+</pre>
+
+(Replace &quot;.<code>x86f</code>&quot; with the correct suffix for
+your platform.)
+<p>
+The distribution includes a test file
+&quot;<code>test.lisp</code>&quot; which you can <code>LOAD</code>
+after loading HTML-TEMPLATE itself to check if everything works as
+intended. If all is well you should just see these two messages:
+
+<pre>
+Please wait a couple of seconds.
+All tests passed...
+</pre>
+
+Some of the tests assume the existence of a directory
+<code>#p"/tmp/"</code> where you can create files. If you're on
+Windows you should probably change this - see the variable
+<code>TMP-DIR</code> in <code>test.lisp</code>.
+
+<p>
+Note that there is <em>no</em> public CVS repository for HTML-TEMPLATE - the repository at <a href="http://common-lisp.net/">common-lisp.net</a> is out of date and not in sync with the (current) version distributed from <a href="http://weitz.de/">weitz.de</a>.
+<p>
+Lu&iacute;s Oliveira maintains a <a href="http://darcs.net/">darcs</a>
+repository of HTML-TEMPLATE
+at <a
+href="http://common-lisp.net/~loliveira/ediware/">http://common-lisp.net/~loliveira/ediware/</a>.
+
+<br>&nbsp;<br><h3><a name="mail" class=none>Support and mailing lists</a></h3>
+
+For questions, bug reports, feature requests, improvements, or patches
+please use the <a
+href="http://common-lisp.net/mailman/listinfo/html-template-devel">html-template-devel
+mailing list</a>. If you want to be notified about future releases
+subscribe to the <a
+href="http://common-lisp.net/mailman/listinfo/html-template-announce">html-template-announce
+mailing list</a>. These mailing lists were made available thanks to
+the services of <a href="http://common-lisp.net/">common-lisp.net</a>.
+<p>
+If you want to send patches, please <a href="http://weitz.de/patches.html">read this first</a>.
+
+<br>&nbsp;<br><h3><a name="syntax" class=none>Syntax</a></h3>
+
+A template is just ordinary text (a file or a string) interspersed
+with <em>template tags</em>. A template tag looks like
+
+<pre>
+  &lt;!-- <em>name</em> [<em>attribute</em>] --&gt;
+</pre>
+
+where <em>name</em> is one of <code>TMPL_VAR</code>,
+<code>TMPL_LOOP</code>, <code>TMPL_REPEAT</code>, <code>TMPL_CALL</code>, <code>TMPL_IF</code>, <code>TMPL_UNLESS</code>,
+<code>TMPL_INCLUDE</code>, <code>/TMPL_LOOP</code>, <code>/TMPL_REPEAT</code>,
+<code>/TMPL_IF</code>, <code>/TMPL_UNLESS</code>, or <code>TMPL_ELSE</code>. Case doesn't matter,
+i.e. <code>tmpl_var</code> or <code>Tmpl_Var</code> would also be
+legal names.
+<p>
+If <em>name</em> is one of the first seven listed above then
+<em>attribute</em> must follow, otherwise it must not follow where
+<em>attribute</em> is any sequence of characters delimited by
+<code>&quot;</code>, <code>'</code>, or by whitespace. There's
+currently no way to escape the delimiters, i.e. if the attribute
+starts with <code>&quot;</code> then the next <code>&quot;</code> (and
+nothing else) will end it.
+<p>
+Any amount (including the empty string) of whitespace directly after
+'<code>&lt;!--</code>' and directly before '<code>--&gt;</code>' is
+optional and will be ignored. However, at least one whitespace
+character between <em>name</em> and <em>attribute</em> (if present) is
+mandatory. But note that if <em>attribute</em> is not delimited by
+<code>&quot;</code> or <code>'</code> then there must be whitespace to
+separate <em>attribute</em> from the closing '<code>--&gt;</code>'.
+<p>
+The following are examples for legal template tags
+
+<pre>
+  &lt;!-- TMPL_VAR foo --&gt;
+  &lt;!--TMPL_LOOP 'foo'--&gt;
+  &lt;!-- tmpl_include &quot;/tmp/foo.html&quot; --&gt;
+  &lt;!-- Tmpl_Else --&gt;
+  &lt;!-- /TMPL_LOOP --&gt;
+  &lt;!-- TMPL_LOOP foo--&gt;&lt;!-- --&gt;
+</pre>
+
+But note that in the last example the attribute is '<code>foo--&gt;&lt;!--</code>' which is probably not what you expected...
+<p>
+These are <b>not</b> legal:
+
+<pre>
+  &lt;!-- TMPL_VAR --&gt;
+  &lt;!-- Tmpl_Else baz --&gt;
+  &lt;!-- TMPL_VARfoo --&gt;
+  &lt;!--TMPL_LOOP 'foo\'bar'--&gt;
+  &lt;tmpl_include &quot;/tmp/foo.html&quot;&gt;
+  &lt;!-- TMPL_VAR NAME=&quot;foo&quot; --&gt;
+</pre>
+
+<code>TMPL_VAR</code> must always be followed by an attribute (1st
+example) while <code>TMPL_ELSE</code> must not (2nd example). The
+third one isn't recognized as a template tag because of the missing
+whitespace behind <code>TMPL_VAR</code>. The tag will simply be
+ignored and the parser will look for the next occurence of
+'<code>&lt;!--</code>'.
+<p>
+The fourth example doesn't work because the second apostrophe
+isn't escaped by the backslash as you might have thought. Instead, the
+parser will think the attribute ends there and will complain about the
+string &quot;<code>bar'</code>&quot; following it. The next example
+fails because, other than with HTML::Template, the HTML comment
+markers are mandatory. (But note that you can change that by setting
+the variables <a
+href="#*template-start-marker*"><code>*TEMPLATE-START-MARKER*</code></a>
+and <a
+href="#*template-end-marker*"><code>*TEMPLATE-END-MARKER*</code></a>.)
+The last example uses HTML::Template's optional
+&quot;<code>NAME=</code>&quot; notation which is not supported by
+HTML-TEMPLATE.
+<p>
+The <code>TMPL_VAR</code>, <code>TMPL_INCLUDE</code>, and
+<code>TMPL_CALL</code> tags can appear anywhere and as often as you
+like in your templates while the other tags must obey certain rules -
+they must follow one of these patterns
+
+<pre>
+  &lt;!-- TMPL_IF <em>attribute</em> --&gt; <em>text</em> &lt;!-- /TMPL_IF --&gt;
+  &lt;!-- TMPL_IF <em>attribute</em> --&gt; <em>text</em> &lt;!-- TMPL_ELSE --&gt; <em>text'</em> &lt;!-- /TMPL_IF --&gt;
+  &lt;!-- TMPL_LOOP <em>attribute</em> --&gt; <em>text</em> &lt;!-- /TMPL_LOOP --&gt;
+  &lt;!-- TMPL_REPEAT <em>attribute</em> --&gt; <em>text</em> &lt;!-- /TMPL_REPEAT --&gt;
+</pre>
+
+where <em>text</em> and <em>text'</em> themselves must be valid
+templates. In other words: These constructs must nest properly.
+<p>
+Note that, despite of its name, HTML-TEMPLATE knows absolutely nothing
+about HTML syntax so you can use it for other texts as well. Also,
+because the templates are filled in before they're sent to the
+browser, you can use template tags anywhere you like and not only in
+places where HTML comments would be legal. These two examples, e.g., will work:
+
+<pre>
+  &lt;!-- Start of comment &lt;!-- TMPL_VAR foo --&gt; End of comment --&gt;
+  &lt;A HREF=&quot;&lt;!-- TMPL_VAR link --&gt;&quot;&gt;foobar&lt;/A&gt;
+</pre>
+
+
+<br>&nbsp;<br><h3><a name="semantics" class=none>Semantics</a></h3>
+The generic function <a
+href="#create-template-printer"><code>CREATE-TEMPLATE-PRINTER</code></a>
+will convert a template into a <em>template printer</em>. A
+<em>template printer</em> is a function which accepts one argument - a
+<em>template structure</em> - which describes how the template should
+be filled and prints the filled template to the stream bound to the
+internal variable <code>*TEMPLATE-OUTPUT*</code>. You can
+<a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_funcal.htm"><code>FUNCALL</code></a> a template printer, but the preferred way to use
+it is to invoke it with <a
+href="#fill-and-print-template"><code>FILL-AND-PRINT-TEMPLATE</code></a>
+(which can also create template printers as needed). Note that
+template printers are compiled closures but although you'll usually
+create them at runtime the Lisp compiler isn't invoked for this task
+so you can safely excise it from your image if you so wish.
+<p>
+For the rest of this document we will make a distinction between
+<em>generation time</em> which is the time the template printer is
+created (either explicitly by <a
+href="#create-template-printer"><code>CREATE-TEMPLATE-PRINTER</code></a>
+or implicitly by <a
+href="#fill-and-print-template"><code>FILL-AND-PRINT-TEMPLATE</code></a>)
+and <em>invocation time</em> which is the time the printer is used (by
+<a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_funcal.htm"><code>FUNCALL</code></a> or <a
+href="#fill-and-print-template"><code>FILL-AND-PRINT-TEMPLATE</code></a>)
+to fill and print a template.
+<p>
+Each of the template tags <code>TMPL_VAR</code>, <code>TMPL_IF</code>, <code>TMPL_UNLESS</code>,
+<code>TMPL_LOOP</code>, <code>TMPL_CALL</code>, and <code>TMPL_REPEAT</code> is associated with a particular symbol at
+generation time. This symbol is the result of <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_intern.htm"><code>INTERN</code></a>ing
+the tag's attribute string into the package <a
+href="#*template-symbol-package*"><code>*TEMPLATE-SYMBOL-PACKAGE*</code></a>. The
+<em>template structure</em> - the argument given to the template
+printer - associates these symbols with values. By default this is
+done by means of a property list but this can be changed at template invocation
+time by changing the contents of the variable <a
+href="#*value-access-function*"><code>*VALUE-ACCESS-FUNCTION*</code></a>. (Note
+that the name <em>structure</em> doesn't imply that template structures are <a href="http://www.lispworks.com/documentation/HyperSpec/Body/08_.htm">structures</a> in
+the sense of Common Lisp. Usually they aren't.)
+<p>
+The template tags work as follows:
+<p><br><b><code>&lt;!-- TMPL_VAR <em>symbol</em> --&gt;</code></b>
+
+<blockquote>
+This tag will be replaced by the value associated with <em>symbol</em>
+which should be (see <a href="#*format-non-strings*"><code>*FORMAT-NON-STRINGS*</code></a>) a string (or maybe <code>NIL</code> - see <a
+href="#*convert-nil-to-empty-string*"><code>*CONVERT-NIL-TO-EMPTY-STRING*</code></a>).  <a href="#*string-modifier*"><code>*STRING-MODIFIER*</code></a> is applied to the string before it is output.
+
+<pre>
+* (let ((tp (create-template-printer &quot;Hello &lt;!-- TMPL_VAR foo --&gt;!&quot;)))
+    (fill-and-print-template tp '(:foo &quot;World&quot;))
+    (terpri)
+    (fill-and-print-template tp '(:foo &quot;Folks&quot;))
+    (terpri)
+    (fill-and-print-template tp '(:foo symbol)))
+Hello World!
+Hello Folks!
+Hello SYMBOL!
+</pre>
+</blockquote>
+
+<p><b><code>&lt;!-- TMPL_IF <em>symbol</em> --&gt;<em>text</em>&lt;!-- /TMPL_IF --&gt;</code></b>
+<br><b><code>&lt;!-- TMPL_UNLESS <em>symbol</em> --&gt;<em>text</em>&lt;!-- /TMPL_UNLESS --&gt;</code></b>
+
+<blockquote>
+In the first case, if the value associated with
+<em>symbol</em> is not <code>NIL</code> the (sub-)template
+<em>text</em> will be filled and printed. Otherwise, the whole
+construct will be replaced by an empty string.  In the second case,
+it's the other way around.
+
+<pre>
+* (let ((tp (create-template-printer &quot;The &lt;!-- TMPL_IF fast --&gt;quick &lt;!-- /TMPL_IF --&gt;brown fox&quot;)))
+    (fill-and-print-template tp '(:fast t))
+    (terpri)
+    (fill-and-print-template tp '(:fast nil)))
+The quick brown fox
+The brown fox
+</pre>
+</blockquote>
+
+<p><b><code>&lt;!-- TMPL_IF <em>symbol</em> --&gt;<em>text</em>&lt;!-- TMPL_ELSE --&gt;<em>text'</em>&lt;!-- /TMPL_IF --&gt;</code></b>
+<br><b><code>&lt;!-- TMPL_UNLESS <em>symbol</em> --&gt;<em>text</em>&lt;!-- TMPL_ELSE --&gt;<em>text'</em>&lt;!-- /TMPL_UNLESS --&gt;</code></b>
+
+<blockquote>
+In the first case, if the value associated with <em>symbol</em> is
+not <code>NIL</code>, the (sub-)template <em>text</em> will be filled
+and printed. Otherwise,
+<em>text'</em> is used instead.  In the second case, it's the other
+way around.
+
+<pre>
+* (let ((tp (create-template-printer &quot;The &lt;!-- TMPL_IF fast --&gt;quick&lt;!-- TMPL_ELSE --&gt;slow&lt;!-- /TMPL_IF --&gt; brown fox&quot;)))
+    (fill-and-print-template tp '(:fast t))
+    (terpri)
+    (fill-and-print-template tp '(:fast nil)))
+The quick brown fox
+The slow brown fox
+</pre>
+</blockquote>
+
+<p><b><code>&lt;!-- TMPL_LOOP <em>symbol</em> --&gt;<em>text</em>&lt;!-- /TMPL_LOOP --&gt;</code></b>
+
+<blockquote>
+The value associated with <em>symbol</em> should be
+a sequence (see <a
+href="#*sequences-are-lists*"><code>*SEQUENCES-ARE-LISTS*</code></a>) of
+template structures. For each element of this sequence the
+(sub-)template <em>text</em> is filled and printed using the
+corresponding template structure.
+<p>
+Note that each template (sub-)structure which is used to fill
+<em>text</em> introduces a new set of associations between symbols and
+their values. While the template printer is within <em>text</em> the
+outer template structure is temporarily &quot;forgotten&quot;
+unless <a
+href="#*value-access-function*"><code>*VALUE-ACCESS-FUNCTION*</code></a>
+(note the <code><i>in-loop-p</i></code> paramter in particular) takes
+care of that.
+
+<pre>
+* (defparameter *tp*
+    (create-template-printer
+     &quot;&lt;!-- TMPL_LOOP foo --&gt;[&lt;!-- TMPL_VAR bar --&gt;,&lt;!-- TMPL_VAR baz --&gt;]&lt;!-- /TMPL_LOOP --&gt;&quot;))
+
+*TP*
+* (fill-and-print-template *tp*
+                           '(:foo ((:bar &quot;EINS&quot; :baz &quot;ONE&quot;)
+                                   (:bar &quot;ZWEI&quot; :baz &quot;TWO&quot;))))
+[EINS,ONE][ZWEI,TWO]
+* (let ((*value-access-function*
+         (lambda (symbol values &ampoptional in-loop-p)
+           (declare (ignore in-loop-p))
+           (getf values symbol))))
+    (fill-and-print-template *tp* '(:baz &quot;ONE&quot;
+                                    :foo ((:bar &quot;EINS&quot;)
+                                          (:bar &quot;UNO&quot;)))))
+[EINS,][UNO,]
+* (fill-and-print-template *tp* '(:baz &quot;ONE&quot;
+                                  :foo ((:bar &quot;EINS&quot;)
+                                        (:bar &quot;UNO&quot;))))
+[EINS,ONE][UNO,ONE]
+</pre>
+</blockquote>
+
+<p><b><code>&lt;!-- TMPL_REPEAT <em>symbol</em> --&gt;<em>text</em>&lt;!-- /TMPL_REPEAT --&gt;</code></b>
+
+<blockquote>
+If the value associated with <em>symbol</em> is a positive integer <code>N</code>, then the (sub-)template <em>text</em> will be filled and printed <code>N</code> times.  Otherwise, the whole construct will be replace with an empty string.
+
+<pre>
+* (let ((tp (create-template-printer &quot;The &lt;!-- TMPL_REPEAT three --&gt;very &lt;!-- /TMPL_REPEAT --&gt;fast brown fox&quot;)))
+    (fill-and-print-template tp '(:three 3))
+    (terpri)
+    (fill-and-print-template tp '(:three &quot;3&quot;)))
+The very very very fast brown fox
+The fast brown fox
+</pre>
+
+Note that <a href="http://html-template.sourceforge.net/">the original HTML::Template</a> library doesn't have the <code>TMPL_REPEAT</code> tag - if that matters to you.
+
+</blockquote>
+
+<p><b><code>&lt;!-- TMPL_INCLUDE <em>pathname</em> --&gt;</code></b>
+
+<blockquote>
+The string <em>pathname</em>
+should be a valid pathname for an existing textfile. This textfile is
+implicitly converted into a template printer at generation
+time as if it were explicitly converted by a call to <a
+href="#create-template-printer"><code>CREATE-TEMPLATE-PRINTER</code></a>. At
+invocation time the tag will be replaced by the result
+of <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_funcal.htm"><code>FUNCALL</code></a>ing this template printer with the current
+template structure. (Note that this implies that the included file has
+to be a valid template, i.e. you can't, say, have a
+<code>TMPL_IF</code> tag in your main file and put the closing
+<code>/TMPL_IF</code> into the included file.)
+
+<pre>
+* (with-open-file (s &quot;/tmp/foo&quot; :direction :output :if-exists :supersede)
+    (write-string &quot;The &lt;!-- TMPL_IF fast --&gt;quick &lt;!-- /TMPL_IF --&gt;brown fox&quot; s))
+&quot;The &lt;!-- TMPL_IF fast --&gt;quick &lt;!-- /TMPL_IF --&gt;brown fox&quot;
+* (fill-and-print-template &quot;&lt;!-- TMPL_INCLUDE '/tmp/foo' --&gt; jumps over the lazy dog&quot; '(:fast t))
+Warning:  New template printer for #p&quot;/tmp/foo&quot; created
+The quick brown fox jumps over the lazy dog
+* (fill-and-print-template &quot;&lt;!-- TMPL_INCLUDE '/tmp/foo' --&gt; jumps over the lazy dog&quot; '(:fast nil))
+The brown fox jumps over the lazy dog
+</pre>
+<p>
+These tags can be nested, i.e. included files can themselves include
+other files. Included template printers are <em>always</em> taken from the <a href="#cache">cache</a> at
+invocation time which means you can update them seperately from the
+including printer.
+</blockquote>
+
+<p><b><code>&lt;!-- TMPL_CALL <em>symbol</em> --&gt;</code></b>
+
+<blockquote>
+The value associated with <em>symbol</em> should be a sequence (as
+specified by <a
+href="#*sequences-are-lists*"><code>*SEQUENCES-ARE-LISTS*</code></a>)
+of template calls, each of which specifies a substructure and a
+template to apply to that. By default, calls are just lists, with the
+<a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_c.htm#car">car</a> specifying the template name and the <a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_c.htm#cdr">cdr</a> containing the
+substructure. (See <a
+href="#*call-template-access-function*"><code>*CALL-TEMPLATE-ACCESS-FUNCTION*</code></a>
+and <a
+href="#*call-value-access-function*"><code>*CALL-VALUE-ACCESS-FUNCTION*</code></a>
+for ways to customize what calls look like.)
+<p>
+<code>TMPL_CALL</code> combines aspects of <code>TMPL_LOOP</code> and
+<code>TMPL_INCLUDE</code> - it iterates over a sequence of values the
+way loops do, but instead of using part of the current template to
+print the values each value contains its own information about which
+subtemplate should be applied to it.
+
+<pre>
+* (with-open-file (s &quot;/tmp/paragraph&quot; :direction :output :if-exists :supersede)
+    (write-string &quot;&lt;p class='fancy'&gt;&lt;!-- TMPL_VAR text --&gt;&lt;/p&gt;&quot; s))
+&quot;&lt;p class='fancy'&gt;&lt;!-- TMPL_VAR text --&gt;&lt;/p&gt;&quot;
+* (with-open-file (s &quot;/tmp/header&quot; :direction :output :if-exists :supersede)
+    (write-string &quot;&lt;h1&gt;&lt;!-- TMPL_VAR text --&gt;&lt;/h1&gt;&quot; s))
+&quot;&lt;h1&gt;&lt;!-- TMPL_VAR text --&gt;&lt;/h1&gt;&quot;
+* (fill-and-print-template &quot;&lt;body&gt;&lt;!-- TMPL_CALL parts --&gt;&lt;/body&gt;&quot;
+                           '(:parts ((#P&quot;/tmp/header&quot; :text &quot;Chapter 1&quot;)
+                                     (#P&quot;/tmp/paragraph&quot; :text &quot;There once was a platypus...&quot;)
+                                     (#P&quot;/tmp/header&quot; :text &quot;Chapter 5&quot;)
+                                     (#P&quot;/tmp/paragraph&quot; :text &quot;And lived happily ever after.&quot;))))
+&lt;h1&gt;Chapter 1&lt;/h1&gt;&lt;p class='fancy'&gt;There once was a platypus...&lt;/p&gt;&lt;h1&gt;Chapter 5&lt;/h1&gt;&lt;p class='fancy'&gt;And lived happily ever after.&lt;/p&gt;&lt;/body&gt;
+</pre>
+<p>
+Note that you do not have to include full pathnames in the call
+structures. You can use <a
+href="#*default-template-pathname*"><code>*DEFAULT-TEMPLATE-PATHNAME*</code></a>
+to specify most of it, or set <a
+href="#*call-template-access-function*"><code>*CALL-TEMPLATE-ACCESS-FUNCTION*</code></a>
+to a function that creates pathnames any way you like.
+</blockquote>
+<p>
+Also note that <a href="http://html-template.sourceforge.net/">the original HTML::Template</a> library doesn't have the <code>TMPL_CALL</code> tag - if that matters to you.
+
+<br>&nbsp;<br><h3><a class=none name="dictionary">The HTML-TEMPLATE dictionary</a></h3>
+
+HTML-TEMPLATE exports the following symbols (some of which are also
+exported by <a href="http://weitz.de/cl-who/">CL-WHO</a>, by the way,
+so beware if you're using both libraries):
+
+<h4><a name="main" class=none>Creating and using template printers</a></h4>
+
+If you're OK with the default settings you will probably only use the
+two functions described in this section.
+
+<p><br>[Generic function]
+<br><a class=none name="create-template-printer"><b>create-template-printer</b> <i>template <tt>&amp;key</tt> force element-type if-does-not-exist external-format</i> =&gt; <i>printer</i></a>
+
+<blockquote><br>
+This function will create and return a <a
+href="#semantics">template printer</a> <code><i>printer</i></code> created from the template denoted by
+<code><i>template</i></code>. The behaviour of this function depends on the
+type of <code><i>template</i></code>.
+<ul>
+  <li>If <code><i>template</i></code> is a <a href="http://www.lispworks.com/documentation/HyperSpec/Body/t_stream.htm"><b>stream</b></a>, it should be an open character input stream which is read character by character with <a href="http://www.lispworks.com/reference/HyperSpec/Body/f_rd_cha.htm"><code>READ-CHAR</code></a> and the resulting text is used as the template.
+  <li>If <code><i>template</i></code> is a <a href="http://www.lispworks.com/documentation/HyperSpec/Body/t_string.htm"><b>string</b></a>, it is converted into a <a href="http://www.lispworks.com/reference/HyperSpec/Body/t_stg_st.htm">string stream</a> which is again fed into <code>CREATE-TEMPLATE-PRINTER</code>.
+  <li>If <code><i>template</i></code> is a <a href="http://www.lispworks.com/documentation/HyperSpec/Body/t_pn.htm"><b>pathname</b></a>, it should denote an existing text file. The file is opened by <a href="http://www.lispworks.com/reference/HyperSpec/Body/m_w_open.htm"><code>WITH-OPEN-FILE</code></a> and the resulting stream is again fed into <code>CREATE-TEMPLATE-PRINTER</code>. All keyword arguments except <code><i>force</i></code> are used as keyword arguments for <code>WITH-OPEN-FILE</code>. The pathname will be <a href="http://www.lispworks.com/reference/HyperSpec/Body/f_merge_.htm">merged</a> with <a
+href="#*default-template-pathname*"><code>*DEFAULT-TEMPLATE-PATHNAME*</code></a> before it is used.
+    <p>HTML-TEMPLATE maintains a <a href="#cache"><em>cache</em></a> of previously created template printers. If the (merged) pathname can be found in this cache and the file denoted by this pathname hasn't changed since the associated cached template printer was created (which is tested by <a href="http://www.lispworks.com/reference/HyperSpec/Body/f_file_w.htm"><code>FILE-WRITE-DATE</code></a>) the cached value will be used and no new template printer will be created. This can be overriden by the keyword argument <code><i>force</i></code>, i.e. when <code><i>force</i></code> is true a new template printer will unconditionally be created (and cached unless <code><i>force</i></code> is the keyword <code>:DO-NOT-CACHE</code>). The default value for <code><i>force</i></code> is the value of <a href="#*force-default*"><code>*FORCE-DEFAULT*</code></a>.  (See also <a
+href="#*no-cache-check*"><code>*NO-CACHE-CHECK*</code></a>.) Note that you may have to use <code><i>force</i></code> if you've changed one of the customization variables described <a href="#custom">below</a> and want to create a template printer based on these new settings although the template file itself hasn't changed. Also note that <code>FILE-WRITE-DATE</code> might not be able to see a difference if the newer version of a file is only fractions of a second newer than the older one.
+</ul>
+
+This function will signal an error of type <a href="#template-invocation-error"><code>TEMPLATE-INVOCATION-ERROR</code></a> if <code><i>template</i></code> is not a pathname and one of the keyword arguments is provided.
+
+<pre>
+* (with-input-from-string (stream &quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot;)
+    (funcall (create-template-printer stream) '(:speed &quot;quick&quot;)))
+The quick brown fox
+* (funcall (create-template-printer &quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot;) '(:speed &quot;slow&quot;))
+The slow brown fox
+* (with-open-file (stream &quot;/tmp/foo.tmpl&quot; :direction :output)
+    (write-string &quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot; stream))
+
+&quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot;
+* (funcall (create-template-printer #p&quot;/tmp/foo.tmpl&quot;) '(:speed &quot;fast&quot;))
+Warning:  New template printer for #p&quot;/tmp/foo.tmpl&quot; created
+The fast brown fox
+* (funcall (create-template-printer #p&quot;/tmp/foo.tmpl&quot;) '(:speed &quot;extremely fast&quot;))
+The extremely fast brown fox
+* (funcall (create-template-printer #p&quot;/tmp/foo.tmpl&quot; :force t) '(:speed &quot;very fast&quot;))
+Warning:  New template printer for #p&quot;/tmp/foo.tmpl&quot; created
+The very fast brown fox
+* (probe-file &quot;/tmp/bar.tmpl&quot;)
+
+NIL
+* (funcall (create-template-printer #p&quot;/tmp/bar.tmpl&quot; :if-does-not-exist :create) '(:foo &quot;foo&quot;))
+Warning:  New template printer for #p&quot;/tmp/bar.tmpl&quot; created
+
+* (probe-file &quot;/tmp/bar.tmpl&quot;)
+
+#p&quot;/tmp/bar.tmpl&quot;
+</pre>
+
+</blockquote>
+
+<p><br>[Generic function]
+<br><a class=none name="fill-and-print-template"><b>fill-and-print-template</b> <i>template/printer values <tt>&amp;key</tt> stream <tt>&amp;allow-other-keys</tt></i> =&gt; <i>|</i></a>
+
+<blockquote><br>
+This function will fill the template denoted by <code><i>template/printer</i></code> with the values provided by <code><i>values</i></code> and print the resulting text to <code><i>stream</i></code> which defaults to <a
+href="#*default-template-output*"><code>*DEFAULT-TEMPLATE-OUTPUT*</code></a>. The value of <code><i>values</i></code> should be a <a
+href="#semantics">template structure</a> matching the current value of <a
+href="#*value-access-function*"><code>*VALUE-ACCESS-FUNCTION*</code></a>.
+<p>
+If <code><i>template/printer</i></code> is a <a href="http://www.lispworks.com/documentation/HyperSpec/Body/t_fn.htm">function</a>, it will be used as if it were a template printer. Otherwise, <code><i>template/printer</i></code> will first be fed into <a
+href="#create-template-printer"><code>CREATE-TEMPLATE-PRINTER</code></a> and the resulting template printer will be used. Note that this implies that the caching mechanism <a href="#create-template-printer">described above</a> is in effect here as well.
+<p>
+If <code><i>template/printer</i></code> is a <a href="http://www.lispworks.com/documentation/HyperSpec/Body/t_pn.htm">pathname</a>, all keyword arguments except for <code><i>stream</i></code> will be used as keyword arguments for <a href="#create-template-printer"><code>CREATE-TEMPLATE-PRINTER</code></a>. If it is not a pathname, keyword arguments other than <code><i>stream</i></code> will result in an error of type <a href="#template-invocation-error"><code>TEMPLATE-INVOCATION-ERROR</code></a>.
+
+<pre>
+* (fill-and-print-template &quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot; '(:speed &quot;slow&quot;))
+The slow brown fox
+* (with-input-from-string (stream &quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot;)
+    (fill-and-print-template stream '(:speed &quot;quick&quot;)))
+The quick brown fox
+* (with-open-file (stream &quot;/tmp/foo.tmpl&quot; :direction :output :if-exists :supersede)
+    (write-string &quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot; stream))
+
+&quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot;
+* (fill-and-print-template #p&quot;/tmp/foo.tmpl&quot; '(:speed &quot;fast&quot;))
+Warning:  New template printer for #p&quot;/tmp/foo.tmpl&quot; created
+The fast brown fox
+* (fill-and-print-template #p&quot;/tmp/foo.tmpl&quot; '(:speed &quot;very fast&quot;))
+The very fast brown fox
+* (let ((tp (create-template-printer &quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot;)))
+    (fill-and-print-template tp '(:speed &quot;tardy&quot;)))
+The tardy brown fox
+</pre>
+</blockquote>
+
+<h4><a name="cache" class=none>Template cache</a></h4>
+
+The functions and variables in this section are related to the cache mechanism described in the entry for <a href="#create-template-printer"><code>CREATE-TEMPLATE-PRINTER</code></a>.
+
+<p><br>[Function]
+<br><a class=none name="clear-template-cache"><b>clear-template-cache</b> =&gt; <i>|</i></a>
+
+<blockquote><br>
+This function will completely clear the <a href="#create-template-printer">cache</a> used by HTML-TEMPLATE.
+</blockquote>
+
+<p><br>[Function]
+<br><a class=none name="delete-from-template-cache"><b>delete-from-template-cache</b> <i>pathname</i> =&gt; <i>result</i></a>
+
+<blockquote><br>
+This function will remove the template printer associated with <code><i>pathname</i></code> from HTML-TEMPLATE's <a href="#create-template-printer">cache</a>. <code><i>result</i></code> is <em>true</em> if there was such a template printer, or <code>NIL</code> otherwise.
+</blockquote>
+
+<p><br>[Special variable]
+<br><a class=none name="*no-cache-check*"><b>*no-cache-check*</b></a>
+
+<blockquote><br>
+If the value of this variable is <em>true</em> (the default is
+<code>NIL</code>) <a
+href="#create-template-printer"><code>CREATE-TEMPLATE-PRINTER</code></a>
+and <a
+href="#fill-and-print-template"><code>FILL-AND-PRINT-TEMPLATE</code></a>
+won't check whether a template file has changed since it has been
+cached, but instead will always use the cached template printer if there is
+one, i.e. there will be no more disk I/O once all template printers
+are generated. This option is intended to be used for sites with heavy
+traffic when you don't expect your templates to change anymore.
+</blockquote>
+
+<h4><a name="custom" class=none>Customizations</a></h4>
+
+This section assembles more than a
+dozen <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_s.htm#special_variable">special
+variables</a> which can be used to customize HTML-TEMPLATE's behaviour.
+
+<p><br>[Special variable]
+<br><a class=none name="*template-start-marker*"><b>*template-start-marker*</b></a>
+
+<blockquote><br>
+This should be a string (the default is <code>&quot;&lt;!--&quot;</code>) which is used at <a href="#semantics">generation time</a> to determine the start of a template tag.
+</blockquote>
+
+<p><br>[Special variable]
+<br><a class=none name="*template-end-marker*"><b>*template-end-marker*</b></a>
+
+<blockquote><br>
+This should be a string (the default is
+<code>&quot;--&gt;&quot;</code>) which is used at <a
+href="#semantics">generation time</a> to determine the end of
+a template tag.
+
+<pre>
+* (let ((*template-start-marker* &quot;<&quot;)
+        (*template-end-marker* &quot;>&quot;))
+    (fill-and-print-template &quot;The &lt;TMPL_VAR 'speed'&gt; &lt;brown&gt; fox&quot; '(:speed &quot;quick&quot;)))
+The quick &lt;brown&gt; fox
+</pre>
+</blockquote>
+
+<p><br>[Special variable]
+<br><a class=none name="*default-template-pathname*"><b>*default-template-pathname*</b></a>
+
+<blockquote><br>
+This should be a pathname (the default is the result of calling <a
+href="http://www.lispworks.com/reference/HyperSpec/Body/f_mk_pn.htm"><code>MAKE-PATHNAME</code></a>
+with no arguments) which is merged with the sole argument of <a
+href="#create-template-printer"><code>CREATE-TEMPLATE-PRINTER</code></a>
+if this argument is a pathname.
+
+<pre>
+* (with-open-file (stream &quot;/tmp/foo.tmpl&quot; :direction :output :if-exists :supersede)
+    (write-string &quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot; stream))
+
+&quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot;
+* (setq *default-template-pathname* #p&quot;/tmp/&quot;)
+
+#p&quot;/tmp/&quot;
+* (fill-and-print-template #p&quot;foo.tmpl&quot; '(:speed &quot;very fast&quot;))
+Warning:  New template printer for #p&quot;/tmp/foo.tmpl&quot; created
+The very fast brown fox
+</pre>
+</blockquote>
+
+<p><br>[Special variable]
+<br><a class=none name="*default-template-output*"><b>*default-template-output*</b></a>
+
+<blockquote><br>
+This should be a stream (the default is the value of
+<a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/v_debug_.htm#STstandard-outputST"><code>*STANDARD-OUTPUT*</code></a>
+when HTML-TEMPLATE is loaded) which is used as the output stream of
+<a
+href="#fill-and-print-template"><code>FILL-AND-PRINT-TEMPLATE</code></a>
+if no <code><i>stream</i></code> keyword argument was provided.
+
+<pre>
+* (fill-and-print-template &quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot; '(:speed &quot;slow&quot;))
+The slow brown fox
+* (with-output-to-string (*default-template-output*)
+    (fill-and-print-template &quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot; '(:speed &quot;slow&quot;)))
+
+&quot;The slow brown fox&quot;
+</pre>
+</blockquote>
+
+<p><br>[Special variable]
+<br><a class=none name="*convert-nil-to-empty-string*"><b>*convert-nil-to-empty-string*</b></a>
+
+<blockquote><br>
+If the values of this variable is <em>true</em> (which is the default), <code>TMPL_VAR</code>
+tags will be replaced by the empty string if the associated value is
+<code>NIL</code>, otherwise an error of type <a
+href="#template-missing-value-error"><code>TEMPLATE-MISSING-VALUE-ERROR</code></a>
+is signaled.  This variable takes
+effect at <a href="#semantics">invocation time</a>.
+
+<pre>
+* (let ((tp (create-template-printer &quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot;)))
+    (handler-bind
+      ((template-missing-value-error (lambda (condition)
+                                       (declare (ignore condition))
+                                       (use-value &quot;slow&quot;))))
+      (let ((*convert-nil-to-empty-string* nil))
+        (fill-and-print-template tp '(:foo &quot;bar&quot;)))))
+The slow brown fox
+</pre>
+</blockquote>
+
+<p><br>[Special variable]
+<br><a class=none name="*format-non-strings*"><b>*format-non-strings*</b></a>
+
+<blockquote><br> If the value of this variable is <em>true</em> (which
+is the default), <code>TMPL_VAR</code> will accept non-string values
+and convert them to strings
+using <code>(FORMAT&nbsp;NIL&nbsp;"~A"&nbsp;...)</code>.  Note that
+the check
+for <a
+href="#*convert-nil-to-empty-string*"><code>*CONVERT-NIL-TO-EMPTY-STRING*</code></a>
+will happen first, though.
+This variable takes effect at <a
+href="#semantics">invocation time</a>.
+
+<pre>
+* (fill-and-print-template &quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot; '(:speed :tardy))
+The TARDY brown fox
+</pre>
+</blockquote>
+
+<p><br>[Special variable]
+<br><a class=none name="*sequences-are-lists*"><b>*sequences-are-lists*</b></a>
+
+<blockquote><br>
+If the values of this variable is <em>true</em> (which is the default)
+the code generated by a <a
+href="#semantics"><code>TMPL_LOOP</code></a> tag expects its
+associated value to be a list, otherwise it expects it to be a
+vector. This variable takes effect at <a href="#semantics">generation time</a>.
+
+<pre>
+* (fill-and-print-template &quot;&lt;!-- TMPL_LOOP list --&gt;[&lt;!-- TMPL_VAR item --&gt;]&lt;!-- /TMPL_LOOP --&gt;&quot;
+                           '(:list ((:item &quot;1&quot;)
+                                    (:item &quot;2&quot;)
+                                    (:item &quot;3&quot;))))
+[1][2][3]
+* (let ((*sequences-are-lists* nil))
+    (fill-and-print-template &quot;&lt;!-- TMPL_LOOP vector --&gt;[&lt;!-- TMPL_VAR item --&gt;]&lt;!-- /TMPL_LOOP --&gt;&quot;
+                             '(:vector #((:item &quot;1&quot;)
+                                         (:item &quot;2&quot;)
+                                         (:item &quot;3&quot;)))))
+[1][2][3]
+</pre>
+</blockquote>
+
+<p><br>[Special variable]
+<br><a class=none name="*upcase-attribute-strings*"><b>*upcase-attribute-strings*</b></a>
+
+<blockquote><br>
+If the values of this variable is <em>true</em> (which is the default)
+<a href="#syntax">attribute strings</a> are fed to
+<code>STRING-UPCASE</code> before they are interned. This variable
+takes effect at <a href="#semantics">generation time</a>.
+
+<pre>
+* (let ((*upcase-attribute-strings* nil))
+    (fill-and-print-template &quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot; '(:speed &quot;quick&quot; :|speed| &quot;slow&quot;)))
+The slow brown fox
+</pre>
+</blockquote>
+
+<p><br>[Special variable]
+<br><a class=none name="*string-modifier*"><b>*string-modifier*</b></a>
+
+<blockquote><br> A <a href="http://www.lispworks.com/documentation/HyperSpec/Body/01_dae.htm">designator</a> for the function which is applied to strings which
+replace <code>TMPL_VAR</code> tags.  The default
+is <a
+href="#escape-string-iso-8859-1"><code>#'ESCAPE-STRING-ISO-8859-1</code></a>.  Use <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_identi.htm"><code>#'CL:IDENTITY</code></a> if you want to leave the string as is.
+
+<pre>
+* (fill-and-print-template &quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot; '(:speed &quot;&lt;quick&gt;&quot;))
+The &amp;lt;quick&amp;gt; brown fox
+
+* (let ((*string-modifier* #'identity))
+    (fill-and-print-template &quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot; '(:speed &quot;&lt;quick&gt;&quot;)))
+The &lt;quick&gt; brown fox
+</pre>
+</blockquote>
+
+<p><br>[Special variable]
+<br><a class=none name="*template-symbol-package*"><b>*template-symbol-package*</b></a>
+
+<blockquote><br> The value of this variable should be
+a <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_p.htm#package_designator">package
+designator</a> designating the package <a href="#syntax">attribute
+strings</a> are interned into. The default is the KEYWORD
+package. This variable takes effect at <a href="#semantics">generation
+time</a>.
+
+<pre>
+* *package*
+
+#&lt;The COMMON-LISP-USER package, 20/21 internal, 0/9 external&gt;
+* (let ((*template-symbol-package* (find-package :common-lisp-user)))
+    (fill-and-print-template &quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot; '(:speed &quot;quick&quot; speed &quot;slow&quot;)))
+The slow brown fox
+</pre>
+</blockquote>
+
+<p><br>[Special variable]
+<br><a class=none name="*force-default*"><b>*force-default*</b></a>
+
+<blockquote><br>
+The default value for the <code><i>force</i></code> keyword argument to
+<a href="#create-template-printer"><code>CREATE-TEMPLATE-PRINTER</code></a>.  Its initial value is <code>NIL</code>.
+</blockquote>
+
+<p><br>[Special variable]
+<br><a class=none name="*value-access-function*"><b>*value-access-function*</b></a>
+
+<blockquote><br> The value of this variable should be
+a <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/01_dae.htm">designator</a>
+for a function with
+the <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_l.htm#lambda_list">lambda
+list</a> <code><i>(symbol&nbsp;values&nbsp;<tt>&amp;optional</tt>&nbsp;in-loop-p)</i></code> which is
+used to associate symbols with their values when a template printer is
+invoked.  <code><i>in-loop-p</i></code> is true whenever this
+function is called from within a <code>TMPL_LOOP</code> or <code>TMPL_CALL</code> tag.
+<p>
+The default
+value is
+<pre>
+(lambda (symbol values &amp;optional in-loop-p)
+  (let ((result (getf values symbol)))
+    (cond (in-loop-p
+           (loop for element in result
+                 when (listp element)
+                   <font color=orange>;; keep values from upper levels</font>
+                   collect (append element values)
+                 else
+                   collect element))
+          (t result))))
+</pre>
+This variable takes effect at <a href="#semantics">invocation
+time</a>.
+
+<pre>
+* (let ((tp (create-template-printer &quot;The &lt;!-- TMPL_VAR speed --&gt; brown fox&quot;))
+        <font color=orange>;; for brevity, we'll ignore the third argument here</font>
+        (*value-access-function* #'gethash)
+        (hash (make-hash-table :test #'eq)))
+    (setf (gethash :speed hash) &quot;fast&quot;)
+    (fill-and-print-template tp hash))
+The fast brown fox
+</pre>
+</blockquote>
+
+<p><br>[Special variable]
+<br><a class=none name="*call-template-access-function*"><b>*call-template-access-function*</b></a>
+
+<blockquote><br> The value of this variable should be a <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/01_dae.htm">designator</a>
+for a function which takes one argument (the call structure) and
+returns either a template printer or a value that can be used as the
+first argument to <a
+href="#create-template-printer"><code>create-template-printer</code></a>.
+This function will be used to determine the template that should be
+used for a call in a <code>TMPL_CALL</code> tag.
+<p>The default value
+is #'<a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/f_car_c.htm#car"><code>CAR</code></a>.
+This variable takes effect at <a href="#semantics">invocation
+time</a>. </blockquote>
+
+<p><br>[Special variable]
+<br><a class=none name="*call-value-access-function*"><b>*call-value-access-function*</b></a>
+
+<blockquote><br> The value of this variable should be a <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/01_dae.htm">designator</a>
+for a function which takes one argument (the call structure) and
+returns a structure to use as the value for a call in a
+<code>TMPL_CALL</code> tag. <p>The default value is #'<a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/f_car_c.htm#cdr"><code>CDR</code></a>.
+This variable takes effect at <a href="#semantics">invocation
+time</a>. </blockquote>
+
+<p><br>[Special variable]
+<br><a class=none name="*ignore-empty-lines*"><b>*ignore-empty-lines*</b></a>
+
+<blockquote><br>
+If the value of this variable is <em>true</em> (the default is
+<code>NIL</code>), template printers will suppress any whitespace in
+front of template tags up to (but excluding) the first
+<code>#\Newline</code> and any whitespace behind template tags up to
+(and including) the first <code>#\Newline</code>. This holds for all
+tags except <code>TMPL_VAR</code>. The idea is that you might want to
+put tags like <code>TMPL_LOOP</code> on lines of their own in order to
+increase the legibility of your template files without creating
+unnecessary empty lines in your output. This variable takes effect at
+<a href="#semantics">generation time</a>.
+
+<pre>
+* (with-open-file (s &quot;/tmp/foo.tmpl&quot; :direction :input)
+    (loop for line = (read-line s nil nil)
+          while line
+          do (print line))
+    (values))
+
+&quot;&lt;table&gt;&quot;
+&quot;  &lt;!-- TMPL_LOOP row-loop --&gt;&quot;
+&quot;  &lt;tr&gt;&quot;
+&quot;    &lt;!-- TMPL_LOOP col-loop --&gt;&quot;
+&quot;    &lt;td&gt;&lt;!-- TMPL_VAR item --&gt;&lt;/td&gt;&quot;
+&quot;    &lt;!-- /TMPL_LOOP --&gt;&quot;
+&quot;  &lt;/tr&gt;&quot;
+&quot;  &lt;!-- /TMPL_LOOP --&gt;&quot;
+&quot;&lt;/table&gt;&quot;
+* (let ((values (list :row-loop
+                      (loop for row in '((1 2 3 4) (2 3 4 5) (3 4 5 6))
+                            collect (list :col-loop
+                                          (loop for col in row
+                                                collect (list :item
+                                                              (format nil &quot;~A&quot; col)))))))
+      (*ignore-empty-lines* t))
+  (fill-and-print-template #p&quot;/tmp/foo.tmpl&quot; values :force t))
+Warning:  New template printer for #p&quot;/tmp/foo.tmpl&quot; created
+&lt;table&gt;
+  &lt;tr&gt;
+    &lt;td&gt;1&lt;/td&gt;
+    &lt;td&gt;2&lt;/td&gt;
+    &lt;td&gt;3&lt;/td&gt;
+    &lt;td&gt;4&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;2&lt;/td&gt;
+    &lt;td&gt;3&lt;/td&gt;
+    &lt;td&gt;4&lt;/td&gt;
+    &lt;td&gt;5&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;3&lt;/td&gt;
+    &lt;td&gt;4&lt;/td&gt;
+    &lt;td&gt;5&lt;/td&gt;
+    &lt;td&gt;6&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;
+</pre>
+</blockquote>
+
+<p><br>[Special variable]
+<br><a class=none name="*warn-on-creation*"><b>*warn-on-creation*</b></a>
+
+<blockquote><br>
+
+If this variable is <em>true</em> (which is the default), <a
+href="#create-template-printer"><code>CREATE-TEMPLATE-PRINTER</code></a>
+will <a
+href="http://www.lispworks.com/reference/HyperSpec/Body/f_warn.htm">warn</a>
+you whenever a template printer is newly created from a pathname
+argument instead of being taken from the <a href="#create-template-printer">cache</a>.
+</blockquote>
+
+<h4><a name="cond" class=none>Conditions</a></h4>
+
+This section lists
+the <a
+href="http://www.lispworks.com/documentation/HyperSpec/Body/09_.htm">conditions</a>
+signaled by HTML-TEMPLATE and the corresponding accessors.
+
+<p><br>[Condition type]
+<br><a class=none name="template-error"><b>template-error</b></a>
+
+<blockquote><br>
+Every error signaled by HTML-TEMPLATE is of type
+<code>TEMPLATE-ERROR</code>. This is a direct subtype of <a
+href="http://www.lispworks.com/reference/HyperSpec/Body/e_smp_er.htm"><code>SIMPLE-ERROR</code></a>
+without any additional slots or options.
+</blockquote>
+
+<p><br>[Condition type]
+<br><a class=none name="template-invocation-error"><b>template-invocation-error</b></a>
+
+<blockquote><br>
+Errors of type <code>TEMPLATE-INVOCATION-ERROR</code> are signaled if
+<a
+href="#create-template-printer"><code>CREATE-TEMPLATE-PRINTER</code></a>
+or <a
+href="#fill-and-print-template"><code>FILL-AND-PRINT-TEMPLATE</code></a>
+are called with wrong keyword arguments. This is a direct subtype of
+<a href="#template-error"><code>TEMPLATE-ERROR</code></a> without any
+additional slots or options.
+</blockquote>
+
+<p><br>[Condition type]
+<br><a class=none name="template-missing-value-error"><b>template-missing-value-error</b></a>
+
+<blockquote><br>
+An error of type <code>TEMPLATE-MISSING-VALUE-ERROR</code> is signaled
+if a template printer for <code>TMPL_VAR</code> is provided with a
+<code>NIL</code> value although <a
+href="#*convert-nil-to-empty-string*"><code>*CONVERT-NIL-TO-EMPTY-STRING*</code></a>
+is <em>false</em>. This is a direct subtype of <a
+href="#template-error"><code>TEMPLATE-ERROR</code></a> without any
+additional slots or options. Whenever a
+<code>TEMPLATE-MISSING-VALUE-ERROR</code> is signaled, an associated
+<a href="http://www.lispworks.com/documentation/HyperSpec/Body/r_use_va.htm"><code>USE-VALUE</code> restart</a> is available.
+</blockquote>
+
+<p><br>[Condition type]
+<br><a class=none name="template-not-a-string-error"><b>template-not-a-string-error</b></a>
+
+<blockquote><br>
+An error of type <code>TEMPLATE-NOT-A-STRING-ERROR</code> is signaled
+if a template printer for <code>TMPL_VAR</code> is provided with a
+value which is neither a string nor <code>NIL</code> and <a href="#*format-non-strings*"><code>*FORMAT-NON-STRINGS*</code></a> is <em>false</em>.  This is a
+direct subtype of <a
+href="#template-error"><code>TEMPLATE-ERROR</code></a> with one
+additional slot for the value which can be read by <a
+href="#template-not-a-string-error-value"><code>TEMPLATE-NOT-A-STRING-ERROR-VALUE</code></a>.
+Whenever a <code>TEMPLATE-NOT-A-STRING-ERROR</code> is signaled, an
+associated <a href="http://www.lispworks.com/documentation/HyperSpec/Body/r_use_va.htm"><code>USE-VALUE</code> restart</a> is available.
+</blockquote>
+
+<p><br>[Generic function]
+<br><a class=none name="template-not-a-string-error-value"><b>template-not-a-string-error-value</b></a> <i>condition</i> =&gt; <i>value</i>
+
+<blockquote><br>
+If <code><i>condition</i></code> is a condition of type <a
+href="#template-not-a-string-error"><code>TEMPLATE-NOT-A-STRING-ERROR</code></a>,
+this function will return the (non-string) value causing the error.
+
+<pre>
+* (let ((tp (create-template-printer &quot;A square has &lt;!-- TMPL_VAR number --&gt; corners&quot;)))
+    (handler-bind
+      ((template-not-a-string-error (lambda (condition)
+                                      (use-value
+                                        (format nil &quot;~R&quot;
+                                                (template-not-a-string-error-value condition))))))
+      (let ((*format-non-strings* nil))
+        (fill-and-print-template tp '(:number 4)))))
+A square has four corners
+</pre>
+</blockquote>
+
+<p><br>[Condition type]
+<br><a class=none name="template-syntax-error"><b>template-syntax-error</b></a>
+
+<blockquote><br>
+An error of type <code>TEMPLATE-SYNTAX-ERROR</code> is signaled at <a
+href="#semantics">generation time</a> when HTML-TEMPLATE is
+not able to create a template printer due to syntax errors in the
+template. This is a direct subtype of <a
+href="#template-error"><code>TEMPLATE-ERROR</code></a> with three
+additional slots. These denote the stream from which HTML-TEMPLATE was
+reading when it encountered the error and a line and column within
+this stream. (See the next three entries on how to access these
+slots.)
+<p>
+As many syntax errors can't be detected before the parser is at the
+end of the stream, the row and column usually denote the last position
+where the parser was happy and not the position where it gave up.
+
+<pre>
+* (handler-case
+    (fill-and-print-template &quot;A square has &lt;!-- TMPL_VAR number--&gt; corners&quot;
+                             '(:number &quot;four&quot;))
+    (template-syntax-error (condition)
+      (format t &quot;Houston, we've got a problem on stream ~A:~%~
+                 Looks like something went wrong after line ~A, column ~A.~%~
+                 The last message we received was '~?'.&quot;
+              (template-syntax-error-stream condition)
+              (template-syntax-error-line condition)
+              (template-syntax-error-col condition)
+              (simple-condition-format-control condition)
+              (simple-condition-format-arguments condition))
+      (values)))
+Houston, we've got a problem on stream #&lt;String-Input Stream&gt;:
+Looks like something went wrong after line 1, column 26.
+The last message we received was 'Unexpected EOF'.
+</pre>
+
+Note that column 26 is the position directly behind <code>&quot;TMPL_VAR&quot;</code>.
+</blockquote>
+
+<p><br>[Generic function]
+<br><a class=none name="template-syntax-error-stream"><b>template-syntax-error-stream</b></a> <i>condition</i> =&gt; <i>stream</i>
+
+<blockquote><br>
+If <code><i>condition</i></code> is a condition of type <a
+href="#template-syntax-error"><code>TEMPLATE-SYNTAX-ERROR</code></a>,
+this function will return the stream the parser was reading from when
+the error was encountered.
+</blockquote>
+
+<p><br>[Generic function]
+<br><a class=none name="template-syntax-error-line"><b>template-syntax-error-line</b></a> <i>condition</i> =&gt; <i>number</i>
+
+<blockquote><br>
+If <code><i>condition</i></code> is a condition of type <a
+href="#template-syntax-error"><code>TEMPLATE-SYNTAX-ERROR</code></a>,
+this function will return the line number which was associated with
+this error. As in <a href="http://www.gnu.org/software/emacs/">Emacs</a>, lines are counted beginning
+with&nbsp;1. HTML-TEMPLATE increases the line counter whenever it reads a <code>#\Newline</code> from its input stream.
+</blockquote>
+
+<p><br>[Generic function]
+<br><a class=none name="template-syntax-error-col"><b>template-syntax-error-col</b></a> <i>condition</i> =&gt; <i>number</i>
+
+<blockquote><br>
+If <code><i>condition</i></code> is a condition of type <a
+href="#template-syntax-error"><code>TEMPLATE-SYNTAX-ERROR</code></a>,
+this function will return the column number which was associated with
+this error. As in Emacs, columns are counted beginning
+with&nbsp;0.
+</blockquote>
+
+<h4><a name="esc" class=none>Escaping</a></h4>
+
+Functions and variables which can be used to encode characters for
+HTML documents -
+see <a href="#*string-modifier*"><code>*STRING-MODIFIER*</code></a>.
+
+<p><br>[Function]
+<br><a class=none name="escape-string"><b>escape-string</b></a> <i>string <tt>&amp;key</tt> test</i> =&gt; <i>escaped-string</i>
+
+<blockquote><br>
+This function will accept a string <code><i>string</i></code> and will replace every character for which <code><i>test</i></code> returns <em>true</em> with its (decimal) character entity.  <code><i>test</i></code> must be a <a href="http://www.lispworks.com/documentation/HyperSpec/Body/01_dae.htm">designator</a> for a function of one argument which accepts a character and returns a <a href="http://www.lispworks.com/reference/HyperSpec/Body/26_glo_g.htm#generalized_boolean">generalized boolean</a>. The default is the value of <a href="#*escape-char-p*"><code>*ESCAPE-CHAR-P*</code></a>.
+<pre>
+* (escape-string &quot;&lt;Hühner&gt; 'naïve'&quot;)
+"&amp;lt;H&amp;#252;hner&amp;gt; &amp;#039;na&amp;#239;ve&amp;#039;"
+</pre>
+</blockquote>
+
+<p><br>[Special variable]
+<br><a class=none name="*escape-char-p*"><b>*escape-char-p*</b></a>
+
+<blockquote><br>
+This is the default for the <code><i>test</i></code> keyword argument to <a href="#escape-string"><code>ESCAPE-STRING</code></a>. Its initial value is
+
+<pre>
+#'(lambda (char)
+    (or (find char &quot;&lt;&gt;&amp;'\&quot;&quot;)
+        (&gt; (char-code char) 127)))
+</pre>
+</blockquote>
+
+<p><br>[Function]
+<br><a class=none name="escape-string-minimal"><b>escape-string-minimal</b> <i>string</i> =&gt; <i>escaped-string</i></a>
+<br>[Function]
+<br><a class=none name="escape-string-minimal-plus-quotes"><b>escape-string-minimal-plus-quotes</b> <i>string</i> =&gt; <i>escaped-string</i></a>
+<br>[Function]
+<br><a class=none name="escape-string-iso-8859-1"><b>escape-string-iso-8859-1</b> <i>string</i> =&gt; <i>escaped-string</i></a>
+<br>[Function]
+<br><a class=none name="escape-string-all"><b>escape-string-all</b> <i>string</i> =&gt; <i>escaped-string</i></a>
+
+<blockquote><br>
+These are convenience function based on <a href="#escape-string"><code>ESCAPE-STRING</code></a>. They are defined as follows:
+
+<pre>
+(defun escape-string-minimal (string)
+  &quot;Escape only #\&lt;, #\&gt;, and #\&amp; in STRING.&quot;
+  (escape-string string :test #'(lambda (char) (find char &quot;&lt;&gt;&amp;&quot;))))
+
+(defun escape-string-minimal-plus-quotes (string)
+  &quot;Like ESCAPE-STRING-MINIMAL but also escapes quotes.&quot;
+  (escape-string string :test #'(lambda (char) (find char &quot;&lt;&gt;&amp;'\&quot;&quot;))))
+
+(defun escape-string-iso-8859-1 (string)
+  &quot;Escapes all characters in STRING which aren't defined in ISO-8859-1.&quot;
+  (escape-string string :test #'(lambda (char)
+                                  (or (find char &quot;&lt;&gt;&amp;'\&quot;&quot;)
+                                      (&gt; (char-code char) 255)))))
+
+(defun escape-string-all (string)
+  &quot;Escapes all characters in STRING which aren't in the 7-bit ASCII
+character set.&quot;
+  (escape-string string :test #'(lambda (char)
+                                  (or (find char &quot;&lt;&gt;&amp;'\&quot;&quot;)
+                                      (&gt; (char-code char) 127)))))
+</pre>
+</blockquote>
+
+<br>&nbsp;<br><h3><a class=none name="ack">Acknowledgements</a></h3>
+
+Thanks to Sam Tregar for <a
+href="http://html-template.sf.net/">HTML::Template</a> which I've used
+successfully for many years together with mod_perl and which inspired
+me to write HTML-TEMPLATE.
+<p>
+Thanks to James Anderson and Kent M. Pitman who helped to de-confuse
+me about restarts.
+<p>
+Thanks to Marijn Haverbeke for a very clean and comprehensive patch
+for the <code>TMPL_CALL</code> code.
+<p>
+$Header: /usr/local/cvsrep/html-template/doc/index.html,v 1.56 2007/11/16 21:09:26 edi Exp $
+<p><a href="http://weitz.de/index.html">BACK TO MY HOMEPAGE</a>
+
+</body>
+</html>

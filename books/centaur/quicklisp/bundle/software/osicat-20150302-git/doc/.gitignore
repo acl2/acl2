@@ -1,0 +1,15 @@
+manual
+include
+# hmm, doc/*.{aux,cp,etc} doesn't work
+*.aux
+*.cp
+*.cps
+*.fn
+*.info
+*.ky
+*.log
+*.pg
+*.toc
+*.tp
+*.vr
+*.vrs
