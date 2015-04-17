@@ -80,7 +80,7 @@ cat update-libs.out
 rm -rf temp-quicklisp-inst
 
 date > bundle/timestamp.txt
-touch bundle/cert_pl_ignore
+touch bundle/cert_pl_exclude
 
 git status
 
