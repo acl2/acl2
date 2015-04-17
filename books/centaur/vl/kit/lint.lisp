@@ -486,6 +486,7 @@ shown.</p>"
        (design (cwtime (vl-design-leftright-check design)))
        (design (cwtime (vl-design-origexprs design)))
        (design (cwtime (vl-design-dupeinst-check design)))
+       (design (cwtime (vl-centaur-seqcheck-hook design)))
 
        (- (cw "~%vl-lint: elaborating the design...~%"))
 
