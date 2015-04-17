@@ -29,4 +29,4 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(require "html-template")
+(asdf:load-system "html-template")
