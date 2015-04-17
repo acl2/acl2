@@ -30,17 +30,16 @@
 
 (in-package "ACL2")
 
-; Preload all Quicklisp libraries that we're making available.  The goal here
-; is to defeat build parallelism and ensure that the packages are loaded in a
-; serial manner.  Otherwise, e.g., we can have two Quicklisp packages that are
-; both being built at separate times in separate threads, crashing into each
-; other's working space.
+; Preload (i.e., compile) all Quicklisp libraries that we're making available.
+; The goal here is to defeat build parallelism and ensure that the packages are
+; loaded in a serial manner.  Otherwise, e.g., we can have two Quicklisp
+; packages that are both being built at separate times in separate threads,
+; crashing into each other's working space.
 
-;; (ql:quickload "iolib.syscalls")
-(ql:quickload :osicat)
-(ql:quickload :bordeaux-threads)
-(ql:quickload :bt-semaphore)
-(ql:quickload :hunchentoot)
-(ql:quickload :uiop)
-(ql:quickload :html-template)
-(ql:quickload :shellpool)
+(require "osicat")
+(require "bordeaux-threads")
+;(require "bt-semaphore")
+(require "hunchentoot")
+(require "uiop")
+(require "html-template")
+;(require "shellpool")
