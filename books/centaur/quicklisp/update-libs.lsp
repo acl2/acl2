@@ -57,11 +57,14 @@
 ;;   :replace t)
 
 (ql:bundle-systems (list "bordeaux-threads"
+                         "bt-semaphore"
                          "cl-fad"
                          "hunchentoot"
                          "osicat"
                          "uiop"
-                         "html-template")
+                         "html-template"
+                         "shellpool"
+                         )
                    :to "./bundle")
 
 (quit)

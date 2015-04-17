@@ -5,6 +5,8 @@ software/babel-20141217-git/babel-tests.asd
 software/babel-20141217-git/babel.asd
 software/bordeaux-threads-0.8.3/bordeaux-threads-test.asd
 software/bordeaux-threads-0.8.3/bordeaux-threads.asd
+software/bt-semaphore-20131003-git/bt-semaphore-test.asd
+software/bt-semaphore-20131003-git/bt-semaphore.asd
 software/cffi_0.14.0/cffi-examples.asd
 software/cffi_0.14.0/cffi-grovel.asd
 software/cffi_0.14.0/cffi-libffi.asd
@@ -24,6 +26,7 @@ software/md5-20130312-git/md5.asd
 software/osicat-20150302-git/osicat-tests.asd
 software/osicat-20150302-git/osicat.asd
 software/rfc2388-20130720-git/rfc2388.asd
+software/shellpool-20150407-git/shellpool.asd
 software/trivial-backtrace-20150407-git/trivial-backtrace-test.asd
 software/trivial-backtrace-20150407-git/trivial-backtrace.asd
 software/trivial-features-20150113-git/trivial-features-tests.asd

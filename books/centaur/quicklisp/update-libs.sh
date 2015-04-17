@@ -33,8 +33,19 @@
 # update-libs.sh -- Updates bundled libraries to the latest versions in Quicklisp
 #
 # Usage:  ./update-libs.sh
+#
+#   -- The list of libraries to install is found in update-libs.lsp
+
 
 set -e
+
+DIFF=`git status --porcelain bundle`
+if [ ! -z "$DIFF" ]
+then
+    echo "Cowardly refusing to update because there are changes in bundle/"
+    git status bundle | sed 's/^/   | /'
+    exit 1
+fi
 
 if [ -z "$LISP" ]
 then
@@ -58,6 +69,10 @@ echo "Downloading Quicklisp..."
 curl http://beta.quicklisp.org/quicklisp.lisp -o quicklisp.lsp
 $BUILD_DIR/wait.pl quicklisp.lsp
 
+
+echo "Cleaning Bundle..."
+git clean -f bundle
+
 echo "Updating Bundle..."
 $STARTJOB -c "$LISP < update-libs.lsp &> update-libs.out"
 cat update-libs.out
@@ -66,3 +81,12 @@ rm -rf temp-quicklisp-inst
 
 date > bundle/timestamp.txt
 touch bundle/cert_pl_ignore
+
+git status
+
+echo "Done updating.  Suggested next steps:"
+echo " -- Review the changes to bundle/"
+echo " -- Git add any new libraries, etc."
+echo " -- Make a preliminary commit"
+echo " -- Do a full ACL2 regression, etc"
+
