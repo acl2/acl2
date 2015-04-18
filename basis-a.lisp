@@ -4805,7 +4805,7 @@
 
 ; Warning: Keep this in sync with default-state-vars.
 
-  ((safe-mode . temp-touchable-vars)
+  ((safe-mode boot-strap-flg . temp-touchable-vars)
    .
    (guard-checking-on ld-skip-proofsp
                       temp-touchable-fns . parallel-execution-enabled))
@@ -4814,6 +4814,7 @@
 (defmacro default-state-vars
   (state-p &key
            (safe-mode 'nil safe-mode-p)
+           (boot-strap-flg 'nil boot-strap-flg-p)
            (temp-touchable-vars 'nil temp-touchable-vars-p)
            (guard-checking-on 't guard-checking-on-p)
            (ld-skip-proofsp 'nil ld-skip-proofsp-p)
@@ -4833,6 +4834,10 @@
                 ,(if safe-mode-p
                      safe-mode
                    '(f-get-global 'safe-mode state))
+                :boot-strap-flg
+                ,(if boot-strap-flg-p
+                     boot-strap-flg
+                   '(f-get-global 'boot-strap-flg state))
                 :temp-touchable-vars
                 ,(if temp-touchable-vars-p
                      temp-touchable-vars
@@ -6076,6 +6081,13 @@
 
        (defvar ,the-live-name)
        #+hons ,@(and (null congruent-to)
+
+; It has occurred to us that this defg form might be avoidable when
+; non-memoizable is true, since the purpose of st-lst is probably only to
+; support memoize-flush.  However, it seems harmless enough to lay down this
+; form even when non-memoizable is true, so we go ahead and do so rather than
+; think carefully about avoiding it.
+
                      `((defg ,(st-lst name) nil)))
 
 ; Now we lay down the defuns of the recognizers, accessors and updaters as
@@ -6888,3 +6900,122 @@
                                    return-from-lp init-forms)
   `(save-exec-fn ,exec-filename ,extra-startup-string ,host-lisp-args
                  ,toplevel-args ,inert-args ,return-from-lp ,init-forms))
+
+(defconst *slash-dot-dot*
+  (concatenate 'string *directory-separator-string* ".."))
+
+(defconst *length-slash-dot-dot*
+  (length *slash-dot-dot*))
+
+(defun find-dot-dot (full-pathname i)
+
+; Termination and even guard-verification are proved in community book
+; books/system/extend-pathname.lisp.
+
+  (declare (xargs :guard (and (stringp full-pathname)
+                              (natp i)
+                              (<= i (length full-pathname)))
+                  :measure (nfix (- (length full-pathname) i))))
+  (let ((pos (search *slash-dot-dot* full-pathname :start2 i)))
+    (and pos
+         (let ((pos+3 (+ pos *length-slash-dot-dot*)))
+           (cond
+            ((or (eql pos+3 (length full-pathname))
+                 (eql (char full-pathname pos+3) *directory-separator*))
+             pos)
+            ((mbt (<= pos+3 (length full-pathname)))
+             (find-dot-dot full-pathname pos+3)))))))
+
+(mutual-recursion
+
+; The :measure declarations in this mutual-recursion nest are in support of
+; community book books/system/extend-pathname.lisp.  The :guard declarations
+; below are intended to be correct, but we won't really know until guards have
+; been verified; it seems quite possible that the guards will need to be
+; adjusted.
+
+(defun cancel-dot-dots (full-pathname)
+  (declare (xargs :guard (stringp full-pathname)
+                  :measure (* 2 (length full-pathname))))
+  (let ((p (find-dot-dot full-pathname 0)))
+    (cond ((and p
+                (mbt ; termination help
+                 (and (natp p)
+                      (stringp full-pathname)
+                      (< p (length full-pathname)))))
+           (let ((new-p
+                  (merge-using-dot-dot
+                   (subseq full-pathname 0 p)
+                   (subseq full-pathname (1+ p) (length full-pathname)))))
+             (and (mbt ; termination help
+                   (and (stringp new-p)
+                        (< (length new-p) (length full-pathname))))
+                  (cancel-dot-dots new-p))))
+          (t full-pathname))))
+
+(defun get-parent-directory (p0)
+
+; P is an absolute pathname for a directory, not a file, where p does not end
+; in "/".  We return an absolute pathname for its parent directory, not
+; including the trailing "/".  See also get-directory-of-file, which is a
+; related function for files.
+
+  (declare (xargs :guard (stringp p0)
+                  :measure (1+ (* 2 (length p0)))))
+  (let* ((p (and (mbt (stringp p0))
+                 (cancel-dot-dots p0)))
+         (posn (search *directory-separator-string* p :from-end t)))
+    (cond
+     (posn (subseq p 0 posn))
+     (t (er hard? 'get-parent-directory
+            "Implementation error!  Unable to get parent directory for ~
+             directory ~x0."
+            p0)))))
+
+(defun merge-using-dot-dot (p s)
+
+; P is the absolute pathname of a directory without the final "/".  S is a
+; pathname (for a file or a directory) that may start with any number of
+; sequences "../" and "./".  We want to "cancel" the leading "../"s in s
+; against directories at the end of p, and eliminate leading "./"s from s
+; (including leading "." if that is all of s).  The result should syntactically
+; represent a directory (end with a "/" or "."  or be "") if and only if s
+; syntactically represents a directory.
+
+; This code is intended to be simple, not necessarily efficient.
+
+  (declare (xargs :guard (and (stringp p)
+                              (stringp s)
+                              (not (equal s "")))
+                  :measure (+ 1 (* 2 (+ (length p) (length s))))))
+  (cond
+   ((not (mbt ; termination help
+          (and (stringp p)
+               (stringp s)
+               (not (equal s "")))))
+    nil)
+   ((equal p "") s)
+   ((equal s "..")
+    (concatenate 'string
+                 (get-parent-directory p)
+                 *directory-separator-string*))
+   ((equal s ".")
+    (concatenate 'string
+                 p
+                 *directory-separator-string*))
+   ((and (>= (length s) 3)
+         (eql (char s 0) #\.)
+         (eql (char s 1) #\.)
+         (eql (char s 2) #\/)
+         (mbt (<= (length (get-parent-directory p)) ; termination help
+                  (length p))))
+    (merge-using-dot-dot (get-parent-directory p)
+                         (subseq s 3 (length s))))
+   ((and (>= (length s) 2)
+         (eql (char s 0) #\.)
+         (eql (char s 1) #\/))
+    (merge-using-dot-dot p (subseq s 2 (length s))))
+   (t
+    (concatenate 'string p *directory-separator-string* s))))
+
+)

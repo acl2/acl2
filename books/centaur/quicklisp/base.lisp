@@ -44,25 +44,17 @@
 
 (defttag :quicklisp)
 
-(value-triple (cw "~%~%~
-***********************************************************************~%~
-*****                                                             *****~%~
-*****                  IF YOUR BUILD FAILS                        *****~%~
-*****                                                             *****~%~
-***** The include-raw form here can fail if you try to certify    *****~%~
-***** this book without first getting quicklisp installed.  You   *****~%~
-***** need to run 'make' first.                                   *****~%~
-*****                                                             *****~%~
-***** See books/centaur/README.html for detailed directions for   *****~%~
-***** properly building the Centaur books.                        *****~%~
-*****                                                             *****~%~
-***********************************************************************~%~
-~%"))
+;; We'll use timestamp.txt as a proxy for whether any Common Lisp libraries
+;; have been updated.
+; (depends-on "bundle/timestamp.txt")
 
-; (depends-on "inst/setup.lisp")
-(include-raw "inst/setup.lisp"
-             :do-not-compile t
-             :host-readtable t)
+; (depends-on "bundle/bundle.lisp")
+(include-raw "bundle/bundle.lisp" :host-readtable t)
 
 ; (depends-on "base-raw.lsp")
-(local (include-raw "base-raw.lsp" :host-readtable t))
+(local (include-raw "base-raw.lsp"
+                    :host-readtable t
+                    :do-not-compile t))
+
+
+

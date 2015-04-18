@@ -504,6 +504,7 @@ $instrs .= "#+acl2-hons (profile-fn 'certify-book-fn)\n";
 $instrs .= "(acl2::lp)\n";
 #    $instrs .= "(set-debugger-enable :bt)\n";
 $instrs .= "(acl2::in-package \"ACL2\")\n\n";
+$instrs .= "(set-ld-error-action (quote (:exit 1)) state)\n";
 $instrs .= "(set-write-acl2x t state)\n" if ($STEP eq "acl2x");
 $instrs .= "(set-write-acl2x '(t) state)\n" if ($STEP eq "acl2xskip");
 $instrs .= "$INHIBIT\n" if ($INHIBIT);
@@ -543,6 +544,8 @@ foreach my $pair (@$includes) {
 	$instrs .= "(acl2::ld \"$incname.port\" :ld-missing-input-ok t)\n"; 
     }
 }
+
+$instrs .= "#!ACL2 (set-ld-error-action (quote :continue) state)\n";
 
 my $cert_flags = parse_certify_flags($acl2file, $usercmds);
 $instrs .= "\n; certify-book command flags: $cert_flags\n";

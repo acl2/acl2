@@ -371,6 +371,8 @@
     defines
     defrule
     defruled
+    defruledl
+    defrulel
     defval
     defconsts
     raise

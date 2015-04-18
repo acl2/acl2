@@ -584,9 +584,10 @@
   (cond (backchain-limit-lst (cadr backchain-limit-lst))
         (t (let ((limit (default-backchain-limit wrld flg)))
              (and limit
-                  (make-list (length hyps)
-                             :initial-element
-                             limit))))))
+                  (cond ((eq flg :meta) limit)
+                        (t (make-list (length hyps)
+                                      :initial-element
+                                      limit))))))))
 
 (defun create-rewrite-rule (rune nume hyps equiv lhs rhs loop-stopper-lst
                                  backchain-limit-lst match-free-value wrld)
@@ -4388,7 +4389,12 @@
                             :rhs (if mfc-symbol 'extended nil)
                             :subclass 'meta
                             :heuristic-info nil
-                            :backchain-limit-lst backchain-limit)
+                            :backchain-limit-lst
+                            (rule-backchain-limit-lst
+                             backchain-limit
+                             nil ; hyps (ignored for :meta)
+                             wrld
+                             :meta))
                       (mark-attachment-disallowed
                        (if (eq hyp-fn t)
                            (list fn)
@@ -7127,9 +7133,9 @@
   (let* ((cmd (car (make-official-pc-instr instr)))
          (typ (pc-command-type cmd)))
     (and (member-eq typ '(primitive atomic-macro))
-         (acl2-system-namep
+         (acl2-system-namep-state
           (intern-in-package-of-symbol (symbol-name cmd) 'acl2-pc::induct)
-          (w state)))))
+          state))))
 
 (defun non-primitive-instructions (instructions state)
   (cond
@@ -8301,7 +8307,7 @@
             name
             (cadr (assoc-keyword :TYPED-TERM (cdr class)))
             term
-            (cadr (assoc-keyword :BACKCHAIN-LIMIT-LST (cdr class)))
+            (assoc-keyword :BACKCHAIN-LIMIT-LST (cdr class))
             ctx ens wrld state))
           (:DEFINITION
            (chk-acceptable-definition-rule
@@ -8484,8 +8490,7 @@
            (add-meta-rule rune nume
                           (cadr (assoc-keyword :TRIGGER-FNS (cdr class)))
                           term
-                          (cadr (assoc-keyword :BACKCHAIN-LIMIT-LST
-                                               (cdr class)))
+                          (assoc-keyword :BACKCHAIN-LIMIT-LST (cdr class))
                           wrld))
           (:CLAUSE-PROCESSOR
            (add-clause-processor-rule (base-symbol rune) term wrld))
@@ -8502,9 +8507,8 @@
                                        (cadr (assoc-keyword :TYPED-TERM
                                                             (cdr class)))
                                        term
-                                       (cadr (assoc-keyword
-                                              :BACKCHAIN-LIMIT-LST
-                                              (cdr class)))
+                                       (assoc-keyword :BACKCHAIN-LIMIT-LST
+                                                      (cdr class))
                                        ens wrld nil))
           (:DEFINITION
            (add-definition-rule rune nume

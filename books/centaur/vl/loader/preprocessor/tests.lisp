@@ -103,8 +103,11 @@
                          :defines ,defines
                          :config (make-vl-loadconfig
                                   :include-dirs (list "."))))
-         (- (cw! "Successp:~x0~%Input:~%~s1~%Output:~%|~s2|~%"
-                 successp ,input (vl-echarlist->string output)))
+         (- (cw! "Successp:~x0~%Input:~%~s1~%Output:~%|~s2|~%Expected:~%|~s3|~%"
+                 successp
+                 ,input
+                 (vl-echarlist->string output)
+                 ,output))
          (- (or (debuggable-and successp
                                 (equal (vl-echarlist->string output) ,output))
                 (er hard? 'preprocessor-basic-test "failed!"))))
@@ -490,3 +493,107 @@ assign b =  c /* la, la */ +b ;"
  :defines (simple-test-defines nil))
 
 
+
+;; Some tests of the new fancy define escape sequences for string/id construction
+
+(preprocessor-basic-test
+ :input #{"""
+`define test1 "hello"
+wire [800:0] found1 = `test1;
+"""}
+
+
+ :output #{"""
+
+wire [800:0] found1 =  "hello";
+"""}
+ :defines (simple-test-defines nil))
+
+
+
+(preprocessor-basic-test
+ :input #{"""
+`define test2(world) "hello world"
+wire [800:0] found2 = `test2(moon);
+"""}
+;; It appears that VCS does not correctly handle this case.  It does the
+;; substitution, producing hello moon.  However, NCV properly avoids
+;; substituting into the string literal.
+
+ :output #{"""
+
+wire [800:0] found2 =  "hello world";
+"""}
+ :defines (simple-test-defines nil))
+
+
+
+
+(preprocessor-basic-test
+ :input #{"""
+`define test3(world) `"hello world`"
+wire [800:0] found3 = `test3(moon);
+"""}
+ :output #{"""
+
+wire [800:0] found3 =  "hello moon";
+"""}
+ :defines (simple-test-defines nil))
+
+
+(preprocessor-basic-test
+ :input #{"""
+`define test4(world) `"hello``world`"
+wire [800:0] found4 = `test4(moon);
+"""}
+ :output #{"""
+
+wire [800:0] found4 =  "hellomoon";
+"""}
+ :defines (simple-test-defines nil))
+
+
+(preprocessor-basic-test
+ :input #{"""
+`define test5(world) `"hello`\`"world`"
+wire [800:0] found5 = `test5(moon);
+"""}
+
+ :output #{"""
+
+wire [800:0] found5 =  "hello\"moon";
+"""}
+ :defines (simple-test-defines nil))
+
+
+
+;; Fancy interactions between `include and the rest of the preprocessor
+
+(preprocessor-basic-test
+ :input #{"""
+`define addtxt(arg) `"arg.txt`"
+`include `addtxt(test)
+"""}
+ :output #{"""
+
+// this is used in preprocessor-tests.lisp
+// do not delete it
+
+"""}
+ :defines (simple-test-defines nil))
+
+
+(preprocessor-basic-test
+ :input #{"""
+`define foo
+`include `ifdef foo "test.txt" `else "do-not-include-this.txt" `endif
+hello
+"""}
+ :output #{"""
+
+// this is used in preprocessor-tests.lisp
+// do not delete it
+
+hello
+"""}
+ :defines (simple-test-defines nil))

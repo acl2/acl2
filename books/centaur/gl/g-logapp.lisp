@@ -138,7 +138,7 @@
                    (equal (* 2 (logcdr n) (nfix w))
                           (* (ifix n) (nfix w)))))
      :hints(("Goal" :in-theory (e/d (logcons)
-                                    (acl2::logcons-destruct))
+                                    (bitops::logcons-destruct))
              :use ((:instance acl2::logcar-logcdr-elim
                     (i n))))))
 

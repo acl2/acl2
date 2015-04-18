@@ -182,11 +182,18 @@
 ; the same color (in font-lock mode) as when defun is called.  If you
 ; don't like it, first copy this form into your .emacs file after the
 ; form that loads this emacs-acl2.el, and then change
-; font-lock-add-keywords to font-lock-remove-keywords.
+; font-lock-add-keywords to font-lock-remove-keywords.  Because of the
+; use of package prefixes in forms like (fty::deflist ...), we
+; include a patch provided with permission from Keshav Kini that
+; allows such package prefixes.  (Note that fty::deflist and
+; std::deflist are different symbols, so they can't both be imported
+; from the "ACL2" package.)
 
 (font-lock-add-keywords
  'lisp-mode
- '(("(\\(def[^ \t]*\\|encapsulate\\|in-theory\\|include-book\\|local\\)\\>"
+ '(("(\\(\\([A-Za-z0-9-_]+::\\)?def[^ \t]*\\)\\>"
+    . 1)
+   ("(\\(encapsulate\\|in-theory\\|include-book\\|local\\)\\>"
     . 1)
    ("(\\(make-event\\|mutual-recursion\\|prog[^ \t]*\\)\\>"
     . 1)
@@ -467,8 +474,11 @@ current top-level form.  See the documentation for enter-theorem."
 
 (define-key ctl-t-keymap "o" 'acl2-open-scope)
 
-; Avoid killing process with control-d in shell buffer:
-(define-key comint-mode-map "\C-d" 'delete-char)
+; The following avoids killing a process with control-d in the shell
+; buffer, by reverting \C-d to whatever it was before comint-mode-map
+; modified its binding.  Thanks to Keshav Kini for this suggestion (in
+; place of our earlier solution of rebinding \C-d to delete-char).
+(define-key comint-mode-map "\C-d" nil)
 
 ; The following only seems necessary in gnu.
 (define-key comint-mode-map "Œ" 'c-m-l)

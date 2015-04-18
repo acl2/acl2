@@ -1758,14 +1758,6 @@ notation causes an error and (b) the use of ,. is not permitted."
             (get-os)
             *the-live-state*))
 
-(defun cancel-dot-dots (full-pathname)
-  (let ((p (search "/.." full-pathname)))
-    (cond (p (cancel-dot-dots
-              (qfuncall merge-using-dot-dot
-                        (subseq full-pathname 0 p)
-                        (subseq full-pathname (1+ p) (length full-pathname)))))
-          (t full-pathname))))
-
 (defun unix-full-pathname (name &optional extension)
 
 ; We formerly used Common Lisp function merge-pathnames.  But in CCL,
@@ -1788,7 +1780,8 @@ notation causes an error and (b) the use of ,. is not permitted."
                                           extension)
                            name)
                          os state)))
-    (cancel-dot-dots
+    (qfuncall
+     cancel-dot-dots
      (cond ((qfuncall absolute-pathname-string-p name nil os)
             name)
            (t
@@ -2076,26 +2069,9 @@ notation causes an error and (b) the use of ,. is not permitted."
     #-(or ccl sb-thread lispworks)
     `(progn ,@forms)))
 
-(defmacro gv (fn args val)
-  (sublis `((funny-fn . ,fn)
-            (funny-args . ,args))
-          `(let ((gc-on (not (gc-off *the-live-state*))))
-             (if (or gc-on
-                     (f-get-global 'safe-mode *the-live-state*))
-                 (throw-raw-ev-fncall
-                  (list 'ev-fncall-guard-er
-                        'funny-fn
-                        ,(cons 'list 'funny-args)
-                        (untranslate* (guard 'funny-fn nil (w *the-live-state*))
-                                      t
-                                      (w *the-live-state*))
-                        (stobjs-in 'funny-fn (w *the-live-state*))
-                        (not gc-on)))
-               ,val))))
-
-; Through ACL2 Version_6.5, acl2-gentemp was deined in interface-raw.lisp.  But
-; since it is used in parallel-raw.lisp, we have moved it here in support of
-; the toothbrush.
+; Through ACL2 Version_6.5, acl2-gentemp was defined in interface-raw.lisp.
+; But since it is used in parallel-raw.lisp, we have moved it here in support
+; of the toothbrush.
 (defvar *acl2-gentemp-counter* 0)
 (defun-one-output acl2-gentemp (root)
   (let ((acl2-pkg (find-package "ACL2")))

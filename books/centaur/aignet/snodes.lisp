@@ -124,13 +124,13 @@
     (equal (snode->regp (mv-nth 1 (mk-snode type regp phase fanin0 fanin1)))
            (bfix regp))
     :hints(("Goal" :in-theory (e/d (snode->regp
-                                    acl2::loghead-of-ash)))))
+                                    bitops::loghead-of-ash)))))
 
   (defthm snode->phase-of-mk-snode
     (equal (snode->phase (mv-nth 1 (mk-snode type regp phase fanin0 fanin1)))
            (bfix phase))
     :hints(("Goal" :in-theory (e/d (snode->phase
-                                    acl2::loghead-of-ash)))))
+                                    bitops::loghead-of-ash)))))
 
   (defthm snode->fanin-of-mk-snode
     (and (equal (snode->fanin (mv-nth 0 (mk-snode type regp phase fanin0 fanin1)))

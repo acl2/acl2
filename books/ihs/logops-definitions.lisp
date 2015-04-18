@@ -167,6 +167,101 @@
 
 (local (in-theory (disable unsigned-byte-p)))
 
+(defxdoc unsigned-byte-p-discussion
+  :parents (unsigned-byte-p)
+  :short "Discussion on how to use unsigned-byte-p"
+  :long "<p>@(csee unsigned-byte-p) (and @(see signed-byte-p) for that matter) are
+  tricky enough that there is no one-size-fits-all solution that everyone
+  should use to reason about them.  Depending on your problem you might try any
+  of these strategies:</p>
+
+  <ol>
+
+  <li><it>Arithmetic</it> -- Leave unsigned-byte-p's regular definition
+  enabled and try to reason about the resulting inequalities.  This sometimes
+  works and may be a good approach if you have goals involving \"non bit-vector
+  functions\" like +, *, /, etc.  I usually don't use this approach but I
+  haven't done a lot of proofs about true arithmetic functions.</li>
+
+  <li><it>Induction</it> -- Disable unsigned-byte-p's regular definition but
+  instead enable an alternate definition, e.g., the
+  centaur/bitops/ihsext-basics book has unsigned-byte-p**, which is a recursive
+  version that works well for induction.  This definition is in the
+  ihsext-recursive-redefs ruleset and also works well with other ** definitions
+  like logand**.  This is often a good strategy when proving lemmas about
+  unsigned-byte-p but is probably mainly useful when reasoning about new
+  recursive functions.</li>
+
+  <li><it>Vector</it> -- Leave @(see unsigned-byte-p) disabled except to
+  prove lemmas, and expect to reason about (unsigned-byte-p n x) via lemmas.  I
+  think I usually prefer this strategy as it feels more reliable/less magical
+  than reasoning about arithmetic inequalities.  Some useful books:
+
+    <ol>
+
+      <li>bitops/ihsext-basics proves the nice/obvious lemmas about
+      signed/unsigned-byte-p on many bit-vector functions like logior,
+      logand, etc.</li>
+
+      <li>bitops/signed-byte-p has lemmas about signed/unsigned-byte-p for
+      some arithmetic functions (+, -, *) and also extended lemmas about
+      bit-vector stuff.  It's often very handy for the kinds of guard
+      obligations that arise from things like (the (unsigned-byte 32)
+      x).</li>
+
+    </ol></li>
+  </ol>
+
+  <p>We have occasionally written wrapper functions like @('u32p'), but, I
+  think that perhaps the only reason we did this was for macros like @(see
+  def-typed-record), where we needed a unary predicate to introduce a fancier
+  data structure.  Once we had the typed records in place, we just enabled
+  these wrappers and did all our reasoning about @(see unsigned-byte-p).
+  (I don't think you'd want to reason about a each various u32p, u64p, etc.,
+  individually.)</p>
+
+  <p>In the context of FTY, I don't think you need wrappers, but if for some
+  reason you do want to use them then that is probably basically fine.  Note
+  here that you have some choice for your fixing function.  You can fix to 0 as
+  you've done in your examples, but you might instead prefer to fix to
+  @'(loghead n x)').  Why?  When you use loghead, it preserves the lower @('N')
+  bits, and this may interact much more nicely with rules about true bit-vector
+  functions.  This approach is also good for GL, where loghead is supported in
+  an especially good way.</p>
+
+  <p>That said, it should be possible to get by without wrappers; see for
+  instance the definition of sizednum in centaur/fty/deftypes-tests.lisp, or
+  the definition of vl-constint in centaur/vl/expr.lisp, both of which use a
+  loghead-based approach to do the fixing.  (The vl-constint example has
+  a :require that is an inequality instead of an unsigned-byte-p term, but I
+  don't think there's any particular reason to do it this way instead of the
+  other.)</p>
+
+  <p>In general there is good reason to expect it to sometimes be hard to work
+  with unsigned-byte-p.  For instance, consider a theorem like the following,
+  from @('centaur/bitops/signed-byte-p.lisp'):</p>
+
+  @({
+   (defthm lousy-unsigned-byte-p-of-*-mixed
+     ;; Probably won't ever unify with anything.
+     (implies (and (unsigned-byte-p n1 a)
+		   (unsigned-byte-p n2 b))
+	      (unsigned-byte-p (+ n1 n2) (* a b)))
+     :hints((\"Goal\" :use ((:instance upper-bound)))))
+  })
+
+  <p>This would be a good rule to try on goals like @('(unsigned-byte-p 10 (* a
+  b))'), but without some insight into @('a') and @('b') it's hard to know how
+  to successfully instantiate @('N1/N2').  So you end up resorting to @(':use')
+  hints, or special-case variants of this theorem (e.g., another theorem that
+  says 7 bits * 3 bits --&gt; 10 bits), or you do something more sophisticated
+  with bind-free or similar.</p>
+
+  <p>If you find yourself going down this road, you might see in particular Dave
+  Greve's \"Parameterized Congruences\" paper from the 2006 workshop, which is
+  implemented in the coi/nary/nary.lisp book.  You could also look at Sol
+  Swords' book to do something similar, see :doc contextual-rewriting.</p>")
+
 
 (defsection signed-byte-p-basics
   :parents (signed-byte-p)
@@ -419,8 +514,8 @@
 
   (defthm logext-bounds
     (implies (< 0 size)
-             (and (>= (logext size i) (- (expt 2 size)))
-                  (< (logext size i) (expt 2 size))))
+             (and (>= (logext size i) (- (expt 2 (1- size))))
+                  (< (logext size i) (expt 2 (1- size)))))
     :rule-classes ((:linear :trigger-terms ((logext size i)))
                    (:rewrite))
     :hints (("Goal"

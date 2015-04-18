@@ -58,7 +58,7 @@
 (defconst *throwaway-tags*
   ;; We leave "img" and "icon" in this list even thouggh we process them in
   ;; merge-text below, because we don't want to process </img> or </icon>.
-  (list "b" "i" "u" "tt" "v" "color" "sf" "box" "img" "icon"
+  (list "b" "i" "u" "tt" "v" "em" "color" "sf" "box" "img" "icon"
         "page"
         ;; We'll just render mathfrag formulas without any special marks
         "mathfrag"

@@ -28,7 +28,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
+(in-package "BITOPS")
 (include-book "xdoc/top" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -99,7 +99,17 @@ parts of vectors.  For instance:</p>
    (assert! (equal (part-select #ux_AAAA_BBBB_CCCC_DDDD :low 0  :high 15) #ux_DDDD))
    (assert! (equal (part-select #ux_AAAA_BBBB_CCCC_DDDD :low 16 :high 31) #ux_CCCC))
    (assert! (equal (part-select #ux_AAAA_BBBB_CCCC_DDDD :low 32 :high 47) #ux_BBBB))
-   (assert! (equal (part-select #ux_AAAA_BBBB_CCCC_DDDD :low 48 :high 63) #ux_AAAA))
+   (assert! (equal (part-select #ux_AAAA_BBBB_CCCC_DDDD :low 48 :high 63) #ux_AAAA))))
 
-   ))
+(defun ccl-bug-1273-test (n)
+  (declare (type (unsigned-byte 80) n))
+  (part-select n :low 64 :high 78))
 
+(make-event
+    (progn$ (or (equal (ccl-bug-1273-test (1- (expt 2 80))) 32767)
+                (cw "~%~%WARNING (centaur/bitops/part-select.lisp): CCL Bug 1273 Detected!~%~
+                        Please upgrade CCL to Version 16356 or later. For details see:~%   ~
+                            - http://trac.clozure.com/ccl/ticket/1273~%   ~
+                            - http://trac.clozure.com/ccl/changeset/16356~%~%"))
+            '(value-triple :invisible))
+    :check-expansion t)

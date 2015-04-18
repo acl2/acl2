@@ -1,0 +1,26 @@
+;;; -*- mode: lisp -*-
+;;;
+;;; Copyright (C) 2001, 2003  Eric Marsden
+;;; Copyright (C) 2005  David Lichteblau
+;;; Copyright (C) 2007  Pixel // pinterface
+;;; "the conditions and ENSURE-SSL-FUNCALL are by Jochen Schmidt."
+;;;
+;;; See LICENSE for details.
+
+
+#+xcvb
+(module
+ (:fullname "cl+ssl"
+  :depends-on ("package"
+	       "reload"
+	       "conditions"
+	       "ffi"
+	       "ffi-buffer-all"
+	       (:cond ((:featurep :clisp) "ffi-buffer-clisp")
+                      ((:featurep (:not :clisp)) "ffi-buffer"))
+	       "streams"
+	       "bio"
+	       "random")
+  :build-depends-on ("flexi-streams" "trivial-gray-streams" "cffi")
+  :supersedes-asdf ("cl+ssl")))
+

@@ -35,7 +35,7 @@
 (set-state-ok t)
 (program)
 
-(defxdoc defoption
+(defxdoc vl::defoption
   :parents (vl::utilities)
   :short "Define an option type."
   :long "<p>BOZO eventually integrate this into @(see std/util).</p>
@@ -292,7 +292,7 @@
                      . ,rest-events)))))))
 
 
-(defmacro defoption (name &rest args)
+(defmacro vl::defoption (name &rest args)
   (b* ((__function__ 'defoption)
        ((unless (symbolp name))
         (raise "Name must be a symbol."))

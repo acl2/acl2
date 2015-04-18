@@ -428,30 +428,7 @@ quicklisp:
 
 else
 
-$(QUICKLISP_DIR)/quicklisp.lsp:
-	@echo "Downloading Quicklisp"
-	@cd $(QUICKLISP_DIR); \
-	   curl http://beta.quicklisp.org/quicklisp.lisp \
-             -o quicklisp.lsp $(HTTP_PROXY_FLAG)
-	@$(BUILD_DIR)/wait.pl $(QUICKLISP_DIR)/quicklisp.lsp
-	@ls -l $(QUICKLISP_DIR)/quicklisp.lsp
-
-$(QUICKLISP_DIR)/inst/setup.lisp: $(QUICKLISP_DIR)/quicklisp.lsp \
-                                  $(QUICKLISP_DIR)/install.lsp
-	@echo "Setting up Quicklisp..."
-	@cd $(QUICKLISP_DIR); \
-           ($(STARTJOB) -c \
-              "ACL2_CUSTOMIZATION=NONE $(ACL2) < install.lsp &> install.out" ; \
-	    $(BUILD_DIR)/wait.pl inst/setup.lisp ;\
-	    ls -l inst/setup.lisp) \
-	   || (tail -300 install.out | sed 's/^/   | /'; false)
-
-$(QUICKLISP_DIR)/base.cert: $(QUICKLISP_DIR)/inst/setup.lisp
-
 quicklisp: $(QUICKLISP_DIR)/top.cert
-
-# I don't think we need this now
-# all: $(QUICKLISP_DIR)/top.cert
 
 endif # REALLY_USE_QUICKLISP
 
@@ -464,12 +441,8 @@ endif # REALLY_USE_QUICKLISP
 .PHONY: quicklisp_clean
 
 quicklisp_clean:
-	echo "Removing downloaded quicklisp files (if any)" ; \
-	cd $(QUICKLISP_DIR); rm -rf quicklisp.lsp  inst/asdf.lisp inst/cache \
-	    inst/client-info.sexp inst/dists inst/local-projects \
-	    inst/quicklisp inst/setup.lisp inst/tmp install.out Makefile-tmp \
-            asdf-home/cache/common-lisp
-	cd $(QUICKLISP_DIR); $(BUILD_DIR)/clean.pl
+	@echo "Cleaning up Quicklisp files"
+	cd $(QUICKLISP_DIR); ./clean.sh
 
 # The following hack was useful briefly in late January, 2014, when
 # there were issues with quicklisp that caused us not to want to clean

@@ -28,7 +28,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
+(in-package "BITOPS")
 (include-book "std/util/define" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (include-book "ihs/logops-definitions" :dir :system)
@@ -44,34 +44,118 @@
          :hints((acl2::equal-by-logbitp-hammer))))
 
 ;; Speed hint
-(local (in-theory (disable ACL2::LOGIOR-<-0-LINEAR-2)))
+(local (in-theory (disable LOGIOR-<-0-LINEAR-2)))
 
 (defxdoc bitops/merge
   :parents (bitops)
-  :short "Various common operations for concatenating bytes/words."
+  :short "Efficient operations for concatenating fixed-sized bit vectors."
 
-  :long "<p>These merge operations may be useful for describing SIMD style
-operations, byte swapping operations, and so forth.</p>
+  :long "<p>We now introduce many operations that concatenate together bit
+vectors of some fixed size to create a new, merged bit vector.  For example,
+@(see merge-4-u8s) joins together four 8-bit vectors into a 32-bit result.</p>
 
-<p>Each function here is logically simple, but we go to some lengths to make
-them execute more efficiently.  For instance,</p>
+<p>In general, the function @(see logapp) is a more flexible alternative to the
+operations below&mdash;it can be used to merge bit vectors of different sizes.
+However, since it can only merge two bit-vectors at a time, using @('logapp')
+directly can become quite tedious when you have a lot of vectors to merge.  For
+instance, these merging operations may be especially useful for describing SIMD
+style operations, byte swapping operations, and so forth.</p>
+
+<p>Each of our merging operations is logically simple.  However, we go to some
+lengths to make them execute more efficiently.  This is accomplished by
+providing ample @(see type-spec) declarations and arranging the order of
+operations to use fixnums for as long as possible.  This provides significant
+speedups, for instance:</p>
 
 @({
- (let ((a7 1)
-       (a6 2)
-       (a5 3)
-       (a4 4)
-       (a3 5)
-       (a2 6)
-       (a1 7)
-       (a0 8))
-   ;; logic mode version: 11.112 seconds
-   ;; exec mode version:   1.404 seconds
-   (time (loop for i fixnum from 1 to 100000000 do
-               (merge-8-u8s a7 a6 a5 a4 a3 a2 a1 a0))))
-})")
+    ;; logic mode version: 11.112 seconds
+    ;; exec mode version:   1.404 seconds
+    (let ((a7 1)
+          (a6 2)
+          (a5 3)
+          (a4 4)
+          (a3 5)
+          (a2 6)
+          (a1 7)
+          (a0 8))
+      (time (loop for i fixnum from 1 to 100000000 do
+                  (merge-8-u8s a7 a6 a5 a4 a3 a2 a1 a0))))
+})
+
+<p>Note that when designing these functions, we typically assume that fixnums
+are large enough to hold 56-bit results.  Our definitions should therefore
+perform well on 64-bit Lisps including at least CCL and SBCL.</p>
+
+<p>We prove that each merge produces a result of the correct size (expressed as
+a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
+@(see congruence) for each of its arguments.</p>")
 
 (local (xdoc::set-default-parents bitops/merge))
+
+(defun congruences-for-merge-fn (form n)
+  (declare (xargs :mode :program))
+  (if (zp n)
+      nil
+    (cons
+     `(defcong nat-equiv equal ,form ,n)
+     (congruences-for-merge-fn form (- n 1)))))
+
+(defmacro congruences-for-merge (form n)
+  `(progn . ,(congruences-for-merge-fn form n)))
+
+
+;; Merging U2s ----------------------------------------------------------------
+
+(define merge-8-u2s (a7 a6 a5 a4 a3 a2 a1 a0)
+  (declare (type (unsigned-byte 2) a7 a6 a5 a4 a3 a2 a1 a0))
+  :returns (result natp :rule-classes :type-prescription)
+  :short "Concatenate eight 2-bit numbers together to form a 16-bit result."
+  :inline t
+  (mbe :logic (logior (ash (lnfix a7) 14)
+                      (ash (lnfix a6) 12)
+                      (ash (lnfix a5) 10)
+                      (ash (lnfix a4) 8)
+                      (ash (lnfix a3) 6)
+                      (ash (lnfix a2) 4)
+                      (ash (lnfix a1) 2)
+                      (lnfix a0))
+       :exec
+       (b* ((ans (the (unsigned-byte 16)
+                      (logior (the (unsigned-byte 16) (ash a1 2))
+                              a0)))
+            (ans (the (unsigned-byte 16)
+                      (logior (the (unsigned-byte 16) (ash a2 4))
+                              (the (unsigned-byte 16) ans))))
+            (ans (the (unsigned-byte 16)
+                      (logior (the (unsigned-byte 16) (ash a3 6))
+                              (the (unsigned-byte 16) ans))))
+            (ans (the (unsigned-byte 16)
+                      (logior (the (unsigned-byte 16) (ash a4 8))
+                              (the (unsigned-byte 16) ans))))
+            (ans (the (unsigned-byte 16)
+                      (logior (the (unsigned-byte 16) (ash a5 10))
+                              (the (unsigned-byte 16) ans))))
+            (ans (the (unsigned-byte 16)
+                      (logior (the (unsigned-byte 16) (ash a6 12))
+                              (the (unsigned-byte 16) ans))))
+            (ans (the (unsigned-byte 16)
+                      (logior (the (unsigned-byte 16) (ash a7 14))
+                              (the (unsigned-byte 16) ans)))))
+         ans))
+  ///
+  (defthm unsigned-byte-p-16-of-merge-8-u2s
+    (implies (and (unsigned-byte-p 2 a7)
+                  (unsigned-byte-p 2 a6)
+                  (unsigned-byte-p 2 a5)
+                  (unsigned-byte-p 2 a4)
+                  (unsigned-byte-p 2 a3)
+                  (unsigned-byte-p 2 a2)
+                  (unsigned-byte-p 2 a1)
+                  (unsigned-byte-p 2 a0))
+             (unsigned-byte-p 16 (merge-8-u2s a7 a6 a5 a4 a3 a2 a1 a0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-8-u2s a7 a6 a5 a4 a3 a2 a1 a0) 8))
+
 
 
 ;; Merging Bytes --------------------------------------------------------------
@@ -89,12 +173,12 @@ them execute more efficiently.  For instance,</p>
          (logior (the (unsigned-byte 16) (ash a1 8))
                  (the (unsigned-byte 16) a0))))
   ///
-  (defcong nat-equiv equal (merge-2-u8s a1 a0) 1)
-  (defcong nat-equiv equal (merge-2-u8s a1 a0) 2)
   (defthm unsigned-byte-p-16-of-merge-2-u8s
     (implies (and (unsigned-byte-p 8 a1)
                   (unsigned-byte-p 8 a0))
-             (unsigned-byte-p 16 (merge-2-u8s a1 a0)))))
+             (unsigned-byte-p 16 (merge-2-u8s a1 a0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-2-u8s a1 a0) 2))
 
 (define merge-4-u8s (a3 a2 a1 a0)
   (declare (type (unsigned-byte 8) a3 a2 a1 a0))
@@ -122,16 +206,14 @@ them execute more efficiently.  For instance,</p>
            (logior (the (unsigned-byte 32) a3)
                    (the (unsigned-byte 32) ans)))))
   ///
-  (defcong nat-equiv equal (merge-4-u8s a3 a2 a1 a0) 1)
-  (defcong nat-equiv equal (merge-4-u8s a3 a2 a1 a0) 2)
-  (defcong nat-equiv equal (merge-4-u8s a3 a2 a1 a0) 3)
-  (defcong nat-equiv equal (merge-4-u8s a3 a2 a1 a0) 4)
   (defthm unsigned-byte-p-32-of-merge-4-u8s
     (implies (and (unsigned-byte-p 8 a3)
                   (unsigned-byte-p 8 a2)
                   (unsigned-byte-p 8 a1)
                   (unsigned-byte-p 8 a0))
-             (unsigned-byte-p 32 (merge-4-u8s a3 a2 a1 a0)))))
+             (unsigned-byte-p 32 (merge-4-u8s a3 a2 a1 a0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-4-u8s a3 a2 a1 a0) 4))
 
 (define merge-8-u8s (a7 a6 a5 a4 a3 a2 a1 a0)
   (declare (type (unsigned-byte 8) a7 a6 a5 a4 a3 a2 a1 a0))
@@ -182,14 +264,6 @@ them execute more efficiently.  For instance,</p>
            (logior (the (unsigned-byte 64) a7)
                    (the (unsigned-byte 56) ans)))))
   ///
-  (defcong nat-equiv equal (merge-8-u8s a7 a6 a5 a4 a3 a2 a1 a0) 1)
-  (defcong nat-equiv equal (merge-8-u8s a7 a6 a5 a4 a3 a2 a1 a0) 2)
-  (defcong nat-equiv equal (merge-8-u8s a7 a6 a5 a4 a3 a2 a1 a0) 3)
-  (defcong nat-equiv equal (merge-8-u8s a7 a6 a5 a4 a3 a2 a1 a0) 4)
-  (defcong nat-equiv equal (merge-8-u8s a7 a6 a5 a4 a3 a2 a1 a0) 5)
-  (defcong nat-equiv equal (merge-8-u8s a7 a6 a5 a4 a3 a2 a1 a0) 6)
-  (defcong nat-equiv equal (merge-8-u8s a7 a6 a5 a4 a3 a2 a1 a0) 7)
-  (defcong nat-equiv equal (merge-8-u8s a7 a6 a5 a4 a3 a2 a1 a0) 8)
   (defthm unsigned-byte-p-64-of-merge-8-u8s
     (implies (and (unsigned-byte-p 8 a7)
                   (unsigned-byte-p 8 a6)
@@ -199,7 +273,9 @@ them execute more efficiently.  For instance,</p>
                   (unsigned-byte-p 8 a2)
                   (unsigned-byte-p 8 a1)
                   (unsigned-byte-p 8 a0))
-             (unsigned-byte-p 64 (merge-8-u8s a7 a6 a5 a4 a3 a2 a1 a0)))))
+             (unsigned-byte-p 64 (merge-8-u8s a7 a6 a5 a4 a3 a2 a1 a0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-8-u8s a7 a6 a5 a4 a3 a2 a1 a0) 8))
 
 (define merge-16-u8s (h7 h6 h5 h4 h3 h2 h1 h0
                       l7 l6 l5 l4 l3 l2 l1 l0)
@@ -316,38 +392,6 @@ them execute more efficiently.  For instance,</p>
            (logior (the (unsigned-byte 128) high)
                    (the (unsigned-byte 64) low)))))
   ///
-  (defcong nat-equiv equal (merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0
-                                         l7 l6 l5 l4 l3 l2 l1 l0) 1)
-  (defcong nat-equiv equal (merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0
-                                         l7 l6 l5 l4 l3 l2 l1 l0) 2)
-  (defcong nat-equiv equal (merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0
-                                         l7 l6 l5 l4 l3 l2 l1 l0) 3)
-  (defcong nat-equiv equal (merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0
-                                         l7 l6 l5 l4 l3 l2 l1 l0) 4)
-  (defcong nat-equiv equal (merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0
-                                         l7 l6 l5 l4 l3 l2 l1 l0) 5)
-  (defcong nat-equiv equal (merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0
-                                         l7 l6 l5 l4 l3 l2 l1 l0) 6)
-  (defcong nat-equiv equal (merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0
-                                         l7 l6 l5 l4 l3 l2 l1 l0) 7)
-  (defcong nat-equiv equal (merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0
-                                         l7 l6 l5 l4 l3 l2 l1 l0) 8)
-  (defcong nat-equiv equal (merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0
-                                         l7 l6 l5 l4 l3 l2 l1 l0) 9)
-  (defcong nat-equiv equal (merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0
-                                         l7 l6 l5 l4 l3 l2 l1 l0) 10)
-  (defcong nat-equiv equal (merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0
-                                         l7 l6 l5 l4 l3 l2 l1 l0) 11)
-  (defcong nat-equiv equal (merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0
-                                         l7 l6 l5 l4 l3 l2 l1 l0) 12)
-  (defcong nat-equiv equal (merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0
-                                         l7 l6 l5 l4 l3 l2 l1 l0) 13)
-  (defcong nat-equiv equal (merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0
-                                         l7 l6 l5 l4 l3 l2 l1 l0) 14)
-  (defcong nat-equiv equal (merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0
-                                         l7 l6 l5 l4 l3 l2 l1 l0) 15)
-  (defcong nat-equiv equal (merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0
-                                         l7 l6 l5 l4 l3 l2 l1 l0) 16)
   (defthm unsigned-byte-p-128-of-merge-16-u8s
     (implies (and (unsigned-byte-p 8 h7)
                   (unsigned-byte-p 8 h6)
@@ -366,7 +410,12 @@ them execute more efficiently.  For instance,</p>
                   (unsigned-byte-p 8 l1)
                   (unsigned-byte-p 8 l0))
              (unsigned-byte-p 128 (merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0
-                                                l7 l6 l5 l4 l3 l2 l1 l0)))))
+                                                l7 l6 l5 l4 l3 l2 l1 l0))))
+
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0
+                                       l7 l6 l5 l4 l3 l2 l1 l0)
+                         16))
 
 
 (define merge-32-u8s (a7 a6 a5 a4 a3 a2 a1 a0
@@ -469,21 +518,6 @@ them execute more efficiently.  For instance,</p>
                (the (unsigned-byte 256) (ash (the (unsigned-byte 128) high) 128))
                (the (unsigned-byte 128) low)))))
   ///
-  (defun congruences-for-merge-32-u8s (n)
-    (declare (xargs :mode :program))
-    (if (zp n)
-        nil
-      (cons
-       `(defcong nat-equiv equal (merge-32-u8s a7 a6 a5 a4 a3 a2 a1 a0
-                                               b7 b6 b5 b4 b3 b2 b1 b0
-                                               c7 c6 c5 c4 c3 c2 c1 c0
-                                               d7 d6 d5 d4 d3 d2 d1 d0)
-          ,n)
-       (congruences-for-merge-32-u8s (- n 1)))))
-
-  (make-event
-   (cons 'progn (congruences-for-merge-32-u8s 32)))
-
   (defthm unsigned-byte-p-256-of-merge-16-u8s
     (implies (and (unsigned-byte-p 8 a7)
                   (unsigned-byte-p 8 a6)
@@ -520,7 +554,14 @@ them execute more efficiently.  For instance,</p>
              (unsigned-byte-p 256 (merge-32-u8s a7 a6 a5 a4 a3 a2 a1 a0
                                                 b7 b6 b5 b4 b3 b2 b1 b0
                                                 c7 c6 c5 c4 c3 c2 c1 c0
-                                                d7 d6 d5 d4 d3 d2 d1 d0)))))
+                                                d7 d6 d5 d4 d3 d2 d1 d0))))
+
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-32-u8s a7 a6 a5 a4 a3 a2 a1 a0
+                                       b7 b6 b5 b4 b3 b2 b1 b0
+                                       c7 c6 c5 c4 c3 c2 c1 c0
+                                       d7 d6 d5 d4 d3 d2 d1 d0)
+                         32))
 
 
 ;; Merging Words --------------------------------------------------------------
@@ -539,12 +580,12 @@ result."
          (logior (the (unsigned-byte 32) (ash a1 16))
                  a0)))
   ///
-  (defcong nat-equiv equal (merge-2-u16s a1 a0) 1)
-  (defcong nat-equiv equal (merge-2-u16s a1 a0) 2)
   (defthm unsigned-byte-p-32-of-merge-2-u16s
     (implies (and (unsigned-byte-p 16 a1)
                   (unsigned-byte-p 16 a0))
-             (unsigned-byte-p 32 (merge-2-u16s a1 a0)))))
+             (unsigned-byte-p 32 (merge-2-u16s a1 a0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-2-u16s a1 a0) 2))
 
 (define merge-4-u16s (a3 a2 a1 a0)
   (declare (type (unsigned-byte 16) a3 a2 a1 a0))
@@ -572,16 +613,14 @@ result."
            (logior (the (unsigned-byte 64) a3)
                    (the (unsigned-byte 56) ans)))))
   ///
-  (defcong nat-equiv equal (merge-4-u16s a3 a2 a1 a0) 1)
-  (defcong nat-equiv equal (merge-4-u16s a3 a2 a1 a0) 2)
-  (defcong nat-equiv equal (merge-4-u16s a3 a2 a1 a0) 3)
-  (defcong nat-equiv equal (merge-4-u16s a3 a2 a1 a0) 4)
   (defthm unsigned-byte-p-64-of-merge-4-u16s
     (implies (and (unsigned-byte-p 16 a3)
                   (unsigned-byte-p 16 a2)
                   (unsigned-byte-p 16 a1)
                   (unsigned-byte-p 16 a0))
-             (unsigned-byte-p 64 (merge-4-u16s a3 a2 a1 a0)))))
+             (unsigned-byte-p 64 (merge-4-u16s a3 a2 a1 a0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-4-u16s a3 a2 a1 a0) 4))
 
 (define merge-8-u16s (h3 h2 h1 h0 l3 l2 l1 l0)
   (declare (type (unsigned-byte 16) h3 h2 h1 h0 l3 l2 l1 l0))
@@ -651,14 +690,6 @@ logic-mode definition.</p>
            (logior (the (unsigned-byte 128) high)
                    (the (unsigned-byte 64) low)))))
   ///
-  (defcong nat-equiv equal (merge-8-u16s h3 h2 h1 h0 l3 l2 l1 l0) 1)
-  (defcong nat-equiv equal (merge-8-u16s h3 h2 h1 h0 l3 l2 l1 l0) 2)
-  (defcong nat-equiv equal (merge-8-u16s h3 h2 h1 h0 l3 l2 l1 l0) 3)
-  (defcong nat-equiv equal (merge-8-u16s h3 h2 h1 h0 l3 l2 l1 l0) 4)
-  (defcong nat-equiv equal (merge-8-u16s h3 h2 h1 h0 l3 l2 l1 l0) 5)
-  (defcong nat-equiv equal (merge-8-u16s h3 h2 h1 h0 l3 l2 l1 l0) 6)
-  (defcong nat-equiv equal (merge-8-u16s h3 h2 h1 h0 l3 l2 l1 l0) 7)
-  (defcong nat-equiv equal (merge-8-u16s h3 h2 h1 h0 l3 l2 l1 l0) 8)
   (defthm unsigned-byte-p-128-of-merge-8-u16s
     (implies (and (unsigned-byte-p 16 h3)
                   (unsigned-byte-p 16 h2)
@@ -668,7 +699,9 @@ logic-mode definition.</p>
                   (unsigned-byte-p 16 l2)
                   (unsigned-byte-p 16 l1)
                   (unsigned-byte-p 16 l0))
-             (unsigned-byte-p 128 (merge-8-u16s h3 h2 h1 h0 l3 l2 l1 l0)))))
+             (unsigned-byte-p 128 (merge-8-u16s h3 h2 h1 h0 l3 l2 l1 l0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-8-u16s h3 h2 h1 h0 l3 l2 l1 l0) 8))
 
 
 (define merge-16-u16s (h7 h6 h5 h4 h3 h2 h1 h0
@@ -707,19 +740,6 @@ logic-mode definition.</p>"
                (the (unsigned-byte 256) (ash (the (unsigned-byte 128) high) 128))
                (the (unsigned-byte 128) low)))))
   ///
-  (defun congruences-for-merge-16-u16s (n)
-    (declare (xargs :mode :program))
-    (if (zp n)
-        nil
-      (cons
-       `(defcong nat-equiv equal (merge-16-u16s h7 h6 h5 h4 h3 h2 h1 h0
-                                                l7 l6 l5 l4 l3 l2 l1 l0)
-          ,n)
-       (congruences-for-merge-16-u16s (- n 1)))))
-
-  (make-event
-   (cons 'progn (congruences-for-merge-16-u16s 16)))
-
   (defthm unsigned-byte-p-256-of-merge-16-u16s
     (implies (and (unsigned-byte-p 16 h7)
                   (unsigned-byte-p 16 h6)
@@ -739,8 +759,11 @@ logic-mode definition.</p>"
                   (unsigned-byte-p 16 l0))
              (unsigned-byte-p 256
                               (merge-16-u16s h7 h6 h5 h4 h3 h2 h1 h0
-                                             l7 l6 l5 l4 l3 l2 l1 l0)))))
-
+                                             l7 l6 l5 l4 l3 l2 l1 l0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-16-u16s h7 h6 h5 h4 h3 h2 h1 h0
+                                        l7 l6 l5 l4 l3 l2 l1 l0)
+                         16))
 
 
 
@@ -759,12 +782,12 @@ result."
          (logior (the (unsigned-byte 64) (ash a1 32))
                  a0)))
   ///
-  (defcong nat-equiv equal (merge-2-u32s a1 a0) 1)
-  (defcong nat-equiv equal (merge-2-u32s a1 a0) 2)
   (defthm unsigned-byte-p-64-of-merge-2-u32s
     (implies (and (unsigned-byte-p 32 a1)
                   (unsigned-byte-p 32 a0))
-             (unsigned-byte-p 64 (merge-2-u32s a1 a0)))))
+             (unsigned-byte-p 64 (merge-2-u32s a1 a0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-2-u32s a1 a0) 2))
 
 (define merge-4-u32s (h1 h0 l1 l0)
   (declare (type (unsigned-byte 32) h1 h0 l1 l0))
@@ -790,16 +813,14 @@ result."
            (logior (the (unsigned-byte 128) high)
                    (the (unsigned-byte 64) low)))))
   ///
-  (defcong nat-equiv equal (merge-4-u32s h1 h0 l1 l0) 1)
-  (defcong nat-equiv equal (merge-4-u32s h1 h0 l1 l0) 2)
-  (defcong nat-equiv equal (merge-4-u32s h1 h0 l1 l0) 3)
-  (defcong nat-equiv equal (merge-4-u32s h1 h0 l1 l0) 4)
   (defthm unsigned-byte-p-128-of-merge-4-u32s
     (implies (and (unsigned-byte-p 32 h1)
                   (unsigned-byte-p 32 h0)
                   (unsigned-byte-p 32 l1)
                   (unsigned-byte-p 32 l0))
-             (unsigned-byte-p 128 (merge-4-u32s h1 h0 l1 l0)))))
+             (unsigned-byte-p 128 (merge-4-u32s h1 h0 l1 l0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-4-u32s h1 h0 l1 l0) 4))
 
 (define merge-8-u32s (h3 h2 h1 h0 l3 l2 l1 l0)
   (declare (type (unsigned-byte 32) h3 h2 h1 h0 l3 l2 l1 l0))
@@ -824,15 +845,6 @@ result."
                (the (unsigned-byte 256) (ash (the (unsigned-byte 128) high) 128))
                (the (unsigned-byte 128) low)))))
   ///
-  (defcong nat-equiv equal (merge-8-u32s h3 h2 h1 h0 l3 l2 l1 l0) 1)
-  (defcong nat-equiv equal (merge-8-u32s h3 h2 h1 h0 l3 l2 l1 l0) 2)
-  (defcong nat-equiv equal (merge-8-u32s h3 h2 h1 h0 l3 l2 l1 l0) 3)
-  (defcong nat-equiv equal (merge-8-u32s h3 h2 h1 h0 l3 l2 l1 l0) 4)
-  (defcong nat-equiv equal (merge-8-u32s h3 h2 h1 h0 l3 l2 l1 l0) 5)
-  (defcong nat-equiv equal (merge-8-u32s h3 h2 h1 h0 l3 l2 l1 l0) 6)
-  (defcong nat-equiv equal (merge-8-u32s h3 h2 h1 h0 l3 l2 l1 l0) 7)
-  (defcong nat-equiv equal (merge-8-u32s h3 h2 h1 h0 l3 l2 l1 l0) 8)
-
   (defthm unsigned-byte-p-256-of-merge-8-u32s
     (implies (and (unsigned-byte-p 32 h3)
                   (unsigned-byte-p 32 h2)
@@ -842,7 +854,67 @@ result."
                   (unsigned-byte-p 32 l2)
                   (unsigned-byte-p 32 l1)
                   (unsigned-byte-p 32 l0))
-             (unsigned-byte-p 256 (merge-8-u32s h3 h2 h1 h0 l3 l2 l1 l0)))))
+             (unsigned-byte-p 256 (merge-8-u32s h3 h2 h1 h0 l3 l2 l1 l0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-8-u32s h3 h2 h1 h0 l3 l2 l1 l0) 8))
+
+(define merge-16-u32s (h7 h6 h5 h4 h3 h2 h1 h0
+                       l7 l6 l5 l4 l3 l2 l1 l0)
+  (declare (type (unsigned-byte 32)
+                 h7 h6 h5 h4 h3 h2 h1 h0
+                 l7 l6 l5 l4 l3 l2 l1 l0))
+  :returns (result natp :rule-classes :type-prescription)
+  :short "Concatenate sixteen 32-bit values together to form a single 512-bit
+result."
+  :guard-hints(("Goal" :in-theory (enable merge-8-u32s)))
+  (mbe :logic
+       (logior (ash (nfix h7) (* 15 32))
+               (ash (nfix h6) (* 14 32))
+               (ash (nfix h5) (* 13 32))
+               (ash (nfix h4) (* 12 32))
+               (ash (nfix h3) (* 11 32))
+               (ash (nfix h2) (* 10 32))
+               (ash (nfix h1) (* 9 32))
+               (ash (nfix h0) (* 8 32))
+               (ash (nfix l7) (* 7 32))
+               (ash (nfix l6) (* 6 32))
+               (ash (nfix l5) (* 5 32))
+               (ash (nfix l4) (* 4 32))
+               (ash (nfix l3) (* 3 32))
+               (ash (nfix l2) (* 2 32))
+               (ash (nfix l1) (* 1 32))
+               (nfix l0))
+       :exec
+       (b* (((the (unsigned-byte 256) high) (merge-8-u32s h7 h6 h5 h4 h3 h2 h1 h0))
+            ((the (unsigned-byte 256) low)  (merge-8-u32s l7 l6 l5 l4 l3 l2 l1 l0)))
+         (the (unsigned-byte 512)
+              (logior
+               (the (unsigned-byte 512) (ash (the (unsigned-byte 256) high) 256))
+               (the (unsigned-byte 256) low)))))
+  ///
+  (defthm unsigned-byte-p-512-of-merge-16-u32s
+    (implies (and (unsigned-byte-p 32 h7)
+                  (unsigned-byte-p 32 h6)
+                  (unsigned-byte-p 32 h5)
+                  (unsigned-byte-p 32 h4)
+                  (unsigned-byte-p 32 h3)
+                  (unsigned-byte-p 32 h2)
+                  (unsigned-byte-p 32 h1)
+                  (unsigned-byte-p 32 h0)
+                  (unsigned-byte-p 32 l7)
+                  (unsigned-byte-p 32 l6)
+                  (unsigned-byte-p 32 l5)
+                  (unsigned-byte-p 32 l4)
+                  (unsigned-byte-p 32 l3)
+                  (unsigned-byte-p 32 l2)
+                  (unsigned-byte-p 32 l1)
+                  (unsigned-byte-p 32 l0))
+             (unsigned-byte-p 512 (merge-16-u32s h7 h6 h5 h4 h3 h2 h1 h0
+                                                 l7 l6 l5 l4 l3 l2 l1 l0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-16-u32s h7 h6 h5 h4 h3 h2 h1 h0
+                                        l7 l6 l5 l4 l3 l2 l1 l0)
+                         16))
 
 
 ;; Merging Qwords -------------------------------------------------------------
@@ -865,12 +937,12 @@ result."
                    l))))
 
   ///
-  (defcong nat-equiv equal (merge-2-u64s h l) 1)
-  (defcong nat-equiv equal (merge-2-u64s h l) 2)
   (defthm unsigned-byte-p-128-of-merge-2-u64s
     (implies (and (unsigned-byte-p 64 h)
                   (unsigned-byte-p 64 l))
-             (unsigned-byte-p 128 (merge-2-u64s h l)))))
+             (unsigned-byte-p 128 (merge-2-u64s h l))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-2-u64s h l) 2))
 
 (define merge-4-u64s (h1 h0 l1 l0)
   (declare (type (unsigned-byte 64) h1 h0 l1 l0))
@@ -891,13 +963,135 @@ result."
                (the (unsigned-byte 256) (ash (the (unsigned-byte 128) high) 128))
                (the (unsigned-byte 128) low)))))
   ///
-  (defcong nat-equiv equal (merge-4-u64s h1 h0 l1 l0) 1)
-  (defcong nat-equiv equal (merge-4-u64s h1 h0 l1 l0) 2)
-  (defcong nat-equiv equal (merge-4-u64s h1 h0 l1 l0) 3)
-  (defcong nat-equiv equal (merge-4-u64s h1 h0 l1 l0) 4)
   (defthm unsigned-byte-p-256-of-merge-4-u64s
     (implies (and (unsigned-byte-p 64 h1)
                   (unsigned-byte-p 64 h0)
                   (unsigned-byte-p 64 l1)
                   (unsigned-byte-p 64 l0))
-             (unsigned-byte-p 256 (merge-4-u64s h1 h0 l1 l0)))))
+             (unsigned-byte-p 256 (merge-4-u64s h1 h0 l1 l0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-4-u64s h1 h0 l1 l0) 4))
+
+(define merge-8-u64s (h3 h2 h1 h0 l3 l2 l1 l0)
+  (declare (type (unsigned-byte 64) h3 h2 h1 h0 l3 l2 l1 l0))
+  :returns (result natp :rule-classes :type-prescription)
+  :short "Concatenate eight 64-bit values together to form a single 512-bit
+result."
+  :guard-hints(("Goal" :in-theory (enable merge-4-u64s)))
+  (mbe :logic
+       (logior (ash (nfix h3) (* 7 64))
+               (ash (nfix h2) (* 6 64))
+               (ash (nfix h1) (* 5 64))
+               (ash (nfix h0) (* 4 64))
+               (ash (nfix l3) (* 3 64))
+               (ash (nfix l2) (* 2 64))
+               (ash (nfix l1) (* 1 64))
+               (nfix l0))
+       :exec
+       (b* (((the (unsigned-byte 256) high) (merge-4-u64s h3 h2 h1 h0))
+            ((the (unsigned-byte 256) low)  (merge-4-u64s l3 l2 l1 l0)))
+         (the (unsigned-byte 512)
+              (logior
+               (the (unsigned-byte 512) (ash (the (unsigned-byte 256) high) 256))
+               (the (unsigned-byte 256) low)))))
+  ///
+  (defthm unsigned-byte-p-512-of-merge-8-u64s
+    (implies (and (unsigned-byte-p 64 h3)
+                  (unsigned-byte-p 64 h2)
+                  (unsigned-byte-p 64 h1)
+                  (unsigned-byte-p 64 h0)
+                  (unsigned-byte-p 64 l3)
+                  (unsigned-byte-p 64 l2)
+                  (unsigned-byte-p 64 l1)
+                  (unsigned-byte-p 64 l0))
+             (unsigned-byte-p 512 (merge-8-u64s h3 h2 h1 h0 l3 l2 l1 l0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-8-u64s h3 h2 h1 h0 l3 l2 l1 l0) 8))
+
+
+
+;; Merging 128s -------------------------------------------------------------
+
+(define merge-2-u128s (h l)
+  (declare (type (unsigned-byte 128) h l))
+  :returns (result natp :rule-classes :type-prescription)
+  :short "Concatenate two 128-bit values together to form a single 256-bit
+result."
+  :inline t
+  (mbe :logic
+       (logior (ash (nfix h) 128)
+               (nfix l))
+       :exec
+       (the (unsigned-byte 256)
+         (logior (the (unsigned-byte 256)
+                   (ash (the (unsigned-byte 128) h)
+                        128))
+                 (the (unsigned-byte 128)
+                   l))))
+
+  ///
+  (defthm unsigned-byte-p-256-of-merge-2-u128s
+    (implies (and (unsigned-byte-p 128 h)
+                  (unsigned-byte-p 128 l))
+             (unsigned-byte-p 256 (merge-2-u128s h l))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-2-u128s h l) 2))
+
+
+(define merge-4-u128s (h1 h0 l1 l0)
+  (declare (type (unsigned-byte 128) h1 h0 l1 l0))
+  :returns (result natp :rule-classes :type-prescription)
+  :short "Concatenate four 128-bit values together to form a single 512-bit
+result."
+  :guard-hints(("Goal" :in-theory (enable merge-2-u128s)))
+  :inline t
+  (mbe :logic
+       (logior (ash (nfix h1) (* 3 128))
+               (ash (nfix h0) (* 2 128))
+               (ash (nfix l1) (* 1 128))
+               (nfix l0))
+       :exec
+       (b* ((high (merge-2-u128s h1 h0))
+            (low  (merge-2-u128s l1 l0)))
+         (the (unsigned-byte 512)
+              (logior (the (unsigned-byte 512)
+                           (ash (the (unsigned-byte 256) high)
+                                256))
+                      (the (unsigned-byte 256) low)))))
+
+  ///
+  (defthm unsigned-byte-p-512-of-merge-4-u128s
+    (implies (and (unsigned-byte-p 128 h1)
+                  (unsigned-byte-p 128 h0)
+                  (unsigned-byte-p 128 l1)
+                  (unsigned-byte-p 128 l0))
+             (unsigned-byte-p 512 (merge-4-u128s h1 h0 l1 l0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-4-u128s h1 h0 l1 l0) 4))
+
+
+
+;; Merging 256s -------------------------------------------------------------
+
+(define merge-2-u256s (h l)
+  (declare (type (unsigned-byte 256) h l))
+  :returns (result natp :rule-classes :type-prescription)
+  :short "Concatenate two 256-bit values together to form a single 512-bit
+result."
+  :inline t
+  (mbe :logic
+       (logior (ash (nfix h) 256)
+               (nfix l))
+       :exec
+       (the (unsigned-byte 512)
+            (logior (the (unsigned-byte 512)
+                         (ash (the (unsigned-byte 256) h)
+                              256))
+                    (the (unsigned-byte 256) l))))
+  ///
+  (defthm unsigned-byte-p-512-of-merge-2-u256s
+    (implies (and (unsigned-byte-p 256 h)
+                  (unsigned-byte-p 256 l))
+             (unsigned-byte-p 512 (merge-2-u256s h l))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-2-u256s h l) 2))

@@ -29,9 +29,10 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (ld "package.lsp")
-(ld "tools/flag-package.lsp" :dir :system)
 (include-book "centaur/vl/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
+; Matt K. mod: The following is redundant with the line above.
+; (ld "tools/flag-package.lsp" :dir :system)
 (include-book "centaur/aignet/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all
 

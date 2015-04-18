@@ -27,7 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
-; Contributing author: David Rager <ragerdl@deftm.com>
+; Contributing author: David Rager <ragerdl@defthm.com>
 
 
 

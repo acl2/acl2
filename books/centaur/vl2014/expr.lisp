@@ -449,7 +449,7 @@ case splits.</p>"
 @(':vl-unsigned').  We may eventually expand this to include other types, such
 as real and string.</p>")
 
-(defoption vl-maybe-exprtype-p vl-exprtype-p
+(defoption vl-maybe-exprtype vl-exprtype-p
   :short "Recognizer for an @(see vl-exprtype-p) or @('nil')."
   :long "<p>We use this for the @('finaltype') fields in our expressions.  It
 allows us to represent expressions whose types have not yet been computed.</p>"
@@ -458,6 +458,7 @@ allows us to represent expressions whose types have not yet been computed.</p>"
     (implies (vl-maybe-exprtype-p x)
              (and (symbolp x)
                   (not (equal x t))))
+    :hints(("Goal" :in-theory (enable vl-maybe-exprtype-p vl-exprtype-p)))
     :rule-classes :compound-recognizer))
 
 
@@ -1514,7 +1515,7 @@ is a @(see vl-maybe-exprtype-p).</p>"
                                                 :finaltype finaltype))
            (vl-maybe-exprtype-fix finaltype))))
 
-;; (defoption vl-maybe-expr-p vl-expr-p
+;; (defoption vl-maybe-expr vl-expr-p
 ;;   :parents (syntax vl-expr-p)
 ;;   :short "Representation for a @(see vl-expr-p) or @('nil')."
 ;;   :long "<p>This is a basic option type for expressions.</p>"
