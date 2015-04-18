@@ -55,8 +55,8 @@ documentation</a>, which you may find useful.</p>
 
 <h3>Usage</h3>
 
-<p>Note that Tshell requires trust tags because its implementation requires
-some raw Lisp code.  The book to load is:</p>
+<p>Note that Tshell requires @(see trust-tag)s because its implementation
+requires some raw Lisp code.  The book to load is:</p>
 
 @({
     (include-book \"centaur/misc/tshell\" :dir :system)
@@ -80,8 +80,8 @@ your ACL2 session, before you have allocated tons of memory.</p>
 @({
     ACL2 !>(tshell-call \"echo hello\")
     (tshell-call \"echo hello\")
-    hello               ;; <-- output from subprogram, streamed
-    (T 0 (\"hello\"))   ;; <-- finished ok, exit code 0, output lines
+    hello             ;; <-- output from subprogram, streamed
+    (0 (\"hello\"))   ;; <-- exit code 0, output lines
 })")
 
 
