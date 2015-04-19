@@ -3946,16 +3946,78 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   (hl-maybe-initialize-default-hs)
   (hl-hspace-hons-summary *default-hs*))
 
-(defun hons-clear (gc)
+(defun hons-clear! (gc)
   ;; no need to inline
   (hl-maybe-initialize-default-hs)
   (hl-hspace-hons-clear gc *default-hs*))
 
-(defun hons-wash ()
+(defun hons-clear (gc)
   ;; no need to inline
+
+; Warning: Keep in sync with hons-wash.
+
+  #+acl2-par
+  (when (and (f-get-global 'parallel-execution-enabled *the-live-state*)
+             #+ccl
+             (not (all-worker-threads-are-dead-or-reset))
+             #-ccl
+
+; Currently only CCL, SBCL, and LispWorks support ACL2(p) builds.  We do not
+; currently have sufficient confidents in worker-threads for SBCL and LispWorks
+; (as per email from David Rager, 4/18/2015) to use the test above, so for
+; those Lisps we simply insist on using hons-clear! instead when parallel
+; execution is enabled.
+
+             t)
+    (return-from hons-clear
+                 (with-live-state
+                  (progn (warning$ 'hons-clear "Hons-clear"
+                                   "Skipping hons-clear call in ACL2(p).  You ~
+                                    can avoid this issue by using hons-clear! ~
+                                    or by turning off parallel execution; see ~
+                                    :DOC hons-clear! and :DOC ~
+                                    set-parallel-execution.")
+                         nil))))
+  (hons-clear! gc))
+
+(defun hons-wash! ()
   (hl-maybe-initialize-default-hs)
   (hl-hspace-hons-wash *default-hs*)
   nil)
+
+(defun hons-wash ()
+  ;; no need to inline
+
+; Warning: Keep in sync with hons-clear.
+
+  #+(and acl2-par static-hons)
+
+; Hons-wash is already a no-op when #-static-hons, so there is no reason to do
+; the preemptive return just below.  Indeed, such a return would be misleading
+; since it may suggest that hons-wash! could have some effect, which is not the
+; case when #-static-hons.
+
+  (when (and (f-get-global 'parallel-execution-enabled *the-live-state*)
+             #+ccl
+             (not (all-worker-threads-are-dead-or-reset))
+             #-ccl
+
+; This case is impossible, as only CCL supports both features (acl2-par and
+; static-hons): only CCL and GCL support static-hons but GCL does not support
+; ACL2(p) builds.  This value of t is acceptable at any rate, though perhaps
+; more severe than necessary if some additional Lisp could be supported here.
+
+             t)
+    (return-from hons-wash
+                 (with-live-state
+                  (progn (warning$ 'hons-wash "Hons-wash"
+                                   "Skipping hons-wash call in ACL2(p).  You ~
+                                    can avoid this issue by using hons-wash! ~
+                                    or by turning off parallel execution; see ~
+                                    :DOC hons-wash! and :DOC ~
+                                    set-parallel-execution.")
+                         nil))))
+  (hons-wash!))
 
 (defun hons-resize-fn (str-ht nil-ht cdr-ht cdr-ht-eql
                                  addr-ht other-ht sbits

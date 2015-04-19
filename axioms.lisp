@@ -12557,7 +12557,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Found for hons after fixing note-fns-in-form just before release v4-2.
 
-    FAST-ALIST-LEN HONS-COPY-PERSISTENT HONS-SUMMARY HONS-CLEAR HONS-WASH
+    FAST-ALIST-LEN HONS-COPY-PERSISTENT HONS-SUMMARY
+    HONS-CLEAR HONS-CLEAR!
+    HONS-WASH HONS-WASH!
     FAST-ALIST-CLEAN FAST-ALIST-FORK HONS-EQUAL-LITE
     CLEAR-HASH-TABLES NUMBER-SUBTREES
     FAST-ALIST-SUMMARY HONS-ACONS! CLEAR-MEMOIZE-TABLES HONS-COPY HONS-ACONS
@@ -25963,7 +25965,9 @@ Lisp definition."
 
 ; Each cdr is either nil or a msg.
 
-  `((open-output-channel!)
+  `((hons-wash!)
+    (hons-clear!)
+    (open-output-channel!)
     (progn!) ; protected because it is legal in books; it's OK to omit progn-fn
     (remove-untouchable-fn
      .
