@@ -77,10 +77,7 @@
     (mv status (nreverse rlines))))
 
 (defun tshell-run-background (cmd)
-  (shellpool:run (concatenate 'string "(" cmd ") &")
-                 :each-line (lambda (line type)
-                              (declare (ignore line type))
-                              nil)))
+  (shellpool:run& cmd))
 
 
 #|

@@ -30,7 +30,6 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 ; cert_param: (uses-glucose)
-; cert_param: (ccl-only)
 
 (in-package "ACL2")
 
