@@ -1,8 +1,0 @@
-Note: You can't just certify these books with cert.pl.  The proper way to
-build them is, e.g.,:
-
-   cd acl2-sources/books
-   make USE_QUICKLISP=1 centaur/quicklisp/top.cert
-
-Or similar.  See books/centaur/README.html for detailed instructions about
-building the Centaur books.

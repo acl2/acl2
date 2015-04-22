@@ -1226,6 +1226,7 @@ extra forms are run when the condition is false.</p>"
 
 
 (def-b*-binder the
+  :parents (b*-binders the)
   :short "@(see b*) type declaration operator."
   :long "<p>This b* binder provides a concise syntax for type declarations,
 which can sometimes improve the efficiency of Common Lisp code.  See the

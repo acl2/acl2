@@ -1,0 +1,7 @@
+*~
+.fasls
+*.fasl
+*.dylib
+*.so
+*.grovel-tmp.lisp
+*.c

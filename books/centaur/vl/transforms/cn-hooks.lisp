@@ -127,3 +127,51 @@ e-conversion)."
     (vl-design-fix x))
 
   (defattach vl-design-constcheck-hook vl-design-constcheck-hook-default))
+
+
+
+(defsection vl-design-constcheck-hook
+  :short "Beta transform, not ready for public release."
+
+  (encapsulate
+    (((vl-design-constcheck-hook * *) => *
+      :formals (x limit)
+      :guard (and (vl-design-p x)
+                  (natp limit))))
+
+    (local (defun vl-design-constcheck-hook (x limit)
+             (declare (ignorable limit))
+             (vl-design-fix x)))
+
+    (defthm vl-design-p-of-vl-design-constcheck-hook
+      (vl-design-p (vl-design-constcheck-hook x limit))))
+
+  (defun vl-design-constcheck-hook-default (x limit)
+    (declare (xargs :guard (and (vl-design-p x)
+                                (natp limit)))
+             (ignorable limit))
+    (vl-design-fix x))
+
+  (defattach vl-design-constcheck-hook vl-design-constcheck-hook-default))
+
+
+(defsection vl-centaur-seqcheck-hook
+  :short "Centaur-specific linter check."
+
+  (encapsulate
+    (((vl-centaur-seqcheck-hook *) => *
+      :formals (x)
+      :guard (vl-design-p x)))
+
+    (local (defun vl-centaur-seqcheck-hook (x)
+             (vl-design-fix x)))
+
+    (defthm vl-design-p-of-vl-centaur-seqcheck-hook
+      (vl-design-p (vl-centaur-seqcheck-hook x))))
+
+  (defun vl-centaur-seqcheck-hook-default (x)
+    (declare (xargs :guard (vl-design-p x)))
+    (vl-design-fix x))
+
+  (defattach vl-centaur-seqcheck-hook
+    vl-centaur-seqcheck-hook-default))

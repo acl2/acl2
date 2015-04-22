@@ -15437,20 +15437,14 @@
             nil)))))
    (t (value nil))))
 
-(defun print-certify-book-step-4 (full-book-name expansion-filename cert-op
-                                                 state)
+(defun print-certify-book-step-4 (full-book-name cert-op state)
   (io? event nil state
-       (full-book-name expansion-filename cert-op)
-       (fms "* Step 4:  Write the certificate for ~x0 in ~x1~@2.~%"
+       (full-book-name cert-op)
+       (fms "* Step 4:  Write the certificate for ~x0 in ~x1.~%"
             (list
              (cons #\0 full-book-name)
              (cons #\1
-                   (convert-book-name-to-cert-name full-book-name cert-op))
-             (cons #\2
-                   (if expansion-filename
-                       (msg ", and compile the expansion file, ~s0"
-                            expansion-filename)
-                     "")))
+                   (convert-book-name-to-cert-name full-book-name cert-op)))
             (proofs-co state) state nil)))
 
 (defun print-certify-book-step-5 (full-book-name state)
@@ -17247,10 +17241,6 @@
 
                                                      (newly-defined-top-level-fns
                                                       wrld1 wrld2 full-book-name)))
-                                               (os-expansion-filename
-                                                (and compile-flg
-                                                     (expansion-filename
-                                                      full-book-name t state)))
                                                (include-book-alist-wrld2
                                                 (global-val 'include-book-alist
                                                             wrld2))
@@ -17304,7 +17294,6 @@
 ; Write certificate.
                                               (print-certify-book-step-4
                                                full-book-name
-                                               os-expansion-filename
                                                cert-op
                                                state)
                                               (let* ((portcullis-cmds
@@ -17374,7 +17363,10 @@
                                                           pass1-known-package-alist
                                                           ctx state)
                                                          #-acl2-loop-only
-                                                         (progn
+                                                         (let ((os-expansion-filename
+                                                                (and compile-flg
+                                                                     (expansion-filename
+                                                                      full-book-name t state))))
                                                            (compile-certified-file
                                                             os-expansion-filename
                                                             full-book-name

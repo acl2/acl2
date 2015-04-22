@@ -203,7 +203,7 @@ sub run_sat_and_check
 
     debug("Verifying the UNSAT proof.\n");
     check_unsat_proof($infile, $proof_file);
-    print "s UNSATISFIABLE";
+    print "s UNSATISFIABLE\n";
 }
 
 

@@ -36,4 +36,5 @@
 (include-book "centaur/satlink/portcullis" :dir :system)
 (include-book "centaur/fty/portcullis" :dir :system)
 (include-book "centaur/getopt/portcullis" :dir :system)
+(include-book "acl2s/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all :skip-proofs-okp t

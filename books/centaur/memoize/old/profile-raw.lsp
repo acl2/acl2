@@ -1029,7 +1029,6 @@
             vx2
             w
             warning-off-p
-            wash-memory
             waterfall
             waterfall-msg
             waterfall-msg1

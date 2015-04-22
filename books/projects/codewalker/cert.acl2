@@ -9,6 +9,16 @@
 
 ; Added by Matt K.:
 
+; We get a step-limit failure for the def-semantics form in demo-fact.lisp when
+; waterfall-parallelism is :full.  So we disallow that here.  If we get future
+; failures even with waterfall-parallelism set to t (an alias for
+; :resource-based), then we might want simply to (set-waterfall-parallelism
+; nil).
+#+acl2-par
+#!acl2(if (eq (@ waterfall-parallelism) :full)
+          (set-waterfall-parallelism t)
+        (value :invisible))
+
 ; The use of codewalker seems to require that parallelism be turned off (in
 ; ACL2(p)).  The problem is that generate-def-semantics-name calls
 ; fmt1-to-string, which leads to a call of with-local-state, which is

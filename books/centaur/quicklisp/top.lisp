@@ -39,8 +39,8 @@
 (include-book "shellpool")
 
 (defsection quicklisp
-  :parents (acl2::interfacing-tools)
-  :short "An ACL2 wrapper for the <a
+  :parents (interfacing-tools)
+  :short "An ACL2 connection to the <a
 href='http://www.quicklisp.org'>Quicklisp</a> system for installing Lisp
 libraries."
 
@@ -52,6 +52,57 @@ href='http://www.perl.org/'>Perl</a>, or <a
 href='http://rubygems.org/'>RubyGems</a> for <a
 href='http://www.ruby-lang.org/'>Ruby</a>.  It lets you to easily install and
 load the latest versions of Common Lisp libraries (and their dependencies).</p>
+
+<p>To make it easy to use Quicklisp from ACL2 we have developed some wrapper
+books in the @('books/centaur/quicklisp') directory.  These books serve as the
+basis for other libraries such as @(see oslib) and the ACL2 @(see bridge).
+Naturally, all of these books require @(see trust-tag)s.</p>
+
+<p>Note that the Quicklisp books (and any libraries that depend on them) are
+<b>not built by default</b> when you run @('make') in the @('books') directory!
+The main reasons for this are that Common Lisp libraries vary in portability
+and may not work on all platforms that ACL2 runs on, and some libraries like <a
+href='https://common-lisp.net/project/cffi/'>CFFI</a> necessarily require
+additional tools, e.g., a C compiler that some users may not have
+installed.</p>
+
+<p>Because of this, if you want to use the Quicklisp books or any libraries
+that depend on them, you may <b>need to manually enable</b> the Quicklisp
+build.  Please see the instructions in @(see books-certification) for the most
+up-to-date details about how to do this.</p>
+
+
+<h3>Using the Quicklisp Books</h3>
+
+<p>Most ACL2 users will have no reason to <i>directly</i> load the Quicklisp
+books in @('books/centaur/quicklisp').  Instead, you will want to load
+higher-level ACL2 libraries like @(see oslib) or the ACL2 @(see bridge).  This
+is because the Quicklisp books only deal with getting the appropriate Common
+Lisp libraries loaded&mdash;they do not, by themselves, introduce ACL2 wrapper
+functions for actually using the associated Lisp libraries.</p>
+
+<p>However, if you are an advanced user who wants to use Common Lisp libraries
+to develop your own ACL2 extensions, then you will typically want to:</p>
+
+<ol>
+
+<li>Include the books for whichever libraries you want to use.  For instance,
+to load <a href='http://weitz.de/cl-fad/'>CL-FAD</a> and <a
+href='https://common-lisp.net/project/osicat/'>OSICAT</a> you could do:
+
+@({
+    (include-book \"centaur/quicklisp/cl-fad\" :dir :system)
+    (include-book \"centaur/quicklisp/osicat\" :dir :system)
+})</li>
+
+<li>Add your own @(see trust-tag)s, drop into raw Lisp with @(see include-raw),
+and implement your extension.  How exactly to do this is, alas, far beyond the
+scope of this documentation, but we do try to give some hints below.</li>
+
+</ol>
+
+
+<h3>Finding Quicklisp Libraries</h3>
 
 <p>If you don't know much about Quicklisp and are wanting to find out about the
 available libraries, the following may be useful:</p>
@@ -69,41 +120,51 @@ documentation for all of the libraries in Quicklisp.</li>
 </ul>
 
 
-<h3>The ACL2 Quicklisp Book</h3>
+<h3>Adding Quicklisp Libraries</h3>
 
-<p>To make it easy to use Quicklisp from ACL2, we have a wrapper book, which of
-course requires a <see topic='@(url defttag)'>trust tag</see>:</p>
+<p>The books in @('centaur/quicklisp') only wrap up a few Common Lisp libraries
+that we have found to be useful.  But it should be very easy to experiment with
+any other Quicklisp libraries.</p>
 
-@({
-    (include-book \"centaur/quicklisp/base\" :dir :system)
-})
+<p>Basic steps:</p>
 
-<p><b>NOTE:</b> this book isn't automatically certified when you just run
-@('make') in the acl2-books directory.  You have to explicitly tell @('make')
-that you want to use Quicklisp&mdash;e.g.,</p>
+<ul>
 
-@({
-    cd [...]/acl2-sources/books
-    make USE_QUICKLISP=1 ...
-})
+<li>Edit @('centaur/quicklisp/update-libs.lsp') and add the libraries you want
+to the list.</li>
 
-<p>The @('base') book really is just a way to get Quicklisp itself loaded into
-an ACL2 session.  It also (locally) loads the libraries that we expect to use,
-which ensures everything gets downloaded at the same time, and avoids potential
-problems with loading Quicklisp libraries during parallel builds.</p>
+<li>Run the @('update-libs.sh') script.  This should download the new libraries
+into your @('centaur/quicklisp/bundle') directory.</li>
 
-<p>Other files in the Quicklisp directory are named after the Common Lisp
-libraries they load, and the @('top') book loads all of the libraries that we
-have been currently using.</p>
+<li>Extend @('centaur/quicklisp/base-raw.lsp') to load the new library and
+certify it.  This @('base') book really is just a way to get the bundle loaded
+into an ACL2 session so that the libraries can be found as needed.  It
+also (locally) loads the libraries that we expect to use, which ensures
+everything gets downloaded at the same time, and avoids potential problems with
+simultaneously compiling Common Lisp libraries during parallel builds.</li>
 
-<h3>Installing Quicklisp Behind a Proxy</h3>
+<li>Add a new @('centaur/quicklisp/yourlib.lisp') book, styled after the other
+books in the Quicklisp directory.  The book doesn't really need to live in the
+@('quicklisp') directory, but keeping them there makes it easy to see what we
+are depending on and, if necessary, to change the way the wrappers work.</li>
 
-<p>See Section @('Using a Proxy') in @(see books-certification).</p>
+<li>Include your new book in @('centaur/quicklisp/top.lisp'), just for
+completeness.  (Hrmn, actually this book probably isn't very useful for
+anything.)</li>
 
-<h3>Practical Howto</h3>
+</ul>
 
-<p>So how do you actually use the Quicklisp book to gain access to a Common
-Lisp library?  For instance, say we want to make use of the <a
+<p>Note that you can also develop your own Common Lisp libraries or do one-off
+hacking using the @('local-projects') feature of the bundle directory.  See the
+documentation for <a
+href='http://www.quicklisp.org/beta/bundles.html'>Quicklisp Bundles</a> for
+more information.</p>
+
+
+<h3>Developing ACL2 Extensions</h3>
+
+<p>After you've added a Common Lisp library, how do you actually use it from
+ACL2?  As an example, say we want to make use of the <a
 href='http://common-lisp.net/project/cl-json/'>CL-JSON</a> library.</p>
 
 <p>Normally you would do something like this:</p>
@@ -112,8 +173,8 @@ href='http://common-lisp.net/project/cl-json/'>CL-JSON</a> library.</p>
     ; ** my-book.lisp
     (in-package \"MY-PKG\")
 
-    ; ** Load Quicklisp
-    (include-book \"centaur/quicklisp/base\" :dir :system)
+    ; ** Load the library (after adding it as described above)
+    (include-book \"centaur/quicklisp/cl-json\" :dir :system)
 
     ; ** [OPTIONAL] develop a logical story so you can use the
     ; ** library from proper ACL2 functions...
@@ -147,11 +208,8 @@ work around that using @('eval-when').</p>
     ; ** my-book-raw.lsp
     (in-package \"MY-PKG\")
 
-    ; ** Tell Quicklisp we want to use the CL-JSON library
-    (ql:quickload \"cl-json\")
-
     ; ** Redefine our interface functions, freely using cl-json
     ; ** functionality
     (defun foo (x y z)
-      ...)
+      (cl-json:...))
 })")

@@ -63,7 +63,18 @@
   nil)
 
 #+(or acl2-loop-only (not hons))
+(defn hons-clear! (gc)
+  ;; Has an under-the-hood implementation
+  (declare (ignore gc))
+  nil)
+
+#+(or acl2-loop-only (not hons))
 (defn hons-wash ()
+  ;; Has an under-the-hood implementation
+  nil)
+
+#+(or acl2-loop-only (not hons))
+(defn hons-wash! ()
   ;; Has an under-the-hood implementation
   nil)
 
@@ -245,7 +256,9 @@
 
             ;; These could be particularly bad to call by mistake
             (:executable-counterpart hons-clear)
+            (:executable-counterpart hons-clear!)
             (:executable-counterpart hons-wash)
+            (:executable-counterpart hons-wash!)
             (:executable-counterpart hons-resize-fn)
 
             ;; These could lead to discipline failures

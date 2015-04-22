@@ -31,13 +31,13 @@
 
 (in-package "SATLINK")
 
-(defun satlink-echo (line buf stream)
+(defun satlink-echo (line rlines stream)
 
 ; Plugin for tshell printing that skips variable assignment lines.  Otherwise,
 ; the SAT solver can easily kill your Emacs by printing an extremely long line,
 ; which Emacs doesn't handle well at all.
 
-  (declare (ignore buf))
+  (declare (ignore rlines))
   (if (str::strprefixp "v " line)
       nil
     (progn

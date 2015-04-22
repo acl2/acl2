@@ -490,6 +490,7 @@ shown.</p>"
        (design (cwtime (vl-design-condcheck design)))
        (design (cwtime (vl-design-leftright-check design)))
        (design (cwtime (vl-design-dupeinst-check design)))
+       (design (cwtime (vl-centaur-seqcheck-hook design)))
 
      
 
