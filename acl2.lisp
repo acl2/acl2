@@ -987,6 +987,19 @@ ACL2 from scratch.")
 
 (in-package "ACL2")
 
+(defun proclaim-optimize ()
+
+; With SBCL 1.2.10, we have seen a saved_acl2 start up without the compiler
+; optimizations that we had installed during the build.  Perhaps that has been
+; true for other SBCL versions or even other Lisps.  The problem appears to be
+; that (in SBCL 1.2.10 at least), proclaim forms can be local to the file in
+; which they appear, even if the file isn't explicitly compiled.  So we call
+; this function in acl2-default-restart, and also at the top level when
+; building ACL2, to ensure that our compiler optimizations are in force, and we
+
+  (proclaim #+cltl2 common-lisp-user::*acl2-optimize-form*
+            #-cltl2 user::*acl2-optimize-form*))
+
 (defparameter *compiled-file-extension*
 
 ; Note that for the community books, files books/Makefile-generic,
@@ -1932,6 +1945,8 @@ You are using version ~s.~s.~s."
              (not *do-proclaims*)) ; see comment above
     (return-from compile-acl2 nil))
 
+  (proclaim-optimize)
+
   (with-warnings-suppressed
 
    #+sbcl
@@ -2049,6 +2064,8 @@ You are using version ~s.~s.~s."
 ; to write proclaim forms into acl2-proclaims.lisp.
 
   (declare (ignorable fast))
+
+  (proclaim-optimize)
 
   (our-with-compilation-unit ; only needed when *suppress-compile-build-time*
    (with-warnings-suppressed

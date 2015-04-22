@@ -258,6 +258,8 @@ implementations.")
 
 (load "acl2.lisp")
 
+(acl2::proclaim-optimize)
+
 ; We allow ACL2(h) code to take advantage of Ansi CL features.  It's
 ; conceivable that we don't need this restriction (which only applies to GCL),
 ; but it doesn't currently seem worth the trouble to figure that out.
@@ -1150,13 +1152,7 @@ implementations.")
   (if *acl2-default-restart-complete*
       (return-from acl2-default-restart nil))
 
-; With SBCL 1.2.10, we have seen a saved_acl2 start up without the compiler
-; optimizations that we had installed during the build.  Perhaps that has been
-; true for other SBCL versions or even other Lisps.  So we take measures here
-; to ensure that our compiler optimizations are in force.
-
-  (proclaim #+cltl2 common-lisp-user::*acl2-optimize-form*
-            #-cltl2 user::*acl2-optimize-form*)
+  (proclaim-optimize) ; see comment in proclaim-optimize
   (setq *lp-ever-entered-p* nil)
   (#+cltl2
    common-lisp-user::acl2-set-character-encoding
