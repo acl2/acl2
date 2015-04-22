@@ -859,7 +859,7 @@
   (make-hash-table :size size
                    :test test
                    :rehash-size 2.2
-                   #+Clozure :shared #+Clozure nil
+                   #+ccl :shared #+ccl nil
                    ))
 
 (defstruct ser-encoder

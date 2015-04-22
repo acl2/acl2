@@ -1150,6 +1150,13 @@ implementations.")
   (if *acl2-default-restart-complete*
       (return-from acl2-default-restart nil))
 
+; With SBCL 1.2.10, we have seen a saved_acl2 start up without the compiler
+; optimizations that we had installed during the build.  Perhaps that has been
+; true for other SBCL versions or even other Lisps.  So we take measures here
+; to ensure that our compiler optimizations are in force.
+
+  (proclaim #+cltl2 common-lisp-user::*acl2-optimize-form*
+            #-cltl2 user::*acl2-optimize-form*)
   (setq *lp-ever-entered-p* nil)
   (#+cltl2
    common-lisp-user::acl2-set-character-encoding

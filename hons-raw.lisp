@@ -119,16 +119,16 @@
                           :size             size
                           :rehash-size      rehash-size
                           :rehash-threshold rehash-threshold
-                          #+Clozure :weak   #+Clozure weak
+                          #+ccl :weak   #+ccl weak
                           ))
         (t
          (make-hash-table :test             test
                           :size             size
                           :rehash-size      rehash-size
                           :rehash-threshold rehash-threshold
-                          #+Clozure :weak   #+Clozure weak
-                          #+Clozure :shared #+Clozure shared
-                          #+Clozure :lock-free #+Clozure lock-free
+                          #+ccl :weak   #+ccl weak
+                          #+ccl :shared #+ccl shared
+                          #+ccl :lock-free #+ccl lock-free
                           ))))
 
 #+allegro
@@ -913,7 +913,7 @@
   (let ((table (hl-mht :test #'eq :size (max 100 fal-ht-size)
 ; We could specify :lock-free t, but perhaps it's faster with default nil.
                        :weak :key)))
-    #+Clozure
+    #+ccl
     ;; This isn't necessary with lock-free, but doesn't hurt.  Note that T is
     ;; always honsed, so sentinel is a valid fast-alist.  I give this a
     ;; sensible name since it can appear in the (fast-alist-summary).
@@ -3076,7 +3076,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ; Static Honsing.
 
 (defun hl-system-gc ()
-  #+Clozure
+  #+ccl
   (let ((current-gcs (ccl::full-gccount)))
     ;; Note that ccl::gc only schedules a GC to happen.  So, we need to both
     ;; trigger one and wait for it to occur.  We use the fact that
@@ -3092,7 +3092,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
                     "; Hons-Note: Waiting for GC to finish.~%")
             (finish-output)
             (sleep 1))))
-  #-Clozure
+  #-ccl
   (gc$))
 
 #-static-hons

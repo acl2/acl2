@@ -1898,9 +1898,9 @@ notation causes an error and (b) the use of ,. is not permitted."
   reference such a variable than an ordinary special, which may have a
   per-thread binding that needs to be locked up."
 
-  #-Clozure
+  #-ccl
   `(defparameter ,@r)
-  #+Clozure
+  #+ccl
   `(ccl::defstatic ,@r))
 
 (defmacro defv (&rest r)
@@ -1914,9 +1914,9 @@ notation causes an error and (b) the use of ,. is not permitted."
   the CCL documentation string for DEFSTATICVAR: ``Like DEFVAR, the initial
   value form is not evaluated if the variable is already BOUNDP.''"
 
-  #-Clozure
+  #-ccl
   `(defvar ,@r)
-  #+Clozure
+  #+ccl
   `(ccl::defstaticvar ,@r))
 
 (defmacro without-interrupts (&rest forms)
