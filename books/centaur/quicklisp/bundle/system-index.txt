@@ -19,6 +19,7 @@ software/cl-base64-20101006-git/cl-base64.asd
 software/cl-fad-0.7.3/cl-fad.asd
 software/cl-ppcre-2.0.9/cl-ppcre-unicode.asd
 software/cl-ppcre-2.0.9/cl-ppcre.asd
+software/external-program-20150302-git/external-program.asd
 software/flexi-streams-1.0.14/flexi-streams.asd
 software/html-template-0.9.1/html-template.asd
 software/hunchentoot-1.2.31/hunchentoot.asd

@@ -29,20 +29,5 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-
-; Preload (i.e., compile) all Quicklisp libraries that we're making available.
-; The goal here is to defeat build parallelism and ensure that the packages are
-; loaded in a serial manner.  Otherwise, e.g., we can have two Quicklisp
-; packages that are both being built at separate times in separate threads,
-; crashing into each other's working space.
-
-(asdf:load-system "bordeaux-threads")
-(asdf:load-system "bt-semaphore")
-(asdf:load-system "cl-fad")
 (asdf:load-system "external-program")
-(asdf:load-system "html-template")
-(asdf:load-system "hunchentoot")
-(asdf:load-system "osicat")
-(asdf:load-system "shellpool")
-(asdf:load-system "uiop")
 

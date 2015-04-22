@@ -64,6 +64,7 @@
                          "uiop"
                          "html-template"
                          "shellpool"
+                         "external-program"
                          )
                    :to "./bundle")
 
