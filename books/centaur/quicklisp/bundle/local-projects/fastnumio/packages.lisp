@@ -1,5 +1,5 @@
-; ACL2 Quicklisp Interface
-; Copyright (C) 2008-2014 Centaur Technology
+; Fastnumio - Efficient hex string I/O ops for Common Lisp streams
+; Copyright (C) 2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,22 +28,14 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
+(in-package :cl-user)
 
-; Preload (i.e., compile) all Quicklisp libraries that we're making available.
-; The goal here is to defeat build parallelism and ensure that the packages are
-; loaded in a serial manner.  Otherwise, e.g., we can have two Quicklisp
-; packages that are both being built at separate times in separate threads,
-; crashing into each other's working space.
+(defpackage :fastnumio
+  (:use :cl)
+  (:export
+   #:write-hex
+   #:read-hex
+   #:scary-unsafe-write-hex
+   ))
 
-(asdf:load-system "bordeaux-threads")
-(asdf:load-system "bt-semaphore")
-(asdf:load-system "cl-fad")
-(asdf:load-system "external-program")
-(asdf:load-system "fastnumio")
-(asdf:load-system "html-template")
-(asdf:load-system "hunchentoot")
-(asdf:load-system "osicat")
-(asdf:load-system "shellpool")
-(asdf:load-system "uiop")
 

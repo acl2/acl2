@@ -34,6 +34,7 @@
 (include-book "bt-semaphore")
 (include-book "cl-fad")
 (include-book "external-program")
+(include-book "fastnumio")
 (include-book "html-template")
 (include-book "hunchentoot")
 (include-book "osicat")

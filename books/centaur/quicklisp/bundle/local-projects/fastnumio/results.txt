@@ -1,0 +1,73 @@
+
+Benchmarks -- we test reading and writing random numbers up to 2^N
+
+For write-tests:
+
+   FMT    is (format stream "~x" val)
+   SAFE   is (fastnumio:write-hex val)
+   UNSAFE is (fastnumio:scary-unsafe-write-hex val)
+
+For read-tests:
+
+   READ   is (read stream) where stream has sharp-prefixed numbers
+          like #xBEEF.
+   SAFE   is (fastnumio:read-hex stream) where stream contains
+          whitespace-separated numbers like BEEF
+
+Note: the tables below don't include memory savings, which can be substantial.
+
+You can run these benchmarks yourself, e.g.:
+
+   ccl < write-hex-benchmark.lsp
+   ccl < read-hex-benchmark.lsp     (**NOTE**: writes to /dev/shm!!
+                                     edit first if you don't have one)
+
+
+Results from compute-1-4: Intel(R) Core(TM) i7-4770K CPU @ 3.50GHz
+                          Linux compute-1-4.local 2.6.32-431.el6.x86_64
+
+
+Hex Writing -- CCL 1.11-dev-r16344M-trunk
+
+         N         FMT       SAFE/Speedup     UNSAFE/Speedup
+---------------------------------------------------------------
+        32        4.22s       1.17s/3.59x       1.24s/3.40x
+        60        5.94s       1.63s/3.64x       1.67s/3.56x
+        64        8.46s       2.46s/3.44x       1.99s/4.26x
+        80        7.25s       2.18s/3.33x       2.01s/3.60x
+       128       10.30s       2.98s/3.46x       2.43s/4.24x
+       256       13.36s       3.49s/3.83x       3.00s/4.45x
+       512       17.38s       3.56s/4.88x       3.03s/5.73x
+----------------------------------------------------------------
+
+Hex Writing -- SBCL 1.2.10.68-f29079d
+
+         N         FMT       SAFE/Speedup     UNSAFE/Speedup
+---------------------------------------------------------------
+        32        4.21s       1.17s/3.60x       1.14s/3.70x
+        60        7.63s       1.48s/5.15x       1.46s/5.23x
+        64        6.59s       3.05s/2.17x       3.03s/2.18x
+        80        6.53s       2.61s/2.51x       2.56s/2.56x
+       128        8.90s       3.67s/2.43x       3.64s/2.44x
+       256       11.17s       4.18s/2.67x       4.17s/2.68x
+       512       11.58s       4.05s/2.86x       4.05s/2.86x
+----------------------------------------------------------------
+
+Hex Reading -- CCL 1.11-dev-r16344M-trunk
+
+         N        READ       SAFE/Speedup
+------------------------------------------------
+        32        5.35s       1.28s/4.17x
+        64        7.39s       2.69s/2.74x
+       128       19.32s       5.42s/3.56x
+------------------------------------------------
+
+Hex Writing -- SBCL 1.2.10.68-f29079d
+
+         N        READ       SAFE/Speedup
+------------------------------------------------
+        32        2.91s       1.42s/2.05x
+        64        5.43s       2.58s/2.10x
+       128        9.81s       4.85s/2.02x
+------------------------------------------------
+
