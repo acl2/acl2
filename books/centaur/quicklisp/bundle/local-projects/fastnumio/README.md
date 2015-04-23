@@ -16,7 +16,7 @@ involved.  We therefore developed faster replacements.
 Ballpark speedup:
 
   - 3x or more on CCL (64-bit X86 Linux)
-  - 1.5x-2.5x faster on SBCL (64-bit X86 Linux)
+  - 2x or more on SBCL (64-bit X86 Linux)
 
 See [benchmark results](results.txt) for more details.
 
@@ -34,23 +34,6 @@ This is like `(format stream "~x" val)`.  We print a hexadecimal encoding of
   - The number is printed in conventional MSB-first order.
   - Digits `A`-`F` are printed in upper-case.
   - No prefixes are printed, i.e., we print `BEEF`, not `#BEEF`, `#xBEEF`, `0xBEEF`, etc.
-
-
-### `(scary-unsafe-write-hex val stream) --> stream`
-
-This is a drop-in replacement for `write-hex`.  On some Lisps it may be just an
-alias for `write-hex`.  On other Lisps, it may have a special implementation
-that achieves faster performance or uses less memory.
-
-This function is **scary and unsafe to use** because it makes use of internal,
-non-exported functionality from CCL or other Lisps.  It may therefore stop
-working if a Lisp upgrades causes these implementation details to change in
-unexpected ways.
-
-We do at least basic tests of this function to make sure it is working, so it
-is quite unlikely that a Lisp upgrade could screw up your program.  However,
-you should almost certainly NOT use this unless you need performance so badly
-that you are willing to take the risk.
 
 
 ### `(read-hex stream) --> val`
@@ -72,6 +55,22 @@ EOF), we return NIL and leave the stream in place.  Some notes:
  - Prefixes are not expected or accepted.  If your stream begins with `#FF00`
    or `#xFF00`, `read-hex` will fail.  If it begins with `0xFF00`, `read-hex`
    will return 0 and the `xFF00` part will still be in the stream.
+
+
+### `(scary-unsafe-write-hex val stream) --> stream`
+
+This is a drop-in replacement for `write-hex`.  On some Lisps it may be just an
+alias for `write-hex`.  On other Lisps, it may have a special implementation
+that achieves faster performance or uses less memory.
+
+This function is **scary and unsafe to use** because it makes use of internal,
+non-exported functionality from CCL/SBCL.  It may therefore stop working if a
+Lisp upgrades causes these implementation details to change in unexpected ways.
+
+We do at least basic tests of this function to make sure it is working, so it
+is quite unlikely that a Lisp upgrade could screw up your program.  However,
+you should almost certainly NOT use this unless you need performance so badly
+that you are willing to take the risk.
 
 
 ### Authorship, License

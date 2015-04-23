@@ -61,13 +61,21 @@
                        (< elem #.(expt 2 32))))))
 
    This is fast on CCL because fixnum checking is just tag checking, while
-   arbitrary-precision < comparison is (comparatively) slow. "
+   arbitrary-precision < comparison is (comparatively) slow.
+
+   It looks like this is not a win on SBCL, so we only use the fancy
+   definition on CCL."
+
+  #+ccl
   (cond ((typep (expt 2 32) 'fixnum)
          `(and (typep ,x 'fixnum)
                (< (the fixnum ,x) ,(expt 2 32))))
         (t
          ;; No way to fixnum optimize it.
-         `(< ,x ,(expt 2 32)))))
+         `(< ,x ,(expt 2 32))))
+
+  #-ccl
+  `(< ,x ,(expt 2 32)))
 
 (assert (fast-u32-p 0))
 (assert (fast-u32-p 1))
@@ -101,7 +109,11 @@
                        (< elem #.(expt 2 60))))))
 
    The goal is to reduce arbitrary-precision (< x (expt 2 60)) checking to just
-   a tag comparison."
+   a tag comparison.
+
+   It looks like this is not a win on SBCL, so we only use the fancy definition
+   on CCL."
+  #+ccl
   (cond ((and (typep (expt 2 59) 'fixnum)
               (not (typep (expt 2 60) 'fixnum)))
          ;; This Lisp has its fixnum boundary exactly at 2^60, so we can just
@@ -114,7 +126,10 @@
                (< (the fixnum ,x) ,(expt 2 60))))
         (t
          ;; No way to fixnum optimize it.
-         `(< ,x ,(expt 2 60)))))
+         `(< ,x ,(expt 2 60))))
+
+  #-ccl
+  `(< ,x ,(expt 2 60)))
 
 (assert (fast-u60-p 0))
 (assert (fast-u60-p 1))
@@ -124,8 +139,6 @@
 (assert (not (fast-u60-p (+ 1 (expt 2 60)))))
 (assert (not (fast-u60-p (+ 2 (expt 2 60)))))
 
-
-(declaim (optimize (speed 3) (space 1) (debug 0) (safety 0)))
 
 (declaim (inline hex-digit-to-char))
 (defun hex-digit-to-char (n)
@@ -281,13 +294,15 @@
 ;
 ; ----------------------------------------------------------------------------
 
-; It seems that to do better, we have to go under the hood.  Accordingly, I
-; wrote some horrible CCL-specific code that exploits the underlying bignum
-; representation.  This code obviously isn't suitable for other Lisps, but it
-; is very, very fast.
+; It seems that to do better, we have to go under the hood.  Below is some
+; horrible code that exploits the underlying bignum representations of CCL and
+; SBCL on 64-bit Linux.  This is much faster and creates no garbage because we
+; can avoid creating new bignums.  However, it is scary because it relies on
+; internal functionality that might change.  Maybe we can eventually get
+; routines like these built into the Lisps.
 
 (defun write-hex-u32-without-leading-zeroes (val stream)
-  ;; Nothing CCL-specific, may be useful for Lisps with smaller fixnums?
+  ;; Completely portable.
   (declare (type (unsigned-byte 32) val))
   (if (eql val 0)
       (write-char #\0 stream)
@@ -334,7 +349,7 @@
   stream)
 
 (defun write-hex-u32-with-leading-zeroes (val stream)
-  ;; Nothing CCL-specific, may be useful for Lisps with smaller fixnums?
+  ;; Completely portable.
   (declare (type (unsigned-byte 32) val))
   (let ((pos    0)
         (shift -28)
@@ -360,9 +375,17 @@
     ;; we want to print and POS says how many we need.  So write them.
     (write-string arr stream)))
 
+
+
+; CCL specific bignum printing.
+;
+; Note: CCL on Linux X86-64 represents bignums as vectors of 32-bit numbers,
+; with the least significant chunks coming first.
+
 #+(and Clozure x86-64)
 (progn
   ;; Make sure we still properly understand the fixnum/bignum boundary.
+  ;; If this changes, scary-unsafe-write-hex is wrong.
   (assert (typep (1- (expt 2 60)) 'fixnum))
   (assert (not (typep (expt 2 60) 'fixnum))))
 
@@ -370,9 +393,6 @@
 (defun scary-unsafe-write-hex-bignum (val stream)
   ;; Assumption: val must be a bignum.
   ;; Assumption: val must be nonzero.
-  ;;
-  ;; Note: CCL on Linux X86-64 represents bignums as vectors of 32-bit numbers,
-  ;; with the least significant chunks coming first.
   (let ((pos (ccl::uvsize val))
         (chunk))
     (declare (type fixnum pos)
@@ -396,18 +416,110 @@
           (setq chunk (ccl::uvref val pos))
           (write-hex-u32-with-leading-zeroes chunk stream))))
 
-#-(and Clozure x86-64)
-(declaim (inline write-hex))
 
+; SBCL specific bignum printing.
+;
+; Note: SBCL on Linux X86-64 represents bignums as vectors of 64-bit 'digits',
+; with the least significant digit in place 0.
+
+#+(and sbcl x86-64)
+(progn
+  ;; Basic sanity checking to see if we still understand the internal API.
+  (assert (equal sb-bignum::digit-size 64))
+  (assert (equal (sb-bignum::%bignum-ref (1- (expt 2 80)) 0) (1- (expt 2 64))))
+  (assert (equal (sb-bignum::%bignum-ref (1- (expt 2 80)) 1) (1- (expt 2 16))))
+  (assert (typep (1- (expt 2 64)) 'sb-bignum::bignum-element-type))
+  (let* ((x      #xfeedf00ddeadd00ddeadbeef99998888)
+         (digit  (sb-bignum::%bignum-ref x 0))
+         (high32 (sb-bignum::%digit-logical-shift-right digit 32))
+         (low32  (sb-bignum::%logand digit #xFFFFFFFF)))
+    (assert (typep high32 'fixnum))
+    (assert (typep low32 'fixnum))
+    (assert (typep high32 '(unsigned-byte 32)))
+    (assert (typep low32 '(unsigned-byte 32)))
+    (assert (equal high32 #xdeadbeef))
+    (assert (equal low32 #x99998888))))
+
+#+(and sbcl x86-64)
+(defun write-hex-bignum-digit-with-leading-zeroes (digit stream)
+  (declare (type sb-bignum::bignum-element-type digit))
+  (let ((high32 (sb-bignum::%digit-logical-shift-right digit 32))
+        (low32  (sb-bignum::%logand digit #xFFFFFFFF)))
+    (declare (type (unsigned-byte 32) high32 low32))
+    (write-hex-u32-with-leading-zeroes high32 stream)
+    (write-hex-u32-with-leading-zeroes low32 stream)
+    stream))
+
+#+(and sbcl x86-64)
+(defun write-hex-bignum-digit-without-leading-zeroes (digit stream)
+  (declare (type sb-bignum::bignum-element-type digit))
+  ;; If digit is nonzero, we print it and return T.
+  ;; If digit is zero,    we do not print anything and return NIL.
+  (let* ((high32 (sb-bignum::%digit-logical-shift-right digit 32))
+         (low32  (sb-bignum::%logand digit #xFFFFFFFF)))
+    (declare (type (unsigned-byte 32) high32 low32))
+    (if (eql high32 0)
+        (if (eql low32 0)
+            nil
+          (progn (write-hex-u32-without-leading-zeroes low32 stream)
+                 t))
+      (progn
+        (write-hex-u32-without-leading-zeroes high32 stream)
+        (write-hex-u32-with-leading-zeroes    low32 stream)
+        t))))
+
+#+(and sbcl x86-64)
+(defun scary-unsafe-write-hex-bignum (val stream)
+  ;; Assumption: val must be a bignum.
+  ;; Assumption: val must be nonzero.
+  (let ((pos (sb-bignum::%bignum-length val))
+        (digit))
+    (declare (type fixnum pos))
+    ;; Print chunks skipping leading zeroes until we've printed at least
+    ;; something.  It seems unlikely that SBCL would create bignums with
+    ;; leading zero chunks, but who knows.
+    (loop do
+          (decf pos)
+          (setq digit (sb-bignum::%bignum-ref val pos))
+          (when (write-hex-bignum-digit-without-leading-zeroes digit stream)
+            ;; Printed something, so subsequent chunks must be printed with
+            ;; zeroes enabled.
+            (loop-finish)))
+    ;; Print any remaining chunks in full.
+    (loop do
+          (decf pos)
+          (when (< pos 0)
+            (loop-finish))
+          (setq digit (sb-bignum::%bignum-ref val pos))
+          (write-hex-bignum-digit-with-leading-zeroes digit stream))))
+
+
+; Wrap up:
+
+(declaim (inline scary-unsafe-write-hex))
 (defun scary-unsafe-write-hex (val stream)
   (declare (type unsigned-byte val))
-  #-(and Clozure x86-64)
+
+  #+(and (not (and Clozure x86-64))
+         (not (and sbcl x86-64)))
   (write-hex val stream)
+
   #+(and Clozure x86-64)
   ;; Any fixnums can be handled with the ordinary 60-bit printer.
   (if (fast-u60-p val)
       (write-hex-u60-without-leading-zeroes val stream)
+    ;; Else we know it's a bignum because we checked, above, that
+    ;; fixnums are still 60 bits.
     (scary-unsafe-write-hex-bignum val stream))
+
+  #+(and sbcl x86-64)
+  (if (typep val 'fixnum)
+      ;; SBCL on x86-64 has some fixnums that exceed 2^60, so we don't know
+      ;; it's a u60.  Just fall back to the generic write-hex code, then.
+      ;; BOZO this may be especially lousy for [2^60, most-positive-fixnum]
+      (write-hex val stream)
+    (scary-unsafe-write-hex-bignum val stream))
+
   stream)
 
 
