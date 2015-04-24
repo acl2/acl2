@@ -504,7 +504,10 @@
              (stack uni-state)
              stack))
 
-(comp t)
+; Compilation doesn't seem necessary here, and it causes a failure in
+; CMU Common Lisp snapshot-2014-06  (20E Unicode),
+; presumably a compiler bug.
+; (comp t)
 
 ; And finally, here is our test.  We use top-level because with-local-stobj is
 ; not allowed at the top level of evaluation (during make-event expansion as
