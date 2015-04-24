@@ -45,6 +45,8 @@
         (t
          (my-len-1 (cdr x) (+ 1 acc)))))
 
+(comp 'my-len-1)
+
 (defconst *my-len-1-check*
   ;; Should not stack overflow.
   (my-len-1 (make-list 1000000) 0))
