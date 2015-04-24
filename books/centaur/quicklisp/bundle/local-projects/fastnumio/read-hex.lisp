@@ -30,7 +30,35 @@
 
 (in-package "FASTNUMIO")
 
+;(declaim (optimize (safety 3) (speed 0) (space 0)))
 (declaim (optimize (speed 3) (space 1) (safety 0)))
+
+; ----------------------------------------------------------------------------
+;
+;                          Supporting Utilities
+;
+; ----------------------------------------------------------------------------
+
+(assert (< (char-code #\0) (char-code #\A)))
+(assert (< (char-code #\A) (char-code #\a)))
+
+(declaim (inline hex-digit-val))
+(defun hex-digit-val (x)
+  (declare (type character x))
+  (let ((code (char-code x)))
+    (declare (type fixnum code))
+    (cond ((<= code #.(char-code #\9))
+           (and (<= #.(char-code #\0) code)
+                (the fixnum (- code #.(char-code #\0)))))
+          ((<= code #.(char-code #\F))
+           (and (<= #.(char-code #\A) code)
+                (the fixnum (- code #.(- (char-code #\A) 10)))))
+          (t
+           (and (<= code #.(char-code #\f))
+                (<= #.(char-code #\a) code)
+                (the fixnum (- code #.(- (char-code #\a) 10))))))))
+
+
 
 ; ----------------------------------------------------------------------------
 ;
@@ -52,7 +80,7 @@
 ;
 ;   - No underscores or whitespace within the number are accepted.
 ;
-; Internally we read things using read-char...
+; Internally we read things using read-char.
 ;
 ;   - Although read-sequence is faster, it seems difficult to provide a nice
 ;     interface if we use it since it may read past the number we're parsing
@@ -65,33 +93,29 @@
 ; We also prefer to use unread-char instead of peek-char.  This appears to be
 ; quite a bit faster on both CCL and SBCL.
 
-; General idea:
-;  - Read in up to 60 bits at a time.
-;  - Turn that 60 bits into a fixnum.
-;  - Merge the 60-bit chunks together.
 
-(assert (< (char-code #\0) (char-code #\A)))
-(assert (< (char-code #\A) (char-code #\a)))
-
-(declaim (inline hex-digit-val))
-(defun hex-digit-val (x)
-  (declare (type character x))
-  (let ((code (char-code x)))
-    (declare (type fixnum code))
-    (cond ((<= code #.(char-code #\9))
-           (and (<= #.(char-code #\0) code)
-                (the fixnum (- code #.(char-code #\0)))))
-          ((<= code #.(char-code #\F))
-           (and (<= #.(char-code #\A) code)
-                (the fixnum (- code #.(- (char-code #\A) 10)))))
-          (t
-           (and (<= code #.(char-code #\f))
-                (<= #.(char-code #\a) code)
-                (the fixnum (- code #.(- (char-code #\a) 10))))))))
+; The general idea behind our generic read-hex function is:
+;
+;   (1) read in as many hex characters (nibbles) as we can into an
+;       (ideally stack-allocated) array,
+;   (2) merge the nibbles in this array into a fixnum/bignum.
+;
+; To optimize for Lisps where we have 60+-bit fixnums, we merge the nibbles
+; into contiguous, 60-bit chunks.  We then merge those chunks together, using
+; something like;
+;
+;   finalans |= chunk << n*60
+;
+; This merging results in ephemeral/garbage bignums, which is unfortunate.
+; However, it requires only one ephemeral bignum for each 60-bits of data,
+; whereas merging the nibbles naively would require a bignum for each 4-bit
+; chunk of data.
 
 (defun assemble-nibbles-60 (pos nibarr)
   (declare (type (array (unsigned-byte 4) *) nibarr)
            (type fixnum pos))
+  ;; POS is initially how many valid nibbles we have.  I.e., nibarr[pos-1]
+  ;; is the last valid nibble.
   (let ((finalans 0)  ;; Accumulator for the answer (perhaps a bignum)
         (chunkidx 0)  ;; Offset into finalans for this chunk (0, 60, ...)
         (chunk    0)  ;; Value of the current chunk we're assembling
@@ -107,7 +131,7 @@
           (when (eql pos 0)
             (loop-finish))
           (when (eql chunkpos 60)
-            ;; Merge the chunk we've gotten into the final answer.
+            ;; Merge the chunk we've gotten into the final answer.   -- ephemeral bignums :(
             ;; finalans |= (chunk << chunkidx * 60)
             (setf finalans
                   (the unsigned-byte
@@ -119,7 +143,7 @@
             (setq chunkpos 0))
           (decf pos)
           ;(format t "This nibble: ~x~%" (aref nibarr pos))
-          (setq chunk ;; chunk |= nibarr[pos] << chunkpos
+          (setq chunk ;; chunk |= nibarr[pos] << chunkpos        -- fixnum on 60+-bit impls
                 (the (unsigned-byte 60)
                      (logior (the (unsigned-byte 60) chunk)
                              (the (unsigned-byte 60)
@@ -133,15 +157,22 @@
       ;(format t "ANS: ~x~%" ans)
       ans)))
 
-(defun read-hex (stream)
-  (let* ((pos    0)
+(defmacro nib-array-init-size () 128)
+
+(declaim (inline read-nibbles))
+(defun read-nibbles (nibarr stream)
+  ;; Returns (values some-nibble-p end nibarr)
+  ;;   some-nibble-p: were there any valid hex chars, including leading zeroes?
+  ;;   end:           end of the valid area of the nibble array
+  ;;                    counts how many nibbles we found, omitting leading nibbles
+  ;;   nibarr:        updated nibble array
+  (declare (type (array (unsigned-byte 4) *) nibarr))
+  (let* ((end 0)
          (char)
          (nibble)
-         (nibarrlen 128)
-         (some-nibble-p nil)
-         (nibarr (make-array nibarrlen :element-type '(unsigned-byte 4))))
-    (declare (dynamic-extent nibarr)
-             (type fixnum pos)
+         (nibarrlen (nib-array-init-size))
+         (some-nibble-p nil))
+    (declare (type fixnum end nibarrlen)
              (type (array (unsigned-byte 4) *) nibarr))
     ;; Begin by skipping any leading 0 digits.  (They screw up length-based
     ;; computations.)
@@ -159,43 +190,290 @@
     (loop do
           (unless nibble
             (loop-finish))
-          (when (eql pos (length nibarr))
-            ;; Need more space, grow the array.  Unfortunately I don't think
-            ;; CCL can stack-allocate the resized array.  However, we will at
-            ;; least get the benefit of a stack allocation for the initial
-            ;; array, which is sufficient for numbers up to 512 bits.  It would
-            ;; be nice to instead just use a global array, but that wouldn't be
-            ;; thread-safe.
+          (when (eql end nibarrlen)
+            ;; Need more space, grow the array.  This will generally ruin stack
+            ;; allocation.  However, we can at least get the benefit of a stack
+            ;; allocation for the initial array, which will be sufficient for
+            ;; numbers up to some reasonable size.
             (setq nibarrlen (ash nibarrlen 1))
             ;(format t "Growing array to ~s~%" nibarrlen)
             (setq nibarr (adjust-array nibarr nibarrlen)))
-          (setf (aref nibarr pos) nibble)
+          (setf (aref nibarr end) nibble)
           ;; advance to next character
-          (incf pos)
+          (incf end)
           (setq char   (read-char stream nil))
           (setq nibble (and char (hex-digit-val char))))
 
     ;; Unread the last (non-hex) character.  Special case: char is NIL exactly
     ;; when we're at EOF, in which case we don't need to unread anything.
     (when char (unread-char char stream))
+    (values some-nibble-p end nibarr)))
 
-    (when (eql pos 0)
-      (return-from read-hex
-                   (if some-nibble-p
-                       ;; No real digits but at least some zero digits,
-                       ;; so the number is 0.
-                       0
-                     ;; Failed to read any hex digits.  Just fail.
-                     nil)))
+(defun read-hex (stream)
+  (let ((nibarr (make-array (nib-array-init-size)
+                            :element-type '(unsigned-byte 4))))
+    (declare (dynamic-extent nibarr)
+             (type (array (unsigned-byte 4) *) nibarr))
+    (multiple-value-bind
+     (some-nibble-p end nibarr)
+     (read-nibbles nibarr stream)
+     (declare (type fixnum end)
+              (type (array (unsigned-byte 4) *) nibarr))
+     (when (eql end 0)
+       (return-from read-hex
+                    (if some-nibble-p
+                        ;; No real digits but at least some zero digits,
+                        ;; so the number is 0.
+                        0
+                      ;; Failed to read any hex digits.  Just fail.
+                      nil)))
+     ;; Found hex digits and already decoded their nibbles into nibarr.  The
+     ;; nibble in nibarr[0] is the most significant.  I now want to chunk them
+     ;; up into fixnum-sized blobs.
+     (assemble-nibbles-60 end nibarr))))
 
-    ;; Found hex digits and already decoded their nibbles into nibarr.  The
-    ;; nibble in nibarr[0] is the most significant.  I now want to chunk them
-    ;; up into fixnum-sized blobs.
-    ;;    #-(and Clozure x86-64)
-    (assemble-nibbles-60 pos nibarr)
-    ;; #+(and Clozure x86-64)
-    ;; (assemble-nibbles-ccl64 pos nibarr)))
-    ))
+
+
+
+
+; ----------------------------------------------------------------------------
+;
+;                      Scary Unsafe Hex Reading
+;
+; ----------------------------------------------------------------------------
+
+; To try to get better performance, we go under the hood and create bignums
+; from whole cloth.  We can reuse the nibble array stuff from above and just
+; write a custom function to combine the nibbles.
+;
+; We start with some supporting code for chunking nibbles into u32s.  This
+; code will be useful on both CCL (where bignums are made up out of 32-bit
+; chunks) and on SBCL (where they are made of 64-bit chunks).
+;
+; Our starting point is the nibble array, which is populated from [0...END)
+; with valid hex nibbles, with the most significant nibble at nibarr[0].  It
+; is easy to see how many 64/32-bit chunks we will need: we can fit 16/8
+; nibbles into such a chunk.  The only trickiness is that we will need to
+; construct the least significant 32-bit chunks from the END of the nibble
+; array.
+;
+; Example: suppose we found 11 nibbles.  Then there are nibbles in nibarr[0]
+; through nibarr[10].  In this case, the least significant u32 is found in
+; nibarr[3]...nibarr[10], with its most significant nibble in nibarr[3] and its
+; least significant nibble in nibarr[10].
+
+(defun u32-from-nibarr (end nibarr)
+  ;; This extracts up to 8 nibbles (32 bits) from the nibble array, reading
+  ;; backwards from index END-1.  END should not be zero but may be the
+  ;; array length.
+  (declare (type fixnum end)
+           (type (array (unsigned-byte 4) *) nibarr))
+  (let ((ans 0)
+        (start (max 0 (- end 8))))
+    (declare (type (unsigned-byte 32) ans)
+             (type fixnum start))
+    (loop do
+          (setq ans (the (unsigned-byte 32)
+                         (logior (the (unsigned-byte 32) (ash ans 4))
+                                 (aref nibarr start))))
+          (incf start)
+          (when (eql start end)
+            (loop-finish)))
+    ans))
+
+;; Basic demo/test
+(let ((nibarr (make-array 16 :element-type '(unsigned-byte 4))))
+  ;; Populate nibarr with FEDCBA98765
+  (setf (aref nibarr 0)  #xf)
+  (setf (aref nibarr 1)  #xe)
+  (setf (aref nibarr 2)  #xd)
+  (setf (aref nibarr 3)  #xc)
+  (setf (aref nibarr 4)  #xb)
+  (setf (aref nibarr 5)  #xa)
+  (setf (aref nibarr 6)  #x9)
+  (setf (aref nibarr 7)  #x8)
+  (setf (aref nibarr 8)  #x7)
+  (setf (aref nibarr 9)  #x6)
+  (setf (aref nibarr 10) #x5)
+  (assert (equal (u32-from-nibarr 11 nibarr) #xCBA98765))
+  (assert (equal (u32-from-nibarr 10 nibarr) #xDCBA9876))
+  (assert (equal (u32-from-nibarr 9 nibarr)  #xEDCBA987))
+  (assert (equal (u32-from-nibarr 8 nibarr)  #xFEDCBA98))
+  (assert (equal (u32-from-nibarr 7 nibarr)  #xFEDCBA9))
+  (assert (equal (u32-from-nibarr 6 nibarr)  #xFEDCBA))
+  (assert (equal (u32-from-nibarr 5 nibarr)  #xFEDCB))
+  (assert (equal (u32-from-nibarr 4 nibarr)  #xFEDC))
+  (assert (equal (u32-from-nibarr 3 nibarr)  #xFED))
+  (assert (equal (u32-from-nibarr 2 nibarr)  #xFE))
+  (assert (equal (u32-from-nibarr 1 nibarr)  #xF))
+  )
+
+#+(and sbcl x86-64)
+(progn
+  ;; Basic sanity checking to see if we still understand the internal API.
+  (assert (equal sb-bignum::digit-size 64))
+  (assert (equal (sb-bignum::%bignum-ref (1- (expt 2 80)) 0) (1- (expt 2 64))))
+  (assert (equal (sb-bignum::%bignum-ref (1- (expt 2 80)) 1) (1- (expt 2 16))))
+  (assert (typep (1- (expt 2 64)) 'sb-bignum::bignum-element-type))
+  (let* ((x      #xfeedf00ddeadd00ddeadbeef99998888)
+         (digit  (sb-bignum::%bignum-ref x 0))
+         (high32 (sb-bignum::%digit-logical-shift-right digit 32))
+         (low32  (sb-bignum::%logand digit #xFFFFFFFF)))
+    (assert (typep high32 'fixnum))
+    (assert (typep low32 'fixnum))
+    (assert (typep high32 '(unsigned-byte 32)))
+    (assert (typep low32 '(unsigned-byte 32)))
+    (assert (equal high32 #xdeadbeef))
+    (assert (equal low32 #x99998888))))
+
+#||
+
+;; This is just scratchwork that may be useful when trying to understand SBCL's
+;; bignum representation.
+
+#+(and sbcl x86-64)
+(defun construct-u64-from-u32s (high low)
+  (declare (type (unsigned-byte 32) high low))
+  (if (logbitp 31 high)
+      ;; Top bit is 1, so we need an extra digit to avoid treating this as unsigned.
+      (let ((ans   (sb-bignum:%allocate-bignum 2))
+            (digit (sb-bignum::%logior (sb-bignum::%ashl high 32) low)))
+        (setf (sb-bignum::%bignum-ref ans 0) digit)
+        (setf (sb-bignum::%bignum-ref ans 1) 0)
+        ans)
+    ;; The top bit is 0, so we don't need an extra digit.
+    (let ((ans   (sb-bignum:%allocate-bignum 1))
+          (digit (sb-bignum::%logior (sb-bignum::%ashl high 32) low)))
+      (setf (sb-bignum::%bignum-ref ans 0) digit))))
+
+(defun my-test (n)
+  (declare (type (unsigned-byte 64) n))
+  (let* ((high (ash n -32))
+         (low  (logand n (1- (expt 2 32))))
+         (ans  (construct-u64-from-u32s high low)))
+    (assert (typep ans '(unsigned-byte 64)))
+    (assert (equal ans n))
+    (if (typep ans 'fixnum)
+        (format t "Fixnum~%")
+      (format t "Bignum~%"))))
+
+(my-test (1- (expt 2 64)))
+(my-test #x1000000000000000)
+
+(loop for i from 1 to 10000 do (my-test i))
+(loop for i from (- (expt 2 62) 1000) to (+ (expt 2 62) 1000) do (my-test i))
+(loop for i from (- (expt 2 63) 1000) to (+ (expt 2 63) 1000) do (my-test i))
+(loop for i from (- (expt 2 64) 1000) to (1- (expt 2 64)) do (my-test i))
+
+
+||#
+
+#+(and sbcl x86-64)
+(defun bignum-from-nibarr (end nibarr)
+  (declare (type (array (unsigned-byte 4) *) nibarr)
+           (type fixnum end))
+  (let* ((bits-needed (* 4 end))
+         (u64s-needed (+ 1 (ash (1- bits-needed) -6)))
+         (u64s-for-normalize u64s-needed)
+         (low32 0)
+         (high32 0)
+         (u64pos 0)
+         (ans))
+    (declare (type (unsigned-byte 32) low32 high32)
+             (type fixnum u64pos))
+;    (format t "~d nibbles, so ~d bits needed, so alloc ~d u64s~%" end bits-needed u64s-needed)
+;    (format t "End mod 16 is ~d~%" (logand end #xF))
+;    (format t "Most significant nibble is ~d~%" (aref nibarr 0))
+
+    (cond ((and (eql (the (unsigned-byte 4) (logand end #xF)) 0)
+                (> (the (unsigned-byte 4) (aref nibarr 0)) 7))
+           ;; The number of nibbles we have is a multiple of 16, and the most
+           ;; significant nibble (nibarr[0]) is large enough that its most
+           ;; significant bit is set.  We need an extra, leading zero bignum
+           ;; digit because otherwise this will look like a signed number.
+
+;           (format t "Need extra digit to avoid signed result.~%")
+           (setq ans (sb-bignum:%allocate-bignum (+ 1 u64s-needed)))
+           (setf (sb-bignum::%bignum-ref ans u64s-needed) 0)
+           (incf u64s-for-normalize))
+          (t
+           ;; Otherwise, we don't need an extra digit, so just allocate the
+           ;; number of digits that we actually do need.
+
+;           (format t "No extra digit is necessary to avoid signedness.~%")
+           (setq ans (sb-bignum:%allocate-bignum u64s-needed))))
+
+    (loop do
+;          (format t "looping, end = ~d~%" end)
+          (when (eql end 0)
+            (loop-finish))
+;          (format t "reading low~%")
+          (setq low32 (u32-from-nibarr end nibarr))
+          (setq end (max 0 (- end 8)))
+;          (format t "got low = #x~x, end is now ~d~%" low32 end)
+          (setq high32 (if (eql end 0)
+                           0
+                         (u32-from-nibarr end nibarr)))
+          (setq end (max 0 (- end 8)))
+;          (format t "got high = #x~x, end is now ~d~%" high32 end)
+;          (format t "Installing chunk ~d <-- #x~x,#x~x~%" u64pos high32 low32)
+          (setf (sb-bignum::%bignum-ref ans u64pos)
+                (sb-bignum::%logior (sb-bignum::%ashl high32 32)
+                                    low32))
+          (incf u64pos))
+
+    ;; This normalization apparently handles the case where the bignum we are
+    ;; constructing isn't necessary and we can just coerce it into a fixnum.
+    (setq ans (sb-bignum::%normalize-bignum ans u64s-for-normalize))
+    ;;(assert (equal u64pos u64s-needed))
+;    (format t "Ans is #x~x~%" ans)
+;    (format t "Type-of ans is ~s~%" (type-of ans))
+    ans))
+
+(defun scary-unsafe-read-hex (stream)
+  (let ((nibarr (make-array (nib-array-init-size)
+                            :element-type '(unsigned-byte 4))))
+    (declare (dynamic-extent nibarr)
+             (type (array (unsigned-byte 4) *) nibarr))
+    (multiple-value-bind
+     (some-nibble-p end nibarr)
+     (read-nibbles nibarr stream)
+     (declare (type fixnum end)
+              (type (array (unsigned-byte 4) *) nibarr))
+     (when (eql end 0)
+       (return-from scary-unsafe-read-hex
+                    (if some-nibble-p
+                        ;; No real digits but at least some zero digits,
+                        ;; so the number is 0.
+                        0
+                      ;; Failed to read any hex digits.  Just fail.
+                      nil)))
+     #+(not (and sbcl x86-64))
+     (assemble-nibbles-60 end nibarr)
+     #+(and sbcl x86-64)
+     (if (< end 16)
+         ;; Don't bother with any bignum nonsense
+         (assemble-nibbles-60 end nibarr)
+       (bignum-from-nibarr end nibarr)))))
+
+;; (defun single-test (n)
+;;   (let* ((str (let ((stream (make-string-output-stream)))
+;;                 (format stream "~x" n)
+;;                 (get-output-stream-string stream)))
+;;          (ans (let ((stream (make-string-input-stream str)))
+;;                 (scary-unsafe-read-hex stream))))
+;;     (equal n ans)))
+
+
+
+
+
+; ----------------------------------------------------------------------------
+;
+;                        Basic Correctness Tests
+;
+; ----------------------------------------------------------------------------
+
 
 
 (let ((tests (append
@@ -230,33 +508,53 @@
                     (expt 2 80)
                     (1- (expt 2 80)))
               (loop for i from 0 to 100 collect i)
-              (loop for i from 1 to 100 collect (random (expt 2 64)))
-              (loop for i from 1 to 100 collect (random (expt 2 1024))))))
+              (loop for i from 0 to 200 collect (ash 1 i))
+              (loop for i from 0 to 200 collect (1- (ash 1 i)))
+              (loop for n from 1 to 200 append  ;; borders near powers of 2
+                    (loop for i from (max 0 (- (expt 2 n) 10))
+                                  to        (+ (expt 2 n) 10)
+                                  collect i))
+              (loop for i from 1 to 100 collect (random (expt 2 1024)))
+              )))
   (loop for test in tests do
+        ;(format t "Testing ~x~%" test)
         (let* ((str (let ((stream (make-string-output-stream)))
                       (format stream "~x" test)
                       (get-output-stream-string stream)))
                (v1 (let ((stream (make-string-input-stream str)))
-                     (progn ;; (format t "Testing ~s~%" str)
-                            (read-hex stream)))))
+                     (read-hex stream)))
+               (v2 (let ((stream (make-string-input-stream str)))
+                     (scary-unsafe-read-hex stream))))
           (or (equal test v1)
-              (error "V1 Failure: ~x --> str ~s, v1 ~x" test str v1)))
+              (error "V1 Failure: ~x --> str ~s, v1 ~x" test str v1))
+          (or (equal test v2)
+              (error "V2 Failure: ~x --> str ~s, v2 ~x" test str v2)))
+
         ;; Test leading zero
         (let* ((str (let ((stream (make-string-output-stream)))
                       (format stream "0~x" test)
                       (get-output-stream-string stream)))
                (v1 (let ((stream (make-string-input-stream str)))
-                     (read-hex stream))))
+                     (read-hex stream)))
+               (v2 (let ((stream (make-string-input-stream str)))
+                     (scary-unsafe-read-hex stream))))
           (or (equal test v1)
-              (error "V1 Failure: ~x --> str ~s, v1 ~x" test str v1)))
+              (error "V1 Failure: ~x --> str ~s, v1 ~x" test str v1))
+          (or (equal test v2)
+              (error "V2 Failure: ~x --> str ~s, v2 ~x" test str v2)))
+
         ;; Two leading zeroes
         (let* ((str (let ((stream (make-string-output-stream)))
                       (format stream "00~x" test)
                       (get-output-stream-string stream)))
                (v1 (let ((stream (make-string-input-stream str)))
-                     (read-hex stream))))
+                     (read-hex stream)))
+               (v2 (let ((stream (make-string-input-stream str)))
+                     (scary-unsafe-read-hex stream))))
           (or (equal test v1)
-              (error "V1 Failure: ~x --> str ~s, v1 ~x" test str v1))))
+              (error "V1 Failure: ~x --> str ~s, v1 ~x" test str v1))
+          (or (equal test v2)
+              (error "V2 Failure: ~x --> str ~s, v2 ~x" test str v2))))
 
   :ok)
 
@@ -330,3 +628,15 @@
 
 
 ||#
+
+
+
+
+
+
+
+
+
+
+
+

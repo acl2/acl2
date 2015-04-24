@@ -18,6 +18,8 @@ Ballpark speedup:
   - 3x or more on CCL (64-bit X86 Linux)
   - 2x or more on SBCL (64-bit X86 Linux)
 
+Plus significant memory savings in many cases.
+
 See [benchmark results](results.txt) for more details.
 
 
@@ -71,6 +73,16 @@ We do at least basic tests of this function to make sure it is working, so it
 is quite unlikely that a Lisp upgrade could screw up your program.  However,
 you should almost certainly NOT use this unless you need performance so badly
 that you are willing to take the risk.
+
+
+### `(scary-unsafe-read-hex stream) --> val`
+
+This is a drop-in replacement for `read-hex`.  On some Lisps it may be just an
+alias for `read-hex`.  On other Lisps, it may have a special implementation
+that achieves faster performance or uses less memory.
+
+This function is **scary and unsafe to use** for the same reasons as
+`scary-unsafe-write-hex`.
 
 
 ### Authorship, License

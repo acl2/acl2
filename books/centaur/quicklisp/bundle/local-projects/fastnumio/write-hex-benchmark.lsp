@@ -32,22 +32,33 @@
 (ql:quickload :trivial-garbage)
 (in-package "FASTNUMIO")
 
+(defun get-bytes ()
+  #+ccl
+  (ccl::total-bytes-allocated)
+  #+sbcl
+  (sb-ext::get-bytes-consed)
+  #+(and (not sbcl) (not ccl))
+  0)
+
 ;; write-hex performance testing
 
 (defun test-builtin (ntimes nums stream)
   (declare (type fixnum ntimes))
+  (format t "Testing FORMAT.~%")
   (loop for i fixnum from 1 to ntimes do
         (loop for num in nums do
               (format stream "~x" num))))
 
 (defun test-safe (ntimes nums stream)
   (declare (type fixnum ntimes))
+  (format t "Testing WRITE-HEX.~%")
   (loop for i fixnum from 1 to ntimes do
         (loop for num in nums do
               (write-hex num stream))))
 
 (defun test-unsafe (ntimes nums stream)
   (declare (type fixnum ntimes))
+  (format t "Testing SCARY-UNSAFE-WRITE-HEX.~%")
   (loop for i fixnum from 1 to ntimes do
         (loop for num in nums do
               (scary-unsafe-write-hex num stream))))
@@ -56,11 +67,26 @@
   (tg::gc :full t :verbose nil))
 
 (defmacro my-time (form)
-  `(let ((start (get-internal-real-time))
-         (blah  (time ,form))
-         (end   (get-internal-real-time)))
+  ;; Returns (cons seconds bytes)
+  `(let ((start-bytes (get-bytes))
+         (start-time  (get-internal-real-time))
+         (blah        (time ,form))
+         (end-time    (get-internal-real-time))
+         (end-bytes   (get-bytes)))
      (declare (ignore blah))
-     (/ (coerce (- end start) 'float) internal-time-units-per-second)))
+     (cons (/ (coerce (- end-time start-time) 'float)
+              internal-time-units-per-second)
+           (- end-bytes start-bytes))))
+
+(defun nice-bytes (x)
+  (cond ((< x (expt 2 10))
+         (format nil "~5DB" x))
+        ((< x (expt 2 20))
+         (format nil "~5,1FK" (/ (coerce x 'float) (expt 2 10))))
+        ((< x (expt 2 30))
+         (format nil "~5,1FM" (/ (coerce x 'float) (expt 2 20))))
+        (t
+         (format nil "~5,1FG" (/ (coerce x 'float) (expt 2 30))))))
 
 (defparameter *times*
   (loop for x in '((32  . 1000000) ;; 2^N . NTIMES
@@ -84,19 +110,38 @@
                    (fmt-time (progn (gc) (my-time (test-builtin ntimes nums stream)))))
               (list n fmt-time safe-time unsafe-time))))))
 
+
+
 (progn
   (format t "~%")
   (format t "         N         FMT       SAFE/Speedup     UNSAFE/Speedup~%")
-  (format t "---------------------------------------------------------------~%")
+  (format t "---------------------------------------------------------------~%~%")
   (loop for elem in *times* do
+        ;; Times
         (let* ((n        (first elem))
-               (fmt      (second elem))
-               (safe     (third elem))
-               (unsafe   (fourth elem))
+               (fmt      (car (second elem)))
+               (safe     (car (third elem)))
+               (unsafe   (car (fourth elem)))
                (sspeedup (if (< fmt safe)   (- (/ safe fmt))   (/ fmt safe)))
                (uspeedup (if (< fmt unsafe) (- (/ unsafe fmt)) (/ fmt unsafe))))
           (format t "~10D  ~10,2Fs ~10,2Fs/~3,2Fx ~10,2Fs/~3,2Fx~%"
-                  n fmt safe sspeedup unsafe uspeedup)))
+                  n fmt safe sspeedup unsafe uspeedup))
+        ;; Bytes
+        (let* ((builtin  (cdr (second elem)))
+               (safe     (cdr (third elem)))
+               (unsafe   (cdr (fourth elem)))
+               (sspeedup (if (eql builtin 0)
+                             "???"
+                           (* 100 (/ (coerce safe 'float) builtin))))
+               (uspeedup (if (eql builtin 0)
+                             "???"
+                           (* 100 (/ (coerce unsafe 'float) builtin)))))
+          (format t "~10a       ~7a    ~7a ~3,1F%      ~7a ~3,1F%~%"
+                  ""
+                  (nice-bytes builtin)
+                  (nice-bytes safe) sspeedup
+                  (nice-bytes unsafe) uspeedup))
+        (format t "~%"))
   (format t "----------------------------------------------------------------~%")
   (format t "~%"))
 

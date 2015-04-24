@@ -36,6 +36,7 @@
    #:write-hex
    #:read-hex
    #:scary-unsafe-write-hex
+   #:scary-unsafe-read-hex
    ))
 
 
