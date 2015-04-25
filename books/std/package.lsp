@@ -294,6 +294,7 @@
 
       ;; Things I want to "import" from ACL2 into the STD package.
       assert!
+      must-fail
       b*
       ret
       def-b*-binder
