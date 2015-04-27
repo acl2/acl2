@@ -35,6 +35,7 @@
 (include-book "make-implicit-wires")
 (include-book "type-disambiguation")
 (include-book "origexprs")
+(include-book "enumnames")
 (include-book "portdecl-sign")
 (include-book "port-resolve")
 (include-book "udp-elim")

@@ -36,6 +36,7 @@
 ;; (include-book "centaur/vl/transforms/always/top-svex" :dir :system)
 (include-book "centaur/vl/transforms/addnames" :dir :system)
 (include-book "centaur/vl/transforms/always/eliminitial" :dir :system)
+
 ;; (include-book "centaur/vl/transforms/assign-trunc" :dir :system)
 ;; (include-book "centaur/vl/transforms/blankargs" :dir :system)
 ;; (include-book "centaur/vl/transforms/clean-params" :dir :system)
@@ -197,6 +198,8 @@
                      :name xf-resolve-ansi-portdecls))
        (x (xf-cwtime (vl-design-resolve-nonansi-interfaceports x)
                      :name xf-resolve-nonansi-interfaceports))
+       (x (xf-cwtime (vl-design-add-enumname-declarations x)
+                     :name xf-design-add-enumname-declarations))
        (x (xf-cwtime (vl-design-make-implicit-wires x)
                      :name xf-make-implicit-wires))
        (x (xf-cwtime (vl-design-portdecl-sign x)
