@@ -16608,17 +16608,34 @@
              (certify-book-finish-complete full-book-name ctx state))
             (t
              (er-let* ((write-port
-                        (cond ((member-eq write-port '(t nil))
-                               (value write-port))
-                              ((eq write-port :default)
-                               (er-let* ((str
-                                          (getenv! "ACL2_WRITE_PORT" state)))
-                                 (value (cond (str (intern$ (string-upcase str)
-                                                            "ACL2"))
-                                              (t t))))) ; default
-                              (t (er soft ctx
-                                     "Illegal :write-port argument, ~x0.  See ~
-                                      :DOC certify-book."))))
+                        (cond
+                         ((member-eq write-port '(t nil))
+                          (value write-port))
+                         ((eq write-port :default)
+                          (cond
+                           (pcert
+
+; We have seen a "convert" failure (for creating the .pcert1 file) for
+; community book
+; books/workshops/2011/verbeek-schmaltz/sources/correctness.lisp.  The problem
+; seems to be that build system automatically creates .port files that are
+; loaded, but more .port files are around when building correctness.pcert1 file
+; than when building correctness.pcert1.pcert0.  Our solution is to make the
+; default for :write-port be nil, instead of t, when doing any step of
+; provisional certification -- even when ACL2_WRITE_PORT is set, so as to
+; defeat the build system's attempt to build .port files when doing
+; pcertification steps.
+
+                            (value nil))
+                           (t
+                            (er-let* ((str
+                                       (getenv! "ACL2_WRITE_PORT" state)))
+                              (value (cond (str (intern$ (string-upcase str)
+                                                         "ACL2"))
+                                           (t t))))))) ; default
+                         (t (er soft ctx
+                                "Illegal :write-port argument, ~x0.  See :DOC ~
+                                 certify-book."))))
                        (write-acl2x
                         (cond (acl2x (value (f-get-global 'write-acl2x state)))
                               ((f-get-global 'write-acl2x state)

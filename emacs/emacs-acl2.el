@@ -355,7 +355,7 @@
 
 (defvar *acl2-insert-pats*
 
-  '(:not ".*%[ ]*$" ".*$[ ]*$")
+  '(:not ".*%[ ]*$" ".*$[ ]*$" "^$")
 
 ;;; Another good default might be this "positive" list -- instead of
 ;;; ruling out shell prompts as done just above, here we allow only
@@ -369,7 +369,8 @@
 ;  )
 
   "A list of regular expressions for acl2-check-insert to allow on the current line
-or, if the car is :not -- e.g., (:not \".*%[ ]*$\" \".*$[ ]*$\") -- patterns to disallow.")
+or, if the car is :not -- e.g., (:not \".*%[ ]*$\" \".*$[ ]*$\" \"^$\") --
+patterns to disallow.")
 
 (defun acl2-check-insert ()
   (save-excursion
