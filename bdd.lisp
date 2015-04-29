@@ -2708,7 +2708,8 @@
                                            (set-difference-eq term-vars
                                                               input-vars)))))))
               #+(and (not acl2-loop-only) akcl)
-              (cond ((and (fboundp 'si::sgc-on)
+              (cond ((and (not *gcl-large-maxpages*)
+                          (fboundp 'si::sgc-on)
                           (funcall 'si::sgc-on))
                      (fms "NOTE: Turning off SGC.  If you wish to turn SGC ~
                            back on again, execute (SI::SGC-ON T) in raw Lisp.~|"

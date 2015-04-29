@@ -17163,7 +17163,8 @@
 
                                     (progn
                                       (cond
-                                       ((and (fboundp 'si::sgc-on)
+                                       ((and (not *gcl-large-maxpages*)
+                                             (fboundp 'si::sgc-on)
                                              (funcall 'si::sgc-on))
                                         (funcall 'si::sgc-on nil)
                                         (si::gbc t)
