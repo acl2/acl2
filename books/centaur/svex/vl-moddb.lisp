@@ -2785,6 +2785,9 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                                          :aliaspairs aliases))
              (modalist (hons-acons type-modname new-mod modalist)))
           (mv err selfwire type-modname modalist))
+
+        :vl-enum
+        (vl-datatype->mods x.basetype modalist)
              
         :otherwise (mv (vmsg "Can't handle type ~a0" x)
                        nil nil (svex::modalist-fix modalist)))))

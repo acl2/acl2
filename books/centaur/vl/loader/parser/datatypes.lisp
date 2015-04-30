@@ -378,7 +378,7 @@
                  :range (cond ((not left)
                                nil)
                               ((not right)
-                               (make-vl-range :msb (vl-make-index (vl-inttoken->value left))
+                               (make-vl-range :msb (vl-make-index 0)
                                               :lsb (vl-make-index (vl-inttoken->value left))))
                               (t
                                (make-vl-range :msb (vl-make-index (vl-inttoken->value left))

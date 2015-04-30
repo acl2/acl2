@@ -1174,7 +1174,8 @@ all of its identifiers.</p>"
          (- (fast-alist-free st.portdecls))
          (- (fast-alist-free st.decls))
          (- (fast-alist-free st.imports))
-         (all-implicit (append-without-guard normal-implicit port-implicit)))
+         (all-implicit (append-without-guard normal-implicit port-implicit))
+         (newitems (append (vl-modelementlist->genelements port-implicit) newitems)))
       (mv all-implicit newitems warnings)))
 
 ;; (trace$ #!vl (vl-make-implicit-wires-main
@@ -1206,11 +1207,52 @@ all of its identifiers.</p>"
                          (append (vl-modelementlist->genelements
                                   (vl-parse-temps->paramports x.parse-temps))
                                  (vl-parse-temps->loaditems x.parse-temps))))
-       ((mv implicit newitems warnings)
+       ((mv ?implicit newitems warnings)
         (vl-make-implicit-wires-main x.loaditems x.ifports ss x.warnings))
-       (vardecls (append-without-guard implicit x.vardecls)))
+       ;; (bad-item (vl-genelementlist-findbad newitems
+       ;;                                      '(:vl-generate
+       ;;                                        ;; :vl-port    -- not allowed, they were parsed separately
+       ;;                                        :vl-portdecl
+       ;;                                        :vl-assign
+       ;;                                        :vl-alias
+       ;;                                        :vl-vardecl
+       ;;                                        :vl-paramdecl
+       ;;                                        :vl-fundecl
+       ;;                                        :vl-taskdecl
+       ;;                                        :vl-modinst
+       ;;                                        :vl-gateinst
+       ;;                                        :vl-always
+       ;;                                        :vl-initial
+       ;;                                        :vl-typedef
+       ;;                                        :vl-import
+       ;;                                        ;; :vl-fwdtypedef -- doesn't seem like these should be ok
+       ;;                                        ;; :vl-modport    -- definitely not ok
+       ;;                                        :vl-genvar
+       ;;                                        )))
+       ;; (warnings (if (not bad-item)
+       ;;               warnings
+       ;;             (fatal :type :vl-bad-module-item
+       ;;                    :msg "~a0: a module may not contain ~x1s."
+       ;;                    :args (list bad-item (tag bad-item)))))
+
+       ((vl-genblob c) (vl-sort-genelements newitems)))
     (change-vl-module x
-                      :vardecls vardecls
+                      :portdecls  c.portdecls
+                      :assigns    c.assigns
+                      :aliases    c.aliases
+                      :vardecls   c.vardecls
+                      :paramdecls c.paramdecls
+                      :fundecls   c.fundecls
+                      :taskdecls  c.taskdecls
+                      :modinsts   c.modinsts
+                      :gateinsts  c.gateinsts
+                      :alwayses   c.alwayses
+                      :initials   c.initials
+                      :generates  c.generates
+                      :genvars    c.genvars
+                      :imports    c.imports
+                      :typedefs   c.typedefs
+
                       :warnings warnings
                       :parse-temps (and x.parse-temps
                                         (change-vl-parse-temps

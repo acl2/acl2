@@ -2115,87 +2115,6 @@ the way.</li>
 
 
 
-
-(define vl-enumrange-val ((nextval integerp)
-                          (nleft natp)
-                          (slotsize natp))
-  :returns (val integerp :rule-classes :type-prescription)
-  (if (zp nleft)
-      0
-    (logior (ash nextval (* nleft (lnfix slotsize)))
-            (vl-enumrange-val (+ 1 (lifix nextval)) (1- nleft) slotsize))))
-
-(define vl-enumrange-to-svex ((orig-x vl-expr-p)
-                              (args svex::svexlist-p)
-                              (type vl-datatype-p))
-  :guard (and (eql (len args) 3)
-              (vl-datatype-resolved-p type))
-  :guard-debug t
-  :returns (mv (warnings vl-warninglist-p)
-               (svex (and (svex::svex-p svex)
-                          (not (member v (svex::svex-vars svex))))))
-  :prepwork ((local (defthm consp-by-len
-                      (implies (< 0 (len x))
-                               (consp x))))
-             (local (defthm len-of-svexlist-reduce-consts
-                      (equal (len (svex::svexlist-reduce-consts x))
-                             (len x))
-                      :hints(("Goal" :induct (len x)
-                              :in-theory (enable len)
-                              :expand ((svex::svexlist-reduce-consts x)))))))
-  (b* ((warnings nil)
-       (orig-x (vl-expr-fix orig-x))
-       (arg-consts (svex::svexlist-reduce-consts args))
-       ((list firstidx lastidx firstval) arg-consts)
-       ((unless (and (svex::svex-case firstidx :quote)
-                     (svex::svex-case lastidx :quote)
-                     (svex::svex-case firstval :quote)
-                     (svex::2vec-p (svex::svex-quote->val firstidx))
-                     (svex::2vec-p (svex::svex-quote->val lastidx))
-                     (svex::2vec-p (svex::svex-quote->val firstval))))
-        (mv (fatal :type :vl-expr-to-svex-fail
-                   :msg "Non-constant args to $enumrange: ~a0"
-                   :args (list orig-x))
-            (svex-x)))
-       (udims (vl-datatype->udims type))
-       ((unless (and (eql (len udims) 1)
-                     (vl-packeddimension-case (car udims) :range)
-                     (vl-range-resolved-p
-                      (vl-packeddimension->range (car udims)))))
-        (mv (fatal :type :vl-expr-to-svex-fail
-                   :msg "Bad type context for $enumrange: ~a0"
-                   :args (list orig-x))
-            (svex-x)))
-       ((vl-range dimrange) (vl-packeddimension->range (car udims)))
-       (firstidx (svex::2vec->val (svex::svex-quote->val firstidx)))
-       (lastidx (svex::2vec->val (svex::svex-quote->val lastidx)))
-       (firstval (svex::2vec->val (svex::svex-quote->val firstval)))
-       (firstdim (vl-resolved->val dimrange.msb))
-       (lastdim  (vl-resolved->val dimrange.lsb))
-       ((unless (and (eql firstidx firstdim)
-                     (eql lastidx lastdim)))
-        ;; A bit overzealous, but might be ok for our purposes
-        (mv (fatal :type :vl-expr-to-svex-fail
-                   :msg "Bad dimension for $enumrange: should ~
-                                     match first args: ~a0"
-                   :args (list orig-x))
-            (svex-x)))
-       (slottype (vl-datatype-update-udims nil type))
-       ((mv err slotsize) (vl-datatype-size slottype))
-       ((when (or err (not slotsize)))
-        (mv (fatal :type :vl-expr-to-svex-fail
-                   :msg "Bad base type for ~a0: ~a1"
-                   :args (list orig-x slottype))
-            (svex-x))))
-    (mv nil
-        (svex::svex-quote
-         (svex::2vec
-          (vl-enumrange-val firstval
-                            (1+ (abs (- firstidx lastidx)))
-                            slotsize))))))
-
-
-
 (defines vl-expr-to-svex
   :ruler-extenders :all
   :verify-guards nil
@@ -2587,14 +2506,7 @@ functions can assume all bits of it are good.</p>"
                   (vl-$bits-call-resolve-type x conf))
 
                  ((when (vl-unary-syscall-p "$bits" x))
-                  (vl-$bits-call-resolve-expr x conf))
-                 
-                 ((when (vl-*ary-syscall-p "$enumrange" x))
-                  (mv (fatal :type :vl-expr-to-svex-fail
-                             :msg "$enumrange system call unsupported in ~
-                                   vector context: ~a0"
-                             :args (list x))
-                      (svex-x))))
+                  (vl-$bits-call-resolve-expr x conf)))
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Unsupported system call: ~a0"
                          :args (list x))
@@ -2826,16 +2738,7 @@ functions can assume all bits of it are good.</p>"
               (svex::svcall svex::? test-svex then-svex else-svex)))
 
         :vl-call
-        (b* (((when (and x.systemp
-                         (vl-*ary-syscall-p "$enumrange" x)
-                         (eql (len x.args) 3)))
-              (b* (((wmv warnings arg-svexes ?sizes)
-                    (vl-exprlist-to-svex-selfdet x.args conf))
-                   ((wmv warnings svex)
-                    (vl-enumrange-to-svex x arg-svexes type)))
-                (mv warnings svex)))
-
-             ((when x.systemp)
+        (b* (((when x.systemp)
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "System call ~a0 supposed to return unpacked type ~a1"
                          :args (list x (vl-datatype-fix type)))
