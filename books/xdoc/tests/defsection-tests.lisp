@@ -158,7 +158,7 @@
 
 (defthm det-f2-identity (equal (det-f2 x) x))
 
-(defsection det-extension-2
+(defsection det-extension-1
   :extension (double-extension-test)
   :long "<p>Blah3</p>"
   (defun det-f3 (x) x))
@@ -174,9 +174,9 @@
         (str::substrp "Blah1" long)
         (str::substrp "Blah2" long)
         (str::substrp "Blah3" long)
-        (not (str::substrp "@(def |XDOC::DET-F1-IDENTITY|)" long))
-        (not (str::substrp "@(def |XDOC::DET-F2-IDENTITY|)" long))
-        (not (str::substrp "@(def |XDOC::DET-F3-IDENTITY|)" long)))))
+        (not (str::substrp "@(def |XDOC|::|DET-F1-IDENTITY|)" long))
+        (not (str::substrp "@(def |XDOC|::|DET-F2-IDENTITY|)" long))
+        (not (str::substrp "@(def |XDOC|::|DET-F3-IDENTITY|)" long)))))
 
 
 
@@ -215,8 +215,8 @@
         (str::substrp "Blooop1" long)
         (str::substrp "Blooop2" long)
         (str::substrp "Blooop3" long)
-        (not (str::substrp "@(def |XDOC::DET2-F1-IDENTITY|)" long))
-        (not (str::substrp "@(def |XDOC::DET2-F2-IDENTITY|)" long))
-        (not (str::substrp "@(def |XDOC::DET2-F3-IDENTITY|)" long)))))
+        (not (str::substrp "@(def |XDOC|::|DET2-F1-IDENTITY|)" long))
+        (not (str::substrp "@(def |XDOC|::|DET2-F2-IDENTITY|)" long))
+        (not (str::substrp "@(def |XDOC|::|DET2-F3-IDENTITY|)" long)))))
 
 

@@ -63,7 +63,7 @@ style operations, byte swapping operations, and so forth.</p>
 
 <p>Each of our merging operations is logically simple.  However, we go to some
 lengths to make them execute more efficiently.  This is accomplished by
-providing ample @(see type-spec) declarations and arranging the order of
+providing ample @(see acl2::type-spec) declarations and arranging the order of
 operations to use fixnums for as long as possible.  This provides significant
 speedups, for instance:</p>
 
@@ -88,7 +88,7 @@ perform well on 64-bit Lisps including at least CCL and SBCL.</p>
 
 <p>We prove that each merge produces a result of the correct size (expressed as
 a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
-@(see congruence) for each of its arguments.</p>")
+@(see acl2::congruence) for each of its arguments.</p>")
 
 (local (xdoc::set-default-parents bitops/merge))
 

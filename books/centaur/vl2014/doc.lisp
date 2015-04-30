@@ -78,9 +78,9 @@ years, we used VL to implement many tools, many of which were based around
 @(see acl2::esim).  ESIM is a purely bit-level backend.</p>
 
 <p>In 2014, we began extending VL with features from SystemVerilog and also
-began work on a new, vector-level backend, @(see svex).  Throughout 2014, and
-into the start of 2015, we made substantial changes to VL and transitioned our
-internal projects to SVEX.</p>
+began work on a new, vector-level backend, @(see acl2::svex).  Throughout 2014,
+and into the start of 2015, we made substantial changes to VL and transitioned
+our internal projects to SVEX.</p>
 
 <p>Much of this work was compatible with ESIM and expanded what the VL/ESIM
 flow could handle.  For instance: during this time, the ESIM flow gained better
@@ -128,7 +128,7 @@ to implement a family of Verilog-related tools.  Here are some examples:</p>
 
 <ul>
 
-<li>VL can build @(see esim) or @(see svex) models of Verilog modules for
+<li>VL can build @(see esim) or @(see acl2::svex) models of Verilog modules for
 formal verification with ACL2.  This is the basis for much of Centaur's formal
 verification efforts.</li>
 
@@ -189,8 +189,8 @@ level.</p>")
 
 (defsection supported-constructs
   :parents (getting-started)
-  :short "Notes about the subset of Verilog and SystemVerilog that @(see VL)
-  supports."
+  :short "Notes about the subset of Verilog and SystemVerilog that @(see
+  VL2014) supports."
 
   :long "<p>VL was originally based on our reading of the <a
 href='http://standards.ieee.org/findstds/standard/1364-2005.html'>Verilog-2005
@@ -212,10 +212,10 @@ designs.  It primarily handles RTL-based designs.  It has trouble with
 transistor-level constructs, hierarchical identifiers, inout ports, and fancy
 procedural statements.  It lacks support for most SystemVerilog features.</li>
 
-<li>The newer @(see svex) flow provides much better support for SystemVerilog
-features like structures, arrays, interfaces, and hierarchical identifiers.  It
-does not currently handle transistor-level constructs or simulation constructs
-like dynamic arrays, tasks, classes, etc.</li>
+<li>The newer @(see acl2::svex) flow provides much better support for
+SystemVerilog features like structures, arrays, interfaces, and hierarchical
+identifiers.  It does not currently handle transistor-level constructs or
+simulation constructs like dynamic arrays, tasks, classes, etc.</li>
 
 <li>The @(see lint)er flow can cope with richer SystemVerilog designs.  It is
 not especially bothered by transistor-level constructs.  It cannot handle some

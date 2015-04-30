@@ -490,8 +490,8 @@ returns the low @('size') bits, i.e., it always returns a natural number.</p>
 a bit position because we normally specify integer subranges by the number of
 significant (including sign) bits.</p>
 
-<p>See also @(see bitops/fast-logext) for a logically identical function that
-is optimized for better performance.</p>"
+<p>See also @(see bitops::bitops/fast-logext) for a logically identical
+function that is optimized for better performance.</p>"
   :enabled t
 
   (let* ((size-1 (- size 1)))
@@ -546,8 +546,8 @@ the performance of the FFT.</p>
 <p>@('logrev') entails a recursive definition of bit-reversing via the helper
 function @(see logrev1).</p>
 
-<p>See also @(see bitops/fast-logrev) for some optimized definitions of @(see
-logrev).</p>"
+<p>See also @(see bitops::bitops/fast-logrev) for some optimized definitions of
+@(see logrev).</p>"
   :inline t
   :enabled t
   (logrev1 size i 0))
@@ -571,8 +571,8 @@ will be @($2^{size-1} - 1$).  For negative @('i'), this will be
 
 <p>This function returns a (possibly negative) integer.  For consistency with
 @(see signed-byte-p), size must be strictly greater than 0.  In contrast, the
-related @(see bitops/saturate) functions always return @('size')-bit natural
-numbers.</p>"
+related @(see bitops::bitops/saturate) functions always return @('size')-bit
+natural numbers.</p>"
 
   :split-types t
   :enabled t

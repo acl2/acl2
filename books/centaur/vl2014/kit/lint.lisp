@@ -93,9 +93,9 @@
 
   :long "<p>A <a
 href='http://en.wikipedia.org/wiki/Lint_%28software%29'>linter</a> is a tool
-that looks for possible bugs in a program.  We have used @(see VL) to implement
-a linter for Verilog and SystemVerilog designs.  It can scan your Verilog
-designs for potential bugs like size mismatches, unused wires, etc.</p>
+that looks for possible bugs in a program.  We have used @(see VL2014) to
+implement a linter for Verilog and SystemVerilog designs.  It can scan your
+Verilog designs for potential bugs like size mismatches, unused wires, etc.</p>
 
 <p>Note: Most of the documentation here is about the implementation of various
 linter checks.  If you just want to run the linter on your own Verilog designs,
