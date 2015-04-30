@@ -870,6 +870,18 @@ implementations.")
   nil)
 
 #+akcl
+(defvar *gcl-large-maxpages*
+
+; This variable tells GCL to use Camm Maguire's strategy during development of
+; GCL 2.6.13 of using large maxpage limits to postpone garbage collection, and
+; thus avoid SGC.  It appears that si::*code-block-reserve* was introduced at
+; the time this strategy was developed, and that si::set-log-maxpage-bound was
+; already defined at that point (but we check, since we rely on that).
+
+  (and (boundp 'si::*code-block-reserve*)
+       (fboundp 'si::set-log-maxpage-bound)))
+
+#+akcl
 (defun save-acl2-in-akcl-aux (sysout-name gcl-exec-name
                                           write-worklispext
                                           set-optimize-maximum-pages
@@ -910,6 +922,9 @@ implementations.")
 ; 'si::*optimize-maximum-pages* to t just before the save.
 
            (setq si::*optimize-maximum-pages* t)))
+    (when *gcl-large-maxpages*
+      (setq si::*code-block-reserve*
+            (make-array 40000000 :element-type 'character :static t)))
     (chmod-executable sysout-name)
     (si::save-system (concatenate 'string sysout-name "." ext))))
 
@@ -1047,7 +1062,8 @@ implementations.")
   (si::gbc t) ; wfs suggestion [at least if we turn on SGC] -- formerly nil
               ; (don't know why...)
 
-  (cond ((fboundp 'si::sgc-on)
+  (cond ((and (not *gcl-large-maxpages*)
+              (fboundp 'si::sgc-on))
          (print "Executing (si::sgc-on t)") ;debugging GC
          (funcall 'si::sgc-on t)))
 
@@ -1905,8 +1921,11 @@ implementations.")
   (declare (ignore other-info))
 
   #+akcl
-  (if (boundp 'si::*optimize-maximum-pages*)
-      (setq si::*optimize-maximum-pages* nil)) ; Camm Maguire suggestion
+  (when (boundp 'si::*optimize-maximum-pages*) ; Camm Maguire suggestions
+    (setq si::*optimize-maximum-pages* nil)
+    (when *gcl-large-maxpages*
+      (si::set-log-maxpage-bound
+       (1+ (integer-length most-positive-fixnum)))))
 
 ; Consider adding something like
 ; (ccl::save-application "acl2-image" :size (expt 2 24))

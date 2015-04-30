@@ -611,7 +611,7 @@
 ;;; perhaps include the binding (*compile-verbose* t) for ecl.
 
 ;;; Modify exit-lisp to treat ecl like akcl, except using ext::quit instead of
-;;; lisp::bye.
+;;; si::bye.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                              PACKAGES
@@ -2191,7 +2191,7 @@ You are using version ~s.~s.~s."
   #+lispworks ; Version 4.2.0; older versions have used bye
   (if status-p (lispworks:quit :status status) (lispworks:quit))
   #+akcl
-  (if status-p (lisp::bye status) (lisp::bye))
+  (if status-p (si::bye status) (si::bye))
   #+lucid
   (lisp::exit) ; don't know how to handle status, but don't support lucid
   #+ccl
@@ -2488,7 +2488,7 @@ You are using version ~s.~s.~s."
         (catch *quit-tag*
           (setq - (locally (declare (notinline read))
                            (dbl-read *debug-io* nil *top-eof*)))
-          (when (eq - *top-eof*) (lisp::bye -1))
+          (when (eq - *top-eof*) (si::bye -1))
           (let* ( break-command
                  (values
                   (multiple-value-list

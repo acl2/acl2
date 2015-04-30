@@ -122,7 +122,8 @@
 ; more than that, so we rather arbitrarily bump the threshold for a warning up
 ; to approximately twice the current size.
 
-	  (max large-file-warning-threshold 30000000))
+	  (and large-file-warning-threshold ; stays nil if it was nil
+	       (max large-file-warning-threshold 30000000)))
 	 (buf0 (find-buffer-visiting rendered-pathname))
 
 ; We could let buf = buf0 if buf0 is non-nil.  But if the file was changed

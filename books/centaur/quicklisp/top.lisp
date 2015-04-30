@@ -31,12 +31,15 @@
 (in-package "ACL2")
 (include-book "base")
 (include-book "bordeaux")
+(include-book "bt-semaphore")
 (include-book "cl-fad")
+(include-book "external-program")
+(include-book "fastnumio")
+(include-book "html-template")
 (include-book "hunchentoot")
 (include-book "osicat")
-(include-book "uiop")
-(include-book "html-template")
 (include-book "shellpool")
+(include-book "uiop")
 
 (defsection quicklisp
   :parents (interfacing-tools)

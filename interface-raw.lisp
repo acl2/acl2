@@ -5365,17 +5365,54 @@
                (oneify-p (eq (car def) 'oneify-cltl-code))
                (def0 (if oneify-p (caddr def) (cdr def))))
           (cond ((and (eq *inside-include-book-fn* t)
-                      (if oneify-p
-                          (install-for-add-trip-include-book
-                           'defun
-                           (*1*-symbol (car def0))
-                           nil
-                           reclassifying-p)
+                      (cond
+                       (oneify-p
                         (install-for-add-trip-include-book
-                         (car def)
-                         (cadr def)
+                         'defun
+                         (*1*-symbol (car def0))
                          nil
-                         reclassifying-p)))
+                         reclassifying-p))
+                       #+sbcl
+                       ((and (not (eq *inside-include-book-fn*
+
+; We don't bother with the special treatment below if we are simply certifying
+; a book, both because we don't expect to do much in the resulting world and
+; because inlining (the issue here, as described in the comment below) seems to
+; be handled without this special treatment.  Note that by avoiding this
+; special case when *inside-include-book-fn* is 'hcomp-build, we avoid
+; duplicating the declaiming of inline for this function done in the
+; (hcomp-build-p) case below.
+
+                                      'hcomp-build))
+                             (not (member-eq (car def)
+                                             '(defmacro defabbrev)))
+                             (let ((name (symbol-name (car def0))))
+                               (terminal-substringp *inline-suffix*
+                                                    name
+                                                    *inline-suffix-len-minus-1*
+                                                    (1- (length name)))))
+
+; We are including a book (and not merely on behalf of certify-book, as
+; explained above).  Apparently SBCL needs the source code for a function in
+; order for it to be inlined.  (This isn't surprising, perhaps; perhaps more
+; surprising is that CCL does not seem to have this requirement.)
+; See for example community book books/system/optimize-check.lisp, where
+; the form (disassemble 'g4) fails to exhibit inlined code without the special
+; treatment we provide here.  That special treatment is to avoid obtaining the
+; definition from the hash table, instead letting SBCL fall through to the
+; (eval (car tail)) below.  If we decide to give this special treatment to
+; other host Lisps, we should consider installing the compiled definition from
+; the hash table; but SBCL always compiles its definitions, so that seems
+; unnecessary other than to save compilation time, which presumably is
+; relatively small for inlined functions, and at any rate, appears to be
+; unavoidable.
+
+                        nil)
+                       (t (install-for-add-trip-include-book
+                           (car def)
+                           (cadr def)
+                           nil
+                           reclassifying-p))))
                  (setf (car tail) nil))
                 (t (let (form)
                      (cond

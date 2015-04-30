@@ -78,7 +78,7 @@
 #
 #   manual        Builds doc/top.cert, which produces the combined ACL2
 #                 books+system manual in doc/manual/index.html.  Note:
-#                 this target requires ACL2(h) and USE_QUICKLISP=1.
+#                 this target requires USE_QUICKLISP=1.
 #
 #   special       Includes all the books, allowing arbitrary code before and
 #                 after an include-book, and writing the log for each book
@@ -1319,10 +1319,10 @@ manual:
 # make occasional updates for "bleeding-edge" (svn) users at
 # http://www.cs.utexas.edu/users/moore/acl2/manuals/.  To build this
 # text-based file after building doc/top.cert as above, issue the
-# following command in this directory, where acl2h is an ACL2(h)
+# following command in this directory, where acl2 is an ACL2(h)
 # executable.
 
-#   make doc/top.cert USE_QUICKLISP=1 ACL2=acl2h
+#   make doc/top.cert USE_QUICKLISP=1 ACL2=acl2
 
 ##############################
 ### Section: Some notes

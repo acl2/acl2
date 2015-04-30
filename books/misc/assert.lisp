@@ -10,7 +10,7 @@
 ; have less clutter when including the book.
 
 (in-package "ACL2")
-
+(include-book "eval")
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc assert!
@@ -81,8 +81,6 @@
 (value-triple (or (equal (assert-test1 3) 3)
                   (er hard 'top-level
                       "Failed to evaluate (assert-test1 3) to 3.")))
-
-(include-book "eval")
 
 (local
  (must-fail

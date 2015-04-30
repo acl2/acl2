@@ -3076,23 +3076,12 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ; Static Honsing.
 
 (defun hl-system-gc ()
-  #+ccl
-  (let ((current-gcs (ccl::full-gccount)))
-    ;; Note that ccl::gc only schedules a GC to happen.  So, we need to both
-    ;; trigger one and wait for it to occur.  We use the fact that
-    ;; ccl::full-gccount always increases after completing a garbage collection
-    ;; initiated by (ccl::gc) (as confirmed via email by Gary Byers, June 16,
-    ;; 2014).
-    (ccl::gc)
-    (loop do
-          (progn
-            (when (> (ccl::full-gccount) current-gcs)
-              (loop-finish))
-            (format (get-output-stream-from-channel *standard-co*)
-                    "; Hons-Note: Waiting for GC to finish.~%")
-            (finish-output)
-            (sleep 1))))
-  #-ccl
+
+; At one time, we thought that ccl::gc only schedules a GC to happen, and we
+; worked here to ensure that the GC has actually completed.  However, Gary
+; Byers has explained (4/28/15) that all other threads are suspended until
+; after the thread performing the GC completes the GC.
+
   (gc$))
 
 #-static-hons

@@ -36,10 +36,14 @@
 ; packages that are both being built at separate times in separate threads,
 ; crashing into each other's working space.
 
-(asdf:load-system "osicat")
 (asdf:load-system "bordeaux-threads")
 (asdf:load-system "bt-semaphore")
-(asdf:load-system "hunchentoot")
-(asdf:load-system "uiop")
+(asdf:load-system "cl-fad")
+(asdf:load-system "external-program")
+(asdf:load-system "fastnumio")
 (asdf:load-system "html-template")
+(asdf:load-system "hunchentoot")
+(asdf:load-system "osicat")
 (asdf:load-system "shellpool")
+(asdf:load-system "uiop")
+
