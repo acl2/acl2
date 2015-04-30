@@ -1100,39 +1100,49 @@ later on.  We handle that in @(see vl-make-implicit-wires-main).</p>"
 (define vl-make-port-implicit-wires
   :short "@(call vl-make-port-implicit-wires) generates variable declarations
 for ports that don't have corresponding variable declarations."
-  ((portdecls "Alist binding names to port declarations."
-              vl-portdecl-alist-p)
+  ((items vl-genelementlist-p "List of genelements.")
    (decls     "Alist binding names declared in the module to @('nil')."))
 
   :hooks nil ;; bozo wtf kind of crazy thing is this trying to prove?
   :verbosep t
 
   :returns
-  (implicit vl-vardecllist-p
-            "A list of new variable declarations, one for each port declaration
+  (mv (implicit vl-vardecllist-p
+                "A list of new variable declarations, one for each port declaration
              without a corresponding ordinary declaration.")
+      (new-items vl-genelementlist-p))
 
   :long "<p>BOZO what about scalaredp, vectoredp, cstrength, delay?  I think we
 don't care, but it might be good to look into this again.</p>"
 
-  (b* (((when (atom portdecls))
-        nil)
+  (b* (((when (atom items))
+        (mv nil nil))
 
-       ((when (atom (car portdecls)))
+       ((mv rest-implicit rest-items)
+        (vl-make-port-implicit-wires (cdr items) decls))
+
+       ((unless (vl-genelement-case (car items) :vl-genbase))
+        (mv rest-implicit (cons (vl-genelement-fix (car items)) rest-items)))
+
+       (item (vl-genbase->item (car items)))
+
+       ((unless (eq (tag item) :vl-portdecl))
         ;; Bad alist convention
-        (vl-make-port-implicit-wires (cdr portdecls) decls))
+        (mv rest-implicit (cons (vl-genelement-fix (car items)) rest-items)))
 
-       ((vl-portdecl portdecl) (cdar portdecls))
+       ((vl-portdecl portdecl) item)
        ((when (hons-get portdecl.name decls))
         ;; Already declared, nothing to add.
-        (vl-make-port-implicit-wires (cdr portdecls) decls))
+        (mv rest-implicit (cons (vl-genelement-fix (car items)) rest-items)))
 
        (new-decl (make-vl-vardecl :name    portdecl.name
                                   :type    portdecl.type
                                   :atts    (cons '("VL_PORT_IMPLICIT") portdecl.atts)
                                   :loc     portdecl.loc)))
-    (cons new-decl
-          (vl-make-port-implicit-wires (cdr portdecls) decls))))
+    (mv (cons new-decl rest-implicit)
+        (cons (vl-genelement-fix (car items))
+              (cons (make-vl-genbase :item new-decl)
+                    rest-items)))))
 
 (define vl-make-implicit-wires-main
   :short "Augment a list of module elements with declarations for any implicit
@@ -1170,12 +1180,12 @@ all of its identifiers.</p>"
          ;; BOZO would be nice to use nreverse here
          (newitems (rev newitems))
          ((vl-implicitst st))
-         (port-implicit (vl-make-port-implicit-wires st.portdecls st.decls))
+         ((mv port-implicit newitems)
+          (vl-make-port-implicit-wires newitems st.decls))
          (- (fast-alist-free st.portdecls))
          (- (fast-alist-free st.decls))
          (- (fast-alist-free st.imports))
-         (all-implicit (append-without-guard normal-implicit port-implicit))
-         (newitems (append (vl-modelementlist->genelements port-implicit) newitems)))
+         (all-implicit (append-without-guard normal-implicit port-implicit)))
       (mv all-implicit newitems warnings)))
 
 ;; (trace$ #!vl (vl-make-implicit-wires-main
