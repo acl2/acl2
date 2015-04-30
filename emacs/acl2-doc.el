@@ -683,7 +683,7 @@ acl2-doc."
 ;;; marks N.
 
   (when (not (gethash topic ht)) ; otherwise we could loop
-    (setf (gethash topic ht) t)
+    (puthash topic t ht)
     (let ((topic-children-ht (gethash topic children-ht)))
       (when topic-children-ht
 	(maphash (lambda (child val)
@@ -706,11 +706,14 @@ acl2-doc."
 	(when (not (member parents '(NIL ())))
 	  (dolist (parent parents)
 	    (let ((ht (cond ((gethash parent *acl2-doc-children-ht*))
-			    (t (setf (gethash parent *acl2-doc-children-ht*)
-				     (make-hash-table :test 'eq))))))
-	      (setf (gethash topic ht) t))))))
+			    (t (let ((ht (make-hash-table :test 'eq)))
+				 (puthash parent
+					  ht
+					  *acl2-doc-children-ht*)
+				 ht)))))
+	      (puthash topic t ht))))))
     (acl2-doc-topics-ht-1 topic *acl2-doc-topics-ht* *acl2-doc-children-ht*)
-    (setf (gethash topic *acl2-doc-topics-ht*) t)
+    (puthash topic t *acl2-doc-topics-ht*)
     *acl2-doc-topics-ht*)))
 
 (defun acl2-doc-set-limit-topic (do-it)
