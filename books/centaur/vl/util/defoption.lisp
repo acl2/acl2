@@ -151,7 +151,7 @@
                                  "any valid @(see " (symbol-name base-type) ")."))))
        (long (or long
                  (and parents
-                      "<p>This is an ordinary @(see std::defoption).</p>")))
+                      "<p>This is an ordinary @(see vl::defoption).</p>")))
 
        (looks-already-defined-p
         (or (not (eq (getprop name 'acl2::formals :none 'acl2::current-acl2-world

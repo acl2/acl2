@@ -56,7 +56,8 @@
 (defsection bitops/signed-byte-p
   :parents (bitops signed-byte-p unsigned-byte-p)
   :short "Lemmas about @(see signed-byte-p) and @(see unsigned-byte-p) that are
-often useful when optimizing definitions with @(see type-spec) declarations."
+often useful when optimizing definitions with @(see acl2::type-spec)
+declarations."
   :long "<p>BOZO document me.</p>")
 
 (defthm basic-unsigned-byte-p-of-+

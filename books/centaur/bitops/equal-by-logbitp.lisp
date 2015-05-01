@@ -91,7 +91,7 @@ the application of this strategy.")
 
 <p>This unusual (but occasionally useful) proof strategy is similar to the
 <i>pick-a-point</i> proofs found in the ordered sets or <see topic=\"@(url
-ubdds)\">ubdd</see> libraries.</p>
+acl2::ubdds)\">ubdd</see> libraries.</p>
 
 <p>There are a couple of ways to invoke the hint.  First, you might manually
 appeal to the theorem using a hint such as:</p>

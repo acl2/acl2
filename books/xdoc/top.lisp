@@ -334,7 +334,17 @@
                 :off :all
                 :on error
                 (progn
+                  ;; We originally just put down a single marker here, but that
+                  ;; led to problems when there were multiple extensions of the
+                  ;; same topic -- the table event for the second extension was
+                  ;; redundant(!) and that led to slurping in all the events
+                  ;; not just in the second extension, but all the way back to
+                  ;; the start of the first extension.  To avoid this redundancy,
+                  ;; be sure to set the marker to nil before installing the real
+                  ;; marker.
+                  (table acl2::intro-table :mark nil)
                   ,marker
+
                   (with-output :stack :pop
                     (,@wrapper
                      ;; A silly value-triple so that an empty defsection is okay.

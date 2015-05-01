@@ -57,11 +57,11 @@ extra price for coercing the characters.</p>
 faster to serialize and load than extended characters.  When we began to
 develop the VL server, these properties seemed quite attractive.</p>
 
-<p>You might ask why we introduce file maps at all.  After all, a file map is
-very similar to an alist that satisfies @(see vl-string-keys-p) and @(see
-vl-string-values-p).  Our basic motivation is to make it more easy to change
-the representation of a filemap in the future, should we decide that we need
-either more control or flexibility in the underlying representation.</p>")
+<p>You might ask why we introduce file maps at all instead of just using alists
+binding filenames to content strings.  Our basic motivation is to make it more
+easy to change the representation of a filemap in the future, should we decide
+that we need either more control or flexibility in the underlying
+representation.</p>")
 
 
 (define vl-string-findloc-aux

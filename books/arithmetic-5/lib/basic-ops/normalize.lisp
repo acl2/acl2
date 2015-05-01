@@ -205,7 +205,10 @@
 	    (true-list-listp (find-denominators-with-sums addend denominator-list n)))))
 
 (defun remainder-aaa (sum factors to-be-found remainder)
-  (declare (xargs :guard t))
+
+  ;; Modified by Jared 2015-04-30 to add true-listp guard, due to
+  ;; set-equal changes.
+  (declare (xargs :guard (true-listp factors)))
 
   ;; Consider that the term 
   ;; (+ (* a x (/ (+ a b))) (* b x (/ (+ a b))) c), 

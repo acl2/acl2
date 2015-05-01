@@ -627,6 +627,7 @@ the \"array1\" book to be applicable.</p>"
     aref1-reset-array1))
 
 (defsection array1-disabled-lemmas
+  :parents (array1)
   :short "A theory of all rules exported DISABLEd by the \"array1\" book."
   :long "<p>Note that in order for these rules to be applicable you will first
 need to disable @(see array1-functions).  Look at the :DOC for each lemma for

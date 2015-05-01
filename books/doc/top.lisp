@@ -167,6 +167,7 @@
 (include-book "centaur/vl2014/doc" :dir :system)
 (include-book "centaur/vl2014/kit/top" :dir :system)
 (include-book "centaur/vl2014/mlib/clean-concats" :dir :system)
+(include-book "centaur/vl2014/lint/use-set" :dir :system)
 (include-book "centaur/vl2014/transforms/clean-selects" :dir :system)
 (include-book "centaur/vl2014/transforms/propagate" :dir :system)
 (include-book "centaur/vl2014/transforms/expr-simp" :dir :system)
@@ -235,7 +236,7 @@
 ; The following include-book causes a name conflict for set-equal, which is
 ; defined both in arithmetic-5/lib/basic-ops/building-blocks.lisp and in
 ; data-structures/set-defuns.lisp.  So for now, at least, it is commented out.
-; (include-book "data-structures/top" :dir :system)
+(include-book "data-structures/top" :dir :system)
 
 ;Put ACL2s doc last, since ccg.lisp inclusion might cause problems -- harshrc
 (include-book "acl2s/doc" :dir :system)

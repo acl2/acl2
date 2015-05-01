@@ -44,8 +44,11 @@ code, developed at <a href='http://www.centtech.com/'>Centaur Technology</a> by
 Jared Davis and Sol Swords.  It serves as a frontend for many Verilog tools."
 
   :long "<box><p><b>Note</b>: this documentation is mainly a reference manual.
-If you are new to VL, please see @(see getting-started) first.</p></box>")
+If you are new to VL, please see @(see getting-started) first.</p></box>
 
+<p>Warning: VL is currently under heavy development and is not in a
+particularly usable state.  In the meantime, please see @(see vl2014::vl2014)
+for a more stable version.</p>")
 
 (defxdoc getting-started
   :parents (vl)
@@ -72,7 +75,7 @@ to implement a family of Verilog-related tools.  Here are some examples:</p>
 
 <ul>
 
-<li>VL can build @(see esim) or @(see svex) models of Verilog modules for
+<li>VL can build @(see esim) or @(see acl2::svex) models of Verilog modules for
 formal verification with ACL2.  This is the basis for much of Centaur's formal
 verification efforts.</li>
 
@@ -156,10 +159,10 @@ designs.  It primarily handles RTL-based designs.  It has trouble with
 transistor-level constructs, hierarchical identifiers, inout ports, and fancy
 procedural statements.  It lacks support for most SystemVerilog features.</li>
 
-<li>The newer @(see svex) flow provides much better support for SystemVerilog
-features like structures, arrays, interfaces, and hierarchical identifiers.  It
-does not currently handle transistor-level constructs or simulation constructs
-like dynamic arrays, tasks, classes, etc.</li>
+<li>The newer @(see acl2::svex) flow provides much better support for
+SystemVerilog features like structures, arrays, interfaces, and hierarchical
+identifiers.  It does not currently handle transistor-level constructs or
+simulation constructs like dynamic arrays, tasks, classes, etc.</li>
 
 <li>The @(see lint)er flow can cope with richer SystemVerilog designs.  It is
 not especially bothered by transistor-level constructs.  It cannot handle some
