@@ -76,6 +76,7 @@
   nil)
 
 (defun maybe-wash-memory-fn (n clear)
+  (declare (ignorable clear))
 
   #+Clozure
   (when (or (eq n t)
@@ -83,13 +84,7 @@
     (format t "********** maybe-wash-memory started ***********~%~%")
     (format t "Pre-wash memory usage.~%")
     (print-quick-memory-summary)
-
-    (if clear
-        (time$ (clear-hash-tables)
-               :msg "(clear-hash-tables) took ~st seconds, ~sa bytes.~%~%")
-      (time$ (wash-memory)
-             :msg "(wash-memory) took ~st seconds, ~sa bytes.~%~%"))
-
+    (hons-wash)
     (format t "Post-wash memory usage:~%")
     (print-quick-memory-summary)
 

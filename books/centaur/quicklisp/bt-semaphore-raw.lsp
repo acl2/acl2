@@ -29,5 +29,5 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(ql:quickload :bt-semaphore)
+(asdf:load-system "bt-semaphore")
 

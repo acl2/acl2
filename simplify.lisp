@@ -472,6 +472,45 @@
               (t (some-member-subsumes init-subsumes-count (cdr cl-set) cl
                                        (or temp acc))))))))
 
+(defun equal-mod-commuting-lst (cl1 cl2)
+  (cond ((endp cl1) (endp cl2))
+        ((endp cl2) nil)
+        (t (and (equal-mod-commuting (car cl1) (car cl2) nil)
+                (equal-mod-commuting-lst (cdr cl1) (cdr cl2))))))
+
+(defun member-equal-mod-commuting-lst (cl cl-set)
+
+; Consider the following definition (which could be shortened, but equivalent,
+; by calling mbt*).
+
+;   (defun foo (x)
+;     (declare (xargs :guard (and (integerp x)
+;                                 (< 10 x))))
+;     (mbe :logic t
+;          :exec (mbe :logic (car (cons (< 5 x) t))
+;                     :exec t)))
+
+; The naively generated guard proof obligation is as follows.
+
+;   (AND (IMPLIES (AND (< 10 X) (INTEGERP X))
+;                 (EQUAL (CAR (CONS (< 5 X) T)) T))
+;        (IMPLIES (AND (< 10 X) (INTEGERP X))
+;                 (EQUAL T (CAR (CONS (< 5 X) T)))))
+
+; We would like to avoid generating one of those two clauses, and we can do so
+; by checking that the two clauses are equal except perhaps for commuted
+; equalities and calls of iff.  (We could allow calls of equivalence relations
+; too, but then we would need to pass in the world and, more significantly, we
+; would feel obligated to track equivalence relations by passing back a tag
+; ttree.)  The present function is essentially (member-equal cl cl-set), except
+; that equality is tested using equal-mod-commuting-lst: thus, some member of
+; cl-set is identicial to cl except that literals can be commuted as explained
+; above.
+
+  (cond ((endp cl-set) nil)
+        ((equal-mod-commuting-lst cl (car cl-set)) t)
+        (t (member-equal-mod-commuting-lst cl (cdr cl-set)))))
+
 (defun conjoin-clause-to-clause-set (cl cl-set)
 
 ; Once upon a time, in particular, in the two weeks before January 25,
@@ -488,7 +527,7 @@
 ; segments.
 
   (cond ((member-equal *t* cl) cl-set)
-        ((member-equal cl cl-set) cl-set)
+        ((member-equal-mod-commuting-lst cl cl-set) cl-set)
         (t (cons cl cl-set))))
 
 (defun add-each-literal-lst (cl-set)

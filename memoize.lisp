@@ -69,7 +69,9 @@
     hons-equal
     hons-equal-lite
     hons-clear
+    hons-clear!
     hons-wash
+    hons-wash!
     hons-summary
     hons-resize-fn
     get-slow-alist-action

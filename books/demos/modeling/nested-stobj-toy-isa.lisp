@@ -504,7 +504,18 @@
              (stack uni-state)
              stack))
 
-(comp t)
+; Compilation is necessary here for Allegro CL.
+; However, it causes a failure in
+; CMU Common Lisp snapshot-2014-06  (20E Unicode),
+; and
+; CMU Common Lisp snapshot-2014-12  (20F Unicode)
+; and probably other CMUCL versions -- presumably a compiler bug.
+; Some day perhaps someone will investigate and then report the CMUCL bug
+; using a small replayable example.
+(make-event
+ (if (equal (@ host-lisp) :CMU)
+     (value '(value-triple nil))
+   (value '(comp t))))
 
 ; And finally, here is our test.  We use top-level because with-local-stobj is
 ; not allowed at the top level of evaluation (during make-event expansion as

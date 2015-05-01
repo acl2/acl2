@@ -407,9 +407,9 @@ when it becomes available.
              :in-theory (disable ctx-ev-meta-extract-relieve-hyp))))
 
   (defthm symbol-alistp-append
-    (implies (and (symbol-alistp a)
-                  (symbol-alistp b))
-             (symbol-alistp (append a b)))
+    (implies (and (symbol-alistp a1)
+                  (symbol-alistp a2))
+             (symbol-alistp (append a1 a2)))
     :hints(("Goal" :in-theory (enable symbol-alistp))))
 
   (defthm symbol-alistp-mx-relieve-hyp

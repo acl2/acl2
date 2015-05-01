@@ -36,7 +36,7 @@
 (local (include-book "std/lists/all-equalp" :dir :system))
 
 (defsection esim-vl
-  :parents (acl2::esim vl)
+  :parents (acl2::esim vl2014)
   :short "Functions for working with E modules produced by VL.")
 
 

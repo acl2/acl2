@@ -449,8 +449,8 @@ long word.</p>
   (logapp size i (logtail size j)))
 
 (define logext
-  :short "Logical sign extension, signed version.  @('(logext size i)')
-sign-extends @('i') to an integer with @('size - 1') significant bits."
+  :short "@('(logext size i)') sign-extends @('i') to a @('size')-bit signed
+integer."
   ((size (and (integerp size)
               (< 0 size))
          :type unsigned-byte)
@@ -459,20 +459,39 @@ sign-extends @('i') to an integer with @('size - 1') significant bits."
                 :rule-classes :type-prescription
                 :name logext-type)
   :split-types t
-  :long "<p>@('logext') coerces any integer @('i') into a signed integer by
-\"sign extending\" the bit at @('size - 1') to infinity.</p>
+  :long "<p>@('logext') interprets the least significant @('size') bits of
+@('i') as a signed, 2's complement integer.</p>
 
-<p>We specify logext in terms of the @('size') of the result instead of as a
-bit position because we normally specify integer subranges by the number of
-significant (including sign) bits.</p>
+<p>Basic examples:</p>
+
+@({
+    (logext 4 7)  --> 7        Bottom four bits are 0111
+                               Sign bit is 0
+                               Sign extension creates {0000......0}111
+                               2's complement interpretation: 7.
+
+    (logext 3 7)  --> -1       Bottom 3 bits are 111
+                               Sign bit is 1
+                               Sign extension creates {1111.....1}111
+                               2's complement interpretation: -1.
+
+    (logext 4 8)  --> -8       Bottom 4 bits are 1000
+                               Sign bit is 1
+                               Sign extension creates {1111.....1}1000
+                               2's complement interpretation: -8.
+})
 
 <p>This function returns a (possibly negative) integer.  For consistency with
 @(see SIGNED-BYTE-P), @('size') must be strictly greater than 0.  In contrast,
 the related function @(see logextu) carries out a sign-extension but only
 returns the low @('size') bits, i.e., it always returns a natural number.</p>
 
-<p>See also @(see bitops/fast-logext) for an optimized implementation of @(see
-logext).</p>"
+<p>We specify @('logext') in terms of the @('size') of the result instead of as
+a bit position because we normally specify integer subranges by the number of
+significant (including sign) bits.</p>
+
+<p>See also @(see bitops::bitops/fast-logext) for a logically identical
+function that is optimized for better performance.</p>"
   :enabled t
 
   (let* ((size-1 (- size 1)))
@@ -527,8 +546,8 @@ the performance of the FFT.</p>
 <p>@('logrev') entails a recursive definition of bit-reversing via the helper
 function @(see logrev1).</p>
 
-<p>See also @(see bitops/fast-logrev) for some optimized definitions of @(see
-logrev).</p>"
+<p>See also @(see bitops::bitops/fast-logrev) for some optimized definitions of
+@(see logrev).</p>"
   :inline t
   :enabled t
   (logrev1 size i 0))
@@ -552,8 +571,8 @@ will be @($2^{size-1} - 1$).  For negative @('i'), this will be
 
 <p>This function returns a (possibly negative) integer.  For consistency with
 @(see signed-byte-p), size must be strictly greater than 0.  In contrast, the
-related @(see bitops/saturate) functions always return @('size')-bit natural
-numbers.</p>"
+related @(see bitops::bitops/saturate) functions always return @('size')-bit
+natural numbers.</p>"
 
   :split-types t
   :enabled t

@@ -291,6 +291,65 @@
 
 
 
+;; Test of return value arity checking (Issue 365)
+
+(must-fail
+ (define rva-1 (x)
+   :returns (mv a b)
+   x))
+
+(must-fail
+ (define rva-2 (x)
+   :returns ans
+   (mv x x)))
+
+(must-fail
+ (define rva-3 (x state)
+   :returns state
+   (mv x state)))
+
+(must-fail
+ (define rva-4 (x state)
+   :returns (mv a b c)
+   (mv x state)))
+
+(define rva-5 (x)
+  :non-executable t
+  :returns (mv a b c)
+  x)
+
+(define rva-6 (x)
+  :non-executable t
+  :returns ans
+  (mv x x x))
+
+
+(must-fail
+ (define rvap-1 (x)
+   :returns (mv a b)
+   :mode :program
+   x))
+
+(must-fail
+ (define rvap-2 (x)
+   :returns ans
+   :mode :program
+   (mv x x)))
+
+(must-fail
+ (define rvap-3 (x state)
+   :returns state
+   :mode :program
+   (mv x state)))
+
+(must-fail
+ (define rvap-4 (x state)
+   :returns (mv a b c)
+   :mode :program
+   (mv x state)))
+
+
+
 
 ;; Basic testing of hook installation/removal
 

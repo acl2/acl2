@@ -78,7 +78,7 @@
 #
 #   manual        Builds doc/top.cert, which produces the combined ACL2
 #                 books+system manual in doc/manual/index.html.  Note:
-#                 this target requires ACL2(h) and USE_QUICKLISP=1.
+#                 this target requires USE_QUICKLISP=1.
 #
 #   special       Includes all the books, allowing arbitrary code before and
 #                 after an include-book, and writing the log for each book
@@ -428,30 +428,7 @@ quicklisp:
 
 else
 
-$(QUICKLISP_DIR)/quicklisp.lsp:
-	@echo "Downloading Quicklisp"
-	@cd $(QUICKLISP_DIR); \
-	   curl http://beta.quicklisp.org/quicklisp.lisp \
-             -o quicklisp.lsp $(HTTP_PROXY_FLAG)
-	@$(BUILD_DIR)/wait.pl $(QUICKLISP_DIR)/quicklisp.lsp
-	@ls -l $(QUICKLISP_DIR)/quicklisp.lsp
-
-$(QUICKLISP_DIR)/inst/setup.lisp: $(QUICKLISP_DIR)/quicklisp.lsp \
-                                  $(QUICKLISP_DIR)/install.lsp
-	@echo "Setting up Quicklisp..."
-	@cd $(QUICKLISP_DIR); \
-           ($(STARTJOB) -c \
-              "ACL2_CUSTOMIZATION=NONE $(ACL2) < install.lsp &> install.out" ; \
-	    $(BUILD_DIR)/wait.pl inst/setup.lisp ;\
-	    ls -l inst/setup.lisp) \
-	   || (tail -300 install.out | sed 's/^/   | /'; false)
-
-$(QUICKLISP_DIR)/base.cert: $(QUICKLISP_DIR)/inst/setup.lisp
-
 quicklisp: $(QUICKLISP_DIR)/top.cert
-
-# I don't think we need this now
-# all: $(QUICKLISP_DIR)/top.cert
 
 endif # REALLY_USE_QUICKLISP
 
@@ -464,12 +441,8 @@ endif # REALLY_USE_QUICKLISP
 .PHONY: quicklisp_clean
 
 quicklisp_clean:
-	echo "Removing downloaded quicklisp files (if any)" ; \
-	cd $(QUICKLISP_DIR); rm -rf quicklisp.lsp  inst/asdf.lisp inst/cache \
-	    inst/client-info.sexp inst/dists inst/local-projects \
-	    inst/quicklisp inst/setup.lisp inst/tmp install.out Makefile-tmp \
-            asdf-home/cache/common-lisp
-	cd $(QUICKLISP_DIR); $(BUILD_DIR)/clean.pl
+	@echo "Cleaning up Quicklisp files"
+	cd $(QUICKLISP_DIR); ./clean.sh
 
 # The following hack was useful briefly in late January, 2014, when
 # there were issues with quicklisp that caused us not to want to clean
@@ -1346,10 +1319,10 @@ manual:
 # make occasional updates for "bleeding-edge" (svn) users at
 # http://www.cs.utexas.edu/users/moore/acl2/manuals/.  To build this
 # text-based file after building doc/top.cert as above, issue the
-# following command in this directory, where acl2h is an ACL2(h)
+# following command in this directory, where acl2 is an ACL2(h)
 # executable.
 
-#   make doc/top.cert USE_QUICKLISP=1 ACL2=acl2h
+#   make doc/top.cert USE_QUICKLISP=1 ACL2=acl2
 
 ##############################
 ### Section: Some notes

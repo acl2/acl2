@@ -11,6 +11,20 @@
    error_reporting(E_ALL);
    ini_set('display_errors', 1);
    
+   // function to prevent SQL injection attacks. Unfortunately, there
+   // seems to be no alternative for SQLite, and no documentation on
+   // what the function does exactly, so we err on the safe side:
+   if(!function_exists('sqlite_escape_string')){ 
+       function sqlite_escape_string($string) {
+       // only allow characters which we know occur in the keys
+           if (preg_match('/^[-._A-Za-z0-9]+$/',$string)===false)
+           // returns 0 on a match, which evaluates to false, so we need a
+           // check with three ='s
+             return '';
+           else return $string; // the string is safe!
+       }
+   }
+
    class MyDB extends SQLite3
    {
       function __construct()
@@ -122,7 +136,7 @@
 ; Content by various authors
 -->
 <title><?php echo($page['PACKAGE'] .' - '. $page['TITLE']); ?></title>
-<link rel="stylesheet" type="text/css" href="<?= $basedir ?>style.css"/>
+<link rel="stylesheet" type="text/css" href="<?= $basedir ?>desktop.css"/>
 <link rel="shortcut icon" href="<?= $basedir ?>favicon.png"/>
 </head>
 <body>

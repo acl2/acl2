@@ -1,0 +1,274 @@
+-*- Text -*-
+
+Random notes:
+
+  * OSICAT-POSIX exports a low-level API, in the sense that it closely
+    matches the POSIX APIs.  However, this does not mean it should
+    match C-style programming low-levelness.  Notably, users of this
+    package should not have to deal with FFI.  The arguments for this
+    approach are:
+
+      (a) convenience, for application programmers who want to access
+          low-level POSIX functionality;
+
+      (b) convenience;
+
+      (c) convenience, for programmers of higher-level libraries such
+          as OSICAT, who can concentrate on building high-level
+          abstractions rather than deal with FFI.  The interface
+          should, however, be reasonably efficient.
+
+    This file describes some of the details about the trade-offs
+    between convenience and efficiency that were chosen.
+
+
+The rest of this text file was taken from SB-POSIX (an SBCL contrib)
+and only slightly adapted since we share many of their goals and
+design criteria.
+
+Going for (near) SB-POSIX compatibility is probably a good idea.
+
+
+* Scope
+
+The scope of this interface is "operating system calls on a typical
+Unixlike platform".  This is section 2 of the Unix manual, plus
+section 3 calls that are (a) typically found in libc, but (b) not part
+of the C standard.  For example, we intend to provide support for
+opendir() and readdir(), but not for printf().  Note that we do not
+assert or imply any claim of conformance with the official standards
+issued by POSIX groups or SVID or anyone else: we're simply using
+"POSIX" in a generic sense to refer to Unix and Unix-like systems.
+
+Some facilities are omitted where they offer absolutely no additional
+use over some portable function, or would be actively dangerous to the
+consistency of Lisp.  Not all functions are available on all
+platforms.  [TBD: unavailable functions should (a) not exist, or (b)
+exist but signal some kind of "not available on this platform" error]
+
+The general intent is for a low-level interface.  There are three
+reasons for this: it's easier to write a high-level interface given a
+low-level one than vice versa, there are fewer philosophical
+disagreements about what it should look like, and the work of
+implementing it is easily parallelisable - and in fact, can be
+attempted on an as-needed basis by the various people who want it.
+
+* Symbol names
+
+In this project the interface is in the OSICAT-POSIX package.  This
+package contains a Lisp function for each supported Unix function, and
+a variable or constant for each supported unix constant.  A symbol
+name is derived from the C binding's name, by (a) uppercasing, then
+(b) removing leading underscores (#\_) then replacing remaining
+underscore characters with the hyphen (#\-). The requirement to
+uppercase is so that in a standard upcasing reader the user may write
+posix:creat instead of posix:|creat| as would otherise be required -
+some extra-standard implementations may have alternative means to
+achieve the same effect.
+
+No other changes to "Lispify" symbol names are made, so creat()
+becomes CREAT, not CREATE
+
+The user is encouraged not to (USE-PACKAGE :OSICAT-POSIX) but instead to
+use the OSICAT-POSIX: prefix on all references, as some of our symbols
+have the same name as CL symbols (OPEN, CLOSE, SIGNAL etc).
+
+[ Rationale: We use similar names to the C bindings so that unix
+manual pages can be used for documentation.  To avoid name clashes
+with CL or other functions, the approaches considered were (a) prefix
+the names of clashing symbols with "POSIX-" or similar, (b) prefix
+_all_ symbols with "POSIX-", (c) use the packaging system to resolve
+ambiguities.  (a) was rejected as the set of symbols we may
+potentially clash with is not fixed (for example, if new symbols are
+added to SB-EXT) so symbols might have to be renamed over the lifetime
+of SB-POSIX, which is not good.  The choice between (b) and (c) was
+made on the grounds that POSIX-OPEN is about as much typing as
+SB-POSIX:OPEN anyway, and symbol munging is, the author feels,
+slightly tacky, when there's a package system available to do it more
+cleanly ]
+
+
+* Types
+
+Some functions accept objects such as filenames or file
+descriptors. In the C binding to POSIX these are represented as
+strings and small integers respectively. For the Lisp programmer's
+convenience we introduce designators such that CL pathnames or open
+streams can be passed to these functions.
+
+** file-descriptor
+
+A file-descriptor is a non-negative small integer.
+
+A file-stream is a designator for a file-descriptor: the streams file
+descriptor is extracted.  Note that mixing io operations on a stream
+with operations directly on its descriptor may produce unexpected
+results if the stream is buffered.
+
+** filename
+
+A filename is a string.
+
+A pathname is a designator for a filename: the filename is computed
+using the same mechanism as the implementation would use to map
+pathnames to OS filenames internally.
+
+In an implementation that supports pathnames to files on other hosts,
+using mechanisms not available to the underlying OS (for example,
+using an FTP or HTTP client in the Lisp implementation), the effect
+of supplying this interface with a pathname to such a file is undefined.
+
+
+** buffer
+
+[ NOTE: this isn't implemented in either SB-POSIX or OSICAT-POSIX.  Many
+        of the details described below regarding allocation aren't
+        either. ]
+
+
+A buffer is an opaque object which represents an area of memory that
+system calls may access.  It has accessors BUFFER-START and
+BUFFER-LENGTH, and can be created using ALLOCATE-BUFFER or GET-BUFFER.
+
+[ TODO: GET-BUFFER is a silly name.  Come up with a better one ]
+
+The object NIL is a designator for a buffer, meaning a NULL pointer.
+
+A vector of (UNSIGNED-BYTE 8) is a designator for a buffer: it is
+converted to a buffer of appropriate start and length using an
+identity mapping.  This may or may not involve creating a copy of the
+data.
+
+A vector of CHARACTER is a designator for a buffer: it is converted to
+a buffer of appropriate start and length using an implementation-
+defined transformation that obviously depends on the implementation's
+representation of characters.  This may or may not involve creating a
+copy of the data.
+
+Implementations may optionally extend these designators to include
+other types - for example, types that already exist in the
+implementation's FFI.
+
+** Structures, unions
+
+C structures and unions are opaque to Lisp and may be implemented
+using any appropriate method. Structure names are chosen according to
+the general rules for symbols.
+
+Accessors must be provided for each documented field in the
+structure. These are named structure-name-field-name where the two
+components are chosen according to the general rules, with the
+exception that in cases where all fields in a given structure have a
+common prefix, that prefix is omitted. For example, stat.st_dev in C
+becomes STAT-DEV in Lisp.
+
+For any structure that the user may need to allocate himself, there
+must also be a MAKE-structure-name function. This takes keyword
+arguments with names deriving from each documented field name
+according to the general rules for symbols.
+
+[ TDB: GC issues for buffers/structures/unions: probably a
+WITHOUT-MOVING macro or similar that will stop them from being moved
+or collected during its extent ]
+
+
+** Type conversion functions
+
+For each of these types there is a function of the same name that
+converts any valid designator for the type into an object of said type.
+
+This example is merely an example: actual output will vary between
+systems, implementations and environments
+
+(with-open-file (o "/tmp/foo" :direction :output)
+  (sb-posix:file-descriptor o))
+=> 4
+
+[ TBD: some memorable and nicely uniform protocol for transforming
+objects of these new types into instances of the Lisp-friendly types
+that may designate them: e.g how to get a stream from a fd ]
+
+
+* Function parameters
+
+The calling convention is modelled after that of CMUCL's UNIX package:
+in particular, it's like the C interface except that
+
+a) length arguments are omitted or optional where the sensible value
+is obvious.  For example,
+
+(read fd buffer &optional (length (length buffer))) => bytes-read
+
+b) where C simulates "out" parameters using pointers (for instance, in
+pipe() or socketpair()) these may be optional or omitted in the Lisp
+interface: if not provided, appropriate objects will be allocated and
+returned (using multiple return values if necessary).
+
+c) some functions accept objects such as filenames or file
+descriptors.  Wherever these are specified as such in the C bindings,
+the Lisp interface accepts designators for them as specified in the
+'Types' section above
+
+[ Rationale: Keeping exact 1:1 correspondence with C conventions is
+less important here, as the function argument list can easily be
+accessed to find out exactly what the arguments are.  Designators
+are primarily a convenience feature ]
+
+* Function return values
+
+The return value is usually the same as for the C binding, except in
+error cases: where the C function is defined as returning some
+sentinel value and setting "errno" on error, we instead signal an
+error of type SYSCALL-ERROR.  The actual error value ("errno") is
+stored in this condition and can be accessed with SYSCALL-ERRNO.
+[TBA: some interface to strerror, to get the user-readable translation
+of the error number]
+
+We do not automatically translate the returned value into "Lispy"
+objects - for example, OSICAT-POSIX:OPEN returns a small integer, not a
+stream.  Exception: boolean-returning functions (or, more commonly,
+macros) do not return a C integer, but instead a lisp boolean [ or
+maybe "true"/"false" in CLtS parlance ]; the rationale behind this
+exception is that there is nothing that can be meaningfully done with
+the boolean except test for truth or falsity -- it cannot be passed
+meaningfully to other POSIX functions.
+
+[ Rationale: This is an interface to POSIX, not a high-level interface
+that uses POSIX, and many people using it will actually want to mess
+with the file descriptors directly.  People needing Lispy interfaces
+can implement them atop this - or indeed, use the existing COMMON-LISP
+package, which already has many high-level constructs built on top of
+the operating system ;-) ]
+
+
+* Implementation
+
+OSICAT-POSIX is a portable MIT-licensed implementation using CFFI.
+
+
+[SBCL: The initial implementation is in contrib/sb-posix, and being
+filled out on an as-needed basis.  Contributions following these style
+rules are welcome from anyone who writes them, provided the author is
+happy to release the code as Public Domain or MIT-style licence.
+
+See/update the TODO list for current status]
+
+
+** Designators
+
+OSICAT-POSIX makes use of CFFI's type system to implement these.  See also
+DEFINE-DESIGNATOR in src/early.lisp.
+
+
+** Adding functions
+
+The use of DEFSYSCALL macro in interface.lisp should be obvious from
+the existing examples.
+
+
+** GC issues [where? --luis]
+
+buffers that refer to C stuff are probably not movable by GC anyway
+
+a buffer that refers to a Lisp object may have trouble if the Lisp
+object is moved

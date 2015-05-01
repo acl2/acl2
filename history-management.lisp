@@ -13485,8 +13485,15 @@
 
   (list* 'mv-nth 'iff *expandable-boot-strap-non-rec-fns*))
 
-(defun translate-in-theory-hint
-  (expr chk-boot-strap-fns-flg ctx wrld state)
+(defun new-disables (theory-tail runic-theory ens wrld)
+  (cond ((endp theory-tail) nil)
+        ((and (enabled-runep (car theory-tail) ens wrld)
+              (not (member-eq (car theory-tail) runic-theory)))
+         (cons (car theory-tail)
+               (new-disables (cdr theory-tail) runic-theory ens wrld)))
+        (t (new-disables (cdr theory-tail) runic-theory ens wrld))))
+
+(defun translate-in-theory-hint (expr chk-boot-strap-fns-flg ctx wrld state)
 
 ; We translate and evaluate expr and make sure that it produces a
 ; common theory.  We either cause an error or return the corresponding
@@ -13495,70 +13502,60 @@
 ; Keep this definition in sync with minimal-theory and
 ; translate-in-theory-hint@par.
 
-  (er-let*
-   ((runic-value (eval-theory-expr expr ctx wrld state)))
-   (let* ((warning-disabled-p (warning-disabled-p "Theory"))
-          (state
-           (cond
-            (warning-disabled-p
-             state)
-            ((and chk-boot-strap-fns-flg
-                  (f-get-global 'verbose-theory-warning state)
-                  (not (subsetp-equal
-                        (getprop 'definition-minimal-theory 'theory
-                                 nil ; so, returns nil early in boot-strap
-                                 'current-acl2-world wrld)
-                        runic-value)))
-             (warning$ ctx ("Theory")
-                       "The :DEFINITION rule~#0~[ for ~&0 is~/s for ~&0 are~] ~
-                        left disabled by the theory expression ~x1, but ~
-                        because ~#0~[this built-in function is~/these ~
-                        built-in functions are~] given certain special ~
-                        handling, some expansions of ~#0~[its~/their~] calls ~
-                        may still occur.  See :DOC theories-and-primitives."
-                       (strip-base-symbols
-                        (set-difference-equal
-                         (getprop 'definition-minimal-theory 'theory nil
-                                  'current-acl2-world wrld)
-                         runic-value))
-                       expr
-                       *definition-minimal-theory*
-                       '(assign verbose-theory-warning nil)))
-            (t state))))
-     (let ((state
+  (er-let* ((runic-value (eval-theory-expr expr ctx wrld state)))
+    (let* ((warning-disabled-p (warning-disabled-p "Theory"))
+           (ens (ens state)))
+      (pprogn
+       (cond
+        ((or warning-disabled-p
+             (not (and chk-boot-strap-fns-flg
+                       (f-get-global 'verbose-theory-warning state))))
+         state)
+        (t
+         (pprogn
+          (let ((new-disables
+                 (new-disables
+                  (getprop 'definition-minimal-theory 'theory
+                           nil ; so, returns nil early in boot-strap
+                           'current-acl2-world wrld)
+                  runic-value ens wrld)))
             (cond
-             (warning-disabled-p
-              state)
-             ((and chk-boot-strap-fns-flg
-                   (f-get-global 'verbose-theory-warning state)
-                   (not (subsetp-equal
-                         (getprop 'executable-counterpart-minimal-theory
-                                  'theory
-                                  nil ; so, returns nil early in boot-strap
-                                  'current-acl2-world wrld)
-                         runic-value)))
+             (new-disables
               (warning$ ctx ("Theory")
-                       "The :EXECUTABLE-COUNTERPART rule~#0~[ for ~&0 is~/s ~
-                        for ~&0 are~] left disabled by the theory expression ~
-                        ~x1, but because ~#0~[this built-in function ~
-                        is~/these built-in functions are~] given certain ~
-                        special handling, some evaluations of ~
-                        ~#0~[its~/their~] calls may still occur.  See :DOC ~
-                        theories-and-primitives."
-                        (strip-base-symbols
-                         (set-difference-equal
-                          (getprop 'executable-counterpart-minimal-theory
-                                   'theory nil 'current-acl2-world wrld)
-                          runic-value))
-                        expr
-                        *built-in-executable-counterparts*
-                        '(assign verbose-theory-warning nil)))
-             (t state))))
+                        "The :DEFINITION rule~#0~[ for ~&0 is~/s for ~&0 ~
+                         are~] disabled by the theory expression ~x1, but ~
+                         because ~#0~[this built-in function is~/these ~
+                         built-in functions are~] given certain special ~
+                         handling, some expansions of ~#0~[its~/their~] calls ~
+                         may still occur.  See :DOC theories-and-primitives."
+                        (strip-base-symbols new-disables)
+                        expr))
+             (t state)))
+          (let ((new-disables
+                 (new-disables
+                  (getprop 'executable-counterpart-minimal-theory
+                           'theory
+                           nil ; so, returns nil early in boot-strap
+                           'current-acl2-world wrld)
+                  runic-value ens wrld)))
+            (cond
+             (new-disables
+              (warning$ ctx ("Theory")
+                        "The :EXECUTABLE-COUNTERPART rule~#0~[ for ~&0 is~/s ~
+                         for ~&0 are~] disabled by the theory expression ~x1, ~
+                         but because ~#0~[this built-in function is~/these ~
+                         built-in functions are~] given certain special ~
+                         handling, some evaluations of ~#0~[its~/their~] ~
+                         calls may still occur.  See :DOC ~
+                         theories-and-primitives."
+                        (strip-base-symbols new-disables)
+                        expr))
+             (t state))))))
        (value runic-value)))))
 
 #+acl2-par
-(defun translate-in-theory-hint@par
-  (expr chk-boot-strap-fns-flg ctx wrld state)
+(defun translate-in-theory-hint@par (expr chk-boot-strap-fns-flg ctx wrld
+                                          state)
 
 ; We translate and evaluate expr and make sure that it produces a
 ; common theory.  We either cause an error or return the corresponding
@@ -13571,70 +13568,53 @@
   (er-let*@par
    ((runic-value (eval-theory-expr@par expr ctx wrld state)))
    (let* ((warning-disabled-p (warning-disabled-p "Theory"))
-          (ignored-val
-           (cond
-            (warning-disabled-p
-             nil)
-            ((and chk-boot-strap-fns-flg
-                  (f-get-global 'verbose-theory-warning state)
-                  (not (subsetp-equal
-                        (getprop 'definition-minimal-theory 'theory
-                                 nil ; so, returns nil early in boot-strap
-                                 'current-acl2-world wrld)
-                        runic-value)))
-             (warning$@par ctx ("Theory")
-               "The value of the theory expression ~x0 does not include the ~
-                :DEFINITION rule~#1~[~/s~] for ~v1.  But ~#1~[this function ~
-                is~/these functions are~] among a set of primitive functions ~
-                whose definitions are built into the ACL2 system in various ~
-                places.  This set consists of the functions ~&2.  While ~
-                excluding :DEFINITION rules for any functions in this set ~
-                from the current theory may prevent certain expansions, it ~
-                may not prevent others.  Good luck!~|~%To inhibit this ~
-                warning, evaluate:~|~x3."
-               expr
-               (strip-base-symbols
-                (set-difference-equal
-                 (getprop 'definition-minimal-theory 'theory nil
+          (ens (ens state)))
+     (prog2$
+      (cond
+       ((or warning-disabled-p
+            (not (and chk-boot-strap-fns-flg
+                      (f-get-global 'verbose-theory-warning state))))
+        nil)
+       (t
+        (progn$
+         (let ((new-disables
+                (new-disables
+                 (getprop 'definition-minimal-theory 'theory
+                          nil ; so, returns nil early in boot-strap
                           'current-acl2-world wrld)
-                 runic-value))
-               *definition-minimal-theory*
-               '(assign verbose-theory-warning nil)))
-            (t nil))))
-     (declare (ignore ignored-val))
-     (let ((ignored-val
-            (cond
-             (warning-disabled-p
-              nil)
-             ((and chk-boot-strap-fns-flg
-                   (f-get-global 'verbose-theory-warning state)
-                   (not (subsetp-equal
-                         (getprop 'executable-counterpart-minimal-theory
-                                  'theory
-                                  nil ; so, returns nil early in boot-strap
-                                  'current-acl2-world wrld)
-                         runic-value)))
-              (warning$@par ctx ("Theory")
-                "The value of the theory expression ~x0 does not include the ~
-                 :EXECUTABLE-COUNTERPART rule~#1~[~/s~] for ~v1.  But ~
-                 ~#1~[this function is~/these functions are~] among a set of ~
-                 primitive functions whose executable counterparts are built ~
-                 into the ACL2 system.  This set consists of the functions ~
-                 ~&2.  While excluding :EXECUTABLE-COUNTERPART rules for any ~
-                 functions in this set from the current theory may prevent ~
-                 certain expansions, it may not prevent others.  Good ~
-                 luck!~|~%To inhibit this warning, evaluate:~|~x3."
-                expr
-                (strip-base-symbols
-                 (set-difference-equal
-                  (getprop 'executable-counterpart-minimal-theory
-                           'theory nil 'current-acl2-world wrld)
-                  runic-value))
-                *built-in-executable-counterparts*
-                '(assign verbose-theory-warning nil)))
-             (t nil))))
-       (declare (ignore ignored-val))
-       (value@par runic-value)))))
+                 runic-value ens wrld)))
+           (cond
+            (new-disables
+             (warning$@par ctx ("Theory")
+               "The :DEFINITION rule~#0~[ for ~&0 is~/s for ~&0 are~] ~
+                disabled by the theory expression ~x1, but because ~#0~[this ~
+                built-in function is~/these built-in functions are~] given ~
+                certain special handling, some expansions of ~
+                ~#0~[its~/their~] calls may still occur.  See :DOC ~
+                theories-and-primitives."
+               (strip-base-symbols new-disables)
+               expr))
+            (t nil)))
+         (let ((new-disables
+                (new-disables
+                 (getprop 'executable-counterpart-minimal-theory
+                          'theory
+                          nil ; so, returns nil early in boot-strap
+                          'current-acl2-world wrld)
+                 runic-value ens wrld)))
+           (cond
+            (new-disables
+             (warning$@par ctx ("Theory")
+               "The :EXECUTABLE-COUNTERPART rule~#0~[ for ~&0 is~/s for ~&0 ~
+                are~] disabled by the theory expression ~x1, but because ~
+                ~#0~[this built-in function is~/these built-in functions ~
+                are~] given certain special handling, some evaluations of ~
+                ~#0~[its~/their~] calls may still occur.  See :DOC ~
+                theories-and-primitives."
+               (strip-base-symbols new-disables)
+               expr))
+            (t nil))))))
+      (value@par runic-value)))))
 
 (defun all-function-symbolps (fns wrld)
   (cond ((atom fns) (equal fns nil))

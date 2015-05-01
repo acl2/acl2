@@ -12,8 +12,6 @@ workxxx*
 *.acl2x
 Makefile-deps
 Makefile-tmp
-*.h
-*.c
 *.data
 *.o
 *.sbin

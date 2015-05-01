@@ -33,66 +33,46 @@
 (include-book "tools/include-raw" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "std/strings/defs" :dir :system) ;; used in the raw code
+(include-book "centaur/quicklisp/shellpool" :dir :system)
 ;; (depends-on "tshell-raw.lsp")
 
 (defxdoc tshell
   :parents (interfacing-tools sys-call)
   :short "A fancy alternative to @(see sys-call) that features output streaming
 and capture, exit-code capture, interruption, and better control over when
-forking occurs. (CCL only)"
+forking occurs."
 
-  :long "<p><b>Tshell</b> is an alternative to things like ACL2's @(see
-sys-call) or Lisp-specific tools like CCL's @('run-program') that offers
-some nice features:</p>
+  :long "<p><b>Tshell</b> is an ACL2 wrapper around the <a
+href='https://github.com/jaredcdavis/shellpool/'>Shellpool</a> library for
+Common Lisp, which is available via @(see quicklisp).  It allows you to run
+external programs from within ACL2, and has many nice features for handling
+output, etc.</p>
 
-<ul>
+<p>Shellpool has its own <a
+href='https://github.com/jaredcdavis/shellpool/blob/master/DOC.md'>API
+documentation</a>, which you may find useful.</p>
 
-<li><i>Output streaming and capture</i>.  You can (optionally) have the
-program's output printed at runtime, but still (optionally) capture its output
-as a string list.  This makes it easy to show a user a long-running
-sub-program's output as it's being created, but also parse and analyze the
-program's output with your ACL2 code.</li>
-
-<li><i>Exit code.</i> Yep, you get it.</li>
-
-<li><i>Interruption.</i> Interrupts are handled gracefully.  After you
-interrupt (e.g., Control C), you can @(':continue') to keep running the
-program, or @(':q') to send the sub-program a KILL signal.</li>
-
-<li><i>Forking.</i> Sub-programs are launched with a separate shell, so you can
-avoid <a
-href='http://en.wikipedia.org/wiki/Fork_%28operating_system%29'>forking</a>
-your ACL2 image when you have dozens of GB allocated.  (Trying to do so
-typically results in ACL2 being killed, despite the wonders of copy-on-write
-pages.)</li>
-
-<li><i>Background jobs.</i> You can optionally launch programs in the
-background.  We use this, e.g., to launch waveform viewers which the user can
-then interact with independently from ACL2.</li>
-
-</ul>
 
 <h3>Usage</h3>
 
-<p>Note that Tshell requires a trust tag because its implementation requires
-some raw Lisp code.  The book to load is:</p>
+<p>Note that Tshell requires @(see trust-tag)s because its implementation
+requires some raw Lisp code.  The book to load is:</p>
 
 @({
- (include-book \"centaur/misc/tshell\" :dir :system)
+    (include-book \"centaur/misc/tshell\" :dir :system)
 })
 
-<p>After loading this book, the first step is then to launch a tshell,
-e.g.,</p>
+<p>After loading this book, the first step is then to launch one or more
+shells, e.g.,</p>
 
 @({
- (value-triple (tshell-ensure))
+    (value-triple (tshell-ensure))
 })
 
-<p>This will launch the subsidiary bash shell that tshell will use to run
-programs (actually three bash shells: one to launch programs, one to kill them,
-and one for background jobs).  This step requires forking ACL2 itself, so you
-typically want to do this early in your ACL2 session, before you have allocated
-tons of memory.</p>
+<p>This is a thin wrapper around @('shellpool:ensure').  It launches the
+subsidiary bash shells that tshell/shellpool will use to run programs.  This
+step requires forking ACL2 itself, so you typically want to do this early in
+your ACL2 session, before you have allocated tons of memory.</p>
 
 <p>After that, you can start launching programs using @(see tshell-call) or
 @(see tshell-run-background).  For instance,</p>
@@ -101,25 +81,13 @@ tons of memory.</p>
     ACL2 !>(tshell-call \"echo hello\")
     (tshell-call \"echo hello\")
     hello             ;; <-- output from subprogram, streamed
-    (T 0 (\"hello\"))   ;; <-- finished ok, exit code 0, output lines
+    (0 (\"hello\"))   ;; <-- exit code 0, output lines
 })")
 
 
-(define tshell-stop ()
+(define tshell-start (&optional ((n posp "How many shells to start.") '1))
   :parents (tshell)
-  :short "Stop any subsidiary bash processes that tshell is running."
-  :returns (nil)
-  :long "<p>You could call this when you're done using tshell.  We typically
-don't bother, since the shells get closed when ACL2 exits anyway.</p>"
-
-  (cw "Warning: under-the-hood definition of ~s0 not installed?"
-      __function__))
-
-
-(define tshell-start ()
-  :parents (tshell)
-  :short "Stop any subsidiary bash processes that tshell is running, then
-start new ones. (always forks ACL2)"
+  :short "Start additional shells for running sub-processes (forks ACL2)."
   :returns (nil)
   :long "<p>We usually instead use @(see tshell-ensure), which only starts up
 new bash processes if they aren't already running.</p>
@@ -127,16 +95,20 @@ new bash processes if they aren't already running.</p>
 <p>If you want to use this in a book, you can wrap it in a @(see value-triple),
 e.g.,</p>
 
-@({ (value-triple (tshell-start)) })"
+@({ (value-triple (tshell-start)) })
+
+<p>This is essentially just @('shellpool:start'); see the <a
+href='https://github.com/jaredcdavis/shellpool/blob/master/DOC.md'>Shellpool
+API documentation</a> for details.</p>"
+  (declare (ignorable n))
 
   (cw "Warning: under-the-hood definition of ~s0 not installed?"
       __function__))
 
 
-(define tshell-ensure ()
+(define tshell-ensure (&optional ((n posp "How many shells to start.") '1))
   :parents (tshell)
-  :short "Starts up the subsidiary bash processes for tshell, but only if they
-are not already running. (sometimes forks ACL2)"
+  :short "Ensure that shells are available for running sub-processes (may fork ACL2)."
   :returns (nil)
   :long "<p>If you want to use this in a book, you can wrap it in a @(see
 value-triple), e.g.,</p>
@@ -145,11 +117,15 @@ value-triple), e.g.,</p>
 
 <p>It's also typically useful to put this before calls of @(see tshell-call) or
 @(see tshell-run-background), to start up the shells if the user hadn't already
-gotten them started earlier.</p>"
+gotten them started earlier.</p>
 
+<p>This is essentially just @('shellpool:ensure'); see the <a
+href='https://github.com/jaredcdavis/shellpool/blob/master/DOC.md'>Shellpool
+API documentation</a> for details.</p>"
+
+  (declare (ignorable n))
   (cw "Warning: under-the-hood definition of ~s0 not installed?"
       __function__))
-
 
 
 (defun tshell-useless-clauseproc (clause)
@@ -160,6 +136,7 @@ gotten them started earlier.</p>"
 (defsection tshell-call-fn1
   :parents (tshell)
   :short "Logical story for @(see tshell-call)."
+
   :long "<p>We use the @(':partial-theory') feature of @(see
 define-trusted-clause-processor) to introduce a function, @('tshell-call-fn1'),
 about which we assume nothing.</p>
@@ -174,17 +151,16 @@ need to involve state.</p>"
    (tshell-call-fn1)
    :partial-theory
    (encapsulate
-     (((tshell-call-fn1 * * *) => (mv * * *)))
+     (((tshell-call-fn1 * * *) => (mv * *)))
 
      (local (defun tshell-call-fn1 (x y z)
               (declare (ignorable x y z))
-              (mv nil 0 nil)))
+              (mv 0 nil)))
 
      (defthm return-type-of-tshell-call-fn1
-       (b* (((mv finishedp status lines)
+       (b* (((mv status lines)
              (tshell-call-fn1 cmd print save)))
-         (and (booleanp finishedp)
-              (natp status)
+         (and (natp status)
               (string-listp lines)))))))
 
 
@@ -194,34 +170,26 @@ need to involve state.</p>"
 forks ACL2)."
 
   ((cmd stringp
-        "This should be an ordinary shell command that takes no input and does
-         not attempt to do any I/O redirection.  It can have arguments, e.g.,
-         you can write something like @('\"echo hello\"') here.  But it won't
-         work to do something like @('\"echo < foo.txt\"').")
+        "This is the command to run.  It can actually be a full-blown shell script.
+         It should not require any input from the user.")
    &key
-
    ((print symbolp
            "This says whether we should print the lines produced by @('cmd') as
-            they are produced.  @('nil') means print nothing, @('t') means
-            print everything, and any other symbol @('fn') means call the raw
-            Lisp function @('fn') to do the printing.  Using a custom output
-            function is an advanced feature; see @('tshell-raw.lsp') to
-            understand how to write such functions.")
+           they are produced.  @('nil') means print nothing, @('t') means print
+           everything, and any other symbol @('fn') means call the raw Lisp
+           function @('fn') to do the printing.  Custom output functions are an
+           advanced feature; see @('tshell-raw.lsp') for details.")
     't)
 
    ((save booleanp
-          "This says whether we should capture the output lines produced by
-           @('cmd') and return them as the @('lines') output.  If you aren't
-           going to analyze the program's output, you might want to set this
-           to @('nil') to cut down on memory usage.")
+          "This says whether we should capture the stdout/stderr lines produced
+          by @('cmd') and return them as the @('lines') output.  If you aren't
+          going to analyze the program's output, you might want to set this to
+          @('nil') to cut down on memory usage.")
     't))
 
   :returns
-  (mv (finishedp booleanp :rule-classes :type-prescription
-                 "This will be @('t') if the command completed normally, or
-                  @('nil') if the command was interrupted.")
-
-      (exit-status natp :rule-classes :type-prescription
+  (mv (exit-status natp :rule-classes :type-prescription
                    "The exit code from the command.  Typically 0 means success
                     and any non-zero value means failure.  This is only
                     sensible if @('finishedp') is @('t').")

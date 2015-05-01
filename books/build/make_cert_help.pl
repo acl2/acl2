@@ -526,6 +526,9 @@ my $usercmds = $acl2file ? read_file_except_certify($acl2file) : "";
 # Don't hideously underapproximate timings in event summaries
 $instrs .= "(acl2::assign acl2::get-internal-time-as-realtime acl2::t)\n";
 
+# Don't hide GC messages -- except for CMUCL, which dumps them to the terminal.
+$instrs .= "#-cmucl (acl2::gc-verbose t)\n";
+
 $instrs .= "; instructions from .acl2 file $acl2file:\n";
 $instrs .= "$usercmds\n\n";
 
@@ -545,7 +548,7 @@ foreach my $pair (@$includes) {
     }
 }
 
-$instrs .= "(set-ld-error-action (quote :continue) state)\n";
+$instrs .= "#!ACL2 (set-ld-error-action (quote :continue) state)\n";
 
 my $cert_flags = parse_certify_flags($acl2file, $usercmds);
 $instrs .= "\n; certify-book command flags: $cert_flags\n";

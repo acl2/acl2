@@ -40,7 +40,7 @@
   :parents (server)
   :short "Where we look for translation data."
 
-  :long "<p>The constant @(see *vls-root*) defines the root directory for our
+  :long "<p>The VL server looks in a particular root directory for its
 translation data.  This directory should contain @('.vlzip') files created by
 the @('vl zip') command.  See the @(see kit) for more details.  Each
 @('.vlzip') file knows its name and has a date stamp associated with it.  We

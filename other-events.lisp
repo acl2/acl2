@@ -15437,20 +15437,14 @@
             nil)))))
    (t (value nil))))
 
-(defun print-certify-book-step-4 (full-book-name expansion-filename cert-op
-                                                 state)
+(defun print-certify-book-step-4 (full-book-name cert-op state)
   (io? event nil state
-       (full-book-name expansion-filename cert-op)
-       (fms "* Step 4:  Write the certificate for ~x0 in ~x1~@2.~%"
+       (full-book-name cert-op)
+       (fms "* Step 4:  Write the certificate for ~x0 in ~x1.~%"
             (list
              (cons #\0 full-book-name)
              (cons #\1
-                   (convert-book-name-to-cert-name full-book-name cert-op))
-             (cons #\2
-                   (if expansion-filename
-                       (msg ", and compile the expansion file, ~s0"
-                            expansion-filename)
-                     "")))
+                   (convert-book-name-to-cert-name full-book-name cert-op)))
             (proofs-co state) state nil)))
 
 (defun print-certify-book-step-5 (full-book-name state)
@@ -16614,17 +16608,34 @@
              (certify-book-finish-complete full-book-name ctx state))
             (t
              (er-let* ((write-port
-                        (cond ((member-eq write-port '(t nil))
-                               (value write-port))
-                              ((eq write-port :default)
-                               (er-let* ((str
-                                          (getenv! "ACL2_WRITE_PORT" state)))
-                                 (value (cond (str (intern$ (string-upcase str)
-                                                            "ACL2"))
-                                              (t t))))) ; default
-                              (t (er soft ctx
-                                     "Illegal :write-port argument, ~x0.  See ~
-                                      :DOC certify-book."))))
+                        (cond
+                         ((member-eq write-port '(t nil))
+                          (value write-port))
+                         ((eq write-port :default)
+                          (cond
+                           (pcert
+
+; We have seen a "convert" failure (for creating the .pcert1 file) for
+; community book
+; books/workshops/2011/verbeek-schmaltz/sources/correctness.lisp.  The problem
+; seems to be that build system automatically creates .port files that are
+; loaded, but more .port files are around when building correctness.pcert1 file
+; than when building correctness.pcert1.pcert0.  Our solution is to make the
+; default for :write-port be nil, instead of t, when doing any step of
+; provisional certification -- even when ACL2_WRITE_PORT is set, so as to
+; defeat the build system's attempt to build .port files when doing
+; pcertification steps.
+
+                            (value nil))
+                           (t
+                            (er-let* ((str
+                                       (getenv! "ACL2_WRITE_PORT" state)))
+                              (value (cond (str (intern$ (string-upcase str)
+                                                         "ACL2"))
+                                           (t t))))))) ; default
+                         (t (er soft ctx
+                                "Illegal :write-port argument, ~x0.  See :DOC ~
+                                 certify-book."))))
                        (write-acl2x
                         (cond (acl2x (value (f-get-global 'write-acl2x state)))
                               ((f-get-global 'write-acl2x state)
@@ -17152,7 +17163,8 @@
 
                                     (progn
                                       (cond
-                                       ((and (fboundp 'si::sgc-on)
+                                       ((and (not *gcl-large-maxpages*)
+                                             (fboundp 'si::sgc-on)
                                              (funcall 'si::sgc-on))
                                         (funcall 'si::sgc-on nil)
                                         (si::gbc t)
@@ -17247,10 +17259,6 @@
 
                                                      (newly-defined-top-level-fns
                                                       wrld1 wrld2 full-book-name)))
-                                               (os-expansion-filename
-                                                (and compile-flg
-                                                     (expansion-filename
-                                                      full-book-name t state)))
                                                (include-book-alist-wrld2
                                                 (global-val 'include-book-alist
                                                             wrld2))
@@ -17304,7 +17312,6 @@
 ; Write certificate.
                                               (print-certify-book-step-4
                                                full-book-name
-                                               os-expansion-filename
                                                cert-op
                                                state)
                                               (let* ((portcullis-cmds
@@ -17374,7 +17381,10 @@
                                                           pass1-known-package-alist
                                                           ctx state)
                                                          #-acl2-loop-only
-                                                         (progn
+                                                         (let ((os-expansion-filename
+                                                                (and compile-flg
+                                                                     (expansion-filename
+                                                                      full-book-name t state))))
                                                            (compile-certified-file
                                                             os-expansion-filename
                                                             full-book-name

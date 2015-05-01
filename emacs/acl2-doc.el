@@ -68,7 +68,10 @@
        "acl2-doc-history")
      (defv *acl2-doc-return* nil)
      (defv *acl2-doc-all-topics-rev* nil)
-     (defv *acl2-doc-state* nil)))
+     (defv *acl2-doc-state* nil)
+     (defv *acl2-doc-limit-topic* nil)
+     (defv *acl2-doc-topics-ht* nil)
+     (defv *acl2-doc-children-ht* nil)))
 
 (acl2-doc-init-vars)
 
@@ -117,12 +120,13 @@
     (error "File %s is missing!" rendered-pathname))
   (let* ((large-file-warning-threshold
 
-; As of November 2013, file books/system/doc/rendered-doc-combined.lsp is
-; nearly 15M.  We take a guess here that modern platforms can handle plenty
-; more than that, so we rather arbitrarily bump the threshold for a warning up
-; to approximately twice the current size.
+; As of April 2015, file books/system/doc/rendered-doc-combined.lsp is nearly
+; 55M.  (It was just under 15M in November 2013.)  We take a guess here that
+; modern platforms can handle somewhat more than the current size, so we rather
+; arbitrarily bump up the threshold for a warning, to provide a modest cushion
+; for avoiding the warning.
 
-	  (max large-file-warning-threshold 30000000))
+	  (max large-file-warning-threshold 70000000))
 	 (buf0 (find-buffer-visiting rendered-pathname))
 
 ; We could let buf = buf0 if buf0 is non-nil.  But if the file was changed
@@ -282,6 +286,15 @@ then restart the ACL2-Doc browser to view that manual."
   (acl2-doc-maybe-reset)
   (nth 1 *acl2-doc-state*))
 
+; Based on http://ergoemacs.org/emacs/elisp_syntax_coloring.html:
+(setq acl2-doc-keywords
+      '(("\\[\\([^ \t]*\\)\\]"
+	 . 1)))
+
+; Can be modified by user; set to the desired link color, or nil if none.
+(defvar *acl2-doc-link-color* "#0000FF") ; blue
+(make-face 'acl2-doc-link-face)
+
 (define-derived-mode acl2-doc-mode
   fundamental-mode
   "ACL2-Doc"
@@ -297,7 +310,15 @@ then restart the ACL2-Doc browser to view that manual."
 ; approach might conceivably be useful for people who are navigating
 ; lisp forms in the acl2-doc buffer.
 
-  :syntax-table lisp-mode-syntax-table)
+  :syntax-table (copy-syntax-table lisp-mode-syntax-table))
+
+(add-hook 'acl2-doc-mode-hook
+	  (lambda ()
+	    (when *acl2-doc-link-color*
+	      (set-face-foreground 'acl2-doc-link-face *acl2-doc-link-color*)
+	      (setq font-lock-defaults '(acl2-doc-keywords t))
+	      (set (make-local-variable 'font-lock-keyword-face)
+		   'acl2-doc-link-face))))
 
 ; Arrange that files ending in .acl2-doc come up in acl2-doc mode.
 ; See also the emacs documentation for auto-mode-alist.
@@ -632,13 +653,100 @@ acl2-doc."
 	(if (eq (acl2-doc-state-top-name) 'ACL2) 'TOP 'ACL2)))
   (acl2-doc-top))
 
+; Start code for setting the limit topic.
+
+;;; When *acl2-doc-limit-topic* is non-nil, it is the "limit topic": we want
+;;; searches (including index operations) to be restricted to topics with a
+;;; parent chain leading to the limit topic.  We'll call such topics
+;;; "descendents".
+
+;;; When *acl2-doc-topics-ht* is non-nil, this is a hash table mapping each
+;;; descendent of *acl2-doc-limit-topic* to t.
+
+;;; When *acl2-doc-children-ht* is non-nil, this variable is a hash table that
+;;; maps each topic name to a hash table, which in turn maps children of that
+;;; key to t.
+
+(defun acl2-doc-topics-ht-1 (topic ht children-ht)
+
+;;; We mark each node reachable from topic by a path following children-ht,
+;;; stopping our exploration when we reach a node that is already marked.  A
+;;; key idea is to avoid looping by marking the topic before exploring its
+;;; children.
+
+;;; It seems plausible that this algorithm marks in ht every node reachable
+;;; from topic.  At some point maybe a proof will appear here.  Here we present
+;;; an informal argument by induction on the length of a path from the
+;;; top-level topic to a reachable node N.  For consider the first call of this
+;;; function on N.  There is a call on some parent P, so by induction, P is
+;;; marked; but the first mark of P will lead to a call of this function that
+;;; marks N.
+
+  (when (not (gethash topic ht)) ; otherwise we could loop
+    (puthash topic t ht)
+    (let ((topic-children-ht (gethash topic children-ht)))
+      (when topic-children-ht
+	(maphash (lambda (child val)
+		   (when (null (gethash child ht))
+		     (acl2-doc-topics-ht-1 child ht children-ht)))
+		 topic-children-ht)))))
+
+(defun acl2-doc-topics-ht-init (topic)
+  (cond
+   ((eq topic (acl2-doc-state-top-name)) ; no limitations
+    (setq *acl2-doc-topics-ht* nil))
+   (t ;; Set up initial *acl2-doc-children-ht*, mapping parents to children.
+    (setq *acl2-doc-topics-ht* (make-hash-table :test 'eq))
+    (when (null *acl2-doc-children-ht*)
+      (setq *acl2-doc-children-ht* (make-hash-table :test 'eq)))
+    ;; Map each parent to its children in *acl2-doc-children-ht*.
+    (dolist (tup (acl2-doc-state-alist))
+      (let ((topic (car tup))
+	    (parents (cadr tup)))
+	(when (not (member parents '(NIL ())))
+	  (dolist (parent parents)
+	    (let ((ht (cond ((gethash parent *acl2-doc-children-ht*))
+			    (t (let ((ht (make-hash-table :test 'eq)))
+				 (puthash parent
+					  ht
+					  *acl2-doc-children-ht*)
+				 ht)))))
+	      (puthash topic t ht))))))
+    (acl2-doc-topics-ht-1 topic *acl2-doc-topics-ht* *acl2-doc-children-ht*)
+    (puthash topic t *acl2-doc-topics-ht*)
+    *acl2-doc-topics-ht*)))
+
+(defun acl2-doc-set-limit-topic (do-it)
+  (cond
+   ((null do-it)
+    (setq *acl2-doc-limit-topic* nil
+	  *acl2-doc-topics-ht* nil))
+   (t
+    (let ((name
+	   (car (acl2-doc-completing-read
+		 "Search or index only under topic"
+		 t))))
+      (cond ((or (equal (symbol-name name) "")
+		 (eq name *acl2-doc-limit-topic*))) ; nothing to do
+	    (t
+	     (let ((found-p (assoc name (acl2-doc-state-alist))))
+	       (cond (found-p (setq *acl2-doc-limit-topic* name)
+			      (acl2-doc-topics-ht-init name))
+		     (t (error "Unknown topic name: %s" name))))))))))
+
+(defun acl2-doc-under-limit-topic-p (topic)
+  (or (null *acl2-doc-topics-ht*)
+      (gethash topic *acl2-doc-topics-ht*)))
+
+; End code for setting the limit topic.
+
 (defun acl2-doc-index-buffer ()
   (or (get-buffer *acl2-doc-index-buffer-name*)
       (let ((buf (get-buffer-create *acl2-doc-index-buffer-name*))
             (alist (acl2-doc-state-alist)))
 	(with-current-buffer
 	    buf
-	  (when *acl2-doc-directory* ; probabl always true
+	  (when *acl2-doc-directory* ; probably always true
 	    (setq default-directory *acl2-doc-directory*))
           (while alist
             (insert (format "%s\n" (car (pop alist)))))
@@ -647,17 +755,13 @@ acl2-doc."
 	  (setq buffer-read-only t))
 	buf)))
 
-(defun acl2-doc-index (name)
-
-  "Go to the specified topic or else one containing it as a
-substring; performs completion.  If the empty string is
-supplied, then go to the index buffer.  Note that the index
-buffer is in ACL2-Doc mode; thus, in particular, you can
-type <RETURN> while standing on a topic in order to go
-directly to that topic."
-
+(defun acl2-doc-index-main (name)
   (interactive (acl2-doc-completing-read
-                "Find topic (then use \",\" for more) "
+                (format "Find topic%s (then type , for next match) "
+			(if *acl2-doc-limit-topic*
+			    (format " under %s"
+				    *acl2-doc-limit-topic*)
+			  ""))
                 t))
   (let ((buf (acl2-doc-index-buffer)))
     (cond
@@ -665,48 +769,125 @@ directly to that topic."
       (switch-to-buffer *acl2-doc-index-buffer-name*)
       (goto-char (point-min)))
      (t
-      (let ((found-p (assoc name (acl2-doc-state-alist))))
-	(setq *acl2-doc-index-name-found-p* (consp found-p))
+      (let ((found-p (and (acl2-doc-under-limit-topic-p name)
+			  (assoc name (acl2-doc-state-alist)))))
+	(setq *acl2-doc-index-name-found-p* found-p) ; a cons
 	(setq *acl2-doc-index-name* (symbol-name name))
 	(cond
 	 (found-p (with-current-buffer
 		      buf
 		    (goto-char (point-min)))
 		  (acl2-doc-display name))
-	 (t (let ((topic
-		   (with-current-buffer
-		       buf
-		     (goto-char (point-min))
-		     (cond ((search-forward (symbol-name name) nil t)
-			    (intern (acl2-doc-read-line)))
-			   (t (setq *acl2-doc-index-name* nil)
-			      (error "No matching topic found"))))))
-	      (acl2-doc-display topic)))))))))
+	 (t (let (topic)
+	      (with-current-buffer
+		  buf
+		(goto-char (point-min))
+		(while (null topic)
+		  (cond ((search-forward (symbol-name name) nil t)
+			 (let ((sym (intern (acl2-doc-read-line))))
+			   (when (acl2-doc-under-limit-topic-p sym)
+			     (setq topic sym))))
+			(t ;; set to failure indicator, 0
+			 (setq topic 0)))))
+	      (cond ((and topic (not (equal topic 0)))
+		     (acl2-doc-display topic))
+		    (t (setq *acl2-doc-index-name* nil)
+		       (error "No matching topic found%s"
+			      (if *acl2-doc-limit-topic*
+				  (format " under %s"
+					  *acl2-doc-limit-topic*)
+				""))))))))))))
 
-(defun acl2-doc-index-next ()
+(defun acl2-doc-index (&optional arg)
 
-  "Find the next topic containing, as a substring, the topic
-from the previous `i' command."
+  "Go to the specified topic or else one containing it as a
+substring; performs completion.  If the empty string is supplied,
+then go to the index buffer.  Otherwise, with prefix argument,
+consider only descendents of the topic supplied in response to a
+prompt.  Note that the index buffer is in ACL2-Doc mode; thus, in
+particular, you can type <RETURN> while standing on a topic in
+order to go directly to that topic."
 
-  (interactive)
+  (interactive "P")
+  (acl2-doc-set-limit-topic arg)
+  (call-interactively 'acl2-doc-index-main))
+
+(defun acl2-doc-index-continue (previous-p)
   (let ((buf (get-buffer *acl2-doc-index-buffer-name*)))
     (when (null buf)
       (error "Need to initiate index search"))
-    (let ((topic (with-current-buffer
-		     buf
-		   (and (search-forward *acl2-doc-index-name* nil t)
-			(acl2-doc-read-line)))))
-      (cond (topic
+    (let* (topic
+	   (acl2-doc-index-sym
+	    (and *acl2-doc-index-name-found-p* ; optimization
+		 (intern *acl2-doc-index-name*))))
+      (with-current-buffer
+	  buf
+	(when previous-p
+
+;;; If this is the first use of "," or "<" after "i", and the match was exact,
+;;; then start the search backward in the index buffer from that match.
+;;; (Otherwise we go forward from the current position, which is presumably the
+;;; beginning of the index buffer.)
+
+	  (when (consp *acl2-doc-index-name-found-p*) ; start from the hit
+	    (when (equal (point) (point-min))	      ; presumably true
+	      (search-forward (format "\n%s\n" *acl2-doc-index-name*))
+	      (backward-char 1) ; to previous line
+	      (setq *acl2-doc-index-name-found-p* nil))))
+
+;;; Note that subsequent uses of "," or "<" (after the same "i") are not the
+;;; first.
+
+	(setq *acl2-doc-index-name-found-p*
+	      (and *acl2-doc-index-name-found-p* t))
+	(while (null topic)
+	  (cond ((cond (previous-p
+			(beginning-of-line)
+			(search-backward *acl2-doc-index-name* nil t))
+		       (t
+			(end-of-line)
+			(search-forward *acl2-doc-index-name* nil t)))
+		 (let ((sym (intern (acl2-doc-read-line))))
+		   (when (acl2-doc-under-limit-topic-p sym)
+		     (setq topic sym))))
+		(t ;; set to failure indicator, 0
+		 (setq topic 0)))))
+      (cond ((not (equal topic 0)) ; success
 	     (cond ((and *acl2-doc-index-name-found-p*
-			 (equal topic *acl2-doc-index-name*))
+			 (eq topic acl2-doc-index-sym))
 		    (setq *acl2-doc-index-name-found-p* nil)
-		    (acl2-doc-index-next))
-		   (t (acl2-doc-display (intern topic)))))
+		    (acl2-doc-index-continue previous-p))
+		   (t (acl2-doc-display topic))))
 	    (t (with-current-buffer
 		   buf
-		 (goto-char (point-min)))
+		 (goto-char (if previous-p (point-max) (point-min))))
 	       (error
-		"No more matches; try again to start from the beginning"))))))
+		"No more matches%s; repeat to re-start index search"
+		(if *acl2-doc-limit-topic*
+		    (format " under %s"
+			    *acl2-doc-limit-topic*)
+		  "")))))))
+
+(defun acl2-doc-index-next ()
+
+  "Find the next topic containing, as a substring, the topic of
+the most recent i command.  Note: if this is the first \",\" or
+\"<\" after an exact match from \"i\", then start the topic
+search alphabetically from the beginning, but avoid a second hit
+on the original topic."
+
+  (interactive)
+  (acl2-doc-index-continue nil))
+
+(defun acl2-doc-index-previous ()
+
+  "Find the previous topic containing, as a substring, the topic of
+the most recent i command.  Note: if this is the first \",\" or \"<\"
+after an exact match from \"i\", then start the topic search
+alphabetically (backwards) from that exact match."
+
+  (interactive)
+  (acl2-doc-index-continue t))
 
 (defun acl2-doc-search-buffer ()
 ;;; Return the search buffer, which contains all :doc topics, creating it first
@@ -724,11 +905,51 @@ from the previous `i' command."
 	  (setq buffer-read-only t))
 	buf)))
 
+(defun acl2-doc-search-aux-1 (continue-p str regexp-p)
+
+; Returns a pair (position . topic-symbol) if we find str in the current
+; (index) buffer, else nil.
+
+  (cond
+   ((if (eq continue-p :previous)
+
+;;; In order to avoid sticking on the same result when changing directions, we
+;;; always leave the cursor at the end of the match.  This takes a bit of extra
+;;; code when searching backwards.
+
+        (cond (regexp-p
+               (and (save-excursion
+                      (backward-char 1)
+                      (re-search-backward str nil t))
+                    (progn (goto-char (match-end 0))
+                           t)))
+              (t
+               (and (save-excursion
+                      (backward-char 1)
+                      (search-backward str nil t))
+                    (progn (goto-char (match-end 0))
+                           t))))
+      (if regexp-p
+          (re-search-forward str nil t)
+        (search-forward str nil t)))
+    (save-excursion
+      (let ((point-found (match-end 0)))
+        (search-backward *acl2-doc-search-separator*)
+        (forward-line 1)
+        (let ((point-start (point)))
+          (cons (1+ (- point-found point-start)) ;; (point-min) = 1
+                (let ((beg (+ point-start 7)))   ;;"Topic: "
+                  (end-of-line)
+                  (intern (buffer-substring beg (point)))))))))
+   (t nil)))
+
 (defun acl2-doc-search-aux (str regexp-p)
   (when (equal str "")
     (error "Input a search string, or type \"n\" to continue previous search"))
   (let* ((buf (acl2-doc-search-buffer))
-	 (continue-p (equal regexp-p :continue))
+	 (continue-p (and (or (eq regexp-p :next)
+			      (eq regexp-p :previous))
+			  regexp-p))
 	 (str (cond
 	       ((not continue-p) str)
 	       (t (or *acl2-doc-search-string*
@@ -736,30 +957,23 @@ from the previous `i' command."
 	 (regexp-p (if continue-p
 		       *acl2-doc-search-regexp-p*
 		     regexp-p))
-	 (pair
-	  (with-current-buffer
-	      buf
-	    (when (not continue-p)
-	      (goto-char (point-min)))
-	    (cond
-	     ((if regexp-p
-		  (re-search-forward str nil t)
-		(search-forward str nil t))
-	      (save-excursion
-		(let ((point-found (match-end 0)))
-		  (search-backward *acl2-doc-search-separator*)
-		  (forward-line 1)
-		  (let ((point-start (point)))
-		    (cons (1+ (- point-found point-start)) ; (point-min) = 1
-			  (let ((beg (+ point-start 7)))   ;"Topic: "
-			    (end-of-line)
-			    (buffer-substring beg (point))))))))
-	     (t nil)))))
+	 (pair nil))
+    (with-current-buffer
+	buf
+      (when (not continue-p)
+	(goto-char (point-min)))
+      (let (done)
+	(while (not done)
+	  (let ((tmp (acl2-doc-search-aux-1 continue-p str regexp-p)))
+	    (cond ((null tmp)
+		   (setq done t))
+		  ((acl2-doc-under-limit-topic-p (cdr tmp))
+		   (setq pair tmp done t)))))))
     (cond (pair
 	   ;; The first two assignments are redundant if continue-p is true.
 	   (setq *acl2-doc-search-string* str)
 	   (setq *acl2-doc-search-regexp-p* regexp-p)
-	   (let ((topic (intern (cdr pair))))
+	   (let ((topic (cdr pair)))
 	     (cond
 	      ((and (equal (buffer-name) *acl2-doc-buffer-name*)
 		    *acl2-doc-history*
@@ -770,30 +984,59 @@ from the previous `i' command."
 	   (acl2-doc-update-top-history-entry))
 	  (continue-p (with-current-buffer
 			  buf
-			(goto-char (point-min)))
+			(goto-char (if (eq continue-p :previous)
+				       (point-max)
+				     (point-min))))
 		      (error "Try again for wrapped search"))
 	  (t (error "Not found: %s" str)))))
 
-(defun acl2-doc-search (str)
-
-  "Search forward from the top of the manual for the input
-string.  If the search succeeds, then go to that topic with
-the cursor put immediately after the found text, with the
-topic name displayed in the minibuffer."
-
-  (interactive "sSearch: ")
+(defun acl2-doc-search-main (str)
+  (interactive
+   (list
+    (read-from-minibuffer
+     (format "Search%s (then type n for next match): "
+	     (if *acl2-doc-limit-topic*
+		 (format " under %s"
+			 *acl2-doc-limit-topic*)
+	       "")))))
   (acl2-doc-search-aux str nil))
+
+(defun acl2-doc-search (&optional arg)
+
+  "Search forward from the top of the manual for the input string.  If
+the search succeeds, then go to that topic with the cursor put
+immediately after the found text, with the topic name displayed in the
+minibuffer.  With prefix argument, consider (also for subsequent \"n\"
+and \"p\" commands) only descendents of the topic supplied in response
+to a prompt."
+
+  (interactive "P")
+  (acl2-doc-set-limit-topic arg)
+  (call-interactively 'acl2-doc-search-main))
+
+(defun acl2-doc-re-search-main (str)
+  (interactive
+   (list
+    (read-from-minibuffer
+     (format "Regular Expression Search%s (then type n for next match): "
+	     (if *acl2-doc-limit-topic*
+		 (format " under %s"
+			 *acl2-doc-limit-topic*)
+	       "")))))
+  (acl2-doc-search-aux str t))
 
 (defun acl2-doc-re-search (str)
 
-  "Perform a regular expression search, forward from the top
-of the manual, for the input string.  If the search
-succeeds, then go to that topic with the cursor put
-immediately after the found text, with the topic name
-displayed in the minibuffer."
+  "Perform a regular expression search, forward from the top of the
+manual, for the input string.  If the search succeeds, then go to that
+topic with the cursor put immediately after the found text, with the
+topic name displayed in the minibuffer.  With prefix argument,
+consider (also for subsequent \"n\" and \"p\" commands) only
+descendents of the topic supplied in response to a prompt."
 
-  (interactive "sRegular Expression Search: ")
-  (acl2-doc-search-aux str t))
+  (interactive "P")
+  (acl2-doc-set-limit-topic arg)
+  (call-interactively 'acl2-doc-re-search-main))
 
 (defun acl2-doc-search-next ()
 
@@ -801,7 +1044,16 @@ displayed in the minibuffer."
 expression search."
 
   (interactive)
-  (acl2-doc-search-aux nil :continue))
+  (acl2-doc-search-aux nil :next))
+
+(defun acl2-doc-search-previous ()
+
+  "Find the previous occurrence for the most recent search or regular
+expression search.  Note: as for \"n\", the cursor will end up at the end
+of the match."
+
+  (interactive)
+  (acl2-doc-search-aux nil :previous))
 
 (defun acl2-doc-tab ()
 
@@ -814,6 +1066,19 @@ searching from the top if no link is below the cursor."
 	     (progn (goto-char (point-min))
 		    (re-search-forward "[[][^ ]+]" nil t)))
 	 (search-backward "[")
+	 (forward-char 1))
+	(t (error "There are no links on this page."))))
+
+(defun acl2-doc-tab-back ()
+
+  "Visit the previous link before the cursor on the current page,
+searching from the bottom if no link is below the cursor."
+
+  (interactive)
+  (switch-to-acl2-doc-buffer)
+  (cond ((or (re-search-backward "[[][^ ]+]" nil t)
+	     (progn (goto-char (point-max))
+		    (re-search-backward "[[][^ ]+]" nil t)))
 	 (forward-char 1))
 	(t (error "There are no links on this page."))))
 
@@ -913,10 +1178,12 @@ ACL2-Doc browser."
 (define-key acl2-doc-mode-map "\C-M" 'acl2-doc-go!)
 (define-key acl2-doc-mode-map "i" 'acl2-doc-index)
 (define-key acl2-doc-mode-map "," 'acl2-doc-index-next)
+(define-key acl2-doc-mode-map "<" 'acl2-doc-index-previous)
 (define-key acl2-doc-mode-map "I" 'acl2-doc-initialize)
 (define-key acl2-doc-mode-map "h" 'acl2-doc-help)
 (define-key acl2-doc-mode-map "l" 'acl2-doc-last)
 (define-key acl2-doc-mode-map "n" 'acl2-doc-search-next)
+(define-key acl2-doc-mode-map "p" 'acl2-doc-search-previous)
 (define-key acl2-doc-mode-map "r" 'acl2-doc-return)
 (define-key acl2-doc-mode-map "s" 'acl2-doc-search)
 (define-key acl2-doc-mode-map "S" 'acl2-doc-re-search)
@@ -926,5 +1193,6 @@ ACL2-Doc browser."
 (define-key acl2-doc-mode-map " " 'scroll-up)
 (define-key acl2-doc-mode-map "D" 'acl2-doc-rendered-combined-download)
 (define-key acl2-doc-mode-map "\t" 'acl2-doc-tab)
+(define-key acl2-doc-mode-map (kbd "C-<tab>") 'acl2-doc-tab-back)
 (define-key acl2-doc-mode-map "H" 'acl2-doc-history)
 (define-key acl2-doc-mode-map "w" 'acl2-doc-where)

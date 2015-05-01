@@ -1,0 +1,33 @@
+Installation of HTML-TEMPLATE
+
+1. Probably the easiest way is
+
+     (load "/path/to/html-template/load.lisp")
+
+   This should compile and load HTML-TEMPLATE on most Common Lisp
+   implementations.
+
+2. With MK:DEFSYSTEM you can make a symlink from 'html-template.system'
+   to your central registry and then issue the command
+
+     (mk:compile-system "html-template")
+
+   Note that this relies on TRUENAME returning the original file a
+   symbolic link is pointing to. With AllegroCL 6.2 this will only
+   work if you've applied all patches with (SYS:UPDATE-ALLEGRO).
+
+3. You can also use ASDF instead of MK:DEFSYSTEM in a similar way:
+
+     (asdf:operate 'asdf:compile-op :html-template)
+     (asdf:operate 'asdf:load-op :html-template)
+
+After installing HTML-TEMPLATE you can LOAD the file "test.lisp" to
+check if everything works as expected.
+
+Complete documentation for HTML-TEMPLATE can be found in the 'doc'
+directory.
+
+HTML-TEMPLATE also supports Nikodemus Siivola's HYPERDOC, see
+<http://common-lisp.net/project/hyperdoc/> and
+<http://www.cliki.net/hyperdoc>.
+

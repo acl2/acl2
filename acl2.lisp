@@ -142,7 +142,8 @@
 ;                               SAFETY AND PROCLAIMING
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(proclaim `(optimize #+cltl2 (compilation-speed 0)
+(defvar *acl2-optimize-form*
+  `(optimize #+cltl2 (compilation-speed 0)
 
 ; The user is welcome to modify this proclaim form.  Warning: Keep it in sync
 ; with the settings in compile-acl2 under #+sbcl.
@@ -150,10 +151,10 @@
 ; The following may allow more tail recursion elimination (from "Lisp
 ; Knowledgebase" at lispworks.com); might consider for Allegro CL too.
 
-                     #+(or lispworks ccl) (debug 0)
-                     #+cmu (extensions:inhibit-warnings 3)
-                     #+sbcl (sb-ext:inhibit-warnings 3)
-                     (speed 3)
+             #+(or lispworks ccl) (debug 0)
+             #+cmu (extensions:inhibit-warnings 3)
+             #+sbcl (sb-ext:inhibit-warnings 3)
+             (speed 3)
 
 ; Consider replacing cmu on the next line with (or cmu sbcl).  The SBCL manual
 ; says the following, but a quick test with (or cmu sbcl) yielded no smaller
@@ -165,12 +166,12 @@
 ;   so indiscriminately that the net effect is to slow the program by causing
 ;   cache misses or even swapping.
 
-                     (space #+cmu 1 #-cmu 0)
+             (space #+cmu 1 #-cmu 0)
 
 ; WARNING:  Do not proclaim (cl-user::fixnum-safety 0) for LispWorks.  Any
 ; fixnum-safety less than 3 expects all integers to be fixnums!
 
-                     (safety
+             (safety
 
 ; Consider using (safety 3) if there is a problem with LispWorks.  It enabled
 ; us to see a stack overflow involving collect-assumptions in the proof of
@@ -213,21 +214,23 @@
 ; ran out of space, saving perhaps a minute]
 ; 15637.669u 511.811s 52:02.78 517.1%   0+0k 0+0io 0pf+0w
 
-                      ,(let ((our-safety
-                              #-CLTL2
-                              (if (boundp 'user::*acl2-safety*)
-                                  (symbol-value 'user::*acl2-safety*)
-                                nil)
-                              #+CLTL2
-                              (if (boundp 'common-lisp-user::*acl2-safety*)
-                                  (symbol-value 'common-lisp-user::*acl2-safety*)
-                                nil)))
-                         (if our-safety
-                             (progn (format t "Note: Setting SAFETY to ~s."
-                                            our-safety)
+              ,(let ((our-safety
+                      #-CLTL2
+                      (if (boundp 'user::*acl2-safety*)
+                          (symbol-value 'user::*acl2-safety*)
+                        nil)
+                      #+CLTL2
+                      (if (boundp 'common-lisp-user::*acl2-safety*)
+                          (symbol-value 'common-lisp-user::*acl2-safety*)
+                        nil)))
+                 (if our-safety
+                     (progn (format t "Note: Setting SAFETY to ~s."
                                     our-safety)
-                           0))
-                     )))
+                            our-safety)
+                   0))
+              )))
+
+(proclaim *acl2-optimize-form*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                               FILES
@@ -608,7 +611,7 @@
 ;;; perhaps include the binding (*compile-verbose* t) for ecl.
 
 ;;; Modify exit-lisp to treat ecl like akcl, except using ext::quit instead of
-;;; lisp::bye.
+;;; si::bye.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                              PACKAGES
@@ -983,6 +986,19 @@ ACL2 from scratch.")
          (eval (caddr (read fl))))))
 
 (in-package "ACL2")
+
+(defun proclaim-optimize ()
+
+; With SBCL 1.2.10, we have seen a saved_acl2 start up without the compiler
+; optimizations that we had installed during the build.  Perhaps that has been
+; true for other SBCL versions or even other Lisps.  The problem appears to be
+; that (in SBCL 1.2.10 at least), proclaim forms can be local to the file in
+; which they appear, even if the file isn't explicitly compiled.  So we call
+; this function in acl2-default-restart, and also at the top level when
+; building ACL2, to ensure that our compiler optimizations are in force, and we
+
+  (proclaim #+cltl2 common-lisp-user::*acl2-optimize-form*
+            #-cltl2 user::*acl2-optimize-form*))
 
 (defparameter *compiled-file-extension*
 
@@ -1929,6 +1945,8 @@ You are using version ~s.~s.~s."
              (not *do-proclaims*)) ; see comment above
     (return-from compile-acl2 nil))
 
+  (proclaim-optimize)
+
   (with-warnings-suppressed
 
    #+sbcl
@@ -2046,6 +2064,8 @@ You are using version ~s.~s.~s."
 ; to write proclaim forms into acl2-proclaims.lisp.
 
   (declare (ignorable fast))
+
+  (proclaim-optimize)
 
   (our-with-compilation-unit ; only needed when *suppress-compile-build-time*
    (with-warnings-suppressed
@@ -2171,7 +2191,7 @@ You are using version ~s.~s.~s."
   #+lispworks ; Version 4.2.0; older versions have used bye
   (if status-p (lispworks:quit :status status) (lispworks:quit))
   #+akcl
-  (if status-p (lisp::bye status) (lisp::bye))
+  (if status-p (si::bye status) (si::bye))
   #+lucid
   (lisp::exit) ; don't know how to handle status, but don't support lucid
   #+ccl
@@ -2468,7 +2488,7 @@ You are using version ~s.~s.~s."
         (catch *quit-tag*
           (setq - (locally (declare (notinline read))
                            (dbl-read *debug-io* nil *top-eof*)))
-          (when (eq - *top-eof*) (lisp::bye -1))
+          (when (eq - *top-eof*) (si::bye -1))
           (let* ( break-command
                  (values
                   (multiple-value-list

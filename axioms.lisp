@@ -2960,6 +2960,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro mbt (x)
   `(mbe1 t ,x))
 
+(defmacro mbt* (x)
+
+; This macro is like mbt, except that not only is it trivial in raw Lisp, it's
+; also trivial in the logic.  Its only purpose is to generate a guard proof
+; obligation.
+
+  `(mbe :logic t
+        :exec (mbe :logic ,x
+                   :exec t)))
+
 (defun binary-append (x y)
   (declare (xargs :guard (true-listp x)))
   (cond ((endp x) y)
@@ -12547,7 +12557,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Found for hons after fixing note-fns-in-form just before release v4-2.
 
-    FAST-ALIST-LEN HONS-COPY-PERSISTENT HONS-SUMMARY HONS-CLEAR HONS-WASH
+    FAST-ALIST-LEN HONS-COPY-PERSISTENT HONS-SUMMARY
+    HONS-CLEAR HONS-CLEAR!
+    HONS-WASH HONS-WASH!
     FAST-ALIST-CLEAN FAST-ALIST-FORK HONS-EQUAL-LITE
     CLEAR-HASH-TABLES NUMBER-SUBTREES
     FAST-ALIST-SUMMARY HONS-ACONS! CLEAR-MEMOIZE-TABLES HONS-COPY HONS-ACONS
@@ -16605,6 +16617,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    "Assertion failed:~%~x0"
                    '(assert$ ,test ,form)))
            ,form))
+
+(defmacro assert* (test form)
+  `(and (mbt* ,test)
+        ,form))
 
 (defun fmt-to-comment-window (str alist col evisc-tuple)
 
@@ -25949,7 +25965,9 @@ Lisp definition."
 
 ; Each cdr is either nil or a msg.
 
-  `((open-output-channel!)
+  `((hons-wash!)
+    (hons-clear!)
+    (open-output-channel!)
     (progn!) ; protected because it is legal in books; it's OK to omit progn-fn
     (remove-untouchable-fn
      .

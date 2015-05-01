@@ -1071,7 +1071,12 @@
   (let ((temp (get sym 'acl2-saved-def)))
     (cond (temp (cdr temp))
           (t (let* ((fn (symbol-function sym))
-                    (lam (and fn (function-lambda-expression fn))))
+                    (lam (and fn
+                              #+gcl ; accommodate early GCL 2.6.13
+                              (and (fboundp 'function-lambda-expression)
+                                   (funcall 'function-lambda-expression fn))
+                              #-gcl
+                              (function-lambda-expression fn))))
                (cond (lam (assert (eq (car lam) 'lambda))
                           lam)
                      (quiet-p nil)

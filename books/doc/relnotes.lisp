@@ -37,6 +37,7 @@
 (include-book "centaur/vl/portcullis" :dir :system)
 (include-book "centaur/gl/portcullis" :dir :system)
 (include-book "centaur/bed/portcullis" :dir :system)
+(include-book "centaur/bitops/portcullis" :dir :system)
 
 ; Please note:
 ;
@@ -48,20 +49,22 @@
 
 (defxdoc note-7-1-books
   :parents (note-7-1)
-  :short "Release notes for the ACL2 Community Books for ACL2 7.1 (BOZO month???)"
+  :short "Release notes for the ACL2 Community Books for ACL2 7.1 (May 2015)"
+
+;; Current through May 1, 2015
+
   :long "<p>The following is a brief summary of changes made to the @(see
  community-books) between the releases of ACL2 7.0 and 7.1.</p>
 
  <p>The <a
  href='https://github.com/acl2/acl2/wiki/Release-version-numbers'>acl2-books
  Wiki page on Release Version Numbers</a> gives the Git/SVN revision numbers
- corresponding to releases.  See also @(see note-7-0) for the changes made to
+ corresponding to releases.  See also @(see note-7-1) for the changes made to
  ACL2 itself.  For additional details, you may also see the raw <a
  href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
 
- <h2>Organizational, Build System, and Name Changes</h2>
 
- <h3>Deleted Books (Including Stubs)</h3>
+ <h3>Deleted Books and Stubs</h3>
 
  <p>When we move a book, we often add a <b>stub</b> book in its previous
  location to help you transition your @(see include-book) commands.  The @(see
@@ -82,12 +85,13 @@
  })
 
  <p>The directory @('fix-cert/') has been deleted, as it is no longer necessary
- now that it is possible to move the system books directory after
- certifying its books (see @(see note-7-1)).</p>
+ now that it is possible to move the system books directory after certifying
+ its books (see @(see note-7-1)).</p>
 
  <p>The directory @('regex/') has been moved to @('projects/regex/').</p>
 
- <h2>New Libraries and Documentation</h2>
+
+ <h3>New Libraries and Documentation</h3>
 
  <p>David Russinoff has contributed a new version of the rtl library:
  @('rtl/rel10/').  This time the new version depends on a previous version,
@@ -95,7 +99,335 @@
  adapted to reside in a new @('\"RTL\"') package; the result is
  @('rtl/rel11/').</p>
 
+ <p>Marijn Heule's @('drat-trim') tool, for checking SAT solver proofs, is now
+ available in @('tools/drat-trim').</p>
+
+ <p>Matt Kaufmann and Cuong Chau have formalized the overspill property in
+ ACL2(r), see @('nonstd/nsa/overspill.lisp').</p>
+
+ <p>The new @('clause-processors/induction') book demonstrates a (not very
+ practical) clause processor that does induction.</p>
+
+ <p>The new directory @('projects/fifo') has a list-based FIFO implementation,
+ that has some properties proven about it.</p>
+
+ <p>The new book @('books/tools/include-an-arithmetic-book.lisp') provides
+ short-hand includes of the arithmetic libraries, including various
+ configurations of @('arithmetic-5').</p>
+
+ <p>The @('misc/assert') book is now documented; see for instance @(see
+ assert!).</p>
+
+ <p>The documentation for @(see data-structures) is now included in the manual;
+ previously it was excluded because of name conflicts with other libraries, but
+ these have now been resolved.</p>
+
+ <h3>Name Changes</h3>
+
+ <p>As mentioned above, the newest @(see rtl) library is now in an @('RTL')
+ package.</p>
+
+ <p>The @(see bitops) library is now in a new @('BITOPS') package.  See below
+ (under ``bitops'') for more information and suggestions about porting books.</p>
+
+ <p>Renamed @('remove-keywords') to @('remove-any-keywords') in
+ @('coi/nary/nary.lisp') to avoid a name conflict between the @('coi') and
+ @('ccg') books; also updated the @('nary') workshop books.</p>
+
+
+ <h3>@(see std)</h3>
+
+ <p>The @(see b*) book has moved from @('tools/bstar') to @('std/util/bstar').
+ There is a stub in the previous location.  As a special compatibility measure,
+ this stub will be kept available for two releases.</p>
+
+ <p>Added new @(see print-legibly) and @(see print-compressed) functions to
+ @(see std/io).  These can print to @(':object') channels with or without @(see
+ serialize)-style compression, and have the necessary theorems about state and
+ output-channel preservation.</p>
+
+ <p>There is new syntactic sugar based on @(see define)'s named return values.
+ The new @(see defret) macro offers a more comfortable syntax for proving
+ theorems about return values by their name.  Also, the new <see topic='@(url
+ patbind-ret)'>ret</see> binder for @(see b*) allows you to name the bundled
+ return values from a @(see define) and then access individual components using
+ a C-like or @(see std::defaggregate)/@(see fty::defprod)-like @('.') syntax.</p>
+
+ <p>The @(see define) macro now checks the arity of @(':returns') specifiers
+ when possible.</p>
+
+ <p>Some @('std/lists') books have been tweaked:</p>
+
+ <ul>
+
+ <li>The @(see acl2-count) book now provides stronger rules.</li>
+
+ <li>The @('equal-sets') book now includes the lemma
+ @('set-equiv-of-nil').</li>
+
+ <li>The @('append') book now includes a few rules about (ca/dr (append ...))
+ to std/lists.  (Two of the new rules are disabled, and there's a theory
+ invariant to make sure things stay reasonable.)</li>
+
+ <li>The @('duplicity') book now have stronger theorems relating @(see
+ duplicity) to @(see member-equal).</li>
+
+ </ul>
+
+
+ <h3>@(see oslib)</h3>
+
+ <p>Added a new @(see oslib::universal-time) function.</p>
+
+ <p>Fixed a raw lisp bug with the definition of @9see oslib::ls), and added a
+ regression test.</p>
+
+ <p>Fixed minor bugs with @(see oslib::copy).</p>
+
+
+ <h3>@(see bitops)</h3>
+
+ <p>Bitops is now in a package.  To minimize backwards incompatibility, the new
+ package imports a lot of stuff that you might not expect.  For instance all of
+ the @(see logops-definitions), and their recursive @('**') variants are still
+ found in the ACL2 package, as are most of the bitops rulesets, its new
+ function definitions, and many frequently instantiated theorems.  When
+ updating your books, you may find it convenient to import
+ @('*bitops-exports*') into packages that use bitops functions.</p>
+
+ <p>Extended the @(see bitops::bitops/merge) book with several new 256- and
+ 512-bit merges, @(see bitops::merge-8-u2s), and improved its
+ documentation.</p>
+
+ <p>Added @(see nth-slice128).</p>
+
+
+ <h3>@(see fty::fty)</h3>
+
+ <p>The case macros from @(see fty::defflexsum) and @(see fty::deftranssum) now
+ require a variable, and cannot bind that variable itself, because the syntax
+ for doing so was too weird and unintuitive.  They can now also be used to
+ carry out type-checks, e.g., @('(foo-case x :mytag)') now returns true when
+ @('x') has tag @(':mytag').</p>
+
+ <p>The macros @('defoption') and @('deftranssum') macros, formerly part of
+ @(see vl), are now integrated into the @(see fty::deftypes) framework.</p>
+
+
+ <h3>@(see xdoc)</h3>
+
+ <p>The fancy viewer's jump-to box should perform better.  It now suggest exact
+ name matches first and otherwise shows results in importance order, instead of
+ alphabetical order, which may be better when there are many matches.</p>
+
+ <p>The fancy viewer now features a mobile-friendly version with many features.
+ This should greatly improve access to ACL2 documentation at parties, sporting
+ events, and other social occasions.</p>
+
+ <p>Fixed a bug with @('<em>') tag handling that affected the @(':xdoc')
+ command and Emacs-based @(see acl2-doc) tool.</p>
+
+ <p>Fixed a bug with using multiple @(see defsection) extensions with the same
+ name.  Defsection now requires a non-nil symbol as the section name.</p>
+
+ <p>As the manual has grown substantially, some memory management measures have
+ been taken in @('doc/top.lisp').</p>
+
+
+ <h3>@(see quicklisp)</h3>
+
+ <p>The approach to distributing Common Lisp libraries has been updated to use
+ the new <a href='http://www.quicklisp.org/beta/bundles.html'>Quicklisp
+ bundles</a> feature.  Some additional Common Lisp libraries have been
+ added to the bundle.</p>
+
+ <p>The @(see tshell) library is now based on the <a
+ href='https://github.com/jaredcdavis/shellpool'>Shellpool</a> Common Lisp
+ library (via @(see quicklisp)).  This may improve reliability and cross-lisp
+ portability for @('tshell') itself and also for libraries like @(see satlink)
+ which are based on it.</p>
+
+
+ <h3>@(see vl), @(see esim), and now @(see vl2014)</h3>
+
+ <p>VL and ESIM have undergone major changes, including a fork of VL.  For
+ details about these changes, see @(see note-7-1-vl).</p>
+
+
+ <h3>Other Libraries</h3>
+
+ <p>Ben Selfridge's @(see leftist-trees) library is now available under an
+ MIT/X11 style license instead of the GNU General Public License.</p>
+
+ <p>The bounding theorems for @(see logext) in @('ihs/logops-definitions') have
+ been tightened.</p>
+
+ <p>For the @(see tau-system), there is now a @(see UNARY--) bounder in
+ @('tau/bounders/elementary-bounders').</p>
+
+ <p>The @(see defsort) macro has been enhanced to better support the fixtype
+ discipline of the @(see fty::fty) library.  In support of this, it now
+ requires a stricter transitivity property, i.e., the comparison function must
+ support unconditional transitivity, regardless of element type.  (This is
+ typically easy to achieve by using @('<<') as a fallback in case of malformed
+ elements.)</p>
+
+ <p>The Codewalker demo books have been improved to use built-in function
+ nat-listp and weaken the hyps (state invariant) so that the state components
+ consist of integers, not naturals.</p>
+
+ <p>@(see gl) now uses an improved theory for better @(see
+ def-gl-clause-processor) event performance.</p>
+
+ <p>The @(see template-subst) tool now has some extended repetition
+ capabilities.</p>
+
+ <p>Various other libraries have received minor cleanups.</p>
+
+
+ <h3>Build System Updates</h3>
+
+ <p>@(see cert.pl), et al. now tolerate @('( include-book...') instead
+ of @('(include-book...'), etc.</p>
+
+ <p>Errors during portcullis events (i.e., @('.acl2') files) should now cause
+ certification to fail; many books have been updated to avoid problems that
+ were, until now, just being ignored.</p>
+
+ <p>Various updates have been made to the Jenkins scripts to keep things up to
+ date.</p>
+
+ <p>For most Lisps, @(see cert.pl) will now include garbage collection messages
+ in output logs files.  This may occasionally be useful when debugging
+ performance issues.</p>
+
 ")
+
+
+(defxdoc note-7-1-vl
+  :parents (note-7-1-books)
+  :short "Notes about changes to @(see vl) and @(see esim) in ACL2 Version
+7.1."
+
+  :long "<h3>VL Fork</h3>
+
+ <p>There have been many changes to @(see vl) and @(see esim).  Most notably,
+ VL has been forked into two versions.</p>
+
+ <dl>
+ <dt>@(see vl2014) is a ``stable'' fork of VL.</dt>
+ <dd>It lives in a new directory: @('books/centaur/vl2014')</dd>
+ <dd>It uses the @('VL2014') package.</dd>
+ <dd>It continues to work with @(see esim) and other, older tools.</dd>
+ <dd>It is no longer under active development by Centaur.</dd>
+
+ <dt>@(see vl) continues as the ``development'' version of VL.</dt>
+ <dd>It continues to live in: @('books/centaur/vl').</dd>
+ <dd>It continues to use the @('VL') package.</dd>
+ <dd>It <b>no longer supports @(see esim)</b>.</dd>
+ <dd>It remains under active development.</dd>
+ <dd>It targets a new backend (instead of esim) which is still under development.</dd>
+ <dd>It may be rather unstable and not yet particularly usable.</dd>
+ </dl>
+
+ <p>The new @('vl') code base is in many cases significantly different than
+ @(see vl2014).  It features a new, more strongly typed expression
+ representation, generally better abstractions for working with
+ scopes/hierarchy and types, and new approaches to elaboration and sizing that
+ can handle much more of SystemVerilog.  More information on the motives and
+ consequences of this split can be found in the documentation for @(see
+ vl2014).</p>
+
+ <p>Largely in support of this fork, many books have been reorganized.  Many
+ books that are specific to the VL/ESIM flow have been moved into the ESIM
+ directory:</p>
+
+ @({
+    centaur/vl/top.lisp --> centaur/vl/defmodules.lisp (with a stub)
+    centaur/vl/defmodules.lisp --> centaur/esim/defmodules.lisp
+    centaur/vl/translation.lisp --> centaur/esim/translation.lisp
+    centaur/vl/toe --> centaur/esim/vltoe (filenames have been unsmurfed)
+    centaur/vl/util/esim-lemmas.lisp --> centaur/esim/vltoe
+    centaur/vl/transforms/occform/* --> centaur/esim/occform
+ })
+
+ <p>Various other files have also been moved into ESIM:</p>
+
+ @({
+    centaur/tutorial --> centaur/esim/tutorial
+    centaur/vcd --> centaur/esim/vcd
+    centaur/regression --> centaur/esim/tests
+ })
+
+ <p>Many other minor file-name changes have been made to help improve the
+ organization of the code base.</p>
+
+ <p>The various VL <i>flows</i> are also now better separated.  For
+ instance:</p>
+
+ <ul>
+
+ <li>The ESIM flow no longer performs certain linter checks that are better
+ handled by VL-Lint.  For instance, it no longer generates a classic
+ use-set-report since the new Lucid reporting is much better.</li>
+
+ <li>The @('vl model') command (based on the ESIM flow) is no longer used in
+ the module browser.  Instead, the module browser now reads @('.vlzip') files
+ that are produced by the @('vl zip') command, which is independent of
+ ESIM.</li>
+
+ </ul>
+
+
+ <h3>Extended Support for Verilog/SystemVeriog</h3>
+
+ <p>The new VL (and in some cases VL2014) now have better support for at least
+ the following Verilog/SystemVerilog features:</p>
+
+ <ul>
+ <li>@('.*') connections that involve interface ports,</li>
+ <li>@('return') statements in functions,</li>
+ <li>@('inside') expressions like @('a inside {b, c, [d:e]}'),</li>
+ <li>@('generate') constructs,</li>
+ <li>System functions like @('$bits') and @('$clog2'),</li>
+ <li>Unpacked dimensions in various contexts,</li>
+ <li>Matched @('end : foo') style endings on blocks,</li>
+ <li>Declarations on unnamed blocks,</li>
+ <li>Typedefs with a single unpacked dimension, i.e., @('typedef ... foo_t [3]'),</li >
+ <li>Ports whose expressions involve parameters,</li>
+ <li>Scope expressions and other complex hierarchical expressions,</li>
+ <li>Module level begin/end blocks (not in the spec but supported by simulators),</li >
+ <li>Package imports in block statements, functions, and tasks,</li>
+ <li>Certain complex assignment patterns,</li>
+ <li>The @('`\"'), @('`\\`\\\"'), and @('``') escapes in @('`define') macros,</li>
+ <li>Certain macro invocations in @('`include')/@('`ifdef') forms,</li>
+ </ul>
+
+
+ <h3>@(see vl::lint) Improvements</h3>
+
+ <p>The loader works harder to attach parse-time warnings to the appropriate
+ modules.</p>
+
+ <p>The new @(see vl::lucid) check is a far more capable check for unused,
+ unset, and multiply driven wires, with proper understanding of SystemVerilog
+ scoping.  The old use-set and multidrive warnings have been retired.</p>
+
+ <p>Heuristic improvements have been made to leftright checking,
+ extension/fussy size warnings for @(''1')/@(''0')/..., and duplicate instance
+ checking involving interfaces and portless modules.  Extension warning
+ heuristics are also now attachable.</p>
+
+ <p>Improved the warning messages for zero-sized replications, overflowing
+ integer literals, and generally for warnings where expressions involve
+ parameters after unparameterization.</p>
+
+ <p>Portcheck now warns about stylistically undesirable ports such as
+ @('foo[3:0]').</p>
+
+ <p>There is now a basic suite of system-level tests directed at the linter;
+ see the @('linttest') directory.  These tests have shed light on many minor
+ linter bugs.</p>")
 
 
 
@@ -639,14 +971,14 @@
 
  <h3>@(see bitops)</h3>
 
- <p>The new @(see bitops/part-install) macro can be used to set particular bits of an
+ <p>The new @(see bitops::bitops/part-install) macro can be used to set particular bits of an
  integer to a value.  It is somewhat similar to utilities like @(see wrb) from
  the IHS library, but its interface is perhaps more intuitive.</p>
 
- <p>The new @(see bitops/fast-rotate) macros provide optimized versions of @(see
+ <p>The new @(see bitops::bitops/fast-rotate) macros provide optimized versions of @(see
  rotate-left) and @(see rotate-right).</p>
 
- <p>The new @(see bitops/logbitp-bounds) book provides a few lemmas relating
+ <p>The new @(see bitops::bitops/logbitp-bounds) book provides a few lemmas relating
  @(see logbitp) to @(see expt).</p>
 
 
@@ -1762,7 +2094,7 @@
  <h5>@(see bitops) - arithmetic library</h5>
  <ul>
  <li>Added significant documentation, including overview documentation.</li>
- <li>Added fast @(see bitops/fast-logrev) and @(see bitops/merge) functions.</li>
+ <li>Added fast @(see bitops::bitops/fast-logrev) and @(see bitops::bitops/merge) functions.</li>
  <li>Reduced dependencies and use of non-local includes.</li>
  </ul>
 
@@ -1833,7 +2165,7 @@
 
  <h5>@(see vl) - Verilog toolkit</h5>
  <ul>
- <li>Expanded @(see vl::always-top) with support for basic @('case') statements.</li>
+ <li>Expanded @(see vl2014::always-top) with support for basic @('case') statements.</li>
  <li>Expanded @(see vl::expr-simp) to make more reductions and be more modular.</li>
  <li>Added new support for hierarchical identifiers.</li>
  <li>Cleaned up support for gate instances.</li>

@@ -23,7 +23,6 @@
 (in-package "ACL2")
 ; cert_param: (hons-only)
 ; cert_param: (uses-glucose)
-; cert_param: (ccl-only)
 (include-book "../defmodules")
 (include-book "centaur/gl/gl" :dir :system)
 (include-book "centaur/aig/g-aig-eval" :dir :system)

@@ -110,7 +110,7 @@ by editing the @('books/centaur/satlink/add-benchmark.pl') script.</p>")
                                         "unsat")
                          ;; BOZO add --comment <name of theorem>
                          ))
-       ((mv ?finishedp ?status ?lines)
+       ((mv ?status ?lines)
         (tshell-call cmd :print t :save nil)))
     nil))
 

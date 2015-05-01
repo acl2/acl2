@@ -258,6 +258,8 @@ implementations.")
 
 (load "acl2.lisp")
 
+(acl2::proclaim-optimize)
+
 ; We allow ACL2(h) code to take advantage of Ansi CL features.  It's
 ; conceivable that we don't need this restriction (which only applies to GCL),
 ; but it doesn't currently seem worth the trouble to figure that out.
@@ -868,6 +870,18 @@ implementations.")
   nil)
 
 #+akcl
+(defvar *gcl-large-maxpages*
+
+; This variable tells GCL to use Camm Maguire's strategy during development of
+; GCL 2.6.13 of using large maxpage limits to postpone garbage collection, and
+; thus avoid SGC.  It appears that si::*code-block-reserve* was introduced at
+; the time this strategy was developed, and that si::set-log-maxpage-bound was
+; already defined at that point (but we check, since we rely on that).
+
+  (and (boundp 'si::*code-block-reserve*)
+       (fboundp 'si::set-log-maxpage-bound)))
+
+#+akcl
 (defun save-acl2-in-akcl-aux (sysout-name gcl-exec-name
                                           write-worklispext
                                           set-optimize-maximum-pages
@@ -908,6 +922,9 @@ implementations.")
 ; 'si::*optimize-maximum-pages* to t just before the save.
 
            (setq si::*optimize-maximum-pages* t)))
+    (when *gcl-large-maxpages*
+      (setq si::*code-block-reserve*
+            (make-array 40000000 :element-type 'character :static t)))
     (chmod-executable sysout-name)
     (si::save-system (concatenate 'string sysout-name "." ext))))
 
@@ -1045,7 +1062,8 @@ implementations.")
   (si::gbc t) ; wfs suggestion [at least if we turn on SGC] -- formerly nil
               ; (don't know why...)
 
-  (cond ((fboundp 'si::sgc-on)
+  (cond ((and (not *gcl-large-maxpages*)
+              (fboundp 'si::sgc-on))
          (print "Executing (si::sgc-on t)") ;debugging GC
          (funcall 'si::sgc-on t)))
 
@@ -1150,6 +1168,7 @@ implementations.")
   (if *acl2-default-restart-complete*
       (return-from acl2-default-restart nil))
 
+  (proclaim-optimize) ; see comment in proclaim-optimize
   (setq *lp-ever-entered-p* nil)
   (#+cltl2
    common-lisp-user::acl2-set-character-encoding
@@ -1484,7 +1503,44 @@ implementations.")
   #-x86-64 2000)
 
 #+sbcl
-(defvar *sbcl-contrib-dir* nil)
+(defvar *sbcl-contrib-dir*
+  (or (getenv$-raw "SBCL_HOME")
+      (let ((suggestions
+             (and
+              (boundp 'sb-ext::*core-pathname*)
+              (ignore-errors
+                (let* ((core-dir
+                        (pathname-directory
+                         sb-ext::*core-pathname*))
+                       (contrib-dir-pathname-new ; see comment above
+                        (and (equal (car (last core-dir))
+                                    "output")
+                             (make-pathname
+                              :directory
+                              (append (butlast core-dir 1)
+                                      (list "obj/sbcl-home")))))
+                       (contrib-dir-pathname
+                        (and (equal (car (last core-dir))
+                                    "output")
+                             (make-pathname
+                              :directory
+                              (append (butlast core-dir 1)
+                                      (list "contrib"))))))
+                  (append (and (probe-file contrib-dir-pathname-new)
+                               (list (namestring contrib-dir-pathname-new)))
+                          (and (probe-file contrib-dir-pathname)
+                               (list (namestring contrib-dir-pathname)))))))))
+        (cond
+         ((consp (cdr suggestions))
+          (error "Please set environment variable SBCL_HOME.  Suggestions:~%~
+                  ~a or ~a"
+                 (car suggestions)
+                 (cadr suggestions)))
+         ((consp suggestions)
+          (error "Please set environment variable SBCL_HOME.  Suggestion:~%~
+                  ~a"
+                 (car suggestions)))
+         (t (error "Please set environment variable SBCL_HOME."))))))
 
 #+sbcl
 (defun save-acl2-in-sbcl-aux (sysout-name core-name
@@ -1520,40 +1576,9 @@ implementations.")
 ; to include the trailing "contrib/" when using obj/sbcl-home/.
 
         ("~a~%"
-         (let ((contrib-dir
-                (or
-                 *sbcl-contrib-dir*
-                 (and (boundp 'sb-ext::*core-pathname*)
-                      (ignore-errors
-                        (let* ((core-dir
-                                (pathname-directory
-                                 sb-ext::*core-pathname*))
-                               (contrib-dir-pathname-new ; see comment above
-                                (and (equal (car (last core-dir))
-                                            "output")
-                                     (make-pathname
-                                      :directory
-                                      (append (butlast core-dir 1)
-                                              (list "obj/sbcl-home")))))
-                               (contrib-dir-pathname
-                                (and (equal (car (last core-dir))
-                                            "output")
-                                     (make-pathname
-                                      :directory
-                                      (append (butlast core-dir 1)
-                                              (list "contrib"))))))
-                          (cond ((probe-file contrib-dir-pathname-new)
-                                 (setq *sbcl-contrib-dir*
-                                       (namestring contrib-dir-pathname-new)))
-                                ((probe-file contrib-dir-pathname)
-                                 (setq *sbcl-contrib-dir*
-                                       (namestring contrib-dir-pathname)))
-                                (t nil))))))))
-           (if contrib-dir
-               (format nil
-                       "export SBCL_HOME=~s"
-                       contrib-dir)
-             "")))
+         (format nil
+                 "export SBCL_HOME=~s"
+                 *sbcl-contrib-dir*))
 
 ; We have observed with SBCL 1.0.49 that "make HTML" fails on our 64-bit linux
 ; system unless we start sbcl with --control-stack-size 4 [or larger].  The
@@ -1896,8 +1921,11 @@ implementations.")
   (declare (ignore other-info))
 
   #+akcl
-  (if (boundp 'si::*optimize-maximum-pages*)
-      (setq si::*optimize-maximum-pages* nil)) ; Camm Maguire suggestion
+  (when (boundp 'si::*optimize-maximum-pages*) ; Camm Maguire suggestions
+    (setq si::*optimize-maximum-pages* nil)
+    (when *gcl-large-maxpages*
+      (si::set-log-maxpage-bound
+       (1+ (integer-length most-positive-fixnum)))))
 
 ; Consider adding something like
 ; (ccl::save-application "acl2-image" :size (expt 2 24))

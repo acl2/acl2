@@ -13,6 +13,9 @@
 ;; We first list some basic properties of divisibility.
 
 (defun divides (x y)
+  (declare (xargs :guard (and (integerp x)
+                              (integerp y)
+                              (not (= x 0)))))
   (and (not (= x 0))
        (integerp (/ y x))))
 
@@ -93,7 +96,11 @@
 ;; the least divisor of a natural number n that is greater than or equal to k:
 
 (defun least-divisor (k n)
-  (declare (xargs :measure (nfix (- n k))))
+  (declare (xargs :guard (and (integerp n)
+                              (integerp k)
+                              (< 1 k)
+                              (<= k n))
+                  :measure (nfix (- n k))))
   (if (and (integerp n)
 	   (integerp k)
 	   (< 1 k)
@@ -126,7 +133,11 @@
   :rule-classes ())
 
 (defun primep (n)
+  (declare (xargs :guard t
+                  :guard-hints (("goal" :use (:instance least-divisor-divides
+                                               (k 2))))))
   (and (integerp n)
+       (>= n 2)
        (= (least-divisor 2 n) n)))
 
 (defthm primep-gt-1
@@ -166,11 +177,13 @@
 ;; returns a prime that is greater than its argument:
 
 (defun fact (n)
+  (declare (xargs :guard (natp n)))
   (if (zp n)
       1
     (* n (fact (1- n)))))
 
 (defun greater-prime (n)
+  (declare (xargs :guard (natp n)))
   (least-divisor 2 (1+ (fact n))))
 
 (defthm greater-prime-divides
@@ -213,7 +226,8 @@
 ;; which We define according to Euclid's algorithm.
 
 (defun g-c-d-nat (x y)
-  (declare (xargs :measure (nfix (+ x y))))
+  (declare (xargs :guard (and (natp x) (natp y))
+                  :measure (nfix (+ x y))))
   (if (zp x)
       y
     (if (zp y)
@@ -223,6 +237,7 @@
 	(g-c-d-nat (- x y) y)))))
 
 (defun g-c-d (x y)
+  (declare (xargs :guard (and (integerp x) (integerp y))))
   (g-c-d-nat (abs x) (abs y)))
 
 (defthm g-c-d-nat-pos
@@ -269,7 +284,8 @@
 (mutual-recursion
 
  (defun r-nat (x y)
-   (declare (xargs :measure (nfix (+ x y))))
+   (declare (xargs :guard (and (natp x) (natp y))
+                   :measure (nfix (+ x y))))
   (if (zp x)
       0
     (if (zp y)
@@ -279,7 +295,8 @@
 	(r-nat (- x y) y)))))
 
 (defun s-nat (x y)
-   (declare (xargs :measure (nfix (+ x y))))
+   (declare (xargs :guard (and (natp x) (natp y))
+                   :measure (nfix (+ x y))))
   (if (zp x)
       1
     (if (zp y)
@@ -299,11 +316,13 @@
   :rule-classes ())
 
 (defun r (x y)
+  (declare (xargs :guard (and (integerp x) (integerp y))))
   (if (< x 0)
       (- (r-nat (abs x) (abs y)))
     (r-nat (abs x) (abs y))))
 
 (defun s (x y)
+  (declare (xargs :guard (and (integerp x) (integerp y))))
   (if (< y 0)
       (- (s-nat (abs x) (abs y)))
     (s-nat (abs x) (abs y))))
