@@ -38,7 +38,7 @@
 (local (xdoc::set-default-parents warnings))
 
 (defprod vl-warning
-  :short "Fundamental warning object used throughout @(see VL)."
+  :short "Fundamental warning object used throughout @(see VL2014)."
   :tag :vl-warning
   :layout :alist
 

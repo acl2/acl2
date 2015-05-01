@@ -3890,17 +3890,18 @@ do this is to wrap it using @('(vl-context x)').</p>
 @('VL_HANDS_OFF') to say that a module should not be changed by @(see
 transforms).</p>
 
-<p>This is generally meant for use in VL @(see primitives).  The Verilog
-definitions of these modules sometimes make use of fancy Verilog constructs.
-Normally our transforms would try to remove these constructs, replacing them
-with instances of primitives.  This can lead to funny sorts of problems if we
-try to transform the primitives themselves.</p>
+<p>This is probably mostly outdated.  It was originally intended for use in
+@(see vl2014::primitives).  The Verilog definitions of these modules sometimes
+make use of fancy Verilog constructs.  Normally our transforms would try to
+remove these constructs, replacing them with instances of primitives.  This can
+lead to funny sorts of problems if we try to transform the primitives
+themselves.</p>
 
-<p>For instance, consider the @(see *vl-1-bit-delay-1*) module.  This module
-has a delayed assignment, @('assign #1 out = in').  If we hit this module with
-the @(see delayredux) transform, we'll try to replace the delay with an
-explicit instance of @('VL_1_BIT_DELAY_1').  But that's crazy: now the module
-is trying to instantiate itself!</p>
+<p>For instance, consider the @(see vl2014::*vl-1-bit-delay-1*) module.  This
+module has a delayed assignment, @('assign #1 out = in').  If we hit this
+module with the @(see vl2014::delayredux) transform, we'll try to replace the
+delay with an explicit instance of @('VL_1_BIT_DELAY_1').  But that's crazy:
+now the module is trying to instantiate itself!</p>
 
 <p>Similar issues can arise from trying to replace the @('always') statements
 in a primitive flop/latch with instances of flop/latch primitives, etc.  So as

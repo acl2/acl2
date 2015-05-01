@@ -38,12 +38,14 @@
   :parents (always-top)
   :short "Rewrite statements into simpler forms."
 
-  :long "<p>This transform simplifies Verilog statements by applying rewrite
+  :long "<p>BOZO historically this transform was important for always handling;
+see for instance @(see vl2014::always-top).  BOZO are we using this anymore?</p>
+
+<p>This transform simplifies Verilog statements by applying rewrite
 rules.  The idea is to make later statement processing simpler by reducing the
 variety of statements that need to be supported.  This is somewhat similar to
 how the @(see oprewrite) transform eliminates certain operators, leaving us
-with fewer operators to support later on.  See @(see always-top) for how this
-fits into our overall handling of @('always') blocks.</p>
+with fewer operators to support later on.</p>
 
 <p>Note that, for instance, our rewrites eliminate @('$display') statements.
 This is suitable when your goal is to analyze the functionality of the module
