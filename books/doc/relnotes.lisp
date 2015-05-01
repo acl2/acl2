@@ -51,7 +51,7 @@
   :parents (note-7-1)
   :short "Release notes for the ACL2 Community Books for ACL2 7.1 (May 2015)"
 
-;; Current through April 18, 2015
+;; Current through May 1, 2015
 
   :long "<p>The following is a brief summary of changes made to the @(see
  community-books) between the releases of ACL2 7.0 and 7.1.</p>
@@ -118,6 +118,9 @@
  <p>The @('misc/assert') book is now documented; see for instance @(see
  assert!).</p>
 
+ <p>The documentation for @(see data-structures) is now included in the manual;
+ previously it was excluded because of name conflicts with other libraries, but
+ these have now been resolved.</p>
 
  <h3>Name Changes</h3>
 
@@ -149,6 +152,9 @@
  patbind-ret)'>ret</see> binder for @(see b*) allows you to name the bundled
  return values from a @(see define) and then access individual components using
  a C-like or @(see std::defaggregate)/@(see fty::defprod)-like @('.') syntax.</p>
+
+ <p>The @(see define) macro now checks the arity of @(':returns') specifiers
+ when possible.</p>
 
  <p>Some @('std/lists') books have been tweaked:</p>
 
@@ -221,6 +227,9 @@
  <p>Fixed a bug with @('<em>') tag handling that affected the @(':xdoc')
  command and Emacs-based @(see acl2-doc) tool.</p>
 
+ <p>Fixed a bug with using multiple @(see defsection) extensions with the same
+ name.  Defsection now requires a non-nil symbol as the section name.</p>
+
  <p>As the manual has grown substantially, some memory management measures have
  been taken in @('doc/top.lisp').</p>
 
@@ -229,7 +238,8 @@
 
  <p>The approach to distributing Common Lisp libraries has been updated to use
  the new <a href='http://www.quicklisp.org/beta/bundles.html'>Quicklisp
- bundles</a> feature.</p>
+ bundles</a> feature.  Some additional Common Lisp libraries have been
+ added to the bundle.</p>
 
  <p>The @(see tshell) library is now based on the <a
  href='https://github.com/jaredcdavis/shellpool'>Shellpool</a> Common Lisp
@@ -286,6 +296,10 @@
 
  <p>Various updates have been made to the Jenkins scripts to keep things up to
  date.</p>
+
+ <p>For most Lisps, @(see cert.pl) will now include garbage collection messages
+ in output logs files.  This may occasionally be useful when debugging
+ performance issues.</p>
 
 ")
 

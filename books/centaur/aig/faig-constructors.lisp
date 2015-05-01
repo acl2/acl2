@@ -150,7 +150,6 @@ FAIGs.</p>"
   (defcong faig-fix-equiv equal (f-aig-unfloat a) 1
     :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
-
 (define t-aig-not (a)
   :parents (faig-constructors)
   :short "@(call t-aig-not) negates the FAIG @('a'), assuming that it cannot

@@ -536,6 +536,25 @@ of proofs.")
                               :verbosep t)))
    (value '(value-triple "xdoc.sao"))))
 
+
+; Once upon a time we had a an out-of-control macro generating automatic docs
+; that included every event in the world(!).  To make this sort of problem
+; easier to spot, we now print out a brief listing of the longest topics.
+
+#!XDOC
+(defun find-long-topics (all-topics)
+  (if (atom all-topics)
+      nil
+    (cons (cons (length (cdr (assoc :long (car all-topics))))
+                (cdr (assoc :name (car all-topics))))
+          (find-long-topics (cdr all-topics)))))
+
+#!XDOC
+(value-triple
+ (b* ((lengths->names (find-long-topics (get-xdoc-table (w state)))))
+   (cw "Longest topics listing (length . name):~%~x0~%"
+       (take 30 (reverse (mergesort lengths->names))))))
+
 ; GC so the fork for the zip call of xdoc::save has a smaller chance of running
 ; out of memory.
 (value-triple (hons-clear t))

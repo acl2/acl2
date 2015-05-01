@@ -304,7 +304,11 @@
                            (or (not autodoc-arg)
                                (cdr autodoc-arg))))
          (new-args (make-xdoc-fragments (throw-away-keyword-parts args))))
-    (cond ((and extension
+    (cond ((or (not name)
+               (not (symbolp name)))
+           (er hard? 'defsection "Section name must be a non-nil symbol; found
+                                  ~x0." name))
+          ((and extension
                 (or parents short))
            (er hard? 'defsection "In section ~x0, you are using :extension, ~
                                   so :parents and :short are not allowed." name))
