@@ -136,7 +136,7 @@
 ; Content by various authors
 -->
 <title><?php echo($page['PACKAGE'] .' - '. $page['TITLE']); ?></title>
-<link rel="stylesheet" type="text/css" href="<?= $basedir ?>style.css"/>
+<link rel="stylesheet" type="text/css" href="<?= $basedir ?>desktop.css"/>
 <link rel="shortcut icon" href="<?= $basedir ?>favicon.png"/>
 </head>
 <body>
