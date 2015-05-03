@@ -5162,10 +5162,7 @@
     (setq *gc-min-threshold* (floor *max-mem-usage* 4)))
   (unless *sol-gc-installed*
     (ccl::add-gc-hook
-     #'(lambda ()
-         (ccl::process-interrupt
-          (slot-value ccl:*application* 'ccl::initial-listener-process)
-          #'set-and-reset-gc-thresholds))
+     #'set-and-reset-gc-thresholds
      :post-gc)
     (setq *sol-gc-installed* t))
   (set-and-reset-gc-thresholds))
