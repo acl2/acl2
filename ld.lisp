@@ -4540,9 +4540,7 @@
 ; We now develop code for without-evisc.
 
 (defun defun-for-state-name (name)
-  (intern-in-package-of-symbol
-   (concatenate 'string (symbol-name name) "-STATE")
-   name))
+  (add-suffix name "-STATE"))
 
 (defmacro defun-for-state (name args)
   `(defun ,(defun-for-state-name name)
