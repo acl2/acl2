@@ -291,7 +291,8 @@ with, we can safely remove @('plus') from our module list.</p>")
 
 (defprod vl-unparam-signature
   ((modname stringp)
-   (final-params vl-paramdecllist-p))
+   (newname stringp)
+   (final-params vl-paramdecllist-p)) 
   :layout :tree)
 
 (fty::deflist vl-unparam-signaturelist :elt-type vl-unparam-signature
@@ -404,7 +405,7 @@ introduced.</p>"
         ;; make sure the instance is also parameter-free.
         (if (vl-paramargs-empty-p inst.paramargs)
             (mv t (ok) inst
-                (make-vl-unparam-signature :modname inst.modname)
+                (make-vl-unparam-signature :modname inst.modname :newname inst.modname)
                 (make-vl-svexconf
                  :ss
                  (vl-scopestack-push mod mod-ss)))
@@ -436,6 +437,7 @@ introduced.</p>"
 
        (unparam-signature (make-vl-unparam-signature
                            :modname inst.modname
+                           :newname new-modname
                            :final-params final-paramdecls)))
 
     (vl-unparam-debug "~a0: success, new instance is ~a1.~%" inst new-inst)
@@ -921,6 +923,7 @@ introduced.</p>"
 
 (define vl-create-unparameterized-module
   ((x vl-module-p)
+   (name stringp "New name including parameter disambiguation")
    (final-paramdecls vl-paramdecllist-p)
    (conf vl-svexconf-p "svexconf with the module's scopeinfo and final parameters,
                         from vl-scope-finalize-params"))
@@ -929,8 +932,7 @@ introduced.</p>"
                (new-mod vl-module-p)
                (siglist vl-unparam-sigalist-p
                          "signatures for this module"))
-  (b* ((origname (vl-module->name x))
-       (name (vl-unparam-newname origname final-paramdecls))
+  (b* ((name (string-fix name))
        (x (change-vl-module x :name name
                             :paramdecls final-paramdecls))
        ((vl-module x))
@@ -951,13 +953,14 @@ introduced.</p>"
 
 (define vl-create-unparameterized-interface
   ((x vl-interface-p)
+   (name stringp "New name including parameter disambiguation")
    (final-paramdecls vl-paramdecllist-p)
    (conf vl-svexconf-p "svexconf with the interface's scopeinfo and final parameters,
                         from vl-scope-finalize-params"))
 
   :returns (mv (okp)
                (new-mod vl-interface-p))
-  (b* ((name (vl-unparam-newname (vl-interface->name x) final-paramdecls))
+  (b* ((name (string-fix name))
        (x (change-vl-interface x :name name
                             :paramdecls final-paramdecls))
        ((vl-interface x))
@@ -1027,12 +1030,12 @@ introduced.</p>"
 
          ((when (eq (tag mod) :vl-interface))
           (b* (((mv ok new-iface)
-                (vl-create-unparameterized-interface mod sig.final-params sig-conf)))
+                (vl-create-unparameterized-interface mod sig.newname sig.final-params sig-conf)))
             (mv (and ok t)
                 warnings nil (list new-iface) donelist)))
 
          ((mv mod-ok new-mod sigalist)
-          (vl-create-unparameterized-module mod sig.final-params sig-conf))
+          (vl-create-unparameterized-module mod sig.newname sig.final-params sig-conf))
 
          ((mv unparams-ok warnings new-mods new-ifaces donelist)
           (vl-unparameterize-main-list sigalist donelist (1- depthlimit))))
@@ -1135,7 +1138,9 @@ introduced.</p>"
                                   warnings
                                   conf.ss conf))
        ((unless ok) (mv nil nil warnings)))
-    (mv (make-vl-unparam-signature :modname modname :final-params final-paramdecls)
+    (mv (make-vl-unparam-signature :modname modname
+                                   :newname modname
+                                   :final-params final-paramdecls)
         mod-conf warnings)))
 
 

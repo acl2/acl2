@@ -953,7 +953,6 @@ created when we process their packages, etc.</p>"
     :returns (new-st vl-lucidstate-p)
     :verify-guards nil
     :inline nil
-
     (vl-expr-case x
       :vl-index (b* ((st
                       ;; We'll mark it as being SET, but first: we also need to
