@@ -378,6 +378,8 @@
                  :range (cond ((not left)
                                nil)
                               ((not right)
+                               ;; See Table 6-10 on Page 80.  A single index should introduce
+                               ;; names foo0 through fooN-1.
                                (make-vl-range :msb (vl-make-index 0)
                                               :lsb (vl-make-index (vl-inttoken->value left))))
                               (t
