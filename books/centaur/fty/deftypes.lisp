@@ -4291,11 +4291,8 @@
        (short (cdr (assoc :short kwd-alist)))
        (long  (cdr (assoc :long kwd-alist)))
        (acc   nil)
-       ((fixtype base) (cdr (assoc :basetype x.kwd-alist)))
-       (acc   (revappend-chars
-               "<p>This is a transparent sum type using @(see
-                fty::deftranssum).</p>"
-               acc))
+       (acc   (revappend-chars "<p>This is a transparent sum type using @(see fty::deftranssum).</p>"
+                               acc))
        (acc   (cons #\Newline acc))
        (acc   (revappend-chars (or long "") acc))
        (long  (rchars-to-string acc))

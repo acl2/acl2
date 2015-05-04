@@ -52,7 +52,7 @@
 (include-book "../lint/selfassigns")
 (include-book "../lint/skip-detect")
 
-;(include-book "../transforms/cn-hooks")
+(include-book "../transforms/cn-hooks")
 (include-book "../transforms/unparam/top")
 (include-book "../transforms/annotate/argresolve")
 ;; (include-book "../transforms/annotate/resolve-indexing")
