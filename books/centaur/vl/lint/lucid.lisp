@@ -1132,7 +1132,7 @@ created when we process their packages, etc.</p>"
           st)
 
         :vl-usertype
-        (b* ((st (vl-hidsolo-mark :used x.name ss st ctx))
+        (b* ((st (vl-hidsolo-mark :used nil x.name ss st ctx))
              (st (vl-packeddimensionlist-lucidcheck x.pdims ss st ctx))
              (st (vl-packeddimensionlist-lucidcheck x.udims ss st ctx)))
           st))))

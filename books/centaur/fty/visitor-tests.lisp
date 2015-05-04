@@ -3,6 +3,7 @@
 (include-book "visitor")
 (include-book "basetypes")
 (include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/misc/two-nats-measure" :dir :system)
 (local (std::add-default-post-define-hook :fix))
 
 (logic)
@@ -93,8 +94,6 @@
 
 (local
  (progn
-   (include-book "basetypes")
-   (include-book "centaur/misc/arith-equivs" :dir :system)
 
    (define double-sum-nat ((x natp)
                            (incr natp)
@@ -143,8 +142,6 @@
                (content natp))))
 
    (defvisitor :type nat-tree :template double-sum-nats)
-
-   (include-book "std/misc/two-nats-measure" :dir :system)
 
    (deftypes bunch-of-stuff
      (deftagsum foosum
