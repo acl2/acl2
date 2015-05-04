@@ -1245,10 +1245,21 @@
 ; more, we bind **1*-as-raw* to nil, to signify that we intend to execute the
 ; function call in the logic.
 
-             (let ((form (car (last x))))
-               `(let* ((args (list ,@(oneify-lst (cdr form) fns w program-p)))
-                       (**1*-as-raw* nil))
-                  (apply ',(*1*-symbol (car form)) args))))))
+               (let ((form (car (last x))))
+                 `(let* ((args (list ,@(oneify-lst (cdr form) fns w program-p)))
+                         (**1*-as-raw* nil))
+                    (apply ',(if (function-symbolp (car form) w)
+                                 (*1*-symbol (car form))
+
+; Otherwise, translate11 guarantees that if (car form) is f, then it is an
+; abbreviation for f$inline.
+
+                               (assert$ (getprop (car x) 'macro-body
+                                                 nil
+                                                 'current-acl2-world w)
+                                        (*1*-symbol (add-suffix (car form)
+                                                                *inline-suffix*))))
+                           args))))))
             ((eq fn 'mbe1-raw)
 
 ; Here we process macroexpansions of mbe calls.

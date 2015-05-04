@@ -17934,15 +17934,11 @@
                            `(not ,body-guts)))
          (skolem-name
           (or skolem-name
-              (intern-in-package-of-symbol
-               (concatenate 'string (symbol-name name) "-WITNESS")
-               name)))
+              (add-suffix name "-WITNESS")))
          (thm-name
           (or thm-name
-              (intern-in-package-of-symbol
-               (concatenate 'string (symbol-name name)
-                            (if exists-p "-SUFF" "-NECC"))
-               name)))
+              (add-suffix name
+                          (if exists-p "-SUFF" "-NECC"))))
          (msg (non-acceptable-defun-sk-p name args body doc quant-ok rewrite
                                          exists-p)))
     (if msg
@@ -24902,9 +24898,7 @@
                 (nth 3 fn-guard-stobjsin-args)
                 nil))
          (formals (formals fn wrld))
-         (guard-fn (intern-in-package-of-symbol
-                    (concatenate 'string (symbol-name fn) "{GUARD}")
-                    fn)))
+         (guard-fn (add-suffix fn "{GUARD}")))
 
 ; Note: (nth 2 fn-guard-stobjsin-args) is the stobjs-in of fn, but we don't
 ; need it.
@@ -27795,9 +27789,7 @@
 (defmacro defmacro-last (fn &key raw (top-level-ok 't))
   (declare (xargs :guard (and (symbolp fn)
                               (symbolp raw))))
-  (let ((raw (or raw (intern-in-package-of-symbol
-                      (concatenate 'string (symbol-name fn) "-RAW")
-                      fn))))
+  (let ((raw (or raw (add-suffix fn "-RAW"))))
     `(progn (defmacro ,fn (x y)
               (list 'return-last (list 'quote ',raw) x y))
             (table return-last-table ',raw '
@@ -28315,7 +28307,7 @@
 
 ; Start definitions related to defun-inline.
 
-(defconst *inline-suffix* "$INLINE")
+; (defconst *inline-suffix* "$INLINE") ; moved above ec-call1-raw
 (defconst *inline-suffix-len-minus-1* (1- (length *inline-suffix*)))
 (defconst *notinline-suffix* "$NOTINLINE")
 (defconst *notinline-suffix-len-minus-1* (1- (length *notinline-suffix*)))
@@ -28336,10 +28328,7 @@
                                   (eq defun-type 'defund))
                               (or (equal suffix *inline-suffix*)
                                   (equal suffix *notinline-suffix*)))))
-  (let* ((name$inline
-          (intern-in-package-of-symbol
-           (concatenate 'string (symbol-name name) suffix)
-           name))
+  (let* ((name$inline (add-suffix name suffix))
          (dcls-and-strings (butlast lst 1))
          (strings (get-string dcls-and-strings))
          (dcls (remove-strings dcls-and-strings))
