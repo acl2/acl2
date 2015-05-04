@@ -1,4 +1,4 @@
-# VL Verilog Toolkit
+# VL 2014 -- VL Verilog Toolkit, 2014 Edition
 # Copyright (C) 2008-2015 Centaur Technology
 #
 # Contact:
@@ -239,5 +239,8 @@ unused(:useprim, "w1_unused ")
 spurious(:useprim, "w1_spurious ")
 
 unused(:trickyscope, "counter_unused ")
+
+unset(:minuscolon, "normal2")
+unused(:minuscolon, "normal1")
 
 test_passed()

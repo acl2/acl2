@@ -137,4 +137,8 @@ normal(:m10, "normal_r1")
 multi(:m11, "multi_a1")
 normal(:m11, "clk")
 
+normal(:m12, "normal1")
+normal(:m12, "normal2")
+
+
 test_passed()
