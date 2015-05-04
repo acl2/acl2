@@ -39,7 +39,7 @@
 
 (defsection esim-primitives
   :parents (esim)
-  :short "The @(see esim) modules that implement @(see vl2014::vl)'s @(see
+  :short "The @(see esim) modules that implement @(see vl2014::vl2014)'s @(see
 vl2014::primitives)."
 
   :long "<p>The patterns used for the :i and :o ports here might look strange.

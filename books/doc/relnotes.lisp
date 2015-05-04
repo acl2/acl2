@@ -51,7 +51,7 @@
   :parents (note-7-1)
   :short "Release notes for the ACL2 Community Books for ACL2 7.1 (May 2015)"
 
-;; Current through April 18, 2015
+;; Current through May 1, 2015
 
   :long "<p>The following is a brief summary of changes made to the @(see
  community-books) between the releases of ACL2 7.0 and 7.1.</p>
@@ -118,6 +118,9 @@
  <p>The @('misc/assert') book is now documented; see for instance @(see
  assert!).</p>
 
+ <p>The documentation for @(see data-structures) is now included in the manual;
+ previously it was excluded because of name conflicts with other libraries, but
+ these have now been resolved.</p>
 
  <h3>Name Changes</h3>
 
@@ -148,7 +151,10 @@
  theorems about return values by their name.  Also, the new <see topic='@(url
  patbind-ret)'>ret</see> binder for @(see b*) allows you to name the bundled
  return values from a @(see define) and then access individual components using
- a C-like or @(see defaggregate)/@(see fty::defprod)-like @('.') syntax.</p>
+ a C-like or @(see std::defaggregate)/@(see fty::defprod)-like @('.') syntax.</p>
+
+ <p>The @(see define) macro now checks the arity of @(':returns') specifiers
+ when possible.</p>
 
  <p>Some @('std/lists') books have been tweaked:</p>
 
@@ -189,13 +195,14 @@
  updating your books, you may find it convenient to import
  @('*bitops-exports*') into packages that use bitops functions.</p>
 
- <p>Extended the @(see bitops/merge) book with several new 256- and 512-bit
- merges, @(see bitops::merge-8-u2s), and improved its documentation.</p>
+ <p>Extended the @(see bitops::bitops/merge) book with several new 256- and
+ 512-bit merges, @(see bitops::merge-8-u2s), and improved its
+ documentation.</p>
 
  <p>Added @(see nth-slice128).</p>
 
 
- <h3>@(see fty)</h3>
+ <h3>@(see fty::fty)</h3>
 
  <p>The case macros from @(see fty::defflexsum) and @(see fty::deftranssum) now
  require a variable, and cannot bind that variable itself, because the syntax
@@ -220,6 +227,9 @@
  <p>Fixed a bug with @('<em>') tag handling that affected the @(':xdoc')
  command and Emacs-based @(see acl2-doc) tool.</p>
 
+ <p>Fixed a bug with using multiple @(see defsection) extensions with the same
+ name.  Defsection now requires a non-nil symbol as the section name.</p>
+
  <p>As the manual has grown substantially, some memory management measures have
  been taken in @('doc/top.lisp').</p>
 
@@ -228,7 +238,8 @@
 
  <p>The approach to distributing Common Lisp libraries has been updated to use
  the new <a href='http://www.quicklisp.org/beta/bundles.html'>Quicklisp
- bundles</a> feature.</p>
+ bundles</a> feature.  Some additional Common Lisp libraries have been
+ added to the bundle.</p>
 
  <p>The @(see tshell) library is now based on the <a
  href='https://github.com/jaredcdavis/shellpool'>Shellpool</a> Common Lisp
@@ -255,10 +266,10 @@
  @('tau/bounders/elementary-bounders').</p>
 
  <p>The @(see defsort) macro has been enhanced to better support the fixtype
- discipline of the @(see fty) library.  In support of this, it now requires a
- stricter transitivity property, i.e., the comparison function must support
- unconditional transitivity, regardless of element type.  (This is typically
- easy to achieve by using @('<<') as a fallback in case of malformed
+ discipline of the @(see fty::fty) library.  In support of this, it now
+ requires a stricter transitivity property, i.e., the comparison function must
+ support unconditional transitivity, regardless of element type.  (This is
+ typically easy to achieve by using @('<<') as a fallback in case of malformed
  elements.)</p>
 
  <p>The Codewalker demo books have been improved to use built-in function
@@ -285,6 +296,10 @@
 
  <p>Various updates have been made to the Jenkins scripts to keep things up to
  date.</p>
+
+ <p>For most Lisps, @(see cert.pl) will now include garbage collection messages
+ in output logs files.  This may occasionally be useful when debugging
+ performance issues.</p>
 
 ")
 
@@ -956,14 +971,14 @@
 
  <h3>@(see bitops)</h3>
 
- <p>The new @(see bitops/part-install) macro can be used to set particular bits of an
+ <p>The new @(see bitops::bitops/part-install) macro can be used to set particular bits of an
  integer to a value.  It is somewhat similar to utilities like @(see wrb) from
  the IHS library, but its interface is perhaps more intuitive.</p>
 
- <p>The new @(see bitops/fast-rotate) macros provide optimized versions of @(see
+ <p>The new @(see bitops::bitops/fast-rotate) macros provide optimized versions of @(see
  rotate-left) and @(see rotate-right).</p>
 
- <p>The new @(see bitops/logbitp-bounds) book provides a few lemmas relating
+ <p>The new @(see bitops::bitops/logbitp-bounds) book provides a few lemmas relating
  @(see logbitp) to @(see expt).</p>
 
 
@@ -2079,7 +2094,7 @@
  <h5>@(see bitops) - arithmetic library</h5>
  <ul>
  <li>Added significant documentation, including overview documentation.</li>
- <li>Added fast @(see bitops/fast-logrev) and @(see bitops/merge) functions.</li>
+ <li>Added fast @(see bitops::bitops/fast-logrev) and @(see bitops::bitops/merge) functions.</li>
  <li>Reduced dependencies and use of non-local includes.</li>
  </ul>
 
@@ -2150,7 +2165,7 @@
 
  <h5>@(see vl) - Verilog toolkit</h5>
  <ul>
- <li>Expanded @(see vl::always-top) with support for basic @('case') statements.</li>
+ <li>Expanded @(see vl2014::always-top) with support for basic @('case') statements.</li>
  <li>Expanded @(see vl::expr-simp) to make more reductions and be more modular.</li>
  <li>Added new support for hierarchical identifiers.</li>
  <li>Cleaned up support for gate instances.</li>

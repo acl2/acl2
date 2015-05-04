@@ -6377,6 +6377,26 @@
         (cdr entry)
       macro-name)))
 
+(defun corresponding-inline-fn (fn wrld)
+  (let* ((fn$inline (add-suffix fn *inline-suffix*))
+         (formals (getprop fn$inline 'formals
+                           nil
+                           'current-acl2-world
+                           wrld)))
+    (and (equal (macro-args fn wrld) formals)
+         (function-symbolp fn$inline wrld)
+         (equal (getprop fn 'macro-body nil 'current-acl2-world wrld)
+                (fcons-term*
+                 'cons
+                 (kwote fn$inline)
+                 (if formals
+                     (xxxjoin 'cons
+                              (append formals
+                                      (list
+                                       *nil*)))
+                   (list *nil*))))
+         fn$inline)))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -8502,33 +8522,49 @@
                                       flet-alist x ctx wrld state-vars)))
                  (trans-value
                   (fcons-term* 'return-last targ1 targ2 targ3))))
-               ((and (eq key 'ec-call1-raw)
-                     (not (and (consp arg3)
-                               (true-listp arg3)
-                               (let ((fn (car arg3)))
-                                 (and (symbolp fn)
-                                      (not (member-eq fn *ec-call-bad-ops*))
-                                      (function-symbolp fn wrld))))))
+               ((and
+                 (eq key 'ec-call1-raw)
+                 (not
+                  (and
+                   (consp arg3)
+                   (true-listp arg3)
+                   (and
+                    (symbolp (car arg3))
+                    (let ((fn (if (function-symbolp (car arg3) wrld)
+                                  (car arg3)
+                                (corresponding-inline-fn (car arg3) wrld))))
+                      (and fn
+                           (not (member-eq fn *ec-call-bad-ops*))))))))
                 (trans-er ctx
                           "A call of ~x0 (including macroexpansion of such a ~
                            call) must only be made on an argument of the form ~
                            (FN ...), where FN is a known function symbol of ~
                            the current ACL2 world not belonging to the list ~
-                           that is the value of the constant ~x1.  The ~
-                           argument ~x2 is thus illegal for ~x0, because ~@3."
+                           that is the value of the constant ~x1, or is a ~
+                           macro expanding in a certain direct way (as with ~
+                           defun-inline) to a call of FN$INLINE (i.e., the ~
+                           result of adding suffix \"$INLINE\" to the ~
+                           symbol-name of FN).  The argument ~x2 is thus ~
+                           illegal for ~x0, because ~@3.  See :DOC ec-call."
                           'ec-call '*ec-call-bad-ops* (car (last x))
-                          (let ((fn (and (consp arg3)
-                                         (car arg3))))
-                            (cond ((not (and fn
+                          (let* ((fn0 (and (consp arg3)
+                                           (car arg3)))
+                                 (fn (and fn0
+                                          (symbolp fn0)
+                                          (if (function-symbolp fn0 wrld)
+                                              fn0
+                                            (corresponding-inline-fn fn0
+                                                                     wrld)))))
+                            (cond ((not (and fn0
                                              (true-listp arg3)))
                                    (msg "~x0 does not have the form of a ~
                                          function call"
                                         arg3))
-                                  ((not (symbolp fn))
-                                   (msg "~x0 is not a symbol" fn))
+                                  ((not (symbolp fn0))
+                                   (msg "~x0 is not a symbol" fn0))
                                   ((member-eq fn *ec-call-bad-ops*)
                                    (msg "~x0 belongs to the above list" fn))
-                                  ((eq (getprop fn 'macro-args t
+                                  ((eq (getprop fn0 'macro-args t
                                                 'current-acl2-world wrld)
                                        t)
                                    (assert$

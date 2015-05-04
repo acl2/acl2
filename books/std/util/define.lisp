@@ -1440,7 +1440,7 @@ names between your formals and returns.</p>")
 
 #!acl2
 (def-b*-binder ret
-  :parents (b*-binders return-specifiers)
+  :parents (b*-binders std::returns-specifiers)
   :short "@(see b*) binder for named return values from functions."
 
   :long "<box><p>BETA.  Interface may change.</p></box>

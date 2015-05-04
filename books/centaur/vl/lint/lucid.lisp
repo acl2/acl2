@@ -736,6 +736,7 @@ created when we process their packages, etc.</p>"
     (vl-hidtrace-mark-interfaces mtype (cdr trace) ss st ctx)))
 
 (define vl-hidsolo-mark ((mtype (member mtype '(:used :set)))
+                         (force-bogusp booleanp)
                          (x     vl-scopeexpr-p)
                          (ss    vl-scopestack-p)
                          (st    vl-lucidstate-p)
@@ -754,7 +755,8 @@ created when we process their packages, etc.</p>"
        (key (make-vl-lucidkey
              :item step.item
              :scopestack (vl-normalize-scopestack step.ss)))
-       (occ (if (vl-hidexpr-case tail :end)
+       (occ (if (and (vl-hidexpr-case tail :end)
+                     (not force-bogusp))
                 (make-vl-lucidocc-solo :ctx ctx :ss ss)
               (make-vl-lucidocc-tail :ctx ctx :ss ss)))
        (st  (vl-hidtrace-mark-interfaces mtype rest ss st ctx))
@@ -849,7 +851,7 @@ created when we process their packages, etc.</p>"
   (if (atom x)
       (vl-lucidstate-fix st)
     (vl-scopeexprlist-mark-solo
-     mtype (cdr x) ss (vl-hidsolo-mark mtype (car x) ss st ctx) ctx)))
+     mtype (cdr x) ss (vl-hidsolo-mark mtype nil (car x) ss st ctx) ctx)))
 
 
   
@@ -872,7 +874,7 @@ created when we process their packages, etc.</p>"
                        (one-index  (tuplep 1 x.indices))
                        (no-partselect (vl-partselect-case x.part :none))
                        ((when (and no-indices no-partselect))
-                        (vl-hidsolo-mark :used x.scope ss st ctx))
+                        (vl-hidsolo-mark :used nil x.scope ss st ctx))
                        ((when (and one-index no-partselect))
                         (vl-hidslice-mark :used x.scope (first x.indices)
                                           (first x.indices) ss st ctx))
@@ -887,10 +889,10 @@ created when we process their packages, etc.</p>"
                     ;;    foo[3][4]
                     ;;    foo[3][4:0]
                     ;; Eventually do something more useful with this.  For now,
-                    ;; we will just mark all of FOO as used.
-                    (vl-hidsolo-mark :used x.scope ss st ctx))
+                    ;; we will just force them to be bogus? BOZO jared check this
+                    (vl-hidsolo-mark :used t x.scope ss st ctx))
 
-        :vl-call (b* ((st (vl-hidsolo-mark :used x.name ss st ctx))
+        :vl-call (b* ((st (vl-hidsolo-mark :used nil x.name ss st ctx))
                       (st (if x.typearg
                               (vl-scopeexprlist-mark-solo
                                :used (vl-collect-usertypes x.typearg)
@@ -960,7 +962,7 @@ created when we process their packages, etc.</p>"
                      (one-index  (tuplep 1 x.indices))
                      (no-partselect (vl-partselect-case x.part :none))
                      ((when (and no-indices no-partselect))
-                      (vl-hidsolo-mark :set x.scope ss st ctx))
+                      (vl-hidsolo-mark :set nil x.scope ss st ctx))
                      ((when (and one-index no-partselect))
                       (vl-hidslice-mark :set x.scope (first x.indices)
                                         (first x.indices) ss st ctx))
@@ -976,7 +978,7 @@ created when we process their packages, etc.</p>"
                   ;;    foo[3][4:0]
                   ;; Eventually do something more useful with this.  For now,
                   ;; we will just mark all of FOO as used.
-                  (vl-hidsolo-mark :set x.scope ss st ctx))
+                  (vl-hidsolo-mark :set t x.scope ss st ctx))
 
       ;; :vl-call (b* ((st (vl-hidsolo-mark :used x.name ss st ctx))
       ;;               (st (if x.typearg
@@ -1313,7 +1315,7 @@ created when we process their packages, etc.</p>"
         ;; task will also be marked as used.  BOZO this maybe isn't quite right
         ;; -- if the task has outputs then maybe we need to be marking them as
         ;; set instead of used??
-        (b* ((st (vl-hidsolo-mark :used x.id ss st ctx))
+        (b* ((st (vl-hidsolo-mark :used nil x.id ss st ctx))
              (st (vl-rhsexprlist-lucidcheck x.args ss st ctx)))
           st)
 
@@ -2376,6 +2378,16 @@ doesn't have to recreate the default heuristics.</p>"
   (defattach vl-custom-suppress-multidrive-p
     vl-custom-suppress-multidrive-p-default))
 
+(define vl-lucidocclist-remove-tails ((x vl-lucidocclist-p))
+  :returns (new-x vl-lucidocclist-p)
+  (cond ((atom x)
+         nil)
+        ((eq (vl-lucidocc-kind (car x)) :tail)
+         (vl-lucidocclist-remove-tails (cdr x)))
+        (t
+         (cons (vl-lucidocc-fix (car x))
+               (vl-lucidocclist-remove-tails (cdr x))))))
+
 (define vl-lucid-multidrive-detect
   ((ss    vl-scopestack-p)
    (item  (or (vl-paramdecl-p item)
@@ -2421,11 +2433,16 @@ doesn't have to recreate the default heuristics.</p>"
        ;;        end
        ;;
        ;;     The problem is that this looks like two drivers onto submod.foo.
+       ;;
+       ;;  6. Drop TAIL occurrences, because they might be things like foo[3-:0]
+       ;;     that we don't understand.
        (set (vl-lucidocclist-drop-initials set))
        (set (vl-lucidocclist-merge-blocks set))
        (set (vl-lucidocclist-drop-bad-modinsts set))
        (set (vl-lucidocclist-drop-foreign-writes set ss))
        (set (if genp set (vl-lucidocclist-drop-generates set)))
+       (set (vl-lucidocclist-remove-tails set))
+
        ((when (or (atom set)
                   (atom (cdr set))))
         nil)

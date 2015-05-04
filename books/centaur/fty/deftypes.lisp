@@ -1430,7 +1430,10 @@
           (get-flexsum-infos (cdr sumnames) world))))
 
 
-
+(defxdoc deftranssum
+  :parents (deftypes)
+  :short "Introduce a transparent sum of products. (beta)"
+  :long "<p>BOZO document me.</p>")
 
 (defun deftranssum-post-pred-events (x)
   (b* (((flexsum x))
@@ -4826,6 +4829,13 @@
                                   :kwd-alist nil
                                   :recp x.recp)))
     (deftypes-events flextypes state)))
+
+(defxdoc defoption
+  :parents (fty deftypes)
+  :short "Define an option type."
+  :long "<p>BOZO document me.  There used to be documentation for this when
+it was part of VL.  See @(see vl::defoption).  I don't know how much of it
+is the same...</p>")
 
 (defmacro defoption (&whole form &rest args)
   (declare (ignore args))

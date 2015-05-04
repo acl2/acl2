@@ -1012,7 +1012,8 @@ variable, we will follow only until the declaration of @('myinst') and then we
 will return @('myinst.opcode') as the tail.</dd>
 
 <dd>Tools that want to descend into structures will need to do so using the
-appropriate functions; for instance @(see BOZO) and @(see BOZO).</dd>
+appropriate functions.  These are largely missing in VL2014 but are being
+developed for the newer @(see vl::vl).</dd>
 
 
 <dt>Unclear Destination</dt>

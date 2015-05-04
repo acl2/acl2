@@ -5249,10 +5249,11 @@
 ; stobj manipulation) when making *1* calls of :logic mode functions.  There is
 ; actually one other case that all-fnnames1-exec ignores function symbols in
 ; the call tree: it does not collect function symbol F from (ec-call (F ...)).
-; But in this case, *1*F is called, and if there is a non-nil 'invariant-risk
-; property for F, then we trust that oneify has laid down suitable *1* code for
-; F to preserve invariants, so there is no risk to bypassing guards in the
-; evaluation of bodies.
+; But in this case, *1*F or *1*F$INLINE is called, and if there is a non-nil
+; 'invariant-risk property for F or F$INLINE (respectively), then we trust that
+; oneify has laid down suitable *1* code for F (or F$INLINE) to preserve
+; invariants, so there is no risk to bypassing guards in the evaluation of
+; bodies.
 
   (cond (non-executablep wrld)
         (t (put-invariant-risk1 names

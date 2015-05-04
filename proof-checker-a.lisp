@@ -64,9 +64,7 @@
   '(pc-value ss-alist))
 
 (defun define-global-name (var)
-  (intern-in-package-of-symbol
-   (string-append (symbol-name var) "-FN")
-   var))
+  (add-suffix var "-FN"))
 
 (defmacro define-global (var)
   (let ((var-fn (define-global-name var)))

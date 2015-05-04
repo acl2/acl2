@@ -495,3 +495,16 @@ module trickyscope;
 
 
 endmodule
+
+
+module minuscolon ;
+
+  wire [10:0] normal1;
+  wire [10:0] normal2;
+
+  assign normal1[3 -: 4] = normal2[3 -: 4];
+  assign normal1[7 -: 4] = normal2[7 -: 4];
+  assign normal1[9:8] = normal2[9:8];
+  assign normal1[10] = normal2[10];
+
+endmodule

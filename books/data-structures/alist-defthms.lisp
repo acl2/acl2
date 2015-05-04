@@ -217,9 +217,8 @@
 	   (symbol-alistp (bind-equal x y a))))
 
 
-(defthm alistp-pairlis$ 
-  (alistp (pairlis$ a b))
-  :rule-classes (:rewrite :type-prescription))
+(defthm alistp-pairlis$
+  (alistp (pairlis$ a b)))
 
 (defthm eqlable-alistp-pairlis$
   (implies (eqlable-listp a)

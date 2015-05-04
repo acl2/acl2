@@ -2085,3 +2085,46 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; See comment in intern-in-package-of-symbol for an explanation of this trick.
                      ans))
          (incf *acl2-gentemp-counter*))))))
+
+; Subsection: type mfixnum
+
+; We use the type mfixnum for counting things that are best counted in the
+; trillions or more.  Mfixnums happen to coincide with regular fixnums on
+; 64-bit CCL, and may be fixnums in other Lisps (e.g. SBCL 1.1.8 and, as
+; confirmed by Camm Maguire Sept. 2014, in 64-bit GCL where fixnums are 64 bits
+; long).
+
+(defconstant most-positive-mfixnum
+
+; Warning: In function internal-real-ticks, we rely on this value having a
+; binary representation as a sequence of ones.
+
+; This is more than 10^18, that is, more than a billion billions.  It seems
+; reasonable to assume (at least in 2014 and for some years beyond) that any
+; integer quantities that we accumulate, such as call counts, are less than
+; that.  This number is also more than the (2*500,000,000)^2, which is the size
+; of *memoize-call-array* when we have approximately 500 million memoized
+; functions.  [Note: if a countable event, like a call, took just the time of
+; the fastest single instruction on a 100GHz (!) machine, then counting up
+; most-positive-mfixnum of them would take over 4 months.]
+
+  (1- (expt 2 60)))
+
+(deftype mfixnum ()
+  `(integer ,(- -1 most-positive-mfixnum)
+            ,most-positive-mfixnum))
+
+(defmacro the-mfixnum (x)
+
+; This silly macro may help someday in debugging, using code such as is found
+; in the comment just below.  Of course, by adding an optional argument that
+; specifies some sort of location for this call, we can get more specific
+; debugging information.  Debugging could also be aided by replacing this with
+; a corresponding defun, which could be traced.
+
+; `(let ((x ,x))
+;    (cond ((not (typep x 'fixnum))
+;           (error "OUCH")))
+;    (the mfixnum x))
+
+  `(the mfixnum ,x))

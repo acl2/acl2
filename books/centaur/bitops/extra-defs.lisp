@@ -269,7 +269,7 @@ about it.</p>"
   :returns (ans natp :rule-classes :type-prescription)
   :parents (bitops/extra-defs)
   :short "@(call abs-diff) is just @('(abs (- (ifix a) (ifix b)))'), but
-optimized for @(see gl)."
+optimized for @(see gl::gl)."
 
   :long "<p>@('abs-diff') is similar to @('(abs (- a b))') but has better
 performance for symbolic simulations with GL: it decides whether the

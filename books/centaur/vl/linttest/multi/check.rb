@@ -1,4 +1,4 @@
-# VL Verilog Toolkit
+# VL 2014 -- VL Verilog Toolkit, 2014 Edition
 # Copyright (C) 2008-2015 Centaur Technology
 #
 # Contact:
@@ -136,5 +136,9 @@ normal(:m10, "normal_r1")
 
 multi(:m11, "multi_a1")
 normal(:m11, "clk")
+
+normal(:m12, "normal1")
+normal(:m12, "normal2")
+
 
 test_passed()
