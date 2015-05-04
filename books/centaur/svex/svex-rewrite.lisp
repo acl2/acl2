@@ -1260,7 +1260,7 @@
          (svex-lookup v x))))
 
 
-(define svexlist-rewrite-fixpoint ((x svexlist-p) &key ((count natp) '8) (verbosep 'nil))
+(define svexlist-rewrite-fixpoint ((x svexlist-p) &key ((count natp) '4) (verbosep 'nil))
   :returns (xx svexlist-p)
   :measure (nfix count)
   (b* ((x (mbe :logic (svexlist-fix x) :exec x))
@@ -1293,7 +1293,7 @@
 
 (define svex-alist-rewrite-fixpoint ((x svex-alist-p)
                                      &key
-                                     ((count natp) '8)
+                                     ((count natp) '4)
                                      (verbosep 'nil))
   :returns (xx svex-alist-p)
   (pairlis$ (svex-alist-keys x)
