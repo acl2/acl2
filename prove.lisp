@@ -4393,9 +4393,9 @@
                   (list (fargn term 2)))
                  (ec-call1-raw
 
-; Since (return-last 'ec-call1-raw ign (fn arg1 ... argk)) macroexpands to
-; (*1*fn arg1 ... argk) in raw Common Lisp, we need only verify guards for the
-; argi.
+; Since (return-last 'ec-call1-raw ign (fn arg1 ... argk)) leads to the call
+; (*1*fn arg1 ... argk) or perhaps (*1*fn$inline arg1 ... argk) in raw Common
+; Lisp, we need only verify guards for the argi.
 
                   (fargs (fargn term 3)))
                  (otherwise

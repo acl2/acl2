@@ -292,7 +292,24 @@ type.</p>")
                          (assoc-eq :header l)))))
 
 
-(defsection-progn array1-lemmas
+; The following two events were added by Matt K. for Version 3.1, 7/1/06, to
+; support proof of compress1-assoc-property-0 in light of addition of
+; reverse-sorted and unsorted ACL2 arrays.
+
+(local
+ (defthm alistp-revappend
+   (implies (alistp x)
+            (equal (alistp (revappend x y))
+                   (alistp y)))))
+
+(local
+ (defthm bounded-integer-alistp-revappend
+   (implies (bounded-integer-alistp x n)
+            (equal (bounded-integer-alistp (revappend x y) n)
+                   (bounded-integer-alistp y n)))))
+
+
+(defsection array1-lemmas
   :parents (array1)
   :short "A @(see theory) of all @(see enable)d rules exported by the @(see
 array1) book."
@@ -308,22 +325,6 @@ need to @(see DISABLE) the theory @(see ARRAY1-FUNCTIONS).</p>"
 ;;;    ARRAY1-LEMMAS.
 ;;;
 ;;;****************************************************************************
-
-; The following two events were added by Matt K. for Version 3.1, 7/1/06, to
-; support proof of compress1-assoc-property-0 in light of addition of
-; reverse-sorted and unsorted ACL2 arrays.
-
-  (local
-   (defthm alistp-revappend
-     (implies (alistp x)
-              (equal (alistp (revappend x y))
-                     (alistp y)))))
-
-  (local
-   (defthm bounded-integer-alistp-revappend
-     (implies (bounded-integer-alistp x n)
-              (equal (bounded-integer-alistp (revappend x y) n)
-                     (bounded-integer-alistp y n)))))
 
   (defthm array1p-compress1
     (implies (array1p name l)
@@ -471,7 +472,7 @@ need to @(see DISABLE) the theory @(see ARRAY1-FUNCTIONS).</p>"
                   (<= (maximum-length name l) *maximum-positive-32-bit-integer*)
                   (bounded-integer-alistp l (car (dimensions name l)))))
     :rule-classes :forward-chaining
-    :hints (("Goal" :in-theory (disable length))))
+    :hints (("Goal" :in-theory (disable length)))))
 
 
 ;;;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -480,55 +481,56 @@ need to @(see DISABLE) the theory @(see ARRAY1-FUNCTIONS).</p>"
 ;;;
 ;;;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+
 ;  The proofs for RESET-ARRAY1 require a few LOCAL facts.
 
-  (local
-   (defthm car-header
-     (implies (array1p name l)
-              (equal (car (header name l))
-                     :header))))
+(local
+ (defthm car-header
+   (implies (array1p name l)
+            (equal (car (header name l))
+                   :header))))
 
-  (local
-   (defthm array1p-list-header
-     (implies (array1p name l)
-              (array1p name (list (header name l))))
-     :hints (("Goal" :in-theory (enable array1p)))))
+(local
+ (defthm array1p-list-header
+   (implies (array1p name l)
+            (array1p name (list (header name l))))
+   :hints (("Goal" :in-theory (enable array1p)))))
 
-  (local
-   (defthm header-list-header
-     (implies (array1p name l)
-              (equal (header name (list (header name l)))
-                     (header name l)))))
+(local
+ (defthm header-list-header
+   (implies (array1p name l)
+            (equal (header name (list (header name l)))
+                   (header name l)))))
 
-  (local
-   (defthm dimensions-list-header
-     (implies (array1p name l)
-              (equal (dimensions name (list (header name l)))
-                     (dimensions name l)))))
+(local
+ (defthm dimensions-list-header
+   (implies (array1p name l)
+            (equal (dimensions name (list (header name l)))
+                   (dimensions name l)))))
 
-  (local
-   (defthm default-cons-header
-     (implies (array1p name l)
-              (equal (default name (cons (header name l) x))
-                     (default name l)))))
+(local
+ (defthm default-cons-header
+   (implies (array1p name l)
+            (equal (default name (cons (header name l) x))
+                   (default name l)))))
 
-  (local
-   (defthm symbol-alistp-list-header
-     (implies (array1p name l)
-              (symbol-alistp (list (header name l))))))
+(local
+ (defthm symbol-alistp-list-header
+   (implies (array1p name l)
+            (symbol-alistp (list (header name l))))))
 
-  (local
-   (defthm symbol-alistp-not-assoc-integer
-     (implies (and (symbol-alistp l)
-                   (integerp i))
-              (not (assoc i l)))))
+(local
+ (defthm symbol-alistp-not-assoc-integer
+   (implies (and (symbol-alistp l)
+                 (integerp i))
+            (not (assoc i l)))))
 
-  (local
-   (defthm symbol-alistp-not-compress11
-     (implies (and (symbol-alistp l)
-                   (integerp i)
-                   (integerp n))
-              (not (compress11 name l i n default))))))
+(local
+ (defthm symbol-alistp-not-compress11
+   (implies (and (symbol-alistp l)
+                 (integerp i)
+                 (integerp n))
+            (not (compress11 name l i n default)))))
 
 
 ;  HEADER, DEFAULT, and DIMENSIONS are characterized, so we DISABLE them.
@@ -627,6 +629,7 @@ the \"array1\" book to be applicable.</p>"
     aref1-reset-array1))
 
 (defsection array1-disabled-lemmas
+  :parents (array1)
   :short "A theory of all rules exported DISABLEd by the \"array1\" book."
   :long "<p>Note that in order for these rules to be applicable you will first
 need to disable @(see array1-functions).  Look at the :DOC for each lemma for
@@ -900,3 +903,5 @@ failure), please notify the author.</p>")
        ;;  DISABLE the recognizer.
 
        (IN-THEORY (DISABLE ,recognizer)))))
+
+

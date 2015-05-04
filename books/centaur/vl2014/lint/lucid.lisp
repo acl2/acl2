@@ -735,11 +735,12 @@ created when we process their packages, etc.</p>"
        (st (vl-hidstep-mark-interfaces mtype (car trace) ss st ctx)))
     (vl-hidtrace-mark-interfaces mtype (cdr trace) ss st ctx)))
 
-(define vl-hidsolo-mark ((mtype (member mtype '(:used :set)))
-                         (hid   vl-expr-p)
-                         (ss    vl-scopestack-p)
-                         (st    vl-lucidstate-p)
-                         (ctx   vl-context1-p))
+(define vl-hidsolo-mark ((mtype        (member mtype '(:used :set)))
+                         (force-bogusp booleanp)
+                         (hid          vl-expr-p)
+                         (ss           vl-scopestack-p)
+                         (st           vl-lucidstate-p)
+                         (ctx          vl-context1-p))
   :guard (vl-hidexpr-p hid)
   :returns (new-st vl-lucidstate-p)
   ;; BOZO this doesn't mark the indices used in the HID expression!!
@@ -755,9 +756,10 @@ created when we process their packages, etc.</p>"
        (key (make-vl-lucidkey
              :item step.item
              :scopestack (vl-normalize-scopestack step.ss)))
-       (occ (if (vl-hidexpr->endp tail)
-                (make-vl-lucidocc-solo :ctx ctx :ss ss)
-              (make-vl-lucidocc-tail :ctx ctx :ss ss)))
+       (occ (if (or force-bogusp
+                    (not (vl-hidexpr->endp tail)))
+                (make-vl-lucidocc-tail :ctx ctx :ss ss)
+              (make-vl-lucidocc-solo :ctx ctx :ss ss)))
        (st  (vl-hidtrace-mark-interfaces mtype rest ss st ctx))
        (st  (vl-lucidstate-mark mtype key occ st ctx)))
     st))
@@ -833,7 +835,7 @@ created when we process their packages, etc.</p>"
     :verify-guards nil
     :inline nil
     (b* (((when (vl-hidexpr-p x))
-          (b* ((st (vl-hidsolo-mark :used x ss st ctx))
+          (b* ((st (vl-hidsolo-mark :used nil x ss st ctx))
                ;; If there are any indices in this expression, then we need to
                ;; perhaps mark identifiers in them as used as well.
                (indices (vl-hidexpr-collect-indices x))
@@ -876,8 +878,20 @@ created when we process their packages, etc.</p>"
                (st (vl-rhsexprlist-lucidcheck (vl-hidexpr-collect-indices from) ss st ctx)))
             st))
 
+         ((when (and (or (eq x.op :vl-select-minuscolon)
+                         (eq x.op :vl-select-pluscolon)
+                         (eq x.op :vl-partselect-pluscolon)
+                         (eq x.op :vl-partselect-minuscolon))
+                     (vl-hidexpr-p (first x.args))))
+          ;; HORRIBLE HACK, force these to be bogus.
+          (b* (((list from left right) x.args)
+               (st (vl-hidsolo-mark :used t from ss st ctx)) ;; "forced bogus"
+               (st (vl-rhsexpr-lucidcheck left ss st ctx))
+               (st (vl-rhsexpr-lucidcheck right ss st ctx))
+               (st (vl-rhsexprlist-lucidcheck (vl-hidexpr-collect-indices from) ss st ctx)))
+            st))
+
          ;; BOZO may eventually wish to specially handle many other operators:
-         ;;  - pluscolon, minuscolon, etc.
          ;;  - assignment pattern stuff
          ;;  - tagged operators (recording which tags are used)
          ;;  - streaming concatenation and with operators
@@ -922,7 +936,7 @@ created when we process their packages, etc.</p>"
     (b* (((when (vl-atom-p x))
           (if (vl-hidexpr-p x)
               ;; No extra indices or anything to worry about marking.
-              (vl-hidsolo-mark :set x ss st ctx)
+              (vl-hidsolo-mark :set nil x ss st ctx)
             (vl-lucidstate-fix st)))
 
          ((vl-nonatom x))
@@ -958,8 +972,21 @@ created when we process their packages, etc.</p>"
                (st (vl-rhsexprlist-lucidcheck (vl-hidexpr-collect-indices from) ss st ctx)))
             st))
 
+         ((when (and (or (eq x.op :vl-select-minuscolon)
+                         (eq x.op :vl-select-pluscolon)
+                         (eq x.op :vl-partselect-pluscolon)
+                         (eq x.op :vl-partselect-minuscolon))
+                     (vl-hidexpr-p (first x.args))))
+          ;; HORRIBLE HACK, force these to be bogus.
+          (b* (((list from left right) x.args)
+               (st (vl-hidsolo-mark :set t from ss st ctx)) ;; "forced bogus"
+               (st (vl-rhsexpr-lucidcheck left ss st ctx))
+               (st (vl-rhsexpr-lucidcheck right ss st ctx))
+               (st (vl-rhsexprlist-lucidcheck (vl-hidexpr-collect-indices from) ss st ctx)))
+            st))
+
          ((when (vl-hidexpr-p x))
-          (b* ((st (vl-hidsolo-mark :set x ss st ctx))
+          (b* ((st (vl-hidsolo-mark :set nil x ss st ctx))
                ;; Subtle.  If there are any indices in this expression, then we
                ;; need to perhaps mark identifiers in them as USED as well.
                ;; For instance, we might be looking at:
@@ -2373,6 +2400,16 @@ doesn't have to recreate the default heuristics.</p>"
   (defattach vl-custom-suppress-multidrive-p
     vl-custom-suppress-multidrive-p-default))
 
+(define vl-lucidocclist-remove-tails ((x vl-lucidocclist-p))
+  :returns (new-x vl-lucidocclist-p)
+  (cond ((atom x)
+         nil)
+        ((eq (vl-lucidocc-kind (car x)) :tail)
+         (vl-lucidocclist-remove-tails (cdr x)))
+        (t
+         (cons (vl-lucidocc-fix (car x))
+               (vl-lucidocclist-remove-tails (cdr x))))))
+
 (define vl-lucid-multidrive-detect
   ((ss    vl-scopestack-p)
    (item  (or (vl-paramdecl-p item)
@@ -2418,11 +2455,16 @@ doesn't have to recreate the default heuristics.</p>"
        ;;        end
        ;;
        ;;     The problem is that this looks like two drivers onto submod.foo.
+       ;;
+       ;;  6. Drop TAIL occurrences, because they might be things like foo[3-:0]
+       ;;     that we don't understand.
        (set (vl-lucidocclist-drop-initials set))
        (set (vl-lucidocclist-merge-blocks set))
        (set (vl-lucidocclist-drop-bad-modinsts set))
        (set (vl-lucidocclist-drop-foreign-writes set ss))
        (set (if genp set (vl-lucidocclist-drop-generates set)))
+       (set (vl-lucidocclist-remove-tails set))
+
        ((when (or (atom set)
                   (atom (cdr set))))
         nil)

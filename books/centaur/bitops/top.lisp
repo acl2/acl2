@@ -50,10 +50,10 @@
 (include-book "signed-byte-p")
 
 (defxdoc bitops
-  :parents (arithmetic)
+  :parents (acl2::arithmetic)
   :short "Bitops is <a href='http://www.centtech.com/'>Centaur Technology</a>'s
 library for reasoning about bit-vector arithmetic.  It grew out of an extension
-to the venerable @(see ihs) library, and is now fairly comprehensive."
+to the venerable @(see acl2::ihs) library, and is now fairly comprehensive."
 
   :long "<h3>Introduction</h3>
 
@@ -63,7 +63,8 @@ to the venerable @(see ihs) library, and is now fairly comprehensive."
 
 <li>Definitions for single-bit operations like @(see b-and), @(see b-ior),
 etc., and for extended bit-vector operations, like @(see loghead), @(see
-logapp), @(see logrev), etc.  These are largely inherited from @(see ihs).</li>
+logapp), @(see logrev), etc.  These are largely inherited from @(see
+acl2::ihs).</li>
 
 <li>Support for reasoning about these new operations, and also about the
 bit-vector operations that are built into ACL2 like @(see logand), @(see ash),
@@ -91,9 +92,9 @@ some other arithmetic library.  Bitops is often used in concert with books from
 @('arithmetic'), @('arithmetic-3'), and @('arithmetic-5').  See @(see
 bitops-compatibility) for notes about using these libraries with Bitops.</p>
 
-<p>Bitops definitions are typically compatible with @(see gl), a framework for
-bit-blasting ACL2 theorems.  GL is mainly applicable to bounded problems, but
-is highly automatic.  This nicely complements Bitops, which is a more
+<p>Bitops definitions are typically compatible with @(see gl::gl), a framework
+for bit-blasting ACL2 theorems.  GL is mainly applicable to bounded problems,
+but is highly automatic.  This nicely complements Bitops, which is a more
 traditional library of lemmas that can be applied to unbounded problems.</p>
 
 
@@ -189,8 +190,9 @@ about @('signed-byte-p') and @('unsigned-byte-p'), e.g., that when you add two
 @('n')-bit signed numbers, you get an @('n+1')-bit signed number.</p>
 
 <p>These rules can be very helpful when you are trying to write optimized
-functions using Common Lisp @(see type-spec)s and need to satisfy the guard
-obligations that come from terms such as @('(the (unsigned-byte 16) x)').</p>
+functions using Common Lisp @(see acl2::type-spec)s and need to satisfy the
+guard obligations that come from terms such as @('(the (unsigned-byte 16)
+x)').</p>
 
 <p>You can use this book independently of the rest of the library.  It
 currently has some support for reasoning about +, -, *, lognot, ash, logcdr,
@@ -356,10 +358,10 @@ mostly incidental, e.g., you have a function that recurs by calling @('(- n
 1)') or similar.</p>
 
 <p><b>2.</b> The book @('arithmetic/top-with-meta') is only slightly stronger;
-it adds some @(see meta) rules that can more effectively cancel out summands
-and factors that can arise in various equalities and inequalities.  It's a fine
-choice that is about on par with @('arithmetic/top'), but which is superior in
-some cases.</p>
+it adds some @(see acl2::meta) rules that can more effectively cancel out
+summands and factors that can arise in various equalities and inequalities.
+It's a fine choice that is about on par with @('arithmetic/top'), but which is
+superior in some cases.</p>
 
 
 <h3>@('arithmetic-3/')</h3>
@@ -368,7 +370,7 @@ some cases.</p>
 similar to the @('arithmetic') library, but features a much more sophisticated
 use of meta rules for reducing sums and products, and recognizing when
 arithmetic expressions return integers.  It also features a much stronger
-integration with @(see non-linear-arithmetic) reasoning, which may be
+integration with @(see acl2::non-linear-arithmetic) reasoning, which may be
 especially useful when working with @('*') and @('/').</p>
 
 <p>This book is also very compatible with Bitops and may be a good choice for
@@ -382,7 +384,8 @@ any problems.</p>
 machine models), you might want to start with @('arithmetic/top-with-meta')
 instead of @('arithmetic-3'), but only because @('arithmetic-3')'s more
 powerful rules are perhaps somewhat slower&mdash;it has a lot of @(see
-type-prescription) rules, for instance, and these can sometimes get slow.</p>
+acl2::type-prescription) rules, for instance, and these can sometimes get
+slow.</p>
 
 <p><b>2.</b> The @('arithmetic-3/floor-mod/floor-mod') book extends
 @('bind-free/top') with rules about @(see floor) and @(see mod).  It also gets
@@ -422,8 +425,8 @@ is somewhat compatible with Bitops.</p>
 
 <p>We usually prefer not to use @('arithmetic-5').  The library can sometimes
 be quite slow; many rules case split and there are, for instance, a great
-number of @(see type-prescription) rules that can become very expensive in some
-cases.  For instance, an extreme case was @('lemma-4-1-30') from
+number of @(see acl2::type-prescription) rules that can become very expensive
+in some cases.  For instance, an extreme case was @('lemma-4-1-30') from
 @('rtl/rel9/seed.lisp')&mdash;we were able to speed this proof up from 651
 seconds to 1 second by mostly just disabling these type-prescription rules; see
 SVN revision 2160 for details.</p>
@@ -444,7 +447,7 @@ bit-vector functions such as @(see logand), @(see logior), etc., and these
 rules may sometimes work against you.  For instance, rules like these are likely
 not what you want:</p>
 
-@(def |(logand 1 x)|)
+@(def acl2::|(logand 1 x)|)
 
 <p>And generally @('arithmetic-5') likes to reason about @('(integerp (* 1/2
 x))') instead of @('(logcar x)'), which is messy because it introduces rational

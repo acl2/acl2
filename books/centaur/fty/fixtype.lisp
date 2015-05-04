@@ -169,8 +169,8 @@ stored as forward chaining rules.  In particular, @('(equal (widget-fix x) y)'),
 @('(widget-equiv x y)').</li>
 
 <li>@(':hints') only matters when @('define') is NIL.  When @(':hints') is set,
-its value is used as a @(see hints) declaration for the theorem that the new
-equivalence relation is holds between some @('x') and @('y') exactly when
+its value is used as a @(see acl2::hints) declaration for the theorem that the
+new equivalence relation is holds between some @('x') and @('y') exactly when
 @('(equal (widget-fix x) (widget-fix y))').
 
 When @('define') is T, the theorem need not be proved, because its statement is

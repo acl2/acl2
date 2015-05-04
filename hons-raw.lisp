@@ -119,14 +119,16 @@
                           :size             size
                           :rehash-size      rehash-size
                           :rehash-threshold rehash-threshold
-                          #+ccl :weak   #+ccl weak
+                          #+ccl :weak #+sbcl :weakness
+                          #+(or ccl sbcl) weak
                           ))
         (t
          (make-hash-table :test             test
                           :size             size
                           :rehash-size      rehash-size
                           :rehash-threshold rehash-threshold
-                          #+ccl :weak   #+ccl weak
+                          #+ccl :weak #+sbcl :weakness
+                          #+(or ccl sbcl) weak
                           #+ccl :shared #+ccl shared
                           #+ccl :lock-free #+ccl lock-free
                           ))))

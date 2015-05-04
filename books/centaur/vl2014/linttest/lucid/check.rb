@@ -240,4 +240,7 @@ spurious(:useprim, "w1_spurious ")
 
 unused(:trickyscope, "counter_unused ")
 
+unset(:minuscolon, "normal2")
+unused(:minuscolon, "normal1")
+
 test_passed()

@@ -414,8 +414,28 @@ endmodule
 
 
 
+module m12 ;
+
+  wire [10:0] normal1;
+  wire [10:0] normal2;
+
+  assign normal2 = 0;
+
+  assign normal1[3 -: 4] = normal2[3 -: 4];
+  assign normal1[7 -: 4] = normal2[7 -: 4];
+  assign normal1[9:8] = normal2[9:8];
+  assign normal1[10] = normal2[10];
+
+
+
+endmodule
+
+
 
 // BOZO more things to eventually support and check
 //  - more testing of structures/fields
 //  - array types and structure arrays
 //  - module instance arrays
+
+
+

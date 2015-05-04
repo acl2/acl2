@@ -316,6 +316,8 @@ subset of the valid @('data_type')s:</p>
 
 (defoption vl-maybe-packeddimension vl-packeddimension-p)
 
+(xdoc::defpointer vl-packeddimension vl-packeddimension-p)
+
 
 (define vl-enumbasekind-p (x)
   :parents (vl-enumbasetype-p)
@@ -2651,9 +2653,8 @@ to the assignstmt.</p>
 
 <p>SystemVerilog also adds increment and decrement operators, i.e., @('a++')
 and @('a--').  These operators, per Section 11.4.2 of SystemVerilog-2012, also
-\"behave as blocking assignments.\" We normally convert these operators into
-blocking assignments in the @(see increment-elim) transform.</p>")
-
+\"behave as blocking assignments.\" VL2014 does not really support these
+operators but they may be supported in the newer @(see vl::vl).</p>")
 
     (:vl-deassignstmt
      :short "Representation of a deassign or release statement."

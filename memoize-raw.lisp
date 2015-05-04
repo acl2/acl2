@@ -415,34 +415,6 @@
 ; browse it lightly, returning to look at specific constants and globals when
 ; they are encountered later.
 
-; Subsection: type mfixnum
-
-; We use the type mfixnum for counting things that are best counted in the
-; trillions or more.  Mfixnums happen to coincide with regular fixnums on
-; 64-bit CCL, and may be fixnums in other Lisps (e.g. SBCL 1.1.8 and, as
-; confirmed by Camm Maguire Sept. 2014, in 64-bit GCL where fixnums are 64 bits
-; long).
-
-(defconstant most-positive-mfixnum
-
-; Warning: In function internal-real-ticks, we rely on this value having a
-; binary representation as a sequence of ones.
-
-; This is more than 10^18, that is, more than a billion billions.  It seems
-; reasonable to assume (at least in 2014 and for some years beyond) that any
-; integer quantities that we accumulate, such as call counts, are less than
-; that.  This number is also more than the (2*500,000,000)^2, which is the size
-; of *memoize-call-array* when we have approximately 500 million memoized
-; functions.  [Note: if a countable event, like a call, took just the time of
-; the fastest single instruction on a 100GHz (!) machine, then counting up
-; most-positive-mfixnum of them would take over 4 months.]
-
-  (1- (expt 2 60)))
-
-(deftype mfixnum ()
-  `(integer ,(- -1 most-positive-mfixnum)
-            ,most-positive-mfixnum))
-
 ; Subsection: User-settable variables for recording
 
 ; To minimize metering overhead costs, one may set the "*RECORD-" variables
@@ -464,7 +436,8 @@
 ; probably been here for many versions through 6.5 and at this point (August
 ; 2014) we don't expect much use of 32-bit CCL when doing memoization.
 
-  (and (member :ccl *features*) ; most Lisps don't report bytes
+  (and (or (member :ccl *features*) ; most Lisps don't report bytes
+           (member :sbcl *features*))
        (> most-positive-fixnum (expt 2 32))))
 
 (defparameter *record-calls*
@@ -515,7 +488,7 @@
 ; heap, if this variable is not nil at that time and the host Lisp supports
 ; providing that information.
 
-  #+ccl t #-ccl nil)
+  #+(or ccl sbcl) t #-(or ccl sbcl) nil)
 
 (defv *report-calls*
 
@@ -608,8 +581,8 @@
 
 ; Options for the functions include the following.
 
-;    bytes-allocated [CCL only]
-;    bytes-allocated/call [CCL only]
+;    bytes-allocated [CCL and SBCL only]
+;    bytes-allocated/call [CCL and SBCL only]
 ;    execution-order
 ;    hits/calls
 ;    pons-calls
@@ -1200,21 +1173,6 @@
   (float internal-time-units-per-second))
 
 (declaim (float *float-internal-time-units-per-second*))
-
-(defmacro the-mfixnum (x)
-
-; This silly macro may help someday in debugging, using code such as is found
-; in the comment just below.  Of course, by adding an optional argument that
-; specifies some sort of location for this call, we can get more specific
-; debugging information.  Debugging could also be aided by replacing this with
-; a corresponding defun, which could be traced.
-
-; `(let ((x ,x))
-;    (cond ((not (typep x 'fixnum))
-;           (error "OUCH")))
-;    (the mfixnum x))
-
-  `(the mfixnum ,x))
 
 (defmacro internal-real-ticks ()
 
@@ -2170,10 +2128,6 @@
          `(when ,s ; optimization
             (memoize-flush1 ,s)))))
 
-#+ccl
-(defmacro heap-bytes-allocated ()
-  '(the-mfixnum (ccl::%heap-bytes-allocated)))
-
 (defun sync-memoize-call-array ()
 
 ; Warning: Be careful if you call this function from other than memoize-init or
@@ -2850,7 +2804,7 @@
   ;; global lock, so we shouldn't need any locking inside here.  See
   ;; memoize-fn-def.
 
-  `(let (#+ccl
+  `(let (#+(or ccl sbcl)
          ,@(and *record-bytes* ; performance counting
                 `((,*mf-start-bytes* (heap-bytes-allocated))))
          ,@(and *record-pons-calls* ; performance counting
@@ -2859,13 +2813,13 @@
                             '(internal-real-ticks)
                           '0)))
      (declare
-      (ignorable #+ccl
+      (ignorable #+(or ccl sbcl)
                  ,@(and *record-bytes* `(,*mf-start-bytes*))
                  ,@(and *record-pons-calls* `(,*mf-start-pons*)))
       (type mfixnum
             ,start-ticks
             ,@(and *record-pons-calls* `(,*mf-start-pons*))
-            #+ccl
+            #+(or ccl sbcl)
             ,@(and *record-bytes* `(,*mf-start-bytes*))))
      (,(cond ((or *record-pons-calls*
                   *record-bytes*
@@ -2908,7 +2862,7 @@
                 (aref ,*mf-ma*
                       ,(ma-index-from-col-base fn-col-base *ma-pons-index*))
                 (the-mfixnum (- *pons-call-counter* ,*mf-start-pons*)))))
-      #+ccl
+      #+(or ccl sbcl)
       ,@(and *record-bytes* ; performance counting
              `((safe-incf
                 (aref ,*mf-ma*
@@ -4047,7 +4001,7 @@
   (aref *memoize-call-array*
         (ma-index x *ma-pons-index*)))
 
-#+ccl
+#+(or ccl sbcl)
 (defun-one-output bytes-allocated (x)
 
 ; This function symbol can be included in *memoize-summary-order-list*.
@@ -4164,7 +4118,7 @@
 
          (float n)))))
 
-#+ccl
+#+(or ccl sbcl)
 (defun-one-output bytes-allocated/call (x)
 
 ; This function symbol can be included in *memoize-summary-order-list*.
@@ -4330,7 +4284,7 @@
            (ma *memoize-call-array*)
            (len-orig-fn-pairs (len fn-pairs))
            (len-fn-pairs 0)      ; set below
-           #+ccl
+           #+(or ccl sbcl)
            (global-bytes-allocated 0) ; set below
            (global-pons-calls 0)      ; set below
            )
@@ -4351,7 +4305,7 @@
                   len-fn-pairs
                   len-orig-fn-pairs
                   *memoize-summary-limit*)))
-      #+ccl
+      #+(or ccl sbcl)
       (setq global-bytes-allocated
             (loop for pair in fn-pairs sum
                   (bytes-allocated (car pair))))
@@ -4382,7 +4336,7 @@
                    (pons-calls (the-mfixnum (pons-calls num)))
                    (no-hits (or (not *report-hits*)
                                 (null (memoize-condition fn))))
-                   #+ccl
+                   #+(or ccl sbcl)
                    (bytes-allocated (bytes-allocated num))
                    (tt (max .000001
 
@@ -4398,7 +4352,7 @@
               (declare (type integer start-ticks)
                        (type mfixnum num nhits nmht ncalls
                              pons-calls
-                             #+ccl bytes-allocated))
+                             #+(or ccl sbcl) bytes-allocated))
               (format t "~%(~s~%" fn)
               (mf-print-alist
                `(,@(when (or *report-calls* *report-hits*)
@@ -4447,7 +4401,7 @@
 ;                           (< t/c 1e-6))
 ;                  `((,(format nil " Doubtful timing info for ~a." fn)
 ;                     "Heisenberg effect.")))
-                 #+ccl
+                 #+(or ccl sbcl)
                  ,@(when (and (> bytes-allocated 0) *report-bytes*)
                      (assert (> global-bytes-allocated 0))
                      `((" Heap bytes allocated"
@@ -4684,15 +4638,14 @@
 ; (Memoize-summary) reports data stored during the execution of the functions
 ; in (memoized-functions).
 
-; Typically each call of a memoized function, fn, is counted.
-; The elapsed time until an outermost function call of fn ends, the
-; number of heap bytes allocated in that period (CCL only), and other
-; 'charges' are 'billed' to fn.  That is, quantities such as elapsed
-; time and heap bytes allocated are not charged to subsidiary
-; recursive calls of fn while an outermost call of fn is running.
-; Recursive calls of fn, and memoized 'hits', are counted, unless fn
-; was memoized with nil as the value of the :inline parameter of
-; memoize.
+; Typically each call of a memoized function, fn, is counted.  The elapsed time
+; until an outermost function call of fn ends, the number of heap bytes
+; allocated in that period (CCL and SBCL only), and other 'charges' are
+; 'billed' to fn.  That is, quantities such as elapsed time and heap bytes
+; allocated are not charged to subsidiary recursive calls of fn while an
+; outermost call of fn is running.  Recursive calls of fn, and memoized 'hits',
+; are counted, unless fn was memoized with nil as the value of the :inline
+; parameter of memoize.
 
 ; The settings of the following determine, at the time a function is
 ; given to memoize, the information that is collected for calls of
@@ -4700,7 +4653,7 @@
 
 ;        Variable              type
 
-;        *record-bytes*       boolean    (available in CCL only)
+;        *record-bytes*       boolean    (available in CCL and SBCL only)
 ;        *record-calls*       boolean
 ;        *record-hits*        boolean
 ;        *record-mht-calls*   boolean
@@ -4710,7 +4663,7 @@
 ; The settings of the following determine, at the time that
 ; memoize-summary is called, what information is printed:
 
-;        *report-bytes*       boolean   (available in ccl only)
+;        *report-bytes*       boolean   (available in CCL and SBCL only)
 ;        *report-calls*       boolean
 ;        *report-calls-from*  boolean
 ;        *report-calls-to*    boolean
@@ -5162,10 +5115,7 @@
     (setq *gc-min-threshold* (floor *max-mem-usage* 4)))
   (unless *sol-gc-installed*
     (ccl::add-gc-hook
-     #'(lambda ()
-         (ccl::process-interrupt
-          (slot-value ccl:*application* 'ccl::initial-listener-process)
-          #'set-and-reset-gc-thresholds))
+     #'set-and-reset-gc-thresholds
      :post-gc)
     (setq *sol-gc-installed* t))
   (set-and-reset-gc-thresholds))

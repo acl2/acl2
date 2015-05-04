@@ -82,7 +82,7 @@ Use 'vl2014 help <command>' for help on a specific command.
     :parents (vl2014)
     :short "A command-line program for using VL in basic ways."
 
-    :long ,(cat "<p>@(see VL) is mainly an ACL2 library, and a lot of its
+    :long ,(cat "<p>@(see VL2014) is mainly an ACL2 library, and a lot of its
 functionality and features are available only from within ACL2.  However, to
 make VL more widely approachable, we have bundled up certain pieces of it into
 a command line program, which we call the Kit.</p>

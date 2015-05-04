@@ -724,6 +724,9 @@ implementations.")
    #+hons
    "~%~% Includes support for hash cons, memoization, and applicative hash~
     ~% tables.~%"
+   #-hons
+   "~%~% WARNING: ACL2(c) is deprecated and will likely be unsupported or~
+    ~% even eliminated in future releases.~%"
    #+acl2-par
    "~%~% Experimental modification for parallel evaluation.  Please expect at~
     ~% most limited maintenance for this version~%"

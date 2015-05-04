@@ -754,7 +754,9 @@ constant false, whereas the car of @('y') is @('t'), constant true.</p>
                      (concatenate 'string (symbol-name arg) "-EQUIV")
                      arg))
          (args-equiv (update-nth (1- n) arg-equiv args)))
-    `(defsection nil
+    `(defsection ,(intern-in-package-of-symbol
+                   (concatenate 'string (symbol-name f) "-FAIG-EQUIVS")
+                   f)
        :extension ,f
        (defcong faig-equiv faig-equiv (,f . ,args) ,n
          :hints(("Goal" :in-theory (disable ,f)

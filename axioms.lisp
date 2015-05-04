@@ -3548,17 +3548,32 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                (- (imagpart x)))
       x))
 
+(defun add-suffix (sym str)
+  (declare (xargs :guard (and (symbolp sym)
+                              (stringp str))))
+  (intern-in-package-of-symbol
+   (concatenate 'string (symbol-name sym) str)
+   sym))
+
+(defconst *inline-suffix* "$INLINE") ; also see above defun-inline-form
+
 #-acl2-loop-only
 (defmacro ec-call1-raw (ign x)
   (declare (ignore ign))
   (assert (and (consp x) (symbolp (car x)))) ; checked by translate11
-  (let ((*1*fn (*1*-symbol (car x))))
-    `(funcall
-      (cond
-       (*safe-mode-verified-p* ; see below for discussion of this case
-        ',(car x))
-       ((fboundp ',*1*fn) ',*1*fn)
-       (t
+  (let ((*1*fn (*1*-symbol (car x)))
+        (*1*fn$inline (*1*-symbol (add-suffix (car x) *inline-suffix*))))
+    `(cond
+      (*safe-mode-verified-p* ; see below for discussion of this case
+       ,x)
+      (t
+       (funcall
+        (cond
+         ((fboundp ',*1*fn) ',*1*fn)
+         ((fboundp ',*1*fn$inline)
+          (assert$ (macro-function ',(car x)) ; sanity check; could be omitted
+                   ',*1*fn$inline))
+         (t
 
 ; We should never hit this case, unless the user is employing trust tags or raw
 ; Lisp.  For ACL2 events that might hit this case, such as a defconst using
@@ -3579,9 +3594,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; avoid the *1* function calls entirely when loading the expansion file (or its
 ; compilation).
 
-        (error "Undefined function, ~s.  Please contact the ACL2 implementors."
-               ',*1*fn)))
-      ,@(cdr x))))
+          (error "Undefined function, ~s.  Please contact the ACL2 ~
+                  implementors."
+                 ',*1*fn)))
+        ,@(cdr x))))))
 
 (defmacro ec-call1 (ign x)
 
@@ -25009,6 +25025,13 @@ Lisp definition."
 )
 
 #-acl2-loop-only
+(defmacro heap-bytes-allocated ()
+  '(the-mfixnum #+ccl (ccl::total-bytes-allocated)
+                #+sbcl (sb-ext:get-bytes-consed)
+                #-(or ccl sbcl)
+                (error "Heap-bytes-allocated is unknown for this host Lisp.")))
+
+#-acl2-loop-only
 (defmacro our-time (x &key real-mintime run-mintime minalloc msg args)
   (let ((g-real-mintime (gensym))
         (g-run-mintime (gensym))
@@ -25017,7 +25040,7 @@ Lisp definition."
         (g-args (gensym))
         (g-start-real-time (gensym))
         (g-start-run-time (gensym))
-        #+ccl
+        #+(or ccl sbcl)
         (g-start-alloc (gensym)))
     `(let ((,g-real-mintime ,real-mintime)
            (,g-run-mintime ,run-mintime)
@@ -25068,8 +25091,8 @@ Lisp definition."
                 (,g-start-run-time
                  #-gcl (get-internal-run-time)
                  #+gcl (multiple-value-list (get-internal-run-time)))
-                #+ccl
-                (,g-start-alloc (CCL::total-bytes-allocated)))
+                #+(or ccl sbcl)
+                (,g-start-alloc (heap-bytes-allocated)))
            (our-multiple-value-prog1
             ,x
             ,(protect-mv
@@ -25077,8 +25100,8 @@ Lisp definition."
                        #-gcl (get-internal-run-time)
                        #+gcl (multiple-value-list (get-internal-run-time)))
                       (end-real-time (get-internal-real-time))
-                      #+ccl ; evaluate before doing computations below:
-                      (allocated (- (ccl::total-bytes-allocated)
+                      #+(or ccl sbcl) ; evaluate before computations below:
+                      (allocated (- (heap-bytes-allocated)
                                     ,g-start-alloc))
                       (float-units-sec (float internal-time-units-per-second))
                       (real-elapsed (/ (- end-real-time ,g-start-real-time)
@@ -25106,7 +25129,7 @@ Lisp definition."
                                    (< real-elapsed (float ,g-real-mintime)))
                               (and ,g-run-mintime
                                    (< run-elapsed (float ,g-run-mintime)))
-                              #+ccl
+                              #+(or ccl sbcl)
                               (and ,g-minalloc
                                    (< allocated ,g-minalloc))))
                    (let* ((alist (list* (cons #\t (format nil "~,2F"
@@ -25126,9 +25149,9 @@ Lisp definition."
                                                         nil "~,2F"
                                                         child-sys-elapsed)))
                                         (cons #\a
-                                              #+ccl
+                                              #+(or ccl sbcl)
                                               (format nil "~:D" allocated)
-                                              #-ccl
+                                              #-(or ccl sbcl)
                                               "[unknown]")
                                         (cons #\f ',x)
                                         (cons #\e (evisc-tuple
@@ -25141,7 +25164,7 @@ Lisp definition."
                                                          #\5 #\6 #\7 #\8 #\9)
                                                        ,g-args))))
                           (,g-msg (or ,g-msg
-                                      #+ccl
+                                      #+(or ccl sbcl)
                                       "; ~Xfe took ~|; ~st seconds realtime, ~
                                        ~sc seconds runtime~|; (~sa bytes ~
                                        allocated).~%"

@@ -886,7 +886,8 @@ defaults to :forward-chaining, otherwise :rewrite.")
 <dt>:THEORY-NAME</dt>
 <dd>This option allows the user to define the name of the deftheory event
    that is automatically generated, and which includes the defthms that
-   are generated.</dd>")
+   are generated.</dd>
+</dl>")
 
 (defmacro defalist (name formals &rest body)
   (let*

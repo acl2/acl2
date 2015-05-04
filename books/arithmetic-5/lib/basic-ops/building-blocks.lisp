@@ -930,12 +930,22 @@
 
 ; Intersection-equal was added to ACL2 in Version 4.0.
 
-(defun set-equal (x y)
-  (declare (xargs :guard t))
-  (and (true-listp x)
-       (true-listp y)
-       (subsetp-equal x y)
-       (subsetp-equal y x)))
+;; [Jared] Modified 2015-04-30 to agree with the definition in data-structures.
+;; FYI, this is why we need to use packages.
+
+;; (defun set-equal (x y)
+;;   (declare (xargs :guard t))
+;;   (and (true-listp x)
+;;        (true-listp y)
+;;        (subsetp-equal x y)
+;;        (subsetp-equal y x)))
+
+(defun set-equal (a b)
+  (declare (xargs :guard (and (true-listp a)
+			      (true-listp b))))
+  (and (subsetp-equal a b)
+       (subsetp-equal b a)))
+
 
 (defun common-factors (factors sum)
   (declare (xargs :measure (acl2-count sum)

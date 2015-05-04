@@ -161,12 +161,7 @@
                (stobjs-in (getprop fn 'stobjs-in t
                                    'current-acl2-world wrld))
                (condition-fn (or ,condition-fn
-                                 (intern-in-package-of-symbol
-                                  (concatenate
-                                   'string
-                                   (symbol-name fn)
-                                   "-MEMOIZE-CONDITION")
-                                  fn)))
+                                 (add-suffix fn "-MEMOIZE-CONDITION")))
                (hints ,hints)
                (otf-flg ,otf-flg)
                (inline ,inline)
@@ -314,10 +309,7 @@
              ((eq commutative t)
               `(make-event
                 (let* ((fn ,fn)
-                       (commutative
-                        (intern-in-package-of-symbol
-                         (concatenate 'string (symbol-name fn) "-COMMUTATIVE")
-                         fn)))
+                       (commutative (add-suffix fn "-COMMUTATIVE")))
                   (list ; use encapsulate so that each form is printed first
                    'encapsulate
                    ()
