@@ -34,13 +34,14 @@ obtained or explored separately</a>.
 <ol>
 
 <li>Fetch a <a href="https://github.com/acl2-devel/acl2-devel/releases/download/7.0/acl2-7.0.tar.gz">gzipped tar file from GitHub</a> containing ACL2 Version 7.0 and the
-  corresponding Community Books, which will create file <code>acl2-7.0.tar.gz</code> on your system.<br>
-    <font color="red">Note</font>: Avoid doing this in a directory
-    whose pathname contains whitespace.</li>
+  corresponding Community Books, which will download
+  file <code>acl2-7.0.tar.gz</code> onto your system.  Move that file
+  into a new directory whose pathname does not contain whitespace.</li>
 
-<li>Execute the following to create subdirectory <code>acl2-7.0/</code>.
-  (These installation instructions assume that you don't rename that
-  directory, though you are welcome to do so.)<br>
+<li>In that new directory, execute the following to create
+  subdirectory <code>acl2-7.0/</code>.  (These installation
+  instructions assume that you don't rename the new subdirectory,
+  though you are welcome to do so.)<br>
 <code>tar xfz acl2-7.0.tar.gz</code></li>
 
 <li><a href="requirements.html">Obtain a Common Lisp implementation</a> if you don't
