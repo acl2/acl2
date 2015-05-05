@@ -809,15 +809,10 @@
       (ens state)
     pc-ens))
 
-(defun initial-rcnst-from-ens (ens wrld splitter-output)
-  (change rewrite-constant *empty-rewrite-constant*
-          :splitter-output splitter-output
-          :current-enabled-structure ens
-          :oncep-override (match-free-override wrld)
-          :force-info t
-          :nonlinearp (non-linearp wrld)
-          :backchain-limit-rw (backchain-limit wrld :rewrite)
-          :rw-cache-state (rw-cache-state wrld)))
+(defun initial-rcnst-from-ens (ens wrld state splitter-output)
+  (make-rcnst ens wrld state
+              :splitter-output splitter-output
+              :force-info t))
 
 (defun make-new-goals-fixed-hyps (termlist hyps goal-name start-index)
   ;; similar to make-new-goals
@@ -879,6 +874,7 @@
                    nil ;simplify-clause-pot-lst
                    (initial-rcnst-from-ens pc-ens
                                            wrld
+                                           state
                                            (splitter-output))
                    wrld
                    state

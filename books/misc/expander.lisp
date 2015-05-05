@@ -384,7 +384,7 @@ directly with ACL2.</p>
            (sl-let
             (erp ttree clauses pairs new-pspv state)
             (prove-clauses tterm
-                           (make-pspv ens wrld
+                           (make-pspv ens wrld state
                                       :displayed-goal
                                       (untranslate tterm t wrld)
                                       :otf-flg t)
@@ -574,7 +574,7 @@ directly with ACL2.</p>
 ; But assumptions is nil if prove-assumptions is nil (we don't collect them) or
 ; is t (we insist that all forced assumptions be proved).
 
-  (let* ((saved-pspv (make-pspv ens wrld
+  (let* ((saved-pspv (make-pspv ens wrld state
                                 :displayed-goal term ; from, e.g., thm-fn
                                 :user-supplied-term term ;from, e.g., prove
                                 :orig-hints thints))) ;from, e.g., prove

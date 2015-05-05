@@ -680,7 +680,7 @@
     (mv-let (clause-lst forcing-occurredp)
             (simplify-clause1* clause
                                nil ; hist
-                               (make-rcnst (ens state) wrld
+                               (make-rcnst (ens state) wrld state
                                            :force-info t) ; allow forcing
                                wrld
                                state
