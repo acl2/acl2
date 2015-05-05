@@ -2327,7 +2327,7 @@
                           (t (value val)))))))))))))))))))
 
 #+acl2-par
-(defun eval-clause-processor@par (clause term stobjs-out ctx state)
+(defun eval-clause-processor@par (clause term stobjs-out pspv ctx state)
 
 ; Keep in sync with eval-clause-processor.
 
@@ -2391,16 +2391,48 @@
                             term
                             nil)
                        nil))
-                  (t (cond ((not (term-list-listp val
-                                                  wrld))
-                            (mv (msg "The :CLAUSE-PROCESSOR hint~|~%  ~
-                                      ~Y01~%did not evaluate to a list of ~
-                                      clauses, but instead to~|~%  ~Y23~%~@4"
-                                     term nil
-                                     val nil
-                                     (non-term-list-listp-msg val wrld))
-                                nil))
-                           (t (value@par val))))))))))))))
+                  ((equal val (list clause)) ; avoid checks below
+                   (value@par val))
+                  (t
+                   (let ((not-skipped
+                          (not (skip-meta-termp-checks
+                                (ffn-symb term) wrld))))
+                     (cond
+                      ((and not-skipped
+                            (not (term-list-listp val wrld)))
+                       (mv (msg
+                            "The :CLAUSE-PROCESSOR hint~|~%  ~Y01~%did not ~
+                             evaluate to a list of clauses, but instead ~
+                             to~|~%  ~Y23~%~@4"
+                            term nil
+                            val nil
+                            (non-term-list-listp-msg
+                             val wrld))
+                           nil))
+                      ((and not-skipped
+                            (forbidden-fns-in-term-list-list
+                             val
+                             (access rewrite-constant
+                                     (access prove-spec-var pspv
+                                             :rewrite-constant)
+                                     :forbidden-fns)))
+                       (mv (msg
+                            "The :CLAUSE-PROCESSOR ~
+                                 hint~|~%~Y01~%evaluated to a list of ~
+                                 clauses~|~%~y2~%that contains a call of the ~
+                                 function symbol~#3~[, ~&3, which is~/s ~&3, ~
+                                 which are~] forbidden in that context.  See ~
+                                 :DOC clause-processor and :DOC ~
+                                 set-skip-meta-termp-checks."
+                            term nil val
+                            (forbidden-fns-in-term-list-list
+                             val
+                             (access rewrite-constant
+                                     (access prove-spec-var pspv
+                                             :rewrite-constant)
+                                     :forbidden-fns)))
+                           nil))
+                      (t (value@par val)))))))))))))))
 
 (defun apply-top-hints-clause1 (temp cl-id cl pspv wrld state step-limit)
 
