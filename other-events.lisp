@@ -23257,8 +23257,7 @@
                             nil ; ancestors
                             nil ; backchain-limit
                             nil ; simplify-clause-pot-lst
-                            (make-rcnst ens
-                                        wrld
+                            (make-rcnst ens wrld state
                                         :force-info 'weak) ; conservative
                             nil ; gstack
                             ttree
@@ -26501,8 +26500,7 @@
           ((ttree1 (cond (instructions (proof-checker nil ugoal goal nil
                                                       instructions wrld state))
                          (t (prove goal
-                                   (make-pspv ens
-                                              wrld
+                                   (make-pspv ens wrld state
                                               :displayed-goal ugoal
                                               :otf-flg otf-flg)
                                    hints ens wrld ctx state)))))
@@ -26685,8 +26683,7 @@
                                     wrld state))
                     (t
                      (prove goal
-                            (make-pspv ens
-                                       wrld
+                            (make-pspv ens wrld state
                                        :displayed-goal ugoal
                                        :otf-flg otf-flg)
                             hints ens wrld ctx state)))))
@@ -26901,15 +26898,6 @@
 ; merging but there is no loop.
 
 ; End of Essay on Merging Attachment Records
-
-(defun intersection1-eq (x y)
-  (declare (xargs :guard (and (true-listp x)
-                              (true-listp y)
-                              (or (symbol-listp x)
-                                  (symbol-listp y)))))
-  (cond ((endp x) nil)
-        ((member-eq (car x) y) (car x))
-        (t (intersection1-eq (cdr x) y))))
 
 (defun defattach-component-has-owner (g g0 comps)
 

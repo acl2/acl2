@@ -1086,7 +1086,7 @@
              (mv-let
               (erp ttree state)
               (prove (termify-clause-set cl-set)
-                     (make-pspv ens wrld
+                     (make-pspv ens wrld state
                                 :displayed-goal displayed-goal
                                 :otf-flg otf-flg)
                      hints ens wrld ctx state)
@@ -4745,7 +4745,7 @@
            (t
             (mv-let (erp ttree state)
                     (prove (termify-clause-set cl-set)
-                           (make-pspv ens wrld
+                           (make-pspv ens wrld state
                                       :displayed-goal displayed-goal
                                       :otf-flg otf-flg)
                            hints
@@ -8051,8 +8051,7 @@
              (t
               (mv-let (erp ttree state)
                       (prove (termify-clause-set cl-set)
-                             (make-pspv ens
-                                        wrld
+                             (make-pspv ens wrld state
                                         :displayed-goal displayed-goal
                                         :otf-flg otf-flg)
                              hints ens wrld ctx state)

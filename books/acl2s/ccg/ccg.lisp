@@ -1983,7 +1983,7 @@
                            (maybe-prover-before-stop-time
                             stop-time ctx state
                             (prove-no-er (termify-clause-set (list clause))
-                                         (make-pspv ens wrld
+                                         (make-pspv ens wrld state
                                                     :displayed-goal displayed-goal
                                                     :otf-flg otf-flg)
                                          hints ens wrld ctx state)))))
@@ -6882,7 +6882,7 @@ e2-e1+1.
                  (increment-timer 'print-time state)
                  (prove (termify-clause-set o-p-clauses)
                         (make-pspv
-                         ens wrld
+                         ens wrld state
                          :displayed-goal displayed-goal
                          :otf-flg otf-flg)
                         nil ens wrld ctx state))

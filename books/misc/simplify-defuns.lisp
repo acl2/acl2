@@ -32,7 +32,7 @@
   (prog2$
    (initialize-brr-stack state)
    (let* ((ens (ens state))
-          (saved-pspv (make-pspv ens wrld
+          (saved-pspv (make-pspv ens wrld state
                                  :displayed-goal term ; from, e.g., thm-fn
                                  :user-supplied-term term ;from, e.g., prove
                                  :orig-hints thints)) ;from, e.g., prove
