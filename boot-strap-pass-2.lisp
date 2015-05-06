@@ -1,4 +1,4 @@
-; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2015, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1334,6 +1334,7 @@
      (FETCH-DCL-FIELDS LST)
      (FETCH-DCL-FIELDS1 LST)
      (FETCH-DCL-FIELDS2 KWD-LIST)
+     (FIND-DOT-DOT I FULL-PATHNAME)
      (FIND-FIRST-BAD-ARG ARGS)
      (LAMBDA-KEYWORDP)
      (LEGAL-CONSTANTP1)

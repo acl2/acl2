@@ -1,6 +1,6 @@
 #  -*- Fundamental -*- 
 
-# ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+# ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
 # Copyright (C) 2015, Regents of the University of Texas
 
 # This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -505,6 +505,8 @@ doc/home-page.html: doc/home-page.lisp
 	cd doc ; rm -rf HTML ; ./create-doc 2>&1 create-doc.out
 
 # The following will implicitly use ACL2=acl2 unless ACL2 is set.
+# Note that books/system/doc/acl2-manual.lisp ends in a call of
+# xdoc::save that populates doc/manual/ (not under books/).
 acl2-manual:
 	rm -rf doc/manual books/system/doc/acl2-manual.cert
 	cd books ; make USE_QUICKLISP=1 system/doc/acl2-manual.cert
