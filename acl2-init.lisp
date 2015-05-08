@@ -1,4 +1,4 @@
-; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2015, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -696,17 +696,17 @@ implementations.")
 ;       for release instructions.
 
 ; Temporarily, for a release:
-; ""
+  ""
 
 ; Normally:
-  "
- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- + WARNING: This is NOT an ACL2 release; it is a development snapshot. +
- + The authors of ACL2 consider such distributions to be experimental; +
- + they may be incomplete, fragile, and unable to pass our own         +
- + regression tests.                                                   +
- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-"
+;  "
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; + WARNING: This is NOT an ACL2 release; it is a development snapshot. +
+; + The authors of ACL2 consider such distributions to be experimental; +
+; + they may be incomplete, fragile, and unable to pass our own         +
+; + regression tests.                                                   +
+; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+;"
   )
 
 (defvar *saved-string*
