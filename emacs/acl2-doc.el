@@ -1035,7 +1035,7 @@ consider (also for subsequent \"n\" and \"p\" commands) only
 descendents of the topic supplied in response to a prompt."
 
   (interactive "P")
-  (acl2-doc-set-limit-topic arg)
+  (acl2-doc-set-limit-topic str)
   (call-interactively 'acl2-doc-re-search-main))
 
 (defun acl2-doc-search-next ()

@@ -1026,7 +1026,7 @@
 ; If the time-tracker calls below are changed, update :doc time-tracker
 ; accordingly.
 
-  (prog2$ (time-tracker :tau :start)
+  (prog2$ (time-tracker :tau :start!)
           (mv-let
            (clauses ttree calist)
            (tau-clausep-lst-rec clauses ens wrld ans ttree state calist)

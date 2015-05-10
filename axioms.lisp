@@ -26153,7 +26153,7 @@ Lisp definition."
         'time-tracker))
    ((and (not (booleanp tag))
          (not (member-eq kwd
-                         '(:init :end :print? :stop :start))))
+                         '(:init :end :print? :stop :start :start!))))
     (er hard? 'time-tracker
         "Illegal second argument for ~x0: ~x1.  See :DOC time-tracker."
         'time-tracker
@@ -26189,7 +26189,8 @@ Lisp definition."
         (:end    (tt-end tag))
         (:print? (tt-print? tag min-time msg))
         (:stop   (tt-stop tag))
-        (:start  (tt-start tag)))
+        (:start  (tt-start tag))
+        (:start! (tt-start tag t)))
       nil)))
 
 #-acl2-par

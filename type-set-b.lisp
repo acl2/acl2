@@ -2773,6 +2773,8 @@
 
 ; See term-order1 for comments.
 
+  (declare (xargs :guard (and (pseudo-termp term1)
+                              (pseudo-termp term2))))
   (term-order1 term1 term2 nil))
 
 ; Type Prescriptions

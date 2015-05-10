@@ -1246,6 +1246,20 @@
 ; feature, and will simply trust that functions marked in
 ; *system-verify-guards-alist* can be guard-verified.
 
+; The following commands will check that things are as they should be, after
+; adjusting *system-verify-guards-alist* (see comments there).  Altogether they
+; took only about two minutes on a fast machine in May 2015.
+
+;   (time nice make ACL2_DEVEL=d)
+;   cd books
+;   make clean
+;   ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d system/top.cert
+;   cd ..
+;   (time nice make -j 8 devel-check ACL2=`pwd`/saved_acl2d)
+
+; For details, see the comment just above the call of system-verify-guards near
+; the end of this section.
+
 ; A flaw in our approach is that user-supplied guard verifications may depend
 ; on package axioms.  Thus, we view such verifications as strong hints, rather
 ; than as ironclad guarantees that the functions can be guard-verified in
@@ -1340,6 +1354,8 @@
      (LEGAL-CONSTANTP1)
      (LEGAL-VARIABLE-OR-CONSTANT-NAMEP)
      (LEGAL-VARIABLEP)
+     (MERGE-SORT-TERM-ORDER L)
+     (MERGE-TERM-ORDER L2 L1)
      (META-EXTRACT-CONTEXTUAL-FACT)
      (META-EXTRACT-GLOBAL-FACT+)
      (META-EXTRACT-RW+-TERM)
@@ -1362,7 +1378,9 @@
      (SUBST-EXPR1 TERM)
      (SUBST-EXPR1-LST ARGS)
      (SUBST-VAR FORM)
-     (SUBST-VAR-LST L))))
+     (SUBST-VAR-LST L)
+     (TERM-ORDER)
+     (TERM-ORDER1))))
 
 (defconst *len-system-verify-guards-alist*
   (length *system-verify-guards-alist*))
@@ -1462,10 +1480,8 @@
 ; (chk-new-verified-guards i) for each i less than the length of
 ; *system-verify-guards-alist*, in order to check that the effect of
 ; system-verify-guards is sound.  This check is performed by using `make' with
-; target devel-check, for example as follows, where <acl2d> denotes a full
-; pathname for a build of ACL2 using feature :acl2-devel (see comments above
-; for how to make such a build):
-;   (time nice make -j 8 regression-fresh devel-check ACL2=<acl2d>)
+; target devel-check, as shown near the top of this section.
+
 #+(and acl2-loop-only ; Note that make-event can't be called here in raw Lisp.
        (not acl2-devel))
 (system-verify-guards)

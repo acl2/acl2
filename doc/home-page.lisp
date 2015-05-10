@@ -100,8 +100,11 @@
 <TD>
 <CENTER><H1>~s0</H1></CENTER>
 
-ACL2 is both a programming language in which you can model computer systems
-and a tool to help you prove properties of those models.<P>
+ACL2 is a logic and programming language in which you can model
+computer systems, together with a tool to help you prove properties
+of those models.  \"ACL2\" denotes
+\"<b>A</b> <b>C</b>omputational <b>L</b>ogic for <b>A</b>pplicative
+<b>C</b>ommon <b>L</b>isp\".</P>
 
 ACL2 is part of the Boyer-Moore family of provers, for which its authors have
 received the 2005 <A HREF=\"http://awards.acm.org/software_system/\">ACM
