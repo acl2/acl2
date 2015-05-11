@@ -1,4 +1,4 @@
-; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2015, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1026,7 +1026,7 @@
 ; If the time-tracker calls below are changed, update :doc time-tracker
 ; accordingly.
 
-  (prog2$ (time-tracker :tau :start)
+  (prog2$ (time-tracker :tau :start!)
           (mv-let
            (clauses ttree calist)
            (tau-clausep-lst-rec clauses ens wrld ans ttree state calist)

@@ -1,4 +1,4 @@
-; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2015, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -7645,6 +7645,8 @@
           (add-to-type-alist-segments ts term (cdr segs))))))
 
 (defun merge-term-order (l1 l2)
+  (declare (xargs :guard (and (pseudo-term-listp l1)
+                              (pseudo-term-listp l2))))
   (cond ((null l1) l2)
         ((null l2) l1)
         ((term-order (car l1) (car l2))
@@ -7652,6 +7654,7 @@
         (t (cons (car l2) (merge-term-order l1 (cdr l2))))))
 
 (defun merge-sort-term-order (l)
+  (declare (xargs :guard (pseudo-term-listp l)))
   (cond ((null (cdr l)) l)
         (t (merge-term-order (merge-sort-term-order (evens l))
                              (merge-sort-term-order (odds l))))))

@@ -1,4 +1,4 @@
-; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2015, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -28693,36 +28693,43 @@
      ((not tt)
       (er hard 'time-tracker
           "It is illegal to specify :STOP for tag ~x0, because this tag is ~
-           not being tracked.  Specify :INIT first to solve this problem.  ~
-           See :DOC time-tracker."
-          tag))
+           not being tracked.  Evaluate (~x1 '~x0 :INIT ...) to solve this ~
+           problem.  See :DOC time-tracker."
+          tag
+          'time-tracker))
      ((not latest)
       (er hard 'time-tracker
           "It is illegal to specify :STOP for tag ~x0, because tracking for ~
-           this tag is already in an inactive state.  Specify :START first to ~
-           solve this problem.  See :DOC time-tracker."
-          tag))
+           this tag is already in an inactive state.  Evaluate ~x1 to solve ~
+           this problem.  See :DOC time-tracker."
+          tag
+          `(time-tracker ',tag :start)))
      (t (setf (time-tracker-elapsed tt)
               (+ (time-tracker-elapsed tt)
                  (- (get-internal-time) latest)))
         (setf (time-tracker-latest tt)
               nil)))))
 
-(defun tt-start (tag)
+(defun tt-start (tag &optional do-it)
   (let ((tt (cdr (assoc-eq tag *time-tracker-alist*))))
     (cond
      ((not tt)
       (er hard 'time-tracker
           "It is illegal to specify :START for tag ~x0, because this tag is ~
-           not being tracked.  Specify :INIT first to solve this problem.  ~
-           See :DOC time-tracker."
-          tag))
-     ((time-tracker-latest tt)
+           not being tracked.  Evaluate (~x1 '~x0 :INIT ...) to solve this ~
+           problem.  See :DOC time-tracker."
+          tag
+          'time-tracker))
+     ((and (time-tracker-latest tt)
+           (or (not do-it)
+               (and (eval `(time-tracker ',tag :stop))
+                    nil)))
       (er hard 'time-tracker
           "It is illegal to specify :START for tag ~x0, because tracking for ~
-           this tag is already in an active state.  Specify :STOP first to ~
-           solve this problem.  See :DOC time-tracker."
-          tag))
+           this tag is already in an active state.  Evaluate ~x1 to solve ~
+           this problem.  See :DOC time-tracker."
+          tag
+          `(time-tracker ',tag :stop)))
      (t (setf (time-tracker-latest tt)
               (get-internal-time))))))
 )
