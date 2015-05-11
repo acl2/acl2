@@ -34,6 +34,25 @@
 (include-book "basetypes")
 (include-book "misc/assert" :dir :system)
 (include-book "std/strings/defs-program" :dir :system)
+(include-book "defsort/duplicated-members" :dir :system)
+(include-book "std/osets/top" :dir :system)
+(table xdoc::xdoc 'xdoc::doc nil)
+
+(defun topiclist->names (all-topics)
+  (if (atom all-topics)
+      nil
+    (cons (cdr (assoc :name (car all-topics)))
+          (topiclist->names (cdr all-topics)))))
+
+(defun collect-all-topics-with-name (name all-topics)
+  (if (atom all-topics)
+      nil
+    (if (equal (cdr (assoc :name (car all-topics))) name)
+        (cons (car all-topics)
+              (collect-all-topics-with-name name (cdr all-topics)))
+      (collect-all-topics-with-name name (cdr all-topics)))))
+
+
 
 ; Basic tests of deftypes doc generation
 
@@ -84,12 +103,21 @@
                    (cdr (assoc :long topic))
                    ',expect))))))
 
+(defmacro assert-dupefree ()
+  `(assert! (let ((dupes (acl2::duplicated-members
+                          (topiclist->names
+                           (set::mergesort (xdoc::get-xdoc-table (w state)))))))
+              (or (not dupes)
+                  (cw "Found duplicated topics for ~x0~%" dupes)))))
+
+
 
 
 (defxdoc game
   :parents (top)
   :short "Pretend game that will be used for deftypes doc testing.")
 
+(assert-dupefree)
 
 
 (defprod monster
@@ -131,6 +159,7 @@
 (assert-short monster->extra "")
 (assert-long monster->extra "")
 
+(assert-dupefree)
 
 
 (deflist monsterlist
@@ -307,4 +336,6 @@ is this?</p>")
 (assert-parents castle-case (castle))
 (assert-short castle-case "")
 (assert-long castle-case "")
+
+(assert-dupefree)
 
