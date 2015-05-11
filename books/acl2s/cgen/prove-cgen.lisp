@@ -534,7 +534,7 @@ history s-hist.")
                             (ttree (acl2::prove ',term
 ;; TODO: Matt's code doesnt work through induction and forcing rds
 ;; Also the OTF flag is set to true, to test all initial subgoals. 
-                                          (acl2::make-pspv ens wrld
+                                          (acl2::make-pspv ens wrld state
                                                      :displayed-goal ',form
                                                      :otf-flg t)
                                           hints ens wrld "( THM ...)" state)))

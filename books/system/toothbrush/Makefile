@@ -14,9 +14,12 @@
 # This variable must be set in order to run "make" with this Makefile.
 # For regressions, books/GNUmakefile skips running "make" in this
 # directory if TB_LISP is not defined.  To run directly in this
-# directory, edit the next line or designate a Lisp executable for
-# TB_LISP in the environment or on the command line.
+# directory, edit one the next lines or designate a Lisp executable
+# for TB_LISP in the environment or on the command line.  As explained
+# above, only CCL and SBCL are currently supported.
+
 # TB_LISP ?= ccl
+# TB_LISP ?= sbcl
 
 # For example:
 # make ACL2=/Users/kaufmann/acl2/acl2/saved_acl2 TB_LISP=ccl

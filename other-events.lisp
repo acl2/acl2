@@ -1,4 +1,4 @@
-; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2015, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -23257,8 +23257,7 @@
                             nil ; ancestors
                             nil ; backchain-limit
                             nil ; simplify-clause-pot-lst
-                            (make-rcnst ens
-                                        wrld
+                            (make-rcnst ens wrld state
                                         :force-info 'weak) ; conservative
                             nil ; gstack
                             ttree
@@ -26501,8 +26500,7 @@
           ((ttree1 (cond (instructions (proof-checker nil ugoal goal nil
                                                       instructions wrld state))
                          (t (prove goal
-                                   (make-pspv ens
-                                              wrld
+                                   (make-pspv ens wrld state
                                               :displayed-goal ugoal
                                               :otf-flg otf-flg)
                                    hints ens wrld ctx state)))))
@@ -26685,8 +26683,7 @@
                                     wrld state))
                     (t
                      (prove goal
-                            (make-pspv ens
-                                       wrld
+                            (make-pspv ens wrld state
                                        :displayed-goal ugoal
                                        :otf-flg otf-flg)
                             hints ens wrld ctx state)))))
@@ -26901,15 +26898,6 @@
 ; merging but there is no loop.
 
 ; End of Essay on Merging Attachment Records
-
-(defun intersection1-eq (x y)
-  (declare (xargs :guard (and (true-listp x)
-                              (true-listp y)
-                              (or (symbol-listp x)
-                                  (symbol-listp y)))))
-  (cond ((endp x) nil)
-        ((member-eq (car x) y) (car x))
-        (t (intersection1-eq (cdr x) y))))
 
 (defun defattach-component-has-owner (g g0 comps)
 
@@ -28705,36 +28693,43 @@
      ((not tt)
       (er hard 'time-tracker
           "It is illegal to specify :STOP for tag ~x0, because this tag is ~
-           not being tracked.  Specify :INIT first to solve this problem.  ~
-           See :DOC time-tracker."
-          tag))
+           not being tracked.  Evaluate (~x1 '~x0 :INIT ...) to solve this ~
+           problem.  See :DOC time-tracker."
+          tag
+          'time-tracker))
      ((not latest)
       (er hard 'time-tracker
           "It is illegal to specify :STOP for tag ~x0, because tracking for ~
-           this tag is already in an inactive state.  Specify :START first to ~
-           solve this problem.  See :DOC time-tracker."
-          tag))
+           this tag is already in an inactive state.  Evaluate ~x1 to solve ~
+           this problem.  See :DOC time-tracker."
+          tag
+          `(time-tracker ',tag :start)))
      (t (setf (time-tracker-elapsed tt)
               (+ (time-tracker-elapsed tt)
                  (- (get-internal-time) latest)))
         (setf (time-tracker-latest tt)
               nil)))))
 
-(defun tt-start (tag)
+(defun tt-start (tag &optional do-it)
   (let ((tt (cdr (assoc-eq tag *time-tracker-alist*))))
     (cond
      ((not tt)
       (er hard 'time-tracker
           "It is illegal to specify :START for tag ~x0, because this tag is ~
-           not being tracked.  Specify :INIT first to solve this problem.  ~
-           See :DOC time-tracker."
-          tag))
-     ((time-tracker-latest tt)
+           not being tracked.  Evaluate (~x1 '~x0 :INIT ...) to solve this ~
+           problem.  See :DOC time-tracker."
+          tag
+          'time-tracker))
+     ((and (time-tracker-latest tt)
+           (or (not do-it)
+               (and (eval `(time-tracker ',tag :stop))
+                    nil)))
       (er hard 'time-tracker
           "It is illegal to specify :START for tag ~x0, because tracking for ~
-           this tag is already in an active state.  Specify :STOP first to ~
-           solve this problem.  See :DOC time-tracker."
-          tag))
+           this tag is already in an active state.  Evaluate ~x1 to solve ~
+           this problem.  See :DOC time-tracker."
+          tag
+          `(time-tracker ',tag :stop)))
      (t (setf (time-tracker-latest tt)
               (get-internal-time))))))
 )

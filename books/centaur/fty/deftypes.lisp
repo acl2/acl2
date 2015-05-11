@@ -28,7 +28,6 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-
 (in-package "FTY")
 (include-book "std/util/da-base" :dir :system)
 (include-book "std/util/deflist-base" :dir :system)
@@ -231,22 +230,23 @@
   :tag :sum)
 
 (def-primitive-aggregate flexlist
-  (name       ;; name of the type
-   pred       ;; preducate function name
-   fix        ;; fix function name
-   equiv      ;; equiv function name
-   count      ;; count function name
-   elt-type   ;; element type name
-   elt-fix    ;; element fixing function
-   elt-equiv  ;; element equiv function
-   measure    ;; termination measure
-   xvar       ;; variable name denoting the object
-   kwd-alist  ;; original keyword alist
-   true-listp ;; require nil final cdr
+  (name             ;; name of the type
+   pred             ;; preducate function name
+   fix              ;; fix function name
+   equiv            ;; equiv function name
+   count            ;; count function name
+   elt-type         ;; element type name
+   elt-fix          ;; element fixing function
+   elt-equiv        ;; element equiv function
+   measure          ;; termination measure
+   xvar             ;; variable name denoting the object
+   kwd-alist        ;; original keyword alist
+   true-listp       ;; require nil final cdr
    elementp-of-nil
    cheap            ;; passed to std::deflist
-   recp       ;; elt-type is recursive
-   already-definedp)
+   recp             ;; elt-type is recursive
+   already-definedp
+   )
   :tag :list)
 
 (def-primitive-aggregate flexalist
@@ -624,7 +624,7 @@
                whole product.  You may change the field name or provide an ~
                explicit :xvar argument.~%" prodname x.name)))
       (flexprod-fields-check-xvar xvar (cdr fields) prodname))))
-              
+
 
 (defun flexprods-check-xvar (xvar prods)
   (if (atom prods)
@@ -1197,7 +1197,7 @@
        (measure (or (getarg :measure nil kwd-alist)
                     `(acl2-count ,xvar)))
        (field-names (flexprod-fields->names (flexprod->fields (car prods))))
-       (post-events (if tag 
+       (post-events (if tag
                         (append (defprod-tag-events-post-ctor tag name field-names)
                                 (cdr (assoc :post-events kwd-alist)))
                       (cdr (assoc :post-events kwd-alist))))
@@ -1391,7 +1391,7 @@
              (eq (flexsum->name (car types)) name)
              (car types))
         (get-flexsum-from-types name (cdr types)))))
-        
+
 
 
 (define get-flexsum-info (name world)
@@ -1430,10 +1430,6 @@
           (get-flexsum-infos (cdr sumnames) world))))
 
 
-(defxdoc deftranssum
-  :parents (deftypes)
-  :short "Introduce a transparent sum of products. (beta)"
-  :long "<p>BOZO document me.</p>")
 
 (defun deftranssum-post-pred-events (x)
   (b* (((flexsum x))
@@ -1500,9 +1496,9 @@
                      tag-cond))
           :fields ((val :type ,sum.name :acc-body ,xvar))
           :ctor-body val))))
-      
-      
-      
+
+
+
 
 (defun transsum-flexprods-in (suminfos xvar base-override our-fixtypes)
   (b* (((when (atom suminfos)) nil)
@@ -1511,7 +1507,7 @@
                         (atom (cdr suminfos)))))
     (cons prod (transsum-flexprods-in
                 (cdr suminfos) xvar (or base-override base) our-fixtypes))))
-  
+
 
 (define suminfo->pred (x)
   (b* ((sum (suminfo->sum x))
@@ -1804,9 +1800,6 @@
                        (not res)))))
     (mv already-defined true-listp)))
 
-
-
-
 (defun parse-flexlist (x xvar our-fixtypes fixtypes state)
   (b* (((cons name args) x)
        ((unless (symbolp name))
@@ -1844,6 +1837,7 @@
                     `(acl2-count ,xvar)))
        ((mv already-defined true-listp)
         (check-flexlist-already-defined pred kwd-alist our-fixtypes 'deflist state)))
+
     (make-flexlist :name name
                   :pred pred
                   :fix fix
@@ -2199,6 +2193,7 @@
              ///))
        (local (in-theory (disable ,list.pred)))
        (std::deflist ,list.pred (,stdx)
+         :parents (,list.name)
          (,list.elt-type ,stdx)
          :already-definedp t
          ,@(and (not (eq list.elementp-of-nil :unknown))
@@ -2366,7 +2361,7 @@
        ((flexprod prod) (car prods))
        ((when (eq prod.kind kind)) prod))
     (find-prod-by-kind kind (cdr prods))))
-    
+
 
 (defun flexsum-case-macro-kinds (var prods kwd-alist)
   (b* (((when (atom kwd-alist)) nil)
@@ -2610,6 +2605,13 @@
 (defun flexlist-fix-def (list flagp)
   (b* (((flexlist list) list))
     `(define ,list.fix ((,list.xvar ,list.pred))
+       :parents (,list.name)
+       :short ,(cat "@(call " (xdoc::full-escape-symbol list.fix)
+                    ") is a usual @(see fty::fty) list fixing function.")
+       :long ,(cat "<p>In the logic, we apply " (xdoc::see list.elt-fix)
+                   " to each member of the list.  In the execution, none of
+                    that is actually necessary and this is just an inlined
+                    identity function.</p>")
        :measure ,list.measure
        ,@(and (getarg :measure-debug nil list.kwd-alist)
               `(:measure-debug t))
@@ -2636,6 +2638,17 @@
 (defun flexalist-fix-def (alist flagp)
   (b* (((flexalist alist) alist))
     `(define ,alist.fix ((,alist.xvar ,alist.pred))
+       :parents (,alist.name)
+       :short ,(cat "@(call " (xdoc::full-escape-symbol alist.fix)
+                    ") is a @(see fty::fty) alist fixing function that follows the "
+                    (str::downcase-string (symbol-name alist.strategy))
+                    "strategy.")
+       ;; BOZO it would be nice to describe the fixing strategy that is used
+       ;; and connect it to discussion of the non-alist convention, etc.  However
+       ;; the fixing strategy to use is parameterized and I don't remember all the
+       ;; options and what they do, so for now I'll omit that.
+       :long "<p>Note that in the execution this is just an inline
+              identity function.</p>"
        :measure ,alist.measure
        ,@(and (getarg :measure-debug nil alist.kwd-alist)
               `(:measure-debug t))
@@ -2704,7 +2717,7 @@
     (and x.kind
          `((deffixequiv ,x.kind :args ((,x.xvar ,x.pred))
              :hints (("goal" :expand ((,x.fix ,x.xvar)))))
-           
+
            (make-event
             (b* ((consp-when-pred ',(intern-in-package-of-symbol (cat "CONSP-WHEN-" (symbol-name x.pred))
                                                                  x.pred))
@@ -2911,11 +2924,14 @@
   (if (atom types)
       nil
     (append (with-flextype-bindings (x (car types))
-              `((deffixtype ,x.name
-                  :pred ,x.pred
-                  :fix ,x.fix
-                  :equiv ,x.equiv
-                  :define t :forward t)
+              `((defsection ,x.equiv
+                  :parents (,x.name)
+                  :short ,(cat "Basic equivalence relation for " (xdoc::see x.pred) ".")
+                  (deffixtype ,x.name
+                    :pred ,x.pred
+                    :fix ,x.fix
+                    :equiv ,x.equiv
+                    :define t :forward t))
                 (local (in-theory (enable ,x.equiv)))))
             (flextypelist-fixtypes (cdr types)))))
 
@@ -3166,7 +3182,7 @@
        (field-accs (pairlis$ fieldnames
                              (flexprod-fields->acc-names prod.fields)))
        (binder-accs (append field-accs
-                            (append 
+                            (append
                              (flexprod-extra-binder-names->acc-alist
                               prod.extra-binder-names prod.type-name))))
        (ctor-of-fields-thmname
@@ -3898,12 +3914,12 @@
   (declare (ignorable state))
   (b* (((flexlist x) x)
        (short (getarg :short nil kwd-alist))
-       (long (getarg :long nil kwd-alist)))
-    (if (or short long)
-        (mv `((defxdoc ,x.name :parents ,parents
-                :short ,short :long ,long))
-            state)
-      (mv nil state))))
+       (long (getarg :long nil kwd-alist))
+       ((unless (or short long))
+        (mv nil state)))
+    (mv `((defxdoc ,x.name :parents ,parents
+            :short ,short :long ,long))
+        state)))
 
 (defun flexalist->defxdoc (x parents kwd-alist state)
   ;; Returns (mv events state)
@@ -4199,6 +4215,73 @@
     (cons (flexprod->type-name (car x))
           (flexprodlist->type-names (cdr x)))))
 
+(defun flexsum-case-macro-defxdoc.examples (kinds acc)
+  (b* (((when (atom kinds))
+        acc)
+       (acc (cons #\Newline acc))
+       (acc (str::revappend-chars "      :" acc))
+       (acc (str::revappend-chars (str::downcase-string (symbol-name (car kinds))) acc))
+       (acc (str::revappend-chars " ..." acc)))
+    (flexsum-case-macro-defxdoc.examples (cdr kinds) acc)))
+
+(defun flexsum-case-macro-defxdoc (sum)
+  (b* (((flexsum sum) sum)
+       (kinds       (flexprods->kinds sum.prods))
+       (name-link   (xdoc::see sum.name))
+       (name-plain  (str::downcase-string (symbol-name sum.name)))
+       (case-str    (str::downcase-string (symbol-name sum.case)))
+       (kind-fn-str (str::downcase-string (symbol-name sum.kind)))
+       (kind1-str   (str::downcase-string (symbol-name (car kinds))))
+       (examples    (str::rchars-to-string (flexsum-case-macro-defxdoc.examples kinds nil)))
+       )
+    `((defxdoc ,sum.case
+        :parents (,sum.name)
+        :short ,(cat "Case macro for the different kinds of " name-link " structures.")
+        :long ,(cat "<p>This is an @(see fty) sum-type case macro, typically
+introduced by @(see fty::defflexsum) or @(see fty::deftagsum).  It allows you
+to safely check the type of a " name-link " structure, or to split into cases
+based on its type.</p>
+
+<h3>Short Form</h3>
+
+<p>In its short form, @('" case-str "') allows you to safely check the type of
+a @('" name-plain "') structure.  For example:</p>
+
+@({
+    (" case-str " x :" kind1-str ")
+})
+
+<p>is essentially just a safer alternative to writing:</p>
+
+@({
+    (equal (" kind-fn-str " x) :" kind1-str ")
+})
+
+<p>Why is it safer?  When using the @('equal') form, there is no static
+checking being done to ensure that, e.g., @(':" kind1-str "') is a valid kind
+of " name-link " structure.  This means there is nothing to save you if, later,
+you change the kind keyword for this type from @(':" kind1-str "') to something
+else.  It also means you get no help if you just make a typo when writing the
+@(':" kind1-str "') symbol.  Over the course of developing VL, we found that
+such issues were very frequent sources of errors!</p>
+
+<p><b>BOZO</b> Wait, is this even implemented?</p>
+
+<h3>Long Form</h3>
+
+<p>In its longer form, @('" case-str "') allows you to split into cases based
+on the kind of structure you are looking at.  A typical example would be:</p>
+
+@({
+    (" case-str " x" examples ")
+})
+
+<p>Note that you can freely rearrange the order the cases and also use
+@(':otherwise').</p>
+
+<p>The case macro automatically binds the fields of @('x') for you, so that you
+can access them using the @(see defprod)-style @('foo.bar') style.</p>")))))
+
 (defun deftagsum->defxdoc (x parents kwd-alist base-pkg state)
   ;; Returns (mv events state)
   (declare (ignorable x parents base-pkg))
@@ -4220,12 +4303,14 @@
                      :short ,short
                      :long ,long)))
        (type-names (flexprodlist->type-names x.prods))
+       (case-doc (flexsum-case-macro-defxdoc x))
        ((mv prods-doc state)
         (deftagsum-prods-doc x x.prods (list x.name) base-pkg state)))
     (mv (append main-doc
                 prods-doc
+                case-doc
                 `((xdoc::order-subtopics ,x.name
-                                         (,x.pred ,x.fix ,x.kind ,x.equiv ,x.count
+                                         (,x.pred ,x.kind ,x.case ,x.fix ,x.equiv ,x.count
                                                   . ,type-names))))
         state)))
 
@@ -4388,7 +4473,7 @@
        (sub-long (getarg :long nil sub-kwd-alist))
        ((unless subtype)
         `(defxdoc ,x.name :parents ,parents :short ,short :long ,long))
-              
+
        ((when (and short sub-short))
         (er hard? 'deftypes "Can't give a top-level :short when you are also ~
                    putting :short documentation on the interior ~x0." x.name))
@@ -4689,7 +4774,7 @@
              (local (set-default-hints nil))
 
              ,@(flextype-collect-events :post-events x.kwd-alist x.types)
-             
+
              ,@(flextype-collect-events :///-events x.kwd-alist x.types)
 
              (table flextypes-table ',x.name ',x)
@@ -4827,12 +4912,6 @@
                                   :recp x.recp)))
     (deftypes-events flextypes state)))
 
-(defxdoc defoption
-  :parents (fty deftypes)
-  :short "Define an option type."
-  :long "<p>BOZO document me.  There used to be documentation for this when
-it was part of VL.  See @(see vl::defoption).  I don't know how much of it
-is the same...</p>")
 
 (defmacro defoption (&whole form &rest args)
   (declare (ignore args))
@@ -4883,724 +4962,3 @@ is the same...</p>")
 (defmacro defprod (&whole form &rest args)
   (declare (ignore args))
   `(make-event (defprod-fn ',form state)))
-
-
-;; ------------------ Documentation -----------------------
-(defxdoc deftypes
-  :parents (fty)
-  :short "Generate mutually recursive types with equivalence relations and fixing functions."
-  :long "<p>@('Deftypes') generates mutually-recursive types.  We'll begin with an example.</p>
-
-@({
- ;; preparation: associate fixing functions/equivalence relations with component types
- ;; Note: this is done for most basic types in the book centaur/fty/basetypes.lisp.
- (deffixtype integer :pred integerp :fix ifix :equiv int-equiv :define t)
- (deffixtype symbol :pred symbolp :fix symbol-fix :equiv sym-equiv :define t)
-
- (deftypes intterm
-   (defflexsum intterm
-     (:num :cond (atom x)
-      :fields ((val :type integerp :acc-body x))
-      :ctor-body val)
-     (:call
-      :fields ((fn :type symbol :acc-body (car x))
-               (args :type inttermlist :acc-body (cdr x)))
-      :ctor-body (cons fn args)))
-   (deflist inttermlist
-     :elt-type intterm))
-})
-
-<p>This generates recognizers and fixing functions for two new types:</p>
-<ul>
-<li>intterm, which is either a \"num\" consisting of a single integer or a
-\"call\" consisting of a symbol consed onto an inttermlist,</li>
-<li>inttermlist, which is a list of intterms.</li>
-</ul>
-
-<p>The @('deftypes') form just bundles together two other forms -- a @(see
-defflexsum) and a @(see deflist).  These two forms would be admissible by
-themselves, except that the types they are defining are mutually recursive, and
-therefore so are their recognizer predicates and fixing functions.</p>
-
-<p>The syntax and behavior of individual type generators is documented further
-in their own topics.  So far, the supported type generators are:</p>
-<ul>
-<li>@(see deflist): a list of elements of a particular type</li>
-<li>@(see defprod): a product (AKA record, aggregate, struct) type</li>
-<li>@(see defalist): an alist mapping keys of some type to values of some type</li>
-<li>@(see deftagsum): a sum-of-products (AKA tagged union) type</li>
-<li>@(see defflexsum): a very flexible (and not as automated) sum-of-products
-type used to implement @(see defprod) and @(see deftagsum).</li>
-</ul>
-
-<p>@('Deftypes') and its component type generators are intended to
-implement the type discipline described in the @(see fty) topic.  In
-particular, this means:</p>
-<ul>
-<li>the type predicates generated by any of these events each have an
-associated fixing function and equivalence relation, and these associations
-are recorded using a @(see deffixtype) event</li>
-<li>accessors and constructors of the sum and product types unconditionally
-return values of the appropriate type</li>
-<li>accessors and constructors have equality congruences based on the types of
-their arguments.</li>
-</ul>
-
-<p>To support these nice properties, all the component types (the fields of
-products, elements of lists, keys and values of alists) are required to also
-have an associated fixing function and equivalence relation, either produced by
-a @('deftypes') compatible type generator or recorded by a @(see deffixtype)
-event.  (They may also be untyped.)  The \"preparation\" forms in the example
-above show how this can be done.  Also see @(see basetypes) for some base types
-with fixing functions.</p>")
-
-(defxdoc deflist
-  :parents (fty deftypes)
-  :short "Define a list type with a fixing function, supported by @(see deftypes)"
-  :long "<p>@('Deflist') provides a recognizer predicate, fixing function, and
-a few theorems defining a list of elements of a certain type.</p>
-
-<p>@('Deflist') is compatible with @(see deftypes), and can be
-mutually-recursive with other @('deftypes') compatible type generators.  As
-with all @(see deftypes)-compatible type generators, its element type must
-either be one produced by a compatible type generator or else have an
-associated fixing function given by @(see deffixtype).  See @(see basetypes) for
-some base types with fixing functions.</p>
-
-<p>The syntax of deflist is:</p>
-@({
-  (deflist foolist
-    :elt-type foo      ;; required, must have a known fixing function
-    :parents (...)     ;; xdoc
-    :short \"...\"       ;; xdoc
-    :long \"...\"        ;; xdoc
-    :measure (+ 1 (* 2 (acl2-count x)))
-                       ;; default: (acl2-count x)
-    :xvar x            ;; default: x, or find x symbol in measure
-    :prepwork          ;; admit these events before starting
-    :pred foolistp     ;; default: foolist-p
-    :fix foolistfix    ;; default: foolist-fix
-    :equiv foolist-=   ;; default: foolist-equiv
-    :count foolistcnt  ;; default: foolist-count
-                       ;; (may be nil; skipped unless mutually recursive)
-    :no-count t        ;; default: nil, same as :count nil
-    :true-listp t      ;; default: nil, require nil final cdr
-  )
- })
-
-<p>Only the name and the @(':elt-type') argument is required.</p>
-
-<p>As part of the event, deflist calls @(see std::deflist) to produce several
-useful theorems about the introduced predicate.</p>
-
-<p>Deflist (by itself, not when part of mutually-recursive deftypes form) also
-allows previously defined list predicates.  For example, the following form
-produces a fixing function for ACL2's built-in @(see string-listp)
-predicate:</p>
-
-@({ (deflist string-list :pred string-listp :elt-type stringp) })")
-
-(defxdoc defalist
-  :parents (fty deftypes)
-  :short "Define an alist type with a fixing function, supported by @(see deftypes)"
-  :long "<p>@('Defalist') provides a recognizer predicate, fixing function, and
-a few theorems defining an alist with keys of some type mapping to values of some type.</p>
-
-<p>@('Defalist') is compatible with @(see deftypes), and can be
-mutually-recursive with other @('deftypes') compatible type generators.  As
-with all @(see deftypes)-compatible type generators, its key and value types
-must either be one produced by a compatible type generator or else have an
-associated fixing function given by @(see deffixtype).  (They may also be
-untyped.)  See @(see basetypes) for some base types with fixing
-functions.</p>
-
-<p>The syntax of defalist is:</p>
-@({
-  (defalist fooalist
-    :key-type symbol
-    :val-type foo
-    :parents (...)     ;; xdoc
-    :short \"...\"       ;; xdoc
-    :long \"...\"        ;; xdoc
-    :measure (+ 1 (* 2 (acl2-count x)))
-                       ;; default: (acl2-count x)
-    :xvar x            ;; default: x, or find x symbol in measure
-    :prepwork          ;; admit these events before starting
-    :pred fooalistp     ;; default: fooalist-p
-    :fix fooalistfix    ;; default: fooalist-fix
-    :equiv fooalist-=   ;; default: fooalist-equiv
-    :count fooalistcnt  ;; default: fooalist-count
-                       ;; (may be nil; skipped unless mutually recursive)
-    :no-count t        ;; default: nil, same as :count nil
-    :true-listp t      ;; default: nil, require nil final cdr
-    :strategy :drop-keys ;; default: :fix-keys
-  )
- })
-
-<p>The keyword arguments are all optional, although it doesn't make much sense
-to define an alist with neither a key-type nor value-type.</p>
-
-<p>The @(':strategy') keyword changes the way the fixing function works; by
-default, every pair in the alist is kept but its key and value are fixed.  With
-@(':strategy :drop-keys'), pairs with malformed keys are dropped, but malformed
-values are still fixed. @(See Defmap) is an abbreviation for @('defalist') with
-@(':strategy :drop-keys').</p>
-
-<p>As part of the event, deflist calls @(see std::deflist) to produce several
-useful theorems about the introduced predicate.</p>
-
-<p>Defalist (by itself, not when part of mutually-recursive deftypes form) also
-allows previously defined alist predicates.  For example, the following form
-produces a fixing function for ACL2's built-in @('timer-alistp') predicate:</p>
-
-@({
- (defalist timer-alist :pred timer-alistp
-                       :key-type symbolp
-                       :val-type rational-listp)
- })")
-
-(defxdoc defmap
-  :parents (fty deftypes)
-  :short "Define an alist type with a fixing function that drops pairs with malformed keys rather than fixing them."
-  :long "<p>@('Defmap') is just an abbreviation for @('defalist') with the option
-@(':strategy :drop-keys').</p>")
-
-
-(defxdoc defprod
-  :parents (fty deftypes)
-  :short "Define a product type with recognizer, constructor, accessors, and a fixing function"
-  :long "<p>@('Defprod') produces a record type, similar in spirit to @(see
-std::defaggregate), @(see acl2::defrec), and so on.</p>
-
-<p>@('Defprod') is compatible with @(see deftypes), and can be
-mutually-recursive with other @('deftypes') compatible type generators.  As
-with all @(see deftypes)-compatible type generators, its field types must each
-either be one produced by a compatible type generator or else have an
-associated fixing function given by @(see deffixtype).  (Fields can also be
-untyped.)  See @(see basetypes) for some base types with fixing
-functions.</p>
-
-<p>The syntax of defprod is:</p>
-@({
- (defprod prodname
-    (list-of-fields)
-    keyword-options)
- })
-
-<p>The fields are @(see std::extended-formals), except that the guard must be
-either simply a predicate or the call of a unary predicate on the field name.
-Acceptable keyword arguments for each field are:</p>
-<ul>
-<li>@(':default'): default value of the field in its constructor macro</li>
-<li>@(':rule-classes'): rule-classes for the return type theorem of the accessor.</li>
-</ul>
-
-<h4>Example</h4>
-
-@({
- (defprod sandwich
-   ((bread symbolp :default 'sourdough)
-    (coldcut meatp)
-    (spread condimentp))
- })
-
-<p>This produces the following functions and macros:</p>
-
-<ul>
-<li>recognizer @('sandwich-p')</li>
-<li>fixing function @('sandwich-fix')</li>
-<li>equivalence relation @('sandwich-equiv')</li>
-<li>constructor @('(sandwich bread coldcut spread)')</li>
-<li>accessors @('sandwich->bread'), @('sandwich->coldcut'), and @('sandwich->field')</li>
-<li>constructor macro @('(make-sandwich :bread bread ...)'), which simply
-expands to a constructor call but uses the given defaults</li>
-<li>changer macro @('(change-sandwich x :bread bread ...)')</li>
-<li>@(see B*) binder @('sandwich') (as in @(see std::defaggregate)).</li>
-</ul>
-
-<h4>Options</h4>
-<p>Keyword options for @('defprod') include:</p>
-<ul>
-
-<li>@(':pred'), @(':fix'), @(':equiv'), @(':count'): override default function
-names, which are (respectively) @('name-p'), @('name-fix'), @('name-equiv'),
-and @('name-count').  As a special case, @(':count') may be nil, meaning no
-count function is produced.  (A count function is only produced when this is
-mutually-recursive with other type generators.)</li>
-
-<li>@(':parents'), @(':short'), @(':long'): add xdoc about the type.  (Note:
-xdoc support is half-baked; e.g. documentation strings for fields are allowed
-but not yet used.</li>
-
-<li>@(':layout'): must be one of @(':tree'), @(':list'), or @(':alist'),
-defaulting to @(':alist').  This determines how the fields are laid out in the
-object; e.g., a 5-element product will be laid out as follows for each case:
-@({
-  `((,a . ,b) . (,c . (,d . e)))                   ;; :tree
-  `(,a ,b ,c ,d ,e)                                ;; :list
-  `((a . ,a) (b . ,b) (c . ,c) (d . ,d) (e . ,e))  ;; :alist
- })
-</li>
-
-<li>@(':tag'): defaults to NIL, meaning it isn't present; otherwise it must be
-a keyword symbol, which is consed onto every occurrence of the object.</li>
-
-<li>@(':measure'): Only necessary in the mutually-recursive case, but probably
-necessary then.  The default measure is @('(acl2-count x)'), but this is
-unlikely to work in the mutually-recursive case because of the possibility that
-@('x') could be (say) an atom, in which case the @('acl2-count') of @('x') will
-be no greater than the @('acl2-count') of a field.  Often something like
-@('(two-nats-measure (acl2-count x) 5)') is a good measure for the product,
-where the other mutually-recursive types have a similar measure with smaller
-second component.</li>
-
-<li>@(':hons'), NIL by default; when T, the constructor is defined using @(see
-hons) rather than cons.</li>
-
-<li>@(':inline') is @('(:acc :fix)') by default, which causes the accessors and
-fixing function (which for execution purposes is just the identity) to be
-inlined.  The list may also contain @(':xtor'), which causes the constructor to
-be inlined as well; @(':all') (not in a list) is also possible.</li>
-
-<li>@(':require') adds a dependent type requirement; see the section on this feature below.</li>
-</ul>
-
-<h4>Experimental Dependent Type Option</h4>
-
-<p>An additional top-level keyword, @(':require'), can add a requirement that
-the fields satisfy some relation.  Using this option requires that one or more
-fields be given a @(':reqfix') option; it must be a theorem that applying the
-regular fixing functions followed by the @(':reqfix') of each field
-independently yields fields that satisfy the requirement.  (It should also be
-the case that applying the reqfixes to fields already satisfying the
-requirement leaves them unchanged.) For example:</p>
-
-@({
- (defprod sizednum
-   ((size natp)
-    (bits natp :reqfix (loghead size bits)))
-   :require (unsigned-byte-p size bits))
- })
-
-<p>If there is more than one field with a @(':reqfix') option, these reqfixes
-are applied to each field independently, after applying all of their types' fixing functions.
-For example, for the following to succeed:</p>
-
-@({
- (defprod foo
-   ((a atype :reqfix (afix a b c))
-    (b btype :reqfix (bfix a b c))
-    (c       :reqfix (cfix a b c)))
-   :require (foo-req a b c))
- })
-
-<p>the following must be a theorem (assuming @('afix') and @('bfix') are the
-fixing functions for @('atype') and @('btype'), respectively):</p>
-
-@({
-  (let ((a (afix a))
-        (b (bfix b)))
-    (let ((a (afix a b c))
-          (b (bfix a b c))
-          (c (cfix a b c)))
-      (foo-req a b c)))
- })
-
-<p>Notice the LET, rather than LET*, binding the fields to their reqfixes.  It
-would NOT be sufficient for this to be true with a LET*.</p>
-")
-
-(defxdoc deftagsum
-  :parents (fty deftypes)
-  :short "Define a (possibly recursive) tagged union/sum of products type."
-
-  :long "<p>@('Deftagsum') produces a tagged union type consisting of several
-product types, each with a tag to distinguish them.  It is similar in spirit to
-ML or Haskell's recursive data types, although without the dependent-type
-features.</p>
-
-<p>@('Deftagsum') is compatible with @(see deftypes), and can be
-mutually-recursive with other @('deftypes') compatible type generators.  As
-with all @(see deftypes)-compatible type generators, the types of the fields of
-its products must each either be one produced by a compatible type generator or
-else have an associated fixing function given by @(see deffixtype).  (Fields
-can also be untyped.)  See @(see basetypes) for some base types with fixing
-functions.</p>
-
-<h3>Example</h3>
-
-<p>Note: It may be helpful to be familiar with @(see defprod).</p>
-
-@({
-  (deftagsum arithtm
-    (:num ((val integerp)))
-    (:plus ((left arithtm-p)
-            (right arithtm-p)))
-    (:minus ((arg arithtm-p))))
- })
-
-<p>This defines the following functions and macros:</p>
-
-<ul>
-<li>Recognizer @('arithtm-p')</li>
-<li>Fixing function @('arithtm-fix')</li>
-<li>Equivalence relation @('arithtm-equiv')</li>
-<li>@('arithtm-kind'), which returns either @(':num'), @(':plus'), or
-@(':minus') to distinguish the different kinds of arithtm objects</li>
-<li>Constructors @('arithtm-num'), @('arithtm-plus'), @('arithtm-minus')</li>
-<li>Accessors @('arithtm-num->val'), @('arithtm-plus->left'),
-@('arithtm-plus->right'), and @('arithtm-minus->arg')</li>
-<li>Constructor macros @('make-aritherm-num'), @('make-arithtm-plus'),
-@('make-arithtm-minus')</li>
-<li>Changer macros @('change-arithtm-num'), @('change-arithtm-plus'),
-@('change-arithtm-minus')</li>
-<li>@(see B*) binders @('arithtm-num'), @('arithtm-plus'),
-@('arithtm-minus')</li>
-<li>@('arithtm-case'), a macro that combines case splitting and accessor binding.</li>
-</ul>
-
-
-
-<p>Note: The individual products in a @('deftagsum') type are not themselves
-types: they have no recognizer or fixing function of their own.  The guard for
-accessors is the sum type and the kind, e.g., for @('arithtm-plus->right'),</p>
-@({
- (and (arithtm-p x) (equal (arithtm-kind x) :plus))
- })
-
-<h4>Using Tagsum Objects</h4>
-
-<p>The following example shows how to use an arithtm object.  We define an
-evaluator function that computes the value of an arithtm and a transformation
-that doubles every leaf in an arithtm, and prove that the doubling function
-doubles the value according to the evaluator.  The doubling function also shows
-how the arithtm-case macro is used.  Note that the return type theorems and
-the theorem about the evaluation of arithtm-double are all hypothesis-free --
-a benefit of following a consistent type-fixing convention.</p>
-
-@({
-  (define arithtm-eval ((x arithtm-p))
-    :returns (val integerp :rule-classes :type-prescription)
-    :measure (arithtm-count x)
-    :verify-guards nil
-    (case (arithtm-kind x)
-      (:num (arithtm-num->val x))
-      (:plus (+ (arithtm-eval (arithtm-plus->left x))
-                (arithtm-eval (arithtm-plus->right x))))
-      (:minus (- (arithtm-eval (arithtm-minus->arg x)))))
-    ///
-    (verify-guards arithtm-eval))
-
-
-  (define arithtm-double ((x arithtm-p))
-    :returns (xx arithtm-p)
-    :measure (arithtm-count x)
-    :verify-guards nil
-    (arithtm-case x
-     :num (arithtm-num (* 2 x.val))
-     :plus (arithtm-plus (arithtm-double x.left)
-                         (arithtm-double x.right))
-     :minus (arithtm-minus (arithtm-double x.arg)))
-    ///
-    (verify-guards arithtm-double)
-
-    (local (include-book \"arithmetic/top-with-meta\" :dir :system))
-
-    (defthm arithtm-eval-of-double
-      (equal (arithtm-eval (arithtm-double x))
-             (* 2 (arithtm-eval x)))
-      :hints((\"Goal\" :in-theory (enable arithtm-eval)))))
- })
-
-<h3>Deftagsum Usage and Options</h3>
-
-<p>A @('deftagsum') form consists of the type name, a list of product
-specifiers, and some optional keyword arguments.</p>
-
-<h4>Product specifiers</h4>
-
-<p>A product specifier consists of a tag (a keyword symbol), a list of fields
-given as @(see std::extended-formals), and some optional keyword arguments.
-The possible keyword arguments are:</p>
-
-<ul>
-<li>@(':layout'), one of @(':tree'), @(':list'), or @(':alist'), determining
-the arrangement of fields within the product object (as in @(see defprod)),</li>
-<li>@(':inline'), determining whether the constructor and accessors are inlined
-or not.  This may be @(':all') or a subset of @('(:xtor :acc)').  Defaults to
-@('(:acc)') if not overridden.</li>
-<li>@(':hons'), NIL by default, determining whether objects are constructed
-with @(see hons).</li>
-<li>@(':base-name'), overrides the name of the constructor and the base name
-used to generate accessors.</li>
-<li>@(':require') adds a dependent type requirement; see the section on this
-feature in @(see defprod).</li>
-</ul>
-
-<h4>Tagsum Options</h4>
-
-<p>The following keyword options are recognized at the top level of a
-@('deftagsum') form (as opposed to inside the individual product forms):</p>
-<ul>
-
-<li>@(':pred'), @(':fix'), @(':equiv'), @(':kind'), @(':count'): override
-default function names.  @(':count') may also be set to NIL, to turn of
-generation of the count function.</li>
-
-<li>@(':parents'), @(':short'), @(':long'): add xdoc about the type.</li>
-
-<li>@(':measure'): override the measures used to admit the recognizer, fixing
-function, and count function; the default is @('(acl2-count x)').</li>
-
-<li>@(':prepwork'): events submitted before</li>
-
-<li>@(':inline'): sets default for inlining of products and determines whether
-the kind and fixing functions are inlined.  This may be @(':all') or a subset
-of @('(:kind :fix :acc :xtor)'), defaulting to @('(:kind :fix :acc)').</li>
-
-<li>@(':layout'): sets default layout for products</li>
-
-<li>@(':base-case-override'): Override which product is the base case.  This
-may affect termination of the fixing function; see below.</li>
-
-</ul>
-
-<h3>Dealing with Base Cases</h3>
-
-<p>Consider the following type definition:</p>
-
-@({
-  (deftypes fntree
-    (deftagsum fntree
-      (:pair ((left fntree-p) (right fntree-p)))
-      (:call ((fn symbol) (args fntreelist-p))))
-    (deflist fntreelist-p :elt-type fntree))
- })
-
-<p>As is, deftypes will fail to admit this event, saying:</p>
-
-<blockquote>
-We couldn't find a base case for tagsum FNTREE, so we don't know what its
-fixing function should return when the input is an atom.  To override this, add
-keyword arg :base-case-override [product], where [product] is one of your
-product keywords, and provide a measure that will allow the fixing function to
-terminate.
-</blockquote>
-
-<p>What is the problem?  As the text suggests, the problem lies in what we
-should do when given an atom as input to the fixing function.  With the default
-measure of @('(acl2-count x)'), we're not allowed to recur on, say, @('NIL'),
-because its acl2-count is already 0.  This is fine as long as we can pick a
-product type that has no recursive components, but in this case, the @(':pair')
-and @(':call') product both do.  However, the @(':call') product could have an
-empty list as its arguments, and this seems like a reasonable thing to use as
-the fix of an atom.  To give @('deftagsum') the hint to do this, we need to
-tell it which product to fix an atom to, and what measure to use.  The
-following modification of the above form works:</p>
-
-@({
-  (deftypes fntree
-    (deftagsum fntree
-      (:pair ((left fntree-p) (right fntree-p)))
-      (:call ((fn symbol) (arg fntreelist-p)))
-      :base-case-override :call
-      :measure (two-nats-measure (acl2-count x) 1))
-    (deflist fntreelist-p :elt-type fntree
-      :measure (two-nats-measure (acl2-count x) 0)))
- }) ")
-
-(defxdoc defflexsum
-  :parents (fty deftypes)
-  :short "Define a (possibly recursive) sum of products type."
-  :long "
-<h3>Caveat</h3>
-
-<p>@('Defflexsum') is not very user-friendly or automatic; it is easy to create
-instances that fail in incomprehensible ways.  It is used as a backend to
-define the @(see deftagsum) and @(see defprod) type generators, which are easier to
-use.</p>
-
-<h4>Example</h4>
-
-<p>This is essentially the same as the example in @(see deftagsum).  Logically,
-the way these types work are very similar; only the representation is
-different.</p>
-@({
-  (defflexsum arithterm
-    (:num :cond (atom x)
-     :fields ((val :type integerp :acc-body x))
-     :ctor-body val)
-    (:plus
-     :cond (eq (car x) '+)
-     :shape (and (true-listp x) (eql (len x) 3))
-     :fields ((left :type arithterm :acc-body (cadr x))
-              (right :type arithterm :acc-body (caddr x)))
-     :ctor-body (list '+ left right))
-    (:minus
-     :shape (and (eq (car x) '-)
-                   (true-listp x)
-                   (eql (len x) 2))
-     :fields ((arg :type arithterm :acc-body (cadr x)))
-     :ctor-body (list '- arg)))
-
-  (define arithterm-eval ((x arithterm-p))
-    :returns (xval integerp :rule-classes :type-prescription)
-    :measure (arithterm-count x)
-    (case (arithterm-kind x)
-      (:num (arithterm-num->val x))
-      (:plus (+ (arithterm-eval (arithterm-plus->left x))
-                (arithterm-eval (arithterm-plus->right x))))
-      (t (- (arithterm-eval (arithterm-minus->arg x)))))
-    ///
-    (deffixequiv arithterm-eval))
-
-  (define arithterm-double ((x arithterm-p))
-    :verify-guards nil ;; requires return type theorem first
-    :returns (xx arithterm-p)
-    :measure (arithterm-count x)
-    (arithterm-case x
-      :num (arithterm-num (* 2 x.val))
-      :plus (arithterm-plus (arithterm-double x.left)
-                            (arithterm-double x.right))
-      :minus (arithterm-minus (arithterm-double x.arg)))
-    ///
-    (verify-guards arithterm-double)
-
-    (deffixequiv arithterm-double)
-
-    (local (include-book \"arithmetic/top-with-meta\" :dir :system))
-
-    (defthm arithterm-double-correct
-      (equal (arithterm-eval (arithterm-double x))
-             (* 2 (arithterm-eval x)))
-      :hints((\"Goal\" :in-theory (enable arithterm-eval)))))
- })
-
-<p>@('Mbe') allows the function to logically apply fixing functions to its
-arguments without a performance penalty when running with guards checked.</p>
-
-<h3>More on the above Caveat</h3>
-
-<p>@('defflexsum') is less automatic than most other type-defining utilities.
-It requires certain information to be provided by the user that must then be
-proved to be self-consistent.  For example, the @(':ctor-body') argument in a
-product spec determines how that product is constructed, and the @(':acc-body')
-argument to a product field spec determines how that field is accessed.  These
-could easily be inconsistent, or the @(':ctor-body') could produce an object
-that is not recognized as that product.  If either of these is the case, some
-proof within the @('defflexsum') event will fail and it will be up to the user
-to figure out what that proof was and why it failed.</p>
-
-
-<h3>Syntax and Options</h3>
-
-<h4>@('Defflexsum') top-level arguments</h4>
-
-<p>@('Defflexsum') takes the following keyword arguments, in addition to a list
-of products, which are described further below.</p>
-
-<ul>
-
-<li>@(':pred'), @(':fix'), @(':equiv'), @(':kind'), @(':case'), and @(':count')
-override the default names for the various generated functions (and case
-macro).  If any of these is not provided, a default name is used instead.  If
-@(':kind nil') is provided, then no @('-kind') function is generated and
-instead the products are distinguished by their bare @(':cond') fields.  If
-@(':count nil') is provided, then no count function is defined for this
-type.</li>
-
-<li>@(':xvar') sets the variable name used to represent the SUM object.  By
-default, we look for a symbol whose name is \"X\" that occurs in the product
-declarations.</li>
-
-<li>@(':measure') provides the measure for the predicate, fixing function, and
-count function.  It defaults to @('(acl2-count x)'), which is usually
-appropriate for stand-alone products, but sometimes a special measure must be
-used, especially when @('defflexsum') is used inside a mutually-recursive
-@('deftypes') form.</li>
-
-<li>@(':prepwork') is a list of events to be submitted at the beginning of the
-process; usually these are local lemmas needed for the various proofs.</li>
-
-<li>@(':parents'), @(':short'), and @(':long') provide xdoc for the type</li>
-
-<li>@(':inline'): sets default for inlining of products and determines whether
-the kind and fixing functions are inlined.  This may be @(':all') or a subset
-of @('(:kind :fix :acc :xtor)'), defaulting to @('(:kind :fix :acc)').</li>
-
-</ul>
-
-<h4>Products</h4>
-
-<p>Each product starts with a keyword naming its kind; this is the symbol that
-the SUM kind function returns on an object of that product type.  The rest of
-the form is a list of keyword arguments:</p>
-
-<ul>
-
-<li>@(':cond') describes how to tell whether an object is of this product type.
-To determine the kind of an SUM object, the SUM kind function checks each of
-the product conditions in turn, returning the name of the first matching
-condition.  So the condition for a given product assumes the negations of the
-conditions of the previous listed products.  The @(':cond') field defaults to
-@('t'), so typically it can be left off the last product type.</li>
-
-<li>@(':shape') adds well-formedness requirements for a product.  One purpose
-these may serve is to make well-formed objects canonical: it must be a theorem
-that the fixing function applied to a well-formed object is the same object.
-So if a product is (e.g.) a tuple represented as a list, and the constructor
-creates it as a true-list, then there should be a requirement that the object
-be a true-list of the appropriate length; otherwise, an object that had a
-non-nil final cdr would be recognized as well-formed, but fix to a different
-value.</li>
-
-<li>@(':fields') list the fields of the product; these are described further
-below.</li>
-
-<li>@(':ctor-body') describes how to make a product object from the fields.
-This must be consistent with the field accessor bodies (described below) and
-with the @(':cond') and @(':shape') fields of this product and the previous
-ones (i.e., it can't produce something that could be mistaken for one of the
-previous products listed).  The actual constructor function will have fixing
-functions added; these should not be present in the @(':ctor-body')
-argument.</li>
-
-<li>@(':type-name') overrides the type-name, which by default is
-@('[SUMNAME]-[KIND]'), e.g. @('arithterm-plus') from the example above.  This
-is used as a base for generating the field accessor names.</li>
-
-<li>@(':ctor-name') overrides the name of the product constructor function,
-which by default is the type-name.</li>
-
-<li>@(':inline'), determining whether the constructor and accessors are inlined
-or not.  This may be @(':all') or a subset of @('(:xtor :acc)').  Defaults to
-@('(:acc)') if not overridden.</li>
-
-<li>@(':require') adds a dependent type requirement; see the section on this
-feature in @(see defprod).</li>
-
-</ul>
-
-<h4>Product Fields</h4>
-
-<p>Each product field is a name followed by a keyword list, in which the
-following keywords are allowed:</p>
-<ul>
-<li>@(':acc-body') must be present: a term showing how to fetch the field from
-the object.</li>
-<li>@(':acc-name') overrides the accessor name</li>
-<li>@(':type'), the type (fixtype name or predicate) of the field; may be empty
-for an untyped field</li>
-<li>@(':default'), the default value of the field in the constructor macro</li>
-<li>@(':doc') will eventually generate xdoc, but is currently ignored</li>
-<li>@(':rule-classes'), the rule classes for the return type of the accessor
-function.  This is @(':rewrite') by default; you may wish to change it to
-@(':type-prescription') when the type is something basic like
-@('integerp').</li>
-</ul>
-")
-
-
-
-
-
