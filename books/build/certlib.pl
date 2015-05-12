@@ -1062,6 +1062,9 @@ sub src_events {
 	if ($parent) {
 	    print " (required by $parent)";
 	}
+	else {
+	    print " (no parent; top level target? cached target?)";
+	}
 	print "\n";
 	# Add an entry with no events and a negative timestamp.
 	# signalling that the file didn't exist.
