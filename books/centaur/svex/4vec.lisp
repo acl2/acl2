@@ -1096,6 +1096,18 @@ Otherwise, produces the signed sum of the two inputs.</p>"
   (fty::deffixequiv 4vec-plus :args ((x 2vecx) (y 2vecx))
     :hints(("Goal" :in-theory (enable 2vecx-fix)))))
 
+(define 4vec-xdet ((x 4vec-p))
+  :parents (4vec-functions)
+  :short "Return X if there is any X bit"
+  :long "<p>Otherwise known as unary +</p>"
+  :returns (res 4vec-p)
+  (if (2vec-p x)
+      (4vec-fix x)
+    (4vec-x))
+  ///
+  (fty::deffixequiv 4vec-xdet :args ((x 2vecx))
+    :hints(("Goal" :in-theory (enable 2vecx-fix)))))
+
 (define 4vec-minus ((x 4vec-p) (y 4vec-p))
   :returns (res 4vec-p)
   :parents (4vec-functions)

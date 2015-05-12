@@ -862,18 +862,24 @@ if the shift amount is computed elsewhere.</p>"
                      (svex-rsh (2vec->val sh.val) x)
                    (svex-concat (- (2vec->val sh.val)) (svex-x) x))
                (svex-x))
-      :otherwise (b* ((concat-amt (svcall ?
-                                                (svcall < sh (vl::svex-int 0))
-                                                (svcall u- sh)
-                                                (vl::svex-int 0)))
-                      (rsh-amt    (svcall ?
-                                                (svcall < sh (vl::svex-int 0))
-                                                (vl::svex-int 0)
-                                                sh)))
-                   (svcall concat
-                                 concat-amt
-                                 (svex-x)
-                                 (svcall rsh rsh-amt x)))))
+      :otherwise ;; (b* ((concat-amt (svcall ?
+                 ;;                                (svcall < sh (vl::svex-int 0))
+                 ;;                                (svcall u- sh)
+                 ;;                                (vl::svex-int 0)))
+                 ;;      (rsh-amt    (svcall ?
+                 ;;                                (svcall < sh (vl::svex-int 0))
+                 ;;                                (vl::svex-int 0)
+                 ;;                                sh)))
+                 ;;   (svcall concat
+                 ;;           concat-amt
+                 ;;           (svex-x)
+                 ;;           (svcall rsh rsh-amt x)))
+      (svcall ?
+              (svcall < sh (vl::svex-int 0))
+              ;; if the shift is negative, we're concatenating Xes, otherwise
+              ;; we're right-shifting.
+              (svcall concat (svcall u- sh) (svex-x) x)
+              (svcall rsh sh x))))
   ///
   (local (defthm 4vec-<-of-non-2vec
            (implies (not (2vec-p x))

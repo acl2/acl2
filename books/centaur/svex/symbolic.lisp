@@ -564,8 +564,179 @@
             :do-not-induct t))
     :otf-flg t))
 
+(define logcollapse ((position natp)
+                     (x integerp))
+  :short "OR together all the bits of x at position or above, collapsing them
+into the single bit at position."
+  :long "<p>This operation helps avoid catastrophically large shifts in computing,
+e.g., concatenations with symbolic widths.  When there is a care-mask of width
+w, then we can collapse all the bits at w and above into the bit at w, because
+the presence of those upper bits means that the shift is longer than we care
+about.</p>
 
-(define a4vec-concat ((w a4vec-p) (x a4vec-p) (y a4vec-p))
+<p>There is a large potential for off-by-one errors when thinking about this
+function.  It may help to start with the fact that @('(logcollapse 0 x)')
+collapses all bits of x into a single bit.  In general, @('(logcollapse n x)')
+results in at most n+1 bits.</p>"
+  (b* ((position (lnfix position))
+       (x (lifix x)))
+    (logior (loghead position x)
+            (ash (acl2::b-not (bool->bit (eql 0 (logtail position x)))) position))))
+
+
+(defsection masked-shifts
+
+  (local (defthm loghead-when-logtail-is-0
+           (implies (equal 0 (logtail n x))
+                    (equal (loghead n x) (ifix x)))
+           :hints(("Goal" :in-theory (enable* acl2::loghead** acl2::logtail**
+                                              acl2::ihsext-inductions)))))
+
+  (local (defthm ash-integer-length-greater
+           (implies (natp x)
+                    (< x (ash 1 (integer-length x))))
+           :hints(("Goal" :in-theory (enable* acl2::ash**
+                                              acl2::integer-length**
+                                              acl2::ihsext-inductions)))
+           :rule-classes :linear))
+
+  (local (defthm logior-of-nats-greater
+           (implies (and (natp x) (natp y))
+                    (<= x (logior x y)))
+           :hints(("Goal" :in-theory (enable* acl2::logior**
+                                              acl2::ihsext-inductions)))
+           :rule-classes :linear))
+
+  (defthm logcollapse-greater-when-greater
+    (implies (and (natp m)
+                  (integerp i)
+                  (<= m i))
+             (<= m
+                 (logcollapse (integer-length m) i)))
+    :hints(("Goal" :in-theory (enable logcollapse bool->bit))))
+
+  (local (defthm logtail-integer-length-when-less
+           (implies (and (integerp m)
+                         (natp i)
+                         (< i m))
+                    (equal (logtail (integer-length m) i) 0))
+           :hints(("Goal" :in-theory (enable* acl2::logtail**
+                                              acl2::integer-length**
+                                              acl2::ihsext-inductions)
+                   :induct (logand m i)))))
+
+  (defthm logcollapse-equal-when-less
+    (implies (and (integerp m)
+                  (natp i)
+                  (< i m))
+             (equal (logcollapse (integer-length m) i)
+                    i))
+    :hints(("Goal" :in-theory (enable logcollapse bool->bit))))
+
+
+  ;; Example.  Suppose our mask is #xab and we are computing (concat n a b).
+  ;; Whenever n is greater than or equal the length of the mask, 8, the answer is
+  ;; just a, as far as we're concerned.  We can transform n however we like as
+  ;; long as we preserve its value when less than 8, and we leave it >= 8 if it
+  ;; is >= 8.  In particular, we can logcollapse it in such a way that this
+  ;; holds: i.e., to the length of 8, or the length of the length of the mask.
+
+  (defthm loghead-of-ash-greater
+    (implies (and (natp i)
+                  (integerp j)
+                  (<= i j))
+             (equal (loghead i (ash x j))
+                    0))
+    :hints(("Goal" :in-theory (enable* acl2::loghead** acl2::ash**
+                                       acl2::ihsext-inductions))))
+
+  (defun mask-equiv-ind (mask x y)
+    (if (zp mask)
+        (list x y)
+      (mask-equiv-ind (logcdr mask) (logcdr x) (logcdr y))))
+
+  (defthm maskedvals-equiv-when-logheads-equiv
+    (implies (and (natp mask)
+                  (equal (loghead (integer-length mask) x)
+                         (loghead (integer-length mask) y)))
+             (equal (equal (logand mask x)
+                           (logand mask y))
+                    t))
+    :hints(("Goal" :in-theory (enable* acl2::loghead** acl2::logand**
+                                       acl2::integer-length**)
+            :induct (mask-equiv-ind mask x y))))
+
+  (defthm maskedvals-equiv-when-logheads-equiv-logior
+    (implies (and (natp mask)
+                  (equal (loghead (integer-length mask) x)
+                         (loghead (integer-length mask) y)))
+             (equal (equal (logior (lognot mask) x)
+                           (logior (lognot mask) y))
+                    t))
+    :hints(("Goal" :in-theory (enable* acl2::loghead** acl2::logior** acl2::lognot**
+                                       acl2::integer-length**)
+            :induct (mask-equiv-ind mask x y))))
+
+
+  (defthm mask-ash-of-logcollapse
+    (implies (and (natp mask)
+                  (natp shift))
+             (equal (logand mask (ash x (logcollapse (integer-length (integer-length mask))
+                                                     shift)))
+                    (logand mask (ash x shift))))
+    :hints (("goal" :cases ((<= (integer-length mask) shift)))))
+
+  (defthm mask-ash-of-logcollapse
+    (implies (and (natp mask)
+                  (natp shift))
+             (equal (logand mask (ash x (logcollapse (integer-length (integer-length mask))
+                                                     shift)))
+                    (logand mask (ash x shift))))
+    :hints (("goal" :cases ((<= (integer-length mask) shift)))))
+
+  (defthm logior-mask-ash-of-logcollapse
+    (implies (and (natp mask)
+                  (natp shift))
+             (equal (logior (lognot mask) (ash x (logcollapse (integer-length (integer-length mask))
+                                                     shift)))
+                    (logior (lognot mask) (ash x shift))))
+    :hints (("goal" :cases ((<= (integer-length mask) shift)))))
+  
+  (defthm mask-logapp-of-logcollapse
+    (implies (and (natp mask)
+                  (natp width))
+             (equal (logand mask (logapp (logcollapse (integer-length (integer-length mask))
+                                                      width)
+                                         x y))
+                    (logand mask (logapp width x y))))
+    :hints (("goal" :cases ((<= (integer-length mask) width)))))
+
+  (defthm logior-mask-logapp-of-logcollapse
+    (implies (and (natp mask)
+                  (natp width))
+             (equal (logior (lognot mask) (logapp (logcollapse (integer-length (integer-length mask))
+                                                      width)
+                                         x y))
+                    (logior (lognot mask) (logapp width x y))))
+    :hints (("goal" :cases ((<= (integer-length mask) width)))))
+
+  )
+
+(define aig-logcollapse-ns ((n natp)
+                            x)
+  (b* ((n (lnfix n)))
+    (aig-logior-ss (aig-loghead-ns n x)
+                   (aig-logapp-nss n nil
+                                   (aig-scons (aig-not (aig-=-ss nil (aig-logtail-ns n x)))
+                                              (aig-sterm nil)))))
+  ///
+  (defthm aig-logcollapse-ns-correct
+    (equal (aig-list->s (aig-logcollapse-ns n x) env)
+           (logcollapse n (aig-list->s x env)))
+    :hints(("Goal" :in-theory (enable logcollapse)))))
+
+
+(define a4vec-concat ((w a4vec-p) (x a4vec-p) (y a4vec-p) (mask 4vmask-p))
   :returns (res a4vec-p)
   (b* (((a4vec w) w)
        ((a4vec x) x)
@@ -573,9 +744,16 @@
   (a4vec-ite
    (aig-and (a2vec-p w)
             (aig-not (aig-sign-s w.upper)))
-   (b* ((xmask (aig-lognot-s (aig-ash-ss 1 (aig-sterm t) w.upper)))
-        (yshu (aig-ash-ss 1 y.upper w.upper))
-        (yshl (aig-ash-ss 1 y.lower w.upper)))
+   (b* ((mask (4vmask-fix mask))
+        ((when (eql mask 0)) (a4vec-0))
+        (shift (if (< 0 mask)
+                   ;; Collapse the upper bits of the shift
+                   (aig-logcollapse-ns (integer-length (integer-length mask))
+                                       w.upper)
+                 w.upper))
+        (xmask (aig-lognot-s (aig-ash-ss 1 (aig-sterm t) shift)))
+        (yshu (aig-ash-ss 1 y.upper shift))
+        (yshl (aig-ash-ss 1 y.lower shift)))
      (a4vec (aig-logior-ss (aig-logand-ss xmask x.upper)
                            yshu)
             (aig-logior-ss (aig-logand-ss xmask x.lower)
@@ -589,32 +767,96 @@
                            (logapp n x y)))
            :hints((bitops::logbitp-reasoning))))
 
+  ;; (local (defthm logapp-of-loghead-under-mask
+  ;;          (implies (and (integerp mask)
+  ;;                        (<= 0 mask))
+  ;;                   (equal (logand mask
+  ;;                                  (logapp (loghead (integer-length mask) bits)
+
 
   (defthm a4vec-concat-correct
-    (equal (a4vec-eval (a4vec-concat n x y) env)
-           (4vec-concat (a4vec-eval n env)
-                        (a4vec-eval x env)
-                        (a4vec-eval y env)))
-    :hints(("Goal" :in-theory (enable 4vec-concat)
+    (equal (4vec-mask mask (a4vec-eval (a4vec-concat n x y mask) env))
+           (4vec-mask mask (4vec-concat (a4vec-eval n env)
+                                        (a4vec-eval x env)
+                                        (a4vec-eval y env))))
+    :hints(("Goal" :in-theory (enable 4vec-concat 4vec-mask)
             :do-not-induct t))
     :otf-flg t))
 
-(define a4vec-rsh ((amt a4vec-p) (x a4vec-p))
+(define aig-right-shift-ss ((place posp) n shamt)
+  (b* (((mv shdig shrst shend) (gl::first/rest/end shamt))
+       (place (mbe :logic (acl2::pos-fix place)
+                   :exec place)))
+     (if shend
+         (aig-logtail-ns 1 n)
+       (let ((rst (aig-right-shift-ss (* 2 place) n shrst)))
+         (aig-ite-bss shdig rst (aig-logtail-ns place rst)))))
+  ///
+  (local (defthm logtail-of-equal-to-ash
+           (implies (equal x (ash a b))
+                    (equal (logtail n x)
+                           (ash a (+ (ifix b) (- (nfix n))))))
+           :hints(("Goal" :in-theory (enable bitops::logtail-of-ash)))))
+
+  (local (defthm minus-plus-2x
+           (equal (+ (- a) (* 2 a) b)
+                  (+ a b))))
+
+  (local (defthm a+a+b
+           (equal (+ a a b)
+                  (+ (* 2 a) b))))
+
+  (defthm aig-right-shift-ss-correct
+    (implies (< (aig-list->s shamt env) 0)
+             (equal (aig-list->s (aig-right-shift-ss place n shamt) env)
+                    (ash (aig-list->s n env)
+                         (+ -1 (acl2::pos-fix place)
+                            (* (acl2::pos-fix place)
+                               (aig-list->s shamt env))))))
+    :hints (("goal" :induct t
+             :in-theory (enable acl2::logcons)
+             :expand ((aig-list->s shamt env))))))
+
+
+(define a4vec-rsh ((amt a4vec-p) (x a4vec-p) (mask 4vmask-p))
   :returns (res a4vec-p)
   (b* (((a4vec amt) amt)
        ((a4vec x) x))
     (a4vec-ite
      (a2vec-p amt)
-     (b* ((shamt (aig-unary-minus-s amt.upper)))
-       (a4vec (aig-ash-ss 1 x.upper shamt)
-              (aig-ash-ss 1 x.lower shamt)))
+     (b* ((shamt (aig-unary-minus-s amt.upper))
+          (sign (aig-sign-s shamt))
+          (mask (4vmask-fix mask))
+          ((mv upper-left lower-left)
+           (if (eq sign t)
+               (mv nil nil)
+             (b* ((lsh-amt (if (<= 0 mask)
+                               (aig-logcollapse-ns
+                                (integer-length (integer-length mask))
+                                shamt)
+                             shamt)))
+               (mv (aig-ash-ss 1 x.upper lsh-amt)
+                   (aig-ash-ss 1 x.lower lsh-amt)))))
+          ((mv upper-right lower-right)
+           (if (not sign)
+               (mv nil nil)
+             (mv (aig-right-shift-ss 1 x.upper shamt)
+                 (aig-right-shift-ss 1 x.lower shamt)))))
+       (a4vec (aig-ite-bss-fn sign upper-right upper-left)
+              (aig-ite-bss-fn sign lower-right lower-left)))
      (a4vec-x)))
   ///
   (defthm a4vec-rsh-correct
-    (equal (a4vec-eval (a4vec-rsh amt x) env)
-           (4vec-rsh (a4vec-eval amt env)
-                     (a4vec-eval x env)))
-    :hints(("Goal" :in-theory (enable 4vec-rsh)))))
+    (equal (4vec-mask mask (a4vec-eval (a4vec-rsh amt x mask) env))
+           (4vec-mask mask
+                      (4vec-rsh (a4vec-eval amt env)
+                                (a4vec-eval x env))))
+    :hints(("Goal" :in-theory (e/d (4vec-rsh 4vec-mask)
+                                   (aig-sign-s-correct))
+            :use ((:instance aig-sign-s-correct
+                   (x (aig-unary-minus-s (a4vec->upper amt)))
+                   (gl::env env)))))
+    :otf-flg t))
 
 (define a4vec-lsh ((amt a4vec-p) (x a4vec-p))
   :returns (res a4vec-p)
@@ -699,6 +941,7 @@
                       (a4vec-eval y env)))
     :hints(("Goal" :in-theory (enable 4vec-plus)))))
 
+
 (define a4vec-minus ((x a4vec-p) (y a4vec-p))
   :returns (res a4vec-p)
   (a4vec-ite
@@ -729,6 +972,18 @@
     (equal (a4vec-eval (a4vec-uminus x) env)
            (4vec-uminus (a4vec-eval x env)))
     :hints(("Goal" :in-theory (enable 4vec-uminus lognot)))))
+
+(define a4vec-xdet ((x a4vec-p))
+  :returns (res a4vec-p)
+  (a4vec-ite
+   (a2vec-p x)
+   (a4vec-fix x)
+   (a4vec-x))
+  ///
+  (defthm a4vec-xdet-correct
+    (equal (a4vec-eval (a4vec-xdet x) env)
+           (4vec-xdet (a4vec-eval x env)))
+    :hints(("Goal" :in-theory (enable 4vec-xdet lognot)))))
 
 (define a4vec-clog2 ((x a4vec-p))
   :returns (res a4vec-p)
@@ -854,6 +1109,62 @@
 ;; ( (a.1 & ~a.0) & ( ( b.0 & c.0 ) & c.1 )
 
 
+;; (define aig-logand-is ((mask integerp)
+;;                        x)
+;;   :returns (new-x)
+;;   :prepwork ((local (in-theory (enable acl2::integer-length**))))
+;;   :measure (integer-length mask)
+;;   (b* (((when (zip mask)) nil)
+;;        ((when (eql mask -1)) x)
+;;        ((mv first rest ?end) (gl::first/rest/end x)))
+;;     (aig-scons (if (logbitp 0 mask) first nil)
+;;                (aig-logand-is (logcdr mask) rest)))
+;;   ///
+
+;;   ;; (local (defthm logcar/logcdr-of-bool->sign
+;;   ;;          (and (equal (logcar (gl::bool->sign x))
+;;   ;;                      (acl2::bool->bit x))
+;;   ;;               (equal (logcdr (gl::bool->sign x))
+;;   ;;                      (gl::bool->sign x)))
+;;   ;;          :hints(("Goal" :in-theory (enable gl::bool->sign acl2::bool->bit)))))
+
+;;   (defthm aig-logand-is-correct
+;;     (equal (aig-list->s (aig-logand-is mask x) env)
+;;            (logand mask (aig-list->s x env)))
+;;     :hints(("Goal" :in-theory (e/d (acl2::logand** aig-list->s)
+;;                                    (GL::SCDR-WHEN-S-ENDP))))))
+       
+(define aig-i2v ((x integerp))
+  :measure (integer-length x)
+  :prepwork ((local (in-theory (enable acl2::integer-length**))))
+  (cond ((zip x) nil)
+        ((eql x -1) '(t))
+        (t (aig-scons (logbitp 0 x) (aig-i2v (logcdr x)))))
+  ///
+  (defthm aig-i2v-correct
+    (equal (aig-list->s (aig-i2v x) env)
+           (ifix x))))
+
+
+(local (defthm 3vec-p-of-4vec-mask
+         (implies (3vec-p x)
+                  (3vec-p (4vec-mask mask x)))
+         :hints(("Goal" :in-theory (enable 4vec-mask 3vec-p))
+                (acl2::logbitp-reasoning))))
+
+(define a4vec-mask ((mask 4vmask-p)
+                    (x a4vec-p))
+  :returns (masked-a4vec a4vec-p)
+  (B* (((a4vec x)))
+    (a4vec (aig-logior-ss (aig-i2v (lognot (4vmask-fix mask))) x.upper)
+           (aig-logand-ss (aig-i2v (4vmask-fix mask)) x.lower)))
+  ///
+  (defthm a4vec-mask-correct
+    (equal (a4vec-eval (a4vec-mask mask x) env)
+           (4vec-mask mask (a4vec-eval x env)))
+    :hints(("Goal" :in-theory (enable 4vec-mask)))))
+  
+
 (define a3vec-? ((x a4vec-p) (y a4vec-p) y3p (z a4vec-p) z3p)
   :returns (res a4vec-p)
   (b* (((a4vec a) x)
@@ -922,7 +1233,6 @@
            (bitops::logbitp-reasoning)
            (and stable-under-simplificationp
                 '(:bdd (:vars nil))))))
-
 
 (define a3vec-bit? ((x a4vec-p) (y a4vec-p) y3p (z a4vec-p) z3p)
   :returns (res a4vec-p)
@@ -1093,6 +1403,12 @@
            (implies (<= (len x) (nfix n))
                     (not (nth n x)))
            :hints(("Goal" :in-theory (enable nth)))))
+
+  (defthm maybe-a3vec-fix-when-implies
+    (implies (case-split (implies (3valued-syntaxp x)
+                                  (3vec-p (a4vec-eval v env))))
+             (equal (a4vec-eval (maybe-a3vec-fix v x) env)
+                    (3vec-fix (a4vec-eval v env)))))
 
   (defthm maybe-a3vec-fix-of-nths
     (implies (equal (a4veclist-eval vals env)
@@ -1364,14 +1680,20 @@
     :hints(("Goal" :in-theory (enable 4vec-symwildeq 4vec-bitxor-redef 2vec)))))
 
 
-
+(define 4vmask-nth ((n natp) (x 4vmasklist-p))
+  :returns (mask 4vmask-p :rule-classes (:rewrite :type-prescription))
+  (b* ((x (4vmasklist-fix x)))
+    (if (< (lnfix n) (len x))
+        (4vmask-fix (nth n x))
+      -1)))
+  
 
 ;; (define maybe-a4vec-fix ((v (or (a4vec-p v) (not v))))
 ;;   :returns (vv a4vec-p)
 ;;   (if v (a4vec-fix v) (a4vec-x)))
 
 (defconst *svex-aig-op-table*
-  ;; fn name, non-3vec-fixing function, args (with notation for 3vec-fixed ones).
+  ;; fn name, non-3vec-fixing function, args (with notation for 3vec-fixed ones and masks)
   '((id        a4vec-fix            (x)                     "identity function")
     (bitsel    a4vec-bit-extract    (index x)               "bit select")
     (unfloat   a4vec-fix            ((3v x))                "change Z bits to Xes")
@@ -1390,13 +1712,14 @@
     (uxor      a4vec-parity         (x)                     "reduction XOR, i.e. parity")
     (zerox     a4vec-zero-ext       (width x)               "zero extend")
     (signx     a4vec-sign-ext       (width x)               "sign extend")
-    (concat    a4vec-concat         (width x y)             "concatenate at a given bit width")
+    (concat    a4vec-concat         (width x y (mask m))    "concatenate at a given bit width")
     (blkrev    a4vec-rev-blocks     (width blksz x)         "reverse block order")
-    (rsh       a4vec-rsh            (shift x)               "right shift")
+    (rsh       a4vec-rsh            (shift x (mask m))      "right shift")
     (lsh       a4vec-lsh            (shift x)               "left shift")
     (+         a4vec-plus           (x y)                   "addition")
     (b-        a4vec-minus          (x y)                   "subtraction")
     (u-        a4vec-uminus         (x)                     "unary minus")
+    (xdet      a4vec-xdet           (x)                     "x detect")
     (*         a4vec-times          (x y)                   "multiplication")
     (/         a4vec-quotient       (x y)                   "division")
     (%         a4vec-remainder      (x y)                   "modulus")
@@ -1408,35 +1731,57 @@
     (?         a3vec-?              ((3v test) (3vp then) (3vp else)) "if-then-else")
     (bit?      a3vec-bit?           ((3v test) (3vp then) (3vp else)) "bitwise if-then-else")))
 
-(defun svex-apply-aig-collect-args (n restargs argsvar svvar)
+
+
+(defun svex-apply-aig-collect-args (n restargs argsvar svvar maskvar ;; argmasks-var
+                                      )
   (let* ((n (nfix n)))
     (if (atom restargs)
         nil
       (append (if (consp (car restargs))
-                  (if (eq (caar restargs) '3v)
-                      `((maybe-a3vec-fix (a4veclist-nth ,n ,argsvar) (svexlist-nth ,n ,svvar)))
-                    (if (eq (caar restargs) '3vp)
-                        `((a4veclist-nth ,n ,argsvar)
-                          (3valued-syntaxp (svexlist-nth ,n ,svvar)))
-                      (prog2$
-                       (er hard? 'svex-apply-aig-collect-args "bad formal expr")
-                       `((a4veclist-nth ,n ,argsvar)))))
+                  (case (caar restargs)
+                    (3v
+                     `((maybe-a3vec-fix ;; (a4vec-mask (4vmask-nth ,n ,argmasks-var)
+                        (a4veclist-nth ,n ,argsvar)
+                        (svexlist-nth ,n ,svvar))))
+                    (3vp
+                     `(;; (a4vec-mask (4vmask-nth ,n ,argmasks-var)
+                       (a4veclist-nth ,n ,argsvar)
+                       (3valued-syntaxp (svexlist-nth ,n ,svvar))))
+                    (mask
+                     `(,maskvar))
+                    (t (prog2$
+                        (er hard? 'svex-apply-aig-collect-args "bad formal expr")
+                        `((a4veclist-nth ,n ,argsvar)))))
                 `((a4veclist-nth ,n ,argsvar)))
-            (svex-apply-aig-collect-args (+ 1 n) (cdr restargs) argsvar svvar)))))
+              (svex-apply-aig-collect-args (+ 1 n) (cdr restargs) argsvar svvar maskvar ;; argmasks-var
+                                           )))))
 
 
+;; (defun svex-apply-aig-uses-argmasks (args)
+;;   (if (atom args)
+;;       nil
+;;     (or (and (consp (car args))
+;;              (or (eq (caar args) '3v)
+;;                  (eq (caar args) '3vp)))
+;;         (svex-apply-aig-uses-argmasks (cdr args)))))
 
-
-(defun svex-apply-aig-cases-fn (argsvar svvar optable)
+(defun svex-apply-aig-cases-fn (argsvar svvar maskvar optable)
   (b* (((when (atom optable)) '((otherwise (a4vec-x))))
        ((list sym fn args) (car optable))
-       (call `(,fn . ,(svex-apply-aig-collect-args 0 args argsvar svvar))))
-    (cons `(,sym ,call)
-          (svex-apply-aig-cases-fn argsvar svvar (cdr optable)))))
+       (acc-args (svex-apply-aig-collect-args 0 args argsvar svvar maskvar ;; 'tmp-argmasks
+                                              ))
+       (call `(,fn . ,acc-args))
+       (full ;; (if (svex-apply-aig-uses-argmasks args)
+             ;;     `(let ((tmp-argmasks (svex-argmasks ,maskvar ',sym ,svvar)))
+             ;;        ,call)
+               call))
+    (cons `(,sym ,full)
+          (svex-apply-aig-cases-fn argsvar svvar maskvar (cdr optable)))))
 
-(defmacro svex-apply-aig-cases (fn args svex)
+(defmacro svex-apply-aig-cases (fn args svex mask)
   `(case ,fn
-     . ,(svex-apply-aig-cases-fn args svex *svex-aig-op-table*)))
+     . ,(svex-apply-aig-cases-fn args svex mask *svex-aig-op-table*)))
 
 
 (defthm svex-p-when-nth
@@ -1469,8 +1814,15 @@
 
 
 
-(define svex-apply-aig ((fn fnsym-p) (args a4veclist-p) (terms svexlist-p))
-  :prepwork ((local (defun ind (n vals x)
+
+
+
+(define svex-apply-aig ((fn fnsym-p) (args a4veclist-p) (terms svexlist-p) (mask 4vmask-p))
+  :prepwork ((local (Defthm 4veclist-nth-of-a4veclist-eval
+                      (equal (a4vec-eval (a4veclist-nth n x) aigenv)
+                             (4veclist-nth n (a4veclist-eval x aigenv)))
+                      :hints(("Goal" :in-theory (enable a4veclist-eval a4veclist-nth 4veclist-nth)))))
+             (local (defun ind (n vals x)
                       (if (zp n)
                           (list vals x)
                         (ind (1- n) (cdr vals) (cdr x)))))
@@ -1489,35 +1841,124 @@
                              (and stable-under-simplificationp
                                   '(:use ((:instance 3vec-p-of-eval-when-3valued-syntaxp
                                            (x (car x))
-                                           (env (svex-a4vec-env-eval a4env aigenv))))))))))
+                                           (env (svex-a4vec-env-eval a4env aigenv)))))))))
+             (local (encapsulate nil
+                      (local (defun ind2 (n masks vals x)
+                               (if (zp n)
+                                   (list masks vals x)
+                                 (ind2 (1- n) (cdr masks) (cdr vals) (cdr x)))))
+
+                      (defthm 4vmask-of-nths
+                        (implies (equal (len masks) (len vecs))
+                                 (equal (4vec-mask (4vmask-nth n masks)
+                                                   (4veclist-nth n vecs))
+                                        (4veclist-nth n (4veclist-mask masks vecs))))
+                        :hints(("Goal" :in-theory (enable 4vmask-nth 4veclist-nth 4veclist-mask nth
+                                                          4vmasklist-fix)
+                                :induct (ind2 n masks vecs nil))))
+
+                      (defthm svex-eval-of-nth-rev
+                        (equal (svex-eval (nth n x) env)
+                               (4veclist-nth n (svexlist-eval x env))))
+
+                      (in-theory (disable svex-eval-of-nth
+                                          4veclist-nth-of-svexlist-eval))
+
+                      (local (defthm 3vec-p-of-eval-by-equal
+                               (implies (and (equal x (svex-eval y env))
+                                             (3valued-syntaxp y))
+                                        (3vec-p x))))
+
+                      (local (defthm 3vec-p-of-eval-by-equal-with-mask
+                               (implies (and (equal x (4vec-mask mask (svex-eval y env)))
+                                             (3valued-syntaxp y))
+                                        (3vec-p x))))
+
+                      (defthm 4veclist-masked-idempotent
+                        (implies (equal x (4veclist-mask masks y))
+                                 (equal (4veclist-mask masks x) x)))
+
+
+                      (defthm dumb
+                        (implies (and (EQUAL (A4VECLIST-EVAL VALS AIGENV)
+                                             (4VECLIST-MASK masks
+                                                            (SVEXLIST-EVAL X (SVEX-A4VEC-ENV-EVAL A4ENV AIGENV))))
+                                      (3valued-syntaxp (svexlist-nth n x)))
+                                 (3vec-p (4veclist-nth n (a4veclist-eval vals aigenv)))
+                                 ;; (3vec-p (4vec-mask (4vmask-nth n masks)
+                                 ;;                    (a4vec-eval (a4veclist-nth n vals) aigenv)))
+                                 )
+                        :hints (("goal" :in-theory (e/d (nth len 4veclist-nth a4veclist-eval
+                                                             4veclist-mask svexlist-eval
+                                                             a4veclist-eval svexlist-nth)
+                                                        (4veclist-nth-of-a4veclist-eval))
+                                 :expand ((:free (env) (svexlist-eval x env))
+                                          (a4veclist-eval vals aigenv)
+                                          (:free (a b) (4veclist-mask masks (cons a b))))
+                                 :induct (ind2 n masks vals x))))
+                      )))
   :verbosep t
+  :guard-debug t
   :returns (res a4vec-p)
   (b* ((fn (fnsym-fix fn))
-       (args (a4veclist-fix args)))
-    (svex-apply-aig-cases fn args terms))
+       (args (a4veclist-fix args))
+       (res (svex-apply-aig-cases fn args terms mask)))
+    (a4vec-mask mask res))
   ///
+
   (defthm svex-apply-aig-correct
     (implies (and (fnsym-p fn)
+                  (bind-free '((a4env . env)) (a4env))
                   (equal (a4veclist-eval vals aigenv)
-                         (svexlist-eval x (svex-a4vec-env-eval a4env aigenv))))
-             (equal (a4vec-eval (svex-apply-aig fn vals x) aigenv)
-                    (svex-apply fn (svexlist-eval x (svex-a4vec-env-eval a4env aigenv)))))
-    :hints(("Goal" :in-theory (e/d (svex-apply svexlist-eval 4veclist-nth
-                                      4vec-bitnot
-                                      4vec-bitand
-                                      4vec-bitor
-                                      4vec-bitxor-redef
-                                      4vec-reduction-and
-                                      4vec-reduction-or
-                                      4vec-?
-                                      4vec-bit?
-                                      4vec-==)
-                                   (len-of-svexlist-eval
-                                    len-of-a4veclist-eval))
-            :use ((:instance len-of-svexlist-eval
-                   (env (svex-a4vec-env-eval a4env aigenv)))
-                  (:instance len-of-a4veclist-eval
-                   (x vals) (env aigenv)))))))
+                         (4veclist-mask argmasks (svexlist-eval x (svex-a4vec-env-eval a4env aigenv))))
+                  (svex-argmasks-okp (svex-call fn x) mask argmasks))
+             (equal (a4vec-eval (svex-apply-aig fn vals x mask) aigenv)
+                    (4vec-mask mask (svex-apply fn (svexlist-eval x (svex-a4vec-env-eval a4env aigenv))))))
+    :hints(("Goal" :in-theory (disable len-of-4veclist-mask
+                                       svex-apply-aig)
+            ;; Establish that (len vals) = (len x).
+            :use ((:instance len-of-4veclist-mask
+                   (masks (svex-argmasks mask fn x))
+                   (x (a4veclist-eval vals aigenv)))
+                  (:instance len-of-4veclist-mask
+                   (masks (svex-argmasks mask fn x))
+                   (x (svexlist-eval x (svex-a4vec-env-eval a4env aigenv))))))
+           (and stable-under-simplificationp
+                '(
+                  :in-theory (e/d (svex-apply svexlist-eval ;; 4veclist-nth ;; 4veclist-mask
+                                              4vec-bitnot
+                                              4vec-bitand
+                                              4vec-bitor
+                                              4vec-bitxor-redef
+                                              4vec-reduction-and
+                                              4vec-reduction-or
+                                              4vec-?
+                                              4vec-bit?
+                                              4vec-==)
+                                  (;; len-of-svexlist-eval
+                                   ;; len-of-a4veclist-eval
+                                   ;; len-of-4veclist-mask
+                                   svex-argmasks-correct
+                                   svex-argmasks-remove-mask))
+                  :use ;; ((:instance len-of-svexlist-eval
+                  ;;   (env (svex-a4vec-env-eval a4env aigenv)))
+                  ;;  (:instance len-of-a4veclist-eval
+                  ;;   (x vals) (env aigenv)))
+                  ((:instance svex-argmasks-okp-necc
+                    (x (svex-call fn x))
+                    (vals (a4veclist-eval vals aigenv))
+                    (env (svex-a4vec-env-eval a4env aigenv)))
+                   ;; (:instance svex-argmasks-remove-mask
+                   ;;  (fn fn)
+                   ;;  (args x)
+                   ;;  (env (svex-a4vec-env-eval a4env aigenv)))
+                   
+                   
+                   )
+                  :do-not-induct t
+                  :do-not '(fertilize generalize eliminate-destructors)
+                  )))
+    :otf-flg t))
 
 
 (defalist svex-aig-memotable :key-type svex :val-type a4vec)
@@ -1532,11 +1973,18 @@
                 (hons-assoc-equal k x))
            (a4vec-p (cdr (hons-assoc-equal k x)))))
 
+;; (SVEX->A4VEC
+;;  '(RSH (? (< 0 (* 32 (B- (CONCAT 16 CNST 0) 0))) (* 32 (B- (CONCAT 16 CNST 0) 0)) 0) '(-71265535176078871931497435759850128999 . 269016831744859591531877171671918082457))
+;;  (make-fast-alist `((cnst ,(acl2::numlist 0 2 16) . ,(acl2::numlist 1 2 16))))
+;;  nil)
+
+
 (defines svex->a4vec
   ;; Self-memoized version of svex-eval, for GL
   :verify-guards nil
   (define svex->a4vec ((x svex-p)
                        (env svex-a4vec-env-p)
+                       (masks svex-mask-alist-p)
                        (memo svex-aig-memotable-p))
     :returns (mv (res a4vec-p)
                  (memo1 svex-aig-memotable-p))
@@ -1544,86 +1992,103 @@
     (b* ((memo (svex-aig-memotable-fix memo))
          (env (svex-a4vec-env-fix env)))
       (svex-case x
-        :quote (mv (4vec->a4vec x.val) memo)
-        :var (mv (let ((look (hons-get x.name env)))
-                   (if look (cdr look) (a4vec-x)))
+        :quote (b* ((mask (svex-mask-lookup x masks)))
+                 (mv (4vec->a4vec (4vec-mask mask x.val)) memo))
+        :var (mv (let ((look (hons-get x.name env))
+                       (mask (svex-mask-lookup x masks)))
+                   (a4vec-mask mask (if look (cdr look) (a4vec-x))))
                  memo)
         :call (b* ((x (svex-fix x))
                    (look (hons-get x memo))
                    ((when look) (mv (cdr look) memo))
-                   ((mv args memo) (svexlist->a4vec x.args env memo))
-                   (res (svex-apply-aig x.fn args x.args))
+                   ((mv args memo) (svexlist->a4vec x.args env masks memo))
+                   (mask (svex-mask-lookup x masks))
+                   (res (svex-apply-aig x.fn args x.args mask))
                    (memo (hons-acons x res memo)))
                 (mv res memo)))))
   (define svexlist->a4vec ((x svexlist-p)
-                       (env svex-a4vec-env-p)
-                       (memo svex-aig-memotable-p))
+                           (env svex-a4vec-env-p)
+                           (masks svex-mask-alist-p)
+                           (memo svex-aig-memotable-p))
     :returns (mv (res a4veclist-p)
                  (memo1 svex-aig-memotable-p))
     :measure (svexlist-count x)
     (b* (((when (atom x)) (mv nil (svex-aig-memotable-fix memo)))
-         ((mv first memo) (svex->a4vec (car x) env memo))
-         ((mv rest memo) (svexlist->a4vec (cdr x) env memo)))
+         ((mv first memo) (svex->a4vec (car x) env masks memo))
+         ((mv rest memo) (svexlist->a4vec (cdr x) env masks memo)))
       (mv (cons first rest) memo)))
   ///
   (verify-guards svex->a4vec)
 
-  (defun-sk svex->a4vec-table-ok (memo env aigenv)
+  (defun-sk svex->a4vec-table-ok (memo env masks aigenv)
     (forall x
-            (let ((memo (svex-aig-memotable-fix memo)))
-              (implies (hons-assoc-equal x memo)
-                       (equal (a4vec-eval (cdr (hons-assoc-equal x memo)) aigenv)
-                              (svex-eval x (svex-a4vec-env-eval env aigenv))))))
+            (let* ((memo (svex-aig-memotable-fix memo))
+                   (mask (svex-mask-lookup x masks)))
+              (implies (hons-assoc-equal (svex-fix x) memo)
+                       (equal (a4vec-eval (cdr (hons-assoc-equal (svex-fix x) memo)) aigenv)
+                              (4vec-mask mask (svex-eval x (svex-a4vec-env-eval env aigenv)))))))
     :rewrite :direct)
 
   (in-theory (disable svex->a4vec-table-ok
                       svex->a4vec-table-ok-necc))
   (local (in-theory (enable svex->a4vec-table-ok-necc)))
 
+  ;; (defthm svex->a4vec-table-ok-necc-rw2
+  ;;   (implies (svex->a4vec-table-ok memo env masks aigenv)
+  ;;            (let* ((memo (svex-aig-memotable-fix memo))
+  ;;                   (mask (svex-mask-lookup x masks)))
+  ;;              (implies (and (svex-p x)
+  ;;                            (hons-assoc-equal x memo))
+  ;;                       (equal (a4vec-eval (cdr (hons-assoc-equal x memo)) aigenv)
+  ;;                              (4vec-mask mask (svex-eval x (svex-a4vec-env-eval env aigenv)))))))
+  ;;   :hints (("goal" :use svex->a4vec-table-ok-necc
+  ;;            :in-theory (disable svex->a4vec-table-ok-necc))))
+
   (defthm svex->a4vec-table-ok-empty
-    (svex->a4vec-table-ok nil env aigenv)
+    (svex->a4vec-table-ok nil env masks aigenv)
     :hints(("Goal" :in-theory (enable svex->a4vec-table-ok))))
 
   (defthm svex->a4vec-table-ok-extend
-    (implies (and (svex->a4vec-table-ok memo env aigenv)
+    (implies (and (svex->a4vec-table-ok memo env masks aigenv)
                   (equal (a4vec-eval val aigenv)
-                         (svex-eval x (svex-a4vec-env-eval env aigenv))))
+                         (4vec-mask (svex-mask-lookup x masks)
+                                    (svex-eval x (svex-a4vec-env-eval env aigenv)))))
              (svex->a4vec-table-ok
-              (cons (cons x val) memo) env aigenv))
+              (cons (cons x val) memo) env masks aigenv))
     :hints (("goal" :expand ((svex->a4vec-table-ok
-                              (cons (cons x val) memo) env aigenv)))))
+                              (cons (cons x val) memo) env masks aigenv)))))
 
   (defthm svex->a4vec-table-ok-memotable-fix
-    (iff (svex->a4vec-table-ok (svex-aig-memotable-fix memo) env aigenv)
-         (svex->a4vec-table-ok memo env aigenv))
+    (iff (svex->a4vec-table-ok (svex-aig-memotable-fix memo) env masks aigenv)
+         (svex->a4vec-table-ok memo env masks aigenv))
     :hints ((and stable-under-simplificationp
                  (if (eq (caar clause) 'not)
                      `(:expand (,(car (last clause)))
                        :in-theory (disable svex->a4vec-table-ok-necc)
                        :use ((:instance svex->a4vec-table-ok-necc
-                              (x (svex->a4vec-table-ok-witness memo env aigenv))
+                              (x (svex->a4vec-table-ok-witness memo env masks aigenv))
                               (memo (svex-aig-memotable-fix memo)))))
                    `(:expand (,(car clause))
                      :in-theory (disable svex->a4vec-table-ok-necc)
                      :use ((:instance svex->a4vec-table-ok-necc
                             (x (svex->a4vec-table-ok-witness
-                                (svex-aig-memotable-fix memo) env aigenv)))))))))
+                                (svex-aig-memotable-fix memo) env masks aigenv)))))))))
 
   (defthm svex->a4vec-table-ok-env-fix
-    (iff (svex->a4vec-table-ok memo (svex-a4vec-env-fix env) aigenv)
-         (svex->a4vec-table-ok memo env aigenv))
+    (iff (svex->a4vec-table-ok memo (svex-a4vec-env-fix env) masks aigenv)
+         (svex->a4vec-table-ok memo env masks aigenv))
     :hints ((and stable-under-simplificationp
                  (if (eq (caar clause) 'not)
                      `(:expand (,(car (last clause)))
                        :in-theory (disable svex->a4vec-table-ok-necc)
                        :use ((:instance svex->a4vec-table-ok-necc
-                              (x (svex->a4vec-table-ok-witness memo env aigenv))
+                              (x (svex->a4vec-table-ok-witness memo env masks aigenv))
                               (env (svex-a4vec-env-fix env)))))
                    `(:expand (,(car clause))
                      :in-theory (disable svex->a4vec-table-ok-necc)
                      :use ((:instance svex->a4vec-table-ok-necc
                             (x (svex->a4vec-table-ok-witness
-                                memo (svex-a4vec-env-fix env) aigenv)))))))))
+                                memo (svex-a4vec-env-fix env) masks aigenv)))))))))
 
   (local (in-theory (disable svex->a4vec svexlist->a4vec)))
 
@@ -1656,59 +2121,81 @@
              (4vec-x)))
     :hints(("Goal" :in-theory (enable svex-env-lookup))))
 
+   ;; (local (defthm svex-apply-aig-correct-rw
+   ;;        (implies (and (fnsym-p fn)
+   ;;                (bind-free '((a4env . env)) (a4env))
+   ;;                (equal (a4veclist-eval vals aigenv)
+   ;;                       (4veclist-mask argmasks (svexlist-eval x (svex-a4vec-env-eval a4env aigenv))))
+   ;;                (svex-argmasks-okp (svex-call fn x) mask argmasks))
+   ;;           (equal (a4vec-eval (svex-apply-aig fn vals x mask) aigenv)
+   ;;                  (4vec-mask mask (svex-apply fn (svexlist-eval x (svex-a4vec-env-eval a4env aigenv))))))
+
+
+  (local (in-theory (enable svex-mask-alist-complete-necc)))
+
   (defthm-svex->a4vec-flag
     (defthm svex->a4vec-correct
-      (b* (((mv res memo1) (svex->a4vec x env memo)))
-        (implies (svex->a4vec-table-ok memo env aigenv)
-                 (and (svex->a4vec-table-ok memo1 env aigenv)
+      (b* (((mv res memo1) (svex->a4vec x env masks memo)))
+        (implies (and (svex->a4vec-table-ok memo env masks aigenv)
+                      (svex-mask-alist-complete masks))
+                 (and (svex->a4vec-table-ok memo1 env masks aigenv)
                       (equal (a4vec-eval res aigenv)
-                             (svex-eval x (svex-a4vec-env-eval env aigenv))))))
-      :hints ('(:expand ((svex->a4vec x env memo)
+                             (4vec-mask (svex-mask-lookup x masks)
+                                        (svex-eval x (svex-a4vec-env-eval env aigenv)))))))
+      :hints ('(:expand ((svex->a4vec x env masks memo)
                          (:free (env) (svex-eval x env)))))
       :flag svex->a4vec)
     (defthm svexlist->a4vec-correct
-      (b* (((mv res memo1) (svexlist->a4vec x env memo)))
-        (implies (svex->a4vec-table-ok memo env aigenv)
-                 (and (svex->a4vec-table-ok memo1 env aigenv)
+      (b* (((mv res memo1) (svexlist->a4vec x env masks memo)))
+        (implies (and (svex->a4vec-table-ok memo env masks aigenv)
+                      (svex-mask-alist-complete masks))
+                 (and (svex->a4vec-table-ok memo1 env masks aigenv)
                       (equal (a4veclist-eval res aigenv)
-                             (svexlist-eval x (svex-a4vec-env-eval env aigenv))))))
-      :hints ('(:expand ((svexlist->a4vec x env memo)
+                             (4veclist-mask (svex-argmasks-lookup x masks)
+                                            (svexlist-eval x (svex-a4vec-env-eval env aigenv)))))))
+      :hints ('(:expand ((svexlist->a4vec x env masks memo)
                          (:free (env) (svexlist-eval x env))
                          (a4veclist-eval nil aigenv)
-                         (:free (a b) (a4veclist-eval (cons a b) aigenv)))))
+                         (svex-argmasks-lookup x masks)
+                         (:free (a b) (a4veclist-eval (cons a b) aigenv)))
+                :in-theory (enable 4veclist-mask)))
       :flag svexlist->a4vec))
 
   (deffixequiv-mutual svex->a4vec
-    :hints (("goal" :expand ((:free (env memo) (svexlist->a4vec x env memo))
-                             (:free (env memo)
-                              (svexlist->a4vec (svexlist-fix x) env memo))
-                             (:free (env memo) (svex->a4vec x env memo))
-                             (:free (env memo)
-                              (svex->a4vec (svex-fix x) env memo)))))))
+    :hints (("goal" :expand ((:free (env masks memo) (svexlist->a4vec x env masks memo))
+                             (:free (env masks memo)
+                              (svexlist->a4vec (svexlist-fix x) env masks memo))
+                             (:free (env masks memo) (svex->a4vec x env masks memo))
+                             (:free (env masks memo)
+                              (svex->a4vec (svex-fix x) env masks memo)))))))
 
-(define svex->a4vec-top ((x svex-p) (env svex-a4vec-env-p))
+(define svex->a4vec-top ((x svex-p) (env svex-a4vec-env-p) (masks svex-mask-alist-p))
   :returns (res a4vec-p)
   (b* (((mv res memo)
-        (svex->a4vec x (make-fast-alist env) nil)))
+        (svex->a4vec x (make-fast-alist env) masks nil)))
     (fast-alist-free memo)
     res)
   ///
   (defthm svex->a4vec-top-correct
-    (equal (a4vec-eval (svex->a4vec-top x env) aigenv)
-           (svex-eval x (svex-a4vec-env-eval env aigenv)))))
+    (implies (svex-mask-alist-complete masks)
+             (equal (a4vec-eval (svex->a4vec-top x env masks) aigenv)
+                    (4vec-mask (svex-mask-lookup x masks)
+                               (svex-eval x (svex-a4vec-env-eval env aigenv)))))))
 
 
-(define svexlist->a4vec-top ((x svexlist-p) (env svex-a4vec-env-p))
+(define svexlist->a4vec-top ((x svexlist-p) (env svex-a4vec-env-p) (masks svex-mask-alist-p))
   ;; note: env must be fast
   :returns (res a4veclist-p)
   (b* (((mv res memo)
-        (svexlist->a4vec x env nil)))
+        (svexlist->a4vec x env masks nil)))
     (fast-alist-free memo)
     res)
   ///
   (defthm svexlist->a4vec-top-correct
-    (equal (a4veclist-eval (svexlist->a4vec-top x env) aigenv)
-           (svexlist-eval x (svex-a4vec-env-eval env aigenv)))))
+    (implies (svex-mask-alist-complete masks)
+             (equal (a4veclist-eval (svexlist->a4vec-top x env masks) aigenv)
+                    (4veclist-mask (svex-argmasks-lookup x masks)
+                                   (svexlist-eval x (svex-a4vec-env-eval env aigenv)))))))
 
 
 ;; There are a few possible approaches to generating the a4vec-env to use in
@@ -2792,7 +3279,7 @@ to the svexes.</p>"
        ((mv err a4env) (svex-varmasks->a4env vars masks boolmasks))
        ((when err) (mv err nil))
        (a4env (make-fast-alist a4env))
-       (res (svexlist->a4vec-top x a4env))
+       (res (svexlist->a4vec-top x a4env masks))
        (?ign (fast-alist-free a4env)))
     (mv nil res))
   ///

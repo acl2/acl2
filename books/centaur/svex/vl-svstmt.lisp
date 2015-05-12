@@ -131,6 +131,7 @@ because... (BOZO)</p>
   :measure (svex-count lhs)
   :returns (mv (err (iff (vl::vl-msg-p err) err))
                (final-rhs (implies (not err) (svex-p final-rhs))))
+  :verify-guards nil
   (b* (((when (svex-equiv wholevar lhs)) (mv nil (svex-fix rhs)))
        ((mv ok al) (svex-unify (svcall concat 'w 'a 'b)
                                lhs nil))
@@ -140,7 +141,7 @@ because... (BOZO)</p>
              (b (svex-lookup 'b al))
              ((when (or (equal b (svex-x))
                         (equal b (svex-z))))
-              ;; (concat w a Z) = rhs --> b = (concat w rhs (rsh w a))
+              ;; (concat w a Z) = rhs --> a = (concat w rhs (rsh w a))
               (svex-resolve-single-assignment
                a (svcall concat w rhs (svcall rsh w a)) wholevar))
              ((when (equal a (svex-x)))
@@ -155,7 +156,23 @@ because... (BOZO)</p>
              (v (svex-lookup 'v al)))
           ;; (rsh w v) = rhs --> v = (concat w v rhs)
           (svex-resolve-single-assignment
-           v (svcall concat w v rhs) wholevar))))
+           v (svcall concat w v rhs) wholevar)))
+       ((mv ok al) (svex-unify (svcall ? 'test 'then 'else) lhs nil))
+       ((when ok)
+        (b* ((test (svex-lookup 'test al))
+             (then (svex-lookup 'then al))
+             (else (svex-lookup 'else al))
+             ;; (? test then else) = rhs
+             ;; is more complicated.  Resolve
+             ;; then = rhs -->  var = then-val
+             ;; else = rhs -->  var = else-val
+             ;; and if both are successful, then result is
+             ;; var = (? test then-val else-val).
+             ((mv err then-val) (svex-resolve-single-assignment then rhs wholevar))
+             ((when err) (mv err nil))
+             ((mv err else-val) (svex-resolve-single-assignment else rhs wholevar))
+             ((when err) (mv err nil)))
+          (mv nil (svcall ? test then-val else-val)))))
     (mv (vl::vmsg "Unexpected form of svex assignment LHS: ~x0 (variable: ~x1)"
                   (svex-fix lhs) (svex-fix wholevar))
         nil))
@@ -164,7 +181,9 @@ because... (BOZO)</p>
     (implies (and (not (member v (svex-vars lhs)))
                   (not (member v (svex-vars rhs)))
                   (not err))
-             (not (member v (svex-vars final-rhs))))))
+             (not (member v (svex-vars final-rhs)))))
+
+  (verify-guards svex-resolve-single-assignment))
 
 
   ;;            ((unless (svex-equiv v wholevar))
@@ -240,7 +259,7 @@ because... (BOZO)</p>
         (list
          (svex::make-svstmt-assign :lhs var-lhs :rhs final-rhs :blockingp blockingp))))
   ///
-  (defret vars-of-vl-single-procedural-assign->svstmts
+  (fty::defret vars-of-vl-single-procedural-assign->svstmts
     (implies (and (not (member v (svex::svex-vars lhs)))
                   (not (member v (svex::svex-vars rhs)))
                   (not (member v (svex::svex-vars wholevar))))

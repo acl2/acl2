@@ -175,50 +175,57 @@
 
 (define svtv-concat->lhs ((x string-listp) (modidx natp) (moddb moddb-ok) aliases)
   :guard (svtv-mod-alias-guard modidx moddb aliases)
-  :returns (mv err
+  :returns (mv errs
                (lhs lhs-p))
   (b* (((when (atom x)) (mv nil nil))
-       ((mv err first) (svtv-1wire->lhs (car x) modidx moddb aliases))
-       ((when err) (mv err nil))
-       ((mv err rest) (svtv-concat->lhs (cdr x) modidx moddb aliases))
-       ((when err) (mv err nil)))
-    (mv nil (append first rest))))
+       ((mv err1 first) (svtv-1wire->lhs (car x) modidx moddb aliases))
+       ((mv errs rest) (svtv-concat->lhs (cdr x) modidx moddb aliases)))
+    (if err1
+        (mv (cons err1 errs) nil)
+      (mv nil (append first rest)))))
 
 (define svtv-wire->lhs (x (modidx natp) (moddb moddb-ok) aliases)
   :guard (svtv-mod-alias-guard modidx moddb aliases)
-  :returns (mv err
+  :returns (mv errs
                (lhs lhs-p))
   (b* (((unless (stringp x))
-        (mv (msg "SVTV wirenames must be strings; ~x0 is not" x) nil))
+        (mv (list (msg "SVTV wirenames must be strings; ~x0 is not" x)) nil))
        (toks (str::strtok x '(#\, #\Newline #\Tab #\Space #\{ #\})))
-       ((mv err lhs) (svtv-concat->lhs toks modidx moddb aliases)))
-    (mv err (lhs-norm lhs))))
+       ((mv errs lhs) (svtv-concat->lhs toks modidx moddb aliases)))
+    (mv errs (lhs-norm lhs))))
 
 
-
+(define msg-list ((x "list of msg objects"))
+  :returns (msg "single msg object containing the list")
+  (if (atom x)
+      ""
+    (if (car x)
+        (msg "~@0~%~@1" (car x) (msg-list (cdr x)))
+      (msg-list (cdr x)))))
 
 (define svtv-wires->lhses ((entries true-list-listp)
-                                (modidx natp)
-                                (moddb moddb-ok)
-                                aliases)
+                           (modidx natp)
+                           (moddb moddb-ok)
+                           aliases)
   :guard (svtv-mod-alias-guard modidx moddb aliases)
-  :returns (mv err (in-entries svtv-lines-p))
+  :returns (mv errs (in-entries svtv-lines-p))
   (b* (((when (atom entries)) (mv nil nil))
        (name (caar entries))
-       ((mv err lhs) (svtv-wire->lhs name modidx moddb aliases))
-       ((when err) (mv err nil))
+       ((mv errs lhs) (svtv-wire->lhs name modidx moddb aliases))
        (entrylist (mbe :logic (list-fix (cdar entries))
                        :exec (cdar entries)))
+       ((mv rest-errs rest) (svtv-wires->lhses (cdr entries) modidx moddb aliases))
        ((unless (svtv-entrylist-p entrylist))
-        (mv (msg "Bad inentrylist: ~x0" entrylist) nil))
-       (entry (make-svtv-line :lhs lhs :entries entrylist))
-       ((mv err rest) (svtv-wires->lhses (cdr entries) modidx moddb aliases)))
-    (mv err (cons entry rest)))
+        (mv (cons (msg "Bad inentrylist: ~x0" entrylist)
+                  (append-without-guard errs rest-errs))
+            rest))
+       (entry (make-svtv-line :lhs lhs :entries entrylist)))
+    (mv (append-without-guard errs rest-errs)
+        (cons entry rest)))
 
   :verbosep t
   :hooks ((:fix :hints (("goal" :in-theory (e/d (true-list-list-fix)
                                                 (double-containment)))))))
-
 
 
 (define svtv-max-length ((x svtv-lines-p))

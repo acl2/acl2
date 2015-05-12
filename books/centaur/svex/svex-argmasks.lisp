@@ -882,7 +882,11 @@
   (list -1 -1)
   :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
 
-(def-svmask u- (x y)
+(def-svmask u- (x)
+  (list -1)
+  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
+
+(def-svmask xdet (x)
   (list -1)
   :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
 

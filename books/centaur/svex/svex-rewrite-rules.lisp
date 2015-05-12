@@ -334,6 +334,7 @@
             +
             b-
             u-
+            xdet
             *
             <
             clog2
@@ -465,6 +466,10 @@
     (3vec-p (4vec-uminus x))
     :hints(("Goal" :in-theory (enable 3vec-p 4vec-uminus))))
 
+  (defthm 3vec-p-of-4vec-xdet
+    (3vec-p (4vec-xdet x))
+    :hints(("Goal" :in-theory (enable 3vec-p 4vec-xdet))))
+
   (defthm 3vec-p-of-4vec-minus
     (3vec-p (4vec-minus x y))
     :hints(("Goal" :in-theory (enable 3vec-p 4vec-minus))))
@@ -539,6 +544,250 @@
   :lhs (unfloat x)
   :checks ((3valued-syntaxp x))
   :rhs x)
+
+
+(def-svex-rewrite unfloat-of-float-free
+  :lhs (unfloat x)
+  :checks ((3valued-syntaxp x))
+  :rhs x)
+
+
+
+(define 2vecx-syntaxp ((x (or (svex-p x) (not x))))
+  :measure (svex-count x)
+  :prepwork ((local (in-theory (e/d* ()
+                                     (bitops::LOGAND->=-0-LINEAR-2
+                                      bitops::UPPER-BOUND-OF-LOGAND
+                                      bitops::LOGAND-NATP-TYPE-2
+                                      bitops::LOGAND-NATP-TYPE-1
+                                      bitops::LOGNOT-NEGP
+                                      bitops::LOGIOR-NATP-TYPE
+                                      bitops::LOGNOT-NATP
+                                      double-containment
+                                      default-car
+                                      default-cdr
+                                      (:t natp)
+                                      (:t negp))))))
+  (or (not x)
+      (svex-case x
+        :quote (2vecx-p x.val)
+        :var nil
+        :call
+        (case x.fn
+          ((+
+            b-
+            u-
+            xdet
+            *
+            <
+            clog2
+            /
+            %
+            uand
+            uor
+            uxor
+            ==
+            ==?
+            ==??) t)
+          (otherwise nil))))
+  ///
+
+  (memoize '2vecx-syntaxp
+           :condition '(and x
+                            (eq (svex-kind x) :call)
+                            (member (svex-call->fn x)
+                                    '(res resand resor concat ?))))
+
+  (local (defthm logand-equal-neg-1
+           (equal (equal (logand x y) -1)
+                  (and (equal x -1)
+                       (equal y -1)))
+           :hints ((acl2::logbitp-reasoning))))
+
+
+
+  (defthm 2vecx-p-of-3vec-reduction-and
+    (implies (3vec-p x)
+             (2vecx-p (3vec-reduction-and x)))
+    :hints(("Goal" :in-theory (enable 2vecx-p 3vec-reduction-and 3vec-fix bool->vec 3vec-p))))
+
+  (defthm 2vecx-p-of-3vec-reduction-or
+    (implies (3vec-p x)
+             (2vecx-p (3vec-reduction-or x)))
+    :hints(("Goal" :in-theory (enable 2vecx-p 3vec-reduction-or 3vec-fix bool->vec 3vec-p))))
+
+  (defthm 2vecx-p-of-4vec-reduction-and
+    (2vecx-p (4vec-reduction-and x))
+    :hints(("Goal" :in-theory (enable 4vec-reduction-and))))
+
+  (defthm 2vecx-p-of-4vec-reduction-or
+    (2vecx-p (4vec-reduction-or x))
+    :hints(("Goal" :in-theory (enable 4vec-reduction-or))))
+
+  (defthm 2vecx-p-of-4vec-parity
+    (2vecx-p (4vec-parity x))
+    :hints(("Goal" :in-theory (enable 2vecx-p 4vec-parity 3vec-fix bool->vec))))
+
+  (defthm 2vecx-p-of-4vec-uminus
+    (2vecx-p (4vec-uminus x))
+    :hints(("Goal" :in-theory (enable 2vecx-p 4vec-uminus))))
+
+  (defthm 2vecx-p-of-4vec-xdet
+    (2vecx-p (4vec-xdet x))
+    :hints(("Goal" :in-theory (enable 2vecx-p 4vec-xdet))))
+
+  (defthm 2vecx-p-of-4vec-minus
+    (2vecx-p (4vec-minus x y))
+    :hints(("Goal" :in-theory (enable 2vecx-p 4vec-minus))))
+
+  (defthm 2vecx-p-of-4vec-plus
+    (2vecx-p (4vec-plus x y))
+    :hints(("Goal" :in-theory (enable 2vecx-p 4vec-plus))))
+
+  (defthm 2vecx-p-of-4vec-times
+    (2vecx-p (4vec-times x y))
+    :hints(("Goal" :in-theory (enable 2vecx-p 4vec-times))))
+
+  (defthm 2vecx-p-of-4vec-quotient
+    (2vecx-p (4vec-quotient x y))
+    :hints(("Goal" :in-theory (enable 2vecx-p 4vec-quotient))))
+
+  (defthm 2vecx-p-of-4vec-remainder
+    (2vecx-p (4vec-remainder x y))
+    :hints(("Goal" :in-theory (enable 2vecx-p 4vec-remainder))))
+
+  (defthm 2vecx-p-of-3vec-==
+    (implies (and (3vec-p x)
+                  (3vec-p y))
+             (2vecx-p (3vec-== x y)))
+    :hints(("Goal" :in-theory (enable 3vec-==))))
+
+  (defthm 2vecx-p-of-2vec
+    (2vecx-p (2vec x))
+    :hints(("Goal" :in-theory (enable 2vecx-p))))
+
+  (defthm 2vecx-p-of-4vec-wildeq
+    (2vecx-p (4vec-wildeq x y))
+  :hints(("Goal" :in-theory (enable 4vec-wildeq))))
+
+  (defthm 2vecx-p-of-4vec-symwildeq
+    (2vecx-p (4vec-symwildeq x y))
+  :hints(("Goal" :in-theory (enable 4vec-symwildeq))))
+
+  (defthm 2vecx-p-of-4vec-==
+    (2vecx-p (4vec-== x y))
+    :hints(("Goal" :in-theory (enable 4vec-==))))
+
+  (defthm 2vecx-p-of-4vec-<
+    (2vecx-p (4vec-< x y))
+    :hints(("Goal" :in-theory (enable 2vecx-p 4vec-<))))
+
+  (defthm 2vecx-p-of-4vec-clog2
+    (2vecx-p (4vec-clog2 x))
+    :hints(("Goal" :in-theory (enable 2vecx-p 4vec-clog2))))
+
+  (defthm 2vecx-p-of-eval-when-2vecx-syntaxp
+    (implies (2vecx-syntaxp x)
+             (2vecx-p (svex-eval x env)))
+    :hints (("Goal" :expand ((svex-eval x env)
+                             (2vecx-syntaxp x)
+                             (:free (x) (svex-eval (list 'quote x) env)))
+             :in-theory (e/d (svex-apply svexlist-eval 4veclist-nth)
+                             ((:d 2vecx-syntaxp))))))
+
+  (deffixequiv 2vecx-syntaxp :args ((x svex))))
+
+(defthm 4vec-xdet-of-2vecx
+  (implies (2vecx-p x)
+           (equal (4vec-xdet x)
+                  (4vec-fix x)))
+  :hints(("Goal" :in-theory (enable 2vecx-p 4vec-xdet))))
+
+(def-svex-rewrite xdet-of-2vecx
+  :lhs (xdet x)
+  :checks ((2vecx-syntaxp x))
+  :rhs x)
+
+(def-svex-rewrite +-of-xdet-left
+  :lhs (+ (xdet x) y)
+  :rhs (+ x y)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-plus 4vec-xdet))))
+
+(def-svex-rewrite +-of-xdet-right
+  :lhs (+ y (xdet x))
+  :rhs (+ y x)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-plus 4vec-xdet))))
+
+(def-svex-rewrite b--of-xdet-left
+  :lhs (b- (xdet x) y)
+  :rhs (b- x y)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-minus 4vec-xdet))))
+
+(def-svex-rewrite b--of-xdet-right
+  :lhs (b- y (xdet x))
+  :rhs (b- y x)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-minus 4vec-xdet))))
+
+(def-svex-rewrite <-of-xdet-left
+  :lhs (< (xdet x) y)
+  :rhs (< x y)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-< 4vec-xdet))))
+
+(def-svex-rewrite <-of-xdet-right
+  :lhs (< y (xdet x))
+  :rhs (< y x)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-< 4vec-xdet))))
+
+(def-svex-rewrite u--of-xdet
+  :lhs (u- (xdet x))
+  :rhs (u- x)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-uminus 4vec-xdet))))
+
+(def-svex-rewrite *-of-xdet-left
+  :lhs (* (xdet x) y)
+  :rhs (* x y)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-times 4vec-xdet))))
+
+(def-svex-rewrite *-of-xdet-right
+  :lhs (* y (xdet x))
+  :rhs (* y x)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-times 4vec-xdet))))
+
+(def-svex-rewrite /-of-xdet-left
+  :lhs (/ (xdet x) y)
+  :rhs (/ x y)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-quotient 4vec-xdet))))
+
+(def-svex-rewrite /-of-xdet-right
+  :lhs (/ y (xdet x))
+  :rhs (/ y x)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-quotient 4vec-xdet))))
+
+(def-svex-rewrite %-of-xdet-left
+  :lhs (% (xdet x) y)
+  :rhs (% x y)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-remainder 4vec-xdet))))
+
+(def-svex-rewrite %-of-xdet-right
+  :lhs (% y (xdet x))
+  :rhs (% y x)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-remainder 4vec-xdet))))
+
+(def-svex-rewrite rsh-of-xdet
+  :lhs (rsh (xdet n) x)
+  :rhs (rsh n x)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-rsh 4vec-xdet))))
+
+(def-svex-rewrite lsh-of-xdet
+  :lhs (lsh (xdet n) x)
+  :rhs (lsh n x)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-lsh 4vec-xdet))))
+
+(def-svex-rewrite concat-of-xdet
+  :lhs (concat (xdet n) x y)
+  :rhs (concat n x y)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-xdet))))
+
 
 (def-svex-rewrite bitnot-of-unfloat
   :lhs (bitnot (unfloat x))
@@ -2658,6 +2907,42 @@
   :rhs (b- x y)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-plus 4vec-uminus 4vec-minus))))
 
+(def-svex-rewrite b--of-0-right
+  :lhs (b- x 0)
+  :rhs (xdet x)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-minus 4vec-xdet))))
+
+(def-svex-rewrite b--of-0-left
+  :lhs (b- 0 x)
+  :rhs (u- x)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-minus 4vec-uminus))))
+
+(def-svex-rewrite +-of-0-right
+  :lhs (+ x 0)
+  :rhs (xdet x)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-plus 4vec-xdet))))
+
+(def-svex-rewrite +-of-0-left
+  :lhs (+ 0 x)
+  :rhs (xdet x)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-plus 4vec-xdet))))
+
+(def-svex-rewrite uminus-of-uminus
+  :lhs (u- (u- x))
+  :rhs (xdet x)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-uminus 4vec-xdet))))
+
+
+(local (defthm logxor-self
+         (equal (logxor x x) 0)))
+
+;; (def-svex-rewrite unsigned-not-less-than-0
+;;   :lhs (< (concat n x 0) 0)
+;;   :rhs (xdet (bitxor (concat n x 0) (concat n x 0)))
+;;   :hints(("Goal" :in-theory (enable svex-apply 4vec-< 4vec-concat
+;;                                     4vec-bitxor 4vec-xdet))))
+
+
 (local (defthm logior-of-logapp
          (equal (logior (logapp n x1 y1)
                         (logapp n x2 y2))
@@ -2853,6 +3138,7 @@
                    (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
            (bitops::logbitp-reasoning
             :add-hints (:in-theory (enable* bitops::logbitp-case-splits))))))
+
 
 (encapsulate
   (((svex-rewrite-trace * * * * * *) => *
