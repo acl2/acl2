@@ -130,7 +130,10 @@ symbol in the ACL2 package."
   :long "<p>Unfortunately it's not currently possible to come up with a good
 symbol-fixing function that induces the proper congruences for both @(see
 symbol-name) and @(see symbol-package-name).  This definition at least gives us
-a congruence for @(see symbol-name).</p>"
+a congruence for @(see symbol-name).</p>
+
+<p>BOZO consider adding a symbolp guard, inlining it, and turning it into an
+identity function for execution.</p>"
 
   (defund symbol-fix (x)
     (declare (xargs :guard t))
@@ -219,7 +222,7 @@ that are completely unconstrained, which may be especially useful when you are
 in the early stages of development and haven't yet thought much about
 types.</p>"
 
-  (defun any-p (x)
+  (defun-inline any-p (x)
     (declare (xargs :guard t)
              (ignore x))
     t))
@@ -234,6 +237,7 @@ types.</p>"
   :parents (fty::basetypes booleanp)
   :short "@(call bool-fix) is a fixing function for Booleans; it coerces any
 non-@('nil') symbol to @('t')."
+  :long "<p>BOZO: could consider putting a @(see booleanp) guard here.</p>"
 
   (defund-inline bool-fix (x)
     (declare (xargs :guard t))
@@ -271,7 +275,9 @@ non-@('nil') symbol to @('t')."
 (defsection maybe-natp-fix
   :parents (fty::basetypes maybe-natp)
   :short "@(call maybe-natp-fix) is the identity for @(see maybe-natp)s, or
-coerces any invalid object to @('nil')."
+  coerces any invalid object to @('nil')."
+  :long "<p>Performance note.  In the execution this is just an inlined
+  identity function, i.e., it should have zero runtime cost.</p>"
 
   (defund-inline maybe-natp-fix (x)
     (declare (xargs :guard (maybe-natp x)))
@@ -295,10 +301,12 @@ coerces any invalid object to @('nil')."
     (acl2::nat-equiv (maybe-natp-fix x) x)
     :hints(("Goal" :in-theory (enable maybe-natp-fix)))))
 
-(defsection maybe-natp-equiv
+(defsection maybe-nat-equiv
   :parents (fty::basetypes maybe-natp)
   :short "@('(maybe-natp-equiv x y)') is an equivalence relation for @(see
   maybe-natp)s, i.e., equality up to @(see maybe-natp-fix)."
+  :long "<p>Performance note.  In the execution, this is just an inlined call
+  of @(see eql).</p>"
 
   (fty::deffixtype maybe-nat
     :pred maybe-natp
@@ -309,15 +317,24 @@ coerces any invalid object to @('nil')."
     :equal eql))
 
 
-(defsection maybe-posp-fix
-  (defthm maybe-posp-when-posp
-    (implies (posp x)
-             (maybe-posp x)))
+(defthm maybe-posp-when-posp
+  ;; BOZO non-local, move to std/defs instead?
+  (implies (posp x)
+           (maybe-posp x)))
 
-  (defthmd posp-when-maybe-posp
-    (implies (and (maybe-posp x)
-                  (double-rewrite x))
-             (posp x)))
+(defthmd posp-when-maybe-posp
+  ;; BOZO non-local, move to std/defs instead?
+  (implies (and (maybe-posp x)
+                (double-rewrite x))
+           (posp x)))
+
+
+(defsection maybe-posp-fix
+  :parents (fty::basetypes maybe-posp)
+  :short "@(call maybe-posp-fix) is the identity for @(see maybe-posp)s, or
+  coerces any non-@(see posp) to @('nil')."
+  :long "<p>Performance note.  In the execution this is just an inlined
+  identity function, i.e., it should have zero runtime cost.</p>"
 
   (defund-inline maybe-posp-fix (x)
     (declare (xargs :guard (maybe-posp x)))
@@ -339,7 +356,15 @@ coerces any invalid object to @('nil')."
 
   (defthm maybe-posp-fix-under-pos-equiv
     (acl2::pos-equiv (maybe-posp-fix x) x)
-    :hints(("Goal" :in-theory (enable maybe-posp-fix))))
+    :hints(("Goal" :in-theory (enable maybe-posp-fix)))))
+
+
+(defsection maybe-pos-equiv
+  :parents (fty::basetypes maybe-posp)
+  :short "@('(maybe-posp-equiv x y)') is an equivalence relation for @(see
+  maybe-posp)s, i.e., equality up to @(see maybe-posp-fix)."
+  :long "<p>Performance note.  In the execution, this is just an inlined call
+  of @(see eql).</p>"
 
   (fty::deffixtype maybe-pos
     :pred maybe-posp
@@ -348,6 +373,7 @@ coerces any invalid object to @('nil')."
     :define t
     :inline t
     :equal eql))
+
 
 (defun fty::make-basetypes-table-rchars (table acc)
   (declare (xargs :mode :program))
