@@ -414,7 +414,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
         ;; literally .name, and also ports that were introduced by .*
         ;; connections.
         (b* ((new-arg (make-vl-namedarg :name       name
-                                        :expr       (vl-idexpr name nil nil)
+                                        :expr       (vl-idexpr name)
                                         :nameonly-p t
                                         :atts       nil)))
           (mv t (ok) (list new-arg))))
@@ -446,7 +446,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
              ((when (eq (tag mod/if) :vl-interface))
               ;; Good enough for now.  Again we'll mark it name-only.
               (b* ((new-arg (make-vl-namedarg :name       name
-                                              :expr       (vl-idexpr name nil nil)
+                                              :expr       (vl-idexpr name)
                                               :nameonly-p t
                                               :atts       nil)))
                 (mv t (ok) (list new-arg)))))
@@ -463,7 +463,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
         ;; kind of compatibility here.  We did at least find an interface,
         ;; and that's good enough.
         (b* ((new-arg (make-vl-namedarg :name       name
-                                        :expr       (vl-idexpr name nil nil)
+                                        :expr       (vl-idexpr name)
                                         :nameonly-p t
                                         :atts       nil)))
           (mv t (ok) (list new-arg)))))

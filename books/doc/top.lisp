@@ -35,7 +35,7 @@
 ; instead of the following, we get a name conflict.
 (include-book "std/system/non-parallel-book" :dir :system)
 
-(local
+
  ;; Disabling waterfall parallelism because the include-books are too slow with
  ;; it enabled, since waterfall parallelism unmemoizes the six or so functions
  ;; that ACL2(h) memoizes by default (in particular, fchecksum-obj needs to be
@@ -48,7 +48,7 @@
  ;; [Jared] BOZO: even if waterfall parallelism still disables this memoization,
  ;; do we care?  The alu16-book demo has been removed from the manual.  (Maybe
  ;; we should put it back in.  Do we care how long the manual takes to build?)
- (non-parallel-book))
+(non-parallel-book)
 
 (include-book "centaur/misc/memory-mgmt" :dir :system)
 (value-triple (set-max-mem (* 4 (expt 2 30))))
@@ -123,6 +123,7 @@
 (include-book "centaur/misc/count-up" :dir :system)
 (include-book "centaur/misc/fast-alist-pop" :dir :system)
 (include-book "centaur/misc/spacewalk" :dir :system)
+(include-book "centaur/misc/dag-measure" :dir :system)
 
 ;; BOZO conflicts with something in 4v-sexpr?
 
@@ -156,13 +157,14 @@
 ;; (include-book "centaur/esim/vcd/vcd-impl")
 
 (include-book "centaur/vl/doc" :dir :system)
+
+;; This rule causes type determination to take forever in VL for some reason
+(in-theory (disable consp-append
+                    true-listp-append
+                    (:t append)))
+
 (include-book "centaur/vl/kit/top" :dir :system)
-(include-book "centaur/vl/mlib/clean-concats" :dir :system)
 (include-book "centaur/vl/mlib/atts" :dir :system)
-(include-book "centaur/vl/transforms/clean-selects" :dir :system)
-(include-book "centaur/vl/transforms/propagate" :dir :system)
-(include-book "centaur/vl/transforms/expr-simp" :dir :system)
-(include-book "centaur/vl/transforms/inline" :dir :system)
 
 (include-book "centaur/vl2014/doc" :dir :system)
 (include-book "centaur/vl2014/kit/top" :dir :system)
@@ -218,7 +220,7 @@
 (include-book "rtl/rel11/lib/srt" :dir :system)
 (include-book "rtl/rel11/lib/sqrt" :dir :system)
 
-(include-book "centaur/fty/deftypes" :dir :system)
+(include-book "centaur/fty/top" :dir :system)
 
 (include-book "misc/find-lemmas" :dir :system)
 (include-book "misc/simp" :dir :system)
@@ -597,26 +599,27 @@ of proofs.")
 (defttag :open-output-channel!)
 
 #!XDOC
-(acl2::defconsts
- (& & state)
- (state-global-let*
-  ((current-package "ACL2" set-current-package-state))
-  (b* ((all-topics (force-root-parents
-                    (maybe-add-top-topic
-                     (normalize-parents-list ; Should we clean-topics?
-                      (get-xdoc-table (w state))))))
-       ((mv rendered state)
-        (render-topics all-topics all-topics state))
-       (rendered (split-acl2-topics rendered nil nil nil))
-       (outfile (acl2::extend-pathname (cbd)
-                                       "../system/doc/rendered-doc-combined.lsp"
-                                       state))
-       (- (cw "Writing ~s0~%" outfile))
-       ((mv channel state) (open-output-channel! outfile :character state))
-       ((unless channel)
-        (cw "can't open ~s0 for output." outfile)
-        (acl2::silent-error state))
-       (state (princ$ "; Documentation for acl2+books
+(make-event
+ (time$
+  (state-global-let*
+   ((current-package "ACL2" set-current-package-state))
+   (b* ((all-topics (time$
+                     (force-root-parents
+                      (maybe-add-top-topic
+                       (normalize-parents-list ; Should we clean-topics?
+                        (get-xdoc-table (w state)))))))
+        ((mv rendered state)
+         (time$ (render-topics all-topics all-topics state)))
+        (rendered (time$ (split-acl2-topics rendered nil nil nil)))
+        (outfile (acl2::extend-pathname (cbd)
+                                        "../system/doc/rendered-doc-combined.lsp"
+                                        state))
+        (- (cw "Writing ~s0~%" outfile))
+        ((mv channel state) (open-output-channel! outfile :character state))
+        ((unless channel)
+         (cw "can't open ~s0 for output." outfile)
+         (acl2::silent-error state))
+        (state (princ$ "; Documentation for acl2+books
 ; WARNING: GENERATED FILE, DO NOT HAND EDIT!
 ; The contents of this file are derived from the full acl2+books
 ; documentation.  For license and copyright information, see community book
@@ -631,13 +634,13 @@ of proofs.")
 
 (defconst *acl2+books-documentation* '"
                       channel state))
-       (state (fms! "~x0"
+       (state (time$ (fms! "~x0"
                     (list (cons #\0 rendered))
-                    channel state nil))
+                    channel state nil)))
        (state (fms! ")" nil channel state nil))
        (state (newline channel state))
        (state (close-output-channel channel state)))
-      (value nil))))
+      (value '(value-triple :ok))))))
 
 
 

@@ -29,174 +29,108 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "mlib/modnamespace")
-(include-book "mlib/find")
-(include-book "mlib/expr-tools")
-(include-book "mlib/range-tools")
-(include-book "util/defwellformed")
-(include-book "util/warnings")
-(include-book "defsort/duplicated-members" :dir :system)
-(local (include-book "util/arithmetic"))
-(local (include-book "util/osets"))
+
+;; All deprecated, safe to delete me
+
+;; (include-book "mlib/modnamespace")
+;; (include-book "mlib/find")
+;; (include-book "mlib/expr-tools")
+;; (include-book "mlib/range-tools")
+;; (include-book "util/defwellformed")
+;; (include-book "util/warnings")
+;; (include-book "defsort/duplicated-members" :dir :system)
+;; (local (include-book "util/arithmetic"))
+;; (local (include-book "util/osets"))
 
 ;; BOZO this entire thing is a giant pile and should get removed.
 
-(defxdoc reasonable
-  :parents (well-formedness)
-  :short "Identify modules in our supported subset of Verilog."
-  :long "<p>We say a module is <i>reasonable</i> if it</p>
+;; (defxdoc reasonable
+;;   :parents (well-formedness)
+;;   :short "Identify modules in our supported subset of Verilog."
+;;   :long "<p>We say a module is <i>reasonable</i> if it</p>
 
-<ol>
-  <li>is semantically well-formed, and</li>
-  <li>does not contain unsupported constructs.</li>
-</ol>
+;; <ol>
+;;   <li>is semantically well-formed, and</li>
+;;   <li>does not contain unsupported constructs.</li>
+;; </ol>
 
-<p>Even though our parser essentially establishes that the files we have just
-read are syntactically well-formed, this does not necessarily mean the files
-are semantically well-formed.  For instance, a module might illegally declare
-the same wire twice, or perhaps we have tried to declare two modules with the
-same name.  So, our reasonableness check is important for ensuring the basic
-semantic correctness of the modules we are examining.</p>
+;; <p>Even though our parser essentially establishes that the files we have just
+;; read are syntactically well-formed, this does not necessarily mean the files
+;; are semantically well-formed.  For instance, a module might illegally declare
+;; the same wire twice, or perhaps we have tried to declare two modules with the
+;; same name.  So, our reasonableness check is important for ensuring the basic
+;; semantic correctness of the modules we are examining.</p>
 
-<p>We also regard many perfectly valid Verilog constructs as unreasonable, for
-the simple pragmatic reason that we are only really interested in dealing with
-the small subset of Verilog that we actually encounter at Centaur.  There is
-little motivation for us to support things like complicated port lists merely
-because they are in the Verilog-2005 standard.</p>")
+;; <p>We also regard many perfectly valid Verilog constructs as unreasonable, for
+;; the simple pragmatic reason that we are only really interested in dealing with
+;; the small subset of Verilog that we actually encounter at Centaur.  There is
+;; little motivation for us to support things like complicated port lists merely
+;; because they are in the Verilog-2005 standard.</p>")
 
-(defwellformed vl-portlist-reasonable-p (x)
-  :parents (reasonable)
-  :short "@(call vl-portlist-reasonable-p) determines if a @(see vl-portlist-p)
-is @(see reasonable)."
-  :long "<p>We just require that any externally visible names are unique.  A
-number of additional well-formedness checks are done in @(see argresolve) and
-@(see e-conversion).</p>"
+;; (defwellformed vl-portlist-reasonable-p (x)
+;;   :parents (reasonable)
+;;   :short "@(call vl-portlist-reasonable-p) determines if a @(see vl-portlist-p)
+;; is @(see reasonable)."
+;;   :long "<p>We just require that any externally visible names are unique.  A
+;; number of additional well-formedness checks are done in @(see argresolve) and
+;; @(see e-conversion).</p>"
 
-  :guard (vl-portlist-p x)
-  :body (let* ((names (remove nil (vl-portlist->names x)))
-               (dupes (duplicated-members names)))
-          (@wf-assert (not dupes)
-                      :vl-bad-ports
-                      "Duplicate port names: ~&0."
-                      (list dupes))))
+;;   :guard (vl-portlist-p x)
+;;   :body (let* ((names (remove nil (vl-portlist->names x)))
+;;                (dupes (duplicated-members names)))
+;;           (@wf-assert (not dupes)
+;;                       :vl-bad-ports
+;;                       "Duplicate port names: ~&0."
+;;                       (list dupes))))
 
-(defwellformed vl-vardecl-reasonable-p (x)
-  :parents (reasonable)
-  :short "@(call vl-vardecl-reasonable-p) determines if a @(see vl-vardecl-p)
-is @(see reasonable)."
-  :long "<p>We restrict wire declarations in the following ways:</p>
-<ul>
+;; (defwellformed vl-vardecl-reasonable-p (x)
+;;   :parents (reasonable)
+;;   :short "@(call vl-vardecl-reasonable-p) determines if a @(see vl-vardecl-p)
+;; is @(see reasonable)."
+;;   :long "<p>We restrict wire declarations in the following ways:</p>
+;; <ul>
 
-<li>The only allowed types are @('supply0'), @('supply1'), and plain
-@('wire')s.  Not permitted are types such as @('wor') and @('tri0').</li>
+;; <li>The only allowed types are @('supply0'), @('supply1'), and plain
+;; @('wire')s.  Not permitted are types such as @('wor') and @('tri0').</li>
 
-<li>Arrays of wires are not supported.  (Note that we do support wires with
-ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
-[7:0]'), or multi-dimensional arrays such as @('wire [7:0] w [3:0]').</li>
+;; <li>Arrays of wires are not supported.  (Note that we do support wires with
+;; ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
+;; [7:0]'), or multi-dimensional arrays such as @('wire [7:0] w [3:0]').</li>
 
-</ul>"
+;; </ul>"
 
-  :guard (vl-vardecl-p x)
-  :body
-  (b* (((vl-vardecl x) x))
-    (@wf-progn
-     (@wf-assert (and (equal (vl-datatype-kind x.type) :vl-coretype)
-                      (member (vl-coretype->name x.type) '(:vl-logic :vl-reg))
-                      (member x.nettype
-                              '(nil :vl-supply0 :vl-supply1 :vl-wire)))
-                 :vl-bad-variable
-                 "~a0: wire has unsupported type ~a1/nettype ~a2."
-                 (list x x.type x.nettype))
+;;   :guard (vl-vardecl-p x)
+;;   :body
+;;   (b* (((vl-vardecl x) x))
+;;     (@wf-progn
+;;      (@wf-assert (and (equal (vl-datatype-kind x.type) :vl-coretype)
+;;                       (member (vl-coretype->name x.type) '(:vl-logic :vl-reg))
+;;                       (member x.nettype
+;;                               '(nil :vl-supply0 :vl-supply1 :vl-wire)))
+;;                  :vl-bad-variable
+;;                  "~a0: wire has unsupported type ~a1/nettype ~a2."
+;;                  (list x x.type x.nettype))
 
-     (@wf-assert (let ((x.udims (vl-datatype->udims x.type))
-                       (x.pdims (vl-datatype->pdims x.type)))
-                   (and (not x.udims)
-                        (or (atom x.pdims)
-                            (atom (cdr x.pdims)))))
-                 :vl-bad-variable
-                 "~a0: arrays are not yet supported."
-                 (list x))
+;;      (@wf-assert (let ((x.udims (vl-datatype->udims x.type))
+;;                        (x.pdims (vl-datatype->pdims x.type)))
+;;                    (and (not x.udims)
+;;                         (or (atom x.pdims)
+;;                             (atom (cdr x.pdims)))))
+;;                  :vl-bad-variable
+;;                  "~a0: arrays are not yet supported."
+;;                  (list x))
 
-     (@wf-assert (vl-simplevar-p x)
-                 :vl-bad-variable
-                 "~a0: variable is too complicated."
-                 (list x)))))
+;;      (@wf-assert (vl-simplevar-p x)
+;;                  :vl-bad-variable
+;;                  "~a0: variable is too complicated."
+;;                  (list x)))))
 
-(defwellformed-list vl-vardecllist-reasonable-p (x)
-  :element vl-vardecl-reasonable-p
-  :guard (vl-vardecllist-p x)
-  :parents (reasonable))
-
-
-(defwellformed vl-portdecl-and-moduleitem-compatible-p (portdecl item)
-  :parents (reasonable)
-  :short "Main function for checking whether a port declaration, which overlaps
-with some module item declaration, is a reasonable overlap."
-  :guard (and (vl-portdecl-p portdecl)
-              (vl-moditem-p item))
-  :long "<p>For instance, we might have:</p>
-
-@({
-    input x;
-    wire x;
-})
-
-<p>Which is fine, or we might have:</p>
-
-@({
-    input [3:0] x;
-    wire [4:0] x;
-})
-
-<p>Which is definitely not okay.  See also @(see portdecl-sign).  We expect
-that after parsing, the types will agree exactly.</p>"
-
-  :body
-
-  (b* (((vl-portdecl portdecl) portdecl)
-       ((unless (eq (tag item) :vl-vardecl))
-        (@wf-assert nil
-                    :vl-weird-port
-                    "~a0: port ~s1 is also declared to be a ~s2."
-                    (list portdecl portdecl.name (tag item))))
-       ((vl-vardecl vardecl) item))
-
-    (@wf-assert (equal portdecl.type vardecl.type)
-                :vl-incompatible-port
-                "~a0: the variable declaration for port ~s1 has incompatible
-                  type: ~a1 vs. ~a2."
-                (list portdecl portdecl.type vardecl.type))))
-
-(local
- (defthm l0
-   (implies (vl-find-moduleitem name x)
-            (vl-moditem-p (vl-find-moduleitem name x)))
-   :hints(("Goal" :in-theory (e/d (vl-find-moduleitem)
-                                  ((force)))))))
+;; (defwellformed-list vl-vardecllist-reasonable-p (x)
+;;   :element vl-vardecl-reasonable-p
+;;   :guard (vl-vardecllist-p x)
+;;   :parents (reasonable))
 
 
-(defwellformed vl-overlap-compatible-p (names x palist ialist)
-  ;; For some very large modules (post synthesis), we found the overlap checking to be very
-  ;; expensive due to slow lookups.  So, we now optimize this to use fast-alist lookups.
-  :parents (reasonable)
-  :guard (and (string-listp names)
-              (vl-module-p x)
-              (equal palist (vl-portdecl-alist (vl-module->portdecls x)))
-              (equal ialist (vl-moditem-alist x))
-              (subsetp-equal names (vl-portdecllist->names (vl-module->portdecls x)))
-              (subsetp-equal names (vl-module->modnamespace x)))
-  :body (if (atom names)
-            (progn$
-             ;; BOZO I hate this style where the aux function frees the fast alists,
-             ;; but for now it's easier to do it this way.
-             (fast-alist-free ialist)
-             (fast-alist-free palist)
-             (@wf-assert t))
-          (@wf-progn
-           (@wf-call vl-portdecl-and-moduleitem-compatible-p
-                     (vl-fast-find-portdecl (car names) (vl-module->portdecls x) palist)
-                     (vl-fast-find-moduleitem (car names) x ialist))
-           (@wf-call vl-overlap-compatible-p (cdr names) x palist ialist))))
 
 
 
@@ -421,81 +355,81 @@ that after parsing, the types will agree exactly.</p>"
 ;;   :guard (vl-alwayslist-p x))
 
 
-(defwellformed vl-module-reasonable-p (x)
-  :parents (reasonable)
-  :guard (vl-module-p x)
-  :extra-decls ((xargs :guard-debug t))
-  :body
-  (b* (((vl-module x) x)
-       (pdnames       (vl-portdecllist->names x.portdecls))
-       (pdnames-s     (mergesort pdnames))
-       (namespace     (vl-module->modnamespace x))
-       (namespace-s   (mergesort namespace))
-       (overlap       (intersect pdnames-s namespace-s))
-       (palist        (vl-portdecl-alist x.portdecls))
-       (ialist        (vl-moditem-alist x)))
-    (@wf-progn
-     (@wf-call vl-portlist-reasonable-p x.ports)
-     ;; (@wf-call vl-ports-and-portdecls-compatible-p ports portdecls)
-     (@wf-call vl-vardecllist-reasonable-p x.vardecls)
-     (@wf-note (not x.initials)
-               :vl-initial-stmts
-               "~l0: module ~s1 contains initial statements."
-               (list x.minloc x.name))
+;; (defwellformed vl-module-reasonable-p (x)
+;;   :parents (reasonable)
+;;   :guard (vl-module-p x)
+;;   :extra-decls ((xargs :guard-debug t))
+;;   :body
+;;   (b* (((vl-module x) x)
+;;        (pdnames       (vl-portdecllist->names x.portdecls))
+;;        (pdnames-s     (mergesort pdnames))
+;;        (namespace     (vl-module->modnamespace x))
+;;        (namespace-s   (mergesort namespace))
+;;        (overlap       (intersect pdnames-s namespace-s))
+;;        (palist        (vl-portdecl-alist x.portdecls))
+;;        (ialist        (vl-moditem-alist x)))
+;;     (@wf-progn
+;;      (@wf-call vl-portlist-reasonable-p x.ports)
+;;      ;; (@wf-call vl-ports-and-portdecls-compatible-p ports portdecls)
+;;      (@wf-call vl-vardecllist-reasonable-p x.vardecls)
+;;      (@wf-note (not x.initials)
+;;                :vl-initial-stmts
+;;                "~l0: module ~s1 contains initial statements."
+;;                (list x.minloc x.name))
 
-; Not really a problem anymore
-;     (@wf-note (not alwayses)
-;               :vl-always-stmts
-;               "~l0: module ~s1 contains always statements."
-;               (list minloc name))
+;; ; Not really a problem anymore
+;; ;     (@wf-note (not alwayses)
+;; ;               :vl-always-stmts
+;; ;               "~l0: module ~s1 contains always statements."
+;; ;               (list minloc name))
 
-;     (@wf-call vl-alwayslist-reasonable-p alwayses)
-     (@wf-assert (mbe :logic (no-duplicatesp-equal namespace)
-                      :exec (same-lengthp namespace namespace-s))
-                 :vl-namespace-error
-                 "~l0: ~s1 illegally redefines ~&2."
-                 (list x.minloc x.name (duplicated-members namespace)))
-     (@wf-call vl-overlap-compatible-p overlap x palist ialist))))
+;; ;     (@wf-call vl-alwayslist-reasonable-p alwayses)
+;;      (@wf-assert (mbe :logic (no-duplicatesp-equal namespace)
+;;                       :exec (same-lengthp namespace namespace-s))
+;;                  :vl-namespace-error
+;;                  "~l0: ~s1 illegally redefines ~&2."
+;;                  (list x.minloc x.name (duplicated-members namespace)))
+;;      (@wf-call vl-overlap-compatible-p overlap x palist ialist))))
 
-(defwellformed-list vl-modulelist-reasonable-p (x)
-  :parents (reasonable)
-  :guard (vl-modulelist-p x)
-  :element vl-module-reasonable-p)
+;; (defwellformed-list vl-modulelist-reasonable-p (x)
+;;   :parents (reasonable)
+;;   :guard (vl-modulelist-p x)
+;;   :element vl-module-reasonable-p)
 
 
-(define vl-module-check-reasonable
-  :parents (reasonable)
-  :short "Annotate a module with any warnings concerning whether it is @(see
-reasonable).  Furthermore, if @('x') is unreasonable, a fatal warning to it."
-  ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard)
-  (b* (((when (vl-module->hands-offp x))
-        x)
-       (warnings          (vl-module->warnings x))
-       ((mv okp warnings) (vl-module-reasonable-p-warn x warnings))
-       (warnings          (if okp
-                              (ok)
-                            (fatal :type :vl-mod-unreasonable
-                                   :msg "Module ~m0 is unreasonable."
-                                   :args (list (vl-module->name x)))))
-       (warnings          (if (vl-module->generates x)
-                              (fatal :type :vl-mod-has-generates
-                                     :msg "Module ~m0 has generate blocks."
-                                     :args (list (vl-module->name x)))
-                            warnings))
-       (x-prime (change-vl-module x :warnings warnings)))
-    x-prime))
+;; (define vl-module-check-reasonable
+;;   :parents (reasonable)
+;;   :short "Annotate a module with any warnings concerning whether it is @(see
+;; reasonable).  Furthermore, if @('x') is unreasonable, a fatal warning to it."
+;;   ((x vl-module-p))
+;;   :returns (new-x vl-module-p :hyp :fguard)
+;;   (b* (((when (vl-module->hands-offp x))
+;;         x)
+;;        (warnings          (vl-module->warnings x))
+;;        ((mv okp warnings) (vl-module-reasonable-p-warn x warnings))
+;;        (warnings          (if okp
+;;                               (ok)
+;;                             (fatal :type :vl-mod-unreasonable
+;;                                    :msg "Module ~m0 is unreasonable."
+;;                                    :args (list (vl-module->name x)))))
+;;        (warnings          (if (vl-module->generates x)
+;;                               (fatal :type :vl-mod-has-generates
+;;                                      :msg "Module ~m0 has generate blocks."
+;;                                      :args (list (vl-module->name x)))
+;;                             warnings))
+;;        (x-prime (change-vl-module x :warnings warnings)))
+;;     x-prime))
 
-(defprojection vl-modulelist-check-reasonable (x)
-  (vl-module-check-reasonable x)
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :parents (reasonable))
+;; (defprojection vl-modulelist-check-reasonable (x)
+;;   (vl-module-check-reasonable x)
+;;   :guard (vl-modulelist-p x)
+;;   :result-type vl-modulelist-p
+;;   :parents (reasonable))
 
-(define vl-design-check-reasonable ((design vl-design-p))
-  :returns (new-design vl-design-p)
-  (b* ((design (vl-design-fix design))
-       ((vl-design design) design)
-       (new-mods (vl-modulelist-check-reasonable design.mods)))
-    (change-vl-design design :mods new-mods)))
+;; (define vl-design-check-reasonable ((design vl-design-p))
+;;   :returns (new-design vl-design-p)
+;;   (b* ((design (vl-design-fix design))
+;;        ((vl-design design) design)
+;;        (new-mods (vl-modulelist-check-reasonable design.mods)))
+;;     (change-vl-design design :mods new-mods)))
 

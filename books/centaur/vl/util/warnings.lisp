@@ -82,6 +82,26 @@
              (vl-warninglist-p (acl2::remove-adjacent-duplicates x)))
     :hints(("Goal" :in-theory (enable acl2::remove-adjacent-duplicates)))))
 
+
+;; this is just a product of msg (string) and args (true-list) but if there are
+;; no args we just use the string.  It's convenient for a bare string to be a
+;; vl-msg.
+(fty::defflexsum vl-msg
+  :short "Format string and args for small messages not constituting a whole warning"
+  :kind nil
+  (:msg :cond t
+   :type-name vl-msg
+   :shape (or (atom x)
+              (cdr x))
+   :fields ((msg :type stringp :acc-body (if (atom x) x (car x))
+                 :rule-classes :type-prescription)
+            (args :type true-listp :acc-body (and (consp x) (cdr x))
+                  :rule-classes :type-prescription))
+   :ctor-body (if args (cons msg args) msg)))
+
+(defmacro vmsg (msg &rest args)
+  `(make-vl-msg :msg ,msg :args (list . ,args)))
+
 (defprojection vl-warninglist->types ((x vl-warninglist-p))
   :returns (types symbol-listp)
   (vl-warning->type x))
@@ -374,3 +394,38 @@ particular interest.</p>"
              (t
               (vl-some-warning-of-type-p types (cdr x))))))
 
+(define vl-warning-add-ctx ((x vl-warning-p)
+                            (ctx))
+  :returns (new-x vl-warning-p)
+  (b* (((vl-warning x)))
+    (change-vl-warning x
+                       :msg "~a0: ~@1"
+                       :args (list ctx (vl-msg x.msg x.args)))))
+
+(defprojection vl-warninglist-add-ctx ((x vl-warninglist-p)
+                                       (ctx))
+  :returns (new-x vl-warninglist-p)
+  (vl-warning-add-ctx x ctx))
+
+#!acl2
+(def-b*-binder vl::wmv
+  :parents (warnings)
+  :short "B* binder to automatically append together returned warnings"
+  :body
+  (b* (((mv ctx args)
+        (b* ((mem (member :ctx args)))
+          (if mem
+              (mv (cadr mem)
+                  (append (take (- (len args) (len mem)) args)
+                          (cddr mem)))
+            (mv nil args)))))
+    `(b* (,(if (equal args '(vl::warnings))
+               `(vl::__tmp__warnings . ,forms)
+             `((mv . ,(subst 'vl::__tmp__warnings 'vl::warnings args)) . ,forms))
+          (vl::warnings (append-without-guard
+                         ,(if ctx
+                              `(vl::vl-warninglist-add-ctx vl::__tmp__warnings
+                                                       ,ctx)
+                            'vl::__tmp__warnings)
+                         vl::warnings)))
+       ,rest-expr)))

@@ -35,10 +35,11 @@
 (include-book "../lint/check-namespace")
 (include-book "../mlib/hierarchy")
 
-(include-book "../lint/drop-missing-submodules")
+;(include-book "../lint/drop-missing-submodules")
 (include-book "../lint/drop-user-submodules")
-(include-book "../lint/lint-stmt-rewrite")
-(include-book "../lint/remove-toohard")
+;(include-book "../lint/lint-stmt-rewrite")
+;; Not used anymore (?)
+;; (include-book "../lint/remove-toohard")
 (include-book "../lint/suppress-warnings")
 (include-book "../lint/condcheck")
 (include-book "../lint/duplicate-detect")
@@ -53,27 +54,23 @@
 
 (include-book "../transforms/cn-hooks")
 (include-book "../transforms/unparam/top")
-(include-book "../transforms/annotate/argresolve")
-(include-book "../transforms/annotate/resolve-indexing")
-(include-book "../transforms/annotate/origexprs")
-(include-book "../transforms/annotate/make-implicit-wires")
-(include-book "../transforms/annotate/portdecl-sign")
-(include-book "../transforms/annotate/udp-elim")
+(include-book "centaur/vl/transforms/annotate/top" :dir :system)
 
-(include-book "../transforms/assign-trunc")
-(include-book "../transforms/blankargs")
-(include-book "../transforms/clean-params")
+;(include-book "../transforms/assign-trunc")
+;(include-book "../transforms/blankargs")
+;(include-book "../transforms/clean-params")
 (include-book "../transforms/clean-warnings")
-(include-book "../transforms/drop-blankports")
-(include-book "../transforms/expr-split")
-(include-book "../transforms/expand-functions")
-(include-book "../transforms/oprewrite")
-(include-book "../transforms/resolve-ranges")
-(include-book "../transforms/replicate-insts")
-(include-book "../transforms/selresolve")
-(include-book "../transforms/sizing")
-(include-book "../transforms/unused-vars")
+;(include-book "../transforms/drop-blankports")
+;(include-book "../transforms/expr-split")
+;(include-book "../transforms/expand-functions")
+;(include-book "../transforms/oprewrite")
+;(include-book "../transforms/resolve-ranges")
+;(include-book "../transforms/replicate-insts")
+;(include-book "../transforms/selresolve")
+;(include-book "../transforms/sizing")
+;(include-book "../transforms/unused-vars")
 
+(include-book "centaur/svex/vl-moddb" :dir :system)
 (include-book "../../misc/sneaky-load")
 
 (include-book "../mlib/json")
@@ -385,7 +382,7 @@ shown.</p>"
                    NO-DUPLICATESP-EQUAL-WHEN-SAME-LENGTH-MERGESORT
                    SUBSETP-OF-VL-MODINSTLIST->MODNAMES-WHEN-SUBSETP
                    CDR-OF-VL-MODULELIST-DUPERHS-CHECK
-                   CDR-OF-VL-MODULELIST-ORIGEXPRS
+                   ;; CDR-OF-VL-MODULELIST-ORIGEXPRS
                    vl-modulelist-p-of-append
                    NO-DUPLICATESP-EQUAL-OF-APPEND
                    acl2::no-duplicatesp-equal-append-iff
@@ -453,6 +450,16 @@ shown.</p>"
   (b* (((vl-lintconfig config) config)
        (design (cwtime (vl-design-drop-user-submodules design config.dropmods)))
 
+       (design (cwtime (vl-design-resolve-ansi-portdecls design)))
+       (design (cwtime (vl-design-resolve-nonansi-interfaceports design)))
+       (design (cwtime (vl-design-add-enumname-declarations design)))
+       (design (cwtime (vl-design-make-implicit-wires design)))
+       (design (cwtime (vl-design-portdecl-sign design)))
+       (design (cwtime (vl-design-udp-elim design)))
+
+       ;; BOZO I have no idea why we're doing this.
+       ;; Old comments:
+
        ;; You might expect that we'd immediately throw out modules that we
        ;; don't need for topmods.  Historically we did that.  But then we found
        ;; that we'd get a bunch of complaints in other modules about
@@ -462,13 +469,15 @@ shown.</p>"
        ;; mods0, so do that now:
        (design0 (vl-design-remove-unnecessary-modules config.topmods design))
 
-       (- (cw "~%vl-lint: initial processing...~%"))
-       (design (cwtime (vl-design-make-implicit-wires design)))
-       (design (cwtime (vl-design-portdecl-sign design)))
-       (design (cwtime (vl-design-udp-elim design)))
+
+       (design (cwtime (vl-design-duplicate-detect design)))
        (design (cwtime (vl-design-portcheck design)))
        (design (cwtime (vl-design-argresolve design)))
-       (design (cwtime (vl-design-resolve-indexing design)))
+       (design (cwtime (vl-design-type-disambiguate design)))
+       (design (cwtime (vl-design-origexprs design)))
+       (design (cwtime (vl-design-oddexpr-check design)))
+
+       ;; this goes away (design (cwtime (vl-design-resolve-indexing design)))
 
        ;; Pre-unparameterization Lucidity Check.
        (design (cwtime (vl-design-lucid design
@@ -477,18 +486,15 @@ shown.</p>"
                                         ;; This is a bad time to check generates
                                         :generatesp nil)))
 
-       (- (cw "~%vl-lint: starting general checks...~%"))
        (design (cwtime (vl-design-check-namespace design)))
        (design (cwtime (vl-design-check-case design)))
        (design (cwtime (vl-design-duperhs-check design)))
-       (design (cwtime (vl-design-duplicate-detect design)))
        (design (cwtime (vl-design-condcheck design)))
        (design (cwtime (vl-design-leftright-check design)))
-       (design (cwtime (vl-design-origexprs design)))
        (design (cwtime (vl-design-dupeinst-check design)))
        (design (cwtime (vl-centaur-seqcheck-hook design)))
 
-       (- (cw "~%vl-lint: elaborating the design...~%"))
+     
 
        ;; BOZO we need to do something to throw away instances with unresolved
        ;; arguments to avoid programming-errors in drop-blankports... and actually
@@ -497,9 +503,11 @@ shown.</p>"
        ;;(design (cwtime (vl-design-follow-hids design)))
        ;; (design (cwtime (vl-design-clean-params design)))
        ;; (design (cwtime (vl-design-check-good-paramdecls design)))
-       (design (cwtime (vl-design-unparameterize design)))
-       (design (cwtime (vl-design-rangeresolve design)))
-       (design (cwtime (vl-design-selresolve design)))
+       (design (cwtime (vl-design-elaborate design)))
+
+       ;; these are part of elaboration now
+       ;;(design (cwtime (vl-design-rangeresolve design)))
+       ;;(design (cwtime (vl-design-selresolve design)))
 
        (design
         ;; Running another dupeinst check here, after unparameterization, may
@@ -516,9 +524,10 @@ shown.</p>"
                                         :paramsp nil
                                         :generatesp t)))
 
-       (design
-        ;; Best not to do this until after lucid checking.
-        (cwtime (vl-design-drop-missing-submodules design)))
+;;*** do we want to do thsi???  I can't think of why
+       ;; (design
+       ;;  ;; Best not to do this until after lucid checking.
+       ;;  (cwtime (vl-design-drop-missing-submodules design)))
 
        ;; BOZO do we even need to do this?
        ;; BOZO not exactly sure where this should go, maybe this will work.
@@ -533,25 +542,31 @@ shown.</p>"
        ;;  (cwtime (vl-design-elim-unused-vars design)))
 
        (design (cwtime (vl-design-check-selfassigns design)))
-       (design (cwtime (vl-design-lint-stmt-rewrite design)))
-       (design (cwtime (vl-design-stmtrewrite design 1000)))
+       (design (cwtime (vl-design-qmarksize-check design)))
+       (sd-probs (cwtime (sd-analyze-design design0)))
+
+;; Not sure we care abotu this for anything
+       ;; (design (cwtime (vl-design-lint-stmt-rewrite design)))
+       ;; (design (cwtime (vl-design-stmtrewrite design 1000)))
        ;;(design (cwtime (vl-design-hid-elim design)))
 
-       ;; Now that HIDs are gone, we can throw away any modules we don't care
-       ;; about, if we have been given any topmods.
-       (design (b* ((names1 (vl-modulelist->names (vl-design->mods design)))
-                    (design (vl-design-drop-missing-submodules design))
-                    (names2 (vl-modulelist->names (vl-design->mods design)))
-                    (lost   (difference (mergesort names1) (mergesort names2))))
-                 (or (not lost)
-                     (cw "BOZO lost ~x0 modules somewhere (probably unparameterizing): ~x1~%"
-                         (len lost) lost))
-                 design))
+;; maaaaybe we don't watn this?
+       ;; ;; Now that HIDs are gone, we can throw away any modules we don't care
+       ;; ;; about, if we have been given any topmods.
+       ;; (design (b* ((names1 (vl-modulelist->names (vl-design->mods design)))
+       ;;              (design (vl-design-drop-missing-submodules design))
+       ;;              (names2 (vl-modulelist->names (vl-design->mods design)))
+       ;;              (lost   (difference (mergesort names1) (mergesort names2))))
+       ;;           (or (not lost)
+       ;;               (cw "BOZO lost ~x0 modules somewhere (probably unparameterizing): ~x1~%"
+       ;;                   (len lost) lost))
+       ;;           design))
+
+       ((mv reportcard ?modalist) (cwtime (vl-design->svex-modalist design)))
+       (design (cwtime (vl-apply-reportcard design reportcard)))
 
        (design (cwtime (vl-design-remove-unnecessary-modules config.topmods design)))
 
-       (- (cw "~%vl-lint: processing expressions...~%"))
-       (design (cwtime (vl-design-oddexpr-check design)))
 
        ;; [Jared] -- Trying to NOT do oprewrite anymore.  Our sizing warnings
        ;; do better if we can tell the difference between == and ~^ operators,
@@ -560,22 +575,25 @@ shown.</p>"
 
 
        ;; Sizing doesn't do well unless we expand functions
-       (design (cwtime (vl-design-expand-functions design)))
-       (design (cwtime (vl-design-exprsize design)))
-       (design (cwtime (vl-design-constcheck-hook design config.cclimit)))
-       (design (cwtime (vl-design-qmarksize-check design)))
+;       (design (cwtime (vl-design-expand-functions design)))
+;       (design (cwtime (vl-design-exprsize design)))
+;       (design (cwtime (vl-design-constcheck-hook design config.cclimit)))
 
-       (- (cw "~%vl-lint: processing assignments...~%"))
-       (design (cwtime (vl-design-split design)))
-       (design (cwtime (vl-design-replicate design)))
-       (design (cwtime (vl-design-blankargs design)))
-       (design (cwtime (vl-design-trunc design)))
 
-       (- (cw "~%vl-lint: finding skipped and multiply driven wires...~%"))
+;       (- (cw "~%vl-lint: processing assignments...~%"))
+;       (design (cwtime (vl-design-split design)))
+
+; BOZO argument width checking?
+;       (design (cwtime (vl-design-replicate design)))
+
+;; BOZO are we checking for connecting blanks to interface ports
+;;        (design (cwtime (vl-design-blankargs design)))
+;;       (design (cwtime (vl-design-trunc design)))
+
+;       (- (cw "~%vl-lint: finding skipped and multiply driven wires...~%"))
        ;; NOTE: use design0, not design, if you ever want this to finish. :)
-       (sd-probs (cwtime (sd-analyze-design design0)))
 
-       (- (cw "~%vl-lint: cleaning up...~%"))
+
        (design   (cwtime (vl-design-clean-warnings design)))
        (design   (cwtime (vl-design-suppress-lint-warnings design)))
        (design   (cwtime (vl-design-lint-ignoreall design config.ignore)))

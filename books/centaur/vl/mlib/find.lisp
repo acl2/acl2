@@ -40,14 +40,13 @@
                            default-cdr
                            acl2::subsetp-member
                            acl2::str-fix-default
-                           stringp-when-maybe-stringp
                            (:t member-equal)
                            member-equal
                            default-car
                            consp-when-member-equal-of-vl-gencaselist-p
                            consp-when-member-equal-of-vl-caselist-p
                            consp-when-member-equal-of-vl-commentmap-p
-                           consp-when-member-equal-of-vl-atts-p
+                           ;; consp-when-member-equal-of-vl-atts-p
                            acl2::consp-when-member-equal-of-keyval-alist-p
                            acl2::consp-of-car-when-alistp
                            (tau-system)

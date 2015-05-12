@@ -113,7 +113,12 @@
 
         (unless (vl-is-token? :vl-lparen)
           (hid := (vl-parse-hierarchical-identifier nil))
-          (return (vl-eventcontrol nil (list (vl-evatom :vl-noedge hid)))))
+          (return (vl-eventcontrol nil (list (vl-evatom :vl-noedge
+                                                        (make-vl-index
+                                                         :scope
+                                                         (make-vl-scopeexpr-end
+                                                          :hid hid)
+                                                         :part (make-vl-partselect-none)))))))
 
         (:= (vl-match-token :vl-lparen))
 

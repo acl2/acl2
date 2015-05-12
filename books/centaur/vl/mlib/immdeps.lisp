@@ -32,6 +32,7 @@
 (include-book "scopestack")
 (include-book "hid-tools")
 (include-book "reportcard")
+(include-book "centaur/fty/visitor" :dir :system)
 (include-book "centaur/depgraph/mergesort-alist-values" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
@@ -238,126 +239,145 @@ elements.")
 
 (local (xdoc::set-default-parents immdeps-main))
 
-(define vl-atomguts-immdeps
-  :short "Gather immediate dependencies from an atom."
-  ((guts vl-atomguts-p "Guts of the atom we're dealing with.")
-   (ans  vl-immdeps-p  "Answer we are building.")
+(local (defthm hidname-equals-$root
+         (implies (vl-hidname-p x)
+                  (equal (equal x :vl-$root)
+                         (not (stringp x))))
+         :hints(("Goal" :in-theory (enable vl-hidname-p)))))
+
+(define vl-scopeexpr-top-immdeps
+  ((x vl-scopeexpr-p)
+   (ans vl-immdeps-p)
    &key
    ((ss  vl-scopestack-p  "Our current scope.") 'ss)
    ((ctx acl2::any-p      "Context for warnings.") 'ctx))
   :returns (ans vl-immdeps-p)
-  (b* ((ans  (vl-immdeps-fix ans))
-       (guts (vl-atomguts-fix guts)))
-    (case (tag guts)
+  (vl-scopeexpr-case x
+    :end (vl-hidexpr-case x.hid
+           :end (vl-immdeps-add-item x.hid.name ans)
+           :dot (b* ((name (vl-hidindex->name x.hid.first)))
+                  (if (eq name :vl-$root)
+                      (vl-immdeps-fix ans)
+                    (vl-immdeps-add-item name ans))))
+    :colon
+    (if (stringp x.first)
+        (vl-immdeps-add-item x.first ans)
+      ;; BOZO think about other scopes.
+      ;; local:: is just something to do with randomize, I don't think we care yet.
+      ;; $unit:: is sort of very ambiguous, we might want to treat it as top-level
+      ;; or we might want to just not support it.
+      (vl-immdeps-fix ans))))
 
-      ;; Main kinds of items to look up
-      (:vl-id       (vl-immdeps-add-item (vl-id->name guts) ans))
-      (:vl-funname  (vl-immdeps-add-item (vl-funname->name guts) ans))
-      (:vl-typename (vl-immdeps-add-item (vl-typename->name guts) ans))
+;; (defines vl-expr-immdeps
+;;   :verify-guards nil
+;;   (define vl-expr-immdeps
+;;     ((x vl-expr-p)
+;;      (ans vl-immdeps-p)
+;;      &key
+;;      ((ss  vl-scopestack-p  "Our current scope.") 'ss)
+;;      ((ctx acl2::any-p      "Context for warnings.") 'ctx))
+;;     :measure (vl-expr-count x)
+;;     :returns (ans vl-immdeps-p)
+;;     (b* ((ans (vl-expr-case x
+;;                 :vl-index (vl-scopeexpr-immdeps x.scope ans)
+;;                 :otherwise ans)))
+;;       (vl-exprlist-immdeps (vl-expr->subexprs x) ans)))
 
-      ((:vl-constint  ;; 3'b111  -- no dependencies
-        :vl-weirdint  ;; 3'bxx1  -- no dependencies
-        :vl-extint    ;; '1      -- no dependencies
-        :vl-string    ;; "foo"   -- no dependencies
-        :vl-real      ;; 3.14    -- no dependencies
-        :vl-time      ;; 45.2ns  -- no dependencies
-        :vl-basictype ;; byte, short, etc., -- no dependencies
-        :vl-sysfunname ;; $bits, etc. -- no dependencies (users can't add new ones, right?)
-        )
-       ans)
-
-      (:vl-keyguts
-       ;; Tricky, might be looking at something like a this/super/local/etc.  I
-       ;; think we should only see these in HIDs, e.g., $root.foo, and so this
-       ;; function isn't the right place to handle them.  However, we might see
-       ;; things like emptyqueue or null anywhere.  It seems pretty reasonable
-       ;; to just return NIL here.
-       ans)
-
-      (:vl-tagname
-       ;; tricky, need to be able to figure out what kind of union
-       ;; we're dealing with...?
-       (vl-immdeps-add-error ans
-                             :type :vl-immdeps-fudging
-                             :msg "~a0: don't know how to handle tag name ~s1.~%"
-                             :args (list ctx (vl-tagname->name guts))
-                             :fatalp t))
-
-      (:vl-hidpiece
-       ;; We should handle HIDs separately and therefore never see these, right?
-       (vl-immdeps-add-error ans
-                             :type :vl-immdeps-fudging
-                             :msg "~a0: atomic hid piece???  skipping ~s1.~%"
-                             :args (list ctx (vl-hidpiece->name guts))
-                             :fatalp t))
-
-      (otherwise
-       (progn$ (impossible)
-               ans)))))
+;;   (define vl-exprlist-immdeps
+;;     ((x vl-exprlist-p)
+;;      (ans vl-immdeps-p)
+;;      &key
+;;      ((ss  vl-scopestack-p  "Our current scope.") 'ss)
+;;      ((ctx acl2::any-p      "Context for warnings.") 'ctx))
+;;     :measure (vl-exprlist-count x)
+;;     :returns (ans vl-immdeps-p)
+;;     (if (atom x)
+;;         (vl-immdeps-fix ans)
+;;       (vl-exprlist-immdeps (cdr x) (vl-expr-immdeps (car x) ans))))
+;;   ///
+;;   (verify-guards vl-expr-immdeps-fn)
+;;   (deffixequiv-mutual vl-expr-immdeps))
 
 
-(defines vl-expr-immdeps
-  :short "Gather immediate dependencies for an expression."
-  :flag-local nil
+(fty::defvisitor-template immdeps ((x :object)
+                                   (ans vl-immdeps-p)
+                                   &key
+                                   ((ss vl-scopestack-p) 'ss)
+                                   ((ctx acl2::any-p) 'ctx))
+  :returns (ans1 (:acc ans :fix (vl-immdeps-fix ans)) vl-immdeps-p)
+  :field-fns ((atts :skip))
+  :prod-fns ((vl-special     (type :skip))
+             (vl-value       (type :skip))
+             (vl-index       (type :skip))
+             (vl-unary       (type :skip))
+             (vl-binary      (type :skip))
+             (vl-qmark       (type :skip))
+             (vl-mintypmax   (type :skip))
+             (vl-concat      (type :skip))
+             (vl-multiconcat (type :skip))
+             (vl-call        (type :skip))
+             (vl-cast        (type :skip))
+             (vl-inside      (type :skip))
+             (vl-tagged      (type :skip))
+             (vl-pattern     (type :skip)))
+  :fnname-template <type>-immdeps)
 
-  (define vl-expr-immdeps ((x   vl-expr-p    "Expression we're processing.")
-                           (ans vl-immdeps-p "Answer we are building.")
+;; Not dealing with anything that might add a scope yet.
+(fty::defvisitor vl-expr-immdeps
+  :template immdeps
+  :type expressions-and-datatypes
+  :type-fns ((vl-scopeexpr vl-scopeexpr-immdeps-fn))
+  :renames ((vl-scopeexpr vl-scopeexpr-immdeps-aux))
+  :measure (two-nats-measure :count 0)
+  (define vl-scopeexpr-immdeps ((x vl-scopeexpr-p)
+                                (ans vl-immdeps-p)
+                                &key
+                                ((ss vl-scopestack-p) 'ss)
+                                ((ctx acl2::any-p) 'ctx))
+    :returns (ans1 vl-immdeps-p)
+    :measure (two-nats-measure (vl-scopeexpr-count x) 1)
+    (vl-scopeexpr-immdeps-aux x (vl-scopeexpr-top-immdeps x ans))))
+
+(fty::defvisitors vl-misc-immdeps
+  :template immdeps
+  :types (vl-maybe-gatedelay
+          vl-arguments
+          vl-paramargs
+          vl-paramtype
+          vl-maybe-delayoreventcontrol))
+
+  
+
+
+
+(fty::defvisitor vl-stmt-immdeps
+  :type statements
+  :template immdeps
+  :type-fns ((vl-stmt vl-stmt-immdeps-fn))
+  :renames ((vl-stmt vl-stmt-immdeps-aux))
+  :measure (two-nats-measure :count 0)
+  (define vl-stmt-immdeps ((x vl-stmt-p)
+                           (ans vl-immdeps-p)
                            &key
-                           ((ss  vl-scopestack-p "Our current scope.") 'ss)
-                           ((ctx acl2::any-p     "Context for warnings.") 'ctx))
-    :returns (ans vl-immdeps-p)
-    :measure (vl-expr-count x)
-    :flag :expr
-    (b* ((x   (vl-expr-fix x))
-         (ans (vl-immdeps-fix ans))
+                           ((ss vl-scopestack-p) 'ss)
+                           ((ctx acl2::any-p) 'ctx))
+    :returns (ans1 vl-immdeps-p)
+    :measure (two-nats-measure (vl-stmt-count x) 1)
+    (b* ((ss (vl-stmt-case x
+               :vl-blockstmt (vl-scopestack-push (vl-blockstmt->blockscope x) ss)
+               :otherwise ss)))
+      (vl-stmt-immdeps-aux x ans))))
 
-         ((when (vl-fast-atom-p x))
-          (vl-atomguts-immdeps (vl-atom->guts x) ans))
 
-         ((when (vl-hidexpr-p x))
-          (vl-immdeps-add-error ans
-                                :type :vl-immdeps-fudging
-                                :msg "~a0: add support for hierarchical identifiers.~%"
-                                :args (list ctx x)))
+;; (fty::defvisitor-template immdeps-no-ctx ((x :object)
+;;                                           (ans vl-immdeps-p)
+;;                                           &key
+;;                                           ((ss vl-scopestack-p) 'ss))
+;;   :wrapper (b* ((?ctx x)) :body)
+  
 
-         ((vl-nonatom x))
 
-         ((when (eq x.op :vl-scope))
-          ;; Special case for foo::[...]
-          ;; This is an explicit dependency on the package foo.
-          (b* (((unless (and (vl-atom-p (first x.args))
-                             (vl-fast-hidpiece-p (vl-atom->guts (first x.args)))))
-                ;; Should never happen, right?
-                (vl-immdeps-add-error ans
-                                      :type :vl-programming-error
-                                      :msg "~a0: weird scope operator ~a1."
-                                      :args (list ctx x)
-                                      :fatalp t  ;; should never happen, right?
-                                      ))
-               (pkgname (vl-hidpiece->name (vl-atom->guts (first x.args))))
-               (ans     (vl-immdeps-add-pkgdep pkgname ans))
-               (ans     (vl-expr-immdeps (second x.args) ans)))
-            ans)))
 
-      (vl-exprlist-immdeps x.args ans)))
-
-  (define vl-exprlist-immdeps ((x    vl-exprlist-p)
-                               (ans  vl-immdeps-p)
-                               &key
-                               ((ss  vl-scopestack-p) 'ss)
-                               ((ctx acl2::any-p) 'ctx))
-    :returns (new-ans vl-immdeps-p)
-    :measure (vl-exprlist-count x)
-    :flag :list
-    :verify-guards nil
-    (b* (((when (atom x))
-          (vl-immdeps-fix ans))
-         (ans (vl-expr-immdeps (car x) ans)))
-      (vl-exprlist-immdeps (cdr x) ans)))
-
-  ///
-  (verify-guards vl-expr-immdeps-fn)
-  (deffixequiv-mutual vl-expr-immdeps))
 
 (defmacro def-vl-immdeps (type &key body verbosep guard-debug prepwork (ctxp 't))
   (let* ((mksym-package-symbol 'vl::foo)
@@ -396,143 +416,143 @@ elements.")
             (ans (,element-collect (car x) ans)))
          (,list-collect (cdr x) ans)))))
 
-(def-vl-immdeps vl-maybe-expr
-  :body
-  (if x
-      (vl-expr-immdeps x ans)
-    ans))
+;; (def-vl-immdeps vl-maybe-expr
+;;   :body
+;;   (if x
+;;       (vl-expr-immdeps x ans)
+;;     ans))
 
-(def-vl-immdeps vl-range
-  :body
-  (b* (((vl-range x) x)
-       (ans (vl-expr-immdeps x.msb ans))
-       (ans (vl-expr-immdeps x.lsb ans)))
-    ans))
+;; (def-vl-immdeps vl-range
+;;   :body
+;;   (b* (((vl-range x) x)
+;;        (ans (vl-expr-immdeps x.msb ans))
+;;        (ans (vl-expr-immdeps x.lsb ans)))
+;;     ans))
 
-(def-vl-immdeps vl-maybe-range
-  :body
-  (if x
-      (vl-range-immdeps x ans)
-    ans))
+;; (def-vl-immdeps vl-maybe-range
+;;   :body
+;;   (if x
+;;       (vl-range-immdeps x ans)
+;;     ans))
 
-(def-vl-immdeps-list vl-rangelist vl-range)
+;; (def-vl-immdeps-list vl-rangelist vl-range)
 
-(def-vl-immdeps vl-packeddimension
-  :body
-  (if (eq x :vl-unsized-dimension)
-      ans
-    (vl-range-immdeps x ans)))
+;; (def-vl-immdeps vl-packeddimension
+;;   :body
+;;   (vl-packeddimension-case x
+;;     :unsized ans
+;;     :range (vl-range-immdeps x.range ans)))
 
-(def-vl-immdeps vl-maybe-packeddimension
-  :body
-  (if x
-      (vl-packeddimension-immdeps x ans)
-    ans))
+;; (def-vl-immdeps vl-maybe-packeddimension
+;;   :body
+;;   (if x
+;;       (vl-packeddimension-immdeps x ans)
+;;     ans))
 
-(def-vl-immdeps-list vl-packeddimensionlist vl-packeddimension)
+;; (def-vl-immdeps-list vl-packeddimensionlist vl-packeddimension)
 
-(def-vl-immdeps vl-enumbasekind
-  :body
-  (if (stringp x)
-      ;; User-defined type.  The type might be defined at the top-level or it
-      ;; might be defined somewhere else.  It's an ordinary scope item so we
-      ;; can do the ordinary lookup.
-      (vl-immdeps-add-item x ans)
-    ;; Not a user-defined type, so it must be a basic type like logic [3:0] and
-    ;; it has no dependencies
-    ans))
+;; (def-vl-immdeps vl-enumbasekind
+;;   :body
+;;   (if (stringp x)
+;;       ;; User-defined type.  The type might be defined at the top-level or it
+;;       ;; might be defined somewhere else.  It's an ordinary scope item so we
+;;       ;; can do the ordinary lookup.
+;;       (vl-immdeps-add-item x ans)
+;;     ;; Not a user-defined type, so it must be a basic type like logic [3:0] and
+;;     ;; it has no dependencies
+;;     ans))
 
-(def-vl-immdeps vl-enumbasetype
-  :body
-  (b* (((vl-enumbasetype x))
-       (ans (vl-enumbasekind-immdeps x.kind ans))
-       (ans (vl-maybe-packeddimension-immdeps x.dim ans)))
-    ans))
+;; (def-vl-immdeps vl-enumbasetype
+;;   :body
+;;   (b* (((vl-enumbasetype x))
+;;        (ans (vl-enumbasekind-immdeps x.kind ans))
+;;        (ans (vl-maybe-packeddimension-immdeps x.dim ans)))
+;;     ans))
 
-(def-vl-immdeps vl-enumitem
-  :body
-  (b* (((vl-enumitem x))
-       (ans (vl-maybe-range-immdeps x.range ans))
-       (ans (vl-maybe-expr-immdeps x.value ans)))
-    ans))
+;; (def-vl-immdeps vl-enumitem
+;;   :body
+;;   (b* (((vl-enumitem x))
+;;        (ans (vl-maybe-range-immdeps x.range ans))
+;;        (ans (vl-maybe-expr-immdeps x.value ans)))
+;;     ans))
 
-(def-vl-immdeps-list vl-enumitemlist vl-enumitem)
+;; (def-vl-immdeps-list vl-enumitemlist vl-enumitem)
 
 
-(defines vl-datatype-immdeps
-  :flag-local nil
-  :verify-guards nil
+;; (defines vl-datatype-immdeps
+;;   :flag-local nil
+;;   :verify-guards nil
 
-  (define vl-datatype-immdeps ((x   vl-datatype-p)
-                               (ans vl-immdeps-p)
-                               &key
-                               ((ss       vl-scopestack-p)  'ss)
-                               ((ctx      acl2::any-p)      'ctx))
-    :returns (new-ans vl-immdeps-p)
-    :measure (vl-datatype-count x)
-    :flag :datatype
-    (b* ((ans (vl-immdeps-fix ans)))
-      (vl-datatype-case x
-        (:vl-coretype
-         (b* ((ans (vl-packeddimensionlist-immdeps x.pdims ans))
-              (ans (vl-packeddimensionlist-immdeps x.udims ans)))
-           ans))
-        (:vl-struct
-         (b* ((ans (vl-structmemberlist-immdeps x.members ans))
-              (ans (vl-packeddimensionlist-immdeps x.pdims ans))
-              (ans (vl-packeddimensionlist-immdeps x.udims ans)))
-           ans))
-        (:vl-union
-         (b* ((ans (vl-structmemberlist-immdeps x.members ans))
-              (ans (vl-packeddimensionlist-immdeps x.pdims ans))
-              (ans (vl-packeddimensionlist-immdeps x.udims ans)))
-           ans))
-        (:vl-enum
-         (b* ((ans (vl-enumbasetype-immdeps x.basetype ans))
-              (ans (vl-enumitemlist-immdeps x.items ans))
-              (ans (vl-packeddimensionlist-immdeps x.pdims ans))
-              (ans (vl-packeddimensionlist-immdeps x.udims ans)))
-           ans))
-        (:vl-usertype
-         (b* ((ans (vl-expr-immdeps x.kind ans))
-              (ans (vl-packeddimensionlist-immdeps x.pdims ans))
-              (ans (vl-packeddimensionlist-immdeps x.udims ans)))
-           ans)))))
+;;   (define vl-datatype-immdeps ((x   vl-datatype-p)
+;;                                (ans vl-immdeps-p)
+;;                                &key
+;;                                ((ss       vl-scopestack-p)  'ss)
+;;                                ((ctx      acl2::any-p)      'ctx))
+;;     :returns (new-ans vl-immdeps-p)
+;;     :measure (vl-datatype-count x)
+;;     :flag :datatype
+;;     (b* ((ans (vl-immdeps-fix ans)))
+;;       (vl-datatype-case x
+;;         (:vl-coretype
+;;          (b* ((ans (vl-packeddimensionlist-immdeps x.pdims ans))
+;;               (ans (vl-packeddimensionlist-immdeps x.udims ans)))
+;;            ans))
+;;         (:vl-struct
+;;          (b* ((ans (vl-structmemberlist-immdeps x.members ans))
+;;               (ans (vl-packeddimensionlist-immdeps x.pdims ans))
+;;               (ans (vl-packeddimensionlist-immdeps x.udims ans)))
+;;            ans))
+;;         (:vl-union
+;;          (b* ((ans (vl-structmemberlist-immdeps x.members ans))
+;;               (ans (vl-packeddimensionlist-immdeps x.pdims ans))
+;;               (ans (vl-packeddimensionlist-immdeps x.udims ans)))
+;;            ans))
+;;         (:vl-enum
+;;          (b* ((ans (vl-enumbasetype-immdeps x.basetype ans))
+;;               (ans (vl-enumitemlist-immdeps x.items ans))
+;;               (ans (vl-packeddimensionlist-immdeps x.pdims ans))
+;;               (ans (vl-packeddimensionlist-immdeps x.udims ans)))
+;;            ans))
+;;         (:vl-usertype
+;;          (b* ((ans (vl-scopeexpr-immdeps x.name ans))
+;;               (ans (vl-packeddimensionlist-immdeps x.pdims ans))
+;;               (ans (vl-packeddimensionlist-immdeps x.udims ans)))
+;;            ans)))))
 
-  (define vl-structmemberlist-immdeps ((x   vl-structmemberlist-p)
-                                       (ans vl-immdeps-p)
-                                       &key
-                                       ((ss  vl-scopestack-p)  'ss)
-                                       ((ctx acl2::any-p)      'ctx))
-    :returns (new-ans vl-immdeps-p)
-    :measure (vl-structmemberlist-count x)
-    :flag :structmemberlist
-    (b* (((when (atom x))
-          (vl-immdeps-fix ans))
-         (ans (vl-structmember-immdeps (car x) ans)))
-      (vl-structmemberlist-immdeps (cdr x) ans)))
+;;   (define vl-structmemberlist-immdeps ((x   vl-structmemberlist-p)
+;;                                        (ans vl-immdeps-p)
+;;                                        &key
+;;                                        ((ss  vl-scopestack-p)  'ss)
+;;                                        ((ctx acl2::any-p)      'ctx))
+;;     :returns (new-ans vl-immdeps-p)
+;;     :measure (vl-structmemberlist-count x)
+;;     :flag :structmemberlist
+;;     (b* (((when (atom x))
+;;           (vl-immdeps-fix ans))
+;;          (ans (vl-structmember-immdeps (car x) ans)))
+;;       (vl-structmemberlist-immdeps (cdr x) ans)))
 
-  (define vl-structmember-immdeps ((x   vl-structmember-p)
-                                   (ans vl-immdeps-p)
-                                   &key
-                                   ((ss  vl-scopestack-p)  'ss)
-                                   ((ctx acl2::any-p)      'ctx))
-    :returns (new-ans vl-immdeps-p)
-    :flag :structmember
-    :measure (vl-structmember-count x)
-    (b* (((vl-structmember x))
-         (ans (vl-datatype-immdeps x.type ans))
-         (ans (vl-maybe-expr-immdeps x.rhs ans)))
-      ans))
-  ///
-  (verify-guards vl-datatype-immdeps-fn)
-  (deffixequiv-mutual vl-datatype-immdeps))
+;;   (define vl-structmember-immdeps ((x   vl-structmember-p)
+;;                                    (ans vl-immdeps-p)
+;;                                    &key
+;;                                    ((ss  vl-scopestack-p)  'ss)
+;;                                    ((ctx acl2::any-p)      'ctx))
+;;     :returns (new-ans vl-immdeps-p)
+;;     :flag :structmember
+;;     :measure (vl-structmember-count x)
+;;     (b* (((vl-structmember x))
+;;          (ans (vl-datatype-immdeps x.type ans))
+;;          (ans (vl-maybe-expr-immdeps x.rhs ans)))
+;;       ans))
+;;   ///
+;;   (verify-guards vl-datatype-immdeps-fn)
+;;   (deffixequiv-mutual vl-datatype-immdeps))
 
-(def-vl-immdeps vl-maybe-datatype
-  :body
-  (if x
-      (vl-datatype-immdeps x ans)
-    ans))
+;; (def-vl-immdeps vl-maybe-datatype
+;;   :body
+;;   (if x
+;;       (vl-datatype-immdeps x ans)
+;;     ans))
 
 (def-vl-immdeps vl-interfaceport
   :ctxp nil
@@ -579,19 +599,19 @@ elements.")
 (def-vl-immdeps-list vl-portdecllist vl-portdecl :ctxp nil)
 
 
-(def-vl-immdeps vl-gatedelay
-  :body
-  (b* (((vl-gatedelay x))
-       (ans (vl-expr-immdeps x.rise ans))
-       (ans (vl-expr-immdeps x.fall ans))
-       (ans (vl-maybe-expr-immdeps x.high ans)))
-    ans))
+;; (def-vl-immdeps vl-gatedelay
+;;   :body
+;;   (b* (((vl-gatedelay x))
+;;        (ans (vl-expr-immdeps x.rise ans))
+;;        (ans (vl-expr-immdeps x.fall ans))
+;;        (ans (vl-maybe-expr-immdeps x.high ans)))
+;;     ans))
 
-(def-vl-immdeps vl-maybe-gatedelay
-  :body
-  (if x
-      (vl-gatedelay-immdeps x ans)
-    ans))
+;; (def-vl-immdeps vl-maybe-gatedelay
+;;   :body
+;;   (if x
+;;       (vl-gatedelay-immdeps x ans)
+;;     ans))
 
 (def-vl-immdeps vl-assign
   :ctxp nil
@@ -641,55 +661,55 @@ elements.")
 (def-vl-immdeps-list vl-importlist vl-import :ctxp nil)
 
 
-(def-vl-immdeps vl-plainarg
-  :body
-  (b* (((vl-plainarg x)))
-    (vl-maybe-expr-immdeps x.expr ans)))
+;; (def-vl-immdeps vl-plainarg
+;;   :body
+;;   (b* (((vl-plainarg x)))
+;;     (vl-maybe-expr-immdeps x.expr ans)))
 
-(def-vl-immdeps-list vl-plainarglist vl-plainarg)
+;; (def-vl-immdeps-list vl-plainarglist vl-plainarg)
 
-(def-vl-immdeps vl-namedarg
-  :body
-  (b* (((vl-namedarg x)))
-    (vl-maybe-expr-immdeps x.expr ans)))
+;; (def-vl-immdeps vl-namedarg
+;;   :body
+;;   (b* (((vl-namedarg x)))
+;;     (vl-maybe-expr-immdeps x.expr ans)))
 
-(def-vl-immdeps-list vl-namedarglist vl-namedarg)
+;; (def-vl-immdeps-list vl-namedarglist vl-namedarg)
 
-(def-vl-immdeps vl-arguments
-  :body
-  (vl-arguments-case x
-    (:vl-arguments-plain (vl-plainarglist-immdeps x.args ans))
-    (:vl-arguments-named (vl-namedarglist-immdeps x.args ans))))
+;; (def-vl-immdeps vl-arguments
+;;   :body
+;;   (vl-arguments-case x
+;;     (:vl-arguments-plain (vl-plainarglist-immdeps x.args ans))
+;;     (:vl-arguments-named (vl-namedarglist-immdeps x.args ans))))
 
-(def-vl-immdeps-list vl-argumentlist vl-arguments)
+;; (def-vl-immdeps-list vl-argumentlist vl-arguments)
 
-(def-vl-immdeps vl-paramvalue
-  :body
-  (if (vl-paramvalue-expr-p x)
-      (vl-expr-immdeps x ans)
-    (vl-datatype-immdeps x ans)))
+;; (def-vl-immdeps vl-paramvalue
+;;   :body
+;;   (vl-paramvalue-case x
+;;     :expr (vl-expr-immdeps x.expr ans)
+;;     :type (vl-datatype-immdeps x.type ans)))
 
-(def-vl-immdeps-list vl-paramvaluelist vl-paramvalue)
+;; (def-vl-immdeps-list vl-paramvaluelist vl-paramvalue)
 
-(def-vl-immdeps vl-maybe-paramvalue
-  :body
-  (if x
-      (vl-paramvalue-immdeps x ans)
-    ans))
+;; (def-vl-immdeps vl-maybe-paramvalue
+;;   :body
+;;   (if x
+;;       (vl-paramvalue-immdeps x ans)
+;;     ans))
 
 
-(def-vl-immdeps vl-namedparamvalue
-  :body
-  (b* (((vl-namedparamvalue x)))
-    (vl-maybe-paramvalue-immdeps x.value ans)))
+;; (def-vl-immdeps vl-namedparamvalue
+;;   :body
+;;   (b* (((vl-namedparamvalue x)))
+;;     (vl-maybe-paramvalue-immdeps x.value ans)))
 
-(def-vl-immdeps-list vl-namedparamvaluelist vl-namedparamvalue)
+;; (def-vl-immdeps-list vl-namedparamvaluelist vl-namedparamvalue)
 
-(def-vl-immdeps vl-paramargs
-  :body
-  (vl-paramargs-case x
-    (:vl-paramargs-plain (vl-paramvaluelist-immdeps x.args ans))
-    (:vl-paramargs-named (vl-namedparamvaluelist-immdeps x.args ans))))
+;; (def-vl-immdeps vl-paramargs
+;;   :body
+;;   (vl-paramargs-case x
+;;     (:vl-paramargs-plain (vl-paramvaluelist-immdeps x.args ans))
+;;     (:vl-paramargs-named (vl-namedparamvaluelist-immdeps x.args ans))))
 
 (def-vl-immdeps vl-modinst
   :ctxp nil
@@ -717,19 +737,19 @@ elements.")
 
 (def-vl-immdeps-list vl-gateinstlist vl-gateinst :ctxp nil)
 
-(def-vl-immdeps vl-paramtype
-  :body
-  (vl-paramtype-case x
-    (:vl-implicitvalueparam
-     (b* ((ans (vl-maybe-range-immdeps x.range ans))
-          (ans (vl-maybe-expr-immdeps x.default ans)))
-       ans))
-    (:vl-explicitvalueparam
-     (b* ((ans (vl-datatype-immdeps x.type ans))
-          (ans (vl-maybe-expr-immdeps x.default ans)))
-       ans))
-    (:vl-typeparam
-     (vl-maybe-datatype-immdeps x.default ans))))
+;; (def-vl-immdeps vl-paramtype
+;;   :body
+;;   (vl-paramtype-case x
+;;     (:vl-implicitvalueparam
+;;      (b* ((ans (vl-maybe-range-immdeps x.range ans))
+;;           (ans (vl-maybe-expr-immdeps x.default ans)))
+;;        ans))
+;;     (:vl-explicitvalueparam
+;;      (b* ((ans (vl-datatype-immdeps x.type ans))
+;;           (ans (vl-maybe-expr-immdeps x.default ans)))
+;;        ans))
+;;     (:vl-typeparam
+;;      (vl-maybe-datatype-immdeps x.default ans))))
 
 (def-vl-immdeps vl-paramdecl
   :ctxp nil
@@ -740,176 +760,176 @@ elements.")
 
 (def-vl-immdeps-list vl-paramdecllist vl-paramdecl :ctxp nil)
 
-(def-vl-immdeps vl-evatom
-  :body
-  (b* (((vl-evatom x)))
-    (vl-expr-immdeps x.expr ans)))
+;; (def-vl-immdeps vl-evatom
+;;   :body
+;;   (b* (((vl-evatom x)))
+;;     (vl-expr-immdeps x.expr ans)))
 
-(def-vl-immdeps-list vl-evatomlist vl-evatom)
+;; (def-vl-immdeps-list vl-evatomlist vl-evatom)
 
-(def-vl-immdeps vl-eventcontrol
-  :body
-  (b* (((vl-eventcontrol x)))
-    (vl-evatomlist-immdeps x.atoms ans)))
+;; (def-vl-immdeps vl-eventcontrol
+;;   :body
+;;   (b* (((vl-eventcontrol x)))
+;;     (vl-evatomlist-immdeps x.atoms ans)))
 
-(def-vl-immdeps vl-delaycontrol
-  :body
-  (b* (((vl-delaycontrol x)))
-    (vl-expr-immdeps x.value ans)))
+;; (def-vl-immdeps vl-delaycontrol
+;;   :body
+;;   (b* (((vl-delaycontrol x)))
+;;     (vl-expr-immdeps x.value ans)))
 
-(def-vl-immdeps vl-repeateventcontrol
-  :body
-  (b* (((vl-repeateventcontrol x))
-       (ans (vl-expr-immdeps x.expr ans))
-       (ans (vl-eventcontrol-immdeps x.ctrl ans)))
-    ans))
+;; (def-vl-immdeps vl-repeateventcontrol
+;;   :body
+;;   (b* (((vl-repeateventcontrol x))
+;;        (ans (vl-expr-immdeps x.expr ans))
+;;        (ans (vl-eventcontrol-immdeps x.ctrl ans)))
+;;     ans))
 
-(def-vl-immdeps vl-delayoreventcontrol
-  :body
-  (case (tag x)
-    (:vl-delaycontrol (vl-delaycontrol-immdeps x ans))
-    (:vl-eventcontrol (vl-eventcontrol-immdeps x ans))
-    (otherwise        (vl-repeateventcontrol-immdeps x ans))))
+;; (def-vl-immdeps vl-delayoreventcontrol
+;;   :body
+;;   (case (tag x)
+;;     (:vl-delaycontrol (vl-delaycontrol-immdeps x ans))
+;;     (:vl-eventcontrol (vl-eventcontrol-immdeps x ans))
+;;     (otherwise        (vl-repeateventcontrol-immdeps x ans))))
 
-(def-vl-immdeps vl-maybe-delayoreventcontrol
-  :body
-  (if x
-      (vl-delayoreventcontrol-immdeps x ans)
-    ans))
-
-
-(defines vl-stmt-immdeps
-  :flag-local nil
-  :verify-guards nil
-  :returns-hints ((and stable-under-simplificationp
-                       '(:expand ((vl-stmt-immdeps x ans)
-                                  (vl-stmtlist-immdeps x ans)
-                                  (vl-caselist-immdeps x ans)))))
+;; (def-vl-immdeps vl-maybe-delayoreventcontrol
+;;   :body
+;;   (if x
+;;       (vl-delayoreventcontrol-immdeps x ans)
+;;     ans))
 
 
-  (define vl-stmt-immdeps ((x   vl-stmt-p)
-                           (ans vl-immdeps-p)
-                           &key
-                           ((ss vl-scopestack-p) 'ss))
-    :returns (new-ans vl-immdeps-p)
-    :measure (vl-stmt-count x)
-    :flag :stmt
-    (b* ((x   (vl-stmt-fix x))
-         (ans (vl-immdeps-fix ans))
-         (ctx x))
-      (vl-stmt-case x
-        (:vl-nullstmt
-         ans)
-        (:vl-assignstmt
-         (b* ((ans (vl-expr-immdeps x.lvalue ans))
-              (ans (vl-expr-immdeps x.expr ans))
-              (ans (vl-maybe-delayoreventcontrol-immdeps x.ctrl ans)))
-           ans))
-        (:vl-deassignstmt
-         (vl-expr-immdeps x.lvalue ans))
-        (:vl-enablestmt
-         (b* ((ans (vl-expr-immdeps x.id ans))
-              (ans (vl-exprlist-immdeps x.args ans)))
-           ans))
-        (:vl-disablestmt
-         (vl-expr-immdeps x.id ans))
-        (:vl-returnstmt
-         (if x.val (vl-expr-immdeps x.val ans) ans))
-        (:vl-eventtriggerstmt
-         (vl-expr-immdeps x.id ans))
-        (:vl-casestmt
-         (b* ((ans (vl-expr-immdeps x.test ans))
-              (ans (vl-caselist-immdeps x.caselist ans))
-              (ans (vl-stmt-immdeps x.default ans)))
-           ans))
-        (:vl-ifstmt
-         (b* ((ans (vl-expr-immdeps x.condition ans))
-              (ans (vl-stmt-immdeps x.truebranch ans))
-              (ans (vl-stmt-immdeps x.falsebranch ans)))
-           ans))
-        (:vl-foreverstmt
-         (vl-stmt-immdeps x.body ans))
-        (:vl-waitstmt
-         (b* ((ans (vl-expr-immdeps x.condition ans))
-              (ans (vl-stmt-immdeps x.body ans)))
-           ans))
-        (:vl-repeatstmt
-         (b* ((ans (vl-expr-immdeps x.condition ans))
-              (ans (vl-stmt-immdeps x.body ans)))
-           ans))
-        (:vl-whilestmt
-         (b* ((ans (vl-expr-immdeps x.condition ans))
-              (ans (vl-stmt-immdeps x.body ans)))
-           ans))
-        (:vl-forstmt
-         (b* ((ans (vl-vardecllist-immdeps x.initdecls ans))
-              (ans (vl-stmtlist-immdeps x.initassigns ans))
-              (ans (vl-expr-immdeps x.test ans))
-              (ans (vl-stmtlist-immdeps x.stepforms ans))
-              (ans (vl-stmt-immdeps x.body ans)))
-           ans))
-        (:vl-blockstmt
-         (b* ((ss (vl-scopestack-push (vl-blockstmt->blockscope x) ss))
-              (ans (vl-importlist-immdeps x.imports ans))
-              (ans (vl-paramdecllist-immdeps x.paramdecls ans))
-              (ans (vl-vardecllist-immdeps x.vardecls ans))
-              (ans (vl-stmtlist-immdeps x.stmts ans)))
-           ans))
-        (:vl-timingstmt
-         (b* ((ans (vl-delayoreventcontrol-immdeps x.ctrl ans))
-              (ans (vl-stmt-immdeps x.body ans)))
-           ans)))))
+;; (defines vl-stmt-immdeps
+;;   :flag-local nil
+;;   :verify-guards nil
+;;   :returns-hints ((and stable-under-simplificationp
+;;                        '(:expand ((vl-stmt-immdeps x ans)
+;;                                   (vl-stmtlist-immdeps x ans)
+;;                                   (vl-caselist-immdeps x ans)))))
 
-  (define vl-stmtlist-immdeps ((x   vl-stmtlist-p)
-                               (ans vl-immdeps-p)
-                               &key
-                               ((ss vl-scopestack-p) 'ss))
-    :returns (new-ans vl-immdeps-p)
-    :measure (vl-stmtlist-count x)
-    :flag :stmtlist
-    (b* ((x   (vl-stmtlist-fix x))
-         (ans (vl-immdeps-fix ans))
-         ((when (atom x))
-          ans)
-         (ans (vl-stmt-immdeps (car x) ans)))
-      (vl-stmtlist-immdeps (cdr x) ans)))
 
-  (define vl-caselist-immdeps ((x   vl-caselist-p)
-                               (ans vl-immdeps-p)
-                               &key
-                               ((ss       vl-scopestack-p)  'ss)
-                               ((ctx      acl2::any-p)      'ctx))
-    :returns (new-ans vl-immdeps-p)
-    :flag :caselist
-    :measure (vl-caselist-count x)
-    (b* ((x   (vl-caselist-fix x))
-         (ans (vl-immdeps-fix ans))
-         ((when (atom x))
-          ans)
-         ((cons exprs1 body1) (car x))
-         (ans (vl-exprlist-immdeps exprs1 ans))
-         (ans (vl-stmt-immdeps body1 ans)))
-      (vl-caselist-immdeps (cdr x) ans)))
+;;   (define vl-stmt-immdeps ((x   vl-stmt-p)
+;;                            (ans vl-immdeps-p)
+;;                            &key
+;;                            ((ss vl-scopestack-p) 'ss))
+;;     :returns (new-ans vl-immdeps-p)
+;;     :measure (vl-stmt-count x)
+;;     :flag :stmt
+;;     (b* ((x   (vl-stmt-fix x))
+;;          (ans (vl-immdeps-fix ans))
+;;          (ctx x))
+;;       (vl-stmt-case x
+;;         (:vl-nullstmt
+;;          ans)
+;;         (:vl-assignstmt
+;;          (b* ((ans (vl-expr-immdeps x.lvalue ans))
+;;               (ans (vl-expr-immdeps x.expr ans))
+;;               (ans (vl-maybe-delayoreventcontrol-immdeps x.ctrl ans)))
+;;            ans))
+;;         (:vl-deassignstmt
+;;          (vl-expr-immdeps x.lvalue ans))
+;;         (:vl-enablestmt
+;;          (b* ((ans (vl-expr-immdeps x.id ans))
+;;               (ans (vl-exprlist-immdeps x.args ans)))
+;;            ans))
+;;         (:vl-disablestmt
+;;          (vl-expr-immdeps x.id ans))
+;;         (:vl-returnstmt
+;;          (if x.val (vl-expr-immdeps x.val ans) ans))
+;;         (:vl-eventtriggerstmt
+;;          (vl-expr-immdeps x.id ans))
+;;         (:vl-casestmt
+;;          (b* ((ans (vl-expr-immdeps x.test ans))
+;;               (ans (vl-caselist-immdeps x.caselist ans))
+;;               (ans (vl-stmt-immdeps x.default ans)))
+;;            ans))
+;;         (:vl-ifstmt
+;;          (b* ((ans (vl-expr-immdeps x.condition ans))
+;;               (ans (vl-stmt-immdeps x.truebranch ans))
+;;               (ans (vl-stmt-immdeps x.falsebranch ans)))
+;;            ans))
+;;         (:vl-foreverstmt
+;;          (vl-stmt-immdeps x.body ans))
+;;         (:vl-waitstmt
+;;          (b* ((ans (vl-expr-immdeps x.condition ans))
+;;               (ans (vl-stmt-immdeps x.body ans)))
+;;            ans))
+;;         (:vl-repeatstmt
+;;          (b* ((ans (vl-expr-immdeps x.condition ans))
+;;               (ans (vl-stmt-immdeps x.body ans)))
+;;            ans))
+;;         (:vl-whilestmt
+;;          (b* ((ans (vl-expr-immdeps x.condition ans))
+;;               (ans (vl-stmt-immdeps x.body ans)))
+;;            ans))
+;;         (:vl-forstmt
+;;          (b* ((ans (vl-vardecllist-immdeps x.initdecls ans))
+;;               (ans (vl-stmtlist-immdeps x.initassigns ans))
+;;               (ans (vl-expr-immdeps x.test ans))
+;;               (ans (vl-stmtlist-immdeps x.stepforms ans))
+;;               (ans (vl-stmt-immdeps x.body ans)))
+;;            ans))
+;;         (:vl-blockstmt
+;;          (b* ((ss (vl-scopestack-push (vl-blockstmt->blockscope x) ss))
+;;               (ans (vl-importlist-immdeps x.imports ans))
+;;               (ans (vl-paramdecllist-immdeps x.paramdecls ans))
+;;               (ans (vl-vardecllist-immdeps x.vardecls ans))
+;;               (ans (vl-stmtlist-immdeps x.stmts ans)))
+;;            ans))
+;;         (:vl-timingstmt
+;;          (b* ((ans (vl-delayoreventcontrol-immdeps x.ctrl ans))
+;;               (ans (vl-stmt-immdeps x.body ans)))
+;;            ans)))))
 
-  ///
-  (local (set-default-hints
-          '((and stable-under-simplificationp
-                 '(:expand ((:free (ss ans) (vl-stmt-immdeps x ans))
-                            (:free (ss ans) (vl-stmt-immdeps (vl-stmt-fix x) ans))
-                            (:free (ss ans) (vl-stmtlist-immdeps x ans))
-                            (:free (ss ans) (vl-stmtlist-immdeps (vl-stmtlist-fix x) ans))
-                            (:free (ss ans ctx) (vl-caselist-immdeps x ans))
-                            (:free (ss ans ctx) (vl-caselist-immdeps (vl-caselist-fix x) ans))))))))
+;;   (define vl-stmtlist-immdeps ((x   vl-stmtlist-p)
+;;                                (ans vl-immdeps-p)
+;;                                &key
+;;                                ((ss vl-scopestack-p) 'ss))
+;;     :returns (new-ans vl-immdeps-p)
+;;     :measure (vl-stmtlist-count x)
+;;     :flag :stmtlist
+;;     (b* ((x   (vl-stmtlist-fix x))
+;;          (ans (vl-immdeps-fix ans))
+;;          ((when (atom x))
+;;           ans)
+;;          (ans (vl-stmt-immdeps (car x) ans)))
+;;       (vl-stmtlist-immdeps (cdr x) ans)))
 
-  (deffixequiv-mutual vl-stmt-immdeps)
-  (verify-guards vl-stmt-immdeps-fn))
+;;   (define vl-caselist-immdeps ((x   vl-caselist-p)
+;;                                (ans vl-immdeps-p)
+;;                                &key
+;;                                ((ss       vl-scopestack-p)  'ss)
+;;                                ((ctx      acl2::any-p)      'ctx))
+;;     :returns (new-ans vl-immdeps-p)
+;;     :flag :caselist
+;;     :measure (vl-caselist-count x)
+;;     (b* ((x   (vl-caselist-fix x))
+;;          (ans (vl-immdeps-fix ans))
+;;          ((when (atom x))
+;;           ans)
+;;          ((cons exprs1 body1) (car x))
+;;          (ans (vl-exprlist-immdeps exprs1 ans))
+;;          (ans (vl-stmt-immdeps body1 ans)))
+;;       (vl-caselist-immdeps (cdr x) ans)))
+
+;;   ///
+;;   (local (set-default-hints
+;;           '((and stable-under-simplificationp
+;;                  '(:expand ((:free (ss ans) (vl-stmt-immdeps x ans))
+;;                             (:free (ss ans) (vl-stmt-immdeps (vl-stmt-fix x) ans))
+;;                             (:free (ss ans) (vl-stmtlist-immdeps x ans))
+;;                             (:free (ss ans) (vl-stmtlist-immdeps (vl-stmtlist-fix x) ans))
+;;                             (:free (ss ans ctx) (vl-caselist-immdeps x ans))
+;;                             (:free (ss ans ctx) (vl-caselist-immdeps (vl-caselist-fix x) ans))))))))
+
+;;   (deffixequiv-mutual vl-stmt-immdeps)
+;;   (verify-guards vl-stmt-immdeps-fn))
 
 
 (def-vl-immdeps vl-always
   :ctxp nil
   :body
   (b* (((vl-always x)))
-    (vl-stmt-immdeps x.stmt ans)))
+    (vl-stmt-immdeps x.stmt ans :ctx x)))
 
 (def-vl-immdeps-list vl-alwayslist vl-always :ctxp nil)
 
@@ -917,7 +937,7 @@ elements.")
   :ctxp nil
   :body
   (b* (((vl-initial x)))
-    (vl-stmt-immdeps x.stmt ans)))
+    (vl-stmt-immdeps x.stmt ans :ctx x)))
 
 (def-vl-immdeps-list vl-initiallist vl-initial :ctxp nil)
 
@@ -937,7 +957,7 @@ elements.")
        (ans (vl-importlist-immdeps x.imports ans))
        (ans (vl-paramdecllist-immdeps x.paramdecls ans))
        (ans (vl-vardecllist-immdeps x.vardecls ans)))
-    (vl-stmt-immdeps x.body ans)))
+    (vl-stmt-immdeps x.body ans :ctx x)))
 
 (def-vl-immdeps-list vl-fundecllist vl-fundecl :ctxp nil)
 
@@ -951,7 +971,7 @@ elements.")
        (ans (vl-importlist-immdeps x.imports ans))
        (ans (vl-paramdecllist-immdeps x.paramdecls ans))
        (ans (vl-vardecllist-immdeps x.vardecls ans)))
-    (vl-stmt-immdeps x.body ans)))
+    (vl-stmt-immdeps x.body ans :ctx x)))
 
 (def-vl-immdeps-list vl-taskdecllist vl-taskdecl :ctxp nil)
 
@@ -1036,7 +1056,7 @@ elements.")
       (vl-genelement-case x
         (:vl-genloop
          (b* (;; Make a fake param for the loop counter, the type and such are irrelevant
-              (fake-param (make-vl-paramdecl :name (vl-id->name x.var)
+              (fake-param (make-vl-paramdecl :name x.var
                                              :type (make-vl-implicitvalueparam)
                                              :loc *vl-fakeloc*))
               (fake-scope (vl-sort-genelements (list (make-vl-genbase :item fake-param))))
@@ -1243,6 +1263,7 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
        (ans (vl-gateinstlist-immdeps   x.gateinsts  ans))
        (ans (vl-alwayslist-immdeps     x.alwayses   ans))
        (ans (vl-initiallist-immdeps    x.initials   ans))
+       (ans (vl-typedeflist-immdeps     x.typedefs   ans))
        (ans (vl-genelementlist-immdeps x.generates  ans)))
     (vl-immdepgraph-merge (hons-copy x.name) ans graph)))
 

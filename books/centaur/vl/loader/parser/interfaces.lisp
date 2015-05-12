@@ -67,7 +67,9 @@ interface_ansi_header ::=
 
   ((name     stringp               "Name of the interface.")
    (params   vl-paramdecllist-p    "Parameters declarations from the #(...) list, if any.")
-   (ports    vl-portlist-p         "Ports like (o, a, b).")
+   (ansi-ports vl-ansi-portdecllist-p "Temporary ANSI portdecl structures")
+   (ports    vl-portlist-p         "Non-ANSI Ports like (o, a, b).")
+   (ansi-p   booleanp              "Ansi or non-ANSI ports?")
    (items    vl-genelementlist-p   "Items from the interface's body, i.e., until endinterface.")
    (atts     vl-atts-p)
    (minloc   vl-location-p)
@@ -118,8 +120,11 @@ interface_ansi_header ::=
                         :maxloc     maxloc
                         :warnings   warnings
                         :origname   name
+                        :parse-temps (make-vl-parse-temps
+                                      :ansi-p ansi-p
+                                      :loaditems items
+                                      :ansi-ports ansi-ports)
                         :comments   nil
-                        :loaditems  items
                         )))
 
 (defparser vl-parse-interface-declaration-core (atts interface-kwd name)
@@ -140,22 +145,19 @@ interface_ansi_header ::=
        (:= (vl-parse-endblock-name (vl-idtoken->name name)
                                    "interface/endinterface"))
        (return-raw
-        (b* (((vl-parsed-ports portinfo))
-             (name     (vl-idtoken->name name))
+        (b* ((name     (vl-idtoken->name name))
              (minloc   (vl-token->loc interface-kwd))
              (maxloc   (vl-token->loc endkwd))
              (warnings (vl-parsestate->warnings (vl-tokstream->pstate)))
-             ((when (and portinfo.ansi-p (vl-genelementlist->portdecls items))) ;; User's fault
+             ((mv ansi-p ansi-portdecls ports)
+              (vl-parsed-ports-case portinfo
+                :ansi (mv t portinfo.decls nil)
+                :nonansi (mv nil nil portinfo.ports)))
+             ((when (and ansi-p (vl-genelementlist->portdecls items))) ;; User's fault
               (vl-parse-error "ANSI interface cannot have internal port declarations."))
-             ((when (and (not portinfo.ansi-p)
-                         (or portinfo.portdecls portinfo.vardecls)))
-              (vl-parse-error "Non-ANSI interface ports are somehow causing declarations?
-                               Programming error."))
              (items (append (vl-modelementlist->genelements imports)
-                            (vl-modelementlist->genelements portinfo.portdecls)
-                            (vl-modelementlist->genelements portinfo.vardecls)
                             items))
-             (interface (vl-make-interface-by-items name params portinfo.ports items
+             (interface (vl-make-interface-by-items name params ansi-portdecls ports ansi-p items
                                               atts minloc maxloc warnings)))
           (mv nil interface tokstream)))))
 

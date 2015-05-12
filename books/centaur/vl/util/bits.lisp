@@ -29,7 +29,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "defs")
+;; (include-book "defs")
+(include-book "std/util/defenum" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
 (include-book "centaur/fty/deftypes" :dir :system)
 (local (std::add-default-post-define-hook :fix))
 

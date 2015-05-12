@@ -52,7 +52,7 @@
 ;; set of all nodes.  These don't have any constraints.
 
 (defxdoc def-dag-measure
-  :parents (proof-templates)
+  :parents (proof-automation)
   :short "Generic framework that allows simple traversals of DAGs."
   :long "<p>Suppose we have a representation of some finite DAG, but it is
 encoded in such a way that it isn't obvious that it's acyclic.  E.g., perhaps

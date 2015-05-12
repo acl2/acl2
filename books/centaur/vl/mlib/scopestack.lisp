@@ -218,9 +218,9 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
     :long "<p>Note that this is only for items, i.e., it's not for definitions,
   ports, packages, etc.</p>"
     '((interface    (:import)
-                    paramdecl vardecl modport)
+                    paramdecl vardecl)
       (module       (:import)
-                    paramdecl vardecl fundecl taskdecl
+                    paramdecl vardecl fundecl taskdecl typedef
                     (modinst :name instname :maybe-stringp t)
                     (gateinst :maybe-stringp t)
                     (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
@@ -274,6 +274,7 @@ in it, such as a function, task, or block statement."
                "Parameter declarations in this scope.")
    (vardecls vl-vardecllist-p
              "Variable declarations in this scope.")
+   (scopetype vl-scopetype-p "Kind of block responsible for this")
 
    (name  maybe-stringp :rule-classes :type-prescription
           "Just a debugging aide.  This lets us see the name of this scope when
@@ -286,6 +287,7 @@ in it, such as a function, task, or block statement."
     (make-vl-blockscope :vardecls x.vardecls
                         :imports x.imports
                         :paramdecls x.paramdecls
+                        :scopetype :vl-fundecl
                         :name  x.name)))
 
 (define vl-taskdecl->blockscope ((x vl-taskdecl-p))
@@ -295,25 +297,49 @@ in it, such as a function, task, or block statement."
     (make-vl-blockscope :vardecls x.vardecls
                         :imports x.imports
                         :paramdecls x.paramdecls
+                        :scopetype :vl-taskdecl
                         :name  x.name)))
 
 (define vl-blockstmt->blockscope ((x vl-stmt-p))
-  :guard (eq (vl-stmt-kind x) :vl-blockstmt)
+  :guard (vl-stmt-case x :vl-blockstmt)
   :returns (scope vl-blockscope-p)
   :parents (vl-blockscope vl-scopestack-push)
   (b* (((vl-blockstmt x)))
     (make-vl-blockscope :vardecls x.vardecls
                         :imports x.imports
                         :paramdecls x.paramdecls
+                        :scopetype :vl-blockstmt
                         :name  x.name)))
 
 (define vl-forstmt->blockscope ((x vl-stmt-p))
-  :guard (eq (vl-stmt-kind x) :vl-forstmt)
+  :guard (vl-stmt-case x :vl-forstmt)
   :returns (scope vl-blockscope-p)
   :parents (vl-blockscope vl-scopestack-push)
+  ;; Note.   We have officially decided that for statemetns are scopes and should
+  ;; be pushed onto the scopestack.  Something like this:
+  ;;
+  ;;    for(int i = 0; i < 10; ++i)
+  ;;      begin
+  ;;       int j = i;
+  ;;       ...
+  ;;      end
+  ;;
+  ;; Therefore involves 2 scopes, an outer scope for I and an inner scope for J.
+  ;; We should push both scopes.
+  ;;
+  ;; Note furthermore that VCS and NCVerilog agree that
+  ;;
+  ;; for (int i=0; i<10; i++)
+  ;;   begin
+  ;;     int i = 15;
+  ;;     $display("i: %x", i);
+  ;;   end
+  ;;
+  ;; Should print i: F ten times.  That seems like it can only happen if there
+  ;; are indeed two separate scopes in play here.
   (b* (((vl-forstmt x)))
-    (make-vl-blockscope :vardecls x.initdecls)))
-
+    (make-vl-blockscope :vardecls x.initdecls
+                        :scopetype :vl-forstmt)))
 
 
 ;; Notes on name spaces -- from SV spec 3.13
@@ -393,17 +419,17 @@ in it, such as a function, task, or block statement."
 ;; Notes on scope rules, from SV spec 23.9.
 
 ;; Elements that define new scopes:
-;;     — Modules
-;;     — Interfaces
-;;     — Programs
-;;     — Checkers
-;;     — Packages
-;;     — Classes
-;;     — Tasks
-;;     — Functions
-;;     — begin-end blocks (named or unnamed)
-;;     — fork-join blocks (named or unnamed)
-;;     — Generate blocks
+;;       Modules
+;;       Interfaces
+;;       Programs
+;;       Checkers
+;;       Packages
+;;       Classes
+;;       Tasks
+;;       Functions
+;;       begin-end blocks (named or unnamed)
+;;       fork-join blocks (named or unnamed)
+;;       Generate blocks
 
 ;; An identifier shall be used to declare only one item within a scope.
 ;; However, perhaps this doesn't apply to global/compilation-unit scope, since
@@ -518,7 +544,7 @@ in it, such as a function, task, or block statement."
     :val-type vl-scopeitem-p
     :count vl-scopeitem-alist-count)
 
-  (defoption vl-maybe-scopeitem-p vl-scopeitem-p))
+  (defoption vl-maybe-scopeitem vl-scopeitem-p))
 
 
 (defsection import-results
@@ -786,7 +812,9 @@ be very cheap in the single-threaded case.</p>"
   ((locals  vl-scopeitem-alist-p "Locally defined names bound to their declarations")
    (imports vl-importresult-alist-p
             "Explicitly imported names bound to import result, i.e. package-name and declaration)")
-   (star-packages string-listp "Names of packages imported with *"))
+   (star-packages string-listp "Names of packages imported with *")
+   (name maybe-stringp)
+   (scopetype vl-scopetype-p :default ':vl-anonymous-scope))
   :layout :tree
   :tag :vl-scopeinfo)
 
@@ -806,6 +834,39 @@ be very cheap in the single-threaded case.</p>"
                  (or ,@(template-proj '(equal (tag x) :vl-__type__) subst)
                      (equal (tag x) :vl-scopeinfo)))
         :rule-classes :forward-chaining))))
+
+(define vl-scope->scopetype ((x vl-scope-p))
+  :returns (type vl-scopetype-p
+                 :hints(("Goal" :in-theory (enable vl-scopetype-p))))
+  :prepwork ((local (defthm vl-scope-fix-forward
+                      (vl-scope-p (vl-scope-fix x))
+                      :rule-classes
+                      ((:forward-chaining :trigger-terms ((vl-scope-fix x)))))))
+  (b* ((x (vl-scope-fix x))
+       (tag (tag x)))
+    (case tag
+      (:vl-genblob (vl-genblob->scopetype x))
+      (:vl-blockscope (vl-blockscope->scopetype x))
+      (:vl-scopeinfo (vl-scopeinfo->scopetype x))
+      (otherwise
+       ;; (:vl-interface :vl-module :vl-design :vl-package
+       tag))))
+
+(define vl-scope->name ((x vl-scope-p))
+  :returns (name maybe-stringp :rule-classes :type-prescription)
+  (b* ((x (vl-scope-fix x)))
+    (case (tag x)
+      (:vl-interface  (vl-interface->name x))
+      (:vl-module     (vl-module->name x))
+      (:vl-genblob    (vl-genblob->name x))
+      (:vl-blockscope (vl-blockscope->name x))
+      (:vl-package    (vl-package->name x))
+      (:vl-scopeinfo  (vl-scopeinfo->name x))
+      ;; Don't know a name for a scopeinfo
+      (otherwise      nil))))
+
+
+
 
 (define vl-scopeinfo-make-fast ((x vl-scopeinfo-p))
   :parents (vl-scopeinfo-p)
@@ -954,6 +1015,89 @@ be very cheap in the single-threaded case.</p>"
                                       vl-importlist->star-packages)))))
 
 
+(local (defthm alist-keys-of-vl-scopeitem-alist
+         (implies (vl-scopeitem-alist-p x)
+                  (string-listp (alist-keys x)))
+         :hints(("Goal" :in-theory (enable vl-scopeitem-alist-p
+                                           alist-keys)))))
+
+(local (defthm alist-keys-of-vl-importresult-alist
+         (implies (vl-importresult-alist-p x)
+                  (string-listp (alist-keys x)))
+         :hints(("Goal" :in-theory (enable vl-importresult-alist-p
+                                           alist-keys)))))
+
+(local (defthm alist-keys-of-vl-scopedef-alist
+         (implies (vl-scopedef-alist-p x)
+                  (string-listp (alist-keys x)))
+         :hints(("Goal" :in-theory (enable vl-scopedef-alist-p
+                                           alist-keys)))))
+
+(local (defthm alist-keys-of-vl-package-alist
+         (implies (vl-package-alist-p x)
+                  (string-listp (alist-keys x)))
+         :hints(("Goal" :in-theory (enable vl-package-alist-p
+                                           alist-keys)))))
+
+(local (defthm alist-keys-of-vl-portdecl-alist
+         (implies (vl-portdecl-alist-p x)
+                  (string-listp (alist-keys x)))
+         :hints(("Goal" :in-theory (enable vl-portdecl-alist-p
+                                           alist-keys)))))
+
+(local (defthm string-listp-of-append
+         (implies (and (string-listp a)
+                       (string-listp b))
+                  (string-listp (append a b)))))
+
+
+
+(local (defthm cdr-of-lookup-in-scopeitem-alist
+         (implies (vl-scopeitem-alist-p x)
+                  (iff (cdr (hons-assoc-equal k x))
+                       (hons-assoc-equal k x)))
+         :hints(("Goal" :in-theory (enable vl-scopeitem-alist-p)))))
+
+(local (defthm cdr-of-lookup-in-importresult-alist
+         (implies (vl-importresult-alist-p x)
+                  (iff (cdr (hons-assoc-equal k x))
+                       (hons-assoc-equal k x)))
+         :hints(("Goal" :in-theory (enable vl-importresult-alist-p)))))
+
+(define vl-import-stars-itemnames ((packages string-listp)
+                                   (design vl-maybe-design-p))
+  :returns (names string-listp)
+  (b* (((when (atom packages)) nil)
+       (pkg (string-fix (Car packages)))
+       (package (and design (cdr (hons-get pkg (vl-design-scope-package-alist-top design)))))
+       ((unless package) nil))
+    (append (alist-keys (vl-package-scope-item-alist-top package))
+            (vl-import-stars-itemnames (cdr packages) design)))
+
+  :prepwork
+  ((local (defthm lookup-of-non-string-in-scopeitem-alist
+            (implies (and (not (stringp name))
+                          (string-listp (alist-keys x)))
+                     (not (hons-assoc-equal name x)))
+            :hints(("Goal" :in-theory (enable alist-keys))))))
+
+  ///
+
+  (local (defthm stringp-when-member
+           (implies (member name (vl-import-stars-itemnames packages design))
+                    (stringp name))
+           :hints (("goal" :use ((:instance string-listp-of-vl-import-stars-itemnames))))
+           :rule-classes :forward-chaining))
+
+  (defthm vl-import-stars-itemname-present-when-lookup
+    (iff (member name (vl-import-stars-itemnames packages design))
+         (and (stringp name)
+              (mv-nth 1 (vl-import-stars-find-item name packages design))))
+    :hints(("Goal" :in-theory (e/d (vl-import-stars-find-item)
+                                   (vl-package-scope-item-alist-correct))))))
+       
+
+
 
 
 
@@ -969,6 +1113,21 @@ be very cheap in the single-threaded case.</p>"
        ((when import-item) (mv (vl-importresult->pkg-name import-item)
                                (vl-importresult->item import-item))))
     (vl-import-stars-find-item name x.star-packages design)))
+
+
+(define vl-scopeinfo->itemnames ((x vl-scopeinfo-p) (design vl-maybe-design-p))
+  :returns (names string-listp)
+  (b* (((vl-scopeinfo x)))
+    (append (alist-keys x.locals)
+            (alist-keys x.imports)
+            (vl-import-stars-itemnames x.star-packages design)))
+  ///
+
+  (defthm vl-scopeinfo->itemnames-present-when-lookup
+    (implies (and (mv-nth 1 (vl-scopeinfo-find-item name x design))
+                  (stringp name))
+             (member name (vl-scopeinfo->itemnames x design)))
+    :hints(("Goal" :in-theory (enable vl-scopeinfo-find-item)))))
 
 
 
@@ -1012,6 +1171,13 @@ be very cheap in the single-threaded case.</p>"
   (more-returns
    (design :name vl-maybe-design-p-of-vl-scopestack->design
            (vl-maybe-design-p design))))
+
+(define vl-scopestack->toplevel ((x vl-scopestack-p))
+  :returns (top vl-scopestack-p)
+  :measure (vl-scopestack-count x)
+  (vl-scopestack-case x
+    :local (vl-scopestack->toplevel x.super)
+    :otherwise (vl-scopestack-fix x)))
 
 (define vl-scopestack-push ((scope vl-scope-p) (x vl-scopestack-p))
   :returns (x1 vl-scopestack-p)
@@ -1103,6 +1269,8 @@ be very cheap in the single-threaded case.</p>"
                          (:vl-__type__
                           (b* (((vl-__type__ scope :quietp t)))
                             (make-vl-scopeinfo
+                             :scopetype (vl-scope->scopetype scope)
+                             :name (vl-scope->name scope)
                              :locals (make-fast-alist
                                       (vl-__type__-scope-__result__-alist scope nil))
                              (:@ :import
@@ -1227,8 +1395,7 @@ be very cheap in the single-threaded case.</p>"
 (defthm tag-of-vl-scopestack-find-item/ss-forward
   (b* (((mv item ?item-ss) (vl-scopestack-find-item/ss name ss)))
     (implies item
-             (or (equal (tag item) :vl-modport)
-                 (equal (tag item) :vl-modinst)
+             (or (equal (tag item) :vl-modinst)
                  (equal (tag item) :vl-gateinst)
                  (equal (tag item) :vl-genloop)
                  (equal (tag item) :vl-genif)
@@ -1422,18 +1589,6 @@ transform that has used scopestacks.</p>"
 
 ; Scopestack debugging
 
-(define vl-scope->name ((x vl-scope-p))
-  :returns (name maybe-stringp :rule-classes :type-prescription)
-  (b* ((x (vl-scope-fix x)))
-    (case (tag x)
-      (:vl-interface  (vl-interface->name x))
-      (:vl-module     (vl-module->name x))
-      (:vl-genblob    (vl-genblob->name x))
-      (:vl-blockscope (vl-blockscope->name x))
-      (:vl-package    (vl-package->name x))
-      ;; Don't know a name for a scopeinfo
-      (otherwise      nil))))
-
 (define vl-scopeitem->name ((x vl-scopeitem-p))
   :returns (name maybe-stringp :rule-classes :type-prescription)
   :prepwork
@@ -1446,7 +1601,6 @@ transform that has used scopestacks.</p>"
   :guard-hints(("Goal" :in-theory (enable vl-scopeitem-p)))
   (b* ((x (vl-scopeitem-fix x)))
     (case (tag x)
-      (:vl-modport    (vl-modport->name x))
       (:vl-modinst    (vl-modinst->instname x))
       (:vl-gateinst   (vl-gateinst->name x))
       (:vl-genblock   (vl-genblock->name x))
@@ -1599,3 +1753,51 @@ returns them as an ordered set."
   ;;                           (vl-modulelist->names mods)))
   ;;   :hints((set-reasoning)))
   )
+
+
+(define vl-scope-namespace ((x vl-scope-p) (design vl-maybe-design-p))
+  :returns (names string-listp)
+  (append (alist-keys (vl-scope-portdecl-alist x))
+          (alist-keys (vl-scope-package-alist x))
+          (alist-keys (vl-scope-definition-alist x))
+          (vl-scopeinfo->itemnames (vl-scope->scopeinfo x design) design))
+  ///
+  (defthm vl-scope-namespace-present-when-item-lookup
+    (implies (and (mv-nth 1 (vl-scope-find-item name x design))
+                  (stringp name))
+             (member name (vl-scope-namespace x design))))
+
+  (local (defthm lookup-in-definition-alist
+           (implies (vl-scopedef-alist-p x)
+                    (iff (hons-assoc-equal name x)
+                         (cdr (hons-assoc-equal name x))))
+           :hints(("Goal" :in-theory (enable vl-scopedef-alist-p)))))
+
+  (local (defthm lookup-in-package-alist
+           (implies (vl-package-alist-p x)
+                    (iff (hons-assoc-equal name x)
+                         (cdr (hons-assoc-equal name x))))
+           :hints(("Goal" :in-theory (enable vl-package-alist-p)))))
+
+  (local (defthm lookup-in-portdecl-alist
+           (implies (vl-portdecl-alist-p x)
+                    (iff (hons-assoc-equal name x)
+                         (cdr (hons-assoc-equal name x))))
+           :hints(("Goal" :in-theory (enable vl-portdecl-alist-p)))))
+
+  (defthm vl-scope-namespace-present-when-definition-lookup
+    (implies (and (vl-scope-find-definition name x)
+                  (stringp name))
+             (member name (vl-scope-namespace x design))))
+
+  (defthm vl-scope-namespace-present-when-package-lookup
+    (implies (and (vl-scope-find-package name x)
+                  (stringp name))
+             (member name (vl-scope-namespace x design))))
+
+  (defthm vl-scope-namespace-present-when-portdecl-lookup
+    (implies (and (vl-scope-find-portdecl name x)
+                  (stringp name))
+             (member name (vl-scope-namespace x design)))))
+
+(defoption vl-maybe-scope vl-scope)

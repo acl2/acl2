@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "ranges")
+(include-book "expressions")
 (include-book "lvalues")
 (include-book "delays")
 (include-book "strengths")
@@ -185,7 +185,7 @@ tests at the bottom of this file.</p>")
           (return-raw (vl-parse-error "Expected argument to named port connect.")))
         ;; SystemVerilog-2012: no port argument is okay, this is a .name style port.
         (return (make-vl-namedarg :name (vl-idtoken->name id)
-                                  :expr (vl-idexpr (vl-idtoken->name id) nil nil)
+                                  :expr (vl-idexpr (vl-idtoken->name id))
                                   :nameonly-p t
                                   :atts atts))))
 
@@ -332,7 +332,7 @@ tests at the bottom of this file.</p>")
                          (vl-tokstream->pstate))))
           ;; Non-type identifier.
           (ans := (vl-parse-mintypmax-expression))
-          (return ans))
+          (return (make-vl-paramvalue-expr :expr ans)))
         (return-raw
          ;; Otherwise, use backtracking: arbitrarily try to get a datatype
          ;; first, then try to get an expr.
@@ -340,11 +340,11 @@ tests at the bottom of this file.</p>")
               ((mv dt-err dt-val tokstream)
                (vl-parse-datatype))
               ((unless dt-err)
-               (mv dt-err dt-val tokstream))
+               (mv dt-err (make-vl-paramvalue-type :type dt-val) tokstream))
               (tokstream (vl-tokstream-restore backup)))
            (seq tokstream
                  (ans := (vl-parse-mintypmax-expression))
-                 (return ans))))))
+                 (return (make-vl-paramvalue-expr :expr ans)))))))
 
 (defparser vl-parse-named-parameter-assignment ()
   :result (vl-namedparamvalue-p val)
@@ -387,6 +387,10 @@ tests at the bottom of this file.</p>")
           (rest := (vl-parse-list-of-ordered-parameter-assignments)))
         (return (cons first rest))))
 
+(defprojection vl-expressions->paramvalues ((x vl-exprlist-p))
+  :returns (paramvals vl-paramvaluelist-p)
+  (vl-paramvalue-expr x))
+
 (defparser vl-parse-list-of-parameter-assignments ()
   :result (vl-paramargs-p val)
   :resultp-of-nil nil
@@ -398,7 +402,10 @@ tests at the bottom of this file.</p>")
           (return (make-vl-paramargs-named :args args)))
         (exprs := (if (eq (vl-loadconfig->edition config) :verilog-2005)
                       ;; Verilog-2005 doesn't allow mintypmax exprs here.
-                      (vl-parse-1+-expressions-separated-by-commas)
+                      (b* (((mv err val tokstream)
+                            (vl-parse-1+-expressions-separated-by-commas))
+                           ((when err) (mv err nil tokstream)))
+                        (mv err (vl-expressions->paramvalues val) tokstream))
                     ;; SystemVerilog-2012 does.
                     (vl-parse-list-of-ordered-parameter-assignments)))
         (return (make-vl-paramargs-plain :args exprs))))

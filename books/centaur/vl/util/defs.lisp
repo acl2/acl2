@@ -215,7 +215,10 @@ fast-alist-free).</p>"
 
 
 
-(define fast-memberp (a x (alist (equal alist (make-lookup-alist x))))
+(define fast-memberp (a
+                      x
+                      (alist (set-equiv (alist-keys alist)
+                                        (list-fix x))))
   :parents (utilities)
   :short "Fast list membership using @(see make-lookup-alist)."
 

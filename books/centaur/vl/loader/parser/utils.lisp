@@ -92,21 +92,38 @@
  `(defstobj tokstream
     (tokens :type (satisfies vl-tokenlist-p)
             :initially nil)
+    (position :type (integer 0 *)
+              :initially 0)
     (pstate :type (satisfies vl-parsestate-p)
             :initially ,(make-vl-parsestate))
     :inline t
     :non-memoizable t
     :renaming
-    ((tokens        vl-tokstream->tokens-raw)
-     (pstate        vl-tokstream->pstate-raw)
-     (update-tokens vl-tokstream-update-tokens-fn)
-     (update-pstate vl-tokstream-update-pstate-fn))))
+    ((tokens          vl-tokstream->tokens-raw)
+     (pstate          vl-tokstream->pstate-raw)
+     (position        vl-tokstream->position-raw)
+     (update-tokens   vl-tokstream-update-tokens-fn)
+     (common-lisp::update-position vl-tokstream-update-position-fn)
+     (update-pstate   vl-tokstream-update-pstate-fn)
+     (common-lisp::positionp       vl-tokstream-positionp))))
+
+(defthm vl-tokstream-positionp-rw
+  (equal (vl-tokstream-positionp x)
+         (natp x))
+  :rule-classes (:rewrite :compound-recognizer))
+
+(in-theory (disable vl-tokstream-positionp))
 
 (define vl-tokstream->tokens (&key (tokstream 'tokstream))
   :returns (tokens vl-tokenlist-p)
   :inline t
   (mbe :logic (vl-tokenlist-fix (vl-tokstream->tokens-raw tokstream))
        :exec (vl-tokstream->tokens-raw tokstream)))
+
+(define vl-tokstream->position (&key (tokstream 'tokstream))
+  :returns (position natp :rule-classes :type-prescription)
+  :inline t
+  (lnfix (vl-tokstream->position-raw tokstream)))
 
 (define vl-tokstream->pstate (&key (tokstream 'tokstream))
   :returns (pstate vl-parsestate-p)
@@ -120,18 +137,31 @@
 (defmacro vl-tokstream-update-pstate (pstate &key (tokstream 'tokstream))
   `(vl-tokstream-update-pstate-fn ,pstate ,tokstream))
 
+(defmacro vl-tokstream-update-position (position &key (tokstream 'tokstream))
+  `(vl-tokstream-update-position-fn ,position ,tokstream))
+
 (add-macro-alias vl-tokstream-update-tokens vl-tokstream-update-tokens-fn)
 (add-macro-alias vl-tokstream-update-pstate vl-tokstream-update-pstate-fn)
+(add-macro-alias vl-tokstream-update-position vl-tokstream-update-position-fn)
 
 (in-theory (disable vl-tokstream-update-tokens
-                    vl-tokstream-update-pstate))
+                    vl-tokstream-update-pstate
+                    vl-tokstream-update-position))
+
+(define vl-tokstream-pop (&key (tokstream 'tokstream))
+  :guard (consp (vl-tokstream->tokens))
+  :inline t
+  (b* ((tokstream (vl-tokstream-update-tokens (cdr (vl-tokstream->tokens)))))
+    (vl-tokstream-update-position (+ 1 (vl-tokstream->position)))))
 
 (encapsulate
   ()
   (local (in-theory (enable vl-tokstream->tokens
                             vl-tokstream->pstate
+                            vl-tokstream->position
                             vl-tokstream-update-tokens
-                            vl-tokstream-update-pstate)))
+                            vl-tokstream-update-pstate
+                            vl-tokstream-update-position)))
 
   (defthm vl-tokstream->tokens-of-vl-tokstream-update-tokens
     (equal (vl-tokstream->tokens :tokstream (vl-tokstream-update-tokens new-tokens))
@@ -145,22 +175,35 @@
     (equal (vl-tokstream->tokens :tokstream (vl-tokstream-update-pstate new-pstate))
            (vl-tokstream->tokens :tokstream tokstream)))
 
+  (defthm vl-tokstream->tokens-of-vl-tokstream-update-position
+    (equal (vl-tokstream->tokens :tokstream (vl-tokstream-update-position new-position))
+           (vl-tokstream->tokens :tokstream tokstream)))
+
   (defthm vl-tokstream->pstate-of-vl-tokstream-update-pstate
     (equal (vl-tokstream->pstate :tokstream (vl-tokstream-update-pstate new-pstate))
-           (vl-parsestate-fix new-pstate))))
+           (vl-parsestate-fix new-pstate)))
+
+  (defthm vl-tokstream->tokens-of-vl-tokstream-pop
+    (equal (vl-tokstream->tokens :tokstream (vl-tokstream-pop))
+           (cdr (vl-tokstream->tokens :tokstream tokstream)))
+    :hints(("Goal" :in-theory (enable vl-tokstream-pop)))))
+
+
 
 (defmacro vl-tokstream-measure (&key (tokstream 'tokstream))
   `(len (vl-tokstream->tokens :tokstream ,tokstream)))
 
 (define vl-tokstream-fix (&key (tokstream 'tokstream))
   (mbe :logic (b* ((tokens (vl-tokstream->tokens))
-                   (pstate (vl-tokstream->pstate)))
+                   (pstate (vl-tokstream->pstate))
+                   (position (vl-tokstream->position)))
                 (non-exec
-                 (list tokens pstate)))
+                 (list tokens position pstate)))
        :exec tokstream)
   :prepwork
   ((local (in-theory (enable vl-tokstream->pstate
-                             vl-tokstream->tokens))))
+                             vl-tokstream->tokens
+                             vl-tokstream->position))))
   ///
   (defthm vl-tokstream->pstate-of-vl-tokstream-fix
     (equal (vl-tokstream->pstate :tokstream (vl-tokstream-fix))
@@ -170,6 +213,10 @@
     (equal (vl-tokstream->tokens :tokstream (vl-tokstream-fix))
            (vl-tokstream->tokens)))
 
+  (defthm vl-tokstream->position-of-vl-tokstream-fix
+    (equal (vl-tokstream->position :tokstream (vl-tokstream-fix))
+           (vl-tokstream->position)))
+
   (defthm vl-tokstream-measure-of-vl-tokstream-fix
     (equal (vl-tokstream-measure :tokstream (vl-tokstream-fix))
            (vl-tokstream-measure))))
@@ -178,11 +225,13 @@
 (defaggregate vl-tokstream-backup
   :tag nil
   ((tokens vl-tokenlist-p)
+   (position natp :rule-classes :type-prescription)
    (pstate vl-parsestate-p)))
 
 (define vl-tokstream-save (&key (tokstream 'tokstream))
   :returns (backup vl-tokstream-backup-p)
   (make-vl-tokstream-backup :tokens (vl-tokstream->tokens)
+                            :position (vl-tokstream->position)
                             :pstate (vl-tokstream->pstate))
   ///
   (defthm vl-tokstream-backup->tokens-of-vl-tokstream-save
@@ -202,13 +251,16 @@
             (vl-parsestate-free curr-pstate)))
        (new-pstate (vl-parsestate-restore backup.pstate))
        (tokstream (vl-tokstream-update-pstate new-pstate))
+       (tokstream (vl-tokstream-update-position backup.position))
        (tokstream (vl-tokstream-update-tokens backup.tokens)))
     (vl-tokstream-fix))
   ///
   (local (in-theory (enable vl-tokstream->tokens
                             vl-tokstream->pstate
+                            vl-tokstream->position
                             vl-tokstream-update-tokens
                             vl-tokstream-update-pstate
+                            vl-tokstream-update-position
                             vl-tokstream-fix
                             vl-tokstream-save
                             vl-parsestate-restore)))
@@ -611,7 +663,7 @@ frequently.</p>")
 
 (defmacro defparser (name formals &rest args)
   (defparser-fn name formals args))
-
+ 
 (defun defparser-top-fn (name guard resulttype state)
   (declare (xargs :mode :program :stobjs state))
   (b* ((wrld (w state))
@@ -672,6 +724,7 @@ frequently.</p>")
   :short "Check whether the current token has a particular type."
   ((type "Type of token to match.")
    &key (tokstream 'tokstream))
+  :guard (symbolp type)
   :returns bool
   :inline t
   (b* ((tokens (vl-tokstream->tokens)))
@@ -843,7 +896,7 @@ the start of the input stream."
                              :fatalp t
                              :fn function)
             nil tokstream))
-       (tokstream (vl-tokstream-update-tokens (cdr tokens))))
+       (tokstream (vl-tokstream-pop)))
     (mv nil token1 tokstream))
 
   :prepwork
@@ -915,7 +968,7 @@ acceptable types."
                              :fatalp t
                              :fn function)
             nil tokstream))
-       (tokstream (vl-tokstream-update-tokens (cdr tokens))))
+       (tokstream (vl-tokstream-pop)))
     (mv nil token1 tokstream))
 
   :prepwork
@@ -967,7 +1020,7 @@ the given type, but if not, don't consume anything and return nil."
        (token1 (car tokens))
        ((unless (eq type (vl-token->type token1)))
         (mv nil nil tokstream))
-       (tokstream (vl-tokstream-update-tokens (cdr tokens))))
+       (tokstream (vl-tokstream-pop)))
     (mv nil token1 tokstream))
 
   :prepwork
@@ -1141,7 +1194,7 @@ guard)."
                                  (consp (vl-tokstream->tokens))))
                (new-tokstream))
   (b* ((tokens    (vl-tokstream->tokens))
-       (tokstream (vl-tokstream-update-tokens (cdr tokens))))
+       (tokstream (vl-tokstream-pop)))
     (mv nil (car tokens) tokstream))
   ///
   ;; (defthm vl-match-of-vl-tokenlist-fix
@@ -1203,7 +1256,7 @@ kind of token it is.  Causes an error on EOF."
   (b* ((tokens (vl-tokstream->tokens))
        ((when (atom tokens))
         (vl-parse-error "Unexpected EOF." :function function))
-       (tokstream (vl-tokstream-update-tokens (cdr tokens))))
+       (tokstream (vl-tokstream-pop)))
     (mv nil (car tokens) tokstream))
   ///
   ;; (defthm vl-match-any-of-vl-tokenlist-fix
@@ -1265,7 +1318,7 @@ listed types.  Causes an error on EOF."
                              :fn function
                              :fatalp t)
             nil tokstream))
-       (tokstream (vl-tokstream-update-tokens (cdr tokens))))
+       (tokstream (vl-tokstream-pop)))
     (mv nil token1 tokstream))
   ///
   (local (in-theory (enable vl-is-some-token?)))
@@ -1366,3 +1419,15 @@ parser when we encounter such an ending.</p>"
                                          (vl-idtoken->name endname)))
             nil
             tokstream))))
+
+
+(define vl-choose-parse-error ((pos1 natp) (err1 vl-warning-p)
+                               (pos2 natp) (err2 vl-warning-p))
+  :returns (mv (best-pos natp :rule-classes :type-prescription)
+               (best-err vl-warning-p))
+  (if (<= (lnfix pos1) (lnfix pos2))
+      (mv (lnfix pos1) (vl-warning-fix err1))
+    (mv (lnfix pos2) (vl-warning-fix err2)))
+  ///
+  (defret vl-choose-parse-error-under-iff
+    best-err))

@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "coretypes")
+(include-book "../util/defs")
 (local (include-book "arithmetic/top" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
@@ -40,21 +41,18 @@
 
 (local (xdoc::set-default-parents syscalls))
 
-(define vl-sysfunexpr-p ((x vl-expr-p))
-  :returns bool
-  :short "Recognize atomic expressions that are system function names."
-  :inline t
-  (and (vl-fast-atom-p x)
-       (vl-fast-sysfunname-p (vl-atom->guts x))))
 
-(define vl-sysfunexpr->name ((x vl-expr-p))
-  :guard (vl-sysfunexpr-p x)
-  :returns (name stringp :rule-classes :type-prescription)
-  :short "Get the name from a @(see vl-sysfunexpr-p) as a string, e.g., @('\"$bits\"')."
-  :guard-hints(("Goal" :in-theory (enable vl-sysfunexpr-p)))
-  :inline t
-  (vl-sysfunname->name (vl-atom->guts x)))
-
+(define vl-simple-id-name ((x vl-scopeexpr-p))
+  :short "If x is a simple name with no scoping, return the name, otherwise nil."
+  :returns (name maybe-stringp :rule-classes :type-prescription)
+  (vl-scopeexpr-case x
+    :end (vl-hidexpr-case x.hid
+           :end x.hid.name
+           :otherwise nil)
+    :otherwise nil)
+  ///
+  (defret stringp-of-vl-simple-id-name
+    (iff (stringp name) name)))
 
 (define vl-0ary-syscall-p
   :short "Recognize calls of a particular zero-ary system function call."
@@ -65,24 +63,19 @@
          @({
            (vl-0ary-syscall-p \"$time\" x)
          })"
-  (b* (((when (vl-fast-atom-p x))
-        nil)
-       ((vl-nonatom x))
-       ((unless (and (eq x.op :vl-syscall)
-                     (consp x.args)
-                     (atom (cdr x.args))))
-        nil)
-       (fn (first x.args))
-       ((unless (vl-sysfunexpr-p fn))
-        nil))
-    (equal (vl-sysfunexpr->name fn) (string-fix name)))
+  (vl-expr-case x
+    :vl-call (and x.systemp
+                  (equal (vl-simple-id-name x.name) (string-fix name))
+                  (atom x.args))
+    :otherwise nil)
   ///
   (defthm arity-stuff-about-vl-0ary-syscall-p
     (implies (vl-0ary-syscall-p name x)
-             (and (not (equal (vl-expr-kind x) :atom))
-                  (equal (vl-nonatom->op x) :vl-syscall)
-                  (consp (vl-nonatom->args x))
-                  (not (consp (cdr (vl-nonatom->args x))))))
+             (vl-expr-case x
+               :vl-call (and x.systemp
+                             (equal (vl-simple-id-name x.name) (string-fix name))
+                             (atom x.args))
+               :otherwise nil))
     :rule-classes :forward-chaining))
 
 
@@ -95,28 +88,21 @@
          @({
            (vl-unary-syscall-p \"$bits\" x)
          })"
-  (b* (((when (vl-fast-atom-p x))
-        nil)
-       ((vl-nonatom x))
-       ((unless (and (eq x.op :vl-syscall)
-                     (consp x.args)
-                     (consp (cdr x.args))
-                     (atom (cddr x.args))))
-        nil)
-       (fn (first x.args))
-       ((unless (vl-sysfunexpr-p fn))
-        nil))
-    (equal (vl-sysfunexpr->name fn) (string-fix name)))
+  (vl-expr-case x
+    :vl-call (and x.systemp
+                  (equal (vl-simple-id-name x.name) (string-fix name))
+                  (eql (len x.args) 1))
+    :otherwise nil)
   ///
   (defthm arity-stuff-about-vl-unary-syscall-p
     (implies (vl-unary-syscall-p name x)
-             (and (not (equal (vl-expr-kind x) :atom))
-                  (equal (vl-nonatom->op x) :vl-syscall)
-                  (consp (vl-nonatom->args x))
-                  (consp (cdr (vl-nonatom->args x)))
-                  (vl-expr-p (cadr (vl-nonatom->args x)))))
+             (vl-expr-case x
+               :vl-call (and x.systemp
+                             (equal (vl-simple-id-name x.name) (string-fix name))
+                             (eql (len x.args) 1)
+                             (consp x.args))
+               :otherwise nil))
     :rule-classes :forward-chaining))
-
 
 (defsection vl-unary-syscall->arg
   :short "Access the argument to a @(see vl-unary-syscall-p), not including the
@@ -126,7 +112,34 @@ is the first argument to the @(':vl-syscall').</p>
   @(def vl-unary-syscall->arg)"
 
   (defmacro vl-unary-syscall->arg (x)
-    `(second (vl-nonatom->args ,x))))
+    `(first (vl-call->args ,x))))
+
+
+(define vl-typearg-syscall-p
+  :short "Recognize calls of a particular typearg system function call."
+  ((name stringp   "Name of the particular system call, e.g., @('$bits').")
+   (x    vl-expr-p "Expression to test."))
+  :long "<p>For instance, to see if @('x') is a call of @('$bits'), you could
+         write:</p>
+         @({
+           (vl-typearg-syscall-p \"$bits\" x)
+         })"
+  (vl-expr-case x
+    :vl-call (and x.systemp
+                  (equal (vl-simple-id-name x.name) (string-fix name))
+                  x.typearg
+                  (atom x.args))
+    :otherwise nil)
+  ///
+  (defthm arity-stuff-about-vl-typearg-syscall-p
+    (implies (vl-typearg-syscall-p name x)
+             (vl-expr-case x
+               :vl-call (and x.systemp
+                             (equal (vl-simple-id-name x.name) (string-fix name))
+                             x.typearg
+                             (not (consp x.args)))
+               :otherwise nil))
+    :rule-classes :forward-chaining))
 
 
 
@@ -140,35 +153,18 @@ is the first argument to the @(':vl-syscall').</p>
          @({
            (vl-*ary-syscall-p \"$size\" x)
          })"
-  (b* (((when (vl-fast-atom-p x))
-        nil)
-       ((vl-nonatom x))
-       ((unless (and (eq x.op :vl-syscall)
-                     (consp x.args)))
-        nil)
-       (fn (first x.args))
-       ((unless (vl-sysfunexpr-p fn))
-        nil))
-    (equal (vl-sysfunexpr->name fn) (string-fix name)))
+  (vl-expr-case x
+    :vl-call (and x.systemp
+                  (equal (vl-simple-id-name x.name) (string-fix name)))
+    :otherwise nil)
   ///
   (defthm arity-stuff-about-vl-*ary-syscall-p
     (implies (vl-*ary-syscall-p name x)
-             (and (not (equal (vl-expr-kind x) :atom))
-                  (equal (vl-nonatom->op x) :vl-syscall)
-                  (consp (vl-nonatom->args x))))
+             (vl-expr-case x
+               :vl-call (and x.systemp
+                             (equal (vl-simple-id-name x.name) (string-fix name)))
+               :otherwise nil))
     :rule-classes :forward-chaining))
-
-(defsection vl-*ary-syscall->args
-  :parents (vl-*ary-syscall-p)
-  :short "Access the argument to a @(see vl-*ary-syscall-p), not including the
-  function name."
-  :long "<p>This is mostly intended to avoid confusion since the function name
-is the first argument to the @(':vl-syscall').</p>
-  @(def vl-*ary-syscall->args)"
-
-  (defmacro vl-*ary-syscall->args (x)
-    `(second (vl-nonatom->args ,x))))
-
 
 
 (define vl-$random-expr-p ((x vl-expr-p))
@@ -188,8 +184,9 @@ but we do not check for this here.</p>"
   ///
   (defthm vl-expr-kind-when-vl-$random-expr-p
     (implies (vl-$random-expr-p x)
-             (and (equal (vl-expr-kind x) :nonatom)
-                  (equal (vl-nonatom->op x) :vl-syscall)))
+             (vl-expr-case x
+               :vl-call x.systemp
+               :otherwise nil))
     :rule-classes ((:forward-chaining))))
 
 
@@ -197,8 +194,7 @@ but we do not check for this here.</p>"
  `(define vl-syscall->returninfo
     :short "(Attempt to) look up the return type of a system function call."
     ((x vl-expr-p))
-    :guard (and (not (vl-atom-p x))
-                (equal (vl-nonatom->op x) :vl-syscall))
+    :guard (vl-expr-case x :vl-call x.systemp :otherwise nil)
     :returns
     (info (iff (vl-coredatatype-info-p info) info)
           "Information about the return type for this system call, if available.")
@@ -218,7 +214,8 @@ complete.</p>"
            ;; invoked it.
            ',(vl-coretypename->info :vl-time))
 
-          ((vl-unary-syscall-p "$bits" x)
+          ((or (vl-unary-syscall-p "$bits" x)
+               (vl-typearg-syscall-p "$bits" x))
            ;; SystemVerilog 20.6.2: The return type is integer.
            ',(vl-coretypename->info :vl-integer))
 

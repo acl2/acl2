@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../parsetree")
+(include-book "../expr")
 
 (defprod vl-coredatatype-info
   :parents (vl-datatype)
@@ -47,7 +47,7 @@
                       "does it optionally take dimensions?")
    (4valuedp          booleanp :rule-classes :type-prescription
                       "Is each bit of it 4-valued (as opposed to 2-valued)?")
-   (size              maybe-natp :rule-classes :type-prescription
+   (size              maybe-posp :rule-classes :type-prescription
                       "Size, when an integer vector type, nil otherwise")))
 
 (fty::deflist vl-coredatatype-infolist :elt-type vl-coredatatype-info)

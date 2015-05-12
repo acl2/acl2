@@ -46,53 +46,30 @@
       (debuggable-and ,successp
                       (not tokens)
                       (equal pstate.warnings 'blah-warnings)
-                      (equal val ,expect)))))
+                      (or (vl-delayoreventcontrol-p val)
+                          (cw "Not a valid delayoreventcontrol: ~x0.~%" val))
+                      (or (equal (vl-pretty-delayoreventcontrol val) ,expect)
+                          (cw "Expected: ~x0~%Found:~x1~%"
+                              ,expect
+                              (vl-pretty-delayoreventcontrol val))))))) 
+
 
 (test-vl-parse-delay-or-eventcontrol :input "@(foo or bar or baz)"
-                                     :expect
-                                     (make-vl-eventcontrol
-                                      :starp nil
-                                      :atoms
-                                      (list (make-vl-evatom
-                                             :type :vl-noedge
-                                             :expr (make-vl-atom :guts (vl-id "foo")))
-                                            (make-vl-evatom
-                                             :type :vl-noedge
-                                             :expr (make-vl-atom :guts (vl-id "bar")))
-                                            (make-vl-evatom
-                                             :type :vl-noedge
-                                             :expr (make-vl-atom :guts (vl-id "baz"))))))
+                                     :expect '((:vl-noedge (id "foo"))
+                                               (:vl-noedge (id "bar"))
+                                               (:vl-noedge (id "baz"))))
 
 (test-vl-parse-delay-or-eventcontrol :input "@(posedge foo)"
-                                     :expect
-                                     (make-vl-eventcontrol
-                                      :starp nil
-                                      :atoms (list (make-vl-evatom
-                                                    :type :vl-posedge
-                                                    :expr (make-vl-atom :guts (vl-id "foo"))))))
+                                     :expect '((:vl-posedge (id "foo"))))
 
 (test-vl-parse-delay-or-eventcontrol :input "@(negedge foo)"
-                                     :expect
-                                     (make-vl-eventcontrol
-                                      :starp nil
-                                      :atoms (list (make-vl-evatom
-                                                    :type :vl-negedge
-                                                    :expr (make-vl-atom :guts (vl-id "foo"))))))
+                                     :expect '((:vl-negedge (id "foo"))))
 
-(test-vl-parse-delay-or-eventcontrol :input "@*"
-                                     :expect (make-vl-eventcontrol :starp t :atoms nil))
-
-(test-vl-parse-delay-or-eventcontrol :input "@(*)"
-                                     :expect (make-vl-eventcontrol :starp t :atoms nil))
-
-(test-vl-parse-delay-or-eventcontrol :input "@( *)"
-                                     :expect (make-vl-eventcontrol :starp t :atoms nil))
-
-(test-vl-parse-delay-or-eventcontrol :input "@(* )"
-                                     :expect (make-vl-eventcontrol :starp t :atoms nil))
-
-(test-vl-parse-delay-or-eventcontrol :input "@( * )"
-                                     :expect (make-vl-eventcontrol :starp t :atoms nil))
+(test-vl-parse-delay-or-eventcontrol :input "@*" :expect '(*))
+(test-vl-parse-delay-or-eventcontrol :input "@(*)" :expect '(*))
+(test-vl-parse-delay-or-eventcontrol :input "@( *)" :expect '(*))
+(test-vl-parse-delay-or-eventcontrol :input "@(* )" :expect '(*))
+(test-vl-parse-delay-or-eventcontrol :input "@( * )" :expect '(*))
 
 (test-vl-parse-delay-or-eventcontrol :input "@(foo or bar or baz or *)"
                                      :successp nil)
@@ -104,15 +81,8 @@
                                      :successp nil)
 
 (test-vl-parse-delay-or-eventcontrol :input "@(foo or posedge bar)"
-                                     :expect
-                                     (make-vl-eventcontrol
-                                      :starp nil
-                                      :atoms (list (make-vl-evatom
-                                                    :type :vl-noedge
-                                                    :expr (make-vl-atom :guts (vl-id "foo")))
-                                                   (make-vl-evatom
-                                                    :type :vl-posedge
-                                                    :expr (make-vl-atom :guts (vl-id "bar"))))))
+                                     :expect '((:vl-noedge (id "foo"))
+                                               (:vl-posedge (id "bar"))))
 
 (test-vl-parse-delay-or-eventcontrol :input "@(* or posedge bar)"
                                      :successp nil)

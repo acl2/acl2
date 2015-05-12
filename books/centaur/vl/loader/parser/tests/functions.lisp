@@ -110,31 +110,31 @@
 
 
 (test-parse-taskports :input "input [3:0] a"
-                      :summary (("a" :vl-input (:vl-logic unsigned (range 3 0)))))
+                      :summary (("a" :vl-input (:vl-logic unsigned (:range 3 0)))))
 
 (test-parse-taskports :input "input [3:0] a, b"
-                      :summary (("a" :vl-input (:vl-logic unsigned (range 3 0)))
-                                ("b" :vl-input (:vl-logic unsigned (range 3 0)))))
+                      :summary (("a" :vl-input (:vl-logic unsigned (:range 3 0)))
+                                ("b" :vl-input (:vl-logic unsigned (:range 3 0)))))
 
 (test-parse-taskports :input "input [3:0] a, b, \c , d"
-                      :summary (("a" :vl-input (:vl-logic unsigned (range 3 0)))
-                                ("b" :vl-input (:vl-logic unsigned (range 3 0)))
-                                ("c" :vl-input (:vl-logic unsigned (range 3 0)))
-                                ("d" :vl-input (:vl-logic unsigned (range 3 0)))
+                      :summary (("a" :vl-input (:vl-logic unsigned (:range 3 0)))
+                                ("b" :vl-input (:vl-logic unsigned (:range 3 0)))
+                                ("c" :vl-input (:vl-logic unsigned (:range 3 0)))
+                                ("d" :vl-input (:vl-logic unsigned (:range 3 0)))
                                 ))
 
 (test-parse-taskports :input "input signed [3:0] a"
-                      :summary (("a" :vl-input (:vl-logic signed (range 3 0)))))
+                      :summary (("a" :vl-input (:vl-logic signed (:range 3 0)))))
 
 (test-parse-taskports :input "input signed [3:0] a, b"
-                      :summary (("a" :vl-input (:vl-logic signed (range 3 0)))
-                                ("b" :vl-input (:vl-logic signed (range 3 0)))))
+                      :summary (("a" :vl-input (:vl-logic signed (:range 3 0)))
+                                ("b" :vl-input (:vl-logic signed (:range 3 0)))))
 
 (test-parse-taskports :input "input reg [3:0] a"
-                      :summary (("a" :vl-input (:vl-logic unsigned (range 3 0)))))
+                      :summary (("a" :vl-input (:vl-logic unsigned (:range 3 0)))))
 
 (test-parse-taskports :input "input reg signed [3:0] a"
-                      :summary (("a" :vl-input (:vl-logic signed (range 3 0)))))
+                      :summary (("a" :vl-input (:vl-logic signed (:range 3 0)))))
 
 (test-parse-taskports :input "input integer a"
                       :summary (("a" :vl-input (:vl-integer signed))))

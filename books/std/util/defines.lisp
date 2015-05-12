@@ -166,7 +166,8 @@ any global @('other-events').</p>
 options can be attached to any @('defun') in the clique.  But we usually think
 of these as global options to the whole clique, so we make them available as
 top-level options to the @('defines') form.  In the implementation, we just
-attach these options to the first @('defun') form generated.</dd>
+attach these options to the first @('defun') form generated, except for
+@(':ruler-extenders'), which we apply to all of the defuns.</dd>
 
 
 <dt>:prepwork</dt>
@@ -245,6 +246,7 @@ its flag in the flag-function.</p>")
     :guard-hints ;; Appended to guard-hints for all sub-functions.
     :hints       ;; Appended to hints for all sub-functions.
     :guard-debug ;; Must agree with any individual guard-debug settings.
+    :measure-debug ;; Must agree with any individual measure-debug settings.
     :well-founded-relation ;; Must agree with any explicit :well-founded-relations
     :otf-flg              ;; Must agree with any explicit otf-flg settings.
     :mode        ;; Must agree with any individual :mode settings.
@@ -546,7 +548,7 @@ its flag in the flag-function.</p>")
   (let* ((thms (collect-returnspec-flag-thms gutslist world))
          (hints (if (eq returns-hints :none)
                     (returnspec-mrec-default-hints
-                     (defguts->name (car gutslist)) world)
+                     (defguts->name-fn (car gutslist)) world)
                   returns-hints)))
     (if thms
         `(,defthm-macro
@@ -578,6 +580,14 @@ its flag in the flag-function.</p>")
       nil
     (or (getarg :hints nil (defguts->kwd-alist (car gutslist)))
         (gutslist-find-hints (cdr gutslist)))))
+
+(defun apply-ruler-extenders-to-defs (ruler-extenders defs)
+  (if (atom defs)
+      nil
+    (cons (append (take 3 (car defs))
+                  `((declare (xargs :ruler-extenders ,ruler-extenders)))
+                  (nthcdr 3 (car defs)))
+          (apply-ruler-extenders-to-defs ruler-extenders (cdr defs)))))
 
 
 ; Documentation hack.
@@ -698,13 +708,17 @@ its flag in the flag-function.</p>")
        (set-ignores (make-ignore-events name kwd-alist gutslist))
 
        (extra-xargs (get-xargs-from-kwd-alist kwd-alist))
+       (ruler-extenders (getarg :ruler-extenders nil kwd-alist))
        (orig-defs   (collect-main-defs gutslist))
        (final-defs  (if extra-xargs
                         ;; Stick them into the first def.
                         (cons (append (take 3 (car orig-defs))
                                       `((declare (xargs . ,extra-xargs)))
                                       (nthcdr 3 (car orig-defs)))
-                              (cdr orig-defs))
+                              (if ruler-extenders
+                                  (apply-ruler-extenders-to-defs
+                                   ruler-extenders (cdr orig-defs))
+                                (cdr orig-defs)))
                       orig-defs))
        (mutual-rec  (cons 'mutual-recursion final-defs))
        (aliases     (collect-macro-aliases gutslist))
@@ -749,8 +763,6 @@ its flag in the flag-function.</p>")
           :kwd-alist kwd-alist
           :flag-mapping flag-mapping
           :flag-defthm-macro thm-macro))
-
-       (ruler-extenders (getarg :ruler-extenders nil kwd-alist))
 
        (prognp (getarg :progn nil kwd-alist)))
 

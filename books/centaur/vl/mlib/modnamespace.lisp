@@ -146,163 +146,163 @@ module illegally declares those duplicated names more than once.</p>
 
 
 
-(define vl-find-moduleitem
-  :short "Legacy -- Use @(see scopestack) instead.  A (naive) lookup operation
-  that can find any name in the module's namespace."
+;; (define vl-find-moduleitem
+;;   :short "Legacy -- Use @(see scopestack) instead.  A (naive) lookup operation
+;;   that can find any name in the module's namespace."
 
-  :long "<p>This is our main, naive spec for what it means to look up a name in
-a module's namespace.  Note that we don't look for port declarations!  (But
-typically this <i>will</i> find the corresponding net/reg declaration for a
-port.)</p>
+;;   :long "<p>This is our main, naive spec for what it means to look up a name in
+;; a module's namespace.  Note that we don't look for port declarations!  (But
+;; typically this <i>will</i> find the corresponding net/reg declaration for a
+;; port.)</p>
 
-<p>Typically you will want to use @(see vl-fast-find-moduleitem) when looking
-up multiple items.</p>"
+;; <p>Typically you will want to use @(see vl-fast-find-moduleitem) when looking
+;; up multiple items.</p>"
 
-  ((name stringp)
-   (x    vl-module-p))
+;;   ((name stringp)
+;;    (x    vl-module-p))
 
-  :returns item?
+;;   :returns item?
 
-  (b* (((vl-module x) x)
-       (name (string-fix name)))
-    (or (vl-find-vardecl   name x.vardecls)
-        (vl-find-paramdecl name x.paramdecls)
-        (vl-find-fundecl   name x.fundecls)
-        (vl-find-taskdecl  name x.taskdecls)
-        (vl-find-modinst   name x.modinsts)
-        (vl-find-gateinst  name x.gateinsts)))
+;;   (b* (((vl-module x) x)
+;;        (name (string-fix name)))
+;;     (or (vl-find-vardecl   name x.vardecls)
+;;         (vl-find-paramdecl name x.paramdecls)
+;;         (vl-find-fundecl   name x.fundecls)
+;;         (vl-find-taskdecl  name x.taskdecls)
+;;         (vl-find-modinst   name x.modinsts)
+;;         (vl-find-gateinst  name x.gateinsts)))
 
-  ///
-  (defthm vl-find-moduleitem-type-when-nothing-else
-    (implies (and (vl-find-moduleitem name x)
-                  (not (vl-vardecl-p   (vl-find-moduleitem name x)))
-                  (not (vl-paramdecl-p (vl-find-moduleitem name x)))
-                  (not (vl-fundecl-p   (vl-find-moduleitem name x)))
-                  (not (vl-taskdecl-p  (vl-find-moduleitem name x)))
-                  (not (vl-modinst-p   (vl-find-moduleitem name x))))
-             (vl-gateinst-p (vl-find-moduleitem name x)))
-    :hints(("Goal" :in-theory (enable vl-find-moduleitem)))
-    :rule-classes ((:rewrite :backchain-limit-lst 1)))
+;;   ///
+;;   (defthm vl-find-moduleitem-type-when-nothing-else
+;;     (implies (and (vl-find-moduleitem name x)
+;;                   (not (vl-vardecl-p   (vl-find-moduleitem name x)))
+;;                   (not (vl-paramdecl-p (vl-find-moduleitem name x)))
+;;                   (not (vl-fundecl-p   (vl-find-moduleitem name x)))
+;;                   (not (vl-taskdecl-p  (vl-find-moduleitem name x)))
+;;                   (not (vl-modinst-p   (vl-find-moduleitem name x))))
+;;              (vl-gateinst-p (vl-find-moduleitem name x)))
+;;     :hints(("Goal" :in-theory (enable vl-find-moduleitem)))
+;;     :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
-  (defthm type-of-vl-find-moduleitem
-    ;; This is gross, but I'm not sure of a better approach.
-    (and (equal (equal (tag (vl-find-moduleitem name x)) :vl-vardecl)
-                (vl-vardecl-p (vl-find-moduleitem name x)))
+;;   (defthm type-of-vl-find-moduleitem
+;;     ;; This is gross, but I'm not sure of a better approach.
+;;     (and (equal (equal (tag (vl-find-moduleitem name x)) :vl-vardecl)
+;;                 (vl-vardecl-p (vl-find-moduleitem name x)))
 
-         (equal (equal (tag (vl-find-moduleitem name x)) :vl-paramdecl)
-                (vl-paramdecl-p (vl-find-moduleitem name x)))
+;;          (equal (equal (tag (vl-find-moduleitem name x)) :vl-paramdecl)
+;;                 (vl-paramdecl-p (vl-find-moduleitem name x)))
 
-         (equal (equal (tag (vl-find-moduleitem name x)) :vl-fundecl)
-                (vl-fundecl-p (vl-find-moduleitem name x)))
+;;          (equal (equal (tag (vl-find-moduleitem name x)) :vl-fundecl)
+;;                 (vl-fundecl-p (vl-find-moduleitem name x)))
 
-         (equal (equal (tag (vl-find-moduleitem name x)) :vl-taskdecl)
-                (vl-taskdecl-p (vl-find-moduleitem name x)))
+;;          (equal (equal (tag (vl-find-moduleitem name x)) :vl-taskdecl)
+;;                 (vl-taskdecl-p (vl-find-moduleitem name x)))
 
-         (equal (equal (tag (vl-find-moduleitem name x)) :vl-modinst)
-                (vl-modinst-p (vl-find-moduleitem name x)))
+;;          (equal (equal (tag (vl-find-moduleitem name x)) :vl-modinst)
+;;                 (vl-modinst-p (vl-find-moduleitem name x)))
 
-         (equal (equal (tag (vl-find-moduleitem name x)) :vl-gateinst)
-                (vl-gateinst-p (vl-find-moduleitem name x))))
-    :hints(("Goal"
-            :in-theory (e/d (tag-reasoning)
-                            (vl-find-moduleitem
-                             vl-find-moduleitem-type-when-nothing-else))
-            :use ((:instance vl-find-moduleitem-type-when-nothing-else)))))
+;;          (equal (equal (tag (vl-find-moduleitem name x)) :vl-gateinst)
+;;                 (vl-gateinst-p (vl-find-moduleitem name x))))
+;;     :hints(("Goal"
+;;             :in-theory (e/d (tag-reasoning)
+;;                             (vl-find-moduleitem
+;;                              vl-find-moduleitem-type-when-nothing-else))
+;;             :use ((:instance vl-find-moduleitem-type-when-nothing-else)))))
 
-  (defthm consp-of-vl-find-moduleitem
-    (equal (consp (vl-find-moduleitem name x))
-           (if (vl-find-moduleitem name x)
-               t
-             nil))
-    :hints(("Goal"
-            :in-theory (disable vl-find-moduleitem-type-when-nothing-else
-                                vl-find-moduleitem)
-            :use ((:instance vl-find-moduleitem-type-when-nothing-else)))))
+;;   (defthm consp-of-vl-find-moduleitem
+;;     (equal (consp (vl-find-moduleitem name x))
+;;            (if (vl-find-moduleitem name x)
+;;                t
+;;              nil))
+;;     :hints(("Goal"
+;;             :in-theory (disable vl-find-moduleitem-type-when-nothing-else
+;;                                 vl-find-moduleitem)
+;;             :use ((:instance vl-find-moduleitem-type-when-nothing-else)))))
 
-  (defthm vl-find-moduleitem-when-in-namespace
-    (implies (member-equal name (vl-module->modnamespace x))
-             (vl-find-moduleitem name x))
-    :hints(("Goal" :in-theory (enable vl-module->modnamespace vl-find-moduleitem)))))
-
-
+;;   (defthm vl-find-moduleitem-when-in-namespace
+;;     (implies (member-equal name (vl-module->modnamespace x))
+;;              (vl-find-moduleitem name x))
+;;     :hints(("Goal" :in-theory (enable vl-module->modnamespace vl-find-moduleitem)))))
 
 
-; FAST-ALIST BASED LOOKUPS ----------------------------------------------------
 
-(deftranssum vl-moditem
-  :short "Legacy -- Use @(see scopestack) instead.  Module items are basically
-any named object that can occur within a module (except that we don't support,
-e.g., named blocks.)"
-  (vl-vardecl
-   vl-paramdecl
-   vl-fundecl
-   vl-taskdecl
-   vl-modinst
-   vl-gateinst))
 
-(fty::deflist vl-moditemlist
-  :elt-type vl-moditem-p
-  :elementp-of-nil nil)
+;; ; FAST-ALIST BASED LOOKUPS ----------------------------------------------------
 
-(fty::defalist vl-moditem-alist
-  :key-type stringp
-  :val-type vl-moditem-p
-  :keyp-of-nil nil
-  :valp-of-nil nil)
+;; (deftranssum vl-moditem
+;;   :short "Legacy -- Use @(see scopestack) instead.  Module items are basically
+;; any named object that can occur within a module (except that we don't support,
+;; e.g., named blocks.)"
+;;   (vl-vardecl
+;;    vl-paramdecl
+;;    vl-fundecl
+;;    vl-taskdecl
+;;    vl-modinst
+;;    vl-gateinst))
 
-(local (defthm l0
-         (implies (vl-moditem-alist-p acc)
-                  (and (vl-moditem-alist-p (vl-vardecllist-alist x acc))
-                       (vl-moditem-alist-p (vl-paramdecllist-alist x acc))
-                       (vl-moditem-alist-p (vl-fundecllist-alist x acc))
-                       (vl-moditem-alist-p (vl-taskdecllist-alist x acc))
-                       (vl-moditem-alist-p (vl-modinstlist-alist x acc))
-                       (vl-moditem-alist-p (vl-gateinstlist-alist x acc))))
-         :hints(("Goal" :in-theory (enable vl-vardecllist-alist
-                                           vl-paramdecllist-alist
-                                           vl-fundecllist-alist
-                                           vl-taskdecllist-alist
-                                           vl-modinstlist-alist
-                                           vl-gateinstlist-alist)))))
+;; (fty::deflist vl-moditemlist
+;;   :elt-type vl-moditem-p
+;;   :elementp-of-nil nil)
 
-(define vl-moditem-alist ((x vl-module-p))
-  :short "Legacy -- Use @(see scopestack) instead.  Main routine for building an
-  fast alist for looking up module items."
+;; (fty::defalist vl-moditem-alist
+;;   :key-type stringp
+;;   :val-type vl-moditem-p
+;;   :keyp-of-nil nil
+;;   :valp-of-nil nil)
 
-  :long "<p>Note that the order the alist is constructed in is particularly
-important: we want it to agree, completely, with the naive @(see
-vl-find-moduleitem).  The alist can be constructed in a one pass, using our
-@(see fast-finding-by-name) functions.</p>"
+;; (local (defthm l0
+;;          (implies (vl-moditem-alist-p acc)
+;;                   (and (vl-moditem-alist-p (vl-vardecllist-alist x acc))
+;;                        (vl-moditem-alist-p (vl-paramdecllist-alist x acc))
+;;                        (vl-moditem-alist-p (vl-fundecllist-alist x acc))
+;;                        (vl-moditem-alist-p (vl-taskdecllist-alist x acc))
+;;                        (vl-moditem-alist-p (vl-modinstlist-alist x acc))
+;;                        (vl-moditem-alist-p (vl-gateinstlist-alist x acc))))
+;;          :hints(("Goal" :in-theory (enable vl-vardecllist-alist
+;;                                            vl-paramdecllist-alist
+;;                                            vl-fundecllist-alist
+;;                                            vl-taskdecllist-alist
+;;                                            vl-modinstlist-alist
+;;                                            vl-gateinstlist-alist)))))
 
-  (b* (((vl-module x) x)
-       ;; Reverse order from vl-find-moduleitem
-       (acc (vl-gateinstlist-alist x.gateinsts nil))
-       (acc (vl-modinstlist-alist x.modinsts acc))
-       (acc (vl-taskdecllist-alist x.taskdecls acc))
-       (acc (vl-fundecllist-alist x.fundecls acc))
-       (acc (vl-paramdecllist-alist x.paramdecls acc))
-       (acc (vl-vardecllist-alist x.vardecls acc)))
-    (make-fast-alist acc))
-  ///
-  (defthm vl-moditem-alist-p-of-vl-moditem-alist
-    (vl-moditem-alist-p (vl-moditem-alist x)))
+;; (define vl-moditem-alist ((x vl-module-p))
+;;   :short "Legacy -- Use @(see scopestack) instead.  Main routine for building an
+;;   fast alist for looking up module items."
 
-  (defthm hons-assoc-equal-of-vl-moditem-alist
-    (implies (force (stringp name))
-             (equal (hons-assoc-equal name (vl-moditem-alist x))
-                    (if (vl-find-moduleitem name x)
-                        (cons name (vl-find-moduleitem name x))
-                      nil)))
-    :hints(("Goal" :in-theory (enable vl-find-moduleitem)))))
+;;   :long "<p>Note that the order the alist is constructed in is particularly
+;; important: we want it to agree, completely, with the naive @(see
+;; vl-find-moduleitem).  The alist can be constructed in a one pass, using our
+;; @(see fast-finding-by-name) functions.</p>"
 
-(define vl-fast-find-moduleitem
-  ((name stringp)
-   (x    vl-module-p)
-   (itemalist (equal itemalist (vl-moditem-alist x))))
-  :short "Legacy -- Use @(see scopestack) instead.  Alternative to @(see
-  vl-find-moduleitem) using fast alist lookups."
-  :enabled t
-  :hooks nil
-  (mbe :logic (vl-find-moduleitem name x)
-       :exec (cdr (hons-get name itemalist))))
+;;   (b* (((vl-module x) x)
+;;        ;; Reverse order from vl-find-moduleitem
+;;        (acc (vl-gateinstlist-alist x.gateinsts nil))
+;;        (acc (vl-modinstlist-alist x.modinsts acc))
+;;        (acc (vl-taskdecllist-alist x.taskdecls acc))
+;;        (acc (vl-fundecllist-alist x.fundecls acc))
+;;        (acc (vl-paramdecllist-alist x.paramdecls acc))
+;;        (acc (vl-vardecllist-alist x.vardecls acc)))
+;;     (make-fast-alist acc))
+;;   ///
+;;   (defthm vl-moditem-alist-p-of-vl-moditem-alist
+;;     (vl-moditem-alist-p (vl-moditem-alist x)))
+
+;;   (defthm hons-assoc-equal-of-vl-moditem-alist
+;;     (implies (force (stringp name))
+;;              (equal (hons-assoc-equal name (vl-moditem-alist x))
+;;                     (if (vl-find-moduleitem name x)
+;;                         (cons name (vl-find-moduleitem name x))
+;;                       nil)))
+;;     :hints(("Goal" :in-theory (enable vl-find-moduleitem)))))
+
+;; (define vl-fast-find-moduleitem
+;;   ((name stringp)
+;;    (x    vl-module-p)
+;;    (itemalist (equal itemalist (vl-moditem-alist x))))
+;;   :short "Legacy -- Use @(see scopestack) instead.  Alternative to @(see
+;;   vl-find-moduleitem) using fast alist lookups."
+;;   :enabled t
+;;   :hooks nil
+;;   (mbe :logic (vl-find-moduleitem name x)
+;;        :exec (cdr (hons-get name itemalist))))
 

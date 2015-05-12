@@ -172,10 +172,23 @@ either upper or lower case, treating - and _ as equivalent, and with or without
           (or
            ;; Recognize certain constructs that have attributes
            (case (car x)
-             (:nonatom
+             ((:vl-special
+               :vl-value
+               :vl-index
+               :vl-unary
+               :vl-binary
+               :vl-qmark
+               :vl-mintypmax
+               :vl-concat
+               :vl-multiconcat
+               :vl-stream
+               :vl-call
+               :vl-cast
+               :vl-inside
+               :vl-tagged
+               :vl-pattern)
               (and (vl-expr-p x)
-                   (eq (vl-expr-kind x) :nonatom)
-                   (vl-lint-atts-say-ignore (vl-nonatom->atts x) mwtype)))
+                   (vl-lint-atts-say-ignore (vl-expr->atts x) mwtype)))
              (:vl-assign       (and (vl-assign-p x)        (vl-lint-atts-say-ignore (vl-assign->atts x)        mwtype)))
              (:vl-modinst      (and (vl-modinst-p x)       (vl-lint-atts-say-ignore (vl-modinst->atts x)       mwtype)))
              (:vl-gateinst     (and (vl-gateinst-p x)      (vl-lint-atts-say-ignore (vl-gateinst->atts x)      mwtype)))

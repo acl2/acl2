@@ -139,10 +139,15 @@ out some duplication and indirection:</p>
                              :atts     atts
                              :loc      loc))))
 
-(local (defthm vl-packeddimensionlist-p-when-vl-rangelist-p
-         (implies (vl-rangelist-p x)
-                  (vl-packeddimensionlist-p x))
-         :hints(("Goal" :induct (len x)))))
+;; (local (defthm vl-packeddimensionlist-p-when-vl-rangelist-p
+;;          (implies (vl-rangelist-p x)
+;;                   (vl-packeddimensionlist-p x))
+;;          :hints(("Goal" :induct (len x)))))
+
+(defprojection vl-ranges->packeddimensions ((x vl-rangelist-p))
+  :returns (dims vl-packeddimensionlist-p)
+  (vl-range->packeddimension x))
+
 
 (defparser vl-parse-variable-type ()
   ;; Verilog-2005 Only.
@@ -163,7 +168,7 @@ out some duplication and indirection:</p>
                                          :expr expr)))
         (arrdims := (vl-parse-0+-ranges))
         (return (make-vl-vardeclassign :id (vl-idtoken->name id)
-                                       :dims arrdims
+                                       :dims (vl-ranges->packeddimensions arrdims)
                                        :expr nil))))
 
 (defparser vl-parse-list-of-variable-identifiers ()
@@ -299,7 +304,7 @@ out some duplication and indirection:</p>
                                           (make-vl-coretype :name :vl-reg
                                                             :signedp signedp
                                                             :pdims (if range
-                                                                       (list range)
+                                                                       (list (vl-range->packeddimension range))
                                                                      nil)))
                                    :atts atts
                                    :loc (vl-token->loc kwd)))))
@@ -322,7 +327,7 @@ out some duplication and indirection:</p>
           (:= (vl-match))
           (rest := (vl-parse-list-of-event-identifiers atts)))
         (return (cons (make-vl-vardecl :type (make-vl-coretype :name :vl-event
-                                                               :udims arrdims)
+                                                               :udims (vl-ranges->packeddimensions arrdims))
                                        :name (vl-idtoken->name id)
                                        :loc (vl-token->loc id)
                                        :atts atts)

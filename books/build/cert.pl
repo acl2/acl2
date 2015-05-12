@@ -654,7 +654,8 @@ my %stubs = (); # maps stub files to the books that include them
 foreach my $cert (@certs) {
     my $certdeps = cert_bookdeps($cert, $depdb);
     foreach my $dep (@$certdeps) {
-	if (cert_get_param($dep, $depdb, "reloc_stub")) {
+	if (cert_get_param($dep, $depdb, "reloc_stub")
+	    || cert_get_param($dep, $depdb, "reloc-stub")) {
 	    if (exists $stubs{$dep}) {
 		push(@{$stubs{$dep}}, $cert);
 	    } else {

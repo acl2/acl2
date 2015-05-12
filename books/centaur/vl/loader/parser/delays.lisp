@@ -77,7 +77,7 @@
          (int := (vl-match))
          (when (member #\' (vl-echarlist->chars (vl-token->etext int)))
            (return-raw (vl-parse-error "Illegal delay value.")))
-         (return (make-vl-atom :guts (vl-make-guts-from-inttoken int))))
+         (return (make-vl-value :val (vl-make-guts-from-inttoken int))))
 
        (when (vl-is-token? :vl-realtoken)
          (ans := (vl-parse-primary))
@@ -85,7 +85,10 @@
 
        (when (vl-is-token? :vl-idtoken)
          (id := (vl-match))
-         (return (make-vl-atom :guts (make-vl-id :name (vl-idtoken->name id)))))
+         (return (make-vl-index :scope
+                                (make-vl-scopeexpr-end
+                                 :hid (make-vl-hidexpr-end :name (vl-idtoken->name id)))
+                                :part (make-vl-partselect-none))))
 
        (return-raw
         (vl-parse-error "Illegal delay value."))))

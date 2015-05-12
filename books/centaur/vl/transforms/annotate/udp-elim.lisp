@@ -99,16 +99,16 @@ simply create a shell module that includes fatal @(see warnings).</p>")
 
        (match-expr1 (case entry1
                       (:vl-udp-1 in1)
-                      (:vl-udp-0 (make-vl-nonatom :op :vl-unary-bitnot :args (list in1)))
+                      (:vl-udp-0 (make-vl-unary :op :vl-unary-bitnot :arg in1))
                       (:vl-udp-?
                        ;; Recognize 0, 1, or X -- always true in the context of a UDP
                        |*sized-1'b1*|)
                       (:vl-udp-b
                        ;; Recognize 0 or 1 -- same as (in1 | ~in1), Xes will still be X.
-                       (make-vl-nonatom :op :vl-binary-bitor
-                                        :args (list in1
-                                                    (make-vl-nonatom :op :vl-unary-bitnot
-                                                                     :args (list in1)))))))
+                       (make-vl-binary :op :vl-binary-bitor
+                                       :left in1
+                                       :right (make-vl-unary :op :vl-unary-bitnot
+                                                             :arg in1)))))
 
        ((when (atom (cdr inexprs)))
         ;; Last expression, nothing more to require
@@ -118,8 +118,9 @@ simply create a shell module that includes fatal @(see warnings).</p>")
         (vl-udpline-match-expr (cdr inexprs) (cdr entries) warnings))
        ((unless okp)
         (mv nil warnings rest-expr)))
-    (mv t warnings (make-vl-nonatom :op :vl-binary-bitand
-                                    :args (list match-expr1 rest-expr)))))
+    (mv t warnings (make-vl-binary :op :vl-binary-bitand
+                                   :left match-expr1
+                                   :right rest-expr))))
 
 (define vl-udptable-assignrhs ((inexprs  vl-exprlist-p)
                                (lines    vl-udptable-p)
@@ -128,6 +129,7 @@ simply create a shell module that includes fatal @(see warnings).</p>")
   :returns (mv (okp      booleanp :rule-classes :type-prescription)
                (warnings vl-warninglist-p)
                (expr     vl-expr-p))
+  :verify-guards nil
   (b* (((when (atom lines))
         ;; End of lines -- no lines match.  The Verilog standard says that if
         ;; no lines match, the output gets driven to X.
@@ -173,9 +175,12 @@ simply create a shell module that includes fatal @(see warnings).</p>")
         ;; Already warned
         (mv nil warnings |*sized-1'bx*|))
 
-       (rhs (make-vl-nonatom :op :vl-qmark
-                             :args (list match-expr then-expr else-expr))))
-    (mv t (ok) rhs)))
+       (rhs (make-vl-qmark :test match-expr
+                           :then then-expr
+                           :else else-expr)))
+    (mv t (ok) rhs))
+  ///
+  (verify-guards vl-udptable-assignrhs))
 
 (define vl-combinational-udptable-synth
   :short "Translate a combinational UDP table into an assignment."
@@ -188,9 +193,9 @@ simply create a shell module that includes fatal @(see warnings).</p>")
                (warnings vl-warninglist-p)
                (assigns  vl-assignlist-p))
   (b* ((outname (vl-portdecl->name output))
-       (outexpr (vl-idexpr outname nil nil))
+       (outexpr (vl-idexpr outname))
        (innames (vl-portdecllist->names inputs))
-       (inexprs (vl-make-idexpr-list innames nil nil))
+       (inexprs (vl-make-idexpr-list innames))
        ((unless (consp inexprs))
         (mv nil
             (fatal :type :vl-bad-udp

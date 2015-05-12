@@ -548,6 +548,7 @@ foreach my $pair (@$includes) {
     }
 }
 
+# LD'd files above may change the current package
 $instrs .= "#!ACL2 (set-ld-error-action (quote :continue) state)\n";
 
 my $cert_flags = parse_certify_flags($acl2file, $usercmds);

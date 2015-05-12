@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "ranges")
+(include-book "expressions")
 (include-book "../../mlib/coretypes")
 (local (include-book "tools/do-not" :dir :system))
 (local (include-book "../../util/arithmetic"))
@@ -49,9 +49,8 @@
                            acl2::consp-when-member-equal-of-atom-listp
                            acl2::len-when-prefixp
                            acl2::consp-under-iff-when-true-listp
-                           consp-when-member-equal-of-vl-atts-p
-                           consp-when-member-equal-of-vl-commentmap-p
-                           consp-when-member-equal-of-vl-caselist-p
+                           ;; consp-when-member-equal-of-vl-commentmap-p
+                           ;; consp-when-member-equal-of-vl-caselist-p
                            consp-when-member-equal-of-vl-usertypes-p
                            acl2::consp-when-member-equal-of-keyval-alist-p
                            vl-tokenlist-p-when-not-consp
@@ -99,7 +98,7 @@
         (:= (vl-match-token :vl-colon))
         (lsb := (vl-parse-expression))
         (:= (vl-match-token :vl-rbrack))
-        (return (make-vl-range :msb msb :lsb lsb))))
+        (return (vl-range->packeddimension (make-vl-range :msb msb :lsb lsb)))))
 
 (defparser vl-parse-0+-packed-dimensions ()
   ;; Match { packed_dimension }
@@ -130,21 +129,23 @@
         (:= (vl-match-token :vl-lbrack))
         (when (vl-is-token? :vl-rbrack)
           (:= (vl-match))
-          (return :vl-unsized-dimension))
+          (return (make-vl-packeddimension-unsized)))
         (msb := (vl-parse-expression))
         (when (vl-is-token? :vl-colon)
           (:= (vl-match))
           (lsb := (vl-parse-expression)))
         (:= (vl-match-token :vl-rbrack))
-        (return (if lsb
-                    ;; Regular [msb:lsb] range
-                    (make-vl-range :msb msb :lsb lsb)
-                  ;; Single dimension [msb], meaning [0:msb-1]
-                  (make-vl-range
-                   :msb (vl-make-index 0)
-                   :lsb (make-vl-nonatom
-                         :op :vl-binary-minus
-                         :args (list msb (vl-make-index 1))))))))
+        (return (vl-range->packeddimension
+                 (if lsb
+                     ;; Regular [msb:lsb] range
+                     (make-vl-range :msb msb :lsb lsb)
+                   ;; Single dimension [msb], meaning [0:msb-1]
+                   (make-vl-range
+                    :msb (vl-make-index 0)
+                    :lsb (make-vl-binary
+                          :op :vl-binary-minus
+                          :left msb
+                          :right (vl-make-index 1))))))))
 
 (defparser vl-parse-0+-unpacked-dimensions ()
   ;; Match { unpacked_dimension }
@@ -264,7 +265,7 @@
   :hints(("Goal" :in-theory (enable vl-enumbasekind-p))))
 
 (defparser vl-parse-enum-base-type ()
-  :result (vl-enumbasetype-p val)
+  :result (vl-datatype-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
@@ -279,8 +280,10 @@
              (vl-parse-error (cat "Not a known type: " (vl-idtoken->name name)))))
           (when (vl-is-token? :vl-lbrack)
             (dim := (vl-parse-packeddimension)))
-          (return (make-vl-enumbasetype :kind (vl-idtoken->name name)
-                                        :dim dim)))
+          (return (make-vl-usertype :name
+                                    (make-vl-scopeexpr-end
+                                     :hid (make-vl-hidexpr-end :name (vl-idtoken->name name)))
+                                    :pdims (and dim (list dim)))))
 
         (when (vl-is-some-token? '(:vl-kwd-bit :vl-kwd-logic :vl-kwd-reg))
           ;; integer vector types.
@@ -298,13 +301,13 @@
            ;; keyword.  I guess it seems most sensible for them to default to
            ;; the signedness of the base type, but BOZO it would be good to
            ;; check this against commercial tools.
-           (make-vl-enumbasetype :kind (case (vl-token->type type)
-                                         (:vl-kwd-bit   :vl-bit)
-                                         (:vl-kwd-logic :vl-logic)
-                                         (:vl-kwd-reg   :vl-reg))
-                                 :signedp (and signing
-                                               (eq (vl-token->type signing) :vl-kwd-signed))
-                                 :dim dim)))
+           (make-vl-coretype :name (case (vl-token->type type)
+                                     (:vl-kwd-bit   :vl-bit)
+                                     (:vl-kwd-logic :vl-logic)
+                                     (:vl-kwd-reg   :vl-reg))
+                             :signedp (and signing
+                                           (eq (vl-token->type signing) :vl-kwd-signed))
+                             :pdims (and dim (list dim)))))
 
         ;; else, integer atom types:
         (type := (vl-match-some-token '(:vl-kwd-byte :vl-kwd-shortint :vl-kwd-int
@@ -316,22 +319,22 @@
         ;; BOZO again the signing here is very unclear!  The integer types are
         ;; signed by default and time is unsigned by default.  Maybe that's what
         ;; we should use?
-        (return (make-vl-enumbasetype :kind (case (vl-token->type type)
-                                              (:vl-kwd-byte     :vl-byte)
-                                              (:vl-kwd-shortint :vl-shortint)
-                                              (:vl-kwd-int      :vl-int)
-                                              (:vl-kwd-longint  :vl-longint)
-                                              (:vl-kwd-integer  :vl-integer)
-                                              (:vl-kwd-time     :vl-time))
-                                      :signedp
-                                      (cond (signing ;; Has explicit signing directive, respect it
-                                             (eq (vl-token->type signing) :vl-kwd-signed))
-                                            ((eq (vl-token->type type) :vl-kwd-time) ;; unsigned by default
-                                             nil)
-                                            (t ;; signed by default
-                                             t))
-                                      ;; No dimension here
-                                      :dim nil))))
+        (return (make-vl-coretype :name (case (vl-token->type type)
+                                          (:vl-kwd-byte     :vl-byte)
+                                          (:vl-kwd-shortint :vl-shortint)
+                                          (:vl-kwd-int      :vl-int)
+                                          (:vl-kwd-longint  :vl-longint)
+                                          (:vl-kwd-integer  :vl-integer)
+                                          (:vl-kwd-time     :vl-time))
+                                  :signedp
+                                  (cond (signing ;; Has explicit signing directive, respect it
+                                         (eq (vl-token->type signing) :vl-kwd-signed))
+                                        ((eq (vl-token->type type) :vl-kwd-time) ;; unsigned by default
+                                         nil)
+                                        (t ;; signed by default
+                                         t))
+                                  ;; No dimension here
+                                  ))))
 
 
 
@@ -375,7 +378,9 @@
                  :range (cond ((not left)
                                nil)
                               ((not right)
-                               (make-vl-range :msb (vl-make-index (vl-inttoken->value left))
+                               ;; See Table 6-10 on Page 80.  A single index should introduce
+                               ;; names foo0 through fooN-1.
+                               (make-vl-range :msb (vl-make-index 0)
                                               :lsb (vl-make-index (vl-inttoken->value left))))
                               (t
                                (make-vl-range :msb (vl-make-index (vl-inttoken->value left))
@@ -603,11 +608,7 @@ dimensions.</p>
                      :basetype (or basetype
                                    ;; Per SystemVerilog-2012 Section 6.19, in the absence of a
                                    ;; data type declaration, the default type is "int".  Moreover
-                                   (make-vl-enumbasetype
-                                    :kind :vl-int
-                                    ;; BOZO is this right?  Ints are signed by default, so maybe?
-                                    :signedp t
-                                    :dim nil))
+                                   (make-vl-coretype :name :vl-int :signedp t))
                      :items items
                      :pdims dims)))
 
@@ -638,10 +639,9 @@ dimensions.</p>
           ;; This is fairly restrictive but is *almost* a subset of, e.g.,
           ;; vl-parse-simple-type.  BOZO, for now, I'm going to just permit any
           ;; simple_type to occur here, followed by a packed dimension.
-          (expr := (vl-parse-simple-type))
+          (type := (vl-parse-simple-type))
           (dims := (vl-parse-0+-packed-dimensions))
-          (return (make-vl-usertype :kind expr
-                                    :pdims dims))))
+          (return (vl-datatype-update-pdims dims type))))
 
 
   (defparser vl-parse-structmembers ()
@@ -852,15 +852,22 @@ dimensions.</p>
            (b* (((mv err val ?tokstream) (vl-parse-core-data-type)))
              (implies (not err)
                       (and (equal (vl-datatype-kind val) :vl-coretype)
-                           (not (vl-coretype->udims val)))))
+                           (not (vl-datatype->udims val)))))
            :hints(("Goal" :in-theory (enable vl-parse-core-data-type)))))
+
+  (local (defthm l1
+           (b* (((mv err val ?tokstream) (vl-parse-simple-type)))
+             (implies (not err)
+                      (not (vl-datatype->udims val))))
+           :hints(("Goal" :expand ((vl-parse-simple-type)
+                                   (vl-parse-very-simple-type))))))
 
   (defthm no-unpacked-dimensions-after-vl-parse-datatype
     (b* (((mv err val ?tokstream) (vl-parse-datatype)))
       (implies (not err)
                (not (vl-datatype->udims val))))
     :hints(("Goal"
-            :in-theory (enable vl-datatype->udims)
+            ;; :in-theory (enable vl-datatype->udims)
             :expand ((vl-parse-datatype))))))
 
 

@@ -58,6 +58,7 @@
     fty::find-prod-by-kind
     fty::flexsum-case-macro-kinds
     fty::flexsum-case-macro-conds
+    fty::flexsum-case-macro-member-special-form-expand
     fty::flexsum-case-macro-fn
     print-base-fix
     print-base-equiv

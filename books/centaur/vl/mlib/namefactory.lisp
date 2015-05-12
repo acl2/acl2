@@ -30,75 +30,79 @@
 
 (in-package "VL")
 (include-book "../util/namedb")
-(include-book "modnamespace")
+(include-book "scopestack")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
 (local (xdoc::set-default-parents vl-namefactory-p))
 
-(define vl-namefactory-namedb-okp ((mod    vl-maybe-module-p)
-                                   (namedb vl-namedb-p))
-  (or (not mod)
+(define vl-namefactory-namedb-okp ((scope  vl-maybe-scope-p)
+                                   (namedb vl-namedb-p)
+                                   (design vl-maybe-design-p))
+  (or (not scope)
       (not (vl-namedb->names namedb))
-      (subsetp-equal (vl-module->modnamespace mod)
+      (subsetp-equal (vl-scope-namespace scope design)
                      (vl-namedb-allnames namedb)))
   ///
   (defthm vl-namefactory-namedb-okp-of-nil
-    (vl-namefactory-namedb-okp nil namedb))
+    (vl-namefactory-namedb-okp nil namedb design))
   (defthm vl-namefactory-namedb-okp-of-vl-empty-namedb
-    (vl-namefactory-namedb-okp mod (vl-empty-namedb))
+    (vl-namefactory-namedb-okp scope (vl-empty-namedb) design)
     :hints(("Goal" :in-theory (enable vl-empty-namedb))))
   (local (defthm vl-namedb->names-of-vl-starting-namedb
            (equal (vl-namedb->names (vl-starting-namedb names))
                   (make-lookup-alist (string-list-fix names)))
            :hints(("Goal" :in-theory (enable vl-starting-namedb)))))
   (defthm vl-namefactory-namedb-okp-of-vl-starting-namedb
-    (vl-namefactory-namedb-okp mod (vl-starting-namedb (vl-module->modnamespace mod)))))
+    (vl-namefactory-namedb-okp scope (vl-starting-namedb (vl-scope-namespace scope design)) design)))
 
-(define vl-namefactory-namedb-fix ((mod    vl-maybe-module-p)
-                                   (namedb vl-namedb-p))
-  :guard (vl-namefactory-namedb-okp mod namedb)
+(define vl-namefactory-namedb-fix ((scope  vl-maybe-scope-p)
+                                   (namedb vl-namedb-p)
+                                   (design vl-maybe-design-p))
+  :guard (vl-namefactory-namedb-okp scope namedb design)
   :returns (new-db (and (vl-namedb-p new-db)
-                        (vl-namefactory-namedb-okp mod new-db)))
+                        (vl-namefactory-namedb-okp scope new-db design)))
   :inline t
   (mbe :logic
-       (b* ((mod    (vl-maybe-module-fix mod))
+       (b* ((scope    (vl-maybe-scope-fix scope))
             (namedb (vl-namedb-fix namedb)))
-         (if (vl-namefactory-namedb-okp mod namedb)
+         (if (vl-namefactory-namedb-okp scope namedb design)
              namedb
            (vl-empty-namedb)))
        :exec
        namedb)
   ///
   (defthm vl-namefactory-namedb-fix-when-vl-namefactory-namedb-okp
-    (implies (vl-namefactory-namedb-okp mod namedb)
-             (equal (vl-namefactory-namedb-fix mod namedb)
+    (implies (vl-namefactory-namedb-okp scope namedb design)
+             (equal (vl-namefactory-namedb-fix scope namedb design)
                     (vl-namedb-fix namedb)))))
 
 (defprod vl-namefactory
   :tag :vl-namefactory
   :layout :tree
-  ((mod    vl-maybe-module-p)
-   (namedb vl-namedb-p :reqfix (vl-namefactory-namedb-fix mod namedb)))
-  :require (vl-namefactory-namedb-okp mod namedb)
+  ((scope    vl-maybe-scope-p)
+   (design   vl-maybe-design-p)
+   (namedb vl-namedb-p :reqfix (vl-namefactory-namedb-fix scope namedb design)))
+
+  :require (vl-namefactory-namedb-okp scope namedb design)
   :parents (mlib)
-  :short "Produces fresh names for a module."
+  :short "Produces fresh names for a scope."
 
   :long "<p>A <b>name factory</b> allows you to easily and efficiently generate
-good, fresh names that are not being used elsewhere in a Verilog module.  They
+good, fresh names that are not being used elsewhere in a Verilog scope.  They
 combine a name database (which is a general mechanism for generating fresh
-names; see @(see vl-namedb-p) for details) with a Verilog module in order to
-avoid computing the module's namespace until a name is actually needed.  This
+names; see @(see vl-namedb-p) for details) with a Verilog scope in order to
+avoid computing the scope's namespace until a name is actually needed.  This
 optimization often saves a lot of consing.</p>
 
 <h3>Using Name Factories</h3>
 
-<p>Typically, given some module @('mod'), the user begins by constructing a
+<p>Typically, given some scope @('mod'), the user begins by constructing a
 name factory using @('(vl-starting-namefactory mod)').  Note that it is quite
 cheap to construct a name factory in this way; all expense is delayed until the
 first use of the factory.  It is also possible to create a name factory without
-a module using @(see vl-empty-namefactory), which is occasionally useful when
-generating new modules.</p>
+a scope using @(see vl-empty-namefactory), which is occasionally useful when
+generating new scopes.</p>
 
 <p>Once constructed, name factories must be used in a single-threaded
 discipline.  That is, the functions for generating names actually return
@@ -139,7 +143,7 @@ prove:</p>
 
 <li>The @('allnames') of the empty name factory is empty.</li>
 
-<li>Every name in the @(see vl-module->modnamespace) of @('mod') is among the
+<li>Every name in the @(see vl-scope-namespace) of @('mod') is among the
 @('allnames') of the initial name factory produced by
 @('(vl-starting-namefactory mod).')</li>
 
@@ -168,7 +172,7 @@ approach was as follows:</p>
 
 <li>Our generated names always looked like @('_gen_1'), @('_gen_2'), etc.</li>
 
-<li>When the first name was needed, a transform would examine the module's
+<li>When the first name was needed, a transform would examine the scope's
 namespace for the largest @('n') such that @('_gen_n') was already in use.  The
 name @('_gen_{n+1}') would then be used as the first new name.</li>
 
@@ -178,10 +182,10 @@ increasing the index.  That is, the second name fresh name would be
 
 </ul>
 
-<p>This scheme was highly efficient because the module's namespace only needed
+<p>This scheme was highly efficient because the scope's namespace only needed
 to be consulted when generating the first wire's name.  This meant that for
-large modules, generating thousands of names was not very expensive.  It also
-meant that if no fresh names were needed, then the module's namespace was never
+large scopes, generating thousands of names was not very expensive.  It also
+meant that if no fresh names were needed, then the scope's namespace was never
 even computed.</p>
 
 <p>But a problem with this scheme is that the generated names are not very good
@@ -202,7 +206,7 @@ basic_flop _gen_17 (q[2], ph1, d[2]);
 
 <p>that is, here the instance name @('data') has been entirely lost and
 replaced with a bunch of unrelated, stupid names that might easily change when
-the module is translated in the future.</p>
+the scope is translated in the future.</p>
 
 <p>Name factories basically extend this scheme to allow much better names to be
 generated, while still being quite efficient.</p>
@@ -214,8 +218,8 @@ generated, while still being quite efficient.</p>
 
 <ul>
 
-<li>@('mod'), the module that we are generating names for, or @('nil') if there
-is no such module (e.g., for empty name factories).</li>
+<li>@('mod'), the scope that we are generating names for, or @('nil') if there
+is no such scope (e.g., for empty name factories).</li>
 
 <li>@('namedb') is an ordinary @(see vl-namedb-p) that we use to generate fresh
 names.</li>
@@ -223,12 +227,13 @@ names.</li>
 </ul>
 
 <p>The invariant we maintain is that either the namedb is empty, or every name
-in the @(see vl-module->modnamespace) of @('mod') must be bound in it.</p>")
+in the @(see vl-scope-namespace) of @('mod') must be bound in it.</p>")
 
 (defthm subsetp-equal-of-modnamespace-when-vl-namefactory-p
   (implies (and (vl-namedb->names (vl-namefactory->namedb x))
-                (vl-namefactory->mod x))
-           (subsetp-equal (vl-module->modnamespace (vl-namefactory->mod x))
+                (vl-namefactory->scope x))
+           (subsetp-equal (vl-scope-namespace (vl-namefactory->scope x)
+                                              (vl-namefactory->design x))
                           (vl-namedb-allnames (vl-namefactory->namedb x))))
   :hints(("Goal"
           :in-theory (e/d (vl-namefactory-namedb-okp)
@@ -247,20 +252,28 @@ in the @(see vl-module->modnamespace) of @('mod') must be bound in it.</p>")
   but this allows us to make @('vl-starting-namefactory') very cheap and; avoid
   computing the modnamespace if it isn't used.</p>"
   :guard-hints (("goal" :in-theory (enable vl-namedb-allnames)))
-  (if (vl-namedb->names (vl-namefactory->namedb factory))
-      (vl-namefactory-fix factory)
-    (let* ((mod   (vl-namefactory->mod factory))
-           (modns (and mod (vl-module->modnamespace mod))))
-      (change-vl-namefactory factory :namedb (vl-starting-namedb modns))))
+  (b* (((vl-namefactory factory)))
+    (if (vl-namedb->names factory.namedb)
+        (vl-namefactory-fix factory)
+      (change-vl-namefactory
+       factory
+       :namedb (vl-starting-namedb
+                (and factory.scope
+                     (vl-scope-namespace factory.scope factory.design))))))
   ///
-  (defthm vl-namefactory->mod-of-vl-namefactory-maybe-initialize
-    (equal (vl-namefactory->mod (vl-namefactory-maybe-initialize factory))
-           (vl-namefactory->mod factory)))
+  (defthm vl-namefactory->scope-of-vl-namefactory-maybe-initialize
+    (equal (vl-namefactory->scope (vl-namefactory-maybe-initialize factory))
+           (vl-namefactory->scope factory)))
+
+  (defthm vl-namefactory->design-of-vl-namefactory-maybe-initialize
+    (equal (vl-namefactory->design (vl-namefactory-maybe-initialize factory))
+           (vl-namefactory->design factory)))
 
   (defthm subsetp-equal-of-modnamespace-and-vl-namefactory-maybe-initialize
-    (implies (vl-namefactory->mod factory)
+    (implies (vl-namefactory->scope factory)
              (subsetp-equal
-              (vl-module->modnamespace (vl-namefactory->mod factory))
+              (vl-scope-namespace (vl-namefactory->scope factory)
+                                  (vl-namefactory->design factory))
               (vl-namedb-allnames (vl-namefactory->namedb
                                    (vl-namefactory-maybe-initialize factory)))))
     :rule-classes ((:rewrite)
@@ -290,12 +303,12 @@ vl-namefactory-p).</p>"
          (vl-namefactory-maybe-initialize
           factory)))
        :exec
-       (let ((mod    (vl-namefactory->mod factory))
+       (let ((scope    (vl-namefactory->scope factory))
              (namedb (vl-namefactory->namedb factory)))
          (cond ((vl-namedb->names namedb)
                 (vl-namedb-allnames namedb))
-               (mod
-                (vl-module->modnamespace mod))
+               (scope
+                (vl-scope-namespace scope (vl-namefactory->design factory)))
                (t
                 nil))))
   ///
@@ -313,18 +326,20 @@ vl-namefactory-p).</p>"
 
 
 (define vl-starting-namefactory
-  :short "@(call vl-starting-namefactory) creates a name factory for a module."
-  ((mod vl-module-p))
+  :short "@(call vl-starting-namefactory) creates a name factory for a scope."
+  ((scope vl-scope-p)
+   (design vl-maybe-design-p))
   :returns (nf vl-namefactory-p)
   :long "<p>This function is very cheap to call because the real work of
 initializing the name factory is deferred to its first use.  See @(see
 vl-namefactory-p) for all name factory documentation.</p>"
   :prepwork ((local (in-theory (enable vl-namefactory-namedb-okp))))
-  (make-vl-namefactory :mod (vl-module-fix mod) :namedb (vl-empty-namedb))
+  (make-vl-namefactory :scope (vl-scope-fix scope) :namedb (vl-empty-namedb)
+                       :design design)
   ///
   (defthm vl-namefactory-allnames-of-vl-starting-namefactory
-    (equal (vl-namefactory-allnames (vl-starting-namefactory mod))
-           (vl-module->modnamespace mod))
+    (equal (vl-namefactory-allnames (vl-starting-namefactory scope design))
+           (vl-scope-namespace scope design))
     :hints(("Goal" :in-theory (e/d (vl-namefactory-allnames
                                     vl-starting-namedb
                                     vl-namedb-allnames
@@ -332,26 +347,28 @@ vl-namefactory-p) for all name factory documentation.</p>"
                                     vl-empty-namedb))))))
 
 
-(define vl-empty-namefactory ()
+(define vl-empty-namefactory ((design vl-maybe-design-p))
   :short "@(call vl-empty-namefactory) creates an empty name factory without
-a module."
+a scope."
   :returns (nf vl-namefactory-p)
   :long "<p>Usually you should use @(see vl-starting-namefactory) instead;
 @('vl-starting-namefactory') automatically regards all of the names in the
-module as used, whereas @('vl-empty-namefactory') regards no names as used.</p>
+scope as used, whereas @('vl-empty-namefactory') regards no names as used.</p>
 
 <p>On the other hand, @('vl-empty-namefactory') may be useful when you are
-generating modules from scratch and, hence, don't have a module to give to
+generating scopes from scratch and, hence, don't have a scope to give to
 @('vl-starting-namefactory') yet.</p>"
 
-  (make-vl-namefactory :mod nil :namedb (vl-empty-namedb))
+  (make-vl-namefactory :scope nil :namedb (vl-empty-namedb) :design design)
   ///
   (in-theory (disable (:executable-counterpart vl-empty-namefactory)))
   (local (in-theory (enable vl-empty-namedb)))
 
   (defthm vl-namefactory-allnames-of-vl-empty-namefactory
-    (equal (vl-namefactory-allnames (vl-empty-namefactory))
-           nil)))
+    (equal (vl-namefactory-allnames (vl-empty-namefactory design))
+           nil)
+    :hints(("Goal" :in-theory (enable vl-namefactory-allnames
+                                      vl-namefactory-maybe-initialize)))))
 
 
 
@@ -363,9 +380,9 @@ fresh-name factory-prime)')."
    (factory vl-namefactory-p))
   :returns (mv (fresh-name stringp :rule-classes :type-prescription)
                (new-factory vl-namefactory-p))
-  (b* ((factory (vl-namefactory-maybe-initialize factory))
+  (b* (((vl-namefactory factory) (vl-namefactory-maybe-initialize factory))
        ((mv newname db-prime)
-        (vl-namedb-indexed-name prefix (vl-namefactory->namedb factory)))
+        (vl-namedb-indexed-name prefix factory.namedb))
        (factory (change-vl-namefactory factory :namedb db-prime)))
     (mv newname factory))
 

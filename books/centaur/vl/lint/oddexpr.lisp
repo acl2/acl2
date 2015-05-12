@@ -29,10 +29,11 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/ctxexprs")
-(include-book "../transforms/expr-size")
+(include-book "../mlib/selfsize")
 (include-book "../mlib/fmt")
+(include-book "../mlib/ctxexprs")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defsection oddexpr-check
   :parents (lint)
@@ -50,11 +51,6 @@ it might not have the expected precedence.</p>
 <p>This has found a few good bugs!</p>")
 
 (local (xdoc::set-default-parents oddexpr-check))
-
-(defval *fake-modelement*
-  (make-vl-vardecl :name "Fake_Module_Element"
-                   :type (make-vl-coretype :name :vl-logic)
-                   :loc *vl-fakeloc*))
 
 (define vl-expr-probable-selfsize
   :short "Heuristically estimate an expression's size."
@@ -76,16 +72,16 @@ non-@('nil') value.  And we can use this before resolving ranges, etc., which
 makes it useful for simple linting.</p>"
 
   (b* (((mv & size)
-        (vl-expr-selfsize x ss *fake-modelement* nil)))
+        (vl-expr-selfsize x ss nil)))
     size))
 
 (define vl-odd-binop-class
   :short "Group binary operators into classes."
-  ((x vl-op-p))
+  ((x vl-binaryop-p))
   :returns (class symbolp :rule-classes :type-prescription)
   :long "<p>This lets us come up with a basic abstraction for an expression,
 where, e.g., we treat any kind of shift operation as equivalent, etc.</p>"
-  (case x
+  (case (vl-binaryop-fix x)
     ((:vl-binary-times :vl-binary-div :vl-binary-mod :vl-binary-power)
      :mult-class)
     ((:vl-binary-plus)
@@ -404,7 +400,7 @@ giving motivation for these actions, etc.</p>
 
 (define vl-warn-odd-binary-expression-main
   :short "Check the top-level of a binary expression for precedence problems."
-  ((op1     vl-op-p)
+  ((op1     vl-binaryop-p)
    (a       vl-expr-p)
    (x       vl-expr-p)
    (flipped booleanp)
@@ -424,40 +420,40 @@ this, in @(see vl-warn-odd-binary-expression), we call this function twice:</p>
 decompose it any more.  However, we try to match X against @('B OP2 C').  Then,
 we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
 
-  (b* (((when (or (vl-fast-atom-p x)
-                  (not (eql (vl-op-arity (vl-nonatom->op x)) 2))))
-        nil)
-       (op2        (vl-nonatom->op x))
-       (op1-class  (vl-odd-binop-class op1))
-       (op2-class  (vl-odd-binop-class op2))
-       (key        (cons op1-class op2-class))
-       (look       (assoc-equal key *vl-odd-binops-table*))
-       ((unless look)
-        nil))
-    (case (cdr look)
-      ((:check-precedence)
-       ;; We've run into something like a + b << c which parses in a way that
-       ;; might sometimes be surprising, viz. (a + b) << c.  We want to check
-       ;; whether there are explicit parens around the sub-op (op2).  If so,
-       ;; this seems to be what the user wants; else issue a warning.
-       (if (assoc-equal "VL_EXPLICIT_PARENS" (vl-nonatom->atts x))
-           nil
-         :check-precedence))
 
-      (:check-type
-       ;; Hrmn.  Well, even in the case of type errors, parens seem to be pretty
-       ;; indicative that the designer wants to do something weird.
-       (if (assoc-equal "VL_EXPLICIT_PARENS" (vl-nonatom->atts x))
-           nil
-         :check-type))
+  (vl-expr-case x
+    :vl-binary
+    (b* ((op2        x.op)
+         (op1-class  (vl-odd-binop-class op1))
+         (op2-class  (vl-odd-binop-class op2))
+         (key        (cons op1-class op2-class))
+         (look       (assoc-equal key *vl-odd-binops-table*))
+         ((unless look)
+          nil))
+      (case (cdr look)
+        ((:check-precedence)
+         ;; We've run into something like a + b << c which parses in a way that
+         ;; might sometimes be surprising, viz. (a + b) << c.  We want to check
+         ;; whether there are explicit parens around the sub-op (op2).  If so,
+         ;; this seems to be what the user wants; else issue a warning.
+         (if (assoc-equal "VL_EXPLICIT_PARENS" x.atts)
+             nil
+           :check-precedence))
+
+        (:check-type
+         ;; Hrmn.  Well, even in the case of type errors, parens seem to be pretty
+         ;; indicative that the designer wants to do something weird.
+         (if (assoc-equal "VL_EXPLICIT_PARENS" x.atts)
+             nil
+           :check-type))
 
       (:check-type-unless-topargs-boolean
-       (b* (((when (assoc-equal "VL_EXPLICIT_PARENS" (vl-nonatom->atts x)))
+       (b* (((when (assoc-equal "VL_EXPLICIT_PARENS" x.atts))
              nil)
             (asize (vl-expr-probable-selfsize a ss))
             (xsize (vl-expr-probable-selfsize x ss))
-            ((when (and (or (not asize) (eql asize 1))
-                        (or (not xsize) (eql xsize 1))))
+            ((when (and (eql asize 1)
+                        (eql xsize 1)))
              ;; Skip it since args are boolean or there was some error determining
              ;; their sizes.
              nil))
@@ -474,7 +470,7 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
        ;; If FLIPPED=T, the expression we found was (B - C) + A.  This is the case we
        ;; want to warn about, unless there were explicit parens around (B - C).
        (if (and flipped
-                (not (assoc-equal "VL_EXPLICIT_PARENS" (vl-nonatom->atts x))))
+                (not (assoc-equal "VL_EXPLICIT_PARENS" x.atts)))
            :check-precedence
          nil))
 
@@ -482,7 +478,9 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
        nil)
 
       (otherwise
-       (raise "Unexpected action type ~x0.~%" (cdr look))))))
+       (raise "Unexpected action type ~x0.~%" (cdr look)))))
+    :otherwise
+    nil))
 
 
 (defines vl-warn-odd-binary-expression
@@ -492,19 +490,17 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
     ((x      vl-expr-p)
      (ss     vl-scopestack-p))
     :measure (vl-expr-count x)
-    (b* (((when (vl-fast-atom-p x))
-          nil)
-         (op    (vl-nonatom->op x))
-         (arity (vl-op-arity op))
-         (args  (vl-nonatom->args x))
-         ((unless (eql arity 2))
-          (vl-warn-odd-binary-expression-list args ss))
-         ((list a b) args)
-         (msg1 (vl-warn-odd-binary-expression-main op a b nil ss))
-         (msg2 (vl-warn-odd-binary-expression-main op b a t   ss)))
-      (append (if msg1 (list (cons msg1 x)) nil)
-              (if msg2 (list (cons msg2 x)) nil)
-              (vl-warn-odd-binary-expression-list args ss))))
+    (b* ((x (vl-expr-fix x)))
+      (vl-expr-case x
+        :vl-binary
+        (b* ((msg1 (vl-warn-odd-binary-expression-main x.op x.left x.right nil ss))
+             (msg2 (vl-warn-odd-binary-expression-main x.op x.right x.left t   ss)))
+          (append (if msg1 (list (cons msg1 x)) nil)
+                  (if msg2 (list (cons msg2 x)) nil)
+                  (vl-warn-odd-binary-expression x.left ss)
+                  (vl-warn-odd-binary-expression x.right ss)))
+        :otherwise
+        (vl-warn-odd-binary-expression-list (vl-expr->subexprs x) ss))))
 
   (define vl-warn-odd-binary-expression-list
     ((x      vl-exprlist-p)
@@ -513,88 +509,9 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
     (if (atom x)
         nil
       (append (vl-warn-odd-binary-expression (car x) ss)
-              (vl-warn-odd-binary-expression-list (cdr x) ss)))))
-
-
-; Bleh, this doesn't really seem to do anything useful:
-
-;; (mutual-recursion
-
-;;  (defund vl-expr-find-oddsizes (x ss)
-;;    (declare (xargs :guard (and (vl-expr-p x)
-;;                                (vl-module-p mod)
-;;                                (equal ialist (vl-moditem-alist mod)))
-;;                    :measure (vl-expr-count x)))
-;;    (b* (((when (vl-fast-atom-p x))
-;;          nil)
-;;         (op   (vl-nonatom->op x))
-;;         (args (vl-nonatom->args x))
-;;         (others (vl-exprlist-find-oddsizes args ss))
-
-;;         ((when (eq op :vl-unary-plus))
-;;          ;; Unary plus is always weird.
-;;          (cons (cons :weird-operator x)
-;;                others))
-
-;;         ;; No checks for unary minus.
-;;         ;; No checks for unary bitwise not.
-;;         ;; No checks for unary logical not.
-
-;;         ((when (member op '(:vl-unary-bitand
-;;                             ;; :vl-unary-bitor  -- seems to mostly generate spurious warnings
-;;                             :vl-unary-xor
-;;                             :vl-unary-nand
-;;                             :vl-unary-nor
-;;                             :vl-unary-xnor)))
-;;          ;; Reduction operators.  It'd be weird to apply these to 1-bit operands.
-;;          ;; It'd be kind of weird to apply these to 1-bit arguments.
-;;          (b* ((arg-size (vl-expr-probable-selfsize (first args) ss)))
-;;            (if (eql arg-size 1)
-;;                (cons (cons :check-size x) others)
-;;              others)))
-
-;;         ;; No checks for binary plus, minus, times, divide, remainder, power.
-
-;;         ((when (member op '(:vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte)))
-;;          ;; Weird to do a relational comparison on a 1-bit argument.
-;;          ;; BOZO maybe also compare whether the sizes are the same?
-;;          (b* (((list a b) args)
-;;               (a-size (vl-expr-probable-selfsize a ss))
-;;               (b-size (vl-expr-probable-selfsize b ss)))
-;;            ;; Originally I just tested (OR (eql a-size 1) (eql b-size 1)) here, but that
-;;            ;; didn't seem right because we can get into situations where A is the sum of
-;;            ;; a bunch of one-bit things, e.g., (a1 + a2 + a3 > 1), so the self-size looks
-;;            ;; like it's just one.  We may want to consider the outer context, too, and not
-;;            ;; try to do this size check based on self-sizes.
-;;            (if (and (eql a-size 1)
-;;                     (eql b-size 1))
-;;                (cons (cons :check-size x) others)
-;;              others)))
-
-;;         ((when (member op '(:vl-binary-shr :vl-binary-shl :vl-binary-ashl :vl-binary-ashr)))
-;;          ;; Weird to shift a one-bit bus left or right.
-;;          (b* (((list a ?b) args)
-;;               (a-size (vl-expr-probable-selfsize a ss)))
-;;            (if (eql a-size 1)
-;;                (cons (cons :check-size x) others)
-;;              others)))
-
-;;         ;; BOZO weird to bitwise and/or/xor things of different widths.
-
-;;         ;; WEird to have ternary operator with different true/false sizes or non-1 test size
-;;         )
-;;      others))
-
-;;  (defund vl-exprlist-find-oddsizes (x ss)
-;;    (declare (xargs :guard (and (vl-exprlist-p x)
-;;                                (vl-module-p mod)
-;;                                (equal ialist (vl-moditem-alist mod)))
-;;                    :measure (vl-exprlist-count x)))
-;;    (if (atom x)
-;;        nil
-;;      (append (vl-expr-find-oddsizes (car x) ss)
-;;              (vl-exprlist-find-oddsizes (cdr x) ss)))))
-
+              (vl-warn-odd-binary-expression-list (cdr x) ss))))
+  ///
+  (deffixequiv-mutual vl-warn-odd-binary-expression))
 
 (define vl-pp-oddexpr-details (x &key (ps 'ps))
   (cond ((atom x)
@@ -608,61 +525,119 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
           (vl-cw "~s0: ~a1~%" (caar x) (cdar x))
           (vl-pp-oddexpr-details (cdr x))))))
 
-(define vl-oddexpr-check ((x      vl-expr-p)
-                          (ctx    vl-context-p)
-                          (ss     vl-scopestack-p))
+(define vl-expr-oddexpr-check ((x  vl-expr-p)
+                               (ss vl-scopestack-p))
   :returns (warnings vl-warninglist-p)
-  (b* ((details (append (vl-warn-odd-binary-expression x ss)
-                        ;;(vl-expr-find-oddsizes x ss)
-                        ))
+  (b* ((details (vl-warn-odd-binary-expression x ss))
        ((unless details)
         nil))
     (list (make-vl-warning
            :type :vl-warn-oddexpr
-           :msg (cat "~a0: found ~s1 that suggest precedence problems may be ~
+           :msg (cat "found ~s0 that suggest precedence problems may be ~
                       present.  Maybe add explicit parens?  Details:~%"
                      (with-local-ps (vl-pp-oddexpr-details details)))
-           :args (list ctx
-                       (if (vl-plural-p details)
+           :args (list (if (vl-plural-p details)
                            "subexpressions"
-                         "a subexpression"))))))
+                         "a subexpression"))
+           :fn __function__))))
 
-(define vl-exprctxalist-oddexpr-check ((x      vl-exprctxalist-p)
-                                       (ss     vl-scopestack-p))
-  :returns (warnings vl-warninglist-p)
-  (if (atom x)
-      nil
-    (append (vl-oddexpr-check (caar x) (cdar x) ss)
-            (vl-exprctxalist-oddexpr-check (cdr x) ss))))
+(def-expr-check oddexpr-check)
 
-(define vl-module-oddexpr-check
-  :short "@(call vl-module-oddexpr-check) carries our our @(see oddexpr-check)
-on all the expressions in a module, and adds any resulting warnings to the
-module."
-  ((x vl-module-p)
-   (ss vl-scopestack-p))
-  :returns (new-x vl-module-p)
 
-  (b* ((x (vl-module-fix x))
-       ((when (vl-module->hands-offp x))
-        ;; don't check things like vl_1_bit_latch if they're already defined somehow
-        x)
-       (ss           (vl-scopestack-push (vl-module-fix x) ss))
-       (ctxexprs     (vl-module-ctxexprs x))
-       (new-warnings (vl-exprctxalist-oddexpr-check ctxexprs ss)))
-    (change-vl-module x
-                      :warnings (append new-warnings (vl-module->warnings x)))))
 
-(defprojection vl-modulelist-oddexpr-check ((x vl-modulelist-p)
-                                            (ss vl-scopestack-p))
-  :returns (new-x vl-modulelist-p)
-  (vl-module-oddexpr-check x ss))
 
-(define vl-design-oddexpr-check ((x vl-design-p))
-  :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       (ss (vl-scopestack-init x))
-       ((vl-design x) x)
-       (mods (vl-modulelist-oddexpr-check x.mods ss)))
-    (vl-scopestacks-free)
-    (change-vl-design x :mods mods)))
+
+
+;; (define vl-interface-oddexpr-check ((x vl-interface-p)
+;;                                  (ss vl-scopestack-p))
+;;   (vl-ctxexprlist-oddexpr-check
+;;    (vl-interface-ctxexprs x ss)))
+
+
+;; (fty::defvisitor-template vl-oddexpr-template
+;;   ((x  :object)
+;;    (ss vl-scopestack-p))
+;;   :returns (warnings (:join (append warnings1 warnings)
+;;                       :tmp-var warnings1
+;;                       :initial nil)
+;;                       vl-warninglist-p)
+;;   :fnname-template <type>-oddexprs
+
+;;   :renames ((vl-assign  vl-assign-oddexprs-aux))
+
+;;   :type-fns ((vl-expr-p vl-oddexpr-check)
+;;              (vl-assign vl-assign-oddexprs)))
+
+
+
+;; (defvisitors vl-modelement-oddexpr-deps
+;;   :template vl-oddexpr-template
+;;   :dep-types (vl-assign ...))
+
+
+;; (defun make-oddexprs-for-types (typenames)
+;;   (if (atom typenames)
+;;       nil
+;;     (cons (acl2::template-subst-top
+;;            '(defvisitor <type>-oddexprs
+;;               :template vl-oddexpr-template
+;;               :type <type>
+;;               (define <type>-oddexprs ...
+                
+;;                 (vl-warninglist-add-ctx
+;;                  (<type>-oddexprs-aux x ss)
+;;                  x)))
+;;            (acl2::make-tmplsubst
+;;             :atoms `((<type> . ,(car typenames)))
+;;             :strs `(("<TYPE>" ,(symbol-name (car typenames)) . ,(car typenames)))))
+;;           (make-oddexprs-for-types (cdr typenames)))))
+
+;; (make-event
+;;  (let ((types '(vl-assign vl-... )))
+;;    `(progn . ,(make-oddexprs-for-types types))))
+   
+
+
+;; this goes away
+
+
+
+;; (define vl-exprctxalist-oddexpr-check ((x      vl-exprctxalist-p)
+;;                                        (ss     vl-scopestack-p))
+;;   :returns (warnings vl-warninglist-p)
+;;   (if (atom x)
+;;       nil
+;;     (append (vl-oddexpr-check (caar x) (cdar x) ss)
+;;             (vl-exprctxalist-oddexpr-check (cdr x) ss))))
+
+;; (define vl-module-oddexpr-check
+;;   :short "@(call vl-module-oddexpr-check) carries our our @(see oddexpr-check)
+;; on all the expressions in a module, and adds any resulting warnings to the
+;; module."
+;;   ((x vl-module-p)
+;;    (ss vl-scopestack-p))
+;;   :returns (new-x vl-module-p)
+
+;;   (b* ((x (vl-module-fix x))
+;;        ((when (vl-module->hands-offp x))
+;;         ;; don't check things like vl_1_bit_latch if they're already defined somehow
+;;         x)
+;;        (ss           (vl-scopestack-push (vl-module-fix x) ss))
+;;        (ctxexprs     (vl-module-ctxexprs x))
+;;        (new-warnings (vl-exprctxalist-oddexpr-check ctxexprs ss)))
+;;     (change-vl-module x
+;;                       :warnings (append new-warnings (vl-module->warnings x)))))
+
+;; (defprojection vl-modulelist-oddexpr-check ((x vl-modulelist-p)
+;;                                             (ss vl-scopestack-p))
+;;   :returns (new-x vl-modulelist-p)
+;;   (vl-module-oddexpr-check x ss))
+
+;; (define vl-design-oddexpr-check ((x vl-design-p))
+;;   :returns (new-x vl-design-p)
+;;   (b* ((x (vl-design-fix x))
+;;        (ss (vl-scopestack-init x))
+;;        ((vl-design x) x)
+;;        (mods (vl-modulelist-oddexpr-check x.mods ss)))
+;;     (vl-scopestacks-free)
+;;     (change-vl-design x :mods mods)))

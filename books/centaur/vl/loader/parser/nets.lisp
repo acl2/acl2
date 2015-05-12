@@ -214,7 +214,7 @@
 ; net_decl_assignment ::= identifier '=' expression
 
 
-
+(fty::deflist vl-rangelist-list :elt-type vl-rangelist :elementp-of-nil t)
 
 (defparser vl-parse-list-of-net-identifiers ()
   ;; Matches: identifier { range } { ',' identifier { range } }
@@ -263,7 +263,7 @@
                                    :cstrength cstrength))
          (assign (and x1.expr
                       (make-vl-assign :loc loc
-                                      :lvalue (vl-idexpr x1.id nil nil)
+                                      :lvalue (vl-idexpr x1.id)
                                       :expr x1.expr
                                       :strength gstrength
                                       :delay delay
@@ -276,11 +276,11 @@
               (cons assign rest-assigns)
             rest-assigns))))
 
-  :prepwork
-  ((local (defthm l0
-            (implies (vl-rangelist-p x)
-                     (vl-packeddimensionlist-p x))
-            :hints(("Goal" :induct (len x))))))
+  ;; :prepwork
+  ;; ((local (defthm l0
+  ;;           (implies (vl-rangelist-p x)
+  ;;                    (vl-packeddimensionlist-p x))
+  ;;           :hints(("Goal" :induct (len x))))))
 
   ///
   (more-returns
@@ -316,8 +316,7 @@
                                         (vl-exprlist-p (strip-cdrs x)))))
   (if (atom x)
       nil
-    (cons (cons (make-vl-atom
-                 :guts (make-vl-id :name (vl-idtoken->name (caar x))))
+    (cons (cons (vl-idexpr (vl-idtoken->name (caar x)))
                 (cdar x))
           (vl-atomify-assignpairs (cdr x))))
   ///

@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "base")
-(include-book "../ranges")
+(include-book "../expressions")
 
 (defparser-top vl-parse-range)
 
@@ -46,19 +46,21 @@
               (and ,successp
                    (vl-range-p val)
                    (not pstate.warnings)
-                   (equal ',range (vl-pretty-range val))))))
+                   (or (equal ',range (vl-pretty-range val))
+                       (cw "Mismatch: Expected ~x0~%Found ~x1~%"
+                           ',range (vl-pretty-range val)))))))
 
 (test-range :input "[7:0]"
-            :range (range 7 0))
+            :range (:range 7 0))
 
 (test-range :input "[3:6]"
-            :range (range 3 6))
+            :range (:range 3 6))
 
 (test-range :input "[7 : 0]"
-            :range (range 7 0))
+            :range (:range 7 0))
 
 (test-range :input "[foo : bar]"
-            :range (range (id "foo") (id "bar")))
+            :range (:range (id "foo") (id "bar")))
 
 (test-range :input "[foo : ]"
             :successp nil)

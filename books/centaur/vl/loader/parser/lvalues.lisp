@@ -67,8 +67,7 @@
            (:= (vl-match-token :vl-lcurly))
            (args := (vl-parse-1+-lvalues-separated-by-commas))
            (:= (vl-match-token :vl-rcurly))
-           (return (make-vl-nonatom :op :vl-concat
-                                    :args args)))))
+           (return (make-vl-concat :parts args)))))
 
   (defparser vl-parse-1+-lvalues-separated-by-commas ()
     :measure (two-nats-measure (vl-tokstream-measure) 1)

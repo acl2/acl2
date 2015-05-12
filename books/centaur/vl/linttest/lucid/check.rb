@@ -63,9 +63,12 @@ def normal(modname, wirename)
   outlaw_warning(modname, "VL-LUCID-UNUSED", wirename)
 end
 
+# We no longer expect to support top-level unset parameters
+#spurious(:"Design Root", "top_spurious ")
+#unset(:"Design Root", "top_unset ")
+
+
 normal(:"Design Root", "top_normal ")
-spurious(:"Design Root", "top_spurious ")
-unset(:"Design Root", "top_unset ")
 unused(:"Design Root", "top_unused ")
 
 

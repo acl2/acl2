@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "hid-tools")
-(include-book "range-tools")
+(include-book "expr-tools")
 (include-book "syscalls")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
@@ -67,180 +67,125 @@
 
 |#
 
+(define vl-signedness-ambiguity-warning ((x vl-expr-p)
+                                         (signedness vl-maybe-exprtype-p)
+                                         (caveat-flag))
+  :returns (new-warnings vl-warninglist-p)
+  (b* ((x (vl-expr-fix x))
+       (warnings nil)
+       (signedness (vl-maybe-exprtype-fix signedness)))
+    (if (and signedness caveat-flag)
+        (warn :type :vl-signedness-ambiguity
+              :msg "Signedness of ~a0 is potentially ~
+                                 ambiguous.  NCVerilog regards packed arrays ~
+                                 of signed usertypes as unsigned, and index ~
+                                 expressions that result in signed usertypes ~
+                                 as signed, whereas VCS regards packed arrays ~
+                                 of signed usertypes as signed, and index ~
+                                 expressions that result in signed usertypes ~
+                                 as unsigned.  We think the SystemVerilog ~
+                                 spec agrees with NCVerilog's interpretation, ~
+                                 so we have labeled this expression as ~s1."
+              :args (list x (if (eq signedness :vl-signed)
+                                    "signed"
+                                  "unsigned")))
+      (ok))))
+
+(define vl-operandinfo-signedness-caveat ((x vl-operandinfo-p))
+  (b* (((vl-operandinfo x)))
+    (and (vl-partselect-case x.part :none)
+         (consp x.seltrace)
+         (vl-selstep->caveat (car x.seltrace)))))
+       
+
+
 (define vl-index-typedecide ((x        vl-expr-p)
                              (ss       vl-scopestack-p)
-                             (ctx     vl-context-p "context")
-                             (warnings vl-warninglist-p))
+                             (typeov   vl-typeoverride-p))
+  :guard (vl-expr-case x :vl-index)
   :returns (mv (new-warnings vl-warninglist-p)
                (type vl-maybe-exprtype-p))
   (b* ((x (vl-expr-fix x))
-       (?ctx (vl-context-fix ctx))
-       ((mv warning datatype) (vl-index-find-type x ss ctx))
-       ((when warning)
-        (mv (cons (change-vl-warning warning :fatalp t)
-                  (vl-warninglist-fix warnings))
+       (warnings nil)
+       ((mv err opinfo) (vl-index-expr-typetrace x ss typeov))
+       ((when err)
+        (mv (fatal :type :vl-typedecide-fail
+                   :msg "Failed to find the type of ~a0: ~@1"
+                   :args (list x err))
             nil))
-       ((mv ok errmsg type) (vl-datatype-exprtype datatype))
-       ((unless ok)
-        (mv (fatal :type :vl-index-typedecide-fail
-                   :msg "~a0: Signedness of datatype failed: ~s1"
-                   :args (list ctx errmsg))
-            nil)))
-    (mv (ok) type))
-  ///
-  (defrule warning-irrelevance-of-vl-index-typedecide
-    (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-             (equal (mv-nth 1 (vl-index-typedecide x ss ctx warnings))
-                    (mv-nth 1 (vl-index-typedecide x ss nil nil))))))
+       ((vl-operandinfo opinfo))
+       ;; we don't need to check that usertypes are ok because
+       ;; vl-index-expr-type ensures this
+       ((unless (vl-datatype-packedp opinfo.type))
+        (mv (ok) nil))
+       (caveat1 (vl-operandinfo-signedness-caveat opinfo))
+       ((mv caveat2 signedness) (vl-datatype-signedness opinfo.type))
+       (warnings (vl-signedness-ambiguity-warning
+                  x signedness (or caveat1 caveat2))))
+    (mv warnings signedness)))
 
 
-(define vl-partselect-typedecide ((x        vl-expr-p)
-                             (ss       vl-scopestack-p)
-                             (ctx     vl-context-p "context")
-                             (warnings vl-warninglist-p))
-  :guard (not (equal (vl-expr-kind x) :atom))
-  :returns (mv (new-warnings vl-warninglist-p)
-               (type vl-maybe-exprtype-p))
-  (b* ((x (vl-expr-fix x))
-       (?ctx (vl-context-fix ctx))
-       ((mv warning datatype) (vl-partselect-expr-type x ss ctx))
-       ((when warning)
-        (mv (cons (change-vl-warning warning :fatalp t)
-                  (vl-warninglist-fix warnings))
-            nil))
-       ((mv ok errmsg type) (vl-datatype-exprtype datatype))
-       ((unless ok)
-        (mv (fatal :type :vl-partselect-typedecide-fail
-                   :msg "~a0: Signedness of datatype failed: ~s1"
-                   :args (list ctx errmsg))
-            nil)))
-    (mv (ok) type))
-  ///
-  (defrule warning-irrelevance-vl-partselect-typedecide
-    (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-             (equal (mv-nth 1 (vl-partselect-typedecide x ss ctx warnings))
-                    (mv-nth 1 (vl-partselect-typedecide x ss nil nil))))))
-
-
-(define vl-atom-typedecide
-  :parents (vl-expr-typedecide)
-  :short "Effectively computes the \"self-determined\" type of an atom."
-  ((x        vl-expr-p)
-   (ss vl-scopestack-p)
-   (ctx     vl-context-p)
-   (warnings vl-warninglist-p))
-  :guard (vl-atom-p x)
-  :returns (mv (warnings vl-warninglist-p)
-               (type (and (vl-maybe-exprtype-p type)
-                          (equal (vl-exprtype-p type) (if type t nil)))))
-
-  :long "<p><b>Warning</b>: this function should typically only be called by
-the @(see expression-sizing) transform.</p>
-
-<p>We compute what the type of the atom @('x') would be if it were in a
-self-determined location.  Another way to look at this function is as an
-extension of \"origtype\" from constint/weirdint atoms to include identifiers
-and strings.</p>
-
-<p>The @('type') we return is a @(see vl-maybe-exprtype-p).  Similarly to @(see
-vl-atom-selfsize), we might fail and return @('nil') for the type, perhaps
-producing some warnings.</p>"
-
-  (b* ((ctx (vl-context-fix ctx))
-       (guts (vl-atom->guts x))
-
-       ((when (vl-fast-constint-p guts))
-        (mv (ok) (vl-constint->origtype guts)))
-
-       ((when (vl-fast-weirdint-p guts))
-        (mv (ok) (vl-weirdint->origtype guts)))
-
-       ((when (vl-fast-string-p guts))
-        (mv (ok) :vl-unsigned))
-
-       ((when (eq (tag guts) :vl-extint))
-        (mv (ok) :vl-signed))
-
-       ((unless (or (vl-fast-id-p guts)
-                    (vl-fast-hidpiece-p guts)))
-        ;; Other kinds of atoms don't get a type.
-
-        ;; [Jared] 2015-01-22.  See the analogous comments in vl-atom-selfsize.
-        ;; We used to cause warnings here but that is silly and we shouldn't
-        ;; warn.
-
-        ;; (mv (warn :type :vl-typedecide-fail
-        ;;           :msg "~a0: Couldn't decide signedness of atom: ~a1"
-        ;;           :args (list (vl-context-fix ctx) (vl-expr-fix x)))
-        ;;     nil)
-        (mv (ok) nil)))
-
-    (vl-index-typedecide x ss ctx warnings))
-
-  ///
-  (defrule warning-irrelevance-of-vl-atom-typedecide
-    (let ((ret1 (vl-atom-typedecide x ss ctx warnings))
-          (ret2 (vl-atom-typedecide x ss nil nil)))
-      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-               (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))))
-
-
+(define vl-value-typedecide ((x vl-value-p))
+  :returns (type vl-maybe-exprtype-p)
+  (vl-value-case x
+    :vl-constint x.origtype
+    :vl-weirdint x.origtype
+    :vl-extint   :vl-signed
+    :vl-string   :vl-unsigned
+    :otherwise   nil))
 
 
 (define vl-funcall-typedecide ((x vl-expr-p)
                                (ss vl-scopestack-p)
-                               (ctx vl-context-p)
-                               (warnings vl-warninglist-p))
-  :guard (and (not (vl-atom-p x))
-              (eq (vl-nonatom->op x) :vl-funcall))
+                               (typeov vl-typeoverride-p))
+  :guard (vl-expr-case x :vl-call (not x.systemp) :otherwise nil)
   :returns (mv (warnings vl-warninglist-p)
                (type (and (vl-maybe-exprtype-p type)
                           (iff (vl-exprtype-p type) type))))
-  (b* ((ctx (vl-context-fix ctx))
-       ((vl-nonatom x) (vl-expr-fix x))
-       ((unless (and (consp x.args)
-                     (vl-fast-atom-p (first x.args))
-                     (vl-funname-p (vl-atom->guts (first x.args)))))
-        (raise "Programming error: function call without function name: ~x0" x)
-        (mv (warn :type :vl-programming-error
-                  :msg "~a0: Function call without function name: ~a1"
-                  :args (list ctx x))
+  (b* (((vl-call x) (vl-expr-fix x))
+       (warnings nil)
+       ((mv err trace ?context ?tail)
+        (vl-follow-scopeexpr x.name ss))
+       ((when err)
+        (mv (fatal :type :vl-typedecide-fail
+                   :msg "Failed to find function ~a0: ~@1"
+                   :args (list (vl-scopeexpr->expr x.name) err))
             nil))
-       (fnname (vl-funname->name (vl-atom->guts (first x.args))))
-       (decl (vl-scopestack-find-item fnname ss))
-       ((unless (and decl (eq (tag decl) :vl-fundecl)))
-        (mv (warn :type :vl-function-not-found
-                  :msg "~a0: Function not found: ~a1"
-                  :args (list ctx x))
+       ((vl-hidstep lookup) (car trace))
+       ((unless (eq (tag lookup.item) :vl-fundecl))
+        (mv (fatal :type :vl-typedecide-fail
+                  :msg "In function call ~a0, function name does not ~
+                        refer to a fundecl but instead ~a1"
+                  :args (list x lookup.item))
             nil))
-       ((vl-fundecl decl))
-       ((mv ok errmsg type) (vl-datatype-exprtype decl.rettype))
-       ((unless ok)
-        (mv (fatal :type :vl-funcall-typedecide-fail
-                   :msg "~a0: Signedness of datatype failed: ~s1"
-                   :args (list ctx errmsg))
-            nil)))
-    (mv (ok) type))
-  ///
-  (defrule warning-irrelevance-of-vl-funcall-typedecide
-    (let ((ret1 (vl-funcall-typedecide x ss ctx warnings))
-          (ret2 (vl-funcall-typedecide x ss nil nil)))
-      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-               (equal (mv-nth 1 ret1)
-                      (mv-nth 1 ret2))))))
+       ((vl-fundecl lookup.item))
+       ((mv err rettype)
+        (b* ((look (hons-get x.name (Vl-typeoverride-fix typeov)))
+             ((when look)
+              (if (vl-datatype-resolved-p (cdr look))
+                  (mv nil (cdr look))
+                (mv (vmsg "Programming error: override type not resolved") nil))))
+          (vl-datatype-usertype-resolve lookup.item.rettype lookup.ss)))
+       ((when err)
+        (mv (fatal :type :vl-typedecide-fail
+                   :msg "In function call ~a0, the function's return ~
+                         type ~a1 had unresolvable usertypes: ~@2"
+                   :args (list x lookup.item.rettype err))
+            nil))
+       ((unless (vl-datatype-packedp rettype))
+        (mv (ok) nil))
+       ((mv caveat signedness) (vl-datatype-signedness rettype))
+       (warnings (vl-signedness-ambiguity-warning x signedness caveat)))
+    (mv (ok) signedness)))
 
 
-(define vl-syscall-typedecide ((x vl-expr-p)
-                               (ss vl-scopestack-p)
-                               (ctx vl-context-p)
-                               (warnings vl-warninglist-p))
-  :guard (and (not (vl-atom-p x))
-              (eq (vl-nonatom->op x) :vl-syscall))
+(define vl-syscall-typedecide ((x vl-expr-p))
+  :guard (vl-expr-case x :vl-call x.systemp :otherwise nil)
   :returns (mv (warnings vl-warninglist-p)
                (type (and (vl-maybe-exprtype-p type)
                           (iff (vl-exprtype-p type) type))))
-  (declare (ignorable ss ctx))
-  (b* ((retinfo (vl-syscall->returninfo x))
+  (b* ((warnings nil)
+       (retinfo (vl-syscall->returninfo x))
        ((unless retinfo)
         (mv (ok) nil))
        ((vl-coredatatype-info retinfo))
@@ -249,14 +194,7 @@ producing some warnings.</p>"
         (mv (ok) nil))
        (signedp (vl-coredatatype-info->default-signedp retinfo)))
     (mv (ok)
-        (if signedp :vl-signed :vl-unsigned)))
-  ///
-  (defrule warning-irrelevance-of-vl-syscall-typedecide
-    (let ((ret1 (vl-syscall-typedecide x ss ctx warnings))
-          (ret2 (vl-syscall-typedecide x ss nil nil)))
-      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-               (equal (mv-nth 1 ret1)
-                      (mv-nth 1 ret2))))))
+        (if signedp :vl-signed :vl-unsigned))))
 
 
 (deflist vl-maybe-exprtype-list-p (x)
@@ -275,10 +213,130 @@ producing some warnings.</p>"
 
 |#
 
+(define vl-unaryop-typedecide
+  :parents (vl-expr-typedecide)
+  ((x         vl-expr-p)
+   (arg-type  vl-maybe-exprtype-p)
+   (mode      (or (eq mode :probably-right)
+                  (eq mode :probably-wrong))))
+  :prepwork ((local (defthm vl-unary->op-forward
+                      (vl-unaryop-p (vl-unary->op x))
+                      :rule-classes ((:forward-chaining :trigger-terms ((vl-unary->op x)))))))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable acl2::member-of-cons))))
+  :guard (vl-expr-case x :vl-unary)
+  :returns (mv (warnings vl-warninglist-p)
+               (exprtype vl-maybe-exprtype-p))
+  (b* (((vl-unary x) (vl-expr-fix x))
+       (warnings nil)
+       (arg-type (vl-maybe-exprtype-fix arg-type)))
+    (case x.op
+      ((:vl-unary-plus :vl-unary-minus)
+       ;; From 5.5.1, I believe these fall into the "all other operators"
+       ;; rule and just take on the signedness of their argument.
+       (mv (ok) arg-type))
+
+      ((:vl-unary-lognot :vl-unary-bitnot :vl-unary-bitand :vl-unary-bitor
+        :vl-unary-nand :vl-unary-nor :vl-unary-xor :vl-unary-xnor)
+       (cond ((eq mode :probably-right)
+              ;; We believe the result is always unsigned; see "minutia".
+              ;; If we ever decide this is not right, review the rules in
+              ;; oprewrite that introduce concatenations like !a -> {~(|a)}
+              ;; since they are not supposed to change signs.
+              (mv (ok) :vl-unsigned))
+             (t
+              ;; Probably-wrong mode: we act like the operand type matters and
+              ;; treat this like a unary plus or minus.
+              (mv (ok) arg-type))))
+
+      ((:vl-unary-preinc :vl-unary-predec :vl-unary-postinc :vl-unary-postdec)
+       (mv (fatal :type :vl-typedecide-fail
+                  :msg  "Programming error: Increment/decrement ~
+                         operators should be handled before now. (~a0)"
+                  :args (list x))
+           nil))
+      (otherwise (progn$ (impossible) (mv (ok) nil))))))
+
+(define vl-binaryop-typedecide
+  ((x           vl-expr-p)
+   (left-type   vl-maybe-exprtype-p)
+   (right-type  vl-maybe-exprtype-p)
+   (mode        (or (eq mode :probably-right)
+                    (eq mode :probably-wrong))))
+  :prepwork ((local (defthm vl-binary->op-forward
+                      (vl-binaryop-p (vl-binary->op x))
+                      :rule-classes ((:forward-chaining :trigger-terms ((vl-binary->op x)))))))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable acl2::member-of-cons))))
+  :guard (vl-expr-case x :vl-binary)
+  :returns (mv (warnings vl-warninglist-p)
+               (exprtype vl-maybe-exprtype-p))
+  (b* (((vl-binary x) (vl-expr-fix x))
+       (warnings nil)
+       (left-type (vl-maybe-exprtype-fix left-type))
+       (right-type (vl-maybe-exprtype-fix right-type)))
+    (case x.op
+      ((:vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
+        :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
+
+        ;; SystemVerilog-2012 extensions: I believe (although it's hard to
+        ;; find good evidence in the spec to support this) that these are
+        ;; also producing 1-bit unsigned answers.
+        :vl-binary-wildneq :vl-binary-wildeq
+        )
+
+       (mv (ok) :vl-unsigned))
+
+      ((:vl-binary-logand :vl-binary-logor :vl-implies :vl-equiv)
+       (cond ((eq mode :probably-right)
+              ;; We believe the result is always unsigned; see "minutia".
+              (mv (ok) :vl-unsigned))
+             (t
+              ;; Probably wrong mode: we act like the operand types matter and
+              ;; treat this like a regular binary op.
+              (b* ((type  (and left-type right-type
+                               (vl-exprtype-max left-type right-type))))
+                (mv (ok) type)))))
+
+      ((:vl-binary-plus :vl-binary-minus :vl-binary-times :vl-binary-div :vl-binary-rem
+        :vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor)
+       ;; Simple context-determined binary ops.
+       (b* ((type  (and left-type right-type
+                        (vl-exprtype-max left-type right-type))))
+         (mv (ok) type)))
+
+      ((:vl-binary-shr :vl-binary-shl :vl-binary-ashr :vl-binary-ashl :vl-binary-power)
+       (cond ((eq mode :probably-right)
+              ;; We believe the second op's type does NOT affect the result
+              ;; type; see "minutia"
+              (mv (ok) left-type))
+             (t
+              ;; Probably-wrong mode: we act like the second op's type matters
+              ;; and treat this like a regular binary op.
+              (b* ((type  (and left-type right-type
+                               (vl-exprtype-max left-type right-type))))
+                (mv (ok) type)))))
+
+      ((:vl-binary-assign :vl-binary-plusassign :vl-binary-minusassign
+        :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
+        :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
+        :vl-binary-shlassign :vl-binary-shrassign :vl-binary-ashlassign
+        :vl-binary-ashrassign)
+       (mv (fatal :type :vl-typedecide-fail
+                  :msg  "Programming error: Assignment operators should ~
+                         be handled before now. (~a0)"
+                  :args (list x))
+           nil))
+      (otherwise (progn$ (impossible) (mv (ok) nil))))))
+
+
 (with-output :off (event)
   :evisc (:gag-mode (evisc-tuple 3 4 nil nil))
-  (defines vl-expr-typedecide-aux
-    :flag-local nil
+  (define vl-expr-typedecide-aux
+    ((x        vl-expr-p)
+     (ss       vl-scopestack-p)
+     (typeov   vl-typeoverride-p) (mode     (or (eq mode :probably-wrong)
+                   (eq mode :probably-right))))
     :parents (vl-expr-typedecide)
     :short "Core of computing expression signedness."
 
@@ -311,396 +369,171 @@ produce unsigned values.</li>
                                           vl-warninglist-p-when-subsetp-equal
                                           cons-equal
                                           acl2::subsetp-member
-                                          (:t member-equal)
-                                          (:t vl-nonatom->op)
-                                          vl-context-fix-when-vl-context-p))))
+                                          (:t member-equal)))))
+    :verify-guards nil
+    :returns (mv (warnings vl-warninglist-p)
+                 (type     (and (vl-maybe-exprtype-p type)
+                                (iff (vl-exprtype-p type) type))
+                           :hints ('(:in-theory (disable (:d vl-expr-typedecide-aux))
+                                     :expand ((:free (mode)
+                                               (vl-expr-typedecide-aux
+                                                x ss typeov mode)))))))
+    :measure (vl-expr-count x)
+    (b* ((x        (vl-expr-fix x))
+         (warnings nil))
+      (vl-expr-case x
+        :vl-special (mv (ok) nil)
+        :vl-value   (mv (ok) (vl-value-typedecide x.val))
+        :vl-index   (vl-index-typedecide x ss typeov)
 
-    (define vl-expr-typedecide-aux ((x        vl-expr-p)
-                                    (ss       vl-scopestack-p)
-                                    (ctx      vl-context-p)
-                                    (warnings vl-warninglist-p)
-                                    (mode     (or (eq mode :probably-wrong)
-                                                  (eq mode :probably-right))))
-      :verify-guards nil
-      :returns (mv (warnings vl-warninglist-p)
-                   (type     (and (vl-maybe-exprtype-p type)
-                                  (equal (vl-exprtype-p type)
-                                         (if type t nil)))
-                             :hints ('(:in-theory (disable (:d vl-expr-typedecide-aux)
-                                                           (:d vl-exprlist-typedecide-aux))
-                                       :expand ((:free (mode)
-                                                 (vl-expr-typedecide-aux
-                                                  x ss ctx warnings mode)))))))
-      :measure (vl-expr-count x)
-      :flag :expr
-      (b* ((x        (vl-expr-fix x))
-           (warnings (vl-warninglist-fix warnings))
-           (ctx      (vl-context-fix ctx))
+        :vl-unary   (b* (((mv warnings arg-type)
+                          (vl-expr-typedecide-aux x.arg ss typeov mode))
+                         ((wmv warnings ans)
+                          (vl-unaryop-typedecide x arg-type mode)))
+                      (mv warnings ans))
 
-           ((when (vl-fast-atom-p x))  (vl-atom-typedecide x ss ctx warnings))
-           ((when (vl-indexexpr-p x))  (vl-index-typedecide x ss ctx warnings))
+        :vl-binary (b* (((mv warnings left-type)
+                         (vl-expr-typedecide-aux x.left ss typeov mode))
+                        ((wmv warnings right-type)
+                         (vl-expr-typedecide-aux x.right ss typeov mode))
+                        ((wmv warnings ans)
+                         (vl-binaryop-typedecide x left-type right-type mode)))
+                     (mv warnings ans))
 
-           (op        (vl-nonatom->op x))
-           (args      (vl-nonatom->args x))
-           ((when (eq op :vl-funcall)) (vl-funcall-typedecide x ss ctx warnings))
-           ((when (eq op :vl-syscall)) (vl-syscall-typedecide x ss ctx warnings))
-           ((mv warnings arg-types)
-            (vl-exprlist-typedecide-aux args ss ctx warnings mode)))
+        :vl-qmark (b* (((mv warnings test-type)
+                        (vl-expr-typedecide-aux x.test ss typeov mode))
+                       ((wmv warnings then-type)
+                        (vl-expr-typedecide-aux x.then ss typeov mode))
+                       ((wmv warnings else-type)
+                        (vl-expr-typedecide-aux x.else ss typeov mode)))
+                    (cond ((eq mode :probably-right)
+                           ;; We believe the first op's type does NOT affect the result type;
+                           ;; see "minutia".
+                           (mv warnings (and then-type else-type
+                                             (vl-exprtype-max then-type else-type))))
+                          (t
+                           ;; Probably-wrong mode: we allow the first op's type to affect the
+                           ;; result type.
+                           (mv warnings (and test-type then-type else-type
+                                             (vl-exprtype-max test-type then-type else-type))))))
 
-        (case op
+        ;; I think it makes no sense to try to assign a type to these.
+        :vl-mintypmax (mv (ok) nil)
 
-          ((:vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
-            :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon)
-           ;; These are actually always unsigned
-           (vl-partselect-typedecide x ss ctx warnings))
+        ;; From Verilog-2005 5.5.1, bit-selects, part-selects,
+        ;; concatenations, and comparisons always produce unsigned results,
+        ;; no matter the signedness of their operands.
+        :vl-concat      (mv (ok) :vl-unsigned)
+        :vl-multiconcat (mv (ok) :vl-unsigned)
 
-          (( ;; From Verilog-2005 5.5.1, bit-selects, part-selects,
-            ;; concatenations, and comparisons always produce unsigned results,
-            ;; no matter the signedness of their operands.
-            :vl-concat :vl-multiconcat
-            :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
-            :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
+        ;; See the comment about stream expressions in vl-expr-selfsize...
+        :vl-stream      (mv (ok) nil)
 
-            ;; SystemVerilog-2012 extensions: I believe (although it's hard to
-            ;; find good evidence in the spec to support this) that these are
-            ;; also producing 1-bit unsigned answers.
-            :vl-binary-wildneq :vl-binary-wildeq
-            )
+        :vl-call        (if x.systemp
+                            (vl-syscall-typedecide x)
+                          (vl-funcall-typedecide x ss typeov))
 
-           (mv warnings :vl-unsigned))
+        :vl-cast (vl-casttype-case x.to
+                   :type (b* (((mv err to-type) (vl-datatype-usertype-resolve x.to.type ss))
+                              ((when err)
+                               (mv (fatal :type :vl-typedecide-fail
+                                          :msg "Failed to resolve usertypes for ~
+                                        cast expression ~a0: ~@1."
+                                          :args (list x err))
+                                   nil))
+                              ((unless (vl-datatype-packedp to-type))
+                               (mv (ok) nil))
+                              ((mv ?caveat signedness)
+                               (vl-datatype-signedness to-type)))
+                           (mv (ok) signedness))
+                   :signedness (mv (ok) (if x.to.signedp :vl-signed :vl-unsigned))
+                   :otherwise (vl-expr-typedecide-aux x.expr ss typeov mode))
 
-          ((:vl-unary-plus :vl-unary-minus)
-           ;; From 5.5.1, I believe these fall into the "all other operators"
-           ;; rule and just take on the signedness of their argument.
-           (mv warnings (first arg-types)))
+        ;; By the spec, it seems this always returns a 1-bit unsigned (test this)
+        :vl-inside (mv (ok) :vl-unsigned)
 
-          ((:vl-unary-lognot :vl-unary-bitnot :vl-unary-bitand :vl-unary-bitor
-            :vl-unary-nand :vl-unary-nor :vl-unary-xor :vl-unary-xnor)
-           (cond ((eq mode :probably-right)
-                  ;; We believe the result is always unsigned; see "minutia".
-                  ;; If we ever decide this is not right, review the rules in
-                  ;; oprewrite that introduce concatenations like !a -> {~(|a)}
-                  ;; since they are not supposed to change signs.
-                  (mv warnings :vl-unsigned))
-                 (t
-                  ;; Probably-wrong mode: we act like the operand type matters and
-                  ;; treat this like a unary plus or minus.
-                  (mv warnings (first arg-types)))))
+        ;; Tagged unions aren't vector types
+        :vl-tagged (mv (ok) nil)
 
-          ((:vl-binary-logand :vl-binary-logor :vl-implies :vl-equiv)
-           (cond ((eq mode :probably-right)
-                  ;; We believe the result is always unsigned; see "minutia".
-                  (mv warnings :vl-unsigned))
-                 (t
-                  ;; Probably wrong mode: we act like the operand types matter and
-                  ;; treat this like a regular binary op.
-                  (b* ((type1 (first arg-types))
-                       (type2 (second arg-types))
-                       (type  (and type1 type2 (vl-exprtype-max type1 type2))))
-                    (mv warnings type)))))
-
-          ((:vl-binary-plus :vl-binary-minus :vl-binary-times :vl-binary-div :vl-binary-rem
-            :vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor)
-           ;; Simple context-determined binary ops.
-           (b* ((type1 (first arg-types))
-                (type2 (second arg-types))
-                (type  (and type1 type2 (vl-exprtype-max type1 type2))))
-             (mv warnings type)))
-
-          ((:vl-binary-shr :vl-binary-shl :vl-binary-ashr :vl-binary-ashl :vl-binary-power)
-           (cond ((eq mode :probably-right)
-                  ;; We believe the second op's type does NOT affect the result
-                  ;; type; see "minutia"
-                  (mv warnings (first arg-types)))
-                 (t
-                  ;; Probably-wrong mode: we act like the second op's type matters
-                  ;; and treat this like a regular binary op.
-                  (b* ((type1 (first arg-types))
-                       (type2 (second arg-types))
-                       (type  (and type1 type2 (vl-exprtype-max type1 type2))))
-                    (mv warnings type)))))
-
-          ((:vl-qmark)
-           (b* ((type1 (first arg-types))
-                (type2 (second arg-types))
-                (type3 (third arg-types)))
-             (cond ((eq mode :probably-right)
-                    ;; We believe the first op's type does NOT affect the result type;
-                    ;; see "minutia".
-                    (mv warnings (and type1 type2 type3
-                                      (vl-exprtype-max type2 type3))))
-                   (t
-                    ;; Probably-wrong mode: we allow the first op's type to affect the
-                    ;; result type.
-                    (mv warnings (and type1 type2 type3
-                                      (vl-exprtype-max type1 type2 type3)))))))
-
-          ((:vl-stream-left :vl-stream-right
-            :vl-stream-left-sized :vl-stream-right-sized)
-           (mv (warn :type :vl-untested-sizing-assumptions
-                     :msg "~a0: sizing of streaming concatenations is ~
-                         experimental and may not be correct."
-                     :args (list ctx))
-               :vl-unsigned))
-
-          ((;; Should have handled these above.
-            :vl-index :vl-bitselect :vl-hid-dot :vl-scope
-
-            ;; BOZO these might not belong here, but it seems like the
-            ;; safest place to put them until they're implemented
-            :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
-            :vl-tagged :vl-binary-cast
-            :vl-pattern-multi
-            :vl-pattern-type
-            :vl-pattern-positional
-            :vl-pattern-keyvalue
-            :vl-keyvalue
-
-            ;; Sizing just shouldn't encounter these
-            :vl-unary-preinc :vl-unary-predec :vl-unary-postinc :vl-unary-postdec
-            :vl-binary-assign
-            :vl-binary-plusassign :vl-binary-minusassign
-            :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
-            :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
-            :vl-binary-shlassign :vl-binary-shrassign :vl-binary-ashlassign :vl-binary-ashrassign
-
-            :vl-inside :vl-valuerange :vl-valuerangelist
-            )
-           (mv warnings nil))
-
-          ((:vl-mintypmax)
-           ;; I think it makes no sense to try to assign a type to these.
-           (mv warnings nil))
-
-          (otherwise
-           (mv warnings (impossible))))))
-
-    (define vl-exprlist-typedecide-aux ((x        vl-exprlist-p)
-                                        (ss vl-scopestack-p)
-                                        (ctx     vl-context-p)
-                                        (warnings vl-warninglist-p)
-                                        (mode     (or (eq mode :probably-wrong)
-                                                      (eq mode :probably-right))))
-      :returns (mv (warnings vl-warninglist-p)
-                   (types    vl-maybe-exprtype-list-p
-                             :hints ('(:in-theory (disable (:d vl-expr-typedecide-aux)
-                                                           (:d vl-exprlist-typedecide-aux))
-                                       :expand ((vl-exprlist-typedecide-aux
-                                                 x ss ctx warnings mode))))))
-      :measure (vl-exprlist-count x)
-      :flag :list
-      (b* (((when (atom x))
-            (mv (ok) nil))
-           ((mv warnings car-type)
-            (vl-expr-typedecide-aux (car x) ss ctx warnings mode))
-           ((mv warnings cdr-type)
-            (vl-exprlist-typedecide-aux (cdr x) ss ctx warnings mode)))
-        (mv warnings (cons car-type cdr-type))))
+        ;; these are special like streaming concatenations, only well typed by
+        ;; context, unless they have a datatype.
+        :vl-pattern (b* (((unless x.pattype) (mv (ok) nil))
+                         ((mv err pattype) (vl-datatype-usertype-resolve
+                                            x.pattype ss))
+                         ((when err)
+                          (mv (fatal :type :vl-selfsize-fail
+                                  :msg "Failed to resolve usertypes for ~
+                                        pattern expression ~a0: ~@1"
+                                  :args (list x err))
+                           nil))
+                         ((unless (vl-datatype-packedp pattype))
+                          (mv (ok) nil))
+                         ((mv ?caveat signedness)
+                          (vl-datatype-signedness pattype)))
+                      (mv (ok) signedness))))
 
     ///
     (local (in-theory (disable member-equal-when-member-equal-of-cdr-under-iff
                                vl-warninglist-p-when-subsetp-equal
                                set::double-containment
-                               arg1-exists-by-arity
                                default-car
                                default-cdr
-                               vl-exprlist-typedecide-aux
-                               vl-expr-typedecide-aux)))
+                               (:d vl-expr-typedecide-aux))))
 
-    (defrule vl-exprlist-typedecide-aux-of-cons
-      (equal (vl-exprlist-typedecide-aux (cons a x) ss ctx warnings mode)
-             (b* (((mv warnings car-type)
-                   (vl-expr-typedecide-aux a ss ctx warnings mode))
-                  ((mv warnings cdr-type)
-                   (vl-exprlist-typedecide-aux x ss ctx warnings mode)))
-               (mv warnings (cons car-type cdr-type))))
-      :hints (("goal" :expand ((:free (mode) (vl-exprlist-typedecide-aux
-                                              (cons a x) ss ctx warnings mode))))))
-
-    (defthm-vl-expr-typedecide-aux-flag
-      (defthm len-of-vl-exprlist-typedecide-aux
-        (equal (len (mv-nth 1 (vl-exprlist-typedecide-aux x ss ctx warnings mode)))
-               (len x))
-        :hints ('(:expand ((:free (mode) (vl-exprlist-typedecide-aux x ss ctx warnings mode)))))
-        :flag :list)
-      :skip-others t)
-
-    (defthm-vl-expr-typedecide-aux-flag
-      (defthm true-listp-of-vl-exprlist-typedecide-aux
-        (true-listp (mv-nth 1 (vl-exprlist-typedecide-aux x ss ctx warnings mode)))
-        :rule-classes :type-prescription
-        :hints ('(:expand ((:free (mode) (vl-exprlist-typedecide-aux x ss ctx warnings mode)))))
-        :flag :list)
-      :skip-others t)
-
-    (local (defthm member-equal-when-member-non-intersecting
-             (implies (and (syntaxp (quotep x))
-                           (member k y)
-                           (syntaxp (quotep y))
-                           (not (intersectp-equal x y)))
-                      (not (member k x)))
-             :hints ((set-reasoning))))
-
-
-    (local (defthm reduce-member-equal-when-not-member
-             (implies (and (syntaxp (quotep x))
-                           (not (member k y))
-                           (syntaxp (quotep y))
-                           (intersectp-equal x y))
-                      (iff (member k x)
-                           (member k (set-difference-equal x y))))
-             :hints ((set-reasoning))))
-    (local (defthm equal-when-member-non-member
-             (implies (and (syntaxp (quotep v))
-                           (member k x)
-                           (syntaxp (quotep x))
-                           (not (member v x)))
-                      (not (equal k v)))))
-    (local (defthm member-of-singleton
-             (iff (member a (cons x nil))
-                  (equal a x))
-             :hints(("Goal" :in-theory (enable acl2::member-of-cons)))))
-    (local (defthm reduce-member-equal-when-not-equal
-             (implies (and (syntaxp (quotep x))
-                           (not (equal k v))
-                           (syntaxp (quotep v))
-                           (member v x))
-                      (iff (member k x)
-                           (member k (remove-equal v x))))
-             :hints ((set-reasoning))))
-    (verify-guards vl-expr-typedecide-aux
-      :hints(("Goal" :in-theory (e/d (vl-nonatom->op-forward
-                                      acl2::hons-assoc-equal-iff-member-alist-keys
-                                      vl-op-p
-                                      vl-ops-table)
-                                     (vl-op-p-of-vl-nonatom->op
-                                      acl2::alist-keys-member-hons-assoc-equal
-                                      (tau-system)))
-              :use VL-OP-P-OF-VL-NONATOM->OP)))
-
-    (local
-     (defthm-vl-expr-typedecide-aux-flag
-       ;; This is pretty subtle.  The induction scheme that the flag function would
-       ;; generate if we tried to directly use warnings and NIL isn't right in the
-       ;; list case.  We have to generalize this to an arbitrary warnings1 and
-       ;; warnings2.  Then, ACL2's induction heuristic is smart enough to get the
-       ;; right scheme, but only when we tell it to consider the flag function for
-       ;; both warnings1 and warnings2.  Ugh.  This took a long time to figure out.
-       (defthm w0
-         (let ((ret1 (vl-expr-typedecide-aux x ss ctx warnings1 mode))
-               (ret2 (vl-expr-typedecide-aux x ss ctx warnings2 mode)))
-           (equal (mv-nth 1 ret1)
-                  (mv-nth 1 ret2)))
-         :rule-classes nil
-         :flag :expr)
-       (defthm w1
-         (let ((ret1 (vl-exprlist-typedecide-aux x ss ctx warnings1 mode))
-               (ret2 (vl-exprlist-typedecide-aux x ss ctx warnings2 mode)))
-           (equal (mv-nth 1 ret1)
-                  (mv-nth 1 ret2)))
-         :rule-classes nil
-         :flag :list)
-       :hints(("Goal"
-               :do-not '(generalize fertilize)
-               :induct (and (vl-expr-typedecide-aux-flag flag x ss ctx warnings1 mode)
-                            (vl-expr-typedecide-aux-flag flag x ss ctx warnings2 mode))
-               :expand ((:free (mode) (vl-expr-typedecide-aux x ss ctx warnings1 mode))
-                        (:free (mode) (vl-expr-typedecide-aux x ss ctx warnings2 mode))
-                        (:free (mode) (vl-exprlist-typedecide-aux x ss ctx warnings1 mode))
-                        (:free (mode) (vl-exprlist-typedecide-aux x ss ctx warnings2 mode)))))))
-
-    (local (defrule warning-irrelevance-of-vl-exprlist-typedecide-aux-tmp
-             (let ((ret1 (vl-exprlist-typedecide-aux x ss ctx warnings mode))
-                   (ret2 (vl-exprlist-typedecide-aux x ss ctx nil mode)))
-               (implies (syntaxp (not (equal warnings ''nil)))
-                        (equal (mv-nth 1 ret1)
-                               (mv-nth 1 ret2))))
-             :use ((:instance w1 (warnings1 warnings) (warnings2 nil)))))
-
-    (local (flag::def-doublevar-induction vl-expr-typedecide-aux-double-ctx
-             :orig-fn vl-expr-typedecide-aux-flag
-             :old-var ctx :new-var ctx1))
-
-    (deffixequiv-mutual vl-expr-typedecide-aux
-      :hints ('(:in-theory (disable (:d vl-expr-typedecide-aux)
-                                    (:d vl-exprlist-typedecide-aux)
-                                    warning-irrelevance-of-vl-exprlist-typedecide-aux-tmp)
-                :expand ((:free (ss ctx warnings mode)
-                          (vl-expr-typedecide-aux x ss ctx warnings mode))
-                         (:free (mode)
-                          (vl-expr-typedecide-aux (vl-expr-fix x) ss ctx warnings mode))
-                         (:free (ss ctx warnings mode)
-                          (vl-exprlist-typedecide-aux x ss ctx warnings mode))
-                         (:free (mode)
-                          (vl-exprlist-typedecide-aux (vl-exprlist-fix x) ss ctx warnings mode))))
-              (and stable-under-simplificationp
-                   '(:expand ((vl-exprlist-fix x))))))
-
-
-
-    (local
-     (defthm-vl-expr-typedecide-aux-flag
-       ;; This is pretty subtle.  The induction scheme that the flag function would
-       ;; generate if we tried to directly use warnings and NIL isn't right in the
-       ;; list case.  We have to generalize this to an arbitrary warnings1 and
-       ;; warnings2.  Then, ACL2's induction heuristic is smart enough to get the
-       ;; right scheme, but only when we tell it to consider the flag function for
-       ;; both warnings1 and warnings2.  Ugh.  This took a long time to figure out.
-       (defthm w2
-         (let ((ret1 (vl-expr-typedecide-aux x ss ctx1 warnings mode))
-               (ret2 (vl-expr-typedecide-aux x ss ctx2 warnings mode)))
-           (equal (mv-nth 1 ret1)
-                  (mv-nth 1 ret2)))
-         :rule-classes nil
-         :flag :expr)
-       (defthm w3
-         (let ((ret1 (vl-exprlist-typedecide-aux x ss ctx1 warnings mode))
-               (ret2 (vl-exprlist-typedecide-aux x ss ctx2 warnings mode)))
-           (equal (mv-nth 1 ret1)
-                  (mv-nth 1 ret2)))
-         :rule-classes nil
-         :flag :list)
-       :hints(("Goal"
-               :do-not '(generalize fertilize)
-               :induct (and (vl-expr-typedecide-aux-flag flag x ss ctx1 warnings mode)
-                            (vl-expr-typedecide-aux-flag flag x ss ctx2 warnings mode))
-               :expand ((:free (mode) (vl-expr-typedecide-aux x ss ctx1 warnings mode))
-                        (:free (mode) (vl-expr-typedecide-aux x ss ctx2 warnings mode))
-                        (:free (mode) (vl-exprlist-typedecide-aux x ss ctx1 warnings mode))
-                        (:free (mode) (vl-exprlist-typedecide-aux x ss ctx2 warnings mode)))))))
-
-    (defrule warning-irrelevance-of-vl-expr-typedecide-aux
-      (let ((ret1 (vl-expr-typedecide-aux x ss ctx warnings mode))
-            (ret2 (vl-expr-typedecide-aux x ss nil nil mode)))
-        (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-                 (equal (mv-nth 1 ret1)
-                        (mv-nth 1 ret2))))
-      :use ((:instance w0 (warnings1 warnings) (warnings2 nil))
-            (:instance w2 (warnings nil) (ctx1 ctx) (ctx2 nil))))
-
-
-
-    (defrule warning-irrelevance-of-vl-exprlist-typedecide-aux
-      (let ((ret1 (vl-exprlist-typedecide-aux x ss ctx warnings mode))
-            (ret2 (vl-exprlist-typedecide-aux x ss nil nil mode)))
-        (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-                 (equal (mv-nth 1 ret1)
-                        (mv-nth 1 ret2))))
-      :use ((:instance w1 (warnings1 warnings) (warnings2 nil))
-            (:instance w3 (warnings nil) (ctx1 ctx) (ctx2 nil))))
+    (verify-guards vl-expr-typedecide-aux)
 
     (defrule symbolp-of-vl-expr-typedecide-aux
-      (symbolp (mv-nth 1 (vl-expr-typedecide-aux x ss ctx warnings mode)))
-      :expand ((:free (warnings mode)
-                (vl-expr-typedecide-aux x ss ctx warnings mode)))
+      (symbolp (mv-nth 1 (vl-expr-typedecide-aux x ss typeov mode)))
       :in-theory (enable (tau-system))
-      :rule-classes :type-prescription)
+      :rule-classes :type-prescription)))
 
-    (defrule vl-exprlist-typedecide-aux-when-atom
-      (implies (atom x)
-               (equal (vl-exprlist-typedecide-aux x ss ctx warnings mode)
-                      (mv (ok) nil)))
-      :hints (("goal" :expand ((:free (mode) (vl-exprlist-typedecide-aux x ss ctx warnings mode))))))))
+
+
+
+    ;; ;; Trick for avoiding the horrendous induction scheme necessary to prove
+    ;; ;; warning and context irrelevance directly.  The problem with the direct
+    ;; ;; proof is that the induction scheme doesn't always choose the right
+    ;; ;; instantiations of the warnings in the induction hyps.  Instead, we
+    ;; ;; basically just want to induct by saying "assuming that all possible
+    ;; ;; warnings/contexts are irrelevant in the recursive calls, all possible
+    ;; ;; warnings/contexts are irrelevant in the top-level call."  So instead of
+    ;; ;; inductively proving "the warnings and context are irrelevant" (with
+    ;; ;; implicit universal quantification) we prove "for all warnings and
+    ;; ;; context, they're irrelevant" (with explicit universal quantification
+    ;; ;; that gets instantiated in the induction hyps as well).
+    ;; (local (defun-sk all-warnings-and-context-irrelevant (x ss typeov mode)
+    ;;          (forall (ctx)
+    ;;                  (implies (syntaxp (not (and (equal warnings ''nil)
+    ;;                                              (equal ''nil))))
+    ;;                           (b* (((mv & type1)
+    ;;                                 (vl-expr-typedecide-aux x ss typeov mode))
+    ;;                                ((mv & type2)
+    ;;                                 (vl-expr-typedecide-aux x ss nil nil mode)))
+    ;;                             (equal type1 type2))))
+    ;;          :rewrite :direct))
+
+    ;; (local (in-theory (disable all-warnings-and-context-irrelevant)))
+
+    ;; (local
+    ;;  (defthmd warning-irrelevance-of-vl-expr-typedecide-aux-1
+    ;;    (all-warnings-and-context-irrelevant x ss typeov mode)
+    ;;    :hints (("goal"
+    ;;             :in-theory (enable (:i vl-expr-typedecide-aux))
+    ;;             :induct (vl-expr-typedecide-aux x ss typeov mode)
+    ;;             :expand ((:free (ctx mode) (vl-expr-typedecide-aux x ss typeov mode))
+    ;;                      (:free (mode) (all-warnings-and-context-irrelevant x ss typeov mode)))))))
+
+    ;; (defthm warning-irrelevance-of-vl-expr-typedecide-aux
+    ;;   (implies (syntaxp (not (and (equal warnings ''nil)
+    ;;                               (equal ''nil))))
+    ;;            (b* (((mv & type1)
+    ;;                  (vl-expr-typedecide-aux x ss typeov mode))
+    ;;                 ((mv & type2)
+    ;;                  (vl-expr-typedecide-aux x ss nil nil mode)))
+    ;;              (equal type1 type2)))
+    ;;   :hints (("goal" :use warning-irrelevance-of-vl-expr-typedecide-aux-1)))
+
+
 
 
 
@@ -709,8 +542,7 @@ produce unsigned values.</li>
   :short "Computation of expression signedness (main routine)."
   ((x        vl-expr-p)
    (ss vl-scopestack-p)
-   (ctx     vl-context-p)
-   (warnings vl-warninglist-p))
+   (typeov vl-typeoverride-p))
   :returns (mv (warnings vl-warninglist-p)
                (type     (and (vl-maybe-exprtype-p type)
                               (equal (vl-exprtype-p type) (if type t nil)))))
@@ -744,36 +576,28 @@ that this addition is in fact unsigned.</p>
 <p>The @('sign') we return is only a @(see vl-maybe-exprtype-p).  We might
 return @('nil') for two reasons.  First, there could be some kind of actual
 error with the module or the expression, e.g., the use of a wire which is not
-declared; in these cases we add fatal @(see warnings).  But we may also
+declared; in these cases we add fatal @(see).  But we may also
 encounter expressions whose type we do not know how to compute (e.g., perhaps
 the expression is an unsupported system call).  In such cases we just return
 @('nil') for the sign without adding any warnings.</p>"
 
   (b* ((x    (vl-expr-fix x))
-       (ctx (vl-context-fix ctx))
-       ((mv warnings right-type) (vl-expr-typedecide-aux x ss ctx warnings :probably-right))
-       ((mv warnings wrong-type) (vl-expr-typedecide-aux x ss ctx warnings :probably-wrong))
+       ((mv warnings right-type) (vl-expr-typedecide-aux x ss typeov :probably-right))
+       ((wmv warnings wrong-type) (vl-expr-typedecide-aux x ss typeov :probably-wrong))
        (warnings
         (if (eq right-type wrong-type)
             warnings
           (warn :type :vl-warn-vague-spec
-                :msg "~a0: expression ~a1 has a type which is not necessarily ~
+                :msg "expression ~a0 has a type which is not necessarily ~
                       clear according to the discussion in the Verilog-2005 ~
-                      standard.  We believe its type should be ~s2, but think ~
+                      standard.  We believe its type should be ~s1, but think ~
                       it would be easy for other Verilog systems to ~
-                      mistakenly interpret the expression as ~s3.  To reduce ~
+                      mistakenly interpret the expression as ~s2.  To reduce ~
                       any potential confusion, you may wish to rewrite this ~
                       expression to make its signedness unambiguous.  Some ~
                       typical causes of signedness are plain decimal numbers ~
                       like 10, and the use of integer variables instead of ~
                       regs."
-                :args (list ctx x right-type wrong-type)))))
-    (mv warnings right-type))
+                :args (list x right-type wrong-type)))))
+    (mv warnings right-type)))
 
-  ///
-  (defrule warning-irrelevance-of-vl-expr-typedecide
-    (let ((ret1 (vl-expr-typedecide x ss ctx warnings))
-          (ret2 (vl-expr-typedecide x ss nil nil)))
-      (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
-               (equal (mv-nth 1 ret1)
-                      (mv-nth 1 ret2))))))

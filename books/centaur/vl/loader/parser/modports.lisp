@@ -53,7 +53,7 @@
           (name := (vl-match-token :vl-idtoken))
           (return (make-vl-modport-port :name (vl-idtoken->name name)
                                         :dir dir
-                                        :expr (vl-idexpr (vl-idtoken->name name) nil nil)
+                                        :expr (vl-idexpr (vl-idtoken->name name))
                                         :atts atts
                                         :loc loc)))
         (:= (vl-match))

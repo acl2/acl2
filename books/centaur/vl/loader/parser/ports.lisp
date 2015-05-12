@@ -44,14 +44,732 @@
          :hints(("Goal" :in-theory (enable vl-rangelist-p vl-packeddimension-p)))))
 
 
-(defprod vl-parsed-ports
-  :short "Top-level, temporary representation for parsed ports."
-  :tag :vl-parsed-ports
-  :layout :tree
-  ((ansi-p    booleanp)
-   (ports     vl-portlist-p)
-   (portdecls vl-portdecllist-p)
-   (vardecls  vl-vardecllist-p)))
+;; This file is organized as follows:
+;; Portlist parsing:
+;;    - Ansi-style ports
+;;        *SV2012
+;;        *Verilog2005
+;;    - Non-ansi-style ports (2005/2012)
+;;    - Choosing between ansi/non-ansi
+;; Portdecl parsing (non-ansi)
+;;    *Verilog2005
+;;    *SV2012
+
+
+;; ===================== PORTLIST PARSING ===========================
+
+(deftagsum vl-parsed-ports
+  :short "Top-level, temporary representation for the parsed port list."
+  (:ansi
+   :base-name vl-ansi-ports
+   ((decls vl-ansi-portdecllist-p)))
+  (:nonansi
+   :base-name vl-nonansi-ports
+   ((ports vl-portlist-p))))
+
+
+(define vl-signing-kwd-to-exprtype ((x vl-token-p))
+  :guard (or (eq (vl-token->type x) :vl-kwd-signed)
+             (eq (vl-token->type x) :vl-kwd-unsigned))
+  :returns (signing vl-exprtype-p)
+  (case (vl-token->type x)
+    (:vl-kwd-signed :vl-signed)
+    (t              :vl-unsigned)))
+
+(defval *vl-directions-kwd-alist*
+  '((:vl-kwd-input . :vl-input)
+    (:vl-kwd-output . :vl-output)
+    (:vl-kwd-inout . :vl-inout)))
+
+(defval *vl-directions-kwds*
+  (strip-cars *vl-directions-kwd-alist*))
+
+(defparser vl-parse-port-direction ()
+  :result (vl-direction-p val)
+  :resultp-of-nil nil
+  :true-listp nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (when (vl-is-some-token? *vl-directions-kwds*)
+         (tok := (vl-match))
+         (return (cdr (assoc (vl-token->type tok)
+                             *vl-directions-kwd-alist*))))
+       (return-raw (vl-parse-error "Expected a port direction."))))
+
+
+(defparser vl-parse-optional-port-direction ()
+  :result (vl-maybe-direction-p val)
+  :resultp-of-nil t
+  :true-listp nil
+  :fails never
+  :count strong-on-value
+  (seq tokstream
+       (when (vl-is-some-token? *vl-directions-kwds*)
+         (tok := (vl-match))
+         (return (cdr (assoc (vl-token->type tok)
+                             *vl-directions-kwd-alist*))))
+       (return nil)))
+
+
+(local (in-theory (disable (tau-system) not nth tokstreamp)))
+
+(defparser vl-parse-optional-var-kwd ()
+  :fails never
+  :count weak
+  (seq tokstream
+       (when (vl-is-token? :vl-kwd-var)
+         (var := (vl-match)))
+       (return var)))
+
+
+;; ---------------- SV2012 Ansi Portlist Parsing ------------------ 
+
+(defparser vl-parse-ansi-portdecl-with-datatype (atts dir nettype var)
+  :guard (and (vl-atts-p atts)
+              (vl-maybe-direction-p dir)
+              (vl-maybe-nettypename-p nettype))
+  :result (vl-ansi-portdecl-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  ;; 1.  data_type port_identifier { unpacked_dimension }
+  (seq tokstream
+       (type := (vl-parse-datatype))
+       (portname := (vl-match-token :vl-idtoken))
+       (udims := (vl-parse-0+-variable-dimensions))
+       (unless (vl-is-some-token? '(:vl-comma :vl-rparen))
+         (return-raw
+          (vl-parse-error "Unreasonable tokens after
+           \"data_type port_identifier { variable_dimension }\"
+           style port.")))
+       (return (make-vl-ansi-portdecl :atts atts
+                                      :dir dir
+                                      :nettype nettype
+                                      :varp (and var t)
+                                      :type type
+                                      :name (vl-idtoken->name portname)
+                                      :udims udims
+                                      :loc (vl-token->loc portname)))))
+  
+
+(defparser vl-parse-ansi-portdecl-with-implicit-type (atts dir nettype var)
+  :guard (and (vl-atts-p atts)
+              (vl-maybe-direction-p dir)
+              (vl-maybe-nettypename-p nettype))
+  :result (vl-ansi-portdecl-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  ;; 2.  [ signing ] { packed_dimension } port_identifier { unpacked_dimension }
+  (seq tokstream
+       (when (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned))
+         (signing := (vl-match)))
+       (when (vl-is-token? :vl-lbrack)
+         (ranges := (vl-parse-0+-ranges)))
+       (portname := (vl-match-token :vl-idtoken))
+       (udims := (vl-parse-0+-variable-dimensions))
+       (unless (vl-is-some-token? '(:vl-comma :vl-rparen))
+         (return-raw
+          (vl-parse-error "Unreasonable tokens after
+      \"[ signing ] { packed_dimension } port_identifier { variable_dimension }\"
+      style port.")))
+       (return (make-vl-ansi-portdecl :atts atts
+                                      :dir dir
+                                      :nettype nettype
+                                      :varp (and var t)
+                                      :signedness (and signing
+                                                       (vl-signing-kwd-to-exprtype signing))
+                                      :pdims ranges
+                                      :name (vl-idtoken->name portname)
+                                      :udims udims
+                                      :loc (vl-token->loc portname)))))
+
+(defparser vl-parse-ansi-regular-portdecl (atts dir nettype var)
+  :guard (and (vl-atts-p atts)
+              (vl-maybe-direction-p dir)
+              (vl-maybe-nettypename-p nettype))
+  :result (vl-ansi-portdecl-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (b* ((backup (vl-tokstream-save))
+       ((mv err port tokstream)
+        ;; 1.  data_type port_identifier { unpacked_dimension }
+        (vl-parse-ansi-portdecl-with-datatype atts dir nettype var))
+       ((unless err) (mv nil port tokstream))
+       (pos (vl-tokstream->position)) ;; position that try 1 got to
+       (tokstream (vl-tokstream-restore backup))
+       ((mv err2 port tokstream)
+        ;; 2.  [ signing ] { packed_dimension } port_identifier { unpacked_dimension }
+        (vl-parse-ansi-portdecl-with-implicit-type atts dir nettype var))
+       ((unless err2) (mv nil port tokstream))
+       (pos2 (vl-tokstream->position))
+       ((mv pos err) (vl-choose-parse-error pos err pos2 err2))
+       (tokstream (vl-tokstream-restore backup))
+       (tokstream (vl-tokstream-update-position pos)))
+    (mv err nil tokstream)))
+
+
+(defparser vl-parse-ansi-interface-portdecl (atts)
+  :guard (vl-atts-p atts)
+  :result (vl-ansi-portdecl-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  ;; 3.  interface_identifier [ . modport_identifier ] port_identifier { unpacked_dimension }
+  (seq tokstream
+       (ifname := (vl-match-token :vl-idtoken))
+       (when (vl-is-token? :vl-dot)
+         (:= (vl-match))
+         (modport := (vl-match-token :vl-idtoken)))
+
+       (portname := (vl-match-token :vl-idtoken))
+       (udims := (vl-parse-0+-variable-dimensions))
+       (unless (vl-is-some-token? '(:vl-comma :vl-rparen))
+         (return-raw
+          (vl-parse-error "Unreasonable tokens after
+      \"interface_identifier [ . modport_identifier ] port_identifier { unpacked_dimension }\"
+      style port.")))
+       (return (make-vl-ansi-portdecl :atts atts
+                                      :typename (vl-idtoken->name ifname)
+                                      :modport (and modport (vl-idtoken->name modport))
+                                      :name (vl-idtoken->name portname)
+                                      :udims udims
+                                      :loc (vl-token->loc ifname)))))
+
+;; (trace! #!vl (vl-parse-ansi-port-declaration-fn
+;;               :entry (list 'vl-parse-ansi-port-declaration
+;;                            (vl-debug-tokstream tokstream))
+;;               :exit (cons 'vl-parse-ansi-port-declaration
+;;                           (b* (((list err val tokstream) values))
+;;                             (list (and err (with-local-ps
+;;                                              (vl-print-warning err)))
+;;                                   (and val (with-local-ps
+;;                                              (vl-pp-ansi-portdecl val)))
+;;                                   (vl-debug-tokstream tokstream))))))
+
+;; (trace! #!vl (vl-parse-ansi-regular-portdecl-fn
+;;               :entry (list 'vl-parse-ansi-regular-portdecl
+;;                            (vl-debug-tokstream tokstream))
+;;               :exit (cons 'vl-parse-ansi-regular-portdecl
+;;                           (b* (((list err val tokstream) values))
+;;                             (list (and err (with-local-ps
+;;                                              (vl-print-warning err)))
+;;                                   (and val (with-local-ps
+;;                                              (vl-pp-ansi-portdecl val)))
+;;                                   (vl-debug-tokstream tokstream))))))
+
+;; (trace! #!vl (vl-parse-ansi-interface-portdecl-fn
+;;               :entry (list 'vl-parse-ansi-interface-portdecl
+;;                            (vl-debug-tokstream tokstream))
+;;               :exit (cons 'vl-parse-ansi-interface-portdecl
+;;                           (b* (((list err val tokstream) values))
+;;                             (list (and err (with-local-ps
+;;                                              (vl-print-warning err)))
+;;                                   (and val (with-local-ps
+;;                                              (vl-pp-ansi-portdecl val)))
+;;                                   (vl-debug-tokstream tokstream))))))
+
+(defparser vl-parse-ansi-port-declaration (atts)
+  :short "Matches @('ansi_port_declaration').  Peeks at the token after to make
+          sure it's a comma or right paren, but doesn't consume it."
+  :guard (vl-atts-p atts)
+  :result (vl-ansi-portdecl-p val)
+  :resultp-of-nil nil
+  :true-listp nil
+  :fails gracefully
+  :count strong
+  ;; Here's what we currently support:
+  ;;   [ port_direction ] [ net_type ] data_type port_identifier { unpacked_dimension }
+  ;; | [ port_direction ] [ net_type ] [ signing ] { packed_dimension } port_identifier { unpacked_dimension }
+  ;; | interface_identifier [ . modport_identifier ] port_identifier { unpacked_dimension }
+  ;; | "interface" [ . modport_identifier ] port_identifier { unpacked_dimension }
+  ;; | [ port_direction ] data_type  port_identifier { variable_dimension }
+  ;; | [ port_direction ] var data_type port_identifier { variable_dimension }
+  ;; | [ port_direction ] var [ signing ] { packed_dimension } port_identifier { variable_dimension }
+  ;; 
+  ;; (The generic interface scheme isn't supported and will produce an error.)
+
+  (seq tokstream
+       (dir := (vl-parse-optional-port-direction))
+       (nettype := (vl-parse-optional-nettype))
+       (var := (vl-parse-optional-var-kwd))
+       (return-raw
+        ;; Here's where it gets hairy.  Ignoring the distinction between unpacked_dimension and variable_dimension:
+        ;; 1.  data_type port_identifier { unpacked_dimension }                             (from either the net or variable case)
+        ;; 2.  [ signing ] { packed_dimension } port_identifier { unpacked_dimension }      (from either the net or variable case)
+        ;; 3.  interface_identifier [ . modport_identifier ] port_identifier { unpacked_dimension }
+        ;; 4.  "interface" [ . modport_identifier ] port_identifier { unpacked_dimension }  (parse error).
+        ;;
+        ;; We'll need to use backtracking to tell the difference between 
+        ;;    foo_t [3:0] bar ...   (case 1)
+        ;;    in [3:0] ...          (case 2).
+        ;; We know we're good if the token after is a comma or right paren.
+        ;; 
+        ;; We won't be able to tell the difference between case 3 (with no
+        ;; modport) and case 1; we'll treat it as case 1 and fix it up later.
+
+        (b* (((when (or dir nettype var))
+              ;; Can't be an interface port.  Just parse it as a regular port.
+              ;; This covers 1 and 2.
+              (vl-parse-ansi-regular-portdecl atts dir nettype var))
+             ((when (vl-is-token? :vl-kwd-interface))
+              (vl-parse-error "BOZO implement explicit 'interface' ports."))
+
+             (backup (vl-tokstream-save))
+             ;; Otherwise, we'll try 3. first.  In ambiguous cases, it's easier
+             ;; to change an interface port to a regular port than vice versa,
+             ;; since a regular port also makes a portdecl and vardecl.
+             
+             ((mv err3 port tokstream)
+              ;; 3.  interface_identifier [ . modport_identifier ] port_identifier { unpacked_dimension }
+              (vl-parse-ansi-interface-portdecl atts))
+             ((unless err3) (mv nil port tokstream))
+             (pos3 (vl-tokstream->position))
+             (tokstream (vl-tokstream-restore backup))
+
+             ((mv err port tokstream)
+              ;; 1-2
+              (vl-parse-ansi-regular-portdecl atts dir nettype var))
+             ((unless err) (mv nil port tokstream))
+             (pos (vl-tokstream->position)) ;; position that try 1 got to
+             (tokstream (vl-tokstream-restore backup))
+
+             ((mv pos err) (vl-choose-parse-error pos err pos3 err3))
+             (tokstream (vl-tokstream-update-position pos)))
+          (mv err nil tokstream)))))
+
+(defparser vl-parse-1+-ansi-port-declarations ()
+  :short "Matches @(' {attribute_instance} ansi_port_declaration
+                      { ',' {attribute_instance} ansi_port_declaration } ')"
+  :result (vl-ansi-portdecllist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (atts  := (vl-parse-0+-attribute-instances))
+       (first := (vl-parse-ansi-port-declaration atts))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (rest := (vl-parse-1+-ansi-port-declarations)))
+       (return (cons first rest))))
+
+
+
+
+;; ---------------- Verilog2005 Ansi Portlist Parsing ------------------ 
+
+
+(encapsulate nil
+  (local (in-theory (enable vl-match vl-is-token? len vl-lookahead-is-token?)))
+  (defparser vl-parse-0+-port-identifiers-as-ansi-decls-2005 ()
+    :result (vl-ansi-portdecllist-p val)
+    :resultp-of-nil t
+    :true-listp t
+    :fails never
+    :count weak
+    (seq tokstream
+         (unless (vl-is-token? :vl-comma)
+           (return nil))
+         (unless (vl-lookahead-is-token? :vl-idtoken (cdr (vl-tokstream->tokens)))
+           (return nil))
+         (:= (vl-match))
+         (name1 := (vl-match))
+         (rest := (vl-parse-0+-port-identifiers-as-ansi-decls-2005))
+         (return (cons (make-vl-ansi-portdecl :name (vl-idtoken->name name1)
+                                              :loc (vl-token->loc name1))
+                       rest)))))
+
+
+
+
+(defparser vl-parse-ansi-port-declaration-2005 (atts)
+  ;; inout_declaration ::= inout [ net_type ] [ signed ] [ range ] list_of_port_identifiers
+  ;; input_declaration ::= input [ net_type ] [ signed ] [ range ] list_of_port_identifiers
+  ;; output_declaration ::= output [ net_type ] [ signed ] [ range ] list_of_port_identifiers
+  ;;                      | output reg [ signed ] [ range ] list_of_variable_port_identifiers
+  ;;                      | output output_variable_type list_of_variable_port_identifiers
+
+
+  :short "Matches a port declaration (which may involve several comma-separated variable names), and creates an ansi-portdecl object for each of them."
+  :guard (vl-atts-p atts)
+  :result (vl-ansi-portdecllist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (unless (vl-is-some-token? *vl-directions-kwds*)
+         (return-raw (vl-parse-error "Expected a port direction")))
+       (dir := (vl-parse-port-direction))
+       (nettype := (vl-parse-optional-nettype))
+       (when (and (eq dir :vl-output)
+                  (not nettype))
+         (type := (vl-match-some-token '(:vl-kwd-reg :vl-kwd-integer :vl-kwd-time)))
+         (when (eq (vl-token->type type) :vl-kwd-reg)
+           (when (vl-is-token? :vl-kwd-signed)
+             (signed := (vl-match)))
+           (when (vl-is-token? :vl-lbrack)
+             (range := (vl-parse-range))))
+         (id := (vl-match-token :vl-idtoken))
+         (rest := (vl-parse-0+-port-identifiers-as-ansi-decls-2005))
+         (return (cons (make-vl-ansi-portdecl
+                          :atts atts
+                          :dir dir
+                          :nettype nil
+                          :type (make-vl-coretype :name (case (vl-token->type type)
+                                                          (:vl-kwd-integer :vl-integer)
+                                                          (t :vl-time))
+                                                  :signedp (if signed
+                                                               t
+                                                             (eq (vl-token->type type)
+                                                                 :vl-kwd-integer))
+                                                  :pdims (and range (list range)))
+                          :name (vl-idtoken->name id)
+                          :loc (vl-token->loc id))
+                         rest)))
+       (unless nettype
+         (return-raw
+          (vl-parse-error "Expected a nettype after an 'input' or 'inout' declaration.")))
+       (when (vl-is-token? :vl-kwd-signed)
+         (signed := (vl-match)))
+       (when (vl-is-token? :vl-lbrack)
+         (range := (vl-parse-range)))
+       (id := (vl-match-token :vl-idtoken))
+       (rest := (vl-parse-0+-port-identifiers-as-ansi-decls-2005))
+       (return (cons (make-vl-ansi-portdecl
+                      :atts atts
+                      :dir dir
+                      :nettype nettype
+                      :type (make-vl-coretype :name :vl-logic
+                                              :signedp (and signed t)
+                                              :pdims (and range (list range)))
+                      :name (vl-idtoken->name id)
+                      :loc (vl-token->loc id))
+                     rest))))
+
+
+(defparser vl-parse-1+-port-declarations-separated-by-commas-2005 ()
+  :short "Verilog-2005 Only.  Matches @(' port_declaration { ',' port_declaration } ') in
+ansi style port lists.  Creates ansi-portdecls."
+  :result (vl-ansi-portdecllist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (portdecls1 := (vl-parse-ansi-port-declaration-2005 nil))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (portdecls2 := (vl-parse-1+-port-declarations-separated-by-commas-2005)))
+       (return (append-without-guard portdecls1 portdecls2))))
+
+
+
+;; ---------------- Non-Ansi Portlist Parsing (2005/2012) ------------------ 
+
+
+(defsection verilog-2005-ports
+  :parents (parse-ports)
+  :short "Parsing for Verilog-2005 ports."
+  :long "<p>In Verilog-2005, a @('port_expression') is just a syntactic means
+to restrict the expressions allowed in ports to identifiers, bit-selects,
+part-selects, and concatenations.  We just parse @('port_expression')s into
+plain expressions.</p>
+
+@({
+    port_expression ::= port_reference
+                      | '{' port_reference { ',' port_reference } '}'
+
+    port_reference ::= identifier [ '[' constant_range_expression ']' ]
+
+    constant_range_expression ::= constant_expression
+                                | msb_constant_expression : lsb_constant_expression
+})
+
+<p>Port expressions are put into lists with the following rules.</p>
+
+@({
+     list_of_ports ::= '(' port { ',' port } ')'
+
+     port ::= [port_expression]
+            | '.' identifier '(' [port_expression] ')'
+})
+
+<p>Note that the above rules allow null ports, e.g., @('module foo ( a, , b
+)').  As described in 12.3.2, the port expression is optional to allow for
+ports that do not connect to anything internal to the module.</p>
+
+<p>If we were to interpret the grammar very literally, the @('list_of_ports')
+for @('module foo ()') would be a singleton list with a blank port.  But in
+light of the way module instances work, e.g., see @(see
+special-note-about-blank-ports), it seems like the nicest way to handle this is
+to instead allow an empty list of ports, and treat @('()') as producing the
+empty list of ports instead of a single blank port.</p>")
+
+(local (xdoc::set-default-parents verilog-2005-ports))
+
+(defparser vl-parse-port-reference ()
+  :short "Matches @('port_reference')."
+  :long "<p>Note: We assume that if a bracket follows the identifier, it
+belongs to this port reference.  This is safe in port-expressions since only a
+comma or end curly-brace will follow them.  Since @('port_reference') never
+occurs anywhere else in the grammar, this should be fine everywhere.</p>"
+  :result (vl-expr-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+        (id := (vl-match-token :vl-idtoken))
+        (unless (vl-is-token? :vl-lbrack)
+          (return (vl-idexpr (vl-idtoken->name id))))
+        (:= (vl-match))
+        (range := (vl-parse-range-expression))
+        (unless (or (eq (vl-erange->type range) :vl-index)
+                    (eq (vl-erange->type range) :vl-colon))
+          (return-raw
+           (vl-parse-error "The +: or -: operators are not allowed in port expressions.")))
+        (:= (vl-match-token :vl-rbrack))
+        (return (vl-build-range-select
+                 (vl-index->scope (vl-idexpr (vl-idtoken->name id)))
+                 nil range))))
+
+(defparser vl-parse-1+-port-references-separated-by-commas ()
+  :short "Matches @('port_reference { ',' port_reference }')"
+  :result (vl-exprlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+        (first := (vl-parse-port-reference))
+        (when (vl-is-token? :vl-comma)
+          (:= (vl-match))
+          (rest := (vl-parse-1+-port-references-separated-by-commas)))
+        (return (cons first rest))))
+
+(defparser vl-parse-port-expression ()
+  :short "Matches @('port_expression')."
+  :result (vl-expr-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+        (when (vl-is-token? :vl-lcurly)
+          ;; A concatenation.
+          (:= (vl-match))
+          (args := (vl-parse-1+-port-references-separated-by-commas))
+          (:= (vl-match-token :vl-rcurly))
+          (return (make-vl-concat :parts args)))
+        ;; A single port reference.
+        (ref := (vl-parse-port-reference))
+        (return ref)))
+
+(defparser vl-parse-nonnull-port ()
+  :short "Matches @('port'), except for the empty port."
+  :result (vl-port-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+        (loc := (vl-current-loc))
+        (unless (vl-is-token? :vl-dot)
+          (pexpr := (vl-parse-port-expression))
+          (return (cond ((vl-idexpr-p pexpr)
+                         ;; Simple port like "x".  It gets its own name.
+                         (make-vl-regularport :name (vl-idexpr->name pexpr)
+                                              :expr pexpr
+                                              :loc loc))
+                        (t
+                         ;; Expression port with no name.
+                         (make-vl-regularport :name nil
+                                              :expr pexpr
+                                              :loc loc)))))
+        ;; Otherwise, we have a name and possibly an expr.
+        (:= (vl-match))
+        (id := (vl-match-token :vl-idtoken))
+        (:= (vl-match-token :vl-lparen))
+        (unless (vl-is-token? :vl-rparen)
+          (pexpr := (vl-parse-port-expression)))
+
+        ;; Why can't I just use (vl-match) here? Ah, it's because (not
+        ;; (vl-is-token? :vl-rparen)) isn't sufficient to know that we aren't
+        ;; at the end of the stream.
+        (:= (vl-match-token :vl-rparen))
+        (return (make-vl-regularport :name (vl-idtoken->name id)
+                                     :expr pexpr
+                                     :loc loc))))
+
+(defparser vl-parse-1+-ports-separated-by-commas ()
+  :short "Matches @('port { ',' port }'), possibly producing blank ports!"
+  :result (vl-portlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count weak
+  (seq tokstream
+        (when (vl-is-token? :vl-rparen)
+          ;; Blank port at the end.
+          (loc := (vl-current-loc))
+          (return (list (make-vl-regularport :name nil :expr nil :loc loc))))
+
+        (when (vl-is-token? :vl-comma)
+          (loc := (vl-current-loc))
+          (:= (vl-match))
+          (rest := (vl-parse-1+-ports-separated-by-commas))
+          (return (cons (make-vl-regularport :name nil :expr nil :loc loc)
+                        rest)))
+
+        (first := (vl-parse-nonnull-port))
+        (when (vl-is-token? :vl-comma)
+          (:= (vl-match))
+          (rest := (vl-parse-1+-ports-separated-by-commas)))
+        (return (cons first rest))))
+
+
+
+;; ------------- Choosing ANSI/Non-ANSI Portlist Parsing --------------------- 
+
+
+(define vl-port-starts-ansi-port-list-p
+  :short "Determine whether we're in an ANSI or non-ANSI port list."
+  ((port1 vl-ansi-portdecl-p))
+  :returns (ansi-p)
+  :long "<p>To tell which version we are in, we follow the rule suggested in
+23.2.2.3 (pg 667):</p>
+
+<blockquote> For the first port in the port list: if the direction, port kind,
+and data type are all omitted, then the port shall be assumed to be a member of
+a non-ANSI style list_of_ports...  </blockquote>"
+  (b* (((vl-ansi-portdecl port1)))
+    (or port1.dir
+        port1.nettype
+        port1.varp
+        port1.typename
+        port1.type
+        port1.signedness
+        port1.pdims)))
+
+
+
+(defparser vl-parse-module-port-list-top-2005 ()
+  :short "Verilog-2005 only.  Top-level function for parsing port lists in both
+  ANSI and non-ANSI styles."
+
+  :long "<p>See @(see verilog-2005-ports) and @(see verilog-2005-portdecls).
+We match the following, contrived grammar rule:</p>
+
+@({
+   vl_module_port_list ::= list_of_ports
+                         | [list_of_port_declarations]
+})
+
+<p>We can tell which variant we are following because a @('port_declaration') must
+begin with one of:</p>
+
+@({
+     (*
+     input
+     output
+     inout
+})"
+  :result (vl-parsed-ports-p val)
+  :resultp-of-nil nil
+  :true-listp nil
+  :fails gracefully
+  :count weak
+  (seq tokstream
+       (unless (vl-is-token? :vl-lparen)
+         ;; No port list at all --> empty ports.
+         (return (make-vl-nonansi-ports :ports nil)))
+       (:= (vl-match))
+       (when (vl-is-token? :vl-rparen)
+         (:= (vl-match-token :vl-rparen))
+         ;; Ports list is just () --> empty ports.
+         (return (make-vl-nonansi-ports :ports nil)))
+
+       (when (vl-is-some-token? '(:vl-kwd-output :vl-kwd-input :vl-kwd-inout :vl-beginattr))
+         ;; This must be an ANSI-style declaration.
+         (portdecls := (vl-parse-1+-port-declarations-separated-by-commas-2005))
+         (:= (vl-match-token :vl-rparen))
+         (return (make-vl-ansi-ports :decls portdecls)))
+
+       ;; This must be a non-ANSI style declaration.
+       (ports := (vl-parse-1+-ports-separated-by-commas))
+       (:= (vl-match-token :vl-rparen))
+       (return (make-vl-nonansi-ports :ports ports))))
+
+
+(defparser vl-parse-module-port-list-top-2012 ()
+  :short "SystemVerilog-2012 only.  Top-level function for parsing port lists
+in both ANSI and non-ANSI styles."
+
+  :long "<p>See @(see sv-ansi-portdecls) and @(see sv-non-ansi-portdecls).  We
+match the following, contrived grammar rule:</p>
+
+@({
+   vl_module_port_list ::= list_of_ports
+                         | [list_of_port_declarations]
+})"
+
+  :result (vl-parsed-ports-p val)
+  :resultp-of-nil nil
+  :true-listp nil
+  :fails gracefully
+  :count weak
+  (seq tokstream
+       (unless (vl-is-token? :vl-lparen)
+         ;; No port list at all --> empty ports.
+         (return (make-vl-nonansi-ports :ports nil)))
+       (:= (vl-match))
+       (when (vl-is-token? :vl-rparen)
+         (:= (vl-match))
+         ;; Ports list is just () --> empty ports.
+         (return (make-vl-nonansi-ports :ports nil)))
+
+       (return-raw
+        (b* ((backup (vl-tokstream-save))
+             ((mv err port1 tokstream)
+              (seq tokstream
+                   (atts  := (vl-parse-0+-attribute-instances))
+                   (port1 := (vl-parse-ansi-port-declaration atts))
+                   (return port1)))
+             (ansi-p
+              (and (not err)
+                   (vl-port-starts-ansi-port-list-p port1)))
+             (tokstream (vl-tokstream-restore backup))
+             ((when ansi-p)
+              (seq tokstream
+                   (decls := (vl-parse-1+-ansi-port-declarations))
+                   (:= (vl-match-token :vl-rparen))
+                   (return (make-vl-ansi-ports :decls decls)))))
+          ;; Non-ansi mode.
+          (seq tokstream
+               (ports := (vl-parse-1+-ports-separated-by-commas))
+               (:= (vl-match-token :vl-rparen))
+               (return (make-vl-nonansi-ports :ports ports)))))))
+
+
+(defparser vl-parse-module-port-list-top ()
+  :result (vl-parsed-ports-p val)
+  :resultp-of-nil nil
+  :true-listp nil
+  :fails gracefully
+  :count weak
+  (seq tokstream
+       (when (eq (vl-loadconfig->edition config) :verilog-2005)
+         (ans := (vl-parse-module-port-list-top-2005))
+         (return ans))
+       (ans := (vl-parse-module-port-list-top-2012))
+       (return ans)))
+
+
+
+
+
+
 
 
 
@@ -206,7 +924,7 @@ any unpacked dimensions.</p>"
             (vl-vardecllist-p  (cdr val))))
   (b* ((atts (if complete-p
                  atts
-               (acons "VL_INCOMPLETE_DECLARATION" nil atts)))
+               (cons '("VL_INCOMPLETE_DECLARATION") atts)))
        (portdecls (vl-build-portdecls x
                                       :dir      dir
                                       :nettype  nettype
@@ -221,7 +939,7 @@ any unpacked dimensions.</p>"
                                                 :nettype  nettype
                                                 ;; Make sure the variables are marked as
                                                 ;; implicit to avoid pretty-printing them.
-                                                :atts     (acons "VL_PORT_IMPLICIT" nil atts)))))
+                                                :atts     (cons '("VL_PORT_IMPLICIT") atts)))))
     (cons portdecls netdecls))
   ///
   (defthm true-listp-of-vl-make-ports-and-maybe-nets-1
@@ -260,166 +978,44 @@ any unpacked dimensions.</p>"
 
 
 
-(defsection verilog-2005-ports
-  :parents (parse-ports)
-  :short "Parsing for Verilog-2005 ports."
-  :long "<p>In Verilog-2005, a @('port_expression') is just a syntactic means
-to restrict the expressions allowed in ports to identifiers, bit-selects,
-part-selects, and concatenations.  We just parse @('port_expression')s into
-plain expressions.</p>
 
-@({
-    port_expression ::= port_reference
-                      | '{' port_reference { ',' port_reference } '}'
 
-    port_reference ::= identifier [ '[' constant_range_expression ']' ]
 
-    constant_range_expression ::= constant_expression
-                                | msb_constant_expression : lsb_constant_expression
-})
 
-<p>Port expressions are put into lists with the following rules.</p>
 
-@({
-     list_of_ports ::= '(' port { ',' port } ')'
 
-     port ::= [port_expression]
-            | '.' identifier '(' [port_expression] ')'
-})
 
-<p>Note that the above rules allow null ports, e.g., @('module foo ( a, , b
-)').  As described in 12.3.2, the port expression is optional to allow for
-ports that do not connect to anything internal to the module.</p>
 
-<p>If we were to interpret the grammar very literally, the @('list_of_ports')
-for @('module foo ()') would be a singleton list with a blank port.  But in
-light of the way module instances work, e.g., see @(see
-special-note-about-blank-ports), it seems like the nicest way to handle this is
-to instead allow an empty list of ports, and treat @('()') as producing the
-empty list of ports instead of a single blank port.</p>")
 
-(local (xdoc::set-default-parents verilog-2005-ports))
 
-(defparser vl-parse-port-reference ()
-  :short "Matches @('port_reference')."
-  :long "<p>Note: We assume that if a bracket follows the identifier, it
-belongs to this port reference.  This is safe in port-expressions since only a
-comma or end curly-brace will follow them.  Since @('port_reference') never
-occurs anywhere else in the grammar, this should be fine everywhere.</p>"
-  :result (vl-expr-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seq tokstream
-        (id := (vl-match-token :vl-idtoken))
-        (unless (vl-is-token? :vl-lbrack)
-          (return (make-vl-atom
-                   :guts (make-vl-id :name (vl-idtoken->name id)))))
-        (:= (vl-match))
-        (range := (vl-parse-range-expression))
-        (unless (or (eq (vl-erange->type range) :vl-index)
-                    (eq (vl-erange->type range) :vl-colon))
-          (return-raw
-           (vl-parse-error "The +: or -: operators are not allowed in port expressions.")))
-        (:= (vl-match-token :vl-rbrack))
-        (return (vl-build-range-select
-                 (make-vl-atom
-                  :guts (make-vl-id :name (vl-idtoken->name id)) )
-                 range))))
 
-(defparser vl-parse-1+-port-references-separated-by-commas ()
-  :short "Matches @('port_reference { ',' port_reference }')"
-  :result (vl-exprlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seq tokstream
-        (first := (vl-parse-port-reference))
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match))
-          (rest := (vl-parse-1+-port-references-separated-by-commas)))
-        (return (cons first rest))))
 
-(defparser vl-parse-port-expression ()
-  :short "Matches @('port_expression')."
-  :result (vl-expr-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seq tokstream
-        (when (vl-is-token? :vl-lcurly)
-          ;; A concatenation.
-          (:= (vl-match))
-          (args := (vl-parse-1+-port-references-separated-by-commas))
-          (:= (vl-match-token :vl-rcurly))
-          (return (make-vl-nonatom :op :vl-concat
-                                   :args args)))
-        ;; A single port reference.
-        (ref := (vl-parse-port-reference))
-        (return ref)))
 
-(defparser vl-parse-nonnull-port ()
-  :short "Matches @('port'), except for the empty port."
-  :result (vl-port-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seq tokstream
-        (loc := (vl-current-loc))
-        (unless (vl-is-token? :vl-dot)
-          (pexpr := (vl-parse-port-expression))
-          (return (cond ((and (vl-atom-p pexpr)
-                              (vl-id-p (vl-atom->guts pexpr)))
-                         ;; Simple port like "x".  It gets its own name.
-                         (make-vl-regularport :name (vl-id->name (vl-atom->guts pexpr))
-                                              :expr pexpr
-                                              :loc loc))
-                        (t
-                         ;; Expression port with no name.
-                         (make-vl-regularport :name nil
-                                              :expr pexpr
-                                              :loc loc)))))
-        ;; Otherwise, we have a name and possibly an expr.
-        (:= (vl-match))
-        (id := (vl-match-token :vl-idtoken))
-        (:= (vl-match-token :vl-lparen))
-        (unless (vl-is-token? :vl-rparen)
-          (pexpr := (vl-parse-port-expression)))
 
-        ;; Why can't I just use (vl-match) here? Ah, it's because (not
-        ;; (vl-is-token? :vl-rparen)) isn't sufficient to know that we aren't
-        ;; at the end of the stream.
-        (:= (vl-match-token :vl-rparen))
-        (return (make-vl-regularport :name (vl-idtoken->name id)
-                                     :expr pexpr
-                                     :loc loc))))
 
-(defparser vl-parse-1+-ports-separated-by-commas ()
-  :short "Matches @('port { ',' port }'), possibly producing blank ports!"
-  :result (vl-portlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count weak
-  (seq tokstream
-        (when (vl-is-token? :vl-rparen)
-          ;; Blank port at the end.
-          (loc := (vl-current-loc))
-          (return (list (make-vl-regularport :name nil :expr nil :loc loc))))
 
-        (when (vl-is-token? :vl-comma)
-          (loc := (vl-current-loc))
-          (:= (vl-match))
-          (rest := (vl-parse-1+-ports-separated-by-commas))
-          (return (cons (make-vl-regularport :name nil :expr nil :loc loc)
-                        rest)))
 
-        (first := (vl-parse-nonnull-port))
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match))
-          (rest := (vl-parse-1+-ports-separated-by-commas)))
-        (return (cons first rest))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;; ===================== Non-ANSI PORTDECL PARSING ===========================
+
+
 
 
 
@@ -666,94 +1262,7 @@ should not be declared again.</p>"
     (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-port-declaration-atts-2005))))
          (vl-vardecllist-p (cdr (mv-nth 1 (vl-parse-port-declaration-atts-2005)))))))
 
-(defparser vl-parse-1+-port-declarations-separated-by-commas-2005 ()
-  :short "Verilog-2005 Only.  Matches @(' port_declaration { ',' port_declaration } ') in
-ansi style port lists."
-  ;; Returns (portdecls . vardecls)
-  :result (consp val)
-  :resultp-of-nil nil
-  :true-listp nil
-  :fails gracefully
-  :verify-guards nil
-  :count strong
-  (seq tokstream
-        ((portdecls1 . vardecls1) := (vl-parse-port-declaration-atts-2005))
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match))
-          ((portdecls2 . vardecls2) := (vl-parse-1+-port-declarations-separated-by-commas-2005)))
-        (return (cons (append portdecls1 portdecls2)
-                      (append vardecls1 vardecls2))))
-  ///
-  (defthm true-listp-of-vl-parse-1+-port-declarations-separated-by-commas-2005-1
-    (true-listp (car (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas-2005))))
-    :rule-classes :type-prescription)
-  (defthm true-listp-of-vl-parse-1+-port-declarations-separated-by-commas-2005-2
-    (true-listp (cdr (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas-2005))))
-    :rule-classes :type-prescription)
-  (defthm vl-parse-1+-port-declarations-separated-by-commas-2005-basics
-    (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas-2005))))
-         (vl-vardecllist-p (cdr (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas-2005))))))
-  (verify-guards vl-parse-1+-port-declarations-separated-by-commas-2005-fn))
 
-
-(defparser vl-parse-module-port-list-top-2005 ()
-  :short "Verilog-2005 only.  Top-level function for parsing port lists in both
-  ANSI and non-ANSI styles."
-
-  :long "<p>See @(see verilog-2005-ports) and @(see verilog-2005-portdecls).
-We match the following, contrived grammar rule:</p>
-
-@({
-   vl_module_port_list ::= list_of_ports
-                         | [list_of_port_declarations]
-})
-
-<p>We can tell which variant we are following because a @('port_declaration') must
-begin with one of:</p>
-
-@({
-     (*
-     input
-     output
-     inout
-})"
-  :result (vl-parsed-ports-p val)
-  :resultp-of-nil nil
-  :true-listp nil
-  :fails gracefully
-  :count weak
-  (seq tokstream
-       (unless (vl-is-token? :vl-lparen)
-         ;; No port list at all --> empty ports.
-         (return (make-vl-parsed-ports :ansi-p nil ;; irrelevant
-                                       :ports nil
-                                       :portdecls nil
-                                       :vardecls nil)))
-       (:= (vl-match))
-       (when (vl-is-token? :vl-rparen)
-         (:= (vl-match-token :vl-rparen))
-         ;; Ports list is just () --> empty ports.
-         (return (make-vl-parsed-ports :ansi-p nil ;; irrelevant
-                                       :ports nil
-                                       :portdecls nil
-                                       :vardecls nil)))
-
-       (when (vl-is-some-token? '(:vl-kwd-output :vl-kwd-input :vl-kwd-inout :vl-beginattr))
-         ;; This must be an ANSI-style declaration.
-         ((portdecls . vardecls) := (vl-parse-1+-port-declarations-separated-by-commas-2005))
-         (:= (vl-match-token :vl-rparen))
-         (return (make-vl-parsed-ports :ansi-p t
-                                       :ports (vl-ports-from-portdecls portdecls)
-                                       :portdecls portdecls
-                                       :vardecls vardecls)))
-
-       ;; This must be a non-ANSI style declaration.
-       (ports := (vl-parse-1+-ports-separated-by-commas))
-       (:= (vl-match-token :vl-rparen))
-       (return (make-vl-parsed-ports :ansi-p nil
-                                     :ports ports
-                                     :portdecls nil
-                                     :vardecls nil))))
 
 
 
@@ -939,24 +1448,20 @@ seen.</p>"
                "True exactly when there was an explicit net type.")
    (var-p      booleanp
                "True exactly when we found a @('var') keyword.")
-   (explicit-p booleanp
-               "True exactly when there was an explicit @('data_type') instead of an
-                @('implicit_data_type').")
-   (implicit-p booleanp
-               "True in the @('implicit_data_type') case IF there was at least
-                some non-empty @('implicit_data_type') was found, i.e., we
-                found a signedness or ranges.  This exclusion might seem weird,
-                but see @(see vl-process-subsequent-ansi-port) for the place
-                where it matters.")
-   (type       vl-datatype-p
-               "The datatype we have parsed (in the explicit case) or
-                inferred (in the implicit case).  In the implicit case,
-                this may not be the real type we are supposed to use.")))
+   (type       vl-maybe-datatype-p
+               "Exists if we found an explicit datatype.")
+   (signing    vl-maybe-exprtype-p
+               "Exists if we had a signedness keyword without an explicit datatype.")
+   (dims       vl-packeddimensionlist-p
+               "Nonempty only if we had packed dimensions without an explicit datatype.")))
 
 (local (defthm crock-idtoken-of-car
          (implies (vl-is-token? :vl-idtoken)
                   (vl-idtoken-p (car (vl-tokstream->tokens))))
          :hints(("Goal" :in-theory (enable vl-is-token?)))))
+
+
+
 
 (defparser vl-parse-port-declaration-head-2012 ()
   :short "Matches @('net_port_type') or @('variable_port_type').  Assumes that
@@ -1010,13 +1515,9 @@ second @('net_port_type') case.</p>
            (return (make-vl-parsed-portdecl-head
                     :nettype nil
                     :var-p t
-                    :explicit-p nil
-                    :implicit-p t
-                    :type (make-vl-coretype :name :vl-logic
-                                            :signedp (and signing
-                                                          (eq (vl-token->type signing)
-                                                              :vl-kwd-signed))
-                                            :pdims ranges))))
+                    :signing (and signing
+                                  (vl-signing-kwd-to-exprtype signing))
+                    :dims   ranges)))
 
          ;; Possibilities:
          ;; (1) variable_port_type ::= 'var' data_type                          "explicit case"
@@ -1025,9 +1526,8 @@ second @('net_port_type') case.</p>
          ;; In the empty case, we expect that an identifier (the port name)
          ;; follows.  However, a data_type can also be an identifier!
          ;;
-         ;; To disambiguate, we'll check whether we have an identifier that is
-         ;; NOT a type name.  That's the only valid way to be in the empty
-         ;; implicit case.
+         ;; To disambiguate, we'll backtrack based on whether we find the right
+         ;; kind of token after we finish parsing a datatype.  If it's an identi
          (when (and (vl-is-token? :vl-idtoken)
                     (not (vl-parsestate-is-user-defined-type-p
                           (vl-idtoken->name (car (vl-tokstream->tokens)))
@@ -1035,20 +1535,13 @@ second @('net_port_type') case.</p>
            ;; Identifier that is not a known type.  We must be in the empty
            ;; implicit case then, i.e., this is a plain old "var" port.
            (return (make-vl-parsed-portdecl-head :nettype nil
-                                                 :var-p t
-                                                 :explicit-p nil
-                                                 :implicit-p nil ;; NIL due to empty implicit case.
-                                                 :type (make-vl-coretype :name    :vl-logic
-                                                                         :signedp nil
-                                                                         :pdims   nil))))
+                                                 :var-p t)))
 
          ;; The only remaining possibility is that we have:
          ;; (1) variable_port_type ::= 'var' data_type                          "explicit case"
          (type := (vl-parse-datatype))
          (return (make-vl-parsed-portdecl-head :nettype nil
                                                :var-p t
-                                               :explicit-p t
-                                               :implicit-p nil
                                                :type type)))
 
        ;; We have now ruled out leading 'interconnect' and 'var' keywords.
@@ -1072,13 +1565,9 @@ second @('net_port_type') case.</p>
          (return (make-vl-parsed-portdecl-head
                   :nettype nettype
                   :var-p nil
-                  :explicit-p nil
-                  :implicit-p t
-                  :type (make-vl-coretype :name :vl-logic
-                                          :signedp (and signing
-                                                        (eq (vl-token->type signing)
-                                                            :vl-kwd-signed))
-                                          :pdims ranges))))
+                  :signing (and signing
+                                (vl-signing-kwd-to-exprtype signing))
+                  :dims ranges)))
 
        ;; Possibilities:
        ;; (1) net_port_type  ::= [net_type] data_type                         "explicit case"
@@ -1093,20 +1582,13 @@ second @('net_port_type') case.</p>
                         (vl-tokstream->pstate))))
          ;; Empty implicit case.
          (return (make-vl-parsed-portdecl-head :nettype nettype
-                                               :var-p nil
-                                               :explicit-p nil
-                                               :implicit-p nil ;; NIL due to empty implicit case.
-                                               :type (make-vl-coretype :name    :vl-logic
-                                                                       :signedp nil
-                                                                       :pdims   nil))))
+                                               :var-p nil)))
 
        ;; The only remaining possibility is that we must have:
        ;; (1) net_port_type  ::= [net_type] data_type                         "explicit case"
        (type := (vl-parse-datatype))
        (return (make-vl-parsed-portdecl-head :nettype nettype
                                              :var-p nil
-                                             :explicit-p t
-                                             :implicit-p nil
                                              :type type))))
 
 
@@ -1209,7 +1691,7 @@ net or a variable type, then the port is considered completely declared.\"</p>"
   (b* (((vl-parsed-portdecl-head head)))
     (if (or head.nettype
             head.var-p
-            head.explicit-p)
+            head.type)
         ;; I'm pretty sure this is right.
         t
       nil)))
@@ -1244,7 +1726,10 @@ supposed to use here.  See the comments.</p>"
                ;; here.  This seems vaguely plausible?  (We know that the inout
                ;; has to be a net.)
                :nettype    (or head.nettype :vl-wire)
-               :type       head.type
+               :type       (or head.type
+                               (make-vl-coretype :name :vl-logic
+                                                 :signedp (eq head.signing :vl-signed)
+                                                 :pdims head.dims))
                :complete-p (vl-parsed-portdecl-head->complete-p head)
                :atts       atts))))
 
@@ -1268,7 +1753,10 @@ supposed to use here.  See the comments.</p>"
                :nettype    (if head.var-p
                                nil
                              (or head.nettype :vl-wire))
-               :type       head.type
+               :type       (or head.type
+                               (make-vl-coretype :name :vl-logic
+                                                 :signedp (eq head.signing :vl-signed)
+                                                 :pdims head.dims))
                :complete-p (vl-parsed-portdecl-head->complete-p head)
                :atts       atts))))
 
@@ -1290,9 +1778,12 @@ supposed to use here.  See the comments.</p>"
                ;; port list, not about non-ansi style port declarations.
                :nettype    (cond (head.var-p      nil) ;; explicit var -- then var.
                                  (head.nettype    head.nettype) ;; explicit net type, so use it
-                                 (head.explicit-p nil) ;; explicit data type, no net type -- then var.
+                                 (head.type       nil) ;; explicit data type, no net type -- then var.
                                  (t               :vl-wire)) ;; implicit data type, no nettype/var keyword, then default net type
-               :type       head.type
+               :type       (or head.type
+                               (make-vl-coretype :name :vl-logic
+                                                 :signedp (eq head.signing :vl-signed)
+                                                 :pdims head.dims))
                :complete-p (vl-parsed-portdecl-head->complete-p head)
                :atts       atts))))
 
@@ -1354,736 +1845,245 @@ except for the initial attributes.  Used for port declarations within modules."
 
 
 
-(defsection sv-ansi-portdecls
-  :parents (parse-ports)
-  :short "Parsing of SystemVerilog-2012 ANSI-style port declarations."
-  :long "<p>Here's the basic grammar:</p>
+;; (defsection sv-ansi-portdecls
+;;   :parents (parse-ports)
+;;   :short "Parsing of SystemVerilog-2012 ANSI-style port declarations."
+;;   :long "<p>Here's the basic grammar:</p>
 
-@({
-    list_of_port_declarations ::=  '(' [ {attribute_instance} ansi_port_declaration
-                                           { ',' {attribute_instance} ansi_port_declaration } ] ')'
+;; @({
+;;     list_of_port_declarations ::=  '(' [ {attribute_instance} ansi_port_declaration
+;;                                            { ',' {attribute_instance} ansi_port_declaration } ] ')'
 
-    ansi_port_declaration ::=
-        [ net_port_header | interface_port_header ] identifier {unpacked_dimension} [ '=' expression ]
-      | [ variable_port_header ] identifier {variable_dimension} [ '=' expression ]
-      | [ port_direction ] '.' identifier '(' [expression] ')'
-
-    net_port_header ::= [port_direction] net_port_type
-
-    interface_port_header ::= identifier [ '.' identifier ]
-                            | 'interface' [ '.' identifier ]
-
-    variable_port_header ::= [port_direction] variable_port_type
-
-    port_direction ::= 'input' | 'output' | 'inout' | 'ref'
-})
-
-<p>There are also some footnotes.  Section 23.2.2.2 imposes various semantic
-restrictions, e.g.,: a ref port shall be a variable type and an inout port
-shall not be; it shall be illegal to initialize a port that is not a variable
-output port or to specify a default value for a port that is not an input
-port.</p>
-
-<p>Section 23.2.2.3 also gives a LOT of subtle rules regarding how the
-directions/kinds get inherited across the list of port declarations, etc.
-See @(see sv-ansi-port-interpretation).</p>
-
-
-<h3>Simplifications and Limitations</h3>
-
-<p>We have decided to NOT yet implement the third kind of
-@('ansi_port_declaration'), which has a separate \"external\" name from the
-internal expression.  That is, we do not try to implement:</p>
-
-@({
-   ansi_port_declaration ::= [ port_direction ] '.' identifier '(' [expression] ')'
-})
-
-<p>If we do want to come back and implement this some day, we will need to
-figure out a way to reconcile the lack of port declarations for the wires
-in the expression.  That is, back in the Verilog-2005 days, we could expect
-that a port such as:</p>
-
-@({
-     module mymod (.foo( {a, b} ), ...)
-})
-
-<p>Would be followed up with port declarations for A and B.  However, these new
-SystemVerilog ANSI-style declarations don't seem to have any such corresponding
-port declarations.  It would likely take a bit of work to get transforms like
-argresolve, replicate, and toe, to cope with this.</p>
-
-<p>Anyway, this simplification means we're only going to try to support:</p>
-
-@({
-    ansi_port_declaration ::=
-        [ net_port_header | interface_port_header ] identifier {unpacked_dimension} [ '=' expression ]
-      | [ variable_port_header ]                    identifier {variable_dimension} [ '=' expression ]
-})
-
-<p>Furthermore, we'll not support default expressions yet (we don't support
-them on non-ANSI ports yet, either) and since we don't really have any support
-for fancy dimensions, what we'll really try to implement is just:</p>
-
-@({
-    ansi_port_declaration ::=
-        net_port_header         identifier {unpacked_dimension}
-      | variable_port_header    identifier {variable_dimension}
-      | interface_port_header   identifier {unpacked_dimension}
-
-    net_port_header ::= [port_direction] net_port_type
-
-    variable_port_header ::= [port_direction] variable_port_type
-
-    interface_port_header ::= identifier  [ '.' identifier ]
-                            | 'interface' [ '.' identifier ]
-})
-
-<p>The tricky part of this is dealing with port types.  See @(see
-parse-port-types) for notes about how we distinguish between
-@('net_port_type'), @('variable_port_type'), and
-@('interface_port_header').</p>")
-
-(local (xdoc::set-default-parents sv-ansi-portdecls))
-
-(defprod vl-parsed-interface-head
-  :tag :vl-parsed-interface-head
-  :layout :tree
-  ((ifname stringp :rule-classes :type-prescription)
-   (modport maybe-stringp :rule-classes :type-prescription)))
-
-(deftranssum vl-parsed-ansi-head
-  (vl-parsed-interface-head
-   vl-parsed-portdecl-head))
-
-(defthm vl-parsed-ansi-head-p-forward
-  (implies (vl-parsed-ansi-head-p x)
-           (or (eq (tag x) :vl-parsed-interface-head)
-               (eq (tag x) :vl-parsed-portdecl-head)))
-  :rule-classes :forward-chaining)
-
-(defaggregate vl-parsed-ansi-port
-  :tag :vl-parsed-ansi-port
-  :legiblep nil
-  ((dir  vl-maybe-direction-p)
-   (head vl-parsed-ansi-head-p)
-   (id   vl-parsed-port-identifier-p)
-   (atts vl-atts-p)))
-
-(defthm vl-parsed-ansi-port-p-forward
-  (implies (vl-parsed-ansi-port-p x)
-           (or (eq (tag (vl-parsed-ansi-port->head x)) :vl-parsed-interface-head)
-               (eq (tag (vl-parsed-ansi-port->head x)) :vl-parsed-portdecl-head)))
-  :rule-classes :forward-chaining
-  :hints(("Goal"
-          :in-theory (disable vl-parsed-ansi-head-p-forward)
-          :use ((:instance vl-parsed-ansi-head-p-forward (x (vl-parsed-ansi-port->head x)))))))
-
-(deflist vl-parsed-ansi-portlist-p (x)
-  (vl-parsed-ansi-port-p x)
-  :elementp-of-nil nil)
-
-(defval *vl-directions-kwd-alist*
-  '((:vl-kwd-input . :vl-input)
-    (:vl-kwd-output . :vl-output)
-    (:vl-kwd-inout . :vl-inout)))
-
-(defval *vl-directions-kwds*
-  (strip-cars *vl-directions-kwd-alist*))
-
-(defparser vl-parse-optional-port-direction ()
-  :result (vl-maybe-direction-p val)
-  :resultp-of-nil t
-  :true-listp nil
-  :fails never
-  :count strong-on-value
-  (seq tokstream
-       (when (vl-is-some-token? *vl-directions-kwds*)
-         (tok := (vl-match))
-         (return (cdr (assoc (vl-token->type tok)
-                             *vl-directions-kwd-alist*))))
-       (return nil)))
-
-(defparser vl-parse-ansi-port-header ()
-  :parents (sv-ansi-portdecls parse-port-types)
-  :short "Matches @('interface_port_header'), @('net_port_type'), or @('variable_port_type')."
-  :long "<p>See especially the discussion of \"ruling out interfaces\" in @(see
-  parse-port-types).</p>"
-  :result (vl-parsed-ansi-head-p val)
-  :resultp-of-nil nil
-  :true-listp nil
-  :fails gracefully
-  :count weak
-  :prepwork ((local (set-default-hints
-                     '((and stable-under-simplificationp
-                            '(:in-theory (enable vl-idtoken-p
-                                                 vl-lookahead-is-token?
-                                                 vl-match)))))))
-  (seq tokstream
-       (when (vl-is-token? :vl-kwd-interface)
-         (return-raw
-          (vl-parse-error "BOZO implement explicit 'interface' ports.")))
-       (when (and (vl-is-token? :vl-idtoken)
-                  (vl-lookahead-is-token? :vl-dot (cdr (vl-tokstream->tokens)))
-                  (vl-lookahead-is-token? :vl-idtoken (cddr (vl-tokstream->tokens))))
-         ;; Found "foo.bar".
-         ;; This is definitely an interface port with a modport.  See PARSE-PORT-TYPES.
-         (iface := (vl-match))
-         (:= (vl-match))
-         (modport := (vl-match))
-         (return (make-vl-parsed-interface-head :ifname (vl-idtoken->name iface)
-                                                :modport (vl-idtoken->name modport))))
-       (when (and (vl-is-token? :vl-idtoken)
-                  (vl-lookahead-is-token? :vl-idtoken (cdr (vl-tokstream->tokens)))
-                  (not (vl-parsestate-is-user-defined-type-p
-                        (vl-idtoken->name (car (vl-tokstream->tokens)))
-                        (vl-tokstream->pstate))))
-         ;; Found "foo bar" and "foo" is NOT the name of a user-defined type.
-         ;; This has to be an interface port.  See PARSE-PORT-TYPES.
-         ;;   - "foo" is the name of the interface.
-         ;;   - "bar" is the name of the port identifier (which doesn't belong to us)
-         (iface := (vl-match))
-         (return (make-vl-parsed-interface-head :ifname (vl-idtoken->name iface)
-                                                :modport nil)))
-       ;; Otherwise this can't be an interface, so it can only be a variable or
-       ;; port header.
-       (ans := (vl-parse-port-declaration-head-2012))
-       (return ans)))
-
-(defparser vl-parse-ansi-port-declaration (atts)
-  :short "Matches @('ansi_port_declaration')."
-  :guard (vl-atts-p atts)
-  :result (vl-parsed-ansi-port-p val)
-  :resultp-of-nil nil
-  :true-listp nil
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (dir := (vl-parse-optional-port-direction))
-       (when dir
-         ;; It cannot be an interface port header.
-         (head  := (vl-parse-port-declaration-head-2012))
-         (id    := (vl-match-token :vl-idtoken))
-         (udims := (vl-parse-0+-variable-dimensions))
-         (return (make-vl-parsed-ansi-port :dir  dir
-                                           :atts atts
-                                           :head head
-                                           :id  (make-vl-parsed-port-identifier :name id
-                                                                                :udims udims))))
-       ;; Else, no direction; can have interface, net, or variable port type.
-       (head  := (vl-parse-ansi-port-header))
-       (id    := (vl-match-token :vl-idtoken))
-       (udims := (vl-parse-0+-variable-dimensions))
-       (return (make-vl-parsed-ansi-port :dir  nil
-                                         :head head
-                                         :atts atts
-                                         :id   (make-vl-parsed-port-identifier :name id
-                                                                               :udims udims)))))
-
-(defparser vl-parse-1+-ansi-port-declarations ()
-  :short "Matches @(' {attribute_instance} ansi_port_declaration
-                      { ',' {attribute_instance} ansi_port_declaration } ')"
-  :result (vl-parsed-ansi-portlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (atts  := (vl-parse-0+-attribute-instances))
-       (first := (vl-parse-ansi-port-declaration atts))
-       (when (vl-is-token? :vl-comma)
-         (:= (vl-match))
-         (rest := (vl-parse-1+-ansi-port-declarations)))
-       (return (cons first rest))))
-
-(defsection sv-ansi-port-interpretation
-  :parents (parse-ports)
-  :short "SystemVerilog-2012 rules for determining port kind/type/direction for
-ANSI ports (Section 23.2.2.3)."
-
-  :long "<p>SystemVerilog has some tricky rules for how ANSI port lists are
-interpreted.  For instance, in a module like:</p>
-
-@({
-     module foo (output o,
-                 input logic [3:0] a, b, c) ;
-       ...
-     endmodule
-})
-
-<p>The @('input logic [3:0]') part gets used for @('a'), @('b'), and @('c').
-Our actual parsing routines (see @(see sv-ansi-portdecls)) don't try to follow
-these rules.  Instead, they give us a list of \"raw\" @(see
-vl-parsed-ansi-port-p) structures, which we then need to convert into actual
-ports, port declarations, and variable declarations.</p>")
-
-(local (xdoc::set-default-parents sv-ansi-port-interpretation))
-
-(define vl-nettype-for-parsed-ansi-port
-  :short "Determine the net type to use for a port."
-  ((dir  vl-direction-p)
-   (head vl-parsed-portdecl-head-p))
-  :returns (nettype vl-maybe-nettypename-p)
-  :long "<p>From SystemVerilog-2012 23.2.2.3, \"the term \"port kind\" is used
-to mean any of the net type keywords, or the keyword var, which are used to
-explicitly declare a port of one of these kinds...\"</p>
-
-<p>For ports in an ANSI port list, the rules for determining the port kind
-appear to be the same for the first port and for subsequent ports.  (Pages 667
-and 668).</p>
-
-<p>The rules depend on the direction of the port.</p>
-
-<ul>
-
-<li>\"For input and inout ports, the port shall default to a net of the default
-net type.\"  In VL the default nettype is always wire so this is easy.</li>
-
-<li>\"For output ports, the default port kind depends on how the data type
-is specified.
-<ul>
-<li>If the data type is omitted or declared with the implicit_data_type syntax, the
-    port kind shall default to a net of the default net type.</li>
-
-<li>If the data type is declared with the explicit datatype syntax, the port
-    shall default to a variable.\"</li>
-</ul></li>
-
-</ul>"
-
-  (b* (((vl-parsed-portdecl-head head)))
-    (cond (head.nettype head.nettype)  ;; Explicitly provided net type; use it.
-          (head.var-p nil)               ;; Explicitly provided 'var' keyword, nettype is NIL.
-          ((eq dir :vl-output)
-           (if head.explicit-p
-               ;; explicit data type so it's a variable (nettype nil)
-               nil
-             ;; no explicit declaration, use default net type, i.e., plain wire
-             :vl-wire))
-          (t
-           ;; input/inout, use default net type, i.e., plain wire
-           :vl-wire))))
-
-(define vl-process-first-ansi-port ((x vl-parsed-ansi-port-p))
-  :long "<p>Note: we assume that the first port in the list has at least a
-direction, port kind, or data type.  Otherwise, per Section 23.2.2.3, the ports
-are supposed to be assumed to be a non-ANSI style list of ports, so we
-shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
-  :returns (mv (ifacep        "Was this port an interface port?"
-                              booleanp :rule-classes :type-prescription)
-               (ports-acc     (and (vl-portlist-p ports-acc)
-                                   (consp ports-acc)
-                                   (equal (vl-interfaceport-p (car ports-acc))
-                                          ifacep)
-                                   (equal (vl-regularport-p (car ports-acc))
-                                          (not ifacep))))
-               (portdecls-acc (and (vl-portdecllist-p portdecls-acc)
-                                   (implies (not ifacep)
-                                            (consp portdecls-acc))))
-               (vardecls-acc  (and (vl-vardecllist-p vardecls-acc)
-                                   (implies (not ifacep)
-                                            (consp vardecls-acc)))))
-  :prepwork
-  ((local (in-theory (enable tag-reasoning))))
-
-  (b* (((vl-parsed-ansi-port x))
-       ((vl-parsed-port-identifier x.id))
-       (name (vl-idtoken->name x.id.name))
-       (loc  (vl-token->loc  x.id.name)))
-
-    (case (tag x.head)
-      (:vl-parsed-interface-head
-       ;; Interface port.  This is actually the easy case, because we do NOT
-       ;; create port or variable declarations for interface ports.  All we
-       ;; need to do is create a special kind of port.
-       (b* ((new-port (make-vl-interfaceport :name    name
-                                             :ifname  (vl-parsed-interface-head->ifname x.head)
-                                             :modport (vl-parsed-interface-head->modport x.head)
-                                             :udims   x.id.udims
-                                             :loc     loc)))
-         (mv t (list new-port) nil nil)))
-
-      (:vl-parsed-portdecl-head
-       (b* (((vl-parsed-portdecl-head x.head))
-            (ports (list (make-vl-regularport :name name
-                                              :expr (vl-idexpr name nil nil)
-                                              :loc loc)))
-            (complete-p
-             ;; ANSI-style ports ALWAYS create corresponding variable
-             ;; declarations.  SystemVerilog-2012 23.2.2.2 (pg. 666): "Each
-             ;; port declaration provides the complete information about the
-             ;; port.  The port's direction, width, net, or variable type, and
-             ;; signedness are completely described.  The port identifier
-             ;; __shall not be redeclared, in part or in full, inside the
-             ;; module body."
-             t)
-
-            (dir
-             ;; 23.2.2.3: "For the first port in the list, if the direction is
-             ;; omitted, it shall default to inout."
-             (or x.dir :vl-inout))
-
-            (nettype
-             (vl-nettype-for-parsed-ansi-port dir x.head))
-
-            (type
-             ;; 23.2.2.3: "If the data type is omitted, it shall default to
-             ;; logic except for interconnect ports which have no data type."
-             ;;
-             ;; We don't implement interconnect ports yet so that's no problem.
-             ;; Otherwise, if the data type is omitted, then we already made a
-             ;; logic datatype when we parsed the header.
-             x.head.type)
-
-            ((cons portdecls vardecls)
-             (vl-make-ports-and-maybe-nets (list x.id)
-                                           :dir        dir
-                                           :nettype    nettype
-                                           :type       type
-                                           :complete-p complete-p
-                                           :atts       x.atts)))
-         (mv nil ports portdecls vardecls)))
-
-      (otherwise
-       (progn$ (impossible)
-               ;; bogus crap for hyp-free type theorems
-               (mv t
-                   (list (make-vl-interfaceport :name "bogus"
-                                                :ifname "bogus"))
-                   nil nil))))))
-
-
-(define vl-process-subsequent-ansi-port
-  ((x             vl-parsed-ansi-port-p "Next parsed port to process.")
-   (prev-ifacep   booleanp              "Was the previous port an interface port?")
-   ;; Accumulators for the proper, parsed structures.  These are in reverse
-   ;; order, so that the CAR of these lists contains the previous port/portdecl.
-   (warnings      vl-warninglist-p)
-   (ports-acc     vl-portlist-p)
-   (portdecls-acc vl-portdecllist-p)
-   (vardecls-acc  vl-vardecllist-p))
-
-  :guard (and (consp ports-acc)
-              (equal (vl-interfaceport-p (car ports-acc)) prev-ifacep)
-              (equal (vl-regularport-p (car ports-acc)) (not prev-ifacep))
-              (implies (not prev-ifacep)
-                       (and (consp portdecls-acc)
-                            (consp vardecls-acc))))
-
-  :returns (mv (ifacep        "Was this port an interface port?"
-                              booleanp :rule-classes :type-prescription)
-               (warnings      vl-warninglist-p)
-               (ports-acc     (and (vl-portlist-p ports-acc)
-                                   (consp ports-acc)
-                                   (equal (vl-interfaceport-p (car ports-acc)) ifacep)
-                                   (equal (vl-regularport-p (car ports-acc)) (not ifacep))
-                                   ))
-               (portdecls-acc (and (vl-portdecllist-p portdecls-acc)
-                                   (implies (not ifacep)
-                                            (consp portdecls-acc))))
-               (vardecls-acc  (and (vl-vardecllist-p vardecls-acc)
-                                   (implies (not ifacep)
-                                            (consp vardecls-acc)))))
-
-  :prepwork ((local (in-theory (enable tag-reasoning))))
-
-  (b* ((warnings      (vl-warninglist-fix  warnings))
-       (ports-acc     (vl-portlist-fix     ports-acc))
-       (portdecls-acc (vl-portdecllist-fix portdecls-acc))
-       (vardecls-acc  (vl-vardecllist-fix  vardecls-acc))
-
-       ((vl-parsed-ansi-port x) x)
-       ((vl-parsed-port-identifier x.id) x.id)
-       (name (vl-idtoken->name x.id.name))
-       (loc  (vl-token->loc  x.id.name)))
-
-    (case (tag x.head)
-      (:vl-parsed-interface-head
-       ;; Interface port.  The rules in 23.2.2.3 don't really address this
-       ;; case, but it seems like what to do is pretty clear.  The new port is
-       ;; sort of "fully specified."  We don't create portdecls or vardecls for
-       ;; interface ports, so just make a port.
-       (mv t
-           warnings
-           (cons (make-vl-interfaceport :name    name
-                                        :ifname  (vl-parsed-interface-head->ifname x.head)
-                                        :modport (vl-parsed-interface-head->modport x.head)
-                                        :udims   x.id.udims
-                                        :loc     loc)
-                 ports-acc)
-           portdecls-acc
-           vardecls-acc))
-
-      (:vl-parsed-portdecl-head
-       (b* (((vl-parsed-portdecl-head x.head))
-
-            ;; 23.2.2.2: "If the direction, port kind, and data type are all
-            ;; omitted, then they shall be inherited from the previous port."
-            ((when (and (not x.dir)
-                        (not x.head.nettype)
-                        (not x.head.var-p)
-                        (not x.head.explicit-p)
-                        ;; See vl-parsed-portdecl-head.  If there was a signed
-                        ;; keyword or ranges, then implicit-p will be set.  So
-                        ;; by checking for implicit-p here, we're looking for
-                        ;; the case where there is literally nothing but a port
-                        ;; name.
-                        (not x.head.implicit-p)))
-             ;; Nothing but a port name, inherit stuff from previous port.
-             (if prev-ifacep
-                 ;; The previous port was an interface, not a regular port.
-                 ;; The spec doesn't really cover this, but it seems obvious
-                 ;; what to do, and testing suggests that NCV and VCS both
-                 ;; treat the new port as an interface of the same type.
-                 (mv t
-                     warnings
-                     (cons (change-vl-interfaceport (car ports-acc)
-                                                    :name name
-                                                    :loc loc)
-                           ports-acc)
-                     portdecls-acc
-                     vardecls-acc)
-               ;; The previous port was a regular port.  It had its own
-               ;; direction and so forth.  We just need to inherit its
-               ;; properties and make this port be just like it.
-               (mv nil
-                   warnings
-                   (cons (change-vl-regularport (car ports-acc)
-                                                :name name
-                                                :expr (vl-idexpr name nil nil)
-                                                :loc loc)
-                         ports-acc)
-                   (cons (change-vl-portdecl (car portdecls-acc) :name name :loc loc) portdecls-acc)
-                   (cons (change-vl-vardecl  (car vardecls-acc)  :name name :loc loc) vardecls-acc))))
-
-            ;; Otherwise there is at least SOME direction or type information
-            ;; here, so this can't be an interface port.
-
-            (ports-acc (cons (make-vl-regularport :name name
-                                                  :expr (vl-idexpr name nil nil)
-                                                  :loc loc)
-                             ports-acc))
-
-            (complete-p
-             ;; ANSI port decls are always complete (see process-first-ansi-port)
-             t)
-
-            ((mv dir warnings)
-             ;; 23.2.2.3.  For subsequent ports in the list, if the direction
-             ;; is omitted then it shall be inherited from the previous port.
-             (cond (x.dir
-                    ;; This port has an explicit direction -- that fine, use it.
-                    (mv x.dir (ok)))
-                   (prev-ifacep
-                    ;; No direction and previous port was an interface port?
-                    ;; It's not at all clear what to do.  From experimenting
-                    ;; with VCS and NCVerilog, I think NCV interprets this as
-                    ;; an inout port whereas VCS treats it as an output port.
-                    ;; Let's just not try to support this.
-                    (mv :vl-inout
-                        (fatal :type :vl-bad-ports
-                               :msg "~a0: can't infer direction for port ~a1 ~
-                                     since it follows an interface port.  ~
-                                     Please explicitly specify a direction ~
-                                     (input, output, ...)"
-                                   :args (list loc name))))
-                   (t
-                    ;; No explicit direction but the previous port was an
-                    ;; ordinary port, so just reuse its direction.
-                    (mv (vl-portdecl->dir (car portdecls-acc)) (ok)))))
-
-            (nettype
-             (vl-nettype-for-parsed-ansi-port dir x.head))
-
-            (type
-             ;; 23.2.2.3: "If the data type is omitted, it shall default to
-             ;; logic except for interconnect ports which have no data type."
-             ;;
-             ;; We don't implement interconnect ports yet so that's no problem.
-             ;; Otherwise, if the data type is omitted, then we already made a
-             ;; logic datatype when we parsed the header.
-             x.head.type)
-
-            ((cons new-portdecls new-vardecls)
-             (vl-make-ports-and-maybe-nets (list x.id)
-                                           :dir        dir
-                                           :nettype    nettype
-                                           :type       type
-                                           :complete-p complete-p
-                                           :atts       x.atts))
-            (portdecls-acc (append new-portdecls portdecls-acc))
-            (vardecls-acc  (append new-vardecls  vardecls-acc)))
-
-         (mv nil warnings ports-acc portdecls-acc vardecls-acc)))
-
-      (otherwise (progn$ (impossible)
-                         ;; bogus crap for hyp-free type theorems
-                         (mv t
-                             warnings
-                             (cons (make-vl-interfaceport :name "bogus"
-                                                          :ifname "bogus")
-                                   ports-acc)
-                             portdecls-acc
-                             vardecls-acc))))))
-
-(define vl-process-subsequent-ansi-ports
-  ((x             vl-parsed-ansi-portlist-p)
-   (prev-ifacep   booleanp)
-   (warnings      vl-warninglist-p)
-   (ports-acc     vl-portlist-p)
-   (portdecls-acc vl-portdecllist-p)
-   (vardecls-acc  vl-vardecllist-p))
-  :guard (and (consp ports-acc)
-              (equal (vl-interfaceport-p (car ports-acc)) prev-ifacep)
-              (equal (vl-regularport-p (car ports-acc)) (not prev-ifacep))
-              (implies (not prev-ifacep)
-                       (and (consp portdecls-acc)
-                            (consp vardecls-acc))))
-  :returns (mv (warnings      vl-warninglist-p)
-               (ports-acc     vl-portlist-p)
-               (portdecls-acc vl-portdecllist-p)
-               (vardecls-acc  vl-vardecllist-p))
-  (b* (((when (atom x))
-        (mv (vl-warninglist-fix  warnings)
-            (vl-portlist-fix     ports-acc)
-            (vl-portdecllist-fix portdecls-acc)
-            (vl-vardecllist-fix  vardecls-acc)))
-       ((mv ifacep1 warnings ports-acc portdecls-acc vardecls-acc)
-        (vl-process-subsequent-ansi-port (car x) prev-ifacep warnings ports-acc portdecls-acc vardecls-acc)))
-    (vl-process-subsequent-ansi-ports (cdr x) ifacep1 warnings ports-acc portdecls-acc vardecls-acc)))
-
-(define vl-process-ansi-ports
-  :short "Top level function for turning parsed ansi port declarations into proper VL structures."
-  ((x        vl-parsed-ansi-portlist-p)
-   (warnings vl-warninglist-p))
-  :returns (mv (warnings  vl-warninglist-p)
-               (ports     vl-portlist-p)
-               (portdecls vl-portdecllist-p)
-               (vardecls  vl-vardecllist-p))
-  (b* (((when (atom x))
-        (mv (ok) nil nil nil))
-       ((mv ifacep ports-acc portdecls-acc vardecls-acc)
-        (vl-process-first-ansi-port (car x)))
-       ((mv warnings ports-acc portdecls-acc vardecls-acc)
-        (vl-process-subsequent-ansi-ports (cdr x) ifacep warnings ports-acc portdecls-acc vardecls-acc)))
-    ;; Reverse the accumulators to put everything into parse-order.
-    (mv warnings
-        (rev ports-acc)
-        (rev portdecls-acc)
-        (rev vardecls-acc))))
-
-
-
-(define vl-port-starts-ansi-port-list-p
-  :short "Determine whether we're in an ANSI or non-ANSI port list."
-  ((port1 vl-parsed-ansi-port-p))
-  :returns (ansi-p booleanp :rule-classes :type-prescription)
-  :long "<p>To tell which version we are in, we follow the rule suggested in
-23.2.2.3 (pg 667):</p>
-
-<blockquote> For the first port in the port list: if the direction, port kind,
-and data type are all omitted, then the port shall be assumed to be a member of
-a non-ANSI style list_of_ports...  </blockquote>"
-  (b* (((vl-parsed-ansi-port port1))
-       ((when port1.dir)
-        t))
-    (case (tag port1.head)
-      (:vl-parsed-interface-head
-       ;; It has some kind of interface, that should count as a datatype.
-       t)
-      (:vl-parsed-portdecl-head
-       (b* (((vl-parsed-portdecl-head port1.head))
-            ((when (or port1.head.nettype
-                       port1.head.var-p
-                       port1.head.explicit-p
-                       port1.head.implicit-p))
-             t))
-         nil))
-      (otherwise
-       (impossible)))))
-
-(defparser vl-parse-module-port-list-top-2012 ()
-  :short "SystemVerilog-2012 only.  Top-level function for parsing port lists
-in both ANSI and non-ANSI styles."
-
-  :long "<p>See @(see sv-ansi-portdecls) and @(see sv-non-ansi-portdecls).  We
-match the following, contrived grammar rule:</p>
-
-@({
-   vl_module_port_list ::= list_of_ports
-                         | [list_of_port_declarations]
-})"
-
-  :result (vl-parsed-ports-p val)
-  :resultp-of-nil nil
-  :true-listp nil
-  :fails gracefully
-  :count weak
-  (seq tokstream
-       (unless (vl-is-token? :vl-lparen)
-         ;; No port list at all --> empty ports.
-         (return (make-vl-parsed-ports :ansi-p nil ;; irrelevant
-                                       :ports nil
-                                       :portdecls nil
-                                       :vardecls nil)))
-       (:= (vl-match))
-       (when (vl-is-token? :vl-rparen)
-         (:= (vl-match))
-         ;; Ports list is just () --> empty ports.
-         (return (make-vl-parsed-ports :ansi-p nil ;; irrelevant
-                                       :ports nil
-                                       :portdecls nil
-                                       :vardecls nil)))
-
-       (return-raw
-        (b* ((backup (vl-tokstream-save))
-             ((mv err port1 tokstream)
-              (seq tokstream
-                   (atts  := (vl-parse-0+-attribute-instances))
-                   (port1 := (vl-parse-ansi-port-declaration atts))
-                   (return port1)))
-             (ansi-p
-              (and (not err)
-                   (vl-port-starts-ansi-port-list-p port1)))
-             (tokstream (vl-tokstream-restore backup))
-             ((when ansi-p)
-              (seq tokstream
-                   (parsed := (vl-parse-1+-ansi-port-declarations))
-                   (:= (vl-match-token :vl-rparen))
-                   (return-raw
-                    (b* ((pstate    (vl-tokstream->pstate))
-                         (warnings  (vl-parsestate->warnings pstate))
-                         ((mv warnings ports portdecls vardecls)
-                          (vl-process-ansi-ports parsed warnings))
-                         (pstate    (vl-parsestate-set-warnings warnings pstate))
-                         (tokstream (vl-tokstream-update-pstate pstate)))
-                      (seq tokstream
-                           (return (make-vl-parsed-ports :ansi-p t
-                                                         :ports ports
-                                                         :portdecls portdecls
-                                                         :vardecls vardecls))))))))
-          ;; Non-ansi mode.
-          (seq tokstream
-               (ports := (vl-parse-1+-ports-separated-by-commas))
-               (:= (vl-match-token :vl-rparen))
-               (return (make-vl-parsed-ports :ansi-p nil
-                                             :ports ports
-                                             :portdecls nil
-                                             :vardecls nil)))))))
-
-
-(defparser vl-parse-module-port-list-top ()
-  :result (vl-parsed-ports-p val)
-  :resultp-of-nil nil
-  :true-listp nil
-  :fails gracefully
-  :count weak
-  (seq tokstream
-       (when (eq (vl-loadconfig->edition config) :verilog-2005)
-         (ans := (vl-parse-module-port-list-top-2005))
-         (return ans))
-       (ans := (vl-parse-module-port-list-top-2012))
-       (return ans)))
+;;     ansi_port_declaration ::=
+;;         [ net_port_header | interface_port_header ] identifier {unpacked_dimension} [ '=' expression ]
+;;       | [ variable_port_header ] identifier {variable_dimension} [ '=' expression ]
+;;       | [ port_direction ] '.' identifier '(' [expression] ')'
+
+;;     net_port_header ::= [port_direction] net_port_type
+
+;;     interface_port_header ::= identifier [ '.' identifier ]
+;;                             | 'interface' [ '.' identifier ]
+
+;;     variable_port_header ::= [port_direction] variable_port_type
+
+;;     port_direction ::= 'input' | 'output' | 'inout' | 'ref'
+;; })
+
+;; <p>There are also some footnotes.  Section 23.2.2.2 imposes various semantic
+;; restrictions, e.g.,: a ref port shall be a variable type and an inout port
+;; shall not be; it shall be illegal to initialize a port that is not a variable
+;; output port or to specify a default value for a port that is not an input
+;; port.</p>
+
+;; <p>Section 23.2.2.3 also gives a LOT of subtle rules regarding how the
+;; directions/kinds get inherited across the list of port declarations, etc.
+;; See @(see sv-ansi-port-interpretation).</p>
+
+
+;; <h3>Simplifications and Limitations</h3>
+
+;; <p>We have decided to NOT yet implement the third kind of
+;; @('ansi_port_declaration'), which has a separate \"external\" name from the
+;; internal expression.  That is, we do not try to implement:</p>
+
+;; @({
+;;    ansi_port_declaration ::= [ port_direction ] '.' identifier '(' [expression] ')'
+;; })
+
+;; <p>If we do want to come back and implement this some day, we will need to
+;; figure out a way to reconcile the lack of port declarations for the wires
+;; in the expression.  That is, back in the Verilog-2005 days, we could expect
+;; that a port such as:</p>
+
+;; @({
+;;      module mymod (.foo( {a, b} ), ...)
+;; })
+
+;; <p>Would be followed up with port declarations for A and B.  However, these new
+;; SystemVerilog ANSI-style declarations don't seem to have any such corresponding
+;; port declarations.  It would likely take a bit of work to get transforms like
+;; argresolve, replicate, and toe, to cope with this.</p>
+
+;; <p>Anyway, this simplification means we're only going to try to support:</p>
+
+;; @({
+;;     ansi_port_declaration ::=
+;;         [ net_port_header | interface_port_header ] identifier {unpacked_dimension} [ '=' expression ]
+;;       | [ variable_port_header ]                    identifier {variable_dimension} [ '=' expression ]
+;; })
+
+;; <p>Furthermore, we'll not support default expressions yet (we don't support
+;; them on non-ANSI ports yet, either) and since we don't really have any support
+;; for fancy dimensions, what we'll really try to implement is just:</p>
+
+;; @({
+;;     ansi_port_declaration ::=
+;;         net_port_header         identifier {unpacked_dimension}
+;;       | variable_port_header    identifier {variable_dimension}
+;;       | interface_port_header   identifier {unpacked_dimension}
+
+;;     net_port_header ::= [port_direction] net_port_type
+
+;;     variable_port_header ::= [port_direction] variable_port_type
+
+;;     interface_port_header ::= identifier  [ '.' identifier ]
+;;                             | 'interface' [ '.' identifier ]
+;; })
+
+;; <p>The tricky part of this is dealing with port types.  See @(see
+;; parse-port-types) for notes about how we distinguish between
+;; @('net_port_type'), @('variable_port_type'), and
+;; @('interface_port_header').</p>")
+
+;; (local (xdoc::set-default-parents sv-ansi-portdecls))
+
+;; (defprod vl-parsed-interface-head
+;;   :tag :vl-parsed-interface-head
+;;   :layout :tree
+;;   ((ifname stringp :rule-classes :type-prescription)
+;;    (modport maybe-stringp :rule-classes :type-prescription)))
+
+;; (deftranssum vl-parsed-ansi-head
+;;   (vl-parsed-interface-head
+;;    vl-parsed-portdecl-head))
+
+;; (defthm vl-parsed-ansi-head-p-forward
+;;   (implies (vl-parsed-ansi-head-p x)
+;;            (or (eq (tag x) :vl-parsed-interface-head)
+;;                (eq (tag x) :vl-parsed-portdecl-head)))
+;;   :rule-classes :forward-chaining)
+
+;; (defaggregate vl-parsed-ansi-port
+;;   :tag :vl-parsed-ansi-port
+;;   :legiblep nil
+;;   ((dir  vl-maybe-direction-p)
+;;    (head vl-parsed-ansi-head-p)
+;;    (id   vl-parsed-port-identifier-p)
+;;    (atts vl-atts-p)))
+
+;; (defthm vl-parsed-ansi-port-p-forward
+;;   (implies (vl-parsed-ansi-port-p x)
+;;            (or (eq (tag (vl-parsed-ansi-port->head x)) :vl-parsed-interface-head)
+;;                (eq (tag (vl-parsed-ansi-port->head x)) :vl-parsed-portdecl-head)))
+;;   :rule-classes :forward-chaining
+;;   :hints(("Goal"
+;;           :in-theory (disable vl-parsed-ansi-head-p-forward)
+;;           :use ((:instance vl-parsed-ansi-head-p-forward (x (vl-parsed-ansi-port->head x)))))))
+
+;; (deflist vl-parsed-ansi-portlist-p (x)
+;;   (vl-parsed-ansi-port-p x)
+;;   :elementp-of-nil nil)
+
+
+
+;; ;; (defparser vl-parse-ansi-port-header ()
+;; ;;   :parents (sv-ansi-portdecls parse-port-types)
+;; ;;   :short "Matches @('interface_port_header'), @('net_port_type'), or @('variable_port_type')."
+;; ;;   :long "<p>See especially the discussion of \"ruling out interfaces\" in @(see
+;; ;;   parse-port-types).</p>"
+;; ;;   :result (vl-parsed-ansi-head-p val)
+;; ;;   :resultp-of-nil nil
+;; ;;   :true-listp nil
+;; ;;   :fails gracefully
+;; ;;   :count weak
+;; ;;   :prepwork ((local (set-default-hints
+;; ;;                      '((and stable-under-simplificationp
+;; ;;                             '(:in-theory (enable vl-idtoken-p
+;; ;;                                                  vl-lookahead-is-token?
+;; ;;                                                  vl-match)))))))
+;; ;;   (seq tokstream
+;; ;;        (when (vl-is-token? :vl-kwd-interface)
+;; ;;          (return-raw
+;; ;;           (vl-parse-error "BOZO implement explicit 'interface' ports.")))
+;; ;;        (when (and (vl-is-token? :vl-idtoken)
+;; ;;                   (vl-lookahead-is-token? :vl-dot (cdr (vl-tokstream->tokens)))
+;; ;;                   (vl-lookahead-is-token? :vl-idtoken (cddr (vl-tokstream->tokens))))
+;; ;;          ;; Found "foo.bar".
+;; ;;          ;; This is definitely an interface port with a modport.  See PARSE-PORT-TYPES.
+;; ;;          (iface := (vl-match))
+;; ;;          (:= (vl-match))
+;; ;;          (modport := (vl-match))
+;; ;;          (return (make-vl-parsed-interface-head :ifname (vl-idtoken->name iface)
+;; ;;                                                 :modport (vl-idtoken->name modport))))
+;; ;;        (when (and (vl-is-token? :vl-idtoken)
+;; ;;                   (vl-lookahead-is-token? :vl-idtoken (cdr (vl-tokstream->tokens)))
+;; ;;                   (not (vl-parsestate-is-user-defined-type-p
+;; ;;                         (vl-idtoken->name (car (vl-tokstream->tokens)))
+;; ;;                         (vl-tokstream->pstate))))
+;; ;;          ;; Found "foo bar" and "foo" is NOT the name of a user-defined type.
+;; ;;          ;; This has to be an interface port.  See PARSE-PORT-TYPES.
+;; ;;          ;;   - "foo" is the name of the interface.
+;; ;;          ;;   - "bar" is the name of the port identifier (which doesn't belong to us)
+;; ;;          (iface := (vl-match))
+;; ;;          (return (make-vl-parsed-interface-head :ifname (vl-idtoken->name iface)
+;; ;;                                                 :modport nil)))
+;; ;;        ;; Otherwise this can't be an interface, so it can only be a variable or
+;; ;;        ;; port header.
+;; ;;        (ans := (vl-parse-port-declaration-head-2012))
+;; ;;        (return ans)))
+
+;; ;; (defparser vl-parse-ansi-port-declaration (atts)
+;; ;;   :short "Matches @('ansi_port_declaration')."
+;; ;;   :guard (vl-atts-p atts)
+;; ;;   :result (vl-parsed-ansi-port-p val)
+;; ;;   :resultp-of-nil nil
+;; ;;   :true-listp nil
+;; ;;   :fails gracefully
+;; ;;   :count strong
+;; ;;   (seq tokstream
+;; ;;        (dir := (vl-parse-optional-port-direction))
+;; ;;        (when dir
+;; ;;          ;; It cannot be an interface port header.
+;; ;;          (head  := (vl-parse-port-declaration-head-2012))
+;; ;;          (id    := (vl-match-token :vl-idtoken))
+;; ;;          (udims := (vl-parse-0+-variable-dimensions))
+;; ;;          (return (make-vl-parsed-ansi-port :dir  dir
+;; ;;                                            :atts atts
+;; ;;                                            :head head
+;; ;;                                            :id  (make-vl-parsed-port-identifier :name id
+;; ;;                                                                                 :udims udims))))
+;; ;;        ;; Else, no direction; can have interface, net, or variable port type.
+;; ;;        (head  := (vl-parse-ansi-port-header))
+;; ;;        (id    := (vl-match-token :vl-idtoken))
+;; ;;        (udims := (vl-parse-0+-variable-dimensions))
+;; ;;        (return (make-vl-parsed-ansi-port :dir  nil
+;; ;;                                          :head head
+;; ;;                                          :atts atts
+;; ;;                                          :id   (make-vl-parsed-port-identifier :name id
+;; ;;                                                                                :udims udims)))))
+
+
+
+                   
+        
+
+
+;; (defsection sv-ansi-port-interpretation
+;;   :parents (parse-ports)
+;;   :short "SystemVerilog-2012 rules for determining port kind/type/direction for
+;; ANSI ports (Section 23.2.2.3)."
+
+;;   :long "<p>SystemVerilog has some tricky rules for how ANSI port lists are
+;; interpreted.  For instance, in a module like:</p>
+
+;; @({
+;;      module foo (output o,
+;;                  input logic [3:0] a, b, c) ;
+;;        ...
+;;      endmodule
+;; })
+
+;; <p>The @('input logic [3:0]') part gets used for @('a'), @('b'), and @('c').
+;; Our actual parsing routines (see @(see sv-ansi-portdecls)) don't try to follow
+;; these rules.  Instead, they give us a list of \"raw\" @(see
+;; vl-parsed-ansi-port-p) structures, which we then need to convert into actual
+;; ports, port declarations, and variable declarations.</p>")
+
+;; (local (xdoc::set-default-parents sv-ansi-port-interpretation))
+
+
+
+
 
 (define vl-genelementlist->portdecls ((x vl-genelementlist-p))
   :returns (portdecls vl-portdecllist-p)
