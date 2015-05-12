@@ -1256,6 +1256,7 @@ state)
                                    nil ; otf-flg (don't-care)
                                    (ens state)
                                    (w state)
+                                   state
                                    nil)
                      :pool '((being-proved-by-induction . nil)))
              (w state)

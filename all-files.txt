@@ -161,6 +161,7 @@ tours
 
 doc/manual/res/centaur:
 centaur-logo.png
+cert_pl_exclude
 
 doc/manual/res/tours:
 *.gif

@@ -1,4 +1,4 @@
-; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2015, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -888,20 +888,23 @@
     (cond (pair (cdr pair))
           (t *default-rw-cache-state*))))
 
-(defmacro make-rcnst (ens wrld &rest args)
+(defmacro make-rcnst (ens wrld state &rest args)
 
-; (Make-rcnst ens w) will make a rewrite-constant that is the result of filling
-; in *empty-rewrite-constant* with a few obviously necessary values, such as
-; the global-enabled-structure as the :current-enabled-structure.  Then it
-; additionally loads user supplied values specified by alternating
+; (Make-rcnst ens w state) will make a rewrite-constant that is the result of
+; filling in *empty-rewrite-constant* with a few obviously necessary values,
+; such as the global-enabled-structure as the :current-enabled-structure.  Then
+; it additionally loads user supplied values specified by alternating
 ; keyword/value pairs to override what is otherwise created.  E.g.,
 
-; (make-rcnst ens w :expand-lst lst)
+; (make-rcnst ens w state :expand-lst lst)
 
 ; will make a rewrite-constant that is like the default one except that it will
 ; have lst as the :expand-lst.
 
 ; Note: Wrld and ens are used in the "default" setting of certain fields.
+
+; Warning: wrld could be evaluated several times.  So it should be an
+; inexpensive expression, such as a variable or (w state).
 
   `(change rewrite-constant
            (change rewrite-constant
@@ -909,6 +912,7 @@
                    :current-enabled-structure ,ens
                    :oncep-override (match-free-override ,wrld)
                    :case-split-limitations (case-split-limitations ,wrld)
+                   :forbidden-fns (forbidden-fns ,wrld ,state)
                    :nonlinearp (non-linearp ,wrld)
                    :backchain-limit-rw (backchain-limit ,wrld :rewrite)
                    :rw-cache-state (rw-cache-state ,wrld))
@@ -945,7 +949,7 @@
            (t (mv-let (new-step-limit provedp pot-lst)
                       (setup-simplify-clause-pot-lst1
                        cl nil type-alist
-                       (make-rcnst ens wrld
+                       (make-rcnst ens wrld state
                                    :force-info 'weak
                                    :cheap-linearp t)
                        wrld state *default-step-limit*)
@@ -1022,7 +1026,7 @@
 ; If the time-tracker calls below are changed, update :doc time-tracker
 ; accordingly.
 
-  (prog2$ (time-tracker :tau :start)
+  (prog2$ (time-tracker :tau :start!)
           (mv-let
            (clauses ttree calist)
            (tau-clausep-lst-rec clauses ens wrld ans ttree state calist)
@@ -2229,7 +2233,7 @@
          (non-term-listp-msg (car l) w)))
    (t (non-term-list-listp-msg (cdr l) w))))
 
-(defun eval-clause-processor (clause term stobjs-out ctx state)
+(defun eval-clause-processor (clause term stobjs-out pspv ctx state)
 
 ; Should we do our evaluation in safe-mode?  For a relevant discussion, see the
 ; comment in protected-eval about safe-mode.
@@ -2273,24 +2277,57 @@
                              nil)
                         nil
                         state))
-                   (t (pprogn (set-w! original-wrld state)
-                              (cond ((not (term-list-listp val
-                                                           original-wrld))
-                                     (mv (msg
-                                          "The :CLAUSE-PROCESSOR hint~|~%  ~
-                                           ~Y01~%did not evaluate to a list ~
-                                           of clauses, but instead to~|~%  ~
-                                           ~Y23~%~@4"
-                                          term nil
-                                          val nil
-                                          (non-term-list-listp-msg
-                                           val original-wrld))
-                                         nil
-                                         state))
-                                    (t (value val))))))))))))))))
+                   (t
+                    (pprogn
+                     (set-w! original-wrld state)
+                     (cond
+                      ((equal val (list clause)) ; avoid checks below
+                       (value val))
+                      (t
+                       (let ((not-skipped
+                              (not (skip-meta-termp-checks
+                                    (ffn-symb term) original-wrld))))
+                         (cond
+                          ((and not-skipped
+                                (not (term-list-listp val original-wrld)))
+                           (mv (msg
+                                "The :CLAUSE-PROCESSOR hint~|~%  ~Y01~%did ~
+                                 not evaluate to a list of clauses, but ~
+                                 instead to~|~%  ~Y23~%~@4"
+                                term nil
+                                val nil
+                                (non-term-list-listp-msg
+                                 val original-wrld))
+                               nil
+                               state))
+                          ((and not-skipped
+                                (forbidden-fns-in-term-list-list
+                                 val
+                                 (access rewrite-constant
+                                         (access prove-spec-var pspv
+                                                 :rewrite-constant)
+                                         :forbidden-fns)))
+                           (mv (msg
+                                "The :CLAUSE-PROCESSOR ~
+                                 hint~|~%~Y01~%evaluated to a list of ~
+                                 clauses~|~%~y2~%that contains a call of the ~
+                                 function symbol~#3~[, ~&3, which is~/s ~&3, ~
+                                 which are~] forbidden in that context.  See ~
+                                 :DOC clause-processor and :DOC ~
+                                 set-skip-meta-termp-checks."
+                                term nil val
+                                (forbidden-fns-in-term-list-list
+                                 val
+                                 (access rewrite-constant
+                                         (access prove-spec-var pspv
+                                                 :rewrite-constant)
+                                         :forbidden-fns)))
+                               nil
+                               state))
+                          (t (value val)))))))))))))))))))
 
 #+acl2-par
-(defun eval-clause-processor@par (clause term stobjs-out ctx state)
+(defun eval-clause-processor@par (clause term stobjs-out pspv ctx state)
 
 ; Keep in sync with eval-clause-processor.
 
@@ -2354,16 +2391,48 @@
                             term
                             nil)
                        nil))
-                  (t (cond ((not (term-list-listp val
-                                                  wrld))
-                            (mv (msg "The :CLAUSE-PROCESSOR hint~|~%  ~
-                                      ~Y01~%did not evaluate to a list of ~
-                                      clauses, but instead to~|~%  ~Y23~%~@4"
-                                     term nil
-                                     val nil
-                                     (non-term-list-listp-msg val wrld))
-                                nil))
-                           (t (value@par val))))))))))))))
+                  ((equal val (list clause)) ; avoid checks below
+                   (value@par val))
+                  (t
+                   (let ((not-skipped
+                          (not (skip-meta-termp-checks
+                                (ffn-symb term) wrld))))
+                     (cond
+                      ((and not-skipped
+                            (not (term-list-listp val wrld)))
+                       (mv (msg
+                            "The :CLAUSE-PROCESSOR hint~|~%  ~Y01~%did not ~
+                             evaluate to a list of clauses, but instead ~
+                             to~|~%  ~Y23~%~@4"
+                            term nil
+                            val nil
+                            (non-term-list-listp-msg
+                             val wrld))
+                           nil))
+                      ((and not-skipped
+                            (forbidden-fns-in-term-list-list
+                             val
+                             (access rewrite-constant
+                                     (access prove-spec-var pspv
+                                             :rewrite-constant)
+                                     :forbidden-fns)))
+                       (mv (msg
+                            "The :CLAUSE-PROCESSOR ~
+                                 hint~|~%~Y01~%evaluated to a list of ~
+                                 clauses~|~%~y2~%that contains a call of the ~
+                                 function symbol~#3~[, ~&3, which is~/s ~&3, ~
+                                 which are~] forbidden in that context.  See ~
+                                 :DOC clause-processor and :DOC ~
+                                 set-skip-meta-termp-checks."
+                            term nil val
+                            (forbidden-fns-in-term-list-list
+                             val
+                             (access rewrite-constant
+                                     (access prove-spec-var pspv
+                                             :rewrite-constant)
+                                     :forbidden-fns)))
+                           nil))
+                      (t (value@par val)))))))))))))))
 
 (defun apply-top-hints-clause1 (temp cl-id cl pspv wrld state step-limit)
 
@@ -2715,7 +2784,7 @@
        (eval-clause-processor@par cl
                                   (access clause-processor-hint (cdr temp) :term)
                                   (access clause-processor-hint (cdr temp) :stobjs-out)
-                                  ctx state)
+                                  pspv ctx state)
        (cond (erp (mv@par step-limit 'error erp nil nil state))
              (t (mv@par step-limit
                         'hit
@@ -9379,7 +9448,7 @@
                      (erp (mv erp nil state))
                      (t (value ttree))))))))
 
-(defmacro make-pspv (ens wrld &rest args)
+(defmacro make-pspv (ens wrld state &rest args)
 
 ; This macro is similar to make-rcnst, which is a little easier to understand.
 ; (make-pspv ens w) will make a pspv that is just *empty-prove-spec-var* except
@@ -9398,7 +9467,7 @@
 
   `(change prove-spec-var
            (change prove-spec-var *empty-prove-spec-var*
-                   :rewrite-constant (make-rcnst ,ens ,wrld
+                   :rewrite-constant (make-rcnst ,ens ,wrld ,state
                                                  :splitter-output
                                                  (splitter-output)))
            ,@args))

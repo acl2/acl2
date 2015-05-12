@@ -136,6 +136,7 @@ generally they'll need induction to do the proofs (future work).</p>")
           `((,term))
           (make-pspv (ens state)
                      (w state)
+                     state
                      :displayed-goal term
                      :user-supplied-term term
                      :orig-hints hints

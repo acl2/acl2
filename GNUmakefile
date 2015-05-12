@@ -1,6 +1,6 @@
 #  -*- Fundamental -*- 
 
-# ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+# ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
 # Copyright (C) 2015, Regents of the University of Texas
 
 # This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -180,6 +180,9 @@ ACL2_SAFETY =
 # books with many complex defun forms.
 ACL2_COMPILER_DISABLED =
 
+# See *acl2-egc-on* for an explanation of the following variable.
+ACL2_EGC_ON =
+
 # The following is not advertised.  It allows more symbol allocation
 # when ACL2 package is created; if specified, its value should be a
 # number to supply for the :size argument of defpackage.  For example,
@@ -266,6 +269,9 @@ acl2r.lisp:
 	fi
 	if [ "$(ACL2_COMPILER_DISABLED)" != "" ] ; then \
 	echo '(DEFPARAMETER *ACL2-COMPILER-ENABLED* NIL)' >> acl2r.lisp ;\
+	fi
+	if [ "$(ACL2_EGC_ON)" != "" ] ; then \
+	echo '(DEFPARAMETER *ACL2-EGC-ON* $(ACL2_EGC_ON))' >> acl2r.lisp ;\
 	fi
 
 .PHONY: chmod_image
@@ -505,6 +511,8 @@ doc/home-page.html: doc/home-page.lisp
 	cd doc ; rm -rf HTML ; ./create-doc 2>&1 create-doc.out
 
 # The following will implicitly use ACL2=acl2 unless ACL2 is set.
+# Note that books/system/doc/acl2-manual.lisp ends in a call of
+# xdoc::save that populates doc/manual/ (not under books/).
 acl2-manual:
 	rm -rf doc/manual books/system/doc/acl2-manual.cert
 	cd books ; make USE_QUICKLISP=1 system/doc/acl2-manual.cert
@@ -829,8 +837,9 @@ else
 	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds ACL2=$(ACL2)
 endif
 
-# Simple targets that ignores variables not mentioned below, including:
-# ACL2_SUFFIX, PREFIX, ACL2_SAFETY, ACL2_COMPILER_DISABLED, and ACL2_SIZE
+# Simple targets that ignore variables not mentioned below,
+# including: ACL2_SUFFIX, PREFIX, ACL2_SAFETY, ACL2_COMPILER_DISABLED,
+# ACL2_EGC_ON, and ACL2_SIZE:
 
 saved_acl2: $(ACL2_DEPS)
 	echo "Making ACL2 on $(LISP)"

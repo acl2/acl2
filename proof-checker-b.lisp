@@ -1,4 +1,4 @@
-; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2015, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -928,13 +928,18 @@
     (null-pool (cdr pool)))
    (t nil)))
 
-(defun initial-pspv (term displayed-goal otf-flg ens wrld splitter-output)
+(defun initial-pspv (term displayed-goal otf-flg ens wrld state splitter-output)
+
+; This is close to being equivalent to a call (make-pspv ...).  However, the
+; splitter-output is supplied as a parameter here.
+
   (change prove-spec-var *empty-prove-spec-var*
           :rewrite-constant
-          (initial-rcnst-from-ens ens wrld splitter-output)
+          (initial-rcnst-from-ens ens wrld state splitter-output)
           :user-supplied-term term
           :displayed-goal displayed-goal
-          :otf-flg otf-flg))
+          :otf-flg otf-flg
+          ))
 
 (defun pc-prove (term displayed-goal hints otf-flg ens wrld ctx state)
 
@@ -946,6 +951,7 @@
    (initialize-brr-stack state)
    (er-let* ((ttree
               (let ((pspv (initial-pspv term displayed-goal otf-flg ens wrld
+                                        state
                                         (splitter-output)))
                     (clauses (list (list term))))
                 (if (f-get-global 'in-verify-flg state) ;interactive

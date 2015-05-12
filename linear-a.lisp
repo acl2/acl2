@@ -1,4 +1,4 @@
-; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2015, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1789,6 +1789,10 @@
 ; variable and parenthesis occurrences in t2 and t1 are the same.  The
 ; lexicographic scan of t1 and t2 will be all equals until x and y are hit.
 
+  (declare (xargs :guard (and (pseudo-termp term1)
+                              (pseudo-termp term2)
+                              (alistp invisible-fns-table)
+                              (symbol-list-listp invisible-fns-table))))
   (mv-let (var-count1 fn-count1 p-fn-count1)
           (var-fn-count term1 invisible-fns-table)
           (mv-let (var-count2 fn-count2 p-fn-count2)
