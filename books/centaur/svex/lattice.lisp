@@ -229,6 +229,7 @@ this relation, i.e.:</p>
   (def-4vec-monotonicity 4vec-plus)
   (def-4vec-monotonicity 4vec-minus)
   (def-4vec-monotonicity 4vec-uminus)
+  (def-4vec-monotonicity 4vec-xdet)
   (def-4vec-monotonicity 4vec-times)
   (def-4vec-monotonicity 4vec-quotient)
   (def-4vec-monotonicity 4vec-remainder)

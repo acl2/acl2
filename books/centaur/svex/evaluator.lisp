@@ -142,6 +142,7 @@
     (*         4vec-times          (x y)               "multiplication")
     (/         4vec-quotient       (x y)               "division")
     (%         4vec-remainder      (x y)               "modulus")
+    (xdet      4vec-xdet           (x)                 "identity on binary vectors, else X")
     (<         4vec-<              (x y)               "less than")
     (==        4vec-==             (x y)               "equality")
     (==?       4vec-wildeq         (x y)               "wildcard equality")
