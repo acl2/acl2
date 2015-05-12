@@ -9202,3 +9202,300 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
       (eval `(untrace$ ,@to-untrace)))
     (when to-retrace
       (eval `(trace$ ,@to-retrace)))))
+
+;;;;;;;;;;
+;;; Start memory management code (formerly called start-sol-gc)
+;;;;;;;;;;
+
+; This section of code was suggested by Jared Davis as a way to regain
+; performance of ACL2(h) on regressions at UT CS.  Initially, these regressions
+; showed significant slowdown upon including new memoization code from Centaur
+; on 3/28/2013:
+; ; old:
+; 24338.570u 1357.200s 1:19:02.75 541.7%	0+0k 0+1918864io 0pf+0w
+; ; new:
+; 33931.460u 1017.070s 1:43:24.28 563.2%	0+0k 392+1931656io 0pf+0w
+; After restoring (start-sol-gc) in function acl2h-init, we regained the old
+; level of performance for a UT CS ACL2(h) regression, with the new memoizaion
+; code.
+
+(defun mf-looking-at (str1 str2 &key (start1 0) (start2 0))
+
+; (Mf-looking-at str1 str2 :start1 s1 :start2 s2) is non-nil if and only if
+; string str1, from location s1 to its end, is an initial segment of string
+; str2, from location s2 to its end.
+
+   (unless (typep str1 'simple-base-string)
+     (error "looking at:  ~a is not a string." str1))
+   (unless (typep str2 'simple-base-string)
+     (error "looking at:  ~a is not a string." str2))
+   (unless (typep start1 'fixnum)
+     (error "looking at:  ~a is not a fixnum." start1))
+   (unless (typep start2 'fixnum)
+     (error "looking at:  ~a is not a fixnum." start2))
+   (locally
+     (declare (simple-base-string str1 str2)
+              (fixnum start1 start2))
+     (let ((l1 (length str1)) (l2 (length str2)))
+       (declare (fixnum l1 l2))
+       (loop
+        (when (>= start1 l1) (return t))
+        (when (or (>= start2 l2)
+                  (not (eql (char str1 start1)
+                            (char str2 start2))))
+          (return nil))
+        (incf start1)
+        (incf start2)))))
+
+(defun our-uname ()
+
+; Returns nil or else a keyword, currently :darwin or :linux, to indicate the
+; result of shell command "uname".
+
+  (multiple-value-bind
+   (exit-code val)
+   (system-call+ "uname" nil)
+   (and (eql exit-code 0)
+        (stringp val)
+        (<= 6 (length val))
+        (cond ((string-equal (subseq val 0 6) "Darwin") :darwin)
+              ((string-equal (subseq val 0 5) "Linux") :linux)))))
+
+(defun meminfo (&optional arg)
+
+; With arg = nil, this function either returns 0 or else the size of the
+; physical memory.  See the code below to understand what information might be
+; returned for non-nil values of arg.
+
+  (assert (or (null arg)
+              (stringp arg)))
+  (or
+   (with-standard-io-syntax
+    (case (our-uname)
+      (:linux
+       (let ((arg (or arg  "MemTotal:")))
+         (and
+          (our-ignore-errors (probe-file "/proc/meminfo"))
+          (with-open-file
+           (stream "/proc/meminfo")
+           (let (line)
+             (loop while (setq line (read-line stream nil nil)) do
+                   (when (mf-looking-at arg line)
+                     (return
+                      (values
+                       (read-from-string line nil nil
+                                         :start (length arg)))))))))))
+      (:darwin
+       (let* ((arg (or arg "hw.memsize"))
+              (len (length arg)))
+         (multiple-value-bind
+          (exit-code val)
+          (system-call+ "sysctl" (list arg))
+          (and (eql exit-code 0)
+               (mf-looking-at arg val)
+               (mf-looking-at arg ": " :start1 len)
+               (let ((ans (read-from-string val nil nil :start (+ 2 len))))
+                 (and (integerp ans)
+                      (equal (mod ans 1024) 0)
+                      (/ ans 1024)))))))
+      (t nil)))
+   0))
+
+(defg *max-mem-usage*
+
+; This global is set in start-sol-gc.  It is an upper bound, in bytes of memory
+; used, that when exceeded results in certain garbage collection actions.
+
+; See also the centaur/misc/memory-mgmt books.
+
+  (expt 2 32))
+
+(defg *gc-min-threshold*
+
+; This is set in start-sol-gc.
+
+; See also the centaur/misc/memory-mgmt books.
+
+  (expt 2 30))
+
+(let ((physical-memory-cached-answer nil))
+(defun physical-memory () ; in KB
+  (or physical-memory-cached-answer
+      (setq physical-memory-cached-answer
+            (meminfo))))
+)
+
+#+ccl
+(defun set-and-reset-gc-thresholds ()
+
+; See start-sol-gc for a full discussion.  The comments here summarize how that
+; works out if, for example, there are 8G bytes of physical memory, just to
+; make the concepts concrete -- so it might be helpful to read the comments in
+; this function before reading the more general discussion in start-sol-gc.
+
+  (let ((n
+
+; E.g., with 8G bytes of physical memory, *max-mem-usage* is 1/8 of that --
+; i.e., 1G -- and *gc-min-threshold* is 1/4 of that -- i.e., (1/4)G.  Then here
+; we arrange to allocate enough memory after a GC to reach *max-mem-usage* = 1G
+; bytes before the next GC, unless the current memory usage is more than
+; (3/4)G, in which case we allocate the minimum of (1/4)G.
+
+         (max (- *max-mem-usage* (ccl::%usedbytes))
+              *gc-min-threshold*)))
+
+; Now set the "threshold" to the number of bytes computed above (unless that
+; would be a no-op).
+
+    (unless (eql n (ccl::lisp-heap-gc-threshold))
+      (ccl::set-lisp-heap-gc-threshold n)))
+
+; The above setting won't take effect until the next GC unless we take action.
+; Here is that action, which actually allocates the bytes computed above as
+; free memory.
+
+  (ccl::use-lisp-heap-gc-threshold)
+
+; Finally, still assuming 8G bytes of phyical memory, set the "threshold" to
+; (1/4)G.  This is how much the next GC will set aside as free memory -- at
+; least initially, but then the post-gc hook will call this function.  As
+; explained above, in the case that the current memory usage is less than
+; (3/4)G, enough free memory will be allocated so that the next GC is triggered
+; after *max-mem-usage* = 1G bytes are in use.
+
+  (unless (eql *gc-min-threshold* (ccl::lisp-heap-gc-threshold))
+    (ccl::set-lisp-heap-gc-threshold *gc-min-threshold*)))
+
+#+ccl
+(defun set-gc-strategy-builtin-delay ()
+
+; This function was called start-sol-gc through ACL2 Version_7.1.  It should
+; undo the effects of set-gc-strategy-builtin-egc, by turning off EGC and
+; enabling the delay strategy.  The list ccl::*post-gc-hook-list* should
+; contain the symbol set-and-reset-gc-thresholds after this call succeeds.
+
+; This function should probably not be invoked in recent versions of CCL,
+; instead relying on EGC for memory management, except perhaps in
+; static-hons-intensive applications.  See *acl2-egc-on*.
+
+;          Sol Swords's scheme to control GC in CCL
+;
+; The goal is to get CCL to perform a GC whenever we're using almost
+; all the physical memory, but not otherwise.
+;
+; The discussion below is self-contained, but for more discussion, relevant CCL
+; documentation is at http://ccl.clozure.com/ccl-documentation.html, Chapter
+; 16: "Understanding and Configuring the Garbage Collector".  Note that it
+; might be easier to read the comment in source function
+; set-and-reset-gc-thresholds before reading below.
+
+; The usual way of controlling GC on CCL is via LISP-HEAP-GC-THRESHOLD.  This
+; value is approximately the amount of free memory that will be allocated
+; immediately after GC.  This means that the next GC will occur after
+; LISP-HEAP-GC-THRESHOLD more bytes are used (by consing or array allocation or
+; whatever).  But this means the total memory used by the time the next GC
+; comes around is the threshold plus the amount that remained in use at the end
+; of the previous GC.  This is a problem because of the following scenario:
+;
+;  - We set the LISP-HEAP-GC-THRESHOLD to 3GB since we'd like to be able
+;    to use most of the 4GB physical memory available.
+;
+;  - A GC runs or we say USE-LISP-HEAP-GC-THRESHOLD to ensure that 3GB
+;    is available to us.
+;
+;  - We run a computation until we've exhausted this 3GB, at which point
+;    a GC occurs.
+;
+;  - The GC reclaims 1.2 GB out of the 3GB used, so there is 1.8 GB
+;    still in use.
+;
+;  - After GC, 3GB more is automatically allocated -- but this means we
+;    won't GC again until we have 4.8 GB in use, meaning we've gone to
+;    swap.
+;
+; What we really want is, instead of allocating a constant additional
+; amount after each GC, to allocate up to a fixed total amount including
+; what's already in use.  To emulate that behavior, we use the hack
+; below.  This operates as follows, assuming the same 4GB total physical
+; memory as in the above example (or, unknown physical memory that defaults to
+; 4GB as shown below, i.e., when function meminfo returns 0).
+;
+; 1. We set the LISP-HEAP-GC-THRESHOLD to (0.5G minus used bytes) and call
+; USE-LISP-HEAP-GC-THRESHOLD so that our next GC will occur when we've used a
+; total of 0.5G.
+;
+; 2. We set the threshold back to *gc-min-threshold*= 0.125GB without calling
+; USE-LISP-HEAP-GC-THRESHOLD.
+;
+; 3. Run a computation until we use up the 0.5G and the GC is called.  Say the
+; GC reclaims 0.3GB so there's 0.2GB in use.  0.125GB more (the current
+; LISP-HEAP-GC-THRESHOLD) is allocated so the ceiling is temporarily 0.325GB.
+;
+; 4. A post-GC hook runs which again sets the threshold to (0.5G minus used
+; bytes), calls USE-LISP-HEAP-GC-THRESHOLD to raise the ceiling to 0.5G, then
+; sets the threshold back to 0.125GB, and the process repeats.
+;
+; A subtlety about this scheme is that post-GC hooks runs in a separate
+; thread from the main execution.  A possible bug is that in step 4,
+; between checking the amount of memory in use and calling
+; USE-LISP-HEAP-GC-THRESHOLD, more memory might be used up by the main
+; execution, which would set the ceiling higher than we intended.  To
+; prevent this, we initially interrupted the main thread to run step 4.
+; However, discussions with Gary Byers led us to avoid calling
+; process-interrupt, which seemed to be leading to errors.
+
+; The following settings are highly heuristic.  We arrange that gc
+; occurs at 1/8 of the physical memory size in bytes, in order to
+; leave room for the gc point to grow (as per
+; set-and-reset-gc-thresholds).  If we can determine the physical
+; memory; great; otherwise we assume that it it contains at least 4GB,
+; a reasonable assumption we think for anyone using ACL2 in 2015 or beyond.
+
+  (without-interrupts ; leave us in a sane state
+   (let* ((phys (physical-memory))
+          (memsize (cond ((> phys 0) (* phys 1024)) ; to bytes
+                         (t (expt 2 32)))))
+     (setq *max-mem-usage* ; no change if we were here already
+           (min (floor memsize 8)
+                (expt 2 31)))
+     (setq *gc-min-threshold* ; no change if we were here already
+           (floor *max-mem-usage* 4)))
+   (ccl:egc nil)
+   (ccl::add-gc-hook
+
+; We use 'set-and-reset-gc-thresholds rather than #'set-and-reset-gc-thresholds
+; to ensure that ccl::remove-gc-hook will remove the hook, since an EQ test is
+; used -- though it appears that #' would also be suitable for that purpose.
+
+    'set-and-reset-gc-thresholds
+    :post-gc)
+   (set-and-reset-gc-thresholds)))
+
+#+ccl
+(defun set-gc-strategy-builtin-egc ()
+
+; This function should undo the effects of set-gc-strategy-builtin-delay, by
+; turning on EGC and disabling the delay strategy.  The list
+; ccl::*post-gc-hook-list* should not contain the symbol
+; set-and-reset-gc-thresholds after this call succeeds.
+
+  (without-interrupts ; leave us in a sane state
+   (ccl:egc t)
+   (ccl::remove-gc-hook
+
+; It appears that remove-gc-hook is simply a no-op, rather than causing an
+; error, when the argument isn't installed as a :post-gc hook.
+
+    'set-and-reset-gc-thresholds
+    :post-gc)))
+
+#+ccl
+(defvar *gc-strategy*
+  #-hons ; else initialized with set-gc-strategy in acl2h-init
+  (progn (ccl::egc nil) t))
+
+#+ccl
+(defun start-sol-gc ()
+  (error "Start-sol-gc has been replaced by set-gc-strategy (more ~%~
+          specifically, by set-gc-strategy-builtin-delay).  See :DOC ~%~
+          set-gc-strategy."))

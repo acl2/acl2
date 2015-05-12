@@ -613,6 +613,29 @@
 ;;; Modify exit-lisp to treat ecl like akcl, except using ext::quit instead of
 ;;; si::bye.
 
+#+ccl
+(defvar *acl2-egc-on* ; in "CL-USER" package; see second paragraph below
+
+; This variable provides the initial garbage collection strategy, by way of the
+; call of set-gc-strategy in acl2h-init.
+
+; This variable is in the "CL-USER" package (see comment above) because users
+; are welcome to set its value, for example by writing the form (defparameter
+; cl-user::*acl2-egc-on* nil) to acl2r.lisp before doing the build by using
+; ACL2_EGC_ON; see GNUmakefile.
+
+; We formerly turned off EGC in CCL because it didn't seem to work well with
+; memoizing worse-than-builtin and sometimes seemed buggy.  But Gary Byers made
+; changes to improve EGC, in particular its interaction with static conses,
+; starting in version 16378 (with the feature below introduced in 16384).  It
+; seems best not to mess with GC heuristics such as post-gc hooks (see
+; set-gc-strategy-builtin-delay), and instead rely on EGC.
+
+  #+static-conses-should-work-with-egc-in-ccl
+  t
+  #-static-conses-should-work-with-egc-in-ccl
+  nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                              PACKAGES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

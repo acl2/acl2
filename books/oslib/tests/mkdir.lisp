@@ -46,6 +46,7 @@
        ((unless okp)
         (raise "Error making directory ~x0." new-dir-name)
         state)
+       (- (sleep 1)) ;; BOZO shouldn't be necessary, yet I get failures sometimes...
        ((mv errp new-dirs state) (ls-subdirs "."))
        ((when errp)
         (raise "Error listing new subdirectories.")
@@ -60,6 +61,7 @@
        ((unless okp)
         (raise "Error removing directory ~x0." new-dir-name)
         state)
+       (- (sleep 1)) ;; BOZO shouldn't be necessary, yet I get failures sometimes...
        ((mv errp new-dirs state) (ls-subdirs "."))
        ((when errp)
         (raise "Error listing new subdirectories.")
