@@ -735,12 +735,12 @@ created when we process their packages, etc.</p>"
        (st (vl-hidstep-mark-interfaces mtype (car trace) ss st ctx)))
     (vl-hidtrace-mark-interfaces mtype (cdr trace) ss st ctx)))
 
-(define vl-hidsolo-mark ((mtype (member mtype '(:used :set)))
+(define vl-hidsolo-mark ((mtype        (member mtype '(:used :set)))
                          (force-bogusp booleanp)
-                         (x     vl-scopeexpr-p)
-                         (ss    vl-scopestack-p)
-                         (st    vl-lucidstate-p)
-                         (ctx   vl-context1-p))
+                         (x            vl-scopeexpr-p)
+                         (ss           vl-scopestack-p)
+                         (st           vl-lucidstate-p)
+                         (ctx          vl-context1-p))
   :returns (new-st vl-lucidstate-p)
   ;; BOZO this doesn't mark the indices used in the HID expression!!
   (b* (((mv err trace ?scopectx tail) (vl-follow-scopeexpr x ss))
@@ -755,8 +755,8 @@ created when we process their packages, etc.</p>"
        (key (make-vl-lucidkey
              :item step.item
              :scopestack (vl-normalize-scopestack step.ss)))
-       (occ (if (and (vl-hidexpr-case tail :end)
-                     (not force-bogusp))
+       (occ (if (and (not force-bogusp)
+                     (vl-hidexpr-case tail :end))
                 (make-vl-lucidocc-solo :ctx ctx :ss ss)
               (make-vl-lucidocc-tail :ctx ctx :ss ss)))
        (st  (vl-hidtrace-mark-interfaces mtype rest ss st ctx))
@@ -848,15 +848,10 @@ created when we process their packages, etc.</p>"
                                     (st    vl-lucidstate-p)
                                     (ctx   vl-context1-p))
   :returns (new-st vl-lucidstate-p)
-  (if (atom x)
-      (vl-lucidstate-fix st)
-    (vl-scopeexprlist-mark-solo
-     mtype (cdr x) ss (vl-hidsolo-mark mtype nil (car x) ss st ctx) ctx)))
-
-
-  
-
-
+  (b* (((when (atom x))
+        (vl-lucidstate-fix st))
+       (st (vl-hidsolo-mark mtype nil (car x) ss st ctx)))
+    (vl-scopeexprlist-mark-solo mtype (cdr x) ss st ctx)))
 
 (defines vl-rhsexpr-lucidcheck
 
@@ -882,15 +877,21 @@ created when we process their packages, etc.</p>"
                                    (vl-partselect-case x.part :range)))
                         (b* (((vl-range x.part) (vl-partselect->range x.part))) ;; ugh
                           (vl-hidslice-mark :used x.scope
-                                            x.part.msb x.part.lsb ss st ctx))))
+                                            x.part.msb x.part.lsb ss st ctx)))
+                       ((when (and no-indices
+                                   (vl-partselect-case x.part :plusminus)))
+                        (b* (((vl-plusminus x.part) (vl-partselect->plusminus x.part)) ;; ugh
+                             (st (vl-hidsolo-mark :used t x.scope ss st ctx)) ;; "forced bogus"
+                             (st (vl-rhsexpr-lucidcheck x.part.base ss st ctx))
+                             (st (vl-rhsexpr-lucidcheck x.part.width ss st ctx)))
+                          st)))
                     ;; BOZO something fancy like
-                    ;;    foo[a +: 5]
-                    ;;    foo[a -: 5]
                     ;;    foo[3][4]
                     ;;    foo[3][4:0]
                     ;; Eventually do something more useful with this.  For now,
-                    ;; we will just force them to be bogus? BOZO jared check this
-                    (vl-hidsolo-mark :used t x.scope ss st ctx))
+                    ;; we will just mark all of FOO as used.
+                    (vl-hidsolo-mark :used t x.scope ss st ctx) ;; "forced bogus"
+                    )
 
         :vl-call (b* ((st (vl-hidsolo-mark :used nil x.name ss st ctx))
                       (st (if x.typearg
@@ -970,15 +971,21 @@ created when we process their packages, etc.</p>"
                                  (vl-partselect-case x.part :range)))
                       (b* (((vl-range x.part) (vl-partselect->range x.part))) ;; ugh
                         (vl-hidslice-mark :set x.scope
-                                          x.part.msb x.part.lsb ss st ctx))))
+                                          x.part.msb x.part.lsb ss st ctx)))
+                     ((when (and no-indices
+                                 (vl-partselect-case x.part :plusminus)))
+                      (b* (((vl-plusminus x.part) (vl-partselect->plusminus x.part)) ;; ugh
+                           (st (vl-hidsolo-mark :set t x.scope ss st ctx)) ;; "forced bogus"
+                           (st (vl-rhsexpr-lucidcheck x.part.base ss st ctx))
+                           (st (vl-rhsexpr-lucidcheck x.part.width ss st ctx)))
+                        st)))
                   ;; BOZO something fancy like
-                  ;;    foo[a +: 5]
-                  ;;    foo[a -: 5]
                   ;;    foo[3][4]
                   ;;    foo[3][4:0]
                   ;; Eventually do something more useful with this.  For now,
                   ;; we will just mark all of FOO as used.
-                  (vl-hidsolo-mark :set t x.scope ss st ctx))
+                  (vl-hidsolo-mark :set t x.scope ss st ctx) ;; "forced bogus"
+                  )
 
       ;; :vl-call (b* ((st (vl-hidsolo-mark :used x.name ss st ctx))
       ;;               (st (if x.typearg

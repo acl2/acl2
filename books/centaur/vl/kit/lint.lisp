@@ -54,13 +54,7 @@
 
 (include-book "../transforms/cn-hooks")
 (include-book "../transforms/unparam/top")
-(include-book "../transforms/annotate/argresolve")
-;; (include-book "../transforms/annotate/resolve-indexing")
-(include-book "../transforms/annotate/origexprs")
-(include-book "../transforms/annotate/make-implicit-wires")
-(include-book "../transforms/annotate/portdecl-sign")
-(include-book "../transforms/annotate/udp-elim")
-(include-book "../transforms/annotate/type-disambiguation")
+(include-book "centaur/vl/transforms/annotate/top" :dir :system)
 
 ;(include-book "../transforms/assign-trunc")
 ;(include-book "../transforms/blankargs")
@@ -456,6 +450,16 @@ shown.</p>"
   (b* (((vl-lintconfig config) config)
        (design (cwtime (vl-design-drop-user-submodules design config.dropmods)))
 
+       (design (cwtime (vl-design-resolve-ansi-portdecls design)))
+       (design (cwtime (vl-design-resolve-nonansi-interfaceports design)))
+       (design (cwtime (vl-design-add-enumname-declarations design)))
+       (design (cwtime (vl-design-make-implicit-wires design)))
+       (design (cwtime (vl-design-portdecl-sign design)))
+       (design (cwtime (vl-design-udp-elim design)))
+
+       ;; BOZO I have no idea why we're doing this.
+       ;; Old comments:
+
        ;; You might expect that we'd immediately throw out modules that we
        ;; don't need for topmods.  Historically we did that.  But then we found
        ;; that we'd get a bunch of complaints in other modules about
@@ -465,9 +469,7 @@ shown.</p>"
        ;; mods0, so do that now:
        (design0 (vl-design-remove-unnecessary-modules config.topmods design))
 
-       (design (cwtime (vl-design-make-implicit-wires design)))
-       (design (cwtime (vl-design-portdecl-sign design)))
-       (design (cwtime (vl-design-udp-elim design)))
+
        (design (cwtime (vl-design-duplicate-detect design)))
        (design (cwtime (vl-design-portcheck design)))
        (design (cwtime (vl-design-argresolve design)))

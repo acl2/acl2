@@ -30,14 +30,16 @@
 
 /*+VL `define HAVE_VL */
 
-`ifdef HAVE_VL
-parameter top_spurious;
-parameter top_unset;
-`else
-// NCVerilog/VCS don't like parameters without initial values
-parameter top_spurious = 1;
-parameter top_unset = 1;
-`endif
+// We no longer expect to support top-level unset parameters
+
+// `ifdef HAVE_VL
+// parameter top_spurious;
+// parameter top_unset;
+// `else
+// // NCVerilog/VCS don't like parameters without initial values
+// parameter top_spurious = 1;
+// parameter top_unset = 1;
+// `endif
 
 parameter top_normal = 3;
 parameter top_unused = 4;
