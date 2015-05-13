@@ -828,6 +828,8 @@ BOOKS_SKIP_COMP += centaur/misc/memory-mgmt-logic.$(ACL2_COMP_EXT)
 # compiled file:
 BOOKS_SKIP_COMP += centaur/misc/memory-mgmt.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/ubdds/core.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += centaur/ubdds/extra-operations.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += std/strings/pretty-tests.$(ACL2_COMP_EXT)
 
 # dft-ex.acl2 specifies no compilation; getprop.lisp can give stack
 # overflow in during the load of the expansion file -- perhaps not
