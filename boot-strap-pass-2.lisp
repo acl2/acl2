@@ -1342,6 +1342,8 @@
   '(("system/top"
      (ARGLISTP)
      (ARGLISTP1 LST)
+     (ARITIES-OKP USER-TABLE)
+     (ARITY)
      (CONS-TERM1-MV2)
      (DUMB-NEGATE-LIT)
      (FETCH-DCL-FIELD)
@@ -1363,6 +1365,7 @@
      #+acl2-legacy-doc (MISSING-FMT-ALIST-CHARS1 CHAR-TO-TILDE-S-STRING-ALIST)
      (PLAUSIBLE-DCLSP LST)
      (PLAUSIBLE-DCLSP1 LST)
+     (PLIST-WORLDP-WITH-FORMALS ALIST)
      (STRIP-DCLS LST)
      (STRIP-DCLS1 LST)
      (STRIP-KEYWORD-LIST LST)
@@ -1379,8 +1382,10 @@
      (SUBST-EXPR1-LST ARGS)
      (SUBST-VAR FORM)
      (SUBST-VAR-LST L)
+     (TERM-LISTP X)
      (TERM-ORDER)
-     (TERM-ORDER1))))
+     (TERM-ORDER1)
+     (TERMP X))))
 
 (defconst *len-system-verify-guards-alist*
   (length *system-verify-guards-alist*))
