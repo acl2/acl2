@@ -1,4 +1,4 @@
-; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2015, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1086,7 +1086,7 @@
              (mv-let
               (erp ttree state)
               (prove (termify-clause-set cl-set)
-                     (make-pspv ens wrld
+                     (make-pspv ens wrld state
                                 :displayed-goal displayed-goal
                                 :otf-flg otf-flg)
                      hints ens wrld ctx state)
@@ -4745,7 +4745,7 @@
            (t
             (mv-let (erp ttree state)
                     (prove (termify-clause-set cl-set)
-                           (make-pspv ens wrld
+                           (make-pspv ens wrld state
                                       :displayed-goal displayed-goal
                                       :otf-flg otf-flg)
                            hints
@@ -8051,8 +8051,7 @@
              (t
               (mv-let (erp ttree state)
                       (prove (termify-clause-set cl-set)
-                             (make-pspv ens
-                                        wrld
+                             (make-pspv ens wrld state
                                         :displayed-goal displayed-goal
                                         :otf-flg otf-flg)
                              hints ens wrld ctx state)

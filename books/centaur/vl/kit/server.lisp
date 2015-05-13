@@ -30,6 +30,11 @@
 
 (in-package "VL")
 
+; Added by Matt K., May 2015.  Improvement observed when certification used
+; the :delay strategy:
+; 47.43 sec. vs. 55.41 sec.
+(value-triple (set-gc-strategy :delay))
+
 (include-book "shell")
 (include-book "../server/server")
 (include-book "../util/gc")

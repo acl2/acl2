@@ -123,6 +123,7 @@
 (include-book "centaur/misc/count-up" :dir :system)
 (include-book "centaur/misc/fast-alist-pop" :dir :system)
 (include-book "centaur/misc/spacewalk" :dir :system)
+(include-book "centaur/misc/dag-measure" :dir :system)
 
 ;; BOZO conflicts with something in 4v-sexpr?
 
@@ -219,7 +220,7 @@
 (include-book "rtl/rel11/lib/srt" :dir :system)
 (include-book "rtl/rel11/lib/sqrt" :dir :system)
 
-(include-book "centaur/fty/deftypes" :dir :system)
+(include-book "centaur/fty/top" :dir :system)
 
 (include-book "misc/find-lemmas" :dir :system)
 (include-book "misc/simp" :dir :system)
@@ -258,6 +259,7 @@
 (include-book "std/util/tests/top" :dir :system)
 (include-book "std/util/extensions/assert-return-thms" :dir :system)
 (include-book "centaur/misc/tshell-tests" :dir :system)
+(include-book "centaur/misc/stobj-swap-test" :dir :system)
 (include-book "oslib/tests/top" :dir :system)
 
 (include-book "centaur/ubdds/sanity-check-macros" :dir :system)

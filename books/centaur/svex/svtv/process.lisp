@@ -449,15 +449,15 @@
        (orig-overrides overrides)
        (orig-outs outs)
        (orig-internals internals)
-       ((mv err ins) (svtv-wires->lhses ins modidx moddb aliases))
-       ((when err) (raise "Error resolving inputs: ~@0" err)
-        (mv nil moddb aliases))
-       ((mv err overrides) (svtv-wires->lhses overrides modidx moddb aliases))
-       ((when err) (raise "Error resolving overrides: ~@0" err)
-        (mv nil moddb aliases))
+       ((mv errs1 ins) (svtv-wires->lhses ins modidx moddb aliases))
+       (input-err (and errs1 (msg "Errors resolving inputs:~%~@0~%" (msg-list errs1))))
+       ((mv errs2 overrides) (svtv-wires->lhses overrides modidx moddb aliases))
+       (override-err (and errs2 (msg "Errors resolving overrides:~%~@0~%" (msg-list errs2))))
        ;; Outputs and internals are exactly the same for our purposes.
-       ((mv err outs) (svtv-wires->lhses (append outs internals) modidx moddb aliases))
-       ((when err) (raise "Error resolving outputs: ~@0" err)
+       ((mv errs3 outs) (svtv-wires->lhses (append outs internals) modidx moddb aliases))
+       (output-err (and errs3 (msg "Errors resolving outputs:~%~@0~%" (msg-list errs3))))
+       ((when (or input-err override-err output-err))
+        (raise "~%~@0" (msg-list (list input-err output-err override-err)))
         (mv nil moddb aliases))
 
        ;; get the total number of phases to simulate and extend the
@@ -1178,6 +1178,7 @@ stvs-and-testing) of the @(see svex-tutorial) for more examples.</p>"
         (svex-alist-eval-with-vars outs (alist-keys svtv.inmasks)
                                    boolmasks
                                    inalist)))
+    (clear-memoize-table 'svex-eval)
     (and (not quiet)
          (progn$ (cw "~%SVTV Inputs:~%")
                  (svtv-print-alist inalist)

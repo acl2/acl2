@@ -1,4 +1,4 @@
-; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2015, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -23,6 +23,7 @@
 (mutual-recursion
 
 (defun termp (x w)
+  (declare (xargs :guard (plist-worldp-with-formals w)))
   (cond ((atom x) (legal-variablep x))
         ((eq (car x) 'quote)
          (and (consp (cdr x))
@@ -49,6 +50,7 @@
         (t nil)))
 
 (defun term-listp (x w)
+  (declare (xargs :guard (plist-worldp-with-formals w)))
   (cond ((atom x) (equal x nil))
         ((termp (car x) w) (term-listp (cdr x) w))
         (t nil)))

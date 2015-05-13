@@ -1,4 +1,4 @@
-; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2015, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -2074,11 +2074,43 @@
                         fn))
                    (t temp))))))
 
+(defun plist-worldp-with-formals (alist)
+
+; This function is like the system function PLIST-WORLDP except that here we
+; additionally require that every FORMALS property have either a true-list or
+; *ACL2-PROPERTY-UNBOUND* as its value.  This is used in the guards for ARITY
+; and TERMP.  We expect this function to hold on (w state).
+
+  (declare (xargs :guard t))
+  (cond ((atom alist) (eq alist nil))
+        (t (and (consp (car alist))
+                (symbolp (car (car alist)))
+                (consp (cdr (car alist)))
+                (symbolp (cadr (car alist)))
+                (or (not (eq (cadr (car alist)) 'FORMALS))
+                    (eq (cddr (car alist)) *ACL2-PROPERTY-UNBOUND*)
+                    (true-listp (cddr (car alist))))
+                (plist-worldp-with-formals (cdr alist))))))
+
 (defun arity (fn w)
+  (declare (xargs :guard (and (or (and (consp fn)
+                                       (consp (cdr fn))
+                                       (true-listp (cadr fn)))
+                                  (symbolp fn))
+                              (plist-worldp-with-formals w))))
   (cond ((flambdap fn) (length (lambda-formals fn)))
         (t (let ((temp (getprop fn 'formals t 'current-acl2-world w)))
              (cond ((eq temp t) nil)
                    (t (length temp)))))))
+
+(defun arities-okp (user-table w)
+  (declare (xargs :guard (and (symbol-alistp user-table)
+                              (plist-worldp-with-formals w))))
+  (cond
+   ((endp user-table) t)
+   (t (and (equal (arity (car (car user-table)) w)
+                  (cdr (car user-table)))
+           (arities-okp (cdr user-table) w)))))
 
 (defconst *user-defined-functions-table-keys*
 

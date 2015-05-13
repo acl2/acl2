@@ -823,6 +823,14 @@ BOOKS_SKIP_COMP :=
 BOOKS_SKIP_COMP += hacking/evalable-ld-printing.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/misc/memory-mgmt-logic.$(ACL2_COMP_EXT)
 
+# These depend on centaur/misc/memory-mgmt-logic, which will be
+# uncertified in other lisps and hence we won't get the target
+# compiled file:
+BOOKS_SKIP_COMP += centaur/misc/memory-mgmt.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += centaur/ubdds/core.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += centaur/ubdds/extra-operations.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += std/strings/pretty-tests.$(ACL2_COMP_EXT)
+
 # dft-ex.acl2 specifies no compilation; getprop.lisp can give stack
 # overflow in during the load of the expansion file -- perhaps not
 # surprising, given that (comp t) occurs in the .lisp file:
@@ -879,12 +887,23 @@ BOOKS_SKIP_COMP += workshops/2006/rager/support/ptest-mergesort.$(ACL2_COMP_EXT)
 
 # GCL says: "Condition in IF [or a callee]: INTERNAL-SIMPLE-ERROR:
 # Invocation history stack overflow."  Other Lisps had trouble too.
-BOOKS_SKIP_COMP += system/hons-check/memoize-tests.lisp
+BOOKS_SKIP_COMP += system/hons-check/memoize-tests.$(ACL2_COMP_EXT)
 
 # In Makefile-comp, bdd/benchmarks.$(ACL2_COMP_EXT) may depend on
 # bdd/benchmarks.lisp, but we don't want to make either, so we do this
 # explicitly:
 BOOKS_SKIP_COMP += bdd/benchmarks.$(ACL2_COMP_EXT)
+
+# Seems to have been headed for a stack overflow due to (comp t) not
+# being invoked when loading @expansion.lsp file.  Including parent
+# book too (perhaps not necessary):
+BOOKS_SKIP_COMP += system/optimize-check-aux.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += system/optimize-check.$(ACL2_COMP_EXT)
+
+# The following is a problem for CMUCL (see comment in the .lisp
+# file), so for simplicity (actually, uniformity), we skip compilation
+# in all Lisps for this book.
+BOOKS_SKIP_COMP += demos/modeling/nested-stobj-toy-isa.$(ACL2_COMP_EXT)
 
 OK_CERTS := $(filter-out $(BOOKS_SKIP_COMP), $(OK_CERTS))
 

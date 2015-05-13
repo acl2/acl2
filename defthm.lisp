@@ -1,4 +1,4 @@
-; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2015, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -3754,8 +3754,7 @@
                   :ancestors nil
                   :simplify-clause-pot-lst nil
                   :rcnst
-                  (make-rcnst ens
-                              wrld
+                  (make-rcnst ens wrld state
                               :force-info t
                               :top-clause (list term)
                               :current-clause (list term))
@@ -8813,8 +8812,7 @@
                                      goal nil instructions
                                      wrld state))
                      (t (prove goal
-                               (make-pspv ens
-                                          wrld
+                               (make-pspv ens wrld state
                                           :displayed-goal goal
                                           :otf-flg otf-flg)
                                hints ens wrld ctx state)))))
@@ -10411,7 +10409,7 @@
                                                      tterm classes instructions
                                                      wrld1 state)))
                                     (t (prove tterm
-                                              (make-pspv ens wrld1
+                                              (make-pspv ens wrld1 state
                                                          :displayed-goal term
                                                          :otf-flg otf-flg)
                                               hints ens wrld1 ctx state))))
@@ -10482,7 +10480,7 @@
                (er-let* ((tterm (translate term t t t ctx wrld state))
 ; known-stobjs = t (stobjs-out = t)
                          (ttree (prove tterm
-                                       (make-pspv ens wrld
+                                       (make-pspv ens wrld state
                                                   :displayed-goal term
                                                   :otf-flg otf-flg)
                                        hints ens wrld ctx state)))

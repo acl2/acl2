@@ -45,8 +45,4 @@
 #+(and hons Clozure)
 (include-raw "hons-memory-mgmt.lsp")
 
-#+(and hons Clozure)
-(progn!
- (set-raw-mode t)
- (when (null *hcomp-fn-macro-restore-ht*)
-   (start-sol-gc)))
+(value-triple (set-gc-strategy :delay) :on-skip-proofs t)

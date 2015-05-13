@@ -43,20 +43,23 @@
 (set-state-ok t)
 (program)
 
-(defun clean-topics-aux (x seen-names-fal)
+(defun clean-topics-aux (x seen-fal)
   ;; Remove topics we've already seen.
   (b* (((when (atom x))
-        (fast-alist-free seen-names-fal)
+        (fast-alist-free seen-fal)
         nil)
-       (name1 (cdr (assoc :name (car x))))
-
-       ((when (hons-get name1 seen-names-fal))
+       (topic1 (car x))
+       (name1  (cdr (assoc :name topic1)))
+       (lookup (hons-get name1 seen-fal))
+       ((when (and lookup
+                   ;; Special hack: don't bother reporting that we're dropping
+                   ;; something that is literally identical to what we've seen
+                   ;; before.
+                   (not (equal topic1 (cdr lookup)))))
         (cw "~|WARNING: dropping shadowed topic for ~x0.~%" name1)
-        (clean-topics-aux (cdr x) seen-names-fal))
-
-       (seen-names-fal (hons-acons name1 t seen-names-fal)))
-    (cons (car x)
-          (clean-topics-aux (cdr x) seen-names-fal))))
+        (clean-topics-aux (cdr x) seen-fal))
+       (seen-fal (hons-acons name1 topic1 seen-fal)))
+    (cons topic1 (clean-topics-aux (cdr x) seen-fal))))
 
 (defun clean-topics (x)
   (clean-topics-aux x (len x)))

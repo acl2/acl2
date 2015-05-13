@@ -1052,3 +1052,34 @@
              (msg "Ouch ~@0"
                   (msg "Bummer: ~x0 ~x1"
                        'foo 'bar)))))))
+
+; Check untouchables etc.
+
+(defun forbidden-clause-processor (cl)
+  (list (cons (list 'if *t* *nil* '(equal (big-n) x))
+              cl)))
+
+(defthm correctness-of-forbidden-clause-processor
+  (implies (and (pseudo-term-listp cl)
+                (alistp a)
+                (evl0 (conjoin-clauses
+                       (forbidden-clause-processor cl))
+                      a))
+           (evl0 (disjoin cl) a))
+  :rule-classes :clause-processor)
+
+(must-fail
+ (thm (equal x x)
+      :hints (("Goal"
+               :clause-processor
+               (:function forbidden-clause-processor)))))
+
+(defttag my-ttag)
+(set-skip-meta-termp-checks (forbidden-clause-processor))
+(defttag nil)
+
+(must-succeed
+ (thm (equal x x)
+      :hints (("Goal"
+               :clause-processor
+               (:function forbidden-clause-processor)))))

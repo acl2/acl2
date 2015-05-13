@@ -1,5 +1,11 @@
 (in-package "ACL2")
 
+; Added by Matt K., May 2015.  Improvement observed when certification used
+; the :delay strategy:
+; 38.84 sec. vs. 61.13 sec.
+; (Maybe we can delete the commented-out set-max-mem below.)
+(value-triple (set-gc-strategy :delay))
+
 (include-book "../y86/y86-asm")
 (include-book "../y86/y86-mem-init")
 (include-book "centaur/gl/gl" :dir :system)

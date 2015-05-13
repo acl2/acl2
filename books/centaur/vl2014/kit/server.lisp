@@ -29,6 +29,12 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL2014")
+
+; Added by Matt K., May 2015.  Improvement observed when certification used
+; the :delay strategy:
+; 49.60 sec. vs. 56.56 sec.
+(value-triple (set-gc-strategy :delay))
+
 (include-book "shell")
 (include-book "../server/server")
 (include-book "../util/gc")

@@ -1,4 +1,4 @@
-; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2015, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -5982,7 +5982,7 @@
    (top-clause . current-clause)
    ((splitter-output . current-literal) . oncep-override)
    (nonlinearp . cheap-linearp)
-   case-split-limitations
+   (case-split-limitations . forbidden-fns)
    . backchain-limit-rw)
   t)
 
@@ -6054,6 +6054,7 @@
         :active-theory :standard
         :rewriter-state nil
         :case-split-limitations nil
+        :forbidden-fns nil
         :splitter-output t ; initial value of state global splitter-output
         :current-clause nil
         :current-enabled-structure nil
@@ -7644,6 +7645,8 @@
           (add-to-type-alist-segments ts term (cdr segs))))))
 
 (defun merge-term-order (l1 l2)
+  (declare (xargs :guard (and (pseudo-term-listp l1)
+                              (pseudo-term-listp l2))))
   (cond ((null l1) l2)
         ((null l2) l1)
         ((term-order (car l1) (car l2))
@@ -7651,6 +7654,7 @@
         (t (cons (car l2) (merge-term-order l1 (cdr l2))))))
 
 (defun merge-sort-term-order (l)
+  (declare (xargs :guard (pseudo-term-listp l)))
   (cond ((null (cdr l)) l)
         (t (merge-term-order (merge-sort-term-order (evens l))
                              (merge-sort-term-order (odds l))))))
@@ -11020,6 +11024,87 @@
 (defabbrev activate-memo (memo)
   (if (eq memo t) :start memo))
 
+(defun intersection1-eq (x y)
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp y)
+                              (or (symbol-listp x)
+                                  (symbol-listp y)))))
+  (cond ((endp x) nil)
+        ((member-eq (car x) y) (car x))
+        (t (intersection1-eq (cdr x) y))))
+
+(defun forbidden-fns-in-term (term forbidden-fns)
+  (intersection-eq (all-fnnames term) forbidden-fns))
+
+(defun forbidden-fns-in-term-list (lst forbidden-fns)
+  (intersection-eq (all-fnnames-lst lst) forbidden-fns))
+
+(defun all-fnnames-lst-lst1 (cl-lst acc)
+  (cond ((endp cl-lst) acc)
+        (t (all-fnnames-lst-lst1 (cdr cl-lst)
+                                 (all-fnnames1 t (car cl-lst) acc)))))
+
+(defun forbidden-fns-in-term-list-list (cl-lst forbidden-fns)
+  (intersection-eq (all-fnnames-lst-lst1 cl-lst nil) forbidden-fns))
+
+(defun forbidden-fns (wrld state)
+
+; We compute a value of forbidden-fns using the values of globals
+; 'untouchable-fns and 'temp-touchable-fns and constant *ttag-fns-and-macros*.
+; We might expect it to be necessary be concerned about untouchable variables,
+; perhaps simply forbidding calls of makunbound-global and put-global; but the
+; event (def-glcp-interp-thm glcp-generic-interp-w-state-preserved ...) in
+; community book books/centaur/gl/gl-generic-interp.lisp actually calls
+; put-global.  But the live state won't be an argument to any function call in
+; the generated clause, so this isn't a concern.
+
+  (let* ((forbidden-fns0 (cond ((eq (f-get-global 'temp-touchable-fns state)
+                                    t)
+                                nil)
+                               ((f-get-global 'temp-touchable-fns state)
+                                (set-difference-eq
+                                 (global-val 'untouchable-fns wrld)
+                                 (f-get-global 'temp-touchable-fns state)))
+                               (t (global-val 'untouchable-fns wrld)))))
+    (reverse-strip-cars
+     (and (not (ttag wrld))
+
+; Although translate11 allows the use of *ttag-fns-and-macros* during the
+; boot-strap, we would be surprised to see such use.  So we save the cost of
+; the following test, but note here that it is likely OK to uncomment this
+; test.
+
+;         (not (global-val 'boot-strap-flg wrld))
+          *ttag-fns-and-macros*)
+     forbidden-fns0)))
+
+(table skip-meta-termp-checks-table nil nil
+       :guard
+       (and (or (null val)
+                (ttag world)
+                (er hard 'skip-meta-termp-checks
+                    "An active trust tag is required for setting ~x0 except ~
+                     when clearing it."
+                    'skip-meta-termp-checks-table))
+            (eq key t)
+            (or (eq val t)
+                (symbol-listp val))))
+
+(defmacro set-skip-meta-termp-checks! (x)
+  (declare (xargs :guard (or (booleanp x)
+                             (symbol-listp x))))
+  `(table skip-meta-termp-checks-table t ',x))
+
+(defmacro set-skip-meta-termp-checks (x)
+  `(local (set-skip-meta-termp-checks! ,x)))
+
+(defun skip-meta-termp-checks (fn wrld)
+  (let ((val (cdr (assoc-eq t (table-alist 'skip-meta-termp-checks-table
+                                           wrld)))))
+    (or (eq val t)
+        (and val ; optimization
+             (member-eq fn val)))))
+
 (mutual-recursion
 
 ; State is an argument of rewrite only to permit us to call ev.  In general,
@@ -13198,7 +13283,7 @@
                                     :unify-subst nil)
                               (coerce-state-to-object state)))
                        (t (list term))))
-                    (rune (access rewrite-rule lemma :rune)))
+                     (rune (access rewrite-rule lemma :rune)))
                 (with-accumulated-persistence
                  rune
                  ((the (signed-byte 30) step-limit) flg term ttree)
@@ -13213,90 +13298,169 @@
                     (mv step-limit nil term ttree))
                    ((equal term val)
                     (mv step-limit nil term ttree))
-                   ((termp val wrld)
-                    (mv-let
-                     (extra-evaled-hyp val)
-                     (cond ((and (nvariablep val)
+                   (t
+                    (let ((not-skipped
+                           (not (skip-meta-termp-checks meta-fn wrld))))
+                      (cond
+                       ((and not-skipped
+                             (not (termp val wrld)))
+                        (mv step-limit
+                            (er hard 'rewrite-with-lemma
+                                "The metafunction ~x0 produced the non-termp ~
+                                 ~x1 on the input term ~x2. The proof of the ~
+                                 correctness of ~x0 establishes that the ~
+                                 quotations of these two s-expressions have ~
+                                 the same value, but our implementation ~
+                                 additionally requires that ~x0 produce a ~
+                                 term."
+                                meta-fn val term)
+                            term ttree))
+                       ((and not-skipped
+                             (forbidden-fns-in-term
+                              val
+                              (access rewrite-constant rcnst :forbidden-fns)))
+                        (mv step-limit
+                            (er hard 'rewrite-with-lemma
+                                "The metafunction ~x0 produced the termp ~x1 ~
+                                 on the input term ~x2.  The proof of the ~
+                                 correctness of ~x0 establishes that the ~
+                                 quotations of these two s-expressions have ~
+                                 the same value, but our implementation ~
+                                 additionally requires that certain forbidden ~
+                                 function symbols not be called.  However, ~
+                                 the forbidden function symbol~#3~[ ~&3 is~/s ~
+                                 ~&3 are~] called in the term produced by ~
+                                 ~x0.  See :DOC meta and :DOC ~
+                                 set-skip-meta-termp-checks."
+                                meta-fn val term
+                                (forbidden-fns-in-term
+                                 val
+                                 (access rewrite-constant rcnst :forbidden-fns)))
+                            term ttree))
+                       (t
+                        (mv-let
+                         (extra-evaled-hyp val)
+                         (cond ((and (nvariablep val)
 ;                                (not (fquotep val))
-                                 (eq (ffn-symb val) 'if)
-                                 (equal (fargn val 3) term))
-                            (mv (fargn val 1) (fargn val 2)))
-                           (t (mv *t* val)))
-                     (let ((hyp-fn (access rewrite-rule lemma :hyps)))
-                       (mv-let
-                        (erp evaled-hyp latches)
-                        (if (eq hyp-fn nil)
-                            (mv nil *t* nil)
-                          (pstk
-                           (ev-fncall-meta hyp-fn args state)))
-                        (declare (ignore latches))
-                        (cond
-                         (erp
-                          (mv step-limit nil term ttree))
-                         ((termp evaled-hyp wrld)
-                          (let* ((vars (all-vars term))
-                                 (hyps0 (flatten-ands-in-lit
-
-; Note: The sublis-var below normalizes the explicit constant constructors,
-; e.g., (cons '1 '2) becomes '(1 . 2).
-
-                                         (sublis-var nil evaled-hyp)))
-                                 (extra-hyps (flatten-ands-in-lit
-
-; Note: The sublis-var below normalizes the explicit constant constructors,
-; e.g., (cons '1 '2) becomes '(1 . 2).
-
-                                              (sublis-var nil
-                                                          extra-evaled-hyp)))
-                                 (hyps (append? hyps0 extra-hyps))
-                                 (rule-backchain-limit
-                                  (access rewrite-rule lemma
-                                          :backchain-limit-lst))
-                                 (bad-synp-hyp-msg
-                                  (bad-synp-hyp-msg hyps0 vars nil wrld))
-                                 (bad-synp-hyp-msg-extra
-                                  (bad-synp-hyp-msg extra-hyps vars nil wrld)))
+                                     (eq (ffn-symb val) 'if)
+                                     (equal (fargn val 3) term))
+                                (mv (fargn val 1) (fargn val 2)))
+                               (t (mv *t* val)))
+                         (let ((hyp-fn (access rewrite-rule lemma :hyps)))
+                           (mv-let
+                            (erp evaled-hyp latches)
+                            (if (eq hyp-fn nil)
+                                (mv nil *t* nil)
+                              (pstk
+                               (ev-fncall-meta hyp-fn args state)))
+                            (declare (ignore latches))
                             (cond
-                             (bad-synp-hyp-msg
-                              (mv step-limit
-                                  (er hard 'rewrite-with-lemma
-                                      "The hypothesis metafunction ~x0, when ~
-                                       applied to the input term ~x1, ~
-                                       produced a term whose use of synp is ~
-                                       illegal because ~@2"
-                                      hyp-fn term bad-synp-hyp-msg)
-                                  term ttree))
-                             (bad-synp-hyp-msg-extra
-                              (mv step-limit
-                                  (er hard 'rewrite-with-lemma
-                                      "The metafunction ~x0, when applied to ~
-                                       the input term ~x1, produced a term ~
-                                       with an implicit hypothesis (see :DOC ~
-                                       meta-implicit-hypothesis), whose use ~
-                                       of synp is illegal because ~@2"
-                                      meta-fn term bad-synp-hyp-msg-extra)
-                                  term ttree))
+                             (erp
+                              (mv step-limit nil term ttree))
                              (t
-                              (sl-let
-                               (relieve-hyps-ans failure-reason unify-subst
-                                                 ttree)
-                               (rewrite-entry
-                                (relieve-hyps
+                              (let ((not-skipped
+                                     (not (skip-meta-termp-checks hyp-fn wrld))))
+                                (cond
+                                 ((and not-skipped
+                                       (not (termp evaled-hyp wrld)))
+                                  (mv step-limit
+                                      (er hard 'rewrite-with-lemma
+                                          "The hypothesis function ~x0 ~
+                                           produced the non-termp ~x1 on the ~
+                                           input term ~x2.  Our ~
+                                           implementation requires that ~x0 ~
+                                           produce a term."
+                                          hyp-fn evaled-hyp term)
+                                      term ttree))
+                                 ((and not-skipped
+                                       (forbidden-fns-in-term
+                                        evaled-hyp
+                                        (access rewrite-constant rcnst :forbidden-fns)))
+                                  (mv step-limit
+                                      (er hard 'rewrite-with-lemma
+                                          "The hypothesis function ~x0 ~
+                                           produced the termp ~x1 on the ~
+                                           input term ~x2.  Our ~
+                                           implementation additionally ~
+                                           requires that certain forbidden ~
+                                           function symbols not be called.  ~
+                                           However, the forbidden function ~
+                                           symbol~#3~[ ~&3 is~/s ~&3 are~] ~
+                                           called in the term produced by ~
+                                           ~x0.  See :DOC meta and :DOC ~
+                                           set-skip-meta-termp-checks."
+                                          hyp-fn evaled-hyp term
+                                          (forbidden-fns-in-term
+                                           evaled-hyp
+                                           (access rewrite-constant rcnst :forbidden-fns)))
+                                      term ttree))
+                                 (t
+                                  (let* ((vars (all-vars term))
+                                         (hyps0 (flatten-ands-in-lit
+
+; Note: The sublis-var below normalizes the explicit constant constructors,
+; e.g., (cons '1 '2) becomes '(1 . 2).
+
+                                                 (sublis-var nil evaled-hyp)))
+                                         (extra-hyps (flatten-ands-in-lit
+
+; Note: The sublis-var below normalizes the explicit constant constructors,
+; e.g., (cons '1 '2) becomes '(1 . 2).
+
+                                                      (sublis-var nil
+                                                                  extra-evaled-hyp)))
+                                         (hyps (append? hyps0 extra-hyps))
+                                         (rule-backchain-limit
+                                          (access rewrite-rule lemma
+                                                  :backchain-limit-lst))
+                                         (bad-synp-hyp-msg
+                                          (bad-synp-hyp-msg hyps0 vars nil wrld))
+                                         (bad-synp-hyp-msg-extra
+                                          (bad-synp-hyp-msg extra-hyps vars nil wrld)))
+                                    (cond
+                                     (bad-synp-hyp-msg
+                                      (mv step-limit
+                                          (er hard 'rewrite-with-lemma
+                                              "The hypothesis metafunction ~
+                                               ~x0, when applied to the input ~
+                                               term ~x1, produced a term ~
+                                               whose use of synp is illegal ~
+                                               because ~@2"
+                                              hyp-fn term bad-synp-hyp-msg)
+                                          term ttree))
+                                     (bad-synp-hyp-msg-extra
+                                      (mv step-limit
+                                          (er hard 'rewrite-with-lemma
+                                              "The metafunction ~x0, when ~
+                                               applied to the input term ~x1, ~
+                                               produced a term with an ~
+                                               implicit hypothesis (see :DOC ~
+                                               meta-implicit-hypothesis), ~
+                                               whose use of synp is illegal ~
+                                               because ~@2"
+                                              meta-fn term bad-synp-hyp-msg-extra)
+                                          term ttree))
+                                     (t
+                                      (sl-let
+                                       (relieve-hyps-ans failure-reason unify-subst
+                                                         ttree)
+                                       (rewrite-entry
+                                        (relieve-hyps
 
 ; The next argument of relieve-hyps is a rune on which to "blame" a
 ; possible force.  We could blame such a force on a lot of things, but
 ; we'll blame it on the metarule and the term that it's applied to.
 
-                                 rune
-                                 term
-                                 hyps
-                                 (and rule-backchain-limit
-                                      (assert$
-                                       (natp rule-backchain-limit)
-                                       (make-list
-                                        (length hyps)
-                                        :initial-element
-                                        rule-backchain-limit)))
+                                         rune
+                                         term
+                                         hyps
+                                         (and rule-backchain-limit
+                                              (assert$
+                                               (natp rule-backchain-limit)
+                                               (make-list
+                                                (length hyps)
+                                                :initial-element
+                                                rule-backchain-limit)))
 
 ; The meta function has rewritten term to val and has generated a
 ; hypothesis called evaled-hyp.  Now ignore the metafunction and just
@@ -13305,13 +13469,13 @@
 ; themselves.  There may be additional vars in both evaled-hyp and in
 ; val.  But they are free at the time we do this relieve-hyps.
 
-                                 (pairlis$ vars vars)
-                                 nil ; allp=nil for meta rules
-                                 )
-                                :obj nil       ; ignored
-                                :geneqv nil    ; ignored
-                                :pequiv-info nil ; ignored
-                                )
+                                         (pairlis$ vars vars)
+                                         nil ; allp=nil for meta rules
+                                         )
+                                        :obj nil         ; ignored
+                                        :geneqv nil      ; ignored
+                                        :pequiv-info nil ; ignored
+                                        )
 
 ; If relieve hyps succeeds we get back a unifying substitution that extends
 ; the identity substitution above.  This substitution might bind free vars
@@ -13321,70 +13485,52 @@
 ; brkpt functions?  No, because we don't break on meta rules.  But perhaps we
 ; should consider allowing breaks on meta rules.
 
-                               (declare (ignore failure-reason))
-                               (cond
-                                (relieve-hyps-ans
-                                 (sl-let
-                                  (rewritten-rhs ttree)
-                                  (with-accumulated-persistence
-                                   rune
-                                   ((the (signed-byte 30) step-limit)
-                                    rewritten-rhs ttree)
+                                       (declare (ignore failure-reason))
+                                       (cond
+                                        (relieve-hyps-ans
+                                         (sl-let
+                                          (rewritten-rhs ttree)
+                                          (with-accumulated-persistence
+                                           rune
+                                           ((the (signed-byte 30) step-limit)
+                                            rewritten-rhs ttree)
 
 ; This rewrite of the body is considered a success unless the parent with-acc-p
 ; fails.
 
-                                   t
-                                   (rewrite-entry (rewrite
+                                           t
+                                           (rewrite-entry (rewrite
 
 ; Note: The sublis-var below normalizes the explicit constant
 ; constructors in val, e.g., (cons '1 '2) becomes '(1 . 2).
 
-                                                   (sublis-var nil val)
+                                                           (sublis-var nil val)
 
 ; At one point we ignored the unify-subst constructed above and used a
 ; nil here.  That was unsound if val involved free vars bound by the
 ; relief of the evaled-hyp.  We must rewrite val under the extended
 ; substitution.  Often that is just the identity substitution.
 
-                                                   unify-subst
-                                                   'meta))
-                                   :conc
-                                   hyps)
-                                  (mv step-limit t rewritten-rhs
+                                                           unify-subst
+                                                           'meta))
+                                           :conc
+                                           hyps)
+                                          (mv step-limit t rewritten-rhs
 
 ; Should we be pushing executable counterparts into ttrees when we applying
 ; metafunctions on behalf of meta rules?  NO:  We should only do that if the
 ; meta-rule's use is sensitive to whether or not they're enabled, and it's not
 ; -- all that matters is if the rule itself is enabled.
 
-                                      (push-lemma
-                                       (geneqv-refinementp
-                                        (access rewrite-rule lemma
-                                                :equiv)
-                                        geneqv
-                                        wrld)
-                                       (push-lemma+ rune ttree rcnst ancestors
-                                                    val rewritten-rhs)))))
-                                (t (mv step-limit nil term ttree))))))))
-                         (t (mv step-limit
-                                (er hard 'rewrite-with-lemma
-                                    "The hypothesis function ~x0 produced the ~
-                                    non-termp ~x1 on the input term ~x2.  Our ~
-                                    implementation requires that ~x0 produce ~
-                                    a term."
-                                    hyp-fn evaled-hyp term meta-fn)
-                                term ttree)))))))
-                   (t (mv step-limit
-                          (er hard 'rewrite-with-lemma
-                              "The metafunction ~x0 produced the non-termp ~
-                               ~x1 on the input term ~x2. The proof of the ~
-                               correctness of ~x0 establishes that the ~
-                               quotations of these two s-expressions have the ~
-                               same value, but our implementation ~
-                               additionally requires that ~x0 produce a term."
-                              meta-fn val term)
-                          term ttree)))))))
+                                              (push-lemma
+                                               (geneqv-refinementp
+                                                (access rewrite-rule lemma
+                                                        :equiv)
+                                                geneqv
+                                                wrld)
+                                               (push-lemma+ rune ttree rcnst ancestors
+                                                            val rewritten-rhs)))))
+                                        (t (mv step-limit nil term ttree))))))))))))))))))))))))
              (t (mv step-limit nil term ttree))))
            ((not (geneqv-refinementp (access rewrite-rule lemma :equiv)
                                      geneqv
@@ -13456,8 +13602,8 @@
                                           (access rewrite-rule
                                                   lemma
                                                   :nume))))
-                             :obj nil ; ignored
-                             :geneqv nil ; ignored
+                             :obj nil         ; ignored
+                             :geneqv nil      ; ignored
                              :pequiv-info nil ; ignored
                              )
                             (cond

@@ -43,8 +43,17 @@
 ; certified in a reasonable amount of time, even on a modest machine.
 
 (in-package "ACL2")
+
+; Added by Matt K., May 2015.  Improvement observed when certification used
+; the :delay strategy:
+; 133.73 sec. vs. 140.53 sec.
+(value-triple (set-gc-strategy :delay))
+
 (include-book "intro")
-(value-triple (set-max-mem (* 3 (expt 2 30))))
+
+; Commented out by Matt K. since set-gc-strategy call above should do the job:
+; (value-triple (set-max-mem (* 3 (expt 2 30))))
+
 ; cert_param: (hons-only)
 
 

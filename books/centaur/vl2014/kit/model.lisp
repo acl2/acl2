@@ -29,6 +29,12 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL2014")
+
+; Added by Matt K., May 2015.  Improvement observed when certification used
+; the :delay strategy:
+; 109.95 sec. vs. 116.03 sec.
+(value-triple (set-gc-strategy :delay))
+
 (include-book "centaur/esim/defmodules" :dir :system)
 (include-book "centaur/getopt/top" :dir :system)
 (include-book "std/io/read-file-characters" :dir :system)

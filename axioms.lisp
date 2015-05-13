@@ -1,4 +1,4 @@
-; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2015, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -12629,6 +12629,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     print-clause-id-okp
     too-many-ifs-post-rewrite
     too-many-ifs-pre-rewrite
+
+    set-gc-strategy gc-strategy
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -12937,7 +12939,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; The reason MCL needs special treatment is that (char-code #\Newline) = 13 in
 ; MCL, not 10.  See also :DOC version.
 
-; ACL2 Version 7.0
+; ACL2 Version 7.1
 
 ; We put the version number on the line above just to remind ourselves to bump
 ; the value of state global 'acl2-version, which gets printed out with the
@@ -12963,7 +12965,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; reformatting :DOC comments.
 
                   ,(concatenate 'string
-                                "ACL2 Version 7.0"
+                                "ACL2 Version 7.1"
                                 #+non-standard-analysis
                                 "(r)"
                                 #+(and mcl (not ccl))
@@ -26153,7 +26155,7 @@ Lisp definition."
         'time-tracker))
    ((and (not (booleanp tag))
          (not (member-eq kwd
-                         '(:init :end :print? :stop :start))))
+                         '(:init :end :print? :stop :start :start!))))
     (er hard? 'time-tracker
         "Illegal second argument for ~x0: ~x1.  See :DOC time-tracker."
         'time-tracker
@@ -26189,7 +26191,8 @@ Lisp definition."
         (:end    (tt-end tag))
         (:print? (tt-print? tag min-time msg))
         (:stop   (tt-stop tag))
-        (:start  (tt-start tag)))
+        (:start  (tt-start tag))
+        (:start! (tt-start tag t)))
       nil)))
 
 #-acl2-par
@@ -26582,3 +26585,41 @@ Lisp definition."
   (declare (xargs :guard val))
   (declare (ignore val term))
   t)
+
+(defconst *gc-strategy-alist*
+  '((:egc   . set-gc-strategy-builtin-egc)
+    (:delay . set-gc-strategy-builtin-delay)))
+
+(defun set-gc-strategy (op)
+
+; The first call of this function cannot be made with op = :current, since
+; *gc-strategy* will not yet be bound.
+
+  (declare (xargs :guard (assoc-eq op *gc-strategy-alist*))
+           #+(and ccl (not acl2-loop-only))
+           (special *gc-strategy*))
+  #-acl2-loop-only
+  #+ccl
+  (let* ((op (if (eq op :current) *gc-strategy* op))
+         (fn (cdr (assoc-eq op *gc-strategy-alist*))))
+    (assert (and (symbolp fn)
+                 (fboundp fn)))
+    (funcall fn op)
+    (setq *gc-strategy* op))
+  #-ccl
+  (cw "; Note: Set-gc-strategy is a no-op in this host Lisp.~|")
+  op)
+
+(defun gc-strategy (state)
+  (declare (xargs :stobjs state)
+           #+(and ccl (not acl2-loop-only))
+           (special *gc-strategy*))
+  #+(not acl2-loop-only)
+  (when (live-state-p state)
+    (return-from
+     gc-strategy
+     (value #+ccl
+            *gc-strategy*
+            #-ccl
+            (cw "; Note: Set-gc-strategy is a no-op in this host Lisp.~|"))))
+  (read-acl2-oracle state))

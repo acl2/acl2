@@ -1,4 +1,4 @@
-; ACL2 Version 7.0 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 7.1 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2015, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1035,7 +1035,7 @@ consider (also for subsequent \"n\" and \"p\" commands) only
 descendents of the topic supplied in response to a prompt."
 
   (interactive "P")
-  (acl2-doc-set-limit-topic arg)
+  (acl2-doc-set-limit-topic str)
   (call-interactively 'acl2-doc-re-search-main))
 
 (defun acl2-doc-search-next ()
