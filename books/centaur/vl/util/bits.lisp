@@ -29,15 +29,13 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-;; (include-book "defs")
 (include-book "std/util/defenum" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
 (include-book "centaur/fty/deftypes" :dir :system)
 (local (std::add-default-post-define-hook :fix))
 
-(defenum vl-bit-p
-  (:vl-0val :vl-1val :vl-xval :vl-zval)
-  :parents (vl-weirdint-p)
+(defxdoc vl-bit
+  :parents (vl-weirdint vl-extint)
   :short "Representation of a single Verilog bit (0, 1, X, or Z)."
 
   :long "<p>Verilog has four register-transfer level values, @('0'), @('1'),
@@ -50,6 +48,11 @@ accepted by @('vl-bit-p'):</p>
  <li>@(':vl-xval') means X, and</li>
  <li>@(':vl-zval') means Z.</li>
 </ul>")
+
+(defenum vl-bit-p
+  (:vl-0val :vl-1val :vl-xval :vl-zval)
+  :parents (vl-bit)
+  :short "Recognizer for a single bit.")
 
 (fty::deflist vl-bitlist
   :elt-type vl-bit-p
@@ -86,6 +89,26 @@ That is, it returns one of the characters: 0, 1, X, or Z.</p>"
   :returns (str stringp :rule-classes :type-prescription)
   (implode (vl-bitlist->charlist x)))
 
+(define vl-bitlist-nonempty-fix ((x vl-bitlist-p))
+  :returns (xx vl-bitlist-p)
+  :guard (consp x)
+  :inline t
+  (mbe :logic
+       (if (atom x)
+           (list :vl-0val)
+         (vl-bitlist-fix x))
+       :exec x)
+  ///
+  (defret consp-of-vl-bitlist-nonempty-fix
+    (consp xx)
+    :rule-classes :type-prescription)
+
+  (defret vl-bitlist-nonempty-fix-idempotent
+    (implies (consp x)
+             (equal xx
+                    (vl-bitlist-fix x)))))
+
+
 (defenum vl-timeunit-p
   (:vl-s
    :vl-ms
@@ -111,4 +134,5 @@ That is, it returns one of the characters: 0, 1, X, or Z.</p>"
       (:vl-fs "fs")
       (otherwise (progn$ (impossible)
                          "s")))))
+
 

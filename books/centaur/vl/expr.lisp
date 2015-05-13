@@ -45,7 +45,71 @@
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
+(defxdoc expressions
+  :parents (syntax)
+  :short "Representation of expressions, data types, and other related,
+mutually recursive concepts."
+
+  :long "<p>SystemVerilog has a very rich expression language.  It has a rich
+collection of literals, including integer literals that can be sized and
+unsized, ``weird'' integers like @('4'10xz'), infinitely extended integers like
+@(''0'), reals, times, strings, etc.  It has many familiar C-like operators and
+numerous extended C-like operators.  It has a rich operand syntax that allows
+for scoping, indexing into the module hierarchy and structures, and for many
+kinds of bit/range selects into wires, arrays, etc.  It has certain casting and
+function call operators that allow for the use of <b>data types directly in
+expressions</b>, which makes expressions and data types mutually recursive
+concepts.  It has nested attributes that can be attached to almost any
+expression as annotations for tools.</p>
+
+<p>These expressions occur everywhere throughout a SystemVerilog design: ports,
+parameters, assignments, instances, statements&mdash;pretty much everywhere.
+This complexity and frequency of usage makes a good representation of
+expressions especially important.  A major differences between @(see vl2014)
+and @(see vl) is that VL uses a new, more mutually recursive, and more strongly
+typed expression representation.  See @(see new-expression-representation) for
+some discussion about the motivation for this change.</p>")
+
 (local (xdoc::set-default-parents expressions))
+
+(defxdoc new-expression-representation
+  :short "Notes about the new expression representation in @(see vl), and how
+and why it diverges from the @(see vl2014::expressions)."
+
+  :long "<p>In earlier versions of VL such as @(see vl2014), we used a fairly
+<see topic='@(url vl2014::expressions)'>simple, AST-like representation</see>.
+This representation had some nice features: it kept mutual recursion to a
+minimum and made it easy to recur through expressions.  However, it also had
+some severe weaknesses.</p>
+
+<p>The most significant of these was the lack of type safety.  We often
+expected expressions to have certain shapes.  For instance, we typically
+expected that any hierarchical identifier, like @('foo.bar[2].baz'), would
+consist of special \"hid pieces\" joined together by certain \"hid dot\" and
+\"hid array index\" operators with a certain recursive structure.  But the
+expression representation did not enforce this, so nothing prevented you from
+creating nonsensical expressions like @('foo.(3 + 4).baz').</p>
+
+<p>That by itself is not necessarily so bad&mdash;don't create nonsense
+expressions and you don't have a problem.  But it turned out to be very
+problematic when writing code to process expressions.  VL's many transforms and
+utilities always had to be on guard against such malformed expressions.  This
+could be done by adding guards or explicit tests that expressions were
+sensible.  The eventual result was copious error handling code, difficult and
+tedious proofs about well-formedness (e.g., see @(see vl2014::welltyped), and
+additional interfacing layers such as the @(see vl2014::hid-tools) to hide the
+problem.  These layers became ever more complex as we implemented more of
+SystemVerilog, e.g., scope expressions and data type indexing greatly
+complicated the handling of hierarchical identifiers.</p>
+
+<p>In light of these problems, and in light of our improving ability to handle
+@(see mutual-recursion) via macro libraries such as @(see fty::fty) and @(see
+defines), we decided to overhaul the expression representation and replace it
+with a much more strongly typed, mutually recursive approach.</p>")
+
+
+
+
 ;; (defoption maybe-string stringp :pred maybe-stringp
 ;;   ;; BOZO misplaced, also has documentation issues
 ;;   :parents nil

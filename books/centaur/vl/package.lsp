@@ -38,6 +38,10 @@
 (include-book "centaur/fty/portcullis" :dir :system)
 (include-book "centaur/depgraph/portcullis" :dir :system)
 
+;; Not strictly necessary, but having the vl2014 package defined is useful when
+;; writing documentation that discusses differences between VL and VL2014.
+(include-book "centaur/vl2014/portcullis" :dir :system)
+
 (defmacro multi-union-eq (x y &rest rst)
   (xxxjoin 'union-eq (list* x y rst)))
 

@@ -839,3 +839,31 @@ versions of the standard.  We currently have some support for:</p>
 <li>@(':system-verilog-2012') corresponds to IEEE Std 1800-2012.</li>
 </ul>")
 
+
+
+
+;; (defoption maybe-string stringp :pred acl2::maybe-stringp$inline
+;;   ;; BOZO misplaced, also has documentation issues
+;;   :parents nil
+;;   :fix maybe-string-fix
+;;   :equiv maybe-string-equiv)
+
+(define maybe-string-fix ((x maybe-stringp))
+  :returns (xx maybe-stringp)
+  :hooks nil
+  (mbe :logic (and x (str-fix x))
+       :exec x)
+  ///
+  (defthm maybe-string-fix-when-maybe-stringp
+    (implies (maybe-stringp x)
+             (equal (maybe-string-fix x) x)))
+
+  (defthm maybe-string-fix-under-iff
+    (iff (maybe-string-fix x) x))
+
+  (fty::deffixtype maybe-string :pred maybe-stringp :fix maybe-string-fix
+    :equiv maybe-string-equiv :define t :forward t)
+
+  (defrefinement maybe-string-equiv streqv
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (enable streqv))))))
