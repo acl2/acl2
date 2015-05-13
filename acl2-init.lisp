@@ -721,9 +721,12 @@ implementations.")
    *acl2-snapshot-string*
 
    "~a"
-   #+hons
-   "~%~% Includes support for hash cons, memoization, and applicative hash~
-    ~% tables.~%"
+
+; Here, we formerly printed "Includes support for hash cons, memoization, and
+; applicative hash tables."  Now that ACL2(c) is deprecated, we have decided
+; that this is no longer appropriate to print (after all, we don't say that
+; ACL2 includes support for rewriting).
+
    #-hons
    "~%~% WARNING: ACL2(c) is deprecated and will likely be unsupported or~
     ~% even eliminated in future releases.~%"
@@ -1170,78 +1173,79 @@ implementations.")
 (defun acl2-default-restart ()
   (if *acl2-default-restart-complete*
       (return-from acl2-default-restart nil))
+  (let ((produced-by-save-exec-p *lp-ever-entered-p*))
+    (proclaim-optimize) ; see comment in proclaim-optimize
+    (setq *lp-ever-entered-p* nil)
+    (#+cltl2
+     common-lisp-user::acl2-set-character-encoding
+     #-cltl2
+     user::acl2-set-character-encoding)
 
-  (proclaim-optimize) ; see comment in proclaim-optimize
-  (setq *lp-ever-entered-p* nil)
-  (#+cltl2
-   common-lisp-user::acl2-set-character-encoding
-   #-cltl2
-   user::acl2-set-character-encoding)
+    (fix-default-pathname-defaults)
 
-  (fix-default-pathname-defaults)
-
-  #+ccl
-  (progn
+    #+ccl
+    (progn
 
 ; In CCL, print greeting now, rather than upon first re-entry to ACL2 loop.
 ; Here we follow a suggestion from Gary Byers.
 
-    (when *print-startup-banner*
-      (format t "~&Welcome to ~A ~A!~%"
-              (lisp-implementation-type)
-              (lisp-implementation-version)))
-    (setq ccl::*inhibit-greeting* t))
+      (when *print-startup-banner*
+        (format t "~&Welcome to ~A ~A!~%"
+                (lisp-implementation-type)
+                (lisp-implementation-version)))
+      (setq ccl::*inhibit-greeting* t))
 
-  #+hons (qfuncall acl2h-init)
+    #+hons (when (not produced-by-save-exec-p)
+             (qfuncall acl2h-init))
 
-  #+gcl
-  (progn
+    #+gcl
+    (progn
 
 ; Some recent versions of GCL (specifically, 2.6.9 in Sept. 2013) do not print
 ; the startup banner until we first exit the loop.  So we handle that situation
 ; much as we handle a similar issue for CCL above, following GCL source file
 ; lsp/gcl_top.lsp.
 
-    (when (and *print-startup-banner*
-               (boundp 'si::*system-banner*))
-      (format t si::*system-banner*)
-      (setq *saved-system-banner* si::*system-banner*)
-      (makunbound 'si::*system-banner*)
-      (when (boundp 'si::*tmp-dir*)
-        (format t "Temporary directory for compiler files set to ~a~%"
-                si::*tmp-dir*)))
+      (when (and *print-startup-banner*
+                 (boundp 'si::*system-banner*))
+        (format t si::*system-banner*)
+        (setq *saved-system-banner* si::*system-banner*)
+        (makunbound 'si::*system-banner*)
+        (when (boundp 'si::*tmp-dir*)
+          (format t "Temporary directory for compiler files set to ~a~%"
+                  si::*tmp-dir*)))
 ; Growing the sbits array just before si::save-system doesn't seem to avoid
 ; triggering a call of hl-hspace-grow-sbits when the first static hons is
 ; created.  So we do the grow here, i.e., after starting ACL2(h).
-    #+(and hons static-hons)
-    (hl-hspace-grow-sbits (hl-staticp (cons nil nil)) *default-hs*))
+      #+(and hons static-hons)
+      (hl-hspace-grow-sbits (hl-staticp (cons nil nil)) *default-hs*))
 
-  (when *print-startup-banner*
-    (format t
-            *saved-string*
-            *copy-of-acl2-version*
-            (saved-build-dates :terminal)
-            (cond (*saved-mode*
-                   (format nil "~% Initialized with ~a." *saved-mode*))
-                  (t ""))
-            (eval '(latest-release-note-string)) ; avoid possible warning
-            ))
-  (maybe-load-acl2-init)
-  (eval `(in-package ,*startup-package-name*))
+    (when *print-startup-banner*
+      (format t
+              *saved-string*
+              *copy-of-acl2-version*
+              (saved-build-dates :terminal)
+              (cond (*saved-mode*
+                     (format nil "~% Initialized with ~a." *saved-mode*))
+                    (t ""))
+              (eval '(latest-release-note-string)) ; avoid possible warning
+              ))
+    (maybe-load-acl2-init)
+    (eval `(in-package ,*startup-package-name*))
 
 ; The following two lines follow the recommendation in Allegro CL's
 ; documentation file doc/delivery.htm.
 
-  #+allegro (tpl:setq-default *package* (find-package *startup-package-name*))
-  #+allegro (rplacd (assoc 'tpl::*saved-package*
-                           tpl:*default-lisp-listener-bindings*)
-                    'common-lisp:*package*)
-  #+allegro (lp)
-  #+lispworks (lp)
-  #+ccl (eval '(lp)) ; using eval to avoid compiler warning
+    #+allegro (tpl:setq-default *package* (find-package *startup-package-name*))
+    #+allegro (rplacd (assoc 'tpl::*saved-package*
+                             tpl:*default-lisp-listener-bindings*)
+                      'common-lisp:*package*)
+    #+allegro (lp)
+    #+lispworks (lp)
+    #+ccl (eval '(lp)) ; using eval to avoid compiler warning
 
-  (setq *acl2-default-restart-complete* t)
-  nil)
+    (setq *acl2-default-restart-complete* t)
+    nil))
 
 #+cmu
 (defun cmulisp-restart ()

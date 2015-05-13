@@ -23,6 +23,7 @@
 (mutual-recursion
 
 (defun termp (x w)
+  (declare (xargs :guard (plist-worldp-with-formals w)))
   (cond ((atom x) (legal-variablep x))
         ((eq (car x) 'quote)
          (and (consp (cdr x))
@@ -49,6 +50,7 @@
         (t nil)))
 
 (defun term-listp (x w)
+  (declare (xargs :guard (plist-worldp-with-formals w)))
   (cond ((atom x) (equal x nil))
         ((termp (car x) w) (term-listp (cdr x) w))
         (t nil)))
