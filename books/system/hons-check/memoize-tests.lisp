@@ -32,6 +32,12 @@
 ; errors in LispWorks and Allegro CL (at least).
 
 (in-package "ACL2")
+
+; Added by Matt K., May 2015.  Improvement observed when certification used
+; the :delay strategy:
+; 92.53 sec. vs. 314.30 sec.
+(value-triple (set-gc-strategy :delay))
+
 (include-book "misc/assert" :dir :system)
 (include-book "std/lists/flatten" :dir :system)
 (include-book "std/util/bstar" :dir :system)

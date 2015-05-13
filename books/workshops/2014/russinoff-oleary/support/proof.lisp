@@ -1,5 +1,10 @@
 (in-package "ACL2")
 
+; Added by Matt K., May 2015.  Improvement observed when certification used
+; the :delay strategy:
+; 18.90 sec. vs. 27.20 sec.
+(value-triple (set-gc-strategy :delay))
+
 (include-book "rtl/rel9/lib/top" :dir :system)   ;; The basic RTL library
 
 (include-book "rtl/rel9/lib/mult" :dir :system)  ;; The Booth multiplication book

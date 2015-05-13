@@ -4870,9 +4870,9 @@
 (defun-one-output acl2h-init ()
 
 ; ACL2-DEFAULT-RESTART is called whenever a saved image for any version of ACL2
-; is started up.  For ACL2(h), ACL2-DEFAULT-RESTART calls ACL2H-INIT.  Although
-; we expect ACL2-DEFAULT-RESTART to be called only once, nevertheless for
-; robustness we code ACL2H-INIT so that it may be called multiple times.
+; is started up.  For ACL2(h), ACL2-DEFAULT-RESTART calls ACL2H-INIT only the
+; first time we save an image, not after save-exec, so that *print-array* and
+; the gc-strategy persist after save-exec.
 
 ; (memoize-init) ; skipped, since this call is in exit-boot-strap-mode
 
