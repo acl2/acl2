@@ -259,6 +259,7 @@
 (include-book "std/util/tests/top" :dir :system)
 (include-book "std/util/extensions/assert-return-thms" :dir :system)
 (include-book "centaur/misc/tshell-tests" :dir :system)
+(include-book "centaur/misc/stobj-swap-test" :dir :system)
 (include-book "oslib/tests/top" :dir :system)
 
 (include-book "centaur/ubdds/sanity-check-macros" :dir :system)
