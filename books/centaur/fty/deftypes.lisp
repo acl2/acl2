@@ -3913,25 +3913,33 @@
   ;; Returns (mv events state)
   (declare (ignorable state))
   (b* (((flexlist x) x)
-       (short (getarg :short nil kwd-alist))
-       (long (getarg :long nil kwd-alist))
-       ((unless (or short long))
-        (mv nil state)))
-    (mv `((defxdoc ,x.name :parents ,parents
-            :short ,short :long ,long))
+       (parents (getarg :parents parents kwd-alist))
+       (short   (or (getarg :short nil kwd-alist)
+                    (cat "A list of @(see? " (xdoc::full-escape-symbol x.elt-type)
+                         ") objects.")))
+       (long    (or (getarg :long nil kwd-alist)
+                    (cat "<p>This is an ordinary @(see fty::deflist).</p>"))))
+    (mv `((defxdoc ,x.name
+            :parents ,parents
+            :short ,short
+            :long ,long))
         state)))
 
 (defun flexalist->defxdoc (x parents kwd-alist state)
   ;; Returns (mv events state)
   (declare (ignorable state))
   (b* (((flexalist x) x)
-       (short (getarg :short nil kwd-alist))
-       (long (getarg :long nil kwd-alist)))
-    (if (or short long)
-        (mv `((defxdoc ,x.name :parents ,parents
-                :short ,short :long ,long))
-            state)
-      (mv nil state))))
+       (parents (getarg :parents parents kwd-alist))
+       (short   (or (getarg :short nil kwd-alist)
+                    (cat "An alist mapping @(see? " (xdoc::full-escape-symbol x.key-type)
+                         ") to @(see? " (xdoc::full-escape-symbol x.val-type) ").")))
+       (long    (or (getarg :long nil kwd-alist)
+                    (cat "<p>This is an ordinary @(see fty::defalist).</p>"))))
+    (mv `((defxdoc ,x.name
+            :parents ,parents
+            :short ,short
+            :long ,long))
+        state)))
 
 (defun defprod-field-doc (x acc base-pkg state)
   (b* (((flexprod-field x) x)
@@ -3991,9 +3999,10 @@
 (defun defprod-main-autodoc (x parents kwd-alist base-pkg state)
   ;; Returns (mv events state)
   (b* (((flexsum x) x)
-       (prod  (car x.prods))
-       (short (cdr (assoc :short kwd-alist)))
-       (long  (cdr (assoc :long kwd-alist)))
+       (prod    (car x.prods))
+       (parents (getarg :parents parents kwd-alist))
+       (short   (cdr (assoc :short kwd-alist)))
+       (long    (cdr (assoc :long kwd-alist)))
        (acc  nil)
        (acc  (revappend-chars "<p>This is a product type introduced by @(see fty::defprod).</p>" acc))
        (acc  (cons #\Newline acc))
@@ -4257,15 +4266,14 @@ a @('" name-plain "') structure.  For example:</p>
     (equal (" kind-fn-str " x) :" kind1-str ")
 })
 
-<p>Why is it safer?  When using the @('equal') form, there is no static
-checking being done to ensure that, e.g., @(':" kind1-str "') is a valid kind
-of " name-link " structure.  This means there is nothing to save you if, later,
-you change the kind keyword for this type from @(':" kind1-str "') to something
-else.  It also means you get no help if you just make a typo when writing the
-@(':" kind1-str "') symbol.  Over the course of developing VL, we found that
-such issues were very frequent sources of errors!</p>
-
-<p><b>BOZO</b> Wait, is this even implemented?</p>
+<p>Why is using " case-str " safer?  When we directly inspect the kind with
+@('equal'), there is no static checking being done to ensure that, e.g.,
+@(':" kind1-str "') is a valid kind of " name-link " structure.  That means
+there is nothing to save you if, later, you change the kind keyword for this
+type from @(':" kind1-str "') to something else.  It also means you get no
+help if you just make a typo when writing the @(':" kind1-str "') symbol.
+Over the course of developing VL, we found that such issues were very
+frequent sources of errors!</p>
 
 <h3>Long Form</h3>
 
@@ -4276,11 +4284,14 @@ on the kind of structure you are looking at.  A typical example would be:</p>
     (" case-str " x" examples ")
 })
 
-<p>Note that you can freely rearrange the order the cases and also use
+<p>It is also possible to consolidate ``uninteresting'' cases using
 @(':otherwise').</p>
 
-<p>The case macro automatically binds the fields of @('x') for you, so that you
-can access them using the @(see defprod)-style @('foo.bar') style.</p>")))))
+<p>For convenience, the case macro automatically binds the fields of @('x') for
+you, as appropriate for each case.  That is, in the @(':" kind1-str "') case,
+you can use @(see defprod)-style @('foo.bar') style accessors for @('x')
+without having to explicitly add a @('" kind1-str "') @(see b*)
+binder.</p>")))))
 
 (defun deftagsum->defxdoc (x parents kwd-alist base-pkg state)
   ;; Returns (mv events state)
@@ -4350,16 +4361,13 @@ can access them using the @(see defprod)-style @('foo.bar') style.</p>")))))
   ;; Returns (mv events state)
   (declare (ignorable x parents base-pkg))
   (b* (((flexsum x) x)
-       (short (cdr (assoc :short kwd-alist)))
-       (long  (cdr (assoc :long kwd-alist)))
-       (acc   nil)
        ((fixtype base) (cdr (assoc :basetype x.kwd-alist)))
-       (acc   (revappend-chars "<p>This is an option type based on @(see " acc))
-       (acc   (revappend-chars (symbol-name base.name) acc))
-       (acc   (revappend-chars "), introduced by @(see fty::defoption).</p>" acc))
-       (acc   (cons #\Newline acc))
-       (acc   (revappend-chars (or long "") acc))
-       (long  (rchars-to-string acc))
+       (short (or (cdr (assoc :short kwd-alist))
+                  (str::cat "Option type; @(see? "
+                            (xdoc::full-escape-symbol base.name)
+                            ") or @('nil').")))
+       (long  (or (cdr (assoc :long kwd-alist))
+                  "<p>This is an option type introduced by @(see fty::defoption).</p>"))
        (main-doc `((defxdoc ,x.name
                      :parents ,parents
                      :short ,short
@@ -4451,6 +4459,7 @@ can access them using the @(see defprod)-style @('foo.bar') style.</p>")))))
        (parents-look (assoc :parents x.kwd-alist))
        (short        (getarg :short nil x.kwd-alist))
        (long         (getarg :long nil x.kwd-alist))
+
        ;; x.name may or may not agree with the names of any of the things
        ;; inside it.  For instance:
        ;;   (deftypes pseudo-termp
@@ -4472,7 +4481,10 @@ can access them using the @(see defprod)-style @('foo.bar') style.</p>")))))
        (sub-short (getarg :short nil sub-kwd-alist))
        (sub-long (getarg :long nil sub-kwd-alist))
        ((unless subtype)
-        `(defxdoc ,x.name :parents ,parents :short ,short :long ,long))
+        `(defxdoc ,x.name
+           :parents ,parents
+           :short ,short
+           :long ,long))
 
        ((when (and short sub-short))
         (er hard? 'deftypes "Can't give a top-level :short when you are also ~

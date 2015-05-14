@@ -179,6 +179,37 @@
 (assert-long monsterlist-fix "")
 
 
+(deflist monsterlist2
+  :parents (monster)
+  :elt-type monster)
+
+(assert-parents monsterlist2 (monster))
+(assert-short monsterlist2 "")
+
+(assert-parents monsterlist2-p (monsterlist2))
+(assert-short monsterlist2-p "")
+(assert-long monsterlist2-p "")
+
+(assert-parents monsterlist2-fix (monsterlist2))
+(assert-short monsterlist2-fix "")
+(assert-long monsterlist2-fix "")
+
+
+(deflist monsterlist3
+  :elt-type monster)
+
+(assert-parents monsterlist3 (acl2::undocumented))
+(assert-short monsterlist3 "")
+
+(assert-parents monsterlist3-p (monsterlist3))
+(assert-short monsterlist3-p "")
+(assert-long monsterlist3-p "")
+
+(assert-parents monsterlist3-fix (monsterlist3))
+(assert-short monsterlist3-fix "")
+(assert-long monsterlist3-fix "")
+
+
 
 (defoption maybe-monster
   monster
@@ -203,6 +234,48 @@
 (assert-long maybe-monster-equiv "")
 
 
+(defoption maybe-monster2
+  monster)
+
+(assert-parents maybe-monster2 (undocumented))
+(assert-short maybe-monster2 "")
+(assert-long maybe-monster2 "")
+
+(assert-parents maybe-monster2-p (maybe-monster2))
+(assert-short maybe-monster2-p "")
+(assert-long maybe-monster2-p "")
+
+(assert-parents maybe-monster2-fix (maybe-monster2))
+(assert-short maybe-monster2-fix "")
+(assert-long maybe-monster2-fix "")
+
+(assert-parents maybe-monster2-equiv (maybe-monster2))
+(assert-short maybe-monster2-equiv "")
+(assert-long maybe-monster2-equiv "")
+
+
+(defoption maybe-monster3
+  monster
+  :parents (game))
+
+(assert-parents maybe-monster3 (game))
+(assert-short maybe-monster3 "")
+(assert-long maybe-monster3 "")
+
+(assert-parents maybe-monster3-p (maybe-monster3))
+(assert-short maybe-monster3-p "")
+(assert-long maybe-monster3-p "")
+
+(assert-parents maybe-monster3-fix (maybe-monster3))
+(assert-short maybe-monster3-fix "")
+(assert-long maybe-monster3-fix "")
+
+(assert-parents maybe-monster3-equiv (maybe-monster3))
+(assert-short maybe-monster3-equiv "")
+(assert-long maybe-monster3-equiv "")
+
+
+
 
 (defalist monster-scoreboard
   :key-type monster
@@ -223,6 +296,24 @@ is this?</p>")
 (assert-parents monster-scoreboard-equiv (monster-scoreboard))
 (assert-short monster-scoreboard-equiv "")
 (assert-long monster-scoreboard-equiv "")
+
+
+(defalist monster-scoreboard2
+  :key-type monster
+  :val-type natp)
+
+(assert-parents monster-scoreboard2 (undocumented))
+(assert-short monster-scoreboard2 "")
+(assert-long monster-scoreboard2 "")
+
+(assert-parents monster-scoreboard2-fix (monster-scoreboard2))
+(assert-short monster-scoreboard2-fix "")
+(assert-long monster-scoreboard2-fix "")
+
+(assert-parents monster-scoreboard2-equiv (monster-scoreboard2))
+(assert-short monster-scoreboard2-equiv "")
+(assert-long monster-scoreboard2-equiv "")
+
 
 
 

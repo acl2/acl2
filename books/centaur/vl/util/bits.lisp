@@ -58,11 +58,12 @@ accepted by @('vl-bit-p'):</p>
   :elt-type vl-bit-p
   :elementp-of-nil nil
   :true-listp nil
-  :parents (vl-weirdint-p))
+  :parents (vl-bit))
 
 (define vl-bit->char ((x vl-bit-p))
-  :parents (vl-bit-p)
-  :short "Get the character for a @(see vl-bit-p)."
+  :parents (vl-bit)
+  :short "Convert a @(see vl-bit-p) into the corresponding character, e.g.,
+  @('#\\0') or @('#\\X')."
   :returns (char characterp :rule-classes :type-prescription)
   :long "<p>@(call vl-bit->char) produces the ASCII character for a @(see vl-bit-p).
 That is, it returns one of the characters: 0, 1, X, or Z.</p>"
@@ -79,35 +80,22 @@ That is, it returns one of the characters: 0, 1, X, or Z.</p>"
 
 (defprojection vl-bitlist->charlist ((x vl-bitlist-p))
   :returns (chars character-listp)
-  :parents (vl-weirdint-p)
-  :short "Get a character list for a @(see vl-bitlist-p)."
+  :parents (vl-bit)
+  :short "Convert a @(see vl-bitlist) into the corresponding character list,
+e.g., @('(#\\1 #\\0 #\\X #\\Z)')."
   (vl-bit->char x))
 
 (define vl-bitlist->string ((x vl-bitlist-p))
-  :parents (vl-weirdint-p)
-  :short "Get the string corresponding to a @(see vl-bitlist-p)."
+  :parents (vl-bit)
+  :short "Convert a @(see vl-bitlist) into the corresponding string, e.g.,
+@('\"10XZ\")."
   :returns (str stringp :rule-classes :type-prescription)
   (implode (vl-bitlist->charlist x)))
 
-(define vl-bitlist-nonempty-fix ((x vl-bitlist-p))
-  :returns (xx vl-bitlist-p)
-  :guard (consp x)
-  :inline t
-  (mbe :logic
-       (if (atom x)
-           (list :vl-0val)
-         (vl-bitlist-fix x))
-       :exec x)
-  ///
-  (defret consp-of-vl-bitlist-nonempty-fix
-    (consp xx)
-    :rule-classes :type-prescription)
 
-  (defret vl-bitlist-nonempty-fix-idempotent
-    (implies (consp x)
-             (equal xx
-                    (vl-bitlist-fix x)))))
-
+(defsection vl-timeunit
+  :parents (vl-time)
+  :short "Representation for SystemVerilog time units (s, ms, ps, ...).")
 
 (defenum vl-timeunit-p
   (:vl-s
@@ -116,11 +104,11 @@ That is, it returns one of the characters: 0, 1, X, or Z.</p>"
    :vl-ns
    :vl-ps
    :vl-fs)
-  :parents (syntax)
-  :short "Representation for SystemVerilog time units (s, ms, ps, ...)")
+  :parents (vl-timeunit)
+  :short "Symbol representation of time units.")
 
 (define vl-timeunit->string ((x vl-timeunit-p))
-  :parents (vl-timeunit-p)
+  :parents (vl-timeunit)
   :short "Get the string corresponding to a @(see vl-timeunit-p)."
   :returns (str stringp :rule-classes :type-prescription)
   (let ((x (mbe :logic (vl-timeunit-fix x)

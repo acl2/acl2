@@ -29,14 +29,12 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/strings/cat" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (local (std::add-default-post-define-hook :fix))
-
 
 
 (defprod vl-location
@@ -60,7 +58,9 @@ own @(see extended-characters) and module items."
 
   (vl-location "[[[ fake location ]]]" 1 0))
 
-(fty::deflist vl-locationlist :elt-type vl-location)
+(fty::deflist vl-locationlist
+  :elt-type vl-location
+  :parents (vl-location))
 
 
 (define vl-location-string ((loc vl-location-p))

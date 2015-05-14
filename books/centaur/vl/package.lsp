@@ -110,14 +110,15 @@
       std::mksym-package-symbol
       std::extract-keyword-from-args
       std::throw-away-keyword-parts
-      ;; std::defoption
 
       fty::defprod
       fty::deftypes
       fty::deftagsum
+      fty::defflexsum
       fty::deffixtype
       fty::deffixequiv
       fty::deffixequiv-mutual
+      fty::defoption
       true-p
       true-fix
       true-equiv
