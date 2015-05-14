@@ -6,6 +6,7 @@ worklispext
 demo2.ccl
 demo2.lx86cl64
 demo2.dx86cl64
+demo2.wx86cl64
 demo2.gcl
 demo2.core
 demo2.lw
