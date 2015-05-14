@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../../mlib/range-tools")
+(include-book "../../mlib/expr-tools")
 (include-book "../../mlib/reorder")
 (include-book "../../mlib/filter")
 (local (include-book "../../util/arithmetic"))

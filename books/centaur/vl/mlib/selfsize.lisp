@@ -134,7 +134,7 @@ only meant as a heuristic for generating more useful warnings.</p>"
     :verify-guards nil
     :returns (vals vl-valuelist-p)
     (vl-expr-case x
-      :vl-value (list x.val)
+      :vl-literal (list x.val)
       :vl-binary (case x.op
                    ((:vl-binary-power
                      :vl-binary-shr
@@ -192,7 +192,7 @@ only meant as a heuristic for generating more useful warnings.</p>"
                :vl-constint x1.wasunsized
                :otherwise nil)))
     (if keep
-        (cons (make-vl-value :val x1)
+        (cons (make-vl-literal :val x1)
               (vl-collect-unsized-ints (cdr x)))
       (vl-collect-unsized-ints (cdr x))))
   ///
@@ -217,7 +217,7 @@ only meant as a heuristic for generating more useful warnings.</p>"
   :returns (extint-p booleanp :rule-classes :type-prescription)
   :prepwork ((local (in-theory (enable tag-reasoning))))
   (vl-expr-case x
-    :vl-value (vl-value-case x.val :vl-extint)
+    :vl-literal (vl-value-case x.val :vl-extint)
     :otherwise nil))
 
 
@@ -789,7 +789,7 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
          (warnings nil))
       (vl-expr-case x
         :vl-special (mv (ok) nil)
-        :vl-value (mv (ok) (vl-value-selfsize x.val))
+        :vl-literal (mv (ok) (vl-value-selfsize x.val))
         :vl-index (vl-index-selfsize x ss typeov)
 
         ;; BOZO In some cases we could deduce a size for the expression even if
@@ -1000,7 +1000,7 @@ sign-extend it and don't change any of its operands.</p>"
   :returns (opacity vl-opacity-p)
 
   (vl-expr-case x
-    :vl-value :opaque
+    :vl-literal :opaque
     :vl-index :opaque
     :vl-unary (if (member x.op
                           '( ;; All of these operations have one-bit results.

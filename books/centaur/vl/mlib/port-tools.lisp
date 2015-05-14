@@ -30,7 +30,6 @@
 
 (in-package "VL")
 (include-book "expr-tools")
-(include-book "range-tools")
 (include-book "scopestack")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))

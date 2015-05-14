@@ -383,7 +383,7 @@ produce unsigned values.</li>
          (warnings nil))
       (vl-expr-case x
         :vl-special (mv (ok) nil)
-        :vl-value   (mv (ok) (vl-value-typedecide x.val))
+        :vl-literal (mv (ok) (vl-value-typedecide x.val))
         :vl-index   (vl-index-typedecide x ss typeov)
 
         :vl-unary   (b* (((mv warnings arg-type)

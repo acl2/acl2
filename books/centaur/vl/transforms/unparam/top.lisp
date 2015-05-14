@@ -483,9 +483,9 @@ introduced.</p>"
        ((wmv warnings res) (vl-consteval eq-expr conf))
        ((mv ok result)
         (vl-expr-case res
-          :vl-value (vl-value-case res.val
-                      :vl-constint (mv t (not (eql 0 res.val.value)))
-                      :otherwise (mv nil nil))
+          :vl-literal (vl-value-case res.val
+                        :vl-constint (mv t (not (eql 0 res.val.value)))
+                        :otherwise (mv nil nil))
           :otherwise (mv nil nil))))
     (if ok
         (mv t warnings result)

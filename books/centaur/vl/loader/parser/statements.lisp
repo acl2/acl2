@@ -57,12 +57,12 @@
            :vl-binary-plus
          :vl-binary-minus)
    :left var
-   :right (make-vl-value :val
-                         (make-vl-constint
-                          :origwidth 32
-                          :value 1
-                          :origtype :vl-unsigned
-                          :wasunsized t))))
+   :right (make-vl-literal :val
+                           (make-vl-constint
+                            :origwidth 32
+                            :value 1
+                            :origtype :vl-unsigned
+                            :wasunsized t))))
 
 (defconst *vl-assignment-operators*
   '(:vl-equalsign

@@ -395,7 +395,7 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
                            (:vl-xval (svex-x))
                            (:vl-zval (svex::svex-quote (svex::4vec-z)))))
     :vl-string   (mv nil (svex-int (vl-string->bits x.value (length x.value))))
-    :otherwise   (mv (vmsg "Unsupported value type: ~a0" (make-vl-value :val x))
+    :otherwise   (mv (vmsg "Unsupported value type: ~a0" (make-vl-literal :val x))
                      (svex-x)))
   ///
   (defret vars-of-vl-value-to-svex
@@ -2375,7 +2375,7 @@ functions can assume all bits of it are good.</p>"
          ((vl-svexconf conf)))
       (vl-expr-case x
 
-        :vl-value
+        :vl-literal
         (b* (((mv err svex) (vl-value-to-svex x.val)))
           (mv (if err
                   (fatal :type :vl-expr-to-svex-fail
@@ -3473,8 +3473,8 @@ functions can assume all bits of it are good.</p>"
               :otherwise nil))
        ((unless val)
         (mv warnings nil (vl-expr-fix x)))
-       (new-x (make-vl-value :val (vl-4vec-to-value val size
-                                                    :signedness (or signedness :vl-signed)))))
+       (new-x (make-vl-literal :val (vl-4vec-to-value val size
+                                                      :signedness (or signedness :vl-signed)))))
     (mv warnings t new-x)))
 
 (define vl-exprlist-consteval ((x vl-exprlist-p)

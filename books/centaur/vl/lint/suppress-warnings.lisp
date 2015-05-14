@@ -173,7 +173,7 @@ either upper or lower case, treating - and _ as equivalent, and with or without
            ;; Recognize certain constructs that have attributes
            (case (car x)
              ((:vl-special
-               :vl-value
+               :vl-literal
                :vl-index
                :vl-unary
                :vl-binary

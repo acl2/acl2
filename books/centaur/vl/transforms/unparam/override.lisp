@@ -218,7 +218,7 @@ types.</p>"
 
        ((wmv ok ?constp warnings reduced-expr ?svex)
         (vl-elaborated-expr-consteval expr conf :ctxsize desired-width))
-       ((unless (and ok (vl-expr-case reduced-expr :vl-value)))
+       ((unless (and ok (vl-expr-case reduced-expr :vl-literal)))
         (vl-unparam-debug "only reduced ~a1 to ~a2 (not a constant).~%"
                           nil expr reduced-expr)
         (mv nil

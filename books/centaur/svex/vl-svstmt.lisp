@@ -779,7 +779,7 @@ because... (BOZO)</p>
        (val (svex::svex-case svex :quote svex.val :otherwise nil))
        ((unless val)
         (mv t nil warnings x svex))
-       (new-x (make-vl-value :val (vl-4vec-to-value val size :signedness signedness))))
+       (new-x (make-vl-literal :val (vl-4vec-to-value val size :signedness signedness))))
     (mv t t warnings new-x svex)))
 
 (define vl-consteval ((x vl-expr-p)

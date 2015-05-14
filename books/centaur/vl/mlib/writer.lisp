@@ -590,9 +590,9 @@ displays.  The module browser's web pages are responsible for defining the
        (val (cdr look))
        ((unless val) nil))
     (vl-expr-case val
-      :vl-value (vl-value-case val.val
-                  :vl-string val.val.value
-                  :otherwise nil)
+      :vl-literal (vl-value-case val.val
+                    :vl-string val.val.value
+                    :otherwise nil)
       :otherwise nil)))
 
 (define vl-leftright-string ((x vl-leftright-p))
@@ -769,14 +769,14 @@ displays.  The module browser's web pages are responsible for defining the
 
         :vl-special (vl-pp-specialkey x.key)
 
-        :vl-value (b* ((ps (vl-pp-value x.val))
-                       (paramname (vl-atts-find-paramname atts)))
-                    (vl-when-html
-                     (if paramname
-                         (vl-ps-seq (vl-print-markup "<span class='vl_paramname'>")
-                                    (vl-print-str paramname)
-                                    (vl-print-markup "</span>"))
-                       ps)))
+        :vl-literal (b* ((ps (vl-pp-value x.val))
+                         (paramname (vl-atts-find-paramname atts)))
+                      (vl-when-html
+                       (if paramname
+                           (vl-ps-seq (vl-print-markup "<span class='vl_paramname'>")
+                                      (vl-print-str paramname)
+                                      (vl-print-markup "</span>"))
+                         ps)))
         
         :vl-index (vl-ps-seq (vl-pp-scopeexpr x.scope)
                              (vl-pp-indexlist x.indices)
@@ -1539,9 +1539,9 @@ expression into a string."
         (b* ((str (cdar x))
              (strval (and str
                           (vl-expr-case str
-                            :vl-value (vl-value-case str.val
-                                        :vl-string str.val.value
-                                        :otherwise nil)
+                            :vl-literal (vl-value-case str.val
+                                          :vl-string str.val.value
+                                          :otherwise nil)
                             :otherwise nil))))
           (if (not strval)
               (prog2$
@@ -1906,9 +1906,9 @@ expression into a string."
         (b* ((val (cdar x))
              (str (and val
                        (vl-expr-case val
-                         :vl-value (vl-value-case val.val
-                                     :vl-string val.val.value
-                                     :otherwise nil)
+                         :vl-literal (vl-value-case val.val
+                                       :vl-string val.val.value
+                                       :otherwise nil)
                          :otherwise nil)))
              ((unless str)
               (raise "Expected VL_FOR to contain a string.")
@@ -2052,9 +2052,9 @@ expression into a string."
         (b* ((val (cdar x))
              (str (and val
                        (vl-expr-case val
-                         :vl-value (vl-value-case val.val
-                                     :vl-string val.val.value
-                                     :otherwise nil)
+                         :vl-literal (vl-value-case val.val
+                                       :vl-string val.val.value
+                                       :otherwise nil)
                          :otherwise nil)))
              ((unless str)
               (prog2$

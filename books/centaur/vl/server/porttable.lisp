@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "../mlib/writer")
-(include-book "../mlib/range-tools")
+(include-book "../mlib/expr-tools")
 (include-book "../mlib/port-tools")
 (local (include-book "../util/arithmetic"))
 
