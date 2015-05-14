@@ -202,6 +202,35 @@ off looking at the source code.</p>")
     (<= (b-xor x y) 1)
     :rule-classes :linear)
 
+  (defthm bxor-norm
+    (implies
+     (syntaxp (and 
+               (not (equal x ''0))
+               (not (equal x ''1))
+               (or
+                (equal y ''0)
+                (equal y ''1))))
+     (equal
+      (b-xor x y)
+      (b-xor y x)))
+    :hints (("goal" :in-theory (enable xor)))
+    )
+
+  (defthm bxor-to-bnot
+    (equal
+     (b-xor 1 x)
+     (b-not x)
+     )
+    )
+
+  (defthm bxor-to-id
+    (implies
+     (bitp x)
+     (equal
+      (b-xor 0 x)
+      x))
+    )
+
   (defthm bfix-bound
     (<= (bfix x) 1)
     :rule-classes :linear)
