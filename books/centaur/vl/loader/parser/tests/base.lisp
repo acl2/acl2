@@ -223,7 +223,7 @@
     :measure (vl-expr-count x)
     (vl-expr-case x
       :vl-special (vl-pretty-specialkey x.key)
-      :vl-value   (vl-pretty-value x.val)
+      :vl-literal (vl-pretty-value x.val)
       :vl-index
       (b* (((when (vl-idexpr-p x))
             (list 'id (vl-idexpr->name x))))
@@ -339,9 +339,9 @@
 
   (define vl-pretty-maybe-range ((x vl-maybe-range-p))
     :measure (vl-maybe-range-count x)
-    (vl-maybe-range-case x
-      (:null  '(no-range))
-      (:range (vl-pretty-range x))))
+    (if x
+        (vl-pretty-range x)
+      '(no-range)))
 
   (define vl-pretty-packeddimension ((x vl-packeddimension-p))
     :measure (vl-packeddimension-count x)
@@ -358,9 +358,9 @@
 
   (define vl-pretty-maybe-packeddimension ((x vl-maybe-packeddimension-p))
     :measure (vl-maybe-packeddimension-count x)
-    (vl-maybe-packeddimension-case x
-      :null nil
-      :dim  (vl-pretty-packeddimension x.packeddimension)))
+    (if x
+        (vl-pretty-packeddimension x)
+      nil))
 
   (define vl-pretty-datatype ((x vl-datatype-p))
     :measure (vl-datatype-count x)

@@ -77,7 +77,7 @@
          (int := (vl-match))
          (when (member #\' (vl-echarlist->chars (vl-token->etext int)))
            (return-raw (vl-parse-error "Illegal delay value.")))
-         (return (make-vl-value :val (vl-make-guts-from-inttoken int))))
+         (return (make-vl-literal :val (vl-make-guts-from-inttoken int))))
 
        (when (vl-is-token? :vl-realtoken)
          (ans := (vl-parse-primary))

@@ -496,19 +496,19 @@ literals, unbased unsized literals, @('this'), @('$'), and @('null').</p>"
   (seq tokstream
        (when (vl-is-token? :vl-inttoken)
          (int := (vl-match))
-         (return (make-vl-value :val (vl-make-guts-from-inttoken int))))
+         (return (make-vl-literal :val (vl-make-guts-from-inttoken int))))
 
        (when (vl-is-token? :vl-realtoken)
          (real := (vl-match))
          (return
           (b* ((value (vl-echarlist->string (vl-realtoken->etext real))))
-            (make-vl-value :val (make-vl-real :value value)))))
+            (make-vl-literal :val (make-vl-real :value value)))))
 
        (when (vl-is-token? :vl-stringtoken)
          (str := (vl-match))
          (return
           (b* ((value (vl-stringtoken->expansion str)))
-            (make-vl-value :val (make-vl-string :value value)))))
+            (make-vl-literal :val (make-vl-string :value value)))))
 
        (when (eq (vl-loadconfig->edition config) :verilog-2005)
          ;; That's it for regular Verilog.
@@ -519,13 +519,13 @@ literals, unbased unsized literals, @('this'), @('$'), and @('null').</p>"
          (ext := (vl-match))
          (return
           (b* ((value (vl-extinttoken->value ext)))
-            (make-vl-value :val (make-vl-extint :value value)))))
+            (make-vl-literal :val (make-vl-extint :value value)))))
 
        (when (vl-is-token? :vl-timetoken)
          (time := (vl-match))
          (return
           (b* (((vl-timetoken time) time))
-            (make-vl-value :val (make-vl-time :quantity time.quantity
+            (make-vl-literal :val (make-vl-time :quantity time.quantity
                                               :units time.units)))))
 
        (when (vl-is-token? :vl-kwd-null)

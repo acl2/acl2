@@ -718,7 +718,7 @@ which could not hold such large values.</p>")
   (define vl-jp-expr ((x vl-expr-p) &key (ps 'ps))
     :measure (two-nats-measure (vl-expr-count x) 0)
     (vl-expr-case x
-      :vl-value (vl-jp-value x.val)
+      :vl-literal (vl-jp-value x.val)
     (vl-expr-case x
       :atom
       (jp-object :tag (jp-sym :atom)

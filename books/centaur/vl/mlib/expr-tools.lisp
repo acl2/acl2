@@ -410,26 +410,26 @@ already annotated with their final widths and types, and @(see
 expression-sizing) is a very complex topic.</p>"
 
   (defconst |*sized-1'b0*|
-    (hons-copy (make-vl-value
+    (hons-copy (make-vl-literal
                 :val
                 (make-vl-constint :value 0
                                   :origwidth 1
                                   :origtype :vl-unsigned))))
 
   (defconst |*sized-1'b1*|
-    (hons-copy (make-vl-value
+    (hons-copy (make-vl-literal
                 :val
                 (make-vl-constint :value 1
                                   :origwidth 1
                                   :origtype :vl-unsigned))))
 
   (defconst |*sized-1'bx*|
-    (hons-copy (make-vl-value :val (make-vl-weirdint :bits (list :vl-xval)
-                                                     :origtype :vl-unsigned))))
+    (hons-copy (make-vl-literal :val (make-vl-weirdint :bits (list :vl-xval)
+                                                       :origtype :vl-unsigned))))
 
   (defconst |*sized-1'bz*|
-    (hons-copy (make-vl-value :val (make-vl-weirdint :bits (list :vl-zval)
-                                                     :origtype :vl-unsigned)))))
+    (hons-copy (make-vl-literal :val (make-vl-weirdint :bits (list :vl-zval)
+                                                       :origtype :vl-unsigned)))))
 
 
 
@@ -442,7 +442,7 @@ the expressions that occur in ranges like @('wire [3:0] foo;') and in
 selects.</p>"
   :inline t
   (vl-expr-case x
-    :vl-value (vl-value-case x.val :vl-constint)
+    :vl-literal (vl-value-case x.val :vl-constint)
     :otherwise nil))
 
 (define vl-resolved->val ((x vl-expr-p))
@@ -450,7 +450,7 @@ selects.</p>"
   :returns (val natp :rule-classes :type-prescription)
   :short "Get the value from a resolved expression."
   :long "<p>Guaranteed to return a natural number.</p>"
-  (vl-constint->value (vl-value->val x))
+  (vl-constint->value (vl-literal->val x))
   :guard-hints (("Goal" :in-theory (enable vl-expr-resolved-p))))
 
 (deflist vl-exprlist-resolved-p (x)
@@ -1228,7 +1228,7 @@ construct fast alists binding identifiers to things, etc.</p>"
     :hints (("goal"
              :expand ((vl-expr-count x)
                       (vl-maybe-expr-count (vl-stream->size x)))
-             :in-theory (enable VL-MAYBE-EXPR-EXPR->EXPR)))
+             :in-theory (enable vl-maybe-expr-some->val)))
     :rule-classes :linear)
 
   (local (in-theory (disable cons-equal double-containment)))
@@ -1776,10 +1776,10 @@ expression, with repetition.</p>"
 
 (define vl-zatom-p ((x vl-expr-p))
   (vl-expr-case x
-    :vl-value (vl-value-case x.val
-                :vl-weirdint (vl-zbitlist-p x.val.bits)
-                :vl-extint (vl-bit-equiv x.val.value :vl-zval)
-                :otherwise nil)
+    :vl-literal (vl-value-case x.val
+                  :vl-weirdint (vl-zbitlist-p x.val.bits)
+                  :vl-extint (vl-bit-equiv x.val.value :vl-zval)
+                  :otherwise nil)
     :otherwise nil))
 
 
@@ -1793,7 +1793,7 @@ expression, with repetition.</p>"
     :measure (vl-expr-count x)
     :flag :expr
     (b* ((nrev (vl-expr-case x
-                 :vl-value (nrev-push x.val nrev)
+                 :vl-literal (nrev-push x.val nrev)
                  :otherwise nrev)))
       (vl-exprlist-values-nrev (vl-expr->subexprs x) nrev)))
 
@@ -1819,7 +1819,7 @@ not usually think of as values.</p>"
     :verify-guards nil
     :flag :expr
     (mbe :logic (append (vl-expr-case x
-                          :vl-value (list x.val)
+                          :vl-literal (list x.val)
                           :otherwise nil)
                         (vl-exprlist-values (vl-expr->subexprs x)))
          :exec (with-local-nrev (vl-expr-values-nrev x nrev))))
@@ -1985,7 +1985,7 @@ when all arguments are signed."
   :returns (new-x vl-expr-p)
   (vl-expr-case x
     :vl-special (change-vl-special x :atts (append-without-guard new-atts x.atts))
-    :vl-value (change-vl-value x :atts (append-without-guard new-atts x.atts))
+    :vl-literal (change-vl-literal x :atts (append-without-guard new-atts x.atts))
     :vl-index (change-vl-index x :atts (append-without-guard new-atts x.atts))
     :vl-unary (change-vl-unary x :atts (append-without-guard new-atts x.atts))
     :vl-binary (change-vl-binary x :atts (append-without-guard new-atts x.atts))
@@ -2028,19 +2028,19 @@ in this case see @(see vl-make-integer).</p>"
         ;; didn't used to hons these, but now it seems like a good idea since
         ;; the same indicies may be needed frequently.
         (hons-copy
-         (make-vl-value
+         (make-vl-literal
           :val (make-vl-constint :origwidth 32
                                  :origtype :vl-signed
                                  :wasunsized t
                                  :value value)))
       (hons-copy
-       (make-vl-value
+       (make-vl-literal
         :val (make-vl-constint :origwidth width
                                :origtype :vl-signed
                                :value value)))))
   ///
   (defthm vl-expr-kind-of-vl-make-index
-    (eq (vl-expr-kind (vl-make-index n)) :vl-value))
+    (eq (vl-expr-kind (vl-make-index n)) :vl-literal))
 
   (defthm vl-expr-resolved-p-of-vl-make-index
     (vl-expr-resolved-p (vl-make-index n))
@@ -2062,14 +2062,14 @@ in this case see @(see vl-make-integer).</p>"
   (let* ((value (lnfix n))
          (bits (lposfix bits)))
     (hons-copy
-     (make-vl-value
+     (make-vl-literal
       :val (make-vl-constint :origwidth bits
                              :origtype :vl-signed
                              :wasunsized t
                              :value value))))
   ///
   (defthm vl-expr-kind-of-vl-make-integer
-    (eq (vl-expr-kind (vl-make-integer n :bits bits)) :vl-value))
+    (eq (vl-expr-kind (vl-make-integer n :bits bits)) :vl-literal))
 
   (defthm vl-expr-resolved-p-of-vl-make-integer
     (vl-expr-resolved-p (vl-make-integer n :bits bits))

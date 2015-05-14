@@ -101,12 +101,12 @@ will allow us to still flag situations like:</p>
 for odd but innocuous things like @('~ 1'b0') and @('{1'b0}').</p>"
 
   (vl-expr-case rhs
-    :vl-value t
+    :vl-literal t
     :vl-unary (and (vl-unaryop-equiv rhs.op :vl-unary-bitnot)
-                   (vl-expr-case rhs.arg :vl-value))
+                   (vl-expr-case rhs.arg :vl-literal))
     :vl-concat (and (tuplep 1 rhs.parts)
                     (let ((arg (first rhs.parts)))
-                      (vl-expr-case arg :vl-value)))
+                      (vl-expr-case arg :vl-literal)))
     :otherwise nil))
 
 

@@ -139,7 +139,7 @@ formerly the \"location directive\" and printed a location.</p>")
              (vl-print-loc x)
            (vl-fmt-tilde-x x)))
         ((:vl-special
-          :vl-value
+          :vl-literal
           :vl-index
           :vl-unary
           :vl-binary

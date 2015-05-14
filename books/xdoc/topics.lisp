@@ -1174,14 +1174,29 @@ not introduce a new local scope, but a @('defsection') does.</p>")
 
 
 (defxdoc undocumented
-  :short "Placeholder for undocumented topics.")
+  :short "Placeholder for documentation topics that lack good @(':parents')."
 
-(defxdoc unselected-parents
-  :short "Placeholder for topics with bad parents."
-  :long "<p>These are topics that we'd like to place somewhere other than, for
-  example, in `acl2-built-ins`.  See <a
-  href=\"https://github.com/acl2/acl2/issues/316\">Github Issue #316</a> for
-  more info.</p>")
+  :long "<p>Many @(see acl2::macros) such as @(see std::deflist) and other
+@(see acl2::std/util) macros can automatically generate @(see xdoc)
+documentation topics.</p>
+
+<p>When someone uses these macros but doesn't give any @(':parents') for the
+resulting documentation, we put the resulting documentation here.  This seems
+better than just dropping the documentation completely, since at least you can
+at least see the boilerplate documentation and any embedded documentation that
+the programmer did provide.</p>
+
+<p>As ongoing documentation improvement work, most topics here can benefit from
+being given more appropriate @(':parents').</p>")
+
+;; [Jared] removing this because we don't seem to be using it?
+
+;; (defxdoc unselected-parents
+;;   :short "Placeholder for topics with bad parents."
+;;   :long "<p>These are topics that we'd like to place somewhere other than, for
+;;   example, in `acl2-built-ins`.  See <a
+;;   href=\"https://github.com/acl2/acl2/issues/316\">Github Issue #316</a> for
+;;   more info.</p>")
 
 (defxdoc set-default-parents
   :short "Set up default parents to use for @(see xdoc)."

@@ -235,7 +235,7 @@ occurs, and is used in any warning messages we produce.</p>"
         (b* ((test-fix  (vl-condcheck-fix x.test))
              (~test-fix (vl-condcheck-negate test-fix))
              (warnings
-              (cond ((vl-expr-case x.test :vl-value)
+              (cond ((vl-expr-case x.test :vl-literal)
                      (list (make-vl-warning
                             :type :vl-warn-qmark-const
                             :msg "~a0: found a ?: operator with constant ~
