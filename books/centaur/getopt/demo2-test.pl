@@ -11,9 +11,13 @@ sub test
     my $expected_out = shift;
     my $expected_code = shift;
 
-    print "Testing $args. ";
+    print "Testing '$args'.\n";
     my $out = `./demo2 $args`;
     my $code = $? >> 8;
+
+    # Mangle stuff to ignore Windows newline discrepancies.  Fixes issue #327
+    $expected_out =~ s/\r?\n/\n/g;
+    $out =~ s/\r?\n/\n/g;
 
     # We originally required that $out was equal to $expected_out.  However,
     # some Lisps print banners that we can't suppress.  So, I gave up on that
@@ -26,7 +30,7 @@ sub test
     # print "expected_length = $expected_len  and  actual_length = $actual_len\n";
 
     if ($expected_len > $actual_len) {
-        print "Fail: expected $expected_out but got $out\n";
+        print "Fail: expected ($expected_len) $expected_out but got ($actual_len) $out\n";
 	exit(1);
     }
 
