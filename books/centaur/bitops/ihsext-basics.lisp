@@ -3172,7 +3172,27 @@ off looking at the source code.</p>")
             :in-theory (e/d (loghead** logext**)
                             (acl2::logextu-as-loghead))
             :do-not '(eliminate-destructors generalize fertilize)
-            :do-not-induct t))))
+            :do-not-induct t)))
+
+  (defthm cancel-loghead-under-logext
+    (implies
+     (posp sz)
+     (equal
+      (logext sz (loghead sz x))
+      (logext sz x))
+     )
+    :hints (("goal" :in-theory (e/d* (ihsext-inductions
+                                      ihsext-recursive-redefs
+                                      posp 
+                                      )
+                                     ())
+             ))
+    )
+
+  (add-to-ruleset ihsext-arithmetic cancel-logext-under-loghead)
+  (add-to-ruleset ihsext-arithmetic cancel-loghead-under-logext)
+
+)
 
 
 
