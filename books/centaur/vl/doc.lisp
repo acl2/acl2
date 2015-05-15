@@ -38,33 +38,36 @@
 (defxdoc vl
   :parents (hardware-verification)
   :short "The VL Verilog Toolkit is a large ACL2 library for working with <a
-href='http://en.wikipedia.org/wiki/Verilog'>Verilog</a> and <a
-href='http://en.wikipedia.org/wiki/SystemVerilog'>SystemVerilog</a> source
+href='http://en.wikipedia.org/wiki/SystemVerilog'>SystemVerilog</a> (and also
+regular <a href='http://en.wikipedia.org/wiki/Verilog'>Verilog</a>) source
 code, developed at <a href='http://www.centtech.com/'>Centaur Technology</a> by
 Jared Davis and Sol Swords.  It serves as a frontend for many Verilog tools."
 
   :long "<box><p><b>Note</b>: this documentation is mainly a reference manual.
 If you are new to VL, please see @(see getting-started) first.</p></box>
 
-<p>Warning: VL is currently under heavy development and is not in a
-particularly usable state.  In the meantime, please see @(see vl2014::vl2014)
-for a more stable version.</p>")
+<p>Warning: VL is currently under heavy development and may change in drastic
+ways without much warning.  Users are encouraged to follow the github project
+to try to keep up to date.  Alternately, see @(see vl2014::vl2014) for a more
+stable (but less fully featured) version of VL.</p>")
 
 (defxdoc getting-started
   :parents (vl)
-  :short "Getting started with VL."
+  :short "An introduction to VL, with suggested starting points for how to get
+started with evaluating it for use in your own projects."
 
   :long "<h3>Introduction</h3>
 
 <p><b>VL</b> is an @(see acl2::acl2) library for working with <a
-href='http://en.wikipedia.org/wiki/Verilog'>Verilog</a> and <a
-href='http://en.wikipedia.org/wiki/SystemVerilog'>SystemVerilog</a> source
-code.  It includes:</p>
+href='http://en.wikipedia.org/wiki/SystemVerilog'>SystemVerilog</a> (and also
+regular <a href='http://en.wikipedia.org/wiki/Verilog'>Verilog</a>) source
+code, developed at <a href='http://www.centtech.com/'>Centaur Technology</a> by
+Jared Davis and Sol Swords.  At a high level, VL includes:</p>
 
 <ul>
  <li>An internal representation for Verilog @(see syntax),</li>
  <li>A @(see loader) for parsing Verilog source code into this representation,</li>
- <li>Utilities for inspecting and analyzing parsed designs,</li>
+ <li>Utilities for inspecting, analyzing, and manipulating these designs,</li>
  <li>Various @(see transforms) that can simplify these designs, and</li>
  <li>Pretty-printing and other report-generation functions.</li>
 </ul>
@@ -75,12 +78,12 @@ to implement a family of Verilog-related tools.  Here are some examples:</p>
 
 <ul>
 
-<li>VL can build @(see esim) or @(see acl2::svex) models of Verilog modules for
-formal verification with ACL2.  This is the basis for much of Centaur's formal
+<li>VL can build @(see acl2::svex) models of Verilog modules for formal
+verification with ACL2.  This is the basis for much of Centaur's formal
 verification efforts.</li>
 
-<li>The VL @(see kit) is a standalone command-line executable that you can
-build on top of ACL2 and VL.  It includes commands for @(see lint)ing Verilog
+<li>The VL @(see kit) is a standalone command-line program that you can build
+on top of ACL2 and VL.  It includes commands for @(see lint)ing Verilog
 designs, converting Verilog modules into a JSON format, and other
 commands.</li>
 

@@ -430,3 +430,15 @@ is this?</p>")
 
 (assert-dupefree)
 
+
+
+(defprod monster->arrow
+  :parents (game)
+  :short "A test of arrows."
+  :tag :monster
+  ((cow->moo stringp  "An arrow in a field."))
+  :long "<p>Arrows cause escaping problems.</p>")
+
+(assert-parents monster->arrow (game))
+
+(assert-dupefree)

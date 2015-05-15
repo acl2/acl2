@@ -3972,9 +3972,9 @@
     (defprod-fields-doc-aux (cdr x) acc base-pkg state)))
 
 (defun defprod-fields-doc (x acc base-pkg state)
-  (b* ((acc (revappend-chars "<ul>" acc))
+  (b* ((acc (revappend-chars "<dl>" acc))
        ((mv acc state) (defprod-fields-doc-aux x acc base-pkg state))
-       (acc (revappend-chars "</ul>" acc)))
+       (acc (revappend-chars "</dl>" acc)))
     (mv acc state)))
 
 (defun defprod-main-description (prod base-pkg acc state)
@@ -4015,37 +4015,52 @@
             :long ,long))
         state)))
 
-(defun defprod-ctor-optional-fields (field-names)
-  (declare (xargs :guard (symbol-listp field-names)))
-  (b* (((when (atom field-names))
-        nil)
-       (name1 (xdoc::name-low (symbol-name (car field-names))))
-       (acc   nil)
-       (acc   (revappend-chars "[:" acc))
-       (acc   (html-encode-str name1 acc))
-       (acc   (revappend-chars " &lt;" acc))
-       (acc   (html-encode-str name1 acc))
-       (acc   (revappend-chars "&gt;]" acc)))
-    (cons (rchars-to-string acc)
-          (defprod-ctor-optional-fields (cdr field-names)))))
 
-(defun defprod-ctor-optional-call (name        ; e.g., make-honsed-foo
-                                   field-strs  ; e.g., ("[:field1 <field1>]" "[field2 <field2>"])
-                                   )
+(defun defprod-ctor-optional-fields (field-names pad acc)
+  (declare (xargs :guard (and (symbol-listp field-names)
+                              (stringp pad))))
+  (b* (((when (atom field-names))
+        acc)
+       (name1 (xdoc::name-low (symbol-name (car field-names))))
+       (len1  (length name1))
+       (acc   (str::revappend-chars "[:" acc))
+       (acc   (xdoc::simple-html-encode-str name1 0 len1 acc))
+       (acc   (str::revappend-chars " &lt;" acc))
+       (acc   (xdoc::simple-html-encode-str name1 0 len1 acc))
+       (acc   (str::revappend-chars "&gt;]" acc))
+       (acc   (if (consp (cdr field-names))
+                  (str::revappend-chars pad acc)
+                acc)))
+    (defprod-ctor-optional-fields (cdr field-names) pad acc)))
+
+(defun defprod-ctor-optional-call (name line1 field-names)
   (declare (xargs :guard (and (symbolp name)
-                              (string-listp field-strs))))
+                              (stringp line1)
+                              (symbol-listp field-names))))
   (b* ((ctor-name (xdoc::name-low (symbol-name name)))
-       ;; +2 to account for the leading paren and trailing space after ctor-name
-       (len       (+ 2 (length ctor-name)))
-       (pad       (str::implode (cons #\Newline (make-list len :initial-element #\Space))))
-       (args      (str::join field-strs pad)))
-    (str::cat "<code>" *nl* "(" ctor-name " " args ")" *nl* "</code>")))
+       (pad (str::implode ;; +2 for leading paren & trailing space after ctor-name
+             (cons #\Newline
+                   (make-list (+ 2 (length ctor-name))
+                              :initial-element #\Space))))
+       (acc nil)
+       (acc (str::revappend-chars "<code>" acc))
+       (acc (cons #\Newline acc))
+       (acc (cons #\( acc))
+       (acc (xdoc::simple-html-encode-str ctor-name 0 (length ctor-name) acc))
+       (acc (cons #\Space acc))
+       (acc (if (equal line1 "")
+                acc
+              (str::revappend-chars pad
+                                    (str::revappend-chars line1 acc))))
+       (acc (defprod-ctor-optional-fields field-names pad acc))
+       (acc (cons #\) acc))
+       (acc (cons #\Newline acc))
+       (acc (str::revappend-chars "</code>" acc)))
+    (str::rchars-to-string acc)))
 
 #||
-(defprod-ctor-optional-call 'make-honsed-foo
-                            '("[:lettuce <lettuce>]"
-                              "[:cheese <cheese>]"
-                              "[:meat <meat>]"))
+(defprod-ctor-optional-call 'make-honsed-foo "" '(lettuce cheese meat))
+(defprod-ctor-optional-call 'change-foo "x" '(lettuce cheese meat))
 ||#
 
 (defun defprod-ctor-autodoc (prod)
@@ -4057,16 +4072,22 @@
        (change-foo-fn        (std::da-changer-fn-name foo))
        (change-foo           (std::da-changer-name foo))
 
-       (plain-foo            (str::cat "<tt>" (xdoc::name-low (symbol-name foo)) "</tt>"))
+       (plain-foo            (let* ((foo-low (xdoc::name-low (symbol-name foo)))
+                                    (acc nil)
+                                    (acc (str::revappend-chars "<tt>" acc))
+                                    (acc (xdoc::simple-html-encode-str foo-low 0 (length foo-low) acc))
+                                    (acc (str::revappend-chars "</tt>" acc)))
+                               (str::rchars-to-string acc)))
+
        (see-foo              (xdoc::see foo))
        (see-make-foo         (xdoc::see make-foo))
        (see-change-foo       (xdoc::see change-foo))
 
        ;; For make-foo, change-foo, etc., it's nicer to present a list of [:fld <fld>] options
        ;; rather than just saying &rest args, which is what @(call ...) would do.
-       (opt-fields           (defprod-ctor-optional-fields (flexprod-fields->names prod.fields)))
-       (call-make-foo        (defprod-ctor-optional-call make-foo opt-fields))
-       (call-change-foo      (defprod-ctor-optional-call change-foo (cons "x" opt-fields)))
+       (fieldnames           (flexprod-fields->names prod.fields))
+       (call-make-foo        (defprod-ctor-optional-call make-foo   "" fieldnames))
+       (call-change-foo      (defprod-ctor-optional-call change-foo "x" fieldnames))
 
        (def-foo              (str::cat "@(def " (xdoc::full-escape-symbol foo)           ")"))
        (def-make-foo-fn      (str::cat "@(def " (xdoc::full-escape-symbol make-foo-fn)   ")"))
