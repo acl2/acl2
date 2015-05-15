@@ -2,6 +2,8 @@
 ; Written by Matt Kaufmann in consultation with Cuong Chau, April, 2015
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; See overspill-test.lisp for a trivial application.
+
 ; cert_param: (uses-acl2r)
 
 (in-package "ACL2")
@@ -57,3 +59,70 @@
                            (<= m n))
                       (overspill-p m x)))))
   :rule-classes nil)
+
+(set-enforce-redundancy nil)
+
+; Now we introduce a macro that automates the application of the overspill
+; principle.  I suspect that with more work we could make the witness
+; classical, but it's not at all clear to me that there is value in doing so.
+; I actually think that it's best for the generic witness function,
+; overspill-p-witness, not to be classical, to avoid needlessly restricting the
+; set of legal functional substitutions.
+
+(defmacro overspill (pred &key pred* witness pred-overspill)
+  (let ((pred*
+         (or pred*
+             (intern-in-package-of-symbol
+              (concatenate 'string (symbol-name pred) "*")
+              pred)))
+        (witness
+         (or witness
+             (intern-in-package-of-symbol
+              (concatenate 'string (symbol-name pred) "-WITNESS")
+              pred)))
+        (pred-overspill
+         (or pred-overspill
+             (intern-in-package-of-symbol
+              (concatenate 'string (symbol-name pred) "-OVERSPILL")
+              pred))))
+    `(encapsulate
+      ()
+
+      (local (include-book ; linebreak defeats bogus cert.pl dependency
+              "nonstd/nsa/overspill" :dir :system))
+
+      (defun ,pred* (n x)
+        (if (zp n)
+            (,pred 0 x)
+          (and (,pred n x)
+               (,pred* (1- n) x))))
+
+      (defchoose ,witness (n) (x)
+        (or (and (natp n)
+                 (standardp n)
+                 (not (,pred n x)))
+            (and (natp n)
+                 (i-large n)
+                 (,pred* n x))))
+
+      (defthm ,pred-overspill
+        (let ((n (,witness x)))
+          (or (and (natp n)
+                   (standardp n)
+                   (not (,pred n x)))
+              (and (natp n)
+                   (i-large n)
+                   (implies (and (natp m)
+                                 (<= m n))
+                            (,pred m x)))))
+        :hints (("Goal"
+                 :by (:functional-instance
+                      overspill-p-overspill
+                      (overspill-p ,pred)
+                      (overspill-p* ,pred*)
+                      (overspill-p-witness ,witness))
+                 :in-theory (theory 'minimal-theory)
+                 :expand ((,pred* n x)))
+                '(:use ,witness))
+        :rule-classes nil)
+      )))

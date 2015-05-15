@@ -7142,6 +7142,7 @@
            set-tau-auto-mode
            set-waterfall-parallelism
            setq
+           system-events
            system-verify-guards
            table
            value
@@ -9303,8 +9304,9 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
 (defg *max-mem-usage*
 
-; This global is set in start-sol-gc.  It is an upper bound, in bytes of memory
-; used, that when exceeded results in certain garbage collection actions.
+; This global is set in set-gc-strategy-builtin-delay (formerly start-sol-gc).
+; It is an upper bound, in bytes of memory used, that when exceeded results in
+; certain garbage collection actions.
 
 ; See also the centaur/misc/memory-mgmt books.
 
@@ -9312,7 +9314,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
 (defg *gc-min-threshold*
 
-; This is set in start-sol-gc.
+; This is set in set-gc-strategy-builtin-delay (formerly start-sol-gc).
 
 ; See also the centaur/misc/memory-mgmt books.
 
@@ -9328,10 +9330,11 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 #+ccl
 (defun set-and-reset-gc-thresholds ()
 
-; See start-sol-gc for a full discussion.  The comments here summarize how that
-; works out if, for example, there are 8G bytes of physical memory, just to
-; make the concepts concrete -- so it might be helpful to read the comments in
-; this function before reading the more general discussion in start-sol-gc.
+; See set-gc-strategy-builtin-delay (formerly start-sol-gc) for a full
+; discussion.  The comments here summarize how that works out if, for example,
+; there are 8G bytes of physical memory, just to make the concepts concrete --
+; so it might be helpful to read the comments in this function before reading
+; the more general discussion in set-gc-strategy-builtin-delay
 
   (let ((n
 
