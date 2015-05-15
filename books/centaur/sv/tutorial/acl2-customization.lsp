@@ -1,4 +1,4 @@
-; FTY type support library
+; SVEX - Symbolic, Vector-Level Hardware Description Library
 ; Copyright (C) 2014 Centaur Technology
 ;
 ; Contact:
@@ -28,28 +28,10 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
+#!ACL2
 (in-package "ACL2")
 
-;;(ld "std/package.lsp" :dir :system)
-(include-book "std/portcullis" :dir :system)
-
-(defpkg "FTY"
-  (append *std-pkg-symbols*
-          '(std::def-primitive-aggregate
-             std::extract-keywords
-             std::getarg)
-          #!ACL2
-          '(a b c d e f g h i j k l m n o p q r s t u v w x y z
-
-              ;; Minor things for better documentation
-              fty
-              fty-discipline
-              natp
-              nfix
-              nat-equiv
-              equivalence
-              congruence
-              hints
-
-              )))
-
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
+(include-book "../portcullis")
+(include-book "centaur/gl/portcullis" :dir :system)
+(in-package "SV")

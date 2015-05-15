@@ -1,5 +1,5 @@
-; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; SVEX - Symbolic, Vector-Level Hardware Description Library
+; Copyright (C) 2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,50 +26,31 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original author: Jared Davis <jared@centtech.com>
-
-(in-package "ACL2")
+; Original author: Sol Swords <sswords@centtech.com>
 
 (include-book "std/portcullis" :dir :system)
 (include-book "oslib/portcullis" :dir :system)
-(include-book "centaur/bridge/portcullis" :dir :system)
-(include-book "centaur/getopt/portcullis" :dir :system)
-(include-book "centaur/nrev/portcullis" :dir :system)
+(include-book "centaur/vl/portcullis" :dir :system)
 (include-book "centaur/fty/portcullis" :dir :system)
-(include-book "centaur/depgraph/portcullis" :dir :system)
 
-;; Not strictly necessary, but having the vl2014 package defined is useful when
-;; writing documentation that discusses differences between VL and VL2014.
-(include-book "centaur/vl2014/portcullis" :dir :system)
-
-(defmacro multi-union-eq (x y &rest rst)
-  (xxxjoin 'union-eq (list* x y rst)))
-
-(defpkg "VL"
+(defpkg "SV"
   (set-difference-eq
-   ;; Things to add:
    (multi-union-eq
+    *standard-acl2-imports*
     std::*std-exports*
-    getopt::*getopt-exports*
     set::*sets-exports*
-    nrev::*nrev-exports*
-    acl2::*acl2-exports*
-    acl2::*common-lisp-symbols-from-main-lisp-package*
     ;; Things we want to "export"
-    '(defmodules)
+    '()
     ;; Things we want to "import"
     '(assert!
       b*
       fun
-      local-stobjs
       append-without-guard
       flatten
       strip-cadrs
       simpler-take
       repeat
       replicate
-      first-n
-      rest-n
       list-fix
       list-equiv
       same-lengthp
@@ -83,46 +64,29 @@
       lnfix
       lifix
       lbfix
+      bool->bit
+      bit-equiv
+      bitp
+      bfix
+      int-equiv
+      nat-equiv
+      logmask
+      logcar logcdr
+      fast-logext
+      logapp
+      logbit
+      logtail
+      negp
       maybe-natp
-      maybe-natp-fix
       maybe-stringp
       maybe-posp
       maybe-integerp
-      cons-listp
-      cons-list-listp
       never-memoize
-      char-fix
-      chareqv
-      str-fix
-      str::string-list-fix
-      streqv
-      pos-fix
-      acl2::print-base-p
-      impossible
-      tuplep
-      all-equalp
-      ret
-      defret
-
-      acl2::set-max-mem
 
       std::mksym
       std::mksym-package-symbol
       std::extract-keyword-from-args
       std::throw-away-keyword-parts
-
-      fty::defprod
-      fty::deftypes
-      fty::deftagsum
-      fty::defflexsum
-      fty::deffixtype
-      fty::deffixequiv
-      fty::deffixequiv-mutual
-      fty::defoption
-      fty::deftranssum
-      true-p
-      true-fix
-      true-equiv
 
       value
       file-measure
@@ -149,7 +113,6 @@
       with-fast-alist
       with-fast
       with-stolen
-      fal-all-boundp
 
       run-when
       run-if
@@ -160,6 +123,10 @@
       definline
       definlined
 
+      seq
+      seq-backtrack
+      seqw
+      seqw-backtrack
       cw-obj
       return-raw
 
@@ -181,17 +148,6 @@
       alist-equiv
       sub-alistp
       hons-rassoc-equal
-      append-alist-keys
-      append-alist-keys-exec
-      append-alist-vals
-      append-alist-vals-exec
-
-      autohide
-      autohide-delete
-      autohide-clear
-      autohide-summary
-      autohide-cp
-      authoide-hint
 
       def-ruleset
       def-ruleset!
@@ -199,80 +155,68 @@
       add-to-ruleset!
       get-ruleset
       ruleset-theory
+      enable*
+      disable*
+      e/d*
+      e/d**
 
       make-fast-alist
       with-fast-alist
       with-fast
       with-fast-alists
 
-      vcd-dump
-
-      gpl
-      pat->al
-      pat->fal
-      al->pat
-      data-for-patternp
-      similar-patternsp
-      pat-flatten
-      pat-flatten1
-      collect-signal-list
-      good-esim-primitivep
-      good-esim-modulep
-      good-esim-occp
-      good-esim-occsp
-      bad-esim-modulep
-      bad-esim-occp
-      bad-esim-occsp
-
       str::cat
       str::natstr
       str::implode
       str::explode
 
-      non-parallel-book
-
-      ;; To make VL::VL show up as just VL in the ACL2 package, e.g., to
-      ;; make the XDOC index prettier.
-      vl
-      vl2014
-      fty
-      hardware-verification
-      esim
-      svex
-
       ;; acl2-customization file stuff
       why
       with-redef
 
-      template-proj
-      template-append
-      make-tmplsubst
-      template-subst-top
-      template-subst
-      std::getargs
-      ))
+      loghead logext
 
-   ;; Things to remove:
-   '(true-list-listp
-     substitute
-     union
-     delete
-     case
-     include-book
-     formatter
-     formatter-p
-     format
-     concatenate
-     enable
-     disable
-     e/d
-     warn
-     nat-listp ; included 12/4/2012 by Matt K., for addition to *acl2-exports*
-     )))
+      f w x y z g s
+      def-b*-binder
+      std::defines
+      mod
+      index-of
+      nat-list-measure
+      fty::defprod
+      fty::deflist
+      fty::defalist
+      fty::deftypes
+      fty::deffixequiv
+      fty::deffixequiv-mutual
+      fty::deffixtype
+      fty::defflexsum
 
-(assign acl2::verbose-theory-warning nil)
+      natarr get-nat set-nat resize-nats
+      u32arr u32s-length get-u32 set-u32 resize-u32s set-u32n
 
-; It's too frustrating NOT to have this be part of package.lsp
+      aig-eval aig-and aig-or aig-not aig-ite aig-xor aig-iff aig-eval-list
 
-(defmacro VL::include-book (&rest args)
-  `(ACL2::include-book ,@args :ttags :all))
+      defsvtv svtv-run svtv-debug svtv-easy-bindings svtv->ins svtv->vars svtv->outs svtv-p
+      patbind-svtv
+      )
+
+    #!VL
+    '(warnings
+      warn
+      fatal
+      ok
+      vl-warninglist-fix
+      vl-warninglist-p
+      make-vl-warning
+      vl-printedlist-p
+      vl-printedlist->string
+      vl-printedlist-length
+      vl-expr-p
+      vl-expr-welltyped-p
+      vl-atom-p
+      xf-cwtime))
+
+    ;; Things to remove:
+    '(acl2::warn
+      std::defalist
+       std::deflist)))

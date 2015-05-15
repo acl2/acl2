@@ -838,15 +838,11 @@ would have had to call @('(student->fullname x)').  For instance:</p>
        (acc  nil)
        (foop (da-recognizer-name name))
        (acc  (str::revappend-chars "<p>@(call " acc))
-       ;; This isn't right, in general.  Need to properly get the name
-       ;; into escaped format.
-       (acc  (str::revappend-chars (symbol-package-name foop) acc))
-       (acc  (str::revappend-chars "::" acc))
-       (acc  (str::revappend-chars (symbol-name foop) acc))
+       (acc  (str::revappend-chars (xdoc::full-escape-symbol foop) acc))
        (acc  (str::revappend-chars ") is a @(see std::defaggregate) of the following fields.</p>" acc))
        ((mv acc state) (da-fields-doc fields acc base-pkg state))
        (acc  (str::revappend-chars "<p>Source link: @(srclink " acc))
-       (acc  (str::revappend-chars (acl2::string-downcase (symbol-name name)) acc))
+       (acc  (str::revappend-chars (xdoc::full-escape-symbol foop) acc))
        (acc  (str::revappend-chars ")</p>" acc))
        (acc  (str::revappend-chars (or long "") acc))
        (long (str::rchars-to-string acc)))
@@ -859,12 +855,18 @@ would have had to call @('(student->fullname x)').  For instance:</p>
 (defun da-field-autodoc (name field)
   (declare (xargs :guard (formal-p field)))
   (b* (((formal field) field)
-       (foop     (da-recognizer-name name))
-       (accessor (da-accessor-name name field.name))
-       ;; bozo escaping issues...
-       (short    (str::cat "Access the <tt>" (acl2::string-downcase (symbol-name field.name))
-                           "</tt> field of a @(see " (xdoc::full-escape-symbol foop)
-                           ") structure.")))
+       (foop      (da-recognizer-name name))
+       (accessor  (da-accessor-name name field.name))
+
+       ;; Create the short string.
+       (fieldname (xdoc::name-low (symbol-name field.name)))
+       (acc nil)
+       (acc (str::revappend-chars "Access the <tt>" acc))
+       (acc (xdoc::simple-html-encode-str fieldname 0 (length fieldname) acc))
+       (acc (str::revappend-chars "</tt> field of a " acc))
+       (acc (str::revappend-chars (xdoc::see foop) acc))
+       (acc (str::revappend-chars " structure." acc))
+       (short (str::rchars-to-string acc)))
     `(defxdoc ,accessor
        :parents (,foop)
        :short ,short)))
@@ -876,48 +878,53 @@ would have had to call @('(student->fullname x)').  For instance:</p>
             (da-fields-autodoc name (cdr fields)))
     nil))
 
-(defun da-ctor-optional-fields (fields)
-  (declare (xargs :guard (formallist-p fields)))
-  (b* (((when (atom fields))
-        nil)
-       (name1 (xdoc::name-low (symbol-name (formal->name (car fields)))))
+(defconst *nl* (str::implode (list #\Newline)))
+
+(defun da-ctor-optional-fields (field-names pad acc)
+  (declare (xargs :guard (and (symbol-listp field-names)
+                              (stringp pad))))
+  (b* (((when (atom field-names))
+        acc)
+       (name1 (xdoc::name-low (symbol-name (car field-names))))
        (len1  (length name1))
-       (acc   nil)
        (acc   (str::revappend-chars "[:" acc))
        (acc   (xdoc::simple-html-encode-str name1 0 len1 acc))
        (acc   (str::revappend-chars " &lt;" acc))
        (acc   (xdoc::simple-html-encode-str name1 0 len1 acc))
-       (acc   (str::revappend-chars "&gt;]" acc)))
-    (cons (str::rchars-to-string acc)
-          (da-ctor-optional-fields (cdr fields)))))
+       (acc   (str::revappend-chars "&gt;]" acc))
+       (acc   (if (consp (cdr field-names))
+                  (str::revappend-chars pad acc)
+                acc)))
+    (da-ctor-optional-fields (cdr field-names) pad acc)))
 
-(defconst *nl* (str::implode (list #\Newline)))
-
-(defun da-ctor-optional-call (name        ; e.g., make-honsed-foo
-                              field-strs  ; e.g., ("[:field1 <field1>]" "[field2 <field2>"])
-                              )
+(defun da-ctor-optional-call (name line1 field-names)
   (declare (xargs :guard (and (symbolp name)
-                              (string-listp field-strs))))
+                              (stringp line1)
+                              (symbol-listp field-names))))
   (b* ((ctor-name (xdoc::name-low (symbol-name name)))
-       ;; +2 to account for the leading paren and trailing space after ctor-name 
-       (len       (+ 2 (length ctor-name)))
-       (pad       (str::implode (cons #\Newline
-                                      (make-list len :initial-element #\Space))))
-       (args      (str::join field-strs pad)))
-    (str::cat "<code>" *nl* "(" ctor-name " " args ")" *nl* "</code>")))
+       (pad (str::implode ;; +2 for leading paren & trailing space after ctor-name
+             (cons #\Newline
+                   (make-list (+ 2 (length ctor-name))
+                              :initial-element #\Space))))
+       (acc nil)
+       (acc (str::revappend-chars "<code>" acc))
+       (acc (cons #\Newline acc))
+       (acc (cons #\( acc))
+       (acc (xdoc::simple-html-encode-str ctor-name 0 (length ctor-name) acc))
+       (acc (cons #\Space acc))
+       (acc (if (equal line1 "")
+                acc
+              (str::revappend-chars pad
+                                    (str::revappend-chars line1 acc))))
+       (acc (da-ctor-optional-fields field-names pad acc))
+       (acc (cons #\) acc))
+       (acc (cons #\Newline acc))
+       (acc (str::revappend-chars "</code>" acc)))
+    (str::rchars-to-string acc)))
 
 #||
-
-(da-ctor-optional-call 'make-honsed-foo
-                       '("[:lettuce <lettuce>]"
-                         "[:cheese <cheese>]"
-                         "[:meat <meat>]"))
-
-(da-ctor-optional-call 'change-honsed-foo
-                       '("x"
-                         "[:lettuce <lettuce>]"
-                         "[:cheese <cheese>]"
-                         "[:meat <meat>]"))
+(da-ctor-optional-call 'make-foo "" '(lettuce cheese meat))
+(da-ctor-optional-call 'change-honsed-foo "x" '(lettuce cheese meat))
 ||#
 
 (defun da-ctor-autodoc (name fields honsp)
@@ -934,23 +941,28 @@ would have had to call @('(student->fullname x)').  For instance:</p>
        (change-foo         (da-changer-name name))
 
        (see-foo-p           (xdoc::see foo-p))
-       (plain-foo-p         (str::cat "<tt>" (xdoc::name-low (symbol-name foo-p)) "</tt>"))
+       (plain-foo-p         (let* ((foo-p-low (xdoc::name-low (symbol-name foo-p)))
+                                   (acc nil)
+                                   (acc (str::revappend-chars "<tt>" acc))
+                                   (acc (xdoc::simple-html-encode-str foo-p-low 0 (length foo-p-low) acc))
+                                   (acc (str::revappend-chars "</tt>" acc)))
+                              (str::rchars-to-string acc)))
+
        (see-foo             (xdoc::see foo))
        (see-honsed-foo      (xdoc::see honsed-foo))
        (see-make-foo        (xdoc::see make-foo))
        (see-make-honsed-foo (xdoc::see make-honsed-foo))
        (see-change-foo      (xdoc::see change-foo))
 
-       (pkg               (symbol-package-name name))
-       (call-foo          (str::cat "@(ccall " pkg "::" (symbol-name foo) ")"))
-       (call-honsed-foo   (str::cat "@(ccall " pkg "::" (symbol-name honsed-foo) ")"))
+       (call-foo            (str::cat "@(ccall " (xdoc::full-escape-symbol foo) ")"))
+       (call-honsed-foo     (str::cat "@(ccall " (xdoc::full-escape-symbol honsed-foo) ")"))
 
        ;; For make-foo, change-foo, etc., it's nicer to present a list of [:fld <fld>] options
        ;; rather than just saying &rest args, which is what @(call ...) would do.
-       (opt-fields           (da-ctor-optional-fields fields))
-       (call-make-foo        (da-ctor-optional-call make-foo opt-fields))
-       (call-make-honsed-foo (da-ctor-optional-call make-honsed-foo opt-fields))
-       (call-change-foo      (da-ctor-optional-call change-foo (cons "x" opt-fields)))
+       (field-names          (formallist->names fields))
+       (call-make-foo        (da-ctor-optional-call make-foo "" field-names))
+       (call-make-honsed-foo (da-ctor-optional-call make-honsed-foo "" field-names))
+       (call-change-foo      (da-ctor-optional-call change-foo "x" field-names))
 
        (def-foo                (str::cat "@(def " (xdoc::full-escape-symbol foo) ")"))
        (def-honsed-foo         (str::cat "@(def " (xdoc::full-escape-symbol honsed-foo) ")"))

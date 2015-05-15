@@ -1,4 +1,4 @@
-; FTY type support library
+; SVEX - Symbolic, Vector-Level Hardware Description Library
 ; Copyright (C) 2014 Centaur Technology
 ;
 ; Contact:
@@ -28,28 +28,26 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-(in-package "ACL2")
+(ld "cert.acl2")
+(in-package "SV")
+(set-deferred-ttag-notes t state)
+(include-book "cosims")
 
-;;(ld "std/package.lsp" :dir :system)
-(include-book "std/portcullis" :dir :system)
+:q
 
-(defpkg "FTY"
-  (append *std-pkg-symbols*
-          '(std::def-primitive-aggregate
-             std::extract-keywords
-             std::getarg)
-          #!ACL2
-          '(a b c d e f g h i j k l m n o p q r s t u v w x y z
+;; (setf *saved-string* "")
 
-              ;; Minor things for better documentation
-              fty
-              fty-discipline
-              natp
-              nfix
-              nat-equiv
-              equivalence
-              congruence
-              hints
+;; ; Redefine default-restart to avoid some of the banner nonsense at the start
+;; (defun acl2-default-restart ()
+;;   (if *acl2-default-restart-complete*
+;;       (return-from acl2-default-restart nil))
+;;   (setq ccl::*inhibit-greeting* t)
+;;   (maybe-load-acl2-init)
+;;   (eval `(in-package ,*startup-package-name*))
+;;   (eval '(lp))
+;;   (setq *acl2-default-restart-complete* t)
+;;   nil)
 
-              )))
-
+(save-exec "cosim-core"
+           "svex cosim framework is built in."
+           :host-lisp-args "-Z 256M")

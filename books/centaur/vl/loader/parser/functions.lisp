@@ -666,17 +666,17 @@ try to resume parsing after a problematic function."
                (vl-idtoken-p (cdr val)))
   :fails gracefully
   :count strong
-  :long "<p>This matches the part of a function body consisting of:
+  :long "<p>This matches the part of a function body consisting of:</p>
 
 @({
- function_data_type_or_implicit
-          [ interface_identifier '.' | class_scope ] identifier
- })
+    function_data_type_or_implicit
+      [ interface_identifier '.' | class_scope ] identifier
+})
 
 <p>Except that we're going to ignore the interface_identifier and class_scope
 part.</p>
 
-<p>The following grammar rules are relevant:
+<p>The following grammar rules are relevant:</p>
 
 @({
     function_data_type_or_implicit ::= data_type_or_void
@@ -687,13 +687,13 @@ part.</p>
     implicit_data_type ::= [ signing ] { packed_dimension }
 })
 
-<p>So really what we're parsing is:
+<p>So really what we're parsing is:</p>
 
 @({
-   'void' identifier
- | data_type identifier
- | [ signing ] { packed_dimension } identifier.
- })
+      'void' identifier
+    | data_type identifier
+    | [ signing ] { packed_dimension } identifier.
+})
 
 <p>This requires backtracking because if an identifier is first, we don't know
 if we're in the data type or implicit case.  The way we resolve this is to
@@ -701,9 +701,7 @@ first try the datatype case.  If that works, it's definitely the right one,
 because in all cases our final identifier is going to be followed by some
 punctuation, and so if we parse both a data type and an identifier, we know the
 third option wouldn't have worked (we would've just gotten an identifier and
-then a semicolon or left-paren).</p>
-
-"
+then a semicolon or left-paren).</p>"
   (b* (((when (and void-allowed-p (vl-is-token? :vl-kwd-void)))
         ;; No ambiguity here.
         (seq tokstream

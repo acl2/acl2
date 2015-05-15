@@ -139,7 +139,8 @@
        (acc (str::revappend-chars "<see topic=\"" acc))
        (acc (file-name-mangle x acc))
        (acc (str::revappend-chars "\">" acc))
-       (acc (str::revappend-chars (name-low (symbol-name x)) acc))
+       (low (name-low (symbol-name x)))
+       (acc (xdoc::simple-html-encode-str low 0 (length low) acc))
        (acc (str::revappend-chars "</see>" acc)))
     (str::rchars-to-string acc)))
 
