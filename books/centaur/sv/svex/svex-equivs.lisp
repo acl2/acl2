@@ -28,7 +28,7 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-(in-package "SVEX")
+(in-package "SV")
 (include-book "svmask")
 
 ;; NOTE: this currently isn't included anywhere

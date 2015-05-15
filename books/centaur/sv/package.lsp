@@ -1,5 +1,5 @@
-; SVEX - Symbolic, Vector-Level Hardware Description Library
-; Copyright (C) 2014 Centaur Technology
+; SV - Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2014-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -35,7 +35,7 @@
 
 (defpkg "SV"
   (set-difference-eq
-   (multi-union-eq
+   (union-eq
     *standard-acl2-imports*
     std::*std-exports*
     set::*sets-exports*

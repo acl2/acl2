@@ -1,5 +1,5 @@
-; Centaur SV Hardware Verification Tutorial
-; Copyright (C) 2012-2015 Centaur Technology
+; SV - Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2014-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,13 +26,32 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original authors: Jared Davis <jared@centtech.com>
-;                   Sol Swords <sswords@centtech.com>
+; Original author: Sol Swords <sswords@centtech.com>
 
-#!ACL2
-(in-package "ACL2")
-
-(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
-(include-book "../portcullis")
-(include-book "centaur/gl/portcullis" :dir :system)
 (in-package "SV")
+(include-book "4vec")
+(include-book "aig-arith")
+(include-book "bits")
+(include-book "compose")
+(include-book "env-ops")
+(include-book "evaluator")
+(include-book "lattice")
+(include-book "rsh-concat")
+(include-book "svex-argmasks")
+(include-book "svex-equivs")
+(include-book "svex")
+(include-book "svex-rewrite-base")
+(include-book "svex-rewrite")
+(include-book "svex-rewrite-rules")
+(include-book "svmask")
+(include-book "symbolic")
+(include-book "vars")
+
+(defxdoc expressions
+  :parents (sv)
+  :short "The <b>S</b>ymbolic <b>V</b>ector <b>Ex</b>pression language (SVEX)
+forms the core of SV.  It includes an S-expression language for certain
+pre-defined hardware functions, an interpreter for evaluating these expressions
+on four-valued integers, and related tools.")
+
+

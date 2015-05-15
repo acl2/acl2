@@ -1,5 +1,5 @@
-; SVEX - Symbolic, Vector-Level Hardware Description Library
-; Copyright (C) 2014 Centaur Technology
+; SV - Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2014-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,12 +26,12 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original author: Sol Swords <sswords@centtech.com>
+; Original authors: Jared Davis <jared@centtech.com>
+;                   Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-
 (include-book "structure")
-(include-book "../moddb")
+(include-book "../mods/moddb")
 (include-book "centaur/esim/stv/stv-util" :dir :system)
 (include-book "std/strings/strtok" :dir :system)
 (include-book "std/strings/strrpos" :dir :system)

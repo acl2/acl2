@@ -1,5 +1,5 @@
-; Copyright (C) 2014 Centaur Technology
-; SVEX - Symbolic, Vector-Level Hardware Description Library
+; SV - Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2014-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,12 +29,12 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "VL")
+(include-book "../mods/svmods")
+(include-book "../svex/lattice")
+(include-book "../svex/svex-rewrite-base")
 (include-book "centaur/vl/mlib/hid-tools" :dir :system)
 (include-book "centaur/vl/mlib/selfsize" :dir :system)
 (include-book "centaur/vl/mlib/typedecide" :dir :system)
-(include-book "lattice")
-(include-book "svmods")
-(include-book "svex-rewrite-base")
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -204,7 +204,7 @@ would therefore incur some overhead.</p>")
   (defthm svex-eval-of-svex-int
     (equal (sv::svex-eval (svex-int x) env)
            (sv::2vec x)))
-  
+
   (defthm vars-of-svex-int
     (equal (sv::svex-vars (svex-int x)) nil)))
 
@@ -295,7 +295,7 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
 
   (local (in-theory (disable svex-reduce-consts
                              svexlist-reduce-consts)))
-           
+
 
   (defthm-svex-reduce-consts-flag
     (defthm svex-reduce-consts-correct
@@ -371,7 +371,7 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
        (charval (char-code (char x (1- n))))
        (rest (vl-string->bits x (1- n))))
     (logior (ash rest 8) charval)))
-       
+
 
 (define vl-value-to-svex ((x vl-value-p))
   :prepwork ((local (defthm vl-bit-p-of-vl-extint->value-forward
@@ -399,7 +399,7 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
   (vl-select-case x
     :field t
     :index (vl-expr-resolved-p x.val)))
-  
+
 (define vl-selstep-resolved-p ((x vl-selstep-p))
   :enabled t
   (vl-select-resolved-p (vl-selstep->select x)))
@@ -422,7 +422,7 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
       0
     (+ (if (vl-selstep-resolved-p (car x)) 0 1)
        (vl-seltrace-unres-count (cdr x)))))
-  
+
 
 (define vl-seltrace-add-to-path ((x vl-seltrace-p)
                                  (path sv::path-p))
@@ -456,7 +456,7 @@ e.g. bitselects, partselects, and nonconstant array selects.</p>"
                    :subpath path)
                 (sv::make-path-wire :name (vl-selstep->svex-name (car x))))))
     (vl-seltrace-add-to-path (cdr x) path1)))
-  
+
 (define vl-hidstep-resolved-p ((x vl-hidstep-p))
   :short "Checks that the index, if any, is resolved, and that the item has a name."
   (b* (((vl-hidstep x)))
@@ -550,7 +550,7 @@ e.g. bitselects, partselects, and nonconstant array selects.</p>"
         (mv nil (+ incr rest)))))
   ///
   (verify-guards vl-upscope-to-svex-upscope))
-        
+
 
 (define vl-scopecontext-to-addr ((x vl-scopecontext-p)
                                  (ss vl-scopestack-p)
@@ -834,7 +834,7 @@ ignored.</p>"
             (4vec-concat (2vec (- sh)) (4vec-x) x)
           (4vec-rsh (2vec sh) x)))
     (4vec-x)))
-  
+
 #!sv
 (define svex-lsb-shift ((shift-amt svex-p)
                         (x svex-p))
@@ -890,7 +890,7 @@ if the shift amount is computed elsewhere.</p>"
                     (equal (4vec-concat x y z) (4vec-x)))
            :hints(("Goal" :in-theory (enable 4vec-concat)))))
 
-  (local (in-theory (disable 4vec->lower-when-2vec-p))) 
+  (local (in-theory (disable 4vec->lower-when-2vec-p)))
 
 
   (local (defthm svex-quote->val-of-reduce-consts
@@ -980,15 +980,15 @@ if the shift amount is computed elsewhere.</p>"
        ((mv err size) (vl-datatype-size type))
        ((when err) (mv err (svex-x)))
        ((unless size) (mv (vmsg "Could not size datatype ~s0" type) (svex-x)))
-       
+
        ((when (atom x))
         (mv nil (sv::svcall sv::concat (svex-int size) base-svex (svex-x))))
-             
+
 
        ;; Unres-count nonzero implies (consp x)
        ((vl-selstep step) (car x))
 
-       
+
 
        (rest-type (vl-seltrace-type (cdr x) opinfo))
        (rest-type (vl-maybe-usertype-resolve rest-type))
@@ -1130,7 +1130,7 @@ the way.</li>
             (mv (vmsg "Unresolved plusminus select width") x indices)))
         (mv nil x indices))))
   ///
-  
+
 
   (defret vl-operandinfo-usertypes-ok-of-vl-operandinfo-to-svex-preproc
     (implies (vl-operandinfo-usertypes-ok x)
@@ -1165,7 +1165,7 @@ the way.</li>
     (implies (not (member v (sv::svexlist-vars indices)))
              (not (member v (sv::svexlist-vars new-indices))))))
 
-  
+
 (define vl-operandinfo-to-svex ((x vl-operandinfo-p)
                                 (indices sv::svexlist-p)
                                 (ss vl-scopestack-p)
@@ -1271,7 +1271,7 @@ the way.</li>
                        (sv::svex-lsb-shift shift-amt baseexpr)
                        (svex-x)))))
   ///
-  
+
   (local (defthm member-svex-vars-of-car
            (implies (not (member v (sv::svexlist-vars x)))
                     (not (member v (sv::svex-vars (car x)))))
@@ -1394,7 +1394,7 @@ the way.</li>
        ((mv err2 x2) (vl-datatypelist-usertype-resolve (cdr x) ss)))
     (mv (or err1 err2)
         (cons x1 x2)))
-  /// 
+  ///
   (defret vl-datatypelist-resolved-p-of-vl-datatypelist-usertype-resolve
     (implies (not err)
              (vl-datatypelist-resolved-p new-x))
@@ -1619,7 +1619,7 @@ the way.</li>
        (x (vl-resolved->val x)))
     (or (and (<= msb x) (<= x lsb))
         (and (<= lsb x) (<= x msb)))))
-       
+
 
 ;; BOZO maybe should also check for more than 1 default key?
 (define vl-check-array-assignpat-keys ((pairs vl-keyvallist-p)
@@ -1772,7 +1772,7 @@ the way.</li>
                          ((unless (vl-find-structmember name membs))
                           (vmsg "Not a field name: ~a0" key.key)))
                       nil)
-              :type 
+              :type
               ;; BOZO could support these someday
               (vmsg "Datatype key ~a0 not valid for struct patterns" key.type)
               :default nil)))
@@ -1817,7 +1817,7 @@ the way.</li>
     :rule-classes :linear))
 
 
-        
+
 (local (defthm vl-exprlist-count-of-assignpat-keyval-values
          ;; (implies (vl-keyvallist-p x)
                   (<= (vl-exprlist-count (alist-vals x))
@@ -1826,7 +1826,7 @@ the way.</li>
                                            vl-keyvallist-count
                                            alist-vals)))
          :rule-classes :linear))
-         
+
 
 (local (defthm len-equal-0
          (equal (equal (len x) 0)
@@ -1951,9 +1951,9 @@ the way.</li>
 ;;     :hints (("Goal" :expand ((vl-expr-paramref-measure x ss :rec-limit rec-limit))
 ;;              :in-theory (enable max)))
 ;;     :rule-classes (:rewrite :linear)))
-                                
-         
-  
+
+
+
 
 ;; (define vl-funname->svex-funname ((x vl-scopeexpr-p)
 ;;                                   (ss vl-scopestack-p))
@@ -2118,7 +2118,7 @@ the way.</li>
 (defines vl-expr-to-svex
   :ruler-extenders :all
   :verify-guards nil
-  :prepwork ((local (in-theory (disable not max 
+  :prepwork ((local (in-theory (disable not max
                                         acl2::member-of-cons
                                         member-equal
                                         true-listp
@@ -2357,7 +2357,7 @@ functions can assume all bits of it are good.</p>"
             (svex-x))
         :otherwise
         (mv (ok) (prog2$ (impossible) (svex-x))))))
-  
+
   (define vl-expr-to-svex-opaque ((x vl-expr-p)
                                   (conf vl-svexconf-p))
     :guard (equal (vl-expr-opacity x) :opaque)
@@ -2468,7 +2468,7 @@ functions can assume all bits of it are good.</p>"
               (svex-multiconcat (vl-resolved->val x.reps) svexes sizes)))
           (mv (ok) svex))
 
-        :vl-inside 
+        :vl-inside
         (mv (fatal :type :vl-expr-to-svex-fail
                    :msg "Not yet supported: ~a0"
                    :args (list x))
@@ -2501,7 +2501,7 @@ functions can assume all bits of it are good.</p>"
                         (vl-expr-to-svex-selfdet (car x.args) nil conf)))
                     (mv warnings
                         (sv::svcall sv::clog2 arg-svex))))
-                 
+
                  ((when (vl-typearg-syscall-p "$bits" x))
                   (vl-$bits-call-resolve-type x conf))
 
@@ -2552,7 +2552,7 @@ functions can assume all bits of it are good.</p>"
           (b* (((mv warnings svex &)
                 (vl-expr-to-svex-selfdet x.expr nil conf)))
             (mv warnings svex)))
-                     
+
 
         :vl-pattern
         (b* (((unless x.pattype)
@@ -2578,7 +2578,7 @@ functions can assume all bits of it are good.</p>"
                  (type (and (vl-maybe-datatype-p type)
                             (implies type
                                      (vl-datatype-resolved-p type)))))
-    :measure (two-nats-measure (vl-expr-count x) 2)    
+    :measure (two-nats-measure (vl-expr-count x) 2)
     (b* ((warnings nil)
          ((unless (mbt (vl-expr-case x :vl-index)))
           (impossible) ;; need this case for measure
@@ -2622,7 +2622,7 @@ functions can assume all bits of it are good.</p>"
                             (implies type
                                      (vl-datatype-resolved-p type)))))
     :guard (vl-expr-case x :vl-call)
-    :measure (two-nats-measure (vl-expr-count x) 2)    
+    :measure (two-nats-measure (vl-expr-count x) 2)
     (b* ((warnings nil)
          ((unless (mbt (vl-expr-case x :vl-call)))
           (impossible) ;; need this case for measure
@@ -2688,8 +2688,8 @@ functions can assume all bits of it are good.</p>"
     (b* ((x (vl-expr-fix x))
          (type (vl-datatype-fix type))
          (warnings nil)
-         ((vl-svexconf conf)) 
-         (opacity (vl-expr-opacity x)) 
+         ((vl-svexconf conf))
+         (opacity (vl-expr-opacity x))
          (packedp (vl-datatype-packedp type))
          ((when (and packedp
                      (not (eq opacity :special))
@@ -2854,7 +2854,7 @@ functions can assume all bits of it are good.</p>"
                                        SystemVerilog says this is an error."
                                  :args (list x type))
                          warnings))
-              
+
              (bitstream (if (eq x.dir :right)
                             concat
                           (sv::svcall sv::blkrev
@@ -3381,7 +3381,7 @@ functions can assume all bits of it are good.</p>"
               (and (mbt (vl-datatype-resolved-p type)) type)
               size))
       (vl-expr-to-svex-untyped x conf))))
-    
+
 
 (define vl-upperlower-to-bitlist ((upper integerp)
                                   (lower integerp)
@@ -3434,8 +3434,8 @@ functions can assume all bits of it are good.</p>"
     (make-vl-weirdint :bits val
                       :origtype signedness
                       :wasunsized t)))
-             
-       
+
+
 
 
 (define vl-expr-consteval ((x vl-expr-p)

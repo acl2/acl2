@@ -1,5 +1,5 @@
-; SVEX - Symbolic, Vector-Level Hardware Description Library
-; Copyright (C) 2014 Centaur Technology
+; SV - Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2014-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,10 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "svtv/debug")
-(include-book "symbolic")
-(include-book "decomp")
-(include-book "vl-svex")
+(include-book "top")
 
 (defxdoc acl2::hardware-verification
   :short "Libraries for working with hardware description languages, modeling circuits, etc.")

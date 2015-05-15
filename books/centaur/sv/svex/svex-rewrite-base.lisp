@@ -35,7 +35,7 @@
 (local (include-book "centaur/misc/equal-sets" :dir :system))
 
 (defxdoc svex-rewriting
-  :parents (svex-package)
+  :parents (sv)
   :short "Simplification of SVEX expressions by mostly-unconditional rewriting."
   :long "<p>Only <i>mostly</i> unconditional, because there is an additional
 context-determined bitmask that can allow additional simplifications; see @(see

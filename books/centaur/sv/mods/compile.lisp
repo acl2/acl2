@@ -1,5 +1,5 @@
-; SVEX - Symbolic, Vector-Level Hardware Description Library
-; Copyright (C) 2014 Centaur Technology
+; SV - Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2014-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -31,7 +31,7 @@
 (in-package "SV")
 (include-book "moddb")
 (include-book "alias-norm")
-(include-book "compose")
+(include-book "../svex/compose")
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "centaur/vl/util/cwtime" :dir :system)
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
@@ -41,7 +41,7 @@
 (local (in-theory (disable nfix natp)))
 
 (defxdoc svex-compilation
-  :parents (svex-package)
+  :parents (sv)
   :short "Turning a hierarchical SVEX design into a finite state machine."
   :long " <p>The function @(see svex-design-compile) extracts a finite state
 machine representation from a hierarchical SVEX design.  See also @(see

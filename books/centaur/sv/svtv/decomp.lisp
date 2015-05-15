@@ -1,5 +1,5 @@
-; SVEX - Symbolic, Vector-Level Hardware Description Library
-; Copyright (C) 2014 Centaur Technology
+; SV - Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2014-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,12 +29,12 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
+(include-book "../svex/compose")
+(include-book "../svex/evaluator")
+(include-book "../svex/env-ops")
 (include-book "tools/match-tree" :dir :system)
-(include-book "compose")
-(include-book "evaluator")
 (include-book "std/alists/fast-alist-clean" :dir :System)
 (include-book "std/alists/fal-extract" :dir :system)
-(include-book "env-ops")
 (local (include-book "centaur/misc/fast-alists" :dir :system))
 (local (include-book "centaur/misc/equal-sets" :dir :System))
 (local (include-book "std/lists/acl2-count" :dir :system))
@@ -45,7 +45,7 @@
 
 
 (defxdoc svex-decomp
-  :parents (svex-package)
+  :parents (sv)
   :short "Proving that a decomposition is equivalent to some whole."
   :long "<p>Here is an example, from \"svex/tutorial/boothpipe.lisp\", showing
 how to use @('svdecomp-hints') to prove a decomposition theorem:</p>
