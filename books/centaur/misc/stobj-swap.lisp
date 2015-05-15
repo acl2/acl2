@@ -73,8 +73,8 @@
       (defun ,swap (,stobj1 ,stobj2)
         (let* ((bound (1- (length ,stobj1))))
           (loop for i from 0 to bound do
-                (psetf (svref i ,stobj1) (svref i ,stobj2)
-                       (svref i ,stobj2) (svref i ,stobj1)))
+                (psetf (svref ,stobj1 i) (svref ,stobj2 i)
+                       (svref ,stobj2 i) (svref ,stobj1 i)))
           (mv ,stobj1 ,stobj2)))))))
 
 
