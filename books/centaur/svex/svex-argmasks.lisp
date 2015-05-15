@@ -731,10 +731,10 @@
                                  3vec-fix)
                                 (bitops::logior-equal-0))
                 :use ((:instance ?-check-lemma-1
-                       (x (svex-eval (car args) nil))
+                       (x (svex-xeval (car args)))
                        (y (svex-eval (car args) env)))
                       (:instance ?-check-lemma-2
-                       (x (svex-eval (car args) nil))
+                       (x (svex-xeval (car args)))
                        (y (svex-eval (car args) env)))
                       )))
           (bitops::logbitp-reasoning)
@@ -752,6 +752,13 @@
                             (4vec->upper y))
                      (equal (4vec->lower (svex-eval x env))
                             (4vec->lower y))))))
+
+(local (defthm 2vec-p-when-4vec-index-p
+         (implies (4vec-index-p x)
+                  (2vec-p x))
+         :hints(("Goal" :in-theory (enable 4vec-index-p)))))
+
+
 
 (def-svmask zerox (n x)
   (list (4vmask-all-or-none mask)
@@ -914,6 +921,10 @@
   (list -1 -1)
   :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
 
+(def-svmask === (x y)
+  (list -1 -1)
+  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
+
 (def-svmask clog2 (x)
   (list -1)
   :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
@@ -939,16 +950,17 @@
                                               4vec-wildeq 3vec-reduction-and
                                               3vec-bitor 3vec-bitnot 4vec-bitxor
                                               4vec-mask bool->vec 4vec-[=)
-                                  (svex-eval-monotonic svex-eval-gte-empty-env))
-                  :use ((:instance svex-eval-gte-empty-env
+                                  (svex-eval-gte-xeval))
+                  :use ((:instance svex-eval-gte-xeval
                          (x (car args)))
-                        (:instance svex-eval-gte-empty-env
+                        (:instance svex-eval-gte-xeval
                          (x (cadr args))))))
            (bitops::logbitp-reasoning :passes 2
                                     :simp-hint nil
                                     :add-hints nil)
            (and stable-under-simplificationp
-                '(:bdd (:vars nil)))))
+                '(:bdd (:vars nil)))
+           ))
 
   (def-svmask ==?? (a b)
     (b* (((4vec bval) (svex-xeval b))
@@ -965,10 +977,10 @@
                                               4vec-symwildeq 3vec-reduction-and
                                               3vec-bitor 3vec-bitnot 4vec-bitxor
                                               4vec-mask bool->vec 4vec-[=)
-                                  (svex-eval-monotonic svex-eval-gte-empty-env))
-                  :use ((:instance svex-eval-gte-empty-env
+                                  (svex-eval-gte-xeval))
+                  :use ((:instance svex-eval-gte-xeval
                          (x (car args)))
-                        (:instance svex-eval-gte-empty-env
+                        (:instance svex-eval-gte-xeval
                          (x (cadr args))))))
            (bitops::logbitp-reasoning :passes 2
                                     :simp-hint nil

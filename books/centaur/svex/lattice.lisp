@@ -241,7 +241,20 @@ this relation, i.e.:</p>
   (def-4vec-monotonicity 4vec-rev-blocks)
   (def-4vec-monotonicity 4vec-wildeq)
   (def-4vec-monotonicity 4vec-symwildeq)
-  (def-4vec-monotonicity 4vec-clog2))
+  (def-4vec-monotonicity 4vec-clog2)
+
+  ;; (local (defthm equal-of-booleans
+  ;;          (implies (and (booleanp a) (booleanp b))
+  ;;                   (equal (equal a b) (iff a b)))))
+  (local (defthm booleanp-of-logbitp
+           (booleanp (logbitp n a))
+           :rule-classes :type-prescription))
+
+  (defthm 4vec-==-[=-===
+    (4vec-[= (4vec-== a b) (4vec-=== a b))
+    :hints(("Goal" :in-theory (enable 4vec-=== 4vec-== 3vec-== 3vec-fix
+                                      4vec-fix-is-4vec-of-fields))
+           (acl2::logbitp-reasoning))))
 
 (defsection 4veclist-[=
   (acl2::defquant 4veclist-[= (x y)
@@ -307,39 +320,40 @@ this relation, i.e.:</p>
     :hints ((acl2::witness))))
 
 (defthm svex-apply-monotonic
-  (implies (4veclist-[= x y)
+  (implies (and (4veclist-[= x y)
+                (not (eq (fnsym-fix fn) '===)))
            (4vec-[= (svex-apply fn x) (svex-apply fn y)))
   :hints(("Goal" :in-theory (e/d (svex-apply) (2vec-p 2vec->val)))))
 
 
 (defthm-svex-eval-flag
-  (defthm svex-eval-monotonic
-    (implies (svex-env-[= env1 env2)
-             (4vec-[= (svex-eval x env1) (svex-eval x env2)))
-    :hints ('(:expand ((:free (env) (svex-eval x env)))))
+  (defthm svex-eval-gte-xeval
+    (4vec-[= (svex-xeval x) (svex-eval x env))
+    :hints ('(:expand ((svex-eval x env)
+                       (svex-xeval x)))
+            (and stable-under-simplificationp
+                 '(:in-theory (e/d (svex-apply 4vec-[=-transitive-2)
+                                   (4vec-==-[=-===))
+                   :use ((:instance 4vec-==-[=-===
+                          (a (4veclist-nth 0 (svexlist-eval (svex-call->args x) env)))
+                          (b (4veclist-nth 1 (svexlist-eval (svex-call->args x) env)))))
+                   :do-not-induct t)))
     :flag expr)
-  (defthm svexlist-eval-monotonic
-    (implies (svex-env-[= env1 env2)
-             (4veclist-[= (svexlist-eval x env1) (svexlist-eval x env2)))
-    :hints ('(:expand ((:free (env) (svexlist-eval x env)))))
+  (defthm svexlist-eval-gte-xeval
+    (4veclist-[= (svexlist-xeval x) (svexlist-eval x env))
+  :hints ('(:expand ((svexlist-eval x env)
+                     (svexlist-xeval x))))
     :flag list))
-
-(defthm svex-eval-gte-empty-env
-  (4vec-[= (svex-eval x nil) (svex-eval x env)))
-
-(defthm svexlist-eval-gte-empty-env
-  (4veclist-[= (svexlist-eval x nil) (svexlist-eval x env)))
 
 (defthmd svex-eval-when-2vec-p-of-minval
   (implies (and (syntaxp (not (equal env ''nil)))
-                (2vec-p (svex-eval n nil)))
+                (2vec-p (svex-xeval n)))
            (equal (svex-eval n env)
-                  (svex-eval n nil)))
-  :hints (("goal" :use ((:instance svex-eval-gte-empty-env (x n)))
+                  (svex-xeval n)))
+  :hints (("goal" :use ((:instance svex-eval-gte-xeval (x n)))
            :in-theory (e/d ( 4vec-equiv)
-                           (svex-eval-gte-empty-env
-                            svex-eval-monotonic))
-           :expand ((4vec-[= (svex-eval n nil) (svex-eval n env)))))
+                           (svex-eval-gte-xeval))
+           :expand ((4vec-[= (svex-xeval n) (svex-eval n env)))))
   :otf-flg t)
 
 
@@ -364,29 +378,76 @@ this relation, i.e.:</p>
                         '(:in-theory (enable bool->bit))))))
    (defthmd logbitp-when-4vec-[=-svex-eval
      (implies (and (syntaxp (not (equal env ''nil)))
-                   (or (not (logbitp n (4vec->upper (svex-eval b nil))))
-                       (logbitp n (4vec->lower (svex-eval b nil)))))
+                   (or (not (logbitp n (4vec->upper (svex-xeval b))))
+                       (logbitp n (4vec->lower (svex-xeval b)))))
               (and (equal (logbitp n (4vec->upper (svex-eval b env)))
-                          (logbitp n (4vec->upper (svex-eval b nil))))
+                          (logbitp n (4vec->upper (svex-xeval b))))
                    (equal (logbitp n (4vec->lower (svex-eval b env)))
-                          (logbitp n (4vec->lower (svex-eval b nil))))))
+                          (logbitp n (4vec->lower (svex-xeval b))))))
      :hints(("Goal" :use ((:instance logbitp-when-4vec-[=
                            (b (svex-eval b env))
-                           (a (svex-eval b nil)))))))))
+                           (a (svex-xeval b)))))))))
 
 
 (defthmd logbitp-when-4vec-[=-svex-eval-strong
   (implies (syntaxp (not (equal env ''nil)))
            (and (equal (logbitp n (4vec->upper (svex-eval b env)))
                        (if (acl2::bit->bool
-                            (acl2::b-ior (acl2::b-not (acl2::logbit n (4vec->upper (svex-eval b nil))))
-                                         (acl2::logbit n (4vec->lower (svex-eval b nil)))))
-                           (logbitp n (4vec->upper (svex-eval b nil)))
+                            (acl2::b-ior (acl2::b-not (acl2::logbit n (4vec->upper (svex-xeval b))))
+                                         (acl2::logbit n (4vec->lower (svex-xeval b)))))
+                           (logbitp n (4vec->upper (svex-xeval b)))
                          (bit-n n (4vec->upper (svex-eval b env)))))
                 (equal (logbitp n (4vec->lower (svex-eval b env)))
                        (if (acl2::bit->bool
-                            (acl2::b-ior (acl2::b-not (acl2::logbit n (4vec->upper (svex-eval b nil))))
-                                         (acl2::logbit n (4vec->lower (svex-eval b nil)))))
-                           (logbitp n (4vec->lower (svex-eval b nil)))
+                            (acl2::b-ior (acl2::b-not (acl2::logbit n (4vec->upper (svex-xeval b))))
+                                         (acl2::logbit n (4vec->lower (svex-xeval b)))))
+                           (logbitp n (4vec->lower (svex-xeval b)))
                          (bit-n n (4vec->lower (svex-eval b env)))))))
   :hints(("Goal" :in-theory (enable bit-n logbitp-when-4vec-[=-svex-eval acl2::b-ior))))
+
+
+
+(define 4vec-xfree-p ((x 4vec-p))
+  (b* (((4vec x) x))
+    (eql -1 (logior (lognot x.upper) x.lower)))
+  ///
+  (local (defthm equal-of-4vecs
+           (implies (and (4vec-p a)
+                         (4vec-p b))
+                    (equal (equal a b)
+                           (and (equal (4vec->upper a) (4vec->upper b))
+                                (equal (4vec->lower a) (4vec->lower b)))))))
+
+  (defthmd svex-eval-when-4vec-xfree-of-minval
+    (implies (and (syntaxp (not (equal env ''nil)))
+                  (4vec-xfree-p (svex-xeval n)))
+             (equal (svex-eval n env)
+                    (svex-xeval n)))
+    :hints (("goal" :use ((:instance svex-eval-gte-xeval (x n)))
+             :in-theory (e/d ( 4vec-equiv)
+                             (svex-eval-gte-xeval))
+             :expand ((4vec-[= (svex-xeval n) (svex-eval n env))))
+            (bitops::logbitp-reasoning)))
+  
+  (defthmd svex-eval-when-4vec-xfree-of-minval-apply
+    (implies (and (syntaxp (not (equal env ''nil)))
+                  (not (eq (fnsym-fix fn) '===))
+                  (4vec-xfree-p (svex-apply fn (svexlist-xeval args))))
+             (equal (svex-apply fn (svexlist-eval args env))
+                    (svex-apply fn (svexlist-xeval args))))
+    :hints (("goal" :use ((:instance svex-eval-when-4vec-xfree-of-minval
+                           (n (svex-call fn args))))
+             :in-theory (disable svex-eval-when-4vec-xfree-of-minval
+                                 equal-of-4vecs 4vec-xfree-p)
+             :expand ((svex-xeval (svex-call fn args))))))
+
+  (defthmd svex-eval-when-4vec-xfree-of-minval-apply-===
+    (implies (and (syntaxp (not (equal env ''nil)))
+                  (4vec-xfree-p (svex-apply '== (svexlist-xeval args))))
+             (equal (svex-apply '=== (svexlist-eval args env))
+                    (svex-apply '== (svexlist-xeval args))))
+    :hints (("goal" :use ((:instance svex-eval-when-4vec-xfree-of-minval
+                           (n (svex-call '=== args))))
+             :in-theory (disable svex-eval-when-4vec-xfree-of-minval
+                                 equal-of-4vecs 4vec-xfree-p)
+             :expand ((svex-xeval (svex-call '=== args)))))))

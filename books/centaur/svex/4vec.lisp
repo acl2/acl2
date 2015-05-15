@@ -1198,6 +1198,17 @@ or 0 (false).</p>"
   :long "<p>Shorthand for (uand (bitnot (bitxor x y))).</p>"
   (3vec-== (3vec-fix x) (3vec-fix y)))
 
+
+(define 4vec-=== ((x 4vec-p) (y 4vec-p))
+  :returns (res 4vec-p)
+  :parents (4vec-functions)
+  :short "Case equality of two 4vecs, Verilog-style"
+  :long "<p>Note: this is a bad operation that breaks the lattice discipline.</p>"
+  (2vec (bool->vec (equal (4vec-fix x) (4vec-fix y)))))
+
+
+
+
 (define 3vec-? ((x 4vec-p) (y 4vec-p) (z 4vec-p))
   :returns (res 4vec-p)
   :parents (4vec-functions)
