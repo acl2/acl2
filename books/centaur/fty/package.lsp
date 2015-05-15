@@ -30,7 +30,8 @@
 
 (in-package "ACL2")
 
-(ld "std/package.lsp" :dir :system)
+;;(ld "std/package.lsp" :dir :system)
+(include-book "std/portcullis" :dir :system)
 
 (defpkg "FTY"
   (append *std-pkg-symbols*

@@ -145,6 +145,7 @@
     (xdet      4vec-xdet           (x)                 "identity on binary vectors, else X")
     (<         4vec-<              (x y)               "less than")
     (==        4vec-==             (x y)               "equality")
+    (===       4vec-===            (x y)               "case equality")
     (==?       4vec-wildeq         (x y)               "wildcard equality")
     (==??      4vec-symwildeq      (x y)               "wildcard equality")
     (clog2     4vec-clog2          (x)                 "ceiling of log2")
@@ -310,30 +311,62 @@ and their meanings.</p>"
 (defines svex-xeval
   :parents (svex-eval)
   :short "Evaluate an svex under the empty (all-X) environment"
-  :long "<p>@('(svex-xeval x)') is the same as @('(svex-eval x nil)').  We
-provide a separate function for this special case because having a single
-argument improves memoization performance, and this function is commonly used
-in @(see svex-rewriting) to check whether a given expression only has one
-possible value.</p>"
+  :long "<p>@('(svex-xeval x)') is the same as @('(svex-eval x nil)'), except
+that the case equality operator @('===') is treated as the (monotonic) equality
+operator @('==').  We provide a separate function for this special case because
+having a single argument improves memoization performance, and this function is
+commonly used in @(see svex-rewriting) to check whether a given expression only
+has one possible value.</p>"
   :verify-guards nil
   (define svex-xeval ((x svex-p))
     :measure (svex-count x)
-    :returns (val (equal val (svex-eval x nil))
-                  :hints ('(:expand ((svex-eval x nil)))))
+    :returns (val 4vec-p)
     (svex-case x
       :quote x.val
       :var (4vec-x)
-      :call (svex-apply x.fn (svexlist-xeval x.args))))
+      :call (svex-apply
+             (if (eq x.fn '===)
+                 '==
+               x.fn)
+             (svexlist-xeval x.args))))
   (define svexlist-xeval ((x svexlist-p))
     :measure (svexlist-count x)
-    :returns (val (equal val (svexlist-eval x nil))
-                  :hints ('(:expand ((svexlist-eval x nil)))))
+    :returns (val 4veclist-p)
     (if (atom x)
         nil
       (cons (svex-xeval (car x))
             (svexlist-xeval (cdr x)))))
   ///
   (verify-guards svex-xeval)
+
+
+  (fty::deffixequiv-mutual svex-xeval
+    :hints (("goal" :expand ((svexlist-fix x)))))
+
+  (defthm len-of-svexlist-xeval
+    (equal (len (svexlist-xeval x))
+           (len x))
+    :hints(("Goal" :in-theory (enable svexlist-xeval))))
+
+
+  (defthm car-of-svexlist-xeval
+    (4vec-equiv (car (svexlist-xeval x))
+                (svex-xeval (car x)))
+    :hints(("Goal" :in-theory (enable svexlist-xeval))))
+
+  (defthm cdr-of-svexlist-xeval
+    (4veclist-equiv (cdr (svexlist-xeval x))
+                    (svexlist-xeval (cdr x)))
+    :hints(("Goal" :in-theory (enable svexlist-xeval))))
+
+  (defthm svexlist-xeval-nil
+    (equal (svexlist-xeval nil) nil))
+
+  (defthm svexlist-xeval-of-append
+    (equal (svexlist-xeval (append a b))
+           (append (svexlist-xeval a)
+                   (svexlist-xeval b)))
+    :hints(("Goal" :in-theory (enable append))))
 
   (memoize 'svex-xeval :condition '(eq (svex-kind x) :call)))
 

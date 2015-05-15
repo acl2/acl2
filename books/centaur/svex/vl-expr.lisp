@@ -275,10 +275,11 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
     :measure (svex-count x)
     (svex-case x
       :call (b* ((args (svexlist-reduce-consts x.args))
+                 ((when (svexlist-variable-free-p args))
+                  (svex-quote (svex-apply x.fn (svexlist-eval args nil))))
                  (args-eval (svexlist-xeval args))
-                 (res (svex-apply x.fn args-eval)))
-              (if (or (2vec-p res)
-                      (svexlist-variable-free-p args))
+                 (res (svex-apply (if (eq x.fn '===) '== x.fn) args-eval)))
+              (if (4vec-xfree-p res)
                   (svex-quote res)
                 (svex-call x.fn args)))
       :otherwise (svex-fix x)))
@@ -294,14 +295,6 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
 
   (local (in-theory (disable svex-reduce-consts
                              svexlist-reduce-consts)))
-
-  (local (defthm svex-eval-call-when-2vec-p-of-minval
-           (implies (and (syntaxp (not (equal env ''nil)))
-                         (2vec-p (svex-apply fn (svexlist-eval args nil))))
-                    (equal (svex-apply fn (svexlist-eval args env))
-                           (svex-apply fn (svexlist-eval args nil))))
-           :hints (("goal" :use ((:instance svex-eval-when-2vec-p-of-minval
-                                  (n (svex-call fn args))))))))
            
 
   (defthm-svex-reduce-consts-flag
@@ -309,7 +302,8 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
       (equal (svex-eval (svex-reduce-consts x) env)
              (svex-eval x env))
       :hints ((and stable-under-simplificationp
-                   '(:in-theory (enable svex-eval-when-2vec-p-of-minval
+                   '(:in-theory (enable svex-eval-when-4vec-xfree-of-minval-apply
+                                        svex-eval-when-4vec-xfree-of-minval-apply-===
                                         eval-when-svexlist-variable-free-p))))
       :flag svex-reduce-consts)
     (defthm svexlist-reduce-consts-correct
@@ -1488,8 +1482,8 @@ the way.</li>
           (:vl-binary-rem     (svex::svcall svex::%      left right))
           (:vl-binary-eq      (svex::svcall svex::==     left right))
           (:vl-binary-neq     (svex::svcall svex::bitnot (svex::svcall svex::==     left right)))
-          (:vl-binary-ceq     (svex::svcall svex::==     left right))
-          (:vl-binary-cne     (svex::svcall svex::bitnot (svex::svcall svex::==     left right)))
+          (:vl-binary-ceq     (svex::svcall svex::===    left right))
+          (:vl-binary-cne     (svex::svcall svex::bitnot (svex::svcall svex::===    left right)))
           (:vl-binary-wildeq  (svex::svcall svex::==?    left right))
           (:vl-binary-wildneq (svex::svcall svex::bitnot (svex::svcall svex::==?    left right)))
           (:vl-binary-logand  (svex::svcall svex::bitand (svex::svcall svex::uor    left)

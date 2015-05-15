@@ -1080,6 +1080,20 @@ results in at most n+1 bits.</p>"
                     (a4vec-eval y env)))
     :hints(("Goal" :in-theory (enable 4vec-== 3vec-==)))))
 
+(define a4vec-=== ((x a4vec-p) (y a4vec-p))
+  :returns (res a4vec-p)
+  (b* (((a4vec x))
+       ((a4vec y))
+       (val (aig-sterm (aig-and (aig-=-ss x.upper y.upper)
+                                (aig-=-ss x.lower y.lower)))))
+    (a4vec val val))
+  ///
+  (defthm a4vec-===-correct
+    (equal (a4vec-eval (a4vec-=== x y) env)
+           (4vec-=== (a4vec-eval x env)
+                    (a4vec-eval y env)))
+    :hints(("Goal" :in-theory (enable 4vec-=== bool->vec)))))
+
 (defun aig-neg/abs (x)
   (b* (((when (or (atom x) (cdr x)))
         (mv nil x))
@@ -1726,6 +1740,7 @@ results in at most n+1 bits.</p>"
     (<         a4vec-<              (x y)                   "less than")
     (clog2     a4vec-clog2          (x)                     "ceiling of log2")
     (==        a3vec-==             ((3v x) (3v y))         "equality")
+    (===       a4vec-===            (x y)                   "case equality")
     (==?       a4vec-wildeq         (x y)                   "wildcard equality")
     (==??      a4vec-symwildeq      (x y)                   "symmetric wildcard equality")
     (?         a3vec-?              ((3v test) (3vp then) (3vp else)) "if-then-else")
