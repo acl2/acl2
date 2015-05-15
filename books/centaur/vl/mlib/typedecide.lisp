@@ -576,7 +576,7 @@ that this addition is in fact unsigned.</p>
 <p>The @('sign') we return is only a @(see vl-maybe-exprtype-p).  We might
 return @('nil') for two reasons.  First, there could be some kind of actual
 error with the module or the expression, e.g., the use of a wire which is not
-declared; in these cases we add fatal @(see).  But we may also
+declared; in these cases we add fatal @(see warnings).  But we may also
 encounter expressions whose type we do not know how to compute (e.g., perhaps
 the expression is an unsupported system call).  In such cases we just return
 @('nil') for the sign without adding any warnings.</p>"

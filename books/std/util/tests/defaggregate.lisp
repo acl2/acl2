@@ -335,5 +335,3 @@
                                "Fred's full name is " fred.fullname "."))
                 "Fred's full name is Fredrick Flintstone."))
 
-
-

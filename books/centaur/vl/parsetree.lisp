@@ -60,24 +60,23 @@
 ;
 ; ----------------------------------------------------------------------------
 
-(defval *vl-current-syntax-version*
-  :parents (vl-syntaxversion-p)
+(defxdoc vl-syntaxversion
   :short "Version of VL syntax being used."
-
   :long "<p>This is a barbaric mechanism to make sure that we don't try to mix
-together translations produced by different versions of VL.  Each design is
-annotated with a @('version') field that must match exactly this string.</p>"
+together translations produced by incompatible versions of VL.  Each design is
+annotated with a @('version') field that must match exactly this string.</p>")
 
-  ;; Current syntax version: generally a string like
-  ;; "VL Syntax [date of modification]"
+(defval *vl-current-syntax-version*
+  :parents (vl-syntaxversion)
+  :short "Current syntax version: @(`*vl-current-syntax-version*`)."
   "VL Syntax 2115-02-05")
 
 (define vl-syntaxversion-p (x)
-  :parents (syntax)
+  :parents (vl-syntaxversion)
   (equal x *vl-current-syntax-version*))
 
 (define vl-syntaxversion-fix (x)
-  :parents (vl-syntaxversion-p)
+  :parents (vl-syntaxversion)
   :returns (version vl-syntaxversion-p)
   (if (vl-syntaxversion-p x)
       x
@@ -87,12 +86,14 @@ annotated with a @('version') field that must match exactly this string.</p>"
     (implies (vl-syntaxversion-p x)
              (equal (vl-syntaxversion-fix x) x))))
 
-(deffixtype vl-syntaxversion
-  :pred vl-syntaxversion-p
-  :fix vl-syntaxversion-fix
-  :equiv vl-syntaxversion-equiv
-  :define t
-  :forward t)
+(defsection vl-syntaxversion-equiv
+  :parents (vl-syntaxversion)
+  (deffixtype vl-syntaxversion
+    :pred vl-syntaxversion-p
+    :fix vl-syntaxversion-fix
+    :equiv vl-syntaxversion-equiv
+    :define t
+    :forward t))
 
 
 
@@ -3351,7 +3352,7 @@ do this is to wrap it using @('(vl-context x)').</p>
 <li>typename should imply no type, signedness, or pdims</li>
 <li>type should imply no signedness or pdims.</li>
 <li>modport should imply typename and not varp, dir, or nettype</li>
-<ul>
+</ul>
 
 <p>The reason we have these: Parsing ports is fairly ambiguous and there's a
 lot that needs to be fleshed out after we have a fuller picture of the design.
@@ -3364,8 +3365,7 @@ refers to an interface or a type.</p>
 <p>Another issue, with non-ANSI ports, is that a port declaration may have a
 corresponding net/variable declaration that contains different information
 about its type and nettype.  We resolve this later as well, cross-propagating
-the type information between the variable and port declarations.</p>
-"
+the type information between the variable and port declarations.</p>"
   :tag :vl-ansi-portdecl
   ((atts vl-atts-p)
    (dir vl-maybe-direction-p

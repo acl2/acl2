@@ -40,7 +40,7 @@
   :short "The VL Verilog Toolkit, 2014 Edition.  This is a \"stable\" fork of
 @(see vl::vl) for compatibility with @(see acl2::esim)."
 
-  :long "<h3>What is VL?</h3>
+  :long "<h3>What are VL and VL2014?</h3>
 
 <p>The @(see vl::vl) Verilog Toolkit is a large ACL2 library for working with
 <a href='http://en.wikipedia.org/wiki/Verilog'>Verilog</a> and <a
@@ -105,12 +105,12 @@ of VL without having to continually update the ESIM flow.</p>")
 
 (defxdoc getting-started
   :parents (vl2014)
-  :short "Getting started with VL."
+  :short "Getting started with VL2014."
 
   :long "<h3>Introduction</h3>
 
-<p><b>VL</b> is an @(see acl2::acl2) library for working with <a
-href='http://en.wikipedia.org/wiki/Verilog'>Verilog</a> and <a
+<p><b>VL2014</b> (hereafter VL) is an @(see acl2::acl2) library for working
+with <a href='http://en.wikipedia.org/wiki/Verilog'>Verilog</a> and <a
 href='http://en.wikipedia.org/wiki/SystemVerilog'>SystemVerilog</a> source
 code.  It includes:</p>
 
@@ -128,9 +128,9 @@ to implement a family of Verilog-related tools.  Here are some examples:</p>
 
 <ul>
 
-<li>VL can build @(see esim) or @(see acl2::svex) models of Verilog modules for
-formal verification with ACL2.  This is the basis for much of Centaur's formal
-verification efforts.</li>
+<li>VL can build @(see esim) models of Verilog modules for formal verification
+with ACL2.  This is the basis for much of Centaur's formal verification
+efforts.</li>
 
 <li>The VL @(see kit) is a standalone command-line executable that you can
 build on top of ACL2 and VL.  It includes commands for @(see lint)ing Verilog
@@ -161,9 +161,14 @@ transformations to easily implement other tools.</p>
 
 <h3>Starting Points</h3>
 
-<p>The first step in using VL for anything is probably to try to get it to
-parse your design; see the documentation for the @(see loader).  You may want
-to read the notes about @(see supported-constructs).</p>
+<p>If you want to use VL to do formal verification of hardware, you might start
+with the @(see esim-tutorial), which is a hands-on guide that will take you
+through using VL and @(see esim) to verify some simple circuits.</p>
+
+<p>The first step in using VL in any other capacity on a real project is
+probably to try to get it to parse your design; see the documentation for the
+@(see loader).  You may want to read the notes about @(see
+supported-constructs).</p>
 
 <p>Once you have parsed your design (or at least some portion of it) you will
 have a list of modules.  You might want to at least glance through the

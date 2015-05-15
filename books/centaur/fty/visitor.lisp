@@ -1826,7 +1826,7 @@ order and creates the necessary defvisitor forms.</p>
 
 <ul>
 
-<li>@(':template') -- the name of the visitor template to instantiate.</p>
+<li>@(':template') -- the name of the visitor template to instantiate.</li>
 
 <li>@(':types'), @(':dep-types') -- controls the top-level types to visit.
 Those listed in @('dep-types') are not themselves visited, but their children

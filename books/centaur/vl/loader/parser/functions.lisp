@@ -666,12 +666,12 @@ try to resume parsing after a problematic function."
                (vl-idtoken-p (cdr val)))
   :fails gracefully
   :count strong
-  :long "<p>This matches the part of a function body consisting of:
+  :long "<p>This matches the part of a function body consisting of:</p>
 
 @({
- function_data_type_or_implicit
-          [ interface_identifier '.' | class_scope ] identifier
- })
+    function_data_type_or_implicit
+      [ interface_identifier '.' | class_scope ] identifier
+})
 
 <p>Except that we're going to ignore the interface_identifier and class_scope
 part.</p>
@@ -690,10 +690,10 @@ part.</p>
 <p>So really what we're parsing is:
 
 @({
-   'void' identifier
- | data_type identifier
- | [ signing ] { packed_dimension } identifier.
- })
+      'void' identifier
+    | data_type identifier
+    | [ signing ] { packed_dimension } identifier.
+})
 
 <p>This requires backtracking because if an identifier is first, we don't know
 if we're in the data type or implicit case.  The way we resolve this is to

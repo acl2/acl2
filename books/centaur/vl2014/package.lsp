@@ -225,9 +225,11 @@
 
       ;; To make VL2014::VL show up as just VL in the ACL2 package, e.g., to
       ;; make the XDOC index prettier.
+      vl
       vl2014
       hardware-verification
       esim
+      svex
 
       ;; acl2-customization file stuff
       why
