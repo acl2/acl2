@@ -83,11 +83,12 @@ verification with ACL2.  This is the basis for much of Centaur's formal
 verification efforts.</li>
 
 <li>The VL @(see kit) is a standalone command-line program that you can build
-on top of ACL2 and VL.  It includes commands for @(see lint)ing Verilog
-designs, converting Verilog modules into a JSON format, and other
-commands.</li>
+on top of ACL2 and VL.  It provides various high-level commands to, e.g., @(see
+lint)ing, preprocess, collect source code into a single file, and so on.  It
+also provides an interactive shell for an instant way to start up ACL2 with VL
+already loaded.</li>
 
-<li>VL has been used to build a web-based \"module browser\" that lets you see
+<li>VL has been used to build a web-based ``module browser'' that lets you see
 the source code for our modules with, e.g., hyperlinks for navigating between
 wires and following wires.  This is now integrated into the VL @(see kit);
 @(see server).</li>
@@ -106,8 +107,9 @@ href='http://www.cs.bham.ac.uk/research/projects/formare/events/aisb2013/'>Do-Fo
 
 </ul>
 
-<p>We imagine that other users of VL may wish to reuse its parsing and
-transformations to easily implement other tools.</p>
+<p>We imagine that parts of VL may be useful for implementing other
+SystemVerilog processing tools.</p>
+
 
 <h3>Starting Points</h3>
 
