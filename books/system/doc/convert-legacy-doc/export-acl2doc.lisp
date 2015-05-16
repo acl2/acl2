@@ -579,9 +579,6 @@
        `(defconst *ignored-xdoc-table* ; includes above books and system
           ',(get-xdoc-table (w state)))))
 
-     #+acl2-legacy-doc
-     (import-acl2doc)
-
      (defun remove-ignored-topics (x bad)
        (declare (xargs :mode :program))
        (if (atom x)

@@ -38,10 +38,6 @@
  (DEFMACRO SYMBOLS::*ACL2-SYMBOLS*0 NIL
            ''(GROUND-ZERO ACL2-WRAP FIND-POSSIBLE-PUT
                           PC-FREE-INSTR-P INSTR-NAME
-                          #+acl2-legacy-doc PRINT-ALL-PC-HELP
-                          #+acl2-legacy-doc PRINT-ALL-PC-HELP-FN
-                          #+acl2-legacy-doc PRINT-PC-HELP-REC
-                          #+acl2-legacy-doc PRINT-HELP-SEPARATOR
                           RUN-INSTR-ON-GOALS-GUTS
                           FROMTO PC-STATE-VARS ALL-VARS-GOALS
                           TRANSLATE-GENERALIZE-ALIST
@@ -59,9 +55,6 @@
                           *DEFAULT-S-REPEAT-LIMIT*
                           MAKE-NEW-GOALS-FROM-ASSUMPTIONS
                           MAKE-GOALS-FROM-ASSUMPTIONS PC-REWRITE*
-                          #+acl2-legacy-doc PC-HELP!-FN
-                          #+acl2-legacy-doc STATE-ONLY
-                          #+acl2-legacy-doc PC-HELP-FN
                           MAKE-REWRITE-INSTR ALIST-DIFFERENCE-EQ
                           UNTRANSLATE-SUBST-ABB
                           INTERSECTION-DOMAINS TRANSLATE-SUBST-ABB
@@ -548,9 +541,7 @@
                                  TABLE-GET ADD-PC-COMMAND))
  (DEFMACRO
       SYMBOLS::*ACL2-SYMBOLS*5 NIL
-      ''(PC-PRIMITIVE-DEFUN-FORM #+acl2-legacy-doc REMOVE-DOC
-                                 #+acl2-legacy-doc ADD-PC-DOC-HEADER
-                                 MAYBE-UPDATE-INSTRUCTION
+      ''(PC-PRIMITIVE-DEFUN-FORM MAYBE-UPDATE-INSTRUCTION
                                  PRINT-NO-CHANGE-FN
                                  FMT1-PC PRINT-NO-CHANGE2
                                  PRINT-NO-CHANGE CHECK-FIELD-NAMES
@@ -903,86 +894,16 @@
                                    PROPS PROPS-FN TILDE-*-PROPS-FN-PHRASE
                                    TILDE-*-PROPS-FN-PHRASE1 TRANS1
                                    TRANS1-FN TRANS TRANS-FN
-                                   #+acl2-legacy-doc HELP
-                                   #+acl2-legacy-doc HELP-FN
-                                   #+acl2-legacy-doc PRINT-TOP-DOC-TOPICS
-                                   #+acl2-legacy-doc DOCS
-                                   #+acl2-legacy-doc DOCS-FN
-                                   #+acl2-legacy-doc GET-DOCS-APROPOS
-                                   #+acl2-legacy-doc GET-DOCS-APROPOS1
-                                   #+acl2-legacy-doc GET-DOC-SECTION-SYMBOLS
-                                   #+acl2-legacy-doc MORE-DOC
-                                   #+acl2-legacy-doc MORE-DOC-FN
-                                   #+acl2-legacy-doc DOC!
                                    DOC
-                                   #+acl2-legacy-doc PRINT-DOC-OUTLINE-LST
-                                   #+acl2-legacy-doc PRINT-DOC-OUTLINE
-                                   #+acl2-legacy-doc MORE!
-                                   #+acl2-legacy-doc MORE
-                                   #+acl2-legacy-doc DOC!-FN
-                                   #+acl2-legacy-doc MORE-FN
                                    DOC-FN
-                                   #+acl2-legacy-doc END-DOC
                                    PRINT-DOC-DWIM FIND-LIKELY-NEAR-MISSES
                                    DEGREE-OF-MATCH DEGREE-OF-MATCH1
                                    DEGREE-OF-MATCH2
-                                   #+acl2-legacy-doc PRINT-DOC-LST
-                                   #+acl2-legacy-doc PRINT-DOC
-                                   #+acl2-legacy-doc PSTATE-GLOBAL-LET*
-                                   #+acl2-legacy-doc GET-DOC-SECTION
-                                   #+acl2-legacy-doc PRINT-DOC-STRING-PART
-                                   #+acl2-legacy-doc PRINT-DOC-STRING-PART1
-                                   #+acl2-legacy-doc LOOKUP-FMT-ALIST
-                                   #+acl2-legacy-doc READ-POINTER-AND-TEXT
-                                   #+acl2-legacy-doc READ-POINTER-AND-TEXT2
-                                   #+acl2-legacy-doc READ-POINTER-AND-TEXT1
-                                   #+acl2-legacy-doc APPLY-CHAR-SUBST-TABLE
-                                   #+acl2-legacy-doc APPLY-CHAR-SUBST-TABLE1
-                                   #+acl2-legacy-doc ASSOC-CHAR-ALIST-STRINGP
-                                   #+acl2-legacy-doc DOC-SCAN-PAST-TILDE
-                                   #+acl2-legacy-doc DOC-SCAN-PAST-TILDE-ARG
-                                   #+acl2-legacy-doc DOC-SCAN-PAST-TILDE-KEY
-                                   #+acl2-legacy-doc DOC-MARKUP-TABLE
-                                   #+acl2-legacy-doc *TERMINAL-MARKUP-TABLE*
-                                   #+acl2-legacy-doc DOC-FMT-ALIST
-                                   #+acl2-legacy-doc DOC-CHAR-SUBST-TABLE
-                                   #+acl2-legacy-doc SET-DOC-CHAR-SUBST-TABLE
-                                   #+acl2-legacy-doc DOC-CHAR-SUBST-TABLE-P
-                                   #+acl2-legacy-doc SAVE-MORE-DOC-STATE
-                                   #+acl2-legacy-doc LENGTH-PREFIX
-                                   #+acl2-legacy-doc PRINC-PREFIX
-                                   #+acl2-legacy-doc DOC-PREFIX
-                                   #+acl2-legacy-doc USE-DOC-STRING-DE-INDENT
-                                   #+acl2-legacy-doc GET-DOC-STRING-DE-INDENT
-                                   #+acl2-legacy-doc GET-DOC-STRING-DE-INDENT1
-                                   #+acl2-legacy-doc GET-DOC-STRING
                                    REDUNDANT-LABELP
                                    GET-EVENT REDEFINED-WARNING
                                    PUTPROP-UNLESS
-                                   #+acl2-legacy-doc UPDATE-DOC-DATABASE-LST
-                                   #+acl2-legacy-doc UPDATE-DOC-DATABASE
-                                   #+acl2-legacy-doc PUT-CITED-BYS
-                                   #+acl2-legacy-doc UPDATE-ALPHA-<-ALIST
                                    MERGE-SORT-ALPHA-< MERGE-ALPHA-<
                                    ALPHA-<
-                                   #+acl2-legacy-doc GET-CITES
-                                   #+acl2-legacy-doc TRANSLATE-DOC-LST
-                                   #+acl2-legacy-doc TRANSLATE-DOC
-                                   #+acl2-legacy-doc CHK-WELL-FORMED-DOC-STRING
-                                   #+acl2-legacy-doc CHK-DOC-STRING-CITATIONS
-                                   #+acl2-legacy-doc DOC-TOPICP
-                                   #+acl2-legacy-doc READ-DOC-STRING-CITATIONS
-                                   #+acl2-legacy-doc READ-DOC-STRING-CITATIONS1
-                                   #+acl2-legacy-doc GET-ONE-LINER-AS-STRING
-                                   #+acl2-legacy-doc GET-ONE-LINER-AS-STRING1
-                                   #+acl2-legacy-doc SCAN-TO-DOC-STRING-PART
-                                   #+acl2-legacy-doc SCAN-TO-DOC-STRING-PART1
-                                   #+acl2-legacy-doc SCAN-PAST-TILDE-SLASH
-                                   #+acl2-legacy-doc SCAN-PAST-NEWLINES
-                                   #+acl2-legacy-doc SCAN-PAST-NEWLINE
-                                   #+acl2-legacy-doc READ-SYMBOL-FROM-STRING
-                                   #+acl2-legacy-doc READ-SYMBOL-FROM-STRING2
-                                   #+acl2-legacy-doc READ-SYMBOL-FROM-STRING1
                                    CHK-JUST-NEW-NAMES NO-NEW-NAMESP
                                    CHK-JUST-NEW-NAME CHK-REDEFINEABLE-NAMEP
                                    REDEFINED-NAMES REDEFINED-NAMES1
@@ -1009,15 +930,6 @@
                               MAKE-EVENT-LDD
                               MAKE-COMMAND-LDD PRINT-LDDS
                               PRINT-LDD PRINT-LDD-FULL-OR-SKETCH
-                              #+acl2-legacy-doc ZAP-DOC-STRING-FROM-EVENT-FORM
-                              #+acl2-legacy-doc ZAP-DOC-STRING-FROM-EVENT-FORM/DOC-KEYWORD
-                              #+acl2-legacy-doc ZAP-DOC-STRING-FROM-EVENT-FORM/MUTUAL-RECURSION
-                              #+acl2-legacy-doc ZAP-DOC-STRING-FROM-EVENT-FORM/THIRD-ARG
-                              #+acl2-legacy-doc ZAP-DOC-STRING-FROM-EVENT-FORM/SECOND-ARG
-                              #+acl2-legacy-doc ZAP-DOC-STRING-FROM-EVENT-FORM/ALL-BUT-LAST
-                              #+acl2-legacy-doc *ZAPPED-DOC-STRING*
-                              #+acl2-legacy-doc DOC-STRINGP
-                              STRING-SEARCH STRING-SEARCH1
                               STRING-MATCHP NORMALIZE-STRING
                               NORMALIZE-STRING1 NORMALIZE-CHAR
                               PRINT-LDD-FULL-OR-SKETCH/ENCAPSULATE

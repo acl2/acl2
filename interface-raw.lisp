@@ -1745,7 +1745,6 @@
                              defstobj-fn defabsstobj-fn
                              defpkg-fn
                              deflabel-fn
-                             #+acl2-legacy-doc defdoc-fn
                              deftheory-fn
                              defchoose-fn
                              verify-guards-fn
@@ -5797,15 +5796,6 @@
                                               (cdr ignorep)
                                             nil))
                                    new-*1*-defs)))))
-            #+acl2-legacy-doc
-            (dolist (def new-defs)
-
-; Remove the documentation string potentially stored in raw Lisp, if a copy is
-; already around in our documentation database, just to save space.
-
-              (when (and (eq (car def) 'defun)
-                         (doc-stringp (documentation (cadr def) 'function)))
-                (setf (documentation (cadr def) 'function) nil)))
             (setq new-defs (nconc new-defs new-*1*-defs))
             (install-defs-for-add-trip new-defs
                                        (eq ignorep 'reclassifying)
@@ -6126,13 +6116,7 @@
                    (install-for-add-trip `(defparameter ,(cadr (cddr trip))
                                             ',(cadddr (cddr trip)))
                                          nil
-                                         t)))
-          #+acl2-legacy-doc
-          (cond ((doc-stringp (and (cadr (cddr trip))
-                                   (documentation (cadr (cddr trip))
-                                                  'variable)))
-                 (setf (documentation (cadr (cddr trip)) 'variable)
-                       nil))))
+                                         t))))
         (defmacro
           (cond (boot-strap-flg
                  (or (fboundp (cadr (cddr trip)))
@@ -6144,11 +6128,7 @@
                                 main Lisp package, such as ~x0!"
                                (cadr (cddr trip))))
                 (t (maybe-push-undo-stack 'defmacro (cadr (cddr trip)))
-                   (install-for-add-trip (cddr trip) nil t)))
-          #+acl2-legacy-doc
-          (cond ((doc-stringp (documentation (cadr (cddr trip)) 'function))
-                 (setf (documentation (cadr (cddr trip)) 'function)
-                       nil))))
+                   (install-for-add-trip (cddr trip) nil t))))
         (attachment ; (cddr trip) is produced by attachment-cltl-cmd
          (dolist (x (cdr (cddr trip)))
            (let ((name (if (symbolp x) x (car x))))
@@ -7129,8 +7109,6 @@
            in-theory
            initialize-state-globals
            let ; could be arbitrarily complex, but we can only do so much!
-           #+acl2-legacy-doc link-doc-to
-           #+acl2-legacy-doc link-doc-to-keyword
            logic
            make-waterfall-parallelism-constants
            make-waterfall-printing-constants

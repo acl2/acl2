@@ -763,10 +763,6 @@
 ;                   (LD-LEVEL . 0)
 ;                   (LD-REDEFINITION-ACTION)
 ;                   (LD-SKIP-PROOFSP)
-;                   #+acl2-legacy-doc (MORE-DOC-MAX-LINES . 45)
-;                   #+acl2-legacy-doc (MORE-DOC-MIN-LINES . 35)
-;                   #+acl2-legacy-doc (MORE-DOC-STATE)
-;                   #+acl2-legacy-doc (PRINT-DOC-START-COLUMN . 15)
 ;                   (PROMPT-FUNCTION . DEFAULT-PRINT-PROMPT)
 ;                   (PROOF-TREE-CTX)
 ;                   (PROOFS-CO
