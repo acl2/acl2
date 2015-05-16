@@ -418,8 +418,6 @@
 ; build at Centaur.  So, I'm putting the save event into a make-event to try
 ; to localize its effects to just this book's certification.
  (er-progn (xdoc::save "./manual"
-                       ;; Don't import again since we just imported.
-                       :import nil
                        ;; Allow redefinition so that we don't have to get
                        ;; everything perfect (until it's release time)
                        :redef-okp t)
@@ -521,7 +519,6 @@
      (ld ;; newline to fool dependency scanner
       "new-doc.lsp")
      (xdoc::save "./manual"
-                 :import nil
                  :redef-okp t
                  :zip-p nil)
      (value `(value-triple :manual)))))
