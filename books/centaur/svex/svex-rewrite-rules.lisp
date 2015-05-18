@@ -340,7 +340,8 @@
             clog2
             ==
             ==?
-            ==??) t)
+            ==??
+            ===) t)
           (id (3valued-syntaxp (first x.args)))
           ((res
             resand
@@ -511,6 +512,10 @@
   (defthm 3vec-p-of-4vec-==
     (3vec-p (4vec-== x y))
     :hints(("Goal" :in-theory (enable 4vec-==))))
+
+  (defthm 3vec-p-of-4vec-===
+    (3vec-p (4vec-=== x y))
+    :hints(("Goal" :in-theory (enable 4vec-===))))
 
   (defthm 3vec-p-of-4vec-<
     (3vec-p (4vec-< x y))
@@ -2241,6 +2246,23 @@
   ;;                                      bitops::ihsext-inductions))))
   )
 
+(local (defthm svex-xeval-of-svex-call
+         (equal (svex-xeval (svex-call fn args))
+                (svex-apply
+                 (if (eq (fnsym-fix fn) '===) '== fn)
+                 (svexlist-xeval args)))
+         :hints(("Goal" :expand ((svex-xeval (svex-call fn args)))))))
+
+(local (defthm svex-xeval-of-svex-quote
+         (equal (svex-xeval (svex-quote val))
+                (4vec-fix val))
+         :hints(("Goal" :in-theory (enable svex-xeval)))))
+
+
+(local (defthm 4veclist-nth-of-svexlist-xeval
+         (equal (4veclist-nth n (svexlist-xeval x))
+                (svex-xeval (nth n x)))
+         :hints(("Goal" :in-theory (enable svexlist-xeval 4veclist-nth)))))
 
 (define res-to-concat ((xmask integerp)
                        (ymask integerp)
@@ -2374,12 +2396,25 @@
                                              4vec-rsh 4vec-non-z-mask)))))
 
 
+  (local (defthm 4vec-non-z-mask-of-svex-rsh-xeval
+           (equal (4vec-non-z-mask (svex-xeval (svex-rsh offset x)))
+                  (logtail offset (4vec-non-z-mask (svex-xeval x))))
+           :hints(("Goal" :in-theory (enable svex-apply svex-rsh svexlist-xeval
+                                             4vec-rsh 4vec-non-z-mask)))))
+
+
 
   (local (defthm 4vec-rsh-of-svex-eval
            (implies (natp offset)
                     (equal (4vec-rsh (2vec offset) (svex-eval x env))
                            (svex-eval (svex-rsh offset x) env)))
            :hints(("Goal" :in-theory (enable svex-rsh svex-apply svexlist-eval)))))
+
+  (local (defthm 4vec-rsh-of-svex-xeval
+           (implies (natp offset)
+                    (equal (4vec-rsh (2vec offset) (svex-xeval x))
+                           (svex-xeval (svex-rsh offset x))))
+           :hints(("Goal" :in-theory (enable svex-rsh svex-apply svexlist-xeval)))))
 
   (local (defthm 4vec-[=-z
            (equal (4vec-[= (4vec-z) x)
@@ -2389,10 +2424,10 @@
            :otf-flg t))
 
   (local (defthmd svex-eval-equal-z
-           (implies (equal (svex-eval x nil) (4vec-z))
+           (implies (equal (svex-xeval x) (4vec-z))
                     (equal (svex-eval x env) (4vec-z)))
-           :hints (("goal" :use ((:instance svex-eval-gte-empty-env))
-                    :in-theory (disable svex-eval-gte-empty-env)))))
+           :hints (("goal" :use ((:instance svex-eval-gte-xeval))
+                    :in-theory (disable svex-eval-gte-xeval)))))
 
 
   (local (defthm logbitp-when-<-trailing-0-count
@@ -2419,18 +2454,18 @@
 
 
   (local (defthmd res-to-concat-lemma1
-           (implies (and (equal 0 (logand (4vec-non-z-mask (svex-eval x nil))
-                                          (4vec-non-z-mask (svex-eval y nil))))
-                         (not (zip (4vec-non-z-mask (svex-eval x nil))))
-                         (not (zip (4vec-non-z-mask (svex-eval y nil))))
-                         (< (trailing-0-count (4vec-non-z-mask (svex-eval x nil)))
-                            (trailing-0-count (4vec-non-z-mask (svex-eval y nil)))))
+           (implies (and (equal 0 (logand (4vec-non-z-mask (svex-xeval x))
+                                          (4vec-non-z-mask (svex-xeval y))))
+                         (not (zip (4vec-non-z-mask (svex-xeval x))))
+                         (not (zip (4vec-non-z-mask (svex-xeval y))))
+                         (< (trailing-0-count (4vec-non-z-mask (svex-xeval x)))
+                            (trailing-0-count (4vec-non-z-mask (svex-xeval y)))))
                     (equal (4vec-res (svex-eval x env)
                                      (svex-eval y env))
                            (4vec-concat
-                            (2vec (trailing-0-count (4vec-non-z-mask (svex-eval y nil))))
+                            (2vec (trailing-0-count (4vec-non-z-mask (svex-xeval y))))
                             (svex-eval x env)
-                            (4vec-rsh (2vec (trailing-0-count (4vec-non-z-mask (svex-eval y nil))))
+                            (4vec-rsh (2vec (trailing-0-count (4vec-non-z-mask (svex-xeval y))))
                                       (4vec-res (svex-eval x env)
                                                 (svex-eval y env))))))
            :hints(("Goal" :in-theory (enable 4vec-concat 4vec-res 4vec-rsh 4vec-non-z-mask))
@@ -2440,18 +2475,18 @@
                                             bool->bit))))))
 
   (local (defthmd res-to-concat-lemma1-resand
-           (implies (and (equal 0 (logand (4vec-non-z-mask (svex-eval x nil))
-                                          (4vec-non-z-mask (svex-eval y nil))))
-                         (not (zip (4vec-non-z-mask (svex-eval x nil))))
-                         (not (zip (4vec-non-z-mask (svex-eval y nil))))
-                         (< (trailing-0-count (4vec-non-z-mask (svex-eval x nil)))
-                            (trailing-0-count (4vec-non-z-mask (svex-eval y nil)))))
+           (implies (and (equal 0 (logand (4vec-non-z-mask (svex-xeval x))
+                                          (4vec-non-z-mask (svex-xeval y))))
+                         (not (zip (4vec-non-z-mask (svex-xeval x))))
+                         (not (zip (4vec-non-z-mask (svex-xeval y))))
+                         (< (trailing-0-count (4vec-non-z-mask (svex-xeval x)))
+                            (trailing-0-count (4vec-non-z-mask (svex-xeval y)))))
                     (equal (4vec-resand (svex-eval x env)
                                      (svex-eval y env))
                            (4vec-concat
-                            (2vec (trailing-0-count (4vec-non-z-mask (svex-eval y nil))))
+                            (2vec (trailing-0-count (4vec-non-z-mask (svex-xeval y))))
                             (svex-eval x env)
-                            (4vec-rsh (2vec (trailing-0-count (4vec-non-z-mask (svex-eval y nil))))
+                            (4vec-rsh (2vec (trailing-0-count (4vec-non-z-mask (svex-xeval y))))
                                       (4vec-resand (svex-eval x env)
                                                 (svex-eval y env))))))
            :hints(("Goal" :in-theory (enable 4vec-concat 4vec-resand 4vec-rsh 4vec-non-z-mask))
@@ -2461,18 +2496,18 @@
                                             bool->bit))))))
 
   (local (defthmd res-to-concat-lemma1-resor
-           (implies (and (equal 0 (logand (4vec-non-z-mask (svex-eval x nil))
-                                          (4vec-non-z-mask (svex-eval y nil))))
-                         (not (zip (4vec-non-z-mask (svex-eval x nil))))
-                         (not (zip (4vec-non-z-mask (svex-eval y nil))))
-                         (< (trailing-0-count (4vec-non-z-mask (svex-eval x nil)))
-                            (trailing-0-count (4vec-non-z-mask (svex-eval y nil)))))
+           (implies (and (equal 0 (logand (4vec-non-z-mask (svex-xeval x))
+                                          (4vec-non-z-mask (svex-xeval y))))
+                         (not (zip (4vec-non-z-mask (svex-xeval x))))
+                         (not (zip (4vec-non-z-mask (svex-xeval y))))
+                         (< (trailing-0-count (4vec-non-z-mask (svex-xeval x)))
+                            (trailing-0-count (4vec-non-z-mask (svex-xeval y)))))
                     (equal (4vec-resor (svex-eval x env)
                                      (svex-eval y env))
                            (4vec-concat
-                            (2vec (trailing-0-count (4vec-non-z-mask (svex-eval y nil))))
+                            (2vec (trailing-0-count (4vec-non-z-mask (svex-xeval y))))
                             (svex-eval x env)
-                            (4vec-rsh (2vec (trailing-0-count (4vec-non-z-mask (svex-eval y nil))))
+                            (4vec-rsh (2vec (trailing-0-count (4vec-non-z-mask (svex-xeval y))))
                                       (4vec-resor (svex-eval x env)
                                                 (svex-eval y env))))))
            :hints(("Goal" :in-theory (enable 4vec-concat 4vec-resor 4vec-rsh 4vec-non-z-mask))
@@ -2517,22 +2552,22 @@
      (IMPLIES
       (and (EQUAL 0
                   (LOGAND (LOGTAIL OFFSET
-                                   (4VEC-NON-Z-MASK (SVEX-EVAL X NIL)))
+                                   (4VEC-NON-Z-MASK (SVEX-XEVAL X)))
                           (LOGTAIL OFFSET
-                                   (4VEC-NON-Z-MASK (SVEX-EVAL Y NIL)))))
+                                   (4VEC-NON-Z-MASK (SVEX-XEVAL Y)))))
            (not (zip (LOGTAIL OFFSET
-                              (4VEC-NON-Z-MASK (SVEX-EVAL X NIL)))))
+                              (4VEC-NON-Z-MASK (SVEX-XEVAL X)))))
            (not (zip (LOGTAIL OFFSET
-                              (4VEC-NON-Z-MASK (SVEX-EVAL Y NIL)))))
+                              (4VEC-NON-Z-MASK (SVEX-XEVAL Y)))))
            (< (TRAILING-0-COUNT (LOGTAIL OFFSET
-                                     (4VEC-NON-Z-MASK (SVEX-EVAL X NIL))))
+                                     (4VEC-NON-Z-MASK (SVEX-XEVAL X))))
               (TRAILING-0-COUNT (LOGTAIL OFFSET
-                                         (4VEC-NON-Z-MASK (SVEX-EVAL Y NIL))))))
+                                         (4VEC-NON-Z-MASK (SVEX-XEVAL Y))))))
 
       (EQUAL
        (4VEC-CONCAT
         (2VEC (TRAILING-0-COUNT (LOGTAIL OFFSET
-                                         (4VEC-NON-Z-MASK (SVEX-EVAL Y NIL)))))
+                                         (4VEC-NON-Z-MASK (SVEX-XEVAL Y)))))
         (4VEC-RSH (2VEC (NFIX OFFSET))
                   (SVEX-EVAL X ENV))
         (4VEC-RES
@@ -2540,13 +2575,13 @@
           (2VEC
            (+ (NFIX OFFSET)
               (TRAILING-0-COUNT (LOGTAIL OFFSET
-                                         (4VEC-NON-Z-MASK (SVEX-EVAL Y NIL))))))
+                                         (4VEC-NON-Z-MASK (SVEX-XEVAL Y))))))
           (SVEX-EVAL X ENV))
          (4VEC-RSH
           (2VEC
            (+ (NFIX OFFSET)
               (TRAILING-0-COUNT (LOGTAIL OFFSET
-                                         (4VEC-NON-Z-MASK (SVEX-EVAL Y NIL))))))
+                                         (4VEC-NON-Z-MASK (SVEX-XEVAL Y))))))
           (SVEX-EVAL Y ENV))))
        (4VEC-RES (4VEC-RSH (2VEC (NFIX OFFSET))
                            (SVEX-EVAL X ENV))
@@ -2555,30 +2590,31 @@
      :hints(("Goal" :use ((:instance res-to-concat-lemma1
                            (y (svex-rsh offset y))
                            (x (svex-rsh offset x))))
-             :in-theory (e/d (svex-rsh svex-apply svexlist-eval)
-                             (4vec-rsh-of-svex-eval))))))
+             :in-theory (e/d (svex-rsh svex-apply svexlist-eval svexlist-xeval)
+                             (4vec-rsh-of-svex-eval
+                              4vec-rsh-of-svex-xeval))))))
 
   (local
    (defthm res-to-concat-lemma-resand
      (IMPLIES
       (and (EQUAL 0
                   (LOGAND (LOGTAIL OFFSET
-                                   (4VEC-NON-Z-MASK (SVEX-EVAL X NIL)))
+                                   (4VEC-NON-Z-MASK (SVEX-XEVAL X)))
                           (LOGTAIL OFFSET
-                                   (4VEC-NON-Z-MASK (SVEX-EVAL Y NIL)))))
+                                   (4VEC-NON-Z-MASK (SVEX-XEVAL Y)))))
            (not (zip (LOGTAIL OFFSET
-                              (4VEC-NON-Z-MASK (SVEX-EVAL X NIL)))))
+                              (4VEC-NON-Z-MASK (SVEX-XEVAL X)))))
            (not (zip (LOGTAIL OFFSET
-                              (4VEC-NON-Z-MASK (SVEX-EVAL Y NIL)))))
+                              (4VEC-NON-Z-MASK (SVEX-XEVAL Y)))))
            (< (TRAILING-0-COUNT (LOGTAIL OFFSET
-                                     (4VEC-NON-Z-MASK (SVEX-EVAL X NIL))))
+                                     (4VEC-NON-Z-MASK (SVEX-XEVAL X))))
               (TRAILING-0-COUNT (LOGTAIL OFFSET
-                                         (4VEC-NON-Z-MASK (SVEX-EVAL Y NIL))))))
+                                         (4VEC-NON-Z-MASK (SVEX-XEVAL Y))))))
 
       (EQUAL
        (4VEC-CONCAT
         (2VEC (TRAILING-0-COUNT (LOGTAIL OFFSET
-                                         (4VEC-NON-Z-MASK (SVEX-EVAL Y NIL)))))
+                                         (4VEC-NON-Z-MASK (SVEX-XEVAL Y)))))
         (4VEC-RSH (2VEC (NFIX OFFSET))
                   (SVEX-EVAL X ENV))
         (4VEC-RESAND
@@ -2586,13 +2622,13 @@
           (2VEC
            (+ (NFIX OFFSET)
               (TRAILING-0-COUNT (LOGTAIL OFFSET
-                                         (4VEC-NON-Z-MASK (SVEX-EVAL Y NIL))))))
+                                         (4VEC-NON-Z-MASK (SVEX-XEVAL Y))))))
           (SVEX-EVAL X ENV))
          (4VEC-RSH
           (2VEC
            (+ (NFIX OFFSET)
               (TRAILING-0-COUNT (LOGTAIL OFFSET
-                                         (4VEC-NON-Z-MASK (SVEX-EVAL Y NIL))))))
+                                         (4VEC-NON-Z-MASK (SVEX-XEVAL Y))))))
           (SVEX-EVAL Y ENV))))
        (4VEC-RESAND (4VEC-RSH (2VEC (NFIX OFFSET))
                            (SVEX-EVAL X ENV))
@@ -2602,29 +2638,30 @@
                            (y (svex-rsh offset y))
                            (x (svex-rsh offset x))))
              :in-theory (e/d (svex-rsh svex-apply svexlist-eval)
-                             (4vec-rsh-of-svex-eval))))))
+                             (4vec-rsh-of-svex-eval
+                              4vec-rsh-of-svex-xeval))))))
 
   (local
    (defthm res-to-concat-lemma-resor
      (IMPLIES
       (and (EQUAL 0
                   (LOGAND (LOGTAIL OFFSET
-                                   (4VEC-NON-Z-MASK (SVEX-EVAL X NIL)))
+                                   (4VEC-NON-Z-MASK (SVEX-XEVAL X)))
                           (LOGTAIL OFFSET
-                                   (4VEC-NON-Z-MASK (SVEX-EVAL Y NIL)))))
+                                   (4VEC-NON-Z-MASK (SVEX-XEVAL Y)))))
            (not (zip (LOGTAIL OFFSET
-                              (4VEC-NON-Z-MASK (SVEX-EVAL X NIL)))))
+                              (4VEC-NON-Z-MASK (SVEX-XEVAL X)))))
            (not (zip (LOGTAIL OFFSET
-                              (4VEC-NON-Z-MASK (SVEX-EVAL Y NIL)))))
+                              (4VEC-NON-Z-MASK (SVEX-XEVAL Y)))))
            (< (TRAILING-0-COUNT (LOGTAIL OFFSET
-                                     (4VEC-NON-Z-MASK (SVEX-EVAL X NIL))))
+                                     (4VEC-NON-Z-MASK (SVEX-XEVAL X))))
               (TRAILING-0-COUNT (LOGTAIL OFFSET
-                                         (4VEC-NON-Z-MASK (SVEX-EVAL Y NIL))))))
+                                         (4VEC-NON-Z-MASK (SVEX-XEVAL Y))))))
 
       (EQUAL
        (4VEC-CONCAT
         (2VEC (TRAILING-0-COUNT (LOGTAIL OFFSET
-                                         (4VEC-NON-Z-MASK (SVEX-EVAL Y NIL)))))
+                                         (4VEC-NON-Z-MASK (SVEX-XEVAL Y)))))
         (4VEC-RSH (2VEC (NFIX OFFSET))
                   (SVEX-EVAL X ENV))
         (4VEC-RESOR
@@ -2632,13 +2669,13 @@
           (2VEC
            (+ (NFIX OFFSET)
               (TRAILING-0-COUNT (LOGTAIL OFFSET
-                                         (4VEC-NON-Z-MASK (SVEX-EVAL Y NIL))))))
+                                         (4VEC-NON-Z-MASK (SVEX-XEVAL Y))))))
           (SVEX-EVAL X ENV))
          (4VEC-RSH
           (2VEC
            (+ (NFIX OFFSET)
               (TRAILING-0-COUNT (LOGTAIL OFFSET
-                                         (4VEC-NON-Z-MASK (SVEX-EVAL Y NIL))))))
+                                         (4VEC-NON-Z-MASK (SVEX-XEVAL Y))))))
           (SVEX-EVAL Y ENV))))
        (4VEC-RESOR (4VEC-RSH (2VEC (NFIX OFFSET))
                            (SVEX-EVAL X ENV))
@@ -2648,7 +2685,8 @@
                            (y (svex-rsh offset y))
                            (x (svex-rsh offset x))))
              :in-theory (e/d (svex-rsh svex-apply svexlist-eval)
-                             (4vec-rsh-of-svex-eval))))))
+                             (4vec-rsh-of-svex-eval
+                              4vec-rsh-of-svex-xeval))))))
 
   (local (defthm 4vec-res-of-z
            (equal (4vec-res (4vec-z) x)
@@ -2681,10 +2719,13 @@
                  '(:in-theory (enable svex-apply svexlist-eval)))
             (and stable-under-simplificationp
                  '(:in-theory (e/d (svex-rsh svex-apply svexlist-eval)
-                                   (4vec-rsh-of-svex-eval))))
+                                   (4vec-rsh-of-svex-eval
+                                    4vec-rsh-of-svex-xeval))))
             (and stable-under-simplificationp
                  '(:in-theory (e/d (logtail-of-non-z-mask svex-eval-equal-z)
-                                   (4vec-non-z-mask-of-svex-rsh))
+                                   (4vec-non-z-mask-of-svex-rsh
+                                    4vec-non-z-mask-of-svex-rsh-xeval
+                                    4vec-non-z-mask-of-4vec-rsh))
                    :do-not '(generalize)))
             ))
 
@@ -2701,8 +2742,8 @@
                         (4vec-non-z-mask (svex-xeval y))))
   :guard-hints ((and stable-under-simplificationp
                      '(:use ((:instance trailing-zero-counts-same
-                              (x (4vec-non-z-mask (svex-eval x nil)))
-                              (y (4vec-non-z-mask (svex-eval y nil))))))))
+                              (x (4vec-non-z-mask (svex-xeval x)))
+                              (y (4vec-non-z-mask (svex-xeval y))))))))
   :returns (res svex-p)
   (b* ((xmask (4vec-non-z-mask (svex-xeval x)))
        (ymask (4vec-non-z-mask (svex-xeval y))))
@@ -2862,7 +2903,8 @@
   :rhs 0
   :hints(("Goal"
           :in-theory (enable svex-apply 4vec-reduction-and 4vec-bit-extract
-                             3vec-reduction-and 4vec-bit-index 3vec-fix))))
+                             3vec-reduction-and 4vec-bit-index 3vec-fix
+                             bool->bit))))
 
 (def-svex-rewrite uand-of-zerox
   :lhs (uand (zerox n x))
@@ -3119,9 +3161,8 @@
     :rhs b
     :hints(("Goal" :in-theory (e/d (4vec-? 3vec-? svex-apply 4vec-mask
                                            3vec-fix 4vec-[=)
-                                   (svex-eval-monotonic
-                                    svex-eval-gte-empty-env))
-            :use ((:instance svex-eval-gte-empty-env
+                                   (svex-eval-gte-xeval))
+            :use ((:instance svex-eval-gte-xeval
                    (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
            (bitops::logbitp-reasoning
             :add-hints (:in-theory (enable* bitops::logbitp-case-splits)))))
@@ -3132,9 +3173,8 @@
     :rhs c
     :hints(("Goal" :in-theory (e/d (4vec-? 3vec-? svex-apply 4vec-mask
                                            3vec-fix 4vec-[=)
-                                   (svex-eval-monotonic
-                                    svex-eval-gte-empty-env))
-            :use ((:instance svex-eval-gte-empty-env
+                                   (svex-eval-gte-xeval))
+            :use ((:instance svex-eval-gte-xeval
                    (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
            (bitops::logbitp-reasoning
             :add-hints (:in-theory (enable* bitops::logbitp-case-splits))))))
@@ -3204,38 +3244,6 @@
   `(case ,fn
      . ,(svex-rewrite-fn-cases *svex-rewrite-table* mask args localp)))
 
-(define 4vec-xfree-p ((x 4vec-p))
-  (b* (((4vec x) x))
-    (eql -1 (logior (lognot x.upper) x.lower)))
-  ///
-  (local (defthm equal-of-4vecs
-           (implies (and (4vec-p a)
-                         (4vec-p b))
-                    (equal (equal a b)
-                           (and (equal (4vec->upper a) (4vec->upper b))
-                                (equal (4vec->lower a) (4vec->lower b)))))))
-
-  (defthmd svex-eval-when-4vec-xfree-of-minval
-    (implies (and (syntaxp (not (equal env ''nil)))
-                  (4vec-xfree-p (svex-eval n nil)))
-             (equal (svex-eval n env)
-                    (svex-eval n nil)))
-    :hints (("goal" :use ((:instance svex-eval-gte-empty-env (x n)))
-             :in-theory (e/d ( 4vec-equiv)
-                             (svex-eval-gte-empty-env
-                              svex-eval-monotonic))
-             :expand ((4vec-[= (svex-eval n nil) (svex-eval n env))))
-            (bitops::logbitp-reasoning)))
-
-  (defthmd svex-eval-when-4vec-xfree-of-minval-apply
-    (implies (and (syntaxp (not (equal env ''nil)))
-                  (4vec-xfree-p (svex-apply fn (svexlist-eval args nil))))
-             (equal (svex-apply fn (svexlist-eval args env))
-                    (svex-apply fn (svexlist-eval args nil))))
-    :hints (("goal" :use ((:instance svex-eval-when-4vec-xfree-of-minval
-                           (n (svex-call fn args))))
-             :in-theory (disable svex-eval-when-4vec-xfree-of-minval
-                                 equal-of-4vecs 4vec-xfree-p)))))
 
 (define 4vec-xfree-under-mask ((x 4vec-p) (mask 4vmask-p))
   (b* (((4vec x) x))
@@ -3250,25 +3258,35 @@
 
   (defthmd svex-eval-when-4vec-xfree-under-mask-of-minval
     (implies (and (syntaxp (not (equal env ''nil)))
-                  (4vec-xfree-under-mask (svex-eval n nil) mask))
+                  (4vec-xfree-under-mask (svex-xeval n) mask))
              (equal (4vec-mask mask (svex-eval n env))
-                    (4vec-mask mask (svex-eval n nil))))
-  :hints (("goal" :use ((:instance svex-eval-gte-empty-env (x n)))
+                    (4vec-mask mask (svex-xeval n))))
+  :hints (("goal" :use ((:instance svex-eval-gte-xeval (x n)))
            :in-theory (e/d ( 4vec-equiv 4vec-mask)
-                           (svex-eval-gte-empty-env
-                            svex-eval-monotonic))
-           :expand ((4vec-[= (svex-eval n nil) (svex-eval n env))))
+                           (svex-eval-gte-xeval))
+           :expand ((4vec-[= (svex-xeval n) (svex-eval n env))))
           (bitops::logbitp-reasoning)))
 
   (deffixequiv 4vec-xfree-under-mask)
 
   (defthmd svex-eval-when-4vec-xfree-under-mask-of-minval-apply
     (implies (and (syntaxp (not (equal env ''nil)))
-                  (4vec-xfree-under-mask (svex-apply fn (svexlist-eval args nil)) mask))
+                  (not (equal (fnsym-fix fn) '===))
+                  (4vec-xfree-under-mask (svex-apply fn (svexlist-xeval args)) mask))
              (equal (4vec-mask mask (svex-apply fn (svexlist-eval args env)))
-                    (4vec-mask mask (svex-apply fn (svexlist-eval args nil)))))
+                    (4vec-mask mask (svex-apply fn (svexlist-xeval args)))))
     :hints (("goal" :use ((:instance svex-eval-when-4vec-xfree-under-mask-of-minval
                            (n (svex-call fn args))))
+             :in-theory (disable svex-eval-when-4vec-xfree-under-mask-of-minval
+                                 equal-of-4vecs 4vec-xfree-under-mask))))
+
+  (defthmd svex-eval-when-4vec-xfree-under-mask-of-minval-apply-===
+    (implies (and (syntaxp (not (equal env ''nil)))
+                  (4vec-xfree-under-mask (svex-apply '== (svexlist-xeval args)) mask))
+             (equal (4vec-mask mask (svex-apply '=== (svexlist-eval args env)))
+                    (4vec-mask mask (svex-apply '== (svexlist-xeval args)))))
+    :hints (("goal" :use ((:instance svex-eval-when-4vec-xfree-under-mask-of-minval
+                           (n (svex-call '=== args))))
              :in-theory (disable svex-eval-when-4vec-xfree-under-mask-of-minval
                                  equal-of-4vecs 4vec-xfree-under-mask)))))
 
@@ -3303,7 +3321,8 @@
       (implies ok
                (equal (4vec-mask mask (svex-eval pat (svex-alist-eval subst env)))
                       (4vec-mask mask (svex-apply fn (svexlist-eval args env))))))
-    :hints(("Goal" :in-theory (enable svex-eval-when-4vec-xfree-under-mask-of-minval-apply))))
+    :hints(("Goal" :in-theory (enable svex-eval-when-4vec-xfree-under-mask-of-minval-apply
+                                      svex-eval-when-4vec-xfree-under-mask-of-minval-apply-===))))
 
   (defthm svex-rewrite-fncall-once-vars
     (b* (((mv ?ok ?pat subst) (svex-rewrite-fncall-once mask fn args localp)))

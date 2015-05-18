@@ -1,5 +1,10 @@
 (in-package "ACL2")
 
+; Added by Matt K., May 2015.  Improvement observed when certification used
+; the :delay strategy:
+; 82.62 sec. vs. 118.04 sec.
+(value-triple (set-gc-strategy :delay))
+
 (include-book "../y86/y86")
 (include-book "../y86/y86-asm")
 (include-book "../y86/y86-mem-init")
@@ -9,8 +14,10 @@
 (include-book "arithmetic-5/top" :dir :system)
 (include-book "centaur/gl/gl"    :dir :system)
 ; Increase memory for X86 memory.
-(include-book "centaur/misc/memory-mgmt-logic" :dir :system)
-(value-triple (set-max-mem (* 6 (expt 2 30))))
+; Matt K., May 2015: Commenting out next two lines, since above call of
+; set-gc-strategy should do the job.
+; (include-book "centaur/misc/memory-mgmt-logic" :dir :system)
+; (value-triple (set-max-mem (* 6 (expt 2 30))))
 
 (defun gl-int (start by count)
  ;; An aid for writing DEF-GL-THM bindings

@@ -703,7 +703,13 @@ else
 endif
 
 # The following target assumes that we are using an image built with
-# ACL2_DEVEL set.
+# ACL2_DEVEL set, and then have certified the books mentioned in
+# *system-verify-guards-alist*, currently system/top, for example as
+# follows.  (This has taken about 2 minutes on a 2015 MacBook Pro.)
+#   # Perhaps start with make clean-books.  Then, where the -j
+#   # argument is optional:
+#   cd books
+#   ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d system/top.cert
 .PHONY: devel-check
 devel-check:
 	@counter=0 ; \
