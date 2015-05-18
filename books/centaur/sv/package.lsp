@@ -198,6 +198,16 @@
 
       defsvtv svtv-run svtv-debug svtv-easy-bindings svtv->ins svtv->vars svtv->outs svtv-p
       patbind-svtv
+
+
+      ;; stuff for nicer documentation
+      sv
+      hardware-verification
+      esim
+      vl
+      vl2014
+      fty
+
       )
 
     #!VL

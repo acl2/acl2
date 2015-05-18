@@ -7,8 +7,9 @@
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 (include-book "milawa/doc")
-(include-book "sidekick/top")
+(include-book "regex/regex-ui")
 (include-book "leftist-trees/top")
+(include-book "sidekick/server")
 
 (defxdoc projects
   :parents (top)

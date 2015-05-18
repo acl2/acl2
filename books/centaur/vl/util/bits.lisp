@@ -88,7 +88,7 @@ e.g., @('(#\\1 #\\0 #\\X #\\Z)')."
 (define vl-bitlist->string ((x vl-bitlist-p))
   :parents (vl-bit)
   :short "Convert a @(see vl-bitlist) into the corresponding string, e.g.,
-@('\"10XZ\")."
+@('\"10XZ\"')."
   :returns (str stringp :rule-classes :type-prescription)
   (implode (vl-bitlist->charlist x)))
 
