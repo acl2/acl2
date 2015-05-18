@@ -2278,15 +2278,24 @@ functions can assume all bits of it are good.</p>"
               (svex-x)))
          ((unless (eq opacity :opaque))
           (vl-expr-to-svex-transparent x size signedness conf))
-         ((wmv warnings size) (vl-expr-selfsize x conf.ss conf.typeov))
-         ((unless size)
+         ((wmv warnings selfsize) (vl-expr-selfsize x conf.ss conf.typeov))
+         ((unless selfsize)
           (mv (fatal :type :vl-expr-to-svex-fail
                      :msg "Sizing of ~a0 failed unexpectedly."
                      :args (list x))
               (svex-x)))
          ((wmv warnings svex)
-          (vl-expr-to-svex-opaque x conf)))
+          (vl-expr-to-svex-opaque x conf))
+         (size
+          ;; Special case for extints -- they get sign/zero-extended at their
+          ;; context size, not their self size.
+          (if (vl-expr-case x
+                :vl-literal (vl-value-case x.val :vl-extint)
+                :otherwise nil)
+              size
+            selfsize)))
       (mv warnings (svex-extend signedness size svex))))
+
 
   (define vl-expr-to-svex-transparent ((x vl-expr-p)
                                        (size natp)
