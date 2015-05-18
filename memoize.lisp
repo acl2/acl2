@@ -87,7 +87,6 @@
     fast-alist-summary
     cons-subtrees
     number-subtrees
-    clear-hash-tables
     flush-hons-get-hash-table-link
     ;; from memoize.lisp
     clear-memoize-table

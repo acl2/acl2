@@ -12565,7 +12565,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     HONS-CLEAR HONS-CLEAR!
     HONS-WASH HONS-WASH!
     FAST-ALIST-CLEAN FAST-ALIST-FORK HONS-EQUAL-LITE
-    CLEAR-HASH-TABLES NUMBER-SUBTREES
+    NUMBER-SUBTREES
     FAST-ALIST-SUMMARY HONS-ACONS! CLEAR-MEMOIZE-TABLES HONS-COPY HONS-ACONS
     CLEAR-MEMOIZE-TABLE FAST-ALIST-FREE HONS-EQUAL HONS-RESIZE-FN HONS-GET HONS
     FAST-ALIST-CLEAN! FAST-ALIST-FORK! MEMOIZE-SUMMARY CLEAR-MEMOIZE-STATISTICS
@@ -12618,7 +12618,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     too-many-ifs-post-rewrite
     too-many-ifs-pre-rewrite
 
-    set-gc-strategy gc-strategy
+    set-gc-strategy-fn gc-strategy
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -26556,18 +26556,22 @@ Lisp definition."
   '((:egc   . set-gc-strategy-builtin-egc)
     (:delay . set-gc-strategy-builtin-delay)))
 
-(defun set-gc-strategy (op)
+(defun set-gc-strategy-fn (op threshold)
 
 ; The first call of this function cannot be made with op = :current, since
 ; *gc-strategy* will not yet be bound.
 
-  (declare (xargs :guard (assoc-eq op *gc-strategy-alist*))
+  (declare (xargs :guard (or (eq op :current)
+                             (assoc-eq op *gc-strategy-alist*)))
            #+(and ccl (not acl2-loop-only))
-           (special *gc-strategy*))
+           (special *gc-strategy*)
+           #+acl2-loop-only
+           (ignore threshold))
   #-acl2-loop-only
   #+ccl
   (let* ((op (if (eq op :current) *gc-strategy* op))
          (fn (cdr (assoc-eq op *gc-strategy-alist*))))
+    (ccl-initialize-gc-strategy threshold)
     (assert (and (symbolp fn)
                  (fboundp fn)))
     (funcall fn op)
@@ -26575,6 +26579,9 @@ Lisp definition."
   #-ccl
   (cw "; Note: Set-gc-strategy is a no-op in this host Lisp.~|")
   op)
+
+(defmacro set-gc-strategy (op &optional threshold)
+  `(set-gc-strategy-fn ,op ,threshold))
 
 (defun gc-strategy (state)
   (declare (xargs :stobjs state)

@@ -9282,9 +9282,9 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
 (defg *max-mem-usage*
 
-; This global is set in set-gc-strategy-builtin-delay (formerly start-sol-gc).
-; It is an upper bound, in bytes of memory used, that when exceeded results in
-; certain garbage collection actions.
+; This global is set in ccl-initialize-gc-strategy.  It is an upper bound, in
+; bytes of memory used, that when exceeded results in certain garbage
+; collection actions.
 
 ; See also the centaur/misc/memory-mgmt books.
 
@@ -9292,7 +9292,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
 (defg *gc-min-threshold*
 
-; This is set in set-gc-strategy-builtin-delay (formerly start-sol-gc).
+; This is set in ccl-initialize-gc-strategy.
 
 ; See also the centaur/misc/memory-mgmt books.
 
@@ -9312,7 +9312,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; discussion.  The comments here summarize how that works out if, for example,
 ; there are 8G bytes of physical memory, just to make the concepts concrete --
 ; so it might be helpful to read the comments in this function before reading
-; the more general discussion in set-gc-strategy-builtin-delay
+; the more general discussion in set-gc-strategy-builtin-delay.
 
   (let ((n
 
@@ -9348,12 +9348,33 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
     (ccl::set-lisp-heap-gc-threshold *gc-min-threshold*)))
 
 #+ccl
+(defun ccl-initialize-gc-strategy (&optional threshold)
+  (let* ((phys (physical-memory))                   ; in KB
+         (memsize (cond ((> phys 0) (* phys 1024))  ; to bytes
+                        (t (expt 2 32)))))
+    (setq *max-mem-usage* ; no change if we were here already
+          (min (floor memsize 8)
+               (expt 2 31)))
+    (setq *gc-min-threshold* ; no change if we were here already
+          (cond ((null threshold) (floor *max-mem-usage* 4))
+                ((posp threshold) threshold)
+                (t (error "The GC threshold must be a positive integer, but ~
+                           ~s is not!"
+                          threshold))))
+    (ccl::set-lisp-heap-gc-threshold *gc-min-threshold*)
+    (ccl::use-lisp-heap-gc-threshold)
+    nil))
+
+#+ccl
 (defun set-gc-strategy-builtin-delay ()
 
 ; This function was called start-sol-gc through ACL2 Version_7.1.  It should
 ; undo the effects of set-gc-strategy-builtin-egc, by turning off EGC and
 ; enabling the delay strategy.  The list ccl::*post-gc-hook-list* should
 ; contain the symbol set-and-reset-gc-thresholds after this call succeeds.
+
+; The function ccl-initialize-gc-strategy should be called before this function
+; is called.
 
 ; This function should probably not be invoked in recent versions of CCL,
 ; instead relying on EGC for memory management, except perhaps in
@@ -9433,14 +9454,6 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; a reasonable assumption we think for anyone using ACL2 in 2015 or beyond.
 
   (without-interrupts ; leave us in a sane state
-   (let* ((phys (physical-memory))
-          (memsize (cond ((> phys 0) (* phys 1024)) ; to bytes
-                         (t (expt 2 32)))))
-     (setq *max-mem-usage* ; no change if we were here already
-           (min (floor memsize 8)
-                (expt 2 31)))
-     (setq *gc-min-threshold* ; no change if we were here already
-           (floor *max-mem-usage* 4)))
    (ccl:egc nil)
    (ccl::add-gc-hook
 

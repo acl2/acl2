@@ -4154,15 +4154,4 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     ,form
     (fast-alist-free ,alist)))
 
-;  COMPATIBILITY WITH OLD HONS FUNCTIONS ------------------------
-
-(defun clear-hash-tables ()
-  (clear-memoize-tables)
-  #+static-hons (hons-wash)
-  #-static-hons (hons-clear t))
-
-(defun wash-memory ()
-  ;; Deprecated.
-  (clear-memoize-tables)
-  (hons-wash))
 
