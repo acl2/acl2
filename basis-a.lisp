@@ -6404,9 +6404,11 @@
 ; state-global-let*).
 
                            (er hard! 'with-local-state
-                               "The use of with-local-state ~
-                                (or, with-local-stobj where STATE is the ~
-                                stobj) is disallowed with parallelism enabled.")
+                               "The use of with-local-state (or, ~
+                                with-local-stobj where STATE is the stobj) is ~
+                                disallowed with parallel execution enabled.  ~
+                                To disable parallel execution, see :DOC ~
+                                set-parallel-execution.")
                          ,p)
                     p)))
              (declare (ignore ,st))
