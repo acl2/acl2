@@ -50,6 +50,24 @@
                            ;; consp-when-member-equal-of-vl-atts-p
                            (tau-system))))
 
+
+
+(defxdoc syntax
+  :parents (vl)
+  :short "Representation of Verilog structures."
+
+  :long "<p>We now describe our representation of Verilog's syntactic
+structures.  For each kind of Verilog construct (expressions, statements,
+declarations, instances, etc.) we introduce recognizer, constructor, and
+accessor functions that enforce certain basic well-formedness criteria.</p>
+
+<p>These structures correspond fairly closely to parse trees in the Verilog
+grammar, although we make many simplifcations and generally present a much more
+regular view of the source code.</p>")
+
+(local (xdoc::set-default-parents syntax))
+
+
 ; ----------------------------------------------------------------------------
 ;
 ;                            BIG WARNING MESSAGE
@@ -96,21 +114,6 @@ annotated with a @('version') field that must match exactly this string.</p>")
     :forward t))
 
 
-
-(defxdoc syntax
-  :parents (vl)
-  :short "Representation of Verilog structures."
-
-  :long "<p>We now describe our representation of Verilog's syntactic
-structures.  For each kind of Verilog construct (expressions, statements,
-declarations, instances, etc.) we introduce recognizer, constructor, and
-accessor functions that enforce certain basic well-formedness criteria.</p>
-
-<p>These structures correspond fairly closely to parse trees in the Verilog
-grammar, although we make many simplifcations and generally present a much more
-regular view of the source code.</p>")
-
-(local (xdoc::set-default-parents syntax))
 
 ;; (defprod vl-range
 ;;   :short "Representation of ranges on wire declarations, instance array

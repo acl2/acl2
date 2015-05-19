@@ -32,7 +32,7 @@
 (in-package "VL")
 (include-book "lineup")
 (include-book "override")
-(include-book "centaur/sv/vl-elaborate" :dir :system)
+(include-book "centaur/sv/vl/elaborate" :dir :system)
 ;; (include-book "scopesubst")
 (include-book "../../mlib/blocks")
 (include-book "../../mlib/writer") ;; for generating the new module names...

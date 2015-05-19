@@ -41,7 +41,6 @@
 (program)
 (set-state-ok t)
 
-
 (defun fixequiv-post-define-hook (guts user-args state)
   (declare (xargs :mode :program :stobjs state))
   (b* (((std::defguts guts) guts))

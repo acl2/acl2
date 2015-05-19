@@ -1,5 +1,5 @@
-; SVEX - Symbolic, Vector-Level Hardware Description Library
-; Copyright (C) 2014 Centaur Technology
+; SV - Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2014-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,13 +29,13 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "VL")
+(include-book "elaborate")
+(include-book "../mods/svmods")
+(include-book "../mods/lhs")
+(include-book "../svex/lattice")
 (include-book "centaur/vl/mlib/scopestack" :dir :system)
 (include-book "centaur/vl/mlib/reportcard" :dir :system)
 (include-book "centaur/vl/mlib/blocks" :dir :System)
-(include-book "svmods")
-(include-book "lhs")
-(include-book "lattice")
-(include-book "vl-elaborate")
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
@@ -345,7 +345,7 @@ current one.  We translate module @('a') as follows:</p>
 ;;                                     tag-reasoning))))
 
 
-        
+
 
 
 (define vl-vardecllist-sizes ((x vl-vardecllist-p)
@@ -378,7 +378,7 @@ current one.  We translate module @('a') as follows:</p>
   (defret true-listp-of-vl-vardecllist-sizes
     (true-listp sizes)
     :rule-classes :type-prescription))
-       
+
 
 
 (define vl-interface-size ((x vl-interface-p)
@@ -445,7 +445,7 @@ constructed separately.)</p>"
            (and stable-under-simplificationp
                 '(:in-theory #!sv (enable lhspairs-vars lhatom-vars))))))
 
-       
+
 (define vl-interfaceport->svex ((x vl-interfaceport-p)
                                 (ss vl-scopestack-p))
   :returns (mv (warnings vl-warninglist-p)
@@ -461,7 +461,7 @@ constructed separately.)</p>"
              (local (defthm name-p-when-stringp
                       (implies (stringp x)
                                (sv::name-p x))
-                      :hints(("Goal" :in-theory (enable sv::name-p)))))) 
+                      :hints(("Goal" :in-theory (enable sv::name-p))))))
   (b* (((vl-interfaceport x) (vl-interfaceport-fix x))
        (insts (list (sv::make-modinst :instname x.name :modname x.ifname)))
        ((mv warnings wires aliases)
@@ -490,7 +490,7 @@ constructed separately.)</p>"
         (append-without-guard insts1 insts2)
         (append-without-guard aliases1 aliases2)))
   ///
-  
+
   (defthm vars-of-vl-interfaceports->svex
     (sv::svarlist-addr-p
      (sv::lhspairs-vars
@@ -695,7 +695,7 @@ constructed separately.)</p>"
 ;;              (xlhs (sv::svex->lhs xsvex))
 ;;              (ylhs (sv::svex->lhs ysvex)))
 ;;           (mv (ok) nil (list (cons xlhs ylhs)) nil)))
-             
+
 
 ;;        ;; ((when (not y.name))
 ;;        ;;  (cw "Warning! No name for port ~x0, module ~s1~%" y inst-modname)
@@ -958,7 +958,7 @@ constructed separately.)</p>"
                (conn-size posp)
                (replicatedp))
    :layout :alist))
-            
+
 (fty::deflist vl-portinfolist :elt-type vl-portinfo)
 
 
@@ -1019,7 +1019,7 @@ constructed separately.)</p>"
                                           sv::svex-concat
                                           sv::4vec-index-p))))
   :guard-debug t
-  
+
   (b* (((fun (fail warnings)) (mv warnings (make-vl-portinfo-bad)))
        ((vl-plainarg x) (vl-plainarg-fix x))
        (portname (string-fix portname))
@@ -1316,7 +1316,7 @@ constructed separately.)</p>"
                (assigns sv::assigns-p)
                (aliases sv::lhspairs-p))
   (b* ((warnings nil)
-       ((when (atom x)) (mv (ok) nil nil)) 
+       ((when (atom x)) (mv (ok) nil nil))
        ((wmv warnings assigns1 aliases1)
         (vl-portinfo-to-svex-assign-or-alias (car x) instname))
        ((wmv warnings assigns2 aliases2)
@@ -1401,7 +1401,7 @@ instance array with a single instance of new module representing the array:</p>
    b <0> ();
    alias <0>.bi = bi;
    alias <0>.bo = bo[2:0];
-  endmodule 
+  endmodule
 
   module a ();
 
@@ -1879,7 +1879,7 @@ how VL module instances are translated.</p>"
                   (implies (not (member v (svex-vars (driver->value x))))
                            (not (member v (driverlist-vars (repeat n x)))))
                   :hints(("Goal" :in-theory (enable repeat driverlist-vars)))))
-  
+
   (defret svarlist-addr-p-of-vl-gatetype-names/dirs/assigns
     (sv::svarlist-addr-p (sv::assigns-vars assigns))
     :hints ((and stable-under-simplificationp
@@ -1920,7 +1920,7 @@ how VL module instances are translated.</p>"
   (defret svarlist-addr-p-of-vl-gate-make-svex-module
     (sv::svarlist-addr-p (sv::module-vars svmod))
     :hints(("Goal" :in-theory (enable sv::module-vars)))))
-       
+
 
 
 
@@ -2214,7 +2214,7 @@ multi-tick we'd have to generate new names for the intermediate states.</p>"
 ;;             (cons (let ((name (vl-scope->name x.top)))
 ;;                     (list (tag x.top) (or name "anonymous")))
 ;;                   acc))))
-                                    
+
 (define vl-datatype->svex-modname ((x vl-datatype-p))
   :returns (name sv::modname-p
                  :hints(("Goal" :in-theory (enable sv::modname-p))))
@@ -2788,7 +2788,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
 
         :vl-enum
         (vl-datatype->mods x.basetype modalist)
-             
+
         :otherwise (mv (vmsg "Can't handle type ~a0" x)
                        nil nil (sv::modalist-fix modalist)))))
 
@@ -2930,7 +2930,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
         (append-without-guard modinsts1 modinsts2)
         modalist))
   ///
-  
+
   (more-returns
    (modalist1 :name vars-of-vl-vardecllist->svex-modalist
               (implies (sv::svarlist-addr-p (sv::modalist-vars modalist))
@@ -3212,8 +3212,8 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
 
     (deffixequiv-mutual vl-genblob->svex-modules))
 
-      
-       
+
+
 
 
 (define vl-module->svex-module ((name stringp)
@@ -3258,7 +3258,7 @@ ports, by calling @(see vl-interfaceports->svex).</p>"
              :insts (append-without-guard ifinsts mod.insts)
              :aliaspairs (append-without-guard ifaliases mod.aliaspairs))))
     (mv warnings (hons-acons x.name mod modalist))))
-       
+
 
 (define vl-modulelist->svex-modalist
   ((x vl-modulelist-p)
@@ -3349,7 +3349,7 @@ the concatenation of all its other declared wires.</p>"
             (cons (cons name warnings) reportcard)
           reportcard)
         modalist)))
-    
+
 
 (define vl-design->svex-modalist ((x vl-design-p))
   :parents (vl-design->svex-design)
@@ -3372,7 +3372,3 @@ this translation.</p>"
        (reportcard (vl-clean-reportcard (append-without-guard reportcard1 reportcard2))))
     (vl-scopestacks-free)
     (mv reportcard modalist)))
-
-
-
-

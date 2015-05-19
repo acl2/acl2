@@ -1,5 +1,5 @@
-; SVEX - Symbolic, Vector-Level Hardware Description Library
-; Copyright (C) 2014 Centaur Technology
+; SV - Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2014-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,16 +26,16 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original author: Sol Swords <sswords@centtech.com>
+; Original authors: Sol Swords <sswords@centtech.com>
+;                   Jared Davis <jared@centtech.com>
 
 (in-package "SV")
-
 (include-book "structure")
 (include-book "expand")
 (include-book "doc")
-(include-book "../svmask")
-(include-book "../compose")
-(include-book "../compile")
+(include-book "../mods/compile")
+(include-book "../svex/svmask")
+(include-book "../svex/compose")
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "centaur/gl/auto-bindings" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -1139,7 +1139,7 @@ then additional xdoc will also be generated to show a timing diagram.
 the given inputs and returns the output values.</p>
 
 <p>The input names and output names referred to above are the variable symbols
-used in the @(see defsvtv') form.  For example,</p>
+used in the @(see defsvtv) form.  For example,</p>
 
 @({
  (defsvtv my-test
@@ -1393,7 +1393,7 @@ irrelevant inputs are removed.</p>"
 
 
 (defxdoc svex-stvs
-  :parents (svex-package)
+  :parents (sv)
   :short "Using SVEX-based STVs as a replacement for ESIM/4v-sexpr-based STVs"
   :long
   "<p>Svex STVs are a mostly-drop-in replacement for ESIM-based STVs.  In this

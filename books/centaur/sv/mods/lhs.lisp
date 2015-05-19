@@ -1,5 +1,5 @@
-; SVEX - Symbolic, Vector-Level Hardware Description Library
-; Copyright (C) 2014 Centaur Technology
+; SV - Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2014-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -30,9 +30,9 @@
 
 (in-package "SV")
 (include-book "address")
-(include-book "svmask")
-(include-book "vars")
-(include-book "rsh-concat")
+(include-book "../svex/svmask")
+(include-book "../svex/vars")
+(include-book "../svex/rsh-concat")
 (include-book "centaur/misc/1d-arr" :dir :system)
 (include-book "tools/clone-stobj" :dir :system)
 (include-book "std/alists/hons-remove-assoc" :dir :system) ;; bozo

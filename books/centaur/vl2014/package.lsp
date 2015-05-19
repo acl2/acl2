@@ -229,7 +229,7 @@
       vl2014
       hardware-verification
       esim
-      svex
+      sv
 
       ;; acl2-customization file stuff
       why

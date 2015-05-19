@@ -53,7 +53,7 @@ monotonic four-valued logic (see @(see acl2::4v)) and features strong support
 for symbolic simulation with @(see gl::gl)."
 
   :long "<box><p><b>Note:</b> ESIM is no longer being actively developed.  You
-will probably want to instead see its successor, @(see svex).</p></box>
+will probably want to instead see its successor, @(see sv).</p></box>
 
 <p>ESIM is a bit-level ``back-end'' for carrying out hardware verification with
 ACL2.  It consists of:</p>

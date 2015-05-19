@@ -1,5 +1,5 @@
-; Centaur Hardware Verification Tutorial
-; Copyright (C) 2012 Centaur Technology
+; Centaur SV Hardware Verification Tutorial
+; Copyright (C) 2012-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,14 +26,15 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original author:  Sol Swords <sswords@centtech.com>
+; Original authors: Jared Davis <jared@centtech.com>
+;                   Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
 
 (include-book "xdoc/top" :dir :system)
 
-(defxdoc svex-tutorial
-  :parents (svex-package)
+(defxdoc sv-tutorial
+  :parents (sv)
   :short "Basic tutorial: how to use the svex package to do datapath verification."
   :long " <p>The subtopics are listed in the intended order of the
 tutorial, which first covers verification of a simple 16-bit combinational ALU

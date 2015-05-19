@@ -30,6 +30,7 @@
 
 (in-package "SV")
 (include-book "4vec")
+(include-book "svex")
 (include-book "std/lists/list-defuns" :dir :system)
 (local (include-book "std/lists/nth" :dir :system))
 (local (include-book "std/lists/acl2-count" :dir :system))

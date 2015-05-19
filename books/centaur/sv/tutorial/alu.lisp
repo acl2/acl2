@@ -1,5 +1,5 @@
-; Centaur Hardware Verification Tutorial
-; Copyright (C) 2012 Centaur Technology
+; Centaur SV Hardware Verification Tutorial
+; Copyright (C) 2012-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,10 +26,8 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original author:  Jared Davis <jared@centtech.com>
-; Modified for SVEX: Sol Swords <sswords@centtech.com>
-
-
+; Original authors: Jared Davis <jared@centtech.com>
+;                   Sol Swords <sswords@centtech.com>
 
 
 ; This is the first example in the tutorial.  We are going to try to verify a
@@ -180,7 +178,7 @@ vl::vl-design->svex-design):</p>
 <p>This runs a series of Verilog to Verilog transforms on the parse tree to
 simplify it, and finally transforms the simplified hierarchy into an svex
 design.  It returns the resulting svex design, an object of type @(see
-sv::design), as well as two additional Verilog designs: the portion of the
+svex::design), as well as two additional Verilog designs: the portion of the
 original design that survived the simplification process, and the portion that
 failed for one reason or another.  You can view pretty-printed versions of
 these:</p>
@@ -197,7 +195,7 @@ print its warnings:</p>
 @(`(:code ($ alu-print-good-reportcard))`)
 
 <p>The svex design @('*alu-svex-design*') is an object of type @(see
-sv::design), and this is a small enough design that you can print it in
+svex::design), and this is a small enough design that you can print it in
 full:</p>
 
 @({(without-evisc *alu-svex-design*)})

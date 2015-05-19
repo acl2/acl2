@@ -1,5 +1,5 @@
-; VL 2014 -- VL Verilog Toolkit, 2014 Edition
-; Copyright (C) 2008-2015 Centaur Technology
+; SV - Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2014-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,25 +26,12 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original author: Jared Davis <jared@centtech.com>
+; Original author: Sol Swords <sswords@centtech.com>
 
-(in-package "VL2014")
-(include-book "caseelim")
-(include-book "eliminitial")
-(include-book "../../util/cwtime")
-
-
-(define vl-design-always-backend-svex ((x vl-design-p))
-  ;; New experimental always-block handling for svex.  Not used in the ESIM
-  ;; flow.  We reuse the esim-style handling of edge-triggered blocks, but
-  ;; don't process combinational or latch-based blocks.  We don't throw away
-  ;; unsupported blocks because we want to deal with combinational and
-  ;; latch-based blocks directly in svex.
-  :returns (new-x vl-design-p)
-
-  (b* ((x (xf-cwtime (vl-design-caseelim x)))
-       (x (xf-cwtime (vl-design-eliminitial x)))
-       ;; (x (xf-cwtime (vl-design-edgesplit x)))
-       ;; (x (xf-cwtime (vl-design-edgesynth x :vecp t)))
-       )
-    x))
+(in-package "SV")
+(include-book "address")
+(include-book "alias-norm")
+(include-book "compile")
+(include-book "lhs")
+(include-book "moddb")
+(include-book "svmods")

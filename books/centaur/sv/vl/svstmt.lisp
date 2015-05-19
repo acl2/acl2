@@ -1,5 +1,5 @@
-; SVEX - Symbolic, Vector-Level Hardware Description Library
-; Copyright (C) 2014 Centaur Technology
+; SV - Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2014-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,8 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-
-(include-book "lhs")
+(include-book "../mods/lhs")
 (include-book "std/util/defmapappend" :dir :system)
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
 (local (std::add-default-post-define-hook :fix))
@@ -53,7 +52,7 @@
 
 (deftypes svstmt
   (fty::deftagsum svstmt
-    :parents (svex-package)
+    :parents (sv)
     :short "An @(see svex)-based representation for procedural statement blocks"
     (:assign
      ((lhs lhs)

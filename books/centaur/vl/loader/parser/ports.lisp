@@ -272,6 +272,7 @@
 ;;                                   (vl-debug-tokstream tokstream))))))
 
 (defparser vl-parse-ansi-port-declaration (atts)
+  :parents (parse-ports)
   :short "Matches @('ansi_port_declaration').  Peeks at the token after to make
           sure it's a comma or right paren, but doesn't consume it."
   :guard (vl-atts-p atts)
@@ -341,6 +342,7 @@
           (mv err nil tokstream)))))
 
 (defparser vl-parse-1+-ansi-port-declarations ()
+  :parents (parse-ports)
   :short "Matches @(' {attribute_instance} ansi_port_declaration
                       { ',' {attribute_instance} ansi_port_declaration } ')"
   :result (vl-ansi-portdecllist-p val)

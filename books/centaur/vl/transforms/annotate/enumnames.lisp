@@ -29,7 +29,6 @@
 ; Original author:  Sol Swords <sswords@centtech.com>
 
 (in-package "VL")
-
 (include-book "../../parsetree")
 (include-book "../../mlib/expr-tools")
 (include-book "centaur/fty/visitor" :dir :system)
@@ -37,6 +36,7 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc enum-names
+  :parents (annotate)
   :short "Making sense of the names defined by enum types."
   :long "<p>Enum types are unique among datatypes in that using one has a side
 effect of declaring some names with assigned values.  We deal with these early

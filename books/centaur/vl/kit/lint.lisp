@@ -70,7 +70,7 @@
 ;(include-book "../transforms/sizing")
 ;(include-book "../transforms/unused-vars")
 
-(include-book "centaur/sv/vl-moddb" :dir :system)
+(include-book "centaur/sv/vl/moddb" :dir :system)
 (include-book "../../misc/sneaky-load")
 
 (include-book "../mlib/json")

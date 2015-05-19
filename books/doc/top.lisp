@@ -63,8 +63,6 @@
 (include-book "centaur/4v-sexpr/top" :dir :system)
 (include-book "centaur/aig/top" :dir :system)
 
-(include-book "projects/doc" :dir :system)
-
 (include-book "centaur/aignet/aig-sim" :dir :system)
 (include-book "centaur/aignet/copying" :dir :system)
 (include-book "centaur/aignet/from-hons-aig-fast" :dir :system)
@@ -134,8 +132,6 @@
 
 (include-book "oslib/top" :dir :system)
 
-(include-book "projects/regex/regex-ui" :dir :system)
-
 (include-book "std/top" :dir :system)
 (include-book "std/basic/inductions" :dir :system)
 (include-book "std/io/unsound-read" :dir :system)
@@ -149,6 +145,7 @@
 (include-book "centaur/ubdds/lite" :dir :system)
 (include-book "centaur/ubdds/param" :dir :system)
 
+(include-book "centaur/sv/top" :dir :system)
 (include-book "centaur/esim/vcd/vcd" :dir :system)
 (include-book "centaur/esim/vcd/esim-snapshot" :dir :system)
 (include-book "centaur/esim/vcd/vcd-stub" :dir :system)
@@ -235,13 +232,12 @@
 (include-book "centaur/memoize/old/profile" :dir :system)
 (include-book "centaur/memoize/old/watch" :dir :system)
 
-; The following include-book causes a name conflict for set-equal, which is
-; defined both in arithmetic-5/lib/basic-ops/building-blocks.lisp and in
-; data-structures/set-defuns.lisp.  So for now, at least, it is commented out.
 (include-book "data-structures/top" :dir :system)
-
-;Put ACL2s doc last, since ccg.lisp inclusion might cause problems -- harshrc
 (include-book "acl2s/doc" :dir :system)
+
+(include-book "projects/doc" :dir :system)
+
+
 
 #||
 
@@ -676,7 +672,8 @@ of proofs.")
       "new-doc.lsp")
      (xdoc::save "./manual"
                  :import nil
-                 :redef-okp t)
+                 :redef-okp t
+                 :zip-p nil)
      (value `(value-triple :manual)))))
 
 
