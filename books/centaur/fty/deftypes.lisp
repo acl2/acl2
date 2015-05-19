@@ -3930,9 +3930,14 @@
   (declare (ignorable state))
   (b* (((flexalist x) x)
        (parents (getarg :parents parents kwd-alist))
+       (key-link (if x.key-type
+                     (cat "@(see? " (xdoc::full-escape-symbol x.key-type) ")")
+                   "anything"))
+       (val-link (if x.val-type
+                     (cat "@(see? " (xdoc::full-escape-symbol x.val-type) ")")
+                   "anything"))
        (short   (or (getarg :short nil kwd-alist)
-                    (cat "An alist mapping @(see? " (xdoc::full-escape-symbol x.key-type)
-                         ") to @(see? " (xdoc::full-escape-symbol x.val-type) ").")))
+                    (cat "An alist mapping " key-link " to " val-link ".")))
        (long    (or (getarg :long nil kwd-alist)
                     (cat "<p>This is an ordinary @(see fty::defalist).</p>"))))
     (mv `((defxdoc ,x.name

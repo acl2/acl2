@@ -30,12 +30,18 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "VL")
-
 (include-book "../../mlib/scopestack")
 (include-book "../../mlib/expr-tools")
 (include-book "../../mlib/filter")
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (Tau-system))))
+
+(defxdoc port-resolve
+  :parents (annotate)
+  :short "Tricky post-parsing code to get all the ports straightened out."
+  :long "<p>BOZO document me.</p>")
+
+(local (xdoc::set-default-parents port-resolve))
 
 ;; ===================== Fixing up ANSI Ports ====================================
 
@@ -56,7 +62,6 @@
 
 (define vl-name-is-interface-or-type ((x stringp)
                                       (ss vl-scopestack-p))
-  :parents (vl-port-resolve)
   :short "Looks up x in the scopestack to see if it looks like an interface or
           type name.  Warns if the result was ambiguous."
   :returns (mv (warnings vl-warninglist-p)

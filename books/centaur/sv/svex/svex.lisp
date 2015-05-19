@@ -29,231 +29,21 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "std/util/defines" :dir :system)
-(include-book "std/util/defaggregate" :dir :system)
-(include-book "tools/flag" :dir :system)
-(include-book "centaur/misc/universal-equiv" :dir :system)
-(include-book "centaur/misc/arith-equiv-defs" :dir :system)
-(include-book "tools/easy-simplify" :dir :system)
+(include-book "4vec-base")
 (include-book "std/lists/repeat" :dir :system)
 (include-book "centaur/fty/deftypes" :dir :system)
+(include-book "centaur/misc/arith-equiv-defs" :dir :system)
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (include-book "std/lists/nth" :dir :system))
 (local (include-book "std/lists/append" :dir :system))
 
-(defxdoc svex.lisp :parents (svex))
-(local (xdoc::set-default-parents svex.lisp))
-
-(defsection 4vec
-  :parents (sv)
-  :short "A 4-valued bit vector representation, used by the SVEX package."
-  :long "<p>A 4vec represents a vector of 4-valued bits.  Each bit can be 1, 0,
-X, or Z.  The concrete representation is either an integer (for special cases
-where every bit is 1 or 0) or a pair of integers, upper and lower.  Each
-4-valued bit is determined by the corresponding positions in the two integers.
-If two corresponding bits are equal, then the resulting bit is that value (1 or
-0).  If the upper bit is 1 and the lower 0, then the resulting value is X, and
-if the upper bit is 0 and the lower 1, then the resulting value is Z.</p>
-
-<p>Examples:</p>
-<table>
-<tr><th>Representation</th><th>Meaning (LSB first)</th></tr>
-<tr><td>6</td>        <td>0,1,1,0,0,0,...</td></tr>
-<tr><td>-13</td>      <td>1,1,0,0,1,1,...</td></tr>
-<tr><td>(6 . -13)</td><td>Z,1,X,0,Z,Z,...</td></tr>
-</table>"
-  (define 4vec-p (x)
-    (or (integerp x)
-        (and (consp x)
-             (integerp (car x))
-             (integerp (cdr x))
-             (not (equal (car x) (cdr x))))))
-
-  (local (in-theory (enable 4vec-p)))
-
-  (define 4vec ((upper integerp)
-                (lower integerp))
-    :parents nil
-    :returns (x 4vec-p)
-    (b* ((upper (lifix upper))
-         (lower (lifix lower)))
-      (if (eql upper lower)
-          upper
-        (cons upper lower))))
-
-  (local (in-theory (enable 4vec)))
-
-  (defconst *4vec-x* (4vec -1 0))
-  (defconst *4vec-z* (4vec 0 -1))
-  (defmacro 4vec-x () `',*4vec-x*)
-  (defmacro 4vec-z () `',*4vec-z*)
-
-  (defconst *4vec-1x* (4vec 1 0))
-  (defconst *4vec-1z* (4vec 0 1))
-  (defmacro 4vec-1x () `',*4vec-1x*)
-  (defmacro 4vec-1z () `',*4vec-1z*)
-
-  (define 4vec-fix ((x 4vec-p))
-    :parents (4vec)
-    :short "Fix an arbitrary object to a 4vec-p.  Guard assumes already 4vec-p."
-    :inline t
-    :prepwork ((local (in-theory (disable (force)))))
-    :returns (newx 4vec-p)
-    (mbe :logic (if (consp x)
-                    (4vec (ifix (car x))
-                          (ifix (cdr x)))
-                  (if (integerp x)
-                      x
-                    (4vec-x)))
-         ;; (4vec (ifix (4vec->upper x))
-         ;;       (ifix (4vec->lower x)))
-         :exec x)
-    ///
-    (defthm 4vec-fix-of-4vec
-      (implies (4vec-p x)
-               (equal (4vec-fix x) x)))
-
-    (fty::deffixtype 4vec :pred 4vec-p :fix 4vec-fix :equiv 4vec-equiv :define t :forward t))
-
-  (local (in-theory (enable 4vec-fix)))
-
-  (define 4vec->upper ((x 4vec-p))
-    :returns (upper integerp
-                    :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (if (consp x)
-                    (ifix (car x))
-                  (if (integerp x)
-                      x
-                    -1))
-         :exec (if (integerp x)
-                   x
-                 (car x)))
-    ///
-    (defthm 4vec->upper-of-4vec
-      (equal (4vec->upper (4vec upper lower))
-             (ifix upper)))
-
-    (defthm 4vec->upper-of-4vec-fix
-      (equal (4vec->upper (4vec-fix x))
-             (4vec->upper x))))
-
-  (define 4vec->lower ((x 4vec-p))
-    :returns (lower integerp :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (if (consp x)
-                    (ifix (cdr x))
-                  (if (integerp x)
-                      x
-                    0))
-         :exec (if (integerp x)
-                   x
-                 (cdr x)))
-    ///
-    (defthm 4vec->lower-of-4vec
-      (equal (4vec->lower (4vec upper lower))
-             (ifix lower)))
-
-    (defthm 4vec->lower-of-4vec-fix
-      (equal (4vec->lower (4vec-fix x))
-             (4vec->lower x))))
-
-  (local (in-theory (enable 4vec->upper 4vec->lower)))
-
-  (defthm 4vec-of-fields
-    (4vec-equiv (4vec (4vec->upper x) (4vec->lower x))
-                x)
-    :hints(("Goal" :in-theory (enable 4vec-fix 4vec-equiv))))
-
-  (defthmd 4vec-fix-is-4vec-of-fields
-    (equal (4vec-fix x)
-           (4vec (4vec->upper x) (4vec->lower x)))
-    :hints(("Goal" :in-theory (enable 4vec-fix))))
-
-  (defthm 4vec-elim
-    (implies (4vec-p x)
-             (equal (4vec (4vec->upper x) (4vec->lower x))
-                    x))
-    :rule-classes :elim)
-
-  (def-b*-binder 4vec
-    :body
-    (std::da-patbind-fn '4vec '((upper . 4vec->upper)
-                                (lower . 4vec->lower))
-                        args acl2::forms acl2::rest-expr))
-
-  (defthm 4vec-equal
-    (equal (equal (4vec upper lower) x)
-           (and (4vec-p x)
-                (equal (4vec->upper x) (ifix upper))
-                (equal (4vec->lower x) (ifix lower))))
-    :hints(("Goal" :in-theory (e/d (4vec-fix)))))
-
-
-  (local (in-theory (enable 4vec-equiv)))
-
-  (defcong 4vec-equiv equal (4vec->upper x) 1)
-  (defcong 4vec-equiv equal (4vec->lower x) 1))
-
-
-(define 2vec-p ((x 4vec-p))
-  :parents (2vec)
-  :inline t
-  :enabled t
-  :guard-hints (("goal" :in-theory (e/d (4vec-p 4vec->upper 4vec->lower 4vec-fix))))
-  (mbe :logic (equal (4vec->upper x)
-                     (4vec->lower x))
-       :exec (integerp x))
-  ///
-  (defthm 4vec->lower-when-2vec-p
-    (implies (2vec-p x)
-             (equal (4vec->lower x)
-                    (4vec->upper x))))
-
-  (fty::deffixequiv 2vec-p))
-
-(define 2vec ((x integerp))
-  :parents (4vec)
-  :short "A 2vec is a 4vec that has no X or Z bits."
-  :long "<p>@('2vec') constructs a 2vec from an integer; @('2vec-p') recognizes
-a 2vec; @('2vec->val') gets the integer value out of a 2vec.</p>"
-  :inline t
-  :guard-hints (("goal" :in-theory (enable 4vec)))
-  (mbe :logic (4vec x x)
-       :exec x)
-  ///
-  (defthm 4vec-p-of-2vec
-    (4vec-p (2vec x)))
-
-  (defthm 4vec->upper-of-2vec
-    (equal (4vec->upper (2vec x))
-           (ifix x)))
-
-  (defthm 4vec->lower-of-2vec
-    (equal (4vec->lower (2vec x))
-           (ifix x)))
-
-  (defthm equal-of-2vec
-    (equal (equal (2vec x) y)
-           (and (4vec-p y)
-                (equal (4vec->upper y) (ifix x))
-                (equal (4vec->lower y) (ifix x)))))
-
-  (fty::deffixequiv 2vec))
-
-(define 2vec->val ((x (and (4vec-p x) (2vec-p x))))
-  :parents (2vec)
-  :short "Extract the upper/lower value (both the same) from a 2vec."
-  :inline t
-  :enabled t
-  :guard-hints (("goal" :in-theory (enable 4vec->upper 4vec->lower 4vec-p)))
-  (mbe :logic (4vec->upper x)
-       :exec x))
-
-
 (defflexsum svar
   :parents (svex)
   :kind nil
-  (:svar :type-name svar
+  (:svar
+   :short "A single variable in a symbolic vector expression."
+   :type-name svar
    :cond t
    :shape (if (atom x)
               (or (stringp x)
@@ -266,19 +56,73 @@ a 2vec; @('2vec->val') gets the integer value out of a 2vec.</p>"
                                     (not (booleanp (cadr x)))))
                            (eql (cddr x) 0)))))
    :fields
-   ((name :acc-body (if (atom x) x (cadr x)))
-    (delay :type natp :acc-body (if (atom x) 0 (cddr x))
-           :default 0))
-   :ctor-body (if (and (or (stringp name)
-                           (and (symbolp name)
-                                (not (booleanp name))))
-                       (eql delay 0))
-                  name
-                (hons :var (hons name delay)))))
+   ((name :acc-body (if (atom x)
+                        x
+                      (cadr x))
+          :doc "The name of this variable.  This can be any ACL2 object at all,
+                but our representation is optimized for @(see stringp) or @(see
+                symbolp) names.")
+    (delay :type natp
+           :acc-body (if (atom x) 0 (cddr x))
+           :default 0
+           :doc "An natural valued index for this variable, used for instance
+                 to support the encoding of, e.g., previous versus current
+                 register values in FSMs.  The default delay (which enjoys an
+                 optimized representation) is 0.  See below for some motivation
+                 and explanation."))
+   :ctor-body
+   (if (and (or (stringp name)
+                (and (symbolp name)
+                     (not (booleanp name))))
+            (eql delay 0))
+       name
+     (hons :var (hons name delay)))
+   :long "<p>Each variable in an @(see svex) represents a @(see 4vec).</p>
+
+<p>In most s-expression formats, e.g., s-expressions in Lisp or in the @(see
+acl2::4v-sexprs) used in @(see acl2::esim), a variable is just a symbol, which
+is generally treated as if it were an atomic <b>name</b> with no further
+structure.</p>
+
+<p>In contrast, in @(see sv), our variables have both a name and also a natural
+numbered index (called @('delay')).  This index is mainly an implementation
+detail that allows us to cheaply (i.e., without @(see intern$)) construct new
+variables.</p>
+
+<p>In the semantics of expressions, e.g., in @(see svex-lookup), variables are
+distinct whenever they differ by name <b>or</b> by delay.  That is, as far as
+expression evaluation is concerned, the variable named \"v\" with delay 5 is
+completely distinct from \"v\" with delay 4.  Think of them as you would
+indexed variables like @($v_5$) versus @($v_4$) in some mathematics.</p>"))
+
+(fty::deflist svarlist
+  :elt-type svar
+  :true-listp t
+  :elementp-of-nil nil
+  :parents (svar))
+
+(defalist svar-alist
+  :key-type svar
+  :parents (svar))
+
+(defalist svar-map
+  :key-type svar
+  :val-type svar
+  :parents (svar))
 
 
+(defxdoc fnsym
+  :parents (svex)
+  :short "A valid function name in an @(see svex) expressions."
+  :long "<p>Syntactically, we allow most symbols to be used as function names.
+However, our expression language is fixed: only a few certain pre-defined
+function symbols like @('bitnot'), @('concat'), etc., are understood by
+functions like @(see svex-eval) and user-defined functions are not supported.
+See @(see svex-functions) for details.</p>")
 
 (define fnsym-p (x)
+  :parents (fnsym)
+  :short "Recognizer for valid @(see fnsym)s."
   (and (symbolp x)
        (not (eq x 'quote))
        (not (keywordp x)))
@@ -289,18 +133,38 @@ a 2vec; @('2vec->val') gets the integer value out of a 2vec.</p>"
     :rule-classes :compound-recognizer))
 
 (define fnsym-fix (x)
+  :parents (fnsym)
+  :short "Fixing function for @(see fnsym)s."
   :returns (x fnsym-p)
-  (if (fnsym-p x) x 'id)
+  (if (fnsym-p x)
+      x
+    'id)
   ///
   (defthm fnsym-fix-when-fnsym-p
     (implies (fnsym-p x)
-             (equal (fnsym-fix x) x)))
+             (equal (fnsym-fix x) x))))
 
-  (fty::deffixtype fnsym :pred fnsym-p :fix fnsym-fix :equiv fnsym-equiv :define t :forward t))
+(defsection fnsym-equiv
+  :parents (fnsym)
+  :short "Equivalence relation for @(see fnsym)s."
+  (fty::deffixtype fnsym
+    :pred fnsym-p
+    :fix fnsym-fix
+    :equiv fnsym-equiv
+    :define t
+    :forward t
+    :equal eq))
 
 
 (fty::deftypes svex
-  :parents (sv)
+  :parents (expressions)
+  :short "A single <b>S</b>ymbolic <b>V</b>ector <b>Ex</b>pression."
+  :long "<p>See @(see expressions) for background.  Each svex represents a
+single @(see 4vec) result.  The semantics are given by @(see svex-eval).</p>
+
+<p>Our @(see svex) expressions are always created with @(see hons) for
+automatic structure sharing.  Most operations over these expressions should
+typically be @(see memoize)d in some way or another.</p>"
   :prepwork ((local (defthm 4vec-not-svar-p
                       (implies (svar-p x)
                                (not (4vec-p x)))
@@ -311,10 +175,12 @@ a 2vec; @('2vec->val') gets the integer value out of a 2vec.</p>"
                       :hints(("Goal" :in-theory (enable fnsym-p svar-p))))))
   (fty::defflexsum svex
     (:var
+     :short "A variable, which represents a @(see 4vec)."
      :cond (svar-p x)
      :fields ((name :acc-body x :type svar-p))
      :ctor-body name)
     (:quote
+     :short "A ``quoted constant'' @(see 4vec), which represents itself."
      :cond (or (atom x)
                (eq (car x) 'quote))
      :shape (or (atom x) (and (consp (cdr x))
@@ -324,23 +190,46 @@ a 2vec; @('2vec->val') gets the integer value out of a 2vec.</p>"
                    :type 4vec))
      :ctor-body (if (atom val) val (hons 'quote (hons val nil))))
     (:call
+     :short "A function applied to some expressions."
      :cond t
-     :fields ((fn :acc-body (car x) :type fnsym)
-              (args :acc-body (cdr x) :type svexlist))
+     :fields ((fn :acc-body (car x)
+                  :type fnsym)
+              (args :acc-body (cdr x)
+                    :type svexlist))
      :ctor-body (hons fn args)))
-  (fty::deflist svexlist :elt-type svex :true-listp t))
+  (fty::deflist svexlist
+    :elt-type svex
+    :true-listp t))
 
 (memoize 'svex-p :condition '(consp x))
 
-(defconst *svex-z* (svex-quote (4vec-z)))
-(defconst *svex-x* (svex-quote (4vec-x)))
-(defconst *svex-1z* (svex-quote (4vec-1z)))
-(defconst *svex-1x* (svex-quote (4vec-1x)))
+(defsection svex-x
+  :parents (svex)
+  :short "An @(see svex) constant for an infinite-width X."
+  :long "@(def *svex-x*) @(def svex-x)"
+  (defconst *svex-x* (svex-quote (4vec-x)))
+  (defmacro svex-x () `',*svex-x*))
 
-(defmacro svex-z () `',*svex-z*)
-(defmacro svex-x () `',*svex-x*)
-(defmacro svex-1z () `',*svex-1z*)
-(defmacro svex-1x () `',*svex-1x*)
+(defsection svex-z
+  :parents (svex)
+  :short "An @(see svex) constant for an infinite-width X."
+  :long "@(def *svex-z*) @(def svex-z)"
+  (defconst *svex-z* (svex-quote (4vec-z)))
+  (defmacro svex-z () `',*svex-z*))
+
+(defsection svex-1x
+  :parents (svex)
+  :short "An @(see svex) constant for an single X bit (lsb), upper bits all 0."
+  :long "@(def *svex-1x*) @(def svex-1x)"
+  (defconst *svex-1x* (svex-quote (4vec-1x)))
+  (defmacro svex-1x () `',*svex-1x*))
+
+(defsection svex-1z
+  :parents (svex)
+  :short "An @(see svex) constant for an single X bit (lsb), upper bits all 0."
+  :long "@(def *svex-1z*) @(def svex-1z)"
+  (defconst *svex-1z* (svex-quote (4vec-1z)))
+  (defmacro svex-1z () `',*svex-1z*))
 
 (defthm len-of-svexlist-fix
   (equal (len (svexlist-fix x))
@@ -359,8 +248,10 @@ a 2vec; @('2vec->val') gets the integer value out of a 2vec.</p>"
   :rule-classes :linear)
 
 
-
 (define svex-nth ((n natp) (x svexlist-p))
+  :parents (svexlist-p)
+  :returns (expr svex-p)
+  :short "@(see nth) for @(see svexlist)s, with proper @(see fty-discipline)."
   :enabled t
   :guard-debug t
   (mbe :logic (svex-fix (nth n x))
@@ -369,7 +260,10 @@ a 2vec; @('2vec->val') gets the integer value out of a 2vec.</p>"
                (svex-quote (4vec-x)))))
 
 (define svex-update-nth ((n natp) (v svex-p) (x svexlist-p))
+  :parents (svexlist)
+  :short "@(see update-nth) for @(see svexlist)s, with proper @(see fty-discipline)."
   :enabled t
+  :returns (new-x svexlist-p)
   :prepwork ((local (in-theory (e/d (update-nth replicate svexlist-fix)
                                     (acl2::equal-of-append-repeat))))
              (local (include-book "arithmetic/top-with-meta" :dir :system)))
@@ -380,12 +274,17 @@ a 2vec; @('2vec->val') gets the integer value out of a 2vec.</p>"
                        (replicate (- n (len x)) (svex-quote (4vec-x)))
                        (list v)))))
 
-
-(fty::defalist svex-alist :key-type svar :val-type svex :true-listp t)
-
+(fty::defalist svex-alist
+  :key-type svar
+  :val-type svex
+  :true-listp t
+  :parents (expressions)
+  :short "Alist binding variables (@(see svar)s) to expressions @(see svex)es.")
 
 
 (define svex-acons ((var svar-p) (v svex-p) (a svex-alist-p))
+  :parents (svex-alist)
+  :short "Like @(see acons), but with proper @(see fty-discipline) for @(see svex-alist)s."
   :prepwork ((local (in-theory (enable svex-alist-fix svex-alist-p))))
   :returns (aa svex-alist-p)
   (mbe :logic (cons (cons (svar-fix var)
@@ -395,9 +294,23 @@ a 2vec; @('2vec->val') gets the integer value out of a 2vec.</p>"
   ///
   (fty::deffixequiv svex-acons))
 
+
+(define svex-fastacons ((var svar-p) (v svex-p) (a svex-alist-p))
+  :parents (svex-alist)
+  :short "Like @(see hons-acons), but with proper @(see fty-discipline) for @(see svex-alist)s."
+  :prepwork ((local (in-theory (enable svex-acons))))
+  :enabled t
+  :inline t
+  (mbe :logic (svex-acons var v a)
+       :exec (hons-acons var v a)))
+
+
 (define svex-lookup ((var svar-p) (a svex-alist-p))
+  :parents (svex-alist)
+  :short "Slow lookup in an @(see svex-alist)."
+  :long "<p>See also @(see svex-fastlookup).</p>"
   :prepwork ((local (in-theory (enable svex-alist-fix svex-alist-p))))
-  :returns (v (iff (svex-p v) v))
+  :returns (value? (iff (svex-p value?) value?))
   (mbe :logic (cdr (hons-assoc-equal (svar-fix var) (svex-alist-fix a)))
        :exec (cdr (assoc-equal var a)))
   ///
@@ -413,22 +326,21 @@ a 2vec; @('2vec->val') gets the integer value out of a 2vec.</p>"
              (svex-lookup var1 a)))
     :hints(("Goal" :in-theory (enable svex-acons)))))
 
+
 (define svex-fastlookup ((var svar-p) (a svex-alist-p))
+  :parents (svex-alist)
+  :short "Fast lookup in an @(see svex-alist)."
   :prepwork ((local (in-theory (enable svex-alist-fix svex-alist-p
                                        svex-lookup))))
   :enabled t
+  :inline t
   (mbe :logic (svex-lookup var a)
        :exec (cdr (hons-get var a))))
 
-(define svex-fastacons ((var svar-p) (v svex-p) (a svex-alist-p))
-  :prepwork ((local (in-theory (enable svex-acons))))
-  :enabled t
-  (mbe :logic (svex-acons var v a)
-       :exec (hons-acons var v a)))
-
-(fty::deflist svarlist :elt-type svar :true-listp t :elementp-of-nil nil)
 
 (define svex-alist-keys ((x svex-alist-p))
+  :parents (svex-alist)
+  :short "Like @(see alist-keys) but with proper @(see fty-discipline) for @(see svex-alist)s."
   :prepwork ((local (in-theory (enable svex-alist-p))))
   :returns (keys svarlist-p)
   (if (atom x)
@@ -452,7 +364,10 @@ a 2vec; @('2vec->val') gets the integer value out of a 2vec.</p>"
            (cons (svar-fix k) (svex-alist-keys x)))
     :hints(("Goal" :in-theory (enable svex-acons)))))
 
+
 (define svex-alist-vals ((x svex-alist-p))
+  :parents (svex-alist)
+  :short "Like @(see alist-vals) but with proper @(see fty-discipline) for @(see svex-alist)s."
   :prepwork ((local (in-theory (enable svex-alist-p))))
   :returns (vals svexlist-p)
   (if (atom x)
@@ -480,10 +395,4 @@ a 2vec; @('2vec->val') gets the integer value out of a 2vec.</p>"
     (equal (len (svex-alist-vals x))
            (len (svex-alist-keys x)))
     :hints(("Goal" :in-theory (enable svex-alist-keys)))))
-
-
-
-(defalist svar-alist :key-type svar)
-
-(defalist svar-map :key-type svar :val-type svar)
 

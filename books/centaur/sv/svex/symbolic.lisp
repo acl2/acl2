@@ -874,15 +874,15 @@ results in at most n+1 bits.</p>"
                      (a4vec-eval x env)))
     :hints(("Goal" :in-theory (enable 4vec-lsh)))))
 
-(defthm parity-rec-of-greater
+(defthm parity-of-greater
   (implies (and (< (+ 1 (integer-length x)) (nfix n))
                 (natp x))
-           (equal (parity-rec n x)
-                  (parity-rec (+ 1 (integer-length x)) x)))
-  :hints(("Goal" :in-theory (enable parity-rec)
-          :induct (parity-rec n x)
+           (equal (parity n x)
+                  (parity (+ 1 (integer-length x)) x)))
+  :hints(("Goal" :in-theory (enable parity)
+          :induct (parity n x)
           :expand ((integer-length x)
-                   (:free (n) (parity-rec n x))))))
+                   (:free (n) (parity n x))))))
 
 (define aig-parity-s ((x true-listp))
   (b* (((mv xf xr xe) (gl::first/rest/end x)))
@@ -900,12 +900,12 @@ results in at most n+1 bits.</p>"
     (let ((xv (aig-list->s x env)))
       (implies (<= 0 xv)
                (equal (aig-eval (aig-parity-s x) env)
-                      (bitops::bit->bool (parity-rec (+ 1 (integer-length xv)) xv)))))
-    :hints(("Goal" :in-theory (enable parity-rec
+                      (bitops::bit->bool (parity (+ 1 (integer-length xv)) xv)))))
+    :hints(("Goal" :in-theory (enable parity
                                       bitops::loghead** bitops::logtail**)
             :induct (aig-parity-s x)
             :expand ((aig-list->s x env)
-                     (:free (n x) (parity-rec (+ 2 n) x))
+                     (:free (n x) (parity (+ 2 n) x))
                      (:free (a b) (integer-length (bitops::logcons a b))))))))
 
 (define a4vec-parity ((x a4vec-p))
