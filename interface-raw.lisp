@@ -8272,10 +8272,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; Acl2-default-restart isn't enough in Allegro, at least, to get the new prompt
 ; when we start up:
 
-       (let* ((system-dir (let ((str (getenv$-raw "ACL2_SYSTEM_BOOKS")))
-                            (and str
-                                 (maybe-add-separator str))))
-              (save-expansion (let ((s (getenv$-raw "ACL2_SAVE_EXPANSION")))
+       (let* ((save-expansion (let ((s (getenv$-raw "ACL2_SAVE_EXPANSION")))
                                 (and s
                                      (not (equal s ""))
                                      (not (equal (string-upcase s)
@@ -8292,20 +8289,28 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                                       (subseq user-home-dir0
                                               0
                                               (1- (length user-home-dir0)))
-                                    user-home-dir0))))
-         (when system-dir
-           (f-put-global 'system-books-dir
-                         (canonical-dirname!
-                          (unix-full-pathname system-dir)
-                          'lp
-                          *the-live-state*)
-                         *the-live-state*))
+                                    user-home-dir0)))
+              (system-dir0 (let ((str (getenv$-raw "ACL2_SYSTEM_BOOKS")))
+                             (and str
+                                  (maybe-add-separator str)))))
          (when (and save-expansion
                     (not (equal (string-upcase save-expansion)
                                 "NIL")))
            (f-put-global 'save-expansion-file t *the-live-state*))
          (when user-home-dir
-           (f-put-global 'user-home-dir user-home-dir *the-live-state*)))
+           (f-put-global 'user-home-dir user-home-dir *the-live-state*))
+         (when system-dir0 ; needs to wait for user-homedir-pathname
+           (f-put-global 'system-books-dir
+                         (canonical-dirname!
+                          (unix-full-pathname
+                           (expand-tilde-to-user-home-dir
+                            system-dir0
+                            (os (w *the-live-state*))
+                            'lp
+                            *the-live-state*))
+                          'lp
+                          *the-live-state*)
+                         *the-live-state*)))
        (set-gag-mode-fn :goals *the-live-state*)
        #-hons
 ; Hons users are presumably advanced enough to tolerate the lack of a
