@@ -37,8 +37,6 @@
 ; instead of ACL2 system documentation
 
 (in-package "ACL2") ;; So the acl2 topic comes from the acl2 package.
-#+acl2-legacy-doc
-(include-book "write-acl2-xdoc")
 (set-state-ok t)
 (program)
 
@@ -137,10 +135,7 @@
         (mv topic state))
 
        ((mv er val state)
-        (cond #+acl2-legacy-doc
-              ((assoc-eq name (acl2::documentation-alist-stub))
-               (value :built-in))
-              (t (acl2::origin-fn name state))))
+        (acl2::origin-fn name state))
        ((mv er val)
         (b* (((unless er)
               (mv er val))
@@ -189,28 +184,6 @@
        ((mv rest state)
         (extend-topics-with-origins (cdr topics) state)))
     (mv (cons first rest) state)))
-
-#+acl2-legacy-doc
-#!XDOC
-(defmacro import-acl2doc ()
-  ;; This is for refreshing the documentation to reflect topics documented in
-  ;; libraries.  We throw away any defdoc topics for names that already have
-  ;; documentation.  This saves us the work of repeatedly importing
-  ;; documentation topics, and usually allows XDOC topics to override ACL2
-  ;; defdoc topics.
-  `(make-event
-    (b* ((all-topics (get-xdoc-table (w state)))
-         (names      (xdoc::all-topic-names all-topics))
-         (skip-fal   (make-fast-alist (pairlis$ names nil)))
-         ((mv ?er ?val state)
-          (time$ (acl2::write-xdoc-alist :skip-topics-fal skip-fal)
-                 :msg "~|; Importing acl2 :doc topics: ~st sec, ~sa bytes~%"
-                 :mintime 1))
-         (new-topics (acl2::f-get-global 'acl2::xdoc-alist state))
-         ((mv new-topics state)
-          (extend-topics-with-origins new-topics state)))
-      (value `(table xdoc 'doc
-                     (append ',new-topics (get-xdoc-table world)))))))
 
 ; The following was in the original version of this book, and might or might
 ; not still be useful.

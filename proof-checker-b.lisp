@@ -26,17 +26,10 @@
 
 (defun define-pc-meta-or-macro-fn (command-type raw-name formals body)
   (let ((name (make-official-pc-command raw-name)) )
-    (mv-let
-     (doc body)
-     (remove-doc
-      (case command-type
-            (meta "  (meta)")
-            (macro "  (macro)")
-            (atomic-macro "  (atomic macro)")
-            (otherwise ""))
-      body)
-     `(install-new-pc-meta-or-macro ,command-type ,raw-name ,name
-                                    ,formals ,doc ,body))))
+    `(install-new-pc-meta-or-macro ,command-type ,raw-name ,name
+                                   ,formals
+                                   nil ; ,doc
+                                   ,body)))
 
 (defmacro define-pc-meta (raw-name formals &rest body)
   (define-pc-meta-or-macro-fn 'meta raw-name formals body))
@@ -71,12 +64,11 @@
 ; may drop a proved goal.
 
   (let ((name (make-official-pc-command raw-name)))
-    (mv-let
-     (doc body)
-     (remove-doc "  (primitive)" body)
-     `(progn
-        ,(pc-primitive-defun-form raw-name name formals doc body)
-        (add-pc-command ,name 'primitive)))))
+    `(progn
+       ,(pc-primitive-defun-form raw-name name formals
+                                 nil ; doc
+                                 body)
+       (add-pc-command ,name 'primitive))))
 
 (define-pc-primitive comment (&rest x)
   (declare (ignore x))
@@ -3324,60 +3316,6 @@
 (define-pc-macro al (&rest args)
   (value (cons :apply-linear args)))
 
-#+acl2-legacy-doc
-(defun pc-help-fn (name state)
-  ;; Adapted in part from doc-fn.
-  (declare (xargs :guard (and (symbolp name)
-                              (equal (symbol-package-name name) "ACL2-PC"))))
-  (let ((name (if (equal (symbol-name name) "ALL")
-                  'proof-checker-commands
-                name)))
-    (cond
-     ((not (or (eq name 'proof-checker-commands)
-               (pc-command-type name)))
-      (pprogn (io? proof-checker nil state
-                   (name)
-                   (fms0 "~%*** Undefined command, ~x0.~%"
-                         (list (cons #\0 (make-pretty-pc-command name)))))
-              (value :invisible)))
-     (t
-      (let ((channel (proofs-co state))
-            (doc-tuple (access-doc-string-database name state)))
-        (cond ((null doc-tuple)
-               (pprogn
-                (io? proof-checker nil state
-                     (channel name)
-                     (fms "No help is available for ~s0.~|"
-                          (list (cons #\0 (symbol-name name)))
-                          channel state nil))
-                (value nil)))
-              (t (state-global-let*
-                  ((print-doc-start-column nil))
-                  (pprogn (print-doc (cons (if (eq name 'proof-checker-commands)
-                                               name
-                                             (intern-in-keyword-package name))
-                                           (cdr doc-tuple))
-                                     0
-                                     (doc-prefix state)
-                                     (doc-markup-table state)
-                                     (doc-char-subst-table state)
-                                     (doc-fmt-alist state)
-                                     channel state)
-                          (print-doc doc-tuple 1 (doc-prefix state)
-                                     (doc-markup-table state)
-                                     (doc-char-subst-table state)
-                                     (doc-fmt-alist state)
-                                     channel state)
-                          (newline channel state)
-                          (end-doc channel state))))))))))
-
-#+acl2-legacy-doc
-(defmacro state-only (triple)
-  `(mv-let (erp val state)
-           ,triple
-           (declare (ignore erp val))
-           state))
-
 (define-pc-macro doc (&optional name)
   (let ((name (or name (make-official-pc-command 'doc))))
     (cond ((and (equal (assoc-eq :doc (ld-keyword-aliases state))
@@ -3392,14 +3330,6 @@
                             (doc ',name))))))
           (t (value `(lisp (doc ',name)))))))
 
-#+acl2-legacy-doc
-(define-pc-help help (&optional instr)
-  (let ((comm (make-official-pc-command (if args
-                                            (if (consp instr) (car instr) instr)
-                                          'help))))
-    (state-only (pc-help-fn comm state))))
-
-#-acl2-legacy-doc
 (define-pc-macro help (&optional name)
   (cond ((not (symbolp name))
          (pprogn
@@ -3411,68 +3341,6 @@
                            'proof-checker-commands
                          (make-official-pc-command (or name 'help)))))
              (value `(doc ,name))))))
-
-#+acl2-legacy-doc
-(defun pc-help!-fn (name state)
-  ;; Adapted in part from doc-fn.
-  (declare (xargs :guard (and (symbolp name)
-                              (equal (symbol-package-name name) "ACL2-PC"))))
-  (cond
-   ((equal (symbol-name name) "ALL")
-    (pc-help-fn name state))
-   ((not (pc-command-type name))
-    (pprogn (io? proof-checker nil state
-                 (name)
-                 (fms0 "~%*** Undefined command, ~x0.~%"
-                       (list (cons #\0 (make-pretty-pc-command name)))))
-            (value :invisible)))
-   (t
-    (let ((channel (proofs-co state))
-          (doc-tuple (access-doc-string-database name state)))
-      (cond ((null doc-tuple)
-             (pprogn
-              (io? proof-checker nil state
-                   (channel name)
-                   (fms "No help is available for ~s0.~|"
-                        (list (cons #\0 (symbol-name name)))
-                        channel state nil))
-              (value nil)))
-            (t (state-global-let*
-                ((print-doc-start-column nil))
-                (pprogn (print-doc (cons (intern-in-keyword-package name)
-                                         (cdr doc-tuple))
-                                   0 (doc-prefix state)
-                                   (doc-markup-table state)
-                                   (doc-char-subst-table state)
-                                   (doc-fmt-alist state)
-                                   channel state)
-                        (print-doc doc-tuple 1 (doc-prefix state)
-                                   (doc-markup-table state)
-                                   (doc-char-subst-table state)
-                                   (doc-fmt-alist state)
-                                   channel state)
-                        (princ-prefix (doc-prefix state) channel state)
-                        (newline channel state)
-                        (more-fn t state)))))))))
-
-#+acl2-legacy-doc
-(define-pc-help help! (&optional instr)
-  (let ((comm (make-official-pc-command (if instr
-                                            (if (consp instr) (car instr) instr)
-                                          'help))))
-    (state-only (pc-help!-fn comm state))))
-
-#+acl2-legacy-doc
-(define-pc-macro help-long (&rest args)
-  (value (cons 'help! args)))
-
-#+acl2-legacy-doc
-(define-pc-help more ()
-  (state-only (more-fn 0 state)))
-
-#+acl2-legacy-doc
-(define-pc-help more! ()
-  (state-only (more-fn t state)))
 
 (defun pc-rewrite*-1
   (term type-alist geneqv iff-flg wrld rcnst old-ttree pot-lst normalize-flg
@@ -4355,46 +4223,6 @@
                      (or completion :reduce)
                      (goal-names (goals t))
                      must-succeed-flg))))
-
-#+acl2-legacy-doc
-(defun print-help-separator (state)
-  (io? proof-checker nil state
-       nil
-       (fms0 "~%==============================~%")))
-
-#+acl2-legacy-doc
-(defun print-pc-help-rec (lst state)
-  (declare (xargs :guard (true-listp lst)))
-  (if (null lst)
-      (value t)
-    (mv-let
-     (erp val state)
-     (doc!-fn (car lst) state)
-     (declare (ignore erp val))
-     (pprogn
-      (print-help-separator state)
-      (print-pc-help-rec (cdr lst) state)))))
-
-#+acl2-legacy-doc
-(defun print-all-pc-help-fn (filename state)
-  (mv-let (chan state)
-          (open-output-channel filename :character state)
-          (state-global-let*
-           ((proofs-co chan)
-            (standard-co chan))
-           (pprogn (io? proof-checker nil state
-                        nil
-                        (fms0 "~|***** Complete documentation of proof-checker ~
-                               commands *****~%"))
-                   (print-help-separator state)
-                   (print-pc-help-rec
-                    (merge-sort-alpha-< (caddr (access-doc-string-database
-                                                'pc-acl2 state)))
-                    state)))))
-
-#+acl2-legacy-doc
-(defmacro print-all-pc-help (&optional filename)
-  `(print-all-pc-help-fn ,(or filename "pc-help.out") state))
 
 (define-pc-macro nil ()
   (value 'exit))

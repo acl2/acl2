@@ -72,9 +72,7 @@
             "xdoc/display" :dir :system)
            (encapsulate ()
             (local (xdoc-quiet)) ;; Suppress warnings when just using :xdoc (or :doc)
-            (local (set-inhibit-warnings "Documentation"))
-            #+acl2-legacy-doc
-            (import-acl2doc))
+            (local (set-inhibit-warnings "Documentation")))
            (table xdoc 'colon-xdoc-support-loaded t))
         '(value-triple :invisible)))))
 

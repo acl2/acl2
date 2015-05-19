@@ -158,14 +158,15 @@
 ;   that "leaving on EGC could really reduce the memory requirements of 95+% of
 ;   the ACL2 jobs in the community books, and could be really good."
 
-; - Consider moving start-sol-gc and supporting functions out of the ACL2 code
-;   base, quite possibly into community books directory
-;   books/centaur/misc/memory-mgmt/.  But perhaps create some way (an interface
-;   of some sort) to get the effect of start-sol-gc, when desirable, without
-;   the need for trust tags.  Perhaps consider the effect on ACL2(hp).  Jared
-;   thinks that removing memory management responsibility out of the ACL2
-;   sources "might be especially useful if you are going to turn EGC back on by
-;   default."
+; - Consider moving set-gc-strategy (note that set-gc-strategy-builtin-delay
+;   was formerly called start-sol-gc) and supporting functions out of the ACL2
+;   code base, quite possibly into community books directory
+;   books/centaur/misc/memory-mgmt/.  But if so, perhaps retain some way (an
+;   interface of some sort) to get the effect of set-gc-strategy when
+;   desirable, without the need for trust tags.  Perhaps consider the effect on
+;   ACL2(hp).  Jared thinks that removing memory management responsibility out
+;   of the ACL2 sources "might be especially useful if you are going to turn
+;   EGC back on by default."
 
 ; - In pons-addr-of-argument, (+ hl-dynamic-base-addr (hl-staticp x)) is
 ;   probably a fixnum.  Especially for GCL, maybe wrap (the fixnum ...) around

@@ -15,7 +15,6 @@
 
 ; (verify-termination fmt-char) ; and guards
 ; (verify-termination fmt-var) ; and guards
-#+acl2-legacy-doc
-(verify-termination missing-fmt-alist-chars1) ; and guards
-#+acl2-legacy-doc
-(verify-termination missing-fmt-alist-chars) ; and guards
+
+(value-triple "This book formerly contained only two forms, both of which ~
+               were executed only when #+acl2-legacy-doc.")

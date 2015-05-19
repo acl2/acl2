@@ -10075,6 +10075,7 @@
 ; Important Note: Don't change the formals of this function without reading the
 ; *initial-event-defmacros* discussion in axioms.lisp.
 
+  (declare (ignore doc))
   (when-logic
    "DEFAXIOM"
    (with-ctx-summarized
@@ -10123,9 +10124,10 @@
                 (enforce-redundancy
                  event-form ctx wrld
                  (er-let*
-                     ((ttree1 (chk-acceptable-rules name classes ctx ens wrld state))
-                      (wrld1 (chk-just-new-name name 'theorem nil ctx wrld state))
-                      (doc-pair (translate-doc name doc ctx state))
+                     ((ttree1 (chk-acceptable-rules name classes ctx ens wrld
+                                                    state))
+                      (wrld1 (chk-just-new-name name 'theorem nil ctx wrld
+                                                state))
                       (ttree3
                        (cond ((ld-skip-proofsp state)
                               (value nil))
@@ -10133,9 +10135,7 @@
                               (prove-corollaries name tterm classes ens wrld1 ctx
                                                  state)))))
                    (let* ((wrld2
-                           (update-doc-database
-                            name doc doc-pair
-                            (add-rules name classes tterm term ens wrld1 state)))
+                           (add-rules name classes tterm term ens wrld1 state))
                           (wrld3 (global-set
                                   'nonconstructive-axiom-names
                                   (cons name
@@ -10386,7 +10386,6 @@
                                                  (and (null instructions)
                                                       (default-hints wrld1))
                                                  ctx wrld1 state)))
-                      (doc-pair (translate-doc name doc ctx state))
                       (ttree2 (cond (instructions
                                      (er-progn
                                       (cond (hints (er soft ctx
@@ -10417,9 +10416,7 @@
                                     (t (prove-corollaries name tterm0 classes ens wrld1
                                                           ctx state)))))
                    (let ((wrld2
-                          (update-doc-database
-                           name doc doc-pair
-                           (add-rules name classes tterm0 term ens wrld1 state)))
+                          (add-rules name classes tterm0 term ens wrld1 state))
                          (ttree4 (cons-tag-trees ttree1
                                                  (cons-tag-trees ttree2 ttree3))))
                      (er-progn
@@ -10475,8 +10472,7 @@
       (er-let* ((hints (translate-hints+ 'thm
                                          hints
                                          (default-hints wrld)
-                                         ctx wrld state))
-                (doc-pair (translate-doc nil doc ctx state)))
+                                         ctx wrld state)))
                (er-let* ((tterm (translate term t t t ctx wrld state))
 ; known-stobjs = t (stobjs-out = t)
                          (ttree (prove tterm

@@ -589,7 +589,7 @@
 
 
 
-; Goal 3.  (8 * a + (b && 7)) >>> 3 = a && (−1 >>> 3)
+; Goal 3.  (8 * a + (b && 7)) >>> 3 = a && ( 1 >>> 3)
 ;
 ; Fox doesn't say how long this takes but from Figure 2 it appears to take
 ; almost no time at all.  GL also handles it with ease:
@@ -798,7 +798,10 @@
 (progn$
  (clear-memoize-tables)
  (clear-memoize-statistics)
- (clear-hash-tables))
+;(clear-hash-tables) ; Matt K. mod: removed for v7-2, replacements just below
+ #+static-hons (hons-wash)
+ #-static-hons (hons-clear t)
+)
 
 (time$
  (def-gl-thm gl-plus-commutes-500

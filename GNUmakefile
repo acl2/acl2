@@ -720,19 +720,33 @@ devel-check:
 	$(ACL2) < workxxx.devel-check > devel-check.out ;\
 	if [ "`fgrep CHK-NEW-VERIFIED-GUARDS-COMPLETE devel-check.out`" ] ; then \
 		rm -f workxxx.devel-check devel-check.out ;\
-		echo 'SUCCESS for devel-check' ;\
-		exit 0 ;\
+		echo 'SUCCESS for chk-new-verified-guards' ;\
+		break ;\
 	fi ;\
 	if [ "`fgrep CHK-NEW-VERIFIED-GUARDS-SUCCESS devel-check.out`" ] ; then \
 		rm -f workxxx.devel-check devel-check.out ;\
 		counter=`expr $$counter + 1` ;\
 	else \
-		echo '**FAILED** devel-check: output log follows:' ;\
+		echo '**FAILED** for chk-new-verified-guards;' ;\
+		echo '           output log follows:' ;\
 		cat devel-check.out ;\
-		rm -f workxxx.devel-check devel-check.out ;\
+		rm -f workxxx.devel-check ;\
 		exit 1 ;\
 	fi \
 	done
+	@echo "(check-system-events)" > workxxx.devel-check
+	@$(ACL2) < workxxx.devel-check > devel-check.out
+	@if [ "`fgrep CHECK-SYSTEM-EVENTS-SUCCESS devel-check.out`" ] ; \
+		then \
+		echo 'SUCCESS for check-system-events' ;\
+	else \
+		echo '**FAILED** for check-new-system-events;' ;\
+		echo '           output log follows:' ;\
+		cat devel-check.out ;\
+		rm -f workxxx.devel-check ;\
+		exit 1 ;\
+	fi
+	@echo 'SUCCESS for devel-check'
 
 # Note that clean-doc does NOT delete source file doc.lisp,
 # because it's important that there is always a doc.lisp present when
