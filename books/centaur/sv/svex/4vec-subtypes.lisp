@@ -225,7 +225,7 @@ That is, the result of an operation like addition is surely a 2vecx.</p>")
 (define 2vecx-fix ((x 4vec-p))
   :parents (2vecx)
   :short "Coerces an arbitrary @(see 4vec) to a @(see 2vecx), by forcing any
-non-@(see 2vex)es to an just be infinite Xes."
+non-@(see 2vec)s to an just be infinite Xes."
   :returns (x-fix 2vecx-p!
                   :hints(("Goal" :in-theory (enable 2vecx-p))))
   :inline t

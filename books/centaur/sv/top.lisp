@@ -41,7 +41,15 @@ expression representation (@(see svex)), efficient symbolic simulation that is
 integrated with @(see gl), and support for many SystemVerilog features.  It
 generally replaces @(see esim) as a backend for @(see vl)."
 
-  :long "<p><b>SV</b> is an ACL2 library for hardware verification, developed
+  :long "
+
+<box><p><b><color rgb='#ff0000'>ALPHA VERSION</color></b>.  SV is not yet ready
+for public use and may change in drastic ways without any warning.  Users who
+want to be on the bleeding edge should follow the github project to try to keep
+up to date.</p></box>
+
+
+<p><b>SV</b> is an ACL2 library for hardware verification, developed
 at <a href='http://www.centtech.com/'>Centaur Technology</a>, primarily by Sol
 Swords.  It is the latest in a long line of hardware description languages that
 are deeply embedded within ACL2: it replaces Centaur's @(see esim), which
@@ -73,8 +81,8 @@ svex-compilation).</li>
 
 <li><b>SystemVerilog/Verilog loading</b>.  SV is integrated with @(see vl) so
 that you can translate SystemVerilog and Verilog designs into its internal SV
-representation.  See @(see vl::vl-design->svex-design).  In practice, this is
-the main way to get the SV modules to analyze.</li>
+representation.  In practice, this is the main way to get the SV modules to
+analyze.</li>
 
 <li><b>Proof development and debugging</b>.  SV provides tools like @(see
 sv-svtv)s for running modules, which allow you to supply inputs and extract

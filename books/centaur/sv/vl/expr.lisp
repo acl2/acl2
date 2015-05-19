@@ -41,11 +41,11 @@
 
 (defxdoc vl-expr-svex-translation
   :parents (vl-design->svex-design)
-  :short "Compilation from (sized) @(see vl::vl) expressions into @(see svex)
-expressions."
+  :short "Compilation from (sized) @(see vl::vl) expressions into @(see
+sv::svex) expressions."
 
   :long "<p>The top-level function for converting a VL expression into a @(see
-svex) expression is @(see vl-expr->svex).</p>
+sv::svex) expression is @(see vl-expr->svex).</p>
 
 <p>We assume that the expressions we are dealing with are sized.</p>
 

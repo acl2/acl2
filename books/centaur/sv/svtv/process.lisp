@@ -1139,7 +1139,7 @@ then additional xdoc will also be generated to show a timing diagram.
 the given inputs and returns the output values.</p>
 
 <p>The input names and output names referred to above are the variable symbols
-used in the @(see defsvtv') form.  For example,</p>
+used in the @(see defsvtv) form.  For example,</p>
 
 @({
  (defsvtv my-test

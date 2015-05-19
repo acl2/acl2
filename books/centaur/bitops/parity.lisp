@@ -51,8 +51,8 @@
 
 (define parity ((n natp)
                 (x integerp))
-  :short "@(call parity n x) computes the parity of the low @('n') bits of
-@('x'), returning it as a @(see bitp)."
+  :short "@(call parity) computes the parity of the low @('n') bits of @('x'),
+returning it as a @(see bitp)."
 
   :long "<p>This has a simple recursive definition which should be easy to
 reason about.  However, it isn't particularly efficient; see @(see fast-parity)

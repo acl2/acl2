@@ -121,6 +121,7 @@ equivalents (e.g., plus, times, etc.).  Historically these operations were
 bit-blasted using the @(see vl2014::occform) transformation, but in svex they
 are primitives with well-defined semantics.</p>")
 
+(local (xdoc::set-default-parents 4vec-operations))
 
 (define 4vec-idx->4v
   :short "Like @(see logbit) for @(see 4vec)s, for fixed indices, producing an
@@ -267,7 +268,6 @@ the 4vec operation to simply:</p>
 
 
 (define 4vec-bitnot ((x 4vec-p))
-  :parents (4vec-operations)
   :short "Bitwise logical NOT of a @(see 4vec)."
   :returns (~x 3vec-p!)
   (3vec-bitnot (3vec-fix x))
@@ -311,7 +311,6 @@ the 4vec operation to simply:</p>
 
 
 (define 4vec-bitand ((x 4vec-p) (y 4vec-p))
-  :parents (4vec-operations)
   :short "Bitwise logical AND of @(see 4vec)s."
   :returns (x&y 3vec-p!)
   (3vec-bitand (3vec-fix x) (3vec-fix y))
@@ -356,7 +355,6 @@ the 4vec operation to simply:</p>
 
 
 (define 4vec-bitor ((x 4vec-p) (y 4vec-p))
-  :parents (4vec-operations)
   :short "Bitwise logical OR of @(see 4vec)s."
   :returns (x-or-y 3vec-p!)
   (3vec-bitor (3vec-fix x) (3vec-fix y))
@@ -403,7 +401,6 @@ the 4vec operation to simply:</p>
 
 
 (define 4vec-bitxor ((x 4vec-p) (y 4vec-p))
-  :parents (4vec-operations)
   :short "Bitwise logical XOR of @(see 4vec)s."
   :guard-hints ((acl2::equal-by-logbitp-hammer))
   :returns (x^y 3vec-p! :hints (("goal" :in-theory (enable 3vec-p))
@@ -441,7 +438,6 @@ the 4vec operation to simply:</p>
 
 
 (define 4vec-res ((a 4vec-p) (b 4vec-p))
-  :parents (4vec-operations)
   :short "Bitwise wire resolution of two @(see 4vec)s."
 
   :long "<p>Resolves together two 4vecs as if they were both shorted together.
@@ -485,7 +481,6 @@ inputs as follows:</p>
 
 
 (define 4vec-resand ((a 4vec-p) (b 4vec-p))
-  :parents (4vec-operations)
   :short "Bitwise wired AND resolution of two @(see 4vec)s."
 
   :long "<p>Resolves together two 4vecs as if they were both assigned to a
@@ -530,7 +525,6 @@ corresponding bits of the two inputs as follows:</p>
 
 
 (define 4vec-resor ((a 4vec-p) (b 4vec-p))
-  :parents (4vec-operations)
   :short "Bitwise wired OR resolution of two @(see 4vec)s."
 
   :long "<p>Resolves together two 4vecs as if they were both assigned to a
@@ -577,7 +571,6 @@ corresponding bits of the two inputs as follows:</p>
 (define 4vec-zero-ext ((n 4vec-p "Position to truncate/zero-extend at.")
                        (x 4vec-p "The @(see 4vec) to truncate/zero-extend."))
   :returns (x-ext 4vec-p)
-  :parents (4vec-operations)
   :short "Like @(see loghead) for @(see 4vec)s; the width is also a @(see
 4vec)."
 
@@ -603,7 +596,6 @@ bits.</p>"
 (define 4vec-sign-ext ((n 4vec-p)
                        (x 4vec-p))
   :returns (x-ext 4vec-p)
-  :parents (4vec-operations)
   :short "Like @(see logext) for @(see 4vec)s; the width is also a @(see
 4vec)."
 
@@ -631,7 +623,6 @@ bits.</p>"
 
 (define 4v->4vec-bit ((x acl2::4vp))
   :returns (vec 4vec-p)
-  :parents (4v-operations)
   :short "Convert a @(see acl2::4v)-style @(see acl2::4vp) into an infinite
 width @(see 4vec) of that bit."
   (case x
@@ -709,7 +700,6 @@ width @(see 4vec) of that bit."
 
 
 (define 4vec-reduction-and ((x 4vec-p))
-  :parents (4vec-operations)
   :short "Reduction logical AND of a @(see 4vec)."
   :long "<p>ANDs together all of the bits in a 4vec.  If any bit is 0, the
 result will be 0; otherwise if any bit is X or Z, the result is X (extended to
@@ -810,7 +800,6 @@ will cause the reduction AND of your vector to be 0!</p>"
 
 
 (define 4vec-reduction-or ((x 4vec-p))
-  :parents (4vec-operations)
   :short "Reduction logical OR of a @(see 4vec)."
 
   :long "<p>ORs together all of the bits in a 4vec.  If any bit is 1, the
@@ -851,7 +840,6 @@ without affecting the result.</p>"
                      (low   4vec-p "Source of the W less-significant bits.")
                      (high  4vec-p "Source of the rest of the bits."))
   :returns (concat 4vec-p)
-  :parents (4vec-operations)
   :short "Like @(see logapp) for @(see 4vec)s; the width is also a @(see 4vec)."
 
   :long "<p>In the usual case, @('width') is some natural number: we
@@ -881,7 +869,6 @@ negative.  In this case, the result is infinite Xes.</p>"
 (define 4vec-rsh ((amt 4vec-p "Shift amount.")
                   (x   4vec-p "Source operand."))
   :returns (shifted 4vec-p)
-  :parents (4vec-operations)
   :short "Right shift of @(see 4vec)s."
   :long "<p>If @('amt') has any X or Z bits, the result is all Xes.  If it
 is negative, then @('x') is left-shifted.</p>"
@@ -901,7 +888,6 @@ is negative, then @('x') is left-shifted.</p>"
 (define 4vec-lsh ((amt 4vec-p "Shift amount.")
                   (x   4vec-p "Source operand."))
   :returns (shifted 4vec-p)
-  :parents (4vec-operations)
   :short "Left-shift 4vec @('x') by @('amt') bits."
   :long "<p>If @('amt') has any X or Z bits, the result is all Xes.  If it is
 negative, then @('x') is right-shifted.</p>"
@@ -921,7 +907,6 @@ negative, then @('x') is right-shifted.</p>"
 
 (define 4vec-parity ((x 4vec-p))
   :returns (par 3vec-p! :hints(("Goal" :in-theory (enable 3vec-p))))
-  :parents (4vec-operations)
   :short "Reduction logical XOR (i.e., parity) of a @(see 4vec)."
 
   :long "<p>If @('x') has any X or Z bits, or is a negative number, we just
@@ -947,7 +932,6 @@ fixed width vectors, you will typically want to take the parity of, e.g., the
 
 
 (define 4vec-plus ((x 4vec-p) (y 4vec-p))
-  :parents (4vec-operations)
   :short "Addition of @(see 4vec)s."
   :long "<p>This is a fairly conservative definition in the style of the
 Verilog semantics: If either input has any X or Z bits, the result is all Xes.
@@ -962,7 +946,6 @@ Otherwise, we produce the (signed) sum of the two (signed) inputs.</p>"
     :hints(("Goal" :in-theory (enable 2vecx-fix)))))
 
 (define 4vec-xdet ((x 4vec-p))
-  :parents (4vec-operations)
   :short "Identity function for @(see 2vec)s, but returns all Xes if there is
 any X bit."
   :long "<p>This (arguably) matches the Verilog specification for unary +.</p>"
@@ -976,7 +959,6 @@ any X bit."
 
 (define 4vec-minus ((x 4vec-p) (y 4vec-p))
   :returns (res 4vec-p)
-  :parents (4vec-operations)
   :short "Subtract two 4vecs"
   :long "<p>If either input has X or Z bits, the result is all X bits.
 Otherwise, produces the signed difference of the two inputs.</p>"
@@ -989,7 +971,6 @@ Otherwise, produces the signed difference of the two inputs.</p>"
 
 (define 4vec-uminus ((x 4vec-p))
   :returns (res 4vec-p)
-  :parents (4vec-operations)
   :short "(Arithmetically) negate a 4vec"
   :long "<p>If the input has X or Z bits, the result is all X bits.  Otherwise,
 produces the signed negation of the input.</p>"
@@ -1002,7 +983,6 @@ produces the signed negation of the input.</p>"
 
 (define 4vec-times ((x 4vec-p) (y 4vec-p))
   :returns (res 4vec-p)
-  :parents (4vec-operations)
   :short "Multiply two 4vecs"
   :long "<p>If either input has X or Z bits, the result is all X bits.
 Otherwise, produces the signed product of the two inputs.</p>"
@@ -1015,7 +995,6 @@ Otherwise, produces the signed product of the two inputs.</p>"
 
 (define 4vec-quotient ((x 4vec-p) (y 4vec-p))
   :returns (res 4vec-p)
-  :parents (4vec-operations)
   :short "Divide two 4vecs"
   :long "<p>If either input has X or Z bits, the result is all X bits.
 Otherwise, produces the signed product of the two inputs.</p>"
@@ -1028,7 +1007,6 @@ Otherwise, produces the signed product of the two inputs.</p>"
 
 (define 4vec-remainder ((x 4vec-p) (y 4vec-p))
   :returns (res 4vec-p)
-  :parents (4vec-operations)
   :short "Remainder from division of two 4vecs"
   :long "<p>If either input has X or Z bits, the result is all X bits.
 Otherwise, produces the signed product of the two inputs.</p>"
@@ -1041,7 +1019,6 @@ Otherwise, produces the signed product of the two inputs.</p>"
 
 (define 4vec-< ((x 4vec-p) (y 4vec-p))
   :returns (res 4vec-p)
-  :parents (4vec-operations)
   :short "Arithmetic inequality of two 4vecs"
   :long "<p>If either input has X or Z bits, the result is all X bits.
 Otherwise, does the signed comparison of the two inputs and produces -1 (true)
@@ -1052,21 +1029,18 @@ or 0 (false).</p>"
 
 (define 3vec-== ((x 4vec-p) (y 4vec-p))
   :returns (res 4vec-p)
-  :parents (4vec-operations)
   :short "Arithmetic equality of two 4vecs"
   :long "<p>Shorthand for (uand (bitnot (bitxor x y))).</p>"
   (3vec-reduction-and (3vec-bitnot (3vec-bitxor x y))))
 
 (define 4vec-== ((x 4vec-p) (y 4vec-p))
   :returns (res 4vec-p)
-  :parents (4vec-operations)
   :short "Arithmetic equality of two 4vecs"
   :long "<p>Shorthand for (uand (bitnot (bitxor x y))).</p>"
   (3vec-== (3vec-fix x) (3vec-fix y)))
 
 (define 4vec-=== ((x 4vec-p) (y 4vec-p))
   :returns (res 4vec-p)
-  :parents (4vec-operations)
   :short "Case equality of two 4vecs, Verilog-style"
   :long "<p>Note: this is a bad operation that breaks the lattice discipline.</p>"
   (2vec (bool->vec (equal (4vec-fix x) (4vec-fix y)))))
@@ -1074,7 +1048,6 @@ or 0 (false).</p>"
 
 (define 3vec-? ((x 4vec-p) (y 4vec-p) (z 4vec-p))
   :returns (res 4vec-p)
-  :parents (4vec-operations)
   :short "If-then-else of 4vecs, with 3vec test"
   :long "<p>If @('x') has any 1-bits, returns @('y'); if @('x') is 0, returns
 @('z'); otherwise returns a result consisting of Xes in bit positions where
@@ -1097,7 +1070,6 @@ equal.</p>"
 
 (define 4vec-? ((x 4vec-p) (y 4vec-p) (z 4vec-p))
   :returns (res 4vec-p)
-  :parents (4vec-operations)
   :short "If-then-else of 4vecs"
   :long "<p>If @('x') has any 1-bits, returns @('y'); if @('x') is 0, returns
 @('z'); otherwise returns a result consisting of Xes in bit positions where
@@ -1107,7 +1079,6 @@ equal.</p>"
 
 (define 3vec-bit? ((x 4vec-p) (y 4vec-p) (z 4vec-p))
   :returns (res 4vec-p)
-  :parents (4vec-operations)
   :short "Bitwise if-then-else of 4vecs, with 3vec test"
   :long "<p>For each bit position, if that bit of x is 1, returns that bit of
 y; if 0, then that bit of z; otherwise if those bits of y and z are equivalent,
@@ -1137,7 +1108,6 @@ then that bit, else X.  Assumes x has no z values.</p>"
 
 (define 4vec-bit? ((x 4vec-p) (y 4vec-p) (z 4vec-p))
   :returns (res 4vec-p)
-  :parents (4vec-operations)
   :short "Bitwise if-then-else of 4vecs"
   :long "<p>For each bit position, if that bit of x is 1, returns that bit of
 y; if 0, then that bit of z; otherwise if those bits of y and z are equivalent,
@@ -1169,7 +1139,6 @@ then that bit, else X.  Assumes x has no z values.</p>"
 
 (define 4vec-override ((x 4vec-p) (y 4vec-p))
   :returns (res 4vec-p)
-  :parents (4vec-operations)
   :short "Resolution for when one signal is stronger than the other"
   :long "<p>(4vec-override x y) takes the value of @('x') for each of its non-Z
 bits, and the value of @('y') for bits where x is Z.</p>"

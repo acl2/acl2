@@ -4272,10 +4272,10 @@
     `((defxdoc ,sum.case
         :parents (,sum.name)
         :short ,(cat "Case macro for the different kinds of " name-link " structures.")
-        :long ,(cat "<p>This is an @(see fty) sum-type case macro, typically
-introduced by @(see fty::defflexsum) or @(see fty::deftagsum).  It allows you
-to safely check the type of a " name-link " structure, or to split into cases
-based on its type.</p>
+        :long ,(cat "<p>This is an @(see fty::fty) sum-type case macro,
+typically introduced by @(see fty::defflexsum) or @(see fty::deftagsum).  It
+allows you to safely check the type of a " name-link " structure, or to split
+into cases based on its type.</p>
 
 <h3>Short Form</h3>
 

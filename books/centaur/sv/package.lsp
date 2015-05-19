@@ -175,6 +175,7 @@
       fty::deffixequiv-mutual
       fty::deffixtype
       fty::defflexsum
+      fty::fty-discipline
 
       natarr get-nat set-nat resize-nats
       u32arr u32s-length get-u32 set-u32 resize-u32s set-u32n
@@ -192,6 +193,7 @@
       vl
       vl2014
       fty
+      gl
 
       )
 
