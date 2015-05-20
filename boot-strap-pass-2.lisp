@@ -1361,8 +1361,6 @@
      (META-EXTRACT-CONTEXTUAL-FACT)
      (META-EXTRACT-GLOBAL-FACT+)
      (META-EXTRACT-RW+-TERM)
-     #+acl2-legacy-doc (MISSING-FMT-ALIST-CHARS)
-     #+acl2-legacy-doc (MISSING-FMT-ALIST-CHARS1 CHAR-TO-TILDE-S-STRING-ALIST)
      (PLAUSIBLE-DCLSP LST)
      (PLAUSIBLE-DCLSP1 LST)
      (PLIST-WORLDP-WITH-FORMALS ALIST)
@@ -1490,6 +1488,87 @@
 #+(and acl2-loop-only ; Note that make-event can't be called here in raw Lisp.
        (not acl2-devel))
 (system-verify-guards)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Support for system-events
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro system-event (event &optional (book-name '"system/top"))
+
+; (System-event E) expands to (skip-proofs E) during normal builds.  However,
+; for acl2-devel builds (see discussion under the section "Support for
+; system-verify-guards" in boot-strap-pass-2.lisp), we merely add the event to
+; a table, to be checked by Make target devel-check, which invokes function
+; system-verify-skip-proofs for that purpose.
+
+  #+acl2-devel `(table system-event-table ',event ',book-name)
+
+; It is tempting to generate a progn, where the skip-proofs is preceded by:
+
+; (value-triple ,(concatenate 'string "Verified in community book " book-name))
+
+; However, that value-triple event doesn't show up with any of :pe, :pcb, or
+; :pcb!, so we won't bother.
+
+  #-acl2-devel (declare (ignore book-name))
+  #-acl2-devel `(skip-proofs ,event))
+
+(defun system-events-fn (events book-name)
+  (declare (xargs :guard (true-listp events)))
+  (cond ((endp events) nil)
+        (t (cons `(system-event ,(car events) ,book-name)
+                 (system-events-fn (cdr events) book-name)))))
+
+(defmacro system-events (book-name &rest events)
+  (declare (xargs :guard (stringp book-name)))
+  (cons 'progn (system-events-fn events book-name)))
+
+(defun system-include-book-forms (book-names)
+  (declare (xargs :guard (true-listp book-names)))
+  (cond ((endp book-names) nil)
+        (t (cons `(include-book ,(car book-names) :dir :system)
+                 (system-include-book-forms (cdr book-names))))))
+
+(defmacro check-system-events ()
+
+; Executed by "make devel-check".
+
+  `(make-event
+    (let ((event-book-alist (table-alist 'system-event-table (w state))))
+      (cons 'progn
+            (append (system-include-book-forms
+                     (remove-duplicates (strip-cdrs event-book-alist)
+                                        :test 'equal))
+                    '((set-enforce-redundancy t))
+                    (strip-cars event-book-alist)
+                    '((value-triple :CHECK-SYSTEM-EVENTS-SUCCESS)))))))
+
+(system-events "system/termp"
+
+(defthm legal-variable-or-constant-namep-implies-symbolp
+  (implies (not (symbolp x))
+           (not (legal-variable-or-constant-namep x))))
+
+(in-theory (disable legal-variable-or-constant-namep))
+
+(defthm termp-implies-pseudo-termp
+  (implies (termp x w)
+           (pseudo-termp x))
+  :rule-classes (:rewrite :forward-chaining))
+
+(defthm term-listp-implies-pseudo-term-listp
+  (implies (term-listp x w)
+           (pseudo-term-listp x))
+  :rule-classes (:rewrite :forward-chaining))
+
+(defthm arities-okp-implies-arity
+  (implies (and (arities-okp user-table w)
+                (assoc fn user-table))
+           (equal (arity fn w) (cdr (assoc fn user-table)))))
+
+(in-theory (disable arity arities-okp))
+
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Memoization
@@ -1638,20 +1717,23 @@
 ; 13018 kaufmann  20   0  512g 664m  36m S   99  2.1   2:15.91 lx86cl64
 ; 13018 kaufmann  20   0  512g 671m  36m S   42  2.1   2:17.16 lx86cl64
 
-; With CCL executable built without start-sol-gc and with EGC on,
-; after the above sequence of unmemoize and memoize:
+; With CCL executable built without start-sol-gc (now called
+; set-gc-strategy-builtin-delay) and with EGC on, after the above sequence of
+; unmemoize and memoize:
 ; Time:  136.47 seconds (prove: 136.45, print: 0.02, other: 0.00)
 ; 13049 kaufmann  20   0  512g  59m  36m S   99  0.2   2:14.93 lx86cl64
 ; 13049 kaufmann  20   0  512g  59m  36m S   96  0.2   2:17.81 lx86cl64
 
-; With CCL executable built without start-sol-gc and with EGC on,
-; after the above unmemoize form:
+; With CCL executable built without start-sol-gc (now called
+; set-gc-strategy-builtin-delay) and with EGC on, after the above unmemoize
+; form:
 ; Time:  86.33 seconds (prove: 86.33, print: 0.01, other: 0.00)
 ; 13178 kaufmann  20   0  512g  58m  35m S  100  0.2   1:27.18 lx86cl64
 ; 13178 kaufmann  20   0  512g  58m  35m S   17  0.2   1:27.70 lx86cl64
 
-; With CCL executable built without start-sol-gc and with EGC on, out of the
-; box except for redefining waterfall1 in raw Lisp so that its body is (prog2$
+; With CCL executable built without start-sol-gc (now called
+; set-gc-strategy-builtin-delay) and with EGC on, out of the box except for
+; redefining waterfall1 in raw Lisp so that its body is (prog2$
 ; (clear-memoize-table 'worse-than-builtin) <old-body>); notice that :forget
 ; remains nil.
 ; Time:  182.61 seconds (prove: 182.58, print: 0.02, other: 0.00)

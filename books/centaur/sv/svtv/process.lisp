@@ -1071,7 +1071,7 @@ phase.</li>
   :short "Create an SVTV structure for some simulation pattern of a hardware design."
   :long "
 
-<p>See the @(see svex-tutorial) and the parent topic @(see svex-stvs) for
+<p>See the @(see sv-tutorial) and the parent topic @(see svex-stvs) for
 higher-level discussion; here, we provide a reference for the arguments.</p>
 
 <ul>
@@ -1139,7 +1139,7 @@ then additional xdoc will also be generated to show a timing diagram.
 the given inputs and returns the output values.</p>
 
 <p>The input names and output names referred to above are the variable symbols
-used in the @(see defsvtv') form.  For example,</p>
+used in the @(see defsvtv) form.  For example,</p>
 
 @({
  (defsvtv my-test
@@ -1158,7 +1158,7 @@ used in the @(see defsvtv') form.  For example,</p>
 
 <p>In this STV, the input names are @('dat'), @('ctrl'), and @('ov'), and the
 output names are @('outa'), @('outb'), and @('intl').  See the section @(see
-stvs-and-testing) of the @(see svex-tutorial) for more examples.</p>"
+stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
 
   :prepwork ((local (in-theory (enable svarlist-fix))))
   :returns (res svex-env-p "Alist mapping output names to 4vec values")
@@ -1330,7 +1330,7 @@ stvs-and-testing) of the @(see svex-tutorial) for more examples.</p>"
 
 (define svtv-easy-bindings
   :hooks nil
-  :parents (symbolic-test-vectors)
+  :parents (symbolic-test-vector)
   :short "Generating G-bindings from an SVTV in a particular way."
 
   ((svtv   "The SVTV you are dealing with."
@@ -1338,7 +1338,7 @@ stvs-and-testing) of the @(see svex-tutorial) for more examples.</p>"
    (order "The variable order you want to use."))
 
   :long "<p>@(call svtv-easy-bindings) is a macro for proving theorems about
-@(see symbolic-test-vectors) using @(see gl::gl).  It returns a list of
+@(see symbolic-test-vector)s using @(see gl::gl).  It returns a list of
 G-bindings for use with @(see gl::def-gl-thm).  That is, you can write something
 like:</p>
 

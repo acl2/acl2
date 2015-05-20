@@ -272,6 +272,7 @@
 ;;                                   (vl-debug-tokstream tokstream))))))
 
 (defparser vl-parse-ansi-port-declaration (atts)
+  :parents (parse-ports)
   :short "Matches @('ansi_port_declaration').  Peeks at the token after to make
           sure it's a comma or right paren, but doesn't consume it."
   :guard (vl-atts-p atts)
@@ -341,6 +342,7 @@
           (mv err nil tokstream)))))
 
 (defparser vl-parse-1+-ansi-port-declarations ()
+  :parents (parse-ports)
   :short "Matches @(' {attribute_instance} ansi_port_declaration
                       { ',' {attribute_instance} ansi_port_declaration } ')"
   :result (vl-ansi-portdecllist-p val)
@@ -392,7 +394,7 @@
   ;;                      | output reg [ signed ] [ range ] list_of_variable_port_identifiers
   ;;                      | output output_variable_type list_of_variable_port_identifiers
 
-
+  :parents (parse-ports)
   :short "Matches a port declaration (which may involve several comma-separated variable names), and creates an ansi-portdecl object for each of them."
   :guard (vl-atts-p atts)
   :result (vl-ansi-portdecllist-p val)
@@ -452,6 +454,7 @@
 
 
 (defparser vl-parse-1+-port-declarations-separated-by-commas-2005 ()
+  :parents (parse-ports)
   :short "Verilog-2005 Only.  Matches @(' port_declaration { ',' port_declaration } ') in
 ansi style port lists.  Creates ansi-portdecls."
   :result (vl-ansi-portdecllist-p val)

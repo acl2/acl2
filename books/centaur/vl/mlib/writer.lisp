@@ -555,6 +555,7 @@ displays.  The module browser's web pages are responsible for defining the
 (define vl-expr-precedence ((x vl-expr-p))
   :short "Returns a symbol representing the operation that's being done at the top level."
   :returns (precedence posp :rule-classes :type-prescription)
+  :parents (verilog-printing)
   (vl-expr-case x
     :vl-unary 150
     :vl-binary (vl-binaryop-precedence x.op)

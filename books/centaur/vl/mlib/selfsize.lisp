@@ -962,6 +962,7 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
    :special))
 
 (define vl-expr-opacity ((x vl-expr-p))
+  :parents (vl-expr-selfsize)
   :short "Returns the \"opacity\" of the expression, a way of categorizing the
           expression for sizing."
   :long "<p>We are sorting expressions into three categories here:</p>

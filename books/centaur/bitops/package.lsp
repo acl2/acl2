@@ -107,6 +107,7 @@
     merge-2-u64s  merge-4-u64s  merge-8-u64s
     merge-2-u128s merge-4-u128s
     merge-2-u256s
+    parity fast-parity
 
     ;; selected theorems, hints, etc
     right-shift-to-logtail

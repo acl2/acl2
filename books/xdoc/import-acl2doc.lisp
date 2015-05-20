@@ -29,8 +29,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-#+acl2-legacy-doc
-(include-book "write-acl2-xdoc")
 (set-state-ok t)
 (program)
 
@@ -277,29 +275,6 @@ find what you want.</p>")
                 (extend-skip-fal (cdr built-ins) fal))))
 
 (include-book "verbosep")
-
-#+acl2-legacy-doc
-#!XDOC
-(defmacro import-acl2doc ()
-  ;; This is for refreshing the documentation to reflect topics documented in
-  ;; libraries.  We throw away any defdoc topics for names that already have
-  ;; documentation.  This saves us the work of repeatedly importing
-  ;; documentation topics, and usually allows XDOC topics to override ACL2
-  ;; defdoc topics.
-  `(make-event
-    (b* ((all-topics (get-xdoc-table (w state)))
-         (names      (xdoc::all-topic-names all-topics))
-         (skip-fal   (make-fast-alist (pairlis$ names nil)))
-         ((mv ?er ?val state)
-          (time$ (acl2::write-xdoc-alist :skip-topics-fal skip-fal)
-                 :msg "~|; Importing acl2 :doc topics: ~st sec, ~sa bytes~%"
-                 :mintime 1))
-         (new-topics (acl2::f-get-global 'acl2::xdoc-alist state))
-         ((mv new-topics state)
-          (extend-topics-with-origins new-topics state)))
-      (value `(table xdoc 'doc
-                     (append ',new-topics (get-xdoc-table world)))))))
-
 
 #||
 ;; Test code:

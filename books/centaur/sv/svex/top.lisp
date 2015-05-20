@@ -47,11 +47,5 @@
 (include-book "symbolic")
 (include-book "vars")
 
-(defxdoc expressions
-  :parents (sv)
-  :short "The <b>S</b>ymbolic <b>V</b>ector <b>Ex</b>pression language (SVEX)
-forms the core of SV.  It includes an S-expression language for certain
-pre-defined hardware functions, an interpreter for evaluating these expressions
-on four-valued integers, and related tools.")
 
 

@@ -56,7 +56,7 @@ efficiency.</p>
 
 <p>FTY is now used extensively at <a href='http://www.centtech.com/'>Centaur
 Technology</a> for data structures in large libraries like @(see acl2::vl) and
-@(see acl2::svex).</p>
+@(see acl2::sv).</p>
 
 <p>Here are the major components of FTY, roughly in order from low-level to
 high-level utilities:</p>
@@ -305,7 +305,7 @@ propagate the congruence into the fix.</p>
 
 <p>Only matters when @('define') is T.  When @(':forward') is T, four
 additional lemmas will be proved about the new equivalence relation and stored
-as @(see forward-chaining) rules.  In particular, the following will all
+as @(see acl2::forward-chaining) rules.  In particular, the following will all
 forward-chain to @('(widget-equiv x y)'):</p>
 
 <ul>
@@ -349,9 +349,10 @@ equivalence relation will compute the @('eql') of the fixes instead of the
 <h5>:executablep</h5>
 
 <p>@(':executablep') should be set to NIL if either the fixing function or
-predicate are non-executable or especially expensive.  This mainly affects, in
-@('deffixequiv') and @('deffixequiv-mutual'), whether a theorem is introduced
-that normalizes constants by applying the fixing function to them.</p>")
+predicate are @(see acl2::non-executable) or especially expensive.  This mainly
+affects, in @('deffixequiv') and @('deffixequiv-mutual'), whether a theorem is
+introduced that normalizes constants by applying the fixing function to
+them.</p>")
 
 
 (defxdoc deffixequiv
@@ -439,9 +440,9 @@ for the @('c') argument:</p>
 })
 
 <p>In rare cases, certain types may have a predicate and/or fixing function
-that is either expensive to execute or even @(see non-executable).  In this
-case, the second theorem, which normalizes constant values by fixing them to
-the correct type, will not work well.</p>
+that is either expensive to execute or even @(see acl2::non-executable).  In
+this case, the second theorem, which normalizes constant values by fixing them
+to the correct type, will not work well.</p>
 
 <p>The recommended way to suppress this theorem is to add @(':executablep nil')
 to the @(see deffixtype) form.  It is also possible to skip the
@@ -582,6 +583,48 @@ described below.</p>
            (bar (z nat-listp)))    ;; override non-function-specific entry
     :hints (...))  ;; hints for the whole inductive proof
 })")
+
+
+(defxdoc fixequiv-hook
+  :parents (deffixequiv)
+  :short "An @(see std::post-define-hook) for automatically proving @(see fty)
+congruences rules."
+  :long "<p>The @(':fix') hook allows you to instruct @(see std::define) to
+automatically try to infer and prove appropriate congruence rules as in @(see
+deffixequiv).</p>
+
+<p>Typical usage, to try to automatically prove congruences everywhere, is to
+simply add the following to the top of your file, section, encapsulate, or
+similar:</p>
+
+@({
+    (local (std::add-default-post-define-hook :fix))
+})
+
+<p>You will almost certainly want to ensure that this is done @(see local)ly,
+since otherwise it will affect all users who include your book.</p>
+
+<p>For finer-grained control or to suppress equivalences for a particular
+function, you can use the @(':hooks') argument to an individual define,
+e.g.,</p>
+
+@({
+     (define none ((n natp))    ;; don't prove any congruences
+        :hooks nil
+        n)
+
+     (define custom ((a natp) (b natp))   ;; prove congruences only
+        :hooks ((:fix :omit (b)))         ;; for A, not for B
+        (list (nfix a) b))
+
+     (define custom2 ((a natp) (b natp))       ;; prove congruences other than
+        :hooks ((:fix :args ((a integerp)      ;; those the formals suggest
+                             (b rationalp))))
+        (list (ifix a) (rfix b)))
+})
+
+<p>The arguments beyond @(':fix') get passed to @(see deffixequiv), so see its
+documentation for more options.</p>")
 
 
 (defxdoc deftypes

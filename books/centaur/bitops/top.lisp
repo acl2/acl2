@@ -42,6 +42,7 @@
 (include-book "install-bit")
 (include-book "integer-length")
 (include-book "merge")
+(include-book "parity")
 (include-book "part-select")
 (include-book "part-install")
 (include-book "rotate")
@@ -258,6 +259,11 @@ result, etc.</p>
 <p>This book provides optimized implementations of @(see logrev) at various
 widths; these definitions are logically just the ordinary, nice, logical
 definition of @('logrev'), thanks to @(see mbe).</p>
+
+<h5>@(see bitops/parity)</h5>
+
+<p>This book provides a simple recursive definition of a parity (i.e.,
+reduction xor) function, and also a faster version for execution.</p>
 
 <h5>@(see bitops/part-select)</h5>
 

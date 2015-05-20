@@ -81,7 +81,6 @@
 
 (defconst *acl2-exports-exclusions*
   '(*UNTROUBLESOME-CHARACTERS*
-    #+acl2-legacy-doc *TERMINAL-MARKUP-TABLE*
     ADD-DIVE-INTO-MACRO
     BDD
     CHECK-SUM

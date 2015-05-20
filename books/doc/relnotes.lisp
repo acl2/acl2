@@ -47,6 +47,11 @@
 ;  - Book release notes are typically very disorganized.  This shouldn't be
 ;    considered a bug until we are very close to a release.
 
+(defxdoc note-7-2-books
+  :parents (note-7-2)
+  :short "Release notes for the ACL2 Community Books for ACL2 7.2 (xx 20xx)"
+  :long "<p>Stub: to be written.</p>")
+
 (defxdoc note-7-1-books
   :parents (note-7-1)
   :short "Release notes for the ACL2 Community Books for ACL2 7.1 (May 2015)"

@@ -217,10 +217,10 @@ no-op that returns @('x')."
   :short "@(call any-p) is always true; i.e., it recognizes any ACL2 object."
 
   :long "<p>This is a ``degenerate'' recognizer which is sometimes useful for
-@(see fty).  For instance, it allows you to have fields within a @(see defprod)
-that are completely unconstrained, which may be especially useful when you are
-in the early stages of development and haven't yet thought much about
-types.</p>"
+@(see fty).  For instance, it allows you to have fields within a @(see
+fty::defprod) that are completely unconstrained, which may be especially useful
+when you are in the early stages of development and haven't yet thought much
+about types.</p>"
 
   (defun-inline any-p (x)
     (declare (xargs :guard t)
@@ -403,9 +403,9 @@ fty::fty-discipline)."
              'string
              "<p>The @('centaur/fty/basetypes') book provides basic support for
 using many built-in ACL2 types with the FTY discipline.  It introduces any
-necessary fixing functions and equivalences, and then sets up @(see deffixtype)
-associations between the recognizers, fixing functions, and equivalence
-relations for the following types.</p>
+necessary fixing functions and equivalences, and then sets up @(see
+fty::deffixtype) associations between the recognizers, fixing functions, and
+equivalence relations for the following types.</p>
 
 <table>
 <tr><th>Type Name</th> <th>Recognizer</th> <th>Fix</th> <th>Equiv</th></tr>" ,rows "</table>

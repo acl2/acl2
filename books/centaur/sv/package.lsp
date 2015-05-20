@@ -32,6 +32,7 @@
 (include-book "oslib/portcullis" :dir :system)
 (include-book "centaur/vl/portcullis" :dir :system)
 (include-book "centaur/fty/portcullis" :dir :system)
+(include-book "centaur/bitops/portcullis" :dir :system)
 
 (defpkg "SV"
   (set-difference-eq
@@ -39,6 +40,7 @@
     *standard-acl2-imports*
     std::*std-exports*
     set::*sets-exports*
+    bitops::*bitops-exports*
     ;; Things we want to "export"
     '()
     ;; Things we want to "import"
@@ -61,22 +63,6 @@
       prefixp
       set-equiv
       set-reasoning
-      lnfix
-      lifix
-      lbfix
-      bool->bit
-      bit-equiv
-      bitp
-      bfix
-      int-equiv
-      nat-equiv
-      logmask
-      logcar logcdr
-      fast-logext
-      logapp
-      logbit
-      logtail
-      negp
       maybe-natp
       maybe-stringp
       maybe-posp
@@ -174,11 +160,10 @@
       why
       with-redef
 
-      loghead logext
-
       f w x y z g s
       def-b*-binder
       std::defines
+      std::defret
       mod
       index-of
       nat-list-measure
@@ -190,6 +175,7 @@
       fty::deffixequiv-mutual
       fty::deffixtype
       fty::defflexsum
+      fty::fty-discipline
 
       natarr get-nat set-nat resize-nats
       u32arr u32s-length get-u32 set-u32 resize-u32s set-u32n
@@ -198,6 +184,17 @@
 
       defsvtv svtv-run svtv-debug svtv-easy-bindings svtv->ins svtv->vars svtv->outs svtv-p
       patbind-svtv
+
+
+      ;; stuff for nicer documentation
+      sv
+      hardware-verification
+      esim
+      vl
+      vl2014
+      fty
+      gl
+
       )
 
     #!VL

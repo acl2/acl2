@@ -78,17 +78,16 @@ years, we used VL to implement many tools, many of which were based around
 @(see acl2::esim).  ESIM is a purely bit-level backend.</p>
 
 <p>In 2014, we began extending VL with features from SystemVerilog and also
-began work on a new, vector-level backend, @(see acl2::svex).  Throughout 2014,
+began work on a new, vector-level backend, @(see acl2::sv).  Throughout 2014,
 and into the start of 2015, we made substantial changes to VL and transitioned
-our internal projects to SVEX.</p>
+our internal projects to SV.</p>
 
 <p>Much of this work was compatible with ESIM and expanded what the VL/ESIM
 flow could handle.  For instance: during this time, the ESIM flow gained better
 support for ANSI-style ports, SystemVerilog style global parameters, basic
 SystemVerilog idioms like @('always_comb') and @('logic') data types, and so
 on.  Other certain SystemVerilog features (structs, arrays, etc.) would have
-been difficult to support in ESIM, so we only added them to the VL/SVEX
-flow.</p>
+been difficult to support in ESIM, so we only added them to the VL/SV flow.</p>
 
 <p>In February 2015, we began working on a substantial change to VL's
 expression representation.  It became apparent that supporting ESIM through
@@ -217,7 +216,7 @@ designs.  It primarily handles RTL-based designs.  It has trouble with
 transistor-level constructs, hierarchical identifiers, inout ports, and fancy
 procedural statements.  It lacks support for most SystemVerilog features.</li>
 
-<li>The newer @(see acl2::svex) flow provides much better support for
+<li>The newer @(see acl2::sv) flow provides much better support for
 SystemVerilog features like structures, arrays, interfaces, and hierarchical
 identifiers.  It does not currently handle transistor-level constructs or
 simulation constructs like dynamic arrays, tasks, classes, etc.</li>
