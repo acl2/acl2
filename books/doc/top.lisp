@@ -439,13 +439,6 @@ circuits, etc.")
   :short "Tools, utilities, and strategies for dealing with particular kinds
 of proofs.")
 
-; Huge stupid hack.  Topics that are documented with the old :DOC system can't
-; have XDOC topics for their parents.  So, get them all loaded and converted
-; into proper XDOC topics, then move them around where we want them.
-
-#+acl2-legacy-doc
-(xdoc::import-acl2doc)
-
 (include-book "xdoc/topics" :dir :system)
 (include-book "xdoc/alter" :dir :system)
 

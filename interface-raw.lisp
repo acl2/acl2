@@ -1745,7 +1745,6 @@
                              defstobj-fn defabsstobj-fn
                              defpkg-fn
                              deflabel-fn
-                             #+acl2-legacy-doc defdoc-fn
                              deftheory-fn
                              defchoose-fn
                              verify-guards-fn
@@ -5797,15 +5796,6 @@
                                               (cdr ignorep)
                                             nil))
                                    new-*1*-defs)))))
-            #+acl2-legacy-doc
-            (dolist (def new-defs)
-
-; Remove the documentation string potentially stored in raw Lisp, if a copy is
-; already around in our documentation database, just to save space.
-
-              (when (and (eq (car def) 'defun)
-                         (doc-stringp (documentation (cadr def) 'function)))
-                (setf (documentation (cadr def) 'function) nil)))
             (setq new-defs (nconc new-defs new-*1*-defs))
             (install-defs-for-add-trip new-defs
                                        (eq ignorep 'reclassifying)
@@ -6126,13 +6116,7 @@
                    (install-for-add-trip `(defparameter ,(cadr (cddr trip))
                                             ',(cadddr (cddr trip)))
                                          nil
-                                         t)))
-          #+acl2-legacy-doc
-          (cond ((doc-stringp (and (cadr (cddr trip))
-                                   (documentation (cadr (cddr trip))
-                                                  'variable)))
-                 (setf (documentation (cadr (cddr trip)) 'variable)
-                       nil))))
+                                         t))))
         (defmacro
           (cond (boot-strap-flg
                  (or (fboundp (cadr (cddr trip)))
@@ -6144,11 +6128,7 @@
                                 main Lisp package, such as ~x0!"
                                (cadr (cddr trip))))
                 (t (maybe-push-undo-stack 'defmacro (cadr (cddr trip)))
-                   (install-for-add-trip (cddr trip) nil t)))
-          #+acl2-legacy-doc
-          (cond ((doc-stringp (documentation (cadr (cddr trip)) 'function))
-                 (setf (documentation (cadr (cddr trip)) 'function)
-                       nil))))
+                   (install-for-add-trip (cddr trip) nil t))))
         (attachment ; (cddr trip) is produced by attachment-cltl-cmd
          (dolist (x (cdr (cddr trip)))
            (let ((name (if (symbolp x) x (car x))))
@@ -7129,8 +7109,6 @@
            in-theory
            initialize-state-globals
            let ; could be arbitrarily complex, but we can only do so much!
-           #+acl2-legacy-doc link-doc-to
-           #+acl2-legacy-doc link-doc-to-keyword
            logic
            make-waterfall-parallelism-constants
            make-waterfall-printing-constants
@@ -7142,6 +7120,7 @@
            set-tau-auto-mode
            set-waterfall-parallelism
            setq
+           system-events
            system-verify-guards
            table
            value
@@ -8293,10 +8272,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; Acl2-default-restart isn't enough in Allegro, at least, to get the new prompt
 ; when we start up:
 
-       (let* ((system-dir (let ((str (getenv$-raw "ACL2_SYSTEM_BOOKS")))
-                            (and str
-                                 (maybe-add-separator str))))
-              (save-expansion (let ((s (getenv$-raw "ACL2_SAVE_EXPANSION")))
+       (let* ((save-expansion (let ((s (getenv$-raw "ACL2_SAVE_EXPANSION")))
                                 (and s
                                      (not (equal s ""))
                                      (not (equal (string-upcase s)
@@ -8313,20 +8289,28 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                                       (subseq user-home-dir0
                                               0
                                               (1- (length user-home-dir0)))
-                                    user-home-dir0))))
-         (when system-dir
-           (f-put-global 'system-books-dir
-                         (canonical-dirname!
-                          (unix-full-pathname system-dir)
-                          'lp
-                          *the-live-state*)
-                         *the-live-state*))
+                                    user-home-dir0)))
+              (system-dir0 (let ((str (getenv$-raw "ACL2_SYSTEM_BOOKS")))
+                             (and str
+                                  (maybe-add-separator str)))))
          (when (and save-expansion
                     (not (equal (string-upcase save-expansion)
                                 "NIL")))
            (f-put-global 'save-expansion-file t *the-live-state*))
          (when user-home-dir
-           (f-put-global 'user-home-dir user-home-dir *the-live-state*)))
+           (f-put-global 'user-home-dir user-home-dir *the-live-state*))
+         (when system-dir0 ; needs to wait for user-homedir-pathname
+           (f-put-global 'system-books-dir
+                         (canonical-dirname!
+                          (unix-full-pathname
+                           (expand-tilde-to-user-home-dir
+                            system-dir0
+                            (os (w *the-live-state*))
+                            'lp
+                            *the-live-state*))
+                          'lp
+                          *the-live-state*)
+                         *the-live-state*)))
        (set-gag-mode-fn :goals *the-live-state*)
        #-hons
 ; Hons users are presumably advanced enough to tolerate the lack of a
@@ -9303,8 +9287,9 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
 (defg *max-mem-usage*
 
-; This global is set in start-sol-gc.  It is an upper bound, in bytes of memory
-; used, that when exceeded results in certain garbage collection actions.
+; This global is set in ccl-initialize-gc-strategy.  It is an upper bound, in
+; bytes of memory used, that when exceeded results in certain garbage
+; collection actions.
 
 ; See also the centaur/misc/memory-mgmt books.
 
@@ -9312,7 +9297,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
 (defg *gc-min-threshold*
 
-; This is set in start-sol-gc.
+; This is set in ccl-initialize-gc-strategy.
 
 ; See also the centaur/misc/memory-mgmt books.
 
@@ -9328,10 +9313,11 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 #+ccl
 (defun set-and-reset-gc-thresholds ()
 
-; See start-sol-gc for a full discussion.  The comments here summarize how that
-; works out if, for example, there are 8G bytes of physical memory, just to
-; make the concepts concrete -- so it might be helpful to read the comments in
-; this function before reading the more general discussion in start-sol-gc.
+; See set-gc-strategy-builtin-delay (formerly start-sol-gc) for a full
+; discussion.  The comments here summarize how that works out if, for example,
+; there are 8G bytes of physical memory, just to make the concepts concrete --
+; so it might be helpful to read the comments in this function before reading
+; the more general discussion in set-gc-strategy-builtin-delay.
 
   (let ((n
 
@@ -9367,12 +9353,33 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
     (ccl::set-lisp-heap-gc-threshold *gc-min-threshold*)))
 
 #+ccl
+(defun ccl-initialize-gc-strategy (&optional threshold)
+  (let* ((phys (physical-memory))                   ; in KB
+         (memsize (cond ((> phys 0) (* phys 1024))  ; to bytes
+                        (t (expt 2 32)))))
+    (setq *max-mem-usage* ; no change if we were here already
+          (min (floor memsize 8)
+               (expt 2 31)))
+    (setq *gc-min-threshold* ; no change if we were here already
+          (cond ((null threshold) (floor *max-mem-usage* 4))
+                ((posp threshold) threshold)
+                (t (error "The GC threshold must be a positive integer, but ~
+                           ~s is not!"
+                          threshold))))
+    (ccl::set-lisp-heap-gc-threshold *gc-min-threshold*)
+    (ccl::use-lisp-heap-gc-threshold)
+    nil))
+
+#+ccl
 (defun set-gc-strategy-builtin-delay ()
 
 ; This function was called start-sol-gc through ACL2 Version_7.1.  It should
 ; undo the effects of set-gc-strategy-builtin-egc, by turning off EGC and
 ; enabling the delay strategy.  The list ccl::*post-gc-hook-list* should
 ; contain the symbol set-and-reset-gc-thresholds after this call succeeds.
+
+; The function ccl-initialize-gc-strategy should be called before this function
+; is called.
 
 ; This function should probably not be invoked in recent versions of CCL,
 ; instead relying on EGC for memory management, except perhaps in
@@ -9452,14 +9459,6 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; a reasonable assumption we think for anyone using ACL2 in 2015 or beyond.
 
   (without-interrupts ; leave us in a sane state
-   (let* ((phys (physical-memory))
-          (memsize (cond ((> phys 0) (* phys 1024)) ; to bytes
-                         (t (expt 2 32)))))
-     (setq *max-mem-usage* ; no change if we were here already
-           (min (floor memsize 8)
-                (expt 2 31)))
-     (setq *gc-min-threshold* ; no change if we were here already
-           (floor *max-mem-usage* 4)))
    (ccl:egc nil)
    (ccl::add-gc-hook
 

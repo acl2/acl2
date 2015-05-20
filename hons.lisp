@@ -231,11 +231,6 @@
   ;; Has an under-the-hood implementation
   (len (cons-subtrees x 'number-subtrees)))
 
-#+(or acl2-loop-only (not hons))
-(defn clear-hash-tables ()
-  ;; Has an under-the-hood implementation
-  nil)
-
 (defn flush-hons-get-hash-table-link (alist)
   (fast-alist-free alist))
 

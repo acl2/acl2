@@ -373,31 +373,6 @@
                       (change-pc-state pc-state :instruction (make-pretty-pc-instr ,instr))))
                state)))
 
-#+acl2-legacy-doc
-(defun add-pc-doc-header (command-type str)
-  (declare (xargs :guard (and (stringp command-type)
-                              (stringp str))))
-  (string-append
-   ":Doc-Section ACL2::Proof-checker-commands
-
-"
-   (string-append (string-append command-type "
-")
-                  str)))
-
-#+acl2-legacy-doc
-(defun remove-doc (command-type body)
-  ;; puts in doc if there isn't any, and puts the appropriate header on
-  (declare (xargs :guard (stringp command-type)))
-  (if (and (consp body) (consp (cdr body)) (stringp (car body)))
-      (mv (add-pc-doc-header command-type (car body)) (cdr body))
-    (mv nil body)))
-
-#-acl2-legacy-doc ; Delete this and its uses when finally excising legacy doc:
-(defun remove-doc (command-type body)
-  (declare (ignore command-type))
-  (mv nil body))
-
 (defun pc-primitive-defun-form (raw-name name formals doc body)
   `(defun ,name (args state)
      ;; notice that args aren't ignored, since even if they're nil, they're

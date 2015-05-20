@@ -54,10 +54,5 @@
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
 
-(defdoc hacker
-  ":Doc-Section hacker
-  
-  functions for extending ACL2 in ways that are potentially unsound.~/
-  
-  These functions typically require an active ttag (~l[defttag]) to work.~/
-  ~/")
+(include-book "xdoc/top" :dir :system)
+

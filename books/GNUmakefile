@@ -452,9 +452,15 @@ quicklisp_clean:
 # and because it's good to preserve the
 # quicklisp/inst/cache/asdf-installs directory), and so he prefers
 # that the "hack" be preserved.
-ifndef ACL2_SAVE_QUICKLISP
+
+# May 2015 update: since the quicklisp installation procedure has
+# changed, the conditional part of this code is hypothetically dead.
+# We leave it commented for now, but if December 2015 comes around,
+# and it's still unnecessary, the conditional part of this (and the
+# above comments) should be deleted.
+#ifndef ACL2_SAVE_QUICKLISP
 clean: quicklisp_clean
-endif # ifndef ACL2_SAVE_QUICKLISP
+#endif # ifndef ACL2_SAVE_QUICKLISP
 
 
 ifeq ($(REALLY_USE_QUICKLISP), 0)

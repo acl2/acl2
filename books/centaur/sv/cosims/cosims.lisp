@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "../vl-svex")
+(include-book "../vl/top")
 (include-book "centaur/vl/loader/top" :dir :system)
 (include-book "std/io/read-file-lines" :dir :system)
 (include-book "../svtv/debug")

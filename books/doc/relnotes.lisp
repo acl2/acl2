@@ -49,20 +49,8 @@
 
 (defxdoc note-7-2-books
   :parents (note-7-2)
-  :short "Release notes for the ACL2 Community Books for ACL2 7.2 (??? 20??)"
-
-  :long "<p>The following is a brief summary of changes made to the @(see
- community-books) between the releases of ACL2 7.1 and 7.2.</p>
-
- <p>The <a
- href='https://github.com/acl2/acl2/wiki/Release-version-numbers'>acl2-books
- Wiki page on Release Version Numbers</a> gives the Git/SVN revision numbers
- corresponding to releases.  See also @(see note-7-2) for the changes made to
- ACL2 itself.  For additional details, you may also see the raw <a
- href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
-
- ")
-
+  :short "Release notes for the ACL2 Community Books for ACL2 7.2 (xx 20xx)"
+  :long "<p>Stub: to be written.</p>")
 
 (defxdoc note-7-1-books
   :parents (note-7-1)

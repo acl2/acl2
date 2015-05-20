@@ -65,7 +65,7 @@ a brief comparison, see @(see sv-versus-esim).</p>
 language of S-expressions that describe functions over infinite-width,
 four-valued vectors called @(see 4vec)s.  We define a sensible semantics for
 these expressions (@(see svex-eval)) and implement tools like @(see
-sv-rewriting) for simplifying these expressions in provably sound ways.  We
+svex-rewriting) for simplifying these expressions in provably sound ways.  We
 also provide special support for bit-blasting SV expressions with @(see gl),
 which allows you to process them with efficient @(see acl2::boolean-reasoning)
 tools like @(see acl2::aignet), @(see acl2::satlink), @(see acl2::ubdds),
@@ -115,7 +115,7 @@ acl2::why-4v-logic) for additional background on why four-valued logics are
 useful in hardware modeling.</li>
 
 <li>They both provide similar user-interfacing tools.  For instance, the @(see
-sv::symbolic-test-vectors) of SV are intentionally very similar to the symbolic
+sv::symbolic-test-vector)s of SV are intentionally very similar to the symbolic
 test vectors of ESIM.</li>
 
 </ul>
@@ -325,8 +325,4 @@ nearly a drop-in replacement for @(see esim) STVs.  See @(see
 acl2::symbolic-test-vectors) for description of the original esim-based
 library, and @(see svex-stvs) for a description of the differences in the new
 svex version.</p>")
-
-
-
-
 
