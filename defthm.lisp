@@ -3734,7 +3734,9 @@
              (t (and (null (cdr hyps))
                      (case-match hyp3
                        ((!ev (fn !x . !extended-args) !a)
-                        fn)
+                        (if (symbolp fn)
+                            fn
+                          nil))
                        (& nil)))))
             (append (and flg1 '(meta-extract-contextual-fact))
                     (and flg2 '(meta-extract-global-fact+)))))))))
