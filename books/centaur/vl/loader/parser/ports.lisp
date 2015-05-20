@@ -394,7 +394,7 @@
   ;;                      | output reg [ signed ] [ range ] list_of_variable_port_identifiers
   ;;                      | output output_variable_type list_of_variable_port_identifiers
 
-
+  :parents (parse-ports)
   :short "Matches a port declaration (which may involve several comma-separated variable names), and creates an ansi-portdecl object for each of them."
   :guard (vl-atts-p atts)
   :result (vl-ansi-portdecllist-p val)
@@ -454,6 +454,7 @@
 
 
 (defparser vl-parse-1+-port-declarations-separated-by-commas-2005 ()
+  :parents (parse-ports)
   :short "Verilog-2005 Only.  Matches @(' port_declaration { ',' port_declaration } ') in
 ansi style port lists.  Creates ansi-portdecls."
   :result (vl-ansi-portdecllist-p val)

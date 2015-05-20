@@ -29,7 +29,7 @@
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
 
-(in-package "SVEX")
+(in-package "SV")
 
 (include-book "alu")
 (include-book "boothpipe")
