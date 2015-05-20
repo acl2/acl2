@@ -57,7 +57,7 @@
 (include-book "centaur/misc/memory-mgmt" :dir :system)
 (include-book "support")
 
-(gl::def-gl-clause-processor svex-tutorial-glcp)
+(gl::def-gl-clause-processor sv-tutorial-glcp)
 
 (make-event
 
@@ -109,7 +109,7 @@
 ; should probably look at it now, and then come back.
 
 
-; First, we read that module into a VL design.  This form does that.  
+; First, we read that module into a VL design.  This form does that.
 (def-saved-event alu-design-form
   (defconsts (*alu-vl-design* state)
     (b* (((mv loadresult state)
@@ -143,7 +143,7 @@
    (vl::vl-reportcard-to-string (vl::vl-design-reportcard *alu-simplified-good*))))
 
 (deftutorial translating-verilog-to-svex
-  :parents (svex-tutorial)
+  :parents (sv-tutorial)
   :short "How to parse Verilog files and translate them into an svex design"
   :long "
 <p>The first step in analyzing a design is to read it in.</p>
@@ -240,7 +240,7 @@ full:</p>
       ;; verilog name --> sequence of inputs to supply
     '(("clk"    1     0     1     0     1     0)
       ("opcode" _     _     _     op    _)
-      ("abus"   _     a     _) 
+      ("abus"   _     a     _)
       ("bbus"   _     b     _))
 
     :outputs                  ;; verilog name --> variable names we will use
@@ -302,7 +302,7 @@ full:</p>
             :quiet t))
 
 (defttag write-ok)
-       
+
 (local (acl2::remove-untouchable acl2::writes-okp nil))
 
 
@@ -340,11 +340,11 @@ full:</p>
 
 
 (deftutorial stvs-and-testing
-  :parents (svex-tutorial)
+  :parents (sv-tutorial)
   :short "Defining a simulation pattern (STV) and using it to run tests."
   :long "
 
-<p>Part of the @(see svex-tutorial). Previous section: @(see
+<p>Part of the @(see sv-tutorial). Previous section: @(see
 translating-verilog-to-svex).</p>
 
 <h4>Defining a simulation pattern</h4> <p>To run a test of our SVEX design,
@@ -549,18 +549,18 @@ gtkwave:</p>
 
 (def-saved-event bdd-mode
   (local (gl::gl-bdd-mode)))
-  
 
 
-  
+
+
 
 
 (deftutorial proofs-with-stvs
-  :parents (svex-tutorial)
+  :parents (sv-tutorial)
   :short "How to do proofs about hardware models using STVs and GL."
   :long "
 
-<p>Part of the @(see svex-tutorial). Previous section: @(see
+<p>Part of the @(see sv-tutorial). Previous section: @(see
 stvs-and-testing).</p>
 
 <h4>Simple STV Proofs</h4>

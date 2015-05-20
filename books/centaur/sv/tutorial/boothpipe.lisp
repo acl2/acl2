@@ -654,11 +654,11 @@
 
 
 (deftutorial decomposition-proofs
-  :parents (svex-tutorial)
+  :parents (sv-tutorial)
   :short "Proof by decomposing and re-composing a hardware model"
   :long "
 
-<p>Part of the @(see svex-tutorial). Previous section: @(see
+<p>Part of the @(see sv-tutorial). Previous section: @(see
 proofs-with-stvs).</p>
 
 
