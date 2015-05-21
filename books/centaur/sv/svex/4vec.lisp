@@ -39,22 +39,10 @@
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(defsection bozo
-  ;; BOZO 1 -- These are non-local and enabled
-  ;; BOZO 2 -- These look obviously great, move to bitops/ihsext-basics if possible
 
-  (defthm logand-self-identity
-    (equal (logand x x)
-           (ifix x))
-    :hints ((acl2::equal-by-logbitp-hammer)))
-
-  (defthm logior-self-identity
-    (equal (logior x x)
-           (ifix x))
-    :hints ((acl2::equal-by-logbitp-hammer))))
-
-
-;; BOZO consider whether any of these can be integrated into bitops
+;; Probably these are specialized enough that they shouldn't be integrated into
+;; bitops?  Or maybe they should go into some heavier bitops book like
+;; ihs-extensions?
 
 (local (defthm equal-neg-1-when-logcdr
          (implies (and (logbitp 0 x)
@@ -76,18 +64,6 @@
          :hints (("goal" :use ((:instance bitops::associativity-of-logior
                                 (acl2::a a) (acl2::b b) (acl2::c c)))
                   :in-theory (disable bitops::associativity-of-logior)))))
-
-(local (defthm logior-logand-id-1
-         (equal (logior b (logand a b))
-                (ifix b))
-         :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                            bitops::ihsext-recursive-redefs)))))
-
-(local (defthm logand-logior-id-1
-         (equal (logand b (logior a b))
-                (ifix b))
-         :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                            bitops::ihsext-recursive-redefs)))))
 
 (local (defthm logior-neg-1-when-logand-neg-1
          (implies (equal (logand a b) -1)
@@ -1566,7 +1542,6 @@ to an offset into @('(rev-blocks nbits blocksz x)')."
           are equal or the bit from b is Z."
   :returns (res 4vec-p)
   (b* ((eq (3vec-bitnot (4vec-bitxor a b))) ;; 4vec-bitxor-redef
-       ((4vec a))
        ((4vec b))
        (zmask (logand (lognot b.upper) b.lower))) ;; b is z
     (3vec-reduction-and (3vec-bitor eq (2vec zmask)))))

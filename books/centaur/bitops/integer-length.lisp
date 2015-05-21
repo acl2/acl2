@@ -219,6 +219,30 @@
               :induct (dec-floor2-induct n a)
               :expand ((:with acl2::integer-length* (integer-length a))))))
 
+    ;; BOZO maybe prove something like this?
+    ;; (defthm integer-length-bounded-by-positive-expt
+    ;;   (implies (and (< a (expt 2 n))
+    ;;                 (natp a)
+    ;;                 (natp n)
+    ;;                 (< 1 n))
+    ;;            (< (integer-length a) n))
+    ;;   :rule-classes ((:rewrite :corollary
+    ;;                   (implies (and (syntaxp (or (not (quotep n))
+    ;;                                              ;; safety valve to keep this rule from
+    ;;                                              ;; exploding Lisp
+    ;;                                              (< (cadr n) 1000)))
+    ;;                                 (< a (expt 2 n))
+    ;;                                 (natp a)
+    ;;                                 (natp n)
+    ;;                                 (< 1 n))
+    ;;                            (< (integer-length a) n)))
+    ;;                  (:linear))
+    ;;   :hints(("Goal"
+    ;;           :nonlinearp t
+    ;;           :in-theory (enable expt-2-is-ash)
+    ;;           :induct (dec-floor2-induct n a)
+    ;;           :expand ((:with acl2::integer-length* (integer-length a))))))
+
     (defthm |(integer-length (mod a (expt 2 n)))|
       (implies (and (natp a)
                     (natp n))
@@ -227,3 +251,10 @@
       :hints(("Goal" :in-theory (enable* ihsext-arithmetic)))
       :rule-classes ((:rewrite) (:linear)))))
 
+
+;; BOZO maybe prove something like this?
+;; (defthm integer-length-bounded-for-unsigned-byte-p
+;;   (implies (unsigned-byte-p n x)
+;;            (< (integer-length x) n))
+;;   :rule-classes ((:rewrite)
+;;                  (:linear)))

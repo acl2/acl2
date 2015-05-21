@@ -1495,7 +1495,11 @@ off looking at the source code.</p>")
   (defthm logand-fold-consts
     (implies (syntaxp (and (quotep a) (quotep b)))
              (equal (logand a b c)
-                    (logand (logand a b) c)))))
+                    (logand (logand a b) c))))
+
+  (defthm logand-of-self
+    (equal (logand x x)
+           (ifix x))))
 
 
 (defsection logior**
@@ -1703,7 +1707,19 @@ off looking at the source code.</p>")
   (defthm logior-fold-consts
     (implies (syntaxp (and (quotep a) (quotep b)))
              (equal (logior a b c)
-                    (logior (logior a b) c)))))
+                    (logior (logior a b) c))))
+
+  (defthm logior-of-self
+    (equal (logior x x)
+           (ifix x)))
+
+  (defthm logior-of-logand-self
+    (equal (logior b (logand a b))
+           (ifix b)))
+
+  (defthm logand-of-logior-self
+    (equal (logand b (logior a b))
+           (ifix b))))
 
 
 (defsection logxor**
@@ -1871,6 +1887,11 @@ off looking at the source code.</p>")
 
   (add-to-ruleset ihsext-bounds-thms '(logxor-<-0))
 
+  (defthm logxor-of-self
+    (equal (logxor x x)
+           0)
+    :hints(("Goal" :in-theory (disable (force)))))
+
   (defthm logxor-equal-0
     (equal (equal (logxor x y) 0)
            (equal (ifix x) (ifix y)))
@@ -1917,8 +1938,6 @@ off looking at the source code.</p>")
     (implies (syntaxp (and (quotep a) (quotep b)))
              (equal (logxor a b c)
                     (logxor (logxor a b) c)))))
-
-
 
 
 
@@ -2081,7 +2100,7 @@ off looking at the source code.</p>")
 
   (defthmd logcdr-of-ash
     (equal (logcdr (ash i count))
-                    (ash i (1- (ifix count)))))
+           (ash i (1- (ifix count)))))
 
   (defthm logcdr-of-left-shift
     ;; this hyp isn't necessary, but this rule could loop with the def of ash otherwise
