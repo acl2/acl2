@@ -289,6 +289,10 @@ is this?</p>")
 (assert-short monster-scoreboard "points each monster has")
 (assert-long monster-scoreboard "Wait, why are <i>monsters</i>")
 
+(assert-parents monster-scoreboard-p (monster-scoreboard))
+(assert-short monster-scoreboard-p "")
+(assert-long monster-scoreboard-p "")
+
 (assert-parents monster-scoreboard-fix (monster-scoreboard))
 (assert-short monster-scoreboard-fix "")
 (assert-long monster-scoreboard-fix "")
@@ -306,6 +310,10 @@ is this?</p>")
 (assert-short monster-scoreboard2 "")
 (assert-long monster-scoreboard2 "")
 
+(assert-parents monster-scoreboard2-p (monster-scoreboard2))
+(assert-short monster-scoreboard2-p "")
+(assert-long monster-scoreboard2-p "")
+
 (assert-parents monster-scoreboard2-fix (monster-scoreboard2))
 (assert-short monster-scoreboard2-fix "")
 (assert-long monster-scoreboard2-fix "")
@@ -314,6 +322,18 @@ is this?</p>")
 (assert-short monster-scoreboard2-equiv "")
 (assert-long monster-scoreboard2-equiv "")
 
+
+(encapsulate
+  ()
+  (local (xdoc::set-default-parents game))
+  (defalist monster-scoreboard3
+    :key-type monster
+    :val-type natp))
+
+(assert-parents monster-scoreboard3 (game))
+(assert-parents monster-scoreboard3-p (monster-scoreboard3))
+(assert-parents monster-scoreboard3-fix (monster-scoreboard3))
+(assert-parents monster-scoreboard3-equiv (monster-scoreboard3))
 
 
 

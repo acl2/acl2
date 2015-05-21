@@ -2243,35 +2243,44 @@
   (b* (((flexalist alist) alist)
        ;; std::deflist-compatible variable names
        (stdx (intern-in-package-of-symbol "X" alist.pred))
+       (bool (intern-in-package-of-symbol "BOOL" alist.name))
        ;; (stda (intern-in-package-of-symbol "A" alist.pred)))
-       )
-    `(,@(if alist.already-definedp
-            '(progn)
-          `(define ,alist.pred (,alist.xvar)
-             :parents nil ;; BOZO not clear when to add docs for this
-             :progn t
-             :measure ,alist.measure
-             ,@(and (getarg :measure-debug nil alist.kwd-alist)
-                    `(:measure-debug t))
-             (if (atom ,alist.xvar)
-                 ,(if alist.true-listp
-                      `(eq ,alist.xvar nil)
-                    t)
-               (and (consp (car ,alist.xvar))
-                    ,@(and alist.key-type
-                           `((,alist.key-type (caar ,alist.xvar))))
-                    ,@(and alist.val-type
-                           `((,alist.val-type (cdar ,alist.xvar))))
-                    (,alist.pred (cdr ,alist.xvar))))
-             ///))
-        (local (in-theory (disable ,alist.pred)))
-        (std::defalist ,alist.pred (,stdx)
-          ,@(and alist.key-type `(:key (,alist.key-type ,stdx)))
-          ,@(and alist.val-type `(:val (,alist.val-type ,stdx)))
-          :true-listp ,alist.true-listp
-          :keyp-of-nil ,alist.keyp-of-nil
-          :valp-of-nil ,alist.valp-of-nil
-          :already-definedp t))))
+       (std-defalist-call `(std::defalist ,alist.pred (,stdx)
+                             ,@(and alist.key-type `(:key (,alist.key-type ,stdx)))
+                             ,@(and alist.val-type `(:val (,alist.val-type ,stdx)))
+                             :true-listp ,alist.true-listp
+                             :keyp-of-nil ,alist.keyp-of-nil
+                             :valp-of-nil ,alist.valp-of-nil
+                             :already-definedp t
+                             ;; Try to turn off all doc generation here
+                             :parents nil
+                             :short nil
+                             :long nil)))
+    (if alist.already-definedp
+        `(progn
+           (local (in-theory (disable ,alist.pred)))
+           ,std-defalist-call)
+      `(define ,alist.pred (,alist.xvar)
+         :parents (,alist.name)
+         :returns ,bool
+         :progn t
+         :short ,(str::cat "Recognizer for @(see " (xdoc::full-escape-symbol alist.name) ").")
+         :measure ,alist.measure
+         ,@(and (getarg :measure-debug nil alist.kwd-alist)
+                `(:measure-debug t))
+         (if (atom ,alist.xvar)
+             ,(if alist.true-listp
+                  `(eq ,alist.xvar nil)
+                t)
+           (and (consp (car ,alist.xvar))
+                ,@(and alist.key-type
+                       `((,alist.key-type (caar ,alist.xvar))))
+                ,@(and alist.val-type
+                       `((,alist.val-type (cdar ,alist.xvar))))
+                (,alist.pred (cdr ,alist.xvar))))
+         ///
+         (local (in-theory (disable ,alist.pred)))
+         ,std-defalist-call))))
 
 
 ;; ------------------ Predicates: deftypes -----------------------
