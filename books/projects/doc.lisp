@@ -10,6 +10,7 @@
 (include-book "regex/regex-ui")
 (include-book "leftist-trees/top")
 (include-book "sidekick/server")
+(include-book "x86isa/top")
 
 (defxdoc projects
   :parents (top)

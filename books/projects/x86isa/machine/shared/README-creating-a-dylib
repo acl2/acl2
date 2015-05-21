@@ -1,0 +1,70 @@
+Dynamic libraries and CCL
+Shilpi Goel
+
+1. Creating a dynamic library:
+
+On Linux systems:
+
+gcc -c -Wall -Werror -fpic rdrand.c
+gcc -shared -o librdrand.so rdrand.c
+
+On Darwin systems:
+gcc -m64 -dynamiclib -Wall -o librdrand.dylib rdrand.c
+
+
+2. Open the dynamic library.  It is recommended to use the absolute
+path here.
+
+(CCL::open-shared-library "/projects/hvg/shigoel/X86/x86-byte-mem/machine/shared/librdrand.so")
+
+3. [Optional] Check if CCL really did open this library:
+
+CCL::*shared-libraries*
+
+4. [Optional] Check if the required function can indeed be found by
+the system.
+
+(CCL::external "_rdrand16")
+(CCL::external "_rdrand32")
+(CCL::external "_rdrand64")
+
+5. Make the external call.
+
+;; _rdrand16:
+
+(multiple-value-bind (_str ptr)
+                     ;; Note that ptr stands in for *num.
+                     (ccl::make-heap-ivector 1 '(unsigned-byte 16))
+                     (declare (ignorable _str))
+                     (let* ((cf (ccl::external-call "_rdrand16"
+                                      :address ptr
+                                      (:unsigned 64)))
+                            (num (ccl::%get-unsigned-word ptr 0)))
+                       (ccl::dispose-heap-ivector ptr)
+                       (cons num cf)))
+
+;; _rdrand32:
+
+(multiple-value-bind (_str ptr)
+                     ;; Note that ptr stands in for *num.
+                     (ccl::make-heap-ivector 1 '(unsigned-byte 32))
+                     (declare (ignorable _str))
+                     (let* ((cf (ccl::external-call "_rdrand32"
+                                      :address ptr
+                                      (:unsigned 64)))
+                            (num (ccl::%get-unsigned-long ptr 0)))
+                       (ccl::dispose-heap-ivector ptr)
+                       (cons num cf)))
+
+;; _rdrand64:
+
+(multiple-value-bind (_str ptr)
+                     ;; Note that ptr stands in for *num.
+                     (ccl::make-heap-ivector 1 '(unsigned-byte 64))
+                     (declare (ignorable _str))
+                     (let* ((cf (ccl::external-call "_rdrand64"
+                                      :address ptr
+                                      (:unsigned 64)))
+                            (num (ccl::%%get-unsigned-longlong ptr 0)))
+                       (ccl::dispose-heap-ivector ptr)
+                       (cons num cf)))
