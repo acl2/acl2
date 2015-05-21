@@ -808,15 +808,6 @@ off looking at the source code.</p>")
  ()
  (local (include-book "arithmetic/top-with-meta" :dir :system))
 
- (defthm lognot-of-lognot
-   ;; Renamed from lognot-lognot to lognot-of-lognot because arithmetic-5
-   ;; and ihs/logops-lemmas both have a worse version of this rule named
-   ;; lognot-lognot.
-   (equal (lognot (lognot x))
-          (ifix x))
-   :hints (("Goal" :in-theory (enable lognot)))
-   )
-
  (defthm loghead-of-negative
    (implies
     (unsigned-byte-p n x)
@@ -839,5 +830,4 @@ off looking at the source code.</p>")
            (- x)))
   :hints (("Goal"
            :use ((:instance loghead-of-negative (x (- x))))
-           :in-theory (disable loghead-of-negative unsigned-byte-p))))
-)
+           :in-theory (disable loghead-of-negative unsigned-byte-p)))))
