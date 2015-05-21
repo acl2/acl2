@@ -157,7 +157,11 @@ that we may correctly decode include-book and other forms with :dir
 
  - (depends-on "<filename>" [:dir :<dirname>])
      Adds the named file as a dependency of the current book.  May
-occur in a comment, since depends-on is not defined in ACL2.
+occur in a comment, since depends-on is not defined in ACL2.  Note: If
+you want to add a dependency on a book, just use include-book (inside
+a multiline comment, if you don\'t want it actually included.
+Depends-on is intended for non-book dependencies, so cert.pl won\'t
+scan the target for its dependencies.
 
  - (loads "<filename>" [:dir :<dirname>])
      Adds the named file as a dependency of the current book, and also
