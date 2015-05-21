@@ -34,7 +34,6 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
-(local (include-book "bits"))
 (local (include-book "lattice"))
 
 (local (in-theory (enable svex-eval-when-2vec-p-of-minval)))

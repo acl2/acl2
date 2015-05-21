@@ -36,7 +36,6 @@
 (include-book "centaur/gl/def-gl-rewrite" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/alists/alist-keys" :dir :System))
-(local (include-book "bits"))
 (local (include-book "std/osets/element-list" :dir :system))
 
 (local (std::add-default-post-define-hook :fix))
