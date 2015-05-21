@@ -1,5 +1,5 @@
-; SVEX - Symbolic, Vector-Level Hardware Description Library
-; Copyright (C) 2014 Centaur Technology
+; SV - Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2014-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -34,7 +34,6 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
-(local (include-book "bits"))
 (local (include-book "lattice"))
 
 (local (in-theory (enable svex-eval-when-2vec-p-of-minval)))

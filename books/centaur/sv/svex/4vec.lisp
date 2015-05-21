@@ -1,5 +1,5 @@
-; SVEX - Symbolic, Vector-Level Hardware Description Library
-; Copyright (C) 2014 Centaur Technology
+; SV - Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2014-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -105,21 +105,32 @@
 are generally intended to support the modeling of Verilog and SystemVerilog
 expressions.  For instance, our @(see 4vec-plus) operation agrees with the
 Verilog notion of plus: if there are any X or Z bits in either input, it
-``conservatively'' returns all Xes.</p>
+``conservatively'' returns all Xes.  Most of these operations have
+corresponding @(see svex) functions and can hence be used in @(see
+expressions).  See in particular @(see svex-functions).</p>
 
-<p>Most of these operations have corresponding @(see svex) functions and can
-hence be used in @(see expressions).  See in particular @(see svex-functions).
-Because of this, for each of the operations below, we are especially interested
-in the performance of symbolic simulation with @(see gl).  Concrete execution
-efficiency is of less importance, but in most cases we can do well in both
-contexts.</p>
+<p>Many of these operations have similarities with the @(see
+acl2::4v-operations) which were used in by @(see acl2::esim).  But SV
+expressions are vectors instead of single bits, so there are many 4vec
+operations with no 4v equivalents (e.g., plus, times, etc.).  Historically
+these operations were bit-blasted using the @(see vl2014::occform)
+transformation, but in svex they are primitives with well-defined
+semantics.</p>
 
-<p>These operations have many similarities to the @(see acl2::4v-operations)
-which were used in by @(see acl2::esim).  However, since SV expressions are
-vectors instead of single bits, there are many 4vec operations with no 4v
-equivalents (e.g., plus, times, etc.).  Historically these operations were
-bit-blasted using the @(see vl2014::occform) transformation, but in svex they
-are primitives with well-defined semantics.</p>")
+<p><u>Boolean Convention</u>.  Most 4vec operations take and return @(see 4vec)
+objects.  This is true even for operations that you might normally expect to
+produce a Boolean result, e.g., comparisons, reductions, etc.  In these cases,
+we typically arrange so that ``true'' is indicated by the all-1s vector (i.e.,
+-1), ``false'' is indicated by the all-0s vector (i.e., 0), and undetermined
+values are indicated by the all-Xes vector.  This is sometimes convenient in
+that it avoids needing to explicitly replicate/extend comparison results.</p>
+
+<p>It is critical that these functions support efficient symbolic simulation
+with @(see gl).  However, the particular definitions below are typically not
+relevant to this, because we use a custom translation from @(see expressions)
+into @(see aig)s; see @(see svex-symbolic-evaluation) for details.</p>")
+
+(xdoc::defpointer boolean-convention 4vec-operations)
 
 (local (xdoc::set-default-parents 4vec-operations))
 
@@ -132,7 +143,7 @@ are primitives with well-defined semantics.</p>")
   :long "<p>This function is mainly used in correspondence theorems that show
 the relationship between our @(see 4vec-operations) and the simple, four-valued
 bit operations provided in the @(see acl2::4v) library.</p>"
-  (b* (((4vec x) x)
+  (b* (((4vec x))
        (n (lnfix n)))
     (if (logbitp n x.upper)
         (if (logbitp n x.lower)
@@ -208,7 +219,8 @@ semantics for @('foo[n]') in cases where @('n') is unknown.</p>"
 
 
 (define bool->vec ((x booleanp))
-  :short "Convert a boolean into an infinite-width @(see 2vec)."
+  :short "Convert an ACL2 @(see booleanp) into a @(see 4vec) according to the
+@(see boolean-convention)."
   :inline t
   (if x -1 0)
   ///
@@ -250,7 +262,7 @@ the 4vec operation to simply:</p>
   (if-2vec-p
    (x)
    (2vec (lognot (2vec->val x)))
-   (b* (((4vec x) x))
+   (b* (((4vec x)))
      (4vec (lognot x.lower)
            (lognot x.upper))))
   ///
@@ -289,8 +301,8 @@ the 4vec operation to simply:</p>
   :returns (x&y 4vec-p)
   (if-2vec-p (x y)
              (2vec (logand (2vec->val x) (2vec->val y)))
-             (b* (((4vec x) x)
-                  ((4vec y) y))
+             (b* (((4vec x))
+                  ((4vec y)))
                (4vec (logand x.upper y.upper)
                      (logand x.lower y.lower))))
   ///
@@ -333,8 +345,8 @@ the 4vec operation to simply:</p>
   :returns (x-or-y 4vec-p)
   (if-2vec-p (x y)
              (2vec (logior (2vec->val x) (2vec->val y)))
-             (b* (((4vec x) x)
-                  ((4vec y) y))
+             (b* (((4vec x))
+                  ((4vec y)))
                (4vec (logior x.upper y.upper)
                      (logior x.lower y.lower))))
   ///
@@ -377,8 +389,8 @@ the 4vec operation to simply:</p>
   :returns (x^y 4vec-p)
   (if-2vec-p (x y)
              (2vec (logxor (2vec->val x) (2vec->val y)))
-             (b* (((4vec x) x)
-                  ((4vec y) y)
+             (b* (((4vec x))
+                  ((4vec y))
                   (xmask (logior (logand x.upper (lognot x.lower))
                                  (logand y.upper (lognot y.lower)))))
                (4vec (logior xmask (logxor x.upper y.upper))
@@ -407,8 +419,8 @@ the 4vec operation to simply:</p>
                                 (acl2::equal-by-logbitp-hammer)))
   (if-2vec-p (x y)
              (2vec (logxor (2vec->val x) (2vec->val y)))
-             (b* (((4vec x) x)
-                  ((4vec y) y)
+             (b* (((4vec x))
+                  ((4vec y))
                   (xmask (logior (logxor x.upper x.lower)
                                  (logxor y.upper y.lower))))
                (4vec (logior xmask (logxor x.upper y.upper))
@@ -450,8 +462,8 @@ inputs as follows:</p>
  <li>Otherwise, the result is X.</li>
 </ul>"
   :returns (ans 4vec-p)
-  (b* (((4vec a) a)
-       ((4vec b) b))
+  (b* (((4vec a))
+       ((4vec b)))
     ;; truth table:
     ;;   u 0011
     ;;   l 0101
@@ -494,8 +506,8 @@ corresponding bits of the two inputs as follows:</p>
  <li>If one input is X and the other is not 0, the result is X.</li>
 </ul>"
   :returns (ans 4vec-p)
-  (b* (((4vec a) a)
-       ((4vec b) b))
+  (b* (((4vec a))
+       ((4vec b)))
     ;; truth table:
     ;;   u 0011
     ;;   l 0101
@@ -538,8 +550,8 @@ corresponding bits of the two inputs as follows:</p>
 <li>If one input is X and the other is not 1, the result is X.</li>
 </ul>"
   :returns (ans 4vec-p)
-  (b* (((4vec a) a)
-       ((4vec b) b))
+  (b* (((4vec a))
+       ((4vec b)))
     ;; truth table:
     ;;   u 0011
     ;;   l 0101
@@ -584,7 +596,7 @@ bits.</p>"
            (<= 0 (2vec->val n)))
       (if-2vec-p (x)
                  (2vec (loghead (2vec->val n) (2vec->val x)))
-                 (b* (((4vec x) x)
+                 (b* (((4vec x))
                       (nval (2vec->val n)))
                    (4vec (loghead nval x.upper)
                          (loghead nval x.lower))))
@@ -610,7 +622,7 @@ bits.</p>"
            (< 0 (2vec->val n)))
       (if-2vec-p (x)
                  (2vec (fast-logext (2vec->val n) (2vec->val x)))
-                 (b* (((4vec x) x)
+                 (b* (((4vec x))
                       (nval (2vec->val n)))
                    (4vec (fast-logext nval x.upper)
                          (fast-logext nval x.lower))))
@@ -641,13 +653,26 @@ width @(see 4vec) of that bit."
   ;;                                     4vec-idx->4v))))
   )
 
+
+
+
 (define 3vec-reduction-and ((x 4vec-p))
   :parents (3vec-operations)
   :returns (and-x 4vec-p)
   :short "Reduction logical AND of a @(see 3vec)."
+  :long "<p>See @(see 4vec-reduction-and) for some additional discussion.  We
+assume there are no Z bits and in that case, following the @(see
+boolean-convention), we return:</p>
+
+<ul>
+<li>True (all 1s) if all of the (infinite) bits are 1, i.e., if X is -1,</li>
+<li>False (all 0s) if there is any bit that is 0, or</li>
+<li>All Xes otherwise.</li>
+</ul>"
+
   (if-2vec-p (x)
              (2vec (bool->vec (int= (2vec->val x) -1)))
-             (b* (((4vec x) x))
+             (b* (((4vec x)))
                (4vec (bool->vec (int= x.upper -1))
                      (bool->vec (int= x.lower -1)))))
   ///
@@ -680,7 +705,7 @@ width @(see 4vec) of that bit."
   (defthmd 3vec-reduction-and-recursive
     (implies (3vec-p! x)
              (equal (3vec-reduction-and x)
-                    (b* (((4vec x) x))
+                    (b* (((4vec x)))
                       (if (and (or (zip x.upper) (eql x.upper -1))
                                (or (zip x.lower) (eql x.lower -1)))
                           (4vec-fix x)
@@ -701,24 +726,31 @@ width @(see 4vec) of that bit."
 
 (define 4vec-reduction-and ((x 4vec-p))
   :short "Reduction logical AND of a @(see 4vec)."
-  :long "<p>ANDs together all of the bits in a 4vec.  If any bit is 0, the
-result will be 0; otherwise if any bit is X or Z, the result is X (extended to
-infinity), otherwise the result is -1.</p>
+  :long "<p>ANDs together all of the bits in a 4vec.  Following the @(see
+boolean-convention), we return:</p>
+
+<ul>
+<li>True (all 1s) if all of the (infinite) bits are 1, i.e., if X is -1,</li>
+<li>False (all 0s) if there is any bit that is 0, or</li>
+<li>All Xes otherwise.</li>
+</ul>
 
 <p><b>Subtle</b>.  Since @(see 4vec)s are ``infinite width,'' reduction
-operations are a bit unusual.  For reduction AND, when translating from Verilog
-or other languages where your vectors are only some particular width, you will
-typically need to <i>always sign-extend the input vector</i>, regardless of
-whether it is signed or unsigned.  That is, say you start with a unsigned 5-bit
-vector whose value is @('11111').  If you create your (infinite width) 4vec for
-this by zero extension, you'll end up with infinitely many leading 0s, which
-will cause the reduction AND of your vector to be 0!</p>"
+operations are a bit unusual.  For reduction AND in particular, when
+translating from Verilog or other languages where your vectors are only some
+fixed width, you will typically need to <i>always sign-extend the input
+vector</i>, regardless of whether it is signed or unsigned.</p>
+
+<p>That is, say you start with a unsigned 5-bit vector whose value is
+@('11111').  If you create your (infinite width) 4vec for this by zero
+extension, you'll end up with infinitely many leading 0s, which will cause the
+reduction AND of your vector to be 0!</p>"
   :returns (and-x 3vec-p!)
   (3vec-reduction-and (3vec-fix x))
   ///
   (defthmd 4vec-reduction-and-recursive
     (equal (4vec-reduction-and x)
-           (b* (((4vec x) x)
+           (b* (((4vec x))
                 ((when (and (or (zip x.upper) (eql x.upper -1))
                             (or (zip x.lower) (eql x.lower -1))))
                  (3vec-fix x))
@@ -744,10 +776,20 @@ will cause the reduction AND of your vector to be 0!</p>"
 (define 3vec-reduction-or ((x 4vec-p))
   :parents (3vec-operations)
   :short "Reduction logical OR of a @(see 3vec)."
+  :long "<p>See @(see 4vec-reduction-or) for some additional discussion.  We
+assume that there are no Z bits.  In that case, following the @(see
+boolean-convention), we return:</p>
+
+<ul>
+<li>False (all 0s) if all of the (infinite) bits are 0, i.e., if X is 0,</li>
+<li>True (all 1s) if there is any bit that is 1, or</li>
+<li>All Xes otherwise.</li>
+</ul>"
+
   :returns (or-x 4vec-p)
   (if-2vec-p (x)
              (2vec (bool->vec (not (int= (2vec->val x) 0))))
-             (b* (((4vec x) x))
+             (b* (((4vec x)))
                (4vec (bool->vec (not (int= x.upper 0)))
                      (bool->vec (not (int= x.lower 0))))))
   ///
@@ -780,7 +822,7 @@ will cause the reduction AND of your vector to be 0!</p>"
   (defthmd 3vec-reduction-or-recursive
     (implies (3vec-p! x)
              (equal (3vec-reduction-or x)
-                    (b* (((4vec x) x))
+                    (b* (((4vec x)))
                       (if (and (or (zip x.upper) (eql x.upper -1))
                                (or (zip x.lower) (eql x.lower -1)))
                           (3vec-fix x)
@@ -802,9 +844,14 @@ will cause the reduction AND of your vector to be 0!</p>"
 (define 4vec-reduction-or ((x 4vec-p))
   :short "Reduction logical OR of a @(see 4vec)."
 
-  :long "<p>ORs together all of the bits in a 4vec.  If any bit is 1, the
-result will be -1 (infinite true bits); otherwise if any bit is X or Z, the
-result is X (extended to infinity), otherwise the result is 0.</p>
+  :long "<p>ORs together all of the bits in a 4vec.  Following the @(see
+boolean-convention), we return:</p>
+
+<ul>
+<li>False (all 0s) if all of the (infinite) bits are 0, i.e., if X is 0,</li>
+<li>True (all 1s) if there is any bit that is 1, or</li>
+<li>All Xes otherwise.</li>
+</ul>
 
 <p>When translating Verilog, the input vector may be either sign- or 0-extended
 without affecting the result.</p>"
@@ -813,7 +860,7 @@ without affecting the result.</p>"
     ///
     (defthmd 4vec-reduction-or-recursive
       (equal (4vec-reduction-or x)
-             (b* (((4vec x) x)
+             (b* (((4vec x))
                   ((when (and (or (zip x.upper) (eql x.upper -1))
                               (or (zip x.lower) (eql x.lower -1))))
                    (3vec-fix x))
@@ -833,6 +880,7 @@ without affecting the result.</p>"
       :rule-classes ((:definition :install-body nil
                       :clique (4vec-reduction-or)
                       :controller-alist ((4vec-reduction-or t)))))
+
     (deffixequiv 4vec-reduction-or :args ((x 3vec))))
 
 
@@ -855,8 +903,8 @@ negative.  In this case, the result is infinite Xes.</p>"
       (b* ((wval (2vec->val width)))
         (if-2vec-p (low high)
                    (2vec (logapp wval (2vec->val low) (2vec->val high)))
-                   (b* (((4vec low) low)
-                        ((4vec high) high))
+                   (b* (((4vec low))
+                        ((4vec high)))
                      (4vec (logapp wval low.upper high.upper)
                            (logapp wval low.lower high.lower)))))
     (4vec-x))
@@ -866,52 +914,102 @@ negative.  In this case, the result is infinite Xes.</p>"
            (low   4vec)
            (high  4vec))))
 
+
 (define 4vec-rsh ((amt 4vec-p "Shift amount.")
-                  (x   4vec-p "Source operand."))
+                  (src 4vec-p "Source operand."))
   :returns (shifted 4vec-p)
-  :short "Right shift of @(see 4vec)s."
-  :long "<p>If @('amt') has any X or Z bits, the result is all Xes.  If it
-is negative, then @('x') is left-shifted.</p>"
+  :short "Right ``arithmetic'' shift of @(see 4vec)s."
+
+  :long "<p>In the usual case, @('amt') is a @(see 2vec), i.e., its bits are
+all good Boolean values.  In this case:</p>
+
+<ul>
+
+<li>If @('amt') is non-negative then we ``arithmetically'' shift @('src') to
+the right by @('amt')-many places.  This doesn't affect the infinitely-repeated
+most significant bit of @('src').  That is, if @('src') is negative to begin
+with, i.e., its upper bits are all 1s, then the resulting, shifted value will
+also be a negative number whose upper bits are all 1s.  If @('src') has upper
+bits Z, then the shifted result will also have upper bits that are all Zs,
+etc.</li>
+
+<li>If @('amt') is negative, then we shift @('src') to the <b>left</b> instead
+of to the right, shifting in 0s from below.  Note that this behavior
+<b>differs</b> from the (very strange) semantics of Verilog/SystemVerilog,
+where shift amounts are always treated as unsigned.</li>
+
+</ul>
+
+<p>In cases where @('amt') has any X or Z bits, the result is just all
+Xes.</p>"
+
   (if (2vec-p amt)
-      (if-2vec-p (x)
-                 (2vec (ash (2vec->val x) (- (2vec->val amt))))
-                 (b* (((4vec x) x)
+      (if-2vec-p (src)
+                 (2vec (ash (2vec->val src) (- (2vec->val amt))))
+                 (b* (((4vec src))
                       (shamt (- (2vec->val amt))))
-                   (4vec (ash x.upper shamt)
-                         (ash x.lower shamt))))
+                   (4vec (ash src.upper shamt)
+                         (ash src.lower shamt))))
     (4vec-x))
   ///
   (deffixequiv 4vec-rsh
     :args ((amt 2vecx :hints(("Goal" :in-theory (enable 2vecx-fix))))
-           (x   4vec))))
+           (src 4vec))))
+
 
 (define 4vec-lsh ((amt 4vec-p "Shift amount.")
-                  (x   4vec-p "Source operand."))
+                  (src 4vec-p "Source operand."))
   :returns (shifted 4vec-p)
-  :short "Left-shift 4vec @('x') by @('amt') bits."
-  :long "<p>If @('amt') has any X or Z bits, the result is all Xes.  If it is
-negative, then @('x') is right-shifted.</p>"
+  :short "Left ``arithmetic'' shift of @(see 4vec)s."
+
+  :long "<p>In the usual case, @('amt') is a @(see 2vec), i.e., its bits are
+all good Boolean values.  In this case:</p>
+
+<ul>
+
+<li>If @('amt') is non-negative, then we shift @('src') to the left by
+@('amt')-many places.  The least significant bits become 0s.</li>
+
+<li>If @('amt') is negative, then we shift @('src') to the <b>right</b> instead
+of to the left.  This is an ``arithmetic'' shift, as described in @(see
+4vec-rsh).  Note that this behavior <b>differs</b> from the (very strange)
+semantics of Verilog/SystemVerilog, where shift amounts are always treated as
+unsigned.</li>
+
+</ul>
+
+<p>In cases where @('amt') has any X or Z bits, the result is just all
+Xes.</p>"
+
   (if (2vec-p amt)
-      (if-2vec-p (x)
-                 (2vec (ash (2vec->val x) (2vec->val amt)))
-                 (b* (((4vec x) x)
+      (if-2vec-p (src)
+                 (2vec (ash (2vec->val src) (2vec->val amt)))
+                 (b* (((4vec src))
                       (shamt (2vec->val amt)))
-                   (4vec (ash x.upper shamt)
-                         (ash x.lower shamt))))
+                   (4vec (ash src.upper shamt)
+                         (ash src.lower shamt))))
     (4vec-x))
   ///
   (deffixequiv 4vec-lsh
     :args ((amt 2vecx :hints(("Goal" :in-theory (enable 2vecx-fix))))
-           (x   4vec))))
+           (src 4vec))))
 
 
 (define 4vec-parity ((x 4vec-p))
-  :returns (par 3vec-p! :hints(("Goal" :in-theory (enable 3vec-p))))
+  :returns (parity 3vec-p! :hints(("Goal" :in-theory (enable 3vec-p))))
   :short "Reduction logical XOR (i.e., parity) of a @(see 4vec)."
 
-  :long "<p>If @('x') has any X or Z bits, or is a negative number, we just
-return all Xes.  Otherwise, @('x') is a natural number and we just return the
-parity of its 1 bits.</p>
+  :long "<p>We compute the parity of @('x') if possible, following the @(see
+boolean-convention).  If @('x') has any X or Z bits, or is a negative number,
+we just return all Xes.  Otherwise, @('x') is a natural number and we just
+return the parity of its 1 bits.  For instance,</p>
+
+@({
+     (4vec-parity #b0) == 0   (all 0s, false)
+     (4vec-parity #b1) == -1  (all 1s, true)
+     (4vec-parity #b11) == 0  (all 0s, false)
+     (4vec-parity #b10) == -1 (all 1s, true)
+})
 
 <p><b>Subtle.</b> Since @(see 4vec)s are ``infinite width,'' reduction
 operators are a bit unusual.  For parity computations this is especially true
@@ -932,23 +1030,35 @@ fixed width vectors, you will typically want to take the parity of, e.g., the
 
 
 (define 4vec-plus ((x 4vec-p) (y 4vec-p))
-  :short "Addition of @(see 4vec)s."
+  :short "Integer addition of two @(see 4vec)s."
+
   :long "<p>This is a fairly conservative definition in the style of the
-Verilog semantics: If either input has any X or Z bits, the result is all Xes.
-Otherwise, we produce the (signed) sum of the two (signed) inputs.</p>"
-  :returns (res 4vec-p)
+Verilog semantics: if either input has any X or Z bits anywhere, the entire
+result is all Xes.  We return all Xes even in cases where you might think that
+some bits are ``obviously'' going to be driven in a certain way.  For instance,
+when we add @('4'b XX00') to @('4'b ZZ01'), we return all Xes even though a
+less conservative semantics might produce @('4'b XX01').</p>
+
+<p>When there are no X or Z bits anywhere, we just compute the (signed) sum of
+the two (signed) inputs.</p>"
+
+  :returns (sum 4vec-p)
   (if (and (2vec-p x) (2vec-p y))
-      (2vec (+ (2vec->val x) (2vec->val y)))
+      (2vec (+ (the integer (2vec->val x))
+               (the integer (2vec->val y))))
     (4vec-x))
   ///
   (deffixequiv 4vec-plus
     :args ((x 2vecx) (y 2vecx))
     :hints(("Goal" :in-theory (enable 2vecx-fix)))))
 
+
 (define 4vec-xdet ((x 4vec-p))
-  :short "Identity function for @(see 2vec)s, but returns all Xes if there is
-any X bit."
-  :long "<p>This (arguably) matches the Verilog specification for unary +.</p>"
+  :short "Identity function for @(see 2vec)s, or all Xes when there are any X
+or Z bits."
+  :long "<p>This (arguably) matches the Verilog specification for unary +.</p>
+
+<p>BOZO this is identical to @(see 2vecx-fix).</p>"
   :returns (res 4vec-p)
   (if (2vec-p x)
       (4vec-fix x)
@@ -957,162 +1067,312 @@ any X bit."
   (deffixequiv 4vec-xdet :args ((x 2vecx))
     :hints(("Goal" :in-theory (enable 2vecx-fix)))))
 
+
 (define 4vec-minus ((x 4vec-p) (y 4vec-p))
-  :returns (res 4vec-p)
-  :short "Subtract two 4vecs"
-  :long "<p>If either input has X or Z bits, the result is all X bits.
-Otherwise, produces the signed difference of the two inputs.</p>"
-  (if (and (2vec-p x) (2vec-p y))
-      (2vec (- (2vec->val x) (2vec->val y)))
+  :returns (diff 4vec-p)
+  :short "Integer subtraction of two @(see 4vec)s."
+
+  :long "<p>This is a fairly conservative definition in the style of the
+Verilog semantics: if either input has any X or Z bits, the result is all X
+bits.  We return all Xes even in cases where you might think that some bits are
+``obviously'' going to be driven in a certain way.  For instance, when we
+subtract @('4'b XX11') - @('4'b ZZ00'), we return all Xes even though a less
+conservative semantics might produce @('4'b XX11').</p>
+
+<p>When there are no X or Z bits anywhere, we just compute the (signed)
+difference of the two (signed) inputs.</p>"
+
+  (if (and (2vec-p x)
+           (2vec-p y))
+      (2vec (binary-- (the integer (2vec->val x))
+                      (the integer (2vec->val y))))
     (4vec-x))
   ///
-  (deffixequiv 4vec-minus :args ((x 2vecx) (y 2vecx))
+  (deffixequiv 4vec-minus
+    :args ((x 2vecx) (y 2vecx))
     :hints(("Goal" :in-theory (enable 2vecx-fix)))))
 
+
 (define 4vec-uminus ((x 4vec-p))
-  :returns (res 4vec-p)
-  :short "(Arithmetically) negate a 4vec"
+  :returns (-x 4vec-p)
+  :short "Integer negation of a @(see 4vec)."
   :long "<p>If the input has X or Z bits, the result is all X bits.  Otherwise,
-produces the signed negation of the input.</p>"
+we return the signed negation of the input.</p>"
   (if (2vec-p x)
-      (2vec (- (2vec->val x)))
+      (2vec (- (the integer (2vec->val x))))
     (4vec-x))
   ///
   (deffixequiv 4vec-uminus :args ((x 2vecx))
     :hints(("Goal" :in-theory (enable 2vecx-fix)))))
 
+
 (define 4vec-times ((x 4vec-p) (y 4vec-p))
-  :returns (res 4vec-p)
-  :short "Multiply two 4vecs"
-  :long "<p>If either input has X or Z bits, the result is all X bits.
-Otherwise, produces the signed product of the two inputs.</p>"
+  :returns (product 4vec-p)
+  :short "Integer multiplication of @(see 4vec)s."
+  :long "<p>This is a fairly conservative definition in the style of the
+Verilog semantics: if either input has any X or Z bits, the result is all X
+bits.  Otherwise, we return the (signed) product of the two (signed)
+inputs.</p>"
   (if (and (2vec-p x) (2vec-p y))
-      (2vec (* (2vec->val x) (2vec->val y)))
+      (2vec (* (the integer (2vec->val x))
+               (the integer (2vec->val y))))
     (4vec-x))
   ///
   (deffixequiv 4vec-times :args ((x 2vecx) (y 2vecx))
     :hints(("Goal" :in-theory (enable 2vecx-fix)))))
+
 
 (define 4vec-quotient ((x 4vec-p) (y 4vec-p))
-  :returns (res 4vec-p)
-  :short "Divide two 4vecs"
-  :long "<p>If either input has X or Z bits, the result is all X bits.
-Otherwise, produces the signed product of the two inputs.</p>"
-  (if (and (2vec-p x) (2vec-p y) (not (eql (2vec->val y) 0)))
-      (2vec (truncate (2vec->val x) (2vec->val y)))
+  :returns (quotient 4vec-p)
+  :short "Integer division as in @(see truncate) for @(see 4vec)s."
+  :long "<p>This is a fairly conservative definition in the style of the
+Verilog semantics: if either input has X or Z bits, or if you try to divide by
+zero, then the result is all X bits.  Otherwise, we produce the integer
+division of @($\\frac{x}{y}$), rounding toward zero as in @(see truncate).</p>"
+  (if (and (2vec-p x)
+           (2vec-p y)
+           (not (eql (2vec->val y) 0)))
+      (2vec (truncate (the integer (2vec->val x))
+                      (the integer (2vec->val y))))
     (4vec-x))
   ///
   (deffixequiv 4vec-times :args ((x 2vecx) (y 2vecx))
     :hints(("Goal" :in-theory (enable 2vecx-fix)))))
+
 
 (define 4vec-remainder ((x 4vec-p) (y 4vec-p))
-  :returns (res 4vec-p)
-  :short "Remainder from division of two 4vecs"
-  :long "<p>If either input has X or Z bits, the result is all X bits.
-Otherwise, produces the signed product of the two inputs.</p>"
-  (if (and (2vec-p x) (2vec-p y) (not (eql (2vec->val y) 0)))
-      (2vec (rem (2vec->val x) (2vec->val y)))
+  :returns (remainder 4vec-p)
+  :short "Integer remainder as in @(see rem) for @(see 4vec)s."
+  :long "<p>This is a fairly conservative definition in the style of the
+Verilog semantics: if either input has X or Z bits, or if you try to divide by
+zero, then the result is all X bits.  Otherwise, we produce the integer
+remainder of @($\\frac{x}{y}$), with rounding toward zero as in @(see
+rem).</p>"
+  (if (and (2vec-p x)
+           (2vec-p y)
+           (not (eql (2vec->val y) 0)))
+      (2vec (rem (the integer (2vec->val x))
+                 (the integer (2vec->val y))))
     (4vec-x))
   ///
   (deffixequiv 4vec-times :args ((x 2vecx) (y 2vecx))
     :hints(("Goal" :in-theory (enable 2vecx-fix)))))
 
+
 (define 4vec-< ((x 4vec-p) (y 4vec-p))
-  :returns (res 4vec-p)
-  :short "Arithmetic inequality of two 4vecs"
-  :long "<p>If either input has X or Z bits, the result is all X bits.
-Otherwise, does the signed comparison of the two inputs and produces -1 (true)
-or 0 (false).</p>"
-  (if (and (2vec-p x) (2vec-p y))
-      (2vec (bool->vec (< (2vec->val x) (2vec->val y))))
+  :returns (less 4vec-p)
+  :short "Integer less-than for @(see 4vec)s."
+
+  :long "<p>We return, following the @(see boolean-convention),</p>
+
+<ul>
+<li>All Xes when if either input has any X or Z bits, or else</li>
+<li>True (all 1s) when @($x < y$), or else</li>
+<li>False (all 0s) otherwise.</li>
+</ul>
+
+<p>This is a fairly conservative definition in the style of the Verilog
+semantics: if either input has X or Z bits, the result is all X bits.  We
+return all Xes even in cases where the comparison would ``obviously'' go a
+certain way.  For instance, if you compare @('4'b 0100 < 4'b 011X'), we return
+all Xes even though a less conservative semantics might say that the comparison
+will be true.</p>"
+  (if (and (2vec-p x)
+           (2vec-p y))
+      (2vec (bool->vec (< (the integer (2vec->val x))
+                          (the integer (2vec->val y)))))
     (4vec-x)))
 
-(define 3vec-== ((x 4vec-p) (y 4vec-p))
-  :returns (res 4vec-p)
-  :short "Arithmetic equality of two 4vecs"
-  :long "<p>Shorthand for (uand (bitnot (bitxor x y))).</p>"
-  (3vec-reduction-and (3vec-bitnot (3vec-bitxor x y))))
+
+(define 3vec-== ((x 4vec-p)
+                 (y 4vec-p))
+  :parents (3vec-operations)
+  :returns (equal 4vec-p)
+  :short "Bitwise equality of @(see 3vec)s."
+  :long "<p>Assuming that the inputs have no Z bits, we return, following the
+@(see boolean-convention):</p>
+
+<ul>
+<li>All Xes if either input has any X bits, or</li>
+<li>True (all 1s) when the inputs are purely Boolean and are equal, or</li>
+<li>False (all 0s) otherwise.</li>
+</ul>
+
+<p>This properly treats X as an unknown, i.e., whether or not an X bit is equal
+to anything else, including another X bit, is always unknown.</p>"
+
+  (3vec-reduction-and
+   (3vec-bitnot
+    (3vec-bitxor x y))))
+
 
 (define 4vec-== ((x 4vec-p) (y 4vec-p))
-  :returns (res 4vec-p)
-  :short "Arithmetic equality of two 4vecs"
-  :long "<p>Shorthand for (uand (bitnot (bitxor x y))).</p>"
+  :returns (equal 4vec-p)
+  :short "Bitwise equality of @(see 4vec)s."
+  :long "<p>We return, following the @(see boolean-convention),</p>
+
+<ul>
+<li>All Xes if either input has any X or Z bits, or</li>
+<li>True (all 1s) when the inputs are purely Boolean and are equal, or</li>
+<li>False (all 0s) otherwise.</li>
+</ul>
+
+<p>This properly treats X and Z values as unknowns, i.e., whether or not an X/Z
+bit is equal to anything else, including another X/Z bit, is always
+unknown.</p>"
+
   (3vec-== (3vec-fix x) (3vec-fix y)))
 
+
 (define 4vec-=== ((x 4vec-p) (y 4vec-p))
-  :returns (res 4vec-p)
-  :short "Case equality of two 4vecs, Verilog-style"
-  :long "<p>Note: this is a bad operation that breaks the lattice discipline.</p>"
-  (2vec (bool->vec (equal (4vec-fix x) (4vec-fix y)))))
+  :returns (equal 4vec-p)
+  :short "Unsafe, Verilog-style ``case equality'' of @(see 4vec)s."
+
+  :long "<p>Warning: this is a bad operator that breaks the @(see 4vec-[=)
+lattice monotonicity property.  It is similar to @(see 4vec-==) but, instead of
+treating X or Z bits as unknown, allows them to be directly compared with one
+another.</p>
+
+<p>We return, following the @(see boolean-convention),</p>
+
+<ul>
+<li>True (all 1s) when the inputs are identical, or</li>
+<li>False (all 0s) otherwise.</li>
+</ul>"
+
+  (2vec (bool->vec (4vec-equiv x y))))
 
 
-(define 3vec-? ((x 4vec-p) (y 4vec-p) (z 4vec-p))
-  :returns (res 4vec-p)
-  :short "If-then-else of 4vecs, with 3vec test"
-  :long "<p>If @('x') has any 1-bits, returns @('y'); if @('x') is 0, returns
-@('z'); otherwise returns a result consisting of Xes in bit positions where
-@('y') and @('z') are unequal and their bits in the positions where they are
-equal.</p>"
-  (b* (((4vec x) x)
-       ((when (eql x.upper 0))
-        ;; false
-        (4vec-fix z))
-       ((when (not (eql x.lower 0)))
-        ;; true
-        (4vec-fix y))
-       ;; otherwise, x
-       ((4vec y) y)
-       ((4vec z) z)
-       (same-bits (logand (logeqv y.upper z.upper)
-                          (logeqv y.lower z.lower))))
-    (4vec (logior (lognot same-bits) y.upper)
-          (logand same-bits y.lower))))
+(define 3vec-? ((test 4vec-p)
+                (then 4vec-p)
+                (else 4vec-p))
+  :parents (3vec-operations)
+  :returns (choice 4vec-p)
+  :short "Atomic if-then-else of @(see 4vec)s, with a @(see 3vec) test; doesn't
+unfloat then/else values."
 
-(define 4vec-? ((x 4vec-p) (y 4vec-p) (z 4vec-p))
-  :returns (res 4vec-p)
-  :short "If-then-else of 4vecs"
-  :long "<p>If @('x') has any 1-bits, returns @('y'); if @('x') is 0, returns
-@('z'); otherwise returns a result consisting of Xes in bit positions where
-@('y') and @('z') are unequal and their bits in the positions where they are
-equal.</p>"
-  (3vec-? (3vec-fix x) y z))
+  :long "<p>See @(see 4vec-?).  This is identical except that we assume
+@('test') has no Z bits.</p>"
 
-(define 3vec-bit? ((x 4vec-p) (y 4vec-p) (z 4vec-p))
-  :returns (res 4vec-p)
-  :short "Bitwise if-then-else of 4vecs, with 3vec test"
-  :long "<p>For each bit position, if that bit of x is 1, returns that bit of
-y; if 0, then that bit of z; otherwise if those bits of y and z are equivalent,
-then that bit, else X.  Assumes x has no z values.</p>"
-  ;; (~x.upper & z.upper) | (x.lower & y.upper) | (z!=y | y.upper)
-  ;; (~x.upper & z.lower) | (x.lower & y.lower) | (z==y & y.lower)
-  (b* (((4vec x))
-       ((4vec y))
-       ((4vec z))
-       (same (logand (logeqv y.upper z.upper)
-                     (logeqv y.lower z.lower))))
-    (4vec (logior (logand (lognot x.upper) z.upper)
-                  (logand x.lower y.upper)
-                  (logand x.upper (lognot x.lower)
-                          (logior (lognot same) y.upper)))
-          (logior (logand (lognot x.upper) z.lower)
-                  (logand x.lower y.lower)
-                  (logand x.upper (lognot x.lower)
-                          (logand same y.lower)))))
+  (b* (((4vec test))
+       ((when (eql test.upper 0)) ;; test is false
+        (4vec-fix else))
+       ((when (not (eql test.lower 0))) ;; test is true
+        (4vec-fix then))
+       ;; otherwise, test is X
+       ((4vec then))
+       ((4vec else))
+       (same-bits (logand (logeqv then.upper else.upper)
+                          (logeqv then.lower else.lower))))
+    (4vec (logior (lognot same-bits) then.upper)
+          (logand same-bits then.lower))))
+
+;; (defconst *zx10* (make-4vec :upper #b0110 :lower #b1010))
+;; (3vec-? (4vec-x) *zx10* *zx10*)
+
+
+(define 4vec-? ((test 4vec-p) (then 4vec-p) (else 4vec-p))
+  :returns (choice 4vec-p)
+  :short "Atomic if-then-else of @(see 4vec)s; doesn't unfloat then/else
+values."
+
+  :long "<p>Easy cases: when @('test') has any 1-bits we return @('then'); when
+@('test') is 0 we return @('else').</p>
+
+<p>Note that the behavior in these cases is <b>not very conservative</b>.  In
+particular, the @('then') and @('else') branches are passed through without
+``unfloating'' Z values.  This agrees with the Verilog and SystemVerilog
+semantics for the @('?:') operators, but it does not agree with how some mux
+implementations behave in hardware, e.g., and/or style muxes.</p>
+
+<p>Hard case: when @('test') has some X or Z bits, we merge the bits of
+@('then') and @('else'), setting each bit of the result to:</p>
+
+<ul>
+  <li>Xes in bit positions where @('then') and @('else') are unequal, or</li>
+  <li>The agreed upon value, otherwise.</li>
+</ul>
+
+<p><b>BUG (issue 384)</b>.  To agree with the Verilog and SystemVerilog
+semantics, this merging should unfloat any Z values in @('then') and @('else')
+into Xes.  We don't currently do this.  BOZO update the docs when this issue
+gets fixed.</p>"
+
+  (3vec-? (3vec-fix test) then else))
+
+
+(define 3vec-bit? ((tests 4vec-p)
+                   (thens 4vec-p)
+                   (elses 4vec-p))
+  :parents (3vec-operations)
+  :returns (choices 4vec-p)
+  :short "Bitwise multiple if-then-elses of @(see 4vec)s, with a @(see 3vec)
+test vector; doesn't unfloat then/else values."
+
+  :prepwork ;; just a speed hint
+  ((local (in-theory (disable BITOPS::LOGAND->=-0-LINEAR-2
+                              BITOPS::LOGIOR-<-0-LINEAR-2
+                              BITOPS::UPPER-BOUND-OF-LOGAND
+                              LOGIOR-NEG-1-WHEN-LOGAND-NEG-1
+                              ))))
+
+  :long "<p>See @(see 4vec-bit?).  This is identical except that we assume
+@('tests') has no Z bits.</p>"
+  ;; (~tests.upper & elses.upper) | (tests.lower & thens.upper) | (elses!=thens | thens.upper)
+  ;; (~tests.upper & elses.lower) | (tests.lower & thens.lower) | (elses==thens & thens.lower)
+  (b* (((4vec tests))
+       ((4vec thens))
+       ((4vec elses))
+       (same (logand (logeqv thens.upper elses.upper)
+                     (logeqv thens.lower elses.lower))))
+    (4vec (logior (logand (lognot tests.upper) elses.upper)
+                  (logand tests.lower thens.upper)
+                  (logand tests.upper (lognot tests.lower)
+                          (logior (lognot same) thens.upper)))
+          (logior (logand (lognot tests.upper) elses.lower)
+                  (logand tests.lower thens.lower)
+                  (logand tests.upper (lognot tests.lower)
+                          (logand same thens.lower)))))
   ///
   (defthm 3vec-?-in-terms-of-3vec-bit?
-    (implies (3vec-p x)
-             (equal (3vec-bit? (4vec-sign-ext 1 (3vec-reduction-or x)) y z)
-                    (3vec-? x y z)))
-    :hints(("Goal" :in-theory (enable 3vec-? 4vec-sign-ext
-                                      3vec-p 3vec-reduction-or)))))
+    (implies (3vec-p tests)
+             (equal (3vec-bit? (4vec-sign-ext 1 (3vec-reduction-or tests)) thens elses)
+                    (3vec-? tests thens elses)))
+    :hints(("Goal" :in-theory (enable 3vec-?
+                                      4vec-sign-ext
+                                      3vec-p
+                                      3vec-reduction-or)))))
 
-(define 4vec-bit? ((x 4vec-p) (y 4vec-p) (z 4vec-p))
-  :returns (res 4vec-p)
-  :short "Bitwise if-then-else of 4vecs"
-  :long "<p>For each bit position, if that bit of x is 1, returns that bit of
-y; if 0, then that bit of z; otherwise if those bits of y and z are equivalent,
-then that bit, else X.  Assumes x has no z values.</p>"
-  (3vec-bit? (3vec-fix x) y z)
+;;(defconst *zx10* (make-4vec :upper #b0110 :lower #b1010))
+;;(3vec-bit? (4vec-x) *zx10* *zx10*)
+
+(define 4vec-bit? ((tests 4vec-p)
+                   (thens 4vec-p)
+                   (elses 4vec-p))
+  :returns (choices 4vec-p)
+  :short "Bitwise multiple if-then-elses of @(see 4vec)s; doesn't unfloat
+then/else values."
+
+  :long "<p>We carry out an independent if-then-else for each bit of
+@('tests'), @('thens'), and @('elses'), producing a new vector with all of the
+answers.  This result is computed bit by bit, with @('result[i]') being set
+to:</p>
+
+<ul>
+<li>@('thens[i]') if @('tests[i]') is 1,</li>
+<li>@('elses[i]') if @('tests[i]') is 0, or</li>
+<li>the merger of @('thens[i]') and @('elses[i]'), otherwise.</li>
+</ul>
+
+<p>This merging is just @('x') if the bits are different, or the agreed upon
+value otherwise.</p>
+
+<p>BOZO.  This operation is not very conservative.  In particular, Z values are
+passed through without unfloating them, and can even be merged without
+unfloating.  BOZO Consider how and whether Issue 384 (see @(see 4vec-?)) should
+affect this operation and update the docs accordingly once it's fixed.</p>"
+
+  (3vec-bit? (3vec-fix tests) thens elses)
   ///
   (local (defthm 3vec-fix-of-4vec-sign-ext
            (equal (3vec-fix (4vec-sign-ext n x))
@@ -1121,11 +1381,17 @@ then that bit, else X.  Assumes x has no z values.</p>"
                   (acl2::logbitp-reasoning))))
 
   (defthm 4vec-?-in-terms-of-4vec-bit?
-    (equal (4vec-bit? (4vec-sign-ext 1 (4vec-reduction-or x)) y z)
-           (4vec-? x y z))
+    (equal (4vec-bit? (4vec-sign-ext 1 (4vec-reduction-or tests)) thens elses)
+           (4vec-? tests thens elses))
     :hints(("Goal" :in-theory (enable 4vec-?
                                       4vec-p 4vec-reduction-or)))))
 
+
+
+;; ---------- BOZO could generally use better documentation below here ---------
+
+;; BOZO maybe should become a type like 2vecnatp?
+;; BOZO document me
 (define 4vec-index-p ((x 4vec-p))
   (and (2vec-p x)
        (<= 0 (2vec->val x)))
@@ -1137,21 +1403,24 @@ then that bit, else X.  Assumes x has no z values.</p>"
     :rule-classes :forward-chaining))
 
 
-(define 4vec-override ((x 4vec-p) (y 4vec-p))
+(define 4vec-override ((stronger 4vec-p)
+                       (weaker   4vec-p))
   :returns (res 4vec-p)
-  :short "Resolution for when one signal is stronger than the other"
-  :long "<p>(4vec-override x y) takes the value of @('x') for each of its non-Z
-bits, and the value of @('y') for bits where x is Z.</p>"
+  :short "Resolution for when one signal is stronger than the other."
+  :long "<p>(4vec-override stronger weaker) takes the value of @('stronger')
+for each of its non-Z bits, and the value of @('weaker') for bits where
+stronger is Z.</p>"
   :guard-hints ((acl2::logbitp-reasoning))
-
-  (b* (((4vec x) x)
-       ((4vec y) y))
+  (b* (((4vec stronger))
+       ((4vec weaker)))
     (mbe :logic
-         (b* ((xz (logand x.lower (lognot x.upper))))
-           (4vec (logior (logand xz y.upper) (logand (lognot xz) x.upper))
-                 (logior (logand xz y.lower) (logand (lognot xz) x.lower))))
-         :exec (4vec (logior (logand x.lower y.upper) x.upper)
-                     (logand (logior x.upper y.lower) x.lower))))
+         (b* ((stronger-z (logand stronger.lower (lognot stronger.upper))))
+           (4vec (logior (logand stronger-z weaker.upper)
+                         (logand (lognot stronger-z) stronger.upper))
+                 (logior (logand stronger-z weaker.lower)
+                         (logand (lognot stronger-z) stronger.lower))))
+         :exec (4vec (logior (logand stronger.lower weaker.upper) stronger.upper)
+                     (logand (logior stronger.upper weaker.lower) stronger.lower))))
   ///
   (local (in-theory (e/d* ()
                           ((:rules-of-class :type-prescription :here)
@@ -1168,13 +1437,14 @@ bits, and the value of @('y') for bits where x is Z.</p>"
             (and stable-under-simplificationp
                  '(:bdd (:vars nil))))))
 
+
 (define 4vec-onset ((x 4vec-p))
   :returns (res 4vec-p)
   :short "Identity, except Z bits become 0."
   :long "<p>The closest monotonic approximation of the onset of each of the
 bits of the input.  It differs from the actual onset in that the 4vec-onset of
 an X bit is X.</p>"
-  (b* (((4vec x) x))
+  (b* (((4vec x)))
     (4vec x.upper (logand x.upper x.lower)))
   ///
   (defthm 4vec-onset-bits
@@ -1191,7 +1461,7 @@ an X bit is X.</p>"
   :long "<p>The closest monotonic approximation of the offset of each of the
 bits of the input.  It differs from the actual offset in that the 4vec-offset
 of an X bit is X.</p>"
-  (b* (((4vec x) x))
+  (b* (((4vec x)))
     (4vec (lognot x.lower) (lognot (logior x.upper x.lower))))
   ///
   (defthm 4vec-offset-bits
@@ -1206,12 +1476,14 @@ of an X bit is X.</p>"
 (define rev-blocks ((nbits natp)
                     (blocksz posp)
                     (x integerp))
+  :parents (4vec-rev-blocks)
   ;; :returns (res natp :rule-classes :type-prescription)
   :short "Reverses blocks, like the streaming concatenation operator in SystemVerilog."
   :long "<p>Example:</p>
+
 @({
- (equal (rev-blocks 28 8 #xaabbccdd) #xddccbba)
- })
+    (equal (rev-blocks 28 8 #xaabbccdd) #xddccbba)
+})
 
 <p>This essentially truncates x to nbits bits, then divides this into blocks of
 size blocksz, starting from least significant bits, where the last
@@ -1232,12 +1504,15 @@ bb cc dd'), which are then reversed.</p>"
 (define rev-block-index ((i natp)
                          (nbits natp)
                          (blocksz posp))
+  :parents (4vec-rev-blocks)
   :short "For reasoning about rev-blocks, computes the offset into x corresponding
-          to an offset into @('(rev-blocks nbits blocksz x)')."
+to an offset into @('(rev-blocks nbits blocksz x)')."
+
   :long "
 @({
  (equal (logbitp i (rev-blocks nbits blocksz x))
-        (logbitp (rev-block-index i nbits blogksz) x)) })
+        (logbitp (rev-block-index i nbits blogksz) x))
+})
 <p>if i is in bounds.</p>"
   :measure (nfix nbits)
   :returns (idx natp :rule-classes :type-prescription)
@@ -1267,10 +1542,12 @@ bb cc dd'), which are then reversed.</p>"
                       (rev-blocks nbits blocksz x))))))
 
 
-(define 4vec-rev-blocks ((nbits 4vec-p)
+(define 4vec-rev-blocks ((nbits   4vec-p)
                          (blocksz 4vec-p)
-                         (x 4vec-p))
+                         (x       4vec-p))
   :returns (res 4vec-p)
+  :short "Similar to a streaming concatenation operation in SystemVerilog."
+  :long "<p>BOZO document me.</p>"
   (if (and (2vec-p nbits)
            (<= 0 (2vec->val nbits))
            (2vec-p blocksz)

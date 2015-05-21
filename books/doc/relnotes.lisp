@@ -56,8 +56,6 @@
   :parents (note-7-1)
   :short "Release notes for the ACL2 Community Books for ACL2 7.1 (May 2015)"
 
-;; Current through May 1, 2015
-
   :long "<p>The following is a brief summary of changes made to the @(see
  community-books) between the releases of ACL2 7.0 and 7.1.</p>
 

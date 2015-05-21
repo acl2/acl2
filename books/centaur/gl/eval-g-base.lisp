@@ -90,7 +90,7 @@
    ;; DOUBLE-REWRITE
 
    logapp int-set-sign maybe-integer
-   binary--))
+   binary-minus-for-gl))
 
 
 (in-theory (disable eval-g-base))

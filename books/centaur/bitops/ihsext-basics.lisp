@@ -39,7 +39,6 @@
 ;; important ones.
 
 (include-book "centaur/misc/arith-equivs" :dir :system)
-(include-book "xdoc/top" :dir :system)
 
 (local (in-theory (enable* arith-equiv-forwarding)))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
@@ -216,22 +215,17 @@ off looking at the source code.</p>")
   ;;   :hints (("goal" :in-theory (enable xor)))
   ;;   )
 
-  (defthm commutative-of-b-xor
+  (defthm commutativity-of-b-xor
     (equal (b-xor x y)
            (b-xor y x)))
 
-  (defthm b-xor-of-1
-    (equal
-     (b-xor 1 x)
-     (b-not x)
-     )
-    )
+  (defthm bxor-to-bnot
+    (equal (b-xor 1 x)
+           (b-not x)))
 
-  (defthm b-xor-of-0
-     (equal
-      (b-xor 0 x)
-      (bfix x))
-    )
+  (defthm bxor-to-id
+    (equal (b-xor 0 x)
+           (bfix x)))
 
   (defthm bfix-bound
     (<= (bfix x) 1)
@@ -251,11 +245,62 @@ off looking at the source code.</p>")
 
   (defthm b-not-equal-0
     (equal (equal 0 (b-not x))
-           (bit->bool x)))
+           (equal x 1)))
+
+  (defthm b-not-equal-1
+    (equal (equal 1 (b-not x))
+           (not (equal x 1))))
 
   (defthm bit->bool-of-b-not
     (equal (bit->bool (b-not x))
-           (not (bit->bool x)))))
+           (not (bit->bool x))))
+
+  ;; Some fancy rules, originally from centaur/sv/svex/bits.  These look like
+  ;; they case-split ensure that we only apply these rules when no actual case
+  ;; split would be caused.  For instance, in the first rule here, we
+  ;; strengthen:
+  ;;
+  ;;  (implies (and ...
+  ;;                (equal (b-and x y) 1)
+  ;;                ...)
+  ;;           concl)
+  ;;
+  ;; Into a new goal:
+  ;;
+  ;;  (implies (and ...
+  ;;                (equal x 1)
+  ;;                (equal y 1)
+  ;;                ...)
+  ;;           concl)
+  ;;
+  ;; But note that this just a single replacement goal, not two new goals. The
+  ;; other rules are similar.
+
+  (defthm b-and-equal-1-in-hyp
+    (implies (syntaxp (or (acl2::rewriting-negative-literal-fn `(equal (acl2::b-and$inline ,x ,y) '1) mfc state)
+                          (acl2::rewriting-negative-literal-fn `(equal '1 (acl2::b-and$inline ,x ,y)) mfc state)))
+             (equal (equal (b-and x y) 1)
+                    (and (equal x 1) (equal y 1)))))
+
+  (defthm b-and-equal-0-in-concl
+    (implies (syntaxp (or (acl2::rewriting-positive-literal-fn `(equal (acl2::b-and$inline ,x ,y) '0) mfc state)
+                          (acl2::rewriting-positive-literal-fn `(equal '0 (acl2::b-and$inline ,x ,y)) mfc state)))
+             (equal (equal (b-and x y) 0)
+                    (or (not (equal x 1)) (not (equal y 1))))))
+
+  (defthm b-ior-equal-1-in-concl
+    (implies (syntaxp (or (acl2::rewriting-positive-literal-fn `(equal (acl2::b-ior$inline ,x ,y) '1) mfc state)
+                          (acl2::rewriting-positive-literal-fn `(equal '1 (acl2::b-ior$inline ,x ,y)) mfc state)))
+             (equal (equal (b-ior x y) 1)
+                    (or (equal x 1) (equal y 1)))))
+
+  (defthm b-ior-equal-0-in-concl
+    (implies (syntaxp (or (acl2::rewriting-negative-literal-fn `(equal (acl2::b-ior$inline ,x ,y) '0) mfc state)
+                          (acl2::rewriting-negative-literal-fn `(equal '0 (acl2::b-ior$inline ,x ,y)) mfc state)))
+             (equal (equal (b-ior x y) 0)
+                    (and (not (equal x 1)) (not (equal y 1))))))
+
+  )
 
 
 

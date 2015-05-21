@@ -1,5 +1,5 @@
-; SVEX - Symbolic, Vector-Level Hardware Description Library
-; Copyright (C) 2014 Centaur Technology
+; SV - Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2014-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -36,7 +36,6 @@
 (include-book "centaur/gl/def-gl-rewrite" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/alists/alist-keys" :dir :System))
-(local (include-book "bits"))
 (local (include-book "std/osets/element-list" :dir :system))
 
 (local (std::add-default-post-define-hook :fix))
