@@ -85,7 +85,7 @@
 
       ;; force checks
       gl-force-check-fn
-      binary--$inline))
+      binary-minus-for-gl))
 
 (in-theory (disable glcp-generic-geval))
 

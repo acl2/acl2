@@ -238,6 +238,20 @@ other than @('1') is considered to be a zero bit."
        :exec (the unsigned-byte
                   (ash 1 (the unsigned-byte n)))))
 
+(define binary-minus-for-gl ((x acl2-numberp)
+                             (y acl2-numberp))
+  :parents (binary--)
+  :short "Hack for implementing @(see binary--).  Don't use this."
+  :long "<p>You should never need to use this, call @(see binary--) instead.</p>
+
+<p>This is the logical definition for @(see binary--).  It has a custom GL
+symbolic counterpart.  The only reason to make this a separate function,
+instead of directly putting a symbolic counterpart on @('binary--') itself, is
+to avoid infinite inlining problems when we define custom symbolic counterparts
+for inlined functions on Lisps like SBCL.</p>"
+  :enabled t
+  (- x y))
+
 (define binary--
   :parents (logops-definition)
   :short "@('(binary-- x y)') is the same as @('(- x y)'), but may symbolically
@@ -259,7 +273,8 @@ nodes.  In the context of @(see hardware-verification), it may also help your
 spec functions to better match the real implementation of subtraction circuits
 in the hardware being analyzed.</p>"
 
-  (- x y))
+  (mbe :logic (binary-minus-for-gl x y)
+       :exec (- x y)))
 
 (define logcar
   :short "Least significant bit of a number."
