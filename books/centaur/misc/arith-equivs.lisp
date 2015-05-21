@@ -647,6 +647,10 @@
     (iff (equal 1 (bool->bit x))
          x))
 
+  (defthm equal-0-of-bool->bit
+    (equal (equal 0 (bool->bit x))
+           (not x)))
+
   (defthm bit->bool-of-bool->bit
     (equal (bit->bool (bool->bit x))
            (not (not x))))
@@ -672,10 +676,6 @@
   (defthm bool->bit-bound
     (< (bool->bit x) 2)
     :rule-classes :linear)
-
-  (defthm bool->bit-equal-0
-    (equal (equal (bool->bit x) 0)
-           (not x)))
 
   (defthm bfix-when-bit->bool
     (implies (bit->bool x)

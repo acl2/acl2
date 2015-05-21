@@ -37,6 +37,12 @@
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (in-theory (disable nth update-nth acl2::nth-when-zp)))
 
+;; [Jared] getting build failures in ( VERIFY-GUARDS LHS-PAIRS-SET-ALIASES ...)
+;; regarding (REALP (LHRANGE->W (CAR (LHS-NORM Y)))), so just disabling this on
+;; ACL2(r) for now:
+
+;; cert_param: (non-acl2r)
+
 (defxdoc alias-normalization
   :parents (svex-compilation)
   :short "The process of computing a canonical form for each wire in the module hierarchy."

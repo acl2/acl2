@@ -33,7 +33,6 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
-(local (include-book "bits"))
 
 (defxdoc lattice.lisp :parents (4vec-[=))
 (local (xdoc::set-default-parents lattice.lisp))
