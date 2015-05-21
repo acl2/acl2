@@ -238,6 +238,28 @@ other than @('1') is considered to be a zero bit."
        :exec (the unsigned-byte
                   (ash 1 (the unsigned-byte n)))))
 
+(define binary--
+  :parents (logops-definition)
+  :short "@('(binary-- x y)') is the same as @('(- x y)'), but may symbolically
+simulate more efficiently in @(see gl)."
+  ((x acl2-numberp)
+   (y acl2-numberp))
+  :enabled t
+  :inline t
+  :long "<p>This is an alias for @('(- x y)').  It should always be left
+enabled and you should never prove any theorems about it.</p>
+
+<p>In ACL2, @(see -) is a macro and @('(- x y)') expands to @('(+ x (unary--
+y))').  This form is often not particularly good for symbolic simulation with
+@(see gl): GL first has to negate @('y') and then carry out the addition.</p>
+
+<p>In contrast, @('binary--') has a custom symbolic counterpart that avoids
+this intermediate negation.  This may result in fewer BDD computations or AIG
+nodes.  In the context of @(see hardware-verification), it may also help your
+spec functions to better match the real implementation of subtraction circuits
+in the hardware being analyzed.</p>"
+
+  (- x y))
 
 (define logcar
   :short "Least significant bit of a number."

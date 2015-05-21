@@ -756,24 +756,24 @@
 For testing, get documentation loaded.  Newlines to avoid dependency scanner
 picking these up.
 
-(ld
- "importance.lisp")
+;; (ld
+;;  "importance.lisp")
 
-(include-book "std/util/defconsts" :dir :system)
-(include-book "centaur/aignet/portcullis" :dir :system)
-(include-book "centaur/getopt/portcullis" :dir :system)
-(include-book "centaur/vl/portcullis" :dir :system)
-(include-book "centaur/gl/portcullis" :dir :system)
-(include-book "centaur/clex/portcullis" :dir :system)
-(include-book "centaur/bed/portcullis" :dir :system)
-(include-book "centaur/defrstobj/portcullis" :dir :system)
-(include-book "projects/milawa/ACL2/portcullis" :dir :system)
-(include-book "projects/doc" :dir :system)
-(include-book "acl2s/portcullis" :dir :system)
-(include-book "centaur/sv/portcullis" :dir :system)
-(include-book "rtl/rel11/portcullis" :dir :system)
+;; (include-book "std/util/defconsts" :dir :system)
+;; (include-book "centaur/aignet/portcullis" :dir :system)
+;; (include-book "centaur/getopt/portcullis" :dir :system)
+;; (include-book "centaur/vl/portcullis" :dir :system)
+;; (include-book "centaur/gl/portcullis" :dir :system)
+;; (include-book "centaur/clex/portcullis" :dir :system)
+;; (include-book "centaur/bed/portcullis" :dir :system)
+;; (include-book "centaur/defrstobj/portcullis" :dir :system)
+;; (include-book "projects/milawa/ACL2/portcullis" :dir :system)
+;; (include-book "projects/doc" :dir :system)
+;; (include-book "acl2s/portcullis" :dir :system)
+;; (include-book "centaur/sv/portcullis" :dir :system)
+;; (include-book "rtl/rel11/portcullis" :dir :system)
 
-(include-book "std/util/defconsts" :dir :system)
+;; (include-book "std/util/defconsts" :dir :system)
 
 (defmacro with-redef (&rest forms)
   ;; A handy macro you can use to temporarily enable redefinition, but then

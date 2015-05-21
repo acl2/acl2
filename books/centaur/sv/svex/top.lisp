@@ -31,7 +31,7 @@
 (in-package "SV")
 (include-book "4vec")
 (include-book "aig-arith")
-(include-book "bits")
+;; Not bits -- it's just lemmas about b-and/b-not/etc., should be local
 (include-book "compose")
 (include-book "env-ops")
 (include-book "evaluator")
@@ -46,6 +46,4 @@
 (include-book "svmask")
 (include-book "symbolic")
 (include-book "vars")
-
-
 

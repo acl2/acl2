@@ -200,7 +200,7 @@
           (mk-g-number (rlist-fix rsum)
                        1
                        (rlist-fix isum)))
-      (g-apply 'binary-- (gl-list x y)))))
+      (g-apply 'binary--$inline (gl-list x y)))))
 
 (in-theory (disable (g-binary---of-numbers)))
 
@@ -283,7 +283,7 @@
 
 (in-theory (disable g-binary---of-numbers))
 
-(def-g-binary-op binary--
+(def-g-binary-op binary--$inline
   (b* ((x-num (if (general-numberp x) x 0))
        (y-num (if (general-numberp y) y 0)))
     (gret (g-binary---of-numbers x-num y-num))))
@@ -293,7 +293,7 @@
 
 
 (verify-g-guards
- binary--
+ binary--$inline
  :hints `(("goal" :in-theory (disable* ,gfn
                                        (:rules-of-class :type-prescription
                                                         :here)))))
@@ -307,7 +307,7 @@
                        (equal (+ x y)
                               (+ x 0))))))
 
-(def-gobj-dependency-thm binary--
+(def-gobj-dependency-thm binary--$inline
   :hints `(("goal" :in-theory (disable (:d ,gfn)
                                        gobj-depends-on)
             :induct ,gcall
@@ -323,7 +323,7 @@
    (implies (not (acl2-numberp y))
             (equal (binary-- x y) (binary-- x 0)))))
 
-(def-g-correct-thm binary-- eval-g-base
+(def-g-correct-thm binary--$inline eval-g-base
   :hints
   `(("goal" :in-theory (e/d* (general-concretep-atom
                               (:ruleset general-object-possibilities))

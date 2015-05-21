@@ -175,6 +175,7 @@
 
      logcons logcar logcdr loghead logtail logapp
      b-ior b-and b-xor b-not bfix bitp boolfix
+     binary-- binary--$inline
 
      numlist
      defsection
