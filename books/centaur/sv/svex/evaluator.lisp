@@ -1,5 +1,5 @@
-; SVEX - Symbolic, Vector-Level Hardware Description Library
-; Copyright (C) 2014 Centaur Technology
+; SV - Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2014-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -32,89 +32,119 @@
 (include-book "4vec")
 (include-book "svex")
 (include-book "std/lists/list-defuns" :dir :system)
+(include-book "std/util/defval" :dir :system)
 (local (include-book "std/lists/nth" :dir :system))
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (in-theory (disable acl2::nth-when-zp)))
 
-(defxdoc evaluator.lisp :parents (svex-eval))
-(local (xdoc::set-default-parents evaluator.lisp))
+(defxdoc evaluation
+  :parents (expression)
+  :short "Evaluation semantics of @(see svex) expressions.")
 
-(fty::deflist 4veclist :elt-type 4vec :true-listp t :parents (4vec))
+(local (xdoc::set-default-parents evaluation))
+
+(fty::deflist 4veclist
+  :elt-type 4vec
+  :true-listp t
+  :parents (4vec))
+
 (define 4veclist-nth ((n natp) (x 4veclist-p))
+  :parents (4veclist)
+  :short "Like @(see nth) but with proper @(see fty-discipline) for @(see
+  4veclist)s."
   :returns (elt 4vec-p)
   (mbe :logic (4vec-fix (nth n x))
        :exec (or (nth n x) (4vec-x)))
   ///
-  (fty::deffixequiv 4veclist-nth
+  (deffixequiv 4veclist-nth
     :hints(("Goal" :in-theory (enable 4veclist-fix))))
   (defthm 4veclist-nth-of-nil
     (equal (4veclist-nth n nil) (4vec-x))))
 
-(fty::defalist svex-env :key-type svar :val-type 4vec :true-listp t)
+(fty::defalist svex-env
+  :key-type svar
+  :val-type 4vec
+  :true-listp t
+  :short "An alist mapping @(see svar)s to @(see 4vec)s.  Typically used as an
+environment that gives variables their values in @(see svex-eval)."
+  ///
+  (defthm svex-env-p-of-append
+    (implies (and (Svex-env-p x)
+                  (svex-env-p y))
+             (svex-env-p (append x y)))
+    :hints(("Goal" :in-theory (enable svex-env-p)))))
 
-(defthm svex-env-p-of-append
-  (implies (and (Svex-env-p x)
-                (svex-env-p y))
-           (svex-env-p (append x y)))
-  :hints(("Goal" :in-theory (enable svex-env-p))))
-
-(define svex-env-acons ((var svar-p) (v 4vec-p) (a svex-env-p))
+(define svex-env-acons ((var svar-p) (val 4vec-p) (env svex-env-p))
+  :returns (new-env svex-env-p)
+  :parents (svex-env)
+  :short "Extend an @(see svex-env) with a new variable binding.  Does not
+expect or preserve @(see fast-alists)."
   :prepwork ((local (in-theory (enable svex-alist-fix svex-alist-p))))
-  :returns (aa svex-env-p)
   (mbe :logic (cons (cons (svar-fix var)
-                          (4vec-fix v))
-                    (svex-env-fix a))
-       :exec (cons (cons var v) a))
+                          (4vec-fix val))
+                    (svex-env-fix env))
+       :exec (cons (cons var val) env))
   ///
-  (fty::deffixequiv svex-env-acons))
+  (deffixequiv svex-env-acons))
 
-(define svex-env-lookup ((k svar-p) (env svex-env-p))
-  :returns (v 4vec-p)
+(define svex-env-lookup ((var svar-p) (env svex-env-p))
+  :parents (svex-env)
+  :short "(Slow) Look up a variable's value in an @(see svex-env)."
+  :long "<p>We treat any unbound variables as being bound to infinite Xes.</p>"
+  :returns (val 4vec-p)
   :prepwork ((local (defthm assoc-is-hons-assoc-equal-when-svex-env-p
-                      (implies (svex-env-p x)
-                               (equal (assoc k x)
-                                      (hons-assoc-equal k x)))
+                      (implies (svex-env-p env)
+                               (equal (assoc var env)
+                                      (hons-assoc-equal var env)))
                       :hints(("Goal" :in-theory (enable svex-env-p))))))
-  (mbe :logic (4vec-fix (cdr (hons-assoc-equal (svar-fix k) (svex-env-fix env))))
-       :exec (let ((look (assoc-equal k env)))
-               (if look
-                   (cdr look)
-                 (4vec-x))))
+  (mbe :logic
+       (4vec-fix (cdr (hons-assoc-equal (svar-fix var) (svex-env-fix env))))
+       :exec
+       (let ((look (assoc-equal var env)))
+         (if look
+             (cdr look)
+           (4vec-x))))
   ///
-  (fty::deffixequiv svex-env-lookup)
+  (deffixequiv svex-env-lookup)
 
   (defthm svex-env-lookup-in-empty
-    (equal (svex-env-lookup k nil) (4vec-x)))
+    (equal (svex-env-lookup var nil) (4vec-x)))
 
   (defthm svex-env-lookup-in-svex-env-acons
-    (equal (svex-env-lookup k1 (svex-env-acons k2 v x))
-           (if (svar-equiv k1 k2)
-               (4vec-fix v)
-             (svex-env-lookup k1 x)))
+    (equal (svex-env-lookup var1 (svex-env-acons var2 val env))
+           (if (svar-equiv var1 var2)
+               (4vec-fix val)
+             (svex-env-lookup var1 env)))
     :hints(("Goal" :in-theory (enable svex-env-acons)))))
 
-(define svex-env-boundp ((k svar-p) (env svex-env-p))
+(define svex-env-boundp ((var svar-p) (env svex-env-p))
+  :parents (svex-env)
+  :short "(Slow) Check whether a variable is bound in an @(see svex-env)."
   :returns (boundp)
   :prepwork ((local (defthm assoc-is-hons-assoc-equal-when-svex-env-p
-                      (implies (svex-env-p x)
-                               (equal (assoc k x)
-                                      (hons-assoc-equal k x)))
+                      (implies (svex-env-p env)
+                               (equal (assoc var env)
+                                      (hons-assoc-equal var env)))
                       :hints(("Goal" :in-theory (enable svex-env-p))))))
-  (mbe :logic (consp (hons-assoc-equal (svar-fix k) (svex-env-fix env)))
-       :exec (consp (assoc-equal k env))))
+  (mbe :logic (consp (hons-assoc-equal (svar-fix var) (svex-env-fix env)))
+       :exec (consp (assoc-equal var env))))
 
-(define svex-env-fastlookup ((k svar-p) (env svex-env-p))
+(define svex-env-fastlookup ((var svar-p) (env svex-env-p))
+  :parents (svex-env)
+  :short "Fast lookup in an @(see svex-env), which must be a @(see fast-alist)."
   :enabled t
   :guard-hints (("goal" :in-theory (enable svex-env-lookup)))
-  (mbe :logic (svex-env-lookup k env)
-       :exec (let ((look (hons-get k env)))
+  (mbe :logic (svex-env-lookup var env)
+       :exec (let ((look (hons-get var env)))
                (if look
                    (cdr look)
                  (4vec-x)))))
 
 
 ;; Svex symbol maps to actual function called followed by element types
-(defconst *svex-op-table*
+(defval *svex-op-table*
+  :parents (svex-functions)
+  :short "Raw table about the known svex functions."
   '((id        4vec-fix            (x)                 "identity function")
     (bitsel    4vec-bit-extract    (index x)           "bit select")
     (unfloat   3vec-fix            (x)                 "change Z bits to Xes")
@@ -153,7 +183,6 @@
     (?         4vec-?              (test then else)    "if-then-else")
     (bit?      4vec-bit?           (test then else)    "bitwise if-then-else")))
 
-
 (defun svex-apply-collect-args (n max argsvar)
   (declare (xargs :measure (nfix (- (nfix max) (nfix n)))))
   (let* ((n (nfix n))
@@ -163,13 +192,27 @@
       (cons `(4veclist-nth ,n ,argsvar)
             (svex-apply-collect-args (+ 1 n) max argsvar)))))
 
-
 (defun svex-apply-cases-fn (argsvar optable)
   (b* (((when (atom optable)) '((otherwise (4vec-x))))
        ((list sym fn args) (car optable))
        (call `(,fn . ,(svex-apply-collect-args 0 (len args) argsvar))))
     (cons `(,sym ,call)
           (svex-apply-cases-fn argsvar (cdr optable)))))
+
+(defmacro svex-apply-cases (fn args)
+  `(case ,fn
+     . ,(svex-apply-cases-fn args *svex-op-table*)))
+
+(define svex-apply ((fn fnsym-p) (args 4veclist-p))
+  :short "Apply any known function to a list of @(see 4vec) arguments."
+  :long "<p>See @(see svex-functions) for the list of functions
+  recognized.</p>"
+  :returns (res 4vec-p)
+  (let* ((fn (mbe :logic (fnsym-fix fn) :exec fn))
+         (args (mbe :logic (4veclist-fix args) :exec args)))
+    (svex-apply-cases fn args))
+  ///
+  (deffixequiv svex-apply))
 
 (defun svcall-fn (fn args)
   (declare (xargs :guard t))
@@ -185,25 +228,11 @@
   (svcall-fn fn args))
 
 
-(defmacro svex-apply-cases (fn args)
-  `(case ,fn
-     . ,(svex-apply-cases-fn args *svex-op-table*)))
 
 ;; (defthm svobj-p-when-4vec-p
 ;;   (implies (4vec-p x)
 ;;            (svobj-p x))
 ;;   :hints(("Goal" :in-theory (enable svobj-p))))
-
-(define svex-apply ((fn fnsym-p) (args 4veclist-p))
-  :parents (svex-eval)
-  :short "Apply an svex function to a list of @(see 4vec) arguments"
-  :long "<p>See @(see svex-functions) for the list of functions recognized.</p>"
-  :returns (res 4vec-p)
-  (let* ((fn (mbe :logic (fnsym-fix fn) :exec fn))
-         (args (mbe :logic (4veclist-fix args) :exec args)))
-    (svex-apply-cases fn args))
-  ///
-  (fty::deffixequiv svex-apply))
 
 
 (local (defun syms->strings (x)
@@ -278,7 +307,7 @@ and their meanings.</p>"
 
   (verify-guards svex-eval)
 
-  (fty::deffixequiv-mutual svex-eval
+  (deffixequiv-mutual svex-eval
     :hints (("goal" :expand ((svexlist-fix x)))))
 
   (defthm len-of-svexlist-eval
@@ -341,7 +370,7 @@ has one possible value.</p>"
   (verify-guards svex-xeval)
 
 
-  (fty::deffixequiv-mutual svex-xeval
+  (deffixequiv-mutual svex-xeval
     :hints (("goal" :expand ((svexlist-fix x)))))
 
   (defthm len-of-svexlist-xeval
@@ -402,7 +431,7 @@ has one possible value.</p>"
            (svex-alist-eval (cdr x) env)))
        :exec (with-fast-alist env (svex-alist-eval-aux x env)))
   ///
-  (fty::deffixequiv svex-alist-eval)
+  (deffixequiv svex-alist-eval)
 
   (local (defthm svex-alist-eval-aux-elim
            (equal (svex-alist-eval-aux x env)

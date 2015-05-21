@@ -32,6 +32,7 @@
 (include-book "parse-xml")
 (include-book "save-classic")
 (include-book "misc/assert" :dir :system)
+(include-book "centaur/vl/util/cwtime" :dir :system)
 (set-state-ok t)
 (program)
 
@@ -700,21 +701,23 @@
     (cons topic1
           (collect-topics-by-importance (cdr keys) keymap topics-fal))))
 
+
+
 (defun order-topics-by-importance (all-topics state)
   ;; Returns
   ;;  (mv result    ; reordered version of all-topics, in importance order
   ;;      xtopics   ; the computed xtopics
   ;;      sitemap   ; site map for search engines
   ;;      state)
-  (b* ((topics-fal   (topics-fal all-topics))
+  (b* ((topics-fal         (topics-fal all-topics))
        ;(- (cw "First 3 of topics-fal: ~x0.~%" (take 3 topics-fal)))
        ;(- (cw "Length of topics-fal: ~x0.~%" (len topics-fal)))
-       (topics-names (strip-cars topics-fal))
-       (topics-keys  (make-keys topics-names))
-       ((mv xtopics state) (xtopics-from-topics all-topics state))
-       (state        (report-broken-links xtopics state))
-       (keys->ranks  (make-keys->ranks topics-keys xtopics))
-       (ordered-keys (rank-xtopics topics-keys keys->ranks))
+       (topics-names       (strip-cars topics-fal))
+       (topics-keys        (acl2::cwtime (make-keys topics-names)))
+       ((mv xtopics state) (acl2::cwtime (xtopics-from-topics all-topics state)))
+       (state              (acl2::cwtime (report-broken-links xtopics state)))
+       (keys->ranks        (acl2::cwtime (make-keys->ranks topics-keys xtopics)))
+       (ordered-keys       (acl2::cwtime (rank-xtopics topics-keys keys->ranks)))
 
        ;(- (cw "First 3 ordered-keys: ~x0.~%" (take 3 ordered-keys)))
        ;(- (cw "First 3 topics-keys: ~x0.~%" (take 3 topics-keys)))
@@ -728,24 +731,21 @@
        ;       (er hard? 'order-topics-by-importance "Don't have the same keys!")))
        (keymap       (make-fast-alist (pairlis$ topics-keys topics-names)))
        ;(- (cw "Keymap is ~x0.~%" keymap))
-       (result       (collect-topics-by-importance ordered-keys keymap topics-fal))
+       (result       (acl2::cwtime (collect-topics-by-importance ordered-keys keymap topics-fal)))
        ;(- (cw "First 3 results: ~x0.~%" (take 3 result)))
        ;(- (cw "Length of result: ~x0.~%" (length result)))
        ;(- (cw "Names of result: ~x0.~%" (strip-cars (fast-alist-free (topics-fal result)))))
-       (site-map (time$ (make-sitemap xtopics keys->ranks)))
+       (site-map     (acl2::cwtime (make-sitemap xtopics keys->ranks)))
        )
     (fast-alist-free keys->ranks)
     (fast-alist-free topics-fal)
     (fast-alist-free keymap)
-    (or (equal (mergesort topics-names)
-               (mergesort (strip-cars (fast-alist-free (topics-fal result)))))
+    (or (acl2::cwtime (equal (mergesort topics-names)
+                             (mergesort (strip-cars (fast-alist-free (topics-fal result)))))
+                      :name order-topics-sanity-check)
         (er hard? 'order-topics-by-importance
             "Screwed up the database!"))
     (mv result xtopics site-map state)))
-
-
-
-
 
 
 
@@ -756,8 +756,8 @@
 For testing, get documentation loaded.  Newlines to avoid dependency scanner
 picking these up.
 
-(ld
- "importance.lisp")
+;; (ld
+;;  "importance.lisp")
 
 ;; (include-book "std/util/defconsts" :dir :system)
 ;; (include-book "centaur/aignet/portcullis" :dir :system)
@@ -769,13 +769,45 @@ picking these up.
 ;; (include-book "centaur/defrstobj/portcullis" :dir :system)
 ;; (include-book "projects/milawa/ACL2/portcullis" :dir :system)
 ;; (include-book "projects/doc" :dir :system)
-;; (include-book "cgen/defdata" :dir :system)
+;; (include-book "acl2s/portcullis" :dir :system)
+;; (include-book "centaur/sv/portcullis" :dir :system)
+;; (include-book "rtl/rel11/portcullis" :dir :system)
+
+;; (include-book "std/util/defconsts" :dir :system)
+
+(defmacro with-redef (&rest forms)
+  ;; A handy macro you can use to temporarily enable redefinition, but then
+  ;; keep it disabled for the rest of the session
+  `(progn
+     (defttag with-redef)
+     (progn!
+      (set-ld-redefinition-action '(:doit . :overwrite) state)
+      (progn . ,forms)
+      (set-ld-redefinition-action nil state))))
+
+(with-redef
+  (defun preprocess-eval-parse (str base-pkg state)
+    (declare (ignore str base-pkg))
+    ;; Returns (mv errmsg? parsed-sexpr state)
+    (mv nil "Elided @(`...`) result." state)))
 
 (acl2::defconsts (*xdoc.sao* state)
   (serialize-read "../doc/xdoc.sao" :verbosep t))
 
 (table xdoc 'doc
        (clean-topics *xdoc.sao*))
+
+(acl2::defconsts (*result* *xtopics* *sitemap* state)
+  (order-topics-by-importance (get-xdoc-table (w state)) state))
+
+
+
+
+
+
+
+
+
 
 (acl2::defconsts *all-topic-names*
                  (gather-topic-names (get-xdoc-table (w state))))
@@ -795,14 +827,14 @@ picking these up.
 ;;                                (car xtopics))
 ;;                              :exit nil))
 
-(defconst *page-ranks*
+(acl2::defconsts *page-ranks*
   (make-fast-alist (dumb-rank-pages *xtopics*)))
 
-(defconst *size-ranks*
+(acl2::defconst *size-ranks*
   (make-fast-alist (pairlis$ (make-keys (xtopiclist->names *xtopics*))
                              (xtopiclist->sizes *xtopics*))))
 
-(defconst *final-ranks*
+(acl2::defconsts *final-ranks*
   (make-fast-alist
    (merge-ranks (make-keys *all-topic-names*)
                 *page-ranks* *size-ranks*)))

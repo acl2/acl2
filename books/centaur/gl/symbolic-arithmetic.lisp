@@ -52,11 +52,6 @@
                        (equal b (imagpart x)))))
   :hints (("goal" :use ((:instance realpart-imagpart-elim)))))
 
-(defun binary-- (x y)
-  (declare (xargs :guard (and (acl2-numberp x)
-                              (acl2-numberp y))))
-  (- x y))
-
 (defund int-set-sign (negp i)
   (declare (xargs :guard (integerp i)))
   (let ((i (lifix i)))
