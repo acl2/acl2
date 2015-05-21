@@ -1276,18 +1276,27 @@ unfloat then/else values."
   :short "Atomic if-then-else of @(see 4vec)s; doesn't unfloat then/else
 values."
 
-  :long "<p>If @('test') has any 1-bits, returns @('then').  Otherwise, if
-@('test') is 0, returns @('else').  Otherwise, @('test') has some X or Z bits,
-so we merge the bits of @('then') and @('else'), setting each bit of the result
-to:</p>
+  :long "<p>Easy cases: when @('test') has any 1-bits we return @('then'); when
+@('test') is 0 we return @('else').</p>
+
+<p>Note that the behavior in these cases is <b>not very conservative</b>.  In
+particular, the @('then') and @('else') branches are passed through without
+``unfloating'' Z values.  This agrees with the Verilog and SystemVerilog
+semantics for the @('?:') operators, but it does not agree with how some mux
+implementations behave in hardware, e.g., and/or style muxes.</p>
+
+<p>Hard case: when @('test') has some X or Z bits, we merge the bits of
+@('then') and @('else'), setting each bit of the result to:</p>
 
 <ul>
   <li>Xes in bit positions where @('then') and @('else') are unequal, or</li>
   <li>The agreed upon value, otherwise.</li>
 </ul>
 
-<p>This is not very conservative.  In particular, this operation does
-<b>not</b> ``unfloat'' Z values from @('then') and @('else').</p>"
+<p><b>BUG (issue 384)</b>.  To agree with the Verilog and SystemVerilog
+semantics, this merging should unfloat any Z values in @('then') and @('else')
+into Xes.  We don't currently do this.  BOZO update the docs when this issue
+gets fixed.</p>"
 
   (3vec-? (3vec-fix test) then else))
 
@@ -1358,9 +1367,10 @@ to:</p>
 <p>This merging is just @('x') if the bits are different, or the agreed upon
 value otherwise.</p>
 
-<p>This operation is not very conservative.  In particular, Z values are passed
-through without unfloating them, and can even be merged without
-unfloating.</p>"
+<p>BOZO.  This operation is not very conservative.  In particular, Z values are
+passed through without unfloating them, and can even be merged without
+unfloating.  BOZO Consider how and whether Issue 384 (see @(see 4vec-?)) should
+affect this operation and update the docs accordingly once it's fixed.</p>"
 
   (3vec-bit? (3vec-fix tests) thens elses)
   ///
