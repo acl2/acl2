@@ -231,7 +231,7 @@ defthm would disappear.</p>
       (intern-in-package-of-symbol
        str (if (keywordp sym)
                sym
-             (or pkg? pkg-sym))))))
+             (or pkg? pkg-sym sym))))))
 
 (defun tmpl-sym-tree-sublis (alist tree pkg-sym)
   (declare (xargs :mode :program))
