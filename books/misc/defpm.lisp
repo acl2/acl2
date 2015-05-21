@@ -22,7 +22,12 @@
 ;;; define functions like fact-test (below).  We might also consider automating
 ;;; the production of additional stuff, as described in comments below.
 
-; (depends-on "arithmetic-top-theory.cert")
+#||
+;; [Jared] this was previously a depends-on arithmetic-top-theory.cert line.
+;; However that didn't seem to work right; see Issue 383 for details.  As a
+;; workaround, replacing it with this phony include-book.
+(include-book "arithmetic-top-theory")
+||#
 
 (in-package "ACL2")
 
