@@ -30,6 +30,7 @@
 
 (in-package "SV")
 (include-book "evaluator")
+(include-book "xeval")
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
@@ -258,14 +259,14 @@ this relation, i.e.:</p>
 (defsection 4veclist-[=
   (acl2::defquant 4veclist-[= (x y)
     (forall idx
-            (4vec-[= (4veclist-nth idx x)
-                     (4veclist-nth idx y)))
+            (4vec-[= (4veclist-nth-safe idx x)
+                     (4veclist-nth-safe idx y)))
     :rewrite :direct)
 
   (in-theory (enable 4veclist-[=-necc))
 
   (acl2::defexample 4vec-alist-[=-example
-    :pattern (4veclist-nth idx x)
+    :pattern (4veclist-nth-safe idx x)
     :templates (idx)
     :instance-rulename 4veclist-[=-instancing)
 
@@ -284,7 +285,7 @@ this relation, i.e.:</p>
               (4veclist-[= b (cdr c))))
     :hints ((acl2::witness :ruleset 4veclist-[=-witnessing)
             (and stable-under-simplificationp
-                 '(:in-theory (e/d (4veclist-nth)
+                 '(:in-theory (e/d (4veclist-nth-safe)
                                    (4veclist-[=-necc))))
             (and stable-under-simplificationp
                  '(:use ((:instance 4veclist-[=-necc
@@ -334,8 +335,8 @@ this relation, i.e.:</p>
                  '(:in-theory (e/d (svex-apply 4vec-[=-transitive-2)
                                    (4vec-==-[=-===))
                    :use ((:instance 4vec-==-[=-===
-                          (a (4veclist-nth 0 (svexlist-eval (svex-call->args x) env)))
-                          (b (4veclist-nth 1 (svexlist-eval (svex-call->args x) env)))))
+                          (a (4veclist-nth-safe 0 (svexlist-eval (svex-call->args x) env)))
+                          (b (4veclist-nth-safe 1 (svexlist-eval (svex-call->args x) env)))))
                    :do-not-induct t)))
     :flag expr)
   (defthm svexlist-eval-gte-xeval

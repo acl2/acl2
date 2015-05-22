@@ -30,6 +30,7 @@
 
 (in-package "SV")
 (include-book "svmask")
+(include-book "xeval")
 ;; (include-book "coi/nary/nary" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -54,10 +55,10 @@
          (len x)))
 
 
-(defthm 4veclist-nth-out-of-bounds
+(defthm 4veclist-nth-safe-out-of-bounds
   (implies (<= (len x) (nfix n))
-           (equal (4veclist-nth n x) (4vec-x)))
-  :hints(("Goal" :in-theory (enable 4veclist-nth))))
+           (equal (4veclist-nth-safe n x) (4vec-x)))
+  :hints(("Goal" :in-theory (enable 4veclist-nth-safe))))
 
 
 ;; (local (defthm svobj-fix-when-natp
@@ -220,20 +221,20 @@
 
 
 
-(defthm 4veclist-nth-of-nthcdr
-  (equal (4veclist-nth m (nthcdr n x))
-         (4veclist-nth (+ (nfix m) (nfix n)) x))
-  :hints(("Goal" :in-theory (enable 4veclist-nth))))
+(defthm 4veclist-nth-safe-of-nthcdr
+  (equal (4veclist-nth-safe m (nthcdr n x))
+         (4veclist-nth-safe (+ (nfix m) (nfix n)) x))
+  :hints(("Goal" :in-theory (enable 4veclist-nth-safe))))
 
 (defthm 4veclist-mask-of-len-fix
   (equal (4veclist-mask (4vmasklist-len-fix len (cons mask1 masks)) args)
          (and (consp args)
               (if (zp len)
                   (4veclist-fix args)
-                (cons (4vec-mask mask1 (4veclist-nth 0 args))
+                (cons (4vec-mask mask1 (4veclist-nth-safe 0 args))
                       (4veclist-mask (4vmasklist-len-fix (1- len) masks)
                                          (cdr args))))))
-  :hints(("Goal" :in-theory (enable 4veclist-mask 4veclist-nth))))
+  :hints(("Goal" :in-theory (enable 4veclist-mask 4veclist-nth-safe))))
 
 (defthm 4veclist-mask-of-len-fix-nthcdr
   (equal (4veclist-mask (4vmasklist-len-fix len (cons mask1 masks))
@@ -241,10 +242,10 @@
          (and (consp (nthcdr n args))
               (if (zp len)
                   (4veclist-fix (nthcdr n args))
-                (cons (4vec-mask mask1 (4veclist-nth n args))
+                (cons (4vec-mask mask1 (4veclist-nth-safe n args))
                       (4veclist-mask (4vmasklist-len-fix (1- len) masks)
                                          (nthcdr (+ 1 (nfix n)) args))))))
-  :hints(("Goal" :in-theory (enable 4veclist-mask 4veclist-nth))))
+  :hints(("Goal" :in-theory (enable 4veclist-mask 4veclist-nth-safe))))
 
 
 (local (in-theory (disable 4vmasklist-len-fix-of-cons)))
@@ -305,12 +306,12 @@
                    (2vec->val nval))
             (4vmask-all-or-none mask))))
   :hints (("Goal" :in-theory (e/d (svex-apply
-                                   4veclist-nth)))
+                                   4veclist-nth-safe)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (svex-apply
                                   4vmask-all-or-none
                                   4vec-mask
-                                  4veclist-nth
+                                  4veclist-nth-safe
                                   4vec-bit-index
                                   4vec-bit-extract))))
           (bitops::logbitp-reasoning))
@@ -319,61 +320,61 @@
 (def-svmask unfloat (x)
   (list mask)
   :hints (("Goal" :in-theory (e/d (svex-apply
-                                   4veclist-nth)))
+                                   4veclist-nth-safe)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (svex-apply
                                   4vec-mask
                                   3vec-fix
-                                  4veclist-nth))))
+                                  4veclist-nth-safe))))
           (bitops::logbitp-reasoning)))
 
 
 (def-svmask id (x)
   (list mask)
   :hints (("Goal" :in-theory (e/d (svex-apply
-                                   4veclist-nth)))
+                                   4veclist-nth-safe)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (svex-apply
                                   4vec-mask
                                   3vec-fix
-                                  4veclist-nth))))
+                                  4veclist-nth-safe))))
           (bitops::logbitp-reasoning)))
 
 (def-svmask bitnot (x)
   (list mask)
   :hints (("Goal" :in-theory (e/d (svex-apply
-                                   4veclist-nth)))
+                                   4veclist-nth-safe)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (svex-apply
                                   4vec-mask
                                   3vec-fix
                                   3vec-bitnot
                                   4vec-bitnot
-                                  4veclist-nth))))
+                                  4veclist-nth-safe))))
           (bitops::logbitp-reasoning)))
 
 (def-svmask onp (x)
   (list mask)
   :hints (("Goal" :in-theory (e/d (svex-apply
-                                   4veclist-nth)))
+                                   4veclist-nth-safe)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (svex-apply
                                   4vec-mask
                                   3vec-fix
                                   4vec-onset
-                                  4veclist-nth))))
+                                  4veclist-nth-safe))))
           (bitops::logbitp-reasoning)))
 
 (def-svmask offp (x)
   (list mask)
   :hints (("Goal" :in-theory (e/d (svex-apply
-                                   4veclist-nth)))
+                                   4veclist-nth-safe)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (svex-apply
                                   4vec-mask
                                   3vec-fix
                                   4vec-offset
-                                  4veclist-nth))))
+                                  4veclist-nth-safe))))
           (bitops::logbitp-reasoning)))
 
 
@@ -444,14 +445,14 @@
     (list (4vec-bitand-mask mask x y)
           (4vec-bitand-mask mask y x)))
   :hints (("Goal" :in-theory (e/d (svex-apply
-                                   4veclist-nth)))
+                                   4veclist-nth-safe)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (svex-apply
                                   4vec-mask
                                   3vec-fix
                                   3vec-bitand
                                   4vec-bitand
-                                  4veclist-nth
+                                  4veclist-nth-safe
                                   4vec-bitand-mask))))
           (bitops::logbitp-reasoning
            :add-hints (:in-theory (enable* logbitp-when-4vec-[=-svex-eval-strong)))
@@ -500,14 +501,14 @@
           (4vec-bit?-y-mask mask x)
           (4vec-bit?-z-mask mask x)))
   :hints (("Goal" :in-theory (e/d (svex-apply
-                                   4veclist-nth)))
+                                   4veclist-nth-safe)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (svex-apply
                                   4vec-mask
                                   3vec-fix
                                   3vec-bit?
                                   4vec-bit?
-                                  4veclist-nth
+                                  4veclist-nth-safe
                                   ;; 4vec-bit?-x-mask
                                   4vec-bit?-y-mask
                                   4vec-bit?-z-mask))))
@@ -525,13 +526,13 @@
     (list (4vec-bitand-mask mask x y)
           (4vec-bitand-mask mask y x)))
   :hints (("Goal" :in-theory (e/d (svex-apply
-                                   4veclist-nth)))
+                                   4veclist-nth-safe)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (svex-apply
                                   4vec-mask
                                   3vec-fix
                                   4vec-resand
-                                  4veclist-nth
+                                  4veclist-nth-safe
                                   4vec-bitand-mask))))
           (bitops::logbitp-reasoning
            :add-hints (:in-theory (enable* logbitp-when-4vec-[=-svex-eval-strong)))
@@ -558,14 +559,14 @@
     (list (4vec-bitor-mask mask x y)
           (4vec-bitor-mask mask y x)))
   :hints (("Goal" :in-theory (e/d (svex-apply
-                                   4veclist-nth)))
+                                   4veclist-nth-safe)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (svex-apply
                                   4vec-mask
                                   3vec-fix
                                   3vec-bitor
                                   4vec-bitor
-                                  4veclist-nth
+                                  4veclist-nth-safe
                                   4vec-bitor-mask))))
           (bitops::logbitp-reasoning
            :add-hints (:in-theory (enable* logbitp-when-4vec-[=-svex-eval-strong)))
@@ -581,13 +582,13 @@
     (list (4vec-bitor-mask mask x y)
           (4vec-bitor-mask mask y x)))
   :hints (("Goal" :in-theory (e/d (svex-apply
-                                   4veclist-nth)))
+                                   4veclist-nth-safe)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (svex-apply
                                   4vec-mask
                                   3vec-fix
                                   4vec-resor
-                                  4veclist-nth
+                                  4veclist-nth-safe
                                   4vec-bitor-mask))))
           (bitops::logbitp-reasoning
            :add-hints (:in-theory (enable* logbitp-when-4vec-[=-svex-eval-strong)))
@@ -613,13 +614,13 @@
     (list (4vec-bitxor-mask mask x y)
           (4vec-bitxor-mask mask y x)))
   :hints (("Goal" :in-theory (e/d (svex-apply
-                                   4veclist-nth)))
+                                   4veclist-nth-safe)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (svex-apply
                                   4vec-mask
                                   3vec-fix
                                   4vec-bitxor
-                                  4veclist-nth
+                                  4veclist-nth-safe
                                   4vec-bitxor-mask))))
           (bitops::logbitp-reasoning
            :add-hints (:in-theory (enable* logbitp-when-4vec-[=-svex-eval-strong)))
@@ -630,7 +631,7 @@
   (list mask
         mask)
   :hints(("Goal" :in-theory (enable svex-apply
-                                    4veclist-nth
+                                    4veclist-nth-safe
                                     4vec-mask
                                     4vec-res))
           (bitops::logbitp-reasoning)
@@ -641,7 +642,7 @@
   (list mask
         mask)
   :hints(("Goal" :in-theory (enable svex-apply
-                                    4veclist-nth
+                                    4veclist-nth-safe
                                     4vec-mask
                                     4vec-override))
          (bitops::logbitp-reasoning)
@@ -664,17 +665,17 @@
 (def-svmask uand (x)
   (list -1)
   :hints(("Goal" :in-theory (enable svex-apply
-                                    4veclist-nth))))
+                                    4veclist-nth-safe))))
 
 (def-svmask uor (x)
   (list -1)
   :hints(("Goal" :in-theory (enable svex-apply
-                                    4veclist-nth))))
+                                    4veclist-nth-safe))))
 
 (def-svmask uxor (x)
   (list -1)
   :hints(("Goal" :in-theory (enable svex-apply
-                                    4veclist-nth))
+                                    4veclist-nth-safe))
          (and stable-under-simplificationp
               '(:in-theory (e/d (4vec-mask
                                  2vec-p
@@ -719,7 +720,7 @@
         (list -1 mask 0)))
     (list -1 mask mask))
   :hints(("Goal" :in-theory (enable svex-apply
-                                    4veclist-nth))
+                                    4veclist-nth-safe))
          (and stable-under-simplificationp
               '(:in-theory (enable 4vec-?)))
          (and stable-under-simplificationp
@@ -767,11 +768,11 @@
                        mask)
             (4vmask-all-or-none mask))))
   :hints (("Goal" :in-theory (e/d (svex-apply
-                                   4veclist-nth)))
+                                   4veclist-nth-safe)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (svex-apply
                                   4vec-mask
-                                  4veclist-nth
+                                  4veclist-nth-safe
                                   4vec-zero-ext))))
           (bitops::logbitp-reasoning)
           (and stable-under-simplificationp
@@ -803,11 +804,11 @@
                              (2vec->val nval))
             (4vmask-all-or-none mask))))
   :hints (("Goal" :in-theory (e/d (svex-apply
-                                   4veclist-nth)))
+                                   4veclist-nth-safe)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (svex-apply
                                   4vec-mask
-                                  4veclist-nth
+                                  4veclist-nth-safe
                                   4vec-sign-ext
                                   4vec-index-p
                                   sign-ext-mask))))
@@ -834,11 +835,11 @@
                 (logtail n mask)))))
     (list -1 -1 -1))
   :hints (("Goal" :in-theory (e/d (svex-apply
-                                   4veclist-nth)))
+                                   4veclist-nth-safe)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (svex-apply
                                   4vec-mask
-                                  4veclist-nth
+                                  4veclist-nth-safe
                                   4vec-concat))))
           (bitops::logbitp-reasoning)))
 
@@ -853,11 +854,11 @@
                 (ash mask n)))))
     (list -1 -1))
   :hints (("Goal" :in-theory (e/d (svex-apply
-                                   4veclist-nth)))
+                                   4veclist-nth-safe)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (svex-apply
                                   4vec-mask
-                                  4veclist-nth
+                                  4veclist-nth-safe
                                   4vec-rsh))
                  :cases ((<= 0 (2vec->val (svex-xeval (car args)))))))
           (bitops::logbitp-reasoning)))
@@ -873,11 +874,11 @@
                 (ash mask (- n))))))
     (list -1 -1))
   :hints (("Goal" :in-theory (e/d (svex-apply
-                                   4veclist-nth)))
+                                   4veclist-nth-safe)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (svex-apply
                                   4vec-mask
-                                  4veclist-nth
+                                  4veclist-nth-safe
                                   4vec-lsh))
                  :cases ((<= 0 (2vec->val (svex-xeval (car args)))))))
           (bitops::logbitp-reasoning)))
@@ -886,47 +887,47 @@
 
 (def-svmask + (x y)
   (list -1 -1)
-  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
+  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe))))
 
 (def-svmask u- (x)
   (list -1)
-  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
+  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe))))
 
 (def-svmask xdet (x)
   (list -1)
-  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
+  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe))))
 
 (def-svmask b- (x y)
   (list -1 -1)
-  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
+  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe))))
 
 (def-svmask * (x y)
   (list -1 -1)
-  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
+  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe))))
 
 (def-svmask / (x y)
   (list -1 -1)
-  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
+  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe))))
 
 (def-svmask % (x y)
   (list -1 -1)
-  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
+  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe))))
 
 (def-svmask < (x y)
   (list -1 -1)
-  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
+  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe))))
 
 (def-svmask == (x y)
   (list -1 -1)
-  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
+  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe))))
 
 (def-svmask === (x y)
   (list -1 -1)
-  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
+  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe))))
 
 (def-svmask clog2 (x)
   (list -1)
-  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth))))
+  :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe))))
 
 
 (encapsulate nil
@@ -942,10 +943,10 @@
          (b-is-z (logand (lognot bval.upper) bval.lower)))
       (list (lognot b-is-z) -1))
     :hints(("Goal" :in-theory (e/d (svex-apply
-                                    4veclist-nth))
+                                    4veclist-nth-safe))
             :do-not-induct t)
            (and stable-under-simplificationp
-                '(:in-theory (e/d (svex-apply 4veclist-nth
+                '(:in-theory (e/d (svex-apply 4veclist-nth-safe
                                               4vec-wildeq 3vec-reduction-and
                                               3vec-bitor 3vec-bitnot 4vec-bitxor
                                               4vec-mask bool->vec 4vec-[=)
@@ -969,10 +970,10 @@
       (list (logior a-is-z (lognot b-is-z))
             (logior b-is-z (lognot a-is-z))))
     :hints(("Goal" :in-theory (e/d (svex-apply
-                                    4veclist-nth))
+                                    4veclist-nth-safe))
             :do-not-induct t)
            (and stable-under-simplificationp
-                '(:in-theory (e/d (svex-apply 4veclist-nth
+                '(:in-theory (e/d (svex-apply 4veclist-nth-safe
                                               4vec-symwildeq 3vec-reduction-and
                                               3vec-bitor 3vec-bitnot 4vec-bitxor
                                               4vec-mask bool->vec 4vec-[=)
@@ -1171,11 +1172,11 @@
             (list -1 -1 (unrev-blocks n b mask)))))
       (list -1 -1 -1))
     :hints (("Goal" :in-theory (e/d (svex-apply
-                                     4veclist-nth)))
+                                     4veclist-nth-safe)))
             (and stable-under-simplificationp
                  '(:in-theory (e/d (svex-apply
                                     4vec-mask
-                                    4veclist-nth
+                                    4veclist-nth-safe
                                     4vec-rev-blocks
                                     4vec-index-p)))))
     :otf-flg t))

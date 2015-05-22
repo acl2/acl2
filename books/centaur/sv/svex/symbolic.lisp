@@ -1832,10 +1832,10 @@ results in at most n+1 bits.</p>"
 
 
 (define svex-apply-aig ((fn fnsym-p) (args a4veclist-p) (terms svexlist-p) (mask 4vmask-p))
-  :prepwork ((local (Defthm 4veclist-nth-of-a4veclist-eval
+  :prepwork ((local (Defthm 4veclist-nth-safe-of-a4veclist-eval
                       (equal (a4vec-eval (a4veclist-nth n x) aigenv)
-                             (4veclist-nth n (a4veclist-eval x aigenv)))
-                      :hints(("Goal" :in-theory (enable a4veclist-eval a4veclist-nth 4veclist-nth)))))
+                             (4veclist-nth-safe n (a4veclist-eval x aigenv)))
+                      :hints(("Goal" :in-theory (enable a4veclist-eval a4veclist-nth 4veclist-nth-safe)))))
              (local (defun ind (n vals x)
                       (if (zp n)
                           (list vals x)
@@ -1865,18 +1865,18 @@ results in at most n+1 bits.</p>"
                       (defthm 4vmask-of-nths
                         (implies (equal (len masks) (len vecs))
                                  (equal (4vec-mask (4vmask-nth n masks)
-                                                   (4veclist-nth n vecs))
-                                        (4veclist-nth n (4veclist-mask masks vecs))))
-                        :hints(("Goal" :in-theory (enable 4vmask-nth 4veclist-nth 4veclist-mask nth
+                                                   (4veclist-nth-safe n vecs))
+                                        (4veclist-nth-safe n (4veclist-mask masks vecs))))
+                        :hints(("Goal" :in-theory (enable 4vmask-nth 4veclist-nth-safe 4veclist-mask nth
                                                           4vmasklist-fix)
                                 :induct (ind2 n masks vecs nil))))
 
                       (defthm svex-eval-of-nth-rev
                         (equal (svex-eval (nth n x) env)
-                               (4veclist-nth n (svexlist-eval x env))))
+                               (4veclist-nth-safe n (svexlist-eval x env))))
 
                       (in-theory (disable svex-eval-of-nth
-                                          4veclist-nth-of-svexlist-eval))
+                                          4veclist-nth-safe-of-svexlist-eval))
 
                       (local (defthm 3vec-p-of-eval-by-equal
                                (implies (and (equal x (svex-eval y env))
@@ -1898,14 +1898,14 @@ results in at most n+1 bits.</p>"
                                              (4VECLIST-MASK masks
                                                             (SVEXLIST-EVAL X (SVEX-A4VEC-ENV-EVAL A4ENV AIGENV))))
                                       (3valued-syntaxp (svexlist-nth n x)))
-                                 (3vec-p (4veclist-nth n (a4veclist-eval vals aigenv)))
+                                 (3vec-p (4veclist-nth-safe n (a4veclist-eval vals aigenv)))
                                  ;; (3vec-p (4vec-mask (4vmask-nth n masks)
                                  ;;                    (a4vec-eval (a4veclist-nth n vals) aigenv)))
                                  )
-                        :hints (("goal" :in-theory (e/d (nth len 4veclist-nth a4veclist-eval
+                        :hints (("goal" :in-theory (e/d (nth len 4veclist-nth-safe a4veclist-eval
                                                              4veclist-mask svexlist-eval
                                                              a4veclist-eval svexlist-nth)
-                                                        (4veclist-nth-of-a4veclist-eval))
+                                                        (4veclist-nth-safe-of-a4veclist-eval))
                                  :expand ((:free (env) (svexlist-eval x env))
                                           (a4veclist-eval vals aigenv)
                                           (:free (a b) (4veclist-mask masks (cons a b))))
@@ -1939,7 +1939,7 @@ results in at most n+1 bits.</p>"
                    (x (svexlist-eval x (svex-a4vec-env-eval a4env aigenv))))))
            (and stable-under-simplificationp
                 '(
-                  :in-theory (e/d (svex-apply svexlist-eval ;; 4veclist-nth ;; 4veclist-mask
+                  :in-theory (e/d (svex-apply svexlist-eval ;; 4veclist-nth-safe ;; 4veclist-mask
                                               4vec-bitnot
                                               4vec-bitand
                                               4vec-bitor

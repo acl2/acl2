@@ -145,7 +145,7 @@
     (equal (svex-eval (lhatom->svex x) env)
            (lhatom-eval x env))
     :hints(("Goal" :in-theory (enable lhatom-eval svex-eval svex-apply
-                                      4veclist-nth svexlist-eval)))))
+                                      4veclist-nth-safe svexlist-eval)))))
 
 (defprod lhrange
   :parents (lhs)
@@ -176,7 +176,7 @@
     (equal (svex-eval (lhrange->svex x) env)
            (lhrange-eval x env))
     :hints(("Goal" :in-theory (enable lhrange-eval svex-eval svex-apply
-                                      4veclist-nth svexlist-eval)))))
+                                      4veclist-nth-safe svexlist-eval)))))
 
 
 
@@ -841,7 +841,7 @@ the order given (LSBs-first).</p>")
                       (lhs-eval nil env)
                       (:free (a b) (lhs-eval (cons a b) env)))
              :in-theory (e/d (svex-eval
-                              svex-apply svexlist-eval 4veclist-nth
+                              svex-apply svexlist-eval 4veclist-nth-safe
                               lhrange-eval lhatom-eval
                               4vec-index-p)
                              ((:d svex->lhs-bound))))
@@ -897,7 +897,7 @@ the order given (LSBs-first).</p>")
                       (lhs-eval nil env)
                       (:free (a b) (lhs-eval (cons a b) env)))
              :in-theory (e/d (svex-eval
-                              svex-apply svexlist-eval 4veclist-nth
+                              svex-apply svexlist-eval 4veclist-nth-safe
                               lhrange-eval lhatom-eval
                               4vec-index-p)
                              ((:d svex->lhs))))
@@ -1381,7 +1381,7 @@ the order given (LSBs-first).</p>")
   (defthm svex-rsh-correct
     (equal (svex-eval (svex-rsh sh x) env)
            (svex-eval (svex-call 'rsh (list (svex-quote (2vec (nfix sh))) x)) env))
-    :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth svexlist-eval)
+    :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe svexlist-eval)
             :expand ((:free (f a) (svex-eval (svex-call f a) env))
                      (svex-eval 0 env)))))
 
@@ -1400,7 +1400,7 @@ the order given (LSBs-first).</p>")
   (defthm svex-concat-correct
     (equal (svex-eval (svex-concat w x y) env)
            (svex-eval (svex-call 'concat (list (svex-quote (2vec (nfix w))) x y)) env))
-    :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth svexlist-eval)
+    :hints(("Goal" :in-theory (enable svex-apply 4veclist-nth-safe svexlist-eval)
             :expand ((:free (f a) (svex-eval (svex-call f a) env))
                      (svex-eval 0 env)))))
 
@@ -1484,7 +1484,7 @@ the order given (LSBs-first).</p>")
                              (svexlist-eval (svex-call->args x) env)
                              (svexlist-eval (cdr (svex-call->args x)) env)
                              (svexlist-eval (cddr (svex-call->args x)) env))
-             :in-theory (enable svex-apply 4veclist-nth svexlist-eval
+             :in-theory (enable svex-apply 4veclist-nth-safe svexlist-eval
                                 4vec-index-p nth
                                 equal-of-4vec-concat)
              :induct t)))
@@ -2109,7 +2109,7 @@ bits of @('foo'):</p>
   (defthm lhs->svex-correct
     (equal (svex-eval (lhs->svex x) env)
            (lhs-eval x env))
-    :hints(("Goal" :in-theory (enable svex-eval svex-apply svexlist-eval 4veclist-nth
+    :hints(("Goal" :in-theory (enable svex-eval svex-apply svexlist-eval 4veclist-nth-safe
                                       lhs-eval lhrange-eval))))
 
   (defthm vars-of-lhs->svex

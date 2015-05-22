@@ -30,6 +30,7 @@
 
 (in-package "SV")
 (include-book "svex-rewrite-base")
+(include-book "xeval")
 (include-book "svmask")
 (include-book "rsh-concat")
 (include-book "centaur/misc/sneaky-load" :dir :system) ;; for profiling
@@ -226,21 +227,21 @@
                (append x (replicate (- n (len x)) (4vec-x)) (list v)))))
 
 
-;; (defthm 4veclist-nth-of-cons-match
+;; (defthm 4veclist-nth-safe-of-cons-match
 ;;   (implies (and (syntaxp (quotep n))
 ;;                 (equal x (cons a b)))
-;;            (equal (4veclist-nth n x)
+;;            (equal (4veclist-nth-safe n x)
 ;;                   (if (zp n)
 ;;                       (svobj-fix a)
-;;                     (4veclist-nth (1- n) b))))
-;;   :hints(("Goal" :in-theory (enable 4veclist-nth))))
+;;                     (4veclist-nth-safe (1- n) b))))
+;;   :hints(("Goal" :in-theory (enable 4veclist-nth-safe))))
 
 
 
-(defthm 4veclist-nth-of-svexlist-eval
-  (equal (4veclist-nth n (svexlist-eval x env))
+(defthm 4veclist-nth-safe-of-svexlist-eval
+  (equal (4veclist-nth-safe n (svexlist-eval x env))
          (svex-eval (nth n x) env))
-  :hints(("Goal" :in-theory (enable 4veclist-nth svexlist-eval))))
+  :hints(("Goal" :in-theory (enable 4veclist-nth-safe svexlist-eval))))
 
 (defthm svex-alist-eval-of-svex-acons
   (equal (svex-alist-eval (svex-acons k v al) env)
@@ -538,7 +539,7 @@
                              (3valued-syntaxp x)
                              (:free (x) (svex-eval (list 'quote x) env)))
              :induct (3valued-syntaxp x)
-             :in-theory (e/d (svex-apply svexlist-eval 4veclist-nth)
+             :in-theory (e/d (svex-apply svexlist-eval 4veclist-nth-safe)
                              ((:d 3valued-syntaxp))))))
 
   (deffixequiv 3valued-syntaxp :args ((x svex))))
@@ -697,7 +698,7 @@
     :hints (("Goal" :expand ((svex-eval x env)
                              (2vecx-syntaxp x)
                              (:free (x) (svex-eval (list 'quote x) env)))
-             :in-theory (e/d (svex-apply svexlist-eval 4veclist-nth)
+             :in-theory (e/d (svex-apply svexlist-eval 4veclist-nth-safe)
                              ((:d 2vecx-syntaxp))))))
 
   (deffixequiv 2vecx-syntaxp :args ((x svex))))
@@ -2259,10 +2260,10 @@
          :hints(("Goal" :in-theory (enable svex-xeval)))))
 
 
-(local (defthm 4veclist-nth-of-svexlist-xeval
-         (equal (4veclist-nth n (svexlist-xeval x))
+(local (defthm 4veclist-nth-safe-of-svexlist-xeval
+         (equal (4veclist-nth-safe n (svexlist-xeval x))
                 (svex-xeval (nth n x)))
-         :hints(("Goal" :in-theory (enable svexlist-xeval 4veclist-nth)))))
+         :hints(("Goal" :in-theory (enable svexlist-xeval 4veclist-nth-safe)))))
 
 (define res-to-concat ((xmask integerp)
                        (ymask integerp)
