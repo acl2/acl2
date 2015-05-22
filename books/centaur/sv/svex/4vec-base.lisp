@@ -40,11 +40,18 @@ forms the core of SV.  It includes an S-expression language for certain
 pre-defined hardware functions, an interpreter for evaluating these expressions
 on four-valued integers, and related tools.")
 
+(defxdoc values
+  :parents (expressions)
+  :short "Our expressions operate on four-valued bit vectors called @(see
+4vec)s.  There are also useful subsets of @(see 4vec)s, such as @(see
+3vec)s (which have no Z bits) and @(see 2vec)s (which have no X or Z bits).")
+
+(xdoc::order-subtopics values (4vec 3vec 2vec))
 
 (defsection 4vec
-  :parents (expressions)
-  :short "The 4-valued bit vector representation used by SV @(see
-expressions)."
+  :parents (values)
+  :short "The fundamental 4-valued vector representation used throughout SV
+@(see expressions)."
 
   :long "<p>In hardware description languages like Verilog and SystemVerilog,
 each bit can typically take one of four values, named 1, 0, X, or Z.  For some
@@ -326,7 +333,7 @@ want when building @(see expressions).</p>
   (fty::deffixequiv 2vec-p))
 
 (define 2vec ((x integerp))
-  :parents (expressions)
+  :parents (values)
   :short "A <b>2vec</b> is a @(see 4vec) that has no X or Z bits."
   :long "<p>@('2vec') constructs a 2vec from an integer; @('2vec-p') recognizes
 a 2vec; @('2vec->val') gets the integer value out of a 2vec.</p>"

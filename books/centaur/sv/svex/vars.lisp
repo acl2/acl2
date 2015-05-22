@@ -31,96 +31,177 @@
 (in-package "SV")
 (include-book "svex")
 (include-book "std/osets/top" :dir :system)
-(include-book "clause-processors/witness-cp" :dir :system)
+(local (include-book "clause-processors/witness-cp" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "centaur/misc/equal-sets" :dir :system))
 (local (include-book "std/osets/element-list" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
-(defxdoc vars.lisp :parents (svex))
-(local (xdoc::set-default-parents vars.lisp))
+(local (std::deflist svarlist-p (x)
+         (svar-p x)
+         :true-listp t
+         :elementp-of-nil nil))
 
-(local (std::deflist svarlist-p (x) (svar-p x) :true-listp t :elementp-of-nil nil))
-
-(defthm setp-singleton
-  (setp (list x))
-  :hints(("Goal" :in-theory (enable setp))))
+(local (defthm setp-singleton
+         (setp (list x))
+         :hints(("Goal" :in-theory (enable setp)))))
 
 (defines svex-vars
   :verify-guards nil
   :flag-local nil
-  (define svex-vars ((x svex-p))
-    :returns (vars (and (svarlist-p vars)
-                        (setp vars)))
+
+  (define svex-vars
+    :parents (expressions)
+    :short "Collect all of the variables from an @(see svex)."
+    ((x svex-p "Expression to collect variables from."))
+    :returns
+    (vars "An <see topic='@(url acl2::std/osets)'>ordered set</see> of all
+           variables in the @('x')."
+          (and (svarlist-p vars)
+               (setp vars)))
+    :long "<p>We collect the set of variables for an @(see svex) by computing
+the exact sets of variables for all of its subexpressions, and @(see union)ing
+them together.  This is logically nice to reason about and is <i>sometimes</i>
+practical to execute.</p>
+
+<p>Although we @(see memoize) this function to take advantage of structure
+sharing, constructing the exact set of variables for every subexpression
+quickly becomes <b>very</b> memory intensive.  For better performance, it is
+often better to use @(see svex-collect-vars) instead.</p>"
     :measure (svex-count x)
     (svex-case x
       :quote nil
       :var (list x.name)
       :call (svexlist-vars x.args)))
-  (define svexlist-vars ((x svexlist-p))
-    :returns (vars (and (svarlist-p vars)
-                        (setp vars)))
+
+  (define svexlist-vars
+    :parents (svex-vars)
+    :short "Collect all of the variables from an @(see svexlist)."
+    ((x svexlist-p "Expression list to collect variables from."))
+    :returns
+    (vars "An <see topic='@(url acl2::std/osets)'>ordered set</see> of all
+           variables used in any expression in @('x')."
+          (and (svarlist-p vars)
+               (setp vars)))
+    :long "<p>See @(see svex-vars).  This just @(see union)s together the @(see
+svex-vars) of all of the expressions in @('x').</p>
+
+<p>Like @(see svex-vars), this is logically nice but can be <b>very</b> memory
+intensive.  It is often better to use @(see svexlist-collect-vars)
+instead.</p>"
+
     :measure (svexlist-count x)
     (if (atom x)
         nil
-      (set::union (svex-vars (car x))
-                  (svexlist-vars (cdr x)))))
+      (union (svex-vars (car x))
+             (svexlist-vars (cdr x)))))
   ///
   (local (defthm svarlist-p-impl-true-listp
            (implies (svarlist-p x)
                     (true-listp x))
            :hints(("Goal" :in-theory (enable svarlist-p)))))
   (verify-guards svex-vars)
-
   (memoize 'svex-vars)
+  ///
+  (deffixequiv-mutual svex-vars
+    :hints (("Goal" :expand ((svexlist-fix x))))))
 
-  (fty::deffixequiv-mutual svex-vars
-    :hints (("Goal" :expand ((svexlist-fix x)))))
 
+(defsection svex-vars-basics
+  :parents (svex-vars)
+  :short "Very basic rules about @(see svex-vars)"
 
-  (defthm svex-vars-of-svex-call
-    (equal (svex-vars (svex-call fn args))
-           (svexlist-vars args))
-    :hints (("goal" :expand (svex-vars (svex-call fn args)))))
-
-  (defthm svex-vars-of-svex-var
-    (equal (svex-vars (Svex-var name))
-           (list (svar-fix name))))
-
-  (defthm svex-vars-of-svex-quote
-    (equal (svex-vars (svex-quote val))
-           nil))
-
-  (defthm svexlist-vars-of-cons
-    (set-equiv (svexlist-vars (cons a b))
-               (append (svex-vars a)
-                       (svexlist-vars b))))
-
-  (defthm svex-vars-when-var
-    (implies (equal (svex-kind x) :var)
-             (equal (svex-vars x) (list (svex-var->name x))))
-    :rule-classes ((:rewrite :backchain-limit-lst 0)))
+  (local (in-theory (enable svex-vars svexlist-vars)))
 
   (defthm svex-vars-when-quote
     (implies (equal (svex-kind x) :quote)
              (equal (svex-vars x) nil))
     :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
+  (defthm svex-vars-when-var
+    (implies (equal (svex-kind x) :var)
+             (equal (svex-vars x) (list (svex-var->name x))))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
   (defthm svex-vars-when-call
     (implies (equal (svex-kind x) :call)
              (equal (svex-vars x)
                     (svexlist-vars (svex-call->args x))))
-    :rule-classes ((:rewrite :backchain-limit-lst 0))))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
-(define svex-alist-vars ((x svex-alist-p))
+  (defthm svex-vars-of-svex-quote
+    (equal (svex-vars (svex-quote val))
+           nil))
+
+  (defthm svex-vars-of-svex-var
+    (equal (svex-vars (svex-var name))
+           (list (svar-fix name))))
+
+  (defthm svex-vars-of-svex-call
+    (equal (svex-vars (svex-call fn args))
+           (svexlist-vars args))
+    :hints (("goal" :expand ((svex-vars (svex-call fn args)))))))
+
+
+(defsection svexlist-vars-basics
+  :parents (svexlist-vars)
+  :short "Basic theorems about @(see svexlist-vars)."
+
+  (local (in-theory (enable svexlist-vars)))
+
+  (defthm svexlist-vars-of-cons
+    (set-equiv (svexlist-vars (cons a b))
+               (append (svex-vars a)
+                       (svexlist-vars b))))
+
+  (defthm svexlist-vars-of-append
+    (equal (svexlist-vars (append x y))
+           (union (svexlist-vars x)
+                  (svexlist-vars y))))
+
+  "<h3>Set equiv congruence</h3>"
+
+  (defthm svex-vars-subset-of-svexlist-vars-when-member
+    (implies (member x y)
+             (subsetp (svex-vars x) (svexlist-vars y))))
+
+  (defthm svexlist-vars-of-subset
+    (implies (subsetp x y)
+             (subsetp (svexlist-vars x) (svexlist-vars y)))
+    :hints(("Goal" :in-theory (enable subsetp))))
+
+  (defcong set-equiv equal (svexlist-vars x) 1
+    :hints(("Goal" :in-theory (enable double-containment
+                                      set::subset-to-subsetp)))))
+
+
+(define svex-alist-vars
+  :parents (svex-vars svex-alist)
+  :short "Collect all of the variables from all the expressions in an @(see
+          svex-alist)."
+  ((x svex-alist-p "Binds variables (not collected!) to their expressions
+                    (whose variables <i>are</i> collected)."))
+  :returns
+  (vars "An <see topic='@(url acl2::std/osets)'>ordered set</see> of all
+         variables used in any of the expressions."
+        (and (svarlist-p vars)
+             (setp vars)))
+
+  :long "<p>This function is based on @(see svex-vars); it is logically nice
+to reason about but probably is not what you want to execute.  BOZO where is
+the collect- version of this; recommend an alternative.</p>
+
+<p>We collect the variables from all of the expressions that are bound in the
+@(see svex-alist).  Note that this does <b>not</b> collect the keys of the
+alist, even though they are variables.  It instead collects the variables from
+the expressions that the keys are bound to.</p>"
   :prepwork ((local (in-theory (enable svex-alist-p))))
   :verify-guards nil
-  :returns (vars (and (svarlist-p vars) (setp vars)))
   (if (atom x)
       nil
-    (set::union (and (consp (car x))
-                      (svex-vars (cdar x)))
-                 (svex-alist-vars (cdr x))))
+    (union (and (consp (car x))
+                (svex-vars (cdar x)))
+           (svex-alist-vars (cdr x))))
   ///
   (local (defthm svarlist-p-impl-true-listp
            (implies (svarlist-p x)
@@ -129,7 +210,7 @@
 
   (verify-guards svex-alist-vars)
 
-  (fty::deffixequiv svex-alist-vars
+  (deffixequiv svex-alist-vars
     :hints (("goal" :expand ((Svex-alist-fix x)))))
 
   (defthm svex-vars-of-svex-alist-lookup
@@ -139,8 +220,8 @@
 
   (defthm svex-vars-of-svex-acons
     (equal (svex-alist-vars (svex-acons k v x))
-           (set::union (svex-vars v)
-                        (svex-alist-vars x)))
+           (union (svex-vars v)
+                  (svex-alist-vars x)))
     :hints(("Goal" :in-theory (enable svex-acons))))
 
   (defthm svex-alist-vars-of-append
@@ -164,15 +245,11 @@
 
 
 
-
-
-;; Want to prove that this function correctly computes (up to set-equivalence)
-;; the same svex-vars as svex-vars/svex-vars-list, defined in
-;; svex-rewrite-base.
 (defines svex-collect-vars1
   :verify-guards nil
   :flag-local nil
   (define svex-collect-vars1 ((x svex-p) (seen) (vars svarlist-p))
+    :parents (svex-collect-vars)
     :returns (mv seen1 (vars1 svarlist-p))
     :measure (svex-count x)
     (b* ((x (svex-fix x))
@@ -188,6 +265,7 @@
                 (b* ((seen (hons-acons x t seen)))
                   (svexlist-collect-vars1 x.args seen vars))))))
   (define svexlist-collect-vars1 ((x svexlist-p) (seen) (vars svarlist-p))
+    :parents (svex-collect-vars)
     :returns (mv seen1 (vars1 svarlist-p))
     :measure (svexlist-count x)
     (if (atom x)
@@ -199,6 +277,22 @@
   (deffixequiv-mutual svex-collect-vars1))
 
 (define svex-collect-vars ((x svex-p))
+  :parents (svex-vars)
+  :short "Usually faster alternative to @(see svex-vars)."
+  :long "<p>We compute a list of variables which occur in the @(see svex)
+@('x').  This list is similar to the set of variables returned by @(see
+svex-vars), except that it is not necessarily ordered.  More formally:</p>
+
+@(thm svex-collect-vars-correct)
+
+<p>This function is usually more efficient than @(see svex-vars).  It walks
+over the @(see svex), gathering variables into an accumulator and keeping track
+of which subtrees have already been explored using a seen table.  This avoids
+computing exact variable information for each subexpression.</p>
+
+<p>The implementation of this function is ugly and you would not want to reason
+about it; instead we typically prefer to reason about @(see svex-vars) and
+appeal to @('svex-collect-vars-correct').</p>"
   :returns (vars svarlist-p)
   (b* (((mv seen vars) (svex-collect-vars1 x nil nil)))
     (fast-alist-free seen)
@@ -208,125 +302,112 @@
 
 (define svexlist-collect-vars ((x svexlist-p))
   :returns (vars svarlist-p)
+  :parents (svex-vars)
+  :short "Usually faster alternative to @(see svexlist-vars)."
+  :long "<p>See @(see svex-collect-vars).  This is just the extension of its
+strategy to collect all variables that occur in an expression list.
+Correctness is stated in terms of @(see svexlist-vars):</p>
+
+@(thm svexlist-collect-vars-correct)"
+
   (b* (((mv seen vars) (svexlist-collect-vars1 x nil nil)))
     (fast-alist-free seen)
     vars)
   ///
   (deffixequiv svexlist-collect-vars))
 
-(defsection svexlist-vars-set-equiv-congruence
-
-  (defthm svex-vars-subset-of-svexlist-vars-when-member
-    (implies (member x y)
-             (subsetp (svex-vars x) (svexlist-vars y)))
-    :hints(("Goal" :in-theory (enable svexlist-vars))))
-
-  (defthm svexlist-vars-of-subset
-    (implies (subsetp x y)
-             (subsetp (svexlist-vars x) (svexlist-vars y)))
-    :hints(("Goal" :in-theory (enable subsetp svexlist-vars))))
-
-  ;; (defthm setp-of-svexlist-vars
-  ;;   (setp (svexlist-vars x))
-  ;;   :hints(("Goal" :in-theory (enable svexlist-vars)
-  ;;           :induct (len x))))
-
-   (defcong set-equiv equal (svexlist-vars x) 1
-     :hints(("Goal" :in-theory (enable double-containment
-                                       set::subset-to-subsetp))))
-
-   (defthm svexlist-vars-of-append
-     (equal (svexlist-vars (append x y))
-            (union (svexlist-vars x)
-                   (svexlist-vars y)))
-     :hints(("Goal" :in-theory (enable svexlist-vars)))))
 
 
 
-
+; -----------------------------------------------------------------------------
+;
+;                  Correctness of svex-collect-vars
+;
+; -----------------------------------------------------------------------------
 
 ;; Invariant: svex-collect-vars1 uses a preorder accumulator.  Working off the
-;; template in centaur/aig/accumulate-nodes-vars.lisp, the invariant we needs
+;; template in centaur/aig/accumulate-nodes-vars.lisp, the invariant we need
 ;; is: when recurring on a node a, for every subnode x of a, if x is in the
 ;; seen list then every subnode of x is in the seen list.
 
 ;; we don't collect quotes because svex-collect-vars doesn't either
 
-(defines svex-subnodes
-  (define svex-subnodes ((x svex-p))
-    :returns (subnodes svexlist-p)
-    :measure (svex-count x)
-    (svex-case x
-      :var (list (svex-fix x))
-      :quote nil
-      :call (cons (svex-fix x) (svexlist-subnodes x.args))))
-  (define svexlist-subnodes ((x svexlist-p))
-    :returns (subnodes svexlist-p)
-    :measure (svexlist-count x)
-    (if (atom x)
-        nil
-      (append (svex-subnodes (car x))
-              (svexlist-subnodes (cdr x)))))
-  ///
-  (deffixequiv-mutual svex-subnodes)
+(local
+ (defines svex-subnodes
+   (define svex-subnodes ((x svex-p))
+     :returns (subnodes svexlist-p)
+     :measure (svex-count x)
+     (svex-case x
+       :var (list (svex-fix x))
+       :quote nil
+       :call (cons (svex-fix x) (svexlist-subnodes x.args))))
+   (define svexlist-subnodes ((x svexlist-p))
+     :returns (subnodes svexlist-p)
+     :measure (svexlist-count x)
+     (if (atom x)
+         nil
+       (append (svex-subnodes (car x))
+               (svexlist-subnodes (cdr x)))))
+   ///
+   (deffixequiv-mutual svex-subnodes)
 
 
-  (defthm-svex-subnodes-flag
-    (defthm member-svex-subnodes-transitive
-      (implies (and (member z (svex-subnodes y))
-                    (member y (svex-subnodes x)))
-               (member z (svex-subnodes x)))
-      :flag svex-subnodes)
-    (defthm member-svexlist-subnodes-transitive
-      (implies (and (member z (svex-subnodes y))
-                    (member y (svexlist-subnodes x)))
-               (member z (svexlist-subnodes x)))
-      :flag svexlist-subnodes))
+   (defthm-svex-subnodes-flag
+     (defthm member-svex-subnodes-transitive
+       (implies (and (member z (svex-subnodes y))
+                     (member y (svex-subnodes x)))
+                (member z (svex-subnodes x)))
+       :flag svex-subnodes)
+     (defthm member-svexlist-subnodes-transitive
+       (implies (and (member z (svex-subnodes y))
+                     (member y (svexlist-subnodes x)))
+                (member z (svexlist-subnodes x)))
+       :flag svexlist-subnodes))
 
-  (defthm-svex-subnodes-flag
-    (defthm nonmember-svex-subnodes-by-count
-      (implies (< (svex-count x) (svex-count y))
-               (not (member y (svex-subnodes x))))
-      :flag svex-subnodes)
-    (defthm nonmember-svexlist-subnodes-by-count
-      (implies (< (svexlist-count x) (svex-count y))
-               (not (member y (svexlist-subnodes x))))
-      :flag svexlist-subnodes))
+   (defthm-svex-subnodes-flag
+     (defthm nonmember-svex-subnodes-by-count
+       (implies (< (svex-count x) (svex-count y))
+                (not (member y (svex-subnodes x))))
+       :flag svex-subnodes)
+     (defthm nonmember-svexlist-subnodes-by-count
+       (implies (< (svexlist-count x) (svex-count y))
+                (not (member y (svexlist-subnodes x))))
+       :flag svexlist-subnodes))
 
-  (defthm-svex-subnodes-flag
-    (defthm member-var-of-svex-subnodes-transitive
-      (implies (and (member v (svex-vars y))
-                    (member y (svex-subnodes x)))
-               (member v (svex-vars x)))
-      :hints ('(:expand ((svex-vars x)
-                         (svex-subnodes x))))
-      :flag svex-subnodes)
-    (defthm member-var-of-svexlist-subnodes-transitive
-      (implies (and (member v (svex-vars y))
-                    (member y (svexlist-subnodes x)))
-               (member v (svexlist-vars x)))
-      :hints ('(:expand ((svexlist-vars x)
-                         (svexlist-subnodes x))))
-      :flag svexlist-subnodes))
-  (in-theory (disable member-var-of-svex-subnodes-transitive
-                      member-var-of-svexlist-subnodes-transitive))
+   (defthm-svex-subnodes-flag
+     (defthm member-var-of-svex-subnodes-transitive
+       (implies (and (member v (svex-vars y))
+                     (member y (svex-subnodes x)))
+                (member v (svex-vars x)))
+       :hints ('(:expand ((svex-vars x)
+                          (svex-subnodes x))))
+       :flag svex-subnodes)
+     (defthm member-var-of-svexlist-subnodes-transitive
+       (implies (and (member v (svex-vars y))
+                     (member y (svexlist-subnodes x)))
+                (member v (svexlist-vars x)))
+       :hints ('(:expand ((svexlist-vars x)
+                          (svexlist-subnodes x))))
+       :flag svexlist-subnodes))
+   (in-theory (disable member-var-of-svex-subnodes-transitive
+                       member-var-of-svexlist-subnodes-transitive))
 
 
-  (defthm-svex-subnodes-flag
-    (defthm member-svex-var-of-subnodes
-      (iff (member (svex-var v) (svex-subnodes x))
-           (member (svar-fix v) (svex-vars x)))
-      :hints ('(:expand ((svex-vars x)
-                         (svex-subnodes x))))
-      :flag svex-subnodes)
-    (defthm member-svexlist-var-of-subnodes
-      (iff (member (svex-var v) (svexlist-subnodes x))
-           (member (svar-fix v) (svexlist-vars x)))
-      :hints ('(:expand ((svexlist-vars x)
-                         (svexlist-subnodes x))))
-      :flag svexlist-subnodes))
+   (defthm-svex-subnodes-flag
+     (defthm member-svex-var-of-subnodes
+       (iff (member (svex-var v) (svex-subnodes x))
+            (member (svar-fix v) (svex-vars x)))
+       :hints ('(:expand ((svex-vars x)
+                          (svex-subnodes x))))
+       :flag svex-subnodes)
+     (defthm member-svexlist-var-of-subnodes
+       (iff (member (svex-var v) (svexlist-subnodes x))
+            (member (svar-fix v) (svexlist-vars x)))
+       :hints ('(:expand ((svexlist-vars x)
+                          (svexlist-subnodes x))))
+       :flag svexlist-subnodes))
 
-  (defthm-svex-vars-flag
+   (defthm-svex-vars-flag
      (defthm svexlist-vars-of-svex-subnodes
        (equal (svexlist-vars (svex-subnodes x))
               (svex-vars x))
@@ -339,24 +420,16 @@
               (svexlist-vars x))
        :hints ('(:expand ((svexlist-subnodes x)
                           (svexlist-vars x))))
-       :flag svexlist-vars)))
+       :flag svexlist-vars))))
 
 (local (in-theory (enable member-var-of-svex-subnodes-transitive
                           member-var-of-svexlist-subnodes-transitive)))
-
-
-
-
-
 
 
 (local (defthmd member-alist-keys
          (iff (member k (alist-keys x))
               (hons-assoc-equal k x))
          :hints(("Goal" :in-theory (enable alist-keys)))))
-
-
-
 
 
 (local
@@ -537,9 +610,9 @@
               (iff (member k x)
                    (or (member k y)
                        (member k z)))))
-   
 
-   
+
+
 
    (local (defthm set-diff-of-nil
             (equal (set-difference$ nil x)
@@ -742,161 +815,164 @@
        :flag svexlist-collect-vars1))))
 
 
+(local
+ (defsection seenlist-invariant
 
-(defsection seenlist-invariant
+   ;; (acl2::defquant svex-seenlist-invariant (x seen)
+   ;;   (forall (y z)
+   ;;           (implies (and (member y (svex-subnodes x))
+   ;;                         (member y seen)
+   ;;                         (not (member z seen)))
+   ;;                    (not (member z (svex-subnodes y)))))
+   ;;   :rewrite :direct)
 
-  ;; (acl2::defquant svex-seenlist-invariant (x seen)
-  ;;   (forall (y z)
-  ;;           (implies (and (member y (svex-subnodes x))
-  ;;                         (member y seen)
-  ;;                         (not (member z seen)))
-  ;;                    (not (member z (svex-subnodes y)))))
-  ;;   :rewrite :direct)
+   ;; (acl2::defquant svex-varlist-invariant (a seen vars)
+   ;;   (forall (v x)
+   ;;           (implies (and (member x (svex-subnodes a))
+   ;;                         (member x seen)
+   ;;                         (not (member v (svarlist-fix vars))))
+   ;;                    (not (member v (svex-vars x)))))
+   ;;   :rewrite :direct)
 
-  ;; (acl2::defquant svex-varlist-invariant (a seen vars)
-  ;;   (forall (v x)
-  ;;           (implies (and (member x (svex-subnodes a))
-  ;;                         (member x seen)
-  ;;                         (not (member v (svarlist-fix vars))))
-  ;;                    (not (member v (svex-vars x)))))
-  ;;   :rewrite :direct)
-
-  (acl2::defquant svex-collect-seen-invariant (seen)
-    ;; Seenlist and varlist invariants for all X
-    (forall (y z)
-            (implies (and (member y seen)
-                          (not (member z seen)))
-                     (not (member z (svex-subnodes y)))))
-    :rewrite :direct)
-
-
-  (local (in-theory (enable svex-collect-seen-invariant-necc)))
-
-  (local
-   (progn
-     (defthm svex-seenlist-invariant-when-collect-seen-invariant
-       (implies (svex-collect-seen-invariant seen)
-                (svex-seenlist-invariant x seen))
-       :hints ((acl2::witness)))
-
-     (defthm svexlist-seenlist-invariant-when-collect-seen-invariant
-       (implies (svex-collect-seen-invariant seen)
-                (svexlist-seenlist-invariant x seen))
-       :hints ((acl2::witness)))))
-
-  (defthm svex-collect-seen-invariant-of-empty
-    (svex-collect-seen-invariant nil)
-    :hints(("Goal" :in-theory (enable svex-collect-seen-invariant))))
+   (acl2::defquant svex-collect-seen-invariant (seen)
+     ;; Seenlist and varlist invariants for all X
+     (forall (y z)
+             (implies (and (member y seen)
+                           (not (member z seen)))
+                      (not (member z (svex-subnodes y)))))
+     :rewrite :direct)
 
 
-  (defthm svex-collect-vars1-preserves-svex-collect-seen-invariant
-    (b* (((mv seen1 ?vars1) (svex-collect-vars1 x seen vars)))
-      (implies (svex-collect-seen-invariant (alist-keys seen))
-               (svex-collect-seen-invariant (alist-keys seen1))))
-    :hints ((acl2::witness)))
+   (local (in-theory (enable svex-collect-seen-invariant-necc)))
 
-  (defthm svexlist-collect-vars1-preserves-svex-collect-seen-invariant
-    (b* (((mv seen1 ?vars1) (svexlist-collect-vars1 x seen vars)))
-      (implies (svex-collect-seen-invariant (alist-keys seen))
-               (svex-collect-seen-invariant (alist-keys seen1))))
-    :hints ((acl2::witness)))
+   (local
+    (progn
+      (defthm svex-seenlist-invariant-when-collect-seen-invariant
+        (implies (svex-collect-seen-invariant seen)
+                 (svex-seenlist-invariant x seen))
+        :hints ((acl2::witness)))
 
+      (defthm svexlist-seenlist-invariant-when-collect-seen-invariant
+        (implies (svex-collect-seen-invariant seen)
+                 (svexlist-seenlist-invariant x seen))
+        :hints ((acl2::witness)))))
 
-  (defthm svex-collect-vars1-seenlist
-    (implies (svex-collect-seen-invariant (alist-keys seen))
-             (set-equiv (alist-keys (mv-nth 0 (svex-collect-vars1 x seen vars)))
-                        (append (svex-subnodes x) (alist-keys seen)))))
-
-
-  (defthm svexlist-collect-vars1-seenlist
-    (implies (svex-collect-seen-invariant (alist-keys seen))
-             (set-equiv (alist-keys (mv-nth 0 (svexlist-collect-vars1 x seen vars)))
-                        (append (svexlist-subnodes x) (alist-keys seen)))))
+   (defthm svex-collect-seen-invariant-of-empty
+     (svex-collect-seen-invariant nil)
+     :hints(("Goal" :in-theory (enable svex-collect-seen-invariant))))
 
 
-  (local
-   (defthm member-svexlist-vars-when-member-svex-var
-     (implies (and (member (svex-var k) x)
-                   (svar-p k))
-              (member k (svexlist-vars x)))
-     :hints(("Goal" :induct (len x)
-             :expand ((svexlist-vars x))))))
+   (defthm svex-collect-vars1-preserves-svex-collect-seen-invariant
+     (b* (((mv seen1 ?vars1) (svex-collect-vars1 x seen vars)))
+       (implies (svex-collect-seen-invariant (alist-keys seen))
+                (svex-collect-seen-invariant (alist-keys seen1))))
+     :hints ((acl2::witness)))
 
-  (local (defthm svex-collect-seen-invariant-implies-member-svex-var
-           (implies (svex-collect-seen-invariant seen)
-                    (iff (member (svex-var k) seen)
-                         (member (svar-fix k) (svexlist-vars seen))))
-           :hints (("goal" :use ((:instance svex-collect-seen-invariant-necc
-                                  (y (member-svexlist-vars-witness
-                                      (svar-fix k) seen))
-                                  (z (svex-var k))))
-                    :in-theory (disable svex-collect-seen-invariant-necc)))))
+   (defthm svexlist-collect-vars1-preserves-svex-collect-seen-invariant
+     (b* (((mv seen1 ?vars1) (svexlist-collect-vars1 x seen vars)))
+       (implies (svex-collect-seen-invariant (alist-keys seen))
+                (svex-collect-seen-invariant (alist-keys seen1))))
+     :hints ((acl2::witness)))
 
 
-
-  (local
-   (defthm svex-collect-correct-lemma
-     (IMPLIES
-      (SVEX-COLLECT-SEEN-INVARIANT (ALIST-KEYS SEEN))
-      (SET-EQUIV
-       (SET-DIFFERENCE-EQUAL
-        (SVEX-VARS X)
-        (SVEXLIST-VARS (INTERSECTION-EQUAL (SVEX-SUBNODES X)
-                                           (ALIST-KEYS SEEN))))
-       (SET-DIFFERENCE-EQUAL (SVEX-VARS X)
-                             (SVEXLIST-VARS (ALIST-KEYS SEEN)))))
-     :hints ((acl2::set-reasoning)
-             (and stable-under-simplificationp
-                  '(:use ((:instance svex-seenlist-invariant-when-collect-seen-invariant
-                           (seen (alist-keys seen))))
-                    :in-theory (disable svex-seenlist-invariant-when-collect-seen-invariant))))
-     :otf-flg t))
-
-  (local
-   (defthm svexlist-collect-correct-lemma
-     (IMPLIES
-      (SVEX-COLLECT-SEEN-INVARIANT (ALIST-KEYS SEEN))
-      (SET-EQUIV
-       (SET-DIFFERENCE-EQUAL
-        (SVEXlist-VARS X)
-        (SVEXLIST-VARS (INTERSECTION-EQUAL (SVEXlist-SUBNODES X)
-                                           (ALIST-KEYS SEEN))))
-       (SET-DIFFERENCE-EQUAL (SVEXlist-VARS X)
-                             (SVEXLIST-VARS (ALIST-KEYS SEEN)))))
-     :hints ((acl2::set-reasoning)
-             (and stable-under-simplificationp
-                  '(:use ((:instance svexlist-seenlist-invariant-when-collect-seen-invariant
-                           (seen (alist-keys seen))))
-                    :in-theory (disable svexlist-seenlist-invariant-when-collect-seen-invariant))))
-     :otf-flg t))
+   (defthm svex-collect-vars1-seenlist
+     (implies (svex-collect-seen-invariant (alist-keys seen))
+              (set-equiv (alist-keys (mv-nth 0 (svex-collect-vars1 x seen vars)))
+                         (append (svex-subnodes x) (alist-keys seen)))))
 
 
-  (defthm svex-collect-vars1-correct
-    (implies (svex-collect-seen-invariant (alist-keys seen))
-             (set-equiv (mv-nth 1 (svex-collect-vars1 x seen vars))
-                        (append (set-difference$ (svex-vars x)
-                                                 (svexlist-vars (alist-keys seen)))
-                                (svarlist-fix vars)))))
+   (defthm svexlist-collect-vars1-seenlist
+     (implies (svex-collect-seen-invariant (alist-keys seen))
+              (set-equiv (alist-keys (mv-nth 0 (svexlist-collect-vars1 x seen vars)))
+                         (append (svexlist-subnodes x) (alist-keys seen)))))
 
-  (defthm svexlist-collect-vars1-correct
-    (implies (svex-collect-seen-invariant (alist-keys seen))
-             (set-equiv (mv-nth 1 (svexlist-collect-vars1 x seen vars))
-                        (append (set-difference$ (svexlist-vars x)
-                                                 (svexlist-vars (alist-keys seen)))
-                                (svarlist-fix vars))))))
 
-  
+   (local
+    (defthm member-svexlist-vars-when-member-svex-var
+      (implies (and (member (svex-var k) x)
+                    (svar-p k))
+               (member k (svexlist-vars x)))
+      :hints(("Goal" :induct (len x)
+              :expand ((svexlist-vars x))))))
+
+   (local (defthm svex-collect-seen-invariant-implies-member-svex-var
+            (implies (svex-collect-seen-invariant seen)
+                     (iff (member (svex-var k) seen)
+                          (member (svar-fix k) (svexlist-vars seen))))
+            :hints (("goal" :use ((:instance svex-collect-seen-invariant-necc
+                                   (y (member-svexlist-vars-witness
+                                       (svar-fix k) seen))
+                                   (z (svex-var k))))
+                     :in-theory (disable svex-collect-seen-invariant-necc)))))
 
 
 
-(defthm svex-collect-vars-correct
-  (set-equiv (svex-collect-vars x)
-             (svex-vars x))
-  :hints(("Goal" :in-theory (enable svex-collect-vars))
-         (acl2::set-reasoning)))
+   (local
+    (defthm svex-collect-correct-lemma
+      (IMPLIES
+       (SVEX-COLLECT-SEEN-INVARIANT (ALIST-KEYS SEEN))
+       (SET-EQUIV
+        (SET-DIFFERENCE-EQUAL
+         (SVEX-VARS X)
+         (SVEXLIST-VARS (INTERSECTION-EQUAL (SVEX-SUBNODES X)
+                                            (ALIST-KEYS SEEN))))
+        (SET-DIFFERENCE-EQUAL (SVEX-VARS X)
+                              (SVEXLIST-VARS (ALIST-KEYS SEEN)))))
+      :hints ((acl2::set-reasoning)
+              (and stable-under-simplificationp
+                   '(:use ((:instance svex-seenlist-invariant-when-collect-seen-invariant
+                            (seen (alist-keys seen))))
+                     :in-theory (disable svex-seenlist-invariant-when-collect-seen-invariant))))
+      :otf-flg t))
 
-(defthm svexlist-collect-vars-correct
-  (set-equiv (svexlist-collect-vars x)
-             (svexlist-vars x))
-  :hints(("Goal" :in-theory (enable svexlist-collect-vars))
-         (acl2::set-reasoning)))
+   (local
+    (defthm svexlist-collect-correct-lemma
+      (IMPLIES
+       (SVEX-COLLECT-SEEN-INVARIANT (ALIST-KEYS SEEN))
+       (SET-EQUIV
+        (SET-DIFFERENCE-EQUAL
+         (SVEXlist-VARS X)
+         (SVEXLIST-VARS (INTERSECTION-EQUAL (SVEXlist-SUBNODES X)
+                                            (ALIST-KEYS SEEN))))
+        (SET-DIFFERENCE-EQUAL (SVEXlist-VARS X)
+                              (SVEXLIST-VARS (ALIST-KEYS SEEN)))))
+      :hints ((acl2::set-reasoning)
+              (and stable-under-simplificationp
+                   '(:use ((:instance svexlist-seenlist-invariant-when-collect-seen-invariant
+                            (seen (alist-keys seen))))
+                     :in-theory (disable svexlist-seenlist-invariant-when-collect-seen-invariant))))
+      :otf-flg t))
+
+
+   (defthm svex-collect-vars1-correct
+     (implies (svex-collect-seen-invariant (alist-keys seen))
+              (set-equiv (mv-nth 1 (svex-collect-vars1 x seen vars))
+                         (append (set-difference$ (svex-vars x)
+                                                  (svexlist-vars (alist-keys seen)))
+                                 (svarlist-fix vars)))))
+
+   (defthm svexlist-collect-vars1-correct
+     (implies (svex-collect-seen-invariant (alist-keys seen))
+              (set-equiv (mv-nth 1 (svexlist-collect-vars1 x seen vars))
+                         (append (set-difference$ (svexlist-vars x)
+                                                  (svexlist-vars (alist-keys seen)))
+                                 (svarlist-fix vars)))))))
+
+
+(defsection svex-collect-vars-correct
+  :extension (svex-collect-vars)
+
+  (defthm svex-collect-vars-correct
+    (set-equiv (svex-collect-vars x)
+               (svex-vars x))
+    :hints(("Goal" :in-theory (enable svex-collect-vars))
+           (acl2::set-reasoning))))
+
+(defsection svexlist-collect-vars-correct
+  :extension (svexlist-collect-vars)
+
+  (defthm svexlist-collect-vars-correct
+    (set-equiv (svexlist-collect-vars x)
+               (svexlist-vars x))
+    :hints(("Goal" :in-theory (enable svexlist-collect-vars))
+           (acl2::set-reasoning))))

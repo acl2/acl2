@@ -34,6 +34,10 @@
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (include-book "centaur/misc/equal-sets" :dir :system))
 
+(local (defthm setp-singleton
+         (setp (list x))
+         :hints(("Goal" :in-theory (enable setp)))))
+
 (defxdoc svex-rewriting
   :parents (sv)
   :short "Simplification of SVEX expressions by mostly-unconditional rewriting."

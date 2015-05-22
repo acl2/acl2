@@ -35,7 +35,7 @@
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 
 (defsection 3vec
-  :parents (expressions)
+  :parents (values)
   :short "A <b>3vec</b> is a @(see 4vec) that has no Z bits."
 
   :long "<p>In hardware modeling, Z bits (floating/undriven wires) are:</p>
@@ -191,7 +191,7 @@ that in the execution this is just the identity."
 
 
 (defsection 2vecx
-  :parents (expressions)
+  :parents (values)
   :short "A <b>2vecx</b> is a @(see 4vec) that is either a @(see 2vec) or is
 all Xes."
 
@@ -271,7 +271,7 @@ non-@(see 2vec)s to an just be infinite Xes."
 
 
 (defsection 2vecnatx
-  :parents (expressions)
+  :parents (values)
   :short "A <b>2vecnatx</b> is a @(see 4vec) that is either a natural-valued
 @(see 2vec) or is all Xes.")
 

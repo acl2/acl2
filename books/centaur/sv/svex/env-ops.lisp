@@ -33,13 +33,8 @@
 (include-book "vars")
 (local (include-book "centaur/misc/equal-sets" :dir :system))
 
-(defxdoc svex-environments
-  :parents (svex)
-  :short "Operations on SVEX evaluation environments")
-(defxdoc env-ops.lisp :parents (svex-environments))
-(local (xdoc::set-default-parents env-ops.lisp))
-
 (define svex-env-extract-aux ((keys svarlist-p) (env svex-env-p))
+  :parents (svex-env-extract)
   :prepwork ((local (in-theory (enable svarlist-p svarlist-fix))))
   :returns (env1 svex-env-p)
   (if (atom keys)
@@ -48,10 +43,14 @@
                 (svex-env-fastlookup (car keys) env))
           (svex-env-extract-aux (cdr keys) env))))
 
-(define svex-env-extract ((keys svarlist-p) (env svex-env-p))
-  :prepwork ((local (in-theory (enable svex-env-extract-aux
-                                       svarlist-fix))))
-  :returns (env1 svex-env-p)
+(define svex-env-extract
+  :parents (svex-env)
+  :short "Restrict an @(see svex-env) to only particular variables."
+  ((keys svarlist-p "Variables to keep.")
+   (env  svex-env-p "Original environment to filter.  Need not be fast."))
+  :returns
+  (sub-env svex-env-p "Restriction of @('env') to @('keys').  Slow alist.")
+  :prepwork ((local (in-theory (enable svex-env-extract-aux svarlist-fix))))
   :verify-guards nil
   (mbe :logic (if (atom keys)
                   nil
@@ -63,6 +62,7 @@
   (local (defthm svex-env-extract-aux-elim
            (equal (svex-env-extract-aux keys env)
                   (svex-env-extract keys env))))
+
   (verify-guards svex-env-extract)
 
   (defthm svex-env-lookup-of-svex-env-extract
