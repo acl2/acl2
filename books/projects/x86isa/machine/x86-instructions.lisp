@@ -7041,16 +7041,16 @@ Digital Random Number Generator Guide</a> for more details.</p>"
 
   :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
 
-  :long "<h3>Op/En = M: \[OP m16&m64\]</h3>
+  :long "<h3>Op/En = M: \[OP m16@('&')m64\]</h3>
 
   <p>In 64-bit mode, the instruction's operand size is fixed at 8+2
   bytes (an 8-byte base and a 2-byte limit).</p>
 
-  \[OP  M\]<br/>
-  0F 01/2: LGDT m16&64
+  <p>\[OP  M\]<br/>
+  0F 01/2: LGDT m16@('&')64</p>
 
-<p><b>TO-DO:</b> If a memory address referencing the SS segment is in
-a non-canonical form, raise the SS exception.</p>"
+  <p><b>TO-DO:</b> If a memory address referencing the SS segment is in
+  a non-canonical form, raise the SS exception.</p>"
 
   :implemented
   (add-to-implemented-opcodes-table 'LGDT #x0F01 '(:reg 2)
@@ -7126,16 +7126,16 @@ a non-canonical form, raise the SS exception.</p>"
 
   :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
 
-  :long "<h3>Op/En = M: \[OP m16&m64\]</h3>
+  :long "<h3>Op/En = M: \[OP m16@('&')m64\]</h3>
 
   <p>In 64-bit mode, the instruction's operand size is fixed at 8+2
   bytes (an 8-byte base and a 2-byte limit).</p>
 
-  \[OP  M\]<br/>
-  0F 01/3: LIDT m16&64<br/>
+  <p>\[OP  M\]<br/>
+  0F 01/3: LIDT m16@('&')64</p>
 
-<p><b>TO-DO:</b> If a memory address referencing the SS segment is in
-a non-canonical form, raise the SS exception.</p>"
+  <p><b>TO-DO:</b> If a memory address referencing the SS segment is in
+  a non-canonical form, raise the SS exception.</p>"
 
   :implemented
   (add-to-implemented-opcodes-table 'LIDT #x0F01 '(:reg 3)

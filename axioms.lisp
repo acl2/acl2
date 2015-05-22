@@ -26565,8 +26565,7 @@ Lisp definition."
                              (assoc-eq op *gc-strategy-alist*)))
            #+(and ccl (not acl2-loop-only))
            (special *gc-strategy*)
-           #+acl2-loop-only
-           (ignore threshold))
+           (ignorable threshold))
   #-acl2-loop-only
   #+ccl
   (let* ((op (if (eq op :current) *gc-strategy* op))
