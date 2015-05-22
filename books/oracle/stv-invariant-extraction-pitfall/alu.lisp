@@ -33,6 +33,9 @@
 
 (def-gl-clause-processor my-glcp)
 
+;; [Jared] Adding (comp t) after my-glcp to avoid stack overflow on GCL.
+(comp t)
+
 (value-triple (set-max-mem (expt 2 34)))
 
 (defmodules *alu-translation*
