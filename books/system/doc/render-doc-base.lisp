@@ -54,12 +54,110 @@
       (substitute new old seq)
     seq))
 
+; The following comment was an attempt by Matt K. to deal with a new topic name
+; that contained the square-bracket character: SV::4VEC-[= .  That name was
+; breaking the acl2-doc Emacs browser.  My thought was to escape the square
+; bracket, "...\[..."; but that got messy to handle for both Common Lisp and
+; Emacs Lisp, perhaps in particular because Common Lisp was escaping the "\",
+; and "\\[" didn't help Emacs.  So I'm taking the easy way out instead, simply
+; replacing [ and ] by { and }, respectively.  I'm not happy that
+; rendered-name-acl2-doc already replaces ( and ) by those characters, but {
+; and } seem less likely to cause confusion; in particular, there are topics
+; SV::4VEC-< and SV::4VEC-[= that don't seem much related, so it would be sad
+; to convert the latter to SV::4VEC-<=.  I may revisit this solution in the
+; future; Jared has suggested a possible path to a solution.  For now, since
+; there is only one affected topic, I can live with the simple replacement.
+
+#||
+(encapsulate
+ ()
+
+ (local
+  (defthm character-listp-first-n-ac
+    (implies (and (character-listp x)
+                  (character-listp ac)
+                  (force (natp n))
+                  (force (<= n (len x))))
+             (character-listp (first-n-ac n x ac)))
+    :hints (("Goal" :induct (first-n-ac n x ac)))))
+
+ (local
+  (defthm len-reveappend
+    (equal (len (revappend x y))
+           (+ (len x) (len y)))))
+
+ (local
+  (defthm len-first-n-ac
+    (equal (len (first-n-ac n x ac))
+           (+ (nfix n)
+              (len ac)))))
+
+ (local
+  (defthm character-listp-nthcdr
+    (implies (character-listp x)
+             (character-listp (nthcdr n x)))))
+
+ (local
+  (defthm character-listp-cdr
+    (implies (character-listp x)
+             (character-listp (cdr x)))))
+
+ (local
+  (defthm position-equal-ac-upper-bound
+    (implies (position-equal-ac c lst n)
+             (< (position-equal-ac c lst n)
+                (+ (len lst) n)))
+    :rule-classes :linear))
+
+ (local
+  (defthm len-nthcdr
+    (implies (and (natp n)
+                  (true-listp x))
+             (equal (len (nthcdr n x))
+                    (if (<= n (len x))
+                        (- (len x) n)
+                      0)))))
+
+ (defun escape-char (c name)
+   (declare (xargs :guard (and (characterp c)
+                               (stringp name))))
+   (let ((pos (position c name)))
+     (cond ((not (mbt (stringp name)))
+            "")
+           ((null pos)
+            name)
+           ((or (eql pos 0)
+                (not (eql (char name (1- pos)) #\\))) ; then escape
+            (concatenate 'string
+                         (subseq name 0 pos)
+                         (coerce (list #\\ c) 'string)
+                         (escape-char c (subseq name (1+ pos) nil))))
+           (t ; don't escape, but keep looking
+            (concatenate 'string
+                         (subseq name 0 (1+ pos))
+                         (escape-char c (subseq name (1+ pos) nil))))))))
+
 (defun rendered-name-acl2-doc (name)
   (declare (xargs :guard (stringp name)))
   (substitute? #\_ #\Space
                (substitute? #\{ #\(
                             (substitute? #\} #\)
-                                         name))))
+                                         (escape-char #\[
+                                                      (escape-char #\]
+                                                                   name))))))
+||#
+
+(defun rendered-name-acl2-doc (name)
+  (declare (xargs :guard (stringp name)))
+  (substitute?
+   #\_ #\Space
+   (substitute?
+    #\{ #\(
+    (substitute?
+     #\} #\)
+     (substitute?
+      #\{ #\[
+      (substitute? #\} #\] name))))))
 
 (defattach rendered-name rendered-name-acl2-doc)
 

@@ -48,6 +48,16 @@
 ;    considered a bug until we are very close to a release.
 
 (defxdoc note-7-2-books
+
+; (Matt K.: Not sure this deserves explicit mention, so I'll make it a comment.
+; If someone prefers to move it into the :long string, that's fine with me.)  A
+; simple fix for the acl2-doc Emacs browser allows handling of topics with
+; square brackets.  This fix was necessary because the new topic,
+; "SV::4VEC-[=", broke acl2-doc; it wouldn't initialize.  The fix simply
+; replaces characters #\[ and #\] with #\< and #\>, respectively.  It's not a
+; perfect fix, but it seems awkward to try to escape #\[ (which Emacs Lisp
+; thinks starts a vector).  See system/doc/render-doc-base.lisp.
+
   :parents (note-7-2)
   :short "Release notes for the ACL2 Community Books for ACL2 7.2 (xx 20xx)"
   :long "<p>Stub: to be written.</p>")
