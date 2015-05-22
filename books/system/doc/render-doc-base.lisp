@@ -60,12 +60,13 @@
 ; bracket, "...\[..."; but that got messy to handle for both Common Lisp and
 ; Emacs Lisp, perhaps in particular because Common Lisp was escaping the "\",
 ; and "\\[" didn't help Emacs.  So I'm taking the easy way out instead, simply
-; replacing [ and ] by < and >, respectively.  (I'd slightly prefer { and },
-; but I see that rendered-name-acl2-doc already replaces ( and ) by those
-; characters; perhaps it's better not to re-use those replacement characters.)
-; I may revisit this solution in the future; Jared has suggested a possible
-; path to a solution.  For now, since there is only one affected topic, I can
-; live with the simple replacement.
+; replacing [ and ] by { and }, respectively.  I'm not happy that
+; rendered-name-acl2-doc already replaces ( and ) by those characters, but {
+; and } seem less likely to cause confusion; in particular, there are topics
+; SV::4VEC-< and SV::4VEC-[= that don't seem much related, so it would be sad
+; to convert the latter to SV::4VEC-<=.  I may revisit this solution in the
+; future; Jared has suggested a possible path to a solution.  For now, since
+; there is only one affected topic, I can live with the simple replacement.
 
 #||
 (encapsulate
@@ -155,8 +156,8 @@
     (substitute?
      #\} #\)
      (substitute?
-      #\< #\[
-      (substitute? #\> #\] name))))))
+      #\{ #\[
+      (substitute? #\} #\] name))))))
 
 (defattach rendered-name rendered-name-acl2-doc)
 

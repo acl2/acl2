@@ -50,6 +50,8 @@
      disable*
      e/d*
 
+     x86isa ; so that top-level :doc topic is also in "ACL2" package
+
      )
    (union-eq *acl2-exports*
              *bitops-exports*
