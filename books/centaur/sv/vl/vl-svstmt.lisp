@@ -815,8 +815,8 @@ because... (BOZO)</p>
                           (equal (vl-evatom->type x) :vl-negedge)
                           (equal (vl-evatom->type x) :vl-posedge))
                       :hints (("goal" :use vl-evatomtype-p-of-vl-evatom->type
-                               ::in-theory (e/d (vl-evatomtype-p)
-                                                (vl-evatomtype-p-of-vl-evatom->type))))
+                               :in-theory (e/d (vl-evatomtype-p)
+                                               (vl-evatomtype-p-of-vl-evatom->type))))
                       :rule-classes ((:forward-chaining :trigger-terms ((vl-evatom->type x)))))))
   (b* (((when (atom x)) (mv nil (sv::svex-quote (sv::2vec 0))))
        ((vl-evatom x1) (car x))
@@ -1003,8 +1003,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                           (equal (vl-evatom->type x) :vl-negedge)
                           (equal (vl-evatom->type x) :vl-posedge))
                       :hints (("goal" :use vl-evatomtype-p-of-vl-evatom->type
-                               ::in-theory (e/d (vl-evatomtype-p)
-                                                (vl-evatomtype-p-of-vl-evatom->type))))
+                               :in-theory (e/d (vl-evatomtype-p)
+                                               (vl-evatomtype-p-of-vl-evatom->type))))
                       :rule-classes ((:forward-chaining :trigger-terms ((vl-evatom->type x))))))
              (local (in-theory (disable member-equal))))
   (b* (((when (atom x)) (mv nil nil))
