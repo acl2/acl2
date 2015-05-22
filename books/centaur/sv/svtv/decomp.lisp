@@ -30,7 +30,7 @@
 
 (in-package "SV")
 (include-book "../svex/compose")
-(include-book "../svex/evaluator")
+(include-book "../svex/eval")
 (include-book "../svex/env-ops")
 (include-book "tools/match-tree" :dir :system)
 (include-book "std/alists/fast-alist-clean" :dir :System)

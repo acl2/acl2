@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "evaluator")
+(include-book "eval")
 (include-book "aig-arith")
 (include-book "svex-rewrite")
 (include-book "centaur/gl/gl-mbe" :dir :system)

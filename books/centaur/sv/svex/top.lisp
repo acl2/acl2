@@ -34,7 +34,7 @@
 ;; Not bits -- it's just lemmas about b-and/b-not/etc., should be local
 (include-book "compose")
 (include-book "env-ops")
-(include-book "evaluator")
+(include-book "eval")
 (include-book "lattice")
 (include-book "rsh-concat")
 (include-book "svex-argmasks")

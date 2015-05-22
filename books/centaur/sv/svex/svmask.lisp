@@ -31,7 +31,7 @@
 (in-package "SV")
 
 (include-book "4vec")
-(include-book "evaluator")
+(include-book "eval")
 (include-book "std/misc/two-nats-measure" :dir :system)
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))

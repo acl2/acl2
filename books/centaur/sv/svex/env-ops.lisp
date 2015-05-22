@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "evaluator")
+(include-book "eval")
 (include-book "vars")
 (local (include-book "centaur/misc/equal-sets" :dir :system))
 
