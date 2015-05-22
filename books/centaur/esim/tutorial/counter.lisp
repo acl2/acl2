@@ -47,8 +47,13 @@
 
 (include-book "intro")
 
-; Commented out by Matt K. since set-gc-strategy call above should do the job:
-; (value-triple (set-max-mem (* 3 (expt 2 30))))
+(value-triple
+ ;; [Jared]: Matt K. had once commented out the following line, but I think
+ ;; it's nicer to leave this here to make it explicit to remind us of how it
+ ;; works.  At the time of this writing, I believe that the above call of
+ ;; set-gc-strategy installs a 4 GB ceiling.  However, in some cases it may be
+ ;; important to set a larger ceiling:
+ (set-max-mem (* 4 (expt 2 30))))
 
 ; cert_param: (hons-only)
 
