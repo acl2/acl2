@@ -36,8 +36,6 @@
 
 (in-package "SV")
 
-
-
 ; -----------------------------------------------------------------------------
 ;
 ;                            PRELIMINARY SETUP
@@ -56,6 +54,8 @@
 (include-book "tools/plev-ccl" :dir :system)
 (include-book "centaur/misc/memory-mgmt" :dir :system)
 (include-book "support")
+; cert_param: (hons-only)
+; cert_param: (uses-glucose)
 
 (gl::def-gl-clause-processor sv-tutorial-glcp)
 

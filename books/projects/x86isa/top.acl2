@@ -1,0 +1,12 @@
+;; Shilpi Goel
+
+;; ======================================================================
+
+(set-waterfall-parallelism t)
+;; I need to disable parallel execution because fms-to-string is not
+;; supported with it turned on.
+(set-parallel-execution nil)
+(include-book "portcullis/sharp-dot-constants")
+;; cert-flags: ? t :ttags all :skip-proofs-okp t
+
+;; ======================================================================

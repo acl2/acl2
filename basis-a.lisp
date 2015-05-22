@@ -5767,7 +5767,9 @@
 ; representing the stobj name.
 
   (let ((field-templates (access defstobj-template template :field-templates)))
-    `(vector ,@(defstobj-raw-init-fields field-templates))))
+    `(coerce ; GCL complains when VECTOR is called on more than 64 arguments.
+      (list ,@(defstobj-raw-init-fields field-templates))
+      'vector)))
 
 (defun defstobj-component-recognizer-calls (field-templates n var ans)
 

@@ -862,6 +862,15 @@ sub get_depends_on {
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
 	debug_print_event($base, "depends_on", \@res);
+	# Disallow depends-on of a certificate, for now.
+	if ($res[0] =~ m/\.cert$/) {
+	    print("**************************** WARNING **************************************\n");
+	    print("$base has a \'depends-on\' dependency on a certificate, $res[0].\n");
+	    print("It is better to use \'include-book\' (in a multiline comment, if necessary)\n");
+	    print("to specify dependencies on books, because \'depends-on\' doesn't trigger\n");
+	    print("a scan of the target's dependencies.\n");
+	    print("***************************************************************************\n");
+	}
 	push(@$events, [$depends_on_event, $res[0], $res[1]]);
 	return 1;
     }

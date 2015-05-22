@@ -423,6 +423,10 @@ AIG to BDD Conversion Algorithm</a>.  In ITP 2010,LNCS 6172, Springer.  Pages
   :short "Libraries for working with hardware description languages, modeling
 circuits, etc.")
 
+(defsection software-verification
+  :parents (top)
+  :short "Software verification projects, tools, etc.")
+
 (defxdoc macro-libraries
   :parents (top macros)
   :short "Generally useful macros for writing more concise code, and frameworks

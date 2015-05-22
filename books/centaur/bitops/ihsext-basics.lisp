@@ -201,25 +201,31 @@ off looking at the source code.</p>")
     (<= (b-xor x y) 1)
     :rule-classes :linear)
 
+  ;; (defthm bxor-norm
+  ;;   (implies
+  ;;    (syntaxp (and 
+  ;;              (not (equal x ''0))
+  ;;              (not (equal x ''1))
+  ;;              (or
+  ;;               (equal y ''0)
+  ;;               (equal y ''1))))
+  ;;    (equal
+  ;;     (b-xor x y)
+  ;;     (b-xor y x)))
+  ;;   :hints (("goal" :in-theory (enable xor)))
+  ;;   )
 
-  ;; Bozo consider replacing with a plain commutativity of b-xor rule.
-  (defthm bxor-norm
-    (implies (syntaxp (and (not (equal x ''0))
-                           (not (equal x ''1))
-                           (or (equal y ''0)
-                               (equal y ''1))))
-             (equal (b-xor x y)
-                    (b-xor y x)))
-    :hints (("goal" :in-theory (enable xor))))
+  (defthm commutativity-of-b-xor
+    (equal (b-xor x y)
+           (b-xor y x)))
 
   (defthm bxor-to-bnot
     (equal (b-xor 1 x)
            (b-not x)))
 
   (defthm bxor-to-id
-    (implies (bitp x)
-             (equal (b-xor 0 x)
-                    x)))
+    (equal (b-xor 0 x)
+           (bfix x)))
 
   (defthm bfix-bound
     (<= (bfix x) 1)
@@ -3235,12 +3241,10 @@ off looking at the source code.</p>")
             :do-not-induct t)))
 
   (defthm cancel-loghead-under-logext
-    (implies
-     (posp sz)
-     (equal
-      (logext sz (loghead sz x))
-      (logext sz x))
-     )
+    (implies (posp sz)
+             (equal (logext sz (loghead sz x))
+                    (logext sz x))
+             )
     :hints (("goal" :in-theory (e/d* (ihsext-inductions
                                       ihsext-recursive-redefs
                                       posp 

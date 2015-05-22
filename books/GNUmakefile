@@ -491,6 +491,8 @@ ADDED_BOOKS := \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
   workshops/2013/hardin-hardin/support/APSP.cert
 
+ADDED_BOOKS += $(filter projects/x86isa/%, $(OK_CERTS))
+
 ADDED_BOOK_TARGETS :=
 
 ifneq ($(ACL2_HAS_HONS), )

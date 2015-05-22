@@ -504,7 +504,7 @@
   <p>where @('EXTRA') includes redundant definitions of functions introduced
   after @('name'), as necessary, in order to avoid undefined function errors
   when processing this @(tsee encapsulate) event.  (As with
-  @('with-supporters), @('EXTRA') may also include macro aliases and their
+  @('with-supporters'), @('EXTRA') may also include macro aliases and their
   supporters; see @(see with-supporters) for details.)  @('EXTRA') also
   includes @(see in-theory) events so that the rules introduced by the
   @('EXTRA') definitions are suitably enable or disabled.  Consider the

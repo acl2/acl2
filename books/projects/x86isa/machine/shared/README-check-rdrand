@@ -1,0 +1,2 @@
+gcc -g -c get_cpuid_v1_lix64.s -o get_cpuid_v1_lix64.o
+gcc -o check-rdrand-support.o check-rdrand-support.c get_cpuid_v1_lix64.o

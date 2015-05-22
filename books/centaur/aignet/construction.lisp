@@ -17,7 +17,7 @@
                            set::sets-are-true-lists
                            make-list-ac)))
 
-(local (in-theory (disable BITOPS::BXOR-NORM
+(local (in-theory (disable BITOPS::commutativity-of-b-xor
                            BITOPS::BXOR-TO-BNOT
                            BITOPS::BXOR-TO-ID
                            BITOPS::B-AND-EQUAL-1-IN-HYP)))
