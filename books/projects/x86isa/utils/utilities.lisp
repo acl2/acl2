@@ -820,7 +820,7 @@ the sake of efficiency.</p>"
 ;; ======================================================================
 
 (defsection globally-disabled-events
-  :parents (dev-philosophy utilities)
+  :parents (utilities)
 
   :short "A ruleset containing all the events supposed to be mostly
   globally disabled in our books"

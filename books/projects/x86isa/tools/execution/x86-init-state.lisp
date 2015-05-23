@@ -9,7 +9,7 @@
 ;; ======================================================================
 
 (defsection initialize-x86-state
-  :parents (Execution)
+  :parents (program-execution)
   :short "Initializing the x86 state"
 
   :long "<p>The events in this section are meant to be used to
