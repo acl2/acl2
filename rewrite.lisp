@@ -11105,6 +11105,15 @@
         (and val ; optimization
              (member-eq fn val)))))
 
+(defun collect-bad-fn-arity-pairs (alist wrld)
+  (cond
+   ((endp alist) nil)
+   ((equal (arity (car (car alist)) wrld)
+           (cdr (car alist)))
+    (collect-bad-fn-arity-pairs (cdr alist) wrld))
+   (t (cons (car alist)
+            (collect-bad-fn-arity-pairs (cdr alist) wrld)))))
+
 (mutual-recursion
 
 ; State is an argument of rewrite only to permit us to call ev.  In general,
@@ -13299,9 +13308,54 @@
                    ((equal term val)
                     (mv step-limit nil term ttree))
                    (t
-                    (let ((not-skipped
-                           (not (skip-meta-termp-checks meta-fn wrld))))
+
+; Skip termp checks if either we're told to via skip-meta-termp-checks or they
+; are unnecessary because of the meta fn (and its hyp-fn) have well-formedness
+; guarantees.  If we skip the checks because of guarantees, we must check the
+; arity assumptions.
+
+                    (let* ((user-says-skip-termp-checkp
+                            (skip-meta-termp-checks meta-fn wrld))
+                           (well-formedness-guarantee
+                            (access rewrite-rule lemma :heuristic-info))
+                           (not-skipped
+                            (and (not user-says-skip-termp-checkp)
+                                 (not well-formedness-guarantee)))
+                           (bad-arities
+                            (if (and well-formedness-guarantee
+                                     (not user-says-skip-termp-checkp))
+                                (collect-bad-fn-arity-pairs
+                                 (cdr well-formedness-guarantee)
+                                 wrld)
+                              nil)))
                       (cond
+                       (bad-arities
+                        (let ((name (nth 0 (car well-formedness-guarantee)))
+                              (fn (nth 1 (car well-formedness-guarantee)))
+                              (hyp-fn (nth 3 (car well-formedness-guarantee))))
+                          (mv step-limit
+                              (er hard 'rewrite-with-lemma
+                                  "The metatheorem ~x0 has a now-invalid ~
+                                   well-formedness guarantee.  Its ~
+                                   metafunction, ~x1, ~#2~[was proved to ~
+                                   return a TERMP~/and its corresponding ~
+                                   hypothesis metafunction, ~x3, were proved ~
+                                   to return TERMPs~] under the assumption ~
+                                   that certain function symbols had certain ~
+                                   arities.  But that assumption is now ~
+                                   invalid.  The following alist pairs ~
+                                   function symbols with their assumed ~
+                                   arities: ~X45.  These arities were valid ~
+                                   when ~x0 was proved but have since changed ~
+                                   (presumably by redefinition).   We cannot ~
+                                   trust the well-formedness guarantee."
+                                  name
+                                  fn
+                                  (if hyp-fn 1 0)
+                                  hyp-fn
+                                  bad-arities
+                                  nil)
+                              term ttree)))
                        ((and not-skipped
                              (not (termp val wrld)))
                         (mv step-limit
@@ -13358,14 +13412,67 @@
                              (erp
                               (mv step-limit nil term ttree))
                              (t
-                              (let ((not-skipped
-                                     (not (skip-meta-termp-checks hyp-fn wrld))))
+                              (let* ((user-says-skip-termp-checkp
+                                      (skip-meta-termp-checks hyp-fn wrld))
+;                                    (well-formedness-guarantee  ; already bound
+;                                     (access rewrite-rule lemma
+;                                             :heuristic-info))
+                                     (not-skipped
+                                      (and (not user-says-skip-termp-checkp)
+                                           (not well-formedness-guarantee)))
+
+; It is easy to think that it is unnecessary to do this computation and binding
+; because the non-nil result will be exactly the same as it was above
+; (depending as it does only on the guarantee and the wrld) and we have already
+; (above) checked and caused an error if it is non-nil.  But that reasoning is
+; faulty.  Suppose the user told us to skip the termp check on metafn's output
+; but to do the check on hyp-fn's output.  Then the earlier binding of
+; bad-arities is nil but this binding may find something.
+
+                                     (bad-arities
+                                      (if (and
+                                           well-formedness-guarantee
+                                           (not user-says-skip-termp-checkp))
+                                          (collect-bad-fn-arity-pairs
+                                           (cdr well-formedness-guarantee)
+                                           wrld)
+                                        nil)))
                                 (cond
+                                 (bad-arities
+                                  (let ((name
+                                         (nth 0
+                                              (car well-formedness-guarantee)))
+                                        (hyp-fn
+                                         (nth 3
+                                              (car well-formedness-guarantee))))
+                                    (mv step-limit
+                                        (er hard 'rewrite-with-lemma
+                                            "The metatheorem ~x0 has a ~
+                                             now-invalid well-formedness ~
+                                             guarantee.  Its hypothesis ~
+                                             metafunction, ~x1, was proved to ~
+                                             return a TERMP under the ~
+                                             assumption that certain function ~
+                                             symbols had certain arities.  ~
+                                             But that assumption is now ~
+                                             invalid.  The following alist ~
+                                             pairs function symbols with ~
+                                             their assumed arities: ~X23.  ~
+                                             These arities were valid when ~
+                                             ~x0 was proved but have since ~
+                                             changed (presumably by ~
+                                             redefinition).   We cannot trust ~
+                                             the well-formedness guarantee."
+                                            name
+                                            hyp-fn
+                                            bad-arities
+                                            nil)
+                                        term ttree)))
                                  ((and not-skipped
                                        (not (termp evaled-hyp wrld)))
                                   (mv step-limit
                                       (er hard 'rewrite-with-lemma
-                                          "The hypothesis function ~x0 ~
+                                          "The hypothesis metafunction ~x0 ~
                                            produced the non-termp ~x1 on the ~
                                            input term ~x2.  Our ~
                                            implementation requires that ~x0 ~
@@ -13378,7 +13485,7 @@
                                         (access rewrite-constant rcnst :forbidden-fns)))
                                   (mv step-limit
                                       (er hard 'rewrite-with-lemma
-                                          "The hypothesis function ~x0 ~
+                                          "The hypothesis metafunction ~x0 ~
                                            produced the termp ~x1 on the ~
                                            input term ~x2.  Our ~
                                            implementation additionally ~
