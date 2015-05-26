@@ -106,21 +106,32 @@
   (local (in-theory (enable svex-env-extract))))
 
 
-;; this is used more than is apparent because of the congruences it provides
 (defsection svex-envs-similar
+  :parents (svex-env)
+  :short "@('(svex-envs-similar x y)') is like alist equivalence for @(see
+svex-env)s: environments are <b>similar</b> if they bind all variables to the
+same values, in the sense of @(see svex-env-lookup)."
 
-  (acl2::def-universal-equiv svex-envs-similar
+  :long "<p>Recall that @(see svex-env-lookup) treats any unbound variables as
+being bound to an infinite X vector.  Accordingly, two environments need not
+have the same bound variables to be regarded as equal.</p>
+
+<p>This is an important equivalence relation that is satisfied by, e.g., @(see
+svex-eval).  It is used more than is apparent because of the congruences it
+provides.</p>"
+
+  (def-universal-equiv svex-envs-similar
     :qvars (k)
     :equiv-terms ((equal (svex-env-lookup k x)))
     :defquant t)
 
-  (acl2::defexample svex-envs-similar-lookup-ex
+  (defexample svex-envs-similar-lookup-ex
     :pattern (svex-env-lookup k x)
     :templates (k)
     :instance-rulename svex-envs-similar-instancing)
 
   (defcong svex-envs-similar equal (svex-env-lookup k x) 2
-    :hints ((Acl2::witness)))
+    :hints ((witness)))
 
   (defthm-svex-eval-flag
     (defthm svex-eval-env-congruence
@@ -139,40 +150,14 @@
   (defcong svex-envs-similar equal (svex-alist-eval x env) 2
     :hints(("Goal" :in-theory (enable svex-alist-eval))))
 
-  ; (local (defthm member-svarlist-fix
-
-  (encapsulate nil
-    (local (defun svar-member (k x)
-             (if (atom x)
-                 nil
-               (if (equal (svar-fix (car x)) k)
-                   (car x)
-                 (svar-member k (cdr x))))))
-
-    (local (defthm witness-member-svarlist-fix
-             (implies (and (equal k (svar-fix v))
-                           (member v x))
-                      (member k (svarlist-fix x)))
-             :hints(("Goal" :in-theory (enable svarlist-fix)))))
-
-    (local (defthm member-svarlist-fix
-             (implies (acl2::rewriting-negative-literal `(member-equal ,k (svarlist-fix$inline ,x)))
-                      (iff (member k (svarlist-fix x))
-                           (and (equal k (svar-fix (svar-member k x)))
-                                (member (svar-member k x) x))))
-             :hints(("Goal" :in-theory (enable svarlist-fix)))))
-
-    (defcong set-equiv set-equiv (svarlist-fix x) 1
-      :hints ((acl2::witness :ruleset acl2::set-equiv-witnessing))))
-
   (defcong set-equiv svex-envs-similar (svex-env-extract keys env) 1
-    :hints ((acl2::witness :ruleset svex-envs-similar-witnessing)))
+    :hints ((witness :ruleset svex-envs-similar-witnessing)))
 
   (defcong svex-envs-similar svex-envs-similar (svex-env-extract keys env) 2
-    :hints ((acl2::witness :ruleset svex-envs-similar-witnessing)))
+    :hints ((witness :ruleset svex-envs-similar-witnessing)))
 
-  (fty::deffixcong svex-env-equiv svex-env-equiv (append a b) a)
-  (fty::deffixcong svex-env-equiv svex-env-equiv (append a b) b)
-  
+  (deffixcong svex-env-equiv svex-env-equiv (append a b) a)
+  (deffixcong svex-env-equiv svex-env-equiv (append a b) b)
+
   (defrefinement svex-env-equiv svex-envs-similar
-    :hints ((acl2::Witness))))
+    :hints ((witness))))

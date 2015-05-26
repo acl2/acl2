@@ -109,6 +109,12 @@
       definline
       definlined
 
+      witness
+      def-universal-equiv
+      definstantiate
+      defexample
+      defwitness
+
       seq
       seq-backtrack
       seqw
@@ -175,6 +181,7 @@
       fty::deffixequiv-mutual
       fty::deffixtype
       fty::defflexsum
+      fty::deffixcong
       fty::fty-discipline
 
       natarr get-nat set-nat resize-nats

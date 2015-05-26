@@ -37,6 +37,7 @@
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (include-book "std/lists/nth" :dir :system))
 (local (include-book "std/lists/append" :dir :system))
+(local (include-book "centaur/misc/equal-sets" :dir :system))
 
 (defflexsum svar
   :parents (svex)
@@ -99,7 +100,31 @@ indexed variables like @($v_5$) versus @($v_4$) in some mathematics.</p>"))
   :elt-type svar
   :true-listp t
   :elementp-of-nil nil
-  :parents (svar))
+  :parents (svar)
+  ///
+  (local (defun svar-member (k x)
+           (if (atom x)
+               nil
+             (if (equal (svar-fix (car x)) k)
+                 (car x)
+               (svar-member k (cdr x))))))
+
+  (local (defthm witness-member-svarlist-fix
+           (implies (and (equal k (svar-fix v))
+                         (member v x))
+                    (member k (svarlist-fix x)))
+           :hints(("Goal" :in-theory (enable svarlist-fix)))))
+
+  (local (defthm member-svarlist-fix
+           (implies (acl2::rewriting-negative-literal `(member-equal ,k (svarlist-fix$inline ,x)))
+                    (iff (member k (svarlist-fix x))
+                         (and (equal k (svar-fix (svar-member k x)))
+                              (member (svar-member k x) x))))
+           :hints(("Goal" :in-theory (enable svarlist-fix)))))
+
+  (defcong set-equiv set-equiv (svarlist-fix x) 1
+    :hints ((acl2::witness :ruleset acl2::set-equiv-witnessing))))
+
 
 (defalist svar-alist
   :key-type svar

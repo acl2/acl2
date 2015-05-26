@@ -38,7 +38,8 @@
 (include-book "lattice")
 (include-book "rsh-concat")
 (include-book "svex-argmasks")
-(include-book "svex-equivs")
+;; Note svex-equivs, it's apparently not included anywhere?
+;; (include-book "svex-equivs")
 (include-book "svex")
 (include-book "svex-rewrite-base")
 (include-book "svex-rewrite")
