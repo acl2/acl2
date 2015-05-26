@@ -1,6 +1,11 @@
 ;; AUTHOR:
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
 
+;; All events beginning with the prefix ACL2:: in this book (except
+;; ACL2::with-supporters) are imported from the RTL9 library under the
+;; directory "books/rtl/rel9/lib", authored by David
+;; M. Russinoff (david@russinoff.com).
+
 (in-package "X86ISA")
 
 (include-book "../x86-decoding-and-spec-utils")
@@ -1572,7 +1577,7 @@
     (< (mv-nth 1 (sp-sse-add/sub/mul/div operation op1 op2 mxcsr))
        *2^32*))))
 
-(defthm n32pp-sp-sse-add/sub/mul/div-2
+(defthm n32p-sp-sse-add/sub/mul/div-2
   (n32p (mv-nth 2 (sp-sse-add/sub/mul/div operation op1 op2 mxcsr)))
   :rule-classes
   ((:type-prescription
@@ -1601,7 +1606,7 @@
                    :exec  mxcsr)))
       (mv flg result mxcsr)))
 
-(defthm n32pp-sp-sse-max/min-1
+(defthm n32p-sp-sse-max/min-1
   (n32p (mv-nth 1 (sp-sse-max/min operation op1 op2 mxcsr)))
   :rule-classes
   ((:type-prescription
@@ -1612,7 +1617,7 @@
     (< (mv-nth 1 (sp-sse-max/min operation op1 op2 mxcsr))
        *2^32*))))
 
-(defthm n32pp-sp-sse-max/min-2
+(defthm n32p-sp-sse-max/min-2
   (n32p (mv-nth 2 (sp-sse-max/min operation op1 op2 mxcsr)))
   :rule-classes
   ((:type-prescription
