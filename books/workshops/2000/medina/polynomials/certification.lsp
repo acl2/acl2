@@ -5,7 +5,8 @@
      (union-eq (union-eq *acl2-exports*
 			 '(defequiv defcong zp len make-ord))
 	       *common-lisp-symbols-from-main-lisp-package*)
-     '(null + * - < = 
+     '(null + * - < =
+       termp ; added by Matt K., 5/26/2014
        commutativity-of-+ commutativity-of-*
        associativity-of-+ associativity-of-*
        distributivity)))
