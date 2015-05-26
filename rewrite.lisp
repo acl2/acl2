@@ -13366,7 +13366,10 @@
                                  quotations of these two s-expressions have ~
                                  the same value, but our implementation ~
                                  additionally requires that ~x0 produce a ~
-                                 term."
+                                 term.  See :DOC termp.  You might consider ~
+                                 proving a well-formedness guarantee to avoid ~
+                                 this runtime test altogether.  See :DOC ~
+                                 well-formedness-guarantee."
                                 meta-fn val term)
                             term ttree))
                        ((and not-skipped
@@ -13385,7 +13388,8 @@
                                  the forbidden function symbol~#3~[ ~&3 is~/s ~
                                  ~&3 are~] called in the term produced by ~
                                  ~x0.  See :DOC meta and :DOC ~
-                                 set-skip-meta-termp-checks."
+                                 set-skip-meta-termp-checks and :DOC ~
+                                 well-formedness-guarantee."
                                 meta-fn val term
                                 (forbidden-fns-in-term
                                  val
@@ -13476,7 +13480,13 @@
                                            produced the non-termp ~x1 on the ~
                                            input term ~x2.  Our ~
                                            implementation requires that ~x0 ~
-                                           produce a term."
+                                           produce a term.  See :DOC termp.  ~
+                                           You might consider proving a ~
+                                           well-formedness guarantee.  See ~
+                                           :DOC well-formedness-guarantee to ~
+                                           avoid this runtime check ~
+                                           altogether.  See :DOC ~
+                                           well-formedness-guarantee."
                                           hyp-fn evaled-hyp term)
                                       term ttree))
                                  ((and not-skipped
@@ -13495,7 +13505,8 @@
                                            symbol~#3~[ ~&3 is~/s ~&3 are~] ~
                                            called in the term produced by ~
                                            ~x0.  See :DOC meta and :DOC ~
-                                           set-skip-meta-termp-checks."
+                                           set-skip-meta-termp-checks and ~
+                                           :DOC well-formedness-guarantee."
                                           hyp-fn evaled-hyp term
                                           (forbidden-fns-in-term
                                            evaled-hyp

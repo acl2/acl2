@@ -2349,7 +2349,8 @@
                                  function symbol~#3~[, ~&3, which is~/s ~&3, ~
                                  which are~] forbidden in that context.  See ~
                                  :DOC clause-processor and :DOC ~
-                                 set-skip-meta-termp-checks."
+                                 set-skip-meta-termp-checks and :DOC ~
+                                 well-formedness-guarantee."
                                 term nil val
                                 (forbidden-fns-in-term-list-list
                                  val
@@ -2489,13 +2490,13 @@
                                              :rewrite-constant)
                                      :forbidden-fns)))
                        (mv (msg
-                            "The :CLAUSE-PROCESSOR ~
-                                 hint~|~%~Y01~%evaluated to a list of ~
-                                 clauses~|~%~y2~%that contains a call of the ~
-                                 function symbol~#3~[, ~&3, which is~/s ~&3, ~
-                                 which are~] forbidden in that context.  See ~
-                                 :DOC clause-processor and :DOC ~
-                                 set-skip-meta-termp-checks."
+                            "The :CLAUSE-PROCESSOR hint~|~%~Y01~%evaluated to ~
+                             a list of clauses~|~%~y2~%that contains a call ~
+                             of the function symbol~#3~[, ~&3, which is~/s ~
+                             ~&3, which are~] forbidden in that context.  See ~
+                             :DOC clause-processor and :DOC ~
+                             set-skip-meta-termp-checks and :DOC ~
+                             well-formedness-guarantee."
                             term nil val
                             (forbidden-fns-in-term-list-list
                              val

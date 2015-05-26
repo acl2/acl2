@@ -7737,19 +7737,20 @@
              following forms:~%[1]  thm-name1~%[2]  (thm-name1)~%[3]  ~
              (thm-name1 thm-name2)~%where thm-name1 names a previously proved ~
              theorem guaranteeing that the relevant metafunction returns a ~
-             TERMP when given a TERMP.  Form [3] is only permitted (and is ~
-             required!) when the metatheorem has a hypothesis metafunction, ~
-             in which case thm-name2 names a previously proved theorem ~
-             guaranteeing that the hypothesis metafunction also returns a ~
-             TERMP when given one.  ~x1 is of none of the expected forms.  ~
-             See :DOC meta for details."
+             TERMP when given a TERMP.  See :DOC termp.  Form [3] is only ~
+             permitted (and is required!) when the metatheorem has a ~
+             hypothesis metafunction, in which case thm-name2 names a ~
+             previously proved theorem guaranteeing that the hypothesis ~
+             metafunction also returns a TERMP when given one.  ~x1 is of ~
+             none of the expected forms.  See :DOC well-formedness-guarantee ~
+             for details."
             name x)
         (er soft ctx
             "The :WELL-FORMEDNESS-GUARANTEE of :CLAUSE-PROCESSOR rule ~x0 ~
              must be the name of a theorem guaranteeing that the clause ~
              processor returns a TERM-LIST-LISTP when given a TERM-LISTP.  ~
-             ~x1 is not such a name.  See :DOC clause-processor for ~
-             details."
+             ~x1 is not such a name.  See :DOC term-listp, :DOC ~
+             term-list-listp, and :DOC well-formedness-guarantee for details."
              name x)))
    (t (let* ((thm-name1 (cond ((symbolp x) x)
                               (t (car x))))
@@ -7813,12 +7814,12 @@
                      "The :WELL-FORMEDNESS-GUARANTEE of ~x0 rule ~x1 is ~
                       ill-formed.  We cannot interpret the theorem named ~x2 ~
                       as a well-formedness guarantee for the function ~x3.  ~
-                      We expected the name of a theorem like ~X45.  ~
-                      See :DOC ~x6 for details of the acceptable forms."
+                      We expected the name of a theorem like ~X45.  See :DOC ~
+                      well-formedness-guarantee for details of the acceptable ~
+                      forms."
                      token name thm-name1 fn
                      expected-fn-form
-                     evisc
-                     (if (eq token :meta) 'meta 'clause-processor)))
+                     evisc))
                 ((and
 
 ; Now we know that the alleged well-formedness theorem, thm1, is about the same
@@ -7938,7 +7939,7 @@
                                that guarantees that ~x2 always returns a ~
                                TERMP.  But theorem ~x3 is not of the expected ~
                                form.  We expected it to be something ~
-                               like:~X45.  See :DOC meta."
+                               like:~X45.  See :DOC well-formedness-guarantee."
                               name fn hyp-fn thm-name2
                               expected-hyp-fn-form evisc)))))))
                 (t (er soft ctx
@@ -7947,9 +7948,9 @@
                         previously proved theorem that established that ~x2 ~
                         always returns a TERMP.  But theorem ~x3 is not of ~
                         the expected form.  We expected it to be something ~
-                        like ~X45. See :DOC ~x6."
-                       token name fn thm-name1 expected-fn-form evisc
-                       (if (eq token :META) 'meta 'clause-processor)))))))))))))
+                        like ~X45. See :DOC well-formedness-guarantee."
+                       token name fn thm-name1
+                       expected-fn-form evisc))))))))))))
 
 (defun translate-rule-class-alist (token alist seen corollary name x ctx ens
                                          wrld state)
@@ -8335,9 +8336,9 @@
                      (er soft ctx
                          "Only :META and :CLAUSE-PROCESSOR rule classes are ~
                           permitted to have a :WELL-FORMEDNESS-GUARANTEE ~
-                          component.  Thus, ~x0 is illegal.  See :DOC ~@1."
-                         x
-                         (symbol-name token)))
+                          component.  Thus, ~x0 is illegal.  See :DOC ~
+                          well-formedness-guarantee."
+                         x))
                     (t (er-let*
                          ((well-formedness-guarantee
                            (translate-well-formedness-guarantee
@@ -8388,15 +8389,16 @@
                             (forbidden-fns
                              (er soft ctx
                                  ":META rule ~x0 is inadmissible because its ~
-                                  TERMP theorem~#1~[~/s~], named ~&1, ~
-                                  ~#1~[is~/are~] incompatible with the ~
+                                  well-formedness theorem~#1~[~/s~], named ~
+                                  ~&1, ~#1~[is~/are~] incompatible with the ~
                                   current world.  In particular, judging by ~
                                   the ARITIES-OKP ~
-                                  ~#1~[hypothesis~/hypotheses~] of the TERMP ~
+                                  ~#1~[hypothesis~/hypotheses~] of the ~
                                   theorem~#1~[~/s~], the metatheorem may ~
                                   introduce one or more functions that are ~
                                   currently forbidden, to wit ~&2.  See :DOC ~
-                                  set-skip-meta-termp-checks."
+                                  set-skip-meta-termp-checks and :DOC ~
+                                  well-formedness-guarantee."
                                  name
                                  (if hyp-fn
                                      (list thm-name1 thm-name2)
