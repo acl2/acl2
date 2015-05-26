@@ -166,7 +166,7 @@ top        - Top-level book that includes all the X86ISA books and
 Section III: Book Certification
 ----------------------------------------------------------------------
 
-There are two ways of building the X86ISA books:
+Two ways of building the X86ISA books are:
 
 1. Using the Makefile provided with the X86ISA books:
 
@@ -202,10 +202,11 @@ There are two ways of building the X86ISA books:
 2. Using the "everything" target of the ACL2 Community Books (see
    acl2/books/GNUmakefile):
 
-   This will build the x86 books without full execution support, i.e.,
-   the effect will be the same as building these books with
-   X86ISA_EXEC=nil even though the Makefile provided with the X86ISA
-   books will not be used.
+   This is essentially the same as executing "cert.pl
+   books/projects/x86isa/top". This will build the x86 books without
+   full execution support, i.e., the effect will be the same as
+   building these books with X86ISA_EXEC=nil even though the Makefile
+   provided with the X86ISA books will not be used.
 
 
 Suppose you had certified these books previously, but you have since

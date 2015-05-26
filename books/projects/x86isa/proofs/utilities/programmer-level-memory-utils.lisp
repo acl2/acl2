@@ -23,6 +23,8 @@ reasoning about the behavior of @(see wb) and @(see rb) when they
 operate in disjoint or overlapping regions of memory in the
 programmer-level mode.</p>" )
 
+(local (xdoc::set-default-parents programmer-level-memory-utils))
+
 ;; ----------------------------------------------------------------------
 ;; Debugging:
 ;; ----------------------------------------------------------------------
@@ -74,7 +76,7 @@ programmer-level mode.</p>" )
               (canonical-address-p addr)
               (canonical-address-p (+ addr count)))
 
-  :parents (reasoning-about-memory-regions)
+  :parents (programmer-level-memory-utils)
 
   :long "<p>Given a canonical address @('addr'),
   @('create-canonical-address-list') creates a list of canonical
@@ -108,7 +110,7 @@ programmer-level mode.</p>" )
 (define remove-duplicate-keys
   ((alst (alistp alst)))
 
-  :parents (reasoning-about-memory-regions)
+  :parents (programmer-level-memory-utils)
   :enabled t
 
   (if (endp alst)
