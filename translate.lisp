@@ -57,6 +57,13 @@
 
 )
 
+(defun term-list-listp (l w)
+  (declare (xargs :guard (plist-worldp-with-formals w)))
+  (if (atom l)
+      (equal l nil)
+    (and (term-listp (car l) w)
+         (term-list-listp (cdr l) w))))
+
 (defun computed-hint-tuple-listp (x wrld)
   (cond
    ((consp x)

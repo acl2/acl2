@@ -1539,6 +1539,7 @@
 
                          ))
                     (ttags-seen nil)
+                    (never-untouchable-fns nil)
                     (untouchable-fns nil)
                     (untouchable-vars nil)
                     (defined-hereditarily-constrained-fns nil)
@@ -19910,19 +19911,52 @@
       ((subsetp-eq names (global-val untouchable-prop wrld))
        (stop-redundant-event ctx state))
       (t
-       (install-event name
-                      event-form
-                      'push-untouchable
-                      0
-                      nil
-                      nil
-                      nil
-                      nil
-                      (global-set
-                       untouchable-prop
-                       (union-eq names (global-val untouchable-prop wrld))
-                       wrld)
-                      state))))))
+       (let ((bad (if fn-p
+                      (collect-never-untouchable-fns-entries
+                       names
+                       (global-val 'never-untouchable-fns wrld))
+                      nil)))
+         (cond
+          ((null bad)
+           (install-event name
+                          event-form
+                          'push-untouchable
+                          0
+                          nil
+                          nil
+                          nil
+                          nil
+                          (global-set
+                           untouchable-prop
+                           (union-eq names (global-val untouchable-prop wrld))
+                           wrld)
+                          state))
+          (t (er soft ctx
+                 "You have tried to make ~&0 an untouchable function.  ~
+                  However, ~#0~[this function is~/these functions are~] ~
+                  sometimes introduced into proofs by one or more ~
+                  metatheorems or clause processors having well-formedness ~
+                  guarantees.   If you insist on making ~#0~[this name~/these ~
+                  names~] untouchable you must redefine the relevant ~
+                  metafunctions and clause processors so they do not create ~
+                  terms involving ~#0~[it~/them~] and prove and cite ~
+                  appropriate :WELL-FORMEDNESS-GUARANTEE theorems.  The ~
+                  following data structure may help you find the relevant ~
+                  events to change.  The data structure is an alist pairing ~
+                  each function name above with information about all the ~
+                  metatheorems or clause processors that may introduce that ~
+                  name.  The information for each metatheorem or clause ~
+                  processor is the name of the correctness theorem, the name ~
+                  of the metafunction or clause processor verified by that ~
+                  metatheorem, the name of the well-formedness guarantee for ~
+                  that metafunction or clause processor, and analogous ~
+                  information about any hypothesis metafunction involved.  ~
+                  All of these events (and possibly their supporting ~
+                  functions and lemmas) must be fixed so that the names you ~
+                  now want to be untouchable are not produced.~%~X12"
+                 (strip-cars bad)
+                 bad
+                 nil)))))))))
 
 (defun remove-untouchable-fn (name fn-p state doc event-form)
 

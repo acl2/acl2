@@ -224,6 +224,8 @@
 
 (verify-guards termp)
 
+(verify-termination term-list-listp)
+
 (verify-termination arities-okp)
 
 (defthm arities-okp-implies-arity

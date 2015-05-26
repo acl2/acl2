@@ -11536,6 +11536,13 @@
         (let ((verified-p
                (getprop (ffn-symb term) 'clause-processor nil
                         'current-acl2-world wrld)))
+
+; If a verified clause processor has a well-formedness guarantee then the
+; value of the property is the guarantee ((name fn thm-name1) . arity-alist);
+; if it has no guarantee (but is a verified processor) the property is T.
+; This guarantee (or t) is put into the :verified-p field of the resulting
+; clause-processor-hint.
+
           (cond
            ((not (or verified-p
                      (assoc-eq (ffn-symb term)
