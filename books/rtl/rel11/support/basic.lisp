@@ -1,16 +1,14 @@
 (in-package "RTL")
 
-(local (include-book "../rel9-rtl-pkg/lib/top"))
-
-(include-book "../rel9-rtl-pkg/lib/util")
+(include-book "std/util/defrule" :dir :system)
 
 (local (include-book "arithmetic-5/top" :dir :system))
 
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
-(local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
+(local (in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
                     simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
-                    |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
+                    |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|)))
 
 
 ;;;**********************************************************************
@@ -21,11 +19,12 @@
   (declare (xargs :guard (real/rationalp x)))
   (floor x 1))
 
-(defthm fl-def
+(defrule fl-def
   (and (integerp (fl x))    
        (implies (case-split (rationalp x))
 	        (and (<= (fl x) x)
 		     (< x (1+ (fl x))))))
+  :enable (fl)
   :rule-classes ((:linear :corollary
                           (implies (case-split (rationalp x))
                                    (and (<= (fl x) x)
@@ -49,13 +48,14 @@
   (implies (integerp x)
            (equal (fl x) x)))
 
-(defthm quot-bnd
+(defrule quot-bnd
   (implies (and (<= 0 x)
                 (<= 0 y)
                 (rationalp x)
                 (rationalp y))
            (<= (* y (fl (/ x y)))
                x))
+  :enable (fl)
   :rule-classes :linear)
 
 (defthm fl-monotone-linear
@@ -77,19 +77,21 @@
 		  (rationalp x))
 	     (equal (fl (+ x n)) (+ (fl x) n))))
 
-(defthm fl/int-rewrite
+(defrule fl/int-rewrite
   (implies (and (integerp n)
                 (<= 0 n)
                 (rationalp x))
            (equal (fl (* (fl x) (/ n)))
-                  (fl (/ x n)))))
+                  (fl (/ x n))))
+  :enable (fl))
 
-(defthm fl/int-rewrite-alt
+(defrule fl/int-rewrite-alt
   (implies (and (integerp n)
                 (<= 0 n)
                 (rationalp x))
            (equal (fl (* (/ n) (fl x)))
-                  (fl (/ x n)))))
+                  (fl (/ x n))))
+  :enable (fl))
 
 (defthm fl-half-int
   (implies (and (integerp n)
@@ -105,23 +107,29 @@
                       (* -1 x)
                     (1- (* -1 (fl x)))))))
 
-(defthm fl-m-n
+(defrule fl-m-n
   (implies (and (< 0 n)
                 (integerp m)
                 (integerp n))
            (= (fl (- (/ m n)))
               (1- (- (fl (/ (1- m) n))))))
+  :prep-books (
+    (set-default-hints '((ACL2::nonlinearp-default-hint
+                          ACL2::stable-under-simplificationp ACL2::hist
+                          ACL2::pspv))))
+  :enable (fl)
   :rule-classes ())
 
 (defund cg (x)
   (declare (xargs :guard (real/rationalp x)))
   (- (fl (- x))))
 
-(defthm cg-def
+(defrule cg-def
   (and (integerp (cg x))
        (implies (case-split (rationalp x))
                 (and (>= (cg x) x)
                      (> (1+ x) (cg x)))))
+  :enable (cg)
   :rule-classes ((:linear :corollary
                           (implies (case-split (rationalp x))
                                    (and (>= (cg x) x)
@@ -161,19 +169,21 @@
 		  (rationalp x))
 	     (equal (cg (+ x n)) (+ (cg x) n))))
 
-(defthm cg/int-rewrite
+(defrule cg/int-rewrite
   (implies (and (integerp n)
                 (> n 0)
                 (rationalp x))
            (equal (cg (* (cg x) (/ n)))
-                  (cg (/ x n)))))
+                  (cg (/ x n))))
+  :enable (cg))
 
-(defthm cg/int-rewrite-alt
+(defrule cg/int-rewrite-alt
   (implies (and (integerp n)
                 (> n 0)
                 (rationalp x))
            (equal (cg (* (/ n) (cg x)))
-                  (cg (/ x n)))))
+                  (cg (/ x n))))
+  :enable (cg))
 
 (defthm fl-cg
   (implies (rationalp x)
@@ -188,12 +198,11 @@
 ;;;                         MOD
 ;;;**********************************************************************
 
-(in-theory (disable mod))
-
-(defthm mod-def
+(defrule mod-def
   (implies (case-split (acl2-numberp x))
            (equal (mod x y)
                   (- x (* y (fl (/ x y))))))
+  :enable (fl)
   :rule-classes ())
 
 (defthm mod-0
@@ -237,10 +246,11 @@
            (equal (mod m 1)
                   0)))
 
-(defthm mod-bnd-2
+(defrule mod-bnd-2
   (implies (and (<= 0 m)
                 (case-split (rationalp m)))
            (<= (mod m n) m))
+  :enable (mod)
   :rule-classes :linear)
 
 (defthm mod-does-nothing
@@ -250,10 +260,11 @@
            (equal (mod m n)
                   m)))
 
-(defthm mod-0-fl
+(defrule mod-0-fl
   (implies (acl2-numberp m)
            (iff (= (mod m n) 0)
 	        (= m (* (fl (/ m n)) n))))
+  :enable (fl)
   :rule-classes ())
 
 (defthm mod-0-int
@@ -264,9 +275,10 @@
                 (integerp (/ m n))))
   :rule-classes ())
 
-(defthm mod-mult-n
+(defrule mod-mult-n
   (equal (mod (* a n) n)
-         (* n (mod a 1))))
+         (* n (mod a 1)))
+  :enable (mod))
 
 (defthm mod-mult-n-alt
   (equal (mod (* n a) n)
@@ -291,13 +303,14 @@
 	     (= m n))
   :rule-classes ())
 
-(defthm mod-0-0
+(defrule mod-0-0
   (implies (and (integerp p)
                 (rationalp m)
                 (rationalp n))
            (iff (= (mod m (* n p)) 0)
                 (and (= (mod m n) 0)
                      (= (mod (fl (/ m n)) p) 0))))
+  :enable (mod)
   :rule-classes ())
 
 (defthm mod-equal-int
@@ -332,22 +345,29 @@
 	     (equal (mod (+ m (* a n)) n)
 		    (mod m n))))
 
-(defthm mod-force
+(defrule mod-force
   (implies (and (<= (* a n) m)
                 (< m (* (1+ a) n))
                 (integerp a)
                 (rationalp m)
                 (rationalp n))
            (= (mod m n) (- m (* a n))))
+  :prep-books (
+    (set-default-hints '((ACL2::nonlinearp-default-hint++
+                          ACL2::id ACL2::stable-under-simplificationp ACL2::hist nil))))
   :rule-classes ())
 
-(defthm mod-bnd-3
+(defrule mod-bnd-3
   (implies (and (< m (+ (* a n) r))
                 (<= (* a n) m)
                 (integerp a)
                 (case-split (rationalp m))
                 (case-split (rationalp n)))
            (< (mod m n) r))
+  :prep-books (
+    (set-default-hints '((ACL2::nonlinearp-default-hint++
+                          ACL2::id ACL2::stable-under-simplificationp ACL2::hist nil))))
+  :use (mod-force)
   :rule-classes :linear)
 
 (defthmd mod-sum
@@ -362,11 +382,15 @@
            (equal (mod (- a (mod b n)) n)
                   (mod (- a b) n))))
 
-(defthmd mod-of-mod
+(defruled mod-of-mod
   (implies (and (case-split (natp k))
                 (case-split (natp n)))
            (equal (mod (mod x (* k n)) n)
-                  (mod x n))))
+                  (mod x n)))
+  :prep-books (
+    (set-default-hints '((ACL2::nonlinearp-default-hint
+                          ACL2::stable-under-simplificationp ACL2::hist
+                          ACL2::pspv)))))
 
 (defthmd mod-of-mod-cor
   (implies (and (<= b a)
