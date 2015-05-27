@@ -1646,13 +1646,21 @@
     (#x05
      "(SYSCALL)"
      (if (programmer-level-mode x86)
-         (x86-syscall start-rip temp-rip prefixes rex-byte opcode modr/m
-                      sib x86)
-       (x86-step-unimplemented
-        (cons (cons "SYSCALL is not implemented in System-level Mode!"
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+         (x86-syscall-programmer-level-mode
+          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
+       (x86-syscall
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)))
+
+    (#x07
+     "(SYSRET)"
+     (if (programmer-level-mode x86)
+         (x86-step-unimplemented
+          (cons (cons "SYSRET is not supported in Programmer-level Mode!"
+                      (ms x86))
+                (list start-rip temp-rip prefixes rex-byte opcode))
+          x86)
+       (x86-sysret
+        start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)))
 
     ;; (#x10
     ;;  "F2h: (MOVSD xmm1 xmm2/m64);
