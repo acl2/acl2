@@ -30,6 +30,7 @@
 
 (in-package "SV")
 (include-book "4vec")
+(include-book "4vmask")
 (include-book "aig-arith")
 ;; Not bits -- it's just lemmas about b-and/b-not/etc., should be local
 (include-book "compose")
@@ -44,7 +45,6 @@
 (include-book "svex-rewrite-base")
 (include-book "svex-rewrite")
 (include-book "svex-rewrite-rules")
-(include-book "svmask")
 (include-book "symbolic")
 (include-book "vars")
 (include-book "xeval")

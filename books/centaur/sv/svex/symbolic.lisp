@@ -1933,10 +1933,10 @@ results in at most n+1 bits.</p>"
             ;; Establish that (len vals) = (len x).
             :use ((:instance len-of-4veclist-mask
                    (masks (svex-argmasks mask fn x))
-                   (x (a4veclist-eval vals aigenv)))
+                   (values (a4veclist-eval vals aigenv)))
                   (:instance len-of-4veclist-mask
                    (masks (svex-argmasks mask fn x))
-                   (x (svexlist-eval x (svex-a4vec-env-eval a4env aigenv))))))
+                   (values (svexlist-eval x (svex-a4vec-env-eval a4env aigenv))))))
            (and stable-under-simplificationp
                 '(
                   :in-theory (e/d (svex-apply svexlist-eval ;; 4veclist-nth-safe ;; 4veclist-mask

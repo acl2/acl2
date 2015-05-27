@@ -185,7 +185,7 @@ See @(see svex-functions) for details.</p>")
   :parents (expressions)
   :short "Our core expression data type.  A <b>S</b>ymbolic <b>V</b>ector
 <b>Ex</b>pression may be either a constant @(see 4vec), a <see topic='@(url
-svar)'>variable</a>, or a function applied to subexpressions."
+svar)'>variable</see>, or a function applied to subexpressions."
 
   :long "<p>See @(see expressions) for background.  Each svex represents a
 single @(see 4vec) result.  The semantics are given by @(see svex-eval).</p>
