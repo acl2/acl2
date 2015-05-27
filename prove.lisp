@@ -2191,13 +2191,6 @@
                                        pspv
                                        :hint-settings))))))
 
-(defun term-list-listp (l w)
-  (declare (xargs :guard t))
-  (if (atom l)
-      (equal l nil)
-    (and (term-listp (car l) w)
-         (term-list-listp (cdr l) w))))
-
 (defun non-term-listp-msg (x w)
 
 ; Perhaps ~Y01 should be ~y below.  If someone complains about a large term
@@ -2233,7 +2226,10 @@
          (non-term-listp-msg (car l) w)))
    (t (non-term-list-listp-msg (cdr l) w))))
 
-(defun eval-clause-processor (clause term stobjs-out pspv ctx state)
+(defun eval-clause-processor (clause term stobjs-out verified-p pspv ctx state)
+
+; Verified-p is either nil, t, or a well-formedness-guarantee of the form
+; ((name fn thm-name1) . arity-alist).
 
 ; Should we do our evaluation in safe-mode?  For a relevant discussion, see the
 ; comment in protected-eval about safe-mode.
@@ -2284,10 +2280,49 @@
                       ((equal val (list clause)) ; avoid checks below
                        (value val))
                       (t
-                       (let ((not-skipped
-                              (not (skip-meta-termp-checks
-                                    (ffn-symb term) original-wrld))))
+                       (let* ((user-says-skip-termp-checkp
+                               (skip-meta-termp-checks
+                                (ffn-symb term) original-wrld))
+                              (well-formedness-guarantee
+                               (if (consp verified-p)
+                                   verified-p
+                                   nil))
+                              (not-skipped
+                               (and (not user-says-skip-termp-checkp)
+                                    (not well-formedness-guarantee)))
+                              (bad-arities
+                               (if (and well-formedness-guarantee
+                                        (not user-says-skip-termp-checkp))
+                                   (collect-bad-fn-arity-pairs
+                                    (cdr well-formedness-guarantee)
+                                    original-wrld)
+                                 nil)))
                          (cond
+                          (bad-arities
+                           (let ((name (nth 0 (car well-formedness-guarantee)))
+                                 (fn (nth 1 (car well-formedness-guarantee)))
+                                 (thm-name1
+                                  (nth 2 (car well-formedness-guarantee))))
+                             (mv (msg
+                                  "The clause processor correctness theorem ~
+                                   ~x0 has a now-invalid well-formedness ~
+                                   guarantee.  Its clause processor ~x1 was ~
+                                   proved in ~x2 to return a TERM-LIST-LISTP ~
+                                   under the assumption that certain function ~
+                                   symbols had certain arities.  But that ~
+                                   assumption is now invalid.  The following ~
+                                   alist pairs function symbols with their ~
+                                   assumed arities: ~X34.  These arities were ~
+                                   valid when ~x0 and ~x2 were proved but ~
+                                   have since changed (presumably by ~
+                                   redefinition).   We cannot trust the ~
+                                   well-formedness guarantee."
+                                  name
+                                  fn
+                                  thm-name1
+                                  bad-arities
+                                  nil)
+                                 nil state)))
                           ((and not-skipped
                                 (not (term-list-listp val original-wrld)))
                            (mv (msg
@@ -2314,7 +2349,8 @@
                                  function symbol~#3~[, ~&3, which is~/s ~&3, ~
                                  which are~] forbidden in that context.  See ~
                                  :DOC clause-processor and :DOC ~
-                                 set-skip-meta-termp-checks."
+                                 set-skip-meta-termp-checks and :DOC ~
+                                 well-formedness-guarantee."
                                 term nil val
                                 (forbidden-fns-in-term-list-list
                                  val
@@ -2327,7 +2363,8 @@
                           (t (value val)))))))))))))))))))
 
 #+acl2-par
-(defun eval-clause-processor@par (clause term stobjs-out pspv ctx state)
+(defun eval-clause-processor@par (clause term stobjs-out verified-p pspv ctx
+                                         state)
 
 ; Keep in sync with eval-clause-processor.
 
@@ -2394,10 +2431,46 @@
                   ((equal val (list clause)) ; avoid checks below
                    (value@par val))
                   (t
-                   (let ((not-skipped
-                          (not (skip-meta-termp-checks
-                                (ffn-symb term) wrld))))
+                   (let* ((user-says-skip-termp-checkp
+                           (skip-meta-termp-checks
+                            (ffn-symb term) wrld))
+                          (well-formedness-guarantee
+                           (if (consp verified-p)
+                               verified-p
+                               nil))
+                          (not-skipped
+                           (and (not user-says-skip-termp-checkp)
+                                (not well-formedness-guarantee)))
+                          (bad-arities (if (and well-formedness-guarantee
+                                                (not user-says-skip-termp-checkp))
+                                           (collect-bad-fn-arity-pairs
+                                            (cdr well-formedness-guarantee)
+                                            wrld)
+                                           nil)))
                      (cond
+                      (bad-arities
+                       (let ((name (nth 0 (car well-formedness-guarantee)))
+                             (fn (nth 1 (car well-formedness-guarantee)))
+                             (thm-name1 (nth 2 (car well-formedness-guarantee))))
+                         (mv (msg
+                              "The clause processor correctness theorem ~x0 ~
+                               has a now-invalid well-formedness guarantee.  ~
+                               Its clause processor ~x1 was proved in ~x2 to ~
+                               return a TERM-LIST-LISTP under the assumption ~
+                               that certain function symbols had certain ~
+                               arities.  But that assumption is now invalid.  ~
+                               The following alist pairs function symbols ~
+                               with their assumed arities: ~X34.  These ~
+                               arities were valid when ~x0 and ~x2 were ~
+                               proved but have since changed (presumably by ~
+                               redefinition). We cannot trust the ~
+                               well-formedness guarantee."
+                              name
+                              fn
+                              thm-name1
+                              bad-arities
+                              nil)
+                             nil)))
                       ((and not-skipped
                             (not (term-list-listp val wrld)))
                        (mv (msg
@@ -2417,13 +2490,13 @@
                                              :rewrite-constant)
                                      :forbidden-fns)))
                        (mv (msg
-                            "The :CLAUSE-PROCESSOR ~
-                                 hint~|~%~Y01~%evaluated to a list of ~
-                                 clauses~|~%~y2~%that contains a call of the ~
-                                 function symbol~#3~[, ~&3, which is~/s ~&3, ~
-                                 which are~] forbidden in that context.  See ~
-                                 :DOC clause-processor and :DOC ~
-                                 set-skip-meta-termp-checks."
+                            "The :CLAUSE-PROCESSOR hint~|~%~Y01~%evaluated to ~
+                             a list of clauses~|~%~y2~%that contains a call ~
+                             of the function symbol~#3~[, ~&3, which is~/s ~
+                             ~&3, which are~] forbidden in that context.  See ~
+                             :DOC clause-processor and :DOC ~
+                             set-skip-meta-termp-checks and :DOC ~
+                             well-formedness-guarantee."
                             term nil val
                             (forbidden-fns-in-term-list-list
                              val
@@ -2782,8 +2855,12 @@
       (mv-let@par
        (erp new-clauses state)
        (eval-clause-processor@par cl
-                                  (access clause-processor-hint (cdr temp) :term)
-                                  (access clause-processor-hint (cdr temp) :stobjs-out)
+                                  (access clause-processor-hint (cdr temp)
+                                          :term)
+                                  (access clause-processor-hint (cdr temp)
+                                          :stobjs-out)
+                                  (access clause-processor-hint (cdr temp)
+                                          :verified-p)
                                   pspv ctx state)
        (cond (erp (mv@par step-limit 'error erp nil nil state))
              (t (mv@par step-limit

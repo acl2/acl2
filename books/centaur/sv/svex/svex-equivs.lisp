@@ -29,87 +29,87 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "svmask")
+(include-book "eval")
 
 ;; NOTE: this currently isn't included anywhere
 
 (defsection svex-eval-equiv
-  (acl2::def-universal-equiv svex-eval-equiv
+  (def-universal-equiv svex-eval-equiv
     :qvars (env)
     :equiv-terms ((equal (svex-eval x env)))
     :defquant t)
 
   (in-theory (disable svex-eval-equiv svex-eval-equiv-necc))
 
-  (acl2::defexample svex-eval-equiv-svex-example
+  (defexample svex-eval-equiv-svex-example
     :pattern (svex-eval x env)
     :templates (env)
     :instance-rulename svex-eval-equiv-instancing)
 
-  (acl2::defexample svex-eval-equiv-list-example
+  (defexample svex-eval-equiv-list-example
     :pattern (svexlist-eval x env)
     :templates (env)
     :instance-rulename svex-eval-equiv-instancing)
 
   (defcong svex-eval-equiv equal (svex-eval x env) 1
-    :hints ((acl2::witness :ruleset (svex-eval-equiv-instancing
+    :hints ((witness :ruleset (svex-eval-equiv-instancing
                                      svex-eval-equiv-svex-example))))
 
   (defrefinement svex-equiv svex-eval-equiv
-    :hints ((acl2::witness :ruleset (svex-eval-equiv-witnessing)))))
+    :hints ((witness :ruleset (svex-eval-equiv-witnessing)))))
 
 (defsection svexlist-eval-equiv
-  (acl2::def-universal-equiv svexlist-eval-equiv
+  (def-universal-equiv svexlist-eval-equiv
     :qvars (env)
     :equiv-terms ((equal (svexlist-eval x env)))
     :defquant t)
 
   (in-theory (disable svexlist-eval-equiv svexlist-eval-equiv-necc))
 
-  (acl2::defexample svexlist-eval-equiv-svex-example
+  (defexample svexlist-eval-equiv-svex-example
     :pattern (svex-eval x env)
     :templates (env)
     :instance-rulename svexlist-eval-equiv-instancing)
 
-  (acl2::defexample svexlist-eval-equiv-list-example
+  (defexample svexlist-eval-equiv-list-example
     :pattern (svexlist-eval x env)
     :templates (env)
     :instance-rulename svexlist-eval-equiv-instancing)
 
   (defcong svexlist-eval-equiv equal (svexlist-eval x env) 1
-    :hints ((acl2::witness :ruleset (svexlist-eval-equiv-instancing
+    :hints ((witness :ruleset (svexlist-eval-equiv-instancing
                                      svexlist-eval-equiv-list-example))))
 
   (defrefinement svexlist-equiv svexlist-eval-equiv
-    :hints ((acl2::witness :ruleset (svexlist-eval-equiv-witnessing))))
+    :hints ((witness :ruleset (svexlist-eval-equiv-witnessing))))
 
   (defcong svexlist-eval-equiv svex-eval-equiv (car x) 1
     :hints (("goal" :expand ((:free (env) (svexlist-eval x env))
                              (:free (env) (svexlist-eval x-equiv env))))
-            (acl2::witness :ruleset (svex-eval-equiv-witnessing
+            (witness :ruleset (svex-eval-equiv-witnessing
                                      svexlist-eval-equiv-instancing
                                      svexlist-eval-equiv-svex-example))))
 
   (defcong svexlist-eval-equiv svexlist-eval-equiv (cdr x) 1
     :hints (("goal" :expand ((:free (env) (svexlist-eval x env))
                              (:free (env) (svexlist-eval x-equiv env))))
-            (acl2::witness :ruleset (svexlist-eval-equiv-witnessing
+            (witness :ruleset (svexlist-eval-equiv-witnessing
                                      svexlist-eval-equiv-instancing
                                      svexlist-eval-equiv-list-example))))
 
   (defcong svexlist-eval-equiv svexlist-eval-equiv (cons x y) 2
     :hints (("goal" :in-theory (enable svexlist-eval))
-            (acl2::witness :ruleset (svexlist-eval-equiv-witnessing
+            (witness :ruleset (svexlist-eval-equiv-witnessing
                                      svexlist-eval-equiv-instancing
                                      svexlist-eval-equiv-list-example))))
 
   (defcong svex-eval-equiv svexlist-eval-equiv (cons x y) 1
     :hints (("goal" :in-theory (enable svexlist-eval))
-            (acl2::witness :ruleset (svexlist-eval-equiv-witnessing
+            (witness :ruleset (svexlist-eval-equiv-witnessing
                                      svex-eval-equiv-instancing
                                      svex-eval-equiv-list-example))))
 
   (defcong svexlist-eval-equiv svex-eval-equiv (svex-call fn args) 2
     :hints (("goal" :expand ((:free (fn args env)
                               (svex-eval (svex-call fn args) env))))
-            (acl2::witness))))
+            (witness))))

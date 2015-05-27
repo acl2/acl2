@@ -30,7 +30,7 @@
 
 (in-package "SV")
 (include-book "address")
-(include-book "../svex/svmask")
+(include-book "../svex/4vmask")
 (include-book "../svex/vars")
 (include-book "../svex/rsh-concat")
 (include-book "centaur/misc/1d-arr" :dir :system)

@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "evaluator")
+(include-book "eval")
 
 
 (defines svex-xeval

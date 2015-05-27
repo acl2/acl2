@@ -3703,8 +3703,8 @@
 ; there is none).  We want to identify the hypothesis metafunction
 ; (see :DOC meta) of that rule.  We return nil if the hyp is
 ; unacceptable, t if there is no extra hypothesis, and otherwise the
-; hypothesis function.  Note that we allow, but do not require, the
-; hypotheses (pseudo-termp x) and (alistp a) to be among the
+; hypothesis function symbol.  Note that we allow, but do not require,
+; the hypotheses (pseudo-termp x) and (alistp a) to be among the
 ; hypotheses, in which case we delete them before returning the
 ; result.
 
@@ -4163,6 +4163,110 @@
                            chk-rule-fn-guard.  Please contact the ACL2 ~
                            implementors."))))))))
 
+; Essay on never-untouchable-fns
+
+; The global-val of 'never-untouchable-fns is an alist pairing function symbols
+; with lists of well-formedness-guarantees.  A well-formedness-guarantee is a
+; structure of the form ((name fn thm-name1 hyp-fn thm-name2) . arity-alist),
+; where hyp-fn and thm-name2 may omitted.  It denotes the fact that the
+; metatheorem named name justifies the metafunction fn (with hypothesis
+; metafunction hyp-fn if present), and that the two metafunctions are
+; guaranteed to return TERMPs by the theorems named thm-name1 and thm-name2
+; respectively, provided the world satisfies arity-alist.  The function symbols
+; listed in arity-alist are the symbols that may be introduced by the
+; metafunction or the hypothesis metafunction.  When a metatheorem with TERMP
+; guarantees is added, we make sure that none of the introduced symbols are on
+; (forbidden-fns wrld state).  See translate-well-formedness-guarantee.  We
+; also record the fact that those introduced symbols should never be made
+; untouchable, by adding the well-formedness-guarantee to the symbol's entry on
+; never-untouchable-fns.  Thereafter, we prevent any of those function symbols
+; from being added to untouchable-fns.  This is done in push-untouchable, by
+; comparing any about-to-be-made-untouchable function with
+; never-untouchable-fns.
+
+(defun add-new-never-untouchable-fns (fns well-formedness-guarantee
+                                          never-untouchable-fns)
+
+; Well-formedness-guarantee is a structure of the form ((name fn thm-name1
+; hyp-fn thm-name2) . arity-alist), where hyp-fn and thm-name2 may be omitted.
+; It denotes the fact that the metatheorem named name justifies the
+; metafunction fn (with hypothesis metafunction hyp-fn if present), and that
+; the two metafunctions are guaranteed to return TERMPs by the theorems named
+; thm-name1 and thm-name2 respectively, provided the world satisfies
+; arity-alist.  Fns, above, is a list of function symbols possibly introduced
+; by the metatheorem described by well-formedness-guarantee.  (In fact, it is
+; initially just the keys of the arity-alist.)  Never-untouchable-fns is an
+; alist pairing function symbols to well-formedness-guarantees that may
+; introduce that symbol.  We add this new well-formedness-guarantee to the
+; entries for fns.
+
+  (cond ((endp fns) never-untouchable-fns)
+        (t (add-new-never-untouchable-fns
+            (cdr fns)
+            well-formedness-guarantee
+            (put-assoc-eq
+             (car fns)
+             (add-to-set-equal well-formedness-guarantee
+                               (cdr (assoc-eq (car fns) never-untouchable-fns)))
+             never-untouchable-fns)))))
+
+(defun collect-never-untouchable-fns-entries (fns never-untouchable-fns)
+
+; Suppose the list of function symbols fns is to be pushed onto
+; untouchable-fns.  We use this function to collect those g in fns (and
+; information from their well-formedness-guarantees) which are not supposed to be
+; made untouchable.  The result of this function is thus nil if there are no
+; never-untouchable-fns names in fns and otherwise, for each name gi that is
+; not to be made untouchable we will have an entry in the result of the form
+; (gi relevant-names1 relevant-names2 ...), where each relevant-namesi is the
+; car of a well-formedness-guarantee, i.e., a list of 5 (or 3) names (name fn
+; thm-name1 hyp-fn thm-name2) with the last two possibly omitted.  This data
+; structure is only shown to the user to help him or her figure out why we're
+; rejecting a proposed untouchable function.
+
+  (cond
+   ((endp fns) nil)
+   (t (let ((entry (assoc-eq (car fns) never-untouchable-fns)))
+        (cond
+         (entry
+          (cons entry
+                (collect-never-untouchable-fns-entries (cdr fns)
+                                                       never-untouchable-fns)))
+         (t (collect-never-untouchable-fns-entries (cdr fns)
+                                                   never-untouchable-fns)))))))
+
+(defun interpret-term-as-meta-rule (term)
+
+; We match term against the acceptable forms of metafunction correctness
+; theorems and return the pieces: (mv hyp eqv ev x a fn mfc-symbol), where hyp
+; is the hypothesis term or *t*, eqv is the equivalence relation, ev is the
+; evaluator, etc.  We do absolutely no well-formedness checks here, just
+; deconstruct the term!  For example, eqv, ev, or fn may be (unacceptable)
+; LAMBDA expressions, x may not be a variable symbol, etc.  But since term is
+; known to be a term, eqv, for example, cannot be nil unless we fail to match
+; any of the acceptable forms.  Our convention is to test eqv to see if the
+; term was deconstructed.  If mfc-symbol is nil, fn is a vanilla flavored
+; metafunction taking one argument, else it is an extended metafunction.  But,
+; despite its name, we don't know that mfc-symbol is a symbol, it could be any
+; term.
+
+  (case-match term
+    (('IMPLIES hyp
+               (eqv (ev x a) (ev (fn x) a)))
+     (mv hyp eqv ev x a fn nil))
+    ((eqv (ev x a) (ev (fn x) a))
+     (mv *t* eqv ev x a fn nil))
+    (('IMPLIES hyp
+               (eqv (ev x a)
+                    (ev (fn x mfc-symbol 'STATE)
+                        a)))
+     (mv hyp eqv ev x a fn mfc-symbol))
+    ((eqv (ev x a)
+          (ev (fn x mfc-symbol 'STATE)
+              a))
+     (mv *t* eqv ev x a fn mfc-symbol))
+    (& (mv *t* nil nil nil nil nil nil))))
+
 (defun chk-acceptable-meta-rule (name trigger-fns term ctx ens wrld state)
   (if (member-eq 'IF trigger-fns)
       (er soft ctx
@@ -4173,22 +4277,7 @@
                 have the form of a metatheorem.  See :DOC meta."))
       (mv-let
        (hyp eqv ev x a fn mfc-symbol)
-       (case-match term
-         (('implies hyp
-                    (eqv (ev x a) (ev (fn x) a)))
-          (mv hyp eqv ev x a fn nil))
-         ((eqv (ev x a) (ev (fn x) a))
-          (mv *t* eqv ev x a fn nil))
-         (('implies hyp
-                    (eqv (ev x a)
-                         (ev (fn x mfc-symbol 'STATE)
-                             a)))
-          (mv hyp eqv ev x a fn mfc-symbol))
-         ((eqv (ev x a)
-               (ev (fn x mfc-symbol 'STATE)
-                   a))
-          (mv *t* eqv ev x a fn mfc-symbol))
-         (& (mv *t* nil nil nil nil nil nil)))
+       (interpret-term-as-meta-rule term)
        (cond ((null eqv)
               (er soft ctx str name (untranslate term t wrld)))
              ((eq fn 'return-last)
@@ -4349,25 +4438,11 @@
    msg
    wrld))
 
-(defun add-meta-rule (rune nume trigger-fns term backchain-limit wrld)
+(defun add-meta-rule (rune nume trigger-fns well-formedness-guarantee
+                           term backchain-limit wrld)
   (mv-let
    (hyp eqv ev x a fn mfc-symbol)
-   (case-match term
-     (('implies hyp
-                (eqv (ev x a) (ev (fn x) a)))
-      (mv hyp eqv ev x a fn nil))
-     ((eqv (ev x a) (ev (fn x) a))
-      (mv *t* eqv ev x a fn nil))
-     (('implies hyp
-                (eqv (ev x a)
-                     (ev (fn x mfc-symbol 'STATE)
-                         a)))
-      (mv hyp eqv ev x a fn mfc-symbol))
-     ((eqv (ev x a)
-           (ev (fn x mfc-symbol 'STATE)
-               a))
-      (mv *t* eqv ev x a fn mfc-symbol))
-     (& (mv *t* nil nil nil nil nil nil)))
+   (interpret-term-as-meta-rule term)
    (mv-let
     (hyp-fn extra-fns)
     (meta-rule-hypothesis-functions hyp ev x a mfc-symbol)
@@ -4379,32 +4454,49 @@
            chk-acceptable-meta-rule."
           (list rune nume trigger-fns term)))
      (t
-      (add-meta-rule1 trigger-fns
-                      (make rewrite-rule
-                            :rune rune
-                            :nume nume
-                            :hyps (if (eq hyp-fn t) nil hyp-fn)
-                            :equiv eqv
-                            :lhs fn
-                            :var-info nil ; unused
-                            :rhs (if mfc-symbol 'extended nil)
-                            :subclass 'meta
-                            :heuristic-info nil
-                            :backchain-limit-lst
-                            (rule-backchain-limit-lst
-                             backchain-limit
-                             nil ; hyps (ignored for :meta)
-                             wrld
-                             :meta))
-                      (mark-attachment-disallowed
-                       (if (eq hyp-fn t)
-                           (list fn)
-                         (list hyp-fn fn))
-                       ev
-                       (msg "it supports both evaluator and meta functions ~
+
+; Note: If a :meta rule has a :WELL-FORMEDNESS-GUARANTEE spec, then
+; well-formedness-guarantee is (name fn thm-name1 hyp-fn thm-name2)
+; . combined-arities-alist), where the hyp-fn and thm-name2 entries are omitted
+; if there is no hyp-fn.  If no :WELL-FORMEDNESS-GUARANTEE was specified, the
+; well-formedness-guarantee is nil.  The :heuristic-info field of the resulting
+; rule contains the well-formedness-guarantee.
+
+      (let* ((arity-alist (cdr well-formedness-guarantee))
+             (wrld1
+              (add-meta-rule1 trigger-fns
+                              (make rewrite-rule
+                                    :rune rune
+                                    :nume nume
+                                    :hyps (if (eq hyp-fn t) nil hyp-fn)
+                                    :equiv eqv
+                                    :lhs fn
+                                    :var-info nil ; unused
+                                    :rhs (if mfc-symbol 'extended nil)
+                                    :subclass 'meta
+                                    :heuristic-info well-formedness-guarantee
+                                    :backchain-limit-lst
+                                    (rule-backchain-limit-lst
+                                     backchain-limit
+                                     nil ; hyps (ignored for :meta)
+                                     wrld
+                                     :meta))
+                              (mark-attachment-disallowed
+                               (if (eq hyp-fn t)
+                                   (list fn)
+                                   (list hyp-fn fn))
+                               ev
+                               (msg "it supports both evaluator and meta functions ~
                              used in :META rule ~x0"
-                            (base-symbol rune))
-                       wrld)))))))
+                                    (base-symbol rune))
+                               wrld)))
+             (wrld2 (global-set 'never-untouchable-fns
+                                (add-new-never-untouchable-fns
+                                 (strip-cars arity-alist)
+                                 well-formedness-guarantee
+                                 (global-val 'never-untouchable-fns wrld1))
+                                wrld1)))
+        wrld2))))))
 
 ;---------------------------------------------------------------------------
 ; Section:  Destructor :ELIM Rules
@@ -6682,9 +6774,33 @@
          cl-proc))))
 
 (defun destructure-clause-processor-rule (term)
+
+; We destructure the translated term term in the form of a :clause-processor
+; correctness theorem.  We return
+; (mv flg fn cl alist rest-args ev call xflg)
+; where
+; flg:   :error, if term is not the right shape
+;        t, if the clause processor function returns an error triple
+;           and is thus to be accessed with CLAUSES-RESULT
+;        nil, if the clause processor returns a set of clauses.
+; fn:    the clause processor function (presumably a function symbol)
+; cl:    the first argument to fn (presumably a variable symbol denoting the
+;        input clause)
+; alist: the evaluator's alist (presumably a variable symbol)
+; rest-args: the arguments of fn after the first (presumably a hint possibly
+;        followed by a list of stobj names)
+; ev:    the evaluator function (presumably a function symbol)
+; call:  the actual call of fn
+; flg:   a boolean indicating whether meta-extract-global-fact+ hyps were found
+; We also may presume that all the variables above are distinct.
+
+; This function does not check the presumptions above but
+; chk-acceptable-clause-processor-rule does and causes an error if they are not
+; true.
+
   (case-match term
-    (('implies hyp
-               (ev ('disjoin clause) alist))
+    (('IMPLIES hyp
+               (ev ('DISJOIN clause) alist))
      (mv-let
       (hyps meta-extract-flg)
       (remove-meta-extract-global-hyps
@@ -6693,10 +6809,10 @@
                                      (flatten-ands-in-lit hyp)))
        ev)
       (case-match hyps
-        (((ev ('conjoin-clauses cl-result)
+        (((ev ('CONJOIN-CLAUSES cl-result)
               &))
          (case-match cl-result
-           (('clauses-result (cl-proc !clause . rest-args))
+           (('CLAUSES-RESULT (cl-proc !clause . rest-args))
             (mv t cl-proc clause alist rest-args ev (cadr cl-result)
                 meta-extract-flg))
            ((cl-proc !clause . rest-args)
@@ -6814,7 +6930,7 @@
                                  ctx wrld state)
               (chk-evaluator ev wrld ctx state))))))))))))
 
-(defun add-clause-processor-rule (name term wrld)
+(defun add-clause-processor-rule (name well-formedness-guarantee term wrld)
 
 ; Warning: Keep this in sync with chk-acceptable-clause-processor-rule.
 
@@ -6836,7 +6952,8 @@
          (function-symbolp cl-proc wrld))
     (putprop
      cl-proc 'clause-processor
-     t
+     (or well-formedness-guarantee
+         t)
 
 ; We keep a global list of clause-processor-rules, simply in order to be
 ; able to print them.  But someone may find other uses for this list, in
@@ -7327,6 +7444,514 @@
         (t
          nil)))
 
+(defun recover-metafunction-or-clause-processor-signatures (token term)
+
+; Term is supposed to be either a metafunction correctness theorem or a
+; clause-processor correctness theorem, depending on token being :meta or
+; :clause-processor.  (But it may not be of the correct form.)  We return (mv
+; triple-flg fn hyp-fn rest-args), where hyp-fn is nil if no hypothesis fn is
+; involved.  Rest-args are all the arguments of fn after the first.  Triple-flg
+; is :error if term cannot be parsed according to token, is t if the identified
+; metafunction or clause processor, fn, returns an error triple (and thus must
+; actually be a clause-processor whose result is to be accessed with
+; CLAUSES-RESULT), or nil if fn returns a simple value (term or set of
+; clauses).
+
+; In the case of a :meta fn, triple-flg is :error or nil and rest-args may be
+; nil or something like (mfc state).  In the case of a :clause-processor,
+; triple-flg may be :error, t, or nil and rest-args may be nil or (hint) or
+; (hint stobj1 stobj2 ... stobjk).  When hyp-fn is present, we know that it can
+; take the same arguments as fn.
+
+; If triple-flg is :error then we know chk-acceptable-x-rule will cause an
+; error.  Otherwise, we guarantee that fn is a function symbol, hyp-fn is nil
+; or a function symbol of the same arity as fn, that the arity of both
+; functions is (+ 1 (len rest-args)), and that rest-args is a list of distinct
+; variable symbols, and that result of fn is either a triple (whose value is to
+; be accessed with CLAUSES-RESULT) or a single value according to triple-flg.
+
+  (cond
+   ((eq token :meta)
+    (mv-let
+     (hyp eqv ev x a fn mfc-symbol)
+     (interpret-term-as-meta-rule term)
+     (mv-let
+      (hyp-fn extra-fns)
+      (meta-rule-hypothesis-functions hyp ev x a mfc-symbol)
+      (declare (ignore extra-fns))
+      (cond
+
+; If hyp-fn is nil, it means the hyp didn't parse.  If hyp-fn is t it means the
+; hyp parsed but there is no hyp-fn.
+
+; Note that to insure that fn, for example, is a function symbol of the correct
+; signature, we only need to check that it is a symbol, since term is a
+; translated term.
+
+       ((or (null eqv)
+            (not (symbolp fn))
+            (null hyp-fn)
+            (not (symbolp hyp-fn))
+            (not (symbolp mfc-symbol)))
+        (mv :error nil nil nil))
+       (t (mv nil
+              fn
+              (if (eq hyp-fn t) nil hyp-fn)
+              (if mfc-symbol
+                  (list mfc-symbol 'STATE)
+                  nil)))))))
+   (t
+    (mv-let
+     (flg fn cl alist rest-args ev call xflg)
+     (destructure-clause-processor-rule term)
+     (declare (ignore call xflg))
+     (cond
+      ((or (eq flg :error)
+           (not (symbolp fn))
+           (not (symbolp cl))
+           (not (symbolp alist))
+           (not (symbol-listp rest-args))
+           (not (symbolp ev))
+           (not (no-duplicatesp (list* cl alist rest-args))))
+       (mv :error nil nil nil))
+      (t (mv flg fn nil rest-args)))))))
+
+(defun equal-except-on-non-stobjs (arglist1 arglist2 w)
+
+; Given two lists of symbols, we check that when corresponding elements are
+; different they are not stobjs.  That is, the two lists are equal except on
+; the non-stobj elements.  This is implied by (equal arglist1 arglist2) and
+; implies (equal (len arglist1) (len arglist2)).
+
+  (cond ((atom arglist1)
+         (and (equal nil arglist1)
+              (equal nil arglist2)))
+        ((atom arglist2) nil)
+        ((equal (car arglist1) (car arglist2))
+         (equal-except-on-non-stobjs (cdr arglist1) (cdr arglist2) w))
+        ((or (stobjp (car arglist1) t w)
+             (stobjp (car arglist2) t w))
+         nil)
+        (t (equal-except-on-non-stobjs (cdr arglist1) (cdr arglist2) w))))
+
+(defun arity-alistp (alist)
+; We check that alist binds symbols to naturals and that no symbol is bound
+; twice.
+  (cond
+   ((atom alist) (eq alist nil))
+   ((and (consp (car alist))
+         (symbolp (car (car alist)))
+         (natp (cdr (car alist)))
+         (arity-alistp (cdr alist))
+         (not (assoc-eq (car (car alist)) (cdr alist))))
+    t)
+   (t nil)))
+
+(defun compatible-arity-alistsp (alist1 alist2)
+
+; Both arguments are arity-alists.  We want to know if their union is also.  We
+; do this in the most brute-force way imaginable except that we recognize the
+; special cases where the two alists are identical.
+
+  (cond ((equal alist1 alist2) t)
+        (t (arity-alistp (union-equal alist1 alist2)))))
+
+(defun collect-disagreeing-arity-assumptions (alist1 alist2)
+  (cond ((endp alist1) nil)
+        ((and (assoc (car (car alist1)) alist2)
+              (not (equal (cdr (car alist1))
+                          (cdr (assoc (car (car alist1)) alist2)))))
+         (cons (car (car alist1))
+               (collect-disagreeing-arity-assumptions (cdr alist1) alist2)))
+        (t (collect-disagreeing-arity-assumptions (cdr alist1) alist2))))
+
+(defun interpret-term-as-well-formedness-guarantee-thm (token fn thm)
+
+; Token must be :META or :CLAUSE-PROCESSOR.  In the former case,
+; thm is a term (actually a theorem) and we interpret it as 
+
+; (IMPLIES (AND (TERMP tvar wvar)
+;               (ARITIES-OKP '((fn1 . k1) ...) wvar))
+;          (TERMP (fn tvar) wvar))
+
+; In the latter case, we interpret thm as
+
+; (IMPLIES (AND (TERM-LISTP tvar wvar)
+;               (ARITIES-OKP '((fn1 . k1) ...) wvar))
+;          (TERM-LIST-LISTP (fn tvar) wvar))
+
+; or
+
+; (IMPLIES (AND (TERM-LISTP tvar wvar)
+;               (ARITIES-OKP '((fn1 . k1) ...) wvar))
+;          (TERM-LIST-LISTP (CLAUSES-RESULT (fn tvar)) wvar))
+
+; But we recognize certain equivalent or stronger variants, including allowing
+; fewer or rearranged hypotheses and allowing for fn to have additional
+; arguments as permitted for metafunctions and clause-processors.  We return
+; (mv tvar wvar alist triple-flg rest-args), where alist is the evg of the quoted
+; arities alist found and rest-args is the list of arguments to fn after tvar.
+; and triple-flg is :error, t, or nil with :error meaning we couldn't parse
+; thm appropriately, t meaning that fn returns a triple whose value is accessed
+; by CLAUSES-RESULT, and nil meaning fn returns a single value.
+
+; If triple-flg is :error, thm is not of the appropriate form; otherwise it is.
+; But we do not check anything about the components returned!  For example,
+; tvar, which is guaranteed to be a term may not actually be a variable symbol,
+; etc.  These constraints must be checked by the caller.
+
+; We actually accept the thm (TERMP (fn tvar) wvar) and (TERM-LIST-LISTP (fn
+; tvar) wvar) without any hypotheses, though the only functions we can think of
+; for which this is provable are those that return constants and hence can't be
+; correct metafunctions or clause processor.
+
+; We could code this more efficiently but we don't expect well-formedness
+; guarantees to be very common.
+
+  (let ((pre (if (eq token :META) 'TERMP 'TERM-LISTP))
+        (post (if (eq token :META) 'TERMP 'TERM-LIST-LISTP)))
+    (case-match thm
+      (('IMPLIES ('IF (!pre tvar wvar)
+                      ('ARITIES-OKP ('QUOTE alist) wvar)
+                      ''NIL)
+                 (!post (!fn tvar . rest-args) wvar))
+       (mv tvar wvar alist nil rest-args))
+      (('IMPLIES ('IF ('ARITIES-OKP ('QUOTE alist) wvar)
+                      (!pre tvar wvar)
+                      ''NIL)
+                 (!post (!fn tvar . rest-args) wvar))
+       (mv tvar wvar alist nil rest-args))
+      (('IMPLIES (!pre tvar wvar)
+                 (!post (!fn tvar . rest-args) wvar))
+       (mv tvar wvar nil nil rest-args))
+      (('IMPLIES ('ARITIES-OKP ('QUOTE alist) wvar)
+                 (!post (!fn tvar . rest-args) wvar))
+       (mv tvar wvar alist nil rest-args))
+      ((!post (!fn tvar . rest-args) wvar)
+       (mv tvar wvar nil nil rest-args))
+
+; Now we repeat the same patterns except this time allow for CLAUSES-RESULT
+; around the fn call:
+
+      (('IMPLIES ('IF (!pre tvar wvar)
+                      ('ARITIES-OKP ('QUOTE alist) wvar)
+                      ''NIL)
+                 (!post ('CLAUSES-RESULT (!fn tvar . rest-args)) wvar))
+       (mv tvar wvar alist t rest-args))
+      (('IMPLIES ('IF ('ARITIES-OKP ('QUOTE alist) wvar)
+                      (!pre tvar wvar)
+                      ''NIL)
+                 (!post ('CLAUSES-RESULT (!fn tvar . rest-args)) wvar))
+       (mv tvar wvar alist t rest-args))
+      (('IMPLIES (!pre tvar wvar)
+                 (!post ('CLAUSES-RESULT (!fn tvar . rest-args)) wvar))
+       (mv tvar wvar nil t rest-args))
+      (('IMPLIES ('ARITIES-OKP ('QUOTE alist) wvar)
+                 (!post ('CLAUSES-RESULT (!fn tvar . rest-args)) wvar))
+       (mv tvar wvar alist t rest-args))
+      ((!post ('CLAUSES-RESULT (!fn tvar . rest-args)) wvar)
+       (mv tvar wvar nil t rest-args))
+      (& (mv nil nil nil :error nil)))))
+
+(defun translate-well-formedness-guarantee (token x name corollary ctx wrld
+                                                  state)
+
+; Token is either :META or :CLAUSE-PROCESSOR and indicates what class of rule
+; we're creating.  X is the value supplied for the :WELL-FORMEDNESS-GUARANTEE
+; component of the rule class.  Name is the name of the correctness theorem for
+; a metafunction (perhaps with a hypothesis metafunction) or clause-processor
+; and corollary is the statement of that correctness theorem.  X must be one
+; of:
+
+; [1] thm-name1               token = :META or :CLAUSE-PROCESSOR
+; [2] (thm-name1)             token = :META
+; [3] (thm-name1 thm-name2)   token = :META
+
+; If token is :CLAUSE-PROCESSOR, token must be of form [1].  If token is :META
+; and the metatheorem named by name has a hypothesis metafunction, token must
+; be of form [3].  In all cases, thm-name1 and thm-name2 (when relevant) must
+; be symbols that name theorems that guarantee that the metafunction or clause
+; processor together with the hypothesis metafunction, as appropriate, return
+; well-formed results.  In the case of token :META ``well-formed'' means the
+; output is a TERMP if the input is; in the case of token :CLAUSE-PROCESSOR,
+; ``well-formed'' means the output is a TERM-LIST-LISTP if the input is a
+; TERM-LISTP..  In both cases, the well-formedness theorems also involve
+; assumptions about the arities of certain functions.
+
+; The result of this function either an error or a ``well-formedness
+; guarantee'' of the form:
+
+; (cons (list name fn thm-name1 hyp-fn thm-name2)
+;       combined-arity-alist)
+
+; where the list of length 5 above is shortened to 3 if there no hyp-fn is
+; involved, and combined-arity-alist is the union of the two arity-alists.  We
+; keep all this information to make error reporting easier.  The list of length
+; 5 (or 3) is displayed to the user when he or she tries to make one of the
+; functions on the combined-arity-alist untouchable.  The combined-arity-alist
+; is checked against the current world when the metatheorem or clause processor
+; is applied.  The value of this function is stored in the :heuristic-info
+; field of the :rewrite-rule created for this metatheorem and on the property
+; list of the metafunction under the WELL-FORMEDNESS-GUARANTEE property.
+
+; So much for the spec and use of this function.  Now for the operational
+; details.   To allow some code sharing we often act like a
+; clause-processor is just a metafunction (e.g., we use the same name, fn, for
+; both) without a hyp-fn; of course, we must interpret ``well-formedness''
+; appropriately.
+
+; But we must recover the metafunction or clause-processor functio name, fn,
+; (and, possibly, the hypothesis metafunction name, hyp-fn) from the translated
+; corollary formula, which means we must parse corollary as a formula of the
+; appropriate shape.  But rule classes are translated -- resulting in this
+; function being called -- before the translated rule class (always now
+; containing a translated :corollary term) is checked for well-formedness.  So
+; here we're in the odd position of wanting to know whether x names theorems
+; about certain functions, fn and hyp-fn, proved sound by corollary, without
+; knowing that corollary establishes soundness for anything!  So what do we do
+; if corollary has the wrong shape and we cannot recover fn and hyp-fn from it?
+; Answer: we ``approve'' x (by causing no error and acting as though there were
+; well-formedness guarantee)!  We know that corollary will be checked later and
+; will cause the whole rule to fail if it's not of the right shape.
+
+  (cond
+   ((not (or (and (symbolp x)
+                  (formula x nil wrld))
+             (and (eq token :META)
+                  (consp x)
+                  (symbolp (car x))
+                  (null (cdr x))
+                  (formula (car x) nil wrld))
+             (and (eq token :META)
+                  (consp x)
+                  (symbolp (car x))
+                  (consp (cdr x))
+                  (symbolp (cadr x))
+                  (null (cddr x))
+                  (formula (car x) nil wrld)
+                  (formula (cadr x) nil wrld))))
+    (if (eq token :META)
+        (er soft ctx
+            "The :WELL-FORMEDNESS-GUARANTEE of :META rule ~x0 is ill-formed.  ~
+             In general, a :WELL-FORMEDNESS-GUARANTEE must be of one of the ~
+             following forms:~%[1]  thm-name1~%[2]  (thm-name1)~%[3]  ~
+             (thm-name1 thm-name2)~%where thm-name1 names a previously proved ~
+             theorem guaranteeing that the relevant metafunction returns a ~
+             TERMP when given a TERMP.  See :DOC termp.  Form [3] is only ~
+             permitted (and is required!) when the metatheorem has a ~
+             hypothesis metafunction, in which case thm-name2 names a ~
+             previously proved theorem guaranteeing that the hypothesis ~
+             metafunction also returns a TERMP when given one.  ~x1 is of ~
+             none of the expected forms.  See :DOC well-formedness-guarantee ~
+             for details."
+            name x)
+        (er soft ctx
+            "The :WELL-FORMEDNESS-GUARANTEE of :CLAUSE-PROCESSOR rule ~x0 ~
+             must be the name of a theorem guaranteeing that the clause ~
+             processor returns a TERM-LIST-LISTP when given a TERM-LISTP.  ~
+             ~x1 is not such a name.  See :DOC term-listp, :DOC ~
+             term-list-listp, and :DOC well-formedness-guarantee for details."
+             name x)))
+   (t (let* ((thm-name1 (cond ((symbolp x) x)
+                              (t (car x))))
+             (thm-name2 (cond ((symbolp x) nil) ; might be nil
+                              (t (cadr x))))
+             (thm1 (formula thm-name1 nil wrld))
+             (thm2 (if (null thm-name2)         ; might be nil
+                       nil
+                       (formula thm-name2 nil wrld))))
+
+        (mv-let
+         (triple-flg fn hyp-fn rest-args)
+         (recover-metafunction-or-clause-processor-signatures token corollary)
+         (let ((expected-fn-form
+                `(IMPLIES
+                  (AND (,(if (eq token :meta) 'TERMP 'TERM-LISTP) X W)
+                       (ARITY-ALISTP '<alist> W))
+                  (,(if (eq token :meta) 'TERMP 'TERM-LIST-LISTP)
+                   ,(if triple-flg
+                        `(CLAUSES-RESULT (,fn X ,@rest-args))
+                        `(,fn X ,@rest-args))
+                   W)))
+               (expected-hyp-fn-form
+                (if hyp-fn
+                    `(IMPLIES
+                      (AND (TERMP X W)
+                           (ARITY-ALISTP '<alist> W))
+                      (TERMP (,hyp-fn X ,@rest-args)
+                             W))
+                    nil))
+               (evisc (evisc-tuple nil nil
+                                   '((<alist> . "((fn1 . n1) ... (fnk . nk))"))
+                                   nil)))
+         (cond
+          ((eq triple-flg :error)
+
+; The corollary didn't parse as a meta/clause-processor rule (as per token).
+; But we quietly accept it knowing that the corresponding chk-acceptable-x-rule
+; will cause an error.
+
+            (value nil))
+
+; Otherwise, fn is the metafunction or clause processor function, as per token.
+; We know that fn is a function symbol of arity (+ 1 (len rest-args)), that fn
+; returns an error triple iff triple-flg is t (and so its value must be
+; accessed with CLAUSES-RESULT), that hyp-fn is either nil or a function symbol
+; of the same arity as fn, and that `(,fn x ,@rest-args) and `(,hyp-fn x
+; ,@rest-args) are legal calls of those functions (assuming hyp-fn is non-nil).
+
+; We also know that x names at least one theorem, thm1 with name thm-name1.  We
+; know that thm2 is either a theorem with name thm-name2 or else thm2 and
+; thm-name2 are both nil.  Thm1 and thm2 are supposedly well-formedness
+; guarantees for fn and hyp-fn.  But we must confirm that.
+
+           (t (mv-let
+               (tvar1 wvar1 alist1 triple-flg1 rest-args1)
+               (interpret-term-as-well-formedness-guarantee-thm token fn thm1)
+               (cond
+                ((eq triple-flg1 :error)
+                 (er soft ctx
+                     "The :WELL-FORMEDNESS-GUARANTEE of ~x0 rule ~x1 is ~
+                      ill-formed.  We cannot interpret the theorem named ~x2 ~
+                      as a well-formedness guarantee for the function ~x3.  ~
+                      We expected the name of a theorem like ~X45.  See :DOC ~
+                      well-formedness-guarantee for details of the acceptable ~
+                      forms."
+                     token name thm-name1 fn
+                     expected-fn-form
+                     evisc))
+                ((and
+
+; Now we know that the alleged well-formedness theorem, thm1, is about the same
+; function symbol, fn!  Given the possibility that fn has changed since thm1
+; was proved, we do another check.  This is just out of politeness: fn could
+; only change due to a redefinition and soundness is now the user's
+; responsibility!  But we know that if this metatheorem/clause-processor is
+; approved, we're going to call fn on the arguments we see in corollary and we
+; want some assurance that thm1 guarantees the well-formedness of the result!
+; For example, imagine that when thm1 was proved about a metafunction fn, the
+; formals of fn were (x state mfc) but then before corollary was proved fn was
+; redefined with arguments (x mfc state).  If we were to approve this thm as a
+; well-formedness guarantee then we'd be wrong!  Of course, if fn has been
+; redefined, it hardly matters that the arguments are the same!  But since the
+; introduction of a non-term is a pretty difficult bug to diagnose, we prefer
+; to do what we can to prevent it even if it's the user's own fault!
+
+                  (equal-except-on-non-stobjs rest-args rest-args1 wrld)
+                  (eq triple-flg triple-flg1)
+
+                  (variablep tvar1)
+                  (variablep wvar1)
+                  (symbol-listp rest-args1) ;``(variable-listp rest-args1)''
+                  (no-duplicatesp-equal
+                   (list* tvar1 wvar1 rest-args1))
+                  (arity-alistp alist1))
+
+; We know thm is of the form (for token :meta):
+; (IMPLIES (AND (TERMP tvar1 wvar1)
+;               (ARITIES-OKP '<alist1> wvar1))
+;          (TERMP (fn tvar1 . rest-args1) wvar1))
+
+; For token :clause-processor we know:
+; (IMPLIES (AND (TERM-LISTP tvar1 wvar1)
+;               (ARITIES-OKP '<alist1> wvar1))
+;          (TERM-LIST-LISTP (fn tvar1 . rest-args1) wvar1))
+
+; possibly with a CLAUSES-RESULT wrapped around the fn call.  Now we know that
+; all the terms used as variables above really are variables and they're
+; distinct, and that alist1 pairs symbols to naturals.  (For politeness only we
+; know that the same stobjs are given to fn in both the corollary and thm1 and
+; that the output of fn is either a triple or a single value as specified by
+; triple-flg in both theorems.)
+
+; We claim the tests above insure that thm1 guarantees that fn always returns a
+; TERMP or TERM-LIST-LISTP provided the arity alist, alist1, is valid in the
+; current world.  Now we check the same things for the hyp-fn, if any.
+
+                 (cond
+                  ((null hyp-fn)
+                   (cond
+                    (thm-name2
+                     (er soft ctx
+                         "The ~x0 rule ~x1 mentions the metafunction ~x2 but ~
+                          does not mention a hypothesis metafunction.  ~
+                          Therefore, it makes no sense to name a previously ~
+                          proved theorem that provides a well-formedness ~
+                          guarantee for a hypothesis metafunction.  But ~
+                          you have specified such a name, ~x4, with your ~
+                          :WELL-FORMEDNESS-GUARANTEE ~x3.  This may indicate ~
+                          a misunderstanding.  Replace your guarantee with ~
+                          :WELL-FORMEDNESS-GUARANTEE ~x5."
+                         token name fn x thm-name2 (list thm-name1)))
+                    (t
+                     (value (cons (list name fn thm-name1)
+                                  alist1)))))
+
+; Token is :META because we have a hyp-fn.
+
+                  ((null thm-name2)
+                   (er soft ctx
+                       "The :META rule ~x0 mentions the metafunction ~x1 and ~
+                        the hypothesis metafunction ~x2.  You have correctly ~
+                        named ~x3 as a previously proved theorem guaranteeing ~
+                        that ~x1 always returns a TERMP, but you have not ~
+                        specified such a name for ~x2.  We require that you ~
+                        do so.  That is, prove a theorem like ~X45 with some ~
+                        name and change your :WELL-FORMEDNESS-GUARANTEE value ~
+                        to (~x3 name)."
+                       name fn hyp-fn thm-name1 expected-hyp-fn-form evisc))
+                  (t (mv-let
+                      (tvar2 wvar2 alist2 triple-flg2 rest-args2)
+                      (interpret-term-as-well-formedness-guarantee-thm
+                       token hyp-fn thm2)
+                      (cond
+                       ((and
+                         (equal-except-on-non-stobjs rest-args rest-args2 wrld)
+                         (eq triple-flg triple-flg2)
+                         (variablep tvar2)
+                         (variablep wvar2)
+                         (no-duplicatesp-equal
+                          (list* tvar2 wvar2 rest-args2))
+                         (arity-alistp alist2))
+                        (cond
+                         ((compatible-arity-alistsp alist1 alist2)
+                          (value (cons (list name
+                                             fn thm-name1
+                                             hyp-fn thm-name2)
+                                       (union-equal alist1 alist2))))
+                         (t (er soft ctx
+                                "The :WELL-FORMEDNESS-GUARANTEE of the :META ~
+                                 rule ~x0 for the metafunction ~x1 with ~
+                                 hypothesis metafunction ~x2 is inadmissible ~
+                                 because the two TERMP theorems (~x3 and ~x4) ~
+                                 assume different arities for one or more ~
+                                 function symbols, to wit ~&5.  You will have ~
+                                 to prove TERMP guarantee theorems that make ~
+                                 compatible arity assumptions!"
+                                name fn hyp-fn thm-name1 thm-name2
+                                (collect-disagreeing-arity-assumptions
+                                 alist1 alist2)))))
+                       (t (er soft ctx
+                              "The :WELL-FORMEDNESS-GUARANTEE of the :META ~
+                               rule ~x0 for the metafunction ~x1 with ~
+                               hypothesis metafunction ~x2 specified that ~x3 ~
+                               is the name of the previously proved theorem ~
+                               that guarantees that ~x2 always returns a ~
+                               TERMP.  But theorem ~x3 is not of the expected ~
+                               form.  We expected it to be something ~
+                               like:~X45.  See :DOC well-formedness-guarantee."
+                              name fn hyp-fn thm-name2
+                              expected-hyp-fn-form evisc)))))))
+                (t (er soft ctx
+                       "The :WELL-FORMEDNESS-GUARANTEE of the ~x0 rule ~x1 ~
+                        for ~x2 specified that ~x3 is the name of the ~
+                        previously proved theorem that established that ~x2 ~
+                        always returns a TERMP.  But theorem ~x3 is not of ~
+                        the expected form.  We expected it to be something ~
+                        like ~X45. See :DOC well-formedness-guarantee."
+                       token name fn thm-name1
+                       expected-fn-form evisc))))))))))))
+
 (defun translate-rule-class-alist (token alist seen corollary name x ctx ens
                                          wrld state)
 
@@ -7704,6 +8329,82 @@
                           illegal.  See :DOC ~@1."
                          x
                          (symbol-name token)))))
+                  (:WELL-FORMEDNESS-GUARANTEE
+                   (cond
+                    ((and (not (eq token :META))
+                          (not (eq token :CLAUSE-PROCESSOR)))
+                     (er soft ctx
+                         "Only :META and :CLAUSE-PROCESSOR rule classes are ~
+                          permitted to have a :WELL-FORMEDNESS-GUARANTEE ~
+                          component.  Thus, ~x0 is illegal.  See :DOC ~
+                          well-formedness-guarantee."
+                         x))
+                    (t (er-let*
+                         ((well-formedness-guarantee
+                           (translate-well-formedness-guarantee
+                            token
+                            (cadr alist)
+                            name corollary ctx wrld state)))
+
+; well-formedness-guarantee is of the form ((name fn thm-name1 hyp-fn
+; thm-name2) .  alist), where hyp-fn and thm-name2 are omitted if there is no
+; hyp-fn.  Alist is the combined arity alist of both termp theorems.  We next
+; check that all of these functions have appropriate arities in the current
+; world and that none are currently on forbidden-fns.
+
+                         (let* ( ; (fn (nth 1 (car well-formedness-guarantee)))
+                                (thm-name1
+                                 (nth 2 (car well-formedness-guarantee)))
+                                (hyp-fn
+                                 (nth 3 (car well-formedness-guarantee))) ; may be nil
+                                (thm-name2
+                                 (nth 4 (car well-formedness-guarantee))) ; may be nil
+                                (alist
+                                 (cdr well-formedness-guarantee))
+                                (bad-arities
+                                 (collect-bad-fn-arity-pairs alist wrld))
+                                (forbidden-fns
+                                 (intersection-eq (strip-cars alist)
+                                                  (forbidden-fns wrld state))))
+                           (cond
+                            (bad-arities
+                             (er soft ctx
+                                 ":META rule ~x0 is inadmissible because its ~
+                                  :WELL-FORMEDNESS-GUARANTEE ~
+                                  theorem~#1~[~/s~], named ~&1, ~
+                                  ~#1~[is~/are~] incompatible with the ~
+                                  current world.  In particular, the ~
+                                  ~#1~[theorem makes~/theorems make~] invalid ~
+                                  assumptions about the arities of one or ~
+                                  more function symbols possibly introduced ~
+                                  by the metatheorem. The following alist ~
+                                  shows assumed arities that are different ~
+                                  from the actual arities of those symbols in ~
+                                  the current world, ~X23."
+                                 name
+                                 (if hyp-fn
+                                     (list thm-name1 thm-name2)
+                                     (list thm-name1))
+                                 bad-arities))
+                            (forbidden-fns
+                             (er soft ctx
+                                 ":META rule ~x0 is inadmissible because its ~
+                                  well-formedness theorem~#1~[~/s~], named ~
+                                  ~&1, ~#1~[is~/are~] incompatible with the ~
+                                  current world.  In particular, judging by ~
+                                  the ARITIES-OKP ~
+                                  ~#1~[hypothesis~/hypotheses~] of the ~
+                                  theorem~#1~[~/s~], the metatheorem may ~
+                                  introduce one or more functions that are ~
+                                  currently forbidden, to wit ~&2.  See :DOC ~
+                                  set-skip-meta-termp-checks and :DOC ~
+                                  well-formedness-guarantee."
+                                 name
+                                 (if hyp-fn
+                                     (list thm-name1 thm-name2)
+                                     (list thm-name1))
+                                 forbidden-fns))
+                            (t (value well-formedness-guarantee))))))))
                   (:TYPED-TERM
                    (cond
                     ((not (eq token :TYPE-PRESCRIPTION))
@@ -8490,11 +9191,17 @@
           (:META
            (add-meta-rule rune nume
                           (cadr (assoc-keyword :TRIGGER-FNS (cdr class)))
+                          (cadr (assoc-keyword :WELL-FORMEDNESS-GUARANTEE
+                                               (cdr class)))
                           term
                           (assoc-keyword :BACKCHAIN-LIMIT-LST (cdr class))
                           wrld))
           (:CLAUSE-PROCESSOR
-           (add-clause-processor-rule (base-symbol rune) term wrld))
+           (add-clause-processor-rule (base-symbol rune)
+                                      (cadr (assoc-keyword
+                                             :WELL-FORMEDNESS-GUARANTEE
+                                             (cdr class)))
+                                      term wrld))
           (:FORWARD-CHAINING
            (add-forward-chaining-rule rune nume
                                       (cadr (assoc-keyword :TRIGGER-TERMS

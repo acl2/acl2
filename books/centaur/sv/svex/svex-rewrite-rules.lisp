@@ -31,7 +31,7 @@
 (in-package "SV")
 (include-book "svex-rewrite-base")
 (include-book "xeval")
-(include-book "svmask")
+(include-book "4vmask")
 (include-book "rsh-concat")
 (include-book "centaur/misc/sneaky-load" :dir :system) ;; for profiling
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))

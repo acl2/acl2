@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "svmask")
+(include-book "4vmask")
 (include-book "xeval")
 ;; (include-book "coi/nary/nary" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
