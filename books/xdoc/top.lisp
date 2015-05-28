@@ -268,7 +268,7 @@
          ;; theorems, definitions, defchooses
          (let* ((acc (list* #\Space #\f #\e #\d #\( #\@ acc)) ;; "@(def "
                 (acc (revappend-full-escape-symbol (caar entries) acc))
-                (acc (cons #\Newline acc)))
+                (acc (list* #\Newline #\) acc)))
            (formula-info-to-defs1 (cdr entries) acc)))
         ((stringp (car entries))
          ;; xdoc fragments
