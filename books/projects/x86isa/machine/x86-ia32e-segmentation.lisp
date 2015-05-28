@@ -275,7 +275,7 @@
                                        9)
                                   (logand 65008
                                           (ash (bool->bit (logbitp 55 descriptor))
-                                               10)))))))))))
+                                               11)))))))))))
            (logior
             (loghead 4 (logtail 40 descriptor))
             (logand
@@ -303,7 +303,7 @@
                                          9)
                                     (logand 65023
                                             (ash (bool->bit (logbitp 55 descriptor))
-                                                 10))))))))))))))
+                                                 11))))))))))))))
    :g-bindings (gl::auto-bindings
                 (:nat descriptor 64))))
 
