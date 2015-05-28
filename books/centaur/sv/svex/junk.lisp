@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "evaluator")
+(include-book "eval")
 
 
 ;; junk.lisp -- bozo are we using any of this?

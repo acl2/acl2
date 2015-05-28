@@ -40,6 +40,12 @@ forms the core of SV.  It includes an S-expression language for certain
 pre-defined hardware functions, an interpreter for evaluating these expressions
 on four-valued integers, and related tools.")
 
+(xdoc::order-subtopics expressions
+                       (values
+                        functions
+                        svex
+                        evaluation))
+
 (defxdoc values
   :parents (expressions)
   :short "Our expressions operate on four-valued bit vectors called @(see

@@ -1298,7 +1298,16 @@ the way.</li>
 
 
 
+#|
 
+(trace$
+ #!vl
+ (vl-datatype-$dimensions
+  :entry (list 'vl-datatype-$dimensions
+               (with-local-ps (vl-pp-datatype x)))
+  :exit (list 'vl-datatype-$dimensions value)))
+
+|#
 
 (define vl-datatype-$dimensions ((x vl-datatype-p))
   :guard (vl-datatype-resolved-p x)
@@ -1317,7 +1326,7 @@ the way.</li>
        :vl-coretype ;; is it a vector type?
        (b* (((vl-coredatatype-info info) (vl-coretypename->info x.name)))
          (if (or (eq x.name :vl-string)
-                 info.size)
+                 (and info.size (not (eql info.size 1))))
              1
            0))
        :vl-struct (if x.packedp 1 0)

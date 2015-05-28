@@ -74,7 +74,7 @@
 
 
 (defsection 4vec-operations
-  :parents (expressions)
+  :parents (functions)
   :short "Core operations on @(see 4vec)s."
 
   :long "<p>We now introduce many operations on @(see 4vec)s.  These operations
@@ -208,7 +208,7 @@ semantics for @('foo[n]') in cases where @('n') is unknown.</p>"
 
 
 (defsection 3vec-operations
-  :parents (expressions)
+  :parents (functions)
   :short "Core operations on @(see 3vec)s."
 
   :long "<p>You can mostly think of these as utility functions for defining

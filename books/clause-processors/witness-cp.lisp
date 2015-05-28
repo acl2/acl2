@@ -32,7 +32,6 @@
 ; predicates.
 
 (in-package "ACL2")
-
 (include-book "use-by-hint")
 (include-book "generalize")
 (include-book "unify-subst")
@@ -47,6 +46,255 @@
 (include-book "tools/easy-simplify" :dir :system)
 (set-inhibit-warnings "theory")
 
+(defxdoc witness-cp
+  :parents (proof-automation)
+  :short "Clause processor for quantifier-based reasoning."
+
+  :long "<h3>Introduction</h3>
+
+<p><b>Witness-cp</b> is an extensible @(see clause-processor) that can apply
+user-supplied rules to carry out <i>witnessing transformations</i> on
+quantifier-like terms in ACL2 proof goals.</p>
+
+<p>Witness-cp is a general purpose tool that you can configure to work with any
+kinds of quantifiers.  As a familiar example, consider set reasoning.  If we
+encounter some proof goal with a hypothesis of the form:</p>
+
+@({
+   (subsetp-equal x y)
+})
+
+<p>then we may want to use this hypothesis to draw specific conclusions, such
+as:</p>
+
+@({
+    (implies (member-equal k x)
+             (member-equal k y))
+})
+
+<p>for various @('k').  Similarly if we have a hypothesis of the form:</p>
+
+@({
+    (not (subsetp-equal y z))
+})
+
+<p>then we may wish to conclude facts such as:</p>
+
+@({
+    (and (member-equal j y)
+         (not (member-equal j z)))
+})
+
+<p>for various @('j').  Many theorems in set theory can be proven by choosing
+suitable @('j') and @('k') and then carrying out membership reasoning.  The
+@('witness-cp') clause processor can be configured to automatically try such
+@('j') and @('k') in reasonably smart ways.</p>
+
+<p>More broadly, @('witness-cp') is a general purpose tool that can configured
+to reason about arbitrary quantified formulas.  It knows nothing <i>a
+priori</i> about set theory or any other domain, but it can be told about what
+predicates are to be taken as universal/existential quantifiers and how they
+should be instantiated.</p>
+
+
+<h3>Usage</h3>
+
+<p>There are two steps to using @('witness-cp').  First, we must configure it
+to understand the desired domain, e.g., for set theory, we would need to
+explain that @('subsetp-equal') is the universal quantification of
+@('member-equal').  Once the domain is configured, we can instruct ACL2 to
+apply the @('witness-cp') clause processor to particular goals that we want to
+solve; this is typically done with an explicit @(see witness) hint or via @(see
+default-hints).</p>
+
+<p>At a high level, when @('witness-cp') transforms a proof goal, it carries
+out the following steps, each of which need to be configured to understand your
+domain:</p>
+
+<ol>
+
+<li><b>Witnessing</b>.  Introduce witnesses for negative occurrences of
+universally quantified predicates and positive occurrences of existentially
+quantified ones.  Then, optionally, for better readability, generalize the
+newly introduced witness terms into fresh variables.  These steps can be
+controlled with @(see defwitness).</li>
+
+<li><b>Gathering</b>. Find the set of examples with which to instantiate
+positive universally quantified and negative existentially quantified
+predicates.  The predicates to target are controlled by @(see
+definstantiate).</li>
+
+<li><b>Instantiation</b>.  Instantiate these predicates with these examples.
+The examples are set up using @(see defexample).</li>
+
+</ol>
+
+<p>Note that witness introduction and instantiation may both be lossy, i.e.,
+they may result in a formula that isn't a theorem even if the original formula
+is one!</p>
+
+
+<h3>Extended Example: Set Theory</h3>
+
+<p>We now run through a typical example of setting up @('witness-cp') to
+understand some functions from set theory.</p>
+
+<h5>Configuring Witnessing</h5>
+
+<p>To set up witnessing for @('(not (subsetp-equal a b))') hypotheses, we can
+issue the following @(see defwitness) event.  We assume here that
+@('(subsetp-equal-witness a b)') is a suitable ``badguy'' function that finds a
+member of @('a') that is not in @('b'), if one exists.</p>
+
+@({
+    (defwitness subsetp-witnessing
+      :predicate (not (subsetp-equal a b))
+      :expr (and (member-equal (subsetp-equal-witness a b) a)
+                 (not (member-equal (subsetp-equal-witness a b) b)))
+      :generalize (((subsetp-equal-witness a b) . ssew))
+      :hints ('(:in-theory '(subsetp-equal-witness-correct))))
+})
+
+<p>This instructs @('witness-cp'), during the witnessing phase, to search for
+hypotheses of the form @('(not (subsetp-equal a b))').  For any such matches,
+@('witness-cp') will add the new hypothesis:</p>
+
+@({
+   (and (member-equal (subsetp-equal-witness a b) a)
+        (not (member-equal (subsetp-equal-witness a b) b)))
+})
+
+<p>and will then generalize away the term @('(subsetp-equal-witness a b)') to a
+fresh variable with a name like @('SSEW0'), @('SSEW1'), etc.  After this
+generalization we are left with two new hyps:</p>
+
+@({
+     (member-equal ssew0 a)
+     (not (member-equal ssew0 b))
+})
+
+<p>The net result of all of this is that we have replaced an existential
+assumption with a fresh variable witnessing it.  We wrap @('(hide ...)') around
+the original hypothesis to leave a trace of what we've done.  (Otherwise, it
+would likely be rewritten away, since the two new hyps imply it.)</p>
+
+<p>Why is it sound to add these new hypotheses to our main formula?  To justify
+this step, the @(see defwitness) event requires us to prove the following
+theorem, using the provided hints:</p>
+
+@({
+   (implies (not (subsetp-equal a b))
+            (and (member-equal (subsetp-equal-witness a b) a)
+                 (not (member-equal (subsetp-equal-witness a b) b))))
+})
+
+
+<h5>Configuring Gathering</h5>
+
+<p>To set up instantiation of a @('(subsetp-equal a b)') hypotheses, we can
+issue the following @(see definstantiate) event.</p>
+
+@({
+    (definstantiate subsetp-equal-instancing
+      :predicate (subsetp-equal a b)
+      :vars (k)
+      :expr (implies (member-equal k a)
+                     (member-equal k b))
+      :hints ('(:in-theory '(subsetp-member))))
+})
+
+<p>This will mean that, for each @('(subsetp-equal a b)') hypothesis we find,
+we'll add hypotheses of the form:</p>
+
+@({
+     (implies (member-equal k a)
+              (member-equal k b))
+})
+
+<p>for each of (possibly) several @('k').  The terms we use to instantiate
+@('k') are determined by @(see defexample); see below.</p>
+
+<p>To show that it sound to add these hypotheses, the @(see definstantiate)
+event requires us to prove:</p>
+
+@({
+    (implies (subsetp-equal a b)
+             (implies (member-equal k a)
+                      (member-equal k b)))
+})
+
+<p>This is a very easy proof: it is just the quantifier-based definition of
+@('subsetp-equal').</p>
+
+
+<h5>Configuring Instantiation</h5>
+
+<p>The terms used to instantiate @('k') above are determined by @(see
+defexample) rules, like the following:</p>
+
+@({
+    (defexample subsetp-member-template
+      :pattern (member-equal k a)
+      :templates (k)
+      :instance-rulename subsetp-equal-instancing)
+})
+
+<p>This rule means that, after the gathering phase, we'll look through the
+clause for expressions @('(member-equal k a)') and, whenever we find one,
+include @('k') in the list of examples to use for instantiating using the
+@('subsetp-equal-instance') rule.</p>
+
+<p>@('Defexample') doesn't require any proof obligation; it's just a heuristic
+that adds to the set of terms used to instantiate universal quantifiers.</p>
+
+
+<h5>Applying the Clause Processor</h5>
+
+<p>To use the scheme we've introduced for reasoning about @('subsetp-equal'),
+we can introduce a <b>witness ruleset</b>:</p>
+
+@({
+   (def-witness-ruleset subsetp-witnessing-rules
+     '(subsetp-witnessing
+       subsetp-equal-instancing
+       subsetp-member-template))
+})
+
+<p>Then when we want to use this reasoning strategy, we can give a hint.  You
+should not call @('witness-cp') directly, but rather using the @(see witness)
+macro as a computed hint.  For example:</p>
+
+@({
+    :hints ((witness :ruleset subsetp-witnessing-rules))
+})
+
+<p>This implicitly waits until the formula is @(see
+stable-under-simplification) and then invokes the @('witness-cp') clause
+processor, allowing it to use the witnessing/instancing/example rules
+listed.</p>
+
+<p>You may find it useful to define a macro so that you don't have to remember
+this syntax, for instance:</p>
+
+@({
+   (defmacro subset-reasoning ()
+     '(witness :ruleset subsetp-witnessing-rules))
+
+   (defthm foo
+     ...
+     :hints ((\"goal\" ...)
+             (subset-reasoning)))
+})
+
+
+<h3>Further Resources</h3>
+
+<p>Additional documentation is available for @(see defwitness), @(see
+definstantiate), and @(see defexample). Also see @(see defquantexpr), which is
+a shortcut for the common pattern (as above) of doing both a defwitness and
+definstantiate for a certain term, and @(see defquant), which defines a
+quantified function (using @(see defun-sk)) and sets up
+defwitness/definstantiate rules for it.</p>")
 
 (local (in-theory (disable state-p1-forward)))
 
@@ -800,193 +1048,6 @@
                            (a a)))))
     :rule-classes :clause-processor))
 
-(defxdoc witness-cp
-  :parents (proof-automation)
-  :short "Clause processor for quantifier-based reasoning."
-  :long "<p>You should not call @('witness-cp') directly, but rather using the
-@('witness') macro as a computed hint.  This documentation is an overview of
-the witness-cp system.</p>
-
-<p>WITNESS-CP is an extensible clause processor that can use various sets of
-rules to do \"witnessing\" transformations.  Taking set-based reasoning as an
-example, we might want to look at hypotheses of the form</p>
-
-@({
-   (subsetp-equal a b)
-})
-
-<p>and conclude specific examples such as</p>
-
-@({
-    (implies (member-equal k a)
-             (member-equal k b))
-})
-
-<p>for various @('k').  We might also want to look at hypotheses of the form</p>
-
-@({
-    (not (subsetp-equal c d))
-})
-
-<p>and conclude</p>
-
-@({
-    (and (member-equal j c)
-         (not (member-equal j d)))
-})
-
-<p>for some witnesses @('j').</p>
-
-<p>There are thus four steps to this transformation:</p>
-
-<ol>
-
-<li>Introduce witnesses for negative occurrences of universally-quantified
-predicates and positive occurrences of existentially-quantified ones.</li>
-
-<li>Optionally, generalize newly introduced witness terms into fresh variables,
-for readability.</li>
-
-<li>Find the set of examples with which to instantiate positive
-universally-quantified and negative existentially-quantified predicates.</li>
-
-<li>Instantiate these predicates with these examples.</li>
-
-</ol>
-
-<p>The clause processor needs two types of information to accomplish this:</p>
-
-<ul>
-
-<li>what predicates are to be taken as universal/existential quantifiers and
-what they mean; i.e. how to introduce witnesses/instantiate.</li>
-
-<li>what examples to use when doing the instantiation.</li>
-
-</ul>
-
-<p>The witness-introduction and instantiation may both be lossy, i.e. result in
-a formula that isn't a theorem even if the original formula is one.</p>
-
-<p>To set up witnessing for not-subsetp-equal hypotheses:</p>
-
-@({
-    (defwitness subsetp-witnessing
-      :predicate (not (subsetp-equal a b))
-      :expr (and (member-equal (subsetp-equal-witness a b) a)
-                 (not (member-equal (subsetp-equal-witness a b) b)))
-      :generalize (((subsetp-equal-witness a b) . ssew))
-      :hints ('(:in-theory '(subsetp-equal-witness-correct))))
-})
-
-<p>This means that in the witnessing phase, we search for hypotheses of the
-form (not (subsetp-equal a b)) and for each such hypothesis, we add the
-hypothesis</p>
-
-@({
-   (and (member-equal (subsetp-equal-witness a b) a)
-        (not (member-equal (subsetp-equal-witness a b) b)))
-})
-
-<p>but then generalize away the term (subsetp-equal-witness a b) to a fresh
-variable from the set SSEW0, SSEW1, ... yielding new hyps:</p>
-
-@({
-     (member-equal ssew0 a)
-     (not (member-equal ssew0 b))
-})
-
-<p>So effectively we've taken an existential assumption and introduced a fresh
-variable witnessing it.  We wrap (hide ...) around the original hyp to leave a
-trace of what we've done (otherwise it would likely be rewritten away, since
-the two hyps we've introduced imply its truth).</p>
-
-<p>We add these new hypotheses to our main formula.  To show that this is
-sound, we have the defwitness event prove the following theorem, using the
-provided hints:</p>
-
-@({
-   (implies (not (subsetp-equal a b))
-            (and (member-equal (subsetp-equal-witness a b) a)
-                 (not (member-equal (subsetp-equal-witness a b) b))))
-})
-
-<p>To set up instantiation of subsetp-equal hypotheses:</p>
-
-@({
-    (definstantiate subsetp-equal-instancing
-      :predicate (subsetp-equal a b)
-      :vars (k)
-      :expr (implies (member-equal k a)
-                     (member-equal k b))
-      :hints ('(:in-theory '(subsetp-member))))
-})
-
-<p>This will mean that for each subsetp-equal hypothesis we find, we'll add
-hypotheses of the form (implies (member-equal k a) (member-equal k b)) for each
-of (possibly) several k.  The terms we use to instantiate k are determined by
-@(see defexample); see below.  To show that it sound to add these hypotheses,
-the definstantiate event proves:</p>
-
-@({
-    (implies (subsetp-equal a b)
-             (implies (member-equal k a)
-                      (member-equal k b)))
-})
-
-<p>The terms used to instantiate k above are determined by defexample rules,
-like the following:</p>
-
-@({
-    (defexample subsetp-member-template
-      :pattern (member-equal k a)
-      :templates (k)
-      :instance-rulename subsetp-equal-instancing)
-})
-
-<p>This means that in phase 2, we'll look through the clause for
-expressions (member-equal k a) and whenever we find one, include k in the list
-of witnesses to use for instantiating using the subsetp-equal-instance rule.
-Defexample doesn't require any proof obligation; it's just a heuristic that
-adds to the set of terms used to instantiate universal quantifiers.</p>
-
-<p>To use the scheme we've introduced for reasoning about subsetp-equal, we can
-introduce a witness ruleset:</p>
-
-@({
-   (def-wcp-witness-ruleset subsetp-witnessing-rules
-     '(subsetp-witnessing
-       subsetp-equal-instancing
-       subsetp-member-template))
-})
-
-<p>Then when we want to use this reasoning strategy, we can provide a computed
-hint:</p>
-
-@({
-    :hints ((witness :ruleset subsetp-witnessing-rules))
-})
-
-<p>This implicitly waits until the formula is stable-under-simplification and
-invokes the witness-cp clause processor, allowing it to use the
-witnessing/instancing/example rules listed.  You can also define a macro so
-that you don't have to remember this syntax:</p>
-
-@({
-   (defmacro subset-reasoning () '(witness :ruleset subsetp-witnessing-rules))
-   (defthm foo
-     ...
-     :hints ((\"goal\" ...)
-             (subset-reasoning)))
-})
-
-<p>Documentation is available for @(see defwitness), @(see definstantiate), and
-@(see defexample). Also see @(see defquantexpr), which is a shortcut for the
-common pattern (as above) of doing both a defwitness and definstantiate for a
-certain term, and @(see defquant), which defines a quantified function (using
-@(see defun-sk)) and sets up defwitness/definstantiate rules for it.</p>")
-
-
 
 ;;========================================================================
 ;; Heuristics for generating the hint list.
@@ -1324,9 +1385,10 @@ certain term, and @(see defquant), which defines a quantified function (using
 
 (defxdoc defwitness
   :parents (witness-cp)
-  :short "Add a @(see witness-cp) rule providing a witness for an
-existential-quantifier hypothesis (or universal-quantifier conclusion)."
-  :long "<p>See @(see witness-cp) for background.  Usage example:</p>
+  :short "Add a @(see witness-cp) rule providing a witness for an existential
+quantifier hypothesis (or universal quantifier conclusion)."
+
+  :long "<p>Example:</p>
 
 @({
    (defwitness subsetp-witnessing
@@ -1337,31 +1399,41 @@ existential-quantifier hypothesis (or universal-quantifier conclusion)."
      :hints ('(:in-theory '(subsetp-equal-witness-correct))))
 })
 
-<p>Additional arguments:</p>
-
-<ul>
-
-<li>@(':restriction term') where term may have free variables that occur also
-in the :predicate term, and may also use the variable WORLD to stand for the
-ACL2 world.</li>
-
-</ul>
-
-<p>The above example tells WITNESS-CP how to expand a hypothesis of the
-form (not (subsetp-equal a b)) or, equivalently, a conclusion of the
-form (subsetp-equal a b), generating a fresh variable named SSEW or similar
+<p>The above example tells @('witness-cp') to expand any hypothesis of the
+form (not (subsetp-equal a b)) or, equivalently, any conclusion of the
+form (subsetp-equal a b), by generating a fresh variable named SSEW or similar
 that represents an object that proves that A is not a subset of B (because that
 object is in A but not B.)</p>
 
-<p>When this rule is in place, WITNESS-CP will look for literals in the clause
-that unify with the negation of PREDICATE.  It will replace these by a term
-generated from EXPR.  It will generalize away terms that are keys in
-GENERALIZE, replacing them by fresh variables based on their corresponding
-values.  It will use HINTS to relieve the proof obligation that this
-replacement is sound (which is also done when the defwitness form is run).</p>
+<p>General Form:</p>
 
-<p>If a RESTRICTION is given, then this replacement will only take place when
-it evaluates to a non-nil value.</p>")
+@({
+    (defwitness name
+      :predicate    predicate
+      :expr         expr
+      [:generalize  generalize]
+      [:hints       hints]
+      [:restriction restriction])
+})
+
+<p>The @('name') of the rule can be used in Witness Rulesets; see @(see
+def-witness-ruleset).</p>
+
+<p>When @(see witness-cp) is given a Witness Ruleset that includes @('name'),
+it will look for literals in the clause that unify with the negation of
+@('predicate').  It will replace these by a term generated from @('expr').  It
+will then generalize away terms that are keys in @('generalize'), replacing
+them by fresh variables based on their corresponding values.  It will use
+@('hints') to relieve the proof obligation that this replacement is sound,
+which is also done when the @('defwitness') form is run.</p>
+
+<h5>Additional Arguments</h5>
+
+<p>You can syntactically restrict the application of a witness rule by giving a
+@('restriction').  The @('restriction') term may have free variables that occur
+also in the @('predicate') term, and may also use the variable @('acl2::world')
+to stand for the ACL2 world.  If a @('restriction') is given, then this
+replacement will only take place when it evaluates to a non-nil value.</p>")
 
 (defmacro defwitness (name &key predicate expr
                            (restriction ''t)
@@ -1409,9 +1481,10 @@ it evaluates to a non-nil value.</p>")
 
 (defxdoc definstantiate
   :parents (witness-cp)
-  :short "Add a @(see witness-cp) rule showing how to instantiate a
-  universial-quantifier hypothesis (or an existential-quantifier conclusion)."
-  :long "<p>See @(see witness-cp) for background.  Usage example:</p>
+  :short "Add a @(see witness-cp) rule showing how to instantiate a universal
+quantifier hypothesis (or an existential quantifier conclusion)."
+
+  :long "<p>Example:</p>
 
 @({
     (definstantiate subsetp-equal-instancing
@@ -1422,31 +1495,48 @@ it evaluates to a non-nil value.</p>")
       :hints ('(:in-theory '(subsetp-member))))
 })
 
+<p>The above example tells WITNESS-CP how to expand a hypothesis of the form
+@('(subsetp-equal a b)') or, equivalently, a conclusion of the form
+@('(not (subsetp-equal a b))'), by introducing a term of the form:</p>
+
+@({
+     (implies (member-equal k a)
+              (member-equal k b))
+})
+
+<p>For each of some various @('k'), as determined by @(see defexample) rules
+and any user-provided examples from the call of @(see witness).</p>
+
+<p>General Form</p>
+
+@({
+    (definstantiate name
+      :predicate    predicate
+      :vars         vars
+      :expr         expr
+      [:hints       hints]
+      [:restriction restriction])
+})
+
+<p>The @('name') of the rule can be used in Witness Rulesets; see @(see
+def-witness-ruleset).</p>
+
+<p>When @(see witness-cp) is given a Witness Ruleset that includes @('name'),
+it will look for literals in the clause that unify with @('predicate').  It
+will replace these with a conjunction of several instantiations of @('expr'),
+with the free variables present in @('vars') replaced by either user-provided
+terms or terms generated by a @(see defexample) rule.  It will use @('hints')
+to relieve the proof obligation that this replacement is sound, which is also
+done when the @('definstantiate') form is run.</p>
+
 <p>Additional arguments:</p>
 
-<ul>
-
-<li>@(':restriction term') where term may have free variables that occur also
-in the :predicate term or the list :vars, as well as WORLD, standing for the
-ACL2 world.</li>
-
-</ul>
-
-<p>The above example tells WITNESS-CP how to expand a hypothesis of the
-form (subsetp-equal a b) or, equivalently, a conclusion of the
-form (not (subsetp-equal a b)), introducing a term of the form EXPR for each of
-some set of K.  Which K are chosen depends on the set of existing @(see
-defexample) rules and the user-provided examples from the call of WITNESS.</p>
-
-<p>In more detail, WITNESS-CP will look in the clause for literals that unify
-with the negation of PREDICATE.  It will replace these with a conjunction of
-several instantiations of EXPR, with the free variables present in VARS
-replaced by either user-provided terms or terms generated by a defexample rule.
-It will use HINTS to relieve the proof obligation that this replacement is
-sound (which is also done when the definstantiate form is run).</p>
-
-<p>If a RESTRICTION is given, then this replacement will only take place when
-it evaluates to a non-nil value.</p>")
+<p>You can syntactically restrict the application of an instantiation rule by
+giving a @('restriction').  The @('restriction') may have free variables that
+occur also in the @('predicate'), term or the list of @('vars'), as well as
+@('acl2::world'), standing for the ACL2 world.  If a @('restriction') is given,
+then this replacement will only take place when it evaluates to a non-@('nil')
+value.</p>")
 
 (defmacro definstantiate (name &key predicate vars expr
                                (restriction ''t) hints)
@@ -1516,9 +1606,10 @@ right number of free variables (~x0): ~x1~%"
 
 (defxdoc defexample
   :parents (witness-cp)
-  :short "Tell @(see witness-cp) how to instantiate the free variables of
-definstantiate rules."
-  :long "<p>Usage example:</p>
+  :short "Tell @(see witness-cp) how to instantiate the free variables of @(see
+definstantiate) rules."
+
+  :long "<p>Example:</p>
 
 @({
     (defexample set-reasoning-member-template
@@ -1530,31 +1621,20 @@ definstantiate rules."
                        set-consp-instancing))
 })
 
-<p>Additional arguments:</p>
+<p>Instructs @('witness-cp') to find terms of the form @('(member-equal k y)')
+throughout the clause, and for each such @('k'), for any match of one of the
+instance-rules listed, add an instance using that @('k').</p>
+
+<p>For example, if we have a hypothesis @('(subsetp-equal a b)') and terms</p>
 
 <ul>
-
-<li>@(':restriction term'), where term may have free variables present in
-pattern as well as WORLD.</li>
-
-<li>@(':instance-rulename rule'), may be used instead of @(':instance-rules')
-when there is only one rule.</li>
-
+<li>@('(member-equal (foo x) (bar y))')</li>
+<li>@('(member-equal q a)')</li>
 </ul>
 
-<p>Meaning: Find terms of the form @('(member-equal k y)') throughout the
-clause, and for each such @('k'), for any match of one of the instance-rules
-listed, add an instance using that @('k').  For example, if we have a
-hypothesis @('(subsetp-equal a b)') and terms</p>
-
-@({
-   (member-equal (foo x) (bar y))
-
-   (member-equal q a)
-})
-
-<p>are present somewhere in the clause, then this rule along with the
-subsetp-equal-instancing rule will cause the following hyps to be added:</p>
+<p>are present somewhere in the clause, then this rule, along with the
+@('subsetp-equal-instancing') rule described in @(see definstantiate), will
+cause the following hyps to be added:</p>
 
 @({
    (implies (member-equal (foo x) a)
@@ -1564,8 +1644,37 @@ subsetp-equal-instancing rule will cause the following hyps to be added:</p>
             (member-equal q b)).
 })
 
-<p>If a :restriction is present, then the rule only applies to occurrences of
-pattern for which the restriction evaluates to non-nil.</p>")
+
+<p>General form:</p>
+
+@({
+     (defexample name
+       :pattern            pattern
+       :templates          templates
+       [:instance-rulename instance-rulename]
+       [:instance-rules    instance-rules]
+       [:restriction       restriction])
+})
+
+<p>The name of the rule can be used in Witness Rulesets; see @(see
+def-witness-ruleset).</p>
+
+<p>When @(see witness-cp) is given a Witness Ruleset that includes @('name'),
+and it has already found matches for one of these @('instance-rules'), it then
+it will look through the clause for terms matching @('pattern'), and use the
+corresponding @('pattern') in place of the @('vars') in the @(see
+definstantiate) rules.</p>
+
+<p>Additional arguments:</p>
+
+<p>The @('instance-rulename') can be used, instead of @('instance-rules'), when
+there is only a single rule.  BOZO we should deprecate this.</p>
+
+<p>You can syntactically restrict the use of @('defexample') forms by giving a
+@('restriction').  The @('restriction') may have free variables that occur also
+in the @('pattern'), as well as @('acl2::world'), standing for the ACL2 world.
+If a @('restriction') is given, then this example will only be used if it
+evaluates to a non-@('nil') value.</p>")
 
 (defmacro defexample (name &key pattern templates instance-rulename
                            instance-rules
@@ -1627,12 +1736,12 @@ pattern for which the restriction evaluates to non-nil.</p>")
               :hints ,instance-hints
               :restriction ,instance-restriction))))
 
-
 (defxdoc defquantexpr
   :parents (witness-cp)
   :short "Shortcut to perform both a @(see defwitness) and @(see
-  definstantiate)."
-  :long "<p>Usage:</p>
+definstantiate)."
+
+  :long "<p>Example:</p>
 
 @({
    (defquantexpr subsetp-equal
@@ -1645,11 +1754,10 @@ pattern for which the restriction evaluates to non-nil.</p>")
      :instance-hints ('(:in-theory '(subsetp-member))))
 })
 
-<p>This expands to a DEFWITNESS and DEFINSTANTIATE form.  The names of the
-defwitness and definstantiate rules produced are generated from the name (first
-argument) of the defquantexpr form; in this case they are subsetp-witnessing
-and subsetp-equal-instancing.  Keyword arguments wcp-witness-rulename and
-instance-rulename may be provided to override these defaults.</p>
+<p>This expands to a @(see defwitness) and a @(see definstantiate) form.  The
+names of the resulting rules are generated from the name (first argument) of
+the @('defquantexpr') form; in this case they are @('subsetp-witnessing') and
+@('subsetp-equal-instancing').</p>
 
 <p>Witness-hints and instance-hints are the hints passed to the two forms.</p>
 
@@ -1657,7 +1765,14 @@ instance-rulename may be provided to override these defaults.</p>
 
 <ul>
 
-<li>@('instance-restriction'), the :restriction argument passed to definstantiate.</li>
+<li>@('instance-rulename'), provide a custom name for the @(see definstantiate)
+rule.</li>
+
+<li>@('instance-restriction'), the :restriction argument passed to
+definstantiate.</li>
+
+<li>@('wcp-witness-rulename'), provide a custom name for the @(see defwitness)
+rule.</li>
 
 <li>@('witness-restriction'), the :restriction argument passed to defwitness</li>
 
@@ -1667,7 +1782,9 @@ names.</li>
 
 </ul>
 
+
 <p>The meaning of this form is as follows:</p>
+
 @({
     \":predicate holds iff (:quantifier) (keys of :witnesses), :expr.\"
 })
@@ -1681,6 +1798,7 @@ names.</li>
 })
 
 <p>An example of this with an existential quantifier:</p>
+
 @({
     (defquantexpr intersectp-equal
       :predicate (intersectp-equal x y)
@@ -1796,10 +1914,12 @@ involves (the forward direction for :exists and the backward for :forall):</p>
 
 (defxdoc def-witness-ruleset
   :parents (witness-cp)
-  :short "Name a set of witness-cp rules."
-  :long "<p>The WITNESS computed-hint macro takes a :ruleset argument that determines
-which witness-cp rules are allowed to fire.  def-witness-ruleset allows
-one name to abbreviate several actual rules in this context.</p>
+  :short "Name a set of @(see witness-cp) rules."
+
+  :long "<p>The @(see witness) computed-hint macro takes a @(':ruleset')
+argument that determines which witness-cp rules are allowed to fire.
+@('def-witness-ruleset') allows one name to abbreviate several actual rules in
+this context.</p>
 
 <p>Usage:</p>
 @({
@@ -1827,7 +1947,7 @@ definitions are given for the same ruleset name, the latest one is always in
 effect.</p>
 
 <p>Rulesets can contain other rulesets.  These are expanded at the time the
-WITNESS hint is run.  A ruleset can be expanded with</p>
+@(see WITNESS) hint is run.  A ruleset can be expanded with</p>
 
 @({
    (witness-expand-ruleset names (w state))
@@ -1941,7 +2061,9 @@ witness-disable just as they are used in the ruleset argument of WITNESS.</p>")
 
 (defxdoc defquant
   :parents (witness-cp)
-  :short "Define a quantified function and corresponding witness-cp rules."
+  :short "Define a quantified function and corresponding @(see witness-cp)
+rules."
+
   :long "<p>Defquant introduces a quantified function using @(see defun-sk) and
 subsequently adds appropriate @(see defwitness) and @(see definstantiate) rules
 for that function.  Note that no @(see defexample) rules are provided (we judge
@@ -2077,7 +2199,7 @@ following additional keywords:</p>
 
 
 (defsection witness-enable
-  :parents (witness-cp)
+  :parents (def-witness-ruleset)
   :short "Enable some rules for @(see witness-cp)."
 
   (defmacro witness-enable (&rest names)
@@ -2085,7 +2207,7 @@ following additional keywords:</p>
 
 
 (defsection witness-disable
-  :parents (witness-cp)
+  :parents (def-witness-ruleset)
   :short "Disable some rules for @(see witness-cp)."
 
   (defmacro witness-disable (&rest names)
@@ -2096,6 +2218,7 @@ following additional keywords:</p>
 (defxdoc witness
   :parents (witness-cp)
   :short "Computed hint for calling the @(see witness-cp) clause processor."
+
   :long "<p>Usage:</p>
 
 @({
@@ -2105,20 +2228,29 @@ following additional keywords:</p>
             :generalize t)
 })
 
-<p>Calls the clause processor WITNESS-CP.  If a ruleset is provided, only those
-witness-cp rules will be available; otherwise, all rules that are currently
-enabled (see @(see witness-enable) and @(see witness-disable)) are used.</p>
+<p>Calls the clause processor @(see WITNESS-CP).  If a ruleset is provided,
+only those witness-cp rules will be available; otherwise, all rules that are
+currently enabled (see @(see witness-enable) and @(see witness-disable)) are
+used.</p>
 
-<p>The :generalize argument is T by default; if set to NIL, the generalization
-step is skipped; see @(see witness-cp).</p>
+<p>The @(':generalize') argument is T by default; if set to NIL, the
+generalization step is skipped; see @(see witness-cp).</p>
 
-<p>The :examples argument is empty by default.  Usually, examples are generated
-by defexample rules.  However, in some cases you might like to instantiate
-universally-quantified hyps in a particular way on a one-off basis; this may be
-done using the :examples field.  Each inst-rulename must be the name of a
-definstantiate rule, and the terms following it correspond to that
-rule's :vars (in partiular, the list of terms must be the same length as
-the :vars of the rule).</p>")
+<p>The @(':examples') argument is empty by default.  Usually, examples are
+generated by @(see defexample) rules.  However, in some cases you might like to
+instantiate universally quantified hyps in a particular way on a one-off basis;
+this may be done using the @(':examples') field.  Within an example:</p>
+
+<ul>
+
+<li>Each @('inst-rulename') must be the name of a @(see definstantiate) rule,
+and</li>
+
+<li>The terms following it correspond to that rule's @(':vars').  In
+particular, the list of terms must be the same length as the @(':vars') of the
+rule.</li>
+
+</ul>")
 
 (defmacro witness (&key ruleset)
   `(and stable-under-simplificationp

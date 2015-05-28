@@ -39,7 +39,10 @@
 
 (defxdoc evaluation
   :parents (expressions)
-  :short "Evaluation semantics of @(see svex) expressions.")
+  :short "The formal semantics of our expressions are defined by @(see
+svex-eval), a simple McCarthy-style evaluator for interpreting an @(see svex)
+under an <see topic='@(url svex-env)'>environment</see> that gives @(see
+values) to its variables.")
 
 (local (xdoc::set-default-parents evaluation))
 
@@ -156,7 +159,7 @@ expect or preserve @(see fast-alists)."
 
 ;; Svex symbol maps to actual function called followed by element types
 (defval *svex-op-table*
-  :parents (svex-functions)
+  :parents (functions)
   :short "Raw table about the known svex functions."
   '((id        4vec-fix            (x)                 "identity function")
     (bitsel    4vec-bit-extract    (index x)           "bit select")
@@ -229,11 +232,16 @@ SV package) and their meanings.</p>
               "</table>"))))
 
   (make-event
-   `(defxdoc svex-functions
+   `(defxdoc functions
       :parents (expressions)
-      :short "The known svex functions symbols and their meanings."
+      :short "Our expressions may involve the application of a fixed set of
+known functions.  There are functions available for modeling many bit-vector
+operations like bitwise and, plus, less-than, and other kinds of hardware
+operations like resolving multiple drivers, etc."
+
       :long ,(optable-to-xdoc))))
 
+(xdoc::order-subtopics functions (4vec-operations 3vec-operations))
 
 (defsection svex-apply-cases
   :parents (svex-apply)
@@ -280,10 +288,9 @@ SV package) and their meanings.</p>
   :long "<p>This function captures function application for @(see svex-eval),
 using a big case statement on the @('fn') to execute.</p>
 
-<p>SVEX uses a fixed language of known functions with fixed arities; see @(see
-svex-functions) for the list of known functions and their meanings.  If we are
-given a known function of proper arity, we execute the corresponding 4vec
-operation on its arguments.</p>
+<p>SVEX uses a fixed language of known @(see functions) with fixed arities.  If
+we are given a known function of proper arity, we execute the corresponding
+4vec operation on its arguments.</p>
 
 <ul>
 
@@ -557,8 +564,8 @@ svex-eval).</p>"
 
   :long "<p>@('(call svcall)') just constructs an @(see svex) that applies
 @('fn') to the given @('args').  This macro is ``safe'' in that, at compile
-time, it ensures that @('fn') is one of the known functions (see the @(see
-svex-functions)) and that it is being given the right number of arguments.</p>
+time, it ensures that @('fn') is one of the known @(see functions) and that it
+is being given the right number of arguments.</p>
 
 @(def svcall)"
 

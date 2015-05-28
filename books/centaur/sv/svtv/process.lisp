@@ -34,7 +34,7 @@
 (include-book "expand")
 (include-book "doc")
 (include-book "../mods/compile")
-(include-book "../svex/svmask")
+(include-book "../svex/4vmask")
 (include-book "../svex/compose")
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "centaur/gl/auto-bindings" :dir :system)

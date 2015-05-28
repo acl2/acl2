@@ -39,6 +39,71 @@
 (include-book "base")
 (include-book "book-thms")
 
+(defun bootstrap-revappend-chars-aux (x n xl y)
+  (declare (xargs :mode :program)
+           (type string x)
+           (type (integer 0 *) n xl))
+  (if (eql n xl)
+      y
+    (bootstrap-revappend-chars-aux x
+                                   (the (integer 0 *)
+                                        (+ 1 (the (integer 0 *) n)))
+                                   xl
+                                   (cons (char x n) y))))
+
+(defun bootstrap-revappend-chars (x acc)
+  ;; Same as str::revappend-chars, but minimize dependencies
+  (declare (xargs :mode :program)
+           (type string x))
+  (bootstrap-revappend-chars-aux x 0 (length x) acc))
+
+(defun bar-escape-chars (x)
+  (declare (xargs :mode :program))
+  (cond ((atom x)
+         nil)
+        ((eql (car x) #\|)
+         (list* #\\ #\| (bar-escape-chars (cdr x))))
+        (t
+         (cons (car x) (bar-escape-chars (cdr x))))))
+
+(defun bar-escape-string (x)
+  (declare (xargs :mode :program)
+           (type string x))
+  ;; Dumb optimization: don't need to escape anything unless there's a #\|
+  ;; somewhere.
+  (if (position #\| x)
+      (coerce (bar-escape-chars (coerce x 'list)) 'string)
+    x))
+
+(defun full-escape-symbol (x)
+  (declare (xargs :mode :program))
+  (concatenate 'string "|" (bar-escape-string (symbol-package-name x)) "|::|"
+               (bar-escape-string (symbol-name x)) "|"))
+
+(defun revappend-bar-escape-string (x n xl acc)
+  (declare (xargs :mode :program)
+           (type string x)
+           (type unsigned-byte n xl))
+  (if (eql n xl)
+      acc
+    (let* ((char (char x n))
+           (acc  (if (eql char #\|)
+                     (cons #\\ acc)
+                   acc)))
+      (revappend-bar-escape-string x (+ n 1) xl (cons char acc)))))
+
+(defun revappend-full-escape-symbol (x acc)
+  (declare (xargs :mode :program))
+  (let* ((pkg  (symbol-package-name x))
+         (name (symbol-name x))
+         (acc  (cons #\| acc))
+         (acc  (revappend-bar-escape-string pkg 0 (length pkg) acc))
+         (acc  (list* #\| #\: #\: #\| acc))
+         (acc  (revappend-bar-escape-string name 0 (length name) acc))
+         (acc  (cons #\| acc)))
+    acc))
+
+
 (defun acl2::colon-xdoc-initialized (state)
 
 ; This interface function was added by Matt K. so that the proof-checker can
@@ -163,8 +228,6 @@
   `(table xdoc 'doc
           (order-subtopics-fn ',name ',order world)))
 
-
-
 (defund extract-keyword-from-args (kwd args)
   (declare (xargs :guard (keywordp kwd)))
   (cond ((atom args)
@@ -192,73 +255,48 @@
          (cons (car args)
                (throw-away-keyword-parts (cdr args))))))
 
-(defun bar-escape-chars (x)
-  (declare (xargs :mode :program))
-  (cond ((atom x)
-         nil)
-        ((eql (car x) #\|)
-         (list* #\\ #\| (bar-escape-chars (cdr x))))
-        (t
-         (cons (car x) (bar-escape-chars (cdr x))))))
-
-(defun bar-escape-string (x)
-  (declare (xargs :mode :program))
-  (coerce (bar-escape-chars (coerce x 'list)) 'string))
-
-(defun full-escape-symbol (x)
-  (declare (xargs :mode :program))
-  (concatenate 'string "|" (bar-escape-string (symbol-package-name x)) "|::|"
-               (bar-escape-string (symbol-name x)) "|"))
-
-(defun formula-info-to-defs1 (entries)
+(defun formula-info-to-defs1 (entries acc)
   ;; See book-thms.lisp.  Entries should be the kind of structure that
-  ;; new-formula-info produces.  We turn it into a list of "@(def fn)" entries.
-  ;; This is a hack.  We probably want something smarter.
+  ;; new-formula-info produces.  We build a string that is mostly "@(def fn)"
+  ;; entries.  We accumulate the characters of the string onto acc in reverse
+  ;; order, as per usual for string-building functions.
   (declare (xargs :mode :program))
   (cond ((atom entries)
-         nil)
+         acc)
         ((and (consp (car entries))
               (symbolp (caar entries)))
          ;; theorems, definitions, defchooses
-         (cons (concatenate 'string "@(def " (full-escape-symbol (caar entries)) ")")
-               (formula-info-to-defs1 (cdr entries))))
+         (let* ((acc (list* #\Space #\f #\e #\d #\( #\@ acc)) ;; "@(def "
+                (acc (revappend-full-escape-symbol (caar entries) acc))
+                (acc (list* #\Newline #\) acc)))
+           (formula-info-to-defs1 (cdr entries) acc)))
         ((stringp (car entries))
          ;; xdoc fragments
-         (cons (car entries)
-               (formula-info-to-defs1 (cdr entries))))
+         (let* ((acc (bootstrap-revappend-chars (car entries) acc)))
+           (formula-info-to-defs1 (cdr entries) acc)))
         (t
-         (formula-info-to-defs1 (cdr entries)))))
+         (formula-info-to-defs1 (cdr entries) acc))))
 
-(defun join-strings (strs sep)
+(defun formula-info-to-defs (headerp entries acc)
   (declare (xargs :mode :program))
-  (cond ((atom strs)
-         "")
-        ((atom (cdr strs))
-         (car strs))
-        (t
-         (concatenate 'string (car strs) sep (join-strings (cdr strs) sep)))))
-
-(defun formula-info-to-defs (headerp entries)
-  ;; BOZO make this nicer
-  (declare (xargs :mode :program))
-  (let ((strs (formula-info-to-defs1 entries)))
-    (if strs
-        (concatenate 'string
-                     (if headerp "<h3>Definitions and Theorems</h3>" "")
-                     (join-strings strs (coerce (list #\Newline) 'string)))
-      "")))
-
+  (let* ((acc (if headerp
+                  (bootstrap-revappend-chars "<h3>Definitions and Theorems</h3>" acc)
+                acc))
+         (acc (formula-info-to-defs1 entries acc)))
+    acc))
 
 (defun defsection-autodoc-fn (name parents short long extension marker state)
   (declare (xargs :mode :program :stobjs state))
   (let* ((wrld      (w state))
          (trips     (acl2::reversed-world-since-event wrld marker nil))
          (info      (reverse (acl2::new-formula-info trips wrld nil)))
-         (autodoc   (formula-info-to-defs (not extension) info))
-         (long      (concatenate 'string
-                                 (or long "")
-                                 (coerce (list #\Newline #\Newline) 'string)
-                                 autodoc)))
+         (acc       nil)
+         (acc       (if long
+                        (bootstrap-revappend-chars long acc)
+                      acc))
+         (acc       (list* #\Newline #\Newline acc))
+         (acc       (formula-info-to-defs (not extension) info acc))
+         (long      (reverse (the string (coerce acc 'string)))))
     (if extension
         `(xdoc-extend ,extension ,long)
       `(defxdoc ,name
@@ -363,6 +401,7 @@
 (defmacro defsection-progn (name &rest args)
   (declare (xargs :guard (symbolp name)))
   (defsection-fn '(progn) name args))
+
 
 
 ;; Moved from cutil/deflist for greater availability
