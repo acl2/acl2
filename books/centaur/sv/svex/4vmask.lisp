@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "eval")
+(include-book "svex")
 (include-book "std/misc/two-nats-measure" :dir :system)
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -191,6 +191,13 @@ relevant'') in the default case.</p>"
            (4vec-x))
     :hints(("Goal" :in-theory (enable 4vec-mask 4vec-equiv)))))
 
+(define 4vmask-empty ((x 4vmask-p))
+  :short "@(call 4vmask-empty) recognizes the empty @(see 4vmask)."
+  :inline t
+  :enabled t
+  (mbe :logic (4vmask-equiv x 0)
+       :exec (eql x 0)))
+
 (define 4vmask-subsumes ((x 4vmask-p) (y 4vmask-p))
   :short "@(call 4vmask-subsumes) checks whether the @(see 4vmask) @('x') cares
 about strictly more bits than @('y') cares about."
@@ -253,7 +260,7 @@ creating a new mask that includes all bits that are relevant for in either
     (4vmask-subsumes (4vmask-union x y) y)
     :hints ((acl2::logbitp-reasoning))))
 
-(fty::deflist 4vmasklist
+(deflist 4vmasklist
   :elt-type 4vmask-p
   :true-listp t)
 
@@ -312,7 +319,7 @@ creating a new mask that includes all bits that are relevant for in either
     :hints (("goal" :induct (len x)))))
 
 
-(fty::defalist 4vmask-alist
+(defalist 4vmask-alist
   :key-type svar
   :val-type 4vmask-p
   :true-listp t)

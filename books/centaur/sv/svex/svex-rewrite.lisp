@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "svex-argmasks")
+(include-book "argmasks")
 (include-book "svex-rewrite-rules")
 (include-book "centaur/vl/util/cwtime" :dir :system)
 (include-book "lattice")

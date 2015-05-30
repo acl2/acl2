@@ -88,10 +88,12 @@ bit-blasting.</p>")
                   (logbitp n (4vec->upper x))))
     :hints (("goal" :use
              ((:instance bitops::logbitp-of-logand
-               (acl2::a n) (x (4vec->lower x)) (acl2::y (lognot (4vec->upper x)))))
+               (acl2::a n)
+               (x       (4vec->lower x))
+               (acl2::y (lognot (4vec->upper x)))))
              :in-theory (disable bitops::logbitp-of-logand))))
 
-  (fty::deffixequiv 4vec-p))
+  (deffixequiv 4vec-p))
 
 (defsection 3vec-p!
   :parents (3vec)
@@ -151,7 +153,7 @@ like @(see 4vec-bitand), we typically just:</p>
   (verify-guards 3vec-fix
     :hints (("goal" :use 3vec-fix-of-3vec-p)))
 
-  (fty::deffixequiv 3vec-fix)
+  (deffixequiv 3vec-fix)
 
   (defthm 3vec-fix-idempotent
     (equal (3vec-fix (3vec-fix x)) (3vec-fix x))
@@ -164,7 +166,7 @@ like @(see 4vec-bitand), we typically just:</p>
 
   (local (in-theory (enable 3vec-fix)))
 
-  (fty::deffixtype 3vec
+  (deffixtype 3vec
     :pred 3vec-p!
     :fix 3vec-fix
     :equiv 3vec-equiv
@@ -240,7 +242,7 @@ non-@(see 2vec)s to an just be infinite Xes."
              (equal (2vecx-fix x)
                     (4vec-fix x))))
 
-  (fty::deffixequiv 2vecx-fix
+  (deffixequiv 2vecx-fix
     :args ((x 3vec))
     :hints(("Goal" :in-theory (enable 3vec-fix))
            (acl2::logbitp-reasoning
@@ -254,7 +256,7 @@ non-@(see 2vec)s to an just be infinite Xes."
   :parents (2vecx)
   :short "Equivalence up to @(see 2vecx-fix)."
 
-  (acl2::def-universal-equiv 2vecx-equiv
+  (def-universal-equiv 2vecx-equiv
     :equiv-terms ((equal (2vecx-fix x))))
 
   (local (in-theory (enable 2vecx-equiv)))
@@ -264,7 +266,7 @@ non-@(see 2vec)s to an just be infinite Xes."
 
   (defcong 2vecx-equiv equal (2vecx-fix x) 1)
 
-  (fty::deffixtype 2vecx
+  (deffixtype 2vecx
     :pred 2vecx-p!
     :fix 2vecx-fix
     :equiv 2vecx-equiv))
@@ -314,7 +316,7 @@ any non-naturals to all Xes."
              (equal (2vecnatx-fix x)
                     (4vec-fix x))))
 
-  (fty::deffixequiv 2vecnatx-fix :args ((x 2vecx))
+  (deffixequiv 2vecnatx-fix :args ((x 2vecx))
     :hints(("Goal" :in-theory (enable 2vecx-fix))
            (acl2::logbitp-reasoning))))
 
@@ -322,7 +324,7 @@ any non-naturals to all Xes."
   :parents (2vecnatx)
   :short "Equivalence up to @(see 2vecnatx-fix)."
 
-  (acl2::def-universal-equiv 2vecnatx-equiv
+  (def-universal-equiv 2vecnatx-equiv
     :equiv-terms ((equal (2vecnatx-fix x))))
 
   (local (in-theory (enable 2vecnatx-equiv)))
@@ -332,7 +334,7 @@ any non-naturals to all Xes."
 
   (defcong 2vecnatx-equiv equal (2vecnatx-fix x) 1)
 
-  (fty::deffixtype 2vecnatx
+  (deffixtype 2vecnatx
     :pred 2vecnatx-p!
     :fix 2vecnatx-fix
     :equiv 2vecnatx-equiv))

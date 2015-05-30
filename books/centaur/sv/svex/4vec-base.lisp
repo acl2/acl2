@@ -31,7 +31,12 @@
 (in-package "SV")
 (include-book "std/basic/defs" :dir :system)
 (include-book "centaur/fty/fixequiv" :dir :system)
+(include-book "centaur/fty/deftypes" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
+(local (include-book "std/lists/repeat" :dir :system))
+(local (include-book "std/lists/nth" :dir :system))
+(local (include-book "std/lists/append" :dir :system))
+(local (include-book "centaur/misc/equal-sets" :dir :system))
 
 (defxdoc expressions
   :parents (sv)
@@ -225,7 +230,7 @@ want when building @(see expressions).</p>
 
 (defsection 4vec-equiv
   :short "Equivalence relation for @(see 4vec)s."
-  (fty::deffixtype 4vec
+  (deffixtype 4vec
     :pred 4vec-p
     :fix 4vec-fix
     :equiv 4vec-equiv
@@ -336,7 +341,7 @@ want when building @(see expressions).</p>
              (equal (4vec->lower x)
                     (4vec->upper x))))
 
-  (fty::deffixequiv 2vec-p))
+  (deffixequiv 2vec-p))
 
 (define 2vec ((x integerp))
   :parents (values)
@@ -365,7 +370,7 @@ a 2vec; @('2vec->val') gets the integer value out of a 2vec.</p>"
                 (equal (4vec->upper y) (ifix x))
                 (equal (4vec->lower y) (ifix x)))))
 
-  (fty::deffixequiv 2vec))
+  (deffixequiv 2vec))
 
 (define 2vec->val ((x (and (4vec-p x)
                            (2vec-p x))))
@@ -395,3 +400,12 @@ fast), if so executes @('2vec-body'), and otherwise executes
                                       (pairlis$ vars nil)))
                     ,2vec-body
                   ,4vec-body))))
+
+
+(deflist 4veclist
+  :elt-type 4vec
+  :true-listp t
+  :parents (4vec))
+
+
+
