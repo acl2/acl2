@@ -219,23 +219,6 @@ svex-nth)."
            bitops::lognot-<-const
            bitops::lognot-natp)))
 
-(local (def-ruleset! bitand-speed-hint
-         ;; Dumb accumulated persistence hacking
-         '((:t ACL2::BIT->BOOL$INLINE)
-           default-car
-           default-cdr
-           SVEX-EVAL-WHEN-FNCALL
-           ACL2::BIT-FUNCTIONS-TYPE
-           (:e tau-system)
-           (:t ACL2::B-IOR$INLINE)
-           (:t ACL2::B-AND$INLINE)
-           (:t ACL2::BIT-EQUIV$INLINE)
-           (:t ACL2::BITP$INLINE)
-           (:t ACL2::BITMASKP$INLINE)
-           CAR-OF-SVEXLIST-FIX-X-NORMALIZE-CONST-UNDER-SVEX-EQUIV
-           SVEX-XEVAL-OF-SVEX-FIX-EXPR-NORMALIZE-CONST
-           CDR-OF-SVEXLIST-FIX-X-NORMALIZE-CONST-UNDER-SVEXLIST-EQUIV
-           BITOPS::LOGBITP-WHEN-BIT)))
 
 (local (in-theory (disable* expensive-rules)))
 
@@ -797,8 +780,7 @@ chopping off any bits beyond position @('n').  Otherwise, we don't know how
                  :use ((:instance svex-eval-gte-xeval (x (car args))))))
           (bitops::logbitp-reasoning)))
 
-
-(define sign-ext-mask ((mask 4vmask-p) (n natp))
+(define mask-for-fixed-signx ((mask 4vmask-p) (n natp))
   :parents (svmask-for-signx)
   :inline t
   (logior (loghead n mask)
@@ -807,11 +789,10 @@ chopping off any bits beyond position @('n').  Otherwise, we don't know how
             (ash 1 (- n 1)))))
 
 (define mask-for-generic-signx ((outer-mask 4vmask-p))
-  :parents (signx)
-  :short "BOZO eventually try to use something like this."
+  :parents (svmask-for-signx)
   :returns (arg-mask 4vmask-p :rule-classes :type-prescription)
   :inline t
-  (b* ((mask (lifix outer-mask)))
+  (b* ((mask (4vmask-fix outer-mask)))
     (if (< mask 0)
         -1
       ;; We might care about any bit up to the length of the mask, but
@@ -824,10 +805,92 @@ chopping off any bits beyond position @('n').  Otherwise, we don't know how
                              bitops::logbitp-case-splits
                              expensive-rules)))
 
-  (defthm logbitp-of-mask-for-generic-signx
-    (equal (logbitp n (mask-for-generic-signx outer-mask))
-           (or (< (ifix outer-mask) 0)
-               (<= (nfix n) (integer-length outer-mask))))))
+  (deffixequiv mask-for-generic-signx)
+
+  (local (defthm logbitp-of-mask-for-generic-signx
+           (equal (logbitp n (mask-for-generic-signx outer-mask))
+                  (or (< (4vmask-fix outer-mask) 0)
+                      (<= (nfix n) (integer-length outer-mask))))
+           :hints(("Goal" :in-theory (enable 4vmask-fix)))))
+
+  (local (defthm integer-length-bounds-logbitp-alt1
+           (implies (< (integer-length x) (nfix n))
+                    (equal (logbitp n x)
+                           (negp x)))
+           :hints(("Goal"
+                   :induct (bitops::logbitp-ind n x)
+                   :in-theory (enable* bitops::ihsext-recursive-redefs
+                                       bitops::ihsext-inductions)))))
+
+  (defthmd mask-for-generic-signx-correct-for-signx
+    (equal (4vec-mask mask (4vec-sign-ext n (4vec-mask (mask-for-generic-signx mask) x)))
+           (4vec-mask mask (4vec-sign-ext n x)))
+    :hints(("Goal" :in-theory (enable mask-for-generic-signx
+                                      4vec-[=
+                                      4vec-mask
+                                      4vec-sign-ext
+                                      negp
+                                      4vmask-fix
+                                      ))
+           (bitops::logbitp-reasoning)))
+
+  (defthmd mask-for-generic-signx-specialized-for-signx
+    (implies (and (equal (4vec-mask (mask-for-generic-signx mask) val1)
+                         (4vec-mask (mask-for-generic-signx mask) val2))
+                  (syntaxp (term-order val2 val1)))
+             (equal (4vec-mask mask (4vec-sign-ext n val2))
+                    (4vec-mask mask (4vec-sign-ext n val1))))
+    :hints(("goal"
+            :in-theory (disable MASK-FOR-GENERIC-SIGNX)
+            :use ((:instance mask-for-generic-signx-correct-for-signx (mask mask) (n n) (x val1))
+                  (:instance mask-for-generic-signx-correct-for-signx (mask mask) (n n) (x val2))))))
+
+
+  (defthmd mask-for-generic-signx-correct-for-concat-x
+    (equal (4vec-mask mask (4vec-concat n (4vec-mask (mask-for-generic-signx mask) x) y))
+           (4vec-mask mask (4vec-concat n x y)))
+    :hints(("Goal" :in-theory (enable mask-for-generic-signx
+                                      4vec-[=
+                                      4vec-mask
+                                      4vec-concat
+                                      negp
+                                      4vmask-fix
+                                      ))
+           (bitops::logbitp-reasoning)))
+
+  (defthmd mask-for-generic-signx-correct-for-concat-y
+    (equal (4vec-mask mask (4vec-concat n x (4vec-mask (mask-for-generic-signx mask) y)))
+           (4vec-mask mask (4vec-concat n x y)))
+    :hints(("Goal" :in-theory (enable mask-for-generic-signx
+                                      4vec-[=
+                                      4vec-mask
+                                      4vec-concat
+                                      negp
+                                      4vmask-fix
+                                      ))
+           (bitops::logbitp-reasoning)))
+
+  (defthmd mask-for-generic-signx-specialized-for-concat-x
+    (implies (and (EQUAL (4VEC-MASK (MASK-FOR-GENERIC-SIGNX MASK) xval1)
+                         (4VEC-MASK (MASK-FOR-GENERIC-SIGNX MASK) xval2))
+                  (syntaxp (term-order xval2 xval1)))
+             (EQUAL (4VEC-MASK MASK (4VEC-CONCAT n xval1 yval))
+                    (4VEC-MASK MASK (4VEC-CONCAT n xval2 yval))))
+    :hints(("Goal"
+            :in-theory (disable MASK-FOR-GENERIC-SIGNX)
+            :use ((:instance mask-for-generic-signx-correct-for-concat-x (n n) (x xval1) (y yval))
+                  (:instance mask-for-generic-signx-correct-for-concat-x (n n) (x xval2) (y yval))))))
+
+  (defthmd mask-for-generic-signx-specialized-for-concat-y
+    (implies (and (EQUAL (4VEC-MASK (MASK-FOR-GENERIC-SIGNX MASK) yval1)
+                         (4VEC-MASK (MASK-FOR-GENERIC-SIGNX MASK) yval2))
+                  (syntaxp (term-order yval2 yval1)))
+             (EQUAL (4VEC-MASK MASK (4VEC-CONCAT n xval yval1))
+                    (4VEC-MASK MASK (4VEC-CONCAT n xval yval2))))
+    :hints(("Goal"
+            :in-theory (disable MASK-FOR-GENERIC-SIGNX)
+            :use ((:instance mask-for-generic-signx-correct-for-concat-y (n n) (x xval) (y yval1))
+                  (:instance mask-for-generic-signx-correct-for-concat-y (n n) (x xval) (y yval2)))))))
 
 (def-svmask signx (n x)
   :long "<p>We are considering a @('(signx n x)') expression and we know that
@@ -877,27 +940,28 @@ mask-for-generic-signx) here.</p>"
               ;;    (mask-for-generic-signx mask)
               ;; It didn't seem super easy to prove this, so I'm holding off
               ;; for now.
-              (list -1 -1))
+              (list -1 (mask-for-generic-signx mask)))
              (nv (2vec->val nval))
              ((unless (<= 0 nv))
               ;; We know N but it is a negative number, so the result is pure X
               ;; bits, regardless of the x argument.
               (list -1 0))
-             (xmask (sign-ext-mask mask nv)))
+             (xmask (mask-for-fixed-signx mask nv)))
           (list -1 xmask))
+  :prepwork ((local (in-theory (disable* 2vec-p))))
   :hints (("Goal" :in-theory (e/d (svex-apply
                                    4veclist-nth-safe
-                                   hide-past-second-arg)))
+                                   hide-past-second-arg
+                                   mask-for-generic-signx-specialized-for-signx)))
           (and stable-under-simplificationp
-               '(:in-theory (e/d (4vec-mask
-                                  4vec-sign-ext
-                                  4vec-index-p
-                                  sign-ext-mask
-                                  4vmask-all-or-none
+               ;; Don't open up 4vec-mask yet, want
+               '(:in-theory (e/d (mask-for-fixed-signx
                                   4vec-[=
-                                  )
+                                  4vec-sign-ext
+                                  4vec-mask
+                                  2vec-p)
                                  (svex-eval-gte-xeval))
-                 :use ((:instance svex-eval-gte-xeval (x (car args))))))
+                 :use ((:instance svex-eval-gte-xeval (x (first args))))))
           (bitops::logbitp-reasoning
            :add-hints (:in-theory
                        (enable* bitops::logbitp-case-splits
@@ -906,6 +970,7 @@ mask-for-generic-signx) here.</p>"
                        (enable* bitops::logbitp-case-splits
                                 bitops::logbitp-of-const-split))
            :prune-examples nil)))
+
 
 (def-svmask concat (n x y)
   :long "<p>We are considering a @('(concat n x y)') expression and we know
@@ -943,7 +1008,8 @@ mask-for-generic-signx) here.</p>"
              ((unless (2vec-p nval))
               ;; Don't know what the index is.  Punt for now.  BOZO eventually
               ;; try to use mask-for-generic-signx here for X and Y.
-              (list -1 -1 -1))
+              (let ((argmask (mask-for-generic-signx mask)))
+                (list -1 argmask argmask)))
              (n (2vec->val nval))
              ((unless (<= 0 n))
               ;; N is statically known to be negative, so the whole result is X
@@ -956,7 +1022,9 @@ mask-for-generic-signx) here.</p>"
                 (logtail n mask)))
   :hints (("Goal" :in-theory (e/d (svex-apply
                                    4veclist-nth-safe
-                                   hide-past-third-arg)))
+                                   hide-past-third-arg
+                                   mask-for-generic-signx-specialized-for-concat-x
+                                   mask-for-generic-signx-specialized-for-concat-y)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (4vec-mask
                                   4vec-concat))))
@@ -1024,38 +1092,6 @@ shifts instead of right shifts.</p>"
                                   4vec-lsh))
                  :cases ((<= 0 (2vec->val (svex-xeval (car args)))))))
           (bitops::logbitp-reasoning)))
-
-
-(add-to-ruleset bitand-speed-hint
-                '(SVEX-EVAL-WHEN-2VEC-P-OF-MINVAL
-                 2VEC-P
-                 4VMASK-P-WHEN-MEMBER-EQUAL-OF-4VMASKLIST-P
-                 BITOPS::LOGAND-WITH-BITMASK
-                 4VECLIST-FIX-WHEN-4VECLIST-P
-                 4VECLIST-P-OF-CDR-WHEN-4VECLIST-P
-                 BITOPS::LOGBITP-WHEN-BIT
-                 default-<-1
-                 default-<-2
-                 acl2::natp-rw
-                 acl2::natp-when-integerp
-                 arith-equiv-forwarding
-                 ACL2::NOT-BIT->BOOL-FORWARD-TO-BIT-EQUIV-0
-                 ACL2::BIT->BOOL-FORWARD-TO-EQUAL-1
-                 CAR-OF-4VECLIST-FIX-X-NORMALIZE-CONST-UNDER-4VEC-EQUIV
-                 (:t 4vmask-p)
-                 ACL2::CANCEL_TIMES-EQUAL-CORRECT
-                 acl2::CANCEL_PLUS-EQUAL-CORRECT
-                 SVEX-EVAL-OF-SVEX-FIX-X-NORMALIZE-CONST
-                 SVEX-EVAL-OF-SVEX-ENV-FIX-ENV-NORMALIZE-CONST
-                 SVEX-EVAL-OF-QUOTED
-                 CDR-OF-4VECLIST-FIX-X-NORMALIZE-CONST-UNDER-4VECLIST-EQUIV
-                 ACL2::BFIX-WHEN-NOT-BITP
-                 EQUAL-OF-4VECLIST-FIX-2-FORWARD-TO-4VECLIST-EQUIV
-                 EQUAL-OF-4VECLIST-FIX-1-FORWARD-TO-4VECLIST-EQUIV
-                 default-car
-                 default-cdr
-
-                 ))
 
 (def-svmask bitand (x y)
   :long "<p>We are considering a @('(bitand x y)') expression and we know that
@@ -1183,8 +1219,7 @@ least one or the other as a care bit.</p>"
           ;; Otherwise, no reason to prefer masking X more aggressively, so
           ;; just arbitrary default to masking Y more aggressively than X.
           (list (logior ym-non1 shared-1s) xm-non1))
-  :prepwork ((local (in-theory (disable* ;bitand-speed-hint
-                                         not))))
+  :prepwork ((local (in-theory (disable* not))))
   :hints (("Goal" :in-theory (e/d (svex-apply
                                    4veclist-nth-safe
                                    hide-past-second-arg)))
