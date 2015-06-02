@@ -37,7 +37,8 @@
 (include-book "env-ops")
 (include-book "eval")
 (include-book "lattice")
-(include-book "rsh-concat")
+;; not rsh-concat, it should be local
+;; (include-book "rsh-concat")
 (include-book "argmasks")
 ;; Note svex-equivs, it's apparently not included anywhere?
 ;; (include-book "svex-equivs")

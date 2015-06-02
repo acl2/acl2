@@ -185,24 +185,28 @@ want when building @(see expressions).</p>
     `(honsed-4vec ,upper ,lower)))
 
 (defsection 4vec-x
+  :parents (values)
   :short "Infinite width vector, all Xes."
   :long "@(def *4vec-x*) @(def 4vec-x)"
   (defconst *4vec-x* (make-honsed-4vec :upper -1 :lower 0))
   (defmacro 4vec-x () `',*4vec-x*))
 
 (defsection 4vec-z
+  :parents (values)
   :short "Infinite width vector, all Zs."
   :long "@(def *4vec-z*) @(def 4vec-z)"
   (defconst *4vec-z* (make-honsed-4vec :upper 0 :lower -1))
   (defmacro 4vec-z () `',*4vec-z*))
 
 (defsection 4vec-1x
+  :parents (values)
   :short "Vector with a single X bit (lsb), upper bits all 0."
   :long "@(def *4vec-1x*) @(def 4vec-1x)"
   (defconst *4vec-1x* (make-honsed-4vec :upper 1 :lower 0))
   (defmacro 4vec-1x () `',*4vec-1x*))
 
 (defsection 4vec-1z
+  :parents (values)
   :short "Vector with a single Z bit (lsb), upper bits all 0."
   :long "@(def *4vec-1z*) @(def 4vec-1z)"
   (defconst *4vec-1z* (make-honsed-4vec :upper 0 :lower 1))

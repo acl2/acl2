@@ -35,23 +35,37 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 
-(defxdoc lattice.lisp :parents (4vec-[=))
-(local (xdoc::set-default-parents lattice.lisp))
-
 (define 4vec-[= ((a 4vec-p) (b 4vec-p))
-  :parents (4vec)
-  :short "Lattice relation (information order) on 4vecs."
-  :long "<p>@('(4vec-[= a b)') is true iff on every bit where @('a') and @('b')
-differ, @('a')'s is X.</p>
+  :returns approxp
+  :parents (values)
+  :short "Lattice relation (information order) on @(see 4vec) values."
 
-<p>All 4vec functions in the svex language satisfy a monotonicity property wrt
-this relation, i.e.:</p>
+  :long "<p>@('(4vec-[= a b)') is true when @('a') is a ``conservative
+approximation'' of @('b').  That is, when every pair of corresponding bits,
+@($a_i$) from @($a$) and @($b_i$) from @($b$), are the same unless @($a_i$) is
+X.</p>
+
+<p>Almost all @(see svex-functions) satisfy a monotonicity property with
+respect to this relation, i.e., if @('f') is a one-argument function, it
+will satisfy:</p>
 
 @({
- (implies (4vec-[= a b)
-          (4vec-[= (f a) (f b)))
- })
-"
+    (implies (4vec-[= a b)
+             (4vec-[= (f a) (f b)))
+})
+
+<p>Intuitively, this property essentially means that each operator properly
+treats X bits as unknown.</p>
+
+<p>A notable exception is the @('===') operator, i.e., @(see 4vec-===), which
+is a ``bad'' operator that can non-conservatively treat X bits as being equal
+to other X bits.  This operator is included in @(see sv) for better
+compatibility with hardware description languages like Verilog, but should
+generally be avoided when possible.</p>
+
+<p>@('4vec-[=') is essentially a bitwise/vector analogue of the similar @(see
+acl2::4v) function called @(see acl2::4v-<=); see also @(see
+acl2::4v-monotonicity).</p>"
   (b* (((4vec a) a)
        ((4vec b) b))
     (eql -1 (logior
@@ -61,7 +75,7 @@ this relation, i.e.:</p>
              ;; or a is X.
              (logand a.upper (lognot a.lower)))))
   ///
-  (fty::deffixequiv 4vec-[=)
+  (deffixequiv 4vec-[=)
 
   (defthm 4vec-[=-self
     (4vec-[= x x))
@@ -73,7 +87,7 @@ this relation, i.e.:</p>
     (implies (and (4vec-[= a b)
                   (4vec-[= b c))
              (4vec-[= a c))
-    :hints ((acl2::logbitp-reasoning)))
+    :hints ((bitops::logbitp-reasoning)))
 
   (defthmd 4vec-[=-transitive-2
     (implies (and (4vec-[= b c)
@@ -94,12 +108,12 @@ this relation, i.e.:</p>
              (equal (4vec-[= n n1)
                     (4vec-equiv n n1)))
     :hints(("goal" :in-theory (enable 4vec-equiv))
-           (acl2::logbitp-reasoning))))
-
-
+           (bitops::logbitp-reasoning))))
 
 
 (defsection 4vec-monotonicity
+  :parents (4vec-[=)
+  :short "Monotonicity properties for the basic @(see svex-functions)."
   (set-state-ok t)
   (local (in-theory (disable bitops::logior-natp-type
                              bitops::logior-<-0-linear-2
@@ -133,10 +147,29 @@ this relation, i.e.:</p>
                              bitops::logand-with-negated-bitmask
                              bitops::logbitp-of-negative-const
                              bitops::logbitp-of-const
+                             BITOPS::LOGIOR-EQUAL-0
                              ;; Disabling NOT is REALLY important here!
                              not)))
 
+  (local (in-theory (disable acl2::zip-open
+                             acl2::zp-open
+                             signed-byte-p
+                             unsigned-byte-p
+                             default-<-1
+                             default-<-2
+                             acl2::bfix-when-bitp
+                             acl2::bfix-when-not-bitp
+                             ACL2::BFIX-WHEN-NOT-BIT->BOOL
+                             ACL2::BFIX-WHEN-BIT->BOOL
+                             ACL2::NFIX-WHEN-NOT-NATP
+                             acl2::natp-when-integerp
+                             bit->bool
+                             BITOPS::LOGBITP-OF-CONST-SPLIT
+                             BITOPS::ASH-NATP-TYPE
+                             BITOPS::LOGBITP-WHEN-BIT
+                             (:e tau-system)
 
+                             )))
 
   (local
    (progn
@@ -175,7 +208,7 @@ this relation, i.e.:</p>
                            '(:in-theory (enable* 4vec-[=
                                                  4vec-mono-defs
                                                  bool->bit)))
-                      (acl2::logbitp-reasoning
+                      (bitops::logbitp-reasoning
                        :prune-examples nil
                        :add-hints (:in-theory (enable* acl2::logbitp-case-splits)))
                       (and stable-under-simplificationp
@@ -243,21 +276,21 @@ this relation, i.e.:</p>
   (def-4vec-monotonicity 4vec-symwildeq)
   (def-4vec-monotonicity 4vec-clog2)
 
-  ;; (local (defthm equal-of-booleans
-  ;;          (implies (and (booleanp a) (booleanp b))
-  ;;                   (equal (equal a b) (iff a b)))))
-  (local (defthm booleanp-of-logbitp
-           (booleanp (logbitp n a))
-           :rule-classes :type-prescription))
+  (local (in-theory (enable (:t logbitp)
+                             bit->bool)))
 
   (defthm 4vec-==-[=-===
     (4vec-[= (4vec-== a b) (4vec-=== a b))
     :hints(("Goal" :in-theory (enable 4vec-=== 4vec-== 3vec-== 3vec-fix
                                       4vec-fix-is-4vec-of-fields))
-           (acl2::logbitp-reasoning))))
+           (bitops::logbitp-reasoning))))
+
 
 (defsection 4veclist-[=
-  (acl2::defquant 4veclist-[= (x y)
+  :parents (4vec-[= 4veclist)
+  :short "Nth-wise lattice ordering for @(see 4veclist)s."
+
+  (defquant 4veclist-[= (x y)
     (forall idx
             (4vec-[= (4veclist-nth-safe idx x)
                      (4veclist-nth-safe idx y)))
@@ -265,12 +298,12 @@ this relation, i.e.:</p>
 
   (in-theory (enable 4veclist-[=-necc))
 
-  (acl2::defexample 4vec-alist-[=-example
+  (defexample 4vec-alist-[=-example
     :pattern (4veclist-nth-safe idx x)
     :templates (idx)
     :instance-rulename 4veclist-[=-instancing)
 
-  (fty::deffixequiv 4veclist-[=
+  (deffixequiv 4veclist-[=
     :args ((x 4veclist) (y 4veclist))
     :hints (("goal" :cases ((4veclist-[= x y)))
             (acl2::witness)))
@@ -283,7 +316,7 @@ this relation, i.e.:</p>
     (iff (4veclist-[= (cons a b) c)
          (and (4vec-[= a (car c))
               (4veclist-[= b (cdr c))))
-    :hints ((acl2::witness :ruleset 4veclist-[=-witnessing)
+    :hints ((witness :ruleset 4veclist-[=-witnessing)
             (and stable-under-simplificationp
                  '(:in-theory (e/d (4veclist-nth-safe)
                                    (4veclist-[=-necc))))
@@ -295,9 +328,14 @@ this relation, i.e.:</p>
                          (:instance 4veclist-[=-necc
                           (x (cons a b)) (y c) (idx (+ 1 (nfix idx0))))))))))
 
-(defsection svex-env-[=
 
-  (acl2::defquant svex-env-[= (x y)
+(defsection svex-env-[=
+  :parents (4vec-[= svex-env)
+  :short "@(call svex-env-[=) checks whether an entire @(see svex-env)
+conservatively approximates another: i.e., is every variable's value in @('x')
+an approximation of its value in @('y')?"
+
+  (defquant svex-env-[= (x y)
     (forall var
             (4vec-[= (svex-env-lookup var x)
                      (svex-env-lookup var y)))
@@ -305,109 +343,128 @@ this relation, i.e.:</p>
 
   (in-theory (enable svex-env-[=-necc))
 
-  (acl2::defexample svex-env-[=-example
+  (defexample svex-env-[=-example
     :pattern (svex-env-lookup var x)
     :templates (var)
     :instance-rulename svex-env-[=-instancing)
 
-  (fty::deffixequiv svex-env-[=
+  (deffixequiv svex-env-[=
     :args ((x svex-env) (y svex-env))
     :hints (("goal" :cases ((svex-env-[= x y)))
-            (acl2::witness)))
+            (witness)))
 
   (defthm svex-env-[=-empty
     (svex-env-[= nil x)
-    :hints ((acl2::witness))))
-
-(defthm svex-apply-monotonic
-  (implies (and (4veclist-[= x y)
-                (not (eq (fnsym-fix fn) '===)))
-           (4vec-[= (svex-apply fn x) (svex-apply fn y)))
-  :hints(("Goal" :in-theory (e/d (svex-apply) (2vec-p 2vec->val)))))
+    :hints ((witness))))
 
 
-(defthm-svex-eval-flag
-  (defthm svex-eval-gte-xeval
-    (4vec-[= (svex-xeval x) (svex-eval x env))
-    :hints ('(:expand ((svex-eval x env)
-                       (svex-xeval x)))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (svex-apply 4vec-[=-transitive-2)
-                                   (4vec-==-[=-===))
-                   :use ((:instance 4vec-==-[=-===
-                          (a (4veclist-nth-safe 0 (svexlist-eval (svex-call->args x) env)))
-                          (b (4veclist-nth-safe 1 (svexlist-eval (svex-call->args x) env)))))
-                   :do-not-induct t)))
-    :flag expr)
-  (defthm svexlist-eval-gte-xeval
-    (4veclist-[= (svexlist-xeval x) (svexlist-eval x env))
-  :hints ('(:expand ((svexlist-eval x env)
-                     (svexlist-xeval x))))
-    :flag list))
+(defsection svex-apply-monotonocity
+  :parents (svex-apply 4vec-[=)
+  :short "@(see svex-apply) is almost always monotonic."
 
-(defthmd svex-eval-when-2vec-p-of-minval
-  (implies (and (syntaxp (not (equal env ''nil)))
-                (2vec-p (svex-xeval n)))
-           (equal (svex-eval n env)
-                  (svex-xeval n)))
-  :hints (("goal" :use ((:instance svex-eval-gte-xeval (x n)))
-           :in-theory (e/d ( 4vec-equiv)
-                           (svex-eval-gte-xeval))
-           :expand ((4vec-[= (svex-xeval n) (svex-eval n env)))))
-  :otf-flg t)
+  (defthm svex-apply-monotonic
+    (implies (and (4veclist-[= x y)
+                  (not (eq (fnsym-fix fn) '===)))
+             (4vec-[= (svex-apply fn x) (svex-apply fn y)))
+    :hints(("Goal" :in-theory (e/d (svex-apply)
+                                   (2vec-p 2vec->val))))))
 
 
 (defund bit-n (n x)
+  ;; BOZO why???
   (logbitp n x))
 
-(local
- (encapsulate nil
-   (local (defthmd logbitp-when-4vec-[=
-            (implies (and (4vec-[= a b)
-                          (or (not (logbitp n (4vec->upper a)))
-                              (logbitp n (4vec->lower a))))
-                     (and (equal (logbitp n (4vec->upper b))
-                                 (logbitp n (4vec->upper a)))
-                          (equal (logbitp n (4vec->lower b))
-                                 (logbitp n (4vec->lower a)))))
-            :hints(("Goal" :in-theory (e/d (4vec-[=) (not)))
-                   '(:cases ((logbitp n (4vec->upper b))))
-                   '(:cases ((logbitp n (4vec->lower b))))
-                   (acl2::logbitp-reasoning)
-                   (and stable-under-simplificationp
-                        '(:in-theory (enable bool->bit))))))
-   (defthmd logbitp-when-4vec-[=-svex-eval
-     (implies (and (syntaxp (not (equal env ''nil)))
-                   (or (not (logbitp n (4vec->upper (svex-xeval b))))
-                       (logbitp n (4vec->lower (svex-xeval b)))))
-              (and (equal (logbitp n (4vec->upper (svex-eval b env)))
-                          (logbitp n (4vec->upper (svex-xeval b))))
-                   (equal (logbitp n (4vec->lower (svex-eval b env)))
-                          (logbitp n (4vec->lower (svex-xeval b))))))
-     :hints(("Goal" :use ((:instance logbitp-when-4vec-[=
-                           (b (svex-eval b env))
-                           (a (svex-xeval b)))))))))
 
+(defsection svex-xeval-monotonicity
+  :parents (svex-xeval 4vec-monotonicity)
+  :short "@('(svex-xeval x)') always approximates @('(svex-eval x env)'), for
+any environment."
 
-(defthmd logbitp-when-4vec-[=-svex-eval-strong
-  (implies (syntaxp (not (equal env ''nil)))
-           (and (equal (logbitp n (4vec->upper (svex-eval b env)))
-                       (if (acl2::bit->bool
-                            (acl2::b-ior (acl2::b-not (acl2::logbit n (4vec->upper (svex-xeval b))))
-                                         (acl2::logbit n (4vec->lower (svex-xeval b)))))
-                           (logbitp n (4vec->upper (svex-xeval b)))
-                         (bit-n n (4vec->upper (svex-eval b env)))))
-                (equal (logbitp n (4vec->lower (svex-eval b env)))
-                       (if (acl2::bit->bool
-                            (acl2::b-ior (acl2::b-not (acl2::logbit n (4vec->upper (svex-xeval b))))
-                                         (acl2::logbit n (4vec->lower (svex-xeval b)))))
-                           (logbitp n (4vec->lower (svex-xeval b)))
-                         (bit-n n (4vec->lower (svex-eval b env)))))))
-  :hints(("Goal" :in-theory (enable bit-n logbitp-when-4vec-[=-svex-eval acl2::b-ior))))
+  (defthm-svex-eval-flag
+    (defthm svex-eval-gte-xeval
+      (4vec-[= (svex-xeval x)
+               (svex-eval x env))
+      :hints ('(:expand ((svex-eval x env)
+                         (svex-xeval x)))
+              (and stable-under-simplificationp
+                   '(:in-theory (e/d (svex-apply 4vec-[=-transitive-2)
+                                     (4vec-==-[=-===))
+                     :use ((:instance 4vec-==-[=-===
+                            (a (4veclist-nth-safe 0 (svexlist-eval (svex-call->args x) env)))
+                            (b (4veclist-nth-safe 1 (svexlist-eval (svex-call->args x) env)))))
+                     :do-not-induct t)))
+      :flag expr)
+    (defthm svexlist-eval-gte-xeval
+      (4veclist-[= (svexlist-xeval x)
+                   (svexlist-eval x env))
+      :hints ('(:expand ((svexlist-eval x env)
+                         (svexlist-xeval x))))
+      :flag list))
+
+  "<p>Accordingly, we can often use @(see svex-xeval) in place of @(see
+  svex-eval).</p>"
+
+  (defthmd svex-eval-when-2vec-p-of-minval
+    (implies (and (syntaxp (not (equal env ''nil)))
+                  (2vec-p (svex-xeval n)))
+             (equal (svex-eval n env)
+                    (svex-xeval n)))
+    :hints (("goal" :use ((:instance svex-eval-gte-xeval (x n)))
+             :in-theory (e/d ( 4vec-equiv)
+                             (svex-eval-gte-xeval))
+             :expand ((4vec-[= (svex-xeval n) (svex-eval n env)))))
+    :otf-flg t)
+
+  (local
+   (encapsulate nil
+     (local (defthmd logbitp-when-4vec-[=
+              (implies (and (4vec-[= a b)
+                            (or (not (logbitp n (4vec->upper a)))
+                                (logbitp n (4vec->lower a))))
+                       (and (equal (logbitp n (4vec->upper b))
+                                   (logbitp n (4vec->upper a)))
+                            (equal (logbitp n (4vec->lower b))
+                                   (logbitp n (4vec->lower a)))))
+              :hints(("Goal" :in-theory (e/d (4vec-[=) (not)))
+                     '(:cases ((logbitp n (4vec->upper b))))
+                     '(:cases ((logbitp n (4vec->lower b))))
+                     (bitops::logbitp-reasoning)
+                     (and stable-under-simplificationp
+                          '(:in-theory (enable bool->bit))))))
+     (defthmd logbitp-when-4vec-[=-svex-eval
+       (implies (and (syntaxp (not (equal env ''nil)))
+                     (or (not (logbitp n (4vec->upper (svex-xeval b))))
+                         (logbitp n (4vec->lower (svex-xeval b)))))
+                (and (equal (logbitp n (4vec->upper (svex-eval b env)))
+                            (logbitp n (4vec->upper (svex-xeval b))))
+                     (equal (logbitp n (4vec->lower (svex-eval b env)))
+                            (logbitp n (4vec->lower (svex-xeval b))))))
+       :hints(("Goal" :use ((:instance logbitp-when-4vec-[=
+                             (b (svex-eval b env))
+                             (a (svex-xeval b)))))))))
+
+  (defthmd logbitp-when-4vec-[=-svex-eval-strong
+    (implies (syntaxp (not (equal env ''nil)))
+             (and (equal (logbitp n (4vec->upper (svex-eval b env)))
+                         (if (bit->bool
+                              (b-ior (b-not (logbit n (4vec->upper (svex-xeval b))))
+                                     (logbit n (4vec->lower (svex-xeval b)))))
+                             (logbitp n (4vec->upper (svex-xeval b)))
+                           (bit-n n (4vec->upper (svex-eval b env)))))
+                  (equal (logbitp n (4vec->lower (svex-eval b env)))
+                         (if (bit->bool
+                              (b-ior (b-not (logbit n (4vec->upper (svex-xeval b))))
+                                     (logbit n (4vec->lower (svex-xeval b)))))
+                             (logbitp n (4vec->lower (svex-xeval b)))
+                           (bit-n n (4vec->lower (svex-eval b env)))))))
+    :hints(("Goal" :in-theory (enable bit-n logbitp-when-4vec-[=-svex-eval b-ior)))))
 
 
 
 (define 4vec-xfree-p ((x 4vec-p))
+  :parents (4vec-[= svex-xeval)
+  :short "Recognizer for @(see 4vec)s with no X bits.  These have a special
+relationship with @(see svex-xeval)."
   (b* (((4vec x) x))
     (eql -1 (logior (lognot x.upper) x.lower)))
   ///
@@ -424,11 +481,11 @@ this relation, i.e.:</p>
              (equal (svex-eval n env)
                     (svex-xeval n)))
     :hints (("goal" :use ((:instance svex-eval-gte-xeval (x n)))
-             :in-theory (e/d ( 4vec-equiv)
+             :in-theory (e/d (4vec-equiv)
                              (svex-eval-gte-xeval))
              :expand ((4vec-[= (svex-xeval n) (svex-eval n env))))
             (bitops::logbitp-reasoning)))
-  
+
   (defthmd svex-eval-when-4vec-xfree-of-minval-apply
     (implies (and (syntaxp (not (equal env ''nil)))
                   (not (eq (fnsym-fix fn) '===))

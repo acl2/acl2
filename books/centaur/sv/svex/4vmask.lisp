@@ -98,7 +98,7 @@
   :short "Bitmasks indicating the relevant bits of SVEX expressions."
 
   :long "<p>A <b>4vmask</b> is a data structure that records which bits of an
-expression are ``relevant.''</p>
+expression we care about.</p>
 
 <p>We represent 4vmasks as ordinary integers, which we treat as bit masks where
 1s encode the relevant bit positions and 0s encode the irrelevant positions.
@@ -128,7 +128,8 @@ expression such as:</p>
 })
 
 <p>Then we can simply rewrite it to @('<low>') and get rid of @('<high>')
-altogether.</p>")
+altogether.  Typically we make these sorts of inferences using @(see
+svex-argmasks).</p>")
 
 (local (xdoc::set-default-parents 4vmask))
 
@@ -283,7 +284,23 @@ creating a new mask that includes all bits that are relevant for in either
 
   (defthm len-of-4veclist-mask
     (equal (len (4veclist-mask masks values))
-           (len values))))
+           (len values)))
+
+  (defthm 4veclist-mask-of-nil
+    (equal (4veclist-mask nil x)
+           (4veclist-fix x))
+    :hints(("Goal" :in-theory (enable 4veclist-mask 4veclist-fix))))
+
+  (defthm equal-of-4veclist-mask-cons
+    (equal (equal (4veclist-mask (cons m1 m) x)
+                  (4veclist-mask (cons m1 m) y))
+           (and (equal (consp x) (consp y))
+                (equal (4vec-mask m1 (car x))
+                       (4vec-mask m1 (car y)))
+                (equal (4veclist-mask m (cdr x))
+                       (4veclist-mask m (cdr y)))))
+    :hints(("Goal" :in-theory (enable 4veclist-mask)))))
+
 
 (define 4vmasklist-subsumes ((x 4vmasklist-p) (y 4vmasklist-p))
   :short "@(call 4vmasklist-subsumes) checks whether the masks in the list

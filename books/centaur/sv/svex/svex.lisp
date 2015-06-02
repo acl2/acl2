@@ -274,6 +274,11 @@ typically be @(see memoize)d in some way or another.</p>"
   :hints (("goal" :cases ((consp args))))
   :rule-classes :linear)
 
+(defcong svexlist-equiv svex-equiv (nth n x) 2
+  :hints(("Goal" :in-theory (enable svexlist-equiv svex-equiv svexlist-fix)
+          :induct (svex-equiv (nth n x) (nth n x-equiv))
+          :expand ((svexlist-fix x) (svexlist-fix x-equiv)))))
+
 
 (define svex-nth ((n natp) (x svexlist-p))
   :parents (svexlist)
@@ -305,7 +310,7 @@ typically be @(see memoize)d in some way or another.</p>"
   :key-type svar
   :val-type svex
   :true-listp t
-  :parents (expressions)
+  :parents (svex)
   :short "Alist binding variables (@(see svar)s) to expressions @(see svex)es.")
 
 

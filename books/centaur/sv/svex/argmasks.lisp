@@ -90,27 +90,11 @@
 
 
 
-(defcong svexlist-equiv svex-equiv (nth n x) 2
-  :hints(("Goal" :in-theory (enable svexlist-equiv svex-equiv svexlist-fix)
-          :induct (svex-equiv (nth n x) (nth n x-equiv))
-          :expand ((svexlist-fix x) (svexlist-fix x-equiv)))))
 
 ;; (local (in-theory (disable nth-open-constidx nth)))
 
-(defthm equal-of-4veclist-mask-cons
-  (equal (equal (4veclist-mask (cons m1 m) x)
-                (4veclist-mask (cons m1 m) y))
-         (and (equal (consp x) (consp y))
-              (equal (4vec-mask m1 (car x))
-                     (4vec-mask m1 (car y)))
-              (equal (4veclist-mask m (cdr x))
-                     (4veclist-mask m (cdr y)))))
-  :hints(("Goal" :in-theory (enable 4veclist-mask))))
 
-(defthm 4veclist-mask-of-nil
-  (equal (4veclist-mask nil x)
-         (4veclist-fix x))
-  :hints(("Goal" :in-theory (enable 4veclist-mask 4veclist-fix))))
+
 
 ;; (defthm equal-of-4veclist-mask-nil
 ;;   (equal (equal (4veclist-mask nil x)
@@ -119,10 +103,6 @@
 ;;                 (4veclist-fix y)))
 ;;   :hints(("Goal" :in-theory (enable 4veclist-mask 4veclist-fix))))
 
-(defthm svex-eval-of-nth
-  (4vec-equiv (nth n (svexlist-eval x env))
-              (svex-eval (nth n x) env))
-  :hints(("Goal" :in-theory (enable svexlist-eval nth))))
 
 (local (in-theory (disable acl2::bit->bool)))
 
@@ -1981,7 +1961,7 @@ outside of the expression and into the arguments.</p>"
     :hints (("goal" :use svex-argmasks-correct
              :in-theory (disable svex-argmasks-correct))))
 
-  (fty::deffixequiv svex-argmasks)
+  (deffixequiv svex-argmasks)
 
   (defthm svex-argmasks-of-none
     (implies (4vmask-empty mask)
@@ -1989,7 +1969,7 @@ outside of the expression and into the arguments.</p>"
                     (replicate (len args) 0))))
 
   (defthm 4veclist-mask-idempotent
-    (Equal (4veclist-mask masks (4veclist-mask masks x))
+    (equal (4veclist-mask masks (4veclist-mask masks x))
            (4veclist-mask masks x))
     :hints(("Goal" :in-theory (enable 4veclist-mask))))
 

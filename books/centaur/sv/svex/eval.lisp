@@ -426,7 +426,14 @@ svex-eval).</p>"
   (defthm svexlist-eval-of-append
     (equal (svexlist-eval (append a b) env)
            (append (svexlist-eval a env)
-                   (svexlist-eval b env)))))
+                   (svexlist-eval b env))))
+
+  (defthm svex-eval-of-nth
+    (4vec-equiv (nth n (svexlist-eval x env))
+                (svex-eval (nth n x) env))
+    :hints(("Goal" :in-theory (enable svexlist-eval nth))))
+
+  )
 
 (defsection svex-eval-basics
   :parents (svex-eval)

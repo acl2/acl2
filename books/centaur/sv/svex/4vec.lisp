@@ -83,28 +83,28 @@ expressions.  For instance, our @(see 4vec-plus) operation agrees with the
 Verilog notion of plus: if there are any X or Z bits in either input, it
 ``conservatively'' returns all Xes.  Most of these operations have
 corresponding @(see svex) functions and can hence be used in @(see
-expressions).  See in particular @(see svex-functions).</p>
+expressions); see @(see svex-functions).</p>
 
 <p>Many of these operations have similarities with the @(see
-acl2::4v-operations) which were used in by @(see acl2::esim).  But SV
-expressions are vectors instead of single bits, so there are many 4vec
-operations with no 4v equivalents (e.g., plus, times, etc.).  Historically
-these operations were bit-blasted using the @(see vl2014::occform)
-transformation, but in svex they are primitives with well-defined
-semantics.</p>
+acl2::4v-operations) which were used in @(see acl2::esim).  But SV expressions
+are vectors instead of single bits, so there are many 4vec operations with no
+4v equivalents (e.g., plus, times, etc.).  Historically these operations were
+bit-blasted using the @(see vl2014::occform) transformation, but in svex they
+are primitives with well-defined semantics.</p>
 
 <p><u>Boolean Convention</u>.  Most 4vec operations take and return @(see 4vec)
-objects.  This is true even for operations that you might normally expect to
-produce a Boolean result, e.g., comparisons, reductions, etc.  In these cases,
-we typically arrange so that ``true'' is indicated by the all-1s vector (i.e.,
--1), ``false'' is indicated by the all-0s vector (i.e., 0), and undetermined
-values are indicated by the all-Xes vector.  This is sometimes convenient in
-that it avoids needing to explicitly replicate/extend comparison results.</p>
+objects&mdash;even comparisons, reductions, etc., which you might instead
+expect to produce a Boolean result.  In these cases, we typically arrange so
+that ``true'' is indicated by the all-1s vector (i.e., -1), ``false'' is
+indicated by the all-0s vector (i.e., 0), and undetermined values are indicated
+by the all-Xes vector.  This is sometimes convenient in that it avoids needing
+to explicitly replicate/extend comparison results.</p>
 
 <p>It is critical that these functions support efficient symbolic simulation
-with @(see gl).  However, the particular definitions below are typically not
-relevant to this, because we use a custom translation from @(see expressions)
-into @(see aig)s; see @(see svex-symbolic-evaluation) for details.</p>")
+with @(see gl).  However, the logical definitions of these functions are
+typically not relevant to this, because we use a custom translation from @(see
+expressions) into @(see aig)s; see @(see svex-symbolic-evaluation) for
+details.</p>")
 
 (xdoc::defpointer boolean-convention 4vec-operations)
 
