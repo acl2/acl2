@@ -1136,11 +1136,11 @@ aggressively.</p>"
 
     :body (b* (((4vec xval)  (svex-xeval x))
                ((4vec yval)  (svex-xeval y))
-               (x-nonzero    (logior xval.upper xval.lower))
-               (y-nonzero    (logior yval.upper yval.lower))
-               (xm-nonzero   (logand mask x-nonzero))
-               (ym-nonzero   (logand mask y-nonzero))
-               (shared-zeros (lognand xm-nonzero ym-nonzero))
+               (x-zero       (lognor xval.upper xval.lower))
+               (y-zero       (lognor yval.upper yval.lower))
+               (shared-zeros (logand x-zero y-zero mask))
+               (xm-nonzero   (logandc2 mask x-zero))
+               (ym-nonzero   (logandc2 mask y-zero))
                ((when (eql 0 shared-zeros))
                 ;; There are no overlapping zeroes in any bits that we care
                 ;; about, so we can aggressively mask both arguments.
@@ -1209,11 +1209,11 @@ least one or the other as a care bit.</p>"
 
   :body (b* (((4vec xval)  (svex-xeval x))
              ((4vec yval)  (svex-xeval y))
-             (x-non1       (lognand xval.upper xval.lower))
-             (y-non1       (lognand yval.upper yval.lower))
-             (xm-non1      (logand mask x-non1))
-             (ym-non1      (logand mask y-non1))
-             (shared-1s    (lognand xm-non1 ym-non1))
+             (x-1          (logand xval.upper xval.lower))
+             (y-1          (logand yval.upper yval.lower))
+             (shared-1s    (logand x-1 y-1 mask))
+             (xm-non1      (logandc2 mask x-1))
+             (ym-non1      (logandc2 mask y-1))
              ((when (eql 0 shared-1s))
               ;; There are no overlapping zeroes in any bits that we care
               ;; about, so we can aggressively mask both arguments.
@@ -1303,12 +1303,12 @@ other.</p>"
 
   :body (b* (((4vec xval)  (svex-xeval x))
              ((4vec yval)  (svex-xeval y))
-             ;; Z is upper 0, lower 1.  so nonZ if (OR UPPER (NOT LOWER))
-             (x-nonZ       (logorc2 xval.upper xval.lower))
-             (y-nonZ       (logorc2 yval.upper yval.lower))
-             (xm-nonZ      (logand mask x-nonZ))
-             (ym-nonZ      (logand mask y-nonZ))
-             (shared-Zs    (lognand xm-nonZ ym-nonZ))
+             ;; Z is upper 0, lower 1.
+             (x-Z          (logandc1 xval.upper xval.lower))
+             (y-Z          (logandc1 yval.upper yval.lower))
+             (shared-Zs    (logand x-Z y-Z mask))
+             (xm-nonZ      (logandc2 mask x-Z))
+             (ym-nonZ      (logandc2 mask y-Z))
              ((when (eql 0 shared-Zs))
               ;; There are no overlapping zeroes in any bits that we care
               ;; about, so we can aggressively mask both arguments.
