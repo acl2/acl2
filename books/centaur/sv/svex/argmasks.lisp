@@ -83,10 +83,10 @@
                     (ifix a)
                   0))))
 
-(defthm 4veclist-nth-safe-of-nthcdr
-  (equal (4veclist-nth-safe m (nthcdr n x))
-         (4veclist-nth-safe (+ (nfix m) (nfix n)) x))
-  :hints(("Goal" :in-theory (enable 4veclist-nth-safe))))
+;; (defthm 4veclist-nth-safe-of-nthcdr
+;;   (equal (4veclist-nth-safe m (nthcdr n x))
+;;          (4veclist-nth-safe (+ (nfix m) (nfix n)) x))
+;;   :hints(("Goal" :in-theory (enable 4veclist-nth-safe))))
 
 
 
@@ -107,12 +107,17 @@
                      (4veclist-mask m (cdr y)))))
   :hints(("Goal" :in-theory (enable 4veclist-mask))))
 
-(defthm equal-of-4veclist-mask-nil
-  (equal (equal (4veclist-mask nil x)
-                (4veclist-mask nil y))
-         (equal (4veclist-fix x)
-                (4veclist-fix y)))
+(defthm 4veclist-mask-of-nil
+  (equal (4veclist-mask nil x)
+         (4veclist-fix x))
   :hints(("Goal" :in-theory (enable 4veclist-mask 4veclist-fix))))
+
+;; (defthm equal-of-4veclist-mask-nil
+;;   (equal (equal (4veclist-mask nil x)
+;;                 (4veclist-mask nil y))
+;;          (equal (4veclist-fix x)
+;;                 (4veclist-fix y)))
+;;   :hints(("Goal" :in-theory (enable 4veclist-mask 4veclist-fix))))
 
 (defthm svex-eval-of-nth
   (4vec-equiv (nth n (svexlist-eval x env))
@@ -217,7 +222,38 @@ svex-nth)."
            bitops::logior->=-0-linear
            bitops::upper-bound-of-logand
            bitops::lognot-<-const
-           bitops::lognot-natp)))
+           bitops::lognot-natp
+
+           acl2::loghead-identity
+           SVEX-EVAL-WHEN-FNCALL
+           SVEX-EVAL-WHEN-QUOTE
+           signed-byte-p
+           unsigned-byte-p
+           acl2::integer-range-p
+           default-car
+           default-cdr
+           default-<-1
+           default-<-2
+           DEFAULT-+-1
+           default-+-2
+
+           ;; ok through here
+
+           ACL2::LOGEXT-IDENTITY
+           ACL2::BFIX-WHEN-NOT-BITP
+           CAR-OF-SVEXLIST-FIX-X-NORMALIZE-CONST-UNDER-SVEX-EQUIV
+           CAR-OF-4VECLIST-FIX-X-NORMALIZE-CONST-UNDER-4VEC-EQUIV
+           SVEX-XEVAL-OF-SVEX-FIX-EXPR-NORMALIZE-CONST
+           ACL2::CANCEL_TIMES-EQUAL-CORRECT
+           ACL2::CANCEL_PLUS-EQUAL-CORRECT
+           ACL2::CANCEL_PLUS-LESSP-CORRECT
+           SVEX-EVAL-OF-QUOTED
+           SVEX-EVAL-OF-SVEX-FIX-X-NORMALIZE-CONST
+           SVEX-EVAL-OF-SVEX-ENV-FIX-ENV-NORMALIZE-CONST
+           CDR-OF-SVEXLIST-FIX-X-NORMALIZE-CONST-UNDER-SVEXLIST-EQUIV
+           4VMASK-P-WHEN-MEMBER-EQUAL-OF-4VMASKLIST-P
+
+           )))
 
 
 (local (in-theory (disable* expensive-rules)))
@@ -971,7 +1007,6 @@ mask-for-generic-signx) here.</p>"
                                 bitops::logbitp-of-const-split))
            :prune-examples nil)))
 
-
 (def-svmask concat (n x y)
   :long "<p>We are considering a @('(concat n x y)') expression and we know
 that we only care about the bits mentioned in @('mask').  We need to figure out
@@ -1145,8 +1180,7 @@ aggressively.</p>"
             ;; Otherwise, no reason to prefer masking X more aggressively, so
             ;; just arbitrary default to masking Y more aggressively than X.
             (list (logior ym-nonzero shared-zeros) xm-nonzero))
-    :prepwork
-    ((local (in-theory (disable* not))))
+    :prepwork ((local (in-theory (disable* not))))
     :hints (("Goal" :in-theory (e/d (svex-apply
                                      4veclist-nth-safe
                                      hide-past-second-arg)))
@@ -1383,30 +1417,88 @@ false.</p>
           (and stable-under-simplificationp
                '(:bdd (:vars nil)))))
 
+(local (defthm strengthen-4vec-?-then
+         (implies (and (equal (4vec-mask mask then1)
+                              (4vec-mask mask then2))
+                       (syntaxp (term-order then2 then1)))
+                  (equal (4vec-mask mask (4vec-? test then1 else))
+                         (4vec-mask mask (4vec-? test then2 else))))
+         :hints(("Goal" :in-theory (enable 4vec-?
+                                           3vec-?
+                                           3vec-fix
+                                           4vec-mask))
+                (bitops::logbitp-reasoning))))
 
-(define svmask-for-?-aux ((mask 4vmask-p)
-                          (then svex-p)
-                          (else svex-p))
+(local (defthm strengthen-4vec-?-else
+         (implies (and (EQUAL (4VEC-MASK MASK else1)
+                              (4VEC-MASK MASK ELSE2))
+                       (syntaxp (term-order else2 else1)))
+                  (equal (4vec-mask mask (4vec-? test then else1))
+                         (4vec-mask mask (4vec-? test then else2))))
+         :hints(("Goal" :in-theory (enable 4vec-?
+                                           3vec-?
+                                           3vec-fix
+                                           4vec-mask))
+                (bitops::logbitp-reasoning))))
+
+(define branches-same-under-mask-p ((mask 4vmask-p)
+                                      (then svex-p)
+                                      (else svex-p))
   :parents (svmask-for-?)
-  :short "Used when we don't know for sure which way the test will evaluate.
-We may not care about the test if then/else are pure-Boolean and agree on all
-mask bits."
-  :returns (masks 4vmasklist-p)
+  :short "Checks whether @('then') and @('else') are statically known to agree,
+in which case we don't care about @('test') at all."
   (b* ((mask           (4vmask-fix mask))
        ((4vec thenval) (svex-xeval then))
        ((4vec elseval) (svex-xeval else))
-       (then-bool      (logeqv thenval.upper thenval.lower)) ;; bits where then is 1/0
-       (else-bool      (logeqv elseval.upper elseval.lower)) ;; bits where else is 1/0
+       (then-bool      (logeqv thenval.upper thenval.lower))  ;; bits where then is 1/0
+       (else-bool      (logeqv elseval.upper elseval.lower))) ;; bits where else is 1/0
+    (and (eql (logorc1 mask then-bool) -1) ;; for every care bit, then is 1/0
+         (eql (logorc1 mask else-bool) -1) ;; for every care bit, else is 1/0
+         (eql (logand mask thenval.upper)
+              (logand mask elseval.upper))))
+  ///
+  (deffixequiv branches-same-under-mask-p))
 
-       ((when (and (eql (logorc1 mask then-bool) -1) ;; for every care bit, then is 1/0
-                   (eql (logorc1 mask else-bool) -1) ;; for every care bit, else is 1/0
-                   (eql (logand mask thenval.upper)
-                        (logand mask elseval.upper))))
-        ;; The obscure case: test/then agree completely on all relevant
-        ;; bits, so test doesn't matter.
-        (list 0 mask mask)))
+(local
+ (defsection branches-same-under-mask-lemmas
 
-    (list -1 mask mask)))
+   (local (in-theory (disable not)))
+   (defthmd branches-same-under-mask-p-correct
+     (implies (and (branches-same-under-mask-p mask then else)
+                   (syntaxp (not (equal any-test ''0))))
+              (equal (4vec-mask mask (4vec-? any-test
+                                             (svex-eval then env)
+                                             (svex-eval else env)))
+                     (4vec-mask mask (4vec-? 0
+                                             (4vec-mask mask (svex-eval then env))
+                                             (4vec-mask mask (svex-eval else env))))))
+     :hints(("Goal" :in-theory (e/d (branches-same-under-mask-p
+                                     4vec-mask
+                                     4vec-?
+                                     3vec-?
+                                     3vec-fix
+                                     4vec-[=)
+                                    (svex-eval-gte-xeval
+                                     ))
+             :use ((:instance svex-eval-gte-xeval (x then))
+                   (:instance svex-eval-gte-xeval (x else)))
+             )
+            (bitops::logbitp-reasoning)
+            (and stable-under-simplificationp '(:bdd (:vars nil)))))
+
+   (defthmd branches-same-under-mask-p-crux
+     (implies
+      (and (branches-same-under-mask-p mask then else)
+           (equal (4vec-mask mask (svex-eval then env)) (4vec-mask mask thenval))
+           (equal (4vec-mask mask (svex-eval else env)) (4vec-mask mask elseval)))
+      (equal (4vec-mask mask (4vec-? testval thenval elseval))
+             (4vec-mask mask
+                        (4vec-? 0
+                                (4vec-mask mask (svex-eval then env))
+                                (4vec-mask mask (svex-eval else env))))))
+     :hints(("Goal"
+             :use ((:instance branches-same-under-mask-p-correct
+                    (any-test testval))))))))
 
 (def-svmask ? (test then else)
   :long "<p>We are considering a @('(? test then else)') expression and we know
@@ -1450,68 +1542,28 @@ care @('then').</li>
               (list -1 0 mask)))
           ;; BOZO this is sound but very slow for the proof of correctness.
           ;; Can we speed this proof up?
-          (svmask-for-?-aux mask then else)
-          ;;(list -1 mask mask)
-          )
+          (if (branches-same-under-mask-p mask then else)
+              (list 0 mask mask)
+            (list -1 mask mask)))
   :prepwork ((local (in-theory (disable* not
                                          svex-eval-gte-xeval
-                                         ;; 147.52 seconds with the above, ap on
-                                         bitops::logior-equal-0
-                                         ;; 48.64 sec with the above, ap on
-                                         default-car
-                                         default-cdr
-                                         (:t svex-eval)
-                                         acl2::bfix-when-bitp
-                                         acl2::bfix-when-not-bitp
-                                         (:e tau-system)
-                                         ;; 45.10 seconds with the above
-                                         SVEX-EVAL-WHEN-2VEC-P-OF-MINVAL
-                                         ;; 43.99 sec
-                                         ;;;; (:t acl2::bit->bool)
-                                         ;;;; SVEX-EVAL-WHEN-FNCALL
-                                         ;; 63.20 seconds??
-                                         SVEX-EVAL-WHEN-FNCALL
-                                         ;; 42.96 seconds
-                                         BITOPS::LOGBITP-WHEN-BIT
-                                         acl2::bit-functions-type
-                                         (:t bitp)
-                                         (:t INTEGERP-OF-4VEC->UPPER)
-                                         (:t INTEGERP-OF-4VEC->LOWER)
-                                         ;; 42.16 seconds
-                                         SVEX-EVAL-OF-QUOTED
-                                         SVEX-XEVAL-OF-SVEX-FIX-EXPR-NORMALIZE-CONST
-                                         SVEX-EVAL-OF-SVEX-ENV-FIX-ENV-NORMALIZE-CONST
-                                         CAR-OF-SVEXLIST-FIX-X-NORMALIZE-CONST-UNDER-SVEX-EQUIV
-                                         CDR-OF-SVEXLIST-FIX-X-NORMALIZE-CONST-UNDER-SVEXLIST-EQUIV
-                                         ;;(:t logbitp)
-                                         ACL2::NOT-BIT->BOOL-FORWARD-TO-BIT-EQUIV-0
-                                         ACL2::BIT->BOOL-FORWARD-TO-EQUAL-1
-                                         4VECLIST-P-OF-CDR-WHEN-4VECLIST-P
-                                         CDR-OF-4VECLIST-FIX-X-NORMALIZE-CONST-UNDER-4VECLIST-EQUIV
-                                         CAR-OF-4VECLIST-FIX-X-NORMALIZE-CONST-UNDER-4VEC-EQUIV
-                                         ACL2::CANCEL_TIMES-EQUAL-CORRECT
-                                         ACL2::CANCEL_PLUS-EQUAL-CORRECT
-                                         ;; 38.52 seconds
-                                         ))))
+                                         bitops::logior-equal-0))))
   :hints (("Goal" :in-theory (e/d (svex-apply
                                    4veclist-nth-safe
-                                   hide-past-third-arg))
-           :use ((:instance svex-eval-gte-xeval (x (first args)))
-                 (:instance svex-eval-gte-xeval (x (second args)))
-                 (:instance svex-eval-gte-xeval (x (third args)))))
+                                   hide-past-third-arg
+                                   branches-same-under-mask-p-crux
+                                   )))
           (and stable-under-simplificationp
                '(:in-theory (e/d (4vec-mask
-                                 2vec-p
-                                 4vec-?
-                                 3vec-?
-                                 3vec-fix
-                                 svmask-for-?-aux
-                                 4vec-[=)
-                                ( ))))
-         (bitops::logbitp-reasoning
-          :passes 2
-          :add-hints(:in-theory (disable BITOPS::LOGBITP-WHEN-BIT)))
-         (and stable-under-simplificationp '(:bdd (:vars nil)))))
+                                  2vec-p
+                                  4vec-?
+                                  3vec-?
+                                  3vec-fix
+                                  4vec-[=)
+                                 (svex-eval-gte-xeval))
+                 :use ((:instance svex-eval-gte-xeval (x (first args))))))
+          (bitops::logbitp-reasoning)
+          (and stable-under-simplificationp '(:bdd (:vars nil)))))
 
 (define unrev-blocks ((nbits natp)
                       (blocksz posp)
@@ -1582,7 +1634,8 @@ care @('then').</li>
     (implies (< (nfix i) (nfix nbits))
              (equal (rev-block-index (unrev-block-index i nbits blocksz) nbits blocksz)
                     (nfix i)))
-    :hints(("Goal" :in-theory (enable rev-block-index)
+    :hints(("Goal" :in-theory (enable* expensive-rules
+                                       rev-block-index)
             :induct (unrev-block-index i nbits blocksz))))
 
 
@@ -1751,6 +1804,7 @@ care @('then').</li>
   `(case ,fn . ,(svex-argmasks-cases-fn *svex-op-table*)))
 
 
+(local (in-theory (enable* expensive-rules)))
 
 (define 4vmasklist-len-fix ((n natp) (x 4vmasklist-p))
   :inline t
