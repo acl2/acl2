@@ -1021,8 +1021,8 @@ mask-for-generic-signx) here.</p>"
               (list 0 0 0))
              (nval (svex-xeval n))
              ((unless (2vec-p nval))
-              ;; Don't know what the index is.  Punt for now.  BOZO eventually
-              ;; try to use mask-for-generic-signx here for X and Y.
+              ;; Don't know what the index is.  We can at least use the
+              ;; saturated mask as in sign extension for both arguments.
               (let ((argmask (mask-for-generic-signx mask)))
                 (list -1 argmask argmask)))
              (n (2vec->val nval))

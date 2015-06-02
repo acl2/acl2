@@ -230,6 +230,10 @@ prefix.</p>"
 
 ;; ======================================================================
 
+;; [Jared] these rules broke something below
+(local (in-theory (disable BITOPS::LOGEXT-OF-LOGAND
+                           BITOPS::LOGEXT-OF-LOGIOR)))
+
 (defsection GPRs-Reads-and-Writes
 
   :parents (x86-register-readers-and-writers)

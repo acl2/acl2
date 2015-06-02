@@ -74,8 +74,8 @@ you to process them with efficient @(see acl2::boolean-reasoning) tools like
 representation for hardware modules.  It also has a compiler that can assemble
 these modules into a convenient finite state machine (FSM) representation, with
 well-defined semantics, and with full observability of all parts of the
-original design.  This compilation process involves, e.g., flatting the module
-hierarchy, resolving multiply driven wires, etc.; see @(see
+original design.  This compilation process involves, e.g., flattening the
+module hierarchy, resolving multiply driven wires, etc.; see @(see
 svex-compilation).</li>
 
 <li><b>SystemVerilog/Verilog loading</b>.  SV is integrated with @(see vl) so

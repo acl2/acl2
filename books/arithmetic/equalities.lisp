@@ -498,7 +498,22 @@ involving @('numerator') and @('denominator') terms.</p>"
     (implies (and (<= 0 i)
                   (integerp r))
              (integerp (expt r i)))
-    :rule-classes (:type-prescription :generalize)))
+    :rule-classes (:type-prescription :generalize))
+
+  (in-theory
+   ;; [Jared] Some of these type-prescription rules for expt, above, are
+   ;; duplicates of built-in ACL2 rules:
+   ;;
+   ;;    new rule                                duplicates
+   ;;  ---------------------------------------------------------------------------------
+   ;;    EXPT-TYPE-PRESCRIPTION-RATIONALP        RATIONALP-EXPT-TYPE-PRESCRIPTION
+   ;;    EXPT-TYPE-PRESCRIPTION-NONZERO          EXPT-TYPE-PRESCRIPTION-NON-ZERO-BASE
+   ;;
+   ;; Since the new rules above have :generalize rule-classes as well, I'm going to
+   ;; disable the built-in ACL2 rules.
+   (disable RATIONALP-EXPT-TYPE-PRESCRIPTION
+            EXPT-TYPE-PRESCRIPTION-NON-ZERO-BASE)))
+
 
 
 (defsection basic-expt-normalization

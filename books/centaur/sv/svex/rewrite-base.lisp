@@ -41,9 +41,9 @@
 (defxdoc rewriting
   :parents (expressions)
   :short "We implement a lightweight, mostly unconditional rewriter for
-simplifying expressions in provably sound ways.  This is typically used to
-reduce expressions before processing them with bit-blasting or other reasoning
-tools."
+simplifying @(see svex) expressions in provably sound ways.  This is typically
+used to reduce expressions before processing them with bit-blasting or other
+reasoning tools."
 
   :long "<p>Our rewriter is only <i>mostly</i> unconditional, because there is
 an additional context-determined bitmask that can allow additional
@@ -451,3 +451,35 @@ accumulator.</p>"
                                   (svexlist-count x))))))
       :rule-classes :linear
       :flag svexlist-unify)))
+
+
+
+(defsection rewriter-tracing
+  :parents (rewriting)
+  :short "Optional support for tracing the application of rewrite rules."
+
+  :long "<p>@(call svex-rewrite-trace) is an attachable function (see @(see
+defattach)) for tracing or profiling svex rewrite rules.</p>
+
+<p>This is an advanced feature for SV hackers and is probably only useful if
+you are trying to extend or debug the svex rewriters.  You may need to
+separately load the following book to use these attachments. (It is not
+included by default to avoid trust tags.)</p>
+
+@({
+    (include-book \"centaur/sv/svex/rewrite-trace\" :dir :system)
+})"
+
+  (encapsulate
+    (((svex-rewrite-trace * * * * * *) => *
+      :guard t :formals (rule mask args localp rhs subst)))
+    (local (defun svex-rewrite-trace (rule mask args localp rhs subst)
+             (declare (xargs :guard t))
+             (list rule mask args localp rhs subst))))
+
+  (defun svex-rewrite-trace-default (rule mask args localp rhs subst)
+    (declare (xargs :guard t)
+             (ignorable rule mask args localp rhs subst))
+    nil)
+
+  (defattach svex-rewrite-trace svex-rewrite-trace-default))
