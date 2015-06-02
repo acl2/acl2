@@ -3253,6 +3253,18 @@
                                  equal-of-4vecs 4vec-xfree-under-mask)))))
 
 
+#|
+(trace$
+ #!sv (svex-rewrite-fncall-once
+       :entry (list 'svex-rewrite-fncall-once
+                    (cons fn args)
+                    mask localp)
+       :exit (cons 'svex-rewrite-fncall-once values)
+       :evisc-tuple '(nil 6 5 nil)
+       :hide nil))
+
+|#
+
 (define svex-rewrite-fncall-once ((mask 4vmask-p)
                                   (fn fnsym-p)
                                   (args svexlist-p)
