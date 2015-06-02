@@ -43,9 +43,9 @@
 ;; Note svex-equivs, it's apparently not included anywhere?
 ;; (include-book "svex-equivs")
 (include-book "svex")
-(include-book "svex-rewrite-base")
-(include-book "svex-rewrite")
-(include-book "svex-rewrite-rules")
+(include-book "rewrite-base")
+(include-book "rewrite")
+(include-book "rewrite-rules")
 (include-book "symbolic")
 (include-book "vars")
 (include-book "xeval")

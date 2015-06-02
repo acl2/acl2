@@ -30,7 +30,7 @@
 
 (in-package "SV")
 (include-book "argmasks")
-(include-book "svex-rewrite-rules")
+(include-book "rewrite-rules")
 (include-book "centaur/vl/util/cwtime" :dir :system)
 (include-book "lattice")
 (local (include-book "std/lists/acl2-count" :dir :system))

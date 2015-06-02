@@ -33,7 +33,7 @@
 (include-book "../mods/svmods")
 (include-book "../svex/compose")
 (include-book "../svex/env-ops")
-(include-book "../svex/svex-rewrite")
+(include-book "../svex/rewrite")
 (include-book "centaur/vl/util/warnings" :dir :System)
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
 (local (include-book "centaur/misc/arith-equivs" :dir :system))

@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "svex-rewrite-base")
+(include-book "rewrite-base")
 (include-book "xeval")
 (include-book "4vmask")
 (local (include-book "rsh-concat"))

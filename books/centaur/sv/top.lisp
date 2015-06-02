@@ -64,12 +64,11 @@ a brief comparison, see @(see sv-versus-esim).</p>
 <li><b>Expression language</b>.  At its core, SV is based on @(see svex), a
 language of S-expressions that describe functions over infinite-width,
 four-valued vectors called @(see 4vec)s.  We define a sensible semantics for
-these expressions (@(see svex-eval)) and implement tools like @(see
-svex-rewriting) for simplifying these expressions in provably sound ways.  We
-also provide special support for bit-blasting SV expressions with @(see gl),
-which allows you to process them with efficient @(see acl2::boolean-reasoning)
-tools like @(see acl2::aignet), @(see acl2::satlink), @(see acl2::ubdds),
-etc.</li>
+these expressions (@(see svex-eval)) and implement tools like @(see rewriting)
+for simplifying these expressions in provably sound ways.  We also provide
+special support for bit-blasting SV expressions with @(see gl), which allows
+you to process them with efficient @(see acl2::boolean-reasoning) tools like
+@(see acl2::aignet), @(see acl2::satlink), @(see acl2::ubdds), etc.</li>
 
 <li><b>Modules and compilation</b>.  SV has a simple, @(see svex)-based
 representation for hardware modules.  It also has a compiler that can assemble
@@ -146,7 +145,7 @@ bottleneck.</p>
 reasoning strategies than just bit-blasting.  Bit-blasting is still an
 important tool and is still well-supported by SV; see in particular @(see
 svex-symbolic-evaluation).  However, delaying bit-blasting opens up
-opportunities for vector-level analysis such as @(see svex-rewriting).</p>
+opportunities for vector-level analysis such as @(see rewriting).</p>
 
 
 <h3>Module Representations</h3>

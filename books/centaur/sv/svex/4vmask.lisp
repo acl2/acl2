@@ -107,11 +107,10 @@ as a new, custom type, with its own recognizer, fixing function, etc.  This
 gives us a semantically nicer fixing behavior where the default mask is -1,
 i.e., by default all bits are relevant.</p>
 
-<p>4vmasks are intended to support @(see svex-rewriting) and other
-applications, e.g., composing update functions to reach a fixpoint.  In these
-contexts, knowing that certain bits of an @(see svex) expression are irrelevant
-can allow for additional simplifications.  For instance, in an expression
-like:</p>
+<p>4vmasks are intended to support @(see rewriting) and other applications,
+e.g., composing update functions to reach a fixpoint.  In these contexts,
+knowing that certain bits of an @(see svex) expression are irrelevant can allow
+for additional simplifications.  For instance, in an expression like:</p>
 
 @({
      (zerox 4 (bitand <a> <b>))

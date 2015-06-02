@@ -30,7 +30,7 @@
 
 (in-package "SV")
 (include-book "argmasks")
-(include-book "svex-rewrite")
+(include-book "rewrite")
 (include-book "misc/hons-help" :dir :system)
 (include-book "std/strings/hexify" :dir :system)
 (include-book "centaur/misc/fast-alist-pop" :dir :system)
