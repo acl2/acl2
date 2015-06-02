@@ -806,7 +806,21 @@ off looking at the source code.</p>")
   (defthm loghead-of-n-0
     (equal (loghead n 0) 0))
 
-
+  ;;Anna (not sure whether this file is a good place to put these theorems)
+  (defthm loghead-of-*
+      (equal
+       (loghead n (* (loghead n x) (loghead n y)))
+       (loghead n (* (ifix x) (ifix y)))
+       )
+     :hints (("goal" :in-theory (e/d (loghead ifix nfix)((tau-system)))))
+     )
+  
+  (defthm loghead-of-+
+      (equal
+       (loghead n (+ (loghead n x) (loghead n y)))
+       (loghead n (+ (ifix x) (ifix y)))
+       )
+     :hints (("goal" :in-theory (enable loghead nfix ifix))))
 
   (defthmd loghead-induct
     t

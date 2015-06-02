@@ -3,7 +3,9 @@
 ;;; --------
 
 (defconst *acl2-and-lisp-exports*
-  (union-eq *acl2-exports* *common-lisp-symbols-from-main-lisp-package*))
+  (set-difference-eq ; modified 5/26/2015 by Matt K.
+   (union-eq *acl2-exports* *common-lisp-symbols-from-main-lisp-package*)
+   '(termp)))
 
 (defpkg "TER"
   (set-difference-eq *acl2-and-lisp-exports* '(<)))

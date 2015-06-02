@@ -380,11 +380,13 @@ Technology</a> \(Anna Slobodova, Jared Davis, and Sol Swords\) for
 their suggestions and their wonderful libraries, especially the
 @('bitops') books.</p>
 
+<p>Thanks to Marijn Heule for contributing his SAT solver for model
+validation.</p>
+
 <p>Thanks to J Moore for too many things to count.</p>
 
-<p>Thanks to Marijn Heule and Nathan Wetzler for helpful discussions,
-  especially on proving properties of paging data structures.</p>"
-  )
+<p>Thanks to Nathan Wetzler for helpful discussions, especially on
+  proving properties of paging data structures.</p>" )
 
 (defxdoc TO-DO
   :parents (x86isa)

@@ -1298,49 +1298,153 @@ the way.</li>
 
 
 
-(define vl-$bits-call-resolve-type ((x vl-expr-p)
-                                    (conf vl-svexconf-p))
-  :guard (vl-typearg-syscall-p "$bits" x)
+#|
+
+(trace$
+ #!vl
+ (vl-datatype-$dimensions
+  :entry (list 'vl-datatype-$dimensions
+               (with-local-ps (vl-pp-datatype x)))
+  :exit (list 'vl-datatype-$dimensions value)))
+
+|#
+
+(define vl-datatype-$dimensions ((x vl-datatype-p))
+  :guard (vl-datatype-resolved-p x)
+  :measure (vl-datatype-count x)
+  :ruler-extenders :all
+;; SystemVerilog spec says: $dimensions shall return the following:
+;;   The total number of dimensions in the array (packed and unpacked, static or dynamic)
+;;   1 for the string data type or any other nonarray type that is equivalent to a simple bit vector
+;; type (see 6.11.1)
+;;   0 for any other type
+
+  ;; Needs testing; this is just a plausible guess
+  (+ (len (vl-datatype->udims x))
+     (len (vl-datatype->pdims x))
+     (vl-datatype-case x
+       :vl-coretype ;; is it a vector type?
+       (b* (((vl-coredatatype-info info) (vl-coretypename->info x.name)))
+         (if (or (eq x.name :vl-string)
+                 (and info.size (not (eql info.size 1))))
+             1
+           0))
+       :vl-struct (if x.packedp 1 0)
+       :vl-union (if x.packedp 1 0)
+       :vl-enum 1
+       :vl-usertype (mbe :logic (if x.res
+                                    (vl-datatype-$dimensions x.res)
+                                  0)
+                         :exec (vl-datatype-$dimensions x.res)))))
+
+(define vl-datatype-$unpacked_dimensions ((x vl-datatype-p))
+  :guard (vl-datatype-resolved-p x)
+  :measure (vl-datatype-count x)
+  :ruler-extenders :all
+
+;; SystemVerilog spec says: $unpacked_dimensions shall return the following:
+;;   The total number of unpacked dimensions for an array (static or dynamic)
+;;   0 for any other type
+
+  ;; Needs testing; this is just a plausible guess
+  (+ (len (vl-datatype->udims x))
+     (if (consp (vl-datatype->pdims x))
+         0
+       (vl-datatype-case x
+         :vl-usertype (mbe :logic (if x.res
+                                      (vl-datatype-$unpacked_dimensions x.res)
+                                    0)
+                           :exec (vl-datatype-$unpacked_dimensions x.res))
+         :otherwise 0))))
+       
+           
+
+
+(define vl-datatype-syscall-to-svex ((orig-x vl-expr-p)
+                                     (fn stringp)
+                                     (type vl-datatype-p)
+                                     (conf vl-svexconf-p))
   :returns (mv (warnings vl-warninglist-p)
                (res sv::Svex-p))
-  (b* (((vl-call x) (vl-expr-fix x))
-       ((vl-svexconf conf))
+  (b* (((vl-svexconf conf))
        (warnings nil)
-       ((mv err typearg)
-        (vl-datatype-usertype-resolve x.typearg conf.ss :typeov conf.typeov))
+       ((mv err type)
+        (vl-datatype-usertype-resolve type conf.ss :typeov conf.typeov))
        ((when err)
         (mv (fatal :type :vl-expr-to-svex-fail
                    :msg "Couldn't resolve datatype in ~a0: ~@1"
-                   :args (list x (or err "unsizable datatype")))
+                   :args (list (vl-expr-fix orig-x) err))
             (svex-x)))
-       ((mv err size) (vl-datatype-size typearg))
-       ((when (or err (not size)))
-        (mv (fatal :type :vl-expr-to-svex-fail
-                   :msg "Couldn't size datatype in ~a0: ~@1"
-                   :args (list x (or err "unsizable datatype")))
-            (svex-x))))
-    (mv (ok) (svex-int size)))
+       (fn (string-fix fn)))
+    (cond ((equal fn "$bits")
+           (b* (((mv err size) (vl-datatype-size type))
+                ((when (or err (not size)))
+                 (mv (fatal :type :vl-expr-to-svex-fail
+                            :msg "Couldn't size datatype in ~a0: ~@1"
+                            :args (list (vl-expr-fix orig-x) (or err "unsizable datatype")))
+                     (svex-x))))
+             (mv (ok) (svex-int size))))
+          ((equal fn "$dimensions")
+           (mv nil (svex-int (vl-datatype-$dimensions type))))
+          ((equal fn "$unpacked_dimensions")
+           (mv nil (svex-int (vl-datatype-$unpacked_dimensions type))))
+
+          ((member-equal fn '("$left"
+                              "$right"
+                              "$increment"
+                              "$low"
+                              "$high"
+                              "$size"))
+           ;; Deals with the outermost dimension
+           (b* (((mv err & & dim)
+                 (vl-datatype-remove-dim type))
+                ((when (or err
+                           ;; BOZO some of these might work for unsized dimensions
+                           (vl-packeddimension-case dim :unsized)
+                           (not (vl-range-resolved-p (vl-packeddimension->range dim)))))
+                 (mv (fatal :type :vl-expr-to-svex-fail
+                            :msg "Couldn't resolve outermost dimension for ~a0: ~@1"
+                            :args (list (vl-expr-fix orig-x)
+                                        (or err "unresolved dimension")))
+                     (svex-x)))
+                (dim.range (vl-packeddimension->range dim))
+                ((vl-range dim) dim.range))
+             (cond ((equal fn "$left")  (mv nil (svex-int (vl-resolved->val dim.msb))))
+                   ((equal fn "$right") (mv nil (svex-int (vl-resolved->val dim.lsb))))
+                   ((equal fn "$increment")
+                    (mv nil
+                        (svex-int (if (< (vl-resolved->val dim.msb)
+                                         (vl-resolved->val dim.lsb))
+                                      -1
+                                    1))))
+                   ((equal fn "$low")
+                    (mv nil
+                        (svex-int (if (< (vl-resolved->val dim.msb)
+                                         (vl-resolved->val dim.lsb))
+                                      (vl-resolved->val dim.msb)
+                                    (vl-resolved->val dim.lsb)))))
+                   ((equal fn "$high")
+                    (mv nil
+                        (svex-int (if (< (vl-resolved->val dim.msb)
+                                         (vl-resolved->val dim.lsb))
+                                      (vl-resolved->val dim.lsb)
+                                    (vl-resolved->val dim.msb)))))
+                   (t
+                    (mv nil
+                        (svex-int (vl-range-size dim.range)))))))
+
+          (t (mv (fatal :type :vl-expr-to-svex-fail
+                        :msg "Unrecognized system function: ~a0"
+                        :args (list (vl-expr-fix orig-x)))
+                 (svex-x)))))
+                 
+
+           
+
   ///
-  (defret vars-of-vl-$bits-call-resolve-type
+  (defret vars-of-vl-datatype-syscall-to-svex
     (equal (sv::svex-vars res) nil)))
 
-(define vl-$bits-call-resolve-expr ((x vl-expr-p)
-                                    (conf vl-svexconf-p))
-  :guard (vl-unary-syscall-p "$bits" x)
-  :returns (mv (warnings vl-warninglist-p)
-               (res sv::Svex-p))
-  (b* (((vl-call x) (vl-expr-fix x))
-       ((vl-svexconf conf))
-       ((mv warnings size) (vl-expr-selfsize (car x.args) conf.ss conf.typeov))
-       ((unless size)
-        (mv (fatal :type :vl-expr-to-svex-fail
-                   :msg "Couldn't size expression in ~a0"
-                   :args (list x))
-            (svex-x))))
-    (mv (ok) (svex-int size)))
-  ///
-  (defret vars-of-vl-$bits-call-resolve-expr
-    (equal (sv::svex-vars res) nil)))
 
 
 
@@ -2130,7 +2234,11 @@ the way.</li>
                                         sv::svex-alist-p-when-not-consp
                                         sv::svarlist-addr-p-when-subsetp-equal
                                         acl2::member-when-atom
-                                        cons-equal))))
+                                        cons-equal)))
+             (local (defthm consp-by-len-equal-1
+                      (implies (equal (len x) 1)
+                               (consp x))
+                      :hints(("Goal" :in-theory (enable len))))))
 
 
   (define vl-expr-to-svex-untyped ((x vl-expr-p)
@@ -2491,35 +2599,40 @@ functions can assume all bits of it are good.</p>"
                              :msg "Bad system function name: ~a0"
                              :args (list x))
                       (svex-x)))
-                 ;; ((when (equal simple-name "$clog2"))
-                 ;;  (b* (((unless (eql (len x.args) 1))
-                 ;;        (mv (fatal :type :vl-expr-to-svex-fail
-                 ;;                   :msg "Need 1 argument for $clog2: ~a0"
-                 ;;                   :args (list x))
-                 ;;            (svex-x)))
-                 ;;       ((mv warnings arg-svex ?size)
-                 ;;        (vl-expr-to-svex-selfdet (car x.args) nil conf))
-                 ;;       (arg-svex (sv::svex-reduce-consts arg-svex))
-                 ;;       ((unless (sv::svex-case arg-svex :quote))
-                 ;;        (mv (fatal :type :vl-expr-to-svex-fail
-                 ;;                   :msg "Non-constant argument to $clog2: ~a0"
-                 ;;                   :args (list x))
-                 ;;            (svex-x)))
+
                  ((when (vl-unary-syscall-p "$clog2" x))
-                  (b* (((mv warnings arg-svex ?size)
+                  (b* (((wmv warnings arg-svex ?size)
                         (vl-expr-to-svex-selfdet (car x.args) nil conf)))
                     (mv warnings
                         (sv::svcall sv::clog2 arg-svex))))
 
-                 ((when (vl-typearg-syscall-p "$bits" x))
-                  (vl-$bits-call-resolve-type x conf))
+                 ;; It happens that almost all the system functions we support
+                 ;; basically act on datatypes, and if an expression is given
+                 ;; instead, they run on the type of the expression.
 
-                 ((when (vl-unary-syscall-p "$bits" x))
-                  (vl-$bits-call-resolve-expr x conf)))
-              (mv (fatal :type :vl-expr-to-svex-fail
-                         :msg "Unsupported system call: ~a0"
-                         :args (list x))
-                  (svex-x)))
+                 ((when (and (atom x.args)
+                             x.typearg))
+                  (vl-datatype-syscall-to-svex x simple-name x.typearg conf))
+
+                 ((unless (and (not x.typearg)
+                               (eql (len x.args) 1)))
+                  (mv (fatal :type :vl-expr-to-svex-fail
+                             :msg "Unsupported system call: ~a0"
+                             :args (list x))
+                      (svex-x)))
+
+                 ;; Resolve the expression to its type.
+                 ((wmv warnings ?arg-svex type ?size)
+                  (vl-expr-to-svex-untyped (car x.args) conf))
+
+                 ((unless type)
+                  ;; Already warned
+                  (mv warnings (svex-x)))
+
+                 ((wmv warnings svex)
+                  (vl-datatype-syscall-to-svex x simple-name type conf)))
+              (mv warnings svex))
+
           (b* (((wmv warnings svex &)
                 (vl-funcall-to-svex x conf)))
             (mv warnings svex)))

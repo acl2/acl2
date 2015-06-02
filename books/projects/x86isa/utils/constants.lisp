@@ -630,7 +630,8 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:p                7  1)
     (:avl              8  1)
     (:l                9  1)
-    (:g               10  1)
+    (:d               10  1)
+    (:g               11  1)
     ))
 
 (defthm code-segment-descriptor-attributes-layout-ok
