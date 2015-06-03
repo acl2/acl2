@@ -212,8 +212,8 @@
                 (fix x))))
 
 (defthm rationalp-mod
-  (implies (rationalp x)
-           (rationalp (mod x y)))
+  (implies (real/rationalp x)
+           (real/rationalp (mod x y)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm integerp-mod
@@ -236,8 +236,8 @@
 
 (defthm mod-bnd-1
   (implies (and (case-split (< 0 n))
-                (case-split (not (complex-rationalp m)))
-                (case-split (not (complex-rationalp n))))
+                (case-split (not (complex/complex-rationalp m)))
+                (case-split (not (complex/complex-rationalp n))))
            (< (mod m n) n))
   :rule-classes :linear)
 
