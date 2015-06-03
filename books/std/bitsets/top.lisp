@@ -83,15 +83,15 @@ see @(see reasoning).</p>
 
 <h5>Optional Optimizations</h5>
 
-<p>CCL only, plain bitsets only: you may be able to substantially speed up the
-@(see bitset-members) operation for large sets by loading an optimized, raw
-Lisp definition:</p>
+<p>You may be able to substantially speed up the @(see bitset-members)
+operation for large sets, perhaps especially on CCL, by loading an optimized,
+raw Lisp definition:</p>
 
 @({
     (include-book \"std/bitsets/bitsets-opt\" :dir :system)
 })
 
-<p>See @(see ttag-bitset-members) for details.</p>")
+<p>See @(see ttag-bitset-members) and @(see bignum-extract) for details.</p>")
 
 
 (defxdoc utilities
