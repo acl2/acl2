@@ -30,6 +30,7 @@
 
 (in-package "BITSETS")
 (include-book "bits-between")
+(include-book "bignum-extract")
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "centaur/misc/witness-cp" :dir :system))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
@@ -194,9 +195,9 @@ to walk up to this bound and collect all @('i') such that @('(logbitp i
 x)').</p>
 
 <p>The definition below uses @(see bits-between) to do just this.  However,
-note that when the @('bitsets-opt') book is loaded (which requires a ttag), a
-more efficient implementation is used; see @(see ttag-bitset-members) for
-details.</p>"
+note that when the @('bignum-extract-opt') book is loaded (which requires a
+ttag), a more efficient implementation is used; see @(see ttag-bitset-members)
+and @(see bignum-extract) for details.</p>"
 
   (mbe :logic
        (let ((x (nfix x)))
@@ -273,57 +274,8 @@ details.</p>"
            (posp x)))))
 
 
-
-(define bignum-extract                          
-  :parents (ttag-bitset-members)
-  :short "Extract a particular 32-bit slice of an integer."
-  ((x integerp "Integer to extract from")
-   (slice natp "Which 32 bit slice to extract"))
-  :returns
-  (extracted natp :rule-classes :type-prescription) 
-  :long "<p>Logically, @(call bignum-extract) is essentially:</p>
-
-@({
-   (logand (ash x (* -32 slice)) (1- (expt 2 32)))
-})
-
-<p>What does this do?  Imagine partitioning the integer @('x') into a list of
-32-bit slices.  Say that the least-significant 32 bits are the 0th slice, and
-so on.  The @('bignum-extract') function is just extracting the @('slice')th
-slice of @('x').</p>
-
-<p>The logical definition of @('bignum-extract') is not very efficient; when
-@('x') is a bignum, the @('(ash x (* -32 slice))') term will generally require
-us to create a new bignum.  In the optional @('bitsets-opt') book, we develop
-an under-the-hood replacement for 64-bit CCL that takes advantage of the
-underlying representation of bignums, and essentially implements this function
-into an array access.</p>"
-
-  :verify-guards nil
-  (mbe :logic (let ((x     (ifix x))
-                    (slice (nfix slice)))
-                (logand (1- (expt 2 32))
-                        (ash x (* -32 slice))))
-       :exec (the (unsigned-byte 32)
-                  (logand (the (unsigned-byte 32) (1- (expt 2 32)))
-                          (ash x (* -32 slice)))))
-  ///
-  (defthm unsigned-byte-p-of-bignum-extract
-    (unsigned-byte-p 32 (bignum-extract x slice))
-    :hints(("Goal"
-            :in-theory (disable bitops::unsigned-byte-p-of-logand-1)
-            :use ((:instance bitops::unsigned-byte-p-of-logand-1
-                   (n 32)
-                   (x (1- (expt 2 32)))
-                   (y (ash (ifix x) (* -32 (nfix slice)))))))))
-
-  (make-event
-   `(defthm upper-bound-of-bignum-extract
-      (< (bignum-extract x slice) ,(expt 2 32))
-      :rule-classes :linear
-      :hints(("Goal" :use ((:instance unsigned-byte-p-of-bignum-extract))))))
-
-  (verify-guards bignum-extract)
+(defsection bits-between-of-bignum-extract
+  (local (in-theory (enable bignum-extract)))
 
   (local (defthm l0
            (implies (and (natp slice)
@@ -353,7 +305,6 @@ into an array access.</p>"
                             (bits-between-of-increment-right-index
                              acl2::right-shift-to-logtail))))))
 
-
 (define ttag-bitset-members ((x natp))
   :parents (bitset-members)
   :short "Notes about the optimization of @(see bitset-members)."
@@ -379,15 +330,15 @@ bignum in a particularly efficient way on 64-bit CCL.</li>
 
 @({
  (include-book \"bitsets\")
- (include-book \"../aig/random-sim\")
- (include-book \"../misc/memory-mgmt-raw\")
- (include-book \"tools/defconsts\" :dir :system)
+ (include-book \"centaur/aig/random-sim\" :dir :system)
+ (include-book \"centaur/misc/memory-mgmt\" :dir :system)
+ (include-book \"std/util/defconsts\" :dir :system)
 
- (set-max-mem ;; newline to fool dependency scanner
-   (* 30 (expt 2 30)))
+  (acl2::set-max-mem ;; newline to fool dependency scanner
+    (* 30 (expt 2 30)))
 
- (defconsts (*random-data* state)
-   (random-list 100000 (ash 1 5000) state))
+  (acl2::defconsts (*random-data* state)
+    (acl2::random-list 100000 (ash 1 5000) state))
 
  (defund bitset-members-list (x)
    (if (atom x)
@@ -422,18 +373,18 @@ bignum in a particularly efficient way on 64-bit CCL.</li>
   nil)
 })
 
-<p>And the results (on fv-1):</p>
+<p>And the results (on compute-1-3):</p>
 
 @({
- Unoptimized Original: 17.11 sec, 4,001,845,424 bytes
- Unoptimized TTAG: 14.20 sec, 9,118,513,584 bytes
- Optimized Original: 3.57 sec, 4,001,845,424 bytes
- Optimized TTAG: 3.57 sec, 4,001,845,424 bytes
+     Unoptimized Original: 12.80 sec, 4,001,843,488 bytes
+     Unoptimized TTAG: 8.27 sec, 9,118,511,648 bytes
+     Optimized Original: 4.05 sec, 4,001,843,488 bytes
+     Optimized TTAG: 4.01 sec, 4,001,843,488 bytes
 })"
 
   :prepwork
   ((local (in-theory (disable acl2::associativity-of-append)))
-   
+
    (local (defthm rassoc-append
             (equal (append x (append y z))
                    (append (append x y) z))))
@@ -560,7 +511,7 @@ probably avoid calling this in a loop if possible; instead consider functions
 like @(see bitset-union).</p>"
   :inline t
   :split-types t
-  (the unsigned-byte 
+  (the unsigned-byte
        (logior (the unsigned-byte (ash 1 (lnfix a)))
                (the unsigned-byte (lnfix x))))
   ///
@@ -920,7 +871,7 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
              (implies (and (natp a) (natp b))
                       (not (iff (set::in k (bitset-members a))
                                 (set::in k (bitset-members b))))))
-     :restriction 
+     :restriction
      (let ((bitset-fns (table-alist 'bitset-fns world)))
                     (or (and (consp a)
                              (assoc (car a) bitset-fns))
@@ -934,7 +885,7 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
      :expr (iff (set::in k (bitset-members a))
                 (set::in k (bitset-members b)))
      :vars (k)
-     :restriction 
+     :restriction
      (let ((bitset-fns (table-alist 'bitset-fns world)))
                     (or (and (consp a)
                              (assoc (car a) bitset-fns))
@@ -1301,4 +1252,3 @@ will require N calls of @(see bitset-insert).</p>"
 
   (defmacro bitset-list (&rest args)
     (bitset-list-macro args)))
-
