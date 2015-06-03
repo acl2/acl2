@@ -29,8 +29,8 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "svex-argmasks")
-(include-book "svex-rewrite")
+(include-book "argmasks")
+(include-book "rewrite")
 (include-book "misc/hons-help" :dir :system)
 (include-book "std/strings/hexify" :dir :system)
 (include-book "centaur/misc/fast-alist-pop" :dir :system)

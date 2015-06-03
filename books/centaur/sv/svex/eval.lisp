@@ -46,11 +46,6 @@ values) to its variables.")
 
 (local (xdoc::set-default-parents evaluation))
 
-(fty::deflist 4veclist
-  :elt-type 4vec
-  :true-listp t
-  :parents (4vec))
-
 (define 4veclist-nth-safe ((n natp) (x 4veclist-p))
   :parents (4veclist)
   :short "Like @(see nth) but, with proper @(see fty-discipline) for @(see
@@ -73,10 +68,17 @@ values) to its variables.")
              (equal (4veclist-nth-safe n (cons a b))
                     (if (zp n)
                         (4vec-fix a)
-                      (4veclist-nth-safe (1- n) b))))))
+                      (4veclist-nth-safe (1- n) b)))))
 
+  (defthm len-of-4veclist-fix
+    (equal (len (4veclist-fix x))
+           (len x)))
 
-(fty::defalist svex-env
+  (defthm 4veclist-nth-safe-out-of-bounds
+    (implies (<= (len x) (nfix n))
+             (equal (4veclist-nth-safe n x) (4vec-x)))))
+
+(defalist svex-env
   :key-type svar
   :val-type 4vec
   :true-listp t
@@ -384,6 +386,12 @@ svex-eval).</p>"
   (local (in-theory (enable svex-eval
                             svexlist-eval)))
 
+  (defthm svexlist-eval-when-atom-cheap
+    (implies (atom x)
+             (equal (svexlist-eval x env) nil))
+    :hints(("Goal" :in-theory (enable svexlist-eval)))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
   (defthm svexlist-eval-nil
     (equal (svexlist-eval nil env)
            nil))
@@ -401,6 +409,16 @@ svex-eval).</p>"
            (cons (svex-eval a env)
                  (svexlist-eval b env))))
 
+  (defthm consp-of-svexlist-eval
+    (equal (consp (svexlist-eval x env))
+           (consp x))
+    :hints(("Goal" :expand (svexlist-eval x env))))
+
+  (defthm svexlist-eval-under-iff
+    (iff (svexlist-eval x env)
+         (consp x))
+    :hints(("Goal" :expand (svexlist-eval x env))))
+
   (defthm len-of-svexlist-eval
     (equal (len (svexlist-eval x env))
            (len x)))
@@ -408,7 +426,14 @@ svex-eval).</p>"
   (defthm svexlist-eval-of-append
     (equal (svexlist-eval (append a b) env)
            (append (svexlist-eval a env)
-                   (svexlist-eval b env)))))
+                   (svexlist-eval b env))))
+
+  (defthm svex-eval-of-nth
+    (4vec-equiv (nth n (svexlist-eval x env))
+                (svex-eval (nth n x) env))
+    :hints(("Goal" :in-theory (enable svexlist-eval nth))))
+
+  )
 
 (defsection svex-eval-basics
   :parents (svex-eval)

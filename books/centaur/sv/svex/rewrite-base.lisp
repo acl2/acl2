@@ -38,17 +38,21 @@
          (setp (list x))
          :hints(("Goal" :in-theory (enable setp)))))
 
-(defxdoc svex-rewriting
-  :parents (sv)
-  :short "Simplification of SVEX expressions by mostly-unconditional rewriting."
-  :long "<p>Only <i>mostly</i> unconditional, because there is an additional
-context-determined bitmask that can allow additional simplifications; see @(see
-4vmask).  For example, suppose we are in a context where only the bottom 4 bits
-are relevant (the bitmask is 15, say) and we see the expression:</p>
+(defxdoc rewriting
+  :parents (expressions)
+  :short "We implement a lightweight, mostly unconditional rewriter for
+simplifying @(see svex) expressions in provably sound ways.  This is typically
+used to reduce expressions before processing them with bit-blasting or other
+reasoning tools."
+
+  :long "<p>Our rewriter is only <i>mostly</i> unconditional, because there is
+an additional context-determined bitmask that can allow additional
+simplifications. For example, suppose we are in a context where only the bottom
+4 bits are relevant (the bitmask is 15, say) and we see the expression:</p>
 
 @({ (concat 5 a b) })
 
-<p>This can then be simplified to just @('a').</p>
+<p>This can then be simplified to just @('a'); see @(see 4vmask).</p>
 
 <h5>Interface</h5>
 <ul>
@@ -62,21 +66,28 @@ applies @('-rewrite-top') until it reaches a fixpoint (or an iteration limit
 runs out).</li>
 </ul>")
 
-(defxdoc svex-rewrite-base.lisp :parents (svex-rewriting))
-(local (xdoc::set-default-parents svex-rewrite-base.lisp))
-
+(local (xdoc::set-default-parents rewriting))
 
 (defines svex-subst
   :verify-guards nil
-  (define svex-subst ((pat svex-p) (al svex-alist-p))
-    :returns (x svex-p)
+  (define svex-subst
+    :short "Basic substitution operation for @(see svex)es.  Not memoized."
+    ((pat svex-p       "Pattern to substitute into.")
+     (al  svex-alist-p "Substitution: binds variables to replacement @(see svex)es.
+                        Need not be a fast alist."))
+    :returns (x svex-p "Rewritten pattern with variables replaced by their bindings.")
     :measure (svex-count pat)
+    :long "<p>Any variables that aren't bound get replaced by all Xes.</p>
+
+<p>We expect to use this function when applying rewrite rules, which typically
+have only a few variables, so we don't use a fast alist here.</p>
+
+<p>See also @(see svex-subst-memo) for a memoized version.</p>"
     (svex-case pat
       :var (or (svex-lookup pat.name al)
                (svex-quote (4vec-x)))
-      :quote (mbe :logic (svex-fix pat) :exec pat)
-      :call (svex-call pat.fn
-                       (svexlist-subst pat.args al))))
+      :quote (svex-fix pat)
+      :call (svex-call pat.fn (svexlist-subst pat.args al))))
   (define svexlist-subst ((pat svexlist-p) (al svex-alist-p))
     :returns (x svexlist-p)
     :measure (svexlist-count pat)
@@ -87,7 +98,7 @@ runs out).</li>
   ///
   (verify-guards svex-subst)
 
-  (fty::deffixequiv-mutual svex-subst
+  (deffixequiv-mutual svex-subst
     :hints (("goal" :expand ((svexlist-fix pat)))))
 
   (defthm-svex-subst-flag
@@ -122,7 +133,12 @@ runs out).</li>
 
 (defines svex-subst-memo
   :verify-guards nil
-  (define svex-subst-memo ((pat svex-p) (al svex-alist-p))
+  (define svex-subst-memo
+    :parents (svex-subst)
+    :short "Substitution for @(see svex)es, identical to @(see svex-subst),
+except that we memoize the results."
+    ((pat svex-p)
+     (al  svex-alist-p "Need not be fast; we still use slow lookups."))
     :returns (x (equal x (svex-subst pat al))
                 :hints ((and stable-under-simplificationp
                              '(:expand ((svex-subst pat al))))))
@@ -130,9 +146,8 @@ runs out).</li>
     (svex-case pat
       :var (or (svex-lookup pat.name al)
                (svex-quote (4vec-x)))
-      :quote (mbe :logic (svex-fix pat) :exec pat)
-      :call (svex-call pat.fn
-                       (svexlist-subst-memo pat.args al))))
+      :quote (svex-fix pat)
+      :call (svex-call pat.fn (svexlist-subst-memo pat.args al))))
   (define svexlist-subst-memo ((pat svexlist-p) (al svex-alist-p))
     :returns (x (equal x (svexlist-subst pat al))
                 :hints ((and stable-under-simplificationp
@@ -144,54 +159,28 @@ runs out).</li>
             (svexlist-subst-memo (cdr pat) al))))
   ///
   (verify-guards svex-subst-memo)
-
-  (memoize 'svex-subst-memo :condition '(eq (svex-kind pat) :call))
-
-  (fty::deffixequiv-mutual svex-subst
-    :hints (("goal" :expand ((svexlist-fix pat)))))
-
-  (defthm-svex-subst-flag
-    (defthm svex-eval-of-svex-subst
-      (equal (svex-eval (svex-subst pat al) env)
-             (svex-eval pat (svex-alist-eval al env)))
-      :hints ('(:expand ((svex-subst pat al)
-                         (:free (al) (svex-eval pat al))
-                         (svex-eval ''(-1 . 0) env)
-                         (:free (f a) (svex-eval (svex-call f a) env)))))
-      :flag svex-subst)
-    (defthm svexlist-eval-of-svexlist-subst
-      (equal (svexlist-eval (svexlist-subst pat al) env)
-             (svexlist-eval pat (svex-alist-eval al env)))
-      :hints ('(:expand ((svexlist-subst pat al)
-                         (:free (al) (svexlist-eval pat al))
-                         (:free (a b) (svexlist-eval (cons a b) env)))))
-      :flag svexlist-subst))
-
-  (defthm-svex-subst-flag
-    (defthm vars-of-svex-subst
-      (implies (not (member v (svex-alist-vars al)))
-               (not (member v (svex-vars (svex-subst pat al)))))
-      :flag svex-subst
-      :hints ('(:expand ((svex-subst pat al)))))
-    (defthm vars-of-svexlist-subst
-      (implies (not (member v (svex-alist-vars al)))
-               (not (member v (svexlist-vars (svexlist-subst pat al)))))
-      :flag svexlist-subst
-      :hints ('(:expand ((svexlist-subst pat al)))))))
-
+  (memoize 'svex-subst-memo :condition '(eq (svex-kind pat) :call)))
 
 
 
 
 (defines svex-unify
   :verify-guards nil
-  (define svex-unify ((pat svex-p) (x svex-p) (al svex-alist-p))
+  (define svex-unify
+    :short "One-way unification for @(see svex)es."
+    ((pat svex-p       "Pattern to match.")
+     (x   svex-p       "Target expression to match against.")
+     (al  svex-alist-p "Accumulator for bindings so far.  Slow alist."))
+    :returns
+    (mv (successp booleanp :rule-classes :type-prescription
+                  :hints ('(:expand ((svex-unify pat x al)))))
+        (al1 svex-alist-p "Updated alist."))
+    :long "<p>We expect to use this function when applying rewrite rules, which
+typically have only a few variables, so we don't use a fast alist for the
+accumulator.</p>"
     :measure (svex-count pat)
-    :returns (mv (successp booleanp :rule-classes :type-prescription
-                           :hints ('(:expand ((svex-unify pat x al)))))
-                 (al1 svex-alist-p))
-    (b* ((x (mbe :logic (svex-fix x) :exec x))
-         (al (mbe :logic (svex-alist-fix al) :exec al)))
+    (b* ((x  (svex-fix x))
+         (al (svex-alist-fix al)))
       (svex-case pat
         :var (b* ((look (svex-lookup pat.name al))
                   ((when look) (mv (equal look x) al)))
@@ -205,7 +194,9 @@ runs out).</li>
                   (svexlist-unify pat.args (svex-call->args x) al)
                 (mv nil al)))))
 
-  (define svexlist-unify ((pat svexlist-p) (x svexlist-p) (al svex-alist-p))
+  (define svexlist-unify ((pat svexlist-p)
+                          (x   svexlist-p)
+                          (al  svex-alist-p))
     :returns (mv (successp booleanp :rule-classes :type-prescription)
                  (al1 svex-alist-p))
     :measure (svexlist-count pat)
@@ -218,7 +209,7 @@ runs out).</li>
   ///
   (verify-guards svex-unify)
 
-  (fty::deffixequiv-mutual svex-unify
+  (deffixequiv-mutual svex-unify
     :hints (("goal" :expand ((svexlist-fix pat)
                              (svexlist-fix x)))))
 
@@ -255,8 +246,7 @@ runs out).</li>
   (defthm svex-vars-bound-of-svexlist-unify-preserved
     (implies (subsetp vars (svex-alist-keys al))
              (subsetp vars
-                      (svex-alist-keys
-                       (mv-nth 1 (svexlist-unify pat y al)))))
+                      (svex-alist-keys (mv-nth 1 (svexlist-unify pat y al)))))
     :hints ((acl2::set-reasoning)))
 
   ;; (defthm-svex-vars-flag
@@ -461,3 +451,35 @@ runs out).</li>
                                   (svexlist-count x))))))
       :rule-classes :linear
       :flag svexlist-unify)))
+
+
+
+(defsection rewriter-tracing
+  :parents (rewriting)
+  :short "Optional support for tracing the application of rewrite rules."
+
+  :long "<p>@(call svex-rewrite-trace) is an attachable function (see @(see
+defattach)) for tracing or profiling svex rewrite rules.</p>
+
+<p>This is an advanced feature for SV hackers and is probably only useful if
+you are trying to extend or debug the svex rewriters.  You may need to
+separately load the following book to use these attachments. (It is not
+included by default to avoid trust tags.)</p>
+
+@({
+    (include-book \"centaur/sv/svex/rewrite-trace\" :dir :system)
+})"
+
+  (encapsulate
+    (((svex-rewrite-trace * * * * * *) => *
+      :guard t :formals (rule mask args localp rhs subst)))
+    (local (defun svex-rewrite-trace (rule mask args localp rhs subst)
+             (declare (xargs :guard t))
+             (list rule mask args localp rhs subst))))
+
+  (defun svex-rewrite-trace-default (rule mask args localp rhs subst)
+    (declare (xargs :guard t)
+             (ignorable rule mask args localp rhs subst))
+    nil)
+
+  (defattach svex-rewrite-trace svex-rewrite-trace-default))

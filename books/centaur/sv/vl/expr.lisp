@@ -31,7 +31,7 @@
 (in-package "VL")
 (include-book "../mods/svmods")
 (include-book "../svex/lattice")
-(include-book "../svex/svex-rewrite-base")
+(include-book "../svex/rewrite-base")
 (include-book "centaur/vl/mlib/hid-tools" :dir :system)
 (include-book "centaur/vl/mlib/selfsize" :dir :system)
 (include-book "centaur/vl/mlib/typedecide" :dir :system)

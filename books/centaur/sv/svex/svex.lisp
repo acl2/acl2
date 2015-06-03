@@ -31,7 +31,6 @@
 (in-package "SV")
 (include-book "4vec-base")
 (include-book "std/lists/repeat" :dir :system)
-(include-book "centaur/fty/deftypes" :dir :system)
 (include-book "centaur/misc/arith-equiv-defs" :dir :system)
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
@@ -96,7 +95,7 @@ expression evaluation is concerned, the variable named \"v\" with delay 5 is
 completely distinct from \"v\" with delay 4.  Think of them as you would
 indexed variables like @($v_5$) versus @($v_4$) in some mathematics.</p>"))
 
-(fty::deflist svarlist
+(deflist svarlist
   :elt-type svar
   :true-listp t
   :elementp-of-nil nil
@@ -172,7 +171,7 @@ See @(see svex-functions) for details.</p>")
 (defsection fnsym-equiv
   :parents (fnsym)
   :short "Equivalence relation for @(see fnsym)s."
-  (fty::deffixtype fnsym
+  (deffixtype fnsym
     :pred fnsym-p
     :fix fnsym-fix
     :equiv fnsym-equiv
@@ -181,7 +180,7 @@ See @(see svex-functions) for details.</p>")
     :equal eq))
 
 
-(fty::deftypes svex
+(deftypes svex
   :parents (expressions)
   :short "Our core expression data type.  A <b>S</b>ymbolic <b>V</b>ector
 <b>Ex</b>pression may be either a constant @(see 4vec), a <see topic='@(url
@@ -201,7 +200,7 @@ typically be @(see memoize)d in some way or another.</p>"
                       (implies (not (eq x :var))
                                (not (svar-p (cons x y))))
                       :hints(("Goal" :in-theory (enable fnsym-p svar-p))))))
-  (fty::defflexsum svex
+  (defflexsum svex
     (:var
      :short "A variable, which represents a @(see 4vec)."
      :cond (svar-p x)
@@ -225,7 +224,7 @@ typically be @(see memoize)d in some way or another.</p>"
               (args :acc-body (cdr x)
                     :type svexlist))
      :ctor-body (hons fn args)))
-  (fty::deflist svexlist
+  (deflist svexlist
     :elt-type svex
     :true-listp t))
 
@@ -275,9 +274,14 @@ typically be @(see memoize)d in some way or another.</p>"
   :hints (("goal" :cases ((consp args))))
   :rule-classes :linear)
 
+(defcong svexlist-equiv svex-equiv (nth n x) 2
+  :hints(("Goal" :in-theory (enable svexlist-equiv svex-equiv svexlist-fix)
+          :induct (svex-equiv (nth n x) (nth n x-equiv))
+          :expand ((svexlist-fix x) (svexlist-fix x-equiv)))))
+
 
 (define svex-nth ((n natp) (x svexlist-p))
-  :parents (svexlist-p)
+  :parents (svexlist)
   :returns (expr svex-p)
   :short "@(see nth) for @(see svexlist)s, with proper @(see fty-discipline)."
   :enabled t
@@ -302,11 +306,11 @@ typically be @(see memoize)d in some way or another.</p>"
                        (replicate (- n (len x)) (svex-quote (4vec-x)))
                        (list v)))))
 
-(fty::defalist svex-alist
+(defalist svex-alist
   :key-type svar
   :val-type svex
   :true-listp t
-  :parents (expressions)
+  :parents (svex)
   :short "Alist binding variables (@(see svar)s) to expressions @(see svex)es.")
 
 
@@ -320,7 +324,7 @@ typically be @(see memoize)d in some way or another.</p>"
                     (svex-alist-fix a))
        :exec (cons (cons var v) a))
   ///
-  (fty::deffixequiv svex-acons))
+  (deffixequiv svex-acons))
 
 
 (define svex-fastacons ((var svar-p) (v svex-p) (a svex-alist-p))
@@ -342,7 +346,7 @@ typically be @(see memoize)d in some way or another.</p>"
   (mbe :logic (cdr (hons-assoc-equal (svar-fix var) (svex-alist-fix a)))
        :exec (cdr (assoc-equal var a)))
   ///
-  (fty::deffixequiv svex-lookup)
+  (deffixequiv svex-lookup)
 
   (defthm svex-lookup-of-nil
     (equal (svex-lookup v nil) nil))
@@ -378,7 +382,7 @@ typically be @(see memoize)d in some way or another.</p>"
               (svex-alist-keys (cdr x)))
       (svex-alist-keys (cdr x))))
   ///
-  (fty::deffixequiv svex-alist-keys
+  (deffixequiv svex-alist-keys
     :hints (("goal" :expand ((svex-alist-fix x)))))
 
   (defthm member-svex-alist-keys
@@ -405,7 +409,7 @@ typically be @(see memoize)d in some way or another.</p>"
               (svex-alist-vals (cdr x)))
       (svex-alist-vals (cdr x))))
   ///
-  (fty::deffixequiv svex-alist-vals
+  (deffixequiv svex-alist-vals
     :hints (("goal" :expand ((svex-alist-fix x)))))
 
   (defthm member-svex-alist-vals-when-svex-lookup

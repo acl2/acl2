@@ -1,6 +1,7 @@
 (in-package "ACL2")
 
 (include-book "instantiate")
+(include-book "autohide")
 
 (defxdoc clause-processor-tools
   :parents (clause-processor proof-automation)

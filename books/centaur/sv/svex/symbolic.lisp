@@ -31,7 +31,7 @@
 (in-package "SV")
 (include-book "eval")
 (include-book "aig-arith")
-(include-book "svex-rewrite")
+(include-book "rewrite")
 (include-book "centaur/gl/gl-mbe" :dir :system)
 (include-book "centaur/gl/def-gl-rewrite" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))

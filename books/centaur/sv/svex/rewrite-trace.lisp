@@ -29,24 +29,41 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "4vec")
-(include-book "4vmask")
-(include-book "aig-arith")
-;; Not bits -- it's just lemmas about b-and/b-not/etc., should be local
-(include-book "compose")
-(include-book "env-ops")
-(include-book "eval")
-(include-book "lattice")
-;; not rsh-concat, it should be local
-;; (include-book "rsh-concat")
-(include-book "argmasks")
-;; Note svex-equivs, it's apparently not included anywhere?
-;; (include-book "svex-equivs")
-(include-book "svex")
 (include-book "rewrite-base")
-(include-book "rewrite")
-(include-book "rewrite-rules")
-(include-book "rewrite-trace")
-(include-book "symbolic")
-(include-book "vars")
-(include-book "xeval")
+(include-book "centaur/misc/sneaky-load" :dir :system)
+
+;; We make this a separate book since sneaky-load requires ttags.
+
+(define svex-rewrite-trace-rule (rule mask args localp rhs subst)
+  :parents (rewriter-tracing)
+  :short "Trace individual rewrite rules, printing to @(see cw)."
+  :long "@({ (defattach svex-rewrite-trace svex-rewrite-trace-rule) })"
+  :ignore-ok t
+  :irrelevant-formals-ok t
+  (cw "Rule: ~x0~%" rule))
+
+(define svex-sneaky-prof-mutator ((val consp) (name-localp consp))
+  :parents (svex-rewrite-trace-profile)
+  :short "<p>A @(see acl2::sneaky) mutator for profiling.</p>"
+  (b* ((val (car val))
+       ((mv nonloc loc) (if (consp val) (mv (car val) (cdr val)) (mv nil nil))))
+    (list (cons (car name-localp)
+                (if (cdr name-localp)
+                    (cons nonloc (+ 1 (fix loc)))
+                  (cons (+ 1 (fix nonloc)) loc))))))
+
+(define svex-rewrite-trace-profile (rule mask args localp rhs subst)
+  :parents (rewriter-tracing)
+  :short "Profile the number of applications of rewrite rules."
+  :long "<p>This is incredibly primitive; you can surely do better if you spend
+any time to improve it.</p>
+
+@({
+     (defattach svex-rewrite-trace svex-rewrite-trace-profile)
+     ;; do rewriting
+     (sneaky-alist state)  ;; see results
+})"
+
+  :ignore-ok t
+  :irrelevant-formals-ok t
+  (acl2::sneaky-mutate 'svex-sneaky-prof-mutator (list rule) (cons rule localp)))
