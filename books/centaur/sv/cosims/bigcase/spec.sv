@@ -28,7 +28,7 @@
 //
 // Original author: Sol Swords <sswords@centtech.com>
 
-parameter nbits=5; // 11
+parameter nbits= 11;
 
 module encdec (input [nbits-1:0] in,
 	       output logic [nbits-1:0] out);

@@ -5901,115 +5901,76 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                     (wire wireidx)))
              :do-not-induct t))))
 
-(define moddb-path->wireidx ((path path-p)
-                             (modidx natp)
-                             (moddb moddb-ok))
+(define moddb-path->wireidx/decl ((path path-p)
+                                  (modidx natp)
+                                  (moddb moddb-ok))
+  :prepwork ((local (in-theory (disable acl2::nth-when-too-large-cheap
+                                        len acl2::nth-when-atom))))
   :parents (moddb)
-  :short "Convert a wire path relative to a module into a wire index."
+  :short "Convert a wire path relative to a module into a wire index and get
+its wire structure.  The path may have one extra numeric component which is
+checked to see if it is a valid bitselect and returned as a separate value."
   :guard (< modidx (moddb->nmods moddb))
-  :returns (idx (iff (natp idx) idx))
+  :returns (mv (errmsg)
+               (wire (implies (not errmsg) (wire-p wire)))
+               (idx (implies (not errmsg) (natp idx)) :rule-classes :type-prescription)
+               (bitsel acl2::maybe-natp :rule-classes :type-prescription))
   :verify-guards nil
   :measure (path-count path)
   (path-case path
     :wire
-    (stobj-let ((elab-mod (moddb->modsi modidx moddb)))
-               (idx)
-               (elab-mod-wirename->idx path.name elab-mod)
-               idx)
-    :scope
-    (b* (((stobj-get offset submod err)
+    (b* (((stobj-get err idx wire)
           ((elab-mod (moddb->modsi modidx moddb)))
-          (b* ((instidx (elab-mod-instname->idx path.namespace elab-mod))
-               ((unless instidx) (mv nil nil (msg "missing: ~s0" path.namespace))))
-            (mv (elab-mod->inst-wireoffset instidx elab-mod)
-                (elab-mod->inst-modidx instidx elab-mod)
-                nil)))
-         ((when err) (raise "~@0" err))
-         (rest (moddb-path->wireidx path.subpath submod moddb)))
-      (and rest (+ offset rest))))
-  ///
-  (defthm type-of-moddb-path->wireidx
-    (or (natp (moddb-path->wireidx path modidx moddb))
-        (not (moddb-path->wireidx path modidx moddb)))
-    :hints (("goal" :use return-type-of-moddb-modname-get-index
-             :in-theory (disable return-type-of-moddb-modname-get-index)))
-    :rule-classes :type-prescription)
-
-  (local (defthm elab-mod$a-instname->idx-bound
-           (implies (elab-mod$a-instname->idx name elab-mod$a)
-                    (< (elab-mod$a-instname->idx name elab-mod$a)
-                       (elab-mod$a-ninsts elab-mod$a)))
-           :hints(("Goal" :in-theory (enable elab-mod$a-ninsts
-                                             elab-mod$a-instname->idx)))
-           :rule-classes :linear))
-
-  (verify-guards moddb-path->wireidx)
-
-
-  (deffixequiv moddb-path->wireidx)
-
-  (local (defthm rem-dups-of-wirelist->names
-           (equal (remove-later-duplicates (wirelist->names x))
-                  (wirelist->names (wirelist-rem-dups x)))
-           :hints(("Goal" :in-theory (enable wirelist->names wirelist-rem-dups
-                                             remove-later-duplicates)))))
-  (local (in-theory (disable WIRELIST->NAMES-OF-REMOVE-DUPLICATE-NAMES)))
-
-  (defthm moddb-path->wireidx-bound
-    (let ((res (moddb-path->wireidx path modidx moddb)))
-      (implies (and (moddb-ok moddb)
-                    (< (nfix modidx) (nfix (nth *moddb->nmods* moddb)))
-                    res)
-               (< res (moddb-mod-totalwires modidx moddb))))
-    :hints (("goal" :induct t :do-not '(preprocess)
-             :expand ((:with moddb-mod-totalwires-in-terms-of-wireoffset
-                       (moddb-mod-totalwires modidx moddb)))
-             :in-theory (enable moddb-mod-ninsts))
-            (and stable-under-simplificationp
-                 (if (member-equal '(not (equal (path-kind$inline path) ':wire)) clause)
-                     '(:in-theory (e/d (elab-mod$a-wirename->idx
-                                        elab-mod$a-nwires)
-                                       (moddb-mod-inst-wireoffset-monotonic))
-                       :use ((:instance moddb-mod-inst-wireoffset-monotonic
-                              (n 0) (m (elab-mod$a-ninsts (nth modidx (nth *moddb->modsi* moddb)))))))
-                   '(:in-theory (e/d ()
-                                     (moddb-mod-inst-wireoffset-monotonic))
-                     :use ((:instance moddb-mod-inst-wireoffset-monotonic
-                            (n (+ 1 (elab-mod$a-instname->idx (path-scope->namespace path)
-                                                              (nth modidx (nth *moddb->modsi* moddb)))))
-                            (m (elab-mod$a-ninsts (nth modidx (nth *moddb->modsi* moddb))))))
-                     :expand ((moddb-mod-inst-wireoffset
-                               (+ 1 (elab-mod$a-instname->idx (path-scope->namespace path)
-                                                              (nth modidx (nth *moddb->modsi* moddb))))
-                               modidx moddb))))))
-    :rule-classes :linear))
-
-(define moddb-path->wiredecl ((path path-p)
-                              (modidx natp)
-                              (moddb moddb-ok))
-  :guard (< modidx (moddb->nmods moddb))
-  :returns (wire (iff (wire-p wire) wire))
-  :verify-guards nil
-  :measure (path-count path)
-  (path-case path
-    :wire
-    (stobj-let ((elab-mod (moddb->modsi modidx moddb)))
-               (wire)
-               (b* ((idx (elab-mod-wirename->idx path.name elab-mod))
-                    ((unless idx)
-                     (raise "missing: ~s0" path.name)))
-                 (elab-mod-wiretablei idx elab-mod))
-               wire)
+          (b* ((idx (elab-mod-wirename->idx path.name elab-mod))
+               ((unless idx)
+                (mv (msg "Missing: ~s0" path.name)
+                    nil nil))
+               (wire (elab-mod-wiretablei idx elab-mod)))
+            (mv nil idx wire)))
+         ((when err) (mv err nil nil nil)))
+      (mv nil wire idx nil))
     :scope
-    (b*(((stobj-get submod err)
-         ((elab-mod (moddb->modsi modidx moddb)))
-         (b* ((instidx (elab-mod-instname->idx path.namespace elab-mod))
-              ((unless instidx) (mv nil (msg "missing: ~s0" path.namespace))))
-           (mv (elab-mod->inst-modidx instidx elab-mod)
-               nil)))
-        ((when err) (raise "~@0" err)))
-      (moddb-path->wiredecl path.subpath submod moddb)))
+    (b* ((bit ;; Check for a possible bitselect, in which case this scopename
+              ;; may actually be the wirename.
+          (path-case path.subpath
+            :wire (and (natp path.subpath.name) path.subpath.name)
+            :scope nil))
+         ((stobj-get ;; We either have a bitselect, an index into a submod, or
+                     ;; it might be that both work.  
+           wireidx wire  ;; bitselect case
+           offset submod     ;; submod case
+           err)              ;; neither
+          ((elab-mod (moddb->modsi modidx moddb)))
+          (b* (;; first check for bitselect.  The next path component must be
+               ;; the end and must have a name that's a natural.
+               (wireidx (and bit (elab-mod-wirename->idx path.namespace elab-mod)))
+               (instidx (elab-mod-instname->idx path.namespace elab-mod))
+               ((unless (or instidx wireidx))
+                (mv nil nil nil nil (msg "missing: ~s0" path.namespace))))
+
+            (mv wireidx
+                (and wireidx (elab-mod-wiretablei wireidx elab-mod))
+                (and instidx (elab-mod->inst-wireoffset instidx elab-mod))
+                (and instidx (elab-mod->inst-modidx instidx elab-mod))
+                nil)))
+         ((when err) (mv err nil nil nil))
+         ((mv err submod-wire rest-index bitsel)
+          (if submod
+              (moddb-path->wireidx/decl path.subpath submod moddb)
+            (mv (msg "missing submod: ~s0" path.namespace)
+                nil nil nil)))
+         ((unless err) (mv nil submod-wire (+ offset rest-index) bitsel))
+         ((unless wire) (mv err nil nil nil))
+         ((wire wire))
+         (in-bounds (and (>= bit wire.low-idx)
+                         (< bit (+ wire.low-idx wire.width))))
+         ((unless in-bounds)
+          (mv (msg "bitselect out of bounds: ~x0" bit) nil nil nil)))
+      (mv nil wire wireidx bit)))
   ///
+
+  (local (in-theory (disable (:d moddb-path->wireidx/decl))))
+
   (local (defthm elab-mod$a-instname->idx-bound
            (implies (elab-mod$a-instname->idx name elab-mod$a)
                     (< (elab-mod$a-instname->idx name elab-mod$a)
@@ -6017,6 +5978,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
            :hints(("Goal" :in-theory (enable elab-mod$a-ninsts
                                              elab-mod$a-instname->idx)))
            :rule-classes :linear))
+
   (local (defthm len-of-wirelist-rem-dups
            (equal (len (wirelist-rem-dups wires))
                   (len (remove-later-duplicates
@@ -6033,12 +5995,109 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                                              elab-mod$a-wirename->idx)))
            :rule-classes :linear))
 
-  (verify-guards moddb-path->wiredecl)
+  (verify-guards moddb-path->wireidx/decl)
+
+
+  (deffixequiv moddb-path->wireidx/decl)
+
+  (local (defthm rem-dups-of-wirelist->names
+           (equal (remove-later-duplicates (wirelist->names x))
+                  (wirelist->names (wirelist-rem-dups x)))
+           :hints(("Goal" :in-theory (enable wirelist->names wirelist-rem-dups
+                                             remove-later-duplicates)))))
+  (local (in-theory (disable WIRELIST->NAMES-OF-REMOVE-DUPLICATE-NAMES
+                             len-of-wirelist-rem-dups)))
+
+  (defret moddb-path->wireidx/decl-bound
+      (implies (and (moddb-ok moddb)
+                    (< (nfix modidx) (nfix (nth *moddb->nmods* moddb)))
+                    (not errmsg))
+               (< idx (moddb-mod-totalwires modidx moddb)))
+    :hints (("goal" :induct t :do-not '(preprocess)
+             :expand ((:with moddb-mod-totalwires-in-terms-of-wireoffset
+                       (moddb-mod-totalwires modidx moddb))
+                      (moddb-path->wireidx/decl path modidx moddb))
+             :in-theory (enable moddb-mod-ninsts))
+            (and stable-under-simplificationp
+                 (if (member-equal '(not (equal (path-kind$inline path) ':wire)) clause)
+                     '(:in-theory (e/d (elab-mod$a-wirename->idx
+                                        elab-mod$a-nwires)
+                                       (moddb-mod-inst-wireoffset-monotonic))
+                       :use ((:instance moddb-mod-inst-wireoffset-monotonic
+                              (n 0) (m (elab-mod$a-ninsts (nth modidx (nth *moddb->modsi* moddb)))))))
+                   '(:in-theory (e/d (;; elab-mod$a-wirename->idx
+                                      ;;   elab-mod$a-nwires
+                                        )
+                                     (moddb-mod-inst-wireoffset-monotonic))
+                     :use ((:instance moddb-mod-inst-wireoffset-monotonic
+                            (n 0) (m (elab-mod$a-ninsts (nth modidx (nth *moddb->modsi* moddb)))))
+                           (:instance moddb-mod-inst-wireoffset-monotonic
+                            (n (+ 1 (elab-mod$a-instname->idx (path-scope->namespace path)
+                                                              (nth modidx (nth *moddb->modsi* moddb)))))
+                            (m (elab-mod$a-ninsts (nth modidx (nth *moddb->modsi* moddb))))))
+                     :expand ((moddb-mod-inst-wireoffset
+                               (+ 1 (elab-mod$a-instname->idx (path-scope->namespace path)
+                                                              (nth modidx (nth *moddb->modsi* moddb))))
+                               modidx moddb))))))
+    :rule-classes :linear))
+
+
+
+(define moddb-path->wireidx ((path path-p)
+                             (modidx natp)
+                             (moddb moddb-ok))
+  :prepwork ((local (in-theory (disable acl2::nth-when-too-large-cheap
+                                        len acl2::nth-when-atom))))
+  :parents (moddb)
+  :short "Convert a wire path relative to a module into a wire index."
+  :guard (< modidx (moddb->nmods moddb))
+  :returns (idx (iff (natp idx) idx))
+
+  (b* (((mv err & idx bitsel)
+        (moddb-path->wireidx/decl path modidx moddb))
+       ((when err) (raise "~@0" err))
+       ((when bitsel) (raise "Didn't expect a bit select: ~x0" path)))
+    idx)
+  ///
+
+  (deffixequiv moddb-path->wireidx)
+
+  (defret moddb-path->wireidx-type
+    (or (not idx) (natp idx))
+    :rule-classes :type-prescription)
+
+  (defret moddb-path->wireidx-bound
+      (implies (and (moddb-ok moddb)
+                    (< (nfix modidx) (nfix (nth *moddb->nmods* moddb)))
+                    idx)
+               (< idx (moddb-mod-totalwires modidx moddb)))
+    :rule-classes :linear))
+
+
+
+
+(define moddb-path->wiredecl ((path path-p)
+                              (modidx natp)
+                              (moddb moddb-ok))
+  :prepwork ((local (defthm moddb-path->wiredecl-wire-exists
+                      (b* (((mv err wire & &)
+                            (moddb-path->wireidx/decl path modidx moddb)))
+                        (implies (not err) wire))
+                      :hints (("goal" :in-theory (disable return-type-of-moddb-path->wireidx/decl.wire)
+                               :use return-type-of-moddb-path->wireidx/decl.wire)))))
+  :guard (< modidx (moddb->nmods moddb))
+  :returns (wire (iff (wire-p wire) wire))
+  (b* (((mv err wire & bitsel)
+        (moddb-path->wireidx/decl path modidx moddb))
+       ((when err) (raise "~@0" err))
+       ((when bitsel) (raise "Didn't expect a bit select: ~x0" path)))
+    wire)
+  ///
 
   (defthm moddb-path->wiredecl-iff-wireidx
     (iff (moddb-path->wiredecl path modidx moddb)
          (moddb-path->wireidx path modidx moddb))
-    :hints(("Goal" :in-theory (enable moddb-path->wireidx))))
+    :hints(("Goal" :in-theory (e/d (moddb-path->wireidx)))))
 
   (deffixequiv moddb-path->wiredecl))
 
@@ -6343,8 +6402,9 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
        ((modscope scope1)
         (if (eq addr.scope :root)
             (modscope->top scope)
-          (modscope->nth addr.scope scope))))
-    (moddb-path->wiredecl addr.path scope1.modidx moddb))
+          (modscope->nth addr.scope scope)))
+       (wire (moddb-path->wiredecl addr.path scope1.modidx moddb)))
+    wire)
   ///
   (defthm moddb-address->wiredecl-iff-wireidx
     (iff (moddb-address->wiredecl addr scope moddb)

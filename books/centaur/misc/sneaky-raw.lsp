@@ -87,3 +87,11 @@
               (setf (gethash (car head) *sneaky-state*) (cdr head)))
             (setq result (cdr result))))
     nil))
+
+(defun sneaky-delete (key)
+  (remhash key *sneaky-state*)
+  nil)
+
+(defun sneaky-clear ()
+  (setq *sneaky-state* (make-hash-table))
+  nil)

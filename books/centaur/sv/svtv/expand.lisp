@@ -35,6 +35,7 @@
 (include-book "centaur/esim/stv/stv-util" :dir :system)
 (include-book "std/strings/strtok" :dir :system)
 (include-book "std/strings/strrpos" :dir :system)
+(include-book "std/strings/strpos" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (local (in-theory (disable nth update-nth)))
 (local (include-book "centaur/misc/arith-equivs" :dir :System))
@@ -42,6 +43,195 @@
 
 (defxdoc expand.lisp :parents (svex-stvs))
 (local (xdoc::set-default-parents expand.lisp))
+
+(define svtv-parse-path-indices ((bracketed-parts string-listp
+                                                  "strings of the form \"[123\"")
+                                 (lastp booleanp)
+                                 (orig-x stringp))
+  :prepwork ((local (defthm len-of-nthcdr
+                      (equal (len (nthcdr n x))
+                             (max 0 (- (len x) (nfix n))))
+                      :hints(("Goal" :in-theory (enable nthcdr)
+                              :induct (nthcdr n x)))))
+             (local (defthm len-equal-0
+                      (equal (equal (len x) 0)
+                             (not (consp x)))))
+             (local (in-theory (disable (tau-system)))))
+  :guard (consp bracketed-parts)
+  :returns (mv errmsg
+               (path (implies path (path-p path)))
+               (range-msb (or (not range-msb) (natp range-msb))
+                          :rule-classes :type-prescription)
+               (range-lsb (implies range-msb (natp range-lsb))
+                          :rule-classes :type-prescription))
+  :measure (len bracketed-parts)
+  :ruler-extenders :lambdas
+  :verify-guards nil
+  (b* ((orig-x (mbe :logic (acl2::str-fix orig-x) :exec orig-x))
+       ((mv err rest range-msb range-lsb)
+        (if (atom (cdr bracketed-parts))
+            (mv nil nil nil nil)
+          (svtv-parse-path-indices (cdr bracketed-parts) lastp orig-x)))
+       ((when err) (mv err nil nil nil))
+       (first (mbe :logic (acl2::str-fix (car bracketed-parts))
+                   :exec (car bracketed-parts)))
+       ((unless (and (not (equal first ""))
+                     (eql (char first 0) #\[)))
+        (mv (msg "Missing [ at \"~s0]\" (inside \"~s1\"" first orig-x)
+            nil nil nil))
+       ((mv first-index first-digits)
+        (str::parse-nat-from-string first 0 0 1 (length first)))
+       ((when (eql 0 first-digits))
+        (mv (msg "Missing index in \"~s0]\" (inside \"~s1\"" first orig-x)
+            nil nil nil))
+       ((when (equal (+ 1 first-digits) (length first)))
+        ;; The whole first string was something like "[324".
+        (mv nil
+            (if rest
+                (make-path-scope :namespace first-index :subpath rest)
+              (make-path-wire :name first-index))
+            range-msb range-lsb))
+       ;; There was more to it than the index.  The only time this is allowed is if
+       ;; this is the absolute last index and we have a partselect.
+       ((unless (and lastp (atom (cdr bracketed-parts))))
+        (mv (msg "Bad format for index: \"~s0]\" inside \"~s1\".  If this is ~
+                  a partselect, they are only allowed last."
+                 first orig-x)
+            nil nil nil))
+       ((unless (eql (char first (+ 1 first-digits)) #\:))
+        (mv (msg "Bad format for last index \"~s0]\" of \"~s1\"."
+                 first orig-x)
+            nil nil nil))
+       ((mv second-index second-digits)
+        (str::parse-nat-from-string first 0 0 (+ 2 first-digits) (length first)))
+       ((when (eql 0 second-digits))
+        (mv (msg "Missing index in \"~s0]\" (inside \"~s1\"" first orig-x)
+            nil nil nil))
+       ((unless (eql (+ 2 first-digits second-digits) (length first)))
+        (mv (msg "Bad format for last index \"~s0]\" of \"~s1\" -- extra ~
+                  stuff after second index."
+                 first orig-x)
+            nil nil nil)))
+    (mv nil nil first-index second-index))
+  ///
+  (local (in-theory (enable name-p)))
+  (local (defthm len-of-nthcdr-1
+           (implies (consp x)
+                    (= (len (nthcdr 1 x))
+                       (+ -1 (len x))))
+           :rule-classes :linear))
+  (verify-guards svtv-parse-path-indices
+    :otf-flg t)
+
+  (local (in-theory (disable len nthcdr (:d svtv-parse-path-indices) cons-equal
+                             string-listp member-equal default-car default-cdr
+                             str::take-leading-digits-when-digit-listp
+                             str::explode-when-not-stringp
+                             acl2::member-when-atom)))
+  
+  (deffixequiv svtv-parse-path-indices))
+       
+       
+  
+
+(define svtv-parse-path/select-aux ((dotted-parts string-listp)
+                                    (orig-x stringp))
+  :prepwork ((local (in-theory (disable (tau-system)
+                                        acl2::take-redefinition
+                                        acl2::take-of-len-free
+                                        acl2::take-of-too-many
+                                        subseq-list)))
+             (local (defthm len-equal-0
+                      (equal (equal (len x) 0)
+                             (not (consp x))))))
+  :returns (mv errmsg
+               (path (implies (not errmsg) (path-p path)))
+               (range-msb (or (not range-msb) (natp range-msb))
+                          :rule-classes :type-prescription)
+               (range-lsb (implies range-msb (natp range-lsb))
+                          :rule-classes :type-prescription))
+  :measure (len dotted-parts)
+  :verify-guards nil
+  (b* ((orig-x (mbe :logic (acl2::str-fix orig-x) :exec orig-x))
+       ((when (atom dotted-parts))
+        (mv (msg "Error -- empty wire path? \"~s0\"" orig-x)
+            nil nil nil))
+       (lastp (atom (cdr dotted-parts)))
+       (part1 (mbe :logic (acl2::str-fix (car dotted-parts))
+                   :exec (car dotted-parts)))
+       ((unless (and (not (equal part1 ""))
+                     (eql (char part1 (1- (length part1))) #\])))
+        (b* (((when lastp)
+              (mv nil (make-path-wire :name part1) nil nil))
+             ((mv errmsg rest range-msb range-lsb)
+              (svtv-parse-path/select-aux (cdr dotted-parts) orig-x))
+             ((when errmsg) (mv errmsg nil nil nil)))
+          (mv nil
+              (make-path-scope :subpath rest :namespace part1)
+              range-msb range-lsb)))
+
+       (lbrack-pos (str::strpos "[" part1))
+       ((unless lbrack-pos)
+        (mv (msg "Found ] without previous [: \"~s0\" inside \"~s1\""
+                 part1 orig-x) nil nil nil))
+            
+       (name-part (subseq part1 0 lbrack-pos))
+       (bracketed-part (subseq part1 lbrack-pos nil))
+       (bracketed-parts (str::strtok bracketed-part '(#\])))
+       ((unless bracketed-parts)
+        (mv "This shouldn't happen." nil nil nil))
+       ((mv err index-path range-msb range-lsb)
+        (svtv-parse-path-indices bracketed-parts lastp orig-x))
+       ((when err) (mv err nil nil nil))
+       ((when lastp)
+        (mv nil
+            (if index-path
+                (make-path-scope :namespace name-part :subpath index-path)
+              (make-path-wire :name name-part))
+            range-msb range-lsb))
+       ((mv err rest-path range-msb range-lsb)
+        (svtv-parse-path/select-aux (cdr dotted-parts) orig-x))
+       ((when err) (mv err nil nil nil)))
+    (mv nil
+        (make-path-scope :namespace name-part
+                         :subpath (if index-path
+                                      (path-append index-path rest-path)
+                                    rest-path))
+        range-msb range-lsb))
+  ///
+  (local (in-theory (enable name-p)))
+  (verify-guards svtv-parse-path/select-aux
+    :otf-flg t)
+  (local (in-theory (disable len nthcdr (:d svtv-parse-path/select-aux) cons-equal
+                             string-listp member-equal default-car default-cdr
+                             str::take-leading-digits-when-digit-listp
+                             str::explode-when-not-stringp
+                             acl2::lower-bound-of-len-when-sublistp
+                             acl2::member-when-atom not)))
+  
+  (deffixequiv svtv-parse-path/select-aux))
+       
+        
+(define svtv-parse-path/select ((x stringp))
+  :returns (mv errmsg
+               (path (implies (not errmsg) (path-p path)))
+               (range-msb (or (not range-msb) (natp range-msb))
+                          :rule-classes :type-prescription)
+               (range-lsb (implies range-msb (natp range-lsb))
+                          :rule-classes :type-prescription))
+  (b* ((dotted-parts (str::strtok x '(#\.))))
+    (svtv-parse-path/select-aux dotted-parts x)))
+
+#|
+(svtv-parse-path/select "a[0].b")
+(svtv-parse-path/select "a[0][1].b[2][3:5]")
+(svtv-parse-path/select "a[0].b[2:]")
+(svtv-parse-path/select "a[0].b[:4]")
+(svtv-parse-path/select "a[0].b[2]3][3:5]")
+|#     
+
+
+
 
 (define svtv-mod-alias-guard ((modidx natp) (moddb moddb-ok) aliases)
   :enabled t
@@ -56,121 +246,53 @@
                             (fn modidx moddb aliases)))
          :exec (fn modidx moddb aliases))))
 
-(define svtv-hiername-rtokens->path ((x acl2::string-listp)
-                                     (acc path-p))
-  :returns (path path-p)
-  :guard-hints (("goal" :in-theory (enable name-p)))
-  (if (atom x)
-      (path-fix acc)
-    (svtv-hiername-rtokens->path
-     (cdr x) (make-path-scope :namespace (acl2::str-fix (car x))
-                              :subpath acc))))
 
-
-(define svtv-hiername-parse ((x stringp) (last natp))
-  :prepwork ((local (defthm true-listp-cdr
-                      (implies (true-listp x)
-                               (true-listp (cdr x)))))
-             (local (defthm string-listp-of-cdr
-                      (implies (string-listp x)
-                               (string-listp (cdr x)))))
-             (local (defthm stringp-car-of-string-listp
-                      (implies (and (string-listp x) (consp x))
-                               (stringp (car x)))))
-             (local (in-theory (enable name-p))))
-  :guard (<= last (length x))
-  :returns (path path-p)
-  (b* ((x (mbe :logic (acl2::str-fix x) :exec x))
-       (last (lnfix last))
-       (rtokens (str::strtok-aux x 0 last '(#\.) nil nil)))
-    (if (consp rtokens)
-        (svtv-hiername-rtokens->path (cdr rtokens)
-                                     (make-path-wire :name (car rtokens)))
-      (prog2$ (raise "Bad hierarchical name: ~s0" x)
-              "bad-path"))))
-
-
-(define svtv-wire-parse ((x stringp))
-  :prepwork ((local (defthm acl2::string-listp-of-cdr
-                      (implies (acl2::string-listp x)
-                               (acl2::string-listp (cdr x)))))
-             (local (defthm stringp-car-of-string-listp
-                      (implies (and (string-listp x) (consp x))
-                               (stringp (car x)))))
-             (local (in-theory (enable maybe-natp))))
-  :Returns (mv errmsg
-               (path path-p "string or path of hierarchical strings")
-               (lsb  maybe-natp :rule-classes :type-prescription
-                     "lsb of range or nil")
-               (width maybe-natp :rule-classes :type-prescription
-                      "width of range or nil")
-               (revp "is the range backward"))
-  :guard-debug t
-  (b* ((x (mbe :logic (acl2::str-fix x) :exec x))
-       (len (length x))
-       ((when (eql len 0)) (mv "Empty wirename?" "bad-path" nil nil nil))
-       ((unless (eql (char x (1- len)) #\]))
-        (mv nil (svtv-hiername-parse x len) nil nil nil))
-       (openbrace (str::strrpos "[" x))
-       ((unless (and openbrace
-                     (< openbrace (1- len))))
-        (mv "] without [" "bad-path" nil nil nil))
-       (path (svtv-hiername-parse x openbrace))
-       (nums (str::strtok-aux x (+ 1 openbrace) (1- len) '(#\:) nil nil))
-       ((when (or (atom nums) (> (len nums) 2)))
-        (mv "failed to tokenize 1 or 2 indices" "bad-path" nil nil nil))
-       (lsb (str::strval (car nums)))
-       ((unless lsb)
-        (mv "non-number as lsb index" "bad-path" nil nil nil))
-       (msb (if (consp (cdr nums))
-                (str::strval (cadr nums))
-              lsb))
-       ((unless msb)
-        (mv "non-number as msb index" "bad-path" nil nil nil))
-       ;; ;; BOZO for reversed indices we're not really doing the right thing
-       ;; (- (and (< msb lsb)
-       ;;         (raise "Reversed indices not yet implemented")))
-       (width (+ 1 (abs (- msb lsb))))
-       (revp (< msb lsb)))
-    ;; ==Backward Range Convention==
-    (mv nil path lsb width revp))
-  ///
-  (defthm width-when-lsb-of-svtv-wire-parse
-    (b* (((mv & & lsb width &) (svtv-wire-parse x)))
-      (and (iff width lsb)
-           (iff (rationalp width) lsb)
-           (iff (acl2-numberp width) lsb)
-           (iff (integerp width) lsb)
-           (iff (natp width) lsb)))))
 
 (define svtv-1wire->lhs ((x stringp) (modidx natp) (moddb moddb-ok) aliases)
   :guard (svtv-mod-alias-guard modidx moddb aliases)
   :returns (mv err
                (lhs lhs-p))
+  :guard-hints (("goal" :do-not-induct t))
   (b* ((x (mbe :logic (acl2::str-fix x) :exec x))
-       ((mv err path lsb width revp) (svtv-wire-parse x))
+       ((mv err path range-msb range-lsb) (svtv-parse-path/select x))
        ((when err) (mv err nil))
-       (wireidx (moddb-path->wireidx path modidx moddb))
-       ((unless wireidx)
+       ((mv err wire wireidx bitsel) (moddb-path->wireidx/decl path modidx moddb))
+       ((when err)
         (mv (msg "Wire not found: ~s0" x) nil))
-       (wire    (moddb-path->wiredecl path modidx moddb))
+       ((when (and bitsel range-msb))
+        (mv (msg "Shouldn't have a part-select of a bit-select: ~s0" x) nil))
        ((wire wire) wire)
-       ((when (and lsb (< 1 width) (< 1 wire.width)
-                   (xor revp wire.revp)))
-        (mv (msg "Wire ~s0: Declared and STV ranges are opposite oriented~%" x)
-            nil))
        (wire-lsb (if wire.revp
                      (+ -1 wire.width wire.low-idx)
                    wire.low-idx))
-       (lsb (or lsb wire-lsb))
-       (width (or width wire.width))
-       (shift (if wire.revp (- wire-lsb lsb) (- lsb wire-lsb)))
-       ((when (< shift 0))
-        (mv (msg "Wire ~s0: LSB out of bounds" x) nil))
-       ((when (> (+ shift width) wire.width))
-        (mv (msg "Wire ~s0: MSB out of bounds" x) nil))
+       (wire-msb (if wire.revp
+                     wire.low-idx
+                   (+ -1 wire.width wire.low-idx)))
+       (range-lsb (if range-msb
+                      range-lsb
+                    (or bitsel wire-lsb)))
+       (range-msb (or range-msb bitsel wire-msb))
+       (range-ok (cond (range-msb
+                        (if wire.revp
+                            (and (<= wire.low-idx range-msb)
+                                 (<= range-msb range-lsb)
+                                 (< range-lsb (+ wire.low-idx wire.width)))
+                          (and (<= wire.low-idx range-lsb)
+                               (<= range-lsb range-msb)
+                               (< range-msb (+ wire.low-idx wire.width)))))
+                       (bitsel (and (<= wire.low-idx bitsel)
+                                    (< bitsel (+ wire.low-idx wire.width))))))
+       ((unless range-ok)
+        (mv (msg "~s0: bit/partselect out of bounds or reversed" x) nil))
+
+       (shift (if wire.revp (- wire-lsb range-lsb) (- range-lsb wire-lsb)))
+       (range-width (+ 1 (abs (- range-msb range-lsb))))
+       ;; ((when (< shift 0))
+       ;;  (mv (msg "Wire ~s0: LSB out of bounds" x) nil))
+       ;; ((when (> (+ shift width) wire.width))
+       ;;  (mv (msg "Wire ~s0: MSB out of bounds" x) nil))
        (alias (get-alias wireidx aliases)))
-    (mv nil (lhs-concat width (lhs-rsh shift alias) nil))))
+    (mv nil (lhs-concat range-width (lhs-rsh shift alias) nil))))
 
 
 (define svtv-concat->lhs ((x string-listp) (modidx natp) (moddb moddb-ok) aliases)

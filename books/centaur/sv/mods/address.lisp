@@ -90,6 +90,17 @@
                        :doc "The name of the subscope, e.g. @('a')"))
    :ctor-body (cons namespace subpath)))
 
+
+(define path-append ((x path-p) (y path-p))
+  :returns (new-path path-p)
+  :measure (path-count x)
+  :verify-guards nil
+  (path-case x
+    :wire (make-path-scope :subpath y :namespace x.name)
+    :scope (make-path-scope :subpath (path-append x.subpath y) :namespace x.namespace))
+  ///
+  (verify-guards path-append))
+
 (define addr-scope-p (x)
   (or (natp x)
       (eq x :root))
