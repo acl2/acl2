@@ -43,7 +43,15 @@
         (error "RMTREE called on a non-stringp dir?")
         (mv nil state))
 
-       (- (sys-call "rm" (list "-rf" dir)))
+       ((mv - file-type)
+        (osicat:file-exists-p dir))
+       (- (cond ((equal file-type :directory)
+                 (osicat:delete-directory-and-files dir
+                                                    :if-does-not-exist
+                                                    :ignore))
+                ((equal file-type :regular-file)
+                 (cl:delete-file dir))
+                (t nil)))
 
        ((mv status state)
         (sys-call-status state))
