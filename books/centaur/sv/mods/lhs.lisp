@@ -30,6 +30,7 @@
 
 (in-package "SV")
 (include-book "address")
+(include-book "../svex/eval")
 (include-book "../svex/4vmask")
 (include-book "../svex/vars")
 (include-book "../svex/rsh-concat")

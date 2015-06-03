@@ -504,6 +504,15 @@ documentation, creating autohyps macros, etc.</p>"
                         ;; Blah, silly, (good-esim-modulep nil) is true, so
                         ;; explicitly check for this.
                         (raise "No :mod was specified.")))
+
+       (-
+        ;; Horribly primitive sanity check, but in practice even this
+        ;; may be helpful for avoiding gross errors.
+        (or (and (gpl :n mod)
+                 (symbolp (gpl :n mod)))
+            (raise "Alleged module doesn't have a non-nil symbol :n field?  ~
+                    Is this a proper ESIM module?")))
+
        (inputs      (if (true-list-listp inputs)
                         inputs
                       (raise ":inputs are not even a true-list-listp")))

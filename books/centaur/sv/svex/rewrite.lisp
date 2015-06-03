@@ -29,12 +29,13 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "svex-argmasks")
-(include-book "svex-rewrite-rules")
+(include-book "argmasks")
+(include-book "rewrite-rules")
 (include-book "centaur/vl/util/cwtime" :dir :system)
 (include-book "lattice")
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 
 (defxdoc svex-rewrite.lisp :parents (svex-rewriting))
 (local (xdoc::set-default-parents svex-rewrite.lisp))

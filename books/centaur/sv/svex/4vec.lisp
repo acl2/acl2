@@ -83,28 +83,28 @@ expressions.  For instance, our @(see 4vec-plus) operation agrees with the
 Verilog notion of plus: if there are any X or Z bits in either input, it
 ``conservatively'' returns all Xes.  Most of these operations have
 corresponding @(see svex) functions and can hence be used in @(see
-expressions).  See in particular @(see svex-functions).</p>
+expressions); see @(see svex-functions).</p>
 
 <p>Many of these operations have similarities with the @(see
-acl2::4v-operations) which were used in by @(see acl2::esim).  But SV
-expressions are vectors instead of single bits, so there are many 4vec
-operations with no 4v equivalents (e.g., plus, times, etc.).  Historically
-these operations were bit-blasted using the @(see vl2014::occform)
-transformation, but in svex they are primitives with well-defined
-semantics.</p>
+acl2::4v-operations) which were used in @(see acl2::esim).  But SV expressions
+are vectors instead of single bits, so there are many 4vec operations with no
+4v equivalents (e.g., plus, times, etc.).  Historically these operations were
+bit-blasted using the @(see vl2014::occform) transformation, but in svex they
+are primitives with well-defined semantics.</p>
 
 <p><u>Boolean Convention</u>.  Most 4vec operations take and return @(see 4vec)
-objects.  This is true even for operations that you might normally expect to
-produce a Boolean result, e.g., comparisons, reductions, etc.  In these cases,
-we typically arrange so that ``true'' is indicated by the all-1s vector (i.e.,
--1), ``false'' is indicated by the all-0s vector (i.e., 0), and undetermined
-values are indicated by the all-Xes vector.  This is sometimes convenient in
-that it avoids needing to explicitly replicate/extend comparison results.</p>
+objects&mdash;even comparisons, reductions, etc., which you might instead
+expect to produce a Boolean result.  In these cases, we typically arrange so
+that ``true'' is indicated by the all-1s vector (i.e., -1), ``false'' is
+indicated by the all-0s vector (i.e., 0), and undetermined values are indicated
+by the all-Xes vector.  This is sometimes convenient in that it avoids needing
+to explicitly replicate/extend comparison results.</p>
 
 <p>It is critical that these functions support efficient symbolic simulation
-with @(see gl).  However, the particular definitions below are typically not
-relevant to this, because we use a custom translation from @(see expressions)
-into @(see aig)s; see @(see svex-symbolic-evaluation) for details.</p>")
+with @(see gl).  However, the logical definitions of these functions are
+typically not relevant to this, because we use a custom translation from @(see
+expressions) into @(see aig)s; see @(see svex-symbolic-evaluation) for
+details.</p>")
 
 (xdoc::defpointer boolean-convention 4vec-operations)
 
@@ -252,7 +252,10 @@ the 4vec operation to simply:</p>
     (implies (3vec-p x)
              (equal (4vec-idx->4v n (3vec-bitnot x))
                     (acl2::4v-not (4vec-idx->4v n x))))
-    :hints(("Goal" :in-theory (enable 4vec-idx->4v)))))
+    :hints(("Goal" :in-theory (enable 4vec-idx->4v))))
+
+  (deffixequiv 3vec-bitnot
+    :hints(("Goal" :in-theory (enable 3vec-fix)))))
 
 
 (define 4vec-bitnot ((x 4vec-p))
@@ -295,7 +298,9 @@ the 4vec operation to simply:</p>
              (equal (4vec-idx->4v n (3vec-bitand x y))
                     (acl2::4v-and (4vec-idx->4v n (3vec-fix x))
                                   (4vec-idx->4v n (3vec-fix y)))))
-    :hints(("Goal" :in-theory (enable 4vec-idx->4v)))))
+    :hints(("Goal" :in-theory (enable 4vec-idx->4v))))
+
+  (deffixequiv 3vec-bitand))
 
 
 (define 4vec-bitand ((x 4vec-p) (y 4vec-p))
@@ -339,7 +344,9 @@ the 4vec operation to simply:</p>
              (equal (4vec-idx->4v n (3vec-bitor x y))
                     (acl2::4v-or (4vec-idx->4v n (3vec-fix x))
                                  (4vec-idx->4v n (3vec-fix y)))))
-    :hints(("Goal" :in-theory (enable 4vec-idx->4v)))))
+    :hints(("Goal" :in-theory (enable 4vec-idx->4v))))
+
+  (deffixequiv 3vec-bitor))
 
 
 (define 4vec-bitor ((x 4vec-p) (y 4vec-p))
@@ -385,7 +392,9 @@ the 4vec operation to simply:</p>
              (equal (4vec-idx->4v n (3vec-bitxor x y))
                     (acl2::4v-xor (4vec-idx->4v n (3vec-fix x))
                                   (4vec-idx->4v n (3vec-fix y)))))
-    :hints(("Goal" :in-theory (enable 4vec-idx->4v)))))
+    :hints(("Goal" :in-theory (enable 4vec-idx->4v))))
+
+  (deffixequiv 3vec-bitxor))
 
 
 (define 4vec-bitxor ((x 4vec-p) (y 4vec-p))
@@ -608,7 +617,6 @@ bits.</p>"
 
 
 
-
 (define 4v->4vec-bit ((x acl2::4vp))
   :returns (vec 4vec-p)
   :short "Convert a @(see acl2::4v)-style @(see acl2::4vp) into an infinite
@@ -697,7 +705,9 @@ boolean-convention), we return:</p>
                      (logior (4vec->lower x) (4vec->upper x)))))
     :rule-classes ((:definition :install-body nil
                     :clique (3vec-reduction-and)
-                    :controller-alist ((3vec-reduction-and t))))))
+                    :controller-alist ((3vec-reduction-and t)))))
+
+  (deffixequiv 3vec-reduction-and))
 
 
 (define 4vec-reduction-and ((x 4vec-p))
@@ -814,7 +824,9 @@ boolean-convention), we return:</p>
                      (logior (4vec->lower x) (4vec->upper x)))))
     :rule-classes ((:definition :install-body nil
                     :clique (3vec-reduction-or)
-                    :controller-alist ((3vec-reduction-or t))))))
+                    :controller-alist ((3vec-reduction-or t)))))
+
+  (deffixequiv 3vec-reduction-or))
 
 
 (define 4vec-reduction-or ((x 4vec-p))
@@ -1097,7 +1109,6 @@ inputs.</p>"
   (deffixequiv 4vec-times :args ((x 2vecx) (y 2vecx))
     :hints(("Goal" :in-theory (enable 2vecx-fix)))))
 
-
 (define 4vec-quotient ((x 4vec-p) (y 4vec-p))
   :returns (quotient 4vec-p)
   :short "Integer division as in @(see truncate) for @(see 4vec)s."
@@ -1112,7 +1123,7 @@ division of @($\\frac{x}{y}$), rounding toward zero as in @(see truncate).</p>"
                       (the integer (2vec->val y))))
     (4vec-x))
   ///
-  (deffixequiv 4vec-times :args ((x 2vecx) (y 2vecx))
+  (deffixequiv 4vec-quotient :args ((x 2vecx) (y 2vecx))
     :hints(("Goal" :in-theory (enable 2vecx-fix)))))
 
 
@@ -1131,7 +1142,7 @@ rem).</p>"
                  (the integer (2vec->val y))))
     (4vec-x))
   ///
-  (deffixequiv 4vec-times :args ((x 2vecx) (y 2vecx))
+  (deffixequiv 4vec-remainder :args ((x 2vecx) (y 2vecx))
     :hints(("Goal" :in-theory (enable 2vecx-fix)))))
 
 
@@ -1157,7 +1168,11 @@ will be true.</p>"
            (2vec-p y))
       (2vec (bool->vec (< (the integer (2vec->val x))
                           (the integer (2vec->val y)))))
-    (4vec-x)))
+    (4vec-x))
+  ///
+  (deffixequiv 4vec-< :args ((x 2vecx) (y 2vecx))
+    :hints(("Goal" :in-theory (enable 2vecx-fix)))))
+
 
 
 (define 3vec-== ((x 4vec-p)
@@ -1179,7 +1194,9 @@ to anything else, including another X bit, is always unknown.</p>"
 
   (3vec-reduction-and
    (3vec-bitnot
-    (3vec-bitxor x y))))
+    (3vec-bitxor x y)))
+  ///
+  (deffixequiv 3vec-==))
 
 
 (define 4vec-== ((x 4vec-p) (y 4vec-p))
@@ -1197,7 +1214,10 @@ to anything else, including another X bit, is always unknown.</p>"
 bit is equal to anything else, including another X/Z bit, is always
 unknown.</p>"
 
-  (3vec-== (3vec-fix x) (3vec-fix y)))
+  (3vec-== (3vec-fix x) (3vec-fix y))
+  ///
+  (deffixequiv 4vec-==
+    :args ((x 3vec) (y 3vec))))
 
 
 (define 4vec-=== ((x 4vec-p) (y 4vec-p))
@@ -1216,7 +1236,9 @@ another.</p>
 <li>False (all 0s) otherwise.</li>
 </ul>"
 
-  (2vec (bool->vec (4vec-equiv x y))))
+  (2vec (bool->vec (4vec-equiv x y)))
+  ///
+  (deffixequiv 4vec-===))
 
 
 (define 3vec-? ((test 4vec-p)
@@ -1241,7 +1263,9 @@ unfloat then/else values."
        (same-bits (logand (logeqv then.upper else.upper)
                           (logeqv then.lower else.lower))))
     (4vec (logior (lognot same-bits) then.upper)
-          (logand same-bits then.lower))))
+          (logand same-bits then.lower)))
+  ///
+  (deffixequiv 3vec-?))
 
 ;; (defconst *zx10* (make-4vec :upper #b0110 :lower #b1010))
 ;; (3vec-? (4vec-x) *zx10* *zx10*)
@@ -1274,8 +1298,12 @@ semantics, this merging should unfloat any Z values in @('then') and @('else')
 into Xes.  We don't currently do this.  BOZO update the docs when this issue
 gets fixed.</p>"
 
-  (3vec-? (3vec-fix test) then else))
-
+  (3vec-? (3vec-fix test) then else)
+  ///
+  (deffixequiv 4vec-?
+    :args ((test 3vec)
+           (then 4vec)
+           (else 4vec))))
 
 (define 3vec-bit? ((tests 4vec-p)
                    (thens 4vec-p)
@@ -1317,7 +1345,8 @@ test vector; doesn't unfloat then/else values."
     :hints(("Goal" :in-theory (enable 3vec-?
                                       4vec-sign-ext
                                       3vec-p
-                                      3vec-reduction-or)))))
+                                      3vec-reduction-or))))
+  (deffixequiv 3vec-bit?))
 
 ;;(defconst *zx10* (make-4vec :upper #b0110 :lower #b1010))
 ;;(3vec-bit? (4vec-x) *zx10* *zx10*)
@@ -1360,7 +1389,11 @@ affect this operation and update the docs accordingly once it's fixed.</p>"
     (equal (4vec-bit? (4vec-sign-ext 1 (4vec-reduction-or tests)) thens elses)
            (4vec-? tests thens elses))
     :hints(("Goal" :in-theory (enable 4vec-?
-                                      4vec-p 4vec-reduction-or)))))
+                                      4vec-p 4vec-reduction-or))))
+  (deffixequiv 4vec-bit?
+    :args ((tests 3vec)
+           (thens 4vec)
+           (elses 4vec))))
 
 
 
@@ -1376,7 +1409,8 @@ affect this operation and update the docs accordingly once it's fixed.</p>"
     (implies (4vec-index-p x)
              (and (equal (4vec->lower x) (4vec->upper x))
                   (<= 0 (4vec->lower x))))
-    :rule-classes :forward-chaining))
+    :rule-classes :forward-chaining)
+  (deffixequiv 4vec-index-p))
 
 
 (define 4vec-override ((stronger 4vec-p)
@@ -1411,7 +1445,8 @@ stronger is Z.</p>"
            (4vec-override x (4vec-override y z)))
     :hints ((acl2::logbitp-reasoning)
             (and stable-under-simplificationp
-                 '(:bdd (:vars nil))))))
+                 '(:bdd (:vars nil)))))
+  (deffixequiv 4vec-override))
 
 
 (define 4vec-onset ((x 4vec-p))
@@ -1429,7 +1464,8 @@ an X bit is X.</p>"
              (if (eq 'z in)
                  'f
                in)))
-    :hints(("Goal" :in-theory (enable 4vec-idx->4v)))))
+    :hints(("Goal" :in-theory (enable 4vec-idx->4v))))
+  (deffixequiv 4vec-onset))
 
 (define 4vec-offset ((x 4vec-p))
   :returns (res 4vec-p)
@@ -1446,7 +1482,8 @@ of an X bit is X.</p>"
              (if (eq 'z in)
                  'f
                (acl2::4v-not in))))
-    :hints(("Goal" :in-theory (enable 4vec-idx->4v)))))
+    :hints(("Goal" :in-theory (enable 4vec-idx->4v))))
+  (deffixequiv 4vec-offset))
 
 
 (define rev-blocks ((nbits natp)
@@ -1535,7 +1572,10 @@ to an offset into @('(rev-blocks nbits blocksz x)')."
               (rev-blocks (2vec->val nbits)
                           (2vec->val blocksz)
                           x.lower)))
-    (4vec-x)))
+    (4vec-x))
+  ///
+  ;; BOZO can probably strengthen the equivalences
+  (deffixequiv 4vec-rev-blocks))
 
 (define 4vec-wildeq ((a 4vec-p) (b 4vec-p))
   :short "True if for every pair of corresponding bits of a and b, either they
@@ -1544,7 +1584,11 @@ to an offset into @('(rev-blocks nbits blocksz x)')."
   (b* ((eq (3vec-bitnot (4vec-bitxor a b))) ;; 4vec-bitxor-redef
        ((4vec b))
        (zmask (logand (lognot b.upper) b.lower))) ;; b is z
-    (3vec-reduction-and (3vec-bitor eq (2vec zmask)))))
+    (3vec-reduction-and (3vec-bitor eq (2vec zmask))))
+  ///
+  (deffixequiv 4vec-wildeq
+    :args ((a 3vec)
+           (b 4vec))))
 
 (define 4vec-symwildeq ((a 4vec-p) (b 4vec-p))
   :short "Symmetric wildcard equality: true if for every pair of corresponding
@@ -1556,7 +1600,9 @@ to an offset into @('(rev-blocks nbits blocksz x)')."
        ((4vec b))
        (zmask (logior (logand (lognot b.upper) b.lower)
                       (logand (lognot a.upper) a.lower))))
-    (3vec-reduction-and (3vec-bitor eq (2vec zmask)))))
+    (3vec-reduction-and (3vec-bitor eq (2vec zmask))))
+  ///
+  (deffixequiv 4vec-symwildeq))
 
 (define 4vec-clog2 ((a 4vec-p))
   :short "Ceiling of the log2 of a, or X if any non-2-valued bits.  Must be truncated
@@ -1565,4 +1611,8 @@ to an offset into @('(rev-blocks nbits blocksz x)')."
   (if (and (2vec-p a)
            (<= 0 (2vec->val a)))
       (2vec (integer-length (- (2vec->val a) 1)))
-    (4vec-x)))
+    (4vec-x))
+  ///
+  (deffixequiv 4vec-clog2
+    :args ((a 2vecnatx))
+    :hints(("Goal" :in-theory (enable 2vecnatx-fix)))))

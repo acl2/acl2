@@ -396,7 +396,7 @@ structure:</p>
 @(`(:code ($ alu-function-examine))`)
 
 <p>Warning: This  prints a  lot of  output --  around 11,000  lines.  We  get a
-somewhat nicer result if we  apply some @(see svex-rewriting) before displaying
+somewhat nicer result if we  apply some @(see rewriting) before displaying
 it:</p>
 
 @(`(:code ($ alu-function-examine-rw))`)

@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "eval")
+(include-book "svex")
 (include-book "std/misc/two-nats-measure" :dir :system)
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -98,7 +98,7 @@
   :short "Bitmasks indicating the relevant bits of SVEX expressions."
 
   :long "<p>A <b>4vmask</b> is a data structure that records which bits of an
-expression are ``relevant.''</p>
+expression we care about.</p>
 
 <p>We represent 4vmasks as ordinary integers, which we treat as bit masks where
 1s encode the relevant bit positions and 0s encode the irrelevant positions.
@@ -107,11 +107,10 @@ as a new, custom type, with its own recognizer, fixing function, etc.  This
 gives us a semantically nicer fixing behavior where the default mask is -1,
 i.e., by default all bits are relevant.</p>
 
-<p>4vmasks are intended to support @(see svex-rewriting) and other
-applications, e.g., composing update functions to reach a fixpoint.  In these
-contexts, knowing that certain bits of an @(see svex) expression are irrelevant
-can allow for additional simplifications.  For instance, in an expression
-like:</p>
+<p>4vmasks are intended to support @(see rewriting) and other applications,
+e.g., composing update functions to reach a fixpoint.  In these contexts,
+knowing that certain bits of an @(see svex) expression are irrelevant can allow
+for additional simplifications.  For instance, in an expression like:</p>
 
 @({
      (zerox 4 (bitand <a> <b>))
@@ -128,7 +127,8 @@ expression such as:</p>
 })
 
 <p>Then we can simply rewrite it to @('<low>') and get rid of @('<high>')
-altogether.</p>")
+altogether.  Typically we make these sorts of inferences using @(see
+svex-argmasks).</p>")
 
 (local (xdoc::set-default-parents 4vmask))
 
@@ -190,6 +190,13 @@ relevant'') in the default case.</p>"
     (equal (4vec-mask 0 value)
            (4vec-x))
     :hints(("Goal" :in-theory (enable 4vec-mask 4vec-equiv)))))
+
+(define 4vmask-empty ((x 4vmask-p))
+  :short "@(call 4vmask-empty) recognizes the empty @(see 4vmask)."
+  :inline t
+  :enabled t
+  (mbe :logic (4vmask-equiv x 0)
+       :exec (eql x 0)))
 
 (define 4vmask-subsumes ((x 4vmask-p) (y 4vmask-p))
   :short "@(call 4vmask-subsumes) checks whether the @(see 4vmask) @('x') cares
@@ -253,7 +260,7 @@ creating a new mask that includes all bits that are relevant for in either
     (4vmask-subsumes (4vmask-union x y) y)
     :hints ((acl2::logbitp-reasoning))))
 
-(fty::deflist 4vmasklist
+(deflist 4vmasklist
   :elt-type 4vmask-p
   :true-listp t)
 
@@ -276,7 +283,23 @@ creating a new mask that includes all bits that are relevant for in either
 
   (defthm len-of-4veclist-mask
     (equal (len (4veclist-mask masks values))
-           (len values))))
+           (len values)))
+
+  (defthm 4veclist-mask-of-nil
+    (equal (4veclist-mask nil x)
+           (4veclist-fix x))
+    :hints(("Goal" :in-theory (enable 4veclist-mask 4veclist-fix))))
+
+  (defthm equal-of-4veclist-mask-cons
+    (equal (equal (4veclist-mask (cons m1 m) x)
+                  (4veclist-mask (cons m1 m) y))
+           (and (equal (consp x) (consp y))
+                (equal (4vec-mask m1 (car x))
+                       (4vec-mask m1 (car y)))
+                (equal (4veclist-mask m (cdr x))
+                       (4veclist-mask m (cdr y)))))
+    :hints(("Goal" :in-theory (enable 4veclist-mask)))))
+
 
 (define 4vmasklist-subsumes ((x 4vmasklist-p) (y 4vmasklist-p))
   :short "@(call 4vmasklist-subsumes) checks whether the masks in the list
@@ -312,7 +335,7 @@ creating a new mask that includes all bits that are relevant for in either
     :hints (("goal" :induct (len x)))))
 
 
-(fty::defalist 4vmask-alist
+(defalist 4vmask-alist
   :key-type svar
   :val-type 4vmask-p
   :true-listp t)

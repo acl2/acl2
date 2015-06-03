@@ -114,6 +114,7 @@
       definstantiate
       defexample
       defwitness
+      defquant
 
       seq
       seq-backtrack
