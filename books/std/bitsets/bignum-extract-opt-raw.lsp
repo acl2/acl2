@@ -30,15 +30,63 @@
 
 (in-package "BITSETS")
 
-; We won't inline this on CCL-x64 because it's pretty complicated.  However,
-; for other Lisps it's very simple.
+
+;; SBCL has a bug with (byte size pos) where it assumes that pos is a fixnum.
+;; It also doesn't seem to have a fast definition of LDB anyway.
+;;
+;;   From sbcl:src/code/numbers.lisp:
+;;
+;;     (defun %ldb (size posn integer)
+;;       (declare (type bit-index size posn))
+;;       (logand (ash integer (- posn))
+;;               (1- (ash 1 size))))
+;;
+;; So trying to work around this just slows SBCL down anyway and it's much
+;; better to just use the original version.
+;;
+;; If this ever gets improved and SBCL's LDB is faster/better than ash, we
+;; can revive the SBCL code below, but also edit bitsets-opt-raw.lsp and
+;; undo the SBCL-specific things there!
+
+;; #+sbcl
+;; (defun test-for-sbcl-bug (x slice)
+;;   (ldb (byte 32 (* 32 slice)) x))
+
+;; #+sbcl
+;; (eval-when
+;;  (:compile-toplevel :load-toplevel :execute)
+;;  (handler-case
+;;    (test-for-sbcl-bug -1 (expt 2 57))
+;;    (error (condition)
+;;           (declare (ignore condition))
+;;           (format t "~%WARNING (from std/bitsets/bignum-extract-opt-raw.lisp):~%~
+;;                      Your copy of SBCL has a bug with BYTE.  Using a slower~%~
+;;                      version of bignum-extract to work around this bug.~%~%")
+;;           (pushnew :sbcl-has-byte-bug *features*))))
+
+;; ;; An implementation of bignum-extract for SBCL versions with the BYTE bug.
+;; #+sbcl-has-byte-bug
+;; (if (and (typep slice 'fixnum)
+;;          (< (the fixnum slice) #.(expt 2 57)))
+;;     ;; Use the fast version for sensible slice numbers
+;;     (the (unsigned-byte 32)
+;;          (ldb (byte 32 (the (unsigned-byte 62) (* 32 (the fixnum slice)))) x))
+;;   ;; Otherwise use the ordinary definition.
+;;   (the (unsigned-byte 32)
+;;        (logand (the (unsigned-byte 32) (1- (expt 2 32)))
+;;                (ash x (* -32 slice)))))
+
+; We just won't do anything at all for SBCL.
+#-sbcl
 (declaim (inline bignum-extract))
 
+#-sbcl
 (defun bignum-extract (x slice)
 
+  ;; Simple Lisp version for most Lisps.
   #-(and Clozure x86-64)
-  ;; Simple Lisp version
-  (ldb (byte 32 (* 32 slice)) x)
+  (the (unsigned-byte 32)
+       (ldb (byte 32 (* 32 slice)) x))
 
   #+(and Clozure x86-64)
   (cond ((not (typep slice 'fixnum))
