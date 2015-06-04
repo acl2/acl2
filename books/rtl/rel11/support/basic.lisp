@@ -19,21 +19,26 @@
   (declare (xargs :guard (real/rationalp x)))
   (floor x 1))
 
+(defruled fl-default
+  (implies (not (real/rationalp x))
+           (equal (fl x) 0))
+  :enable (fl))
+
 (defrule fl-def
   (and (integerp (fl x))    
-       (implies (case-split (rationalp x))
+       (implies (case-split (real/rationalp x))
 	        (and (<= (fl x) x)
 		     (< x (1+ (fl x))))))
   :enable (fl)
   :rule-classes ((:linear :corollary
-                          (implies (case-split (rationalp x))
+                          (implies (case-split (real/rationalp x))
                                    (and (<= (fl x) x)
                                         (< x (1+ (fl x))))))
                  (:type-prescription :corollary
                                      (integerp (fl x)))))
 
 (defthm fl-unique
-    (implies (and (rationalp x)
+    (implies (and (real/rationalp x)
 		  (integerp n)
 		  (<= n x)
 		  (< x (1+ n)))
@@ -51,8 +56,8 @@
 (defrule quot-bnd
   (implies (and (<= 0 x)
                 (<= 0 y)
-                (rationalp x)
-                (rationalp y))
+                (real/rationalp x)
+                (real/rationalp y))
            (<= (* y (fl (/ x y)))
                x))
   :enable (fl)
@@ -60,27 +65,27 @@
 
 (defthm fl-monotone-linear
     (implies (and (<= x y)
-		  (rationalp x)
-		  (rationalp y))
+		  (real/rationalp x)
+		  (real/rationalp y))
 	     (<= (fl x) (fl y)))
   :rule-classes :linear)
 
 (defthm n<=fl-linear
     (implies (and (<= n x)
-		  (rationalp x)
+		  (real/rationalp x)
 		  (integerp n))
 	     (<= n (fl x)))
   :rule-classes :linear)
 
 (defthm fl+int-rewrite
     (implies (and (integerp n)
-		  (rationalp x))
+		  (real/rationalp x))
 	     (equal (fl (+ x n)) (+ (fl x) n))))
 
 (defrule fl/int-rewrite
   (implies (and (integerp n)
                 (<= 0 n)
-                (rationalp x))
+                (real/rationalp x))
            (equal (fl (* (fl x) (/ n)))
                   (fl (/ x n))))
   :enable (fl))
@@ -88,7 +93,7 @@
 (defrule fl/int-rewrite-alt
   (implies (and (integerp n)
                 (<= 0 n)
-                (rationalp x))
+                (real/rationalp x))
            (equal (fl (* (/ n) (fl x)))
                   (fl (/ x n))))
   :enable (fl))
@@ -101,7 +106,7 @@
   :rule-classes ())
 
 (defthmd fl-minus
-  (implies (rationalp x)
+  (implies (real/rationalp x)
            (equal (fl (* -1 x))
                   (if (integerp x)
                       (* -1 x)
@@ -124,21 +129,26 @@
   (declare (xargs :guard (real/rationalp x)))
   (- (fl (- x))))
 
+(defruled cg-default
+  (implies (not (real/rationalp x))
+           (equal (cg x) 0))
+  :enable (cg fl-default))
+
 (defrule cg-def
   (and (integerp (cg x))
-       (implies (case-split (rationalp x))
+       (implies (case-split (real/rationalp x))
                 (and (>= (cg x) x)
                      (> (1+ x) (cg x)))))
   :enable (cg)
   :rule-classes ((:linear :corollary
-                          (implies (case-split (rationalp x))
+                          (implies (case-split (real/rationalp x))
                                    (and (>= (cg x) x)
                                         (> (1+ x) (cg x)))))
                  (:type-prescription :corollary
                                      (integerp (cg x)))))
 
 (defthm cg-unique
-    (implies (and (rationalp x)
+    (implies (and (real/rationalp x)
 		  (integerp n)
 		  (>= n x)
 		  (> (1+ x) n))
@@ -146,33 +156,33 @@
   :rule-classes ())
 
 (defthm cg-integerp
-    (implies (rationalp x)
+    (implies (real/rationalp x)
 	     (equal (equal (cg x) x)
                     (integerp x))))
 
 (defthm cg-monotone-linear
-    (implies (and (rationalp x)
-		  (rationalp y)
+    (implies (and (real/rationalp x)
+		  (real/rationalp y)
 		  (<= x y))
 	     (<= (cg x) (cg y)))
   :rule-classes :linear)
 
 (defthm n>=cg-linear
     (implies (and (>= n x)
-		  (rationalp x)
+		  (real/rationalp x)
 		  (integerp n))
 	     (>= n (cg x)))
   :rule-classes :linear)
 
 (defthm cg+int-rewrite
     (implies (and (integerp n)
-		  (rationalp x))
+		  (real/rationalp x))
 	     (equal (cg (+ x n)) (+ (cg x) n))))
 
 (defrule cg/int-rewrite
   (implies (and (integerp n)
                 (> n 0)
-                (rationalp x))
+                (real/rationalp x))
            (equal (cg (* (cg x) (/ n)))
                   (cg (/ x n))))
   :enable (cg))
@@ -180,13 +190,13 @@
 (defrule cg/int-rewrite-alt
   (implies (and (integerp n)
                 (> n 0)
-                (rationalp x))
+                (real/rationalp x))
            (equal (cg (* (/ n) (cg x)))
                   (cg (/ x n))))
   :enable (cg))
 
 (defthm fl-cg
-  (implies (rationalp x)
+  (implies (real/rationalp x)
            (equal (cg x)
                   (if (integerp x)
                       (fl x)
@@ -248,7 +258,7 @@
 
 (defrule mod-bnd-2
   (implies (and (<= 0 m)
-                (case-split (rationalp m)))
+                (case-split (real/rationalp m)))
            (<= (mod m n) m))
   :enable (mod)
   :rule-classes :linear)
@@ -256,7 +266,7 @@
 (defthm mod-does-nothing
   (implies (and (< m n)
                 (<= 0 m)
-                (case-split (rationalp m)))
+                (case-split (real/rationalp m)))
            (equal (mod m n)
                   m)))
 
@@ -298,15 +308,15 @@
     (implies (and (= (mod m n) 0)
 		  (< m (* 2 n))
                   (< 0 m)
-		  (rationalp m)
-		  (rationalp n))
+		  (real/rationalp m)
+		  (real/rationalp n))
 	     (= m n))
   :rule-classes ())
 
 (defrule mod-0-0
   (implies (and (integerp p)
-                (rationalp m)
-                (rationalp n))
+                (real/rationalp m)
+                (real/rationalp n))
            (iff (= (mod m (* n p)) 0)
                 (and (= (mod m n) 0)
                      (= (mod (fl (/ m n)) p) 0))))
@@ -315,24 +325,24 @@
 
 (defthm mod-equal-int
   (implies (and (= (mod a n) (mod b n))
-                (rationalp a)
-                (rationalp b))
+                (real/rationalp a)
+                (real/rationalp b))
            (integerp (/ (- a b) n)))
   :rule-classes ())
 
 (defthm mod-equal-int-reverse
   (implies (and (integerp (/ (- a b) n))
-                (rationalp a)
-                (rationalp b)
-                (rationalp n)
+                (real/rationalp a)
+                (real/rationalp b)
+                (real/rationalp n)
                 (< 0 n))
            (= (mod a n) (mod b n)))
   :rule-classes ())
 
 (defthm mod-force-equal
   (implies (and (< (abs (- a b)) n)
-                (rationalp a)
-                (rationalp b)
+                (real/rationalp a)
+                (real/rationalp b)
                 (integerp n))
           (iff (= (mod a n) (mod b n))
                (= a b)))
@@ -340,8 +350,8 @@
 
 (defthmd mod-mult
     (implies (and (integerp a)
-                  (rationalp m)
-		  (rationalp n))
+                  (real/rationalp m)
+		  (real/rationalp n))
 	     (equal (mod (+ m (* a n)) n)
 		    (mod m n))))
 
@@ -349,8 +359,8 @@
   (implies (and (<= (* a n) m)
                 (< m (* (1+ a) n))
                 (integerp a)
-                (rationalp m)
-                (rationalp n))
+                (real/rationalp m)
+                (real/rationalp n))
            (= (mod m n) (- m (* a n))))
   :prep-books (
     (set-default-hints '((ACL2::nonlinearp-default-hint++
@@ -361,8 +371,8 @@
   (implies (and (< m (+ (* a n) r))
                 (<= (* a n) m)
                 (integerp a)
-                (case-split (rationalp m))
-                (case-split (rationalp n)))
+                (case-split (real/rationalp m))
+                (case-split (real/rationalp n)))
            (< (mod m n) r))
   :prep-books (
     (set-default-hints '((ACL2::nonlinearp-default-hint++
@@ -371,14 +381,14 @@
   :rule-classes :linear)
 
 (defthmd mod-sum
-    (implies (and (rationalp a)
-		  (rationalp b))
+    (implies (and (real/rationalp a)
+		  (real/rationalp b))
 	     (equal (mod (+ a (mod b n)) n)
 		    (mod (+ a b) n))))
 
 (defthmd mod-diff
-  (implies (and (case-split (rationalp a))
-                (case-split (rationalp b)))
+  (implies (and (case-split (real/rationalp a))
+                (case-split (real/rationalp b)))
            (equal (mod (- a (mod b n)) n)
                   (mod (- a b) n))))
 
@@ -400,9 +410,9 @@
                   (mod x (expt 2 b)))))
 
 (defthmd mod-prod
-  (implies (and (rationalp m)
-                (rationalp n)
-                (rationalp k))
+  (implies (and (real/rationalp m)
+                (real/rationalp n)
+                (real/rationalp k))
            (equal (mod (* k m) (* k n))
                   (* k (mod m n)))))
 
