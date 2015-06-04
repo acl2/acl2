@@ -38,6 +38,9 @@
 (include-book "linkcheck")
 (include-book "centaur/bridge/to-json" :dir :system)
 (include-book "oslib/copy" :dir :system)
+
+(include-book "centaur/misc/tshell" :dir :system)
+
 (set-state-ok t)
 (program)
 
@@ -495,13 +498,16 @@
        ;; gets rid of the ~ characters.
        (dir-fix (acl2::extend-pathname dir "." state))
        (zip.sh  (acl2::extend-pathname dir-fix "zip.sh" state))
-       ((mv erp val state)
-        (time$ (sys-call+ "sh" (list zip.sh dir-fix) state)
+       (cmd (string-append "sh "
+             (string-append zip.sh
+              (string-append " " dir-fix))))
+       ((mv exit-status lines)
+        (time$ (acl2::tshell-call cmd :print t)
                :msg "; XDOC zip.sh: ~st sec, ~sa bytes.~%"))
-       ((when erp)
+       ((unless (equal exit-status 0))
         (er hard? 'run-fancy-zip
             "zip.sh failed (exit code ~x0).  ~x1."
-            erp val)
+            exit-status lines)
         state))
     state))
 
