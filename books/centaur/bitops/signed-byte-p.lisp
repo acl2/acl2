@@ -83,6 +83,13 @@ declarations."
            (signed-byte-p (+ 1 n) (- x)))
   :hints(("Goal" :in-theory (enable signed-byte-p))))
 
+(defthm basic-signed-byte-p-of-unary-minus-2
+  ;; ACL2's fancy unification stuff means this works fine in the common case
+  ;; that you're dealing with quoted constants.
+  (implies (unsigned-byte-p n x)
+           (signed-byte-p (+ 1 n) (- x)))
+  :hints(("Goal" :in-theory (enable signed-byte-p unsigned-byte-p))))
+
 (defthm basic-signed-byte-p-of-binary-minus
   ;; ACL2's fancy unification stuff means this works fine in the common case
   ;; that you're dealing with quoted constants.

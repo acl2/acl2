@@ -34,7 +34,7 @@
 (in-package "BITSETS")
 (include-book "bignum-extract")
 (include-book "tools/include-raw" :dir :system)
-; (depends-on "bignum-extract-opt.lsp")
+; (depends-on "bignum-extract-opt-raw.lsp")
 
 
 (local (defund bignum-extract-slow (x slice)
@@ -50,8 +50,8 @@
 (local (defthm bignum-extract-slow-correct
          (equal (bignum-extract-slow x slice)
                 (bignum-extract x slice))
-         :hints(("Goal" :in-theory (enable bignum-extract-slow
-                                           bignum-extract)))))
+         :hints(("Goal" :in-theory (acl2::enable bignum-extract-slow
+                                                 bignum-extract)))))
 
 
 (defttag bignum-extract)
