@@ -35,24 +35,71 @@
 (include-book "centaur/gl/gl-mbe" :dir :system)
 (include-book "centaur/gl/def-gl-rewrite" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/alists/alist-keys" :dir :System))
-(local (include-book "std/osets/element-list" :dir :system))
-
+(local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
-(local (std::deflist svarlist-p (x) (svar-p x) :true-listp t :elementp-of-nil nil))
+(local (std::deflist svarlist-p (x)
+         (svar-p x)
+         :true-listp t
+         :elementp-of-nil nil))
+
+(local (defthm true-listp-nthcdr
+         (implies (true-listp x)
+                  (true-listp (nthcdr n x)))
+         :hints(("Goal" :in-theory (e/d (nthcdr)
+                                        (acl2::cdr-nthcdr))
+                 :induct (nthcdr n x)))
+         :rule-classes :type-prescription))
+
+(local (defthm aig-eval-list-of-append
+         (Equal (aig-eval-list (append x y) env)
+                (append (aig-eval-list x env)
+                        (aig-eval-list y env)))))
+
+(local (defthm len-of-aig-eval-list
+         (equal (len (aig-eval-list x env))
+                (len x))))
+
+(local (defthm consp-of-aig-eval-list
+         (equal (consp (aig-eval-list x env))
+                (consp x))))
+
+(local (defthm nthcdr-of-append-equal-len
+         (implies (equal (nfix n) (len x))
+                  (equal (nthcdr n (append x y))
+                         y))
+         :hints(("Goal" :in-theory (e/d (nthcdr)
+                                        (acl2::cdr-nthcdr))
+                 :induct (nthcdr n x)))))
+
+(local (defthm take-of-append-equal-len
+         (implies (equal (nfix n) (len x))
+                  (equal (take n (append x y))
+                         (list-fix x)))
+         :hints(("Goal" :in-theory (e/d (acl2::take-redefinition))
+                 :induct (nthcdr n x)))))
+
+(local (in-theory (disable double-containment)))
+
+(local (defthm 3vec-p-of-4vec-mask
+         (implies (3vec-p x)
+                  (3vec-p (4vec-mask mask x)))
+         :hints(("Goal" :in-theory (enable 4vec-mask 3vec-p))
+                (acl2::logbitp-reasoning))))
 
 
-(defxdoc svex-symbolic-evaluation
-  :parents (svex)
-  :short "Translating SVEX objects into AIGs for symbolic evaluation")
+(defxdoc bit-blasting
+  :parents (expressions)
+  :short "We implement an efficient translation from @(see svex) expressions
+into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
 
-(defxdoc symbolic.lisp :parents (svex-symbolic-evaluation))
-(local (xdoc::set-default-parents symbolic.lisp))
+(local (xdoc::set-default-parents bit-blasting))
 
 (defsection svex-envs-mask-equiv
   ;; this is only used in symbolic.lisp so could be moved there
-  (acl2::defquant svex-envs-mask-equiv (masks env1 env2)
+  (defquant svex-envs-mask-equiv (masks env1 env2)
     (forall var
             (equal (equal (4vec-mask (svex-mask-lookup (svex-var var) masks)
                                      (svex-env-lookup var env1))
@@ -60,28 +107,51 @@
                                      (svex-env-lookup var env2)))
                    t)))
 
-  (acl2::defexample svex-envs-mask-equiv-mask-look-example
+  (defexample svex-envs-mask-equiv-mask-look-example
     :pattern (svex-mask-lookup (svex-var var) masks)
     :templates (var)
     :instance-rulename svex-envs-mask-equiv-instancing)
 
-  (acl2::defexample svex-envs-mask-equiv-env-look-example
+  (defexample svex-envs-mask-equiv-env-look-example
     :pattern (svex-env-lookup var env)
     :templates (var)
     :instance-rulename svex-envs-mask-equiv-instancing)
+
+  (local (acl2::def-witness-ruleset svex-envs-mask-equiv-reasoning
+           '(svex-envs-mask-equiv-instancing
+             svex-envs-mask-equiv-witnessing
+             svex-envs-mask-equiv-instancing
+             svex-envs-mask-equiv-env-look-example
+             svex-envs-mask-equiv-mask-look-example)))
 
   (deffixequiv svex-envs-mask-equiv
     :args ((masks svex-mask-alist-p)
            (env1 svex-env-p)
            (env2 svex-env-p))
     :hints (("goal" :cases ((svex-envs-mask-equiv masks env1 env2)))
-            (acl2::witness)))
+            (witness :ruleset svex-envs-mask-equiv-reasoning)))
 
-  (local (acl2::defexample svex-argmasks-okp-example
+  (local (defexample svex-argmasks-okp-example
            :pattern (equal (4vec-mask mask (svex-apply fn (svexlist-eval args env1)))
                            (4vec-mask mask (svex-apply fn (svexlist-eval args env2))))
            :templates (env1 (svexlist-eval args env2))
            :instance-rulename svex-argmasks-okp-instancing))
+
+  (local (acl2::def-witness-ruleset svex-mask-alist-reasoning
+           '(svex-mask-alist-complete-witnessing
+             svex-mask-alist-complete-instancing
+             svex-mask-alist-complete-example
+             svex-mask-alist-partly-complete-witnessing
+             svex-mask-alist-partly-complete-instancing
+             svex-mask-alist-partly-complete-example)))
+
+  (local (acl2::def-witness-ruleset svex-env-reasoning
+           '(svex-envs-mask-equiv-reasoning
+             svex-mask-alist-reasoning
+             SVEX-ARGMASKS-OKP-WITNESSING
+             SVEX-ARGMASKS-OKP-INSTANCING
+             SVEX-ARGMASKS-OKP-EXAMPLE
+             )))
 
   (defthm-svex-eval-flag
     (defthm svex-eval-of-mask-equiv-envs
@@ -94,8 +164,8 @@
                       t))
       :hints ('(:expand ((:free (env) (svex-eval x env)))
                 :do-not-induct t)
-              (acl2::witness)
-              (acl2::witness)
+              (witness :ruleset svex-env-reasoning)
+              (witness :ruleset svex-env-reasoning)
               ;; (and stable-under-simplificationp
               ;;      '(:use ((:instance svex-argmasks-okp-necc
               ;;               (mask (svex-mask-lookup x masks))
@@ -116,12 +186,6 @@
       :hints ('(:expand ((:free (env) (svexlist-eval x env))
                          (svex-argmasks-lookup x masks))))
       :flag list)))
-
-(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-(local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
-
-
-
 
 
 ;; A symbolic 4vec, with lists of AIGs for the upper/lower
@@ -580,7 +644,7 @@ results in at most n+1 bits.</p>"
   (b* ((position (lnfix position))
        (x (lifix x)))
     (logior (loghead position x)
-            (ash (acl2::b-not (bool->bit (eql 0 (logtail position x)))) position))))
+            (ash (b-not (bool->bit (eql 0 (logtail position x)))) position))))
 
 
 (defsection masked-shifts
@@ -700,7 +764,7 @@ results in at most n+1 bits.</p>"
                                                      shift)))
                     (logior (lognot mask) (ash x shift))))
     :hints (("goal" :cases ((<= (integer-length mask) shift)))))
-  
+
   (defthm mask-logapp-of-logcollapse
     (implies (and (natp mask)
                   (natp width))
@@ -1146,7 +1210,7 @@ results in at most n+1 bits.</p>"
 ;;            (logand mask (aig-list->s x env)))
 ;;     :hints(("Goal" :in-theory (e/d (acl2::logand** aig-list->s)
 ;;                                    (GL::SCDR-WHEN-S-ENDP))))))
-       
+
 (define aig-i2v ((x integerp))
   :measure (integer-length x)
   :prepwork ((local (in-theory (enable acl2::integer-length**))))
@@ -1159,11 +1223,6 @@ results in at most n+1 bits.</p>"
            (ifix x))))
 
 
-(local (defthm 3vec-p-of-4vec-mask
-         (implies (3vec-p x)
-                  (3vec-p (4vec-mask mask x)))
-         :hints(("Goal" :in-theory (enable 4vec-mask 3vec-p))
-                (acl2::logbitp-reasoning))))
 
 (define a4vec-mask ((mask 4vmask-p)
                     (x a4vec-p))
@@ -1176,7 +1235,7 @@ results in at most n+1 bits.</p>"
     (equal (a4vec-eval (a4vec-mask mask x) env)
            (4vec-mask mask (a4vec-eval x env)))
     :hints(("Goal" :in-theory (enable 4vec-mask)))))
-  
+
 
 (define a3vec-? ((x a4vec-p) (y a4vec-p) y3p (z a4vec-p) z3p)
   :returns (res a4vec-p)
@@ -1393,6 +1452,7 @@ results in at most n+1 bits.</p>"
                      (svex-eval (nth n x) env)))
          :hints(("Goal" :in-theory (enable nth svexlist-eval)
                  :induct (nth n x)))))
+
 (local (defthm nth-of-a4veclist-eval
          (equal (nth n (a4veclist-eval x env))
                 (and (< (nfix n) (len x))
@@ -1699,7 +1759,7 @@ results in at most n+1 bits.</p>"
     (if (< (lnfix n) (len x))
         (4vmask-fix (nth n x))
       -1)))
-  
+
 
 ;; (define maybe-a4vec-fix ((v (or (a4vec-p v) (not v))))
 ;;   :returns (vv a4vec-p)
@@ -1966,8 +2026,8 @@ results in at most n+1 bits.</p>"
                    ;;  (fn fn)
                    ;;  (args x)
                    ;;  (env (svex-a4vec-env-eval a4env aigenv)))
-                   
-                   
+
+
                    )
                   :do-not-induct t
                   :do-not '(fertilize generalize eliminate-destructors)
@@ -3489,43 +3549,6 @@ obviously 2-vectors.</p>"
   (b* (((a4vec x) x))
     (append x.upper x.lower)))
 
-(local (defthm true-listp-nthcdr
-         (implies (true-listp x)
-                  (true-listp (nthcdr n x)))
-         :hints(("Goal" :in-theory (e/d (nthcdr)
-                                        (acl2::cdr-nthcdr))
-                 :induct (nthcdr n x)))
-         :rule-classes :type-prescription))
-
-(local (defthm aig-eval-list-of-append
-         (Equal (aig-eval-list (append x y) env)
-                (append (aig-eval-list x env)
-                        (aig-eval-list y env)))))
-
-(local (defthm len-of-aig-eval-list
-         (equal (len (aig-eval-list x env))
-                (len x))))
-
-(local (defthm consp-of-aig-eval-list
-         (equal (consp (aig-eval-list x env))
-                (consp x))))
-
-(local (defthm nthcdr-of-append-equal-len
-         (implies (equal (nfix n) (len x))
-                  (equal (nthcdr n (append x y))
-                         y))
-         :hints(("Goal" :in-theory (e/d (nthcdr)
-                                        (acl2::cdr-nthcdr))
-                 :induct (nthcdr n x)))))
-
-(local (defthm take-of-append-equal-len
-         (implies (equal (nfix n) (len x))
-                  (equal (take n (append x y))
-                         (list-fix x)))
-         :hints(("Goal" :in-theory (e/d (acl2::take-redefinition))
-                 :induct (nthcdr n x)))))
-
-(local (in-theory (disable double-containment)))
 
 (local (defthm v2i-of-aig-eval-list
          (equal (gl::v2i (aig-eval-list x env))
