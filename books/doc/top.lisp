@@ -50,8 +50,12 @@
  ;; we should put it back in.  Do we care how long the manual takes to build?)
 (non-parallel-book)
 
+(include-book "centaur/misc/tshell" :dir :system)
+(value-triple (acl2::tshell-ensure))
+
 (include-book "centaur/misc/memory-mgmt" :dir :system)
 (value-triple (set-max-mem (* 10 (expt 2 30))))
+
 
 (include-book "relnotes")
 (include-book "practices")
