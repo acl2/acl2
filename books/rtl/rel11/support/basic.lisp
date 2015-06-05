@@ -478,3 +478,5 @@
 (defthm mod-2*m+1-rewrite
   (implies (integerp m)
            (equal (mod (1+ (* 2 m)) 2) 1)))
+
+(in-theory (disable mod))
