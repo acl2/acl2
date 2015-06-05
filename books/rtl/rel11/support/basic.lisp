@@ -221,7 +221,21 @@
          (equal (mod x 0)
                 (fix x))))
 
+#-non-standard-analysis
 (defthm rationalp-mod
+  (implies (rationalp x)
+           (rationalp (mod x y)))
+  :rule-classes (:rewrite :type-prescription))
+
+#+non-standard-analysis
+(defthm rationalp-mod
+  (implies (and (rationalp x)
+                (rationalp y))
+           (rationalp (mod x y)))
+  :rule-classes (:rewrite :type-prescription))
+
+#+non-standard-analysis
+(defthm realp-mod
   (implies (real/rationalp x)
            (real/rationalp (mod x y)))
   :rule-classes (:rewrite :type-prescription))
