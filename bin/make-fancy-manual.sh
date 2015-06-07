@@ -5,14 +5,13 @@
 # ACL2-Doc Emacs browser.
 
 # The normal usage of this program, at UT CS, is first to ensure that
-# /projects/acl2/devel/books/doc/manual/ exists and is up to date,
-# say, after running (in /projects/acl2/devel/):
-#   make -j 8 regression-everything USE_QUICKLISP=1 ACL2=/projects/acl2/devel/ccl-saved_acl2
+# books/doc/manual/ exists and is up to date, say, after running:
+#   make -j 8 regression-everything USE_QUICKLISP=1 ACL2=/projects/acl2/acl2/ccl-saved_acl2
 # and to ensure that
-# /projects/acl2/devel/books/system/doc/rendered-doc-combined.lsp is
-# up to date, for example after running (in /projects/acl2/devel/):
-#   make -j 8 DOC ACL2=/projects/acl2/devel/ccl-saved_acl2
-# Then, we typically execute the following in /projects/acl2/devel/:
+# books/system/doc/rendered-doc-combined.lsp is
+# up to date, for example after running:
+#   make -j 8 DOC ACL2=/projects/acl2/acl2/ccl-saved_acl2
+# Then, we typically execute the following in a directory like /projects/acl2/acl2/:
 #   bin/make-fancy-manual.sh
 # But optional arguments may be given:
 #   bin/make-fancy-manual.sh [booksdir] [destdirmain] [destdirsub]
@@ -20,7 +19,7 @@
 # it is executed in destdirmain with destdirsub as the argument.
 
 if [ $# -lt 1 ] ; then
-    books=/projects/acl2/acl2/books
+    books=`pwd`/books
 else
     books=$1
 fi
