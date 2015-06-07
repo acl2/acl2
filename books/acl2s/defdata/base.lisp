@@ -546,6 +546,15 @@
          (ipart (nth-rational (defdata::nfixg (cadr two-n-list)))))
     (complex rpart ipart)))
 
+(defun nth-complex-rational-between (n lo hi)
+  (b* ((rlo (realpart lo))
+       (rhi (realpart hi))
+       (ilo (imagpart lo))
+       (ihi (imagpart hi))
+       ((list n1 n2) (defdata::split-nat 2 n)))
+    (complex (nth-rational-between n1 rlo rhi) (nth-rational-between n2 ilo ihi))))
+
+
 (encapsulate 
  ((nth-acl2-number (n) t :guard (natp n)))
  (local (defun nth-acl2-number (n)
@@ -564,6 +573,25 @@
           (t (nth-complex-rational seed)))))
 
 (defattach nth-acl2-number nth-acl2-number-builtin)
+
+(defun nth-acl2-number-between (n lo hi)
+  (b* (((mv choice seed)
+        (defdata::switch-nat 3 n)))
+    (case choice
+          (0 (nth-integer-between seed lo hi))
+          (1 (nth-rational-between seed lo hi))
+          (t (nth-complex-rational-between seed lo hi)))))
+
+(defun nth-number-between-fn (n lo hi type)
+  (case type
+    (integer (nth-integer-between n lo hi))
+    (rational (nth-rational-between n lo hi))
+    (complex-rational (nth-complex-rational-between n lo hi))
+    (t (nth-acl2-number-between n lo hi))))
+  
+
+(defmacro nth-number-between (n lo hi &key type)
+  `(nth-number-between-fn ,n ,lo ,hi (or ,type 'acl2s::acl2-number)))
 
 ;(defdata character-list (listof character))
 ;;only strings upto len 1 to 8
@@ -953,7 +981,7 @@
                :size t 
                :predicate character-listp
                :enumerator nth-character-list  
-               :prettyified-def (listof character))
+               ::prettyified-def (listof character))
                
 (defdata::register-type standard-char-list 
                :size t 

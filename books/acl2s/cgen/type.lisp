@@ -6,7 +6,7 @@
 
 (in-package "CGEN"
 )
-(include-book "std/util/bstar" :dir :system)
+
 (include-book "basis")
 (include-book "../defdata/defdata-util")
 
@@ -129,6 +129,15 @@
 (verify-termination acl2::cons-term); ASK MATT to make these logic mode
 (set-verify-guards-eagerness 1)
 
+
+(defun make-dumb-type-alist (vars)
+  "the default dumb type-alist with all variables associated with TOP i.e acl2s::all"
+  (declare (xargs :guard (symbol-listp vars))) ;use proper-symbol-listp
+  (pairlis$ vars (make-list (len vars)
+                            :initial-element 
+                            (list 'ACL2S::ALL))))
+
+
 (defun get-acl2-type-alist-fn (cl vars ens state)
   (declare (xargs :mode :program :stobjs (state)))
   (b* (((mv erp type-alist &)
@@ -144,9 +153,7 @@
 ;This context, gives us the type-alist ACL2 inferred from the
 ;the current subgoal i.e. cl
        (vt-acl2-alst (if erp ;contradiction
-                         (pairlis$ vars (make-list (len vars)
-                                                   :initial-element 
-                                                   (list 'ACL2S::ALL)))
+                         (make-dumb-type-alist vars)
                        (decode-acl2-type-alist type-alist vars))))
    vt-acl2-alst))
 
@@ -156,6 +163,10 @@
                            ,(or vars '(acl2::all-vars1-lst cl '()))
                            ,(or ens '(acl2::ens state))
                            state))
+
+
+
+
 
 ; utility fn to print if verbose flag is true 
 (defmacro cw? (verbose-flag &rest rst)
@@ -283,39 +294,6 @@
 ;;    type-class defs) NIL)
  
 
-;; NOTE: In the following the type 'empty' has
-;; special status and treated seperately
-;; (def meet (typ1 typ2 vl wrld)
-;;   (decl :sig ((symbol symbol vl plist-worldp) -> symbol)
-;;         :doc "find smaller type in subtype hierarchy/lattice")
-;;   (declare (xargs :verify-guards nil))
-;;   ;; (decl :sig ((possible-defdata-type-p possible-defdata-type-p
-;; ;;                plist-world) -> possible-defdata-type-p)
-;;   (b* (((when (or (eq 'acl2::empty typ1)
-;;                   (eq 'acl2::empty typ2))) 'acl2::empty)
-;;        ((when (eq typ2 typ1)) typ2)
-;;        ((unless (and (is-a-typeName typ1 wrld)
-;;                      (is-a-typeName typ2 wrld)))
-;;         (prog2$
-;;          (cw? (verbose-stats-flag vl)
-;;               "~|CEgen/Note: ~x0 or ~x1 not a defdata type. ~ Meet returning universal type ALL.~|" typ1 typ2)
-;;          'acl2::all))
-;;        ((when (eq 'acl2::all typ1)) typ2)
-;;        ((when (eq 'acl2::all typ2)) typ1)
-;;        ((when (is-subtype typ1 typ2 wrld))   typ1)
-;;        ((when (is-subtype typ2 typ1 wrld))   typ2)
-;;        ((when (is-disjoint typ2 typ1 wrld))  'acl2::empty) ;Should we instead define the NULL type??? Modified: so Ans is YES instead of Ans: NO, the way its used now, this is right!
-;; ;give preference to custom type
-;;        ((when (is-a-custom-type typ1 wrld)) typ1)
-;;        ((when (is-a-custom-type typ2 wrld)) typ2)
-
-;; ; choose the one that was defined later (earlier in 
-;; ; reverse chronological order)
-;;        (all-types (strip-cars (table-alist 'defdata::types-info-table wrld)))
-;;        )
-;;    (if (< (position-eq typ1 all-types) (position-eq typ2 all-types)) 
-;;        typ1 
-;;      typ2)))
 
 (defmacro   verbose-stats-flag ( vl)
   `(> ,vl 2)) 
@@ -362,7 +340,7 @@
 
 ; choose the one that was defined later (earlier in 
 ; reverse chronological order)
-       (all-types (strip-cars (table-alist 'defdata::type-metadata-table wrld)))
+       (all-types (strip-cars (table-alist 'DEFDATA::TYPE-METADATA-TABLE wrld)))
        )
    (if (< (position-eq typ1 all-types) (position-eq typ2 all-types)) 
        typ1 
@@ -400,7 +378,7 @@
                   ((unless (and curr-typs-entry 
                                 (consp (cdr curr-typs-entry))))
 ; no or invalid entry, though this is not possible, because we call it with
-; default type-alist of ((x . ('ALL)) ...)
+; default type-alist of ((x . ('ACL2S::ALL)) ...)
                    ans.)
                   (curr-typs (cdr curr-typs-entry))
                   (- (cw? (and (verbose-stats-flag vl) 
@@ -437,15 +415,11 @@
       (dumb-type-alist-infer-from-terms (cdr H) vl wrld ans.))))
 
 (def dumb-type-alist-infer (H vars vl wrld)
-  (decl :sig ((pseudo-term-listp symbol-listp fixnum plist-worldp) 
+  (decl :sig ((pseudo-term-listp proper-symbol-listp fixnum plist-worldp) 
               -> symbol-alistp)
         :doc "dumb infer defdata types from terms in H")
   (declare (xargs :verify-guards nil))
-  (dumb-type-alist-infer-from-terms 
-   H vl wrld
-   (pairlis$ vars (make-list (len vars)
-                             :initial-element 
-                             (list 'ACL2S::ALL)))))
+  (dumb-type-alist-infer-from-terms H vl wrld (make-dumb-type-alist vars)))
 
 (defmacro   debug-flag  (vl)
   `(> ,vl 3))
@@ -460,7 +434,7 @@
 ; variables that the user wants in his final type-alist
 ; A1 and A2 and the return value have type
 ; (listof (cons symbolp (listof possible-defdata-type-p)))
-; TODO: if val has more than 1 type, then we treat it as (list 'ALL)
+; TODO: if val has more than 1 type, then we treat it as (list 'ACL2S::ALL)
 
 ; Usually its called with A1 as the acl2 type alist and A2 as the
 ; top-level type alist. so it might contain
@@ -478,18 +452,22 @@
                                                (mv typ2 typ1)))
                                  (M (table-alist 'defdata::type-metadata-table wrld))
                                  (P (defdata::predicate-name dt M))
-
+                                 
+                                 ((unless (defdata::plausible-predicate-functionp P wrld)) ;abort before calling ev-fncall on non-function
+                                  (prog2$ (cw? (debug-flag vl)
+                                               "~|CEGen/Warning:: ~x0: Bad args to eval-and-get-meet: ~x1 ~x2. ~|" ctx typ1 typ2)
+                                          (mv t st))) ;prefer singleton type
                                  ;; args to ev-fncall-w is a list of evaluated values.
                                  ((mv erp res) (acl2::ev-fncall-w P (list (if (quotep st) ;possible bug caught, what if st is not quoted!
                                                                               (acl2::unquote st)
                                                                             st)) 
                                                                   wrld nil nil t nil nil))
                                  (- (cw? (and erp (debug-flag vl))
-                                         "~|CEgen/Error in ~x0: while calling ev-fncall-w on ~x1~|" ctx (cons P (list st))))
+                                         "~|CEgen/Error:: ~x0: while calling ev-fncall-w on ~x1~|" ctx (cons P (list st))))
                                  (- (cw? (and (not erp) (not res) (debug-flag vl))
                                          "~|CEgen/Debug:: ~x0 evaluated to nil~|" (cons P (list st))))
                                  ((when erp)
-                                  (mv t 'ACL2S::EMPTY)))
+                                  (mv t st))) ;prefer singleton type
                               (if res (mv nil st) (mv nil 'ACL2S::EMPTY)))))
   (if (endp A1)
       (mv nil '())

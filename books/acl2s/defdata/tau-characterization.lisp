@@ -134,15 +134,16 @@ data last modified: [2014-08-06]
            (if cons-x ;dest-elim 1 round successful
                (cond (remaining-x-es
                       (prog2$ ;check this
-                       (cw "~| Presence of ~x0 precludes a tau characterization of ~x1~%" remaining-x-es P)
-                       "Multiple sig terms i.e. (P1 (f x1 ...)) \/ (P2 (f x1 ...)) not allowed in conclusion of signature rule"))
+                       (cw? nil "~| Presence of ~x0 precludes a tau characterization of ~x1~%" remaining-x-es P)
+"Multiple sig terms i.e. (P1 (f x1 ...)) \/ (P2 (f x1 ...)) 
+ not allowed in conclusion of signature rule."))
                      ((nested-functional-terms-with-vars-p dest-es x1--xk)
                       (prog2$
-                       (cw "~| Nested destructors precludes a tau characterization of ~x0~%" P)
+                       (cw? nil "~| Nested destructors precludes a tau characterization of ~x0~%" P)
                        "Nesting i.e. (P (f ... (g x1 ...) ...) not allowed in conclusion of signature rule"))
                      (t `(IMPLIES (AND . ,dest-es) (,P ,cons-x))))
              (prog2$
-              (cw "~| Non-dest-eliminable AND nest ~x0 precludes a tau characterization of ~x1~%" fes P)
+              (cw? nil "~| Non-dest-eliminable AND nest ~x0 precludes a tau characterization of ~x1~%" fes P)
               "Illegal tau rule")))
        (if fes ;there is one nested term
            (if (= (depth-var x (car fes)) 2)
@@ -186,7 +187,9 @@ data last modified: [2014-08-06]
           (if (= (depth-var x (car fes2)) 2)
               `(IMPLIES (AND . ,(cons (list P x) (dumber-negate-lit-lst (set-difference-equal terms fes2)))) ,(car fes2)) ;sig rule
             "Nesting i.e. (P (f ... (g x1 ...) ...) not allowed in conclusion of signature rule"))
-         (t "Multiple sig terms i.e. (P1 (f x1 ...)) \/ (P2 (f x1 ...)) not allowed in conclusion of signature rule")))
+         (t 
+"Multiple sig terms i.e. (P1 (f x1 ...)) \/ (P2 (f x1 ...)) 
+ not allowed in conclusion of signature rule")))
     "Impossible: Empty clause"))
 
 (defloop tau-rules-Px=>CNF (clauses Px)
@@ -262,19 +265,17 @@ data last modified: [2014-08-06]
 
 
 
-
-(defun recognizer-call (call C)
+(defun recognizer-call (call C wrld)
   (case-match call
-    ((P x) (and (proper-symbolp x) (get-conx-name P C) call))
+    ((P x) (and (proper-symbolp x) (or (get-conx-name P C) (tau-predicate-p P wrld)) call))
     (& nil)))
 
-(defloop governing-recognizer-call (terms C) ;cheat: just give the first
-  (for ((term in terms)) (thereis (recognizer-call term C))))
-
+(defloop governing-recognizer-call (terms C wrld) ;cheat: just give the first
+  (for ((term in terms)) (thereis (recognizer-call term C wrld))))
 
 (defun disjoint-clause2-p (cl1 cl2 C wrld)
-  (b* ((P1x (governing-recognizer-call cl1 C))
-       (P2x (governing-recognizer-call cl2 C))
+  (b* ((P1x (governing-recognizer-call cl1 C wrld))
+       (P2x (governing-recognizer-call cl2 C wrld))
        (evg1-term (get-first-eq-constant cl1 wrld))
        (evg2-term (get-first-eq-constant cl2 wrld))
        (evg1 (and evg1-term (third evg1-term)))
@@ -334,7 +335,7 @@ data last modified: [2014-08-06]
                       ;;TODO The conj clauses eaten/consumed by above should be
                       ;;excluded from below call!!
                       (tau-rules-Px=>SoP conj-clauses (car Px) (cadr Px) C wrld))
-            (list "Dont know how to characterize (using tau rules) a non-disjoint union type")))
+            (list "Unable to characterize (using tau rules) a non-disjoint union type")))
 
       (b* ((clauses (acl2::cnf-dnf t te t))) ;get cnf
         (tau-rules-Px=>CNF clauses Px)))))
@@ -431,14 +432,15 @@ data last modified: [2014-08-06]
        (msgs=> (remove-duplicates-equal (append (and (not rule-=>-Px-tau-acceptable-p) (list unacceptable-tau-rule-msg)) msgs=>)))
        (msgs<= (remove-duplicates-equal (append (and (not rule-Px-=>-tau-acceptable-p) (list unacceptable-tau-rule-msg)) msgs<=)))
        (?recp (get1 :recp kwd-alist))
+       (yes (get1 :print-commentary kwd-alist))
        )
     
 
     
-    (append (and msgs<= `((value-triple (cw "~| Incomplete tau characterization of ~x0 <= body. ~% Failure messages: ~x1 ~%" ',Px ',msgs<=))))
-            (and msgs=> `((value-triple (cw "~| Incomplete tau characterization of ~x0 => body. ~% Failure messages: ~x1 ~%" ',Px ',msgs=>))))
+    (append (and msgs<= `((commentary ,yes "~| ~x0 <= body -- not complete. ~|Reasons: ~x1 ~%" ',Px ',msgs<=)))
+            (and msgs=> `((commentary ,yes "~| ~x0 => body -- not complete. ~|Reasons: ~x1 ~%" ',Px ',msgs=>)))
             (and (not msgs=>) (not msgs<=) rule-Px-=>-tau-acceptable-p rule-Px-=>-tau-acceptable-p
-                 `((value-triple (cw "~|Defdata/Note: Complete tau characterization of ~x0 successful.~%" ',Px))))
+                 `((commentary ,yes "~|Defdata/Note: ~x0 relatively complete for Tau.~%" ',(car Px))))
             (and rule-=>-Px 
                  `((DEFTHM ,(symbol-fns::prefix 'def '=> name)
                      ,rule-=>-Px
