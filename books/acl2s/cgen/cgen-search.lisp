@@ -7,8 +7,6 @@
 
 (in-package "CGEN")
 
-;Useful Macros for concise/convenient code.
-(include-book "std/util/bstar" :dir :system)
 (include-book "basis")
 
 (include-book "type")
@@ -142,6 +140,9 @@
     :guard (symbol-doublet-listp A)))
  
   (local (defun hypotheses-val (A) (list A))))
+
+
+
 ;(defstub conclusion-val (*) => *)
 (encapsulate
   ((conclusion-val
@@ -163,11 +164,125 @@
   (decl :sig ((pseudo-term-list) -> (oneof 'T pseudo-term))
         :doc
 "?: Transform a list of hypotheses into an equivalent hypothesis
- eg: (single-hypothesis '((posp x) (stringp s)) ==> (and (posp x) (stringp s))
+ eg: (single-hypothesis '((posp x) (stringp s))) ==> (and (posp x) (stringp s))
      (single-hypothesis '()) ==> T")
   (if (endp hyp-list)
     't
     `(and ,@hyp-list)))
+
+
+(def make-let-binding-for-sigma (vs sigma-symbol)
+  (decl :sig ((symbol-list symbol) -> symbol-doublet-listp)
+        :doc 
+"(make-let-binding-for-sigma '(x y) 'A) => ((x (get-val x A))
+                                            (y (get-val y A)))
+")
+  (if (endp vs)
+      '()
+    (cons `(,(first vs) (cadr (assoc-eq ',(first vs) ,sigma-symbol)))
+          (make-let-binding-for-sigma (cdr vs) sigma-symbol))))
+
+
+
+(defs 
+  (mv-list-ify (term mv-sig-alist)
+    (decl :sig ((pseudo-term symbol-list) -> pseudo-term)
+          :doc "wrap all mv fn calls with mv-list")
+    (if (variablep term)
+      term
+      (if (fquotep term)
+        term
+      (b* ((fn (ffn-symb term))
+           (args (fargs term))
+           (A mv-sig-alist)
+           (entry (assoc-eq fn A))
+           ((unless entry)
+            (acl2::cons-term fn
+                       (mv-list-ify-lst args A)))
+           ((cons fn m) entry)) 
+;m is output arity and should be greater than 1.
+        (acl2::cons-term 'acl2::mv-list
+                   (list (kwote m)
+                         (acl2::cons-term fn (mv-list-ify-lst args A))))))))
+
+  (mv-list-ify-lst (terms mv-sig-alist)
+   (decl :sig ((pseudo-term-list symbol-list) -> pseudo-term-list))
+   (if (endp terms)
+       '()
+     (cons (mv-list-ify (car terms) mv-sig-alist)
+           (mv-list-ify-lst (cdr terms) mv-sig-alist)))))
+
+
+; 9th Nov '13 -- stupid bug. I recently fixed -gv function to have
+; :verify-guards t, so that even in the presence of
+; set-verify-guards-eagerness 0, but in program mode, or if
+; hypotheses-val-current has a program mode function, then the pair
+; :verify-guards t is not allowed.
+(def make-hypotheses-val-defuns (terms ord-vars mv-sig-alist programp)
+  (decl :sig ((pseudo-term-list symbol-list symbol-alist boolean) -> all)
+        :doc "make the defun forms for hypotheses-val defstub")
+  `((defun hypotheses-val-current (A)
+      (declare (ignorable A))
+      (declare (xargs :verify-guards nil :normalize nil
+                      :guard (symbol-doublet-listp A)))
+      (let ,(make-let-binding-for-sigma ord-vars 'A)
+        (declare (ignorable ,@ord-vars))
+          ,(mv-list-ify (single-hypothesis terms)
+                        mv-sig-alist)))
+    (defun hypotheses-val-current-gv (A)
+      (declare (xargs :guard T :verify-guards ,(not programp)))
+      (ec-call (hypotheses-val-current A)))))
+
+(def make-conclusion-val-defuns (term ord-vars mv-sig-alist programp)
+  (decl :sig ((pseudo-term symbol-list symbol-alist boolean) -> all)
+        :doc "make the defun forms for conclusion-val defstub")
+  `((defun conclusion-val-current (A)
+      (declare (ignorable A))
+      (declare (xargs :verify-guards nil :normalize nil
+                      :guard (symbol-doublet-listp A)))
+      (let ,(make-let-binding-for-sigma ord-vars 'A)
+        (declare (ignorable ,@ord-vars))
+          ,(mv-list-ify term mv-sig-alist)))
+    (defun conclusion-val-current-gv (A)
+      (declare (xargs :guard T :verify-guards ,(not programp)))
+      (ec-call (conclusion-val-current A)))))
+
+;add the following for guard verif
+(defthm symbol-doublet-listp-=>-symbol-alistp
+  (implies (symbol-doublet-listp x)
+           (symbol-alistp x))
+  :rule-classes ((:forward-chaining)
+                 (:rewrite :backchain-limit-lst 1)
+                 ))
+
+
+
+;;; [2015-04-07 Tue]  
+;;; collect stats about which hyps failed to satisfy.
+(encapsulate
+  ((hyp-val-list
+    (A) t
+    :guard (symbol-doublet-listp A)))
+ 
+  (local (defun hyp-val-list (A) A)))
+
+
+(def make-hyp-val-list-defuns (terms ord-vars mv-sig-alist programp)
+  (decl :sig ((pseudo-term-list symbol-list symbol-alist boolean) -> all)
+        :doc "make the defun forms for hyp-val-list defstub")
+  `((defun hyp-val-list-current (A)
+      (declare (ignorable A))
+      (declare (xargs :verify-guards nil :normalize nil
+                      :guard (symbol-doublet-listp A)))
+      (let ,(make-let-binding-for-sigma ord-vars 'A)
+        (declare (ignorable ,@ord-vars))
+          ,(mv-list-ify (cons 'LIST terms)
+                        mv-sig-alist)))
+    (defun hyp-val-list-current-gv (A)
+      (declare (xargs :guard T :verify-guards ,(not programp)))
+      (ec-call (hyp-val-list-current A)))))
+
+
 
 
 (set-verify-guards-eagerness 2)
@@ -342,7 +457,7 @@ cgen-state"
           (backtrack-limit :backtrack-limit)
           (search-strategy :search-strategy)
           (testing-enabled :testing-enabled)
-          (cgen-timeout :cgen-timeout)
+          (cgen-local-timeout :cgen-local-timeout)
           (print-cgen-summary :print-cgen-summary)
           ) v))
     (and (fixnump num-trials)
@@ -353,7 +468,7 @@ cgen-state"
          (fixnump backtrack-limit)
          (member-eq search-strategy acl2s::*search-strategy-values*)
          (member-eq testing-enabled acl2s::*testing-enabled-values*)
-         (rationalp cgen-timeout)
+         (rationalp cgen-local-timeout)
          (booleanp print-cgen-summary))))
          
 (defun cgen-params-p (v)
@@ -366,20 +481,24 @@ cgen-state"
 ; cts is a list of counterexample assignments/value-bindings
 ; wts is a list of witness          " 
 ; vacs is a list of vacuous         "
-; #dups is the number of duplicates encountered
-
+; #dups is the number of duplicates encountered (but only in wts and cts [2015-04-07 Tue]) 
+; [2015-04-07 Tue] vacs-hyp-vals-list is (listof (listof boolean))
 (defrec test-outcomes% 
-  ((|#cts| . cts) (|#wts| . wts) (|#vacs| . vacs) . |#dups|)
+  ((|#cts| cts cts-hyp-vals-list) (|#wts| wts wts-hyp-vals-list) (|#vacs| vacs vacs-hyp-vals-list) . |#dups|)
   NIL)
+
 
 (defun test-outcomes%-p (v)
   (declare (xargs :guard T))
   (case-match v ;internal layout hidden everywhere else
-    (('test-outcomes% (|#cts| . cts) (|#wts| . wts) (|#vacs| . vacs) . |#dups|)
+    (('test-outcomes% (|#cts| cts cts-hyp-vals-list) (|#wts| wts wts-hyp-vals-list) (|#vacs| vacs vacs-hyp-vals-list) . |#dups|)
 ; symbol-doublet-list-listp is a list of assignments/value-bindings              
      (and (symbol-doublet-list-listp cts)
           (symbol-doublet-list-listp wts)
           (symbol-doublet-list-listp vacs)
+          (true-list-listp cts-hyp-vals-list)
+          (true-list-listp wts-hyp-vals-list)
+          (true-list-listp vacs-hyp-vals-list)
           (unsigned-29bits-p |#wts|)
           (unsigned-29bits-p |#cts|)
           (unsigned-29bits-p |#vacs|)
@@ -505,7 +624,7 @@ cgen-state"
   (decl 
         :sig ((fixnum keyword fixnum fixnum fixnum symbol-fixnum-alist) 
               -> 
-              (mv keyword symbol-doublet-listp fixnum symbol-fixnum-alist))
+              (mv keyword true-listp symbol-doublet-listp fixnum symbol-fixnum-alist))
         :doc 
 "?:
 * Synopsis 
@@ -518,8 +637,9 @@ itself.  i is the current local-trial number.  'r.' is the current
 pseudo-random seed.  'BE.' is alist that holds previous
 bounded-exhaustive nat arg seeds used to compute sigma.
 
-* Return sig: (mv res A r. BE.)
+* Return sig: (mv res hyp-vals A r. BE.)
 A is computed sigma (value binding) used to test this run
+hyp-vals is the list of boolean values for each of hyps under A
 res is :vacuous if the hypotheses were inconsistent under A
 res is :witness if both conclusion and hyps eval to T under A
 else is :counterexample
@@ -531,16 +651,22 @@ eg:n/a")
   (b* ((sm (local-sampling-method sampling-method i N))
        ((mv A r. BE.) (next-sigma sm r. BE.))
        (- (cw? (system-debug-flag vl) 
-               "~|CEgen/Sysdebug/run-single.: Using A: ~x0 and seed: ~x1.~%" A r.))
-       (|not vacuous ?|  (hypotheses-val A)))
+               "~|CEgen/Sysdebug/run-single: A: ~x0 seed: ~x1~%" A r.))
+       (|not vacuous ?|  (hypotheses-val A))
+       (hyp-vals (and (verbose-stats-flag vl) (hyp-val-list A)))
+
+       (- (cw? (and (system-debug-flag vl)
+                    (not |not vacuous ?|)) 
+               "~|CEgen/Sysdebug/run-single: hyp-vals : ~x0~%" hyp-vals))
+       )
 ;  in
    (if |not vacuous ?|
        ;; bugfix: why even try to evaluate conclusion when
        ;; the hypotheses arnt satisfied, the whole form's value
        ;; is simply true - May 2nd '12
        (let ((res (if (conclusion-val A) :witness :counterexample)))
-        (mv res A r. BE.))
-     (mv :vacuous A r. BE.))))
+        (mv res hyp-vals A r. BE.))
+     (mv :vacuous hyp-vals A r. BE.))))
 
 
 
@@ -576,8 +702,8 @@ eg:n/a")
 
 ; TODO: This function is in the inner loop. See if it can be furthur
 ; optimized.
-(def record-testrun. (test-result A num-cts num-wts test-outcomes% gcs%)
-  (decl :sig ((keyword symbol-doublet-listp fixnum fixnum test-outcomes%-p gcs%-p)
+(def record-testrun. (test-result hyp-vals A num-cts num-wts vl test-outcomes% gcs%)
+  (decl :sig ((keyword true-listp symbol-doublet-listp fixnum fixnum fixnum test-outcomes%-p gcs%-p)
               ->
               (mv test-outcomes%-p gcs%-p))
         :doc 
@@ -590,13 +716,16 @@ eg:n/a")
                              
                              ((when (member-equal A A-cts))
                               (mv (test-outcomes-1+ dups) (gcs-1+ dups)));ignore A
-                             
+                                                                                       
                              (gcs% (gcs-1+ cts))
                              (m    (access test-outcomes% |#cts|))
                              (test-outcomes% ;TODO:per subgoal num-cts stored??
-                              (if (< m num-cts)
-                                  (change test-outcomes% cts (cons A A-cts) )
-                                test-outcomes%));dont store extra 
+                              (if (< m num-cts) ;dont store extra unless
+                                  (b* ((test-outcomes% (change test-outcomes% cts (cons A A-cts)))
+                                       (test-outcomes% (change test-outcomes% cts-hyp-vals-list
+                                                               (cons hyp-vals (access test-outcomes% cts-hyp-vals-list)))))
+                                    test-outcomes%)
+                                test-outcomes%))
                              (test-outcomes%   (test-outcomes-1+ cts)))
 ;                              in
                          (mv test-outcomes% gcs%)))
@@ -605,25 +734,37 @@ eg:n/a")
       (:witness          (b* ((A-wts (access test-outcomes% wts))
                              ((when (member-equal A A-wts))
                               (mv (test-outcomes-1+ dups) (gcs-1+ dups)))
+                             
                              (gcs% (gcs-1+ wts))
                              (m    (access test-outcomes% |#wts|))
                              (test-outcomes%   
                               (if (< m num-wts)
-                                  (change test-outcomes% wts (cons A A-wts))
-                                test-outcomes%));dont store extra
+                                  (b* ((test-outcomes% (change test-outcomes% wts (cons A A-wts)))
+                                       (test-outcomes% (change test-outcomes% wts-hyp-vals-list
+                                                               (cons hyp-vals (access test-outcomes% wts-hyp-vals-list)))))
+                                    test-outcomes%)
+                                test-outcomes%))
                              (test-outcomes%   (test-outcomes-1+ wts)))
 ;                         in       
                           (mv test-outcomes% gcs%)))
 
                                              
       (:vacuous          (b* ((A-vacs (access test-outcomes% vacs))
-                             ((when (member-equal A A-vacs))
-                              (mv ( test-outcomes-1+ dups) (gcs-1+ dups)))
+
+                              ;; ((when (member-equal A A-vacs)) ;costly -- commenting out ;; this makes #dups inconsistent
+                              ;; (mv ( test-outcomes-1+ dups) (gcs-1+ dups)))
+
+                             (test-outcomes% 
+                              (if (verbose-stats-flag vl)
+                                  (change test-outcomes% vacs-hyp-vals-list
+                                          (cons hyp-vals (access test-outcomes% vacs-hyp-vals-list)))
+                                test-outcomes%))
+                             
                              (gcs% (gcs-1+ vacs))
                              (m    (access test-outcomes% |#vacs|))
                              (test-outcomes%   
-                              (if (< m (acl2::+f num-wts num-cts))
-; dont store a lot of vacuouses
+                              (if (or (< m (acl2::+f num-wts num-cts))
+                                      (verbose-stats-flag vl)) ;[2015-04-07 Tue]
 
 ; TODO: [2014-04-26 Sat] To (post-) diagnose vacuous tests, we ought
 ; to store or at least provide a way to do on-the-fly
@@ -677,9 +818,9 @@ where
          (mv T r. test-outcomes% gcs%))
 
        (local-trial-num  (acl2::|1+F| (acl2::-f num-trials n)))
-       ((mv res A r. BE.) ; res = value of test  A= value-bindings
+       ((mv res hyp-vals A r. BE.) ; res = test value  A= value-bindings
         (run-single-test. vl sm num-trials local-trial-num  r. BE.))
-       ((mv test-outcomes% gcs%) (record-testrun. res A num-cts num-wts test-outcomes% gcs%))
+       ((mv test-outcomes% gcs%) (record-testrun. res hyp-vals A num-cts num-wts vl test-outcomes% gcs%))
        (- (cw? (system-debug-flag vl) 
                "~|CEgen/Sysdebug/run-n-tests: Finished run n: ~x0 -- got ~x1~|" n res)))
 ;  in   
@@ -752,6 +893,8 @@ where
 
 
 
+(defun membership-relationp (R) ;TODO make this more general
+  (member-equal R '(acl2::member-eq acl2::member acl2::member-eql acl2::member-equal)))
 
 
 ;identify (equal x y)
@@ -942,6 +1085,19 @@ processed, the annotation of edges is also returned"
            (union-entry-in-adj-list var fvars alst) 
            alst-C
            incoming)))
+;       [2015-04-16 Thu] Add special support for member
+       ((and (membership-relationp (car hyp)) ;(member x term)
+             (proper-symbolp (second hyp)))
+        (b* ((var (second hyp))
+             (term (third hyp))
+             (fvars (remove-equal ;sloppy code
+                     var (get-free-vars1 term nil))));buggy for non-terms
+          (build-vdependency-graph 
+           (cdr hyp-lst)
+           (union-entry-in-adj-list var fvars alst) 
+           alst-C
+           incoming)))
+       
        (t
 ;(R term1 term2 ...termN) ==> add edges between x and y where x \in termI
 ;and y \in termJ and I=!J and R is a N-ary relation
@@ -1029,19 +1185,23 @@ processed, the annotation of edges is also returned"
 
 (defrec cs% (defdata-type spilled-types 
               eq-constraint 
-              range 
+              range
+              member-constraint ; [2015-04-16 Thu] Added support for member-equal
               additional-constraints) NIL)
 
 
 (defun cs%-p (v)
   (declare (xargs :guard T))
-  (case-match v
-    (('cs% dt st eqc int ac)   (and (possible-defdata-type-p dt) 
-                                (possible-defdata-type-list-p st)
-                                (or (pseudo-termp eqc)
-                                    (eq 'defdata::empty-eq-constraint eqc))
-                                (acl2::tau-intervalp int)
-                                (pseudo-term-listp ac)))))
+  (case-match v ;layout not hidden -- see build-enumcalls.lisp
+    (('cs% dt st eqc int mem ac)
+
+     (and (possible-defdata-type-p dt) 
+          (possible-defdata-type-list-p st)
+          (or (pseudo-termp eqc)
+              (eq 'defdata::empty-eq-constraint eqc))
+          (acl2::tau-intervalp int)
+          (pseudo-termp mem)
+          (pseudo-term-listp ac)))))
     
 
 (defun |is (symbol . cs%)| (v)
@@ -1145,13 +1305,26 @@ processed, the annotation of edges is also returned"
        (cs% (change cs% eq-constraint term)))
    (put-assoc-eq v cs% v-cs%-alst.)))
 
+
+(def put-member-constraint. (v term vl v-cs%-alst.)
+  (decl :sig ((symbol pseudo-term vl symbol-cs%-alist) 
+              -> symbol-cs%-alist)
+        :doc "put member-constraint term in alist for key v")
+  (b* (((cons & cs%) (assoc-eq v v-cs%-alst.))
+       (memc (access cs% member-constraint))
+       (- (cw? (and (verbose-stats-flag vl)
+                    (not (equal 'defdata::empty-mem-constraint memc)))
+               "CEgen/Note: Overwriting member-constraint for ~x0 with ~x1~|" v term))
+       (cs% (change cs% member-constraint term)))
+   (put-assoc-eq v cs% v-cs%-alst.)))
+
 (def put-defdata-type. (v typ vl v-cs%-alst.)
   (decl :sig ((symbol possible-defdata-type-p fixnum symbol-cs%-alist) 
               -> symbol-cs%-alist)
         :doc "put defdata type typ in alist for key v")
   (b* (((cons & cs%) (assoc-eq v v-cs%-alst.))
        (dt (access cs% defdata-type))
-       (- (cw? (and (verbose-stats-flag vl) (not (eq 'acl2s::all dt))) 
+       (- (cw? (and (verbose-stats-flag vl) (not (eq 'ACL2S::ALL dt)))  ;TODO perhaps use is-top? but that might be expensive?
 "CEgen/Note: Overwriting defdata type for ~x0. ~x1 -> ~x2~|" v dt typ))
        (cs% (change cs% defdata-type typ)))
    (put-assoc-eq v cs% v-cs%-alst.)))
@@ -1169,10 +1342,13 @@ processed, the annotation of edges is also returned"
   (declare (xargs :verify-guards nil))
 ;Invariant: ans. is an alist thats in the order given by dependency analysis
   (f* ((add-constraints... () (put-additional-constraints. fvars term ans.))
-         
+; [2015-04-16 Thu] add support for membership
+       (add-eq/mem-constraint... (t1) (if (membership-relationp R)
+                                          (put-member-constraint. x t1 vl ans.)
+                                        (add-eq-constraint... t1)))
        (add-eq-constraint... (t1) (if (acl2::equivalence-relationp R wrld)
                                       (if (symbolp t1)
-                                          (put-var-eq-constraint. x t1 vl wrld  ans.)
+                                          (put-var-eq-constraint. x t1 vl wrld ans.)
                                         (put-eq-constraint. x t1 vl ans.))
                                     (add-constraints...))))
      
@@ -1206,11 +1382,11 @@ processed, the annotation of edges is also returned"
 
 ;x has to be an atom below, otherwise, we would have caught that case
 ;above.
-      ((R x ('quote c))    (add-eq-constraint... (kwote c)))
+      ((R x ('quote c))    (add-eq/mem-constraint... (kwote c)))
       ((R ('quote c) x)    (add-eq-constraint... (kwote c)))
-      ((R x (f . args))    (add-eq-constraint... (acl2::cons-term f args)))
+      ((R x (f . args))    (add-eq/mem-constraint... (acl2::cons-term f args)))
       ((R (f . args) x)    (add-eq-constraint... (acl2::cons-term f args)))
-      ((R x y)             (add-eq-constraint... y))
+      ((R x y)             (add-eq/mem-constraint... y))
       
       ;; has to be a (R t1 t2 ...) or atomic term
       (&                   (add-constraints...)))))))
@@ -1243,22 +1419,22 @@ processed, the annotation of edges is also returned"
        (hi (acl2::access acl2::tau-interval interval :hi))
        (lo-rel (acl2::access acl2::tau-interval interval :lo-rel))
        (hi-rel (acl2::access acl2::tau-interval interval :hi-rel))
-       (P (defdata::predicate-name type (table-alist 'defdata::type-metadata-table wrld))))
+       (P (defdata::predicate-name type (table-alist 'DEFDATA::TYPE-METADATA-TABLE wrld))))
     (case (acl2::access acl2::tau-interval interval :domain)
-      (acl2::integerp (or (and (defdata::subtype-p P 'acl2::natp wrld) ;use the fact that integers are squeezed (weak inequalities)
+      (acl2::integerp (or (and (defdata::subtype-p P 'ACL2::NATP wrld) ;use the fact that integers are squeezed (weak inequalities)
                                (equal lo 0)
                                (null hi))
-                          (and (defdata::subtype-p P 'acl2::posp wrld) 
+                          (and (defdata::subtype-p P 'ACL2::POSP wrld) 
                                (equal lo 1)
                                (null hi))
-                          (and (defdata::subtype-p P 'acl2::negp wrld) 
+                          (and (defdata::subtype-p P 'ACL2::NEGP wrld) 
                                (null lo)
                                (equal hi -1))))
-      (otherwise (or (and (defdata::subtype-p P 'acl2::positive-rationalp wrld)
+      (otherwise (or (and (defdata::subtype-p P 'ACL2::POSITIVE-RATIONALP wrld)
                           lo-rel ;strict
                           (null hi)
                           (equal lo 0))
-                     (and (defdata::subtype-p P 'acl2::negative-rationalp wrld) 
+                     (and (defdata::subtype-p P 'ACL2::NEGATIVE-RATIONALP wrld) 
                           hi-rel
                           (null lo)
                           (equal hi 0)))))))
@@ -1322,10 +1498,11 @@ into eq-constraint field and put interval into range constraint field")
 
 (defconst *empty-cs%*
   (acl2::make cs%
-        :defdata-type 'acl2s::all 
+        :defdata-type 'ACL2S::ALL 
         :spilled-types '()
         :eq-constraint 'defdata::empty-eq-constraint
         :range (acl2::make-tau-interval nil nil nil nil nil)
+        :member-constraint 'defdata::empty-mem-constraint
         :additional-constraints '()))
 
 (def collect-constraints% (hyps ordered-vars type-alist tau-interval-alist vl wrld)
@@ -1432,90 +1609,9 @@ into eq-constraint field and put interval into range constraint field")
 
 
 
-
-(defs 
-  (mv-list-ify (term mv-sig-alist)
-    (decl :sig ((pseudo-term symbol-list) -> pseudo-term)
-          :doc "wrap all mv fn calls with mv-list")
-    (if (variablep term)
-      term
-      (if (fquotep term)
-        term
-      (b* ((fn (ffn-symb term))
-           (args (fargs term))
-           (A mv-sig-alist)
-           (entry (assoc-eq fn A))
-           ((unless entry)
-            (acl2::cons-term fn
-                       (mv-list-ify-lst args A)))
-           ((cons fn m) entry)) 
-;m is output arity and should be greater than 1.
-        (acl2::cons-term 'acl2::mv-list
-                   (list (kwote m)
-                         (acl2::cons-term fn (mv-list-ify-lst args A))))))))
-
-  (mv-list-ify-lst (terms mv-sig-alist)
-   (decl :sig ((pseudo-term-list symbol-list) -> pseudo-term-list))
-   (if (endp terms)
-       '()
-     (cons (mv-list-ify (car terms) mv-sig-alist)
-           (mv-list-ify-lst (cdr terms) mv-sig-alist)))))
          
         
 
-(def make-let-binding-for-sigma (vs sigma-symbol)
-  (decl :sig ((symbol-list symbol) -> symbol-doublet-listp)
-        :doc 
-"(make-let-binding-for-sigma '(x y) 'A) => ((x (get-val x A))
-                                            (y (get-val y A)))
-")
-  (if (endp vs)
-      '()
-    (cons `(,(first vs) (cadr (assoc-eq ',(first vs) ,sigma-symbol)))
-          (make-let-binding-for-sigma (cdr vs) sigma-symbol))))
-
-
-; 9th Nov '13 -- stupid bug. I recently fixed -gv function to have
-; :verify-guards t, so that even in the presence of
-; set-verify-guards-eagerness 0, but in program mode, or if
-; hypotheses-val-current has a program mode function, then the pair
-; :verify-guards t is not allowed.
-(def make-hypotheses-val-defuns (terms ord-vars mv-sig-alist programp)
-  (decl :sig ((pseudo-term-list symbol-list symbol-alist boolean) -> all)
-        :doc "make the defun forms for hypotheses-val defstub")
-  `((defun hypotheses-val-current (A)
-      (declare (ignorable A))
-      (declare (xargs :verify-guards nil :normalize nil
-                      :guard (symbol-doublet-listp A)))
-      (let ,(make-let-binding-for-sigma ord-vars 'A)
-        (declare (ignorable ,@ord-vars))
-          ,(mv-list-ify (single-hypothesis terms)
-                        mv-sig-alist)))
-    (defun hypotheses-val-current-gv (A)
-      (declare (xargs :guard T :verify-guards ,(not programp)))
-      (ec-call (hypotheses-val-current A)))))
-
-(def make-conclusion-val-defuns (term ord-vars mv-sig-alist programp)
-  (decl :sig ((pseudo-term symbol-list symbol-alist boolean) -> all)
-        :doc "make the defun forms for conclusion-val defstub")
-  `((defun conclusion-val-current (A)
-      (declare (ignorable A))
-      (declare (xargs :verify-guards nil :normalize nil
-                      :guard (symbol-doublet-listp A)))
-      (let ,(make-let-binding-for-sigma ord-vars 'A)
-        (declare (ignorable ,@ord-vars))
-          ,(mv-list-ify term mv-sig-alist)))
-    (defun conclusion-val-current-gv (A)
-      (declare (xargs :guard T :verify-guards ,(not programp)))
-      (ec-call (conclusion-val-current A)))))
-
-;add the following for guard verif
-(defthm symbol-doublet-listp-=>-symbol-alistp
-  (implies (symbol-doublet-listp x)
-           (symbol-alistp x))
-  :rule-classes ((:forward-chaining)
-                 (:rewrite :backchain-limit-lst 1)
-                 ))
 
 
 
@@ -1636,6 +1732,7 @@ into eq-constraint field and put interval into range constraint field")
        
 
 ; pushed the with-timeout wrapper into the trans-eval make-event of simple-search to get saner cgen::event-stack behavior
+; [2015-02-04 Wed] The reason in the above note is irrelevant now that we disallow nested testable events. 
 (defun run-tests-with-timeout (timeout-secs N sm vl num-cts num-wts vars test-outcomes% gcs% state)
   (acl2::with-timeout1 
    timeout-secs
@@ -1653,8 +1750,8 @@ into eq-constraint field and put interval into range constraint field")
    (prog2$
     (cw? (normal-output-flag vl)
          "~%Search for counterexamples TIMED OUT! ~
-~|Use (acl2s-defaults :set cgen-timeout 0) to disable timeout. ~
-~|For more information see :doc cgen-timeout.~%") 
+~|Use (acl2s-defaults :set cgen-local-timeout 0) to disable timeout. ~
+~|For more information see :doc cgen-local-timeout.~%") 
     (er-progn
      (b* (((mv & (the (unsigned-byte 31) rseed.)) (defdata::genrandom-seed 2 (defdata::getseed state)))
           (state (defdata::putseed rseed. state))) ;make some progress -- dont get stuck on the same sequence of seeds
@@ -1709,9 +1806,10 @@ Use :simple search strategy to find counterexamples and witnesses.
              (trans-eval-single-value form ctx state))
             ((mv test-outcomes% gcs%)
              (record-testrun. (if c :witness :counterexample)
+                              '()
                               partial-A
                               num-cts num-wts
-                              test-outcomes% gcs%)))
+                              vl test-outcomes% gcs%)))
 
 ;       in
         (prog2$
@@ -1730,6 +1828,10 @@ Use :simple search strategy to find counterexamples and witnesses.
 
        (hyp-val-defuns   (make-hypotheses-val-defuns hyps vars mv-sig-alist programp))
        (concl-val-defuns (make-conclusion-val-defuns concl vars mv-sig-alist programp))
+;       [2015-04-07 Tue]
+;       Order of hyps is important -- Values of each hyp is stored in seq
+       (hyp-val-list-defuns (make-hyp-val-list-defuns hyps vars mv-sig-alist programp))
+       
        (wrld (w state))
        ;; ((mv erp0 tr-res state) ;commented out after throwing graph-tc.lisp
        ;;  (trans-eval `(mv-list 2 (meet-type-alist ',type-alist ',top-vt-alist ',vl ',wrld))
@@ -1815,6 +1917,7 @@ Use :simple search strategy to find counterexamples and witnesses.
           #!acl2(PROGN! (SET-LD-REDEFINITION-ACTION '(:WARN! . :OVERWRITE) STATE))
           ,@hyp-val-defuns
           ,@concl-val-defuns
+          ,@hyp-val-list-defuns
           ,@next-sigma-defuns
           #!acl2(PROGN! (SET-LD-REDEFINITION-ACTION NIL STATE))
                      
@@ -1829,9 +1932,11 @@ Use :simple search strategy to find counterexamples and witnesses.
           ,@(if (or t programp)
                 '((defattach (hypotheses-val hypotheses-val-current-gv) :skip-checks t)
                   (defattach (conclusion-val conclusion-val-current-gv) :skip-checks t)
+                  (defattach (hyp-val-list hyp-val-list-current-gv) :skip-checks t)
                   (defattach (next-sigma next-sigma-current-gv) :skip-checks t))
               '((defattach (hypotheses-val hypotheses-val-current-gv))
                 (defattach (conclusion-val conclusion-val-current-gv))
+                (defattach (hyp-val-list hyp-val-list-current-gv))
                 (defattach (next-sigma next-sigma-current-gv))))
           
           ,@(and (or t programp) '((defttag nil)))
@@ -2392,7 +2497,8 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
         ans.
       (let ((fn (ffn-symb term))
             (args (fargs term)))
-        (if (consp fn) ;lambda
+        (if (or (equal fn 'ACL2::IF)
+                (consp fn)) ;lambda
             (all-functions-lst. args ans.)
           (all-functions-lst. args (add-to-set-eq fn ans.)))))))
 
@@ -2523,7 +2629,7 @@ Why is ACL2 not good at this?
        (blimit (get1 :backtrack-limit defaults 2))
        (num-cts (get1 :num-counterexamples defaults 3))
        (num-wts (get1 :num-witnesses defaults 3))
-       (timeout-secs (get1 :cgen-timeout defaults 10))
+       (timeout-secs (get1 :cgen-local-timeout defaults 10))
 ; mv-sig-alist : for each mv fn in H,C, stores its output arity
        (mv-sig-alist (mv-sig-alist (cons C H) (w state)))
        (vars (vars-in-dependency-order H C vl (w state))))

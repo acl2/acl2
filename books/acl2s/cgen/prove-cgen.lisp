@@ -105,6 +105,7 @@
 
 (include-book "misc/evalable-printing" :dir :system)
 
+
 ;; Print the random instantiations for a particular test run.
 ;; Return value is a dummy error-triple. 
 ;; This function is called for side-effect only(printing IO)
@@ -225,6 +226,150 @@ A-lst top-vars elide-map))
       (print-assignments A-lst top-vars top-term elide-map vl cts-p state)
       (print-cts/wts (cdr s-hist) cts-p nc nw top-vars top-term vl state)))))
 
+(program)
+; adapted from acl2/axioms.lisp
+(defun rational-to-decimal-string (x)
+  (let ((x00 (round (* 100 (abs x)) 1)))
+    (b* ((prefix (if (< x 0) "-" ""))
+         (integer-part (cond ((> x00 99) (to-string (floor (/ x00 100) 1)))
+                             (t "0")))
+         (r (rem x00 100))
+         (fractional-part (cond ((< r 10) (concatenate 'acl2::string "0" (to-string r)))
+                               (t (to-string r)))))
+      (concatenate 'acl2::string prefix integer-part "." fractional-part))))
+
+
+; [2015-04-07 Tue]
+
+(defun print-vacuous-stats-summary (hyps kinds total hyp->sat)
+;  Hypothesis | Type of Constraint | Negated | Sat/Total
+  (if (endp hyps)
+      nil
+    (b* ((hyp (car hyps))
+         ((cons negp kind) (car kinds))
+         (neg (if negp " (NEGATED)" "")) 
+         (num-sat (cdr (assoc-equal hyp hyp->sat)))
+         (p (rational-to-decimal-string (* 100 (/ num-sat total))))
+         )
+      (prog2$
+       (cw "~|Constraint: ~x0 ~|Kind: ~x1~s2 : Sat/Total: ~x3/~x4 (~s5%) ~%" hyp kind neg num-sat total p)
+       (print-vacuous-stats-summary (cdr hyps) (cdr kinds) total hyp->sat)))))
+
+(defun update-hyps->num-sat (hyp-vals hyps hyp->num-sat)
+  "for each T value of hyp, increment its num-sat"
+  (declare (xargs :guard (and (true-listp hyp-vals)
+                              (pseudo-term-listp hyps)
+                              (alistp hyp->num-sat)
+                              (= (len hyp-vals) (len hyps)))))
+  (if (endp hyp-vals)
+      hyp->num-sat
+    (if (car hyp-vals) ;true
+        (b* ((n (nfix (cdr (assoc-equal (car hyps) hyp->num-sat)))))
+          (update-hyps->num-sat (cdr hyp-vals) (cdr hyps)
+                              (put-assoc-equal (car hyps) (1+ n) hyp->num-sat)))
+      (update-hyps->num-sat (cdr hyp-vals) (cdr hyps) hyp->num-sat))))
+      
+
+  
+(defun print-vacuous-stats1 (hyp-vals-list hyps kinds total hyp->num-sat)
+  (if (endp hyp-vals-list)
+      (print-vacuous-stats-summary hyps kinds total hyp->num-sat)
+    (b* ((hyp-vals (car hyp-vals-list))
+         (hyp->num-sat (update-hyps->num-sat hyp-vals hyps hyp->num-sat)))
+      (print-vacuous-stats1 (cdr hyp-vals-list) hyps kinds total hyp->num-sat))))
+
+
+
+; The following two functions are by Matt K. [2015-04-07 Tue]
+#!ACL2
+(defun boolean-fn-symb-1 (tp-lst) ; helper function
+  (cond ((endp tp-lst) nil)
+        ((let ((tp (car tp-lst)))
+           (and (ts-subsetp (access type-prescription tp :basic-ts)
+                            *ts-boolean*)
+                (null (access type-prescription tp :hyps))
+                (null (access type-prescription tp :vars)))))
+        (t (boolean-fn-symb-1 (cdr tp-lst)))))
+#!ACL2
+(defun boolean-fn-symb (fn wrld)
+  (cond
+   ((assoc-eq fn *primitive-formals-and-guards*)
+    (or (eq fn 'bad-atom<=)
+        (eq fn '<)
+        (eq fn 'equal)
+
+; The following is right, by inspection.  Perhaps it would be better though to
+; enumerate the appropriate symbols.
+
+        (let ((name (symbol-name fn)))
+          (eql (char name (1- (length name)))
+               #\P))))
+   (t
+    (let ((tp-lst (getprop fn 'type-prescriptions nil 'current-acl2-world wrld)))
+      (boolean-fn-symb-1 tp-lst)))))
+
+
+(defun classify-hyp (hyp negp wrld)
+  "classify hyp as one of Equality, Arithmetic Inequality, defdata type, monadic predicate, n-ary Relation, unknown"
+  (declare (xargs :guard (and (pseudo-termp hyp)
+                              (booleanp negp)
+                              (plist-worldp wrld))))
+  (if (equal (acl2::ffn-symb hyp) 'ACL2::NOT)
+      (classify-hyp (cadr hyp) (not negp) wrld)
+    (b* ((f (ffn-symb hyp))
+         ((unless (symbolp f)) (cons negp :LAMBDA)) ;can it be something else
+
+         ((when (member-eq f '(acl2::equal acl2::= acl2::eq acl2::eql)))
+          (if (or (proper-symbolp (second hyp)) (proper-symbolp (third hyp)))
+              (cons negp :EQUAL/VAR)
+            (cons negp :EQUAL)))
+
+         ((when (member-eq f '(acl2::member acl2::member-eq acl2::member-eql acl2::member-equal)))
+          (if (or (proper-symbolp (second hyp)) (proper-symbolp (third hyp)))
+              (cons negp :MEMBER/VAR)
+            (cons negp :MEMBER)))
+
+         ((when (member-eq f '(ACL2::<)))
+          (if (or (proper-symbolp (second hyp)) (proper-symbolp (third hyp)))
+              (cons negp :LESS/VAR)
+            (cons negp :LESS)))
+
+         ((when (defdata::is-type-predicate f wrld))
+          (cons negp :DEFDATA-TYPE))
+         ((when (and (equal (acl2::arity f wrld) 1) (acl2::boolean-fn-symb f wrld)))
+          (cons negp :MONADIC-PRED))
+         ((when (and (equal (acl2::arity f wrld) 2) (acl2::boolean-fn-symb f wrld)))
+          (cons negp :BINARY-RELATION))
+         ((when (and (equal (acl2::arity f wrld) 3) (acl2::boolean-fn-symb f wrld)))
+          (cons negp :TERNARY-RELATION))
+         ((when (and (> (acl2::arity f wrld) 3) (acl2::boolean-fn-symb f wrld)))
+          (cons negp :>3-ARY-RELATION)))
+      (cons negp :UNKNOWN))))
+
+(defun classify-hyps (hyps wrld)
+  (if (endp hyps)
+      '()
+    (cons (classify-hyp (car hyps) nil wrld)
+          (classify-hyps (cdr hyps) wrld))))
+  
+(defun print-vacuous-stats (s-hist vl wrld)
+  (if (endp s-hist)
+      nil
+    (b* (((cons name s-hist-entry%) (car s-hist))
+         (test-outcomes% (access s-hist-entry% test-outcomes))
+         (hyps      (access s-hist-entry% hyps))
+         (hyp-vals-list (access test-outcomes% vacs-hyp-vals-list))
+         (total (len hyp-vals-list))
+         ((when (= total 0)) nil) ;skip if no vacuous tests
+         (- (cw? (verbose-stats-flag vl) "~| [IN:~x0]~%" name))
+         (hyp->num-sat (pairlis$ hyps (make-list (len hyps) :initial-element 0)))
+         (kinds (classify-hyps hyps wrld))
+         )
+     (prog2$
+      (print-vacuous-stats1 hyp-vals-list hyps kinds total hyp->num-sat)
+      (print-vacuous-stats (cdr s-hist) vl wrld)))))
+
+(logic)
 
 (def print-s-hist (s-hist printc? printw? nc nw 
                           top-term top-vars vl state)
@@ -247,8 +392,14 @@ history s-hist.")
                     (cw? (normal-output-flag vl)
 "~|~%Cases in which the conjecture is true include:~|")
                     (print-cts/wts s-hist NIL nc nw top-vars top-term vl state))
-                 (value nil))))
+                 (value nil)))
+       (- (and (verbose-stats-flag vl)
+               (prog2$
+                (cw
+                 "~|~%Vacuous test statistics: ~%")
+                (print-vacuous-stats s-hist vl (w state))))))
     (value nil)))
+
 (logic)
 
   
@@ -384,7 +535,7 @@ history s-hist.")
 
 (defun make-cgen-state-fn (form kwd-val-lst wrld)
   (b* ((override-params (make-cgen-params-from-args kwd-val-lst '()))
-       (params (acl2s::acl2s-defaults-value-alist. (table-alist 'acl2s::acl2s-defaults-table wrld) override-params '())))
+       (params (acl2s::acl2s-defaults-value-alist. (table-alist 'ACL2S::ACL2S-DEFAULTS-TABLE wrld) override-params '())))
     (list (cons 'PARAMS params)
           (cons 'USER-SUPPLIED-TERM :undefined)
           (cons 'DISPLAYED-GOAL form)
@@ -480,8 +631,7 @@ history s-hist.")
                                                     :start-time start-top  
                                                     :top-vt-alist d-typ-al))
          (vt-acl2-alst (if programp 
-                           (pairlis$ vars (make-list (len vars)
-                                                     :initial-element (list 'ACL2::ALL)))
+                           (make-dumb-type-alist vars)
                          (get-acl2-type-alist (list term) vars)))
          (tau-interval-alist (tau-interval-alist-clause (clausify-hyps-concl hyps concl) vars))
 
@@ -509,7 +659,6 @@ history s-hist.")
          (state (f-put-global 'cgen-state cgen-state state)) 
 
 
-         
 ; 2 July '13 (bug: hard error reported as proof without induction)
          ((mv trans-erp prove-erp state) 
           (if no-prove-call-p

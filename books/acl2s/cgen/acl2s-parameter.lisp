@@ -27,6 +27,7 @@
                                :search-strategy
                                :testing-enabled
                                :cgen-timeout
+                               :cgen-local-timeout
                                :print-cgen-summary
                                ))
 
@@ -86,7 +87,7 @@ short and long are keyword arguments to defxdoc.
 <h3>Examples</h3>
 @({
   (acl2s-defaults :set num-trials 1000)
-  (acl2s-defaults :get cgen-timeout)
+  (acl2s-defaults :get cgen-local-timeout)
   (acl2s-defaults :get testing-enabled)
   (acl2s-defaults :set num-counterexamples 3)
 })
@@ -105,6 +106,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
                   search-strategy
                   testing-enabled
                   cgen-timeout
+                  cgen-local-timeout
                   print-cgen-summary
 
 })
@@ -240,7 +242,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
  :long "
    Maximum number of backtracks allowed by a variable.
    The default backtrack limit is set to 3. Setting this 
-   parameter to 0, means that backtracking is disabled.
+   parameter to 0 disables the backtracking.
    <code>
     Usage:
     (acl2s-defaults :set backtrack-limit 3)
@@ -249,23 +251,43 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
    </code>
    "
  :guard (natp value))
-        
 
 (add-acl2s-parameter 
- cgen-timeout 10
+ cgen-timeout 3600 ;bad name -- TODO: change it in a latter version.
+ :short "test?/prover timeout (in seconds)"
+ :long
+  "Maximum allowed time (in seconds) to be spent
+  in the ACL2 prover on behalf of Cgen/test? macro.
+  This value is used as the second argument of the
+  with-prover-time-limit macro around the call to 
+  prove/cgen.
+
+  The default timeout limit is set to 3600 sec.
+  Guard : Timeout should be a rational.
+   <code>
+    Usage:
+    (acl2s-defaults :set cgen-timeout 3600)
+    (acl2s-defaults :get cgen-timeout)
+    :doc cgen-timeout
+   </code>
+   "
+ :guard (rationalp value))
+        
+(add-acl2s-parameter 
+ cgen-local-timeout 10
  :short "Cgen/Testing timeout (in seconds)"
  :long
   "Maximum allowed time (in seconds) for Cgen to
-  search for counterexamples to a particular form.
+  search for counterexamples to a particular form/subgoal.
   The default timeout limit is set to 10 sec.
   Setting this parameter to 0 amounts to disabling
   the timeout mechanism, i.e. its a no-op.
   Guard : Timeout should be a rational.
    <code>
     Usage:
-    (acl2s-defaults :set cgen-timeout 10)
-    (acl2s-defaults :get cgen-timeout)
-    :doc cgen-timeout
+    (acl2s-defaults :set cgen-local-timeout 10)
+    (acl2s-defaults :get cgen-local-timeout)
+    :doc cgen-local-timeout
    </code>
    "
  :guard (rationalp value))
@@ -364,7 +386,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
   (declare (xargs :verify-guards nil
                   :guard (and (symbolp param) (plist-worldp wrld))))
   (b* ((kparam (keywordify param))
-       (param-rec-pair (assoc-eq kparam (table-alist 'acl2s-defaults-table wrld)))
+       (param-rec-pair (assoc-eq kparam (table-alist 'ACL2S-DEFAULTS-TABLE wrld)))
        ((unless (consp param-rec-pair))
         (er hard 'acl2s-defaults 
             "~|Parameter ~x0 not found in acl2s defaults!~%" param))
@@ -396,8 +418,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
        (make-event
         (b* ((param-rec-pair
              (assoc-eq ',(keywordify param)
-                      (table-alist 
-                       'acl2s-defaults-table (w state))))
+                      (table-alist 'ACL2S-DEFAULTS-TABLE (w state))))
              ((unless (consp param-rec-pair))
                  (er hard 'acl2s-defaults 
                      "~|Parameter ~x0 not found in acl2s-defaults!~%"
@@ -476,7 +497,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
 (defmacro acl2s-defaults-alist (&optional override-alist)
   "return alist mapping acl2s-parameters to their default values
 overridden by entries in override-alist"
-  `(acl2s-defaults-value-alist. (table-alist 'acl2s-defaults-table (w state))
+  `(acl2s-defaults-value-alist. (table-alist 'ACL2S-DEFAULTS-TABLE (w state))
                                 ,override-alist '()))
 
 
