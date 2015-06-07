@@ -260,7 +260,7 @@ data last modified: [2014-08-07]
 (defconst *sig-keywords* '(:hints :rule-classes :verbose :satisfies))
 
 ;check -- also take care of monomorphic sig, but make sure only tnames are allowed!
-(defun parse-sig (args ctx wrld)
+(defun parse-sig (args curr-pkg ctx wrld)
   (declare (ignorable wrld))
   (b* (((mv sig kwd-val-list) (separate-kwd-args args '()))
        ((mv kwd-alist rest) (extract-keywords ctx *sig-keywords* kwd-val-list '()))
@@ -278,6 +278,7 @@ data last modified: [2014-08-07]
                       ((proper-symbolp (car dep-hyp)) (list dep-hyp))
                       (t dep-hyp)))
       (kwd-alist (put-assoc-eq :satisfies dep-hyps kwd-alist))
+      (kwd-alist (put-assoc-eq :current-package curr-pkg kwd-alist))
       ;(- (cw "sig = ~x0  kwd-alist = ~x1 " sig kwd-alist))
       )
 
@@ -472,12 +473,12 @@ Please send this example to the implementors for considering removal of this res
 
 (defun register-poly-sig-events (nm atypes rtype templ wrld)
 ;sig: proper-symbol * texps * texp * template * world -> events
-  (b* ((dom-atype (pick-dominant-poly-type-expr atypes))
-       (- (cw? nil "dom-atype: ~x0 nm: ~x1" dom-atype nm))
-       ((when (null dom-atype))
-        (prog2$ (cw *sig-singular-dominant-poly-comb-limitation-msg* atypes) nil)))
-    (and (consp dom-atype)
-         (b* ((pcomb (car dom-atype))
+  (b* ((dom-type (pick-dominant-poly-type-expr (append atypes (list rtype)))) ;[2015-01-11 Sun] Dont ignore return type here.
+       (- (cw? nil "dom-type: ~x0 nm: ~x1" dom-type nm))
+       ((when (null dom-type))
+        (prog2$ (cw *sig-singular-dominant-poly-comb-limitation-msg* (cons rtype atypes)) nil)))
+    (and (consp dom-type)
+         (b* ((pcomb (car dom-type))
               ((unless (member-eq pcomb *poly-combinators*))
                (prog2$ 
                 (cw "~x0 currently does not have polymorphic support. Skipping..." pcomb)
@@ -599,6 +600,9 @@ constant). In the latter return a lambda expression"
 (defloop filter-proper-symbols (xs)
   (for ((x in xs)) (append (and (proper-symbolp x) (list x)))))
 
+(defloop filter-true-lists (xs wrld)
+  (for ((x in xs)) (append (and (subtype-p x 'acl2::true-listp wrld) (list x)))))
+
 
 (defun psig-templ-instantiation-ev-user (tname tvar-sigma templ derived-pred->poly-texp-map new-types kwd-alist wrld)
   "For given tvar-sigma, find functional instantiation and return instantiated templ"
@@ -609,7 +613,8 @@ constant). In the latter return a lambda expression"
        (fun-inst-dlist (functional-instantiation-list (remove-undefined ppred->tname-map) tvar-sigma new-types kwd-alist wrld))
 
        (pred (predicate-name tname (append new-types (table-alist 'type-metadata-table wrld))))
-       (disabled (remove-eq pred (append (filter-proper-symbols (strip-cadrs fun-inst-dlist)) (get1 :disabled kwd-alist))))
+       (disabled (remove-eq pred (union-eq (filter-proper-symbols (strip-cadrs fun-inst-dlist)) (get1 :disabled kwd-alist))))
+       (disabled (set-difference-eq disabled (filter-true-lists disabled wrld))) ;hack to fix an acl2s-issue. TODO
        (enabled (and pred (list pred))) ;TODO.check later
        (splice-alist `((_ENABLED-RUNES_ . ,enabled) (_DISABLED-RUNES_ . ,disabled) (_FUN-INST-ALIST_ . ,fun-inst-dlist)))
        (ppred-inst-pred-alist (polypred-instantiated-pred-alist ppred->tname-map new-types wrld))
@@ -620,7 +625,8 @@ constant). In the latter return a lambda expression"
                     :splice-alist splice-alist
                     :atom-alist atom-alist
                     :str-alist str-alist
-                    :pkg-sym pred)))
+;The original function name should be used to avoid name clashes e.g between acl2s::rev and acl2::rev
+                    :pkg-sym (intern$ "a" (get1 :current-package kwd-alist))))) 
  
 (defttag t)      
 (defattach (psig-templ-instantiation-ev psig-templ-instantiation-ev-user) :skip-checks t)
@@ -773,11 +779,11 @@ constant). In the latter return a lambda expression"
      
 (defun sig-events (parsed wrld)
   (b* (((list name arg-types ret-type kwd-alist) parsed)
-       (testing-enabledp (get1 :testing-enabled kwd-alist nil))
+       (cgenp (acl2::logical-namep 'acl2s::acl2s-defaults wrld))
        ;; dont even call acl2s-defaults if cgen/top is not included. This
        ;; allows defdata/sig to be used independently of cgen
-       (local-testing-downgraded-form (and testing-enabledp 
-                                           '((LOCAL (ACL2S::ACL2S-DEFAULTS :SET ACL2S::TESTING-ENABLED :naive))))))
+       (local-testing-downgraded-form (and cgenp 
+                                           '((LOCAL (ACL2S::ACL2S-DEFAULTS :SET ACL2S::TESTING-ENABLED nil))))))
     
     `(WITH-OUTPUT :on (acl2::summary acl2::error) 
                   :SUMMARY (ACL2::FORM) 
@@ -795,4 +801,4 @@ constant). In the latter return a lambda expression"
                   :gag-mode t 
                   :stack :push
        (make-event
-        (sig-events (parse-sig ',args 'sig (w state)) (w state))))))
+        (sig-events (parse-sig ',args (current-package state) 'sig (w state)) (w state))))))
