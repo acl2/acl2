@@ -740,7 +740,7 @@ because... (BOZO)</p>
        ((wmv ok warnings svstmts) (vl-stmt->svstmts x.body conf nil))
        ((unless ok) (mv warnings (svex-x)))
        ((wmv ok warnings svstate)
-        (sv::svstmtlist-compile svstmts (sv::make-svstate) 1000
+        (sv::svstmtlist-compile svstmts (sv::make-svstate) 100000
                                   nil ;; nb-delayp
                                   ))
        ((unless ok) (mv warnings (svex-x)))
@@ -1424,7 +1424,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
        ((unless ok) (mv warnings nil))
        ;; Only use the nonblocking-delay strategy for flops, not latches
        ((wmv ok warnings st)
-        (sv::svstmtlist-compile svstmts (sv::make-svstate) 1000 nil))
+        (sv::svstmtlist-compile svstmts (sv::make-svstate) 100000 nil))
        ((unless ok) (mv warnings nil))
 
        ((sv::svstate st) (sv::svstate-clean st))

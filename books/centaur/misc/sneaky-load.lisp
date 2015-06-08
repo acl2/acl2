@@ -265,6 +265,17 @@ a single value.</p>"
        ((mv rest state)  (sneaky-load-list (cdr keys) state)))
     (mv (cons first rest) state)))
 
+
+(define sneaky-delete (key)
+  :short "Delete the data stored under a key from the sneaky store."
+  :ignore-ok t :irrelevant-formals-ok t
+  (raise "Under-the-hood definition not yet installed"))
+
+(define sneaky-clear ()
+  :short "Clear all data stored in the sneaky store."
+  (raise "Under-the-hood definition not yet installed"))
+
+
 ; (depends-on "sneaky-raw.lsp")
 (include-raw "sneaky-raw.lsp")
 

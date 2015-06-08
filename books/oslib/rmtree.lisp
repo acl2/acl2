@@ -31,6 +31,7 @@
 (in-package "OSLIB")
 (include-book "rmtree-logic")
 (include-book "tools/include-raw" :dir :system)
+(include-book "centaur/quicklisp/osicat" :dir :system)
 ; (depends-on "rmtree-raw.lsp")
 
 (defttag oslib)

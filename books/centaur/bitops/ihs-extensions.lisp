@@ -403,41 +403,6 @@ off looking at the source code.</p>")
                                    ihsext-recursive-redefs)
                                   (ash-1-removal)))))
 
-(defthm +-of-logcons-with-cin
-  (implies (bitp cin)
-           (equal (+ cin
-                     (logcons b1 r1)
-                     (logcons b2 r2))
-                  (logcons (b-xor cin (b-xor b1 b2))
-                           (+ (b-ior (b-and cin b1)
-                                     (b-ior (b-and cin b2)
-                                            (b-and b1 b2)))
-                              (ifix r1)
-                              (ifix r2)))))
-  :hints(("Goal" :in-theory (enable logcons b-ior b-and b-xor))))
-
-(defthm +-of-logcons
-  (equal (+ (logcons b1 r1)
-            (logcons b2 r2))
-         (logcons (b-xor b1 b2)
-                  (+ (b-and b1 b2)
-                     (ifix r1)
-                     (ifix r2))))
-  :hints(("Goal" :use ((:instance +-of-logcons-with-cin
-                        (cin 0))))))
-
-(defthm logcar-of-+
-  (implies (and (integerp a)
-                (integerp b))
-           (equal (logcar (+ a b))
-                  (logxor (logcar a) (logcar b)))))
-
-(defthm logcdr-of-+
-  (implies (and (integerp a)
-                (integerp b))
-           (equal (logcdr (+ a b))
-                  (+ (logcdr a) (logcdr b)
-                     (b-and (logcar a) (logcar b))))))
 
 (encapsulate nil
 
