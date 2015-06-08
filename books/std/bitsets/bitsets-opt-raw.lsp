@@ -30,6 +30,14 @@
 
 (in-package "BITSETS")
 
+#+sbcl
+;; See bignum-extract-opt-raw.lsp: for SBCL don't do anything and
+;; prefer to use the straightforward bitset-members version.
+(defun ttag-bitset-members (x)
+  (bitset-members x))
+
+#-sbcl
+;; For other Lisps, try to use our optimized version.
 (defun bitset-members (x)
   (ttag-bitset-members x))
 

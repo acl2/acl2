@@ -891,7 +891,7 @@ defined with @(see sv::defsvtv).</p>"
                                                     assoc-of-nil
                                                     car-cons cdr-cons
                                                     member-equal))
-                          ,@(if (autoins-lookup-casesplit invars 'k)
+                          ,@(if (consp invars)
                                 `(:cases ,(autoins-lookup-casesplit invars 'k))
                               nil))))
                (defmacro ,name-autoins-body ()

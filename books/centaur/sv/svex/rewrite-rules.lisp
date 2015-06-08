@@ -33,40 +33,21 @@
 (include-book "xeval")
 (include-book "4vmask")
 (include-book "centaur/bitops/trailing-0-count" :dir :system)
+(local (include-book "lattice"))
 (local (include-book "rsh-concat"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/misc/equal-sets" :dir :system))
-(local (include-book "lattice"))
+(local (include-book "clause-processors/find-matching" :dir :system))
+(local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (acl2::ruletable-delete-tags! acl2::listp-rules (:duplicated-members)))
-
-
-;; now in bitops
-;; (local (defthm logand-same-2
-;;          (equal (logand x (logand x y))
-;;                 (logand x y))
-;;          :hints((bitops::logbitp-reasoning))))
 
 (local (defthm logbitp-of-logeqv
          (equal (logbitp n (logeqv a b))
                 (iff (logbitp n a)
                      (logbitp n b)))
          :hints(("Goal" :in-theory (enable logeqv)))))
-
-
-;; Now in bitops
-;; (local (defthm logxor-self
-;;          (equal (logxor x x) 0)))
-
-
-
-;; (def-svex-rewrite unsigned-not-less-than-0
-;;   :lhs (< (concat n x 0) 0)
-;;   :rhs (xdet (bitxor (concat n x 0) (concat n x 0)))
-;;   :hints(("Goal" :in-theory (enable svex-apply 4vec-< 4vec-concat
-;;                                     4vec-bitxor 4vec-xdet))))
-
 
 (local (defthm logior-of-logapp
          (equal (logior (logapp n x1 y1)
@@ -80,15 +61,12 @@
                 (logapp n (logand x1 x2) (logand y1 y2)))
          :hints ((bitops::logbitp-reasoning))))
 
-
 (local (defthm logapp-equal-neg-1
          (iff (equal (logapp n x y) -1)
               (and (equal (ifix y) -1)
-                   (or (zp n) (equal (logext n x) -1))))
+                   (or (zp n)
+                       (equal (logext n x) -1))))
          :hints ((bitops::logbitp-reasoning :prune-examples nil))))
-
-
-
 
 (local (defthm logbitp-when-not-integerp
          (implies (not (integerp y))
@@ -97,10 +75,76 @@
 
 (local (defthm logand-equal-minus-1
          (equal (equal (logand x y) -1)
-                (and (equal x -1) (equal y -1)))
+                (and (equal x -1)
+                     (equal y -1)))
          :hints ((bitops::logbitp-reasoning
                   :add-hints (:in-theory (enable* bitops::logbitp-case-splits
                                                   acl2::b-and))))))
+
+(local (defthm svexlist-eval-of-update-nth
+         (equal (svexlist-eval (update-nth n v x) env)
+                (4veclist-fix (update-nth n
+                                          (svex-eval v env)
+                                          (svexlist-eval x env))))
+         :hints(("Goal" :in-theory (enable svexlist-eval)))))
+
+(local (defthm logand-equal-logior
+         (equal (equal (logand x y) (logior x y))
+                (equal (ifix x) (ifix y)))
+         :hints ((bitops::logbitp-reasoning
+                  :add-hints (:in-theory (enable* acl2::logbitp-case-splits
+                                                  acl2::bool->bit))))))
+
+(local (defthm 2vec-of-4vec-lower
+         (implies (2vec-p x)
+                  (equal (2vec (4vec->lower x))
+                         (4vec-fix x)))
+         :hints(("Goal" :in-theory (enable 2vec)))))
+
+(local (defthm svex-xeval-of-svex-call
+         (equal (svex-xeval (svex-call fn args))
+                (svex-apply
+                 (if (eq (fnsym-fix fn) '===) '== fn)
+                 (svexlist-xeval args)))
+         :hints(("Goal" :expand ((svex-xeval (svex-call fn args)))))))
+
+(local (defthm svex-xeval-of-svex-quote
+         (equal (svex-xeval (svex-quote val))
+                (4vec-fix val))
+         :hints(("Goal" :in-theory (enable svex-xeval)))))
+
+
+(local (defthm 4veclist-nth-safe-of-svexlist-xeval
+         (equal (4veclist-nth-safe n (svexlist-xeval x))
+                (svex-xeval (nth n x)))
+         :hints(("Goal" :in-theory (enable svexlist-xeval 4veclist-nth-safe)))))
+
+(local (encapsulate nil
+         (local (defun ind (m x n1 n2)
+                  (if (zp m)
+                      (list x n1 n2)
+                    (ind (1- m) (logcdr x) (1- (ifix n1)) (1- (ifix n2))))))
+
+         (local (defthm ifix-minus
+                  (equal (ifix (- x))
+                         (- (ifix x)))
+                  :hints(("Goal" :in-theory (enable ifix)))))
+
+         (defthm logapp-of-shift-sums
+           (implies (equal (ifix n2) (+ (nfix m) (ifix n1)))
+                    (equal (logapp m (ash x (- n1)) (ash x (- n2)))
+                           (ash x (- n1))))
+           :hints ((acl2::equal-by-logbitp-hammer)))))
+
+;; (def-svex-rewrite unsigned-not-less-than-0
+;;   :lhs (< (concat n x 0) 0)
+;;   :rhs (xdet (bitxor (concat n x 0) (concat n x 0)))
+;;   :hints(("Goal" :in-theory (enable svex-apply 4vec-< 4vec-concat
+;;                                     4vec-bitxor 4vec-xdet))))
+
+
+
+
 
 
 (defxdoc svex-rewrite-rules.lisp :parents (svex-rewriting))
@@ -108,7 +152,7 @@
 
 (local
  (progn
-   (include-book "clause-processors/find-matching" :dir :system)
+
 
    (defun svex-gen-alist-from-calls (x)
      (b* (((when (atom x)) nil)
@@ -343,24 +387,12 @@
            (not (member v (svexlist-vars (update-nth n val x)))))
   :hints(("Goal" :in-theory (enable svexlist-vars))))
 
-(local (defthm svexlist-eval-of-update-nth
-         (equal (svexlist-eval (update-nth n v x) env)
-                (4veclist-fix
-                 (update-nth n (svex-eval v env)
-                             (svexlist-eval x env))))
-         :hints(("Goal" :in-theory (enable svexlist-eval)))))
 
 
 (def-svex-rewrite id
   :lhs (id x)
   :rhs x)
 
-(defthm logand-equal-logior
-  (equal (equal (logand x y) (logior x y))
-         (equal (ifix x) (ifix y)))
-  :hints ((bitops::logbitp-reasoning
-           :add-hints (:in-theory (enable* acl2::logbitp-case-splits
-                                           acl2::bool->bit)))))
 
 
 (define 3valued-syntaxp ((x (or (svex-p x) (not x))))
@@ -1247,11 +1279,6 @@
 ;;   (deffixequiv concat-under-mask-meta-aux))
 
 
-(local (defthm 2vec-of-4vec-lower
-         (implies (2vec-p x)
-                  (equal (2vec (4vec->lower x))
-                         (4vec-fix x)))
-         :hints(("Goal" :in-theory (enable 2vec)))))
 
 ;; (define svex-concat-flatten ((x svex-p)
 ;;                              (width natp)
@@ -2247,23 +2274,6 @@
   (deffixequiv 4vec-non-z-mask))
 
 
-(local (defthm svex-xeval-of-svex-call
-         (equal (svex-xeval (svex-call fn args))
-                (svex-apply
-                 (if (eq (fnsym-fix fn) '===) '== fn)
-                 (svexlist-xeval args)))
-         :hints(("Goal" :expand ((svex-xeval (svex-call fn args)))))))
-
-(local (defthm svex-xeval-of-svex-quote
-         (equal (svex-xeval (svex-quote val))
-                (4vec-fix val))
-         :hints(("Goal" :in-theory (enable svex-xeval)))))
-
-
-(local (defthm 4veclist-nth-safe-of-svexlist-xeval
-         (equal (4veclist-nth-safe n (svexlist-xeval x))
-                (svex-xeval (nth n x)))
-         :hints(("Goal" :in-theory (enable svexlist-xeval 4veclist-nth-safe)))))
 
 (define res-to-concat ((xmask integerp)
                        (ymask integerp)
@@ -3127,22 +3137,7 @@
          (and stable-under-simplificationp
               '(:in-theory (enable bool->bit)))))
 
-(encapsulate nil
-  (local (defun ind (m x n1 n2)
-           (if (zp m)
-               (list x n1 n2)
-             (ind (1- m) (logcdr x) (1- (ifix n1)) (1- (ifix n2))))))
 
-  (local (defthm ifix-minus
-           (equal (ifix (- x))
-                  (- (ifix x)))
-           :hints(("Goal" :in-theory (enable ifix)))))
-
-  (defthm logapp-of-shift-sums
-    (implies (equal (ifix n2) (+ (nfix m) (ifix n1)))
-             (equal (logapp m (ash x (- n1)) (ash x (- n2)))
-                    (ash x (- n1))))
-    :hints ((acl2::equal-by-logbitp-hammer))))
 
 (def-svex-rewrite concat-redundant-rsh
   :lhs (concat m (rsh n1 x) (rsh n2 x))
@@ -3162,7 +3157,7 @@
                                     4vec-index-p
                                     4vec-mask))))
 
-(local (include-book "tools/trivial-ancestors-check" :dir :system))
+
 
 (local (acl2::use-trivial-ancestors-check))
 

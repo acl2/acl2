@@ -61,14 +61,14 @@ a brief comparison, see @(see sv-versus-esim).</p>
 
 <ol>
 
-<li><b>Expression language</b>.  At its core, SV is based on @(see svex), a
-language of S-expressions that describe functions over infinite-width,
-four-valued vectors called @(see 4vec)s.  We define a sensible semantics for
-these expressions (@(see svex-eval)) and implement tools like @(see rewriting)
-for simplifying these expressions in provably sound ways.  We also provide
-special support for bit-blasting SV expressions with @(see gl), which allows
-you to process them with efficient @(see acl2::boolean-reasoning) tools like
-@(see acl2::aignet), @(see acl2::satlink), @(see acl2::ubdds), etc.</li>
+<li><b>Expression language</b>.  At its core, SV is based on a language of
+symbolic @(see expressions) that represent functions over infinite-width
+vectors of four-valued ``bits.''  We define a sensible semantics for these
+expressions (@(see svex-eval)) and implement tools like @(see rewriting) for
+simplifying these expressions in provably sound ways.  We also provide special
+support for bit-blasting SV expressions with @(see gl), which allows you to
+process them with efficient @(see acl2::boolean-reasoning) tools like @(see
+acl2::aignet), @(see acl2::satlink), @(see acl2::ubdds), etc.</li>
 
 <li><b>Modules and compilation</b>.  SV has a simple, @(see svex)-based
 representation for hardware modules.  It also has a compiler that can assemble
@@ -105,11 +105,12 @@ simple Verilog designs.  (This tutorial will be quite familiar if you have used
 <ul>
 
 <li>They largely share the same goal: to provide a representation for (RTL)
-hardware designs that can be automatically derived from Verilog/SystemVerilog
-and can be concretely or symbolically simulated.</li>
+hardware designs that can be automatically derived from Verilog/SystemVerilog,
+can be concretely or symbolically simulated, and can be formally analyzed by
+ACL2.</li>
 
 <li>They are both, like Verilog or SystemVerilog, based on four-valued logics
-where each bit of a wire can be either 1, 0, X, or Z; see @(see
+where each ``bit'' of a wire can be either 1, 0, X, or Z; see @(see
 acl2::why-4v-logic) for additional background on why four-valued logics are
 useful in hardware modeling.</li>
 
@@ -126,26 +127,68 @@ consequences.</p>
 
 <h3>Expression Language</h3>
 
-<p>ESIM is a bit-level backend.  That is, the expression language used by ESIM
-is @(see 4v).  Each expression in this language represents a
+<p>ESIM is a <b>bit-level</b> backend.  That is, the expression language used
+by ESIM is @(see 4v).  Each expression in this language represents a
 single (four-valued) bit.</p>
 
-<p>In contrast, SV is a vector-level backend.  In its expression language,
-@(see svex), each expression represents a (4-valued) bit vector, somewhat
-similar to a bignum representation.  (In fact, the values taken by its
-expressions are represented by @(see 4vec) structures, each of which is
-essentially a pair of integers.)</p>
+<p>In contrast, SV is a <v>vector-level</v> backend.  In its expression
+language, @(see svex), each expression represents a (4-valued) bit vector,
+somewhat similar to a bignum representation.  In particular, the values taken
+by its expressions are represented by @(see 4vec) structures, each of which is
+essentially a pair of integers.</p>
 
 <p>The main motivation for this change was to make it easier to translate large
-Verilog/SystemVerilog designs with reasonable performance.  In esim,
+Verilog/SystemVerilog designs with reasonable performance.  In ESIM,
 bit-blasting every expression has proven to be a major performance
-bottleneck.</p>
+bottleneck...</p>
+
+<ul>
+
+<li>In some cases it requires the creation of millions of symbols.  This could
+be slow just to @(see intern).  We typically built ACL2 with a much larger
+@('ACL2') @(see package) to improve performance.</li>
+
+<li>These symbols were (of course) then consed together into various
+structures, which could become large and require lots of memory to
+represent (and to @(see hons)).</li>
+
+<li>We needed separate expressions for each bit of the circuit.  For instance,
+an assignment like @('assign foo[7:0] = bar[7:0] & baz[7:0]') would require
+eight separate, distinct @('and') expressions, i.e., @('(and bar[7] baz[7])'),
+@('(and bar[6] baz[6])'), ...; each of these were @(see acl2::4v-sexpr)s, which
+were typically @(see hons)es, so there is a significant memory cost.</li>
+
+<li>Traversing so many individual bit expressions adds significant time
+overhead for algorithms such as evaluating, reducing, topologically sorting and
+composing update functions, etc., as well as much larger memo tables.</li>
+
+<li>It takes some memory to record the association of Verilog-level vectors to
+their corresponding bits, and some computation to reassemble vectors out of
+their bits, which you need to do in tools like waveform dumping and symbolic
+test vector processing.</li>
+
+<li>There are other undesirable consequences for the front-end (i.e., Verilog
+translation), which we will come back to later.</li>
+
+</ul>
+
+<p>A vector-level language largely avoids these problems.  Since each variable
+represents an entire vector, we need far fewer symbols and expressions, and
+correspondingly far less memory is needed to represent structures such as the
+state of the circuit at a particular instant in time and its update functions.
+The symbolic expressions for our update functions are also more compact,
+requiring less memory for memo tables and less time for traversals.  We don't
+need to track associations between vectors and their individual bits for
+waveforms/etc., which further reduces memory overhead and computation time.</p>
 
 <p>A vector-level expression language also may lend itself to more specialized
 reasoning strategies than just bit-blasting.  Bit-blasting is still an
 important tool and is still well-supported by SV; see in particular @(see
-svex-symbolic-evaluation).  However, delaying bit-blasting opens up
-opportunities for vector-level analysis such as @(see rewriting).</p>
+svex-symbolic-evaluation).  However, delaying bit-blasting seems to open up
+opportunities for certain kinds of vector-level analysis such as @(see
+rewriting).</p>
+
+
 
 
 <h3>Module Representations</h3>
