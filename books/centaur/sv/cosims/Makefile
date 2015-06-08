@@ -39,7 +39,7 @@ STARTJOB ?= $(SHELL)
 ACL2 ?= acl2
 
 CORE := ./cosim-core
-IMG_EXT ?= ccl
+IMG_EXT ?= lx86cl64
 
 ACL2_SYSTEM_BOOKS ?= ../../..
 
