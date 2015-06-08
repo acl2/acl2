@@ -57,9 +57,8 @@ $(info Done rebuilding makefiles)
 -include Makefile-books
 
 cosim-core: cosims.cert make-cosim.lsp
-	rm -f $(CORE) $(CORE).$(IMG_EXT) cosim-core cosim-core.ccl
+	rm -f $(CORE) 
 	$(STARTJOB) -c "$(ACL2) < make-cosim.lsp &> make-cosim.out"
-	ls -la $(CORE) $(CORE).$(IMG_EXT)
 
 all: cosim-core symlinks
 
