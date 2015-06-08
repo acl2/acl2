@@ -50,3 +50,6 @@
 (include-book "symbolic")
 (include-book "vars")
 (include-book "xeval")
+
+;; ttag book needed for efficient rewriting (trailing 0 count).
+(include-book "std/bitsets/bignum-extract-opt" :dir :system)
