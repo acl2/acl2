@@ -36,8 +36,10 @@ all:
 #  Building the cosim image
 
 STARTJOB ?= $(SHELL)
+ACL2 ?= acl2
 
 CORE := ./cosim-core
+IMG_EXT ?= ccl
 
 ACL2_SYSTEM_BOOKS ?= ../../..
 
@@ -55,9 +57,9 @@ $(info Done rebuilding makefiles)
 -include Makefile-books
 
 cosim-core: cosims.cert make-cosim.lsp
-	rm -f $(CORE) $(CORE).ccl cosim-core cosim-core.ccl
-	$(STARTJOB) -c "acl2 < make-cosim.lsp &> make-cosim.out"
-	ls -la $(CORE) $(CORE).ccl
+	rm -f $(CORE) $(CORE).$(IMG_EXT) cosim-core cosim-core.ccl
+	$(STARTJOB) -c "$(ACL2) < make-cosim.lsp &> make-cosim.out"
+	ls -la $(CORE) $(CORE).$(IMG_EXT)
 
 all: cosim-core symlinks
 
