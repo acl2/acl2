@@ -51,6 +51,9 @@
 (include-book "vars")
 (include-book "xeval")
 
+;; ttag book needed for efficient rewriting (trailing 0 count).
+(include-book "std/bitsets/bignum-extract-opt" :dir :system)
+
 
 
 (defxdoc why-infinite-width
@@ -115,3 +118,4 @@ become explicit in the expressions themselves.</p>
 <p>This seems like a strong advantage.  It means, for instance, that every
 expression can be understood, exactly, all by itself, without having to
 consider or look up any other information.</p>")
+
