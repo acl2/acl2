@@ -149,6 +149,19 @@ because... (BOZO)</p>
                b (svcall rsh w rhs) wholevar)))
           (mv (vl::vmsg "Unexpected form of svex assignment LHS: ~x0" (svex-fix lhs))
               nil)))
+       ((mv ok al) (svex-unify (svcall zerox 'w 'a)
+                               lhs nil))
+       ((mv ok al) (if ok
+                       (mv ok al)
+                     (svex-unify (svcall signx 'w 'a)
+                                 lhs nil)))
+       ((when ok)
+        (b* ((w (svex-lookup 'w al))
+             (a (svex-lookup 'a al)))
+          ;; (zerox/signx w a) = rhs --> a = (concat w rhs (rsh w a))
+          (svex-resolve-single-assignment
+           a (svcall concat w rhs (svcall rsh w a)) wholevar)))
+
        ((mv ok al) (svex-unify (svcall rsh 'w 'v) lhs nil))
        ((when ok)
         (b* ((w (svex-lookup 'w al))
@@ -214,6 +227,14 @@ because... (BOZO)</p>
                                               (varsize natp)
                                               (rhs sv::svex-p)
                                               (blockingp booleanp))
+  :prepwork ((local (defthm consp-cdr-by-len
+                      (implies (< 1 (len x))
+                               (consp (cdr x)))
+                      :hints(("Goal" :in-theory (enable len)))))
+             (local (defthm consp-by-len
+                      (implies (< 0 (len x))
+                               (consp x))
+                      :hints(("Goal" :in-theory (enable len))))))
   :returns (mv (ok)
                (warnings vl-warninglist-p)
                (res sv::svstmtlist-p))
@@ -232,8 +253,8 @@ because... (BOZO)</p>
        ;; operations to concats and right shifts.  It does this now, and it
        ;; seems unlikely we'll want to change that.
        ;; First make sure we can process wholevar into an LHS.
-       (varsvex (sv::svex-concat varsize (sv::svex-lhsrewrite wholevar 0 varsize)
-                                   (sv::svex-z)))
+       (wholevar (sv::svex-lhsrewrite wholevar 0 varsize))
+       (varsvex (sv::svex-concat varsize wholevar (sv::svex-z)))
        ((unless (sv::lhssvex-p varsvex))
         (mv nil
             (fatal :type :vl-assignstmt-fail
@@ -243,7 +264,7 @@ because... (BOZO)</p>
             nil))
        (var-lhs (sv::svex->lhs varsvex))
 
-       (simp-lhs (sv::svex-rewrite lhs-simp1 (sv::svexlist-mask-alist (list lhs-simp1))))
+       ((list simp-lhs wholevar) (sv::svexlist-rewrite-top (list lhs-simp1 wholevar)))
 
        ((mv err final-rhs)
         (sv::svex-resolve-single-assignment simp-lhs rhs wholevar))
@@ -258,6 +279,13 @@ because... (BOZO)</p>
         (list
          (sv::make-svstmt-assign :lhs var-lhs :rhs final-rhs :blockingp blockingp))))
   ///
+  (local #!sv (defthm svex-vars-of-car
+                (implies (not (member v (svexlist-vars x)))
+                         (not (member v (svex-vars (car x)))))))
+  (local #!sv (defthm svexlist-vars-of-cdr
+                (implies (not (member v (svexlist-vars x)))
+                         (not (member v (svexlist-vars (cdr x)))))))
+
   (fty::defret vars-of-vl-single-procedural-assign->svstmts
     (implies (and (not (member v (sv::svex-vars lhs)))
                   (not (member v (sv::svex-vars rhs)))
