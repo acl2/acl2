@@ -56,7 +56,7 @@
 
 (defun deffixtype-fn (name predicate fix equiv execp definep inline equal verbosep hints forward)
   (if definep
-      `(with-output ,@(and (not verbosep) '(:off :all)) :stack :push
+      `(with-output ,@(and (not verbosep) '(:off :all :on acl2::error)) :stack :push
          (encapsulate nil
            (logic)
            (local (make-event

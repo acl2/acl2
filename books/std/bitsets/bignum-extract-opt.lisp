@@ -55,7 +55,8 @@
 
 
 (defttag bignum-extract)
-(include-raw "bignum-extract-opt-raw.lsp")
+(include-raw "bignum-extract-opt-raw.lsp"
+             :host-readtable t)
 (defttag nil)
 
 ; Primitive tests to make sure it seems to be working.
@@ -86,13 +87,32 @@
            (floor (expt 2 90) 3)
            (floor (expt 2 90) 5)
            (floor (expt 2 90) 7)
+
+           (- (floor (expt 2 90) 3))
+           (- (floor (expt 2 90) 5))
+           (- (floor (expt 2 90) 7))
            ))
 
    (defconst *test-slice-indices*
      (list 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+           ;; SBCL has a bug with LDB on large numbers, which we have reported.
+           ;; Once it is fixed, we can remove these conditionals.
+           (expt 2 51)
+           (+ 1 (expt 2 52))
+           (+ 7 (expt 2 53))
+           (+ 9 (expt 2 54))
+           (+ 2 (expt 2 55))
+           (+ 3 (expt 2 56))
+           (- (expt 2 57) 1)
+           (expt 2 57)
+           (- (expt 2 57) 2)
+           (- (expt 2 57) 3)
            (expt 2 60)
            (+ 1 (expt 2 60))
            (+ 2 (expt 2 60))
+           (+ 2 (expt 2 61))
+           (+ 2 (expt 2 62))
+           (+ 2 (expt 2 63))
            (expt 2 90)))
 
    ;; Modified slightly 12/4/2012 by Matt K. to be redundant with new ACL2
@@ -104,17 +124,22 @@
            (t (and (natp (car l))
                    (nat-listp (cdr l))))))
 
+   (defun test0 (num index)
+     (declare (xargs :guard (and (integerp num)
+                                 (natp index))))
+     (or (equal (bignum-extract num index)
+                (bignum-extract-slow num index))
+         (cw "Oops: (bignum-extract ~x0 ~x1): spec = ~x2, impl = ~x3.~%"
+             num index
+             (bignum-extract-slow num index)
+             (bignum-extract num index))))
+
    (defun test1 (num indices)
      (declare (xargs :guard (and (integerp num)
                                  (nat-listp indices))))
      (if (atom indices)
          t
-       (and (or (equal (bignum-extract num (car indices))
-                       (bignum-extract-slow num (car indices)))
-                (cw "Oops: (bignum-extract ~x0 ~x1): spec = ~x2, impl = ~x3.~%"
-                    num (car indices)
-                    (bignum-extract-slow num (car indices))
-                    (bignum-extract num (car indices))))
+       (and (test0 num (car indices))
             (test1 num (cdr indices)))))
 
    (defun test2 (nums indices)

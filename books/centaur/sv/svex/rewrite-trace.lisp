@@ -37,7 +37,10 @@
 (define svex-rewrite-trace-rule (rule mask args localp rhs subst)
   :parents (rewriter-tracing)
   :short "Trace individual rewrite rules, printing to @(see cw)."
-  :long "@({ (defattach svex-rewrite-trace svex-rewrite-trace-rule) })"
+  :long "@({
+ (defattach svex-rewrite-trace svex-rewrite-trace-rule)    ;; turn on tracing
+ (defattach svex-rewrite-trace svex-rewrite-trace-default) ;; turn off tracing
+ })"
   :ignore-ok t
   :irrelevant-formals-ok t
   (cw "Rule: ~x0~%" rule))
@@ -62,6 +65,9 @@ any time to improve it.</p>
      (defattach svex-rewrite-trace svex-rewrite-trace-profile)
      ;; do rewriting
      (sneaky-alist state)  ;; see results
+     (sneaky-clear)        ;; clear data
+
+     (defattach svex-rewrite-trace svex-rewrite-trace-default) ;; stop profiling
 })"
 
   :ignore-ok t

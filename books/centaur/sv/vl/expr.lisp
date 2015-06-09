@@ -1189,12 +1189,21 @@ the way.</li>
   :guard (and (vl-operandinfo-usertypes-ok x)
               (equal (len indices)
                      (vl-operandinfo-index-count x)))
-  :guard-hints (("goal" :in-theory (enable vl-operandinfo-index-count)))
+  :guard-hints (("goal" :in-theory (enable vl-operandinfo-index-count)
+                 :do-not-induct t))
   :returns (mv (err (iff (vl-msg-p err) err))
                (svex sv::svex-p))
   (b* (((mv err x indices) (vl-operandinfo-to-svex-preproc x indices))
        ((when err) (mv err (svex-x)))
        ((vl-operandinfo x))
+
+       ((mv err size) (vl-datatype-size x.type))
+       ((when err) (mv err (svex-x)))
+       ((unless size)
+        (mv (vmsg "Unsizable datatype ~a0" x.type) (svex-x)))
+       ((mv & signedness) (vl-datatype-signedness x.type))
+
+
        ((unless (vl-hidtrace-resolved-p x.hidtrace))
         (mv (vmsg "Unresolved hid indices") (svex-x)))
        ((vl-hidstep decl) (car x.hidtrace))
@@ -1223,9 +1232,18 @@ the way.</li>
        ((when err) (mv err (svex-x)))
 
        ((when (vl-partselect-case x.part :none))
-        ;; Bitselect was taken care of by preproc.  Just remains to convert the seltrace.
-        (vl-seltrace-to-svex-vector unres-seltrace indices
-                                    x base-svex ss))
+        (b* (((mv err res-base)
+              ;; Bitselect was taken care of by preproc.  Just remains to convert the seltrace.
+              (vl-seltrace-to-svex-vector unres-seltrace indices
+                                          x base-svex ss))
+             ((when err) (mv err (svex-x)))
+             ;; Res-base is padded with Xes so that out-of-bounds selects work
+             ;; right, so now we need to sign/zero-extend.
+             (res-ext (if signedness
+                          (svex-extend signedness size res-base)
+                        res-base)))
+          (mv nil res-ext)))
+       
        ((vl-plusminus->partselect x.part))
        ((mv err baseexpr)
         (vl-seltrace-to-svex-vector unres-seltrace (cddr indices) x base-svex ss))
@@ -1246,30 +1264,25 @@ the way.</li>
                     (if x.part.minusp
                         ;; base is the msb, compute the lsb
                         (sv::svcall + base-svex
-                                      (sv::svcall + (svex-int 1)
-                                                    (sv::svcall sv::u- width-svex)))
+                                    (sv::svcall + (svex-int 1)
+                                                (sv::svcall sv::u- width-svex)))
                       ;; base is the lsb
                       base-svex)
                   (if x.part.minusp
                       base-svex
                     ;; base is the msb, compute the lsb
                     (sv::svcall + base-svex
-                                  (sv::svcall + (svex-int -1) width-svex)))))
+                                (sv::svcall + (svex-int -1) width-svex)))))
        ((mv err shift-amt)
         (vl-datatype-index-shift-amount arrtype sel-lsb))
        ((when err) (mv err (svex-x)))
-
-       ((mv err size) (vl-datatype-size x.type))
-       ((when err) (mv err (svex-x)))
-       ((unless size)
-        (mv (vmsg "Unsizable datatype ~a0" x.type) (svex-x))))
+       (res-base (sv::svex-lsb-shift shift-amt baseexpr))
+       (res-ext (if signedness
+                    (svex-extend signedness size res-base)
+                  (sv::svcall sv::concat (svex-int size) res-base (svex-x)))))
 
     (mv nil
-        (sv::svex-reduce-consts
-         (sv::svcall sv::concat
-                       (svex-int size)
-                       (sv::svex-lsb-shift shift-amt baseexpr)
-                       (svex-x)))))
+        (sv::svex-reduce-consts res-ext)))
   ///
 
   (local (defthm member-svex-vars-of-car
