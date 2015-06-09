@@ -258,7 +258,6 @@
 #!ACL2
 (defmacro acl2s-beginner-settings ()
   `(er-progn
-    (include-book "beginner-theory" :dir :acl2s-modes :ttags :all)
 ; Non-events:
     (acl2::set-guard-checking :all)
 
@@ -284,8 +283,6 @@
 (defmacro acl2s-bare-bones-settings ()
   `(er-progn
 
-    (include-book "bare-bones-theory" :dir :acl2s-modes :ttags :all)
-
     (set-irrelevant-formals-ok :warn)
     (set-bogus-mutual-recursion-ok :warn)
     (set-ignore-ok :warn)
@@ -306,8 +303,6 @@
 #!ACL2
 (defmacro acl2s-theorem-proving-beginner-settings ()
   `(er-progn
-
-    (include-book "theorem-proving-beginner-theory" :dir :acl2s-modes :ttags :all)
 
     (set-backchain-limit '(50 100))
     (set-rewrite-stack-limit 500)
