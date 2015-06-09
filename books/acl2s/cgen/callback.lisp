@@ -7,10 +7,6 @@
 
 (in-package "CGEN")
 
-;Useful Macros for concise/convenient code.
-(include-book "std/util/bstar" :dir :system)
-;(include-book "basis")
-
 (include-book "type")
 
 (include-book "simple-graph-array")
@@ -187,9 +183,7 @@
 ;the current subgoal i.e. cl
        (vars (all-vars1-lst cl '()))
        (vt-acl2-alst (if erp ;contradiction
-                         (pairlis$ vars (make-list (len vars)
-                                                   :initial-element 
-                                                   (list 'ACL2::ALL)))
+                         (make-dumb-type-alist vars)
                        (decode-acl2-type-alist type-alist vars)))
        ((mv hyps concl) (clause-mv-hyps-concl cl))
 ;       (wrld (w state))
@@ -427,9 +421,7 @@ Nested testing not allowed! Skipping testing of new goal...~%"
               ((mv H C) (cgen::clause-mv-hyps-concl gen-cl))
               (vars (vars-in-dependency-order H C vl wrld))
 
-              (vt-alist (pairlis$ vars (make-list (len vars)
-                                                  :initial-element 
-                                                  (list 'ACL2::ALL))))
+              (vt-alist (make-dumb-type-alist vars))
               ;; (term (if (null H)
               ;;           C
               ;;           `(implies (and ,@H) ,C)))
@@ -451,12 +443,12 @@ Nested testing not allowed! Skipping testing of new goal...~%"
               (num-cts-found (access test-outcomes% |#cts|)))
           (value (if (> num-cts-found 0)
                      (progn$ 
-                      (cw? (normal-output-flag vl) "~| Generalized subgoal: ~x0~|" 
+                      (cw? (verbose-stats-flag vl) "~| Generalized subgoal: ~x0~|" 
                            (acl2::prettyify-clause gen-cl nil (w state)))
-                      (cw? (normal-output-flag vl)
+                      (cw? (verbose-stats-flag vl)
                            "~| Counterexample found: ~x0 ~|"
                            (car (access test-outcomes% cts)))
-                      (cw? (normal-output-flag vl) "~| Backtracking...~|")
+                      (cw? (verbose-flag vl) "~| Bad generalization! Backtracking...~|")
                       '(:do-not '(acl2::generalize)
                                 :no-thanks t))
                    nil)))
@@ -485,7 +477,7 @@ Nested testing not allowed! Skipping testing of new goal...~%"
 ;; expansion result of the make-event in set-acl2s-random-testing-enabled
 `(make-event  
   '(progn 
-     (acl2::add-override-hints 
+     (acl2::add-override-hints!
       '((list* :backtrack 
 ;take parent pspv and hist, not the ones returned by clause-processor
 
@@ -603,6 +595,10 @@ Nested testing not allowed! Skipping testing of new goal...~%"
 
 
 
+
+
+
+
 ; [2014-05-03 Sat] event-stack stores in its entries, either a keyword
 ; :ignore-cgen or the ctx of the current event/form. The former
 ; indicates that cgen has ignored this event, the latter that cgen is
@@ -610,7 +606,7 @@ Nested testing not allowed! Skipping testing of new goal...~%"
 ; conjecture under test. This is crucial to match the actions taken in
 ; initialize-event with actions in finalize-event. At the top-level,
 ; this stack better be empty (how to ensure this invariant?).
-(defun initialize-event-user-cgen (ctx-form body state)
+(defun initialize-event-user-cgen/old (ctx-form body state)
   (declare (xargs :stobjs state
                   :mode :program
                   :verify-guards nil))
@@ -656,7 +652,7 @@ Nested testing not allowed! Skipping testing of new goal...~%"
 
 (defstub print-testing-summary (* * state) => (mv * * state))
        
-(defun finalize-event-user-cgen (ctx-form body state)
+(defun finalize-event-user-cgen/old (ctx-form body state)
   (declare (xargs :mode :program ;print-testing-summary is program-mode
                   :verify-guards nil :stobjs state))
   (declare (ignorable ctx-form body))
@@ -704,6 +700,75 @@ Nested testing not allowed! Skipping testing of new goal...~%"
           
       
 
+;; [2015-02-04 Wed] Simplify the pre/post event hooks used by Cgen.
+;; Assume that no event of concern to use will be nested. i.e thm, defthm, verify-guards, test? will never be nested.
+(defun initialize-event-user-cgen (ctx-form body state)
+  (declare (xargs :stobjs state :mode :program :verify-guards nil))
+  (declare (ignorable body)) 
+; As soon as it sees a testable/cgen-able event it resets/inits the two globals:
+; cgen-state using init-cgen-state/event and event-ctx with ctx-form
+  (b* (((unless (and (f-boundp-global 'cgen-state state)
+                     (f-boundp-global 'event-ctx state)))
+        state) ;ignore
+       (vl (acl2s-defaults :get verbosity-level))
+       (ctx (compute-event-ctx ctx-form))
+       ((unless (allowed-cgen-event-ctx-p ctx))
+        (prog2$
+         (cw? (> vl 8) "~|CEgen/Warning: initialize-event -- ctx ~x0 ignored...~%" ctx)
+         state))
+              
+       ((mv start state) (acl2::read-run-time state))
+       (cgen-state (init-cgen-state/event (acl2s::acl2s-defaults-alist) start ctx))
+       (- (cw? (debug-flag vl) "~|CEgen/Note: CGEN-STATE initialized for ctx ~x0~%" ctx))
+       (state (f-put-global 'cgen-state cgen-state state))
+       (state (f-put-global 'event-ctx ctx-form state)))
+    state))
+       
+(defun finalize-event-user-cgen (ctx-form body state)
+  (declare (xargs :mode :program ;print-testing-summary is program-mode
+                  :verify-guards nil :stobjs state))
+  (declare (ignorable body))
+; If event-ctx global matches ctx-form, we know (sure??) this is the top cgen event and do the following. (if not matched, we ignore/skip).
+; We reset event-ctx to nil.
+; Finalize cgen-state with end-time, print-summary and reset cgen-state to nil.
+  (b* (((unless (and (f-boundp-global 'cgen-state state)
+                     (f-boundp-global 'event-ctx state)))
+        state) ;ignore
+       (vl (acl2s-defaults :get verbosity-level)) ;todo replace with the one from cgen-state
+       (event-ctx (@ event-ctx))
+       ((unless (equal event-ctx ctx-form)) ;check if it is the matching finalize
+        (prog2$
+         (cw? (> vl 8) "~|CEgen/Warning: finalize-event -- ignore non-top event...~%")
+         state))
+       
+       (state (f-put-global 'event-ctx nil state)) ;reset/clean
+
+       ;; symmetric to initialize-event-user-cgen, update end time
+       ((mv end state) (acl2::read-run-time state))
+       (cgen-state (@ cgen-state))
+; removed assert here for valid cgen-state, as there are many events that occur that have nothing to do with testing!
+       (cgen-state (cput end-time end))
+       (state (f-put-global 'cgen-state cgen-state state))
+       (gcs% (cget gcs))
+
+       (ctx (compute-event-ctx ctx-form))
+       (print-summary-p (and (cget print-cgen-summary) 
+                             ;(> (access gcs% cts) 0) ;commented out to collect vacuous stats
+; dont print at the end of defun/defuns events (any help to CCG by cgen is invisible) TODO
+                             (member-eq ctx '(ACL2::THM ACL2::DEFTHM ACL2::VERIFY-GUARDS))))
+       
+       (- (cw? (system-debug-flag vl) "~|CEgen/SysDebug: Exiting event with gcs% : ~x0. ~ ctx: ~x1 print-cgen-summ : ~x2 ~%" gcs% ctx (cget print-cgen-summary)))
+                        
+       ((mv & & state) ;ignore error in print function
+        (if print-summary-p
+            (print-testing-summary cgen-state ctx state) ;state is important also because we call trans-eval inside this fun
+          (value nil)))
+       (- (cw? (debug-flag vl)
+              "~|CEgen/Note: CGEN-STATE finalized for ctx ~x0~%" ctx))
+       (state (f-put-global 'cgen-state nil state))) ;clean up cgen state
+    state))
+
+
 
 (defun initialize-event-user-cgen-gv (ctx body state)
   (declare (xargs :mode :program
@@ -724,6 +789,10 @@ Nested testing not allowed! Skipping testing of new goal...~%"
 ;brr which does not end gracefully (no finalize-event is called).
 ; Actually even simple interrupts, leave the event-stack unfinalized, and hence
 ; we might need to manually flush these globals.
+
+; [2015-02-04 Wed] After the above simplification (disallowing nested
+; cgen-relevant events), the above note is mostly irrelevant.
+
 (defmacro flush ()
 ;; ":Doc-Section cgen
   
@@ -737,5 +806,5 @@ Nested testing not allowed! Skipping testing of new goal...~%"
 ;flush any transient/polluted globals due to interrupts
   `(er-progn 
     (assign cgen::cgen-state nil)
-    (assign cgen::event-stack nil)
+    (assign cgen::event-ctx nil)
     (value nil)))

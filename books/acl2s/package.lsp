@@ -150,3 +150,134 @@
       set-defunc-termination-strictp set-defunc-function-contract-strictp set-defunc-body-contracts-strictp set-defunc-timeout
       get-defunc-timeout get-defunc-termination-strictp get-defunc-function-contract-strictp get-defunc-body-contracts-strictp
        ))))
+
+
+(defpkg "ACL2S B" ; beginner
+  (union-eq '(t nil 
+              ;if ; see macro below
+              equal
+
+              ; + * unary-- unary-/ < ; see definitions below
+              numerator denominator
+              rationalp integerp
+
+              consp cons ; car cdr
+
+              cond ; macro: explain
+              list ; macro: explain
+
+              lambda
+              let let* ; macro: explain
+
+              quote
+
+              symbolp symbol-name symbol-package-name
+              ;stringp
+              ;charp
+
+              acl2s::check=
+
+              and or iff implies not booleanp 
+              ;+ * 
+              / posp negp natp <= > >= zp - atom 
+              ; true-listp 
+              endp 
+              ;caar cadr cdar cddr 
+              ;caaar caadr cadar caddr cdaar cdadr cddar cdddr
+              ;caaaar caaadr caadar caaddr cadaar cadadr caddar cadddr
+              ;cdaaar cdaadr cdadar cdaddr cddaar cddadr cdddar cddddr
+              
+              
+              trace* trace$
+
+              defthm thm defconst in-package defun table
+
+              )
+            (union-eq
+             #!ACL2S
+             '(nat string pos rational integer boolean all neg
+                   acl2-number true-list char symbol)
+             acl2s::*acl2s-exports*)
+             ))
+
+
+(defpkg "ACL2S BB" ; bare bones
+  (union-eq '(t nil 
+              ;if ; see macro below
+              equal
+
+              defun acl2s::defunc ;for function definitions
+
+              ; + * unary-- unary-/ < ;see definitions below
+              numerator denominator
+              rationalp integerp
+              
+              consp cons  
+
+              cond ; macro: explain
+              list ; harshrc [21st Aug 2012] commented out to allow (defdata list ...) below
+
+              lambda
+              let let* ; macro: explain
+
+              quote
+
+              symbolp symbol-name symbol-package-name
+              ;stringp
+              ;charp
+
+              acl2s::check=
+              
+              trace*
+              )
+            '()))
+
+
+(defpkg "ACL2S T" ; Theorem Proving Beginner 
+  (union-eq '(t nil 
+              ;if ; see macro below
+              equal
+
+              
+              ; + * unary-- unary-/ < ; see definitions below
+              numerator denominator
+              rationalp integerp
+
+              cons car cdr consp 
+              ;first  rest
+              ;second third fourth fifth
+
+              cond ; macro: explain
+              list ; macro: explain
+
+              lambda
+              let let* ; macro: explain
+
+              quote
+
+              symbolp symbol-name symbol-package-name
+              stringp
+              charp
+
+              acl2s::check=
+
+              and or iff implies not booleanp 
+              ; + * 
+              / posp natp <= > >= zp - atom 
+              true-listp endp 
+              caar cadr cdar cddr 
+              caaar caadr cadar caddr cdaar cdadr cddar cdddr
+              caaaar caaadr caadar caaddr cadaar cadadr caddar cadddr
+              cdaaar cdaadr cdadar cdaddr cddaar cddadr cdddar cddddr
+              
+              trace* trace$
+         
+              defthm thm defconst in-package defun table
+              
+              )
+            (union-eq
+             #!ACL2S
+             '(nat string pos rational integer boolean all neg
+                   acl2-number true-list char symbol)
+             acl2s::*acl2s-exports*)
+            ))

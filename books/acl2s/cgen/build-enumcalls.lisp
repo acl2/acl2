@@ -8,7 +8,6 @@
 (in-package "CGEN")
 
 ;Useful Macros for concise/convenient code.
-(include-book "std/util/bstar" :dir :system)
 (include-book "basis")
 (include-book "utilities")
 (include-book "type")
@@ -60,18 +59,46 @@
               (not (acl2::singleton-tau-intervalp lo-rel lo hi-rel hi))))))
           
 
-
+(defun abs/complex (c)
+  (declare (xargs :guard (complex-rationalp c)))
+  (complex (abs (realpart c)) (abs (imagpart c))))
   
+(defun abs/acl2-number (x)
+    (declare (xargs :guard (acl2-numberp x)))
+  (if (complex-rationalp x)
+      (abs/complex x)
+    (abs x)))
 
-(def make-range-enum-info% (domain interval)
-  (decl :sig ((symbolp non-empty-non-universal-interval-p) -> enum-info%-p)
+
+(defun mod/complex (c m)
+  (declare (xargs :guard (and (rationalp m)
+                              (> m 0)
+                              (complex-rationalp c))))
+  (complex (mod (realpart c) m) (imagpart c)))
+  
+(defun mod/acl2-number (x m)
+    (declare (xargs :guard (and (acl2-numberp x)
+                                (rationalp m)
+                                (> m 0)
+                                )))
+  (if (complex-rationalp x)
+      (mod/complex x m)
+    (mod x m)))
+
+; NOTE: The following function returns code snippets and hence cannot be type
+; checked until runtime. Such functionality is extremely difficult to find
+; trivial mistakes that could have been easily caught had we compiled these
+; snippets.
+
+(def make-range-enum-info% (type interval M)
+  (decl :sig ((symbolp non-empty-non-universal-interval-p symbol-alist) -> enum-info%-p)
         :doc "given tau-interval interval construct an enum-info% rec with appropriate enum calls")
   (b* ((lo (acl2::access acl2::tau-interval interval :lo))
        (hi (acl2::access acl2::tau-interval interval :hi))
        (lo-rel (acl2::access acl2::tau-interval interval :lo-rel))
        (hi-rel (acl2::access acl2::tau-interval interval :hi-rel)))
        
-  (case domain
+  (case type
     (acl2s::integer (let ((lo (and lo (if lo-rel (1+ lo) lo))) ;make both inclusive bounds
                          (hi (and hi (if hi-rel (1- hi) hi))))
                      (cond ((and lo hi)
@@ -79,7 +106,7 @@
                                         :size 't ;(- hi lo)
                                         :category :numeric-range 
                                         :expr `(acl2s::nth-integer-between r ,lo ,hi)
-                                        :expr2 `(defdata::random-int-between-seed ,lo ,hi seed.)))
+                                        :expr2 `(defdata::random-integer-between-seed ,lo ,hi seed.)))
                            (lo ;hi is positive infinity
                             (acl2::make enum-info% 
                                         :size 't
@@ -112,201 +139,56 @@
                                         :expr2 `(mv-let (r seed.)
                                                         (defdata::random-small-natural-seed seed.)
                                                         (mv (- ,hi r) seed.)))))))
-    (otherwise  (cond ((and lo hi) ;ASSUME inclusive even when you have exclusive bounds
+    (otherwise  (cond ((and lo hi) ;ASSUME inclusive even when you have exclusive bounds -- rational, complex-rational, acl2-number
                             (acl2::make enum-info% 
                                         :size 't ;(- hi lo)
                                         :category :numeric-range 
-                                        :expr `(acl2s::nth-rational-between r ,lo ,hi)
-                                        :expr2 `(defdata::random-rational-between-seed ,lo ,hi seed.)))
+                                        :expr `(acl2s::nth-number-between r ,lo ,hi :type ',type)
+                                        :expr2 `(defdata::random-number-between-seed ,lo ,hi seed. :type ',type)))
                          (lo ;hi is positive infinity
                           (acl2::make enum-info% 
                                       :size 't
                                       :category :numeric-range 
-                                      :expr `(+ ,lo (acl2s::nth-positive-rational r))
-                                      :expr2 `(mv-let (p seed.)
-                                                      (defdata::random-probability-seed seed.)
-                                                      (mv-let (r seed.)
-                                                              (defdata::random-natural-seed seed.)
-                                                              (mv (+ ,lo (* p r)) seed.)))))
+                                      :expr `(+ ,lo (abs/acl2-number (,(defdata::enumerator-name type M) r)))
+                                      :expr2 `(mv-let (r seed.)
+                                                      (defdata::random-small-natural-seed seed.)
+                                                      (mv-let (num seed.) ;TODO perhaps we should prefer test/acc over enum/acc
+                                                              (,(defdata::enum/acc-name type M) r seed.)
+                                                              (mv (+ ,lo (abs/acl2-number num)) seed.)))))
                          
                          ((> hi 0) ;lo is neg infinity and hi is is >= 1
                           (acl2::make enum-info% 
                                         :size 't
                                         :category :numeric-range 
-                                        :expr `(let ((rat-ans (acl2s::nth-rational r)))
+                                        :expr `(let ((rat-ans (,(defdata::enumerator-name type M) r)))
                                                  (if (> rat-ans ,hi)
-                                                     (mod rat-ans (1+ ,hi))
+                                                     (mod/acl2-number rat-ans (1+ ,hi))
                                                    rat-ans));ans shud be less than or equal to hi
                                                         
-                                        :expr2 `(mv-let (p seed.)
-                                                        (defdata::random-probability-seed seed.)
-                                                        (mv-let (r seed.)
-                                                                (defdata::random-integer-seed seed.)
-                                                                (let ((rat-ans (* p r)))
-                                                                  (mv (if (> rat-ans ,hi) 
-                                                                          (mod rat-ans (1+ ,hi)) 
-                                                                        rat-ans) 
-                                                                      seed.))))))
+                                        :expr2 `(mv-let (r seed.)
+                                                        (defdata::random-small-natural-seed seed.)
+                                                        (mv-let (rat-ans seed.) 
+                                                                (,(defdata::enum/acc-name type M) r seed.)
+                                                                (mv (if (> rat-ans ,hi)
+                                                                        (mod/acl2-number rat-ans (1+ ,hi))
+                                                                      rat-ans)
+                                                                    seed.)))))
+
 
                          (t;lo is neg infinity and hi is is <= 0
                           (acl2::make enum-info% 
                                       :size 't
                                       :category :numeric-range 
-                                      :expr `(- ,hi (acl2s::nth-positive-rational r))
-                                      :expr2 `(mv-let (p seed.)
-                                                      (defdata::random-probability-seed seed.)
-                                                      (mv-let (r seed.)
-                                                              (defdata::random-natural-seed seed.)
-                                                      (mv (- ,hi (* p r)) seed.))))))))))
+                                      :expr `(- ,hi (abs/acl2-number (,(defdata::enumerator-name type M) r)))
+                                      :expr2 `(mv-let (r seed.)
+                                                      (defdata::random-small-natural-seed seed.)
+                                                      (mv-let (ans seed.)
+                                                              (,(defdata::enum/acc-name type M) r seed.)
+                                                              (mv (- ,hi ans) seed.))))))))))
                    
                           
                          
   
-;usage:
-
-;OLD COMMENT as of 10 March 2012;
-;MODIFIED: I had to change the order because it was picking
-;up *empty-values* as a constant value and hence
-;a singleton which is not working right. 
-;Come back to this point later.
-;;; harshrc 03/10/12 - updated it to defrec and def
-
-; 5 July '13 - Fixed bug. 2nd argument to 'nth' should be in bounds for finite types (-values* defconst).
-; 15 July '13 - added range support
-;; (def get-enum-info% (type range vl wrld)
-;;   (decl :sig ((possible-defdata-type-p tau-interval fixnum plist-world)
-;;               -> enum-info%-p)
-
-;; ;TODO: union types
-;;         :doc "to fill")
-;;   (declare (xargs :verify-guards nil))
-;; ; returns a well-formed enum-info defrec object
-;; ; r is the free variable in the enum-expression which
-;; ; is the place-holder for the random-seed or BE arg 
-;;   (if (possible-constant-value-p type)
-;;       (acl2::make enum-info% :size 1 :category :singleton :expr type :expr2 `(mv ',type seed.)) 
-;; ;ALSO HANDLE SINGLETON TYPES DIRECTLY
-    
-;;     (let ((entry (assoc-eq type 
-;;                            (table-alist 'defdata::types-info-table wrld))))
-     
-;;     (if entry ;if we find enum-info from type-info-table then use it
-;;         (b* ((types-info% (cdr entry))
-;;               (TI.test-enumerator (access types-info% enumerator-test))
-;;               (TI.enumerator      (access types-info% enumerator))
-;;               (TI.enum-uniform    (access types-info% enum-uniform))
-;;               (TI.size            (access types-info% size))
-;;              ((unless (or (eq 't TI.size)
-;;                          (posp TI.size)))
-;;               (prog2$
-;;                (cw? (normal-output-flag vl)
-;;                     "~|CEgen/Error: size in type-info ~x0 should be posp.~%" (cdr entry))
-;;                (acl2::make enum-info% :size 0 :category :empty :expr nil :expr2 nil)))
-             
-;; ; 15 July '13 added support for integer and rational ranges
-;; ; (acl2-numberp ranges reduce to rational ranges) custom types dont
-;; ; take ranges in hyps into account, since they are explicitly given by
-;; ; user, the user is burdened with the resposibility of taking them
-;; ; into account manually. In any case even defined defdata types play
-;; ; well only for integers and rationals, but then you cannot define an
-;; ; interesting numeric type, like 4divp, primep, arithmetic
-;; ; progression, etc. But you can use / constructor to define some
-;; ; interesting types, so I need to think about how to make this more general!! TODO
-;;              ((when (and (is-subtype type 'acl2::integer wrld)
-;;                          (non-empty-non-universal-interval-p range)))
-;;               (make-range-enum-info% 'acl2::integer range))
-                                     
-;;              ((when (and (is-subtype type 'acl2::acl2-number wrld)
-;;                          (non-empty-non-universal-interval-p range)))
-;;               (make-range-enum-info% 'acl2::rational range)))
-                                             
-              
-;;              ;first check for test-enum
-;;          (if TI.test-enumerator
-;;              (cond 
-;;               ((defdata::allows-arity TI.test-enumerator 1 wrld)
-;; ;TODO. I am not checking if test enumerator is to be used or not
-;;                (acl2::make enum-info% :size 't
-;;                            :category :function
-;;                            :expr (list TI.test-enumerator 'r)
-;;                            :expr2 (list (modify-symbol "" TI.test-enumerator "-UNIFORM") 'm 'seed.)))
-;;               (t (prog2$
-;;                   (cw? (normal-output-flag vl)
-;;                        "~|CEgen/Error: ~x0 should be an enum function of arity 1.~%" TI.test-enumerator)
-;;                   (acl2::make enum-info% :size 0 :category :empty :expr nil :expr2 nil))))
-
-;; ;common scenario: inf enumerator
-;;            (if (eq 't TI.size);inf or custom registered (assume)
-;;                (acl2::make enum-info% :size 't :category :function
-;;                            :expr (list TI.enumerator 'r)
-;;                            :expr2 (list TI.enum-uniform 'm 'seed.));inf or some enum fn
-;;              (let ((stored-defconst 
-;;                     (acl2-getprop TI.enumerator 'const wrld)))
-              
-;;               (if stored-defconst ;some finite set of values
-;;                   (b* ((values (second stored-defconst))
-;;                        (len-v (len values))
-;;                        ((unless (posp len-v))
-;;                         (prog2$
-;;                          (cw? (normal-output-flag vl)
-;;                               "~|CEgen/Error: stored-defconst ~x0 has 0 values~%" stored-defconst)
-;;                          (acl2::make enum-info% :size 0 :category :empty :expr nil :expr2 nil))))
-;;                    (acl2::make enum-info%
-;;                                :size len-v 
-;;                                :category (if (= len-v 1) 
-;;                                              :singleton
-;;                                            :defconst)
-;;                                :expr (if (= len-v 1)  
-;;                                          `',(car values)
-;;                                        `(nth (mod r ,len-v) ,TI.enumerator))
-;;                                :expr2 (if (= len-v 1)  
-;;                                          `(mv ',(car values) seed.) ;todo check random-natural
-;;                                        `(mv (nth (mod seed. ,len-v) ,TI.enumerator) seed.))))
-;; ;uncommon scenario, finite enumerator function        
-;;                 (if (defdata::allows-arity TI.enumerator 1 wrld) 
-;;                     (acl2::make enum-info% :size TI.size 
-;;                                 :category :function
-;;                                 :expr (list TI.enumerator 'r)
-;;                                 :expr2 (list TI.enum-uniform 'm 'seed.));some enum fn
-                  
-;;                   (prog2$
-;;                      (cw? (normal-output-flag vl)
-;;                           "~|CEgen/Error: ~x0 is neither one of constant, an enum function or a values defconst.~%" TI.enumerator)
-;;                      (acl2::make enum-info% :size 0 :category :empty :expr nil :expr2 nil))))))))
-
-;;       ;;;o.w (possibly) custom 
-;;       (let* ((vsym (modify-symbol "*" type "-VALUES*"))
-;;              (values (second (acl2-getprop vsym 'const wrld))))
-                    
-;;         (if values
-;;             (let ((len-v (len values)))
-;;                (acl2::make enum-info%
-;;                         :size len-v 
-;;                         :category (if (= len-v 1) 
-;;                                       :singleton
-;;                                     :defconst)
-;;                         :expr (if (= len-v 1)  
-;;                                   `',(car values) 
-;;                                 `(nth (mod r ,len-v) ,vsym))
-;;                         :expr2 (if (= len-v 1)  
-;;                                   `(mv ',(car values) seed.);see todo above 
-;;                                 `(mv (nth (mod seed ,len-v) ,vsym) seed.))))
-;;           (let ((esym (modify-symbol "NTH-" type "")))
-                
-;;             ;;check if enum is defined in wrld
-;;             (cond ((defdata::allows-arity esym 1 wrld) 
-;;                    (acl2::make enum-info% 
-;;                              :size t 
-;;                              :category :function
-;;                              :expr `(,esym r)
-;;                              :expr2 `(mv-let (r seed.)
-;;                                              (random-natural-seed seed.)
-;;                                              (mv (,esym r) seed.))))
-;;                   (t 
-;;                    (prog2$
-;;                      (cw? (normal-output-flag vl)
-;;                           "~|CEgen/Error: ~x0 doesnt appear to be a type.~%" type)
-;;                      (acl2::make enum-info% :size 0 :category :empty :expr nil :expr2 nil)))))))))))
               
 
 (def get-enum-info% (type range vl wrld)
@@ -351,11 +233,11 @@
 ; interesting types, so I need to think about how to make this more general!! TODO
              ((when (and (defdata::subtype-p TI.pred 'integerp wrld)
                          (non-empty-non-universal-interval-p range)))
-              (make-range-enum-info% 'acl2s::integer range))
-                                     
+              (make-range-enum-info% 'acl2s::integer range (list entry)))
+
              ((when (and (defdata::subtype-p TI.pred 'acl2-numberp wrld)
                          (non-empty-non-universal-interval-p range)))
-              (make-range-enum-info% 'acl2s::rational range)))
+              (make-range-enum-info% type range (list entry))))
                                              
               
              ;first check for test-enum
@@ -378,7 +260,7 @@
                            :expr (list TI.enumerator 'r)
                            :expr2 (list TI.enum-uniform 'm 'seed.));inf or some enum fn
              (let ((stored-defconst 
-                    (acl2-getprop TI.enumerator 'const wrld)))
+                    (acl2-getprop TI.enumerator 'acl2::const wrld)))
               
               (if stored-defconst ;some finite set of values
                   (b* ((values (second stored-defconst))
@@ -413,7 +295,7 @@
 
       ;;;o.w (possibly) custom 
       (let* ((vsym (modify-symbol "*" type "-VALUES*"))
-             (values (second (acl2-getprop vsym 'const wrld))))
+             (values (second (acl2-getprop vsym 'acl2::const wrld))))
                     
         (if values
             (let ((len-v (len values)))
@@ -427,7 +309,7 @@
                                 `(nth (mod r ,len-v) ,vsym))
                         :expr2 (if (= len-v 1)  
                                   `(mv ',(car values) seed.);see todo above 
-                                `(mv (nth (mod seed ,len-v) ,vsym) seed.))))
+                                `(mv (nth (mod seed. ,len-v) ,vsym) seed.))))
           (let ((esym (modify-symbol "NTH-" type "")))
                 
             ;;check if enum is defined in wrld
@@ -583,7 +465,7 @@ thought about how to implement it.
 ;;; spilled-types and additional-constraints
   (case-match cs%
 ;('cs% defdata-type spilled-types eq-constraint interval additional-constraints)
-    (('cs% defdata-type & 'defdata::empty-eq-constraint range &) 
+    (('cs% defdata-type & 'defdata::empty-eq-constraint range 'defdata::empty-mem-constraint &)
 ; ACHTUNG: cs% defrec exposed
      (b* ((enum-info% (get-enum-info% defdata-type range vl wrld )))
       (mv (access enum-info% size) (list (access enum-info% expr)
@@ -592,7 +474,7 @@ thought about how to implement it.
 ; if we see a equality constraint, we give preference to it over a
 ; defdata type, but only if the variables in the eq-constraint are
 ; already computed i.e already have an enumcall in the final answer
-    (('cs% defdata-type & eq-constraint range &)    
+    (('cs% defdata-type & eq-constraint range 'defdata::empty-mem-constraint &)
      (b* ((eq-vs (all-vars eq-constraint))
           (remaining (set-difference-eq eq-vs computed-vars)))
       (if remaining
@@ -600,6 +482,23 @@ thought about how to implement it.
            (mv (access enum-info% size) (list (access enum-info% expr)
                                               (access enum-info% expr2))))
         (mv 1 (list eq-constraint (list 'mv eq-constraint 'seed.))))))
+    
+    (('cs% defdata-type & 'defdata::empty-eq-constraint range mem-constraint &)
+     (b* ((mem-vs (all-vars mem-constraint))
+          (remaining (set-difference-eq mem-vs computed-vars))
+          (enum-info% (get-enum-info% defdata-type range vl wrld)))
+      (if remaining
+          (mv (access enum-info% size) (list (access enum-info% expr)
+                                              (access enum-info% expr2)))
+        (mv :mem (list `(let ((len-v (len ,mem-constraint)))
+                          (if (zp len-v)
+                              ,(access enum-info% expr)
+                            (nth (mod r len-v) ,mem-constraint)))
+                       `(let ((len-v (len ,mem-constraint)))
+                          (if (zp len-v)
+                              ,(access enum-info% expr2)
+                            (mv (nth (mod seed. len-v) ,mem-constraint) seed.))))))))
+  
     (& (prog2$ 
         (cw? (normal-output-flag vl) "~|CEgen/Error: BAD record cs% passed to cs%-enumcalls")
         (mv 0 NIL)))))
@@ -646,12 +545,12 @@ enumerator call expression")
 equality constraint that will be used for enumeration. it shadows cs%-enumcall")
   (case-match cs%
 ;('cs% defdata-type spilled-types eq-constraint range additional-constraints)
-    (('cs% defdata-type & 'defdata::empty-eq-constraint range &) 
+    (('cs% defdata-type & 'defdata::empty-eq-constraint range 'defdata::empty-mem-constraint &) 
 ; ACHTUNG: cs% defrec exposed
      (if (non-empty-non-universal-interval-p range)
          (list :type defdata-type :range (displayed-range range))
        defdata-type))
-    (('cs% defdata-type & eq-constraint range &)    
+    (('cs% defdata-type & eq-constraint range 'defdata::empty-mem-constraint &)
      (b* ((eq-vs (all-vars eq-constraint))
           (remaining (set-difference-eq eq-vs computed-vars)))
       (if remaining
@@ -659,6 +558,14 @@ equality constraint that will be used for enumeration. it shadows cs%-enumcall")
               (list :type defdata-type :range (displayed-range range))
             defdata-type)
         eq-constraint)))
+    (('cs% defdata-type & 'defdata::empty-eq-constraint range mem-constraint &)
+     (b* ((mem-vs (all-vars mem-constraint))
+          (remaining (set-difference-eq mem-vs computed-vars)))
+      (if remaining
+          (if (non-empty-non-universal-interval-p range)
+              (list :type defdata-type :range (displayed-range range))
+            defdata-type)
+        (list :enum mem-constraint))))
     (& 'bad-type)))
 
 (def displayed-enum-alist (v-cs%-alst ans.)

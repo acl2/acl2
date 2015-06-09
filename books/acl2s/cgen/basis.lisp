@@ -64,7 +64,11 @@
 
 ;;;;debug/print,trace,stats/log
 
-
+;; NOTE: [2015-02-04 Wed] Using names that are english words, makes fgrep
+;; harder. Either make fgrep more intelligent, or use non-english-dict
+;; names. Function names are fine since we can grep using "(fun-name ". The
+;; important point to be kept at the back of the mind is that sometimes we need
+;; to write our programs in a way that nicely supports our tools.
 
 
 
@@ -178,7 +182,7 @@
 (defthm concatenate-names-is-stringp
   (stringp (concatenate-names x)))
 
-(in-theory (disable concatenate-names))
+(local (in-theory (disable concatenate-names)))
 
 ;;; mksym-package-symbol will be captured by calling lexical environment
 (defmacro mksym (&rest args)
@@ -309,7 +313,7 @@
                 (symbol-listp ys))
            (eqlable-alistp (pairlis$ xs ys))))
   ;:rule-classes :forward-chaining)
-(in-theory (disable pairlis$))
+(local (in-theory (disable pairlis$)))
 #| add to test regression, there is a bug in the following guard conjecture
 (IMPLIES
  (AND (SYMBOLP NM) (FN-LIST-P FNS))
