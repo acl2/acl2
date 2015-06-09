@@ -58,10 +58,13 @@
        (cons 'defdata-testing-enabled-ev 
              (defdata::get1 :pre-hook-fns (table-alist 'defdata-defaults-table world))))
 
+
+;reset cgen globals and other state defaults
 (make-event 
  (er-progn
-  (assign cgen::event-stack nil)
+  (assign cgen::event-ctx nil)
   (assign cgen::cgen-state nil)
+  (assign acl2::evalable-printing-abstractions nil)
   (value '(value-triple :invisible)))
  :check-expansion t)
 
@@ -96,13 +99,18 @@
        ;(testing-enabled (cget testing-enabled))
        (vl              (cgen::cget verbosity-level))
        (pts?            (cgen::cget print-cgen-summary))
+       
+       (timeout (cgen::cget cgen-timeout))
+
        (hints (append '() ;acl2::*bash-skip-forcing-round-hints*
                       (acl2::add-string-val-pair-to-string-val-alist
                        "Goal" :do-not (list 'quote '(acl2::generalize acl2::fertilize))
                        (acl2::add-string-val-pair-to-string-val-alist
                         "Goal" :do-not-induct T hints))))
 
-       ((mv res cgen::cgen-state state) (prove/cgen form hints cgen::cgen-state state))
+       ((mv res cgen::cgen-state state) 
+        (with-prover-time-limit timeout
+                                (prove/cgen form hints cgen::cgen-state state)))
 
        ((er &) (cond ((not (cgen::cgen-state-p cgen::cgen-state)) (value nil))
                      ((and (<= (acl2::access cgen::gcs% (cgen::cget gcs) :cts) 0)
@@ -242,7 +250,7 @@ package.</p>
   :parents (acl2::cgen)
   :short "Flush/Reset the Cgen state globals to sane values."
   :long "
-  Flush the transient Cgen state globals (<tt>cgen::event-stack</tt>, <tt>cgen::cgen-state</tt>) to <tt>nil</tt>.
+  Flush the transient Cgen state globals (<tt>cgen::event-ctx</tt>, <tt>cgen::cgen-state</tt>) to <tt>nil</tt>.
   <code>
    Usage (at the top-level):
      (cgen::flush)
@@ -467,3 +475,5 @@ the structure of @('cgen-state'), you can study the
 information in a human-readable form. </p>
 "
 )
+
+(acl2s-defaults :set testing-enabled t)

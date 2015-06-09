@@ -91,10 +91,10 @@ data last modified: [2014-08-06]
 
 (defun alistof-theory-ev (p top-kwd-alist wrld)
   (b* (((cons name A) p)
-       ((acl2::assocs odef new-types kwd-alist) A) ;what about pdef?
+       ((acl2::assocs pdef new-types kwd-alist) A) ;ignore odef
        (kwd-alist (append kwd-alist top-kwd-alist)))
        
-    (case-match odef
+    (case-match pdef
       (('ALISTOF key-body val-body) (alistof-theory-events name key-body val-body new-types kwd-alist wrld))
       (& '()))))
              

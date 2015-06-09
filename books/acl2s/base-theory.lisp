@@ -7,7 +7,6 @@
 (in-package "ACL2S")
 
 (include-book "defdata/top" :ttags :all)
-(include-book "cgen/top" :ttags :all)
 (include-book "std/lists/top" :dir :system)
 (include-book "std/alists/top" :dir :system)
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
@@ -47,6 +46,59 @@
      :satisfies (and (<= x3 (len x1)) (<= x2 x3)))
 
 (sig put-assoc-equal (:a :b (alistof :a :b)) => (alistof :a :b))
+(sig pairlis$ ((listof :a) (listof :b)) => (alistof :a :b)
+     :satisfies (= (len x1) (len x2)))
 
 (include-book "arithmetic-5/top" :dir :system)
+
+(defthm natp-implies-acl2-numberp
+  (implies (natp x)
+           (acl2-numberp x))
+  :rule-classes ((:rewrite)))
+
+(defthm posp-implies-acl2-numberp
+  (implies (posp x)
+           (acl2-numberp x))
+  :rule-classes ((:rewrite)))
+
+(defthm integerp-implies-acl2-numberp
+  (implies (integerp x)
+           (acl2-numberp x))
+  :rule-classes ((:rewrite)))
+
+(defthm rationalp-implies-acl2-numberp2
+  (implies (rationalp x)
+           (acl2-numberp x))
+  :rule-classes ((:rewrite)))
+
+(defthm natp-implies-rationalp
+  (implies (natp x)
+           (rationalp x))
+  :rule-classes ((:rewrite)))
+
+(defthm posp-implies-rationalp
+  (implies (posp x)
+           (rationalp x))
+  :rule-classes ((:rewrite)))
+
+(defthm integerp-implies-rationalp
+  (implies (integerp x)
+           (rationalp x))
+  :rule-classes ((:rewrite)))
+
+(defthm numerator-1-decreases
+  (implies (rationalp n) 
+           (< (numerator (- n 1))
+              (numerator n)))
+  :hints (("goal" 
+           :use ((:instance ACL2::|(* r (denominator r))| 
+                  (acl2::r n))
+                 (:instance ACL2::|(* r (denominator r))| 
+                  (acl2::r (- n 1)))
+                 )
+           :in-theory (disable ACL2::|(* r (denominator r))|)))
+  :rule-classes ((:linear) (:rewrite)))
+
+
+
 
