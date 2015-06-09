@@ -223,75 +223,334 @@ bignums.</p>"
              (< (trailing-0-count x) (integer-length x)))
     :hints(("Goal" :induct (trailing-0-count x)
             :expand ((:with bitops::integer-length** (integer-length x)))))
+    :rule-classes :linear))
+
+(local
+ (defsection trailing-0-count-lemmas
+
+
+
+   (defthm integer-length-when-unsigned-byte-p
+     (implies (unsigned-byte-p n x)
+              (<= (integer-length x) n))
+     :hints(("Goal" :in-theory (e/d* (bitops::ihsext-inductions
+                                      bitops::ihsext-recursive-redefs)
+                                     (unsigned-byte-p))))
+     :rule-classes :linear)
+
+   (defthm trailing-0-count-32-correct
+     (implies (and (unsigned-byte-p 32 x)
+                   (not (equal x 0)))
+              (equal (trailing-0-count-32 x)
+                     (trailing-0-count x)))
+     :hints(("Goal" :in-theory (e/d (trailing-0-count-32)
+                                    (unsigned-byte-p)))))
+
+   (in-theory (enable trailing-0-count-rec))
+
+
+   (defthm trailing-0-count-of-loghead
+     (implies (not (equal 0 (loghead n x)))
+              (equal (trailing-0-count (loghead n x))
+                     (trailing-0-count x)))
+     :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                        bitops::ihsext-recursive-redefs
+                                        trailing-0-count))))
+
+   (defthm trailing-0-count-of-logtail
+     (implies (and (equal 0 (loghead n x))
+                   (not (equal 0 (logtail n x))))
+              (equal (trailing-0-count (logtail n x))
+                     (- (trailing-0-count x) (nfix n))))
+     :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                        bitops::ihsext-recursive-redefs
+                                        trailing-0-count))))
+
+   (defthm not-zip-when-logtail
+     (implies (not (equal 0 (logtail n x)))
+              (not (zip x)))
+     :rule-classes :forward-chaining)
+
+   (defthm trailing-0-count-rec-properties
+     (implies (and (not (equal 0 (logtail (* 32 (nfix slice-idx)) x)))
+                   (equal 0 (loghead (* 32 (nfix slice-idx)) x)))
+              (let ((ans (trailing-0-count-rec x slice-idx)))
+                (and (logbitp ans x)
+                     (equal (loghead ans x) 0)
+                     (implies (< (nfix idx) ans)
+                              (not (logbitp idx x))))))
+     :hints(("Goal" :in-theory (enable bitsets::bignum-extract))))
+
+   (defthm trailing-0-count-rec-correct
+     (implies (and (not (equal 0 (logtail (* 32 (nfix slice-idx)) x)))
+                   (equal 0 (loghead (* 32 (nfix slice-idx)) x)))
+              (equal (trailing-0-count-rec x slice-idx)
+                     (trailing-0-count x)))
+     :hints (("goal" :in-theory (disable trailing-0-count-rec
+                                         trailing-0-count-rec-properties
+                                         trailing-0-count-properties)
+              :use ((:instance trailing-0-count-rec-properties
+                     (idx (trailing-0-count x)))
+                    (:instance trailing-0-count-properties
+                     (idx (trailing-0-count-rec x slice-idx)))))))))
+
+(verify-guards trailing-0-count
+  :hints(("Goal" :in-theory (enable trailing-0-count))))
+
+
+(define trailing-0-count-from ((x integerp)
+                               (offset natp))
+  :verify-guards nil
+  :enabled t
+  (mbe :logic (trailing-0-count (logtail offset x))
+       :exec
+       (b* ((offset (lnfix offset))
+            (slice1-idx (logtail 5 offset)) ;; (floor offset 32)
+            (slice1-offset (loghead 5 offset)) ;; (mod offset 32)
+            (slice1 (bitsets::bignum-extract x slice1-idx))
+            (slice1-tail (logtail slice1-offset slice1))
+            ((when (not (eql 0 slice1-tail)))
+             (trailing-0-count-32 slice1-tail))
+            ;; What we want now is the trailing-0-count of (logtail x (* 32 (+ 1 slice-idx))).
+            ;; This is just (trailing-0-count-rec x (+ 1 slice1-idx)),
+            ;; but we need to make sure that this tail of x isn't 0 for the guard.
+            ;; think of the case where offset = 0 and x = (ash -1 32) = ...FFFF0000000.
+            ;; This has integer-length 32 and trailing-0-count 32
+            (len (integer-length x))
+            ((when (and (<= len (* 32 (+ 1 slice1-idx)))
+                        (not (logbitp (* 32 (+ 1 slice1-idx)) x))))
+             0)
+            (count2 (trailing-0-count-rec x (+ 1 slice1-idx))))
+         (- count2 offset)))
+  ///
+
+  (local (in-theory (disable loghead-zero-compose)))
+
+  (local (defthm trailing-0-count-of-logtail-props
+           (implies (and (not (equal 0 (logtail n x)))
+                         (natp n))
+                    (let ((count (trailing-0-count (logtail n x))))
+                      (and (logbitp (+ n count) x)
+                           (implies (and (< (nfix idx) (+ n count))
+                                         (<= n (nfix idx)))
+                                    (not (logbitp idx x))))))
+           :hints (("goal" :use ((:instance trailing-0-count-properties
+                                  (x (logtail n x))
+                                  (idx (- (nfix idx) n))))
+                    :in-theory (disable trailing-0-count-properties)))))
+                           
+  (defthm trailing-0-count-rec-bound
+    (implies (not (equal 0 (logtail (* 32 (nfix slice-idx)) x)))
+             (<= (* 32 (nfix slice-idx))
+                 (trailing-0-count-rec x slice-idx)))
     :rule-classes :linear)
 
+  (defthm trailing-0-count-rec-props2
+    (implies (not (equal 0 (logtail (* 32 (nfix slice-idx)) x)))
+             (let ((ans (trailing-0-count-rec x slice-idx)))
+               (and (logbitp ans x)
+                    (equal (loghead (- ans (* 32 (nfix slice-idx)))
+                                    (logtail (* 32 (nfix slice-idx)) x))
+                           0)
+                    ;; (implies (and (< (nfix idx) ans)
+                    ;;               (<= (* 32 (nfix slice-idx)) (nfix idx)))
+                    ;;          (not (logbitp idx x)))
+                    )))
+    :hints(("Goal" :in-theory (enable bitsets::bignum-extract)
+            :induct (trailing-0-count-rec x slice-idx))
+           (and stable-under-simplificationp
+                '(:use ((:instance loghead-zero-compose
+                         (m (+ -32 (- (* 32 (nfix slice-idx)))
+                               (trailing-0-count-rec x (+ 1 (nfix slice-idx)))))
+                         (n 32)
+                         (x (logtail (* 32 (nfix slice-idx)) x))))
+                  :in-theory (disable loghead-zero-compose)))))
+
+  (defthm trailing-0-count-rec-props3
+    (implies (not (equal 0 (logtail (* 32 (nfix slice-idx)) x)))
+             (let ((ans (trailing-0-count-rec x slice-idx)))
+               (implies (and (< (nfix idx) ans)
+                             (<= (* 32 (nfix slice-idx)) (nfix idx)))
+                        (not (logbitp idx x)))))
+    :hints(("Goal" :use (trailing-0-count-rec-props2
+                         (:instance logbitp-of-loghead-split
+                          (pos (- (nfix idx) (* 32 (nfix slice-idx))))
+                          (size (- (trailing-0-count-rec x slice-idx)
+                                   (* 32 (nfix slice-idx))))
+                          (i (logtail (* 32 (nfix slice-idx)) x))))
+            :in-theory (disable trailing-0-count-rec-props2
+                                logbitp-when-bitmaskp)
+            :do-not-induct t)))
 
 
-  (local (defthm integer-length-when-unsigned-byte-p
-           (implies (unsigned-byte-p n x)
-                    (<= (integer-length x) n))
-           :hints(("Goal" :in-theory (e/d* (bitops::ihsext-inductions
-                                            bitops::ihsext-recursive-redefs)
-                                           (unsigned-byte-p))))
+
+  (defthm trailing-0-count-rec-rw2
+    (implies (not (equal 0 (logtail (* 32 (nfix slice-idx)) x)))
+             (equal (trailing-0-count-rec x slice-idx)
+                    (+ (* 32 (nfix slice-idx))
+                       (trailing-0-count (logtail (* 32 (nfix slice-idx)) x)))))
+     :hints (("goal" :in-theory (disable trailing-0-count-rec
+                                         trailing-0-count-rec-properties
+                                         trailing-0-count-properties
+                                         trailing-0-count-of-logtail-props)
+              :use ((:instance trailing-0-count-rec-props2)
+                    (:instance trailing-0-count-rec-props3
+                     (idx (+ (* 32 (nfix slice-idx))
+                             (trailing-0-count (logtail (* 32 (nfix slice-idx)) x)))))
+                    (:instance trailing-0-count-properties
+                     (idx (- (trailing-0-count-rec x slice-idx) (* 32 (nfix slice-idx))))
+                     (x (logtail (* 32 (nfix slice-idx)) x)))))))
+
+
+
+  (local (defthm logtail-0-by-integer-length
+           (implies (and (equal 0 (loghead m (logtail n x)))
+                         (< (integer-length x) (+ m n))
+                         (posp m) (natp n))
+                    (equal (logtail n x) 0))))
+
+  (local (defthm logtail-nonzero-by-integer-length
+           (implies (and (< n (integer-length x))
+                         (posp n))
+                    (not (equal 0 (logtail n x))))
+           :hints (("goal" :in-theory (enable* ihsext-recursive-redefs
+                                               ihsext-inductions)))))
+
+  (local (defthm logtail-0-when-loghead-0
+           (implies (equal 0 (loghead n x))
+                    (equal (equal 0 (logtail n x))
+                           (zip x)))
+           :hints (("goal" :in-theory (enable* ihsext-recursive-redefs
+                                               ihsext-inductions)))))
+
+
+  (local (in-theory (disable unsigned-byte-p)))
+
+  (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
+
+  (local (defthm offset-components
+           (equal (+ (LOGHEAD 5 OFFSET)
+                     (* 32 (LOGTAIL 5 OFFSET)))
+                  (ifix offset))
+           :hints(("Goal" :in-theory (enable loghead logtail mod)))
+           :rule-classes (:rewrite :linear)))
+
+  (local (defthm offset-components-2
+           (implies (integerp offset)
+                    (equal (+ offset (- (LOGHEAD 5 OFFSET)))
+                           (* 32 (LOGTAIL 5 OFFSET))))
+           :hints(("Goal" :in-theory (enable loghead logtail mod)))))
+
+  (local (defthm offset-components-plus-rest
+           (equal (+ (LOGHEAD 5 OFFSET)
+                     (* 32 (LOGTAIL 5 OFFSET))
+                     c)
+                  (+ (ifix offset) c))
+           :hints(("Goal" :in-theory (enable loghead logtail mod)))))
+
+  (local (defthm offset-less-than-logtail-plus-32
+           (> (+ 32 (* 32 (LOGTAIL 5 OFFSET)))
+              (ifix offset))
+           :hints(("Goal" :in-theory (enable loghead logtail mod)))
            :rule-classes :linear))
 
-  (local (defthm trailing-0-count-32-correct
-           (implies (and (unsigned-byte-p 32 x)
-                         (not (equal x 0)))
-                    (equal (trailing-0-count-32 x)
-                           (trailing-0-count x)))
-           :hints(("Goal" :in-theory (e/d (trailing-0-count-32)
-                                          (unsigned-byte-p))))))
+  (local (defthm loghead-5-lt-32
+           (< (loghead 5 x) 32)
+           :hints(("Goal" :in-theory (enable loghead)))
+           :rule-classes :linear))
 
-  (local (in-theory (enable trailing-0-count-rec)))
+  (local (defthm loghead-0-when-integer-length-less
+           (implies (< (integer-length x) (nfix n))
+                    (equal (equal 0 (loghead n x))
+                           (zip x)))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              ihsext-recursive-redefs)))
+           :otf-flg t))
 
 
-  (local (defthm trailing-0-count-of-loghead
-           (implies (not (equal 0 (loghead n x)))
-                    (equal (trailing-0-count (loghead n x))
-                           (trailing-0-count x)))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs
-                                              trailing-0-count)))))
-
-  (local (defthm trailing-0-count-of-logtail
-           (implies (and (equal 0 (loghead n x))
-                         (not (equal 0 (logtail n x))))
+  (local (defthmd trailing-0-count-of-logtail-when-loghead-0
+           (implies (and (equal (loghead n x) 0)
+                         (not (zip x)))
                     (equal (trailing-0-count (logtail n x))
                            (- (trailing-0-count x) (nfix n))))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs
-                                              trailing-0-count)))))
+           :hints(("Goal" :in-theory (enable* trailing-0-count
+                                              ihsext-inductions
+                                              ihsext-recursive-redefs)))))
 
-  (local (defthm not-zip-when-logtail
-           (implies (not (equal 0 (logtail n x)))
-                    (not (zip x)))
-           :rule-classes :forward-chaining))
 
-  (local (defthm trailing-0-count-rec-properties
-           (implies (and (not (equal 0 (logtail (* 32 (nfix slice-idx)) x)))
-                         (equal 0 (loghead (* 32 (nfix slice-idx)) x)))
-                    (let ((ans (trailing-0-count-rec x slice-idx)))
-                      (and (logbitp ans x)
-                           (equal (loghead ans x) 0)
-                           (implies (< (nfix idx) ans)
-                                    (not (logbitp idx x))))))
-           :hints(("Goal" :in-theory (enable bitsets::bignum-extract)))))
+  (local (defthmd trailing-0-count-unique
+           (implies (and (equal 0 (loghead n x))
+                         (logbitp n x)
+                         (natp n))
+                    (equal (equal (trailing-0-count x) n) t))
+           :hints (("goal" :use ((:instance trailing-0-count-properties)
+                                 (:instance logbitp-of-loghead-split
+                                  (pos (trailing-0-count x))
+                                  (size n) (i x))
+                                 (:instance logbitp-of-loghead-split
+                                  (pos n)
+                                  (size (trailing-0-count x))
+                                  (i x)))
+                    :in-theory (enable natp)))))
+                                  
+  (local (defthm logtail-not-zero-when-logbitp
+           (implies (and (logbitp m x)
+                         (<= (nfix n) (nfix m)))
+                    (not (equal 0 (logtail n x))))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              ihsext-recursive-redefs)))))
 
-  (local (defthm trailing-0-count-rec-correct
-           (implies (and (not (equal 0 (logtail (* 32 (nfix slice-idx)) x)))
-                         (equal 0 (loghead (* 32 (nfix slice-idx)) x)))
-                    (equal (trailing-0-count-rec x slice-idx)
-                           (trailing-0-count x)))
-           :hints (("goal" :in-theory (disable trailing-0-count-rec
-                                               trailing-0-count-rec-properties
-                                               trailing-0-count-properties)
-                    :use ((:instance trailing-0-count-rec-properties
-                           (idx (trailing-0-count x)))
-                          (:instance trailing-0-count-properties
-                           (idx (trailing-0-count-rec x slice-idx))))))))
 
-  (verify-guards trailing-0-count))
+  (local (defthm logtail-0-when-greater
+           (implies (and (equal (logtail n x) 0)
+                         (<= (nfix n) (nfix m)))
+                    (equal (logtail m x) 0))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              ihsext-recursive-redefs)))))
+
+  (local (defthm loghead-0-when-integer-length-less-2
+           (implies (and (<= (integer-length x) (nfix n))
+                         (not (logbitp n x)))
+                    (equal (equal 0 (loghead n x))
+                           (zip x)))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              ihsext-recursive-redefs)))
+           :otf-flg t))
+
+
+  (local (defthm offset-hack
+           (implies (integerp offset)
+                    (iff (< (+ 32 (- (LOGHEAD 5 OFFSET)))
+                            (+ (- OFFSET) (INTEGER-LENGTH X)))
+                         (< (+ 32 (* 32 (logtail 5 offset))) (integer-length x))))
+           :hints (("goal" :use ((:instance offset-components))
+                    :in-theory (disable offset-components
+                                        offset-components-2
+                                        offset-components-plus-rest)))))
+
+  (verify-guards trailing-0-count-from
+    :hints((and stable-under-simplificationp
+                '(:in-theory (enable bitsets::bignum-extract)))
+           (and stable-under-simplificationp
+                '(:use ((:instance trailing-0-count-of-logtail-when-loghead-0
+                         (n (+ 32 (- (loghead 5 offset))))
+                         (x (logtail offset x))))
+                  :cases ((posp offset))))
+           (and stable-under-simplificationp
+                '(:use ((:instance loghead-0-when-integer-length-less-2
+                         (x (logtail offset x))
+                         (n (+ 32 (- (loghead 5 offset))))))))
+           )
+    :otf-flg t))
+            
+       
+
+
+
+
+
+
+
 
 
 

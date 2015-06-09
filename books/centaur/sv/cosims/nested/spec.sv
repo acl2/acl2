@@ -1,10 +1,5 @@
-// SV - Symbolic Vector Hardware Analysis Framework
-// Copyright (C) 2014-2015 Centaur Technology
-//
-// Contact:
-//   Centaur Technology Formal Verification Group
-//   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-//   http://www.centtech.com/
+// SV - Regression Test
+// Copyright (C) 2015, Oracle and/or its affiliates. All rights reserved.
 //
 // License: (An MIT/X11-style license)
 //
@@ -26,34 +21,41 @@
 //   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //   DEALINGS IN THE SOFTWARE.
 //
-// Original author: Sol Swords <sswords@centtech.com>
-
-parameter nbits=11;
-
-module encdec (input [nbits-1:0] in,
-	       output logic [nbits-1:0] out);
-
-  wire [(1<<nbits)-1:0] dec;
-
-  genvar i;
-   for (i=0; i<(1<<nbits); i++) begin
-     assign dec[i] = in == i;
-   end
-
-  integer j;
-
-   always_comb begin
-     out='x;
-     for (j=0; j<(1<<nbits); j++) begin
-       if (dec[j] == 1'b1) out = j;
-     end
-   end
-
-endmodule // encdec
+// Original authors: Andrew Brock <andrew.brock@oracle.com>
+//                   David L. Rager <david.rager@oracle.com>
 
 module spec (input logic [127:0] in,
-	     output wire [127:0] out);
+	     output logic [127:0] out);
 
-   encdec encdecinst (in, out[nbits-1:0]);
+       reg [3:0] r[3:0];
+       wire[1:0] p;
+       wire flag;
+
+       assign flag = (in[127] == in[126]);
+       assign p = in[125:124];
+
+       assign r[0] = in[63:60];
+       assign r[1] = in[59:56];
+       assign r[2] = in[55:52];
+       assign r[3] = in[51:48];
+
+       assign out[127:8] = 120'b0;
+
+       always_comb begin
+         if(flag) begin
+           out[7:4] = r[p[1:0]];
+         end else begin
+           out[7:4] = 4'bxxxx;
+         end
+       end
+
+       always_comb begin
+         if(flag) begin
+           out[3:0] = 4'bxxxx;
+         end else begin
+           // this also fails if "r[p[1:0]]" is replaced with "4'b0000"
+           out[3:0] = r[p[1:0]];
+         end
+       end
 
 endmodule // spec
