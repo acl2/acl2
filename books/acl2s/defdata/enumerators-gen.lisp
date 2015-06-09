@@ -86,11 +86,10 @@ data last modified: [2014-08-06]
               (i1--ik (numbered-vars 'i k))
               (enum-arg-exprs (make-enum-Is... (remove-names-lst (cdr s)) i1--ik))
               (binding (bind-names-vals (cdr s) enum-arg-exprs))
-              (s2 (keep-names-lst (cdr s)))
               (?satisfies-exprs (get-all :satisfies kwd-alist))
-              (rst (make-enum-Is... s2 i1--ik)))
+              (rst (make-enum-Is... (keep-names-lst (cdr s)) i1--ik)))
 
-           `(B* (((list . ,i1--ik) (SPLIT-NAT ,k ,i)))
+           `(B* (((list . ,i1--ik) (SPLIT-NAT ,k ,i))) ;TODO: This needlessly splits seeds for constant texps too!!
                     ,(if binding
                          `(B* ,binding (,(car s) . ,rst))
                        `(,(car s) . ,rst)))))
@@ -124,18 +123,47 @@ data last modified: [2014-08-06]
        (collect (if (named-defdata-exp-p texp)
                     (list (list 'MV (car texp) acc-exp) val)
                   (list (list 'MV nm acc-exp) val)))))
-                                                          
-
-(defmacro make-enum/acc-I... (s x)
-  `(make-enum/acc-I ,s ,x kwd-alist M C B wrld))
-(defmacro make-enum/acc-Is... (ss xs)
-  `(make-enum/acc-Is ,ss ,xs kwd-alist M C B wrld))
 
 (mutual-recursion
- (defun make-enum/acc-I (s i   kwd-alist M C B wrld)
+ (defun has-recursive-reference-p (texp new-names)
+   (cond ((possible-constant-value-p texp) nil)
+         ((proper-symbolp texp) (member-eq texp new-names))
+
+         ((not (true-listp texp)) (member-equal (cdr texp) new-names))
+         (t (has-recursive-reference-lst-p (cdr texp) new-names))))
+ (defun has-recursive-reference-lst-p (texps new-names)
+   (if (endp texps)
+       nil
+     (or (has-recursive-reference-p (car texps) new-names)
+         (has-recursive-reference-lst-p (cdr texps) new-names))))
+ )
+
+(defun bound-seeds-to-recursive-calls (i i1--ik texps new-names)
+  (if (endp texps)
+      '()
+    (b* ((i_current (car i1--ik))
+         (texp (car texps)))
+      (cons 
+       (if (has-recursive-reference-p texp new-names)
+           `(if (or (zp ,i_current) (< ,i_current ,i)) ,i_current (1- ,i_current))
+         i_current)
+       (bound-seeds-to-recursive-calls i (cdr i1--ik) (cdr texps) new-names)))))
+          
+         
+    
+
+(defmacro make-enum/acc-I... (s x)
+  `(make-enum/acc-I ,s ,x kwd-alist new-names M C B wrld))
+(defmacro make-enum/acc-Is... (ss xs)
+  `(make-enum/acc-Is ,ss ,xs kwd-alist new-names M C B wrld))
+
+(mutual-recursion
+ (defun make-enum/acc-I (s i kwd-alist new-names M C B wrld)
+   (declare (ignorable new-names))
    "enumerator/acc interpretation for core defdata exp s.
 i is the name of the current indicial argument (dont confuse with an integer) that is used as recursion measure.
 kwd-alist gives some defaults.
+new-names is self-explanatory (imp to find recursive references)
 M is type metadata table + some basic info for the clique of types being defined.
 C is the constructor table + some basic info for new constructors.
 B is the builtin combinator table."
@@ -145,7 +173,7 @@ B is the builtin combinator table."
                                 `(,(get2 s :enum/acc M) ,i _SEED)
                               `(MV ,s _SEED)))
 
-         ((not (true-listp s)) (car s)) ;(make-enum/acc-I (cdr s) i kwd-alist M C B wrld)) ;name decl
+         ((not (true-listp s)) (car s)) ;(make-enum/acc-I (cdr s) i kwd-alist M C B wrld)) ;name decl   ;TODO.check -- seems wrong!!
 
          ((assoc-eq (car s) B) ;builtin combinator
           (b* ((enum/acc-I-fn (get2 (car s) :enum/acc-I B))
@@ -161,7 +189,7 @@ B is the builtin combinator table."
 ;                           (RANDOM-INDEX-SEED (MIN ,k ,i) _SEED) ;i forces termination
                            (CASE _CHOICE
                                  . ,(append (list-up-lists (make-numlist-from 0 k)
-                                                     (make-enum/acc-Is (cdr s) (make-list k :initial-element i) kwd-alist M C B wrld))
+                                                     (make-enum/acc-Is... (cdr s) (make-list k :initial-element i)))
                                             '((OTHERWISE (mv nil _SEED))))))
 
                 nil)))) ;unsupported -- raise catchable error.
@@ -174,13 +202,15 @@ B is the builtin combinator table."
                (binding (bind-mv2-names-enum/acc-calls (cdr s) enum/acc-exprs _v1--_vk '_SEED))
                (names (replace-calls-with-names _v1--_vk (cdr s))))
                
-            `(B* (((list . ,i1--ik) (SPLIT-NAT ,k ,i)))
+            `(B* (((mv (list . ,i1--ik) _SEED) (RANDOM-INDEX-LIST-SEED ,k ,i _SEED))) ;TODO.check later. random-indexes less that i force termination.
+                  ;((list . ,i1--ik) (list ,@(bound-seeds-to-recursive-calls i i1--ik (cdr s) new-names))))
+                 
                  (B* ,binding (MV (,(car s) . ,names) _SEED)))))
          (t
 ; possible dependent expr?
           `(,(car s) . ,(make-enum/acc-Is... (cdr s) (make-list (len (cdr s)) :initial-element i))))))
  
- (defun make-enum/acc-Is (texps is   kwd-alist M C B wrld)
+ (defun make-enum/acc-Is (texps is kwd-alist new-names M C B wrld)
    (declare (ignorable kwd-alist))
    (if (endp texps)
        '()
@@ -252,7 +282,7 @@ B is the builtin combinator table."
        (kwd-alist (append kwd-alist top-kwd-alist))
        (avoid-lst (append (forbidden-names) (strip-cars N)))
        (ivar (if (member-eq 'i avoid-lst) 'i (acl2::generate-variable 'i avoid-lst nil nil wrld)))
-       (enum/acc-body (make-enum/acc-I ndef ivar kwd-alist M C B wrld))
+       (enum/acc-body (make-enum/acc-I ndef ivar kwd-alist (strip-cars new-types) M C B wrld))
        (enum/acc-decls (make-enum/acc-declare-forms ivar kwd-alist))
        )
     

@@ -208,11 +208,14 @@
         (t
          nil)))#|ACL2s-ToDo-Line|#
 
+
+
+; Common book to all modes.
+(include-book "defunc" :ttags :all)
+
 #!ACL2
 (defmacro acl2s-common-settings ()
 `(progn
-   (include-book "defunc" :ttags :all)
-   
    (make-event
     (er-progn
      (assign checkpoint-processors
@@ -246,6 +249,75 @@
    ;;Cgen settings
    (acl2s::acl2s-defaults :set acl2s::testing-enabled t)
    (acl2s::acl2s-defaults :set acl2s::num-trials 500)
-  
+
+
+
 ))
 
+
+#!ACL2
+(defmacro acl2s-beginner-settings ()
+  `(er-progn
+; Non-events:
+    (acl2::set-guard-checking :all)
+
+    (set-backchain-limit '(50 100))
+    (set-rewrite-stack-limit 500)
+    (acl2s-defaults :set cgen-timeout 20)
+    (table acl2s::defunc-defaults-table :skip-tests nil :put)
+    (table acl2s::defunc-defaults-table :timeout 50 :put)
+
+    (set-irrelevant-formals-ok :warn)
+    (set-bogus-mutual-recursion-ok :warn)
+    (set-ignore-ok :warn)
+
+    (assign evalable-ld-printingp t)
+    (assign evalable-printing-abstractions '(list cons))
+    (assign triple-print-prefix "; ")
+
+    ))
+
+
+
+#!ACL2
+(defmacro acl2s-bare-bones-settings ()
+  `(er-progn
+
+    (set-irrelevant-formals-ok :warn)
+    (set-bogus-mutual-recursion-ok :warn)
+    (set-ignore-ok :warn)
+
+    (set-backchain-limit '(50 100))
+    (set-rewrite-stack-limit 500)
+    (table acl2s::defunc-defaults-table :skip-tests nil :put)
+    (table acl2s::defunc-defaults-table :timeout 50 :put)
+
+    (assign evalable-ld-printingp t)
+    (assign evalable-printing-abstractions '(list cons))
+    (assign triple-print-prefix "; ")
+
+; Non-events:
+    (acl2::set-guard-checking :all)
+    ))
+
+#!ACL2
+(defmacro acl2s-theorem-proving-beginner-settings ()
+  `(er-progn
+
+    (set-backchain-limit '(50 100))
+    (set-rewrite-stack-limit 500)
+
+    (set-irrelevant-formals-ok :warn)
+    (set-bogus-mutual-recursion-ok :warn)
+    (set-ignore-ok :warn)
+
+    (set-guard-checking :all)
+    (table acl2s::defunc-defaults-table :skip-tests nil :put)
+    (table acl2s::defunc-defaults-table :timeout 50 :put)
+
+
+;(set-verify-guards-eagerness 0)
+    (assign evalable-ld-printingp t)
+    (assign evalable-printing-abstractions '(list cons))
+    (assign triple-print-prefix "; ")
+    ))

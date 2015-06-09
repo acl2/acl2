@@ -71,7 +71,7 @@
   `(> ,vl 0))
 
 
-
+;TODO: hide this macro in a function and there put a guard that prop should be a ACL2 symbol.
 (defmacro acl2-getprop (name prop w &key default)
  `(getprop ,name ,prop ,default 'acl2::current-acl2-world ,w))
 
@@ -230,11 +230,11 @@
   :rule-classes :type-prescription)
 (in-theory (disable flatten)) 
 
-(defun true-list-alistp (x)
+(defun listof-alistp (x)
   (declare (xargs :guard t))
   (cond ((atom x) (eq x nil))
         (t (and (alistp (car x))
-                (true-list-listp (cdr x))))))
+                (listof-alistp (cdr x))))))
 
 (defun true-list-symbol-alistp (x)
   (declare (xargs :guard t))

@@ -126,9 +126,7 @@ data last modified: [2014-08-06]
        ((when rest) (er hard? ctx "~| Extra args: ~x0~%" rest))
        ((unless (proper-symbolp name)) (er hard? ctx "~| ~x0 should be a proper symbol.~%" name))
        
-       ((when (assoc-eq name (table-alist 'type-metadata-table wrld)))
-        (er hard? ctx "~| ~x0 is already a registered defdata type.~%" name))
-
+   
        ((unless (well-formed-type-metadata-p kwd-alist wrld))
         (er hard? ctx "~| ~s0~%" (ill-formed-type-metadata-msg kwd-alist wrld)))
         
@@ -144,6 +142,11 @@ data last modified: [2014-08-06]
        (kwd-alist (put-assoc-eq :enum/acc (or enum/acc enum/acc-default) kwd-alist))
        (kwd-alist (put-assoc-eq :size (or (get1 :size kwd-alist) 't) kwd-alist))
        (kwd-alist (put-assoc-eq :theory-name (or (get1 :theory-name kwd-alist) (s+ name 'theory)) kwd-alist))
+
+       (existing-entry (assoc-eq name (table-alist 'type-metadata-table wrld)))
+       ((when (and existing-entry (not (equal kwd-alist (cdr existing-entry)))))        
+        (er hard? ctx "~| ~x0 is already a registered defdata type.~%" name))
+
        )
     
        

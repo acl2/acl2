@@ -249,9 +249,19 @@
   ;; (declare (xargs :guard (and (proper-symbolp P)
   ;;                             (plist-worldp wrld))))
   (declare (xargs :verify-guards nil))
-  (or (eq P 'acl2s::allp)
-      (assoc-eq P (table-alist 'acl2s::allp-aliases wrld))))
+  (or (eq P 'ACL2S::ALLP)
+      (assoc P (table-alist 'ACL2S::ALLP-ALIASES wrld))))
                   
+
+; TODO -- use this in places where we check for Top type.
+(defun is-top (typename wrld)
+  "is typename an alias of acl2s::all?"
+  ;; (declare (xargs :guard (and (proper-symbolp P)
+  ;;                             (plist-worldp wrld))))
+  (declare (xargs :verify-guards nil))
+  (or (eq typename 'ACL2S::ALL)
+      (rassoc typename (table-alist 'ACL2S::ALLP-ALIASES wrld))))
+
 
 ; CHECK with J. TODO What if there is some information in pos-implicants of P1,
 ; that is missed below!?
@@ -599,6 +609,12 @@
   (if M
       `(get1 :enumerator (get1 ,tname ,M))
     `(get1 :enumerator  (get1 ,tname (table-alist 'type-metadata-table wrld)))))
+
+(defmacro enum/acc-name (tname &optional M)
+; if Metadata table is not provided, wrld should be in scope.
+  (if M
+      `(get1 :enum/acc (get1 ,tname ,M))
+    `(get1 :enum/acc  (get1 ,tname (table-alist 'type-metadata-table wrld)))))
 
 (defloop predicate-names-fn (tnames M)
   (declare (xargs :guard (and (symbol-listp tnames)
