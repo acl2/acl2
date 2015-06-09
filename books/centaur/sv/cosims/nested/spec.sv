@@ -53,6 +53,7 @@ module spec (input logic [127:0] in,
          if(flag) begin
            out[3:0] = 4'bxxxx;
          end else begin
+           // this also fails if "r[p[1:0]]" is replaced with "4'b0000"
            out[3:0] = r[p[1:0]];
          end
        end
