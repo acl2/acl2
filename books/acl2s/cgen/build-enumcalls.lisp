@@ -60,12 +60,12 @@
           
 
 (defun abs/complex (c)
-  (declare (xargs :guard (complex-rationalp c)))
+  (declare (xargs :guard (complex/complex-rationalp c)))
   (complex (abs (realpart c)) (abs (imagpart c))))
   
 (defun abs/acl2-number (x)
     (declare (xargs :guard (acl2-numberp x)))
-  (if (complex-rationalp x)
+  (if (complex/complex-rationalp x)
       (abs/complex x)
     (abs x)))
 
@@ -73,7 +73,7 @@
 (defun mod/complex (c m)
   (declare (xargs :guard (and (rationalp m)
                               (> m 0)
-                              (complex-rationalp c))))
+                              (complex/complex-rationalp c))))
   (complex (mod (realpart c) m) (imagpart c)))
   
 (defun mod/acl2-number (x m)
@@ -81,7 +81,7 @@
                                 (rationalp m)
                                 (> m 0)
                                 )))
-  (if (complex-rationalp x)
+  (if (complex/complex-rationalp x)
       (mod/complex x m)
     (mod x m)))
 
