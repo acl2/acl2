@@ -36,9 +36,9 @@
 (include-book "std/util/defmvtypes" :dir :system)
 (include-book "../misc/defapply")
 
-(defun acl2::boolfix (x)
-  (declare (xargs :guard t))
-  (if x t nil))
+;; (defun acl2::boolfix (x)
+;;   (declare (xargs :guard t))
+;;   (if x t nil))
 
 
 ;; Pulls apart a number into its components.  They are stored in order of how
@@ -787,7 +787,7 @@
       mod
       truncate
       rem
-      acl2::boolfix
+;      acl2::boolfix
 
       ;; these are from the constant *expandable-boot-strap-non-rec-fns*.
       NOT IMPLIES

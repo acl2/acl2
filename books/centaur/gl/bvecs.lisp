@@ -35,70 +35,56 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (in-theory (disable floor)))
 
-;; (include-book "tools/with-arith5-help" :dir :system)
 
-;; (allow-arith5-help)
+(define boolfix (x)
+  (if x t nil)
+  ///
+  (defcong iff equal (boolfix x) 1)
 
-;; (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
-;; (local (include-book "ihs/math-lemmas" :dir :system))
-
-
-;; (defun bfr-listp1 (x)
-;;   (declare (Xargs :guard t))
-;;   (if (atom x)
-;;       (eq x nil)
-;;     (and (bfr-p (car x))
-;;          (bfr-listp1 (cdr x)))))
-
-;; (defun bfr-listp (x)
-;;   (declare (xargs :guard t))
-;;   (mbe :logic (if (atom x)
-;;                   (eq x nil)
-;;                 (and (bfr-p (car x))
-;;                      (bfr-listp (cdr x))))
-;;        :exec (or (boolean-listp x)
-;;                  (bfr-listp1 x))))
-
-;; (defthm bfr-p-car-when-bfr-listp
-;;   (implies (bfr-listp x)
-;;            (bfr-p (car x))))
-
-;; (defthm bfr-listp-cdr-when-bfr-listp
-;;   (implies (bfr-listp x)
-;;            (bfr-listp (cdr x))))
-
-;; (defthm bfr-listp-cons
-;;   (implies (and (bfr-p x) (bfr-listp y))
-;;            (bfr-listp (cons x y))))
-
-;; (defthm boolean-list-bfr-listp
-;;   (implies (and (syntaxp (quotep x))
-;;                 (boolean-listp x))
-;;            (bfr-listp x)))
+  (defthm boolfix-under-iff
+    (iff (boolfix x) x)))
 
 
-(defun bfr-eval-list (x env)
-  (declare (xargs :guard t))
+(define bfr-eval-list (x env)
   (if (atom x)
       nil
     (cons (bfr-eval (car x) env)
-          (bfr-eval-list (cdr x) env))))
+          (bfr-eval-list (cdr x) env)))
+  ///
+  (defthm bfr-eval-list-when-atom
+    (implies (atom x)
+             (equal (bfr-eval-list x env) nil)))
 
-(defthmd boolean-list-bfr-eval-list
-  (implies (boolean-listp x)
-           (equal (bfr-eval-list x env) x))
-  :hints (("goal" :in-theory (enable bfr-eval-list boolean-listp))))
+  (defthm bfr-eval-list-of-cons
+    (equal (bfr-eval-list (cons a x) env)
+           (cons (bfr-eval a env)
+                 (bfr-eval-list x env))))
 
-(defthm boolean-list-bfr-eval-list-const
-  (implies (and (syntaxp (quotep x))
-                (boolean-listp x))
-           (equal (bfr-eval-list x env) x))
-  :hints (("goal" :in-theory (enable bfr-eval-list boolean-listp))))
+  (defthm consp-of-bfr-eval-list
+    (equal (consp (bfr-eval-list x env))
+           (consp x)))
 
-(defthm bfr-eval-list-of-list-fix
-  (equal (bfr-eval-list (acl2::list-fix x) env)
-         (bfr-eval-list x env)))
+  (defthm bfr-eval-list-of-append
+    (equal (bfr-eval-list (append a b) env)
+           (append (bfr-eval-list a env)
+                   (bfr-eval-list b env))))
 
+  (defthmd boolean-list-bfr-eval-list
+    (implies (boolean-listp x)
+             (equal (bfr-eval-list x env) x))
+    :hints (("goal" :in-theory (enable bfr-eval-list boolean-listp))))
+
+  (defthm boolean-list-bfr-eval-list-const
+    (implies (and (syntaxp (quotep x))
+                  (boolean-listp x))
+             (equal (bfr-eval-list x env) x))
+    :hints (("goal" :in-theory (enable bfr-eval-list boolean-listp))))
+
+  (defthm bfr-eval-list-of-list-fix
+    (equal (bfr-eval-list (acl2::list-fix x) env)
+           (bfr-eval-list x env))))
+
+;(local (in-theory (enable bfr-eval-list)))
 
 (defund pbfr-list-depends-on (k p x)
   (if (atom x)
@@ -580,14 +566,6 @@
 
 
 
-(defun boolfix (x)
-  (declare (xargs :guard t))
-  (if x t nil))
-
-(defcong iff equal (boolfix x) 1)
-
-(defthm boolfix-under-iff
-  (iff (boolfix x) x))
 
 
 
@@ -795,9 +773,6 @@
            (logcons (acl2::bool->bit (car v))
                     (v2i (cdr v)))))))
 
-(defthm consp-of-bfr-eval-list
-  (equal (consp (bfr-eval-list x env))
-         (consp x)))
 
 
 

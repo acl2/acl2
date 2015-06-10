@@ -361,11 +361,6 @@
     (cons `(:with ,def ,(car expands))
           (expands-with-hint def (cdr expands)))))
 
-(defthm bfr-eval-list-of-append
-  (equal (bfr-eval-list (append a b) env)
-         (append (bfr-eval-list a env)
-                 (bfr-eval-list b env))))
-
 (defthm bfr-list->s-of-append
   (implies (consp b)
            (equal (bfr-list->s (append a b) env)

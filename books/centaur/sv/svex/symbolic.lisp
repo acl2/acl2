@@ -90,6 +90,20 @@
                 (acl2::logbitp-reasoning))))
 
 
+(defthm true-listp-of-bfr-scons
+  (implies (true-listp b)
+           (true-listp (gl::bfr-scons a b)))
+  :hints(("Goal" :in-theory (enable gl::bfr-scons)))
+  :rule-classes :type-prescription)
+
+(defthm true-listp-of-bfr-sterm
+  (true-listp (gl::bfr-sterm a))
+  :hints(("Goal" :in-theory (enable gl::bfr-sterm)))
+  :rule-classes :type-prescription)
+
+
+
+
 (defxdoc bit-blasting
   :parents (expressions)
   :short "We implement an efficient translation from @(see svex) expressions
@@ -187,15 +201,19 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                          (svex-argmasks-lookup x masks))))
       :flag list)))
 
-
-;; A symbolic 4vec, with lists of AIGs for the upper/lower
 (defprod a4vec
-  ((upper true-listp)
-   (lower true-listp))
-  :layout :tree)
+  :short "A symbolic 4vec, with lists of AIGs for the upper and lower bits."
+  :layout :tree
+  ((upper true-listp "List of AIGs for the upper bits.")
+   (lower true-listp "List of AIGs for the lower bits."))
+  :long "<p>See @(see a4vec-eval); the semantics are given by @(see
+aig-list->s).</p>")
 
-(define a4vec-eval ((x a4vec-p) env)
-  :returns (res 4vec-p)
+(define a4vec-eval ((x   a4vec-p "A4vec to evaluate.")
+                    (env         "Environment for @(see aig-eval)."))
+  :returns (res 4vec-p "Value of @('x') as a @(see 4vec).")
+  :parents (a4vec)
+  :short "Semantics of an @(see a4vec)."
   (b* (((a4vec x) x))
     (4vec (aig-list->s x.upper env)
           (aig-list->s x.lower env)))
@@ -217,16 +235,6 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                     (4vec (aig-list->s (a4vec->upper x) env)
                           (aig-list->s (a4vec->lower x) env))))))
 
-(defthm true-listp-of-bfr-scons
-  (implies (true-listp b)
-           (true-listp (gl::bfr-scons a b)))
-  :hints(("Goal" :in-theory (enable gl::bfr-scons)))
-  :rule-classes :type-prescription)
-
-(defthm true-listp-of-bfr-sterm
-  (true-listp (gl::bfr-sterm a))
-  :hints(("Goal" :in-theory (enable gl::bfr-sterm)))
-  :rule-classes :type-prescription)
 
 ;; (define a4vec-bit-index ((n natp) (x a4vec-p))
 ;;   :returns (res a4vec-p)
@@ -240,6 +248,8 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
 ;;     :hints(("Goal" :in-theory (enable a4vec-eval 4vec-bit-index aig-list->s)))))
 
 (define a2vec-p ((x a4vec-p))
+  :parents (a4vec)
+  :short "Recognizer for @(see a4vec)s that are statically just @(see 2vec)s."
   (b* (((a4vec x) x))
     (aig-=-ss x.upper x.lower))
   ///
@@ -247,8 +257,10 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
     (equal (aig-eval (a2vec-p x) env)
            (2vec-p (a4vec-eval x env)))))
 
-(defmacro a4vec-x () (list 'quote (a4vec (aig-sterm t)
-                                         (aig-sterm nil))))
+(defmacro a4vec-x ()
+  (list 'quote (a4vec (aig-sterm t)
+                      (aig-sterm nil))))
+
 (defmacro a4vec-1x () (list 'quote (a4vec (aig-scons t (aig-sterm nil))
                                           (aig-sterm nil))))
 (defmacro a4vec-z () (list 'quote (a4vec (aig-sterm nil)
@@ -512,7 +524,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
   (defthm a4vec-resand-correct
     (equal (a4vec-eval (a4vec-resand x y) env)
            (4vec-resand (a4vec-eval x env)
-                     (a4vec-eval y env)))
+                        (a4vec-eval y env)))
     :hints(("Goal" :in-theory (enable 4vec-resand)))))
 
 (define a4vec-resor ((a a4vec-p) (b a4vec-p))
@@ -631,11 +643,12 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                      (x integerp))
   :short "OR together all the bits of x at position or above, collapsing them
 into the single bit at position."
-  :long "<p>This operation helps avoid catastrophically large shifts in computing,
-e.g., concatenations with symbolic widths.  When there is a care-mask of width
-w, then we can collapse all the bits at w and above into the bit at w, because
-the presence of those upper bits means that the shift is longer than we care
-about.</p>
+
+  :long "<p>This operation helps avoid catastrophically large shifts in
+computing, e.g., concatenations with symbolic widths.  When there is a
+care-mask of width w, then we can collapse all the bits at w and above into the
+bit at w, because the presence of those upper bits means that the shift is
+longer than we care about.</p>
 
 <p>There is a large potential for off-by-one errors when thinking about this
 function.  It may help to start with the fact that @('(logcollapse 0 x)')
