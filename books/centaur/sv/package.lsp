@@ -54,6 +54,7 @@
       repeat
       replicate
       list-fix
+      llist-fix
       list-equiv
       same-lengthp
       rev

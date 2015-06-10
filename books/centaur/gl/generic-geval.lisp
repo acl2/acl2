@@ -59,10 +59,10 @@
                               (mv (car x) (cdr x))
                             (mv nil nil)))
        (imag-denom (if (consp x) (car x) '(t))))
-    ;; (mv (rlist-fix real-numer)
-    ;;     (rlist-fix real-denom)
-    ;;     (rlist-fix imag-numer)
-    ;;     (rlist-fix imag-denom))
+    ;; (mv (list-fix real-numer)
+    ;;     (list-fix real-denom)
+    ;;     (list-fix imag-numer)
+    ;;     (list-fix imag-denom))
     (mv real-numer
         real-denom
         imag-numer

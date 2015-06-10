@@ -302,8 +302,7 @@ entry.</p>"
     (cond ((atom x)
            nil)
           ((equal (esim-vl-iopattern-entry->basename (car x)) basename)
-           (mbe :logic (list-fix (car x))
-                :exec (car x)))
+           (llist-fix (car x)))
           (t
            (esim-vl-find-io-main basename (cdr x)))))
 

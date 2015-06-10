@@ -51,7 +51,7 @@
                        (bfr-=-uu xid nil)) t)
              (eq (bfr-or (bfr-=-ss yin nil)
                        (bfr-=-uu yid nil)) t))
-        (mk-g-number (rlist-fix (bfr-truncate-ss xrn yrn)))
+        (mk-g-number (list-fix (bfr-truncate-ss xrn yrn)))
       (g-apply 'truncate (gl-list x y)))))
 
 (in-theory (disable (g-truncate-of-numbers)))

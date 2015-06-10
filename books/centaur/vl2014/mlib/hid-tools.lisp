@@ -1716,7 +1716,7 @@ and unpacked dimension @('[0:8]').</p>"
        (nunpacked (len unpacked-dims))
        ((when (<= idxcount nunpacked))
         (mv nil (vl-datatype-update-udims
-                 (nthcdr idxcount (redundant-list-fix unpacked-dims)) type)))
+                 (nthcdr idxcount (list-fix unpacked-dims)) type)))
        (remaining-idxcount (- idxcount nunpacked))
        ((unless (<= remaining-idxcount (len packed-dims)))
         (mv (make-vl-warning :type :vl-too-many-indices
@@ -1727,7 +1727,7 @@ and unpacked dimension @('[0:8]').</p>"
                              :fn __function__)
             nil))
        (type (vl-datatype-update-dims
-              (nthcdr remaining-idxcount (redundant-list-fix packed-dims))
+              (nthcdr remaining-idxcount (list-fix packed-dims))
               nil ;; udims
               type)))
     (mv nil type)))

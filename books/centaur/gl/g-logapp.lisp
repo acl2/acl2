@@ -229,7 +229,7 @@
        (xbits (bfr-ite-bss-fn xintp xrn nil))
        (ybits (bfr-ite-bss-fn yintp yrn nil))
        (resbits (logapp-uss 1 nbits xbits ybits)))
-    (mk-g-number (rlist-fix resbits))))
+    (mk-g-number (list-fix resbits))))
 
 
 (in-theory (disable (g-logapp-of-numbers)))
@@ -413,7 +413,7 @@
        (ybits (bfr-ite-bss-fn yintp yrn nil))
        (ylen (bfr-integer-length-s ybits))
        (resbits (logapp-uss 1 ylen ybits (bfr-ite-bss-fn negbfr '(t) '(nil)))))
-    (gret (mk-g-number (rlist-fix resbits))))
+    (gret (mk-g-number (list-fix resbits))))
   ///
   (def-hyp-congruence g-int-set-sign-of-number)
 
@@ -521,7 +521,7 @@
        ((unless iintp-known) (mv t nil)) ;; error
        ;; ifix
        (ibits (bfr-ite-bss-fn iintp irn nil)))
-    (mv nil (mk-g-number (rlist-fix ibits)))))
+    (mv nil (mk-g-number (list-fix ibits)))))
 
 (defthm deps-of-g-ifix-of-number
   (implies (and (not (gobj-depends-on k p i))

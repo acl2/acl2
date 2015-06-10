@@ -215,7 +215,7 @@ interface_ansi_header ::=
                                :msg "[[ Remaining ]]: ~s0 ~s1.~%"
                                :args (list (vl-tokenlist->string-with-spaces
                                             (take (min 4 (len tokens))
-                                                  (redundant-list-fix tokens)))
+                                                  (list-fix tokens)))
                                            (if (> (len tokens) 4) "..." ""))
                                :fatalp t
                                :fn __function__)))

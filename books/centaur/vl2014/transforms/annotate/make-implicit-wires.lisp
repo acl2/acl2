@@ -1143,7 +1143,7 @@ all of its identifiers.</p>"
     (b* ((ifports (vl-interfaceportlist-fix ifports))
          (st (make-vl-implicitst :decls     (make-fast-alist
                                              (pairlis$ (vl-portlist->names ifports)
-                                                       (redundant-list-fix ifports)))
+                                                       (list-fix ifports)))
                                  :portdecls nil
                                  :imports   nil
                                  :ss        ss))

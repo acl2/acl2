@@ -2104,7 +2104,7 @@ it right away.</p>"
   (cond ((<= (len args) 10)
          (vl-basic-fmt msg (pairlis$
                             '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
-                            (redundant-list-fix args))))
+                            (list-fix args))))
         (t
          (progn$ (raise "vl-basic-cw-obj is limited to 10 arguments.")
                  ps))))

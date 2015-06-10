@@ -599,7 +599,7 @@ because... (BOZO)</p>
              ((vl-svexconf conf))
              ((wmv warnings sizes)
               (vl-exprlist-selfsize caseexprs conf.ss conf.typeov))
-             ((when (member nil (redundant-list-fix sizes)))
+             ((when (member nil (list-fix sizes)))
               ;; already warned
               (fail (warn :type :vl-stmt->svstmts-failed
                           :msg "Failed to size some case expression: ~a0"

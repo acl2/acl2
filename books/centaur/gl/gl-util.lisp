@@ -223,8 +223,11 @@ passed to ~x2 in that theorem.~%"
 (program)
 
 (defun gl-fnsym (fn)
+  ;; [Jared] To better support inline functions, I changed the way these names
+  ;; are generated, so that they always end with $.  This prevents the GL version
+  ;; of an inline/notinline function from ever ending with $inline/$notinline.
   (incat 'gl-sym::foo
-         (symbol-package-name fn) "::" (symbol-name fn)))
+         (symbol-package-name fn) "::" (symbol-name fn) "$"))
 
 (defmacro glr (fn &rest args)
   `(,(gl-fnsym fn) ,@args))

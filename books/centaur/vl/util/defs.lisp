@@ -361,27 +361,6 @@ from @('alist')."
     :enable acl2-count))
 
 
-(define redundant-list-fix (x)
-  :parents (utilities)
-  :short "@(call redundant-list-fix) is the same as @('(list-fix x)'), but
-avoids consing when @('x') is already a true-listp."
-
-  :long "<p>I sometimes want to @('list-fix') something that I know is almost
-certainly already a @('true-listp') in practice.  In such cases,
-@('redundant-list-fix') may be a better choice than @('list-fix'), because
-checking @('true-listp') is much cheaper than re-consing the a list.</p>
-
-<p>I leave this function enabled.  Logically it is just an alias for
-@('list-fix'), so you should never need to reason about it.</p>"
-
-  :enabled t
-
-  (mbe :logic (list-fix x)
-       :exec (if (true-listp x)
-                 x
-               (list-fix x))))
-
-
 (deflist string-list-listp (x)
   (string-listp x)
   :guard t

@@ -60,10 +60,10 @@
         (mv-let (rn rd in id)
           (break-g-number num)
           (gret
-           (mk-g-number (rlist-fix (bfr-unary-minus-s rn))
-                        (rlist-fix rd)
-                        (rlist-fix (bfr-unary-minus-s in))
-                        (rlist-fix id)))))
+           (mk-g-number (list-fix (bfr-unary-minus-s rn))
+                        (list-fix rd)
+                        (list-fix (bfr-unary-minus-s in))
+                        (list-fix id)))))
        (& (gret 0)))))
 
 ;; (def-gobjectp-thm unary--

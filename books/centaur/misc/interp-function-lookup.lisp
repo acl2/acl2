@@ -542,14 +542,6 @@
                    vars rest))))
 
 
-(defun list-fix (x)
-  (declare (xargs :guard t))
-  (if (consp x)
-      (cons (car x) (list-fix (cdr x)))
-    nil))
-
-
-
 (defthm ifl-ev-lst-pairlis
   (implies (and (nonnil-symbol-listp vars)
                 (no-duplicatesp-equal vars)

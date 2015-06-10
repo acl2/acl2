@@ -401,7 +401,7 @@
                      :verify-guards nil
                      :measure (two-nats-measure (acl2-count mod) 2)))
      (b* ((dwires     (esim-vl-designwires mod))
-          (dwires-fal (pairlis$ (redundant-list-fix dwires) nil))
+          (dwires-fal (pairlis$ (list-fix dwires) nil))
           (walist     (esim-vl-wirealist mod))
           ((with-fast walist dwires-fal))
           ((mv acc n ostream)

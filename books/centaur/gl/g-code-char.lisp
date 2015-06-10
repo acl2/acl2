@@ -342,7 +342,7 @@
                            (gret nil)
                            (glr < x 256 hyp clk config bvar-db state))
                      (gret nil))
-               (code-char-s 8 (rlist-fix xrn) 0 hyp)
+               (code-char-s 8 (list-fix xrn) 0 hyp)
                (gret (code-char 0)))
        (gret (g-apply 'code-char (list x))))))
   ///
