@@ -33,6 +33,7 @@
 (include-book "gtypes")
 (include-book "tools/mv-nth" :dir :system)
 (local (include-book "gtype-thms"))
+(local (include-book "bfr-reasoning"))
 (set-inhibit-warnings "theory")
 
 (define mk-g-bdd-ite (bdd then else hyp)

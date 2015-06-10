@@ -90,7 +90,16 @@
     `(acl2::add-term-patterns bfr-eval . ,val))
 
   (set-bfr-eval-patterns nil)
-  (add-bfr-eval-pats (bfr-eval & env)))
+  (add-bfr-eval-pats (bfr-eval & env))
+  (add-bfr-eval-pat (bfr-eval-list & env))
+  (add-bfr-eval-pats (bfr-list->u & env))
+  (add-bfr-eval-pats (bfr-list->s & env))
+  ;; bozo why not also bfr-eval-alist?
+  )
+
+
+
+
 
 
 (defsection bfr-cp-ev

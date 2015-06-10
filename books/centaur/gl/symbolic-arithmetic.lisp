@@ -32,9 +32,7 @@
 
 (in-package "GL")
 (include-book "bvecs")
-(include-book "std/util/bstar" :dir :system)
-(include-book "tools/mv-nth" :dir :system)
-(include-book "ihs/logops-definitions" :dir :system)
+(include-book "bfr-reasoning")
 (local (include-book "clause-processors/find-subterms" :dir :system))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -297,7 +295,7 @@
                     :guard (and ,@(let ((guard (cadr (assoc-keyword :guard other-kws))))
                                     (and guard `(,guard)))
                                 . ,(defsymbolic-guards formals))))
-                  
+
                   (local (defun ,name ,formal-vars
                            (,exec-name . ,formal-vars)))
 
@@ -320,7 +318,7 @@
                 (defattach ,name ,exec-name)))
 
        (table defsymbolic-forms ',name ',args))))
-                  
+
 (defmacro defsymbolic (name &rest args)
   (defsymbolic-fn name args))
 
@@ -345,6 +343,11 @@
            (true-listp (bfr-scons a b)))
   :hints(("Goal" :in-theory (enable bfr-scons)))
   :rule-classes :type-prescription)
+
+(defmacro car/cdr (x)
+  `(let* ((a ,x))
+     (mbe :logic (mv (car a) (cdr a))
+          :exec (if (atom a) (mv nil nil) (mv (car a) (cdr a))))))
 
 (defsymbolic bfr-ite-bvv-fn ((c b) ;; name c, type b (boolean)
                              (v1 u) ;; unsigned
@@ -393,7 +396,7 @@
        ,v0)))
 
 (add-macro-alias bfr-ite-bss bfr-ite-bss-fn)
-                        
+
 (defsymbolic bfr-loghead-ns ((n n)  ;; name n, type n (natp)
                              (x s)) ;; name x, type s (signed bvec)
   :returns (xx s (loghead n x))     ;; return name, type (signed bvec), spec
@@ -551,7 +554,7 @@
                                      (integer-length-bound-s-correct
                                       bfr-sign-s-correct
                                       acl2::ihsext-redefs)))))
-                   
+
 (defsymbolic bfr-=-uu ((a u) (b u))
   :returns (a=b b (equal a b))
   :measure (+ (len a) (len b))
@@ -1038,12 +1041,3 @@
                          :in-theory (e/d (logext-of-integer-length-bound)
                                          (integer-length-of-rem
                                           integer-length-of-mod))))))
-
-
-
-
-
-
-
-
-

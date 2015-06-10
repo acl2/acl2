@@ -35,6 +35,7 @@
 (include-book "clause-processors/decomp-hint" :dir :system)
 (include-book "centaur/misc/interp-function-lookup" :dir :system)
 (include-book "var-bounds")
+(local (include-book "bfr-reasoning"))
 (local (include-book "data-structures/no-duplicates" :dir :system))
 (local (include-book "general-object-thms"))
 (local (include-book "tools/with-quoted-forms" :dir :system))
