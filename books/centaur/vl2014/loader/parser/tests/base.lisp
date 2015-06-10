@@ -259,7 +259,7 @@
 (defun vl-debug-tokstream (tokstream)
   (declare (xargs :stobjs tokstream
                   :guard-debug t))
-  (let* ((tokens (redundant-list-fix (vl-tokstream->tokens)))
+  (let* ((tokens (list-fix (vl-tokstream->tokens)))
          (n      (min 5 (len tokens))))
     (vl-tokenlist->string-with-spaces (take n tokens))))
 

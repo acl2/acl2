@@ -1200,44 +1200,44 @@ with the following call of @(see def-gl-param-thm)</p>
 
 @({
 
-(def-gl-param-thm finite-commute-of-*
-  :hyp (and (natp a)
-            (< a (expt 2 16))
-            (natp n)
-            (< n 8))
-  :concl (equal (* n a)
-                (* a n))
-  :param-bindings `((((lsb 0) (mid-sb 0) (high-sb 0))
-                     ,(gl::auto-bindings (:nat a 16)
-                                         (:nat n 3)))
-                    (((lsb 0) (mid-sb 0) (high-sb 1))
-                     ,(gl::auto-bindings (:nat a 16)
-                                         (:nat n 3)))
-                    (((lsb 0) (mid-sb 1) (high-sb 0))
-                     ,(gl::auto-bindings (:nat a 16)
-                                         (:nat n 3)))
-                    (((lsb 0) (mid-sb 1) (high-sb 1))
-                     ,(gl::auto-bindings (:nat a 16)
-                                         (:nat n 3)))
-                    (((lsb 1) (mid-sb 0) (high-sb 0))
-                     ,(gl::auto-bindings (:nat a 16)
-                                         (:nat n 3)))
-                    (((lsb 1) (mid-sb 0) (high-sb 1))
-                     ,(gl::auto-bindings (:nat a 16)
-                                         (:nat n 3)))
-                    (((lsb 1) (mid-sb 1) (high-sb 0))
-                     ,(gl::auto-bindings (:nat a 16)
-                                         (:nat n 3)))
-                    (((lsb 1) (mid-sb 1) (high-sb 1))
-                     ,(gl::auto-bindings (:nat a 16)
-                                         (:nat n 3))))
-  :param-hyp (equal n
-                    (logapp 1 lsb
-                            (logapp 1 mid-sb
-                                    high-sb)))
+    (def-gl-param-thm finite-commute-of-*
+      :hyp (and (natp a)
+                (< a (expt 2 16))
+                (natp n)
+                (< n 8))
+      :concl (equal (* n a)
+                    (* a n))
+      :param-bindings `((((lsb 0) (mid-sb 0) (high-sb 0))
+                         ,(gl::auto-bindings (:nat a 16)
+                                             (:nat n 3)))
+                        (((lsb 0) (mid-sb 0) (high-sb 1))
+                         ,(gl::auto-bindings (:nat a 16)
+                                             (:nat n 3)))
+                        (((lsb 0) (mid-sb 1) (high-sb 0))
+                         ,(gl::auto-bindings (:nat a 16)
+                                             (:nat n 3)))
+                        (((lsb 0) (mid-sb 1) (high-sb 1))
+                         ,(gl::auto-bindings (:nat a 16)
+                                             (:nat n 3)))
+                        (((lsb 1) (mid-sb 0) (high-sb 0))
+                         ,(gl::auto-bindings (:nat a 16)
+                                             (:nat n 3)))
+                        (((lsb 1) (mid-sb 0) (high-sb 1))
+                         ,(gl::auto-bindings (:nat a 16)
+                                             (:nat n 3)))
+                        (((lsb 1) (mid-sb 1) (high-sb 0))
+                         ,(gl::auto-bindings (:nat a 16)
+                                             (:nat n 3)))
+                        (((lsb 1) (mid-sb 1) (high-sb 1))
+                         ,(gl::auto-bindings (:nat a 16)
+                                             (:nat n 3))))
+      :param-hyp (equal n
+                        (logapp 1 lsb
+                                (logapp 1 mid-sb
+                                        high-sb)))
 
-  :cov-bindings (gl::auto-bindings (:nat a 16)
-                                   (:nat n 3)))
+      :cov-bindings (gl::auto-bindings (:nat a 16)
+                                       (:nat n 3)))
 
 })
 
@@ -1465,10 +1465,10 @@ whatsoever, so its coverage obligations are trivial.</p>
 <li>INV, a 1-argument function symbol or lambda, the inverse function.</li>
 </ul>
 
-<p>The symbolic term resulting from this shape spec is simply the application
-(G-APPLY) of FN to the symbolic objects derived from ARGS.  INV is an extra
-piece of information that tells us how to prove coverage.  Its usage is
-discussed in @(see g-call).</p>
+<p>The symbolic term resulting from this shape spec is simply the
+application (G-APPLY) of FN to the symbolic objects derived from ARGS.  INV is
+an extra piece of information that tells us how to prove coverage.  Its usage
+is discussed in @(see g-call).</p>
 
 <h3>Automatic Boolean Variable Generation</h3>
 
@@ -1587,7 +1587,5 @@ false counterexamples, however.</p>
    (mem (update-mem addr val mem))
    :test (quotep addr))
 })")
-
-
 
 

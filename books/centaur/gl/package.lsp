@@ -37,9 +37,9 @@
    *common-lisp-symbols-from-main-lisp-package*
    '(pkg-witness bad-atom<= b* quit exit
      hons-acons hons-get hut het hqual hons-equal
-     hons-assoc-equal make-fal
+     hons-assoc-equal make-fal list-fix
      definline definlined
-     defxdoc defsection define
+     defxdoc defsection define defines
      __function__
 
      alist-keys alist-vals
@@ -148,7 +148,6 @@
      EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT
      BOOLEAN-LISTP MOD-ZERO MOD-NEGATIVE
 
-
      conjoin-clauses conjoin disjoin disjoin-lst
      pseudo-term-list-listp
 
@@ -174,7 +173,7 @@
      gl-bdd-mode gl-aig-mode gl-mbe
 
      logcons logcar logcdr loghead logtail logapp
-     b-ior b-and b-xor b-not bfix bitp boolfix
+     b-ior b-and b-xor b-not bfix bitp bool-fix
      binary-- binary-minus-for-gl
 
      numlist

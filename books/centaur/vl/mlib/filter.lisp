@@ -229,7 +229,7 @@ names.</p>")
               :exec
               (b* (((when (atom names))
                     ;; Stupid optimization
-                    (redundant-list-fix x))
+                    (list-fix x))
                    ((when (atom x))
                     ;; Stupid optimization
                     nil)
@@ -314,7 +314,7 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
               :exec
               (b* (((when (atom names))
                     ;; Stupid optimization
-                    (mv nil (redundant-list-fix x)))
+                    (mv nil (list-fix x)))
                    ((when (atom x))
                     ;; Stupid optimization
                     (mv nil nil))
@@ -453,7 +453,7 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
   :enabled t
   (mbe :logic (vl-filter-modinsts-by-modname names x)
        :exec (b* (((when (atom names))
-                   (mv nil (redundant-list-fix x)))
+                   (mv nil (list-fix x)))
                   ((when (atom x)) (mv nil nil))
                   ((local-stobjs nrev nrev2)
                    (mv yes no nrev nrev2))

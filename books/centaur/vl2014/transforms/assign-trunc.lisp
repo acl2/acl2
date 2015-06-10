@@ -168,7 +168,7 @@ its width reduced and that drops the chopped off bits.</p>"
        (guts               (vl-atom->guts x))
        ((vl-weirdint guts) guts)
        (bits-chop (nthcdr (- guts.origwidth n)
-                          (redundant-list-fix guts.bits)))
+                          (list-fix guts.bits)))
        (new-guts (make-vl-weirdint :bits bits-chop
                                    :origwidth n
                                    :origtype :vl-unsigned))

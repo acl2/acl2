@@ -2578,8 +2578,8 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 ;;                 1 0))
 ;;   (b* ((x (vl-datatype-fix x))
 ;;        (ss (vl-scopestack-fix ss))
-;;        (udims (redundant-list-fix (vl-datatype->udims x)))
-;;        (pdims (redundant-list-fix (vl-datatype->pdims x)))
+;;        (udims (list-fix (vl-datatype->udims x)))
+;;        (pdims (list-fix (vl-datatype->pdims x)))
 ;;        (nu (len udims))
 ;;        (n (lnfix n))
 ;;        ((when (<= n nu))
@@ -2853,7 +2853,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 ;;        (nunpacked (len unpacked-dims))
 ;;        ((when (<= idxcount nunpacked))
 ;;         (mv nil (vl-datatype-update-udims
-;;                  (nthcdr idxcount (redundant-list-fix unpacked-dims)) type)))
+;;                  (nthcdr idxcount (list-fix unpacked-dims)) type)))
 ;;        (remaining-idxcount (- idxcount nunpacked))
 ;;        ((unless (<= remaining-idxcount (len packed-dims)))
 ;;         (mv (make-vl-warning :type :vl-too-many-indices
@@ -2863,7 +2863,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 ;;                              :fn __function__)
 ;;             nil))
 ;;        (type (vl-datatype-update-dims
-;;               (nthcdr remaining-idxcount (redundant-list-fix packed-dims))
+;;               (nthcdr remaining-idxcount (list-fix packed-dims))
 ;;               nil ;; udims
 ;;               type)))
 ;;     (mv nil type)))

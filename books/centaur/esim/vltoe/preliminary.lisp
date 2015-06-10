@@ -218,7 +218,7 @@ might not even have the same direction.</p>"
                    :args (list decl1 decl1.name))
             nil nil))
 
-       (msb-wires (mbe :logic (list-fix (cdr entry)) :exec (cdr entry)))
+       (msb-wires (llist-fix (cdr entry)))
        (lsb-wires (reverse msb-wires))
 
 ;; BOZO eventually it would be good to restore this kind of sanity checking,

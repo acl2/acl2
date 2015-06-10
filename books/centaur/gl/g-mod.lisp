@@ -50,7 +50,7 @@
                          (bfr-=-uu xid nil)) t)
              (eq (bfr-or (bfr-=-ss yin nil)
                          (bfr-=-uu yid nil)) t))
-        (mk-g-number (rlist-fix (bfr-mod-ss xrn yrn)))
+        (mk-g-number (list-fix (bfr-mod-ss xrn yrn)))
       (g-apply 'mod (gl-list x y)))))
 
 (in-theory (disable (g-mod-of-numbers)))

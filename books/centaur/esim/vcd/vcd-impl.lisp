@@ -1015,7 +1015,7 @@
         nil
       (b* ((path1       (caar x))
            (wires1      (cdar x))
-           (wires1-sort (vl-emodwire-sort (redundant-list-fix wires1)))
+           (wires1-sort (vl-emodwire-sort (list-fix wires1)))
            (nets1       (vcd-nets-from-emodwires path1 wires1-sort)))
         (append nets1
                 (vcd-nets-from-partitioned-names (cdr x))))))

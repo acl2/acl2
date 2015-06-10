@@ -1003,8 +1003,7 @@ this name in MSB order.</p>"
                    :args (list x))
             nil))
 
-       (wires (mbe :logic (list-fix (cdr (hons-get name walist)))
-                   :exec  (cdr (hons-get name walist))))
+       (wires (llist-fix (cdr (hons-get name walist))))
 
        ((unless (and (consp wires)
                      (mbt (vl-emodwirelist-p wires))))
@@ -1089,8 +1088,7 @@ indices are in bounds, and so on.</p>"
                    :args (list name))
             nil))
 
-       (wires (mbe :logic (list-fix (cdr entry))
-                   :exec  (cdr entry)))
+       (wires (llist-fix (cdr entry)))
 
        (plain-name (vl-plain-wire-name name))
 
@@ -1186,8 +1184,7 @@ careful to ensure that the selected bit is in bounds, etc.</p>"
                    :args (list name))
             nil))
 
-       (wires (mbe :logic (list-fix (cdr entry))
-                   :exec (cdr entry)))
+       (wires (llist-fix (cdr entry)))
        (plain-name (vl-plain-wire-name name))
 
        ((when (equal wires (list plain-name)))

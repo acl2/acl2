@@ -64,7 +64,7 @@ things might well be copy/paste errors.</p>")
                                    (locs vl-locationlist-p)
                                    (modname stringp))
   :returns (warning vl-warning-p)
-  (b* ((locs        (redundant-list-fix locs))
+  (b* ((locs        (list-fix locs))
        (elide-p     (> (len locs) 9))
        (elided-locs (if elide-p (take 9 locs) locs)))
     (make-vl-warning

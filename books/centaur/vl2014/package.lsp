@@ -67,6 +67,7 @@
       first-n
       rest-n
       list-fix
+      llist-fix
       list-equiv
       same-lengthp
       rev

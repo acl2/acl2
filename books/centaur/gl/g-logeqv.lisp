@@ -57,7 +57,7 @@
           (mv nil nil))))
     (if (and xintp-known yintp-known)
         (mk-g-number
-         (rlist-fix
+         (list-fix
           (bfr-logeqv-ss (bfr-ite-bss-fn xintp xrn nil)
                          (bfr-ite-bss-fn yintp yrn nil))))
       (g-apply 'acl2::binary-logeqv (gl-list x y)))))

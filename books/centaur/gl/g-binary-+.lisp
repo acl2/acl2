@@ -55,9 +55,9 @@
              (equal yid '(t)))
         (let* ((rsum (bfr-+-ss nil xrn yrn))
                (isum (bfr-+-ss nil xin yin)))
-          (mk-g-number (rlist-fix rsum)
+          (mk-g-number (list-fix rsum)
                        1
-                       (rlist-fix isum)))
+                       (list-fix isum)))
       (g-apply 'binary-+ (gl-list x y)))))
 
 (in-theory (disable (g-binary-+-of-numbers)))
@@ -196,9 +196,9 @@
              (equal yid '(t)))
         (let* ((rsum (bfr-+-ss t xrn (bfr-lognot-s yrn)))
                (isum (bfr-+-ss t xin (bfr-lognot-s yin))))
-          (mk-g-number (rlist-fix rsum)
+          (mk-g-number (list-fix rsum)
                        1
-                       (rlist-fix isum)))
+                       (list-fix isum)))
       (g-apply 'binary-minus-for-gl (gl-list x y)))))
 
 (in-theory (disable (g-binary---of-numbers)))

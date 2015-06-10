@@ -57,7 +57,7 @@
           (mv nil nil))))
     (if (and cintp-known iintp-known)
         (mk-g-number
-         (rlist-fix
+         (list-fix
           (bfr-ash-ss 1 (bfr-ite-bss-fn iintp irn nil)
                   (bfr-ite-bss-fn cintp crn nil))))
       (g-apply 'ash (gl-list i c)))))

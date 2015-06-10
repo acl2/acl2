@@ -227,7 +227,7 @@ For instance,</p>
 
   (defund vl-verilogify-emodwirelist (x)
     (declare (xargs :guard (vl-emodwirelist-p x)))
-    (vl-verilogify-emodwirelist-0 (vl-emodwire-sort (redundant-list-fix x))))
+    (vl-verilogify-emodwirelist-0 (vl-emodwire-sort (list-fix x))))
 
   (defthm string-listp-of-vl-verilogify-emodwirelist
     (implies (force (vl-emodwirelist-p x))

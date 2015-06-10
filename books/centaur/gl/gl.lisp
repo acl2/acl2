@@ -144,10 +144,9 @@
 (def-g-simple complex-rationalp
   (equal 'nil (equal '0 (imagpart x))))
 
+(def-g-simple acl2::bool-fix$inline (if x 't 'nil))
 
-(def-g-simple acl2::boolfix (if x 't 'nil))
-
-(def-g-simple implies (if (not p) 't (acl2::boolfix q)))
+(def-g-simple implies (if (not p) 't (acl2::bool-fix$inline q)))
 
 (def-g-simple eq (equal x y))
 

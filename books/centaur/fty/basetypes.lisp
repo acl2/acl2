@@ -258,7 +258,11 @@ non-@('nil') symbol to @('t')."
     :fix bool-fix
     :equiv iff)
 
-  (defcong iff equal (bool-fix x) 1))
+  (defcong iff equal (bool-fix x) 1)
+
+  (defthm bool-fix-under-iff
+    (iff (bool-fix x) x)))
+
 
 
 (defthm maybe-natp-when-natp
