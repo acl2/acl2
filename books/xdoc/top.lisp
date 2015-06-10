@@ -279,11 +279,16 @@
 
 (defun formula-info-to-defs (headerp entries acc)
   (declare (xargs :mode :program))
-  (let* ((acc (if headerp
+  (let* ((original acc)
+         (acc (if headerp
                   (bootstrap-revappend-chars "<h3>Definitions and Theorems</h3>" acc)
                 acc))
+         (before-entries acc)
          (acc (formula-info-to-defs1 entries acc)))
-    acc))
+    (if (equal acc before-entries)
+        ;; Avoid adding empty "Definitions and Theorems" sections.
+        original
+      acc)))
 
 (defun defsection-autodoc-fn (name parents short long extension marker state)
   (declare (xargs :mode :program :stobjs state))

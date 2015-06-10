@@ -228,9 +228,12 @@ var XD_LONG = 3;
 
 function keyTitle(key)
 {
+    var prefix = XDOCTITLE;
+    if (!prefix) { prefix = "XDOC"; }
+
     return (topicExists(key))
-       ? ("XDOC &mdash; " + topicName(key))
-       : ("XDOC &mdash; " + key);
+       ? (prefix + " &mdash; " + topicName(key))
+       : (prefix + " &mdash; " + key);
 }
 
 
