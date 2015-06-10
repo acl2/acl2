@@ -302,6 +302,11 @@ sign bit, which we must implicitly extend out to infinity.</p>"
         v
       (cons b v)))
   ///
+  (defthm true-listp-of-bfr-scons
+    (implies (true-listp b)
+             (true-listp (bfr-scons a b)))
+    :rule-classes :type-prescription)
+
   (defthm scdr-of-bfr-scons
     (equal (scdr (bfr-scons b v))
            (bfr-snorm v))
@@ -378,11 +383,6 @@ environment."
         ((eql n -1) '(t))
         (t (bfr-scons (equal (logcar n) 1) (i2v (logcdr n)))))
   ///
-  (local (defthm true-listp-of-bfr-scons
-           (implies (true-listp x)
-                    (true-listp (bfr-scons b x)))
-           :hints(("Goal" :in-theory (enable bfr-scons)))))
-
   (defthm true-listp-of-i2v
     (true-listp (i2v n))
     :rule-classes :type-prescription)
@@ -432,6 +432,11 @@ environment."
       nil
     (cons b x))
   ///
+  (defthm true-listp-of-bfr-ucons
+    (implies (true-listp b)
+             (true-listp (bfr-ucons a b)))
+    :rule-classes :type-prescription)
+
   (defthm bfr-list->u-of-bfr-ucons
     (equal (bfr-list->u (bfr-ucons b x) env)
            (logcons (acl2::bool->bit (bfr-eval b env))
@@ -454,11 +459,6 @@ environment."
     (bfr-ucons (equal 1 (logcar n))
                (n2v (logcdr n))))
   ///
-  (local (defthm true-listp-of-bfr-ucons
-           (implies (true-listp x)
-                    (true-listp (bfr-ucons b x)))
-           :hints(("Goal" :in-theory (enable bfr-ucons)))))
-
   (defthm true-listp-of-n2v
     (true-listp (n2v n))
     :rule-classes :type-prescription)

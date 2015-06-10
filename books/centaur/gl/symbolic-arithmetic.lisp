@@ -38,6 +38,26 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "arith-lemmas"))
 
+(defsection symbolic-arithmetic
+  :parents (reference)
+  :short "Internal operations for computing on symbolic bit vectors."
+  :long "<p>Naming convention:</p>
+<ul>
+<li>B stands for a boolean variable.</li>
+<li>S stands for a signed bvec.</li>
+<li>U stands for an unsigned bvec.</li>
+<li>V stands for a generic bvec where signedness doesn't matter.</li>
+<li>N stands for a known natural constant.</li>
+</ul>
+
+<p>For instance, @('bfr-ite-bss-fn') has @('bss'), indicating that it's
+for computing:</p>
+
+@({
+     (ite Boolean Signed-Bvec Signed-Bvec)
+})")
+
+(local (xdoc::set-default-parents symbolic-arithmetic))
 
 ;;---------------- Misc function definitions and lemmas -------------------
 
@@ -50,47 +70,48 @@
                        (equal b (imagpart x)))))
   :hints (("goal" :use ((:instance realpart-imagpart-elim)))))
 
-(defund int-set-sign (negp i)
-  (declare (xargs :guard (integerp i)))
+(define int-set-sign ((negp "True if we should set the sign bit to 1.")
+                      (i    integerp "The integer to modify."))
+  :short "Change the sign bit of an integer to a new value."
+  :returns (new-i integerp :rule-classes :type-prescription)
   (let ((i (lifix i)))
-    (acl2::logapp (integer-length i) i (if negp -1 0))))
+    (acl2::logapp (integer-length i) i (if negp -1 0)))
+  ///
+  (defthm sign-of-int-set-sign
+    (iff (< (int-set-sign negp i) 0)
+         negp)
+    :hints(("Goal" :in-theory (e/d* (int-set-sign)
+                                    (acl2::logapp
+                                     acl2::ifix-under-int-equiv))))))
 
-(defthm sign-of-int-set-sign
-  (iff (< (int-set-sign negp i) 0)
-       negp)
-  :hints(("Goal" :in-theory (e/d* (int-set-sign)
-                                  (acl2::logapp
-                                   acl2::ifix-under-int-equiv)))))
-
-(defthm int-set-sign-integerp
-  (integerp (int-set-sign negp i))
-  :rule-classes :type-prescription)
-
-(defund non-int-fix (x)
+(define non-int-fix (x)
+  :short "Identity for non-integers; coerces any integers to @('nil')."
   (declare (xargs :guard t))
-  (and (not (integerp x)) x))
+  (and (not (integerp x))
+       x)
+  ///
+  (defthm non-int-fix-when-non-integer
+    (implies (not (integerp x))
+             (equal (non-int-fix x) x))
+    :hints(("Goal" :in-theory (enable non-int-fix)))
+    :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
-(defthm non-int-fix-when-non-integer
-  (implies (not (integerp x))
-           (equal (non-int-fix x) x))
-  :hints(("Goal" :in-theory (enable non-int-fix)))
-  :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
-(defund maybe-integer (i x intp)
-  (declare (xargs :guard (integerp i)))
+
+(define maybe-integer ((i integerp) x intp)
   (if intp
       (ifix i)
-    (non-int-fix x)))
+    (non-int-fix x))
+  ///
+  (defthm maybe-integer-t
+    (equal (maybe-integer i x t)
+           (ifix i))
+    :hints(("Goal" :in-theory (enable maybe-integer))))
 
-(defthm maybe-integer-t
-  (equal (maybe-integer i x t)
-         (ifix i))
-  :hints(("Goal" :in-theory (enable maybe-integer))))
-
-(defthm maybe-integer-nil
-  (equal (maybe-integer i x nil)
-         (non-int-fix x))
-  :hints(("Goal" :in-theory (enable maybe-integer))))
+  (defthm maybe-integer-nil
+    (equal (maybe-integer i x nil)
+           (non-int-fix x))
+    :hints(("Goal" :in-theory (enable maybe-integer)))))
 
 ;;-------------------------- DEFSYMBOLIC -----------------------------------
 
@@ -332,17 +353,6 @@
                            acl2::logext-identity
                            truncate)))
 
-(defthm true-listp-of-bfr-ucons
-  (implies (true-listp b)
-           (true-listp (bfr-ucons a b)))
-  :hints(("Goal" :in-theory (enable bfr-ucons)))
-  :rule-classes :type-prescription)
-
-(defthm true-listp-of-bfr-scons
-  (implies (true-listp b)
-           (true-listp (bfr-scons a b)))
-  :hints(("Goal" :in-theory (enable bfr-scons)))
-  :rule-classes :type-prescription)
 
 (defmacro car/cdr (x)
   `(let* ((a ,x))
