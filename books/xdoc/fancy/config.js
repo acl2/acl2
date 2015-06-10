@@ -33,9 +33,10 @@
 // XDOC Configuration
 //
 // Most users should not edit this file.
-//
-// You only need to change this if you are going to load your data on the fly
-// via ajax queries and xdataget.pl.  In this case, you need to:
+
+
+// XDATAGET -- You only need to change this if you are going to load your data
+// on the fly via ajax queries and xdataget.pl.  In this case, you need to:
 //
 //   (1) Build the sqlite database using xdata2sql.pl
 //   (2) Install xdata.db and xdataget.pl somewhere on your web server
@@ -46,3 +47,25 @@
 
 var XDATAGET = "";
 
+// XDOCTITLE -- You only need to change this if you want to customize the title
+// that your web pages will display as.  By default pages will be shown as, e.g.,
+//
+//    XDOC --- Top
+//    XDOC --- Arithmetic
+//    XDOC --- Ihs
+//
+// And so forth.  You can replace the "XDOC" part of this by configuring this
+// variable.  For example, writing:
+//
+//   var XDOCTITLE = "ACL2+Books Manual";
+//
+// Will result in page titles such as:
+//
+//   ACL2+Books Manual --- Top
+//   ACL2+Books Manual --- Arithmetic
+//   ACL2+Books Manual --- Ihs
+//
+// And so forth.  You could of course provide some alternate description for
+// internal manuals at organizations, e.g., "Centaur FV Manual" or whatever.
+
+var XDOCTITLE = "XDOC";
