@@ -745,7 +745,8 @@ top-level hierarchical identifiers.</p>"
   
 
 (defprod vl-operandinfo
-  ((context  vl-scopecontext-p  "The context in which the HID base was found")
+  ((orig-expr  vl-expr-p         "The original index expression, for error messages etc")
+   (context  vl-scopecontext-p  "The context in which the HID base was found")
    (prefixname vl-scopeexpr-p    "The scopeexpr, not including the possible data selects.")
    (hidtrace vl-hidtrace-p      "The follow-hids trace, i.e. the trace of instances/blocks
                                  in which the base variable is located")
@@ -3464,13 +3465,14 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
        ((when err) (mv err nil)))
 
     (mv nil (make-vl-operandinfo
+             :orig-expr x
              :context context
              :prefixname prefix-name
              :hidtrace hidtrace
              :hidtype type
              :seltrace seltrace
              :part x.part
-             :type final-type)))
+             :type final-type))) 
 
 
 

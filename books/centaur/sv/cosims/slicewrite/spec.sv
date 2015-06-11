@@ -44,19 +44,25 @@ module spec (input logic [127:0] in,
    assign { vals[3], vals[2], vals[1], vals[0], indices[3], indices[2], indices[1], indices[0] } = in;
 
 
+  int i [3:0];
+
    always_comb begin
+     { m.a[0][3], m.a[0][2], m.a[0][1], m.a[0][0] } = '0;
      m.a[0][indices[0]] = vals[0];
    end
 
    always_comb begin
+     { m.a[1][3], m.a[1][2], m.a[1][1], m.a[1][0] } = '0;
      m.a[1][indices[1]] = vals[1];
    end
 
    always_comb begin
+     { m.b[0][3], m.b[0][2], m.b[0][1], m.b[0][0] } = '0;
      m.b[0][indices[2]] = vals[2];
    end
 
    always_comb begin
+     { m.b[1][3], m.b[1][2], m.b[1][1], m.b[1][0] } = '0;
      m.b[1][indices[3]] = vals[3];
    end
 

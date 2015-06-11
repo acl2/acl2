@@ -621,19 +621,19 @@ ignored.</p>"
                                            :subpath path)))))
 
 (define vl-seltrace-type ((x vl-seltrace-p)
-                          (opinfo vl-operandinfo-p))
+                          (base-type vl-datatype-p))
   :guard (and (vl-seltrace-usertypes-ok x)
-              (vl-operandinfo-usertypes-ok opinfo))
+              (vl-datatype-resolved-p base-type))
   :guard-hints (("goal" :in-theory (enable vl-operandinfo-usertypes-ok)))
   :returns (type vl-datatype-p)
   (if (consp x)
       (b* (((vl-selstep sel) (car x)))
         sel.type)
-    (vl-operandinfo->hidtype opinfo))
+    (vl-datatype-fix base-type))
   ///
   (std::defret usertypes-ok-of-vl-seltrace-type/ss
     (implies (and (vl-seltrace-usertypes-ok x)
-                  (vl-operandinfo-usertypes-ok opinfo))
+                  (vl-datatype-resolved-p base-type))
              (vl-datatype-resolved-p type))
     :hints(("Goal" :in-theory (enable vl-operandinfo-usertypes-ok)))))
 
@@ -948,21 +948,31 @@ if the shift amount is computed elsewhere.</p>"
     (and (equal (vl-seltrace-unres-count unres)
                 (vl-seltrace-unres-count x))
          (equal (vl-seltrace-unres-count res) 0))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret len-of-vl-seltrace-split-parts
+    (= (+ (len unres) (len res)) (len x))
+    :rule-classes (:rewrite :linear))
+
+  (defret vl-seltrace-index-count-of-vl-seltrace-split-parts
+    (= (+ (vl-seltrace-index-count unres) (vl-seltrace-index-count res))
+       (vl-seltrace-index-count x))
+    :hints(("Goal" :in-theory (enable vl-seltrace-index-count)))
+    :rule-classes (:rewrite :linear)))
 
 
 (define vl-seltrace-to-svex-vector
   ((x vl-seltrace-p)
    (indices sv::svexlist-p)
-   (opinfo vl-operandinfo-p
-           "The full operandinfo of which the seltrace is a part.")
+   (base-type vl-datatype-p "The type of the variable that the selects are indexing into.")
    (base-svex sv::svex-p)
    (outer-ss vl-scopestack-p))
   :guard (and (vl-seltrace-usertypes-ok x)
-              (vl-operandinfo-usertypes-ok opinfo)
+              (vl-datatype-resolved-p base-type)
               (>= (len indices)
                   (vl-seltrace-index-count x))
-              (vl-hidtrace-resolved-p (vl-operandinfo->hidtrace opinfo)))
+              ;; (vl-hidtrace-resolved-p (vl-operandinfo->hidtrace opinfo))
+              )
   :verify-guards nil
   :returns (mv (err (iff (vl-msg-p err) err))
                (svex sv::svex-p))
@@ -976,7 +986,7 @@ if the shift amount is computed elsewhere.</p>"
                                (consp x))
                       :hints(("Goal" :in-theory (enable vl-seltrace-unres-count)))
                       :rule-classes :forward-chaining)))
-  (b* ((type (vl-seltrace-type x opinfo))
+  (b* ((type (vl-seltrace-type x base-type))
        ((mv err size) (vl-datatype-size type))
        ((when err) (mv err (svex-x)))
        ((unless size) (mv (vmsg "Could not size datatype ~s0" type) (svex-x)))
@@ -990,7 +1000,7 @@ if the shift amount is computed elsewhere.</p>"
 
 
 
-       (rest-type (vl-seltrace-type (cdr x) opinfo))
+       (rest-type (vl-seltrace-type (cdr x) base-type))
        (rest-type (vl-maybe-usertype-resolve rest-type))
 
        ((mv err shift-amt)
@@ -1007,7 +1017,7 @@ if the shift amount is computed elsewhere.</p>"
                        (vl-select-case step.select
                          :field indices
                          :index (cdr indices))
-                       opinfo
+                       base-type
                        base-svex
                        outer-ss))
        ((when err) (mv err (svex-x))))
@@ -1038,9 +1048,9 @@ if the shift amount is computed elsewhere.</p>"
                                       vl-select-resolved-p)))))
 
   (defret vars-of-vl-seltrace-to-svex-vector
-    (implies (and (sv::svarlist-addr-p (sv::svexlist-vars indices))
-                  (sv::svarlist-addr-p (sv::svex-vars base-svex)))
-             (sv::svarlist-addr-p (sv::svex-vars svex)))
+    (implies (and (not (member v (sv::svexlist-vars indices)))
+                  (not (member v (sv::svex-vars base-svex))))
+             (not (member v (sv::svex-vars svex))))
     :hints(("Goal" :in-theory (enable vl-seltrace-to-svex-vector)))))
 
 
@@ -1088,7 +1098,7 @@ the way.</li>
                  ((unless (vl-select-case sel1.select :index))
                   ;; final select is a field access, so not a bitselect
                   (mv nil x indices))
-                 (type (vl-seltrace-type (cdr x.seltrace) x))
+                 (type (vl-seltrace-type (cdr x.seltrace) x.hidtype))
                  ((unless (vl-datatype-index-is-bitselect type))
                   ;; final index, but not a bitselect
                   (mv nil x indices))
@@ -1166,6 +1176,292 @@ the way.</li>
              (not (member v (sv::svexlist-vars new-indices))))))
 
 
+;; (trace$
+;;  #!vl (vl-plusminus-partselect->svex
+;;        :entry (list 'vl-plusminus-partselect->svex
+;;                     x
+;;                     (with-local-ps (vl-pp-datatype type))
+;;                     (with-local-ps (vl-pp-plusminus psel))
+;;                     :base base-svex :width width-svex)
+;;        :exit (b* (((list err svex) values))
+;;                (if err
+;;                    (list 'vl-plusminus-partselect->svex
+;;                          (with-local-ps (vl-cw "~@0" err)))
+;;                  (list 'vl-plusminus-partselect->svex svex)))))
+
+(define vl-plusminus-partselect->svex ((x sv::svex-p "expr to apply the partselect to")
+                                       (type vl-datatype-p "type of base expr")
+                                       (psel vl-plusminus-p)
+                                       (base-svex sv::svex-p "base index")
+                                       (width-svex sv::svex-p "width index"))
+  :short "This ONLY shifts the base expression to the right point for the partselect;
+          it does not truncate it at the right width."
+  :guard (vl-datatype-resolved-p type)
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (svex sv::svex-p))
+  (b* (((vl-plusminus psel))
+       ((mv err ?caveat ?basetype dim) (vl-datatype-remove-dim type))
+       ((when err) (mv err (svex-x)))
+       ((when (vl-packeddimension-case dim :unsized))
+        (mv (vmsg "Unsized dimension") (svex-x)))
+       ((vl-range dimrange) (vl-packeddimension->range dim))
+       ((unless (vl-range-resolved-p dimrange))
+        (mv (vmsg "Unresolved dimension") (svex-x)))
+       (dim-msb (vl-resolved->val dimrange.msb))
+       (dim-lsb (vl-resolved->val dimrange.lsb))
+       (downp (<= dim-lsb dim-msb))
+       (sel-lsb (if downp
+                    (if psel.minusp
+                        ;; base is the msb, compute the lsb
+                        (sv::svcall + base-svex
+                                    (sv::svcall + (svex-int 1)
+                                                (sv::svcall sv::u- width-svex)))
+                      ;; base is the lsb
+                      base-svex)
+                  (if psel.minusp
+                      base-svex
+                    ;; base is the msb, compute the lsb
+                    (sv::svcall + base-svex
+                                (sv::svcall + (svex-int -1) width-svex)))))
+       ((mv err shift-amt)
+        (vl-datatype-index-shift-amount type sel-lsb))
+       ((when err) (mv err (svex-x))))
+    (mv nil (sv::svex-lsb-shift shift-amt x)))
+
+  ///
+  (defret vars-of-vl-plusminus-partselect->svex
+    (implies (and (not (member v (sv::svex-vars x)))
+                  (not (member v (sv::svex-vars base-svex)))
+                  (not (member v (sv::svex-vars width-svex))))
+             (not (member v (sv::svex-vars svex))))))
+
+
+(defconst *svex-longest-static-prefix-var*
+  :svex-longest-static-prefix)
+
+(local (include-book "std/lists/nthcdr" :dir :system))
+;; (local (include-book "std/lists/take" :dir :system))
+
+(local #!sv (std::deflist svexlist-p (x)
+              (svex-p x)
+              :true-listp t))
+
+(define vl-operandinfo-to-svex-longest-static-prefix
+  ((x vl-operandinfo-p)
+   (indices sv::svexlist-p)
+   (ss vl-scopestack-p)
+   (params vl-svexalist-p))
+
+
+
+  ;; Process an index expression's operandinfo to obtain
+  ;;   -- an svex expression for its longest static prefix, in terms of a variable
+  ;;      representing its HID/vardecl part
+  ;;   -- a variable representing the longest static prefix
+  ;;   -- an svex expression for the entire expression, in terms of the longest
+  ;;   static prefix var.
+
+  ;; Why break it into these parts?  When processing assignments where the LHS
+  ;; contains a dynamic array index
+
+  ;; Note: This does NOT properly sign- or zero-extend either part.
+
+  :prepwork (;; (local (defthm seltrace-index-count-in-terms-of-operandinfo
+             ;;          (equal (vl-seltrace-index-count (vl-operandinfo->seltrace x))
+             ;;                 (- (vl-operandinfo-index-count x)
+             ;;                    (b* ((part (vl-operandinfo->part x)))
+             ;;                      (vl-partselect-case part :none 0 :otherwise 2))))
+             ;;          :hints(("Goal" :in-theory (enable vl-operandinfo-index-count)))
+             ;;          :rule-classes (:rewrite :linear)))
+             ;; (local (defthm len-of-cdr
+             ;;          (implies (posp (len x))
+             ;;                   (equal (len (cdr x))
+             ;;                          (1- (len x))))))
+             (local (defthmd consp-by-len
+                      (implies (posp (len x))
+                               (consp x))
+                      :hints(("Goal" :in-theory (enable len)))))
+             ;; (local (defthm len-cdr
+             ;;          (implies (consp x)
+             ;;                   (equal (len (cdr x))
+             ;;                          (+ -1 (len x))))))
+             (local (in-theory (disable len-of-cdr
+                                        acl2::take-of-len-free
+                                        acl2::len-when-atom
+                                        acl2::take-redefinition
+                                        acl2::nthcdr-when-zp
+                                        acl2::subsetp-when-atom-left
+                                        nthcdr)))
+
+             ;; (local (in-theory (disable acl2::nthcdr-of-cdr)))
+             )
+  :guard (and (vl-operandinfo-usertypes-ok x)
+              (equal (len indices)
+                     (vl-operandinfo-index-count x)))
+  :guard-hints (("goal" :in-theory (enable vl-operandinfo-index-count
+                                           consp-by-len len-of-cdr)
+                 :do-not-induct t))
+  :guard-debug t
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (lsp-expr sv::svex-p)
+               (lsp-type
+                (implies (not err)
+                         (and (vl-datatype-p lsp-type)
+                              (implies (vl-operandinfo-usertypes-ok x)
+                                       (vl-datatype-resolved-p lsp-type)))))
+               (full-expr sv::svex-p)) ;; in terms of lsp-var
+  (b* (((fun (fail err)) (mv err (svex-x) nil (svex-x)))
+       ((mv err x indices) (vl-operandinfo-to-svex-preproc x indices))
+       (indices (list-fix indices))
+       ((when err) (fail err))
+       ((vl-operandinfo x))
+
+       ((unless (vl-hidtrace-resolved-p x.hidtrace))
+        (fail (vmsg "Unresolved hid indices")))
+       ((vl-hidstep decl) (car x.hidtrace))
+
+       ((mv err base-svex)
+        (if (eq (tag decl.item) :vl-vardecl)
+            (b* (;; ((mv unres-sels res-sels)
+                 ;;  (vl-seltrace-split x.seltrace
+                 ;;                     (vl-seltrace-unres-count x.seltrace)))
+                 ;; If we have a bunch of resolved selects, we can encode them
+                 ;; as either an explicit select (right shift + concat) or as a
+                 ;; name, where eventually this will be resolved to a shift by
+                 ;; alias resolution.  Let's go with the former for now since
+                 ;; the latter won't work for elaboration, where we don't yet
+                 ;; have a complete module hierarchy.
+                 ((mv err base-var)
+                  ;; Note we're passing NIL as the seltrace here, so it's
+                  ;; really only making a variable of the part corresponding to
+                  ;; the vardecl (hid), with no selects.
+                  (vl-seltrace-to-svex-var nil x ss)))
+              (mv err base-var))
+          (b* ((look (cdr (hons-get x.prefixname (vl-svexalist-fix params))))
+               ((unless look)
+                ;; (cw "var: ~x0 look: ~x1 alist: ~x2~%" var look params);; (break$)
+                (mv (vmsg "Parameter definition not found") nil))
+               ((unless (sv::svex-addr-p look))
+                (mv (vmsg "Parameter expression malformed") nil)))
+            (mv nil look))))
+       ((when err) (fail err))
+
+       (unres-count (vl-seltrace-unres-count x.seltrace))
+       ((mv unres-sels res-sels)
+        ;; Note: It might be better (?) to determine which selects are resolved
+        ;; based on their svexes.  This wouldn't work, e.g., if we didn't
+        ;; replace constant indices by their values during elaboration: test this!
+        ;; E.g.,
+        ;;  parameter foo = 5;
+        ;; always_comb
+        ;;     bar[foo+1][idx] = a;
+        ;; always_comb
+        ;;     bar[foo+2][idx] = b;
+        ;; If this works, then bar[foo+1] and bar[foo+2] are the two longest
+        ;; static prefixes and these two blocks won't interfere with each
+        ;; other.
+        (vl-seltrace-split x.seltrace unres-count))
+
+       ;; longest static prefix
+       (partsel-p (not (vl-partselect-case x.part :none)))
+       (seltrace-indices (if partsel-p
+                             (cddr indices)
+                           indices))
+       (nonstatic-count (vl-seltrace-index-count unres-sels))
+       (nonstatic-indices (take nonstatic-count seltrace-indices))
+       (static-indices (nthcdr nonstatic-count seltrace-indices))
+       
+       ((mv err lsp-sel-expr)
+        (vl-seltrace-to-svex-vector res-sels static-indices x.hidtype base-svex ss))
+       ((when err) (fail err))
+       (lsp-sel-type (vl-seltrace-type res-sels x.hidtype))
+
+       ((mv err sel-nonstatic)
+        (vl-seltrace-to-svex-vector unres-sels nonstatic-indices lsp-sel-type
+                                    (sv::make-svex-var :name *svex-longest-static-prefix-var*)
+                                    ss))
+       ((when err) (fail err))
+       ;; Cases:
+       ;; 1 the entire seltrace is static and there is no partselect.
+       ;; 2 part of the seltrace is nonstatic and there is no partselect (handled with 1).
+       ;; 3 the entire seltrace is static and there is a static partselect.
+       ;; 4 the entire seltrace is static and there is a nonstatic partselect.
+       ;; 5 part of the seltrace is nonstatic and there is a partselect (don't
+       ;;   care whether static).
+
+       ;; Cases 1&2 -- no partselect.  Don't really care if there are nonstatic
+       ;; selects or not.
+       ((unless partsel-p)
+        (mv nil lsp-sel-expr lsp-sel-type sel-nonstatic))
+
+       ;; From here down we have a partselect.
+       ((list base-svex width-svex) indices)
+
+       ;; Case 4&5 -- part of the seltrace or the partselect is nonstatic:
+       ((when (or (consp unres-sels)
+                  (not (vl-expr-resolved-p (vl-partselect-plusminus->base x.part)))))
+        (b* (((mv err psel-svex)
+              (vl-plusminus-partselect->svex
+               sel-nonstatic
+               (vl-seltrace-type unres-sels lsp-sel-type)
+               (vl-partselect->plusminus x.part)
+               base-svex width-svex))
+             ((when err) (fail err)))
+          (mv nil lsp-sel-expr lsp-sel-type psel-svex)))
+
+       ;; Case 3 -- everything is static:
+       ((mv err psel-svex)
+        (vl-plusminus-partselect->svex
+         lsp-sel-expr lsp-sel-type
+         (vl-partselect->plusminus x.part)
+         base-svex width-svex))
+       ((when err) (fail err)))
+    (mv nil psel-svex x.type (sv::make-svex-var :name *svex-longest-static-prefix-var*)))
+  ///
+
+  (local (defthm svexlist-vars-of-cdr
+           #!sv
+           (implies (not (member v (svexlist-vars x)))
+                    (not (member v (svexlist-vars (cdr x)))))))
+
+  (local (defthm svex-vars-of-car
+           #!sv
+           (implies (not (member v (svexlist-vars x)))
+                    (not (member v (svex-vars (car x)))))))
+  
+  (local (defthm svexlist-vars-of-take
+           #!sv
+           (implies (not (member v (svexlist-vars x)))
+                    (not (member v (svexlist-vars (take n x)))))
+           :hints(("Goal" :in-theory (enable acl2::take-redefinition)))))
+
+  (local (defthm svexlist-vars-of-nthcdr
+           #!sv
+           (implies (not (member v (svexlist-vars x)))
+                    (not (member v (svexlist-vars (nthcdr n x)))))
+           :hints(("Goal" :in-theory (enable nthcdr)))))
+
+  (local (defthm member-of-list-a
+           (iff (member v (list a))
+                (equal v a))
+           :hints(("Goal" :in-theory (enable member)))))
+
+  (local (defthm svexlist-vars-of-list-fix
+           #!sv (equal (svexlist-vars (list-fix x))
+                       (svexlist-vars x))))
+
+  (defret vars-of-vl-operandinfo-to-svex-longest-static-prefix-full
+    (implies (and (not (equal v *svex-longest-static-prefix-var*))
+                  (not (member v (sv::svexlist-vars indices))))
+             (not (member v (sv::svex-vars full-expr)))))
+
+  (defret vars-of-vl-operandinfo-to-svex-longest-static-prefix-lsp
+    (implies (sv::svarlist-addr-p (sv::svexlist-vars indices))
+             (sv::svarlist-addr-p (sv::svex-vars lsp-expr)))))
+
+
+
+
 (define vl-operandinfo-to-svex ((x vl-operandinfo-p)
                                 (indices sv::svexlist-p)
                                 (ss vl-scopestack-p)
@@ -1193,9 +1489,7 @@ the way.</li>
                  :do-not-induct t))
   :returns (mv (err (iff (vl-msg-p err) err))
                (svex sv::svex-p))
-  (b* (((mv err x indices) (vl-operandinfo-to-svex-preproc x indices))
-       ((when err) (mv err (svex-x)))
-       ((vl-operandinfo x))
+  (b* (((vl-operandinfo x))
 
        ((mv err size) (vl-datatype-size x.type))
        ((when err) (mv err (svex-x)))
@@ -1203,86 +1497,17 @@ the way.</li>
         (mv (vmsg "Unsizable datatype ~a0" x.type) (svex-x)))
        ((mv & signedness) (vl-datatype-signedness x.type))
 
-
-       ((unless (vl-hidtrace-resolved-p x.hidtrace))
-        (mv (vmsg "Unresolved hid indices") (svex-x)))
-       ((vl-hidstep decl) (car x.hidtrace))
-       ((mv err base-svex unres-seltrace)
-        (if (eq (tag decl.item) :vl-vardecl)
-            (b* (;; ((mv unres-sels res-sels)
-                 ;;  (vl-seltrace-split x.seltrace
-                 ;;                     (vl-seltrace-unres-count x.seltrace)))
-                 ;; If we have a bunch of resolved selects, we can encode them
-                 ;; as either an explicit select (right shift + concat) or as a
-                 ;; name, where eventually this will be resolved to a shift by
-                 ;; alias resolution.  Let's go with the former for now since
-                 ;; the latter won't work for elaboration, where we don't yet
-                 ;; have a complete module hierarchy.
-                 ((mv err base-var)
-                  (vl-seltrace-to-svex-var nil x ss)))
-              (mv err base-var x.seltrace))
-          (b* ((look (cdr (hons-get x.prefixname (vl-svexalist-fix params))))
-               ((unless look)
-                ;; (cw "var: ~x0 look: ~x1 alist: ~x2~%" var look params);; (break$)
-                (mv (vmsg "Parameter definition not found") nil nil))
-               ((unless (sv::svex-addr-p look))
-                (mv (vmsg "Parameter expression malformed") nil nil)))
-            (mv nil look x.seltrace))))
+       ((mv err lsp-expr ?lsp-type dyn-expr)
+        (vl-operandinfo-to-svex-longest-static-prefix
+         x indices ss params))
 
        ((when err) (mv err (svex-x)))
 
-       ((when (vl-partselect-case x.part :none))
-        (b* (((mv err res-base)
-              ;; Bitselect was taken care of by preproc.  Just remains to convert the seltrace.
-              (vl-seltrace-to-svex-vector unres-seltrace indices
-                                          x base-svex ss))
-             ((when err) (mv err (svex-x)))
-             ;; Res-base is padded with Xes so that out-of-bounds selects work
-             ;; right, so now we need to sign/zero-extend.
-             (res-ext (if signedness
-                          (svex-extend signedness size res-base)
-                        res-base)))
-          (mv nil res-ext)))
-       
-       ((vl-plusminus->partselect x.part))
-       ((mv err baseexpr)
-        (vl-seltrace-to-svex-vector unres-seltrace (cddr indices) x base-svex ss))
-       ((when err) (mv err (svex-x)))
-       (arrtype (vl-seltrace-type x.seltrace x))
-       ((mv err ?caveat ?basetype dim) (vl-datatype-remove-dim arrtype))
-       ((when err) (mv err (svex-x)))
-       ((when (vl-packeddimension-case dim :unsized))
-        (mv (vmsg "Unsized dimension") (svex-x)))
-       ((vl-range dimrange) (vl-packeddimension->range dim))
-       ((unless (vl-range-resolved-p dimrange))
-        (mv (vmsg "Unresolved dimension") (svex-x)))
-       (dim-msb (vl-resolved->val dimrange.msb))
-       (dim-lsb (vl-resolved->val dimrange.lsb))
-       (downp (<= dim-lsb dim-msb))
-       ((list base-svex width-svex) indices)
-       (sel-lsb (if downp
-                    (if x.part.minusp
-                        ;; base is the msb, compute the lsb
-                        (sv::svcall + base-svex
-                                    (sv::svcall + (svex-int 1)
-                                                (sv::svcall sv::u- width-svex)))
-                      ;; base is the lsb
-                      base-svex)
-                  (if x.part.minusp
-                      base-svex
-                    ;; base is the msb, compute the lsb
-                    (sv::svcall + base-svex
-                                (sv::svcall + (svex-int -1) width-svex)))))
-       ((mv err shift-amt)
-        (vl-datatype-index-shift-amount arrtype sel-lsb))
-       ((when err) (mv err (svex-x)))
-       (res-base (sv::svex-lsb-shift shift-amt baseexpr))
-       (res-ext (if signedness
-                    (svex-extend signedness size res-base)
-                  (sv::svcall sv::concat (svex-int size) res-base (svex-x)))))
-
-    (mv nil
-        (sv::svex-reduce-consts res-ext)))
+       (res-base (sv::svex-replace-var dyn-expr *svex-longest-static-prefix-var* lsp-expr)))
+    (mv nil (sv::svex-reduce-consts
+             (if signedness
+                 (svex-extend signedness size res-base)
+               res-base))))
   ///
 
   (local (defthm member-svex-vars-of-car
@@ -1303,9 +1528,25 @@ the way.</li>
 
   (local (in-theory (disable len consp-by-len member-equal)))
 
+  (local (defthm svex-alist-vars-of-single
+           #!sv (equal (svex-alist-vars (list (cons a b)))
+                       (svex-vars b))
+           :hints(("Goal" :in-theory (enable sv::svex-alist-vars)))))
+
+  (local (defthm svex-alist-keys-of-single
+           #!sv (equal (svex-alist-keys (list (cons a b)))
+                       (list (svar-fix a)))
+           :hints(("Goal" :in-theory (enable sv::svex-alist-keys)))))
+
+  (local (defthm member-single
+           (iff (member a (list b))
+                (equal a b))
+           :hints(("Goal" :in-theory (enable member)))))
+
   (defret vars-of-vl-operandinfo-to-svex
     (implies (sv::svarlist-addr-p (sv::svexlist-vars indices))
-             (sv::svarlist-addr-p (sv::svex-vars svex)))))
+             (sv::svarlist-addr-p (sv::svex-vars svex)))
+    :hints(("Goal" :in-theory (enable sv::vars-of-svex-compose-strong)))))
 
 
 

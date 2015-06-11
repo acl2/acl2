@@ -1534,10 +1534,10 @@
          (bitops::logbitp-reasoning :prune-examples nil)))
            
 
-;; (def-svex-rewrite zerox-to-concat
-;;   :lhs (zerox w x)
-;;   :rhs (concat w x 0)
-;;   :hints(("Goal" :in-theory (enable svex-apply 4vec-zero-ext 4vec-concat))))
+(def-svex-rewrite zerox-to-concat
+  :lhs (zerox w x)
+  :rhs (concat w x 0)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-zero-ext 4vec-concat))))
 
 ;; should be subsumed by concat-under-mask-2
 (def-svex-rewrite zerox-of-concat-greater
