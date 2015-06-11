@@ -432,9 +432,9 @@ because... (BOZO)</p>
                          :args (list lhs err))
                   nil nil))
 
-             ;; BOZO This could be expensive!
              (final-rhs (sv::svex-replace-var dyn-rhs *svex-longest-static-prefix-var*
                                               longest-static-prefix-svex))
+             (- (clear-memoize-table 'sv::svex-replace-var))
 
              ((mv err lsp-size) (vl-datatype-size lsp-type))
              ((unless (and (not err) lsp-size))

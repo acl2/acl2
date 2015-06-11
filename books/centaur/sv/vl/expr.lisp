@@ -1504,6 +1504,7 @@ the way.</li>
        ((when err) (mv err (svex-x)))
 
        (res-base (sv::svex-replace-var dyn-expr *svex-longest-static-prefix-var* lsp-expr)))
+    (clear-memoize-table 'sv::svex-replace-var)
     (mv nil (sv::svex-reduce-consts
              (if signedness
                  (svex-extend signedness size res-base)
