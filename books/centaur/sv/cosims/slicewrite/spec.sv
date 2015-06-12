@@ -31,45 +31,45 @@
 module spec (input logic [127:0] in,
 	     output logic [127:0] out);
 
-  logic [3:0] a, b, c, d;
+  typedef struct {
+    logic [3:0] a [1:0][3:0];
+    logic [3:0] b [1:0][3:0];
+  } mems;
 
-   assign {a, b, c, d} = in;
+   mems m;
 
-  logic [18:3] e;
+  logic [1:0] indices [3:0];
+  logic [3:0] vals [3:0];
 
-   always_comb begin
-     e = 16'b0;
-     e[a] = 1'b1;
-   end
+   assign { vals[3], vals[2], vals[1], vals[0], indices[3], indices[2], indices[1], indices[0] } = in;
 
-  logic [3:0] f [15:0];
 
-     int i, j, k;
-
-   always_comb begin
-     for (i=0; i<16; i++) begin
-       f[i] = 0;
-     end
-     f[b] = c;
-   end
-
-  logic [3:0] g [15:0], h [15:0];
+  int i [3:0];
 
    always_comb begin
-     for (j=0; j<16; j++) begin
-       g[j] = 0;
-       h[j] = 0;
-     end
-     {g[d], h[d]} = {a, b};
+     { m.a[0][3], m.a[0][2], m.a[0][1], m.a[0][0] } = '0;
+     m.a[0][indices[0]] = vals[0];
    end
 
    always_comb begin
-     for (k=0; k<16; k++) begin
-       out[4*k +: 3] = (k & 1) ? f[k] : (k & 2) ? g[k] : h[k] ;
-     end
-     out[79:64] = e;
+     { m.a[1][3], m.a[1][2], m.a[1][1], m.a[1][0] } = '0;
+     m.a[1][indices[1]] = vals[1];
    end
 
-   // assign out = e;
-endmodule // spec
+   always_comb begin
+     { m.b[0][3], m.b[0][2], m.b[0][1], m.b[0][0] } = '0;
+     m.b[0][indices[2]] = vals[2];
+   end
 
+   always_comb begin
+     { m.b[1][3], m.b[1][2], m.b[1][1], m.b[1][0] } = '0;
+     m.b[1][indices[3]] = vals[3];
+   end
+
+   assign out = { m.b[1][3], m.b[1][2], m.b[1][1], m.b[1][0],
+                  m.b[0][3], m.b[0][2], m.b[0][1], m.b[0][0],
+                  m.a[1][3], m.a[1][2], m.a[1][1], m.a[1][0],
+                  m.a[0][3], m.a[0][2], m.a[0][1], m.a[0][0] };
+
+
+endmodule   
