@@ -189,7 +189,7 @@
       natarr get-nat set-nat resize-nats
       u32arr u32s-length get-u32 set-u32 resize-u32s set-u32n
 
-      aig-eval aig-and aig-or aig-not aig-ite aig-xor aig-iff aig-eval-list
+      aig-eval aig-and aig-or aig-not aig-ite aig-xor aig-iff aig-nand aig-nor aig-eval-list
 
       defsvtv svtv-run svtv-debug svtv-easy-bindings svtv->ins svtv->vars svtv->outs svtv-p
       patbind-svtv

@@ -729,8 +729,8 @@ for computing:</p>
   (b* (((mv af ar aend) (first/rest/end a))
        ((mv bf br bend) (first/rest/end b)))
     (if (and aend bend)
-        (bfr-sterm (bfr-not (bfr-xor af bf)))
-      (b* ((c (bfr-not (bfr-xor af bf)))
+        (bfr-sterm (bfr-iff af bf))
+      (b* ((c (bfr-iff af bf))
            (r (bfr-logeqv-ss ar br)))
         (bfr-scons c r)))))
 

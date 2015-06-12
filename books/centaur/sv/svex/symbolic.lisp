@@ -388,6 +388,9 @@ aig-list->s).</p>")
                  :exec (let ((a4vec-ite-test ,test))
                          ;; BOZO this duplicates ,else, which could lead to
                          ;; code blowup.  We can probably avoid that...
+
+                         ;; BOZO should also check-vars-not-free here.  See 
+                         ;; aig-ite and similar
                          (if a4vec-ite-test
                              (let ((a4vec-ite-then ,then))
                                (if (eq a4vec-ite-test t)
@@ -514,7 +517,7 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
   :returns (res a4vec-p)
   (b* (((a4vec x) x))
     (a4vec (aig-lognot-s x.lower)
-           (aig-lognot-s (aig-logior-ss x.upper x.lower))))
+           (aig-lognor-ss x.upper x.lower)))
   ///
   (defthm a4vec-offset-correct
     (equal (a4vec-eval (a4vec-offset x) env)
@@ -552,6 +555,7 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
 (define a3vec-bitxor ((x a4vec-p) (y a4vec-p))
   :short "Symbolic version of @(see 3vec-bitxor)."
   :returns (res a4vec-p)
+  ;; BOZO many opportunities to fuse these operations
   (b* (((a4vec x) x)
        ((a4vec y) y)
        (xmask (aig-logior-ss
@@ -567,9 +571,8 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                         (a4vec-eval y env)))
     :hints(("Goal" :in-theory (enable 3vec-bitxor)))))
 
-
-
 (define a4vec-res ((a a4vec-p) (b a4vec-p))
+  :short "Symbolic version of @(see 4vec-res)."
   :returns (res a4vec-p)
   (b* (((a4vec a) a)
        ((a4vec b) b))
@@ -602,9 +605,9 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
   (b* (((a4vec a) a)
        ((a4vec b) b))
     (a4vec (aig-logior-ss a.upper b.upper)
-           (aig-logior-ss (aig-logand-ss a.upper a.lower)  ;; a not 0
-                          (aig-logior-ss (aig-logand-ss b.upper b.lower)  ;; b not 0
-                                         (aig-logand-ss a.lower b.lower)))))
+           (aig-logior-sss (aig-logand-ss a.upper a.lower)  ;; a not 0
+                           (aig-logand-ss b.upper b.lower)  ;; b not 0
+                           (aig-logand-ss a.lower b.lower))))
   ///
   (defthm a4vec-resor-correct
     (equal (a4vec-eval (a4vec-resor x y) env)
@@ -679,8 +682,8 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
        ((a4vec x) x))
   (a4vec-ite
    (aig-and (a2vec-p n)
-            (aig-and (aig-not (aig-sign-s n.upper))
-                     (aig-not (aig-=-ss n.upper (aig-sterm nil)))))
+            (aig-nor (aig-sign-s n.upper)
+                     (aig-=-ss n.upper (aig-sterm nil))))
    (b* ((smask (aig-ash-ss 1 (aig-sterm t) n.upper))
         (bmask (aig-lognot-s smask))
         (signpos (aig-+-ss nil (aig-sterm t) n.upper))
@@ -885,19 +888,19 @@ results in at most n+1 bits.</p>"
 
 ;; BOZO this is only used in a4vec-concat when the mask is 0.  We may as well
 ;; use X then, right?
-(defsection a4vec-0
-  :short "@(call a4vec-0) returns an @(see a4vec) that evaluates to @(see
-4vec-0) every environment."
-  :long "@(def a4vec-0)"
+;; (defsection a4vec-0
+;;   :short "@(call a4vec-0) returns an @(see a4vec) that evaluates to @(see
+;; 4vec-0) every environment."
+;;   :long "@(def a4vec-0)"
 
-  (defmacro a4vec-0 ()
-    (list 'quote (a4vec (aig-sterm nil)
-                        (aig-sterm nil))))
+;;   (defmacro a4vec-0 ()
+;;     (list 'quote (a4vec (aig-sterm nil)
+;;                         (aig-sterm nil))))
 
-  ;; (defthm a4vec-0-correct
-  ;;   (equal (a4vec-eval (a4vec-0) env)
-  ;;          (4vec-0)))
-  )
+;;   ;; (defthm a4vec-0-correct
+;;   ;;   (equal (a4vec-eval (a4vec-0) env)
+;;   ;;          (4vec-0)))
+;;   )
 
 (define a4vec-concat ((w a4vec-p) (x a4vec-p) (y a4vec-p) (mask 4vmask-p))
   :returns (res a4vec-p)
@@ -908,7 +911,12 @@ results in at most n+1 bits.</p>"
    (aig-and (a2vec-p w)
             (aig-not (aig-sign-s w.upper)))
    (b* ((mask (4vmask-fix mask))
-        ((when (eql mask 0)) (a4vec-0))
+        ((when (eql mask 0))
+         ;; [Jared] this was previously using 4vec-0.  I think it's probably
+         ;; better to use 4vec-x, in general, since for instance many
+         ;; arithmetic operations check a2vec-p and then do something really
+         ;; simple in the "nope, not a 2vec, may as well just return all xes."
+         (a4vec-x))
         (shift (if (< 0 mask)
                    ;; Collapse the upper bits of the shift
                    (aig-logcollapse-ns (integer-length (integer-length mask))
@@ -917,10 +925,8 @@ results in at most n+1 bits.</p>"
         (xmask (aig-lognot-s (aig-ash-ss 1 (aig-sterm t) shift)))
         (yshu (aig-ash-ss 1 y.upper shift))
         (yshl (aig-ash-ss 1 y.lower shift)))
-     (a4vec (aig-logior-ss (aig-logand-ss xmask x.upper)
-                           yshu)
-            (aig-logior-ss (aig-logand-ss xmask x.lower)
-                           yshl)))
+     (a4vec (aig-logior-ss (aig-logand-ss xmask x.upper) yshu)
+            (aig-logior-ss (aig-logand-ss xmask x.lower) yshl)))
    (a4vec-x)))
   ///
   (local (defthm logapp-formulation
@@ -1183,8 +1189,8 @@ results in at most n+1 bits.</p>"
 (define a4vec-quotient ((x a4vec-p) (y a4vec-p))
   :returns (res a4vec-p)
   (a4vec-ite
-   (aig-and (aig-and (a2vec-p x)
-                     (a2vec-p y))
+   (aig-and (a2vec-p x)
+            (a2vec-p y)
             (aig-not (aig-=-ss (a4vec->upper y) (aig-sterm nil))))
    (b* (((a4vec x) x)
         ((a4vec y) y)
@@ -1201,8 +1207,8 @@ results in at most n+1 bits.</p>"
 (define a4vec-remainder ((x a4vec-p) (y a4vec-p))
   :returns (res a4vec-p)
   (a4vec-ite
-   (aig-and (aig-and (a2vec-p x)
-                     (a2vec-p y))
+   (aig-and (a2vec-p x)
+            (a2vec-p y)
             (aig-not (aig-=-ss (a4vec->upper y) (aig-sterm nil))))
    (b* (((a4vec x) x)
         ((a4vec y) y)
@@ -1235,6 +1241,7 @@ results in at most n+1 bits.</p>"
 
 (define a3vec-== ((x a4vec-p) (y a4vec-p))
   :returns (res a4vec-p)
+  ;; Could probably do this in one pass and lazily
   (a3vec-reduction-and (a3vec-bitnot (a3vec-bitxor x y)))
   ///
   (defthm a3vec-==-correct
@@ -1247,6 +1254,7 @@ results in at most n+1 bits.</p>"
   :returns (res a4vec-p)
   (b* (((a4vec x))
        ((a4vec y))
+       ;; Building this lazily could be useful
        (val (aig-sterm (aig-and (aig-=-ss x.upper y.upper)
                                 (aig-=-ss x.lower y.lower)))))
     (a4vec val val))
@@ -1804,11 +1812,11 @@ results in at most n+1 bits.</p>"
        ((a4vec b) b)
        ((a4vec x) x))
     (a4vec-ite
-     (aig-and* (a2vec-p w)
-               (aig-not (aig-sign-s w.upper))
-               (a2vec-p b)
-               (aig-not (aig-sign-s b.upper))
-               (aig-not (aig-=-ss b.upper nil)))
+     (aig-and (a2vec-p w)
+              (aig-not (aig-sign-s w.upper))
+              (a2vec-p b)
+              (aig-not (aig-sign-s b.upper))
+              (aig-not (aig-=-ss b.upper nil)))
      (a4vec (aig-rev-blocks-sss 0 0 w.upper b.upper x.upper)
             (aig-rev-blocks-sss 0 0 w.upper b.upper x.lower))
      (a4vec-x)))
@@ -1824,8 +1832,7 @@ results in at most n+1 bits.</p>"
   :returns (res a4vec-p)
   (b* ((eq (a3vec-bitnot (a3vec-bitxor (a3vec-fix a) (a3vec-fix b))))
        ((a4vec a)) ((a4vec b))
-       (zmask (aig-logand-ss
-               (aig-lognot-s b.upper) b.lower)))
+       (zmask (aig-logand-ss (aig-lognot-s b.upper) b.lower)))
     (a3vec-reduction-and (a3vec-bitor eq (a4vec zmask zmask))))
   ///
   (defthm a4vec-wildeq-correct
@@ -1840,10 +1847,8 @@ results in at most n+1 bits.</p>"
   (b* ((eq (a3vec-bitnot (a3vec-bitxor (a3vec-fix a) (a3vec-fix b))))
        ((a4vec a)) ((a4vec b))
        (zmask (aig-logior-ss
-               (aig-logand-ss
-                (aig-lognot-s b.upper) b.lower)
-               (aig-logand-ss
-                (aig-lognot-s a.upper) a.lower))))
+               (aig-logand-ss (aig-lognot-s b.upper) b.lower)
+               (aig-logand-ss (aig-lognot-s a.upper) a.lower))))
     (a3vec-reduction-and (a3vec-bitor eq (a4vec zmask zmask))))
   ///
   (defthm a4vec-symwildeq-correct
@@ -2077,6 +2082,9 @@ results in at most n+1 bits.</p>"
   (b* ((fn (fnsym-fix fn))
        (args (a4veclist-fix args))
        (res (svex-apply-aig-cases fn args terms mask)))
+    ;; This cleverly masks out any bits of the result that we don't care about,
+    ;; replacing them with Xes.  This might be a great way to get a lot more
+    ;; constant propagation...
     (a4vec-mask mask res))
   ///
 

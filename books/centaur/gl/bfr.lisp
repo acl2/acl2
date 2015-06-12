@@ -467,6 +467,62 @@ possible environment."
                  `(:expand (,(car (last clause))))))))
 
 
+(define bfr-nor (x y)
+  :short "@(call bfr-nor) constructs the NOR of these BFRs."
+  (mbe :logic
+       (bfr-case :bdd (acl2::q-nor x y)
+                 :aig (acl2::aig-nor x y))
+       :exec
+       (if (and (booleanp x) (booleanp y))
+           (not (or x y))
+         (bfr-case :bdd (acl2::q-nor x y)
+                   :aig (acl2::aig-nor x y))))
+  ///
+  (defthm bfr-eval-bfr-nor
+    (equal (bfr-eval (bfr-nor x y) env)
+           (not (or (bfr-eval x env)
+                    (bfr-eval y env))))
+    :hints (("goal" :in-theory (e/d (bfr-eval) ((force))))))
+
+  (local (in-theory (disable bfr-nor)))
+
+  (defcong bfr-equiv bfr-equiv (bfr-nor x y) 1
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+
+  (defcong bfr-equiv bfr-equiv (bfr-nor x y) 2
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause))))))))
+
+
+(define bfr-nand (x y)
+  :short "@(call bfr-nand) constructs the NAND of these BFRs."
+  (mbe :logic
+       (bfr-case :bdd (acl2::q-nand x y)
+                 :aig (acl2::aig-nand x y))
+       :exec
+       (if (and (booleanp x) (booleanp y))
+           (not (and x y))
+         (bfr-case :bdd (acl2::q-nand x y)
+                   :aig (acl2::aig-nand x y))))
+  ///
+  (defthm bfr-eval-bfr-nand
+    (equal (bfr-eval (bfr-nand x y) env)
+           (not (and (bfr-eval x env)
+                     (bfr-eval y env))))
+    :hints (("goal" :in-theory (e/d (bfr-eval) ((force))))))
+
+  (local (in-theory (disable bfr-nand)))
+
+  (defcong bfr-equiv bfr-equiv (bfr-nand x y) 1
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+
+  (defcong bfr-equiv bfr-equiv (bfr-nand x y) 2
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause))))))))
+
+
 (define bfr-to-param-space (p x)
   :short "Perhaps strengthen a BFR under some hypothesis."
 
@@ -894,6 +950,28 @@ anything if we're working with AIGs."
                                        acl2::aig-or)))
                  ((member-equal '(bfr-mode) clause)
                   '(:expand ((pbfr-semantic-depends-on k p (bfr-iff x y))))))))
+
+  (defthm no-new-deps-of-pbfr-nor
+    (implies (and (not (pbfr-depends-on k p x))
+                  (not (pbfr-depends-on k p y)))
+             (not (pbfr-depends-on k p (bfr-nor x y))))
+    :hints(("Goal" :in-theory (enable pbfr-depends-on
+                                      bfr-depends-on))
+           (cond ((member-equal '(not (bfr-mode)) clause)
+                  '(:in-theory (enable bfr-from-param-space bfr-nor acl2::aig-or)))
+                 ((member-equal '(bfr-mode) clause)
+                  '(:expand ((pbfr-semantic-depends-on k p (bfr-nor x y))))))))
+
+  (defthm no-new-deps-of-pbfr-nand
+    (implies (and (not (pbfr-depends-on k p x))
+                  (not (pbfr-depends-on k p y)))
+             (not (pbfr-depends-on k p (bfr-nand x y))))
+    :hints(("Goal" :in-theory (enable pbfr-depends-on
+                                      bfr-depends-on))
+           (cond ((member-equal '(not (bfr-mode)) clause)
+                  '(:in-theory (enable bfr-from-param-space bfr-nand acl2::aig-or)))
+                 ((member-equal '(bfr-mode) clause)
+                  '(:expand ((pbfr-semantic-depends-on k p (bfr-nand x y))))))))
 
   (defthm no-new-deps-of-pbfr-ite
     (implies (and (not (pbfr-depends-on k p x))
