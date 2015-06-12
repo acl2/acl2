@@ -342,33 +342,710 @@ take care to fold constants and avoid creating double negatives.</p>"
     (equal (aig-eval (aig-not x) env)
            (not (aig-eval x env)))))
 
-(define aig-and (x y)
-  :parents (aig-constructors)
-  :short "@(call aig-and) constructs an AIG representing @('(and x y)')."
-  :long "<p>This could have been implemented as @('(hons x y)'), but we take
-care to fold constants and reduce @('x & x') and @('x & ~x').</p>"
+
+(define and-count (x)
+  :parents (aig)
+  :short "Counts how many ANDs are in an AIG."
+  :returns (count natp :rule-classes :type-prescription)
+  (cond ((atom x)
+         0)
+        ((eq (cdr x) nil)
+         (and-count (car x)))
+        (t
+         (+ 1
+            (and-count (car x))
+            (and-count (cdr x)))))
+  ///
+  (defthm and-count-when-atom
+    (implies (atom x)
+             (equal (and-count x)
+                    0)))
+
+  (defthm and-count-of-aig-not
+    (equal (and-count (aig-not x))
+           (and-count x))
+    :hints(("Goal" :in-theory (enable aig-not)))))
+
+
+
+; -----------------------------------------------------------------------------
+;
+;                               AIG AND
+;
+; -----------------------------------------------------------------------------
+
+(local (xdoc::set-default-parents aig-and))
+
+(define aig-negation-p (x y)
+  :short "@(call aig-negation-p) determines if the AIGs @('x') and @('y')
+are (syntactically) negations of one another."
+  :inline t
+  (or (and (consp y)
+           (eq (cdr y) nil)
+           (hons-equal (car y) x))
+      (and (consp x)
+           (eq (cdr x) nil)
+           (hons-equal (car x) y)))
+  ///
+  (defthm aig-negation-p-symmetric
+    (equal (aig-negation-p x y)
+           (aig-negation-p y x)))
+
+  (defthmd aig-negation-p-correct-1
+    (implies (and (aig-negation-p x y)
+                  (aig-eval x env))
+             (equal (aig-eval y env)
+                    nil)))
+
+  (defthmd aig-negation-p-correct-2
+    (implies (and (aig-negation-p x y)
+                  (not (aig-eval x env)))
+             (equal (aig-eval y env)
+                    t))))
+
+(local (in-theory (enable aig-negation-p-correct-1
+                          aig-negation-p-correct-2)))
+
+(define aig-and-dumb (x y)
+  :short "@(call aig-and-dumb) is a simpler alternative to @(see aig-and)."
+  :long "<p>This does far fewer reductions than @(see aig-and).  We fold
+constants and collapse @('x & x') and @('x & ~x'), but that's it.</p>"
   :returns aig
   (cond ((or (eq x nil) (eq y nil)) nil)
         ((eq x t) y)
         ((eq y t) x)
         ((hons-equal x y) x)
-        ((and (consp y) (eq (cdr y) nil)
-              (hons-equal (car y) x))
-         nil)
-        ((and (consp x) (eq (cdr x) nil)
-              (hons-equal (car x) y))
-         nil)
+        ((aig-negation-p x y) nil)
         (t (hons x y)))
   ///
-  (defthm aig-eval-and
-    (equal (aig-eval (aig-and x y) env)
+  (defthm aig-eval-of-aig-and-dumb
+    (equal (aig-eval (aig-and-dumb x y) env)
            (and (aig-eval x env)
                 (aig-eval y env))))
+
+  (defthm aig-and-dumb-of-constants
+    (and (equal (aig-and-dumb nil x) nil)
+         (equal (aig-and-dumb x nil) nil)
+         (equal (aig-and-dumb x t) x)
+         (equal (aig-and-dumb t x) x))))
+
+
+(define aig-and-pass1 (x y)
+  :returns (mv hit ans)
+  :short "Level 1 simplifications."
+  :long "<p>See also @(see aig-and-dumb), which tries to apply these same
+reductions, but otherwise just gives up, and doesn't report whether it has
+succeded or not.</p>"
+  :inline t
+  (cond ((eq x nil)           (mv t nil))
+        ((eq y nil)           (mv t nil))
+        ((eq x t)             (mv t y))
+        ((eq y t)             (mv t x))
+        ((hons-equal x y)     (mv t x))
+        ((aig-negation-p x y) (mv t nil))
+        (t                    (mv nil nil)))
+  ///
+  (defret aig-and-pass1-correct
+    (implies hit
+             (equal (aig-eval ans env)
+                    (and (aig-eval x env)
+                         (aig-eval y env))))
+    :rule-classes nil))
+
+
+(define aig-and-pass2a (x y)
+  :returns (mv status arg1 arg2)
+  :short "Level 2 Contradiction Rule 1 and Idempotence Rule, Single Direction."
+  (b* (((unless (and (consp x)
+                     (not (eq (cdr x) nil))))
+        (mv :fail x y))
+       (a (car x))
+       (b (cdr x))
+       ((when (or (aig-negation-p a y)
+                  (aig-negation-p b y)))
+        ;; Level 2, Contradiction Rule 1
+        (mv :subterm nil nil))
+       ((when (or (hons-equal a y)
+                  (hons-equal b y)))
+        ;; Level 2, Idempotence Rule
+        (mv :subterm x x)))
+    (mv :fail x y))
+  ///
+  (defret aig-and-pass2a-correct
+    (equal (and (aig-eval arg1 env)
+                (aig-eval arg2 env))
+           (and (aig-eval x env)
+                (aig-eval y env)))
+    :rule-classes nil)
+
+  (defret aig-and-pass2a-never-reduced
+    (not (equal status :reduced)))
+
+  (defret aig-and-pass2a-subterm-convention
+    (implies (equal status :subterm)
+             (equal arg2 arg1)))
+
+  (defret aig-and-pass2a-normalize-status
+    (implies (and (not (equal status :subterm))
+                  (not (equal status :reduced)))
+             (and (equal status :fail)
+                  (equal arg1 x)
+                  (equal arg2 y)))))
+
+
+(define aig-and-pass2 (x y)
+  :returns (mv status arg1 arg2)
+  :short "Level 2 Contradiction Rule 1 and Idempotence Rule, Both Directions."
+  :inline t
+  ;; Subtle argument order to get fail theorem to work out nicely
+  (b* (((mv status a b) (aig-and-pass2a y x))
+       ((unless (eq status :fail))
+        (mv status a b)))
+    (aig-and-pass2a x y))
+  ///
+  (defret aig-and-pass2-correct
+    (equal (and (aig-eval arg1 env)
+                (aig-eval arg2 env))
+           (and (aig-eval x env)
+                (aig-eval y env)))
+    :rule-classes nil
+    :hints(("Goal" :use ((:instance aig-and-pass2a-correct)
+                         (:instance aig-and-pass2a-correct (x y) (y x))))))
+
+  (defret aig-and-pass2-never-reduced
+    (not (equal status :reduced)))
+
+  (defret aig-and-pass2-subterm-convention
+    (implies (equal status :subterm)
+             (equal arg2 arg1)))
+
+  (defret aig-and-pass2-normalize-status
+    (implies (and (not (equal status :subterm))
+                  (not (equal status :reduced)))
+             (and (equal status :fail)
+                  (equal arg1 x)
+                  (equal arg2 y)))))
+
+
+(define aig-and-pass3 (x y)
+  :returns (mv status arg1 arg2)
+  :short "Level 2 Contradiction Rule 2 and all Level 4 Rules."
+  :inline t
+  (b* (((unless (and (consp x)
+                     (not (eq (cdr x) nil))))
+        (mv :fail x y))
+       ((unless (and (consp y)
+                     (not (eq (cdr y) nil))))
+        (mv :fail x y))
+       (a (car x))
+       (b (cdr x))
+       (c (car y))
+       (d (cdr y))
+       ((when (or (aig-negation-p a c)
+                  (aig-negation-p a d)
+                  (aig-negation-p b c)
+                  (aig-negation-p b d)))
+        ;; Level 2, Contradiction Rule 2
+        (mv :subterm nil nil))
+
+       ;; Level 4 -- All Rules.  In all of the following we have some choice as
+       ;; to which form we might use.  It is tempting to try to put in some kind
+       ;; of a heuristic here to make a better choice.  But it is difficult to
+       ;; imagine how something like that might work for Hons AIGs.
+       ;;
+       ;; Consider the A=C case, but all of the other cases are similar.  The
+       ;; choice is really: do we want to prefer B & (A & D) or do we want to
+       ;; choose (A & B) & D.  The better form to use is really governed by the
+       ;; rest of the circuit, i.e., which form would give us better structure
+       ;; sharing.  But with Hons AIGs we don't really have any kind of
+       ;; reference counts, so it's not clear how to make a good decision.
+       ;;
+       ;; As a dumb attempt to try to make our normalization more consistent,
+       ;; we will arbitrarily always choose the form that preserves X.
+       ((when (hons-equal a c))
+        ;; Can choose Idempotence Rule 1 or 4
+        ;; (A & B) & (A & D) -- could be B & (A & D) or (A & B) & D
+        ;;                               B & Y       or X & D
+        (mv :reduced x d))
+
+       ((when (hons-equal b c))
+        ;; (A & B) & (B & D) -- could be A & (B & D) or (A & B) & D
+        ;;                               A & Y       or X & D
+        (mv :reduced x d))
+
+       ((when (hons-equal b d))
+        ;; (A & B) & (C & B) -- could be A & (C & B) or (A & B) & C
+        ;;                               A & Y       or X & C
+        (mv :reduced x c))
+
+       ((when (hons-equal a d))
+        ;; (A & B) & (C & A) -- could be B & (C & A) or (A & B) & C
+        ;;                               B & Y       or X & C
+        (mv :reduced x c)))
+    (mv :fail x y))
+  ///
+  (defret aig-and-pass3-correct
+    (equal (and (aig-eval arg1 env)
+                (aig-eval arg2 env))
+           (and (aig-eval x env)
+                (aig-eval y env)))
+    :rule-classes nil)
+
+  (defret aig-and-pass3-reduces-count
+    (implies (eq status :reduced)
+             (< (+ (and-count arg1)
+                   (and-count arg2))
+                (+ (and-count x)
+                   (and-count y))))
+    :rule-classes nil
+    :hints(("Goal" :in-theory (enable and-count))))
+
+  (defret aig-and-pass3-subterm-convention
+    (implies (equal status :subterm)
+             (equal arg2 arg1)))
+
+  (defret aig-and-pass3-normalize-status
+    (implies (and (not (equal status :subterm))
+                  (not (equal status :reduced)))
+             (and (equal status :fail)
+                  (equal arg1 x)
+                  (equal arg2 y)))))
+
+
+(define aig-and-pass4a (x y)
+  :returns (mv status arg1 arg2)
+  :short "Level 2, Subsumption Rules 1 and 2, Single Direction."
+  (b* (((unless (and (consp x)
+                     (eq (cdr x) nil)))
+        (mv :fail x y))
+       (~x (car x))
+       ((unless (and (consp ~x)
+                     (not (eq (cdr ~x) nil))))
+        (mv :fail x y))
+       ;; X is ~(A & B)
+       (a (car ~x))
+       (b (cdr ~x))
+       ((when (or (aig-negation-p a y)
+                  (aig-negation-p b y)))
+        ;; Subsumption Rule 1.
+        (mv :subterm y y))
+
+       ((when (and (consp y)
+                   (not (eq (cdr y) nil))))
+        ;; Y is an AND.  The only thing we can match is Subsumption Rule 2.
+        (b* ((c (car y))
+             (d (cdr y))
+             ((when (or (aig-negation-p a c)
+                        (aig-negation-p a d)
+                        (aig-negation-p b c)
+                        (aig-negation-p b d)))
+              ;; For example:  ~(A & B) & (~A & C)
+              ;;           === ~(A & B) & ~A & C
+              ;;        So this  ---------^
+              ;;        Implies ~(A & B)
+              ;;     And the whole thing is just (~A & C)
+              (mv :subterm y y)))
+          ;; No other rules match ~(A & B) & (C & D).
+          (mv :fail x y))))
+    (mv :fail x y))
+  ///
+  (defret aig-and-pass4a-correct
+    (equal (and (aig-eval arg1 env)
+                (aig-eval arg2 env))
+           (and (aig-eval x env)
+                (aig-eval y env)))
+    :rule-classes nil)
+
+  (defret aig-and-pass4a-never-reduced
+    (not (equal status :reduced)))
+
+  (defret aig-and-pass4a-subterm-convention
+    (implies (equal status :subterm)
+             (equal arg2 arg1)))
+
+  (defret aig-and-pass4a-normalize-status
+    (implies (and (not (equal status :subterm))
+                  (not (equal status :reduced)))
+             (and (equal status :fail)
+                  (equal arg1 x)
+                  (equal arg2 y)))))
+
+
+(define aig-and-pass4 (x y)
+  :short "Level 2, Subsumption Rules 1 and 2, Both Directions."
+  :returns (mv status arg1 arg2)
+  :inline t
+  ;; Subtle argument order to get fail theorem to work out nicely
+  (b* (((mv status arg1 arg2) (aig-and-pass4a y x))
+       ((unless (eq status :fail))
+        (mv status arg1 arg2)))
+    (aig-and-pass4a x y))
+  ///
+  (defret aig-and-pass4-correct
+    (equal (and (aig-eval arg1 env)
+                (aig-eval arg2 env))
+           (and (aig-eval x env)
+                (aig-eval y env)))
+    :rule-classes nil
+    :hints(("Goal" :use ((:instance aig-and-pass4a-correct)
+                         (:instance aig-and-pass4a-correct (x y) (y x))))))
+
+  (defret aig-and-pass4-never-reduced
+    (not (equal status :reduced)))
+
+  (defret aig-and-pass4-subterm-convention
+    (implies (equal status :subterm)
+             (equal arg2 arg1)))
+
+  (defret aig-and-pass4-normalize-status
+    (implies (and (not (equal status :subterm))
+                  (not (equal status :reduced)))
+             (and (equal status :fail)
+                  (equal arg1 x)
+                  (equal arg2 y)))))
+
+
+(define aig-and-pass5 (x y)
+  :short "Level 2, Resolution Rule."
+  :returns (mv status arg1 arg2)
+  :inline t
+  (b* (((unless (and (consp x)
+                     (eq (cdr x) nil)
+                     (consp (car x))
+                     (not (eq (cdar x) nil))))
+        (mv :fail x y))
+       ((unless (and (consp y)
+                     (eq (cdr y) nil)
+                     (consp (car y))
+                     (not (eq (cdar y) nil))))
+        (mv :fail x y))
+       ;; X is ~(A & B), Y is ~(C & D).
+       (a (caar x))
+       (b (cdar x))
+       (c (caar y))
+       (d (cdar y))
+       ((when (or (and (hons-equal a d) (aig-negation-p b c))
+                  (and (hons-equal a c) (aig-negation-p b d))))
+        ;; For example, in the first line:
+        ;; ~(A & B) & ~(~B & A)
+        ;; Which reduces to just ~A.
+        ;; How?  I have no idea.  But this is true:
+        ;;
+        ;; (thm (iff (and (not (and a b))
+        ;;                (not (and (not b) a)))
+        ;;           (not a)))
+        (let ((ans (aig-not a)))
+          (mv :subterm ans ans)))
+
+       ((when (or (and (hons-equal b d) (aig-negation-p a c))
+                  (and (hons-equal b c) (aig-negation-p a d))))
+        ;; As above.
+        (let ((ans (aig-not b)))
+          (mv :subterm ans ans))))
+    (mv :fail x y))
+  ///
+  (defret aig-and-pass5-correct
+    (equal (and (aig-eval arg1 env)
+                (aig-eval arg2 env))
+           (and (aig-eval x env)
+                (aig-eval y env)))
+    :rule-classes nil)
+
+  (defret aig-and-pass5-never-reduced
+    (not (equal status :reduced)))
+
+  (defret aig-and-pass5-subterm-convention
+    (implies (equal status :subterm)
+             (equal arg2 arg1)))
+
+  (defret aig-and-pass5-normalize-status
+    (implies (and (not (equal status :subterm))
+                  (not (equal status :reduced)))
+             (and (equal status :fail)
+                  (equal arg1 x)
+                  (equal arg2 y)))))
+
+
+(define aig-and-pass6a (x y)
+  :short "Level 3 Substitution Rules, Single Direction."
+  :returns (mv status arg1 arg2)
+  (b* (((unless (and (consp x)
+                     (eq (cdr x) nil)
+                     (consp (car x))
+                     (not (eq (cdar x) nil))))
+        (mv :fail x y))
+       ;; X is ~(A & B)
+       (a (caar x))
+       (b (cdar x))
+
+       ;; Substitution Rule 1.
+       ((when (hons-equal a y))
+        ;; ~(A & B) & A --> A & ~B
+        (mv :reduced a (aig-not b)))
+       ((when (hons-equal b y))
+        ;; ~(A & B) & B --> B & ~A
+        (mv :reduced b (aig-not a)))
+
+       ((unless (and (consp y)
+                     (not (eq (cdr y) nil))))
+        (mv :fail x y))
+
+       ;; X is ~(A & B), Y is (C & D).
+       (c (car y))
+       (d (cdr y))
+
+       ((when (or (hons-equal b c)
+                  (hons-equal b d)))
+        ;; Example: ~(A & B) & (C & B)
+        ;;      --> ~A & (C & B)
+        (mv :reduced (aig-not a) y))
+
+       ((when (or (hons-equal a c)
+                  (hons-equal a d)))
+        (mv :reduced (aig-not b) y)))
+    (mv :fail x y))
+  ///
+  (defret aig-and-pass6a-correct
+    (equal (and (aig-eval arg1 env)
+                (aig-eval arg2 env))
+           (and (aig-eval x env)
+                (aig-eval y env)))
+    :rule-classes nil)
+
+  (defret aig-and-pass6a-reduces-count
+    (implies (eq status :reduced)
+             (< (+ (and-count arg1)
+                   (and-count arg2))
+                (+ (and-count x)
+                   (and-count y))))
+    :rule-classes nil
+    :hints(("Goal" :in-theory (enable and-count))))
+
+  (defret aig-and-pass6a-subterm-convention
+    (implies (equal status :subterm)
+             (equal arg2 arg1)))
+
+  (defret aig-and-pass6a-arg2-on-failure
+    (implies (and (equal status :fail)
+                  y)
+             (iff arg2 t)))
+
+  (defret aig-and-pass6a-when-fail
+    (implies (and (not (equal status :subterm))
+                  (not (equal status :reduced)))
+             (and (equal status :fail)
+                  (equal arg1 x)
+                  (equal arg2 y)))))
+
+
+(define aig-and-pass6 (x y)
+  :short "Level 3 Substitution Rules, Both Directions."
+  :returns (mv status arg1 arg2)
+  :inline t
+  ;; Subtle argument order to get fail theorem to work out nicely
+  (b* (((mv status arg1 arg2) (aig-and-pass6a y x))
+       ((unless (eq status :fail))
+        (mv status arg1 arg2)))
+    (aig-and-pass6a x y))
+  ///
+  (defret aig-and-pass6-correct
+    (equal (and (aig-eval arg1 env)
+                (aig-eval arg2 env))
+           (and (aig-eval x env)
+                (aig-eval y env)))
+    :rule-classes nil
+    :hints(("Goal" :use ((:instance aig-and-pass6a-correct)
+                         (:instance aig-and-pass6a-correct (x y) (y x))))))
+
+  (defret aig-and-pass6-reduces-count
+    (implies (eq status :reduced)
+             (< (+ (and-count arg1)
+                   (and-count arg2))
+                (+ (and-count x)
+                   (and-count y))))
+    :rule-classes nil
+    :hints(("Goal" :use ((:instance aig-and-pass6a-reduces-count)
+                         (:instance aig-and-pass6a-reduces-count (x y) (y x))))))
+
+  (defret aig-and-pass6-subterm-convention
+    (implies (equal status :subterm)
+             (equal arg2 arg1)))
+
+  (defret aig-and-pass6-arg2-on-failure
+    (implies (and (equal status :fail)
+                  y)
+             (iff arg2 t)))
+
+  (defret aig-and-pass6-when-fail
+    (implies (and (not (equal status :subterm))
+                  (not (equal status :reduced)))
+             (and (equal status :fail)
+                  (equal arg1 x)
+                  (equal arg2 y)))))
+
+
+(define aig-and-main (x y)
+  :short "And-Node, Main Optimizations, Non-Recursive."
+  :returns (mv status arg1 arg2)
+  (b* (;; All Level 1 Rules
+       ((mv hit ans) (aig-and-pass1 x y))
+       ((when hit)
+        (mv :subterm ans ans))
+
+       ;; Level 2 Contradiction Rule 1 and Idempotence Rule
+       ((mv status arg1 arg2) (aig-and-pass2 x y))
+       ((unless (eq status :fail))
+        (mv status arg1 arg2))
+
+       ;; All (A & B) & (C & D) style rules.
+       ((mv status arg1 arg2) (aig-and-pass3 x y))
+       ((unless (eq status :fail))
+        (mv status arg1 arg2))
+
+       ;; Level 2 Subsumption Rules
+       ((mv status arg1 arg2) (aig-and-pass4 x y))
+       ((unless (eq status :fail))
+        (mv status arg1 arg2))
+
+       ;; Level 2 Resolution Rule
+       ((mv status arg1 arg2) (aig-and-pass5 x y))
+       ((unless (eq status :fail))
+        (mv status arg1 arg2)))
+
+    ;; Level 3 Substitution Rules
+    (aig-and-pass6 x y))
+  ///
+  (defret aig-and-main-correct
+    (equal (and (aig-eval arg1 env)
+                (aig-eval arg2 env))
+           (and (aig-eval x env)
+                (aig-eval y env)))
+    :rule-classes nil
+    :hints(("Goal"
+            :use ((:instance aig-and-pass1-correct)
+                  (:instance aig-and-pass2-correct)
+                  (:instance aig-and-pass3-correct)
+                  (:instance aig-and-pass4-correct)
+                  (:instance aig-and-pass5-correct)
+                  (:instance aig-and-pass6-correct)
+                  ))))
+
+  (defret aig-and-main-reduces-count
+    (implies (eq status :reduced)
+             (< (+ (and-count arg1)
+                   (and-count arg2))
+                (+ (and-count x)
+                   (and-count y))))
+    :rule-classes nil
+    :hints(("Goal" :use ((:instance aig-and-pass3-reduces-count)
+                         (:instance aig-and-pass6-reduces-count)
+                         ))))
+
+  (defret aig-and-main-subterm-convention
+    (implies (equal status :subterm)
+             (equal arg2 arg1)))
+
+  (defret aig-and-main-on-failure
+    (implies (and (not (equal status :reduced))
+                  (not (equal status :subterm)))
+             (and (equal status :fail)
+                  (equal arg1 x)
+                  (equal arg2 y))))
+
+  (defthm aig-and-main-of-constants
+    (and (equal (aig-and-main x nil) (mv :subterm nil nil))
+         (equal (aig-and-main nil y) (mv :subterm nil nil))
+         (equal (aig-and-main x t)   (mv :subterm x x))
+         (equal (aig-and-main t x)   (mv :subterm x x)))
+    :hints(("Goal" :in-theory (enable aig-and-main aig-and-pass1))))
+
+  (defret aig-and-main-arg2-on-failure
+    (implies (equal status :fail)
+             arg2)
+    :hints(("Goal" :in-theory (enable aig-and-pass1)))))
+
+(local (xdoc::set-default-parents nil))
+
+(define aig-and (x y)
+  :parents (aig-constructors)
+  :short "@(call aig-and) constructs an AIG representing @('(and x y)')."
+  :long "<p>This implements something like the algorithm described in:</p>
+
+<ul>
+
+<li>Robert Brummayer and Armin Biere.  <a
+href='http://fmv.jku.at/papers/BrummayerBiere-MEMICS06.pdf'>Local Two-Level And
+Inverter Graph Minimization Without Blowup</a>.  Mathematical and Engineering
+Methods in Computer Science (MEMICS).  2006.</li>
+
+</ul>
+
+<p>In particular, see Table 2 in that paper, which describes optimization rules
+that are ``locally size decreasing without affecting global sharing
+negatively.''</p>
+
+<p>We try to implement these rules in @(see aig-and-main), which returns:</p>
+
+@({
+     (mv status arg1 arg2)
+})
+
+<p>The status is either:</p>
+
+<ul>
+<li>@(':fail') if no rule applies, in which case @('arg1') and @('arg2') are
+just copies of @('x') and @('y') and we need to construct a new AND node that
+joins them together;</li>
+
+<li>@(':subterm') if a rewrite rule applies that reduces the AND of @('x') and
+@('y') to either a constant or to a subterm of @('x') or @('y').  This subterm
+is returned as both @('arg1') and @('arg2').  In this case, we assume there is
+no more rewriting to be done and just return the reduced subterm.</li>
+
+<li>@(':reduced') if a rewrite rule applies that reduces the AND in some
+interesting way, where it is no longer a proper subterm of @('x') or @('y').
+In this case, it may be possible to further reduce @('arg1') and @('arg2'),
+so we want to recursively rewrite them.</li>
+
+</ul>
+
+<p>See also @(see aig-and-dumb), which is much less sophisticated but may be
+easier to reason about in certain cases where you really care about the
+structure of the resulting AIGs.</p>
+
+<p>A June 2015 experiment suggests that, for a particular 80-bit floating point
+addition problem, this fancier algorithm improves the size of AIGs produced by
+@(see SV) by about 3% when measured either by unique AND nodes or by unique
+conses.</p>"
+
+  :measure (+ (and-count x) (and-count y))
+  (b* (((mv status arg1 arg2) (aig-and-main x y))
+       ((when (eq status :subterm))
+        arg1)
+       ((when (eq status :reduced))
+        (aig-and arg1 arg2)))
+    ;; Else, status is fail.
+    (hons arg1 arg2))
+
+  :hints(("Goal" :use ((:instance aig-and-main-reduces-count))))
+  ///
+  (local (in-theory (enable aig-and)))
+
   (defthm aig-and-constants
     (and (equal (aig-and nil x) nil)
          (equal (aig-and x nil) nil)
          (equal (aig-and x t) x)
-         (equal (aig-and t x) x))))
+         (equal (aig-and t x) x)))
+
+  (defthm aig-eval-and
+    (equal (aig-eval (aig-and x y) env)
+           (and (aig-eval x env)
+                (aig-eval y env)))
+    :hints(("Goal"
+            :induct (aig-and x y)
+            :do-not '(generalize fertilize))
+           (and stable-under-simplificationp
+                '(:use ((:instance aig-and-main-correct)))))))
 
 (define aig-or (x y)
   :parents (aig-constructors)
@@ -417,9 +1094,78 @@ care to fold constants and reduce @('x & x') and @('x & ~x').</p>"
            (implies (aig-eval x env)
                     (aig-eval y env)))))
 
+(define aig-nand (x y)
+  :parents (aig-constructors)
+  :short "@(call aig-nand) constructs an AIG representing @('(not (and x y))')."
+  :returns aig
+  :inline t
+  (aig-not (aig-and x y))
+  ///
+  (defthm aig-eval-nand
+    (equal (aig-eval (aig-nand x y) env)
+           (not (and (aig-eval x env)
+                     (aig-eval y env))))))
+
+(define aig-nor (x y)
+  :parents (aig-constructors)
+  :short "@(call aig-nor) constructs an AIG representing @('(not (or x y))')."
+  :returns aig
+  :inline t
+  (aig-and (aig-not x) (aig-not y))
+  ///
+  (defthm aig-eval-nor
+    (equal (aig-eval (aig-nor x y) env)
+           (not (or (aig-eval x env)
+                    (aig-eval y env))))))
+
+(define aig-andc1 (x y)
+  :parents (aig-constructors)
+  :short "@(call aig-andc1) constructs an AIG representing @('(and (not x) y)')."
+  :returns aig
+  :inline t
+  (aig-and (aig-not x) y)
+  ///
+  (defthm aig-eval-andc1
+    (equal (aig-eval (aig-andc1 x y) env)
+           (and (not (aig-eval x env))
+                (aig-eval y env)))))
+
+(define aig-andc2 (x y)
+  :parents (aig-constructors)
+  :short "@(call aig-andc2) constructs an AIG representing @('(and x (not y))')."
+  :returns aig
+  :inline t
+  (aig-and x (aig-not y))
+  ///
+  (defthm aig-eval-andc2
+    (equal (aig-eval (aig-andc2 x y) env)
+           (and (aig-eval x env)
+                (not (aig-eval y env))))))
+
+(defsection aig-orc1
+  :short "@(call aig-orc1) is identical to @(see aig-implies)."
+  :long "@(def aig-orc1)"
+
+  (defmacro aig-orc1 (x y)
+    `(aig-implies ,x ,y)))
+
+(define aig-orc2 (x y)
+  :parents (aig-constructors)
+  :short "@(call aig-orc2) constructs an AIG representing @('(or x (not y))')."
+  :returns aig
+  :inline t
+  (aig-not (aig-and (aig-not x) y))
+  ///
+  (defthm aig-eval-orc2
+    (equal (aig-eval (aig-orc2 x y) env)
+           (or (aig-eval x env)
+               (not (aig-eval y env))))))
+
 (define aig-ite (a b c)
   :parents (aig-constructors)
   :short "@(call aig-ite) constructs an AIG representing @('(if a b c)')."
+  ;; BOZO consider a macro in the style of q-ite that tries to lazily avoid
+  ;; evaluating B and C.
   :returns aig
   (cond ((eq a t) b)
         ((eq a nil) c)
@@ -447,26 +1193,94 @@ care to fold constants and reduce @('x & x') and @('x & ~x').</p>"
     (cons (aig-not (car X))
           (aig-not-list (cdr x)))))
 
+(define member-eql-without-truelistp ((a eqlablep) x)
+  :parents (aig-and-list aig-or-list)
+  :enabled t
+  (mbe :logic (member a x)
+       :exec
+       (cond ((atom x) nil)
+             ((eql a (car x)) x)
+             (t (member-eql-without-truelistp a (cdr x))))))
+
+(define aig-and-list-aux (x)
+  :enabled t
+  :parents (aig-and-list)
+  (if (atom x)
+      t
+    (aig-and (car x) (aig-and-list-aux (cdr x)))))
+
 (define aig-and-list (x)
   :parents (aig-constructors)
   :short "@(call aig-and-list) <i>and</i>s together all of the AIGs in the list
 @('x')."
+  :long "<p>As a dumb attempt at optimization, we try to avoid consing if we
+see that there's a @('nil') anywhere in the list.  This won't win very often,
+but it is quite cheap and it can win big when it does win by avoiding a lot of
+AIG construction.</p>"
   :returns aig
   :enabled t
+  :verify-guards nil
+  (mbe :logic (if (atom x)
+                  t
+                (aig-and (car x)
+                         (aig-and-list (cdr x))))
+       :exec (cond ((atom x)
+                    t)
+                   ((member-eql-without-truelistp nil x)
+                    nil)
+                   (t
+                    (aig-and-list-aux x))))
+  ///
+  (defthm aig-and-list-aux-removal
+    (equal (aig-and-list-aux x)
+           (aig-and-list x)))
+  (local (defthm aig-and-list-when-member-nil
+           (implies (member nil x)
+                    (equal (aig-and-list x) nil))))
+  (verify-guards aig-and-list))
+
+(define aig-or-list-aux (x)
+  :enabled t
+  :parents (aig-or-list)
   (if (atom x)
-      t
-    (aig-and (car x)
-             (aig-and-list (cdr x)))))
+      nil
+    (aig-or (car x)
+            (aig-or-list-aux (cdr x)))))
 
 (define aig-or-list (x)
   :parents (aig-constructors)
   :short "@(call aig-or-list) <i>or</i>s together all of the AIGs in the list
 @('x')."
+  :long "<p>As a dumb attempt at optimization, we try to avoid consing if we
+see that there's a @('t') anywhere in the list.  This won't win very often, but
+it is quite cheap and it can win big when it does win by avoiding a lot of AIG
+construction.</p>"
   :returns aig
   :enabled t
-  (if (atom x)
-      nil
-    (aig-or (car x) (aig-or-list (cdr x)))))
+  :verify-guards nil
+  (mbe :logic (if (atom x)
+                  nil
+                (aig-or (car x) (aig-or-list (cdr x))))
+       :exec (cond ((atom x)
+                    nil)
+                   ((member-eql-without-truelistp t x)
+                    t)
+                   (t
+                    (aig-or-list-aux x))))
+    ///
+    (defthm aig-or-list-aux-removal
+      (equal (aig-or-list-aux x)
+             (aig-or-list x)))
+    (local (defthm l0
+             (and (equal (aig-or t y) t)
+                  (equal (aig-or y t) t))
+             :hints(("Goal" :in-theory (enable aig-or)))))
+    (local (defthm aig-or-list-when-member-t
+             (implies (member t x)
+                      (equal (aig-or-list x) t))))
+    (verify-guards aig-or-list))
+
+;; BOZO want a reduction xor, nor, nand, etc., as well?
 
 (define aig-and-lists (x y)
   :parents (aig-constructors)
@@ -490,17 +1304,6 @@ lists @('x') and @('y')."
     (cons (aig-or (car x) (car y))
           (aig-or-lists (cdr x) (cdr y)))))
 
-(define aig-iff-lists (x y)
-  :parents (aig-constructors)
-  :short "@(call aig-iff-lists) pairwise <i>iff</i>s together the AIGs from the
-lists @('x') and @('y')."
-  :returns aig-list
-  :enabled t
-  (if (or (atom x) (atom y))
-      nil
-    (cons (aig-iff (car x) (car y))
-          (aig-iff-lists (cdr x) (cdr y)))))
-
 (define aig-xor-lists (x y)
   :parents (aig-constructors)
   :short "@(call aig-xor-lists) pairwise <i>xor</i>s together the AIGs from the
@@ -511,6 +1314,17 @@ lists @('x') and @('y')."
       nil
     (cons (aig-xor (car x) (car y))
           (aig-xor-lists (cdr x) (cdr y)))))
+
+(define aig-iff-lists (x y)
+  :parents (aig-constructors)
+  :short "@(call aig-iff-lists) pairwise <i>iff</i>s together the AIGs from the
+lists @('x') and @('y')."
+  :returns aig-list
+  :enabled t
+  (if (or (atom x) (atom y))
+      nil
+    (cons (aig-iff (car x) (car y))
+          (aig-iff-lists (cdr x) (cdr y)))))
 
 (define aig-implies-lists (x y)
   :parents (aig-constructors)
@@ -523,22 +1337,99 @@ from the lists @('x') and @('y')."
     (cons (aig-implies (car x) (car y))
           (aig-implies-lists (cdr x) (cdr y)))))
 
+(define aig-nand-lists (x y)
+  :parents (aig-constructors)
+  :short "@(call aig-nand-lists) pairwise <i>nand</i>s together the AIGs from the
+lists @('x') and @('y')."
+  :returns aig-list
+  :enabled t
+  (if (or (atom x) (atom y))
+      nil
+    (cons (aig-nand (car x) (car y))
+          (aig-nand-lists (cdr x) (cdr y)))))
+
+(define aig-nor-lists (x y)
+  :parents (aig-constructors)
+  :short "@(call aig-nor-lists) pairwise <i>nor</i>s together the AIGs from the
+lists @('x') and @('y')."
+  :returns aig-list
+  :enabled t
+  (if (or (atom x) (atom y))
+      nil
+    (cons (aig-nor (car x) (car y))
+          (aig-nor-lists (cdr x) (cdr y)))))
+
+(define aig-andc1-lists (x y)
+  :parents (aig-constructors)
+  :short "@(call aig-andc1-lists) pairwise <i>andc1</i>s together the AIGs from the
+lists @('x') and @('y')."
+  :returns aig-list
+  :enabled t
+  (if (or (atom x) (atom y))
+      nil
+    (cons (aig-andc1 (car x) (car y))
+          (aig-andc1-lists (cdr x) (cdr y)))))
+
+(define aig-andc2-lists (x y)
+  :parents (aig-constructors)
+  :short "@(call aig-andc2-lists) pairwise <i>andc2</i>s together the AIGs from the
+lists @('x') and @('y')."
+  :returns aig-list
+  :enabled t
+  (if (or (atom x) (atom y))
+      nil
+    (cons (aig-andc2 (car x) (car y))
+          (aig-andc2-lists (cdr x) (cdr y)))))
+
+(defsection aig-orc1-lists
+  :parents (aig-constructors)
+  :short "@(call aig-orc1-lists) is identical to @(see aig-implies-lists)."
+  :long "@(def aig-orc1-lists)"
+  (defmacro aig-orc1-lists (x y)
+    `(aig-implies-lists ,x ,y)))
+
+(define aig-orc2-lists (x y)
+  :parents (aig-constructors)
+  :short "@(call aig-orc2-lists) pairwise <i>orc2</i>s together the AIGs from the
+lists @('x') or @('y')."
+  :returns aig-list
+  :enabled t
+  (if (or (atom x) (atom y))
+      nil
+    (cons (aig-orc2 (car x) (car y))
+          (aig-orc2-lists (cdr x) (cdr y)))))
+
+
 (def-ruleset aig-constructors
   '(aig-not
     aig-and
     aig-or
     aig-xor
     aig-iff
+    aig-nand
+    aig-nor
     aig-implies
+    aig-andc1
+    aig-andc2
+    aig-orc2
     aig-ite
+
     aig-not-list
     aig-and-list
     aig-or-list
+
     aig-and-lists
     aig-or-lists
-    aig-iff-lists
     aig-xor-lists
-    aig-implies-lists))
+    aig-iff-lists
+    aig-nand-lists
+    aig-nor-lists
+    aig-implies-lists
+    aig-andc1-lists
+    aig-andc2-lists
+    aig-orc2-lists
+    ))
+
 
 ; -----------------------------------------------------------------------------
 ;

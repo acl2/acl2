@@ -618,7 +618,9 @@
        (car (aig-under-constraint-alist (car xabs) calist))
        ((when (eq car nil)) nil)
        (cdr (aig-under-constraint-alist (cdr xabs) calist))
-       (newx (acl2::aig-and car cdr))
+       ;; BOZO.  The new, smarter AIG-AND algorithm *might* work here if we can come
+       ;; up with a suitable measure.  For now, just use the dumb algorithm.
+       (newx (acl2::aig-and-dumb car cdr))
        (look (calist-lookup newx calist))
        ((when look) (eql 1 look)))
     newx)
@@ -655,7 +657,7 @@
            (aig-under-constraint-alist x calist))
     :hints (("goal" :induct (aig-under-constraint-alist x calist))
             (and stable-under-simplificationp
-                 '(:in-theory (enable acl2::aig-and)))))
+                 '(:in-theory (enable acl2::aig-and-dumb)))))
 
   (defthm aig-under-constraint-alist-of-t-and-nil
     (and (equal (aig-under-constraint-alist t calist) t)

@@ -31,42 +31,58 @@
 (in-package "GL")
 (include-book "centaur/gl/symbolic-arithmetic" :dir :system)
 (include-book "tools/templates" :dir :system)
+(include-book "xdoc/alter" :dir :system)
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/gl/arith-lemmas" :dir :system))
 
-;; Goal: a more or less complete set of functions for doing arithmetic
-;; on a symbolic bitvector representation consisting of lists of AIGs.
+(defsection sv::aig-symbolic-arithmetic
+  :parents (sv::bit-blasting)
+  :short "A more or less complete set of functions for doing arithmetic on a
+symbolic bitvector representation consisting of lists of AIGs."
+  :long "<p>See @(see gl::symbolic-arithmetic).  This is almost the same, but
+for AIGs instead of for @(see gl::bfr)s.</p>")
 
-;; We almost already have this with gl/symbolic-arithmetic.  Frustratingly, we
-;; can't quite reuse it because it does its computations in terms of BFRs,
-;; i.e., it will do AIG or BDD operations depending on the current attachment
-;; to bfr-mode.  But we need to be able to do these with AIGs even in the midst
-;; of a GL BDD proof -- unfortunate.
+(xdoc::change-base-pkg sv::aig-symbolic-arithmetic "SV")
 
-;; In order to reuse the formulations & proofs we've already done in
-;; symbolic-arithmetic, this book uses a hack -- in symbolic-arithmetic, we
-;; record in a table the defsymbolic events that we use to create these
-;; bfr-based functions and their correctness proofs.  We then replicate the
-;; events here, basically replacing occurrences of "BFR-" with "AIG-".  Very
-;; ugly, but, we hope, effective.
+(local (xdoc::set-default-parents sv::aig-symbolic-arithmetic))
 
+; Frustratingly, we can't quite reuse gl/symbolic-arithmetic because it does
+; its computations in terms of BFRs, i.e., it will do either AIG or BDD
+; operations depending on the current attachment to BFR-MODE.  But we need to
+; be able to do these with AIGs even in the midst of a GL BDD proof --
+; unfortunate.
+
+; In order to reuse the formulations & proofs we've already done in
+; gl/symbolic-arithmetic, this book uses a hack -- in symbolic-arithmetic, we
+; record in a table the defsymbolic events that we use to create these
+; bfr-based functions and their correctness proofs.  We then replicate the
+; events here, basically replacing occurrences of "BFR-" with "AIG-".  Very
+; ugly, but, we hope, effective.
 
 (defmacro sv::aig-sterm (x) `(gl::bfr-sterm ,x))
 (defmacro sv::aig-scons (x y) `(gl::bfr-scons ,x ,y))
 (defmacro sv::aig-ucons (x y) `(gl::bfr-ucons ,x ,y))
 
-(defun sv::aig-list->s (x env)
-  (declare (xargs :guard t))
+(define sv::aig-list->s ((x   "AIG list to evaluate.")
+                         (env "AIG environment to evaluate it under."))
+  :returns (ans integerp :rule-classes :type-prescription)
+  :short "Evaluate an AIG list and interpret the resulting bits as a signed
+  integer, as in @(see gl::bfr-list->s)."
+  :enabled t
   (b* (((mv first rest end) (first/rest/end x)))
     (if end
         (bool->sign (sv::aig-eval first env))
       (logcons (sv::bool->bit (sv::aig-eval first env))
                (sv::aig-list->s rest env)))))
 
-(defun sv::aig-list->u (x env)
-  (declare (xargs :guard t))
+(define sv::aig-list->u ((x   "AIG list to evaluate.")
+                         (env "AIG environment to evaluate it under."))
+  :returns (ans natp :rule-classes :type-prescription)
+  :short "Evaluate an AIG list and interpret the resulting bits as an unsigned
+  integer, as in @(see gl::bfr-list->u)."
+  :enabled t
   (if (atom x)
       0
     (logcons (sv::bool->bit (sv::aig-eval (car x) env))

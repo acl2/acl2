@@ -89,19 +89,75 @@
          :hints(("Goal" :in-theory (enable 4vec-mask 3vec-p))
                 (acl2::logbitp-reasoning))))
 
+(local (defthm aig-ite-of-consts
+         (and (equal (aig-ite t a b) a)
+              (equal (aig-ite nil a b) b))
+         :hints(("Goal" :in-theory (enable aig-ite)))))
 
-(defthm true-listp-of-bfr-scons
-  (implies (true-listp b)
-           (true-listp (gl::bfr-scons a b)))
-  :hints(("Goal" :in-theory (enable gl::bfr-scons)))
-  :rule-classes :type-prescription)
+(local (defthm true-listp-of-scdr
+         (implies (true-listp x)
+                  (true-listp (gl::scdr x)))
+         :hints(("Goal" :in-theory (enable gl::scdr)))
+         :rule-classes :type-prescription))
 
-(defthm true-listp-of-bfr-sterm
-  (true-listp (gl::bfr-sterm a))
-  :hints(("Goal" :in-theory (enable gl::bfr-sterm)))
-  :rule-classes :type-prescription)
+(local (in-theory (disable gl::s-endp-of-bfr-scons
+                           aig-list->s)))
 
 
+;; New local rules
+(local (defthm aig-list->u-when-aig-list->s-nonneg
+         (implies (<= 0 (aig-list->s x env))
+                  (equal (aig-list->u x env)
+                         (aig-list->s x env)))
+         :hints(("Goal" :in-theory (enable aig-list->u
+                                           aig-list->s
+                                           gl::scdr
+                                           gl::s-endp)))))
+
+(local (defthm aig-list->s-open-quote
+         (implies (syntaxp (quotep x))
+                  (equal (aig-list->s x env)
+                         (B* (((MV FIRST REST GL::END)
+                               (GL::FIRST/REST/END X)))
+                           (IF GL::END
+                               (GL::BOOL->SIGN (AIG-EVAL FIRST ENV))
+                               (BITOPS::LOGCONS (BOOL->BIT (AIG-EVAL FIRST ENV))
+                                                (AIG-LIST->S REST ENV))))))
+         :hints(("Goal" :in-theory (enable aig-list->s)))))
+
+
+(local (defthm aig-list->s-of-bfr-snorm
+         (equal (aig-list->s (gl::bfr-snorm x) env)
+                (aig-list->s x env))
+         :hints(("Goal" :in-theory (enable aig-list->s gl::bfr-snorm)))))
+
+(local (defthm aig-list->s-of-bfr-scons
+         (equal (aig-list->s (gl::bfr-scons a b) env)
+                (bitops::logcons (bool->bit (aig-eval a env))
+                                 (aig-list->s b env)))
+         :hints(("Goal" :expand ((aig-list->s (gl::bfr-scons a b) env)
+                                 (aig-list->s b env))
+                 :in-theory (enable gl::s-endp-of-bfr-scons)
+                 :do-not-induct t))))
+
+(local (defthm aig-list->s-of-bfr-sterm
+         (equal (aig-list->s (gl::bfr-sterm x) env)
+                (bool->vec (aig-eval x env)))
+         :hints(("Goal" :in-theory (enable aig-list->s)))))
+
+
+;; now in gl/bvec already anyway
+;; (defthm true-listp-of-bfr-scons
+;;   (implies (true-listp b)
+;;            (true-listp (gl::bfr-scons a b)))
+;;   :hints(("Goal" :in-theory (enable gl::bfr-scons)))
+;;   :rule-classes :type-prescription)
+
+;; now in gl/bvec already anyway
+;; (defthm true-listp-of-bfr-sterm
+;;   (true-listp (gl::bfr-sterm a))
+;;   :hints(("Goal" :in-theory (enable gl::bfr-sterm)))
+;;   :rule-classes :type-prescription)
 
 
 (defxdoc bit-blasting
@@ -209,11 +265,10 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
   :long "<p>See @(see a4vec-eval); the semantics are given by @(see
 aig-list->s).</p>")
 
-(define a4vec-eval ((x   a4vec-p "A4vec to evaluate.")
+(define a4vec-eval ((x   a4vec-p "Symbolic 4vec to evaluate.")
                     (env         "Environment for @(see aig-eval)."))
   :returns (res 4vec-p "Value of @('x') as a @(see 4vec).")
-  :parents (a4vec)
-  :short "Semantics of an @(see a4vec)."
+  :short "Semantics of @(see a4vec)s."
   (b* (((a4vec x) x))
     (4vec (aig-list->s x.upper env)
           (aig-list->s x.lower env)))
@@ -221,7 +276,8 @@ aig-list->s).</p>")
   (defthm a4vec-eval-of-a4vec
     (equal (a4vec-eval (a4vec upper lower) env)
            (4vec (aig-list->s upper env)
-                 (aig-list->s lower env))))
+                 (aig-list->s lower env)))
+    :hints(("Goal" :in-theory (enable aig-list->s))))
 
   (defthm a4vec-eval-of-const
     (implies (syntaxp (quotep x))
@@ -248,49 +304,59 @@ aig-list->s).</p>")
 ;;     :hints(("Goal" :in-theory (enable a4vec-eval 4vec-bit-index aig-list->s)))))
 
 (define a2vec-p ((x a4vec-p))
-  :parents (a4vec)
-  :short "Recognizer for @(see a4vec)s that are statically just @(see 2vec)s."
+  :returns (aig)
+  :short "Construct an AIG that captures: when does an @(see a4vec) evaluate to
+  a @(see 2vec-p)?"
   (b* (((a4vec x) x))
+    ;; Could perhaps go scanning through to try to short-circuit...
     (aig-=-ss x.upper x.lower))
   ///
   (defthm a2vec-p-correct
     (equal (aig-eval (a2vec-p x) env)
            (2vec-p (a4vec-eval x env)))))
 
-(defmacro a4vec-x ()
-  (list 'quote (a4vec (aig-sterm t)
-                      (aig-sterm nil))))
+(defsection a4vec-x
+  :short "@(call a4vec-x) return an @(see a4vec) that evaluates to @(see
+  4vec-x) under every environment."
+  :long "@(def a4vec-x)"
 
-(defmacro a4vec-1x () (list 'quote (a4vec (aig-scons t (aig-sterm nil))
-                                          (aig-sterm nil))))
-(defmacro a4vec-z () (list 'quote (a4vec (aig-sterm nil)
-                                         (aig-scons t (aig-sterm nil)))))
-(defmacro a4vec-0 () (list 'quote (a4vec (aig-sterm nil)
-                                         (aig-sterm nil))))
-(defmacro a4vec-neg1 () (list 'quote (a4vec (aig-sterm t)
-                                            (aig-sterm t))))
+  (defmacro a4vec-x ()
+    (list 'quote (a4vec (aig-sterm t)
+                        (aig-sterm nil))))
 
-(defmacro a4vec-pos1 () (list 'quote (a4vec (aig-scons t (aig-sterm nil))
-                                            (aig-scons t (aig-sterm nil)))))
+  (defthm a4vec-x-correct
+    (equal (a4vec-eval (a4vec-x) env)
+           (4vec-x))))
 
-(local (defthm aig-ite-of-consts
-         (and (equal (aig-ite t a b) a)
-              (equal (aig-ite nil a b) b))
-         :hints(("Goal" :in-theory (enable aig-ite)))))
+(defsection a4vec-1x
+  :short "@(call a4vec-1x) returns an @(see a4vec) that evaluates to @(see
+4vec-1x) under every environment."
+  :long "@(def a4vec-1x)"
+
+  (defmacro a4vec-1x ()
+    (list 'quote (a4vec (aig-scons t (aig-sterm nil))
+                        (aig-sterm nil))))
+
+  (defthm a4vec-1x-correct
+    (equal (a4vec-eval (a4vec-1x) env)
+           (4vec-1x))))
 
 
-(local (defthm true-listp-of-scdr
-         (implies (true-listp x)
-                  (true-listp (gl::scdr x)))
-         :hints(("Goal" :in-theory (enable gl::scdr)))
-         :rule-classes :type-prescription))
-
-(define a4vec-ite-fn (test (then a4vec-p) (else a4vec-p))
+(define a4vec-ite-fn ((test "Test AIG (not a 4vec!).")
+                      (then a4vec-p)
+                      (else a4vec-p))
+  :parents (a4vec-ite)
   :returns (res a4vec-p)
-  (cond ((eq test t) (a4vec-fix then))
+  :short "Basic if-then-else for symbolic 4vecs."
+  (cond ((eq test t)   (a4vec-fix then))
         ((eq test nil) (a4vec-fix else))
         (t (b* (((a4vec then) then)
                 ((a4vec else) else))
+             ;; BOZO It looks like this is going to call aig-ite on each pair
+             ;; of bits, which is going to be checking over and over again
+             ;; whether the test is known to be T or NIL.  That probably isn't
+             ;; worth worrying about.  It might be that we could optimize
+             ;; aig-ite-bss-fn itself to avoid this, using an aux function.
              (a4vec (aig-ite-bss-fn test then.upper else.upper)
                     (aig-ite-bss-fn test then.lower else.lower)))))
   ///
@@ -302,75 +368,49 @@ aig-list->s).</p>")
 
   (defthm a4vec-ite-fn-of-const-tests
     (and (equal (a4vec-ite-fn t then else) (a4vec-fix then))
-         (equal (a4vec-ite-fn nil then else) (a4vec-fix else))))
+         (equal (a4vec-ite-fn nil then else) (a4vec-fix else)))))
+
+
+(defsection a4vec-ite
+  :short "Lazy macro for if-then-else of symbolic 4vecs."
+  :long "<p>This is similar to @(see acl2::q-ite); we try to avoid evaluating
+@('then') or @('else') if we can resolve @('test').</p>"
 
   (defmacro a4vec-ite (test then else)
     (cond ((and (or (symbolp then) (quotep then))
                 (or (symbolp else) (quotep else)))
+           ;; THEN and ELSE are constants or variables, so there's no point in
+           ;; trying to lazily avoid computing them, because they are already
+           ;; computed.
            `(a4vec-ite-fn ,test ,then ,else))
-          (t `(mbe :logic (a4vec-ite-fn ,test ,then ,else)
-                   :exec (let ((a4vec-ite-test ,test))
-                           (if a4vec-ite-test
-                               (let ((a4vec-ite-then ,then))
-                                 (if (eq a4vec-ite-test t)
-                                     a4vec-ite-then
-                                   (a4vec-ite-fn a4vec-ite-test a4vec-ite-then ,else)))
-                             ,else)))))))
-
-(defthm aig-list->u-when-aig-list->s-nonneg
-  (implies (<= 0 (aig-list->s x env))
-           (equal (aig-list->u x env)
-                  (aig-list->s x env)))
-  :hints(("Goal" :in-theory (enable aig-list->u
-                                    aig-list->s
-                                    gl::scdr
-                                    gl::s-endp))))
-
-(local (in-theory (disable gl::s-endp-of-bfr-scons
-                           aig-list->s)))
-
-(defthm aig-list->s-open-quote
-  (implies (syntaxp (quotep x))
-           (equal (aig-list->s x env)
-                  (B* (((MV FIRST REST GL::END)
-                        (GL::FIRST/REST/END X)))
-                      (IF GL::END
-                          (GL::BOOL->SIGN (AIG-EVAL FIRST ENV))
-                          (BITOPS::LOGCONS (BOOL->BIT (AIG-EVAL FIRST ENV))
-                                         (AIG-LIST->S REST ENV))))))
-  :hints(("Goal" :in-theory (enable aig-list->s))))
-
-
-(defthm aig-list->s-of-bfr-snorm
-  (equal (aig-list->s (gl::bfr-snorm x) env)
-         (aig-list->s x env))
-  :hints(("Goal" :in-theory (enable aig-list->s gl::bfr-snorm))))
-
-(defthm aig-list->s-of-bfr-scons
-  (equal (aig-list->s (gl::bfr-scons a b) env)
-         (bitops::logcons (bool->bit (aig-eval a env))
-                  (aig-list->s b env)))
-  :hints(("Goal" :expand ((aig-list->s (gl::bfr-scons a b) env)
-                          (aig-list->s b env))
-          :in-theory (enable gl::s-endp-of-bfr-scons)
-          :do-not-induct t)))
-
-(defthm aig-list->s-of-bfr-sterm
-  (equal (aig-list->s (gl::bfr-sterm x) env)
-         (bool->vec (aig-eval x env)))
-  :hints(("Goal" :in-theory (enable aig-list->s))))
+          (t
+           `(mbe :logic (a4vec-ite-fn ,test ,then ,else)
+                 :exec (let ((a4vec-ite-test ,test))
+                         ;; BOZO this duplicates ,else, which could lead to
+                         ;; code blowup.  We can probably avoid that...
+                         (if a4vec-ite-test
+                             (let ((a4vec-ite-then ,then))
+                               (if (eq a4vec-ite-test t)
+                                   a4vec-ite-then
+                                 (a4vec-ite-fn a4vec-ite-test a4vec-ite-then ,else)))
+                           ,else)))))))
 
 (define a4vec-bit-extract ((n a4vec-p) (x a4vec-p))
+  :short "Symbolic version of @(see 4vec-bit-extract)."
   :returns (res a4vec-p)
   (b* (((a4vec x) x)
        ((a4vec n) n))
-    (a4vec-ite (aig-and (a2vec-p n)
-                        (aig-not (aig-sign-s n.upper)))
-               (b* ((ubit (aig-logbitp-n2v 1 n.upper x.upper))
-                    (lbit (aig-logbitp-n2v 1 n.upper x.lower)))
-                 (a4vec (aig-scons ubit (aig-sterm nil))
-                        (aig-scons lbit (aig-sterm nil))))
-               (a4vec-1x)))
+    (a4vec-ite
+     ;; Condition: AIG for when N is a natural number.
+     (aig-and (a2vec-p n)
+              (aig-not (aig-sign-s n.upper)))
+     ;; Then: Extract the Nth bit and zero extend it
+     (b* ((ubit (aig-logbitp-n2v 1 n.upper x.upper))
+          (lbit (aig-logbitp-n2v 1 n.upper x.lower)))
+       (a4vec (aig-scons ubit (aig-sterm nil))
+              (aig-scons lbit (aig-sterm nil))))
+     ;; Else: 4vec-bit-extract returns a single X bit.
+     (a4vec-1x)))
   ///
   (defthm a4vec-bit-extract-correct
     (equal (a4vec-eval (a4vec-bit-extract n x) env)
@@ -380,25 +420,36 @@ aig-list->s).</p>")
                                       4vec-bit-index)))))
 
 (define a4vec-syntactic-3vec-p-rec ((x true-listp) (y true-listp))
+  :returns bool
+  :parents (a4vec-syntactic-3vec-p)
+  :short "Make sure there is no pair of bits with Xi == 0 while Yi == 1."
   :measure (+ (len x) (len y))
   (b* (((mv xf xr xe) (gl::first/rest/end x))
        ((mv yf yr ye) (gl::first/rest/end y)))
-    (and (or (hons-equal xf yf)
-             (eq xf t)
-             (eq yf nil))
+    (and (or (eq xf t)          ;; Xf is obviously non-0
+             (eq yf nil)        ;; Yf is obviously non-1
+             (hons-equal xf yf) ;; Same bits rules out Xf == 0 while Yf == 1.
+             )
          (if (and xe ye)
+             ;; End of both vectors, so we're done.
              t
+           ;; More bits to check, so keep going.
            (a4vec-syntactic-3vec-p-rec xr yr))))
   ///
   (defthm a4vec-syntactic-3vec-p-rec-correct
     (implies (a4vec-syntactic-3vec-p-rec x y)
              (equal (logand (aig-list->s y env) (lognot (aig-list->s x env)))
                     0))
-    :hints (("goal" :induct (a4vec-syntactic-3vec-p-rec x y)
+    :hints (("goal"
+             :induct (a4vec-syntactic-3vec-p-rec x y)
              :expand ((aig-list->s y env)
                       (aig-list->s x env))))))
 
 (define a4vec-syntactic-3vec-p ((x a4vec-p))
+  :short "Try to cheaply, statically determine whether an @(see a4vec) always
+evaluates to a @(see 3vec), i.e., whether it has no Z bits."
+  :long "<p>This is used mainly in @(see a3vec-fix): when we know that there
+are no Z bits, we can avoid building AIGs to do unfloating.</p>"
   (b* (((a4vec x) x))
     (a4vec-syntactic-3vec-p-rec x.upper x.lower))
   ///
@@ -408,12 +459,24 @@ aig-list->s).</p>")
     :hints(("Goal" :in-theory (enable 3vec-p)))))
 
 (define a3vec-fix ((x a4vec-p))
-  :returns (xx a4vec-p)
+  :short "Symbolic version of @(see 3vec-fix)."
+  :returns (x-fix a4vec-p)
   (if (a4vec-syntactic-3vec-p x)
+      ;; We don't have to do anything because we can determine, cheaply and
+      ;; statically, that there are no Z bits at all.
       (a4vec-fix x)
     (b* (((a4vec x) x))
-      (a4vec (aig-logior-ss x.upper x.lower)
-             (aig-logand-ss x.upper x.lower))))
+      (a4vec
+       ;; [BOZO] We might benefit from some smarter ORing here.  Even though we
+       ;; can't tell the whole thing is Z-free, there may be many individual
+       ;; bits that are Z-free.  It looks like aig-logior-ss just calls AIG-OR
+       ;; on each of them, which doesn't appear to do any checking for, e.g.,
+       ;; hons-equal of the arguments.  Maybe this really just suggests that we
+       ;; should tweak AIG-OR to check for Boolean and hons-equal cases.
+       (aig-logior-ss x.upper x.lower)
+       ;; In contrast, this does check individual bits for T/NIL/HONS-EQUAL and
+       ;; also for (AND A (NOT A)).
+       (aig-logand-ss x.upper x.lower))))
   ///
   (defthm a3vec-fix-correct
     (equal (a4vec-eval (a3vec-fix x) env)
@@ -424,6 +487,7 @@ aig-list->s).</p>")
 
 
 (define a3vec-bitnot ((x a4vec-p))
+  :short "Symbolic version of @(see 3vec-bitnot)."
   :returns (res a4vec-p)
   (b* (((a4vec x) x))
     (a4vec (aig-lognot-s x.lower)
@@ -435,6 +499,7 @@ aig-list->s).</p>")
     :hints(("Goal" :in-theory (enable 3vec-bitnot)))))
 
 (define a4vec-onset ((x a4vec-p))
+  :short "Symbolic version of @(see 4vec-onset)."
   :returns (res a4vec-p)
   (b* (((a4vec x) x))
     (a4vec x.upper (aig-logand-ss x.upper x.lower)))
@@ -445,9 +510,11 @@ aig-list->s).</p>")
     :hints(("Goal" :in-theory (enable 4vec-onset)))))
 
 (define a4vec-offset ((x a4vec-p))
+  :short "Symbolic version of @(see 4vec-offset)."
   :returns (res a4vec-p)
   (b* (((a4vec x) x))
-    (a4vec (aig-lognot-s x.lower) (aig-lognot-s (aig-logior-ss x.upper x.lower))))
+    (a4vec (aig-lognot-s x.lower)
+           (aig-lognot-s (aig-logior-ss x.upper x.lower))))
   ///
   (defthm a4vec-offset-correct
     (equal (a4vec-eval (a4vec-offset x) env)
@@ -455,6 +522,7 @@ aig-list->s).</p>")
     :hints(("Goal" :in-theory (enable 4vec-offset)))))
 
 (define a3vec-bitand ((x a4vec-p) (y a4vec-p))
+  :short "Symbolic version of @(see 3vec-bitand)."
   :returns (res a4vec-p)
   (b* (((a4vec x) x)
        ((a4vec y) y))
@@ -468,6 +536,7 @@ aig-list->s).</p>")
     :hints(("Goal" :in-theory (enable 3vec-bitand)))))
 
 (define a3vec-bitor ((x a4vec-p) (y a4vec-p))
+  :short "Symbolic version of @(see 3vec-bitor)."
   :returns (res a4vec-p)
   (b* (((a4vec x) x)
        ((a4vec y) y))
@@ -477,10 +546,11 @@ aig-list->s).</p>")
   (defthm a3vec-bitor-correct
     (equal (a4vec-eval (a3vec-bitor x y) env)
            (3vec-bitor (a4vec-eval x env)
-                        (a4vec-eval y env)))
+                       (a4vec-eval y env)))
     :hints(("Goal" :in-theory (enable 3vec-bitor)))))
 
 (define a3vec-bitxor ((x a4vec-p) (y a4vec-p))
+  :short "Symbolic version of @(see 3vec-bitxor)."
   :returns (res a4vec-p)
   (b* (((a4vec x) x)
        ((a4vec y) y)
@@ -811,6 +881,23 @@ results in at most n+1 bits.</p>"
            (logcollapse n (aig-list->s x env)))
     :hints(("Goal" :in-theory (enable logcollapse)))))
 
+
+
+;; BOZO this is only used in a4vec-concat when the mask is 0.  We may as well
+;; use X then, right?
+(defsection a4vec-0
+  :short "@(call a4vec-0) returns an @(see a4vec) that evaluates to @(see
+4vec-0) every environment."
+  :long "@(def a4vec-0)"
+
+  (defmacro a4vec-0 ()
+    (list 'quote (a4vec (aig-sterm nil)
+                        (aig-sterm nil))))
+
+  ;; (defthm a4vec-0-correct
+  ;;   (equal (a4vec-eval (a4vec-0) env)
+  ;;          (4vec-0)))
+  )
 
 (define a4vec-concat ((w a4vec-p) (x a4vec-p) (y a4vec-p) (mask 4vmask-p))
   :returns (res a4vec-p)
