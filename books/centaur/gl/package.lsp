@@ -63,7 +63,7 @@
      bfr-p-of-bfr-iff
      bfr-p-of-bfr-or
      bfr-p-of-q-implies
-     lnfix lifix lbfix
+     lnfix lifix lbfix lposfix pos-fix
 
      mv-nth-cons-meta
 
@@ -172,7 +172,7 @@
      xor
      gl-bdd-mode gl-aig-mode gl-mbe
 
-     logcons logcar logcdr loghead logtail logapp
+     logcons logcar logcdr loghead logtail logapp logext
      b-ior b-and b-xor b-not bfix bitp bool-fix
      binary-- binary-minus-for-gl
 

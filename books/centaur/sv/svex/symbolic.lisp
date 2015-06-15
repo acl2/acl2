@@ -146,6 +146,12 @@
          :hints(("Goal" :in-theory (enable aig-list->s)))))
 
 
+(local (defthm aig-list->s-of-i2v
+         (equal (aig-list->s (gl::i2v x) env)
+                (ifix x))
+         :hints(("Goal" :in-theory (enable aig-list->s gl::i2v)))))
+
+
 ;; now in gl/bvec already anyway
 ;; (defthm true-listp-of-bfr-scons
 ;;   (implies (true-listp b)
@@ -405,8 +411,8 @@ aig-list->s).</p>")
        ((a4vec n) n))
     (a4vec-ite
      ;; Condition: AIG for when N is a natural number.
-     (aig-and (a2vec-p n)
-              (aig-not (aig-sign-s n.upper)))
+     (aig-andc2 (a2vec-p n)
+                (aig-sign-s n.upper))
      ;; Then: Extract the Nth bit and zero extend it
      (b* ((ubit (aig-logbitp-n2v 1 n.upper x.upper))
           (lbit (aig-logbitp-n2v 1 n.upper x.lower)))
@@ -469,17 +475,8 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
       ;; statically, that there are no Z bits at all.
       (a4vec-fix x)
     (b* (((a4vec x) x))
-      (a4vec
-       ;; [BOZO] We might benefit from some smarter ORing here.  Even though we
-       ;; can't tell the whole thing is Z-free, there may be many individual
-       ;; bits that are Z-free.  It looks like aig-logior-ss just calls AIG-OR
-       ;; on each of them, which doesn't appear to do any checking for, e.g.,
-       ;; hons-equal of the arguments.  Maybe this really just suggests that we
-       ;; should tweak AIG-OR to check for Boolean and hons-equal cases.
-       (aig-logior-ss x.upper x.lower)
-       ;; In contrast, this does check individual bits for T/NIL/HONS-EQUAL and
-       ;; also for (AND A (NOT A)).
-       (aig-logand-ss x.upper x.lower))))
+      (a4vec (aig-logior-ss x.upper x.lower)
+             (aig-logand-ss x.upper x.lower))))
   ///
   (defthm a3vec-fix-correct
     (equal (a4vec-eval (a3vec-fix x) env)
@@ -487,7 +484,6 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
     :hints (("goal" :in-theory (disable a4vec-eval-of-var))
             (and stable-under-simplificationp
                  '(:in-theory (enable 3vec-fix a4vec-eval-of-var))))))
-
 
 (define a3vec-bitnot ((x a4vec-p))
   :short "Symbolic version of @(see 3vec-bitnot)."
@@ -555,15 +551,13 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
 (define a3vec-bitxor ((x a4vec-p) (y a4vec-p))
   :short "Symbolic version of @(see 3vec-bitxor)."
   :returns (res a4vec-p)
-  ;; BOZO many opportunities to fuse these operations
   (b* (((a4vec x) x)
        ((a4vec y) y)
        (xmask (aig-logior-ss
-               (aig-logand-ss x.upper (aig-lognot-s x.lower))
-               (aig-logand-ss y.upper (aig-lognot-s y.lower)))))
+               (aig-logandc2-ss x.upper x.lower)
+               (aig-logandc2-ss y.upper y.lower))))
     (a4vec (aig-logior-ss xmask (aig-logxor-ss x.upper y.upper))
-           (aig-logand-ss (aig-lognot-s xmask)
-                          (aig-logxor-ss x.lower y.lower))))
+           (aig-logandc1-ss xmask (aig-logxor-ss x.lower y.lower))))
   ///
   (defthm a3vec-bitxor-correct
     (equal (a4vec-eval (a3vec-bitxor x y) env)
@@ -586,12 +580,13 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
     :hints(("Goal" :in-theory (enable 4vec-res)))))
 
 (define a4vec-resand ((a a4vec-p) (b a4vec-p))
+  :short "Symbolic version of @(see 4vec-resand)."
   :returns (res a4vec-p)
   (b* (((a4vec a) a)
        ((a4vec b) b))
-    (a4vec (aig-logand-ss (aig-logior-ss a.upper a.lower)  ;; a not 0
-                          (aig-logand-ss (aig-logior-ss b.upper b.lower)  ;; b not 0
-                                         (aig-logior-ss a.upper b.upper)))
+    (a4vec (aig-logand-sss (aig-logior-ss a.upper a.lower)  ;; a not 0
+                           (aig-logior-ss b.upper b.lower)  ;; b not 0
+                           (aig-logior-ss a.upper b.upper))
            (aig-logand-ss a.lower b.lower)))
   ///
   (defthm a4vec-resand-correct
@@ -601,6 +596,7 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
     :hints(("Goal" :in-theory (enable 4vec-resand)))))
 
 (define a4vec-resor ((a a4vec-p) (b a4vec-p))
+  :short "Symbolic version of @(see 4vec-resor)."
   :returns (res a4vec-p)
   (b* (((a4vec a) a)
        ((a4vec b) b))
@@ -612,10 +608,11 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
   (defthm a4vec-resor-correct
     (equal (a4vec-eval (a4vec-resor x y) env)
            (4vec-resor (a4vec-eval x env)
-                     (a4vec-eval y env)))
+                       (a4vec-eval y env)))
     :hints(("Goal" :in-theory (enable 4vec-resor)))))
 
 (define a4vec-override ((a a4vec-p) (b a4vec-p))
+  :short "Symbolic version of @(see 4vec-override)."
   :returns (res a4vec-p)
   (b* (((a4vec a) a)
        ((a4vec b) b))
@@ -630,6 +627,7 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
            (bitops::logbitp-reasoning))))
 
 (define a3vec-reduction-and ((x a4vec-p))
+  :short "Symbolic version of @(see 3vec-reduction-and)."
   :returns (res a4vec-p)
   (b* (((a4vec x) x))
     (a4vec (aig-sterm (aig-=-ss x.upper (aig-sterm t)))
@@ -641,6 +639,7 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
     :hints(("Goal" :in-theory (enable 3vec-reduction-and)))))
 
 (define a3vec-reduction-or ((x a4vec-p))
+  :short "Symbolic version of @(see 3vec-reduction-or)."
   :returns (res a4vec-p)
   (b* (((a4vec x) x))
     (a4vec (aig-sterm (aig-not (aig-=-ss x.upper (aig-sterm nil))))
@@ -652,6 +651,7 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
     :hints(("Goal" :in-theory (enable 3vec-reduction-or)))))
 
 (define a4vec-zero-ext ((n a4vec-p) (x a4vec-p))
+  :short "Symbolic version of @(see 4vec-zero-ext)."
   :returns (res a4vec-p)
   (b* (((a4vec n) n)
        ((a4vec x) x))
@@ -677,22 +677,30 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
     :hints(("Goal" :in-theory (enable 4vec-zero-ext)))))
 
 (define a4vec-sign-ext ((n a4vec-p) (x a4vec-p))
+  :short "Symbolic version of @(see 4vec-sign-ext)."
   :returns (res a4vec-p)
   (b* (((a4vec n) n)
        ((a4vec x) x))
   (a4vec-ite
-   (aig-and (a2vec-p n)
-            (aig-nor (aig-sign-s n.upper)
-                     (aig-=-ss n.upper (aig-sterm nil))))
-   (b* ((smask (aig-ash-ss 1 (aig-sterm t) n.upper))
-        (bmask (aig-lognot-s smask))
+   ;; The result is all Xes unless the index is a positive number.
+   (aig-and (a2vec-p n) ;; Checks for X/Z bits
+            (aig-nor (aig-sign-s n.upper) ;; Checks for negative index
+                     (aig-=-ss n.upper (aig-sterm nil)) ;; Checks for zero index
+                     ))
+   ;; Valid index, compute the sign extension.
+   ;; In this case, the value of the index is just n.upper.
+   (b* ((smask   (aig-ash-ss 1 (aig-sterm t) n.upper))
+        (bmask   (aig-lognot-s smask))
         (signpos (aig-+-ss nil (aig-sterm t) n.upper))
-        (uext  (aig-sterm (aig-logbitp-n2v 1 signpos x.upper)))
-        (lext  (aig-sterm (aig-logbitp-n2v 1 signpos x.lower))))
-     (a4vec (aig-logior-ss (aig-logand-ss bmask x.upper)
-                           (aig-logand-ss smask uext))
-            (aig-logior-ss (aig-logand-ss bmask x.lower)
-                           (aig-logand-ss smask lext))))
+        (uext    (aig-sterm (aig-logbitp-n2v 1 signpos x.upper)))
+        (lext    (aig-sterm (aig-logbitp-n2v 1 signpos x.lower))))
+     (a4vec
+      ;; BOZO could these be better written as ITEs?
+      (aig-logior-ss (aig-logand-ss bmask x.upper)
+                     (aig-logand-ss smask uext))
+      (aig-logior-ss (aig-logand-ss bmask x.lower)
+                     (aig-logand-ss smask lext))))
+   ;; Invalid index, just return all Xes
    (a4vec-x)))
   ///
   (local (defthm logext-formulation
@@ -702,7 +710,6 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                                            (bool->vec (logbitp (+ -1 n) x))))
                            (logext n x)))
            :hints((bitops::logbitp-reasoning))))
-
 
   (defthm a4vec-sign-ext-correct
     (equal (a4vec-eval (a4vec-sign-ext n x) env)
@@ -733,146 +740,148 @@ results in at most n+1 bits.</p>"
             (ash (b-not (bool->bit (eql 0 (logtail position x)))) position))))
 
 
-(defsection masked-shifts
+(local
+ (defsection masked-shifts
 
-  (local (defthm loghead-when-logtail-is-0
-           (implies (equal 0 (logtail n x))
-                    (equal (loghead n x) (ifix x)))
-           :hints(("Goal" :in-theory (enable* acl2::loghead** acl2::logtail**
-                                              acl2::ihsext-inductions)))))
+   (local (defthm loghead-when-logtail-is-0
+            (implies (equal 0 (logtail n x))
+                     (equal (loghead n x) (ifix x)))
+            :hints(("Goal" :in-theory (enable* acl2::loghead** acl2::logtail**
+                                               acl2::ihsext-inductions)))))
 
-  (local (defthm ash-integer-length-greater
-           (implies (natp x)
-                    (< x (ash 1 (integer-length x))))
-           :hints(("Goal" :in-theory (enable* acl2::ash**
-                                              acl2::integer-length**
-                                              acl2::ihsext-inductions)))
-           :rule-classes :linear))
+   (local (defthm ash-integer-length-greater
+            (implies (natp x)
+                     (< x (ash 1 (integer-length x))))
+            :hints(("Goal" :in-theory (enable* acl2::ash**
+                                               acl2::integer-length**
+                                               acl2::ihsext-inductions)))
+            :rule-classes :linear))
 
-  (local (defthm logior-of-nats-greater
-           (implies (and (natp x) (natp y))
-                    (<= x (logior x y)))
-           :hints(("Goal" :in-theory (enable* acl2::logior**
-                                              acl2::ihsext-inductions)))
-           :rule-classes :linear))
+   (local (defthm logior-of-nats-greater
+            (implies (and (natp x) (natp y))
+                     (<= x (logior x y)))
+            :hints(("Goal" :in-theory (enable* acl2::logior**
+                                               acl2::ihsext-inductions)))
+            :rule-classes :linear))
 
-  (defthm logcollapse-greater-when-greater
-    (implies (and (natp m)
-                  (integerp i)
-                  (<= m i))
-             (<= m
-                 (logcollapse (integer-length m) i)))
-    :hints(("Goal" :in-theory (enable logcollapse bool->bit))))
+   (defthm logcollapse-greater-when-greater
+     (implies (and (natp m)
+                   (integerp i)
+                   (<= m i))
+              (<= m
+                  (logcollapse (integer-length m) i)))
+     :hints(("Goal" :in-theory (enable logcollapse bool->bit))))
 
-  (local (defthm logtail-integer-length-when-less
-           (implies (and (integerp m)
-                         (natp i)
-                         (< i m))
-                    (equal (logtail (integer-length m) i) 0))
-           :hints(("Goal" :in-theory (enable* acl2::logtail**
-                                              acl2::integer-length**
-                                              acl2::ihsext-inductions)
-                   :induct (logand m i)))))
+   (local (defthm logtail-integer-length-when-less
+            (implies (and (integerp m)
+                          (natp i)
+                          (< i m))
+                     (equal (logtail (integer-length m) i) 0))
+            :hints(("Goal" :in-theory (enable* acl2::logtail**
+                                               acl2::integer-length**
+                                               acl2::ihsext-inductions)
+                    :induct (logand m i)))))
 
-  (defthm logcollapse-equal-when-less
-    (implies (and (integerp m)
-                  (natp i)
-                  (< i m))
-             (equal (logcollapse (integer-length m) i)
-                    i))
-    :hints(("Goal" :in-theory (enable logcollapse bool->bit))))
-
-
-  ;; Example.  Suppose our mask is #xab and we are computing (concat n a b).
-  ;; Whenever n is greater than or equal the length of the mask, 8, the answer is
-  ;; just a, as far as we're concerned.  We can transform n however we like as
-  ;; long as we preserve its value when less than 8, and we leave it >= 8 if it
-  ;; is >= 8.  In particular, we can logcollapse it in such a way that this
-  ;; holds: i.e., to the length of 8, or the length of the length of the mask.
-
-  (defthm loghead-of-ash-greater
-    (implies (and (natp i)
-                  (integerp j)
-                  (<= i j))
-             (equal (loghead i (ash x j))
-                    0))
-    :hints(("Goal" :in-theory (enable* acl2::loghead** acl2::ash**
-                                       acl2::ihsext-inductions))))
-
-  (defun mask-equiv-ind (mask x y)
-    (if (zp mask)
-        (list x y)
-      (mask-equiv-ind (logcdr mask) (logcdr x) (logcdr y))))
-
-  (defthm maskedvals-equiv-when-logheads-equiv
-    (implies (and (natp mask)
-                  (equal (loghead (integer-length mask) x)
-                         (loghead (integer-length mask) y)))
-             (equal (equal (logand mask x)
-                           (logand mask y))
-                    t))
-    :hints(("Goal" :in-theory (enable* acl2::loghead** acl2::logand**
-                                       acl2::integer-length**)
-            :induct (mask-equiv-ind mask x y))))
-
-  (defthm maskedvals-equiv-when-logheads-equiv-logior
-    (implies (and (natp mask)
-                  (equal (loghead (integer-length mask) x)
-                         (loghead (integer-length mask) y)))
-             (equal (equal (logior (lognot mask) x)
-                           (logior (lognot mask) y))
-                    t))
-    :hints(("Goal" :in-theory (enable* acl2::loghead** acl2::logior** acl2::lognot**
-                                       acl2::integer-length**)
-            :induct (mask-equiv-ind mask x y))))
+   (defthm logcollapse-equal-when-less
+     (implies (and (integerp m)
+                   (natp i)
+                   (< i m))
+              (equal (logcollapse (integer-length m) i)
+                     i))
+     :hints(("Goal" :in-theory (enable logcollapse bool->bit))))
 
 
-  (defthm mask-ash-of-logcollapse
-    (implies (and (natp mask)
-                  (natp shift))
-             (equal (logand mask (ash x (logcollapse (integer-length (integer-length mask))
-                                                     shift)))
-                    (logand mask (ash x shift))))
-    :hints (("goal" :cases ((<= (integer-length mask) shift)))))
+   ;; Example.  Suppose our mask is #xab and we are computing (concat n a b).
+   ;; Whenever n is greater than or equal the length of the mask, 8, the answer is
+   ;; just a, as far as we're concerned.  We can transform n however we like as
+   ;; long as we preserve its value when less than 8, and we leave it >= 8 if it
+   ;; is >= 8.  In particular, we can logcollapse it in such a way that this
+   ;; holds: i.e., to the length of 8, or the length of the length of the mask.
 
-  (defthm mask-ash-of-logcollapse
-    (implies (and (natp mask)
-                  (natp shift))
-             (equal (logand mask (ash x (logcollapse (integer-length (integer-length mask))
-                                                     shift)))
-                    (logand mask (ash x shift))))
-    :hints (("goal" :cases ((<= (integer-length mask) shift)))))
+   (defthm loghead-of-ash-greater
+     (implies (and (natp i)
+                   (integerp j)
+                   (<= i j))
+              (equal (loghead i (ash x j))
+                     0))
+     :hints(("Goal" :in-theory (enable* acl2::loghead** acl2::ash**
+                                        acl2::ihsext-inductions))))
 
-  (defthm logior-mask-ash-of-logcollapse
-    (implies (and (natp mask)
-                  (natp shift))
-             (equal (logior (lognot mask) (ash x (logcollapse (integer-length (integer-length mask))
-                                                     shift)))
-                    (logior (lognot mask) (ash x shift))))
-    :hints (("goal" :cases ((<= (integer-length mask) shift)))))
+   (local (defun mask-equiv-ind (mask x y)
+            (if (zp mask)
+                (list x y)
+              (mask-equiv-ind (logcdr mask) (logcdr x) (logcdr y)))))
 
-  (defthm mask-logapp-of-logcollapse
-    (implies (and (natp mask)
-                  (natp width))
-             (equal (logand mask (logapp (logcollapse (integer-length (integer-length mask))
-                                                      width)
-                                         x y))
-                    (logand mask (logapp width x y))))
-    :hints (("goal" :cases ((<= (integer-length mask) width)))))
+   (defthm maskedvals-equiv-when-logheads-equiv
+     (implies (and (natp mask)
+                   (equal (loghead (integer-length mask) x)
+                          (loghead (integer-length mask) y)))
+              (equal (equal (logand mask x)
+                            (logand mask y))
+                     t))
+     :hints(("Goal" :in-theory (enable* acl2::loghead** acl2::logand**
+                                        acl2::integer-length**)
+             :induct (mask-equiv-ind mask x y))))
 
-  (defthm logior-mask-logapp-of-logcollapse
-    (implies (and (natp mask)
-                  (natp width))
-             (equal (logior (lognot mask) (logapp (logcollapse (integer-length (integer-length mask))
-                                                      width)
-                                         x y))
-                    (logior (lognot mask) (logapp width x y))))
-    :hints (("goal" :cases ((<= (integer-length mask) width)))))
+   (defthm maskedvals-equiv-when-logheads-equiv-logior
+     (implies (and (natp mask)
+                   (equal (loghead (integer-length mask) x)
+                          (loghead (integer-length mask) y)))
+              (equal (equal (logior (lognot mask) x)
+                            (logior (lognot mask) y))
+                     t))
+     :hints(("Goal" :in-theory (enable* acl2::loghead** acl2::logior** acl2::lognot**
+                                        acl2::integer-length**)
+             :induct (mask-equiv-ind mask x y))))
 
-  )
+
+   (defthm mask-ash-of-logcollapse
+     (implies (and (natp mask)
+                   (natp shift))
+              (equal (logand mask (ash x (logcollapse (integer-length (integer-length mask))
+                                                      shift)))
+                     (logand mask (ash x shift))))
+     :hints (("goal" :cases ((<= (integer-length mask) shift)))))
+
+   (defthm mask-ash-of-logcollapse
+     (implies (and (natp mask)
+                   (natp shift))
+              (equal (logand mask (ash x (logcollapse (integer-length (integer-length mask))
+                                                      shift)))
+                     (logand mask (ash x shift))))
+     :hints (("goal" :cases ((<= (integer-length mask) shift)))))
+
+   (defthm logior-mask-ash-of-logcollapse
+     (implies (and (natp mask)
+                   (natp shift))
+              (equal (logior (lognot mask) (ash x (logcollapse (integer-length (integer-length mask))
+                                                               shift)))
+                     (logior (lognot mask) (ash x shift))))
+     :hints (("goal" :cases ((<= (integer-length mask) shift)))))
+
+   (defthm mask-logapp-of-logcollapse
+     (implies (and (natp mask)
+                   (natp width))
+              (equal (logand mask (logapp (logcollapse (integer-length (integer-length mask))
+                                                       width)
+                                          x y))
+                     (logand mask (logapp width x y))))
+     :hints (("goal" :cases ((<= (integer-length mask) width)))))
+
+   (defthm logior-mask-logapp-of-logcollapse
+     (implies (and (natp mask)
+                   (natp width))
+              (equal (logior (lognot mask) (logapp (logcollapse (integer-length (integer-length mask))
+                                                                width)
+                                                   x y))
+                     (logior (lognot mask) (logapp width x y))))
+     :hints (("goal" :cases ((<= (integer-length mask) width)))))
+
+   ))
 
 (define aig-logcollapse-ns ((n natp)
                             x)
+  :parents (logcollapse)
   (b* ((n (lnfix n)))
     (aig-logior-ss (aig-loghead-ns n x)
                    (aig-logapp-nss n nil
@@ -883,7 +892,6 @@ results in at most n+1 bits.</p>"
     (equal (aig-list->s (aig-logcollapse-ns n x) env)
            (logcollapse n (aig-list->s x env)))
     :hints(("Goal" :in-theory (enable logcollapse)))))
-
 
 
 ;; BOZO this is only used in a4vec-concat when the mask is 0.  We may as well
@@ -903,6 +911,7 @@ results in at most n+1 bits.</p>"
 ;;   )
 
 (define a4vec-concat ((w a4vec-p) (x a4vec-p) (y a4vec-p) (mask 4vmask-p))
+  :short "Symbolic version of @(see 4vec-concat)."
   :returns (res a4vec-p)
   (b* (((a4vec w) w)
        ((a4vec x) x)
@@ -952,14 +961,15 @@ results in at most n+1 bits.</p>"
             :do-not-induct t))
     :otf-flg t))
 
+
 (define aig-right-shift-ss ((place posp) n shamt)
+  :parents (a4vec-rsh)
   (b* (((mv shdig shrst shend) (gl::first/rest/end shamt))
-       (place (mbe :logic (acl2::pos-fix place)
-                   :exec place)))
-     (if shend
-         (aig-logtail-ns 1 n)
-       (let ((rst (aig-right-shift-ss (* 2 place) n shrst)))
-         (aig-ite-bss shdig rst (aig-logtail-ns place rst)))))
+       (place (acl2::lposfix place))
+       ((when shend)
+        (aig-logtail-ns 1 n))
+       (rst (aig-right-shift-ss (* 2 place) n shrst)))
+    (aig-ite-bss shdig rst (aig-logtail-ns place rst)))
   ///
   (local (defthm logtail-of-equal-to-ash
            (implies (equal x (ash a b))
@@ -986,13 +996,14 @@ results in at most n+1 bits.</p>"
              :in-theory (enable acl2::logcons)
              :expand ((aig-list->s shamt env))))))
 
-
 (define a4vec-rsh ((amt a4vec-p) (x a4vec-p) (mask 4vmask-p))
+  :short "Symbolic version of @(see 4vec-rsh)."
   :returns (res a4vec-p)
   (b* (((a4vec amt) amt)
        ((a4vec x) x))
     (a4vec-ite
      (a2vec-p amt)
+     ;; Valid shift amount.
      (b* ((shamt (aig-unary-minus-s amt.upper))
           (sign (aig-sign-s shamt))
           (mask (4vmask-fix mask))
@@ -1013,6 +1024,7 @@ results in at most n+1 bits.</p>"
                  (aig-right-shift-ss 1 x.lower shamt)))))
        (a4vec (aig-ite-bss-fn sign upper-right upper-left)
               (aig-ite-bss-fn sign lower-right lower-left)))
+     ;; X/Z bits in shift amount, just return all Xes.
      (a4vec-x)))
   ///
   (defthm a4vec-rsh-correct
@@ -1028,6 +1040,7 @@ results in at most n+1 bits.</p>"
     :otf-flg t))
 
 (define a4vec-lsh ((amt a4vec-p) (x a4vec-p))
+  :short "Symbolic version of @(see 4vec-lhs)."
   :returns (res a4vec-p)
   (b* (((a4vec amt) amt)
        ((a4vec x) x))
@@ -1043,15 +1056,16 @@ results in at most n+1 bits.</p>"
                      (a4vec-eval x env)))
     :hints(("Goal" :in-theory (enable 4vec-lsh)))))
 
-(defthm parity-of-greater
-  (implies (and (< (+ 1 (integer-length x)) (nfix n))
-                (natp x))
-           (equal (parity n x)
-                  (parity (+ 1 (integer-length x)) x)))
-  :hints(("Goal" :in-theory (enable parity)
-          :induct (parity n x)
-          :expand ((integer-length x)
-                   (:free (n) (parity n x))))))
+
+(local (defthm parity-of-greater
+         (implies (and (< (+ 1 (integer-length x)) (nfix n))
+                       (natp x))
+                  (equal (parity n x)
+                         (parity (+ 1 (integer-length x)) x)))
+         :hints(("Goal" :in-theory (enable parity)
+                 :induct (parity n x)
+                 :expand ((integer-length x)
+                          (:free (n) (parity n x)))))))
 
 (define aig-parity-s ((x true-listp))
   (b* (((mv xf xr xe) (gl::first/rest/end x)))
@@ -1093,6 +1107,7 @@ results in at most n+1 bits.</p>"
            (4vec-parity (a4vec-eval x env)))
     :hints(("Goal" :in-theory (enable 4vec-parity bool->vec)))))
 
+
 (define a4vec-plus ((x a4vec-p) (y a4vec-p))
   :returns (res a4vec-p)
   (a4vec-ite
@@ -1109,6 +1124,7 @@ results in at most n+1 bits.</p>"
            (4vec-plus (a4vec-eval x env)
                       (a4vec-eval y env)))
     :hints(("Goal" :in-theory (enable 4vec-plus)))))
+
 
 
 (define a4vec-minus ((x a4vec-p) (y a4vec-p))
@@ -1254,7 +1270,7 @@ results in at most n+1 bits.</p>"
   :returns (res a4vec-p)
   (b* (((a4vec x))
        ((a4vec y))
-       ;; Building this lazily could be useful
+       ;; The laziness of aig-and means that this is as lazy as possible.
        (val (aig-sterm (aig-and (aig-=-ss x.upper y.upper)
                                 (aig-=-ss x.lower y.lower)))))
     (a4vec val val))
@@ -1335,9 +1351,10 @@ results in at most n+1 bits.</p>"
 (define a4vec-mask ((mask 4vmask-p)
                     (x a4vec-p))
   :returns (masked-a4vec a4vec-p)
-  (B* (((a4vec x)))
-    (a4vec (aig-logior-ss (aig-i2v (lognot (4vmask-fix mask))) x.upper)
-           (aig-logand-ss (aig-i2v (4vmask-fix mask)) x.lower)))
+  (b* (((a4vec x))
+       (mask (4vmask-fix mask)))
+    (a4vec (aig-logior-ss (aig-i2v (lognot mask)) x.upper)
+           (aig-logand-ss (aig-i2v mask) x.lower)))
   ///
   (defthm a4vec-mask-correct
     (equal (a4vec-eval (a4vec-mask mask x) env)
@@ -1353,7 +1370,7 @@ results in at most n+1 bits.</p>"
        ;; common subexpressions between the two
        (a=1 (aig-not (aig-=-ss a.lower nil)))
        (a=0 (aig-=-ss a.upper nil))
-       (a=x (aig-and (aig-not a=1) (aig-not a=0)))
+       (a=x (aig-nor a=1 a=0))
        (b1vc1 (aig-logior-ss b.upper c.upper))
        (b0^c0 (aig-logand-ss b.lower c.lower))
 
@@ -1364,9 +1381,8 @@ results in at most n+1 bits.</p>"
                     (y3p (aig-logior-ss b1vc1 c.lower))
                     (z3p (aig-logior-ss b1vc1 b.lower))
                     (t (aig-logior-ss b1vc1
-                                      (aig-logand-ss
-                                       (aig-lognot-s b0^c0)
-                                       (aig-logior-ss b.lower c.lower))))))
+                                      (aig-logandc1-ss b0^c0
+                                                       (aig-logior-ss b.lower c.lower))))))
        (upper (aig-logior-ss boolcase
                              (aig-ite-bss-fn a=x xcase nil)))
 
@@ -1422,23 +1438,22 @@ results in at most n+1 bits.</p>"
        ;; common subexpressions between the two
        (b1vc1 (aig-logior-ss b.upper c.upper))
        (b0^c0 (aig-logand-ss b.lower c.lower))
-       (a=x   (aig-logand-ss a.upper (aig-lognot-s a.lower)))
+       (a=x   (aig-logandc2-ss a.upper a.lower))
        ;; upper
        (boolcase (aig-logior-ss (aig-logand-ss a.lower b.upper)
-                                (aig-logand-ss (aig-lognot-s a.upper) c.upper)))
+                                (aig-logandc1-ss a.upper c.upper)))
        (xcase (cond ((and y3p z3p) b1vc1)
                     (y3p (aig-logior-ss b1vc1 c.lower))
                     (z3p (aig-logior-ss b1vc1 b.lower))
                     (t (aig-logior-ss b1vc1
-                                      (aig-logand-ss
-                                       (aig-lognot-s b0^c0)
-                                       (aig-logior-ss b.lower c.lower))))))
+                                      (aig-logandc1-ss b0^c0
+                                                       (aig-logior-ss b.lower c.lower))))))
        (upper (aig-logior-ss boolcase
                              (aig-logand-ss a=x xcase)))
 
        ;; lower
        (boolcase (aig-logior-ss (aig-logand-ss a.lower b.lower)
-                                (aig-logand-ss (aig-lognot-s a.upper) c.lower)))
+                                (aig-logandc1-ss a.upper c.lower)))
        (xcase (cond ((and y3p z3p) b0^c0)
                     (y3p (aig-logand-ss b0^c0 c.upper))
                     (z3p (aig-logand-ss b0^c0 b.upper))
@@ -1480,10 +1495,6 @@ results in at most n+1 bits.</p>"
            (and stable-under-simplificationp
                 '(:bdd (:vars nil))))))
 
-(defthm aig-list->s-of-i2v
-  (equal (aig-list->s (gl::i2v x) env)
-         (ifix x))
-  :hints(("Goal" :in-theory (enable aig-list->s gl::i2v))))
 
 
 (define 4vec->a4vec ((x 4vec-p))
@@ -1516,11 +1527,6 @@ results in at most n+1 bits.</p>"
       nil
     (cons (a4vec-eval (car x) env)
           (a4veclist-eval (cdr x) env))))
-
-
-
-
-
 
 
 
@@ -3087,7 +3093,8 @@ results in at most n+1 bits.</p>"
                                       svex-maskbits-for-vars)))))
 
 (defsection svex-envs-masks-partly-equiv
-  (acl2::defquant svex-envs-masks-partly-equiv (vars masks env1 env2)
+
+  (defquant svex-envs-masks-partly-equiv (vars masks env1 env2)
     (forall v
             (implies (not (member (svar-fix v) (svarlist-fix vars)))
                      (equal (4vec-mask (svex-mask-lookup (svex-var v) masks)
@@ -3096,7 +3103,7 @@ results in at most n+1 bits.</p>"
                                        (svex-env-lookup v env2)))))
     :rewrite :direct)
 
-  (acl2::defexample svex-envs-masks-partly-equiv-example
+  (defexample svex-envs-masks-partly-equiv-example
     :pattern (equal (4vec-mask (svex-mask-lookup (svex-var v) masks)
                                val1)
                     (4vec-mask mask2 val2))

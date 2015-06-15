@@ -289,9 +289,7 @@ possible environment."
        (if (booleanp x)
            (if x y z)
          (bfr-case :bdd (acl2::q-ite x y z)
-                   :aig (cond ((eq x t) y)
-                              ((eq x nil) z)
-                              (t (acl2::aig-ite x y z))))))
+                   :aig (acl2::aig-ite x y z))))
   ///
   (defthm bfr-eval-bfr-ite-fn
     (equal (bfr-eval (bfr-ite-fn x y z) env)
@@ -521,6 +519,65 @@ possible environment."
   (defcong bfr-equiv bfr-equiv (bfr-nand x y) 2
     :hints ((and stable-under-simplificationp
                  `(:expand (,(car (last clause))))))))
+
+
+(define bfr-andc1 (x y)
+  :short "@(call bfr-andc1) constructs the ANDC1 of these BFRs."
+  (mbe :logic
+       (bfr-case :bdd (acl2::q-and-c1 x y)
+                 :aig (acl2::aig-andc1 x y))
+       :exec
+       (if (and (booleanp x) (booleanp y))
+           (and (not x) y)
+         (bfr-case :bdd (acl2::q-and-c1 x y)
+                   :aig (acl2::aig-andc1 x y))))
+  ///
+  (defthm bfr-eval-bfr-andc1
+    (equal (bfr-eval (bfr-andc1 x y) env)
+           (and (not (bfr-eval x env))
+                (bfr-eval y env)))
+    :hints (("goal" :in-theory (e/d (bfr-eval) ((force))))))
+
+  (local (in-theory (disable bfr-andc1)))
+
+  (defcong bfr-equiv bfr-equiv (bfr-andc1 x y) 1
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+
+  (defcong bfr-equiv bfr-equiv (bfr-andc1 x y) 2
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause))))))))
+
+
+(define bfr-andc2 (x y)
+  :short "@(call bfr-andc2) constructs the ANDC2 of these BFRs."
+  (mbe :logic
+       (bfr-case :bdd (acl2::q-and-c2 x y)
+                 :aig (acl2::aig-andc2 x y))
+       :exec
+       (if (and (booleanp x) (booleanp y))
+           (and x (not y))
+         (bfr-case :bdd (acl2::q-and-c2 x y)
+                   :aig (acl2::aig-andc2 x y))))
+  ///
+  (defthm bfr-eval-bfr-andc2
+    (equal (bfr-eval (bfr-andc2 x y) env)
+           (and (bfr-eval x env)
+                (not (bfr-eval y env))))
+    :hints (("goal" :in-theory (e/d (bfr-eval) ((force))))))
+
+  (local (in-theory (disable bfr-andc2)))
+
+  (defcong bfr-equiv bfr-equiv (bfr-andc2 x y) 1
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+
+  (defcong bfr-equiv bfr-equiv (bfr-andc2 x y) 2
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause))))))))
+
+
+
 
 
 (define bfr-to-param-space (p x)
@@ -972,6 +1029,28 @@ anything if we're working with AIGs."
                   '(:in-theory (enable bfr-from-param-space bfr-nand acl2::aig-or)))
                  ((member-equal '(bfr-mode) clause)
                   '(:expand ((pbfr-semantic-depends-on k p (bfr-nand x y))))))))
+
+  (defthm no-new-deps-of-pbfr-andc1
+    (implies (and (not (pbfr-depends-on k p x))
+                  (not (pbfr-depends-on k p y)))
+             (not (pbfr-depends-on k p (bfr-andc1 x y))))
+    :hints(("Goal" :in-theory (enable pbfr-depends-on
+                                      bfr-depends-on))
+           (cond ((member-equal '(not (bfr-mode)) clause)
+                  '(:in-theory (enable bfr-from-param-space bfr-andc1)))
+                 ((member-equal '(bfr-mode) clause)
+                  '(:expand ((pbfr-semantic-depends-on k p (bfr-andc1 x y))))))))
+
+  (defthm no-new-deps-of-pbfr-andc2
+    (implies (and (not (pbfr-depends-on k p x))
+                  (not (pbfr-depends-on k p y)))
+             (not (pbfr-depends-on k p (bfr-andc2 x y))))
+    :hints(("Goal" :in-theory (enable pbfr-depends-on
+                                      bfr-depends-on))
+           (cond ((member-equal '(not (bfr-mode)) clause)
+                  '(:in-theory (enable bfr-from-param-space bfr-andc2)))
+                 ((member-equal '(bfr-mode) clause)
+                  '(:expand ((pbfr-semantic-depends-on k p (bfr-andc2 x y))))))))
 
   (defthm no-new-deps-of-pbfr-ite
     (implies (and (not (pbfr-depends-on k p x))

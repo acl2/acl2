@@ -150,7 +150,13 @@ the same names to their (Boolean) results."
   ///
   (defthm s-endp-of-list-fix
     (equal (s-endp (acl2::list-fix x))
-           (s-endp x))))
+           (s-endp x)))
+
+  (defthm not-s-endp-compound-recognizer
+    (implies (not (s-endp x))
+             (consp x))
+    :rule-classes :compound-recognizer))
+
 
 
 (define scdr (v)
